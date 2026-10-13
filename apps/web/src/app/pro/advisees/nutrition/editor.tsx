@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Editor del borrador (B05:404-624; CAND-NUT-B): la jerarquía Día tipo → Comida → Opción → Ítem, nunca una tabla plana.
+ * La versión en preparación del plan de comidas (B05:404-624; CAND-NUT-B): la jerarquía Día tipo → Comida → Opción →
+ * Ítem, nunca una tabla plana.
  * - El día tipo no es una fecha (B05:435-443). Las comidas son rótulos libres: se agregan, se renombran, se ordenan y se
  *   quitan, sin fijar cuatro (B05:447-467).
  * - Cada ítem lleva cantidad, unidad y estado de preparación; con cantidad, el estado es obligatorio (REG-06-122).
@@ -11,47 +12,65 @@
  * - DL-119: «Agregar receta como opción» suma una opción `{label, recipeVersionId}`. Sus ítems los arma la API con los
  *   ingredientes de una porción de esa versión de la receta: en el editor se ven en lectura, y para cambiarlos se edita
  *   la receta y se vuelve a agregar. Las opciones no se presentan como equivalentes.
+ *
+ * **La composición (WP-ESCRITORIO-AREAS, parte 7; maquetas 17 y 18).** Se mira un día tipo por vez, con sus comidas
+ * plegadas; adentro de una comida, sus opciones en pestañas y los ítems en una tabla. Lo que se usa de vez en cuando
+ * (cambiar un nombre, quitar, guardar como plantilla o como habitual) va en un menú. Hace lo mismo que antes:
+ * - **Lo que se mira vive en la dirección,** por su posición: el día tipo (`dia`) y las comidas abiertas (`comidas`).
+ *   «Actualizar» y volver atrás lo conservan. Al entrar no hay ninguna comida abierta: el día se lee de un vistazo.
+ * - **«Activar plan» guarda antes, si hace falta,** y recién entonces pregunta. El diálogo dice qué entra y qué queda, y
+ *   ahí se fija la próxima revisión, que es parte de ese acto. Si no se puede guardar, no se abre, y se dice por qué.
+ * - **Cada problema de «Validar» lleva a su lugar:** elige el día tipo, abre la comida y la opción.
  */
 import {
-  estructuraNutricionalComoEntrada,
-  cantidad as formatearCantidad,
   COPY,
-  COPY_RECETAS,
-  nutrienteParaMostrar,
-  COPY_INTEGRACIONES,
+  COPY_DE_ACTIVAR_EL_PLAN,
+  COPY_DEL_PLAN,
+  COPY_HABITUALES,
   COPY_NUTRICION,
-  ETIQUETA_DE_PREPARACION,
-  ETIQUETA_DE_UNIDAD,
-  leerNumero,
-  motivoDeNumeroIlegible,
-  type ElementoDeCatalogo,
-  type EstructuraDePlanEntrada,
+  COPY_PLANTILLAS,
+  COPY_RECETAS,
+  PROBLEMA_DEL_EDITOR,
+  avisoDeLoQueNoDejaGuardar,
+  comidasAbiertasEnElEditor,
+  estructuraNutricionalComoEntrada,
+  loQueEntraAlActivar,
+  loQueNoDejaGuardar,
+  lugarDelProblema,
+  nutrienteParaMostrar,
+  pedidoDeComidasDelEditor,
+  pedidoDeLaPosicion,
+  posicionPedida,
+  problemasDeLaComida,
+  ubicacionDelProblema,
   type Receta,
   type RecetaDeOpcion,
   type ValidationIssue,
+  type VersionDeObjetivo,
   type VersionDePlan,
 } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
-import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
+import { useCallback, useEffect, useId, useState } from 'react';
+import { AvisoFlotante } from '../../../../components/ayuda';
+import { Cajon } from '../../../../components/cajon';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
+import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { api } from '../../../../lib/api';
-import { numeroEnCampo } from '../../../../lib/formato';
+import { diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
+import { AgregarItem } from './agregar-item';
+import { CampoDeNombre, ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
+import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 import { NoDisponible, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
-import { COPY_HABITUALES, COPY_PLANTILLAS } from '@be/domain';
-import { AgregarItem } from './agregar-item';
-import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 
-type Estructura = EstructuraDePlanEntrada['dayTypes'];
-type Item = Estructura[number]['meals'][number]['options'][number]['items'][number];
-type Preparacion = 'RAW' | 'COOKED' | 'AS_PURCHASED';
-type Unidad = 'g' | 'ml' | 'unit';
+/** El contrato admite hasta siete días tipo en un plan. */
+const MAXIMO_DE_DIAS_TIPO = 7;
 
 /**
  * La jerarquía de la respuesta, como entrada del PATCH: el helper compartido con las plantillas (PF-09). Una opción que
@@ -84,24 +103,12 @@ function itemsGuardados(v: VersionDePlan, optionId: string | undefined) {
   return null;
 }
 
-const tieneRecetas = (comidas: readonly Estructura[number]['meals'][number][]) => comidas.some((m) => m.options.some((o) => o.recipeVersionId));
+const tieneRecetas = (comidas: readonly ComidaEnEdicion[]) => comidas.some((m) => m.options.some((o) => o.recipeVersionId));
 
 function nombresDe(v: VersionDePlan): Record<string, string> {
   const n: Record<string, string> = {};
   for (const d of v.dayTypes) for (const m of d.meals) for (const o of m.options) for (const i of o.items) n[i.catalogItemId] = i.name;
   return n;
-}
-
-/** Texto de la ubicación de un problema, sin rutas técnicas: «Día habitual → Almuerzo → Opción 2 → …» (B05:654-659). */
-function ubicacion(path: string, e: Estructura): string {
-  const m = path.match(/^dayTypes\[(\d+)\](?:\.meals\[(\d+)\])?(?:\.options\[(\d+)\])?(?:\.items\[(\d+)\])?/);
-  if (!m) return 'Plan';
-  const d = e[Number(m[1])];
-  const partes = [d?.label ?? 'Día tipo'];
-  if (m[2] !== undefined) partes.push(d?.meals[Number(m[2])]?.label ?? 'Comida');
-  if (m[3] !== undefined) partes.push(`Opción ${Number(m[3]) + 1}`);
-  if (m[4] !== undefined) partes.push(`Ítem ${Number(m[4]) + 1}`);
-  return partes.join(' → ');
 }
 
 const PROBLEMA: Readonly<Record<string, string>> = {
@@ -115,10 +122,34 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   DUPLICATE_NODE_ID: 'hay un elemento repetido',
   OBJECTIVE_NOT_EFFECTIVE: 'el borrador usa un objetivo que ya no es el vigente',
   SNAPSHOT_NOT_PRESERVABLE: 'no se pudo preservar la versión para el asesorado',
+  // Lo que el editor ve solo, antes de guardar.
+  [PROBLEMA_DEL_EDITOR.faltaElNombre]: 'falta el nombre',
+  [PROBLEMA_DEL_EDITOR.cantidadIlegible]: 'la cantidad no se entiende',
 };
 
-export function EditorDeBorrador({ planId, onActivado }: { planId: string; onActivado: () => void }) {
-  const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
+const esDelEditor = (codigo: string): boolean => codigo === PROBLEMA_DEL_EDITOR.faltaElNombre || codigo === PROBLEMA_DEL_EDITOR.cantidadIlegible;
+
+/** Qué nombre se está cambiando: el de un día tipo, el de una comida o el de una opción, por sus posiciones. */
+type NombreQueSeCambia = { readonly de: 'dia'; readonly i: number } | { readonly de: 'comida'; readonly i: number; readonly j: number } | { readonly de: 'opcion'; readonly i: number; readonly j: number; readonly k: number } | null;
+
+export function EditorDeBorrador({
+  planId,
+  objetivo,
+  vigente = null,
+  onActivado,
+}: {
+  planId: string;
+  /**
+   * El objetivo vigente, que ya leyó la sección: lo que la versión usa, o va a usar al guardar si hay uno más nuevo.
+   * El editor no lo vuelve a pedir: sin esa lectura, la sección no llega a mostrarlo.
+   */
+  objetivo: VersionDeObjetivo | null;
+  /** La versión que rige hoy, que al activar esta queda en el historial; `null` si es la primera. */
+  vigente?: { readonly numero: number; readonly desde: string } | null;
+  onActivado: () => void;
+}) {
+  const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
+  const propio = useId();
   const [version, setVersion] = useState<VersionDePlan | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [estructura, setEstructura] = useState<Estructura>([]);
@@ -126,7 +157,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   const [nombres, setNombres] = useState<Record<string, string>>({});
   // DL-119: la receta de cada opción de receta, por la versión que cita.
   const [recetas, setRecetas] = useState<Record<string, RecetaDeOpcion>>({});
-  const [eligiendoReceta, setEligiendoReceta] = useState<{ i: number; j: number } | null>(null);
+  const [eligiendoReceta, setEligiendoReceta] = useState<{ readonly i: number; readonly j: number } | null>(null);
   const [sucio, setSucio] = useState(false);
   useCambiosSinGuardar(sucio, 'el plan en preparación');
   const [guardando, setGuardando] = useState(false);
@@ -136,7 +167,7 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
   // «Guardar como habitual» sobre una comida del borrador (DL-109): la posición de la comida elegida, o nada.
-  const [guardarHabitual, setGuardarHabitual] = useState<{ i: number; j: number } | null>(null);
+  const [guardarHabitual, setGuardarHabitual] = useState<{ readonly i: number; readonly j: number } | null>(null);
   const comidasHabituales = useComidasHabituales(token);
   // Los alimentos habituales se cargan una vez para todo el borrador.
   const alimentosHabituales = useAlimentosHabituales(token);
@@ -144,13 +175,17 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   const [agregando, setAgregando] = useState<{ readonly i: number; readonly j: number; readonly k: number } | null>(null);
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
-  const [objetivoVigente, setObjetivoVigente] = useState<string | null>(null);
   const intentoDeActivar = useClaveDeIntento();
+  // La opción que se edita en cada comida (por «día-comida»); el nombre que se está cambiando; y el campo que hay que
+  // enfocar después de ir a un problema.
+  const [pestanas, setPestanas] = useState<Readonly<Record<string, number>>>({});
+  const [nombreQueSeCambia, setNombreQueSeCambia] = useState<NombreQueSeCambia>(null);
+  const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
-    const [r, ob] = await Promise.all([api.consultarPlan(token, planId), api.objetivoEfectivo(token, asesoradoId)]);
-    if (sesionPerdida(r) || sesionPerdida(ob)) return;
+    const r = await api.consultarPlan(token, planId);
+    if (sesionPerdida(r)) return;
     if (!r.ok) return setError(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? 'no-disponible' : 'error');
     setVersion(r.datos.data);
     setEstructura(aEntrada(r.datos.data));
@@ -158,25 +193,41 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
     setRecetas(recetasDe(r.datos.data));
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
     setSucio(false);
-    setObjetivoVigente(ob.ok ? (ob.datos.data.objective?.versionId ?? null) : null);
-  }, [token, planId, asesoradoId, sesionPerdida]);
+  }, [token, planId, sesionPerdida]);
 
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // Después de ir a un problema, el foco va a su lugar en cuanto está dibujado (el día tipo puede tardar un instante
+  // en cambiar). Si la persona hace otra cosa antes, ese foco pendiente se olvida: no salta más tarde.
+  useEffect(() => {
+    if (!paraEnfocar) return;
+    const campo = document.getElementById(paraEnfocar);
+    if (!campo) return;
+    campo.focus();
+    setParaEnfocar(null);
+  });
 
   const cambiar = (f: (e: Estructura) => Estructura) => {
     setEstructura((e) => f(structuredClone(e)));
     setSucio(true);
     setProblemas(null);
     setMensaje(null);
+    setParaEnfocar(null);
   };
+
+  const objetivoVigente = objetivo?.versionId ?? null;
 
   /** Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. */
   async function guardar(): Promise<VersionDePlan | null> {
     if (!version) return null;
-    if (hayCantidadesIlegibles(estructura)) {
-      setMensaje({ tipo: 'error', texto: 'Hay cantidades que no se entienden. Corregí los campos marcados antes de guardar.' });
+    // Un nombre vacío o una cantidad que no se entiende pueden estar en otro día tipo, en una comida plegada o en otra
+    // pestaña: se listan, y cada uno lleva a su lugar.
+    const impide = loQueNoDejaGuardar(estructura);
+    if (impide.length > 0) {
+      setProblemas(impide);
+      setMensaje({ tipo: 'error', texto: avisoDeLoQueNoDejaGuardar(impide) });
       return null;
     }
     setGuardando(true);
@@ -214,11 +265,28 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
     setMensaje(r.datos.data.valid ? { tipo: 'exito', texto: COPY_NUTRICION.planValido } : { tipo: 'error', texto: COPY_NUTRICION.hayElementosPorCorregir });
   }
 
+  /** «Activar plan»: con cambios, guarda antes; si no se puede guardar, no pregunta nada (el motivo queda a la vista). */
+  async function abrirLaActivacion() {
+    const v = sucio ? await guardar() : version;
+    if (!v) return;
+    setFalloDeActivacion(null);
+    setConfirmar(true);
+  }
+
   async function activar() {
     if (!version) return;
     setActivando(true);
     setFalloDeActivacion(null);
-    const r = await api.activarPlan(token, planId, version.version, intentoDeActivar.actual());
+    // La próxima revisión se fija en este acto: si cambió, se guarda antes, y se activa la versión que eso deja.
+    let v: VersionDePlan | null = version;
+    if (proximaRevision !== (version.nextReviewAt ?? '')) {
+      v = await guardar();
+      if (!v) {
+        setActivando(false);
+        return setFalloDeActivacion(COPY_DE_ACTIVAR_EL_PLAN.noSePudoGuardarAntes);
+      }
+    }
+    const r = await api.activarPlan(token, planId, v.version, intentoDeActivar.actual());
     intentoDeActivar.registrar(r);
     setActivando(false);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
@@ -240,6 +308,71 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (!version) return <Cargando />;
 
+  // ── Lo que se mira: el día tipo y las comidas abiertas, por su posición, según la dirección ────────────────────
+  const i = posicionPedida(estructura.length, parametros.get('dia'));
+  const dia = i >= 0 ? estructura[i] : undefined;
+  const abiertas = comidasAbiertasEnElEditor(dia?.meals.length ?? 0, parametros.get('comidas'));
+  const nombreDelDia = dia ? dia.label.trim() || `Día tipo ${i + 1}` : '';
+  // Lo que el editor ve solo ya lo dice cada comida con sus palabras («Falta el nombre»): acá van los de «Validar».
+  const rutasConProblemas = (problemas ?? []).filter((p) => !esDelEditor(p.code)).map((p) => p.path);
+  const elegirDia = (n: number) => {
+    setParaEnfocar(null);
+    ir({ dia: pedidoDeLaPosicion(n), comidas: null });
+  };
+  const dejarAbiertas = (s: ReadonlySet<number>) => {
+    setParaEnfocar(null);
+    ir({ comidas: pedidoDeComidasDelEditor(s) });
+  };
+  const cambiandoElNombreDelDia = nombreQueSeCambia?.de === 'dia' && nombreQueSeCambia.i === i;
+  const pestana = (j: number) => pestanas[`${i}-${j}`] ?? 0;
+  const elegirPestana = (j: number, k: number) => setPestanas((p) => ({ ...p, [`${i}-${j}`]: k }));
+
+  const agregarDia = () => {
+    const n = estructura.length;
+    cambiar((x) => (x.push({ label: `Día tipo ${n + 1}`, meals: [] }), x));
+    elegirDia(n);
+    setNombreQueSeCambia({ de: 'dia', i: n });
+  };
+  const quitarDia = () => {
+    cambiar((x) => (x.splice(i, 1), x));
+    setPestanas({});
+    elegirDia(Math.max(0, i - 1));
+  };
+  const agregarComida = () => {
+    const j = dia?.meals.length ?? 0;
+    cambiar((x) => (x[i]!.meals.push({ label: '', prescriptionMode: 'DISH_OPTIONS', options: [] }), x));
+    dejarAbiertas(new Set([...abiertas, j]));
+    // Una comida sin nombre no se puede guardar: nace con el campo abierto.
+    setNombreQueSeCambia({ de: 'comida', i, j });
+  };
+  const subirComida = (j: number) => {
+    cambiar((x) => ([x[i]!.meals[j - 1], x[i]!.meals[j]] = [x[i]!.meals[j]!, x[i]!.meals[j - 1]!], x));
+    // Lo abierto y la opción elegida acompañan a su comida.
+    dejarAbiertas(new Set([...abiertas].map((p) => (p === j ? j - 1 : p === j - 1 ? j : p))));
+    setPestanas((p) => ({ ...p, [`${i}-${j - 1}`]: p[`${i}-${j}`] ?? 0, [`${i}-${j}`]: p[`${i}-${j - 1}`] ?? 0 }));
+  };
+  const quitarComida = (j: number) => {
+    cambiar((x) => (x[i]!.meals.splice(j, 1), x));
+    dejarAbiertas(new Set([...abiertas].filter((p) => p !== j).map((p) => (p > j ? p - 1 : p))));
+    setPestanas({});
+  };
+  /**
+   * Lleva a donde está un problema: elige su día tipo, abre su comida y su opción, y deja el foco ahí (en el campo del
+   * ítem, en el renglón de la comida o en el día tipo). Si lo que falta es un nombre, abre su campo.
+   */
+  const irAlProblema = (p: ValidationIssue) => {
+    const l = lugarDelProblema(p.path);
+    if (l.dia === null) return;
+    ir({ dia: pedidoDeLaPosicion(l.dia), comidas: l.comida === null ? null : pedidoDeComidasDelEditor(new Set([l.comida])) });
+    if (l.comida !== null && l.opcion !== null) setPestanas((x) => ({ ...x, [`${l.dia}-${l.comida}`]: l.opcion! }));
+    if (p.code === PROBLEMA_DEL_EDITOR.faltaElNombre) {
+      return setNombreQueSeCambia(l.comida === null ? { de: 'dia', i: l.dia } : l.opcion === null ? { de: 'comida', i: l.dia, j: l.comida } : { de: 'opcion', i: l.dia, j: l.comida, k: l.opcion });
+    }
+    if (l.comida === null) return setParaEnfocar(`dia-tipo-${l.dia}`);
+    if (l.opcion === null || l.item === null) return setParaEnfocar(`abrir-comida-${l.dia}-${l.comida}`);
+    setParaEnfocar(`item-${l.dia}-${l.comida}-${l.opcion}-${l.item}-${p.path.endsWith('.preparationState') ? 'preparacion' : 'cantidad'}`);
+  };
+
   // «Almuerzo · opción 1: Pollo, arroz y verduras»: el cajón tapa la opción, y lo dice arriba.
   const comidaDondeSeAgrega = agregando ? estructura[agregando.i]?.meals[agregando.j] : undefined;
   const opcionDondeSeAgrega = agregando ? comidaDondeSeAgrega?.options[agregando.k] : undefined;
@@ -247,16 +380,67 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
     agregando && comidaDondeSeAgrega && opcionDondeSeAgrega
       ? `${comidaDondeSeAgrega.label.trim() || `Comida ${agregando.j + 1}`} · opción ${agregando.k + 1}${opcionDondeSeAgrega.label.trim() ? `: ${opcionDondeSeAgrega.label.trim()}` : ''}`
       : null;
+  const comidaDeLaReceta = eligiendoReceta ? estructura[eligiendoReceta.i]?.meals[eligiendoReceta.j] : undefined;
 
   return (
-    <section className="seccion" aria-labelledby="titulo-borrador">
-      <h2 id="titulo-borrador">
-        Versión en preparación <span className="insignia">{COPY_NUTRICION.borrador}</span>
-      </h2>
-      <Ayuda titulo="Qué es una versión en preparación">
-        <p>El borrador no es visible para el asesorado. Guardar no activa.</p>
-        {version.predecessorPlanId ? <p>Nueva versión a partir de la versión activa. La versión activa no cambia hasta que actives esta.</p> : null}
-      </Ayuda>
+    <section className="seccion editor-del-plan" aria-labelledby="titulo-borrador">
+      <div className="editor-del-plan__cabecera">
+        <h2 id="titulo-borrador">
+          Versión en preparación <span className="insignia">{COPY_NUTRICION.borrador}</span>
+        </h2>
+        <div className="editor-del-plan__acciones">
+          <p className="editor-del-plan__estado" aria-live="polite" data-estado={guardando ? 'guardando' : sucio ? 'sin-guardar' : 'guardado'}>
+            {guardando ? COPY_NUTRICION.guardando : sucio ? COPY_NUTRICION.cambiosSinGuardar : COPY_NUTRICION.guardado}
+          </p>
+          <MenuDeAcciones
+            rotulo="Más acciones de esta versión"
+            acciones={[
+              {
+                clave: 'plantilla',
+                texto: COPY_PLANTILLAS.guardarComoPlantilla,
+                alElegir: () => setGuardarPlantilla(true),
+                noSePuede: estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null,
+              },
+            ]}
+          />
+          {/* Los tres se apagan con `aria-disabled`, no con `disabled`: un botón deshabilitado pierde el foco, y quien
+              guarda con el teclado quedaría fuera de lugar (y «Volver», en el diálogo, no tendría a dónde volver). */}
+          <button
+            type="button"
+            className="boton boton--quieto"
+            aria-disabled={guardando || undefined}
+            onClick={() => {
+              if (!guardando) void validar();
+            }}
+          >
+            {COPY_NUTRICION.validarPlan}
+          </button>
+          <button
+            type="button"
+            className="boton boton--secundario"
+            aria-disabled={guardando || undefined}
+            onClick={() => {
+              if (!guardando) void abrirLaActivacion();
+            }}
+          >
+            <Icono nombre="activar" tamano={18} />
+            {COPY_NUTRICION.activarPlan}
+          </button>
+          <button
+            type="button"
+            className="boton boton--primario"
+            aria-disabled={guardando || !sucio || undefined}
+            onClick={() => {
+              if (!guardando && sucio) void guardar();
+            }}
+          >
+            {COPY_NUTRICION.guardarCambios}
+          </button>
+        </div>
+      </div>
+      <p className="nota editor-del-plan__que-es">
+        El asesorado no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
+      </p>
       {version.templateOrigin ? <NotaDeOrigenNutricional token={token} origen={version.templateOrigin} /> : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
@@ -264,127 +448,6 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
         </Aviso>
       ) : null}
 
-      <div className="jerarquia">
-        {estructura.map((d, i) => (
-          <fieldset key={d.dayTypeId ?? i} className="nodo nodo--dia">
-            <legend>Día tipo {i + 1}</legend>
-            <Campo id={`dia-${i}`} etiqueta="Nombre del día tipo" value={d.label} onChange={(e) => cambiar((x) => ((x[i]!.label = e.target.value), x))} maxLength={80} />
-            {d.meals.map((m, j) => (
-              <fieldset key={m.mealId ?? j} className="nodo nodo--comida">
-                <legend>{m.label || `Comida ${j + 1}`}</legend>
-                <Campo id={`comida-${i}-${j}`} etiqueta="Nombre de la comida" value={m.label} onChange={(e) => cambiar((x) => ((x[i]!.meals[j]!.label = e.target.value), x))} maxLength={80} />
-                {m.options.map((o, k) => (
-                  <fieldset key={o.optionId ?? k} className="nodo nodo--opcion">
-                    <legend>Opción {k + 1}</legend>
-                    <Campo id={`opcion-${i}-${j}-${k}`} etiqueta="Nombre de la opción" value={o.label} onChange={(e) => cambiar((x) => ((x[i]!.meals[j]!.options[k]!.label = e.target.value), x))} maxLength={120} />
-                    {o.recipeVersionId ? (
-                      <OpcionDeReceta receta={recetas[o.recipeVersionId] ?? null} items={itemsGuardados(version, o.optionId)} nombres={nombres} />
-                    ) : (
-                    <>
-                    <ul className="items">
-                      {o.items.map((it, l) => (
-                        <FilaDeItem
-                          key={it.itemId ?? l}
-                          id={`item-${i}-${j}-${k}-${l}`}
-                          item={it}
-                          nombre={nombres[it.catalogItemId] ?? 'Elemento'}
-                          onCambiar={(cambio) => cambiar((x) => ((x[i]!.meals[j]!.options[k]!.items[l] = { ...it, ...cambio }), x))}
-                          onQuitar={() => cambiar((x) => (x[i]!.meals[j]!.options[k]!.items.splice(l, 1), x))}
-                        />
-                      ))}
-                    </ul>
-                    <button type="button" className="boton boton--secundario" data-agregar-item onClick={() => setAgregando({ i, j, k })}>
-                      <Icono nombre="mas" tamano={18} />
-                      Agregar ítem
-                    </button>
-                    </>
-                    )}
-                    <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (x[i]!.meals[j]!.options.splice(k, 1), x))}>
-                      Quitar opción {k + 1}
-                    </button>
-                  </fieldset>
-                ))}
-                <div className="acciones">
-                  <button type="button" className="boton boton--secundario" onClick={() => cambiar((x) => (x[i]!.meals[j]!.options.push({ label: `Opción ${m.options.length + 1}`, items: [] }), x))}>
-                    Agregar opción
-                  </button>
-                  <button
-                    type="button"
-                    className="boton boton--secundario"
-                    aria-expanded={eligiendoReceta?.i === i && eligiendoReceta.j === j}
-                    onClick={() => setEligiendoReceta(eligiendoReceta?.i === i && eligiendoReceta.j === j ? null : { i, j })}
-                  >
-                    {COPY_RECETAS.agregarComoOpcion}
-                  </button>
-                  <button type="button" className="boton boton--enlace" disabled={j === 0} onClick={() => cambiar((x) => ([x[i]!.meals[j - 1], x[i]!.meals[j]] = [x[i]!.meals[j]!, x[i]!.meals[j - 1]!], x))}>
-                    Subir
-                  </button>
-                  <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (x[i]!.meals.splice(j, 1), x))}>
-                    Quitar comida
-                  </button>
-                  <button
-                    type="button"
-                    className="boton boton--enlace"
-                    onClick={() => (tieneRecetas([m]) ? setMensaje({ tipo: 'info', texto: COPY_RECETAS.recetaEnPlantilla }) : setGuardarHabitual({ i, j }))}
-                  >
-                    {COPY_HABITUALES.guardarComoHabitual}
-                  </button>
-                </div>
-                {eligiendoReceta?.i === i && eligiendoReceta.j === j ? (
-                  <ElegirReceta
-                    onCerrar={() => setEligiendoReceta(null)}
-                    onElegir={(receta) => {
-                      setRecetas((x) => ({
-                        ...x,
-                        [receta.recipeVersionId]: { recipeId: receta.recipeId, recipeVersionId: receta.recipeVersionId, versionNumber: receta.versionNumber, name: receta.name, servings: receta.servings },
-                      }));
-                      cambiar((x) => (x[i]!.meals[j]!.options.push({ label: receta.name, items: [], recipeVersionId: receta.recipeVersionId }), x));
-                      setEligiendoReceta(null);
-                    }}
-                  />
-                ) : null}
-                {m.options.some((o) => o.recipeVersionId) ? <p className="nota">{COPY_RECETAS.avisoDeOpciones}</p> : null}
-              </fieldset>
-            ))}
-            <div className="acciones">
-              <button type="button" className="boton boton--secundario" onClick={() => cambiar((x) => (x[i]!.meals.push({ label: '', prescriptionMode: 'DISH_OPTIONS', options: [] }), x))}>
-                Agregar comida
-              </button>
-              {estructura.length > 1 ? (
-                <button type="button" className="boton boton--enlace" onClick={() => cambiar((x) => (x.splice(i, 1), x))}>
-                  Quitar día tipo
-                </button>
-              ) : null}
-            </div>
-            <InsertarComidaHabitual
-              comidas={comidasHabituales.lista}
-              onInsertar={(comida, nombresNuevos) => {
-                setNombres((n) => ({ ...n, ...nombresNuevos }));
-                cambiar((x) => (x[i]!.meals.push(comida), x));
-              }}
-            />
-          </fieldset>
-        ))}
-        <button type="button" className="boton boton--secundario" onClick={() => cambiar((x) => (x.push({ label: `Día tipo ${x.length + 1}`, meals: [] }), x))}>
-          Agregar día tipo
-        </button>
-      </div>
-
-      <Campo
-        id="proxima-revision"
-        etiqueta="Próxima revisión (opcional)"
-        ayuda="Si la fijás, al activar queda como revisión pendiente del seguimiento a partir de esa fecha."
-        type="date"
-        value={proximaRevision}
-        onChange={(e) => {
-          setProximaRevision(e.target.value);
-          setSucio(true);
-        }}
-      />
-
-      <p className="nota" aria-live="polite">
-        {guardando ? COPY_NUTRICION.guardando : sucio ? COPY_NUTRICION.cambiosSinGuardar : COPY_NUTRICION.guardado}
-      </p>
       {mensaje && mensaje.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => setMensaje(null)}>
           <p>{mensaje.texto}</p>
@@ -394,36 +457,134 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
         <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info'}>
           <p>{mensaje.texto}</p>
           {problemas && problemas.length > 0 ? (
-            <ul>
-              {problemas.map((p, i) => (
-                <li key={i}>
-                  {ubicacion(p.path, estructura)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
+            <ul className="problemas-del-plan">
+              {problemas.map((p, n) => (
+                <li key={n}>
+                  {/* Cada problema lleva a su lugar: con las comidas plegadas, no hay que ir a buscarlo. */}
+                  {lugarDelProblema(p.path).dia === null ? (
+                    <>
+                      {ubicacionDelProblema(p.path, estructura)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
+                    </>
+                  ) : (
+                    <button type="button" className="boton boton--enlace" data-problema onClick={() => irAlProblema(p)}>
+                      {ubicacionDelProblema(p.path, estructura)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
           ) : null}
         </Aviso>
       ) : null}
-      <div className="acciones">
-        <button type="button" className="boton boton--primario" onClick={() => void guardar()} disabled={guardando || !sucio}>
-          {COPY_NUTRICION.guardarCambios}
+
+      <div className="editor-del-plan__dia">
+        {estructura.length > 0 ? (
+          <fieldset className="segmentos segmentos--que-bajan" data-dia-tipo="varios">
+            <legend>Día tipo</legend>
+            <div className="segmentos__fila">
+              {estructura.map((d, n) => (
+                <label key={d.dayTypeId ?? `nuevo-${n}`} className="segmento">
+                  <input type="radio" id={`dia-tipo-${n}`} name={`${propio}-dia`} checked={n === i} onChange={() => elegirDia(n)} />
+                  {d.label.trim() || `Día tipo ${n + 1}`}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : (
+          <p className="nota">Esta versión todavía no tiene días tipo.</p>
+        )}
+        <button type="button" className="boton boton--quieto boton--compacto" data-agregar-dia onClick={agregarDia} disabled={estructura.length >= MAXIMO_DE_DIAS_TIPO}>
+          <Icono nombre="mas" tamano={18} />
+          Agregar<span className="visualmente-oculto"> un día tipo</span>
         </button>
-        <button type="button" className="boton boton--secundario" onClick={() => void validar()} disabled={guardando}>
-          {COPY_NUTRICION.validarPlan}
-        </button>
-        <button type="button" className="boton boton--secundario" onClick={() => setConfirmar(true)} disabled={guardando || sucio}>
-          {COPY_NUTRICION.activarPlan}
-        </button>
-        <button
-          type="button"
-          className="boton boton--secundario"
-          onClick={() => (estructura.some((d) => tieneRecetas(d.meals)) ? setMensaje({ tipo: 'info', texto: COPY_RECETAS.recetaEnPlantilla }) : setGuardarPlantilla(true))}
-          disabled={guardando}
-        >
-          {COPY_PLANTILLAS.guardarComoPlantilla}
-        </button>
+        {estructura.length >= MAXIMO_DE_DIAS_TIPO ? <span className="nota">Un plan lleva hasta {MAXIMO_DE_DIAS_TIPO} días tipo.</span> : null}
+        {dia ? (
+          <MenuDeAcciones
+            rotulo={`más acciones del día tipo ${nombreDelDia}`}
+            acciones={[
+              { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setNombreQueSeCambia({ de: 'dia', i }) },
+              { clave: 'quitar', texto: 'Quitar este día tipo', alElegir: quitarDia, noSePuede: estructura.length <= 1 ? 'Es el único día tipo de la versión.' : null },
+            ]}
+          />
+        ) : null}
+        {objetivo ? (
+          <div className="plan__objetivo" data-objetivo="listo">
+            <p className="plan__objetivo-titulo">
+              <Icono nombre="objetivo" tamano={18} />
+              {COPY_DEL_PLAN.objetivoDelDia}
+            </p>
+            {/* Los macros ya llegaron con el objetivo: acá no hay una lectura que reintentar. */}
+            <TiraDelObjetivo calorias={objetivo.estimatedEnergyRequirement.value} macros={{ estado: 'listos', valor: objetivo.macronutrientDistribution }} onReintentar={() => undefined} />
+          </div>
+        ) : null}
       </div>
-      {sucio ? <p className="nota">Guardá los cambios antes de activar.</p> : null}
+
+      {dia ? (
+        <div className="comidas-del-plan comidas-del-editor" data-dia={i + 1}>
+          {cambiandoElNombreDelDia || dia.label.trim() === '' ? (
+            <CampoDeNombre
+              id={`dia-${i}`}
+              etiqueta="Nombre del día tipo"
+              valor={dia.label}
+              maximo={80}
+              enfocar={cambiandoElNombreDelDia}
+              alEmpezar={() => setNombreQueSeCambia({ de: 'dia', i })}
+              alCambiar={(v) => cambiar((x) => ((x[i]!.label = v), x))}
+              alTerminar={() => setNombreQueSeCambia(null)}
+            />
+          ) : null}
+          {dia.meals.length === 0 ? <p className="nota">Este día tipo todavía no tiene comidas.</p> : null}
+          {dia.meals.map((m, j) => (
+            <ComidaDelEditor
+              key={m.mealId ?? `nueva-${j}`}
+              id={`${i}-${j}`}
+              posicion={j}
+              comida={m}
+              abierta={abiertas.has(j)}
+              problemas={problemasDeLaComida(rutasConProblemas, i, j)}
+              esLaPrimera={j === 0}
+              opcionElegida={pestana(j)}
+              nombreEnEdicion={
+                nombreQueSeCambia?.de === 'comida' && nombreQueSeCambia.i === i && nombreQueSeCambia.j === j
+                  ? { de: 'comida' }
+                  : nombreQueSeCambia?.de === 'opcion' && nombreQueSeCambia.i === i && nombreQueSeCambia.j === j
+                    ? { de: 'opcion', opcion: nombreQueSeCambia.k }
+                    : null
+              }
+              nombres={nombres}
+              recetas={recetas}
+              itemsDeLaReceta={(optionId) => itemsGuardados(version, optionId)}
+              alAlternar={() => {
+                const s = new Set(abiertas);
+                if (!s.delete(j)) s.add(j);
+                dejarAbiertas(s);
+              }}
+              alElegirOpcion={(k) => elegirPestana(j, k)}
+              alEditarNombre={(que) => setNombreQueSeCambia(que === null ? null : que.de === 'comida' ? { de: 'comida', i, j } : { de: 'opcion', i, j, k: que.opcion })}
+              alCambiar={(f) => cambiar((x) => (f(x[i]!.meals[j]!), x))}
+              alSubir={() => subirComida(j)}
+              alQuitar={() => quitarComida(j)}
+              alGuardarComoHabitual={() => setGuardarHabitual({ i, j })}
+              alAgregarItem={(k) => setAgregando({ i, j, k })}
+              alAgregarReceta={() => setEligiendoReceta({ i, j })}
+            />
+          ))}
+          <div className="editor-del-plan__al-pie">
+            <button type="button" className="boton boton--quieto" data-agregar-comida onClick={agregarComida}>
+              <Icono nombre="mas" tamano={18} />
+              Agregar comida
+            </button>
+            <InsertarComidaHabitual
+              comidas={comidasHabituales.lista}
+              onInsertar={(comida, nombresNuevos) => {
+                setNombres((n) => ({ ...n, ...nombresNuevos }));
+                cambiar((x) => (x[i]!.meals.push(comida), x));
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
       <DialogoGuardarPlantillaNutricional
         token={token}
         abierto={guardarPlantilla}
@@ -454,131 +615,74 @@ export function EditorDeBorrador({ planId, onActivado }: { planId: string; onAct
         habituales={alimentosHabituales}
         onElegir={(el) => {
           if (!agregando) return;
-          const { i, j, k } = agregando;
+          const { i: di, j, k } = agregando;
           setNombres((n) => ({ ...n, [el.catalogItemId]: el.name }));
           // El ítem nace sin cantidad ni estado: se completan en la opción (REG-06-122).
-          cambiar((x) => (x[i]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
+          cambiar((x) => (x[di]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
         }}
         onCerrar={() => setAgregando(null)}
       />
 
+      {/* Las recetas, en el mismo cajón que los alimentos: no hay un diálogo encima de otro. */}
+      <Cajon abierto={eligiendoReceta !== null} titulo={COPY_RECETAS.agregarComoOpcion} sobretitulo={comidaDeLaReceta ? comidaDeLaReceta.label.trim() || `Comida ${(eligiendoReceta?.j ?? 0) + 1}` : null} onCerrar={() => setEligiendoReceta(null)}>
+        <ElegirReceta
+          onElegir={(receta) => {
+            if (!eligiendoReceta) return;
+            const { i: di, j } = eligiendoReceta;
+            const nueva = estructura[di]?.meals[j]?.options.length ?? 0;
+            setRecetas((x) => ({
+              ...x,
+              [receta.recipeVersionId]: { recipeId: receta.recipeId, recipeVersionId: receta.recipeVersionId, versionNumber: receta.versionNumber, name: receta.name, servings: receta.servings },
+            }));
+            cambiar((x) => (x[di]!.meals[j]!.options.push({ label: receta.name, items: [], recipeVersionId: receta.recipeVersionId }), x));
+            setPestanas((p) => ({ ...p, [`${di}-${j}`]: nueva }));
+            setEligiendoReceta(null);
+          }}
+        />
+      </Cajon>
+
       <DialogoDeConfirmacion
         abierto={confirmar}
         titulo={COPY_NUTRICION.activarPlan}
-        textoVolver="Volver"
-        textoConfirmar="Activar esta versión"
-        textoEnviando="Activando…"
+        textoVolver={COPY_DE_ACTIVAR_EL_PLAN.volver}
+        textoConfirmar={COPY_DE_ACTIVAR_EL_PLAN.activarEstaVersion}
+        textoEnviando={COPY_DE_ACTIVAR_EL_PLAN.activando}
         enviando={activando}
         error={falloDeActivacion}
+        focoEnVolver
         onVolver={() => {
           setConfirmar(false);
           setFalloDeActivacion(null);
+          // La fecha es de este acto: si no se activa, vuelve a la que estaba guardada.
+          setProximaRevision(version.nextReviewAt ?? '');
           intentoDeActivar.descartar();
         }}
         onConfirmar={() => void activar()}
       >
         <p>{COPY_NUTRICION.confirmarActivacion}</p>
+        <div className="lo-que-cambia-al-activar" data-lo-que-cambia>
+          {[COPY_DE_ACTIVAR_EL_PLAN.entra(loQueEntraAlActivar(estructura)), ...(vigente ? [COPY_DE_ACTIVAR_EL_PLAN.queda(vigente.numero, diaSinElAnioEnCurso(vigente.desde))] : [])].map((frase) => (
+            <p key={frase.quien}>
+              <strong>{frase.quien}</strong>
+              {frase.que}
+            </p>
+          ))}
+        </div>
+        <Campo
+          id="proxima-revision"
+          etiqueta={`${COPY_DE_ACTIVAR_EL_PLAN.proximaRevision} (${COPY_DE_ACTIVAR_EL_PLAN.opcional})`}
+          ayuda={COPY_DE_ACTIVAR_EL_PLAN.ayudaDeLaRevision}
+          type="date"
+          value={proximaRevision}
+          onChange={(e) => setProximaRevision(e.target.value)}
+        />
       </DialogoDeConfirmacion>
     </section>
   );
 }
 
-/** Una cantidad escrita que no es un número queda como NaN en la estructura (ver `FilaDeItem`). */
-function hayCantidadesIlegibles(e: Estructura): boolean {
-  return e.some((d) => d.meals.some((m) => m.options.some((o) => o.items.some((i) => i.quantity !== null && Number.isNaN(i.quantity.value)))));
-}
-
-function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; item: Item; nombre: string; onCambiar: (c: Partial<Item>) => void; onQuitar: () => void }) {
-  const magnitud = item.quantity;
-  /**
-   * El campo guarda el texto tal como se escribe y propaga lo interpretado: si mostrara siempre el número
-   * interpretado, «72,» se borraría a mitad de camino y no se podría escribir un decimal. Se resincroniza cuando el
-   * valor cambia desde afuera (al guardar, al quitar un ítem).
-   */
-  const externo = numeroEnCampo(magnitud?.value);
-  const [escrito, setEscrito] = useState(externo);
-  useEffect(() => {
-    setEscrito((t) => (numeroEnCampo(leerNumero(t)) === externo ? t : externo));
-  }, [externo]);
-  // Lo que no es un número se señala en el campo, en vez de guardarse como cero en silencio (B10-10:164-165).
-  const error = escrito.trim() !== '' && leerNumero(escrito) === null ? motivoDeNumeroIlegible(escrito) : null;
-
-  return (
-    <li className="fila-de-item">
-      <strong>{nombre}</strong>
-      <Campo
-        id={`${id}-cantidad`}
-        etiqueta="Cantidad"
-        inputMode="decimal"
-        value={escrito}
-        error={error}
-        onChange={(e) => {
-          setEscrito(e.target.value);
-          const n = leerNumero(e.target.value);
-          if (e.target.value.trim() === '') return onCambiar({ quantity: null });
-          // Lo que no se entiende viaja como NaN, igual que en entrenamiento: el guardado se niega y lo señala, en
-          // vez de guardar en silencio el último número válido que había en el campo.
-          onCambiar({ quantity: { value: n ?? Number.NaN, unit: magnitud?.unit ?? 'g' } });
-        }}
-      />
-      <div className="campo">
-        <label htmlFor={`${id}-unidad`}>Unidad</label>
-        <select id={`${id}-unidad`} value={magnitud?.unit ?? 'g'} disabled={!magnitud} onChange={(e) => magnitud && onCambiar({ quantity: { ...magnitud, unit: e.target.value as Unidad } })}>
-          {(Object.keys(ETIQUETA_DE_UNIDAD) as Unidad[]).map((u) => (
-            <option key={u} value={u}>
-              {ETIQUETA_DE_UNIDAD[u]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="campo">
-        <label htmlFor={`${id}-preparacion`}>{COPY_NUTRICION.estadoDePreparacion}</label>
-        <select id={`${id}-preparacion`} value={item.preparationState ?? ''} onChange={(e) => onCambiar({ preparationState: (e.target.value || null) as Preparacion | null })}>
-          <option value="">Sin indicar</option>
-          {(Object.keys(ETIQUETA_DE_PREPARACION) as Preparacion[]).map((p) => (
-            <option key={p} value={p}>
-              {ETIQUETA_DE_PREPARACION[p]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <button type="button" className="boton boton--enlace" onClick={onQuitar}>
-        Quitar {nombre}
-      </button>
-    </li>
-  );
-}
-
-/**
- * Una opción que nació de una receta (DL-119): la receta y su versión, y los ítems de una porción que armó la API, en
- * lectura. Antes de guardar, todavía no hay ítems: se dice.
- */
-function OpcionDeReceta({ receta, items, nombres }: { receta: RecetaDeOpcion | null; items: VersionDePlan['dayTypes'][number]['meals'][number]['options'][number]['items'] | null; nombres: Record<string, string> }) {
-  return (
-    <div className="opcion-de-receta">
-      <p>
-        <span className="insignia">{receta ? COPY_RECETAS.opcionDeReceta(receta.name, receta.versionNumber) : 'Receta'}</span>
-      </p>
-      <p className="nota">{COPY_RECETAS.porcionDeLaOpcion}</p>
-      {items ? (
-        <ul className="lista-compacta">
-          {items.map((it) => (
-            <li key={it.itemId}>
-              <strong>{it.name || nombres[it.catalogItemId] || 'Elemento'}</strong>
-              {it.quantity ? ` · ${formatearCantidad(it.quantity.value, ETIQUETA_DE_UNIDAD[it.quantity.unit])}` : ''}
-              {it.preparationState ? ` · ${ETIQUETA_DE_PREPARACION[it.preparationState].toLowerCase()}` : ''}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="nota">{COPY_RECETAS.ingredientesAlGuardar}</p>
-      )}
-    </div>
-  );
-}
-
-/** Elegir una de mis recetas para ofrecerla como opción: se agrega su versión vigente (API-REC-02). */
-function ElegirReceta({ onElegir, onCerrar }: { onElegir: (r: Receta) => void; onCerrar: () => void }) {
+/** La lista de recetas propias, para sumar una como opción de una comida (DL-119). Va dentro de un cajón. */
+function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
   const { token, sesionPerdida } = useNutricion();
   const [estado, setEstado] = useState<{ tipo: 'cargando' } | { tipo: 'error'; texto: string } | { tipo: 'lista'; recetas: readonly Receta[]; mas: string | null }>({ tipo: 'cargando' });
 
@@ -600,8 +704,7 @@ function ElegirReceta({ onElegir, onCerrar }: { onElegir: (r: Receta) => void; o
   }, [cargar]);
 
   return (
-    <div className="buscador">
-      <p className="lista__titulo">{COPY_RECETAS.elegirReceta}</p>
+    <div className="recetas-para-elegir">
       {estado.tipo === 'cargando' ? <Cargando /> : null}
       {estado.tipo === 'error' ? (
         <Aviso tipo="error">
@@ -633,9 +736,6 @@ function ElegirReceta({ onElegir, onCerrar }: { onElegir: (r: Receta) => void; o
           Ver más
         </button>
       ) : null}
-      <button type="button" className="boton boton--enlace" onClick={onCerrar}>
-        Cerrar
-      </button>
     </div>
   );
 }

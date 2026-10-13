@@ -12,6 +12,9 @@
 //   Para mirar una búsqueda, `#buscar:texto`: antes de los clics, lo escribe en el buscador de la vista y lo envía.
 //   Para escribir en lo que quedó con el foco después de los clics (el buscador de un cajón que se acaba de abrir),
 //   `#escribir:texto`: lo escribe y lo envía con Enter. Y `#luego:Texto|Otro` toca eso después de escribir.
+//   Para escribir en un campo que no se abre con un clic, `#foco:identificador` (el `id` del campo, sin el numeral) le da
+//   el foco después de los clics, con el cursor al final: lo que diga `#escribir:` se suma a lo que el campo ya tenía.
+//   Un botón que es solo un ícono se toca por su nombre accesible (`aria-label`).
 //   Con un cajón abierto (`dialog.cajon`), la captura es la de la ventana, sin estirarla: el cajón mide lo que la ventana.
 //   Para mirar una pantalla con datos que el escenario no tiene, `#entrega:fragmento=archivo.json`: los pedidos a la API
 //   que contienen el fragmento reciben, en el navegador, el contenido de ese archivo de BE_TRABAJO (la API y la base no
@@ -61,7 +64,7 @@ const rutas = pedidos.map((p) => {
     process.exit(2);
   }
   // Después de la ruta van, en cualquier orden, `#clic:Texto|Otro`, `#falla:fragmento de una dirección de la API`,
-  // `#buscar:texto`, `#escribir:texto`, `#luego:Texto|Otro` y `#entrega:fragmento=archivo.json`.
+  // `#buscar:texto`, `#foco:identificador`, `#escribir:texto`, `#luego:Texto|Otro` y `#entrega:fragmento=archivo.json`.
   const [destino, ...extras] = ruta.split('#');
   const de = (prefijo) => extras.find((x) => x.startsWith(prefijo))?.slice(prefijo.length) ?? '';
   const entrega = de('entrega:');
@@ -75,7 +78,7 @@ const rutas = pedidos.map((p) => {
     }
     simulada = { fragmento: entrega.slice(0, igual), cuerpo: fs.readFileSync(archivo, 'utf8') };
   }
-  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, de('clic:').split('|').filter(Boolean), de('falla:'), de('buscar:'), simulada, de('escribir:'), de('luego:').split('|').filter(Boolean)];
+  return [p.slice(0, corte), destino.startsWith('/') ? destino : `/${destino}`, de('clic:').split('|').filter(Boolean), de('falla:'), de('buscar:'), simulada, de('escribir:'), de('luego:').split('|').filter(Boolean), de('foco:')];
 });
 fs.mkdirSync(salida, { recursive: true });
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -141,7 +144,7 @@ try {
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
   await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees'), { timeout: 240_000 });
   await page.waitForFunction(() => typeof window.next?.router?.push === 'function', { timeout: 240_000 });
-  for (const [nombre, ruta, clics, falla, buscado, simulada, escrito, luego] of rutas) {
+  for (const [nombre, ruta, clics, falla, buscado, simulada, escrito, luego, foco] of rutas) {
     await page.setViewport({ width: ANCHO, height: ALTO, deviceScaleFactor: 1 });
     // Un diálogo que quedó abierto de la ruta anterior (una ayuda) se cierra antes de ir a la siguiente.
     await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach((d) => d.close()));
@@ -178,7 +181,8 @@ try {
       // (`checkVisibility` lo sabe). Si hay uno con ese texto exacto, es ese; si no, el primero que lo contiene.
       const elegir = (s, t) => {
         const aLaVista = [...document.querySelectorAll(s)].filter((e) => (e.checkVisibility ? e.checkVisibility() : e.getClientRects().length > 0));
-        const limpio = (e) => e.textContent.replace(/\s+/g, ' ').trim();
+        // Un botón que es solo un ícono no tiene texto: se lo busca por su nombre accesible.
+        const limpio = (e) => e.textContent.replace(/\s+/g, ' ').trim() || (e.getAttribute('aria-label') ?? '');
         return aLaVista.find((e) => limpio(e) === t) ?? aLaVista.find((e) => limpio(e).includes(t)) ?? null;
       };
       await page.waitForFunction(`(${elegir})(${JSON.stringify(TOCABLES)}, ${JSON.stringify(texto)}) !== null`, { timeout: 30_000 }).catch(() => {});
@@ -187,6 +191,17 @@ try {
       await asentar();
     };
     for (const texto of clics) await tocar(texto);
+    if (foco) {
+      // `#foco:identificador`: el campo toma el foco, con el cursor al final de lo que ya tenía.
+      const tomado = await page.evaluate((id) => {
+        const campo = document.getElementById(id);
+        if (!campo) return false;
+        campo.focus();
+        campo.setSelectionRange?.(campo.value.length, campo.value.length);
+        return document.activeElement === campo;
+      }, foco);
+      if (!tomado) console.log(`${nombre}: no encontré el campo «${foco}» para darle el foco`);
+    }
     if (escrito) {
       // `#escribir:texto`: en lo que quedó con el foco (el buscador del cajón recién abierto), y lo envía con Enter.
       await page.keyboard.type(escrito);

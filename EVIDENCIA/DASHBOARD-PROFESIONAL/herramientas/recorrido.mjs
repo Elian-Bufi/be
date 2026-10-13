@@ -9426,12 +9426,669 @@ async function planesDeNutricion() {
       `escrituras: ${creadas} · aviso «Borrador creado»: ${avisoDeCreada ? 'sí' : 'no'} · ${conBorrador.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${conBorrador.selector?.nota}»`,
     );
 
-    // ── Pasar a la activa y volver no pierde lo escrito ──────────────────────────────────────────────────────────
-    const AJUSTE = ' (ajuste)';
-    const nombreAntes = await page.$eval('#comida-0-0', (e) => e.value);
-    await page.focus('#comida-0-0');
+    // ── El editor recompuesto (WP-ESCRITORIO-AREAS, parte 7, tramos 2 y 3; maquetas 17 y 18) ─────────────────────
+    // La versión en preparación recién creada es una copia de la activa: dos días tipo, y una comida con tres opciones,
+    // una de ellas de receta. Lo que el editor tiene que decir se escribe a mano con lo que devuelve la API: no se usa
+    // el módulo del dominio que arma la pantalla (`editor-del-plan-de-nutricion.ts`).
+    const EDITOR = '.plan__preparacion .editor-del-plan';
+    const ID_DEL_BORRADOR = elBorrador.planId;
+    const porOrden = (xs) => [...xs].sort((a, b) => a.order - b.order);
+    const cuentaDe = (n) => (n === 0 ? 'Sin opciones' : n === 1 ? '1 opción' : `${n} opciones · se elige una`);
+    const UNIDAD_DEL_CAMPO = { g: 'g', ml: 'ml', unit: 'unidad' };
+    const ESTADO_DEL_CAMPO = { RAW: 'Crudo', COOKED: 'Cocido', AS_PURCHASED: 'Tal como se adquiere' };
+    const conComa = (n) => String(n).replace('.', ',');
+    const estructuraDe = (version) =>
+      porOrden(version.dayTypes).map((dt) => ({
+        nombre: dt.label,
+        comidas: porOrden(dt.meals).map((m) => ({ nombre: m.label, opciones: porOrden(m.options).map((o) => ({ nombre: o.label, receta: o.recipe ?? null, items: porOrden(o.items) })) })),
+      }));
+    /** Lo que importa de una estructura para compararla: nombres, de qué receta sale cada opción y los tres datos de cada ítem. */
+    const resumenDe = (dias) =>
+      dias.map((x) => [x.nombre, x.comidas.map((m) => [m.nombre, m.opciones.map((o) => [o.nombre, o.receta ? o.receta.recipeVersionId : null, o.items.map((i) => [i.name, i.quantity ? `${i.quantity.value} ${i.quantity.unit}` : null, i.preparationState ?? null])])])]);
+    const leerElBorrador = async () => (await leerApi(v, `/nutrition/plans/${ID_DEL_BORRADOR}`)).data;
+    /** Lo que el editor tiene a la vista. */
+    const elEditor = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+        const raiz = document.querySelector(s);
+        if (!raiz) return null;
+        const campo = raiz.querySelector('.nombre-a-pedido input');
+        const panel = raiz.querySelector('.menu-de-acciones[data-abierto] .menu-de-acciones__lista');
+        return {
+          estado: t(raiz.querySelector('.editor-del-plan__estado')),
+          acciones: [...raiz.querySelectorAll('.editor-del-plan__acciones > button, .editor-del-plan__acciones > .menu-de-acciones > button')].map((b) => ({
+            nombre: b.getAttribute('aria-label') ?? t(b),
+            // «Apagado» es que no se puede usar: deshabilitado, o apagado conservando el foco (`aria-disabled`).
+            apagado: b.disabled || b.getAttribute('aria-disabled') === 'true',
+            deshabilitado: b.disabled,
+          })),
+          dias: [...raiz.querySelectorAll('[data-dia-tipo] .segmento')].map((x) => ({ texto: t(x), elegido: x.querySelector('input').checked })),
+          sinComidas: t(raiz.querySelector('.comidas-del-editor > .nota')),
+          objetivo: [...raiz.querySelectorAll('.plan__objetivo .tira-del-objetivo > div')].map(t),
+          comidas: [...raiz.querySelectorAll('.comida-del-editor')].map((c) => {
+            const o = c.querySelector('.opcion-del-editor');
+            const subir = [...c.querySelectorAll('.comida-del-editor__acciones > button')].find((b) => t(b) === 'Subir');
+            return {
+              posicion: Number(c.dataset.comida),
+              abierta: c.hasAttribute('data-abierta'),
+              expandida: c.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+              nombre: t(c.querySelector('.comida-del-plan__nombre')),
+              resumen: t(c.querySelector('[data-resumen]')),
+              avisos: t(c.querySelector('[data-avisos]')),
+              subirApagado: subir ? subir.disabled : null,
+              sinOpciones: t(c.querySelector('.comida-del-editor__opciones > .nota')),
+              pestanas: [...c.querySelectorAll('.pestana-de-opcion')].map((p) => ({ texto: t(p), elegida: p.querySelector('input').checked, receta: p.hasAttribute('data-receta') })),
+              cortadas: [...c.querySelectorAll('.pestana-de-opcion > span')].map((x) => x.scrollWidth > x.clientWidth + 1),
+              opcion: o
+                ? {
+                    numero: Number(o.dataset.opcion),
+                    columnas: [...o.querySelectorAll('.items-del-editor thead th')].map(t),
+                    items: [...o.querySelectorAll('tr.item-del-editor')].map((tr) => {
+                      const cantidad = tr.querySelector('input[id$="-cantidad"]');
+                      const unidad = tr.querySelector('select[id$="-unidad"]');
+                      const preparacion = tr.querySelector('select[id$="-preparacion"]');
+                      const error = tr.querySelector('.campo__error');
+                      return {
+                        nombre: t(tr.querySelector('th')),
+                        cantidad: cantidad.value,
+                        unidad: unidad.selectedOptions[0]?.textContent.trim() ?? null,
+                        unidadApagada: unidad.disabled,
+                        preparacion: preparacion.selectedOptions[0]?.textContent.trim() ?? null,
+                        nombres: [cantidad, unidad, preparacion, tr.querySelector('.item-del-editor__boton-de-quitar')].map((e) => e.getAttribute('aria-label')),
+                        // El error lleva delante un símbolo de aviso, que no se lee en voz alta: se compara el texto.
+                        error: error ? t(error).replace('⚠', '').trim() : null,
+                        invalida: cantidad.getAttribute('aria-invalid'),
+                      };
+                    }),
+                    receta: t(o.querySelector('.opcion-de-receta .insignia')),
+                    ingredientes: [...o.querySelectorAll('.opcion-de-receta li')].map(t),
+                    sinItems: t(o.querySelector(':scope > p.nota')),
+                    notasDeLaReceta: [...o.querySelectorAll('.opcion-de-receta > .nota')].map(t),
+                    pie: [...o.querySelectorAll('.opcion-del-editor__pie button')].map(t),
+                  }
+                : null,
+            };
+          }),
+          campos: [...raiz.querySelectorAll('input:not([type="radio"]), select, textarea')].filter(aLaVista).map((e) => e.id),
+          nombreAbierto: campo ? { id: campo.id, valor: campo.value, conFoco: document.activeElement === campo, seleccionado: campo.value.length > 0 && campo.selectionStart === 0 && campo.selectionEnd === campo.value.length } : null,
+          menu: panel ? [...panel.querySelectorAll(':scope > li')].map((li) => ({ texto: t(li.querySelector('button')), apagada: li.querySelector('button').disabled, motivo: t(li.querySelector('.menu-de-acciones__motivo')) })) : null,
+          aviso: t(raiz.querySelector(':scope > .aviso--error p')),
+          problemas: [...raiz.querySelectorAll('.problemas-del-plan li')].map((li) => ({ texto: t(li), esBoton: !!li.querySelector('button[data-problema]') })),
+          foco: document.activeElement?.id || null,
+          alto: document.documentElement.scrollHeight,
+          texto: t(raiz),
+        };
+      }, EDITOR);
+    const enElEditor = async (selector, contiene) => {
+      await clic(page, `${EDITOR} ${selector}`, contiene);
+      await pausa(250);
+    };
+    /** Abre o pliega una comida del día tipo que se mira, por su posición (desde uno). */
+    const alternarEnElEditor = async (n) => {
+      await page.click(`${EDITOR} .comida-del-editor[data-comida="${n}"] .comida-del-plan__boton`);
+      await pausa(250);
+    };
+    const abrirMenuDelEditor = async (donde) => {
+      await page.click(`${EDITOR} ${donde} .menu-de-acciones__boton`);
+      await page.waitForSelector(`${EDITOR} ${donde} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, { timeout: 5_000 }).catch(() => {});
+    };
+    const elegirDelMenu = async (texto) => {
+      await clic(page, `${EDITOR} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, texto);
+      await pausa(250);
+    };
+    /** El campo de un nombre recién abierto tiene el foco y el texto seleccionado: lo que se escribe lo reemplaza. */
+    const escribirElNombre = async (texto) => {
+      await page.keyboard.type(texto);
+      await page.keyboard.press('Enter');
+      await pausa(250);
+    };
+    const elegirDiaDelEditor = (nombre) => enElEditor('[data-dia-tipo] .segmento', nombre);
+    const tocarAccionDelEditor = (texto) => enElEditor('.editor-del-plan__acciones > button', texto);
+    /** Las escrituras sobre la versión en preparación, por lo que hacen: guardar (PATCH), validar y activar. */
+    const escriturasDelBorrador = (desde) => {
+      const todas = v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(`/nutrition/plans/${ID_DEL_BORRADOR}`));
+      return { guardar: todas.filter((u) => u.startsWith('PATCH ')).length, validar: todas.filter((u) => u.endsWith('/validate')).length, activar: todas.filter((u) => u.endsWith('/activate')).length };
+    };
+    const pedidosDesde = (desde) => v.urls.slice(desde).filter((u) => !u.startsWith('OPTIONS ')).length;
+    const esperarGuardado = async () => {
+      await page.waitForFunction((s) => document.querySelector(`${s} .editor-del-plan__estado`)?.innerText.trim() === 'Guardado', { timeout: 40_000 }, EDITOR).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+    };
+    const sinMotivo = (texto) => ({ texto, apagada: false, motivo: null });
+
+    const DB = estructuraDe(await leerElBorrador());
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const alEntrarAlEditor = await elEditor();
+    await captura(page, v, 'editor-al-entrar-1440-claro');
+    comprobar(
+      'F-89',
+      'La versión en preparación se abre con un día tipo a la vista y sus comidas plegadas: cada una, en un renglón, con su nombre y cuántas opciones tiene, como los da la API. No hay ningún campo a la vista. Arriba, el estado del guardado («Guardado») y, en este orden, el menú de la versión, «Validar plan», «Activar plan» y «Guardar cambios», apagado porque no hay nada que guardar (apagado, no deshabilitado: conserva el foco). El objetivo del día es el de la API. La página entera mide menos de 1.000 px a 1440 (medía 9.045)',
+      !!alEntrarAlEditor &&
+        DB.length === 2 &&
+        igual(alEntrarAlEditor.dias, DB.map((x, i) => ({ texto: x.nombre, elegido: i === 0 }))) &&
+        igual(alEntrarAlEditor.comidas.map((c) => [c.posicion, c.nombre, c.resumen, c.abierta, c.expandida, c.avisos]), DB[0].comidas.map((m, j) => [j + 1, m.nombre, cuentaDe(m.opciones.length), false, 'false', null])) &&
+        alEntrarAlEditor.campos.length === 0 &&
+        alEntrarAlEditor.nombreAbierto === null &&
+        alEntrarAlEditor.estado === 'Guardado' &&
+        igual(alEntrarAlEditor.acciones, [
+          { nombre: 'Más acciones de esta versión', apagado: false, deshabilitado: false },
+          { nombre: 'Validar plan', apagado: false, deshabilitado: false },
+          { nombre: 'Activar plan', apagado: false, deshabilitado: false },
+          { nombre: 'Guardar cambios', apagado: true, deshabilitado: false },
+        ]) &&
+        tiraBien(alEntrarAlEditor.objetivo, trasCrear.objetivo) &&
+        alEntrarAlEditor.alto <= 1000 &&
+        ['dia', 'comidas'].every((k) => P(page).get(k) === null),
+      `${alEntrarAlEditor?.alto} px · ${alEntrarAlEditor?.dias.map((x) => `${x.texto}${x.elegido ? ' (elegido)' : ''}`).join(' | ')} · ${alEntrarAlEditor?.comidas.map((c) => `${c.nombre}: ${c.resumen}`).join(' | ')} · campos a la vista: ${alEntrarAlEditor?.campos.length} · «${alEntrarAlEditor?.estado}» · ${alEntrarAlEditor?.acciones.map((a) => `${a.nombre}${a.apagado ? ' (apagado)' : ''}`).join(' | ')}`,
+    );
+
+    // El día tipo que se mira y las comidas abiertas: en la dirección.
+    const antesDeElegirElDia = v.urls.length;
+    await elegirDiaDelEditor(DB[1].nombre);
+    const enElSegundoDia = await elEditor();
+    const diaEnLaDireccionDelEditor = P(page).get('dia');
+    await alternarEnElEditor(2);
+    const conUnaComidaAbierta = await elEditor();
+    const comidasEnLaDireccionDelEditor = P(page).get('comidas');
+    const pedidosAlElegirElDia = pedidosDesde(antesDeElegirElDia);
+    const antesDeActualizarElEditor = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    for (let i = 0; i < 100 && lecturasDesde(antesDeActualizarElEditor, `/nutrition/plans/${ID_DEL_BORRADOR}`).length === 0; i++) await pausa(100);
+    await quieto(page, v);
+    await page.waitForSelector(`${EDITOR} .comida-del-editor`, { timeout: 30_000 }).catch(() => {});
+    const trasActualizarElEditor = await elEditor();
+    const direccionTrasActualizar = [P(page).get('dia'), P(page).get('comidas')];
+    await elegirDiaDelEditor(DB[0].nombre);
+    const deVueltaEnElPrimerDia = await elEditor();
+    comprobar(
+      'F-90',
+      'El día tipo que se mira y las comidas abiertas viven en la dirección, por su posición: elegir el segundo día deja `dia=2` y muestra sus comidas (las de la API), plegadas; abrir la segunda deja `comidas=2`. Ninguna de las dos cosas le pide nada a BE. «Actualizar» vuelve a leer la versión y deja a la vista el mismo día y la misma comida abierta. Al volver al primer día, la dirección queda limpia y no hay ninguna comida abierta',
+      DB[1].comidas.length >= 3 &&
+        diaEnLaDireccionDelEditor === '2' &&
+        igual(enElSegundoDia?.dias.map((x) => x.elegido), [false, true]) &&
+        igual(enElSegundoDia.comidas.map((c) => [c.nombre, c.resumen, c.abierta]), DB[1].comidas.map((m) => [m.nombre, cuentaDe(m.opciones.length), false])) &&
+        comidasEnLaDireccionDelEditor === '2' &&
+        igual(conUnaComidaAbierta?.comidas.map((c) => [c.abierta, c.expandida]), DB[1].comidas.map((_, j) => [j === 1, String(j === 1)])) &&
+        pedidosAlElegirElDia === 0 &&
+        lecturasDesde(antesDeActualizarElEditor, `/nutrition/plans/${ID_DEL_BORRADOR}`).length >= 1 &&
+        igual(direccionTrasActualizar, ['2', '2']) &&
+        igual(trasActualizarElEditor?.dias.map((x) => x.elegido), [false, true]) &&
+        igual(trasActualizarElEditor.comidas.map((c) => c.abierta), DB[1].comidas.map((_, j) => j === 1)) &&
+        ['dia', 'comidas'].every((k) => P(page).get(k) === null) &&
+        igual(deVueltaEnElPrimerDia?.dias.map((x) => x.elegido), [true, false]) &&
+        deVueltaEnElPrimerDia.comidas.every((c) => !c.abierta),
+      `dia=${diaEnLaDireccionDelEditor} · comidas=${comidasEnLaDireccionDelEditor} · pedidos al elegir: ${pedidosAlElegirElDia} · tras «Actualizar»: dia=${direccionTrasActualizar[0]}, comidas=${direccionTrasActualizar[1]}, abiertas: ${trasActualizarElEditor?.comidas.filter((c) => c.abierta).map((c) => c.nombre).join(', ')} · de vuelta en el primero: ${deVueltaEnElPrimerDia?.comidas.filter((c) => c.abierta).length} abiertas`,
+    );
+
+    // Una comida abierta: las opciones en pestañas y los ítems en una tabla; la de receta, en lectura.
+    const jRec = DB[0].comidas.findIndex((m) => m.opciones.length >= 2 && !m.opciones[0].receta && m.opciones.some((o) => o.receta));
+    if (jRec < 0) throw new Error('el plan descartable no tiene una comida con varias opciones y una de ellas de receta');
+    const M = DB[0].comidas[jRec];
+    const kRec = M.opciones.findIndex((o) => o.receta);
+    const COMIDA = `.comida-del-editor[data-comida="${jRec + 1}"]`;
+    const antesDeMirarLaComida = v.urls.length;
+    await alternarEnElEditor(jRec + 1);
+    const conLaTabla = await elEditor();
+    await captura(page, v, 'editor-una-comida-abierta-1440-claro');
+    await enElEditor(`${COMIDA} .pestana-de-opcion`, `${kRec + 1} · ${M.opciones[kRec].nombre}`);
+    const conLaReceta = await elEditor();
+    await captura(page, v, 'editor-una-opcion-de-receta-1440-claro');
+    await enElEditor(`${COMIDA} .pestana-de-opcion`, `1 · ${M.opciones[0].nombre}`);
+    const pedidosAlMirarLaComida = pedidosDesde(antesDeMirarLaComida);
+    const filasEsperadas = M.opciones[0].items.map((i) => ({
+      nombre: i.name,
+      cantidad: i.quantity ? conComa(i.quantity.value) : '',
+      unidad: UNIDAD_DEL_CAMPO[i.quantity?.unit ?? 'g'],
+      unidadApagada: !i.quantity,
+      preparacion: i.preparationState ? ESTADO_DEL_CAMPO[i.preparationState] : 'Sin indicar',
+      nombres: [`Cantidad de ${i.name}`, `Unidad de ${i.name}`, `Estado de preparación de ${i.name}`, `Quitar ${i.name}`],
+      error: null,
+      invalida: null,
+    }));
+    const laReceta = M.opciones[kRec].receta;
+    const ingredientesEsperados = M.opciones[kRec].items.map((i) => [i.name, ...(i.quantity ? [`${conComa(i.quantity.value)} ${UNIDAD_DEL_CAMPO[i.quantity.unit]}`] : []), ...(i.preparationState ? [ESTADO_DEL_CAMPO[i.preparationState].toLowerCase()] : [])].join(' · '));
+    comprobar(
+      'F-91',
+      'Abrir una comida muestra sus opciones en pestañas («N · nombre», y la de receta marcada), con la primera elegida, y los ítems de esa opción en una tabla: alimento, cantidad, unidad y estado de preparación, con los valores de la API. Cada campo dice de qué alimento es en su nombre accesible. La pestaña de la receta se lee y no se edita: la receta con su versión y los ingredientes de una porción, sin campos ni «Agregar ítem». Mirar no le pide nada a BE ni ensucia la versión',
+      igual(conLaTabla?.comidas[jRec].pestanas, M.opciones.map((o, k) => ({ texto: `${k + 1} · ${o.nombre}`, elegida: k === 0, receta: !!o.receta }))) &&
+        conLaTabla.comidas[jRec].opcion?.numero === 1 &&
+        igual(conLaTabla.comidas[jRec].opcion.columnas, ['Alimento', 'Cantidad', 'Unidad', 'Estado de preparación', 'Quitar']) &&
+        filasEsperadas.length >= 2 &&
+        igual(conLaTabla.comidas[jRec].opcion.items, filasEsperadas) &&
+        igual(conLaTabla.comidas[jRec].opcion.pie, ['Agregar ítem', 'Cambiar el nombre', 'Quitar opción 1']) &&
+        conLaTabla.comidas[jRec].subirApagado === (jRec === 0) &&
+        conLaTabla.comidas.every((c, j) => c.abierta === (j === jRec)) &&
+        igual(conLaReceta?.comidas[jRec].pestanas.map((p) => p.elegida), M.opciones.map((_, k) => k === kRec)) &&
+        conLaReceta.comidas[jRec].opcion?.numero === kRec + 1 &&
+        conLaReceta.comidas[jRec].opcion.receta === `Receta «${laReceta.name}», versión ${laReceta.versionNumber}` &&
+        ingredientesEsperados.length >= 1 &&
+        igual(conLaReceta.comidas[jRec].opcion.ingredientes, ingredientesEsperados) &&
+        conLaReceta.comidas[jRec].opcion.items.length === 0 &&
+        igual(conLaReceta.comidas[jRec].opcion.pie, ['Cambiar el nombre', `Quitar opción ${kRec + 1}`]) &&
+        conLaReceta.campos.length === 0 &&
+        conLaReceta.estado === 'Guardado' &&
+        pedidosAlMirarLaComida === 0,
+      `${M.nombre}: ${conLaTabla?.comidas[jRec].pestanas.map((p) => `${p.texto}${p.receta ? ' (receta)' : ''}`).join(' | ')} · ${conLaTabla?.comidas[jRec].opcion?.items.map((i) => `${i.nombre}: ${i.cantidad} ${i.unidad}, ${i.preparacion}`).join(' | ')} · la de receta: «${conLaReceta?.comidas[jRec].opcion?.receta}», ${conLaReceta?.comidas[jRec].opcion?.ingredientes.join(' | ')} · campos en la de receta: ${conLaReceta?.campos.length} · pedidos: ${pedidosAlMirarLaComida}`,
+    );
+
+    // Los nombres se cambian a pedido: el de una comida, el de una opción y el de un día tipo.
+    const NOMBRE_DE_LA_COMIDA = `${M.nombre} del recorrido`;
+    const NOMBRE_DE_LA_OPCION = `${M.opciones[0].nombre} (ajustada)`;
+    const NOMBRE_DEL_DIA = `${DB[1].nombre} (ajustado)`;
+    const antesDeLosNombres = v.urls.length;
+    await abrirMenuDelEditor('.editor-del-plan__acciones');
+    const menuDeLaVersionConReceta = (await elEditor())?.menu;
+    await captura(page, v, 'editor-el-menu-de-la-version-con-una-receta-1440-claro');
+    await page.keyboard.press('Escape');
+    await pausa(200);
+    const menuTrasEscape = (await elEditor())?.menu;
+    const focoTrasEscape = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null);
+    await abrirMenuDelEditor(`${COMIDA} .comida-del-editor__acciones`);
+    const menuDeLaComida = (await elEditor())?.menu;
+    await captura(page, v, 'editor-el-menu-de-una-comida-1440-claro');
+    await elegirDelMenu('Cambiar el nombre');
+    const campoDeLaComida = (await elEditor())?.nombreAbierto;
+    await captura(page, v, 'editor-el-nombre-de-una-comida-1440-claro');
+    await escribirElNombre(NOMBRE_DE_LA_COMIDA);
+    const trasNombrarLaComida = await elEditor();
+    await enElEditor(`${COMIDA} .opcion-del-editor__pie button`, 'Cambiar el nombre');
+    const campoDeLaOpcion = (await elEditor())?.nombreAbierto;
+    await escribirElNombre(NOMBRE_DE_LA_OPCION);
+    const trasNombrarLaOpcion = await elEditor();
+    // El día tipo que se renombra es el segundo: al primero se lo busca por su nombre más adelante.
+    await elegirDiaDelEditor(DB[1].nombre);
+    await abrirMenuDelEditor('.editor-del-plan__dia');
+    const menuDelDia = (await elEditor())?.menu;
+    await elegirDelMenu('Cambiar el nombre');
+    const campoDelDia = (await elEditor())?.nombreAbierto;
+    await escribirElNombre(NOMBRE_DEL_DIA);
+    const trasNombrarElDia = await elEditor();
+    const pedidosAlNombrar = pedidosDesde(antesDeLosNombres);
+    comprobar(
+      'F-92',
+      'Los nombres se cambian a pedido. El menú «Más» de una comida ofrece «Cambiar el nombre», «Guardar como habitual» y «Quitar comida»; como esa comida tiene una opción de receta, «Guardar como habitual» está apagada y dice por qué. «Cambiar el nombre» abre el campo en el lugar, con el foco y el nombre seleccionado: lo que se escribe lo reemplaza, y Enter lo cierra. Lo mismo con la opción (la pestaña pasa a decir el nombre nuevo) y con el día tipo, desde su menú. Nada de esto le pide algo a BE; la versión queda con «Cambios sin guardar». El menú de la versión tiene una sola acción, «Guardar como plantilla», que con una opción de receta en el plan está apagada y dice por qué; Escape lo cierra y devuelve el foco a su botón',
+      menuDeLaVersionConReceta?.length === 1 &&
+        menuDeLaVersionConReceta[0].texto === 'Guardar como plantilla' &&
+        menuDeLaVersionConReceta[0].apagada &&
+        /^Las opciones que vienen de una receta/.test(menuDeLaVersionConReceta[0].motivo ?? '') &&
+        menuTrasEscape === null &&
+        focoTrasEscape === 'Más acciones de esta versión' &&
+        menuDeLaComida?.length === 3 &&
+        igual(menuDeLaComida[0], sinMotivo('Cambiar el nombre')) &&
+        menuDeLaComida[1].texto === 'Guardar como habitual' &&
+        menuDeLaComida[1].apagada &&
+        /^Las opciones que vienen de una receta/.test(menuDeLaComida[1].motivo ?? '') &&
+        igual(menuDeLaComida[2], sinMotivo('Quitar comida')) &&
+        igual(campoDeLaComida, { id: `comida-0-${jRec}`, valor: M.nombre, conFoco: true, seleccionado: true }) &&
+        trasNombrarLaComida?.nombreAbierto === null &&
+        trasNombrarLaComida.comidas[jRec].nombre === NOMBRE_DE_LA_COMIDA &&
+        trasNombrarLaComida.estado === 'Cambios sin guardar' &&
+        igual(campoDeLaOpcion, { id: `opcion-0-${jRec}-0`, valor: M.opciones[0].nombre, conFoco: true, seleccionado: true }) &&
+        trasNombrarLaOpcion?.nombreAbierto === null &&
+        trasNombrarLaOpcion.comidas[jRec].pestanas[0].texto === `1 · ${NOMBRE_DE_LA_OPCION}` &&
+        igual(menuDelDia, [sinMotivo('Cambiar el nombre'), sinMotivo('Quitar este día tipo')]) &&
+        igual(campoDelDia, { id: 'dia-1', valor: DB[1].nombre, conFoco: true, seleccionado: true }) &&
+        trasNombrarElDia?.nombreAbierto === null &&
+        igual(trasNombrarElDia.dias, [{ texto: DB[0].nombre, elegido: false }, { texto: NOMBRE_DEL_DIA, elegido: true }]) &&
+        pedidosAlNombrar === 0,
+      `menú: ${menuDeLaComida?.map((a) => `${a.texto}${a.apagada ? ` (apagada: «${(a.motivo ?? '').slice(0, 50)}…»)` : ''}`).join(' | ')} · el campo: ${JSON.stringify(campoDeLaComida)} · comida: «${trasNombrarLaComida?.comidas[jRec]?.nombre}» · pestaña: «${trasNombrarLaOpcion?.comidas[jRec]?.pestanas[0]?.texto}» · día: «${trasNombrarElDia?.dias[1]?.texto}» · «${trasNombrarLaComida?.estado}» · pedidos: ${pedidosAlNombrar}`,
+    );
+
+    // Agregar, mover y quitar, en el segundo día tipo.
+    const NOMBRE_DE_LA_OPCION_NUEVA = 'Opción del recorrido';
+    const NOMBRE_DE_LA_COMIDA_NUEVA = 'Colación del recorrido';
+    const D2 = DB[1];
+    const cuantasOpciones = D2.comidas[1].opciones.length + 1;
+    const cuantasComidas = D2.comidas.length + 1;
+    const antesDeAgregar = v.urls.length;
+    await alternarEnElEditor(2);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="2"] .comida-del-editor__opciones');
+    const menuDeAgregarOpcion = (await elEditor())?.menu;
+    await elegirDelMenu('Una opción nueva');
+    const conOpcionNueva = await elEditor();
+    await escribirElNombre(NOMBRE_DE_LA_OPCION_NUEVA);
+    const trasNombrarLaOpcionNueva = await elEditor();
+    await enElEditor('[data-agregar-comida]', 'Agregar comida');
+    const conComidaNueva = await elEditor();
+    await captura(page, v, 'editor-una-comida-recien-agregada-1440-claro');
+    await escribirElNombre(NOMBRE_DE_LA_COMIDA_NUEVA);
+    const trasNombrarLaComidaNueva = await elEditor();
+    await enElEditor(`.comida-del-editor[data-comida="${cuantasComidas}"] .comida-del-editor__acciones > button`, 'Subir');
+    const trasSubir = await elEditor();
+    const comidasEnLaDireccionTrasSubir = P(page).get('comidas');
+    await alternarEnElEditor(1);
+    const conLaPrimeraAbierta = await elEditor();
+    await alternarEnElEditor(1);
+    await enElEditor('[data-agregar-dia]', 'Agregar');
+    const conDiaNuevo = await elEditor();
+    const diaNuevoEnLaDireccion = P(page).get('dia');
+    await abrirMenuDelEditor('.editor-del-plan__dia');
+    await elegirDelMenu('Quitar este día tipo');
+    const trasQuitarElDia = await elEditor();
+    const diaTrasQuitar = P(page).get('dia');
+    const pedidosAlAgregar = pedidosDesde(antesDeAgregar);
+    comprobar(
+      'F-93',
+      'Agregar, mover y quitar. «Agregar opción» despliega dos caminos (una opción nueva o una receta); la opción nueva queda elegida, con su pestaña («Opción N»), sin ítems y con el campo de su nombre abierto. «Agregar comida» suma una comida al final, abierta, que dice «Falta el nombre» hasta que se lo escribe. «Subir» la mueve un lugar y lo abierto la acompaña (en la dirección también); en la primera comida, «Subir» está apagado. «Agregar» suma un día tipo, lo elige y abre su nombre; «Quitar este día tipo» lo saca y deja elegido el anterior. Nada de esto le pide algo a BE',
+      D2.comidas.length >= 3 &&
+        igual(menuDeAgregarOpcion, [sinMotivo('Una opción nueva'), sinMotivo('Agregar receta como opción')]) &&
+        conOpcionNueva?.comidas[1].pestanas.length === cuantasOpciones &&
+        igual(conOpcionNueva.comidas[1].pestanas.at(-1), { texto: `Opción ${cuantasOpciones}`, elegida: true, receta: false }) &&
+        conOpcionNueva.comidas[1].resumen === cuentaDe(cuantasOpciones) &&
+        conOpcionNueva.comidas[1].opcion?.sinItems === 'Esta opción todavía no tiene ítems.' &&
+        igual(conOpcionNueva.comidas[1].opcion.pie, ['Agregar ítem', 'Cambiar el nombre', `Quitar opción ${cuantasOpciones}`]) &&
+        igual(conOpcionNueva.nombreAbierto, { id: `opcion-1-1-${cuantasOpciones - 1}`, valor: `Opción ${cuantasOpciones}`, conFoco: true, seleccionado: true }) &&
+        trasNombrarLaOpcionNueva?.comidas[1].pestanas.at(-1).texto === `${cuantasOpciones} · ${NOMBRE_DE_LA_OPCION_NUEVA}` &&
+        conComidaNueva?.comidas.length === cuantasComidas &&
+        igual(
+          [conComidaNueva.comidas.at(-1)].map((c) => [c.nombre, c.resumen, c.avisos, c.abierta, c.sinOpciones]),
+          [[`Comida ${cuantasComidas}`, 'Sin opciones', 'Falta el nombre', true, 'Esta comida todavía no tiene opciones.']],
+        ) &&
+        igual(conComidaNueva.nombreAbierto, { id: `comida-1-${cuantasComidas - 1}`, valor: '', conFoco: true, seleccionado: false }) &&
+        trasNombrarLaComidaNueva?.nombreAbierto === null &&
+        igual([trasNombrarLaComidaNueva.comidas.at(-1)].map((c) => [c.nombre, c.avisos]), [[NOMBRE_DE_LA_COMIDA_NUEVA, null]]) &&
+        igual(trasSubir?.comidas.map((c) => [c.nombre, c.abierta]), [...D2.comidas.slice(0, -1).map((m, j) => [m.nombre, j === 1]), [NOMBRE_DE_LA_COMIDA_NUEVA, true], [D2.comidas.at(-1).nombre, false]]) &&
+        comidasEnLaDireccionTrasSubir === `2.${D2.comidas.length}` &&
+        igual(conLaPrimeraAbierta?.comidas.filter((c) => c.abierta).map((c) => c.subirApagado), [true, false, false]) &&
+        igual(conDiaNuevo?.dias, [{ texto: DB[0].nombre, elegido: false }, { texto: NOMBRE_DEL_DIA, elegido: false }, { texto: 'Día tipo 3', elegido: true }]) &&
+        igual(conDiaNuevo.nombreAbierto, { id: 'dia-2', valor: 'Día tipo 3', conFoco: true, seleccionado: true }) &&
+        conDiaNuevo.comidas.length === 0 &&
+        conDiaNuevo.sinComidas === 'Este día tipo todavía no tiene comidas.' &&
+        diaNuevoEnLaDireccion === '3' &&
+        igual(trasQuitarElDia?.dias, [{ texto: DB[0].nombre, elegido: false }, { texto: NOMBRE_DEL_DIA, elegido: true }]) &&
+        diaTrasQuitar === '2' &&
+        pedidosAlAgregar === 0,
+      `«Agregar opción»: ${menuDeAgregarOpcion?.map((a) => a.texto).join(' | ')} · pestañas: ${trasNombrarLaOpcionNueva?.comidas[1]?.pestanas.map((p) => p.texto).join(' | ')} · la comida nueva: «${conComidaNueva?.comidas.at(-1)?.nombre}», ${conComidaNueva?.comidas.at(-1)?.avisos} · tras «Subir»: ${trasSubir?.comidas.map((c) => `${c.nombre}${c.abierta ? ' (abierta)' : ''}`).join(' | ')}, comidas=${comidasEnLaDireccionTrasSubir} · días: ${conDiaNuevo?.dias.map((x) => x.texto).join(' | ')} → ${trasQuitarElDia?.dias.map((x) => x.texto).join(' | ')} · pedidos: ${pedidosAlAgregar}`,
+    );
+
+    // Lo que no deja guardar: una cantidad que no se entiende, en el segundo día tipo…
+    await alternarEnElEditor(1);
+    const CANTIDAD = '#item-1-0-0-0-cantidad';
+    const cantidadAntes = await page.$eval(CANTIDAD, (e) => e.value).catch(() => null);
+    await page.focus(CANTIDAD).catch(() => {});
     await page.keyboard.press('End');
-    await page.type('#comida-0-0', AJUSTE);
+    await page.keyboard.type('x');
+    await pausa(250);
+    const conIlegible = await elEditor();
+    await captura(page, v, 'editor-una-cantidad-que-no-se-entiende-1440-claro');
+    // …y una comida sin nombre, en el primero. El campo vacío no se cierra con Enter.
+    await elegirDiaDelEditor(DB[0].nombre);
+    await alternarEnElEditor(1);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__acciones');
+    await elegirDelMenu('Cambiar el nombre');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Enter');
+    await pausa(250);
+    const conElNombreVacio = await elEditor();
+    await alternarEnElEditor(1);
+    const plegadaSinNombre = await elEditor();
+    const antesDeIntentarGuardar = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await pausa(400);
+    const noDejaGuardar = await elEditor();
+    await captura(page, v, 'editor-lo-que-no-deja-guardar-1440-claro');
+    const escriturasAlIntentar = escriturasDelBorrador(antesDeIntentarGuardar);
+    // La cantidad está en el otro día tipo, en una comida plegada: su renglón lleva hasta el campo.
+    await enElEditor('.problemas-del-plan button', 'la cantidad no se entiende');
+    await pausa(300);
+    const enLaCantidad = await elEditor();
+    const direccionEnLaCantidad = [P(page).get('dia'), P(page).get('comidas')];
+    await page.keyboard.down('Control');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Control');
+    await page.keyboard.type('75,5');
+    await pausa(250);
+    const cantidadCorregida = await elEditor();
+    await tocarAccionDelEditor('Guardar cambios');
+    await pausa(400);
+    const faltaElNombre = await elEditor();
+    await enElEditor('.problemas-del-plan button', 'falta el nombre');
+    await pausa(300);
+    const enElNombre = await elEditor();
+    const direccionEnElNombre = [P(page).get('dia'), P(page).get('comidas')];
+    await escribirElNombre(DB[0].comidas[0].nombre);
+    const conElNombreDeVuelta = await elEditor();
+    const escriturasAntesDeGuardar = escriturasDelBorrador(antesDeIntentarGuardar);
+    comprobar(
+      'F-94',
+      'Lo que no deja guardar no queda escondido. Una cantidad que no es un número se marca en su campo, con el motivo, y el renglón de su comida lo dice («1 cantidad que no se entiende»). Un nombre vacío no se cierra con Enter, y su comida dice «Falta el nombre», también plegada. Con las dos cosas —una en cada día tipo—, «Guardar cambios» no escribe nada y las lista, en el orden del plan y con su lugar; cada renglón es un botón. El de la cantidad lleva al otro día tipo, abre la comida y deja el foco en el campo; corregida, la lista se va. Al guardar otra vez queda el nombre: su renglón abre el campo, con el foco',
+      cantidadAntes !== null &&
+        conIlegible?.comidas[0].avisos === '1 cantidad que no se entiende' &&
+        igual([conIlegible.comidas[0].opcion?.items[0]].map((i) => [i?.cantidad, i?.error, i?.invalida]), [[`${cantidadAntes}x`, 'Escribí un número: «150» o «72,5».', 'true']]) &&
+        conIlegible.comidas[0].opcion.items.slice(1).every((i) => i.error === null) &&
+        igual(conElNombreVacio?.nombreAbierto, { id: 'comida-0-0', valor: '', conFoco: true, seleccionado: false }) &&
+        igual([conElNombreVacio.comidas[0]].map((c) => [c.nombre, c.avisos, c.abierta]), [['Comida 1', 'Falta el nombre', true]]) &&
+        igual([plegadaSinNombre?.comidas[0]].map((c) => [c?.nombre, c?.avisos, c?.abierta]), [['Comida 1', 'Falta el nombre', false]]) &&
+        igual(escriturasAlIntentar, { guardar: 0, validar: 0, activar: 0 }) &&
+        noDejaGuardar?.aviso === 'Hay nombres sin completar y cantidades que no se entienden. Corregilos antes de guardar.' &&
+        igual(noDejaGuardar.problemas, [
+          { texto: `${DB[0].nombre} → Comida 1 → falta el nombre`, esBoton: true },
+          { texto: `${NOMBRE_DEL_DIA} → ${D2.comidas[0].nombre} → Opción 1 → Ítem 1 → la cantidad no se entiende`, esBoton: true },
+        ]) &&
+        noDejaGuardar.estado === 'Cambios sin guardar' &&
+        igual(direccionEnLaCantidad, ['2', '1']) &&
+        enLaCantidad?.foco === 'item-1-0-0-0-cantidad' &&
+        igual(enLaCantidad.comidas.map((c) => c.abierta), enLaCantidad.comidas.map((_, j) => j === 0)) &&
+        igual([cantidadCorregida?.comidas[0].opcion?.items[0]].map((i) => [i?.cantidad, i?.error, i?.invalida]), [['75,5', null, null]]) &&
+        cantidadCorregida.comidas[0].avisos === null &&
+        cantidadCorregida.aviso === null &&
+        faltaElNombre?.aviso === 'Hay nombres sin completar. Completalos antes de guardar.' &&
+        igual(faltaElNombre.problemas, [{ texto: `${DB[0].nombre} → Comida 1 → falta el nombre`, esBoton: true }]) &&
+        igual(direccionEnElNombre, [null, '1']) &&
+        igual(enElNombre?.nombreAbierto, { id: 'comida-0-0', valor: '', conFoco: true, seleccionado: false }) &&
+        conElNombreDeVuelta?.nombreAbierto === null &&
+        conElNombreDeVuelta.comidas[0].nombre === DB[0].comidas[0].nombre &&
+        conElNombreDeVuelta.comidas[0].avisos === null &&
+        igual(escriturasAntesDeGuardar, { guardar: 0, validar: 0, activar: 0 }),
+      `la cantidad: «${conIlegible?.comidas[0]?.opcion?.items[0]?.cantidad}», «${conIlegible?.comidas[0]?.opcion?.items[0]?.error}» · la comida: ${conIlegible?.comidas[0]?.avisos} · al guardar: «${noDejaGuardar?.aviso}» ${noDejaGuardar?.problemas.map((p) => `[${p.texto}]`).join(' ')} · escrituras: ${escriturasAlIntentar.guardar} · el de la cantidad lleva a dia=${direccionEnLaCantidad[0]}, comidas=${direccionEnLaCantidad[1]}, foco en ${enLaCantidad?.foco} · después: «${faltaElNombre?.aviso}» · el del nombre lleva a comidas=${direccionEnElNombre[1]}, foco en el campo: ${enElNombre?.nombreAbierto?.conFoco ? 'sí' : 'no'}`,
+    );
+
+    // Guardar: una sola escritura, y la API queda con lo que se hizo en pantalla.
+    const antesDeGuardarElEditor = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await esperarGuardado();
+    const trasGuardarElEditor = await elEditor();
+    const focoTrasGuardar = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? null);
+    const escriturasAlGuardar = escriturasDelBorrador(antesDeGuardarElEditor);
+    const borradorTrasGuardar = await leerElBorrador();
+    const esperadoTrasGuardar = structuredClone(DB);
+    esperadoTrasGuardar[0].comidas[jRec].nombre = NOMBRE_DE_LA_COMIDA;
+    esperadoTrasGuardar[0].comidas[jRec].opciones[0].nombre = NOMBRE_DE_LA_OPCION;
+    esperadoTrasGuardar[1].nombre = NOMBRE_DEL_DIA;
+    esperadoTrasGuardar[1].comidas[0].opciones[0].items[0].quantity.value = 75.5;
+    esperadoTrasGuardar[1].comidas[1].opciones.push({ nombre: NOMBRE_DE_LA_OPCION_NUEVA, receta: null, items: [] });
+    esperadoTrasGuardar[1].comidas.splice(D2.comidas.length - 1, 0, { nombre: NOMBRE_DE_LA_COMIDA_NUEVA, opciones: [] });
+    const trasGuardarTodo = await leerTodo();
+    comprobar(
+      'F-95',
+      'Con todo corregido, «Guardar cambios» hace una sola escritura y la API queda con lo que se hizo en pantalla, y nada más: la comida y la opción con sus nombres nuevos, el segundo día tipo con el suyo, la cantidad corregida (75,5), la opción nueva sin ítems y la comida nueva, sin opciones, en el lugar al que se la subió; lo demás, igual que antes (la opción de receta, con sus ingredientes). Guardar no activa: la versión sigue en preparación y la activa es la misma. El botón queda apagado, con el foco todavía en él',
+      igual(escriturasAlGuardar, { guardar: 1, validar: 0, activar: 0 }) &&
+        trasGuardarElEditor?.estado === 'Guardado' &&
+        igual(trasGuardarElEditor.acciones.at(-1), { nombre: 'Guardar cambios', apagado: true, deshabilitado: false }) &&
+        focoTrasGuardar === 'Guardar cambios' &&
+        igual(resumenDe(estructuraDe(borradorTrasGuardar)), resumenDe(esperadoTrasGuardar)) &&
+        borradorTrasGuardar.state === 'DRAFT' &&
+        trasGuardarTodo.activa.planId === activa.planId &&
+        (await planEnPantalla(page)).version === 'preparacion',
+      `escrituras: ${escriturasAlGuardar.guardar} · «${trasGuardarElEditor?.estado}» · foco en «${focoTrasGuardar}» · en la API: ${estructuraDe(borradorTrasGuardar).map((x) => `${x.nombre}: ${x.comidas.map((m) => `${m.nombre} (${m.opciones.length})`).join(', ')}`).join(' | ')} · estado: ${borradorTrasGuardar.state}`,
+    );
+
+    // «Validar plan»: los problemas están en el otro día tipo, y cada uno lleva a su lugar.
+    const antesDeValidar = v.urls.length;
+    await tocarAccionDelEditor('Validar plan');
+    await page.waitForSelector(`${EDITOR} .problemas-del-plan`, { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const conProblemas = await elEditor();
+    const escriturasAlValidar = escriturasDelBorrador(antesDeValidar);
+    await captura(page, v, 'editor-los-problemas-de-validar-1440-claro');
+    await enElEditor('.problemas-del-plan button', `${NOMBRE_DE_LA_COMIDA_NUEVA} → falta al menos una opción`);
+    await pausa(300);
+    const enElProblema = await elEditor();
+    const direccionEnElProblema = [P(page).get('dia'), P(page).get('comidas')];
+    await captura(page, v, 'editor-un-problema-en-su-lugar-1440-claro');
+    await abrirMenuDelEditor(`.comida-del-editor[data-comida="${D2.comidas.length}"] .comida-del-editor__acciones`);
+    await elegirDelMenu('Quitar comida');
+    await alternarEnElEditor(2);
+    await enElEditor('.comida-del-editor[data-comida="2"] .pestana-de-opcion', NOMBRE_DE_LA_OPCION_NUEVA);
+    await enElEditor('.comida-del-editor[data-comida="2"] .opcion-del-editor__pie button', 'Quitar opción');
+    const trasQuitarLoVacio = await elEditor();
+    const antesDeRevalidar = v.urls.length;
+    await tocarAccionDelEditor('Validar plan');
+    const avisoDeValido = await esperarAviso('Plan válido');
+    await esperarGuardado();
+    const trasRevalidar = await elEditor();
+    const escriturasAlRevalidar = escriturasDelBorrador(antesDeRevalidar);
+    const problemasEsperados = [`${NOMBRE_DEL_DIA} → ${D2.comidas[1].nombre} → Opción ${cuantasOpciones} → falta al menos un ítem`, `${NOMBRE_DEL_DIA} → ${NOMBRE_DE_LA_COMIDA_NUEVA} → falta al menos una opción`];
+    comprobar(
+      'F-96',
+      '«Validar plan», sin cambios por guardar, no guarda: valida (una escritura) y dice «Hay elementos por corregir» con cada problema y su lugar, por sus nombres: la opción sin ítems y la comida sin opciones, las dos en el día tipo que no se está mirando. Cada renglón es un botón: el de la comida lleva a su día, la abre y deja el foco en su renglón; ese renglón y el de la otra comida, plegada, dicen «1 problema para revisar». Quitadas la comida y la opción vacías, «Validar plan» guarda antes (una escritura) y valida: «Plan válido», sin lista',
+      igual(escriturasAlValidar, { guardar: 0, validar: 1, activar: 0 }) &&
+        conProblemas?.aviso === 'Hay elementos por corregir' &&
+        igual([...conProblemas.problemas.map((p) => p.texto)].sort(), [...problemasEsperados].sort()) &&
+        conProblemas.problemas.every((p) => p.esBoton) &&
+        igual(direccionEnElProblema, ['2', String(D2.comidas.length)]) &&
+        enElProblema?.foco === `abrir-comida-1-${D2.comidas.length - 1}` &&
+        igual(enElProblema.comidas.map((c) => [c.nombre, c.abierta, c.avisos]), [
+          ...D2.comidas.slice(0, -1).map((m, j) => [m.nombre, false, j === 1 ? '1 problema para revisar' : null]),
+          [NOMBRE_DE_LA_COMIDA_NUEVA, true, '1 problema para revisar'],
+          [D2.comidas.at(-1).nombre, false, null],
+        ]) &&
+        igual(trasQuitarLoVacio?.comidas.map((c) => c.nombre), D2.comidas.map((m) => m.nombre)) &&
+        trasQuitarLoVacio.comidas[1].pestanas.length === D2.comidas[1].opciones.length &&
+        trasQuitarLoVacio.problemas.length === 0 &&
+        igual(escriturasAlRevalidar, { guardar: 1, validar: 1, activar: 0 }) &&
+        avisoDeValido &&
+        trasRevalidar?.aviso === null &&
+        trasRevalidar.problemas.length === 0 &&
+        trasRevalidar.estado === 'Guardado',
+      `al validar: guardar ${escriturasAlValidar.guardar}, validar ${escriturasAlValidar.validar} · «${conProblemas?.aviso}» ${conProblemas?.problemas.map((p) => `[${p.texto}]`).join(' ')} · el de la comida lleva a dia=${direccionEnElProblema[0]}, comidas=${direccionEnElProblema[1]}, foco en ${enElProblema?.foco} · al revalidar: guardar ${escriturasAlRevalidar.guardar}, validar ${escriturasAlRevalidar.validar}, «Plan válido»: ${avisoDeValido ? 'sí' : 'no'}`,
+    );
+
+    // «Agregar receta como opción»: las recetas se eligen en un cajón, como los alimentos (DL-119). Se suma a la primera
+    // comida del segundo día tipo, que tiene una sola opción, y se guarda: los ítems los arma la API.
+    const recetasEnLaApi = (await leerApi(v, '/nutrition/recipes')).data;
+    const elCajonDeRecetas = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const dlg = document.querySelector('dialog.cajon[open]');
+        if (!dlg) return null;
+        return {
+          sobretitulo: t(dlg.querySelector('.cajon__sobretitulo')),
+          titulo: t(dlg.querySelector('.cajon__cabecera h2')),
+          recetas: [...dlg.querySelectorAll('.recetas-para-elegir .lista__item')].map((li) => ({ nombre: t(li.querySelector('.lista__titulo')), detalle: t(li.querySelector('.nota')), accion: t(li.querySelector('button')) })),
+          falla: t(dlg.querySelector('.aviso--error')),
+        };
+      });
+    const itemEnResumen = (i) => [i.name, i.quantity ? `${i.quantity.value} ${i.quantity.unit}` : null, i.preparationState ?? null];
+    const cuantasTenia = D2.comidas[0].opciones.length;
+    await alternarEnElEditor(1);
+    const antesDeLasRecetas = v.urls.length;
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__opciones');
+    await elegirDelMenu('Agregar receta como opción');
+    await page.waitForSelector('dialog.cajon[open] .recetas-para-elegir .lista__item', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const cajonDeRecetas = await elCajonDeRecetas();
+    const lecturasDeRecetas = lecturasDesde(antesDeLasRecetas, '/nutrition/recipes').length;
+    await captura(page, v, 'editor-las-recetas-en-el-cajon-1440-claro', { tope: 900 });
+    await clic(page, 'dialog.cajon[open] .recetas-para-elegir button', `Agregar receta como opción: ${laReceta.name}`).catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog.cajon[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(300);
+    const conLaRecetaNueva = await elEditor();
+    const focoTrasLaReceta = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? null);
+    const antesDeGuardarLaReceta = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await esperarGuardado();
+    const conLaRecetaGuardada = await elEditor();
+    const escriturasDeLaReceta = escriturasDelBorrador(antesDeGuardarLaReceta);
+    const opcionesTrasLaReceta = estructuraDe(await leerElBorrador())[1].comidas[0].opciones;
+    await alternarEnElEditor(1);
+    comprobar(
+      'F-99',
+      '«Agregar receta como opción» abre las recetas propias en el cajón, que dice de qué comida es, con una sola lectura: cada receta, con su versión, sus porciones y lo que aporta una porción. Elegir una cierra el cajón y suma una opción con el nombre de la receta, elegida y marcada como receta: se lee y no se edita, y dice que sus ingredientes se cargan al guardar; el foco vuelve a «Agregar opción». Al guardar (una escritura), la API arma los ítems con los ingredientes de una porción —los mismos que tiene la otra opción de esa receta— y la pantalla los muestra',
+      recetasEnLaApi.length >= 1 &&
+        !!cajonDeRecetas &&
+        cajonDeRecetas.titulo === 'Agregar receta como opción' &&
+        cajonDeRecetas.sobretitulo === D2.comidas[0].nombre &&
+        cajonDeRecetas.falla === null &&
+        igual(cajonDeRecetas.recetas.map((r) => [r.nombre, r.accion]), recetasEnLaApi.map((r) => [r.name, `Agregar receta como opción: ${r.name}`])) &&
+        cajonDeRecetas.recetas.every((r, n) => (r.detalle ?? '').startsWith(`Versión ${recetasEnLaApi[n].versionNumber} · ${recetasEnLaApi[n].servings === 1 ? '1 porción' : `${recetasEnLaApi[n].servings} porciones`} · `)) &&
+        lecturasDeRecetas === 1 &&
+        igual(conLaRecetaNueva?.comidas[0].pestanas, [...D2.comidas[0].opciones.map((o, k) => ({ texto: `${k + 1} · ${o.nombre}`, elegida: false, receta: !!o.receta })), { texto: `${cuantasTenia + 1} · ${laReceta.name}`, elegida: true, receta: true }]) &&
+        conLaRecetaNueva.comidas[0].opcion?.receta === `Receta «${laReceta.name}», versión ${laReceta.versionNumber}` &&
+        conLaRecetaNueva.comidas[0].opcion.ingredientes.length === 0 &&
+        igual(conLaRecetaNueva.comidas[0].opcion.notasDeLaReceta, ['La opción lleva los ingredientes de una porción de la receta.', 'Los ingredientes de una porción se cargan al guardar el borrador.']) &&
+        igual(conLaRecetaNueva.comidas[0].opcion.pie, ['Cambiar el nombre', `Quitar opción ${cuantasTenia + 1}`]) &&
+        conLaRecetaNueva.estado === 'Cambios sin guardar' &&
+        (focoTrasLaReceta ?? '').startsWith('Agregar opción') &&
+        igual(escriturasDeLaReceta, { guardar: 1, validar: 0, activar: 0 }) &&
+        igual(conLaRecetaGuardada?.comidas[0].opcion?.ingredientes, ingredientesEsperados) &&
+        opcionesTrasLaReceta.length === cuantasTenia + 1 &&
+        opcionesTrasLaReceta.at(-1).nombre === laReceta.name &&
+        opcionesTrasLaReceta.at(-1).receta?.recipeVersionId === laReceta.recipeVersionId &&
+        igual(opcionesTrasLaReceta.at(-1).items.map(itemEnResumen), M.opciones[kRec].items.map(itemEnResumen)),
+      `el cajón: «${cajonDeRecetas?.sobretitulo}» · «${cajonDeRecetas?.titulo}» · ${cajonDeRecetas?.recetas.map((r) => `${r.nombre} (${r.detalle})`).join(' | ')} · lecturas: ${lecturasDeRecetas} · pestañas: ${conLaRecetaNueva?.comidas[0]?.pestanas.map((p) => `${p.texto}${p.receta ? ' (receta)' : ''}`).join(' | ')} · antes de guardar: ${conLaRecetaNueva?.comidas[0]?.opcion?.notasDeLaReceta?.at(-1)} · foco en «${(focoTrasLaReceta ?? '').slice(0, 30)}» · al guardar: ${escriturasDeLaReceta.guardar} escritura, ${conLaRecetaGuardada?.comidas[0]?.opcion?.ingredientes.join(' | ')}`,
+    );
+
+    // Las palabras, la accesibilidad y los anchos, con una comida abierta y su tabla a la vista.
+    await enElEditor('.comida-del-editor[data-comida="2"] .pestana-de-opcion', `1 · ${D2.comidas[1].opciones[0].nombre}`);
+    const paraLeerElEditor = await elEditor();
+    const faltasDelEditor = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasDelEditorDeNoche = await axe(page);
+    await captura(page, v, 'editor-una-comida-abierta-1440-azul-noche');
+    await ponerTema(page, 'claro');
+    const editorEnAnchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      const medida = await page.evaluate((s) => {
+        const raiz = document.querySelector(s);
+        const caja = raiz.getBoundingClientRect();
+        const afuera = [...raiz.querySelectorAll('*')].filter((e) => !e.closest('dialog') && e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1));
+        const nombre = raiz.querySelector('.comida-del-editor[data-abierta] .comida-del-plan__nombre');
+        const renglon = parseFloat(getComputedStyle(nombre).lineHeight) || 24;
+        const campos = [...raiz.querySelectorAll('.comida-del-editor[data-abierta] input:not([type="radio"]), .comida-del-editor[data-abierta] select')];
+        return {
+          afuera: afuera.length,
+          primeroAfuera: afuera[0] ? String(afuera[0].className).slice(0, 60) : null,
+          renglonesDelNombre: Math.round(nombre.getBoundingClientRect().height / renglon),
+          campos: campos.length,
+          camposALaVista: campos.filter((e) => e.getClientRects().length > 0 && e.getBoundingClientRect().width >= 44 && e.getBoundingClientRect().height >= 44).length,
+          alto: document.documentElement.scrollHeight,
+        };
+      }, EDITOR);
+      editorEnAnchos.push({ ancho, ...medida, desborda: !(await sinDesborde(page)) });
+      await captura(page, v, `editor-una-comida-abierta-${ancho}-claro`);
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    comprobar(
+      'F-97',
+      'Con una comida abierta, en el editor no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra los nombres de los alimentos. axe no encuentra faltas, en los dos temas. A 1280, 1024, 768 y 390 px la página no desborda, nada se sale del editor, el nombre de la comida abierta entra en dos renglones como mucho y todos sus campos están a la vista con su tamaño táctil',
+      !!paraLeerElEditor &&
+        prohibidas(paraLeerElEditor.texto).length === 0 &&
+        D2.comidas[1].opciones[0].items.length >= 1 &&
+        D2.comidas[1].opciones[0].items.every((i) => paraLeerElEditor.texto.includes(i.name)) &&
+        faltasDelEditor.length === 0 &&
+        faltasDelEditorDeNoche.length === 0 &&
+        editorEnAnchos.every((x) => !x.desborda && x.afuera === 0 && x.renglonesDelNombre <= 2 && x.campos >= 3 && x.camposALaVista === x.campos),
+      `palabras: ${prohibidas(paraLeerElEditor?.texto).join(', ') || 'ninguna'} · axe: ${[...faltasDelEditor, ...faltasDelEditorDeNoche].map((f) => f.id).join(', ') || 'sin faltas'} · ${editorEnAnchos.map((x) => `${x.ancho}: ${x.alto} px, el nombre en ${x.renglonesDelNombre} renglón(es), ${x.camposALaVista}/${x.campos} campos${x.afuera ? `, ${x.afuera} AFUERA (${x.primeroAfuera})` : ''}${x.desborda ? ', DESBORDA' : ''}`).join(' · ')}`,
+    );
+
+    // ── Pasar a la activa y volver no pierde lo escrito ──────────────────────────────────────────────────────────
+    // Lo escrito es el final del nombre de la primera comida del primer día tipo, que se cambia a pedido.
+    const AJUSTE = ' (ajuste)';
+    await elegirDiaDelEditor(DB[0].nombre);
+    const nombreAntes = (await elEditor()).comidas[0].nombre;
+    await alternarEnElEditor(1);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__acciones');
+    await elegirDelMenu('Cambiar el nombre');
+    await page.keyboard.press('End');
+    await page.keyboard.type(AJUSTE);
+    await page.keyboard.press('Enter');
+    await pausa(250);
+    await alternarEnElEditor(1);
     const conCambios = await planEnPantalla(page);
     const antesDePasar = v.urls.length;
     const tocarVersion = async (cual) => {
@@ -9447,11 +10104,14 @@ async function planesDeNutricion() {
     await tocarVersion('En preparación');
     const diaAlVolver = P(page).get('dia');
     const deVueltaAlBorrador = await planEnPantalla(page);
-    const nombreDespues = await page.$eval('#comida-0-0', (e) => e.value);
     const pedidosAlPasar = v.urls.slice(antesDePasar).filter((u) => !u.startsWith('OPTIONS '));
+    // El editor volvió en el segundo día tipo, que es el que se miraba en la activa: lo escrito está en el primero.
+    const diaDelEditorAlVolver = (await elEditor())?.dias.find((x) => x.elegido)?.texto ?? null;
+    await elegirDiaDelEditor(DB[0].nombre);
+    const nombreDespues = (await elEditor())?.comidas[0]?.nombre ?? null;
     comprobar(
       'F-65',
-      'Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra versión) y deja el editor fuera de la vista; volver a «En preparación» lo muestra con lo escrito intacto y «Cambios sin guardar». Ir y volver no le pide nada a BE, y la versión elegida queda en la dirección',
+      'Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra versión) y deja el editor fuera de la vista; volver a «En preparación» lo muestra con lo escrito intacto y «Cambios sin guardar», en el día tipo que se miraba en la activa. Ir y volver no le pide nada a BE, y la versión elegida queda en la dirección',
       conCambios.editor.estado === 'Cambios sin guardar' &&
         enLaActiva.version === 'activa' &&
         direccionEnLaActiva === 'activa' &&
@@ -9469,8 +10129,9 @@ async function planesDeNutricion() {
         P(page).get('version') === null &&
         diaEnLaActiva === String(dia2.orden) &&
         diaAlVolver === String(dia2.orden) &&
+        diaDelEditorAlVolver === NOMBRE_DEL_DIA &&
         pedidosAlPasar.length === 0,
-      `«${nombreAntes}» → «${nombreDespues}» · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] «${enLaActiva.activo?.yaHay}» · editor a la vista: ${enLaActiva.editor.aLaVista ? 'sí' : 'no'} · pedidos: ${pedidosAlPasar.length}`,
+      `«${nombreAntes}» → «${nombreDespues}» · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] «${enLaActiva.activo?.yaHay}» · editor a la vista: ${enLaActiva.editor.aLaVista ? 'sí' : 'no'} · al volver, el editor muestra «${diaDelEditorAlVolver}» · pedidos: ${pedidosAlPasar.length}`,
     );
     await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
     await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
@@ -9479,7 +10140,7 @@ async function planesDeNutricion() {
     await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
     await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
     await quieto(page, v);
-    const sigueEscrito = await page.$eval('#comida-0-0', (e) => e.value).catch(() => null);
+    const sigueEscrito = (await elEditor())?.comidas[0]?.nombre ?? null;
     comprobar(
       'F-65',
       'Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer y dice qué se perdería («el plan en preparación»); «Seguir editando» deja todo como estaba',
@@ -9487,45 +10148,124 @@ async function planesDeNutricion() {
       `«${pregunta.slice(0, 170)}»`,
     );
 
-    // ── Guardar y activar: la versión nueva pasa a ser la que se lee ─────────────────────────────────────────────
-    // Si no quedó nada por guardar (lo escrito se perdió en el camino), no hay botón que tocar: activar sigue igual.
-    const hayQueGuardar = await page.evaluate(() => [...document.querySelectorAll('.plan__preparacion .acciones button')].some((b) => b.textContent.trim() === 'Guardar cambios' && !b.disabled));
-    if (hayQueGuardar) await clic(page, '.plan__preparacion .acciones button', 'Guardar cambios');
-    await page.waitForFunction(() => document.querySelector('.plan__preparacion p[aria-live="polite"]')?.innerText.trim() === 'Guardado', { timeout: 30_000 }).catch(() => {});
-    await quieto(page, v);
+    // ── Activar: guarda antes si hace falta, dice qué entra y qué queda, y ahí se fija la próxima revisión ───────
+    const elDialogoDeActivar = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const dlg = [...document.querySelectorAll('dialog[open]')].find((x) => t(x.querySelector('h2')) === 'Activar plan');
+        if (!dlg) return null;
+        return {
+          loQueCambia: [...dlg.querySelectorAll('[data-lo-que-cambia] p')].map(t),
+          destacado: [...dlg.querySelectorAll('[data-lo-que-cambia] strong')].map(t),
+          rotuloDeLaFecha: t(dlg.querySelector('label[for="proxima-revision"]')),
+          fecha: dlg.querySelector('#proxima-revision')?.value ?? null,
+          botones: [...dlg.querySelectorAll('.acciones button')].map((b) => ({ texto: t(b), conFoco: document.activeElement === b })),
+          error: t(dlg.querySelector('.aviso--error')),
+          texto: t(dlg),
+        };
+      });
+    // La activación sale con el segundo día tipo y una comida abierta en la dirección: la versión nueva se abre limpia.
+    await elegirDiaDelEditor(NOMBRE_DEL_DIA);
+    await alternarEnElEditor(1);
+    const direccionAntesDeActivar = [P(page).get('dia'), P(page).get('comidas')];
+    // (Falla simulada.) Hay cambios sin guardar: si no se pueden guardar, «Activar plan» no pregunta nada.
+    const antesDeLaFalla = v.urls.length;
+    v.reglas.push({ coincide: (u, req) => req.method() === 'PATCH' && u.includes(`/nutrition/plans/${ID_DEL_BORRADOR}`), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    let sinPoderGuardar = null;
+    let dialogoSinGuardar = 'sin mirar';
+    try {
+      await tocarAccionDelEditor('Activar plan');
+      await page.waitForFunction((s) => !!document.querySelector(`${s} > .aviso--error`), { timeout: 20_000 }, EDITOR).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+      sinPoderGuardar = await elEditor();
+      dialogoSinGuardar = await elDialogoDeActivar();
+    } finally {
+      v.reglas.length = 0;
+    }
+    const activacionesConLaFalla = escriturasDelBorrador(antesDeLaFalla).activar;
+    await page.screenshot({ path: fileURLToPath(new URL('activar-sin-poder-guardar-simulado-1440-claro.png', DIR)) });
+    // Sin la falla: guarda (una escritura) y recién entonces pregunta.
+    const antesDeAbrirElDialogo = v.urls.length;
+    await tocarAccionDelEditor('Activar plan');
+    await page.waitForSelector('dialog[open]', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const dialogoDeActivar = await elDialogoDeActivar();
+    const escriturasAlAbrir = escriturasDelBorrador(antesDeAbrirElDialogo);
+    const estadoConElDialogo = (await elEditor())?.estado ?? null;
+    const faltasDelDialogo = await axe(page);
+    await page.screenshot({ path: fileURLToPath(new URL('activar-el-plan-1440-claro.png', DIR)) });
+    const comidasDelBorrador = estructuraDe(await leerElBorrador()).reduce((n, x) => n + x.comidas.length, 0);
+    const antesDeVolver = v.urls.length;
+    await clic(page, 'dialog[open] .acciones button', 'Volver');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(200);
+    const trasVolver = {
+      escrituras: escriturasDelBorrador(antesDeVolver),
+      version: (await planEnPantalla(page)).version,
+      foco: await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? null),
+    };
+    comprobar(
+      'F-98',
+      '«Activar plan» guarda antes si hay cambios, y recién entonces pregunta. (Falla simulada.) Si no se puede guardar, no abre el diálogo: dice por qué, la versión sigue con «Cambios sin guardar» y no se activa nada. Cuando sí se puede, hace una sola escritura y abre el diálogo, con el foco en «Volver»: dice qué entra («Esta versión pasa a ser la vigente: 2 días tipo y N comidas», contadas de la API y sin prometerle un número) y qué queda («La versión 2, activa desde el …, queda en el historial»), y trae «Próxima revisión (opcional)», vacía. «Volver» lo cierra sin escribir nada y devuelve el foco a «Activar plan». axe no encuentra faltas con el diálogo abierto',
+      igual(direccionAntesDeActivar, ['2', '1']) &&
+        dialogoSinGuardar === null &&
+        !!sinPoderGuardar?.aviso &&
+        sinPoderGuardar.estado === 'Cambios sin guardar' &&
+        activacionesConLaFalla === 0 &&
+        igual(escriturasAlAbrir, { guardar: 1, validar: 0, activar: 0 }) &&
+        estadoConElDialogo === 'Guardado' &&
+        igual(dialogoDeActivar?.loQueCambia, [`Esta versión pasa a ser la vigente: 2 días tipo y ${comidasDelBorrador} comidas.`, `La versión 2, activa desde el ${fechaDeLaActiva.dia}, queda en el historial.`]) &&
+        igual(dialogoDeActivar.destacado, ['Esta versión', 'La versión 2']) &&
+        dialogoDeActivar.rotuloDeLaFecha === 'Próxima revisión (opcional)' &&
+        dialogoDeActivar.fecha === '' &&
+        igual(dialogoDeActivar.botones, [{ texto: 'Volver', conFoco: true }, { texto: 'Activar esta versión', conFoco: false }]) &&
+        dialogoDeActivar.error === null &&
+        prohibidas(dialogoDeActivar.texto).length === 0 &&
+        faltasDelDialogo.length === 0 &&
+        igual(trasVolver.escrituras, { guardar: 0, validar: 0, activar: 0 }) &&
+        trasVolver.version === 'preparacion' &&
+        trasVolver.foco === 'Activar plan',
+      `con la falla: «${(sinPoderGuardar?.aviso ?? '').slice(0, 90)}», diálogo: ${dialogoSinGuardar === null ? 'no se abrió' : 'ABIERTO'}, activaciones: ${activacionesConLaFalla} · al abrir: guardar ${escriturasAlAbrir.guardar} · ${dialogoDeActivar?.loQueCambia.map((x) => `«${x}»`).join(' ')} · «${dialogoDeActivar?.rotuloDeLaFecha}»: «${dialogoDeActivar?.fecha}» · foco: ${dialogoDeActivar?.botones.find((b) => b.conFoco)?.texto} · axe: ${faltasDelDialogo.map((f) => f.id).join(', ') || 'sin faltas'} · «Volver»: ${trasVolver.escrituras.guardar + trasVolver.escrituras.activar} escrituras, foco en «${trasVolver.foco}»`,
+    );
+
+    // ── Activar, con la próxima revisión: la versión nueva pasa a ser la que se lee ──────────────────────────────
+    const PROXIMA_REVISION = new Date(Date.now() + 21 * 86_400_000).toISOString().slice(0, 10);
     const antesDeActivar = v.urls.length;
-    await clic(page, '.plan__preparacion .acciones button', 'Activar plan');
+    await tocarAccionDelEditor('Activar plan');
     await page.waitForSelector('dialog[open]', { timeout: 10_000 });
+    await fijarFecha(page, '#proxima-revision', PROXIMA_REVISION);
+    await pausa(200);
     await clic(page, 'dialog[open] .acciones button', 'Activar esta versión');
     const avisoDeActivada = await esperarAviso('Versión activada.');
     await page.waitForFunction(() => !document.querySelector('[data-selector-de-version]') && !!document.querySelector('.plan__activo'), { timeout: 40_000 }).catch(() => {});
     await quieto(page, v);
     const activada = await planEnPantalla(page);
     await captura(page, v, 'plan-version-3-recien-activada-1440-claro');
+    const escriturasAlActivar = escriturasDelBorrador(antesDeActivar);
     const trasActivar = await leerTodo();
     const historialNuevo = await historialEsperado(trasActivar.E);
     const fechaDeLaNueva = await enLaPagina(trasActivar.activa.activatedAt);
     comprobar(
       'F-65',
-      'Activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan activo dice «Versión 3 · … · es lo que ve el asesorado», su primera comida lleva el nombre que se escribió, el historial lista las tres (la 3, vigente; la 2 y la 1, conservadas) y la dirección queda limpia (traía el segundo día tipo: la versión nueva se abre por el primero). Vuelve a ofrecerse crear una versión',
+      'Activar la versión en preparación, con una fecha de próxima revisión puesta en el diálogo, hace dos escrituras: guarda la fecha y activa. La versión pasa a ser la vigente, con esa fecha en la API: el selector desaparece, el plan activo dice «Versión 3 · … · es lo que ve el asesorado», su primera comida lleva el nombre que se escribió, el historial lista las tres (la 3, vigente; la 2 y la 1, conservadas) y la dirección queda limpia (traía el segundo día tipo y una comida abierta: la versión nueva se abre por el primero). Vuelve a ofrecerse crear una versión',
       trasActivar.activa.planId === elBorrador.planId &&
         trasActivar.E.numero === 3 &&
         avisoDeActivada &&
+        igual(escriturasAlActivar, { guardar: 1, validar: 0, activar: 1 }) &&
+        trasActivar.activa.nextReviewAt === PROXIMA_REVISION &&
         activada.selector === null &&
         !activada.editor.esta &&
         activada.version === 'activa' &&
         activada.activo?.frase === `Versión 3 · activada el ${fechaDeLaNueva.dia} · es lo que ve el asesorado` &&
         activada.activo.comidas[0].nombre === `${nombreAntes}${AJUSTE}` &&
         activada.activo.dia.opciones.find((o) => o.elegido)?.texto === dia1.nombre &&
-        hayQueGuardar &&
         igual(activada.activo.historial.versiones, historialNuevo) &&
         historialNuevo.length === 3 &&
         igual(historialNuevo.map((x) => x.vigente), [true, false, false]) &&
         activada.activo.historial.huella === `Huella de la instantánea: ${trasActivar.activa.snapshotDigest.slice(0, 16)}…` &&
         activada.activo.acciones.includes('Crear nueva versión a partir de esta') &&
-        ['version', 'dia', 'comidas'].every((k) => P(page).get(k) === null) &&
-        escriturasDesde(antesDeActivar, `/nutrition/plans/${elBorrador.planId}/activate`).length === 1,
-      `«${activada.activo?.frase}» · primera comida: «${activada.activo?.comidas[0]?.nombre}» · ${activada.activo?.historial.versiones.map((x) => x.texto).join(' | ')}`,
+        ['version', 'dia', 'comidas'].every((k) => P(page).get(k) === null),
+      `«${activada.activo?.frase}» · escrituras: guardar ${escriturasAlActivar.guardar}, activar ${escriturasAlActivar.activar} · próxima revisión en la API: ${trasActivar.activa.nextReviewAt} · primera comida: «${activada.activo?.comidas[0]?.nombre}» · ${activada.activo?.historial.versiones.map((x) => x.texto).join(' | ')}`,
     );
 
     // ── Empezar desde una plantilla, de verdad ───────────────────────────────────────────────────────────────────
@@ -9554,10 +10294,92 @@ async function planesDeNutricion() {
         desdePlantilla.editor.aLaVista,
       `escrituras: ${escriturasDesde(antesDeAplicar, '/nutrition/plans').length} · aviso: ${avisoDeAplicada ? 'sí' : 'no'} · ${desdePlantilla.selector?.opciones.map((o) => o.texto).join(' | ')} · origen en la API: ${elDeLaPlantilla?.templateOrigin ? 'una plantilla' : 'ninguno'}`,
     );
+    // ── Las comidas habituales y la plantilla, desde sus lugares nuevos (parte 7, tramos 2 y 3) ──────────────────
+    // La versión que salió de la plantilla no tiene opciones de receta: las dos cosas se pueden guardar. «Guardar como
+    // plantilla» va en el menú de la versión; «Guardar como habitual», en el menú de la comida; y la comida habitual se
+    // agrega al pie del día tipo.
+    const NOMBRE_DE_LA_HABITUAL = `Habitual del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    const DP = estructuraDe(elDeLaPlantilla);
+    const DIALOGO = 'dialog[open]:not(.cajon)';
+    const elDialogoAbierto = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const dlg = document.querySelector(s);
+        return dlg ? { titulo: t(dlg.querySelector('h2')), nombre: dlg.querySelector('input[id$="-nombre"]')?.value ?? null, botones: [...dlg.querySelectorAll('.acciones button')].map((b) => ({ texto: t(b), apagado: b.disabled })) } : null;
+      }, DIALOGO);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await abrirMenuDelEditor('.editor-del-plan__acciones');
+    const menuDeLaVersion = (await elEditor())?.menu;
+    await captura(page, v, 'editor-el-menu-de-la-version-1440-claro');
+    await elegirDelMenu('Guardar como plantilla');
+    await page.waitForSelector(DIALOGO, { timeout: 10_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const dialogoDePlantilla = await elDialogoAbierto();
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await alternarEnElEditor(1);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__acciones');
+    const menuDeLaComidaSinReceta = (await elEditor())?.menu;
+    await elegirDelMenu('Guardar como habitual');
+    await page.waitForSelector(`${DIALOGO} input[id$="-nombre"]`, { timeout: 10_000 }).catch(() => {});
+    await pausa(200);
+    const dialogoDeHabitual = await elDialogoAbierto();
+    // El nombre viene con el de la comida: se lo reemplaza entero.
+    await page.$eval(`${DIALOGO} input[id$="-nombre"]`, (i) => {
+      i.focus();
+      i.select();
+    });
+    await page.keyboard.type(NOMBRE_DE_LA_HABITUAL);
+    const antesDeGuardarLaHabitual = v.urls.length;
+    await clic(page, `${DIALOGO} .acciones button`, 'Guardar la comida habitual').catch(() => null);
+    const avisoDeHabitual = await esperarAviso('Comida habitual guardada.');
+    await quieto(page, v);
+    const escriturasDeLaHabitual = escriturasDesde(antesDeGuardarLaHabitual, '/nutrition/meal-presets').length;
+    const laHabitual = (await leerApi(v, '/nutrition/meal-presets')).data.find((h) => h.name === NOMBRE_DE_LA_HABITUAL) ?? null;
+    const AL_PIE = `${EDITOR} [data-habituales="comidas"]`;
+    await page.waitForSelector(`${AL_PIE} select`, { timeout: 20_000 }).catch(() => {});
+    const alPie = await page.evaluate((s) => {
+      const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+      const c = document.querySelector(s);
+      return c ? { rotulo: t(c.querySelector('label')), opciones: [...c.querySelectorAll('option')].map((o) => o.textContent.replace(/\s+/g, ' ').trim()), boton: { texto: t(c.querySelector('button')), apagado: c.querySelector('button').disabled } } : null;
+    }, AL_PIE);
+    if (laHabitual && alPie) {
+      await page.select(`${AL_PIE} select`, laHabitual.presetId);
+      await pausa(200);
+      await clic(page, `${AL_PIE} button`, 'Agregar esta comida habitual').catch(() => null);
+      await pausa(300);
+    }
+    const conLaHabitual = await elEditor();
+    const notaDeInsertada = await page.evaluate((s) => document.querySelector(`${s} [role="status"]`)?.innerText.trim() ?? null, AL_PIE);
+    await captura(page, v, 'editor-una-comida-habitual-agregada-1440-claro');
+    comprobar(
+      'F-100',
+      'Lo que se usa de vez en cuando sigue estando, en su menú. En una versión sin opciones de receta, el menú de la versión ofrece «Guardar como plantilla», que abre su diálogo, y el menú «Más» de una comida, «Guardar como habitual», encendida: su diálogo trae el nombre de la comida. Guardarla es una sola escritura y la pantalla lo avisa; recién entonces aparece, al pie del día tipo, «Agregar una comida habitual» con esa comida (cuántos alimentos tiene y que va sin cantidades). Agregarla la suma al final del día tipo, plegada, con sus opciones, y lo dice; la versión queda con «Cambios sin guardar»',
+      igual(menuDeLaVersion, [sinMotivo('Guardar como plantilla')]) &&
+        dialogoDePlantilla?.titulo === 'Guardar como plantilla' &&
+        igual(menuDeLaComidaSinReceta, [sinMotivo('Cambiar el nombre'), sinMotivo('Guardar como habitual'), sinMotivo('Quitar comida')]) &&
+        dialogoDeHabitual?.titulo === 'Guardar como habitual' &&
+        dialogoDeHabitual.nombre === DP[0].comidas[0].nombre &&
+        igual(dialogoDeHabitual.botones, [{ texto: 'Cancelar', apagado: false }, { texto: 'Guardar la comida habitual', apagado: false }]) &&
+        escriturasDeLaHabitual === 1 &&
+        avisoDeHabitual &&
+        !!laHabitual &&
+        alPie?.rotulo === 'Agregar una comida habitual' &&
+        igual(alPie.opciones, ['—', `${NOMBRE_DE_LA_HABITUAL} · ${laHabitual.itemCount} ${laHabitual.itemCount === 1 ? 'alimento' : 'alimentos'} · Sin cantidades`]) &&
+        igual(alPie.boton, { texto: 'Agregar esta comida habitual', apagado: true }) &&
+        igual(conLaHabitual?.comidas.map((c) => [c.nombre, c.resumen]), [...DP[0].comidas, DP[0].comidas[0]].map((m) => [m.nombre, cuentaDe(m.opciones.length)])) &&
+        conLaHabitual.comidas.at(-1).abierta === false &&
+        conLaHabitual.estado === 'Cambios sin guardar' &&
+        (notaDeInsertada ?? '').startsWith('Comida habitual agregada al borrador.'),
+      `menú de la versión: ${menuDeLaVersion?.map((a) => a.texto).join(' | ')} → «${dialogoDePlantilla?.titulo}» · menú de la comida: ${menuDeLaComidaSinReceta?.map((a) => `${a.texto}${a.apagada ? ' (apagada)' : ''}`).join(' | ')} → «${dialogoDeHabitual?.titulo}», nombre «${dialogoDeHabitual?.nombre}» · escrituras: ${escriturasDeLaHabitual} · al pie: ${alPie?.opciones.join(' | ')} · comidas: ${conLaHabitual?.comidas.map((c) => c.nombre).join(', ')} · «${(notaDeInsertada ?? '').slice(0, 60)}»`,
+    );
+
     // ── «Agregar ítem» (WP-ESCRITORIO-AREAS, parte 7, primer tramo; maqueta 21) ──────────────────────────────────
     // El borrador que salió de la plantilla está abierto en el editor. A la primera opción de su primera comida se le
     // agregan ítems por las tres vías —el catálogo, un habitual y un alimento creado a mano— y después se guarda.
-    const OPCION = '.plan__preparacion fieldset.nodo--dia fieldset.nodo--comida fieldset.nodo--opcion';
+    // La opción está dentro de su comida: si está plegada (al entrar al editor lo están todas), se abre.
+    const OPCION = `${EDITOR} .comida-del-editor[data-comida="1"] .opcion-del-editor`;
+    if ((await page.$(OPCION)) === null) await alternarEnElEditor(1);
     const CAJON = 'dialog.cajon[open]';
     const coma = (n) => String(n).replace('.', ',');
     const laOpcion = () =>
@@ -9565,10 +10387,12 @@ async function planesDeNutricion() {
         const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
         const o = document.querySelector(s);
         if (!o) return null;
+        const pestana = t(o.closest('.comida-del-editor').querySelector('.pestana-de-opcion:has(input:checked)')) ?? '';
         return {
-          comida: o.closest('fieldset.nodo--comida').querySelector('input[id^="comida-"]')?.value ?? null,
-          nombre: o.querySelector('input[id^="opcion-"]')?.value ?? null,
-          items: [...o.querySelectorAll('li.fila-de-item')].map((li) => ({ nombre: t(li.querySelector('strong')), cantidad: li.querySelector('input[id$="-cantidad"]')?.value ?? null, unidadApagada: li.querySelector('select[id$="-unidad"]')?.disabled ?? null })),
+          // El nombre de la comida está en su renglón; el de la opción, en su pestaña («1 · nombre»).
+          comida: t(o.closest('.comida-del-editor').querySelector('.comida-del-plan__nombre')),
+          nombre: pestana.includes(' · ') ? pestana.slice(pestana.indexOf(' · ') + 3) : pestana,
+          items: [...o.querySelectorAll('tr.item-del-editor')].map((tr) => ({ nombre: t(tr.querySelector('th')), cantidad: tr.querySelector('input[id$="-cantidad"]')?.value ?? null, unidadApagada: tr.querySelector('select[id$="-unidad"]')?.disabled ?? null })),
           buscadorAdentro: !!o.querySelector('.buscador'),
           focoEnElBoton: document.activeElement === o.querySelector('[data-agregar-item]'),
           estado: t(document.querySelector('.plan__preparacion p[aria-live="polite"]')),
@@ -9623,6 +10447,8 @@ async function planesDeNutricion() {
     /** Si el cajón no está abierto (o quedó en «Crear manualmente»), lo deja abierto en la búsqueda: el recorrido sigue. */
     const asegurarElCajon = async () => {
       if ((await page.$(CAJON)) === null) {
+        // Al volver a entrar, las comidas están plegadas: la de la opción se abre antes.
+        if ((await page.$(OPCION)) === null) await alternarEnElEditor(1);
         await clic(page, `${OPCION} [data-agregar-item]`, 'Agregar ítem').catch(() => null);
         await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 15_000 }).catch(() => {});
       }
@@ -9969,6 +10795,101 @@ async function planesDeNutricion() {
     );
     await tocarEnElCajon('.cajon__cerrar');
     await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+
+    // (Respuesta simulada.) Los topes del contrato, que el escenario no tiene: siete días tipo de nombre largo y una
+    // comida con doce opciones, la última de nombre muy largo. Se mira a 1024 px, el ancho más justo del escritorio.
+    const versionReal = (await leerApi(v, `/nutrition/plans/${enLaLista.planId}`)).data;
+    const diaReal = porOrden(versionReal.dayTypes)[0];
+    const opcionReal = porOrden(porOrden(diaReal.meals)[0].options)[0];
+    const idSimulado = (grupo, n) => `00000000-0000-4000-8000-${String(grupo).padStart(4, '0')}${String(n).padStart(8, '0')}`;
+    const NOMBRE_MUY_LARGO = 'Tarta de verduras de estación con ensalada de hojas verdes, tomate, zanahoria rallada y semillas';
+    const doceOpciones = Array.from({ length: 12 }, (_, n) => ({ ...opcionReal, optionId: idSimulado(2, n + 1), order: n + 1, label: n === 11 ? NOMBRE_MUY_LARGO : `Opción de prueba ${n + 1}` }));
+    const versionGrande = {
+      ...versionReal,
+      dayTypes: Array.from({ length: 7 }, (_, n) => ({
+        ...diaReal,
+        dayTypeId: idSimulado(1, n + 1),
+        order: n + 1,
+        label: `Día de entrenamiento de fuerza número ${n + 1}, con merienda`,
+        meals: porOrden(diaReal.meals).map((m, j) => (j === 0 ? { ...m, options: doceOpciones } : m)),
+      })),
+    };
+    await page.setViewport({ width: 1024, height: 900 });
+    const conLosTopes = await conSimulacion(
+      [{ coincide: (u, req) => req.method() === 'GET' && u.includes(`/nutrition/plans/${enLaLista.planId}`), accion: 'entregar', cuerpo: { data: versionGrande } }],
+      `${BASE}&dia=6&comidas=1`,
+      () => elEditor(),
+    );
+    const medirLosTopes = () =>
+      page.evaluate((s) => {
+        const raiz = document.querySelector(s);
+        if (!raiz) return null;
+        const caja = raiz.getBoundingClientRect();
+        const adentro = (e) => e.getBoundingClientRect().left >= caja.left - 1 && e.getBoundingClientRect().right <= caja.right + 1;
+        const renglones = (xs) => new Set(xs.map((e) => Math.round(e.getBoundingClientRect().top))).size;
+        const segmentos = [...raiz.querySelectorAll('[data-dia-tipo] .segmento')];
+        const pestanas = [...raiz.querySelectorAll('.comida-del-editor[data-abierta] .pestana-de-opcion')];
+        const agregarDia = raiz.querySelector('[data-agregar-dia]');
+        return {
+          segmentos: segmentos.length,
+          segmentosAdentro: segmentos.every(adentro),
+          renglonesDeSegmentos: renglones(segmentos),
+          pestanas: pestanas.length,
+          pestanasAdentro: pestanas.every(adentro),
+          renglonesDePestanas: renglones(pestanas),
+          agregarDiaApagado: agregarDia?.disabled ?? null,
+          tope: [...raiz.querySelectorAll('.editor-del-plan__dia > .nota')].map((e) => e.innerText.replace(/\s+/g, ' ').trim()).join(' '),
+          afuera: [...raiz.querySelectorAll('*')].filter((e) => !e.closest('dialog') && e.getClientRects().length > 0 && !adentro(e)).length,
+        };
+      }, EDITOR);
+    const topesMedidos = await medirLosTopes();
+    const topesDesbordan = !(await sinDesborde(page));
+    const antesDeElegirLaLarga = v.urls.length;
+    await enElEditor('.comida-del-editor[data-comida="1"] .pestana-de-opcion', '12 · Tarta de verduras').catch(() => null);
+    const conLaLargaElegida = await elEditor();
+    const topesConLaLarga = await medirLosTopes();
+    const laLargaDesborda = !(await sinDesborde(page));
+    await captura(page, v, 'editor-los-topes-simulado-1024-claro');
+    const pedidosConLosTopes = pedidosDesde(antesDeElegirLaLarga);
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    comprobar(
+      'F-101',
+      '(Respuesta simulada.) Con los topes del contrato —siete días tipo de nombre largo y una comida con doce opciones—, a 1024 px: los siete segmentos y las doce pestañas están enteros dentro del editor, en más de un renglón; el día tipo que se mira es el que pide la dirección (el sexto); «Agregar» un día tipo está apagado y dice el tope; nada se sale del editor y la página no desborda',
+      conLosTopes?.dias.length === 7 &&
+        conLosTopes.dias.findIndex((x) => x.elegido) === 5 &&
+        conLosTopes.comidas[0]?.abierta === true &&
+        conLosTopes.comidas[0].pestanas.length === 12 &&
+        conLosTopes.estado === 'Guardado' &&
+        !!topesMedidos &&
+        topesMedidos.segmentos === 7 &&
+        topesMedidos.segmentosAdentro &&
+        topesMedidos.renglonesDeSegmentos > 1 &&
+        topesMedidos.pestanas === 12 &&
+        topesMedidos.pestanasAdentro &&
+        topesMedidos.renglonesDePestanas > 1 &&
+        topesMedidos.agregarDiaApagado === true &&
+        topesMedidos.tope === 'Un plan lleva hasta 7 días tipo.' &&
+        topesMedidos.afuera === 0 &&
+        !topesDesbordan,
+      `${topesMedidos?.segmentos} segmentos en ${topesMedidos?.renglonesDeSegmentos} renglones · ${topesMedidos?.pestanas} pestañas en ${topesMedidos?.renglonesDePestanas} renglones · «Agregar» apagado: ${topesMedidos?.agregarDiaApagado ? 'sí' : 'no'}, «${topesMedidos?.tope}» · afuera: ${topesMedidos?.afuera}${topesDesbordan ? ' · DESBORDA' : ''}`,
+    );
+    comprobar(
+      'F-102',
+      '(Respuesta simulada.) Una opción de nombre muy largo: su pestaña lo corta mientras no es la elegida —y la primera, de nombre corto, no se corta—; al pasar a esa opción, la pestaña lo muestra entero, sin salirse del editor ni hacer desbordar la página. Pasar de una pestaña a otra no le pide nada a BE',
+      conLosTopes?.comidas[0]?.pestanas.at(-1)?.texto === `12 · ${NOMBRE_MUY_LARGO}` &&
+        conLosTopes.comidas[0].cortadas.at(-1) === true &&
+        conLosTopes.comidas[0].cortadas[0] === false &&
+        conLosTopes.comidas[0].pestanas[0].elegida &&
+        conLaLargaElegida?.comidas[0]?.pestanas.at(-1)?.elegida === true &&
+        conLaLargaElegida.comidas[0].cortadas.at(-1) === false &&
+        !!topesConLaLarga &&
+        topesConLaLarga.pestanasAdentro &&
+        topesConLaLarga.afuera === 0 &&
+        !laLargaDesborda &&
+        pedidosConLosTopes === 0,
+      `sin elegir: ${conLosTopes?.comidas[0]?.cortadas.at(-1) ? 'cortada' : 'ENTERA'} · elegida: ${conLaLargaElegida?.comidas[0]?.cortadas.at(-1) ? 'CORTADA' : 'entera'} · adentro: ${topesConLaLarga?.pestanasAdentro ? 'sí' : 'NO'}${laLargaDesborda ? ' · DESBORDA' : ''} · pedidos: ${pedidosConLosTopes}`,
+    );
 
     comprobar('—', '«Plan», de Nutrición, no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
   } finally {

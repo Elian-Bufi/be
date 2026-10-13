@@ -220,6 +220,8 @@ export function VistaDePlan() {
                     <EditorDeBorrador
                       key={borrador.planId}
                       planId={borrador.planId}
+                      objetivo={objetivo ?? null}
+                      vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt } : null}
                       onActivado={() => {
                         setAviso({ tipo: 'exito', texto: COPY_DEL_PLAN.versionActivadaAviso });
                         ir({ version: null, dia: null, comidas: null });
