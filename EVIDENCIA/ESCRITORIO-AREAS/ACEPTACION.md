@@ -1049,3 +1049,98 @@ pantalla de escritorio; las tres que sí cambian —la ayuda, en los dos temas, 
 **Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-6/`: `ahora/` (42 capturas), `antes/` (12 y
 `la-ficha-se-rompia.txt`), `plan-de-dos-bloques-antes-y-ahora.png`, `resumen-de-la-pasada.txt` y `resultados/` (los
 resultados de cada recorrido, las pruebas y los veredictos de las roturas).
+
+## Parte 7, primer tramo · Nutrición · «Agregar ítem» (2026-10-12)
+
+La parte 7 recompone la versión en preparación del plan de comidas (maquetas 17, 18 y 21). Va en tres tramos, cada uno
+con la pantalla funcionando: **este es el primero, «Agregar ítem» (maqueta 21; C-52).** Los otros dos —el editor (17) y
+activar (18), que van juntos— no están hechos: el editor es el de antes, y ahora abre el buscador en un cajón.
+
+**Qué cambió.** «Agregar ítem» abría un recuadro dentro de la opción, con el buscador, los habituales y tres enlaces
+pegados. Ahora abre **un cajón al costado, uno solo para todo el borrador,** con el editor a la vista por detrás: el
+buscador con el foco, los alimentos habituales como fichas, los resultados en una tabla con calorías y macros, y
+«Crear manualmente» e «Importar desde Open Food Facts» adentro, con «Volver a la búsqueda». **Elegir un alimento no
+cierra el cajón:** lo suma a la opción y lo anuncia. No se quitó ninguna función. No cambian la API, la base ni la APK.
+Sobre la base propia (`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del código de
+este tramo (`9f701c0`).
+
+**Medido en la página real,** con el plan de dos días tipo de las cuentas descartables y una versión en preparación:
+
+| A 1440 × 900 | Antes | Ahora |
+|---|---|---|
+| El editor, sin tocar nada | 9.045 px | 9.045 px: el editor no cambió |
+| Con «Agregar ítem» abierto | 9.345 px: el recuadro se abría dentro de la opción y empujaba lo demás | El editor no se mueve. El cajón mide 800 px de ancho y el alto de la ventana; con tres resultados, su contenido mide 700 px |
+| Sumar tres alimentos a una opción | Abrir el recuadro tres veces: se cerraba con cada uno | Una sola apertura |
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| «Agregar ítem» abre el buscador del catálogo en un cajón al costado, no dentro de la opción: dice de qué comida y de qué opción es, el foco está en el campo de búsqueda y abrirlo no le pide nada a BE. El cajón no ocupa toda la ventana: el editor sigue detrás. Antes de buscar no hay resultados ni un «no encontramos»; en el pie, lo que hay que saber antes de elegir y las otras dos vías (F-82) | `recorrido.mjs planes`, al final: corre sobre las cuentas descartables recién generadas, con la versión en preparación que el mismo recorrido creó desde una plantilla. No toca los datos de A, B ni C | Pasa: «Desayuno · opción 1: Avena con leche»; el cajón empieza a los 640 px y mide 800; 0 pedidos al abrir | Verificado automáticamente |
+| Buscar es una sola lectura, con el texto en el cuerpo del pedido y no en la dirección. Los resultados van en una tabla: el alimento y, en este orden, calorías, carbohidratos, grasas y proteínas; son los que da la API para esa búsqueda. Cada uno dice si es cada 100 g o cada 100 ml, y de dónde se importó si vino de afuera. La cuenta se dice porque la búsqueda trajo todo. El foco sigue en el campo (F-83) | Lo mismo: lo esperado se calcula a mano con lo que devuelve la API para la misma búsqueda | Pasa: 1 pedido; «Arroz blanco de grano largo, cocido · 130 kcal · 28,17 g · 0,28 g · 2,69 g», «Arroz integral · 112 kcal · 23,5 g · 0,9 g · 2,6 g» y «Arroz blanco · 130 kcal · 28 g · 0,3 g · 2,7 g»; «3 en el catálogo» | Verificado automáticamente |
+| Con más coincidencias que las veinte que se piden, el cajón no dice una cuenta: la API no informa el total. Dice «Los primeros 20» y que hay más, para acotar la búsqueda (F-83) | Lo mismo, con una respuesta simulada: el catálogo de prueba no tiene una búsqueda con tantos resultados | Pasa: 20 filas, ninguna cuenta, «Los primeros 20 con «alimento»» y «Hay más alimentos que coinciden: escribí algo más del nombre para acotar.» | Verificado automáticamente, sobre una respuesta simulada |
+| Elegir un alimento lo suma a la opción y no cierra el cajón: lo anuncia y deja seguir; con el segundo dice cuántos van. Elegir no le pide nada a BE. Al cerrar, el foco vuelve a «Agregar ítem», la opción tiene los dos ítems nuevos al final, sin cantidad y con la unidad apagada, y el editor dice que hay cambios sin guardar (F-84) | Lo mismo | Pasa: «Agregado: Arroz blanco de grano largo, cocido. Podés sumar otro o cerrar.» y «Agregado: Arroz integral (van 2). …»; 0 pedidos al elegir; «Cambios sin guardar» | Verificado automáticamente |
+| Cada vez que se abre, el cajón empieza con el buscador vacío. La chinche de un resultado lo marca como habitual con una sola escritura: queda apretada, cambia su nombre a «Quitar de habituales» y el alimento aparece arriba, como una ficha que lo agrega con un clic. Volver a tocarla lo quita, y la ficha se va. Antes de marcar ninguno, el bloque dice cómo se marcan (F-85) | Lo mismo: marca y quita de verdad, y lee de la API cómo quedó | Pasa: 1 escritura al marcar; la ficha «Agregar Arroz integral»; al quitar, ninguno en la pantalla ni en la API | Verificado automáticamente |
+| Si los alimentos habituales no se pueden leer, el cajón lo dice, con su motivo y «Reintentar», y no «Todavía no marcaste alimentos habituales»; el buscador queda a la vista. Al reintentar, el bloque vuelve a decir cómo se marcan (F-85) | Lo mismo, con un 503 simulado sobre esa lectura | Pasa: «No pudimos leer tus alimentos habituales. El servicio no está disponible en este momento. Probá de nuevo más tarde. Rein»; al reintentar, el bloque vuelve a decir cómo se marcan | Verificado automáticamente, sobre una falla simulada |
+| Una búsqueda que no encuentra nada lo dice y ofrece las otras dos vías; no muestra una tabla vacía ni una cuenta. Una búsqueda que falla dice la falla con su motivo y «Reintentar», y no «No encontramos alimentos con ese nombre»; al reintentar, los resultados aparecen (F-86) | Lo mismo; la falla, con un 503 simulado | Pasa: «No encontramos alimentos con ese nombre. Podés crearlo a mano o importarlo, con los botones de abajo.»; «No pudimos buscar en el catálogo. El servicio no está disponible en este momento. Probá de nuevo más tarde.»; al reintentar, 3 alimentos | Verificado automáticamente |
+| «Crear manualmente» se abre dentro del cajón, en el lugar de los resultados, con «Volver a la búsqueda» y sin las acciones del pie; pide el nombre y, en el orden de BE, calorías, carbohidratos, grasas y proteínas. Enviarlo vacío no escribe nada y dice en cada campo qué falta. Con los cinco datos hace una sola escritura, suma el alimento a la opción, vuelve a la búsqueda con el foco en el campo y lo anuncia. El alimento queda en el catálogo con los valores que se escribieron (F-87) | Lo mismo: crea un alimento de verdad y lo busca en la API | Pasa: vacío, 5 campos marcados y 0 escrituras; al crear, 1 escritura; en el catálogo, 120 kcal, 22,5 g, 1,5 g y 4 g | Verificado automáticamente |
+| Con una búsqueda hecha, en el cajón no hay un porcentaje ni una palabra de la lista de Nutrición. axe no encuentra faltas con el cajón abierto, en los dos temas. A 1280 px el cajón sigue al costado; a 1024, 768 y 390 ocupa todo el ancho. En los cuatro, nada se sale del cajón, su pie queda a la vista y la página no desborda (F-88) | Lo mismo, con el detector del dominio y con axe; mide cada elemento contra la caja del cajón | Pasa: a 1280, el cajón mide 800 px y empieza a los 480; a 1024, 768 y 390, mide lo que la ventana | Verificado automáticamente |
+| «Guardar cambios» guarda la opción con lo que se agregó, con una sola escritura: en la API, sus últimos cuatro ítems son los dos elegidos del catálogo, el habitual y el que se creó a mano, en ese orden y sin cantidad ni estado de preparación. Guardar no activa (F-84) | Lo mismo: guarda por la pantalla y lee la versión de la API | Pasa: 6 ítems en la API, los 4 nuevos sin cantidad; la versión sigue en preparación | Verificado automáticamente |
+| «Pedir información», que usa el mismo cajón, sigue abriendo con el foco en su título | `recorrido.mjs solicitudes`, que no se tocó, en la pasada | Pasa: 32 de 32 | Verificado automáticamente |
+| Ningún texto escrito en las pantallas de Nutrición usa un término prohibido | `scripts/copy-pantallas.test.cjs`, que recorre la carpeta `nutrition` entera: el archivo nuevo entra solo | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de este tramo | `recorrido.mjs`: capturas 60 de 60, funcional 324 de 324, descartable 22 de 22, mediciones 18 de 18, solicitudes 32 de 32, planes 43 de 43 (los 33 de antes y los 10 de «Agregar ítem»), entrenamientos 22 de 22 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-12, de 22:19 a 23:12, sobre el código de `9f701c0`, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-7/agregar-item/resumen-de-la-pasada.txt` | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código | En verde la corrida 38335783978, sobre `9f701c0`: el legajo; la batería completa (typecheck; dominio, 717; guiones, 347; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440, 1280 y 1024 px en los dos temas (el cajón al abrirse, con resultados, después de elegir, sin resultados y «Crear manualmente») y a 390 px | `ver.mjs`, sobre las cuentas descartables recién generadas; y `recorrido.mjs planes`, para los estados simulados | 18 capturas de ahora (`parte-7/agregar-item/ahora/`; una es sobre una respuesta simulada, y lo dice en su nombre) y 4 de antes (`antes/`: el editor y el recuadro que se abría dentro de la opción; va la parte de arriba de la página, que mide diez pantallas) | Observado en capturas |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «abrir no le pide nada a BE» (buscar hace un
+pedido), «el texto buscado no viaja en una dirección» (el pedido de la búsqueda está), «elegir no le pide nada a BE»
+(marcar un habitual hace una escritura), «con la falla no dice No encontramos» (sin resultados, lo dice) y «enviar
+vacío no escribe nada» (con los cinco datos hace una escritura).
+
+**La prueba de la prueba.**
+- **La pantalla, rota a propósito y compilada así,** en tres tandas sobre `planes`: 10 roturas, las 10 notadas por la
+  comprobación que se esperaba, y ninguna comprobación falló sin que se la esperara
+  (`resultados/compilacion-rota-tanda-*.txt`). La T, 7 roturas: el foco en el título y no en el buscador, las proteínas
+  donde van los carbohidratos, la chinche que no cambia de nombre, una falla dicha como «no encontramos», un campo de
+  «Crear manualmente» con el rótulo de otro, el cajón a todo el ancho a 1280 px y un ítem que nace con un estado de
+  preparación que nadie eligió. La U, una sola —elegir cierra el cajón—, que hace caer de rebote a las tres
+  comprobaciones que usan el cajón abierto, y por eso va aparte. La V, 2 sobre las comprobaciones que se sumaron
+  después: los habituales que no se pueden leer dichos como «todavía no marcaste», y una cuenta dicha cuando hay más
+  coincidencias que las pedidas. Antes de cada vuelta, el recorrido de control pasó entero.
+- **Este tramo no tiene reglas nuevas en el dominio:** los textos y el orden de los valores son de la pantalla, y los
+  mira el recorrido.
+
+**Lo que mostraron las capturas y las primeras corridas.**
+- **A 390 px el contenido del cajón se salía de costado:** el botón «Buscar», la nota de los habituales y la
+  procedencia de un alimento quedaban cortados. La fila del buscador no dejaba achicar la columna. Se corrigió; lo
+  notó la comprobación de los anchos (F-88), que mide cada elemento contra la caja del cajón.
+- **Al abrirse, el foco quedaba en el título y no en el buscador:** el cajón ponía su foco después que el buscador.
+  Ahora el cajón recibe de quien lo abre dónde va el foco. Se vio en la primera captura, antes de escribir la
+  comprobación.
+- Los cuatro valores de «Crear manualmente» iban tres en una fila y uno solo debajo. Ahora van los cuatro en una fila.
+- **Dos fallas eran del recorrido, no de la pantalla:** no vaciaba el buscador antes de escribir la búsqueda
+  siguiente (el triple clic no selecciona el texto de ese campo), y comparaba el texto de un error sin contar el
+  símbolo de aviso que lleva delante.
+
+**Hallazgos fuera de lo dibujado.**
+- **Una búsqueda del catálogo que fallaba se presentaba como «No encontramos alimentos con ese nombre»** (severidad
+  media: una falla dicha como ausencia). Corregido (F-86).
+- **Lo mismo con los alimentos habituales:** si no se podían leer, decía «Todavía no marcaste alimentos habituales»
+  (media). Corregido (F-85).
+- **«Crear manualmente», «Importar desde Open Food Facts» y «Cerrar búsqueda» iban pegados,** sin espacio entre uno y
+  otro (baja). Ya no existen como enlaces: son los dos botones del pie y «Cerrar».
+
+**Límites, dichos.**
+- **El editor es el de antes.** Diez pantallas de alto con el plan de dos días tipo. Su recomposición y «Activar plan»
+  son los dos tramos que faltan de esta parte.
+- **La importación desde Open Food Facts no se miró con un producto.** Se abre dentro del cajón y vuelve a la búsqueda,
+  y eso se vio; su formulario es el de antes («Energía», y las proteínas antes que los carbohidratos). El entorno de
+  prueba no tiene un proveedor propio y los recorridos no llaman a servicios de afuera (definición, §6).
+- **La cuenta de resultados se dice solo si la búsqueda trajo todo.** Con más de veinte coincidencias, el cajón dice
+  «Los primeros 20» y pide acotar: no hay «ver más», como antes. No se comprobó en pantalla: el catálogo de prueba no
+  tiene una búsqueda con más de veinte resultados.
+- **Las fallas se miraron con respuestas simuladas en el navegador** (la búsqueda y la lista de habituales): la API y
+  la base no se tocan.
+- **Sin teléfono ni lector de pantalla reales:** el foco, los nombres accesibles y el anuncio de «Agregado» se
+  comprobaron con el navegador y con axe.
+
+**Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-7/agregar-item/`: `ahora/` (18 capturas), `antes/` (4),
+`resumen-de-la-pasada.txt` y `resultados/` (los resultados de cada recorrido y los veredictos de las roturas).

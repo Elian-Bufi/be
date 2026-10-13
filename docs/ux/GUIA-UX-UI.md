@@ -671,7 +671,8 @@ crear otro, se usa uno de estos.
 | `todasLasPaginas` (dominio) · `useListaCompleta` | Una lista leída entera, para contarla o buscar en ella: dice si quedó incompleta y, si falló, por qué | Los pendientes de la cartera; los vínculos de la ficha |
 | `motivoDeFalla` · `razonDeFalla` · `ICONO_DE_FALLA` (`lib/fallas.ts`) | Por qué falló una lectura, con sus palabras y su ícono, en todo el website profesional | «Hubo muchas consultas seguidas. Esperá un minuto y reintentá.» |
 | `.dialogo--formulario` | Un formulario corto en un diálogo: el foco en el primer campo, «Volver» y la acción | «Solicitar vínculo» |
-| `Cajon` (`components/cajon.tsx`) | Un formulario más largo, que se abre al costado, sobre la vista, que sigue a la vista por detrás. La cabecera (de quién es, el título y «Cerrar») y el pie quedan fijos; el cuerpo se desplaza adentro. Lo que hay que saber antes de un acto que no se deshace va en el pie, junto al botón. El foco va al título; no se cierra durante un envío. 800 px; hasta 64 rem de ventana, todo el ancho. Dibuja su contenido solo mientras está abierto: lo que tiene que sobrevivir al cierre vive en quien lo abre | «Pedir información», sobre «Solicitudes» |
+| `Cajon` (`components/cajon.tsx`) | Un formulario más largo, que se abre al costado, sobre la vista, que sigue a la vista por detrás. La cabecera (de quién es, el título y «Cerrar») y el pie quedan fijos; el cuerpo se desplaza adentro. Lo que hay que saber antes de un acto que no se deshace va en el pie, junto al botón. El foco va al título, o adonde pida quien lo abre (`focoInicial`): un buscador se abre para escribir. No se cierra durante un envío. 800 px; hasta 64 rem de ventana, todo el ancho. Dibuja su contenido solo mientras está abierto: lo que tiene que sobrevivir al cierre vive en quien lo abre | «Pedir información», sobre «Solicitudes»; «Agregar ítem», sobre el editor del plan de comidas |
+| `AgregarItem` (`nutrition/agregar-item.tsx`) | El buscador del catálogo para sumarle un ítem a una opción del plan de comidas, en un cajón: dice de qué comida y de qué opción es; busca al enviar; los alimentos habituales, arriba, como fichas; los resultados, en una tabla con calorías, carbohidratos, grasas y proteínas; elegir no lo cierra y lo anuncia; «Crear manualmente» e «Importar» se abren adentro, con «Volver a la búsqueda» | «Agregado: Arroz integral (van 2). Podés sumar otro o cerrar.» |
 | `.paso-del-pedido` · `.formularios-del-pedido` · `.preguntas-del-pedido` | Los pasos de un pedido, a la vista a la vez: una opción por formulario (su descripción, solo en el elegido); una fila por pregunta, con la casilla que la pide, con qué se responde y si es requerida; y el para qué, con el área | «2 Qué preguntas · 6 de 6 elegidas.» |
 | `.campo-fijo` | Un valor que la pantalla fija y no deja cambiar: se lee como un campo, con su candado y su motivo | «Área: Entrenamiento» + «Este formulario es solo de Entrenamiento.» |
 | `.casilla-de-celda` | Una casilla sola en su celda: lo que se toca mide 44 px aunque la casilla sea chica | «Requerida», en la tabla de preguntas |
@@ -723,6 +724,11 @@ crear otro, se usa uno de estos.
   bloques, microciclos o sesiones van como botones; con cinco o más, una lista que dice cuál se mira y cuántas hay. Los
   días tipo de un plan de comidas son siete como mucho: van siempre como botones, que bajan de renglón.
 - **Una tabla que se apila conserva el rótulo de cada dato,** salvo el que ya dice qué es («6 rep.», «RIR 1»).
+- **Lo que se suma de a varios no cierra su panel con cada uno.** Lo anuncia en el mismo panel —la vista quedó detrás
+  del velo— y deja seguir; se cierra cuando la persona lo decide.
+- **Un buscador que se abre recibe el foco.** Y cada vez que se abre, empieza vacío.
+- **No encontrar no es fallar.** Una búsqueda sin resultados lo dice y ofrece otro camino; una que falló dice su motivo y
+  se reintenta. Vale también para una lista propia que no se pudo leer: no es «todavía no tenés ninguno».
 
 ### II.9 Pestaña Antropometría (no se extiende al resto del website)
 
@@ -1311,6 +1317,10 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | «Empezar desde una plantilla», en Entrenamiento | Un desplegable siempre a la vista, que se leía al entrar; si esa lectura fallaba, decía «No tenés plantillas activas». | El diálogo común (II.8): lee al abrirse, dice la falla con su motivo y, de cada plantilla, cuántas sesiones tiene y si lleva cargas. | Corregida | Áreas, 6 |
 | El número de una versión del plan de entrenamiento | Lo calculaba la pantalla, con la primera página de la lista de versiones. | Lo calcula el dominio, con todas las versiones: es la misma regla que en Nutrición. | Corregida | Áreas, 6 |
 | Cuántos botones para elegir, en el plan de entrenamiento | Sin regla. | Hasta cuatro bloques, microciclos o sesiones, botones; con cinco o más, una lista que dice cuál se mira y cuántas hay. Los días tipo de Nutrición, que son siete como mucho, siguen como botones (II.8). | Nueva | Áreas, 6 |
+| «Agregar ítem», en el plan de comidas | Un recuadro que se abría dentro de la opción, con el buscador, los habituales como enlaces y cada resultado en un renglón con sus calorías; se cerraba al elegir. | Un cajón al costado, uno solo para todo el borrador: los habituales como fichas, los resultados en una tabla con calorías y macros, y elegir no lo cierra (II.8). | Sustituida | Áreas, 7 |
+| Una búsqueda del catálogo que falla | «No encontramos alimentos con ese nombre.», lo mismo que una búsqueda sin resultados. | Dice la falla con su motivo y «Reintentar». | Corregida | Áreas, 7 |
+| Los alimentos habituales que no se pueden leer | «Todavía no marcaste alimentos habituales.» | Dice que no se pudieron leer, con su motivo y «Reintentar». | Corregida | Áreas, 7 |
+| El foco al abrir un cajón | Siempre en el título. | En el título, o adonde pida quien lo abre: en «Agregar ítem», en el campo de búsqueda (II.8). | Ampliada | Áreas, 7 |
 
 ---
 
