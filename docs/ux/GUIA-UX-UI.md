@@ -672,6 +672,11 @@ crear otro, se usa uno de estos.
 | `motivoDeFalla` · `razonDeFalla` · `ICONO_DE_FALLA` (`lib/fallas.ts`) | Por qué falló una lectura, con sus palabras y su ícono, en todo el website profesional | «Hubo muchas consultas seguidas. Esperá un minuto y reintentá.» |
 | `.dialogo--formulario` | Un formulario corto en un diálogo: el foco en el primer campo, «Volver» y la acción | «Solicitar vínculo» |
 | `Cajon` (`components/cajon.tsx`) | Un formulario más largo, que se abre al costado, sobre la vista, que sigue a la vista por detrás. La cabecera (de quién es, el título y «Cerrar») y el pie quedan fijos; el cuerpo se desplaza adentro. Lo que hay que saber antes de un acto que no se deshace va en el pie, junto al botón. El foco va al título, o adonde pida quien lo abre (`focoInicial`): un buscador se abre para escribir. No se cierra durante un envío. 800 px; hasta 64 rem de ventana, todo el ancho. Dibuja su contenido solo mientras está abierto: lo que tiene que sobrevivir al cierre vive en quien lo abre | «Pedir información», sobre «Solicitudes»; «Agregar ítem», sobre el editor del plan de comidas |
+| `MenuDeAcciones` (`components/menu-de-acciones.tsx`) | Lo que se hace de vez en cuando sobre algo (cambiar un nombre, quitar, guardar como plantilla), detrás de un botón que dice de qué son las acciones. Es un botón con un panel de botones, como el menú de la cuenta: Escape lo cierra y devuelve el foco; tocar fuera o salir de él con el teclado, también. Una acción que ahora no se puede usar no desaparece: va apagada y dice por qué, en su renglón. Con texto y una flecha, despliega los caminos de una acción | «Más», en una comida: «Cambiar el nombre · Guardar como habitual · Quitar comida»; «Agregar opción ▾» |
+| `ComidaDelEditor` · `CampoDeNombre` (`nutrition/comida-del-editor.tsx`) | Una comida de la versión en preparación del plan de comidas. Plegada, un renglón con su nombre, cuántas opciones tiene y lo que adentro pide atención. Abierta, sus opciones en pestañas —la elegida muestra su nombre entero; las demás lo cortan— y los ítems de la opción elegida en una tabla, con cada campo diciendo de qué alimento es; una opción de receta se lee y no se edita. El nombre se cambia a pedido: el campo aparece en el lugar, con el foco y el texto seleccionado, y Enter o salir lo cierra; lo que no tiene nombre lo muestra siempre | «Almuerzo · 3 opciones · se elige una · ⚠ 1 cantidad que no se entiende» |
+| `.items-del-editor` | La tabla de ítems de una opción, para editar: el alimento ocupa lo que sobra y sus tres datos van en columnas del mismo ancho en toda opción (al cambiar de pestaña, los campos no se mueven). El motivo de una cantidad que no se entiende se lee de corrido, por debajo de los otros campos. En una ventana angosta (hasta 56 rem), cada ítem es su nombre y, debajo, sus tres campos en fila, cada uno con su rótulo | «Arroz blanco · 150 · g · Cocido · ✕» |
+| `loQueNoDejaGuardar` · `comidaPlegadaDelEditor` · `lugarDelProblema` · `ubicacionDelProblema` · `posicionPedida` · `comidasAbiertasEnElEditor` · `loQueEntraAlActivar` (dominio, `editor-del-plan-de-nutricion.ts`) | Las reglas del editor del plan de comidas: qué no deja guardar (un nombre que falta, una cantidad que no es un número), con la ruta a su lugar; qué dice una comida plegada; dónde está un problema de «Validar» y cómo se dice con los nombres del plan; el día tipo y las comidas abiertas que pide la dirección, por posición; y qué entra y qué queda al activar | «Día de descanso → Colación → falta al menos una opción»; «2 días tipo y 7 comidas» |
+| `.boton[aria-disabled='true']` | Un botón que ahora no se puede usar pero conserva el foco: se ve apagado y no responde. Para el que se apaga solo después de usarlo, o mientras se guarda: con `disabled` perdería el foco, y quien usa el teclado quedaría fuera de lugar | «Guardar cambios», sin nada que guardar |
 | `AgregarItem` (`nutrition/agregar-item.tsx`) | El buscador del catálogo para sumarle un ítem a una opción del plan de comidas, en un cajón: dice de qué comida y de qué opción es; busca al enviar; los alimentos habituales, arriba, como fichas; los resultados, en una tabla con calorías, carbohidratos, grasas y proteínas; elegir no lo cierra y lo anuncia; «Crear manualmente» e «Importar» se abren adentro, con «Volver a la búsqueda» | «Agregado: Arroz integral (van 2). Podés sumar otro o cerrar.» |
 | `.paso-del-pedido` · `.formularios-del-pedido` · `.preguntas-del-pedido` | Los pasos de un pedido, a la vista a la vez: una opción por formulario (su descripción, solo en el elegido); una fila por pregunta, con la casilla que la pide, con qué se responde y si es requerida; y el para qué, con el área | «2 Qué preguntas · 6 de 6 elegidas.» |
 | `.campo-fijo` | Un valor que la pantalla fija y no deja cambiar: se lee como un campo, con su candado y su motivo | «Área: Entrenamiento» + «Este formulario es solo de Entrenamiento.» |
@@ -729,6 +734,24 @@ crear otro, se usa uno de estos.
 - **Un buscador que se abre recibe el foco.** Y cada vez que se abre, empieza vacío.
 - **No encontrar no es fallar.** Una búsqueda sin resultados lo dice y ofrece otro camino; una que falló dice su motivo y
   se reintenta. Vale también para una lista propia que no se pudo leer: no es «todavía no tenés ninguno».
+- **Plegar tampoco esconde lo que falta.** Un renglón plegado dice lo que adentro pide atención —un nombre que falta, una
+  cantidad que no se entiende, un problema de la validación—, con un ícono y con texto, no con un color.
+- **Lo que no deja guardar se lista con su lugar, y cada renglón lleva hasta ahí.** Cuando la pantalla muestra una parte
+  por vez, «corregí los campos marcados» no alcanza: hay que decir dónde, elegirlo, abrirlo y dejar el foco en el campo.
+  Vale igual para los problemas que devuelve una validación.
+- **Para leer, lado a lado; para escribir, de a una.** Las opciones de una comida van todas a la vista en el plan activo,
+  donde se comparan, y en pestañas en el editor, donde se escribe. En los dos casos pesan lo mismo.
+- **Lo que casi nunca se toca no ocupa un campo.** Un nombre se cambia a pedido; lo que se usa de vez en cuando va en un
+  menú que dice qué tiene adentro. Lo que se acaba de agregar nace con su nombre abierto, y lo que no tiene nombre lo
+  muestra siempre.
+- **Apagado no es deshabilitado.** Un botón que se apaga solo después de usarlo conserva el foco (`aria-disabled`).
+  «Guardar cambios» está apagado cuando no hay nada que guardar, y el estado del guardado, al lado, dice por qué.
+- **Un acto que necesita otro antes, lo hace.** «Activar plan» guarda si hace falta y recién entonces pregunta; si no
+  puede guardar, lo dice y no sigue. No se apaga esperando que la persona adivine el orden.
+- **Un dato que es de un acto se pide en ese acto.** La próxima revisión, en el diálogo de activar; si el acto no se
+  hace, el dato vuelve a como estaba.
+- **En una pantalla que se edita, lo que se mira va en la dirección por su posición.** Lo que se acaba de agregar
+  todavía no tiene identificador ni número de orden.
 
 ### II.9 Pestaña Antropometría (no se extiende al resto del website)
 
@@ -1321,6 +1344,15 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Una búsqueda del catálogo que falla | «No encontramos alimentos con ese nombre.», lo mismo que una búsqueda sin resultados. | Dice la falla con su motivo y «Reintentar». | Corregida | Áreas, 7 |
 | Los alimentos habituales que no se pueden leer | «Todavía no marcaste alimentos habituales.» | Dice que no se pudieron leer, con su motivo y «Reintentar». | Corregida | Áreas, 7 |
 | El foco al abrir un cajón | Siempre en el título. | En el título, o adonde pida quien lo abre: en «Agregar ítem», en el campo de búsqueda (II.8). | Ampliada | Áreas, 7 |
+| La versión en preparación del plan de comidas | Una jerarquía de cajas, una adentro de la otra, con todo abierto y las acciones al final: 9.045 px con dos días tipo. | Un día tipo por vez, con las comidas plegadas; abierta, sus opciones en pestañas y los ítems en una tabla; las acciones, arriba: 950 px (II.8). | Sustituida | Áreas, 7 |
+| Los nombres, en el editor del plan de comidas | Un campo siempre abierto por día tipo, por comida y por opción. | A pedido: «Cambiar el nombre» abre el campo en el lugar, con el foco. | Sustituida | Áreas, 7 |
+| Las acciones de vez en cuando, en el editor | Todos los botones a la vista a la vez. | En un menú por cosa (`MenuDeAcciones`); la que no se puede usar va apagada y dice por qué. | Sustituida | Áreas, 7 |
+| «Activar plan» | Apagado mientras hubiera cambios sin guardar; la próxima revisión, un campo al pie del editor. | Guarda antes si hace falta y recién entonces pregunta; el diálogo dice qué entra y qué queda, y ahí se fija la próxima revisión. | Sustituida | Áreas, 7 |
+| El foco inicial de un diálogo de confirmación con un campo adentro | En el campo, que es el primer control. | En «Volver», si quien lo abre lo pide (`focoEnVolver`): la acción con efecto nunca es la opción por defecto (I.3). | Ampliada | Áreas, 7 |
+| Los problemas de «Validar plan» | Una lista de texto. | Cada uno es un botón que lleva a su lugar: elige el día tipo, abre la comida y la opción, y deja el foco ahí. | Ampliada | Áreas, 7 |
+| Un nombre vacío o una cantidad que no se entiende, al guardar el plan de comidas | «Corregí los campos marcados»; el nombre vacío volvía de la API como «Plan → revisá este elemento». | Se listan con su lugar, y la comida lo dice en su renglón, también plegada (II.8). | Corregida | Áreas, 7 |
+| Los botones de la cabecera del editor, al guardar | Se deshabilitaban: el foco se perdía. | Se apagan conservando el foco (`aria-disabled`). | Corregida | Áreas, 7 |
+| «Agregar receta como opción» | La lista de recetas se abría debajo de la comida. | En el cajón, como los alimentos. | Sustituida | Áreas, 7 |
 
 ---
 

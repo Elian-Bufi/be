@@ -1144,3 +1144,143 @@ vacío no escribe nada» (con los cinco datos hace una escritura).
 
 **Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-7/agregar-item/`: `ahora/` (18 capturas), `antes/` (4),
 `resumen-de-la-pasada.txt` y `resultados/` (los resultados de cada recorrido y los veredictos de las roturas).
+
+## Parte 7, tramos 2 y 3 · Nutrición · La versión en preparación y «Activar plan» (2026-10-13)
+
+Con estos dos tramos la parte 7 queda completa: **el editor del plan de comidas recompuesto (maqueta 17; C-37 y C-38) y
+«Activar plan» (maqueta 18; C-40 a C-42).** El primer tramo, «Agregar ítem» (maqueta 21), está más arriba.
+
+**Qué cambió.** La versión en preparación era una jerarquía de cajas, una adentro de la otra, con todo abierto: cada
+día tipo, cada comida y cada opción con su campo de nombre, todos los botones a la vista y las acciones al final. Ahora
+**se mira un día tipo por vez, con sus comidas plegadas** —cada una en un renglón, con su nombre y cuántas opciones
+tiene—; abierta, una comida muestra **sus opciones en pestañas y los ítems de la que se eligió en una tabla.** Los
+nombres se cambian a pedido, y lo que se usa de vez en cuando (cambiar un nombre, quitar, guardar como plantilla o como
+habitual) va en un menú. Arriba, en un renglón, el estado del guardado y las acciones. **«Activar plan» guarda antes si
+hace falta y recién entonces pregunta;** su diálogo dice qué entra y qué queda, y ahí se fija la próxima revisión. Es
+otra composición de lo mismo: **no se agregó ni se quitó ninguna operación.** No cambian la API, la base ni la APK.
+Sobre la base propia (`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del código de
+estos tramos (`77597aa`).
+
+**Lo que hubo que resolver, que el dibujo no dice.** Con un día tipo por vez, las comidas plegadas y una opción por
+pestaña, **lo que no deja guardar puede no estar a la vista:** un nombre borrado, o una cantidad que no es un número, en
+otro día tipo o en otra pestaña. Entonces: la comida lo dice en su renglón, también plegada; lo que no tiene nombre
+muestra su campo siempre; «Guardar cambios» no escribe nada y lista cada cosa con su lugar; y **cada renglón de esa
+lista —y de la de «Validar plan»— es un botón que lleva hasta ahí:** elige el día tipo, abre la comida y la opción, y
+deja el foco en el campo. Es una regla nueva del dominio (`editor-del-plan-de-nutricion.ts`), con sus pruebas.
+
+**Medido en la página real,** con el plan de dos días tipo de las cuentas descartables y una versión en preparación:
+
+| A 1440 × 900 | Antes | Ahora |
+|---|---|---|
+| El editor, al abrirse | 9.045 px: diez pantallas | 950 px: una, casi entera |
+| Para cambiar una cantidad | Buscarla a mano en esas diez pantallas | Elegir el día tipo, abrir la comida y, si hace falta, pasar de pestaña |
+| Con una comida abierta (tres opciones, cuatro ítems) | — | 1.431 px (1.485 a 1024) |
+| Campos a la vista al entrar | Todos los del plan: cada nombre y, de cada ítem, la cantidad, la unidad y el estado | Ninguno: se abre lo que se va a tocar |
+| Activar con cambios sin guardar | Guardar a mano, y recién entonces el botón se encendía | «Activar plan» guarda y pregunta |
+| La próxima revisión | Un campo suelto, al pie de la página | En el diálogo de activar, que es cuando empieza a valer |
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| La versión en preparación se abre con un día tipo a la vista y sus comidas plegadas, cada una con su nombre y cuántas opciones tiene, como los da la API. No hay ningún campo a la vista. Arriba, el estado del guardado y, en este orden, el menú de la versión, «Validar plan», «Activar plan» y «Guardar cambios», apagado porque no hay nada que guardar (apagado, no deshabilitado). El objetivo del día es el de la API. La página mide menos de 1.000 px (F-89) | `recorrido.mjs planes`: corre sobre las cuentas descartables recién generadas, con la versión en preparación que el mismo recorrido crea desde la activa. Lo esperado se escribe a mano con lo que devuelve la API; no usa el módulo del dominio que arma la pantalla. No toca los datos de A, B ni C | Pasa: 950 px; «Desayuno: 2 opciones · se elige una», «Almuerzo: 3 opciones · se elige una», «Merienda: 1 opción», «Cena: 2 opciones · se elige una»; 0 campos a la vista | Verificado automáticamente |
+| El día tipo que se mira y las comidas abiertas viven en la dirección, por su posición. Elegir y abrir no le piden nada a BE. «Actualizar» vuelve a leer la versión y deja a la vista el mismo día y la misma comida abierta. Al volver al primer día, la dirección queda limpia (F-90) | Lo mismo | Pasa: `dia=2`, `comidas=2`; 0 pedidos al elegir; tras «Actualizar», el mismo día y «Almuerzo» abierta | Verificado automáticamente |
+| Abrir una comida muestra sus opciones en pestañas («N · nombre», y la de receta marcada), con la primera elegida, y los ítems de esa opción en una tabla, con los valores de la API. Cada campo dice de qué alimento es en su nombre accesible. La pestaña de la receta se lee y no se edita: la receta con su versión y los ingredientes de una porción, sin campos ni «Agregar ítem». Mirar no le pide nada a BE ni ensucia la versión (F-91) | Lo mismo | Pasa: «1 · Arroz con pollo y brócoli», «2 · Guiso de lentejas» (receta) y «3 · Salmón con papa»; cuatro ítems con su cantidad, su unidad y su estado; en la de receta, 0 campos | Verificado automáticamente |
+| Los nombres se cambian a pedido: «Cambiar el nombre» abre el campo en el lugar, con el foco y el nombre seleccionado; lo que se escribe lo reemplaza y Enter lo cierra. Vale para la comida (desde su menú «Más»), la opción (al pie) y el día tipo (desde su menú). Una acción que no se puede usar va apagada y dice por qué: «Guardar como habitual», en una comida con una opción de receta; «Guardar como plantilla», en el menú de la versión, con una receta en el plan. Escape cierra el menú y devuelve el foco a su botón. Nada de esto le pide algo a BE (F-92) | Lo mismo: escribe tres nombres por la pantalla | Pasa: el campo `comida-0-1` con el foco y «Almuerzo» seleccionado; la comida pasa a «Almuerzo del recorrido», la pestaña a «1 · Arroz con pollo y brócoli (ajustada)» y el día a «Día de descanso (ajustado)»; 0 pedidos | Verificado automáticamente |
+| Agregar, mover y quitar: «Agregar opción» despliega dos caminos; la opción nueva queda elegida, sin ítems y con su nombre abierto. «Agregar comida» suma una comida al final, abierta, que dice «Falta el nombre» hasta que se lo escribe. «Subir» la mueve un lugar y lo abierto la acompaña; en la primera comida está apagado. «Agregar» suma un día tipo, lo elige y abre su nombre; «Quitar este día tipo» lo saca y deja elegido el anterior. Nada de esto le pide algo a BE (F-93) | Lo mismo | Pasa: «3 · Opción del recorrido»; «Comida 4 · Sin opciones · Falta el nombre» y, con su nombre, «Colación del recorrido»; tras «Subir», tercera, con `comidas=2.3`; tres días tipo y, al quitar, dos | Verificado automáticamente |
+| Lo que no deja guardar no queda escondido. Una cantidad que no es un número se marca en su campo, con el motivo, y el renglón de su comida lo dice. Un nombre vacío no se cierra con Enter, y su comida dice «Falta el nombre», también plegada. Con las dos cosas —una en cada día tipo—, «Guardar cambios» no escribe nada y las lista, en el orden del plan y con su lugar. El renglón de la cantidad lleva al otro día tipo, abre la comida y deja el foco en el campo; corregida, la lista se va. Al guardar otra vez queda el nombre: su renglón abre el campo, con el foco (F-94) | Lo mismo: escribe «60x» en una cantidad y borra el nombre de una comida | Pasa: «Escribí un número: «150» o «72,5».» y «1 cantidad que no se entiende»; 0 escrituras; «Hay nombres sin completar y cantidades que no se entienden. Corregilos antes de guardar.», con «Día de entrenamiento → Comida 1 → falta el nombre» y «Día de descanso (ajustado) → Desayuno → Opción 1 → Ítem 1 → la cantidad no se entiende»; el foco, en `item-1-0-0-0-cantidad` | Verificado automáticamente |
+| Con todo corregido, «Guardar cambios» hace una sola escritura y la API queda con lo que se hizo en pantalla, y nada más: los tres nombres nuevos, la cantidad corregida (75,5), la opción nueva sin ítems y la comida nueva, sin opciones, en el lugar al que se la subió; lo demás, igual (la opción de receta, con sus ingredientes). Guardar no activa. El botón queda apagado, con el foco todavía en él (F-95) | Lo mismo: guarda por la pantalla, lee la versión de la API y la compara, entera, con la de antes más los seis cambios | Pasa: 1 escritura; «Guardado»; el foco, en «Guardar cambios»; la versión sigue en preparación y la activa es la misma | Verificado automáticamente |
+| «Validar plan», sin cambios por guardar, no guarda: valida y dice «Hay elementos por corregir» con cada problema y su lugar, por sus nombres. Los dos están en el día tipo que no se está mirando. Cada renglón es un botón: el de la comida lleva a su día, la abre y deja el foco en su renglón; ese renglón y el de la otra comida, plegada, dicen «1 problema para revisar». Quitadas la comida y la opción vacías, «Validar plan» guarda antes y valida: «Plan válido» (F-96) | Lo mismo | Pasa: «Día de descanso (ajustado) → Almuerzo → Opción 3 → falta al menos un ítem» y «… → Colación del recorrido → falta al menos una opción»; al validar, 0 escrituras de guardar y 1 de validar; al revalidar, 1 y 1 | Verificado automáticamente |
+| «Agregar receta como opción» abre las recetas propias en el cajón, que dice de qué comida es, con una sola lectura. Elegir una cierra el cajón y suma una opción con el nombre de la receta, elegida y marcada como receta: se lee y no se edita, y dice que sus ingredientes se cargan al guardar; el foco vuelve a «Agregar opción». Al guardar, la API arma los ítems con los ingredientes de una porción —los mismos que tiene la otra opción de esa receta— y la pantalla los muestra (F-99) | Lo mismo: agrega la receta y guarda por la pantalla, y lee la versión de la API | Pasa: «Guiso de lentejas (Versión 1 · 2 porciones · 355 kcal por porción)»; 1 lectura; «2 · Guiso de lentejas»; al guardar, 1 escritura y los tres ingredientes | Verificado automáticamente |
+| Con una comida abierta, en el editor no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra los nombres de los alimentos. axe no encuentra faltas, en los dos temas. A 1280, 1024, 768 y 390 px la página no desborda, nada se sale del editor, el nombre de la comida abierta entra en dos renglones como mucho y todos sus campos están a la vista con su tamaño táctil (F-97) | Lo mismo, con el detector del dominio y con axe; mide cada elemento contra la caja del editor | Pasa: sin palabras de la lista; axe sin faltas; en los cuatro anchos, sin desborde y con todos los campos a la vista (a 1280 y a 1024, el nombre en un renglón y 9 de 9 campos) | Verificado automáticamente |
+| Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo y deja el editor fuera de la vista; volver lo muestra con lo escrito intacto y «Cambios sin guardar», en el día tipo que se miraba en la activa. Ir y volver no le pide nada a BE. «Actualizar» pregunta antes de volver a leer (F-65) | Lo mismo: son las comprobaciones de la parte 5, que ahora escriben en un nombre que se abre a pedido | Pasa: «Desayuno» → «Desayuno (ajuste)»; 0 pedidos | Verificado automáticamente |
+| «Activar plan» guarda antes si hay cambios, y recién entonces pregunta. Si no se puede guardar, no abre el diálogo: dice por qué, la versión sigue con «Cambios sin guardar» y no se activa nada. Cuando sí se puede, hace una sola escritura y abre el diálogo, con el foco en «Volver»: dice qué entra y qué queda, y trae «Próxima revisión (opcional)», vacía. «Volver» lo cierra sin escribir nada y devuelve el foco a «Activar plan». axe no encuentra faltas con el diálogo abierto (F-98) | Lo mismo; la falla al guardar, con un 503 simulado sobre esa escritura | Pasa: con la falla, «El servicio no está disponible en este momento. Probá de nuevo más tarde.», sin diálogo y 0 activaciones; sin ella, 1 escritura y «Esta versión pasa a ser la vigente: 2 días tipo y 7 comidas.» y «La versión 2, activa desde el 13 oct, queda en el historial.» (el día en que se generaron los datos) | Verificado automáticamente; la falla, sobre una respuesta simulada |
+| Activar, con una fecha de próxima revisión puesta en el diálogo, hace dos escrituras: guarda la fecha y activa. La versión pasa a ser la vigente, con esa fecha en la API; el selector desaparece, el plan activo dice «Versión 3 · … · es lo que ve el asesorado» y la dirección queda limpia (F-65) | Lo mismo: activa por la pantalla y lee de la API cómo quedó | Pasa: 1 escritura de guardar y 1 de activar; la próxima revisión, en la API | Verificado automáticamente |
+| Lo que se usa de vez en cuando sigue estando, en su menú: en una versión sin opciones de receta, «Guardar como plantilla» abre su diálogo, y «Guardar como habitual», encendida, trae el nombre de la comida. Guardarla es una sola escritura; recién entonces aparece, al pie del día tipo, «Agregar una comida habitual» con esa comida. Agregarla la suma al final, plegada, con sus opciones, y lo dice (F-100) | Lo mismo, sobre la versión que el recorrido crea desde una plantilla: guarda una comida habitual de verdad y la agrega | Pasa: 1 escritura; «Habitual del recorrido … · 4 alimentos · Sin cantidades»; la comida, al final | Verificado automáticamente |
+| Con los topes del contrato —siete días tipo de nombre largo y una comida con doce opciones—, a 1024 px: los siete segmentos y las doce pestañas están enteros dentro del editor, en más de un renglón; «Agregar» un día tipo está apagado y dice el tope; nada se sale y la página no desborda (F-101) | Lo mismo, con una respuesta simulada: el escenario de prueba no tiene un plan así | Pasa: 7 segmentos en 4 renglones y 12 pestañas en 4; «Un plan lleva hasta 7 días tipo.» | Verificado automáticamente, sobre una respuesta simulada |
+| Una opción de nombre muy largo: su pestaña lo corta mientras no es la elegida; al pasar a esa opción, lo muestra entero, sin salirse del editor (C-38; F-102) | Lo mismo, sobre la misma respuesta simulada | Pasa: sin elegir, cortada; elegida, entera | Verificado automáticamente, sobre una respuesta simulada |
+| «Agregar ítem» sigue funcionando sobre el editor nuevo: el cajón, la búsqueda, elegir, los habituales, «Crear manualmente» y guardar (F-82 a F-88) | `recorrido.mjs planes`: son las diez comprobaciones del primer tramo, que ahora leen la opción en el marcado nuevo | Pasan las diez | Verificado automáticamente |
+| Las reglas del editor: dónde está un problema y cómo se dice su lugar; qué no deja guardar; qué dice una comida plegada; el día tipo y las comidas abiertas que pide la dirección; la pestaña de una opción; y lo que entra y lo que queda al activar | `packages/domain/src/editor-del-plan-de-nutricion.test.ts`, con los resultados esperados escritos a mano | Pasan las 12 | Verificado automáticamente |
+| Ningún texto escrito en las pantallas de Nutrición usa un término prohibido | `scripts/copy-pantallas.test.cjs`, que recorre la carpeta `nutrition` entera: el archivo nuevo entra solo | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de estos tramos | `recorrido.mjs`: capturas 60 de 60, funcional 324 de 324, descartable 22 de 22, mediciones 18 de 18, solicitudes 32 de 32, planes 57 de 57 (los 43 de antes y los 14 de estos tramos), entrenamientos 22 de 22 y estimación 7 de 7. `recorrido-comprension.mjs`: mirar 20 de 20, capturas 80 de 80, funcional 86 de 86 y revocación 6 de 6. Pasada del 2026-10-13, de 02:19 a 03:15, sobre el árbol que después fue el commit `77597aa`, sin cambios en el medio, con los datos generados de nuevo y verificados (26 de 26 y 10 de 10). `parte-7/editor/resumen-de-la-pasada.txt` | Verificado automáticamente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código | En verde la corrida 38355789979, sobre `77597aa`: el legajo; la batería completa (typecheck; dominio, 729; guiones, 347; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla, a 1440, 1280 y 1024 px en los dos temas (al entrar, una comida abierta, la opción de receta, los menús, un nombre a pedido, lo recién agregado, las recetas en el cajón, lo que no deja guardar, los problemas de «Validar» y el diálogo de activar) y a 768 y 390 px | `ver.mjs`, sobre las cuentas descartables recién generadas, con una versión en preparación creada por la pantalla; y `recorrido.mjs planes`, de la pasada limpia, para lo que se arma escribiendo y para los estados simulados | 42 capturas de ahora (`parte-7/editor/ahora/`), 6 del recorrido (`del-recorrido/`: dos son sobre una respuesta simulada, y lo dicen en su nombre), 3 de antes (`antes/`: el editor entero, de 9.045 px, y su primera pantalla en los dos temas) y la comparación `antes-y-ahora-1440-claro.png` | Observado en capturas |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «no hay ningún campo a la vista» (con una comida
+abierta, la misma consulta encuentra los de sus ítems), «elegir no le pide nada a BE» («Actualizar» vuelve a leer la
+versión), «guardar no escribe nada» (corregido, hace una escritura), «con la falla no se abre el diálogo» (sin ella, se
+abre) y «“Volver” no escribe nada» (confirmar hace dos escrituras).
+
+**La prueba de la prueba.**
+- **Las reglas, rotas de a una:** 50 mutaciones de `editor-del-plan-de-nutricion.ts`, cada una contra las pruebas del
+  módulo en una copia de la compilación. **Las 50 detectadas** (`resultados/roturas-de-las-reglas.txt`).
+- **La pantalla, rota a propósito y compilada así,** en cinco tandas sobre `planes`: 27 roturas
+  (`resultados/compilacion-rota-tanda-*.txt`). La W, 11 del website, una por comprobación (las diez nuevas y la activación): el editor más alto de
+  lo que entra, el botón de una comida que no dice que está abierta, un campo que no dice de qué alimento es, una
+  acción del menú que no se apaga, «Subir» encendido en la primera comida, una cantidad que no se marca como inválida,
+  la unidad que cambia sola al escribir una cantidad, el foco que no va a su lugar, «Activar plan» que no guarda antes,
+  la fecha que no se guarda al activar y la del teléfono, que es la que hubo que rehacer. La X, 3 en la fuente de las reglas del dominio: muestran que lo esperado por
+  el recorrido no sale del módulo que arma la pantalla. La T y la U, las 8 de «Agregar ítem», otra vez, porque el
+  recorrido ahora lee la opción en el marcado nuevo. La Y, 5 sobre lo que se sumó después: el nombre de la opción de
+  una receta, la lista de comidas habituales que no se vuelve a leer, «Agregar» encendido con siete días tipo, la
+  pestaña elegida que corta su nombre y la cabecera de la comida en el teléfono.
+- **Una rotura no se notó a la primera, y era una rotura mal elegida:** para el teléfono, quitaba una regla de estilo
+  que no era la que arreglaba el defecto (la cabecera seguía bajando de renglón). Rehecha en la tanda Y —quita la que
+  sí lo arregla—, se nota. En ninguna de las cinco tandas falló una comprobación sin que se la esperara.
+- **Un rebote que no estaba declarado, en la tanda U:** con «elegir cierra el cajón», el alimento habitual que el
+  recorrido marca no llega a quitarse, y la comprobación de los habituales que no se pueden leer encuentra uno al
+  reintentar. Es un rebote legítimo: se declaró y el veredicto se releyó sobre el mismo resultado
+  (`resultados/compilacion-rota-tanda-U.txt`).
+- Las tandas W, X, T y U corrieron sobre el código anterior a cuatro ajustes de esa misma noche (la pestaña elegida
+  con el nombre entero, el objetivo que llega de la sección sin una segunda lectura, el foco pendiente que se olvida y
+  el pie con la comida habitual en un renglón); la Y y la pasada completa, sobre el código final.
+
+**Lo que mostraron las capturas y las primeras corridas.**
+- **En la primera captura, la tabla de ítems estaba rota** —cada fila se partía en varios renglones—: los estilos del
+  editor de antes (`.fila-de-item`), que sigue usando el editor de Entrenamiento, alcanzaban a las filas nuevas. Las
+  filas tienen ahora su propio nombre. El editor, además, quedaba angosto: heredaba el tope de 72 rem de la jerarquía.
+- **Las columnas cambiaban de lugar de una opción a otra,** según el largo de los nombres. Ahora miden lo mismo en toda
+  opción.
+- **El motivo de una cantidad que no se entiende ocupaba tres renglones** en su columna angosta. Ahora se lee de
+  corrido, por debajo de los otros campos de la fila.
+- **A 390 px, el nombre de la comida abierta quedaba de a una letra por renglón,** al lado de «Subir» y «Más»; y a 768
+  la tabla dejaba al alimento en una columna de una palabra por renglón. Ahora, en el teléfono, el nombre va en su
+  renglón; y a 768 y 390 cada ítem es su nombre y, debajo, sus tres campos con su rótulo. Lo cubre F-97.
+- **La pestaña de una opción recién agregada decía «4 · Opción 4».** Ahora, «Opción 4».
+- **El control de «Agregar una comida habitual» quedaba desalineado al pie:** una pila de rótulo, lista y botón al lado
+  de «Agregar comida». Ahora van en un renglón.
+- **Al revisar el criterio se vio que faltaba una parte de C-38:** la pestaña cortaba un nombre largo también cuando
+  era la elegida, y el nombre entero no se leía en ningún lado. Ahora la elegida lo muestra entero (F-102).
+- **Un campo de nombre vacío desaparecía con la primera letra** que se escribía en él: se vio al razonar la
+  comprobación, antes de correrla. Corregido.
+- **La primera corrida del recorrido no llegó a empezar:** la API respondió 503 (la base no contestó a tiempo) mientras
+  se generaban los datos; la máquina estaba con poca memoria libre. Se repitió y pasó: no es de la pantalla.
+
+**Hallazgos fuera de lo dibujado.**
+- **Un nombre borrado llegaba a la API y volvía como «Plan → revisá este elemento»,** sin decir cuál (severidad media:
+  en el editor de antes el campo vacío estaba a la vista; en el nuevo podía no estarlo). Corregido (F-94).
+- **Al guardar, el teclado quedaba fuera de lugar:** los botones se deshabilitaban mientras se guardaba, y un botón
+  deshabilitado pierde el foco (media, de accesibilidad; es de antes y pasa en otras pantallas). Corregido en la
+  cabecera del editor (F-95); los demás botones del website siguen como estaban.
+- **El editor leía el objetivo vigente por segunda vez,** apenas después de la sección, y si esa segunda lectura
+  fallaba no lo decía (baja). Ahora usa el que ya leyó la sección.
+
+**Límites, dichos.**
+- **«Agregar una comida habitual» conserva su forma de antes:** una lista y un botón, en el lugar. El plan de
+  implementación proponía un diálogo; no es lo que hacía larga la pantalla, y funciona.
+- **La versión que entra, en el diálogo de activar, no dice su número** («Esta versión pasa a ser la vigente»): no lo
+  tiene hasta activarse. El dibujo dice «Versión 3».
+- **No se dibujan los rangos de macros ni la estimación de cada opción,** que la maqueta muestra al costado de la
+  comida abierta: son datos que hoy no existen o no llegan (definición, §6).
+- **No hay «bajar», ni mover una opción o un día tipo, ni deshacer:** no existían. «Actualizar» sigue preguntando y, si
+  se sigue, descarta lo escrito.
+- **Los topes del contrato y el nombre largo se miraron con una respuesta simulada** (siete días tipo, doce opciones):
+  el escenario de prueba tiene dos días tipo y hasta tres opciones.
+- **La falla al guardar antes de activar se miró con una respuesta simulada** en el navegador: la API y la base no se
+  tocan.
+- **Los botones del resto del website se siguen deshabilitando al enviar.** El cambio es solo de la cabecera de este
+  editor.
+- **Sin teléfono ni lector de pantalla reales:** el foco, los nombres accesibles y los avisos se comprobaron con el
+  navegador y con axe. 768 y 390 px se miraron para que no se rompa: el profesional trabaja en escritorio.
+
+**Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-7/editor/`: `ahora/` (42 capturas), `del-recorrido/` (6), `antes/` (3), `antes-y-ahora-1440-claro.png`,
+`resumen-de-la-pasada.txt` y `resultados/` (los resultados de cada recorrido, los veredictos de las roturas y las
+roturas de las reglas).
