@@ -530,7 +530,7 @@ function Preparacion({
       ) : null}
       {borrador && borrador.measurements.length === 0 && !algoEscrito ? <p className="nota">{COPY_ANTROPOMETRIA.sinContenidoRegistrable}</p> : null}
 
-      <div className="carga-de-la-toma__cuerpo">
+      <div className={`carga-de-la-toma__cuerpo${familia ? '' : ' carga-de-la-toma__cuerpo--sin-figura'}`}>
         {familia ? (
           <section className="tarjeta taller-de-la-carga" aria-labelledby="titulo-de-la-figura">
             <div className="taller-de-la-carga__cabecera">

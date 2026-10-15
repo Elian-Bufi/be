@@ -10415,6 +10415,18 @@ button.comida-del-dia__fila > .icono:last-child {
   min-width: 0;
 }
 
+/* Un protocolo sin sitios en la figura (peso y talla, por ejemplo): no hay escena, y los datos de la toma y sus
+   mediciones van lado a lado, a todo el ancho. */
+.carga-de-la-toma__cuerpo.carga-de-la-toma__cuerpo--sin-figura {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container carga (min-width: 48rem) {
+  .carga-de-la-toma__cuerpo--sin-figura .carga-de-la-toma__datos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @container carga (min-width: 48rem) and (max-width: 75.12rem) {
   .carga-de-la-toma__datos {
     grid-template-columns: repeat(2, minmax(0, 1fr));

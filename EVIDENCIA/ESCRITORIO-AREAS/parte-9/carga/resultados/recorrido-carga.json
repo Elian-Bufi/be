@@ -1,9 +1,9 @@
 {
   "modo": "carga",
-  "inicio": "2026-10-15T10:30:55.462Z",
-  "fin": "2026-10-15T10:31:30.531Z",
+  "inicio": "2026-10-15T11:39:41.134Z",
+  "fin": "2026-10-15T11:40:18.613Z",
   "hoy": "2026-10-15",
-  "total": 15,
+  "total": 16,
   "fallas": 0,
   "resultados": [
     {
@@ -65,7 +65,7 @@
       "pro": "F-132",
       "descripcion": "Guardar escribe una sola vez y manda lo escrito (la cintura y el tricipital, cada uno con su unidad). Después el título dice «Toma en preparación» con «Borrador», el estado «Guardado · …» con la hora que da la API, y el lleno pasa a «Registrar toma»; lo escrito sigue en los campos y la familia y la figura elegidas siguen igual",
       "ok": true,
-      "detalle": "pedidos: 1 · en la API: perimetro-cintura 84.5 cm, pliegue-triceps 12.5 mm · «Toma en preparación» «Borrador» · «Guardado · 15 oct 2026, 07:31» · Registrar toma (lleno), Guardar"
+      "detalle": "pedidos: 1 · en la API: perimetro-cintura 84.5 cm, pliegue-triceps 12.5 mm · «Toma en preparación» «Borrador» · «Guardado · 15 oct 2026, 08:39» · Registrar toma (lleno), Guardar"
     },
     {
       "pro": "F-134",
@@ -77,13 +77,19 @@
       "pro": "F-132",
       "descripcion": "«Cambios sin guardar» compara lo escrito con lo guardado: borrar el peso recién escrito deja todo como estaba y el estado vuelve a «Guardado · …», con «Registrar toma» lleno",
       "ok": true,
-      "detalle": "«Guardado · 15 oct 2026, 07:31»"
+      "detalle": "«Guardado · 15 oct 2026, 08:39»"
     },
     {
       "pro": "F-135",
       "descripcion": "A 1280 la figura conserva su escena (832 px o más) y los datos se angostan a su lado; a 1024 la escena ocupa el ancho y los datos van debajo; a 768 y 390 los campos van en lista, sin la figura. En ningún ancho la página se desborda de costado",
       "ok": true,
       "detalle": "1280: escena 832, datos 334 al lado, desborde 0 · 1024: escena 929, datos 963 debajo, desborde 0 · 768: escena 688 (lista), datos 722 debajo, desborde 0 · 390: escena 324 (lista), datos 358 debajo, desborde 0"
+    },
+    {
+      "pro": "F-131",
+      "descripcion": "Con un protocolo que no tiene sitios en la figura («Protocolo de laboratorio», peso y talla), no hay escena ni «Medidas en la figura»: los datos de la toma y sus mediciones van lado a lado, a todo el ancho, y lo escrito en la figura pasa a fuera del protocolo, sin perderse",
+      "ok": true,
+      "detalle": "escena: no · tarjetas: 32,330 (682 px) y 726,330 (682 px) · «0 de 2 mediciones cargadas, y 2 fuera del protocolo. No es historia hasta que la registres.»"
     },
     {
       "pro": "F-136",

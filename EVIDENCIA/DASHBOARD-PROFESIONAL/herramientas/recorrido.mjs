@@ -14106,6 +14106,31 @@ async function cargaDeUnaToma() {
       [1280, 1024, 768, 390].map((x) => `${x}: escena ${Math.round(a[x].escena?.ancho ?? 0)}${a[x].enLista ? ' (lista)' : ''}, datos ${Math.round(a[x].datos?.ancho ?? 0)} ${a[x].datos && a[x].escena && a[x].datos.y > a[x].escena.y + a[x].escena.alto ? 'debajo' : 'al lado'}, desborde ${a[x].desborde}`).join(' · '),
     );
 
+    // ── Un protocolo sin sitios en la figura ────────────────────────────────────────────────────────────────────────
+    const laboratorio = especificaciones.find((e) => /laboratorio/i.test(e.name));
+    if (laboratorio) {
+      const declaradas = dominio.metricasDelProtocolo(laboratorio.content);
+      await page.select('#ant-protocolo', laboratorio.versionId);
+      await pausa(500);
+      const sinFigura = await cargaEnPantalla(page);
+      const cajas = await page.evaluate(() => [...document.querySelectorAll('.carga-de-la-toma__datos > section')].map((x) => { const r = x.getBoundingClientRect(); return { x: r.left, y: r.top, ancho: r.width }; }));
+      comprobar(
+        'F-131',
+        'Con un protocolo que no tiene sitios en la figura («Protocolo de laboratorio», peso y talla), no hay escena ni «Medidas en la figura»: los datos de la toma y sus mediciones van lado a lado, a todo el ancho, y lo escrito en la figura pasa a fuera del protocolo, sin perderse',
+        !sinFigura.escena &&
+          sinFigura.segmentos.length === 0 &&
+          cajas.length === 2 &&
+          Math.abs(cajas[0].y - cajas[1].y) < 2 &&
+          cajas[1].x > cajas[0].x + cajas[0].ancho &&
+          sinFigura.cuenta.startsWith(`0 de ${declaradas.length} `) &&
+          / y 2 fuera del protocolo\./.test(sinFigura.cuenta) &&
+          sinFigura.desborde <= 0,
+        `escena: ${sinFigura.escena ? 'sí' : 'no'} · tarjetas: ${cajas.map((c) => `${Math.round(c.x)},${Math.round(c.y)} (${Math.round(c.ancho)} px)`).join(' y ')} · «${sinFigura.cuenta}»`,
+      );
+      await page.select('#ant-protocolo', perfil.versionId);
+      await pausa(500);
+    } else informar('F-131', 'Un protocolo sin sitios en la figura', 'el escenario no tiene el «Protocolo de laboratorio»: no se pudo mirar');
+
     // ── Accesibilidad en los dos temas ───────────────────────────────────────────────────────────────────────────────
     const axes = {};
     for (const tema of ['azul-noche', 'claro']) {
