@@ -96,5 +96,6 @@ export * from './solicitudes-de-informacion';
 export * from './versiones-de-plan';
 export * from './plan-de-nutricion';
 export * from './editor-del-plan-de-nutricion';
+export * from './editor-del-plan-de-entrenamiento';
 export * from './lectura-del-plan-de-entrenamiento';
 export * from './iconos';

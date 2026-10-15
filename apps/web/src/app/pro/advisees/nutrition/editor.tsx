@@ -53,6 +53,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
+import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -64,7 +65,7 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { AgregarItem } from './agregar-item';
-import { CampoDeNombre, ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
+import { ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
 import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 import { NoDisponible, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
@@ -528,6 +529,7 @@ export function EditorDeBorrador({
               valor={dia.label}
               maximo={80}
               enfocar={cambiandoElNombreDelDia}
+              despues={`dia-tipo-${i}`}
               alEmpezar={() => setNombreQueSeCambia({ de: 'dia', i })}
               alCambiar={(v) => cambiar((x) => ((x[i]!.label = v), x))}
               alTerminar={() => setNombreQueSeCambia(null)}

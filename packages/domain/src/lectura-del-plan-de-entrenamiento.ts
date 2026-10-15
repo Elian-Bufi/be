@@ -54,8 +54,8 @@ export function loQueSeMiraDelPlan(bloques: readonly Bloque[], pedido: PedidoDel
 }
 
 /** Cuántas sesiones tiene un bloque, contando las de sus microciclos: «2 sesiones». Sin ninguna, lo dice: no un cero. */
-export function sesionesDelBloque(bloque: Pick<Bloque, 'sessions' | 'microcycles'>): string {
-  const cuantas = bloque.sessions.length + bloque.microcycles.reduce((n, m) => n + m.sessions.length, 0);
+export function sesionesDelBloque(bloque: { readonly sessions?: readonly unknown[]; readonly microcycles?: readonly { readonly sessions: readonly unknown[] }[] }): string {
+  const cuantas = (bloque.sessions ?? []).length + (bloque.microcycles ?? []).reduce((n, m) => n + m.sessions.length, 0);
   if (cuantas === 0) return 'sin sesiones';
   return cuantas === 1 ? '1 sesión' : `${numero(cuantas)} sesiones`;
 }

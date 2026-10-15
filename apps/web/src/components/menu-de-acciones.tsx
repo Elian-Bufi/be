@@ -26,6 +26,7 @@ export interface AccionDelMenu {
 }
 
 export function MenuDeAcciones({
+  id: idDelBoton,
   rotulo,
   texto = null,
   acciones,
@@ -33,6 +34,8 @@ export function MenuDeAcciones({
   conFlecha = false,
   alineado = 'derecha',
 }: {
+  /** El identificador del botón, si hay que poder llevarle el foco desde afuera (al ir a un problema, al cerrar un nombre). */
+  id?: string;
   /** El nombre accesible del botón, que dice de qué son las acciones: «Más acciones de este día tipo». */
   rotulo: string;
   /** El texto a la vista, si lleva («Más»); sin texto, el botón es solo el ícono de los tres puntos. */
@@ -79,7 +82,7 @@ export function MenuDeAcciones({
         if (abierto && !(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setAbierto(false);
       }}
     >
-      <button ref={boton} type="button" className="boton boton--quieto menu-de-acciones__boton" aria-expanded={abierto} aria-controls={`${id}-panel`} aria-label={texto ? undefined : rotulo} title={texto ? undefined : rotulo} onClick={() => setAbierto((a) => !a)}>
+      <button ref={boton} id={idDelBoton} type="button" className="boton boton--quieto menu-de-acciones__boton" aria-expanded={abierto} aria-controls={`${id}-panel`} aria-label={texto ? undefined : rotulo} title={texto ? undefined : rotulo} onClick={() => setAbierto((a) => !a)}>
         <Icono nombre={icono} tamano={18} />
         {texto ? <span>{texto}</span> : null}
         {texto ? <span className="visualmente-oculto">: {rotulo}</span> : null}

@@ -10,7 +10,7 @@
  *   una receta va en lectura (DL-119).
  * - **Cada campo de la tabla dice de qué alimento es** en su nombre accesible; el título de la columna lo dice a la vista.
  * - **El nombre se cambia a pedido** («Cambiar el nombre»): el campo aparece en el lugar, con el foco adentro, y Enter o
- *   salir de él lo cierra. Lo que se acaba de agregar nace con el campo abierto.
+ *   salir de él lo cierra (`components/campo-de-nombre.tsx`). Lo que se acaba de agregar nace con el campo abierto.
  */
 import {
   cantidad as formatearCantidad,
@@ -27,9 +27,9 @@ import {
   type RecetaDeOpcion,
   type VersionDePlan,
 } from '@be/domain';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
-import { Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { numeroEnCampo } from '../../../../lib/formato';
@@ -44,66 +44,6 @@ type Unidad = 'g' | 'ml' | 'unit';
 
 /** Qué nombre se está cambiando dentro de una comida: el de la comida o el de una de sus opciones. */
 export type NombreEnEdicion = { readonly de: 'comida' } | { readonly de: 'opcion'; readonly opcion: number } | null;
-
-/**
- * El campo de un nombre. Se muestra a pedido («Cambiar el nombre») y entonces toma el foco, con el texto seleccionado;
- * Enter o salir de él lo cierra. **Lo que no tiene nombre lo muestra siempre** (sin nombre no se puede guardar), y ahí no
- * toma el foco: abrir una comida no lo saca de donde estaba. Al entrar a escribir en él, pasa a ser el nombre que se
- * está cambiando: si no, desaparecería con la primera letra.
- */
-export function CampoDeNombre({
-  id,
-  etiqueta,
-  valor,
-  maximo,
-  enfocar,
-  alEmpezar,
-  alCambiar,
-  alTerminar,
-}: {
-  id: string;
-  etiqueta: string;
-  valor: string;
-  maximo: number;
-  /** Es el nombre que se está cambiando: toma el foco. */
-  enfocar: boolean;
-  alEmpezar: () => void;
-  alCambiar: (v: string) => void;
-  alTerminar: () => void;
-}) {
-  const campo = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (!enfocar || document.activeElement === campo.current) return;
-    campo.current?.focus();
-    campo.current?.select();
-  }, [enfocar]);
-  return (
-    <div className="nombre-a-pedido">
-      <Campo
-        ref={campo}
-        id={id}
-        etiqueta={etiqueta}
-        value={valor}
-        maxLength={maximo}
-        onChange={(e) => {
-          // Si se escribe en un campo que estaba a la vista por estar vacío, pasa a ser el que se está cambiando.
-          if (!enfocar) alEmpezar();
-          alCambiar(e.target.value);
-        }}
-        onFocus={() => {
-          if (!enfocar) alEmpezar();
-        }}
-        onBlur={alTerminar}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter') return;
-          e.preventDefault();
-          // Enter confirma el nombre; vacío no hay nada que confirmar, y el campo sigue ahí para escribirlo.
-          if (valor.trim() !== '') alTerminar();
-        }}
-      />
-    </div>
-  );
-}
 
 export function ComidaDelEditor({
   id,
@@ -207,6 +147,7 @@ export function ComidaDelEditor({
                 valor={comida.label}
                 maximo={80}
                 enfocar={cambiandoElNombre}
+                despues={`abrir-comida-${id}`}
                 alEmpezar={() => alEditarNombre({ de: 'comida' })}
                 alCambiar={(v) => alCambiar((m) => void (m.label = v))}
                 alTerminar={() => alEditarNombre(null)}
@@ -218,7 +159,7 @@ export function ComidaDelEditor({
                   <legend className="visualmente-oculto">Opción de {plegada.titulo} que se edita</legend>
                   {comida.options.map((o, n) => (
                     <label key={o.optionId ?? `nueva-${n}`} className="pestana-de-opcion" data-receta={o.recipeVersionId ? '' : undefined}>
-                      <input type="radio" name={`${propio}-opcion`} checked={n === k} onChange={() => alElegirOpcion(n)} />
+                      <input type="radio" id={`pestana-${id}-${n}`} name={`${propio}-opcion`} checked={n === k} onChange={() => alElegirOpcion(n)} />
                       {o.recipeVersionId ? <Icono nombre="receta" tamano={18} /> : null}
                       <span>{pestanaDeLaOpcion(o, n)}</span>
                     </label>
@@ -257,6 +198,7 @@ export function ComidaDelEditor({
                     valor={opcion.label}
                     maximo={120}
                     enfocar={cambiandoElDeLaOpcion}
+                    despues={`pestana-${id}-${k}`}
                     alEmpezar={() => alEditarNombre({ de: 'opcion', opcion: k })}
                     alCambiar={(v) => alCambiar((m) => void (m.options[k]!.label = v))}
                     alTerminar={() => alEditarNombre(null)}

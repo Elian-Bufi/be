@@ -9711,3 +9711,425 @@ button.comida-del-dia__fila > .icono:last-child {
     padding: 0 0.75rem 0.6rem;
   }
 }
+
+/* ─── Entrenamiento · La versión en preparación (WP-ESCRITORIO-AREAS, parte 8; maqueta 28) ───────── */
+/* Usa el armado del editor del plan de comidas (la cabecera con el estado del guardado, el renglón que se abre, los
+   problemas que llevan a su lugar) y los niveles del plan activo de Entrenamiento, y suma lo propio: lo que va al lado
+   de cada nivel (agregar, su menú, su propósito) y, en un ejercicio abierto, la tabla de sus series con lo general al
+   costado. */
+
+/* Un nivel: el control que elige, «Agregar», el menú y lo que se dice de lo elegido, en un renglón mientras entren. */
+.niveles-del-editor .nivel-del-plan {
+  gap: 0.4rem 0.6rem;
+}
+
+.niveles-del-editor .nivel-del-plan__detalle {
+  flex: 0 1 auto;
+}
+
+.niveles-del-editor .nivel-del-plan > .nota {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* La cuenta de la sesión, al final de su renglón. */
+.nivel-del-plan__cuenta {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Un texto que se cambia a pedido (el propósito, las indicaciones): se lee con su rótulo y «Cambiar» al lado. */
+.texto-a-pedido {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.texto-a-pedido > .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* En el renglón de un nivel va al final si entra; un texto largo baja y ocupa el suyo. */
+.nivel-del-plan > .texto-a-pedido {
+  margin-left: auto;
+}
+
+/* Abierto es un campo: ocupa su renglón, desde la izquierda, sin estirarse a todo el ancho. */
+.texto-a-pedido--abierto,
+.nivel-del-plan > .texto-a-pedido--abierto {
+  flex: 1 1 100%;
+  max-width: 46rem;
+  margin: 0;
+}
+
+.texto-a-pedido--abierto input,
+.texto-a-pedido--abierto textarea {
+  width: 100%;
+}
+
+/* «Agregar una sesión habitual», a pedido: la lista, su botón y «Cancelar», en un renglón. */
+.sesion-habitual-a-pedido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+}
+
+.sesion-habitual-a-pedido > .campo {
+  flex: 0 1 44rem;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.sesion-habitual-a-pedido > .campo > select {
+  flex: 1 1 14rem;
+  width: auto;
+  min-width: 0;
+}
+
+.sesion-habitual-a-pedido > .boton--enlace {
+  min-height: 44px;
+}
+
+/* Los ejercicios miden su ancho: de eso depende si lo general entra al costado de las series. */
+.ejercicios-del-editor {
+  container: ejercicios / inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.ejercicios-del-editor > .nota {
+  margin: 0;
+}
+
+.ejercicios-del-editor .editor-del-plan__al-pie {
+  align-items: center;
+}
+
+/* Un ejercicio abierto: sus series y, al costado, lo general. */
+.ejercicio-del-editor__cuerpo:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+  align-items: start;
+  gap: 1rem 1.75rem;
+}
+
+.ejercicio-del-editor__series {
+  min-width: 0;
+}
+
+.ejercicio-del-editor__series > .nota {
+  margin: 0 0 0.6rem;
+}
+
+.ejercicio-del-editor__general {
+  min-width: 0;
+  padding-left: 1.75rem;
+  border-left: 1px solid var(--borde);
+}
+
+.ejercicio-del-editor__general .ejercicio-del-plan__subtitulo .nota {
+  margin-left: 0.4rem;
+  font-weight: 400;
+}
+
+/* La tabla de series: una fila por serie y, en cada celda, un campo. Las columnas tienen ancho fijo, para que al agregar
+   una serie o pasar de un ejercicio a otro los campos no cambien de lugar; la nota ocupa lo que sobra. */
+.series-del-editor {
+  table-layout: fixed;
+  margin: 0 0 0.5rem;
+}
+
+.series-del-editor th,
+.series-del-editor td {
+  padding: 0.25rem 0.3rem;
+  border-bottom: 0;
+  vertical-align: middle;
+}
+
+.series-del-editor thead th {
+  padding-bottom: 0.1rem;
+  border-bottom: 0;
+  line-height: 1.25;
+  vertical-align: bottom;
+}
+
+.series-del-editor thead th .nota {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.series-del-editor thead th:first-child {
+  width: 3rem;
+}
+
+.series-del-editor thead th:nth-child(2) {
+  width: 6rem;
+}
+
+.series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(:last-child) {
+  width: 8.5rem;
+}
+
+.series-del-editor tbody th[scope="row"] {
+  font-weight: 700;
+}
+
+/* Cada campo de la tabla, con el borde de los campos del website y el alto táctil. */
+.series-del-editor .celda-de-serie,
+.celda-de-objetivo {
+  width: 100%;
+  min-height: 44px;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.series-del-editor .celda-de-serie {
+  padding: 0.3rem 0.6rem;
+}
+
+.series-del-editor td[data-etiqueta="Repeticiones"] .celda-de-serie {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La celda de un objetivo: el campo y, a su derecha, la flecha que deja elegir «Sin objetivo» o «Tomar de lo general». */
+.celda-de-objetivo {
+  display: flex;
+  align-items: stretch;
+}
+
+.celda-de-objetivo > input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0.3rem 0.1rem 0.3rem 0.6rem;
+  border: 0;
+  border-radius: 9px 0 0 9px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sin un valor escrito, la celda dice lo que la serie recibe: en gris, lo que toma de lo general; en el color del texto,
+   «Sin objetivo» elegido para esa serie. */
+.celda-de-objetivo > input::placeholder {
+  color: var(--texto);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.celda-de-objetivo > input[data-en-gris]::placeholder {
+  color: var(--tenue);
+  font-weight: 400;
+}
+
+/* «Sin objetivo» es un texto, no un número: va desde la izquierda y un poco más chico, para entrar en la celda. */
+.celda-de-objetivo > input[data-texto] {
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.celda-de-objetivo[data-estado="no-se-entiende"],
+.series-del-editor .celda-de-serie[aria-invalid="true"] {
+  border-width: 2px;
+  border-color: var(--error);
+}
+
+.celda-de-objetivo .menu-de-acciones {
+  flex: none;
+}
+
+.celda-de-objetivo .menu-de-acciones__boton {
+  min-width: 30px;
+  min-height: 0;
+  height: 100%;
+  padding: 0 0.25rem;
+  border: 0;
+  border-radius: 0 9px 9px 0;
+  background: none;
+}
+
+/* Al pie de la tabla: «Agregar serie», qué quiere decir el gris y «Quitar la última serie». */
+.ejercicio-del-editor__pie-de-series {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.ejercicio-del-editor__pie-de-series > .nota {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+/* Lo general: los datos cortos, de a dos por renglón; los textos, a lo ancho. */
+.lo-general-del-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.lo-general-del-editor > .nota {
+  margin: 0;
+}
+
+.lo-general-del-editor .campo {
+  margin: 0;
+}
+
+.lo-general-del-editor .campo input {
+  width: 100%;
+}
+
+.lo-general-del-editor__par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.6rem 0.75rem;
+}
+
+/* La carga con su unidad: el número ocupa lo que sobra y la unidad, lo suyo. */
+.lo-general-del-editor__carga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.4rem;
+}
+
+.lo-general-del-editor__carga select {
+  width: auto;
+}
+
+/* Lo que va a un clic: un renglón que se despliega. */
+.a-un-clic > summary {
+  width: fit-content;
+  min-height: 32px;
+  padding: 0.2rem 0;
+  color: var(--enlace);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.a-un-clic[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+.parametros-del-editor {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.parametros-del-editor > p {
+  margin: 0;
+}
+
+.parametros-del-editor .fila-de-dato {
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.parametros-del-editor > .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+}
+
+/* Por debajo de unos 1.200 px de ancho para los ejercicios (una ventana de 1280), lo general va debajo de la tabla, en dos
+   columnas, y la raya pasa arriba: al costado le dejaría a la nota una columna de unos 80 px (DEC-30). */
+@container ejercicios (max-width: 76rem) {
+  .ejercicio-del-editor__cuerpo:not([hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ejercicio-del-editor__general {
+    padding: 1rem 0 0;
+    border-top: 1px solid var(--borde);
+    border-left: 0;
+  }
+
+  .lo-general-del-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem 1.5rem;
+  }
+
+  .lo-general-del-editor > .nota,
+  .lo-general-del-editor > details,
+  .lo-general-del-editor > .parametros-del-editor {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Angosto (una tableta de pie, un teléfono): cada serie es un bloque con su número y, debajo, sus campos con su rótulo. */
+@container ejercicios (max-width: 46rem) {
+  .lo-general-del-editor,
+  .lo-general-del-editor__par {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .series-del-editor thead {
+    display: none;
+  }
+
+  .series-del-editor,
+  .series-del-editor tbody {
+    display: block;
+  }
+
+  .series-del-editor tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem 0.6rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .series-del-editor th[scope="row"],
+  .series-del-editor .series-del-editor__nota {
+    grid-column: 1 / -1;
+  }
+
+  .series-del-editor th,
+  .series-del-editor td {
+    display: block;
+    padding: 0;
+  }
+
+  .series-del-editor th[scope="row"]::before,
+  .series-del-editor td[data-etiqueta]::before {
+    content: attr(data-etiqueta) " ";
+    display: inline;
+    color: var(--tenue);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .series-del-editor td[data-etiqueta]::before {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .nivel-del-plan__cuenta,
+  .nivel-del-plan > .texto-a-pedido {
+    margin-left: 0;
+  }
+}

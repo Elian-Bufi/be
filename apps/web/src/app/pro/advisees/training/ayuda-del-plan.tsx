@@ -2,10 +2,11 @@
 
 /**
  * «Cómo se lee esta vista», para Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6): qué es la versión activa, cómo se
- * elige lo que se mira y qué quiere decir cada cosa que la pantalla escribe. El botón y el diálogo son los de la ficha
+ * elige lo que se mira y qué quiere decir cada cosa que la pantalla escribe. Desde la parte 8, también lo que escribe el
+ * editor de la versión en preparación: lo que antes era una ayuda fija junto a cada campo (DEC-28). El botón y el diálogo son los de la ficha
  * (`AyudaDeVista`); va en el marco del área.
  */
-import { COPY_DEL_PLAN_DE_ENTRENAMIENTO as C, COPY_ENTRENAMIENTO_POR_SERIE } from '@be/domain';
+import { COPY_DEL_PLAN_DE_ENTRENAMIENTO as C, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE } from '@be/domain';
 import { AyudaDeVista, RenglonDeAyuda as Renglon } from '../../../../components/ayuda-de-vista';
 import { EnPartes } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
@@ -51,6 +52,18 @@ export function AyudaDelPlanDeEntrenamiento() {
         </Renglon>
         <Renglon muestra={<Icono nombre="borrador" tamano={20} />}>
           <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. El asesorado no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="series" tamano={20} />}>
+          <strong>En la versión en preparación, cada serie se escribe en una fila.</strong> En gris, lo que la serie toma de lo general del ejercicio; un valor escrito es el suyo; «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}», que se elige con la flecha de la celda, quiere decir que esa
+          serie no tiene ese objetivo aunque lo general lo tenga. Lo que ves en la tabla es lo que recibe tu asesorado.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="descanso" tamano={20} />}>
+          <strong>El descanso se lee «02:30»,</strong> minutos y segundos; se escribe así o en segundos («150»), y 0 es sin pausa. <strong>RIR</strong> quiere decir repeticiones en reserva: cada serie puede tener el suyo, si el criterio
+          de intensidad del ejercicio es RIR.
+        </Renglon>
+        <Renglon muestra={<Icono nombre="aviso" tamano={20} />}>
+          <strong>Lo que no se entiende no se guarda.</strong> Un dato mal escrito se marca en su lugar, el ejercicio lo dice en su renglón y «Guardar cambios» lista dónde está cada cosa: cada renglón te lleva hasta ahí.
+          {COPY_ENTRENAMIENTO.noJuzga}
         </Renglon>
         <Renglon muestra={<Icono nombre="actualizar" tamano={20} />}>
           <strong>Lo que elegís queda en la dirección de la página</strong> (la versión, el bloque, la sesión y los ejercicios abiertos): «Actualizar» y volver atrás lo conservan.

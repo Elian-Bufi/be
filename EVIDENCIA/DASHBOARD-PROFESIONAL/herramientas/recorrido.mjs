@@ -11761,21 +11761,332 @@ async function planesDeEntrenamiento() {
       `escrituras: ${guardadas} · aviso: ${avisoDeGuardada ? 'sí' : 'no'} · lecturas al abrir: ${leidasAlAbrir} · «${laGuardada?.nombre}»: ${laGuardada?.detalle} · con la falla: «${(conFallaDePlantillas?.falla ?? '').slice(0, 80)}»`,
     );
 
-    // ── Crear una versión nueva, mirar la activa sin perder lo escrito, y activar ────────────────────────────────
+    // ── Crear una versión nueva y editarla con el editor recompuesto (WP-ESCRITORIO-AREAS, parte 8; maqueta 28) ──────
     const antesDeCrear = v.urls.length;
     await clic(page, '[data-crear-version]', 'Crear nueva versión a partir de esta');
     const avisoDeCreada = await esperarAviso('Borrador creado.');
     await page.waitForSelector('[data-selector-de-version]', { timeout: 30_000 }).catch(() => {});
+    await page.waitForSelector('.plan__preparacion .editor-de-entrenamiento .ejercicio-del-editor', { timeout: 30_000 }).catch(() => {});
     await quieto(page, v);
     const conBorrador = await planDeEntrenamientoEnPantalla(page);
     const creadas = escriturasDesde(antesDeCrear, '/training/plans').length;
     const elBorrador = (await leerTodo()).lista.find((x) => x.state === 'DRAFT');
+
+    // La versión en preparación recién creada es una copia de la activa: dos bloques, el primero con dos sesiones y el
+    // segundo con dos microciclos. Lo que el editor tiene que decir se escribe a mano con lo que devuelve la API (y con
+    // lo que ya se esperaba del plan activo): no se usa el módulo del dominio que arma la pantalla.
+    const EDITOR = '.plan__preparacion .editor-de-entrenamiento';
+    const ID_DEL_BORRADOR = elBorrador.planId;
+    const leerElBorrador = async () => (await leerApi(v, `/training/plans/${ID_DEL_BORRADOR}/detail`)).data;
+    const coma = (n) => String(n).replace('.', ',');
+    const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    const porOrden = (xs) => [...xs].sort((a, b) => a.order - b.order);
+    const sesionesDe = (b) => (b.microcycles.length > 0 ? porOrden(b.microcycles).flatMap((m) => porOrden(m.sessions)) : porOrden(b.sessions));
+    /**
+     * Lo que tiene que mostrar cada celda de un objetivo de una serie, escrito a mano con la API: la clave que no está es
+     * «toma de lo general» (en gris, con el valor de lo general o «Sin objetivo»); `null`, «Sin objetivo» elegido para la
+     * serie; un número, el propio.
+     */
+    const celdaEsperada = (serie, clave, general, escribir) => {
+      if (!(clave in serie) || serie[clave] === undefined) return { estado: 'de-lo-general', valor: '', gris: true, sinValor: general === null ? 'Sin objetivo' : escribir(general) };
+      if (serie[clave] === null) return { estado: 'sin-objetivo', valor: '', gris: false, sinValor: 'Sin objetivo' };
+      const n = clave === 'suggestedLoad' ? serie[clave].value : serie[clave];
+      return { estado: 'propio', valor: escribir(n), gris: true, sinValor: general === null ? 'Sin objetivo' : escribir(general) };
+    };
+    const filasEsperadas = (p) =>
+      [...p.sets]
+        .sort((a, b) => a.setIndex - b.setIndex)
+        .map((s, n) => ({
+          numero: String(n + 1),
+          repeticiones: s.target.repetitions ? ('value' in s.target.repetitions ? String(s.target.repetitions.value) : `${s.target.repetitions.min}-${s.target.repetitions.max}`) : '',
+          celdas: [
+            celdaEsperada(s, 'suggestedLoad', p.suggestedLoad ? p.suggestedLoad.value : null, coma),
+            ...(p.intensity?.criterion === 'RIR' ? [celdaEsperada(s, 'rir', p.intensity.target.value, coma)] : []),
+            celdaEsperada(s, 'restSeconds', p.restSeconds, mmss),
+          ],
+          nota: s.note ?? '',
+        }));
+    /** Lo que el editor tiene a la vista. */
+    const elEditor = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+        const caja = (e) => {
+          if (!e) return null;
+          const r = e.getBoundingClientRect();
+          return { x: Math.round(r.left), y: Math.round(r.top + window.scrollY), ancho: Math.round(r.width), alto: Math.round(r.height) };
+        };
+        const raiz = document.querySelector(s);
+        if (!raiz) return null;
+        const nombre = raiz.querySelector('.nombre-a-pedido input');
+        const textoAbierto = raiz.querySelector('.texto-a-pedido--abierto input, .texto-a-pedido--abierto textarea');
+        const panel = raiz.querySelector('.menu-de-acciones[data-abierto] .menu-de-acciones__lista');
+        const nivel = (clave) => {
+          const n = raiz.querySelector(`.niveles-del-editor > .nivel-del-plan[data-nivel="${clave}"]`);
+          if (!n) return null;
+          const segmentos = [...n.querySelectorAll('.segmento')];
+          return {
+            forma: n.dataset.forma,
+            opciones: segmentos.map((x) => ({ texto: t(x), elegido: x.querySelector('input').checked })),
+            elegido: n.dataset.forma === 'unico' ? t(n.querySelector('.nivel-del-plan__unico strong')) : t(segmentos.find((x) => x.querySelector('input').checked)),
+            detalle: t(n.querySelector('.nivel-del-plan__detalle')),
+            cuenta: t(n.querySelector('[data-cuenta-de-la-sesion]')),
+            proposito: t(n.querySelector('.texto-a-pedido .texto-a-pedido__texto')),
+            ofreceProposito: t(n.querySelector('.texto-a-pedido > .boton--enlace')),
+            sinNada: t(n.querySelector(':scope > .nota')),
+          };
+        };
+        return {
+          estado: t(raiz.querySelector('.editor-del-plan__estado')),
+          acciones: [...raiz.querySelectorAll('.editor-del-plan__acciones > button, .editor-del-plan__acciones > .menu-de-acciones > button')].map((b) => ({
+            nombre: b.getAttribute('aria-label') ?? t(b),
+            apagado: b.disabled || b.getAttribute('aria-disabled') === 'true',
+            deshabilitado: b.disabled,
+            describe: b.getAttribute('aria-describedby'),
+          })),
+          motivoSinActivar: t(document.getElementById('motivo-sin-activar')),
+          bloque: nivel('bloque'),
+          microciclo: nivel('microciclo'),
+          sesion: nivel('sesion'),
+          indicaciones: t(raiz.querySelector('.niveles-del-editor > .texto-a-pedido .texto-a-pedido__texto')),
+          ejercicios: [...raiz.querySelectorAll('.ejercicio-del-editor')].map((e) => ({
+            posicion: Number(e.dataset.ejercicio),
+            abierto: e.hasAttribute('data-abierta'),
+            expandido: e.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+            nombre: t(e.querySelector('.comida-del-plan__nombre')),
+            resumen: t(e.querySelector('[data-resumen]')),
+            avisos: t(e.querySelector('[data-avisos]')),
+            columnas: [...e.querySelectorAll('.series-del-editor thead th')].map(t),
+            filas: [...e.querySelectorAll('.series-del-editor tbody tr')].map((tr) => ({
+              numero: t(tr.querySelector('th')),
+              repeticiones: tr.querySelector('td[data-etiqueta="Repeticiones"] input')?.value ?? null,
+              celdas: [...tr.querySelectorAll('.celda-de-objetivo')].map((c) => {
+                const i = c.querySelector('input');
+                return { estado: c.dataset.estado, valor: i.value, gris: i.hasAttribute('data-en-gris'), sinValor: i.placeholder };
+              }),
+              nota: tr.querySelector('.series-del-editor__nota input')?.value ?? null,
+            })),
+            invalidas: [...e.querySelectorAll('[aria-invalid="true"]')].map((x) => x.id),
+            errores: [...e.querySelectorAll('.campo__error')].map((x) => t(x).replace('⚠', '').trim()),
+            general: e.querySelector('.lo-general-del-editor')
+              ? {
+                  criterio: e.querySelector('select[id$="-criterio"]')?.value ?? null,
+                  objetivo: e.querySelector('input[id$="-objetivo"]')?.value ?? null,
+                  carga: e.querySelector('input[id$="-carga"]:not([id*="-serie-"])')?.value ?? null,
+                  unidad: e.querySelector('select[id$="-unidad"]')?.value ?? null,
+                  descanso: e.querySelector('input[id$="-descanso"]:not([id*="-serie-"])')?.value ?? null,
+                  nota: e.querySelector('textarea[id$="-nota"]')?.value ?? null,
+                }
+              : null,
+            cajaDeSeries: caja(e.querySelector('.ejercicio-del-editor__series')),
+            cajaDeLoGeneral: caja(e.querySelector('.ejercicio-del-editor__general')),
+          })),
+          sinEjercicios: t(raiz.querySelector('.ejercicios-del-editor > .nota')),
+          campos: [...raiz.querySelectorAll('input:not([type="radio"]), select, textarea')].filter(aLaVista).map((e) => e.id),
+          nombreAbierto: nombre ? { id: nombre.id, valor: nombre.value, conFoco: document.activeElement === nombre, seleccionado: nombre.value.length > 0 && nombre.selectionStart === 0 && nombre.selectionEnd === nombre.value.length } : null,
+          textoAbierto: textoAbierto ? { id: textoAbierto.id, valor: textoAbierto.value, conFoco: document.activeElement === textoAbierto } : null,
+          menu: panel ? [...panel.querySelectorAll(':scope > li')].map((li) => ({ texto: t(li.querySelector('button')), apagada: li.querySelector('button').disabled, motivo: t(li.querySelector('.menu-de-acciones__motivo')) })) : null,
+          aviso: t(raiz.querySelector(':scope > .aviso--error p')),
+          problemas: [...raiz.querySelectorAll('.problemas-del-plan li')].map((li) => ({ texto: t(li), esBoton: !!li.querySelector('button[data-problema]') })),
+          notaDeValidar: t(raiz.querySelector(':scope > .aviso--error > .nota, :scope > .aviso--error .nota:last-child')),
+          foco: document.activeElement?.id || null,
+          alto: document.documentElement.scrollHeight,
+          texto: t(raiz),
+        };
+      }, EDITOR);
+    const enElEditor = async (selector, contiene) => {
+      await clic(page, `${EDITOR} ${selector}`, contiene);
+      await pausa(250);
+    };
+    const tocarNivelDelEditor = (nivel, nombre) => enElEditor(`.niveles-del-editor > .nivel-del-plan[data-nivel="${nivel}"] .segmento`, nombre);
+    /** Abre o pliega un ejercicio de la sesión que se mira, por su posición (desde uno). */
+    const alternarEjercicio = async (n) => {
+      await page.click(`${EDITOR} .ejercicio-del-editor[data-ejercicio="${n}"] .comida-del-plan__boton`);
+      await pausa(250);
+    };
+    /** Abre un menú del editor por el selector de su botón (`#menu-del-bloque`, o el de una celda). */
+    const abrirMenu = async (boton) => {
+      await page.click(`${EDITOR} ${boton}`);
+      await page.waitForSelector(`${EDITOR} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, { timeout: 5_000 }).catch(() => {});
+    };
+    const elegirDelMenu = async (texto) => {
+      await clic(page, `${EDITOR} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, texto);
+      await pausa(250);
+    };
+    /** El botón de la celda de un objetivo, por el identificador de su campo. */
+    const menuDeLaCelda = (id) => `.celda-de-objetivo:has(#${id}) .menu-de-acciones__boton`;
+    /** Escribe en un campo del editor reemplazando lo que tenía, y sale de él (lo que se entendió pasa a su forma). */
+    const escribirEn = async (id, texto, { salir = true } = {}) => {
+      await page.focus(`#${id}`);
+      await page.evaluate((x) => document.getElementById(x).select(), id);
+      await page.keyboard.type(texto);
+      if (salir) await page.keyboard.press('Tab');
+      await pausa(200);
+    };
+    const tocarAccionDelEditor = (texto) => enElEditor('.editor-del-plan__acciones > button', texto);
+    /** Las escrituras sobre la versión en preparación, por lo que hacen: guardar (PATCH), validar y activar. */
+    const escriturasDelBorrador = (desde) => {
+      const todas = v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(`/training/plans/${ID_DEL_BORRADOR}`));
+      return { guardar: todas.filter((u) => u.startsWith('PATCH ')).length, validar: todas.filter((u) => u.endsWith('/validate')).length, activar: todas.filter((u) => u.endsWith('/activate')).length };
+    };
+    const pedidosDesde = (desde) => v.urls.slice(desde).filter((u) => !u.startsWith('OPTIONS ')).length;
+    const esperarEstado = async (estadoEsperado) => {
+      await page.waitForFunction((s, e) => document.querySelector(`${s} .editor-del-plan__estado`)?.innerText.trim() === e, { timeout: 40_000 }, EDITOR, estadoEsperado).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+    };
+    const sinMotivo = (texto) => ({ texto, apagada: false, motivo: null });
+
+    // ── Al entrar ──
+    const DB = await leerElBorrador();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const alEntrarAlEditor = await elEditor();
+    await captura(page, v, 'editor-de-entrenamiento-al-entrar-1440-claro');
+    const bA = porOrden(DB.blocks)[0];
+    comprobar(
+      'F-103',
+      'La versión en preparación se abre en una sesión, con sus ejercicios plegados: cada uno en un renglón que dice lo que piden sus series, el mismo renglón que el plan activo (es una copia), calculado a mano con la API. Arriba, el estado del guardado y, en este orden, el menú de la versión, «Validar plan», «Activar plan» y «Guardar cambios», apagado (apagado, no deshabilitado: conserva el foco). El bloque y la sesión, con los nombres de la API; al lado del bloque, cuántas sesiones tiene y su propósito con «Cambiar»; al lado de la sesión, cuántos ejercicios y series tiene; debajo, sus indicaciones. No hay ningún campo a la vista, y la página entera mide menos de 1.000 px a 1440 (medía 28.413)',
+      !!alEntrarAlEditor &&
+        creadas === 1 &&
+        !!elBorrador &&
+        alEntrarAlEditor.estado === 'Guardado' &&
+        igual(alEntrarAlEditor.acciones.map((a) => [a.nombre, a.apagado, a.deshabilitado]), [
+          ['Más acciones de esta versión', false, false],
+          ['Validar plan', false, false],
+          ['Activar plan', false, false],
+          ['Guardar cambios', true, false],
+        ]) &&
+        alEntrarAlEditor.bloque?.forma === 'botones' &&
+        igual(alEntrarAlEditor.bloque.opciones, E.bloques.map((b, i) => ({ texto: b.nombre, elegido: i === 0 }))) &&
+        alEntrarAlEditor.bloque.detalle === E.bloques[0].detalle.split(' · ')[0] &&
+        alEntrarAlEditor.bloque.proposito === bA.purpose &&
+        alEntrarAlEditor.microciclo === null &&
+        igual(alEntrarAlEditor.sesion?.opciones, b1.sesiones.map((x, i) => ({ texto: x.nombre, elegido: i === 0 }))) &&
+        alEntrarAlEditor.sesion.detalle === 'Sin día asignado: tu asesorado elige cuál hace.' &&
+        alEntrarAlEditor.sesion.cuenta === sA.cuenta &&
+        alEntrarAlEditor.indicaciones === sA.indicaciones &&
+        igual(alEntrarAlEditor.ejercicios.map((e) => [e.posicion, e.nombre, e.resumen, e.abierto, e.expandido, e.avisos]), sA.ejercicios.map((x, i) => [i + 1, x.nombre, x.cerrado, false, 'false', null])) &&
+        alEntrarAlEditor.campos.length === 0 &&
+        alEntrarAlEditor.nombreAbierto === null &&
+        alEntrarAlEditor.alto <= 1000 &&
+        ['bloque', 'micro', 'sesion', 'ejercicios'].every((k) => P().get(k) === null),
+      `${alEntrarAlEditor?.alto} px · «${alEntrarAlEditor?.estado}» · ${alEntrarAlEditor?.acciones.map((a) => `${a.nombre}${a.apagado ? ' (apagado)' : ''}`).join(' | ')} · bloque: ${alEntrarAlEditor?.bloque?.opciones.map((o) => o.texto).join(' | ')} («${alEntrarAlEditor?.bloque?.detalle}», «${alEntrarAlEditor?.bloque?.proposito}») · ${alEntrarAlEditor?.sesion?.cuenta} · ${alEntrarAlEditor?.ejercicios.map((e) => `${e.nombre}: ${e.resumen}`).join(' | ')} · campos: ${alEntrarAlEditor?.campos.length}`,
+    );
+
+    // ── Lo que se mira, en la dirección, por posición ──
+    const antesDeMirar = v.urls.length;
+    await tocarNivelDelEditor('sesion', sB.nombre);
+    const enLaSesionB = await elEditor();
+    const dirSesionB = direccion();
+    await alternarEjercicio(1);
+    const dirConUnoAbierto = direccion();
+    await tocarNivelDelEditor('bloque', b2.nombre);
+    const enElBloque2 = await elEditor();
+    const dirBloque2 = direccion();
+    await tocarNivelDelEditor('microciclo', b2.microciclos[1].nombre);
+    const enElMicro2 = await elEditor();
+    const dirMicro2 = direccion();
+    await tocarNivelDelEditor('bloque', b1.nombre);
+    const dirDeVuelta = direccion();
+    const pedidosAlMirar = pedidosDesde(antesDeMirar);
+    comprobar(
+      'F-104',
+      'Lo que se mira en el editor vive en la dirección, por su posición: elegir la segunda sesión escribe `sesion=2` y muestra sus ejercicios (los de la API), plegados; abrir el primero escribe `ejercicios=1`. Elegir el segundo bloque escribe `bloque=2` y quita la sesión y los ejercicios; ese bloque usa microciclos: aparece su renglón, con el primero elegido, y la sesión, que es una sola, se dice por su nombre; elegir el segundo microciclo escribe `micro=2`. Volver al primer bloque limpia la dirección. Nada de eso le pide algo a BE',
+      dirSesionB.sesion === '2' &&
+        igual(enLaSesionB?.ejercicios.map((e) => [e.nombre, e.resumen, e.abierto]), sB.ejercicios.map((x) => [x.nombre, x.cerrado, false])) &&
+        enLaSesionB.sesion?.cuenta === sB.cuenta &&
+        dirConUnoAbierto.ejercicios === '1' &&
+        dirBloque2.bloque === '2' &&
+        dirBloque2.sesion === undefined &&
+        dirBloque2.ejercicios === undefined &&
+        igual(enElBloque2?.microciclo?.opciones, b2.microciclos.map((m, i) => ({ texto: m.nombre, elegido: i === 0 }))) &&
+        enElBloque2.sesion?.forma === 'unico' &&
+        enElBloque2.sesion.elegido === b2.microciclos[0].sesiones[0].nombre &&
+        igual(enElBloque2.ejercicios.map((e) => e.resumen), b2.microciclos[0].sesiones[0].ejercicios.map((x) => x.cerrado)) &&
+        dirMicro2.micro === '2' &&
+        enElMicro2?.sesion?.elegido === b2.microciclos[1].sesiones[0].nombre &&
+        ['bloque', 'micro', 'sesion', 'ejercicios'].every((k) => dirDeVuelta[k] === undefined) &&
+        pedidosAlMirar === 0,
+      `sesion=${dirSesionB.sesion} · ejercicios=${dirConUnoAbierto.ejercicios} · bloque=${dirBloque2.bloque} (${enElBloque2?.microciclo?.opciones.map((o) => o.texto).join(' | ')}; sesión «${enElBloque2?.sesion?.elegido}») · micro=${dirMicro2.micro} · al volver: ${JSON.stringify(dirDeVuelta)} · pedidos: ${pedidosAlMirar}`,
+    );
+
+    // ── Un ejercicio abierto: la tabla de series, con los tres estados de cada objetivo, y lo general ──
+    const pB = porOrden(porOrden(DB.blocks)[0].sessions)[1];
+    const bancaDelBorrador = porOrden(pB.prescriptions)[0];
+    await entrar(`${BASE}&sesion=2&ejercicios=1`);
+    const conLaTabla = await elEditor();
+    await captura(page, v, 'editor-de-entrenamiento-un-ejercicio-abierto-1440-claro');
+    const laTabla = conLaTabla?.ejercicios[0];
+    const filasDeBanca = filasEsperadas(bancaDelBorrador);
+    const estados = filasDeBanca.flatMap((f) => f.celdas.map((c) => c.estado));
+    comprobar(
+      'F-105',
+      'Abierto, un ejercicio muestra sus series en una tabla: «Serie», «Repeticiones», «Carga sugerida», «RIR» (con el criterio RIR), «Descanso» y «Nota», cada encabezado con lo que hace falta para llenarlo. Cada objetivo de cada serie está en una celda con sus tres estados, como los guardó la API: vacía y en gris lo que toma de lo general, con un valor el propio, y «Sin objetivo» elegido para la serie, en el color del texto. El descanso se lee «02:30». Ya no está «Así lo ve tu asesorado»: lo que se ve en la tabla es lo que recibe. Al lado, «Lo general del ejercicio», con el criterio, su objetivo, la carga con su unidad, el descanso y las notas de la API. El escenario tiene los tres estados',
+      !!laTabla &&
+        laTabla.abierto &&
+        laTabla.nombre === sB.ejercicios[0].nombre &&
+        laTabla.resumen === `${bancaDelBorrador.sets.length} series` &&
+        igual(laTabla.columnas, ['Serie', 'Repeticiones 8 u 8-12', `Carga sugerida ${bancaDelBorrador.suggestedLoad?.unit ?? 'kg'}`, 'RIR 0 a 10', 'Descanso 02:30', 'Nota']) &&
+        igual(laTabla.filas, filasDeBanca) &&
+        ['de-lo-general', 'propio', 'sin-objetivo'].every((x) => estados.includes(x)) &&
+        !/Así lo ve tu asesorado/.test(conLaTabla.texto) &&
+        igual(laTabla.general, {
+          criterio: bancaDelBorrador.intensity.criterion,
+          objetivo: coma(bancaDelBorrador.intensity.target.value),
+          carga: bancaDelBorrador.suggestedLoad ? coma(bancaDelBorrador.suggestedLoad.value) : '',
+          unidad: bancaDelBorrador.suggestedLoad?.unit ?? 'kg',
+          descanso: bancaDelBorrador.restSeconds === null ? '' : mmss(bancaDelBorrador.restSeconds),
+          nota: bancaDelBorrador.note ?? '',
+        }) &&
+        laTabla.cajaDeLoGeneral.x >= laTabla.cajaDeSeries.x + laTabla.cajaDeSeries.ancho &&
+        Math.abs(laTabla.cajaDeLoGeneral.y - laTabla.cajaDeSeries.y) <= 2,
+      `${laTabla?.nombre}: ${laTabla?.filas.map((f) => `${f.numero}: ${f.repeticiones} / ${f.celdas.map((c) => `${c.valor || c.sinValor}${c.estado === 'de-lo-general' ? ' (gris)' : c.estado === 'sin-objetivo' ? ' (elegido)' : ''}`).join(' / ')}${f.nota ? ` / «${f.nota}»` : ''}`).join(' | ')} · lo general: ${JSON.stringify(laTabla?.general)}`,
+    );
+    informar('F-105', 'El alto de «Plan», de Entrenamiento, con la versión en preparación y un ejercicio abierto, a 1440 × 900', `${conLaTabla?.alto} px (con los campos de antes, el mismo ejercicio abierto medía 2.932 px)`);
+
+    // ── Los nombres y los menús, a pedido ──
+    await entrar(BASE);
+    await abrirMenu('#menu-del-bloque');
+    const menuDelBloque = (await elEditor())?.menu;
+    await elegirDelMenu('Cambiar el nombre');
+    const conElNombreAbierto = await elEditor();
     const AJUSTE = ' (ajuste)';
-    const nombreAntes = await page.$eval('#b0-nombre', (e) => e.value);
-    await page.focus('#b0-nombre');
+    const nombreAntes = conElNombreAbierto?.nombreAbierto?.valor ?? null;
     await page.keyboard.press('End');
-    await page.type('#b0-nombre', AJUSTE);
-    const conCambios = await planDeEntrenamientoEnPantalla(page);
+    await page.keyboard.type(AJUSTE);
+    await page.keyboard.press('Enter');
+    await pausa(300);
+    const conElNombreNuevo = await elEditor();
+    await abrirMenu('#menu-de-la-sesion');
+    const menuDeLaSesion = (await elEditor())?.menu;
+    await page.keyboard.press('Escape');
+    await tocarNivelDelEditor('bloque', b2.nombre);
+    await abrirMenu('#menu-del-microciclo');
+    const menuDelMicro = (await elEditor())?.menu;
+    await page.keyboard.press('Escape');
+    await abrirMenu('#menu-del-bloque');
+    const menuDelBloqueConMicros = (await elEditor())?.menu;
+    await page.keyboard.press('Escape');
+    await tocarNivelDelEditor('bloque', `${nombreAntes}${AJUSTE}`);
+    comprobar(
+      'F-108',
+      'Los nombres se cambian a pedido. El menú del bloque ofrece «Cambiar el nombre», «Organizar por microciclos» —apagada, y dice por qué: el bloque ya tiene sesiones— y «Quitar este bloque». «Cambiar el nombre» abre el campo en el lugar, con el foco y el nombre seleccionado; Enter lo cierra, el foco vuelve al botón del menú y el bloque se llama como se escribió. El menú de la sesión: «Cambiar el nombre», «Guardar como habitual» y «Quitar esta sesión»; el del microciclo: «Cambiar el nombre» y «Quitar este microciclo»; en un bloque que ya usa microciclos, el menú no ofrece organizarlo por microciclos. La versión queda con «Cambios sin guardar»',
+      igual(menuDelBloque, [sinMotivo('Cambiar el nombre'), { texto: 'Organizar por microciclos', apagada: true, motivo: 'Solo mientras el bloque no tiene sesiones: con microciclos, las sesiones van dentro de ellos.' }, sinMotivo('Quitar este bloque')]) &&
+        conElNombreAbierto?.nombreAbierto?.id === 'b0-nombre' &&
+        conElNombreAbierto.nombreAbierto.conFoco &&
+        conElNombreAbierto.nombreAbierto.seleccionado &&
+        nombreAntes === b1.nombre &&
+        conElNombreNuevo?.nombreAbierto === null &&
+        conElNombreNuevo.foco === 'menu-del-bloque' &&
+        conElNombreNuevo.bloque?.elegido === `${b1.nombre}${AJUSTE}` &&
+        conElNombreNuevo.estado === 'Cambios sin guardar' &&
+        igual(menuDeLaSesion, [sinMotivo('Cambiar el nombre'), sinMotivo('Guardar como habitual'), sinMotivo('Quitar esta sesión')]) &&
+        igual(menuDelMicro, [sinMotivo('Cambiar el nombre'), sinMotivo('Quitar este microciclo')]) &&
+        igual(menuDelBloqueConMicros, [sinMotivo('Cambiar el nombre'), sinMotivo('Quitar este bloque')]),
+      `bloque: ${menuDelBloque?.map((m) => `${m.texto}${m.apagada ? ` (apagada: ${m.motivo})` : ''}`).join(' | ')} · campo: ${conElNombreAbierto?.nombreAbierto?.id}${conElNombreAbierto?.nombreAbierto?.seleccionado ? ' (seleccionado)' : ''} · después: «${conElNombreNuevo?.bloque?.elegido}», foco en ${conElNombreNuevo?.foco} · sesión: ${menuDeLaSesion?.map((m) => m.texto).join(' | ')} · microciclo: ${menuDelMicro?.map((m) => m.texto).join(' | ')}`,
+    );
+
+    // Con cambios sin guardar, mirar la activa y volver no pierde nada.
+    const conCambios = await elEditor();
     const antesDePasar = v.urls.length;
     const tocarVersion = async (cual) => {
       await clic(page, '[data-selector-de-version] .segmento', cual);
@@ -11789,13 +12100,12 @@ async function planesDeEntrenamiento() {
     const sesionEnLaActiva = P().get('sesion');
     await tocarVersion('En preparación');
     const deVueltaAlBorrador = await planDeEntrenamientoEnPantalla(page);
-    const nombreDespues = await page.$eval('#b0-nombre', (e) => e.value).catch(() => null);
+    const editorDeVuelta = await elEditor();
     const pedidosAlPasar = v.urls.slice(antesDePasar).filter((u) => !u.startsWith('OPTIONS '));
     comprobar(
       'F-79',
-      '«Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «En preparación» elegida, «El asesorado no la ve.» y la activa como «2 · activa». Con cambios sin guardar, pasar a la activa muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra) y deja el editor fuera de la vista; volver lo muestra con lo escrito intacto. Ir y volver no le pide nada a BE',
+      '«Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «En preparación» elegida, «El asesorado no la ve.» y la activa como «2 · activa». Con cambios sin guardar, pasar a la activa muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra) y deja el editor fuera de la vista; volver lo muestra con lo escrito intacto, en la sesión que se miraba en la activa (la dirección usa los mismos nombres). Ir y volver no le pide nada a BE',
       creadas === 1 &&
-        !!elBorrador &&
         elBorrador.predecessorPlanId === activa.planId &&
         avisoDeCreada &&
         conBorrador.version === 'preparacion' &&
@@ -11804,7 +12114,7 @@ async function planesDeEntrenamiento() {
         conBorrador.editor.aLaVista &&
         conBorrador.activo === null &&
         !conBorrador.botones.some((b) => /Crear nueva versión|Crear plan|Empezar desde una plantilla/.test(b)) &&
-        conCambios.editor.estado === 'Hay cambios sin guardar.' &&
+        conCambios?.estado === 'Cambios sin guardar' &&
         enLaActiva.version === 'activa' &&
         direccionEnLaActiva === 'activa' &&
         enLaActiva.activo?.frase === fraseEsperada &&
@@ -11815,11 +12125,12 @@ async function planesDeEntrenamiento() {
         sesionEnLaActiva === String(sB.orden) &&
         deVueltaAlBorrador.version === 'preparacion' &&
         deVueltaAlBorrador.editor.aLaVista &&
-        deVueltaAlBorrador.editor.estado === 'Hay cambios sin guardar.' &&
-        nombreDespues === `${nombreAntes}${AJUSTE}` &&
+        editorDeVuelta?.estado === 'Cambios sin guardar' &&
+        editorDeVuelta.bloque?.elegido === `${nombreAntes}${AJUSTE}` &&
+        editorDeVuelta.sesion?.elegido === sB.nombre &&
         P().get('version') === null &&
         pedidosAlPasar.length === 0,
-      `escrituras: ${creadas} · aviso: ${avisoDeCreada ? 'sí' : 'no'} · ${conBorrador.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${nombreAntes}» → «${nombreDespues}» · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] · pedidos al ir y volver: ${pedidosAlPasar.length}`,
+      `escrituras: ${creadas} · aviso: ${avisoDeCreada ? 'sí' : 'no'} · ${conBorrador.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] · de vuelta: «${editorDeVuelta?.bloque?.elegido}», sesión «${editorDeVuelta?.sesion?.elegido}», «${editorDeVuelta?.estado}» · pedidos al ir y volver: ${pedidosAlPasar.length}`,
     );
     await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
     await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
@@ -11827,13 +12138,287 @@ async function planesDeEntrenamiento() {
     await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
     await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
     await quieto(page, v);
-    const hayQueGuardar = await page.evaluate(() => [...document.querySelectorAll('.plan__preparacion .acciones button')].some((b) => b.textContent.trim() === 'Guardar borrador' && !b.disabled));
-    if (hayQueGuardar) await clic(page, '.plan__preparacion .acciones button', 'Guardar borrador');
-    await page.waitForFunction(() => document.querySelector('.plan__preparacion p[aria-live="polite"]')?.innerText.trim() === 'Guardado.', { timeout: 30_000 }).catch(() => {});
-    await quieto(page, v);
+
+    // ── Lo que no deja guardar: un RIR y un descanso mal escritos, en ejercicios que después se pliegan ──
+    // Antes, un descanso o un RIR por serie mal escritos viajaban como «nada» y se guardaban en silencio como «sin objetivo».
+    await alternarEjercicio(1);
+    await alternarEjercicio(2);
+    const idDelRir = 'b0-s1-p0-serie-1-rir';
+    const idDelDescanso = 'b0-s1-p1-descanso';
+    await escribirEn(idDelRir, 'dos');
+    await escribirEn(idDelDescanso, '90,5');
+    const conDatosMal = await elEditor();
+    await alternarEjercicio(1);
+    await alternarEjercicio(2);
+    const plegadosConDatosMal = await elEditor();
+    await tocarNivelDelEditor('sesion', sA.nombre);
+    const antesDeIntentar = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await pausa(400);
+    const sinGuardar = await elEditor();
+    await captura(page, v, 'editor-de-entrenamiento-lo-que-no-deja-guardar-1440-claro');
+    const escriturasAlIntentar = escriturasDelBorrador(antesDeIntentar);
+    await clic(page, `${EDITOR} .problemas-del-plan button[data-problema]`, 'el descanso no se entiende');
+    await pausa(500);
+    const enElDescanso = await elEditor();
+    const dirDelDescanso = direccion();
+    await clic(page, `${EDITOR} .problemas-del-plan button[data-problema]`, 'el RIR no se entiende');
+    await pausa(500);
+    const enElRir = await elEditor();
+    const dirDelRir = direccion();
+    const lugarDelEjercicio = `${nombreAntes}${AJUSTE} → ${sB.nombre} → Ejercicio`;
+    comprobar(
+      'F-107',
+      'Un RIR por serie y un descanso mal escritos no se guardan como otra cosa. La celda del RIR queda marcada y el campo del descanso dice el formato; plegados, cada ejercicio dice «1 dato que no se entiende» en su renglón. Desde otra sesión, «Guardar cambios» no le pide nada a BE: dice qué hay que corregir y lista cada cosa con su lugar, por sus nombres; cada renglón es un botón que elige la sesión, abre ese ejercicio y deja el foco en el campo que hay que corregir',
+      igual(conDatosMal?.ejercicios[0].invalidas, [idDelRir]) &&
+        igual(conDatosMal.ejercicios[1].errores, ['No se entiende: va como 02:30, o en segundos enteros.']) &&
+        plegadosConDatosMal?.ejercicios[0].avisos === '1 dato que no se entiende' &&
+        plegadosConDatosMal.ejercicios[1].avisos === '1 dato que no se entiende' &&
+        plegadosConDatosMal.ejercicios[0].resumen === `${bancaDelBorrador.sets.length} series` &&
+        escriturasAlIntentar.guardar === 0 &&
+        sinGuardar?.aviso === 'Hay datos que faltan o no se entienden. Corregilos antes de guardar.' &&
+        igual(sinGuardar.problemas, [
+          { texto: `${lugarDelEjercicio} 1 → Serie 2 → el RIR no se entiende`, esBoton: true },
+          { texto: `${lugarDelEjercicio} 2 → el descanso no se entiende: va como 02:30, o en segundos`, esBoton: true },
+        ]) &&
+        sinGuardar.estado === 'Cambios sin guardar' &&
+        dirDelDescanso.sesion === '2' &&
+        dirDelDescanso.ejercicios === '2' &&
+        enElDescanso?.foco === idDelDescanso &&
+        dirDelRir.ejercicios === '1' &&
+        enElRir?.foco === idDelRir,
+      `escrituras al intentar: ${escriturasAlIntentar.guardar} · «${sinGuardar?.aviso}» · ${sinGuardar?.problemas.map((p) => p.texto).join(' | ')} · al ir al descanso: sesion=${dirDelDescanso.sesion}, ejercicios=${dirDelDescanso.ejercicios}, foco en ${enElDescanso?.foco} · al ir al RIR: ejercicios=${dirDelRir.ejercicios}, foco en ${enElRir?.foco}`,
+    );
+
+    // ── Los tres estados, escritos, y guardados ──
+    // En «Press de bancaDelBorrador»: la carga propia en la serie 1; la serie 4 vuelve a tomar la carga de lo general; la serie 2 queda
+    // sin descanso; la 3 con un descanso propio, escrito en segundos; la 4 vuelve a tomar el descanso. El RIR de la serie 2,
+    // corregido. En el ejercicio 2, el descanso general se corrige escribiéndolo como «2:00».
+    await escribirEn(idDelRir, '1');
+    await escribirEn('b0-s1-p0-serie-0-carga', '65');
+    await abrirMenu(menuDeLaCelda('b0-s1-p0-serie-3-carga'));
+    await elegirDelMenu('Tomar de lo general');
+    await abrirMenu(menuDeLaCelda('b0-s1-p0-serie-1-descanso'));
+    const opcionesDeUnaCeldaQueToma = (await elEditor())?.menu;
+    await elegirDelMenu('Sin objetivo en esta serie');
+    await escribirEn('b0-s1-p0-serie-2-descanso', '105');
+    await abrirMenu(menuDeLaCelda('b0-s1-p0-serie-3-descanso'));
+    const opcionesDeUnaCeldaSinObjetivo = (await elEditor())?.menu;
+    await elegirDelMenu('Tomar de lo general');
+    await alternarEjercicio(2);
+    await escribirEn(idDelDescanso, '2:00');
+    const antesDeGuardar3 = await elEditor();
+    const antesDelGuardado = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await esperarEstado('Guardado');
+    const trasGuardar = await elEditor();
+    const escriturasAlGuardar = escriturasDelBorrador(antesDelGuardado);
+    const DB2 = await leerElBorrador();
+    const banca2 = porOrden(porOrden(porOrden(DB2.blocks)[0].sessions)[1].prescriptions)[0];
+    const remo2 = porOrden(porOrden(porOrden(DB2.blocks)[0].sessions)[1].prescriptions)[1];
+    const series2 = [...banca2.sets].sort((a, b) => a.setIndex - b.setIndex);
+    const efectivoDe = (s, clave) => ({ valor: s.target[clave], origen: s.targetOrigin[clave] });
+    comprobar(
+      'F-106',
+      'Cada celda escribe uno de los tres estados, y eso es lo que se guarda. Escribir un número deja el propio; «Tomar de lo general» quita el de la serie; «Sin objetivo en esta serie» lo quita aunque lo general lo tenga. El botón de cada celda ofrece solo lo que cambia algo. Un descanso escrito en segundos se lee «01:45» al salir del campo, y uno escrito «2:00» se guarda como 120 segundos. «Guardar cambios» hace una sola escritura; la API devuelve, serie por serie, lo declarado y el objetivo que recibe el teléfono con su origen, y el editor queda como lo dejó la API, con «Guardado»',
+      igual(opcionesDeUnaCeldaQueToma, [sinMotivo('Sin objetivo en esta serie')]) &&
+        igual(opcionesDeUnaCeldaSinObjetivo, [sinMotivo('Tomar de lo general')]) &&
+        antesDeGuardar3?.ejercicios[0].filas[2].celdas.at(-1).valor === '01:45' &&
+        escriturasAlGuardar.guardar === 1 &&
+        trasGuardar?.estado === 'Guardado' &&
+        series2[0].suggestedLoad?.value === 65 &&
+        !('suggestedLoad' in series2[3]) &&
+        efectivoDe(series2[3], 'suggestedLoad').origen === 'PRESCRIPTION' &&
+        series2[1].rir === 1 &&
+        series2[1].restSeconds === null &&
+        efectivoDe(series2[1], 'restSeconds').valor === null &&
+        efectivoDe(series2[1], 'restSeconds').origen === 'SET' &&
+        series2[2].restSeconds === 105 &&
+        !('restSeconds' in series2[3]) &&
+        efectivoDe(series2[3], 'restSeconds').valor === banca2.restSeconds &&
+        remo2.restSeconds === 120 &&
+        igual(trasGuardar.ejercicios[0].filas, filasEsperadas(banca2)),
+      `escrituras: ${escriturasAlGuardar.guardar} · «${trasGuardar?.estado}» · en la API: ${series2.map((s) => `[carga ${'suggestedLoad' in s ? JSON.stringify(s.suggestedLoad) : 'de lo general'} · RIR ${'rir' in s ? s.rir : 'de lo general'} · descanso ${'restSeconds' in s ? s.restSeconds : 'de lo general'}]`).join(' ')} · el descanso del remo: ${remo2.restSeconds} s`,
+    );
+
+    // ── Agregar y quitar: un bloque, una sesión y un ejercicio desde el cajón ──
+    const antesDeAgregar = v.urls.length;
+    await enElEditor('[data-agregar-bloque]', 'Agregar');
+    const conBloqueNuevo = await elEditor();
+    const dirBloqueNuevo = direccion();
+    const NOMBRE_DEL_BLOQUE = 'Bloque del recorrido';
+    await page.keyboard.type(NOMBRE_DEL_BLOQUE);
+    await page.keyboard.press('Enter');
+    await pausa(300);
+    await abrirMenu('#agregar-sesion');
+    await elegirDelMenu('Una sesión nueva');
+    const conSesionNueva = await elEditor();
+    await page.keyboard.press('Enter');
+    await pausa(300);
+    await enElEditor('[data-agregar-ejercicio]', 'Agregar ejercicio');
+    await page.waitForSelector('dialog.cajon[open] input[type="search"], .cajon[open] input[type="search"]', { timeout: 10_000 }).catch(() => {});
+    const cajonAbierto = await page.evaluate(() => {
+      const c = document.querySelector('dialog[open]');
+      const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+      return c ? { titulo: t(c.querySelector('h2')), sobretitulo: t(c.querySelector('.cajon__sobretitulo')), focoEnLaBusqueda: document.activeElement?.type === 'search' } : null;
+    });
+    const busqueda = sA.ejercicios[0].nombre;
+    await page.keyboard.type(busqueda);
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('dialog[open] tr[data-ejercicio-del-catalogo]', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    await captura(page, v, 'editor-de-entrenamiento-agregar-ejercicio-1440-claro');
+    await clic(page, `dialog[open] tr[data-ejercicio-del-catalogo] button[aria-label="Elegir ${busqueda}"]`, 'Elegir');
+    await pausa(400);
+    const anunciado = await page.evaluate(() => document.querySelector('dialog[open] [data-agregado]')?.innerText.trim() ?? null);
+    const sigueAbierto = await page.evaluate(() => !!document.querySelector('dialog[open]'));
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(300);
+    const conElEjercicio = await elEditor();
+    const focoTrasElCajon = await page.evaluate(() => document.activeElement?.hasAttribute('data-agregar-ejercicio') ?? false);
+    await alternarEjercicio(1);
+    await enElEditor('.ejercicio-del-editor[data-ejercicio="1"] .comida-del-editor__acciones .menu-de-acciones__boton', 'Más');
+    await elegirDelMenu(`Quitar ${busqueda}`);
+    const sinElEjercicio = await elEditor();
+    const escriturasAlAgregar = escriturasDelBorrador(antesDeAgregar);
+    comprobar(
+      'F-109',
+      '«Agregar», al lado del bloque, suma un bloque al final, lo elige y abre su nombre, seleccionado: lo que se escribe lo reemplaza. Un bloque nuevo no tiene sesiones y lo dice; «Agregar» de la sesión ofrece una sesión nueva o una habitual, y la nueva queda elegida con su nombre abierto. «Agregar ejercicio» abre el buscador en un cajón, que dice adónde se agrega y deja el foco en la búsqueda; elegir un ejercicio lo suma sin cerrar el cajón y lo anuncia; Escape lo cierra y el foco vuelve a «Agregar ejercicio». El ejercicio nuevo tiene una serie, sin repeticiones ni criterio, y lo dice; «Quitar», en su menú «Más», lo saca. Nada de esto escribe en BE',
+      dirBloqueNuevo.bloque === String(E.bloques.length + 1) &&
+        conBloqueNuevo?.nombreAbierto?.id === `b${E.bloques.length}-nombre` &&
+        conBloqueNuevo.nombreAbierto.conFoco &&
+        conBloqueNuevo.nombreAbierto.seleccionado &&
+        conBloqueNuevo.sesion?.forma === 'ninguna' &&
+        conBloqueNuevo.sesion.sinNada === 'Acá no hay sesiones.' &&
+        conSesionNueva?.bloque?.elegido === NOMBRE_DEL_BLOQUE &&
+        conSesionNueva.nombreAbierto?.id === `b${E.bloques.length}-s0-nombre` &&
+        conSesionNueva.nombreAbierto.valor === 'Sesión A' &&
+        conSesionNueva.nombreAbierto.conFoco &&
+        cajonAbierto?.titulo === 'Agregar ejercicio' &&
+        cajonAbierto.focoEnLaBusqueda &&
+        (cajonAbierto.sobretitulo ?? '').includes(`${NOMBRE_DEL_BLOQUE} · Sesión A`) &&
+        anunciado === `Agregado: ${busqueda}. Podés sumar otro o cerrar.` &&
+        sigueAbierto &&
+        focoTrasElCajon &&
+        igual(conElEjercicio?.ejercicios.map((e) => [e.nombre, e.resumen]), [[busqueda, '1 serie sin repeticiones fijadas · sin criterio de intensidad']]) &&
+        conElEjercicio.sesion?.cuenta === '1 ejercicio · 1 serie' &&
+        sinElEjercicio?.ejercicios.length === 0 &&
+        sinElEjercicio.sinEjercicios === 'Esta sesión no tiene ejercicios.' &&
+        escriturasAlAgregar.guardar === 0,
+      `bloque=${dirBloqueNuevo.bloque} (campo ${conBloqueNuevo?.nombreAbierto?.id}) · sesión: ${conSesionNueva?.nombreAbierto?.id} «${conSesionNueva?.nombreAbierto?.valor}» · cajón: «${cajonAbierto?.titulo}» / «${cajonAbierto?.sobretitulo}» · «${anunciado}» · foco al cerrar en «Agregar ejercicio»: ${focoTrasElCajon ? 'sí' : 'no'} · ${conElEjercicio?.ejercicios.map((e) => `${e.nombre}: ${e.resumen}`).join(' | ')} · escrituras: ${escriturasAlAgregar.guardar}`,
+    );
+
+    // ── Validar: un problema de la API lleva a su lugar ──
+    const antesDeValidar = v.urls.length;
+    await tocarNivelDelEditor('bloque', `${nombreAntes}${AJUSTE}`);
+    await tocarAccionDelEditor('Validar plan');
+    await page.waitForSelector(`${EDITOR} .problemas-del-plan button[data-problema]`, { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const conProblemas = await elEditor();
+    const escriturasAlValidar = escriturasDelBorrador(antesDeValidar);
+    await clic(page, `${EDITOR} .problemas-del-plan button[data-problema]`, 'falta al menos un ejercicio');
+    await pausa(500);
+    const enElProblema = await elEditor();
+    const dirDelProblema = direccion();
+    await abrirMenu('#menu-del-bloque');
+    await elegirDelMenu('Quitar este bloque');
+    const antesDeValidarBien = v.urls.length;
+    await tocarAccionDelEditor('Validar plan');
+    const avisoDeValido = await esperarAviso('El borrador no tiene problemas de estructura.');
+    await quieto(page, v, { silencio: 300 });
+    const trasValidarBien = await elEditor();
+    const textoDelAvisoValido = await page.evaluate(() => [...document.querySelectorAll('.aviso-flotante__texto')].map((e) => e.innerText.trim()).find((x) => x.startsWith('El borrador')) ?? null);
+    const escriturasAlValidarBien = escriturasDelBorrador(antesDeValidarBien);
+    comprobar(
+      'F-113',
+      '«Validar plan», con cambios sin guardar, guarda antes y valida (una escritura de cada una). La sesión vacía del bloque nuevo es un problema de la API: el aviso dice «Hay elementos por corregir antes de activar.», nombra el lugar sin rutas técnicas, como un botón, y recuerda que validar revisa la forma, no la calidad. El botón elige el bloque y la sesión y deja el foco en el menú de esa sesión. Quitado el bloque nuevo, «Validar plan» dice que no hay problemas de estructura, y también que eso no juzga el programa',
+      escriturasAlValidar.guardar === 1 &&
+        escriturasAlValidar.validar === 1 &&
+        conProblemas?.aviso === 'Hay elementos por corregir antes de activar.' &&
+        igual(conProblemas.problemas, [{ texto: `${NOMBRE_DEL_BLOQUE} → Sesión A → falta al menos un ejercicio`, esBoton: true }]) &&
+        (conProblemas.texto ?? '').includes('Validar revisa la forma del plan, no su calidad') &&
+        dirDelProblema.bloque === String(E.bloques.length + 1) &&
+        enElProblema?.foco === 'menu-de-la-sesion' &&
+        escriturasAlValidarBien.guardar === 1 &&
+        escriturasAlValidarBien.validar === 1 &&
+        avisoDeValido &&
+        textoDelAvisoValido === 'El borrador no tiene problemas de estructura. Validar revisa la forma del plan, no su calidad: no juzga el programa, la frecuencia ni la selección de ejercicios.' &&
+        trasValidarBien?.problemas.length === 0 &&
+        trasValidarBien.bloque?.opciones.length === E.bloques.length,
+      `escrituras: ${JSON.stringify(escriturasAlValidar)} · «${conProblemas?.aviso}» · ${conProblemas?.problemas.map((p) => p.texto).join(' | ')} · al ir: bloque=${dirDelProblema.bloque}, foco en ${enElProblema?.foco} · después de quitar el bloque: ${JSON.stringify(escriturasAlValidarBien)}, «${(textoDelAvisoValido ?? '').slice(0, 60)}…»`,
+    );
+
+    // ── Palabras, accesibilidad y anchos, con los ejercicios de la segunda sesión abiertos ──
+    await entrar(`${BASE}&sesion=2&ejercicios=1.2.3`);
+    const todoAbierto = await elEditor();
+    const palabrasDelEditor = prohibidas(todoAbierto?.texto ?? '');
+    const faltasDelEditorClaro = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasDelEditorNoche = await axe(page);
+    await captura(page, v, 'editor-de-entrenamiento-un-ejercicio-abierto-1440-azul-noche');
+    await ponerTema(page, 'claro');
+    const anchosDelEditor = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await entrar(`${BASE}&sesion=2&ejercicios=1`);
+      const x = await elEditor();
+      const e = x?.ejercicios[0];
+      anchosDelEditor.push({
+        ancho,
+        desborda: !(await sinDesborde(page)),
+        alLado: !!e && e.cajaDeLoGeneral.x >= e.cajaDeSeries.x + e.cajaDeSeries.ancho,
+        debajo: !!e && e.cajaDeLoGeneral.y >= e.cajaDeSeries.y + e.cajaDeSeries.alto,
+        alto: x?.alto,
+      });
+      await captura(page, v, `editor-de-entrenamiento-un-ejercicio-abierto-${ancho}-claro`);
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    const anchoDe = (a) => anchosDelEditor.find((x) => x.ancho === a);
+    comprobar(
+      'F-112',
+      'Con los ejercicios de una sesión abiertos, el editor no tiene una palabra de la lista de Entrenamiento, y axe no encuentra faltas en los dos temas. «Lo general» va al costado de la tabla a 1440 y debajo, en dos columnas, a 1280, 1024, 768 y 390: al costado, a 1280, a la nota le quedaba una columna de unos 80 px (DEC-30); a 768 y a 390 cada serie es un bloque. En ninguno de esos anchos la página desborda de costado',
+      palabrasDelEditor.length === 0 &&
+        (todoAbierto?.ejercicios ?? []).every((e) => e.abierto) &&
+        faltasDelEditorClaro.length === 0 &&
+        faltasDelEditorNoche.length === 0 &&
+        anchosDelEditor.every((x) => !x.desborda) &&
+        [1280, 1024, 768, 390].every((a) => anchoDe(a).debajo),
+      `palabras: ${palabrasDelEditor.join(', ') || 'ninguna'} · axe claro: ${faltasDelEditorClaro.map((f) => f.id).join(', ') || 'sin faltas'} · azul noche: ${faltasDelEditorNoche.map((f) => f.id).join(', ') || 'sin faltas'} · ${anchosDelEditor.map((x) => `${x.ancho}: ${x.alto} px, lo general ${x.alLado ? 'al costado' : x.debajo ? 'debajo' : '¿?'}${x.desborda ? ' · DESBORDA' : ''}`).join(' · ')}`,
+    );
+
+    // ── Activar: guarda antes, pregunta con lo que entra y lo que queda, y la próxima revisión es parte del acto ──
+    await escribirEn('b0-s1-p0-serie-0-nota', 'Controlar la bajada.');
+    const antesDeAbrirActivar = v.urls.length;
+    await tocarAccionDelEditor('Activar plan');
+    await page.waitForSelector('dialog[open]', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const leerElDialogo = () =>
+      page.evaluate(() => {
+        const d = document.querySelector('dialog[open]');
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        if (!d) return null;
+        return {
+          titulo: t(d.querySelector('h2')),
+          frases: [...d.querySelectorAll('[data-lo-que-cambia] p')].map(t),
+          fecha: d.querySelector('#trn-proxima-revision')?.value ?? null,
+          botones: [...d.querySelectorAll('.acciones button')].map((b) => ({ texto: t(b), conFoco: document.activeElement === b })),
+        };
+      });
+    const dialogoDeActivar = await leerElDialogo();
+    await captura(page, v, 'editor-de-entrenamiento-activar-1440-claro');
+    const escriturasAlAbrir = escriturasDelBorrador(antesDeAbrirActivar);
+    await clic(page, 'dialog[open] .acciones button', 'Volver');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    const escriturasAlVolver = escriturasDelBorrador(antesDeAbrirActivar);
+    const sesionesQueEntran = DB2.blocks.reduce((n, b) => n + b.sessions.length + b.microcycles.reduce((m, x) => m + x.sessions.length, 0), 0);
+    const fechaDeLaActivaSinAnio = (await enLaPagina(activa.activatedAt)).dia;
+    const REVISION = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+    await tocarAccionDelEditor('Activar plan');
+    await page.waitForSelector('dialog[open] #trn-proxima-revision', { timeout: 20_000 }).catch(() => {});
+    await fijarFecha(page, '#trn-proxima-revision', REVISION);
+    const fechaEscrita = await page.$eval('dialog[open] #trn-proxima-revision', (e) => e.value);
     const antesDeActivar = v.urls.length;
-    await clic(page, '.plan__preparacion .acciones button', 'Activar plan');
-    await page.waitForSelector('dialog[open]', { timeout: 10_000 });
     await clic(page, 'dialog[open] .acciones button', 'Activar esta versión');
     const avisoDeActivada = await esperarAviso('Plan activado.');
     await page.waitForFunction(() => !document.querySelector('[data-selector-de-version]') && !!document.querySelector('.plan__activo'), { timeout: 40_000 }).catch(() => {});
@@ -11842,25 +12427,40 @@ async function planesDeEntrenamiento() {
     const trasActivar = await leerTodo();
     const historialNuevo = await historialEsperado(trasActivar.E);
     const fechaDeLaNueva = await enLaPagina(trasActivar.activa.activatedAt);
+    const escriturasAlActivar = escriturasDelBorrador(antesDeActivar);
     comprobar(
-      'F-79',
-      'Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Guardar y activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan dice «Versión 3 · … · es lo que ve el asesorado», su bloque lleva el nombre que se escribió, el historial lista las tres y la dirección queda limpia (traía la segunda sesión: la versión nueva se abre por la primera). El plan tiene objetivos distintos por serie, y se activa porque el titular ya usó una app que los muestra',
-      /Tenés cambios sin guardar/.test(pregunta) &&
-        /el plan en preparación/.test(pregunta) &&
-        hayQueGuardar &&
+      'F-110',
+      '«Activar plan», con cambios sin guardar, guarda antes (una escritura) y recién entonces pregunta. El diálogo dice la consecuencia, qué entra («Esta versión pasa a ser la vigente: 2 bloques y N sesiones.») y qué queda («La versión 2, activa desde el …, queda en el historial.»), y trae la próxima revisión vacía; el foco empieza en «Volver». «Volver» no escribe nada. Con la fecha puesta, «Activar esta versión» guarda la fecha y activa (una escritura de cada una), y la API la devuelve como la próxima revisión de la versión activada',
+      escriturasAlAbrir.guardar === 1 &&
+        escriturasAlAbrir.activar === 0 &&
+        dialogoDeActivar?.titulo === 'Activar plan' &&
+        igual(dialogoDeActivar.frases, [`Esta versión pasa a ser la vigente: ${E.bloques.length === 1 ? '1 bloque' : `${E.bloques.length} bloques`} y ${sesionesQueEntran === 1 ? '1 sesión' : `${sesionesQueEntran} sesiones`}.`, `La versión 2, activa desde el ${fechaDeLaActivaSinAnio}, queda en el historial.`]) &&
+        dialogoDeActivar.fecha === '' &&
+        igual(dialogoDeActivar.botones, [{ texto: 'Volver', conFoco: true }, { texto: 'Activar esta versión', conFoco: false }]) &&
+        escriturasAlVolver.guardar === 1 &&
+        escriturasAlVolver.activar === 0 &&
+        fechaEscrita === REVISION &&
+        escriturasAlActivar.guardar === 1 &&
+        escriturasAlActivar.activar === 1 &&
         avisoDeActivada &&
         trasActivar.activa.planId === elBorrador.planId &&
+        (trasActivar.activa.nextReviewAt ?? '').slice(0, 10) === REVISION,
+      `al abrir: ${JSON.stringify(escriturasAlAbrir)} · «${dialogoDeActivar?.frases.join(' / ')}» · botones: ${dialogoDeActivar?.botones.map((b) => `${b.texto}${b.conFoco ? ' (con foco)' : ''}`).join(' | ')} · al volver: ${JSON.stringify(escriturasAlVolver)} · fecha: ${fechaEscrita} · al activar: ${JSON.stringify(escriturasAlActivar)} · en la API: ${trasActivar.activa.nextReviewAt}`,
+    );
+    comprobar(
+      'F-79',
+      'Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Activada, la versión en preparación pasa a ser la vigente: el selector desaparece, el plan dice «Versión 3 · … · es lo que ve el asesorado», su bloque lleva el nombre que se escribió, el historial lista las tres y la dirección queda limpia. El plan tiene objetivos distintos por serie, y se activa porque el titular ya usó una app que los muestra',
+      /Tenés cambios sin guardar/.test(pregunta) &&
+        /el plan en preparación/.test(pregunta) &&
         trasActivar.activa.setTargetsDelivery.required === true &&
         trasActivar.E.numero === 3 &&
         activada.selector === null &&
         !activada.editor.esta &&
         activada.activo?.frase === `Versión 3 · activada el ${fechaDeLaNueva.dia} · es lo que ve el asesorado` &&
         activada.activo.bloque.opciones.find((o) => o.elegido)?.texto === `${nombreAntes}${AJUSTE}` &&
-        activada.activo.sesion.elegido === sA.nombre &&
         igual(activada.activo.historial.versiones, historialNuevo) &&
         igual(historialNuevo.map((x) => x.vigente), [true, false, false]) &&
-        ['version', 'bloque', 'micro', 'sesion', 'ejercicios'].every((k) => P().get(k) === null) &&
-        escriturasDesde(antesDeActivar, `/training/plans/${elBorrador.planId}/activate`).length === 1,
+        ['version', 'bloque', 'micro', 'sesion', 'ejercicios'].every((k) => P().get(k) === null),
       `«${pregunta.slice(0, 60)}…» · «${activada.activo?.frase}» · bloque: «${activada.activo?.bloque?.opciones?.find((o) => o.elegido)?.texto}» · ${activada.activo?.historial.versiones.map((x) => x.texto).join(' | ')}`,
     );
     await captura(page, v, 'plan-de-entrenamiento-version-3-recien-activada-1440-claro');
@@ -11887,6 +12487,47 @@ async function planesDeEntrenamiento() {
         igual(desdePlantilla.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['3 · activa', false]]) &&
         desdePlantilla.editor.aLaVista,
       `escrituras: ${escriturasDesde(antesDeAplicar, '/training/plans').length} · aviso: ${avisoDeAplicada ? 'sí' : 'no'} · ${desdePlantilla.selector?.opciones.map((o) => o.texto).join(' | ')} · origen en la API: ${elDeLaPlantilla?.templateOrigin ? 'una plantilla' : 'ninguno'}`,
+    );
+    // ── Con el bloqueo de la app (respuesta simulada): «Activar plan» apagado, con su motivo ──
+    const ID_DESDE_LA_PLANTILLA = enLaLista?.planId ?? null;
+    let bloqueado = null;
+    let dialogoBloqueado = null;
+    let escriturasBloqueado = null;
+    let exigiaObjetivosPorSerie = null;
+    if (ID_DESDE_LA_PLANTILLA) {
+      const real = (await leerApi(v, `/training/plans/${ID_DESDE_LA_PLANTILLA}/detail`)).data;
+      exigiaObjetivosPorSerie = real.setTargetsDelivery.required;
+      await salir();
+      v.reglas.push({ coincide: (u) => u.includes(`/training/plans/${ID_DESDE_LA_PLANTILLA}/detail`), accion: 'entregar', cuerpo: { data: { ...real, setTargetsDelivery: { ...real.setTargetsDelivery, adviseeClientCapable: false } } } });
+      try {
+        await entrar(BASE);
+        await page.waitForSelector(`${EDITOR} .ejercicio-del-editor`, { timeout: 20_000 }).catch(() => {});
+        await quieto(page, v, { silencio: 300 });
+        bloqueado = await elEditor();
+        await captura(page, v, 'editor-de-entrenamiento-bloqueado-por-la-app-simulado-1440-claro');
+        const antes = v.urls.length;
+        await page.click(`${EDITOR} .editor-del-plan__acciones > button[aria-describedby="motivo-sin-activar"]`).catch(() => {});
+        await pausa(500);
+        dialogoBloqueado = await page.evaluate(() => !!document.querySelector('dialog[open]'));
+        escriturasBloqueado = v.urls.slice(antes).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u)).length;
+      } finally {
+        v.reglas.length = 0;
+      }
+    }
+    const elDeActivar = bloqueado?.acciones.find((a) => a.nombre === 'Activar plan');
+    comprobar(
+      'F-111',
+      '(Respuesta simulada: el titular ya usó una app que muestra los objetivos por serie.) Si el asesorado todavía no usó una app que los muestre y el plan tiene objetivos distintos en algunas series, «Activar plan» está apagado —conserva el foco— y lo describe su motivo, que se lee arriba: «Todavía no podés activar este plan», por qué y qué se puede hacer. Tocarlo no abre nada ni escribe nada',
+      exigiaObjetivosPorSerie === true &&
+        !!elDeActivar &&
+        elDeActivar.apagado &&
+        !elDeActivar.deshabilitado &&
+        elDeActivar.describe === 'motivo-sin-activar' &&
+        (bloqueado.motivoSinActivar ?? '').startsWith('Todavía no podés activar este plan') &&
+        (bloqueado.motivoSinActivar ?? '').includes('Podés activarlo cuando tu asesorado abra Entrenamiento con BE actualizada') &&
+        dialogoBloqueado === false &&
+        escriturasBloqueado === 0,
+      `exige objetivos por serie: ${exigiaObjetivosPorSerie} · «Activar plan»: ${elDeActivar ? `${elDeActivar.apagado ? 'apagado' : 'encendido'}, descrito por ${elDeActivar.describe}` : 'no está'} · «${(bloqueado?.motivoSinActivar ?? '').slice(0, 70)}…» · diálogo: ${dialogoBloqueado ? 'se abrió' : 'no'} · escrituras: ${escriturasBloqueado}`,
     );
     comprobar('—', '«Plan», de Entrenamiento, no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
   } finally {

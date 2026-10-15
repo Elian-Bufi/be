@@ -14,7 +14,9 @@
  *   sesión se eligen (C-81); los demás ejercicios dicen en un renglón lo que piden.
  * - **Lo elegido vive en la dirección** (`version`, `bloque`, `micro`, `sesion`, `ejercicios`): «Actualizar» y volver
  *   atrás lo conservan.
- * - Una versión en preparación sigue en el editor de siempre, hasta su parte (la 8).
+ * - Una versión en preparación se edita con la misma composición (parte 8; `editor.tsx`): una sesión por vez, con los
+ *   ejercicios plegados. Lo que se mira usa los mismos nombres en la dirección, por posición: al pasar de una versión a
+ *   la otra se sigue en el mismo lugar.
  */
 import {
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
@@ -209,6 +211,8 @@ export function VistaDePlan() {
                     <EditorDePlan
                       key={borrador.planId}
                       planId={borrador.planId}
+                      objetivoVigente={objetivo}
+                      vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt } : null}
                       onActivado={() => {
                         setAviso({ tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.planActivado}. El asesorado ya ve esta planificación como vigente.` });
                         ir(TODO_LO_ELEGIDO);

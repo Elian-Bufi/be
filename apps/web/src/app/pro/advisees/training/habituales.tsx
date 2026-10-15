@@ -4,7 +4,7 @@
  * «Mis habituales» en el plan de entrenamiento (PF-09 bis; DL-109):
  * - **Ejercicios habituales**: los que el profesional marca en el buscador quedan a mano, arriba de los resultados, y
  *   se agregan con un clic. Marcar y quitar es la misma operación (API-HAB-02) y la lista se actualiza al instante,
- *   con vuelta atrás si la API falla.
+ *   con vuelta atrás si la API falla. El buscador que los muestra es `agregar-ejercicio.tsx`.
  * - **Sesiones habituales**: «Guardar como habitual» en una sesión abre un diálogo con el nombre (el rótulo de la
  *   sesión), el interruptor de cargas apagado (DL-108 D-2) y cada nota de texto libre para vaciarla una por una
  *   (D-3). Si ya hay una sesión habitual con ese nombre, se avisa que se reemplaza (DL-109 D-2) y el botón lo dice.
@@ -30,22 +30,33 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 
 // ─── Ejercicios habituales ─────────────────────────────────────────────────────────────────────
 
-/** La lista de ejercicios habituales del profesional, cargada una vez por editor; marcar y quitar con vuelta atrás si falla. */
+/**
+ * La lista de ejercicios habituales del profesional, cargada una vez por editor; marcar y quitar con vuelta atrás si
+ * falla. **Si la lista no se puede leer, se dice** (`lectura`, con su motivo) y se puede volver a leer: no es «todavía no
+ * marcaste ninguno».
+ */
 export function useEjerciciosHabituales(token: string) {
   const [habituales, setHabituales] = useState<readonly EjercicioDeCatalogo[]>([]);
+  const [lectura, setLectura] = useState<{ readonly estado: 'cargando' | 'lista' | 'falla'; readonly motivo: string | null }>({ estado: 'cargando', motivo: null });
   // La lista vigente, para que alternar no dependa de un cierre viejo.
   const vigentes = useRef<readonly EjercicioDeCatalogo[]>([]);
   vigentes.current = habituales;
-  useEffect(() => {
-    let vigente = true;
-    // Un 403 (profesional sin Entrenamiento) o cualquier fallo deja la lista vacía y sin aviso: el bloque es una comodidad.
-    void api.listarEjerciciosHabituales(token).then((r) => {
-      if (vigente) setHabituales(r.ok ? r.datos.data : []);
-    });
-    return () => {
-      vigente = false;
-    };
+  // Una respuesta vieja no pisa una lectura posterior.
+  const generacion = useRef(0);
+  const recargar = useCallback(async () => {
+    const esta = ++generacion.current;
+    setLectura({ estado: 'cargando', motivo: null });
+    const r = await api.listarEjerciciosHabituales(token);
+    if (esta !== generacion.current) return;
+    setHabituales(r.ok ? r.datos.data : []);
+    setLectura(r.ok ? { estado: 'lista', motivo: null } : { estado: 'falla', motivo: mensajeDeFallo(r) });
   }, [token]);
+  useEffect(() => {
+    void recargar();
+    return () => {
+      generacion.current += 1;
+    };
+  }, [recargar]);
   const esHabitual = useCallback((exerciseId: string) => habituales.some((h) => h.exerciseId === exerciseId), [habituales]);
   const alternar = useCallback(
     async (ejercicio: EjercicioDeCatalogo): Promise<boolean> => {
@@ -61,41 +72,9 @@ export function useEjerciciosHabituales(token: string) {
     },
     [token],
   );
-  return { habituales, esHabitual, alternar };
+  return { habituales, esHabitual, alternar, lectura: lectura.estado, motivoDeLectura: lectura.motivo, recargar };
 }
 export type EjerciciosHabituales = ReturnType<typeof useEjerciciosHabituales>;
-
-/** «Mis habituales» arriba de los resultados del buscador: un botón por ejercicio, que lo agrega a la sesión. */
-export function BloqueDeHabituales({ habituales, onElegir }: { habituales: readonly EjercicioDeCatalogo[]; onElegir: (e: EjercicioDeCatalogo) => void }) {
-  const id = useId();
-  return (
-    <div className="grupo habituales" role="group" aria-labelledby={`${id}-titulo`}>
-      <p id={`${id}-titulo`} className="lista__titulo">
-        {COPY_HABITUALES.misHabituales}
-      </p>
-      {habituales.length === 0 ? (
-        <p className="nota">{COPY_HABITUALES.sinEjerciciosHabituales}</p>
-      ) : (
-        <div className="acciones">
-          {habituales.map((h) => (
-            <button key={h.exerciseId} type="button" className="boton boton--secundario" onClick={() => onElegir(h)} aria-label={`Elegir ${h.name}`}>
-              {h.name}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Marcar o quitar un ejercicio de los habituales, en cada resultado del buscador. */
-export function BotonHabitual({ ejercicio, marcado, onAlternar }: { ejercicio: EjercicioDeCatalogo; marcado: boolean; onAlternar: (e: EjercicioDeCatalogo) => void }) {
-  return (
-    <button type="button" className="boton boton--enlace" aria-pressed={marcado} onClick={() => onAlternar(ejercicio)}>
-      {marcado ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar}
-    </button>
-  );
-}
 
 // ─── Sesiones habituales ───────────────────────────────────────────────────────────────────────
 
