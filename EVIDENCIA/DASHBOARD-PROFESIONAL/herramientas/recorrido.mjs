@@ -2093,8 +2093,9 @@ async function analizarRecompuesto(page, v) {
     }));
     comprobar(
       'E-47',
-      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo',
-      [1440, 1280, 1024].every((a) => marco[a].alto === 143 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && enLaLinea.boton === 'Cómo se lee esta vista' && enLaLinea.periodo && enLaLinea.alto === 143,
+      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (140 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo',
+      // 140 desde la crítica de diseño del 2026-10-15 (la píldora del acceso, más liviana: F-142); antes, 143.
+      [1440, 1280, 1024].every((a) => marco[a].alto === 140 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && enLaLinea.boton === 'Cómo se lee esta vista' && enLaLinea.periodo && enLaLinea.alto === 140,
       `${JSON.stringify(marco)} · Línea de tiempo: ${JSON.stringify(enLaLinea)}`,
     );
     comprobar(

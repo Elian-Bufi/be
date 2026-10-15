@@ -11039,3 +11039,18 @@ details[open] > summary:not([class])::before {
   border-radius: 50%;
   background: var(--superficie);
 }
+
+/* El marco de la ficha y de las áreas, con renglones de píxeles enteros (53 + 36 + 50, más el borde: 140). Con la píldora
+   del acceso más liviana, el renglón del estado medía 35,7 px y el marco 139,48: medía lo mismo en todas las páginas,
+   pero redondeado daba 139 o 140 según desde dónde se lo midiera. */
+.marco-de-la-ficha__persona {
+  min-height: 3.3125rem;
+}
+
+.marco-de-la-ficha__estado {
+  min-height: 2.25rem;
+}
+
+.marco-de-la-ficha__vistas {
+  min-height: 3.125rem;
+}
