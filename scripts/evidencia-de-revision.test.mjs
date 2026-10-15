@@ -97,19 +97,28 @@ test('al cambiar el período se quita solo lo marcado que quedó afuera, y se di
   assert.match(avisoDeMarcasQuitadas(3), /^Con el período nuevo se quitaron 3 marcas /);
 });
 
-test('las versiones del plan se dicen por su fecha de activación; dos del mismo día, con la hora', () => {
+test('las versiones del plan se dicen por su fecha de activación, la que rige dice «vigente» y dos del mismo día van con la hora', () => {
   const textos = versionesDelPlan([
-    { planId: 'p1', dia: '7 sept', hora: '09:00' },
-    { planId: 'p2', dia: '15 oct', hora: '10:32' },
-    { planId: 'p3', dia: '15 oct', hora: '18:05' },
+    { planId: 'p1', dia: '7 sept', hora: '09:00', vigente: false },
+    { planId: 'p2', dia: '15 oct', hora: '10:32', vigente: false },
+    { planId: 'p3', dia: '15 oct', hora: '18:05', vigente: true },
   ]);
   assert.deepEqual(
     textos.map((c) => [c.tipo, c.id, c.dia, c.texto]),
     [
       ['PLAN_VERSION', 'p1', null, 'Plan activado el 7 sept'],
       ['PLAN_VERSION', 'p2', null, 'Plan activado el 15 oct, 10:32'],
-      ['PLAN_VERSION', 'p3', null, 'Plan activado el 15 oct, 18:05'],
+      ['PLAN_VERSION', 'p3', null, 'Plan activado el 15 oct, 18:05 · vigente'],
     ],
   );
+  // Las dos del mismo minuto (las activa así el generador de datos): las distingue cuál rige.
+  assert.deepEqual(
+    versionesDelPlan([
+      { planId: 'a', dia: '15 oct', hora: '00:08', vigente: false },
+      { planId: 'b', dia: '15 oct', hora: '00:08', vigente: true },
+    ]).map((c) => c.texto),
+    ['Plan activado el 15 oct, 00:08', 'Plan activado el 15 oct, 00:08 · vigente'],
+  );
+  assert.equal(versionesDelPlan([{ planId: 'v', dia: '7 sept', hora: '09:00', vigente: true }])[0].texto, 'Plan activado el 7 sept · vigente');
   assert.deepEqual(versionesDelPlan([]), []);
 });

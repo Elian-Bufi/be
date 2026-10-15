@@ -694,8 +694,10 @@ input[type='radio'] {
 /* ─── La evidencia de una revisión: por tipo y por día, con lo marcado a la vista (pasada del 2026-10-09) ─── */
 /*
  * WP-ESCRITORIO-AREAS, parte 10 (maqueta 06): la planificación y el objetivo, en una fila; los días, en una grilla de
- * celdas; lo marcado, al pie. La grilla pone tantas columnas como entran (tres en la columna de una ventana de 1440) y
- * cada celda dice su día, su cuenta y «Ver». Un día abierto ocupa todo el ancho: sus registros quedan dentro del día.
+ * celdas; lo marcado, al pie. La grilla pone tantas columnas como entran (tres en la columna de una ventana de 1440; dos
+ * a 1280, 1024 y 768) y cada celda dice en una línea su día, su cuenta y «Ver»: el ancho mínimo es el de «28 sept 4
+ * comidas», así ninguna celda baja la cuenta mientras otras no. Un día abierto ocupa todo el ancho: sus registros quedan
+ * dentro del día.
  */
 /* Dentro de su paso, la selección no es otra caja: el paso ya lo es. */
 .grupo.evidencia {
@@ -751,7 +753,7 @@ input[type='radio'] {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   gap: 0.5rem;
 }
 
@@ -10463,9 +10465,12 @@ button.comida-del-dia__fila > .icono:last-child {
   background: var(--fondo-suave);
 }
 
+/* Los seis efectos, en dos columnas compartidas: el nombre de cada resultado y lo que hace, alineados entre sí (cada
+ * renglón `div` no arma su propia grilla: si no, el nombre más largo corría solo su renglón). */
 .resultado-de-revision__lista {
   display: grid;
-  gap: 0.5rem;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
   margin: 0;
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--borde);
@@ -10473,9 +10478,7 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 .resultado-de-revision__lista div {
-  display: grid;
-  grid-template-columns: minmax(9rem, max-content) 1fr;
-  gap: 0 0.75rem;
+  display: contents;
 }
 
 .resultado-de-revision__lista dt {
@@ -10552,7 +10555,12 @@ button.comida-del-dia__fila > .icono:last-child {
     margin-top: 1rem;
   }
 
-  .resultado-de-revision__lista div {
+  .resultado-de-revision__lista {
     grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.15rem;
+  }
+
+  .resultado-de-revision__lista dd {
+    margin-bottom: 0.4rem;
   }
 }

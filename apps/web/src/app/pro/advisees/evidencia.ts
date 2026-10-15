@@ -93,14 +93,19 @@ export const avisoDeMarcasQuitadas = (quitadas: number): string =>
 
 /**
  * Las versiones del plan que rigieron en el período, como casillas de la evidencia: por su fecha de activación («Plan
- * activado el 7 sept»; el contexto de la revisión no trae su número, F-123). Si dos se activaron el mismo día, van con
- * la hora, para que se distingan («Plan activado el 15 oct, 10:32»).
- * @param versiones el día ya dicho como lo dice la pantalla y la hora en la zona del período.
+ * activado el 7 sept»; el contexto de la revisión no trae su número, F-123), y la que rige hoy, la que ve el asesorado,
+ * dice «vigente». Si dos se activaron el mismo día, van con la hora («Plan activado el 15 oct, 10:32 · vigente»).
+ * @param versiones el día ya dicho como lo dice la pantalla, la hora en la zona del período y si es la vigente.
  */
-export function versionesDelPlan(versiones: readonly { readonly planId: string; readonly dia: string; readonly hora: string }[]): CandidataDeEvidencia[] {
+export function versionesDelPlan(versiones: readonly { readonly planId: string; readonly dia: string; readonly hora: string; readonly vigente: boolean }[]): CandidataDeEvidencia[] {
   const delMismoDia = new Map<string, number>();
   for (const v of versiones) delMismoDia.set(v.dia, (delMismoDia.get(v.dia) ?? 0) + 1);
-  return versiones.map((v) => ({ tipo: 'PLAN_VERSION', id: v.planId, dia: null, texto: `Plan activado el ${v.dia}${(delMismoDia.get(v.dia) ?? 0) > 1 ? `, ${v.hora}` : ''}` }));
+  return versiones.map((v) => ({
+    tipo: 'PLAN_VERSION',
+    id: v.planId,
+    dia: null,
+    texto: `Plan activado el ${v.dia}${(delMismoDia.get(v.dia) ?? 0) > 1 ? `, ${v.hora}` : ''}${v.vigente ? ' · vigente' : ''}`,
+  }));
 }
 
 /**

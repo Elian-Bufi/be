@@ -249,6 +249,7 @@ function FormularioDeRevision({
           planId: v.planId,
           dia: diaDelAnioEnCurso(fechaCivil(v.activatedAt as string, contexto.period.timeZone), hoy),
           hora: horaEnZona(v.activatedAt as string, contexto.period.timeZone),
+          vigente: v.isEffective,
         })),
       ),
       ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
