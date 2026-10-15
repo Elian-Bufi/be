@@ -163,6 +163,11 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   `#f2f6fc`, tarjetas blancas y azul `#1e6bf2`; «Azul noche», fondo `#011325`, tarjetas `#052238` y cian `#27d5f9`.
   En Claro, el website lleva cuatro colores de texto (secundario, enlace, error y éxito) un punto más oscuros que los
   medidos: los pone también sobre el velo azul de la cara pública, donde el valor medido no llegaba a 4,5:1.
+- **El texto secundario de Azul noche es gris azulado** (`#a3b1c2`), desde el 2026-10-15: el celeste de la paleta
+  medida (`#8dcae5`) se confundía con los enlaces y el tema quedaba de un solo color. El cian queda para enlaces, acentos
+  y datos. Lo pidió la crítica de diseño y lo aprobó Dirección. La APK conserva el celeste hasta su próxima versión.
+- **Un solo botón secundario** en el website: fondo de tarjeta, borde de 1 px gris medio y texto en peso 600. Uno lleno
+  por vista; uno apagado, gris neutro. Las píldoras de estado y las etiquetas, livianas: no tienen que parecer botones.
 - **El cian no es color de texto sobre fondo claro.** Marca el encabezado y lo elegido sobre azul profundo; un texto
   de acento usa el color de los enlaces, que sí está medido.
 - **El significado no va solo en el color.** Se dice también con forma, trazo, texto o estado accesible.
@@ -289,7 +294,7 @@ Información).
 - **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar), cada una con su ícono, que comparten el período, y
   **pestañas de área** para trabajar sobre el registro completo.
 - **El marco de una pestaña de área** (`marco-del-area.tsx`; WP-ESCRITORIO-AREAS) es el de la ficha llevado a
-  Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones, a la misma altura (143 px), para
+  Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones, a la misma altura (140 px), para
   que pasar de la ficha a un área no mueva nada de lugar. (1) El camino de vuelta, el área como título, la referencia
   de la persona y, a la derecha, «Actualizar» con la hora de la consulta; (2) el **acceso actual de esa área** (en
   Información, el de las tres); (3) las secciones, cada una con su ícono, y la ayuda de la vista cuando la tenga. No
@@ -1441,6 +1446,11 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | «Cambios sin guardar», en la carga de una toma | Bastaba con tocar un campo, aunque se volviera a lo mismo. | Compara lo escrito con lo guardado (II.9). | Corregida | Áreas, 9 |
 | Las etiquetas de estado («Borrador», «En preparación · sin registrar», «Solo lectura») | Una píldora en unas pantallas y una etiqueta en otras. | Una etiqueta, como en las maquetas; la píldora queda para el acceso del marco y los estados de una lista. | Aclarada | Áreas, pasada de estética |
 | «Cómo se lee esta vista», en Evolución y Lámina | Plegado dentro de la sección. | En el marco, como en las demás secciones (II.9). | Sustituida | Áreas, pasada de estética |
+| El botón secundario | Dos: el «secundario», con borde azul de 2 px, y el «quieto», con borde oscuro de 2 px, sin una regla entre ellos. | Uno solo, con borde de 1 px gris medio y texto en peso 600 (I.6). | Sustituida | Áreas, crítica de diseño |
+| El texto secundario en Azul noche | Celeste (`#8dcae5`), casi el color de los enlaces. | Gris azulado (`#a3b1c2`) (I.6). | Sustituida | Áreas, crítica de diseño |
+| Las listas desplegables y los desplegables | Con la flecha y el triángulo del navegador. | Con la flecha de BE; los desplegables, con 44 px. | Sustituida | Áreas, crítica de diseño |
+| El alto del marco de la ficha y de las áreas | 143 px. | 140 px, con renglones de píxeles enteros: con la píldora del acceso más liviana, un alto fraccionario se redondeaba distinto según desde dónde se lo midiera. | Sustituida | Áreas, crítica de diseño |
+| Antropometría · Evolución | Dos fechas vacías, puntos naranjas, un eje irregular y un párrafo técnico a la vista. | El control de período de las otras secciones, el azul de los datos, un eje parejo y el párrafo solo para el lector (II.9). | Sustituida | Áreas, crítica de diseño |
 | La regla de los 390 px, en Antropometría | La pestaña tenía que poder usarse a 390 px de ancho. | Es de escritorio: con menos de 832 px de escena, los campos de la carga van en lista, sin la figura (II.1, II.9). | Sustituida | Áreas, 9 |
 
 ---

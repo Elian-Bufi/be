@@ -1539,17 +1539,42 @@ controles. Se refinaron tres cosas (F-139 a F-141; código en `5d836c1`):
 | El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de `5d836c1` | La pasada completa del 15/10 (09:36 a 10:32): R capturas 60, funcional 323 de 324, descartable 22, mediciones 18, carga 17, solicitudes 32, planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación 5 de 6. La de la funcional (F-14) afirmaba que Evolución no tiene ayuda, y ahora la tiene a propósito: se reescribió con una sección que sigue sin ayuda (el Resumen de Nutrición) y la positiva de Evolución, y `tomas` dio 24 de 24. La de la revocación (CP-23, los gráficos de Analizar después de revocar), repetida sola con datos nuevos: 6 de 6 | Verificado en pantalla |
 | Toda la batería de la CI | La CI de GitHub sobre el commit | En verde la corrida 38744400327, sobre `5d836c1`: el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
 
-**Lo que se vio y queda para decidir** (no está dibujado, o cambia algo que Dirección ya aprobó):
-- **El Resumen de Nutrición y el de Entrenamiento** conservan su diseño anterior: tarjetas apiladas a 72 rem, las acciones
-  al pie y sin «Cómo se lee esta vista». No tienen maqueta.
-- **La Lámina** elige con píldoras azules lo que el resto elige con segmentos oscuros («Hombre · Mujer» se ve distinto en
-  la carga y en la Lámina), y conserva su ancho de 72 rem.
-- **Evolución** tiene todavía dos tarjetas arriba (el período y la métrica). Juntarlas con el control de período común
-  pide decidir el tope: el control común llega a 92 días, y Evolución hoy admite más.
-- **«Plantillas y habituales», «Mis recetas» y «Mis ejercicios»** conservan el diseño anterior (centrado, con migas y un
-  título grande): al pasar desde el Espacio profesional se nota.
-- **En el Espacio profesional,** «Abrir» es un enlace en «Pendientes» y un botón en «Tus asesorados».
-- **En el historial del plan de Nutrición** se ve «Huella de la instantánea: c764df2c…», un dato de trazabilidad.
+**La crítica de diseño, aplicada antes de integrar.** Un revisor aparte, con el rol de director de diseño, miró las
+mismas capturas y dejó su opinión (`pasada-de-estetica/critica-de-diseno.md`). Dirección pidió aplicarla antes de
+integrar, también donde contradecía la paleta de Azul noche (F-142 a F-147; código en `e30009f` y `ff91adb`):
+- **Menos volumen:** un solo botón secundario (borde de 1 px gris medio, texto en peso 600), píldoras y etiquetas más
+  livianas, y el peso 700 solo para títulos y cifras grandes.
+- **El texto secundario de Azul noche, gris azulado** (`#a3b1c2`): el celeste se confundía con los enlaces.
+- **Sin rastros del navegador:** las listas desplegables y los desplegables, con la flecha de BE.
+- **Evolución, completa:** el control de período de las otras secciones, el azul de los datos, un eje parejo, las fechas
+  sin el año, la unidad derecha, la leyenda con las tres formas y el párrafo técnico solo para el lector de pantalla.
+- **Un botón apagado, gris neutro, y uno solo lleno en los editores.**
+- **Detalles:** la toma elegida, los estados vacíos, la barra de la revisión nueva, la Lámina (botonera pegada, al
+  ancho, y su ayuda sin «compositor de Dirección») y Plantillas.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Las pantallas, en los dos temas, a 1440 | `ver.mjs` sobre los datos del día, mirando cada captura | Como se describe arriba | Observado en una captura real |
+| Los colores nuevos llegan al contraste: el texto secundario de Azul noche, 4,5:1 o más sobre el fondo, las tarjetas y el fondo suave | `scripts/contraste.test.cjs` | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos | La pasada completa del 15/10 (11:35 a 12:22), sobre `e30009f`: R capturas 60, descartable 22, mediciones 18, carga 17, solicitudes 32, planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación 6. La funcional de R, con la máquina corta de memoria, se cortó dos veces por el entorno (la base venció transacciones; una lectura no llegó a cargar) y la tercera, entera, dio 321 de 324: el marco medía 139,48 px y se redondeaba distinto según desde dónde se lo midiera (F-06), y E-47 esperaba los 143 de antes. Corregido en `ff91adb` (renglones de píxeles enteros: 140): R capturas 60 de 60, el marco de las áreas 21 de 21 y Analizar 44 de 44, y la funcional entera 322 de 324, con una lectura del acceso de Entrenamiento que no llegó a cargar (F-01 y, por su aviso, F-06), que pasaron en el modo del marco. Una primera corrida, a las 11:02, la cortó Claude Code por falta de memoria a los 2 de 14 | Verificado en pantalla |
+| Toda la batería de la CI | La CI de GitHub sobre el commit | En verde las corridas 38751316644 (sobre `e30009f`) y 38766974568 (sobre `ff91adb`): el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
+
+**Lo que queda, con su razón** (en §6 de la definición; la crítica, entera, en `pasada-de-estetica/critica-de-diseno.md`):
+- **Choca con algo ya decidido, para que decida Dirección:** el Resumen de la ficha más corto (sus frases las pidió la
+  pasada de comprensión y las fijan sus comprobaciones); el acceso como «Activo» en la primera fila («Activo · acceso
+  contextual» lo pide el legajo: B10-04, §28); la Línea de tiempo con todos los días en tarjeta y sin la barrita de los
+  hitos (así la dibuja la maqueta 02, validada); «Asesorado ·» repetido en «Tus asesorados» (el alias de DL-040). Los
+  íconos —el de cada métrica en Analizar y el del protocolo— se quedan: lo decidió Dirección el 15/10.
+- **Pide más que estilo, para después de integrar:** las fechas escritas con un control propio (su accesibilidad hay que
+  verificarla; la del nativo viene resuelta); los cuadros de texto sin la marca para agrandarlos; un mismo espacio entre
+  tarjetas y entre secciones (mueve el alto de todas las pantallas); el estado vacío y la pestaña única de Información;
+  las plantillas del Plan de Nutrición en un menú y la «Huella de la instantánea» (un dato de trazabilidad); «Abrir»
+  como enlace en «Pendientes» y como botón en «Tus asesorados»; y «Plantillas y habituales», «Mis recetas» y «Mis
+  ejercicios», que conservan el diseño anterior (centrado, con migas y un título grande).
+- **No es del website:** el «cm» chico de la vista previa de la Lámina (la imagen a escala; la que se descarga lo tiene a
+  su tamaño).
+- **El Resumen de Nutrición y el de Entrenamiento** conservan su diseño anterior (tarjetas apiladas a 72 rem, las
+  acciones al pie y sin «Cómo se lee esta vista»): no tienen maqueta.
 
 ## Parte 10 · Preparar revisión (2026-10-15)
 
