@@ -82,6 +82,15 @@ const DOMINIOS = [
     prohibidos: terminosProhibidosDeFormulariosEn,
     minimo: 4,
   },
+  {
+    // WP-ESCRITORIO-AREAS, parte 10: las piezas de una revisión que comparten Nutrición y Entrenamiento (la evidencia por
+    // día, la revisión en preparación, el período y su ayuda). Muestran texto de las dos áreas: pasan por las dos listas.
+    // Hasta acá la evidencia no la miraba ninguna prueba de palabras.
+    nombre: 'la revisión de Nutrición y de Entrenamiento',
+    archivos: ['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+    prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 5,
+  },
 ];
 
 /** Estilos de React Native: valores como '100%' no son texto para la persona. */

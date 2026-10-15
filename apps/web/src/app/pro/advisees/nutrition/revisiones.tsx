@@ -7,159 +7,221 @@
  *   Sin «Recomendación BE: ajustar» (B05:1162-1176): BE no sugiere un resultado.
  * - Aplicar es un paso aparte (B05:1240-1261): la revisión queda registrada aunque todavía no se aplique.
  * - «Finalizar» no es «Eliminar plan»: la historia se conserva (B05:1283-1295).
+ * WP-ESCRITORIO-AREAS, parte 10 (maqueta 06; DEC-17 a DEC-20): por defecto se ve la lista de revisiones registradas, con
+ * «Nueva revisión». La revisión nueva es otra pantalla de la misma sección (`preparar=1`, también desde la ficha), en tres
+ * pasos y con la barra de «Registrar revisión» pegada abajo; al registrar o cancelar se vuelve a la lista. Las piezas
+ * comunes con Entrenamiento están en `revision-en-preparacion.tsx`.
  */
 import {
   COPY_NUTRICION,
   EFECTO_VISIBLE_DE_RESULTADO,
   ETIQUETA_DE_RESULTADO,
+  fechaCivil,
   type ContextoDeRevisionResponse,
   type EvaluacionNutricional,
   type Revision,
 } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia, fecha, horaEnZona } from '../../../../lib/formato';
+import { dia, diaDelAnioEnCurso, fecha, horaEnZona } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
-import { referenciasMarcadas } from '../evidencia';
+import { avisoDeMarcasQuitadas, diasDelPeriodo, marcasDelPeriodoNuevo, referenciasMarcadas, versionesDelPlan } from '../evidencia';
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
-import { FiltroDePeriodo, type Periodo } from '../periodo';
-import { AvisoDePreparacion, periodoPreparado, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
-import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
+import {
+  AreaDeTexto,
+  AYUDA_DE_LA_INTERPRETACION,
+  BarraDeLaRevision,
+  CabeceraDeLaRevision,
+  LecturaDelPeriodo,
+  PasoDeLaRevision,
+  ResultadoDeLaRevision,
+  SALIR_DE_LA_REVISION,
+  useContextoDeLaRevision,
+} from '../revision-en-preparacion';
+import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
 type Contexto = ContextoDeRevisionResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;
 const RESULTADOS = Object.keys(ETIQUETA_DE_RESULTADO) as ResultadoApi[];
+const COMIDAS: readonly [string, string] = ['comida', 'comidas'];
 
 export function VistaDeRevisiones() {
-  const { token, asesoradoId, sesionPerdida, irA } = useNutricion();
-  // WP-DASHBOARD-COMPRENSION (eje 5): «Preparar la revisión» desde la ficha abre el formulario con el período desde la
+  const { asesoradoId, irA, ir } = useNutricion();
+  // WP-DASHBOARD-COMPRENSION (eje 5): «Preparar la revisión» desde la ficha abre la revisión nueva con el período desde la
   // última revisión, dicho como preparado por BE. Ver no es revisar: nada se registra hasta «Registrar revisión».
   const preparar = usePreparar();
   const retorno = useRetornoALaFicha(asesoradoId);
-  const [preparado, setPreparado] = useState<{ desdeLaRevision: string | null; periodo: Periodo | null } | null>(null);
-  const [periodo, setPeriodo] = useState<Periodo>({});
-  const [r, setR] = useState<Resultado<{ contexto: Contexto; evaluaciones: EvaluacionNutricional[] }> | null>(null);
-  const [aviso, setAviso] = useState<{ tipo: 'exito' | 'info'; texto: string; alPlan?: boolean; volver?: string | null } | null>(null);
+  const [aviso, setAviso] = useState<{ texto: string; alPlan?: boolean; volver?: string | null } | null>(null);
 
+  return (
+    <>
+      {/* DL-113: el atajo al borrador va en el aviso, que por eso se queda hasta que se cierra. */}
+      {aviso ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.alPlan || !!aviso.volver}>
+          <p>{aviso.texto}</p>
+          {aviso.volver ? (
+            <p>
+              {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
+              <Link href={aviso.volver}>Volver a la ficha, donde estabas</Link>
+            </p>
+          ) : null}
+          {aviso.alPlan ? (
+            <p>
+              <button type="button" className="boton boton--enlace" onClick={() => irA('plan')}>
+                Abrir el borrador en Plan
+              </button>
+            </p>
+          ) : null}
+        </AvisoFlotante>
+      ) : null}
+      {preparar ? (
+        <RevisionNueva
+          onRegistrada={() => {
+            setAviso({ texto: `${COPY_NUTRICION.revisionRegistrada}. Todavía no se aplicó: aplicala desde la lista.`, alPlan: false, volver: retorno.href });
+            ir(SALIR_DE_LA_REVISION);
+          }}
+        />
+      ) : (
+        <ListaDeRevisiones onAplicada={(texto, alPlan) => setAviso({ texto, alPlan })} />
+      )}
+    </>
+  );
+}
+
+/** La lista de revisiones registradas, con «Nueva revisión» (DEC-17). Su lectura no depende de un período. */
+function ListaDeRevisiones({ onAplicada }: { onAplicada: (texto: string, alPlan: boolean) => void }) {
+  const { token, asesoradoId, sesionPerdida, ir } = useNutricion();
+  const [r, setR] = useState<Resultado<{ data: Contexto }> | null>(null);
   const cargar = useCallback(async () => {
     setR(null);
-    const [cx, ev] = await Promise.all([api.contextoDeRevision(token, asesoradoId, periodo), api.listarEvaluaciones(token, asesoradoId)]);
-    if (sesionPerdida(cx) || sesionPerdida(ev)) return;
-    if (!cx.ok) return setR(cx as Resultado<never>);
-    if (!ev.ok) return setR(ev as Resultado<never>);
-    setR({ ok: true, datos: { contexto: cx.datos.data, evaluaciones: ev.datos.data } });
-  }, [token, asesoradoId, sesionPerdida, periodo]);
-
+    const res = await api.contextoDeRevision(token, asesoradoId, {});
+    if (sesionPerdida(res)) return;
+    setR(res);
+  }, [token, asesoradoId, sesionPerdida]);
   useEffect(() => {
     void cargar();
   }, [cargar]);
-  // La primera lectura dice cuándo fue la última revisión: con eso se prepara el período, una sola vez.
-  useEffect(() => {
-    if (!preparar || preparado || !r?.ok) return;
-    const p = periodoPreparado(r.datos.contexto.previousReviews);
-    setPreparado(p ? { desdeLaRevision: p.desdeLaRevision, periodo: p.periodo } : { desdeLaRevision: null, periodo: null });
-    if (p) setPeriodo(p.periodo);
-  }, [preparar, preparado, r]);
+  const contexto = r?.ok ? r.datos.data : null;
 
   return (
-    <div className="secciones">
-      {/* El período de la revisión se elige (B10-06 §41, §43-§44), y vive fuera del estado de lectura (B10-10:376). */}
-      <FiltroDePeriodo key={preparado?.periodo?.periodStart ?? 'sin-preparar'} id="nut-revision-periodo" onAplicar={setPeriodo} inicial={preparado?.periodo ?? undefined} />
+    <section className="revisiones" aria-labelledby="titulo-revisiones">
+      <div className="revisiones__encabezado">
+        <h2 id="titulo-revisiones">Revisiones registradas</h2>
+        {contexto?.process?.state === 'ABIERTO' ? (
+          <button type="button" className="boton boton--primario" onClick={() => ir({ preparar: '1' }, { agregarAlHistorial: true })}>
+            {COPY_NUTRICION.nuevaRevision}
+          </button>
+        ) : null}
+      </div>
       <EstadoDeLectura r={r} onReintentar={cargar}>
-        {r?.ok ? (
-        <div className="secciones">
-          <p className="nota">{COPY_NUTRICION.verNoEsRevisar}</p>
-          {/* DL-113: el atajo al borrador va en el aviso, que por eso se queda hasta que se cierra. */}
-          {aviso && aviso.tipo === 'exito' ? (
-            <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.alPlan || !!aviso.volver}>
-              <p>{aviso.texto}</p>
-              {aviso.volver ? (
+        {contexto ? (
+          <div className="secciones">
+            {contexto.pendingReview.pending ? (
+              <Aviso tipo="info">
                 <p>
-                  {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
-                  <Link href={aviso.volver}>Volver a la ficha, donde estabas</Link>
+                  {COPY_NUTRICION.revisionPendiente} desde el {dia(`${contexto.pendingReview.since}T12:00:00Z`)}.
                 </p>
-              ) : null}
-              {aviso.alPlan ? (
-                <p>
-                  <button type="button" className="boton boton--enlace" onClick={() => irA('plan')}>
-                    Abrir el borrador en Plan
-                  </button>
-                </p>
-              ) : null}
-            </AvisoFlotante>
-          ) : null}
-          {aviso && aviso.tipo !== 'exito' ? (
-            <Aviso tipo={aviso.tipo} enfocar>
-              <p>{aviso.texto}</p>
-            </Aviso>
-          ) : null}
-          {r.datos.contexto.pendingReview.pending ? (
-            <Aviso tipo="info">
-              <p>
-                {COPY_NUTRICION.revisionPendiente} desde el {dia(`${r.datos.contexto.pendingReview.since}T12:00:00Z`)}.
-              </p>
-            </Aviso>
-          ) : null}
-          {r.datos.contexto.process?.state === 'ABIERTO' ? (
-            <FormularioDeRevision
-              abiertoAlEntrar={preparar}
-              preparado={preparado}
-              contexto={r.datos.contexto}
-              evaluaciones={r.datos.evaluaciones}
-              onRegistrada={() => {
-                setAviso({ tipo: 'exito', texto: `${COPY_NUTRICION.revisionRegistrada}. Todavía no se aplicó: aplicala desde la lista.`, alPlan: false, volver: retorno.href });
-                void cargar();
-              }}
-            />
-          ) : (
-            <Aviso tipo="info">
-              <p>{r.datos.contexto.process ? 'El seguimiento nutricional está cerrado. La historia se conserva.' : 'El seguimiento empieza al activar el primer plan.'}</p>
-            </Aviso>
-          )}
-          <section className="seccion" aria-labelledby="titulo-revisiones">
-            <h2 id="titulo-revisiones">Revisiones registradas</h2>
-            {r.datos.contexto.previousReviews.length === 0 ? <p>Todavía no hay revisiones registradas.</p> : null}
+              </Aviso>
+            ) : null}
+            {contexto.process?.state !== 'ABIERTO' ? <SinSeguimientoAbierto contexto={contexto} /> : null}
+            {contexto.previousReviews.length === 0 ? <p>Todavía no hay revisiones registradas.</p> : null}
             <ul className="lista">
-              {r.datos.contexto.previousReviews.map((rev) => (
+              {contexto.previousReviews.map((rev) => (
                 <ItemDeRevision
                   key={rev.reviewId}
                   revision={rev}
                   onAplicada={(texto, alPlan) => {
-                    setAviso({ tipo: 'exito', texto, alPlan });
+                    onAplicada(texto, alPlan);
                     void cargar();
                   }}
                 />
               ))}
             </ul>
-          </section>
-        </div>
+          </div>
         ) : null}
       </EstadoDeLectura>
-    </div>
+    </section>
+  );
+}
+
+function SinSeguimientoAbierto({ contexto }: { contexto: Contexto }) {
+  return (
+    <Aviso tipo="info">
+      <p>{contexto.process ? 'El seguimiento nutricional está cerrado. La historia se conserva.' : 'El seguimiento empieza al activar el primer plan.'}</p>
+    </Aviso>
+  );
+}
+
+/** La revisión nueva (maqueta 06): la cabecera con el período, fuera del formulario, y el formulario en tres pasos. */
+function RevisionNueva({ onRegistrada }: { onRegistrada: () => void }) {
+  const area = useNutricion();
+  const { token, asesoradoId, sesionPerdida, ir } = area;
+  const leer = useCallback((p: { periodStart?: string; periodEnd?: string }) => api.contextoDeRevision(token, asesoradoId, p), [token, asesoradoId]);
+  const lectura = useContextoDeLaRevision<Contexto>(leer, area);
+  // Las evaluaciones no dependen del período: se leen una vez (las pide «Cambiar objetivo»).
+  const [evaluaciones, setEvaluaciones] = useState<Resultado<{ data: EvaluacionNutricional[] }> | null>(null);
+  const leerEvaluaciones = useCallback(async () => {
+    setEvaluaciones(null);
+    const res = await api.listarEvaluaciones(token, asesoradoId);
+    if (!sesionPerdida(res)) setEvaluaciones(res);
+  }, [token, asesoradoId, sesionPerdida]);
+  useEffect(() => {
+    void leerEvaluaciones();
+  }, [leerEvaluaciones]);
+  const estado = lectura.primera && !lectura.primera.ok ? lectura.primera : evaluaciones && !evaluaciones.ok ? evaluaciones : lectura.contexto && evaluaciones ? evaluaciones : null;
+
+  return (
+    <section className="revision-nueva" aria-labelledby="titulo-revision-nueva">
+      <CabeceraDeLaRevision titulo="Nueva revisión de Nutrición" idDelTitulo="titulo-revision-nueva" periodo={lectura.periodo} procedencia={lectura.procedencia} onElegirPeriodo={lectura.elegirPeriodo} />
+      <EstadoDeLectura
+        r={estado}
+        onReintentar={() => {
+          if (!lectura.contexto) lectura.reintentar();
+          if (!evaluaciones?.ok) void leerEvaluaciones();
+        }}
+      >
+        {lectura.contexto && evaluaciones?.ok ? (
+          lectura.contexto.process?.state === 'ABIERTO' ? (
+            <FormularioDeRevision contexto={lectura.contexto} evaluaciones={evaluaciones.datos.data} hoy={lectura.hoy} lectura={lectura} onRegistrada={onRegistrada} onCancelar={() => ir(SALIR_DE_LA_REVISION)} />
+          ) : (
+            <div className="secciones">
+              <SinSeguimientoAbierto contexto={lectura.contexto} />
+              <div className="acciones">
+                <button type="button" className="boton boton--secundario" onClick={() => ir(SALIR_DE_LA_REVISION)}>
+                  Ver las revisiones registradas
+                </button>
+              </div>
+            </div>
+          )
+        ) : null}
+      </EstadoDeLectura>
+    </section>
   );
 }
 
 function FormularioDeRevision({
-  abiertoAlEntrar = false,
-  preparado = null,
   contexto,
   evaluaciones,
+  hoy,
+  lectura,
   onRegistrada,
+  onCancelar,
 }: {
-  abiertoAlEntrar?: boolean;
-  preparado?: { desdeLaRevision: string | null; periodo: Periodo | null } | null;
   contexto: Contexto;
   evaluaciones: readonly EvaluacionNutricional[];
+  hoy: string;
+  lectura: { readonly leyendo: boolean; readonly falloDelPeriodo: string | null; readonly bloqueo: string | null; readonly reintentar: () => void };
   onRegistrada: () => void;
+  onCancelar: () => void;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
-  const [abierto, setAbierto] = useState(abiertoAlEntrar);
   const [evidencia, setEvidencia] = useState<Set<string>>(new Set());
   const [interpretacion, setInterpretacion] = useState('');
   const [resultado, setResultado] = useState<ResultadoApi | ''>('');
@@ -169,24 +231,49 @@ function FormularioDeRevision({
   const [objetivo, setObjetivo] = useState(objetivoVacio(evaluaciones[0]?.evaluationId ?? ''));
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
-  useCambiosSinGuardar(abierto && (evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima].some((t) => t.trim() !== '')), 'la revisión');
+  useCambiosSinGuardar(evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima].some((t) => t.trim() !== ''), 'la revisión');
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
   // Las comidas, por su día civil (lo dice el grupo) con la hora y el tipo; la planificación y el objetivo, aparte.
-  const candidatas: CandidataDeEvidencia[] = [
-    ...contexto.registeredIntakes.map((i) => ({
-      tipo: 'EXECUTION' as const,
-      id: i.executionId,
-      dia: i.localDate,
-      texto: `${horaEnZona(i.occurredAt, i.timeZone)} · ${i.origin === 'PRESCRIBED' ? 'Comida del plan' : 'Comida fuera del plan'}${i.description ? ` · «${i.description}»` : ''}`,
-    })),
-    ...contexto.activePlanVersions.map((v) => ({ tipo: 'PLAN_VERSION' as const, id: v.planId, dia: null, texto: `Plan activado el ${fecha(v.activatedAt as string)}` })),
-    ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
-  ];
+  const candidatas: CandidataDeEvidencia[] = useMemo(
+    () => [
+      ...contexto.registeredIntakes.map((i) => ({
+        tipo: 'EXECUTION' as const,
+        id: i.executionId,
+        dia: i.localDate,
+        texto: `${horaEnZona(i.occurredAt, i.timeZone)} · ${i.origin === 'PRESCRIBED' ? 'Comida del plan' : 'Comida fuera del plan'}${i.description ? ` · «${i.description}»` : ''}`,
+      })),
+      ...versionesDelPlan(
+        contexto.activePlanVersions.map((v) => ({
+          planId: v.planId,
+          dia: diaDelAnioEnCurso(fechaCivil(v.activatedAt as string, contexto.period.timeZone), hoy),
+          hora: horaEnZona(v.activatedAt as string, contexto.period.timeZone),
+        })),
+      ),
+      ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
+    ],
+    [contexto, hoy],
+  );
+
+  // DEC-20: con otro período, se quita solo lo marcado que quedó afuera, y se dice. Lo escrito no cambia.
+  const [avisoDeMarcas, setAvisoDeMarcas] = useState<string | null>(null);
+  const periodoLeido = `${contexto.period.start}|${contexto.period.end}`;
+  const periodoAnterior = useRef(periodoLeido);
+  useEffect(() => {
+    if (periodoAnterior.current === periodoLeido) return;
+    periodoAnterior.current = periodoLeido;
+    const { quedan, quitadas } = marcasDelPeriodoNuevo(evidencia, candidatas);
+    if (quitadas > 0) setEvidencia(quedan);
+    setAvisoDeMarcas(quitadas > 0 ? avisoDeMarcasQuitadas(quitadas) : null);
+    // A propósito, solo cuando cambia el período leído: marcar o desmarcar no es motivo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodoLeido]);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
+    // Lo que se ve todavía no es del período elegido: la barra dice por qué.
+    if (lectura.bloqueo) return;
     const problemas: { id: string; texto: string }[] = [];
     if (evidencia.size === 0) problemas.push({ id: 'revision-evidencia', texto: 'Elegí la evidencia que examinaste.' });
     if (!interpretacion.trim()) problemas.push({ id: 'revision-interpretacion', texto: 'Falta la interpretación.' });
@@ -223,137 +310,86 @@ function FormularioDeRevision({
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
-    setAbierto(false);
     onRegistrada();
   }
 
-  if (!abierto) {
-    return (
-      <div className="acciones">
-        <button type="button" className="boton boton--primario" onClick={() => setAbierto(true)}>
-          {COPY_NUTRICION.nuevaRevision}
-        </button>
-      </div>
-    );
-  }
   // El mismo error que enumera el resumen se marca en su campo (B10-10:164-165; DL-091 punto 3).
   const porCampo = erroresPorCampo(errores);
-  const campo = (id: string) => {
-    const texto = porCampo[id];
-    return {
-      contenedor: `campo${texto ? ' campo--error' : ''}`,
-      atributos: { 'aria-invalid': texto ? true : undefined, 'aria-describedby': texto ? `${id}-error` : undefined } as const,
-      texto,
-    };
-  };
-  const evidencia_ = campo('revision-evidencia');
-  const interpretacion_ = campo('revision-interpretacion');
-  const resultado_ = campo('revision-resultado');
-  const fundamento_ = campo('revision-fundamento');
-  const accion_ = campo('revision-accion');
 
   return (
-    <form className="formulario seccion" onSubmit={enviar} noValidate>
-      <h2>{COPY_NUTRICION.nuevaRevision}</h2>
-      {preparado ? <AvisoDePreparacion desdeLaRevision={preparado.desdeLaRevision} periodo={preparado.periodo} /> : null}
-      <p>
-        Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
-      </p>
+    <form className="revision-nueva__formulario" onSubmit={enviar} noValidate data-periodo={periodoLeido}>
       <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={envios} />
-      <SeleccionDeEvidencia
-        id="revision-evidencia"
-        candidatas={candidatas}
-        elegidas={evidencia}
-        onCambiar={setEvidencia}
-        registros={['comida', 'comidas']}
-        sinRegistros="No hay comidas registradas en el período."
-        error={evidencia_.texto ?? null}
-      />
-      <div className={interpretacion_.contenedor}>
-        <label htmlFor="revision-interpretacion">Interpretación</label>
-        <p id="revision-interpretacion-ayuda" className="campo__ayuda">
-          {COPY_NUTRICION.interpretacionNoDiagnostica}
-        </p>
-        <textarea
-          id="revision-interpretacion"
-          rows={3}
-          value={interpretacion}
-          onChange={(e) => setInterpretacion(e.target.value)}
-          maxLength={4000}
-          aria-invalid={interpretacion_.texto ? true : undefined}
-          aria-describedby={interpretacion_.texto ? 'revision-interpretacion-ayuda revision-interpretacion-error' : 'revision-interpretacion-ayuda'}
-        />
-        {interpretacion_.texto ? (
-          <p id="revision-interpretacion-error" className="campo__error">
-            <span aria-hidden="true">⚠ </span>
-            {interpretacion_.texto}
-          </p>
-        ) : null}
+      <div className="revision-nueva__columnas">
+        <div className="revision-nueva__tarjeta">
+          <PasoDeLaRevision
+            numero={1}
+            titulo="Lo que miraste"
+            idDeLaAyuda="revision-evidencia-ayuda"
+            ayuda="Marcá solo lo que examinaste: nada viene marcado. Marcar un día marca cada una de sus comidas; dejá marcadas solo las que miraste."
+          >
+            <LecturaDelPeriodo leyendo={lectura.leyendo} fallo={lectura.falloDelPeriodo} onReintentar={lectura.reintentar} />
+            <SeleccionDeEvidencia
+              id="revision-evidencia"
+              hoy={hoy}
+              candidatas={candidatas}
+              elegidas={evidencia}
+              onCambiar={(siguiente) => {
+                setEvidencia(siguiente);
+                setAvisoDeMarcas(null);
+              }}
+              registros={COMIDAS}
+              sinRegistros="No hay comidas registradas en el período."
+              diasDelPeriodo={diasDelPeriodo(contexto.period.start, contexto.period.end)}
+              idDeLaAyuda="revision-evidencia-ayuda"
+              aviso={avisoDeMarcas}
+              error={porCampo['revision-evidencia'] ?? null}
+            />
+          </PasoDeLaRevision>
+        </div>
+        <div className="revision-nueva__tarjeta">
+          <PasoDeLaRevision numero={2} titulo="Lo que observaste">
+            <AreaDeTexto id="revision-interpretacion" etiqueta="Interpretación" ayuda={AYUDA_DE_LA_INTERPRETACION} valor={interpretacion} onCambiar={setInterpretacion} maximo={4000} porCampo={porCampo} />
+          </PasoDeLaRevision>
+          <PasoDeLaRevision numero={3} titulo="Lo que decidís">
+            <ResultadoDeLaRevision
+              id="revision-resultado"
+              nombre="resultado"
+              resultados={RESULTADOS}
+              etiquetas={ETIQUETA_DE_RESULTADO}
+              efectos={EFECTO_VISIBLE_DE_RESULTADO}
+              valor={resultado}
+              alElegir={setResultado}
+              error={porCampo['revision-resultado'] ?? null}
+            />
+            <AreaDeTexto id="revision-fundamento" etiqueta="Fundamento" valor={fundamento} onCambiar={setFundamento} filas={2} maximo={4000} porCampo={porCampo} />
+            <div className="revision-nueva__siguiente">
+              <AreaDeTexto id="revision-accion" etiqueta={resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'} valor={accion} onCambiar={setAccion} filas={2} maximo={2000} porCampo={porCampo} />
+              {resultado !== 'FINALIZE' ? (
+                <Campo
+                  id="revision-proxima"
+                  etiqueta={resultado === 'RESCHEDULE_REVIEW' ? 'Fecha de la próxima revisión' : 'Próxima revisión (opcional)'}
+                  type="date"
+                  value={proxima}
+                  onChange={(e) => setProxima(e.target.value)}
+                  error={porCampo['revision-proxima'] ?? null}
+                />
+              ) : null}
+            </div>
+            {resultado === 'CHANGE_OBJECTIVE' ? (
+              <fieldset className="grupo">
+                <legend>Nuevo objetivo</legend>
+                <CamposDeObjetivo valores={objetivo} onCambiar={setObjetivo} evaluaciones={evaluaciones} prefijo="revision-objetivo" errores={porCampo} />
+              </fieldset>
+            ) : null}
+          </PasoDeLaRevision>
+        </div>
       </div>
-      <fieldset className={`grupo${resultado_.texto ? ' campo--error' : ''}`} id="revision-resultado" tabIndex={-1} {...resultado_.atributos}>
-        <legend>Resultado</legend>
-        {resultado_.texto ? (
-          <p id="revision-resultado-error" className="campo__error">
-            <span aria-hidden="true">⚠ </span>
-            {resultado_.texto}
-          </p>
-        ) : null}
-        {RESULTADOS.map((res) => (
-          <label key={res} className="acto">
-            <input type="radio" name="resultado" value={res} checked={resultado === res} onChange={() => setResultado(res)} /> <strong>{ETIQUETA_DE_RESULTADO[res]}</strong>
-            <span className="campo__ayuda">{EFECTO_VISIBLE_DE_RESULTADO[res]}</span>
-          </label>
-        ))}
-      </fieldset>
-      <div className={fundamento_.contenedor}>
-        <label htmlFor="revision-fundamento">Fundamento</label>
-        <textarea id="revision-fundamento" rows={3} value={fundamento} onChange={(e) => setFundamento(e.target.value)} maxLength={4000} {...fundamento_.atributos} />
-        {fundamento_.texto ? (
-          <p id="revision-fundamento-error" className="campo__error">
-            <span aria-hidden="true">⚠ </span>
-            {fundamento_.texto}
-          </p>
-        ) : null}
-      </div>
-      <div className={accion_.contenedor}>
-        <label htmlFor="revision-accion">{resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'}</label>
-        <textarea id="revision-accion" rows={2} value={accion} onChange={(e) => setAccion(e.target.value)} maxLength={2000} {...accion_.atributos} />
-        {accion_.texto ? (
-          <p id="revision-accion-error" className="campo__error">
-            <span aria-hidden="true">⚠ </span>
-            {accion_.texto}
-          </p>
-        ) : null}
-      </div>
-      {resultado !== 'FINALIZE' ? (
-        <Campo
-          id="revision-proxima"
-          etiqueta={resultado === 'RESCHEDULE_REVIEW' ? 'Fecha de la próxima revisión' : 'Próxima revisión (opcional)'}
-          type="date"
-          value={proxima}
-          onChange={(e) => setProxima(e.target.value)}
-          error={porCampo['revision-proxima'] ?? null}
-        />
-      ) : null}
-      {resultado === 'CHANGE_OBJECTIVE' ? (
-        <fieldset className="grupo">
-          <legend>Nuevo objetivo</legend>
-          <CamposDeObjetivo valores={objetivo} onCambiar={setObjetivo} evaluaciones={evaluaciones} prefijo="revision-objetivo" errores={porCampo} />
-        </fieldset>
-      ) : null}
       {fallo ? (
         <Aviso tipo="error" enfocar>
           <p>{fallo}</p>
         </Aviso>
       ) : null}
-      <div className="acciones">
-        <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando}>
-          {enviando ? 'Registrando…' : COPY_NUTRICION.registrarRevision}
-        </button>
-        <button type="button" className="boton boton--secundario" onClick={() => setAbierto(false)} disabled={enviando}>
-          Cancelar
-        </button>
-      </div>
+      <BarraDeLaRevision enviando={enviando} bloqueo={lectura.bloqueo} textoDelBoton={COPY_NUTRICION.registrarRevision} alCancelar={onCancelar} />
     </form>
   );
 }

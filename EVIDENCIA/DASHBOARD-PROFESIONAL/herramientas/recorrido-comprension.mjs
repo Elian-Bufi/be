@@ -204,20 +204,19 @@ async function abrirDelPie(page, texto, selector) {
   await page.waitForSelector(selector, { timeout: 5_000 });
 }
 /**
- * La revisión de Nutrición preparada desde la ficha se arma en dos lecturas: primero llega la lista de revisiones y
- * recién entonces BE fija el período desde la última y vuelve a leer la evidencia. Hasta ahí la pantalla muestra el
- * período por defecto de la API (los últimos 7 días). Se espera a que diga el período preparado y a que la evidencia
- * sea la de ese período: leerla antes era leer otra pantalla (pasó el 2026-10-10, con la máquina cargada: la
- * comprobación de la evidencia encontró 7 días en lugar de los 21 que había desde la última revisión).
+ * La revisión preparada desde la ficha se arma en dos lecturas: primero la del período que propone la API y, si hay una
+ * revisión anterior, BE deja en la dirección el período desde ella y vuelve a leer. Recién entonces aparece el formulario,
+ * con la frase que dice de dónde salió el período (WP-ESCRITORIO-AREAS, parte 10: «Preparado por BE: …»). Leer antes era
+ * leer otra pantalla (pasó el 2026-10-10, con la máquina cargada: la comprobación de la evidencia encontró 7 días en
+ * lugar de los 21 que había desde la última revisión). Sin revisiones previas, vale el período que propone la API, y la
+ * frase también empieza con «Preparado por BE».
  */
 async function revisionPreparada(page, v) {
   await page.waitForFunction(
-    () => {
-      const t = document.querySelector('main')?.innerText ?? '';
-      const desde = /Preparado por BE para esta revisión: el período va del (\d{1,2} \S+ \d{4})/.exec(t)?.[1];
-      // Sin revisiones previas no hay período preparado: vale el que propone la API.
-      return desde ? t.includes(`Período: ${desde} a`) : /Preparado por BE para esta revisión: todavía no hay revisiones registradas/.test(t);
-    },
+    () =>
+      /^Preparado por BE: /.test(document.querySelector('.revision-nueva__procedencia')?.textContent ?? '') &&
+      !!document.querySelector('form.revision-nueva__formulario') &&
+      !document.querySelector('.revision-nueva__lectura'),
     { timeout: 30_000 },
   );
   await quieto(page, v);
@@ -1124,8 +1123,8 @@ async function evidenciaDeLaRevision(page, v, carpeta) {
     });
   const marcadasEn = (resumen) => Number(/^Marcaste (\d+) de/.exec(resumen)?.[1] ?? 0);
   const inicial = await leer();
-  // Cuántas comidas tiene cada día, del rótulo de su casilla («marcar las 4 comidas»).
-  const porDia = (inicial?.dias ?? []).map((d) => Number(/las (\d+) comidas/.exec(d.texto)?.[1] ?? (/marcar la comida/.test(d.texto) ? 1 : 0)));
+  // Cuántas comidas tiene cada día, del rótulo de su casilla («11 sept 4 comidas»; WP-ESCRITORIO-AREAS, parte 10).
+  const porDia = (inicial?.dias ?? []).map((d) => Number(/(\d+) comidas?\b/.exec(d.texto)?.[1] ?? 0));
   const comidas = porDia.reduce((s, n) => s + n, 0);
   comprobar(
     'R3',
@@ -1728,8 +1727,15 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
   await clic(page, '.area[data-area="ENTRENAMIENTO"] .area__accion a', 'Preparar la revisión de Entrenamiento');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/training', { timeout: 20_000 });
   await quieto(page, v);
-  const preparado = await texto(page, 'main');
-  comprobar('CP-19', '«Preparar la revisión» abre el formulario con el período desde la última revisión, dicho como preparado por BE, y no escribe nada', /Preparado por BE para esta revisión/.test(preparado) && preparado.includes(diaDe(cortes.TRAINING.recordedAt)) && escrituras(v, desde).length === 0, escrituras(v, desde).join(' · ') || 'sin escrituras');
+  await revisionPreparada(page, v);
+  // WP-ESCRITORIO-AREAS, parte 10: el período y de dónde salió van en la cabecera de la revisión nueva, en una frase.
+  const preparado = await texto(page, '.revision-nueva__procedencia');
+  comprobar(
+    'CP-19',
+    '«Preparar la revisión» abre la revisión nueva con el período desde la última revisión, dicho como preparado por BE, y no escribe nada',
+    preparado === `Preparado por BE: desde tu última revisión, del ${diaBreveDe(cortes.TRAINING.recordedAt)}, hasta hoy.` && escrituras(v, desde).length === 0,
+    `${preparado} · ${escrituras(v, desde).join(' · ') || 'sin escrituras'}`,
+  );
   // Registrar una revisión sintética: una sola escritura, y el resumen se actualiza.
   const listaAntes = (await textos(page, '.revisiones li, .revision')).length;
   // Pasada del 2026-10-09: nada viene marcado; se marca la versión del plan y un día entero de sesiones, y viaja una
