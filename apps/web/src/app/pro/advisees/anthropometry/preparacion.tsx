@@ -44,6 +44,7 @@ import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { clavesConSitio, clavesDeLaFamilia, type FamiliaDeLaCarga } from './composicion-de-la-carga';
 import { CampoDeMedicion, FiguraDeLaCarga, idDelValor, type CampoDeLaCarga } from './figura-de-la-carga';
+import { esFechaFutura, FECHA_DE_TOMA_FUTURA, motivoDelRechazo } from './rechazos-de-antropometria';
 
 /** El aviso de la toma. Un error de validación lista los campos que corregir, con un enlace a cada uno. */
 type AvisoDeLaToma = { tipo: 'exito' | 'error' | 'info'; texto: string; campos?: readonly { id: string; texto: string }[]; vez?: number };
@@ -309,6 +310,9 @@ function Preparacion({
    */
   function revisar(): Record<string, string> {
     const problemas: Record<string, string> = {};
+    // Una fecha futura la rechaza la API; dicha acá, va a su campo antes de escribir nada (antes decía «El servicio no
+    // está disponible»).
+    if (esFechaFutura(momento)) problemas['ant-momento'] = FECHA_DE_TOMA_FUTURA;
     for (const m of metricas) {
       const texto = escritoDe(m).valor;
       // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
@@ -340,7 +344,8 @@ function Preparacion({
         .filter(([prefijo]) => problemas[`${prefijo}-${i}`])
         .map(([prefijo, rotulo]) => ({ id: `${prefijo}-${i}`, texto: `Fuera del protocolo, fila ${i + 1} (${rotulo.toLocaleLowerCase('es-AR')}): ${problemas[`${prefijo}-${i}`]}` })),
     );
-    return [...deLosCampos, ...deLasFilas];
+    const delMomento = problemas['ant-momento'] ? [{ id: 'ant-momento', texto: `${COPY_ANTROPOMETRIA.momentoDeLaToma}: ${problemas['ant-momento']}` }] : [];
+    return [...delMomento, ...deLosCampos, ...deLasFilas];
   }
 
   const contenido = () => ({
@@ -378,7 +383,7 @@ function Preparacion({
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(res) || accesoRetirado(res)) return null;
     if (!res.ok) {
-      avisar({ tipo: 'error', texto: mensajeDeFallo(res) });
+      avisarDelRechazo(res);
       return null;
     }
     return res.datos.data as Borrador;
@@ -417,7 +422,7 @@ function Preparacion({
     setEnviando(false);
     setConfirmando(false);
     if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return avisar({ tipo: 'error', texto: mensajeDeFallo(res) });
+    if (!res.ok) return avisarDelRechazo(res);
     onRegistrada(res.datos.data.evaluationId);
   }
 
@@ -446,6 +451,15 @@ function Preparacion({
   // algo para corregir no puede quedar mudo, lejos del aviso.
   const vez = useRef(0);
   const avisar = (a: AvisoDeLaToma | null) => onAviso(a ? { ...a, vez: ++vez.current } : null);
+  /** Un rechazo de la API: con su motivo si se puede explicar (y su campo, si es la fecha); si no, el mensaje general. */
+  function avisarDelRechazo(res: Resultado<unknown>) {
+    const motivo = motivoDelRechazo(res);
+    if (motivo?.campo === 'momento') {
+      setErrores((e) => ({ ...e, 'ant-momento': motivo.texto }));
+      return avisar({ tipo: 'error', texto: COPY_ANTROPOMETRIA.revisarAntesDeGuardar, campos: [{ id: 'ant-momento', texto: `${COPY_ANTROPOMETRIA.momentoDeLaToma}: ${motivo.texto}` }] });
+    }
+    avisar({ tipo: 'error', texto: motivo?.texto ?? mensajeDeFallo(res) });
+  }
 
   const escribir = (clave: string, cambio: Partial<Escrito>) => {
     const m = metricas.find((x) => x.clave === clave);
@@ -586,7 +600,15 @@ function Preparacion({
           <section className="tarjeta datos-de-la-carga" aria-labelledby="titulo-datos-de-la-toma">
             <h3 id="titulo-datos-de-la-toma">Datos de la toma</h3>
             <div className="datos-de-la-carga__campos">
-              <Campo id="ant-momento" etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma} type="datetime-local" value={momento} onChange={(e) => setMomento(e.target.value)} />
+              <Campo
+                id="ant-momento"
+                etiqueta={COPY_ANTROPOMETRIA.momentoDeLaToma}
+                type="datetime-local"
+                value={momento}
+                max={paraElCampo(new Date().toISOString())}
+                onChange={(e) => setMomento(e.target.value)}
+                error={errores['ant-momento'] ?? null}
+              />
               <div className="campo">
                 <label htmlFor="ant-origen">{COPY_ANTROPOMETRIA.origenDelDato}</label>
                 <select id="ant-origen" value={origen} onChange={(e) => setOrigen(e.target.value as 'DIRECT_CAPTURE' | 'SELF_REPORTED')}>

@@ -861,7 +861,9 @@ WP-ESCRITORIO-AREAS, parte 9; maqueta 23):
   guardar; si no, «Registrar toma». **«Cambios sin guardar» compara lo escrito con lo guardado,** y lo guardado dice la
   hora que da la API.
 - **Un valor que no se puede leer:** el aviso lista el campo y lleva hasta él, aunque esté en la otra familia; el campo
-  queda marcado, con el motivo debajo.
+  queda marcado, con el motivo debajo. Lo mismo con una fecha de toma futura, que se dice antes de escribir nada. **Un
+  rechazo de la API que se puede explicar dice su motivo** (una medición anulada, un método al que le falta un dato):
+  nunca «El servicio no está disponible», que hace pensar que BE está caído.
 - **Colores:** tokens propios (`--escena`, `--figura-sitio`, `--figura-posterior`, `--figura-guia`), medidos a 3:1
   contra el maniquí y contra la escena en los dos temas (I.6). La escena es plana.
 - **Anchos:** a 1440, la escena de 880 px y los datos de la toma en 448; a 1280, los datos se angostan para que la

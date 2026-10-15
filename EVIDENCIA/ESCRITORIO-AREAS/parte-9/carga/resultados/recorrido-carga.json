@@ -1,9 +1,9 @@
 {
   "modo": "carga",
-  "inicio": "2026-10-15T11:39:41.134Z",
-  "fin": "2026-10-15T11:40:18.613Z",
+  "inicio": "2026-10-15T12:08:40.972Z",
+  "fin": "2026-10-15T12:09:18.569Z",
   "hoy": "2026-10-15",
-  "total": 16,
+  "total": 17,
   "fallas": 0,
   "resultados": [
     {
@@ -62,10 +62,16 @@
       "detalle": "pedidos: 0 · enlaces: Pliegue tricipital: Escribilo sin punto de miles («1850») o, si es decimal, con coma («1,85»). · medidas=pliegues · foco: ant-valor-pliegue-triceps · error: «⚠ Escribilo sin punto de miles («1850») o, si es decimal, con coma («1,85»).»"
     },
     {
+      "pro": "F-138",
+      "descripcion": "Con una fecha futura en «Cuándo se tomó», «Guardar» no escribe nada: el aviso lo dice con el nombre del campo («La fecha de la toma no puede ser futura.», no «El servicio no está disponible») y lleva hasta él, que queda marcado con el motivo; el campo no ofrece fechas posteriores a este minuto",
+      "ok": true,
+      "detalle": "pedidos: 0 · aviso: «Antes de guardar, revisá estas mediciones. Cada una lleva a su campo: Cuándo se tomó: La fecha de la toma no puede ser f» · campo: marcado, «⚠ La fecha de la toma no puede ser futura.», máximo 2026-10-15T09:08"
+    },
+    {
       "pro": "F-132",
       "descripcion": "Guardar escribe una sola vez y manda lo escrito (la cintura y el tricipital, cada uno con su unidad). Después el título dice «Toma en preparación» con «Borrador», el estado «Guardado · …» con la hora que da la API, y el lleno pasa a «Registrar toma»; lo escrito sigue en los campos y la familia y la figura elegidas siguen igual",
       "ok": true,
-      "detalle": "pedidos: 1 · en la API: perimetro-cintura 84.5 cm, pliegue-triceps 12.5 mm · «Toma en preparación» «Borrador» · «Guardado · 15 oct 2026, 08:39» · Registrar toma (lleno), Guardar"
+      "detalle": "pedidos: 1 · en la API: perimetro-cintura 84.5 cm, pliegue-triceps 12.5 mm · «Toma en preparación» «Borrador» · «Guardado · 15 oct 2026, 09:08» · Registrar toma (lleno), Guardar"
     },
     {
       "pro": "F-134",
@@ -77,7 +83,7 @@
       "pro": "F-132",
       "descripcion": "«Cambios sin guardar» compara lo escrito con lo guardado: borrar el peso recién escrito deja todo como estaba y el estado vuelve a «Guardado · …», con «Registrar toma» lleno",
       "ok": true,
-      "detalle": "«Guardado · 15 oct 2026, 08:39»"
+      "detalle": "«Guardado · 15 oct 2026, 09:08»"
     },
     {
       "pro": "F-135",

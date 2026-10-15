@@ -1428,11 +1428,14 @@ mismo: **no se agregó ni se quitó ninguna operación,** y lo que se manda al g
 la base ni la APK. Sobre la base propia (`be_test_escritorio`) y la compilación estática del código de esta parte
 (`7ceee6f`).
 
-**Dos cosas de antes, corregidas (bajas).**
+**Tres cosas de antes, corregidas (bajas).**
 - **«Cambios sin guardar» se encendía con tocar un campo,** aunque se volviera a lo mismo, y «Actualizar» preguntaba
   igual. Ahora compara lo escrito con lo guardado.
 - **Una toma en preparación sin mediciones perdía su momento en pantalla:** se reconstruía desde la primera medición.
   Ahora se lee de la toma. Esta segunda no tiene comprobación en pantalla: el recorrido guarda siempre con mediciones.
+- **Los rechazos de la API que se pueden explicar decían «El servicio no está disponible en este momento»,** como si
+  BE estuviera caído: una fecha de toma futura, corregir una medición anulada, un método al que le faltaba un dato.
+  Ahora cada uno dice su motivo; la fecha futura, además, se dice en su campo antes de escribir nada (F-138).
 
 **Medido en la página real,** con las cuentas descartables (la toma del perfil completo registrada, ninguna en
 preparación), el «Perfil antropométrico completo» elegido y nada escrito. El «antes» es la pantalla de la parte 10
@@ -1449,7 +1452,7 @@ preparación), el «Perfil antropométrico completo» elegido y nada escrito. El
 
 | Qué | Cómo se comprobó | Resultado | Estado |
 |---|---|---|---|
-| La carga sigue la maqueta 23: «Nueva toma», la cuenta del protocolo y «No es historia hasta que la registres.», el estado y «Guardar», el único lleno; «Perímetros 0 de 13» elegido, «Pliegues 0 de 11» y la figura de hombre; a 1440 la escena mide 880 × 632 y los datos 448, al lado (F-125) | `recorrido.mjs carga` (16 comprobaciones), en las cuentas descartables con la toma completa | Pasa | Verificado en pantalla |
+| La carga sigue la maqueta 23: «Nueva toma», la cuenta del protocolo y «No es historia hasta que la registres.», el estado y «Guardar», el único lleno; «Perímetros 0 de 13» elegido, «Pliegues 0 de 11» y la figura de hombre; a 1440 la escena mide 880 × 632 y los datos 448, al lado (F-125) | `recorrido.mjs carga` (17 comprobaciones), en las cuentas descartables con la toma completa | Pasa | Verificado en pantalla |
 | Ningún sitio se mueve: en las dos figuras y en las dos familias, cada sitio queda a menos de 0,6 px de donde lo ponen las cuentas del dominio sobre la caja real de la imagen (440 × 660, la de cada figura), y no hay ninguno de más (F-126) | Lo mismo, midiendo en la página | Pasa: 13 perímetros y 11 pliegues en cada figura | Verificado en pantalla |
 | Cada campo está unido a su sitio (la guía sale del borde de la tarjeta a la altura del campo y llega al borde del sitio) y ninguna guía se cruza, en las cuatro combinaciones; el tronco a la derecha en perímetros, y solo el subescapular y el abdominal en pliegues; el foco recorre los perímetros en el orden exacto del protocolo (F-129) | Lo mismo | Pasa | Verificado en pantalla |
 | Los dos pliegues de la cara de atrás lo dicen tres veces: el sitio en gris, la guía punteada y «posterior» en el campo, con el nombre completo para el lector («Pliegue tricipital, posterior»); la leyenda dice las tres formas y los dos pares que casi coinciden (F-128) | Lo mismo | Pasa | Verificado en pantalla |
@@ -1459,6 +1462,8 @@ preparación), el «Perfil antropométrico completo» elegido y nada escrito. El
 | Guardar escribe una sola vez y manda lo escrito en las dos familias (la cintura en cm y el tricipital en mm, leídos después en la API); queda «Toma en preparación» con «Borrador» y «Guardado · …», el lleno pasa a «Registrar toma», y la familia y la figura elegidas siguen igual (F-132) | Lo mismo, en la cuenta descartable | Pasa | Verificado en pantalla |
 | Escribir el peso vuelve a «Cambios sin guardar»; borrarlo deja todo como estaba y vuelve a «Guardado · …» (F-132) | Lo mismo | Pasa | Verificado en pantalla |
 | «Fuera de la figura» tiene lo que el protocolo declara sin sitio: «Masa y estatura · 1 de 2», «Diámetros · cm · 0 de 3» con los nombres cortos y la edad en «Otras mediciones del protocolo · años · 0 de 1» (F-134) | Lo mismo | Pasa | Verificado en pantalla |
+| Con una fecha futura en «Cuándo se tomó», «Guardar» no escribe nada: el aviso dice «Cuándo se tomó: La fecha de la toma no puede ser futura.» y lleva hasta el campo, que queda marcado con el motivo (antes, «El servicio no está disponible»); el campo no ofrece fechas posteriores a este minuto (F-138) | `recorrido.mjs carga` | Pasa | Verificado en pantalla |
+| Los rechazos de la API que se pueden explicar dicen su motivo, y la fecha futura va a su campo; lo desconocido, la falta de red y el éxito no tienen texto propio; ningún texto deja ver un código ni dice que el servicio no está disponible (F-138) | `scripts/rechazos-de-antropometria.test.mjs` (5) | Pasan | Verificado automáticamente |
 | Con el «Protocolo de laboratorio» (peso y talla, sin sitios en la figura) no hay escena: los datos de la toma y sus mediciones van lado a lado, a todo el ancho, y lo escrito en la figura pasa a fuera del protocolo sin perderse; con el «Perfil» de nuevo, vuelve a sus campos (F-131) | Lo mismo | Pasa | Verificado en pantalla |
 | A 1280 la escena conserva 832 px y los datos se angostan al lado; a 1024 la escena ocupa el ancho y los datos van debajo; a 768 y 390, lista sin la figura; ningún ancho se desborda de costado (F-135) | Lo mismo, a cinco anchos | Pasa | Verificado en pantalla |
 | Axe no encuentra nada en la carga, en Claro y en Azul noche (F-136) | Lo mismo | Pasa | Verificado en pantalla |

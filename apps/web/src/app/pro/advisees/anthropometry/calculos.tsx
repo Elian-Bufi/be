@@ -48,6 +48,7 @@ import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { motivoDelRechazo } from './rechazos-de-antropometria';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { useAntropometria } from './antropometria';
 import { Marca } from './marca';
@@ -236,7 +237,7 @@ export function DetalleDeResultado({ corrida, hecho, onHecho }: { corrida: Corri
     if (sesionPerdida(res) || accesoRetirado(res)) return setEnviando(false);
     if (!res.ok) {
       setEnviando(false);
-      return setError(mensajeDeFallo(res));
+      return setError(motivoDelRechazo(res)?.texto ?? mensajeDeFallo(res));
     }
     await onHecho(res.datos.data.supersedesReferenceId ? `${C.referenciaHecha} ${C.referenciaReemplazada}` : C.referenciaHecha);
     setEnviando(false);
@@ -401,7 +402,7 @@ export function NuevoCalculo({
     if (sesionPerdida(res) || accesoRetirado(res)) return setEnviando(false);
     if (!res.ok) {
       setEnviando(false);
-      return setError(mensajeDeFallo(res));
+      return setError(motivoDelRechazo(res)?.texto ?? mensajeDeFallo(res));
     }
     await onHecho(C.calculoHecho, res.datos.data.calculationRunId);
     setEnviando(false);

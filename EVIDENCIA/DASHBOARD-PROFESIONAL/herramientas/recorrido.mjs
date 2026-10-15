@@ -14027,6 +14027,37 @@ async function cargaDeUnaToma() {
       `pedidos: ${escrituras('/anthropometry/evaluation-drafts', antesDelAviso).length} · enlaces: ${conAviso.enlacesDelAviso.join(' | ')} · medidas=${parametros(page).get('medidas')} · foco: ${trasElEnlace.foco} · error: «${tricipital?.error}»`,
     );
 
+    // ── Una fecha futura: se dice en su campo, sin escribir nada (antes, «El servicio no está disponible») ───────────
+    const enElCampo = (d) => {
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+    const manana = enElCampo(new Date(Date.now() + 26 * 3600 * 1000));
+    await fijarFecha(page, '#ant-momento', manana);
+    const antesDeLaFecha = v.urls.length;
+    await clic(page, '.carga-de-la-toma__acciones button', 'Guardar');
+    await page.waitForSelector('.carga-de-la-toma .aviso a', { timeout: 10_000 }).catch(() => {});
+    await pausa(300);
+    const conFechaFutura = await cargaEnPantalla(page);
+    const elCampoDeLaFecha = await page.evaluate(() => {
+      const c = document.querySelector('#ant-momento');
+      const error = c?.closest('.campo')?.querySelector('.campo__error');
+      return { max: c?.getAttribute('max') ?? null, invalido: c?.getAttribute('aria-invalid') === 'true', error: (error?.innerText ?? '').replace(/\s+/g, ' ').trim() };
+    });
+    comprobar(
+      'F-138',
+      'Con una fecha futura en «Cuándo se tomó», «Guardar» no escribe nada: el aviso lo dice con el nombre del campo («La fecha de la toma no puede ser futura.», no «El servicio no está disponible») y lleva hasta él, que queda marcado con el motivo; el campo no ofrece fechas posteriores a este minuto',
+      escrituras('/anthropometry/evaluation-drafts', antesDeLaFecha).length === 0 &&
+        conFechaFutura.enlacesDelAviso.includes('Cuándo se tomó: La fecha de la toma no puede ser futura.') &&
+        !/no está disponible/i.test(conFechaFutura.aviso) &&
+        elCampoDeLaFecha.invalido &&
+        /La fecha de la toma no puede ser futura\./.test(elCampoDeLaFecha.error) &&
+        (elCampoDeLaFecha.max ?? '') < manana,
+      `pedidos: ${escrituras('/anthropometry/evaluation-drafts', antesDeLaFecha).length} · aviso: «${conFechaFutura.aviso.slice(0, 120)}» · campo: ${elCampoDeLaFecha.invalido ? 'marcado' : 'sin marcar'}, «${elCampoDeLaFecha.error}», máximo ${elCampoDeLaFecha.max}`,
+    );
+    // De vuelta a una fecha que vale: ayer a las 9:15.
+    await fijarFecha(page, '#ant-momento', `${diaMenos(hoy, 1)}T09:15`);
+
     // ── Guardar: un solo pedido con lo escrito; después, «Guardado» y «Registrar toma» lleno ───────────────────────
     // Pliegues, por las dudas: si el enlace del aviso no la eligió (la comprobación anterior lo dice), el camino sigue.
     await elegirSegmento('Pliegues');
