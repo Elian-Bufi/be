@@ -1521,6 +1521,36 @@ datos nuevos, pasó entera (32 de 32).
 `del-recorrido/` y `resultados/` (los resultados de los recorridos, las roturas de la composición y el veredicto de la
 tanda rota).
 
+## Pasada de estética previa a la integración (2026-10-15)
+
+**A pedido de Dirección, antes de integrar:** se capturaron las 18 pantallas que entran con la integración (el Espacio
+profesional, las tres vistas de la ficha y las secciones de las cuatro áreas, más «Plantillas y habituales»), a 1440 y en
+los dos temas, y se miraron contra las maquetas y la guía. Las recompuestas por este paquete se ven parejas entre sí: el
+mismo marco, el mismo encabezado de sección (título, una frase y la acción o el período a la derecha) y los mismos
+controles. Se refinaron tres cosas (F-139 a F-141; código en `5d836c1`):
+- **Las etiquetas de estado,** con la forma de las maquetas: «Borrador» era una píldora en los editores y una etiqueta en
+  la carga de una toma.
+- **«Cómo se lee esta vista» en Evolución y Lámina,** en el marco, como en las demás secciones.
+- **Evolución, al ancho de las otras secciones de Antropometría,** con el período y la métrica a su medida.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Las pantallas refinadas: Evolución, su ayuda y la de la Lámina, el editor de Entrenamiento con «Borrador» y la revisión nueva, a 1440 | `ver.mjs` sobre los datos del día, mirando cada captura | Como se describe arriba | Observado en una captura real |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de `5d836c1` | La pasada completa del 15/10 (09:36 a 10:32): R capturas 60, funcional 323 de 324, descartable 22, mediciones 18, carga 17, solicitudes 32, planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación 5 de 6. La de la funcional (F-14) afirmaba que Evolución no tiene ayuda, y ahora la tiene a propósito: se reescribió con una sección que sigue sin ayuda (el Resumen de Nutrición) y la positiva de Evolución, y `tomas` dio 24 de 24. La de la revocación (CP-23, los gráficos de Analizar después de revocar), repetida sola con datos nuevos: 6 de 6 | Verificado en pantalla |
+| Toda la batería de la CI | La CI de GitHub sobre el commit | En verde la corrida 38744400327, sobre `5d836c1`: el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
+
+**Lo que se vio y queda para decidir** (no está dibujado, o cambia algo que Dirección ya aprobó):
+- **El Resumen de Nutrición y el de Entrenamiento** conservan su diseño anterior: tarjetas apiladas a 72 rem, las acciones
+  al pie y sin «Cómo se lee esta vista». No tienen maqueta.
+- **La Lámina** elige con píldoras azules lo que el resto elige con segmentos oscuros («Hombre · Mujer» se ve distinto en
+  la carga y en la Lámina), y conserva su ancho de 72 rem.
+- **Evolución** tiene todavía dos tarjetas arriba (el período y la métrica). Juntarlas con el control de período común
+  pide decidir el tope: el control común llega a 92 días, y Evolución hoy admite más.
+- **«Plantillas y habituales», «Mis recetas» y «Mis ejercicios»** conservan el diseño anterior (centrado, con migas y un
+  título grande): al pasar desde el Espacio profesional se nota.
+- **En el Espacio profesional,** «Abrir» es un enlace en «Pendientes» y un botón en «Tus asesorados».
+- **En el historial del plan de Nutrición** se ve «Huella de la instantánea: c764df2c…», un dato de trazabilidad.
+
 ## Parte 10 · Preparar revisión (2026-10-15)
 
 **La revisión nueva recompuesta (maqueta 06; C-14 y C-15), en Nutrición y en Entrenamiento.** La maqueta está dibujada

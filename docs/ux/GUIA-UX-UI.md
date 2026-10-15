@@ -874,6 +874,9 @@ WP-ESCRITORIO-AREAS, parte 9; maqueta 23):
   figura»), `.sitio-de-la-carga`, `.guia-de-la-carga` y `.leyenda-de-la-carga`; y `componerLaCarga`, la composición,
   sin interfaz.
 
+**Evolución y Lámina** tienen su «Cómo se lee esta vista» en el marco, como Tomas y la carga (pasada de estética del
+2026-10-15). Evolución usa el ancho de las otras secciones; la Lámina conserva el suyo (la imagen tiene su proporción).
+
 **Lámina:**
 - **Lo principal, primero.** El orden es: qué se muestra (la toma y la hoja); enseguida, la imagen con «Descargar
   imagen»; después, los ajustes de cómo se ve; al final, la explicación. En el teléfono, la imagen entra en la primera
@@ -1436,6 +1439,8 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Los errores de la revisión de Entrenamiento | Solo en el resumen. | En el resumen y en cada campo, como en Nutrición. | Corregida | Áreas, 10 |
 | La carga de una toma | Una lista de 30 campos por familia, con una silueta dibujada para BE al costado (de frente y de espalda) y la barra de guardar al pie: 3.034 px a 1440 con el perfil completo. | La figura de Dirección con cada campo unido a su sitio, de a una familia; arriba, el estado del guardado y un solo botón lleno; a la derecha, los datos de la toma y lo que no tiene sitio en la figura: 1.287 px (II.9). | Sustituida | Áreas, 9 |
 | «Cambios sin guardar», en la carga de una toma | Bastaba con tocar un campo, aunque se volviera a lo mismo. | Compara lo escrito con lo guardado (II.9). | Corregida | Áreas, 9 |
+| Las etiquetas de estado («Borrador», «En preparación · sin registrar», «Solo lectura») | Una píldora en unas pantallas y una etiqueta en otras. | Una etiqueta, como en las maquetas; la píldora queda para el acceso del marco y los estados de una lista. | Aclarada | Áreas, pasada de estética |
+| «Cómo se lee esta vista», en Evolución y Lámina | Plegado dentro de la sección. | En el marco, como en las demás secciones (II.9). | Sustituida | Áreas, pasada de estética |
 | La regla de los 390 px, en Antropometría | La pestaña tenía que poder usarse a 390 px de ancho. | Es de escritorio: con menos de 832 px de escena, los campos de la carga van en lista, sin la figura (II.1, II.9). | Sustituida | Áreas, 9 |
 
 ---
