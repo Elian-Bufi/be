@@ -1,0 +1,38 @@
+NOTADA    los ejercicios no miden su ancho: «Lo general» nunca baja — F-112 (palabras, axe y anchos del editor)
+tanda E3 (entrenamientos): 1 de 1 roturas notadas · 1 comprobaciones fallaron y 31 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-112 · Con los ejercicios de una sesión abiertos, el editor… — palabras: ninguna · axe claro: sin faltas · azul noche: sin faltas · 1280: 1555 px, lo general al costado · 1024: 1677 px, lo general al costado · 768: 1758 px,
+pasaron:
+  F-71 · El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · 
+  F-72 · Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas s
+  F-73 · Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series («3 × 5 rep. · 85 kg · 
+  F-76 · El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la m
+  F-74 · En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: 
+  F-73 · Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · d
+  F-75 · Lo elegido vive en la dirección de la página, por su número de orden. Elegir la segunda sesión escribe 
+  F-75 · «Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microcic
+  F-80 · Con los tres ejercicios de la sesión abiertos, en toda la sección no hay una palabra de la lista de Ent
+  F-14 · «Plan», de Entrenamiento, tiene su ayuda en el marco del área: se abre por el título, explica cada cosa
+  F-80 · axe no encuentra faltas en «Plan», de Entrenamiento, con todos los ejercicios abiertos, en los dos tema
+  F-80 · El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al l
+  F-78 · (Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna 
+  F-72 · (Respuesta simulada.) Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se m
+  F-74 · (Respuesta simulada.) Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los pa
+  F-74 · (Respuestas simuladas: el escenario no tiene ejercicios con imagen.) Un ejercicio con imagen la muestra
+  F-77 · «Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una
+  F-103 · La versión en preparación se abre en una sesión, con sus ejercicios plegados: cada uno en un renglón q
+  F-104 · Lo que se mira en el editor vive en la dirección, por su posición: elegir la segunda sesión escribe `s
+  F-105 · Abierto, un ejercicio muestra sus series en una tabla: «Serie», «Repeticiones», «Carga sugerida», «RIR
+  F-108 · Los nombres se cambian a pedido. El menú del bloque ofrece «Cambiar el nombre», «Organizar por microci
+  F-79 · «Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «E
+  F-107 · Un RIR por serie y un descanso mal escritos no se guardan como otra cosa. La celda del RIR queda marca
+  F-106 · Cada celda escribe uno de los tres estados, y eso es lo que se guarda. Escribir un número deja el prop
+  F-109 · «Agregar», al lado del bloque, suma un bloque al final, lo elige y abre su nombre, seleccionado: lo qu
+  F-113 · «Validar plan», con cambios sin guardar, guarda antes y valida (una escritura de cada una). La sesión 
+  F-110 · «Activar plan», con cambios sin guardar, guarda antes (una escritura) y recién entonces pregunta. El d
+  F-79 · Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Activada, la versión en preparac
+  F-77 · Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se c
+  F-111 · (Respuesta simulada: el titular ya usó una app que muestra los objetivos por serie.) Si el asesorado t
+  — · «Plan», de Entrenamiento, no produjo errores de página
+última línea: 33/34 comprobaciones bien; fallan: F-112

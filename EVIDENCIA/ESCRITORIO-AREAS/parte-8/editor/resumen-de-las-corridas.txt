@@ -1,0 +1,8 @@
+Parte 8 de WP-ESCRITORIO-AREAS: las corridas sobre el código final (6d85355), el 2026-10-14.
+La pasada completa (empezó a las 22:12) se cortó a los pocos minutos: con 200 a 800 MB libres la sesión de prueba se vencía a mitad de camino.
+Queda pendiente. Lo que alcanzó a correr de ella (r-capturas 59 de 61, rc-mirar 14 de 20, rc-capturas 0 de 1) falló
+por la máquina: el recorrido de comprensión se cortó con un 401 de la API al leer el resumen.
+
+entrenamientos: 34/34 comprobaciones bien
+planes (primera): 56/57 comprobaciones bien; fallan: F-63
+planes (segunda): 56/57 comprobaciones bien; fallan: F-66

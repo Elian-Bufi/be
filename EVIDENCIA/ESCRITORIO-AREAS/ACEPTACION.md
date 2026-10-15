@@ -1284,3 +1284,128 @@ abre) y «“Volver” no escribe nada» (confirmar hace dos escrituras).
 **Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-7/editor/`: `ahora/` (42 capturas), `del-recorrido/` (6), `antes/` (3), `antes-y-ahora-1440-claro.png`,
 `resumen-de-la-pasada.txt` y `resultados/` (los resultados de cada recorrido, los veredictos de las roturas y las
 roturas de las reglas).
+
+## Parte 8 · Entrenamiento · La versión en preparación (2026-10-14)
+
+**El editor del plan de entrenamiento recompuesto (maqueta 28; C-75 a C-78).** La parte se planeó en dos tramos —la
+composición, y después la tabla de series—, pero se hicieron juntos: con la composición nueva y los campos de antes, un
+ejercicio abierto seguía midiendo casi 3.000 px.
+
+**Qué cambió.** La versión en preparación era una jerarquía de cajas, una adentro de la otra, con todo abierto: cada
+bloque, microciclo y sesión con su nombre y su propósito, y cada serie con cinco campos y tres casillas. Ahora **se mira
+una sesión por vez** —la del bloque y, si el bloque los usa, del microciclo elegidos—, **con los ejercicios plegados:**
+cada uno dice en un renglón lo que piden sus series, con lo escrito y todavía sin guardar. Abierto, un ejercicio muestra
+**sus series en una tabla, con una celda por objetivo y sus tres estados** (DL-122): en gris, lo que la serie toma de lo
+general; con un valor, el suyo; «Sin objetivo», elegido con la flecha de la celda. Lo que se ve es lo que recibe el
+asesorado: sale «Así lo ve tu asesorado». El descanso se lee «02:30». Los nombres, el propósito y las indicaciones se
+cambian a pedido; lo que se usa de vez en cuando va en un menú; «Agregar ejercicio» abre el buscador en un cajón.
+**«Activar plan» guarda antes y pregunta,** con la próxima revisión en el diálogo. Es otra composición de lo mismo:
+**no se agregó ni se quitó ninguna operación.** No cambian la API, la base ni la APK. Sobre la base propia
+(`be_test_escritorio`, regenerada antes de cada pasada) y la compilación estática del código de esta parte
+(`6d85355`).
+
+**Un defecto de antes, corregido (severidad media, de datos).** Lo escrito que no era un número viajaba como NaN, y al
+armar el pedido un NaN se vuelve `null`. En un descanso o en el RIR de una serie, `null` quiere decir «sin objetivo»: si
+el profesional escribía «90,5» en un descanso o «dos» en un RIR, se guardaba otra cosa, en silencio, y la pantalla decía
+«Guardado.». En la carga y en las repeticiones la API lo rechazaba, con un mensaje sin lugar. Ahora el editor no lo
+manda: la celda se marca, el ejercicio lo dice en su renglón (también plegado) y «Guardar cambios» lo lista con su
+lugar, como un nombre que falta o el objetivo de intensidad que falta con un criterio elegido. Es una regla nueva del
+dominio (`editor-del-plan-de-entrenamiento.ts`), con sus pruebas.
+
+**Medido en la página real,** con el plan de dos bloques de las cuentas descartables y una versión en preparación creada
+desde la activa:
+
+| A 1440 × 900 | Antes | Ahora |
+|---|---|---|
+| El editor, al abrirse | 28.413 px: casi treinta pantallas (29.149 a 1024) | 955 px: una pantalla, casi entera |
+| Con un ejercicio abierto (cuatro series) | — (con la composición nueva y los campos de antes: 2.932 px) | 1.555 px (1.730 a 1280 y 1.853 a 1024, con «Lo general» debajo) |
+| Campos a la vista al entrar | Todos: nombres, propósitos, indicaciones y, de cada serie, cinco campos y tres casillas | Ninguno: se abre lo que se va a tocar |
+| Un objetivo de una serie | Un campo, una casilla «Sin objetivo en esta serie» y su ayuda; y una tabla aparte, «Así lo ve tu asesorado» | Una celda: en gris lo que toma, el propio, o «Sin objetivo» |
+| Un descanso o un RIR por serie mal escritos | Se guardaban como «sin objetivo», y decía «Guardado.» | No dejan guardar, y dice dónde están |
+| Activar con cambios sin guardar | Guardar a mano, y recién entonces el botón se encendía | «Activar plan» guarda y pregunta |
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| La versión en preparación se abre en una sesión, con sus ejercicios plegados: cada uno con el renglón del plan activo (es una copia), calculado a mano con la API. Arriba, el estado del guardado y el menú de la versión, «Validar plan», «Activar plan» y «Guardar cambios», apagado (no deshabilitado). El bloque y la sesión con los nombres de la API, cuántas sesiones tiene el bloque y su propósito, cuántos ejercicios y series tiene la sesión, y sus indicaciones. Ningún campo a la vista; menos de 1.000 px (F-103) | `recorrido.mjs entrenamientos`: corre sobre las cuentas descartables recién generadas, con la versión en preparación que el mismo recorrido crea desde la activa. Lo esperado se escribe a mano con lo que devuelve la API; no usa el módulo del dominio que arma la pantalla. No toca los datos de A, B ni C | Pasa: 955 px; «Guardado»; las cuatro acciones, con «Guardar cambios» apagado; «Fuerza: progresión» y «Descarga», «2 sesiones» y su propósito; 0 campos a la vista | Verificado automáticamente |
+| Lo que se mira vive en la dirección, por su posición: la segunda sesión (`sesion=2`), un ejercicio abierto (`ejercicios=1`), el segundo bloque, que usa microciclos (`bloque=2`, y aparece su renglón), el segundo microciclo (`micro=2`); al volver al primer bloque, la dirección queda limpia. Nada de eso le pide algo a BE (F-104) | Lo mismo | Pasa: `sesion=2`, `ejercicios=1`, `bloque=2` («Semana 1» y «Semana 2»; la sesión, «Cuerpo completo»), `micro=2`; al volver, la dirección limpia; 0 pedidos | Verificado automáticamente |
+| Abierto, un ejercicio con objetivos distintos por serie muestra su tabla: cada celda en el estado que guardó la API —en gris lo que toma, el propio, «Sin objetivo» elegido—, el descanso como «02:30», los encabezados con lo que hace falta para llenarlos, y «Lo general del ejercicio» al costado con los valores de la API. Ya no está «Así lo ve tu asesorado». El escenario tiene los tres estados (F-105) | Lo mismo: lo esperado de cada celda se arma a mano con la serie de la API (la clave que no está, `null` o un valor) | Pasa: «Press de banca», cuatro series: la carga, 62,5 en gris en las tres primeras y 60 propia en la cuarta; el RIR, 2 en gris en las dos primeras y 1 propio en las otras dos; el descanso, 02:30 en gris y «Sin objetivo» elegido en la cuarta; la nota de la cuarta | Verificado automáticamente |
+| Lo que se escribe en una celda es lo que se guarda: un número deja el propio; «Tomar de lo general» quita el de la serie; «Sin objetivo en esta serie» lo quita aunque lo general lo tenga. El botón de la celda ofrece solo lo que cambia algo. Un descanso escrito en segundos se lee «01:45» al salir del campo; uno escrito «2:00» se guarda como 120 segundos. «Guardar cambios» hace una sola escritura (F-106) | Lo mismo: escribe por la pantalla, guarda, lee la versión de la API y la compara serie por serie (lo declarado, y el objetivo que recibe el teléfono con su origen) | Pasa: 1 escritura; «Guardado»; en la API, la serie 1 con 65 kg propios, la 2 con RIR 1 y sin descanso (`null`: lo declara la serie), la 3 con 105 s y la 4 tomando de lo general la carga y el descanso; el remo, con 120 s | Verificado automáticamente |
+| Un RIR por serie y un descanso mal escritos no se guardan como otra cosa: la celda queda marcada y el campo dice el formato; plegados, cada ejercicio dice «1 dato que no se entiende». Desde otra sesión, «Guardar cambios» no le pide nada a BE, dice qué hay que corregir y lista cada cosa con su lugar; cada renglón elige la sesión, abre el ejercicio y deja el foco en el campo (F-107) | Lo mismo: escribe «dos» en un RIR y «90,5» en un descanso | Pasa: «1 dato que no se entiende» en los dos renglones; 0 escrituras; «Hay datos que faltan o no se entienden. Corregilos antes de guardar.», con «Fuerza: progresión (ajuste) → B · Tren superior → Ejercicio 1 → Serie 2 → el RIR no se entiende» y «… → Ejercicio 2 → el descanso no se entiende: va como 02:30, o en segundos»; el foco, en el descanso del ejercicio 2 y en el RIR de la serie 2 | Verificado automáticamente |
+| Los nombres se cambian a pedido: el menú del bloque ofrece «Cambiar el nombre», «Organizar por microciclos» (apagada, con su motivo) y «Quitar este bloque»; el campo se abre con el foco y el nombre seleccionado, y Enter lo cierra y deja el foco en el botón del menú. Los menús de la sesión y del microciclo; en un bloque con microciclos, el menú no ofrece organizarlo por microciclos (F-108) | Lo mismo | Pasa: «Organizar por microciclos», apagada, con «Solo mientras el bloque no tiene sesiones: con microciclos, las sesiones van dentro de ellos.»; el campo `b0-nombre`, con el foco y el nombre seleccionado; después, «Fuerza: progresión (ajuste)» y el foco en el menú del bloque | Verificado automáticamente |
+| Agregar y quitar: un bloque (elegido, con su nombre abierto); una sesión nueva; un ejercicio desde el cajón, que dice adónde se agrega, deja el foco en la búsqueda, no se cierra al elegir y lo anuncia; Escape lo cierra y devuelve el foco. El ejercicio nuevo tiene una serie sin repeticiones ni criterio, y lo dice; «Quitar», en su menú, lo saca. Nada de esto escribe en BE (F-109) | Lo mismo: busca en el catálogo de la API local | Pasa: `bloque=3`, con el campo `b2-nombre`; «Sesión A»; el cajón dice «Bloque del recorrido · Sesión A»; «Agregado: Sentadilla. Podés sumar otro o cerrar.»; el foco vuelve a «Agregar ejercicio»; «1 serie sin repeticiones fijadas · sin criterio de intensidad»; 0 escrituras | Verificado automáticamente |
+| «Validar plan», con cambios sin guardar, guarda antes y valida. La sesión vacía del bloque nuevo es un problema de la API: el aviso lo nombra sin rutas técnicas, como un botón que elige el bloque y deja el foco en el menú de la sesión, y recuerda que validar revisa la forma, no la calidad. Sin problemas, lo dice igual (F-113) | Lo mismo | Pasa: 1 escritura de guardar y 1 de validar; «Bloque del recorrido → Sesión A → falta al menos un ejercicio»; el foco, en el menú de la sesión; sin el bloque nuevo, «El borrador no tiene problemas de estructura. Validar revisa la forma del plan, no su calidad…» | Verificado automáticamente |
+| Con los ejercicios de una sesión abiertos, sin palabras de la lista de Entrenamiento y axe sin faltas en los dos temas. «Lo general» al costado a 1440 y debajo a 1280, 1024, 768 y 390; sin desborde (F-112) | Lo mismo, con el detector del dominio y con axe | Pasa: sin palabras de la lista; axe sin faltas en los dos temas; «Lo general» debajo a 1280 (1.730 px), 1024 (1.853), 768 y 390; sin desborde | Verificado automáticamente |
+| «Activar plan», con cambios sin guardar, guarda antes y pregunta. El diálogo dice la consecuencia, qué entra y qué queda, trae la próxima revisión vacía y el foco en «Volver», que no escribe nada. Con la fecha, activa: dos escrituras, y la API devuelve la fecha (F-110) | Lo mismo: activa por la pantalla y lee de la API cómo quedó | Pasa: al abrir, 1 escritura; «Esta versión pasa a ser la vigente: 2 bloques y 4 sesiones.» y «La versión 2, activa desde el 14 oct, queda en el historial.» (el día en que se generaron los datos); el foco en «Volver», que no escribe; al activar, 1 escritura de guardar y 1 de activar; la fecha, en la API | Verificado automáticamente |
+| Con cambios sin guardar, pasar a la versión activa y volver no pierde nada ni le pide algo a BE; «Actualizar» pregunta. Activada, la versión pasa a ser la vigente con el nombre que se escribió, y el historial lista las tres (F-79) | Lo mismo: son las comprobaciones de la parte 6, que ahora escriben en un nombre a pedido | Pasan las dos | Verificado automáticamente |
+| Con el bloqueo de la app, «Activar plan» está apagado, lo describe su motivo («Todavía no podés activar este plan», por qué y qué hacer) y tocarlo no abre nada ni escribe nada (F-111) | Lo mismo, con una respuesta simulada: el titular del escenario ya usó una app que muestra los objetivos por serie | Pasa: «Activar plan» apagado (no deshabilitado), descrito por `motivo-sin-activar`: «Todavía no podés activar este plan…»; tocarlo no abre nada; 0 escrituras | Verificado automáticamente, sobre una respuesta simulada |
+| Las reglas del editor: qué se mira, dónde está un problema, qué no deja guardar, qué dice un ejercicio plegado, cómo se lee un descanso, qué muestra y qué escribe la celda de un objetivo, y qué entra al activar | `packages/domain/src/editor-del-plan-de-entrenamiento.test.ts`, con los resultados esperados escritos a mano | Pasan las 23 | Verificado automáticamente |
+| Ningún texto de las pantallas de Entrenamiento usa un término prohibido | `scripts/copy-pantallas.test.cjs`, que recorre la carpeta `training` entera: los archivos nuevos entran solos | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | **La pasada completa no se pudo hacer el 14/10.** Con 200 a 800 MB libres (en la máquina había además un navegador de 1,3 GB), todo iba tan lento que la sesión de prueba se vencía a mitad de camino (la API respondía 401) y las fallas eran de la máquina: se cortó. Se corrieron los dos recorridos de los editores sobre el código final: `entrenamientos`, 34 de 34; y `planes`, dos veces, 56 de 57, con una comprobación distinta del plan activo cada vez (F-63 y después F-66: una lectura que no llegó a tiempo), y las catorce del editor del plan de comidas bien en las dos. **Pendiente:** la pasada completa, con la memoria libre | Verificado en parte: los dos editores. La pasada completa, pendiente |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código | En verde la corrida 38667931879, sobre `6d85355`: el legajo; la batería completa (typecheck; dominio, 752; guiones, 347; y las pruebas de la API); la integración; y la imagen de la API | Verificado automáticamente |
+| La pantalla en sus estados: al entrar, el segundo bloque, un ejercicio abierto (1440 en los dos temas, 1280, 1024, 768 y 390), lo que no deja guardar, el cajón, el diálogo de activar y el bloqueo de la app | `ver.mjs` sobre las cuentas descartables recién generadas, con una versión en preparación creada por la pantalla; y `recorrido.mjs entrenamientos`, de la pasada limpia | 32 capturas de ahora (`parte-8/editor/ahora/`: al entrar, el segundo bloque, un ejercicio abierto, la sesión con todo abierto, los menús, un nombre y un propósito a pedido, «Agregar» de la sesión y la flecha de una celda, en los dos temas a 1440; al entrar y con un ejercicio abierto a 1280, 1024, 768 y 390), 5 del recorrido (`del-recorrido/`: lo que no deja guardar, el cajón, el diálogo de activar, el bloqueo de la app —sobre una respuesta simulada, y lo dice en su nombre— y un ejercicio abierto en Azul noche), 3 de antes (`antes/`: los primeros 16.000 px del editor, que mide 28.413, y su primera pantalla en los dos temas) y la comparación `antes-y-ahora-1440-claro.png`. Cuatro capturas de ahora se repitieron: con poca memoria, la primera página después de levantar la API la encontraba todavía arrancando («No hay conexión con BE») | Observado en capturas |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «no hay ningún campo a la vista» (con un
+ejercicio abierto, la misma consulta encuentra los de sus series), «elegir no le pide nada a BE» (guardar hace una
+escritura), «guardar no escribe nada» (corregido, escribe una vez), «“Volver” no escribe nada» (activar escribe dos) y
+«tocar el botón bloqueado no abre nada» (sin el bloqueo, el diálogo se abre).
+
+**La prueba de la prueba.**
+- **Las reglas, rotas de a una:** 72 mutaciones de `editor-del-plan-de-entrenamiento.ts`, cada una contra las pruebas
+  del módulo en una copia de la compilación. **A la primera sobrevivió una, y destapó un hueco:** nada comprobaba que una
+  celda vacía no vale por un cero (si la serie tenía «RIR 0» o «0 kg» y la celda quedaba vacía, el cero no se mostraba).
+  Se sumó esa prueba; **las 72, detectadas** (`resultados/roturas-de-las-reglas.txt`).
+- **La pantalla, rota a propósito y compilada así,** en tres tandas sobre `entrenamientos`: 15 roturas
+  (`resultados/compilacion-rota-tanda-*.txt`). La E1, 11 del website, una por comprobación: «Guardar cambios»
+  deshabilitado en vez de apagado, la sesión escrita desde cero en la dirección, «Lo general» debajo a 1440, el foco
+  perdido al confirmar un nombre, la celda de un dato mal escrito sin marcar, las dos opciones de la celda dejando la
+  serie sin objetivo, el cajón que se cierra al elegir, el foco que no va al menú de la sesión, los ejercicios que no
+  miden su ancho, «Activar plan» que no guarda antes y el bloqueo de la app sin su motivo. La E2, 3 en la fuente de las
+  reglas del dominio: muestran que lo esperado por el recorrido no sale del módulo que arma la pantalla. **Todas
+  notadas.**
+- **Una rotura de la E1 no se notó, y era un error de armado:** «los ejercicios no miden su ancho» quedó tapada por
+  otra de la misma tanda, que ya ponía «Lo general» debajo en todos los anchos. Sola, en la tanda E3, se nota, sin
+  ninguna otra falla.
+- **La primera corrida de la E1 se cortó antes de llegar al editor,** en un paso del plan activo que ninguna rotura
+  toca: la API respondía 503 a los ocho segundos (la base no contestaba; la máquina tenía unos 700 MB libres). Repetida,
+  corrió entera. En esa segunda corrida fallaron además, sin que se las esperara, la comprobación de anchos del plan
+  activo (una página que no llegó a cargar) y la de errores de página («Failed to fetch» al navegar): las dos son de la
+  misma falta de memoria, y en la E2, la E3 y la pasada limpia no aparecen.
+
+**Lo que mostraron las capturas y las primeras corridas.**
+- **Con los campos de antes, un ejercicio abierto medía 2.932 px** (cuatro series de cinco campos y tres casillas
+  cada una, y la tabla aparte). Por eso la tabla de series se hizo en el mismo paso que la composición.
+- **A 1440 y a 1280 la celda cortaba «Sin objetivo»** («Sin objetivc»). Ahora, sin un valor, el texto va un poco más
+  chico y desde la izquierda.
+- **A 1280, «Lo general» al costado dejaba a la nota una columna de unos 80 px.** Se aplicó lo que el plan de
+  implementación ya proponía (DEC-30): por debajo de unos 1.200 px para los ejercicios, «Lo general» va debajo, en dos
+  columnas.
+- **A 768 la tabla se apretaba.** Ahí y a 390, cada serie es un bloque con sus campos rotulados.
+- **«RIR = repeticiones en reserva Cada serie puede tener el suyo.»** —sin el punto— era la ayuda del criterio en el
+  editor de antes. Ahora esa explicación está en «Cómo se lee esta vista», como pide DEC-28.
+
+**Hallazgos fuera de lo dibujado.**
+- **El dato mal escrito que se guardaba como «sin objetivo»** (media, de datos; es de antes): corregido (F-107).
+- **En los dos editores, confirmar un nombre con Enter dejaba el foco al principio de la página** (media, de
+  accesibilidad; en el de comidas lo dejé así en la parte 7). Ahora va a lo que muestra ese nombre (F-108).
+- **Un parámetro que se deja vacío** («Agregar parámetro» lo crea así) lo rechaza el contrato, que pide su nombre y su
+  valor: el editor de antes lo mandaba igual, y el problema volvía con el texto genérico de una falla de forma («falta
+  un dato, o el número es demasiado chico»). Ahora se dice antes de guardar: «a un parámetro le falta el nombre o el
+  valor», en su ejercicio, y lleva al campo (baja; por lectura del contrato, sin correrlo con el editor de antes).
+
+**Límites, dichos.**
+- **La unidad de la carga va en el encabezado de la columna**, no en cada celda como la dibuja la maqueta («62,5 kg»):
+  en el editor la celda es un campo, y escribir «60» y leer «60 kg» en el mismo campo pide separar el número de su
+  unidad. Para decidir.
+- **Los topes del contrato** (doce bloques, treinta sesiones por bloque, cuarenta ejercicios, veinte series) no se
+  anticipan en la pantalla: los dice la API al guardar, ubicados en su lugar.
+- **«Importar desde wger» no se miró en pantalla:** los recorridos no llaman a servicios de afuera.
+- **El bloqueo de la app se miró con una respuesta simulada.**
+- **Los guiones de WP-ENTRENAMIENTO-SERIES ya no corren contra el editor nuevo** (DEC-31): lo que protegían —escribir
+  los tres estados y comparar con la API— está en F-105 a F-107, F-110 y F-111.
+- **«Actualizar» sigue preguntando y, si se sigue, descarta lo escrito.**
+- **Sin teléfono ni lector de pantalla reales:** el foco, los nombres accesibles y los avisos se comprobaron con el
+  navegador y con axe. 768 y 390 px se miraron para que no se rompa.
+
+**Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-8/editor/`: `ahora/`, `del-recorrido/`, `antes/`,
+`antes-y-ahora-1440-claro.png`, `resumen-de-las-corridas.txt` y `resultados/` (los resultados de los dos recorridos de
+los editores, los veredictos de las roturas y las roturas de las reglas).
