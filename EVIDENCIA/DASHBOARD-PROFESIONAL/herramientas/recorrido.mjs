@@ -4483,12 +4483,15 @@ async function marcoDeLasAreas(page, v) {
 
   // F-06 · Los mismos tres renglones que la ficha ───────────────────────────────────────────────────────────
   informar('F-06', 'El alto del marco y de sus tres renglones, a 1440 px', `ficha ${ficha.alto} px (${ficha.renglones.join(' + ')}) · ${medidas.map((x) => `${x.area} ${x.alto} (${x.renglones.join(' + ')})`).join(' · ')}`);
+  // A 1440, desde la crítica de diseño del 2026-10-15, el acceso va en el primer renglón (F-148): el marco tiene dos
+  // renglones, el de la persona (con el acceso al lado) y el de las secciones, y esos dos se comparan al píxel. El acceso
+  // va adentro del primero: en la ficha, con el nombre y la referencia al lado, se parte en dos líneas sin agrandarlo
+  // (F-157), y en un área entra en una. Lo que protege la comprobación es lo mismo: nada se mueve al pasar de una a otra.
+  const dentroDelPrimero = (r) => r.length === 3 && r[1] <= r[0];
   comprobar(
     'F-06',
-    // A 1440, desde la crítica de diseño del 2026-10-15, el acceso va en el primer renglón (F-148): se miden las mismas tres
-    // partes (la persona, el acceso y las secciones), y las dos primeras comparten renglón.
-    'El marco tiene las mismas partes y mide lo mismo en las cuatro áreas y en la ficha, parte por parte: al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura',
-    medidas.every((x) => x.renglones.length === 3 && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
+    'El marco mide lo mismo en las cuatro áreas y en la ficha, renglón por renglón (el de la persona, con el acceso adentro, y el de las secciones): al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura',
+    dentroDelPrimero(ficha.renglones) && medidas.every((x) => dentroDelPrimero(x.renglones) && x.alto === ficha.alto && x.renglones[0] === ficha.renglones[0] && x.renglones[2] === ficha.renglones[2]),
     `ficha ${ficha.alto} · ${medidas.map((x) => `${x.area} ${x.alto}`).join(' · ')}`,
   );
   // F-10 · La sección conserva su ancho y arranca donde arranca el marco ────────────────────────────────────
