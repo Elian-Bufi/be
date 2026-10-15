@@ -231,8 +231,9 @@ Información).
   y los primeros días; en el Espacio profesional, los pendientes y el directorio. A 1440 × 900, el Resumen muestra las
   tres tarjetas enteras y el valor de cada indicador (II.3); la línea de tiempo, seis días enteros con todos sus hechos;
   y el Espacio profesional, sus dos tarjetas enteras con siete pendientes (II.6). Si no entra, cambia la composición,
-  no la letra (I.5). La regla de los 390 px de ancho vale para el website del asesorado y para la pestaña Antropometría
-  (II.9 y II.10).
+  no la letra (I.5). La regla de los 390 px de ancho vale para el website del asesorado (II.10). La pestaña Antropometría
+  la dejó con la parte 9 de WP-ESCRITORIO-AREAS: la carga de una toma, con la figura y sus campos, es de escritorio, y en
+  un teléfono pasa a una lista (II.9).
 - **Zonas con sentido, no columnas porque sí.** En Analizar, una barra arriba (la pregunta, las métricas y los modos)
   y, debajo, los gráficos y la lectura lado a lado desde 1024 px; en el Resumen, una tarjeta por área, lado a lado, y
   debajo los indicadores. La grilla ubica; el orden del documento y del teclado es el que se ve (WCAG 1.3.2 y 2.4.3).
@@ -836,6 +837,41 @@ otras pestañas. La pestaña tiene tres secciones: Tomas, Evolución y Lámina.
   del panel, de una medición o de un resultado), `.historia-de-medicion` y `.cambios-de-resultados`; y `Marca` (la
   clase de un dato o su excepción, con su ícono).
 
+**La carga de una toma** (`anthropometry/preparacion.tsx`, `figura-de-la-carga.tsx` y `composicion-de-la-carga.ts`;
+WP-ESCRITORIO-AREAS, parte 9; maqueta 23):
+- **Cada campo, unido a su sitio de la figura.** La figura es la de Dirección, la misma de la Lámina y del teléfono, y
+  los sitios son los del dominio: no se mueven para acomodar el dibujo ni para separar dos que de frente casi coinciden
+  (DL-113). A cada lado, tarjetas con los campos, apiladas a la altura de sus sitios; de cada campo sale una guía hasta
+  el borde de su sitio, y ninguna cruza a otra (una prueba lo fija, en las dos figuras y en las dos familias).
+- **Una familia por vez (perímetros o pliegues) y una figura por vez (hombre o mujer),** las dos en la dirección.
+  Ninguna es un dato: la figura arranca en hombre, como la Lámina. Cada familia dice cuántas de sus mediciones tienen
+  dato, y lo escrito en la otra no se pierde.
+- **Con dato o sin dato, por la forma; un solo color.** El anillo de un perímetro con dato tiene la mitad de adelante
+  llena; sin dato, va entero y punteado. El punto de un pliegue con dato es un aro lleno con su centro; sin dato, un aro
+  punteado y vacío. **Lo de la cara de atrás** (tricipital y subescapular) va en gris, con la guía punteada y la palabra
+  «posterior» en el campo: la figura está de frente.
+- **Pliegues:** los once sitios quedan del lado derecho de la persona. A la derecha de la figura van solo los dos que
+  están junto a la línea media; los demás, a la izquierda.
+- **Los campos son el camino del teclado y del lector de pantalla:** el dibujo va oculto para el lector, y tocar un
+  sitio lleva a su campo. El foco sigue el orden del protocolo, por tarjetas. El nombre que se ve es el corto
+  («Tricipital»); el que se oye, el completo («Pliegue tricipital, posterior»).
+- **Lo que el protocolo declara sin sitio en la figura va a la derecha, en «Fuera de la figura»:** por familia, con la
+  unidad si todas la comparten y su cuenta. Debajo, «Agregar otra medición», para lo que el protocolo no declara.
+- **Arriba, el estado del guardado y un solo botón lleno,** a la vista al desplazarse: «Guardar» si hay algo sin
+  guardar; si no, «Registrar toma». **«Cambios sin guardar» compara lo escrito con lo guardado,** y lo guardado dice la
+  hora que da la API.
+- **Un valor que no se puede leer:** el aviso lista el campo y lleva hasta él, aunque esté en la otra familia; el campo
+  queda marcado, con el motivo debajo.
+- **Colores:** tokens propios (`--escena`, `--figura-sitio`, `--figura-posterior`, `--figura-guia`), medidos a 3:1
+  contra el maniquí y contra la escena en los dos temas (I.6). La escena es plana.
+- **Anchos:** a 1440, la escena de 880 px y los datos de la toma en 448; a 1280, los datos se angostan para que la
+  escena no baje de 832; a 1024, la escena ocupa el ancho y los datos van debajo. **Con menos de 832 px de escena, los
+  campos van en lista, por tarjeta, sin la figura.**
+- **Piezas propias:** `.carga-de-la-toma` (la cabecera y el cuerpo), `.taller-de-la-carga`, `.escena-de-la-carga`,
+  `.tarjeta-de-la-carga`, `.medicion-de-la-carga` (`CampoDeMedicion`, la fila de un campo, también en «Fuera de la
+  figura»), `.sitio-de-la-carga`, `.guia-de-la-carga` y `.leyenda-de-la-carga`; y `componerLaCarga`, la composición,
+  sin interfaz.
+
 **Lámina:**
 - **Lo principal, primero.** El orden es: qué se muestra (la toma y la hoja); enseguida, la imagen con «Descargar
   imagen»; después, los ajustes de cómo se ve; al final, la explicación. En el teléfono, la imagen entra en la primera
@@ -1396,6 +1432,9 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Los días de la evidencia | Una fila por día con registros: «11 sept · marcar las 3 comidas · sin marcar» y «Ver las 3». | Una grilla; en Nutrición, con los días sin registros a la vista y sin casilla. El nombre de cada casilla empieza por lo que se ve. | Ampliada | Áreas, 10 |
 | Los efectos de los resultados | Los seis a la vista, cada uno debajo de su resultado. | El del elegido, en un recuadro; los seis, a un clic, en «Qué hace cada resultado». | Sustituida | Áreas, 10 |
 | Los errores de la revisión de Entrenamiento | Solo en el resumen. | En el resumen y en cada campo, como en Nutrición. | Corregida | Áreas, 10 |
+| La carga de una toma | Una lista de 30 campos por familia, con una silueta dibujada para BE al costado (de frente y de espalda) y la barra de guardar al pie: 3.034 px a 1440 con el perfil completo. | La figura de Dirección con cada campo unido a su sitio, de a una familia; arriba, el estado del guardado y un solo botón lleno; a la derecha, los datos de la toma y lo que no tiene sitio en la figura: 1.287 px (II.9). | Sustituida | Áreas, 9 |
+| «Cambios sin guardar», en la carga de una toma | Bastaba con tocar un campo, aunque se volviera a lo mismo. | Compara lo escrito con lo guardado (II.9). | Corregida | Áreas, 9 |
+| La regla de los 390 px, en Antropometría | La pestaña tenía que poder usarse a 390 px de ancho. | Es de escritorio: con menos de 832 px de escena, los campos de la carga van en lista, sin la figura (II.1, II.9). | Sustituida | Áreas, 9 |
 
 ---
 

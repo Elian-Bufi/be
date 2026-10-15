@@ -55,11 +55,16 @@
   --encabezado-texto: #f2f7fc;
   --encabezado-tenue: #8dcae5;
   --encabezado-foco: #fbbf24;
-  /* Figura de la toma antropométrica (tramo D): el azul de la referencia de Dirección, sobre una tarjeta blanca */
-  --figura-relleno: #eaf3ff;
-  --figura-trazo: #2e8fff;
-  --punto: #17459a;
-  --punto-halo: #c4f0ff;
+  /* La figura de la carga de una toma (WP-ESCRITORIO-AREAS, parte 9): la de Dirección sobre una escena plana. Los sitios
+     van casi siempre sobre el maniquí, que es el mismo en los dos temas: `--figura-cuerpo` no se pinta, es su tono más
+     oscuro medido en las dos imágenes (el 5 % más oscuro del cuerpo), para medir contra él. Un sitio no conoce el valor:
+     un solo color, y el gris para los de la cara de atrás. */
+  --escena: #e9f0fa;
+  --figura-cuerpo: #dfe6ec;
+  --figura-sitio: #1e6bf2;
+  --figura-posterior: #64748b;
+  --figura-guia: #3f78cc;
+  --figura-punto-relleno: #ffffff;
   /* Planificado y registrado (gráficos del espacio profesional): además del color, lo planificado va rayado o con
      línea discontinua y cuadrados, y lo registrado lleno o con línea continua y círculos (B10-10 §11). */
   --grafico-planificado: #1f5bc4;
@@ -109,12 +114,11 @@
   --error-fondo: #3b1a25;
   --exito: #6ee7b7;
   --exito-fondo: #0b3a3a;
-  /* Figura de la toma sobre una tarjeta navy: relleno apenas más claro, trazo y punto en cian, halo azul claro. Los
-     puntos siguen sin conocer el valor: un solo color por estado de carga. */
-  --figura-relleno: #0c3558;
-  --figura-trazo: #27d5f9;
-  --punto: #a5f0ff;
-  --punto-halo: #1f5bc4;
+  /* La escena de la carga sobre navy. El maniquí sigue siendo claro: el sitio y la guía son un azul que llega a 3:1
+     contra los dos (el cian de la maqueta no se ve sobre el cuerpo). */
+  --escena: #0a2c47;
+  --figura-sitio: #2a74ee;
+  --figura-guia: #3b7ddd;
   /* Gráficos: planificado en cian, registrado en naranja claro, hueco en gris azulado; rayado y forma siguen igual. */
   --grafico-planificado: #27d5f9;
   --grafico-registrado: #ff9b5c;

@@ -13,7 +13,8 @@
  *
  * Parte 3: **«En preparación» dejó de ser una sección.** La carga de una toma se abre desde «Tomas» («Preparar una
  * toma»), y `vista=preparacion` sigue abriéndola: la usan el Resumen de la ficha y el pendiente del Espacio profesional.
- * Mientras se carga una toma, la sección marcada es «Tomas», con un enlace para volver a ella. «Tomas» usa todo el ancho
+ * Mientras se carga una toma, la sección marcada es «Tomas», con un enlace para volver a ella. Desde la parte 9, la carga usa
+ * todo el ancho del marco (la figura y sus campos, maqueta 23) y tiene su ayuda. «Tomas» usa todo el ancho
  * del marco y tiene su ayuda; las tomas se leen una vez por visita y se vuelven a leer con «Actualizar» (el marco, además,
  * vuelve a preguntar el acceso al volver a la pestaña del navegador y ante un «no disponible»).
  */
@@ -28,6 +29,8 @@ import type { Resultado } from '../../../../lib/api';
 import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { hrefConCambios } from '../seguimiento/estado';
+import { AyudaDeLaCarga } from './ayuda-de-la-carga';
 import { AyudaDeTomas } from './ayuda-de-tomas';
 import { VistaDeEvaluaciones } from './evaluaciones';
 import { VistaDeEvolucion } from './evolucion';
@@ -60,6 +63,11 @@ export interface ContextoDeAntropometria {
   readonly irA: (vista: Vista, evaluacionId?: string) => void;
   /** Lo que dice la dirección de la página: la toma elegida vive ahí (`evaluacion=`), y «Actualizar» la conserva. */
   readonly parametros: URLSearchParams;
+  /**
+   * Cambia parámetros de la dirección sin salir de la vista (`null` los quita): en la carga de una toma, la familia y la
+   * figura que se miran (`medidas`, `figura`). Reemplaza la entrada del historial.
+   */
+  readonly ir: (cambios: Readonly<Record<string, string | null>>) => void;
   /**
    * Lo que se acaba de hacer en la carga de una toma y se dice al volver a «Tomas» («Toma registrada…»). Vive en la
    * pestaña, no en la carga: esa vista se desmonta al volver.
@@ -111,9 +119,14 @@ export function Antropometria() {
   }, []);
   const volverALeer = useCallback(() => setRetirado(false), []);
   const [avisoDeTomas, avisarEnTomas] = useState<string | null>(null);
+  const enLaDireccion = parametros.toString();
+  const ir = useCallback(
+    (cambios: Readonly<Record<string, string | null>>) => router.replace(hrefConCambios(ruta, new URLSearchParams(enLaDireccion), cambios), { scroll: false }),
+    [router, ruta, enLaDireccion],
+  );
   const contexto = useMemo(
-    () => (token ? { token, asesoradoId: id, miIdentidad, sesionPerdida, accesoRetirado, irA, parametros: new URLSearchParams(parametros.toString()), avisoDeTomas, avisarEnTomas } : null),
-    [token, id, miIdentidad, sesionPerdida, accesoRetirado, irA, parametros, avisoDeTomas],
+    () => (token ? { token, asesoradoId: id, miIdentidad, sesionPerdida, accesoRetirado, irA, parametros: new URLSearchParams(parametros.toString()), ir, avisoDeTomas, avisarEnTomas } : null),
+    [token, id, miIdentidad, sesionPerdida, accesoRetirado, irA, parametros, ir, avisoDeTomas],
   );
   // La carga de una toma es de «Tomas»: es la sección que queda marcada mientras se carga.
   const seccion: Seccion = vista === 'preparacion' ? 'evaluaciones' : vista;
@@ -131,22 +144,21 @@ export function Antropometria() {
       href={hrefDe}
       retirado={retirado}
       onActualizar={volverALeer}
-      ancho={vista === 'evaluaciones'}
-      ayuda={vista === 'evaluaciones' ? <AyudaDeTomas /> : null}
+      ancho={vista === 'evaluaciones' || vista === 'preparacion'}
+      ayuda={vista === 'evaluaciones' ? <AyudaDeTomas /> : vista === 'preparacion' ? <AyudaDeLaCarga /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>
           {vista === 'evaluaciones' ? <VistaDeEvaluaciones /> : null}
           {vista === 'preparacion' ? (
-            <>
-              <p className="vuelta-a-la-seccion">
+            <VistaDePreparacion
+              vuelta={
                 <Link href={hrefDe('evaluaciones')}>
                   <Icono nombre="izquierda" tamano={18} />
                   {COPY_ANTROPOMETRIA.volverATomas}
                 </Link>
-              </p>
-              <VistaDePreparacion />
-            </>
+              }
+            />
           ) : null}
           {vista === 'evolucion' ? <VistaDeEvolucion /> : null}
           {vista === 'lamina' ? <VistaDeLamina /> : null}
