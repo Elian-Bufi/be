@@ -11216,7 +11216,9 @@ details[open] > summary:not([class])::before {
 
 /* Un solo ritmo: 24 px entre tarjetas y 32 entre secciones (la crítica midió de 10 a 26, según la pantalla, y con lo
    mismo entre secciones que adentro de una tarjeta los grupos no se despegaban). Lo que entra en la primera pantalla
-   se sigue midiendo: el marco más bajo a 1.440 px y los pendientes en un renglón dejan el lugar. */
+   se sigue midiendo: el marco más bajo a 1.440 px y los pendientes en un renglón dejan el lugar. La carga de una toma
+   conserva sus 16 px entre la figura y los datos: con 24, a 1.280 px la columna de datos quedaba en 326 px, y sus
+   campos necesitan 330 (F-135). */
 :root {
   --entre-tarjetas: 1.5rem;
   --entre-secciones: 2rem;
@@ -11230,8 +11232,7 @@ details[open] > summary:not([class])::before {
 
 .areas,
 .indicadores,
-.analizar__dos-columnas,
-.carga-de-la-toma__cuerpo {
+.analizar__dos-columnas {
   gap: var(--entre-tarjetas);
 }
 
@@ -11241,9 +11242,12 @@ details[open] > summary:not([class])::before {
 
 /* Los cuadros de texto crecen con lo que se escribe y no llevan la marca para agrandarlos, donde el navegador lo sabe
    hacer (Chrome y Edge, con `field-sizing`). En los demás quedan como antes: con su alto de partida y la marca, que es
-   la manera de agrandarlos. Arrancan con tres renglones; con un texto muy largo, se desplazan por dentro. */
+   la manera de agrandarlos. Arrancan con tres renglones; con un texto muy largo, se desplazan por dentro. Va también
+   con la clase del campo: `.campo textarea` fija 44 px y, con más peso, dejaba los cuadros vacíos de un renglón (lo
+   encontró F-120: el formulario de la revisión se achicaba). */
 @supports (field-sizing: content) {
-  textarea {
+  textarea,
+  .campo textarea {
     field-sizing: content;
     resize: none;
     min-height: 5.25rem;

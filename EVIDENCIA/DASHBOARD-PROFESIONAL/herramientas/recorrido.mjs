@@ -4424,15 +4424,17 @@ async function marcoDeLasAreas(page, v) {
   await ir(page, FICHA_A);
   await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
   await quieto(page, v);
-  const ficha = await page.evaluate(() => {
-    // Como en `marcoEnPantalla`: un renglón que no dibuja su caja mide lo que sus partes.
-    const alto = (e) => {
-      const rs = getComputedStyle(e).display === 'contents' ? [...e.children].map((c) => c.getBoundingClientRect()) : [e.getBoundingClientRect()];
-      return Math.round(Math.max(...rs.map((x) => x.bottom)) - Math.min(...rs.map((x) => x.top)));
-    };
-    const marco = document.querySelector('header.marco-de-la-ficha');
-    return { alto: alto(marco), renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(alto) };
-  });
+  const medirLaFicha = () =>
+    page.evaluate(() => {
+      // Como en `marcoEnPantalla`: un renglón que no dibuja su caja mide lo que sus partes.
+      const alto = (e) => {
+        const rs = getComputedStyle(e).display === 'contents' ? [...e.children].map((c) => c.getBoundingClientRect()) : [e.getBoundingClientRect()];
+        return Math.round(Math.max(...rs.map((x) => x.bottom)) - Math.min(...rs.map((x) => x.top)));
+      };
+      const marco = document.querySelector('header.marco-de-la-ficha');
+      return { alto: alto(marco), renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(alto) };
+    });
+  const ficha = await medirLaFicha();
 
   // F-01 · El marco, en las cuatro áreas ─────────────────────────────────────────────────────────────────
   const medidas = [];
@@ -4734,9 +4736,16 @@ async function marcoDeLasAreas(page, v) {
   );
 
   // El marco a 1280 y a 1024 px ───────────────────────────────────────────────────────────────────────────
+  // Contra la ficha medida en el mismo ancho: desde la crítica de diseño del 2026-10-15 (F-148), a 1440 el acceso sube
+  // al primer renglón y el marco mide otra cosa que a 1280 y 1024, donde conserva sus tres renglones.
   const anchos = [];
+  const fichaEn = {};
   for (const ancho of [1280, 1024]) {
     await page.setViewport({ width: ancho, height: 900 });
+    await ir(page, FICHA_A);
+    await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
+    await quieto(page, v);
+    fichaEn[ancho] = await medirLaFicha();
     for (const area of [AREAS[2], AREAS[3]]) {
       await entrar(`/pro/advisees/${area.clave}?id=${A}`);
       const m = await marcoEnPantalla(page);
@@ -4746,9 +4755,9 @@ async function marcoDeLasAreas(page, v) {
   await page.setViewport({ width: 1440, height: 900 });
   comprobar(
     'F-06',
-    'A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página',
-    anchos.every((x) => !x.desborda && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
-    anchos.map((x) => `${x.ancho} · ${x.area}: ${x.alto} px (${x.renglones.join(' + ')})${x.desborda ? ' DESBORDA' : ''}`).join(' — '),
+    'A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de la ficha en ese ancho: nada baja de renglón ni desborda la página',
+    anchos.every((x) => !x.desborda && x.renglones.length === 3 && x.alto === fichaEn[x.ancho].alto && igual(x.renglones, fichaEn[x.ancho].renglones)),
+    `${anchos.map((x) => `${x.ancho} · ${x.area}: ${x.alto} px (${x.renglones.join(' + ')})${x.desborda ? ' DESBORDA' : ''}`).join(' — ')} · la ficha: ${[1280, 1024].map((a) => `${a} · ${fichaEn[a].alto} px (${fichaEn[a].renglones.join(' + ')})`).join(', ')}`,
   );
   comprobar('—', 'El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
