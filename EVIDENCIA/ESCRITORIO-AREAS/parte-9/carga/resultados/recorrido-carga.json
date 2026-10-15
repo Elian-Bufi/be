@@ -1,0 +1,101 @@
+{
+  "modo": "carga",
+  "inicio": "2026-10-15T10:30:55.462Z",
+  "fin": "2026-10-15T10:31:30.531Z",
+  "hoy": "2026-10-15",
+  "total": 15,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "F-125",
+      "descripcion": "La carga sigue la maqueta 23: arriba, «Nueva toma» (todavía no hay borrador), la cuenta del protocolo y «No es historia hasta que la registres.», el estado y «Guardar», el único lleno; a la izquierda, «Medidas en la figura» con «Perímetros 0 de 13» elegido, «Pliegues 0 de 11» y la figura de hombre; a la derecha, los datos de la toma y lo de fuera de la figura. A 1440 la escena mide 880 × 632 y los datos 448 de ancho, al lado",
+      "ok": true,
+      "detalle": "«Nueva toma» · «0 de 30 mediciones cargadas. No es historia hasta que la registres.» · «Todavía no se guardó.» · Guardar (lleno) · Perímetros 0 de 13* | Pliegues 0 de 11 | Hombre* | Mujer · escena 878 × 632 · datos 448"
+    },
+    {
+      "pro": "F-125",
+      "descripcion": "Alto de la página de la carga, a 1440 × 900, con el perfil completo y sin nada escrito",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1287 px"
+    },
+    {
+      "pro": "F-126",
+      "descripcion": "Los sitios son los de la lámina y no se mueve ninguno: en la figura de hombre y en la de mujer, en perímetros y en pliegues, cada sitio queda a menos de 0,6 px de donde lo ponen las cuentas del dominio sobre la caja real de la imagen (440 × 660, la que corresponde a cada figura), y no hay ninguno de más",
+      "ok": true,
+      "detalle": "HOMBRE PERIMETROS: 13 sitios, /figura/hombre-entero.png · HOMBRE PLIEGUES: 11 sitios, /figura/hombre-entero.png · MUJER PLIEGUES: 11 sitios, /figura/mujer-entero.png · MUJER PERIMETROS: 13 sitios, /figura/mujer-entero.png"
+    },
+    {
+      "pro": "F-129",
+      "descripcion": "Cada campo está unido a su sitio: la guía sale del borde de su tarjeta a la altura del campo y llega al borde del sitio, del lado de la tarjeta; ninguna guía se cruza con otra, en las dos figuras y en las dos familias. Los perímetros del tronco van a la derecha y los del brazo y la pierna a la izquierda; en pliegues, a la derecha solo el subescapular y el abdominal",
+      "ok": true,
+      "detalle": "HOMBRE PERIMETROS: 13 guías · HOMBRE PLIEGUES: 11 guías · MUJER PLIEGUES: 11 guías · MUJER PERIMETROS: 13 guías"
+    },
+    {
+      "pro": "F-129",
+      "descripcion": "El foco recorre los campos de la figura en el orden del protocolo: en perímetros, el del «Perfil antropométrico completo» exacto (arriba a la derecha, el brazo, la cintura y la pierna)",
+      "ok": true,
+      "detalle": "cuello, hombros, pecho, brazo-relajado, brazo-flexionado, antebrazo, muneca, cintura, abdomen, cadera, muslo, pantorrilla, tobillo"
+    },
+    {
+      "pro": "F-128",
+      "descripcion": "Los dos pliegues de la cara de atrás (tricipital y subescapular) lo dicen tres veces: el sitio en gris, la guía punteada y la palabra «posterior» en el campo, cuyo nombre para el lector de pantalla es el completo («Pliegue tricipital, posterior»). Los demás, no. La leyenda dice las tres formas y los dos pares que de frente casi coinciden",
+      "ok": true,
+      "detalle": "posteriores: pliegue-subescapular, pliegue-triceps · tricipital: «Tricipital posterior», lector: «Pliegue tricipital, posterior» · leyenda: «Con dato Sin dato Posterior: en la cara de atrás Dos pares están a la misma altura y de frente casi coinciden: tricipital y bicipital; cresta ilíaca y supraespinal. La figura ubica el sitio de toma; no califica el valor.»"
+    },
+    {
+      "pro": "F-127",
+      "descripcion": "Escribir un perímetro cambia la forma de su anillo y no su color: sin dato, entero y punteado; con dato, la mitad de adelante llena. Suben «Perímetros 1 de 13» y la cuenta del título, aparece «Cambios sin guardar» y «Guardar» sigue siendo el único lleno. Mientras el campo tiene el foco, su sitio lleva el halo",
+      "ok": true,
+      "detalle": "antes: no, punteado · después: si, mitad llena, color el mismo, halo sí · «Perímetros 1 de 13» · «1 de 30 mediciones cargadas. No es historia hasta que la registres.» · «Cambios sin guardar»"
+    },
+    {
+      "pro": "F-130",
+      "descripcion": "Tocar un sitio de la figura lleva el foco a su campo (el abdominal, a la derecha; la pantorrilla, a la izquierda): el dibujo es un atajo, los campos son el camino del teclado",
+      "ok": true,
+      "detalle": "abdominal → ant-valor-pliegue-abdominal · pantorrilla → ant-valor-pliegue-pantorrilla"
+    },
+    {
+      "pro": "F-133",
+      "descripcion": "Con un valor que no se puede leer en un pliegue («1.850») y Perímetros a la vista, «Guardar» no escribe nada: el aviso lista el campo con su nombre completo, y su enlace elige Pliegues (queda en la dirección), lleva el foco al tricipital y lo muestra marcado, con el motivo debajo",
+      "ok": true,
+      "detalle": "pedidos: 0 · enlaces: Pliegue tricipital: Escribilo sin punto de miles («1850») o, si es decimal, con coma («1,85»). · medidas=pliegues · foco: ant-valor-pliegue-triceps · error: «⚠ Escribilo sin punto de miles («1850») o, si es decimal, con coma («1,85»).»"
+    },
+    {
+      "pro": "F-132",
+      "descripcion": "Guardar escribe una sola vez y manda lo escrito (la cintura y el tricipital, cada uno con su unidad). Después el título dice «Toma en preparación» con «Borrador», el estado «Guardado · …» con la hora que da la API, y el lleno pasa a «Registrar toma»; lo escrito sigue en los campos y la familia y la figura elegidas siguen igual",
+      "ok": true,
+      "detalle": "pedidos: 1 · en la API: perimetro-cintura 84.5 cm, pliegue-triceps 12.5 mm · «Toma en preparación» «Borrador» · «Guardado · 15 oct 2026, 07:31» · Registrar toma (lleno), Guardar"
+    },
+    {
+      "pro": "F-134",
+      "descripcion": "Lo que el protocolo declara y no tiene sitio en la figura va a la derecha, por familia y con su cuenta: «Masa y estatura · 1 de 2» (el peso recién escrito), «Diámetros · cm · 0 de 3» con los nombres cortos, y la edad en «Otras mediciones del protocolo». Escribir el peso vuelve a «Cambios sin guardar» y el lleno vuelve a «Guardar»",
+      "ok": true,
+      "detalle": "Masa y estatura · 1 de 2: Peso, Talla · Diámetros · cm · 0 de 3: Biepicondíleo del húmero (codo), Biestiloideo (muñeca), Bicondíleo del fémur (rodilla) · Otras mediciones del protocolo · años · 0 de 1: Edad al momento de la toma · «Cambios sin guardar»"
+    },
+    {
+      "pro": "F-132",
+      "descripcion": "«Cambios sin guardar» compara lo escrito con lo guardado: borrar el peso recién escrito deja todo como estaba y el estado vuelve a «Guardado · …», con «Registrar toma» lleno",
+      "ok": true,
+      "detalle": "«Guardado · 15 oct 2026, 07:31»"
+    },
+    {
+      "pro": "F-135",
+      "descripcion": "A 1280 la figura conserva su escena (832 px o más) y los datos se angostan a su lado; a 1024 la escena ocupa el ancho y los datos van debajo; a 768 y 390 los campos van en lista, sin la figura. En ningún ancho la página se desborda de costado",
+      "ok": true,
+      "detalle": "1280: escena 832, datos 334 al lado, desborde 0 · 1024: escena 929, datos 963 debajo, desborde 0 · 768: escena 688 (lista), datos 722 debajo, desborde 0 · 390: escena 324 (lista), datos 358 debajo, desborde 0"
+    },
+    {
+      "pro": "F-136",
+      "descripcion": "Axe no encuentra nada en la carga, en Claro y en Azul noche (con Pliegues y la figura de mujer a la vista, un campo con dato y uno sin dato)",
+      "ok": true,
+      "detalle": "azul-noche: nada · claro: nada"
+    },
+    {
+      "pro": "—",
+      "descripcion": "La carga de una toma no produjo errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

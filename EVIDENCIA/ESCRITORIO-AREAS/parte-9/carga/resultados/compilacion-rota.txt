@@ -1,0 +1,16 @@
+Tanda de la pantalla rota (correr-mutante-9.sh), sobre recorrido.mjs carga, el 2026-10-15:
+
+aplicadas 3 roturas en 2 archivos
+── tipos de la versión rota · 07:22:42
+── compila la versión rota · 07:22:52
+compilado: web estática (apps/web/out)
+── cuentas descartables · 07:25:07
+── recorrido carga · 07:25:25
+── veredicto · 07:26:03 · salida del recorrido: 0
+NOTADA    la figura califica: un sitio con dato cambia de color · «Escribir un perímetro cambia la forma de su anillo y no su color…»
+NOTADA    Guardar no manda los pliegues · «Guardar escribe una sola vez y manda lo escrito…»
+NOTADA    el enlace del aviso no cambia de familia · «Con un valor que no se puede leer en un pliegue…»
+3 de 3 notadas
+TERMINÓ LA TANDA · 07:26:03
+el código, restaurado
+la compilación buena del website volvió a su lugar
