@@ -22,6 +22,7 @@ import {
   type SolicitarCierreResponse,
   type ValidationIssue,
 } from './contratos';
+import { PerfilPropioResponseSchema, type EditarPerfilPropioRequest, type PerfilPropioResponse } from './contratos-perfil-propio';
 import {
   CandidatoDeAlimentoResponseSchema,
   CandidatoDeEjercicioResponseSchema,
@@ -428,6 +429,14 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-ACC-05. */
     consultarCuenta(token: string): Promise<Resultado<MeResponse>> {
       return llamar('GET', '/me', { token, esquema: MeResponseSchema });
+    },
+    /** API-ACC-06-PROPIA (DL-009 y DL-040): el perfil propio, con su nombre visible y su versión efectiva. */
+    consultarPerfilPropio(token: string): Promise<Resultado<PerfilPropioResponse>> {
+      return llamar('GET', '/me/profile', { token, esquema: PerfilPropioResponseSchema });
+    },
+    /** API-ACC-06: cambia el nombre visible (o lo quita, con `null`). Sin Idempotency-Key: concurrencia por `expectedVersion`. */
+    editarPerfilPropio(token: string, cuerpo: EditarPerfilPropioRequest): Promise<Resultado<PerfilPropioResponse>> {
+      return llamar('PATCH', '/me/profile', { token, cuerpo, esquema: PerfilPropioResponseSchema });
     },
     /** API-CON-05 (solo lectura). */
     consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>> {

@@ -23,6 +23,7 @@ import {
   SolicitarCierreRequestSchema,
   SolicitarCierreResponseSchema,
 } from './contratos';
+import { EditarPerfilPropioRequestSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
   AceptarSolicitudResponseSchema,
   ConsentimientoDeSaludOtorgadoResponseSchema,
@@ -359,6 +360,30 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: MeResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: '09v8:461-505',
+  },
+  {
+    id: 'API-ACC-06',
+    metodo: 'patch',
+    ruta: '/me/profile',
+    resumen:
+      'Editar el perfil propio con la versión esperada: hoy, el nombre visible (o quitarlo). Cada cambio es una versión. Lo ve el profesional con un vínculo vigente; si no, la referencia neutral.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarPerfilPropioRequestSchema,
+    exitos: [{ status: 200, schema: PerfilPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['VERSION_CONFLICT'], 422: ['INVALID_PROFILE_DATA'] },
+    fuente: '09v8:509-554 · DEUDA_LEGAJO DL-009 (opción B) y DL-040, decididas por Dirección el 2026-10-15',
+  },
+  {
+    id: 'API-ACC-06-PROPIA',
+    metodo: 'get',
+    ruta: '/me/profile',
+    resumen: 'El perfil propio con su versión efectiva, para editarlo. Va aparte de /me, cuya respuesta estricta valida la APK instalada.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PerfilPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'variante de lectura de API-ACC-06 (09v8:509-554) · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-009 y DL-040',
   },
   {
     id: 'API-ACC-P1-03',

@@ -11266,3 +11266,29 @@ details[open] > summary:not([class])::before {
     grid-column: 1 / -1;
   }
 }
+
+/* El nombre visible del asesorado (DL-040, 2026-10-15). En la cabecera de la ficha, la referencia va al lado del nombre,
+   chica y tenue, como en la maqueta 01; en «Tus asesorados», después del nombre. Distingue a dos personas que se llaman
+   igual, y es lo que se puede buscar aunque no se recuerde el nombre. */
+.marco-de-la-ficha__nombre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+  min-width: 0;
+}
+
+.marco-de-la-ficha__referencia,
+.persona__referencia {
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.persona__quien {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5rem;
+  min-width: 0;
+}

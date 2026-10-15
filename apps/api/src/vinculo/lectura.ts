@@ -1,6 +1,7 @@
 import {
   ETIQUETA_DE_ALCANCE,
   modoDeAcceso,
+  referenciaNeutral,
   type Alcance,
   type EstadoDeAlcanceDeVinculo,
   type Finalidad,
@@ -20,8 +21,9 @@ import type { PdpService } from '../autorizacion/pdp.service';
 
 /**
  * Modelos de lectura de REL y CON (09v8 §6-§7). No incluyen información sanitaria (09v8:1224) ni razones internas del
- * PDP (10-B04:640-645). Nombres visibles sin campos de perfil aprobados (DEUDA_LEGAJO DL-040): el profesional con su
- * nombre visible sintético y el asesorado con una referencia neutral, sin correo.
+ * PDP (10-B04:640-645). Nombres visibles (DEUDA_LEGAJO DL-040, decidida por Dirección el 2026-10-15): el profesional, con
+ * el de su perfil profesional; el asesorado, con el de su perfil propio mientras el vínculo esté vigente
+ * (`nombresDeAsesoradosPorPar`), y si no, con una referencia neutral. El correo, nunca.
  */
 
 export const token = (version: number): string => `v${version}`;
@@ -35,7 +37,49 @@ export function nombreDeProfesional(perfil: { nombreVisible: string } | null | u
 
 /** Referencia neutral: el profesional no ve el correo del asesorado (DL-040). */
 export function nombreDeAsesorado(identidadId: string): string {
-  return `Asesorado · ${identidadId.replace(/-/g, '').slice(-6)}`;
+  return referenciaNeutral(identidadId);
+}
+
+/** Un profesional y un asesorado: la pareja de la que depende qué nombre se ve. */
+export interface ParDeVinculo {
+  readonly profesionalId: string;
+  readonly asesoradoId: string;
+}
+
+const claveDelPar = (p: ParDeVinculo): string => `${p.profesionalId.toLowerCase()}|${p.asesoradoId.toLowerCase()}`;
+
+/**
+ * Cómo ve cada profesional a cada asesorado (DL-040, decidida por Dirección el 2026-10-15): por el nombre visible del
+ * perfil propio de la persona (DL-009, opción B) mientras tengan entre los dos un vínculo vigente, es decir, algún
+ * alcance aceptado o en pausa; si no lo hay (una solicitud pendiente, un vínculo que terminó) o la persona no declaró un
+ * nombre, por la referencia neutral. El correo, nunca. Una sola consulta para todos los pares: se lee con `nombreDelPar`.
+ */
+export async function nombresDeAsesoradosPorPar(cliente: Prisma.TransactionClient, pares: readonly ParDeVinculo[]): Promise<Map<string, string>> {
+  const unicos = [...new Map(pares.map((p) => [claveDelPar(p), p])).values()];
+  const nombres = new Map<string, string>();
+  if (unicos.length === 0) return nombres;
+  const profesionales = unicos.map((p) => p.profesionalId.toLowerCase());
+  const asesorados = unicos.map((p) => p.asesoradoId.toLowerCase());
+  const filas = await cliente.$queryRaw<{ profesional: string; asesorado: string; nombre: string }[]>`
+    SELECT par."profesional"::text AS "profesional", par."asesorado"::text AS "asesorado", v."nombre_visible" AS "nombre"
+      FROM unnest(${profesionales}::uuid[], ${asesorados}::uuid[]) AS par("profesional", "asesorado")
+      JOIN "perfil_propio" pp ON pp."identidad_id" = par."asesorado"
+      JOIN "version_de_perfil_propio" v ON v."id" = pp."version_efectiva_id"
+     WHERE v."nombre_visible" IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM "vinculo" vi JOIN "alcance_de_vinculo" a ON a."vinculo_id" = vi."id"
+          WHERE vi."profesional_id" = par."profesional" AND vi."asesorado_id" = par."asesorado" AND a."estado" IN ('ACEPTADO', 'PAUSADO'))`;
+  for (const f of filas) nombres.set(claveDelPar({ profesionalId: f.profesional, asesoradoId: f.asesorado }), f.nombre);
+  return nombres;
+}
+
+/** El nombre de un par en el resultado de `nombresDeAsesoradosPorPar`: el visible, o la referencia neutral. */
+export const nombreDelPar = (nombres: ReadonlyMap<string, string>, p: ParDeVinculo): string => nombres.get(claveDelPar(p)) ?? nombreDeAsesorado(p.asesoradoId);
+
+/** El nombre con que un profesional ve a un asesorado (ver `nombresDeAsesoradosPorPar`). */
+export async function nombreDeAsesoradoPara(cliente: Prisma.TransactionClient, profesionalId: string, asesoradoId: string): Promise<string> {
+  const par = { profesionalId, asesoradoId };
+  return nombreDelPar(await nombresDeAsesoradosPorPar(cliente, [par]), par);
 }
 
 export const rolApi = (rol: RolEnVinculo): 'PROFESSIONAL' | 'ADVISEE' => (rol === 'PROFESIONAL' ? 'PROFESSIONAL' : 'ADVISEE');
@@ -48,12 +92,13 @@ export const INCLUIR_PARTES_DE_SOLICITUD = {
   profesional: { select: { perfilProfesional: { select: { nombreVisible: true } } } },
 } as const;
 
-export function itemDeSolicitud(s: SolicitudConPartes): SolicitudDeVinculo {
+/** `nombreDelAsesorado`: el que resolvió `nombresDeAsesoradosPorPar` para el par; sin él, la referencia neutral. */
+export function itemDeSolicitud(s: SolicitudConPartes, nombreDelAsesorado: string = nombreDeAsesorado(s.asesoradoId)): SolicitudDeVinculo {
   return {
     relationshipRequestId: s.id,
     version: token(s.version),
     professional: { identityId: s.profesionalId, displayName: nombreDeProfesional(s.profesional.perfilProfesional) },
-    advisee: { identityId: s.asesoradoId, displayName: nombreDeAsesorado(s.asesoradoId) },
+    advisee: { identityId: s.asesoradoId, displayName: nombreDelAsesorado },
     scope: resumenDeAlcance(s.alcance),
     purpose: s.finalidad,
     state: s.estado,
@@ -93,7 +138,7 @@ export async function itemDeVinculo(cliente: Prisma.TransactionClient, pdp: PdpS
     relationshipId: c.id,
     version: token(c.version),
     professional: { identityId: c.vinculo.profesionalId, displayName: nombreDeProfesional(c.vinculo.profesional.perfilProfesional) },
-    advisee: { identityId: c.vinculo.asesoradoId, displayName: nombreDeAsesorado(c.vinculo.asesoradoId) },
+    advisee: { identityId: c.vinculo.asesoradoId, displayName: await nombreDeAsesoradoPara(cliente, c.vinculo.profesionalId, c.vinculo.asesoradoId) },
     scope: resumenDeAlcance(c.alcance),
     purpose: c.finalidad as Finalidad,
     relationshipState: estado,

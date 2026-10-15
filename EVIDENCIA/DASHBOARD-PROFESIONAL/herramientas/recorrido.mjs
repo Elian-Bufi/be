@@ -4062,9 +4062,11 @@ async function espacioProfesional(page, v) {
   }, buscador);
   const antesDeBuscar = v.urls.length;
   const laDeA = personasEsperadas.find((p) => p.id === estado.aseId) ?? personasEsperadas[0];
-  // El final de una referencia, en mayúsculas: quiénes la tienen se calcula a mano sobre los nombres de la API.
-  const buscado = laDeA.nombre.slice(-4).toUpperCase();
-  const lasQueCoinciden = personasEsperadas.filter((p) => p.nombre.toLowerCase().includes(buscado.toLowerCase())).map((p) => p.id);
+  // El final de una referencia, en mayúsculas: quiénes la tienen se calcula a mano sobre los nombres de la API y las
+  // referencias (desde el 2026-10-15, con DL-040, una persona con nombre visible se busca también por su referencia).
+  const referenciaDe = (id) => id.replace(/-/g, '').slice(-6);
+  const buscado = referenciaDe(laDeA.id).slice(-4).toUpperCase();
+  const lasQueCoinciden = personasEsperadas.filter((p) => `${p.nombre} ${referenciaDe(p.id)}`.toLowerCase().includes(buscado.toLowerCase())).map((p) => p.id);
   await page.type(buscador, buscado);
   await pausa(300);
   const buscada = await espacioEnPantalla(page);
@@ -4081,15 +4083,15 @@ async function espacioProfesional(page, v) {
   const otraVezTodas = await espacioEnPantalla(page);
   comprobar(
     'E-90',
-    'El buscador se llama «Buscar por referencia» (también para el lector de pantalla) y filtra mientras se escribe, sin pedirle nada a la API: con el final de una referencia, en mayúsculas, quedan las personas que la tienen y el título dice cuántas de cuántas; con algo que no coincide dice que ninguna referencia coincide (no que no hay asesorados) y ofrece quitar la búsqueda, que las trae a todas',
-    rotuloDelBuscador.rotulo === 'Buscar por referencia' &&
-      rotuloDelBuscador.ejemplo === 'Buscar por referencia' &&
+    'El buscador se llama «Buscar por nombre o referencia» (también para el lector de pantalla; el texto de la maqueta, que volvió con DL-040) y filtra mientras se escribe, sin pedirle nada a la API: con el final de una referencia, en mayúsculas, quedan las personas que la tienen y el título dice cuántas de cuántas; con algo que no coincide dice que ningún nombre ni referencia coincide (no que no hay asesorados) y ofrece quitar la búsqueda, que las trae a todas',
+    rotuloDelBuscador.rotulo === 'Buscar por nombre o referencia' &&
+      rotuloDelBuscador.ejemplo === 'Buscar por nombre o referencia' &&
       lasQueCoinciden.length >= 1 &&
       lasQueCoinciden.length < personasEsperadas.length &&
       igual(buscada.personas.map((p) => p.id), lasQueCoinciden) &&
       buscada.cuentaDelDirectorio === `${num(lasQueCoinciden.length)} de ${num(personasEsperadas.length)} personas` &&
       sinNadie.personas.length === 0 &&
-      sinNadie.sinReferencias === 'Ninguna referencia coincide con «zzzz». Quitar la búsqueda' &&
+      sinNadie.sinReferencias === 'Ningún nombre ni referencia coincide con «zzzz». Quitar la búsqueda' &&
       sinNadie.directorioVacio === null &&
       sinNadie.cuentaDelDirectorio === `0 de ${num(personasEsperadas.length)} personas` &&
       otraVezTodas.personas.length === personasEsperadas.length &&

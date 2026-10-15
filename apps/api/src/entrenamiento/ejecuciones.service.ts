@@ -38,7 +38,7 @@ import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { ZONA_POR_DEFECTO, fechaLocalEn, finDelDiaLocal, inicioDelDiaLocal } from '../nutricion/zona';
-import { nombreDeAsesorado, token, esToken } from '../vinculo/lectura';
+import { nombreDeAsesoradoPara, token, esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService, type Ambito } from './catalogo.service';
 import { CompatibilidadDeClientesService, entregaRetenida, seRetieneLaEntrega } from './compatibilidad-de-clientes';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
@@ -898,7 +898,7 @@ export class EjecucionesDeEntrenamientoService {
     if (ids.length === 0) return [];
     const filas = await tx.ejecucionDeEntrenamiento.findMany({
       where: { id: { in: [...ids] } },
-      include: { correcciones: { orderBy: [{ momentoDeRegistro: 'asc' }, { id: 'asc' }] }, versionDePlan: { include: { instantanea: true } } },
+      include: { correcciones: { orderBy: [{ momentoDeRegistro: 'asc' }, { id: 'asc' }] }, versionDePlan: { include: { instantanea: true, plan: { select: { profesionalId: true } } } } },
     });
     const porId = new Map(filas.map((x) => [x.id, x]));
     const leidas = ids.flatMap((id) => {
@@ -910,7 +910,8 @@ export class EjecucionesDeEntrenamientoService {
     const autores = new Map<string, string>();
     for (const { x, correcciones } of leidas) {
       for (const { fila } of correcciones) {
-        if (!autores.has(fila.autorId)) autores.set(fila.autorId, fila.autorId === x.asesoradoId ? nombreDeAsesorado(fila.autorId) : await nombreVisibleDe(tx, fila.autorId));
+        // La persona, con su nombre si el vínculo con el profesional del plan está vigente (DL-040).
+        if (!autores.has(fila.autorId)) autores.set(fila.autorId, fila.autorId === x.asesoradoId ? await nombreDeAsesoradoPara(tx, x.versionDePlan.plan.profesionalId, fila.autorId) : await nombreVisibleDe(tx, fila.autorId));
       }
     }
     return leidas.map(({ x, original, correcciones }) => {

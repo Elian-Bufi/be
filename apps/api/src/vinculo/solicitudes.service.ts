@@ -32,6 +32,8 @@ import {
   INCLUIR_PARTES_DE_SOLICITUD,
   esToken,
   itemDeSolicitud,
+  nombreDelPar,
+  nombresDeAsesoradosPorPar,
   registrarEventoDeVinculo,
   resumenDeAlcance,
   token,
@@ -207,7 +209,9 @@ export class SolicitudesService {
       include: INCLUIR_PARTES_DE_SOLICITUD,
     });
     const { pagina, page } = paginar(filas, consulta.limit);
-    return { data: pagina.map(itemDeSolicitud), page };
+    // El nombre del asesorado, si el vínculo con ese profesional está vigente (DL-040); si no, la referencia neutral.
+    const nombres = await nombresDeAsesoradosPorPar(this.prisma as unknown as Prisma.TransactionClient, pagina);
+    return { data: pagina.map((s) => itemDeSolicitud(s, nombreDelPar(nombres, s))), page };
   }
 
   // ─── API-REL-03 ────────────────────────────────────────────────────────────────────────────

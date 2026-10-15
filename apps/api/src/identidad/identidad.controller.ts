@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { HEADER_IDEMPOTENCY_KEY, type MeResponse } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
@@ -7,14 +7,16 @@ import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesion.guard';
 import { CierreService } from './cierre.service';
 import { CuentaPropiaService } from './cuenta-propia.service';
+import { PerfilPropioService } from './perfil-propio.service';
 import { RegistroService } from './registro.service';
 
-/** API-ACC-01, ACC-05 y ACC-P1-03 (09v8 §4; 09v12). Prefijo global /api/v1. */
+/** API-ACC-01, ACC-05, ACC-06 (con su lectura, ACC-06-PROPIA) y ACC-P1-03 (09v8 §4; 09v12). Prefijo global /api/v1. */
 @Controller()
 export class IdentidadController {
   constructor(
     private readonly registro: RegistroService,
     private readonly cuentaPropia: CuentaPropiaService,
+    private readonly perfilPropio: PerfilPropioService,
     private readonly cierre: CierreService,
   ) {}
 
@@ -37,6 +39,27 @@ export class IdentidadController {
   consultar(@Query() query: Record<string, unknown>, @Req() req: SolicitudAutenticada): Promise<MeResponse> {
     sinParametrosDeQuery(query);
     return this.cuentaPropia.consultar(actorDe(req));
+  }
+
+  /** API-ACC-06-PROPIA — SESSION. El perfil propio con su versión efectiva (DL-009 y DL-040). */
+  @Get('me/profile')
+  @UseGuards(SesionGuard)
+  consultarPerfil(@Query() query: Record<string, unknown>, @Req() req: SolicitudAutenticada & SolicitudConContexto): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.perfilPropio.consultar(actorDe(req), contextoDe(req));
+  }
+
+  /** API-ACC-06 — SESSION. Sin Idempotency-Key: concurrencia por `expectedVersion` (09v8:509-554). */
+  @Patch('me/profile')
+  @UseGuards(SesionGuard)
+  async editarPerfil(
+    @Body() cuerpo: unknown,
+    @Query() query: Record<string, unknown>,
+    @Req() req: SolicitudAutenticada & SolicitudConContexto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.perfilPropio.editar(actorDe(req), cuerpo, contextoDe(req)));
   }
 
   /** API-ACC-P1-03 — SESSION_STEP_UP, Idempotency-Key requerida. La autenticación la resuelve el servicio (replay). */

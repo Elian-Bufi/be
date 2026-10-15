@@ -203,18 +203,39 @@ model Identidad {
 }
 
 /// T-06-04 — Perfil propio (06 §5.5). Exactamente uno por Identidad tras el alta (INV-06-22).
-/// Sin contenido ni versiones mientras 04/05 no aprueben campos (DEUDA_LEGAJO DL-009).
+/// Su único campo aprobado es el nombre visible (DEUDA_LEGAJO DL-009, opción B, y DL-040, decididas por Dirección el
+/// 2026-10-15), con historia: cada cambio es una versión (REG-06-20), y el perfil apunta a la efectiva.
 model PerfilPropio {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   identidadId         String    @unique @map("identidad_id") @db.Uuid
   /// 06 §5.5.2 «referencia a Versión efectiva de perfil: exactamente una cuando existe contenido confirmado». NULL: sin contenido.
-  versionEfectivaId   String?   @map("version_efectiva_id") @db.Uuid
+  versionEfectivaId   String?   @unique @map("version_efectiva_id") @db.Uuid
   momentoDeOcurrencia DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  identidad       Identidad               @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  versionEfectiva VersionDePerfilPropio?  @relation("VersionEfectivaDelPerfilPropio", fields: [versionEfectivaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones       VersionDePerfilPropio[] @relation("VersionesDelPerfilPropio")
 
   @@map("perfil_propio")
+}
+
+/// Una versión del perfil propio (06 §5.5; REG-06-20): se agrega, nunca se edita ni se borra. Hoy lleva solo el nombre
+/// visible (C3, «contacto mínimo del vínculo», 08 §11): NULL es «sin nombre», y el profesional ve la referencia neutral.
+model VersionDePerfilPropio {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  perfilPropioId    String   @map("perfil_propio_id") @db.Uuid
+  /// 1, 2, 3…: el número de la versión dentro del perfil, y el `version` del contrato («v1»).
+  numero            Int
+  nombreVisible     String?  @map("nombre_visible")
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  perfilPropio PerfilPropio  @relation("VersionesDelPerfilPropio", fields: [perfilPropioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  efectivaEn   PerfilPropio? @relation("VersionEfectivaDelPerfilPropio")
+
+  @@unique([perfilPropioId, numero])
+  @@map("version_de_perfil_propio")
 }
 
 /// T-06-03 — Método de acceso (06 §5.6). Identidad 1 : 0..N; un método vigente → como máximo 1 Identidad (INV-06-24).

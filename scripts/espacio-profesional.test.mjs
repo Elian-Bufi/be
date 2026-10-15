@@ -121,6 +121,24 @@ test('se busca por la referencia: sin acentos ni signos, con todas las palabras;
   assert.equal(personas.length, 3, 'buscar no cambia la lista');
 });
 
+test('con un nombre visible (DL-040, 2026-10-15) se busca por el nombre o por la referencia corta, sin acentos', () => {
+  const conNombre = (asesorado, nombre, alcance) => vinculo(asesorado, alcance, { advisee: { identityId: `ase-${asesorado}`, displayName: nombre } });
+  const personas = armarElDirectorio([conNombre('a9be23', 'Martina Gómez', 'NUTRICION'), conNombre('c5c72c', 'Lucas Fernández', 'NUTRICION'), vinculo('16de3f', 'ENTRENAMIENTO')], YO);
+  assert.deepEqual(
+    personas.map((p) => [p.nombre, p.referencia]),
+    [
+      ['Martina Gómez', 'a9be23'],
+      ['Lucas Fernández', 'c5c72c'],
+      ['Asesorado · 16de3f', '16de3f'],
+    ],
+  );
+  const quienes = (buscado) => buscarEnElDirectorio(personas, buscado).map((p) => p.referencia);
+  assert.deepEqual(quienes('gomez'), ['a9be23'], 'sin el acento');
+  assert.deepEqual(quienes('Martina G'), ['a9be23'], 'con todas las palabras');
+  assert.deepEqual(quienes('c5c7'), ['c5c72c'], 'por la referencia, aunque tenga nombre');
+  assert.deepEqual(quienes('asesorado'), ['16de3f'], 'la referencia neutral, solo en quien no tiene un nombre a la vista');
+});
+
 // ─── Un pendiente en una fila ────────────────────────────────────────────────────────────────────
 
 const HOY = '2026-10-11';
