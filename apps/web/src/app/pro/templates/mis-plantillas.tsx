@@ -53,7 +53,7 @@ export function MisPlantillas() {
   if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
 
   return (
-    <div className="secciones">
+    <div className="secciones plantillas-y-habituales">
       {aviso && aviso.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => setAviso(null)}>
           <p>{aviso.texto}</p>

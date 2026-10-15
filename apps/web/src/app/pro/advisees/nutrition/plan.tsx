@@ -37,7 +37,7 @@ import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
-import { HistorialDelPlan, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
+import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { EditorDeBorrador } from './editor';
 import { ComidasDelPlan, SelectorDeDiaTipo } from './estructura-del-plan';
 import { EstadoDeLectura, useNutricion } from './nutricion';
@@ -175,13 +175,8 @@ export function VistaDePlan() {
                 {activa ? COPY_NUTRICION.crearNuevaVersion : COPY_NUTRICION.crearNuevoPlan}
               </button>
             );
-            // En el encabezado la principal va última, contra el borde; donde todavía no hay un plan, primera.
-            const crearUna = sePuedeCrear ? (
-              <>
-                {desdeUnaPlantilla}
-                {crearLaVersion}
-              </>
-            ) : null;
+            // En el encabezado la principal va última, contra el borde, y las plantillas en su menú; donde todavía no hay
+            // un plan, la principal va primera y las plantillas con su botón.
             const empezarElPlan = sePuedeCrear ? (
               <>
                 {crearLaVersion}
@@ -240,12 +235,9 @@ export function VistaDePlan() {
                     objetivoVigente={objetivo}
                     acciones={
                       <>
-                        {crearUna ? null : borrador ? <p className="nota plan__ya-hay">{COPY_DEL_PLAN.yaHayUnaEnPreparacion}</p> : null}
-                        <button type="button" className="boton boton--quieto" onClick={() => setGuardarPlantilla(true)} data-guardar-plantilla>
-                          <Icono nombre="plantillas" tamano={18} />
-                          {COPY_PLANTILLAS.guardarComoPlantilla}
-                        </button>
-                        {crearUna}
+                        {!sePuedeCrear && borrador ? <p className="nota plan__ya-hay">{COPY_DEL_PLAN.yaHayUnaEnPreparacion}</p> : null}
+                        <MenuDePlantillas alGuardar={() => setGuardarPlantilla(true)} alEmpezar={sePuedeCrear ? abrirDesdePlantilla : null} />
+                        {sePuedeCrear ? crearLaVersion : null}
                       </>
                     }
                     aviso={sinObjetivo}

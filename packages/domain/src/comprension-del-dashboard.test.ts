@@ -31,7 +31,7 @@ import { comidaFrenteALoIndicado, contrasteDeLaComida, diferenciaDeLaFilaEnPalab
 import { conteosDesde, cumpleFiltros, novedadDesde } from './linea-de-tiempo';
 import { definicionAntropometrica, definicionDeMetrica, MAXIMO_DE_METRICAS, type DefinicionDeMetrica } from './metricas-del-analisis';
 import { PREGUNTAS_PROFESIONALES, requisitosDe, resolverPregunta, traeSeleccionesDelAsesorado, type ContextoDeLaPregunta } from './preguntas-profesionales';
-import { compararPeriodos, huecosDelRango, partesDeLaCobertura, resumirPeriodo } from './series-del-analisis';
+import { coberturaBreve, compararPeriodos, huecosDelRango, partesDeLaCobertura, resumirPeriodo } from './series-del-analisis';
 import {
   claveDeObservacion,
   inicioDelPrimerPlan,
@@ -44,6 +44,7 @@ import {
   textoDelPrimerPlan,
   type DatosDeLaSintesis,
   type FormatoDeLaSintesis,
+  type ObservacionDelResumen,
 } from './sintesis-del-resumen';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -346,6 +347,49 @@ test('cada día del rango cuenta una vez: con valor (y cuántos son subtotales),
     '1 con registros sin dato de este nutriente',
     'hoy, en curso: fuera de la media',
   ]);
+  // La versión corta del indicador del Resumen: las mismas cuentas, en dos renglones.
+  assert.deepEqual(coberturaBreve(r), { principal: ['8 días: 3 con valor', '2 sin registros'], detalle: ['1 subtotal', '1 sin cantidades', '1 sin dato del nutriente', 'hoy, en curso: fuera de la media'] });
+});
+
+test('la cobertura corta de un indicador dice lo mismo que la entera: cada cuenta, con su número y su palabra', () => {
+  const energia = def('nutricion.energia');
+  const puntos = [
+    punto('2026-10-02', 2000),
+    punto('2026-10-03', 1500, { quality: 'PARTIAL', missing: [{ reason: 'SIN_CANTIDADES', count: 1 }] }),
+    punto('2026-10-04', 1700, { quality: 'PARTIAL', missing: [{ reason: 'SIN_CANTIDADES', count: 1 }] }),
+    punto('2026-10-07', 1800),
+    punto(HOY, 300, { partialBucket: true }),
+  ];
+  const conHoy = resumirPeriodo(conHuecos(energia, puntos, '2026-10-02', HOY), energia, '2026-10-02', HOY, HOY);
+  const sinNada = resumirPeriodo(conHuecos(energia, [punto('2026-10-03', 1000)], '2026-10-03', '2026-10-05'), energia, '2026-10-03', '2026-10-05');
+  const carga = def('entrenamiento.carga');
+  const sesiones = resumirPeriodo(serie(carga, [punto('2026-09-01', 50), punto('2026-09-05', null), punto('2026-09-09', 55)], 'ORIGINAL'), carga, '2026-09-01', '2026-09-30');
+  const conteo = def('nutricion.registros');
+  const total = resumirPeriodo(conHuecos(conteo, ['2026-10-06', '2026-10-07', '2026-10-08'].map((f) => punto(f, 4)), '2026-10-06', HOY), conteo, '2026-10-06', HOY, HOY);
+  assert.deepEqual(coberturaBreve(conHoy), { principal: ['8 días: 4 con valor', '3 sin registros'], detalle: ['2 subtotales', 'hoy, en curso: fuera de la media'] });
+  assert.deepEqual(coberturaBreve(sinNada), { principal: ['3 días: 1 con valor', '2 sin registros'], detalle: [] });
+  assert.deepEqual(coberturaBreve(sesiones), { principal: ['3 sesiones: 2 con valor'], detalle: [] });
+  // Para cada resumen, la versión corta no agrega ni saca cuentas: cada número está en la entera con la misma palabra.
+  const leer = (partes: readonly string[]) => {
+    const t = partes.join(' · ');
+    const n = (re: RegExp) => re.exec(t)?.[1] ?? null;
+    return {
+      dias: n(/^(\d[\d.]*) días?:/),
+      conValor: n(/: (\d[\d.]*) con (?:valor|registros)/),
+      subtotales: n(/(\d[\d.]*) (?:es un |son )?subtotal/),
+      sinRegistros: n(/(\d[\d.]*) sin registros/),
+      sinCantidades: n(/(\d[\d.]*) (?:con registros )?sin cantidades/),
+      sinNutriente: n(/(\d[\d.]*) (?:con registros )?sin dato de(?:l| este) nutriente/),
+      sesiones: n(/^(\d[\d.]*) sesi/),
+      enCurso: /hoy, en curso/.test(t),
+    };
+  };
+  for (const r of [conHoy, sinNada, sesiones, total]) {
+    const entera = partesDeLaCobertura(r);
+    const corta = coberturaBreve(r);
+    assert.equal(corta.principal[0], entera[0], 'el primer renglón es el mismo');
+    assert.deepEqual(leer([...corta.principal, ...corta.detalle]), leer(entera), entera.join(' · '));
+  }
 });
 
 test('hoy sin registros todavía es el día en curso, no un día sin registros; un total que lo incluye no se resta', () => {
@@ -563,7 +607,7 @@ test('la síntesis prioriza pendientes, después planificación y comparabilidad
   assert.equal(textoDelAlcance(cobertura!.alcance, FORMATO), 'En el período seleccionado');
   assert.equal(textoDeObservacion(cobertura!, FORMATO), '23 sesiones registradas (1 con cambios, 1 registrada como no realizada, 1 resumida, sin series).');
   // El objetivo nuevo salió de aplicar la revisión: se dice así.
-  assert.match(textoDeObservacion(s.find((o) => o.regla === 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE')!, FORMATO), /creado al aplicar la última revisión/);
+  assert.match(textoDeObservacion(s.find((o) => o.regla === 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE')!, FORMATO), /creado al aplicar la revisión$/);
 });
 
 test('pendientes explícitos: revisión sin aplicar, próxima revisión cercana o pasada y borrador sin activar', () => {
@@ -581,15 +625,36 @@ test('pendientes explícitos: revisión sin aplicar, próxima revisión cercana 
   });
   const pendientes = s.filter((o) => o.prioridad === 1).map((o) => o.regla);
   assert.deepEqual(pendientes, ['REVISION_SIN_APLICAR', 'PROXIMA_REVISION', 'BORRADOR_SIN_ACTIVAR']);
-  assert.equal(textoDeObservacion(s[0]!, FORMATO), 'La revisión del 20/9 está registrada y su resultado todavía no se aplicó.');
-  assert.equal(textoDeObservacion(s[1]!, FORMATO), 'La próxima revisión acordada era el 5/10 (hace 4 días).');
-  assert.equal(textoDeObservacion(s[2]!, FORMATO), 'Hay una versión nueva del plan en borrador, creada el 7/10. No rige hasta que se active.');
+  // En un renglón corto, como la maqueta 01 (crítica de diseño del 2026-10-15): lo que dice cada uno no cambió.
+  assert.equal(textoDeObservacion(s[0]!, FORMATO), 'Revisión del 20/9 registrada, sin aplicar');
+  assert.equal(textoDeObservacion(s[1]!, FORMATO), 'Revisión acordada para el 5/10 · hace 4 días');
+  assert.equal(textoDeObservacion(s[2]!, FORMATO), 'Plan en borrador del 7/10, sin activar');
   // Sin número: el `version` del borrador es su token de concurrencia, y el número para la persona es el orden de activación.
   assert.doesNotMatch(textoDeObservacion(s[2]!, FORMATO), /versión \d/);
   assert.deepEqual(s[2]!.accion, { tipo: 'PLANIFICACION', area: 'NUTRICION', planVersionId: BORRADOR });
   // Una revisión acordada para dentro de un mes todavía no es un pendiente.
   const lejos = sintesisDelResumen({ ...DATOS, nutricion: { ...DATOS.nutricion!, resumen: nutricion({ activePlan: { planVersionId: V3, activatedAt: '2026-09-25T13:00:00.000Z', nextReviewAt: '2026-11-20' } }) } });
   assert.equal(lejos.some((o) => o.regla === 'PROXIMA_REVISION'), false);
+});
+
+test('lo pendiente y los cambios, en un renglón corto: cada variante dice su fecha, cuánto falta o pasó, y lo que todavía no rige', () => {
+  const de = (regla: ObservacionDelResumen['regla'], args: object) =>
+    ({ regla, area: 'NUTRICION', prioridad: 1, alcance: { tipo: 'HOY' }, origen: [], accion: null, args }) as unknown as ObservacionDelResumen;
+  assert.equal(textoDeObservacion(de('PROXIMA_REVISION', { fecha: '2026-10-12', dias: 3 }), FORMATO), 'Próxima revisión: 12/10 · en 3 días');
+  assert.equal(textoDeObservacion(de('PROXIMA_REVISION', { fecha: '2026-10-10', dias: 1 }), FORMATO), 'Próxima revisión: 10/10 · mañana');
+  assert.equal(textoDeObservacion(de('PROXIMA_REVISION', { fecha: '2026-10-09', dias: 0 }), FORMATO), 'Próxima revisión: hoy, 9/10');
+  assert.equal(textoDeObservacion(de('PROXIMA_REVISION', { fecha: '2026-10-08', dias: -1 }), FORMATO), 'Revisión acordada para el 8/10 · hace 1 día');
+  assert.equal(
+    textoDeObservacion(de('BORRADOR_SIN_ACTIVAR', { planVersionId: BORRADOR, registradoEl: '2026-10-07T12:00:00.000Z', deLaRevision: true }), FORMATO),
+    'Plan en borrador del 7/10 (de una revisión), sin activar',
+  );
+  assert.equal(textoDeObservacion(de('PLAN_ACTIVADO_DESPUES_DEL_CORTE', { planVersionId: V3, activadoEl: '2026-09-25T13:00:00.000Z' }), FORMATO), 'Plan activado el 25/9');
+  assert.equal(textoDeObservacion(de('OBJETIVO_NUEVO_DESPUES_DEL_CORTE', { objectiveVersionId: V3, rigeDesde: '2026-09-25T13:00:00.000Z', porLaRevision: false }), FORMATO), 'Objetivo vigente desde el 25/9');
+  assert.equal(textoDeObservacion(de('CAMBIO_DE_COMPARABILIDAD', { medidas: [{ nombre: 'Peso', grupos: 2 }] }), FORMATO), 'Peso cambió de protocolo, método o unidad: la serie se corta ahí');
+  assert.equal(
+    textoDeObservacion(de('CAMBIO_DE_COMPARABILIDAD', { medidas: [{ nombre: 'Peso', grupos: 2 }, { nombre: 'Cintura', grupos: 3 }, { nombre: 'Cadera', grupos: 2 }] }), FORMATO),
+    'Peso, Cintura y Cadera cambiaron de protocolo, método o unidad: las series se cortan ahí',
+  );
 });
 
 test('la cobertura dice desde cuándo rige el plan si empezó dentro del período: «1 de 90 días» no son 89 días sin registrar', () => {

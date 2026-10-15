@@ -45,7 +45,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
-import { HistorialDelPlan, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
+import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { EditorDePlan } from './editor';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
@@ -231,11 +231,8 @@ export function VistaDePlan() {
                     acciones={
                       <>
                         {borrador ? <p className="nota plan__ya-hay">{C.yaHayUnaEnPreparacion}</p> : null}
-                        <button type="button" className="boton boton--quieto" onClick={() => setGuardarPlantilla(true)} data-guardar-plantilla>
-                          <Icono nombre="plantillas" tamano={18} />
-                          {COPY_PLANTILLAS.guardarComoPlantilla}
-                        </button>
-                        {sePuedeCrear ? desdeUnaPlantilla : null}
+                        {/* Las plantillas, en su menú: la principal va sola, contra el borde (crítica de diseño, 2026-10-15). */}
+                        <MenuDePlantillas alGuardar={() => setGuardarPlantilla(true)} alEmpezar={sePuedeCrear ? abrirDesdePlantilla : null} />
                         {sePuedeCrear ? crearLaVersion : null}
                       </>
                     }

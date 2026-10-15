@@ -161,9 +161,11 @@ function Persona({ persona, abierta, alAlternar }: { persona: PersonaDelDirector
           : null}
       </ul>
       {/* La ficha es una por persona, aunque los vínculos sean por área (DL-039). Va después del detalle en el documento,
-          para que el detalle siga a lo que lo abre; a la vista, está al lado de la referencia. */}
-      <Link className="boton boton--quieto boton--compacto persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`} aria-label={`Abrir la ficha de ${persona.nombre}`}>
+          para que el detalle siga a lo que lo abre; a la vista, está al lado de la referencia. Es un enlace, como «Abrir»
+          en «Pendientes»: una columna de botones con borde pesaba de más (crítica de diseño, 2026-10-15). */}
+      <Link className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`} aria-label={`Abrir la ficha de ${persona.nombre}`}>
         Abrir
+        <Icono nombre="derecha" tamano={18} />
       </Link>
     </li>
   );

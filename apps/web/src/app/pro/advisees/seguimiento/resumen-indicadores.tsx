@@ -17,9 +17,9 @@ import {
   claseEnPalabras,
   definicionDeMetrica,
   inicioDelPrimerPlan,
+  coberturaBreve,
   METRICAS_DEL_DICCIONARIO,
   numero,
-  partesDeLaCobertura,
   primerPlanDelPeriodo,
   resumenTextual,
   resumirPeriodo,
@@ -264,8 +264,9 @@ function ValorDelIndicador({
   // La última sesión de una métrica que se resume con la mediana: el número de hoy al lado del número del período.
   const conValor = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
   const ultimaSesion = definicion.resumenDePeriodo === 'MEDIANA' ? (conValor[conValor.length - 1] ?? null) : null;
-  // La cobertura, con las mismas partes que la tabla de etapas y «Comparar dos períodos» (GUIA-UX-UI I.2).
-  const cobertura = partesDeLaCobertura(r);
+  // La cobertura, con las mismas cuentas y palabras que la tabla de etapas y «Comparar dos períodos» (GUIA-UX-UI I.2), en
+  // su versión corta: con qué se calcula el número y, debajo, lo que cambia cómo se lee (crítica de diseño, 2026-10-15).
+  const { principal: cobertura, detalle } = coberturaBreve(r);
   const sombrea = serie.grain === 'DAY' && serie.gaps.length > 0;
   return (
     <>
@@ -302,6 +303,7 @@ function ValorDelIndicador({
           </span>
         ))}
       </p>
+      {detalle.length > 0 ? <p className="indicador__nota">{detalle.join(' · ')}</p> : null}
       {inicioDelPlan ? (
         <p className="indicador__nota">
           <span className="muestra-de-inicio" aria-hidden="true" />
@@ -311,7 +313,7 @@ function ValorDelIndicador({
       {deTomas ? (
         <p className="indicador__nota">
           {primero && ultimo && primero.pointId !== ultimo.pointId && primero.value !== null
-            ? `Primera comparable del período: ${valorParaMostrar(primero.value, definicion, serie.unit)} el ${formato.fecha(primero.date)} · diferencia ${r.valor - primero.value > 0 ? '+' : ''}${numero(Number((r.valor - primero.value).toFixed(definicion.decimales)))} ${serie.unit} (${numero(r.n)} tomas comparables)`
+            ? `Primera comparable: ${valorParaMostrar(primero.value, definicion, serie.unit)} el ${formato.fecha(primero.date)} · diferencia ${r.valor - primero.value > 0 ? '+' : ''}${numero(Number((r.valor - primero.value).toFixed(definicion.decimales)))} ${serie.unit}`
             : 'Una sola observación comparable: no hay con qué comparar.'}
         </p>
       ) : null}

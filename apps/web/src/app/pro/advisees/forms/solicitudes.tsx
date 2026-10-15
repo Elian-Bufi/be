@@ -211,13 +211,15 @@ export function VistaDeSolicitudes() {
       <div className="registros__encabezado">
         <h2 id="titulo-solicitudes">{F.solicitudes}</h2>
         <p className="nota registros__bajada">{C.bajada}</p>
-        <div className="solicitudes-del-area__pedir">{pedir}</div>
+        {/* Sin ninguna solicitud, «Pedir información» va dentro del estado vacío, que es donde se mira (crítica de diseño,
+            2026-10-15): uno solo, nunca dos. */}
+        {solicitudes?.length === 0 ? null : <div className="solicitudes-del-area__pedir">{pedir}</div>}
       </div>
 
       <EstadoDeLectura r={lista} onReintentar={() => void cargar()}>
         {solicitudes ? (
           solicitudes.length === 0 ? (
-            <EstadoVacio titulo={F.sinSolicitudes} />
+            <EstadoVacio titulo={F.sinSolicitudes} icono="solicitar" accion={pedir} />
           ) : (
             <>
               <div className="vistas-de-la-linea registros__vistas">

@@ -21,8 +21,9 @@
  * leen juntos (`dia-de-la-linea.ts`, del dominio):
  * - Cada hecho es un renglón que se abre entero. Los hitos van primero y pesan más; las comidas de un día van en un
  *   renglón («Comidas · 4 registradas») que dice cuántas tienen algo distinto de lo de siempre, y se abre en el lugar.
- * - Un día que solo tiene sus comidas, sin nada distinto, va en un renglón liso; la tarjeta queda para los días con una
- *   sesión, un hito o un rasgo para mirar.
+ * - Un día que solo tiene sus comidas, sin nada distinto, va en su tarjeta sin fondo; la tarjeta llena queda para los
+ *   días con una sesión, un hito o un rasgo para mirar (antes el día tranquilo iba liso, sin tarjeta: la crítica de
+ *   diseño del 2026-10-15 encontró que la columna zigzagueaba).
  * - Las vistas con nombre («Hitos», «Sin confirmar»…) son los filtros de siempre, con el nombre de lo que se busca y la
  *   cantidad de hechos que traen. La combinación libre sigue entera en «Más filtros».
  * - El detalle se abre al costado, sin tapar la lista; en una ventana angosta, encima, como un panel que se cierra.

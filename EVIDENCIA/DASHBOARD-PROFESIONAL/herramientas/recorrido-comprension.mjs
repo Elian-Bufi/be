@@ -1805,7 +1805,9 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
       deEntrenamiento.corte.startsWith(`Desde la revisión del ${diaBreveDe(nuevo.recordedAt)}`) &&
       !/aplicada/.test(deEntrenamiento.corte) &&
       deEntrenamiento.sinAplicar.length === 1 &&
-      deEntrenamiento.sinAplicar[0] === `La revisión del ${diaBreveDe(nuevo.recordedAt)} está registrada y su resultado todavía no se aplicó.` &&
+      // En un renglón corto desde la crítica de diseño del 2026-10-15 (antes: «La revisión del … está registrada y su
+      // resultado todavía no se aplicó.»): sigue diciendo cuál es y que no se aplicó.
+      deEntrenamiento.sinAplicar[0] === `Revisión del ${diaBreveDe(nuevo.recordedAt)} registrada, sin aplicar` &&
       deEntrenamiento.novedades.includes(`Desde la revisión del ${diaBreveDe(nuevo.recordedAt)}`),
     `«${deEntrenamiento.corte}» · ${deEntrenamiento.sinAplicar.join(' | ')} · ${deEntrenamiento.novedades}`,
   );
