@@ -59,7 +59,6 @@ import {
 } from '@be/domain';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Ayuda } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
@@ -554,14 +553,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
 
       <div className="lamina__pie">
         <div className="lamina__notas">{notas}</div>
-        {/* DL-113 · qué es la lámina y cómo se lee, plegado y al final: arriba quedan lo que se muestra y la imagen. */}
-        <Ayuda>
-          <p>{C.explicacionDeLamina}</p>
-          {hoja !== 'CONCLUSIONES' ? <p>{C.explicacionDeFigura}</p> : null}
-          {modo === 'SERIE' ? <p>{C.laminaExplicacionDeResta}</p> : null}
-          {modo === 'SERIE' && hoja !== 'CONCLUSIONES' ? <p>{C.laminaSerieSinEntero}</p> : null}
-          <p>{C.laminaTemaPropio}</p>
-        </Ayuda>
+        {/* Qué es la lámina y cómo se lee: en «Cómo se lee esta vista», en el marco (`ayuda-de-la-lamina.tsx`). */}
       </div>
       </div>
     </section>

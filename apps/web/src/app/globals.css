@@ -10058,11 +10058,9 @@ button.comida-del-dia__fila > .icono:last-child {
   font-size: 1.3rem;
 }
 
+/* «En preparación · sin registrar»: una etiqueta de estado como las demás (`.etiqueta-de-dato`, maqueta 06). */
 .revision-nueva__estado {
-  border-width: 1px;
   color: var(--tenue);
-  font-size: 0.85rem;
-  font-weight: 650;
 }
 
 .revision-nueva__periodo {
@@ -10794,4 +10792,29 @@ button.comida-del-dia__fila > .icono:last-child {
 
 .datos-de-la-carga__agregar .nota {
   margin: 0;
+}
+
+/* ─── Antropometría · Evolución, al ancho de las otras secciones (pasada de estética del 2026-10-15) ─────────────── */
+/* El gráfico ocupa el ancho; el período (dos fechas y un botón) y la métrica no lo necesitan. El campo de la métrica era
+   a la vez la fila de controles: su rótulo quedaba a la derecha, sobre un selector de todo el ancho. */
+.evolucion .fila-de-dato.filtro-de-periodo .campo {
+  flex: 0 1 15rem;
+}
+
+.campo.grafico__controles {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+}
+
+.campo.grafico__controles select {
+  width: min(28rem, 100%);
+}
+
+/* Una etiqueta de estado dentro de un título conserva su peso y su tamaño (como al lado de él). */
+h2 .etiqueta-de-dato,
+h3 .etiqueta-de-dato {
+  margin-left: 0.25rem;
+  font-weight: 500;
+  vertical-align: 0.2em;
 }

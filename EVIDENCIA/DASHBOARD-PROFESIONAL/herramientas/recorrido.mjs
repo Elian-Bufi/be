@@ -7166,6 +7166,16 @@ async function tomasDeAntropometria(page, v) {
 
   // ── La ayuda, la accesibilidad y los anchos ─────────────────────────────────────────────────────────────────────
   await salir();
+  // Evolución tiene su ayuda (F-140); el Resumen de Nutrición, que no tiene, no muestra el botón.
+  const enEvolucion = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayudaDeEvolucion = await page.evaluate(() => document.querySelector('dialog.como-se-lee[open] h2')?.innerText.trim() ?? null);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  await ir(page, `/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.waitForSelector('header.marco-del-area', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
   const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
   await entrar(`${BASE}&evaluacion=${rica?.id ?? primera.id}`);
   const medida = await page.evaluate(() => {
@@ -7190,9 +7200,9 @@ async function tomasDeAntropometria(page, v) {
   await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
   comprobar(
     'F-14',
-    '«Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rige, las marcas y los resultados; Evolución, que no tiene ayuda, no muestra el botón (la misma consulta lo encuentra en «Tomas»)',
-    ayuda.titulo === 'Cómo se leen las Tomas' && ayuda.renglones >= 8 && ayuda.foco && sinAyuda === 0,
-    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · botones de ayuda en Evolución: ${sinAyuda}`,
+    '«Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rige, las marcas y los resultados. Evolución también tiene la suya (F-140), y una sección sin ayuda (el Resumen de Nutrición) no muestra el botón (la misma consulta lo encuentra en «Tomas» y en Evolución)',
+    ayuda.titulo === 'Cómo se leen las Tomas' && ayuda.renglones >= 8 && ayuda.foco && enEvolucion === 1 && ayudaDeEvolucion === 'Cómo se lee la Evolución' && sinAyuda === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · en Evolución: ${enEvolucion} botón, «${ayudaDeEvolucion}» · botones de ayuda en el Resumen de Nutrición: ${sinAyuda}`,
   );
   comprobar(
     'F-37',

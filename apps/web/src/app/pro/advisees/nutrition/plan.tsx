@@ -403,7 +403,11 @@ export function VersionSoloLectura({ version, numero }: { version: VersionDePlan
   return (
     <div className="version-del-plan">
       <p>
-        <span className="insignia">{COPY_NUTRICION.soloLectura}</span> Versión {numero} · activada el {fecha(version.activatedAt as string)}
+        <span className="etiqueta-de-dato">
+          <Icono nombre="candado" tamano={15} />
+          {COPY_NUTRICION.soloLectura}
+        </span>{' '}
+        Versión {numero} · activada el {fecha(version.activatedAt as string)}
       </p>
       {version.snapshotDigest ? (
         <p className="nota">

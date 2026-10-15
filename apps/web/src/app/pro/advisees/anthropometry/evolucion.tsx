@@ -50,7 +50,7 @@ export function VistaDeEvolucion() {
   }, [cargar]);
 
   return (
-    <div className="secciones">
+    <div className="secciones evolucion">
       <section className="seccion" aria-labelledby="titulo-periodo">
         <h2 id="titulo-periodo">{COPY_ANTROPOMETRIA.periodo}</h2>
         {/*

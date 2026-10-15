@@ -49,7 +49,6 @@ import {
 } from '@be/domain';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts';
-import { Ayuda } from '../../../../components/ayuda';
 import { Aviso } from '../../../../components/formulario';
 import { diaCivil, fechaEnZona } from '../../../../lib/formato';
 import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
@@ -95,12 +94,7 @@ export function EvolucionDeMetrica({
   return (
     <section className="seccion" aria-labelledby={`${id}-titulo`}>
       <h2 id={`${id}-titulo`}>{nombreDeMetrica(serie.metricCode)}</h2>
-      {/* DL-113 · cómo se leen el gráfico y la tabla, plegado: arriba quedan los datos. */}
-      <Ayuda>
-        <p>{COPY_ANTROPOMETRIA.explicacionDeSinDato}</p>
-        <p>{COPY_ANTROPOMETRIA.explicacionDeComparabilidad}</p>
-        <p>{COPY_EVOLUCION.tablaAclaracion}</p>
-      </Ayuda>
+      {/* Cómo se leen el gráfico y la tabla: en «Cómo se lee esta vista», en el marco (`ayuda-de-evolucion.tsx`). */}
       {preparada.observaciones.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinMediciones}</p> : null}
       {preparada.variosGrupos ? (
         <>

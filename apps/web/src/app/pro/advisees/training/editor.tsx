@@ -500,7 +500,11 @@ export function EditorDePlan({
     <section className="seccion editor-del-plan editor-de-entrenamiento" aria-labelledby="titulo-borrador">
       <div className="editor-del-plan__cabecera">
         <h2 id="titulo-borrador">
-          Versión en preparación <span className="insignia">{COPY_ENTRENAMIENTO.borrador}</span>
+          Versión en preparación{' '}
+          <span className="etiqueta-de-dato">
+            <Icono nombre="borrador" tamano={15} />
+            {COPY_ENTRENAMIENTO.borrador}
+          </span>
         </h2>
         <div className="editor-del-plan__acciones">
           <p className="editor-del-plan__estado" aria-live="polite" data-estado={guardando ? 'guardando' : sucio ? 'sin-guardar' : 'guardado'}>
