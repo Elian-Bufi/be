@@ -1496,7 +1496,9 @@ corregido, escribe una vez), «el color no cambia al escribir» (la forma sí), 
   tarjetas del tronco, y a la izquierda la pila de pliegues no entraba sobre una leyenda de cinco renglones.
 
 **Lo que pasó con la máquina.** Una corrida de `mediciones` se cortó al entrar en «Tomas», antes de llegar a la carga
-(la página no terminó de cargar, con 400 a 700 MB libres); repetida enseguida, pasó entera (18 de 18).
+(la página no terminó de cargar, con 400 a 700 MB libres); repetida enseguida, pasó entera (18 de 18). En la pasada
+completa, «Solicitudes» (de la parte 4, que esta parte no toca) no llegó a leer su lista al entrar; repetida sola, con
+datos nuevos, pasó entera (32 de 32).
 
 **Límites, dichos.**
 - **El reparto de los pliegues y los dos sitios que ubicó BE** (bicipital y cresta ilíaca) esperan la validación de
