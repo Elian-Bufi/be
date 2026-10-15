@@ -10795,12 +10795,8 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 /* ─── Antropometría · Evolución, al ancho de las otras secciones (pasada de estética del 2026-10-15) ─────────────── */
-/* El gráfico ocupa el ancho; el período (dos fechas y un botón) y la métrica no lo necesitan. El campo de la métrica era
-   a la vez la fila de controles: su rótulo quedaba a la derecha, sobre un selector de todo el ancho. */
-.evolucion .fila-de-dato.filtro-de-periodo .campo {
-  flex: 0 1 15rem;
-}
-
+/* El campo de la métrica era a la vez la fila de controles: su rótulo quedaba a la derecha, sobre un selector de todo el
+   ancho. */
 .campo.grafico__controles {
   display: grid;
   justify-items: start;
@@ -10817,4 +10813,229 @@ h3 .etiqueta-de-dato {
   margin-left: 0.25rem;
   font-weight: 500;
   vertical-align: 0.2em;
+}
+
+/* ─── La crítica de diseño, aplicada antes de integrar (2026-10-15) ───────────────────────────────────────────────── */
+/* «Bajar el volumen»: un solo botón secundario, con borde de 1 px gris medio y texto en peso 600; el lleno sigue siendo
+   uno por vista. Las etiquetas y las píldoras de estado, más livianas, para que no parezcan botones. El peso 700 queda
+   para los títulos y las cifras grandes. */
+.boton {
+  border-width: 1px;
+  font-weight: 600;
+}
+
+.boton--secundario,
+.boton--quieto {
+  background: var(--superficie);
+  color: var(--texto);
+  border-color: var(--borde-control);
+}
+
+.boton--secundario:hover:not(:disabled),
+.boton--quieto:hover:not(:disabled) {
+  background: var(--fondo-suave);
+}
+
+.boton--peligro-secundario {
+  border-width: 1px;
+}
+
+/* Un botón apagado: gris neutro con su texto legible (antes, texto blanco sobre un celeste pálido). */
+.boton:disabled,
+.boton[aria-disabled='true'] {
+  opacity: 1;
+  background: var(--fondo-suave);
+  color: var(--tenue);
+  border-color: var(--borde);
+}
+
+.insignia {
+  padding: 0.05rem 0.6rem;
+  border-width: 1px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ficha__acceso .insignia {
+  background: var(--fondo-suave);
+}
+
+/* La línea de acceso: el rótulo, tenue; el área, en peso 600; el estado, en su píldora. */
+.ficha__acceso-titulo,
+.ficha__acceso-titulo strong {
+  color: var(--tenue);
+  font-weight: 500;
+}
+
+.ficha__acceso-areas strong,
+.estados-de-vinculo strong {
+  font-weight: 600;
+}
+
+.etiqueta-de-dato {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.375rem;
+}
+
+/* Las listas desplegables, con la flecha de BE y no la del navegador. */
+select:not([multiple]):not([size]) {
+  appearance: none;
+  padding-right: 2.4rem;
+  background-image: var(--flecha-de-lista);
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1rem 1rem;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+/* Los desplegables sin clase propia («Más preguntas», «Quién ve tus plantillas»): la flecha de BE en lugar del triángulo
+   del navegador, y 44 px para tocarlos. */
+details > summary:not([class]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  list-style: none;
+}
+
+details > summary:not([class])::-webkit-details-marker {
+  display: none;
+}
+
+details > summary:not([class])::before {
+  content: '';
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  background-color: currentColor;
+  -webkit-mask: var(--flecha-como-mascara) no-repeat center / contain;
+  mask: var(--flecha-como-mascara) no-repeat center / contain;
+  transform: rotate(-90deg);
+  transition: transform 120ms ease;
+}
+
+details[open] > summary:not([class])::before {
+  transform: none;
+}
+
+/* Un estado vacío no es una zona para soltar archivos: borde continuo y suave, no punteado. */
+.estado-vacio {
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+}
+
+/* La frase de la barra de una revisión nueva, sin la caja gris que la hacía parecer un campo apagado. */
+.barra-de-revision__texto {
+  padding: 0;
+  background: none;
+}
+
+/* La toma elegida: un fondo tenue con una barra al costado (el contorno parecía el foco del teclado). */
+.toma-de-la-lista[aria-current='true'] {
+  background: var(--fondo-suave);
+  box-shadow: inset 3px 0 0 var(--boton-fondo);
+}
+
+/* La Lámina elige cómo se ve con la misma botonera pegada que el resto (antes, píldoras azules sueltas). */
+.lamina__opciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+  width: fit-content;
+  overflow: hidden;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.lamina__opciones .chip {
+  min-height: 41px;
+  margin: 0;
+  padding: 0 0.9rem;
+  border: 0;
+  border-left: 1.5px solid var(--borde-control);
+  border-radius: 0;
+  background: transparent;
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.lamina__opciones .chip:first-child {
+  border-left: 0;
+}
+
+.lamina__opciones .chip[aria-pressed='true'] {
+  background: var(--texto);
+  color: var(--superficie);
+}
+
+.lamina__opciones .chip:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Evolución: el encabezado de las demás secciones (el título, una frase y el período a la derecha). */
+.evolucion {
+  display: grid;
+  gap: 1rem;
+}
+
+.evolucion__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+}
+
+.evolucion__encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.evolucion__bajada {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.evolucion__cuerpo {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.evolucion__metrica {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.grafico__unidad {
+  margin: 0 0 -0.5rem;
+  color: var(--tenue);
+  font-size: 0.8rem;
+}
+
+/* Los puntos de Evolución van en el azul de los datos, y la leyenda dice las tres formas. */
+.leyenda--evolucion .muestra--punto,
+.leyenda--evolucion .muestra--rombo {
+  background: var(--metrica-1);
+}
+
+.muestra--corregida {
+  position: relative;
+}
+
+.muestra--corregida::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.3rem;
+  margin: -0.15rem 0 0 -0.15rem;
+  border-radius: 50%;
+  background: var(--superficie);
 }

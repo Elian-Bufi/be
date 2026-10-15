@@ -146,7 +146,7 @@ export function Antropometria() {
       href={hrefDe}
       retirado={retirado}
       onActualizar={volverALeer}
-      ancho={vista === 'evaluaciones' || vista === 'preparacion' || vista === 'evolucion'}
+      ancho
       ayuda={vista === 'evaluaciones' ? <AyudaDeTomas /> : vista === 'preparacion' ? <AyudaDeLaCarga /> : vista === 'evolucion' ? <AyudaDeEvolucion /> : <AyudaDeLaLamina />}
     >
       {contexto ? (

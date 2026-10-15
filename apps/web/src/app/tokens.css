@@ -85,6 +85,11 @@
   /* La sombra que avisa que una línea sigue de costado (`.desplazable-x`): oscura sobre fondo claro, cian sobre navy */
   --sombra-desplazamiento: rgb(10 31 68 / 28%);
   --sombra-desplazamiento-sobre-navy: rgb(39 213 249 / 55%);
+  /* La flecha de una lista desplegable, del dibujo de los íconos de BE (en lugar de la del navegador). Va como imagen:
+     se pinta con el color del texto secundario de cada tema. */
+  --flecha-de-lista: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23566881' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* La misma flecha como máscara, para pintarla con el color del texto (`currentColor`): la de los desplegables. */
+  --flecha-como-mascara: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: light;
 }
 
@@ -96,7 +101,10 @@
   --fondo-suave: #0a2c47;
   --superficie: #052238;
   --texto: #ffffff;
-  --tenue: #8dcae5;
+  /* El texto secundario, gris azulado (crítica de diseño del 2026-10-15): el celeste de antes (#8dcae5) se confundía con
+     los enlaces y el tema quedaba de un solo color. El cian queda para enlaces, acentos y datos. */
+  --tenue: #a3b1c2;
+  --flecha-de-lista: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23a3b1c2' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --azul: #1d98de;
   --azul-oscuro: #46e2f3;
   --enlace: #46e2f3;

@@ -208,7 +208,7 @@ export const COPY_ANTROPOMETRIA = {
   lamina: 'Lámina',
   verLamina: 'Ver lámina',
   explicacionDeLamina:
-    'La lámina arma con los datos registrados la del compositor de Dirección: ubica cada medida sobre la figura y no califica ningún valor. Los datos completos siguen en el detalle de cada toma.',
+    'La lámina arma una imagen con los datos registrados: ubica cada medida sobre la figura y no califica ningún valor. Los datos completos siguen en el detalle de cada toma.',
   laminaModo: 'Modo',
   laminaEncuadre: 'Encuadre',
   laminaTema: 'Tema de la lámina',
@@ -224,7 +224,7 @@ export const COPY_ANTROPOMETRIA = {
   laminaToma: 'Toma',
   laminaTomasDeLaSerie: 'Tomas de la serie',
   laminaAyudaDeLaSerie: 'Hasta ocho tomas registradas. En la lámina van por fecha: T1 es la más antigua.',
-  laminaSerieSinEntero: 'En Serie la figura va en tren superior o inferior, como en el compositor.',
+  laminaSerieSinEntero: 'En Serie, la figura va en tren superior o inferior.',
   laminaSeriesEnLaLamina: 'Qué va en la lámina',
   laminaAyudaDeSeries: 'Hasta ocho. Cada resultado calculado es una serie por método y versión: dos métodos no se comparan entre sí.',
   descargarImagen: 'Descargar imagen',

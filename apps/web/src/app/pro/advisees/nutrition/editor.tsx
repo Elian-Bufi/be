@@ -420,9 +420,10 @@ export function EditorDeBorrador({
           >
             {COPY_NUTRICION.validarPlan}
           </button>
+          {/* Un solo botón lleno (crítica de diseño del 2026-10-15): «Guardar cambios» si hay algo sin guardar; si no, «Activar plan». */}
           <button
             type="button"
-            className="boton boton--secundario"
+            className={`boton ${sucio ? 'boton--secundario' : 'boton--primario'}`}
             aria-disabled={guardando || undefined}
             onClick={() => {
               if (!guardando) void abrirLaActivacion();
@@ -433,7 +434,7 @@ export function EditorDeBorrador({
           </button>
           <button
             type="button"
-            className="boton boton--primario"
+            className={`boton ${sucio ? 'boton--primario' : 'boton--secundario'}`}
             aria-disabled={guardando || !sucio || undefined}
             onClick={() => {
               if (!guardando && sucio) void guardar();

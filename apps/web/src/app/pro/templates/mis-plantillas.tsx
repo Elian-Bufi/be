@@ -70,6 +70,8 @@ export function MisPlantillas() {
         <Ayuda titulo="Quién ve tus plantillas">
           <p>{COPY_PLANTILLAS.soloTuya}</p>
         </Ayuda>
+        {/* Sin plantillas y sin filtro, el filtro no tiene nada que filtrar: aparece cuando hay alguna. */}
+        {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
         <div className="campo">
           <label htmlFor="plantillas-estado">Estado</label>
           <select id="plantillas-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
@@ -78,6 +80,7 @@ export function MisPlantillas() {
             <option value="ARCHIVED">{COPY_PLANTILLAS.archivada}</option>
           </select>
         </div>
+        )}
         {lista.estado.tipo === 'cargando' ? <Cargando /> : null}
         {lista.estado.tipo === 'error' ? <ErrorConReintento onReintentar={lista.recargar} /> : null}
         {lista.estado.tipo === 'listo' ? (

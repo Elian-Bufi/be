@@ -93,7 +93,7 @@ export function EvolucionDeMetrica({
 
   return (
     <section className="seccion" aria-labelledby={`${id}-titulo`}>
-      <h2 id={`${id}-titulo`}>{nombreDeMetrica(serie.metricCode)}</h2>
+      <h3 id={`${id}-titulo`} className="evolucion__metrica">{nombreDeMetrica(serie.metricCode)}</h3>
       {/* Cómo se leen el gráfico y la tabla: en «Cómo se lee esta vista», en el marco (`ayuda-de-evolucion.tsx`). */}
       {preparada.observaciones.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinMediciones}</p> : null}
       {preparada.variosGrupos ? (
@@ -141,6 +141,22 @@ interface Dato {
   readonly sourceId: string;
 }
 
+/**
+ * Las marcas del eje vertical, con un paso parejo (1, 2, 2,5 o 5 por una potencia de diez) y dentro del dominio. Antes
+ * las elegía Recharts y podían quedar irregulares (23, 25, 27, 28).
+ */
+function marcasDelEjeVertical(desde: number, hasta: number): number[] {
+  const rango = hasta - desde;
+  if (!(rango > 0)) return [desde];
+  const crudo = rango / 4;
+  const potencia = 10 ** Math.floor(Math.log10(crudo));
+  const n = crudo / potencia;
+  const paso = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * potencia;
+  const marcas: number[] = [];
+  for (let v = Math.ceil(desde / paso - 1e-9) * paso; v <= hasta + 1e-9; v += paso) marcas.push(Number(v.toFixed(6)));
+  return marcas;
+}
+
 function Grafico({
   id,
   titulo,
@@ -174,12 +190,19 @@ function Grafico({
   // navegador esté en otra zona. Las marcas son fechas civiles de esa zona, nunca posteriores al último día.
   const { desde, hasta } = limitesDelPeriodo(periodo, zonaHoraria);
   const marcas = marcasDelPeriodo(periodo, zonaHoraria);
+  const marcasVerticales = marcasDelEjeVertical(dominio.desde, dominio.hasta);
+  // Dentro de un mismo año, las fechas del eje no lo repiten: el período ya lo dice.
+  const sinElAnio = periodo.start.slice(0, 4) === periodo.end.slice(0, 4);
   const resumen = visibles.map((o) => `${diaCivil(o.fecha)}${o.delDia.total > 1 ? ` (${COPY_EVOLUCION.delDia(o.delDia.orden, o.delDia.total)})` : ''}: ${resumenDeObservacion(o)}`).join('. ');
   return (
     <figure className="grafico__figura">
-      <figcaption className="nota">
+      <figcaption className="visualmente-oculto">
         {titulo}. {COPY_EVOLUCION.ejeTemporal} {COPY_EVOLUCION.zona(zonaHoraria)}
       </figcaption>
+      {/* La unidad, derecha y arriba del eje: girada costaba leerla. */}
+      <p className="grafico__unidad" aria-hidden="true">
+        {unidad}
+      </p>
       <div
         className="grafico__lienzo"
         tabIndex={0}
@@ -207,7 +230,7 @@ function Grafico({
               tick={({ x, y, payload }: { x?: number | string; y?: number | string; payload?: { value?: number } }) => (
                 <g transform={`translate(${x ?? 0},${y ?? 0})`}>
                   <text textAnchor="middle" dy={14} className="grafico__tick">
-                    {Number.isFinite(Number(payload?.value)) ? diaCivil(fechaCivil(new Date(Number(payload?.value)).toISOString(), zonaHoraria)) : ''}
+                    {Number.isFinite(Number(payload?.value)) ? diaCivil(fechaCivil(new Date(Number(payload?.value)).toISOString(), zonaHoraria)).replace(sinElAnio ? / \d{4}$/ : /$^/, '') : ''}
                   </text>
                 </g>
               )}
@@ -215,7 +238,7 @@ function Grafico({
               tickLine={false}
               height={36}
             />
-            <YAxis dataKey="y" type="number" domain={[dominio.desde, dominio.hasta]} width={56} tickFormatter={(v: number) => numero(v, decimales)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }} />
+            <YAxis dataKey="y" type="number" domain={[dominio.desde, dominio.hasta]} ticks={marcasVerticales} interval={0} width={56} tickFormatter={(v: number) => numero(v, decimales)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} />
             {conPuntero ? <Tooltip cursor={false} content={({ active, payload }) => (active && payload?.[0] ? <Recuadro observacion={visibles.find((o) => o.punto.sourceId === (payload[0]!.payload as Dato).sourceId)} zonaHoraria={zonaHoraria} /> : null)} /> : null}
             <Scatter
               data={datos}
@@ -230,9 +253,9 @@ function Grafico({
                   <g className="grafico__elegible" onClick={() => onElegir(i)} aria-hidden="true">
                     {esElegido ? <circle cx={props.cx} cy={props.cy} r={11} fill="none" stroke="var(--foco)" strokeWidth={3} /> : null}
                     {noComparable ? (
-                      <rect x={props.cx - 6} y={props.cy - 6} width={12} height={12} transform={`rotate(45 ${props.cx} ${props.cy})`} fill="var(--grafico-registrado)" stroke="var(--superficie)" strokeWidth={1.5} />
+                      <rect x={props.cx - 6} y={props.cy - 6} width={12} height={12} transform={`rotate(45 ${props.cx} ${props.cy})`} fill="var(--metrica-1)" stroke="var(--superficie)" strokeWidth={1.5} />
                     ) : (
-                      <circle cx={props.cx} cy={props.cy} r={6} fill="var(--grafico-registrado)" stroke="var(--superficie)" strokeWidth={1.5} />
+                      <circle cx={props.cx} cy={props.cy} r={6} fill="var(--metrica-1)" stroke="var(--superficie)" strokeWidth={1.5} />
                     )}
                     {o.punto.correctionState === 'CORRECTED' ? <circle cx={props.cx} cy={props.cy} r={2} fill="var(--superficie)" /> : null}
                   </g>
@@ -242,14 +265,16 @@ function Grafico({
           </ScatterChart>
         </ResponsiveContainer>
       </div>
-      <ul className="leyenda" aria-label="Leyenda">
+      <ul className="leyenda leyenda--evolucion" aria-label="Leyenda">
         <li>
           <span className="muestra muestra--punto" aria-hidden="true" /> Observación comparable con la anterior
         </li>
         <li>
           <span className="muestra muestra--rombo" aria-hidden="true" /> {COPY_ANTROPOMETRIA.noComparable} (el motivo, en la tabla)
         </li>
-        <li>Un punto con centro claro: valor corregido</li>
+        <li>
+          <span className="muestra muestra--punto muestra--corregida" aria-hidden="true" /> Valor corregido (el centro claro)
+        </li>
       </ul>
     </figure>
   );
