@@ -384,10 +384,11 @@ code {
 @media (max-width: 40rem) {
   .encabezado {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    /* DL-133: la campana de las novedades va en el primer renglón, entre la marca y el menú de la cuenta. */
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'marca cuenta'
-      'navegacion navegacion';
+      'marca campana cuenta'
+      'navegacion navegacion navegacion';
     gap: 0.15rem 0.75rem;
     padding: 0.45rem 1rem 0.4rem;
   }
@@ -405,6 +406,12 @@ code {
   .encabezado .menu-de-cuenta {
     grid-area: cuenta;
     justify-self: end;
+  }
+
+  .encabezado .campana-de-novedades {
+    grid-area: campana;
+    justify-self: end;
+    margin-left: 0;
   }
 
   .encabezado .navegacion {
@@ -11338,10 +11345,15 @@ details[open] > summary:not([class])::before {
   text-align: center;
 }
 
-/* En un teléfono chico la palabra cede su lugar: queda la campana con su número y su nombre accesible. */
-@media (max-width: 520px) {
+/* En el teléfono y en la tablet de pie la palabra cede su lugar, como la del botón de la cuenta: queda la campana con su
+   número y su nombre accesible («Novedades, 2 sin leer»). */
+@media (max-width: 63.99rem) {
   .campana-de-novedades__palabra {
     display: none;
+  }
+
+  .campana-de-novedades {
+    padding: 0.25rem 0.6rem;
   }
 }
 
