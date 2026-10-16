@@ -5,11 +5,14 @@
  * - sin Firebase (no hay token), «no disponibles», y nada queda guardado como activo;
  * - el teléfono tiene un identificador propio y estable;
  * - activos por cuenta: al entrar se renueva el token solo si esta cuenta los activó; al salir se retiran y se olvidan;
- * - solo un aviso con los datos de BE abre Novedades.
+ * - solo un aviso con los datos de BE abre Novedades;
+ * - la APK bloquea los permisos que trae expo-notifications y BE no usa, y conserva los que hacen falta para recibir
+ *   avisos.
  *
  * Uso: node --test scripts/avisos-del-telefono.test.mjs
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const avisos = await import('../apps/mobile/src/avisos.ts');
@@ -121,4 +124,25 @@ test('desactivar se olvida aunque la API no responda; sin permiso en los ajustes
 test('solo un aviso con los datos de BE abre Novedades', () => {
   assert.equal(avisos.esAvisoDeBe({ type: 'NEW_INTERNAL_UPDATE', referenceId: 'n1' }), true);
   for (const otro of [null, undefined, {}, { type: 'OTRO', referenceId: 'n1' }, { type: 'NEW_INTERNAL_UPDATE' }, 'texto']) assert.equal(avisos.esAvisoDeBe(otro), false);
+});
+
+test('la APK pide solo lo que usa: sin insignias, referidor ni arranque del sistema, y con lo que reciben los avisos', () => {
+  const CONFIG = readFileSync(new URL('../apps/mobile/app.config.ts', import.meta.url), 'utf8');
+  const android = CONFIG.slice(CONFIG.indexOf('  android: {'), CONFIG.indexOf('  plugins: ['));
+  assert.match(android, /blockedPermissions: PERMISOS_QUE_BE_NO_USA,/);
+  const lista = CONFIG.slice(CONFIG.indexOf('const PERMISOS_QUE_BE_NO_USA = ['), CONFIG.indexOf('];', CONFIG.indexOf('const PERMISOS_QUE_BE_NO_USA')));
+  const bloqueados = [...lista.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  // Los que agregó expo-notifications en la 0.16.0-candidata.1 (aapt2 dump permissions) y BE no usa.
+  for (const p of ['android.permission.RECEIVE_BOOT_COMPLETED', 'com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE', 'android.permission.READ_APP_BADGE', 'com.sec.android.provider.badge.permission.WRITE', 'com.huawei.android.launcher.permission.CHANGE_BADGE', 'me.everything.badger.permission.BADGE_COUNT_WRITE']) {
+    assert.ok(bloqueados.includes(p), `falta bloquear ${p}`);
+  }
+  assert.equal(bloqueados.length, 21);
+  assert.equal(new Set(bloqueados).size, bloqueados.length, 'sin repetidos');
+  // Lo que hace falta para recibir avisos, entrar a la API y sacar la foto de una comida no se bloquea.
+  for (const p of ['android.permission.POST_NOTIFICATIONS', 'android.permission.WAKE_LOCK', 'android.permission.ACCESS_NETWORK_STATE', 'com.google.android.c2dm.permission.RECEIVE', 'android.permission.INTERNET', 'android.permission.CAMERA', 'android.permission.READ_EXTERNAL_STORAGE']) {
+    assert.ok(!bloqueados.includes(p), `${p} hace falta`);
+  }
+  // Sin insignias: si algún día se usan, hay que sacar sus permisos de la lista.
+  const TELEFONO = readFileSync(new URL('../apps/mobile/src/avisos-del-telefono.ts', import.meta.url), 'utf8');
+  assert.match(TELEFONO, /shouldSetBadge: false/);
 });
