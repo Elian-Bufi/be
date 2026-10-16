@@ -19,6 +19,13 @@ import { LimitadorService } from '../plataforma/limitador.service';
 import { extraerBearer, TokensService } from './tokens.service';
 import type { ActorAutenticado } from './sesion.guard';
 
+/** Una sesión recién abierta: su fila, la versión de control con que se firma el token y su vencimiento. */
+export interface SesionAbierta {
+  readonly sesionId: string;
+  readonly version: number;
+  readonly expiraEn: Date;
+}
+
 /**
  * UC-P26 — Autenticar y finalizar una sesión local (API-ACC-02/03/04).
  * Sesiones revocables server-side (08 §26), verificadas en cada request por `SesionGuard`.
@@ -81,49 +88,13 @@ export class SesionService {
     }
 
     const identidadId = metodo.identidadId;
-    const expiraEn = new Date(ctx.momentoDeRecepcion.getTime() + DURACION_DE_SESION_MS);
-    let estadoEnCarrera: EstadoOperativoDeCuenta | 'INEXISTENTE' | null = null;
-    const emitida = await this.prisma.$transaction(async (tx) => {
-      // Relectura con bloqueo compartido: serializa con CerrarCuenta/SuspenderCuenta (FOR NO KEY UPDATE). Si la cuenta dejó
-      // de ser operativa entre la verificación y este punto, no se crea sesión.
-      const [cuenta] = await tx.$queryRaw<{ estado: EstadoOperativoDeCuenta }[]>`
-        SELECT "estado_operativo_de_cuenta" AS "estado" FROM "identidad" WHERE "id" = ${identidadId}::uuid FOR SHARE`;
-      if (!cuenta || !cuentaPermiteOperar(cuenta.estado)) {
-        estadoEnCarrera = cuenta?.estado ?? 'INEXISTENTE';
-        return null;
-      }
-      const control = await tx.controlDeSesion.findUniqueOrThrow({ where: { identidadId } });
-      const sesion = await tx.sesion.create({
-        data: {
-          identidadId,
-          superficie: ctx.superficie,
-          momentoDeOcurrencia: ctx.momentoDeRecepcion,
-          expiraEn,
-          versionDeControl: control.version,
-        },
-      });
-      await this.auditoria.registrar(
-        {
-          operacion: 'API-ACC-02',
-          resultado: 'EXITO',
-          actorId: identidadId,
-          sujetoId: identidadId,
-          recursoTipo: 'Sesion',
-          recursoId: sesion.id,
-          superficie: ctx.superficie,
-          requestId: ctx.requestId,
-          momentoDeOcurrencia: ctx.momentoDeRecepcion,
-        },
-        tx,
-      );
-      return { sesionId: sesion.id, version: control.version };
-    });
-    if (!emitida) {
+    const emitida = await this.prisma.$transaction((tx) => this.abrirEn(tx, identidadId, ctx, 'API-ACC-02'));
+    if ('estado' in emitida) {
       // El intento fallido también se audita (09v8 ACC-02: «failed attempts: REQUIRED»), igual que la rama principal.
       await this.auditoria.registrar({
         operacion: 'API-ACC-02',
         resultado: 'RECHAZO',
-        motivo: `CUENTA_${estadoEnCarrera}`,
+        motivo: `CUENTA_${emitida.estado}`,
         sujetoId: identidadId,
         superficie: ctx.superficie,
         requestId: ctx.requestId,
@@ -131,15 +102,61 @@ export class SesionService {
       });
       throw errores.credencialesInvalidas();
     }
-    const { sesionId, version } = emitida;
+    return this.respuesta(identidadId, emitida);
+  }
 
+  /**
+   * Abre la sesión de una identidad ya autenticada, dentro de `tx`, y la audita con `operacion` en la misma transacción.
+   * La usan API-ACC-02 y la familia GOO (DL-138): una sesión abierta con Google es exactamente igual a la local.
+   * Relee el estado con bloqueo compartido: serializa con CerrarCuenta/SuspenderCuenta (FOR NO KEY UPDATE). Si la cuenta
+   * dejó de ser operativa entre la verificación y este punto, no se crea sesión y devuelve el estado encontrado.
+   */
+  async abrirEn(
+    tx: Prisma.TransactionClient,
+    identidadId: string,
+    ctx: ContextoDeSolicitud,
+    operacion: string,
+  ): Promise<SesionAbierta | { readonly estado: EstadoOperativoDeCuenta | 'INEXISTENTE' }> {
+    const [cuenta] = await tx.$queryRaw<{ estado: EstadoOperativoDeCuenta }[]>`
+      SELECT "estado_operativo_de_cuenta" AS "estado" FROM "identidad" WHERE "id" = ${identidadId}::uuid FOR SHARE`;
+    if (!cuenta || !cuentaPermiteOperar(cuenta.estado)) return { estado: cuenta?.estado ?? 'INEXISTENTE' };
+    const expiraEn = new Date(ctx.momentoDeRecepcion.getTime() + DURACION_DE_SESION_MS);
+    const control = await tx.controlDeSesion.findUniqueOrThrow({ where: { identidadId } });
+    const sesion = await tx.sesion.create({
+      data: {
+        identidadId,
+        superficie: ctx.superficie,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+        expiraEn,
+        versionDeControl: control.version,
+      },
+    });
+    await this.auditoria.registrar(
+      {
+        operacion,
+        resultado: 'EXITO',
+        actorId: identidadId,
+        sujetoId: identidadId,
+        recursoTipo: 'Sesion',
+        recursoId: sesion.id,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      },
+      tx,
+    );
+    return { sesionId: sesion.id, version: control.version, expiraEn };
+  }
+
+  /** La respuesta de API-ACC-02 para una sesión abierta: el Bearer firmado, de 12 h y sin renovación (DL-012). */
+  respuesta(identidadId: string, sesion: SesionAbierta): IniciarSesionResponse {
     return {
       data: {
         session: {
-          id: sesionId,
-          expiresAt: expiraEn.toISOString(),
+          id: sesion.sesionId,
+          expiresAt: sesion.expiraEn.toISOString(),
           renewable: false,
-          accessToken: this.tokens.firmar({ sub: identidadId, sid: sesionId, tv: version }, expiraEn),
+          accessToken: this.tokens.firmar({ sub: identidadId, sid: sesion.sesionId, tv: sesion.version }, sesion.expiraEn),
           tokenType: 'Bearer',
         },
         actor: { identityId: identidadId, accountOperationalState: 'OPERATIVA' },

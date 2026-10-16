@@ -25,6 +25,14 @@ import {
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
+  DetalleDeCuentaDeGoogleSchema,
+  IniciarSesionConGoogleRequestSchema,
+  RegistrarConGoogleRequestSchema,
+  RUTAS_DE_ACCESO_GOOGLE,
+  SesionConGoogleResponseSchema,
+  VincularGoogleRequestSchema,
+} from './contratos-acceso-google';
+import {
   CrearInvitacionRequestSchema,
   InvitacionCreadaResponseSchema,
   InvitacionResponseSchema,
@@ -284,6 +292,9 @@ export interface Operacion {
   readonly detalleDe422?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
   /** Lo mismo para un 403 que trae `details`: el de API-MED-01 sin el acto `EVIDENCIA_VISUAL` (DL-125). */
   readonly detalleDe403?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
+  /** Lo mismo para un 404 y un 409 que traen `details`: el correo de la cuenta de Google en la familia GOO (DL-138). */
+  readonly detalleDe404?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
+  readonly detalleDe409?: { readonly codigo: Codigo; readonly schema: z.ZodType; readonly descripcion: string };
   readonly fuente: string;
 }
 
@@ -322,7 +333,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-ACC-01',
     metodo: 'post',
     ruta: '/registrations',
-    resumen: 'Registrar identidad BE y perfil propio con A1 (términos) y A2 (privacidad) como actos separados. No concede A3.',
+    resumen:
+      'Registrar identidad BE y perfil propio con A1 (términos), A2 (privacidad) y la declaración de mayoría de edad (08 §24.7 a) como actos separados. No concede A3. Sin la declaración no hay alta: un cuerpo que no la trae (un cliente anterior a DL-138) recibe 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue ADULT_DECLARATION_REQUIRED, para que las APK instaladas pidan actualizar; sin marcar o con otra versión, 422 VALIDATION_FAILED con ADULT_DECLARATION_REQUIRED o ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE. Un correo que ya usa otra cuenta, también con Google, responde el mismo 409 neutral.',
     autenticacion: 'PUBLIC',
     idempotencia: true,
     request: RegistrarIdentidadRequestSchema,
@@ -330,10 +342,10 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: {
       400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
       409: ['REGISTRATION_NOT_AVAILABLE', 'IDEMPOTENCY_KEY_REUSED'],
-      422: ['TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE'],
+      422: ['TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE', 'VALIDATION_FAILED'],
       429: ['RATE_LIMITED'],
     },
-    fuente: '09v8:227-307',
+    fuente: '09v8:227-307 · 08 §24.7 a y §42 ítem 22 (declaración de mayoría de edad) · DEUDA_LEGAJO DL-023 y DL-138',
   },
   {
     id: 'API-ACC-02',
@@ -2822,6 +2834,77 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'pedido de Dirección del 2026-10-16 · 06 §7.4 (REG-06-46, INV-06-55/56) · 05 UC-P05 V01 · 09v8:1108-1192 (REL-01) · ID propio de BE (familia INV) · DEUDA_LEGAJO DL-136',
   },
 
+  // ─── WP-ACCESO-GOOGLE (DL-138): entrar con Google, verificado por la API; BE sigue siendo la fuente de identidad ─────
+  // 04 RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.7 a · 09 §12 y 09v12 §11, que solo
+  // bosquejan «authorize/complete»: BE verifica el ID token que el cliente obtuvo de Google (sin secreto en los dispositivos).
+  {
+    id: 'API-GOO-01',
+    metodo: 'post',
+    ruta: RUTAS_DE_ACCESO_GOOGLE.sesiones,
+    resumen:
+      'Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: IniciarSesionConGoogleRequestSchema,
+    exitos: [{ status: 201, schema: SesionConGoogleResponseSchema }],
+    errores: {
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      401: ['GOOGLE_TOKEN_INVALID', 'INVALID_CREDENTIALS'],
+      404: ['GOOGLE_ACCOUNT_NOT_FOUND'],
+      409: ['GOOGLE_LINK_REQUIRED'],
+      422: ['GOOGLE_EMAIL_NOT_VERIFIED'],
+      429: ['RATE_LIMITED'],
+      503: ['DEPENDENCY_UNAVAILABLE'],
+    },
+    detalleDe404: { codigo: 'GOOGLE_ACCOUNT_NOT_FOUND', schema: DetalleDeCuentaDeGoogleSchema, descripcion: 'details.email es el correo verificado de la cuenta de Google, para ofrecer el alta con ese correo.' },
+    detalleDe409: { codigo: 'GOOGLE_LINK_REQUIRED', schema: DetalleDeCuentaDeGoogleSchema, descripcion: 'details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).' },
+    fuente: 'pedido de Dirección del 2026-10-16 · 04 RF-003 · 05 UC-E05 · 06 §5.6 · 08 §24.1 y §24.5 · 09 §12 y 09v12 §11 (bosquejo) · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138',
+  },
+  {
+    id: 'API-GOO-02',
+    metodo: 'post',
+    ruta: RUTAS_DE_ACCESO_GOOGLE.vinculos,
+    resumen:
+      'Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: VincularGoogleRequestSchema,
+    exitos: [{ status: 201, schema: SesionConGoogleResponseSchema }],
+    errores: {
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      401: ['GOOGLE_TOKEN_INVALID', 'INVALID_CREDENTIALS'],
+      409: ['GOOGLE_ACCOUNT_ALREADY_LINKED'],
+      422: ['GOOGLE_EMAIL_NOT_VERIFIED'],
+      429: ['RATE_LIMITED'],
+      503: ['DEPENDENCY_UNAVAILABLE'],
+    },
+    fuente: 'pedido de Dirección del 2026-10-16 («solo después de que la persona confirme la contraseña de esa cuenta») · 05 UC-E05 E02 · 06 REG-06-21 · 08 §24.5 y §24.6 · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138',
+  },
+  {
+    id: 'API-GOO-03',
+    metodo: 'post',
+    ruta: RUTAS_DE_ACCESO_GOOGLE.registros,
+    resumen:
+      'Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: RegistrarConGoogleRequestSchema,
+    exitos: [
+      { status: 201, schema: SesionConGoogleResponseSchema },
+      { status: 200, schema: SesionConGoogleResponseSchema },
+    ],
+    errores: {
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      401: ['GOOGLE_TOKEN_INVALID', 'INVALID_CREDENTIALS'],
+      409: ['GOOGLE_LINK_REQUIRED', 'REGISTRATION_NOT_AVAILABLE'],
+      422: ['GOOGLE_EMAIL_NOT_VERIFIED', 'TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE', 'VALIDATION_FAILED'],
+      429: ['RATE_LIMITED'],
+      503: ['DEPENDENCY_UNAVAILABLE'],
+    },
+    detalleDe409: { codigo: 'GOOGLE_LINK_REQUIRED', schema: DetalleDeCuentaDeGoogleSchema, descripcion: 'details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).' },
+    fuente: 'pedido de Dirección del 2026-10-16 · 04 RF-001 y RF-003 · 05 UC-P25 y UC-E05 · 06 §5.6 · 08 §12.1, §24.1 y §24.7 a · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138',
+  },
+
   // ─── REV-A (propuesta del 2026-09-29; opciones A tomadas el 2026-10-16 con el mandato de Dirección; DL-134) ─────────
   // Las revisiones que los profesionales registraron sobre la persona, que ella lee completas (08 §6.2, 08:495).
   {
@@ -2932,7 +3015,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06']);
+// API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };
@@ -2991,7 +3075,8 @@ export function documentoOpenApi(): Record<string, unknown> {
           : { description: 'Éxito, sin cuerpo' };
     }
     for (const [status, codigos] of Object.entries(conComunes(op.errores))) {
-      const detalle = status === '422' ? op.detalleDe422 : status === '403' ? op.detalleDe403 : undefined;
+      const detalles: Readonly<Record<string, Operacion['detalleDe422']>> = { '403': op.detalleDe403, '404': op.detalleDe404, '409': op.detalleDe409, '422': op.detalleDe422 };
+      const detalle = detalles[status];
       const envelope = { $ref: '#/components/schemas/ErrorEnvelope' };
       respuestas[status] = {
         description: `ErrorEnvelope: ${(codigos ?? []).join(' | ')}${detalle ? `. ${detalle.codigo}: ${detalle.descripcion}` : ''}`,

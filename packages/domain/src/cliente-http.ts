@@ -23,6 +23,8 @@ import {
   type ValidationIssue,
 } from './contratos';
 import { PerfilPropioResponseSchema, type EditarPerfilPropioRequest, type PerfilPropioResponse } from './contratos-perfil-propio';
+import { DetalleDeCuentaDeGoogleSchema, RUTAS_DE_ACCESO_GOOGLE, SesionConGoogleResponseSchema } from './contratos-acceso-google';
+import { declaracionDeMayoriaDeEdad } from './mayoria-de-edad';
 import {
   CandidatoDeAlimentoResponseSchema,
   CandidatoDeEjercicioResponseSchema,
@@ -314,9 +316,17 @@ export type Resultado<T> =
        * contra su schema. Sin ellos, la pantalla no tiene qué mostrar y lo trata como cualquier otro rechazo.
        */
       readonly evidenciaVisual?: DetalleDeEvidenciaVisualRequerida;
+      /**
+       * Con `GOOGLE_LINK_REQUIRED` o `GOOGLE_ACCOUNT_NOT_FOUND` (familia GOO; DL-138): el correo verificado de la cuenta de
+       * Google, para decir con qué cuenta sigue la persona (vincular o crear).
+       */
+      readonly correoDeGoogle?: string;
     }
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
   | { readonly ok: false; readonly tipo: 'RED' };
+
+/** Los rechazos de la familia GOO que traen el correo de la cuenta de Google en `details` (DL-138). */
+const CODIGOS_CON_CORREO_DE_GOOGLE: ReadonlySet<string> = new Set(['GOOGLE_LINK_REQUIRED', 'GOOGLE_ACCOUNT_NOT_FOUND']);
 
 /** Códigos que significan «esta sesión ya no sirve»: la UI olvida el token y vuelve a Iniciar sesión. */
 export const CODIGOS_DE_SESION_NO_VALIDA: ReadonlySet<string> = new Set([
@@ -374,7 +384,16 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       if (!error.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
       const issues = (error.data.error.details as { issues?: ValidationIssue[] } | undefined)?.issues ?? [];
       const evidenciaVisual = error.data.error.code === 'VISUAL_EVIDENCE_ACT_REQUIRED' ? DetalleDeEvidenciaVisualRequeridaSchema.safeParse(error.data.error.details) : null;
-      return { ok: false, tipo: 'API', status: respuesta.status, codigo: error.data.error.code, issues, ...(evidenciaVisual?.success ? { evidenciaVisual: evidenciaVisual.data } : {}) };
+      const cuentaDeGoogle = CODIGOS_CON_CORREO_DE_GOOGLE.has(error.data.error.code) ? DetalleDeCuentaDeGoogleSchema.safeParse(error.data.error.details) : null;
+      return {
+        ok: false,
+        tipo: 'API',
+        status: respuesta.status,
+        codigo: error.data.error.code,
+        issues,
+        ...(evidenciaVisual?.success ? { evidenciaVisual: evidenciaVisual.data } : {}),
+        ...(cuentaDeGoogle?.success ? { correoDeGoogle: cuentaDeGoogle.data.email } : {}),
+      };
     }
     const fecha = respuesta.headers?.get?.('date');
     const conFecha = fecha ? { fechaDelServidor: fecha } : {};
@@ -419,8 +438,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     urlDe(ruta: string): string {
       return `${opciones.baseUrl}${ruta}`;
     },
-    /** API-ACC-01. A1 y A2 viajan como dos actos separados con la versión que la UI mostró. Nunca A3. */
-    registrar(datos: { correo: string; contrasena: string }, claveDeIdempotencia: string): Promise<Resultado<RegistrarIdentidadResponse>> {
+    /**
+     * API-ACC-01. A1, A2 y la declaración de mayoría de edad viajan como actos separados con la versión que la UI mostró.
+     * Nunca A3. `mayoriaDeEdad` es la casilla que la persona marcó (08 §24.7 a; DL-138): el cliente no la declara por ella.
+     * Sin ese dato no viaja la declaración, y la API responde 422 (la pantalla tiene que mostrar la casilla).
+     */
+    registrar(datos: { correo: string; contrasena: string; mayoriaDeEdad?: boolean }, claveDeIdempotencia: string): Promise<Resultado<RegistrarIdentidadResponse>> {
       return llamar('POST', '/registrations', {
         claveDeIdempotencia,
         esquema: RegistrarIdentidadResponseSchema,
@@ -429,6 +452,35 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
           identity: { localIdentifier: datos.correo, localCredential: datos.contrasena },
           termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
           privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+          ...(datos.mayoriaDeEdad === undefined ? {} : { adultDeclaration: declaracionDeMayoriaDeEdad(datos.mayoriaDeEdad) }),
+        },
+      });
+    },
+    /**
+     * API-GOO-01 (DL-138): entrar con el ID token que el cliente obtuvo de Google. Responde la sesión como `iniciarSesion`;
+     * GOOGLE_LINK_REQUIRED y GOOGLE_ACCOUNT_NOT_FOUND traen `correoDeGoogle`; 503 DEPENDENCY_UNAVAILABLE: Google no está
+     * disponible y el acceso local sigue.
+     */
+    iniciarSesionConGoogle(idToken: string): Promise<Resultado<IniciarSesionResponse>> {
+      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.sesiones, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken } });
+    },
+    /** API-GOO-02 (DL-138): vincular Google a la cuenta con contraseña del mismo correo, confirmando esa contraseña. */
+    vincularGoogle(idToken: string, contrasena: string): Promise<Resultado<IniciarSesionResponse>> {
+      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.vinculos, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken, credential: contrasena } });
+    },
+    /**
+     * API-GOO-03 (DL-138): crear la cuenta con Google, con los mismos actos que `registrar` y la casilla de mayoría de
+     * edad que la persona marcó. Responde la sesión (201 creada; 200 si esa cuenta de Google ya tenía identidad).
+     */
+    registrarConGoogle(idToken: string, mayoriaDeEdad: boolean): Promise<Resultado<IniciarSesionResponse>> {
+      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.registros, {
+        esquema: SesionConGoogleResponseSchema,
+        cuerpo: {
+          idToken,
+          registrationIntent: 'ADVISEE', // DL-024: la UI registra solo asesorados
+          termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
+          privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+          adultDeclaration: declaracionDeMayoriaDeEdad(mayoriaDeEdad),
         },
       });
     },

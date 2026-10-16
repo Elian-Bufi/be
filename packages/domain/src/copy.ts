@@ -10,6 +10,11 @@ export const COPY = {
   /** 10-B02:143-155 — A2, etiqueta propia. No es consentimiento sensible (10-B02:155). */
   a2Titulo: 'Información de privacidad',
   a2Texto: 'Confirmo que recibí la información de privacidad correspondiente a esta versión.',
+  /**
+   * 08 §24.7 a (DL-138): la declaración de mayoría de edad, una casilla propia, nunca premarcada. La etiqueta de la casilla
+   * es el texto de la versión vigente, literal (`VERSION_VIGENTE.MAYORIA_DE_EDAD.texto`): lo que se ve es lo que se declara.
+   */
+  mayoriaTitulo: 'Mayoría de edad',
   /** 10-B02:157-166, sin «o recuperar el acceso» (DL-024: recuperación fuera de alcance). */
   registroNoDisponible: 'No pudimos completar el registro con esos datos.',
   registroNoDisponibleAyuda: 'Podés intentar iniciar sesión.',
@@ -60,4 +65,6 @@ export const MENSAJE_DE_CAMPO: Readonly<Record<string, string>> = {
   CREDENCIAL_DEMASIADO_LARGA: 'La contraseña es demasiado larga.',
   A1_REQUERIDO: 'Para crear la cuenta tenés que aceptar los términos de uso.',
   A2_REQUERIDO: 'Para crear la cuenta tenés que confirmar que recibiste la información de privacidad.',
+  /** 08 §24.7 a (DL-138): sin la declaración no hay alta. BE es solo para personas adultas. */
+  MAYORIA_REQUERIDA: 'Para crear la cuenta tenés que declarar que tenés 18 años o más.',
 };

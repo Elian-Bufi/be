@@ -1,4 +1,4 @@
-import { CodigoDeError, type ValidationIssue } from '@be/domain';
+import { CodigoDeError, ISSUE_DE_MAYORIA_DE_EDAD, type ValidationIssue } from '@be/domain';
 
 /**
  * Error de contrato: se serializa como ErrorEnvelope (09 §3.2, 09v7 T03).
@@ -133,6 +133,39 @@ export const errores = {
    */
   invitacionNoRecuperable: () =>
     new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'La invitación se creó, pero no se puede volver a mostrar. Anulala y creá otra.'),
+  // ─── Declaración de mayoría de edad del alta (08 §24.7 a; DL-138) ─────────────────────────────────────────────────
+  /**
+   * El cuerpo no trae la declaración: es lo que manda un cliente anterior a DL-138. Sale con el código que esos clientes
+   * ya traducen a «Los textos cambiaron. Actualizá la app para continuar.» (la APK) o «Recargá la página» (la web): el
+   * conjunto de textos del alta cambió y su pantalla no muestra la casilla. El issue dice exactamente qué falta.
+   */
+  mayoriaDeEdadAusente: () =>
+    new ErrorDeApi(422, CodigoDeError.TERMS_VERSION_NOT_ACCEPTABLE, 'Para crear la cuenta hay que declarar que tenés 18 años o más. Actualizá la app para continuar.', {
+      issues: [{ code: ISSUE_DE_MAYORIA_DE_EDAD.REQUERIDA, path: 'adultDeclaration' }],
+    }),
+  /** La declaración llegó sin marcar (o falta en el alta con Google, que no tiene clientes viejos). */
+  mayoriaDeEdadRequerida: (path: string) =>
+    new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Para crear la cuenta tenés que declarar que tenés 18 años o más.', {
+      issues: [{ code: ISSUE_DE_MAYORIA_DE_EDAD.REQUERIDA, path }],
+    }),
+  versionDeMayoriaDeEdadNoAceptable: () =>
+    new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'La versión de la declaración de mayoría de edad no es la vigente.', {
+      issues: [{ code: ISSUE_DE_MAYORIA_DE_EDAD.VERSION_NO_VIGENTE, path: 'adultDeclaration.versionId' }],
+    }),
+  // ─── WP-ACCESO-GOOGLE (DL-138) ─────────────────────────────────────────────────────────────────────────────────────
+  /** UC-E05 E01: Google sin configurar o sin responder. «Se informa la contingencia y se ofrece acceso local». */
+  googleNoDisponible: (motivo: 'GOOGLE_NO_CONFIGURADO' | 'CLAVES_NO_DISPONIBLES') =>
+    new ErrorDeApi(503, CodigoDeError.DEPENDENCY_UNAVAILABLE, 'Ahora no podemos usar Google. Podés entrar con tu correo y tu contraseña.', { fallback: { localAccess: true } }, motivo),
+  /** UC-E05 E03: «resultado no verificable». El motivo (firma, audiencia, vencimiento…) queda solo en la auditoría. */
+  tokenDeGoogleInvalido: (motivo: string) =>
+    new ErrorDeApi(401, CodigoDeError.GOOGLE_TOKEN_INVALID, 'No pudimos verificar tu cuenta de Google.', undefined, `TOKEN_${motivo}`),
+  correoDeGoogleNoVerificado: () => new ErrorDeApi(422, CodigoDeError.GOOGLE_EMAIL_NOT_VERIFIED, 'Google no verificó el correo de esa cuenta.'),
+  /** Hay una cuenta BE con contraseña y ese correo: nunca se vincula sola (UC-E05 E02). */
+  vinculacionConGoogleRequerida: (correo: string) =>
+    new ErrorDeApi(409, CodigoDeError.GOOGLE_LINK_REQUIRED, 'Para entrar con Google a esa cuenta, confirmá su contraseña una vez.', { email: correo }),
+  cuentaDeGoogleInexistente: (correo: string) =>
+    new ErrorDeApi(404, CodigoDeError.GOOGLE_ACCOUNT_NOT_FOUND, 'Todavía no hay una cuenta BE con esa cuenta de Google.', { email: correo }),
+  cuentaDeGoogleYaVinculada: () => new ErrorDeApi(409, CodigoDeError.GOOGLE_ACCOUNT_ALREADY_LINKED, 'La cuenta BE ya está vinculada con otra cuenta de Google.'),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };

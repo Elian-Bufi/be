@@ -51,6 +51,8 @@ export function clienteDe(origen) {
         identity: { localIdentifier: correo, localCredential: clave },
         termsAcceptance: { versionId: dominio.VERSION_VIGENTE.TERMINOS.id },
         privacyAcknowledgement: { versionId: dominio.VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+        // DL-138: toda alta declara la mayoría de edad (las personas de la cohorte son adultas).
+        adultDeclaration: { versionId: dominio.VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
       },
     });
     return r.data.identityId;

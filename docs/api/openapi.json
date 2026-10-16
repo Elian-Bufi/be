@@ -59,8 +59,8 @@
     "/registrations": {
       "post": {
         "operationId": "API-ACC-01",
-        "summary": "Registrar identidad BE y perfil propio con A1 (términos) y A2 (privacidad) como actos separados. No concede A3.",
-        "description": "Fuente: 09v8:227-307. AuthN: PUBLIC.",
+        "summary": "Registrar identidad BE y perfil propio con A1 (términos), A2 (privacidad) y la declaración de mayoría de edad (08 §24.7 a) como actos separados. No concede A3. Sin la declaración no hay alta: un cuerpo que no la trae (un cliente anterior a DL-138) recibe 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue ADULT_DECLARATION_REQUIRED, para que las APK instaladas pidan actualizar; sin marcar o con otra versión, 422 VALIDATION_FAILED con ADULT_DECLARATION_REQUIRED o ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE. Un correo que ya usa otra cuenta, también con Google, responde el mismo 409 neutral.",
+        "description": "Fuente: 09v8:227-307 · 08 §24.7 a y §42 ítem 22 (declaración de mayoría de edad) · DEUDA_LEGAJO DL-023 y DL-138. AuthN: PUBLIC.",
         "security": [],
         "parameters": [
           {
@@ -157,6 +157,23 @@
                       "versionId"
                     ],
                     "additionalProperties": false
+                  },
+                  "adultDeclaration": {
+                    "type": "object",
+                    "properties": {
+                      "versionId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "declared": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "versionId",
+                      "declared"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -245,7 +262,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: TERMS_VERSION_NOT_ACCEPTABLE | PRIVACY_VERSION_NOT_ACCEPTABLE",
+            "description": "ErrorEnvelope: TERMS_VERSION_NOT_ACCEPTABLE | PRIVACY_VERSION_NOT_ACCEPTABLE | VALIDATION_FAILED",
             "content": {
               "application/json": {
                 "schema": {
@@ -98343,6 +98360,866 @@
           },
           "503": {
             "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/federated/google/sessions": {
+      "post": {
+        "operationId": "API-GOO-01",
+        "summary": "Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.",
+        "description": "Fuente: pedido de Dirección del 2026-10-16 · 04 RF-003 · 05 UC-E05 · 06 §5.6 · 08 §24.1 y §24.5 · 09 §12 y 09v12 §11 (bosquejo) · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138. AuthN: PUBLIC.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "idToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "idToken"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "session": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "renewable": {
+                              "type": "boolean"
+                            },
+                            "accessToken": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "tokenType": {
+                              "type": "string",
+                              "const": "Bearer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "expiresAt",
+                            "renewable",
+                            "accessToken",
+                            "tokenType"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "accountOperationalState": {
+                              "type": "string",
+                              "enum": [
+                                "OPERATIVA",
+                                "SUSPENDIDA",
+                                "CERRADA"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "accountOperationalState"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "session",
+                        "actor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: GOOGLE_TOKEN_INVALID | INVALID_CREDENTIALS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: GOOGLE_ACCOUNT_NOT_FOUND. GOOGLE_ACCOUNT_NOT_FOUND: details.email es el correo verificado de la cuenta de Google, para ofrecer el alta con ese correo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "details": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "email": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "email"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: GOOGLE_LINK_REQUIRED. GOOGLE_LINK_REQUIRED: details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "details": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "email": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "email"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: GOOGLE_EMAIL_NOT_VERIFIED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DEPENDENCY_UNAVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/federated/google/links": {
+      "post": {
+        "operationId": "API-GOO-02",
+        "summary": "Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.",
+        "description": "Fuente: pedido de Dirección del 2026-10-16 («solo después de que la persona confirme la contraseña de esa cuenta») · 05 UC-E05 E02 · 06 REG-06-21 · 08 §24.5 y §24.6 · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138. AuthN: PUBLIC.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "idToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "credential": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "idToken",
+                  "credential"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "session": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "renewable": {
+                              "type": "boolean"
+                            },
+                            "accessToken": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "tokenType": {
+                              "type": "string",
+                              "const": "Bearer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "expiresAt",
+                            "renewable",
+                            "accessToken",
+                            "tokenType"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "accountOperationalState": {
+                              "type": "string",
+                              "enum": [
+                                "OPERATIVA",
+                                "SUSPENDIDA",
+                                "CERRADA"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "accountOperationalState"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "session",
+                        "actor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: GOOGLE_TOKEN_INVALID | INVALID_CREDENTIALS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: GOOGLE_ACCOUNT_ALREADY_LINKED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: GOOGLE_EMAIL_NOT_VERIFIED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DEPENDENCY_UNAVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/federated/google/registrations": {
+      "post": {
+        "operationId": "API-GOO-03",
+        "summary": "Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.",
+        "description": "Fuente: pedido de Dirección del 2026-10-16 · 04 RF-001 y RF-003 · 05 UC-P25 y UC-E05 · 06 §5.6 · 08 §12.1, §24.1 y §24.7 a · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138. AuthN: PUBLIC.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "idToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "registrationIntent": {
+                    "type": "string",
+                    "enum": [
+                      "ADVISEE",
+                      "PROFESSIONAL"
+                    ]
+                  },
+                  "termsAcceptance": {
+                    "type": "object",
+                    "properties": {
+                      "versionId": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "versionId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "privacyAcknowledgement": {
+                    "type": "object",
+                    "properties": {
+                      "versionId": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "versionId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "adultDeclaration": {
+                    "type": "object",
+                    "properties": {
+                      "versionId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "declared": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "versionId",
+                      "declared"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "idToken",
+                  "registrationIntent",
+                  "termsAcceptance",
+                  "privacyAcknowledgement"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "session": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "renewable": {
+                              "type": "boolean"
+                            },
+                            "accessToken": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "tokenType": {
+                              "type": "string",
+                              "const": "Bearer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "expiresAt",
+                            "renewable",
+                            "accessToken",
+                            "tokenType"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "accountOperationalState": {
+                              "type": "string",
+                              "enum": [
+                                "OPERATIVA",
+                                "SUSPENDIDA",
+                                "CERRADA"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "accountOperationalState"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "session",
+                        "actor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "session": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "renewable": {
+                              "type": "boolean"
+                            },
+                            "accessToken": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "tokenType": {
+                              "type": "string",
+                              "const": "Bearer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "expiresAt",
+                            "renewable",
+                            "accessToken",
+                            "tokenType"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "accountOperationalState": {
+                              "type": "string",
+                              "enum": [
+                                "OPERATIVA",
+                                "SUSPENDIDA",
+                                "CERRADA"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "accountOperationalState"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "session",
+                        "actor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: GOOGLE_TOKEN_INVALID | INVALID_CREDENTIALS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: GOOGLE_LINK_REQUIRED | REGISTRATION_NOT_AVAILABLE | RESOURCE_CONFLICT. GOOGLE_LINK_REQUIRED: details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "details": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "email": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "email"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: GOOGLE_EMAIL_NOT_VERIFIED | TERMS_VERSION_NOT_ACCEPTABLE | PRIVACY_VERSION_NOT_ACCEPTABLE | VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DEPENDENCY_UNAVAILABLE | DB_UNAVAILABLE",
             "content": {
               "application/json": {
                 "schema": {

@@ -48,6 +48,9 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     // DL-133: sin canal de avisos y sin la ruta interna, salvo la prueba que los configura.
     avisos: { canal: 'desactivado', expoUrl: 'http://127.0.0.1:1', expoToken: null, presupuestoMs: 2000 },
     secretoDeTareas: null,
+    // DL-138: sin client IDs, la familia GOO responde 503. La prueba de Google levanta su propia app con claves locales;
+    // ninguna prueba consulta a Google.
+    google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 2000 },
     ...cambios,
   };
 }
@@ -76,12 +79,16 @@ export function claveDeIdempotencia(): string {
   return `prueba-${randomUUID()}`;
 }
 
+/** Desde DL-138 toda alta declara la mayoría de edad (08 §24.7 a): las personas sintéticas de las pruebas son adultas. */
+export const DECLARACION_DE_MAYORIA = { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true } as const;
+
 export function cuerpoDeRegistro(correo: string, credencial = CREDENCIAL_SINTETICA): Record<string, unknown> {
   return {
     registrationIntent: 'ADVISEE',
     identity: { localIdentifier: correo, localCredential: credencial },
     termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
     privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+    adultDeclaration: DECLARACION_DE_MAYORIA,
   };
 }
 

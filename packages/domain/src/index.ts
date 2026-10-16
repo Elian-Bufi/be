@@ -104,3 +104,6 @@ export * from './contratos-novedades';
 export * from './copy-novedades';
 export * from './tvcc30';
 export * from './contratos-invitaciones';
+export * from './mayoria-de-edad';
+export * from './contratos-acceso-google';
+export * from './copy-acceso-google';

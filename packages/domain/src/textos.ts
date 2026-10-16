@@ -22,6 +22,11 @@ export const TipoDeTexto = {
    * §21.3). Precierre del 2026-10-06, §6: es una **propuesta** (`VERSIONES_PROPUESTAS`).
    */
   EVIDENCIA_VISUAL: 'EVIDENCIA_VISUAL',
+  /**
+   * La declaración de mayoría de edad del alta (08 §24.7 a; gate §42, ítem 22; DEUDA_LEGAJO DL-023 y DL-138). La persona
+   * declara que es adulta: BE no pide la fecha de nacimiento (minimización).
+   */
+  MAYORIA_DE_EDAD: 'MAYORIA_DE_EDAD',
 } as const;
 export type TipoDeTexto = (typeof TipoDeTexto)[keyof typeof TipoDeTexto];
 
@@ -157,6 +162,14 @@ Podés revocar esta autorización cuando quieras, desde Cuenta → Privacidad. D
 
 Aceptar esta versión no acepta versiones futuras.`;
 
+/**
+ * 08 §24.7 a: «el alta requiere declaración de fecha de nacimiento/mayoría de edad». BE pide la declaración, no la fecha
+ * (DL-138): para decidir si alguien puede usar BE alcanza con saber que es adulto, y la fecha sería un dato C3 más. Es la
+ * declaración de la persona, con las palabras aprobadas por Dirección el 2026-10-16; no es un texto legal de BE, y por eso
+ * no lleva el aviso de demostración.
+ */
+const MAYORIA_DE_EDAD = 'Declaro que tengo 18 años o más. BE es solo para personas adultas.';
+
 export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
   {
     id: 'terminos-2026-09-demo',
@@ -226,6 +239,17 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
     vigenteDesde: '2026-10-06T00:00:00.000Z',
     texto: EVIDENCIA_VISUAL,
     hash: '88eb764c3382f241a1d6f7f0a51e5daa3d0774232957492d860e1549f34e28a1',
+    reemplazaA: null,
+  },
+  {
+    id: 'mayoria-de-edad-2026-10',
+    tipo: 'MAYORIA_DE_EDAD',
+    titulo: 'Declaración de mayoría de edad',
+    // 08 §24.7 a: «finalidad exclusiva de elegibilidad».
+    finalidad: 'ELEGIBILIDAD_POR_MAYORIA_DE_EDAD',
+    vigenteDesde: '2026-10-16T00:00:00.000Z',
+    texto: MAYORIA_DE_EDAD,
+    hash: 'cd090b1e6ae3d68033962ed5b8effd2b6a0b8db7bd3f046e1fadf06b986c60f6',
     reemplazaA: null,
   },
 ];

@@ -22,9 +22,18 @@ test('08 §12.2 — cada versión de texto guarda el SHA-256 real de su contenid
 test('Catálogo de textos: ids únicos, una versión vigente por tipo y marcados como demostración (DL-028)', () => {
   assert.equal(new Set(CATALOGO_DE_TEXTOS.map((v) => v.id)).size, CATALOGO_DE_TEXTOS.length);
   for (const tipo of Object.values(TipoDeTexto)) assert.equal(VERSION_VIGENTE[tipo].tipo, tipo);
-  for (const v of CATALOGO_DE_TEXTOS.filter((t) => t.tipo !== 'CONSECUENCIAS_DE_CIERRE')) {
+  // Las consecuencias del cierre y la declaración de mayoría de edad no son textos legales de BE: no llevan el aviso.
+  for (const v of CATALOGO_DE_TEXTOS.filter((t) => t.tipo !== 'CONSECUENCIAS_DE_CIERRE' && t.tipo !== 'MAYORIA_DE_EDAD')) {
     assert.match(v.texto, /Texto de demostración/);
   }
+});
+
+test('08 §24.7 a (DL-138): la declaración de mayoría de edad es la de las palabras aprobadas, con finalidad de elegibilidad, y no pide la fecha de nacimiento', () => {
+  const v = VERSION_VIGENTE.MAYORIA_DE_EDAD;
+  assert.equal(v.texto, 'Declaro que tengo 18 años o más. BE es solo para personas adultas.');
+  assert.equal(v.finalidad, 'ELEGIBILIDAD_POR_MAYORIA_DE_EDAD');
+  assert.equal(v.reemplazaA, null);
+  assert.doesNotMatch(v.texto, /nacimiento|fecha/i);
 });
 
 test('A2 contiene los contenidos mínimos del 08 §12.1 y aclara que no es consentimiento de salud', () => {
@@ -42,10 +51,10 @@ test('Consecuencias del cierre: copy de 10-ADD + irreversibilidad (DL-024), sin 
   assert.doesNotMatch(t, /borrad|eliminar todos/i);
 });
 
-test('08 §12.4 — el registro crea A1 y A2, nunca A3; solo TERMINOS y DATOS_SALUD_BE son revocables', () => {
-  assert.deepEqual([...ACTOS_DEL_REGISTRO], ['TERMINOS', 'PRIVACIDAD_INFO']);
+test('08 §12.4 — el registro crea A1, A2 y la declaración de mayoría de edad (DL-138), nunca A3; solo TERMINOS y DATOS_SALUD_BE son revocables', () => {
+  assert.deepEqual([...ACTOS_DEL_REGISTRO], ['TERMINOS', 'PRIVACIDAD_INFO', 'MAYORIA_DE_EDAD']);
   assert.ok(!ACTOS_DEL_REGISTRO.includes('DATOS_SALUD_BE'));
-  assert.deepEqual(ACTO_REVOCABLE, { TERMINOS: true, PRIVACIDAD_INFO: false, DATOS_SALUD_BE: true });
+  assert.deepEqual(ACTO_REVOCABLE, { TERMINOS: true, PRIVACIDAD_INFO: false, DATOS_SALUD_BE: true, MAYORIA_DE_EDAD: false });
   assert.deepEqual(Object.values(EstadoDeActoRegistrable), ['VIGENTE', 'REVOCADO']);
   assert.deepEqual(TRANSICIONES_DE_ACTO_REGISTRABLE.map((t) => `${t.origen}->${t.destino}`), ['VIGENTE->REVOCADO']);
 });

@@ -90,6 +90,8 @@ async function asesoradoNuevo() {
       identity: { localIdentifier: correo, localCredential: contrasena },
       termsAcceptance: { versionId: 'terminos-2026-09-demo' },
       privacyAcknowledgement: { versionId: 'privacidad-2026-09-demo' },
+      // DL-138: toda alta declara la mayoría de edad (las personas sintéticas son adultas).
+      adultDeclaration: { versionId: 'mayoria-de-edad-2026-10', declared: true },
     },
   });
   if (alta.status !== 201) throw new Error(`alta del asesorado: ${alta.status}`);

@@ -35,16 +35,16 @@ afterAll(async () => {
 });
 
 describe('TEST-AUTH-002 — el registro no concede A3', () => {
-  it('TEST-AUTH-002: tras ACC-01 existen A1 y A2 separados con evidencia propia, cero A3, sin rol ni sesión', async () => {
+  it('TEST-AUTH-002: tras ACC-01 existen A1, A2 y la declaración de mayoría de edad (DL-138) separados con evidencia propia, cero A3, sin rol ni sesión', async () => {
     const correo = correoSintetico('auth002');
     const id = await registrarOk(app, correo, 'WEB');
 
     const actos = await prisma.actoRegistrable.findMany({ where: { identidadId: id }, orderBy: { tipo: 'asc' } });
-    expect(actos.map((a) => a.tipo).sort()).toEqual(['PRIVACIDAD_INFO', 'TERMINOS']);
+    expect(actos.map((a) => a.tipo).sort()).toEqual(['MAYORIA_DE_EDAD', 'PRIVACIDAD_INFO', 'TERMINOS']);
     expect(actos.filter((a) => a.tipo === 'DATOS_SALUD_BE')).toHaveLength(0);
     // 08 §12.2: cada acto con su versión, hash del texto mostrado, finalidad, superficie, actor y momento.
     for (const acto of actos) {
-      const version = VERSION_VIGENTE[acto.tipo as 'TERMINOS' | 'PRIVACIDAD_INFO'];
+      const version = VERSION_VIGENTE[acto.tipo as 'TERMINOS' | 'PRIVACIDAD_INFO' | 'MAYORIA_DE_EDAD'];
       expect(acto).toMatchObject({
         estado: 'VIGENTE',
         versionDeTextoId: version.id,
@@ -56,7 +56,7 @@ describe('TEST-AUTH-002 — el registro no concede A3', () => {
       });
       expect(acto.momentoDeOcurrencia).toBeInstanceOf(Date);
     }
-    expect(actos[0].id).not.toBe(actos[1].id);
+    expect(new Set(actos.map((a) => a.id)).size).toBe(3);
     // No se crea sesión en el alta (09v8 §2.2: sin auto-login).
     expect(await prisma.sesion.count({ where: { identidadId: id } })).toBe(0);
   });
@@ -221,6 +221,58 @@ describe('TEST-UC-P25 / TEST-CT-ACC-01 — registro', () => {
   });
 });
 
+describe('08 §24.7 a — la declaración de mayoría de edad del alta (DL-023, DL-138)', () => {
+  const alta = (cuerpo: Record<string, unknown>) =>
+    request(app.getHttpServer()).post('/api/v1/registrations').set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo);
+  const sinDeclaracion = (correo: string) => {
+    const { adultDeclaration: _quitada, ...resto } = cuerpoDeRegistro(correo);
+    return resto;
+  };
+
+  it('el acto MAYORIA_DE_EDAD guarda la versión mostrada, su hash, la finalidad de elegibilidad, la superficie y la evidencia técnica; lo declara el titular', async () => {
+    const id = await registrarOk(app, correoSintetico('mayoria'), 'APK');
+    const acto = await prisma.actoRegistrable.findFirstOrThrow({ where: { identidadId: id, tipo: 'MAYORIA_DE_EDAD' } });
+    expect(acto).toMatchObject({
+      estado: 'VIGENTE',
+      versionDeTextoId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id,
+      hashDelTexto: VERSION_VIGENTE.MAYORIA_DE_EDAD.hash,
+      finalidad: 'ELEGIBILIDAD_POR_MAYORIA_DE_EDAD',
+      superficie: 'APK',
+      actorId: id,
+      autoriaId: id,
+    });
+    expect(acto.direccionIp).not.toBeNull();
+    expect(VERSION_VIGENTE.MAYORIA_DE_EDAD.texto).toBe('Declaro que tengo 18 años o más. BE es solo para personas adultas.');
+  });
+
+  it('sin la declaración (un cliente anterior a DL-138): 422 con el código que las APK instaladas traducen a «actualizá la app», el issue exacto, y no se crea nada', async () => {
+    const correo = correoSintetico('mayoria-ausente');
+    const res = await alta(sinDeclaracion(correo)).expect(422);
+    expect(res.body.error).toEqual({
+      code: 'TERMS_VERSION_NOT_ACCEPTABLE',
+      message: 'Para crear la cuenta hay que declarar que tenés 18 años o más. Actualizá la app para continuar.',
+      details: { issues: [{ code: 'ADULT_DECLARATION_REQUIRED', path: 'adultDeclaration' }] },
+    });
+    expect(await prisma.metodoDeAcceso.count({ where: { referencia: correo } })).toBe(0);
+  });
+
+  it.each([
+    ['sin marcar', { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: false }, { code: 'ADULT_DECLARATION_REQUIRED', path: 'adultDeclaration.declared' }],
+    ['con otra versión', { versionId: 'mayoria-de-edad-vieja', declared: true }, { code: 'ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE', path: 'adultDeclaration.versionId' }],
+  ])('la declaración %s: 422 VALIDATION_FAILED con el issue exacto, y no se crea nada', async (_caso, declaracion, issue) => {
+    const correo = correoSintetico('mayoria-invalida');
+    const res = await alta({ ...cuerpoDeRegistro(correo), adultDeclaration: declaracion }).expect(422);
+    expect(res.body.error).toMatchObject({ code: 'VALIDATION_FAILED', details: { issues: [issue] } });
+    expect(await prisma.metodoDeAcceso.count({ where: { referencia: correo } })).toBe(0);
+  });
+
+  it('minimización: la fecha de nacimiento no se acepta (400 UNKNOWN_FIELD), ni dentro ni fuera de la declaración', async () => {
+    const base = cuerpoDeRegistro(correoSintetico('mayoria-fecha'));
+    expect((await alta({ ...base, birthDate: '2000-01-01' }).expect(400)).body.error.code).toBe('UNKNOWN_FIELD');
+    expect((await alta({ ...base, adultDeclaration: { ...(base.adultDeclaration as object), birthDate: '2000-01-01' } }).expect(400)).body.error.code).toBe('UNKNOWN_FIELD');
+  });
+});
+
 describe('TEST-RNF-REC-002 — idempotencia del registro', () => {
   it('TEST-RNF-REC-002: misma key + mismo payload → mismo resultado sin duplicar efectos', async () => {
     const correo = correoSintetico('replay');
@@ -229,7 +281,8 @@ describe('TEST-RNF-REC-002 — idempotencia del registro', () => {
     const segunda = await registrar(app, correo, { clave }).expect(201);
     expect(segunda.body).toEqual(primera.body);
     expect(await prisma.identidad.count({ where: { id: primera.body.data.identityId } })).toBe(1);
-    expect(await prisma.actoRegistrable.count({ where: { identidadId: primera.body.data.identityId } })).toBe(2);
+    // A1, A2 y la declaración de mayoría de edad (DL-138), una vez cada uno.
+    expect(await prisma.actoRegistrable.count({ where: { identidadId: primera.body.data.identityId } })).toBe(3);
   });
 
   it('TEST-RNF-REC-002: requests concurrentes con la misma key → una identidad y respuestas idénticas', async () => {

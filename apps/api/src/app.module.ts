@@ -1,6 +1,7 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import type { Entorno } from './config/entorno';
+import { AccesoGoogleModule } from './acceso-google/acceso-google.module';
 import { ENTORNO, VERSION } from './config/tokens';
 import type { VersionDesplegada } from './config/version';
 import { AutorizacionModule } from './autorizacion/autorizacion.module';
@@ -66,6 +67,8 @@ export class AppModule {
         PlataformaModule,
         HealthModule,
         SesionModule,
+        // DL-138: entrar con Google, verificado por la API.
+        AccesoGoogleModule,
         AutorizacionModule,
         ProfesionalModule,
         IdentidadModule,

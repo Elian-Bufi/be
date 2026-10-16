@@ -19,6 +19,7 @@ import { PrismaClient } from '@prisma/client';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { PREFIJO_DEL_CERROJO_DE_CORREO } from '../../apps/api/src/identidad/correo-de-acceso';
 import { RAIZ } from './soporte';
 
 const prisma = new PrismaClient();
@@ -79,6 +80,23 @@ describe('Funciones SQL que Prisma no modela', () => {
     const tablas = sentencias.map((x) => x.match(/FROM "([a-z_]+)"/)![1]);
     expect(tablas).toEqual(['identidad', 'verificacion_profesional', 'habilitacion', 'alcance_de_vinculo', 'consentimiento', 'acto_registrable']);
     expect(sentencias.every((x) => /FOR SHARE( OF [a-z]+)?$/.test(x))).toBe(true);
+  });
+
+  // DL-138: el disparador que impide que un correo quede en dos identidades toma el mismo cerrojo transaccional que el
+  // código (`apps/api/src/identidad/correo-de-acceso.ts`). Si la clave cambiara de un lado solo, las altas simultáneas con
+  // el mismo correo dejarían de ordenarse y la segunda saldría con un 500 en vez del 409 preciso.
+  it('be_metodo_de_acceso_sin_identidad_paralela toma el cerrojo del correo con la clave del código, antes de mirar, y dispara en cada alta de un método', async () => {
+    const [funcion] = await prisma.$queryRaw<{ cuerpo: string }[]>`
+      SELECT p.prosrc AS "cuerpo" FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+       WHERE n.nspname = current_schema() AND p.proname = 'be_metodo_de_acceso_sin_identidad_paralela'`;
+    expect(funcion).toBeDefined();
+    const cuerpo = funcion!.cuerpo.replace(/\s+/g, ' ');
+    expect(cuerpo).toContain(`PERFORM pg_advisory_xact_lock(hashtextextended('${PREFIJO_DEL_CERROJO_DE_CORREO}' || v_correo, 0))`);
+    expect(cuerpo.indexOf('pg_advisory_xact_lock')).toBeLessThan(cuerpo.indexOf('IF EXISTS'));
+    const [disparador] = await prisma.$queryRaw<{ definicion: string }[]>`
+      SELECT pg_get_triggerdef(t.oid) AS "definicion" FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+       WHERE c.relname = 'metodo_de_acceso' AND t.tgname = 'metodo_de_acceso_sin_identidad_paralela'`;
+    expect(disparador!.definicion).toMatch(/BEFORE INSERT ON .*metodo_de_acceso FOR EACH ROW/);
   });
 });
 
