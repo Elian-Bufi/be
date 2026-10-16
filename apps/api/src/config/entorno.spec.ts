@@ -29,7 +29,31 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       proveedores: { openFoodFactsUrl: 'https://world.openfoodfacts.org', wgerUrl: 'https://wger.de', presupuestoMs: 5000 },
       mediosAlmacen: 'postgres',
       evidenciaVisualExigida: false,
+      avisos: { canal: 'desactivado', expoUrl: 'https://exp.host', expoToken: null, presupuestoMs: 5000 },
+      secretoDeTareas: null,
     });
+  });
+
+  it('DL-133 · los avisos: desactivados por defecto; «expo» los activa con su origen y su token; el secreto de la tarea, de 32 caracteres; ningún mensaje repite un valor', () => {
+    const con = leerEntorno({ ...BASE, BE_AVISOS_PUSH: 'expo', EXPO_ACCESS_TOKEN: 'token-de-acceso-sintetico', BE_SECRETO_DE_TAREAS: 's'.repeat(40) });
+    expect(con.avisos).toEqual({ canal: 'expo', expoUrl: 'https://exp.host', expoToken: 'token-de-acceso-sintetico', presupuestoMs: 5000 });
+    expect(con.secretoDeTareas).toBe('s'.repeat(40));
+    const fallas: [Record<string, string>, RegExp][] = [
+      [{ BE_AVISOS_PUSH: 'firebase-sintetico' }, /BE_AVISOS_PUSH/],
+      [{ BE_SECRETO_DE_TAREAS: 'corto-sintetico' }, /BE_SECRETO_DE_TAREAS/],
+      [{ EXPO_ACCESS_TOKEN: 'con espacios sintetico' }, /EXPO_ACCESS_TOKEN/],
+      [{ EXPO_PUSH_URL: 'ftp://exp.host' }, /EXPO_PUSH_URL/],
+    ];
+    for (const [cambio, nombre] of fallas) {
+      let mensaje = '';
+      try {
+        leerEntorno({ ...BASE, ...cambio });
+      } catch (e) {
+        mensaje = (e as Error).message;
+      }
+      expect(mensaje).toMatch(nombre);
+      for (const valor of Object.values(cambio)) expect(mensaje).not.toContain(valor);
+    }
   });
 
   it('DL-125 · BE_EVIDENCIA_VISUAL_EXIGIDA: false por defecto; true la activa; otro valor no arranca, y el mensaje no repite el valor', () => {

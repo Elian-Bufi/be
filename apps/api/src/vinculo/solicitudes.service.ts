@@ -17,6 +17,7 @@ import {
   type SolicitudDeduplicadaResponse,
 } from '@be/domain';
 import { Prisma, type TipoDeEventoDeVinculo } from '@prisma/client';
+import { PublicadorDeNovedades } from '../novedades/publicador';
 import type { Entorno } from '../config/entorno';
 import { ENTORNO } from '../config/tokens';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
@@ -66,6 +67,7 @@ export class SolicitudesService {
     private readonly idempotencia: IdempotenciaService,
     private readonly auditoria: AuditoriaService,
     @Inject(ENTORNO) private readonly entorno: Entorno,
+    private readonly novedades: PublicadorDeNovedades,
   ) {}
 
   // ─── API-REL-01 ────────────────────────────────────────────────────────────────────────────
@@ -158,6 +160,12 @@ export class SolicitudesService {
           procedencia,
           momento: ctx.momentoDeRecepcion,
         });
+        // DL-133 · B10-04 §42: la contraparte ve la solicitud nueva en sus novedades.
+        await this.novedades.publicar(
+          tx,
+          [{ tipo: 'SOLICITUD_RECIBIDA', destinatarioId: destino, alcance, fuenteId: actor.identidadId, referencia: { tipo: 'SolicitudDeVinculo', id: creada.id }, identidadDelHecho: creada.id, momentoDeOcurrencia: ctx.momentoDeRecepcion }],
+          procedencia,
+        );
         await this.auditar(tx, operacion, 'EXITO', actor.identidadId, asesoradoId, creada.id, ctx);
         const respuesta: CrearSolicitudDeVinculoResponse = { data: itemDeSolicitud(creada) };
         return { estadoHttp: 201, cuerpo: respuesta as unknown as Prisma.InputJsonValue };
@@ -295,6 +303,12 @@ export class SolicitudesService {
           procedencia,
           momento: ctx.momentoDeRecepcion,
         });
+        // DL-133 · B10-04 §42: el profesional que la envió ve que la aceptaron.
+        await this.novedades.publicar(
+          tx,
+          [{ tipo: 'SOLICITUD_ACEPTADA', destinatarioId: s.profesionalId, alcance: s.alcance, fuenteId: actor.identidadId, referencia: { tipo: 'AlcanceDeVinculo', id: componente.id }, identidadDelHecho: s.id, momentoDeOcurrencia: ctx.momentoDeRecepcion }],
+          procedencia,
+        );
         await this.auditar(tx, operacion, 'EXITO', actor.identidadId, s.asesoradoId, s.id, ctx);
         const respuesta: AceptarSolicitudResponse = {
           data: {
@@ -345,6 +359,12 @@ export class SolicitudesService {
           procedencia,
           momento: ctx.momentoDeRecepcion,
         });
+        // DL-133 · B10-04 §42: el profesional que la envió ve que la rechazaron, sin el nombre de la persona.
+        await this.novedades.publicar(
+          tx,
+          [{ tipo: 'SOLICITUD_RECHAZADA', destinatarioId: s.profesionalId, alcance: s.alcance, fuenteId: actor.identidadId, referencia: { tipo: 'SolicitudDeVinculo', id: s.id }, identidadDelHecho: s.id, momentoDeOcurrencia: ctx.momentoDeRecepcion }],
+          procedencia,
+        );
         await this.auditar(tx, operacion, 'EXITO', actor.identidadId, s.asesoradoId, s.id, ctx);
         const respuesta: RechazarSolicitudResponse = { data: { relationshipRequestId: s.id, state: 'RECHAZADA', version: token(actual.version + 1) } };
         return { estadoHttp: 200, cuerpo: respuesta as unknown as Prisma.InputJsonValue };

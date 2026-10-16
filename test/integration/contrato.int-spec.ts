@@ -1484,6 +1484,42 @@ it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, DSH-04-BUSQUEDA, PRJ-01 y VAN-01
   await pro.delete(ruta).set('Idempotency-Key', claveDeIdempotencia()).expect(204);
 });
 
+it('TEST-CT (WP-NOVEDADES-Y-AVISOS): NOV-01 a 06, con éxitos y errores declarados', async () => {
+  const c = await circuitoConPlanActivo(app, 'contrato-nov');
+  const ase = conSesion(app, c.ase.token);
+  const pro = conSesion(app, c.pro.token);
+  const servidor = app.getHttpServer();
+  // NOV-01: las propias; la activación del plan ya dejó una.
+  const lista = (await ase.get('/api/v1/me/news?limit=5').expect(200)).body;
+  await ase.get('/api/v1/me/news?x=1').expect(400); // INVALID_REQUEST
+  await ase.get('/api/v1/me/news?cursor=basura').expect(400); // INVALID_CURSOR
+  await request(servidor).get('/api/v1/me/news').expect(401);
+  // NOV-02: abrir una propia; la de otro es el mismo 404 que una inexistente.
+  const id = lista.data[0].newsId as string;
+  await ase.get(`/api/v1/me/news/${id}`).expect(200);
+  await ase.get(`/api/v1/me/news/${id}?x=1`).expect(400);
+  await pro.get(`/api/v1/me/news/${id}`).expect(404);
+  // NOV-03 y 04: un teléfono.
+  const telefono = '00000000-0000-4000-8000-00000000c0de';
+  const suscripcion = `/api/v1/me/push-subscriptions/${telefono}`;
+  await ase.put(suscripcion).send({ expoPushToken: 'ExponentPushToken[contrato-sintetico-1]', platform: 'ANDROID' }).expect(200);
+  await ase.put(suscripcion).send({ expoPushToken: 'no-es-un-token', platform: 'ANDROID' }).expect(400); // INVALID_REQUEST
+  await ase.put(suscripcion).send({ expoPushToken: 'ExponentPushToken[contrato-sintetico-1]', platform: 'ANDROID', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await ase.put('/api/v1/me/push-subscriptions/no-es-un-uuid').send({ expoPushToken: 'ExponentPushToken[contrato-sintetico-1]', platform: 'ANDROID' }).expect(400);
+  await ase.delete(`${suscripcion}?x=1`).expect(400);
+  await ase.delete(suscripcion).expect(204);
+  await ase.delete(suscripcion).expect(204);
+  await request(servidor).delete(suscripcion).expect(401);
+  // NOV-05 y 06: las preferencias de los recordatorios.
+  const preferencias = '/api/v1/me/notification-preferences';
+  await ase.get(preferencias).expect(200);
+  await ase.get(`${preferencias}?x=1`).expect(400);
+  await ase.put(preferencias).send({ mealLogReminder: true, trainingLogReminder: false }).expect(200);
+  await ase.put(preferencias).send({ mealLogReminder: true, trainingLogReminder: false, otro: true }).expect(400); // UNKNOWN_FIELD
+  await ase.put(preferencias).send({ mealLogReminder: 'sí', trainingLogReminder: false }).expect(400); // INVALID_REQUEST
+  await request(servidor).put(preferencias).send({ mealLogReminder: true, trainingLogReminder: true }).expect(401);
+});
+
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
   const noDeclaradas: string[] = [];
   const porOperacion = new Map<string, Set<string>>();

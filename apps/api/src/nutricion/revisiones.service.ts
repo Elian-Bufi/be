@@ -20,6 +20,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
+import { PublicadorDeNovedades } from '../novedades/publicador';
 import { ProcesoService } from '../proceso/proceso.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
@@ -61,6 +62,7 @@ export class RevisionesService {
     private readonly procesos: ProcesoService,
     private readonly planes: PlanesService,
     private readonly evaluaciones: EvaluacionesService,
+    private readonly novedades: PublicadorDeNovedades,
   ) {}
 
   // ─── API-NUT-17 ────────────────────────────────────────────────────────────────────────────
@@ -239,6 +241,12 @@ export class RevisionesService {
           procedencia,
           momento,
         });
+        // DL-133 · la novedad para el asesorado (RF-061): que hay una revisión, nunca su contenido.
+        await this.novedades.publicar(
+          tx,
+          [{ tipo: 'REVISION_REGISTRADA', destinatarioId: asesoradoId, alcance: 'NUTRICION', fuenteId: actor.identidadId, referencia: { tipo: 'RevisionNutricional', id: revision.id }, identidadDelHecho: revision.id, momentoDeOcurrencia: momento }],
+          procedencia,
+        );
         return {
           estadoHttp: 201,
           cuerpo: { data: revisionApi(revision, { asesoradoId }, await nombreVisibleDe(tx, actor.identidadId), proceso.id) },

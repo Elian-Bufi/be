@@ -145,40 +145,40 @@ model Identidad {
 
   // WP-04
   capacidades                                CapacidadProfesional[]
-  evaluacionesAntropometricasComoProfesional EvaluacionAntropometrica[]             @relation("EvaluacionAntropometricaDelProfesional")
-  evaluacionesAntropometricasComoAsesorado   EvaluacionAntropometrica[]             @relation("EvaluacionAntropometricaDelAsesorado")
-  medicionesCorregidas                       CorreccionDeMedicion[]                 @relation("CorreccionDeMedicionDelAutor")
-  medicionesAnuladas                         AnulacionDeMedicion[]                  @relation("AnulacionDeMedicionDelAutor")
-  ejecucionesDeCalculo                       EjecucionDeCalculo[]                   @relation("EjecucionDeCalculoDelAutor")
-  referenciasDeCalculoComoAsesorado          ReferenciaDeCalculo[]                  @relation("ReferenciaDeCalculoDelAsesorado")
-  referenciasDeCalculoComoProfesional        ReferenciaDeCalculo[]                  @relation("ReferenciaDeCalculoDelProfesional")
-  procesosComoProfesional                    ProcesoOperativo[]                     @relation("ProcesoDelProfesional")
-  procesosComoAsesorado                      ProcesoOperativo[]                     @relation("ProcesoDelAsesorado")
-  evaluacionesComoProfesional                EvaluacionNutricional[]                @relation("EvaluacionDelProfesional")
-  evaluacionesComoAsesorado                  EvaluacionNutricional[]                @relation("EvaluacionDelAsesorado")
-  objetivosComoProfesional                   ObjetivoNutricional[]                  @relation("ObjetivoDelProfesional")
-  objetivosComoAsesorado                     ObjetivoNutricional[]                  @relation("ObjetivoDelAsesorado")
-  planesComoProfesional                      PlanNutricional[]                      @relation("PlanDelProfesional")
-  planesComoAsesorado                        PlanNutricional[]                      @relation("PlanDelAsesorado")
-  ingestas                                   IngestaNutricional[]                   @relation("IngestaDelAsesorado")
-  ejerciciosCreados                          EjercicioDeCatalogo[]                  @relation("EjercicioCreadoPor")
-  plantillasDePlanDeEntrenamiento            PlantillaDePlanDeEntrenamiento[]       @relation("PlantillaDePlanDelProfesional")
+  evaluacionesAntropometricasComoProfesional EvaluacionAntropometrica[]                @relation("EvaluacionAntropometricaDelProfesional")
+  evaluacionesAntropometricasComoAsesorado   EvaluacionAntropometrica[]                @relation("EvaluacionAntropometricaDelAsesorado")
+  medicionesCorregidas                       CorreccionDeMedicion[]                    @relation("CorreccionDeMedicionDelAutor")
+  medicionesAnuladas                         AnulacionDeMedicion[]                     @relation("AnulacionDeMedicionDelAutor")
+  ejecucionesDeCalculo                       EjecucionDeCalculo[]                      @relation("EjecucionDeCalculoDelAutor")
+  referenciasDeCalculoComoAsesorado          ReferenciaDeCalculo[]                     @relation("ReferenciaDeCalculoDelAsesorado")
+  referenciasDeCalculoComoProfesional        ReferenciaDeCalculo[]                     @relation("ReferenciaDeCalculoDelProfesional")
+  procesosComoProfesional                    ProcesoOperativo[]                        @relation("ProcesoDelProfesional")
+  procesosComoAsesorado                      ProcesoOperativo[]                        @relation("ProcesoDelAsesorado")
+  evaluacionesComoProfesional                EvaluacionNutricional[]                   @relation("EvaluacionDelProfesional")
+  evaluacionesComoAsesorado                  EvaluacionNutricional[]                   @relation("EvaluacionDelAsesorado")
+  objetivosComoProfesional                   ObjetivoNutricional[]                     @relation("ObjetivoDelProfesional")
+  objetivosComoAsesorado                     ObjetivoNutricional[]                     @relation("ObjetivoDelAsesorado")
+  planesComoProfesional                      PlanNutricional[]                         @relation("PlanDelProfesional")
+  planesComoAsesorado                        PlanNutricional[]                         @relation("PlanDelAsesorado")
+  ingestas                                   IngestaNutricional[]                      @relation("IngestaDelAsesorado")
+  ejerciciosCreados                          EjercicioDeCatalogo[]                     @relation("EjercicioCreadoPor")
+  plantillasDePlanDeEntrenamiento            PlantillaDePlanDeEntrenamiento[]          @relation("PlantillaDePlanDelProfesional")
   versionesDePlantillaAutor                  VersionDePlantillaDePlanDeEntrenamiento[] @relation("VersionDePlantillaPorAutor")
-  plantillasDePlanNutricional                PlantillaDePlanNutricional[]           @relation("PlantillaNutricionalDelProfesional")
-  versionesDePlantillaNutricionalAutor       VersionDePlantillaDePlanNutricional[]  @relation("VersionDePlantillaNutricionalPorAutor")
-  ejerciciosHabituales                       EjercicioHabitual[]                    @relation("EjercicioHabitualDelProfesional")
-  sesionesHabituales                         SesionHabitual[]                       @relation("SesionHabitualDelProfesional")
-  alimentosHabituales                        AlimentoHabitual[]                     @relation("AlimentoHabitualDelProfesional")
-  comidasHabituales                          ComidaHabitual[]                       @relation("ComidaHabitualDelProfesional")
-  evaluacionesDeEntrenamientoComoProfesional EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelProfesional")
-  evaluacionesDeEntrenamientoComoAsesorado   EvaluacionDeEntrenamiento[]            @relation("EvaluacionDeEntrenamientoDelAsesorado")
-  objetivosDeEntrenamientoComoProfesional    ObjetivoDeEntrenamiento[]              @relation("ObjetivoDeEntrenamientoDelProfesional")
-  objetivosDeEntrenamientoComoAsesorado      ObjetivoDeEntrenamiento[]              @relation("ObjetivoDeEntrenamientoDelAsesorado")
-  planesDeEntrenamientoComoProfesional       PlanDeEntrenamiento[]                  @relation("PlanDeEntrenamientoDelProfesional")
-  planesDeEntrenamientoComoAsesorado         PlanDeEntrenamiento[]                  @relation("PlanDeEntrenamientoDelAsesorado")
-  borradoresDeEjecucion                      BorradorDeEjecucionDeEntrenamiento[]   @relation("BorradorDeEjecucionDelAsesorado")
-  ejecucionesDeEntrenamiento                 EjecucionDeEntrenamiento[]             @relation("EjecucionDeEntrenamientoDelAsesorado")
-  correccionesDeEjecucion                    CorreccionDeEjecucionDeEntrenamiento[] @relation("CorreccionDeEjecucionDelAutor")
+  plantillasDePlanNutricional                PlantillaDePlanNutricional[]              @relation("PlantillaNutricionalDelProfesional")
+  versionesDePlantillaNutricionalAutor       VersionDePlantillaDePlanNutricional[]     @relation("VersionDePlantillaNutricionalPorAutor")
+  ejerciciosHabituales                       EjercicioHabitual[]                       @relation("EjercicioHabitualDelProfesional")
+  sesionesHabituales                         SesionHabitual[]                          @relation("SesionHabitualDelProfesional")
+  alimentosHabituales                        AlimentoHabitual[]                        @relation("AlimentoHabitualDelProfesional")
+  comidasHabituales                          ComidaHabitual[]                          @relation("ComidaHabitualDelProfesional")
+  evaluacionesDeEntrenamientoComoProfesional EvaluacionDeEntrenamiento[]               @relation("EvaluacionDeEntrenamientoDelProfesional")
+  evaluacionesDeEntrenamientoComoAsesorado   EvaluacionDeEntrenamiento[]               @relation("EvaluacionDeEntrenamientoDelAsesorado")
+  objetivosDeEntrenamientoComoProfesional    ObjetivoDeEntrenamiento[]                 @relation("ObjetivoDeEntrenamientoDelProfesional")
+  objetivosDeEntrenamientoComoAsesorado      ObjetivoDeEntrenamiento[]                 @relation("ObjetivoDeEntrenamientoDelAsesorado")
+  planesDeEntrenamientoComoProfesional       PlanDeEntrenamiento[]                     @relation("PlanDeEntrenamientoDelProfesional")
+  planesDeEntrenamientoComoAsesorado         PlanDeEntrenamiento[]                     @relation("PlanDeEntrenamientoDelAsesorado")
+  borradoresDeEjecucion                      BorradorDeEjecucionDeEntrenamiento[]      @relation("BorradorDeEjecucionDelAsesorado")
+  ejecucionesDeEntrenamiento                 EjecucionDeEntrenamiento[]                @relation("EjecucionDeEntrenamientoDelAsesorado")
+  correccionesDeEjecucion                    CorreccionDeEjecucionDeEntrenamiento[]    @relation("CorreccionDeEjecucionDelAutor")
 
   // WP-07
   solicitudesDeFormularioComoProfesional SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelProfesional")
@@ -198,6 +198,12 @@ model Identidad {
 
   // WP-DASHBOARD-PROFESIONAL (DL-128)
   vistasDeAnalisis VistaDeAnalisis[] @relation("VistaDeAnalisisDelProfesional")
+
+  // WP-NOVEDADES-Y-AVISOS (DL-133)
+  novedadesRecibidas         Novedad[]                   @relation("NovedadDelDestinatario")
+  novedadesOriginadas        Novedad[]                   @relation("NovedadDeLaFuente")
+  suscripcionesPush          SuscripcionPush[]           @relation("SuscripcionPushDeLaIdentidad")
+  preferenciasDeRecordatorio PreferenciaDeRecordatorio[] @relation("PreferenciaDeRecordatorioDeLaIdentidad")
 
   @@map("identidad")
 }
@@ -647,11 +653,11 @@ model AlcanceDeVinculo {
   momentoDeOcurrencia      DateTime?                    @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro        DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  vinculo           Vinculo            @relation(fields: [vinculoId], references: [id], onDelete: Restrict)
-  solicitudDeOrigen SolicitudDeVinculo @relation(fields: [solicitudDeOrigenId], references: [id], onDelete: Restrict)
-  consentimientos   Consentimiento[]
-  eventos           EventoDeVinculo[]
-  decisiones        DecisionDeAcceso[]
+  vinculo                Vinculo            @relation(fields: [vinculoId], references: [id], onDelete: Restrict)
+  solicitudDeOrigen      SolicitudDeVinculo @relation(fields: [solicitudDeOrigenId], references: [id], onDelete: Restrict)
+  consentimientos        Consentimiento[]
+  eventos                EventoDeVinculo[]
+  decisiones             DecisionDeAcceso[]
   /// DL-125: los actos `EVIDENCIA_VISUAL` de este alcance.
   actosDeEvidenciaVisual ActoRegistrable[]
 
@@ -2321,15 +2327,15 @@ model PlantillaDePlanDeEntrenamiento {
 /// La estructura de entrada de un plan (la misma forma que valida API-TRN-07), sin cargas salvo pedido (D-2) y sin nada
 /// de una persona (D-5). `origen` es la versión de plan propia de la que salió, si salió de una.
 model VersionDePlantillaDePlanDeEntrenamiento {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  plantillaId       String   @map("plantilla_id") @db.Uuid
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plantillaId       String            @map("plantilla_id") @db.Uuid
   numero            Int
   estructura        Json
   cargas            CargasDePlantilla @default(NO_COPIADAS)
   origen            Json?
-  autorId           String   @map("autor_id") @db.Uuid
+  autorId           String            @map("autor_id") @db.Uuid
   procedencia       Json
-  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeRegistro DateTime          @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   plantilla PlantillaDePlanDeEntrenamiento @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   autor     Identidad                      @relation("VersionDePlantillaPorAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -2842,4 +2848,168 @@ model VistaDeAnalisis {
 
   @@index([profesionalId, momentoDeActualizacion])
   @@map("vista_de_analisis")
+}
+
+// ─── Novedades y avisos push (WP-NOVEDADES-Y-AVISOS; DL-133) ─────────────────────────────────────────────────────────
+// RF-061 (centro de novedades, P1; UC-P30) y RF-062 (avisos push no sensibles, P2; UC-E08), con el modelo del 06 §5.11
+// (T-06-07 y T-06-08). packages/domain/src/contratos-novedades.ts. Lo que Prisma no modela (una suscripción vigente por
+// teléfono, la historia por adición, los CHECK) está en la migración 20261016120000.
+
+/// Qué cuenta una novedad. El texto lo arma la API con el tipo (packages/domain/src/copy-novedades.ts).
+enum TipoDeNovedad {
+  PLAN_ACTIVADO
+  REVISION_REGISTRADA
+  SOLICITUD_RECIBIDA
+  SOLICITUD_ACEPTADA
+  SOLICITUD_RECHAZADA
+  VINCULO_PAUSADO
+  VINCULO_REANUDADO
+  VINCULO_FINALIZADO
+  CONSENTIMIENTO_REVOCADO
+  RECORDATORIO_DE_COMIDAS
+  RECORDATORIO_DE_ENTRENAMIENTO
+}
+
+enum PlataformaDeAviso {
+  ANDROID
+}
+
+/// Por qué un teléfono dejó de recibir los avisos de una cuenta.
+enum MotivoDeBajaDeSuscripcion {
+  /// La persona los apagó o cerró la sesión en ese teléfono (API-NOV-04).
+  RETIRADA
+  /// El mismo teléfono registró un token nuevo para la misma cuenta.
+  REEMPLAZADA
+  /// Otra cuenta registró ese teléfono: la anterior deja de recibir avisos ahí.
+  OTRA_CUENTA
+  /// Expo respondió que el token ya no sirve (DeviceNotRegistered).
+  TOKEN_INVALIDO
+}
+
+/// El resultado de un aviso push.
+enum EstadoDeAvisoPush {
+  /// Tomado para enviar; si queda así, se envía en la próxima pasada.
+  EN_CURSO
+  /// Expo lo aceptó (un ticket «ok»).
+  ENVIADO
+  /// Expo lo rechazó; el código queda en `detalle`.
+  RECHAZADO
+  /// Expo no respondió a tiempo o falló la red: se reintenta en la próxima pasada.
+  SIN_RESPUESTA
+  /// Salió dentro de otro aviso, que nombra a la novedad más nueva del grupo.
+  AGRUPADO
+}
+
+enum TipoDeRecordatorio {
+  COMIDAS
+  ENTRENAMIENTO
+}
+
+enum EstadoDePreferencia {
+  ACTIVA
+  INACTIVA
+}
+
+/// T-06-07 — Novedad interna (06 §5.11.1): contenido operativo NO clínico para una persona, que es su audiencia. Un hecho
+/// que interesa a las dos partes da una novedad para cada una. El texto no se guarda: lo arma la API con el tipo, el área y
+/// el nombre que el lector puede ver de quien la originó (DL-040), así nunca lleva datos de salud (UC-P30; INV-06-32).
+/// Nace en la misma transacción que el hecho que cuenta, y `clave_de_unicidad` impide que el mismo hecho (o el mismo
+/// recordatorio del mismo día) dé dos. Solo se agrega: no se edita ni se borra (08 §29).
+model Novedad {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  destinatarioId      String        @map("destinatario_id") @db.Uuid
+  tipo                TipoDeNovedad
+  alcance             Alcance?
+  /// Quién la originó (06 §5.11.1: «fuente o autoría identificable»). NULL: la emite BE (un recordatorio).
+  fuenteId            String?       @map("fuente_id") @db.Uuid
+  /// El recurso del hecho (una versión de plan, una revisión, una solicitud, un componente de vínculo).
+  referenciaTipo      String?       @map("referencia_tipo")
+  referenciaId        String?       @map("referencia_id") @db.Uuid
+  /// El día civil al que se refiere un recordatorio.
+  fechaLocal          DateTime?     @map("fecha_local") @db.Date
+  claveDeUnicidad     String        @unique @map("clave_de_unicidad")
+  procedencia         Json
+  momentoDeOcurrencia DateTime?     @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  destinatario Identidad         @relation("NovedadDelDestinatario", fields: [destinatarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  fuente       Identidad?        @relation("NovedadDeLaFuente", fields: [fuenteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lectura      LecturaDeNovedad?
+  avisos       AvisoPush[]
+
+  @@index([destinatarioId, momentoDeRegistro(sort: Desc), id(sort: Desc)])
+  @@map("novedad")
+}
+
+/// UC-P30, paso 6 («BE registra la consulta según política»): la primera vez que la persona abrió la novedad. Solo se
+/// agrega; abrirla de nuevo no cambia nada.
+model LecturaDeNovedad {
+  novedadId         String   @id @map("novedad_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  novedad Novedad @relation(fields: [novedadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("lectura_de_novedad")
+}
+
+/// RF-062 — Un teléfono que recibe los avisos push de una identidad (09v12 §21). El token de Expo es C3 (08 §52: Expo
+/// Push es encargado, con transferencia AR→US) y nunca va a logs ni a la auditoría. Como máximo una suscripción vigente
+/// por teléfono (índice parcial en la migración): si otra cuenta lo registra, la anterior se da de baja.
+model SuscripcionPush {
+  id            String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId   String                     @map("identidad_id") @db.Uuid
+  /// Lo genera la APK al instalarse; no identifica al aparato fuera de BE.
+  dispositivoId String                     @map("dispositivo_id") @db.Uuid
+  token         String
+  plataforma    PlataformaDeAviso
+  procedencia   Json
+  momentoDeAlta DateTime                   @default(now()) @map("momento_de_alta") @db.Timestamptz(3)
+  momentoDeBaja DateTime?                  @map("momento_de_baja") @db.Timestamptz(3)
+  motivoDeBaja  MotivoDeBajaDeSuscripcion? @map("motivo_de_baja")
+
+  identidad Identidad   @relation("SuscripcionPushDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  avisos    AvisoPush[]
+
+  @@index([identidadId])
+  @@map("suscripcion_push")
+}
+
+/// T-06-08 — Notificación push no sensible (06 §5.11.4): un aviso a un teléfono, que referencia una sola novedad (0..N
+/// por novedad). Cuando salen varias juntas, un solo aviso nombra a la más nueva y las demás quedan AGRUPADA. Mutable: el
+/// estado avanza con la respuesta del canal.
+model AvisoPush {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  novedadId         String            @map("novedad_id") @db.Uuid
+  suscripcionId     String            @map("suscripcion_id") @db.Uuid
+  estado            EstadoDeAvisoPush
+  /// El id del ticket de Expo, si lo aceptó.
+  ticket            String?
+  /// El código del rechazo o de la falla (DeviceNotRegistered, timeout…), nunca el token.
+  detalle           String?
+  intentos          Int               @default(1)
+  momentoDeIntento  DateTime          @map("momento_de_intento") @db.Timestamptz(3)
+  momentoDeRegistro DateTime          @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  novedad     Novedad         @relation(fields: [novedadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  suscripcion SuscripcionPush @relation(fields: [suscripcionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([novedadId, suscripcionId])
+  @@index([estado, momentoDeIntento])
+  @@map("aviso_push")
+}
+
+/// DL-133 — Si la persona quiere los recordatorios diarios de registro: una fila por tipo, con su estado (sin booleanos,
+/// como el resto del esquema). Sin fila, apagado. Mutable; cada cambio queda en la auditoría.
+model PreferenciaDeRecordatorio {
+  identidadId            String              @map("identidad_id") @db.Uuid
+  tipo                   TipoDeRecordatorio
+  estado                 EstadoDePreferencia
+  procedencia            Json
+  momentoDeActualizacion DateTime            @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  identidad Identidad @relation("PreferenciaDeRecordatorioDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([identidadId, tipo])
+  @@map("preferencia_de_recordatorio")
 }

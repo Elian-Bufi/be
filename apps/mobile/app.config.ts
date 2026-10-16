@@ -10,6 +10,14 @@ const VERSION = '0.13.2';
 /** El fondo de Azul noche (src/tema.ts, tema predeterminado): detrás de la app mientras carga y detrás del ícono adaptativo. */
 const FONDO = '#011325';
 
+/**
+ * WP-NOVEDADES-Y-AVISOS (DL-133): los avisos push de Android llegan por Firebase Cloud Messaging, y la APK necesita el
+ * `google-services.json` del proyecto de Firebase de BE. No se versiona: el build lo toma de la ruta que diga
+ * `GOOGLE_SERVICES_JSON` (fuera del repo, en la máquina de Dirección). Sin él la APK se construye igual, el centro de
+ * novedades funciona, y Cuenta dice que los avisos todavía no están disponibles en esa versión.
+ */
+const SERVICIOS_DE_GOOGLE = process.env.GOOGLE_SERVICES_JSON?.trim() || null;
+
 const config: ExpoConfig = {
   name: 'BE',
   slug: 'be',
@@ -29,6 +37,7 @@ const config: ExpoConfig = {
       backgroundColor: FONDO,
     },
     predictiveBackGestureEnabled: false,
+    ...(SERVICIOS_DE_GOOGLE ? { googleServicesFile: SERVICIOS_DE_GOOGLE } : {}),
   },
   // DL-012 (decisión del 2026-10-03): la credencial de la sesión va al almacenamiento seguro. El plugin la deja fuera
   // del respaldo automático de Android. No se usa biometría: sin el permiso de Face ID.
@@ -48,6 +57,9 @@ const config: ExpoConfig = {
         microphonePermission: false,
       },
     ],
+    // DL-133: los avisos. El ícono es la marca en blanco con transparencia (scripts/generar-icono-de-aviso.cjs), que
+    // Android tiñe con el acento; el permiso de Android 13 se pide recién al tocar «Activar avisos» en Cuenta.
+    ['expo-notifications', { icon: './assets/icono-de-aviso.png', color: '#27D5F9' }],
   ],
   extra: {
     appEnv: process.env.APP_ENV ?? 'development',

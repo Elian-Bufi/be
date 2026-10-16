@@ -29,6 +29,7 @@ import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '
 import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
+import { PublicadorDeNovedades } from '../novedades/publicador';
 import { ProcesoService } from '../proceso/proceso.service';
 import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
@@ -89,6 +90,7 @@ export class PlanesDeEntrenamientoService {
     private readonly procesos: ProcesoService,
     private readonly plantillas: PlantillasDeEntrenamientoService,
     private readonly compatibilidad: CompatibilidadDeClientesService,
+    private readonly novedades: PublicadorDeNovedades,
   ) {}
 
   // ─── API-TRN-07 ────────────────────────────────────────────────────────────────────────────
@@ -430,6 +432,12 @@ export class PlanesDeEntrenamientoService {
             momento,
           });
         }
+        // DL-133 · la novedad para el asesorado, en esta transacción (RF-061); el aviso push sale después de confirmar.
+        await this.novedades.publicar(
+          tx,
+          [{ tipo: 'PLAN_ACTIVADO', destinatarioId: v.asesoradoId, alcance: 'ENTRENAMIENTO', fuenteId: actor.identidadId, referencia: recurso, identidadDelHecho: v.id, momentoDeOcurrencia: momento }],
+          procedencia,
+        );
         return {
           estadoHttp: 200,
           cuerpo: {

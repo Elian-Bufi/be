@@ -44,6 +44,9 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     mediosAlmacen: 'postgres',
     // DL-125: como el despliegue, sin exigir el acto EVIDENCIA_VISUAL. Su prueba levanta su propia app con la exigencia.
     evidenciaVisualExigida: false,
+    // DL-133: sin canal de avisos y sin la ruta interna, salvo la prueba que los configura.
+    avisos: { canal: 'desactivado', expoUrl: 'http://127.0.0.1:1', expoToken: null, presupuestoMs: 2000 },
+    secretoDeTareas: null,
     ...cambios,
   };
 }

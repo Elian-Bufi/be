@@ -59,7 +59,7 @@ export const NOMBRES_DE_ICONO = [
   // Casillas
   'tilde', 'guion',
   // Sistema
-  'ayuda', 'pregunta', 'info', 'aviso', 'sin-datos', 'sin-conexion', 'espera', 'servicio', 'candado', 'acceso', 'oculto', 'cargando', 'claro', 'azul-noche',
+  'ayuda', 'pregunta', 'info', 'aviso', 'sin-datos', 'sin-conexion', 'espera', 'servicio', 'candado', 'acceso', 'oculto', 'cargando', 'claro', 'azul-noche', 'novedades',
   // Personas
   'persona', 'asesorados', 'solicitud', 'pendientes',
   // Biblioteca
@@ -168,6 +168,8 @@ export const ICONOS: Readonly<Record<NombreDeIcono, DefinicionDeIcono>> = {
   persona: { grupo: 'Personas', formas: [{ forma: 'circulo', cx: 12, cy: 8, r: 4 }, { forma: 'trazo', d: 'M4.5 20.5a7.5 7.5 0 0 1 15 0' }] },
   asesorados: { grupo: 'Personas', formas: [{ forma: 'circulo', cx: 9, cy: 8.5, r: 3.5 }, { forma: 'trazo', d: 'M2.5 20a6.5 6.5 0 0 1 13 0' }, { forma: 'trazo', d: 'M15.5 5.2a3.5 3.5 0 0 1 0 6.6M18 14.3a6.5 6.5 0 0 1 3.5 5.7' }] },
   solicitud: { grupo: 'Personas', formas: [{ forma: 'circulo', cx: 9.5, cy: 8, r: 4 }, { forma: 'trazo', d: 'M2.5 20.5a7 7 0 0 1 14 0' }, { forma: 'trazo', d: 'M18.5 8.5v6M15.5 11.5h6' }] },
+  // WP-NOVEDADES-Y-AVISOS (DL-133): la campana del centro de novedades (RF-061), con el trazo y el lienzo de la familia.
+  novedades: { grupo: 'Sistema', formas: [{ forma: 'trazo', d: 'M6.5 16.5v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z' }, { forma: 'trazo', d: 'M10 20.5a2 2 0 0 0 4 0' }, { forma: 'trazo', d: 'M12 3.5V6' }] },
   pendientes: { grupo: 'Personas', formas: [{ forma: 'rectangulo', x: 3.5, y: 4.5, ancho: 5.5, alto: 5.5, radio: 1.4 }, { forma: 'rectangulo', x: 3.5, y: 14, ancho: 5.5, alto: 5.5, radio: 1.4 }, { forma: 'trazo', d: 'M12.5 7.25h8M12.5 16.75h8' }] },
   plantillas: { grupo: 'Biblioteca', formas: [{ forma: 'trazo', d: 'M12 3.5l8.5 4.5-8.5 4.5L3.5 8z' }, { forma: 'trazo', d: 'M3.5 12.25l8.5 4.5 8.5-4.5M3.5 16.5L12 21l8.5-4.5' }] },
   habitual: { grupo: 'Biblioteca', formas: [{ forma: 'trazo', d: 'M8.5 3.5h7M9.7 3.5L9 9.8 6 13h12l-3-3.2-.7-6.3M12 13v7.5' }] },

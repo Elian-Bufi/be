@@ -79,6 +79,32 @@ Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa pa
 - **Acceso a la base:** la historia se escribe por SQL, con la base abierta solo a la IP de esa máquina mientras dura la carga. Es el acceso del operador que admite el 07 §29. **Al terminar, la IP se quita a mano** en `be-db-test` → Networking, y se confirma que la conexión desde afuera se rechaza. El 2026-10-16 la volvieron a cerrar los push a `main` que cambiaron `render.yaml` o redesplegaron la API: el `ipAllowList: []` del Blueprint se impuso. En cambio, un push que no toca las rutas del `buildFilter` ni `render.yaml` no la cierra. Fue lo que pasó con el de la cohorte, que solo tocó `EVIDENCIA/` y `docs/`.
 - **Cargada en test el 2026-10-16** (de 06:35 a 06:46, sobre `4f10121`). Se comprobó de dos maneras: contando en la base las comidas, sesiones y tomas de cada persona (las mismas que en local), y entrando por la API con cada profesional para ver sus vínculos, con la fecha real de «Desde el…», y sus pendientes. Los pendientes se fijaron contra ese día y corren con el calendario. Por ejemplo, la revisión de Diego, que ese día faltaba 3 días, desde el 2026-10-20 aparece vencida.
 
+### Avisos push y recordatorios (DL-133, WP-NOVEDADES-Y-AVISOS)
+
+**Qué ya hace el Blueprint:**
+- **be-api** envía avisos por Expo Push (`BE_AVISOS_PUSH=expo`).
+- **El cron `be-recordatorios`** llama a la corrida de recordatorios a las 15:00 y a las 22:00 de Argentina, con el secreto que Render genera para be-api (`BE_SECRETO_DE_TAREAS`).
+- **El registro de la corrida:** cada una deja en el log del cron el día, la franja y cuántos recordatorios y avisos hubo, sin datos de nadie.
+- **El costo:** el cron se cobra por minuto, con un mínimo de un dólar por mes.
+
+**Lo que hace falta para que un teléfono Android reciba avisos.** Expo los entrega por Firebase Cloud Messaging (FCM), y eso pide dos cosas de la cuenta de Google de Dirección. Se hace una sola vez y lleva unos 15 minutos:
+1. **El proyecto de Firebase:**
+   - En <https://console.firebase.google.com>, «Agregar proyecto», con el nombre `BE` y sin Google Analytics.
+   - Adentro, «Agregar app» → Android, con el nombre del paquete **exacto** `com.elianbufi.be`.
+   - Descargar el `google-services.json` y guardarlo **fuera del repo**, en `C:\Users\bufim\BE-datos-locales\firebase\google-services.json`.
+2. **La clave de FCM para Expo:**
+   - En Firebase, ⚙ Configuración del proyecto → Cuentas de servicio → «Generar nueva clave privada». Baja un JSON, y **ese sí es secreto**.
+   - En <https://expo.dev>, proyecto `elianbufi/be` → Credentials → Android → `com.elianbufi.be` → «FCM V1 service account key» → subir ese JSON.
+   - Después, borrar el JSON descargado o guardarlo fuera del repo.
+3. **La APK:** se construye con `GOOGLE_SERVICES_JSON=C:/Users/bufim/BE-datos-locales/firebase/google-services.json` en el entorno. `app.config.ts` lo toma de ahí; sin esa variable la APK se construye igual, sin avisos. El `google-services.json` queda dentro de la APK: no es un secreto, pero tampoco se versiona.
+4. **Verificar:**
+   - En la APK, Cuenta → «Activar avisos» y aceptar el permiso.
+   - Desde el website, que el profesional active un plan de esa persona: llega «BE · Tenés una novedad.», y tocarlo abre Novedades.
+
+**Opcional:** la seguridad reforzada de Expo. En expo.dev, Account settings → Access tokens → «Enhanced Security for Push Notifications», y un token de acceso cargado a mano en be-api como `EXPO_ACCESS_TOKEN`. Así nadie que tenga un token de teléfono puede mandarle avisos en nombre de BE.
+
+**Comprobar el cron sin esperar a las 15:00:** Render → be-recordatorios → «Trigger Run». Fuera de las franjas (de 14 a 18 y de 21 a 23), la API responde 409 y el log lo dice: no crea nada.
+
 ### APK
 
 `apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:

@@ -20,6 +20,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
+import { PublicadorDeNovedades } from '../novedades/publicador';
 import { ProcesoService } from '../proceso/proceso.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
@@ -92,6 +93,7 @@ export class RevisionesDeEntrenamientoService {
     private readonly planes: PlanesDeEntrenamientoService,
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,
     private readonly ejecuciones: EjecucionesDeEntrenamientoService,
+    private readonly novedades: PublicadorDeNovedades,
   ) {}
 
   // ─── API-TRN-21 ────────────────────────────────────────────────────────────────────────────
@@ -255,6 +257,12 @@ export class RevisionesDeEntrenamientoService {
           procedencia,
           momento,
         });
+        // DL-133 · la novedad para el asesorado (RF-061): que hay una revisión, nunca su contenido.
+        await this.novedades.publicar(
+          tx,
+          [{ tipo: 'REVISION_REGISTRADA', destinatarioId: asesoradoId, alcance: 'ENTRENAMIENTO', fuenteId: actor.identidadId, referencia: { tipo: 'RevisionDeEntrenamiento', id: revision.id }, identidadDelHecho: revision.id, momentoDeOcurrencia: momento }],
+          procedencia,
+        );
         return {
           estadoHttp: 201,
           cuerpo: { data: revisionApi(revision, asesoradoId, await nombreVisibleDe(tx, actor.identidadId)) },

@@ -19,6 +19,7 @@ import {
   type TransicionDeConsentimiento,
 } from '@be/domain';
 import type { Prisma, TipoDePerfilProfesional, TipoDeEventoDeVinculo, VersionDeTexto } from '@prisma/client';
+import { PublicadorDeNovedades } from '../novedades/publicador';
 import { PdpService } from '../autorizacion/pdp.service';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
@@ -60,6 +61,7 @@ export class ConsentimientoProfesionalService {
     private readonly idempotencia: IdempotenciaService,
     private readonly auditoria: AuditoriaService,
     private readonly limitador: LimitadorService,
+    private readonly novedades: PublicadorDeNovedades,
   ) {}
 
   // ─── API-CON-01 ────────────────────────────────────────────────────────────────────────────
@@ -308,6 +310,12 @@ export class ConsentimientoProfesionalService {
           procedencia,
           momento: ahora,
         });
+        // DL-133 · B10-04 §42: el profesional ve en sus novedades que ya no tiene acceso a esa área.
+        await this.novedades.publicar(
+          tx,
+          [{ tipo: 'CONSENTIMIENTO_REVOCADO', destinatarioId: fila.profesional_id, alcance: av.alcance, fuenteId: actor.identidadId, referencia: { tipo: 'Consentimiento', id: fila.id }, identidadDelHecho: version.id, momentoDeOcurrencia: ahora }],
+          procedencia,
+        );
         await this.auditar(tx, operacion, actor.identidadId, fila.id, ctx);
         return { data: { consentId: fila.id, state: 'REVOKED', revokedAt: ahora.toISOString() } };
       }));

@@ -64,7 +64,23 @@ export interface Entorno {
    * (precierre del 2026-10-06, §6). Las operaciones del acto (API-EVI-01 a 04) responden igual con o sin ella.
    */
   readonly evidenciaVisualExigida: boolean;
+  /**
+   * WP-NOVEDADES-Y-AVISOS (DL-133) · el canal de los avisos push (RF-062). `expo` (`BE_AVISOS_PUSH`) los envía por Expo
+   * Push (`EXPO_PUSH_URL`, por defecto https://exp.host; `EXPO_ACCESS_TOKEN`, opcional, si el proyecto de Expo exige la
+   * seguridad reforzada de los avisos). Sin valor, `desactivado`: las novedades se guardan igual y no sale ningún aviso
+   * (CI y desarrollo, que nunca dependen de un tercero). El token de acceso es un secreto: nunca se imprime.
+   */
+  readonly avisos: { readonly canal: CanalDeAvisos; readonly expoUrl: string; readonly expoToken: string | null; readonly presupuestoMs: number };
+  /**
+   * DL-133 · el secreto con que la tarea programada de la plataforma llama a la corrida de los recordatorios (07 §24: «cron
+   * administrado de la plataforma llamando un endpoint interno idempotente»; `BE_SECRETO_DE_TAREAS`, 32 caracteres como
+   * mínimo, lo genera Render). Sin valor, esa ruta responde 404.
+   */
+  readonly secretoDeTareas: string | null;
 }
+
+export const CANALES_DE_AVISOS = ['expo', 'desactivado'] as const;
+export type CanalDeAvisos = (typeof CANALES_DE_AVISOS)[number];
 
 export const ALMACENES_DE_MEDIOS = ['postgres'] as const;
 export type AlmacenDeMediosConfigurado = (typeof ALMACENES_DE_MEDIOS)[number];
@@ -174,6 +190,15 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
   const exigida = (env.BE_EVIDENCIA_VISUAL_EXIGIDA ?? '').trim() || 'false';
   if (exigida !== 'true' && exigida !== 'false') errores.push('BE_EVIDENCIA_VISUAL_EXIGIDA solo admite «true» o «false» (DL-125)');
 
+  // DL-133: el canal de los avisos y el secreto de la tarea programada. Ningún valor se imprime.
+  const canal = (env.BE_AVISOS_PUSH ?? '').trim() || 'desactivado';
+  if (!(CANALES_DE_AVISOS as readonly string[]).includes(canal)) errores.push('BE_AVISOS_PUSH solo admite «expo» o «desactivado» (DL-133)');
+  const expoUrl = origenDeProveedor(env.EXPO_PUSH_URL, 'https://exp.host', 'EXPO_PUSH_URL');
+  const expoToken = (env.EXPO_ACCESS_TOKEN ?? '').trim() || null;
+  if (expoToken !== null && (expoToken.length > 200 || /\s/.test(expoToken))) errores.push('EXPO_ACCESS_TOKEN no tiene la forma de un token de acceso de Expo');
+  const secretoDeTareas = (env.BE_SECRETO_DE_TAREAS ?? '').trim() || null;
+  if (secretoDeTareas !== null && secretoDeTareas.length < 32) errores.push('BE_SECRETO_DE_TAREAS debe tener al menos 32 caracteres');
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -192,6 +217,8 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     proveedores,
     mediosAlmacen: almacen as AlmacenDeMediosConfigurado,
     evidenciaVisualExigida: exigida === 'true',
+    avisos: { canal: canal as CanalDeAvisos, expoUrl, expoToken, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS },
+    secretoDeTareas,
   };
 }
 

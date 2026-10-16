@@ -9,7 +9,10 @@
  * - Privacidad: resumen de A3 desde CON-05 (`currentConsent: null` = no otorgado) y el acceso a «Privacidad y
  *   consentimientos», donde A3 ya tiene su CTA de otorgamiento y de revocación (PROTO-10-ACC-03/04 cierran la mitad A3
  *   de DL-024).
- * - Seguridad: cerrar sesión / cerrar todas, separado del cierre de cuenta (10-B02:436-458).
+ * - Tu nombre (DL-009 y DL-040): el que ven tus profesionales con un vínculo vigente.
+ * - Avisos en este teléfono (DL-133; RF-062): los avisos push y los recordatorios diarios de registro.
+ * - Seguridad: cerrar sesión / cerrar todas, separado del cierre de cuenta (10-B02:436-458). Antes de cerrar la sesión o la
+ *   cuenta, este teléfono deja de recibir los avisos de la cuenta, mientras la sesión todavía vale (DL-133).
  * - Cierre (PROTO-10-ACC-06): explicación → modal con consecuencias versionadas → «Confirmar cierre».
  */
 import { COPY, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
@@ -21,6 +24,17 @@ import { fecha } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Ayuda, Boton, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
 import { SelectorDeApariencia } from '../apariencia';
+import { retirarAlSalir } from '../avisos';
+import { dependenciasDeAvisos } from '../avisos-del-telefono';
+import { SeccionDeAvisos, SeccionDeTuNombre } from './cuenta-avisos-y-nombre';
+
+/**
+ * Antes de cerrar la sesión: este teléfono deja de recibir los avisos de la cuenta (DL-133). Lo mejor posible y con
+ * tope: si la API no responde en 4 s, la sesión se cierra igual.
+ */
+function retirarAvisos(token: string, identidadId: string): Promise<void> {
+  return Promise.race([retirarAlSalir(dependenciasDeAvisos, { token, identidadId }).catch(() => undefined), new Promise<void>((r) => setTimeout(r, 4_000))]);
+}
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error'; sinConexion: boolean };
 
@@ -34,7 +48,19 @@ const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], st
  * `sesionRecordada`: si la sesión quedó guardada en el almacenamiento seguro del teléfono (DL-012). Con `false` se dice
  * que no se pudo guardar; con `null` (todavía no se sabe) no se dice nada.
  */
-export function PantallaDeCuenta({ token, salir, ir, sesionRecordada = null }: { token: string; salir: (motivo: Salida) => void; ir: (r: Ruta) => void; sesionRecordada?: boolean | null }) {
+export function PantallaDeCuenta({
+  token,
+  identidadId,
+  salir,
+  ir,
+  sesionRecordada = null,
+}: {
+  token: string;
+  identidadId: string;
+  salir: (motivo: Salida) => void;
+  ir: (r: Ruta) => void;
+  sesionRecordada?: boolean | null;
+}) {
   const [cuenta, setCuenta] = useState<Carga<MeResponse['data']>>({ tipo: 'cargando' });
   const [a3, setA3] = useState<Carga<RequisitoDeConsentimientoDeSaludResponse['data']>>({ tipo: 'cargando' });
   const [accion, setAccion] = useState<'libre' | 'una' | 'todas' | { error: string }>('libre');
@@ -63,6 +89,7 @@ export function PantallaDeCuenta({ token, salir, ir, sesionRecordada = null }: {
   async function cerrarSesion(que: 'una' | 'todas') {
     if (accion === 'una' || accion === 'todas') return;
     setAccion(que);
+    await retirarAvisos(token, identidadId);
     const r = que === 'una' ? await api.finalizarSesion(token) : await api.cerrarTodasLasSesiones(token);
     if (r.ok) return salir(que === 'una' ? 'sesion-cerrada' : 'sesiones-cerradas');
     if (sesionPerdida(r)) return;
@@ -91,6 +118,8 @@ export function PantallaDeCuenta({ token, salir, ir, sesionRecordada = null }: {
         </Ayuda>
       </Seccion>
 
+      <SeccionDeTuNombre token={token} sesionPerdida={sesionPerdida} />
+
       <Seccion titulo={COPY_VINCULO.tuIdentificador}>
         {cuenta.tipo === 'cargando' ? <Cargando /> : null}
         {cuenta.tipo === 'error' ? <ErrorConReintento sinConexion={cuenta.sinConexion} onReintentar={cargarCuenta} /> : null}
@@ -109,6 +138,8 @@ export function PantallaDeCuenta({ token, salir, ir, sesionRecordada = null }: {
         <SelectorDeApariencia />
       </Seccion>
 
+      <SeccionDeAvisos token={token} identidadId={identidadId} sesionPerdida={sesionPerdida} />
+
       <Seccion titulo="Seguridad">
         <Parrafo>Cerrar sesión no cierra tu cuenta.</Parrafo>
         {sesionRecordada === true ? <Parrafo tenue>Tu sesión queda guardada de forma segura en este teléfono hasta que venza, para que no tengas que volver a entrar si cerrás la app. Cerrar sesión la borra.</Parrafo> : null}
@@ -118,7 +149,7 @@ export function PantallaDeCuenta({ token, salir, ir, sesionRecordada = null }: {
         <Boton texto={accion === 'todas' ? 'Cerrando sesiones…' : COPY.cerrarTodas} tipo="secundario" onPress={() => cerrarSesion('todas')} ocupado={accion === 'todas'} deshabilitado={ocupado} />
       </Seccion>
 
-      <CierreDeCuenta token={token} salir={salir} sesionPerdida={sesionPerdida} />
+      <CierreDeCuenta token={token} identidadId={identidadId} salir={salir} sesionPerdida={sesionPerdida} />
     </>
   );
 }
@@ -167,7 +198,17 @@ function EstadoA3({ datos }: { datos: RequisitoDeConsentimientoDeSaludResponse['
  * conserva, «Cancelar» deja de ofrecerse y el aviso queda en la sección aunque se cierre el modal; «Reintentar» usa la
  * MISMA key (10-B10:430-438), así el servidor devuelve el resultado original aunque la sesión ya esté revocada.
  */
-function CierreDeCuenta({ token, salir, sesionPerdida }: { token: string; salir: (m: Salida) => void; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
+function CierreDeCuenta({
+  token,
+  identidadId,
+  salir,
+  sesionPerdida,
+}: {
+  token: string;
+  identidadId: string;
+  salir: (m: Salida) => void;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+}) {
   const [estado, setEstado] = useState<'cerrado' | 'abierto' | 'enviando' | 'incierto' | 'step-up' | { error: string }>('cerrado');
   const clave = useRef<string | null>(null);
   const consecuencias = VERSION_VIGENTE.CONSECUENCIAS_DE_CIERRE;
@@ -185,6 +226,7 @@ function CierreDeCuenta({ token, salir, sesionPerdida }: { token: string; salir:
   async function confirmar() {
     if (estado === 'enviando' || !clave.current) return;
     setEstado('enviando');
+    await retirarAvisos(token, identidadId);
     const r = await api.solicitarCierre(token, clave.current);
     if (r.ok) return salir('cierre-registrado');
     if (r.tipo === 'RED' || r.codigo === 'RESPUESTA_NO_RECONOCIDA') return setEstado('incierto');

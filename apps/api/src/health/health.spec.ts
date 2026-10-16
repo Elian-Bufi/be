@@ -27,6 +27,9 @@ const ENTORNO = {
   proveedores: { openFoodFactsUrl: 'http://127.0.0.1:9', wgerUrl: 'http://127.0.0.1:9', presupuestoMs: 1000 },
   mediosAlmacen: 'postgres' as const,
   evidenciaVisualExigida: false,
+  // DL-133: sin canal de avisos y sin la ruta interna, salvo la prueba que los configura.
+  avisos: { canal: 'desactivado' as const, expoUrl: 'http://127.0.0.1:1', expoToken: null, presupuestoMs: 2000 },
+  secretoDeTareas: null,
 };
 
 function directorioCon(migraciones: string[]): string {

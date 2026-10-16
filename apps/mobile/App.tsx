@@ -29,6 +29,9 @@
  * Al entrar a una zona, la pantalla conserva su estructura y no muestra valores hasta que la API confirma el acceso en
  * esa entrada (src/ciclo-de-lectura.ts). Lo confirmado sigue a la vista mientras se reconfirma al volver del segundo
  * plano. Cada zona principal vuelve a la altura en que se la dejó.
+ * - WP-NOVEDADES-Y-AVISOS (DL-133; RF-061 y RF-062): la campana de la cabecera abre Novedades y dice cuántas hay sin
+ *   leer; tocar un aviso de BE también abre Novedades (con la sesión, o después de iniciarla: el aviso no muestra nada,
+ *   UC-E08 E03). Con los avisos activos para la cuenta, al entrar se renueva el token del teléfono.
  * Identidad del build visible en Bienvenida (07 §34, TEST-APK-008).
  */
 import Constants from 'expo-constants';
@@ -40,6 +43,8 @@ import { api, apiConfigurada, consultarCuentaConSenal, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas, SEPARACION_DE_LA_BARRA, VeloDeLaBarra } from './src/barra-de-zonas';
 import { almacenSeguro } from './src/almacen-seguro';
+import { esAvisoDeBe, renovar } from './src/avisos';
+import { avisoQueAbrioLaApp, dependenciasDeAvisos, escucharAvisosRecibidos, escucharAvisosTocados } from './src/avisos-del-telefono';
 import { Cabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
 import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambios';
@@ -56,6 +61,7 @@ import { PantallaDeFormularios, PantallaDeMiSolicitud } from './src/pantallas/fo
 import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantallas/historial';
 import { PantallaDeInicio } from './src/pantallas/inicio';
 import { PantallaDeLogin } from './src/pantallas/login';
+import { PantallaDeNovedades } from './src/pantallas/novedades';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
 import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
@@ -164,6 +170,9 @@ function Contenido() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   // El alto real de la barra inferior, medido: el contenido deja ese espacio libre al final. 0 mientras no se ve.
   const [altoDeLaBarra, setAltoDeLaBarra] = useState(0);
+  // DL-133: las novedades sin leer, para la campana; `null` mientras no se sabe. Y si un aviso tocado espera la sesión.
+  const [sinLeer, setSinLeer] = useState<number | null>(null);
+  const avisoPendiente = useRef(esAvisoDeBe(avisoQueAbrioLaApp()));
 
   /** Muestra una pantalla ya resuelta. La usan `ir` (que resuelve el origen con `navegar`) y volver (con `anterior`). */
   const mostrar = useCallback(
@@ -311,6 +320,51 @@ function Contenido() {
     if (alMontar.estado === 'ninguna') void recuperar();
   }, [alMontar, recuperar]);
 
+  /** DL-133: cuántas novedades hay sin leer, para la campana. Una lectura liviana: una novedad y el conteo. */
+  const actualizarSinLeer = useCallback(async () => {
+    const actual = sesionActual.current;
+    if (!actual) return;
+    const r = await api.consultarNovedades(actual.token, { limit: '1' });
+    if (r.ok && sesionActual.current?.token === actual.token) setSinLeer(r.datos.unreadCount);
+  }, []);
+
+  // Con sesión: el número de la campana, el token del teléfono renovado si la cuenta tiene los avisos activos, y un aviso
+  // tocado antes de iniciar sesión, que ahora abre Novedades. Al volver del segundo plano o al llegar un aviso, el número
+  // se vuelve a pedir.
+  const tokenDeLaSesion = sesion?.token ?? null;
+  useEffect(() => {
+    const actual = sesionActual.current;
+    if (!tokenDeLaSesion || !actual) {
+      setSinLeer(null);
+      return;
+    }
+    void actualizarSinLeer();
+    void renovar(dependenciasDeAvisos, { token: actual.token, identidadId: actual.identidadId }).catch(() => undefined);
+    if (avisoPendiente.current) {
+      avisoPendiente.current = false;
+      ir({ nombre: 'novedades' });
+    }
+    const alVolver = AppState.addEventListener('change', (momento) => {
+      if (momento === 'active') void actualizarSinLeer();
+    });
+    const alLlegar = escucharAvisosRecibidos(() => void actualizarSinLeer());
+    return () => {
+      alVolver.remove();
+      alLlegar();
+    };
+  }, [tokenDeLaSesion, actualizarSinLeer, ir]);
+
+  // Tocar un aviso de BE abre Novedades; sin sesión, queda pendiente hasta iniciarla (el aviso no muestra nada).
+  useEffect(
+    () =>
+      escucharAvisosTocados((datos) => {
+        if (!esAvisoDeBe(datos)) return;
+        if (sesionActual.current) ir({ nombre: 'novedades' });
+        else avisoPendiente.current = true;
+      }),
+    [ir],
+  );
+
   /** «Iniciar sesión de nuevo» cuando no se pudo verificar: la persona elige no esperar, y la credencial se borra. */
   const iniciarDeNuevo = useCallback(() => {
     intentoDeRecuperacion.current++;
@@ -383,6 +437,8 @@ function Contenido() {
         volver={volverConCuidado}
         abrirMenu={() => setMenuAbierto(true)}
         abrirCuenta={() => irConCuidado({ nombre: 'cuenta' })}
+        sinLeer={conSesion ? sinLeer : null}
+        abrirNovedades={() => irConCuidado({ nombre: 'novedades' })}
       />
       <ScrollView
         ref={desplazamiento}
@@ -449,7 +505,8 @@ function Contenido() {
             <>
               {/* Volver, sin depender del botón ni de un gesto del sistema (10-B10 §9), está en la cabecera. */}
               {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} salir={salir} ir={ir} /> : null}
-              {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} salir={salir} ir={ir} sesionRecordada={recordada} /> : null}
+              {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} sesionRecordada={recordada} /> : null}
+              {ruta.nombre === 'novedades' ? <PantallaDeNovedades token={sesion.token} salir={salir} ir={ir} alCambiarSinLeer={setSinLeer} /> : null}
               {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
               {ruta.nombre === 'vinculo' ? (
                 <PantallaDeVinculo key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} ir={ir} volver={volver} subir={subir} />
