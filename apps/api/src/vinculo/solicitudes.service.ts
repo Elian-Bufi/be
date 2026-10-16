@@ -38,6 +38,7 @@ import {
   registrarEventoDeVinculo,
   resumenDeAlcance,
   token,
+  type SolicitudConPartes,
 } from './lectura';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -85,12 +86,7 @@ export class SolicitudesService {
         // Primero, todo lo que no depende de la contraparte: la respuesta a un pedido que falla por eso no puede
         // variar según exista o no el destino (09:213-233; 09v8:1188, «revelar la contraparte cuando ya es legítimo»).
         // 1) Semántica del pedido: alcance del catálogo y su finalidad (REG-06-61; DL-039).
-        if (!esAlcance(solicitud.scope.code)) throw errores.alcanceNoDisponible();
-        const alcance: Alcance = solicitud.scope.code;
-        if (solicitud.purpose.trim() === '') throw errores.finalidadRequerida();
-        if (solicitud.purpose !== FINALIDAD_DE_ALCANCE[alcance]) {
-          throw errores.validacionFallida([{ code: 'PURPOSE_NOT_AVAILABLE', path: 'purpose' }]);
-        }
+        const alcance = alcanceYFinalidadDelPedido(solicitud.scope.code, solicitud.purpose);
         const destino = solicitud.target.identityId.toLowerCase();
         if (!UUID.test(destino)) throw errores.recursoNoEncontrado();
         if (destino === actor.identidadId) throw errores.contraparteNoElegible();
@@ -99,75 +95,21 @@ export class SolicitudesService {
         // 2) Elegibilidad propia del profesional que solicita → 422: es su propio estado y no depende del destino.
         if (actorEsProfesional && !(await this.profesionalHabilitado(tx, actor.identidadId, alcance))) throw errores.alcanceNoDisponible();
 
-        // 3) Las dos cuentas, con bloqueo compartido y en orden de id: el cierre y la suspensión (FOR NO KEY UPDATE)
-        //    quedan antes o después de esta solicitud, nunca en el medio (T13; D8). Contraparte no operativa → 404.
-        const cuentas = await this.bloquearCuentas(tx, profesionalId, asesoradoId);
-        if (cuentas.get(destino) !== 'OPERATIVA') throw errores.recursoNoEncontrado();
-        if (cuentas.get(actor.identidadId) !== 'OPERATIVA') throw errores.estadoNoPermite();
-
-        // 4) Elegibilidad estructural completa: de la contraparte → 404 (no revelable).
-        const eleg = await this.elegibilidad(tx, profesionalId, asesoradoId, alcance);
-        const profesionalElegible = eleg.perfilProfesional && eleg.verificado && eleg.habilitado;
-        if (!profesionalElegible) throw actorEsProfesional ? errores.alcanceNoDisponible() : errores.recursoNoEncontrado();
-
-        const rol: ActorDeVinculo = actorEsProfesional ? 'PROFESIONAL' : 'ASESORADO';
-        const evaluacion = evaluarTransicionDeSolicitud(null, {
-          transicion: 'CrearSolicitud',
-          actor: rol,
-          alcanceYFinalidadValidos: true,
-          elegibilidadEstructural: eleg.profesionalOperativo && eleg.asesoradoOperativo && profesionalElegible,
-        });
-        if (!evaluacion.permitida) throw errores.estadoNoPermite();
-
-        // 4) Estado: una vencida no bloquea la equivalente nueva; un vínculo vigente para ese alcance, sí (UC-P04 E03).
-        const equivalente = { profesionalId, asesoradoId, alcance, finalidad: FINALIDAD_DE_ALCANCE[alcance] };
-        await this.caducarVencidas(tx, equivalente, ctx.momentoDeRecepcion);
-        const vigente = await tx.alcanceDeVinculo.findFirst({
-          where: { alcance, estado: { not: 'FINALIZADO' }, vinculo: { profesionalId, asesoradoId } },
-          select: { id: true },
-        });
-        if (vigente) throw errores.conflictoDeRecurso();
-
-        // 5) REG-06-44: si hay una equivalente PENDIENTE, se devuelve esa (09v8:1165-1176; CAND-09-S03, DL-037).
-        const pendiente = await tx.solicitudDeVinculo.findFirst({ where: { ...equivalente, estado: 'PENDIENTE' }, select: { id: true } });
-        if (pendiente) {
-          // Respuesta exitosa: se audita como cualquier otra (REQUIRED_SAME_TX).
-          await this.auditar(tx, operacion, 'EXITO', actor.identidadId, asesoradoId, pendiente.id, ctx);
-          return deduplicada(pendiente.id);
-        }
-
-        // «Reiterar crea nueva Solicitud relacionada» (REG-06-45).
-        const antecedente = await tx.solicitudDeVinculo.findFirst({ where: equivalente, orderBy: ORDEN_DE_LISTA, select: { id: true } });
-        const creada = await tx.solicitudDeVinculo.create({
-          data: {
-            ...equivalente,
-            iniciador: rol === 'PROFESIONAL' ? 'PROFESIONAL' : 'ASESORADO',
-            antecedenteId: antecedente?.id ?? null,
-            procedencia: procedencia as unknown as Prisma.InputJsonValue,
-            momentoDeOcurrencia: ctx.momentoDeRecepcion,
-            venceEn: new Date(ctx.momentoDeRecepcion.getTime() + this.entorno.caducidadDeSolicitudMs),
-          },
-          include: INCLUIR_PARTES_DE_SOLICITUD,
-        });
-        await registrarEventoDeVinculo(tx, {
-          tipo: 'SolicitudDeVinculoCreada',
+        // 3) a 5) Lo que comparte con API-INV-05 (DL-136): cuentas, elegibilidad, estado, deduplicación y alta.
+        const r = await this.crearEnTransaccion(tx, {
           profesionalId,
           asesoradoId,
-          solicitudDeVinculoId: creada.id,
-          estadoPrevio: null,
-          estadoPosterior: 'PENDIENTE',
-          actor: { identidadId: actor.identidadId },
+          alcance,
+          iniciador: actorEsProfesional ? 'PROFESIONAL' : 'ASESORADO',
+          solicitanteId: actor.identidadId,
+          avisarALaContraparte: true,
           procedencia,
           momento: ctx.momentoDeRecepcion,
         });
-        // DL-133 · B10-04 §42: la contraparte ve la solicitud nueva en sus novedades.
-        await this.novedades.publicar(
-          tx,
-          [{ tipo: 'SOLICITUD_RECIBIDA', destinatarioId: destino, alcance, fuenteId: actor.identidadId, referencia: { tipo: 'SolicitudDeVinculo', id: creada.id }, identidadDelHecho: creada.id, momentoDeOcurrencia: ctx.momentoDeRecepcion }],
-          procedencia,
-        );
-        await this.auditar(tx, operacion, 'EXITO', actor.identidadId, asesoradoId, creada.id, ctx);
-        const respuesta: CrearSolicitudDeVinculoResponse = { data: itemDeSolicitud(creada) };
+        // Respuesta exitosa, también la deduplicada: se audita como cualquier otra (REQUIRED_SAME_TX).
+        await this.auditar(tx, operacion, 'EXITO', actor.identidadId, asesoradoId, r.tipo === 'CREADA' ? r.solicitud.id : r.id, ctx);
+        if (r.tipo === 'DEDUPLICADA') return deduplicada(r.id);
+        const respuesta: CrearSolicitudDeVinculoResponse = { data: itemDeSolicitud(r.solicitud) };
         return { estadoHttp: 201, cuerpo: respuesta as unknown as Prisma.InputJsonValue };
       });
     } catch (e) {
@@ -200,6 +142,103 @@ export class SolicitudesService {
       await this.auditarRechazo(e, operacion, actor.identidadId, ctx);
       throw e;
     }
+  }
+
+  /**
+   * El corazón de REL-01, dentro de la transacción de quien llama: lo usan API-REL-01 y API-INV-05, que crea la solicitud
+   * del profesional al usar su invitación (DL-136). Así la invitación no tiene reglas propias de solicitud: las de acá.
+   * 3) Las dos cuentas, con bloqueo compartido y en orden de id: el cierre y la suspensión (FOR NO KEY UPDATE) quedan antes
+   *    o después de esta solicitud, nunca en el medio (T13; D8). La contraparte de quien hace el pedido no operativa →
+   *    404; quien lo hace, no operativo → 422.
+   * 4) Elegibilidad estructural completa (REG-06-49): si el profesional no es elegible, 422 cuando él mismo lo pide y 404
+   *    para la otra parte (no revelable).
+   * 5) Estado: una vencida no bloquea la equivalente nueva; un vínculo vigente para ese alcance, sí (UC-P04 E03, 409); y
+   *    si hay una equivalente PENDIENTE, se devuelve esa (REG-06-44; 09v8:1165-1176).
+   * El hecho `SolicitudDeVinculoCreada` lleva como actor a quien la inicia (06:3012). La novedad «solicitud recibida» va a
+   * la contraparte del iniciador solo si se pide: quien usa una invitación no recibe aviso de algo que hizo él mismo.
+   */
+  async crearEnTransaccion(
+    tx: Prisma.TransactionClient,
+    p: {
+      readonly profesionalId: string;
+      readonly asesoradoId: string;
+      readonly alcance: Alcance;
+      /** Quién propone el vínculo («actor iniciador», 06:3012). */
+      readonly iniciador: 'PROFESIONAL' | 'ASESORADO';
+      /** La identidad que hace el pedido HTTP: en REL-01, el iniciador; en INV-05, el asesorado que usa la invitación. */
+      readonly solicitanteId: string;
+      readonly avisarALaContraparte: boolean;
+      readonly procedencia: Procedencia;
+      readonly momento: Date;
+    },
+  ): Promise<{ readonly tipo: 'CREADA'; readonly solicitud: SolicitudConPartes } | { readonly tipo: 'DEDUPLICADA'; readonly id: string }> {
+    const { profesionalId, asesoradoId, alcance } = p;
+    const solicitanteEsProfesional = p.solicitanteId === profesionalId;
+    const contraparte = solicitanteEsProfesional ? asesoradoId : profesionalId;
+
+    const cuentas = await this.bloquearCuentas(tx, profesionalId, asesoradoId);
+    if (cuentas.get(contraparte) !== 'OPERATIVA') throw errores.recursoNoEncontrado();
+    if (cuentas.get(p.solicitanteId) !== 'OPERATIVA') throw errores.estadoNoPermite();
+
+    const eleg = await this.elegibilidad(tx, profesionalId, asesoradoId, alcance);
+    const profesionalElegible = eleg.perfilProfesional && eleg.verificado && eleg.habilitado;
+    if (!profesionalElegible) throw solicitanteEsProfesional ? errores.alcanceNoDisponible() : errores.recursoNoEncontrado();
+
+    const rol: ActorDeVinculo = p.iniciador;
+    const evaluacion = evaluarTransicionDeSolicitud(null, {
+      transicion: 'CrearSolicitud',
+      actor: rol,
+      alcanceYFinalidadValidos: true,
+      elegibilidadEstructural: eleg.profesionalOperativo && eleg.asesoradoOperativo && profesionalElegible,
+    });
+    if (!evaluacion.permitida) throw errores.estadoNoPermite();
+
+    const equivalente = { profesionalId, asesoradoId, alcance, finalidad: FINALIDAD_DE_ALCANCE[alcance] };
+    await this.caducarVencidas(tx, equivalente, p.momento);
+    const vigente = await tx.alcanceDeVinculo.findFirst({
+      where: { alcance, estado: { not: 'FINALIZADO' }, vinculo: { profesionalId, asesoradoId } },
+      select: { id: true },
+    });
+    if (vigente) throw errores.conflictoDeRecurso();
+
+    const pendiente = await tx.solicitudDeVinculo.findFirst({ where: { ...equivalente, estado: 'PENDIENTE' }, select: { id: true } });
+    if (pendiente) return { tipo: 'DEDUPLICADA', id: pendiente.id };
+
+    // «Reiterar crea nueva Solicitud relacionada» (REG-06-45).
+    const antecedente = await tx.solicitudDeVinculo.findFirst({ where: equivalente, orderBy: ORDEN_DE_LISTA, select: { id: true } });
+    const creada = await tx.solicitudDeVinculo.create({
+      data: {
+        ...equivalente,
+        iniciador: p.iniciador,
+        antecedenteId: antecedente?.id ?? null,
+        procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
+        momentoDeOcurrencia: p.momento,
+        venceEn: new Date(p.momento.getTime() + this.entorno.caducidadDeSolicitudMs),
+      },
+      include: INCLUIR_PARTES_DE_SOLICITUD,
+    });
+    const iniciadorId = p.iniciador === 'PROFESIONAL' ? profesionalId : asesoradoId;
+    await registrarEventoDeVinculo(tx, {
+      tipo: 'SolicitudDeVinculoCreada',
+      profesionalId,
+      asesoradoId,
+      solicitudDeVinculoId: creada.id,
+      estadoPrevio: null,
+      estadoPosterior: 'PENDIENTE',
+      actor: { identidadId: iniciadorId },
+      procedencia: p.procedencia,
+      momento: p.momento,
+    });
+    // DL-133 · B10-04 §42: la contraparte del iniciador ve la solicitud nueva en sus novedades.
+    if (p.avisarALaContraparte) {
+      const destinatarioId = p.iniciador === 'PROFESIONAL' ? asesoradoId : profesionalId;
+      await this.novedades.publicar(
+        tx,
+        [{ tipo: 'SOLICITUD_RECIBIDA', destinatarioId, alcance, fuenteId: iniciadorId, referencia: { tipo: 'SolicitudDeVinculo', id: creada.id }, identidadDelHecho: creada.id, momentoDeOcurrencia: p.momento }],
+        p.procedencia,
+      );
+    }
+    return { tipo: 'CREADA', solicitud: creada };
   }
 
   // ─── API-REL-02 ────────────────────────────────────────────────────────────────────────────
@@ -478,8 +517,11 @@ export class SolicitudesService {
     return true;
   }
 
-  /** Bloqueo compartido de las dos cuentas, en orden de id (orden único: prisma/concurrencia.ts). Devuelve su estado. */
-  private async bloquearCuentas(tx: Prisma.TransactionClient, a: string, b: string): Promise<Map<string, string>> {
+  /**
+   * Bloqueo compartido de las dos cuentas, en orden de id (orden único: prisma/concurrencia.ts). Devuelve su estado. Lo
+   * usa también API-INV-05 antes de bloquear la invitación (identidad → invitación → solicitud).
+   */
+  async bloquearCuentas(tx: Prisma.TransactionClient, a: string, b: string): Promise<Map<string, string>> {
     const filas = await tx.$queryRaw<{ id: string; estado: string }[]>`
       SELECT "id"::text AS "id", "estado_operativo_de_cuenta"::text AS "estado" FROM "identidad"
        WHERE "id" IN (${a}::uuid, ${b}::uuid) ORDER BY "id" FOR SHARE`;
@@ -494,10 +536,19 @@ export class SolicitudesService {
     if (partes) await this.bloquearCuentas(tx, partes.profesional_id, asesoradoId);
   }
 
-  /** Perfil, verificación y habilitación del profesional para el alcance (06 §6.8; REG-06-79). */
-  private async profesionalHabilitado(tx: Prisma.TransactionClient, profesionalId: string, alcance: Alcance): Promise<boolean> {
+  /** Perfil, verificación y habilitación del profesional para el alcance (06 §6.8; REG-06-79). La usa también API-INV-01. */
+  async profesionalHabilitado(tx: Prisma.TransactionClient, profesionalId: string, alcance: Alcance): Promise<boolean> {
     const e = await this.elegibilidad(tx, profesionalId, profesionalId, alcance);
     return e.perfilProfesional && e.verificado && e.habilitado;
+  }
+
+  /**
+   * Lo mismo con la cuenta operativa: un profesional con quien hoy se podría crear la solicitud. API-INV-04 no muestra la
+   * invitación de quien no lo es (el mismo 404 que REL-01 le da al asesorado, 09v8:1188).
+   */
+  async profesionalDisponible(tx: Prisma.TransactionClient, profesionalId: string, alcance: Alcance): Promise<boolean> {
+    const e = await this.elegibilidad(tx, profesionalId, profesionalId, alcance);
+    return e.profesionalOperativo && e.perfilProfesional && e.verificado && e.habilitado;
   }
 
   /** Transición del sistema disparada por un request: queda auditada con ese request, sin actor humano. */
@@ -603,7 +654,18 @@ export class SolicitudesService {
   }
 }
 
-function exigirClave(clave: string | undefined): void {
+/**
+ * El alcance del catálogo y su finalidad, como los valida REL-01 (REG-06-61; DL-039): fuera del catálogo → 422
+ * SCOPE_NOT_AVAILABLE; vacía → 422 PURPOSE_REQUIRED; ajena al alcance → 422 VALIDATION_FAILED. API-INV-01 usa la misma.
+ */
+export function alcanceYFinalidadDelPedido(codigo: string, finalidad: string): Alcance {
+  if (!esAlcance(codigo)) throw errores.alcanceNoDisponible();
+  if (finalidad.trim() === '') throw errores.finalidadRequerida();
+  if (finalidad !== FINALIDAD_DE_ALCANCE[codigo]) throw errores.validacionFallida([{ code: 'PURPOSE_NOT_AVAILABLE', path: 'purpose' }]);
+  return codigo;
+}
+
+export function exigirClave(clave: string | undefined): void {
   if (!IdempotenciaService.claveValida(clave)) {
     throw errores.solicitudInvalida([{ code: 'IDEMPOTENCY_KEY_REQUIRED', path: 'Idempotency-Key' }], { header: 'Idempotency-Key' });
   }

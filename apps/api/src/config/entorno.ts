@@ -29,6 +29,8 @@ export interface Entorno {
    * profundidad ante pools de direcciones, DL-030); registro 10 / h por red. Red = IPv4 o prefijo /64 de IPv6.
    * WP-03: consultas protegidas por el PDP, 120 / min por actor. Cada una registra sus decisiones, que no se borran:
    * sin límite, una sola cuenta podría llenar la base (revisión adversarial del PDP, hallazgo 11).
+   * WP-INVITACION (DL-136): ver o usar una invitación, 10 / 15 min por cuenta, desde cualquier red (como el cupo por
+   * identificador del login, DL-030): adivinar un código de 40 bits no es viable con ese ritmo.
    */
   readonly limites: {
     readonly login: Limite;
@@ -36,6 +38,7 @@ export interface Entorno {
     readonly loginPorIdentificador: Limite;
     readonly registro: Limite;
     readonly consultaProtegida: Limite;
+    readonly invitacion: Limite;
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
@@ -154,6 +157,7 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
       'RATE_LIMIT_CONSULTA_PROTEGIDA',
       errores,
     ),
+    invitacion: limite(env.RATE_LIMIT_INVITACION_MAX, env.RATE_LIMIT_INVITACION_WINDOW_MS, 10, 15 * 60 * 1000, 'RATE_LIMIT_INVITACION', errores),
   };
 
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);

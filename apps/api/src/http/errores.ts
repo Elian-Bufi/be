@@ -117,6 +117,22 @@ export const errores = {
     new ErrorDeApi(403, CodigoDeError.VISUAL_EVIDENCE_ACT_REQUIRED, 'Antes de tu primera foto, leé la información sobre las fotos de tus comidas.', detalle),
   /** API-MED-01: la foto de una comida sin un plan de Nutrición vigente: no hay un profesional al que se le informe. */
   planDeNutricionRequerido: () => new ErrorDeApi(422, CodigoDeError.ACTIVE_PLAN_REQUIRED, 'Para subir la foto de una comida hace falta un plan de Nutrición vigente.'),
+  // ─── WP-INVITACION (DL-136) ──────────────────────────────────────────────────────────────────────────────────────
+  /**
+   * Una invitación que no existe, un token o un código mal escritos, o un profesional que ya no está disponible: el mismo
+   * 404, sin oráculo (08 §24.5). El motivo real queda solo en la auditoría.
+   */
+  invitacionNoEncontrada: (motivo: 'INVITACION_DESCONOCIDA' | 'PROFESIONAL_NO_DISPONIBLE') =>
+    new ErrorDeApi(404, CodigoDeError.RESOURCE_NOT_FOUND, 'Recurso no encontrado.', undefined, motivo),
+  invitacionVencida: () => new ErrorDeApi(422, CodigoDeError.INVITATION_EXPIRED, 'La invitación venció. Pedile al profesional una nueva.'),
+  invitacionUsada: () => new ErrorDeApi(422, CodigoDeError.INVITATION_USED, 'La invitación ya se usó: es de un solo uso.'),
+  invitacionAnulada: () => new ErrorDeApi(422, CodigoDeError.INVITATION_REVOKED, 'El profesional anuló esta invitación.'),
+  /**
+   * El reintento de API-INV-01 con la misma clave no puede volver a mostrar el token y el código: BE no los guarda, los
+   * vuelve a calcular, y el cálculo ya no coincide (cambió el secreto del servidor). Nunca pasa en el uso normal.
+   */
+  invitacionNoRecuperable: () =>
+    new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'La invitación se creó, pero no se puede volver a mostrar. Anulala y creá otra.'),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };
