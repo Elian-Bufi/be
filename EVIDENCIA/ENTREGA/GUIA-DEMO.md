@@ -38,7 +38,7 @@ Esta guía los junta. Las capturas de referencia del website están en `capturas
 | # | Qué hacer | Qué mostrar |
 |---|---|---|
 | 1.1 | Abrir el website | La landing: **qué es BE** con las palabras del legajo (02 §3.2), qué hace por el profesional y por el asesorado (02 §9) y **lo que BE no hace**: no diagnostica, no puntúa personas, no arma planes solo y nadie ve datos sin autorización (02 §14) |
-| 1.2 | Señalar el aviso del encabezado | «Ambiente de prueba · solo datos sintéticos» está en todas las pantallas (08 §33) |
+| 1.2 | Bajar hasta el pie y señalar el aviso | «Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.» está en el pie de la cara pública y, con otras palabras, en el registro (08 §33). Desde WP-ESCRITORIO-AMABLE ya no va en la barra de cada pantalla; la APK conserva su franja |
 | 1.3 | «Ya tengo una cuenta» | El acceso, en el mismo tema oscuro. Iniciar sesión con **DEMO-PN** |
 
 ## 2 · El espacio profesional (4 minutos)

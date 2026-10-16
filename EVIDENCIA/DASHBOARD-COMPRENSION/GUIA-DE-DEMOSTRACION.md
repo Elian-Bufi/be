@@ -9,8 +9,10 @@ personas reales ni se escribe nada en `test` ni en producción. Lleva unos 25 mi
 - Entrá con el profesional sintético: su correo es el campo `proCorreo` de
   `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/trabajo-comprension/estado.json`, y la clave es
   `clave-sintetica-de-prueba-01`.
-- En «Espacio profesional», abrí el asesorado A (el primero de la cartera; su ficha dice «Asesorado · 2fa34a» o el nombre
-  que tenga en tu generación).
+- En «Espacio profesional», abrí la ficha del asesorado A desde «Tus asesorados», con su «Abrir». Su referencia es
+  «Asesorado · » y los últimos seis caracteres de `aseId` en ese `estado.json` (por ejemplo, «Asesorado · 2fa34a»): se
+  puede buscar por ese final. En «Pendientes» es la persona de las dos filas, pero ese «Abrir» lleva a la pestaña del
+  área, no a la ficha.
 - El escenario está armado para el día en que se generó: lo que dice «hace 20 días» cuenta desde ese día.
 
 ## 1 · Preparar una consulta (5 minutos)

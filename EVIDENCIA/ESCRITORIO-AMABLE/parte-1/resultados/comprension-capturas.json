@@ -1,0 +1,484 @@
+{
+  "modo": "capturas",
+  "inicio": "2026-10-10T17:49:16.069Z",
+  "fin": "2026-10-10T17:55:18.940Z",
+  "hoy": "2026-10-10",
+  "total": 79,
+  "fallas": 0,
+  "resultados": [
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-01",
+      "descripcion": "A 1440 × 900 en azul-noche, la primera observación de la síntesis se ve sin desplazarse",
+      "ok": true,
+      "detalle": "termina en y = 778"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "analizar a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "preguntas a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "etapas a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "contraste a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "informacion a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea-novedades a 1440 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "analizar a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "preguntas a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "etapas a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "contraste a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "informacion a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea-novedades a 1280 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "analizar a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "preguntas a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "etapas a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "contraste a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "informacion a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea-novedades a 1024 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 768 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 768 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 390 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 390 px en azul-noche: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-01",
+      "descripcion": "A 1440 × 900 en claro, la primera observación de la síntesis se ve sin desplazarse",
+      "ok": true,
+      "detalle": "termina en y = 778"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "analizar a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "preguntas a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "etapas a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "contraste a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "informacion a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea-novedades a 1440 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "analizar a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "preguntas a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "etapas a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "contraste a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "informacion a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea-novedades a 1280 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "revision-nutricion a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "analizar a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "preguntas a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "etapas a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "contraste a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "informacion a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "linea-novedades a 1024 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 768 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 768 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "resumen a 390 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "0 de 0 gráficos"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "pregunta-ejercicio a 390 px en claro: sin desborde de costado ni doble desplazamiento; los gráficos, dibujados",
+      "ok": true,
+      "detalle": "3 de 3 gráficos"
+    },
+    {
+      "clave": "GUIA-II.1",
+      "descripcion": "A 1280 × 800, Resumen: el objetivo y la planificación empieza en la primera pantalla",
+      "ok": true,
+      "detalle": "y = 319"
+    },
+    {
+      "clave": "GUIA-II.1",
+      "descripcion": "A 1280 × 800, Analizar: las preguntas empieza en la primera pantalla",
+      "ok": true,
+      "detalle": "y = 342"
+    },
+    {
+      "clave": "GUIA-II.1",
+      "descripcion": "A 1280 × 800, Línea de tiempo: el primer hecho empieza en la primera pantalla",
+      "ok": true,
+      "detalle": "y = 532"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "Modo paneles en azul-noche: 3 gráfico(s), dibujado(s) con sus curvas",
+      "ok": true,
+      "detalle": "3 de 3"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "Modo superpuestas en azul-noche: 1 gráfico(s), dibujado(s) con sus curvas",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "Modo relativo en azul-noche: 1 gráfico(s), dibujado(s) con sus curvas",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "Modo paneles en claro: 3 gráfico(s), dibujado(s) con sus curvas",
+      "ok": true,
+      "detalle": "3 de 3"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "Modo superpuestas en claro: 1 gráfico(s), dibujado(s) con sus curvas",
+      "ok": true,
+      "detalle": "1 de 1"
+    },
+    {
+      "clave": "CP-27",
+      "descripcion": "Modo relativo en claro: 1 gráfico(s), dibujado(s) con sus curvas",
+      "ok": true,
+      "detalle": "1 de 1"
+    }
+  ]
+}

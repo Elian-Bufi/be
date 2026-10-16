@@ -72,7 +72,7 @@ export const PREGUNTAS_PROFESIONALES: readonly PreguntaProfesional[] = [
   {
     id: 'alimentacion-y-medidas',
     pregunta: '¿Cómo evolucionaron la alimentación y las medidas corporales?',
-    muestra: 'Energía y proteínas registradas, con una medida corporal que elegís, en paneles sincronizados.',
+    muestra: 'Calorías y proteínas registradas, con una medida corporal que elegís, cada una en su gráfico.',
     limite: 'La ingesta registrada no es la ingesta total, y el peso no equivale a grasa ni a músculo.',
     principal: false,
   },

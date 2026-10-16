@@ -124,7 +124,7 @@ test('600 kcal confirmadas, un registro sin cantidades y una foto no son un tota
     { reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 },
   ]);
   assert.deepEqual(p.coverage, { records: 3, recordsWithQuantities: 1, recordsWithoutQuantities: 2, daysWithData: null, daysInBucket: null });
-  assert.equal(s.label, 'Energía registrada', 'nunca «consumo» ni «total»');
+  assert.equal(s.label, 'Calorías registradas', 'nunca «consumo» ni «total»');
   assert.doesNotMatch(JSON.stringify(s), /consumo total|ingesta total del día/i);
 });
 
@@ -536,7 +536,7 @@ test('el día en curso no entra en la media ni en la referencia; el total lo inc
 
 test('el resumen textual dice n, la primera y la última con sus fechas, y los subtotales; no califica', () => {
   const texto = resumenTextual(serieDe([['2026-10-01', 2000], ['2026-10-03', 1800]]), definicion('nutricion.energia'), '2026-10-01', '2026-10-07');
-  assert.match(texto, /Energía registrada \(kcal\), del 1\/10\/2026 al 7\/10\/2026: 2 observaciones con valor; la primera, 2\.000 kcal el 1\/10\/2026; la última, 1\.800 kcal el 3\/10\/2026/);
+  assert.match(texto, /Calorías registradas \(kcal\), del 1\/10\/2026 al 7\/10\/2026: 2 observaciones con valor; la primera, 2\.000 kcal el 1\/10\/2026; la última, 1\.800 kcal el 3\/10\/2026/);
   assert.doesNotMatch(texto, /mejor|peor|bien|mal|riesgo/i);
 });
 

@@ -21,6 +21,7 @@ import { Aviso } from '../../components/formulario';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../lib/api';
 import { COPY } from '../../lib/copy';
 import { useSesion } from '../../lib/sesion';
+import { fecha } from '../../lib/formato';
 
 const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], string> = {
   OPERATIVA: 'Operativa',
@@ -29,9 +30,6 @@ const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], st
 };
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error' };
-
-const fecha = (iso: string) =>
-  new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 
 export function Cuenta() {
   const router = useRouter();

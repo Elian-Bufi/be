@@ -15,17 +15,29 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DashboardResponse, DominioDeAnalisis } from '@be/domain';
 import type { Resultado } from '../../../../lib/api';
+import { motivoDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
 import { hrefConCambios, leerPeriodo, type Periodo } from './estado';
 
-/** El resumen por dominio de API-DSH-03, tal como lo leyó la ficha: también es el acceso actual por área. */
-export type PanelDelResumen = { readonly tipo: 'cargando' } | { readonly tipo: 'error' } | { readonly tipo: 'no-disponible' } | { readonly tipo: 'listo'; readonly datos: DashboardResponse['data'] };
+// Las fallas de una lectura viven en `lib/fallas` (las usa también el Espacio profesional): acá se vuelven a exportar
+// para las vistas de la ficha.
+export { motivoDeFalla, razonDeFalla, textoDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
+
+/**
+ * El resumen por dominio de API-DSH-03, tal como lo leyó la ficha: también es el acceso actual por área. Si la lectura
+ * falló, guarda por qué: «esperá un minuto» no es lo mismo que «revisá la conexión», y la ficha lo dice.
+ */
+export type PanelDelResumen =
+  | { readonly tipo: 'cargando' }
+  | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla }
+  | { readonly tipo: 'no-disponible' }
+  | { readonly tipo: 'listo'; readonly datos: DashboardResponse['data'] };
 
 export interface ContextoDelSeguimiento {
   readonly token: string;
   /** API-DSH-03 de la ficha (planes, objetivos, revisiones y disponibilidad por área). */
   readonly panel: PanelDelResumen;
   readonly recargarPanel: () => void;
-  /** Sube cuando cambió lo que se puede leer: las lecturas de la ficha se repiten con el acceso nuevo. */
+  /** Sube cuando cambió lo que se puede leer, y cuando se pide «Actualizar»: las lecturas de la ficha se repiten. */
   readonly versionDeAcceso: number;
   readonly asesoradoId: string;
   /**
@@ -94,33 +106,6 @@ export function ProveedorDelSeguimiento({
     [token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir],
   );
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
-}
-
-// ─── Fallas: por qué no llegó una lectura ──────────────────────────────────────────────────────
-
-/** Por qué falló una lectura. Decide el texto; el código de la API nunca se muestra (10-B01:1146-1189). */
-export type MotivoDeFalla = 'LIMITE' | 'RED' | 'SERVICIO' | 'OTRO';
-
-export function motivoDeFalla(r: Resultado<unknown>): MotivoDeFalla {
-  if (r.ok) return 'OTRO';
-  if (r.tipo === 'RED') return 'RED';
-  // El límite de lecturas protegidas es por profesional y por minuto: explorar muy rápido puede tocarlo.
-  if (r.codigo === 'RATE_LIMITED') return 'LIMITE';
-  return r.status >= 500 ? 'SERVICIO' : 'OTRO';
-}
-
-/** El texto de una falla, con lo que se puede hacer. Una falla nunca se presenta como ausencia de datos. */
-export function textoDeFalla(motivo: MotivoDeFalla, que: string): string {
-  switch (motivo) {
-    case 'LIMITE':
-      return `No pudimos cargar ${que}: hubo muchas consultas seguidas. Esperá un minuto y reintentá.`;
-    case 'RED':
-      return `No pudimos cargar ${que}: no hay conexión con BE. Revisá la conexión y reintentá.`;
-    case 'SERVICIO':
-      return `No pudimos cargar ${que}: BE no está disponible en este momento. Reintentá en unos minutos.`;
-    default:
-      return `No pudimos cargar ${que}. No es una ausencia de datos: reintentá.`;
-  }
 }
 
 // ─── Lecturas de a pocas ───────────────────────────────────────────────────────────────────────

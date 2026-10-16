@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Suspense, type ReactNode } from 'react';
 import { AvisoDeLlegada } from '../components/aviso-de-llegada';
 import { Encabezado } from '../components/encabezado';
+import { Icono } from '../components/icono';
 import { Pie } from '../components/pie';
 import isotipo from '../marca/isotipo-640.png';
 
@@ -84,13 +85,13 @@ export default function Inicio() {
         <section className="landing__seccion" aria-labelledby="titulo-dominios">
           <h2 id="titulo-dominios">Tres especialidades, una historia</h2>
           <div className="landing__columnas">
-            <Especialidad titulo="Nutrición" icono={<IconoNutricion />}>
+            <Especialidad titulo="Nutrición" icono={<Icono nombre="nutricion" tamano={24} />}>
               El plan alimentario, lo que la persona registra que comió y la revisión de su profesional.
             </Especialidad>
-            <Especialidad titulo="Entrenamiento" icono={<IconoEntrenamiento />}>
+            <Especialidad titulo="Entrenamiento" icono={<Icono nombre="entrenamiento" tamano={24} />}>
               El plan de entrenamiento, cada sesión que la persona ejecuta y la revisión de su profesional.
             </Especialidad>
-            <Especialidad titulo="Antropometría" icono={<IconoAntropometria />}>
+            <Especialidad titulo="Antropometría" icono={<Icono nombre="antropometria" tamano={24} />}>
               Las evaluaciones con su protocolo, los cálculos con su método y la evolución de cada medida.
             </Especialidad>
           </div>
@@ -122,6 +123,7 @@ export default function Inicio() {
   );
 }
 
+/** Una especialidad, con su ícono de la familia de BE: es decorativo, el título dice lo mismo. */
 function Especialidad({ titulo, icono, children }: { titulo: string; icono: ReactNode; children: ReactNode }) {
   return (
     <article className="tarjeta">
@@ -131,35 +133,5 @@ function Especialidad({ titulo, icono, children }: { titulo: string; icono: Reac
       <h3>{titulo}</h3>
       <p>{children}</p>
     </article>
-  );
-}
-
-/* Íconos de trazo, dibujados para BE: decorativos, el título de cada tarjeta dice lo mismo. */
-const trazo = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
-
-function IconoNutricion() {
-  return (
-    <svg viewBox="0 0 24 24" {...trazo}>
-      <path d="M3.5 11.5h17a8.5 8.5 0 0 1-17 0Z" />
-      <path d="M12 8.5c0-2.8 1.8-4.8 4.5-5.2-.2 2.9-2 4.9-4.5 5.2Z" />
-      <path d="M8 20.5h8" />
-    </svg>
-  );
-}
-
-function IconoEntrenamiento() {
-  return (
-    <svg viewBox="0 0 24 24" {...trazo}>
-      <path d="M6.5 7v10M4 9.5v5M17.5 7v10M20 9.5v5M6.5 12h11" />
-    </svg>
-  );
-}
-
-function IconoAntropometria() {
-  return (
-    <svg viewBox="0 0 24 24" {...trazo}>
-      <rect x="2.5" y="8" width="19" height="8" rx="2" />
-      <path d="M6.5 8v3M10 8v4.5M13.5 8v3M17 8v4.5" />
-    </svg>
   );
 }

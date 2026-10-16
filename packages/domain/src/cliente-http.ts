@@ -1273,19 +1273,41 @@ function leerJson(texto: string): unknown {
  * evaluación). Pide de a `limite` (el máximo de la API es 50) y se detiene en `maximoDePaginas` para que una lista sin fin
  * no cuelgue la pantalla: si quedó algo afuera, `completa` es falso y la pantalla lo puede decir. Un error en cualquier
  * página es el resultado: no se muestra media lista como si fuera entera.
+ *
+ * WP-ESCRITORIO-AMABLE, parte 5 (los pendientes de la cartera, que se cuentan en la pantalla):
+ * - `primera` es la primera página tal como llegó, con lo que la respuesta dice además de la lista (en la cartera, la
+ *   fecha con que se clasificó y el aviso de vista parcial);
+ * - un cursor vence si la lista cambió mientras se la leía (`INVALID_CURSOR`): se empieza de nuevo, una sola vez. Si
+ *   vuelve a vencer, ese es el resultado.
  */
-export async function todasLasPaginas<T>(
-  pedir: (filtro: { cursor?: string; limit: string }) => Promise<Resultado<{ readonly data: readonly T[]; readonly page: { readonly nextCursor: string | null; readonly hasMore: boolean } }>>,
+export interface PaginaDeUnaLista<T> {
+  readonly data: readonly T[];
+  readonly page: { readonly nextCursor: string | null; readonly hasMore: boolean };
+}
+
+export async function todasLasPaginas<P extends PaginaDeUnaLista<unknown>>(
+  pedir: (filtro: { cursor?: string; limit: string }) => Promise<Resultado<P>>,
   { limite = 50, maximoDePaginas = 20 }: { limite?: number; maximoDePaginas?: number } = {},
-): Promise<Resultado<{ data: T[]; completa: boolean }>> {
-  const data: T[] = [];
-  let cursor: string | undefined;
-  for (let pagina = 0; pagina < maximoDePaginas; pagina++) {
-    const r = await pedir({ ...(cursor ? { cursor } : {}), limit: String(limite) });
-    if (!r.ok) return r;
-    data.push(...r.datos.data);
-    if (!r.datos.page.hasMore || !r.datos.page.nextCursor) return { ok: true, datos: { data, completa: true } };
-    cursor = r.datos.page.nextCursor;
+): Promise<Resultado<{ data: P['data'][number][]; completa: boolean; primera: P }>> {
+  for (let intento = 0; ; intento++) {
+    const data: P['data'][number][] = [];
+    let primera: P | null = null;
+    let cursor: string | undefined;
+    let vencido = false;
+    for (let pagina = 0; pagina < Math.max(1, maximoDePaginas); pagina++) {
+      const r = await pedir({ ...(cursor ? { cursor } : {}), limit: String(limite) });
+      if (!r.ok) {
+        if (cursor !== undefined && intento === 0 && r.tipo === 'API' && r.codigo === 'INVALID_CURSOR') {
+          vencido = true;
+          break;
+        }
+        return r;
+      }
+      primera ??= r.datos;
+      data.push(...r.datos.data);
+      if (!r.datos.page.hasMore || !r.datos.page.nextCursor) return { ok: true, datos: { data, completa: true, primera } };
+      cursor = r.datos.page.nextCursor;
+    }
+    if (!vencido) return { ok: true, datos: { data, completa: false, primera: primera as P } };
   }
-  return { ok: true, datos: { data, completa: false } };
 }

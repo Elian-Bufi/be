@@ -21,7 +21,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  * - La firma es HMAC-SHA256 con una clave **derivada** (HKDF) del secreto del servidor, el mismo que firma las sesiones:
  *   no hay otra credencial que custodiar, y la clave de las rutas no sirve para firmar una sesión ni al revés.
  * - Se compara en tiempo constante. Un token alterado, vencido o de otro propósito no se distingue de uno inexistente:
- *   quien llama responde el mismo 404.
+ *   quien llama responde el mismo 404. Alterado es cualquier texto distinto del emitido, también una firma escrita de
+ *   otra forma que decodifica a los mismos bytes.
  * - La identidad del medio no es la ruta: la ruta vence, el medio no.
  */
 @Injectable()
@@ -50,6 +51,9 @@ export class RutasFirmadas {
     const [carga, firma] = token.split('.') as [string, string];
     const esperada = this.firma(carga);
     const recibida = Buffer.from(firma, 'base64url');
+    // La firma vale solo escrita como se emitió. El decodificador acepta más de un texto para los mismos bytes (el
+    // último carácter lleva bits de relleno): sin esto, un token con el final cambiado pasaba como válido.
+    if (recibida.toString('base64url') !== firma) return null;
     if (recibida.length !== esperada.length || !timingSafeEqual(recibida, esperada)) return null;
     const [letra, medioId, vence] = Buffer.from(carga, 'base64url').toString('utf8').split('.');
     if (letra !== LETRA[proposito] || !medioId || !UUID.test(medioId) || !vence || !/^\d{1,12}$/.test(vence)) return null;

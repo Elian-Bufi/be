@@ -19,9 +19,9 @@ import {
 } from '@be/domain';
 
 export const VISTAS_DEL_SEGUIMIENTO = [
-  { clave: 'resumen', texto: 'Resumen' },
-  { clave: 'linea', texto: 'Línea de tiempo' },
-  { clave: 'analizar', texto: 'Analizar' },
+  { clave: 'resumen', texto: 'Resumen', icono: 'resumen' },
+  { clave: 'linea', texto: 'Línea de tiempo', icono: 'linea-de-tiempo' },
+  { clave: 'analizar', texto: 'Analizar', icono: 'analizar' },
 ] as const;
 export type VistaDelSeguimiento = (typeof VISTAS_DEL_SEGUIMIENTO)[number]['clave'];
 

@@ -3,11 +3,12 @@
 /**
  * Entrar por preguntas profesionales (WP-DASHBOARD-COMPRENSION, eje 2). La pregunta y sus parámetros viven en la URL
  * (`pregunta`, `area`, `version`, `etapaA`, `etapaB`, `medida`, `ejercicio`, `serie`, `unidad`): solo identificadores.
- * - Sin pregunta ni métricas: las preguntas principales a la vista, las demás en «Más preguntas», y «Análisis
- *   personalizado» para elegir métricas a mano.
+ * - Sin pregunta ni métricas (la entrada de Analizar, «¿Qué querés mirar?»): las preguntas principales a la vista, en
+ *   filas, y las demás en «Más preguntas». Al lado, las métricas para comparar sin pregunta (`entrada.tsx`).
  * - Con una pregunta: lo que falta elegir se pide (nunca se elige por la persona: ni el ejercicio, ni la medida, ni la
  *   versión, ni las etapas) y lo que venía de otro asesorado se dice y se vuelve a pedir.
- * - Resuelta, el encabezado dice la pregunta, sus parámetros y su límite de interpretación, y deja cambiarla.
+ * - Resuelta, la pregunta es el título de la vista, con sus parámetros y la salida para cambiarla (lo arma `analizar.tsx`);
+ *   su límite de interpretación va al pie de los gráficos.
  * La resolución es la del dominio (`resolverPregunta`); acá solo se piden los datos y se dibuja.
  */
 import {
@@ -21,13 +22,15 @@ import {
   type ContextoDeLaPregunta,
   type EtapaDePlanificacion,
   type IdDePregunta,
+  type NombreDeIcono,
   type ParametrosDePregunta,
   type PreguntaElegida,
   type ProyeccionResponse,
   type ResolucionDePregunta,
 } from '@be/domain';
-import { useId, useMemo, useState, type FormEvent } from 'react';
+import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Cargando } from '../../../../components/estados';
+import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
@@ -76,68 +79,49 @@ export function etapaEnPalabras(e: EtapaDePlanificacion): string {
   return `${e.etiqueta} · del ${diaCivil(e.desde)} al ${diaCivil(e.ultimoDia)} (${duracionDeLaEtapa(e)})`;
 }
 
-/** Las preguntas, cuando todavía no se eligió ninguna. */
-export function ListaDePreguntas({ onPersonalizado }: { onPersonalizado: () => void }) {
+/** El ícono de cada pregunta: acompaña al texto, no lo reemplaza. */
+const ICONO_DE_PREGUNTA: Readonly<Record<IdDePregunta, NombreDeIcono>> = {
+  'cambio-desde-el-plan': 'plan',
+  'registrado-vs-indicado': 'distinto',
+  'progreso-de-un-ejercicio': 'carga',
+  'informacion-para-revisar': 'revision',
+  'alimentacion-y-medidas': 'nutricion',
+  'comparar-etapas': 'comparar',
+};
+
+/**
+ * Las preguntas, cuando todavía no se eligió ninguna: una fila por pregunta, con su ícono, lo que muestra y una flecha.
+ * Las filas de una lista miden lo mismo (E-18).
+ */
+export function ListaDePreguntas() {
   const { ir } = useSeguimiento();
   const id = useId();
   const elegir = (p: IdDePregunta) => ir(parametrosDePregunta({ id: p, params: {} }), { agregarAlHistorial: true });
   const principales = PREGUNTAS_PROFESIONALES.filter((p) => p.principal);
   const otras = PREGUNTAS_PROFESIONALES.filter((p) => !p.principal);
-  return (
-    <section className="preguntas-profesionales" aria-labelledby={`${id}-titulo`}>
-      <h3 id={`${id}-titulo`}>Empezar por una pregunta</h3>
-      <ul className="preguntas-profesionales__lista">
-        {principales.map((p) => (
-          <li key={p.id}>
-            <button type="button" className="tarjeta-de-pregunta" onClick={() => elegir(p.id)}>
-              <span className="tarjeta-de-pregunta__pregunta">{p.pregunta}</span>
-              <span className="tarjeta-de-pregunta__muestra">{p.muestra}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <details className="preguntas-profesionales__mas">
-        <summary>Más preguntas</summary>
-        <ul className="preguntas-profesionales__lista">
-          {otras.map((p) => (
-            <li key={p.id}>
-              <button type="button" className="tarjeta-de-pregunta" onClick={() => elegir(p.id)}>
-                <span className="tarjeta-de-pregunta__pregunta">{p.pregunta}</span>
-                <span className="tarjeta-de-pregunta__muestra">{p.muestra}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </details>
-      <p>
-        <button type="button" className="boton boton--enlace" onClick={onPersonalizado}>
-          Análisis personalizado: elegir las métricas a mano
-        </button>
-      </p>
-    </section>
+  const fila = (p: (typeof PREGUNTAS_PROFESIONALES)[number]) => (
+    <li key={p.id}>
+      <button type="button" className="tarjeta-de-pregunta" onClick={() => elegir(p.id)}>
+        <Icono nombre={ICONO_DE_PREGUNTA[p.id]} tamano={20} />
+        <span className="tarjeta-de-pregunta__textos">
+          <span className="tarjeta-de-pregunta__pregunta">{p.pregunta}</span>
+          <span className="tarjeta-de-pregunta__muestra">{p.muestra}</span>
+        </span>
+        <Icono nombre="derecha" tamano={18} />
+      </button>
+    </li>
   );
-}
-
-/** El encabezado de una pregunta resuelta: la pregunta, sus parámetros y su límite, con las salidas. */
-export function PreguntaActiva({ pregunta, parametros, onCambiar }: { pregunta: PreguntaElegida; parametros: string; onCambiar: () => void }) {
-  const { ir } = useSeguimiento();
-  const p = preguntaProfesional(pregunta.id);
   return (
-    <div className="pregunta-activa" role="region" aria-label="Pregunta en curso">
-      <p className="pregunta-activa__titulo">
-        <span className="pregunta-activa__rotulo">Pregunta</span> <strong>{p.pregunta}</strong>
-      </p>
-      {parametros ? <p className="metadatos">{parametros}</p> : null}
-      <p className="nota">{p.limite}</p>
-      <div className="acciones">
-        <button type="button" className="boton boton--secundario boton--compacto" onClick={onCambiar}>
-          Cambiar los datos
-        </button>
-        <button type="button" className="boton boton--enlace" onClick={() => ir(parametrosDePregunta(null), { agregarAlHistorial: true })}>
-          Otra pregunta o análisis personalizado
-        </button>
-      </div>
-    </div>
+    <section className="tarjeta-de-entrada preguntas-profesionales" aria-labelledby={`${id}-titulo`}>
+      <h3 id={`${id}-titulo`}>
+        <Icono nombre="pregunta" tamano={20} /> Empezar por una pregunta
+      </h3>
+      <ul className="preguntas-profesionales__lista">{principales.map(fila)}</ul>
+      <details className="preguntas-profesionales__mas">
+        <summary>Más preguntas ({otras.length})</summary>
+        <ul className="preguntas-profesionales__lista">{otras.map(fila)}</ul>
+      </details>
+    </section>
   );
 }
 
@@ -182,7 +166,8 @@ export function ElegirParametros({
   };
   return (
     <form className="panel parametros-de-pregunta" onSubmit={enviar} aria-labelledby={`${id}-titulo`} noValidate>
-      <h3 id={`${id}-titulo`}>{p.pregunta}</h3>
+      {/* La pregunta ya es el título de la vista (WP-ESCRITORIO-AMABLE): acá va qué se pide para responderla. */}
+      <h3 id={`${id}-titulo`}>Datos para responder</h3>
       <p className="metadatos">{p.muestra}</p>
       {resolucion && resolucion.noAplican.length > 0 ? (
         <p className="nota" role="status">
@@ -303,6 +288,90 @@ export function ElegirParametros({
         </button>
       </div>
     </form>
+  );
+}
+
+/**
+ * Los datos de «¿Cómo viene progresando este ejercicio?», en el lugar (WP-ESCRITORIO-AMABLE, C-21): el ejercicio, la
+ * serie y la unidad se cambian ahí mismo, sin abrir el formulario. Ocupan el lugar de las etiquetas de las métricas,
+ * que en esta pregunta son siempre las tres de esa serie.
+ * - **Nada se elige por la persona** (D-13): al cambiar de ejercicio, la serie y la unidad siguen si el otro ejercicio
+ *   las tiene registradas; si no, se piden con el formulario de siempre, que las sugiere a la vista para confirmar.
+ * - **Un control aparece solo si hay algo para elegir:** con una sola serie o una sola unidad, el dato se escribe.
+ */
+export function ParametrosDelEjercicio({ pregunta, contexto }: { pregunta: PreguntaElegida; contexto: ContextoDeLaPregunta }) {
+  const { ir } = useSeguimiento();
+  const p = pregunta.params;
+  const ejercicio = contexto.ejercicios.find((e) => e.exerciseKey === p.exerciseKey) ?? null;
+  if (!ejercicio) return null;
+  const unidadesDe = (e: (typeof contexto.ejercicios)[number]): readonly ('kg' | 'lb')[] => (e.loadUnits.length > 0 ? e.loadUnits : ['kg']);
+  const cambiar = (c: Partial<ParametrosDePregunta>) => ir(parametrosDePregunta({ id: pregunta.id, params: { ...p, ...c } }), { agregarAlHistorial: true });
+  const elegirEjercicio = (clave: string) => {
+    const otro = contexto.ejercicios.find((e) => e.exerciseKey === clave);
+    if (!otro) return;
+    cambiar({
+      exerciseKey: clave,
+      setIndex: p.setIndex !== undefined && otro.setNumbers.includes(p.setIndex) ? p.setIndex : undefined,
+      unit: p.unit !== undefined && unidadesDe(otro).includes(p.unit) ? p.unit : undefined,
+    });
+  };
+  const unidades = unidadesDe(ejercicio);
+  return (
+    <div className="parametros-en-el-lugar" role="group" aria-label="El ejercicio, la serie y la unidad">
+      <Parametro nombre="Ejercicio" icono="entrenamiento" fijo={contexto.ejercicios.length <= 1 ? ejercicio.name : null}>
+        <select value={ejercicio.exerciseKey} onChange={(e) => elegirEjercicio(e.target.value)}>
+          {contexto.ejercicios.map((x) => (
+            <option key={x.exerciseKey} value={x.exerciseKey}>
+              {x.name}
+              {x.homonym ? ' (otro con el mismo nombre)' : ''} · {x.sessions} {x.sessions === 1 ? 'sesión' : 'sesiones'}
+            </option>
+          ))}
+        </select>
+      </Parametro>
+      <Parametro nombre="Serie" fijo={ejercicio.setNumbers.length <= 1 ? String(p.setIndex ?? '') : null}>
+        <select value={p.setIndex ?? ''} onChange={(e) => cambiar({ setIndex: Number(e.target.value) })}>
+          {ejercicio.setNumbers.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </Parametro>
+      <Parametro nombre="Unidad" fijo={unidades.length <= 1 ? (p.unit ?? '') : null}>
+        <select value={p.unit ?? ''} onChange={(e) => cambiar({ unit: e.target.value as 'kg' | 'lb' })}>
+          {unidades.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
+      </Parametro>
+      <p className="parametros-en-el-lugar__nota">Cada punto es esa serie en una sesión.</p>
+    </div>
+  );
+}
+
+/**
+ * Un dato de la pregunta, en el lugar: su nombre y, al lado, el control para cambiarlo. Si no hay otra cosa para
+ * elegir (`fijo`), va escrito: no es un control, y no lleva su rótulo.
+ */
+function Parametro({ nombre, icono, fijo, children }: { nombre: string; icono?: NombreDeIcono; fijo: string | null; children: ReactNode }) {
+  const delante = (
+    <>
+      {icono ? <Icono nombre={icono} tamano={18} /> : null}
+      <span className="parametro-en-el-lugar__nombre">{nombre}:</span>
+    </>
+  );
+  return fijo !== null ? (
+    <span className="parametro-en-el-lugar parametro-en-el-lugar--fijo">
+      {delante}
+      <strong>{fijo}</strong>
+    </span>
+  ) : (
+    <label className="parametro-en-el-lugar">
+      {delante}
+      {children}
+    </label>
   );
 }
 

@@ -5,10 +5,11 @@
  * para listas por cursor. DL-113 suma el estado vacío con su paso siguiente, para que todas las pantallas lo digan
  * igual: qué falta y qué se puede hacer, nunca un cero.
  */
-import { COPY } from '@be/domain';
+import { COPY, type NombreDeIcono } from '@be/domain';
 import type { ReactNode } from 'react';
 import type { EstadoDeLista } from '../lib/lista';
 import { Aviso } from './formulario';
+import { Icono } from './icono';
 
 /** Una región de estado: el lector de pantalla anuncia que se está cargando, y la marca respeta «reducir movimiento». */
 export function Cargando() {
@@ -26,6 +27,46 @@ export function EstadoVacio({ titulo, children, accion }: { titulo: string; chil
       <p className="estado-vacio__titulo">{titulo}</p>
       {children}
       {accion ? <div className="acciones">{accion}</div> : null}
+    </div>
+  );
+}
+
+/**
+ * Un estado dicho en el lugar de lo que falta (WP-ESCRITORIO-AMABLE, pantallas 15 y 19): un ícono, qué pasó, por qué y
+ * qué se puede hacer. Se reconoce por el ícono y por el título, no por un color. Lo usan el gráfico de una métrica en
+ * «Analizar» y un indicador o una tarjeta del Resumen: una falla nunca se presenta como ausencia de datos, y una
+ * ausencia nunca como un cero.
+ */
+export function BloqueDeEstado({
+  tipo,
+  icono,
+  titulo = null,
+  children,
+  onReintentar = null,
+  deQue,
+}: {
+  /** Va en la clase del bloque. `cargando` se dibuja con borde punteado y se anuncia al lector de pantalla. */
+  tipo: string;
+  icono: NombreDeIcono;
+  titulo?: string | null;
+  children: ReactNode;
+  onReintentar?: (() => void) | null;
+  /** Qué se reintenta, para el lector de pantalla cuando hay varios «Reintentar» en la vista. */
+  deQue?: string;
+}) {
+  return (
+    <div className={`estado-de-grafico estado-de-grafico--${tipo}`} role={tipo === 'cargando' ? 'status' : undefined}>
+      <Icono nombre={icono} tamano={24} />
+      <div className="estado-de-grafico__texto">
+        {titulo ? <p className="estado-de-grafico__titulo">{titulo}</p> : null}
+        <p className="nota">{children}</p>
+      </div>
+      {onReintentar ? (
+        <button type="button" className="boton boton--secundario boton--compacto" onClick={onReintentar}>
+          <Icono nombre="actualizar" tamano={18} />
+          Reintentar{deQue ? <span className="visualmente-oculto"> {deQue}</span> : null}
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,17 @@
+inicio: 2026-10-10 15:46 · commit fd0c4c4 + cambios sin commit: 14
+datos: verificación: 25 de 25 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 79 OK · 0 datos · 0 fallas · 79 de 79 bien
+r-funcional: salida 0 · 83 OK · 1 datos · 0 fallas · 84/84 comprobaciones bien
+rc-funcional: salida 0 · 66 OK · 9 datos · 0 fallas · 75 de 75 bien
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 1 · 16 OK · 0 datos · 1 fallas · 16/17 comprobaciones bien; fallan: PRO-10
+FALLA PRO-10 · En azul-noche, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba) — Peso · cada toma (kg): 126 px sin dibujo (mínimo 90) · Índice de masa corporal : 0 px sin dibujo (mínimo 60)
+fin: 2026-10-10 16:09
+repetición de las pasadas que miden píxeles, con la medición corregida (sin los textos del gráfico): 2026-10-10 16:11
+datos: verificación: 25 de 25 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-descartable: salida 0 · 17 OK · 0 datos · 0 fallas · 17/17 comprobaciones bien
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+r-funcional: salida 0 · 83 OK · 1 datos · 0 fallas · 84/84 comprobaciones bien
+fin de la repetición: 2026-10-10 16:22

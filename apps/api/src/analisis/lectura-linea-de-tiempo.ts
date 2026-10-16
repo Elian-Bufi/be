@@ -181,7 +181,7 @@ export function entradasDeComidas(registros: readonly RegistroDeComida[], asesor
         // Solo con cantidades informadas BE compara: el resultado va aparte del modo.
         ...(frente.modo === 'INFORMADAS' ? [{ label: 'Frente a lo indicado', value: frenteALoIndicadoEnPalabras(frente) }] : []),
         // El mismo redondeo que la pantalla de registro: el valor coincide en los dos lugares (encargo §11).
-        ...(energia !== null ? [{ label: 'Energía registrada', value: `${redondeoDePresentacion(energia, 'energyKcal')} kcal` }] : []),
+        ...(energia !== null ? [{ label: 'Calorías registradas', value: `${redondeoDePresentacion(energia, 'energyKcal')} kcal` }] : []),
         ...(incompletos ? [{ label: 'Nutrientes', value: 'falta el dato de alguno' }] : []),
         ...(r.kind === 'DIFFERENT' && !r.consumed ? [{ label: 'Calorías y macros', value: 'sin calcular (no se inventan)' }] : []),
         ...(r.evidence.length > 0 ? [{ label: 'Foto', value: r.evidence.length === 1 ? 'con foto' : `${r.evidence.length} fotos` }] : []),

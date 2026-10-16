@@ -1,0 +1,12 @@
+inicio: 2026-10-10 22:06 · commit 40a578e + cambios sin commit: 25
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 1 · 146 OK · 6 datos · 1 fallas · 152/153 comprobaciones bien; fallan: E-55
+FALLA E-55 · A 1440 × 900 entran, sin desplazarse, las tres tarjetas enteras (con su acción) y el nombre, el valor y la regla de los cuatro indicadores — {"tarjetas":3,"finDeLasTarjetas":772,"finDeLasAcciones":756,"tituloDeIndicadores":784,"indicadores":4,"finDeLosNombres":852,"finDeLosValores"
+rc-funcional: salida 1 · 66 OK · 9 datos · 1 fallas · 75 de 76 bien; con observaciones: CP-28 Con el teclado se alcanzan los hechos de
+FALLA CP-28 · Con el teclado se alcanzan los hechos de las tarjetas, la acción de cada área y las preguntas del Resumen, con el foco visible — 6 Tab · 2 dentro (pregunta) · ¿Qué cambió desde que empezó este plan? | ¿Lo registrado coincide con lo indicado?
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 17 OK · 0 datos · 0 fallas · 17/17 comprobaciones bien
+fin: 2026-10-10 22:31

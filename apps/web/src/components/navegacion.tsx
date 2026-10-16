@@ -4,6 +4,9 @@
  * Navegación de las rutas con sesión. Dos espacios separados (10-B01; criterio 11A n.º 1): el del asesorado vive bajo
  * `/account` y nunca bajo `/pro` (DL-025); el profesional tiene su propio espacio en `/pro` (DL-041).
  * Mostrar u ocultar un enlace no autoriza nada: cada operación la decide la API.
+ *
+ * WP-ESCRITORIO-AMABLE: en el espacio profesional quedan los cuatro lugares de trabajo; «Cuenta» está en el menú de la
+ * esquina del encabezado (`MenuDeCuenta`).
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -21,7 +24,6 @@ const PROFESIONAL = [
   { href: '/pro/templates', texto: 'Plantillas y habituales' },
   { href: '/pro/recipes', texto: 'Mis recetas' },
   { href: '/pro/exercises', texto: 'Mis ejercicios' },
-  { href: '/account', texto: 'Cuenta' },
 ] as const;
 
 export function NavegacionDeCuenta() {

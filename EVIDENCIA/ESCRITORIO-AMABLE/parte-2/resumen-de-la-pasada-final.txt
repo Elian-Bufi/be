@@ -1,0 +1,10 @@
+inicio: 2026-10-10 18:15 · commit c94a76c + cambios sin commit: 21
+datos: verificación: 25 de 25 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 79 OK · 0 datos · 0 fallas · 79 de 79 bien
+r-funcional: salida 0 · 108 OK · 4 datos · 0 fallas · 112/112 comprobaciones bien
+rc-funcional: salida 0 · 67 OK · 9 datos · 0 fallas · 76 de 76 bien
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 17 OK · 0 datos · 0 fallas · 17/17 comprobaciones bien
+fin: 2026-10-10 18:41

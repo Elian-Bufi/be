@@ -1,0 +1,15 @@
+inicio: 2026-10-10 19:52 · commit af7f984 + cambios sin commit: 3
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 79 OK · 0 datos · 0 fallas · 79 de 79 bien
+r-funcional: salida 0 · 118 OK · 4 datos · 0 fallas · 122/122 comprobaciones bien
+rc-funcional: salida 1 · 62 OK · 9 datos · 2 fallas · 71 de 73 bien; con observaciones: R3 La evidencia ocupa menos de la mitad que un
+FALLA R3 · La evidencia ocupa menos de la mitad que una casilla por registro — 842 de 1612 px
+FALLA R3 · Evidencia de la revisión de Nutrición (pasada del 2026-10-09): el recorrido llegó al final — Cannot read properties of null (reading 'resumen')
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 17 OK · 0 datos · 0 fallas · 17/17 comprobaciones bien
+fin: 2026-10-10 20:19
+repetición de recorrido-comprension.mjs funcional, sobre los mismos datos, con la espera corregida (la revisión de Nutrición preparada se arma en dos lecturas): 2026-10-10 20:24
+rc-funcional: salida 0 · 67 OK · 9 datos · 0 fallas · 287 s · 76 de 76 bien
+fin de la repetición: 2026-10-10 20:29

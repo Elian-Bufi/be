@@ -101,7 +101,11 @@ export function VistaDeLamina() {
 
   const cargar = useCallback(async () => {
     setLista(null);
-    const [evaluaciones, vinculos] = await Promise.all([todasLasPaginas((f) => api.listarEvaluacionesAntropometricas(token, asesoradoId, f)), api.consultarVinculos(token)]);
+    const [evaluaciones, vinculos] = await Promise.all([
+      todasLasPaginas((f) => api.listarEvaluacionesAntropometricas(token, asesoradoId, f)),
+      // Todos los vínculos, no los primeros 20: si no, el nombre de un asesorado antiguo no se encontraba.
+      todasLasPaginas((f) => api.consultarVinculos(token, { cursor: f.cursor })),
+    ]);
     if (sesionPerdida(evaluaciones) || sesionPerdida(vinculos)) return;
     if (!evaluaciones.ok) return setLista(evaluaciones as Resultado<never>);
     // El nombre va en el encabezado de la lámina, como en el compositor; si no se puede leer, la lámina va sin nombre.

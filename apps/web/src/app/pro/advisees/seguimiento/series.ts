@@ -37,12 +37,20 @@ export type EstadoDeSerie =
       /** Las observaciones de la métrica (grano DAY u ORIGINAL), para resumir, comparar y referenciar. */
       readonly observaciones: SerieAnalitica;
       readonly bandas: readonly VigenciaDePlan[];
+      /**
+       * Lo planificado que llega con la serie, en su misma unidad: los escalones del requerimiento energético (uno por
+       * versión del objetivo vigente en el período). Solo las calorías lo traen; el resto, vacío (WP-ESCRITORIO-AMABLE,
+       * C-17: el objetivo de los macronutrientes no viaja en esta lectura).
+       */
+      readonly objetivo: readonly { readonly desde: string; readonly hasta: string | null; readonly valor: number }[];
       readonly parcial: boolean;
       readonly generada: string;
       readonly zona: string;
     }
   | { readonly tipo: 'sin-acceso' }
   | { readonly tipo: 'sin-especificacion' }
+  /** La lectura respondió bien y no trae serie: en el período no hay tomas de esa medida ni sesiones de ese ejercicio. */
+  | { readonly tipo: 'sin-datos' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
 
 export interface SerieDelAnalisis {
@@ -104,11 +112,15 @@ function estadoDe(r: Respuesta, deObservaciones: Respuesta | null): EstadoDeSeri
   }
   const serie = serieDe(r);
   const observaciones = deObservaciones ? serieDe(deObservaciones) : serie;
-  if (!r.ok || !serie || !observaciones) return { tipo: 'error', motivo: 'OTRO' };
+  if (!r.ok) return { tipo: 'error', motivo: 'OTRO' };
+  // Respondió bien y sin serie: no hay nada de esa métrica en el período. Es una ausencia, no una falla.
+  if (!serie || !observaciones) return { tipo: 'sin-datos' };
   const d = r.datos.data;
   const res = d.result;
   const bandas = !res || res.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? [] : res.planVersions;
-  return { tipo: 'lista', serie, observaciones, bandas, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
+  // El requerimiento está en kcal por día: acompaña solo a la serie de calorías (la API ya lo manda vacío en las demás).
+  const objetivo = res?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' && res.metric === 'ENERGY' ? res.prescribed.energyRequirement.map((e) => ({ desde: e.from, hasta: e.to, valor: e.value })) : [];
+  return { tipo: 'lista', serie, observaciones, bandas, objetivo, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
 }
 
 export interface SeriePedida {

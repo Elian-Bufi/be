@@ -1,0 +1,6 @@
+Después del arreglo del renglón de las vistas (commit d56d485), sobre su compilación y los datos del día (2026-10-11, 01:25 a 01:30).
+Se repitieron los tres recorridos que miran ese renglón. Los otros cuatro son los de la pasada final (resumen-de-la-pasada-final.txt).
+
+r-linea-2: 26 OK · 0 datos · 0 fallas · 26/26 comprobaciones bien
+r-capturas-2: 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar-2: 20 OK · 0 datos · 0 fallas · 20 de 20 bien

@@ -1,0 +1,8 @@
+roto: después de una revocación, el origen sigue mostrando el valor (lo protege PRO-20 y CP-23)
+rota: compilado: web estática (apps/web/out)
+== rc-revocacion-mutante: 5 OK · 1 fallas · 5 de 6 bien; con observaciones: CP-23 Después de revocar, el origen dice «no está disponible» y no repite el valor que había quedado a la vista
+CP-23 · Después de revocar, el origen dice «no está disponible» y no repite el valor que había quedado a la vista — Volver a la lectura De dónde sale este dato Peso · 7 oct 2026 79,9 Clase de dato: Medido Peso: medición directa de cada toma. Sin faltantes · n = 1 Esta toma no está disponible con tu acceso actual. Ver en Antropometría 
+FALLA CP-23 · Después de revocar, el origen dice «no está disponible» y no repite el valor que había quedado a la vista — Volver a la lectura De dónde sale este dato Peso · 7 oct 2026 79,9 Clase de dato: Medido Peso: medición directa de cada toma. Sin faltantes · n = 1 Esta toma no está disponible con tu acceso actual. Ver en Antropometría 
+restaurado: app/pro/advisees/seguimiento/analizar.tsx
+buena: compilado: web estática (apps/web/out)
+cambios sin commit: 0

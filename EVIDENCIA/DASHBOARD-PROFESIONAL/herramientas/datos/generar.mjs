@@ -15,7 +15,8 @@
 //              sesiones (3 por semana) y tomas (cada dos semanas) por SQL, con los mismos disparadores. No se verifica
 //              contra valores a mano: es volumen, no un caso de lectura.
 //   descartable-cuentas  (revisión de #153, hallazgo 5) cuentas sintéticas SEPARADAS y DESCARTABLES, nuevas en cada
-//              corrida: un profesional con Nutrición y Antropometría y un asesorado. Las de A, B y C no se tocan. Escribe
+//              corrida: un profesional (habilitado en las tres áreas; con vínculo en Nutrición y Antropometría, y
+//              Entrenamiento libre para pedir un vínculo desde la pantalla) y un asesorado. Las de A, B y C no se tocan. Escribe
 //              trabajo/demo-profesionales-descartable.txt: hay que reiniciar la API con ese BE_DEMO_PROFESIONALES.
 //   comprension · comprension-e · verificar-comprension   los escenarios D y E de WP-DASHBOARD-COMPRENSION
 //              (datos/comprension.mjs): revisiones por área en fechas distintas, cargas y correcciones después del corte,
@@ -627,7 +628,9 @@ async function descartableCuentas() {
   const aseId = await registrarCuenta(aseCorreo, 'APK');
   guardarEstado({ descartable: { proCorreo, proId, aseCorreo, aseId, profesional: PROFESIONAL_DESCARTABLE, creado: new Date().toISOString() } });
   const actual = /BE_DEMO_PROFESIONALES=(.*)/.exec(fs.readFileSync(enTrabajo('demo-profesionales.txt'), 'utf8'))?.[1]?.trim() ?? '';
-  const extendido = [actual, `${proId}|NUTRICION|SANITARIO|${PROFESIONAL_DESCARTABLE}`, `${proId}|ANTROPOMETRIA|SANITARIO|${PROFESIONAL_DESCARTABLE}`].filter(Boolean).join(';');
+  // Habilitado en las tres áreas y con vínculo en dos (`descartable-datos`): la tercera queda libre para que el recorrido
+  // pida un vínculo desde el Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5) sin tocar los datos principales.
+  const extendido = [actual, ...['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'].map((alcance) => `${proId}|${alcance}|SANITARIO|${PROFESIONAL_DESCARTABLE}`)].filter(Boolean).join(';');
   fs.writeFileSync(enTrabajo('demo-profesionales-descartable.txt'), `BE_DEMO_PROFESIONALES=${extendido}\n`);
   console.log('cuentas descartables listas: reiniciá la API con trabajo/demo-profesionales-descartable.txt y seguí con descartable-datos');
 }
