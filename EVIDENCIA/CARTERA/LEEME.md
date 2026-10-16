@@ -3,7 +3,9 @@
 > **Nota del 2026-10-03 (DL-116).** El ID de la operación pasa a **API-CAR-01**: API-DSH-04 es, en el 09, la línea
 > temporal. Esta evidencia conserva el ID con el que se hizo.
 
-Decisión de Elián del 2026-09-30 sobre la ficha `docs/propuestas/PF-07_vista-de-cartera.md`, registrada como DL-107. Rama `feat/cartera-profesional`, sobre `main` (`53cc70e`). Para auditoría, **sin integrar, sin desplegar y sin APK**.
+Decisión de Elián del 2026-09-30 sobre la ficha `docs/propuestas/PF-07_vista-de-cartera.md`, registrada como DL-107. Rama `feat/cartera-profesional`, sobre `main` (`53cc70e`). ~~Para auditoría, **sin integrar, sin desplegar y sin APK**.~~
+
+**Estado (2026-10-16):** integrado en `main` el 2026-09-30 con el PR #120 (`8013ed0`) y desplegado en `test` con `76f2a10` (`EVIDENCIA/PUBLICACION-0.12.1/LEEME.md`). No lleva APK: es del website profesional.
 
 ## Qué puede hacer el profesional
 
@@ -22,7 +24,7 @@ Cada fila trae la **última actividad registrada** del asesorado en ese dominio 
 ## Cómo está hecho
 
 - `packages/domain/src/cartera.ts`: clasificación de la revisión (vencida / próxima / sin fecha / todavía no), orden por urgencia objetiva con empates por antigüedad, copy con un control de términos que califiquen (los de los tres dominios más «inactivo», «riesgo», «alerta», «ranking», «racha»).
-- `packages/domain/src/fechas-civiles.ts`: fecha civil por zona, días de calendario, inicio del día y validez de una fecha. Compartible con la evolución antropométrica (#116) cuando se integre.
+- `packages/domain/src/fechas-civiles.ts`: fecha civil por zona, días de calendario, inicio del día y validez de una fecha. Compartible con la evolución antropométrica (#116, integrada el 2026-09-30).
 - `apps/api/src/cartera/`: `GET /me/portfolio`. Recorre los vínculos con alcance ACEPTADO del profesional; el PDP decide y **registra** por asesorado y alcance (como API-DSH-03); todos los hechos se leen en **una** transacción; paginación por cursor sobre la lista ordenada; tope de 200 asesorados por lectura. Sin tablas nuevas.
 - `apps/web/src/app/pro/pendientes.tsx`: la sección, con los mismos componentes de lista, período y avisos que el resto del website.
 

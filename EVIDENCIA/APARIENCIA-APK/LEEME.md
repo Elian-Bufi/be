@@ -5,7 +5,9 @@
 - Los dos entran en la APK 0.12.1.
 - El website se actualiza a estas mismas paletas en un PR aparte, después de integrar #118.
 
-Rama `feat/apk-temas`, apilada sobre #123 (formularios y versión 0.12.1). Para auditoría: **sin integrar, sin desplegar y sin APK construida todavía**.
+Rama `feat/apk-temas`, apilada sobre #123 (formularios y versión 0.12.1). ~~Para auditoría: **sin integrar, sin desplegar y sin APK construida todavía**.~~
+
+**Estado (2026-10-16):** integrado en `main` el 2026-09-30 con el PR #124 (`fec9450`) y publicado ese día en la APK 0.12.1 (`be-apk-0.12.1`), construida desde ese commit (`EVIDENCIA/PUBLICACION-0.12.1/LEEME.md`).
 
 ## De dónde salen los colores
 - **Azul noche:** medido píxel a píxel en las pantallas mobile de referencia que armó Dirección (Inicio, Antropometría y Progreso). Es más oscuro que el anterior (`#04213F`). El cian es más intenso, las tarjetas llevan un borde luminoso y el botón principal pasa a ser claro con texto oscuro.

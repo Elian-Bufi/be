@@ -45,7 +45,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 | Qué | Requisitos | Estado |
 |---|---|---|
 | **Alta y verificación de profesionales, y rol administrador** (WP-09). Hoy un profesional se habilita con un servicio interno y cuentas demo. El administrador es actor en RF-011, RF-012 y RF-014, y exige MFA siempre (08 §25) | RF-007 a RF-014 · RF-067 · UC-P01 a P03 · UC-E01 · API-PRO-01 a 13 · DL-036 | Fuera del tramo. Ficha del 2/10 en `docs/propuestas/PERFIL-DEL-ASESORADO-Y-ADMINISTRACION_fichas.md`. **La mesa pide distintos roles, no un administrador** |
-| **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107), los resúmenes por dominio (DL-031) y la línea de tiempo del escritorio. **La TVCC-30 (RF-058 · UC-S01) quedó hecha el 2026-10-16** (DL-135): cálculo interno y conservado, sin HTTP, como dice el 09. Faltan las notas de coordinación (RF-057) y las proyecciones |
+| **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107), los resúmenes por dominio (DL-031) y la línea de tiempo del escritorio. **La TVCC-30 (RF-058 · UC-S01) quedó hecha el 2026-10-16** (DL-135): cálculo interno y conservado, sin HTTP, como dice el 09. Faltan las notas de coordinación (RF-057, P0: ficha con ocho decisiones para Dirección en docs/propuestas/NOTAS-DE-COORDINACION_ficha.md) y las proyecciones |
 | **Perfil del asesorado** con nombre visible. El perfil propio existía sin contenido (RF-017 parcial desde WP-02); el nombre visible sale del 09v8 §3.2 y del B10-08 §5.4 | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | **Hecho el 2026-10-15** (decisión de Dirección; PR #159, sin integrar): el nombre visible con versiones, API-ACC-06 y su lectura, «Tu nombre» en «Cuenta», y el profesional lo ve con un vínculo vigente. Falta en la APK, que lo suma en su próxima versión; otros campos del perfil siguen en DL-023 y DL-095 |
 | **Novedades y avisos push**: el centro de novedades, los avisos por Expo y los recordatorios diarios de registro | RF-061 · RF-062 · UC-P30 · UC-E08 · API-NOV-01 a 06 · DL-133 | **Hecho el 2026-10-16** (pedido de Dirección; PR #163): website y APK. Para que un teléfono reciba avisos falta el proyecto de Firebase de Dirección (`docs/DESPLIEGUE.md`, «Avisos push») |
 | **Exportar los datos del titular** y los pasos 2 y 3 de la revocación de A3 | DL-021 · REV-A-D4 | Sin implementar |
@@ -132,9 +132,14 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 ## 6. Documentos con estado viejo
 
 Son de orden, no de funcionalidad:
-- **WP-08 figura «sin integrar»** en `WP-08.md`, `DEFENSA/WP-08.md`, DL-086 y `EVIDENCIA/ENTREGA/LEEME.md`, pero está integrado desde #72.
-- **`DEUDA_LEGAJO.md`:** DL-072, DL-042, DL-084, DL-065, DL-108 y DL-093 tienen el estado desactualizado.
-- **LEEME «sin integrar»:** CARTERA, PLANTILLAS, HABITUALES, APARIENCIA-APK y ANTROPOMETRIA-EVOLUCION ya están integrados.
+- ~~**WP-08 figura «sin integrar»** en `WP-08.md`, `DEFENSA/WP-08.md`, DL-086 y `EVIDENCIA/ENTREGA/LEEME.md`, pero está integrado desde #72.~~ **Resuelto el 2026-10-16:** los cuatro dicen que WP-08 se integró el 2026-09-25 (`e83245d`) y salió en la APK 0.10.0. DL-086 quedó CERRADA.
+- ~~**`DEUDA_LEGAJO.md`:** DL-072, DL-042, DL-084, DL-065, DL-108 y DL-093 tienen el estado desactualizado.~~ **Resuelto el 2026-10-16:** la tabla y cada entrada dicen el estado real, con su PR:
+  - DL-042, cerrada;
+  - DL-072 y DL-093, implementadas;
+  - DL-084, resuelta con el provisorio;
+  - DL-065, con los oráculos escritos, a la espera del 11A;
+  - DL-108, integrada.
+- ~~**LEEME «sin integrar»:** CARTERA, PLANTILLAS, HABITUALES, APARIENCIA-APK y ANTROPOMETRIA-EVOLUCION ya están integrados.~~ **Resuelto el 2026-10-16:** los cinco dicen con qué PR se integraron el 2026-09-30 y dónde quedaron desplegados o publicados.
 
 ## 7. Fuera de alcance declarado
 

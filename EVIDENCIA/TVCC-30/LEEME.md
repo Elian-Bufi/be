@@ -55,7 +55,17 @@ Los siete vencieron estando vigentes. El resultado no lleva nombres: la persona 
 - **Los mismos datos dan la misma huella.** La huella es el SHA-256 de la forma canónica del resultado. Recalcular con los mismos datos, la misma especificación y el mismo corte da la misma huella (12 §22; TEST-TVCC-009).
 - **Lo posterior no cambia el corte.** Lo que se registre después del 16/10 no cambia el resultado de ese corte, porque solo se leen hechos registrados antes del fin de la ventana.
 
+**Se comprobó en la cohorte local el mismo 16/10, media hora después del ensayo:**
+- La migración se aplicó y la TVCC-30 se corrió dos veces más, esta vez **conservándola**.
+- Las dos corridas quedaron en `resultado_tvcc30`. La segunda es sucesora de la primera, y las dos llevan la misma huella que el ensayo (`3d3fe065…a0ee2`).
+
+```text
+Resultado: N/D = 5/7 = 71,4 %
+Conservado: resultado_tvcc30 9128d7ec-… · huella 3d3fe065…a0ee2 · primero de ese corte
+Resultado: N/D = 5/7 = 71,4 %
+Conservado: resultado_tvcc30 911e9143-… · huella 3d3fe065…a0ee2 · sucesor de 9128d7ec-…
+```
+
 ## Falta
 
 - **Correrlo en test** desde la consola del servicio `be-api` en Render, declarando demo las cinco cuentas DEMO. El comando está en el paquete, §5.
-- **Conservar el resultado.** La corrida conservada queda en `resultado_tvcc30`; la de esta evidencia fue un ensayo sin conservar.
