@@ -19,12 +19,9 @@ Cada punto lleva su ID. El detalle está en el documento que se cita.
 
 ## 1. Urgente
 
-1. **La base de `test` vence cerca del 16 o 18/10** (plan gratuito de Render). Recrearla obliga a:
-   - registrar de nuevo las cuentas demo;
-   - un PR de configuración (`BE_DEMO_PROFESIONALES`);
-   - rehacer los vínculos y los datos del escenario.
-
-   Ver «Límites del plan gratuito» en `docs/DESPLIEGUE.md`.
+1. ~~**La base de `test` vence cerca del 16 o 18/10.**~~ **Resuelto el 2026-10-16:** Dirección pasó la base a
+   Basic-256mb y la API a Starter (#160). La base ya no vence y la API no se duerme. Ver «Planes de Render» en
+   `docs/DESPLIEGUE.md`.
 2. **Ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica.
 3. **TalkBack y la letra del sistema al máximo** nunca se probaron en un Android físico (RNF-ACC-001). Faltan las capturas 16, 17, 19, 20, 21 y 22 de la guía de capturas.
 4. **DL-115, de severidad alta.** Revocado el A3, el titular sigue leyendo su evolución antropométrica y el detalle de sus formularios; nutrición y entrenamiento sí lo cortan (08:406). Espera la decisión de Dirección. La recomendación es la opción A, de tamaño S, que necesita una APK nueva.
@@ -95,7 +92,8 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 
 ## 5. Infraestructura y deuda técnica
 
-- **API en plan gratuito:** se duerme a los 15 minutos y el arranque en frío tarda entre 25 y 60 segundos.
+- **API en Starter desde el 2026-10-16:** ya no se duerme. Con el plan pago, Render ofrece el pre-deploy: DL-006 se
+  puede cerrar, pero todavía no se cambió el despliegue.
 - **Despliegue:**
   - no hay pre-deploy (DL-006);
   - el Blueprint despliega sin esperar la CI (DL-008).

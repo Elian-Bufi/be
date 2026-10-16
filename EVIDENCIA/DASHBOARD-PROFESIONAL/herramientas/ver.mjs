@@ -43,7 +43,20 @@ const estado = JSON.parse(fs.readFileSync(enTrabajo('estado.json'), 'utf8'));
 // Con BE_VER_CUENTA=descartable se entra con el profesional descartable y `{a}` es su asesorado (las cuentas de
 // `datos/generar.mjs descartable-cuentas`, con la API levantada con `demo-profesionales-descartable.txt`): para mirar lo
 // que solo ese escenario tiene, como la toma con el perfil completo.
-const CUENTA = process.env.BE_VER_CUENTA === 'descartable' ? { correo: estado.descartable?.proCorreo, asesorado: estado.descartable?.aseId } : { correo: estado.proCorreo, asesorado: estado.aseId };
+// Con BE_VER_CUENTA=cohorte se entra con un profesional de la cohorte realista (datos/cohorte; BE_TRABAJO=trabajo-cohorte):
+// BE_VER_PRO es N, T o A, y BE_VER_ASE la persona que es `{a}` (DIEGO, CAMILA, FEDERICO, NORMA, HECTOR o AGUSTINA). Las
+// credenciales salen de cuentas.env de esa carpeta: son al azar y nunca se imprimen.
+function cuentaDeLaCohorte() {
+  const c = Object.fromEntries(fs.readFileSync(enTrabajo('cuentas.env'), 'utf8').split(/\r?\n/).filter((l) => /^[A-Z0-9_]+=/.test(l)).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+  const pro = process.env.BE_VER_PRO ?? 'N';
+  return { correo: c[`PRO_${pro}_CORREO`], clave: c[`PRO_${pro}_CLAVE`], asesorado: c[`ASE_${process.env.BE_VER_ASE ?? 'DIEGO'}_ID`] };
+}
+const CUENTA =
+  process.env.BE_VER_CUENTA === 'cohorte'
+    ? cuentaDeLaCohorte()
+    : process.env.BE_VER_CUENTA === 'descartable'
+      ? { correo: estado.descartable?.proCorreo, asesorado: estado.descartable?.aseId }
+      : { correo: estado.proCorreo, asesorado: estado.aseId };
 if (!CUENTA.correo || !CUENTA.asesorado) {
   console.error('estado.json no tiene las cuentas descartables: corré antes datos/generar.mjs descartable-cuentas.');
   process.exit(2);
@@ -140,7 +153,7 @@ try {
   await page.waitForSelector('#correo');
   await page.waitForNetworkIdle({ idleTime: 500, timeout: 60_000 }).catch(() => {});
   await page.type('#correo', CUENTA.correo);
-  await page.type('#contrasena', 'clave-sintetica-de-prueba-01');
+  await page.type('#contrasena', CUENTA.clave ?? 'clave-sintetica-de-prueba-01');
   await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
   await page.waitForFunction(() => location.pathname.startsWith('/pro/advisees'), { timeout: 240_000 });
   await page.waitForFunction(() => typeof window.next?.router?.push === 'function', { timeout: 240_000 });
