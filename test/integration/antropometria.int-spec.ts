@@ -679,4 +679,20 @@ describe('DV-05 · antropometría: el hueco, la anulación, el borrador, el regi
     const previas = (final.corrections as { previousCorrectionId: string | null }[]).map((x) => x.previousCorrectionId);
     expect(new Set(previas).size).toBe(previas.length);
   });
+
+  it('TEST-ANT-006 · adversarial 6, a la vez: de dos anulaciones simultáneas queda una sola, la otra la ve, y ninguna termina en un error del servidor', async () => {
+    // La CI del 2026-10-16 mostró que dos escrituras simultáneas sobre la misma medición leían la cadena antes del
+    // bloqueo: la segunda chocaba contra la unicidad y salía un 500. Ahora la medición se relee después del bloqueo.
+    const c = await circuitoAntropometrico(app, prisma, 'anular-a-la-vez');
+    const e = await evaluacionRegistrada(c);
+    const peso = e.measurements.find((m) => m.metric === 'peso')!;
+    const ruta = `/api/v1/anthropometry/measurements/${peso.measurementId}/annulments`;
+    const respuestas = await simultaneos(2, (i) => conSesion(app, c.pro.token).post(ruta, claveDeIdempotencia()).send({ reason: `Anulación simultánea ${i}.` }));
+    expect(respuestas.map((r) => r.status).sort()).toEqual([200, 201]);
+    const creada = respuestas.find((r) => r.status === 201)!;
+    const vista = respuestas.find((r) => r.status === 200)!;
+    expect(vista.body.data.alreadyAnnulled).toBe(true);
+    expect(vista.body.data.annulment.annulmentId).toBe(creada.body.data.annulment.annulmentId);
+    expect(await prisma.anulacionDeMedicion.count({ where: { medicionId: peso.measurementId } })).toBe(1);
+  });
 });

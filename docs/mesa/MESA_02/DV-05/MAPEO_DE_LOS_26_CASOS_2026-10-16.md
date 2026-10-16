@@ -59,11 +59,29 @@ Los archivos van sin carpeta: `*.int-spec.ts` está en `test/integration/`, `*.t
 
 **Conteo esperado en la próxima corrida de la CI: 44 de 59** (33 + 1 + 10). Se confirma con `scripts/cobertura-dv05.cjs` sobre los artefactos de esa corrida. Las pruebas nuevas son de integración, así que entran en el conteo; ninguna es una unitaria de la API, que el script no lee.
 
-Son nueve pruebas nuevas (TEST-DOM-004 y TEST-ANT-002 comparten una) y una que ya existía y ahora nombra su caso. Se corrieron contra PostgreSQL 16 local, primero solas y después con sus cuatro suites completas: antropometría 24 de 24, cálculos 19 de 19, evolución antropométrica 8 de 8 y nutrición 22 de 22.
+Son nueve pruebas nuevas (TEST-DOM-004 y TEST-ANT-002 comparten una) y una que ya existía y ahora nombra su caso. Se corrieron contra PostgreSQL 16 local, primero solas y después con sus cuatro suites completas: antropometría 24 de 24 (25 de 25 con la prueba que se sumó al corregir el defecto de abajo), cálculos 19 de 19, evolución antropométrica 8 de 8 y nutrición 22 de 22.
 
 ## Defectos encontrados
 
-Ninguno. Todas las pruebas nuevas pasaron contra el código de `dc68309` sin tocar producción.
+**Uno, ya corregido: dos escrituras simultáneas sobre la misma medición terminaban en un 500.** Severidad media. Los datos no se dañaban, porque la base impedía la bifurcación, pero la respuesta era un error del servidor en vez de un resultado prolijo.
+
+**Cómo se encontró.** En local, todas las pruebas nuevas pasaron. En la CI del PR, la parte de TEST-RF-050 con dos correcciones simultáneas falló: una de las dos respondió 500, con `P2002` en el log.
+
+**La causa.** `propiaBloqueada` (`apps/api/src/antropometria/mediciones.service.ts`) leía la medición con su cadena de correcciones **antes** de tomar el bloqueo de la fila. Las dos transacciones leían la misma cadena, esperaban el bloqueo una detrás de la otra, y la segunda intentaba colgarse del mismo eslabón que la primera, con lo que chocaba contra la unicidad. A la anulación le pasaba lo mismo.
+
+**El arreglo.**
+- La medición se vuelve a leer después del bloqueo.
+- La escritura de la corrección pasa por `sinDuplicar`, como el resto de la API, para que un choque que quede sea 409 y no 500.
+
+**La comprobación.** Un ensayo de estrés descartable, con seis correcciones y seis anulaciones simultáneas sobre la misma medición:
+- **con el código anterior:** varias terminaron en `P2002`, o sea en 500;
+- **con el arreglo, dos corridas:**
+  - las seis correcciones respondieron 201 y quedaron encadenadas;
+  - de las seis anulaciones, una creó (201) y las otras cinco vieron esa misma (200, `alreadyAnnulled`).
+
+**Lo que queda fijo en la CI:**
+- la prueba de TEST-RF-050;
+- una prueba nueva, «TEST-ANT-006 · adversarial 6, a la vez», con dos anulaciones simultáneas: queda una sola, la otra la ve, y ninguna termina en un error del servidor.
 
 ## Lo que queda para cerrar los PARCIAL
 

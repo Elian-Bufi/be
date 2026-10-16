@@ -17,7 +17,7 @@ import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
-import { momentoDeLaBase } from '../prisma/concurrencia';
+import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { EjecutorAntropometrico, esUuid } from './ejecutor';
@@ -87,17 +87,22 @@ export class MedicionesService {
           throw new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'La cadena de correcciones cambió. Volvé a leer la medición antes de corregirla.');
         }
 
-        const correccion = await tx.correccionDeMedicion.create({
-          data: {
-            medicionId: m.id,
-            correccionPreviaId: terminal,
-            autorId: actor.identidadId,
-            motivo: pedido.reason,
-            valor: pedido.magnitude.value,
-            unidadDeOrigen: pedido.magnitude.unit,
-            procedencia: procedencia as unknown as Prisma.InputJsonValue,
-          },
-        });
+        // La medición se releyó después del bloqueo, así que la terminal está al día. Si aun así otra transacción ocupó
+        // ese eslabón, la cadena no se bifurca: la base deja pasar una y la otra recibe el 409, no un 500.
+        const correccion = await sinDuplicar(
+          tx.correccionDeMedicion.create({
+            data: {
+              medicionId: m.id,
+              correccionPreviaId: terminal,
+              autorId: actor.identidadId,
+              motivo: pedido.reason,
+              valor: pedido.magnitude.value,
+              unidadDeOrigen: pedido.magnitude.unit,
+              procedencia: procedencia as unknown as Prisma.InputJsonValue,
+            },
+          }),
+          () => new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'La cadena de correcciones cambió. Volvé a leer la medición antes de corregirla.'),
+        );
 
         const momento = await momentoDeLaBase(tx);
         // REG-06-161: los derivados que dependían de esta medición se reemiten, sin sobrescribir el histórico.
@@ -317,6 +322,9 @@ export class MedicionesService {
       throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso, sujetoId: m.evaluacion.asesoradoId }, ctx);
     }
     await tx.$queryRaw`SELECT 1 FROM "medicion_antropometrica" WHERE "id" = ${m.id}::uuid FOR NO KEY UPDATE`;
-    return m;
+    // Releída después del bloqueo: lo leído antes puede ser viejo si otra corrección o anulación de la misma medición
+    // estaba en curso. Con la cadena al día, la segunda corrección se encadena detrás de la primera y la segunda
+    // anulación ve la primera, en vez de chocar contra la unicidad (DV-05 TEST-RF-050, CI del 2026-10-16).
+    return this.leerMedicion(tx, m.id);
   }
 }
