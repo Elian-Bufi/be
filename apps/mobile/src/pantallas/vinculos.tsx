@@ -9,7 +9,7 @@
  * Solo se listan los ítems en los que esta cuenta es el asesorado, y como recibidas las que inició el profesional: el
  * APK es la superficie del asesorado (10-B01:100-119). `expectedVersion` es la versión que la tarjeta mostró.
  */
-import { COPY, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, type Resultado, type SolicitudDeVinculo, type Vinculo } from '@be/domain';
+import { COPY, COPY_INVITACION, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, type Resultado, type SolicitudDeVinculo, type Vinculo } from '@be/domain';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
@@ -78,6 +78,8 @@ export function PantallaDeVinculos({
       <Seccion titulo="Solicitudes recibidas">
         <EstadoDeCarga estado={pendientes.estado} onReintentar={pendientes.recargar} />
         {pendientes.estado.tipo === 'listo' && recibidas.length === 0 ? <Parrafo>{COPY_VINCULO.sinSolicitudes}</Parrafo> : null}
+        {/* DL-136: la invitación por código, al lado de lo que llega por solicitud. */}
+        <Boton texto={COPY_INVITACION.tengoUnCodigo} tipo="enlace" onPress={() => ir({ nombre: 'invitacion' })} />
         {recibidas.map((s) => (
           <SolicitudRecibida
             key={`${s.relationshipRequestId}:${s.version}`}
