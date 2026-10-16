@@ -25,6 +25,14 @@ import {
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
+  ListaDeNovedadesResponseSchema,
+  NovedadResponseSchema,
+  PreferenciasDeAvisosResponseSchema,
+  ReemplazarPreferenciasDeAvisosRequestSchema,
+  RegistrarSuscripcionPushRequestSchema,
+  SuscripcionPushResponseSchema,
+} from './contratos-novedades';
+import {
   AceptarSolicitudResponseSchema,
   ConsentimientoDeSaludOtorgadoResponseSchema,
   ConsentimientoOtorgadoResponseSchema,
@@ -2647,6 +2655,78 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: 'encargo del 2026-10-08 §8 y §16 · ID propio de BE (familia VAN) · DEUDA_LEGAJO DL-128',
   },
+  // ─── WP-NOVEDADES-Y-AVISOS (DL-133): RF-061 y RF-062 con el bosquejo del 09v12 §20-21 ───────────────────────────────
+  {
+    id: 'API-NOV-01',
+    metodo: 'get',
+    ruta: '/me/news',
+    resumen:
+      'Las novedades del actor, de la más nueva a la más vieja, con las no leídas contadas sobre todas. Contenido operativo no clínico: qué pasó y quién, nunca datos de salud (UC-P30). Funciona aunque no haya avisos push.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeNovedadesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09v12 §20 (GET /me/news) · RF-061 · UC-P30 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
+  {
+    id: 'API-NOV-02',
+    metodo: 'get',
+    ruta: '/me/news/{newsId}',
+    resumen: 'Una novedad propia, que queda leída: la primera lectura se registra (UC-P30, paso 6). Una novedad ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: NovedadResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v12 §20 (GET /me/news/{newsId}) · RF-061 · UC-P30 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
+  {
+    id: 'API-NOV-03',
+    metodo: 'put',
+    ruta: '/me/push-subscriptions/{deviceId}',
+    resumen:
+      'Este teléfono recibe los avisos push de esta cuenta (el token de Expo es C3). Repetirlo con el mismo token no cambia nada; con otro, lo reemplaza. Si el teléfono tenía otra cuenta, esa deja de recibirlos.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: RegistrarSuscripcionPushRequestSchema,
+    exitos: [{ status: 200, schema: SuscripcionPushResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: '09v12 §21 (PUT /me/push-subscriptions/{deviceId}) · RF-062 · UC-E08 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
+  {
+    id: 'API-NOV-04',
+    metodo: 'delete',
+    ruta: '/me/push-subscriptions/{deviceId}',
+    resumen: 'Este teléfono deja de recibir los avisos de esta cuenta (al cerrar la sesión o al apagarlos). Repetirlo responde igual.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 204 }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '09v12 §21 (DELETE /me/push-subscriptions/{deviceId}) · RF-062 · UC-E08 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
+  {
+    id: 'API-NOV-05',
+    metodo: 'get',
+    ruta: '/me/notification-preferences',
+    resumen: 'Las preferencias de los recordatorios diarios de registro (comidas y entrenamiento). Apagados mientras la persona no los encienda.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PreferenciasDeAvisosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '04 RF-062 (derivación: «10 preferencias») · pedido de Dirección del 2026-10-16 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
+  {
+    id: 'API-NOV-06',
+    metodo: 'put',
+    ruta: '/me/notification-preferences',
+    resumen: 'Reemplazar las preferencias de los recordatorios diarios. Repetirlo con los mismos valores no cambia nada.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ReemplazarPreferenciasDeAvisosRequestSchema,
+    exitos: [{ status: 200, schema: PreferenciasDeAvisosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: '04 RF-062 (derivación: «10 preferencias») · pedido de Dirección del 2026-10-16 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
 ];
 
 /**
@@ -2698,10 +2778,12 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-FRM-06',
   'API-MED-03',
   'API-ING-03',
+  'API-NOV-01',
+  'API-NOV-02',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

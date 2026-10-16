@@ -65,6 +65,14 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import {
+  ListaDeNovedadesResponseSchema,
+  NovedadResponseSchema,
+  PreferenciasDeAvisosResponseSchema,
+  SuscripcionPushResponseSchema,
+  type RegistrarSuscripcionPushRequest,
+  type ReemplazarPreferenciasDeAvisosRequest,
+} from './contratos-novedades';
+import {
   LineaDeTiempoResponseSchema,
   ListaDeVistasResponseSchema,
   ProyeccionResponseSchema,
@@ -1209,6 +1217,30 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-VAN-04. */
     borrarVistaDeAnalisis(token: string, viewId: string, claveDeIdempotencia: string) {
       return llamar('DELETE', `/me/analysis-views/${encodeURIComponent(viewId)}`, { token, claveDeIdempotencia, esquema: null });
+    },
+    /** API-NOV-01: las novedades propias, de la más nueva a la más vieja, con las no leídas (DL-133). */
+    consultarNovedades(token: string, filtro: { cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/news${query(filtro)}`, { token, esquema: ListaDeNovedadesResponseSchema });
+    },
+    /** API-NOV-02: una novedad propia, que queda leída. */
+    abrirNovedad(token: string, newsId: string) {
+      return llamar('GET', `/me/news/${encodeURIComponent(newsId)}`, { token, esquema: NovedadResponseSchema });
+    },
+    /** API-NOV-03: este teléfono recibe los avisos push de esta cuenta. */
+    registrarSuscripcionPush(token: string, deviceId: string, cuerpo: RegistrarSuscripcionPushRequest) {
+      return llamar('PUT', `/me/push-subscriptions/${encodeURIComponent(deviceId)}`, { token, esquema: SuscripcionPushResponseSchema, cuerpo });
+    },
+    /** API-NOV-04: este teléfono deja de recibirlos. */
+    retirarSuscripcionPush(token: string, deviceId: string) {
+      return llamar('DELETE', `/me/push-subscriptions/${encodeURIComponent(deviceId)}`, { token, esquema: null });
+    },
+    /** API-NOV-05: las preferencias de los recordatorios diarios. */
+    consultarPreferenciasDeAvisos(token: string) {
+      return llamar('GET', '/me/notification-preferences', { token, esquema: PreferenciasDeAvisosResponseSchema });
+    },
+    /** API-NOV-06: reemplazarlas. */
+    reemplazarPreferenciasDeAvisos(token: string, cuerpo: ReemplazarPreferenciasDeAvisosRequest) {
+      return llamar('PUT', '/me/notification-preferences', { token, esquema: PreferenciasDeAvisosResponseSchema, cuerpo });
     },
     /** API-EJE-01: los ejercicios propios, con su imagen vigente. */
     ejerciciosPropios(token: string) {

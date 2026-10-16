@@ -68,6 +68,43 @@ services:
       # jurídica: pasar a "true" es una decisión de Dirección, aun con cuentas sintéticas.
       - key: BE_EVIDENCIA_VISUAL_EXIGIDA
         value: "false"
+      # DL-133 (WP-NOVEDADES-Y-AVISOS): los avisos push salen por Expo Push, después de confirmar el hecho y lo mejor
+      # posible (07 §23); si Expo no responde, la novedad queda igual en el centro (RF-061). Para que un teléfono Android
+      # los reciba, el proyecto de Expo necesita la clave FCM V1 de Firebase (docs/DESPLIEGUE.md, «Avisos push»).
+      # EXPO_ACCESS_TOKEN es opcional: solo si se activa la seguridad reforzada de los avisos en Expo (se carga a mano).
+      - key: BE_AVISOS_PUSH
+        value: expo
+      # El secreto con que la tarea programada be-recordatorios llama a la corrida interna. Lo genera Render.
+      - key: BE_SECRETO_DE_TAREAS
+        generateValue: true
+
+  # DL-133 (WP-NOVEDADES-Y-AVISOS): los recordatorios diarios de registro. 07 §24: «un cron administrado de la plataforma
+  # llamando un endpoint interno idempotente». Render programa en UTC: 18:00 y 01:00 son las 15:00 y las 22:00 de
+  # Argentina. Solo llama a la API con el secreto de be-api (scripts/disparar-recordatorios.mjs, sin dependencias); la
+  # API decide la franja por su hora y repetirla no duplica nada. Starter: se cobra por minuto de ejecución, con un mínimo
+  # de un dólar por mes.
+  - type: cron
+    name: be-recordatorios
+    runtime: node
+    region: frankfurt
+    plan: starter
+    branch: main
+    schedule: "0 1,18 * * *"
+    buildCommand: node --version
+    startCommand: node scripts/disparar-recordatorios.mjs
+    buildFilter:
+      paths:
+        - scripts/disparar-recordatorios.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: BE_API_URL
+        value: https://be-api-hndp.onrender.com
+      - key: BE_SECRETO_DE_TAREAS
+        fromService:
+          type: web
+          name: be-api
+          envVarKey: BE_SECRETO_DE_TAREAS
 
   - type: web
     name: be-web

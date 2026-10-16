@@ -17,6 +17,7 @@ import {
   type VinculoResponse,
 } from '@be/domain';
 import type { MotivoDeTransicionDeVinculo, Prisma, RolEnVinculo, TipoDeEventoDeVinculo } from '@prisma/client';
+import { PublicadorDeNovedades } from '../novedades/publicador';
 import { PdpService } from '../autorizacion/pdp.service';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
@@ -52,6 +53,13 @@ interface ComponenteBloqueado {
  * - Pausar o finalizar no revocan el consentimiento (REG-06-52). La asimetría 7.5-05 queda en la base: el consentimiento
  *   sigue como está, y el acceso se corta por la dimensión VÍNCULO del PDP.
  */
+/** DL-133: la novedad que deja cada transición del alcance a la otra parte. */
+const NOVEDAD_DE_TRANSICION: Readonly<Record<string, 'VINCULO_PAUSADO' | 'VINCULO_REANUDADO' | 'VINCULO_FINALIZADO'>> = {
+  'API-REL-07': 'VINCULO_PAUSADO',
+  'API-REL-08': 'VINCULO_REANUDADO',
+  'API-REL-09': 'VINCULO_FINALIZADO',
+};
+
 @Injectable()
 export class VinculosService {
   constructor(
@@ -61,6 +69,7 @@ export class VinculosService {
     private readonly auditoria: AuditoriaService,
     private readonly limitador: LimitadorService,
     private readonly procesos: ProcesoService,
+    private readonly novedades: PublicadorDeNovedades,
   ) {}
 
   // ─── API-REL-05 ────────────────────────────────────────────────────────────────────────────
@@ -237,6 +246,15 @@ export class VinculosService {
           procedencia,
           momento,
         );
+        // DL-133 · B10-04 §42: la otra parte ve la pausa, la reanudación o el fin en sus novedades.
+        const tipoDeNovedad = NOVEDAD_DE_TRANSICION[operacion];
+        if (tipoDeNovedad) {
+          await this.novedades.publicar(
+            tx,
+            [{ tipo: tipoDeNovedad, destinatarioId: rol === 'PROFESIONAL' ? c.asesoradoId : c.profesionalId, alcance: c.alcance, fuenteId: actor.identidadId, referencia: { tipo: 'AlcanceDeVinculo', id: c.id }, identidadDelHecho: `${c.id}|v${c.version + 1}`, momentoDeOcurrencia: momento }],
+            procedencia,
+          );
+        }
         await this.auditoria.registrar(
           {
             operacion,

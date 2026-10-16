@@ -35,12 +35,14 @@ export async function crearApp(opciones: OpcionesApp): Promise<INestApplication>
   }
   app.useBodyParser('json', { limit: LIMITE_DE_CUERPO });
   app.useBodyParser('urlencoded', { limit: LIMITE_DE_CUERPO, extended: false });
-  // 09 §3.1 — prefijo obligatorio; health queda fuera (07 §13.2, DEUDA_LEGAJO DL-004).
+  // 09 §3.1 — prefijo obligatorio; health queda fuera (07 §13.2, DEUDA_LEGAJO DL-004), y la ruta interna de las tareas (DL-133).
   app.setGlobalPrefix('api/v1', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },
       { path: 'health/live', method: RequestMethod.GET },
       { path: 'health/ready', method: RequestMethod.GET },
+      // DL-133: la ruta interna de la tarea programada (07 §24), fuera del contrato de los clientes.
+      { path: 'internal/reminder-runs', method: RequestMethod.POST },
     ],
   });
   app.enableShutdownHooks();

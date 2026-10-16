@@ -246,6 +246,9 @@ describe('08 §29 — historia por adición', () => {
     'cita_de_respuesta_en_evaluacion_de_entrenamiento',
     // DL-009 y DL-040 (2026-10-15): las versiones del perfil propio
     'version_de_perfil_propio',
+    // DL-133 (2026-10-16): las novedades y sus lecturas
+    'novedad',
+    'lectura_de_novedad',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {
