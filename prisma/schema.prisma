@@ -3013,3 +3013,46 @@ model PreferenciaDeRecordatorio {
   @@id([identidadId, tipo])
   @@map("preferencia_de_recordatorio")
 }
+
+// ─── RF-058 · UC-S01 · TVCC-30 (DL-135) ───────────────────────────────────────────────────────────
+
+enum EstadoDeResultadoTvcc30 {
+  CALCULADO
+  SIN_VALOR
+}
+
+/// RF-058 · UC-S01 (DL-135): cada corrida de la TVCC-30, con su universo, su especificación y su huella (12 §22;
+/// REG-06-196). Append-only: otra corrida sobre el mismo corte es otro resultado, sucesor del anterior, y nunca lo
+/// reemplaza (REG-06-198). N y D van juntos (REG-06-194); sin D o con algo no resoluble no hay tasa (12 §20, §21).
+model ResultadoTvcc30 {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  especificacion    String
+  mapeo             String
+  corte             DateTime                @db.Date
+  zona              String
+  ventanaInicio     DateTime                @map("ventana_inicio") @db.Timestamptz(3)
+  ventanaFin        DateTime                @map("ventana_fin") @db.Timestamptz(3)
+  estado            EstadoDeResultadoTvcc30
+  motivoSinValor    String?                 @map("motivo_sin_valor")
+  numerador         Int?
+  denominador       Int?
+  universo          Int
+  excluidos         Int
+  noResolubles      Int                     @map("no_resolubles")
+  /// El resultado completo: la ventana, cada ciclo con su clasificación, su motivo y sus fuentes.
+  resultado         Json
+  /// SHA-256 de la forma canónica del resultado: dos corridas con las mismas fuentes dan la misma (12 §22).
+  huella            String
+  predecesorId      String?                 @unique @map("predecesor_id") @db.Uuid
+  /// Quién la pidió: la corrida es interna y la hace el responsable de validación (UC-S01, actor principal).
+  ejecutor          String
+  ambiente          String
+  procedencia       Json
+  momentoDeRegistro DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  predecesor ResultadoTvcc30? @relation("CadenaDeResultadosTvcc30", fields: [predecesorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesor    ResultadoTvcc30? @relation("CadenaDeResultadosTvcc30")
+
+  @@index([corte, zona])
+  @@map("resultado_tvcc30")
+}

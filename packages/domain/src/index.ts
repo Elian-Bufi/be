@@ -102,3 +102,4 @@ export * from './lectura-del-plan-de-entrenamiento';
 export * from './iconos';
 export * from './contratos-novedades';
 export * from './copy-novedades';
+export * from './tvcc30';
