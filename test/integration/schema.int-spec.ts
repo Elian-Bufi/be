@@ -251,6 +251,9 @@ describe('08 §29 — historia por adición', () => {
     'lectura_de_novedad',
     // DL-135 (2026-10-16): los resultados de la TVCC-30
     'resultado_tvcc30',
+    // DL-136 (2026-10-16): las invitaciones de vínculo y cómo terminó cada una
+    'invitacion_de_vinculo',
+    'resolucion_de_invitacion',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

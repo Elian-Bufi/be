@@ -11,6 +11,7 @@
  * - WP-ENTRENAMIENTO-SERIES: las familias SER (DL-122), TIE (DL-124) y EJE (DL-123), y MED con la imagen de un ejercicio.
  * - Precierre del 2026-10-06: EVIDENCIA_VISUAL (EVI-01 a 04, DL-125), y MED-01 con la exigencia activa, en una segunda app
  *   con el mismo observador.
+ * - WP-INVITACION: la familia INV (DL-136), con la invitación vencida escrita directo en la base.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -38,7 +39,7 @@ import {
 } from './soporte-api';
 import { a3Vigente, aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 import { CATALOGO_DEMO, circuitoAntropometrico } from './soporte-antropometria';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   activar,
   circuitoListoParaPlanificar,
@@ -1538,6 +1539,83 @@ it('TEST-CT (WP-NOVEDADES-Y-AVISOS): NOV-01 a 06, con éxitos y errores declarad
   await ase.put(preferencias).send({ mealLogReminder: true, trainingLogReminder: false, otro: true }).expect(400); // UNKNOWN_FIELD
   await ase.put(preferencias).send({ mealLogReminder: 'sí', trainingLogReminder: false }).expect(400); // INVALID_REQUEST
   await request(servidor).put(preferencias).send({ mealLogReminder: true, trainingLogReminder: true }).expect(401);
+});
+
+it('TEST-CT (WP-INVITACION): INV-01 a 05, con éxitos y errores declarados', async () => {
+  const servidor = app.getHttpServer();
+  const pro = await prepararProfesional(app, 'ct-inv', ['NUTRICION']);
+  const ase = await prepararAsesorado(app, 'ct-inv');
+  const otra = await prepararAsesorado(app, 'ct-inv-2');
+  const p = conSesion(app, pro.token);
+  const a = conSesion(app, ase.token);
+  const o = conSesion(app, otra.token);
+  const cuerpo = { scope: { code: 'NUTRICION' }, purpose: 'ACOMPANAMIENTO_NUTRICIONAL' };
+  const crear = async () => (await p.post('/api/v1/relationship-invitations').send(cuerpo).expect(201)).body.data as { invitationId: string; token: string; code: string };
+  const ver = (token: string, secreto: Record<string, unknown>) =>
+    request(servidor).post('/api/v1/relationship-invitations/preview').set('Authorization', `Bearer ${token}`).send(secreto);
+
+  // INV-01
+  const clave = claveDeIdempotencia();
+  const inv = (await p.post('/api/v1/relationship-invitations', clave).send(cuerpo).expect(201)).body.data as { invitationId: string; token: string; code: string };
+  await p.post('/api/v1/relationship-invitations', clave).send({ scope: { code: 'NUTRICION' }, purpose: 'otra' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await p.post('/api/v1/relationship-invitations').send({ ...cuerpo, adviseeId: ase.id }).expect(400); // UNKNOWN_FIELD
+  await p.post('/api/v1/relationship-invitations').send({ scope: 'NUTRICION' }).expect(400); // INVALID_REQUEST
+  await p.post('/api/v1/relationship-invitations').send({ scope: { code: 'ENTRENAMIENTO' }, purpose: 'PLANIFICACION_DEL_ENTRENAMIENTO' }).expect(422); // SCOPE_NOT_AVAILABLE
+  await p.post('/api/v1/relationship-invitations').send({ scope: { code: 'NUTRICION' }, purpose: '' }).expect(422); // PURPOSE_REQUIRED
+  await p.post('/api/v1/relationship-invitations').send({ scope: { code: 'NUTRICION' }, purpose: 'PLANIFICACION_DEL_ENTRENAMIENTO' }).expect(422); // VALIDATION_FAILED
+  await request(servidor).post('/api/v1/relationship-invitations').set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401);
+
+  // INV-02
+  await p.get('/api/v1/relationship-invitations?state=PENDING&limit=5').expect(200);
+  await p.get('/api/v1/relationship-invitations?x=1').expect(400); // INVALID_REQUEST
+  await p.get('/api/v1/relationship-invitations?cursor=basura').expect(400); // INVALID_CURSOR
+  await request(servidor).get('/api/v1/relationship-invitations').expect(401);
+
+  // INV-04
+  await ver(ase.token, { code: inv.code }).expect(200);
+  await ver(ase.token, { code: 'no-es-un-codigo' }).expect(404);
+  await ver(ase.token, { token: inv.token, otro: 1 }).expect(400);
+  await request(servidor).post('/api/v1/relationship-invitations/preview').send({ token: inv.token }).expect(401);
+
+  // INV-05
+  await a.post('/api/v1/relationship-invitations/claim').send({ code: 'no-es-un-codigo' }).expect(404);
+  await p.post('/api/v1/relationship-invitations/claim').send({ token: inv.token }).expect(422); // COUNTERPART_NOT_ELIGIBLE
+  const claveDeUso = claveDeIdempotencia();
+  const creada = await a.post('/api/v1/relationship-invitations/claim', claveDeUso).send({ token: inv.token }).expect(201);
+  await a.post('/api/v1/relationship-invitations/claim', claveDeUso).send({ code: inv.code }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await o.post('/api/v1/relationship-invitations/claim').send({ token: inv.token }).expect(422); // INVITATION_USED
+  await a.post('/api/v1/relationship-invitations/claim').send({ token: inv.token, code: inv.code }).expect(400); // INVALID_REQUEST
+  await request(servidor).post('/api/v1/relationship-invitations/claim').set('Authorization', `Bearer ${ase.token}`).send({ token: inv.token }).expect(400); // sin key
+  await request(servidor).post('/api/v1/relationship-invitations/claim').set('Idempotency-Key', claveDeIdempotencia()).send({ token: inv.token }).expect(401);
+  // 200: la equivalente pendiente (REG-06-44).
+  const segunda = await crear();
+  await solicitar(app, pro, otra.id, 'NUTRICION').expect(201);
+  await o.post('/api/v1/relationship-invitations/claim').send({ token: segunda.token }).expect(200);
+  // 409 RESOURCE_CONFLICT: con un vínculo vigente en ese alcance, como REL-01.
+  await aceptar(app, ase, creada.body.data.relationshipRequestId as string).expect(200);
+  const tercera = await crear();
+  await a.post('/api/v1/relationship-invitations/claim').send({ token: tercera.token }).expect(409);
+
+  // INV-03
+  const claveDeAnular = claveDeIdempotencia();
+  await p.post(`/api/v1/relationship-invitations/${tercera.invitationId}/revoke`, claveDeAnular).send({}).expect(200);
+  await p.post(`/api/v1/relationship-invitations/${segunda.invitationId}/revoke`, claveDeAnular).send({}).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await p.post(`/api/v1/relationship-invitations/${tercera.invitationId}/revoke`).send({}).expect(422); // INVITATION_REVOKED
+  await p.post(`/api/v1/relationship-invitations/${inv.invitationId}/revoke`).send({}).expect(422); // INVITATION_USED
+  await a.post(`/api/v1/relationship-invitations/${tercera.invitationId}/revoke`).send({}).expect(404);
+  await p.post(`/api/v1/relationship-invitations/${tercera.invitationId}/revoke`).send({ motivo: 'x' }).expect(400); // UNKNOWN_FIELD
+  await request(servidor).post(`/api/v1/relationship-invitations/${tercera.invitationId}/revoke`).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
+  await o.post('/api/v1/relationship-invitations/claim').send({ token: tercera.token }).expect(422); // INVITATION_REVOKED
+  // Vencida: escrita directo en la base (la tabla solo admite agregar), con la vigencia máxima ya cumplida.
+  const vencidaId = randomUUID();
+  const tokenVencido = randomBytes(32).toString('base64url');
+  const sha = (t: string) => createHash('sha256').update(t, 'utf8').digest('hex');
+  await prisma.$executeRaw`
+    INSERT INTO "invitacion_de_vinculo" ("id", "profesional_id", "alcance", "finalidad", "hash_del_token", "hash_del_codigo", "procedencia", "momento_de_ocurrencia", "vence_en")
+    VALUES (${vencidaId}::uuid, ${pro.id}::uuid, 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', ${sha(tokenVencido)}, ${sha(randomUUID())}, '{}'::jsonb,
+            now() - interval '8 days', now() - interval '1 day')`;
+  await o.post('/api/v1/relationship-invitations/claim').send({ token: tokenVencido }).expect(422); // INVITATION_EXPIRED
+  await p.post(`/api/v1/relationship-invitations/${vencidaId}/revoke`).send({}).expect(422); // INVITATION_EXPIRED
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
