@@ -25,6 +25,14 @@ import {
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
+  CrearInvitacionRequestSchema,
+  InvitacionCreadaResponseSchema,
+  InvitacionResponseSchema,
+  ListaDeInvitacionesResponseSchema,
+  SecretoDeInvitacionRequestSchema,
+  VistaPreviaDeInvitacionResponseSchema,
+} from './contratos-invitaciones';
+import {
   ListaDeNovedadesResponseSchema,
   NovedadResponseSchema,
   PreferenciasDeAvisosResponseSchema,
@@ -39,6 +47,7 @@ import {
   ConsentimientoRevocadoResponseSchema,
   CrearSolicitudDeVinculoRequestSchema,
   CrearSolicitudDeVinculoResponseSchema,
+  CuerpoVacioSchema,
   DashboardResponseSchema,
   DecidirSolicitudRequestSchema,
   DetalleDeVinculoResponseSchema,
@@ -2728,6 +2737,89 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PreferenciasDeAvisosResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
     fuente: '04 RF-062 (derivación: «10 preferencias») · pedido de Dirección del 2026-10-16 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
+
+  // ─── WP-INVITACION (DL-136): el profesional invita con un enlace o un código; usarla crea la solicitud de REL-01 ────────
+  // 06 §7.4 (invitación previa a Identidad BE) · 05 UC-P04 V04 y UC-P05 V01 · 08 §24.3 y §24.5. El 09 no la contrata.
+  {
+    id: 'API-INV-01',
+    metodo: 'post',
+    ruta: '/relationship-invitations',
+    resumen:
+      'Crear una invitación de un solo uso para un alcance, que vence a los 7 días. Responde el token del enlace y el código corto, la única vez que se muestran: BE guarda solo su SHA-256. No crea ninguna solicitud ni concede nada.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearInvitacionRequestSchema,
+    exitos: [{ status: 201, schema: InvitacionCreadaResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['SCOPE_NOT_AVAILABLE', 'PURPOSE_REQUIRED', 'VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'],
+    },
+    fuente: 'pedido de Dirección del 2026-10-16 · 06 §7.4 · 05 UC-P04 V04 · 08 §24.3 · ID propio de BE (familia INV) · DEUDA_LEGAJO DL-136 (avanza DL-023 y DL-035)',
+  },
+  {
+    id: 'API-INV-02',
+    metodo: 'get',
+    ruta: '/relationship-invitations',
+    resumen: 'Las invitaciones propias del profesional, de la más nueva a la más vieja, con su estado derivado. Nunca el token ni el código.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'state', descripcion: 'Estado derivado de la invitación.', schema: { type: 'string', enum: ['PENDING', 'USED', 'EXPIRED', 'REVOKED'] } }],
+    exitos: [{ status: 200, schema: ListaDeInvitacionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: 'pedido de Dirección del 2026-10-16 · ID propio de BE (familia INV) · DEUDA_LEGAJO DL-136',
+  },
+  {
+    id: 'API-INV-03',
+    metodo: 'post',
+    ruta: '/relationship-invitations/{invitationId}/revoke',
+    resumen: 'Anular una invitación propia que todavía no se usó ni venció. Una ajena o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CuerpoVacioSchema,
+    exitos: [{ status: 200, schema: InvitacionResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['INVITATION_EXPIRED', 'INVITATION_USED', 'INVITATION_REVOKED'],
+    },
+    fuente: 'pedido de Dirección del 2026-10-16 · 08 §24.3 · ID propio de BE (familia INV) · DEUDA_LEGAJO DL-136',
+  },
+  {
+    id: 'API-INV-04',
+    metodo: 'post',
+    ruta: '/relationship-invitations/preview',
+    resumen:
+      'Ver una invitación con su token o su código, en el cuerpo: quién invita (nombre visible), el alcance, la finalidad, el vencimiento y el estado. No la usa ni crea nada. Una que no existe, un código mal escrito o un profesional que ya no está disponible: el mismo 404. Con límite de intentos.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: SecretoDeInvitacionRequestSchema,
+    exitos: [{ status: 200, schema: VistaPreviaDeInvitacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 429: ['RATE_LIMITED'] },
+    fuente: 'pedido de Dirección del 2026-10-16 · 08 §24.5 (sin revelar existencia) · ID propio de BE (familia INV) · DEUDA_LEGAJO DL-136',
+  },
+  {
+    id: 'API-INV-05',
+    metodo: 'post',
+    ruta: '/relationship-invitations/claim',
+    resumen:
+      'Usar una invitación: en una transacción, crea la solicitud de vínculo del profesional dirigida a quien la usa, exactamente como REL-01 (201, o 200 con la equivalente pendiente), y la deja usada. Aceptar la solicitud (REL-03) y otorgar B2 siguen siendo actos aparte. Con límite de intentos.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: SecretoDeInvitacionRequestSchema,
+    exitos: [
+      { status: 201, schema: CrearSolicitudDeVinculoResponseSchema },
+      { status: 200, schema: SolicitudDeduplicadaResponseSchema },
+    ],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED', 'RESOURCE_CONFLICT'],
+      422: ['COUNTERPART_NOT_ELIGIBLE', 'INVITATION_EXPIRED', 'INVITATION_USED', 'INVITATION_REVOKED', 'INVALID_STATE_TRANSITION'],
+      429: ['RATE_LIMITED'],
+    },
+    fuente: 'pedido de Dirección del 2026-10-16 · 06 §7.4 (REG-06-46, INV-06-55/56) · 05 UC-P05 V01 · 09v8:1108-1192 (REL-01) · ID propio de BE (familia INV) · DEUDA_LEGAJO DL-136',
   },
 
   // ─── REV-A (propuesta del 2026-09-29; opciones A tomadas el 2026-10-16 con el mandato de Dirección; DL-134) ─────────

@@ -138,6 +138,15 @@ export const CodigoDeError = {
    * (precierre del 2026-10-06, §6; DL-125).
    */
   VISUAL_EVIDENCE_ACT_REQUIRED: 'VISUAL_EVIDENCE_ACT_REQUIRED',
+  // INV (familia propia de BE; WP-INVITACION, DL-136). Quien los recibe tiene el token o el código: decir por qué ya no
+  // sirve no revela nada que no tenga. Una invitación que no existe responde 404 RESOURCE_NOT_FOUND, igual que un código mal
+  // escrito.
+  /** Pasaron los 7 días sin que nadie la usara. */
+  INVITATION_EXPIRED: 'INVITATION_EXPIRED',
+  /** Ya la usó alguien (también quien pierde entre dos usos simultáneos). Es de un solo uso. */
+  INVITATION_USED: 'INVITATION_USED',
+  /** El profesional la anuló. */
+  INVITATION_REVOKED: 'INVITATION_REVOKED',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

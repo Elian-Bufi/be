@@ -65,6 +65,17 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import {
+  InvitacionCreadaResponseSchema,
+  InvitacionResponseSchema,
+  ListaDeInvitacionesResponseSchema,
+  VistaPreviaDeInvitacionResponseSchema,
+  type InvitacionCreadaResponse,
+  type InvitacionResponse,
+  type ListaDeInvitacionesResponse,
+  type SecretoDeInvitacionRequest,
+  type VistaPreviaDeInvitacionResponse,
+} from './contratos-invitaciones';
+import {
   ListaDeNovedadesResponseSchema,
   NovedadResponseSchema,
   PreferenciasDeAvisosResponseSchema,
@@ -1259,6 +1270,39 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-NOV-06: reemplazarlas. */
     reemplazarPreferenciasDeAvisos(token: string, cuerpo: ReemplazarPreferenciasDeAvisosRequest) {
       return llamar('PUT', '/me/notification-preferences', { token, esquema: PreferenciasDeAvisosResponseSchema, cuerpo });
+    },
+
+    // ─── INV · invitaciones de vínculo (WP-INVITACION; DL-136) ──────────────────────────────────
+    /**
+     * API-INV-01: el profesional crea una invitación para un alcance. La respuesta trae el token y el código, la única vez
+     * que se ven: el enlace se arma con `enlaceDeInvitacion`. La finalidad es la del alcance (DL-039), como en REL-01.
+     */
+    crearInvitacion(token: string, alcance: Alcance, claveDeIdempotencia: string): Promise<Resultado<InvitacionCreadaResponse>> {
+      return llamar('POST', '/relationship-invitations', {
+        token,
+        claveDeIdempotencia,
+        esquema: InvitacionCreadaResponseSchema,
+        cuerpo: { scope: { code: alcance }, purpose: FINALIDAD_DE_ALCANCE[alcance] },
+      });
+    },
+    /** API-INV-02: las propias, con su estado (PENDING, USED, EXPIRED o REVOKED). */
+    consultarInvitaciones(token: string, filtro: { state?: string; cursor?: string; limit?: string } = {}): Promise<Resultado<ListaDeInvitacionesResponse>> {
+      return llamar('GET', `/relationship-invitations${query(filtro)}`, { token, esquema: ListaDeInvitacionesResponseSchema });
+    },
+    /** API-INV-03: anular una propia que todavía no se usó ni venció. */
+    anularInvitacion(token: string, invitationId: string, claveDeIdempotencia: string): Promise<Resultado<InvitacionResponse>> {
+      return llamar('POST', `/relationship-invitations/${encodeURIComponent(invitationId)}/revoke`, { token, claveDeIdempotencia, esquema: InvitacionResponseSchema, cuerpo: {} });
+    },
+    /** API-INV-04: quién invita y para qué, con el token del enlace o el código (en el cuerpo, nunca en la URL). */
+    verInvitacion(token: string, secreto: SecretoDeInvitacionRequest): Promise<Resultado<VistaPreviaDeInvitacionResponse>> {
+      return llamar('POST', '/relationship-invitations/preview', { token, esquema: VistaPreviaDeInvitacionResponseSchema, cuerpo: secreto });
+    },
+    /**
+     * API-INV-05: usar la invitación. Responde como REL-01: la solicitud creada (201) o la equivalente pendiente (200). La
+     * persona la acepta después con `aceptarSolicitud` y otorga B2 con `otorgarConsentimiento`: no se saltea ningún acto.
+     */
+    usarInvitacion(token: string, secreto: SecretoDeInvitacionRequest, claveDeIdempotencia: string): Promise<Resultado<RespuestaDeCrearSolicitud>> {
+      return llamar('POST', '/relationship-invitations/claim', { token, claveDeIdempotencia, esquema: RespuestaDeCrearSolicitudSchema, cuerpo: secreto });
     },
     /** API-EJE-01: los ejercicios propios, con su imagen vigente. */
     ejerciciosPropios(token: string) {
