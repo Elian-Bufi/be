@@ -1,5 +1,7 @@
 # CI — verifica cada push y PR (07 §35).
 # Render despliega `test` solo cuando TODOS estos checks pasan en main (autoDeployTrigger: checksPass, 07 §36).
+# Las máquinas van fijas en Ubuntu 24.04: desde el 2026-10-19, ubuntu-latest pasa a ser Ubuntu 26.04, y la entrega es el
+# 2026-10-20. Cambiar de sistema se decide aparte, con su propia corrida.
 name: ci
 
 on:
@@ -18,7 +20,7 @@ concurrency:
 jobs:
   legajo:
     name: legajo · hashes SHA-256
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: Verificar docs/MANIFEST.sha256 (salvo lo no publicado por Dirección)
@@ -26,7 +28,7 @@ jobs:
 
   verificar:
     name: verificar · typecheck · unit · build · audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -50,7 +52,7 @@ jobs:
 
   integracion:
     name: integración · PostgreSQL 16 (Testcontainers)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -71,7 +73,7 @@ jobs:
 
   imagen-api:
     name: imagen API · migrate deploy + readiness (ASR-09)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: Build de la imagen OCI

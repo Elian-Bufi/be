@@ -315,6 +315,18 @@ export const ElementoDeCatalogoSchema = z.strictObject({
 });
 export type ElementoDeCatalogo = z.infer<typeof ElementoDeCatalogoSchema>;
 export const ListaDeCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoDeCatalogoSchema), page: PaginaSchema });
+/**
+ * API-NUT-13-BUSQUEDA (DL-130): la búsqueda en el catálogo con el texto en el **cuerpo**, nunca en una URL (historiales,
+ * proxies, bitácoras). Es una lectura: no crea ni cambia nada y responde lo mismo que API-NUT-13, que se conserva con su
+ * contrato para los clientes instalados.
+ */
+export const BusquedaEnCatalogoRequestSchema = z.strictObject({
+  q: z.string().trim().max(80),
+  type: z.literal('FOOD').optional(),
+  limit: z.number().int().min(1).max(50).optional(),
+  cursor: z.string().max(400).optional(),
+});
+export type BusquedaEnCatalogoRequest = z.infer<typeof BusquedaEnCatalogoRequestSchema>;
 export const CrearElementoDeCatalogoRequestSchema = z.strictObject({ name: Texto(120), itemType: z.literal('FOOD'), composition: ComposicionSchema });
 export type CrearElementoDeCatalogoRequest = z.infer<typeof CrearElementoDeCatalogoRequestSchema>;
 export const ElementoDeCatalogoResponseSchema = z.strictObject({ data: ElementoDeCatalogoSchema });

@@ -165,3 +165,55 @@ export const NOMBRE_DE_METODO: Readonly<Record<string, string>> = {
 
 /** El nombre del método de una versión, o `null` si BE no la conoce. */
 export const nombreDeMetodo = (methodVersionId: string | null): string | null => (methodVersionId ? (NOMBRE_DE_METODO[methodVersionId] ?? null) : null);
+
+/**
+ * La categoría de cada versión de método del catálogo de BE (la de su ficha, la misma que guarda la migración): dice si
+ * el resultado es un índice o una suma de pliegues (un cálculo sobre medidas), una ecuación de predicción (grasa corporal
+ * o masas: una estimación) o un componente del somatotipo. Calculado no es siempre estimado.
+ */
+export const CATEGORIA_DE_METODO: Readonly<Record<string, 'INDICES' | 'SUMAS_DE_PLIEGUES' | 'GRASA_CORPORAL' | 'MASAS' | 'SOMATOTIPO'>> = {
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f01': 'INDICES',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f02': 'INDICES',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f03': 'INDICES',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f04': 'INDICES',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f05': 'SUMAS_DE_PLIEGUES',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f06': 'SUMAS_DE_PLIEGUES',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f07': 'SUMAS_DE_PLIEGUES',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f08': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f09': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f0a': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f0b': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f0c': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f0d': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f0e': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f0f': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f10': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f11': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f12': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f13': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f14': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f15': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f16': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f17': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f18': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f19': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1a': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1b': 'GRASA_CORPORAL',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1c': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1d': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1e': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1f': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f20': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f21': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f22': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f23': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f24': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f25': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f26': 'SOMATOTIPO',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f27': 'SOMATOTIPO',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f28': 'SOMATOTIPO',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f29': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2a': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2b': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2c': 'MASAS',
+};

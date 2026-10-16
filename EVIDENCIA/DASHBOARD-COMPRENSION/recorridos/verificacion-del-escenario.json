@@ -1,0 +1,90 @@
+{
+  "total": 10,
+  "ok": 10,
+  "comprobaciones": [
+    {
+      "que": "Nutrición: la última revisión es la de D-20",
+      "obtenido": "2026-09-19T14:00:00.000Z",
+      "esperado": "2026-09-19T14:00:00.000Z",
+      "ok": true
+    },
+    {
+      "que": "Nutrición: la revisión está aplicada",
+      "obtenido": "2026-09-19T14:15:00.000Z",
+      "esperado": "2026-09-19T14:15:00.000Z",
+      "ok": true
+    },
+    {
+      "que": "Nutrición: la próxima revisión acordada",
+      "obtenido": "2026-10-12",
+      "esperado": "2026-10-12",
+      "ok": true
+    },
+    {
+      "que": "Entrenamiento: la última revisión es la de D-9",
+      "obtenido": "2026-09-30T22:00:00.000Z",
+      "esperado": "2026-09-30T22:00:00.000Z",
+      "ok": true
+    },
+    {
+      "que": "Entrenamiento: la revisión no está aplicada",
+      "obtenido": null,
+      "esperado": null,
+      "ok": true
+    },
+    {
+      "que": "Entrenamiento: el borrador v3 no rige",
+      "obtenido": "03b5dd99-e297-47fa-b969-d4775ed7624f",
+      "esperado": "03b5dd99-e297-47fa-b969-d4775ed7624f",
+      "ok": true
+    },
+    {
+      "que": "Nutrición: comidas nuevas desde la revisión, por clase",
+      "obtenido": {
+        "OCURRIO_DESPUES": 67,
+        "INCORPORADO_DESPUES": 1,
+        "CORREGIDO_DESPUES": 1
+      },
+      "esperado": {
+        "OCURRIO_DESPUES": 67,
+        "INCORPORADO_DESPUES": 1,
+        "CORREGIDO_DESPUES": 1
+      },
+      "ok": true
+    },
+    {
+      "que": "Entrenamiento: sesiones nuevas desde la revisión, por clase",
+      "obtenido": {
+        "OCURRIO_DESPUES": 4,
+        "INCORPORADO_DESPUES": 1,
+        "CORREGIDO_DESPUES": 1
+      },
+      "esperado": {
+        "OCURRIO_DESPUES": 4,
+        "INCORPORADO_DESPUES": 1,
+        "CORREGIDO_DESPUES": 1
+      },
+      "ok": true
+    },
+    {
+      "que": "Escenario E: solo Nutrición disponible",
+      "obtenido": [
+        true,
+        false,
+        false
+      ],
+      "esperado": [
+        true,
+        false,
+        false
+      ],
+      "ok": true
+    },
+    {
+      "que": "Escenario E: sin revisiones",
+      "obtenido": null,
+      "esperado": null,
+      "ok": true
+    }
+  ]
+}

@@ -36,6 +36,8 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
           <p>{aviso.texto}</p>
         </Aviso>
       ) : null}
+      {/* Sin plantillas y sin filtro, el filtro no tiene nada que filtrar: aparece cuando hay alguna. */}
+      {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
       <div className="campo">
         <label htmlFor="plantillas-nutricion-estado">Estado</label>
         <select id="plantillas-nutricion-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
@@ -44,6 +46,7 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
           <option value="ARCHIVED">{COPY_PLANTILLAS.archivada}</option>
         </select>
       </div>
+      )}
       {lista.estado.tipo === 'cargando' ? <Cargando /> : null}
       {lista.estado.tipo === 'listo' ? (
         lista.estado.items.length === 0 ? (

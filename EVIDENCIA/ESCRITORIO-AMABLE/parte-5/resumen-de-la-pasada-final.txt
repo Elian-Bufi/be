@@ -1,0 +1,10 @@
+inicio: 2026-10-11 02:56 · commit 4b84714 + cambios sin commit: 3
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 0 · 205 OK · 8 datos · 0 fallas · 213/213 comprobaciones bien
+rc-funcional: salida 0 · 67 OK · 9 datos · 0 fallas · 76 de 76 bien
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 21 OK · 0 datos · 0 fallas · 21/21 comprobaciones bien
+fin: 2026-10-11 03:25

@@ -500,7 +500,7 @@ test('TEST-PRJ-009 · el OpenAPI generado tampoco expone puntaje de adherencia e
   const hallazgos: string[] = [];
   for (const [ruta, metodos] of Object.entries(doc.paths)) if (ruta.includes('nutrition')) recorrer(metodos, ruta, hallazgos);
   const operaciones = Object.entries(doc.paths).filter(([r]) => r.includes('nutrition')).reduce((n, [, m]) => n + Object.keys(m as object).length, 0);
-  assert.equal(operaciones, 48, 'las 5 de habituales (HAN-01..05, DL-109), las 5 de plantillas (TPN-01..05, DL-108), las 21 NUT, INT-NUT-01, la lista propia de ingestas, la importación de Open Food Facts (INT-NUT-02/03, WP-08), las 7 de recetas (REC-01..07, DL-119) y las 6 del registro v2 (ING-01..06, DL-121); las de medios (MED, DL-120) no llevan «nutrition» en la ruta');
+  assert.equal(operaciones, 49, 'las 5 de habituales (HAN-01..05, DL-109), las 5 de plantillas (TPN-01..05, DL-108), las 21 NUT, la búsqueda con el texto en el cuerpo (NUT-13-BUSQUEDA, DL-130), INT-NUT-01, la lista propia de ingestas, la importación de Open Food Facts (INT-NUT-02/03, WP-08), las 7 de recetas (REC-01..07, DL-119) y las 6 del registro v2 (ING-01..06, DL-121); las de medios (MED, DL-120) no llevan «nutrition» en la ruta');
   assert.deepEqual(hallazgos, []);
 });
 

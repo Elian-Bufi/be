@@ -1,0 +1,35 @@
+NO NOTADA «Guardar cambios» se deshabilita en vez de apagarse: pierde el foco — F-103 (el editor al entrar) · no falló: F-103 (el editor al entrar)
+NO NOTADA elegir una sesión escribe su posición desde cero — F-104 (la dirección del editor) · no falló: F-104 (la dirección del editor)
+NO NOTADA a 1440, «Lo general» va debajo de la tabla de series — F-105 (la tabla de series) · no falló: F-105 (la tabla de series)
+NO NOTADA al confirmar el nombre de un bloque con Enter, el foco se pierde — F-108 (los nombres a pedido) · no falló: F-108 (los nombres a pedido)
+NO NOTADA un objetivo mal escrito no se marca en su celda — F-107 (lo que no deja guardar) · no falló: F-107 (lo que no deja guardar)
+NO NOTADA las dos opciones de la celda dejan a la serie sin objetivo — F-106 (los tres estados guardados) · no falló: F-106 (los tres estados guardados)
+NO NOTADA elegir un ejercicio en el buscador cierra el cajón — F-109 (agregar y quitar) · no falló: F-109 (agregar y quitar)
+NO NOTADA ir al problema de una sesión no deja el foco en su menú — F-113 (validar) · no falló: F-113 (validar)
+NO NOTADA los ejercicios no miden su ancho: «Lo general» nunca baja — F-112 (palabras, axe y anchos del editor) · no falló: F-112 (palabras, axe y anchos del editor)
+NO NOTADA «Activar plan» no guarda antes de preguntar — F-110 (activar) · no falló: F-110 (activar)
+NO NOTADA con el bloqueo de la app, «Activar plan» no dice su motivo — F-111 (el bloqueo por la app) · no falló: F-111 (el bloqueo por la app)
+tanda E1 (entrenamientos): 0 de 11 roturas notadas · 1 comprobaciones fallaron y 16 pasaron
+fallaron sin que se las esperara: 
+  FALLA — · El recorrido terminó por una excepción — no encontré «Guardar como plantilla» en [data-guardar-plantilla]
+no llegaron a correr: F-77 (guardar y listar); F-103 (el editor al entrar); F-104 (la dirección del editor); F-105 (la tabla de series); F-108 (los nombres a pedido); F-79 (crear, ir y volver); F-107 (lo que no deja guardar); F-106 (los tres estados guardados); F-109 (agregar y quitar); F-113 (validar); F-112 (palabras, axe y anchos del editor); F-110 (activar); F-79 (activar); F-77 (desde la plantilla); F-111 (el bloqueo por la app); — (errores)
+con qué falló cada una:
+  — · El recorrido terminó por una excepción — no encontré «Gu… — · El recorrido terminó por una excepción — no encontré «Guardar como plantilla» en [data-guardar-plantilla]
+pasaron:
+  F-71 · El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · 
+  F-72 · Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas s
+  F-73 · Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series («3 × 5 rep. · 85 kg · 
+  F-76 · El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la m
+  F-74 · En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: 
+  F-73 · Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · d
+  F-75 · Lo elegido vive en la dirección de la página, por su número de orden. Elegir la segunda sesión escribe 
+  F-75 · «Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microcic
+  F-80 · Con los tres ejercicios de la sesión abiertos, en toda la sección no hay una palabra de la lista de Ent
+  F-14 · «Plan», de Entrenamiento, tiene su ayuda en el marco del área: se abre por el título, explica cada cosa
+  F-80 · axe no encuentra faltas en «Plan», de Entrenamiento, con todos los ejercicios abiertos, en los dos tema
+  F-80 · El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al l
+  F-78 · (Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna 
+  F-72 · (Respuesta simulada.) Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se m
+  F-74 · (Respuesta simulada.) Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los pa
+  F-74 · (Respuestas simuladas: el escenario no tiene ejercicios con imagen.) Un ejercicio con imagen la muestra
+última línea: 17/18 comprobaciones bien; fallan: —

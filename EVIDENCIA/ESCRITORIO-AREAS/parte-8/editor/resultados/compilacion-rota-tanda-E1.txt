@@ -1,0 +1,50 @@
+NOTADA    «Guardar cambios» se deshabilita en vez de apagarse: pierde el foco — F-103 (el editor al entrar)
+NOTADA    elegir una sesión escribe su posición desde cero — F-104 (la dirección del editor)
+NOTADA    a 1440, «Lo general» va debajo de la tabla de series — F-105 (la tabla de series)
+NOTADA    al confirmar el nombre de un bloque con Enter, el foco se pierde — F-108 (los nombres a pedido)
+NOTADA    un objetivo mal escrito no se marca en su celda — F-107 (lo que no deja guardar)
+NOTADA    las dos opciones de la celda dejan a la serie sin objetivo — F-106 (los tres estados guardados)
+NOTADA    elegir un ejercicio en el buscador cierra el cajón — F-109 (agregar y quitar)
+NOTADA    ir al problema de una sesión no deja el foco en su menú — F-113 (validar)
+NO NOTADA los ejercicios no miden su ancho: «Lo general» nunca baja — F-112 (palabras, axe y anchos del editor) · no falló: F-112 (palabras, axe y anchos del editor)
+NOTADA    «Activar plan» no guarda antes de preguntar — F-110 (activar)
+NOTADA    con el bloqueo de la app, «Activar plan» no dice su motivo — F-111 (el bloqueo por la app)
+tanda E1 (entrenamientos): 10 de 11 roturas notadas · 12 comprobaciones fallaron y 20 pasaron
+fallaron sin que se las esperara: 
+  FALLA F-80 · El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al lado de la tabla mientras entra, y pasa debajo cuando no (a 390 px). A 1280, 1024, 768 y 390 px la página no desborda de costado, y ningún renglón empieza con el separador « · » ni deja
+  FALLA — · «Plan», de Entrenamiento, no produjo errores de página — Failed to fetch RSC payload for http://localhost:3000/pro/advisees/forms.txt?id=d8e21b71-1c09-4082-ac54-3c5f87e52e73&vista=pedir&volver=vista%3Dresumen. Falling
+con qué falló cada una:
+  F-80 · El historial sigue al costado a 1280 px y pasa debajo… — 1280: 900 px de alto, historial ¿?, lo general ¿? · 1024: 1264 px de alto, historial debajo, lo general al lado · 768: 1522 px de alto, historial debajo, lo gen
+  F-103 · La versión en preparación se abre en una sesión, con… — 955 px · «Guardado» · Más acciones de esta versión | Validar plan | Activar plan | Guardar cambios (apagado) · bloque: Fuerza: progresión | Descarga («2 sesione
+  F-104 · Lo que se mira en el editor vive en la dirección, po… — sesion=1 · ejercicios=1 · bloque=2 (Semana 1 | Semana 2; sesión «Cuerpo completo») · micro=2 · al volver: {"id":"d8e21b71-1c09-4082-ac54-3c5f87e52e73","vista":"
+  F-105 · Abierto, un ejercicio muestra sus series en una tabl… — Press de banca: 1: 6-8 / 62,5 (gris) / 2 (gris) / 02:30 (gris) | 2: 6-8 / 62,5 (gris) / 2 (gris) / 02:30 (gris) | 3: 6-8 / 62,5 (gris) / 1 / 02:30 (gris) | 4: 6
+  F-108 · Los nombres se cambian a pedido. El menú del bloque … — bloque: Cambiar el nombre | Organizar por microciclos (apagada: Solo mientras el bloque no tiene sesiones: con microciclos, las sesiones van dentro de ellos.) |
+  F-107 · Un RIR por serie y un descanso mal escritos no se gu… — escrituras al intentar: 0 · «Hay datos que faltan o no se entienden. Corregilos antes de guardar.» · Fuerza: progresión (ajuste) → B · Tren superior → Ejercicio
+  F-106 · Cada celda escribe uno de los tres estados, y eso es… — escrituras: 1 · «Guardado» · en la API: [carga {"unit":"kg","value":65} · RIR de lo general · descanso de lo general] [carga de lo general · RIR 1 · descanso nu
+  F-109 · «Agregar», al lado del bloque, suma un bloque al fin… — bloque=3 (campo b2-nombre) · sesión: b2-s0-nombre «Sesión A» · cajón: «Agregar ejercicio» / «Bloque del recorrido · Sesión A» · «null» · foco al cerrar en «Agre
+  F-113 · «Validar plan», con cambios sin guardar, guarda ante… — escrituras: {"guardar":1,"validar":1,"activar":0} · «Hay elementos por corregir antes de activar.» · Bloque del recorrido → Sesión A → falta al menos un ejercic
+  F-110 · «Activar plan», con cambios sin guardar, guarda ante… — al abrir: {"guardar":0,"validar":0,"activar":0} · «Esta versión pasa a ser la vigente: 2 bloques y 4 sesiones. / La versión 2, activa desde el 14 oct, queda en 
+  F-111 · (Respuesta simulada: el titular ya usó una app que m… — exige objetivos por serie: true · «Activar plan»: apagado, descrito por null · «Todavía no podés activar este plan Este plan tiene objetivos distintos…» · diálo
+  — · «Plan», de Entrenamiento, no produjo errores de página —… — · «Plan», de Entrenamiento, no produjo errores de página — Failed to fetch RSC payload for http://localhost:3000/pro/advisees/forms.txt?id=d8e21b71-1c09-4082-ac54-3c5f87e52e73&vista=pedir&volver=vista%3Dresumen. Falling
+pasaron:
+  F-71 · El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · 
+  F-72 · Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas s
+  F-73 · Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series («3 × 5 rep. · 85 kg · 
+  F-76 · El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la m
+  F-74 · En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: 
+  F-73 · Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · d
+  F-75 · Lo elegido vive en la dirección de la página, por su número de orden. Elegir la segunda sesión escribe 
+  F-75 · «Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microcic
+  F-80 · Con los tres ejercicios de la sesión abiertos, en toda la sección no hay una palabra de la lista de Ent
+  F-14 · «Plan», de Entrenamiento, tiene su ayuda en el marco del área: se abre por el título, explica cada cosa
+  F-80 · axe no encuentra faltas en «Plan», de Entrenamiento, con todos los ejercicios abiertos, en los dos tema
+  F-78 · (Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna 
+  F-72 · (Respuesta simulada.) Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se m
+  F-74 · (Respuesta simulada.) Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los pa
+  F-74 · (Respuestas simuladas: el escenario no tiene ejercicios con imagen.) Un ejercicio con imagen la muestra
+  F-77 · «Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una
+  F-79 · «Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «E
+  F-112 · Con los ejercicios de una sesión abiertos, el editor no tiene una palabra de la lista de Entrenamiento
+  F-79 · Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Activada, la versión en preparac
+  F-77 · Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se c
+última línea: 22/34 comprobaciones bien; fallan: F-80, F-103, F-104, F-105, F-108, F-107, F-106, F-109, F-113, F-110, F-111, —

@@ -1,0 +1,27 @@
+detectada      con un empate, la cobertura de la tarjeta es la de la última métrica
+detectada      la tarjeta nunca nombra de qué métricas es su cobertura
+detectada      una métrica con otra cobertura no la dice en su celda
+detectada      los días asociados a otra versión no se dicen
+detectada      lo registrado fuera de las fechas de la etapa no se dice
+detectada      las fechas de la etapa se repiten siempre en la cobertura
+detectada      una lectura recortada no se dice
+detectada      la tarjeta A ofrece también las etapas posteriores a B
+detectada      la tarjeta B ofrece también las etapas anteriores a A
+detectada      la etapa elegida sale de la lista si ya no está entre las del año
+detectada      la versión que reemplazó a una etapa es la suya
+detectada      una etapa cerrada dice «Sigue vigente»
+detectada      el cierre del seguimiento se dice como un reemplazo
+detectada      los nombres se enumeran solo con comas
+detectada      una etapa no se recorta al comienzo de lo leído
+detectada      una etapa entera fuera de lo leído igual es una banda
+detectada      la letra de la etapa no tiene su franja
+detectada      el renglón de las fechas no se reserva
+detectada      una fecha del medio va aunque pise a otra
+detectada      una fecha de afuera del período se escribe
+detectada      el objetivo no entra en el eje
+detectada      dos escalones del objetivo se pisan
+detectada      un escalón que terminó antes de lo leído se dibuja
+detectada      el eje ajustado no se ajusta
+detectada      el eje de siempre cambia
+
+25 de 25 roturas detectadas

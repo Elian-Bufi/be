@@ -1,0 +1,15 @@
+control (sin mutar): 7 pasan, 0 fallan
+DETECTADA pliegues-corridos · los puntos de los pliegues se corren 2 px · fallan 1: «ningún sitio se mueve: cada uno queda donde lo ponen las cue»
+DETECTADA anillos-mas-chicos · los anillos no tienen el ancho de la lámina · fallan 1: «ningún sitio se mueve: cada uno queda donde lo ponen las cue»
+DETECTADA imagen-sin-centrar · la figura no queda centrada en la escena · fallan 2: «ningún sitio se mueve: cada uno queda donde lo ponen las cue» «ninguna guía se cruza con otra, en las dos figuras y en las »
+DETECTADA sin-subescapular · el subescapular se queda sin campo · fallan 1: «cada sitio que el protocolo declara tiene su campo, una sola»
+DETECTADA tronco-a-la-izquierda · una tarjeta del tronco va a la izquierda y la del brazo se pierde · fallan 3: «cada sitio que el protocolo declara tiene su campo, una sola» «ninguna guía se cruza con otra, en las dos figuras y en las » «dentro de cada tarjeta los campos van en el orden decidido: »
+DETECTADA leyenda-ignorada · las tarjetas de la derecha bajan hasta la leyenda · fallan 1: «las tarjetas no se pisan, quedan dentro de la escena y no ba»
+DETECTADA orden-sin-arreglo · dos guías de una tarjeta se cruzan y nadie lo arregla · fallan 1: «ninguna guía se cruza con otra, en las dos figuras y en las »
+DETECTADA guia-desde-arriba · la guía sale del borde de arriba de la fila, no del campo · fallan 2: «ninguna guía se cruza con otra, en las dos figuras y en las » «una fila que crece agranda su tarjeta y la guía de las de ab»
+DETECTADA guia-al-centro · la guía llega al centro del sitio y lo tapa · fallan 1: «ninguna guía se cruza con otra, en las dos figuras y en las »
+DETECTADA documento-por-lado · el documento va por columnas, no en el orden del protocolo · fallan 1: «dentro de cada tarjeta los campos van en el orden decidido: »
+DETECTADA filas-sin-su-alto · una fila que crece no agranda su tarjeta · fallan 1: «una fila que crece agranda su tarjeta y la guía de las de ab»
+DETECTADA posterior-sin-marca · un pliegue de la cara de atrás no lo dice · fallan 1: «ninguna guía se cruza con otra, en las dos figuras y en las »
+DETECTADA pliegues-de-mas · una tarjeta sin sitios del protocolo se dibuja igual · fallan 1: «cada sitio que el protocolo declara tiene su campo, una sola»
+13 de 13 detectadas

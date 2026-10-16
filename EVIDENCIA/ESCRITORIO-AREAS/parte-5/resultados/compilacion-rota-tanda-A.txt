@@ -1,0 +1,12 @@
+NOTADA    con un solo día tipo se dibuja igual un control de un solo segmento — F-58 (un solo día, de verdad)
+NOTADA    la fecha de activación del renglón lleva el año — F-62 (la versión de A)
+NOTADA    en la ficha, los títulos de las comidas no bajan de nivel — F-69 (la pieza en la ficha)
+tanda A (plan): 3 de 3 roturas notadas · 3 comprobaciones fallaron y 1 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-58 · El plan de A tiene un solo día tipo: no hay nada que … — «Día tipo Día habitual» · Desayuno: 2 opciones · se elige una · Almuerzo: 2 opciones · se elige una · Merienda: 1 opción · Cena: 1 opción
+  F-62 · El plan de A dice su versión con la fecha de otro mes… — «Versión 2 · activada el 7 sept 2026 · es lo que ve el asesorado» · Versión 2 · activada el 7 sept, 09:30 · vigente | Versión 1 · activada el 21 jul, 09:00 · an
+  F-69 · En la ficha, el detalle de la activación muestra la m… — columna de 480 px · «Solo lectura Versión 2 · activada el 7 sept 2026, 09:30» · «Día tipo Día habitual» · Desayuno (abierta), Almuerzo, Merienda, Cena · 2 opcio
+pasaron:
+  — · «Plan», de Nutrición (asesorado A), y su pieza en la ficha no produjeron errores de página
+última línea: 1/4 comprobaciones bien; fallan: F-58, F-62, F-69

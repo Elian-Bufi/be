@@ -22,6 +22,7 @@ import {
   type SolicitarCierreResponse,
   type ValidationIssue,
 } from './contratos';
+import { PerfilPropioResponseSchema, type EditarPerfilPropioRequest, type PerfilPropioResponse } from './contratos-perfil-propio';
 import {
   CandidatoDeAlimentoResponseSchema,
   CandidatoDeEjercicioResponseSchema,
@@ -63,6 +64,49 @@ import {
   type VinculoResponse,
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
+import {
+  LineaDeTiempoResponseSchema,
+  ListaDeVistasResponseSchema,
+  ProyeccionResponseSchema,
+  VistaDeAnalisisResponseSchema,
+  type BusquedaEnLineaDeTiempoRequest,
+  type ClaveDeProyeccion,
+  type CrearVistaRequest,
+  type ReemplazarVistaRequest,
+} from './contratos-analisis';
+
+/**
+ * Los filtros de API-DSH-04, ya como texto de la consulta (listas separadas por coma). Sin `q`: la búsqueda va en el
+ * cuerpo de API-DSH-04-BUSQUEDA (`buscarEnLineaDeTiempo`), nunca en una URL (DL-127).
+ */
+export type FiltroDeLineaDeTiempo = {
+  readonly periodStart?: string;
+  readonly periodEnd?: string;
+  readonly domain?: string;
+  readonly type?: string;
+  readonly state?: string;
+  readonly quality?: string;
+  readonly late?: 'true';
+  readonly planVersionId?: string;
+  readonly exerciseId?: string;
+  /** El instante de un corte (la última revisión de un área): lo nuevo desde entonces (WP-DASHBOARD-COMPRENSION). */
+  readonly since?: string;
+  readonly limit?: string;
+  readonly cursor?: string;
+};
+
+const CLAVES_DE_LA_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'since', 'limit', 'cursor'] as const satisfies readonly (keyof FiltroDeLineaDeTiempo)[];
+
+/** Los parámetros de API-PRJ-01, ya como texto de la consulta. */
+export type FiltroDeProyeccion = {
+  readonly periodStart?: string;
+  readonly periodEnd?: string;
+  readonly metric?: string;
+  readonly exerciseId?: string;
+  readonly setIndex?: string;
+  readonly unit?: 'kg' | 'lb';
+  readonly grain?: 'ORIGINAL' | 'DAY' | 'WEEK';
+};
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -386,6 +430,14 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     consultarCuenta(token: string): Promise<Resultado<MeResponse>> {
       return llamar('GET', '/me', { token, esquema: MeResponseSchema });
     },
+    /** API-ACC-06-PROPIA (DL-009 y DL-040): el perfil propio, con su nombre visible y su versión efectiva. */
+    consultarPerfilPropio(token: string): Promise<Resultado<PerfilPropioResponse>> {
+      return llamar('GET', '/me/profile', { token, esquema: PerfilPropioResponseSchema });
+    },
+    /** API-ACC-06: cambia el nombre visible (o lo quita, con `null`). Sin Idempotency-Key: concurrencia por `expectedVersion`. */
+    editarPerfilPropio(token: string, cuerpo: EditarPerfilPropioRequest): Promise<Resultado<PerfilPropioResponse>> {
+      return llamar('PATCH', '/me/profile', { token, cuerpo, esquema: PerfilPropioResponseSchema });
+    },
     /** API-CON-05 (solo lectura). */
     consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>> {
       return llamar('GET', '/me/health-data-consent-requirement', { token, esquema: RequisitoDeConsentimientoDeSaludResponseSchema });
@@ -566,9 +618,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
 
     // ─── WP-03 · DSH-03 mínimo (DL-031) ────────────────────────────────────────────────────────
-    /** API-DSH-03. 404 = no hay acceso que mostrar: la UI no distingue por qué (UC-I02 E05). */
-    consultarDashboard(token: string, asesoradoId: string): Promise<Resultado<DashboardResponse>> {
-      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/dashboard`, { token, esquema: DashboardResponseSchema });
+    /**
+     * API-DSH-03. 404 = no hay acceso que mostrar: la UI no distingue por qué (UC-I02 E05). El período es opcional
+     * (instantes RFC 3339): sin él, los conteos son de toda la historia, como hasta ahora.
+     */
+    consultarDashboard(token: string, asesoradoId: string, periodo?: { readonly periodStart?: string; readonly periodEnd?: string }): Promise<Resultado<DashboardResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/dashboard${query({ periodStart: periodo?.periodStart, periodEnd: periodo?.periodEnd })}`, { token, esquema: DashboardResponseSchema });
     },
     // ─── PF-09 · Plantillas de plan de entrenamiento (DL-108) ─────────────────────────────
     crearPlantillaDeEntrenamiento(token: string, cuerpo: CrearPlantillaDeEntrenamientoRequest, clave: string) {
@@ -698,9 +753,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
-    /** API-NUT-13. */
+    /**
+     * API-NUT-13-BUSQUEDA (DL-130): buscar en el catálogo con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
+     * clave de idempotencia. API-NUT-13 (`q` en la URL) queda como contrato legado de la API.
+     */
     buscarEnCatalogo(token: string, texto: string) {
-      return llamar('GET', `/nutrition/catalog-items${query({ q: texto, limit: '20' })}`, { token, esquema: ListaDeCatalogoResponseSchema });
+      return llamar('POST', '/nutrition/catalog-items/search', { token, esquema: ListaDeCatalogoResponseSchema, cuerpo: { q: texto, limit: 20 } });
     },
     /** API-INT-NUT-01. */
     crearElementoDeCatalogo(token: string, cuerpo: CrearElementoDeCatalogoRequest, claveDeIdempotencia: string) {
@@ -1003,9 +1061,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
-    /** API-TRN-13. */
+    /**
+     * API-TRN-13-BUSQUEDA (DL-130): buscar ejercicios con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
+     * clave de idempotencia. API-TRN-13 (`q` en la URL) queda como contrato legado de la API.
+     */
     buscarEjercicios(token: string, texto: string) {
-      return llamar('GET', `/training/exercises${query({ q: texto, limit: '20' })}`, { token, esquema: ListaDeEjerciciosResponseSchema });
+      return llamar('POST', '/training/exercises/search', { token, esquema: ListaDeEjerciciosResponseSchema, cuerpo: { q: texto, limit: 20 } });
     },
     /** API-INT-TRN-01: carga manual, con cero zonas hasta WP-07. */
     crearEjercicio(token: string, nombre: string, claveDeIdempotencia: string) {
@@ -1113,6 +1174,42 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     sesionEnCurso(token: string) {
       return llamar('GET', '/me/training/session-in-progress', { token, esquema: SesionEnCursoResponseSchema });
     },
+    /**
+     * API-DSH-04: la línea de tiempo del asesorado (DL-127). Sin ningún alcance permitido: 404. Solo las claves declaradas
+     * van a la URL: un objeto con otros campos (por ejemplo, un texto de búsqueda) no los arrastra a la consulta.
+     */
+    lineaDeTiempo(token: string, asesoradoId: string, filtro: FiltroDeLineaDeTiempo) {
+      const declarados: Record<string, string | undefined> = {};
+      for (const clave of CLAVES_DE_LA_LINEA_DE_TIEMPO) declarados[clave] = filtro[clave];
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/timeline${query(declarados)}`, { token, esquema: LineaDeTiempoResponseSchema });
+    },
+    /**
+     * API-DSH-04-BUSQUEDA: buscar en la línea de tiempo con el texto en el cuerpo (DL-127). Es una lectura: sin clave de
+     * idempotencia. La URL lleva solo el asesorado; el texto no queda en ninguna URL ni bitácora de la API.
+     */
+    buscarEnLineaDeTiempo(token: string, asesoradoId: string, cuerpo: BusquedaEnLineaDeTiempoRequest) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/timeline/search`, { token, esquema: LineaDeTiempoResponseSchema, cuerpo });
+    },
+    /** API-PRJ-01: una proyección profunda (DL-126). */
+    proyeccion(token: string, asesoradoId: string, clave: ClaveDeProyeccion, filtro: FiltroDeProyeccion) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/projections/${clave}${query(filtro)}`, { token, esquema: ProyeccionResponseSchema });
+    },
+    /** API-VAN-01: las vistas de análisis propias (DL-128). */
+    listarVistasDeAnalisis(token: string) {
+      return llamar('GET', '/me/analysis-views', { token, esquema: ListaDeVistasResponseSchema });
+    },
+    /** API-VAN-02. */
+    crearVistaDeAnalisis(token: string, cuerpo: CrearVistaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/analysis-views', { token, claveDeIdempotencia, esquema: VistaDeAnalisisResponseSchema, cuerpo });
+    },
+    /** API-VAN-03. */
+    reemplazarVistaDeAnalisis(token: string, viewId: string, cuerpo: ReemplazarVistaRequest) {
+      return llamar('PUT', `/me/analysis-views/${encodeURIComponent(viewId)}`, { token, esquema: VistaDeAnalisisResponseSchema, cuerpo });
+    },
+    /** API-VAN-04. */
+    borrarVistaDeAnalisis(token: string, viewId: string, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/me/analysis-views/${encodeURIComponent(viewId)}`, { token, claveDeIdempotencia, esquema: null });
+    },
     /** API-EJE-01: los ejercicios propios, con su imagen vigente. */
     ejerciciosPropios(token: string) {
       return llamar('GET', '/training/own-exercises', { token, esquema: ListaDeEjerciciosPropiosResponseSchema });
@@ -1185,19 +1282,41 @@ function leerJson(texto: string): unknown {
  * evaluación). Pide de a `limite` (el máximo de la API es 50) y se detiene en `maximoDePaginas` para que una lista sin fin
  * no cuelgue la pantalla: si quedó algo afuera, `completa` es falso y la pantalla lo puede decir. Un error en cualquier
  * página es el resultado: no se muestra media lista como si fuera entera.
+ *
+ * WP-ESCRITORIO-AMABLE, parte 5 (los pendientes de la cartera, que se cuentan en la pantalla):
+ * - `primera` es la primera página tal como llegó, con lo que la respuesta dice además de la lista (en la cartera, la
+ *   fecha con que se clasificó y el aviso de vista parcial);
+ * - un cursor vence si la lista cambió mientras se la leía (`INVALID_CURSOR`): se empieza de nuevo, una sola vez. Si
+ *   vuelve a vencer, ese es el resultado.
  */
-export async function todasLasPaginas<T>(
-  pedir: (filtro: { cursor?: string; limit: string }) => Promise<Resultado<{ readonly data: readonly T[]; readonly page: { readonly nextCursor: string | null; readonly hasMore: boolean } }>>,
+export interface PaginaDeUnaLista<T> {
+  readonly data: readonly T[];
+  readonly page: { readonly nextCursor: string | null; readonly hasMore: boolean };
+}
+
+export async function todasLasPaginas<P extends PaginaDeUnaLista<unknown>>(
+  pedir: (filtro: { cursor?: string; limit: string }) => Promise<Resultado<P>>,
   { limite = 50, maximoDePaginas = 20 }: { limite?: number; maximoDePaginas?: number } = {},
-): Promise<Resultado<{ data: T[]; completa: boolean }>> {
-  const data: T[] = [];
-  let cursor: string | undefined;
-  for (let pagina = 0; pagina < maximoDePaginas; pagina++) {
-    const r = await pedir({ ...(cursor ? { cursor } : {}), limit: String(limite) });
-    if (!r.ok) return r;
-    data.push(...r.datos.data);
-    if (!r.datos.page.hasMore || !r.datos.page.nextCursor) return { ok: true, datos: { data, completa: true } };
-    cursor = r.datos.page.nextCursor;
+): Promise<Resultado<{ data: P['data'][number][]; completa: boolean; primera: P }>> {
+  for (let intento = 0; ; intento++) {
+    const data: P['data'][number][] = [];
+    let primera: P | null = null;
+    let cursor: string | undefined;
+    let vencido = false;
+    for (let pagina = 0; pagina < Math.max(1, maximoDePaginas); pagina++) {
+      const r = await pedir({ ...(cursor ? { cursor } : {}), limit: String(limite) });
+      if (!r.ok) {
+        if (cursor !== undefined && intento === 0 && r.tipo === 'API' && r.codigo === 'INVALID_CURSOR') {
+          vencido = true;
+          break;
+        }
+        return r;
+      }
+      primera ??= r.datos;
+      data.push(...r.datos.data);
+      if (!r.datos.page.hasMore || !r.datos.page.nextCursor) return { ok: true, datos: { data, completa: true, primera } };
+      cursor = r.datos.page.nextCursor;
+    }
+    if (!vencido) return { ok: true, datos: { data, completa: false, primera: primera as P } };
   }
-  return { ok: true, datos: { data, completa: false } };
 }

@@ -1,0 +1,31 @@
+Parte 8 de WP-ESCRITORIO-AREAS: las corridas sobre el código final (6d85355), el 2026-10-14.
+La pasada completa (empezó a las 22:12) se cortó a los pocos minutos: con 200 a 800 MB libres la sesión de prueba se vencía a mitad de camino.
+Queda pendiente. Lo que alcanzó a correr de ella (r-capturas 59 de 61, rc-mirar 14 de 20, rc-capturas 0 de 1) falló
+por la máquina: el recorrido de comprensión se cortó con un 401 de la API al leer el resumen.
+
+entrenamientos: 34/34 comprobaciones bien
+planes (primera): 56/57 comprobaciones bien; fallan: F-63
+planes (segunda): 56/57 comprobaciones bien; fallan: F-66
+
+La pasada completa se hizo el 2026-10-15, de 02:05 a 02:58, con la máquina libre, sobre la rama de la parte 10 (7850b3d),
+que contiene esta parte sin cambios en sus pantallas:
+inicio: 2026-10-15 02:05 · commit 7850b3d + cambios sin commit: 1
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 1 · 309 OK · 13 datos · 2 fallas · 322/324 comprobaciones bien; fallan: PRO-18, F-09
+rc-funcional: salida 0 · 76 OK · 10 datos · 0 fallas · 86 de 86 bien
+rc-revocacion: salida 1 · 1 OK · 0 datos · 1 fallas · 1 de 2 bien; con observaciones: — El recorrido terminó por una excepción
+r-descartable: salida 0 · 22 OK · 0 datos · 0 fallas · 22/22 comprobaciones bien
+r-mediciones: salida 0 · 18 OK · 0 datos · 0 fallas · 18/18 comprobaciones bien
+r-solicitudes: salida 0 · 27 OK · 5 datos · 0 fallas · 32/32 comprobaciones bien
+r-planes: salida 0 · 56 OK · 1 datos · 0 fallas · 57/57 comprobaciones bien
+r-entrenamientos: salida 0 · 32 OK · 2 datos · 0 fallas · 34/34 comprobaciones bien
+r-revisiones: salida 0 · 15 OK · 1 datos · 0 fallas · 16/16 comprobaciones bien
+r-estimacion: salida 0 · 7 OK · 0 datos · 0 fallas · 7/7 comprobaciones bien
+fin: 2026-10-15 02:58
+
+Repetidos sobre datos nuevos (02:59 a 03:18) los dos que fallaron por páginas que no terminaron de cargar:
+r-funcional-repetida: salida 1 · 310 OK · 13 datos · 1 fallas · 1008 s · 323/324 comprobaciones bien; fallan: E-63
+rc-revocacion-repetida: salida 0 · 6 OK · 0 datos · 0 fallas · 26 s · 6 de 6 bien

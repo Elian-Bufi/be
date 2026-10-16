@@ -1,0 +1,11 @@
+NOTADA    en la ficha, la pieza del plan queda aplastada: dos columnas aunque no haya historial — F-81 (la pieza en la ficha)
+NOTADA    la ficha le pasa a la pieza del plan un acceso sin la sesión — F-81 (la imagen en la ficha)
+tanda C (plan-entrenamiento): 2 de 2 roturas notadas · 2 comprobaciones fallaron y 2 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-81 · En la ficha, el detalle de la activación de un plan d… — columna de 480 px (el ejercicio ocupa 74) · «Versión 2 · activada el 7 sept 2026, 10:00» · «Fuerza progresión» · Sentadilla (abierto), Peso muerto, Zancadas · s
+  F-81 · (Respuestas simuladas: el escenario no tiene ejercici… — sin imagen
+pasaron:
+  F-79 · A tiene una versión en preparación: al entrar a «Plan» se ve el selector, con «En preparación» elegida,
+  — · «Plan», de Entrenamiento (asesorado A), y su pieza en la ficha no produjeron errores de página
+última línea: 2/4 comprobaciones bien; fallan: F-81, F-81

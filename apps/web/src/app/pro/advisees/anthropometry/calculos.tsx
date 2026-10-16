@@ -1,228 +1,366 @@
 'use client';
 
 /**
- * Cálculos de una evaluación (API-MTH-01, API-CAL-01/02/04; UC-I09; RF-048).
+ * Los resultados calculados de una toma (API-MTH-01, API-CAL-01/02/04; UC-I09; RF-048), en «Tomas» (WP-ESCRITORIO-AREAS,
+ * parte 3; maqueta 22).
  *
  * La pantalla dice en voz alta lo que el 06 §20.3 exige y lo que la interfaz podría tapar:
- * - **qué necesita el método** y con qué medición se cubre cada entrada, porque «disponible» no es «admisible»
- *   (REG-06-204). El desplegable ofrece solo las mediciones vigentes, y si igual no corresponde, el rechazo del
- *   servidor se muestra con su motivo en vez de un «no se pudo»;
- * - **los cálculos conviven**: se listan todos, sin promedio, sin orden por «mejor» y sin ninguno marcado por BE
- *   (REG-06-205). Si el profesional quiere dejar uno como referencia, es un acto suyo, con su fecha y su autor;
+ * - **los cálculos conviven**: van por categoría del catálogo y por método, sin promedio, sin orden por «mejor» y sin
+ *   ninguno marcado por BE (REG-06-205). Si el profesional quiere dejar uno como referencia, es un acto suyo;
  * - **la referencia no es una decisión clínica**: no cambia el cálculo, no borra los otros y no crea objetivo ni
  *   prescripción (REG-06-207; INV-06-05). El texto lo dice antes de que apriete el botón;
+ * - **qué necesita el método** y con qué medición se cubre cada entrada, porque «disponible» no es «admisible»
+ *   (REG-06-204);
  * - cada corrida muestra **método, versión, regla y precisión declarada**, que es lo que la vuelve reproducible
- *   (REG-06-156/158). Desde DL-113, el método y la fecha quedan a la vista y lo demás, a un toque en «Con qué se
- *   calculó», junto con las entradas: la pantalla muestra primero el resultado y las acciones.
+ *   (REG-06-156/158), con sus entradas.
+ *
+ * Qué cambió respecto de antes: los resultados vigentes van a la vista, cada uno en un renglón con su método y su valor;
+ * los que quedaron sin efecto, a pedido («Ver N anteriores, sin efecto»). El detalle de un resultado y «Calcular con un
+ * método» se abren en el panel, en vez de empujar las mediciones hacia abajo. Los métodos y las corridas se leen una
+ * vez por visita, no en cada cambio de toma: son del asesorado, no de la toma.
  */
-import { asignacionAutomatica, cantidad, todasLasPaginas, UNIDAD_ADIMENSIONAL, COPY_ANTROPOMETRIA, datosDelMetodo, metodosParaLaToma, nombreDeMetrica, numeroConPrecision, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, type CorridaDeCalculoApi, type EvaluacionAntropometricaApi, type MetodoApi } from '@be/domain';
+import {
+  agruparPorCategoria,
+  asignacionAutomatica,
+  cantidad,
+  COPY,
+  COPY_ANTROPOMETRIA as C,
+  corridaVigente,
+  datosDelMetodo,
+  ETIQUETA_DE_CLASE_DE_DATO,
+  ETIQUETA_DE_CONDICION,
+  marcaDeLaClase,
+  metodosParaLaToma,
+  nombreDeMetrica,
+  resultadosDeLaToma,
+  todasLasPaginas,
+  valorDelResultado,
+  type CorridaDeCalculoApi,
+  type EvaluacionAntropometricaApi,
+  type MetodoApi,
+} from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
+import { conNumerosPegados } from '../../../../components/en-partes';
+import { Cargando } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
-import { Cargando, ErrorConReintento } from '../../../../components/estados';
+import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { motivoDelRechazo } from './rechazos-de-antropometria';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { useAntropometria } from './antropometria';
+import { Marca } from './marca';
 
-type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; metodos: MetodoApi[]; corridas: CorridaDeCalculoApi[] };
+export type Calculos =
+  | { readonly tipo: 'cargando' }
+  | { readonly tipo: 'fallo' }
+  | {
+      readonly tipo: 'listo';
+      readonly metodos: readonly MetodoApi[];
+      /** Todas las corridas del asesorado: API-CAL-02 no filtra por toma. */
+      readonly corridas: readonly CorridaDeCalculoApi[];
+      /** Falso si alguna de las dos listas llegó cortada: puede faltar un resultado. */
+      readonly completa: boolean;
+    };
 
-export function BloqueDeCalculos({ evaluacion, onAviso }: { evaluacion: EvaluacionAntropometricaApi; onAviso: (a: { tipo: 'exito' | 'error'; texto: string }) => void }) {
+/**
+ * Los métodos del catálogo y las corridas del asesorado, leídos enteros (desde DL-111 el catálogo tiene más métodos que
+ * una página, y una corrida de una toma puede estar en cualquier página). Al volver a leer, lo que había sigue a la
+ * vista hasta que llega lo nuevo.
+ */
+export function useCalculosDelAsesorado(): { readonly estado: Calculos; readonly recargar: () => Promise<void> } {
   const { token, asesoradoId, sesionPerdida } = useAntropometria();
-  const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
-  const [abierto, setAbierto] = useState(false);
-
-  const cargar = useCallback(async () => {
-    setEstado({ tipo: 'cargando' });
-    // Las dos listas van completas: desde DL-111 el catálogo tiene más métodos que una página, y API-CAL-02 no filtra
-    // por evaluación, así que una corrida de esta toma puede estar en cualquier página.
-    const [metodos, corridas] = await Promise.all([
-      todasLasPaginas((f) => api.listarMetodos(token, f)),
-      todasLasPaginas((f) => api.listarCalculos(token, asesoradoId, f)),
-    ]);
+  const [estado, setEstado] = useState<Calculos>({ tipo: 'cargando' });
+  const recargar = useCallback(async () => {
+    setEstado((e) => (e.tipo === 'listo' ? e : { tipo: 'cargando' }));
+    const [metodos, corridas] = await Promise.all([todasLasPaginas((f) => api.listarMetodos(token, f)), todasLasPaginas((f) => api.listarCalculos(token, asesoradoId, f))]);
     if (sesionPerdida(metodos) || sesionPerdida(corridas)) return;
-    if (!metodos.ok || !corridas.ok) return setEstado({ tipo: 'error' });
-    setEstado({
-      tipo: 'listo',
-      metodos: metodos.datos.data as MetodoApi[],
-      corridas: (corridas.datos.data as CorridaDeCalculoApi[]).filter((c) => c.evaluationId === evaluacion.evaluationId),
-    });
-  }, [token, asesoradoId, sesionPerdida, evaluacion.evaluationId]);
-
+    if (!metodos.ok || !corridas.ok) return setEstado({ tipo: 'fallo' });
+    setEstado({ tipo: 'listo', metodos: metodos.datos.data, corridas: corridas.datos.data, completa: metodos.datos.completa && corridas.datos.completa });
+  }, [token, asesoradoId, sesionPerdida]);
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    void recargar();
+  }, [recargar]);
+  return { estado, recargar };
+}
+
+/** El valor de un resultado, con el número destacado y la unidad al lado. */
+function Valor({ corrida }: { corrida: CorridaDeCalculoApi }) {
+  // Con la precisión que declara el método, aunque termine en cero (REG-06-158: sin redondeo silencioso).
+  const [valor, ...unidad] = valorDelResultado(corrida).split(' ');
+  return (
+    <span className="resultado-de-la-toma__valor">
+      <strong>{valor}</strong>
+      {unidad.length > 0 ? <span className="resultado-de-la-toma__unidad"> {unidad.join(' ')}</span> : null}
+    </span>
+  );
+}
+
+export function ResultadosDeLaToma({
+  toma,
+  calculos,
+  onReintentar,
+  onAbrir,
+  onCalcular,
+}: {
+  toma: EvaluacionAntropometricaApi;
+  calculos: Calculos;
+  onReintentar: () => void;
+  /** Abre el detalle de un resultado, por su corrida. */
+  onAbrir: (corridaId: string) => void;
+  onCalcular: () => void;
+}) {
+  const [verAnteriores, setVerAnteriores] = useState(false);
+  const deLaToma = calculos.tipo === 'listo' ? calculos.corridas.filter((c) => c.evaluationId === toma.evaluationId) : [];
+  const porId = new Map(deLaToma.map((c) => [c.calculationRunId, c]));
+  // Por categoría del catálogo y por método: el orden neutral del dominio, el mismo de la lámina.
+  const secciones = calculos.tipo === 'listo' ? agruparPorCategoria(resultadosDeLaToma(calculos.corridas, calculos.metodos, toma.evaluationId)) : [];
+  const anteriores = deLaToma.filter((c) => !corridaVigente(c));
 
   return (
-    <section className="subseccion" aria-labelledby="titulo-calculos">
-      {/* DL-113 · la acción principal de esta parte, arriba: antes quedaba al final de la lista de corridas. */}
-      <div className="encabezado-de-bloque">
-        <h3 id="titulo-calculos">{COPY_ANTROPOMETRIA.calculos}</h3>
-        {estado.tipo === 'listo' && !abierto ? (
-          <button type="button" className="boton boton--primario" onClick={() => setAbierto(true)} disabled={estado.metodos.length === 0}>
-            {COPY_ANTROPOMETRIA.nuevoCalculo}
-          </button>
-        ) : null}
-      </div>
-      <Ayuda titulo="Cómo conviven los cálculos">
-        <p>{COPY_ANTROPOMETRIA.explicacionDeCoexistencia}</p>
-      </Ayuda>
-      {estado.tipo === 'cargando' ? <Cargando /> : null}
-      {estado.tipo === 'error' ? <ErrorConReintento onReintentar={cargar} /> : null}
-      {estado.tipo === 'listo' ? (
-        <>
-          {abierto ? (
-            <NuevoCalculo
-              evaluacion={evaluacion}
-              metodos={estado.metodos}
-              corridas={estado.corridas}
-              onCerrar={() => setAbierto(false)}
-              onHecho={(texto) => {
-                setAbierto(false);
-                onAviso({ tipo: 'exito', texto });
-                void cargar();
-              }}
-              onError={(texto) => onAviso({ tipo: 'error', texto })}
-            />
+    <section className="resultados-de-la-toma" aria-labelledby="titulo-resultados">
+      <div className="toma-abierta__titulo-de-bloque">
+        <h3 id="titulo-resultados">{C.resultadosDerivados}</h3>
+        <Marca marca={marcaDeLaClase('DERIVED')} />
+        <p className="nota">{C.cadaUnoConSuMetodo}</p>
+        <span className="toma-abierta__acciones-de-bloque">
+          {anteriores.length > 0 ? (
+            <button type="button" className="boton boton--enlace" aria-expanded={verAnteriores} aria-controls="anteriores-sin-efecto" onClick={() => setVerAnteriores((x) => !x)}>
+              {verAnteriores ? C.ocultarAnteriores : C.verAnterioresSinEfecto(anteriores.length)}
+            </button>
           ) : null}
-          {estado.metodos.length === 0 ? <p className="nota">{COPY_ANTROPOMETRIA.sinMetodosSeleccionables}</p> : null}
-          {estado.corridas.length === 0 ? <p>{COPY_ANTROPOMETRIA.sinCalculos}</p> : null}
-          <ul className="corridas">
-            {estado.corridas.map((c) => (
-              <Corrida
-                key={c.calculationRunId}
-                corrida={c}
-                onHecho={(texto) => {
-                  onAviso({ tipo: 'exito', texto });
-                  void cargar();
-                }}
-                onError={(texto) => onAviso({ tipo: 'error', texto })}
-              />
+          {calculos.tipo === 'listo' ? (
+            <button type="button" className="boton boton--secundario boton--compacto" onClick={onCalcular} disabled={calculos.metodos.length === 0}>
+              <Icono nombre="mas" tamano={18} />
+              {C.nuevoCalculo}
+            </button>
+          ) : null}
+        </span>
+      </div>
+
+      {calculos.tipo === 'cargando' ? <Cargando /> : null}
+      {/* Una falla de esta lectura no es «todavía no hay cálculos». */}
+      {calculos.tipo === 'fallo' ? (
+        <Aviso tipo="error">
+          <p>
+            {C.resultadosNoCargaron}{' '}
+            <button type="button" className="boton boton--enlace" onClick={onReintentar}>
+              {COPY.reintentar}
+            </button>
+          </p>
+        </Aviso>
+      ) : null}
+      {calculos.tipo === 'listo' ? (
+        <>
+          {!calculos.completa ? <p className="nota">{C.resultadosIncompletos}</p> : null}
+          {calculos.metodos.length === 0 ? <p className="nota">{C.sinMetodosSeleccionables}</p> : null}
+          {secciones.length === 0 ? <p className="nota resultados-de-la-toma__sin-calculos">{C.sinCalculos}</p> : null}
+          <div className="categorias-de-resultados">
+            {secciones.map((s) => (
+              <section key={s.categoria ?? 'OTROS'} className="categoria-de-resultados" data-categoria={s.categoria ?? 'OTROS'}>
+                <h4>{s.categoria ? (C.categoriaDeMetodo[s.categoria] ?? s.categoria) : C.laminaOtrosCalculos}</h4>
+                <ul>
+                  {s.resultados.map((r) => {
+                    const corrida = porId.get(r.corridaId);
+                    if (!corrida) return null;
+                    return (
+                      <li key={r.corridaId}>
+                        <button
+                          type="button"
+                          className="resultado-de-la-toma"
+                          data-resultado={r.corridaId}
+                          aria-label={[`${r.metodo}: ${r.nombre}, ${valorDelResultado(corrida)}`, ...(corrida.referenceForPurpose ? [C.referenciaAdoptada] : [])].join(' · ')}
+                          onClick={() => onAbrir(r.corridaId)}
+                        >
+                          <span className="resultado-de-la-toma__que">
+                            {/* El nombre de un método puede traer un número («7 pliegues»): no se separa de su palabra. */}
+                            <span className="resultado-de-la-toma__nombre">{conNumerosPegados(r.metodo)}</span>
+                            {corrida.referenceForPurpose ? <span className="etiqueta-de-dato">{C.referenciaAdoptada}</span> : null}
+                          </span>
+                          <Valor corrida={corrida} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
+          {verAnteriores ? (
+            <div className="anteriores-sin-efecto" id="anteriores-sin-efecto">
+              <h4>{C.anterioresSinEfecto}</h4>
+              <p className="nota">{C.explicacionDeAnterioresSinEfecto}</p>
+              <ul>
+                {anteriores.map((c) => (
+                  <li key={c.calculationRunId}>
+                    <button type="button" className="resultado-de-la-toma" data-resultado={c.calculationRunId} aria-label={`${c.methodName}: ${nombreDeMetrica(c.result.metric)}, ${valorDelResultado(c)} · ${C.calculoNoVigente}`} onClick={() => onAbrir(c.calculationRunId)}>
+                      <span className="resultado-de-la-toma__que">
+                        <span className="resultado-de-la-toma__nombre">{conNumerosPegados(c.methodName)}</span>
+                        <span className="etiqueta-de-dato">{C.calculoNoVigente}</span>
+                      </span>
+                      <Valor corrida={c} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </>
       ) : null}
     </section>
   );
 }
 
-function Corrida({ corrida, onHecho, onError }: { corrida: CorridaDeCalculoApi; onHecho: (t: string) => void; onError: (t: string) => void }) {
+/**
+ * Un resultado calculado, en el panel: el valor con su precisión, con qué se calculó (método, versión, regla y entradas)
+ * y, si es de una toma registrada y está vigente, «Dejar como referencia».
+ */
+export function DetalleDeResultado({ corrida, hecho, onHecho }: { corrida: CorridaDeCalculoApi; hecho: string | null; onHecho: (texto: string) => Promise<void> }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
   const [adoptando, setAdoptando] = useState(false);
   const [fundamento, setFundamento] = useState('');
+  useCambiosSinGuardar(adoptando && fundamento.trim() !== '', 'el fundamento de un resultado');
   const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const vigente = corridaVigente(corrida);
 
   /** El token de la referencia vigente viaja en la corrida: sin él, reemplazarla pisaría la decisión anterior. */
   async function adoptar(expectedVersion: string | null) {
+    setError(null);
     setEnviando(true);
-    const res = await api.adoptarReferenciaDeCalculo(
-      token,
-      asesoradoId,
-      corrida.purpose,
-      { calculationRunId: corrida.calculationRunId, expectedVersion, rationale: fundamento.trim() || null },
-      intento.actual(),
-    );
+    const res = await api.adoptarReferenciaDeCalculo(token, asesoradoId, corrida.purpose, { calculationRunId: corrida.calculationRunId, expectedVersion, rationale: fundamento.trim() || null }, intento.actual());
     intento.registrar(res);
-    setEnviando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
-    if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return onError(mensajeDeFallo(res));
+    if (sesionPerdida(res) || accesoRetirado(res)) return setEnviando(false);
+    if (!res.ok) {
+      setEnviando(false);
+      return setError(motivoDelRechazo(res)?.texto ?? mensajeDeFallo(res));
+    }
+    await onHecho(res.datos.data.supersedesReferenceId ? `${C.referenciaHecha} ${C.referenciaReemplazada}` : C.referenciaHecha);
+    setEnviando(false);
     setAdoptando(false);
-    onHecho(res.datos.data.supersedesReferenceId ? `${COPY_ANTROPOMETRIA.referenciaHecha} ${COPY_ANTROPOMETRIA.referenciaReemplazada}` : COPY_ANTROPOMETRIA.referenciaHecha);
+    setFundamento('');
   }
 
   return (
-    <li className="corrida">
-      <h4>
-        {/* Con la precisión que declara el método, aunque termine en cero (REG-06-158: sin redondeo silencioso). */}
-        <span className="corrida__nombre">{nombreDeMetrica(corrida.result.metric)}:</span>{' '}
-        <span className="corrida__valor">
-          {numeroConPrecision(corrida.result.magnitude.value, corrida.precision.decimals)}
-          {corrida.result.magnitude.unit === UNIDAD_ADIMENSIONAL ? '' : ` ${corrida.result.magnitude.unit}`}
-        </span>{' '}
-        <span className="insignia">{ETIQUETA_DE_CLASE_DE_DATO.DERIVED}</span>
-        {corrida.evaluationContext === 'IN_PREPARATION' ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoEnPreparacion}</span></> : null}
-        {!corrida.effective ? <> <span className="insignia">{COPY_ANTROPOMETRIA.calculoNoVigente}</span></> : null}
-        {corrida.referenceForPurpose ? <> <span className="insignia">{COPY_ANTROPOMETRIA.referenciaAdoptada}</span></> : null}
-      </h4>
-      {!corrida.effective ? (
-        <Ayuda titulo="Por qué está sin efecto">
-          <p>{COPY_ANTROPOMETRIA.explicacionDeCalculoNoVigente}</p>
-        </Ayuda>
+    <div className="medicion-abierta resultado-abierto" data-resultado={corrida.calculationRunId}>
+      <p className="nota medicion-abierta__de-donde">{conNumerosPegados(corrida.methodName)}</p>
+      {hecho ? (
+        <Aviso tipo="exito">
+          <p>{hecho}</p>
+        </Aviso>
       ) : null}
-      <p className="nota">
-        {COPY_ANTROPOMETRIA.metodo}: {corrida.methodName} · {fecha(corrida.recordedAt)}
-        {corrida.supersedesRunId ? ` · ${COPY_ANTROPOMETRIA.corridaReemplazada}` : ''}
-      </p>
-      {/* Lo que vuelve reproducible la corrida (REG-06-156/158), a un toque: versión, regla, precisión y entradas. */}
-      <Ayuda titulo={COPY_ANTROPOMETRIA.entradasDelCalculo}>
-        <p>
-          {COPY_ANTROPOMETRIA.versionDelMetodo} {corrida.methodVersion} · {COPY_ANTROPOMETRIA.reglaAplicada}: {corrida.ruleId} · {COPY_ANTROPOMETRIA.precisionDeclarada}:{' '}
-          {COPY_ANTROPOMETRIA.decimales(corrida.precision.decimals)}
+      <div className="medicion-abierta__titular">
+        <p className="medicion-abierta__valor">{valorDelResultado(corrida)}</p>
+        <span className="medicion-abierta__marcas">
+          <Marca marca={marcaDeLaClase('DERIVED')} />
+          {corrida.evaluationContext === 'IN_PREPARATION' ? <span className="etiqueta-de-dato">{C.calculoEnPreparacion}</span> : null}
+          {!vigente ? <span className="etiqueta-de-dato">{C.calculoNoVigente}</span> : null}
+          {corrida.referenceForPurpose ? <span className="etiqueta-de-dato">{C.referenciaAdoptada}</span> : null}
+        </span>
+      </div>
+      <dl className="medicion-abierta__datos">
+        <div>
+          <dt>{C.queSeCalculo}</dt>
+          <dd>{nombreDeMetrica(corrida.result.metric)}</dd>
+        </div>
+        <div>
+          <dt>{C.calculadoEl}</dt>
+          <dd>{fecha(corrida.recordedAt)}</dd>
+        </div>
+      </dl>
+      {corrida.supersedesRunId ? <p className="nota">{C.corridaReemplazada}</p> : null}
+      {!vigente ? <p className="nota">{C.explicacionDeCalculoNoVigente}</p> : null}
+      <p className="nota">{C.noEsDiagnostico}</p>
+
+      {/* Lo que vuelve reproducible la corrida (REG-06-156/158): versión, regla, precisión y entradas. */}
+      <section className="medicion-abierta__bloque" aria-labelledby="titulo-entradas">
+        <h3 id="titulo-entradas">{C.entradasDelCalculo}</h3>
+        <p className="nota">
+          {conNumerosPegados(`${C.versionDelMetodo} ${corrida.methodVersion} · ${C.reglaAplicada}: ${corrida.ruleId} · ${C.precisionDeclarada}: ${C.decimales(corrida.precision.decimals)}`)}
         </p>
-        <ul>
+        <ul className="entradas-del-calculo">
           {corrida.inputProvenance.map((i) => (
-            <li key={i.sourceRef}>
-              {nombreDeMetrica(i.metric)}: {i.magnitude ? cantidad(i.magnitude.value, i.magnitude.unit) : COPY_ANTROPOMETRIA.valorNoConsultable} ·{' '}
-              {ETIQUETA_DE_CLASE_DE_DATO[i.provenanceType === 'SELF_REPORTED' ? 'REPORTED' : 'MEASURED']} · {ETIQUETA_DE_CONDICION[i.condition]} · {fecha(i.sourceOccurredAt)}
+            <li key={`${i.inputCode}-${i.sourceRef}`}>
+              <span className="entradas-del-calculo__nombre">{nombreDeMetrica(i.metric)}</span>
+              <span className="entradas-del-calculo__valor">{i.magnitude ? cantidad(i.magnitude.value, i.magnitude.unit) : C.valorNoConsultable}</span>
+              <span className="nota entradas-del-calculo__de-donde">
+                {ETIQUETA_DE_CLASE_DE_DATO[i.provenanceType === 'SELF_REPORTED' ? 'REPORTED' : 'MEASURED']} · {ETIQUETA_DE_CONDICION[i.condition]} · {fecha(i.sourceOccurredAt)}
+              </span>
             </li>
           ))}
         </ul>
-      </Ayuda>
+      </section>
 
-      {!corrida.referenceForPurpose && !adoptando && corrida.evaluationContext === 'REGISTERED' && corrida.effective ? (
-        <div className="acciones acciones--en-linea">
-          <button type="button" className="boton boton--secundario boton--compacto" onClick={() => setAdoptando(true)}>
-            {COPY_ANTROPOMETRIA.adoptarReferencia}
-          </button>
-        </div>
+      {error ? (
+        <Aviso tipo="error" enfocar>
+          <p>{error}</p>
+        </Aviso>
       ) : null}
 
-      {adoptando ? (
-        <div>
-          <Aviso tipo="info">
-            <p>{COPY_ANTROPOMETRIA.explicacionDeReferencia}</p>
-          </Aviso>
-          <Campo
-            id={`ref-fundamento-${corrida.calculationRunId}`}
-            etiqueta={COPY_ANTROPOMETRIA.fundamentoDeLaReferencia}
-            value={fundamento}
-            onChange={(e) => setFundamento(e.target.value)}
-            maxLength={1000}
-          />
-          <div className="acciones">
-            <button type="button" className="boton boton--secundario" onClick={() => setAdoptando(false)} disabled={enviando}>
-              Cancelar
-            </button>
-            <button type="button" className="boton boton--primario" onClick={() => void adoptar(corrida.referenceVersion)} disabled={enviando}>
-              {COPY_ANTROPOMETRIA.adoptarReferencia}
+      {!corrida.referenceForPurpose && !adoptando && corrida.evaluationContext === 'REGISTERED' && vigente ? (
+        <div className="medicion-abierta__pie">
+          <div className="acciones acciones--en-linea">
+            <button type="button" className="boton boton--secundario" onClick={() => setAdoptando(true)}>
+              {C.adoptarReferencia}
             </button>
           </div>
         </div>
       ) : null}
-    </li>
+
+      {adoptando ? (
+        <div className="medicion-abierta__pie" data-formulario="referencia">
+          {/* Lo que hay que saber antes de dejarlo como referencia queda a la vista, arriba del botón. */}
+          <Aviso tipo="info">
+            <p>{C.explicacionDeReferencia}</p>
+          </Aviso>
+          <Campo id={`ref-fundamento-${corrida.calculationRunId}`} etiqueta={C.fundamentoDeLaReferencia} value={fundamento} onChange={(e) => setFundamento(e.target.value)} maxLength={1000} />
+          <div className="acciones">
+            <button
+              type="button"
+              className="boton boton--secundario"
+              onClick={() => {
+                setAdoptando(false);
+                setError(null);
+              }}
+              disabled={enviando}
+            >
+              Cancelar
+            </button>
+            <button type="button" className="boton boton--primario" onClick={() => void adoptar(corrida.referenceVersion)} disabled={enviando}>
+              {C.adoptarReferencia}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 /** La categoría del método delante de su nombre, como en el desplegable. */
-const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${COPY_ANTROPOMETRIA.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
+const etiquetaDeCategoria = (m: MetodoApi): string => (m.category ? `${C.categoriaDeMetodo[m.category] ?? m.category} · ` : '');
 
-function NuevoCalculo({
+/**
+ * «Calcular con un método», en el panel: el método en dos grupos (los que esta toma cubre y los que no), su ficha —qué
+ * es, qué da, qué pide y de dónde sale— y de qué medición sale cada dato. Lo que hace falta para decidir no se pliega.
+ */
+export function NuevoCalculo({
   evaluacion,
   metodos,
   corridas,
   onCerrar,
   onHecho,
-  onError,
 }: {
   evaluacion: EvaluacionAntropometricaApi;
   metodos: readonly MetodoApi[];
   /** Las corridas de esta toma: para avisar si el mismo resultado ya está calculado con otro método. */
   corridas: readonly CorridaDeCalculoApi[];
   onCerrar: () => void;
-  onHecho: (t: string) => void;
-  onError: (t: string) => void;
+  /** El cálculo se registró: el texto para decirlo y la corrida nueva, para mostrarla. */
+  onHecho: (texto: string, corridaId: string) => Promise<void>;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
@@ -235,16 +373,19 @@ function NuevoCalculo({
   // Cada dato se asigna solo a la medición vigente de la toma con la misma clave; el profesional la puede cambiar.
   const [entradas, setEntradas] = useState<Record<string, string>>(() => asignacionAutomatica(datosDelMetodo(primero, evaluacion.measurements)));
   const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Solo las mediciones vigentes: una anulada dejó de contar, también como entrada (REG-06-217).
   const disponibles = evaluacion.measurements.filter((m) => m.condition === 'EFFECTIVE');
 
   function elegirMetodo(id: string) {
     const elegido = metodos.find((m) => m.methodVersionId === id);
     setMetodoId(id);
+    setError(null);
     setEntradas(elegido ? asignacionAutomatica(datosDelMetodo(elegido, evaluacion.measurements)) : {});
   }
 
   async function ejecutar() {
+    setError(null);
     setEnviando(true);
     const res = await api.ejecutarCalculo(
       token,
@@ -257,11 +398,14 @@ function NuevoCalculo({
       intento.actual(),
     );
     intento.registrar(res);
-    setEnviando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
-    if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return onError(mensajeDeFallo(res));
-    onHecho(COPY_ANTROPOMETRIA.calculoHecho);
+    if (sesionPerdida(res) || accesoRetirado(res)) return setEnviando(false);
+    if (!res.ok) {
+      setEnviando(false);
+      return setError(motivoDelRechazo(res)?.texto ?? mensajeDeFallo(res));
+    }
+    await onHecho(C.calculoHecho, res.datos.data.calculationRunId);
+    setEnviando(false);
   }
 
   const completo = metodo.requiredInputs.every((e) => entradas[e.inputCode]);
@@ -273,33 +417,33 @@ function NuevoCalculo({
   const opcion = (m: MetodoApi) => (
     <option key={m.methodVersionId} value={m.methodVersionId}>
       {etiquetaDeCategoria(m)}
-      {m.name} · {COPY_ANTROPOMETRIA.versionDelMetodo} {m.version}
+      {m.name} · {C.versionDelMetodo} {m.version}
     </option>
   );
 
   return (
-    <div className="panel">
+    <div className="nuevo-calculo">
       <div className="campo">
-        <label htmlFor="cal-metodo">{COPY_ANTROPOMETRIA.metodo}</label>
+        <label htmlFor="cal-metodo">{C.metodo}</label>
         <select id="cal-metodo" value={metodoId} onChange={(e) => elegirMetodo(e.target.value)}>
-          {posibles.length > 0 ? <optgroup label={COPY_ANTROPOMETRIA.metodosPosibles}>{posibles.map(opcion)}</optgroup> : null}
-          {faltanDatos.length > 0 ? <optgroup label={COPY_ANTROPOMETRIA.metodosConDatosFaltantes}>{faltanDatos.map(opcion)}</optgroup> : null}
+          {posibles.length > 0 ? <optgroup label={C.metodosPosibles}>{posibles.map(opcion)}</optgroup> : null}
+          {faltanDatos.length > 0 ? <optgroup label={C.metodosConDatosFaltantes}>{faltanDatos.map(opcion)}</optgroup> : null}
         </select>
       </div>
 
       {/* La ficha del método: qué es, qué da, qué pide (y si esta toma lo tiene) y de dónde sale (DL-111). */}
       <div className="ficha-de-metodo" aria-live="polite">
-        {/* DL-113 · el nombre completo: en el desplegable se corta en el teléfono, y es lo que identifica al método. */}
+        {/* DL-113 · el nombre completo: en el desplegable se corta, y es lo que identifica al método. */}
         <p className="ficha-de-metodo__nombre">
           {etiquetaDeCategoria(metodo)}
-          {metodo.name} · {COPY_ANTROPOMETRIA.versionDelMetodo} {metodo.version}
+          {metodo.name} · {C.versionDelMetodo} {metodo.version}
         </p>
         {metodo.description ? <p>{metodo.description}</p> : null}
         <p>
-          <strong>{COPY_ANTROPOMETRIA.metodoDa}:</strong> {nombreDeMetrica(metodo.output.metric)} ({metodo.output.unit})
+          <strong>{C.metodoDa}:</strong> {nombreDeMetrica(metodo.output.metric)} ({metodo.output.unit})
         </p>
         <p>
-          <strong>{COPY_ANTROPOMETRIA.metodoPide}:</strong>
+          <strong>{C.metodoPide}:</strong>
         </p>
         <ul className="ficha-de-metodo__datos">
           {datos.map((d) => {
@@ -316,18 +460,10 @@ function NuevoCalculo({
                       {elegida.metric !== d.metrica ? ` (${nombreDeMetrica(elegida.metric)})` : ''}
                     </>
                   ) : (
-                    <strong>{COPY_ANTROPOMETRIA.sinValorVigente}</strong>
+                    <strong>{C.sinValorVigente}</strong>
                   )
                 ) : (
-                  <strong>
-                    {d.falta?.motivo === 'OTRA_UNIDAD'
-                      ? `${COPY_ANTROPOMETRIA.datoEnOtraUnidad} (${d.falta.unidad})`
-                      : d.falta?.motivo === 'SIN_VALOR_VIGENTE'
-                        ? COPY_ANTROPOMETRIA.datoSinValorVigente
-                        : d.falta
-                          ? COPY_ANTROPOMETRIA.datoFalta
-                          : 'Sin elegir'}
-                  </strong>
+                  <strong>{d.falta?.motivo === 'OTRA_UNIDAD' ? `${C.datoEnOtraUnidad} (${d.falta.unidad})` : d.falta?.motivo === 'SIN_VALOR_VIGENTE' ? C.datoSinValorVigente : d.falta ? C.datoFalta : 'Sin elegir'}</strong>
                 )}
               </li>
             );
@@ -335,29 +471,27 @@ function NuevoCalculo({
         </ul>
         {metodo.population ? (
           <p className="nota">
-            <strong>{COPY_ANTROPOMETRIA.metodoPoblacion}:</strong> {metodo.population}
+            <strong>{C.metodoPoblacion}:</strong> {metodo.population}
           </p>
         ) : null}
         {yaCalculada ? (
           <Aviso tipo="info">
             <p>
-              Esta toma ya tiene «{nombreDeMetrica(metodo.output.metric)}» calculada con «{yaCalculada.methodName}». Si calculás también este método,
-              los dos resultados conviven: en la evolución se ven los dos, cada uno con su método, y en la APK la persona ve el último que se
-              registró.
+              Esta toma ya tiene «{nombreDeMetrica(metodo.output.metric)}» calculada con «{yaCalculada.methodName}». Si calculás también este método, los dos resultados conviven: en la evolución se ven los dos, cada uno
+              con su método, y en la APK la persona ve el último que se registró.
             </p>
           </Aviso>
         ) : null}
         <Ayuda titulo="Fuente y regla del método">
           {metodo.source ? (
             <p>
-              <strong>{COPY_ANTROPOMETRIA.metodoFuente}:</strong> {metodo.source}
+              <strong>{C.metodoFuente}:</strong> {metodo.source}
             </p>
           ) : (
             <p>{metodo.provenanceNote}</p>
           )}
           <p>
-            {COPY_ANTROPOMETRIA.finalidadDelCalculo}: {metodo.purposes.map((p) => COPY_ANTROPOMETRIA.finalidadDeCalculo[p] ?? p).join(', ')} · {COPY_ANTROPOMETRIA.precisionDeclarada}:{' '}
-            {COPY_ANTROPOMETRIA.decimales(metodo.precisionPolicy.decimals)} · {COPY_ANTROPOMETRIA.reglaAplicada}: {metodo.ruleId}
+            {C.finalidadDelCalculo}: {metodo.purposes.map((p) => C.finalidadDeCalculo[p] ?? p).join(', ')} · {C.precisionDeclarada}: {C.decimales(metodo.precisionPolicy.decimals)} · {C.reglaAplicada}: {metodo.ruleId}
           </p>
         </Ayuda>
       </div>
@@ -369,7 +503,7 @@ function NuevoCalculo({
       <details className="ayuda">
         <summary>Cambiar de qué medición sale cada dato</summary>
         <p className="nota">
-          {COPY_ANTROPOMETRIA.asignacionAutomatica} {COPY_ANTROPOMETRIA.explicacionDeAdmisibilidad}
+          {C.asignacionAutomatica} {C.explicacionDeAdmisibilidad}
         </p>
         {metodo.requiredInputs.map((e) => (
           <div className="campo" key={e.inputCode}>
@@ -377,17 +511,15 @@ function NuevoCalculo({
               {nombreDeMetrica(e.metric)} ({e.acceptedUnits.join(', ')})
             </label>
             <select id={`cal-entrada-${e.inputCode}`} value={entradas[e.inputCode] ?? ''} onChange={(ev) => setEntradas((x) => ({ ...x, [e.inputCode]: ev.target.value }))}>
-              <option value="">{COPY_ANTROPOMETRIA.elegirEntrada}</option>
+              <option value="">{C.elegirEntrada}</option>
               {/*
-                El desplegable ofrece el valor con el que se va a calcular, que es el que rige (REG-06-16). Mostrar el
-                que se tomó primero hacía que el profesional eligiera un número y recibiera un resultado derivado de
-                otro. Con la cadena sin resolver no se ofrece un valor: la admisibilidad va a rechazar esa entrada.
+                El desplegable ofrece el valor con el que se va a calcular, que es el que rige (REG-06-16). Con la cadena
+                sin resolver no se ofrece un valor: la admisibilidad va a rechazar esa entrada.
               */}
               {disponibles.map((m) => (
                 <option key={m.measurementId} value={m.measurementId}>
-                  {nombreDeMetrica(m.metric)}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : COPY_ANTROPOMETRIA.sinValorVigente} ·{' '}
-                  {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
-                  {m.corrections.length > 0 ? ` · ${COPY_ANTROPOMETRIA.corregida}` : ''}
+                  {nombreDeMetrica(m.metric)}: {m.effectiveMagnitude ? cantidad(m.effectiveMagnitude.value, m.effectiveMagnitude.unit) : C.sinValorVigente} · {ETIQUETA_DE_CLASE_DE_DATO[m.dataClass]}
+                  {m.corrections.length > 0 ? ` · ${C.corregida}` : ''}
                 </option>
               ))}
             </select>
@@ -395,12 +527,18 @@ function NuevoCalculo({
         ))}
       </details>
 
+      {error ? (
+        <Aviso tipo="error" enfocar>
+          <p>{error}</p>
+        </Aviso>
+      ) : null}
+
       <div className="acciones">
         <button type="button" className="boton boton--secundario" onClick={onCerrar} disabled={enviando}>
           Cancelar
         </button>
         <button type="button" className="boton boton--primario" onClick={() => void ejecutar()} disabled={enviando || !completo}>
-          {COPY_ANTROPOMETRIA.ejecutarCalculo}
+          {C.ejecutarCalculo}
         </button>
       </div>
     </div>

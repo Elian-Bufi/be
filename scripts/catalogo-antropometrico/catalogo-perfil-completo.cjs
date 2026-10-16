@@ -94,6 +94,15 @@ ${METODOS.map((m) => `  '${m.versionId}': '${m.nombre.replace(/'/g, "\\'")}',`).
 
 /** El nombre del método de una versión, o \`null\` si BE no la conoce. */
 export const nombreDeMetodo = (methodVersionId: string | null): string | null => (methodVersionId ? (NOMBRE_DE_METODO[methodVersionId] ?? null) : null);
+
+/**
+ * La categoría de cada versión de método del catálogo de BE (la de su ficha, la misma que guarda la migración): dice si
+ * el resultado es un índice o una suma de pliegues (un cálculo sobre medidas), una ecuación de predicción (grasa corporal
+ * o masas: una estimación) o un componente del somatotipo. Calculado no es siempre estimado.
+ */
+export const CATEGORIA_DE_METODO: Readonly<Record<string, 'INDICES' | 'SUMAS_DE_PLIEGUES' | 'GRASA_CORPORAL' | 'MASAS' | 'SOMATOTIPO'>> = {
+${METODOS.map((m) => `  '${m.versionId}': '${m.categoria}',`).join('\n')}
+};
 `;
   fs.writeFileSync(salidaTs, ts);
   console.log(`catálogo: ${METRICAS.length} métricas`);

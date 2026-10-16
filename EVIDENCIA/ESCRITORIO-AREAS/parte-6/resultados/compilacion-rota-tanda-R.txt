@@ -1,0 +1,38 @@
+NOTADA    la etiqueta del plan activo dice «Borrador» en lugar de «Solo lectura» — F-71 (el renglón de la versión)
+NOTADA    con varias sesiones no se dice que no tienen día asignado — F-72 (lo que se elige)
+NOTADA    la sesión dice su nombre donde va la cuenta de ejercicios y series — F-73 (los ejercicios plegados)
+NOTADA    una serie sin objetivo muestra una raya en lugar de «Sin objetivo» — F-74 (los objetivos por serie)
+NOTADA    el historial dice el día de cada activación, sin la hora — F-76 (el historial)
+NOTADA    la ayuda del plan lleva el título genérico — F-14 (la ayuda)
+NOTADA    una lectura de plantillas que falla se presenta como «no tenés plantillas» — F-77 (guardar y listar)
+NOTADA    al pasar a la activa, el editor se desmonta: lo escrito sin guardar se pierde — F-79 (crear, ir y volver)
+NOTADA    una lista de versiones que no se puede leer se presenta como «no hay plan» — F-78 (sin plan y fallas)
+NOTADA    después de crear el borrador desde la plantilla, el diálogo queda abierto — F-77 (desde la plantilla)
+NOTADA    «Lo general» va siempre debajo de la tabla de series — F-80 (los anchos)
+NOTADA    con seis sesiones para elegir se dibujan seis botones — F-72 (seis sesiones)
+tanda R (entrenamientos): 12 de 12 roturas notadas · 15 comprobaciones fallaron y 6 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-71 · El plan activo se presenta en un renglón: «Plan activ… — «Versión 2 · activada el 12 oct · es lo que ve el asesorado» · lecturas: lista 1, versión 1, objetivo 1, otras de Entrenamiento 0 · Guardar como plantilla | Emp
+  F-72 · Se mira una sesión por vez. Con dos bloques, un contr… — Fuerza: progresión (elegido) | Descarga · «2 sesiones · Propósito: Más carga, menos repeticiones» · A · Tren inferior (elegida) | B · Tren superior · «null»
+  F-73 · Los ejercicios van plegados, cada uno en un renglón c… — A · Tren inferior · Sentadilla: 4 series · criterio de intensidad: RIR (abierto, 4 filas) | Peso muerto: 3 × 5 rep. · 85 kg · RIR 2 · descanso 03:00 | Zancadas:
+  F-76 · El historial va al costado de los ejercicios, a la al… — Versión 2 · activada el 12 oct · vigente | Versión 1 · activada el 12 oct · anterior, conservada · el primer ejercicio termina a los 870 px; el historial empiez
+  F-74 · En un ejercicio con objetivos distintos por serie, ca… — Press de banca: 62,5 kg / 6–8 rep. / RIR 2 / 02:30 /  | 62,5 kg / 6–8 rep. / RIR 2 / 02:30 /  | 62,5 kg / 6–8 rep. / RIR 1 / 02:30 /  | 60 kg / 6–8 rep. / RIR 1
+  F-75 · Lo elegido vive en la dirección de la página, por su … — sesion=2 · ejercicios=1.3 → 1.2.3 → ninguno · bloque=2 («Semana 1 | Semana 2», sesión «Cuerpo completo») · micro=2 · al volver: {"id":"af0e4260-3c1d-4056-9020-9
+  F-80 · Con los tres ejercicios de la sesión abiertos, en tod… — sin palabras prohibidas en 1802 caracteres · lo general empieza a los 49 px y la tabla termina a los 1027
+  F-14 · «Plan», de Entrenamiento, tiene su ayuda en el marco … — «Cómo se lee esta vista» · 12 renglones · axe: sin faltas
+  F-80 · El historial sigue al costado a 1280 px y pasa debajo… — 1280: 1176 px de alto, historial al costado, lo general debajo · 1024: 1373 px de alto, historial debajo, lo general debajo · 768: 1522 px de alto, historial de
+  F-78 · (Respuestas simuladas.) Sin plan y sin objetivo, la s… — sin objetivo: [Ir a Resumen] · con objetivo: [Crear plan | Empezar desde una plantilla] · con plan y sin objetivo: [Guardar como plantilla] · falla: «»
+  F-72 · (Respuesta simulada.) Con seis sesiones para elegir, … — botones: 6 opciones, «null» · bloque vacío: «Acá no hay sesiones.» («sin sesiones»)
+  F-77 · «Guardar como plantilla» guarda la versión activa con… — escrituras: 1 · aviso: sí · lecturas al abrir: 1 · «Plan de entrenamiento del recorrido 220349»: 4 sesiones · Sin cargas · con la falla: «»
+  F-79 · «Crear nueva versión a partir de esta» hace una sola … — escrituras: 1 · aviso: sí · En preparación (elegida) | 2 · activa · «Fuerza: progresión» → «Fuerza: progresión» · en la activa: [Guardar como plantilla] · pedid
+  F-79 · Con cambios sin guardar, «Actualizar» pregunta antes … — «…» · «Versión 3 · activada el 12 oct · es lo que ve el asesorado» · bloque: «Fuerza: progresión» · Versión 3 · activada el 12 oct · vigente | Versión 2 · activ
+  F-77 · Elegida la plantilla, «Crear el borrador desde esta p… — escrituras: 1 · aviso: sí · En preparación | 3 · activa · origen en la API: una plantilla
+pasaron:
+  F-73 · Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · d
+  F-75 · «Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microcic
+  F-80 · axe no encuentra faltas en «Plan», de Entrenamiento, con todos los ejercicios abiertos, en los dos tema
+  F-74 · (Respuesta simulada.) Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los pa
+  F-74 · (Respuestas simuladas: el escenario no tiene ejercicios con imagen.) Un ejercicio con imagen la muestra
+  — · «Plan», de Entrenamiento, no produjo errores de página
+última línea: 7/22 comprobaciones bien; fallan: F-71, F-72, F-73, F-76, F-74, F-75, F-80, F-14, F-80, F-78, F-72, F-77, F-79, F-79, F-77

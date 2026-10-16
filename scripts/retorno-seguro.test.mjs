@@ -20,6 +20,10 @@ test('una receta abierta vuelve con su identificador, y un asesorado con el suyo
   // La pestaña Entrenamiento de un asesorado (WP-ENTRENAMIENTO-SERIES): faltaba, y el login volvía a Cuenta.
   assert.equal(destinoSeguro(`/pro/advisees/training?id=${UUID}`), `/pro/advisees/training?id=${UUID}`);
   assert.equal(destinoSeguro(`/pro/advisees/nutrition?id=${UUID}`), `/pro/advisees/nutrition?id=${UUID}`);
+  // Las otras dos pestañas de área. Información faltaba (WP-ESCRITORIO-AREAS, parte 4): quien iniciaba sesión desde ahí
+  // volvía a Cuenta.
+  assert.equal(destinoSeguro(`/pro/advisees/anthropometry?id=${UUID}`), `/pro/advisees/anthropometry?id=${UUID}`);
+  assert.equal(destinoSeguro(`/pro/advisees/forms?id=${UUID}`), `/pro/advisees/forms?id=${UUID}`);
 });
 
 test('cualquier otra cosa vuelve a Cuenta', () => {
@@ -30,6 +34,8 @@ test('cualquier otra cosa vuelve a Cuenta', () => {
     '/pro/recipes?nueva=1',
     `/pro/advisees/nutrition?receta=${UUID}`,
     `/pro/advisees/nutrition?id=${UUID}&vista=plan`,
+    // Un pedido de información a medio armar no se retoma después de iniciar sesión: se vuelve a las solicitudes.
+    `/pro/advisees/forms?id=${UUID}&vista=pedir`,
     `//otro.example/pro?id=${UUID}`,
     'https://otro.example/account',
     `/pro/recipes/../account?receta=${UUID}`,

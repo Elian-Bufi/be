@@ -1,0 +1,38 @@
+NOTADA    después de enviar, la lista no se vuelve a leer — F-05 (enviar)
+NOTADA    tras un «no disponible» al enviar, el marco no vuelve a preguntar el acceso — F-55 (los rechazos)
+NOTADA    el cajón se abre sin sumar un paso al historial: «atrás» sale de Información — F-52 (cerrar no pierde)
+NOTADA    al enviar desde Entrenamiento no se vuelve a Entrenamiento — F-57 (desde Entrenamiento)
+NOTADA    las aclaraciones de las preguntas vienen abiertas — F-54 (el área)
+NOTADA    todos los formularios muestran su descripción, no solo el elegido — C-73 (todas marcadas)
+NOTADA    el marco de Información no ofrece la ayuda de la vista — F-14 (la ayuda)
+tanda T (solicitudes): 7 de 7 roturas notadas · 9 comprobaciones fallaron y 17 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-14 · «Solicitudes» tiene su ayuda en el marco del área: ex… — «null» · 0 renglones · prohibidos: ninguno
+  F-51 · A 1280 px el detalle sigue al costado de la lista. A … — 1280: encima · 1024: al costado, la respuesta al lado · cortes: ninguno
+  C-70 · «Pedir información» abre un cajón sobre «Solicitudes»… — vista=pedir · «Asesorado · 216f7c» (el marco: «Asesorado · 216f7c») · foco en el título · 1 Qué formulario | 2 Qué preguntas | 3 Para qué y en qué área · Antece
+  C-73 · Elegir un formulario lee su versión una vez, y muestr… — versiones leídas: 1 · al elegir: 3 de 3 marcadas, 0 requeridas · «3 de 3 elegidas.» · Número · h, Texto, Sí o no · al desmarcar una: «2 de 3 elegidas.» · tras t
+  F-52 · Escape cierra el cajón: la dirección vuelve a `vista=… — tras Escape: cerrado, vista=solicitudes, foco en el botón · escrituras: 0 · al reabrir: «2 de 3 elegidas.», «Ajustar el plan a tu descanso» · «Actualizar»: «Ten
+  F-54 · El área de la solicitud: con un formulario sin área p… — Hábitos: a elegir (Elegí un área, Nutrición, Entrenamiento, Antropometría), elegida «» · Entrenamiento: fija en «Entrenamiento», «Este formulario es solo de Ent
+  F-55 · Un rechazo al enviar (simulado) se dice adentro del c… — 422: «Alguna de las preguntas pedidas no es pertinente para esta área. Revisá las preguntas o el área.» (foco en aviso) · 404: «No encontramos un recurso dispon
+  F-05 · Al enviar sale un solo pedido, con lo que quedó elegi… — pedidos: 1 · pedidas: nivel_de_actividad, fuma · requeridas: nivel_de_actividad · NUTRICION · «Ajustar el plan a tu descanso.» · «Solicitud enviada.» · Todas 3 
+  F-57 · Llegando desde Entrenamiento, el cajón se abre con la… — Antecedentes para entrenamiento: 6 pedidas, 5 requeridas · «Planificar tu entrenamiento» · área fija · tras cerrar: vista=solicitudes, «Volver a Entrenamiento» 
+pasaron:
+  F-44 · Al entrar, «Solicitudes» lee la lista entera una vez y, una vez, la respuesta de cada solicitud respond
+  C-72 · La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice e
+  C-70 · «Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola, y ningún ren
+  F-45 · Las tres vistas están en su orden, cada una con la cantidad de solicitudes que trae, contada a mano sob
+  C-71 · Una solicitud respondida se abre al costado, sin tapar la lista, y el foco va a su título. Dice cuándo 
+  F-44 · Abrir una solicitud respondida no vuelve a leerla (su respuesta ya se leyó al entrar): lee una vez la v
+  C-71 · La historia va de lo más nuevo a lo más viejo: la corrección, marcada «Vigente», con el motivo que escr
+  F-46 · Una solicitud respondida y sin correcciones: rige la original, ninguna fila dice «Corregida» ni «Antes»
+  F-47 · Una solicitud sin responder se abre igual, sin leer nada más que su formulario: dice las preguntas pedi
+  F-48 · Escape cierra el detalle y el foco vuelve al renglón de esa solicitud. La solicitud abierta vive en la 
+  F-49 · En ningún estado de «Solicitudes» (la lista, una respondida y corregida, una respondida y una sin respo
+  F-50 · Si la lista no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Toda
+  F-48 · axe no encuentra faltas en «Solicitudes» con una solicitud abierta al costado (1440 y 1280 px), en el p
+  C-74 · La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vac
+  F-53 · Con algo sin completar, «Enviar solicitud» no envía nada y dice en su lugar qué falta, con el foco en l
+  F-56 · A 1440 y a 1280 px el cajón mide 800 px, pegado al borde derecho y de arriba a abajo de la ventana, y l
+  — · «Solicitudes» y el pedido no produjeron errores de página
+última línea: 21/30 comprobaciones bien; fallan: F-14, F-51, C-70, C-73, F-52, F-54, F-55, F-05, F-57

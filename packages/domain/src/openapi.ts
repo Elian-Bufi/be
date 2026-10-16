@@ -23,6 +23,7 @@ import {
   SolicitarCierreRequestSchema,
   SolicitarCierreResponseSchema,
 } from './contratos';
+import { EditarPerfilPropioRequestSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
   AceptarSolicitudResponseSchema,
   ConsentimientoDeSaludOtorgadoResponseSchema,
@@ -106,6 +107,7 @@ import {
   HoyResponseSchema,
   IngestaResponseSchema,
   ListaDeCatalogoResponseSchema,
+  BusquedaEnCatalogoRequestSchema,
   ListaDeEvaluacionesResponseSchema,
   ListaDeIngestasResponseSchema,
   ListaDeObjetivosResponseSchema,
@@ -160,6 +162,7 @@ import {
   EvaluacionDeEntrenamientoResponseSchema,
   HoyDeEntrenamientoResponseSchema,
   ListaDeEjerciciosResponseSchema,
+  BusquedaDeEjerciciosRequestSchema,
   ListaDeEvaluacionesDeEntrenamientoResponseSchema,
   ListaDeObjetivosDeEntrenamientoResponseSchema,
   ListaDePlanesDeEntrenamientoResponseSchema,
@@ -197,6 +200,15 @@ import {
   TiemposDeSesionResponseSchema,
 } from './contratos-entrenamiento-por-serie';
 import { HEADER_DE_CAPACIDADES } from './compatibilidad-de-clientes';
+import {
+  BusquedaEnLineaDeTiempoRequestSchema,
+  CrearVistaRequestSchema,
+  LineaDeTiempoResponseSchema,
+  ListaDeVistasResponseSchema,
+  ProyeccionResponseSchema,
+  ReemplazarVistaRequestSchema,
+  VistaDeAnalisisResponseSchema,
+} from './contratos-analisis';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -348,6 +360,30 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: MeResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: '09v8:461-505',
+  },
+  {
+    id: 'API-ACC-06',
+    metodo: 'patch',
+    ruta: '/me/profile',
+    resumen:
+      'Editar el perfil propio con la versión esperada: hoy, el nombre visible (o quitarlo). Cada cambio es una versión. Lo ve el profesional con un vínculo vigente; si no, la referencia neutral.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarPerfilPropioRequestSchema,
+    exitos: [{ status: 200, schema: PerfilPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['VERSION_CONFLICT'], 422: ['INVALID_PROFILE_DATA'] },
+    fuente: '09v8:509-554 · DEUDA_LEGAJO DL-009 (opción B) y DL-040, decididas por Dirección el 2026-10-15',
+  },
+  {
+    id: 'API-ACC-06-PROPIA',
+    metodo: 'get',
+    ruta: '/me/profile',
+    resumen: 'El perfil propio con su versión efectiva, para editarlo. Va aparte de /me, cuya respuesta estricta valida la APK instalada.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PerfilPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'variante de lectura de API-ACC-06 (09v8:509-554) · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-009 y DL-040',
   },
   {
     id: 'API-ACC-P1-03',
@@ -858,10 +894,28 @@ const DEFINIDAS: readonly Operacion[] = [
     resumen: 'Catálogo nutricional BE: el sembrado (global) y el propio del profesional. Solo profesionales de Nutrición.',
     autenticacion: 'SESSION',
     idempotencia: false,
-    query: [LIMIT, CURSOR, { nombre: 'q', descripcion: 'Texto a buscar en el nombre.', schema: { type: 'string' } }, { nombre: 'type', descripcion: 'FOOD.', schema: { type: 'string', enum: ['FOOD'] } }],
+    query: [
+      LIMIT,
+      CURSOR,
+      { nombre: 'q', descripcion: 'Texto a buscar en el nombre. Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).', schema: { type: 'string' } },
+      { nombre: 'type', descripcion: 'FOOD.', schema: { type: 'string', enum: ['FOOD'] } },
+    ],
     exitos: [{ status: 200, schema: ListaDeCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
     fuente: '09v9:648-654 · REG-06-99, 135',
+  },
+  {
+    id: 'API-NUT-13-BUSQUEDA',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-items/search',
+    resumen:
+      'Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: BusquedaEnCatalogoRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeCatalogoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130',
   },
   {
     id: 'API-INT-NUT-01',
@@ -1489,10 +1543,27 @@ const DEFINIDAS: readonly Operacion[] = [
     resumen: 'Catálogo propio de ejercicios, con procedencia. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.',
     autenticacion: 'SESSION',
     idempotencia: false,
-    query: [LIMIT, CURSOR, { nombre: 'q', descripcion: 'Texto a buscar en el nombre.', schema: { type: 'string', maxLength: 80 } }],
+    query: [
+      LIMIT,
+      CURSOR,
+      { nombre: 'q', descripcion: 'Texto a buscar en el nombre. Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).', schema: { type: 'string', maxLength: 80 } },
+    ],
     exitos: [{ status: 200, schema: ListaDeEjerciciosResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
     fuente: '09v10:838-854 · RF-037 · INV-06-143',
+  },
+  {
+    id: 'API-TRN-13-BUSQUEDA',
+    metodo: 'post',
+    ruta: '/training/exercises/search',
+    resumen:
+      'Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: BusquedaDeEjerciciosRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeEjerciciosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: '09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130',
   },
   {
     id: 'API-INT-TRN-01',
@@ -2467,6 +2538,115 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: '06:1422-1462 inciso 4 · B10-07 · DEUDA_LEGAJO DL-050, DL-121',
   },
+  // ─── WP-DASHBOARD-PROFESIONAL: línea de tiempo, proyecciones y vistas guardadas ───────────────
+  {
+    id: 'API-DSH-04',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/timeline',
+    resumen:
+      'Línea de tiempo longitudinal del asesorado, con los hechos de las áreas que el PDP autoriza a quien consulta. Ordena por la fecha del hecho (occurredAt y occurredDate); recordedAt es independiente y nunca la reemplaza. Una rectificación o una anulación es una relación de la entrada original, no una entrada nueva. Sin ningún alcance permitido: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Primer día del período (fecha civil del asesorado, inclusive).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Último día del período (fecha civil, inclusive). Hasta 366 días.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'domain', descripcion: 'Áreas separadas por coma (NUTRITION, TRAINING, ANTHROPOMETRY).', schema: { type: 'string' } },
+      { nombre: 'type', descripcion: 'Tipos de evento separados por coma.', schema: { type: 'string' } },
+      { nombre: 'state', descripcion: 'Extensión de BE (DL-127): estados separados por coma (EFFECTIVE, RECTIFIED, ANNULLED, CORRECTED).', schema: { type: 'string' } },
+      { nombre: 'quality', descripcion: 'Extensión de BE (DL-127): rasgos operativos separados por coma.', schema: { type: 'string' } },
+      { nombre: 'late', descripcion: 'Extensión de BE (DL-127): solo los registrados en un día posterior al del hecho.', schema: { type: 'boolean' } },
+      { nombre: 'planVersionId', descripcion: 'Extensión de BE (DL-127): una versión de plan.', schema: { type: 'string' } },
+      { nombre: 'exerciseId', descripcion: 'Extensión de BE (DL-127): la identidad de un ejercicio (e:<id>).', schema: { type: 'string' } },
+      // Sin `q`: el texto buscado no viaja en una URL. La búsqueda es API-DSH-04-BUSQUEDA, con el texto en el cuerpo.
+      LIMIT,
+      CURSOR,
+    ],
+    exitos: [{ status: 200, schema: LineaDeTiempoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v11:964-1010 · B10-08 §11-§12 · T-06-24 · REG-06-145 · DEUDA_LEGAJO DL-054, DL-116, DL-127',
+  },
+  {
+    id: 'API-DSH-04-BUSQUEDA',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/timeline/search',
+    resumen:
+      'Búsqueda en la línea de tiempo del asesorado: la misma lectura que API-DSH-04, con el texto a buscar en el cuerpo para que nunca quede en una URL (historiales, proxies, bitácoras). Es una lectura: no crea ni cambia nada y no exige Idempotency-Key. Busca en todo el período del conjunto autorizado, con los mismos filtros, el mismo PDP y la misma paginación. Sin ningún alcance permitido: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: BusquedaEnLineaDeTiempoRequestSchema,
+    exitos: [{ status: 200, schema: LineaDeTiempoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v11:964-1010 · B10-08 §11-§12 · revisión independiente de #153 (hallazgo 4) · ID propio de BE (variante BUSQUEDA de API-DSH-04) · DEUDA_LEGAJO DL-127',
+  },
+  {
+    // El 09 declara SESSION_MFA (09 v0.11 §19); se implementa como SESSION en esta demo sintética, igual que DL-088 #17.
+    id: 'API-PRJ-01',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/projections/{projectionKey}',
+    resumen:
+      'Proyección profunda del asesorado (taxonomía cerrada de ocho claves). Tres tienen una derivación definida (nutrición prescripto y registrado, progresión por ejercicio y evolución antropométrica); las otras cinco responden INSUFFICIENT_INFORMATION con SPECIFICATION_PENDING. Puntos reales, sin interpolar, imputar ni arrastrar; lo desconocido es null con su motivo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Primer día del período (fecha civil, inclusive).', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Último día del período (fecha civil, inclusive). Hasta 366 días.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'metric', descripcion: 'La métrica de la clave (por ejemplo ENERGY, LOAD o un código antropométrico; varias separadas por coma en antropometría).', schema: { type: 'string' } },
+      { nombre: 'exerciseId', descripcion: 'La identidad de un ejercicio (e:<id> o v:<versionId>), para la progresión.', schema: { type: 'string' } },
+      { nombre: 'setIndex', descripcion: 'El número de serie comparado entre sesiones, para la progresión.', schema: { type: 'integer', minimum: 1, maximum: 30 } },
+      { nombre: 'unit', descripcion: 'La unidad de carga (kg o lb), para la progresión de la carga.', schema: { type: 'string', enum: ['kg', 'lb'] } },
+      { nombre: 'grain', descripcion: 'El grano (ORIGINAL, DAY o WEEK), si la métrica lo admite.', schema: { type: 'string', enum: ['ORIGINAL', 'DAY', 'WEEK'] } },
+    ],
+    exitos: [{ status: 200, schema: ProyeccionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09v11:1063-1405 · B10-09 §15-§28 · 11A TEST-PRJ-001 a 010 · DEUDA_LEGAJO DL-126',
+  },
+  {
+    id: 'API-VAN-01',
+    metodo: 'get',
+    ruta: '/me/analysis-views',
+    resumen: 'Las vistas de análisis guardadas por el profesional y su configuración de indicadores del Resumen. Son configuración: no traen datos de salud ni conceden acceso.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeVistasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'encargo del 2026-10-08 §6, §8 y §16 · ID propio de BE (familia VAN) · DEUDA_LEGAJO DL-128',
+  },
+  {
+    id: 'API-VAN-02',
+    metodo: 'post',
+    ruta: '/me/analysis-views',
+    resumen: 'Guardar una vista de análisis o la configuración de indicadores del Resumen (a lo sumo una por profesional). Solo identificadores de métricas, período, modo, grano y capas.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearVistaRequestSchema,
+    exitos: [{ status: 201, schema: VistaDeAnalisisResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'RESOURCE_CONFLICT'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'encargo del 2026-10-08 §6, §8 y §16 · ID propio de BE (familia VAN) · DEUDA_LEGAJO DL-128',
+  },
+  {
+    id: 'API-VAN-03',
+    metodo: 'put',
+    ruta: '/me/analysis-views/{viewId}',
+    resumen: 'Reemplazar el nombre y la configuración de una vista propia, con la versión esperada. Una vista ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ReemplazarVistaRequestSchema,
+    exitos: [{ status: 200, schema: VistaDeAnalisisResponseSchema }],
+    // 422: una configuración que no es la del uso de la vista (CONFIGURATION_USAGE_MISMATCH en los detalles).
+    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'encargo del 2026-10-08 §8 y §16 · ID propio de BE (familia VAN) · DEUDA_LEGAJO DL-128',
+  },
+  {
+    id: 'API-VAN-04',
+    metodo: 'delete',
+    ruta: '/me/analysis-views/{viewId}',
+    resumen: 'Borrar una vista propia. Borrarla no borra ni oculta ningún dato. Una vista ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    exitos: [{ status: 204 }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'encargo del 2026-10-08 §8 y §16 · ID propio de BE (familia VAN) · DEUDA_LEGAJO DL-128',
+  },
 ];
 
 /**
@@ -2477,6 +2657,9 @@ const DEFINIDAS: readonly Operacion[] = [
  */
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-DSH-03',
+  'API-DSH-04',
+  'API-DSH-04-BUSQUEDA',
+  'API-PRJ-01',
   'API-CAR-01',
   'API-ANT-03',
   'API-ANT-06',

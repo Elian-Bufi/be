@@ -1,0 +1,156 @@
+{
+  "modo": "tomas",
+  "inicio": "2026-10-12T12:58:23.596Z",
+  "fin": "2026-10-12T13:00:38.198Z",
+  "hoy": "2026-10-12",
+  "total": 24,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "F-33",
+      "descripcion": "Al entrar, «Tomas» lee la lista entera una vez, la toma en preparación una vez, y una vez el detalle de cada toma (hasta veinte): ninguno dos veces. Los métodos y los cálculos, una vez cada lista",
+      "ok": true,
+      "detalle": "la lista: 1 · en preparación: 1 · detalles: 1, 1, 1, 1, 1, 1, 1, 1 (de 8 tomas) · métodos: 1 · cálculos: 1"
+    },
+    {
+      "pro": "C-64",
+      "descripcion": "La lista tiene todas las tomas registradas, por cuándo se tomaron y de la más nueva a la más vieja, en tramos seguidos del mismo protocolo (una toma con otro protocolo en el medio parte el tramo); cada una dice su día y hora y sus cuentas: mediciones, corregidas y anuladas, calculadas a mano con su detalle",
+      "ok": true,
+      "detalle": "8 tomas en 3 tramos: Perfil antropométrico completo (5) · Protocolo de laboratorio (demostración) (1) · Perfil antropométrico completo (2)"
+    },
+    {
+      "pro": "C-58",
+      "descripcion": "El título dice «Tomas», cuántas hay registradas (la cantidad de la lista entera) y que una toma registrada no se edita; la toma en preparación se anuncia solo si hay una, con sus mediciones",
+      "ok": true,
+      "detalle": "«8 registradas.» · botón: «Preparar una toma» · tomas en preparación según la API: 0"
+    },
+    {
+      "pro": "F-36",
+      "descripcion": "Sin una toma en la dirección abre la más reciente, marcada en la lista. Su encabezado dice cuándo se tomó, la clase del dato si todas las mediciones la comparten, y en un renglón el protocolo, las cuentas, cuándo se registró y quién",
+      "ok": true,
+      "detalle": "«Toma del 11 oct 2026, 08:00» · Medido · «Perfil antropométrico completo · 2 mediciones · registrada el 12 oct 2026, 08:58 por Lic. Sofía Paz (sintética)»"
+    },
+    {
+      "pro": "F-33",
+      "descripcion": "Elegir otra toma la pone en la dirección (`evaluacion=`), la marca en la lista y la muestra sin pedirle nada a la API ni pasar por «Cargando…»: su detalle ya se había leído",
+      "ok": true,
+      "detalle": "«Toma del 23 sept 2026, 08:00» · pedidos a la API: 0 · veces que se vio «Cargando…»: 0"
+    },
+    {
+      "pro": "F-36",
+      "descripcion": "Las mediciones van por familia, en el orden del dominio y, adentro, en el del catálogo; cada fila dice el nombre corto, el valor que rige y solo lo que se sale de lo común («Anulada», «Corregida»); la unidad va una vez en el título de la familia si todas la comparten, y si no, en cada fila. El lector de pantalla oye el nombre completo y el valor con su unidad",
+      "ok": true,
+      "detalle": "Masa y estatura (1) · Pliegues cutáneos · mm (7) · Perímetros · cm (2) · Pliegue bicipital: 6 mm · Anulada"
+    },
+    {
+      "pro": "F-36",
+      "descripcion": "Una toma de hasta seis mediciones muestra sus familias una al lado de la otra, en un renglón, sin dejar vacío el lugar de las que no tiene: entre dos familias seguidas queda solo la separación de la grilla. Una toma más cargada conserva el lugar fijo de cada familia",
+      "ok": true,
+      "detalle": "2 mediciones: Masa y estatura | Perímetros · separación: 26 px · la de 10 mediciones: cada familia en su lugar"
+    },
+    {
+      "pro": "C-62",
+      "descripcion": "Entre las mediciones no hay ningún botón «Corregir» ni «Anular»: la fila entera abre la medición en un panel, que retiene el foco, sin pedirle nada a la API. Ahí están su valor que rige, sus marcas, el protocolo, cuándo se tomó, su historia y los dos actos. Escape lo cierra y el foco vuelve a la fila",
+      "ok": true,
+      "detalle": "«Peso» · 80,2 kg · Medido, Vigente · historia: Valor original: 80,2 kg Valor vigente · acciones: Corregir medición, Anular esta medición · foco al cerrar: en la fila"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "Una medición anulada se abre igual: dice «Anulada» y no «Vigente», conserva su valor a la vista, su historia empieza por la anulación con el motivo y quién la hizo, dice que no se reactiva, y no ofrece ni corregir ni anular (la misma consulta los encuentra en una medición vigente)",
+      "ok": true,
+      "detalle": "Medido, Anulada · 6 mm · Anulación: Por qué se anuló: «Sitio mal marcado». La anulaste vos. | Valor original: 6 mm: Sin correcciones: es el valor que se tomó. · acciones: 0"
+    },
+    {
+      "pro": "F-38",
+      "descripcion": "Si ningún resultado calculado de la toma usaba la medición anulada, «Lo que pasó con los resultados» lo dice con las palabras de una anulación: no habla de una corrección que no hubo, ni lista ningún resultado",
+      "ok": true,
+      "detalle": "«Lo que pasó con los resultados Ningún resultado calculado de esta toma quedó sin efecto por esta anulación.»"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "Una medición corregida muestra en la fila y en el panel el valor que rige, no el que se tomó primero, con la marca «Corregida». Su historia va de lo más nuevo a lo más viejo: la corrección, con su motivo y quién la hizo, marcada como el valor vigente; y el valor original, que se conserva",
+      "ok": true,
+      "detalle": "la fila: Cintura 90,5 Corregida · el panel: 90,5 cm (se tomó 95) · Corrección: 90,5 cm Valor vigente — Por qué se corrigió: «Valor tipeado mal: era 90,5». La corregiste vos. | Valor original: 95 cm — Se conserva: una corrección no lo borra."
+    },
+    {
+      "pro": "F-38",
+      "descripcion": "Si ningún resultado calculado de la toma usa la medición corregida, «Lo que cambió con la corrección» lo dice con esas palabras: no lista ningún resultado ni un «antes»",
+      "ok": true,
+      "detalle": "«Lo que cambió con la corrección Ningún resultado calculado de esta toma cambió por esta corrección.»"
+    },
+    {
+      "pro": "F-39",
+      "descripcion": "Los resultados vigentes de la toma van por categoría del catálogo y, adentro, por método: cada uno con el nombre de su método y su valor con los decimales que el método declara. «Ver N anteriores, sin efecto» está solo si hay alguno. Una toma sin cálculos lo dice con sus palabras, y no muestra ninguna categoría",
+      "ok": true,
+      "detalle": "Índices: Índice de masa corporal (IMC) 25,1 kg/m² · sin efecto: 0 · una toma sin cálculos: «Todavía no hay cálculos para esta toma.»"
+    },
+    {
+      "pro": "F-39",
+      "descripcion": "Un resultado se abre en el panel: su método, su valor con la precisión declarada, la marca «Calculado», con qué se calculó (la versión, la regla, la precisión y una línea por entrada) y, si está vigente y no es ya la referencia, «Dejar como referencia». «Calcular con un método» se abre en el mismo panel, con todos los métodos del catálogo, y «Cancelar» lo cierra sin escribir nada",
+      "ok": true,
+      "detalle": "«Índice de masa corporal (IMC)» 25,1 kg/m² · 2 entradas · acciones: Dejar como referencia · métodos en el panel: 22 (el catálogo: 22)"
+    },
+    {
+      "pro": "F-35",
+      "descripcion": "«En preparación» dejó de ser una sección: el marco tiene tres (Tomas, Evolución y Lámina). El botón de «Tomas» abre la carga de una toma (`vista=preparacion`, que no cambió), con «Tomas» marcada y un enlace de la aplicación para volver, que vuelve a la lista",
+      "ok": true,
+      "detalle": "secciones: Tomas, Evolución, Lámina · marcada: Tomas · la carga: «Nueva toma» · vuelta: «Tomas»"
+    },
+    {
+      "pro": "F-33",
+      "descripcion": "La toma elegida vive en la dirección: se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta",
+      "ok": true,
+      "detalle": "«Toma del 23 sept 2026, 08:00» · lecturas de la lista al actualizar: 1"
+    },
+    {
+      "pro": "F-33",
+      "descripcion": "Una toma pedida por la dirección que no está disponible lo dice con el texto neutral, sin tapar la lista, que sigue completa; «Volver a la lista de tomas» saca el parámetro y abre la más reciente",
+      "ok": true,
+      "detalle": "«La toma solicitada no está disponible. La lista de tomas sigue completa. Volver a la lista» · tomas en la lista: 8 · después: «Toma del 11 oct 2026, 08:00»"
+    },
+    {
+      "pro": "F-39",
+      "descripcion": "Si la lista de tomas no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Todavía no hay tomas registradas». Si lo que no se puede leer son los cálculos, la toma y sus mediciones siguen a la vista, el bloque de resultados dice que no pudo leerlos (no «todavía no hay cálculos») y «Reintentar» los trae",
+      "ok": true,
+      "detalle": "sin la lista: «Tomas Una toma registrada no se edita: cada medición se corrige o se anula, y queda consta» · sin los cálculos: «No pudimos leer los resultados calculados de esta toma. Reintentar», 1 familias a la vista · después de reintentar: 1 resultados"
+    },
+    {
+      "pro": "F-41",
+      "descripcion": "«Tomas», con la toma más cargada del escenario principal abierta, a 1440 × 900",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1018 px · la lista mide 280 px de ancho y la toma, 1080; la toma termina a los 749 px"
+    },
+    {
+      "pro": "F-14",
+      "descripcion": "«Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rige, las marcas y los resultados; Evolución, que no tiene ayuda, no muestra el botón (la misma consulta lo encuentra en «Tomas»)",
+      "ok": true,
+      "detalle": "«Cómo se leen las Tomas» · 11 renglones · botones de ayuda en Evolución: 0"
+    },
+    {
+      "pro": "F-37",
+      "descripcion": "axe no encuentra faltas en «Tomas», ni con una medición abierta en el panel, ni con la ayuda abierta",
+      "ok": true,
+      "detalle": "la lista y la toma: sin faltas · con el panel: sin faltas · la ayuda: sin faltas"
+    },
+    {
+      "pro": "F-41",
+      "descripcion": "El alto de «Tomas» con esa toma, a 1280 y a 1024 px",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1018 px y 1059 px"
+    },
+    {
+      "pro": "F-41",
+      "descripcion": "A 1280 px la lista sigue al costado de la toma. A 1024 px la lista pasa arriba, como un selector con las mismas tomas, sus mismas cuentas y sus tramos; elegir otra toma en el selector la abre y la pone en la dirección. En ningún ancho la página desborda de costado",
+      "ok": true,
+      "detalle": "1280: lista al costado · 1024: 8 opciones en el selector (de 8) · elegida por el selector: «Toma del 11 oct 2026, 08:00»"
+    },
+    {
+      "pro": "—",
+      "descripcion": "«Tomas» no produjo errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

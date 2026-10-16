@@ -1,0 +1,209 @@
+{
+  "modo": "planes",
+  "inicio": "2026-10-12T20:09:28.289Z",
+  "fin": "2026-10-12T20:15:24.208Z",
+  "hoy": "2026-10-12",
+  "total": 33,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "F-62",
+      "descripcion": "El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación (calculado a mano con la lista de la API). Para verlo se leen tres cosas, una vez cada una: la lista de versiones, la versión vigente y el objetivo vigente",
+      "ok": true,
+      "detalle": "«Plan activo» · «Solo lectura» · «Versión 2 · activada el 12 oct · es lo que ve el asesorado» · lecturas: lista 1, versión 1, objetivo 1, otras de Nutrición 0 (3 en total)"
+    },
+    {
+      "pro": "F-58",
+      "descripcion": "Con más de un día tipo, el plan se lee de a uno: un control con el nombre de cada día, en el orden del plan, y elegido el primero. A la vista están solo las comidas de ese día",
+      "ok": true,
+      "detalle": "Día de entrenamiento (elegido) | Día de descanso · 4 comidas: Desayuno, Almuerzo, Merienda, Cena"
+    },
+    {
+      "pro": "F-59",
+      "descripcion": "Las comidas van plegadas, cada una en un renglón con su cantidad de opciones («N opciones · se elige una»; con una sola, «1 opción») y, plegada, los nombres de sus opciones. Al entrar está abierta la primera, con sus opciones y los ítems que devuelve la API",
+      "ok": true,
+      "detalle": "Desayuno: 2 opciones · se elige una (abierta, 2 opciones) · Almuerzo: 3 opciones · se elige una — Arroz con pollo y brócoli · Guiso de lentejas · Salmón con papa · Merienda: 1 opción — Yogur con manzana · Cena: 2 opciones · se elige una — Salmón con papa · Lentejas con zanahoria"
+    },
+    {
+      "pro": "F-63",
+      "descripcion": "El objetivo del día está a la vista, al lado del día tipo: las calorías y los tres macros del objetivo que cita la versión, en el orden de la APK. Son los de la API",
+      "ok": true,
+      "detalle": "Calorías (requerimiento energético estimado) 2.250 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g (la API: 2.250 kcal · 220 g · 65 g · 130 g)"
+    },
+    {
+      "pro": "F-64",
+      "descripcion": "El historial va al costado de las comidas, a la altura de la primera: las versiones activadas, de la más nueva a la más vieja, cada una con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea que se lee (sus primeros 16 caracteres)",
+      "ok": true,
+      "detalle": "Versión 2 · activada el 12 oct, 17:09 · vigente | Versión 1 · activada el 12 oct, 17:09 · anterior, conservada · «Huella de la instantánea: cbb73ccd1a2f2fba…» · el historial empieza a los 384 px y la primera comida a los 384"
+    },
+    {
+      "pro": "F-70",
+      "descripcion": "El alto de «Plan» al entrar, a 1440 × 900, con el plan de dos días tipo",
+      "ok": true,
+      "informativo": true,
+      "detalle": "900 px · la última comida termina a los 765 px"
+    },
+    {
+      "pro": "F-70",
+      "descripcion": "A 1440 × 900 el plan entra en la primera pantalla: el día tipo, el objetivo, las cuatro comidas (una abierta) y el historial, sin desplazarse",
+      "ok": true,
+      "detalle": "la última comida termina a los 765 px; el historial, a los 614"
+    },
+    {
+      "pro": "F-67",
+      "descripcion": "Sin una versión en preparación, y con un objetivo vigente, el plan activo ofrece tres acciones: «Guardar como plantilla», «Empezar desde una plantilla» y, la principal, «Crear nueva versión a partir de esta». Entrar no lee las plantillas",
+      "ok": true,
+      "detalle": "Guardar como plantilla | Empezar desde una plantilla | Crear nueva versión a partir de esta · lecturas de plantillas al entrar: 0"
+    },
+    {
+      "pro": "F-66",
+      "descripcion": "Lo elegido vive en la dirección de la página, por su número de orden. Elegir el segundo día tipo escribe «dia» y deja abierta su primera comida; abrir otra comida escribe «comidas» con las dos; «Abrir todas las comidas» las abre y pasa a decir «Plegar todas», que escribe «ninguna»; volver al primer día limpia la dirección. Nada de eso le pide algo a BE",
+      "ok": true,
+      "detalle": "dia=2 · comidas=1.2 → 1.2.3 → ninguna → (nada) · pedidos a BE mientras tanto: 0"
+    },
+    {
+      "pro": "F-66",
+      "descripcion": "«Actualizar» vuelve a leer las tres cosas y conserva lo elegido: el mismo día tipo y la misma comida abierta, que no es la primera",
+      "ok": true,
+      "detalle": "antes: Almuerzo · después: Almuerzo de «Día de descanso» · releídas: {\"lista\":1,\"version\":1,\"objetivo\":1} · Consultado a las 17:09"
+    },
+    {
+      "pro": "F-66",
+      "descripcion": "Una dirección con valores que el plan no tiene (un día 9, una comida 7, una versión desconocida) no rompe ni muestra un día vacío: se ve el plan activo, en su primer día tipo, con todas las comidas plegadas",
+      "ok": true,
+      "detalle": "«Día de entrenamiento» · 0 comidas abiertas"
+    },
+    {
+      "pro": "F-60",
+      "descripcion": "Con todas las comidas abiertas, cada una muestra todas sus opciones a la vez, con los ítems que devuelve la API: el alimento a la izquierda y lo indicado a la derecha («150 g · cocido»). Las tres opciones del almuerzo están lado a lado, a la misma altura, y ninguna queda detrás de un «ver la opción 3». Con una sola opción, el título no lleva número",
+      "ok": true,
+      "detalle": "Almuerzo: Opción 1: Arroz con pollo y brócoli (x 49, y 640; 4 ítems) | Opción 2: Guiso de lentejas (x 379, y 640; 3 ítems) | Opción 3: Salmón con papa (x 709, y 640; 2 ítems) · Merienda: «Yogur con manzana»"
+    },
+    {
+      "pro": "F-61",
+      "descripcion": "Una opción que nació de una receta lo dice con las palabras de BE («Receta «…», versión N» y que lleva los ingredientes de una porción), y sus ítems son los de la API. La nota de un ítem se lee debajo, como la lee el asesorado",
+      "ok": true,
+      "detalle": "«Receta «Guiso de lentejas», versión 1 · La opción lleva los ingredientes de una porción de la receta.» · Lentejas hervidas sin sal 200 g · cocido; Zanahoria hervida y escurrida, sin sal 100 g · cocido; Aceite de oliva 10 g · crudo · «Aceite de oliva»: «Nota: En crudo, al servir.»"
+    },
+    {
+      "pro": "F-70",
+      "descripcion": "En toda la sección, con todas las comidas abiertas, no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra el contenido (los nombres de las comidas y «se elige una»)",
+      "ok": true,
+      "detalle": "sin palabras prohibidas en 2092 caracteres"
+    },
+    {
+      "pro": "F-14",
+      "descripcion": "«Plan» tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada cosa que la pantalla escribe, sin palabras de la lista de Nutrición; Escape la cierra y el foco vuelve al botón",
+      "ok": true,
+      "detalle": "«Cómo se lee el Plan» · 11 renglones · axe: sin faltas"
+    },
+    {
+      "pro": "F-70",
+      "descripcion": "axe no encuentra faltas en «Plan» con todas las comidas abiertas, en los dos temas",
+      "ok": true,
+      "detalle": "claro: sin faltas · azul noche: sin faltas"
+    },
+    {
+      "pro": "F-70",
+      "descripcion": "A 1440 px con todas las comidas abiertas, y a 1280, 1024, 768 y 390 con una, ningún renglón del plan empieza con el separador « · » ni deja un número separado de su unidad; la medida tuvo textos de más de un renglón que mirar",
+      "ok": true,
+      "detalle": "40 textos a 1440 px · 56 en más de un renglón, sumando los cinco anchos"
+    },
+    {
+      "pro": "F-70",
+      "descripcion": "El historial sigue al costado a 1280 px y pasa debajo de las comidas a 1024; las opciones se acomodan al ancho de su caja (a 390 px, una por fila) y ninguna queda más angosta de lo que se lee. A 1280, 1024, 768 y 390 px la página no desborda de costado",
+      "ok": true,
+      "detalle": "1280: 1147 px de alto, historial al costado, 2 opciones por fila (la más angosta, 419 px) · 1024: 1272 px de alto, historial debajo, 3 opciones por fila (la más angosta, 302 px) · 768: 1530 px de alto, historial debajo, 2 opciones por fila (la más angosta, 338 px) · 390: 2307 px de alto, historial debajo, 1 opciones por fila (la más angosta, 324 px)"
+    },
+    {
+      "pro": "F-68",
+      "descripcion": "(Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece el paso que falta: «Ir a Resumen», y ninguna acción para crear un plan. Sin plan y con objetivo, ofrece «Crear nuevo plan», primero, y «Empezar desde una plantilla». En ningún caso muestra un historial vacío ni un día sin comidas",
+      "ok": true,
+      "detalle": "sin objetivo: «Todavía no hay un plan activo. Para planificar, primero definí el objetivo: el plan se relaciona con el objeti» [Ir a Resumen] · con objetivo: [Crear nuevo plan | Empezar desde una plantilla]"
+    },
+    {
+      "pro": "F-63",
+      "descripcion": "(Respuestas simuladas.) Si hoy rige un objetivo más nuevo que el de la versión que se lee, la tira muestra el de la versión (2.250 kcal, no las 2.600 del más nuevo) y lo dice. Si hoy no hay objetivo vigente, también muestra el de la versión, lo dice, y en lugar de «Crear nueva versión» explica que primero hay que definir el objetivo",
+      "ok": true,
+      "detalle": "más nuevo: Calorías (requerimiento energético estimado) 2.250 kcal · «Es el objetivo con el que se armó esta versión. Hoy rige uno más nuevo.» · sin vigente: «Es el objetivo con el que se armó esta versión. Hoy no hay un objetivo vigente.» [Guardar como plantilla]"
+    },
+    {
+      "pro": "F-63",
+      "descripcion": "(Falla simulada.) Si el objetivo de la versión no se puede leer, el plan se ve entero y la tira lo dice, sin ningún número, con «Reintentar»; al reintentar, aparece",
+      "ok": true,
+      "detalle": "«No pudimos leer el objetivo de esta versión. Reintentar la lectura del objetivo» con 4 comidas a la vista · al reintentar: Calorías (requerimiento energético estimado) 2.250 kcal"
+    },
+    {
+      "pro": "F-68",
+      "descripcion": "(Falla simulada.) Si la lista de versiones no se puede leer, la sección dice la falla con su motivo y «Reintentar»: no dice «Todavía no hay un plan activo», que sería presentar una falla como una ausencia",
+      "ok": true,
+      "detalle": "«No pudimos cargar esta vista BE no está disponible en este momento. Reintentá en unos minutos. Reintentar»"
+    },
+    {
+      "pro": "F-58",
+      "descripcion": "(Respuesta simulada.) Con siete días tipo de nombre largo, a 1024 px, los siete segmentos están enteros dentro de la pantalla, en más de un renglón, y la página no desborda; el elegido es el que pide la dirección (el sexto)",
+      "ok": true,
+      "detalle": "7 segmentos en 4 renglones; el más ancho termina a los 993 px"
+    },
+    {
+      "pro": "F-58",
+      "descripcion": "(Respuesta simulada.) Con un solo día tipo no hay nada que elegir: la pantalla dice su nombre, sin control",
+      "ok": true,
+      "detalle": "«Día tipo Día de entrenamiento»"
+    },
+    {
+      "pro": "F-67",
+      "descripcion": "«Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre un diálogo que recién entonces lee las plantillas, una vez: está la que se acaba de guardar, con sus comidas contadas a mano y «Sin cantidades»; ninguna viene elegida, y crear el borrador está apagado hasta elegir",
+      "ok": true,
+      "detalle": "escrituras: 1 · aviso de guardada: sí · lecturas al abrir: 1 · «Plan del recorrido 201458»: 7 comidas · Sin cantidades · elegidas: 0 · «Crear el borrador desde esta plantilla» apagado"
+    },
+    {
+      "pro": "F-67",
+      "descripcion": "(Respuestas simuladas.) Si las plantillas no se pueden leer, el diálogo dice la falla con su motivo y «Reintentar», y no «No tenés plantillas activas»; al reintentar, la lista aparece. Con la lista vacía de verdad, dice que no hay plantillas activas y dónde se arman",
+      "ok": true,
+      "detalle": "con la falla: «No pudimos leer tus plantillas BE no está disponible en este momento. Reintentá en unos minutos. Reintentar la» · al reintentar: 1 plantillas · vacía: «No tenés plantillas activas para aplicar. Se guardan desde una versión de plan, con «Guardar como plantilla», o se escribe»"
+    },
+    {
+      "pro": "F-67",
+      "descripcion": "(Falla simulada.) Elegida una plantilla, crear el borrador se enciende. Si esa escritura falla, el motivo se dice dentro del diálogo, que sigue abierto con la plantilla elegida; al cancelar, el plan activo sigue como estaba, sin selector de versión",
+      "ok": true,
+      "detalle": "«El servicio no está disponible en este momento. Probá de nuevo más tarde.» · elegida: Plan del recorrido 201458"
+    },
+    {
+      "pro": "F-65",
+      "descripcion": "«Crear nueva versión a partir de esta» hace una sola escritura y deja una versión en preparación. Arriba aparece el selector de versión, con «En preparación» elegida y, al lado, «El asesorado no la ve.»; la activa figura con su número («2 · activa»). Se ve el editor y no el plan activo, y ya no se ofrece crear otra versión",
+      "ok": true,
+      "detalle": "escrituras: 1 · aviso «Borrador creado»: sí · En preparación (elegida) | 2 · activa · «El asesorado no la ve.»"
+    },
+    {
+      "pro": "F-65",
+      "descripcion": "Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra versión) y deja el editor fuera de la vista; volver a «En preparación» lo muestra con lo escrito intacto y «Cambios sin guardar». Ir y volver no le pide nada a BE, y la versión elegida queda en la dirección",
+      "ok": true,
+      "detalle": "«Desayuno» → «Desayuno (ajuste)» · en la activa: [Guardar como plantilla] «Ya hay una versión en preparación: se sigue sobre esa.» · editor a la vista: no · pedidos: 0"
+    },
+    {
+      "pro": "F-65",
+      "descripcion": "Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer y dice qué se perdería («el plan en preparación»); «Seguir editando» deja todo como estaba",
+      "ok": true,
+      "detalle": "«Tenés cambios sin guardar «Actualizar» vuelve a leer todo lo que muestra esta sección. Si seguís, se pierde lo que escribiste y no guardaste en el plan en preparación. Se»"
+    },
+    {
+      "pro": "F-65",
+      "descripcion": "Activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan activo dice «Versión 3 · … · es lo que ve el asesorado», su primera comida lleva el nombre que se escribió, el historial lista las tres (la 3, vigente; la 2 y la 1, conservadas) y la dirección queda limpia (traía el segundo día tipo: la versión nueva se abre por el primero). Vuelve a ofrecerse crear una versión",
+      "ok": true,
+      "detalle": "«Versión 3 · activada el 12 oct · es lo que ve el asesorado» · primera comida: «Desayuno (ajuste)» · Versión 3 · activada el 12 oct, 17:15 · vigente | Versión 2 · activada el 12 oct, 17:09 · anterior, conservada | Versión 1 · activada el 12 oct, 17:09 · anterior, conservada"
+    },
+    {
+      "pro": "F-67",
+      "descripcion": "Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa, y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con la activa como «3 · activa»",
+      "ok": true,
+      "detalle": "escrituras: 1 · aviso: sí · En preparación | 3 · activa · origen en la API: una plantilla"
+    },
+    {
+      "pro": "—",
+      "descripcion": "«Plan», de Nutrición, no produjo errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

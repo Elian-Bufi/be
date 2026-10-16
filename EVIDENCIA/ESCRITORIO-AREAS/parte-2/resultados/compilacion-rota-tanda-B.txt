@@ -1,0 +1,33 @@
+roto: el botón que cierra el detalle queda sin nombre (solo el ícono) (lo tienen que notar: F-27 (axe))
+roto: el cálculo cuenta serie por serie una sesión registrada como no realizada («0 de 12») (lo tienen que notar: F-25 (no se cuenta serie por serie); C-68 (cada sesión, una fila); F-26 (las cuatro vistas); F-26 (elegir una vista); F-29 (falla lo indicado))
+roto: el cálculo cuenta como diferencia una carga distinta de la sugerida (lo tienen que notar: C-66 (el detalle, una tabla); C-68 (cada sesión, una fila))
+── compila la versión rota · 04:52:31
+compilado: web estática (apps/web/out)
+── recorrido · 04:54:36
+── veredicto · 04:55:47 · salida del recorrido: 0
+NOTADA    el botón que cierra el detalle queda sin nombre (solo el ícono) — F-27 (axe)
+NOTADA    el cálculo cuenta serie por serie una sesión registrada como no realizada («0 de 12») — F-25 (no se cuenta serie por serie); C-68 (cada sesión, una fila); F-26 (las cuatro vistas); F-26 (elegir una vista); F-29 (falla lo indicado)
+NOTADA    el cálculo cuenta como diferencia una carga distinta de la sugerida — C-66 (el detalle, una tabla); C-68 (cada sesión, una fila)
+tanda B: 3 de 3 roturas notadas · 7 comprobaciones fallaron y 14 pasaron
+fallaron sin que se las esperara: ninguna
+pasaron:
+  F-24 · Al entrar, Registros de Entrenamiento lee el contexto de revisión, sin período (lo propone la API), y u
+  F-31 · Un período largo no se muestra entero de una vez: quince sesiones, las más nuevas, y «Ver sesiones ante
+  F-27 · El detalle dice cuándo ocurrió, cuándo se registró y frente a qué versión del plan (su número de orden 
+  C-67 · La evolución de un ejercicio ya no está en la sección: no hay un bloque «Planificado y registrado» ni u
+  F-25 · Los días del período sin ninguna sesión registrada se dicen con su cantidad (la que da la API) y como f
+  F-28 · El período, la vista y el filtro por versión del plan viven en la dirección: con una versión elegida se
+  F-27 · Con tiempos marcados (una respuesta armada por el recorrido: el escenario no tiene ninguna sesión con t
+  F-32 · Nada de lo que se veía se quitó, está a un clic y se abre en el lugar: «Ver la sesión en el plan» muest
+  F-28 · La sesión abierta vive en la dirección: se abre al entrar con ella, y «Actualizar» la deja abierta al c
+  F-30 · A 1440 × 900, con una sesión abierta, las vistas y los nombres de las columnas entran en la primera pan
+  F-14 · Registros de Entrenamiento tiene su ayuda en el marco del área: se abre por el título, explica cada cos
+  F-14 · En Entrenamiento · Resumen el marco no muestra el botón de la ayuda (la misma consulta lo encuentra en 
+  C-66 · A 1024 px el detalle de la sesión se abre encima, en un panel que retiene el foco, con la misma tabla; 
+  — · Registros de Entrenamiento no produjo errores de página
+última línea: 15/22 comprobaciones bien; fallan: C-68, F-25, F-26, F-26, C-66, F-29, F-27
+FIN DE LA TANDA B · 04:55:50
+restaurado: app/pro/advisees/training/ejecuciones.tsx
+restaurado: dominio:registros-de-entrenamiento
+el dominio, compilado de nuevo desde su fuente restaurada
+la compilación buena del website volvió a su lugar

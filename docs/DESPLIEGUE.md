@@ -71,6 +71,14 @@ Van por identidad y no por correo. Si se publicara un correo antes de registrarl
 
 Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa para la capacidad antropométrica, que el 06 modela como transversal y «nunca tercera Especialidad» (06:2774): DEMO-PN la suma a su Especialidad Nutrición, y DEMO-PA la tiene sin ninguna Especialidad, que es la identidad válida de 06 §8.10. El tipo de perfil es de la identidad y no del alcance: la segunda declaración de una misma identidad no lo cambia.
 
+**La cohorte realista (desde el 2026-10-16, #160):**
+- **Profesionales:** Lic. Sofía Paz (Nutrición y Antropometría), Prof. Martín Acosta (Entrenamiento) y Prof. Lucía Benítez (Antropometría), declarados en `BE_DEMO_PROFESIONALES` además de los de la demostración.
+- **Asesorados:** seis personas con nombre, de 6 meses a 3 años de historia.
+- **Credenciales:** al azar y fuera del repo, en `C:\Users\bufim\BE-datos-locales\cohorte-test\cuentas.env`, en la máquina de Dirección.
+- **Cómo se cargó y qué es sintético:** `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/LEEME.md`.
+- **Acceso a la base:** la historia se escribe por SQL, con la base abierta solo a la IP de esa máquina mientras dura la carga. Es el acceso del operador que admite el 07 §29. **Al terminar, la IP se quita a mano** en `be-db-test` → Networking, y se confirma que la conexión desde afuera se rechaza. El 2026-10-16 la volvieron a cerrar los push a `main` que cambiaron `render.yaml` o redesplegaron la API: el `ipAllowList: []` del Blueprint se impuso. En cambio, un push que no toca las rutas del `buildFilter` ni `render.yaml` no la cierra. Fue lo que pasó con el de la cohorte, que solo tocó `EVIDENCIA/` y `docs/`.
+- **Cargada en test el 2026-10-16** (de 06:35 a 06:46, sobre `4f10121`). Se comprobó de dos maneras: contando en la base las comidas, sesiones y tomas de cada persona (las mismas que en local), y entrando por la API con cada profesional para ver sus vínculos, con la fecha real de «Desde el…», y sus pendientes. Los pendientes se fijaron contra ese día y corren con el calendario. Por ejemplo, la revisión de Diego, que ese día faltaba 3 días, desde el 2026-10-20 aparece vencida.
+
 ### APK
 
 `apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:
@@ -102,7 +110,7 @@ curl -si -X OPTIONS -H "Origin: https://be-web-1ngj.onrender.com" -H "Access-Con
 
 Recorrido funcional de WP-02 contra el ambiente desplegado, con cuenta sintética: `scratchpad/capturas/capturas-wp02.mjs` (puppeteer-core con Edge). Captura cada paso (registro con A1/A2, login neutral, Cuenta con A3 no otorgado y cierre) y registra requests y status. Salida en `EVIDENCIA/WP-02/`.
 
-La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apaga la API después de 15 minutos sin tráfico. En el primer despliegue se midieron 23 s en frío y 0,5 s en caliente.
+Desde el 2026-10-16 la API está en el plan Starter y no se apaga. Con el plan gratuito, la primera respuesta tardaba alrededor de 30 segundos después de 15 minutos sin tráfico (en el primer despliegue se midieron 23 s en frío y 0,5 s en caliente).
 
 ## Rollback (07 §39)
 
@@ -114,10 +122,14 @@ La primera respuesta puede tardar alrededor de 30 segundos: el plan gratuito apa
 - **Merge defectuoso** (ACTA-DIR-034 §12): `git revert -m 1 <sha-del-merge>` en una rama nueva → PR → CI verde → merge. El revert se despliega como cualquier cambio. Nunca `push --force`, `reset --hard` ni `commit --amend` sobre historia publicada.
 - **Ensayo de rollback** (ACTA-DIR-034 §12): la parte 1, `git revert -m 1` de un merge publicado, se ejecutó el 2026-09-19 (PR #9 y #10). La parte 2, el rollback de la aplicación en el dashboard de Render (Dirección), también se ejecutó: `be-api` volvió a `4776fc5` sin reconstruir la imagen, y después Manual Deploy la llevó a `c94a320` (el último commit de `main`, mismo código que `23c9997`). Evidencia en `EVIDENCIA/ENSAYO-ROLLBACK/`.
 
-## Límites del plan gratuito
+## Planes de Render
 
-- La API se apaga después de 15 minutos sin tráfico. Antes de una demo, abrir `/health/ready` unos minutos antes.
-- `be-db-test` expira a los 30 días de creada, con 14 días de gracia. Se creó con el primer Blueprint, alrededor del 2026-09-18: **vence cerca del 2026-10-18**. La fecha exacta está en el dashboard de Render. **La entrega es el 2026-10-20, después del vencimiento:** hay que pasarla a un plan pago o recrearla antes. Las opciones están en `docs/propuestas/INSUMOS-EXPLORACION-VISUAL_2026-10-05.md`. Una base recreada arranca vacía: las migraciones corren solas al arrancar la API, pero las cuentas demo y sus datos se vuelven a crear. Eso incluye:
+Desde el 2026-10-16, por decisión de Dirección, `test` usa los planes pagos mínimos, declarados en `render.yaml`:
+- **`be-api`, Starter:** no se apaga por falta de tráfico. El límite de pedidos por minuto no depende del plan: es el de la API (RNF-SEC-003, `limitador.service.ts`).
+- **`be-db-test`, Basic-256mb:** no vence. Hasta ese día era gratuita y vencía cerca del 2026-10-18, antes de la entrega; pasar de gratuita a paga conserva los datos.
+- **`be-web`:** sitio estático, sin cambio: no tiene plan pago ni se apaga.
+
+Si la base se tuviera que recrear igual, arranca vacía: las migraciones corren solas al arrancar la API, pero las cuentas demo y sus datos se vuelven a crear. Eso incluye:
   - registrar las cuentas por la API pública;
   - cargar sus identificadores nuevos en `BE_DEMO_PROFESIONALES`, con un PR solo de configuración;
   - rehacer los vínculos, los planes y los registros del escenario.

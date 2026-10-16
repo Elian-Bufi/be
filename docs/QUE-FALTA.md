@@ -19,12 +19,9 @@ Cada punto lleva su ID. El detalle está en el documento que se cita.
 
 ## 1. Urgente
 
-1. **La base de `test` vence cerca del 16 o 18/10** (plan gratuito de Render). Recrearla obliga a:
-   - registrar de nuevo las cuentas demo;
-   - un PR de configuración (`BE_DEMO_PROFESIONALES`);
-   - rehacer los vínculos y los datos del escenario.
-
-   Ver «Límites del plan gratuito» en `docs/DESPLIEGUE.md`.
+1. ~~**La base de `test` vence cerca del 16 o 18/10.**~~ **Resuelto el 2026-10-16:** Dirección pasó la base a
+   Basic-256mb y la API a Starter (#160). La base ya no vence y la API no se duerme. Ver «Planes de Render» en
+   `docs/DESPLIEGUE.md`.
 2. **Ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica.
 3. **TalkBack y la letra del sistema al máximo** nunca se probaron en un Android físico (RNF-ACC-001). Faltan las capturas 16, 17, 19, 20, 21 y 22 de la guía de capturas.
 4. **DL-115, de severidad alta.** Revocado el A3, el titular sigue leyendo su evolución antropométrica y el detalle de sus formularios; nutrición y entrenamiento sí lo cortan (08:406). Espera la decisión de Dirección. La recomendación es la opción A, de tamaño S, que necesita una APK nueva.
@@ -37,7 +34,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 |---|---|---|
 | **Alta y verificación de profesionales, y rol administrador** (WP-09). Hoy un profesional se habilita con un servicio interno y cuentas demo. El administrador es actor en RF-011, RF-012 y RF-014, y exige MFA siempre (08 §25) | RF-007 a RF-014 · RF-067 · UC-P01 a P03 · UC-E01 · API-PRO-01 a 13 · DL-036 | Fuera del tramo. Ficha del 2/10 en `docs/propuestas/PERFIL-DEL-ASESORADO-Y-ADMINISTRACION_fichas.md`. **La mesa pide distintos roles, no un administrador** |
 | **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107) y los resúmenes por dominio (DL-031) |
-| **Perfil del asesorado** con nombre visible. Hoy el profesional ve «Asesorado · c36743». El perfil propio existe sin contenido (RF-017 parcial desde WP-02); el nombre visible sale del 09v8 §3.2 y del B10-08 §5.4 | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | El nombre y API-ACC-06, sin implementar. Ficha del 2/10 en el mismo documento |
+| **Perfil del asesorado** con nombre visible. El perfil propio existía sin contenido (RF-017 parcial desde WP-02); el nombre visible sale del 09v8 §3.2 y del B10-08 §5.4 | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | **Hecho el 2026-10-15** (decisión de Dirección; PR #159, sin integrar): el nombre visible con versiones, API-ACC-06 y su lectura, «Tu nombre» en «Cuenta», y el profesional lo ve con un vínculo vigente. Falta en la APK, que lo suma en su próxima versión; otros campos del perfil siguen en DL-023 y DL-095 |
 | **Exportar los datos del titular** y los pasos 2 y 3 de la revocación de A3 | DL-021 · REV-A-D4 | Sin implementar |
 | **Alta por invitación** con declaración de mayoría de edad. Hoy el asesorado pasa su identificador por fuera de BE | DL-023 · DL-035 | Sin implementar |
 | **Suspender y restablecer una cuenta** desde la interfaz | DL-020 | Solo servicio interno |
@@ -95,7 +92,8 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 
 ## 5. Infraestructura y deuda técnica
 
-- **API en plan gratuito:** se duerme a los 15 minutos y el arranque en frío tarda entre 25 y 60 segundos.
+- **API en Starter desde el 2026-10-16:** ya no se duerme. Con el plan pago, Render ofrece el pre-deploy: DL-006 se
+  puede cerrar, pero todavía no se cambió el despliegue.
 - **Despliegue:**
   - no hay pre-deploy (DL-006);
   - el Blueprint despliega sin esperar la CI (DL-008).

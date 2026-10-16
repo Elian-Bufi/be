@@ -1,0 +1,47 @@
+WP-ESCRITORIO-AREAS, parte 4 · las reglas de Información · Solicitudes (packages/domain/src/solicitudes-de-informacion.ts), rotas de a una, contra sus pruebas.
+Segunda corrida, con 18 pruebas. La primera, con 16, notó 36 de 41: sobrevivían antes-es-el-mas-viejo, antes-solo-la-inmediata,
+codigo-en-la-fila-sin-valor, elegidas-al-reves y el-area-fija-sin-nombre. Se sumaron dos pruebas y se reforzó una.
+
+control (sin mutar): 18 pasan, 0 fallan
+DETECTADA vistas-cruzadas · «Respondidas» trae las sin responder, y al revés · fallan 1: «las vistas: «Sin responder» y «Respondidas» suman «Todas», y»
+DETECTADA todas-filtra · «Todas» deja afuera las respondidas · fallan 1: «las vistas: «Sin responder» y «Respondidas» suman «Todas», y»
+DETECTADA sin-responder-cuenta-todas · «Sin responder» cuenta también las respondidas · fallan 1: «las vistas: «Sin responder» y «Respondidas» suman «Todas», y»
+DETECTADA respondidas-cuenta-pendientes · «Respondidas» cuenta las que están sin responder · fallan 1: «las vistas: «Sin responder» y «Respondidas» suman «Todas», y»
+DETECTADA numero-con-punto · un número declarado se escribe con punto · fallan 2: «el valor declarado: el número con coma y su unidad; «Sí» o «» «la unidad de un número: la que declaró la persona o, si falt»
+DETECTADA si-y-no-cruzados · «Sí» y «No» van cruzados · fallan 2: «el valor declarado: el número con coma y su unidad; «Sí» o «» «la unidad de un número: la que declaró la persona o, si falt»
+DETECTADA valor-sin-unidad · el valor pierde su unidad · fallan 2: «el valor declarado: el número con coma y su unidad; «Sí» o «» «la unidad de un número: la que declaró la persona o, si falt»
+DETECTADA responde-con-sin-unidad · «Responde con» no dice la unidad de un número · fallan 1: «con qué se responde una pregunta: el tipo y, si es un número»
+DETECTADA si-o-no-como-texto · una pregunta de «Sí o no» dice que se responde con texto · fallan 1: «con qué se responde una pregunta: el tipo y, si es un número»
+DETECTADA cadena-siempre-por-fecha · las correcciones se ordenan por fecha y no por su cadena · fallan 1: «dos correcciones que llegan desordenadas: rige la que dice l»
+DETECTADA filas-en-el-orden-del-pedido · las filas van en el orden en que se pidieron, no en el del formulario · fallan 1: «sin respuesta: una fila por pregunta pedida, sin valor, en e»
+DETECTADA se-pierde-la-pregunta-ajena · una pregunta pedida que el formulario no trae no tiene fila · fallan 2: «sin el formulario (no se pudo leer): las filas no llevan el » «una pregunta pedida que el formulario no trae va al final, s»
+DETECTADA unidad-solo-la-declarada · un número sin unidad declarada no toma la de su pregunta · fallan 1: «la unidad de un número: la que declaró la persona o, si falt»
+DETECTADA unidad-de-la-pregunta-primero · la unidad de la pregunta pisa a la que declaró la persona · fallan 1: «la unidad de un número: la que declaró la persona o, si falt»
+DETECTADA sin-respuesta-figura-respondida · una solicitud sin respuesta figura como respondida · fallan 1: «sin respuesta: una fila por pregunta pedida, sin valor, en e»
+DETECTADA rige-la-ultima-de-la-cadena · rige la última corrección, diga lo que diga la API · fallan 2: «rige una corrección que no es la última de la cadena: lo que» «la cadena que no se puede resolver: ninguna versión rige y n»
+DETECTADA sin-resolver-rige-la-original · con la cadena sin resolver, igual se elige una versión · fallan 1: «la cadena que no se puede resolver: ninguna versión rige y n»
+DETECTADA rige-una-que-no-llego · si la API dice que rige una corrección que no entrega, se da por resuelta · fallan 1: «la cadena que no se puede resolver: ninguna versión rige y n»
+DETECTADA historia-al-reves · la historia va de lo más viejo a lo más nuevo · fallan 2: «dos correcciones que llegan desordenadas: rige la que dice l» «rige una corrección que no es la última de la cadena: lo que»
+DETECTADA rigen-todas-las-correcciones · todas las correcciones figuran como vigentes · fallan 2: «dos correcciones que llegan desordenadas: rige la que dice l» «rige una corrección que no es la última de la cadena: lo que»
+DETECTADA la-original-rige-siempre · la original figura como vigente aunque rija una corrección · fallan 3: «la maqueta 26: una corrección que cambia una respuesta y agr» «dos correcciones que llegan desordenadas: rige la que dice l» «rige una corrección que no es la última de la cadena: lo que»
+DETECTADA respondidas-cuenta-lo-de-mas · «Respondió N» cuenta también lo que no se le pidió · fallan 1: «una pregunta pedida que el formulario no trae va al final, s»
+DETECTADA la-version-esconde-lo-de-mas · una versión no muestra lo que respondió de más · fallan 1: «una pregunta pedida que el formulario no trae va al final, s»
+DETECTADA corrigio-el-la-primera · «lo corrigió» dice la fecha de la primera corrección, no la de la última · fallan 1: «dos correcciones que llegan desordenadas: rige la que dice l»
+DETECTADA sin-resolver-con-valores · con la cadena sin resolver se muestran valores igual · fallan 1: «la cadena que no se puede resolver: ninguna versión rige y n»
+DETECTADA cuenta-lo-posterior-a-la-que-rige · lo que vino después de la corrección que rige también cuenta · fallan 1: «rige una corrección que no es la última de la cadena: lo que»
+DETECTADA antes-es-el-mas-viejo · «Antes» es el primer valor distinto, no el último · fallan 1: ««antes», con dos correcciones: es el último valor distinto d»
+DETECTADA antes-solo-la-inmediata · «Antes» mira solo la versión inmediata anterior · fallan 1: ««antes», con dos correcciones: es el último valor distinto d»
+DETECTADA antes-sin-responder-se-calla · no se dice que antes la pregunta estaba sin responder · fallan 1: «la maqueta 26: una corrección que cambia una respuesta y agr»
+DETECTADA corregida-nunca · ninguna fila se marca «Corregida» · fallan 4: «la maqueta 26: una corrección que cambia una respuesta y agr» «una corrección que saca una respuesta: la fila queda sin val» «dos correcciones que llegan desordenadas: rige la que dice l» ««antes», con dos correcciones: es el último valor distinto d»
+DETECTADA corregida-siempre · toda fila se marca «Corregida» · fallan 2: «la original sola: rige la original; la pregunta que no respo» «una corrección que saca una respuesta: la fila queda sin val»
+DETECTADA requerida-se-pierde-al-responder · una pregunta respondida no dice que era requerida · fallan 2: «la maqueta 26: una corrección que cambia una respuesta y agr» «dos correcciones que llegan desordenadas: rige la que dice l»
+DETECTADA requerida-se-pierde-sin-responder · una pregunta sin responder no dice que era requerida · fallan 1: «sin respuesta: una fila por pregunta pedida, sin valor, en e»
+DETECTADA codigo-en-la-fila · una fila muestra el código de la pregunta si no se leyó su texto · fallan 2: «sin el formulario (no se pudo leer): las filas no llevan el » «una pregunta pedida que el formulario no trae va al final, s»
+DETECTADA codigo-en-la-fila-sin-valor · una fila sin valor muestra el código de la pregunta · fallan 1: «sin el formulario (no se pudo leer): las filas no llevan el »
+DETECTADA codigo-en-la-historia · una versión muestra el código de la pregunta · fallan 1: «sin el formulario (no se pudo leer): las filas no llevan el »
+DETECTADA una-pregunta-en-plural · una sola pregunta se dice «1 preguntas» · fallan 1: ««Respondió N de las M preguntas» es una cuenta, nunca una pr»
+DETECTADA respondio-n-de-n · con todas respondidas dice «Respondió 2 de las 2 preguntas» · fallan 1: ««Respondió N de las M preguntas» es una cuenta, nunca una pr»
+DETECTADA respondio-las-1-preguntas · con una sola pedida dice «Respondió las 1 preguntas» · fallan 1: ««Respondió N de las M preguntas» es una cuenta, nunca una pr»
+DETECTADA elegidas-al-reves · «N de M elegidas» va cruzado · fallan 1: «los textos del pedido que llevan un dato: cuántas preguntas »
+DETECTADA el-area-fija-sin-nombre · «Este formulario es solo de…» no dice el área · fallan 1: «los textos del pedido que llevan un dato: cuántas preguntas »
+41 de 41 detectadas

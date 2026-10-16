@@ -1,0 +1,31 @@
+NOTADA    los tramos juntan todas las tomas del mismo protocolo, aunque haya una de otro en el medio — C-64 (la lista, en tramos); F-41 (los anchos)
+NOTADA    la fila de una medición muestra el valor que se tomó primero, no el que rige — F-37 (una medición corregida)
+NOTADA    las mediciones de una familia van por orden alfabético de su clave, no en el del catálogo — F-36 (las mediciones, por familia)
+NOTADA    el encabezado de la toma no dice la clase del dato aunque todas las mediciones la compartan — F-36 (el encabezado de la toma)
+tanda B (tomas): 4 de 4 roturas notadas · 5 comprobaciones fallaron y 17 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  C-64 · La lista tiene todas las tomas registradas, por cuánd… — a la vista: [{"protocolo":"Perfil antropométrico completo","tomas":[{"id":"e9b86130-7467-4158-9527-c6c927112c83","fecha":"11 oct 2026 · 08:00","cuentas":"2 medi
+  F-36 · Sin una toma en la dirección abre la más reciente, ma… — «Toma del 11 oct 2026, 08:00» · sin una clase común · «Perfil antropométrico completo · 2 mediciones · registrada el 12 oct 2026, 08:58 por Lic. Sofía Paz (sint
+  F-36 · Las mediciones van por familia, en el orden del domin… — a la vista: [{"familia":"MASA_Y_ESTATURA","titulo":"Masa y estatura","filas":[{"id":"f850f48b-26e1-4ec0-ac64-4253c0a2e1be","nombre":"Peso","valor":"80,2 kg","ma
+  F-37 · Una medición corregida muestra en la fila y en el pan… — la fila: Cintura 95 Corregida · el panel: 90,5 cm (se tomó 95) · Corrección: 90,5 cm Valor vigente — Por qué se corrigió: «Valor tipeado mal: era 90,5». La corr
+  F-41 · A 1280 px la lista sigue al costado de la toma. A 102… — 1280: lista al costado · 1024: 8 opciones en el selector (de 8) · elegida por el selector: «Toma del 11 oct 2026, 08:00»
+pasaron:
+  F-33 · Al entrar, «Tomas» lee la lista entera una vez, la toma en preparación una vez, y una vez el detalle de
+  C-58 · El título dice «Tomas», cuántas hay registradas (la cantidad de la lista entera) y que una toma registr
+  F-33 · Elegir otra toma la pone en la dirección (`evaluacion=`), la marca en la lista y la muestra sin pedirle
+  F-36 · Una toma de hasta seis mediciones muestra sus familias una al lado de la otra, en un renglón, sin dejar
+  C-62 · Entre las mediciones no hay ningún botón «Corregir» ni «Anular»: la fila entera abre la medición en un 
+  F-37 · Una medición anulada se abre igual: dice «Anulada» y no «Vigente», conserva su valor a la vista, su his
+  F-38 · Si ningún resultado calculado de la toma usaba la medición anulada, «Lo que pasó con los resultados» lo
+  F-38 · Si ningún resultado calculado de la toma usa la medición corregida, «Lo que cambió con la corrección» l
+  F-39 · Los resultados vigentes de la toma van por categoría del catálogo y, adentro, por método: cada uno con 
+  F-39 · Un resultado se abre en el panel: su método, su valor con la precisión declarada, la marca «Calculado»,
+  F-35 · «En preparación» dejó de ser una sección: el marco tiene tres (Tomas, Evolución y Lámina). El botón de 
+  F-33 · La toma elegida vive en la dirección: se abre al entrar con ella, y «Actualizar» vuelve a leer la lista
+  F-33 · Una toma pedida por la dirección que no está disponible lo dice con el texto neutral, sin tapar la list
+  F-39 · Si la lista de tomas no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nu
+  F-14 · «Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rig
+  F-37 · axe no encuentra faltas en «Tomas», ni con una medición abierta en el panel, ni con la ayuda abierta — 
+  — · «Tomas» no produjo errores de página
+última línea: 19/24 comprobaciones bien; fallan: C-64, F-36, F-36, F-37, F-41

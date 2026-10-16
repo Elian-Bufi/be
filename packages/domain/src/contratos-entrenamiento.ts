@@ -428,6 +428,16 @@ export const EjercicioDeCatalogoSchema = z.strictObject({
 });
 export type EjercicioDeCatalogo = z.infer<typeof EjercicioDeCatalogoSchema>;
 export const ListaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioDeCatalogoSchema), page: PaginaSchema });
+/**
+ * API-TRN-13-BUSQUEDA (DL-130): la búsqueda de ejercicios con el texto en el **cuerpo**, nunca en una URL. Es una lectura
+ * y responde lo mismo que API-TRN-13, que se conserva con su contrato para los clientes instalados.
+ */
+export const BusquedaDeEjerciciosRequestSchema = z.strictObject({
+  q: z.string().trim().max(80),
+  limit: z.number().int().min(1).max(50).optional(),
+  cursor: z.string().max(400).optional(),
+});
+export type BusquedaDeEjerciciosRequest = z.infer<typeof BusquedaDeEjerciciosRequestSchema>;
 export const EjercicioDeCatalogoResponseSchema = z.strictObject({ data: EjercicioDeCatalogoSchema });
 
 /**

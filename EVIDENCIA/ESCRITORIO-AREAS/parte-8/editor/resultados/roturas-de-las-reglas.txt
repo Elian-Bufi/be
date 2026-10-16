@@ -1,0 +1,74 @@
+control (sin mutar): 23 pasan, 0 fallan
+DETECTADA microciclo-pedido-ignorado · el microciclo que pide la dirección no se mira: siempre el primero · fallan 1: «en un bloque con microciclos, las sesiones entre las que se »
+DETECTADA bloque-sin-micros-con-uno · un bloque sin microciclos dice que mira el primero · fallan 2: «sin pedir nada se mira el primer bloque y su primera sesión;» «lo que la dirección pide y la versión no tiene cae en lo pri»
+DETECTADA sesiones-del-bloque-siempre · con microciclos, las sesiones son las del bloque · fallan 2: «en un bloque con microciclos, las sesiones entre las que se » «lo que la dirección pide y la versión no tiene cae en lo pri»
+DETECTADA sesion-pedida-ignorada · la sesión que pide la dirección no se mira · fallan 2: «sin pedir nada se mira el primer bloque y su primera sesión;» «en un bloque con microciclos, las sesiones entre las que se »
+DETECTADA al-entrar-uno-abierto · al entrar, el primer ejercicio está abierto · fallan 1: «al entrar no hay ningún ejercicio abierto; la dirección los »
+DETECTADA ninguno-abierto-se-escribe · sin ejercicios abiertos, la dirección escribe algo · fallan 1: «al entrar no hay ningún ejercicio abierto; la dirección los »
+DETECTADA ruta-sin-serie · la ruta de un problema no llega hasta la serie · fallan 2: «la ruta de un problema da las posiciones de su bloque, su mi» «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ruta-sin-microciclo · la ruta de un problema no entiende los microciclos · fallan 4: «la ruta de un problema da las posiciones de su bloque, su mi» «la ubicación de un problema se dice con los nombres, sin rut» «los problemas de un ejercicio son los que están en él o en u» «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA ruta-con-puntos-no · una falla de forma del pedido, con puntos, no se ubica · fallan 2: «la ruta de un problema da las posiciones de su bloque, su mi» «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ruta-desde-uno · las posiciones de un problema se cuentan desde uno · fallan 4: «la ruta de un problema da las posiciones de su bloque, su mi» «la ubicación de un problema se dice con los nombres, sin rut» «los problemas de un ejercicio son los que están en él o en u» «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA ruta-de-cualquier-cosa · lo que no es de la estructura cae en el primer bloque · fallan 2: «la ruta de un problema da las posiciones de su bloque, su mi» «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-del-plan-callada · un problema del plan entero no dice de qué es · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-sin-nombre-de-bloque · la ubicación no usa el nombre del bloque · fallan 2: «la ubicación de un problema se dice con los nombres, sin rut» «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA ubicacion-sin-nombre-de-microciclo · la ubicación no usa el nombre del microciclo · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-sesion-del-bloque · la sesión de un microciclo se busca entre las del bloque · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-ejercicio-desde-cero · el primer ejercicio es el «Ejercicio 0» · fallan 2: «la ubicación de un problema se dice con los nombres, sin rut» «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA ubicacion-serie-desde-cero · la primera serie es la «Serie 0» · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-con-otro-separador · la ubicación se separa con otro signo · fallan 2: «la ubicación de un problema se dice con los nombres, sin rut» «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA problemas-de-cualquier-microciclo · un ejercicio cuenta los problemas de la misma posición en el bloque · fallan 1: «los problemas de un ejercicio son los que están en él o en u»
+DETECTADA problemas-de-cualquier-sesion · un ejercicio cuenta los problemas de la misma posición en otra sesión · fallan 1: «los problemas de un ejercicio son los que están en él o en u»
+DETECTADA problemas-sin-los-de-las-series · los problemas de una serie no se cuentan en su ejercicio · fallan 1: «los problemas de un ejercicio son los que están en él o en u»
+DETECTADA objetivo-que-falta-pasa · el objetivo de intensidad que falta no se lista · fallan 2: «plegar no esconde lo que falta: lo que no deja guardar y los» «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA carga-general-pasa · una carga general mal escrita no se lista · fallan 2: «plegar no esconde lo que falta: lo que no deja guardar y los» «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA descanso-general-pasa · un descanso general mal escrito no se lista · fallan 3: «plegar no esconde lo que falta: lo que no deja guardar y los» «de un ejercicio no deja guardar lo escrito que no se entiend» «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA parametro-incompleto-pasa · un parámetro sin completar no se lista · fallan 2: «plegar no esconde lo que falta: lo que no deja guardar y los» «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA parametro-de-espacios-vale · un parámetro con un valor de solo espacios pasa por completo · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA parametro-nan-vale · un parámetro numérico mal escrito pasa por completo · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA repeticiones-ilegibles-pasan · unas repeticiones mal escritas no se listan · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA rango-ilegible-pasa · un rango con el máximo mal escrito no se lista · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA carga-de-serie-pasa · la carga mal escrita de una serie no se lista · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA rir-de-serie-pasa · el RIR mal escrito de una serie no se lista · fallan 2: «plegar no esconde lo que falta: lo que no deja guardar y los» «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA descanso-de-serie-pasa · el descanso mal escrito de una serie no se lista · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA rir-dicho-como-descanso · un RIR mal escrito se lista como un descanso · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA serie-ubicada-en-su-ejercicio · lo de una serie se ubica en el ejercicio, no en la serie · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA lo-vacio-es-ilegible · un dato vacío cuenta como mal escrito · fallan 1: «de un ejercicio no deja guardar lo escrito que no se entiend»
+DETECTADA bloque-sin-nombre-pasa · un bloque sin nombre no se lista · fallan 1: «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA microciclo-sin-nombre-pasa · un microciclo sin nombre no se lista · fallan 1: «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA sesion-sin-nombre-pasa · una sesión sin nombre no se lista · fallan 1: «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA nombre-de-espacios-vale · un nombre de solo espacios pasa por nombre · fallan 1: «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA sesiones-escondidas-recorridas · con microciclos, también se recorren las sesiones del bloque, que no se editan · fallan 1: «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA ejercicio-ubicado-en-la-sesion · lo de un ejercicio se ubica en su sesión · fallan 1: «del plan no dejan guardar un bloque, un microciclo o una ses»
+DETECTADA aviso-de-las-dos-cosas-callado · con nombres y datos, el aviso habla de una sola cosa · fallan 1: «el aviso de lo que no deja guardar dice qué hay que corregir»
+DETECTADA aviso-cruzado · el aviso de los nombres se da por los datos · fallan 1: «el aviso de lo que no deja guardar dice qué hay que corregir»
+DETECTADA los-nombres-son-datos · un nombre que falta cuenta también como un dato · fallan 1: «el aviso de lo que no deja guardar dice qué hay que corregir»
+DETECTADA objetivo-que-falta-callado · plegado, no dice que falta el objetivo de intensidad · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA el-objetivo-cuenta-como-dato · el objetivo que falta se cuenta además como un dato mal escrito · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA los-parametros-cuentan-como-datos · un parámetro sin completar se cuenta como un dato mal escrito · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA resumen-con-el-objetivo-que-falta · sin el objetivo de intensidad, el renglón resume igual · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA resumen-siempre · con datos mal escritos, el renglón resume igual · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA parametros-callados · plegado, no dice que hay parámetros sin completar · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA problemas-de-validar-callados · plegado, no dice los problemas de «Validar» · fallan 1: «plegar no esconde lo que falta: lo que no deja guardar y los»
+DETECTADA uno-dicho-en-plural · uno se dice en plural · fallan 2: «plegar no esconde lo que falta: lo que no deja guardar y los» «lo que entra al activar se cuenta de la estructura, con las »
+DETECTADA criterio-sin-normalizar · el criterio con espacios o en minúscula no es el mismo · fallan 1: «un ejercicio plegado dice lo que piden sus series, con lo es»
+DETECTADA descanso-sin-numero-solo · un número solo ya no se lee como segundos · fallan 1: «el descanso se lee como minutos y segundos, con o sin hora, »
+DETECTADA descanso-hora-de-sesenta · una hora vale sesenta segundos · fallan 2: «el descanso se lee como minutos y segundos, con o sin hora, » «el descanso que se muestra se vuelve a leer igual: escribirl»
+DETECTADA descanso-sin-segundos · en «m:ss» se olvidan los segundos · fallan 3: «el descanso se lee como minutos y segundos, con o sin hora, » «el descanso que se muestra se vuelve a leer igual: escribirl» «lo que la celda deja en la serie: vacía, nada; un número, el»
+DETECTADA descanso-adivinado · «2:5» y «2:75» se aceptan · fallan 2: «lo que no es un descanso no se adivina: ni medio segundo, ni» «lo que la celda deja en la serie: vacía, nada; un número, el»
+DETECTADA descanso-con-espacios-no · un descanso con espacios alrededor no se lee · fallan 1: «el descanso se lee como minutos y segundos, con o sin hora, »
+DETECTADA lo-que-toma-sin-gris · lo que la serie toma de lo general no va en gris · fallan 1: «una celda vacía toma de lo general: lo muestra en gris, lo d»
+DETECTADA sin-objetivo-en-gris · «Sin objetivo» elegido va en gris · fallan 1: ««Sin objetivo» elegido para una serie va en el color del tex»
+DETECTADA vacia-ofrece-tomar · una celda vacía ofrece volver a tomar de lo general, que ya toma · fallan 1: «una celda vacía toma de lo general: lo muestra en gris, lo d»
+DETECTADA sin-objetivo-ofrece-sin-objetivo · «Sin objetivo» ofrece quitar el objetivo, que ya no tiene · fallan 1: ««Sin objetivo» elegido para una serie va en el color del tex»
+DETECTADA nan-es-propio · lo que no se entiende se muestra como un valor propio · fallan 1: «con un valor propio la celda ofrece las dos salidas; el cero»
+DETECTADA cero-es-sin-objetivo · un cero es «Sin objetivo» · fallan 1: «con un valor propio la celda ofrece las dos salidas; el cero»
+DETECTADA descripcion-sin-lo-general · la descripción no dice qué toma de lo general · fallan 1: «una celda vacía toma de lo general: lo muestra en gris, lo d»
+DETECTADA vacia-escribe-sin-objetivo · vaciar la celda la deja sin objetivo · fallan 1: «lo que la celda deja en la serie: vacía, nada; un número, el»
+DETECTADA ilegible-escribe-nada · lo que no se entiende deja la celda vacía · fallan 1: «lo que la celda deja en la serie: vacía, nada; un número, el»
+DETECTADA opciones-al-reves · «Sin objetivo» deja tomar de lo general, y al revés · fallan 1: «lo que la celda deja en la serie: vacía, nada; un número, el»
+DETECTADA vacia-vale-por-cero · una celda vacía vale por un cero · fallan 1: «lo escrito en la celda es lo que la serie tiene: vacía vale »
+DETECTADA ilegible-distinto-de-si-mismo · algo mal escrito no se reconoce como lo que la serie tiene · fallan 1: «lo escrito en la celda es lo que la serie tiene: vacía vale »
+DETECTADA activar-sin-microciclos · lo que entra al activar no cuenta las sesiones de los microciclos · fallan 1: «lo que entra al activar se cuenta de la estructura, con las »
+DETECTADA activar-sesion-en-plural · una sesión se dice en plural · fallan 1: «lo que entra al activar se cuenta de la estructura, con las »
+72 de 72 detectadas

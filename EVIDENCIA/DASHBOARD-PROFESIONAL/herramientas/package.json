@@ -1,0 +1,8 @@
+{
+  "name": "herramientas-dashboard-profesional",
+  "private": true,
+  "description": "Datos sintéticos, recorridos y capturas de WP-DASHBOARD-PROFESIONAL (API y web locales; puppeteer-core contra el Chrome instalado)",
+  "dependencies": {
+    "puppeteer-core": "25.12.0"
+  }
+}

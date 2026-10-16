@@ -22,7 +22,7 @@ permissions:
 jobs:
   build:
     name: EAS build Android (${{ inputs.perfil || 'test' }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:

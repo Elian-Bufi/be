@@ -1,0 +1,60 @@
+NOTADA    una comida plegada no dice que adentro hay una cantidad que no se entiende — F-94 (lo que no deja guardar)
+NOTADA    los problemas que están dentro de una opción no se cuentan en el renglón de su comida — F-96 (validar)
+NOTADA    lo que entra al activar cuenta comidas de más — F-98 (activar guarda antes)
+tanda X (planes): 3 de 3 roturas notadas · 3 comprobaciones fallaron y 49 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-94 · Lo que no deja guardar no queda escondido. Una cantid… — la cantidad: «60x», «Escribí un número: «150» o «72,5».» · la comida: null · al guardar: «Hay nombres sin completar y cantidades que no se entienden. Corregilos
+  F-96 · «Validar plan», sin cambios por guardar, no guarda: v… — al validar: guardar 0, validar 1 · «Hay elementos por corregir» [Día de descanso (ajustado) → Almuerzo → Opción 3 → falta al menos un ítem] [Día de descanso (aj
+  F-98 · «Activar plan» guarda antes si hay cambios, y recién … — con la falla: «El servicio no está disponible en este momento. Probá de nuevo más tarde.», diálogo: no se abrió, activaciones: 0 · al abrir: guardar 1 · «Esta v
+pasaron:
+  F-62 · El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · 
+  F-58 · Con más de un día tipo, el plan se lee de a uno: un control con el nombre de cada día, en el orden del 
+  F-59 · Las comidas van plegadas, cada una en un renglón con su cantidad de opciones («N opciones · se elige un
+  F-63 · El objetivo del día está a la vista, al lado del día tipo: las calorías y los tres macros del objetivo 
+  F-64 · El historial va al costado de las comidas, a la altura de la primera: las versiones activadas, de la má
+  F-70 · A 1440 × 900 el plan entra en la primera pantalla: el día tipo, el objetivo, las cuatro comidas (una ab
+  F-67 · Sin una versión en preparación, y con un objetivo vigente, el plan activo ofrece tres acciones: «Guarda
+  F-66 · Lo elegido vive en la dirección de la página, por su número de orden. Elegir el segundo día tipo escrib
+  F-66 · «Actualizar» vuelve a leer las tres cosas y conserva lo elegido: el mismo día tipo y la misma comida ab
+  F-66 · Una dirección con valores que el plan no tiene (un día 9, una comida 7, una versión desconocida) no rom
+  F-60 · Con todas las comidas abiertas, cada una muestra todas sus opciones a la vez, con los ítems que devuelv
+  F-61 · Una opción que nació de una receta lo dice con las palabras de BE («Receta «…», versión N» y que lleva 
+  F-70 · En toda la sección, con todas las comidas abiertas, no hay un porcentaje ni una palabra de la lista de 
+  F-14 · «Plan» tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica c
+  F-70 · axe no encuentra faltas en «Plan» con todas las comidas abiertas, en los dos temas — claro: sin faltas 
+  F-70 · A 1440 px con todas las comidas abiertas, y a 1280, 1024, 768 y 390 con una, ningún renglón del plan em
+  F-70 · El historial sigue al costado a 1280 px y pasa debajo de las comidas a 1024; las opciones se acomodan a
+  F-68 · (Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece el paso que falta: «Ir a R
+  F-63 · (Respuestas simuladas.) Si hoy rige un objetivo más nuevo que el de la versión que se lee, la tira mues
+  F-63 · (Falla simulada.) Si el objetivo de la versión no se puede leer, el plan se ve entero y la tira lo dice
+  F-68 · (Falla simulada.) Si la lista de versiones no se puede leer, la sección dice la falla con su motivo y «
+  F-58 · (Respuesta simulada.) Con siete días tipo de nombre largo, a 1024 px, los siete segmentos están enteros
+  F-58 · (Respuesta simulada.) Con un solo día tipo no hay nada que elegir: la pantalla dice su nombre, sin cont
+  F-67 · «Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una
+  F-67 · (Respuestas simuladas.) Si las plantillas no se pueden leer, el diálogo dice la falla con su motivo y «
+  F-67 · (Falla simulada.) Elegida una plantilla, crear el borrador se enciende. Si esa escritura falla, el moti
+  F-65 · «Crear nueva versión a partir de esta» hace una sola escritura y deja una versión en preparación. Arrib
+  F-89 · La versión en preparación se abre con un día tipo a la vista y sus comidas plegadas: cada una, en un re
+  F-90 · El día tipo que se mira y las comidas abiertas viven en la dirección, por su posición: elegir el segund
+  F-91 · Abrir una comida muestra sus opciones en pestañas («N · nombre», y la de receta marcada), con la primer
+  F-92 · Los nombres se cambian a pedido. El menú «Más» de una comida ofrece «Cambiar el nombre», «Guardar como 
+  F-93 · Agregar, mover y quitar. «Agregar opción» despliega dos caminos (una opción nueva o una receta); la opc
+  F-95 · Con todo corregido, «Guardar cambios» hace una sola escritura y la API queda con lo que se hizo en pant
+  F-97 · Con una comida abierta, en el editor no hay un porcentaje ni una palabra de la lista de Nutrición; la m
+  F-65 · Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo (con 
+  F-65 · Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer y dice qué se perdería («el plan 
+  F-65 · Activar la versión en preparación, con una fecha de próxima revisión puesta en el diálogo, hace dos esc
+  F-67 · Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se c
+  F-82 · «Agregar ítem» abre el buscador del catálogo en un cajón al costado, no dentro de la opción: dice de qu
+  F-83 · Buscar es una sola lectura, con el texto en el cuerpo del pedido y no en la dirección. Los resultados v
+  F-84 · Elegir un alimento lo suma a la opción y no cierra el cajón: lo anuncia («Agregado: …») y deja seguir; 
+  F-85 · Cada vez que se abre, el cajón empieza con el buscador vacío. La chinche de un resultado lo marca como 
+  F-86 · Una búsqueda que no encuentra nada lo dice y ofrece las otras dos vías; no muestra una tabla vacía ni u
+  F-87 · «Crear manualmente» se abre dentro del cajón, en el lugar de los resultados, con «Volver a la búsqueda»
+  F-88 · Con una búsqueda hecha, en el cajón no hay un porcentaje ni una palabra de la lista de Nutrición; la mi
+  F-84 · «Guardar cambios» guarda la opción con lo que se agregó, con una sola escritura: en la API, sus últimos
+  F-85 · (Respuesta simulada.) Si los alimentos habituales no se pueden leer, el cajón lo dice, con su motivo y 
+  F-83 · (Respuesta simulada.) Con más coincidencias que las veinte que se piden, el cajón no dice una cuenta: l
+  — · «Plan», de Nutrición, no produjo errores de página
+última línea: 50/53 comprobaciones bien; fallan: F-94, F-96, F-98

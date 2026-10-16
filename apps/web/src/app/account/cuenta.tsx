@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Website `/account` (DL-025 A): Estado · Tu identificador BE · Privacidad · Seguridad · Cerrar mi cuenta.
+ * Website `/account` (DL-025 A): Estado · Tu nombre · Tu identificador BE · Privacidad · Seguridad · Cerrar mi cuenta.
+ * - Tu nombre (DL-009 y DL-040, 2026-10-15): el que ven los profesionales con un vínculo vigente; se cambia o se quita.
  * - Estado: solo el estado operativo (TEST-RF-006: nunca «habilitado»).
  * - Tu identificador BE (DL-035): lo que el asesorado comparte con el profesional para recibir una solicitud. Por sí
  *   solo no da acceso a nada: el acceso exige vínculo aceptado y consentimiento (RF-021).
@@ -12,7 +13,17 @@
  * - Cierre (PROTO-10-ACC-06, 10-ADD): explicación → diálogo con consecuencias versionadas → confirmación explícita.
  * Carga con estructura real y sin datos ficticios; error con «Reintentar» (10-B10:343-378).
  */
-import { CODIGOS_DE_SESION_NO_VALIDA, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse } from '@be/domain';
+import {
+  CODIGOS_DE_SESION_NO_VALIDA,
+  COPY_VINCULO,
+  LARGO_MAXIMO_DEL_NOMBRE_VISIBLE,
+  nombreVisibleValido,
+  normalizarNombreVisible,
+  VERSION_VIGENTE,
+  type MeResponse,
+  type PerfilPropio,
+  type RequisitoDeConsentimientoDeSaludResponse,
+} from '@be/domain';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -21,6 +32,7 @@ import { Aviso } from '../../components/formulario';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../lib/api';
 import { COPY } from '../../lib/copy';
 import { useSesion } from '../../lib/sesion';
+import { fecha } from '../../lib/formato';
 
 const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], string> = {
   OPERATIVA: 'Operativa',
@@ -29,9 +41,6 @@ const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], st
 };
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error' };
-
-const fecha = (iso: string) =>
-  new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 
 export function Cuenta() {
   const router = useRouter();
@@ -130,6 +139,8 @@ export function Cuenta() {
         ) : null}
       </section>
 
+      <TuNombre token={token} alPerderSesion={sesionPerdida} />
+
       {cuenta.tipo === 'listo' ? <TuIdentificador identityId={cuenta.datos.identityId} /> : null}
 
       <section className="seccion" aria-labelledby="titulo-privacidad">
@@ -183,6 +194,103 @@ function EstadoA3({ datos }: { datos: RequisitoDeConsentimientoDeSaludResponse['
         </div>
       </details>
     </>
+  );
+}
+
+/**
+ * «Tu nombre» (DL-009, opción B, y DL-040, decididas por Dirección el 2026-10-15): el nombre con que te ven los
+ * profesionales con los que tenés un vínculo vigente. Es tuyo: lo cambiás o lo quitás cuando quieras, y cada cambio
+ * queda en tu historia. Sin nombre, ven una referencia («Asesorado · c36743»). Tu correo no lo ven nunca.
+ * - Guardar manda la versión que se leyó: si cambió en otra pestaña, se vuelve a leer y se dice, sin pisar nada.
+ * - Lo que se escribe se valida con la misma regla que la API (de 1 a 60 caracteres, sin símbolos invisibles).
+ */
+function TuNombre({ token, alPerderSesion }: { token: string; alPerderSesion: (r: Resultado<unknown>) => boolean }) {
+  const [perfil, setPerfil] = useState<Carga<PerfilPropio>>({ tipo: 'cargando' });
+  const [escrito, setEscrito] = useState('');
+  const [estado, setEstado] = useState<{ tipo: 'libre' } | { tipo: 'guardando' } | { tipo: 'guardado'; texto: string } | { tipo: 'error'; mensaje: string }>({ tipo: 'libre' });
+
+  const cargar = useCallback(async () => {
+    setPerfil({ tipo: 'cargando' });
+    const r = await api.consultarPerfilPropio(token);
+    if (alPerderSesion(r)) return;
+    if (!r.ok) return setPerfil({ tipo: 'error' });
+    setPerfil({ tipo: 'listo', datos: r.datos.data });
+    setEscrito(r.datos.data.displayName ?? '');
+  }, [token, alPerderSesion]);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  async function guardar(nombre: string | null) {
+    if (perfil.tipo !== 'listo' || estado.tipo === 'guardando') return;
+    if (nombre !== null && nombreVisibleValido(nombre) === null) {
+      return setEstado({ tipo: 'error', mensaje: `Escribí entre 1 y ${LARGO_MAXIMO_DEL_NOMBRE_VISIBLE} caracteres.` });
+    }
+    setEstado({ tipo: 'guardando' });
+    const r = await api.editarPerfilPropio(token, { expectedVersion: perfil.datos.version, changes: { displayName: nombre } });
+    if (alPerderSesion(r)) return;
+    if (r.ok) {
+      setPerfil({ tipo: 'listo', datos: r.datos.data });
+      setEscrito(r.datos.data.displayName ?? '');
+      return setEstado({ tipo: 'guardado', texto: r.datos.data.displayName ? 'Nombre guardado.' : 'Quitaste tu nombre: los profesionales ven tu referencia.' });
+    }
+    if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+      await cargar();
+      return setEstado({ tipo: 'error', mensaje: 'Tu nombre cambió en otra pestaña: lo volvimos a leer. Si querés, guardalo de nuevo.' });
+    }
+    if (r.tipo === 'API' && r.codigo === 'INVALID_PROFILE_DATA') {
+      return setEstado({ tipo: 'error', mensaje: `Escribí entre 1 y ${LARGO_MAXIMO_DEL_NOMBRE_VISIBLE} caracteres, sin símbolos invisibles.` });
+    }
+    setEstado({ tipo: 'error', mensaje: r.tipo === 'RED' ? COPY.resultadoIncierto : COPY.noDisponible });
+  }
+
+  const actual = perfil.tipo === 'listo' ? perfil.datos.displayName : null;
+  const sinCambios = normalizarNombreVisible(escrito) === (actual ?? '');
+  return (
+    <section className="seccion" aria-labelledby="titulo-nombre">
+      <h2 id="titulo-nombre">Tu nombre</h2>
+      <p className="nota">Es el nombre con que te ven los profesionales con los que tenés un vínculo vigente. Sin nombre, ven una referencia, como «Asesorado · c36743». Tu correo no lo ven.</p>
+      {perfil.tipo === 'cargando' ? <p aria-busy="true">Cargando…</p> : null}
+      {perfil.tipo === 'error' ? <ErrorConReintento onReintentar={cargar} /> : null}
+      {perfil.tipo === 'listo' ? (
+        <form
+          className="tu-nombre"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void guardar(escrito);
+          }}
+        >
+          <div className="campo">
+            <label htmlFor="nombre-visible">Nombre</label>
+            <input
+              id="nombre-visible"
+              value={escrito}
+              maxLength={LARGO_MAXIMO_DEL_NOMBRE_VISIBLE + 20}
+              autoComplete="name"
+              aria-describedby="nombre-visible-estado"
+              onChange={(e) => {
+                setEscrito(e.target.value);
+                if (estado.tipo !== 'guardando') setEstado({ tipo: 'libre' });
+              }}
+            />
+          </div>
+          <div className="acciones">
+            <button type="submit" className="boton boton--primario" disabled={estado.tipo === 'guardando' || sinCambios || escrito.trim() === ''}>
+              {estado.tipo === 'guardando' ? 'Guardando…' : 'Guardar nombre'}
+            </button>
+            {actual ? (
+              <button type="button" className="boton boton--secundario" onClick={() => void guardar(null)} disabled={estado.tipo === 'guardando'}>
+                Quitar el nombre
+              </button>
+            ) : null}
+          </div>
+          <p id="nombre-visible-estado" role="status" className={estado.tipo === 'error' ? 'campo__error' : 'nota'}>
+            {estado.tipo === 'guardado' ? estado.texto : estado.tipo === 'error' ? estado.mensaje : ''}
+          </p>
+        </form>
+      ) : null}
+    </section>
   );
 }
 
