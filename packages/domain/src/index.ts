@@ -104,3 +104,4 @@ export * from './contratos-novedades';
 export * from './copy-novedades';
 export * from './tvcc30';
 export * from './contratos-invitaciones';
+export * from './agenda-de-entrenamiento';

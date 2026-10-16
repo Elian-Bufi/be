@@ -38,8 +38,15 @@ export const TIPOS_DE_NOVEDAD = [
   'CONSENT_REVOKED',
   /** Al asesorado, con el recordatorio activo: hoy todavía no registró comidas (15:00 y 22:00). */
   'MEAL_LOG_REMINDER',
-  /** Al asesorado, con el recordatorio activo: hoy todavía no registró un entrenamiento (22:00). */
+  /**
+   * Al asesorado, con el recordatorio activo: hoy tenía una sesión prevista en su agenda y todavía no la registró ni la
+   * salteó (22:00). Desde DL-137, solo los días planificados: un plan sin agenda no avisa.
+   */
   'TRAINING_LOG_REMINDER',
+  /** DL-137: a la mañana (10:00), hoy hay una sesión prevista en la agenda. */
+  'TRAINING_SESSION_TODAY_REMINDER',
+  /** DL-137: a la mañana (10:00), le quedó pendiente una sesión de los dos días anteriores; la fecha es la prevista. */
+  'TRAINING_SESSION_PENDING_REMINDER',
 ] as const;
 export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
 
@@ -115,7 +122,10 @@ export type DatosDelAvisoPush = z.infer<typeof DatosDelAvisoPushSchema>;
 export const PreferenciasDeAvisosSchema = z.strictObject({
   /** El recordatorio de comidas: a las 15:00 y a las 22:00, si ese día todavía no hay ninguna registrada. */
   mealLogReminder: z.boolean(),
-  /** El recordatorio de entrenamiento: a las 22:00, si ese día todavía no hay ninguno registrado. */
+  /**
+   * El recordatorio de entrenamiento, según la agenda del plan (DL-137): a las 10:00, si hoy toca una sesión o quedó una
+   * pendiente de los dos días anteriores; a las 22:00, si la de hoy sigue sin registrar. Un plan sin agenda no avisa.
+   */
   trainingLogReminder: z.boolean(),
 });
 export type PreferenciasDeAvisos = z.infer<typeof PreferenciasDeAvisosSchema>;
@@ -131,10 +141,10 @@ export type ReemplazarPreferenciasDeAvisosRequest = z.infer<typeof ReemplazarPre
 // ─── La tarea programada de los recordatorios (07 §24) ────────────────────────────────────────
 
 /**
- * Las dos franjas del día en que corre la tarea (DL-133): la de la tarde (15:00) recuerda solo las comidas; la de la
- * noche (22:00), las comidas y el entrenamiento.
+ * Las franjas del día en que corre la tarea: la de la mañana (10:00) recuerda solo el entrenamiento según la agenda
+ * (DL-137); la de la tarde (15:00), solo las comidas; la de la noche (22:00), las comidas y la sesión de hoy (DL-133).
  */
-export const FRANJAS_DE_RECORDATORIO = ['AFTERNOON', 'NIGHT'] as const;
+export const FRANJAS_DE_RECORDATORIO = ['MORNING', 'AFTERNOON', 'NIGHT'] as const;
 export type FranjaDeRecordatorio = (typeof FRANJAS_DE_RECORDATORIO)[number];
 export const FranjaDeRecordatorioSchema = z.enum(FRANJAS_DE_RECORDATORIO);
 
@@ -153,8 +163,10 @@ export const CorridaDeRecordatoriosResponseSchema = z.strictObject({
 });
 export type CorridaDeRecordatoriosResponse = z.infer<typeof CorridaDeRecordatoriosResponseSchema>;
 
-/** La hora civil (en la zona de BE) a la que pertenece cada franja: la tarea corre a las 15:00 y a las 22:00. */
+/** La hora civil (en la zona de BE) a la que pertenece cada franja: la tarea corre a las 10:00, a las 15:00 y a las 22:00. */
 export function franjaDeLaHora(hora: number): FranjaDeRecordatorio | null {
+  // DL-137: la mañana es solo del entrenamiento (la tarea corre a las 10:00).
+  if (hora >= 9 && hora < 13) return 'MORNING';
   if (hora >= 14 && hora < 19) return 'AFTERNOON';
   if (hora >= 21 && hora <= 23) return 'NIGHT';
   return null;

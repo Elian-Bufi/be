@@ -245,7 +245,8 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
         : lectorEsProfesional
           ? nombreDelPar(nombresDeAsesorados, { profesionalId: lectorId, asesoradoId: f.fuenteId })
           : (nombresDeProfesionales.get(f.fuenteId) ?? nombreDeProfesional(null));
-    const texto = textoDeNovedad(tipo, { alcance: f.alcance, fuente });
+    const fecha = f.fechaLocal ? f.fechaLocal.toISOString().slice(0, 10) : null;
+    const texto = textoDeNovedad(tipo, { alcance: f.alcance, fuente, fecha });
     const vista = vistaDeNovedad(tipo, f.alcance, lectorEsProfesional);
     return {
       newsId: f.id,
@@ -254,7 +255,7 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
       source: f.fuenteId === null ? null : { identityId: f.fuenteId, displayName: fuente as string },
       title: texto.title,
       body: texto.body,
-      date: f.fechaLocal ? f.fechaLocal.toISOString().slice(0, 10) : null,
+      date: fecha,
       occurredAt: f.momentoDeOcurrencia?.toISOString() ?? null,
       recordedAt: f.momentoDeRegistro.toISOString(),
       readAt: f.lectura?.momentoDeRegistro.toISOString() ?? null,

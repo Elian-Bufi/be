@@ -78,9 +78,9 @@ services:
       - key: BE_SECRETO_DE_TAREAS
         generateValue: true
 
-  # DL-133 (WP-NOVEDADES-Y-AVISOS): los recordatorios diarios de registro. 07 §24: «un cron administrado de la plataforma
-  # llamando un endpoint interno idempotente». Render programa en UTC: 18:00 y 01:00 son las 15:00 y las 22:00 de
-  # Argentina. Solo llama a la API con el secreto de be-api (scripts/disparar-recordatorios.mjs, sin dependencias); la
+  # DL-133 (WP-NOVEDADES-Y-AVISOS) y DL-137 (la agenda de entrenamiento): los recordatorios diarios. 07 §24: «un cron
+  # administrado de la plataforma llamando un endpoint interno idempotente». Render programa en UTC: 13:00, 18:00 y 01:00
+  # son las 10:00, las 15:00 y las 22:00 de Argentina. Solo llama a la API con el secreto de be-api (scripts/disparar-recordatorios.mjs, sin dependencias); la
   # API decide la franja por su hora y repetirla no duplica nada. Starter: se cobra por minuto de ejecución, con un mínimo
   # de un dólar por mes.
   - type: cron
@@ -89,7 +89,7 @@ services:
     region: frankfurt
     plan: starter
     branch: main
-    schedule: "0 1,18 * * *"
+    schedule: "0 1,13,18 * * *"
     autoDeployTrigger: checksPass
     buildCommand: node --version
     startCommand: node scripts/disparar-recordatorios.mjs

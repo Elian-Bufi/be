@@ -709,6 +709,9 @@ it('TEST-CT (WP-06, tramos 3 y 4): se ejercitan éxitos y errores de la ejecuci�
   // TRN-14 y el período
   const hoy = (await ase.get('/api/v1/me/training/today').expect(200)).body.data;
   await ase.get('/api/v1/me/training/today?dia=1').expect(400);
+  // API-AGE-01 (DL-137): la agenda del día; un plan sin agenda responde con las listas vacías.
+  expect((await ase.get('/api/v1/me/training/agenda').expect(200)).body.data).toMatchObject({ planState: 'AVAILABLE', startDate: null, today: [], pending: [] });
+  await ase.get('/api/v1/me/training/agenda?dia=1').expect(400);
   await ase.get(`/api/v1/me/training/occurrences?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(200);
   await ase.get('/api/v1/me/training/occurrences').expect(400);
   // API-TRN-19-LISTA (DL-096): «Tu historial» — sesiones registradas propias por período, solo con A3.

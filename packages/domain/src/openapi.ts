@@ -178,6 +178,7 @@ import {
   EjecucionDeEntrenamientoResponseSchema,
   EjercicioDeCatalogoResponseSchema,
   EvaluacionDeEntrenamientoResponseSchema,
+  AgendaDeHoyResponseSchema,
   HoyDeEntrenamientoResponseSchema,
   ListaDeEjerciciosResponseSchema,
   BusquedaDeEjerciciosRequestSchema,
@@ -1514,7 +1515,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'patch',
     ruta: '/training/plans/{planId}',
     resumen:
-      'Editar un borrador: bloque, microciclo opcional, sesión y prescripción. Valida la forma, no la calidad del programa: ni volumen, ni frecuencia, ni selección de ejercicios, ni progresión.',
+      'Editar un borrador: bloque, microciclo opcional, sesión y prescripción. Valida la forma, no la calidad del programa: ni volumen, ni frecuencia, ni selección de ejercicios, ni progresión. DL-137: también la agenda (fecha de inicio, días de cada sesión y fechas movidas), que se valida contra las sesiones del plan; sin el campo se conserva, sin las sesiones que ya no están, y null la quita. La agenda se lee en API-SER-01.',
     autenticacion: 'SESSION',
     idempotencia: false,
     request: EditarPlanDeEntrenamientoRequestSchema,
@@ -2137,6 +2138,18 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: SesionEnCursoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: 'DEUDA_LEGAJO DL-124',
+  },
+  {
+    id: 'API-AGE-01',
+    metodo: 'get',
+    ruta: '/me/training/agenda',
+    resumen:
+      'La agenda del día del titular: las sesiones previstas para hoy, las de días anteriores que siguen sin registro (una semana, hasta la próxima fecha de la misma sesión) y las de los siete días que siguen. Cada fecha prevista trae su ocurrencia: registrarla «no realizada» es saltearla, sin hora. Es una operación propia porque «Hoy» (API-TRN-14) no cambia de forma. Un plan sin agenda responde con las listas vacías.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: AgendaDeHoyResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'DEUDA_LEGAJO DL-137 · REG-06-114, 115, 131 · WP-06 §9.2',
   },
   {
     id: 'API-EJE-01',

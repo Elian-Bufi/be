@@ -8,10 +8,14 @@ import {
   evaluarSucesion,
   evaluarTransicionDePlanDeEntrenamiento,
   normalizarEstructuraDeEntrenamiento,
+  agendaPodada,
+  problemasDeAgenda,
   problemasDeCompletitud,
   problemasDeReferencias,
+  sesionesDelPlan,
   referenciasDeEjercicio,
   serializacionCanonica,
+  type AgendaDeEntrenamiento,
   type ContenidoDePlanDeEntrenamiento,
   type EjercicioCitable,
   type EstructuraDePlanDeEntrenamientoEntrada,
@@ -57,6 +61,20 @@ interface VersionBloqueada {
 }
 
 const RECURSO = 'VersionDePlanDeEntrenamiento';
+
+/** Los identificadores de las sesiones de un contenido, para validar su agenda (DL-137). */
+const sesionesDe = (c: ContenidoDePlanDeEntrenamiento): Set<string> => new Set(sesionesDelPlan(c).map((s) => s.sesion.sessionId));
+
+/** La agenda que pide el profesional, si se puede guardar con esta estructura; `null` la quita (DL-137). */
+function agendaValida(agenda: AgendaDeEntrenamiento | null, estructura: ContenidoDePlanDeEntrenamiento): AgendaDeEntrenamiento | null {
+  if (agenda === null) return null;
+  const problemas = problemasDeAgenda(agenda, sesionesDe(estructura));
+  // La agenda es parte de lo que se guarda del plan: el mismo código que una estructura que no se puede guardar.
+  if (problemas.length > 0) {
+    throw new ErrorDeApi(422, CodigoDeError.TRAINING_PLAN_STRUCTURE_INVALID, 'La agenda del plan no se puede guardar.', { issues: problemas.map((p) => ({ code: p.code, path: p.path })) });
+  }
+  return agenda;
+}
 
 const noEditable = () =>
   new ErrorDeApi(422, CodigoDeError.PLAN_NOT_EDITABLE, 'Esta versión está activada y no se puede editar. Para cambiarla, creá una nueva versión a partir de esta.');
@@ -305,7 +323,10 @@ export class PlanesDeEntrenamientoService {
         if (!esToken(pedido.expectedVersion, v.version)) throw errores.conflictoDeVersion();
         const objetivo = pedido.objectiveVersionId ?? v.versionDeObjetivoId;
         if (pedido.objectiveVersionId) await this.exigirObjetivoEfectivo(tx, v.profesionalId, v.asesoradoId, objetivo);
-        const contenido = await this.normalizarYVerificar(tx, v.profesionalId, pedido.changes);
+        const estructura = await this.normalizarYVerificar(tx, v.profesionalId, pedido.changes);
+        // DL-137: sin el campo, la agenda que había sigue, sin las sesiones que ya no están; `null` la quita.
+        const agenda = pedido.agenda === undefined ? agendaPodada(v.contenido.agenda, sesionesDe(estructura)) : agendaValida(pedido.agenda, estructura);
+        const contenido: ContenidoDePlanDeEntrenamiento = agenda ? { ...estructura, agenda } : estructura;
         const evaluacion = evaluarTransicionDePlanDeEntrenamiento(v.estado, { transicion: 'GuardarBorrador', cambiosValidosComoBorrador: true });
         if (!evaluacion.permitida) throw noEditable();
         await tx.versionDePlanDeEntrenamiento.update({
@@ -529,7 +550,11 @@ export class PlanesDeEntrenamientoService {
 
   private async problemasParaActivar(tx: Tx, v: VersionBloqueada): Promise<{ issues: ValidationIssue[]; catalogo: Map<string, EjercicioCitable> }> {
     const catalogo = aCitables(await this.catalogo.citables(tx, v.profesionalId, 'PROFESIONAL', referenciasDeEjercicio(v.contenido)));
-    const issues = [...problemasDeCompletitud(v.contenido), ...problemasDeReferencias(v.contenido, catalogo)];
+    const issues = [
+      ...problemasDeCompletitud(v.contenido),
+      ...problemasDeReferencias(v.contenido, catalogo),
+      ...(v.contenido.agenda ? problemasDeAgenda(v.contenido.agenda, sesionesDe(v.contenido)) : []),
+    ];
     const objetivoEfectivo = await this.objetivoEfectivoId(tx, v.profesionalId, v.asesoradoId);
     if (objetivoEfectivo !== v.versionDeObjetivoId) issues.push({ code: 'OBJECTIVE_NOT_EFFECTIVE', path: 'objectiveVersionId' });
     return { issues, catalogo };
