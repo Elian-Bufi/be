@@ -90,6 +90,7 @@ services:
     plan: starter
     branch: main
     schedule: "0 1,18 * * *"
+    autoDeployTrigger: checksPass
     buildCommand: node --version
     startCommand: node scripts/disparar-recordatorios.mjs
     buildFilter:

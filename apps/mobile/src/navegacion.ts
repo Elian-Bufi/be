@@ -37,6 +37,8 @@ export type Ruta =
   | { readonly nombre: 'mis-solicitudes' }
   // Los detalles: recuerdan de dónde se abrieron.
   | { readonly nombre: 'cuenta'; readonly desde?: Ruta }
+  // WP-NOVEDADES-Y-AVISOS (DL-133): el centro de novedades, desde la campana de la cabecera o al tocar un aviso.
+  | { readonly nombre: 'novedades'; readonly desde?: Ruta }
   | { readonly nombre: 'vinculos'; readonly desde?: Ruta }
   | { readonly nombre: 'vinculo'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'consentimiento'; readonly vinculoId: string; readonly desde?: Ruta }
@@ -159,6 +161,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'mi-solicitud':
       return 'informacion';
     case 'cuenta':
+    case 'novedades':
     case 'vinculos':
     case 'vinculo':
     case 'consentimiento':
@@ -219,6 +222,7 @@ function madre(ruta: Ruta): Ruta | null {
     case 'mi-evolucion':
     case 'mis-solicitudes':
     case 'cuenta':
+    case 'novedades':
       return INICIO;
     case 'vinculos':
     case 'privacidad':
@@ -329,6 +333,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Inicio';
     case 'cuenta':
       return 'Volver a Cuenta';
+    case 'novedades':
+      return 'Volver a Novedades';
     case 'vinculos':
       return 'Volver a Vínculos';
     case 'vinculo':

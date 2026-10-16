@@ -19,7 +19,7 @@ export function avisoDe(valor: string | null): string | null {
 }
 
 /** Rutas propias a las que se puede volver después del login. */
-const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/pro', '/pro/templates', '/pro/recipes', '/pro/exercises']);
+const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/account/news', '/pro', '/pro/templates', '/pro/recipes', '/pro/exercises', '/pro/news']);
 /** Rutas que llevan un identificador opaco en el query (el export estático no admite segmentos dinámicos, DL-041). */
 const RUTAS_CON_ID: ReadonlySet<string> = new Set([
   '/account/relationships/detail',

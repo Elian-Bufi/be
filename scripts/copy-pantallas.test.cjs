@@ -29,6 +29,18 @@ const tsx = (dir) => readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) 
  */
 const inicio = (archivo) => join(RAIZ, 'apps/mobile/src/pantallas', archivo);
 const INICIO_COMUN = ['inicio.tsx', 'tarjeta-de-inicio.tsx', 'inicio-informacion.tsx'].map(inicio);
+/**
+ * WP-NOVEDADES-Y-AVISOS (DL-133): el centro de novedades muestra texto de cualquier módulo, como Inicio. Sus pantallas y
+ * sus textos se revisan con todas las listas: una novedad dice qué pasó, nunca un puntaje ni un juicio.
+ */
+const NOVEDADES = [
+  inicio('novedades.tsx'),
+  inicio('cuenta-avisos-y-nombre.tsx'),
+  join(RAIZ, 'apps/web/src/components/centro-de-novedades.tsx'),
+  join(RAIZ, 'apps/web/src/components/campana-de-novedades.tsx'),
+  join(RAIZ, 'packages/domain/src/copy-novedades.ts'),
+];
+const INICIO_Y_NOVEDADES = [...INICIO_COMUN, ...NOVEDADES];
 
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
 const DOMINIOS = [
@@ -42,7 +54,7 @@ const DOMINIOS = [
       ...['piezas-de-nutricion.tsx', 'imagen-de-medio.tsx', 'registro-de-comidas.tsx', 'franja-de-macros.ts', 'consumo-de-la-opcion.ts', 'borrador-de-comida-diferente.ts'].map(movil),
       inicio('inicio-nutricion.tsx'),
       movil('lecturas-de-inicio.ts'),
-      ...INICIO_COMUN,
+      ...INICIO_Y_NOVEDADES,
     ],
     prohibidos: terminosProhibidosEn,
     minimo: 8,
@@ -54,14 +66,14 @@ const DOMINIOS = [
       ...['antropometria.tsx', 'figura-de-la-toma.tsx', 'indicadores.tsx', 'progreso.tsx', 'progreso-de-una-medida.tsx'].map((archivo) => join(RAIZ, 'apps/mobile/src/pantallas', archivo)),
       movil('textos-por-toma.ts'),
       inicio('inicio-mediciones.tsx'),
-      ...INICIO_COMUN,
+      ...INICIO_Y_NOVEDADES,
     ],
     prohibidos: terminosProhibidosDeAntropometriaEn,
     minimo: 5,
   },
   {
     nombre: 'entrenamiento',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_COMUN],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_Y_NOVEDADES],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },

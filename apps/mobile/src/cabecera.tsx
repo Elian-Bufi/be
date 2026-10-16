@@ -2,7 +2,7 @@
  * La cabecera única de la APK (DL-117, decisión de Dirección del 2026-10-04), la misma en todas las pantallas:
  * - **a la izquierda**, volver en un detalle, que tiene prioridad; el menú auxiliar en una raíz con sesión; o nada;
  * - **al centro**, la marca: el isotipo y «BE», con un brillo contenido detrás;
- * - **a la derecha**, el avatar, que abre Cuenta. Es un ícono neutro de persona: el perfil no tiene nombre ni foto
+ * - **a la derecha**, la campana de las novedades, con cuántas hay sin leer (DL-133), y el avatar, que abre Cuenta. Es un ícono neutro de persona: el perfil no tiene nombre ni foto
  *   (`MeResponse.profile` es `{}`, DL-009), y no se deriva uno del correo ni de un identificador (D-2);
  * - **debajo**, la franja del ambiente de prueba, siempre a la vista (08 §33), y la línea de actualización.
  *
@@ -29,6 +29,8 @@ export function Cabecera({
   volver,
   abrirMenu,
   abrirCuenta,
+  sinLeer = null,
+  abrirNovedades,
 }: {
   /** Adónde vuelve el botón de volver. `null`: la pantalla no lo lleva (una raíz, Bienvenida). */
   volverA: Ruta | null;
@@ -38,6 +40,9 @@ export function Cabecera({
   volver: () => void;
   abrirMenu: () => void;
   abrirCuenta: () => void;
+  /** Las novedades sin leer (DL-133); `null` mientras no se sabe. El número es un dato, no una alerta. */
+  sinLeer?: number | null;
+  abrirNovedades?: () => void;
 }) {
   return (
     <View style={estilos.cabecera}>
@@ -68,6 +73,26 @@ export function Cabecera({
         </View>
         <Marca />
         <View style={[estilos.lado, estilos.derecha]}>
+          {conAvatar && abrirNovedades ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={sinLeer ? `Novedades, ${sinLeer} sin leer` : 'Novedades'}
+              onPress={abrirNovedades}
+              style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}
+            >
+              <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
+                <Path d="M6.5 16.5v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z" stroke={COLOR.texto} strokeWidth={1.8} strokeLinejoin="round" fill="none" />
+                <Path d="M10 20.5a2 2 0 0 0 4 0M12 3.5V6" stroke={COLOR.texto} strokeWidth={1.8} strokeLinecap="round" fill="none" />
+              </Svg>
+              {sinLeer ? (
+                <View style={estilos.cuenta} accessible={false} importantForAccessibility="no-hide-descendants">
+                  <Text style={estilos.textoCuenta} maxFontSizeMultiplier={1.15}>
+                    {sinLeer > 99 ? '99+' : sinLeer}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ) : null}
           {conAvatar ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Cuenta" onPress={abrirCuenta} style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}>
               <View style={estilos.avatar}>
@@ -127,5 +152,8 @@ const estilos = estilosPorTema((COLOR) => ({
   brillo: { position: 'absolute', left: 0, top: 0 },
   isotipo: { width: 26, height: 26, marginRight: 6 },
   textoMarca: { fontSize: 20, fontWeight: '800', color: COLOR.texto, letterSpacing: 1 },
+  // El número sin leer: un dato con el color del acento, sin animación (UC-P30: no es una alerta clínica).
+  cuenta: { position: 'absolute', top: 6, right: 4, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.fondo, borderWidth: 1, borderColor: COLOR.acento },
+  textoCuenta: { fontSize: 11, fontWeight: '700', color: COLOR.acento },
   ambiente: { fontSize: 12, lineHeight: 15, color: COLOR.tenue, textAlign: 'center', paddingHorizontal: 16, paddingBottom: 6 },
 }));

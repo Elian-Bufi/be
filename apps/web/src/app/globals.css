@@ -11296,3 +11296,112 @@ details[open] > summary:not([class])::before {
   gap: 0 0.5rem;
   min-width: 0;
 }
+
+/* ─── WP-NOVEDADES-Y-AVISOS (DL-133): la campana del encabezado y el centro de novedades (RF-061) ───────────────────── */
+
+/* La campana va en la esquina, antes del menú de la cuenta: ella toma el margen que empuja a los dos a la derecha. */
+.encabezado .campana-de-novedades {
+  margin-left: auto;
+}
+
+.encabezado .campana-de-novedades + .menu-de-cuenta {
+  margin-left: 0;
+}
+
+.campana-de-novedades {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--encabezado-tenue);
+  border-radius: 999px;
+  color: var(--encabezado-texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.campana-de-novedades:hover,
+.campana-de-novedades[aria-current='page'] {
+  background: var(--encabezado-fondo-2);
+}
+
+/* El número sin leer: un dato, con el color del texto del encabezado y sin animación. */
+.campana-de-novedades__cuenta {
+  min-width: 1.4rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--encabezado-texto);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  line-height: 1.3rem;
+  text-align: center;
+}
+
+/* En un teléfono chico la palabra cede su lugar: queda la campana con su número y su nombre accesible. */
+@media (max-width: 520px) {
+  .campana-de-novedades__palabra {
+    display: none;
+  }
+}
+
+.novedades__lista {
+  list-style: none;
+  margin: 0.75rem 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  max-width: 52rem;
+}
+
+.novedad {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.4rem 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.novedad--sin-leer {
+  border-color: var(--azul);
+  background: var(--fondo-suave);
+}
+
+.novedad__icono {
+  display: inline-flex;
+  margin-top: 0.15rem;
+  color: var(--tenue);
+}
+
+.novedad__texto p {
+  margin: 0 0 0.2rem;
+}
+
+.novedad__titulo {
+  font-weight: 700;
+}
+
+/* «Sin leer» con palabras: el estado no depende solo del color (B10-10 §43). */
+.novedad__marca {
+  margin-left: 0.5rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--azul);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+@media (max-width: 520px) {
+  .novedad {
+    grid-template-columns: auto 1fr;
+  }
+
+  .novedad__abrir {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
