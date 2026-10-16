@@ -232,3 +232,68 @@ export function etiquetaDeConsentimiento(estado: 'REQUIRED' | 'ACTIVE' | 'REVOKE
   if (estado === 'ACTIVE') return accessMode === 'CONTEXTUAL' ? COPY_VINCULO.estadoDeConsentimiento.ACTIVE : COPY_VINCULO.estadoDeConsentimiento.NO_EFECTIVO;
   return COPY_VINCULO.estadoDeConsentimiento[estado];
 }
+
+/**
+ * WP-INVITACION (DEUDA_LEGAJO DL-136): la invitación del profesional por enlace, QR o código, decidida por Dirección el
+ * 2026-10-16. Acorta el camino hasta la pregunta del 10-B04, no la reemplaza: la persona igual ve `confirmarAceptacion`
+ * y decide, y el acceso a sus datos sigue siendo el consentimiento aparte.
+ */
+export const COPY_INVITACION = {
+  // ─── El profesional, en el website ─────────────────────────────────────────────────────────
+  invitar: 'Invitar a una persona',
+  ayuda: 'Creá una invitación y mandásela por WhatsApp, mostrale el QR o pasale el código. Es para una sola persona y vence a los 7 días.',
+  area: 'Área',
+  elegirArea: 'Elegí un área',
+  crear: 'Crear invitación',
+  creando: 'Creando la invitación…',
+  lista: 'La invitación está lista',
+  soloAhora: 'El enlace y el código se muestran solo ahora. Si los perdés, creá otra invitación y anulá esta.',
+  enlace: 'Enlace',
+  copiarEnlace: 'Copiar enlace',
+  copiarMensaje: 'Copiar mensaje',
+  copiado: 'Copiado',
+  compartirPorWhatsApp: 'Compartir por WhatsApp',
+  compartir: 'Compartir…',
+  qr: 'Código QR',
+  qrAyuda: 'Que lo escanee con la cámara del teléfono.',
+  codigo: 'Código',
+  codigoAyuda: 'Si el enlace no abre la app: en BE, Cuenta → «Tengo un código».',
+  vence: (fecha: string) => `Vence el ${fecha}.`,
+  mensaje: (area: string, enlace: string, codigo: string, vence: string) =>
+    `Hola. Te invito a hacer tu seguimiento de ${area} en BE. Abrí este enlace desde tu teléfono: ${enlace}\nSi la app te pide un código, es ${codigo}. La invitación vence el ${vence}.`,
+  otraInvitacion: 'Crear otra',
+  tusInvitaciones: 'Tus invitaciones',
+  sinInvitaciones: 'Todavía no creaste invitaciones.',
+  estado: { PENDING: 'Pendiente', USED: 'Usada', EXPIRED: 'Vencida', REVOKED: 'Anulada' },
+  anular: 'Anular',
+  anulada: 'La invitación quedó anulada: el enlace y el código ya no sirven.',
+  conElIdentificador: '¿Ya tenés su identificador BE? Solicitá el vínculo directo.',
+
+  // ─── La persona que recibe el enlace, en el website (/invitacion) ──────────────────────────
+  paginaTitulo: 'Te invitaron a BE',
+  paginaTexto: 'Un profesional te invitó a hacer tu seguimiento en BE. Para ver quién es y responder, abrí la invitación en la app.',
+  abrirEnLaApp: 'Abrir en la app BE',
+  descargar: 'Descargar BE para Android',
+  despuesDeInstalar: 'Después de instalarla, volvé a tocar el enlace de la invitación.',
+  desdeLaComputadora: 'Si estás en una computadora, abrí este enlace desde el teléfono donde tenés BE, o escaneá este código con su cámara.',
+  sinInvitacion: 'Este enlace no trae una invitación. Pedile al profesional que te la mande de nuevo, o escribí el código en la app: Cuenta → «Tengo un código».',
+
+  // ─── La persona, en la APK ─────────────────────────────────────────────────────────────────
+  tengoUnCodigo: 'Tengo un código',
+  escribirCodigo: 'Código de la invitación',
+  codigoEjemplo: 'Por ejemplo, ABCD-2345.',
+  verInvitacion: 'Ver invitación',
+  buscando: 'Buscando la invitación…',
+  teInvita: (profesional: string, area: string) => `${profesional} te invita a acompañarte en ${area}.`,
+  queSigue: 'Si aceptás, empieza el vínculo. Después vas a ver qué información necesita y vas a decidir si autorizás el acceso.',
+  aceptar: 'Aceptar invitación',
+  ahoraNo: 'Ahora no',
+  noEncontrada: 'No encontramos esa invitación. Revisá el código o pedile al profesional que te mande otra.',
+  vencida: 'Esta invitación venció. Pedile al profesional que te mande otra.',
+  usada: 'Esta invitación ya se usó. Pedile al profesional que te mande otra.',
+  anuladaParaLaPersona: 'El profesional anuló esta invitación.',
+  propia: 'Esta invitación es tuya: mandásela a la persona que querés acompañar.',
+  yaVinculados: 'Ya tenés un vínculo vigente con este profesional para esa área.',
+  muchosIntentos: 'Hiciste muchos intentos seguidos. Esperá unos minutos y probá de nuevo.',
+  despuesDeEntrar: 'Iniciá sesión o creá tu cuenta para ver la invitación.',
+} as const;

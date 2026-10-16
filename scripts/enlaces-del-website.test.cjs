@@ -28,8 +28,11 @@ function archivos(dir) {
   });
 }
 
-/** Destinos que no recargan la aplicación: dentro de la página, a otro sitio, un correo o un teléfono. */
-const NO_RECARGA = /^(#|https?:\/\/|mailto:|tel:)/;
+/**
+ * Destinos que no recargan la aplicación: dentro de la página, a otro sitio, un correo, un teléfono o una app de Android
+ * (`intent:`, el enlace de /invitacion que abre la APK; WP-INVITACION).
+ */
+const NO_RECARGA = /^(#|https?:\/\/|mailto:|tel:|intent:)/;
 
 /** El comienzo fijo de un texto escrito en el código: una cadena o el arranque de una plantilla. Si no, `null`. */
 function comienzoDe(e) {
@@ -102,6 +105,7 @@ test('la prueba distingue un ancla que recarga de las que no', () => {
   assert.equal(caso('<a href={`#${campo}`}>El campo</a>'), 0);
   assert.equal(caso('<a href="https://ejemplo.invalid">Otro sitio</a>'), 0);
   assert.equal(caso('<a href="mailto:alguien@ejemplo.invalid">Escribir</a>'), 0);
+  assert.equal(caso('<a href={`intent://invitacion?t=${t}#Intent;scheme=be;end`}>Abrir en la app</a>'), 0);
   assert.equal(caso('<a href={archivo} download="datos.csv">Descargar</a>'), 0);
   // Y un `Link` no es un ancla.
   assert.equal(caso('<Link href="/pro">Volver</Link>'), 0);
