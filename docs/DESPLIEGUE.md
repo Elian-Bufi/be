@@ -106,6 +106,14 @@ Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa pa
 
 **Comprobar el cron sin esperar a las 15:00:** Render → be-recordatorios → «Trigger Run». Fuera de las franjas (de 14 a 18 y de 21 a 23), la API responde 409 y el log lo dice: no crea nada.
 
+### Entrar con Google (DL-138, WP-ACCESO-GOOGLE)
+
+La API verifica el ID token de Google con las claves públicas de Google: no hay secreto que guardar. **Sin `GOOGLE_CLIENT_IDS`, «Continuar con Google» responde que Google no está disponible y el correo y la contraseña siguen igual.** Para activarlo, una sola vez, en <https://console.cloud.google.com> con la cuenta de Dirección:
+1. Un proyecto `BE` y su **pantalla de consentimiento de OAuth** (externa; nombre BE, correo de soporte y el dominio del website), en modo de prueba con los usuarios de prueba.
+2. Credenciales → «Crear ID de cliente de OAuth» → **Aplicación web**, con el origen autorizado del website de test. Lo usan el website y la APK.
+3. Otro → **Android**, con el paquete `com.elianbufi.be` y la huella SHA-1 del certificado que firma la APK (`keytool -list -v` sobre el keystore, o la página de firma de la app en Play).
+4. En be-api, la variable `GOOGLE_CLIENT_IDS` con los dos IDs separados por coma, cargada a mano (no es un secreto; un valor con otra forma no deja arrancar la API).
+
 ### APK
 
 `apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:
