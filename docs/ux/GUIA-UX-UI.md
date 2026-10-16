@@ -363,13 +363,17 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   una toma»), en el marco («Solicitar contexto») y en la pregunta de información. Llevan a la pestaña del área con
   `volver`.
 - **Ver no es revisar.** Abrir o salir de una pantalla nunca crea una revisión ni una nota. «Preparar la revisión»
-  abre el formulario con el período desde la última revisión, marcado «Preparado por BE» (`AvisoDePreparacion`); la
-  evidencia, la interpretación y el resultado los elige el profesional, y nada se registra hasta «Registrar revisión».
-  Registrar, aplicar y activar son actos distintos y nunca se juntan.
-- **La evidencia de una revisión** (`SeleccionDeEvidencia`) se marca agrupada: la planificación y el objetivo aparte, y
-  los registros por día, con una casilla explícita por día y otra por el período. Nada viene marcado; el resumen dice
-  lo marcado («Marcaste 12 de 73: 10 comidas de 3 días…»), cada día se abre para cambiar sus registros uno por uno y
-  «Lo que marcaste» los lista con «Quitar». Marcar no es haber examinado: la casilla es la declaración del profesional,
+  abre la revisión nueva con el período desde la última revisión, y la frase junto al período dice de dónde salió
+  («Preparado por BE: desde tu última revisión, del 27 sept, hasta hoy.»; si el profesional elige otro, «Lo elegiste
+  vos»). La evidencia, la interpretación y el resultado los elige el profesional, y la barra de abajo lo dice todo el
+  tiempo: «Todavía no se registró nada. Registrar deja asentada la revisión; no cambia el plan.» Registrar, aplicar y
+  activar son actos distintos y nunca se juntan.
+- **La evidencia de una revisión** (`SeleccionDeEvidencia`) se marca agrupada: la planificación y el objetivo en una
+  fila, y los registros en una grilla de días, con una casilla explícita por día y otra por el período («Marcar las 44
+  comidas»). En Nutrición la grilla tiene todos los días del período: los que no tienen registros se ven, sin casilla.
+  Nada viene marcado; el resumen dice lo marcado («Marcaste 12 de 73: 10 comidas de 3 días…»), «Ver» abre el día a todo
+  el ancho para cambiar sus registros uno por uno y «Ver lo que marcaste» los lista con «Quitar». Al cambiar el
+  período se quita solo lo que quedó afuera, y se dice. Marcar no es haber examinado: la casilla es la declaración del profesional,
   el texto le pide dejar marcado solo lo que miró y ningún rótulo dice «examinado». Viajan las referencias individuales
   de siempre.
 - **Después de una acción:** el aviso de éxito ofrece volver a la ficha, y la ficha vuelve a leer lo afectado. Una
@@ -652,7 +656,9 @@ crear otro, se usa uno de estos.
 | `ListaDePreguntas` · `ElegirParametros` · `PreguntaActiva` | Entrar por preguntas, pedir lo que falta y decir la pregunta en curso | «¿Cómo viene progresando este ejercicio?» |
 | `ComparacionDeEtapas` · `EtapasDelPeriodo` | Comparar dos etapas del plan y ofrecerlas desde el gráfico | «v2 y v3» con su tabla |
 | `partesDeLaCobertura` (dominio) | La cobertura de un valor resumido, la misma en todas las tablas: días por categoría en nutrición; sesiones o tomas en lo demás | «48 días: 44 con valor · de ellos, 7 son subtotales (falta algún dato) · 4 sin registros» |
-| `SeleccionDeEvidencia` | La evidencia de una revisión: por día y por tipo, con casillas de grupo, lo marcado a la vista y nada marcado al abrir | «Registrar revisión» de Nutrición y de Entrenamiento |
+| `SeleccionDeEvidencia` | La evidencia de una revisión: la planificación y el objetivo en una fila, los días en una grilla con casillas de grupo, lo marcado al pie y nada marcado al abrir | El paso 1 de una revisión nueva, en Nutrición y en Entrenamiento |
+| `useContextoDeLaRevision` · `CabeceraDeLaRevision` · `PasoDeLaRevision` · `ResultadoDeLaRevision` · `BarraDeLaRevision` (`revision-en-preparacion.tsx`) | Una revisión nueva: el contexto del período de la dirección (sin desmontar el formulario al cambiarlo), la cabecera con el período y de dónde salió, los pasos numerados, el resultado con el efecto del elegido y la barra pegada abajo con lo que pasa al registrar | «Nueva revisión de Nutrición · En preparación · sin registrar» |
+| `AyudaDeRevisiones` | «Cómo se leen las Revisiones», una para las dos áreas: cambian los registros y las frases de cada una | El botón «Cómo se lee esta vista» de Revisiones |
 | `.capas--en-columna` | Opciones con una explicación cada una, una por renglón | «Qué comidas ver» en el contraste de Nutrición |
 | `.observacion` | Un hecho de la síntesis, en la tarjeta de su área: un renglón entero que abre su evidencia; si es una cuenta, con la cifra adelante | «67 comidas registradas» |
 | `.area` | La tarjeta de un área del Resumen: contexto, pendientes, lo nuevo desde su revisión y la acción | «Nutrición» |
@@ -764,6 +770,19 @@ crear otro, se usa uno de estos.
   general: con eso, una vista previa aparte sobra.
 - **Al cerrar un campo con el teclado, el foco va a lo que lo muestra.** Un nombre confirmado con Enter deja el foco en
   el control que ahora dice ese nombre, o en el botón que lo abrió: nunca al principio de la página.
+- **Un acto que se registra se prepara en su propia pantalla,** dentro de la misma sección y con su dirección. La lista
+  queda como estaba; al registrar o al cancelar se vuelve a ella.
+- **Lo que BE propone se dice como propuesto, y solo mientras lo sea.** «Preparado por BE» va junto al período que BE
+  preparó; si la persona elige otro, deja de decirse.
+- **Cambiar el alcance no borra lo escrito.** Con otro período, el texto y lo elegido siguen; de lo marcado se quita
+  solo lo que quedó afuera, y se dice cuánto. Mientras se lee el período nuevo, registrar queda apagado, con su motivo:
+  lo que se ve todavía es del anterior.
+- **Lo que no tiene dato se ve, sin control.** Un día sin registros está en la grilla, apagado y sin casilla: no hay
+  nada que marcar, y no es un cero.
+- **El nombre de un control empieza por lo que se ve** (WCAG 2.5.3): «11 sept 3 comidas, sin marcar», no «marcar las 3
+  comidas». El verbo va donde se lee («Marcar las 44 comidas»).
+- **Un control de período que tiene campos va fuera del formulario que lo usa:** Enter en una fecha no tiene que enviar
+  otra cosa.
 
 ### II.9 Pestaña Antropometría (no se extiende al resto del website)
 
@@ -1372,6 +1391,11 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | El buscador de ejercicios | Un recuadro dentro de la sesión, que empujaba lo demás. | Un cajón al costado, como «Agregar ítem» (II.8). | Sustituida | Áreas, 8 |
 | El foco al confirmar un nombre con Enter, en los dos editores | Volvía al principio de la página. | Va a lo que muestra ese nombre. | Corregida | Áreas, 8 |
 | «Validar plan», en Entrenamiento | «Validar revisa la forma…», una nota fija al pie. | Junto al resultado, también cuando no hay problemas. | Sustituida | Áreas, 8 |
+| La pestaña Revisiones | El formulario se abría en el lugar, arriba de la lista: con «Preparar la revisión», 3.856 px antes de la lista. | La lista, con «Nueva revisión»; la revisión nueva es otra pantalla de la sección (`preparar=1`), en tres pasos y dos columnas, con la barra de «Registrar revisión» pegada abajo: 1.175 px. | Sustituida | Áreas, 10 |
+| El período de una revisión | «Desde», «Hasta» y «Ver período» arriba de todo, en la memoria de la sección; un aviso de tres oraciones decía que lo había preparado BE. | El control de la ficha, en la cabecera, con una frase que dice de dónde salió; en la dirección. Cambiarlo no borra lo escrito: quita solo lo marcado que quedó afuera, y lo dice. | Sustituida | Áreas, 10 |
+| Los días de la evidencia | Una fila por día con registros: «11 sept · marcar las 3 comidas · sin marcar» y «Ver las 3». | Una grilla; en Nutrición, con los días sin registros a la vista y sin casilla. El nombre de cada casilla empieza por lo que se ve. | Ampliada | Áreas, 10 |
+| Los efectos de los resultados | Los seis a la vista, cada uno debajo de su resultado. | El del elegido, en un recuadro; los seis, a un clic, en «Qué hace cada resultado». | Sustituida | Áreas, 10 |
+| Los errores de la revisión de Entrenamiento | Solo en el resumen. | En el resumen y en cada campo, como en Nutrición. | Corregida | Áreas, 10 |
 
 ---
 

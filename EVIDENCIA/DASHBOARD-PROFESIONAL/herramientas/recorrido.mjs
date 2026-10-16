@@ -13110,6 +13110,366 @@ async function solicitarDesdeElEspacio(pro, d) {
   return { pantalla, parcialDeLaApi };
 }
 
+/**
+ * WP-ESCRITORIO-AREAS, parte 10 (maqueta 06; DEC-17 a DEC-20): las Revisiones de Nutrición y de Entrenamiento. Sobre el
+ * asesorado A no se escribe nada (cada revisión nueva se cancela); el registro se prueba en la cuenta descartable, que
+ * tiene su plan de Nutrición activado (`descartable-plan`). Lo esperado sale de la API, leída como la página.
+ */
+async function revisionesEnPreparacion() {
+  const A = estado.aseId;
+  const ZONA_AR = 'America/Argentina/Buenos_Aires';
+  const civil = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_AR }).format(new Date(iso));
+  /** Una fecha civil como la dice la página: sin el año, si es del año en curso. */
+  const comoLaPagina = (f) => (f.slice(0, 4) === hoy.slice(0, 4) ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${f}T12:00:00Z`)) : diaCivil(f));
+  const diasEntre = (desde, hasta) => {
+    const dias = [];
+    for (let f = desde; f <= hasta; f = new Date(Date.parse(`${f}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10)) dias.push(f);
+    return dias;
+  };
+  const escriturasDesde = (v, desde) => v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u));
+  const LISTA = '.revisiones, .seccion-del-area .estado-de-grafico--error, .seccion-del-area > .aviso';
+  const FORMULARIO = 'form.revision-nueva__formulario, .seccion-del-area .estado-de-grafico--error';
+  const entrar = async (page, v, ruta, listo) => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector(listo, { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  /** La revisión nueva, ya con el período leído: la procedencia dicha y ninguna lectura en curso. */
+  const revisionLista = async (page, v) => {
+    await page.waitForFunction(() => !!document.querySelector('form.revision-nueva__formulario') && !!document.querySelector('.revision-nueva__procedencia') && !document.querySelector('.revision-nueva__lectura'), { timeout: 40_000 });
+    await quieto(page, v);
+  };
+  const enPantalla = (page, id) =>
+    page.evaluate((id) => {
+      const f = document.getElementById(id);
+      const caja = (e) => (e ? e.getBoundingClientRect() : null);
+      return {
+        procedencia: document.querySelector('.revision-nueva__procedencia')?.textContent.trim() ?? '',
+        periodo: document.querySelector('.revision-nueva__periodo .periodo-del-seguimiento__boton')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        estado: document.querySelector('.revision-nueva__estado')?.textContent.trim() ?? '',
+        titulo: document.querySelector('.revision-nueva__titulo h2')?.textContent.trim() ?? '',
+        resumen: f?.querySelector('.evidencia__resumen')?.textContent.trim() ?? '',
+        marcadas: f ? [...f.querySelectorAll('input[type="checkbox"]')].filter((c) => c.checked || c.indeterminate).length : -1,
+        casillas: f ? f.querySelectorAll('input[type="checkbox"]').length : -1,
+        elegidos: [...document.querySelectorAll('.resultado-de-revision input[type="radio"]')].filter((r) => r.checked).length,
+        dias: f ? [...f.querySelectorAll('.evidencia__dias > li')].map((li) => ({ dia: li.dataset.dia, texto: `${li.querySelector('.evidencia__fecha')?.textContent.trim() ?? ''} ${li.querySelector('.evidencia__cuenta')?.textContent.trim() ?? ''}`, casilla: !!li.querySelector('input'), x: Math.round(caja(li).left) })) : [],
+        nota: f?.querySelector('.evidencia__nota')?.textContent.trim() ?? '',
+        aviso: f?.querySelector('.evidencia__aviso')?.textContent.trim() ?? '',
+        barra: document.querySelector('form.revision-nueva__formulario .barra-de-revision__texto')?.textContent.replace(/\s+/g, ' ').trim() ?? '',
+        botonDentro: !!document.querySelector('form.revision-nueva__formulario .barra-de-revision button[type="submit"]'),
+      };
+    }, id);
+
+  const { navegador, page, v } = await abrir();
+  try {
+    await iniciarSesion(page, v, estado.proCorreo, FICHA_A);
+    await quieto(page, v);
+    const contextoDe = async (area, desde, hasta) => (await leerApi(v, `/advisees/${A}/${area}/review-context${desde ? `?periodStart=${desde}&periodEnd=${hasta}` : ''}`)).data;
+
+    // F-114 · Revisiones abre en la lista, con «Nueva revisión»; la revisión nueva es otra pantalla, con `preparar=1` ─
+    const alEntrar = await entrar(page, v, `/pro/advisees/nutrition?id=${A}&vista=revisiones`, LISTA);
+    const deLaApi = await contextoDe('nutrition');
+    const lista = await page.evaluate(() => ({
+      titulo: document.querySelector('.revisiones h2')?.textContent.trim() ?? '',
+      boton: [...document.querySelectorAll('.revisiones__encabezado button')].map((b) => b.textContent.trim()),
+      items: document.querySelectorAll('.revisiones .lista__item').length,
+      formulario: !!document.querySelector('form.revision-nueva__formulario'),
+    }));
+    comprobar(
+      'F-114',
+      'Revisiones de Nutrición abre en la lista de revisiones registradas, con «Nueva revisión» y sin formulario: una por revisión de la API',
+      lista.titulo === 'Revisiones registradas' && lista.boton.join() === 'Nueva revisión' && !lista.formulario && lista.items === deLaApi.previousReviews.length && deLaApi.previousReviews.length > 0,
+      `${lista.titulo} · ${lista.boton.join(', ')} · ${lista.items} de ${deLaApi.previousReviews.length} · formulario: ${lista.formulario}`,
+    );
+    const alAbrir = v.urls.length;
+    await clic(page, '.revisiones__encabezado button', 'Nueva revisión');
+    await revisionLista(page, v);
+    const abierta = Object.fromEntries(parametros(page));
+    const ultima = [...deLaApi.previousReviews].sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))[0];
+    // Una revisión de hace más de 92 días deja el período en los últimos 92 (lo más largo que abarca una revisión).
+    const diaDeLaUltima = civil(ultima.recordedAt);
+    const desde = diaDeLaUltima < diaMenos(hoy, 91) ? diaMenos(hoy, 91) : diaDeLaUltima;
+    const preparadoPorBE = desde === diaDeLaUltima ? `Preparado por BE: desde tu última revisión, del ${comoLaPagina(desde)}, hasta hoy.` : `Preparado por BE: los últimos 92 días, lo más largo que abarca una revisión. Tu última revisión fue el ${comoLaPagina(diaDeLaUltima)}.`;
+    comprobar(
+      'F-114',
+      '«Nueva revisión» abre la revisión nueva en la misma sección: `preparar=1` en la dirección y el período que preparó BE (desde la última revisión hasta hoy), sin escribir nada',
+      abierta.vista === 'revisiones' && abierta.preparar === '1' && abierta.desde === desde && abierta.hasta === hoy && escriturasDesde(v, alAbrir).length === 0,
+      `${JSON.stringify(abierta)} · última revisión: ${desde} · ${escriturasDesde(v, alAbrir).join(' · ') || 'sin escrituras'}`,
+    );
+
+    // F-115 · Al abrir, nada viene marcado ni elegido; el período se dice como preparado por BE ────────────────────
+    const nueva = await enPantalla(page, 'revision-evidencia');
+    comprobar(
+      'F-115',
+      'La revisión nueva dice qué es («Nueva revisión de Nutrición · En preparación · sin registrar») y de dónde salió el período: «Preparado por BE: desde tu última revisión, del …, hasta hoy.»',
+      nueva.titulo === 'Nueva revisión de Nutrición' && nueva.estado === 'En preparación · sin registrar' && nueva.procedencia === preparadoPorBE && nueva.periodo.includes('incluye hoy'),
+      `${nueva.titulo} · ${nueva.estado} · ${nueva.procedencia} · ${nueva.periodo}`,
+    );
+    comprobar(
+      'F-115',
+      'Al abrir no hay nada marcado ni ningún resultado elegido, y la barra dice que todavía no se registró nada; «Registrar revisión» está dentro del formulario',
+      nueva.marcadas === 0 && nueva.casillas > 0 && nueva.elegidos === 0 && nueva.resumen === 'Todavía no marcaste nada.' && nueva.barra.startsWith('Todavía no se registró nada. Registrar deja asentada la revisión; no cambia el plan.') && nueva.botonDentro,
+      `${nueva.marcadas} de ${nueva.casillas} casillas · ${nueva.elegidos} resultados · ${nueva.resumen} · ${nueva.barra}`,
+    );
+
+    // F-116 · La grilla: todos los días del período; los que no tienen registros, sin casilla ─────────────────────────
+    const delPeriodo = await contextoDe('nutrition', desde, hoy);
+    const porDia = new Map();
+    for (const i of delPeriodo.registeredIntakes) porDia.set(i.localDate, (porDia.get(i.localDate) ?? 0) + 1);
+    const todos = diasEntre(desde, hoy);
+    const esperados = todos.map((f) => (porDia.has(f) ? `${comoLaPagina(f)} ${porDia.get(f)} ${porDia.get(f) === 1 ? 'comida' : 'comidas'}` : `${comoLaPagina(f)} sin registros`));
+    const vistos = nueva.dias.map((d) => d.texto);
+    comprobar(
+      'F-116',
+      'En Nutrición la grilla tiene todos los días del período, en orden, cada uno con su cuenta de comidas; un día sin registros va sin casilla',
+      vistos.length === todos.length && vistos.every((t, i) => t === esperados[i]) && nueva.dias.every((d, i) => d.dia === todos[i] && d.casilla === porDia.has(todos[i])),
+      vistos.map((t, i) => (t === esperados[i] ? null : `«${t}» ≠ «${esperados[i]}»`)).filter(Boolean).slice(0, 3).join(' · ') || `${todos.length} días, ${todos.length - porDia.size} sin registros`,
+    );
+    const columnas = new Set(nueva.dias.slice(0, 6).map((d) => d.x)).size;
+    informar('F-116', 'Columnas de la grilla a 1440', columnas);
+    // «Ver» abre el día a todo el ancho de la grilla, con sus comidas dentro del mismo día.
+    await page.evaluate(() => document.querySelector('#revision-evidencia .evidencia__dia .evidencia__ver')?.click());
+    await pausa(200);
+    const abiertoElDia = await page.evaluate(() => {
+      const li = document.querySelector('#revision-evidencia .evidencia__dia[data-abierto]');
+      const grilla = document.querySelector('#revision-evidencia .evidencia__dias');
+      return li ? { ancho: Math.round(li.getBoundingClientRect().width), grilla: Math.round(grilla.getBoundingClientRect().width), registros: li.querySelectorAll('.evidencia__registros input').length, cuenta: li.querySelector('.evidencia__cuenta')?.textContent ?? '' } : null;
+    });
+    comprobar(
+      'F-116',
+      '«Ver» abre el día a todo el ancho de la grilla, con sus comidas dentro del día, una casilla por comida',
+      abiertoElDia && Math.abs(abiertoElDia.ancho - abiertoElDia.grilla) <= 2 && abiertoElDia.registros === Number(/^(\d+)/.exec(abiertoElDia.cuenta)?.[1] ?? -1),
+      JSON.stringify(abiertoElDia),
+    );
+    await page.evaluate(() => document.querySelector('#revision-evidencia .evidencia__dia[data-abierto] .evidencia__ver')?.click());
+    await pausa(150);
+
+    // F-117 · El resultado: el efecto del elegido, dicho por el dominio; todos, a un clic ─────────────────────────────
+    await clic(page, '#revision-resultado label', 'Ajustar');
+    await pausa(150);
+    const efecto = await texto(page, '.resultado-de-revision__efecto');
+    await clic(page, '#revision-resultado .resultado-de-revision__todos', 'Qué hace cada resultado');
+    await pausa(150);
+    const todosLosEfectos = await page.evaluate(() => [...document.querySelectorAll('#revision-resultado .resultado-de-revision__lista div')].map((d) => [d.querySelector('dt')?.textContent ?? '', d.querySelector('dd')?.textContent ?? '']));
+    const opciones = await page.evaluate(() => [...document.querySelectorAll('#revision-resultado .resultado-de-revision__opcion')].map((l) => ({ texto: l.textContent.trim(), x: Math.round(l.getBoundingClientRect().left) })));
+    const E = dominio.EFECTO_VISIBLE_DE_RESULTADO;
+    const N = dominio.ETIQUETA_DE_RESULTADO;
+    comprobar(
+      'F-117',
+      'Elegido un resultado, su efecto se lee debajo con el texto del dominio; «Qué hace cada resultado» muestra los seis, en el orden y con los textos del dominio; las opciones van en dos columnas',
+      efecto === `${N.ADJUST}. ${E.ADJUST}` && todosLosEfectos.length === 6 && todosLosEfectos.every(([dt, dd], i) => dt === Object.values(N)[i] && dd === Object.values(E)[i]) && new Set(opciones.map((o) => o.x)).size === 2 && opciones.map((o) => o.texto).join() === Object.values(N).join(),
+      `${efecto} · ${todosLosEfectos.length} efectos · columnas: ${new Set(opciones.map((o) => o.x)).size}`,
+    );
+    await clic(page, '#revision-resultado .resultado-de-revision__todos', 'Qué hace cada resultado');
+
+    // F-118 · Cambiar el período conserva lo escrito y quita solo lo marcado que quedó afuera, y lo dice (DEC-20) ─────
+    const ESCRITO = 'Interpretación del recorrido de la parte 10.';
+    const FUNDADO = 'Fundamento del recorrido de la parte 10.';
+    await page.type('#revision-interpretacion', ESCRITO);
+    await page.type('#revision-fundamento', FUNDADO);
+    const conRegistros = todos.filter((f) => porDia.has(f));
+    const corte = diaMenos(hoy, 6);
+    const viejo = conRegistros.find((f) => f < corte);
+    const reciente = [...conRegistros].reverse().find((f) => f >= corte);
+    await page.evaluate(
+      (viejo, reciente) => {
+        const dias = [...document.querySelectorAll('#revision-evidencia .evidencia__dias > li')];
+        for (const f of [viejo, reciente]) dias.find((li) => li.dataset.dia === f)?.querySelector('.evidencia__grupo-casilla input')?.click();
+        document.querySelector('#revision-evidencia .evidencia__otras .acto input')?.click();
+      },
+      viejo,
+      reciente,
+    );
+    await pausa(200);
+    const antesDelCambio = await enPantalla(page, 'revision-evidencia');
+    const alCambiar = v.urls.length;
+    await clic(page, '.revision-nueva__periodo .periodo-del-seguimiento__boton', 'Período');
+    await clic(page, '.revision-nueva__periodo .periodo-del-seguimiento__opciones .chip', '7 días');
+    await revisionLista(page, v);
+    const trasElCambio = await enPantalla(page, 'revision-evidencia');
+    const escritos = await page.evaluate(() => [document.getElementById('revision-interpretacion')?.value, document.getElementById('revision-fundamento')?.value, document.querySelector('#revision-resultado input:checked')?.value ?? null]);
+    const nuevo = Object.fromEntries(parametros(page));
+    // Lo esperado, de la API: lo marcado (las comidas de los dos días y la primera versión del plan) contra el período nuevo.
+    const enElNuevo = await contextoDe('nutrition', corte, hoy);
+    const idsNuevos = new Set([...enElNuevo.registeredIntakes.map((i) => i.executionId), ...enElNuevo.activePlanVersions.map((x) => x.planId), ...(enElNuevo.objective ? [enElNuevo.objective.versionId] : [])]);
+    const marcadosAntes = [...delPeriodo.registeredIntakes.filter((i) => i.localDate === viejo || i.localDate === reciente).map((i) => i.executionId), delPeriodo.activePlanVersions[0]?.planId].filter(Boolean);
+    const quitadas = marcadosAntes.filter((x) => !idsNuevos.has(x)).length;
+    const quedan = marcadosAntes.length - quitadas;
+    comprobar(
+      'F-118',
+      'Con otro período, lo escrito y el resultado elegido siguen; se quitan solo las marcas del día que quedó afuera, y se dice cuántas',
+      viejo && reciente && escritos[0] === ESCRITO && escritos[1] === FUNDADO && escritos[2] === 'ADJUST' && nuevo.p === '7' && !nuevo.desde && trasElCambio.aviso === `Con el período nuevo ${quitadas === 1 ? 'se quitó 1 marca' : `se quitaron ${quitadas} marcas`} de lo que quedó afuera. Lo demás sigue marcado y lo que escribiste no cambió.` && new RegExp(`^Marcaste ${quedan} de `).test(trasElCambio.resumen),
+      `antes: ${antesDelCambio.resumen} · después: ${trasElCambio.resumen} · ${trasElCambio.aviso} · ${JSON.stringify(escritos)} · ${viejo}/${reciente}`,
+    );
+    comprobar(
+      'F-118',
+      'Con un período elegido, ya no se dice «Preparado por BE»: se dice que lo elegiste vos, con la fecha de la última revisión; cambiar el período no escribe nada',
+      trasElCambio.procedencia === `Lo elegiste vos. Tu última revisión fue el ${comoLaPagina(diaDeLaUltima)}.` && escriturasDesde(v, alCambiar).length === 0,
+      `${trasElCambio.procedencia} · ${escriturasDesde(v, alCambiar).join(' · ') || 'sin escrituras'}`,
+    );
+    await captura(page, v, 'revision-nueva-con-otro-periodo-1440');
+
+    // F-120 · La barra queda abajo a la vista mientras se escribe; las dos tarjetas, lado a lado; sin doble desplazamiento ─
+    // La barra se pega abajo mientras el final del formulario está fuera de la ventana: se mide arriba de todo, con el
+    // final afuera (si el formulario entrara entero no habría nada que probar, y la comprobación falla diciéndolo). Y un
+    // campo que queda detrás de la barra sube por encima de ella al recibir el foco (el margen de `acciones--fijas`).
+    const disposicion = async () =>
+      page.evaluate(() => {
+        const [izq, der] = [...document.querySelectorAll('.revision-nueva__tarjeta')].map((t) => t.getBoundingClientRect());
+        const lado = izq && der ? Math.round(izq.right) <= Math.round(der.left) && Math.abs(izq.top - der.top) < 2 : false;
+        const debajo = izq && der ? Math.round(der.top) >= Math.round(izq.bottom) : false;
+        const barraDeLaRevision = () => document.querySelector('.barra-de-revision').getBoundingClientRect();
+        window.scrollTo(0, 0);
+        const finAfuera = document.querySelector('form.revision-nueva__formulario').getBoundingClientRect().bottom > innerHeight + 5;
+        const barraAbajo = finAfuera && Math.abs(barraDeLaRevision().bottom - innerHeight) <= 2;
+        // El campo, llevado detrás de la barra, y enfocado.
+        const campo = document.getElementById('revision-fundamento');
+        window.scrollBy(0, campo.getBoundingClientRect().top - (innerHeight - 30));
+        const detras = campo.getBoundingClientRect().top > barraDeLaRevision().top;
+        campo.focus();
+        const c = campo.getBoundingClientRect();
+        const arribaDeLaBarra = c.top >= 0 && c.bottom <= barraDeLaRevision().top + 1;
+        campo.blur();
+        const conDesplazamientoPropio = [...document.querySelectorAll('.revision-nueva *')].filter((e) => {
+          const s = getComputedStyle(e);
+          return /(auto|scroll)/.test(s.overflowY + s.overflowX) && (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1);
+        }).length;
+        return { lado, debajo, finAfuera, barraAbajo, campo: detras && arribaDeLaBarra, conDesplazamientoPropio, horizontal: document.documentElement.scrollWidth > innerWidth };
+      });
+    const a1440 = await disposicion();
+    await page.setViewport({ width: 768, height: 1024 });
+    await quieto(page, v, { silencio: 300 });
+    const a768 = await disposicion();
+    await page.setViewport({ width: 390, height: 844 });
+    await quieto(page, v, { silencio: 300 });
+    const a390 = await disposicion();
+    await page.setViewport({ width: 1440, height: 900 });
+    await quieto(page, v, { silencio: 300 });
+    comprobar(
+      'F-120',
+      'A 1440 los pasos van en dos tarjetas lado a lado; a 768, una debajo de la otra; a los tres anchos la barra queda pegada abajo mientras se escribe, un campo enfocado sube por encima de ella, nada tiene desplazamiento propio y la página no se corre de costado',
+      a1440.lado && a768.debajo && a390.debajo && [a1440, a768, a390].every((x) => x.barraAbajo && x.campo && x.conDesplazamientoPropio === 0 && !x.horizontal),
+      JSON.stringify({ a1440, a768, a390 }),
+    );
+
+    // F-119 · «Cancelar» vuelve a la lista: `preparar` y el período salen de la dirección, y nada se escribió ─────────
+    await clic(page, 'form.revision-nueva__formulario button', 'Cancelar');
+    await page.waitForSelector('.revisiones', { timeout: 30_000 });
+    await quieto(page, v);
+    const trasCancelar = Object.fromEntries(parametros(page));
+    comprobar(
+      'F-119',
+      '«Cancelar» vuelve a la lista: `preparar`, `p`, `desde` y `hasta` salen de la dirección (y `vista` queda), y abrir, marcar, cambiar el período y cancelar no escribió nada',
+      trasCancelar.vista === 'revisiones' && !('preparar' in trasCancelar) && !('p' in trasCancelar) && !('desde' in trasCancelar) && !('hasta' in trasCancelar) && escriturasDesde(v, alEntrar).length === 0,
+      `${JSON.stringify(trasCancelar)} · ${escriturasDesde(v, alEntrar).join(' · ') || 'sin escrituras'}`,
+    );
+    await captura(page, v, 'revisiones-lista-nutricion-1440');
+
+    // F-116 · Con días sin registros en el período (el hueco de cuatro días del escenario, de D-62 a D-59), esos días se
+    // ven en su lugar, apagados y sin casilla. El período va pedido en la dirección: también se comprueba que se respeta.
+    const desdeDelHueco = diaMenos(hoy, 65);
+    const hastaDelHueco = diaMenos(hoy, 56);
+    await entrar(page, v, `/pro/advisees/nutrition?id=${A}&vista=revisiones&preparar=1&desde=${desdeDelHueco}&hasta=${hastaDelHueco}`, FORMULARIO);
+    await revisionLista(page, v);
+    const conElHueco = await enPantalla(page, 'revision-evidencia');
+    const delHueco = await contextoDe('nutrition', desdeDelHueco, hastaDelHueco);
+    const porDiaDelHueco = new Map();
+    for (const i of delHueco.registeredIntakes) porDiaDelHueco.set(i.localDate, (porDiaDelHueco.get(i.localDate) ?? 0) + 1);
+    const diasDelHueco = diasEntre(desdeDelHueco, hastaDelHueco);
+    const sinRegistros = diasDelHueco.filter((f) => !porDiaDelHueco.has(f));
+    const esperadosDelHueco = diasDelHueco.map((f) => (porDiaDelHueco.has(f) ? `${comoLaPagina(f)} ${porDiaDelHueco.get(f)} ${porDiaDelHueco.get(f) === 1 ? 'comida' : 'comidas'}` : `${comoLaPagina(f)} sin registros`));
+    comprobar(
+      'F-116',
+      'Con días sin registros en el período (el hueco del escenario), esos días están en la grilla, en su lugar, apagados, sin casilla y diciendo «sin registros»; los demás, con su casilla y su cuenta. El período pedido en la dirección se respeta',
+      sinRegistros.length > 0 &&
+        conElHueco.dias.length === diasDelHueco.length &&
+        conElHueco.dias.every((d, i) => d.dia === diasDelHueco[i] && d.texto === esperadosDelHueco[i] && d.casilla === porDiaDelHueco.has(diasDelHueco[i])) &&
+        Object.fromEntries(parametros(page)).desde === desdeDelHueco,
+      `${sinRegistros.length} sin registros (${sinRegistros.join(', ')}; la API dice ${delHueco.missingData.join(', ') || 'ninguno'}) · ${conElHueco.dias.map((d, i) => (d.texto === esperadosDelHueco[i] ? null : `«${d.texto}» ≠ «${esperadosDelHueco[i]}»`)).filter(Boolean).slice(0, 3).join(' · ')}`,
+    );
+    await captura(page, v, 'revision-nueva-con-dias-sin-registros-1440');
+    await clic(page, 'form.revision-nueva__formulario button', 'Cancelar');
+    await page.waitForSelector('.revisiones', { timeout: 30_000 });
+    await quieto(page, v);
+
+    // F-121 · Entrenamiento: lo que falta se dice en el resumen y en cada campo, como en Nutrición ──────────────────────
+    const alEntrarAEntrenamiento = await entrar(page, v, `/pro/advisees/training?id=${A}&vista=revisiones&preparar=1`, FORMULARIO);
+    await revisionLista(page, v);
+    const deEntrenamiento = await enPantalla(page, 'trn-revision-evidencia');
+    const enEntrenamiento = Object.fromEntries(parametros(page));
+    const sesiones = await contextoDe('training', enEntrenamiento.desde, enEntrenamiento.hasta);
+    const conSesiones = new Set(sesiones.registeredExecutions.map((x) => x.date)).size;
+    comprobar(
+      'F-116',
+      'En Entrenamiento la grilla trae solo los días con sesiones, y debajo la cuenta de los días sin registro del período',
+      deEntrenamiento.titulo === 'Nueva revisión de Entrenamiento' && deEntrenamiento.dias.length === conSesiones && deEntrenamiento.dias.every((d) => d.casilla) && (sesiones.missingData.length === 0 || deEntrenamiento.nota === `Días sin registro en el período: ${sesiones.missingData.length}. No hay dato de esos días.`),
+      `${deEntrenamiento.dias.length} días de ${conSesiones} con sesiones · ${deEntrenamiento.nota}`,
+    );
+    await clic(page, 'form.revision-nueva__formulario button[type="submit"]', 'Registrar revisión');
+    await pausa(300);
+    const errores = await page.evaluate(() => {
+      const resumen = [...document.querySelectorAll('.aviso--error[role="alert"] li a')].map((a) => [a.getAttribute('href')?.slice(1), a.textContent.trim()]);
+      return resumen.map(([id, t]) => {
+        const campo = document.getElementById(id);
+        return { id, resumen: t, invalido: campo?.getAttribute('aria-invalid') === 'true', enElCampo: document.getElementById(`${id}-error`)?.textContent.replace(/^⚠\s*/, '').trim() ?? null, describe: (campo?.getAttribute('aria-describedby') ?? '').split(' ').includes(`${id}-error`) };
+      });
+    });
+    comprobar(
+      'F-121',
+      'En Entrenamiento, registrar sin nada dice lo que falta en el resumen y en cada campo (marcado como inválido y con el mismo texto), y no escribe',
+      errores.length === 5 && errores.every((e) => e.invalido && e.enElCampo === e.resumen && e.describe) && escriturasDesde(v, alEntrarAEntrenamiento).length === 0,
+      errores.map((e) => `${e.id}: ${e.invalido ? 'inválido' : 'válido'} · «${e.enElCampo}»`).join(' | '),
+    );
+    await clic(page, 'form.revision-nueva__formulario button', 'Cancelar');
+    await page.waitForSelector('.revisiones', { timeout: 30_000 });
+    await quieto(page, v);
+  } finally {
+    await navegador.close();
+  }
+
+  // F-122 · Registrar, en la cuenta descartable: una sola escritura, y de vuelta en la lista, con el aviso ────────────────
+  const d = estado.descartable;
+  if (!d?.planDeNutricion) {
+    informar('F-122', 'Registrar una revisión de Nutrición', 'sin la cuenta descartable con su plan (datos/generar.mjs descartable-plan): no se probó');
+    return;
+  }
+  const otra = await abrir();
+  try {
+    const { page: p2, v: v2 } = otra;
+    await iniciarSesion(p2, v2, d.proCorreo, `/pro/advisees?id=${d.aseId}`);
+    await quieto(p2, v2);
+    await entrar(p2, v2, `/pro/advisees/nutrition?id=${d.aseId}&vista=revisiones`, LISTA);
+    const antes = await p2.$$eval('.revisiones .lista__item', (l) => l.length);
+    await clic(p2, '.revisiones__encabezado button', 'Nueva revisión');
+    await revisionLista(p2, v2);
+    await p2.evaluate(() => document.querySelector('#revision-evidencia .evidencia__otras .acto input')?.click());
+    await p2.type('#revision-interpretacion', 'Interpretación sintética de la parte 10.');
+    await clic(p2, '#revision-resultado label', 'Mantener');
+    await p2.type('#revision-fundamento', 'Fundamento sintético.');
+    await p2.type('#revision-accion', 'Seguir con el plan vigente.');
+    const alRegistrar = v2.urls.length;
+    await clic(p2, 'form.revision-nueva__formulario button[type="submit"]', 'Registrar revisión');
+    await p2.waitForSelector('.revisiones', { timeout: 30_000 }).catch(() => {});
+    await quieto(p2, v2);
+    const posts = escriturasDesde(v2, alRegistrar);
+    const tras = Object.fromEntries(parametros(p2));
+    const aviso = await texto(p2, '.aviso-flotante');
+    const despues = await p2.$$eval('.revisiones .lista__item', (l) => l.length);
+    comprobar(
+      'F-122',
+      'Registrar hace una sola escritura (la revisión) y vuelve a la lista sin `preparar` ni el período, con el aviso de que todavía no se aplicó; la lista tiene una revisión más',
+      posts.length === 1 && /\/nutrition\/reviews$/.test(new URL(posts[0].split(' ')[1]).pathname) && !('preparar' in tras) && !('desde' in tras) && /Revisión registrada\. Todavía no se aplicó: aplicala desde la lista\./.test(aviso) && despues === antes + 1,
+      `${posts.join(' · ')} · ${JSON.stringify(tras)} · «${aviso.slice(0, 90)}» · ${antes} → ${despues}`,
+    );
+  } finally {
+    await otra.navegador.close();
+  }
+}
+
 async function descartable() {
   const d = estado.descartable;
   if (!d?.datos) throw new Error('falta el escenario descartable: datos/generar.mjs descartable-cuentas y descartable-datos');
@@ -13349,6 +13709,7 @@ try {
   if (modo === 'solicitudes') await solicitudesDeInformacion();
   if (modo === 'planes') await planesDeNutricion();
   if (modo === 'entrenamientos') await planesDeEntrenamiento();
+  if (modo === 'revisiones') await revisionesEnPreparacion();
   if (modo === 'estimacion') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));

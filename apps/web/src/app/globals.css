@@ -692,15 +692,55 @@ input[type='radio'] {
 }
 
 /* ─── La evidencia de una revisión: por tipo y por día, con lo marcado a la vista (pasada del 2026-10-09) ─── */
+/*
+ * WP-ESCRITORIO-AREAS, parte 10 (maqueta 06): la planificación y el objetivo, en una fila; los días, en una grilla de
+ * celdas; lo marcado, al pie. La grilla pone tantas columnas como entran (tres en la columna de una ventana de 1440; dos
+ * a 1280, 1024 y 768) y cada celda dice en una línea su día, su cuenta y «Ver»: el ancho mínimo es el de «28 sept 4
+ * comidas», así ninguna celda baja la cuenta mientras otras no. Un día abierto ocupa todo el ancho: sus registros quedan
+ * dentro del día.
+ */
+/* Dentro de su paso, la selección no es otra caja: el paso ya lo es. */
+.grupo.evidencia {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Las casillas de la evidencia van sueltas, sin la caja de un acto: la caja es la celda del día. */
+.grupo.evidencia .acto {
+  padding: 0.45rem 0;
+  border: 0;
+  background: transparent;
+}
+
 .evidencia__resumen {
-  margin: 0.5rem 0 0;
+  flex: 1 1 16rem;
+  margin: 0;
   font-weight: 650;
 }
 
 .evidencia__seccion {
   display: grid;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+/* La planificación y el objetivo: dos casillas en una fila, separadas de los días por una línea. */
+.evidencia__otras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.evidencia__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
 }
 
 .evidencia__titulo {
@@ -713,27 +753,73 @@ input[type='radio'] {
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   gap: 0.5rem;
+}
+
+/* Una celda: la casilla con el día y su cuenta, y «Ver» a la derecha. */
+.evidencia__dia,
+.evidencia__sin-registros {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--fondo-suave);
 }
 
 .evidencia__dia {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  padding: 0 0.6rem;
 }
 
-/* Un día en una fila: su casilla de grupo (con el estado en la misma línea) y «Ver las 4» al costado. */
+/* Marcada entera o en parte, la celda lleva el borde del color de la casilla: se ve qué días tienen algo marcado. */
+.evidencia__dia[data-marcado] {
+  border-color: var(--azul);
+}
+
+/* Abierta, la celda ocupa la fila entera y lista sus registros debajo, en columnas. */
+.evidencia__dia[data-abierto] {
+  grid-column: 1 / -1;
+  padding-bottom: 0.6rem;
+}
+
+/* Un día sin registros: a la vista, sin casilla y apagado. No es un cero: no hay nada que marcar. */
+.evidencia__sin-registros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px dashed var(--borde);
+  background: transparent;
+  color: var(--tenue);
+}
+
 .evidencia__fila {
   display: flex;
   align-items: center;
-  gap: 0.5rem 1rem;
+  gap: 0.25rem 0.75rem;
 }
 
 .evidencia__fila > .acto {
   flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
 }
 
-.evidencia__estado {
+.evidencia__fecha {
+  white-space: nowrap;
+}
+
+.evidencia__cuenta {
   color: var(--tenue);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.evidencia__sin-registros .evidencia__fecha {
+  font-weight: 650;
 }
 
 .evidencia__ver {
@@ -744,12 +830,39 @@ input[type='radio'] {
 
 .evidencia__registros {
   display: grid;
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.35rem 1.25rem;
   margin-left: 2.15rem;
 }
 
-.evidencia__marcadas {
+.evidencia__vacio,
+.evidencia__nota {
+  margin: 0;
+}
+
+/* Lo que pasó con lo marcado al cambiar el período (DEC-20). */
+.evidencia__aviso {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--azul);
+  border-radius: 0 8px 8px 0;
+  background: var(--fondo-suave);
+}
+
+/* Al pie: cuánto está marcado y, a la derecha, «Ver lo que marcaste». Abierto, lo marcado va a todo el ancho. */
+.evidencia__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
   margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.evidencia__marcadas[open] {
+  flex-basis: 100%;
 }
 
 .evidencia__lista {
@@ -10131,5 +10244,323 @@ button.comida-del-dia__fila > .icono:last-child {
   .nivel-del-plan__cuenta,
   .nivel-del-plan > .texto-a-pedido {
     margin-left: 0;
+  }
+}
+
+/* ═══ Revisiones · La lista y una revisión en preparación (WP-ESCRITORIO-AREAS, parte 10; maqueta 06) ═══════════════ */
+/* La lista: el título y «Nueva revisión» en una línea. */
+.revisiones__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.revisiones__encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+/*
+ * Una revisión nueva: la cabecera (el título, «En preparación · sin registrar» y, a la derecha, el período con su
+ * control y de dónde salió), las dos tarjetas de los pasos y la barra pegada abajo. Los anchos se deciden por el lugar
+ * que tiene la revisión, no por la ventana.
+ */
+.revision-nueva {
+  container: revision / inline-size;
+}
+
+.revision-nueva__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.revision-nueva__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.revision-nueva__titulo h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.revision-nueva__estado {
+  border-width: 1px;
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.revision-nueva__periodo {
+  display: grid;
+  justify-items: end;
+  gap: 0.2rem;
+}
+
+.revision-nueva__procedencia {
+  margin: 0;
+  text-align: right;
+}
+
+/* Los pasos: lo que miraste a la izquierda, más ancho; lo que observaste y lo que decidís, a la derecha. */
+.revision-nueva__columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 1.27fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.revision-nueva__tarjeta {
+  container: tarjeta-de-revision / inline-size;
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.revision-nueva__tarjeta > .paso-de-revision + .paso-de-revision {
+  padding-top: 1rem;
+  border-top: 1px solid var(--borde);
+}
+
+.revision-nueva__lectura {
+  margin: 0;
+}
+
+.paso-de-revision {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.paso-de-revision__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.paso-de-revision__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+/* El número del paso: un círculo del color del texto, con el número del color del fondo (se ve en los dos temas). */
+.paso-de-revision__numero {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--texto);
+  color: var(--superficie);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.paso-de-revision__ayuda {
+  margin: 0;
+}
+
+/* Un texto largo con el rótulo y su ayuda en la misma línea: «Interpretación · Describe lo observado…». */
+.campo__rotulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.6rem;
+}
+
+.campo__rotulo .campo__ayuda {
+  color: var(--tenue);
+}
+
+/* La próxima acción y la próxima revisión, una al lado de la otra; la fecha, con su ancho. */
+.revision-nueva__siguiente {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 13rem);
+  gap: 0 1rem;
+  align-items: start;
+}
+
+.revision-nueva__siguiente .campo {
+  margin: 0;
+}
+
+/* El resultado: «Qué hace cada resultado» a la derecha de su título, las seis opciones en dos columnas (bajan por
+ * columna, en el orden del dominio) y el efecto del elegido en un recuadro. */
+.resultado-de-revision {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* El título que se ve y «Qué hace cada resultado», en una fila (la leyenda, oculta, nombra al grupo). */
+.resultado-de-revision__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 1rem;
+}
+
+.resultado-de-revision__titulo {
+  font-weight: 700;
+}
+
+.resultado-de-revision__todos {
+  min-height: 2.75rem;
+}
+
+.resultado-de-revision__opciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  gap: 0.15rem 1rem;
+}
+
+.resultado-de-revision__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.resultado-de-revision__opcion input {
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+}
+
+.resultado-de-revision__opcion:has(input:checked) span {
+  font-weight: 700;
+}
+
+.resultado-de-revision__efecto {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--azul);
+  border-radius: 0 8px 8px 0;
+  background: var(--fondo-suave);
+}
+
+/* Los seis efectos, en dos columnas compartidas: el nombre de cada resultado y lo que hace, alineados entre sí (cada
+ * renglón `div` no arma su propia grilla: si no, el nombre más largo corría solo su renglón). */
+.resultado-de-revision__lista {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.resultado-de-revision__lista div {
+  display: contents;
+}
+
+.resultado-de-revision__lista dt {
+  font-weight: 700;
+}
+
+.resultado-de-revision__lista dd {
+  margin: 0;
+}
+
+/* La barra: la de los formularios largos (`acciones--fijas`), con lo que pasa al registrar a la izquierda. */
+.barra-de-revision {
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.barra-de-revision__texto {
+  flex: 1 1 24rem;
+  margin: 0;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  background: var(--fondo-suave);
+}
+
+.barra-de-revision__motivo {
+  color: var(--tenue);
+}
+
+.barra-de-revision__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Sin lugar para las dos tarjetas (una tableta, una ventana chica): los pasos van uno debajo del otro. */
+@container revision (max-width: 56rem) {
+  .revision-nueva__columnas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Angosto: el período va debajo del título, a la izquierda, y lo que pasa al registrar arriba de los botones. */
+@container revision (max-width: 40rem) {
+  .revision-nueva__periodo {
+    justify-items: start;
+  }
+
+  .revision-nueva__procedencia {
+    text-align: left;
+  }
+
+  .barra-de-revision__acciones {
+    width: 100%;
+  }
+
+  .barra-de-revision__acciones .boton {
+    flex: 1 1 8rem;
+  }
+}
+
+/* Una tarjeta angosta: el resultado, en una columna; la fecha, debajo. */
+@container tarjeta-de-revision (max-width: 26rem) {
+  .resultado-de-revision__opciones {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-flow: row;
+  }
+
+  .revision-nueva__siguiente {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .revision-nueva__siguiente .campo + .campo {
+    margin-top: 1rem;
+  }
+
+  .resultado-de-revision__lista {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.15rem;
+  }
+
+  .resultado-de-revision__lista dd {
+    margin-bottom: 0.4rem;
   }
 }

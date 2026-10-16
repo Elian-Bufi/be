@@ -8,152 +8,221 @@
  * - El contexto no muestra volumen, marcas, mapa ni puntaje: esas proyecciones no existen en P0 (09v10 §40).
  * - Aplicar es un paso aparte: la revisión queda registrada aunque todavía no se aplique (B10-06:1077-1093).
  * - El período se elige (B10-06:1027-1036): al cerrar un bloque de cuatro semanas, la evidencia es de cuatro semanas.
+ * WP-ESCRITORIO-AREAS, parte 10 (la maqueta 06, dibujada para Nutrición; DEC-17 a DEC-20): la misma pantalla que en
+ * Nutrición, con las piezas de `revision-en-preparacion.tsx`. Lo que difiere: la evidencia son sesiones, la grilla trae
+ * solo los días con sesiones y la cuenta de los demás (DEC-18), y el nuevo objetivo es un enunciado con su fundamento.
+ * Los errores ahora se dicen también en cada campo, como en Nutrición.
  */
 import {
   COPY_ENTRENAMIENTO,
   EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO,
   ETIQUETA_DE_RESULTADO,
   etiquetaDeCondicionRegistrada,
+  fechaCivil,
   registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EvaluacionDeEntrenamiento,
   type RevisionDeEntrenamiento,
 } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
-import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
+import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia, fecha } from '../../../../lib/formato';
+import { dia, diaDelAnioEnCurso, fecha, horaEnZona } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
-import { referenciasMarcadas } from '../evidencia';
+import { avisoDeMarcasQuitadas, marcasDelPeriodoNuevo, referenciasMarcadas, versionesDelPlan } from '../evidencia';
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
-import { FiltroDePeriodo, type Periodo } from '../periodo';
-import { AvisoDePreparacion, periodoPreparado, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
+import {
+  AreaDeTexto,
+  AYUDA_DE_LA_INTERPRETACION,
+  BarraDeLaRevision,
+  CabeceraDeLaRevision,
+  ErrorDelCampo,
+  LecturaDelPeriodo,
+  PasoDeLaRevision,
+  ResultadoDeLaRevision,
+  SALIR_DE_LA_REVISION,
+  useContextoDeLaRevision,
+} from '../revision-en-preparacion';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;
 const RESULTADOS = Object.keys(ETIQUETA_DE_RESULTADO) as ResultadoApi[];
+const SESIONES: readonly [string, string] = ['sesión', 'sesiones'];
 
 export function VistaDeRevisiones() {
-  const { token, asesoradoId, sesionPerdida, irA } = useEntrenamiento();
-  // WP-DASHBOARD-COMPRENSION (eje 5): «Preparar la revisión» desde la ficha abre el formulario con el período desde la
+  const { asesoradoId, irA, ir } = useEntrenamiento();
+  // WP-DASHBOARD-COMPRENSION (eje 5): «Preparar la revisión» desde la ficha abre la revisión nueva con el período desde la
   // última revisión, dicho como preparado por BE. Ver no es revisar: nada se registra hasta «Registrar revisión».
   const preparar = usePreparar();
   const retorno = useRetornoALaFicha(asesoradoId);
-  const [preparado, setPreparado] = useState<{ desdeLaRevision: string | null; periodo: Periodo | null } | null>(null);
-  const [r, setR] = useState<Resultado<{ contexto: Contexto; evaluaciones: EvaluacionDeEntrenamiento[] }> | null>(null);
   const [aviso, setAviso] = useState<{ texto: string; alPlan?: boolean; volver?: string | null } | null>(null);
-  const [periodo, setPeriodo] = useState<Periodo>({});
 
+  return (
+    <>
+      {/* DL-113: el atajo al borrador va en el aviso, que por eso se queda hasta que se cierra. */}
+      {aviso ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.alPlan || !!aviso.volver}>
+          <p>{aviso.texto}</p>
+          {aviso.volver ? (
+            <p>
+              {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
+              <Link href={aviso.volver}>Volver a la ficha, donde estabas</Link>
+            </p>
+          ) : null}
+          {aviso.alPlan ? (
+            <p>
+              <button type="button" className="boton boton--enlace" onClick={() => irA('plan')}>
+                Abrir el borrador en Plan
+              </button>
+            </p>
+          ) : null}
+        </AvisoFlotante>
+      ) : null}
+      {preparar ? (
+        <RevisionNueva
+          onRegistrada={() => {
+            setAviso({ texto: 'Revisión registrada. Todavía no se aplicó: aplicala desde la lista.', volver: retorno.href });
+            ir(SALIR_DE_LA_REVISION);
+          }}
+        />
+      ) : (
+        <ListaDeRevisiones onAplicada={(texto, alPlan) => setAviso({ texto, alPlan })} />
+      )}
+    </>
+  );
+}
+
+/** La lista de revisiones registradas, con «Nueva revisión» (DEC-17). Su lectura no depende de un período. */
+function ListaDeRevisiones({ onAplicada }: { onAplicada: (texto: string, alPlan: boolean) => void }) {
+  const { token, asesoradoId, sesionPerdida, ir } = useEntrenamiento();
+  const [r, setR] = useState<Resultado<{ data: Contexto }> | null>(null);
   const cargar = useCallback(async () => {
     setR(null);
-    const [cx, ev] = await Promise.all([api.contextoDeRevisionDeEntrenamiento(token, asesoradoId, periodo), api.listarEvaluacionesDeEntrenamiento(token, asesoradoId)]);
-    if (sesionPerdida(cx) || sesionPerdida(ev)) return;
-    if (!cx.ok) return setR(cx as Resultado<never>);
-    if (!ev.ok) return setR(ev as Resultado<never>);
-    setR({ ok: true, datos: { contexto: cx.datos.data, evaluaciones: ev.datos.data } });
-  }, [token, asesoradoId, periodo, sesionPerdida]);
-
+    const res = await api.contextoDeRevisionDeEntrenamiento(token, asesoradoId, {});
+    if (sesionPerdida(res)) return;
+    setR(res);
+  }, [token, asesoradoId, sesionPerdida]);
   useEffect(() => {
     void cargar();
   }, [cargar]);
-  // La primera lectura dice cuándo fue la última revisión: con eso se prepara el período, una sola vez.
-  useEffect(() => {
-    if (!preparar || preparado || !r?.ok) return;
-    const p = periodoPreparado(r.datos.contexto.previousReviews);
-    setPreparado(p ? { desdeLaRevision: p.desdeLaRevision, periodo: p.periodo } : { desdeLaRevision: null, periodo: null });
-    if (p) setPeriodo(p.periodo);
-  }, [preparar, preparado, r]);
+  const contexto = r?.ok ? r.datos.data : null;
 
   return (
-    <div className="secciones">
-    <FiltroDePeriodo key={preparado?.periodo?.periodStart ?? 'sin-preparar'} id="trn-revision-periodo" onAplicar={setPeriodo} inicial={preparado?.periodo ?? undefined} />
-    <EstadoDeLectura r={r} onReintentar={cargar}>
-      {r?.ok ? (
-        <div className="secciones">
-          <p className="nota">{COPY_ENTRENAMIENTO.contextoNoEsRevision}</p>
-          {/* DL-113: el atajo al borrador va en el aviso, que por eso se queda hasta que se cierra. */}
-          {aviso ? (
-            <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.alPlan || !!aviso.volver}>
-              <p>{aviso.texto}</p>
-              {aviso.volver ? (
-                <p>
-                  {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
-                  <Link href={aviso.volver}>Volver a la ficha, donde estabas</Link>
-                </p>
-              ) : null}
-              {aviso.alPlan ? (
-                <p>
-                  <button type="button" className="boton boton--enlace" onClick={() => irA('plan')}>
-                    Abrir el borrador en Plan
-                  </button>
-                </p>
-              ) : null}
-            </AvisoFlotante>
-          ) : null}
-          {r.datos.contexto.pendingReview.pending ? (
-            <Aviso tipo="info">
-              <p>Revisión pendiente desde el {dia(`${r.datos.contexto.pendingReview.since}T12:00:00Z`)}.</p>
-            </Aviso>
-          ) : null}
-          {r.datos.contexto.process?.state === 'ABIERTO' ? (
-            <FormularioDeRevision
-              abiertoAlEntrar={preparar}
-              preparado={preparado}
-              contexto={r.datos.contexto}
-              evaluaciones={r.datos.evaluaciones}
-              onRegistrada={() => {
-                setAviso({ texto: 'Revisión registrada. Todavía no se aplicó: aplicala desde la lista.', volver: retorno.href });
-                void cargar();
-              }}
-            />
-          ) : (
-            <Aviso tipo="info">
-              <p>{r.datos.contexto.process ? 'El seguimiento de entrenamiento está cerrado. La historia se conserva.' : 'El seguimiento empieza al activar el primer plan.'}</p>
-            </Aviso>
-          )}
-          <section className="seccion" aria-labelledby="titulo-revisiones-trn">
-            <h2 id="titulo-revisiones-trn">Revisiones registradas</h2>
-            {r.datos.contexto.previousReviews.length === 0 ? <p>Todavía no hay revisiones registradas.</p> : null}
+    <section className="revisiones" aria-labelledby="titulo-revisiones-trn">
+      <div className="revisiones__encabezado">
+        <h2 id="titulo-revisiones-trn">Revisiones registradas</h2>
+        {contexto?.process?.state === 'ABIERTO' ? (
+          <button type="button" className="boton boton--primario" onClick={() => ir({ preparar: '1' }, { agregarAlHistorial: true })}>
+            Nueva revisión
+          </button>
+        ) : null}
+      </div>
+      <EstadoDeLectura r={r} onReintentar={cargar}>
+        {contexto ? (
+          <div className="secciones">
+            {contexto.pendingReview.pending ? (
+              <Aviso tipo="info">
+                <p>Revisión pendiente desde el {dia(`${contexto.pendingReview.since}T12:00:00Z`)}.</p>
+              </Aviso>
+            ) : null}
+            {contexto.process?.state !== 'ABIERTO' ? <SinSeguimientoAbierto contexto={contexto} /> : null}
+            {contexto.previousReviews.length === 0 ? <p>Todavía no hay revisiones registradas.</p> : null}
             <ul className="lista">
-              {r.datos.contexto.previousReviews.map((rev) => (
+              {contexto.previousReviews.map((rev) => (
                 <ItemDeRevision
                   key={rev.reviewId}
                   revision={rev}
                   onAplicada={(texto, alPlan) => {
-                    setAviso({ texto, alPlan });
+                    onAplicada(texto, alPlan);
                     void cargar();
                   }}
                 />
               ))}
             </ul>
-          </section>
-        </div>
-      ) : null}
-    </EstadoDeLectura>
-    </div>
+          </div>
+        ) : null}
+      </EstadoDeLectura>
+    </section>
+  );
+}
+
+function SinSeguimientoAbierto({ contexto }: { contexto: Contexto }) {
+  return (
+    <Aviso tipo="info">
+      <p>{contexto.process ? 'El seguimiento de entrenamiento está cerrado. La historia se conserva.' : 'El seguimiento empieza al activar el primer plan.'}</p>
+    </Aviso>
+  );
+}
+
+/** La revisión nueva (maqueta 06): la cabecera con el período, fuera del formulario, y el formulario en tres pasos. */
+function RevisionNueva({ onRegistrada }: { onRegistrada: () => void }) {
+  const area = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, ir } = area;
+  const leer = useCallback((p: { periodStart?: string; periodEnd?: string }) => api.contextoDeRevisionDeEntrenamiento(token, asesoradoId, p), [token, asesoradoId]);
+  const lectura = useContextoDeLaRevision<Contexto>(leer, area);
+  // Las evaluaciones no dependen del período: se leen una vez (las pide «Cambiar objetivo»).
+  const [evaluaciones, setEvaluaciones] = useState<Resultado<{ data: EvaluacionDeEntrenamiento[] }> | null>(null);
+  const leerEvaluaciones = useCallback(async () => {
+    setEvaluaciones(null);
+    const res = await api.listarEvaluacionesDeEntrenamiento(token, asesoradoId);
+    if (!sesionPerdida(res)) setEvaluaciones(res);
+  }, [token, asesoradoId, sesionPerdida]);
+  useEffect(() => {
+    void leerEvaluaciones();
+  }, [leerEvaluaciones]);
+  const estado = lectura.primera && !lectura.primera.ok ? lectura.primera : evaluaciones && !evaluaciones.ok ? evaluaciones : lectura.contexto && evaluaciones ? evaluaciones : null;
+
+  return (
+    <section className="revision-nueva" aria-labelledby="titulo-revision-nueva-trn">
+      <CabeceraDeLaRevision titulo="Nueva revisión de Entrenamiento" idDelTitulo="titulo-revision-nueva-trn" periodo={lectura.periodo} procedencia={lectura.procedencia} onElegirPeriodo={lectura.elegirPeriodo} />
+      <EstadoDeLectura
+        r={estado}
+        onReintentar={() => {
+          if (!lectura.contexto) lectura.reintentar();
+          if (!evaluaciones?.ok) void leerEvaluaciones();
+        }}
+      >
+        {lectura.contexto && evaluaciones?.ok ? (
+          lectura.contexto.process?.state === 'ABIERTO' ? (
+            <FormularioDeRevision contexto={lectura.contexto} evaluaciones={evaluaciones.datos.data} hoy={lectura.hoy} lectura={lectura} onRegistrada={onRegistrada} onCancelar={() => ir(SALIR_DE_LA_REVISION)} />
+          ) : (
+            <div className="secciones">
+              <SinSeguimientoAbierto contexto={lectura.contexto} />
+              <div className="acciones">
+                <button type="button" className="boton boton--secundario" onClick={() => ir(SALIR_DE_LA_REVISION)}>
+                  Ver las revisiones registradas
+                </button>
+              </div>
+            </div>
+          )
+        ) : null}
+      </EstadoDeLectura>
+    </section>
   );
 }
 
 function FormularioDeRevision({
-  abiertoAlEntrar = false,
-  preparado = null,
   contexto,
   evaluaciones,
+  hoy,
+  lectura,
   onRegistrada,
+  onCancelar,
 }: {
-  abiertoAlEntrar?: boolean;
-  preparado?: { desdeLaRevision: string | null; periodo: Periodo | null } | null;
   contexto: Contexto;
   evaluaciones: readonly EvaluacionDeEntrenamiento[];
+  hoy: string;
+  lectura: { readonly leyendo: boolean; readonly falloDelPeriodo: string | null; readonly bloqueo: string | null; readonly reintentar: () => void };
   onRegistrada: () => void;
+  onCancelar: () => void;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
-  const [abierto, setAbierto] = useState(abiertoAlEntrar);
   const [evidencia, setEvidencia] = useState<Set<string>>(new Set());
   const [interpretacion, setInterpretacion] = useState('');
   const [resultado, setResultado] = useState<ResultadoApi | ''>('');
@@ -164,27 +233,50 @@ function FormularioDeRevision({
   const [fundamentoDelObjetivo, setFundamentoDelObjetivo] = useState('');
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
-  useCambiosSinGuardar(
-    abierto && (evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima, nuevoObjetivo, fundamentoDelObjetivo].some((t) => t.trim() !== '')),
-    'la revisión',
-  );
+  useCambiosSinGuardar(evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima, nuevoObjetivo, fundamentoDelObjetivo].some((t) => t.trim() !== ''), 'la revisión');
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
   // Las sesiones, por su día (lo dice el grupo); la planificación y el objetivo, aparte.
-  const candidatas: CandidataDeEvidencia[] = [
-    ...contexto.registeredExecutions.map((x) => ({
-      tipo: 'EXECUTION' as const,
-      id: x.executionId,
-      dia: x.date,
-      texto: `${x.plannedSession.label} · ${etiquetaDeCondicionRegistrada(registroVigente(x))}`,
-    })),
-    ...contexto.activePlanVersions.map((v) => ({ tipo: 'PLAN_VERSION' as const, id: v.planId, dia: null, texto: `Plan activado el ${fecha(v.activatedAt as string)}` })),
-    ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
-  ];
+  const candidatas: CandidataDeEvidencia[] = useMemo(
+    () => [
+      ...contexto.registeredExecutions.map((x) => ({
+        tipo: 'EXECUTION' as const,
+        id: x.executionId,
+        dia: x.date,
+        texto: `${x.plannedSession.label} · ${etiquetaDeCondicionRegistrada(registroVigente(x))}`,
+      })),
+      ...versionesDelPlan(
+        contexto.activePlanVersions.map((v) => ({
+          planId: v.planId,
+          dia: diaDelAnioEnCurso(fechaCivil(v.activatedAt as string, contexto.period.timeZone), hoy),
+          hora: horaEnZona(v.activatedAt as string, contexto.period.timeZone),
+          vigente: v.isEffective,
+        })),
+      ),
+      ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
+    ],
+    [contexto, hoy],
+  );
+
+  // DEC-20: con otro período, se quita solo lo marcado que quedó afuera, y se dice. Lo escrito no cambia.
+  const [avisoDeMarcas, setAvisoDeMarcas] = useState<string | null>(null);
+  const periodoLeido = `${contexto.period.start}|${contexto.period.end}`;
+  const periodoAnterior = useRef(periodoLeido);
+  useEffect(() => {
+    if (periodoAnterior.current === periodoLeido) return;
+    periodoAnterior.current = periodoLeido;
+    const { quedan, quitadas } = marcasDelPeriodoNuevo(evidencia, candidatas);
+    if (quitadas > 0) setEvidencia(quedan);
+    setAvisoDeMarcas(quitadas > 0 ? avisoDeMarcasQuitadas(quitadas) : null);
+    // A propósito, solo cuando cambia el período leído: marcar o desmarcar no es motivo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodoLeido]);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
+    // Lo que se ve todavía no es del período elegido: la barra dice por qué.
+    if (lectura.bloqueo) return;
     const problemas: { id: string; texto: string }[] = [];
     if (evidencia.size === 0) problemas.push({ id: 'trn-revision-evidencia', texto: 'Elegí la evidencia que examinaste.' });
     if (!interpretacion.trim()) problemas.push({ id: 'trn-revision-interpretacion', texto: 'Falta la interpretación.' });
@@ -231,94 +323,96 @@ function FormularioDeRevision({
     setEnviando(false);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
-    setAbierto(false);
     onRegistrada();
   }
 
-  if (!abierto) {
-    return (
-      <div className="acciones">
-        <button type="button" className="boton boton--primario" onClick={() => setAbierto(true)}>
-          {COPY_ENTRENAMIENTO.registrarRevision}
-        </button>
-      </div>
-    );
-  }
+  // El mismo error que enumera el resumen se marca en su campo (B10-10:164-165; DL-091 punto 3), como en Nutrición.
+  const porCampo = erroresPorCampo(errores);
+  const errorDelObjetivo = porCampo['trn-revision-objetivo'] ?? null;
+
   return (
-    <form className="formulario seccion" onSubmit={enviar} noValidate>
-      <h2>{COPY_ENTRENAMIENTO.registrarRevision}</h2>
-      {preparado ? <AvisoDePreparacion desdeLaRevision={preparado.desdeLaRevision} periodo={preparado.periodo} /> : null}
-      <p>
-        Período: {dia(`${contexto.period.start}T12:00:00Z`)} a {dia(`${contexto.period.end}T12:00:00Z`)}
-      </p>
+    <form className="revision-nueva__formulario" onSubmit={enviar} noValidate data-periodo={periodoLeido}>
       <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={envios} />
-      <SeleccionDeEvidencia
-        id="trn-revision-evidencia"
-        candidatas={candidatas}
-        elegidas={evidencia}
-        onCambiar={setEvidencia}
-        registros={['sesión', 'sesiones']}
-        sinRegistros="No hay sesiones registradas en el período."
-        error={errores.find((x) => x.id === 'trn-revision-evidencia')?.texto ?? null}
-      />
-      {contexto.missingData.length > 0 ? <p className="nota">Días sin registro en el período: {contexto.missingData.length}. No hay dato de esos días.</p> : null}
-      <div className="campo">
-        <label htmlFor="trn-revision-interpretacion">Interpretación</label>
-        <textarea id="trn-revision-interpretacion" rows={3} value={interpretacion} onChange={(e) => setInterpretacion(e.target.value)} maxLength={4000} />
+      <div className="revision-nueva__columnas">
+        <div className="revision-nueva__tarjeta">
+          <PasoDeLaRevision
+            numero={1}
+            titulo="Lo que miraste"
+            idDeLaAyuda="trn-revision-evidencia-ayuda"
+            ayuda="Marcá solo lo que examinaste: nada viene marcado. Marcar un día marca cada una de sus sesiones; dejá marcadas solo las que miraste."
+          >
+            <LecturaDelPeriodo leyendo={lectura.leyendo} fallo={lectura.falloDelPeriodo} onReintentar={lectura.reintentar} />
+            <SeleccionDeEvidencia
+              id="trn-revision-evidencia"
+              hoy={hoy}
+              candidatas={candidatas}
+              elegidas={evidencia}
+              onCambiar={(siguiente) => {
+                setEvidencia(siguiente);
+                setAvisoDeMarcas(null);
+              }}
+              registros={SESIONES}
+              sinRegistros="No hay sesiones registradas en el período."
+              idDeLaAyuda="trn-revision-evidencia-ayuda"
+              aviso={avisoDeMarcas}
+              nota={contexto.missingData.length > 0 ? <p className="nota evidencia__nota">Días sin registro en el período: {contexto.missingData.length}. No hay dato de esos días.</p> : null}
+              error={porCampo['trn-revision-evidencia'] ?? null}
+            />
+          </PasoDeLaRevision>
+        </div>
+        <div className="revision-nueva__tarjeta">
+          <PasoDeLaRevision numero={2} titulo="Lo que observaste">
+            <AreaDeTexto id="trn-revision-interpretacion" etiqueta="Interpretación" ayuda={AYUDA_DE_LA_INTERPRETACION} valor={interpretacion} onCambiar={setInterpretacion} maximo={4000} porCampo={porCampo} />
+          </PasoDeLaRevision>
+          <PasoDeLaRevision numero={3} titulo="Lo que decidís">
+            <ResultadoDeLaRevision
+              id="trn-revision-resultado"
+              nombre="trn-resultado"
+              resultados={RESULTADOS}
+              etiquetas={ETIQUETA_DE_RESULTADO}
+              efectos={EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO}
+              valor={resultado}
+              alElegir={setResultado}
+              error={porCampo['trn-revision-resultado'] ?? null}
+              explicacion={COPY_ENTRENAMIENTO.progresionComoAjuste}
+            />
+            <AreaDeTexto id="trn-revision-fundamento" etiqueta="Fundamento" valor={fundamento} onCambiar={setFundamento} filas={2} maximo={4000} porCampo={porCampo} />
+            <div className="revision-nueva__siguiente">
+              <AreaDeTexto id="trn-revision-accion" etiqueta={resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'} valor={accion} onCambiar={setAccion} filas={2} maximo={2000} porCampo={porCampo} />
+              {resultado !== 'FINALIZE' ? (
+                <Campo
+                  id="trn-revision-proxima"
+                  etiqueta={resultado === 'RESCHEDULE_REVIEW' ? 'Fecha de la próxima revisión' : 'Próxima revisión (opcional)'}
+                  type="date"
+                  value={proxima}
+                  onChange={(e) => setProxima(e.target.value)}
+                  error={porCampo['trn-revision-proxima'] ?? null}
+                />
+              ) : null}
+            </div>
+            {resultado === 'CHANGE_OBJECTIVE' ? (
+              <fieldset
+                className={`grupo${errorDelObjetivo ? ' campo--error' : ''}`}
+                id="trn-revision-objetivo"
+                tabIndex={-1}
+                aria-invalid={errorDelObjetivo ? true : undefined}
+                aria-describedby={errorDelObjetivo ? 'trn-revision-objetivo-error' : undefined}
+              >
+                <legend>Nuevo objetivo</legend>
+                <ErrorDelCampo id="trn-revision-objetivo" texto={errorDelObjetivo} />
+                <AreaDeTexto id="trn-revision-objetivo-enunciado" etiqueta="Objetivo" valor={nuevoObjetivo} onCambiar={setNuevoObjetivo} filas={2} maximo={2000} porCampo={porCampo} />
+                <AreaDeTexto id="trn-revision-objetivo-fundamento" etiqueta="Fundamento del objetivo" valor={fundamentoDelObjetivo} onCambiar={setFundamentoDelObjetivo} filas={2} maximo={4000} porCampo={porCampo} />
+              </fieldset>
+            ) : null}
+          </PasoDeLaRevision>
+        </div>
       </div>
-      <fieldset className="grupo" id="trn-revision-resultado" tabIndex={-1}>
-        <legend>Resultado</legend>
-        <p className="campo__ayuda">{COPY_ENTRENAMIENTO.progresionComoAjuste}</p>
-        {RESULTADOS.map((res) => (
-          <label key={res} className="acto">
-            <input type="radio" name="trn-resultado" value={res} checked={resultado === res} onChange={() => setResultado(res)} /> <strong>{ETIQUETA_DE_RESULTADO[res]}</strong>
-            <span className="campo__ayuda">{EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO[res]}</span>
-          </label>
-        ))}
-      </fieldset>
-      <div className="campo">
-        <label htmlFor="trn-revision-fundamento">Fundamento</label>
-        <textarea id="trn-revision-fundamento" rows={3} value={fundamento} onChange={(e) => setFundamento(e.target.value)} maxLength={4000} />
-      </div>
-      <div className="campo">
-        <label htmlFor="trn-revision-accion">{resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'}</label>
-        <textarea id="trn-revision-accion" rows={2} value={accion} onChange={(e) => setAccion(e.target.value)} maxLength={2000} />
-      </div>
-      {resultado !== 'FINALIZE' ? (
-        <Campo
-          id="trn-revision-proxima"
-          etiqueta={resultado === 'RESCHEDULE_REVIEW' ? 'Fecha de la próxima revisión' : 'Próxima revisión (opcional)'}
-          type="date"
-          value={proxima}
-          onChange={(e) => setProxima(e.target.value)}
-        />
-      ) : null}
-      {resultado === 'CHANGE_OBJECTIVE' ? (
-        <fieldset className="grupo" id="trn-revision-objetivo" tabIndex={-1}>
-          <legend>Nuevo objetivo</legend>
-          <div className="campo">
-            <label htmlFor="trn-revision-objetivo-enunciado">Objetivo</label>
-            <textarea id="trn-revision-objetivo-enunciado" rows={2} value={nuevoObjetivo} onChange={(e) => setNuevoObjetivo(e.target.value)} maxLength={2000} />
-          </div>
-          <div className="campo">
-            <label htmlFor="trn-revision-objetivo-fundamento">Fundamento del objetivo</label>
-            <textarea id="trn-revision-objetivo-fundamento" rows={2} value={fundamentoDelObjetivo} onChange={(e) => setFundamentoDelObjetivo(e.target.value)} maxLength={4000} />
-          </div>
-        </fieldset>
-      ) : null}
       {fallo ? (
         <Aviso tipo="error" enfocar>
           <p>{fallo}</p>
         </Aviso>
       ) : null}
-      <div className="acciones">
-        <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando}>
-          {enviando ? 'Registrando…' : COPY_ENTRENAMIENTO.registrarRevision}
-        </button>
-        <button type="button" className="boton boton--secundario" onClick={() => setAbierto(false)} disabled={enviando}>
-          Cancelar
-        </button>
-      </div>
+      <BarraDeLaRevision enviando={enviando} bloqueo={lectura.bloqueo} textoDelBoton={COPY_ENTRENAMIENTO.registrarRevision} alCancelar={onCancelar} />
     </form>
   );
 }

@@ -1409,3 +1409,117 @@ escritura), «guardar no escribe nada» (corregido, escribe una vez), «“Volve
 **Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-8/editor/`: `ahora/`, `del-recorrido/`, `antes/`,
 `antes-y-ahora-1440-claro.png`, `resumen-de-las-corridas.txt` y `resultados/` (los resultados de los dos recorridos de
 los editores, los veredictos de las roturas y las roturas de las reglas).
+
+## Parte 10 · Preparar revisión (2026-10-15)
+
+**La revisión nueva recompuesta (maqueta 06; C-14 y C-15), en Nutrición y en Entrenamiento.** La maqueta está dibujada
+para Nutrición; Entrenamiento usa las mismas piezas, con lo suyo (las sesiones, el objetivo como un enunciado).
+
+**Qué cambió.** La pestaña Revisiones abría el formulario en el lugar, arriba de la lista: con «Preparar la revisión»
+desde la ficha, un aviso de tres oraciones, el período en otra línea, una casilla por día con registros, los seis
+resultados con su efecto debajo y los botones al pie, y recién después la lista. Ahora **la pestaña abre en la lista, con
+«Nueva revisión»,** y **la revisión nueva es otra pantalla de la misma sección** (`preparar=1`): arriba, el título, «En
+preparación · sin registrar» y el período con una frase que dice de dónde salió; debajo, **tres pasos en dos columnas**
+—lo que miraste (la planificación y el objetivo en una fila, y los días en una grilla); lo que observaste; lo que decidís
+(el resultado en dos columnas, con el efecto del elegido en un recuadro y todos a un clic)—; y **la barra de «Registrar
+revisión» pegada abajo,** que dice todo el tiempo que todavía no se registró nada y que registrar no cambia el plan. En
+Nutrición la grilla tiene **todos los días del período: los que no tienen registros se ven, sin casilla.** El período se
+cambia con el control de la ficha, **sin perder lo escrito.** Es otra composición de lo mismo: **no se agregó ni se quitó
+ninguna operación.** No cambian la API, la base ni la APK. Sobre la base propia (`be_test_escritorio`, regenerada antes
+de cada corrida) y la compilación estática del código de esta parte (`0be2006` y `7850b3d`).
+
+**Un defecto de antes, corregido (baja, de accesibilidad).** La revisión de Entrenamiento decía lo que faltaba solo en
+el resumen: el campo no se marcaba ni decía su error, como sí lo hacía Nutrición (B10-10:164-165; DL-091 punto 3).
+Ahora las dos áreas usan las mismas piezas.
+
+**Medido en la página real,** con el asesorado A y el período desde su última revisión:
+
+| A 1440 × 900 | Antes | Ahora |
+|---|---|---|
+| La revisión de Nutrición, preparada desde la ficha | 3.856 px, y la lista de revisiones debajo | 1.175 px; la lista, en su propia pantalla |
+| La revisión de Entrenamiento | 2.906 px | 1.230 px |
+| Los días del período | Una fila por día con registros; los días sin registros no estaban | Una grilla de tres por fila, con todos los días |
+| Los efectos de los resultados | Los seis a la vista | El del elegido; los seis, a un clic |
+| Cambiar el período | «Desde», «Hasta» y «Ver período», arriba de todo; el período, en la memoria de la sección | El control de la ficha, en la cabecera; en la dirección; lo escrito no se pierde |
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Revisiones abre en la lista de revisiones registradas, con «Nueva revisión» y sin formulario, una por revisión de la API; «Nueva revisión» abre la revisión nueva en la misma sección, con `preparar=1` y el período que preparó BE en la dirección, sin escribir nada (F-114) | `recorrido.mjs revisiones`, con lo esperado leído de la API como la página | Pasa | Verificado en pantalla |
+| La revisión nueva dice qué es y de dónde salió el período («Preparado por BE: desde tu última revisión, del 25 sept, hasta hoy.»); al abrir no hay nada marcado (0 de 24 casillas) ni elegido, y la barra dice que todavía no se registró nada, con «Registrar revisión» dentro del formulario (F-115) | Lo mismo | Pasa | Verificado en pantalla |
+| La grilla de Nutrición tiene todos los días del período, en orden, cada uno con su cuenta de comidas (21 días, tres por fila a 1440); con un período pedido que incluye el hueco de cuatro días del escenario, esos días se ven en su lugar, apagados y sin casilla; «Ver» abre un día a todo el ancho con sus comidas adentro; en Entrenamiento, solo los días con sesiones y la cuenta de los demás (F-116) | Lo mismo, con los días y las cuentas calculados a mano desde los registros de la API | Pasa | Verificado en pantalla |
+| Elegido «Ajustar», el recuadro dice su efecto con el texto del dominio; «Qué hace cada resultado» muestra los seis, en el orden del dominio; las opciones van en dos columnas (F-117) | Lo mismo, contra `EFECTO_VISIBLE_DE_RESULTADO` | Pasa | Verificado en pantalla |
+| Con dos días y el plan marcados, la interpretación, el fundamento y «Ajustar» escritos, pasar a los últimos 7 días conserva lo escrito y lo elegido, quita solo las marcas del día que quedó afuera y lo dice («Con el período nuevo se quitaron 2 marcas…»); la frase pasa a «Lo elegiste vos. Tu última revisión fue el 25 sept.»; nada se escribe (F-118) | Lo mismo: las marcas que tienen que quedar, calculadas con los dos contextos de la API | Pasa | Verificado en pantalla |
+| «Cancelar» vuelve a la lista, y `preparar`, `p`, `desde` y `hasta` salen de la dirección; abrir, marcar, cambiar el período y cancelar no escribió nada (F-119) | Lo mismo | Pasa | Verificado en pantalla |
+| A 1440, dos tarjetas lado a lado; a 768 y 390, una debajo de la otra; a los tres anchos la barra queda pegada abajo con el final del formulario fuera de la ventana, un campo enfocado detrás de la barra sube por encima de ella, nada tiene desplazamiento propio y la página no se corre de costado (F-120) | Lo mismo, midiendo en la página | Pasa | Verificado en pantalla |
+| En Entrenamiento, «Registrar revisión» sin nada lista cinco faltas, y cada campo queda marcado como inválido, describe su error y dice el mismo texto que el resumen; no escribe (F-121) | Lo mismo | Pasa | Verificado en pantalla |
+| Registrar, en la cuenta descartable: una sola escritura (`POST …/nutrition/reviews`), de vuelta en la lista sin `preparar` ni el período, con el aviso de que todavía no se aplicó y una revisión más en la lista (F-122) | Lo mismo, en las cuentas descartables con su plan de Nutrición | Pasa | Verificado en pantalla |
+| La evidencia desde la ficha (R3), «Preparar la revisión» de Entrenamiento (CP-19) y registrar con una referencia por registro marcado (CP-20), con la cabecera nueva | `recorrido-comprension.mjs funcional` | Pasan: 86 de 86 en la pasada completa | Verificado en pantalla |
+| Las reglas nuevas: los días del período, lo que dice un día, lo marcado al cambiar el período, las versiones del plan, el período que propone BE y de dónde salió | `scripts/evidencia-de-revision.test.mjs` (8) y `scripts/periodo-de-la-revision.test.mjs` (5), con 28 roturas | Pasan; las 28 roturas, detectadas | Verificado automáticamente |
+| Ningún texto de las piezas compartidas usa un término prohibido de Nutrición ni de Entrenamiento | `scripts/copy-pantallas.test.cjs`, con un bloque nuevo para las piezas de la revisión (hasta acá ninguna prueba de palabras miraba la evidencia) | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | La pasada completa del 15/10 (02:05 a 02:58, sobre `7850b3d`), que cierra también la que había quedado pendiente de la parte 8: R capturas 60/60, funcional 322 de 324, descartable 22, mediciones 18, solicitudes 32, planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación cortada (1 de 2). Las tres fallas son de pantallas que esta parte no tocó, con páginas que no terminaron de cargar (PRO-18, F-09 y la revocación, que no encontró «Ver origen»); repetidas sobre datos nuevos, pasaron: revocación 6/6 y funcional 323 de 324, con otra del mismo tipo (E-63, una tarjeta del escenario E que no cargó). Cada comprobación pasó en al menos una de las dos corridas | Verificado en pantalla, en dos corridas |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código | En verde las corridas 38680964132, sobre `0be2006`, y 38684305952, sobre `7850b3d`: el legajo, la batería completa (typecheck, unit, build y audit), la integración y la imagen de la API | Verificado automáticamente |
+| La pantalla en sus estados: la lista, la revisión nueva, un día abierto, un resultado con todos los efectos, lo que falta, el control de período y las dos versiones del mismo día (1440 en los dos temas), y la revisión nueva a 1280, 1024, 768 y 390 | `ver.mjs` sobre los datos de la corrida | 28 capturas: las de 1440, en los dos temas; las de 1280, 1024 y 768, en claro; las de 390, con un guion propio (`ver.mjs` se trababa a ese ancho al cambiar el tema), en azul noche. Tres se repitieron: dos con «No hay conexión con BE» (la máquina paginaba) y una con el tope de cinco inicios de sesión en quince minutos | Verificado en pantalla |
+
+Las comprobaciones negativas van con una positiva de la misma consulta: «no hay nada marcado al abrir» (después de
+marcar dos días y el plan, la misma consulta los cuenta), «un día sin registros no tiene casilla» (los días con
+registros, en la misma grilla, sí), «cambiar el período no escribe nada» y «cancelar no escribe nada» (registrar, en la
+cuenta descartable, escribe una vez), y «ya no se dice “Preparado por BE”» (con el período que preparó BE, sí se dice).
+
+**La prueba de la prueba.**
+- **Las reglas, rotas de a una:** 28 mutaciones de `evidencia.ts` (los días del período, lo que dice un día, lo marcado
+  al cambiar el período, las versiones del plan) y de `periodo-de-la-revision.ts` (el período que propone BE y de dónde
+  salió), cada una contra su prueba en una copia. **Las 28, detectadas** (`resultados/roturas-de-las-reglas.txt`).
+- **La pantalla, rota a propósito y compilada así,** en una tanda sobre `revisiones`, con cinco roturas en mecanismos
+  distintos: el formulario que se vuelve a armar al cambiar el período, Entrenamiento que abre con las sesiones
+  marcadas, la barra que no queda pegada abajo, los días sin registros que faltan en la grilla y el recuadro que dice el
+  efecto de otro resultado. **Las cinco, notadas, y ninguna otra comprobación falló**
+  (`resultados/compilacion-rota.txt`). Dos cosas del armado: la primera versión de la quinta rotura no compilaba
+  (escondía el recuadro y rompía los tipos) y se cambió por una que compila, verificada con `tsc` antes de la tanda; y
+  la cuarta la nota la comprobación del período con el hueco, no la del período desde la última revisión, que no tiene
+  días sin registros (el veredicto esperaba la otra, y se corrigió sin volver a correr nada).
+
+**Lo que mostraron las capturas y las primeras corridas.**
+- **«Qué hace cada resultado» se montaba encima de «Reprogramar revisión».** Iba en la esquina del grupo, con posición
+  absoluta, y la leyenda de un grupo no ocupa el lugar que parece. Ahora el título que se ve y ese botón van en una fila;
+  la leyenda, oculta, sigue nombrando al grupo.
+- **En la lista de los seis efectos, el renglón de «Reprogramar revisión» quedaba corrido:** cada renglón medía su
+  propia columna. Ahora los seis comparten las dos columnas.
+- **A 768, unas celdas bajaban la cuenta debajo de la fecha y otras no** («28 sept» es más largo que «1 oct»): las filas
+  quedaban desparejas. Con un ancho mínimo de celda que entra «28 sept 4 comidas», van tres por fila a 1440 y dos a
+  1280, 1024 y 768, todas en una línea.
+- **Dos versiones del plan activadas el mismo día decían lo mismo** («Plan activado el 15 oct» dos veces, en las cuentas
+  descartables). Con la hora tampoco alcanzaba: el generador las activa en el mismo minuto. Ahora la que rige dice
+  «vigente», y las del mismo día llevan además la hora.
+- **El período desde la última revisión no tenía días sin registros** (el asesorado A registró todos los días): la
+  comprobación de los días sin registros no tenía con qué. Ahora se mira también un período pedido en la dirección que
+  incluye el hueco de cuatro días del escenario.
+- **La barra se medía con el final del formulario a la vista,** donde no tiene por qué estar pegada. Ahora se mide arriba
+  de todo, con el final afuera, y se comprueba además que un campo enfocado detrás de la barra sube por encima de ella.
+
+**Lo que pasó con la máquina.** La primera compilación para verificar las correcciones la cortó Claude Code por falta
+de memoria (la sesión estaba esperando); se repitió con la máquina libre. Una corrida de `revisiones` se quedó esperando
+el formulario de la cuenta descartable: los dos pedidos de la revisión nueva no llegaron a la API, aunque un minuto
+después respondían en 50 ms; las tres corridas siguientes pasaron enteras. Y una captura de la cuenta descartable salió
+con «No hay conexión con BE»: la base tardó más de 7 segundos y la API respondió 503 (vence la transacción, `P2028`),
+con la máquina corta de memoria; se repitió. En la pasada completa, tres comprobaciones de pantallas que esta parte no tocó fallaron con
+páginas que no terminaron de cargar (PRO-18 y F-09 de la funcional; la revocación, que no encontró «Ver origen»);
+repetidas sobre datos nuevos pasaron, y la funcional dejó otra del mismo tipo (E-63). Cada comprobación pasó en al menos
+una de las dos corridas.
+
+**Hallazgos fuera de lo dibujado.**
+- **La revisión de Entrenamiento no marcaba el campo con error** (baja, de accesibilidad; es de antes): corregido
+  (F-121).
+- **El período de la revisión vivía en la memoria de la sección:** «Actualizar» lo perdía (era uno de los lugares que
+  §6 dejaba para su parte). Ahora va en la dirección (F-118).
+
+**Límites, dichos.**
+- **La versión del plan se dice por su fecha de activación** (y la hora, si hace falta), sin número: el contexto de la
+  revisión no lo trae (F-123; §6, para decidir).
+- **La lista de revisiones no está dibujada:** sumó su encabezado con «Nueva revisión»; cada revisión se lee como antes.
+- **Entrenamiento no tiene maqueta propia:** usa la de Nutrición, con lo suyo.
+- **Sin teléfono ni lector de pantalla reales:** el foco, los nombres accesibles y los avisos se comprobaron con el
+  navegador y con axe. 768 y 390 px se miraron para que no se rompa.
+
+**Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-10/revision/`: `ahora/`, `antes/`, `antes-y-ahora-1440-claro.png`,
+`del-recorrido/` y `resultados/` (los resultados de los recorridos, el veredicto de la tanda rota y las roturas de las
+reglas).
