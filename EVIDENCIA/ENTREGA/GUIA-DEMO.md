@@ -16,7 +16,7 @@
 |---|---|
 | Website | `https://be-web-1ngj.onrender.com` |
 | API | `https://be-api-hndp.onrender.com/health/ready` → `200`. Desde el 16/10 no se duerme: no hace falta despertarla |
-| **APK 0.16.0-candidata.1** | La prerelease `be-apk-0.16.0-candidata.1` en GitHub, con su `.sha256`. Se instala encima de la anterior, sin desinstalar (misma firma). Los avisos al teléfono necesitan el proyecto de Firebase (`docs/DESPLIEGUE.md`, «Avisos push»): mientras tanto, Cuenta dice que no están disponibles y las novedades se ven igual en la campana |
+| **APK 0.16.0-candidata.1** | `https://github.com/Elian-Bufi/be/releases/download/be-apk-0.16.0-candidata.1/be-0.16.0-candidata.1-10816ae.apk` · SHA-256 `867f4dd60c4d4f7c8dbef78d3d6d5f4e872a2cac18a9c72212c2f283142e85f2`. El registro de la construcción está en la rama `apk/candidata-0.16.0-1`, en `EVIDENCIA/CANDIDATA-0.16.0-1/LEEME.md`. Se instala encima de la anterior, sin desinstalar (misma firma). Los avisos al teléfono necesitan el proyecto de Firebase (`docs/DESPLIEGUE.md`, «Avisos push»): mientras tanto, Cuenta dice que no están disponibles y las novedades se ven igual en la campana |
 | Cuentas de la cohorte | Fuera del repo, en `C:\Users\bufim\BE-datos-locales\cohorte-test\cuentas.env`. `PRO_N` es Lic. Sofía Paz (Nutrición y Antropometría), `PRO_T` es Prof. Martín Acosta (Entrenamiento) y `PRO_A` es Prof. Lucía Benítez (Antropometría). Las personas son `ASE_DIEGO`, `ASE_CAMILA`, `ASE_FEDERICO`, `ASE_NORMA`, `ASE_HECTOR` y `ASE_AGUSTINA` |
 | Cuentas DEMO | En `.env.cuentas-demo`, en el clon local de Dirección. DEMO-A01 se llama «Martina Gómez» y DEMO-A02 «Lucas Fernández» |
 
