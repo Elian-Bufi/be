@@ -1,5 +1,13 @@
 # Qué falta desarrollar en BE
 
+> **Nota del 2026-10-16.** Desde el corte se integró y se desplegó en `test`:
+> - el escritorio profesional por áreas (#153 a #159), con Pendientes, Resumen, Línea de tiempo, Analizar y Preparar revisión;
+> - la cohorte de seis personas con historia (#161);
+> - las novedades, los avisos y los recordatorios (#163);
+> - REV-A (#164).
+>
+> La APK 0.16.0-candidata.1 lleva todo eso y los arreglos de la 0.15.0-candidata.1. Las marcas de este documento están al día en lo que se tocó ese día; el resto sigue siendo del 2/10.
+>
 > **Nota del 2026-10-05.** La entrega es el 2026-10-20, por instrucción de Dirección. La base de `test` vence antes (punto 1 de §1). Dirección probó en el teléfono la APK 0.14.0-candidata.1 el 2026-10-05: el informe está en DL-117. El resto de este documento es del corte del 2026-10-02.
 
 **Corte:** 2026-10-02. En `main` (`6213ec8`) están integrados:
@@ -22,9 +30,9 @@ Cada punto lleva su ID. El detalle está en el documento que se cita.
 1. ~~**La base de `test` vence cerca del 16 o 18/10.**~~ **Resuelto el 2026-10-16:** Dirección pasó la base a
    Basic-256mb y la API a Starter (#160). La base ya no vence y la API no se duerme. Ver «Planes de Render» en
    `docs/DESPLIEGUE.md`.
-2. **Ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica.
+2. **El teléfono:** Dirección probó la 0.14.0-candidata.1 (5/10) y la 0.15.0-candidata.1 (7 y 8/10); los dos defectos que encontró están corregidos en la 0.16.0-candidata.1 (#151 y #152), que falta probar. Antes: **ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica.
 3. **TalkBack y la letra del sistema al máximo** nunca se probaron en un Android físico (RNF-ACC-001). Faltan las capturas 16, 17, 19, 20, 21 y 22 de la guía de capturas.
-4. **DL-115, de severidad alta.** Revocado el A3, el titular sigue leyendo su evolución antropométrica y el detalle de sus formularios; nutrición y entrenamiento sí lo cortan (08:406). Espera la decisión de Dirección. La recomendación es la opción A, de tamaño S, que necesita una APK nueva.
+4. ~~**DL-115, de severidad alta.**~~ **Resuelto:** decidida con la opción A el 2/10 e integrada en la 0.13.2 (#133, #140). Antes: Revocado el A3, el titular sigue leyendo su evolución antropométrica y el detalle de sus formularios; nutrición y entrenamiento sí lo cortan (08:406). Espera la decisión de Dirección. La recomendación es la opción A, de tamaño S, que necesita una APK nueva.
 
 ## 2. Funcionalidades P0 que faltan
 
