@@ -141,6 +141,7 @@
 | DL-134 | Mandato de Dirección · 2026-10-16 (REV-A) | 08 §6.2, 08:495, §14.3, 08:406 · 09v12:844 · 04 RF-035, RF-046 · propuesta REV-A | La persona lee las revisiones que sus profesionales registraron sobre ella | **IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar |
 | DL-135 | Mandato de Dirección · 2026-10-16 (WP-TVCC-30) | 02 §16 · 04 RF-058 · 05 UC-S01 · 06 B-12 (REG-06-186 a 201) · 07 §24, §42.1 · 09 ANA-P1, TRACE-DEBT-12-001 · 11A §21 · 12 §12-27 | TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado | **IMPLEMENTADA** 2026-10-16; D-1 a D-9 a ratificar |
 | DL-136 | Aprobación de Dirección · 2026-10-16 (WP-INVITACION) | 06 §7.3, §7.4 (REG-06-44, 45, 46; INV-06-55, 56) · 05 UC-P04 V04, UC-P05 V01 · 08 §24.3, §24.5 · 09v8 REL-01 · DL-023 · DL-035 | Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK |
+| DL-137 | Pedido de Dirección · 2026-10-16 (WP-AGENDA-DE-ENTRENAMIENTO) | 06 B-08 (REG-06-111, 114, 115, 126, 131) · DL-077 · DL-088 · DL-133 D-5 · WP-06 §9.2 | El plan de entrenamiento no tenía días: el recordatorio llegaba todos los días y BE no sabía qué sesión tocaba ni cuál quedó pendiente | **IMPLEMENTADA (API)** 2026-10-16: días de cada sesión, lo pendiente, saltear y los avisos de las 10 y las 22; falta el editor del website y la APK; D-1 a D-9 a ratificar |
 
 ---
 
@@ -1780,6 +1781,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - «Hoy» y la lectura por período muestran cada sesión **una vez**: la de la versión donde ya se empezó o se registró, y si no, la de la versión más nueva que regía ese día;
 - abrir la de la otra versión es `422 OCCURRENCE_NOT_EXECUTABLE` (`SESSION_STARTED_IN_OTHER_VERSION`), y la base lo vuelve a exigir con un trigger y un cerrojo que serializa dos inserciones simultáneas;
 - el horario declarado tiene que caer mientras la versión regía, desde su activación hasta la de su sucesora (06:4351): si no, `OCCURRED_AT_OUTSIDE_PLAN_VERSION`.
+
+**Avance del 2026-10-16 (DL-137).** Con la agenda del plan, la sesión planificada tiene fechas previstas: la opción B entra como una capa de planificación encima de la clave de la opción A, que no cambia. La ejecución sigue siendo una por sesión y por fecha local de ejecución.
 
 ## DL-078 — No hay operación para llegar a una ocurrencia que no sea la de hoy
 
@@ -3806,6 +3809,8 @@ sin recetas.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-10, o cambia las que quiera, y un teléfono real recibe un aviso con Firebase configurado.
 
+**Avance del 2026-10-16 (DL-137).** Dirección eligió la opción C para D-5: el entrenamiento se recuerda solo los días planificados, según la agenda del plan (a las 10:00 y a las 22:00). Un plan sin agenda no avisa. La nutrición sigue igual.
+
 ## DL-134 — REV-A: la persona lee las revisiones que sus profesionales registraron sobre ella
 
 **Prioridad:** media.
@@ -4017,3 +4022,78 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 - la web y la APK ofrecen la invitación, y una persona real la usa desde el teléfono;
 - Dirección ratifica D-1 a D-12, o cambia las que quiera;
 - con eso, DL-035 se cierra (el identificador deja de copiarse a mano), y DL-023 queda solo con la declaración de edad.
+
+## DL-137 — La agenda del plan de entrenamiento: fechas exactas, lo pendiente y los avisos por día planificado
+
+**Prioridad:** media.
+
+**Documentos:**
+- **06 B-08:** REG-06-111 (la jerarquía del plan, sin tiempo), REG-06-114 (la ejecución conserva su ocurrencia de referencia), REG-06-115 (como mucho una ejecución por ocurrencia identificable), REG-06-126 (el microciclo es la unidad de repetición semanal, sin duración fija) y REG-06-131 (no realizada no es lo mismo que sin registro).
+- **DL-077:** la opción B («cada sesión lleva su ocurrencia prevista») se había dejado de lado porque el 06 no fija fechas (B10-06:364-375).
+- **WP-06 §9.2:** «No realizada» sale solo de un acto explícito. **DL-088:** BE no inventa la hora de una sesión pasada. **DL-106.**
+- **DL-133 D-5:** el recordatorio de entrenamiento llegaba todos los días; su opción C era «días de la semana en el plan; es otro paquete».
+- **El paquete:** WP-AGENDA-DE-ENTRENAMIENTO (`docs/paquetes/WP-AGENDA-DE-ENTRENAMIENTO.md`).
+
+**Estado:** IMPLEMENTADA (API) el 2026-10-16. Falta el editor del website y la APK.
+
+**Qué pasaba.** El plan de entrenamiento no tenía días. «Hoy» listaba todas las sesiones y la persona elegía cuál hacía (DL-077), y el recordatorio de las 22:00 llegaba todos los días, también en los de descanso. BE no podía decir qué sesión tocaba ni cuál quedó pendiente.
+
+**Qué pidió y decidió Dirección el 2026-10-16:**
+- «El plan de entrenamiento, solo los días que tendría que haber entrenado o que lo tenía planificado». La nutrición sigue con el recordatorio de todos los días.
+- La persona puede pasar la sesión a otro día o saltearla: «el miércoles me tocaba pierna […] lo voy a pasar para mañana», o «fue directamente al tercer día planificado». «Todavía no metería más algoritmos en eso».
+- «Avisa a las 10 am sobre el entrenamiento si es nuevo o atrasado, y a la noche en el caso de no haberlo cargado, 10 pm». La pendiente insiste dos días como mucho.
+- «Ya podría arrancar con fechas exactas».
+
+**El contrato:**
+
+| Operación | Qué cambia |
+|---|---|
+| API-TRN-10 `PATCH /training/plans/{planId}` | Acepta `agenda`: `startDate`, `sessions` (cada sesión con sus `weekdays`) y `moves` (una fecha suelta movida: `sessionId`, `from`, `to`). Sin el campo, la que había se conserva, sin las sesiones que ya no están; `null` la quita. Una agenda que no se puede guardar es 422 `TRAINING_PLAN_STRUCTURE_INVALID` con los códigos `AGENDA_*` y la ruta de cada campo |
+| API-SER-01 `GET /training/plans/{planId}/detail` | Trae `agenda`, o `null`. Es la lectura del profesional |
+| **API-AGE-01** `GET /me/training/agenda` (nueva, familia AGE) | La agenda del día del titular: `today`, `pending` y `upcoming`, cada fecha prevista con su ocurrencia y lo que la resolvió. Sin agenda, las listas vacías |
+| API-TRN-18 (confirmar) | Una «no realizada» de un día pasado ya no pide hora: rige el último instante de ese día local (D-5) |
+| La corrida de recordatorios | La franja `MORNING` (10:00) y dos tipos de novedad: `TRAINING_SESSION_TODAY_REMINDER` y `TRAINING_SESSION_PENDING_REMINDER` |
+
+**Lo decidido** (con el mandato del día; todo espera ratificación):
+- **D-1 · Días de la semana, una fecha de inicio y fechas movidas a mano.** BE arma con eso las fechas exactas.
+  - *Alternativas descartadas:* cargar cada fecha a mano (treinta fechas por plan); una fecha por microciclo (el 06 no fija su duración, REG-06-126).
+- **D-2 · La agenda va en el contenido de la versión.** Se versiona con el plan, queda en la instantánea al activar y la hereda la sucesora, que el profesional puede cambiar.
+  - *Alternativa descartada:* una tabla aparte, que se podría editar sin versión (contra B-06).
+- **D-3 · La ocurrencia planificada se deriva y no se guarda:** (sesión, fecha prevista), desde que la versión rige.
+  - *Alternativa descartada:* materializar las fechas al activar, que duplica el plan y obliga a migrarlo cuando cambia.
+- **D-4 · Hacerla otro día la resuelve.** Una fecha prevista P de la sesión S queda resuelta por la primera ejecución de S desde P y antes de la próxima fecha de S, en cualquier condición; si no hay, por una anterior a P y posterior a la prevista anterior (la adelantó). Cada ejecución resuelve una sola fecha, y una de antes de que la versión rigiera no resuelve nada.
+  - *Alternativa descartada:* una ocurrencia nueva por cada cambio de día de la persona. Es más fina, pero agrega un acto que Dirección no pidió.
+- **D-5 · Saltear es registrarla «no realizada» en su fecha prevista**, con la ocurrencia de esa fecha (WP-06 §9.2, DL-106). Como no pasó nada que tenga hora, la API no la pide: rige el último instante de ese día local, o el último de la versión si otra la reemplazó ese día. Es un instante convencional, no la hora de una sesión: las pantallas no lo muestran como hora.
+  - *Alternativas descartadas:* un estado «salteada» nuevo, sin respaldo en el 06; que cada cliente mande una hora inventada.
+- **D-6 · Los avisos de entrenamiento:**
+  - **a las 10:00:** si hoy toca una sesión que todavía no se hizo, «Entrenamiento de hoy»; y por cada sesión de los dos días anteriores que siguió sin registrar ni saltear, «Te quedó pendiente una sesión del miércoles»;
+  - **a las 22:00:** si la de hoy sigue sin registrar ni saltear;
+  - **un plan sin agenda no avisa;**
+  - en la agenda del día, una pendiente se ve una semana, o hasta la próxima fecha de la misma sesión.
+  - *Alternativa descartada:* seguir avisando todos los días (DL-133 D-5, opción A).
+- **D-7 · Operaciones nuevas, no campos nuevos.** «Hoy» (API-TRN-14) y el plan (API-TRN-09) no cambian de forma, porque las APK instaladas los validan con esquemas estrictos (la prueba C01). La agenda del día va en API-AGE-01 y la del plan, en el detalle del profesional (API-SER-01).
+  - *Alternativa descartada:* un campo opcional que solo viaja a quien declara una capacidad (`X-BE-Capabilities`, como DL-122). Funciona, pero contradice la regla de WP-ENTRENAMIENTO-SERIES: «Lo nuevo va en operaciones nuevas».
+- **D-8 · Qué no se guarda:** una sesión que no está en el plan o que aparece dos veces, un día repetido, y un movimiento que no parte de una fecha prevista, se repite, cae antes del inicio o choca con otra fecha de la misma sesión. Al activar se vuelve a validar.
+- **D-9 · Los textos no nombran la sesión.** La novedad guarda el tipo, el área y la fecha; el texto se arma al leer (DL-133 D-2) y dice el día de la semana de la fecha prevista. La pantalla de Entrenamiento muestra cuál es.
+  - *Alternativa descartada:* guardar el nombre de la sesión en la novedad: sería contenido del plan en el centro de novedades, que DL-133 deja afuera.
+
+**Cambia otras decisiones:**
+- **DL-133 D-5** pasa de la opción A a la C.
+- **DL-077:** la opción B entra como una capa de planificación encima de la clave de la opción A, que no cambia.
+
+**Base de datos.** Migración aditiva `20261016210000_agenda_de_entrenamiento`: los dos valores nuevos de `TipoDeNovedad` y la restricción `novedad_recordatorio_coherente` con ellos. La agenda va en el JSON del contenido de la versión: no hay tablas ni columnas nuevas. La tarea programada corre también a las 13:00 UTC (`0 1,13,18 * * *`).
+
+**Pruebas:**
+- **dominio** (`agenda-de-entrenamiento.test.ts`, `novedades.test.ts`): el calendario, los movimientos, la validación, la resolución (a tiempo, tarde, adelantada, «no realizada», sin registro), lo pendiente, lo que viene y los textos;
+- **integración** (`agenda-de-entrenamiento.int-spec.ts`): guardar, podar, quitar, la instantánea y la sucesora; la agenda del día; saltear sin hora; los avisos de las 10 y de las 22, una sola vez, y nada sin agenda; `contrato.int-spec.ts` observa API-AGE-01.
+
+**Lo que queda abierto:**
+- **El editor del website:** los días de cada sesión, la fecha de inicio, la vista previa del calendario y mover una fecha.
+- **La APK:** lo de hoy, lo pendiente con «Hacerla hoy» y «Saltearla», lo que viene, y la pregunta por la pendiente al registrar la sesión siguiente (Dirección). Una salteada se ve como «No realizada», sin la hora convencional.
+- Varias pendientes dan un aviso cada una, dos mañanas como mucho.
+
+**Provisorio en código:** D-1 a D-9.
+
+**Condición de cierre:**
+- el editor y la APK lo ofrecen, y una persona real recibe los avisos en el teléfono;
+- Dirección ratifica D-1 a D-9, o cambia las que quiera.

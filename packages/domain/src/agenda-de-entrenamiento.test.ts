@@ -139,3 +139,18 @@ test('«Hoy» muestra lo previsto para el día y lo pendiente; una pendiente se 
   // Antes de que la versión empiece a regir no había nada previsto.
   assert.deepEqual(fechas(agendaDelDia(AGENDA, [], '2026-10-23', '2026-10-22').pendientes), []);
 });
+
+test('lo que viene es la semana siguiente sin lo ya hecho; una sesión del plan anterior no adelanta el nuevo', () => {
+  // El sábado 24, con el torso del lunes 19 hecho: el de hoy adelanta el del lunes 26, que ya no está entre lo que viene.
+  const sabado = agendaDelDia(AGENDA, [hecha('torso', '2026-10-19'), hecha('torso', '2026-10-24')], '2026-10-24', '2026-10-19');
+  assert.deepEqual(fechas(sabado.proximas), ['2026-10-28 piernas', '2026-10-30 completo']);
+  // Sin el del lunes 19, el de hoy primero pone al día ese (D-4: hecha después resuelve antes que adelantada).
+  const atrasada = agendaDelDia(AGENDA, [hecha('torso', '2026-10-24')], '2026-10-24', '2026-10-19');
+  assert.deepEqual(fechas(atrasada.proximas), ['2026-10-26 torso', '2026-10-28 piernas', '2026-10-30 completo']);
+  // La versión nueva rige desde el viernes 23: el torso del miércoles 21, con la anterior, no resuelve el lunes 26.
+  const nueva = agendaDelDia(AGENDA, [hecha('torso', '2026-10-21')], '2026-10-24', '2026-10-23');
+  assert.deepEqual(fechas(nueva.proximas), ['2026-10-26 torso', '2026-10-28 piernas', '2026-10-30 completo']);
+  // La resolución conserva la ejecución entera, con lo que la API le haya sumado.
+  const conId = agendaDelDia(AGENDA, [{ ...hecha('torso', '2026-10-19'), executionId: 'x-1' }], '2026-10-19', '2026-10-19');
+  assert.equal(conId.hoy[0]?.resolvedBy?.executionId, 'x-1');
+});

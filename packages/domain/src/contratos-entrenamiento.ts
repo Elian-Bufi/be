@@ -392,11 +392,6 @@ export const VersionDePlanDeEntrenamientoSchema = z.strictObject({
    * valida con esquemas estrictos y no la conoce): ausente para el titular, `null` si no salió de una plantilla.
    */
   templateOrigin: z.strictObject({ templateId: IdOpaco, templateVersionId: IdOpaco }).nullable().optional(),
-  /**
-   * DL-137: la agenda, solo para quien declara la capacidad `training-agenda-1` (el website y la APK que la muestra). Las
-   * APK instaladas validan con esquemas estrictos y no la conocen: para ellas no viene. `null` si la versión no tiene.
-   */
-  agenda: AgendaDeEntrenamientoSchema.nullable().optional(),
   blocks: z.array(BloqueSchema),
 });
 export type VersionDePlanDeEntrenamiento = z.infer<typeof VersionDePlanDeEntrenamientoSchema>;
@@ -515,6 +510,20 @@ export const OcurrenciaSchema = z.strictObject({
 export type Ocurrencia = z.infer<typeof OcurrenciaSchema>;
 
 /**
+ * DL-137: una fecha prevista de la agenda. `occurrenceId` es la ocurrencia de esa fecha: con ella se registra en diferido
+ * o se saltea (registrarla «no realizada»). Hacerla hoy es registrar la ocurrencia de hoy de la misma sesión, que está en
+ * las ocurrencias de «Hoy»; la resuelve igual (D-4).
+ */
+export const FechaDeAgendaSchema = z.strictObject({
+  sessionId: IdDeNodoSchema,
+  plannedDate: FechaLocalSchema,
+  occurrenceId: IdOpaco,
+  /** La ejecución que la resolvió, o `null`: hecha (con o sin cambios) o salteada, y en qué fecha. */
+  resolvedBy: z.strictObject({ executionId: IdOpaco, date: FechaLocalSchema, sessionCondition: CondicionDeSesionApiSchema }).nullable(),
+});
+export type FechaDeAgenda = z.infer<typeof FechaDeAgendaSchema>;
+
+/**
  * API-TRN-14. El servidor fija fecha y zona (09v10:872). Si el plan tiene varias sesiones, están todas: BE no elige
  * cuál corresponde hoy, el asesorado la elige (DL-077, igual que el día tipo de nutrición en DL-049).
  */
@@ -537,6 +546,31 @@ export const HoyDeEntrenamientoResponseSchema = z.strictObject({
   }),
 });
 export type HoyDeEntrenamientoResponse = z.infer<typeof HoyDeEntrenamientoResponseSchema>;
+
+/**
+ * API-AGE-01 (DL-137): la agenda del día del titular, en una operación propia: «Hoy» (API-TRN-14) no cambia, porque la
+ * APK instalada lo valida con un esquema estricto. Con el plan vigente y su agenda: lo previsto para hoy, lo pendiente y
+ * lo que viene. Los nombres de las sesiones están en las ocurrencias de «Hoy». Sin agenda, `startDate` es `null` y las
+ * listas van vacías: la persona elige la sesión como siempre (DL-077).
+ */
+export const AgendaDeHoyResponseSchema = z.strictObject({
+  data: z.strictObject({
+    date: FechaLocalSchema,
+    timeZone: ZonaHorariaSchema,
+    /** Como en «Hoy»: NOT_AVAILABLE es acceso suspendido. */
+    planState: z.enum(['AVAILABLE', 'NO_ACTIVE_PLAN', 'NOT_AVAILABLE']),
+    /** La versión efectiva del plan, la de las ocurrencias. */
+    planId: IdOpaco.nullable(),
+    startDate: FechaLocalSchema.nullable(),
+    /** Las sesiones previstas para hoy, registradas o no. */
+    today: z.array(FechaDeAgendaSchema),
+    /** Las de días anteriores que siguen sin registro: se ven una semana, hasta la próxima fecha de la misma sesión. */
+    pending: z.array(FechaDeAgendaSchema),
+    /** Las de los siete días que siguen y todavía no se hicieron: «Mañana: Piernas A». */
+    upcoming: z.array(z.strictObject({ sessionId: IdDeNodoSchema, plannedDate: FechaLocalSchema })),
+  }),
+});
+export type AgendaDeHoyResponse = z.infer<typeof AgendaDeHoyResponseSchema>;
 
 /**
  * DL-078: la lectura que falta para registrar en diferido. Sin ella, la sesión de anteayer no se podría registrar y

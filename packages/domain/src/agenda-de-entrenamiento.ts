@@ -29,9 +29,9 @@ export interface EjecucionParaLaAgenda {
   readonly condition: CondicionParaLaAgenda;
 }
 
-export interface FechaPrevistaResuelta extends FechaPrevista {
+export interface FechaPrevistaResuelta<E extends EjecucionParaLaAgenda = EjecucionParaLaAgenda> extends FechaPrevista {
   /** La ejecución que la resolvió, o `null` si sigue sin registro. */
-  readonly resolvedBy: EjecucionParaLaAgenda | null;
+  readonly resolvedBy: E | null;
 }
 
 const DIA = 86_400_000;
@@ -122,14 +122,14 @@ export function problemasDeAgenda(agenda: AgendaDeEntrenamiento, sesionesDelPlan
  * fecha y antes de la próxima prevista de la misma sesión; si no hay, la última hecha antes, después de la prevista
  * anterior (la adelantó). Cada ejecución resuelve una sola fecha. Devuelve las previstas en el orden en que llegaron.
  */
-export function resolverFechasPrevistas(previstas: readonly FechaPrevista[], ejecuciones: readonly EjecucionParaLaAgenda[]): FechaPrevistaResuelta[] {
-  const resueltas = new Map<FechaPrevista, EjecucionParaLaAgenda | null>();
+export function resolverFechasPrevistas<E extends EjecucionParaLaAgenda>(previstas: readonly FechaPrevista[], ejecuciones: readonly E[]): FechaPrevistaResuelta<E>[] {
+  const resueltas = new Map<FechaPrevista, E | null>();
   const porSesion = new Map<string, FechaPrevista[]>();
   for (const p of previstas) porSesion.set(p.sessionId, [...(porSesion.get(p.sessionId) ?? []), p]);
   for (const [sesion, fechas] of porSesion) {
     const ordenadas = [...fechas].sort((a, b) => a.date.localeCompare(b.date));
     const suyas = ejecuciones.filter((e) => e.sessionId === sesion).sort((a, b) => a.date.localeCompare(b.date));
-    const usadas = new Set<EjecucionParaLaAgenda>();
+    const usadas = new Set<E>();
     ordenadas.forEach((p, i) => {
       const proxima = ordenadas[i + 1]?.date ?? null;
       const anterior = ordenadas[i - 1]?.date ?? null;
@@ -152,21 +152,30 @@ export const DIAS_QUE_SE_MUESTRA_UNA_PENDIENTE = 7;
 /** Cuántos días se recuerda una misma pendiente (Dirección, 2026-10-16: «el aviso insiste dos días como mucho»). */
 export const DIAS_QUE_SE_RECUERDA_UNA_PENDIENTE = 2;
 
-export interface AgendaDelDia {
+/** Lo que se ve de lo que viene: la semana siguiente a hoy. */
+export const DIAS_QUE_SE_MIRAN_HACIA_ADELANTE = 7;
+
+export interface AgendaDelDia<E extends EjecucionParaLaAgenda = EjecucionParaLaAgenda> {
   /** Las fechas previstas para hoy, resueltas o no. */
-  readonly hoy: readonly FechaPrevistaResuelta[];
+  readonly hoy: readonly FechaPrevistaResuelta<E>[];
   /** Las previstas de días anteriores que siguen sin registro, de la más vieja a la más nueva. */
-  readonly pendientes: readonly FechaPrevistaResuelta[];
+  readonly pendientes: readonly FechaPrevistaResuelta<E>[];
+  /** Las de la semana siguiente que todavía no se hicieron (una adelantada ya no está), en orden. */
+  readonly proximas: readonly FechaPrevista[];
 }
 
 /**
  * La agenda de un día: lo previsto para hoy y lo que quedó pendiente. `vigenteDesde` es la fecha local en que la versión
  * empezó a regir: antes, nada estaba previsto todavía. Una pendiente deja de mostrarse a la semana o cuando llega la
- * próxima fecha de la misma sesión.
+ * próxima fecha de la misma sesión. Una ejecución anterior a la ventana no resuelve nada: con otra versión del plan, una
+ * sesión hecha antes de que esta rigiera no adelanta la primera fecha de esta.
  */
-export function agendaDelDia(agenda: AgendaDeEntrenamiento, ejecuciones: readonly EjecucionParaLaAgenda[], hoy: string, vigenteDesde: string): AgendaDelDia {
+export function agendaDelDia<E extends EjecucionParaLaAgenda>(agenda: AgendaDeEntrenamiento, ejecuciones: readonly E[], hoy: string, vigenteDesde: string): AgendaDelDia<E> {
   const desde = sumarDias(hoy, -MARGEN_DE_DIAS) < vigenteDesde ? vigenteDesde : sumarDias(hoy, -MARGEN_DE_DIAS);
-  const resueltas = resolverFechasPrevistas(fechasPrevistas(agenda, desde, sumarDias(hoy, MARGEN_DE_DIAS)), ejecuciones);
+  const resueltas = resolverFechasPrevistas(
+    fechasPrevistas(agenda, desde, sumarDias(hoy, MARGEN_DE_DIAS)),
+    ejecuciones.filter((e) => e.date >= desde),
+  );
   const proximaDeLaSesion = (p: FechaPrevista): string | null => resueltas.find((o) => o.sessionId === p.sessionId && o.date > p.date)?.date ?? null;
   return {
     hoy: resueltas.filter((p) => p.date === hoy),
@@ -176,9 +185,12 @@ export function agendaDelDia(agenda: AgendaDeEntrenamiento, ejecuciones: readonl
       const proxima = proximaDeLaSesion(p);
       return proxima === null || proxima > hoy;
     }),
+    proximas: resueltas
+      .filter((p) => p.date > hoy && diasEntreFechas(hoy, p.date) <= DIAS_QUE_SE_MIRAN_HACIA_ADELANTE && p.resolvedBy === null)
+      .map((p) => ({ sessionId: p.sessionId, date: p.date })),
   };
 }
 
 /** Las pendientes que todavía se recuerdan hoy: las de los últimos dos días. */
-export const pendientesParaRecordar = (agenda: AgendaDelDia, hoy: string): FechaPrevistaResuelta[] =>
+export const pendientesParaRecordar = <E extends EjecucionParaLaAgenda>(agenda: AgendaDelDia<E>, hoy: string): FechaPrevistaResuelta<E>[] =>
   agenda.pendientes.filter((p) => diasEntreFechas(p.date, hoy) <= DIAS_QUE_SE_RECUERDA_UNA_PENDIENTE);

@@ -212,6 +212,12 @@ export class EntrenamientoController {
     return this.ejecuciones.hoy(actorDe(req), query, contextoDe(req));
   }
 
+  /** API-AGE-01 (DL-137): la agenda del día; «Hoy» no cambia de forma. */
+  @Get('me/training/agenda')
+  agenda(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.ejecuciones.agenda(actorDe(req), query, contextoDe(req));
+  }
+
   /** DL-078: la lectura que falta para registrar en diferido. */
   @Get('me/training/occurrences')
   ocurrencias(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {

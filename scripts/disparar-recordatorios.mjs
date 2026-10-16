@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * La tarea programada de los recordatorios diarios de registro (WP-NOVEDADES-Y-AVISOS, DEUDA_LEGAJO DL-133). La corre
- * Render (servicio cron `be-recordatorios` de render.yaml) a las 15:00 y a las 22:00 de Argentina. 07 §24: «un cron
+ * La tarea programada de los recordatorios diarios (WP-NOVEDADES-Y-AVISOS y la agenda de entrenamiento, DEUDA_LEGAJO
+ * DL-133 y DL-137). La corre Render (servicio cron `be-recordatorios` de render.yaml) a las 10:00, a las 15:00 y a las
+ * 22:00 de Argentina. 07 §24: «un cron
  * administrado de la plataforma llamando un endpoint interno idempotente».
  * - Solo llama a la API: la API decide la franja por su hora, a quién recordarle y qué avisar. Repetirla no duplica nada.
  * - Necesita `BE_API_URL` y `BE_SECRETO_DE_TAREAS` (el mismo que genera Render para be-api). Nunca los imprime.

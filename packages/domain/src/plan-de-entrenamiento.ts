@@ -15,7 +15,15 @@
  * ideales, la selección de ejercicios, la progresión. Tampoco se exige criterio de intensidad: REG-06-128 es
  * condicional, y una prescripción sin criterio es legítima (DL-088).
  */
-import type { BaseDeCarga, BaseDeRepeticiones, EjercicioRegistradoEntrada, EstructuraDePlanDeEntrenamientoEntrada, SesionEntrada, VersionDePlanDeEntrenamiento } from './contratos-entrenamiento';
+import type {
+  AgendaDeEntrenamiento,
+  BaseDeCarga,
+  BaseDeRepeticiones,
+  EjercicioRegistradoEntrada,
+  EstructuraDePlanDeEntrenamientoEntrada,
+  SesionEntrada,
+  VersionDePlanDeEntrenamiento,
+} from './contratos-entrenamiento';
 import type { PlanConObjetivos } from './contratos-entrenamiento-por-serie';
 import { problemasDeObjetivosPorSerie } from './objetivos-por-serie';
 import type { ValidationIssue } from './contratos';
@@ -78,6 +86,19 @@ export interface BloqueGuardado {
 /** El contenido de una versión de plan: el orden es el del arreglo (REG-06-111: «en orden identificable»). */
 export interface ContenidoDePlanDeEntrenamiento {
   readonly blocks: readonly BloqueGuardado[];
+  /** DL-137: la agenda de la versión. Ausente en los planes de antes y en los que no la usan. */
+  readonly agenda?: AgendaDeEntrenamiento | null;
+}
+
+/**
+ * DL-137: la agenda que queda después de cambiar la estructura sin tocarla: sin las sesiones que ya no están en el plan
+ * ni sus movimientos. Si no queda ninguna sesión con días, no queda agenda.
+ */
+export function agendaPodada(agenda: AgendaDeEntrenamiento | null | undefined, sesionesDelPlan: ReadonlySet<string>): AgendaDeEntrenamiento | null {
+  if (!agenda) return null;
+  const sessions = agenda.sessions.filter((s) => sesionesDelPlan.has(s.sessionId));
+  if (sessions.length === 0) return null;
+  return { startDate: agenda.startDate, sessions, moves: agenda.moves.filter((m) => sesionesDelPlan.has(m.sessionId)) };
 }
 
 /**

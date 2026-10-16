@@ -21,6 +21,8 @@ import {
   type EjecucionDeEntrenamiento,
   type EjercicioRegistradoEntrada,
   type GranularidadDeRegistro,
+  type AgendaDeHoyResponse,
+  type FechaPrevistaResuelta,
   type HoyDeEntrenamientoResponse,
   type InstantaneaDeEntrenamiento,
   type Ocurrencia,
@@ -40,6 +42,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { ZONA_POR_DEFECTO, fechaLocalEn, finDelDiaLocal, inicioDelDiaLocal } from '../nutricion/zona';
 import { nombreDeAsesoradoPara, token, esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService, type Ambito } from './catalogo.service';
+import { agendaDeLaVersion, type EjecucionDeLaAgenda } from './agenda-del-asesorado';
 import { CompatibilidadDeClientesService, entregaRetenida, seRetieneLaEntrega } from './compatibilidad-de-clientes';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
@@ -55,6 +58,7 @@ import {
 } from './lectura-entrenamiento';
 
 type Tx = Prisma.TransactionClient;
+type AgendaDeHoyApi = AgendaDeHoyResponse['data'];
 
 const TOLERANCIA_FUTURO_MS = 5 * 60 * 1000;
 /** DL-078: la lectura por período alcanza para registrar en diferido sin volverse un volcado del historial. */
@@ -91,6 +95,22 @@ interface ContenidoDeCorreccion extends ContenidoDeRegistro {
 const CONDICION_DESDE_API = Object.fromEntries(Object.entries(CONDICION_DE_SESION_API).map(([d, a]) => [a, d])) as Record<string, CondicionDeSesion>;
 const GRANULARIDAD_DESDE_API = Object.fromEntries(Object.entries(GRANULARIDAD_API).map(([d, a]) => [a, d])) as Record<string, GranularidadDeRegistro>;
 
+/**
+ * DL-137 D-5: saltear una sesión de un día pasado es registrarla «no realizada», y no pasó nada que tenga hora. Sin una
+ * declarada, el instante es el último de ese día local, o el último de la versión si otra la reemplazó ese día. Es un
+ * instante convencional, no la hora de una sesión: BE sigue sin inventar la hora de una sesión pasada (DL-088).
+ */
+function finDeUnaNoRealizada(
+  borrador: { readonly condicion: CondicionDeSesion | null; readonly momentoDeRegistro: Date; readonly zonaHoraria: string },
+  fecha: string,
+  vigencia: { readonly desde: Date; readonly hasta: Date | null },
+): Date | null {
+  if (borrador.condicion !== 'NO_REALIZADA' || fecha >= fechaLocalEn(borrador.momentoDeRegistro, borrador.zonaHoraria)) return null;
+  const fin = new Date(finDelDiaLocal(fecha, borrador.zonaHoraria).getTime() - 1);
+  const ultimo = vigencia.hasta && fin >= vigencia.hasta ? new Date(vigencia.hasta.getTime() - 1) : fin;
+  return ultimo >= vigencia.desde ? ultimo : null;
+}
+
 /** Fuera de los tres valores es `SESSION_CONDITION_INVALID` con su motivo (09v10:1538), no un 400 genérico. */
 function interpretarCondicion(texto: string | null, ruta: string): CondicionDeSesion | null {
   if (texto === null) return null;
@@ -124,6 +144,7 @@ const comoFecha = (f: string): Date => new Date(`${f}T00:00:00.000Z`);
  * - la ocurrencia la emite el servidor y no se inventa por timestamp: (versión, sesión, fecha local) (DL-077);
  * - el borrador solo lo ve su titular: no es evidencia (09v10:980; DL-088);
  * - BE no inventa la hora de una sesión pasada (DL-088);
+ * - una «no realizada» de un día pasado no tiene hora: sin una declarada, rige el final de ese día (DL-137 D-5);
  * - un plan con objetivos distintos por serie no se le entrega a un cliente que no los muestra: «Hoy» y el período dicen
  *   que no está disponible, y abrir el borrador es el 404 de lo inexistente. Lo ya registrado no cambia (DL-122, precierre
  *   del 2026-10-06; `compatibilidad-de-clientes.ts`).
@@ -186,6 +207,38 @@ export class EjecucionesDeEntrenamientoService {
     });
     await this.compatibilidad.registrarDeclaracion(actor.identidadId, ctx);
     return respuesta;
+  }
+
+  // ─── API-AGE-01 (DL-137) ───────────────────────────────────────────────────────────────────
+  /**
+   * La agenda del día del titular, con las mismas reglas que «Hoy»: el plan con su Proceso abierto, el PDP de su
+   * profesional, y la versión retenida a un cliente que no muestra los objetivos por serie. Sin agenda, listas vacías.
+   */
+  agenda(actor: ActorAutenticado, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<AgendaDeHoyResponse> {
+    sinParametrosDeQuery(query);
+    return this.ejecutor.leer<AgendaDeHoyResponse>({
+      operacion: 'API-AGE-01',
+      casoDeUso: 'UC-P17',
+      actor,
+      ctx,
+      recursoIntentado: null,
+      lectura: async (tx) => {
+        const zona = ZONA_POR_DEFECTO;
+        const fecha = fechaLocalEn(await momentoDeLaBase(tx), zona);
+        const vacia = { date: fecha, timeZone: zona, planId: null, startDate: null, today: [], pending: [], upcoming: [] };
+        const plan = await this.planConProcesoAbierto(tx, actor.identidadId);
+        if (!plan) return { data: { ...vacia, planState: 'NO_ACTIVE_PLAN' } };
+        if (!(await this.accesoVigente(tx, 'API-AGE-01', actor, plan, ctx))) return { data: { ...vacia, planState: 'NOT_AVAILABLE' } };
+        const efectiva = plan.versiones.find((v) => v.id === plan.efectivaId);
+        if (!efectiva) return { data: { ...vacia, planState: 'NO_ACTIVE_PLAN' } };
+        if (seRetieneLaEntrega(ctx, efectiva.instantanea.contenido)) {
+          await this.compatibilidad.registrarRetencion(tx, { operacion: 'API-AGE-01', actorId: actor.identidadId, versionDePlanId: efectiva.id }, ctx);
+          return { data: { ...vacia, planState: 'NOT_AVAILABLE' } };
+        }
+        const a = await this.agendaDeHoy(tx, actor.identidadId, efectiva, fecha, zona);
+        return { data: { date: fecha, timeZone: zona, planState: 'AVAILABLE', planId: efectiva.id, ...(a ?? { startDate: null, today: [], pending: [], upcoming: [] }) } };
+      },
+    });
   }
 
   // ─── API-TRN-14-PERIODO (DL-078) ───────────────────────────────────────────────────────────
@@ -432,7 +485,7 @@ export class EjecucionesDeEntrenamientoService {
         const vigencia = await this.vigenciaDe(tx, borrador.versionDePlanId);
         const dentro = (m: Date) => m >= vigencia.desde && (!vigencia.hasta || m < vigencia.hasta);
         const porDefecto = fechaLocalEn(borrador.momentoDeRegistro, borrador.zonaHoraria) === fecha && dentro(borrador.momentoDeRegistro) ? borrador.momentoDeRegistro : null;
-        const ocurrencia = borrador.momentoDeOcurrencia ?? porDefecto;
+        const ocurrencia = borrador.momentoDeOcurrencia ?? porDefecto ?? finDeUnaNoRealizada(borrador, fecha, vigencia);
         if (!ocurrencia) issues.push({ code: 'OCCURRED_AT_REQUIRED', path: 'occurredAt' });
         else if (!dentro(ocurrencia)) issues.push({ code: 'OCCURRED_AT_OUTSIDE_PLAN_VERSION', path: 'occurredAt' });
         if (issues.length > 0 || !borrador.condicion) {
@@ -704,6 +757,27 @@ export class EjecucionesDeEntrenamientoService {
       }
     }
     return r;
+  }
+
+  /**
+   * DL-137: lo previsto para hoy, lo pendiente y lo que viene, con la ocurrencia de cada fecha prevista: la de la versión
+   * efectiva, que ya regía en cada una (la agenda no mira antes de la activación). `null` si la versión no tiene agenda.
+   */
+  private async agendaDeHoy(tx: Tx, asesoradoId: string, efectiva: VersionActivada, hoy: string, zona: string): Promise<Omit<AgendaDeHoyApi, 'date' | 'timeZone' | 'planState' | 'planId'> | null> {
+    const a = await agendaDeLaVersion(tx, asesoradoId, efectiva, hoy, zona);
+    if (!a) return null;
+    const fecha = (p: FechaPrevistaResuelta<EjecucionDeLaAgenda>) => ({
+      sessionId: p.sessionId,
+      plannedDate: p.date,
+      occurrenceId: codificarOcurrencia({ versionDePlanId: efectiva.id, sesionPlanificadaId: p.sessionId, fechaLocal: p.date }),
+      resolvedBy: p.resolvedBy ? { executionId: p.resolvedBy.executionId, date: p.resolvedBy.date, sessionCondition: p.resolvedBy.condition } : null,
+    });
+    return {
+      startDate: a.agenda.startDate,
+      today: a.dia.hoy.map(fecha),
+      pending: a.dia.pendientes.map(fecha),
+      upcoming: a.dia.proximas.map((p) => ({ sessionId: p.sessionId, plannedDate: p.date })),
+    };
   }
 
   /** El PDP sobre el profesional del plan: si el acceso está suspendido, queda registrado y se informa (UC-P12 E06). */

@@ -20,6 +20,7 @@
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
 import {
+  AgendaDeEntrenamientoSchema,
   BaseDeCargaSchema,
   BaseDeRepeticionesSchema,
   CargaSchema,
@@ -196,6 +197,8 @@ export type EntregaDeObjetivosPorSerie = z.infer<typeof EntregaDeObjetivosPorSer
 export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ blocks: true }).extend({
   blocks: z.array(BloqueConObjetivosSchema),
   setTargetsDelivery: EntregaDeObjetivosPorSerieSchema,
+  /** DL-137: la agenda de la versión (los días de cada sesión, desde cuándo y lo movido), o `null` si no tiene. */
+  agenda: AgendaDeEntrenamientoSchema.nullable(),
 });
 export type PlanConObjetivos = z.infer<typeof PlanConObjetivosSchema>;
 export const PlanConObjetivosResponseSchema = z.strictObject({ data: PlanConObjetivosSchema });

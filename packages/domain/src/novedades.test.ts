@@ -9,6 +9,7 @@ import {
   franjaDeLaHora,
   ListaDeNovedadesResponseSchema,
   RegistrarSuscripcionPushRequestSchema,
+  terminosProhibidosDeEntrenamientoEn,
   textoDeNovedad,
   textoDelAvisoPush,
   TIPOS_DE_NOVEDAD,
@@ -46,11 +47,27 @@ test('cada tipo tiene su texto y su pantalla; el texto nombra a quien la origin�
   assert.equal(vistaDeNovedad('RELATIONSHIP_PAUSED', 'NUTRICION', false), 'RELATIONSHIPS');
 });
 
+test('DL-137: los avisos de la agenda dicen qué sesión toca o de qué día quedó, sin juzgar', () => {
+  const pendiente = (fecha: string | null) => textoDeNovedad('TRAINING_SESSION_PENDING_REMINDER', { alcance: 'ENTRENAMIENTO', fuente: null, fecha }).body;
+  // El miércoles 21 de octubre de 2026: el día sale del calendario, sin la zona.
+  assert.equal(pendiente('2026-10-21'), 'Te quedó pendiente una sesión del miércoles. Podés hacerla hoy o saltearla, desde Entrenamiento.');
+  assert.match(pendiente('2026-10-25'), /del domingo\./);
+  assert.match(pendiente(null), /de un día anterior\./);
+  for (const tipo of ['TRAINING_LOG_REMINDER', 'TRAINING_SESSION_TODAY_REMINDER', 'TRAINING_SESSION_PENDING_REMINDER'] as const) {
+    const t = textoDeNovedad(tipo, { alcance: 'ENTRENAMIENTO', fuente: null, fecha: '2026-10-21' });
+    assert.deepEqual(terminosProhibidosDeEntrenamientoEn(`${t.title} ${t.body}`), [], tipo);
+    assert.equal(vistaDeNovedad(tipo, 'ENTRENAMIENTO', false), 'TRAINING', tipo);
+  }
+  assert.equal(textoDelAvisoPush(['TRAINING_SESSION_TODAY_REMINDER', 'TRAINING_SESSION_PENDING_REMINDER']), 'Tenés 2 recordatorios para hoy.');
+});
+
 test('las franjas: la tarde de 14 a 18 y la noche de 21 a 23; fuera de eso, ninguna', () => {
   assert.equal(franjaDeLaHora(15), 'AFTERNOON');
   assert.equal(franjaDeLaHora(22), 'NIGHT');
   assert.equal(franjaDeLaHora(23), 'NIGHT');
-  for (const h of [0, 3, 9, 13, 19, 20]) assert.equal(franjaDeLaHora(h), null, String(h));
+  // DL-137: la mañana (10:00) es la del entrenamiento.
+  for (const h of [9, 10, 12]) assert.equal(franjaDeLaHora(h), 'MORNING', String(h));
+  for (const h of [0, 3, 8, 13, 19, 20]) assert.equal(franjaDeLaHora(h), null, String(h));
 });
 
 test('el contrato: el token con la forma de Expo, el aviso sin contenido y un tipo desconocido que no rompe la lista', () => {
