@@ -119,6 +119,8 @@ export const COPY_NOVEDADES = {
 export const COPY_REVISIONES_PROPIAS = {
   titulo: 'Tus revisiones',
   entrada: 'Ver las revisiones de tu profesional',
+  /** Para el profesional, al escribir la revisión (propuesta REV-A, §3, D1): información, no una restricción. */
+  laPersonaLaLee: 'La persona lee la revisión completa en su app: lo que observaste, lo que decidís y por qué.',
   explicacion: 'Las revisiones que registraron tus profesionales, completas: qué observaron, qué decidieron, por qué y qué sigue.',
   vacio: 'Todavía no hay revisiones registradas.',
   sinA3: 'Para ver tu historia, BE necesita tu autorización de datos de salud vigente. Podés darla en Cuenta, en Privacidad.',
