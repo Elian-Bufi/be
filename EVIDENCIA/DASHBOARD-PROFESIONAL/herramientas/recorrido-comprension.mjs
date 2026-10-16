@@ -1073,13 +1073,26 @@ async function recorridoNutricion(page, v, carpeta) {
   // «Solicitar contexto» está en el marco de la ficha, a la vista en las tres vistas (WP-ESCRITORIO-AMABLE, parte 1).
   await clic(page, '.marco-de-la-ficha a', 'Solicitar contexto');
   await page.waitForFunction(() => location.pathname === '/pro/advisees/forms', { timeout: 20_000 });
+  // «Pedir información» es un cajón que se abre sobre las solicitudes (WP-ESCRITORIO-AREAS, parte 4) y retiene el foco:
+  // para volver a la ficha, primero se cierra. Cerrarlo no envía nada.
+  await page.waitForSelector('dialog.cajon[open]', { timeout: 20_000 });
   await quieto(page, v);
-  const pedido = await texto(page, 'main');
+  const tituloDelPedido = await texto(page, 'dialog.cajon[open] .cajon__cabecera h2');
+  await clic(page, 'dialog.cajon[open] button', 'Cerrar');
+  await page.waitForFunction(() => !document.querySelector('dialog.cajon[open]'), { timeout: 10_000 });
+  // El camino de vuelta está siempre en el marco del área (WP-ESCRITORIO-AREAS, parte 0): lo que dice que hay un retorno
+  // a donde estaba la persona es «donde estabas», que el marco escribe solo con un `volver` válido.
+  const retornoDelPedido = await texto(page, '.retorno-a-la-ficha a');
   await clic(page, '.retorno-a-la-ficha a', 'Volver a la ficha');
   await page.waitForFunction(() => location.pathname === '/pro/advisees', { timeout: 20_000 });
   await quieto(page, v);
   const despues = (await leerApi(v, `/advisees/${estado.aseId}/form-requests?limit=50`)).data.length;
-  comprobar('R3', '«Solicitar contexto» abre el flujo de formularios con su retorno; salir sin enviar no crea ninguna solicitud', /Volver a la ficha/.test(pedido) && antes === despues && escrituras(v, desde).length === 0, `${antes} → ${despues} solicitudes · ${escrituras(v, desde).join(' · ') || 'sin escrituras'}`);
+  comprobar(
+    'R3',
+    '«Solicitar contexto» abre «Pedir información» sobre las solicitudes de la persona, con su retorno a la ficha; cerrarlo y volver sin enviar no crea ninguna solicitud',
+    tituloDelPedido === 'Pedir información' && retornoDelPedido === 'Volver a la ficha, donde estabas' && antes === despues && escrituras(v, desde).length === 0,
+    `«${tituloDelPedido}» · «${retornoDelPedido}» · ${antes} → ${despues} solicitudes · ${escrituras(v, desde).join(' · ') || 'sin escrituras'}`,
+  );
 }
 
 /**
@@ -1758,12 +1771,12 @@ async function recorridoEntrenamiento(page, v, cortes, carpeta) {
     `${resumenMarcado} · ${referencias.length} referencias: ${referencias.map((r) => r.type).join(', ')}`,
   );
   const posts = escrituras(v, desdeEnvio).filter((u) => /\/training\/reviews$/.test(new URL(u.split(' ')[1]).pathname));
-  const tras = await texto(page, 'main');
-  const aviso = await texto(page, '[role="status"]');
-  comprobar('CP-20', 'Registrar la revisión hace una sola escritura y avisa, con la vuelta a la ficha', posts.length === 1 && /Volver a la ficha/.test(tras), `${posts.length} POST · ${aviso.slice(0, 120)}`);
+  // El aviso de la revisión, no la página: el marco del área tiene su propio «Volver a la ficha», siempre.
+  const aviso = await texto(page, '.aviso-flotante');
+  comprobar('CP-20', 'Registrar la revisión hace una sola escritura y avisa, con la vuelta a la ficha en el mismo aviso', posts.length === 1 && /Volver a la ficha, donde estabas/.test(aviso), `${posts.length} POST · ${aviso.slice(0, 120)}`);
   const listaDespues = (await textos(page, '.revisiones li, .revision')).length;
   informar('CP-20', 'Revisiones en la lista, antes y después', `${listaAntes} → ${listaDespues}`);
-  await clic(page, 'a', 'Volver a la ficha');
+  await clic(page, '.aviso-flotante a', 'Volver a la ficha');
   await page.waitForFunction(() => location.pathname === '/pro/advisees', { timeout: 20_000 });
   await quieto(page, v);
   const nuevo = (await leerApi(v, `/advisees/${estado.aseId}/dashboard`)).data.domains.training.summary.lastReview;

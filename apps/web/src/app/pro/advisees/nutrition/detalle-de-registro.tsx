@@ -20,6 +20,7 @@ import {
   UNIDAD_DE_NUTRIENTE,
   cantidad,
   contrasteDeLaComida,
+  diferenciaDeLaFilaEnPalabras,
   nutrienteParaMostrar,
   type Nutrientes,
   type RegistroDeComida,
@@ -30,28 +31,11 @@ import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { useImagenDeMedio } from '../../../../lib/medios';
 import { motivoDeFalla, textoDeFalla } from '../seguimiento/contexto';
-import { useNutricion } from './nutricion';
-
-export function VerRegistro({ registroId }: { registroId: string }) {
-  const [abierto, setAbierto] = useState(false);
-  return (
-    <div className="ver-registro">
-      <button type="button" className="boton boton--enlace" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
-        {abierto ? COPY_REGISTRO_PARA_EL_PROFESIONAL.ocultarRegistro : COPY_REGISTRO_PARA_EL_PROFESIONAL.verRegistro}
-      </button>
-      {abierto ? <DetalleDeRegistro registroId={registroId} /> : null}
-    </div>
-  );
-}
-
-function DetalleDeRegistro({ registroId }: { registroId: string }) {
-  const { token, sesionPerdida } = useNutricion();
-  return <DetalleDeRegistroDeComida registroId={registroId} token={token} sesionPerdida={sesionPerdida} />;
-}
 
 /**
- * El mismo detalle, con la sesión por props: lo usa también la ficha del asesorado («Abrir registro» desde la línea de
- * tiempo y desde Analizar), fuera de la pestaña Nutrición. La lectura es la misma API-ING-03, con su PDP.
+ * El detalle, con la sesión por props: lo usan Nutrición · Registros (al costado de la lista) y la ficha del asesorado
+ * («Abrir registro» desde la línea de tiempo y desde Analizar), fuera de la pestaña Nutrición. La lectura es la misma
+ * API-ING-03, con su PDP.
  */
 export function DetalleDeRegistroDeComida({
   registroId,
@@ -170,7 +154,8 @@ function ContrasteConLaOpcion({ registro }: { registro: RegistroDeComida }) {
               <th scope="row">{f.nombre}</th>
               <td>{f.indicado}</td>
               <td>{f.registrado}</td>
-              <td>{f.diferencia ?? (f.estado === 'OTRA_UNIDAD' ? 'otra unidad: no se resta' : f.estado === 'IGUAL' ? 'igual' : '—')}</td>
+              {/* Siempre con palabras: una raya sola se puede leer como «falta el dato» (C-51). */}
+              <td>{diferenciaDeLaFilaEnPalabras(f)}</td>
             </tr>
           ))}
         </tbody>

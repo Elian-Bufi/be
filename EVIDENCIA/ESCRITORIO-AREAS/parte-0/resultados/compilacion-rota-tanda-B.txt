@@ -1,0 +1,31 @@
+roto: lo escrito sin guardar no se anota: «Actualizar» no pregunta (lo protege F-08 (pregunta antes))
+roto: el marco no tiene en cuenta lo que el resumen deja leer (lo protege F-09 (deja de decir «Activo»))
+roto: «Actualizar» no vuelve a preguntar el resumen, aunque ya había hecho falta (lo protege F-09 («Actualizar» trae la sección))
+roto: «Actualizar» no se alcanza con el teclado (lo protege F-01 (teclado))
+roto: a 1280 px o menos, la referencia de la persona baja de renglón (lo protege F-06 (a 1280 y a 1024))
+roto: con la cuenta sin leer, el marco no ofrece el camino de vuelta (lo protege F-01 (la cuenta que no se pudo leer))
+compilado: web estática (apps/web/out)
+== r-areas-mutante sobre la versión rota (tanda B): 14 OK · 6 fallas · 15/21 comprobaciones bien; fallan: F-08, F-09, F-09, F-01, F-01, F-06
+F-08 · Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir editando» deja lo escrito como estaba; «Actualizar y descartar» vuelve a leer la sec
+F-09 · Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acceso no disponible» y deja de decir «Activo»; el de Entrenamiento, que no recibió 
+F-09 · Cuando las lecturas vuelven a responder, «Actualizar» trae la sección y el marco vuelve a decir el acceso del vínculo (vuelve a preguntar también el resumen, porque ya había tenido que p
+F-01 · Si no se puede leer la cuenta (un 503 simulado), la página conserva el título del área y el camino de vuelta, y la falla va en el lugar de la sección, con «Reintentar»; no hay secciones 
+F-01 · Con el teclado, después del título se llega a «Actualizar» y después a las cuatro secciones, en su orden; axe no encuentra faltas en la página con el marco — Tab: Resumen → Plan → 
+F-06 · A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página �
+--- pasaron:
+F-01 · Nutrición: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actua
+F-01 · Entrenamiento: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Ac
+F-01 · Antropometría: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «A
+F-01 · Información: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Act
+F-07 · Sin haber llegado desde la ficha (como desde un pendiente), el camino de vuelta de las cuatro áreas dice «Volver a la ficha» y ll
+F-06 · El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a un área, o de un área a o
+F-10 · La sección arranca en la misma vertical que el marco y, mientras no se recomponga, conserva el ancho para el que se hizo (1.152 px 
+C-65 · «vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacio
+F-07 · Llegando desde la ficha, el camino de vuelta dice «Volver a la ficha, donde estabas», las cuatro secciones lo conservan y lleva a 
+F-07 · Llegando a «Pedir información» desde Entrenamiento, el camino de vuelta dice «Volver a Entrenamiento» y lleva ahí: no dice «d
+F-08 · «Actualizar» vuelve a pedir todo lo que la sección leyó al entrar (las mismas lecturas, una vez cada una, con los vínculos) y n
+C-43 · Si la sección no se puede leer por una falla (un 503 simulado en el navegador), lo dice en su lugar con el motivo y «Reintentar»;
+F-09 · Si las lecturas de la sección responden «no disponible» (simulado), la sección dice el texto neutral de siempre y el marco pregu
+— · El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas
+restaurado: app/globals.css
+restaurado: app/pro/advisees/marco-del-area.tsx

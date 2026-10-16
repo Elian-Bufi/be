@@ -1,0 +1,47 @@
+NOTADA    al entrar, los métodos y los cálculos se leen dos veces — F-33 (las lecturas de entrada)
+NOTADA    la lista de tomas no dice la hora de cada una — C-64 (la lista, en tramos)
+NOTADA    el título cuenta una toma de más — C-58 (el título y la cuenta)
+NOTADA    el encabezado de la toma no dice sus cuentas — F-36 (el encabezado de la toma)
+NOTADA    cambiar de toma vuelve a leer su detalle — F-33 (elegir otra toma)
+NOTADA    el lector de pantalla oye el nombre corto de la medición (hay dos «Antebrazo») — F-36 (las mediciones, por familia)
+NOTADA    el panel de una medición no ofrece anularla — C-62 (la fila abre el panel)
+NOTADA    una medición anulada ofrece corregirla y anularla — F-37 (una medición anulada)
+NOTADA    la historia no marca la corrección como el valor vigente — F-37 (una medición corregida)
+NOTADA    si ningún resultado cambió, el bloque de una corrección queda mudo y el de una anulación habla de una corrección — F-38 (ningún resultado cambió); F-38 (ningún resultado, al anular)
+NOTADA    una toma sin cálculos no lo dice — F-39 (los resultados, por categoría)
+NOTADA    el detalle de un resultado se saltea la primera entrada del cálculo — F-39 (un resultado, en el panel)
+NOTADA    el enlace para volver de la carga lleva a Evolución — F-35 (la carga, desde Tomas)
+NOTADA    «Actualizar» cierra la toma elegida — F-33 (Actualizar)
+NOTADA    una toma que no está disponible se presenta como una falla de lectura — F-33 (una toma que no está)
+NOTADA    una falla al leer los cálculos pasa por «todavía no hay cálculos»: una falla presentada como ausencia de datos — F-39 (las fallas se dicen)
+NOTADA    el botón de la ayuda de «Tomas» aparece en todas las secciones de Antropometría — F-14 (la ayuda)
+NOTADA    el botón «Ver lámina» queda sin nombre (solo el ícono) — F-37 (axe)
+NOTADA    una toma de pocas mediciones deja vacío el lugar de las familias que no tiene — F-36 (pocas mediciones)
+NOTADA    en una ventana angosta la lista de tomas sigue a la vista, además del selector — F-41 (los anchos)
+tanda A (tomas): 20 de 20 roturas notadas · 21 comprobaciones fallaron y 1 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-33 · Al entrar, «Tomas» lee la lista entera una vez, la to… — la lista: 1 · en preparación: 1 · detalles: 1, 1, 1, 1, 1, 1, 1, 1 (de 8 tomas) · métodos: 2 · cálculos: 2
+  C-64 · La lista tiene todas las tomas registradas, por cuánd… — a la vista: [{"protocolo":"Perfil antropométrico completo","tomas":[{"id":"e9b86130-7467-4158-9527-c6c927112c83","fecha":"11 oct 2026","cuentas":"2 mediciones"}
+  C-58 · El título dice «Tomas», cuántas hay registradas (la c… — «9 registradas.» · botón: «Preparar una toma» · tomas en preparación según la API: 0
+  F-36 · Sin una toma en la dirección abre la más reciente, ma… — «Toma del 11 oct 2026, 08:00» · Medido · «Perfil antropométrico completo · registrada el 12 oct 2026, 08:58 por Lic. Sofía Paz (sintética)»
+  F-33 · Elegir otra toma la pone en la dirección (`evaluacion… — «Toma del 23 sept 2026, 08:00» · pedidos a la API: 1 · veces que se vio «Cargando…»: 0
+  F-36 · Las mediciones van por familia, en el orden del domin… — a la vista: [{"familia":"MASA_Y_ESTATURA","titulo":"Masa y estatura","filas":[{"id":"f850f48b-26e1-4ec0-ac64-4253c0a2e1be","nombre":"Peso","valor":"80,2 kg","ma
+  F-36 · Una toma de hasta seis mediciones muestra sus familia… — 2 mediciones: Masa y estatura | Perímetros · separación: 351 px · la de 10 mediciones: cada familia en su lugar
+  C-62 · Entre las mediciones no hay ningún botón «Corregir» n… — «Peso» · 80,2 kg · Medido, Vigente · historia: Valor original: 80,2 kg Valor vigente · acciones: Corregir medición · foco al cerrar: en la fila
+  F-37 · Una medición anulada se abre igual: dice «Anulada» y … — Medido, Anulada · 6 mm · Anulación: Por qué se anuló: «Sitio mal marcado». La anulaste vos. | Valor original: 6 mm: Sin correcciones: es el valor que se tomó. ·
+  F-38 · Si ningún resultado calculado de la toma usaba la med… — «Lo que pasó con los resultados Ningún resultado calculado de esta toma cambió por esta corrección.»
+  F-37 · Una medición corregida muestra en la fila y en el pan… — la fila: Cintura 90,5 Corregida · el panel: 90,5 cm (se tomó 95) · Corrección: 90,5 cm — Por qué se corrigió: «Valor tipeado mal: era 90,5». La corregiste vos. 
+  F-38 · Si ningún resultado calculado de la toma usa la medic… — «Lo que cambió con la corrección»
+  F-39 · Los resultados vigentes de la toma van por categoría … — Índices: Índice de masa corporal (IMC) 25,1 kg/m² · sin efecto: 0 · una toma sin cálculos: «null»
+  F-39 · Un resultado se abre en el panel: su método, su valor… — «Índice de masa corporal (IMC)» 25,1 kg/m² · 1 entradas · acciones: Dejar como referencia · métodos en el panel: 22 (el catálogo: 22)
+  F-35 · «En preparación» dejó de ser una sección: el marco ti… — secciones: Tomas, Evolución, Lámina · marcada: Tomas · la carga: «Nueva toma» · vuelta: «Tomas»
+  F-33 · La toma elegida vive en la dirección: se abre al entr… — «Toma del 11 oct 2026, 08:00» · lecturas de la lista al actualizar: 1
+  F-33 · Una toma pedida por la dirección que no está disponib… — «No pudimos abrir la toma solicitada. Reintentar · Volver a la lista de tomas» · tomas en la lista: 8 · después: «Toma del 11 oct 2026, 08:00»
+  F-39 · Si la lista de tomas no se puede leer (un 503 simulad… — sin la lista: «Tomas Una toma registrada no se edita: cada medición se corrige o se anula, y queda consta» · sin los cálculos: «null», 1 familias a la vista · d
+  F-14 · «Tomas» tiene su ayuda en el marco del área: se abre … — «Cómo se leen las Tomas» · 11 renglones · botones de ayuda en Evolución: 1
+  F-37 · axe no encuentra faltas en «Tomas», ni con una medici… — la lista y la toma: button-name · con el panel: sin faltas · la ayuda: sin faltas
+  F-41 · A 1280 px la lista sigue al costado de la toma. A 102… — 1280: lista al costado · 1024: 8 opciones en el selector (de 8) · elegida por el selector: «Toma del 11 oct 2026, 08:00»
+pasaron:
+  — · «Tomas» no produjo errores de página
+última línea: 3/24 comprobaciones bien; fallan: F-33, C-64, C-58, F-36, F-33, F-36, F-36, C-62, F-37, F-38, F-37, F-38, F-39, F-39, F-35, F-33, F-33, F-39, F-14, F-37, F-41

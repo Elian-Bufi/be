@@ -14,7 +14,7 @@ const { readdirSync, readFileSync } = require('node:fs');
 const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
-const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
+const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn, terminosProhibidosDeFormulariosEn } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
 /** Los textos también viven en módulos sin JSX (`.ts`): se leen como TypeScript, no como TSX. */
@@ -72,6 +72,15 @@ const DOMINIOS = [
     archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
     prohibidos: terminosProhibidosDeCarteraEn,
     minimo: 8,
+  },
+  {
+    // WP-ESCRITORIO-AREAS, parte 4: Información del profesional (las solicitudes y el pedido). Pedir no es obligar, no
+    // responder no se mide, y lo declarado no es una medición ni un diagnóstico (09 §22.7): negarlo sí se puede decir.
+    // Hasta acá estas pantallas no las miraba ninguna prueba; el texto del dominio sí (`contratos-wp07.test.ts`).
+    nombre: 'información',
+    archivos: tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/forms')),
+    prohibidos: terminosProhibidosDeFormulariosEn,
+    minimo: 4,
   },
 ];
 
@@ -188,23 +197,35 @@ test('T13 · en antropometría, un juicio afirmativo se detecta y su negación e
  *
  * DL-113: el titular dejó de ser un `<h4>` por tarjeta y pasó a ser la fila de la lista de mediciones
  * (`medicion__fila`). Cambió dónde se busca; lo que se exige es lo mismo.
+ *
+ * WP-ESCRITORIO-AREAS, parte 3: las pantallas ya no eligen el valor. La fila de «Tomas» lo recibe de
+ * `medicionesPorFamilia` y el titular del panel, de `valorQueRige`, las dos del dominio, que leen `effectiveMagnitude`
+ * y tienen su prueba (`tomas-de-antropometria.test.ts`: «la fila muestra el valor que rige»). Lo que se exige es lo
+ * mismo, y se fija en tres lugares: que las dos pantallas usen esas funciones; que ninguna lea por su cuenta el valor
+ * que se tomó (`magnitude.value`); y que las funciones lean el vigente. El original entra a la pantalla solo por la
+ * historia de la medición, rotulado como tal. La unidad de origen sí se lee: una corrección la conserva.
  */
 test('T13 · el titular de la medición muestra el valor vigente, no el original', () => {
-  const archivo = join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry/evaluaciones.tsx');
-  const fuente = ts.createSourceFile(archivo, readFileSync(archivo, 'utf8'), ts.ScriptTarget.Latest, true, tipoDeArchivo(archivo));
-  let titular = null;
-  const visitar = (n) => {
-    if (ts.isJsxElement(n) && /className="medicion__fila"/.test(n.openingElement.getText())) titular = n.getText();
-    ts.forEachChild(n, visitar);
+  const leer = (ruta) => readFileSync(join(RAIZ, ruta), 'utf8');
+  const lista = leer('apps/web/src/app/pro/advisees/anthropometry/evaluaciones.tsx');
+  const panel = leer('apps/web/src/app/pro/advisees/anthropometry/medicion.tsx');
+  assert.match(lista, /medicionesPorFamilia\(/, 'la lista de mediciones sale de medicionesPorFamilia, del dominio');
+  assert.match(panel, /const titular = valorQueRige\(medicion\)/, 'el titular del panel sale de valorQueRige, del dominio');
+  assert.match(panel, /className="medicion-abierta__valor">\{titular \?\? C\.sinValorVigente\}/, 'el titular del panel muestra ese valor, o dice que no hay uno vigente');
+  for (const [nombre, fuente] of [['evaluaciones.tsx', lista], ['medicion.tsx', panel]]) {
+    assert.doesNotMatch(fuente, /magnitude\??\.value/, `${nombre} no lee un valor por su cuenta: ni el original ni el vigente`);
+  }
+  // Las dos funciones leen el valor que rige; el original solo aparece en la historia (`historiaDeLaMedicion`).
+  const dominio = leer('packages/domain/src/tomas-de-antropometria.ts');
+  const cuerpoDe = (nombre) => {
+    const desde = dominio.indexOf(nombre);
+    assert.ok(desde >= 0, `se esperaba ${nombre} en el dominio`);
+    return dominio.slice(desde, dominio.indexOf('\n}\n', desde));
   };
-  visitar(fuente);
-  assert.ok(titular, 'se esperaba el encabezado de la medición');
-  assert.match(titular, /effectiveMagnitude/, 'el titular tiene que leer effectiveMagnitude');
-  assert.doesNotMatch(
-    titular.replace(/effectiveMagnitude\s*\?\?\s*medicion\.magnitude/g, ''),
-    /medicion\.magnitude\b/,
-    'el original solo entra como respaldo de la cadena no resoluble, nunca como titular propio',
-  );
+  assert.match(dominio, /export const valorQueRige = \(m: Pick<Medicion, 'effectiveMagnitude'>\)/, 'valorQueRige solo puede leer effectiveMagnitude');
+  const fila = cuerpoDe('export function medicionesPorFamilia');
+  assert.match(fila, /const rige = m\.effectiveMagnitude;/, 'la fila toma el valor de effectiveMagnitude');
+  assert.doesNotMatch(fila, /m\.magnitude\.value/, 'la fila no muestra el valor original');
 });
 
 /**

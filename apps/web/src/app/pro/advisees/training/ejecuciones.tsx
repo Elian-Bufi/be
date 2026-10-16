@@ -1,35 +1,51 @@
 'use client';
 
 /**
- * Ejecuciones (B10-06 §41): período, sesión, condición y detalle. Filtro por período.
+ * Registros de Entrenamiento (B10-06 §41): las sesiones registradas del período, con su detalle.
  * - Solo lo registrado: el borrador del asesorado no es evidencia y no aparece (09v10:980).
- * - Los días sin nada registrado se muestran como «Sin registro», nunca como sesiones no realizadas: el plan no fija
- *   qué días se entrena (H-09-TRN-01; DL-088).
- * - Cada ejecución muestra lo planificado y lo ejecutado por separado, la sustitución con sus dos puntas, y las
- *   correcciones con su autor real: «Registro original / Corrección vigente / Historial» (B10-06:890-900).
+ * - Los días sin nada registrado se dicen «sin sesión registrada», nunca como sesiones que faltaron: el plan no fija qué
+ *   días se entrena (H-09-TRN-01; DL-088).
  * - Sin «disciplinado», «mal rendimiento» ni porcentajes (B10-06:963-966).
- * - Filtros por período, versión del plan y ejercicio (B10-06:956-961). El período vive fuera del estado de lectura.
  * - Una carga que no se registró dice eso, «carga no registrada»: no es «sin carga» ni peso corporal (06:5675).
- * - Objetivos por serie y tiempos (DL-122, DL-124): cada versión del período se lee con API-SER-01, así el gráfico y la
- *   tabla comparan contra el objetivo histórico de cada serie; y cada sesión abierta muestra sus tiempos con su certeza.
- * - Planificado y registrado (amplía DL-105): cada ejecución compara sus series con las de la prescripción que rigió, y
- *   un ejercicio elegido muestra su evolución en el período (`comparacion.tsx`). El ejercicio se elige por identidad del
- *   catálogo, no por nombre: dos ejercicios con el mismo nombre no se mezclan.
+ * - Lo indicado de cada serie es el de la versión del plan que rigió ese día (API-SER-01 de esa versión; DL-122).
+ *
+ * WP-ESCRITORIO-AREAS (parte 2; maqueta 25): **una fila por sesión, y el detalle es una tabla.**
+ * - Las sesiones van de la más nueva a la más vieja (C-68). Cada fila dice el día, la sesión y su condición, cuántas
+ *   series se registraron y cómo quedaron frente a lo indicado. La fila entera abre el detalle.
+ * - Cuatro vistas con nombre dicen cuántas sesiones trae cada una. Los filtros de siempre (versión del plan y
+ *   ejercicio) están en «Más filtros».
+ * - El detalle se abre al costado, sin tapar la lista: cada serie una sola vez, con lo indicado, lo registrado y cómo
+ *   quedó (C-66). Lo demás que se veía (los descansos y la duración de cada serie, la sesión en el plan, el gráfico por
+ *   serie, el registro original y las correcciones) sigue ahí, a un clic.
+ * - La evolución de un ejercicio queda en Analizar (C-67): acá hay un enlace que lleva.
+ * - Las reglas (qué es una serie con diferencias, qué dice cada fila, qué trae cada vista) están en el dominio
+ *   (`registros-de-entrenamiento.ts`), con sus pruebas. Esta pantalla no calcula.
+ * - Si los objetivos de una versión del plan no se pueden leer, sus sesiones se ven igual y lo dicen: una falla no es
+ *   una ausencia de diferencias.
+ * - El período, la vista, los filtros y la sesión abierta viven en la dirección: «Actualizar» y volver atrás los
+ *   conservan.
  */
 import {
   cantidad,
+  componerLasSesiones,
+  contarLasVistasDeSesiones,
   COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
+  COPY_ENTRENAMIENTO_POR_SERIE,
   ejerciciosComparables,
-  identidadDeVersiones,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
+  identidadDeVersiones,
   numero,
   observacionesDelEjercicio,
-  registroVigente,
   repeticionesPlanificadas,
+  sesionEnLaVista,
+  VISTAS_DE_SESIONES,
+  type ClaveDeVistaDeSesiones,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EjecucionDeEntrenamiento,
+  type EjercicioDeSesion,
+  type FilaDeSesion,
   type IdentidadDeVersiones,
   type ObjetivosDeLaVersion,
   type PlanConObjetivos,
@@ -37,174 +53,666 @@ import {
   type RegistroDeEjecucion,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Ayuda } from '../../../../components/ayuda';
-import { Cargando } from '../../../../components/estados';
+import Link from 'next/link';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { EnPartes, FraseEnPartes } from '../../../../components/en-partes';
+import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
+import { Icono } from '../../../../components/icono';
+import { Panel } from '../../../../components/panel';
+import { BotonDeVista } from '../../../../components/vista-con-nombre';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia, fecha } from '../../../../lib/formato';
+import { dia, diaDelAnioEnCurso, fecha, horaEnZona, nombreDelDiaDeLaSemana } from '../../../../lib/formato';
+import { ControlDePeriodo } from '../control-de-periodo';
+import { ATAJOS_DE_UN_AREA, cambiosDePeriodo, MAXIMO_DE_DIAS_DE_UN_AREA, periodoALaVista, periodoPedidoEnUnArea, type PeriodoDeUnArea } from '../periodo-de-un-area';
+import { useDetalleAlCostado } from '../seguimiento/al-costado';
+import { hoyEn } from '../seguimiento/estado';
+import { ICONO_DEL_RASGO } from '../seguimiento/hecho-en-un-renglon';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
-import { LineasDePrescripcion } from './plan';
-import { FiltroDePeriodo, type Periodo } from '../periodo';
-import { SeriesYTiempos } from './series-y-tiempos';
+import { LineasDePrescripcion, numerosDeVersion } from './plan';
+import { DescansosYDuracion, TiemposDeLaSesion, useTiemposDeLaSesion } from './series-y-tiempos';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 
-// Los gráficos (Recharts) se cargan cuando hacen falta: al elegir un ejercicio o al abrir una ejecución. Así la vista
-// de Ejecuciones no paga su peso de entrada.
-const EvolucionDelEjercicio = dynamic(() => import('./comparacion').then((m) => m.EvolucionDelEjercicio), { ssr: false, loading: () => <Cargando /> });
+// El gráfico por serie (Recharts) se carga cuando se lo pide: la lista no paga su peso de entrada.
 const ComparacionPorSerie = dynamic(() => import('./comparacion').then((m) => m.ComparacionPorSerie), { ssr: false, loading: () => <Cargando /> });
 
+/** La vista elegida, como va en la dirección (`ver=`). Sin el parámetro, «Todas las sesiones». */
+const VISTA_DEL_PARAMETRO: Readonly<Record<string, ClaveDeVistaDeSesiones>> = { 'con-diferencias': 'CON_DIFERENCIAS', 'con-desvio': 'CON_DESVIO_O_NO_REALIZADA', 'sin-registrar': 'SIN_REGISTRAR' };
+const PARAMETRO_DE_LA_VISTA = Object.fromEntries(Object.entries(VISTA_DEL_PARAMETRO).map(([k, v]) => [v, k])) as Partial<Record<ClaveDeVistaDeSesiones, string>>;
+const UNIDAD: readonly [string, string] = ['sesión', 'sesiones'];
+/** Cuántas sesiones se muestran de una vez; «Ver sesiones anteriores» suma otras tantas. La lectura trae el período entero. */
+const SESIONES_DE_UNA_VEZ = 15;
+
+/** Los objetivos por serie de cada versión del plan que aparece en el período; `null`: esa versión no se pudo leer. */
+type Planes = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly porVersion: ReadonlyMap<string, PlanConObjetivos | null> };
+
 export function VistaDeEjecuciones() {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
-  const [periodo, setPeriodo] = useState<Periodo>({});
+  const { token, asesoradoId, sesionPerdida, parametros, ir } = useEntrenamiento();
+  const hoy = hoyEn();
+  const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pedido = useMemo(() => periodoPedidoEnUnArea(parametros, hoy), [claveDelPeriodo, hoy]);
   const [r, setR] = useState<Resultado<Contexto> | null>(null);
-  const [version, setVersion] = useState('');
-  const [ejercicio, setEjercicio] = useState('');
+  const [planes, setPlanes] = useState<Planes>({ tipo: 'cargando' });
+  /** El número de cada versión (su orden de activación), si la lista de versiones se pudo leer. */
+  const [numeros, setNumeros] = useState<ReadonlyMap<string, number>>(new Map());
+  const generacion = useRef(0);
+
+  /** Lee los objetivos por serie de las versiones que se le piden y los suma a los que ya hay. */
+  const leerLosPlanes = useCallback(
+    async (ids: readonly string[], anteriores: ReadonlyMap<string, PlanConObjetivos | null>, esta: number) => {
+      const respuestas = await Promise.all(ids.map((planId) => api.planConObjetivos(token, planId)));
+      if (esta !== generacion.current || respuestas.some((x) => sesionPerdida(x))) return;
+      setPlanes({ tipo: 'listo', porVersion: new Map([...anteriores, ...ids.map((planId, i) => [planId, respuestas[i]!.ok ? (respuestas[i] as { datos: { data: PlanConObjetivos } }).datos.data : null] as const)]) });
+    },
+    [token, sesionPerdida],
+  );
 
   const cargar = useCallback(async () => {
+    const esta = ++generacion.current;
     setR(null);
-    const cx = await api.contextoDeRevisionDeEntrenamiento(token, asesoradoId, periodo);
-    if (sesionPerdida(cx)) return;
+    setPlanes({ tipo: 'cargando' });
+    const cx = await api.contextoDeRevisionDeEntrenamiento(token, asesoradoId, pedido ? { periodStart: pedido.desde, periodEnd: pedido.hasta } : {});
+    if (esta !== generacion.current || sesionPerdida(cx)) return;
     setR(cx.ok ? { ok: true, datos: cx.datos.data } : (cx as Resultado<never>));
-  }, [token, asesoradoId, periodo, sesionPerdida]);
-
+    if (!cx.ok) return;
+    await leerLosPlanes([...new Set(cx.datos.data.registeredExecutions.map((x) => x.planId))], new Map(), esta);
+  }, [token, asesoradoId, sesionPerdida, pedido, leerLosPlanes]);
   useEffect(() => {
     void cargar();
   }, [cargar]);
 
-  // Los ejercicios que aparecen en el período, planificados o realizados por sustitución, por su identidad en el
-  // catálogo: el filtro no ofrece lo que no hay, y dos ejercicios con el mismo nombre no se mezclan.
-  const ejecuciones = useMemo(() => (r?.ok ? r.datos.registeredExecutions : []), [r]);
-  const ejercicios = useMemo(() => ejerciciosComparables(ejecuciones), [ejecuciones]);
-  const ejercicioVigente = ejercicios.some((x) => x.clave === ejercicio) ? ejercicio : '';
-  const deLaVersion = useMemo(() => ejecuciones.filter((x) => !version || x.planId === version), [ejecuciones, version]);
-  const conElEjercicio = useMemo(
-    () => (ejercicioVigente ? new Set(observacionesDelEjercicio(deLaVersion, ejercicioVigente, ejecuciones).map((o) => o.comparacion.executionId)) : null),
-    [deLaVersion, ejercicioVigente, ejecuciones],
-  );
-  const visibles = deLaVersion.filter((x) => !conElEjercicio || conElEjercicio.has(x.executionId));
-  const elegido = ejercicios.find((x) => x.clave === ejercicioVigente);
-  // La identidad de las versiones sale de todo el período, para la evolución y para el detalle por serie: la misma.
-  const identidadDelPeriodo = useMemo(() => identidadDeVersiones(ejecuciones), [ejecuciones]);
-  const versiones = useMemo(() => new Map((r?.ok ? r.datos.activePlanVersions : []).map((v) => [v.planId, fecha(v.activatedAt as string)])), [r]);
-  // DL-122: el plan de cada versión del período, con sus objetivos por serie. Una versión que no se puede leer queda
-  // sin objetivos por serie: la comparación usa entonces los de la prescripción, como antes.
-  const [planes, setPlanes] = useState<ReadonlyMap<string, PlanConObjetivos>>(new Map());
+  // El número de versión no es necesario para leer la lista: si no llega, la versión se nombra por su fecha.
   useEffect(() => {
     let vigente = true;
-    const ids = [...new Set(ejecuciones.map((x) => x.planId))];
-    void Promise.all(ids.map((planId) => api.planConObjetivos(token, planId))).then((rs) => {
-      if (!vigente || rs.some((x) => sesionPerdida(x))) return;
-      setPlanes(new Map(rs.flatMap((x) => (x.ok ? [[x.datos.data.planId, x.datos.data] as const] : []))));
+    void api.listarPlanesDeEntrenamiento(token, asesoradoId).then((lista) => {
+      if (vigente && lista.ok) setNumeros(numerosDeVersion(lista.datos.data));
     });
     return () => {
       vigente = false;
     };
-  }, [ejecuciones, token, sesionPerdida]);
-  const objetivosPorVersion = useMemo(() => new Map([...planes].map(([planId, plan]) => [planId, objetivosDe(plan)] as const)), [planes]);
-  /** La ejecución que se pidió abrir desde la evolución: se despliega, muestra la prescripción del punto y recibe el foco. */
-  const [pedido, setPedido] = useState<{ executionId: string; prescriptionId: string; vez: number } | null>(null);
-  const abrir = useCallback((executionId: string, prescriptionId: string) => setPedido((p) => ({ executionId, prescriptionId, vez: (p?.vez ?? 0) + 1 })), []);
-  const atendido = useCallback(() => setPedido(null), []);
-  useEffect(() => setPedido(null), [periodo, version, ejercicioVigente]);
+  }, [token, asesoradoId]);
+
+  const contexto = r?.ok ? r.datos : null;
+  const reintentarLosPlanes = () => {
+    if (planes.tipo !== 'listo') return;
+    const sinLeer = [...planes.porVersion].filter(([, plan]) => plan === null).map(([planId]) => planId);
+    const leidos = new Map([...planes.porVersion].filter(([, plan]) => plan !== null));
+    setPlanes({ tipo: 'cargando' });
+    void leerLosPlanes(sinLeer, leidos, generacion.current);
+  };
+  const periodo = periodoALaVista(pedido, contexto?.period ?? null, hoy);
+  const elegirPeriodo = (p: PeriodoDeUnArea) => ir({ ...cambiosDePeriodo(p), sesion: null }, { agregarAlHistorial: true });
 
   return (
-    <div className="secciones">
-      <FiltroDePeriodo id="trn-periodo" onAplicar={setPeriodo} />
-      <EstadoDeLectura r={r} onReintentar={cargar}>
-      {r?.ok ? (
-        <div className="secciones">
-          <div className="fila-de-dato">
-            <div className="campo">
-              <label htmlFor="trn-filtro-version">Versión del plan</label>
-              <select id="trn-filtro-version" value={version} onChange={(e) => setVersion(e.target.value)}>
-                <option value="">Todas</option>
-                {r.datos.activePlanVersions.map((v) => (
-                  <option key={v.planId} value={v.planId}>
-                    Activada el {fecha(v.activatedAt as string)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="campo">
-              <label htmlFor="trn-filtro-ejercicio">Ejercicio</label>
-              <select id="trn-filtro-ejercicio" value={ejercicioVigente} onChange={(e) => setEjercicio(e.target.value)}>
-                <option value="">Todos</option>
-                {ejercicios.map((e) => (
-                  <option key={e.clave} value={e.clave}>
-                    {nombreParaElegir(e, ejercicios)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <p className="nota">
-            Período: {dia(`${r.datos.period.start}T12:00:00Z`)} a {dia(`${r.datos.period.end}T12:00:00Z`)}
-          </p>
+    <section className="registros sesiones" aria-labelledby="titulo-sesiones">
+      <div className="registros__encabezado">
+        <h2 id="titulo-sesiones">Sesiones registradas</h2>
+        <p className="nota registros__bajada">
+          Lo indicado y lo registrado, serie por serie. Lo que no se registró dice «{COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar}»: no se interpreta.
+        </p>
+        {/* El período queda fuera del estado de lectura: si no se puede leer, sigue ahí para cambiarlo (B10-06:956-961). */}
+        {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} /> : null}
+      </div>
+      <EstadoDeLectura r={r} onReintentar={() => void cargar()}>
+        {contexto ? planes.tipo === 'cargando' ? <Cargando /> : <Sesiones contexto={contexto} planes={planes.porVersion} numeros={numeros} hoy={hoy} pedido={pedido} onReintentarLosPlanes={reintentarLosPlanes} /> : null}
+      </EstadoDeLectura>
+    </section>
+  );
+}
 
-          <section className="seccion" aria-labelledby="titulo-evolucion">
-            <h2 id="titulo-evolucion">{COPY_COMPARACION.titulo}</h2>
-            {/* DL-113: qué entra en la comparación, plegado. Cómo se lee el gráfico va en su propia ayuda, junto a él. */}
-            <Ayuda titulo="Qué entra en la comparación">
-              <p>{COPY_COMPARACION.soloRegistradas}</p>
-              {ejercicios.some((e) => e.homonimo) ? <p>Hay ejercicios con el mismo nombre que no se pueden identificar como el mismo (otro ejercicio del catálogo, o una versión registrada por sustitución que no está prescripta en el período): se listan por separado.</p> : null}
-            </Ayuda>
-            {!elegido ? (
-              <p>{r.datos.registeredExecutions.length === 0 ? COPY_ENTRENAMIENTO.sinEjecuciones : COPY_COMPARACION.elegiUnEjercicio}</p>
-            ) : (
-              <>
-                <h3>
-                  {COPY_COMPARACION.evolucion}: {nombreParaElegir(elegido, ejercicios)}
-                </h3>
-                <EvolucionDelEjercicio
-                  key={`${elegido.clave}|${version}`}
-                  ejecuciones={deLaVersion}
-                  periodo={ejecuciones}
-                  clave={elegido.clave}
-                  nombre={nombreParaElegir(elegido, ejercicios)}
-                  versiones={versiones}
-                  onAbrir={abrir}
-                  objetivosPorVersion={objetivosPorVersion}
-                />
-              </>
-            )}
-          </section>
+function Sesiones({
+  contexto,
+  planes,
+  numeros,
+  hoy,
+  pedido,
+  onReintentarLosPlanes,
+}: {
+  contexto: Contexto;
+  planes: ReadonlyMap<string, PlanConObjetivos | null>;
+  numeros: ReadonlyMap<string, number>;
+  hoy: string;
+  pedido: PeriodoDeUnArea | null;
+  onReintentarLosPlanes: () => void;
+}) {
+  const { asesoradoId, parametros, ir } = useEntrenamiento();
+  const id = useId();
+  const ejecuciones = contexto.registeredExecutions;
+  const objetivosPorVersion = useMemo(() => new Map([...planes].map(([planId, plan]) => [planId, plan ? objetivosDe(plan) : null] as const)), [planes]);
+  const identidad = useMemo(() => identidadDeVersiones(ejecuciones), [ejecuciones]);
+  const todas = useMemo(() => componerLasSesiones(ejecuciones, objetivosPorVersion), [ejecuciones, objetivosPorVersion]);
+  const sinLeer = [...planes].filter(([, plan]) => plan === null).length;
 
-          <section className="seccion" aria-labelledby="titulo-ejecuciones">
-            <h2 id="titulo-ejecuciones">Sesiones registradas</h2>
-            {r.datos.registeredExecutions.length === 0 ? <p>{COPY_ENTRENAMIENTO.sinEjecuciones}</p> : null}
-            {r.datos.registeredExecutions.length > 0 && visibles.length === 0 ? <p>Ninguna sesión registrada del período coincide con el filtro.</p> : null}
-            <ul className="lista">
-              {visibles.map((x) => (
-                <DetalleDeEjecucion
-                  key={x.executionId}
-                  ejecucion={x}
-                  identidad={identidadDelPeriodo}
-                  pedido={pedido?.executionId === x.executionId ? pedido : null}
-                  onAtendido={atendido}
-                  plan={planes.get(x.planId) ?? null}
-                  objetivos={objetivosPorVersion.get(x.planId)}
-                />
+  // Los filtros de siempre. El ejercicio se elige por su identidad en el catálogo, no por su nombre: dos ejercicios con
+  // el mismo nombre no se mezclan, y el filtro no ofrece lo que no hay en el período.
+  const ejercicios = useMemo(() => ejerciciosComparables(ejecuciones), [ejecuciones]);
+  const version = contexto.activePlanVersions.some((v) => v.planId === parametros.get('version')) ? (parametros.get('version') as string) : '';
+  const ejercicio = ejercicios.some((e) => e.clave === parametros.get('ejercicio')) ? (parametros.get('ejercicio') as string) : '';
+  const filtradas = useMemo(() => {
+    const deLaVersion = ejecuciones.filter((x) => !version || x.planId === version);
+    const conElEjercicio = ejercicio ? new Set(observacionesDelEjercicio(deLaVersion, ejercicio, ejecuciones).map((o) => o.comparacion.executionId)) : null;
+    const quedan = new Set(deLaVersion.filter((x) => !conElEjercicio || conElEjercicio.has(x.executionId)).map((x) => x.executionId));
+    return todas.filter((f) => quedan.has(f.id));
+  }, [todas, ejecuciones, version, ejercicio]);
+  const conFiltros = (version ? 1 : 0) + (ejercicio ? 1 : 0);
+  const [masFiltros, setMasFiltros] = useState(conFiltros > 0);
+
+  const cuentas = useMemo(() => contarLasVistasDeSesiones(filtradas), [filtradas]);
+  const vista: ClaveDeVistaDeSesiones = VISTA_DEL_PARAMETRO[parametros.get('ver') ?? ''] ?? 'TODAS';
+  const definicion = VISTAS_DE_SESIONES.find((v) => v.clave === vista)!;
+  const aLaVista = useMemo(() => filtradas.filter((f) => sesionEnLaVista(f, vista)), [filtradas, vista]);
+  // Un período largo no se muestra entero de una vez: las más nuevas, y las anteriores a pedido (la lectura ya las trajo).
+  const [hasta, setHasta] = useState(SESIONES_DE_UNA_VEZ);
+  useEffect(() => setHasta(SESIONES_DE_UNA_VEZ), [vista, version, ejercicio, contexto.period.start, contexto.period.end]);
+
+  // La sesión abierta.
+  const sesionId = parametros.get('sesion');
+  const abierta = useMemo(() => todas.find((f) => f.id === sesionId) ?? null, [todas, sesionId]);
+  const ejecucionAbierta = abierta ? (ejecuciones.find((x) => x.executionId === abierta.id) ?? null) : null;
+  const alCostado = useDetalleAlCostado();
+  const raiz = useRef<HTMLDivElement>(null);
+  const detalle = useRef<HTMLElement>(null);
+  const titulo = useRef<HTMLHeadingElement>(null);
+  const idDeLaAbierta = abierta?.id ?? null;
+  // Al abrir el detalle al costado, el foco va a su título: con el teclado, el detalle está después de toda la lista.
+  useEffect(() => {
+    if (idDeLaAbierta !== null && alCostado) titulo.current?.focus({ preventScroll: true });
+  }, [idDeLaAbierta, alCostado]);
+  /** Cierra el detalle. Si el foco estaba adentro, vuelve a la fila de esa sesión. */
+  const cerrar = useCallback(
+    (devolverElFoco: boolean) => {
+      const anterior = idDeLaAbierta;
+      ir({ sesion: null });
+      if (anterior === null || !devolverElFoco) return;
+      // La dirección cambia en el próximo dibujo: el foco se devuelve después.
+      requestAnimationFrame(() => raiz.current?.querySelector<HTMLElement>(`[data-sesion="${CSS.escape(anterior)}"]`)?.focus({ preventScroll: true }));
+    },
+    [idDeLaAbierta, ir],
+  );
+  const conDetalleAlCostado = abierta !== null && alCostado;
+  useEffect(() => {
+    if (!conDetalleAlCostado) return;
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !(e.target instanceof Node) || !raiz.current?.contains(e.target)) return;
+      cerrar(detalle.current?.contains(e.target) ?? false);
+    };
+    document.addEventListener('keydown', alTeclear);
+    return () => document.removeEventListener('keydown', alTeclear);
+  }, [conDetalleAlCostado, cerrar]);
+
+  const total = cuentas.TODAS ?? 0;
+  const deLaVista = cuentas[vista];
+  const versionDe = (planId: string): string => {
+    const n = numeros.get(planId);
+    const activada = contexto.activePlanVersions.find((v) => v.planId === planId)?.activatedAt ?? planes.get(planId)?.activatedAt ?? null;
+    return n ? `versión ${n}` : activada ? `activado el ${dia(activada)}` : 'de ese día';
+  };
+  const tituloDeLaAbierta = abierta ? tituloDeLaSesion(abierta.sesion) : '';
+  const contenidoDeLaAbierta =
+    abierta && ejecucionAbierta ? (
+      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} onReintentarLosPlanes={onReintentarLosPlanes} />
+    ) : null;
+
+  // A Analizar va con el período que se está mirando, si es uno elegido: allá el ejercicio se elige de nuevo.
+  const haciaAnalizar = `/pro/advisees?id=${encodeURIComponent(asesoradoId)}&vista=analizar&pregunta=progreso-de-un-ejercicio${pedido ? (pedido.preset ? `&p=${pedido.preset}` : `&desde=${pedido.desde}&hasta=${pedido.hasta}`) : ''}`;
+
+  return (
+    <>
+      <div className="vistas-de-la-linea registros__vistas">
+        <div className="vistas-de-la-linea__vistas" role="group" aria-labelledby={`${id}-ver`}>
+          <span id={`${id}-ver`} className="vistas-de-la-linea__rotulo">
+            Ver
+          </span>
+          {VISTAS_DE_SESIONES.map((v) => (
+            <BotonDeVista
+              key={v.clave}
+              clave={v.clave}
+              nombre={v.nombre}
+              icono={v.icono}
+              elegida={vista === v.clave}
+              cuenta={cuentas[v.clave]}
+              unidad={UNIDAD}
+              // Elegir una vista reemplaza a la que estaba; volver a tocarla deja «Todas las sesiones». No le pide nada a la API.
+              onElegir={() => ir({ ver: vista === v.clave ? null : (PARAMETRO_DE_LA_VISTA[v.clave] ?? null), sesion: null }, { agregarAlHistorial: true })}
+            />
+          ))}
+        </div>
+        <button type="button" className="boton boton--secundario boton--compacto sesiones__mas-filtros" aria-expanded={masFiltros} aria-controls={`${id}-filtros`} onClick={() => setMasFiltros(!masFiltros)}>
+          <Icono nombre="filtros" tamano={18} />
+          Más filtros{conFiltros > 0 ? ` · ${conFiltros}` : ''}
+        </button>
+      </div>
+      {masFiltros ? (
+        <div id={`${id}-filtros`} className="fila-de-dato sesiones__filtros">
+          <div className="campo">
+            <label htmlFor={`${id}-version`}>Versión del plan</label>
+            <select id={`${id}-version`} value={version} onChange={(e) => ir({ version: e.target.value || null, sesion: null })}>
+              <option value="">Todas</option>
+              {contexto.activePlanVersions.map((v) => (
+                <option key={v.planId} value={v.planId}>
+                  {numeros.get(v.planId) ? `Versión ${numeros.get(v.planId)} · activada` : 'Activada'} el {fecha(v.activatedAt as string)}
+                </option>
               ))}
-            </ul>
-          </section>
-
-          <section className="seccion" aria-labelledby="titulo-sin-registro">
-            <h2 id="titulo-sin-registro">{COPY_ENTRENAMIENTO.diasSinRegistro}</h2>
-            <p className="nota">Días del período sin ninguna sesión registrada. Sin registro no quiere decir que no haya entrenado: no hay dato.</p>
-            {r.datos.missingData.length === 0 ? <p>Ninguno.</p> : <p>{r.datos.missingData.map((f) => dia(`${f}T12:00:00Z`)).join(' · ')}</p>}
-          </section>
+            </select>
+          </div>
+          <div className="campo">
+            <label htmlFor={`${id}-ejercicio`}>Ejercicio</label>
+            <select id={`${id}-ejercicio`} value={ejercicio} onChange={(e) => ir({ ejercicio: e.target.value || null, sesion: null })}>
+              <option value="">Todos</option>
+              {ejercicios.map((e) => (
+                <option key={e.clave} value={e.clave}>
+                  {nombreParaElegir(e, ejercicios)}
+                </option>
+              ))}
+            </select>
+            {ejercicios.some((e) => e.homonimo) ? <p className="campo__ayuda">Hay ejercicios con el mismo nombre que no se pueden identificar como el mismo: se listan por separado.</p> : null}
+          </div>
         </div>
       ) : null}
-      </EstadoDeLectura>
+
+      {sinLeer > 0 ? (
+        <BloqueDeEstado tipo="error" icono="servicio" titulo="No pudimos leer lo indicado de algunas sesiones" onReintentar={onReintentarLosPlanes} deQue="la lectura de lo indicado">
+          {sinLeer === 1 ? 'Una versión del plan no se pudo leer' : `${numero(sinLeer)} versiones del plan no se pudieron leer`}. Sus sesiones están abajo, con lo registrado; falta saber lo indicado de cada serie: por eso «{VISTAS_DE_SESIONES[1]!.nombre}» no
+          tiene cantidad.
+        </BloqueDeEstado>
+      ) : null}
+
+      {/* Con «Todas las sesiones» y sin filtros, la cantidad ya está en la vista: a la vista no se repite. */}
+      <p className={vista === 'TODAS' && conFiltros === 0 ? 'visualmente-oculto' : 'nota registros__cuenta'} role="status">
+        {vista === 'TODAS'
+          ? `${numero(total)} ${total === 1 ? UNIDAD[0] : UNIDAD[1]}`
+          : deLaVista === null
+            ? `«${definicion.nombre}» no se puede contar sin esa lectura`
+            : `${numero(deLaVista)} de ${numero(total)} ${total === 1 ? UNIDAD[0] : UNIDAD[1]}: ${definicion.nombre.toLowerCase()}`}
+        {conFiltros > 0 ? ` · con ${conFiltros === 1 ? 'un filtro' : 'dos filtros'} de «Más filtros» (de ${numero(todas.length)} en el período)` : ''}
+      </p>
+
+      {aLaVista.length === 0 ? (
+        <EstadoVacio
+          titulo={
+            todas.length === 0
+              ? COPY_ENTRENAMIENTO.sinEjecuciones
+              : vista !== 'TODAS' && deLaVista === null
+                ? `No se puede saber qué sesiones trae «${definicion.nombre}».`
+                : vista !== 'TODAS'
+                  ? `Ninguna sesión coincide con «${definicion.nombre}».`
+                  : 'Ninguna sesión registrada del período coincide con los filtros.'
+          }
+          accion={
+            todas.length === 0 ? undefined : (
+              <button type="button" className="boton boton--secundario" onClick={() => ir({ ver: null, version: null, ejercicio: null }, { agregarAlHistorial: true })}>
+                Ver todas las sesiones
+              </button>
+            )
+          }
+        >
+          {todas.length > 0 ? <p className="nota">{todas.length === 1 ? 'Hay una sesión registrada' : `Hay ${numero(todas.length)} sesiones registradas`} en el período elegido.</p> : null}
+        </EstadoVacio>
+      ) : (
+        <div ref={raiz} className="linea__cuerpo sesiones__cuerpo" data-con-detalle={conDetalleAlCostado ? 'si' : undefined}>
+          <div className="registros__lista sesiones__lista">
+            {/* Los nombres de las columnas, una vez. Para el lector de pantalla, cada dato lleva su rótulo en la fila. */}
+            <div className="registros__columnas sesiones__columnas" aria-hidden="true">
+              <span>Día</span>
+              <span>Sesión y condición</span>
+              <span>Series</span>
+              <span>Frente a lo indicado</span>
+            </div>
+            <ul className="sesiones__filas">
+              {aLaVista.slice(0, hasta).map((f) => (
+                <Fila key={f.id} fila={f} hoy={hoy} elegida={f.id === idDeLaAbierta} onAbrir={() => ir({ sesion: f.id })} />
+              ))}
+            </ul>
+            {aLaVista.length > hasta ? (
+              <div className="acciones linea__mas">
+                <button type="button" className="boton boton--secundario" onClick={() => setHasta(hasta + SESIONES_DE_UNA_VEZ)}>
+                  Ver sesiones anteriores
+                </button>
+                <span className="nota">
+                  Se ven {numero(Math.min(hasta, aLaVista.length))} de {numero(aLaVista.length)} sesiones, hasta la del {diaDelAnioEnCurso(aLaVista[Math.min(hasta, aLaVista.length) - 1]!.fecha, hoy)}.
+                </span>
+              </div>
+            ) : null}
+          </div>
+          {abierta && alCostado ? (
+            <aside ref={detalle} className="detalle-del-hecho detalle-de-sesion" aria-labelledby={`${id}-detalle`}>
+              <div className="detalle-del-hecho__cabecera">
+                <p className="detalle-del-hecho__rotulo">Detalle del registro</p>
+                <button type="button" className="boton boton--enlace" onClick={() => cerrar(true)}>
+                  <Icono nombre="cerrar" tamano={18} />
+                  Cerrar
+                </button>
+              </div>
+              <h3 id={`${id}-detalle`} ref={titulo} tabIndex={-1}>
+                {tituloDeLaAbierta}
+              </h3>
+              {contenidoDeLaAbierta}
+            </aside>
+          ) : null}
+        </div>
+      )}
+
+      <DiasSinSesion dias={contexto.missingData} />
+      <p className="sesiones__a-analizar">
+        <Icono nombre="analizar" tamano={18} />
+        <Link href={haciaAnalizar}>¿Cómo viene progresando un ejercicio? Verlo en Analizar</Link>
+      </p>
+
+      {/* En una ventana angosta el detalle no entra al costado: se abre encima, en un panel que retiene el foco. */}
+      <Panel abierto={abierta !== null && !alCostado} titulo={tituloDeLaAbierta} onCerrar={() => ir({ sesion: null })}>
+        {abierta && !alCostado ? contenidoDeLaAbierta : null}
+      </Panel>
+    </>
+  );
+}
+
+/** «Sesión B · Tren superior»: la palabra no se antepone si el nombre ya empieza con ella (los nombres por omisión son «Sesión A»). */
+const tituloDeLaSesion = (nombre: string): string => (/^sesi[oó]n\b/i.test(nombre.trim()) ? nombre : `Sesión ${nombre}`);
+
+/** Un dato de la fila con su rótulo para el lector de pantalla (a la vista, el rótulo está una vez, arriba de la lista). */
+function Dato({ rotulo, className, children }: { rotulo: string; className?: string; children: ReactNode }) {
+  return (
+    <span className={className}>
+      <span className="visualmente-oculto">{rotulo}: </span>
+      {children}
+    </span>
+  );
+}
+
+/** La condición con que quedó registrada la sesión. Lo de siempre va en texto; lo que se sale, con su ícono. */
+function Condicion({ fila }: { fila: FilaDeSesion }) {
+  if (!fila.condicion) return null;
+  if (!fila.conDesvioONoRealizada) return <span className="sesion-registrada__tenue">{fila.condicion}</span>;
+  return (
+    <span className="etiqueta-de-dato">
+      <Icono nombre={ICONO_DEL_RASGO[fila.clase === 'POR_SERIE' || fila.clase === 'RESUMIDA' ? 'SESION_CON_CAMBIOS' : 'SESION_NO_REALIZADA']} tamano={15} />
+      {fila.condicion}
+    </span>
+  );
+}
+
+const Corregida = () => (
+  <span className="etiqueta-de-dato">
+    <Icono nombre={ICONO_DEL_RASGO.CORREGIDO} tamano={15} />
+    Corregida
+  </span>
+);
+
+function Fila({ fila, hoy, elegida, onAbrir }: { fila: FilaDeSesion; hoy: string; elegida: boolean; onAbrir: () => void }) {
+  return (
+    <li className="sesion-registrada" data-clase={fila.clase}>
+      <button type="button" className="sesion-registrada__fila" data-sesion={fila.id} aria-current={elegida ? 'true' : undefined} onClick={onAbrir}>
+        <Dato rotulo="Día" className="sesion-registrada__dia">
+          <strong>{diaDelAnioEnCurso(fila.fecha, hoy)}</strong>
+          <span className="sesion-registrada__tenue">{nombreDelDiaDeLaSemana(fila.fecha)}</span>
+        </Dato>
+        <Dato rotulo="Sesión y condición" className="sesion-registrada__sesion">
+          <strong>{fila.sesion}</strong>
+          <Condicion fila={fila} />
+          {fila.fuente.tipo === 'correccion' ? <Corregida /> : null}
+        </Dato>
+        <Dato rotulo="Series" className="sesion-registrada__series">
+          <FraseEnPartes texto={fila.series} />
+        </Dato>
+        <Dato rotulo="Frente a lo indicado" className="sesion-registrada__frente">
+          <FraseEnPartes texto={fila.frente} />
+        </Dato>
+        <Icono nombre="derecha" tamano={18} />
+      </button>
+    </li>
+  );
+}
+
+/** Los días del período sin ninguna sesión registrada: cuántos son y, a pedido, cuáles. Sin dato no es «no entrenó». */
+function DiasSinSesion({ dias }: { dias: readonly string[] }) {
+  const id = useId();
+  const [abierto, setAbierto] = useState(false);
+  if (dias.length === 0) return <p className="nota sesiones__sin-sesion">Todos los días del período tienen una sesión registrada.</p>;
+  return (
+    <div className="sesiones__sin-sesion">
+      <p>
+        <strong>{dias.length === 1 ? 'Un día del período' : `${numero(dias.length)} días del período`} sin sesión registrada.</strong> Sin registro no quiere decir que no haya entrenado: no hay dato.{' '}
+        <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={`${id}-dias`} onClick={() => setAbierto(!abierto)}>
+          {abierto ? 'Ocultar los días' : 'Ver los días'}
+        </button>
+      </p>
+      {abierto ? (
+        <p id={`${id}-dias`} className="nota">
+          {dias.map((f) => dia(`${f}T12:00:00Z`)).join(' · ')}
+        </p>
+      ) : null}
     </div>
+  );
+}
+
+// ─── El detalle de una sesión ───────────────────────────────────────────────────────────────────────────────
+
+/** «a las 19:22» si se registró el mismo día en que ocurrió (en la zona de la sesión); si no, con su fecha. */
+function seRegistro(x: EjecucionDeEntrenamiento): string {
+  let elMismoDia = false;
+  try {
+    elMismoDia = new Intl.DateTimeFormat('en-CA', { timeZone: x.timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(x.recordedAt)) === x.date;
+  } catch {
+    elMismoDia = false;
+  }
+  return elMismoDia ? `a las ${horaEnZona(x.recordedAt, x.timeZone)}` : `el ${fecha(x.recordedAt)}`;
+}
+
+function DetalleDeLaSesion({
+  fila,
+  ejecucion: x,
+  identidad,
+  objetivos,
+  version,
+  onReintentarLosPlanes,
+}: {
+  fila: FilaDeSesion;
+  ejecucion: EjecucionDeEntrenamiento;
+  identidad: IdentidadDeVersiones;
+  objetivos: ObjetivosDeLaVersion | null;
+  /** «versión 3», o «activado el 3 ago» si el número no se pudo saber. */
+  version: string;
+  onReintentarLosPlanes: () => void;
+}) {
+  const tiempos = useTiemposDeLaSesion(x.executionId);
+  const vigente = x.effectiveView.kind === 'CORRECTED' ? (x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) ?? null) : null;
+  const [grafico, setGrafico] = useState(false);
+  return (
+    <>
+      <p className="datos-del-hecho__rasgos">
+        <Condicion fila={fila} />
+        {fila.comoSeRegistro ? <span className="etiqueta-de-dato">{fila.comoSeRegistro}</span> : null}
+        {fila.fuente.tipo === 'correccion' ? <Corregida /> : null}
+      </p>
+      <p className="nota detalle-de-sesion__cuando">
+        Ocurrió el {diaDelAnioEnCurso(x.date, hoyEn())} a las {horaEnZona(x.occurredAt, x.timeZone)} · se registró {seRegistro(x)} · frente al plan {version}, el de ese día
+      </p>
+      {fila.motivo ? (
+        <p>
+          <strong>Motivo que escribió la persona:</strong> «{fila.motivo}»
+        </p>
+      ) : null}
+      {fila.resumenDeLaSesion ? (
+        <p>
+          <strong>Resumen de la sesión:</strong> «{fila.resumenDeLaSesion}»
+        </p>
+      ) : null}
+      {fila.fuente.tipo === 'correccion' ? (
+        <p className="nota">
+          Rige una corrección: {fila.fuente.rolDelAutor === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} ({fila.fuente.autor}), el {fecha(fila.fuente.registradaEl)}. Motivo: {fila.fuente.motivo}
+        </p>
+      ) : null}
+      {fila.fuente.tipo === 'no-resoluble' ? <p>{COPY_COMPARACION.vistaNoResoluble}</p> : null}
+      {fila.clase === 'NO_REALIZADA' ? <p className="nota">{fila.series}. {fila.frente}.</p> : null}
+      {!fila.seLeyoLoIndicado && fila.ejercicios.length > 0 ? (
+        <BloqueDeEstado tipo="error" icono="servicio" titulo="No pudimos leer lo indicado de esta sesión" onReintentar={onReintentarLosPlanes} deQue="la lectura de lo indicado">
+          Lo registrado está abajo. De lo indicado se ven las repeticiones; faltan la carga y el RIR de cada serie, y por eso no se compara.
+        </BloqueDeEstado>
+      ) : null}
+
+      {fila.ejercicios.length > 0 ? <TablaDeSeries ejercicios={fila.ejercicios} /> : null}
+
+      <TiemposDeLaSesion tiempos={tiempos} />
+
+      <div className="detalle-de-sesion__mas">
+        {/* Sin tiempos marcados no hay descansos ni duraciones que abrir: ya lo dice el renglón de arriba. */}
+        {tiempos.tipo === 'listo' && tiempos.datos.state === 'NOT_STARTED' ? null : (
+          <details>
+            <summary>
+              <Icono nombre="descanso" tamano={18} />
+              Descansos y duración de cada serie
+            </summary>
+            <DescansosYDuracion ejecucion={x} tiempos={tiempos} />
+          </details>
+        )}
+        <details>
+          <summary>
+            <Icono nombre="plan" tamano={18} />
+            Ver la sesión en el plan
+          </summary>
+          <SesionEnElPlan ejecucion={x} version={version} />
+        </details>
+        {fila.clase === 'POR_SERIE' ? (
+          <details onToggle={(e) => setGrafico((e.currentTarget as HTMLDetailsElement).open)}>
+            <summary>
+              <Icono nombre="analizar" tamano={18} />
+              Ver en un gráfico
+            </summary>
+            {/* Se dibuja solo abierto: un gráfico dentro de un bloque cerrado no tiene medidas. */}
+            {grafico ? <ComparacionPorSerie ejecucion={x} identidad={identidad} objetivos={objetivos ?? undefined} /> : null}
+          </details>
+        ) : null}
+        <details>
+          <summary>
+            <Icono nombre="origen" tamano={18} />
+            {x.corrections.length > 0 ? 'Registro original y correcciones' : 'Registro original'}
+          </summary>
+          {vigente ? (
+            <>
+              <h4>{COPY_ENTRENAMIENTO.correccionVigente}</h4>
+              <p className="nota">
+                {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} · {fecha(vigente.recordedAt)} · Motivo: {vigente.reason}
+              </p>
+              <Registro registro={vigente.correction} planificado={x.plannedSession.prescriptions} />
+            </>
+          ) : null}
+          <h4>{COPY_ENTRENAMIENTO.registroOriginal}</h4>
+          <p className="nota">Registrado el {fecha(x.recordedAt)}</p>
+          <Registro registro={x.original} planificado={x.plannedSession.prescriptions} />
+          {x.corrections.length > 1 ? (
+            <>
+              <h4>{COPY_ENTRENAMIENTO.historialDeCorrecciones}</h4>
+              <ol className="historial">
+                {x.corrections.map((c) => (
+                  <li key={c.correctionId}>
+                    {fecha(c.recordedAt)} · {c.author.displayName} · {c.reason}
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : null}
+        </details>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Cada serie una sola vez (C-66): lo indicado, lo registrado y cómo quedó frente a lo indicado. Un renglón por
+ * ejercicio dice cuántas series se registraron. La serie con una diferencia va en negrita, y además lo dice su texto.
+ */
+function TablaDeSeries({ ejercicios }: { ejercicios: readonly EjercicioDeSesion[] }) {
+  return (
+    <div className="desplazable-x">
+      <table className="tabla tabla--compacta tabla-de-series tabla-de-series--frente-a-lo-indicado">
+        <caption className="visualmente-oculto">Lo indicado y lo registrado, serie por serie</caption>
+        <thead>
+          <tr>
+            <th scope="col">Serie</th>
+            <th scope="col">Indicado</th>
+            <th scope="col">Registrado</th>
+            <th scope="col">Frente a lo indicado</th>
+          </tr>
+        </thead>
+        {ejercicios.map((e) => (
+          <tbody key={e.prescriptionId} data-ejercicio={e.prescriptionId}>
+            <tr className="tabla-de-series__ejercicio">
+              <th colSpan={4} scope="rowgroup">
+                <strong>{e.nombre}</strong>
+                {e.enLugarDe ? (
+                  <>
+                    {' '}
+                    <span className="etiqueta-de-dato">{COPY_ENTRENAMIENTO.sustituido}</span> <span className="tabla-de-series__cuenta">en lugar de {e.enLugarDe}</span>
+                  </>
+                ) : null}{' '}
+                <span className="tabla-de-series__cuenta">
+                  {e.cuenta}
+                  {e.notaDeLoIndicado ? ` · ${e.notaDeLoIndicado}` : ''}
+                </span>
+                {e.aviso ? <span className="tabla-de-series__aviso">{e.aviso}</span> : null}
+                {e.resumen ? <span className="tabla-de-series__aviso">«{e.resumen}»</span> : null}
+              </th>
+            </tr>
+            {e.series.map((s) => (
+              <tr key={s.numero} data-estado={s.estado} data-con-diferencia={s.conDiferencia ? 'si' : undefined}>
+                <th scope="row">{numero(s.numero)}</th>
+                <td>
+                  <EnPartes texto={s.indicado} />
+                  {s.nota ? <span className="tabla-de-series__nota">Nota: {s.nota}</span> : null}
+                </td>
+                <td>
+                  <EnPartes texto={s.registrado} />
+                  {s.corregida ? (
+                    <>
+                      {' '}
+                      <Corregida />
+                    </>
+                  ) : null}
+                </td>
+                <td>
+                  <EnPartes texto={s.frente} />
+                  {/* Lo de la carga va aparte y sin negrita: se dice, y no cuenta como diferencia. */}
+                  {s.frenteDeLaCarga ? <span className="tabla-de-series__nota">{s.frenteDeLaCarga}</span> : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        ))}
+      </table>
+    </div>
+  );
+}
+
+/** La sesión tal como estaba en el plan de ese día (su instantánea): no la de la versión vigente hoy. Solo lectura. */
+function SesionEnElPlan({ ejecucion: x, version }: { ejecucion: EjecucionDeEntrenamiento; version: string }) {
+  return (
+    <>
+      <p className="nota">
+        {tituloDeLaSesion(x.plannedSession.label)}, en el plan {version}: lo general de cada ejercicio. El objetivo de cada serie está en la tabla de arriba.
+      </p>
+      {x.plannedSession.instructions ? (
+        <p className="nota">
+          {COPY_ENTRENAMIENTO.indicacionesDeLaSesion}: {x.plannedSession.instructions}
+        </p>
+      ) : null}
+      <ul>
+        {x.plannedSession.prescriptions.map((p) => (
+          <li key={p.prescriptionId}>
+            <strong>{p.exerciseName}</strong>
+            <LineasDePrescripcion prescripcion={p} />
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
 /**
  * Lo registrado de una sesión, ejercicio por ejercicio, sin reinterpretar un registro agregado como series. Con
  * `planificado` (las prescripciones de la versión que rigió esa sesión), cada serie registrada dice también lo
- * planificado para ella: «· planificadas 8». Sin porcentajes ni colores: comparar no es calificar (DL-105).
+ * planificado para ella: «· planificadas 8». Sin porcentajes ni colores: comparar no es calificar (DL-105). Lo usa
+ * también la ficha, para mostrar el registro original de una sesión.
  */
 export function Registro({ registro, planificado = [] }: { registro: RegistroDeEjecucion; planificado?: readonly Prescripcion[] }) {
   return (
@@ -258,101 +766,6 @@ export function nombreParaElegir(e: { clave: string; nombre: string; homonimo: b
   if (!e.homonimo) return e.nombre;
   const iguales = todos.filter((o) => o.nombre === e.nombre);
   return `${e.nombre} (${iguales.findIndex((o) => o.clave === e.clave) + 1} de ${iguales.length} con este nombre)`;
-}
-
-function DetalleDeEjecucion({
-  ejecucion: x,
-  identidad,
-  pedido,
-  onAtendido,
-  plan,
-  objetivos,
-}: {
-  ejecucion: EjecucionDeEntrenamiento;
-  identidad: IdentidadDeVersiones;
-  pedido: { prescriptionId: string; vez: number } | null;
-  onAtendido: () => void;
-  plan: PlanConObjetivos | null;
-  objetivos: ObjetivosDeLaVersion | undefined;
-}) {
-  const vigente = x.effectiveView.kind === 'CORRECTED' ? x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) : null;
-  const rige = registroVigente(x);
-  const [abierta, setAbierta] = useState(false);
-  /** La prescripción pedida desde la evolución: queda acá, porque el pedido se descarta apenas se atiende. */
-  const [pedida, setPedida] = useState<{ prescriptionId: string; vez: number } | null>(null);
-  const resumen = useRef<HTMLElement>(null);
-  // Abrir desde un punto de la evolución: se despliega, se ve la prescripción de ese punto y el foco llega acá. El pedido
-  // se atiende una sola vez: si la ejecución se vuelve a mostrar después, no se abre sola.
-  useEffect(() => {
-    if (!pedido) return;
-    setAbierta(true);
-    setPedida(pedido);
-    onAtendido();
-    requestAnimationFrame(() => {
-      resumen.current?.scrollIntoView({ block: 'start' });
-      resumen.current?.focus();
-    });
-  }, [pedido, onAtendido]);
-  return (
-    <li className="lista__item" id={`ejecucion-${x.executionId}`}>
-      <p className="lista__titulo">
-        {x.plannedSession.label} · {dia(`${x.date}T12:00:00Z`)} · {etiquetaDeCondicionRegistrada(rige)}
-      </p>
-      <details open={abierta} onToggle={(e) => setAbierta((e.currentTarget as HTMLDetailsElement).open)}>
-        <summary ref={resumen}>Ver detalle</summary>
-        {/* Se dibuja solo abierta: un gráfico dentro de un bloque cerrado no tiene medidas. */}
-        {abierta ? (
-          <>
-            <SeriesYTiempos ejecucion={x} plan={plan} />
-            <h4>{COPY_COMPARACION.porSerie}</h4>
-            <ComparacionPorSerie key={pedida ? `${pedida.prescriptionId}-${pedida.vez}` : 'inicial'} ejecucion={x} prescriptionId={pedida?.prescriptionId} identidad={identidad} objetivos={objetivos} />
-          </>
-        ) : null}
-        <h4>{COPY_ENTRENAMIENTO.planificado}</h4>
-        {/* DL-122: estas líneas dicen lo general de cada prescripción; con objetivos por serie, una serie puede tener los
-            suyos, y la tabla de arriba dice el de cada una. */}
-        {plan ? <p className="nota">Lo general de cada prescripción. El objetivo de cada serie, heredado o propio, está en «Planificado frente a registrado».</p> : null}
-        {/* La prescripción de la versión que rigió esta sesión (su instantánea), completa: no la de la versión vigente hoy. */}
-        {x.plannedSession.instructions ? (
-          <p className="nota">
-            {COPY_ENTRENAMIENTO.indicacionesDeLaSesion}: {x.plannedSession.instructions}
-          </p>
-        ) : null}
-        <ul>
-          {x.plannedSession.prescriptions.map((p) => (
-            <li key={p.prescriptionId}>
-              <strong>{p.exerciseName}</strong>
-              <LineasDePrescripcion prescripcion={p} />
-            </li>
-          ))}
-        </ul>
-        {vigente ? (
-          <>
-            <h4>{COPY_ENTRENAMIENTO.correccionVigente}</h4>
-            <p className="nota">
-              {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} · {fecha(vigente.recordedAt)} · Motivo: {vigente.reason}
-            </p>
-            <Registro registro={vigente.correction} planificado={x.plannedSession.prescriptions} />
-          </>
-        ) : null}
-        <h4>{COPY_ENTRENAMIENTO.registroOriginal}</h4>
-        <p className="nota">Registrado el {fecha(x.recordedAt)}</p>
-        <Registro registro={x.original} planificado={x.plannedSession.prescriptions} />
-        {x.corrections.length > 1 ? (
-          <>
-            <h4>{COPY_ENTRENAMIENTO.historialDeCorrecciones}</h4>
-            <ol className="historial">
-              {x.corrections.map((c) => (
-                <li key={c.correctionId}>
-                  {fecha(c.recordedAt)} · {c.author.displayName} · {c.reason}
-                </li>
-              ))}
-            </ol>
-          </>
-        ) : null}
-      </details>
-    </li>
-  );
 }
 
 /** « · planificadas 8» para una serie registrada, o nada si esa serie no estaba planificada o no fijaba repeticiones. */

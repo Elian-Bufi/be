@@ -16,12 +16,12 @@ import {
   COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
   ejerciciosComparables,
-  frenteALoIndicadoEnPalabras,
+  frenteALoIndicadoDeUnaComida,
+  modoDeUnaComida,
   TEXTO_DEL_MODO_DE_REGISTRO,
   type ContextoDeRevisionDeEntrenamientoResponse,
   type EntradaDeLineaDeTiempo,
   type LineaDeTiempoResponse,
-  type ModoDeRegistro,
   type OrigenDeDato,
   type PlanConObjetivos,
 } from '@be/domain';
@@ -134,25 +134,8 @@ const QUE_VER = {
 type QueVer = keyof typeof QUE_VER;
 const ESTADO_DE_LA_COMIDA: Readonly<Partial<Record<EntradaDeLineaDeTiempo['state'], string>>> = { ANNULLED: 'Anulado', RECTIFIED: 'Rectificado', CORRECTED: 'Corregido' };
 
-/** El modo de registro de una entrada, desde sus rasgos de calidad: cómo se registró, sin decir si difiere. */
-function modoDeLaEntrada(e: EntradaDeLineaDeTiempo): ModoDeRegistro | null {
-  if (e.quality.includes('DIFFERENT_MEAL')) return 'COMIDA_DIFERENTE';
-  if (e.quality.includes('QUANTITIES_FROM_PLAN')) return 'PORCIONES_DEL_PLAN';
-  if (e.quality.includes('QUANTITIES_REPORTED')) return 'INFORMADAS';
-  if (e.quality.includes('QUANTITIES_UNCONFIRMED')) return 'SIN_CONFIRMAR';
-  return null;
-}
-
-/**
- * Lo que se sabe frente a lo indicado: con cantidades informadas, lo que comprobó la API ingrediente por ingrediente
- * (`comidaFrenteALoIndicado`); en los otros modos, por qué no hay diferencia que comprobar.
- */
-function frenteDeLaEntrada(e: EntradaDeLineaDeTiempo, modo: ModoDeRegistro | null): string {
-  const comprobado = e.details.find((x) => x.label === 'Frente a lo indicado')?.value;
-  if (comprobado) return comprobado;
-  if (modo === null || modo === 'INFORMADAS') return 'Sin dato';
-  return frenteALoIndicadoEnPalabras({ modo, resultado: modo === 'PORCIONES_DEL_PLAN' ? 'LAS_DEL_PLAN' : 'NO_SE_COMPRUEBA', ingredientes: 0, distintos: 0, sinComparar: 0 });
-}
+// El modo de registro de una comida y lo que se sabe frente a lo indicado los dice el dominio (`modoDeUnaComida` y
+// `frenteALoIndicadoDeUnaComida`): son los mismos en este contraste y en Nutrición · Registros.
 
 type PaginasExtra = { readonly clave: string; readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly cursor: string | null; readonly cargando: boolean; readonly falla: boolean };
 
@@ -251,7 +234,7 @@ function ContrasteDeNutricion() {
 function FilaDeComida({ e, primeraDelDia, onAbrir }: { e: EntradaDeLineaDeTiempo; primeraDelDia: boolean; onAbrir: () => void }) {
   const dato = (etiqueta: string) => e.details.find((x) => x.label === etiqueta)?.value ?? null;
   const diferente = e.quality.includes('DIFFERENT_MEAL');
-  const modo = modoDeLaEntrada(e);
+  const modo = modoDeUnaComida(e);
   // «Comida registrada · Desayuno» → «Desayuno»: el tipo de hecho ya lo dice la columna «Lo registrado».
   const [, ...nombre] = e.title.split(' · ');
   const estado = ESTADO_DE_LA_COMIDA[e.state];
@@ -267,7 +250,7 @@ function FilaDeComida({ e, primeraDelDia, onAbrir }: { e: EntradaDeLineaDeTiempo
       </td>
       <td>{diferente ? `Una comida diferente${dato('Cantidad aproximada') ? ` (aproximada: ${dato('Cantidad aproximada')})` : ''}` : dato('Opción') ? `Opción ${dato('Opción')}` : 'Opción del plan'}</td>
       <td>{modo ? TEXTO_DEL_MODO_DE_REGISTRO[modo] : 'Sin dato'}</td>
-      <td>{frenteDeLaEntrada(e, modo)}</td>
+      <td>{frenteALoIndicadoDeUnaComida(e)}</td>
       <td>{dato('Plan') ?? 'sin dato'}</td>
       <td>
         <button type="button" className="boton boton--enlace" onClick={onAbrir}>

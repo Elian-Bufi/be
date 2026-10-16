@@ -24,21 +24,23 @@ export const COPY_FORMULARIOS = {
   catalogo: 'Formularios disponibles',
   sinPlantillas: 'Todavía no hay formularios disponibles.',
   plantillaDemostracion: 'Catálogo de demostración: no es un catálogo clínico.',
-  campos: 'Campos',
-  elegirCampos: 'Elegí qué campos pedir',
-  marcarRequerido: 'Requerido',
-  ayudaRequerido: 'Un campo requerido igual puede quedar sin responder: el asesorado decide.',
-  sinCamposElegidos: 'Elegí al menos un campo para pedir.',
+  campos: 'Preguntas',
+  elegirCampos: 'Elegí qué preguntas pedir',
+  marcarRequerido: 'Requerida',
+  // La API rechaza una respuesta a la que le falta una requerida (FRM-07), y la APK lo avisa antes de enviar: lo que la
+  // persona puede dejar sin responder es la solicitud entera. El texto de antes decía lo contrario.
+  ayudaRequerido: 'Si responde, las requeridas no pueden quedar vacías. La solicitud entera sí puede quedar sin responder.',
+  sinCamposElegidos: 'Elegí al menos una pregunta para pedir.',
 
   // ─── Crear la solicitud ───────────────────────────────────────────────────────────────────────
   proposito: 'Para qué lo necesitás',
   ayudaProposito: 'Queda registrado y el asesorado lo ve. Explicá para qué vas a usar esta información.',
-  alcance: 'Alcance',
+  alcance: 'Área',
   // FRM-03 exige que una plantilla con dominio se pida en su Alcance (UC-P32, precondición 7): la pantalla lo fija.
-  alcanceDeLaPlantilla: 'Esta plantilla es de un solo Alcance: la solicitud va con ese.',
-  plantillaNoSeleccionable: 'Esta plantilla no se puede pedir así: es de otro Alcance o hay una versión más nueva. Volvé a elegirla y revisá el Alcance.',
-  campoNoPertinente: 'Alguno de los campos pedidos no es pertinente para este Alcance. Revisá los campos o el Alcance.',
-  solicitudInvalida: 'Revisá los campos pedidos: los requeridos tienen que estar entre los pedidos.',
+  alcanceDeLaPlantilla: 'Este formulario es de una sola área: la solicitud va con esa.',
+  plantillaNoSeleccionable: 'Este formulario no se puede pedir así: es de otra área o hay una versión más nueva. Volvé a elegirlo y revisá el área.',
+  campoNoPertinente: 'Alguna de las preguntas pedidas no es pertinente para esta área. Revisá las preguntas o el área.',
+  solicitudInvalida: 'Revisá las preguntas pedidas: las requeridas tienen que estar entre las pedidas.',
   enviarSolicitud: 'Enviar solicitud',
   solicitudEnviada: 'Solicitud enviada.',
   solicitarNoEsAcceder: 'Pedir información no amplía tu acceso ni el consentimiento: hasta que el asesorado responda, no hay dato nuevo.',
@@ -110,7 +112,7 @@ export const COPY_FORMULARIOS = {
 
   // ─── PF-02 · pedido desde la evaluación de entrenamiento ─────────────────────────────────────
   propositoDeContextoDeEntrenamiento: 'Planificar tu entrenamiento',
-  pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario, los campos y el alcance ya están elegidos. Podés cambiarlos antes de enviar.',
+  pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario, las preguntas y el área ya están elegidos. Podés cambiarlos antes de enviar.',
   volverAEntrenamiento: 'Volver a Entrenamiento',
 } as const;
 

@@ -25,6 +25,23 @@
 //   descartable-datos    por la API, hoy: vínculos de Nutrición y Antropometría, una toma medida, una informada por la
 //              persona (SELF_REPORTED) y otra medida, y dos corridas del IMC (be/imc@1): valores medidos, informados y
 //              estimados en la misma serie de evolución. La revocación la hace el asesorado desde su web, en el recorrido.
+//   descartable-toma-completa  (WP-ESCRITORIO-AREAS, parte 3) por la API, sobre esas mismas cuentas: una toma de hace dos
+//              días con el perfil completo (30 mediciones, con la cintura mal tipeada a propósito) y ocho resultados
+//              calculados. La usa `recorrido.mjs mediciones`, que corrige, anula, calcula y deja una referencia por la
+//              pantalla. Va después de descartable-datos.
+//   descartable-solicitudes  (WP-ESCRITORIO-AREAS, parte 4) por la API, sobre esas mismas cuentas: el vínculo de
+//              Entrenamiento y tres solicitudes de información (una respondida, una respondida y corregida por la
+//              persona, y una sin responder), en dos áreas. Las usa `recorrido.mjs solicitudes`. Va después de
+//              descartable-datos; ocupa Entrenamiento, así que no va antes de `recorrido.mjs descartable`.
+//   descartable-plan  (WP-ESCRITORIO-AREAS, parte 5) por la API, sobre esas mismas cuentas: una evaluación, un objetivo,
+//              una receta propia y un plan de Nutrición con dos versiones activadas (la segunda, vigente), dos días
+//              tipo, comidas con una, dos y tres opciones y una opción de receta. Lo usa `recorrido.mjs planes`, que crea
+//              el borrador por la pantalla. Va después de descartable-datos.
+//   descartable-plan-de-entrenamiento  (WP-ESCRITORIO-AREAS, parte 6) por la API, sobre esas mismas cuentas: el vínculo de
+//              Entrenamiento, una evaluación, un objetivo y un plan con dos versiones activadas (la segunda, vigente): dos
+//              bloques (uno con dos microciclos), sesiones con indicaciones, un ejercicio con objetivos distintos por serie
+//              y otro sin criterio de intensidad. Lo usa `recorrido.mjs entrenamientos`. Va después de descartable-datos;
+//              ocupa Entrenamiento, así que no va antes de `recorrido.mjs descartable`.
 //
 // Uso: node datos/generar.mjs <fase> [origen de la API]   (BE_E2E_DATABASE_URL para otra base local)
 import { REPO, enTrabajo } from '../rutas.mjs';
@@ -65,8 +82,9 @@ const hoyCivil = () => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, year: 
 
 // ─── API ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-async function pedir(metodo, ruta, { token, cuerpo, clave, superficie = 'WEB', esperado } = {}) {
+async function pedir(metodo, ruta, { token, cuerpo, clave, superficie = 'WEB', esperado, capacidades } = {}) {
   const headers = { 'Content-Type': 'application/json', 'X-BE-Surface': superficie };
+  if (capacidades) headers[dominio.HEADER_DE_CAPACIDADES] = capacidades;
   if (token) headers.Authorization = `Bearer ${token}`;
   if (clave !== false && ['POST', 'PUT', 'DELETE'].includes(metodo)) headers['Idempotency-Key'] = clave ?? `datos-${randomUUID()}`;
   const r = await fetch(`${origen}/api/v1${ruta}`, { method: metodo, headers, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
@@ -677,6 +695,403 @@ async function descartableDatos() {
   console.log(`datos descartables listos: tres tomas de peso (medida, reportada por la persona y medida) y dos IMC calculados por un método (${corridas.map((c) => `${c.valor} ${c.unidad}`).join(', ')})`);
 }
 
+// ─── WP-ESCRITORIO-AREAS, parte 3: una toma con el perfil completo, en las cuentas descartables ──────────────────────
+
+/** Las 30 mediciones del «Perfil antropométrico completo», con los valores de la maqueta 22. La cintura va mal tipeada. */
+const PERFIL_COMPLETO = [
+  ['peso', 77.9, 'kg'],
+  ['talla', 168, 'cm'],
+  ['edad', 34, 'años'],
+  ['pliegue-pectoral', 13, 'mm'],
+  ['pliegue-axilar-media', 15.5, 'mm'],
+  ['pliegue-triceps', 22, 'mm'],
+  ['pliegue-subescapular', 18.5, 'mm'],
+  ['pliegue-biceps', 11, 'mm'],
+  ['pliegue-cresta-iliaca', 24, 'mm'],
+  ['pliegue-supraespinal', 19, 'mm'],
+  ['pliegue-abdominal', 27.5, 'mm'],
+  ['pliegue-muslo-frontal', 30, 'mm'],
+  ['pliegue-pantorrilla', 17, 'mm'],
+  ['pliegue-antebrazo', 8, 'mm'],
+  ['perimetro-cuello', 33.5, 'cm'],
+  ['perimetro-hombros', 104, 'cm'],
+  ['perimetro-pecho', 96, 'cm'],
+  ['perimetro-brazo-relajado', 30.5, 'cm'],
+  ['perimetro-brazo-flexionado', 31.5, 'cm'],
+  ['perimetro-antebrazo', 25, 'cm'],
+  ['perimetro-muneca', 15.5, 'cm'],
+  // Mal tipeada a propósito (era 84): el recorrido la corrige por la pantalla, y la API vuelve a calcular lo que la usa.
+  ['perimetro-cintura', 48, 'cm'],
+  ['perimetro-abdomen', 92, 'cm'],
+  ['perimetro-cadera', 104, 'cm'],
+  ['perimetro-muslo', 60.5, 'cm'],
+  ['perimetro-pantorrilla', 37.5, 'cm'],
+  ['perimetro-tobillo', 22, 'cm'],
+  ['diametro-humero', 6.2, 'cm'],
+  ['diametro-biestiloideo', 5, 'cm'],
+  ['diametro-femur', 9.1, 'cm'],
+];
+
+/** Los métodos que se calculan sobre esa toma, por su nombre en el catálogo: índices, sumas de pliegues y grasa corporal. */
+const METODOS_DE_LA_TOMA_COMPLETA = [
+  'Índice de masa corporal (IMC)',
+  'Índice cintura/cadera',
+  'Índice cintura/talla',
+  'Suma de 6 pliegues (ISAK)',
+  'Suma de 7 pliegues (Jackson y Pollock)',
+  'Durnin y Womersley, mujeres · Siri',
+  'Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri',
+  'Masa grasa relativa (RFM), mujeres',
+];
+
+/**
+ * En las cuentas descartables, ya con sus datos (`descartable-datos`): una toma de hace dos días con el perfil completo
+ * y ocho resultados calculados, todo por la API. Es la toma que dibuja la maqueta 22: con ella «Tomas» se ve con sus
+ * tres columnas de mediciones y sus categorías de resultados, y el recorrido que escribe (`recorrido.mjs mediciones`)
+ * corrige la cintura, anula un pliegue, calcula un método y deja una referencia. Cada entrada de un método sale de la
+ * medición de la toma con su misma métrica; un método que el catálogo no ofrece, o al que le falta una entrada, corta.
+ */
+async function descartableTomaCompleta() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.datos) throw new Error('primero: descartable-cuentas y descartable-datos');
+  const pro = await sesion(d.proCorreo);
+  const fecha = diaMenos(hoyCivil(), 2);
+  const creada = (
+    await pedir('POST', `/advisees/${d.aseId}/anthropometry/evaluation-drafts`, {
+      token: pro,
+      cuerpo: {
+        occurredAt: instante(fecha, '08:40').toISOString(),
+        specificationVersionId: PROTOCOLOS.perfil.version,
+        source: { type: 'DIRECT_CAPTURE' },
+        professionalNotes: 'En ayunas, antes de entrenar',
+        directMeasurements: PERFIL_COMPLETO.map(([metricCode, value, unit]) => ({ metricCode, value, unit })),
+      },
+    })
+  ).data;
+  const registrada = (await pedir('POST', `/anthropometry/evaluation-drafts/${creada.evaluationId}/register`, { token: pro, cuerpo: { expectedVersion: creada.version } })).data;
+  if (registrada.measurements.length !== PERFIL_COMPLETO.length) throw new Error(`la toma quedó con ${registrada.measurements.length} mediciones, no ${PERFIL_COMPLETO.length}`);
+  const porMetrica = Object.fromEntries(registrada.measurements.map((m) => [m.metric, m.measurementId]));
+
+  const catalogo = [];
+  for (let cursor = null; ; ) {
+    const r = await pedir('GET', `/professional-methods?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { token: pro });
+    catalogo.push(...r.data);
+    if (!r.page.hasMore || !r.page.nextCursor) break;
+    cursor = r.page.nextCursor;
+  }
+  const corridas = [];
+  for (const nombre of METODOS_DE_LA_TOMA_COMPLETA) {
+    const metodo = catalogo.find((m) => m.name === nombre);
+    if (!metodo) throw new Error(`el catálogo no ofrece «${nombre}»`);
+    const sinMedicion = metodo.requiredInputs.filter((x) => !porMetrica[x.metric]).map((x) => x.metric);
+    if (sinMedicion.length > 0) throw new Error(`«${nombre}» pide ${sinMedicion.join(', ')}, que la toma no tiene`);
+    const r = await pedir('POST', `/advisees/${d.aseId}/calculations`, {
+      token: pro,
+      cuerpo: { purpose: metodo.purposes[0], methodVersionId: metodo.methodVersionId, inputBindings: metodo.requiredInputs.map((x) => ({ inputCode: x.inputCode, sourceRef: porMetrica[x.metric] })) },
+    });
+    corridas.push({ id: r.data.calculationRunId, metodo: nombre, valor: r.data.result.magnitude.value, unidad: r.data.result.magnitude.unit });
+  }
+  guardarEstado({ descartable: { ...d, tomaCompleta: { evaluationId: registrada.evaluationId, fecha, porMetrica, corridas } } });
+  console.log(`toma completa lista: ${registrada.measurements.length} mediciones y ${corridas.length} resultados calculados (${corridas.map((c) => `${c.metodo}: ${c.valor}`).join('; ')})`);
+}
+
+// ─── WP-ESCRITORIO-AREAS, parte 4: tres solicitudes de información, en las cuentas descartables ──────────────────────
+
+/**
+ * En las cuentas descartables, ya con sus datos (`descartable-datos`): el vínculo de Entrenamiento que les falta y tres
+ * solicitudes de información, todo por la API, como las dibuja la maqueta 26:
+ * - «Antecedentes para entrenamiento», en Entrenamiento: las seis preguntas (cinco requeridas), respondida entera;
+ * - «Antecedentes de salud declarados», en Entrenamiento: dos preguntas (una requerida). La persona respondió una y
+ *   después corrigió: cambió esa respuesta y agregó la otra;
+ * - «Hábitos y contexto», en Nutrición: tres preguntas, sin responder.
+ * Las respuestas y la corrección las hace la cuenta del asesorado (API-FRM-07 y 08), con la superficie de la APK y sin
+ * unidad, como las manda la APK.
+ * Ocupa el área de Entrenamiento: el recorrido que la necesita libre para pedir un vínculo desde la pantalla
+ * (`recorrido.mjs descartable`) corre con cuentas descartables recién generadas y sin esta fase.
+ */
+async function descartableSolicitudes() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.datos) throw new Error('primero: descartable-cuentas y descartable-datos');
+  const pro = await sesion(d.proCorreo);
+  const ase = await sesion(d.aseCorreo, 'APK');
+  const vinculoDeEntrenamiento = await vincular(pro, ase, d.aseId, 'ENTRENAMIENTO');
+  const plantillas = (await pedir('GET', '/form-templates?limit=50', { token: pro })).data;
+  const version = async (clave) => {
+    const p = plantillas.find((x) => x.key === clave);
+    if (!p) throw new Error(`el catálogo no tiene el formulario ${clave}`);
+    return (await pedir('GET', `/form-templates/${p.templateId}/versions/${p.latestVersionId}`, { token: pro })).data;
+  };
+  const solicitar = async (v, alcance, proposito, pedidas, requeridas) =>
+    (await pedir('POST', `/advisees/${d.aseId}/form-requests`, { token: pro, cuerpo: { templateVersionId: v.templateVersionId, purpose: proposito, scope: alcance, requestedFieldCodes: pedidas, requiredFieldCodes: requeridas } })).data;
+  const responder = async (solicitud, respuestas) => (await pedir('POST', `/me/form-requests/${solicitud.formRequestId}/responses`, { token: ase, superficie: 'APK', cuerpo: { answers: respuestas } })).data;
+
+  const entrenamiento = await version(dominio.CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
+  const salud = await version('FRM-SALUD');
+  const habitos = await version('FRM-HABITOS');
+
+  // 1 · La más vieja: el formulario de Entrenamiento, con lo que precarga la pantalla al llegar desde ahí, respondido entero.
+  const deEntrenamiento = await solicitar(entrenamiento, 'ENTRENAMIENTO', dominio.COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento, [...dominio.CONTEXTO_DE_ENTRENAMIENTO.campos], [...dominio.CONTEXTO_DE_ENTRENAMIENTO.requeridos]);
+  const respuestaDeEntrenamiento = await responder(deEntrenamiento, [
+    { fieldCode: 'trn_objetivo_declarado', value: 'Ganar fuerza en piernas y volver a correr 5 km' },
+    { fieldCode: 'trn_experiencia', value: 'Gimnasio hace dos años, tres veces por semana; un año sin correr' },
+    { fieldCode: 'trn_dias_por_semana', value: 3 },
+    { fieldCode: 'trn_minutos_por_sesion', value: 45 },
+    { fieldCode: 'trn_lugar_y_equipamiento', value: 'Gimnasio del barrio, con barras y máquinas' },
+    { fieldCode: 'trn_preferencias', value: 'Me gusta el trabajo con barra; prefiero evitar la cinta' },
+  ]);
+  // 2 · Salud, dos preguntas: responde una y después corrige (cambia esa respuesta y agrega la otra).
+  const deSalud = await solicitar(salud, 'ENTRENAMIENTO', 'Necesito saber si hay lesiones o condiciones que cambien la carga del plan.', ['condiciones_declaradas', 'dolor_o_lesiones'], ['condiciones_declaradas']);
+  const respuestaDeSalud = await responder(deSalud, [{ fieldCode: 'condiciones_declaradas', value: 'Asma leve, desde hace años.' }]);
+  const correccionDeSalud = (
+    await pedir('POST', `/me/form-responses/${respuestaDeSalud.formResponseId}/rectifications`, {
+      token: ase,
+      superficie: 'APK',
+      cuerpo: {
+        expectedVersion: respuestaDeSalud.version,
+        reason: 'Me olvidé de aclarar que uso inhalador antes de entrenar.',
+        answers: [
+          { fieldCode: 'condiciones_declaradas', value: 'Asma leve. Uso inhalador antes de entrenar.' },
+          { fieldCode: 'dolor_o_lesiones', value: 'Molestia en el hombro derecho desde hace dos semanas.' },
+        ],
+      },
+    })
+  ).data;
+  // 3 · La más nueva: hábitos, en Nutrición, sin responder.
+  const deHabitos = await solicitar(habitos, 'NUTRICION', 'Acompañamiento nutricional', ['horas_de_sueno', 'nivel_de_actividad', 'fuma'], []);
+  guardarEstado({
+    descartable: {
+      ...d,
+      vinculos: { ...d.vinculos, ENTRENAMIENTO: vinculoDeEntrenamiento },
+      solicitudes: {
+        entrenamiento: deEntrenamiento.formRequestId,
+        salud: deSalud.formRequestId,
+        habitos: deHabitos.formRequestId,
+        respuestaDeEntrenamiento: respuestaDeEntrenamiento.formResponseId,
+        respuestaDeSalud: respuestaDeSalud.formResponseId,
+        correccionDeSalud: correccionDeSalud.rectificationId,
+      },
+    },
+  });
+  console.log('solicitudes de información listas: «Antecedentes para entrenamiento» (respondida), «Antecedentes de salud declarados» (respondida y corregida) y «Hábitos y contexto» (sin responder)');
+}
+
+/**
+ * WP-ESCRITORIO-AREAS, parte 5 · un plan de Nutrición para ver «Plan» como la maqueta 16, en las cuentas descartables y
+ * todo por la API: dos días tipo; comidas con una, dos y tres opciones; una opción que nace de una receta propia; y un
+ * ítem con su nota. Queda
+ * con dos versiones activadas (la segunda es la vigente) y sin borrador: el recorrido que la usa
+ * (`recorrido.mjs planes`) crea el borrador por la pantalla. Las dos se activan hoy: la activación por la API no admite
+ * otra fecha.
+ */
+async function descartablePlan() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.datos) throw new Error('primero: descartable-cuentas y descartable-datos');
+  const pro = await sesion(d.proCorreo);
+  const evaluacion = (await pedir('POST', `/advisees/${d.aseId}/nutrition/evaluations`, { token: pro, cuerpo: cuerpoDeEvaluacionNutricional(new Date(Date.now() - 2 * 3600_000)) })).data.evaluationId;
+  const objetivo = (await pedir('POST', `/advisees/${d.aseId}/nutrition/objectives`, { token: pro, cuerpo: cuerpoDeObjetivoNutricional(evaluacion, new Date(Date.now() - 3600_000), 2250) })).data;
+
+  // Una receta propia, de dos porciones: la opción del plan lleva los ingredientes de una.
+  const catalogo = await en((tx) => catalogoNutricional(tx, d.proId, Object.values(ALIMENTOS).map((a) => a.id)));
+  const unidadDe = (clave) => (ALIMENTOS[clave].ml ? 'ml' : 'g');
+  const ingrediente = (clave, cantidad, estado) => ({ catalogItemId: ALIMENTOS[clave].id, catalogItemVersionId: catalogo.get(ALIMENTOS[clave].id).versionId, quantity: { value: cantidad, unit: unidadDe(clave) }, preparationState: estado });
+  const receta = (
+    await pedir('POST', '/nutrition/recipes', {
+      token: pro,
+      cuerpo: {
+        name: 'Guiso de lentejas',
+        description: 'Receta sintética de demostración.',
+        servings: 2,
+        ingredients: [ingrediente('lentejas', 400, 'COOKED'), ingrediente('zanahoria', 200, 'COOKED'), ingrediente('aceite', 20, 'RAW')],
+        steps: ['Rehogar la zanahoria en el aceite.', 'Sumar las lentejas y cocinar diez minutos.'],
+      },
+    })
+  ).data;
+
+  const it = (clave, cantidad, estado, nota) => ({ catalogItemId: ALIMENTOS[clave].id, quantity: { value: cantidad, unit: unidadDe(clave) }, preparationState: estado, ...(nota ? { note: nota } : {}) });
+  const opcion = (label, items) => ({ label, items });
+  const comida = (label, options) => ({ label, prescriptionMode: 'DISH_OPTIONS', options });
+  /** La estructura del plan. `arroz` es lo único que cambia entre la primera versión y la segunda. */
+  const estructura = (arroz) => ({
+    dayTypes: [
+      {
+        label: 'Día de entrenamiento',
+        meals: [
+          comida('Desayuno', [opcion('Avena con leche', [it('avena', 50, 'RAW'), it('leche', 200, 'RAW')]), opcion('Tostadas con queso', [it('panIntegral', 60, 'AS_PURCHASED'), it('queso', 30, 'AS_PURCHASED')])]),
+          comida('Almuerzo', [
+            opcion('Arroz con pollo y brócoli', [it('arroz', arroz, 'COOKED'), it('pollo', 120, 'COOKED'), it('brocoli', 100, 'COOKED'), it('aceite', 10, 'RAW', 'En crudo, al servir.')]),
+            { label: 'Guiso de lentejas', items: [], recipeVersionId: receta.recipeVersionId },
+            opcion('Salmón con papa', [it('salmon', 150, 'COOKED'), it('papa', 200, 'COOKED')]),
+          ]),
+          comida('Merienda', [opcion('Yogur con manzana', [it('yogur', 200, 'RAW'), it('manzana', 150, 'RAW')])]),
+          comida('Cena', [opcion('Salmón con papa', [it('salmon', 150, 'COOKED'), it('papa', 150, 'COOKED'), it('aceite', 5, 'RAW')]), opcion('Lentejas con zanahoria', [it('lentejas', 200, 'COOKED'), it('zanahoria', 100, 'COOKED')])]),
+        ],
+      },
+      {
+        label: 'Día de descanso',
+        meals: [
+          comida('Desayuno', [opcion('Tostadas con queso', [it('panIntegral', 60, 'AS_PURCHASED'), it('queso', 30, 'AS_PURCHASED')])]),
+          comida('Almuerzo', [opcion('Lentejas con zanahoria', [it('lentejas', 200, 'COOKED'), it('zanahoria', 100, 'COOKED'), it('aceite', 5, 'RAW')]), opcion('Arroz con pollo y brócoli', [it('arroz', 100, 'COOKED'), it('pollo', 120, 'COOKED'), it('brocoli', 150, 'COOKED')])]),
+          comida('Cena', [opcion('Salmón con papa', [it('salmon', 150, 'COOKED'), it('papa', 100, 'COOKED')])]),
+        ],
+      },
+    ],
+  });
+  const activar = async (plan) => (await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } })).data;
+  const primera = (await pedir('POST', `/advisees/${d.aseId}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo.versionId, initialStructure: estructura(180) } })).data;
+  await activar(primera);
+  const segunda = (await pedir('POST', `/advisees/${d.aseId}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo.versionId, basedOnPlanId: primera.planId } })).data;
+  const editada = (await pedir('PATCH', `/nutrition/plans/${segunda.planId}`, { token: pro, cuerpo: { expectedVersion: segunda.version, changes: estructura(150) } })).data;
+  await activar(editada);
+  guardarEstado({ descartable: { ...d, planDeNutricion: { evaluacionId: evaluacion, objetivoId: objetivo.versionId, recetaId: receta.recipeId, v1: primera.planId, v2: segunda.planId } } });
+  console.log('plan de Nutrición listo: dos versiones activadas (la segunda, vigente), dos días tipo, hasta tres opciones por comida y una opción de receta («Guiso de lentejas»)');
+}
+
+/**
+ * WP-ESCRITORIO-AREAS, parte 6 · un plan de Entrenamiento para ver «Plan» como la maqueta 24, en las cuentas
+ * descartables y todo por la API: dos bloques (el segundo, con dos microciclos); sesiones con sus indicaciones; un
+ * ejercicio con objetivos distintos por serie (carga, RIR y descanso), con una serie sin descanso recomendado y con su
+ * nota, y con las bases de carga y de repeticiones declaradas; uno con todas las series iguales; y uno sin criterio de
+ * intensidad. Queda con dos versiones activadas (la segunda, vigente) y sin borrador: el recorrido que lo usa
+ * (`recorrido.mjs entrenamientos`) crea el borrador por la pantalla.
+ * Un plan con objetivos distintos por serie no se activa hasta que su titular abre «Hoy» con una app que los muestra
+ * (DL-122): acá lo hace el asesorado, declarando esa capacidad, antes de la segunda activación.
+ */
+async function descartablePlanDeEntrenamiento() {
+  const e = leerEstado();
+  const d = e.descartable;
+  if (!d?.datos) throw new Error('primero: descartable-cuentas y descartable-datos');
+  const pro = await sesion(d.proCorreo);
+  const ase = await sesion(d.aseCorreo, 'APK');
+  await vincular(pro, ase, d.aseId, 'ENTRENAMIENTO');
+  const evaluacion = (
+    await pedir('POST', `/advisees/${d.aseId}/training/evaluations`, {
+      token: pro,
+      cuerpo: {
+        occurredAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
+        assessment: { entries: [{ concept: 'Experiencia en entrenamiento de fuerza', value: 'Dos años (dato sintético)', source: 'REPORTED' }] },
+        evidenceReferences: [],
+        professionalNotes: 'Notas sintéticas del profesional.',
+      },
+    })
+  ).data.evaluationId;
+  const objetivo = (
+    await pedir('POST', `/advisees/${d.aseId}/training/objectives`, {
+      token: pro,
+      cuerpo: {
+        evaluationId: evaluacion,
+        effectiveFrom: new Date(Date.now() - 3600_000).toISOString(),
+        effectiveUntil: null,
+        objective: { statement: 'Ganar fuerza en los básicos con técnica estable (objetivo sintético).' },
+        rationale: 'Fundamento sintético: decisión del profesional, sin cálculo de BE.',
+      },
+    })
+  ).data;
+
+  const kg = (valor) => ({ value: valor, unit: 'kg' });
+  const conRir = (valor) => ({ criterion: 'RIR', target: { value: valor } });
+  const iguales = (cuantas, repeticiones) => Array.from({ length: cuantas }, () => ({ repetitions: repeticiones }));
+  const de = (ejercicio) => EJERCICIOS[ejercicio].version;
+  const seisAOcho = { min: 6, max: 8 };
+  /** La primera versión: un bloque, dos sesiones, sin objetivos por serie. */
+  const base = {
+    blocks: [
+      {
+        label: 'Fuerza: base',
+        purpose: 'Técnica y cargas moderadas',
+        sessions: [
+          { label: 'A · Tren inferior', prescriptions: [{ exerciseVersionId: de('sentadilla'), sets: iguales(3, { value: 8 }), intensity: conRir(2), suggestedLoad: kg(60) }] },
+          { label: 'B · Tren superior', prescriptions: [{ exerciseVersionId: de('banca'), sets: iguales(3, { value: 8 }), intensity: conRir(2), suggestedLoad: kg(50) }] },
+        ],
+      },
+    ],
+  };
+  /** La segunda, que queda vigente: es la que se mira. */
+  const progresion = {
+    blocks: [
+      {
+        label: 'Fuerza: progresión',
+        purpose: 'Más carga, menos repeticiones',
+        sessions: [
+          {
+            label: 'A · Tren inferior',
+            instructions: 'Entrada en calor: diez minutos de movilidad de cadera y dos series livianas del primer ejercicio.',
+            prescriptions: [
+              { exerciseVersionId: de('sentadilla'), sets: iguales(4, { value: 6 }), intensity: conRir(1), suggestedLoad: kg(77.5), restSeconds: 180 },
+              { exerciseVersionId: de('pesoMuerto'), sets: iguales(3, { value: 5 }), intensity: conRir(2), suggestedLoad: kg(85), restSeconds: 180 },
+              { exerciseVersionId: de('zancadas'), sets: iguales(3, { value: 10 }), intensity: conRir(2), suggestedLoad: kg(10), restSeconds: 90, loadBasis: 'PER_IMPLEMENT', repetitionBasis: 'PER_SIDE' },
+            ],
+          },
+          {
+            label: 'B · Tren superior',
+            instructions: 'Entrada en calor: diez minutos de movilidad de hombros y dos series livianas del primer ejercicio.',
+            prescriptions: [
+              {
+                exerciseVersionId: de('banca'),
+                // Las dos primeras toman todo de lo general; la tercera cambia el RIR; la cuarta, el RIR y la carga, no
+                // tiene descanso recomendado y lleva una nota.
+                sets: [
+                  { repetitions: seisAOcho },
+                  { repetitions: seisAOcho },
+                  { repetitions: seisAOcho, rir: 1 },
+                  { repetitions: seisAOcho, rir: 1, suggestedLoad: kg(60), restSeconds: null, note: 'Si se pierde la técnica, cortar la serie.' },
+                ],
+                intensity: conRir(2),
+                suggestedLoad: kg(62.5),
+                restSeconds: 150,
+                loadBasis: 'TOTAL_EXTERNAL',
+                repetitionBasis: 'PER_SET',
+                note: 'Bajar en 3 segundos y subir en 1.',
+              },
+              { exerciseVersionId: de('remo'), sets: iguales(4, { min: 8, max: 10 }), intensity: conRir(2), suggestedLoad: kg(47.5), restSeconds: 120 },
+              { exerciseVersionId: de('dominadas'), sets: iguales(4, { value: 6 }), intensity: null, restSeconds: 120 },
+            ],
+          },
+        ],
+      },
+      {
+        label: 'Descarga',
+        purpose: 'Una semana con menos series',
+        microcycles: [
+          {
+            label: 'Semana 1',
+            purpose: 'La mitad de las series',
+            sessions: [
+              {
+                label: 'Cuerpo completo',
+                prescriptions: [
+                  { exerciseVersionId: de('sentadilla'), sets: iguales(2, { value: 6 }), intensity: conRir(3), suggestedLoad: kg(60), restSeconds: 120 },
+                  { exerciseVersionId: de('banca'), sets: iguales(2, { value: 6 }), intensity: conRir(3), suggestedLoad: kg(50), restSeconds: 120 },
+                ],
+              },
+            ],
+          },
+          { label: 'Semana 2', sessions: [{ label: 'Cuerpo completo', prescriptions: [{ exerciseVersionId: de('pesoMuerto'), sets: iguales(2, { value: 5 }), intensity: conRir(3), suggestedLoad: kg(70), restSeconds: 150 }] }] },
+        ],
+      },
+    ],
+  };
+  const activar = async (plan) => (await pedir('POST', `/training/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } })).data;
+  const primera = (await pedir('POST', `/advisees/${d.aseId}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo.versionId, initialStructure: base } })).data;
+  await activar(primera);
+  // El titular abre «Hoy» con una app que muestra los objetivos de cada serie: la API lo registra, y recién entonces
+  // deja activar un plan que los tiene distintos de los generales.
+  await pedir('GET', '/me/training/today', { token: ase, superficie: 'APK', capacidades: dominio.CAPACIDAD_OBJETIVOS_POR_SERIE });
+  const segunda = (await pedir('POST', `/advisees/${d.aseId}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo.versionId, basedOnPlanId: primera.planId } })).data;
+  const editada = (await pedir('PATCH', `/training/plans/${segunda.planId}`, { token: pro, cuerpo: { expectedVersion: segunda.version, changes: progresion } })).data;
+  let capaz = false;
+  for (let intento = 0; intento < 20 && !capaz; intento++) {
+    capaz = (await pedir('GET', `/training/plans/${segunda.planId}/detail`, { token: pro })).data.setTargetsDelivery.adviseeClientCapable;
+    if (!capaz) await new Promise((r) => setTimeout(r, 500));
+  }
+  if (!capaz) throw new Error('la API no registró que el titular usa una app que muestra los objetivos por serie');
+  await activar(editada);
+  guardarEstado({ descartable: { ...d, planDeEntrenamiento: { evaluacionId: evaluacion, objetivoId: objetivo.versionId, v1: primera.planId, v2: segunda.planId } } });
+  console.log('plan de Entrenamiento listo: dos versiones activadas (la segunda, vigente), dos bloques (uno con dos microciclos), objetivos distintos por serie en un ejercicio y otro sin criterio de intensidad');
+}
+
 // ─── WP-DASHBOARD-COMPRENSION: escenarios D y E ────────────────────────────────────────────────────────────────────
 
 async function comprension() {
@@ -742,9 +1157,13 @@ const FASES = {
   'verificar-comprension': verificarComprension,
   'descartable-cuentas': descartableCuentas,
   'descartable-datos': descartableDatos,
+  'descartable-toma-completa': descartableTomaCompleta,
+  'descartable-solicitudes': descartableSolicitudes,
+  'descartable-plan': descartablePlan,
+  'descartable-plan-de-entrenamiento': descartablePlanDeEntrenamiento,
 };
 if (!FASES[fase]) {
-  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos [origen de la API]');
+  console.error('uso: node datos/generar.mjs cuentas|base|historia|recientes|verificar|volumen|comprension|comprension-e|verificar-comprension|descartable-cuentas|descartable-datos|descartable-toma-completa|descartable-solicitudes|descartable-plan|descartable-plan-de-entrenamiento [origen de la API]');
   process.exit(2);
 }
 try {

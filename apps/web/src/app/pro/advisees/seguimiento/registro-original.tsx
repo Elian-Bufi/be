@@ -22,8 +22,9 @@ import {
   type RegistroDeEjecucion,
 } from '@be/domain';
 import Link from 'next/link';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
+import { Panel } from '../../../../components/panel';
 import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { DetalleDeRegistroDeComida } from '../nutrition/detalle-de-registro';
@@ -38,12 +39,12 @@ const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: st
   NUTRITION_PLAN_VERSION: { ruta: '/pro/advisees/nutrition', vista: 'plan', texto: 'Ver en Nutrición · Plan' },
   NUTRITION_OBJECTIVE_VERSION: { ruta: '/pro/advisees/nutrition', vista: 'resumen', texto: 'Ver en Nutrición' },
   NUTRITION_REVIEW: { ruta: '/pro/advisees/nutrition', vista: 'revisiones', texto: 'Ver en Nutrición · Revisiones' },
-  TRAINING_EXECUTION: { ruta: '/pro/advisees/training', vista: 'ejecuciones', texto: 'Ver en Entrenamiento · Ejecuciones' },
+  TRAINING_EXECUTION: { ruta: '/pro/advisees/training', vista: 'ejecuciones', texto: 'Ver en Entrenamiento · Registros' },
   TRAINING_PLAN_VERSION: { ruta: '/pro/advisees/training', vista: 'plan', texto: 'Ver en Entrenamiento · Plan' },
   TRAINING_OBJECTIVE_VERSION: { ruta: '/pro/advisees/training', vista: 'resumen', texto: 'Ver en Entrenamiento' },
   TRAINING_REVIEW: { ruta: '/pro/advisees/training', vista: 'revisiones', texto: 'Ver en Entrenamiento · Revisiones' },
-  ANTHROPOMETRIC_EVALUATION: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Evaluaciones' },
-  ANTHROPOMETRIC_MEASUREMENT: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Evaluaciones' },
+  ANTHROPOMETRIC_EVALUATION: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Tomas' },
+  ANTHROPOMETRIC_MEASUREMENT: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Tomas' },
   FOLLOW_UP_PROCESS: { ruta: '/pro/advisees', vista: '', texto: 'Ver el resumen' },
 };
 
@@ -66,34 +67,13 @@ export function PanelDeRegistro({
   numeroDeVersion?: number;
   children?: ReactNode;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const id = useId();
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (origen && !d.open) d.showModal();
-    if (!origen && d.open) d.close();
-  }, [origen]);
+  // El marco es el panel común (`components/panel.tsx`), que también usan las pestañas de área.
   return (
-    <dialog
-      ref={ref}
-      className="dialogo dialogo--panel"
-      aria-labelledby={`${id}-titulo`}
-      onCancel={(e) => {
-        e.preventDefault();
-        onCerrar();
-      }}
-    >
-      <div className="dialogo__encabezado">
-        <h2 id={`${id}-titulo`}>{titulo}</h2>
-        <button type="button" className="boton boton--secundario" onClick={onCerrar}>
-          Cerrar
-        </button>
-      </div>
+    <Panel abierto={origen !== null} titulo={titulo} onCerrar={onCerrar}>
       {children}
       {origen && !soloLoDeAdentro ? <ContenidoDelRegistro origen={origen} onNoDisponible={onNoDisponible} numeroDeVersion={numeroDeVersion} /> : null}
       {origen && !soloLoDeAdentro ? <EnlaceAlArea origen={origen} /> : null}
-    </dialog>
+    </Panel>
   );
 }
 
@@ -222,7 +202,7 @@ function VersionDeNutricion({ planId, numero, onNoDisponible }: { planId: string
 }
 
 function VersionDeEntrenamiento({ planId, numero, onNoDisponible }: { planId: string; numero?: number; onNoDisponible?: () => void }) {
-  const { token } = useSeguimiento();
+  const { token, sesionPerdida } = useSeguimiento();
   const { lectura, recargar } = useLectura<{ data: PlanConObjetivos }>(`plan-trn|${planId}`, () => api.planConObjetivos(token, planId), 'TRAINING');
   useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
   if (lectura.tipo === 'cargando') return <Cargando />;
@@ -230,5 +210,5 @@ function VersionDeEntrenamiento({ planId, numero, onNoDisponible }: { planId: st
   if (lectura.tipo === 'error') return <ErrorConReintento mensaje={textoDeFalla(lectura.motivo, 'la planificación')} onReintentar={recargar} />;
   const v = lectura.datos.data;
   if (!v.activatedAt) return <p className="nota">Es un borrador: todavía no rige ni forma una etapa. Se edita en la pestaña Entrenamiento.</p>;
-  return <PlanSoloLectura version={v} numero={numero ?? 0} />;
+  return <PlanSoloLectura version={v} numero={numero ?? 0} acceso={{ token, sesionPerdida }} />;
 }

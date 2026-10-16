@@ -91,7 +91,9 @@ Cuando una regla de acá choca con el legajo, gana el legajo y se anota en `docs
   `scripts/copy-pantallas.test.cjs` recorre el texto de las pantallas y falla si aparece alguna. La síntesis del
   Resumen tiene su propia lista (`PALABRAS_QUE_CALIFICAN`), con su prueba.
 - **Números:**
-  - siempre con su unidad;
+  - siempre con su unidad. En una lista de valores que comparten la unidad, se dice una vez, en el título de la
+    columna o del grupo («Pliegues cutáneos · mm»): no se omite, se dice una vez. El nombre accesible de cada valor la
+    lleva igual (II.9);
   - con la precisión que declara el método, sin redondeo silencioso (REG-06-158);
   - con el separador decimal y de miles del español (`numero`, `cantidad`).
 
@@ -105,7 +107,7 @@ Cuando una regla de acá choca con el legajo, gana el legajo y se anota en `docs
 | Información de contexto | Junto a lo que explica, plegada si es larga. | `Aviso tipo="info"` / `Ayuda` |
 
 No se usa `<dialog open>` en el flujo de la página: en el teléfono aparece arriba de todo, lejos del botón que lo
-abrió. Pasó con «Registrar evaluación» en la prueba del 2026-10-01.
+abrió. Pasó con «Registrar evaluación» (hoy, «Registrar toma») en la prueba del 2026-10-01.
 
 ### I.4 Estados
 
@@ -284,16 +286,36 @@ Información).
   1440 × 900 se ven sin desplazarse las tarjetas de las tres áreas (el objetivo y el plan, lo pendiente, lo nuevo
   desde su revisión y la acción) y el valor de cada indicador.
 - **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar), cada una con su ícono, que comparten el período, y
-  **pestañas de área** para trabajar sobre el registro completo. En las pestañas de área, las migas dicen «Ficha del
-  asesorado».
+  **pestañas de área** para trabajar sobre el registro completo.
+- **El marco de una pestaña de área** (`marco-del-area.tsx`; WP-ESCRITORIO-AREAS) es el de la ficha llevado a
+  Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones, a la misma altura (143 px), para
+  que pasar de la ficha a un área no mueva nada de lugar. (1) El camino de vuelta, el área como título, la referencia
+  de la persona y, a la derecha, «Actualizar» con la hora de la consulta; (2) el **acceso actual de esa área** (en
+  Información, el de las tres); (3) las secciones, cada una con su ícono, y la ayuda de la vista cuando la tenga. No
+  lleva miga.
+  - **El camino de vuelta está siempre:** «Volver a la ficha, donde estabas» si se llegó desde la ficha; «Volver a la
+    ficha» si no; «Volver a Entrenamiento» si se llegó desde ahí.
+  - **«Actualizar» vuelve a leer todo lo que la sección muestra.** Si hay algo escrito sin guardar, antes pregunta y
+    dice qué se pierde: quien lo tiene se lo avisa al marco con `useCambiosSinGuardar`. Un formulario nuevo dentro de
+    un área tiene que avisarlo.
+  - **El acceso no dice «Activo» sobre algo que ya no se puede leer:** si una lectura o una escritura responde «no
+    disponible», el marco vuelve a preguntar el acceso, como la ficha. Una falla no es una revocación. Nunca se dice
+    quién retiró el acceso ni por qué.
+  - **Una sección que todavía no se recompuso conserva su ancho** (72 rem), alineada con el marco; una recompuesta usa
+    todo el ancho.
+  - **Lo que una sección elige vive en la dirección:** el período, la vista y lo que está abierto. Como «Actualizar»
+    vuelve a montar la sección, lo que quede en su memoria se pierde: una sección recompuesta lo lleva a la dirección
+    (`ir`, del contexto del área), y «Actualizar» y volver atrás lo conservan. Al cambiar de sección no se lleva.
+  - **La ayuda de la vista** («Cómo se lee esta vista») va en el renglón de las secciones, a la derecha, solo en las
+    secciones que la tienen (`AyudaDeVista`).
 - **La dirección dice dónde se está:** se navega con el router (`ir`, `irA`), no cambiando un estado escondido. La URL
   guarda la vista, el período, los filtros, las métricas, la pregunta y la fecha elegida, **solo como identificadores,
   enumerados y fechas**. El texto que escribe la persona (una búsqueda) y los borradores no van en la URL. Atrás vuelve
   al estado anterior.
 - **Ir y volver con todo:** de la ficha a una pestaña de área se pasa `volver` con la configuración de la ficha. La
   pestaña la valida con los mismos lectores de la ficha (`retornoALaFicha`: nunca sale de `/pro/advisees` del mismo
-  asesorado), la conserva al cambiar de sección y ofrece «Volver a la ficha, donde estabas» (`EnlaceDeRetorno`) y la
-  miga «Ficha del asesorado» con ese destino.
+  asesorado), la conserva al cambiar de sección y ofrece «Volver a la ficha, donde estabas» en su marco, delante del
+  título.
 - **Las pestañas de cada sección van en una línea** (`Pestanas`). Si no entran, se desplazan de costado, con una sombra
   que avisa que hay más, y la elegida queda a la vista.
 
@@ -489,7 +511,7 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   - **El encabezado** dice el título, «Hoy» (la fecha con que la API clasificó las revisiones, con su día de la semana
     y su año) y «Solicitar vínculo».
   - **«Pendientes»** tiene vistas con nombre, como la línea de tiempo: «Todo», «Revisiones», «Planes», «Formularios» y
-    «Evaluaciones», cada una con la cantidad que trae. La cartera se lee entera al entrar y se cuenta en el navegador:
+    «Tomas», cada una con la cantidad que trae. La cartera se lee entera al entrar y se cuenta en el navegador:
     elegir una vista no le pide nada a la API. Una vista en cero se muestra con su cero. «Más filtros» guarda la
     combinación libre: un área, un tipo exacto y el período.
   - **Cada pendiente es una fila:** la persona, el área, lo pendiente con la frase de BE y, debajo, el último registro
@@ -507,6 +529,55 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
     mientras se envía; al enviarse se cierra y la página dice qué pasó. Un aviso que queda adentro de un diálogo
     cerrado no lo lee nadie.
   - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita.
+- **Los registros de un área, por día** (`nutrition/registros.tsx`; las reglas, en `registros-de-nutricion.ts` del
+  dominio; WP-ESCRITORIO-AREAS): es la línea de tiempo llevada al registro completo de un área. **El día es la unidad**
+  y, adentro, **cada comida del plan es una fila.**
+  - **El día en un renglón:** «3 de 4 comidas registradas · 1 sin registro». Cuenta las comidas del plan con una opción
+    registrada. Un día sin ningún registro dice «Sin registro», nunca «0 de 4»; el de hoy dice «hoy, día en curso».
+    Arrancan abiertos los que tienen una comida diferente o algo distinto de lo indicado; los demás se abren a pedido.
+    Plegar no esconde: el renglón dice lo que el día tiene.
+  - **La fila:** la comida, lo registrado, cómo se informaron las cantidades y la diferencia observada, con las
+    palabras del dominio. Los nombres de las columnas van una vez, arriba; para el lector de pantalla, cada dato lleva
+    su rótulo. La fila entera abre el registro; una fila sin registro no es un botón.
+  - **Una resta que da cero no es una diferencia:** no se muestra ni abre el día. Con las porciones del plan
+    confirmadas no se dice «igual»: BE no comparó nada.
+  - **Las vistas con nombre cuentan comidas, no registros.** Cada fila está en un solo estado (registrada, con una
+    comida diferente, sin registro), y los tres suman «Todas las comidas». Una vista que depende de una lectura que
+    falló no lleva número: un cero sería decir que no hay ninguna.
+  - **Dos lecturas, y una puede fallar.** Si falla la que dice la opción y el modo de cada registro, los días y sus
+    comidas se ven igual, y un bloque dice qué falta y por qué, con «Reintentar».
+  - **El registro, al costado** desde 1200 px; más angosto, encima. El foco va a su título, y Escape o «Cerrar» lo
+    devuelven a la fila. Lo que se le agrega a un registro (la estimación del profesional sobre una comida diferente)
+    se hace desde ahí, no en una lista aparte.
+  - **Un período largo se muestra de a catorce días;** «Ver días anteriores» no le pide nada a la API. El período de
+    entrada (siete días) se muestra entero.
+- **Los registros de Entrenamiento, por sesión** (`training/ejecuciones.tsx`; las reglas, en
+  `registros-de-entrenamiento.ts` del dominio): el mismo patrón, con **la sesión como unidad.** No todos los días hay
+  una sesión, y el plan no fija qué días se entrena.
+  - **Una fila por sesión, de la más nueva a la más vieja:** el día, la sesión con su condición, cuántas series se
+    registraron («7 de 10 registradas») y cómo quedaron frente a lo indicado («3 series sin registrar · 1 serie con
+    diferencias», «Dentro de lo indicado»). Una sesión registrada como no realizada, o resumida, no se cuenta serie por
+    serie: dice por qué no tiene series, nunca «0 de 12».
+  - **El detalle es una tabla con cada serie una sola vez:** lo indicado, lo registrado y cómo quedó, agrupadas por
+    ejercicio. La serie con una diferencia va en negrita y, además, su texto dice cuál es: la negrita sola no alcanza.
+  - **Qué es una diferencia:** las repeticiones o el RIR por encima o por debajo de lo indicado. **La carga se dice
+    aparte, en un renglón propio y sin negrita, y no cuenta:** la sugerida es un complemento, no una obligación. Un dato
+    que no se registró tampoco es una diferencia: se dice («RIR: sin dato»).
+  - **Dos cosas distintas, con dos nombres:** «Con diferencias» sale de comparar las series; «Con desvío o no
+    realizada» es lo que la persona declaró al registrar. No se usa «Distinto de lo indicado», que en la línea de tiempo
+    de la ficha ya nombra otra cosa.
+  - **Con una sesión abierta, la lista y el detalle se reparten la ventana por mitades:** la tabla necesita más ancho
+    que el detalle de una comida. A 1280 px las dos mitades quedan angostas: en la tabla, lo que no entra en un renglón
+    baja de a una parte entera («77,5 kg · 6 rep. ·» y, abajo, «RIR 1»); en la fila, el número no se separa de lo que
+    cuenta ni el separador queda al principio de un renglón; y la marca de la condición parte su texto adentro de su
+    columna, sin pisar la de al lado.
+  - **Lo que antes estaba todo abierto queda a un clic,** en el lugar: los descansos y la duración de cada serie, la
+    sesión en el plan de ese día, el gráfico por serie y el registro original con sus correcciones. No se ofrece abrir
+    lo que no hay (una sesión sin tiempos marcados lo dice en su renglón).
+  - **Lo indicado es otra lectura, y puede fallar:** las sesiones se ven igual, cada una dice «No se pudo leer lo
+    indicado» y la vista que depende de eso queda sin número.
+  - **Un período largo se muestra de a quince sesiones.** La evolución de un ejercicio no se repite acá: está en
+    Analizar, y hay un enlace que lleva.
 
 ### II.7 Estados del website profesional
 
@@ -546,18 +617,37 @@ crear otro, se usa uno de estos.
 | `Pestanas` | Las secciones de un asesorado, en una línea. La elegida, a la vista | `<Pestanas etiqueta="Secciones de Nutrición" vistas={VISTAS} actual={vista} href={(c) => …} />` |
 | `Ayuda` | Una explicación larga, plegada. Es un enlace con su marca ▸, no una caja | «Cómo se arma esta lista», «Con qué se calculó» |
 | `AvisoFlotante` | El éxito de una acción, abajo. Con `seQueda` si trae una acción | «Revisión registrada» + «Volver a la ficha, donde estabas» |
-| `EstadoVacio` | Lo que todavía no hay, con su paso siguiente | «Todavía no hay evaluaciones registradas» → «Preparar una toma» |
+| `EstadoVacio` | Lo que todavía no hay, con su paso siguiente | «Todavía no hay tomas registradas» → «Preparar una toma» |
 | `.metadatos` | Lo que vale para todo un bloque, dicho una vez junto al título | «Del 13 jul al 10 oct · describen lo registrado, sin calificar» |
 | `.subseccion` | Un bloque dentro de una sección: un separador, no otra tarjeta | Cada área en la pregunta de información |
 | `.encabezado-de-bloque` | El título de un bloque con su acción principal al lado | «Indicadores» + «Elegir indicadores» |
 | `.panel` | Un formulario que se abre en el lugar: una sola superficie | Lo que falta elegir de una pregunta |
 | `.acciones--fijas` | Las acciones de un formulario largo, fijas al pie, con el estado de lo guardado | La preparación de una toma: «Todavía no se guardó.» + «Guardar» |
 | `.boton--compacto` | Una acción de fila: el mismo alto táctil (44 px), menos relleno | «Actualizar» en el encabezado de la ficha |
-| `.desplazable-x` | Una tabla ancha que se desplaza de costado dentro de su caja, nunca la página. Las sombras de los bordes aparecen solo si hay más, con el color de la superficie de abajo (`.seccion`, `.panel`) | La tabla de etapas; las comidas del contraste |
-| `MigasDelAsesorado` + `EnlaceDeRetorno` | Volver a la ficha con su configuración | «Ficha del asesorado» y «Volver a la ficha, donde estabas» |
+| `.desplazable-x` | Una tabla ancha que se desplaza de costado dentro de su caja, nunca la página. Las sombras de los bordes aparecen solo si hay más, y las tapas que las esconden llevan el color de la superficie donde está (`.seccion`, `.panel`, el detalle al costado, un diálogo): con otro color queda una franja a cada lado | La tabla de etapas; las comidas del contraste; las series de una sesión |
+| `MarcoDelArea` | El marco de una pestaña de área: el camino de vuelta, de quién es, el acceso actual, «Actualizar» con la hora, las secciones con su ícono y la ayuda | «← Volver a la ficha, donde estabas · Nutrición · Asesorado · 5db647» |
+| `useCambiosSinGuardar` | Avisarle al marco que hay algo escrito sin guardar, con su nombre: «Actualizar» pregunta antes de perderlo | «el plan en preparación», «la revisión» |
+| `EstadoDeLecturaDelArea` · `NoDisponibleEnElArea` | El resultado de leer una sección: cargando, el «no disponible» neutral o la falla con su motivo y «Reintentar» | «No pudimos cargar esta vista · Hubo muchas consultas seguidas…» |
+| `AccesoPorArea` (`acceso-por-area.tsx`) | El acceso actual por área, igual en la ficha y en el marco de un área | «Nutrición: Activo · acceso contextual» |
 | `PanelDeRegistro` | Un registro encima de la vista, en un panel que retiene el foco, con su propia lectura | La planificación de una etapa; el origen de un dato o el detalle de un hecho, en una ventana angosta |
+| `Panel` (`components/panel.tsx`) | Lo mismo, para cualquier contenido: el diálogo, su título y «Cerrar». `PanelDeRegistro` lo usa | El registro de una comida de Nutrición · Registros o una solicitud de Información, en una ventana angosta; una medición o un resultado de Antropometría · Tomas, en cualquier ancho |
+| `ControlDePeriodo` (`advisees/control-de-periodo.tsx`) | El período en un solo control. Recibe el período, los atajos y el tope: no lee ni escribe la dirección por su cuenta | La ficha (hasta 366 días) y Nutrición · Registros (hasta 92) |
+| `AyudaDeVista` · `RenglonDeAyuda` (`components/ayuda-de-vista.tsx`) | «Cómo se lee esta vista»: el botón y su diálogo, con una muestra y una explicación por renglón | La de la ficha; la de Nutrición · Registros, en el marco del área |
+| `.dia-de-registros` · `.comida-del-dia` | El día de un área en un renglón que se abre, y cada comida del plan en una fila con sus columnas | «11 oct · domingo · 2 de 4 comidas registradas · 1 comida diferente» |
+| `componerLosRegistros` · `resumenDeUnDia` · `contarLasVistas` (dominio) | Los días, las filas, las cantidades de las vistas y el renglón del día de Nutrición · Registros, desde sus dos lecturas | «Sin registro»; «3 de 4 comidas registradas» |
+| `opcionDeUnaComida` · `modoDeUnaComida` · `frenteALoIndicadoDeUnaComida` (dominio) | Lo que la línea de tiempo dice de una comida. Una sola regla para la ficha y para Registros | «Tostadas con queso» · «Porciones del plan» · «Sin diferencia: son las porciones del plan» |
+| `periodo-de-un-area.ts` (`periodoPedidoEnUnArea`, `periodoALaVista`, `cambiosDePeriodo`) | El período de los registros de un área, en la dirección: los atajos que la lectura admite (7, 30 y 90 días) y el tope de 92 | Registros de Nutrición y de Entrenamiento |
+| `.sesion-registrada` · `.tabla-de-series` | Una sesión en una fila que se abre entera, y la tabla de sus series, agrupadas por ejercicio | «12 oct · A · Tren inferior · 7 de 10 registradas» |
+| `.parte-de-dato` (`EnPartes`, en `components/en-partes.tsx`) | Un dato hecho de partes cortas separadas por « · », en una tabla o en una lista angosta: si no entra en un renglón, baja una parte entera, con el separador al final del renglón de arriba | «77,5 kg · 6 rep. ·» y, abajo, «RIR 1»: nunca «RIR» arriba y «1» abajo. «30 mediciones · 1 corregida ·» y, abajo, «1 anulada» |
+| `FraseEnPartes` (en `components/en-partes.tsx`) | Lo mismo para frases largas, en una fila: el texto corre como cualquier otro, pero no se parte entre el número y lo que cuenta, ni antes del separador (espacios que no se parten) | «3 series sin registrar ·» y, abajo, «1 serie con diferencias»: nunca «… · 1» arriba y «serie» abajo |
+| `conNumerosPegados` (en `components/en-partes.tsx`) | Lo mismo para un nombre o un renglón que trae un número adentro y no arma BE (el nombre de un método del catálogo): el número no se separa de su palabra, ni el separador baja solo | «Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri»: nunca «7» arriba y «pliegues» abajo |
+| `componerLasSesiones` · `relacionDeUnaSerie` · `contarLasVistasDeSesiones` (dominio) | Las filas de Entrenamiento · Registros, cómo quedó cada serie frente a lo indicado y las cantidades de las vistas | «Dentro de lo indicado» · «RIR: por debajo» · «Carga: por encima de la sugerida» |
+| `.tomas-del-area` · `.toma-de-la-lista` · `.medicion-de-la-toma` | Antropometría · Tomas: la lista en tramos de protocolo, y una medición en una fila que se abre entera, con su nombre corto, lo que se sale de lo común y el valor que rige (II.9) | «Cintura · Corregida · 84» debajo de «Perímetros · cm» |
+| `.medicion-abierta` · `.historia-de-medicion` · `.cambios-de-resultados` | El contenido del panel de una medición o de un resultado: el valor grande con sus marcas, la historia de lo más nuevo a lo más viejo y lo que cambió, con el valor de ahora y el de antes | «Índice cintura/cadera 0,81 · antes 0,46» |
+| `Marca` (`anthropometry/marca.tsx`) | La clase de un dato o su excepción, con su ícono y su palabra: el ícono solo no alcanza | «Medido», «Corregida», «Anulada» |
+| `tramosDeProtocolo` · `medicionesPorFamilia` · `historiaDeLaMedicion` · `loQueCambio` (dominio) | Las reglas de Antropometría · Tomas: los tramos de la lista, las filas con el valor que rige, la historia por la cadena de correcciones y lo que cambió en los resultados | «30 mediciones · 1 corregida · 1 anulada» |
 | `OrigenDelDato` | De dónde sale un punto de Analizar, en el lugar de la lectura: el valor, qué es y sus fuentes, con lo que aporta cada comida | «795 kcal»: Almuerzo, 311 kcal; Cena, 484 kcal |
-| `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar |
+| `useDetalleAlCostado` (`al-costado.ts`) | Si la ventana tiene lugar para un detalle al costado (desde 1200 px) | La línea de tiempo y Analizar; los Registros de Nutrición y de Entrenamiento; las Solicitudes de Información |
 | `ParametrosDelEjercicio` | Los datos de una pregunta, para elegirlos en el lugar; uno sin otra opción va escrito | «Ejercicio: Peso muerto · Serie: 1 · Unidad: kg» |
 | `ListaDePreguntas` · `ElegirParametros` · `PreguntaActiva` | Entrar por preguntas, pedir lo que falta y decir la pregunta en curso | «¿Cómo viene progresando este ejercicio?» |
 | `ComparacionDeEtapas` · `EtapasDelPeriodo` | Comparar dos etapas del plan y ofrecerlas desde el gráfico | «v2 y v3» con su tabla |
@@ -571,7 +661,7 @@ crear otro, se usa uno de estos.
 | `BloqueDeEstado` | Un estado dicho en el lugar de lo que falta: ícono, qué pasó, por qué y qué se puede hacer | «No pudimos completar esta parte» + «Reintentar» |
 | `.tarjeta-de-pregunta` | Una pregunta como botón entero, con lo que muestra | Las preguntas principales de Analizar |
 | `.aviso-de-filtro` | Un filtro que viene de otra vista, explicado y con su salida | «Lo nuevo desde la revisión…» + «Ver todo el período elegido» |
-| `BotonDeVista` · `.vista-de-la-linea` | Una vista con nombre: un filtro con el nombre de lo que se busca y la cantidad que trae. La elegida va llena. La usan la línea de tiempo y «Pendientes» | «Hitos 19», «Revisiones 3» |
+| `BotonDeVista` · `.vista-de-la-linea` | Una vista con nombre: un filtro con el nombre de lo que se busca y la cantidad que trae. La elegida va llena. La usan la línea de tiempo, «Pendientes», los Registros de Nutrición y de Entrenamiento y las Solicitudes de Información | «Hitos 19», «Revisiones 3», «Sin responder 1» |
 | `.entrada` | Un hecho en un renglón que se abre entero: ícono o hora, nombre, lo que lo distingue, sus rasgos y la flecha | «Almuerzo · Arroz con pollo y brócoli · Rectificado» |
 | `.grupo-de-hechos` | Lo de todos los días, junto en un renglón que dice cuánto hay y lo que tiene de distinto; se abre en el lugar | «Comidas · 4 registradas · 1 anulada» |
 | `.detalle-del-hecho` | El detalle de lo elegido, al costado de su lista, sin taparla; acompaña el desplazamiento | El de un hecho de la línea de tiempo |
@@ -581,6 +671,34 @@ crear otro, se usa uno de estos.
 | `todasLasPaginas` (dominio) · `useListaCompleta` | Una lista leída entera, para contarla o buscar en ella: dice si quedó incompleta y, si falló, por qué | Los pendientes de la cartera; los vínculos de la ficha |
 | `motivoDeFalla` · `razonDeFalla` · `ICONO_DE_FALLA` (`lib/fallas.ts`) | Por qué falló una lectura, con sus palabras y su ícono, en todo el website profesional | «Hubo muchas consultas seguidas. Esperá un minuto y reintentá.» |
 | `.dialogo--formulario` | Un formulario corto en un diálogo: el foco en el primer campo, «Volver» y la acción | «Solicitar vínculo» |
+| `Cajon` (`components/cajon.tsx`) | Un formulario más largo, que se abre al costado, sobre la vista, que sigue a la vista por detrás. La cabecera (de quién es, el título y «Cerrar») y el pie quedan fijos; el cuerpo se desplaza adentro. Lo que hay que saber antes de un acto que no se deshace va en el pie, junto al botón. El foco va al título, o adonde pida quien lo abre (`focoInicial`): un buscador se abre para escribir. No se cierra durante un envío. 800 px; hasta 64 rem de ventana, todo el ancho. Dibuja su contenido solo mientras está abierto: lo que tiene que sobrevivir al cierre vive en quien lo abre | «Pedir información», sobre «Solicitudes»; «Agregar ítem», sobre el editor del plan de comidas |
+| `MenuDeAcciones` (`components/menu-de-acciones.tsx`) | Lo que se hace de vez en cuando sobre algo (cambiar un nombre, quitar, guardar como plantilla), detrás de un botón que dice de qué son las acciones. Es un botón con un panel de botones, como el menú de la cuenta: Escape lo cierra y devuelve el foco; tocar fuera o salir de él con el teclado, también. Una acción que ahora no se puede usar no desaparece: va apagada y dice por qué, en su renglón. Con texto y una flecha, despliega los caminos de una acción | «Más», en una comida: «Cambiar el nombre · Guardar como habitual · Quitar comida»; «Agregar opción ▾» |
+| `ComidaDelEditor` · `CampoDeNombre` (`nutrition/comida-del-editor.tsx`) | Una comida de la versión en preparación del plan de comidas. Plegada, un renglón con su nombre, cuántas opciones tiene y lo que adentro pide atención. Abierta, sus opciones en pestañas —la elegida muestra su nombre entero; las demás lo cortan— y los ítems de la opción elegida en una tabla, con cada campo diciendo de qué alimento es; una opción de receta se lee y no se edita. El nombre se cambia a pedido (`components/campo-de-nombre.tsx`, el mismo campo en los dos editores): aparece en el lugar, con el foco y el texto seleccionado, y Enter o salir lo cierra; con Enter, el foco va a lo que muestra ese nombre. Lo que no tiene nombre lo muestra siempre | «Almuerzo · 3 opciones · se elige una · ⚠ 1 cantidad que no se entiende» |
+| `.items-del-editor` | La tabla de ítems de una opción, para editar: el alimento ocupa lo que sobra y sus tres datos van en columnas del mismo ancho en toda opción (al cambiar de pestaña, los campos no se mueven). El motivo de una cantidad que no se entiende se lee de corrido, por debajo de los otros campos. En una ventana angosta (hasta 56 rem), cada ítem es su nombre y, debajo, sus tres campos en fila, cada uno con su rótulo | «Arroz blanco · 150 · g · Cocido · ✕» |
+| `loQueNoDejaGuardar` · `comidaPlegadaDelEditor` · `lugarDelProblema` · `ubicacionDelProblema` · `posicionPedida` · `comidasAbiertasEnElEditor` · `loQueEntraAlActivar` (dominio, `editor-del-plan-de-nutricion.ts`) | Las reglas del editor del plan de comidas: qué no deja guardar (un nombre que falta, una cantidad que no es un número), con la ruta a su lugar; qué dice una comida plegada; dónde está un problema de «Validar» y cómo se dice con los nombres del plan; el día tipo y las comidas abiertas que pide la dirección, por posición; y qué entra y qué queda al activar | «Día de descanso → Colación → falta al menos una opción»; «2 días tipo y 7 comidas» |
+| `.boton[aria-disabled='true']` | Un botón que ahora no se puede usar pero conserva el foco: se ve apagado y no responde. Para el que se apaga solo después de usarlo, o mientras se guarda: con `disabled` perdería el foco, y quien usa el teclado quedaría fuera de lugar | «Guardar cambios», sin nada que guardar |
+| `EjercicioDelEditor` · `CeldaDeObjetivo` (`training/ejercicio-del-editor.tsx`) | Un ejercicio de la versión en preparación del plan de entrenamiento. Plegado, un renglón con lo que piden sus series —lo escrito y todavía sin guardar, resuelto como lo resolverá la API— y lo que adentro pide atención. Abierto, la tabla de sus series y «Lo general del ejercicio» al costado (debajo, en dos columnas, cuando los ejercicios tienen menos de unos 1.200 px). Cada objetivo de una serie es una celda con sus tres estados: vacía, toma el de lo general, que se lee en gris; con un valor, el propio; «Sin objetivo», elegido con la flecha de la celda, en el color del texto. El botón de la celda ofrece solo lo que cambia algo. El descanso se lee «02:30» y se escribe así o en segundos | «Press de banca · 4 × 6–8 rep. · 62,5 kg · RIR 2 · descanso 02:30» |
+| `.series-del-editor` | La tabla de series, para editar: las columnas tienen ancho fijo, para que al agregar una serie los campos no se muevan; la nota ocupa lo que sobra; cada encabezado dice lo que hace falta para llenar su columna. Angosta (hasta 46 rem de ejercicios), cada serie es un bloque con sus campos rotulados | «Repeticiones · 8 u 8-12», «Descanso · 02:30» |
+| `TextoAPedido` (`components/texto-a-pedido.tsx`) | Un texto opcional que se lee en su lugar y se cambia a pedido (el propósito de un bloque, las indicaciones de una sesión): con texto, se lee con «Cambiar» al lado; sin texto, ofrece agregarlo. «Cambiar» abre el campo en el lugar, con el foco; cerrado con el teclado, el foco vuelve a «Cambiar» | «Propósito Más carga, menos repeticiones · Cambiar» |
+| `AgregarEjercicio` (`training/agregar-ejercicio.tsx`) | El buscador de ejercicios, en un cajón, con las reglas de `AgregarItem`: dice adónde se agrega; los habituales, como fichas; los resultados, en una tabla con la chinche de «habitual»; elegir no lo cierra y lo anuncia; «Crear manualmente» e «Importar desde wger», adentro, con «Volver a la búsqueda» | «Bloque del recorrido · Sesión A» |
+| `loQueNoDejaGuardarElEntrenamiento` · `ejercicioPlegadoDelEditor` · `celdaDeObjetivoDelEditor` · `leerDescanso` · `lugarDelProblemaDeEntrenamiento` · `loQueSeMiraEnElEditor` (dominio, `editor-del-plan-de-entrenamiento.ts`) | Las reglas del editor del plan de entrenamiento: qué no deja guardar (un nombre que falta, el objetivo de intensidad que falta, un dato mal escrito, un parámetro sin completar), con la ruta a su lugar; qué dice un ejercicio plegado; qué muestra y qué escribe la celda de un objetivo; cómo se lee un descanso escrito; dónde está un problema; y qué se mira según la dirección | — |
+| `AgregarItem` (`nutrition/agregar-item.tsx`) | El buscador del catálogo para sumarle un ítem a una opción del plan de comidas, en un cajón: dice de qué comida y de qué opción es; busca al enviar; los alimentos habituales, arriba, como fichas; los resultados, en una tabla con calorías, carbohidratos, grasas y proteínas; elegir no lo cierra y lo anuncia; «Crear manualmente» e «Importar» se abren adentro, con «Volver a la búsqueda» | «Agregado: Arroz integral (van 2). Podés sumar otro o cerrar.» |
+| `.paso-del-pedido` · `.formularios-del-pedido` · `.preguntas-del-pedido` | Los pasos de un pedido, a la vista a la vez: una opción por formulario (su descripción, solo en el elegido); una fila por pregunta, con la casilla que la pide, con qué se responde y si es requerida; y el para qué, con el área | «2 Qué preguntas · 6 de 6 elegidas.» |
+| `.campo-fijo` | Un valor que la pantalla fija y no deja cambiar: se lee como un campo, con su candado y su motivo | «Área: Entrenamiento» + «Este formulario es solo de Entrenamiento.» |
+| `.casilla-de-celda` | Una casilla sola en su celda: lo que se toca mide 44 px aunque la casilla sea chica | «Requerida», en la tabla de preguntas |
+| `.lista-de-solicitudes` · `.solicitud-abierta` · `.lo-declarado` | Información · Solicitudes: la lista, y lo que la persona declaró por pregunta pedida, con la respuesta que rige, «Corregida» y lo que había antes | «Dolor o lesiones actuales — Molestia en el hombro derecho… · Corregida · Antes: sin responder.» |
+| `loDeclarado` · `contarLasVistasDeSolicitudes` · `valorDeclarado` · `respondeCon` (dominio) | Las reglas de Información · Solicitudes: la respuesta que rige por la relación que da la API, «antes», la historia de las versiones, las cantidades de las vistas, y el valor con su unidad | «7,5 h»; «Respondió 1 de las 2 preguntas.» |
+| `usePersonaDelArea` · `useAvisarSinAcceso` (`marco-del-area.tsx`) | De quién es el área, para decirlo donde el marco queda tapado; y avisarle al marco que una escritura respondió «no disponible» sin retirar la sección | El cajón del pedido |
+| `dejarAvisoPara` · `tomarAvisoPara` (`lib/aviso-al-llegar.ts`) | Un aviso para la página a la que se va: lo deja quien navega y lo toma, una vez, la página de destino. Vive en memoria, no en la dirección | «Solicitud enviada.», al volver a Entrenamiento |
+| `SelectorDeDiaTipo` · `ComidasDelPlan` (`nutrition/estructura-del-plan.tsx`) | El plan de comidas, en solo lectura: el día tipo que se mira (un control; con uno solo, su nombre) y sus comidas plegadas, cada una en un renglón con su cantidad de opciones y sus nombres; abierta, sus opciones lado a lado, todas a la vista. Va en Nutrición · Plan y en el detalle de una etapa de la ficha: se acomoda al ancho de su caja, no al de la ventana | «Almuerzo · 3 opciones · se elige una · Arroz con pollo y brócoli · Guiso de lentejas · Salmón con papa» |
+| `.segmentos--que-bajan` | Un control segmentado cuyos nombres escribe la persona: baja de renglón antes que salirse o recortarse | Los días tipo de un plan (hasta siete) |
+| `SelectorDeVersion` · `HistorialDelPlan` (`advisees/versiones-del-plan.tsx`; `.historial-del-plan`) | Lo que los dos planes, el de Nutrición y el de Entrenamiento, comparten sobre sus versiones. El selector, cuando hay una en preparación y una activa: «En preparación», sin número, y «N · activa». El historial: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál rige; al pie, la huella de la instantánea que se lee. Al costado; con la ventana angosta, debajo. Las palabras, en `COPY_DE_VERSIONES` (dominio) | «Versión 2 · activada el 7 sept, 09:30 · vigente»; «Versión 1 · activada el 21 jul, 09:00 · anterior, conservada» |
+| `DialogoEmpezarDesdePlantilla` (`advisees/empezar-desde-plantilla.tsx`) | Elegir una plantilla propia para empezar una versión, en un diálogo: lee las plantillas al abrirse, dice una lectura que falla con su motivo (nunca «no tenés»), no trae ninguna elegida y dice adentro una falla al crear. Cada área le dice cómo se leen sus plantillas | «Plan base · 7 comidas · Sin cantidades» |
+| `numerosDeVersionDePlan` · `historialDeVersiones` · `elegidoPorOrden` · `abiertosPorOrden` · `pedidoDeAbiertos` (dominio, `versiones-de-plan.ts`) | Lo que los dos planes resuelven igual: el número de una versión por su orden de activación, con todas las versiones; la vigente según la API; lo elegido y lo abierto que pide la dirección, por su número de orden; y lo que se escribe en ella (nada, si es lo que se ve sin pedir) | «2 · activa»; `ejercicios=1.3`; `comidas=ninguna` |
+| `diaTipoElegido` · `comidasAbiertas` · `pedidoDeComidas` · `opcionesEnPalabras` · `indicadoDelItem` (dominio, `plan-de-nutricion.ts`) | Las reglas de Nutrición · Plan: el día tipo y las comidas abiertas que pide la dirección, cuántas opciones tiene una comida y lo indicado de un ítem | «3 opciones · se elige una»; «sin cantidad indicada» |
+| `SelectorDeNivel` · `EjerciciosDeLaSesion` (`training/estructura-del-plan.tsx`) | El plan de entrenamiento, en solo lectura. `SelectorDeNivel`: lo que se mira en un nivel (el bloque, el microciclo o la sesión): con una sola cosa, su nombre; hasta cuatro, botones; con cinco o más, una lista que dice cuál se mira y cuántas hay. `EjerciciosDeLaSesion`: los ejercicios plegados, cada uno en un renglón con lo que piden sus series; abierto, «Lo que recibe tu asesorado», serie por serie, y «Lo general del ejercicio» al lado. Va en Entrenamiento · Plan y en el detalle de una etapa de la ficha: no pide el contexto de la pestaña, y el acceso a la imagen se lo da quien la usa | «Remo con barra · 4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00»; «Sesión · 4 de 6» |
+| `.series-del-plan` | La tabla de objetivos por serie de un ejercicio del plan: una fila por serie; la columna del RIR y la de la nota, solo si hacen falta; «Sin objetivo», en gris, donde la serie no tiene uno. Apilada, en una pantalla angosta, cada dato lleva su rótulo | «3 · 62,5 kg · 6–8 rep. · RIR 1 · 02:30» |
+| `loQueSeMiraDelPlan` · `renglonDelEjercicio` · `encabezadoDelEjercicio` · `seriesDelEjercicio` · `loGeneralDelEjercicio` (dominio, `lectura-del-plan-de-entrenamiento.ts`) | Las reglas de Entrenamiento · Plan: el bloque, el microciclo y la sesión que pide la dirección; el renglón de un ejercicio plegado (entero, si todas las series piden lo mismo; si no, qué cambia «por serie»); su cabecera; la tabla de series con lo que resolvió la API; y lo general | «4 series · 6–8 rep. · carga, RIR y descanso por serie» |
 
 **Reglas que salieron de este trabajo:**
 - **La fecha que importa nombra al registro.** La fecha de ocurrencia es lo principal. La de registro es un metadato:
@@ -592,19 +710,119 @@ crear otro, se usa uno de estos.
 - **No se pliega lo que hace falta para decidir** (I.2): requisitos de un cálculo, población en que se validó,
   advertencias, alcance, corte, cobertura y motivos. Se pliega la explicación larga.
 - **La barra fija de guardado no tapa un error.** El campo enfocado y su mensaje quedan por encima de la barra.
+- **Un botón de enviar no espera apagado sin decir por qué.** Lo que falta se dice al tocarlo, cada cosa en su lugar, y
+  el foco va a lo primero que falta. Apagado queda solo mientras algo se está leyendo o enviando.
+- **Cerrar un formulario abierto encima no descarta lo escrito.** Queda como estaba mientras dure la visita; lo que lo
+  descartaría («Actualizar») pregunta antes.
+- **Lo que una acción deja dicho, lo dice la página donde la persona queda.** Si al enviar se vuelve a otra página, el
+  aviso viaja con ella: un aviso de la página que se abandona no lo lee nadie.
+- **Plegar no esconde.** Un renglón plegado dice cuánto tiene adentro y, si entra, cómo se llama cada cosa: el conjunto se
+  lee sin abrir nada.
+- **Lo que se elige entre varias se muestra con el mismo peso.** Las opciones de una comida van todas a la vista: una
+  opción detrás de un enlace es una opción de segunda.
+- **Un selector que cambia de vista no desmonta un formulario con cambios.** Lo deja montado y fuera de la vista: al
+  volver, lo escrito sigue ahí.
+- **Un nombre que escribe la persona puede ser largo, y pueden ser varios.** Un control armado con nombres propios baja
+  de renglón; no los recorta.
+- **Un resumen no elige un caso.** Si las partes dicen lo mismo, se dice una vez; si difieren, se nombra qué cambia
+  («carga y RIR por serie»). Nunca la primera, ni un rango que nadie indicó.
+- **Dos pantallas hermanas dicen lo mismo con las mismas palabras.** Los dos planes comparten el renglón de la versión,
+  el selector, el historial y sus textos: la pieza y la regla viven en un solo lugar.
+- **Una pieza que se comparte no pide el contexto de una pestaña.** Lo que necesita se lo da quien la usa. Fuera de su
+  pestaña ese contexto no existe, y pedirlo tira la página entera.
+- **Cuando lo que se elige puede ser mucho, los botones tienen un tope.** En el plan de entrenamiento, hasta cuatro
+  bloques, microciclos o sesiones van como botones; con cinco o más, una lista que dice cuál se mira y cuántas hay. Los
+  días tipo de un plan de comidas son siete como mucho: van siempre como botones, que bajan de renglón.
+- **Una tabla que se apila conserva el rótulo de cada dato,** salvo el que ya dice qué es («6 rep.», «RIR 1»).
+- **Lo que se suma de a varios no cierra su panel con cada uno.** Lo anuncia en el mismo panel —la vista quedó detrás
+  del velo— y deja seguir; se cierra cuando la persona lo decide.
+- **Un buscador que se abre recibe el foco.** Y cada vez que se abre, empieza vacío.
+- **No encontrar no es fallar.** Una búsqueda sin resultados lo dice y ofrece otro camino; una que falló dice su motivo y
+  se reintenta. Vale también para una lista propia que no se pudo leer: no es «todavía no tenés ninguno».
+- **Plegar tampoco esconde lo que falta.** Un renglón plegado dice lo que adentro pide atención —un nombre que falta, una
+  cantidad que no se entiende, un problema de la validación—, con un ícono y con texto, no con un color.
+- **Lo que no deja guardar se lista con su lugar, y cada renglón lleva hasta ahí.** Cuando la pantalla muestra una parte
+  por vez, «corregí los campos marcados» no alcanza: hay que decir dónde, elegirlo, abrirlo y dejar el foco en el campo.
+  Vale igual para los problemas que devuelve una validación.
+- **Para leer, lado a lado; para escribir, de a una.** Las opciones de una comida van todas a la vista en el plan activo,
+  donde se comparan, y en pestañas en el editor, donde se escribe. En los dos casos pesan lo mismo.
+- **Lo que casi nunca se toca no ocupa un campo.** Un nombre se cambia a pedido; lo que se usa de vez en cuando va en un
+  menú que dice qué tiene adentro. Lo que se acaba de agregar nace con su nombre abierto, y lo que no tiene nombre lo
+  muestra siempre.
+- **Apagado no es deshabilitado.** Un botón que se apaga solo después de usarlo conserva el foco (`aria-disabled`).
+  «Guardar cambios» está apagado cuando no hay nada que guardar, y el estado del guardado, al lado, dice por qué.
+- **Un acto que necesita otro antes, lo hace.** «Activar plan» guarda si hace falta y recién entonces pregunta; si no
+  puede guardar, lo dice y no sigue. No se apaga esperando que la persona adivine el orden.
+- **Un dato que es de un acto se pide en ese acto.** La próxima revisión, en el diálogo de activar; si el acto no se
+  hace, el dato vuelve a como estaba.
+- **En una pantalla que se edita, lo que se mira va en la dirección por su posición.** Lo que se acaba de agregar
+  todavía no tiene identificador ni número de orden.
+- **Un dato mal escrito no viaja.** Lo que no se entiende no se manda como «nada»: en un campo que acepta «nada», eso
+  quiere decir otra cosa (sin descanso, sin objetivo). Se marca en su lugar, se dice en el renglón plegado y no deja
+  guardar hasta corregirlo.
+- **Lo que se ve al editar es lo que recibe la persona.** En la tabla de series, el gris es lo que la serie toma de lo
+  general: con eso, una vista previa aparte sobra.
+- **Al cerrar un campo con el teclado, el foco va a lo que lo muestra.** Un nombre confirmado con Enter deja el foco en
+  el control que ahora dice ese nombre, o en el botón que lo abrió: nunca al principio de la página.
 
 ### II.9 Pestaña Antropometría (no se extiende al resto del website)
 
 Estas reglas son de la pestaña Antropometría del profesional y de su lámina. No valen para el dashboard ni para las
-otras pestañas.
-- **Lo principal, primero.** En la lámina, el orden es: qué se muestra (la toma y la hoja); enseguida, la imagen con
-  «Descargar imagen»; después, los ajustes de cómo se ve; al final, la explicación. En el teléfono, la imagen entra en la
-  primera pantalla; el orden del documento es el del teléfono, y el foco lo sigue.
-- **Desde 1100 px (`69rem`), columnas con sentido:** las tomas, la lista a la izquierda (fija) y la abierta a la
-  derecha; la lámina, lo que se elige a la izquierda y la imagen a la derecha, fija mientras se ajusta.
-- **Piezas propias:** `.tomas` (elegir entre registros por su fecha de ocurrencia; el elegido, marcado por forma) y
-  `.mediciones` / `.medicion__fila` (filas compactas por familia, con el valor alineado y las acciones en la fila).
-- **En la toma, los cálculos van antes que las mediciones.**
+otras pestañas. La pestaña tiene tres secciones: Tomas, Evolución y Lámina.
+
+**Tomas** (`anthropometry/evaluaciones.tsx`, `medicion.tsx` y `calculos.tsx`; las reglas, en
+`tomas-de-antropometria.ts` del dominio; WP-ESCRITORIO-AREAS, parte 3):
+- **La lista, al costado, en tramos seguidos del mismo protocolo.** Cada toma se nombra por cuándo se tomó (la fecha de
+  ocurrencia, con su hora) y dice sus cuentas: mediciones, corregidas y anuladas. No se reordena para agrupar: una toma
+  con otro protocolo en el medio parte el tramo, y así se ve cuándo cambió. La elegida va marcada por forma (un borde),
+  no solo por color, y vive en la dirección. La lista se lee una vez por visita: cambiar de toma no le pide nada a la
+  API.
+- **Lo que vale para toda la toma se dice una vez, arriba:** cuándo se tomó, la clase del dato si todas las mediciones
+  la comparten, y en un renglón el protocolo, las cuentas, cuándo se registró y quién.
+- **En la toma, los cálculos van antes que las mediciones.** Los resultados vigentes, por categoría del catálogo y, en
+  cada una, por método: cada uno con el nombre de su método y los decimales que el método declara. Los que quedaron sin
+  efecto, a pedido. El orden es el neutral del dominio, el mismo de la lámina: nunca por «mejor».
+- **Las mediciones, por familia, y en cada fila solo lo que se sale de lo común:** el nombre corto («Cintura», debajo
+  de «Perímetros»), el valor que rige y, si corresponde, «Corregida», «Anulada» o «Sin valor vigente». **La unidad se
+  dice una vez, en el título de la familia, si todas sus mediciones la comparten,** como en el encabezado de una
+  columna (I.2); si no, en cada fila. El lector de pantalla oye siempre el nombre completo y el valor con su unidad:
+  con los nombres cortos hay dos «Antebrazo» y dos «Pantorrilla».
+- **La fila entera abre la medición, en un panel** que retiene el foco: el valor que rige, su historia de lo más nuevo
+  a lo más viejo (el original se conserva), lo que cambió en los resultados y, al pie, corregir y anular. No hay
+  acciones en la fila. Lo que se acaba de hacer se dice adentro del panel, que sigue abierto: un aviso de la página
+  quedaría detrás.
+- **Anular no se presenta como borrar:** lo que hay que saber —que no borra nada y que no se reactiva— va arriba del
+  botón, que no es rojo ni el principal. Una medición anulada conserva su valor a la vista y no ofrece ninguna acción.
+- **«Lo que cambió con la corrección» sale de una relación entre cálculos,** no de una coincidencia de fechas: el
+  resultado vigente que reemplaza a otro, con el valor de ahora y el de antes. Al anular, los resultados que usaban la
+  medición quedan sin efecto y sin reemplazo: se nombran con el valor que tenían, y no se pone un cero. Lo que no se
+  puede atribuir no se atribuye, y se dice.
+- **Un resultado y «Calcular con un método» se abren en el mismo panel.** Una falla al leer los cálculos se dice en su
+  bloque, con «Reintentar»: la toma y sus mediciones siguen a la vista, y no es «todavía no hay cálculos».
+- **La carga de una toma no es una sección:** se abre desde «Tomas» («Preparar una toma» o, si ya hay una empezada,
+  «Seguir con la toma en preparación»), con «Tomas» marcada y un enlace para volver. Al registrar se vuelve a «Tomas»
+  con esa toma abierta, y el aviso se dice ahí.
+- **Una toma de pocas mediciones (hasta seis) no reserva el lugar de las familias que no tiene:** van una al lado de la
+  otra. Con más, cada familia tiene su lugar fijo —lo corto, los pliegues y los perímetros—, que es como se lee un
+  perfil completo.
+- **Ningún renglón separa un número de la palabra que cuenta** («1» arriba y «anulada» abajo; «7» y «pliegues»), ni
+  deja el separador al principio: las cuentas de la lista bajan de a una entera, y los nombres de los métodos y el
+  renglón de la toma llevan espacios que no se parten (II.8).
+- **Anchos:** por encima de 1200 px (`75rem`), la lista a la izquierda y la toma a la derecha; hasta 1360 px (`85rem`)
+  lo corto (masa y estatura, diámetros) pasa arriba y pliegues y perímetros se reparten el ancho; hasta 1200 px la
+  lista pasa arriba, como un selector con las mismas tomas y sus cuentas: se muestra uno u otro, nunca los dos. Las
+  filas miden 44 px (I.5): una toma de treinta mediciones no entra en una pantalla.
+- **Piezas propias:** `.tomas-del-area` (la lista y la toma abierta), `.tramo-de-tomas` y `.toma-de-la-lista`;
+  `.medicion-de-la-toma` y `.resultado-de-la-toma` (una fila que abre su detalle); `.medicion-abierta` (el contenido
+  del panel, de una medición o de un resultado), `.historia-de-medicion` y `.cambios-de-resultados`; y `Marca` (la
+  clase de un dato o su excepción, con su ícono).
+
+**Lámina:**
+- **Lo principal, primero.** El orden es: qué se muestra (la toma y la hoja); enseguida, la imagen con «Descargar
+  imagen»; después, los ajustes de cómo se ve; al final, la explicación. En el teléfono, la imagen entra en la primera
+  pantalla; el orden del documento es el del teléfono, y el foco lo sigue.
+- **Desde 1100 px (`69rem`), dos columnas:** lo que se elige a la izquierda y la imagen a la derecha, fija mientras se
+  ajusta.
 - **El documento descargable y su vista previa son cosas distintas.** La imagen que se descarga (2160 × 3840) lleva
   todos los datos con sus unidades. En el teléfono, «Ver en tamaño real» la muestra a 1080 px dentro de un visor que se
   recorre con el dedo, y «Ver entera» la devuelve. El botón dice su estado (`aria-pressed`).
@@ -1093,6 +1311,67 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Los datos de la pregunta del ejercicio | Una frase al lado del título y un formulario para cambiarlos. | En el lugar: el ejercicio, la serie y la unidad (II.6). | Sustituida | 2 |
 | Los modos sin nada para elegir | Siempre a la vista, apagados. | No aparecen donde las métricas están fijas (la pregunta del ejercicio); en lo demás siguen, con su motivo (II.6). | Aclarada | 2 |
 | El origen de un dato | Un panel encima de los gráficos; «Registro 1», «Registro 2». | En el lugar de la lectura; las comidas del día, cada una con lo que aporta (II.5, II.6). | Sustituida | 2 |
+| El encabezado de una pestaña de área | Una miga, el título y las secciones; el enlace de vuelta, solo si se había llegado desde la ficha. | El marco del área: el de la ficha, con el camino de vuelta siempre, de quién es, el acceso actual y «Actualizar» (II.3). | Sustituida | Áreas, 0 |
+| «Evaluaciones» y «Ejecuciones» | Los nombres de dos secciones. | «Tomas» y «Registros»; las direcciones no cambian. | Sustituida | Áreas, 0 |
+| La falla de la lectura de una sección de área | «No pudimos cargar esta vista. Reintentar». | El bloque de estado, con el motivo y «Reintentar» (II.3). | Sustituida | Áreas, 0 |
+| Nutrición · Registros | Una tabla por día, todas a la vista; el registro, desplegado debajo de su fila; «Desde», «Hasta» y «Ver período». 3.985 px a 1440 px de ancho. | El día como unidad, vistas con nombre y cantidad, el registro al costado y el período en un control. 1.073 px (II.6). | Sustituida | Áreas, 1 |
+| Una comida registrada sin diferencias | Una raya. | «Sin diferencia: son las porciones del plan»; con cantidades informadas, lo que comprobó BE (II.6). | Sustituida | Áreas, 1 |
+| La comida diferente y la estimación del profesional | En su comida y, otra vez, en una lista «Fuera del plan» al pie del día, donde se agregaba la estimación. | Una sola vez, en su comida; la estimación, desde el detalle del registro (II.6). | Sustituida | Áreas, 1 |
+| Lo que una sección de área elige (el período, la vista, lo abierto) | En la memoria de la sección: «Actualizar» lo perdía. | En la dirección, en cada sección que se recompone (II.3). | Corregida | Áreas, 1 |
+| «Cómo se lee» en una sección de área | Plegado dentro de la sección. | En el marco del área, como en la ficha (II.3). | Sustituida | Áreas, 1 |
+| Entrenamiento · Registros | Una tarjeta por sesión, de la más vieja a la más nueva; «Ver detalle» desplegaba debajo una tabla de seis columnas, un gráfico, lo planificado y el registro original. Con una sesión abierta, 3.996 px a 1440 px de ancho. | Una fila por sesión, de la más nueva a la más vieja; vistas con nombre y cantidad; y el detalle al costado, una tabla con cada serie una sola vez. Con una sesión abierta y 90 días, 1.612 px (II.6). | Sustituida | Áreas, 2 |
+| Qué cuenta como una diferencia en una serie | Se listaban las tres relaciones (repeticiones, RIR y carga), sin decir cuántas series quedaban fuera. | Las repeticiones y el RIR; la carga se dice aparte y no cuenta (II.6). | Nueva | Áreas, 2 |
+| La evolución de un ejercicio | En la ficha (Analizar) y, otra vez, en Entrenamiento · Registros, con filtros propios. | En Analizar; desde Registros, un enlace (II.6). | Sustituida | Áreas, 2 |
+| Una versión del plan que no se puede leer, en Registros | Se descartaba en silencio: la tabla comparaba con lo general de la prescripción. | Las sesiones lo dicen, hay un bloque con «Reintentar» y «Con diferencias» queda sin número (II.6). | Corregida | Áreas, 2 |
+| La tabla de adentro de un detalle, en un área | Una franja a cada lado de la tabla (oscura en Azul noche): las tapas de lo que se desplaza tomaban el color del fondo de la página. | Llevan el color del detalle o del diálogo donde está la tabla, en Nutrición y en Entrenamiento (II.8). | Corregida | Áreas, 2 |
+| Un dato que no entra en un renglón, en una tabla o en una fila angosta | Se partía en cualquier lado: «RIR» arriba y su número abajo; «… · 1» arriba y «serie con diferencias» abajo. | En la tabla baja una parte entera; en la fila, el número no se separa de lo que cuenta. El separador queda al final del renglón de arriba (II.8). | Corregida | Áreas, 2 |
+| Antropometría · Tomas | Cuatro secciones. De la toma abierta, cada medición con «Medido · Vigente» y dos botones («Corregir» y «Anular»); cada clic en otra toma volvía a leer la lista, el detalle, los métodos y los cálculos. | Tres secciones. La lista, en tramos del mismo protocolo; lo que vale para toda la toma, una vez; cada medición, una fila que abre su panel, con la historia y los dos actos. Cambiar de toma no vuelve a leer nada (II.9). | Sustituida | Áreas, 3 |
+| «En preparación» | Una sección de Antropometría. | La carga se abre desde «Tomas», que dice si ya hay una toma empezada; al registrar se vuelve a «Tomas» con esa toma abierta (II.9). | Sustituida | Áreas, 3 |
+| La unidad de un valor | En cada valor, siempre. | En una lista de valores que la comparten, una vez, en el título del grupo; el nombre accesible de cada valor la lleva igual (I.2). | Aclarada | Áreas, 3 |
+| Los resultados calculados de una toma | Una lista con todas las corridas, vigentes y sin efecto, en el orden de la API, cada una con sus desplegables. | Los vigentes, por categoría y por método; los que quedaron sin efecto, a pedido; el detalle de cada uno, en el panel (II.9). | Sustituida | Áreas, 3 |
+| Qué pasa con los resultados al corregir o anular una medición | No se decía. | El panel de la medición lo dice, por la relación entre cálculos: el valor de ahora y el de antes; al anular, los que quedaron sin efecto, sin un cero en su lugar (II.9). | Nueva | Áreas, 3 |
+| «Evaluación», en Antropometría | El nombre de una toma en la carga, en los avisos, en la evolución y en el pendiente del Espacio profesional. | «Toma», en todos; las direcciones no cambian. | Sustituida | Áreas, 3 |
+| El aviso «Toma registrada» | Se decía en la carga, que se desmontaba al volver: podía no verse. | Se dice en «Tomas», adonde se vuelve (II.9). | Corregida | Áreas, 3 |
+| Información · Solicitudes | Dos secciones. Cada solicitud, un renglón con «Ver detalle»; el detalle, debajo, con cada versión de la respuesta entera y «Declarado por la persona» en cada dato. | Una sección. La lista, con tres vistas con nombre y cantidad; el detalle al costado, con lo que declaró por pregunta pedida y la respuesta que rige; cada versión, en la historia, a un clic (II.8). | Sustituida | Áreas, 4 |
+| Una pregunta pedida que la persona no respondió | No aparecía: había que notar que faltaba. | Una fila que dice «Sin responder». | Corregida | Áreas, 4 |
+| «Pedir información» | Otra página, con su pestaña. Ninguna pregunta marcada; el botón, apagado hasta escribir el propósito. | Un cajón sobre «Solicitudes», con los tres pasos a la vista y lo que hay que saber antes de enviar junto al botón. Las preguntas vienen todas marcadas (DL-131); lo que falta se dice en su lugar; cerrar no descarta lo armado (II.8). | Sustituida | Áreas, 4 |
+| El área de un pedido de información | «Entrenamiento», elegida de entrada para todo formulario. | Fija, con su candado, si el formulario es de un área sola; si no, hay que elegirla. | Corregida | Áreas, 4 |
+| «Plantilla», «campo» y «Alcance», en lo que lee el profesional en Información | En los títulos, las notas y los rechazos. | «Formulario», «pregunta» y «área». | Sustituida | Áreas, 4 |
+| El éxito de un pedido hecho desde Entrenamiento | No se veía: se guardaba en la página que se abandonaba. | Lo dice Entrenamiento, al llegar (II.8). | Corregida | Áreas, 4 |
+| Nutrición · Plan | La versión en preparación, el plan activo y el historial, uno debajo del otro; todos los días tipo y todas las comidas, abiertos. | Un selector de versión (la que está en preparación, sin número, y la activa); el plan activo de a un día tipo, con las comidas plegadas, las opciones lado a lado, el objetivo del día de esa versión a la vista y el historial al costado (II.8). | Sustituida | Áreas, 5 |
+| La planificación de una etapa, en la ficha | Todos los días tipo y todas las comidas, abiertos, en la columna del detalle. | La misma pieza que en Nutrición · Plan, en su columna: un día tipo, las comidas plegadas y las opciones una debajo de la otra. | Sustituida | Áreas, 5 |
+| «Empezar desde una plantilla» | Un desplegable siempre a la vista, que se leía al entrar; si esa lectura fallaba, decía «No tenés plantillas activas». | Un botón que abre un diálogo: lee al abrirse, dice la falla con su motivo y no trae nada elegido (II.8). | Corregida | Áreas, 5 |
+| La nota de un ítem del plan | El website no la mostraba. | Se lee debajo del ítem, como la lee el asesorado en la APK. | Corregida | Áreas, 5 |
+| El número de una versión del plan de comidas | Lo calculaba la pantalla, con la primera página de la lista de versiones. | Lo calcula el dominio, con todas las versiones. La regla no cambia: es el orden de activación. | Corregida | Áreas, 5 |
+| El control segmentado | Recortaba el nombre que no entraba. | Cuando los nombres los escribe la persona, baja de renglón (`.segmentos--que-bajan`, II.8). | Ampliada | Áreas, 5 |
+| Entrenamiento · Plan | La versión en preparación (el editor entero), el plan activo y el historial, uno debajo del otro; todos los bloques, las sesiones y los ejercicios, abiertos. | Un selector de versión; el plan activo de a una sesión —se eligen el bloque, el microciclo y la sesión—, con los ejercicios plegados, la tabla de objetivos por serie con lo general al lado, y el historial al costado (II.8). | Sustituida | Áreas, 6 |
+| La planificación de una etapa de entrenamiento, en la ficha | Abrirla rompía la ficha entera: la pieza pedía el contexto de la pestaña Entrenamiento. | La misma pieza que en Entrenamiento · Plan, en su columna; el acceso a la imagen de un ejercicio se lo da la ficha (II.8). | Corregida | Áreas, 6 |
+| La nota de una serie del plan | El website no la mostraba. | Se lee en la fila de su serie, como la lee el asesorado en la APK. | Corregida | Áreas, 6 |
+| « · de la prescripción», en el plan activo | Acompañaba cada valor que la serie tomaba de lo general. | La tabla dice lo que recibe el asesorado, sin decir de dónde viene cada valor: eso queda para el editor. | Sustituida | Áreas, 6 |
+| Las palabras de las versiones, en el plan de entrenamiento | Las insignias «Activo» y «Anterior», en una sección aparte. | Las mismas que en Nutrición, en el historial común: «vigente» y «anterior, conservada» (II.8). | Sustituida | Áreas, 6 |
+| «Empezar desde una plantilla», en Entrenamiento | Un desplegable siempre a la vista, que se leía al entrar; si esa lectura fallaba, decía «No tenés plantillas activas». | El diálogo común (II.8): lee al abrirse, dice la falla con su motivo y, de cada plantilla, cuántas sesiones tiene y si lleva cargas. | Corregida | Áreas, 6 |
+| El número de una versión del plan de entrenamiento | Lo calculaba la pantalla, con la primera página de la lista de versiones. | Lo calcula el dominio, con todas las versiones: es la misma regla que en Nutrición. | Corregida | Áreas, 6 |
+| Cuántos botones para elegir, en el plan de entrenamiento | Sin regla. | Hasta cuatro bloques, microciclos o sesiones, botones; con cinco o más, una lista que dice cuál se mira y cuántas hay. Los días tipo de Nutrición, que son siete como mucho, siguen como botones (II.8). | Nueva | Áreas, 6 |
+| «Agregar ítem», en el plan de comidas | Un recuadro que se abría dentro de la opción, con el buscador, los habituales como enlaces y cada resultado en un renglón con sus calorías; se cerraba al elegir. | Un cajón al costado, uno solo para todo el borrador: los habituales como fichas, los resultados en una tabla con calorías y macros, y elegir no lo cierra (II.8). | Sustituida | Áreas, 7 |
+| Una búsqueda del catálogo que falla | «No encontramos alimentos con ese nombre.», lo mismo que una búsqueda sin resultados. | Dice la falla con su motivo y «Reintentar». | Corregida | Áreas, 7 |
+| Los alimentos habituales que no se pueden leer | «Todavía no marcaste alimentos habituales.» | Dice que no se pudieron leer, con su motivo y «Reintentar». | Corregida | Áreas, 7 |
+| El foco al abrir un cajón | Siempre en el título. | En el título, o adonde pida quien lo abre: en «Agregar ítem», en el campo de búsqueda (II.8). | Ampliada | Áreas, 7 |
+| La versión en preparación del plan de comidas | Una jerarquía de cajas, una adentro de la otra, con todo abierto y las acciones al final: 9.045 px con dos días tipo. | Un día tipo por vez, con las comidas plegadas; abierta, sus opciones en pestañas y los ítems en una tabla; las acciones, arriba: 950 px (II.8). | Sustituida | Áreas, 7 |
+| Los nombres, en el editor del plan de comidas | Un campo siempre abierto por día tipo, por comida y por opción. | A pedido: «Cambiar el nombre» abre el campo en el lugar, con el foco. | Sustituida | Áreas, 7 |
+| Las acciones de vez en cuando, en el editor | Todos los botones a la vista a la vez. | En un menú por cosa (`MenuDeAcciones`); la que no se puede usar va apagada y dice por qué. | Sustituida | Áreas, 7 |
+| «Activar plan» | Apagado mientras hubiera cambios sin guardar; la próxima revisión, un campo al pie del editor. | Guarda antes si hace falta y recién entonces pregunta; el diálogo dice qué entra y qué queda, y ahí se fija la próxima revisión. | Sustituida | Áreas, 7 |
+| El foco inicial de un diálogo de confirmación con un campo adentro | En el campo, que es el primer control. | En «Volver», si quien lo abre lo pide (`focoEnVolver`): la acción con efecto nunca es la opción por defecto (I.3). | Ampliada | Áreas, 7 |
+| Los problemas de «Validar plan» | Una lista de texto. | Cada uno es un botón que lleva a su lugar: elige el día tipo, abre la comida y la opción, y deja el foco ahí. | Ampliada | Áreas, 7 |
+| Un nombre vacío o una cantidad que no se entiende, al guardar el plan de comidas | «Corregí los campos marcados»; el nombre vacío volvía de la API como «Plan → revisá este elemento». | Se listan con su lugar, y la comida lo dice en su renglón, también plegada (II.8). | Corregida | Áreas, 7 |
+| Los botones de la cabecera del editor, al guardar | Se deshabilitaban: el foco se perdía. | Se apagan conservando el foco (`aria-disabled`). | Corregida | Áreas, 7 |
+| «Agregar receta como opción» | La lista de recetas se abría debajo de la comida. | En el cajón, como los alimentos. | Sustituida | Áreas, 7 |
+| La versión en preparación del plan de entrenamiento | Una jerarquía de cajas, con todo abierto: 28.413 px con dos bloques. | Una sesión por vez, con los ejercicios plegados; abierto, la tabla de series con lo general al costado; las acciones, arriba: menos de 1.000 px (II.8). | Sustituida | Áreas, 8 |
+| Los objetivos de una serie, en el editor | Cinco campos por serie, tres con su casilla «Sin objetivo en esta serie», y una tabla aparte, «Así lo ve tu asesorado». | Una celda por objetivo, con sus tres estados: en gris lo que toma de lo general, el propio, o «Sin objetivo» elegido con la flecha de la celda (II.8). | Sustituida | Áreas, 8 |
+| El descanso, en el editor | En segundos («150»). | Se lee «02:30» y se escribe así o en segundos. | Ampliada | Áreas, 8 |
+| Un descanso o un RIR por serie mal escritos | Se guardaban como «sin objetivo», en silencio. | No dejan guardar: se marcan, se dicen en el renglón del ejercicio y se listan con su lugar. | Corregida | Áreas, 8 |
+| El buscador de ejercicios | Un recuadro dentro de la sesión, que empujaba lo demás. | Un cajón al costado, como «Agregar ítem» (II.8). | Sustituida | Áreas, 8 |
+| El foco al confirmar un nombre con Enter, en los dos editores | Volvía al principio de la página. | Va a lo que muestra ese nombre. | Corregida | Áreas, 8 |
+| «Validar plan», en Entrenamiento | «Validar revisa la forma…», una nota fija al pie. | Junto al resultado, también cuando no hay problemas. | Sustituida | Áreas, 8 |
 
 ---
 

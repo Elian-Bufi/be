@@ -27,7 +27,7 @@ import {
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
   type EtapaDePlanificacion,
 } from './etapas-de-planificacion';
-import { comidaFrenteALoIndicado, contrasteDeLaComida, filaEnPalabras, frenteALoIndicadoEnPalabras, TEXTO_DEL_MODO_DE_REGISTRO } from './contraste-de-comida';
+import { comidaFrenteALoIndicado, contrasteDeLaComida, diferenciaDeLaFilaEnPalabras, filaEnPalabras, frenteALoIndicadoEnPalabras, TEXTO_DEL_MODO_DE_REGISTRO } from './contraste-de-comida';
 import { conteosDesde, cumpleFiltros, novedadDesde } from './linea-de-tiempo';
 import { definicionAntropometrica, definicionDeMetrica, MAXIMO_DE_METRICAS, type DefinicionDeMetrica } from './metricas-del-analisis';
 import { PREGUNTAS_PROFESIONALES, requisitosDe, resolverPregunta, traeSeleccionesDelAsesorado, type ContextoDeLaPregunta } from './preguntas-profesionales';
@@ -757,6 +757,30 @@ test('una comida contra su opción indicada: sin confirmar sigue sin confirmar, 
   ]);
   assert.deepEqual(contrasteDeLaComida({ kind: 'DIFFERENT', option: null, consumption: null, description: 'Una pizza' }), { tipo: 'FUERA_DE_LO_INDICADO', descripcion: 'Una pizza' });
   for (const f of informada.filas) assert.doesNotMatch(filaEnPalabras(f), /%|cumpl|adherencia/i);
+  // La celda «Diferencia» siempre dice algo: la resta o, si no hay una, por qué. Nunca una raya (C-51).
+  assert.deepEqual(informada.filas.map(diferenciaDeLaFilaEnPalabras), ['−20 g', 'no se resta', 'no se resta']);
+  assert.deepEqual(sinConfirmar.filas.map(diferenciaDeLaFilaEnPalabras), ['no se puede comprobar', 'no se puede comprobar', 'no se puede comprobar']);
+  const conLasDelPlan = contrasteDeLaComida({ kind: 'PLAN_OPTION', option: opcion, consumption: { status: 'PLAN_PORTIONS', items: [], source: 'ORIGINAL', rectifiedAt: null }, description: null });
+  if (conLasDelPlan.tipo !== 'CON_LA_OPCION') throw new Error('con la opción');
+  assert.deepEqual(conLasDelPlan.filas.map(diferenciaDeLaFilaEnPalabras), ['sin diferencia', 'sin diferencia', 'sin diferencia']);
+  // Igual a lo indicado, en otra unidad y sin cantidad informada.
+  const otras = contrasteDeLaComida({
+    kind: 'PLAN_OPTION',
+    option: opcion,
+    consumption: {
+      status: 'REPORTED',
+      items: [
+        { itemId: '10000000-0000-4000-8000-0000000000a1', quantity: { value: 120, unit: 'g' }, notEaten: false },
+        { itemId: '10000000-0000-4000-8000-0000000000a2', quantity: { value: 100, unit: 'ml' }, notEaten: false },
+      ],
+      source: 'ORIGINAL',
+      rectifiedAt: null,
+    },
+    description: null,
+  });
+  if (otras.tipo !== 'CON_LA_OPCION') throw new Error('con la opción');
+  assert.deepEqual(otras.filas.map(diferenciaDeLaFilaEnPalabras), ['igual', 'otra unidad: no se resta', 'no se resta']);
+  for (const c of [informada, sinConfirmar, conLasDelPlan, otras]) for (const f of c.filas) assert.match(diferenciaDeLaFilaEnPalabras(f), /[a-z0-9]/);
 });
 
 test('el modo de registro no es una diferencia: cantidades a mano iguales, distintas, sin confirmar y comida diferente (pasada del 2026-10-09)', () => {

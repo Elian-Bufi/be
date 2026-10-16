@@ -6,6 +6,14 @@
 // - «Recuperación de prueba» y «Recuperación con el reloj del arranque»: la app se cerró con un descanso abierto, que queda
 //   incompleto; el total queda estimado con el reloj del proceso y medido con el del arranque.
 // Uso: node recorrido-web-ejecuciones.mjs   (lee estado.json y apk.json; escribe recorrido-web-ejecuciones.json)
+//
+// DESDE WP-ESCRITORIO-AREAS (parte 2, 2026-10-12) ESTE GUION YA NO CORRE CONTRA LA PANTALLA DE HOY: busca las tarjetas
+// con «Ver detalle» y la tabla de seis columnas de la pantalla de antes. Registros pasó a ser una lista por sesión con
+// el detalle al costado: una tabla con lo indicado, lo registrado y cómo quedó cada serie, y los descansos y la duración
+// a un clic. Queda como constancia de la corrida de su paquete. Lo que protegía se mira ahora en
+// `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/recorrido.mjs` (modo `sesiones`); los tiempos, que allá se miran con una
+// respuesta armada porque su escenario no tiene sesiones con tiempos, están dichos como tales en
+// `EVIDENCIA/ESCRITORIO-AREAS/ACEPTACION.md`.
 import { REPO, enTrabajo } from './rutas.mjs';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';

@@ -1,0 +1,50 @@
+control (sin mutar): 25 pasan, 0 fallan
+DETECTADA numero-por-orden-de-llegada · el número de versión es el orden en que llega la lista · fallan 1: «el número de una versión es su orden de activación, llegue l»
+DETECTADA numero-desde-cero · la primera versión activada es la 0 · fallan 2: «el número de una versión es su orden de activación, llegue l» «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA el-borrador-tiene-numero · un borrador también recibe número · fallan 2: «el número de una versión es su orden de activación, llegue l» «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA historial-de-vieja-a-nueva · el historial va de la más vieja a la más nueva · fallan 1: «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA vigente-la-mas-nueva · la vigente se deduce de la fecha · fallan 1: «el historial va de la versión más nueva a la más vieja, sin »
+DETECTADA elegido-siempre-el-primero · lo que pide la dirección se ignora · fallan 4: «sin pedir nada se mira el primer bloque y su primera sesión;» «en un bloque con microciclos, las sesiones son las del micro» «lo que la versión no tiene no es un error ni deja la pantall» «el día tipo que se muestra: el que pide la dirección por su »
+DETECTADA elegido-desconocido-es-nada · pedir algo que la lista no tiene deja la pantalla sin nada · fallan 2: «lo que la versión no tiene no es un error ni deja la pantall» «el día tipo que se muestra: el que pide la dirección por su »
+DETECTADA elegido-el-que-llego-primero · sin pedido se muestra lo que llegó primero, no lo de menor orden · fallan 4: «sin pedir nada se mira el primer bloque y su primera sesión;» «en un bloque con microciclos, las sesiones son las del micro» «lo que la versión no tiene no es un error ni deja la pantall» «el día tipo que se muestra: el que pide la dirección por su »
+DETECTADA abierto-ninguno-al-entrar · sin pedido no hay nada abierto · fallan 2: «sin pedido está abierta la primera comida, y solo esa; un dí» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA abiertos-por-parecido · «12» abre el 1 y el 2 · fallan 1: «las comidas abiertas se piden por su número de orden; «ningu»
+DETECTADA abiertos-lo-que-pidan · algo que la lista no tiene queda abierto igual · fallan 1: «las comidas abiertas se piden por su número de orden; «ningu»
+DETECTADA plegado-no-se-escribe · con todo plegado no se escribe nada: al volver se abre lo primero · fallan 2: «lo que se escribe en la dirección: nada si es lo que se ve s» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA uno-solo-nunca-se-escribe · con uno solo abierto no se escribe cuál, aunque no sea el primero · fallan 2: «lo que se escribe en la dirección: nada si es lo que se ve s» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA lo-primero-siempre-se-escribe · lo que se ve sin pedir nada igual ensucia la dirección · fallan 1: «lo que se escribe en la dirección: nada si es lo que se ve s»
+DETECTADA pedido-con-coma · lo abierto se escribe con coma, que la lectura no entiende · fallan 2: «lo que se escribe en la dirección: nada si es lo que se ve s» «ida y vuelta: lo que se escribe en la dirección abre las mis»
+DETECTADA activa-sin-numero · en el selector, la activa no dice su número · fallan 1: «los textos del plan: ninguno usa un término prohibido de Nut»
+DETECTADA microciclo-ignorado · en un bloque con microciclos se muestran las sesiones del bloque, que no tiene · fallan 2: «en un bloque con microciclos, las sesiones son las del micro» «lo que la versión no tiene no es un error ni deja la pantall»
+DETECTADA microciclo-donde-no-hay · un bloque sin microciclos recibe uno igual · fallan 1: «sin pedir nada se mira el primer bloque y su primera sesión;»
+DETECTADA sesiones-como-llegan · las sesiones entre las que se elige van en el orden en que llegan · fallan 3: «sin pedir nada se mira el primer bloque y su primera sesión;» «en un bloque con microciclos, las sesiones son las del micro» «lo que la versión no tiene no es un error ni deja la pantall»
+DETECTADA sesion-la-pedida-en-otro-lado · la sesión pedida se ignora · fallan 2: «sin pedir nada se mira el primer bloque y su primera sesión;» «en un bloque con microciclos, las sesiones son las del micro»
+DETECTADA bloque-sin-contar-microciclos · las sesiones de un bloque no cuentan las de sus microciclos · fallan 1: «las sesiones de un bloque se cuentan con las de sus microcic»
+DETECTADA cero-sesiones-es-un-cero · un bloque sin sesiones dice «0 sesiones» · fallan 1: «las sesiones de un bloque se cuentan con las de sus microcic»
+DETECTADA una-sesion-en-plural · una sola sesión se dice en plural · fallan 1: «las sesiones de un bloque se cuentan con las de sus microcic»
+DETECTADA cuenta-sin-series · la sesión no dice cuántas series tiene · fallan 1: «lo que tiene una sesión: ejercicios y series, contadas»
+DETECTADA cuenta-de-ejercicios-por-series · la sesión cuenta ejercicios donde van series · fallan 1: «lo que tiene una sesión: ejercicios y series, contadas»
+DETECTADA cabecera-sin-criterio-callada · la cabecera de un ejercicio sin criterio no lo dice · fallan 1: «la cabecera de un ejercicio abierto dice cuántas series tien»
+DETECTADA cabecera-siempre-rir · la cabecera dice RIR aunque el criterio sea % RM · fallan 1: «la cabecera de un ejercicio abierto dice cuántas series tien»
+DETECTADA la-primera-serie-por-todas · un ejercicio con series distintas se resume con la primera · fallan 1: «lo que cambia de una serie a otra se dice «por serie»: ni la»
+DETECTADA carga-distinta-callada · si la carga cambia de una serie a otra, se dice la de la primera · fallan 1: «lo que cambia de una serie a otra se dice «por serie»: ni la»
+DETECTADA rir-distinto-callado · si el RIR cambia de una serie a otra, se dice el de la primera · fallan 1: «lo que cambia de una serie a otra se dice «por serie»: ni la»
+DETECTADA descanso-distinto-callado · si el descanso cambia de una serie a otra, no se dice · fallan 1: «lo que cambia de una serie a otra se dice «por serie»: ni la»
+DETECTADA repeticiones-distintas-calladas · si las repeticiones cambian de una serie a otra, se dicen las de la primera · fallan 1: «lo que cambia de una serie a otra se dice «por serie»: ni la»
+DETECTADA sin-criterio-callado · un ejercicio plegado sin criterio de intensidad no lo dice · fallan 2: «plegado, un ejercicio con todas las series iguales se dice e» «un ejercicio sin repeticiones fijadas o sin series lo dice; »
+DETECTADA porcentaje-como-rir · con % RM, el renglón dice «RIR» · fallan 1: «plegado, un ejercicio con todas las series iguales se dice e»
+DETECTADA sin-repeticiones-es-nada · series sin repeticiones fijadas no lo dicen · fallan 1: «un ejercicio sin repeticiones fijadas o sin series lo dice; »
+DETECTADA sin-series-es-cero · un ejercicio sin series dice «0 series» · fallan 1: «un ejercicio sin repeticiones fijadas o sin series lo dice; »
+DETECTADA descanso-sin-la-palabra · el descanso va como un número suelto · fallan 2: «plegado, un ejercicio con todas las series iguales se dice e» «lo que cambia de una serie a otra se dice «por serie»: ni la»
+DETECTADA rir-sin-criterio-cuenta · sin criterio RIR, un RIR suelto de una serie hace decir «RIR por serie» · fallan 1: «plegado, un ejercicio con todas las series iguales se dice e»
+DETECTADA series-como-llegan · las series de la tabla van en el orden en que llegan · fallan 1: «las series, con el objetivo que recibe el teléfono: lo que f»
+DETECTADA nota-vacia-es-nota · una nota de espacios cuenta como nota · fallan 1: «la columna del RIR va con el criterio RIR o si alguna serie »
+DETECTADA columna-de-rir-siempre · la columna del RIR va aunque no haya criterio ni RIR · fallan 1: «la columna del RIR va con el criterio RIR o si alguna serie »
+DETECTADA columna-de-rir-solo-por-criterio · un RIR en una serie con otro criterio no muestra la columna · fallan 1: «la columna del RIR va con el criterio RIR o si alguna serie »
+DETECTADA general-sin-criterio-callado · lo general de un ejercicio sin criterio no lo dice · fallan 1: «lo general del ejercicio, como en la maqueta; lo que no se d»
+DETECTADA general-sin-parametros · lo general no lista los parámetros del profesional · fallan 1: «lo general del ejercicio, como en la maqueta; lo que no se d»
+DETECTADA parametro-con-punto · un parámetro numérico se escribe con punto · fallan 1: «lo general del ejercicio, como en la maqueta; lo que no se d»
+DETECTADA base-no-declarada-ocupa · una base de carga sin declarar ocupa un renglón · fallan 1: «lo general del ejercicio, como en la maqueta; lo que no se d»
+DETECTADA bases-cruzadas · la base de las repeticiones se dice con el rótulo de la carga · fallan 1: «lo general del ejercicio, como en la maqueta; lo que no se d»
+DETECTADA texto-con-palabra-prohibida · un texto del plan califica («adherencia») · fallan 1: «los textos del plan de entrenamiento: ninguno usa un término»
+48 de 48 detectadas

@@ -8,7 +8,7 @@
  * - Un área que el profesional no puede ver no aparece; si alguna quedó fuera, un aviso único.
  *
  * WP-ESCRITORIO-AMABLE, parte 5 (la pantalla 13 de las maquetas):
- * - **Las vistas con nombre** («Todo», «Revisiones», «Planes», «Formularios», «Evaluaciones») dicen cuántos pendientes
+ * - **Las vistas con nombre** («Todo», «Revisiones», «Planes», «Formularios», «Tomas») dicen cuántos pendientes
  *   traen. La cartera se lee entera y se cuenta acá: elegir una vista no le pide nada a la API. El orden no cambia: es
  *   el de la urgencia, que fija la API.
  * - **«Más filtros»** guarda la combinación libre: un área, un tipo exacto y el período. Con un área o un tipo suelto

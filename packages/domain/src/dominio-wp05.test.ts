@@ -372,7 +372,8 @@ test('WP-05 §4 · el OpenAPI publica las doce operaciones ANT en las rutas que 
 test('T13 · el copy de antropometría no dice diagnóstico, ni completa huecos, ni califica el cuerpo', async () => {
   const { COPY_ANTROPOMETRIA, ETIQUETA_DE_CLASE_DE_DATO, ETIQUETA_DE_CONDICION, ETIQUETA_DE_ORIGEN, terminosProhibidosDeAntropometriaEn } = await import('./copy-antropometria');
   const textos = [
-    ...Object.values(COPY_ANTROPOMETRIA).flatMap((v) => (typeof v === 'string' ? [v] : Object.values(v))),
+    // Un texto que depende de una cantidad se prueba en singular y en plural: sin esto, quedaba afuera de la lista.
+    ...Object.values(COPY_ANTROPOMETRIA).flatMap((v) => (typeof v === 'string' ? [v] : typeof v === 'function' ? [0, 1, 3].map((n) => (v as (n: number) => string)(n)) : Object.values(v))),
     ...Object.values(ETIQUETA_DE_CLASE_DE_DATO),
     ...Object.values(ETIQUETA_DE_CONDICION),
     ...Object.values(ETIQUETA_DE_ORIGEN),

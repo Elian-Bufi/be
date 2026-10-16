@@ -1,0 +1,47 @@
+roto: la sección «Plan» de Nutrición no lleva ícono (lo protege F-01 (Nutrición))
+roto: la tercera sección de Entrenamiento vuelve a decir «Ejecuciones» (lo protege F-01 (Entrenamiento) y C-65)
+roto: las secciones de Antropometría no dicen de qué área son al lector de pantalla (lo protege F-01 (Antropometría))
+roto: en Información, el acceso actual nombra una sola área (lo protege F-01 (Información))
+roto: sin `volver`, el camino de vuelta lleva al Espacio profesional y no a la ficha (lo protege F-07 (sin volver))
+roto: el marco del área es 8 px más alto que el de la ficha (lo protege F-06 (lo mismo que la ficha))
+roto: la sección se estira más allá del ancho para el que se hizo (lo protege F-10)
+roto: «vista=preparacion» ya no abre la toma en preparación (lo protege C-65 (las direcciones de siempre))
+roto: las secciones de Nutrición pierden el retorno a la ficha (lo protege F-07 (desde la ficha))
+roto: llegando desde Entrenamiento, el camino de vuelta dice «donde estabas» de la ficha (lo protege F-07 (desde Entrenamiento))
+roto: «Actualizar» no vuelve a leer la sección (lo protege F-08 (las mismas lecturas))
+roto: una falla de la lectura se muestra como «no disponible» (lo protege C-43)
+roto: un «no disponible» de la sección no hace volver a preguntar el acceso (lo protege F-09 (pregunta una vez))
+roto: con la cuenta sin leer, el marco no ofrece el camino de vuelta (lo protege F-01 (la cuenta que no se pudo leer))
+roto: el marco no muestra los vínculos con el consentimiento revocado (lo protege F-09 (revocación real, en `descartable`))
+compilado: web estática (apps/web/out)
+== r-areas-mutante sobre la versión rota (tanda A): 3 OK · 17 fallas · 4/21 comprobaciones bien; fallan: F-01, F-01, F-01, F-01, F-07, F-06, F-10, C-65, F-07, F-07, F-08, F-08, C-43, F-09, F-09, F-09, F-06
+F-01 · Nutrición: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una
+F-01 · Entrenamiento: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada 
+F-01 · Antropometría: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada
+F-01 · Información: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada u
+F-07 · Sin haber llegado desde la ficha (como desde un pendiente), el camino de vuelta de las cuatro áreas dice «Volver a la ficha» y lleva a la ficha de esa persona. Reemplaza a la miga, que ya n
+F-06 · El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma a
+F-10 · La sección arranca en la misma vertical que el marco y, mientras no se recomponga, conserva el ancho para el que se hizo (1.152 px a 1440) — Nutrición: marco desde 32, sección de 32 a 131
+C-65 · «vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacion» sigue abriendo la toma en preparación, y la primera sec
+F-07 · Llegando desde la ficha, el camino de vuelta dice «Volver a la ficha, donde estabas», las cuatro secciones lo conservan y lleva a esa vista de la ficha, con su métrica — Volver a la ficha
+F-07 · Llegando a «Pedir información» desde Entrenamiento, el camino de vuelta dice «Volver a Entrenamiento» y lleva ahí: no dice «donde estabas» de un lugar de la ficha donde la persona no e
+F-08 · «Actualizar» vuelve a pedir todo lo que la sección leyó al entrar (las mismas lecturas, una vez cada una, con los vínculos) y no abre ninguna pregunta; la hora es la de esa consulta — a
+F-08 · Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir editando» deja lo escrito como estaba; «Actualizar y descartar» vuelve a leer la sec
+C-43 · Si la sección no se puede leer por una falla (un 503 simulado en el navegador), lo dice en su lugar con el motivo y «Reintentar»; el marco sigue diciendo el acceso del vínculo y no pregunt
+F-09 · Si las lecturas de la sección responden «no disponible» (simulado), la sección dice el texto neutral de siempre y el marco pregunta una sola vez qué deja leer el resumen del asesorado; co
+F-09 · Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acceso no disponible» y deja de decir «Activo»; el de Entrenamiento, que no recibió 
+F-09 · Cuando las lecturas vuelven a responder, «Actualizar» trae la sección y el marco vuelve a decir el acceso del vínculo (vuelve a preguntar también el resumen, porque ya había tenido que p
+F-06 · A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página �
+--- pasaron:
+F-01 · Si no se puede leer la cuenta (un 503 simulado), la página conserva el título del área y el camino de vuelta, y la falla va en el
+F-01 · Con el teclado, después del título se llega a «Actualizar» y después a las cuatro secciones, en su orden; axe no encuentra falt
+— · El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas
+== r-descartable-mutante sobre la versión rota (tanda A): 21 OK · 1 fallas · 21/22 comprobaciones bien; fallan: F-09
+F-09 · Después de una revocación real, el marco de Antropometría dice «Consentimiento revocado» y «Acceso no disponible», no «Activo», y su sección dice el texto neutral de siempre; el de u
+--- pasaron:
+restaurado: app/globals.css
+restaurado: app/pro/advisees/anthropometry/antropometria.tsx
+restaurado: app/pro/advisees/forms/formularios.tsx
+restaurado: app/pro/advisees/marco-del-area.tsx
+restaurado: app/pro/advisees/nutrition/nutricion.tsx
+restaurado: app/pro/advisees/training/entrenamiento.tsx

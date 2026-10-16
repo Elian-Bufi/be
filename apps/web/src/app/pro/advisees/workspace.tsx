@@ -27,7 +27,7 @@
  * con la hora; el acceso actual; y las tres vistas con el período. Siempre se sabe dónde se está sin desplazarse. La miga se retiró: la barra
  * de marca ya vuelve al Espacio profesional.
  */
-import { COPY_VINCULO, estadoParaMostrar, todasLasPaginas, type DashboardResponse, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_VINCULO, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -38,6 +38,7 @@ import { Icono } from '../../../components/icono';
 import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
+import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen } from './seguimiento/contexto';
@@ -49,14 +50,8 @@ const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.An
 
 type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vinculos: readonly Vinculo[] };
 
-const DOMINIO_DEL_ALCANCE: Readonly<Record<string, DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
-const CLAVE_DEL_DOMINIO: Readonly<Record<DominioDeAnalisis, keyof DashboardResponse['data']['domains']>> = { NUTRITION: 'nutrition', TRAINING: 'training', ANTHROPOMETRY: 'anthropometry' };
-/** Las áreas van siempre en el mismo orden, el de todo BE: Nutrición, Entrenamiento, Antropometría. */
-const ORDEN_DE_LAS_AREAS: readonly string[] = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
-const lugarDelArea = (v: Vinculo): number => {
-  const i = ORDEN_DE_LAS_AREAS.indexOf(v.scope.code);
-  return i < 0 ? ORDEN_DE_LAS_AREAS.length : i;
-};
+/** Lo que el resumen deja leer, área por área. Sin resumen todavía, vale el estado de cada vínculo. */
+const lecturaSegun = (panel: PanelDelResumen): LecturaPorArea => (panel.tipo === 'listo' ? (dominio) => panel.datos.domains[CLAVE_DEL_DOMINIO[dominio]].available : null);
 
 /** Cada cuánto, como mucho, se vuelve a preguntar el acceso por un aviso de «no disponible». */
 const ESPERA_ENTRE_REVALIDACIONES_MS = 5_000;
@@ -195,7 +190,7 @@ export function Workspace() {
             </p>
             {encabezado.tipo === 'cargando' ? <Cargando /> : null}
             {encabezado.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
-            {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} panel={panel} /> : null}
+            {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} sePuedeLeer={lecturaSegun(panel)} /> : null}
           </div>
           {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}
           {panel.tipo === 'listo' && panel.datos.partialView ? (
@@ -258,51 +253,14 @@ export function Workspace() {
   );
 }
 
-/**
- * El acceso actual por área. Si todas las áreas están en el mismo estado, se dice una vez («Nutrición, Entrenamiento y
- * Antropometría: Activo · acceso contextual»): repetir tres veces el mismo estado ocupaba una línea más de identidad
- * técnica (encargo §10). Si difieren, cada área con el suyo.
- */
-function AccesoPorArea({ vinculos, panel }: { vinculos: readonly Vinculo[]; panel: PanelDelResumen }) {
-  const filas = [...vinculos].sort((a, b) => lugarDelArea(a) - lugarDelArea(b)).map((v) => ({ v, e: estadoDelArea(v, panel) }));
-  const primero = filas[0];
-  if (primero && filas.length > 1 && filas.every((f) => f.e.estado === primero.e.estado && !f.e.detalle)) {
-    const nombres = filas.map((f) => f.v.scope.label);
-    return (
-      <p className="ficha__acceso-areas">
-        <strong>{`${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`}</strong>: <span className="insignia">{primero.e.estado}</span>
-      </p>
-    );
-  }
-  return (
-    <ul className="estados-de-vinculo estados-de-vinculo--en-linea">
-      {filas.map(({ v, e }) => (
-        <li key={v.relationshipId}>
-          <strong>{v.scope.label}</strong>: <span className="insignia">{e.estado}</span>
-          {e.detalle ? <> {e.detalle}</> : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** El estado de un área en el encabezado: el del vínculo, salvo que el resumen ya no deje leerla. */
-function estadoDelArea(v: Vinculo, panel: PanelDelResumen): { estado: string; detalle: string | null } {
-  const e = estadoParaMostrar(v, 'PROFESSIONAL');
-  const dominio = DOMINIO_DEL_ALCANCE[v.scope.code];
-  if (panel.tipo === 'listo' && dominio && e.estado === COPY_VINCULO.accesoContextual && !panel.datos.domains[CLAVE_DEL_DOMINIO[dominio]].available) {
-    return { estado: COPY_VINCULO.accesoNoDisponible, detalle: null };
-  }
-  return e;
-}
-
 /** Las áreas que el encabezado muestra activas (vínculo activo y lectura permitida). */
 function dominiosActivos(encabezado: Encabezado, panel: PanelDelResumen): ReadonlySet<DominioDeAnalisis> {
   if (encabezado.tipo !== 'listo') return new Set(Object.values(DOMINIO_DEL_ALCANCE));
+  const sePuedeLeer = lecturaSegun(panel);
   return new Set(
     encabezado.vinculos.flatMap((v) => {
       const dominio = DOMINIO_DEL_ALCANCE[v.scope.code];
-      return dominio && estadoDelArea(v, panel).estado === COPY_VINCULO.accesoContextual ? [dominio] : [];
+      return dominio && estadoDelArea(v, sePuedeLeer).estado === COPY_VINCULO.accesoContextual ? [dominio] : [];
     }),
   );
 }

@@ -1072,6 +1072,14 @@ details summary {
   }
 }
 
+/* El detalle al costado y un diálogo son superficies por sí mismos, estén en la ficha o en un área: adentro, las tapas
+   llevan su color. Van antes que la sección y el panel, que son superficies de adentro y ganan si los contienen. */
+.detalle-del-hecho .desplazable-x,
+.dialogo .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+}
+
 /* Dentro de una sección o de un panel, las tapas llevan el color de esa superficie: con el del fondo de la página se
    veían dos franjas oscuras a los lados de cada tabla, aunque no hubiera nada que desplazar. */
 .seccion .desplazable-x {
@@ -1234,10 +1242,6 @@ details summary {
   color: var(--tenue);
   font-weight: 700;
   border-bottom-width: 2px;
-}
-
-.diferencia {
-  display: block;
 }
 
 @media (max-width: 40rem) {
@@ -2257,152 +2261,6 @@ details summary {
   padding: 0.3rem 0.85rem;
 }
 
-/* La lista de tomas: cada una por su fecha; la abierta, marcada por forma además de color. */
-.tomas {
-  list-style: none;
-  margin: 0.5rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
-}
-
-.tomas__toma {
-  width: 100%;
-  min-height: 44px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-  padding: 0.55rem 0.85rem;
-  border: 1px solid var(--borde-control);
-  border-radius: 10px;
-  background: var(--fondo-suave);
-  color: var(--texto);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.tomas__toma:hover {
-  border-color: var(--azul);
-}
-
-.tomas__toma[aria-current='true'] {
-  border-color: var(--azul);
-  box-shadow: inset 4px 0 0 var(--azul);
-}
-
-.tomas__fecha {
-  font-weight: 700;
-}
-
-.tomas__detalle {
-  color: var(--tenue);
-  font-size: 0.9rem;
-}
-
-/* Pulido del 2026-10-03: en una pantalla ancha, la lista de tomas a la izquierda, fija, y la toma abierta a la derecha. */
-@media (min-width: 69rem) {
-  .evaluaciones {
-    display: grid;
-    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: start;
-  }
-
-  .evaluaciones__lista {
-    position: sticky;
-    top: 1rem;
-  }
-
-  .evaluaciones .tomas {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* Las mediciones de una toma, por familia: filas, no tarjetas. */
-.familia h4 {
-  margin: 1rem 0 0.15rem;
-  color: var(--tenue);
-  font-size: 0.95rem;
-}
-
-.mediciones,
-.corridas {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.medicion {
-  padding: 0.4rem 0;
-  border-bottom: 1px solid var(--borde);
-}
-
-.medicion__fila {
-  display: grid;
-  grid-template-columns: minmax(9rem, 1.5fr) minmax(5.5rem, auto) minmax(0, 2fr);
-  align-items: center;
-  gap: 0.25rem 1rem;
-}
-
-/* El estado y las acciones de la fila, juntos: a la derecha en escritorio, debajo en el teléfono. */
-.medicion__pie {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem 0.75rem;
-}
-
-.medicion__nombre {
-  font-weight: 600;
-}
-
-.medicion__valor {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.medicion__estado {
-  color: var(--tenue);
-  font-size: 0.9rem;
-}
-
-.medicion__acciones {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-
-/* Anulada no es borrada (08 §56.12): se atenúa y lo dice, sin tacharla. */
-.medicion--anulada .medicion__nombre,
-.medicion--anulada .medicion__valor {
-  color: var(--tenue);
-}
-
-.corrida {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--borde);
-}
-
-.corrida h4 {
-  margin: 0 0 0.25rem;
-}
-
-/* El dato manda: el valor del resultado, más grande que su nombre. */
-.corrida__nombre {
-  font-weight: 600;
-}
-
-.corrida__valor {
-  font-size: 1.2rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
 /*
  * Las acciones de un formulario largo, fijas al pie de la pantalla mientras el formulario está a la vista, con el
  * estado de lo guardado. En el teléfono, los botones van uno al lado del otro para no tapar media pantalla.
@@ -2439,15 +2297,6 @@ html:has(.acciones--fijas) {
 @media (max-width: 40rem) {
   .seccion {
     padding: 1rem 0.9rem 1.1rem;
-  }
-
-  /* En el teléfono: nombre y valor arriba, con todo el ancho; el estado y las acciones, debajo. */
-  .medicion__fila {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .medicion__pie {
-    grid-column: 1 / -1;
   }
 }
 
@@ -6165,8 +6014,607 @@ a.observacion__fila:focus-visible {
   margin: 0 0 0.25rem;
 }
 
+/* ─── El marco de una pestaña de área (WP-ESCRITORIO-AREAS, parte 0) ─────────────── */
+/* Es el marco de la ficha llevado a Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones
+   (de quién es y «Actualizar»; el acceso actual; las secciones), a la misma altura, para que pasar de la ficha a un
+   área no mueva nada de lugar. Delante del título va el camino de vuelta a la ficha. */
 .retorno-a-la-ficha {
-  margin: -0.25rem 0 0.75rem;
+  margin: 0;
+}
+
+.retorno-a-la-ficha a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* La referencia de la persona, al lado del área: dice de quién es la pestaña sin competir con el título. */
+.marco-del-area__persona {
+  margin: 0;
+  color: var(--tenue);
+}
+
+/* La sección que se mira. Las que todavía no se recompusieron conservan el ancho para el que se hicieron (72 rem, el
+   que les dejaba la página de antes), alineadas con el marco por la izquierda. Una recompuesta usa todo el ancho. */
+.seccion-del-area {
+  max-width: 72rem;
+}
+
+.seccion-del-area--ancha {
+  max-width: none;
+}
+
+/* ─── Nutrición · Registros (WP-ESCRITORIO-AREAS, parte 1; maqueta 20) ───────────── */
+/* El día es la unidad: cada día en un renglón que se abre en el lugar, y cada comida del plan en una fila con lo que se
+   registró en ella. Las vistas con nombre, la fecha del día y el detalle al costado son los de la línea de tiempo de la
+   ficha (las mismas clases). */
+.registros {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+/* El título, lo que la sección dice en una frase y, a la derecha, el período. Lo que no entra, baja. */
+.registros__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+}
+
+.registros__encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.registros__bajada {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.registros__cuenta {
+  margin: 0;
+}
+
+/* Las columnas de una fila. Las usan los nombres de las columnas, una vez arriba, y cada comida. */
+.registros__lista {
+  --columnas-de-una-comida: minmax(6.5rem, 0.75fr) minmax(0, 1.55fr) minmax(0, 1.05fr) minmax(0, 1.65fr) 1.15rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Los nombres de las columnas van corridos lo que ocupa la fecha del día (su columna y la separación) y el relleno de
+   la fila, para quedar encima de cada dato. */
+.registros__columnas {
+  display: grid;
+  grid-template-columns: var(--columnas-de-una-comida);
+  gap: 0 0.9rem;
+  padding: 0 0.9rem 0.25rem calc(5.75rem + 1rem + 0.9rem);
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.dia-de-registros__cuerpo {
+  min-width: 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+/* Un día abierto: una tarjeta, con el renglón del día como cabecera y sus comidas debajo. */
+.dia-de-registros[data-abierto] .dia-de-registros__cuerpo {
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.dia-de-registros[data-abierto] .linea-de-tiempo__numero {
+  font-weight: 700;
+}
+
+.dia-de-registros[data-abierto] .linea-de-tiempo__fecha {
+  padding-top: 0.65rem;
+}
+
+/* El día en un renglón: es el botón que lo abre y lo cierra. */
+.dia-de-registros__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.3rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+}
+
+button.dia-de-registros__resumen {
+  cursor: pointer;
+}
+
+button.dia-de-registros__resumen:hover {
+  background: var(--fondo-suave);
+}
+
+button.dia-de-registros__resumen:focus-visible {
+  outline-offset: -3px;
+}
+
+/* La flecha del renglón queda a la derecha, aunque las notas bajen de línea. */
+.dia-de-registros__resumen > .icono:last-child {
+  margin-left: auto;
+  color: var(--tenue);
+}
+
+.dia-de-registros__nota {
+  color: var(--tenue);
+}
+
+.dia-de-registros__comidas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dia-de-registros__comidas > li {
+  border-top: 1px solid var(--borde);
+}
+
+/* Con una vista elegida el día no lleva renglón propio: la primera comida no necesita la línea de arriba. */
+.dia-de-registros__cuerpo > .dia-de-registros__comidas:first-child > li:first-child {
+  border-top: 0;
+}
+
+/* Una comida: la fila entera es el botón que abre su registro. Sin registro, no abre nada y no es un botón. */
+.comida-del-dia__fila {
+  display: grid;
+  grid-template-columns: var(--columnas-de-una-comida);
+  align-items: center;
+  gap: 0.15rem 0.9rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+}
+
+button.comida-del-dia__fila {
+  cursor: pointer;
+}
+
+button.comida-del-dia__fila:hover {
+  background: var(--fondo-suave);
+}
+
+button.comida-del-dia__fila:focus-visible {
+  outline-offset: -3px;
+}
+
+button.comida-del-dia__fila > .icono:last-child {
+  color: var(--tenue);
+}
+
+/* La comida cuyo registro está abierto: un contorno, no solo un color de fondo. */
+.comida-del-dia__fila[aria-current='true'] {
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+  border-radius: 10px;
+}
+
+.comida-del-dia__diferencia {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+/* Lo registrado y, a continuación, sus etiquetas (rectificado, cargado otro día): bajan de renglón solo si no entran.
+   Los dos hechos de una comida diferente van cada uno en su renglón. */
+.comida-del-dia__registrado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+}
+
+.comida-del-dia__registrado > .comida-del-dia__tenue,
+.comida-del-dia__registrado > .comida-del-dia__diferente {
+  flex-basis: 100%;
+}
+
+.comida-del-dia__cantidades,
+.comida-del-dia__diferente {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.comida-del-dia__cantidades > .icono,
+.comida-del-dia__diferente > .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.comida-del-dia__tenue {
+  color: var(--tenue);
+}
+
+/* Otra comida diferente registrada en la misma comida: su registro se abre aparte, alineado con «Registrado». */
+.comida-del-dia__otro {
+  margin: 0 0.9rem 0.4rem calc(0.9rem + 6.5rem + 0.9rem);
+}
+
+.comida-del-dia__otro[aria-current='true'] {
+  font-weight: 700;
+}
+
+/* La estimación del profesional, dentro del detalle de una comida diferente. */
+.estimacion-del-profesional {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--borde);
+}
+
+.estimacion-del-profesional > p {
+  margin: 0;
+}
+
+.estimacion-del-profesional > .grupo {
+  width: 100%;
+}
+
+/* En una ventana angosta las cuatro columnas no entran: cada dato de la comida va en su renglón, con su rótulo dicho
+   para el lector de pantalla, y los nombres de las columnas no se muestran. */
+@media (max-width: 60rem) {
+  .registros__columnas {
+    display: none;
+  }
+
+  .comida-del-dia__fila {
+    grid-template-columns: minmax(0, 1fr) 1.15rem;
+  }
+
+  .comida-del-dia__fila > :not(.icono) {
+    grid-column: 1;
+  }
+
+  .comida-del-dia__fila > .icono:last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .comida-del-dia__otro {
+    margin-left: 0.9rem;
+  }
+}
+
+/* ─── Entrenamiento · Registros (WP-ESCRITORIO-AREAS, parte 2; maqueta 25) ───────── */
+/* Una fila por sesión, de la más nueva a la más vieja, y el detalle al costado: una tabla con cada serie una sola vez.
+   Comparte con Registros de Nutrición el encabezado, las vistas y los nombres de las columnas (`.registros*`). */
+.sesiones__mas-filtros {
+  margin-left: auto;
+}
+
+.sesiones__filtros {
+  align-items: flex-start;
+  margin: 0;
+}
+
+/* Las columnas de una sesión: el día, la sesión con su condición, las series y cómo quedaron. La de las series no baja
+   de lo que ocupa «12 de 12 registradas» en un renglón, también con el detalle abierto al costado. */
+.sesiones__lista {
+  --columnas-de-una-sesion: 5.5rem minmax(0, 1.25fr) minmax(9.25rem, 0.9fr) minmax(0, 1.5fr) 1.15rem;
+}
+
+.sesiones__columnas {
+  grid-template-columns: var(--columnas-de-una-sesion);
+  padding: 0 0.9rem 0.25rem;
+}
+
+/* Las sesiones van juntas en una tarjeta, separadas por una línea: son una lista, no tarjetas sueltas. */
+.sesiones__filas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.sesion-registrada + .sesion-registrada {
+  border-top: 1px solid var(--borde);
+}
+
+.sesion-registrada__fila {
+  display: grid;
+  grid-template-columns: var(--columnas-de-una-sesion);
+  align-items: center;
+  gap: 0.15rem 0.9rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sesion-registrada__fila:hover {
+  background: var(--fondo-suave);
+}
+
+.sesion-registrada__fila:focus-visible {
+  outline-offset: -3px;
+}
+
+.sesion-registrada__fila[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+  border-radius: 12px;
+}
+
+.sesion-registrada__fila > .icono:last-child {
+  color: var(--tenue);
+}
+
+.sesion-registrada__dia,
+.sesion-registrada__sesion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sesion-registrada__sesion {
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+}
+
+/* El nombre de la sesión ocupa su renglón; la condición y «Corregida» van debajo, una al lado de la otra. */
+.sesion-registrada__sesion > strong {
+  flex-basis: 100%;
+}
+
+/* Con el detalle abierto en una ventana de 1280 px, la columna mide menos que «Realizada con desvío»: la marca parte su
+   texto adentro de la columna, en vez de salirse y pisar la de las series. */
+.sesion-registrada__sesion .etiqueta-de-dato {
+  max-width: 100%;
+  white-space: normal;
+}
+
+/* Cada parte de un dato («77,5 kg ·», «6 rep. ·», «RIR 1») baja entera al renglón siguiente si no entra: el corte cae
+   después de un separador, no en el medio de «RIR 1». Una parte más ancha que su columna se parte adentro. */
+.parte-de-dato {
+  display: inline-block;
+}
+
+.sesion-registrada__tenue {
+  color: var(--tenue);
+}
+
+.sesiones__sin-sesion {
+  margin: 0;
+}
+
+.sesiones__sin-sesion p {
+  margin: 0;
+}
+
+.sesiones__sin-sesion p + p {
+  margin-top: 0.3rem;
+}
+
+.sesiones__a-analizar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+/* El detalle de una sesión es una tabla de cuatro columnas: pide más ancho que el de un registro de comida. Con el
+   detalle abierto, la lista y el detalle se reparten la ventana por mitades. */
+.sesiones__cuerpo[data-con-detalle] {
+  grid-template-columns: minmax(0, 1fr) minmax(32rem, 1fr);
+}
+
+.detalle-de-sesion__cuando {
+  margin: 0.2rem 0 0.6rem;
+}
+
+.detalle-de-sesion .estado-de-grafico {
+  margin: 0.6rem 0;
+}
+
+.tabla-de-series {
+  width: 100%;
+  margin: 0.4rem 0 0;
+  border-collapse: collapse;
+  font-size: 0.97rem;
+}
+
+.tabla-de-series th,
+.tabla-de-series td {
+  padding: 0.28rem 0.6rem 0.28rem 0;
+  border-bottom: 1px solid var(--borde);
+  vertical-align: top;
+  text-align: left;
+  font-weight: 400;
+}
+
+.tabla-de-series thead th {
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom-width: 2px;
+}
+
+.tabla-de-series tbody th[scope='row'] {
+  width: 2.75rem;
+  color: var(--tenue);
+}
+
+/* La tabla de cada serie frente a lo indicado: columnas de ancho fijo, para que lo indicado y lo registrado queden uno
+   debajo del otro y se lean en un renglón cuando entran. Lo que no entra, baja. */
+.tabla-de-series--frente-a-lo-indicado {
+  table-layout: fixed;
+}
+
+.tabla-de-series--frente-a-lo-indicado thead th:nth-child(1) {
+  width: 2.75rem;
+}
+
+/* Lo indicado y lo registrado ocupan lo que pide «87,5 kg · 6 rep. · RIR 1»; lo demás es para cómo quedó la serie. */
+.tabla-de-series--frente-a-lo-indicado thead th:nth-child(2),
+.tabla-de-series--frente-a-lo-indicado thead th:nth-child(3) {
+  width: 28%;
+}
+
+/* El renglón de un ejercicio: su nombre y cuántas series se registraron. */
+.tabla-de-series__ejercicio th {
+  padding-top: 0.6rem;
+  border-bottom-color: var(--borde-fuerte, var(--borde));
+}
+
+.tabla-de-series__ejercicio strong {
+  font-weight: 700;
+}
+
+.tabla-de-series__cuenta {
+  color: var(--tenue);
+}
+
+.tabla-de-series__aviso,
+.tabla-de-series__nota {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+/* La serie con una diferencia va en negrita. No alcanza sola: su última celda dice cuál es la diferencia. */
+.tabla-de-series tr[data-con-diferencia] > th,
+.tabla-de-series tr[data-con-diferencia] > td {
+  font-weight: 700;
+}
+
+.tabla-de-series tr[data-con-diferencia] .tabla-de-series__nota {
+  font-weight: 400;
+}
+
+.detalle-de-sesion__tiempos {
+  margin-top: 0.85rem;
+}
+
+.detalle-de-sesion__tiempos > p {
+  margin: 0 0 0.2rem;
+}
+
+/* Los tres tiempos de la sesión, uno al lado del otro; lo que no entra, baja. */
+.datos-de-tiempo--en-un-renglon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.25rem;
+  margin: 0;
+}
+
+.datos-de-tiempo--en-un-renglon > div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.datos-de-tiempo--en-un-renglon dt {
+  color: var(--tenue);
+  font-weight: 400;
+}
+
+/* Lo demás de la sesión, a un clic: cada cosa se abre en su lugar. */
+.detalle-de-sesion__mas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.85rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.detalle-de-sesion__mas summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  color: var(--enlace);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.detalle-de-sesion__mas summary::-webkit-details-marker {
+  display: none;
+}
+
+.detalle-de-sesion__mas summary::after {
+  content: '▸';
+  margin-left: 0.1rem;
+}
+
+.detalle-de-sesion__mas details[open] > summary::after {
+  content: '▾';
+}
+
+.detalle-de-sesion__mas details[open] {
+  padding-bottom: 0.6rem;
+}
+
+.detalle-de-sesion__mas h4 {
+  margin: 0.7rem 0 0.2rem;
+}
+
+/* En una ventana angosta las cuatro columnas no entran: cada dato de la sesión va en su renglón, con su rótulo dicho
+   para el lector de pantalla. */
+@media (max-width: 60rem) {
+  .sesion-registrada__fila {
+    grid-template-columns: minmax(0, 1fr) 1.15rem;
+  }
+
+  .sesion-registrada__fila > :not(.icono) {
+    grid-column: 1;
+  }
+
+  .sesion-registrada__fila > .icono:last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .sesion-registrada__dia {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .sesiones__mas-filtros {
+    margin-left: 0;
+  }
 }
 
 /* ─── El Espacio profesional (WP-ESCRITORIO-AMABLE, parte 5) ─────────────────────── */
@@ -6629,6 +7077,3059 @@ a.observacion__fila:focus-visible {
   }
 
   .espacio-profesional__solicitar {
+    margin-left: 0;
+  }
+}
+
+/* ─── Antropometría · Tomas (WP-ESCRITORIO-AREAS, parte 3; maquetas 22 y 29) ───────── */
+/* La lista de tomas a la izquierda, en tramos del mismo protocolo, y la toma elegida a la derecha: lo que vale para toda
+   la toma, sus resultados calculados y sus mediciones por familia. Una medición o un resultado se abren encima, en un
+   panel. Comparte el encabezado con los Registros (`.registros*`). */
+.tomas-del-area__preparar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem 0.75rem;
+  margin-left: auto;
+}
+
+.tomas-del-area__preparar .nota {
+  margin: 0;
+}
+
+.tomas-del-area__cuerpo {
+  display: grid;
+  grid-template-columns: 17.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* El selector es la misma lista para una ventana angosta: se muestra uno u otro, nunca los dos. */
+.tomas-del-area__selector {
+  display: none;
+  margin: 0;
+}
+
+.tomas-del-area__toma {
+  min-width: 0;
+}
+
+.tomas-del-area__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.tomas-del-area__lista > .nota {
+  margin: 0 0.6rem;
+}
+
+.tramo-de-tomas + .tramo-de-tomas {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde);
+}
+
+.tramo-de-tomas__protocolo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0.25rem 0.6rem 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.tramo-de-tomas__protocolo .icono {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--tenue);
+}
+
+.tramo-de-tomas__tomas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toma-de-la-lista {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toma-de-la-lista:hover {
+  background: var(--fondo-suave);
+}
+
+.toma-de-la-lista:focus-visible {
+  outline-offset: -3px;
+}
+
+.toma-de-la-lista[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+}
+
+.toma-de-la-lista__fecha {
+  font-weight: 600;
+}
+
+.toma-de-la-lista__cuentas {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+/* La toma elegida: una sola superficie, con sus bloques separados por una línea. */
+.toma-abierta {
+  min-width: 0;
+  padding: 0.9rem 1.25rem 1.1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.toma-abierta__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.toma-abierta__encabezado h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.toma-abierta__lamina {
+  margin-left: auto;
+}
+
+.toma-abierta__metadatos {
+  margin: 0.3rem 0 0;
+}
+
+/* El título de un bloque de la toma, con lo que lo acompaña en el mismo renglón: una marca, una frase y sus acciones. */
+.toma-abierta__titulo-de-bloque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.toma-abierta__titulo-de-bloque h3,
+.toma-abierta__titulo-de-bloque .nota {
+  margin: 0;
+}
+
+.toma-abierta__titulo-de-bloque h3 {
+  font-size: 1.1rem;
+}
+
+.toma-abierta__acciones-de-bloque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  margin-left: auto;
+}
+
+.resultados-de-la-toma,
+.mediciones-de-la-toma {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--borde);
+}
+
+.resultados-de-la-toma__sin-calculos {
+  margin: 0;
+}
+
+/* Los resultados, por categoría del catálogo, en columnas: hasta tres, y cada categoría entera en la suya. Con más
+   categorías que columnas, las que siguen se acomodan debajo de las más cortas, sin dejar un hueco. */
+.categorias-de-resultados {
+  columns: 17rem 3;
+  column-gap: 1.5rem;
+}
+
+.categoria-de-resultados {
+  break-inside: avoid;
+  margin-bottom: 0.6rem;
+}
+
+.categoria-de-resultados h4,
+.familia-de-la-toma h4,
+.anteriores-sin-efecto h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.categoria-de-resultados h4 .icono,
+.familia-de-la-toma h4 .icono {
+  color: var(--tenue);
+}
+
+.categoria-de-resultados ul,
+.anteriores-sin-efecto ul,
+.mediciones-de-la-familia {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.anteriores-sin-efecto {
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem 0.3rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.anteriores-sin-efecto .nota {
+  margin: 0 0 0.3rem;
+}
+
+/* Un resultado o una medición: un renglón que se toca entero. El nombre a la izquierda, sus marcas y el valor a la
+   derecha, alineado con los demás. */
+.resultado-de-la-toma,
+.medicion-de-la-toma {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  /* Lo que se toca mide 44 px, también en el escritorio (guía, I.5). */
+  min-height: 2.75rem;
+  padding: 0.25rem 0.15rem;
+  border: 0;
+  border-bottom: 1px solid var(--borde);
+  border-radius: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resultado-de-la-toma:hover,
+.medicion-de-la-toma:hover {
+  background: var(--fondo-suave);
+}
+
+.resultado-de-la-toma:focus-visible,
+.medicion-de-la-toma:focus-visible {
+  outline-offset: -2px;
+}
+
+/* El nombre y sus marcas van juntos y pueden ocupar dos renglones; el valor queda siempre en su lugar, a la derecha. */
+.resultado-de-la-toma__que,
+.medicion-de-la-toma__que {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+}
+
+.resultado-de-la-toma__valor,
+.medicion-de-la-toma__valor {
+  flex: none;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.medicion-de-la-toma__valor {
+  font-weight: 600;
+}
+
+.resultado-de-la-toma__unidad,
+.familia-de-la-toma__unidad {
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+/* Una medición anulada conserva su valor a la vista, atenuado: dejó de contar. La marca dice por qué. */
+.medicion-de-la-toma[data-anulada] .medicion-de-la-toma__nombre,
+.medicion-de-la-toma[data-anulada] .medicion-de-la-toma__valor {
+  color: var(--tenue);
+}
+
+/* Las familias, en tres columnas: lo corto a la izquierda (masa y estatura, diámetros, lo demás); pliegues y
+   perímetros, cada uno en la suya, en dos subcolumnas si entran. El orden del documento es el del dominio. */
+.familias-de-la-toma {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.75fr);
+  grid-template-areas:
+    'masa pliegues perimetros'
+    'diametros pliegues perimetros'
+    'otras pliegues perimetros'
+    '. pliegues perimetros';
+  grid-template-rows: auto auto auto 1fr;
+  align-items: start;
+  gap: 0.9rem 1.6rem;
+}
+
+.familia-de-la-toma {
+  min-width: 0;
+}
+
+.familia-de-la-toma[data-familia='MASA_Y_ESTATURA'] {
+  grid-area: masa;
+}
+
+.familia-de-la-toma[data-familia='DIAMETROS'] {
+  grid-area: diametros;
+}
+
+.familia-de-la-toma[data-familia='OTRAS'] {
+  grid-area: otras;
+}
+
+.familia-de-la-toma[data-familia='PLIEGUES'] {
+  grid-area: pliegues;
+}
+
+.familia-de-la-toma[data-familia='PERIMETROS'] {
+  grid-area: perimetros;
+}
+
+.familia-de-la-toma[data-familia='PLIEGUES'] .mediciones-de-la-familia,
+.familia-de-la-toma[data-familia='PERIMETROS'] .mediciones-de-la-familia {
+  columns: 8.25rem 2;
+  column-gap: 1.4rem;
+}
+
+.mediciones-de-la-familia > li {
+  break-inside: avoid;
+}
+
+/* Una toma de pocas mediciones no reserva el lugar de las familias que no tiene: van una al lado de la otra, cada una
+   con su ancho. Con dos clases, para ganarles a las reglas de los anchos angostos. */
+.familias-de-la-toma.familias-de-la-toma--pocas {
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 17rem));
+  grid-template-areas: none;
+  grid-template-rows: none;
+}
+
+.familias-de-la-toma--pocas .familia-de-la-toma[data-familia] {
+  grid-area: auto;
+}
+
+.familias-de-la-toma--pocas .familia-de-la-toma[data-familia] .mediciones-de-la-familia {
+  columns: auto;
+}
+
+/* ─── Una medición o un resultado, en el panel ───────── */
+.medicion-abierta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.medicion-abierta > .aviso,
+.medicion-abierta .nota,
+.medicion-abierta p {
+  margin: 0;
+}
+
+.medicion-abierta__titular {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+}
+
+.medicion-abierta__valor {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.medicion-abierta__marcas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.medicion-abierta__datos {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+}
+
+.medicion-abierta__datos > div {
+  display: contents;
+}
+
+.medicion-abierta__datos dt {
+  color: var(--tenue);
+}
+
+.medicion-abierta__datos dd {
+  margin: 0;
+}
+
+.medicion-abierta__bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--borde);
+}
+
+.medicion-abierta__bloque h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* La historia: cuándo, a la izquierda; qué quedó registrado, a la derecha. De lo más nuevo a lo más viejo. */
+.historia-de-medicion {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historia-de-medicion__evento {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.2rem 1rem;
+  padding: 0.5rem 0;
+}
+
+.historia-de-medicion__evento + .historia-de-medicion__evento {
+  border-top: 1px solid var(--borde);
+}
+
+.historia-de-medicion__cuando {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.historia-de-medicion__titulo {
+  font-weight: 600;
+}
+
+.historia-de-medicion__que {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+/* Lo que cambió en los resultados: el de ahora, destacado; el de antes, al lado y atenuado. */
+.cambios-de-resultados,
+.entradas-del-calculo {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cambios-de-resultados li,
+.entradas-del-calculo li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.9rem;
+  padding: 0.3rem 0;
+}
+
+.cambios-de-resultados li + li,
+.entradas-del-calculo li + li {
+  border-top: 1px solid var(--borde);
+}
+
+.cambios-de-resultados__nombre,
+.entradas-del-calculo__nombre {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.cambios-de-resultados__valores,
+.entradas-del-calculo__valor {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.cambios-de-resultados__antes {
+  margin-left: 0.5rem;
+  color: var(--tenue);
+}
+
+.entradas-del-calculo__valor {
+  font-weight: 600;
+}
+
+.entradas-del-calculo__de-donde {
+  flex-basis: 100%;
+}
+
+/* Las acciones y sus formularios van al pie del panel, separados de lo que se lee. */
+.medicion-abierta__pie {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--borde);
+}
+
+.medicion-abierta__pie .acciones {
+  margin: 0;
+}
+
+.nuevo-calculo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* El camino de vuelta a la sección desde una pantalla que se abre adentro de ella (la carga de una toma). */
+.vuelta-a-la-seccion {
+  margin: 0 0 0.6rem;
+}
+
+.vuelta-a-la-seccion a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* A 1280 px la toma queda más angosta: lo corto pasa arriba, en un renglón, y pliegues y perímetros se reparten el ancho. */
+@media (max-width: 85rem) {
+  .familias-de-la-toma {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-areas:
+      'masa masa diametros diametros otras otras'
+      'pliegues pliegues pliegues perimetros perimetros perimetros';
+    grid-template-rows: auto auto;
+  }
+}
+
+/* En una ventana que no deja lugar para la lista al costado, la lista pasa arriba, como un selector, y las familias van
+   una debajo de la otra, cada una con sus dos subcolumnas. */
+@media (max-width: 75rem) {
+  .tomas-del-area__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tomas-del-area__lista {
+    display: none;
+  }
+
+  .tomas-del-area__selector {
+    display: block;
+    max-width: 36rem;
+  }
+
+  .familias-de-la-toma {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+    grid-template-rows: none;
+  }
+
+  .familias-de-la-toma .familia-de-la-toma {
+    grid-area: auto;
+  }
+
+  .familia-de-la-toma .mediciones-de-la-familia {
+    columns: 14rem 2;
+    column-gap: 1.6rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .toma-abierta {
+    padding: 0.8rem 0.85rem 1rem;
+  }
+
+  .toma-abierta__lamina,
+  .toma-abierta__acciones-de-bloque,
+  .tomas-del-area__preparar {
+    margin-left: 0;
+  }
+
+  .historia-de-medicion__evento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ═══ Información · Solicitudes (WP-ESCRITORIO-AREAS, parte 4; maqueta 26) ═══════════════════════════════════════════
+   La lista de lo pedido, con sus vistas, y el detalle al costado: lo que la persona declaró por pregunta, con la
+   respuesta que rige, y la historia de sus versiones. Reusa el encabezado de los Registros (`.registros__*`), las vistas
+   con nombre, el detalle al costado (`.detalle-del-hecho`) y la historia de una medición (`.historia-de-medicion`). */
+.solicitudes-del-area__pedir {
+  margin-left: auto;
+}
+
+/* Sin nada abierto, la lista no se estira a todo el ancho: un renglón de 1.300 px no se lee. Con una solicitud abierta,
+   la lista queda en su ancho y el detalle toma el resto. */
+.solicitudes__cuerpo {
+  grid-template-columns: minmax(0, 46rem);
+}
+
+.solicitudes__cuerpo[data-con-detalle] {
+  grid-template-columns: minmax(0, 32.5rem) minmax(0, 1fr);
+}
+
+.lista-de-solicitudes {
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.lista-de-solicitudes > li + li {
+  border-top: 1px solid var(--borde);
+}
+
+/* El renglón entero abre la solicitud. La elegida, marcada por forma (un borde), no solo por color. */
+.solicitud-de-la-lista {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.solicitud-de-la-lista:hover {
+  background: var(--fondo-suave);
+}
+
+.solicitud-de-la-lista:focus-visible {
+  outline-offset: -3px;
+}
+
+.solicitud-de-la-lista[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--boton-secundario-borde);
+}
+
+.solicitud-de-la-lista__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.solicitud-de-la-lista__nombre {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.solicitud-de-la-lista__datos {
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.solicitudes__al-pie {
+  margin: 0.75rem 0.85rem 0;
+}
+
+/* ─── La solicitud abierta ───────── */
+.detalle-de-solicitud__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.detalle-de-solicitud__estado {
+  margin: 0 0 0.5rem;
+}
+
+.solicitud-abierta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.solicitud-abierta .nota,
+.solicitud-abierta p {
+  margin: 0;
+}
+
+.solicitud-abierta__datos {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.3rem 1.5rem;
+  margin: 0;
+}
+
+.solicitud-abierta__datos > div {
+  display: contents;
+}
+
+.solicitud-abierta__datos dt {
+  color: var(--tenue);
+}
+
+.solicitud-abierta__datos dd {
+  margin: 0;
+}
+
+.solicitud-abierta__bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.solicitud-abierta__titulo-de-bloque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+}
+
+.solicitud-abierta__titulo-de-bloque h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* Lo que declaró: la pregunta a la izquierda y la respuesta que rige a la derecha; los nombres de las columnas, una vez. */
+.lo-declarado__columnas,
+.lo-declarado__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  gap: 0.2rem 1.5rem;
+}
+
+.lo-declarado__columnas {
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--borde);
+  color: var(--tenue);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.lo-declarado {
+  margin: 0;
+}
+
+.lo-declarado__fila {
+  align-items: start;
+  padding: 0.6rem 0;
+}
+
+.lo-declarado__fila + .lo-declarado__fila {
+  border-top: 1px solid var(--borde);
+}
+
+/* La pregunta corre como texto, y «Requerida» sigue a su última palabra: no baja a un renglón propio si entra al lado. */
+.lo-declarado__fila dt,
+.preguntas-pedidas li {
+  margin: 0;
+}
+
+.lo-declarado__fila dt .etiqueta-de-dato,
+.preguntas-pedidas li .etiqueta-de-dato {
+  margin-left: 0.25rem;
+}
+
+.lo-declarado__fila dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+  margin: 0;
+}
+
+.lo-declarado__valor {
+  font-weight: 600;
+}
+
+.lo-declarado__sin-responder {
+  color: var(--tenue);
+}
+
+/* «Antes: …» va en su propio renglón, debajo de la respuesta que rige. */
+.lo-declarado__antes {
+  flex-basis: 100%;
+}
+
+.preguntas-pedidas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preguntas-pedidas li {
+  padding: 0.5rem 0;
+}
+
+.preguntas-pedidas li + li {
+  border-top: 1px solid var(--borde);
+}
+
+.historia-de-respuesta .boton--enlace {
+  align-self: flex-start;
+}
+
+.historia-de-respuesta__respuestas {
+  margin: 0.2rem 0 0;
+}
+
+/* En el panel de encima (una ventana angosta) la pregunta va arriba y su respuesta debajo: la tabla de dos columnas no
+   entra. Los nombres de las columnas dejan de hacer falta. */
+@media (max-width: 75rem) {
+  .solicitudes__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lo-declarado__columnas {
+    display: none;
+  }
+
+  .lo-declarado__fila {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lo-declarado__fila dt {
+    color: var(--tenue);
+  }
+}
+
+@media (max-width: 40rem) {
+  .solicitudes-del-area__pedir {
+    margin-left: 0;
+  }
+
+  .solicitud-abierta__datos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+
+  .solicitud-abierta__datos dd {
+    margin-bottom: 0.35rem;
+  }
+}
+
+/* ═══ El cajón (`components/cajon.tsx`; WP-ESCRITORIO-AREAS, parte 4; maqueta 27) ════════════════════════════════════
+   Un formulario que se abre al costado, sobre la vista, que sigue a la vista por detrás. La cabecera y el pie quedan
+   fijos y el cuerpo se desplaza adentro: lo que hay que leer antes de enviar está siempre junto al botón. Hasta 64 rem
+   de ventana ocupa todo el ancho. El velo y la sombra son los de todo diálogo (`.dialogo`). */
+.cajon {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+}
+
+/* Solo abierto: un `display` puesto sin esa condición mostraría también el diálogo cerrado. */
+.cajon[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 64.0625rem) {
+  .cajon {
+    width: 50rem;
+  }
+}
+
+.cajon__cabecera {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.6rem 0.35rem;
+}
+
+.cajon__sobretitulo {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+.cajon__cabecera h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+/* El título recibe el foco al abrirse el cajón, para el lector de pantalla: no es un control. */
+.cajon__cabecera h2:focus {
+  outline: none;
+}
+
+.cajon__cerrar {
+  flex: none;
+  min-height: 2.75rem;
+  text-decoration: none;
+}
+
+.cajon__cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.3rem 1.6rem 1.25rem;
+}
+
+.cajon__pie {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.8rem 1.6rem 0.95rem;
+  border-top: 1px solid var(--borde);
+}
+
+/* ─── «Pedir información»: los tres pasos ───────── */
+.pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.pedido p,
+.pedido .aviso {
+  margin: 0;
+}
+
+.pedido__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  /* Si ocupa dos renglones, que el segundo no sea una palabra sola. */
+  text-wrap: pretty;
+}
+
+.pedido__aviso .icono {
+  flex: none;
+  margin-top: 0.12rem;
+}
+
+.pedido__antes-de-enviar {
+  flex: 1 1 16rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.paso-del-pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.paso-del-pedido__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.75rem;
+}
+
+.paso-del-pedido__cabecera h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* El número del paso: un círculo, con el color del texto. */
+.paso-del-pedido__numero {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+/* Paso 1 · una opción por formulario. La elegida se reconoce por su botón de opción, además del fondo, y es la única
+   que muestra su descripción. */
+.formularios-del-pedido {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.formulario-del-pedido + .formulario-del-pedido {
+  border-top: 1px solid var(--borde);
+}
+
+.formulario-del-pedido:first-child {
+  border-radius: 11px 11px 0 0;
+}
+
+.formulario-del-pedido:last-child {
+  border-radius: 0 0 11px 11px;
+}
+
+.formulario-del-pedido[data-elegido] {
+  background: var(--fondo-suave);
+}
+
+.formulario-del-pedido label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.875rem;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+
+.formulario-del-pedido input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+
+.formulario-del-pedido__nombre {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+
+.formulario-del-pedido__cuenta {
+  flex: none;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+/* Alineada con el nombre: el margen del renglón, el botón de opción y su separación. */
+.formulario-del-pedido__descripcion {
+  padding: 0 0.9rem 0.65rem 2.9rem;
+  color: var(--tenue);
+  font-size: 0.93rem;
+  line-height: 1.4;
+}
+
+/* Paso 2 · una fila por pregunta: la casilla que la pide, la pregunta (con lo que va a leer la persona debajo), con qué
+   se responde y si es requerida. Cada fila mide 44 px o más. */
+.preguntas-del-pedido {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preguntas-del-pedido thead th {
+  padding: 0.25rem 0.75rem 0.3rem 0;
+  border-bottom: 1.5px solid var(--borde-control);
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.preguntas-del-pedido tbody th,
+.preguntas-del-pedido tbody td {
+  height: 2.75rem;
+  padding: 0;
+  border-bottom: 1px solid var(--borde);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.preguntas-del-pedido__casilla {
+  width: 2.25rem;
+}
+
+.preguntas-del-pedido input[type='checkbox'] {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+/* El texto de la pregunta es la etiqueta de su casilla, y ocupa toda la celda: tocar la pregunta la marca. */
+.preguntas-del-pedido tbody th label {
+  display: block;
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.preguntas-del-pedido tbody tr:not([data-pedida]) th label {
+  color: var(--tenue);
+}
+
+/* La aclaración que la persona lee debajo de la pregunta: se abre para todas a la vez, con el botón de arriba de la tabla. */
+.preguntas-del-pedido__ayuda {
+  display: block;
+  margin-top: -0.45rem;
+  padding: 0 0.75rem 0.5rem 0;
+  color: var(--tenue);
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.preguntas-del-pedido__aclaraciones .boton--enlace {
+  font-size: inherit;
+}
+
+/* Angosta, y con el texto en dos renglones si hace falta («Número · días por semana»): el ancho es de la pregunta. */
+.preguntas-del-pedido tbody .preguntas-del-pedido__responde {
+  width: 9.5rem;
+  padding-right: 0.75rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.preguntas-del-pedido thead th:last-child,
+.preguntas-del-pedido tbody .preguntas-del-pedido__requerida {
+  width: 5.5rem;
+  padding-right: 0;
+  text-align: center;
+}
+
+/* Una casilla sola en su celda: lo que se toca mide 44 px aunque la casilla sea chica. */
+.casilla-de-celda {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.casilla-de-celda:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+.casilla-de-celda__texto {
+  display: none;
+}
+
+.preguntas-del-pedido__seccion th {
+  height: auto;
+  padding: 0.7rem 0 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Paso 3 · los dos campos, uno al lado del otro. Cada parte de un campo (el rótulo, su ayuda, el control y lo que falta)
+   va en su renglón de la grilla: los dos controles quedan a la misma altura aunque una ayuda ocupe dos renglones. */
+.pedido__dos-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15.6rem;
+  grid-template-rows: repeat(4, auto);
+  column-gap: 0.9rem;
+}
+
+.pedido__dos-campos > .campo {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  row-gap: 0.3rem;
+  margin: 0;
+}
+
+.pedido__dos-campos > .campo > label {
+  grid-row: 1;
+}
+
+.pedido__dos-campos > .campo > .campo__ayuda {
+  grid-row: 2;
+}
+
+.pedido__dos-campos > .campo > input,
+.pedido__dos-campos > .campo > select,
+.pedido__dos-campos > .campo > .campo-fijo {
+  grid-row: 3;
+  width: 100%;
+}
+
+.pedido__dos-campos > .campo > .campo__error {
+  grid-row: 4;
+}
+
+/* Un valor que la pantalla fija y no deja cambiar: se lee como un campo, con su candado. */
+.campo-fijo {
+  position: relative;
+  display: block;
+}
+
+.campo .campo-fijo input {
+  width: 100%;
+  padding-right: 2.6rem;
+  background: var(--fondo-suave);
+}
+
+.campo-fijo .icono {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  color: var(--tenue);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Cuando el cajón ocupa todo el ancho, «Responde con» tiene lugar para ir en un renglón. */
+@media (max-width: 64rem) {
+  .preguntas-del-pedido tbody .preguntas-del-pedido__responde {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+/* En una ventana angosta, una pregunta por bloque: la casilla a la izquierda y, a su lado, la pregunta, con qué se
+   responde y si es requerida, cada cosa con su nombre. */
+@media (max-width: 40rem) {
+  .cajon__cabecera,
+  .cajon__cuerpo,
+  .cajon__pie {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .preguntas-del-pedido,
+  .preguntas-del-pedido tbody {
+    display: block;
+  }
+
+  .preguntas-del-pedido thead {
+    display: none;
+  }
+
+  .preguntas-del-pedido tbody tr {
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .preguntas-del-pedido tbody th,
+  .preguntas-del-pedido tbody td {
+    display: block;
+    height: auto;
+    border-bottom: 0;
+  }
+
+  .preguntas-del-pedido__casilla {
+    padding-top: 0.6rem;
+  }
+
+  .preguntas-del-pedido tbody .preguntas-del-pedido__responde,
+  .preguntas-del-pedido tbody .preguntas-del-pedido__requerida {
+    grid-column: 2;
+    width: auto;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .preguntas-del-pedido__responde::before {
+    content: attr(data-etiqueta) ': ';
+  }
+
+  .casilla-de-celda {
+    justify-content: flex-start;
+  }
+
+  .casilla-de-celda__texto {
+    display: inline;
+  }
+
+  .preguntas-del-pedido__seccion {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pedido__dos-campos {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    row-gap: 0.9rem;
+  }
+
+  .pedido__dos-campos > .campo {
+    display: flex;
+    grid-row: auto;
+  }
+}
+
+/* ═══ Nutrición · Plan (WP-ESCRITORIO-AREAS, parte 5; maqueta 16) ═══════════════════════════════════════════════════
+   El plan activo se lee de a un día tipo, con las comidas plegadas y las opciones lado a lado. La misma pieza
+   (`estructura-del-plan.tsx`) va en la sección «Plan» y en el detalle de una etapa de la ficha, que es una columna
+   angosta: lo de adentro se acomoda al ancho de su caja, no al de la ventana. */
+.plan,
+.plan__activo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+/* El título, lo que la versión es en una frase y, a la derecha, lo que se puede hacer con ella. Lo que no entra, baja. */
+.plan__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.85rem;
+}
+
+.plan__encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.plan__version {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--tenue);
+}
+
+.plan__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.plan__ya-hay {
+  margin: 0;
+}
+
+/* Donde todavía no hay un plan, el aviso no se estira de lado a lado: es una frase y su acción. */
+.plan > .estado-vacio {
+  max-width: 46rem;
+}
+
+/* Qué versión se mira, y lo que hay que saber de la que está en preparación. */
+.plan__selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+}
+
+.plan__selector .nota {
+  margin: 0;
+}
+
+/* La versión en preparación sigue en el editor de siempre, con el ancho para el que se hizo, hasta su parte. */
+.plan__preparacion {
+  max-width: 72rem;
+}
+
+/* El día tipo a la izquierda; a la derecha, el objetivo del día de esa versión. */
+.plan__dia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+
+.dia-tipo-del-plan {
+  margin: 0;
+}
+
+.dia-tipo-del-plan__rotulo {
+  margin-right: 0.35rem;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.plan__objetivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 1.15rem;
+  min-width: 0;
+}
+
+.plan__objetivo-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: center;
+  margin: 0;
+  color: var(--tenue);
+  font-weight: 600;
+}
+
+/* En el plan, los cuatro números van en un renglón (en la tarjeta del Resumen, de a dos). */
+.plan__objetivo .tira-del-objetivo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.25rem;
+}
+
+.plan__objetivo .tira-del-objetivo dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.plan__objetivo .tira-del-objetivo dd {
+  margin: 0;
+}
+
+.plan__objetivo .tira-del-objetivo > div {
+  align-items: center;
+}
+
+.plan__objetivo .cargando,
+.plan__objetivo-falla,
+.plan__objetivo-nota {
+  margin: 0;
+}
+
+.plan__objetivo-nota {
+  text-align: right;
+}
+
+/* Las comidas y, al costado, el historial. En una ventana angosta el historial va debajo. */
+.plan__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem 1.5rem;
+}
+
+@media (min-width: 75rem) {
+  /* Dos columnas solo si hay historial: en el detalle de la ficha la pieza va sola, en su columna. */
+  .plan__cuerpo:has(> .historial-del-plan) {
+    grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 21.25rem);
+  }
+
+  /* El historial arranca a la altura de la primera comida: baja lo que ocupa el renglón de «N comidas». */
+  .plan__cuerpo > .historial-del-plan {
+    margin-top: 2.35rem;
+  }
+}
+
+/* Los segmentos con nombres que escribe la persona (hasta siete días tipo): bajan de renglón antes que salirse. Cada
+   uno se separa del anterior y del de arriba con una raya que el borde del grupo recorta en las orillas. */
+.segmentos--que-bajan {
+  max-width: 100%;
+}
+
+.segmentos--que-bajan .segmentos__fila {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.segmentos--que-bajan .segmento {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+  padding-block: 0.3rem;
+  border-left: 0;
+  box-shadow:
+    -1.5px 0 0 var(--borde-control),
+    0 -1.5px 0 var(--borde-control);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+/* ─── Las comidas de un día tipo ───────── */
+.comidas-del-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.comidas-del-plan__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  min-height: 1.75rem;
+}
+
+.comidas-del-plan__barra .nota {
+  margin: 0;
+}
+
+/* Una comida: una tarjeta cuyo renglón de arriba la abre y la pliega. */
+.comida-del-plan {
+  min-width: 0;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.comida-del-plan__titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.comida-del-plan__boton {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 13px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.comida-del-plan__boton:hover {
+  background: var(--fondo-suave);
+}
+
+.comida-del-plan__boton:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.comida-del-plan__textos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.8rem;
+  min-width: 0;
+}
+
+.comida-del-plan__nombre {
+  font-size: 1.1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.comida-del-plan__cuenta,
+.comida-del-plan__opciones {
+  color: var(--tenue);
+}
+
+/* Los nombres de las opciones de una comida plegada: lo que entra en el renglón, y lo demás baja. */
+.comida-del-plan__opciones {
+  flex: 1 1 14rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.comida-del-plan__cuerpo {
+  padding: 0.2rem 1rem 1rem;
+}
+
+/* Las opciones, lado a lado mientras entren con un ancho que se lea; si no, una debajo de la otra. Con una sola o con
+   dos no se estiran a todo el ancho: un nombre a la izquierda y su cantidad muy lejos a la derecha no se leen juntos. */
+.opciones-del-plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18.5rem), 1fr));
+  gap: 0.75rem;
+}
+
+.opcion-del-plan {
+  min-width: 0;
+  max-width: 40rem;
+  padding: 0.8rem 1rem 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.opcion-del-plan__titulo {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.opcion-del-plan__receta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0 0 0.45rem;
+}
+
+.opcion-del-plan__receta .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+/* Un ítem: el alimento a la izquierda y lo indicado a la derecha; su nota, debajo, de lado a lado. */
+.items-del-plan {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.items-del-plan li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0 0.9rem;
+  padding: 0.2rem 0;
+}
+
+.items-del-plan__nombre {
+  overflow-wrap: anywhere;
+}
+
+.items-del-plan__indicado {
+  max-width: 15rem;
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.items-del-plan__nota {
+  grid-column: 1 / -1;
+  color: var(--tenue);
+  overflow-wrap: anywhere;
+}
+
+/* ─── El historial de versiones ───────── */
+.historial-del-plan {
+  min-width: 0;
+  padding: 0.9rem 1.1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.historial-del-plan h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.historial-del-plan__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historial-del-plan__lista li {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.historial-del-plan__huella {
+  margin: 0.7rem 0 0;
+}
+
+/* La huella no se parte por la mitad: si no entra al lado de su rótulo, baja entera. */
+.historial-del-plan__huella .huella {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+/* La planificación de una etapa, en el detalle de la ficha: lo mismo, en su columna. */
+.version-del-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.version-del-plan > p {
+  margin: 0;
+}
+
+/* ─── «Empezar desde una plantilla»: la lista del diálogo ───────── */
+.plantillas-para-empezar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-inline-size: 0;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.plantilla-para-empezar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0 0.6rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.plantilla-para-empezar:has(input:checked) {
+  border-color: var(--texto);
+  background: var(--fondo-suave);
+}
+
+.plantilla-para-empezar:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.plantilla-para-empezar__nombre {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.plantilla-para-empezar__detalle {
+  grid-column: 2;
+  margin: 0;
+}
+
+/* ═══ Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6; maqueta 24) ═══════════════════════════════════════════════
+   Usa el armado de Nutrición · Plan (el encabezado, el selector de versión, el renglón que se abre y el historial) y
+   suma lo propio: los niveles entre los que se elige (bloque, microciclo y sesión) y, en un ejercicio abierto, la tabla
+   de sus series con lo general al lado. La misma pieza va en el detalle de una etapa de la ficha. */
+
+/* El bloque, el microciclo y la sesión: un renglón cada uno, con lo que se dice de lo elegido al lado. */
+.plan__niveles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.nivel-del-plan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  min-width: 0;
+}
+
+.nivel-del-plan__unico,
+.nivel-del-plan__lista {
+  margin: 0;
+}
+
+.nivel-del-plan__lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+
+.nivel-del-plan__lista select {
+  max-width: min(100%, 28rem);
+  min-height: 41px;
+}
+
+.nivel-del-plan__rotulo {
+  margin-right: 0.35rem;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.nivel-del-plan__detalle {
+  flex: 1 1 18rem;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Las indicaciones de la sesión, antes de sus ejercicios: el rótulo y el texto, en el mismo renglón. */
+.indicaciones-de-la-sesion {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Un ejercicio abierto: la tabla de sus series y, al lado, lo general. Si no entran los dos, lo general va debajo. */
+.ejercicio-del-plan__cuerpo:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1.75rem;
+}
+
+.ejercicio-del-plan__series {
+  flex: 3 1 30rem;
+  min-width: 0;
+}
+
+.ejercicio-del-plan__general {
+  flex: 1 1 15rem;
+  min-width: 0;
+}
+
+.ejercicio-del-plan__subtitulo,
+.series-del-plan caption {
+  margin: 0 0 0.35rem;
+  padding: 0;
+  font-weight: 600;
+  text-align: left;
+  caption-side: top;
+}
+
+/* La tabla va dentro de la tarjeta del ejercicio, que es una superficie: las tapas del desplazamiento llevan su color.
+   Con el del fondo de la página se veían dos franjas a los lados aunque no hubiera nada que desplazar. */
+.ejercicio-del-plan .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+}
+
+/* La tabla de series: los números, alineados entre sí; la nota, que es texto, puede ocupar más de un renglón. */
+.series-del-plan {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.series-del-plan th,
+.series-del-plan td {
+  white-space: nowrap;
+}
+
+/* En una columna angosta (el detalle de la ficha), los títulos de las columnas bajan de renglón antes que la tabla se
+   salga de su caja. */
+.series-del-plan thead th {
+  white-space: normal;
+}
+
+.series-del-plan .series-del-plan__nota {
+  min-width: 10rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Apilada (pantalla angosta), cada serie dice que es una serie y una nota que no hay no ocupa un renglón. */
+@media (max-width: 40rem) {
+  .series-del-plan tbody th[data-etiqueta]::before {
+    content: attr(data-etiqueta) ' ';
+  }
+
+  .series-del-plan td:empty {
+    display: none;
+  }
+}
+
+/* Lo general: el rótulo a la izquierda y el valor a la derecha, cada dato en su renglón. */
+.lo-general-del-ejercicio {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 0.3rem 1rem;
+  margin: 0;
+}
+
+.lo-general-del-ejercicio > div {
+  display: contents;
+}
+
+.lo-general-del-ejercicio dt {
+  color: var(--tenue);
+}
+
+.lo-general-del-ejercicio dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ─── «Agregar ítem»: el buscador del catálogo, en el cajón ───────── */
+/* Una sola columna que se achica con el cajón: sin el mínimo en cero, la fila del buscador ensanchaba todo. */
+.agregar-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+/* El campo de búsqueda: la lupa adentro; la cuenta y el botón, al lado, o debajo si no entran. */
+.agregar-item__buscador {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.agregar-item__campo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.agregar-item__campo > .icono {
+  position: absolute;
+  left: 0.8rem;
+  color: var(--tenue);
+  pointer-events: none;
+}
+
+.agregar-item__buscador input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.3rem 0.9rem 0.3rem 2.6rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.agregar-item__buscador input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.agregar-item__cuenta {
+  flex: none;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.agregar-item__enviar {
+  flex: none;
+}
+
+/* Lo que se acaba de sumar. Sin texto no ocupa lugar. */
+.agregar-item__agregado {
+  margin: 0;
+  font-weight: 600;
+}
+
+.agregar-item__agregado:empty {
+  display: none;
+}
+
+.agregar-item__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.agregar-item__titulo .icono {
+  align-self: center;
+}
+
+.agregar-item__titulo .nota {
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Los alimentos habituales: una ficha por alimento, que baja de renglón. */
+.agregar-item__fichas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agregar-item__fichas .boton {
+  border-radius: 999px;
+}
+
+/* La tabla de resultados: los números, alineados entre sí; las acciones, al final de la fila. */
+.alimentos-del-catalogo {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.alimentos-del-catalogo th[scope='row'] {
+  font-weight: 400;
+}
+
+.alimentos-del-catalogo__nombre {
+  display: block;
+  font-weight: 600;
+}
+
+.alimentos-del-catalogo__detalle {
+  display: block;
+  margin: 0;
+}
+
+.alimentos-del-catalogo .alimentos-del-catalogo__numero {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.alimentos-del-catalogo__acciones {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.alimentos-del-catalogo__acciones .boton + .boton {
+  margin-left: 0.4rem;
+}
+
+/* La chinche de «habitual»: marcada va llena. El estado lo dice además `aria-pressed`, y el nombre del botón cambia. */
+.alimentos-del-catalogo__habitual {
+  min-width: 44px;
+  padding: 0.3rem;
+  justify-content: center;
+}
+
+.alimentos-del-catalogo__habitual[aria-pressed='true'] {
+  background: var(--texto);
+  color: var(--superficie);
+  border-color: var(--texto);
+}
+
+@media (max-width: 40rem) {
+  .alimentos-del-catalogo .alimentos-del-catalogo__numero,
+  .alimentos-del-catalogo__acciones {
+    text-align: left;
+  }
+}
+
+/* En el pie del cajón: lo que hay que saber va arriba, a todo el ancho; las dos acciones, debajo. */
+.agregar-item__antes {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+/* «Crear manualmente» e «Importar», en el lugar de los resultados. */
+.agregar-item__otro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.agregar-item__otro .agregar-item__titulo {
+  margin: 0;
+}
+
+/* Los cuatro valores de un alimento nuevo, en una fila; en una pantalla angosta, de a dos. */
+.agregar-item__valores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 40rem) {
+  .agregar-item__valores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.agregar-item__volver {
+  justify-self: start;
+  min-height: 2.75rem;
+  text-decoration: none;
+}
+
+/* ─── Un menú de acciones: un botón que despliega lo que se hace de vez en cuando ───────── */
+.menu-de-acciones {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu-de-acciones__boton {
+  gap: 0.4rem;
+}
+
+/* Sin texto, el botón es el ícono solo: cuadrado, con el alto táctil. */
+.menu-de-acciones__boton:not(:has(span)) {
+  min-width: 44px;
+  padding: 0.3rem;
+  justify-content: center;
+}
+
+.menu-de-acciones__panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  z-index: 6;
+  width: max-content;
+  min-width: 14rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.menu-de-acciones__panel--derecha {
+  right: 0;
+}
+
+.menu-de-acciones__panel--izquierda {
+  left: 0;
+}
+
+.menu-de-acciones__lista {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-de-acciones__accion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4rem 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-de-acciones__accion:hover:not(:disabled) {
+  background: var(--fondo-suave);
+}
+
+.menu-de-acciones__accion:disabled {
+  color: var(--tenue);
+  cursor: not-allowed;
+}
+
+/* Por qué una acción no se puede usar: debajo de ella, con el mismo margen. */
+.menu-de-acciones__motivo {
+  margin: 0 0.7rem 0.45rem;
+}
+
+/* Un botón que ahora no se puede usar pero conserva el foco (`aria-disabled`): se ve apagado y no responde al mouse. Es
+   para el que se apaga solo después de usarlo («Guardar cambios», sin nada que guardar): con `disabled` perdería el foco. */
+.boton[aria-disabled='true'] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ─── Nutrición · La versión en preparación ───────── */
+/* El editor recompuesto usa el ancho de la sección: el tope de antes era para la jerarquía de una columna. */
+.plan__preparacion:has(> .editor-del-plan) {
+  max-width: none;
+}
+
+.editor-del-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+/* El título a la izquierda; el estado del guardado y las acciones, a la derecha, en el mismo renglón si entran. */
+.editor-del-plan__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1.25rem;
+}
+
+.editor-del-plan__cabecera h2 {
+  margin: 0;
+}
+
+.editor-del-plan__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+}
+
+/* El estado se dice con texto; el punto lo acompaña cuando hay algo sin guardar, no lo reemplaza. */
+.editor-del-plan__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0.4rem 0 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.editor-del-plan__estado[data-estado="sin-guardar"]::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--texto);
+}
+
+.editor-del-plan__estado[data-estado="guardado"] {
+  color: var(--tenue);
+}
+
+.editor-del-plan__que-es {
+  margin: 0;
+}
+
+/* El día tipo: los segmentos, «Agregar» y su menú, en fila; el objetivo del día, al final del renglón. */
+.editor-del-plan__dia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.6rem;
+}
+
+.editor-del-plan__dia .plan__objetivo {
+  margin-left: auto;
+}
+
+/* Donde el objetivo no entra al lado del día tipo, va debajo y desde la izquierda: es de ese día, no un resto del renglón. */
+@media (max-width: 96rem) {
+  .editor-del-plan__dia .plan__objetivo {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+.comidas-del-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+/* El renglón de una comida: el botón que la abre ocupa lo que haya; abierta, «Subir» y «Más» van al lado. */
+.comida-del-editor__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.comida-del-editor__cabecera .comida-del-plan__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.comida-del-editor__acciones {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 0.75rem;
+}
+
+/* Lo que plegar no puede esconder. Va con su ícono y con texto: no es un color. */
+.comida-del-editor__avisos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.comida-del-editor__cuerpo:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.comida-del-editor__cuerpo > .nota {
+  margin: 0;
+}
+
+/* Las opciones, en pestañas; «Agregar opción», al final del renglón. */
+.comida-del-editor__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.comida-del-editor__opciones > .nota {
+  margin: 0 0 0.6rem;
+}
+
+/* Sin opciones no hay pestañas que subrayar. */
+.comida-del-editor__opciones:not(:has(.pestanas-de-opcion)) {
+  border-bottom: 0;
+}
+
+.comida-del-editor__opciones > .menu-de-acciones {
+  margin-bottom: 0.5rem;
+}
+
+.pestanas-de-opcion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Una pestaña es una opción de un grupo: la nativa la cubre entera, invisible, y el teclado es el de siempre. */
+.pestana-de-opcion {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  max-width: 22rem;
+  padding: 0 0.85rem;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  color: var(--tenue);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pestana-de-opcion > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pestana-de-opcion input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.pestana-de-opcion:has(input:checked) {
+  border-bottom-color: var(--azul);
+  color: var(--texto);
+}
+
+/* La pestaña elegida muestra su nombre entero, en los renglones que haga falta: las demás lo cortan. */
+.pestana-de-opcion:has(input:checked) {
+  max-width: none;
+  padding-block: 0.35rem;
+}
+
+.pestana-de-opcion:has(input:checked) > span {
+  overflow: visible;
+  white-space: normal;
+}
+
+.pestana-de-opcion:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+  border-radius: 8px 8px 0 0;
+}
+
+.opcion-del-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  /* La tabla no se estira a todo el ancho: son cuatro datos cortos por fila. */
+  max-width: 62rem;
+}
+
+.opcion-del-editor > .nota {
+  margin: 0;
+}
+
+.nombre-a-pedido {
+  max-width: 30rem;
+}
+
+.nombre-a-pedido .campo {
+  margin: 0;
+}
+
+/* Los ítems de una opción: el alimento ocupa lo que sobra, y sus tres datos van en columnas del mismo ancho en toda
+   opción, para que al pasar de una pestaña a otra los campos no cambien de lugar. */
+.items-del-editor {
+  width: 100%;
+}
+
+.items-del-editor thead th:nth-child(2) {
+  width: 9rem;
+}
+
+.items-del-editor thead th:nth-child(3) {
+  width: 8rem;
+}
+
+.items-del-editor thead th:nth-child(4) {
+  width: 15.5rem;
+}
+
+.items-del-editor thead th:nth-child(5) {
+  width: 4.25rem;
+}
+
+/* El nombre del alimento, a la altura del texto de sus campos, aunque debajo de la cantidad haya un error. */
+.items-del-editor th[scope="row"] {
+  padding-top: 1.2rem;
+  font-weight: 600;
+}
+
+.items-del-editor td {
+  vertical-align: top;
+}
+
+.items-del-editor input,
+.items-del-editor select {
+  min-height: 44px;
+  padding: 0.3rem 0.7rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.items-del-editor select {
+  width: 100%;
+}
+
+.items-del-editor .item-del-editor__cantidad {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.items-del-editor select:disabled {
+  background: var(--fondo-suave);
+  color: var(--tenue);
+}
+
+/* El error de una cantidad se lee de corrido: se extiende hacia la derecha, por debajo de los otros campos de la fila,
+   sin ensanchar su columna (el margen negativo le descuenta lo que se pasa). */
+.items-del-editor .campo__error {
+  width: 30rem;
+  max-width: none;
+  margin: 0.25rem -23.5rem 0 0;
+}
+
+.item-del-editor__quitar {
+  width: 1%;
+  text-align: right;
+}
+
+.item-del-editor__boton-de-quitar {
+  min-width: 44px;
+  padding: 0.3rem;
+  justify-content: center;
+}
+
+/* El pie de la opción: agregar, a la izquierda; el nombre y quitar, a la derecha. */
+.opcion-del-editor__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.opcion-del-editor__pie > .nota {
+  margin: 0;
+}
+
+.opcion-del-editor__del-nombre {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-left: auto;
+}
+
+.editor-del-plan__al-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.6rem 1.25rem;
+}
+
+/* «Agregar una comida habitual», al pie del día tipo: su rótulo, la lista y el botón, en un renglón mientras entren;
+   lo que avisa al agregar, debajo. */
+.editor-del-plan__al-pie [data-habituales='comidas'] {
+  flex: 1 1 28rem;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.editor-del-plan__al-pie [data-habituales='comidas'] > select {
+  flex: 1 1 14rem;
+  width: auto;
+  min-width: 0;
+  max-width: 24rem;
+}
+
+.editor-del-plan__al-pie [data-habituales='comidas'] > .nota {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Los problemas de «Validar»: cada uno es un enlace a su lugar. */
+.problemas-del-plan {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.problemas-del-plan .boton--enlace {
+  text-align: left;
+}
+
+/* Activar: lo que entra y lo que queda, en un recuadro, antes de la fecha. */
+.lo-que-cambia-al-activar {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.lo-que-cambia-al-activar p {
+  margin: 0;
+}
+
+.recetas-para-elegir {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* En una ventana angosta (una tableta de pie, un teléfono) la tabla de ítems no entra sin dejar al alimento en una
+   columna de una palabra por renglón: cada ítem pasa a ser su nombre y, debajo, sus tres campos en fila, cada uno con
+   su rótulo (el encabezado de la tabla ya no está a la vista). El estado del guardado va en su renglón. */
+@media (max-width: 56rem) {
+  .editor-del-plan__estado {
+    flex-basis: 100%;
+  }
+
+  .items-del-editor thead {
+    display: none;
+  }
+
+  .items-del-editor,
+  .items-del-editor tbody {
+    display: block;
+  }
+
+  .items-del-editor tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .items-del-editor th[scope="row"] {
+    display: block;
+    flex: 1 1 100%;
+    padding: 0;
+    border: 0;
+  }
+
+  .items-del-editor td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .items-del-editor td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--tenue);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .items-del-editor select {
+    width: auto;
+  }
+
+  /* «Quitar» queda al final de la fila de campos, a la altura de ellos (debajo del renglón de los rótulos). */
+  .items-del-editor .item-del-editor__quitar {
+    width: auto;
+    margin-left: auto;
+    padding-top: 1.45rem;
+  }
+
+  .items-del-editor .campo__error {
+    width: 18rem;
+    margin-right: -11.5rem;
+  }
+}
+
+/* En un teléfono, el nombre de la comida abierta va en su renglón y «Subir» y «Más», debajo: al lado no le dejan lugar. */
+@media (max-width: 40rem) {
+  .comida-del-editor__cabecera {
+    flex-wrap: wrap;
+  }
+
+  .comida-del-editor__cabecera .comida-del-plan__titulo {
+    flex-basis: 100%;
+  }
+
+  .comida-del-editor__acciones {
+    padding: 0 0.75rem 0.6rem;
+  }
+}
+
+/* ─── Entrenamiento · La versión en preparación (WP-ESCRITORIO-AREAS, parte 8; maqueta 28) ───────── */
+/* Usa el armado del editor del plan de comidas (la cabecera con el estado del guardado, el renglón que se abre, los
+   problemas que llevan a su lugar) y los niveles del plan activo de Entrenamiento, y suma lo propio: lo que va al lado
+   de cada nivel (agregar, su menú, su propósito) y, en un ejercicio abierto, la tabla de sus series con lo general al
+   costado. */
+
+/* Un nivel: el control que elige, «Agregar», el menú y lo que se dice de lo elegido, en un renglón mientras entren. */
+.niveles-del-editor .nivel-del-plan {
+  gap: 0.4rem 0.6rem;
+}
+
+.niveles-del-editor .nivel-del-plan__detalle {
+  flex: 0 1 auto;
+}
+
+.niveles-del-editor .nivel-del-plan > .nota {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* La cuenta de la sesión, al final de su renglón. */
+.nivel-del-plan__cuenta {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Un texto que se cambia a pedido (el propósito, las indicaciones): se lee con su rótulo y «Cambiar» al lado. */
+.texto-a-pedido {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.texto-a-pedido > .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* En el renglón de un nivel va al final si entra; un texto largo baja y ocupa el suyo. */
+.nivel-del-plan > .texto-a-pedido {
+  margin-left: auto;
+}
+
+/* Abierto es un campo: ocupa su renglón, desde la izquierda, sin estirarse a todo el ancho. */
+.texto-a-pedido--abierto,
+.nivel-del-plan > .texto-a-pedido--abierto {
+  flex: 1 1 100%;
+  max-width: 46rem;
+  margin: 0;
+}
+
+.texto-a-pedido--abierto input,
+.texto-a-pedido--abierto textarea {
+  width: 100%;
+}
+
+/* «Agregar una sesión habitual», a pedido: la lista, su botón y «Cancelar», en un renglón. */
+.sesion-habitual-a-pedido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+}
+
+.sesion-habitual-a-pedido > .campo {
+  flex: 0 1 44rem;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.sesion-habitual-a-pedido > .campo > select {
+  flex: 1 1 14rem;
+  width: auto;
+  min-width: 0;
+}
+
+.sesion-habitual-a-pedido > .boton--enlace {
+  min-height: 44px;
+}
+
+/* Los ejercicios miden su ancho: de eso depende si lo general entra al costado de las series. */
+.ejercicios-del-editor {
+  container: ejercicios / inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.ejercicios-del-editor > .nota {
+  margin: 0;
+}
+
+.ejercicios-del-editor .editor-del-plan__al-pie {
+  align-items: center;
+}
+
+/* Un ejercicio abierto: sus series y, al costado, lo general. */
+.ejercicio-del-editor__cuerpo:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+  align-items: start;
+  gap: 1rem 1.75rem;
+}
+
+.ejercicio-del-editor__series {
+  min-width: 0;
+}
+
+.ejercicio-del-editor__series > .nota {
+  margin: 0 0 0.6rem;
+}
+
+.ejercicio-del-editor__general {
+  min-width: 0;
+  padding-left: 1.75rem;
+  border-left: 1px solid var(--borde);
+}
+
+.ejercicio-del-editor__general .ejercicio-del-plan__subtitulo .nota {
+  margin-left: 0.4rem;
+  font-weight: 400;
+}
+
+/* La tabla de series: una fila por serie y, en cada celda, un campo. Las columnas tienen ancho fijo, para que al agregar
+   una serie o pasar de un ejercicio a otro los campos no cambien de lugar; la nota ocupa lo que sobra. */
+.series-del-editor {
+  table-layout: fixed;
+  margin: 0 0 0.5rem;
+}
+
+.series-del-editor th,
+.series-del-editor td {
+  padding: 0.25rem 0.3rem;
+  border-bottom: 0;
+  vertical-align: middle;
+}
+
+.series-del-editor thead th {
+  padding-bottom: 0.1rem;
+  border-bottom: 0;
+  line-height: 1.25;
+  vertical-align: bottom;
+}
+
+.series-del-editor thead th .nota {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.series-del-editor thead th:first-child {
+  width: 3rem;
+}
+
+.series-del-editor thead th:nth-child(2) {
+  width: 6rem;
+}
+
+.series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(:last-child) {
+  width: 8.5rem;
+}
+
+.series-del-editor tbody th[scope="row"] {
+  font-weight: 700;
+}
+
+/* Cada campo de la tabla, con el borde de los campos del website y el alto táctil. */
+.series-del-editor .celda-de-serie,
+.celda-de-objetivo {
+  width: 100%;
+  min-height: 44px;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.series-del-editor .celda-de-serie {
+  padding: 0.3rem 0.6rem;
+}
+
+.series-del-editor td[data-etiqueta="Repeticiones"] .celda-de-serie {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La celda de un objetivo: el campo y, a su derecha, la flecha que deja elegir «Sin objetivo» o «Tomar de lo general». */
+.celda-de-objetivo {
+  display: flex;
+  align-items: stretch;
+}
+
+.celda-de-objetivo > input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0.3rem 0.1rem 0.3rem 0.6rem;
+  border: 0;
+  border-radius: 9px 0 0 9px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sin un valor escrito, la celda dice lo que la serie recibe: en gris, lo que toma de lo general; en el color del texto,
+   «Sin objetivo» elegido para esa serie. */
+.celda-de-objetivo > input::placeholder {
+  color: var(--texto);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.celda-de-objetivo > input[data-en-gris]::placeholder {
+  color: var(--tenue);
+  font-weight: 400;
+}
+
+/* «Sin objetivo» es un texto, no un número: va desde la izquierda y un poco más chico, para entrar en la celda. */
+.celda-de-objetivo > input[data-texto] {
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.celda-de-objetivo[data-estado="no-se-entiende"],
+.series-del-editor .celda-de-serie[aria-invalid="true"] {
+  border-width: 2px;
+  border-color: var(--error);
+}
+
+.celda-de-objetivo .menu-de-acciones {
+  flex: none;
+}
+
+.celda-de-objetivo .menu-de-acciones__boton {
+  min-width: 30px;
+  min-height: 0;
+  height: 100%;
+  padding: 0 0.25rem;
+  border: 0;
+  border-radius: 0 9px 9px 0;
+  background: none;
+}
+
+/* Al pie de la tabla: «Agregar serie», qué quiere decir el gris y «Quitar la última serie». */
+.ejercicio-del-editor__pie-de-series {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.ejercicio-del-editor__pie-de-series > .nota {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+/* Lo general: los datos cortos, de a dos por renglón; los textos, a lo ancho. */
+.lo-general-del-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.lo-general-del-editor > .nota {
+  margin: 0;
+}
+
+.lo-general-del-editor .campo {
+  margin: 0;
+}
+
+.lo-general-del-editor .campo input {
+  width: 100%;
+}
+
+.lo-general-del-editor__par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.6rem 0.75rem;
+}
+
+/* La carga con su unidad: el número ocupa lo que sobra y la unidad, lo suyo. */
+.lo-general-del-editor__carga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.4rem;
+}
+
+.lo-general-del-editor__carga select {
+  width: auto;
+}
+
+/* Lo que va a un clic: un renglón que se despliega. */
+.a-un-clic > summary {
+  width: fit-content;
+  min-height: 32px;
+  padding: 0.2rem 0;
+  color: var(--enlace);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.a-un-clic[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+.parametros-del-editor {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.parametros-del-editor > p {
+  margin: 0;
+}
+
+.parametros-del-editor .fila-de-dato {
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.parametros-del-editor > .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+}
+
+/* Por debajo de unos 1.200 px de ancho para los ejercicios (una ventana de 1280), lo general va debajo de la tabla, en dos
+   columnas, y la raya pasa arriba: al costado le dejaría a la nota una columna de unos 80 px (DEC-30). */
+@container ejercicios (max-width: 76rem) {
+  .ejercicio-del-editor__cuerpo:not([hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ejercicio-del-editor__general {
+    padding: 1rem 0 0;
+    border-top: 1px solid var(--borde);
+    border-left: 0;
+  }
+
+  .lo-general-del-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem 1.5rem;
+  }
+
+  .lo-general-del-editor > .nota,
+  .lo-general-del-editor > details,
+  .lo-general-del-editor > .parametros-del-editor {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Angosto (una tableta de pie, un teléfono): cada serie es un bloque con su número y, debajo, sus campos con su rótulo. */
+@container ejercicios (max-width: 46rem) {
+  .lo-general-del-editor,
+  .lo-general-del-editor__par {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .series-del-editor thead {
+    display: none;
+  }
+
+  .series-del-editor,
+  .series-del-editor tbody {
+    display: block;
+  }
+
+  .series-del-editor tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem 0.6rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .series-del-editor th[scope="row"],
+  .series-del-editor .series-del-editor__nota {
+    grid-column: 1 / -1;
+  }
+
+  .series-del-editor th,
+  .series-del-editor td {
+    display: block;
+    padding: 0;
+  }
+
+  .series-del-editor th[scope="row"]::before,
+  .series-del-editor td[data-etiqueta]::before {
+    content: attr(data-etiqueta) " ";
+    display: inline;
+    color: var(--tenue);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .series-del-editor td[data-etiqueta]::before {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  .nivel-del-plan__cuenta,
+  .nivel-del-plan > .texto-a-pedido {
     margin-left: 0;
   }
 }

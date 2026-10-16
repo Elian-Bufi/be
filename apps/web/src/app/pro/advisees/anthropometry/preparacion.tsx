@@ -39,6 +39,7 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha, numeroEnCampo } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { Figura } from './figura';
 
@@ -105,7 +106,7 @@ const aLosCampos = (enSuCampo: Map<string, MedicionConFila>): Record<string, Esc
   Object.fromEntries([...enSuCampo].map(([clave, m]) => [clave, { valor: m.valor, unidad: m.unidad.trim() }]));
 
 export function VistaDePreparacion() {
-  const { token, asesoradoId, sesionPerdida, irA } = useAntropometria();
+  const { token, asesoradoId, sesionPerdida, irA, avisarEnTomas } = useAntropometria();
   const [r, setR] = useState<Resultado<{ borrador: Borrador | null; especificaciones: Especificacion[] }> | null>(null);
   const [aviso, setAviso] = useState<AvisoDeLaToma | null>(null);
 
@@ -140,9 +141,11 @@ export function VistaDePreparacion() {
           aviso={aviso}
           onAviso={setAviso}
           onCambio={cargar}
-          onRegistrada={() => {
-            setAviso({ tipo: 'exito', texto: COPY_ANTROPOMETRIA.registroHecho });
-            irA('evaluaciones');
+          onRegistrada={(evaluationId) => {
+            // El aviso se dice en «Tomas», adonde se vuelve con la toma recién registrada abierta: dicho acá, esta vista se
+            // desmontaba antes de que llegara a verse.
+            avisarEnTomas(COPY_ANTROPOMETRIA.registroHecho);
+            irA('evaluaciones', evaluationId);
           }}
         />
       ) : null}
@@ -163,7 +166,7 @@ function Preparacion({
   aviso: AvisoDeLaToma | null;
   onAviso: (a: AvisoDeLaToma | null) => void;
   onCambio: () => Promise<void>;
-  onRegistrada: () => void;
+  onRegistrada: (evaluationId: string) => void;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
   const intento = useClaveDeIntento();
@@ -183,11 +186,15 @@ function Preparacion({
   const [confirmando, setConfirmando] = useState(false);
   const [activa, setActiva] = useState<string | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
+  // Algo se escribió desde la última vez que se leyó el borrador: «Actualizar» pregunta antes de volver a leerlo.
+  const [tocado, setTocado] = useState(false);
+  useCambiosSinGuardar(tocado, 'la toma en preparación');
 
   /** Las métricas que declara el protocolo elegido (B10-07 §18): lo que la figura y la lista ofrecen. */
   const metricas = useMemo(() => metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocolo)?.content), [especificaciones, protocolo]);
 
   useEffect(() => {
+    setTocado(false);
     setProtocolo((p) => p || protocoloPorDefecto);
     if (!borrador) {
       setEscritos({});
@@ -353,7 +360,7 @@ function Preparacion({
     setConfirmando(false);
     if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return avisar({ tipo: 'error', texto: mensajeDeFallo(res) });
-    onRegistrada();
+    onRegistrada(res.datos.data.evaluationId);
   }
 
   /**
@@ -380,7 +387,7 @@ function Preparacion({
   const guardado = borrador ? ultimoGuardado(borrador) : null;
 
   return (
-    <div className="secciones">
+    <div className="secciones" onChange={() => setTocado(true)}>
       {aviso && aviso.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => onAviso(null)}>
           <p>{aviso.texto}</p>
@@ -411,7 +418,7 @@ function Preparacion({
 
       <section className="seccion" aria-labelledby="titulo-preparacion">
         <h2 id="titulo-preparacion">{borrador ? COPY_ANTROPOMETRIA.borradorEnCurso : COPY_ANTROPOMETRIA.nuevaEvaluacion}</h2>
-        <Ayuda titulo="Qué es una evaluación en preparación">
+        <Ayuda titulo="Qué es una toma en preparación">
           <p>{COPY_ANTROPOMETRIA.borradorNoEsHistoria}</p>
         </Ayuda>
 

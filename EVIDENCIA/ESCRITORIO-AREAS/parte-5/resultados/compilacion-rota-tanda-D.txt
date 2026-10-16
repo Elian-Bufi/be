@@ -1,0 +1,40 @@
+NOTADA    un día tipo que la versión no tiene deja la pantalla sin día — F-66 (valores que no existen)
+NOTADA    el historial va de la versión más vieja a la más nueva — F-64 (el historial)
+NOTADA    una opción única también lleva «Opción 1:» — F-60 (las opciones lado a lado)
+tanda D (planes): 3 de 3 roturas notadas · 5 comprobaciones fallaron y 27 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-64 · El historial va al costado de las comidas, a la altur… — Versión 1 · activada el 12 oct, 16:06 · anterior, conservada | Versión 2 · activada el 12 oct, 16:06 · vigente · «Huella de la instantánea: 4c2c922fbbb13aba…» ·
+  F-66 · Lo elegido vive en la dirección de la página, por su … — dia=2 · comidas=1.2 → 1.2.3 → ninguna → (nada) · pedidos a BE mientras tanto: 0
+  F-66 · Una dirección con valores que el plan no tiene (un dí… — «undefined» · 0 comidas abiertas
+  F-60 · Con todas las comidas abiertas, cada una muestra toda… — Almuerzo: Opción 1: Arroz con pollo y brócoli (x 49, y 640; 4 ítems) | Opción 2: Guiso de lentejas (x 379, y 640; 3 ítems) | Opción 3: Salmón con papa (x 709, y
+  F-65 · Activar la versión en preparación la convierte en la … — «Versión 3 · activada el 12 oct · es lo que ve el asesorado» · primera comida: «Desayuno (ajuste)» · Versión 1 · activada el 12 oct, 16:06 · anterior, conservad
+pasaron:
+  F-62 · El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · 
+  F-58 · Con más de un día tipo, el plan se lee de a uno: un control con el nombre de cada día, en el orden del 
+  F-59 · Las comidas van plegadas, cada una en un renglón con su cantidad de opciones («N opciones · se elige un
+  F-63 · El objetivo del día está a la vista, al lado del día tipo: las calorías y los tres macros del objetivo 
+  F-70 · A 1440 × 900 el plan entra en la primera pantalla: el día tipo, el objetivo, las cuatro comidas (una ab
+  F-67 · Sin una versión en preparación, y con un objetivo vigente, el plan activo ofrece tres acciones: «Guarda
+  F-66 · «Actualizar» vuelve a leer las tres cosas y conserva lo elegido: el mismo día tipo y la misma comida ab
+  F-61 · Una opción que nació de una receta lo dice con las palabras de BE («Receta «…», versión N» y que lleva 
+  F-70 · En toda la sección, con todas las comidas abiertas, no hay un porcentaje ni una palabra de la lista de 
+  F-14 · «Plan» tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica c
+  F-70 · axe no encuentra faltas en «Plan» con todas las comidas abiertas, en los dos temas — claro: sin faltas 
+  F-70 · A 1440 px con todas las comidas abiertas, y a 1280, 1024, 768 y 390 con una, ningún renglón del plan em
+  F-70 · El historial sigue al costado a 1280 px y pasa debajo de las comidas a 1024; las opciones se acomodan a
+  F-68 · (Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece el paso que falta: «Ir a R
+  F-63 · (Respuestas simuladas.) Si hoy rige un objetivo más nuevo que el de la versión que se lee, la tira mues
+  F-63 · (Falla simulada.) Si el objetivo de la versión no se puede leer, el plan se ve entero y la tira lo dice
+  F-68 · (Falla simulada.) Si la lista de versiones no se puede leer, la sección dice la falla con su motivo y «
+  F-58 · (Respuesta simulada.) Con siete días tipo de nombre largo, a 1024 px, los siete segmentos están enteros
+  F-58 · (Respuesta simulada.) Con un solo día tipo no hay nada que elegir: la pantalla dice su nombre, sin cont
+  F-67 · «Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una
+  F-67 · (Respuestas simuladas.) Si las plantillas no se pueden leer, el diálogo dice la falla con su motivo y «
+  F-67 · (Falla simulada.) Elegida una plantilla, crear el borrador se enciende. Si esa escritura falla, el moti
+  F-65 · «Crear nueva versión a partir de esta» hace una sola escritura y deja una versión en preparación. Arrib
+  F-65 · Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo (con 
+  F-65 · Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer y dice qué se perdería («el plan 
+  F-67 · Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se c
+  — · «Plan», de Nutrición, no produjo errores de página
+última línea: 28/33 comprobaciones bien; fallan: F-64, F-66, F-66, F-60, F-65

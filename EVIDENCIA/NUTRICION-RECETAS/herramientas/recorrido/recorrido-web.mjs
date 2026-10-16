@@ -270,6 +270,9 @@ try {
   await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 60000 });
   await esperarTexto('Plan activo');
   await pausa(800);
+  // Desde WP-ESCRITORIO-AREAS (parte 5) las comidas del plan activo van plegadas: se abren todas para leerlas.
+  await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Abrir todas las comidas')?.click());
+  await pausa(500);
   const tActivo = await texto();
   control('el plan activado (instantánea) nombra la receta y su versión en cada opción', (tActivo.match(/Receta «/g) ?? []).length >= 4, tActivo.match(/Receta «[^»]+», versión \d/g)?.join(' | '));
   await capturar('06c-plan-activo');

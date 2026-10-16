@@ -135,6 +135,8 @@
 | DL-128 | Encargo de Dirección · 2026-10-08 (entorno profesional) | encargo §8 y §16 («guardar una vista personal») · 09 sin operación · 08 (preferencias sin datos de salud) | Vistas de análisis guardadas e indicadores fijados del Resumen: no existen en el 09 ni en el modelo | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · familia propia VAN (API-VAN-01 a 04), tabla aditiva `vista_de_analisis` con configuración sin datos de salud; los permisos se revalidan al abrir |
 | DL-129 | Encargo de Dirección · 2026-10-09 (comprensión profesional) | 09 v0.11 §15-§16, §19-§20 · B10-08 §8, §10-§12 · DL-126 · DL-127 · DL-128 · encargo §3-§9 | Comprender, investigar y actuar: el 09 no tiene «desde la última revisión», etapas de planificación ni preguntas profesionales | **PROPUESTA** en `wp-dashboard-comprension`, sin integrar · extensiones aditivas de lectura (DSH-03, DSH-04 `since`, PRJ-01) y reglas del dominio (síntesis, etapas, preguntas); API-ANT-06 y las APK sin cambios |
 | DL-130 | Encargo de Dirección · 2026-10-09 (§3.C) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · DL-127 | La búsqueda en los catálogos de alimentos y ejercicios lleva el texto en la URL | **PROPUESTA** en `wp-dashboard-comprension`, sin integrar · variantes `API-NUT-13-BUSQUEDA` y `API-TRN-13-BUSQUEDA` (POST con el texto en el cuerpo); el GET se conserva con su contrato |
+| DL-131 | Decisión de Dirección · 2026-10-12 (WP-ESCRITORIO-AREAS, F-05) | 09v16.1:1518-1528 (API-FRM-03, precondiciones) · 05:15096-15105 (§13.6.7) · 05 §13.6.8 (pasos 6 a 8) · DL-100 | Al elegir un formulario en «Pedir información», el website no traía ninguna pregunta marcada: había que marcarlas de a una. La implementación de WP-07 lo fundaba en «una plantilla con campos más amplios no amplía B2» | **DECIDIDA** 2026-10-12 · vienen todas marcadas y el profesional desmarca las que no necesita; ninguna viene como requerida; la API sigue evaluando la pertinencia de cada pregunta al crear la solicitud. **IMPLEMENTADA** en `wp-escritorio-areas` (parte 4), sin integrar |
+| DL-132 | Hallazgo de implementación · 2026-10-12 (WP-ESCRITORIO-AREAS, parte 5) | DL-119 (lo implementado) · DL-108 | «Guardar como plantilla» responde distinto con una opción de receta: en la versión en preparación dice que no se guarda; en el plan activo la guarda como una opción común, con los ingredientes de una porción, sin avisar | **ABIERTA** · se recomienda A (que el plan activo responda como el editor). Sin cambios en el código: es el comportamiento de `main` |
 
 ---
 
@@ -3601,3 +3603,82 @@ línea de tiempo.
 **Provisorio en código.** A.
 
 **Condición de cierre.** Dirección aprueba las variantes y el 09 las incorpora.
+
+---
+
+## DL-131 — «Pedir información»: las preguntas vienen todas marcadas
+
+**Prioridad:** baja · **Documento:** 09v16.1:1518-1528 (API-FRM-03, precondiciones) · 05 §13.6.7 (05:15096-15105) y
+§13.6.8 (pasos 6 a 8) · DL-100 · criterio del escritorio, C-73 · **Estado:** DECIDIDA por Dirección el 2026-10-12;
+implementada en `wp-escritorio-areas` (parte 4), sin integrar
+
+**Qué pasa.** Al elegir un formulario, la pantalla del profesional no traía ninguna pregunta marcada: había que
+marcarlas de a una. El comentario del código lo fundaba en el legajo: «una plantilla con campos más amplios no amplía
+B2» (09:1528) y «la minimización es del profesional, no del catálogo». El legajo no pide ese paso. Sus precondiciones
+de FRM-03 son del servidor —«pertinencia» y «cada categoría/campo solicitado autorizado para ese contexto»
+(09:1518-1526)—, y su flujo dice que BE «presenta campos/secciones permitidos y su carácter requerido/opcional», que el
+profesional «confirma la solicitud» y que después BE «reevalúa autorización y pertinencia» (05 §13.6.8, pasos 6 a 8).
+La única precarga era la del formulario de Entrenamiento cuando se llega desde Entrenamiento (DL-100). El diseño
+validado del escritorio dibuja todas las preguntas elegidas (maqueta 27; C-73).
+
+**Opciones.**
+- **A. Todas marcadas** al elegir un formulario; el profesional desmarca las que no necesita. Ninguna viene como
+  requerida («Un campo requerido debe ser legítimo y visible como tal», 05 §13.6.7). La cuenta de las elegidas queda a
+  la vista y sigue a las casillas. La API no cambia: evalúa la pertinencia de cada pregunta al crear la solicitud y
+  rechaza la que no corresponde al área.
+- **B. Ninguna marcada,** como hasta ahora, con un «Elegir todas» a un clic.
+
+**Decisión de Dirección (2026-10-12).** A: «si vienen marcadas las opciones la respuesta es sí; si el profesional no
+quiere alguna, la destilda».
+
+**Lo que no cambia.** Solicitar no es consentir ni obtener acceso: el aviso sigue a la vista en el pedido. La
+existencia de un formulario no concede autorización: la evalúa el servidor en cada solicitud. Lo requerido sigue siendo
+un subconjunto de lo pedido, y no viene marcado por omisión; la excepción es la precarga ratificada del formulario de
+Entrenamiento al llegar desde Entrenamiento (DL-100), que ya existía.
+
+**El costo, dicho.** Con todo marcado, pedir de más cuesta menos que antes: la minimización depende de que el
+profesional desmarque. La pantalla lo acompaña con la cuenta («3 de 3 elegidas») y con la nota «Vienen todas elegidas:
+desmarcá las que no necesites».
+
+**Condición de cierre.** Ninguna pendiente del legajo. Queda para el uso real ver si la nota alcanza.
+
+---
+
+## DL-132 — «Guardar como plantilla» con opciones de receta: dos respuestas distintas para la misma acción
+
+**Prioridad:** baja · **Documento:** DL-119, lo implementado («Las plantillas y las comidas habituales no la aceptan
+(422)») · DL-108 (plantillas del profesional) · **Estado:** ABIERTA; encontrada el 2026-10-12, al
+recomponer «Plan» (WP-ESCRITORIO-AREAS, parte 5). No se cambió nada: es el comportamiento de `main`
+
+**Qué pasa.** «Guardar como plantilla» está en dos lugares de Nutrición y responde distinto cuando el plan tiene una
+opción que nació de una receta:
+
+- **En la versión en preparación** (el editor) no guarda: dice «Las opciones que vienen de una receta no se guardan en
+  plantillas ni en comidas habituales. Quitalas antes, o guardá la plantilla desde un plan sin recetas.»
+- **En el plan activo** guarda. La opción de receta entra a la plantilla como una opción común, con los ingredientes de
+  una porción, y pierde el vínculo con la receta. La pantalla no lo avisa.
+
+La API rechaza una plantilla que cite una receta (422). En el plan activo no hay rechazo porque la pantalla arma la
+plantilla desde la instantánea, donde la opción ya es una lista de ingredientes. Se vio en el recorrido de la parte 5,
+que guarda una plantilla desde un plan con una opción de receta: la API la acepta y la plantilla queda con siete
+comidas.
+
+**Por qué importa.** El mismo botón, con el mismo plan, dice que no en un lugar y que sí en el otro. Y en el que dice
+que sí, lo que queda guardado no es lo que el profesional ve: ve «Receta «Guiso de lentejas», versión 1» y guarda tres
+ingredientes sueltos.
+
+**Opciones.**
+- **A. Que el plan activo responda como el editor:** con una opción de receta, no abre el diálogo y dice lo mismo. Es
+  lo que BE ya declara, y es un cambio de pocas líneas en `nutrition/plan.tsx`.
+- **B. Que los dos guarden, y lo digan:** la plantilla lleva la opción como una opción común, con sus ingredientes, y
+  el diálogo avisa que no conserva el vínculo con la receta. Es más útil —hoy un plan con recetas no se puede volver
+  plantilla sin desarmarlo— y pide cambiar el editor, el texto y una decisión sobre qué pasa con la estimación.
+- **C. Dejarlo como está.**
+
+**Recomendación.** A, ahora: es coherente con lo que BE dice y no agrega nada. B queda como mejora, con su decisión.
+
+**Provisorio en código.** Ninguno: la parte 5 movió el botón de lugar y no cambió lo que hace. El recorrido `planes`
+guarda una plantilla desde un plan con una opción de receta: si se decide A, ese paso tiene que hacerse sobre un plan
+sin recetas.
+
+**Condición de cierre.** Dirección elige A, B o C.

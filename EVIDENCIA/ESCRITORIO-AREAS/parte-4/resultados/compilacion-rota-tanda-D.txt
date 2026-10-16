@@ -1,0 +1,37 @@
+NOTADA    rige la respuesta original aunque la API señale una corrección — C-71 (la respuesta que rige)
+NOTADA    la historia va de lo más viejo a lo más nuevo — C-71 (la historia)
+NOTADA    un número declarado sin unidad no toma la de su pregunta — F-46 (sin correcciones)
+NOTADA    «Sin responder» cuenta también las respondidas — F-45 (las vistas)
+NOTADA    «Responde con» no dice la unidad de un número — C-73 (todas marcadas)
+NOTADA    una solicitud sin responder figura como respondida — F-47 (sin responder)
+tanda D (solicitudes): 6 de 6 roturas notadas · 9 comprobaciones fallaron y 17 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-45 · Las tres vistas están en su orden, cada una con la ca… — Todas 3 solicitudes · Sin responder 3 solicitudes · Respondidas 2 solicitudes · al elegir «Sin responder»: 1 a la vista, 0 pedidos, ver=sin-responder
+  C-71 · Una solicitud respondida se abre al costado, sin tapa… — a la vista: [{"codigo":"condiciones_declaradas","pregunta":"Condiciones de salud declaradas Requerida","respuesta":"Asma leve, desde hace años."},{"codigo":"dol
+  C-71 · La historia va de lo más nuevo a lo más viejo: la cor… — 12 oct, 12:24 Respuesta original: Respondió 1 de las 2 preguntas. | 12 oct, 12:24 Corrección Vigente: Motivo que escribió: «Me olvidé de aclarar que uso inhalad
+  F-46 · Una solicitud respondida y sin correcciones: rige la … — Ganar fuerza en piernas y volver a correr 5 km | Gimnasio hace dos años, tres veces por semana; un año sin correr | 3 días por semana | 45 min | Gimnasio del ba
+  F-47 · Una solicitud sin responder se abre igual, sin leer n… —  · «null»
+  F-50 · Si la lista no se puede leer (un 503 simulado), la se… — sin la lista: «Solicitudes Lo que le pediste a esta persona y lo que declaró. No responder tamb» · sin la respuesta ni el formulario: No pudimos leer esta solic
+  F-51 · A 1280 px el detalle sigue al costado de la lista. A … — 1280: al costado · 1024: encima, la respuesta debajo · cortes: ninguno
+  C-73 · Elegir un formulario lee su versión una vez, y muestr… — versiones leídas: 1 · al elegir: 3 de 3 marcadas, 0 requeridas · «3 de 3 elegidas.» · Número, Texto, Sí o no · al desmarcar una: «2 de 3 elegidas.» · tras tocar
+  F-05 · Al enviar sale un solo pedido, con lo que quedó elegi… — pedidos: 1 · pedidas: nivel_de_actividad, fuma · requeridas: nivel_de_actividad · NUTRICION · «Ajustar el plan a tu descanso.» · «Solicitud enviada.» · Todas 4 
+pasaron:
+  F-44 · Al entrar, «Solicitudes» lee la lista entera una vez y, una vez, la respuesta de cada solicitud respond
+  C-72 · La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice e
+  C-70 · «Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola, y ningún ren
+  F-44 · Abrir una solicitud respondida no vuelve a leerla (su respuesta ya se leyó al entrar): lee una vez la v
+  F-48 · Escape cierra el detalle y el foco vuelve al renglón de esa solicitud. La solicitud abierta vive en la 
+  F-49 · En ningún estado de «Solicitudes» (la lista, una respondida y corregida, una respondida y una sin respo
+  F-14 · «Solicitudes» tiene su ayuda en el marco del área: explica los estados, «Declarado por la persona», «Re
+  F-48 · axe no encuentra faltas en «Solicitudes» con una solicitud abierta al costado (1440 y 1280 px), en el p
+  C-70 · «Pedir información» abre un cajón sobre «Solicitudes», que sigue detrás con su lista y sin volver a lee
+  C-74 · La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vac
+  F-52 · Escape cierra el cajón: la dirección vuelve a `vista=solicitudes`, el foco vuelve al botón que lo abrió
+  F-53 · Con algo sin completar, «Enviar solicitud» no envía nada y dice en su lugar qué falta, con el foco en l
+  F-54 · El área de la solicitud: con un formulario sin área propia (la API lo entrega sin área) hay que elegirl
+  F-55 · Un rechazo al enviar (simulado) se dice adentro del cajón, con el foco en el aviso, y lo elegido sigue 
+  F-56 · A 1440 y a 1280 px el cajón mide 800 px, pegado al borde derecho y de arriba a abajo de la ventana, y l
+  F-57 · Llegando desde Entrenamiento, el cajón se abre con la precarga ratificada (DL-100): el formulario de En
+  — · «Solicitudes» y el pedido no produjeron errores de página
+última línea: 21/30 comprobaciones bien; fallan: F-45, C-71, C-71, F-46, F-47, F-50, F-51, C-73, F-05

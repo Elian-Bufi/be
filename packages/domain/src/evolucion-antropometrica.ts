@@ -277,10 +277,10 @@ export const COPY_EVOLUCION = {
   metodo: 'Método',
   unidad: 'Unidad',
   correccion: 'Corrección',
-  vieneDeCorreccion: 'El valor vigente viene de una corrección: el original se conserva en la evaluación.',
+  vieneDeCorreccion: 'El valor vigente viene de una corrección: el original se conserva en la toma.',
   sinCorreccion: 'Valor original, sin correcciones.',
   comparabilidad: 'Comparabilidad',
-  abrirEvaluacion: 'Abrir la evaluación de origen',
+  abrirEvaluacion: 'Abrir la toma de origen',
   comparar: 'Comparar con otra observación',
   compararCon: 'Comparar con',
   sinComparar: 'No comparar',
@@ -291,10 +291,10 @@ export const COPY_EVOLUCION = {
   tablaAclaracion: 'La tabla tiene las mismas observaciones y los mismos huecos que el gráfico.',
   elegirEnTabla: 'Ver en el gráfico',
   metricaCambio: 'La métrica que estabas viendo no tiene observaciones en este período: se muestra la primera disponible.',
-  /** Neutral a propósito: no dice si la evaluación existe, fue anulada o no está autorizada (misma regla que el 404). */
-  evaluacionNoDisponible: 'La evaluación solicitada no está disponible. La lista de evaluaciones sigue completa.',
-  evaluacionNoCargo: 'No pudimos abrir la evaluación solicitada.',
-  volverALaLista: 'Volver a la lista de evaluaciones',
+  /** Neutral a propósito: no dice si la toma existe o no está autorizada (misma regla que el 404). */
+  evaluacionNoDisponible: 'La toma solicitada no está disponible. La lista de tomas sigue completa.',
+  evaluacionNoCargo: 'No pudimos abrir la toma solicitada.',
+  volverALaLista: 'Volver a la lista de tomas',
   delDia: (orden: number, total: number): string => `${numero(orden)} de ${numero(total)} del día`,
   zona: (zonaHoraria: string): string => `Fechas y horas en la zona del período (${zonaHoraria}).`,
 } as const;

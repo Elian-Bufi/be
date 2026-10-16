@@ -16,6 +16,7 @@ import {
   type EvaluacionNutricional,
   type Revision,
 } from '@be/domain';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
@@ -27,6 +28,7 @@ import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de
 import { FiltroDePeriodo, type Periodo } from '../periodo';
 import { AvisoDePreparacion, periodoPreparado, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
+import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 
 type Contexto = ContextoDeRevisionResponse['data'];
@@ -78,7 +80,8 @@ export function VistaDeRevisiones() {
               <p>{aviso.texto}</p>
               {aviso.volver ? (
                 <p>
-                  <a href={aviso.volver}>Volver a la ficha, donde estabas</a>
+                  {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
+                  <Link href={aviso.volver}>Volver a la ficha, donde estabas</Link>
                 </p>
               ) : null}
               {aviso.alPlan ? (
@@ -166,6 +169,7 @@ function FormularioDeRevision({
   const [objetivo, setObjetivo] = useState(objetivoVacio(evaluaciones[0]?.evaluationId ?? ''));
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
+  useCambiosSinGuardar(abierto && (evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima].some((t) => t.trim() !== '')), 'la revisión');
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 

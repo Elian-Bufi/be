@@ -7,7 +7,7 @@
  * API («Opción», «Series con datos»…) y los rasgos. Nada se calcula ni se completa. Si la API cambia un título o el
  * rótulo de un detalle, el renglón no inventa: cae en el título entero y en el primer detalle.
  */
-import { NOMBRE_DEL_RASGO, normalizarTexto, rasgosDeUnHecho, type EntradaDeLineaDeTiempo, type NombreDeIcono, type RasgoDeUnHecho } from '@be/domain';
+import { MODO_EN_UN_RENGLON, modoDeUnaComida, NOMBRE_DEL_RASGO, normalizarTexto, opcionDeUnaComida, rasgosDeUnHecho, type EntradaDeLineaDeTiempo, type NombreDeIcono, type RasgoDeUnHecho } from '@be/domain';
 
 export interface RenglonDelHecho {
   readonly icono: NombreDeIcono;
@@ -35,14 +35,11 @@ const primerDetalle = (e: EntradaDeLineaDeTiempo): string | null => (e.details[0
 export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
   switch (e.eventType) {
     case 'MEAL_RECORDED': {
-      const opcion = detalle(e, 'Opción');
-      // «2 · Tostadas con queso» → «Tostadas con queso»; una opción sin nombre («2») se dice «Opción 2».
-      const dato = opcion === null ? detalle(e, 'Descripción') : /^\d+$/.test(opcion) ? `Opción ${opcion}` : opcion.replace(/^\d+ · /, '');
-      const modo = e.quality.includes('QUANTITIES_FROM_PLAN')
-        ? ({ icono: 'plan', texto: 'Porciones del plan' } as const)
-        : e.quality.includes('QUANTITIES_REPORTED')
-          ? ({ icono: 'a-mano', texto: 'Cantidades informadas' } as const)
-          : null;
+      // La opción elegida y el modo de las cantidades los dice el dominio (los mismos que en Nutrición · Registros).
+      const dato = opcionDeUnaComida(e) ?? detalle(e, 'Descripción');
+      // Acá van los dos modos de siempre; «sin confirmar» es un rasgo y va como etiqueta.
+      const comoSeRegistro = modoDeUnaComida(e);
+      const modo = comoSeRegistro === 'PORCIONES_DEL_PLAN' || comoSeRegistro === 'INFORMADAS' ? (MODO_EN_UN_RENGLON[comoSeRegistro] ?? null) : null;
       return { icono: 'nutricion', nombre: despuesDelTipo(e.title), dato, modo };
     }
     case 'TRAINING_SESSION_RECORDED': {

@@ -150,7 +150,7 @@ export const COPY_CARTERA = {
     PLAN_DRAFT_PENDING: (desde: string): string => `Plan en borrador desde el ${desde}`,
     NO_ACTIVE_PLAN: (): string => 'Sin plan activo',
     FORM_REQUEST_OPEN: (desde: string): string => `Formulario sin responder desde el ${desde}`,
-    ANTHRO_DRAFT_PENDING: (desde: string): string => `Evaluación en preparación desde el ${desde}`,
+    ANTHRO_DRAFT_PENDING: (desde: string): string => `Toma en preparación desde el ${desde}`,
   },
   ultimoRegistro: (fecha: string): string => `Último registro: ${fecha}`,
   sinRegistros: 'Sin registros en el período',
@@ -161,7 +161,7 @@ export const COPY_CARTERA = {
   filtroTipo: 'Tipo de pendiente',
   todos: 'Todos',
   /** Las vistas con nombre (`VISTAS_DE_PENDIENTES`). */
-  vista: { TODO: 'Todo', REVISIONES: 'Revisiones', PLANES: 'Planes', FORMULARIOS: 'Formularios', EVALUACIONES: 'Evaluaciones' } as const,
+  vista: { TODO: 'Todo', REVISIONES: 'Revisiones', PLANES: 'Planes', FORMULARIOS: 'Formularios', EVALUACIONES: 'Tomas' } as const,
   masFiltros: 'Más filtros',
   /** Una vista o un filtro sin filas no es «nada pendiente»: hay pendientes, y ninguno coincide con lo elegido. */
   sinCoincidencias: 'Ningún pendiente coincide con lo elegido.',
@@ -175,7 +175,7 @@ export const COPY_CARTERA = {
     PLAN_DRAFT_PENDING: 'Plan en borrador',
     NO_ACTIVE_PLAN: 'Sin plan activo',
     FORM_REQUEST_OPEN: 'Formulario sin responder',
-    ANTHRO_DRAFT_PENDING: 'Evaluación en preparación',
+    ANTHRO_DRAFT_PENDING: 'Toma en preparación',
   } as const,
 } as const;
 

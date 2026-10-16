@@ -9,28 +9,32 @@
  * - Una **escritura** denegada retira el contenido de toda la pestaña, no solo la acción: si el asesorado revocó el
  *   acceso, «siguiente operación deny → UI limpia contenido» (B10-06:1145-1148; S10-TRN-09).
  * - La vista activa vive en la URL (`vista=`).
+ *
+ * WP-ESCRITORIO-AREAS (parte 0): el encabezado es el marco del área, común a las cuatro (`MarcoDelArea`). La tercera
+ * sección se lee «Registros», como en Nutrición (C-65); su clave en la URL sigue siendo `ejecuciones` (F-03).
+ * Desde la parte 2, lo que Registros elige (el período, la vista, los filtros y la sesión abierta) vive en la dirección,
+ * como en Nutrición: «Actualizar» vuelve a leer sin perderlo. Al cambiar de sección no se lleva.
  */
-import { COPY_ENTRENAMIENTO, COPY_VINCULO } from '@be/domain';
-import Link from 'next/link';
+import { COPY_ENTRENAMIENTO } from '@be/domain';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Pestanas } from '../../../../components/pestanas';
-import { MigasDelAsesorado } from '../../../../components/migas';
-import { Aviso } from '../../../../components/formulario';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Resultado } from '../../../../lib/api';
-import { SinEspacioProfesional, useEspacioProfesional } from '../../espacio-profesional';
-import { conVolver, EnlaceDeRetorno, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { useEspacioProfesional } from '../../espacio-profesional';
+import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
+import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { hrefConCambios } from '../seguimiento/estado';
+import { AyudaDeRegistrosDeEntrenamiento } from './ayuda-de-registros';
+import { AyudaDelPlanDeEntrenamiento } from './ayuda-del-plan';
 import { VistaDeEjecuciones } from './ejecuciones';
 import { VistaDePlan } from './plan';
 import { VistaDeResumen } from './resumen';
 import { VistaDeRevisiones } from './revisiones';
 
 export const VISTAS = [
-  { clave: 'resumen', texto: COPY_ENTRENAMIENTO.resumen },
-  { clave: 'plan', texto: COPY_ENTRENAMIENTO.plan },
-  { clave: 'ejecuciones', texto: COPY_ENTRENAMIENTO.ejecuciones },
-  { clave: 'revisiones', texto: COPY_ENTRENAMIENTO.revisiones },
+  { clave: 'resumen', texto: COPY_ENTRENAMIENTO.resumen, icono: 'resumen' },
+  { clave: 'plan', texto: COPY_ENTRENAMIENTO.plan, icono: 'plan' },
+  { clave: 'ejecuciones', texto: COPY_ENTRENAMIENTO.ejecuciones, icono: 'lista' },
+  { clave: 'revisiones', texto: COPY_ENTRENAMIENTO.revisiones, icono: 'revision' },
 ] as const;
 export type Vista = (typeof VISTAS)[number]['clave'];
 
@@ -41,6 +45,10 @@ export interface ContextoDeEntrenamiento {
   /** `true` si una escritura recibió el 404 no revelador: la pestaña pasa a «no disponible» entera. */
   readonly accesoRetirado: (r: Resultado<unknown>) => boolean;
   readonly irA: (vista: Vista) => void;
+  /** Lo que la sección tiene elegido, en la dirección: el período, la vista con nombre, lo que está abierto. */
+  readonly parametros: { get(clave: string): string | null };
+  /** Cambia parámetros de la dirección sin salir de la sección: `null` quita el parámetro; lo demás se conserva. */
+  readonly ir: (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => void;
 }
 
 const Contexto = createContext<ContextoDeEntrenamiento | null>(null);
@@ -51,24 +59,11 @@ export function useEntrenamiento(): ContextoDeEntrenamiento {
   return c;
 }
 
-export function NoDisponible() {
-  return (
-    <Aviso tipo="info">
-      <p>{COPY_VINCULO.recursoNoDisponible}</p>
-      <p>
-        <Link href="/pro">{COPY_VINCULO.volver}</Link>
-      </p>
-    </Aviso>
-  );
-}
+/** Texto neutral del 404 del profesional (10-B10:407). Es el del marco del área, que vuelve a preguntar el acceso. */
+export const NoDisponible = NoDisponibleEnElArea;
 
-/** Resultado de una lectura de la vista: 404 → neutral; otro error → reintentar. */
-export function EstadoDeLectura({ r, onReintentar, children }: { r: Resultado<unknown> | null; onReintentar: () => void; children: ReactNode }) {
-  if (!r) return <Cargando />;
-  if (!r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') return <NoDisponible />;
-  if (!r.ok) return <ErrorConReintento onReintentar={onReintentar} />;
-  return <>{children}</>;
-}
+/** Resultado de una lectura de la vista: 404 → neutral; otra falla → su motivo y «Reintentar». */
+export const EstadoDeLectura = EstadoDeLecturaDelArea;
 
 export function Entrenamiento() {
   const parametros = useSearchParams();
@@ -77,7 +72,8 @@ export function Entrenamiento() {
   const vista: Vista = VISTAS.some((v) => v.clave === vistaPedida) ? (vistaPedida as Vista) : 'resumen';
   const ruta = usePathname();
   const router = useRouter();
-  const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees/training?id=${id}`);
+  const sesion = useEspacioProfesional(`/pro/advisees/training?id=${id}`);
+  const { token, sesionPerdida } = sesion;
 
   const retorno = useRetornoALaFicha(id);
   const irA = useCallback((v: Vista) => router.replace(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor)), [router, ruta, id, retorno.valor]);
@@ -87,31 +83,46 @@ export function Entrenamiento() {
     setRetirado(true);
     return true;
   }, []);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA } : null), [token, id, sesionPerdida, accesoRetirado, irA]);
-
-  if (!token || !contexto) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
-  if (yo.tipo === 'cargando') return <Cargando />;
-  if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
-  if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
-
-  return (
-    <Contexto.Provider value={contexto}>
-      <MigasDelAsesorado id={id} pestana={COPY_ENTRENAMIENTO.pestana} volver={retorno.href} />
-      <h1>{COPY_ENTRENAMIENTO.pestana}</h1>
-      <EnlaceDeRetorno href={retorno.href} />
-      {retirado ? <NoDisponible /> : <Secciones ruta={ruta} id={id} vista={vista} volver={retorno.valor} />}
-    </Contexto.Provider>
+  const volverALeer = useCallback(() => setRetirado(false), []);
+  const enLaDireccion = parametros.toString();
+  const ir = useCallback(
+    (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
+      const destino = hrefConCambios(ruta, new URLSearchParams(enLaDireccion), cambios);
+      if (opciones?.agregarAlHistorial) router.push(destino, { scroll: false });
+      else router.replace(destino, { scroll: false });
+    },
+    [router, ruta, enLaDireccion],
   );
-}
+  const contexto = useMemo(
+    () => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA, parametros, ir } : null),
+    [token, id, sesionPerdida, accesoRetirado, irA, parametros, ir],
+  );
 
-function Secciones({ ruta, id, vista, volver }: { ruta: string; id: string; vista: Vista; volver: string | null }) {
   return (
-    <>
-      <Pestanas etiqueta="Secciones de Entrenamiento" vistas={VISTAS} actual={vista} href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, volver)} />
-      {vista === 'resumen' ? <VistaDeResumen /> : null}
-      {vista === 'plan' ? <VistaDePlan /> : null}
-      {vista === 'ejecuciones' ? <VistaDeEjecuciones /> : null}
-      {vista === 'revisiones' ? <VistaDeRevisiones /> : null}
-    </>
+    <MarcoDelArea
+      alcance="ENTRENAMIENTO"
+      titulo={COPY_ENTRENAMIENTO.pestana}
+      etiqueta="Secciones de Entrenamiento"
+      id={id}
+      sesion={sesion}
+      retorno={retorno}
+      vistas={VISTAS}
+      vista={vista}
+      href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)}
+      retirado={retirado}
+      onActualizar={volverALeer}
+      // Registros ya está recompuesta (parte 2): usa todo el ancho y tiene su ayuda. Las demás, con su parte.
+      ancho={vista === 'ejecuciones' || vista === 'plan'}
+      ayuda={vista === 'ejecuciones' ? <AyudaDeRegistrosDeEntrenamiento /> : vista === 'plan' ? <AyudaDelPlanDeEntrenamiento /> : null}
+    >
+      {contexto ? (
+        <Contexto.Provider value={contexto}>
+          {vista === 'resumen' ? <VistaDeResumen /> : null}
+          {vista === 'plan' ? <VistaDePlan /> : null}
+          {vista === 'ejecuciones' ? <VistaDeEjecuciones /> : null}
+          {vista === 'revisiones' ? <VistaDeRevisiones /> : null}
+        </Contexto.Provider>
+      ) : null}
+    </MarcoDelArea>
   );
 }

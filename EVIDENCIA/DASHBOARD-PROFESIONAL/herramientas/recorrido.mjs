@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|tomas|plan|plan-entrenamiento|mediciones|solicitudes|planes|entrenamientos|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -22,6 +22,42 @@
 //   `espacioProfesional`, al final de esa misma sesión; sola, con `espacio`. Los tipos de pendiente que el escenario no
 //   tiene se miran con una respuesta simulada en el navegador (`cartera-simulada.mjs`). Una cuenta sin asesorados se
 //   mira en la sesión del tercero; el envío de una solicitud y el aviso de vista parcial real, en `descartable`.
+// - El marco de las pestañas de área (WP-ESCRITORIO-AREAS, parte 0: Nutrición, Entrenamiento, Antropometría e
+//   Información) se comprueba en `marcoDeLasAreas`, al final de esa misma sesión; solo, con `areas`. Un área que deja
+//   de poder leerse se mira ahí con respuestas simuladas en el navegador, y con una revocación real en `descartable`.
+// - Nutrición · Registros por día (WP-ESCRITORIO-AREAS, parte 1) se comprueba en `registrosDeNutricion`, en esa misma
+//   sesión; solo, con `registros`. Lo esperado sale de las dos lecturas de la API, calculado a mano.
+// - Entrenamiento · Registros por sesión (WP-ESCRITORIO-AREAS, parte 2) se comprueba en `sesionesDeEntrenamiento`, en
+//   esa misma sesión; solo, con `sesiones`. Lo esperado sale del contexto de revisión, del plan de cada versión y de la
+//   lista de versiones, calculado a mano.
+// - Antropometría · Tomas (WP-ESCRITORIO-AREAS, parte 3) se comprueba en `tomasDeAntropometria`, en esa misma sesión;
+//   solo, con `tomas`. Lo esperado sale de la lista entera, del detalle de cada toma, de los cálculos y de los métodos,
+//   calculado a mano (`esperadoDeTomas`). Lo que ESCRIBE —corregir, anular, calcular, dejar una referencia y registrar
+//   una toma desde la carga— va en `medicionesDeUnaToma`: corre solo, con `mediciones`, sobre las cuentas descartables
+//   con la toma del perfil completo (`datos/generar.mjs descartable-toma-completa`), y no toca los datos de A, B ni C.
+// - Información · Solicitudes y el pedido (WP-ESCRITORIO-AREAS, parte 4) se comprueba en `solicitudesDeInformacion`: corre
+//   solo, con `solicitudes`, sobre las cuentas descartables con sus tres solicitudes (`datos/generar.mjs
+//   descartable-solicitudes`). Lo esperado sale de la lista, del detalle de cada solicitud y de la versión de su
+//   formulario, calculado a mano (`esperadoDeSolicitudes`). Al final ESCRIBE: envía una solicitud por la pantalla.
+// - Nutrición · Plan con el asesorado A (un solo día tipo; solo lee) y la misma pieza dentro de la ficha se comprueban
+//   en `planDeNutricionDeA`, en la sesión de `fichaRecompuesta`; solo, con `plan`.
+// - Nutrición · Plan (WP-ESCRITORIO-AREAS, parte 5) se comprueba en `planesDeNutricion`: corre solo, con `planes`, sobre
+//   las cuentas descartables con su plan de dos días tipo (`datos/generar.mjs descartable-plan`). Lo esperado sale de la
+//   lista de versiones, de la versión vigente y del objetivo, calculado a mano (`esperadoDelPlan`). Los estados que el
+//   escenario no tiene (sin plan, sin objetivo, un objetivo más nuevo, siete días tipo) se miran con respuestas
+//   simuladas en el navegador. ESCRIBE: guarda una plantilla, crea una versión, la edita, la activa y crea otra desde la
+//   plantilla, todo por la pantalla.
+// - Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6) se comprueba en `planesDeEntrenamiento`: corre solo, con
+//   `entrenamientos`, sobre las cuentas descartables con su plan de dos bloques (`datos/generar.mjs
+//   descartable-plan-de-entrenamiento`). Lo esperado sale de la lista de versiones y de la versión vigente con sus
+//   objetivos por serie, calculado a mano (`esperadoDelPlanDeEntrenamiento`). ESCRIBE: guarda una plantilla, crea una
+//   versión, la edita, la activa y crea otra desde la plantilla, por la pantalla. Con el asesorado A (que tiene una
+//   versión en preparación) y la misma pieza dentro de la ficha, en `planDeEntrenamientoDeA`, en la sesión de
+//   `fichaRecompuesta`; solo, con `plan-entrenamiento`. El escenario no tiene ejercicios con imagen: se mira con una
+//   imagen armada acá y sus dos respuestas simuladas (`imagenDeEjercicioSimulada`), en la pestaña y en la ficha; el
+//   acceso simulado se entrega solo si el pedido lleva la sesión de la página.
+// - La estimación del profesional sobre una comida diferente (`estimacionDeUnaComida`) ESCRIBE en el escenario: no va
+//   dentro de `funcional`. Corre sola, con `estimacion`, y última en la pasada completa.
 // - `descartable` usa las cuentas descartables de `datos/generar.mjs descartable-cuentas` y `descartable-datos`
 //   (valores medidos, informados y estimados; revocación desde la web del asesorado).
 import fs from 'node:fs';
@@ -106,7 +142,7 @@ async function abrir() {
       v.marcas.push(Date.now());
       if (process.env.RECORRIDO_PEDIDOS) console.log(`  → ${new Date().toISOString().slice(11, 23)} ${req.method()} ${url.replace(API, '').replace(/[0-9a-f-]{36}/g, ':id').slice(0, 110)}`);
     }
-    const regla = v.reglas.find((r) => r.coincide(url));
+    const regla = v.reglas.find((r) => r.coincide(url, req));
     if (!regla) return req.continue();
     if (req.method() === 'OPTIONS') return req.respond({ status: 204, headers: PREFLIGHT });
     if (regla.accion === 'demorar') {
@@ -116,6 +152,7 @@ async function abrir() {
     if (regla.accion === 'cortar') return req.abort('internetdisconnected');
     // Una respuesta armada por el recorrido, para mirar una pantalla con datos que el escenario no tiene.
     if (regla.accion === 'entregar') return req.respond({ status: 200, headers: CORS, contentType: 'application/json; charset=utf-8', body: JSON.stringify(regla.cuerpo) });
+    if (regla.accion === 'entregar-archivo') return req.respond({ status: 200, headers: CORS, contentType: regla.tipo, body: regla.cuerpo });
     return req.respond({ status: regla.status, headers: CORS, contentType: 'application/json; charset=utf-8', body: JSON.stringify({ error: { code: regla.codigo, message: 'Falla simulada por el recorrido.' } }) });
   });
   const fin = (r) => {
@@ -3607,7 +3644,7 @@ async function espacioProfesional(page, v) {
       PLAN_DRAFT_PENDING: `Plan en borrador desde el ${p.since ? fechaBreve(p.since) : '—'}`,
       NO_ACTIVE_PLAN: 'Sin plan activo',
       FORM_REQUEST_OPEN: `Formulario sin responder desde el ${p.since ? fechaBreve(p.since) : '—'}`,
-      ANTHRO_DRAFT_PENDING: `Evaluación en preparación desde el ${p.since ? fechaBreve(p.since) : '—'}`,
+      ANTHRO_DRAFT_PENDING: `Toma en preparación desde el ${p.since ? fechaBreve(p.since) : '—'}`,
     })[p.kind];
   const diaEn = (instante, zona) => new Intl.DateTimeFormat('en-CA', { timeZone: zona }).format(new Date(instante));
   const ultimoDe = (p, zona, conPeriodo) => (p.lastActivityAt ? `Último registro: ${fechaBreve(diaEn(p.lastActivityAt, zona))}` : conPeriodo ? 'Sin registros en el período' : 'Sin registros todavía');
@@ -3750,7 +3787,7 @@ async function espacioProfesional(page, v) {
   // E-85 · «Más filtros»: un área y un tipo exacto, a medida ──────────────────────────────────────────────
   const conArea = cartera.items.find((p) => cartera.items.some((q) => q.domain !== p.domain))?.domain ?? cartera.items[0].domain;
   const tipoSuelto = cartera.items.find((p) => p.domain === conArea).kind;
-  const NOMBRE_DEL_TIPO = { REVIEW_OVERDUE: 'Revisión vencida', REVIEW_DUE_SOON: 'Revisión próxima', REVIEW_UNDATED: 'Revisión sin fecha', PLAN_DRAFT_PENDING: 'Plan en borrador', NO_ACTIVE_PLAN: 'Sin plan activo', FORM_REQUEST_OPEN: 'Formulario sin responder', ANTHRO_DRAFT_PENDING: 'Evaluación en preparación' };
+  const NOMBRE_DEL_TIPO = { REVIEW_OVERDUE: 'Revisión vencida', REVIEW_DUE_SOON: 'Revisión próxima', REVIEW_UNDATED: 'Revisión sin fecha', PLAN_DRAFT_PENDING: 'Plan en borrador', NO_ACTIVE_PLAN: 'Sin plan activo', FORM_REQUEST_OPEN: 'Formulario sin responder', ANTHRO_DRAFT_PENDING: 'Toma en preparación' };
   const antesDeFiltrar = v.urls.length;
   await clic(page, 'section.pendientes .vistas-de-la-linea__mas', 'Más filtros');
   await page.waitForSelector('section.pendientes .pendientes__filtros select', { timeout: 5_000 });
@@ -4251,7 +4288,8405 @@ async function espacioProfesional(page, v) {
  * se mira qué guiones cargó. El modo funcional corre las tres antes del encabezado; `resumen`, `linea` y `analizar`
  * corren una sola. El Espacio profesional va al final, en la misma sesión; solo, con `espacio`.
  */
-async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true } = {}) {
+// ─── El marco de las pestañas de área (WP-ESCRITORIO-AREAS, parte 0) ─────────────────────────────────────────────
+
+/**
+ * Lo que dice el marco de una pestaña de área, y dónde está cada renglón. Solo lo que está a la vista: el texto de un
+ * elemento oculto se lee igual, y una pantalla que escondiera el camino de vuelta pasaría por buena.
+ */
+const marcoEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const caja = (e) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { arriba: Math.round(r.top + scrollY), abajo: Math.round(r.bottom + scrollY), izquierda: Math.round(r.left), derecha: Math.round(r.right) };
+    };
+    const marco = document.querySelector('header.marco-del-area');
+    if (!marco) return null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const vuelta = aLaVista(marco.querySelector('.retorno-a-la-ficha a'));
+    return {
+      titulos: [...document.querySelectorAll('h1')].map(t),
+      volver: vuelta ? { texto: t(vuelta), href: vuelta.getAttribute('href'), caja: caja(vuelta) } : null,
+      persona: t(aLaVista(marco.querySelector('.marco-del-area__persona'))),
+      acceso: t(aLaVista(marco.querySelector('.ficha__acceso'))),
+      hora: t(aLaVista(marco.querySelector('.ficha__consulta .nota'))),
+      actualizar: !!aLaVista(marco.querySelector('.ficha__consulta button')),
+      etiqueta: marco.querySelector('nav.pestanas')?.getAttribute('aria-label') ?? null,
+      pestanas: [...marco.querySelectorAll('nav.pestanas a')].filter(aLaVista).map((a) => ({ texto: t(a), href: a.getAttribute('href'), actual: a.getAttribute('aria-current'), icono: !!a.querySelector('svg') })),
+      migas: document.querySelectorAll('nav.migas').length,
+      caja: caja(marco),
+      renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(caja),
+      seccion: caja(document.querySelector('.seccion-del-area')),
+      primerTitulo: t(document.querySelector('.seccion-del-area h2')),
+      cuerpo: t(document.querySelector('.seccion-del-area')),
+    };
+  });
+
+/**
+ * El marco común de Nutrición, Entrenamiento, Antropometría e Información (F-01). Lo esperado se calcula a mano con lo
+ * que devuelve la API: los vínculos del profesional con el asesorado A. Va dentro de `funcional`; solo, con
+ * `node recorrido.mjs areas`.
+ */
+async function marcoDeLasAreas(page, v) {
+  const A = estado.aseId;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  /** Las secciones de cada área, escritas a mano: la clave que viaja en la dirección y el nombre que se lee. */
+  const AREAS = [
+    { clave: 'nutrition', alcance: 'NUTRICION', titulo: 'Nutrición', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['registros', 'Registros'], ['revisiones', 'Revisiones']] },
+    { clave: 'training', alcance: 'ENTRENAMIENTO', titulo: 'Entrenamiento', secciones: [['resumen', 'Resumen'], ['plan', 'Plan'], ['ejecuciones', 'Registros'], ['revisiones', 'Revisiones']] },
+    { clave: 'anthropometry', alcance: 'ANTROPOMETRIA', titulo: 'Antropometría', secciones: [['evaluaciones', 'Tomas'], ['evolucion', 'Evolución'], ['lamina', 'Lámina']] },
+    // Desde la parte 4, «Pedir información» no es una sección: se abre desde «Solicitudes» (`vista=pedir` sigue abriéndolo).
+    { clave: 'forms', alcance: null, titulo: 'Información', secciones: [['solicitudes', 'Solicitudes']] },
+  ];
+  const ACTIVO = 'Activo · acceso contextual';
+  const ORDEN = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
+  const destino = (href) => {
+    const u = new URL(href || '/', WEB);
+    return { ruta: u.pathname.replace(/\/$/, ''), q: Object.fromEntries(u.searchParams) };
+  };
+  const BOTON = 'header.marco-del-area .ficha__consulta button';
+  const HORA = 'header.marco-del-area .ficha__consulta .nota';
+  /** Entra a una dirección de un área y espera a que el marco diga la hora de su consulta. Devuelve la marca de los pedidos. */
+  const entrar = async (ruta) => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('header.marco-del-area', { timeout: 30_000 });
+    await quieto(page, v);
+    await page.waitForSelector(HORA, { timeout: 30_000 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  /** Las lecturas de la página desde una marca, sin la de la cuenta (que se hace al abrir la página, no al actualizar). */
+  const lecturas = (desde) =>
+    v.urls
+      .slice(desde)
+      .filter((u) => u.startsWith('GET ') && !/\/api\/v1\/me$/.test(u))
+      .map((u) => u.replace(`GET ${API}/api/v1`, ''))
+      .sort();
+  const actualizar = async () => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await clic(page, BOTON, 'Actualizar');
+    return desde;
+  };
+  /** La hora del marco es la de ahora (o la del minuto anterior), en el reloj de esta máquina. */
+  const esDeAhora = (dice) => {
+    const leida = /^Consultado a las (\d{2}):(\d{2})$/.exec(dice ?? '');
+    if (!leida) return false;
+    const ahora = new Date();
+    const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+    const dichos = Number(leida[1]) * 60 + Number(leida[2]);
+    return [0, 1, 1439].includes((minutos - dichos + 1440) % 1440);
+  };
+
+  // Lo esperado: los vínculos del profesional con A, como los da la API.
+  await cupo(v, 60);
+  const yo = (await leerApi(v, '/me')).data;
+  const todos = [];
+  let cursor = null;
+  do {
+    const r = await leerApi(v, `/me/relationships${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`);
+    todos.push(...r.data);
+    cursor = r.page.hasMore ? r.page.nextCursor : null;
+  } while (cursor);
+  const vinculos = todos.filter((x) => x.professional.identityId === yo.identityId && x.advisee.identityId === A).sort((a, b) => ORDEN.indexOf(a.scope.code) - ORDEN.indexOf(b.scope.code));
+  const activo = (x) => x.relationshipState === 'ACEPTADO' && x.consentState === 'ACTIVE' && x.accessMode === 'CONTEXTUAL';
+  /** «Acceso actual Nutrición: Activo · acceso contextual». Si el escenario cambió (un vínculo no activo), `null`. */
+  const accesoEsperado = (alcance) => {
+    const suyos = vinculos.filter((x) => !alcance || x.scope.code === alcance);
+    if (suyos.length === 0 || !suyos.every(activo)) return null;
+    const nombres = suyos.map((x) => x.scope.label);
+    return `Acceso actual ${nombres.length > 1 ? `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}` : nombres[0]}: ${ACTIVO}`;
+  };
+  const persona = vinculos[0]?.advisee.displayName ?? null;
+
+  // La ficha, para comparar: los tres renglones de su marco.
+  await ir(page, FICHA_A);
+  await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
+  await quieto(page, v);
+  const ficha = await page.evaluate(() => {
+    const alto = (e) => Math.round(e.getBoundingClientRect().height);
+    const marco = document.querySelector('header.marco-de-la-ficha');
+    return { alto: alto(marco), renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(alto) };
+  });
+
+  // F-01 · El marco, en las cuatro áreas ─────────────────────────────────────────────────────────────────
+  const medidas = [];
+  const sinVolver = [];
+  let resumenDeEntrenamiento = null;
+  for (const area of AREAS) {
+    await entrar(`/pro/advisees/${area.clave}?id=${A}`);
+    const m = await marcoEnPantalla(page);
+    if (area.clave === 'training') resumenDeEntrenamiento = m.primerTitulo;
+    medidas.push({ area: area.titulo, alto: m.caja.abajo - m.caja.arriba, renglones: m.renglones.map((r) => r.abajo - r.arriba), izquierda: m.volver?.caja.izquierda, seccion: m.seccion });
+    const pestanasBien =
+      igual(m.pestanas.map((p) => p.texto), area.secciones.map((s) => s[1])) &&
+      igual(m.pestanas.map((p) => p.actual), area.secciones.map((_, i) => (i === 0 ? 'page' : null))) &&
+      m.pestanas.every((p, i) => {
+        const d = destino(p.href);
+        return p.icono && d.ruta === `/pro/advisees/${area.clave}` && igual(d.q, { id: A, vista: area.secciones[i][0] });
+      });
+    comprobar(
+      'F-01',
+      `${area.titulo}: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga`,
+      igual(m.titulos, [area.titulo]) &&
+        persona !== null &&
+        m.persona === persona &&
+        accesoEsperado(area.alcance) !== null &&
+        m.acceso === accesoEsperado(area.alcance) &&
+        m.actualizar &&
+        esDeAhora(m.hora) &&
+        m.etiqueta === `Secciones de ${area.titulo}` &&
+        pestanasBien &&
+        m.migas === 0,
+      `${m.titulos.join(' | ')} · ${m.persona} · ${m.acceso} (la API: ${accesoEsperado(area.alcance)}) · ${m.hora} · ${m.pestanas.map((p) => `${p.texto}${p.icono ? '' : ' (sin ícono)'}${p.actual ? '*' : ''}`).join(', ')} · migas: ${m.migas}`,
+    );
+    const d = destino(m.volver?.href);
+    sinVolver.push({ area: area.titulo, texto: m.volver?.texto ?? null, migas: m.migas, bien: m.volver?.texto === 'Volver a la ficha' && d.ruta === '/pro/advisees' && igual(d.q, { id: A }) });
+  }
+  await ir(page, '/pro/templates');
+  await page.waitForSelector('nav.migas', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const migasDeLaBiblioteca = await page.evaluate(() => document.querySelectorAll('nav.migas').length);
+  comprobar(
+    'F-07',
+    'Sin haber llegado desde la ficha (como desde un pendiente), el camino de vuelta de las cuatro áreas dice «Volver a la ficha» y lleva a la ficha de esa persona. Reemplaza a la miga, que ya no está en ninguna de las cuatro (la misma consulta encuentra la de «Plantillas y habituales»)',
+    sinVolver.length === 4 && sinVolver.every((x) => x.bien) && sinVolver.every((x) => x.migas === 0) && migasDeLaBiblioteca === 1,
+    `${sinVolver.map((x) => `${x.area}: ${x.texto}, ${x.migas} migas`).join(' · ')} · «Plantillas y habituales»: ${migasDeLaBiblioteca}`,
+  );
+
+  // F-06 · Los mismos tres renglones que la ficha ───────────────────────────────────────────────────────────
+  informar('F-06', 'El alto del marco y de sus tres renglones, a 1440 px', `ficha ${ficha.alto} px (${ficha.renglones.join(' + ')}) · ${medidas.map((x) => `${x.area} ${x.alto} (${x.renglones.join(' + ')})`).join(' · ')}`);
+  comprobar(
+    'F-06',
+    'El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura',
+    medidas.every((x) => x.renglones.length === 3 && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
+    `ficha ${ficha.alto} · ${medidas.map((x) => `${x.area} ${x.alto}`).join(' · ')}`,
+  );
+  // F-10 · La sección conserva su ancho y arranca donde arranca el marco ────────────────────────────────────
+  // Las áreas cuya sección de entrada ya se recompuso. Se nombran una por una: una sección que cambie de ancho sin
+  // haberse recompuesto tiene que hacer fallar la comprobación.
+  const A_TODO_EL_ANCHO = ['Antropometría', 'Información'];
+  comprobar(
+    'F-10',
+    'La sección arranca en la misma vertical que el marco. Mientras no se recomponga conserva el ancho para el que se hizo (1.152 px a 1440); la que ya se recompuso usa todo el ancho del marco: de las cuatro que abren al entrar a un área, «Tomas», de Antropometría (parte 3), y «Solicitudes», de Información (parte 4)',
+    // A 1440 px, «todo el ancho» deja a la derecha el mismo margen que a la izquierda.
+    medidas.every((x) => x.seccion && x.seccion.izquierda === x.izquierda && (A_TODO_EL_ANCHO.includes(x.area) ? x.seccion.derecha === 1440 - x.seccion.izquierda : x.seccion.derecha - x.seccion.izquierda === 1152)) &&
+      A_TODO_EL_ANCHO.every((area) => medidas.some((x) => x.area === area)),
+    medidas.map((x) => `${x.area}: marco desde ${x.izquierda}, sección de ${x.seccion?.izquierda} a ${x.seccion?.derecha}`).join(' · '),
+  );
+
+  // C-58 y C-65 · Cambian los nombres que se leen; las direcciones, no ──────────────────────────────────────
+  await entrar(`/pro/advisees/training?id=${A}&vista=ejecuciones`);
+  const entrenamiento = await marcoEnPantalla(page);
+  await entrar(`/pro/advisees/anthropometry?id=${A}&vista=preparacion`);
+  const antropometria = await marcoEnPantalla(page);
+  const elegida = (m) => m.pestanas.find((p) => p.actual === 'page')?.texto ?? null;
+  comprobar(
+    'C-65',
+    '«vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacion» sigue abriendo la carga de una toma, que desde la parte 3 no es una sección: queda marcada «Tomas», la primera de Antropometría. Ninguna sección dice «Ejecuciones», «Evaluaciones» ni «En preparación»',
+    elegida(entrenamiento) === 'Registros' &&
+      entrenamiento.primerTitulo !== null &&
+      entrenamiento.primerTitulo !== resumenDeEntrenamiento &&
+      elegida(antropometria) === 'Tomas' &&
+      antropometria.pestanas[0]?.texto === 'Tomas' &&
+      /^(Nueva toma|Toma en preparación)$/.test(antropometria.primerTitulo ?? '') &&
+      ![...entrenamiento.pestanas, ...antropometria.pestanas].some((p) => /Ejecuciones|Evaluaciones|En preparación/.test(p.texto)),
+    `Entrenamiento: ${elegida(entrenamiento)} («${entrenamiento.primerTitulo}»; el Resumen empieza con «${resumenDeEntrenamiento}») · Antropometría: ${antropometria.pestanas.map((p) => p.texto).join(', ')}, elegida ${elegida(antropometria)}, y a la vista «${antropometria.primerTitulo}»`,
+  );
+
+  // F-07 · El camino de vuelta, llegando desde la ficha y desde Entrenamiento ───────────────────────────────
+  const VOLVER = 'vista=analizar&m=nutricion.energia';
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=registros&volver=${encodeURIComponent(VOLVER)}`);
+  const desdeLaFicha = await marcoEnPantalla(page);
+  const aLaFicha = destino(desdeLaFicha.volver?.href);
+  const loConservan = desdeLaFicha.pestanas.length === 4 && desdeLaFicha.pestanas.every((p) => destino(p.href).q.volver === VOLVER);
+  await clic(page, 'header.marco-del-area .retorno-a-la-ficha a', 'Volver a la ficha');
+  await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
+  await quieto(page, v);
+  const llegada = { ruta: new URL(page.url()).pathname.replace(/\/$/, ''), q: Object.fromEntries(parametros(page)) };
+  comprobar(
+    'F-07',
+    'Llegando desde la ficha, el camino de vuelta dice «Volver a la ficha, donde estabas», las cuatro secciones lo conservan y lleva a esa vista de la ficha, con su métrica',
+    desdeLaFicha.volver?.texto === 'Volver a la ficha, donde estabas' &&
+      aLaFicha.ruta === '/pro/advisees' &&
+      aLaFicha.q.id === A &&
+      aLaFicha.q.vista === 'analizar' &&
+      aLaFicha.q.m === 'nutricion.energia' &&
+      loConservan &&
+      llegada.ruta === '/pro/advisees' &&
+      llegada.q.id === A &&
+      llegada.q.vista === 'analizar' &&
+      llegada.q.m === 'nutricion.energia',
+    `${desdeLaFicha.volver?.texto} → ${desdeLaFicha.volver?.href} · las secciones lo conservan: ${loConservan} · llegó a ${llegada.ruta}?vista=${llegada.q.vista}&m=${llegada.q.m}`,
+  );
+  await entrar(`/pro/advisees/forms?id=${A}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`);
+  const desdeEntrenamiento = await marcoEnPantalla(page);
+  const aEntrenamiento = destino(desdeEntrenamiento.volver?.href);
+  comprobar(
+    'F-07',
+    'Llegando a «Pedir información» desde Entrenamiento, el camino de vuelta dice «Volver a Entrenamiento» y lleva ahí: no dice «donde estabas» de un lugar de la ficha donde la persona no estaba',
+    desdeEntrenamiento.volver?.texto === 'Volver a Entrenamiento' && aEntrenamiento.ruta === '/pro/advisees/training' && aEntrenamiento.q.id === A && aEntrenamiento.q.vista === 'resumen',
+    `${desdeEntrenamiento.volver?.texto} → ${desdeEntrenamiento.volver?.href}`,
+  );
+
+  // F-08 · «Actualizar» vuelve a leer todo lo que la sección muestra ───────────────────────────────────────
+  const alEntrar = await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  const deEntrada = lecturas(alEntrar);
+  const alActualizar = await actualizar();
+  await quieto(page, v);
+  await page.waitForSelector(HORA, { timeout: 30_000 });
+  const deNuevo = lecturas(alActualizar);
+  const trasActualizar = await marcoEnPantalla(page);
+  comprobar(
+    'F-08',
+    '«Actualizar» vuelve a pedir todo lo que la sección leyó al entrar (las mismas lecturas, una vez cada una, con los vínculos) y no abre ninguna pregunta; la hora es la de esa consulta',
+    deEntrada.length >= 3 && deEntrada.some((u) => u.startsWith('/me/relationships')) && igual(deNuevo, deEntrada) && esDeAhora(trasActualizar.hora) && !(await page.$('dialog.dialogo[open]')),
+    `al entrar (${deEntrada.length}): ${deEntrada.map((u) => u.replace(A, ':a').split('?')[0]).join(' · ')} — al actualizar (${deNuevo.length}): ${igual(deNuevo, deEntrada) ? 'las mismas' : deNuevo.map((u) => u.replace(A, ':a').split('?')[0]).join(' · ')} — ${trasActualizar.hora}`,
+  );
+
+  // F-08 · Con algo escrito sin guardar, «Actualizar» pregunta antes ───────────────────────────────────────
+  const ESCRITO = 'Texto del recorrido, sin guardar.';
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=revisiones&preparar=1`);
+  await page.waitForSelector('#revision-interpretacion', { timeout: 30_000 });
+  await page.type('#revision-interpretacion', ESCRITO);
+  const alPreguntar = await actualizar();
+  const aparecio = () => page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 }).then(
+    () => true,
+    () => false,
+  );
+  const pregunto = await aparecio();
+  let pregunta = '(no preguntó)';
+  let leyoAlPreguntar = -1;
+  let sigueEscrito = null;
+  let trasDescartar = null;
+  let leyoAlDescartar = 0;
+  if (pregunto) {
+    pregunta = await texto(page, 'dialog.dialogo[open]');
+    await pausa(600);
+    leyoAlPreguntar = lecturas(alPreguntar).length;
+    await clic(page, 'dialog.dialogo[open] button', 'Seguir editando');
+    await page.waitForFunction(() => !document.querySelector('dialog.dialogo[open]'), { timeout: 10_000 });
+    sigueEscrito = await page.$eval('#revision-interpretacion', (e) => e.value);
+    await actualizar();
+    if (await aparecio()) {
+      const alDescartar = v.urls.length;
+      await clic(page, 'dialog.dialogo[open] button', 'Actualizar y descartar');
+      await quieto(page, v);
+      await page.waitForSelector('#revision-interpretacion', { timeout: 30_000 });
+      trasDescartar = await page.$eval('#revision-interpretacion', (e) => e.value);
+      leyoAlDescartar = lecturas(alDescartar).length;
+    }
+  } else {
+    await quieto(page, v);
+  }
+  comprobar(
+    'F-08',
+    'Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir editando» deja lo escrito como estaba; «Actualizar y descartar» vuelve a leer la sección',
+    /Tenés cambios sin guardar/.test(pregunta) && /la revisión/.test(pregunta) && leyoAlPreguntar === 0 && sigueEscrito === ESCRITO && trasDescartar === '' && leyoAlDescartar >= 2,
+    `«${pregunta.slice(0, 150)}» · lecturas mientras pregunta: ${leyoAlPreguntar} · tras «Seguir editando»: «${sigueEscrito}» · tras descartar: «${trasDescartar}», ${leyoAlDescartar} lecturas`,
+  );
+
+  // C-43 · Una falla dice su motivo, y no es una revocación ─────────────────────────────────────────────────
+  const delArea = (u) => u.includes(`/advisees/${A}/nutrition/`);
+  const falla = { coincide: delArea, accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  await entrar(`/pro/advisees/training?id=${A}`);
+  v.reglas.push(falla);
+  const alFallar = await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  const conFalla = await marcoEnPantalla(page);
+  const bloque = await texto(page, '.seccion-del-area .estado-de-grafico--error');
+  const preguntoPorLaFalla = lecturas(alFallar).filter((u) => u.includes('/dashboard')).length;
+  v.reglas.splice(v.reglas.indexOf(falla), 1);
+  await cupo(v, 60);
+  const seReintento = !!(await page.$('.seccion-del-area .estado-de-grafico--error button'));
+  if (seReintento) await clic(page, '.seccion-del-area .estado-de-grafico--error button', 'Reintentar');
+  await quieto(page, v);
+  const trasReintentar = await marcoEnPantalla(page);
+  comprobar(
+    'C-43',
+    'Si la sección no se puede leer por una falla (un 503 simulado en el navegador), lo dice en su lugar con el motivo y «Reintentar»; el marco sigue diciendo el acceso del vínculo y no pregunta nada más: una falla no es una revocación. «Reintentar» trae la sección',
+    /No pudimos cargar esta vista/.test(bloque) &&
+      /BE no está disponible en este momento/.test(bloque) &&
+      /Reintentar/.test(bloque) &&
+      conFalla.acceso === accesoEsperado('NUTRICION') &&
+      preguntoPorLaFalla === 0 &&
+      seReintento &&
+      !(await page.$('.seccion-del-area .estado-de-grafico--error')) &&
+      trasReintentar.primerTitulo !== null,
+    `«${bloque}» · el marco: ${conFalla.acceso} · lecturas del resumen del asesorado: ${preguntoPorLaFalla} · tras reintentar: «${trasReintentar.primerTitulo}»`,
+  );
+
+  // F-09 · Si una lectura dice «no disponible», el marco vuelve a preguntar el acceso ────────────────────────
+  // Con respuestas simuladas en el navegador (la API y la base no se tocan). La revocación real se comprueba en el
+  // escenario descartable.
+  const NEUTRAL = 'No encontramos un recurso disponible para esta acción.';
+  const noDisponible = { coincide: delArea, accion: 'responder', status: 404, codigo: 'RESOURCE_NOT_FOUND' };
+  await entrar(`/pro/advisees/training?id=${A}`);
+  v.reglas.push(noDisponible);
+  const alNoEncontrar = await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.waitForFunction((s) => document.querySelector('.seccion-del-area')?.innerText.includes(s), { timeout: 30_000 }, NEUTRAL);
+  await quieto(page, v);
+  const conRecursoAusente = await marcoEnPantalla(page);
+  const preguntas = lecturas(alNoEncontrar).filter((u) => u.includes('/dashboard'));
+  comprobar(
+    'F-09',
+    'Si las lecturas de la sección responden «no disponible» (simulado), la sección dice el texto neutral de siempre y el marco pregunta una sola vez qué deja leer el resumen del asesorado; como el área se puede leer, sigue diciendo el acceso del vínculo',
+    conRecursoAusente.cuerpo.includes(NEUTRAL) && preguntas.length === 1 && preguntas[0].startsWith(`/advisees/${A}/dashboard`) && conRecursoAusente.acceso === accesoEsperado('NUTRICION'),
+    `la sección: «${conRecursoAusente.cuerpo.slice(0, 80)}» · preguntas al resumen: ${preguntas.length} · el marco: ${conRecursoAusente.acceso}`,
+  );
+  // El resumen real, con Nutrición marcada como no disponible: es lo único que cambia.
+  const real = await leerApi(v, `/advisees/${A}/dashboard`);
+  const sinNutricion = { coincide: (u) => u.includes(`/advisees/${A}/dashboard`), accion: 'entregar', cuerpo: { ...real, data: { ...real.data, domains: { ...real.data.domains, nutrition: { available: false, reason: 'NOT_AVAILABLE_TO_VIEW' } } } } };
+  v.reglas.push(sinNutricion);
+  await entrar(`/pro/advisees/training?id=${A}`);
+  const deEntrenamiento = await marcoEnPantalla(page);
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.waitForFunction(() => /Acceso no disponible/.test(document.querySelector('header.marco-del-area .ficha__acceso')?.innerText ?? ''), { timeout: 30_000 }).catch(() => {});
+  const sinAcceso = await marcoEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinNutricion), 1);
+  v.reglas.splice(v.reglas.indexOf(noDisponible), 1);
+  comprobar(
+    'F-09',
+    'Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acceso no disponible» y deja de decir «Activo»; el de Entrenamiento, que no recibió ningún «no disponible», sigue diciendo el suyo. No dice quién lo retiró ni por qué',
+    sinAcceso.acceso === 'Acceso actual Nutrición: Acceso no disponible' && !/Activo/.test(sinAcceso.acceso) && deEntrenamiento.acceso === accesoEsperado('ENTRENAMIENTO') && !/revoc|retir|motivo/i.test(sinAcceso.acceso),
+    `Nutrición: ${sinAcceso.acceso} · Entrenamiento: ${deEntrenamiento.acceso}`,
+  );
+  // Sin las respuestas simuladas, «Actualizar» devuelve la sección y el acceso del vínculo.
+  const alVolverALeer = await actualizar();
+  await quieto(page, v);
+  await page.waitForFunction((s) => !document.querySelector('.seccion-del-area')?.innerText.includes(s), { timeout: 30_000 }, NEUTRAL).catch(() => {});
+  await quieto(page, v);
+  const repuesto = await marcoEnPantalla(page);
+  comprobar(
+    'F-09',
+    'Cuando las lecturas vuelven a responder, «Actualizar» trae la sección y el marco vuelve a decir el acceso del vínculo (vuelve a preguntar también el resumen, porque ya había tenido que preguntarlo)',
+    !repuesto.cuerpo.includes(NEUTRAL) && repuesto.primerTitulo !== null && repuesto.acceso === accesoEsperado('NUTRICION') && lecturas(alVolverALeer).filter((u) => u.includes('/dashboard')).length === 1,
+    `la sección empieza con «${repuesto.primerTitulo}» · el marco: ${repuesto.acceso} · preguntas al resumen: ${lecturas(alVolverALeer).filter((u) => u.includes('/dashboard')).length}`,
+  );
+
+  // Los estados conservan el título y el camino de vuelta ───────────────────────────────────────────────────
+  const sinCuenta = { coincide: (u) => /\/api\/v1\/me$/.test(u), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  v.reglas.push(sinCuenta);
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees/anthropometry?id=${A}`);
+  await page.waitForSelector('header.marco-del-area', { timeout: 30_000 });
+  await quieto(page, v);
+  const sinSaberQuienEs = await marcoEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinCuenta), 1);
+  if (/Reintentar/.test(sinSaberQuienEs.cuerpo ?? '')) await clic(page, '.seccion-del-area button', 'Reintentar');
+  else await ir(page, `/pro/advisees/training?id=${A}`).then(() => ir(page, `/pro/advisees/anthropometry?id=${A}`));
+  await quieto(page, v);
+  await page.waitForSelector(HORA, { timeout: 30_000 }).catch(() => {});
+  const repuestoElMarco = await marcoEnPantalla(page);
+  comprobar(
+    'F-01',
+    'Si no se puede leer la cuenta (un 503 simulado), la página conserva el título del área y el camino de vuelta, y la falla va en el lugar de la sección, con «Reintentar»; no hay secciones ni acceso que mostrar. «Reintentar» trae el marco entero',
+    igual(sinSaberQuienEs.titulos, ['Antropometría']) &&
+      sinSaberQuienEs.volver?.texto === 'Volver a la ficha' &&
+      sinSaberQuienEs.pestanas.length === 0 &&
+      sinSaberQuienEs.acceso === null &&
+      /Reintentar/.test(sinSaberQuienEs.cuerpo ?? '') &&
+      repuestoElMarco.pestanas.length === 3 &&
+      repuestoElMarco.acceso === accesoEsperado('ANTROPOMETRIA'),
+    `con la falla: ${sinSaberQuienEs.titulos.join(' | ')} · ${sinSaberQuienEs.volver?.texto} · ${sinSaberQuienEs.pestanas.length} secciones · «${sinSaberQuienEs.cuerpo.slice(0, 60)}» — después: ${repuestoElMarco.pestanas.length} secciones · ${repuestoElMarco.acceso}`,
+  );
+
+  // Teclado y accesibilidad ───────────────────────────────────────────────────────────────────────────────
+  await entrar(`/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.click('#titulo-del-area');
+  const orden = [];
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Tab');
+    orden.push(await page.evaluate(() => document.activeElement?.innerText.replace(/\s+/g, ' ').trim() ?? ''));
+  }
+  const faltas = await axe(page);
+  comprobar(
+    'F-01',
+    'Con el teclado, después del título se llega a «Actualizar» y después a las cuatro secciones, en su orden; axe no encuentra faltas en la página con el marco',
+    igual(orden.slice(0, 5), ['Actualizar', 'Resumen', 'Plan', 'Registros', 'Revisiones']) && faltas.length === 0,
+    `Tab: ${orden.join(' → ')} · axe: ${faltas.length === 0 ? 'sin faltas' : faltas.map((f) => f.id).join(', ')}`,
+  );
+
+  // El marco a 1280 y a 1024 px ───────────────────────────────────────────────────────────────────────────
+  const anchos = [];
+  for (const ancho of [1280, 1024]) {
+    await page.setViewport({ width: ancho, height: 900 });
+    for (const area of [AREAS[2], AREAS[3]]) {
+      await entrar(`/pro/advisees/${area.clave}?id=${A}`);
+      const m = await marcoEnPantalla(page);
+      anchos.push({ ancho, area: area.titulo, alto: m.caja.abajo - m.caja.arriba, renglones: m.renglones.map((r) => r.abajo - r.arriba), desborda: !(await sinDesborde(page)) });
+    }
+  }
+  await page.setViewport({ width: 1440, height: 900 });
+  comprobar(
+    'F-06',
+    'A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página',
+    anchos.every((x) => !x.desborda && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
+    anchos.map((x) => `${x.ancho} · ${x.area}: ${x.alto} px (${x.renglones.join(' + ')})${x.desborda ? ' DESBORDA' : ''}`).join(' — '),
+  );
+  comprobar('—', 'El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Nutrición · Registros (WP-ESCRITORIO-AREAS, parte 1) ──────────────────────────────────────────────────────
+
+/** Lo que muestra Nutrición · Registros: las vistas, los días y las filas que están a la vista, y el detalle. */
+const registrosEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const detalle = aLaVista(document.querySelector('aside.detalle-del-hecho'));
+    return {
+      titulo: t(document.querySelector('#titulo-registros')),
+      periodo: t(aLaVista(document.querySelector('.registros .periodo-del-seguimiento__boton'))),
+      vistas: [...document.querySelectorAll('.registros__vistas .vista-de-la-linea')].filter(aLaVista).map((b) => ({
+        vista: b.dataset.vista,
+        cuenta: b.querySelector('.vista-de-la-linea__cuenta')?.firstChild?.textContent?.trim() ?? null,
+        dice: t(b.querySelector('.vista-de-la-linea__cuenta')),
+        elegida: b.getAttribute('aria-pressed'),
+        nombre: [...b.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(''),
+      })),
+      cuenta: t(aLaVista(document.querySelector('.registros__cuenta'))),
+      columnas: [...document.querySelectorAll('.registros__columnas span')].map((s) => s.textContent.trim()),
+      dias: [...document.querySelectorAll('.dia-de-registros')].filter(aLaVista).map((d) => ({
+        fecha: d.dataset.fecha,
+        abierto: d.dataset.abierto === 'si',
+        seAbre: d.querySelector('.dia-de-registros__resumen')?.tagName === 'BUTTON',
+        principal: t(d.querySelector('.dia-de-registros__principal')),
+        notas: [...d.querySelectorAll('.dia-de-registros__resumen .etiqueta-de-dato, .dia-de-registros__nota')].map(t),
+        filas: [...d.querySelectorAll('.comida-del-dia')].filter(aLaVista).map((li) => {
+          const fila = li.querySelector('.comida-del-dia__fila');
+          return {
+            estado: li.dataset.estado,
+            comida: t(li.querySelector('.comida-del-dia__comida')),
+            registrado: t(li.querySelector('.comida-del-dia__registrado')),
+            cantidades: t(li.querySelector('.comida-del-dia__cantidades')),
+            diferencia: t(li.querySelector('.comida-del-dia__diferencia')),
+            registro: fila?.dataset.registro ?? null,
+            esBoton: fila?.tagName === 'BUTTON',
+            elegida: fila?.getAttribute('aria-current') === 'true',
+          };
+        }),
+      })),
+      detalle: detalle
+        ? {
+            titulo: t(detalle.querySelector('h3')),
+            texto: t(detalle),
+            conElFoco: document.activeElement === detalle.querySelector('h3'),
+            celdas: [...detalle.querySelectorAll('table tbody tr')].map((tr) => [...tr.children].map(t)),
+          }
+        : null,
+      panel: t(aLaVista(document.querySelector('dialog.dialogo--panel[open]'))),
+      vacio: t(aLaVista(document.querySelector('.registros .estado-vacio'))),
+      falla: t(aLaVista(document.querySelector('.registros .estado-de-grafico--error'))),
+      masDias: t(aLaVista(document.querySelector('.registros .linea__mas'))),
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/**
+ * Lo que se desplaza de costado (`.desplazable-x`) dentro de una superficie —el detalle al costado, el panel de encima—
+ * lleva dos «tapas» que esconden la sombra cuando no hay nada que desplazar. Tienen que tener el color de esa
+ * superficie: con otro, a cada lado de la tabla queda una franja. Devuelve el color de la superficie y el de sus tapas,
+ * resueltos por el navegador (la tapa es una variable: se la prueba como fondo de un elemento que no queda en la página).
+ */
+const tapasDeLaSuperficie = (page, superficie) =>
+  page.evaluate((s) => {
+    const e = [...document.querySelectorAll(s)].find((x) => x.getClientRects().length > 0);
+    if (!e) return { fondo: null, tapas: [] };
+    const color = (valor) => {
+      const prueba = document.createElement('span');
+      prueba.style.backgroundColor = valor;
+      e.append(prueba);
+      const c = getComputedStyle(prueba).backgroundColor;
+      prueba.remove();
+      return c;
+    };
+    return {
+      fondo: getComputedStyle(e).backgroundColor,
+      tapas: [...e.querySelectorAll('.desplazable-x')].flatMap((x) => ['--tapa-izquierda', '--tapa-derecha'].map((p) => color(getComputedStyle(x).getPropertyValue(p).trim()))),
+    };
+  }, superficie);
+
+/** Las tapas de una superficie están bien si hay alguna y todas tienen su color. */
+const tapasBien = (t) => t.fondo !== null && t.tapas.length > 0 && t.tapas.every((c) => c === t.fondo);
+const tapasEnPalabras = (t) => `la superficie: ${t.fondo ?? 'no está'} · sus tapas: ${[...new Set(t.tapas)].join(', ') || 'no hay'}`;
+
+/**
+ * Nutrición · Registros por día (maqueta 20; C-49, C-50, C-51 y C-53; F-15 a F-22). Lo esperado se calcula a mano con lo
+ * que devuelven las dos lecturas de la API (el contexto de revisión y las comidas de la línea de tiempo del mismo
+ * período): no se usa el módulo del dominio que arma la pantalla. Va dentro de `funcional`; solo, con
+ * `node recorrido.mjs registros`.
+ */
+async function registrosDeNutricion(page, v) {
+  const A = estado.aseId;
+  const BASE = `/pro/advisees/nutrition?id=${A}&vista=registros`;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const num = (n) => new Intl.NumberFormat('es-AR').format(n);
+  const comidas = (n) => (n === 1 ? 'comida' : 'comidas');
+  /** Los pedidos de la página a una dirección de la API, desde una marca. */
+  const pedidos = (fragmento, desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const LISTA = '.registros .dia-de-registros, .registros .estado-vacio';
+  /** Entra a una dirección de Registros y espera la lista (o su estado vacío). Devuelve la marca de los pedidos. */
+  const entrar = async (ruta) => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('#titulo-registros', { timeout: 30_000 });
+    await quieto(page, v);
+    await page.waitForSelector(LISTA, { timeout: 30_000 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  /** Sale de Registros a otra sección de Nutrición (ahí no hay lista que esperar). */
+  const salir = async () => {
+    await cupo(v, 60);
+    await ir(page, `/pro/advisees/nutrition?id=${A}&vista=resumen`);
+    await page.waitForFunction(() => !document.querySelector('#titulo-registros'), { timeout: 30_000 });
+    await quieto(page, v);
+  };
+  /** Abre los días que están plegados, para leer todas sus filas. */
+  const abrirLosDias = async () => {
+    for (;;) {
+      const quedaba = await page.evaluate(() => {
+        const plegado = document.querySelector('.dia-de-registros:not([data-abierto]) button.dia-de-registros__resumen');
+        if (!plegado) return false;
+        plegado.click();
+        return true;
+      });
+      if (!quedaba) break;
+      await pausa(60);
+    }
+  };
+  const leerLaLinea = async (desde, hasta) => {
+    const entradas = [];
+    let cursor = null;
+    do {
+      const r = await leerApi(v, `/advisees/${A}/timeline?periodStart=${desde}&periodEnd=${hasta}&domain=NUTRITION&type=MEAL_RECORDED&limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      entradas.push(...r.data.entries);
+      cursor = r.page.hasMore ? r.page.nextCursor : null;
+    } while (cursor);
+    return entradas;
+  };
+  const dato = (e, rotulo) => e?.details.find((d) => d.label === rotulo)?.value ?? null;
+  /** Lo que se espera ver, escrito a mano desde las dos respuestas: los días, del más nuevo al más viejo, con sus filas. */
+  const esperado = (ctx, entradas) => {
+    const porRegistro = new Map(entradas.map((e) => [e.source.id, e]));
+    const dias = [...ctx.descriptiveContrast.days]
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .map((d) => {
+        const enUnaComida = new Set(d.meals.flatMap((m) => m.differentMealExecutionIds));
+        const descripcion = new Map(d.outsidePrescription.map((o) => [o.executionId, o.description]));
+        const filas = [
+          ...d.meals.map((m) => ({
+            comida: m.label,
+            estado: m.state === 'REGISTERED' ? 'REGISTRADA' : m.differentMealExecutionIds.length > 0 ? 'COMIDA_DIFERENTE' : 'SIN_REGISTRO',
+            opcion: m.state === 'REGISTERED' ? m.executionId : null,
+            entrada: m.state === 'REGISTERED' ? (porRegistro.get(m.executionId) ?? null) : null,
+            diferentes: m.differentMealExecutionIds.map((id) => ({ id, descripcion: descripcion.get(id) ?? null, entrada: porRegistro.get(id) ?? null })),
+            // Una resta que da cero no es una diferencia (así llegan las porciones del plan confirmadas).
+            diferencias: m.quantityDifferences.filter((q) => q.difference !== 0),
+            restasEnCero: m.quantityDifferences.filter((q) => q.difference === 0).length,
+          })),
+          ...d.outsidePrescription.filter((o) => !enUnaComida.has(o.executionId)).map((o) => ({ comida: null, estado: 'COMIDA_DIFERENTE', opcion: null, entrada: null, diferentes: [{ id: o.executionId, descripcion: o.description, entrada: porRegistro.get(o.executionId) ?? null }], diferencias: [] })),
+        ];
+        return { fecha: d.date, sinRegistros: d.dataState === 'NO_DATA', sinComidasDelPlan: d.meals.length === 0, filas };
+      });
+    const filas = dias.flatMap((d) => d.filas);
+    const con = (rasgo) => filas.filter((f) => f.entrada?.quality.includes(rasgo)).length;
+    const cuentas = {
+      TODAS: filas.length,
+      DISTINTAS: con('QUANTITIES_DIFFER_FROM_PLAN'),
+      SIN_CONFIRMAR: con('QUANTITIES_UNCONFIRMED'),
+      COMIDA_DIFERENTE: filas.filter((f) => f.diferentes.length > 0).length,
+      SIN_REGISTRO: filas.filter((f) => f.estado === 'SIN_REGISTRO').length,
+    };
+    return { dias, filas, cuentas };
+  };
+  /** El renglón de un día, a mano: «N de M comidas registradas», «Sin registro» o que no hay una opción del plan. */
+  const principalDe = (d) => {
+    if (d.sinComidasDelPlan) return null; // lo dice con una frase propia: no se compara acá
+    if (d.sinRegistros) return 'Sin registro';
+    const delPlan = d.filas.filter((f) => f.comida !== null);
+    const registradas = delPlan.filter((f) => f.estado === 'REGISTRADA').length;
+    return registradas === 0 ? 'Sin opción del plan registrada' : `${registradas} de ${delPlan.length} ${comidas(delPlan.length)} ${delPlan.length === 1 ? 'registrada' : 'registradas'}`;
+  };
+  /** Lo que tiene que decir cada dato de una fila, a mano, con el rótulo que oye el lector de pantalla. */
+  const MODO = { QUANTITIES_FROM_PLAN: 'Porciones del plan', QUANTITIES_REPORTED: 'Cantidades informadas', QUANTITIES_UNCONFIRMED: 'Sin confirmar' };
+  const SIN_COMPROBAR = { QUANTITIES_FROM_PLAN: 'Sin diferencia: son las porciones del plan', QUANTITIES_UNCONFIRMED: 'No se puede comprobar: sin confirmar' };
+  const textoDeLaFila = (f) => {
+    const e = f.entrada;
+    const modo = e ? Object.keys(MODO).find((q) => e.quality.includes(q)) : null;
+    const opcion = e ? (dato(e, 'Opción') ?? '') : '';
+    const diferentes = f.diferentes.map((d) => `Comida diferente: ${d.descripcion ? `«${d.descripcion}»` : 'sin descripción'}${dato(d.entrada, 'Cantidad aproximada') ? `, ${dato(d.entrada, 'Cantidad aproximada')}` : ''}`);
+    const deLaFila = [e, ...f.diferentes.map((d) => d.entrada)].filter(Boolean);
+    const etiquetas = [deLaFila.some((x) => x.state === 'RECTIFIED') ? 'Rectificado' : null, deLaFila.some((x) => x.state === 'CORRECTED') ? 'Corregido' : null, deLaFila.some((x) => x.recordedLate) ? 'Cargado otro día' : null].filter(Boolean);
+    const registrado =
+      f.estado === 'SIN_REGISTRO'
+        ? ['Sin registro']
+        : [
+            ...(f.opcion ? [/^\d+$/.test(opcion) ? `Opción ${opcion}` : opcion.replace(/^\d+ · /, '')] : []),
+            ...(f.estado === 'COMIDA_DIFERENTE' && f.comida !== null ? ['Sin opción del plan registrada'] : []),
+            ...diferentes,
+            ...etiquetas,
+          ];
+    return {
+      estado: f.estado,
+      comida: f.comida ?? 'Fuera del plan',
+      registrado: `Registrado: ${registrado.join(' ')}`,
+      cantidades: `Cantidades: ${f.opcion ? (modo ? MODO[modo] : 'Sin dato') : 'no corresponde'}`,
+      // Las restas se escriben con el formato de números de la pantalla: acá se comprueba lo que va antes de ellas.
+      diferencia: f.opcion ? `Diferencia observada: ${dato(e, 'Frente a lo indicado') ?? (modo ? (SIN_COMPROBAR[modo] ?? 'Sin dato') : 'Sin dato')}` : f.diferentes.length > 0 ? 'Diferencia observada: No se compara: fuera de lo indicado' : 'Diferencia observada: no corresponde',
+      restas: f.diferencias.map((q) => `${q.name} ${q.difference > 0 ? '+' : q.difference < 0 ? '−' : ''}`),
+      registro: f.opcion ?? f.diferentes[0]?.id ?? null,
+    };
+  };
+  const filaBien = (vista, espera) =>
+    vista.estado === espera.estado &&
+    vista.comida === espera.comida &&
+    vista.registrado === espera.registrado &&
+    vista.cantidades === espera.cantidades &&
+    vista.diferencia.startsWith(espera.diferencia) &&
+    espera.restas.every((r) => vista.diferencia.includes(r)) &&
+    vista.registro === espera.registro &&
+    vista.esBoton === (espera.registro !== null);
+  /**
+   * La celda «Diferencia» de cada ingrediente de un registro, a mano: con palabras, nunca una raya. De una resta se
+   * mira el signo (el número lleva el formato de la pantalla).
+   */
+  const diferenciaAMano = (registro) =>
+    (registro.option?.items ?? []).map((item) => {
+      const estadoDeLasCantidades = registro.consumption?.status ?? 'UNCONFIRMED';
+      if (estadoDeLasCantidades === 'UNCONFIRMED') return 'no se puede comprobar';
+      if (estadoDeLasCantidades === 'PLAN_PORTIONS') return 'sin diferencia';
+      const informado = (registro.consumption?.items ?? []).find((i) => i.itemId === item.itemId);
+      if (!informado || informado.notEaten || !informado.quantity || !item.quantity) return 'no se resta';
+      if (informado.quantity.unit !== item.quantity.unit) return 'otra unidad: no se resta';
+      const resta = Math.round((informado.quantity.value - item.quantity.value) * 100) / 100;
+      return resta === 0 ? 'igual' : resta > 0 ? '+' : '−';
+    });
+  const celdasBien = (celdas, registro) => {
+    const espera = diferenciaAMano(registro);
+    return (
+      espera.length > 0 &&
+      celdas.length === espera.length &&
+      espera.every((e, i) => (e === '+' || e === '−' ? (celdas[i][3] ?? '').startsWith(e) : celdas[i][3] === e)) &&
+      !celdas.flat().includes('—')
+    );
+  };
+
+  // ── La entrada: el período que propone la API, las dos lecturas y los días ────────────────────────────────────
+  const alEntrar = await entrar(BASE);
+  const ctx = (await leerApi(v, `/advisees/${A}/nutrition/review-context`)).data;
+  const entradas = await leerLaLinea(ctx.period.start, ctx.period.end);
+  const E = esperado(ctx, entradas);
+  const inicial = await registrosEnPantalla(page);
+  const deLaLinea = pedidos(`/advisees/${A}/timeline`, alEntrar);
+  comprobar(
+    'F-15',
+    'Al entrar, Registros hace dos lecturas: el contexto de revisión, sin período (lo propone la API), y las comidas de la línea de tiempo de ese mismo período; el control dice el período que propuso la API',
+    pedidos('/nutrition/review-context', alEntrar).length === 1 &&
+      !/periodStart/.test(pedidos('/nutrition/review-context', alEntrar)[0]) &&
+      deLaLinea.length === 1 &&
+      deLaLinea[0].includes(`periodStart=${ctx.period.start}`) &&
+      deLaLinea[0].includes(`periodEnd=${ctx.period.end}`) &&
+      /domain=NUTRITION/.test(deLaLinea[0]) &&
+      /type=MEAL_RECORDED/.test(deLaLinea[0]) &&
+      (inicial.periodo ?? '').includes(`${E.dias.length} días`),
+    `contexto: ${pedidos('/nutrition/review-context', alEntrar).length} · línea de tiempo: ${deLaLinea.length} · ${inicial.periodo} · la API: ${ctx.period.start} a ${ctx.period.end}`,
+  );
+  comprobar(
+    'C-49',
+    'El día es la unidad: están todos los días del período, del más nuevo al más viejo, cada uno dicho en un renglón con la cuenta calculada a mano («N de M comidas registradas», o «Sin registro» si no hay ninguno); los nombres de las columnas están una vez',
+    inicial.titulo === 'Registros' &&
+      igual(inicial.dias.map((d) => d.fecha), E.dias.map((d) => d.fecha)) &&
+      E.dias.every((d, i) => principalDe(d) === null || inicial.dias[i].principal === principalDe(d)) &&
+      igual(inicial.columnas, ['Comida', 'Registrado', 'Cantidades', 'Diferencia observada']),
+    inicial.dias.map((d, i) => `${d.fecha.slice(5)}: ${d.principal}${principalDe(E.dias[i]) === d.principal ? '' : ` (a mano: ${principalDe(E.dias[i])})`}`).join(' · '),
+  );
+  comprobar(
+    'C-49',
+    'Arrancan abiertos los días con una comida diferente o con algo distinto de lo indicado, y solo esos; los demás van en un renglón que se puede abrir',
+    E.dias.every((d, i) => inicial.dias[i].abierto === d.filas.some((f) => f.diferentes.length > 0 || f.entrada?.quality.includes('QUANTITIES_DIFFER_FROM_PLAN') || f.diferencias.length > 0)) && inicial.dias.every((d) => d.seAbre || d.filas.length === 0),
+    inicial.dias.map((d) => `${d.fecha.slice(5)}${d.abierto ? ' abierto' : ''}`).join(' · '),
+  );
+
+  // ── Las vistas con nombre y su cantidad ─────────────────────────────────────────────────────────────────────
+  const ORDEN = ['TODAS', 'DISTINTAS', 'SIN_CONFIRMAR', 'COMIDA_DIFERENTE', 'SIN_REGISTRO'];
+  const porEstado = (estadoDeLaFila) => E.filas.filter((f) => f.estado === estadoDeLaFila).length;
+  comprobar(
+    'F-16',
+    'Las cinco vistas están en su orden, cada una con la cantidad de comidas que trae (contada a mano sobre las dos respuestas de la API); registradas, con comida diferente y sin registro suman «Todas las comidas»; al entrar está elegida «Todas»',
+    igual(inicial.vistas.map((x) => x.vista), ORDEN) &&
+      inicial.vistas.every((x) => x.cuenta === num(E.cuentas[x.vista]) && x.dice === `${num(E.cuentas[x.vista])} ${comidas(E.cuentas[x.vista])}`) &&
+      porEstado('REGISTRADA') + porEstado('COMIDA_DIFERENTE') + porEstado('SIN_REGISTRO') === E.cuentas.TODAS &&
+      E.cuentas.TODAS > 0 &&
+      inicial.vistas.every((x) => x.elegida === (x.vista === 'TODAS' ? 'true' : 'false')),
+    `${inicial.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E.cuentas[k]).join(', ')} (${porEstado('REGISTRADA')} registradas + ${porEstado('COMIDA_DIFERENTE')} con comida diferente + ${porEstado('SIN_REGISTRO')} sin registro)`,
+  );
+
+  // ── Cada fila, con las palabras del dominio ─────────────────────────────────────────────────────────────────
+  await abrirLosDias();
+  const abiertos = await registrosEnPantalla(page);
+  const filasALaVista = abiertos.dias.flatMap((d) => d.filas);
+  const filasEsperadas = E.filas.map(textoDeLaFila);
+  const distintas = filasALaVista.map((f, i) => (filasEsperadas[i] && filaBien(f, filasEsperadas[i]) ? null : i)).filter((i) => i !== null);
+  comprobar(
+    'C-53',
+    'Cada comida del plan es una fila, en el orden del plan: lo registrado (la opción, «Sin registro», o los dos hechos de una comida diferente), cómo se informaron las cantidades y la diferencia observada, con las palabras del dominio; una fila sin registro no abre nada',
+    filasALaVista.length === filasEsperadas.length && filasEsperadas.length > 0 && distintas.length === 0,
+    distintas.length === 0
+      ? `${filasALaVista.length} filas, las ${filasEsperadas.length} esperadas`
+      : `${distintas.length} filas distintas; la primera: ${JSON.stringify(filasALaVista[distintas[0]])} — a mano: ${JSON.stringify(filasEsperadas[distintas[0]])}`,
+  );
+  const conDiferente = filasEsperadas.find((f) => f.estado === 'COMIDA_DIFERENTE');
+  const enPantalla = conDiferente ? filasALaVista[filasEsperadas.indexOf(conDiferente)] : null;
+  comprobar(
+    'C-50',
+    'Una comida diferente se lee en la comida donde se registró, con los dos hechos («Sin opción del plan registrada» y la comida diferente, con su descripción); no cuenta como registrada, y la vista «Comida diferente» la trae',
+    !!conDiferente && !!enPantalla && /Sin opción del plan registrada/.test(enPantalla.registrado) && /Comida diferente: «/.test(enPantalla.registrado) && enPantalla.estado === 'COMIDA_DIFERENTE' && /No se compara: fuera de lo indicado/.test(enPantalla.diferencia) && E.cuentas.COMIDA_DIFERENTE >= 1,
+    conDiferente ? `${enPantalla?.comida} · ${enPantalla?.registrado} · ${enPantalla?.diferencia}` : 'el escenario no tiene una comida diferente en este período',
+  );
+  const conPorciones = filasALaVista.filter((f) => /Porciones del plan/.test(f.cantidades));
+  comprobar(
+    'C-51',
+    'Con las porciones del plan confirmadas la fila dice «Sin diferencia: son las porciones del plan», y nada más: no una raya, ni «igual» de algo que BE no comparó, ni las restas en cero que la API manda por cada ítem. Ninguna fila dice una raya suelta ni lista una resta en cero',
+    conPorciones.length > 0 &&
+      conPorciones.every((f) => f.diferencia === 'Diferencia observada: Sin diferencia: son las porciones del plan') &&
+      E.filas.some((f) => f.restasEnCero > 0) &&
+      !filasALaVista.some((f) => /: —$/.test(f.diferencia) || /: —$/.test(f.registrado) || /\s0 (g|ml|unidad)(\s|$)/.test(f.diferencia)),
+    `${conPorciones.length} filas con las porciones del plan · ${conPorciones[0]?.diferencia} · restas en cero que manda la API en el período: ${E.filas.reduce((n, f) => n + (f.restasEnCero ?? 0), 0)}`,
+  );
+
+  // ── Elegir una vista: no le pide nada a la API y deja las filas que cuenta ─────────────────────────────────────
+  const alElegir = v.urls.length;
+  await page.click('.registros__vistas .vista-de-la-linea[data-vista="SIN_REGISTRO"]');
+  await page.waitForFunction(() => new URL(location.href).searchParams.get('ver') === 'sin-registro', { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  const sinRegistro = await registrosEnPantalla(page);
+  const filasSinRegistro = sinRegistro.dias.flatMap((d) => d.filas);
+  await page.click('.registros__vistas .vista-de-la-linea[data-vista="SIN_REGISTRO"]');
+  await page.waitForFunction(() => !new URL(location.href).searchParams.has('ver'), { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  const deVuelta = await registrosEnPantalla(page);
+  comprobar(
+    'F-16',
+    'Elegir «Sin registro» no le pide nada a la API, queda en la dirección (`ver=sin-registro`) y deja a la vista las filas que cuenta, todas sin registro y ninguna otra; volver a tocarla deja «Todas las comidas»',
+    v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      E.cuentas.SIN_REGISTRO > 0 &&
+      filasSinRegistro.length === E.cuentas.SIN_REGISTRO &&
+      filasSinRegistro.every((f) => f.estado === 'SIN_REGISTRO' && !f.esBoton) &&
+      sinRegistro.vistas.find((x) => x.vista === 'SIN_REGISTRO')?.elegida === 'true' &&
+      (sinRegistro.cuenta ?? '').startsWith(`${num(E.cuentas.SIN_REGISTRO)} de ${num(E.cuentas.TODAS)} ${comidas(E.cuentas.TODAS)}`) &&
+      deVuelta.vistas.find((x) => x.vista === 'TODAS')?.elegida === 'true' &&
+      deVuelta.dias.length === E.dias.length,
+    `${filasSinRegistro.length} filas (a mano: ${E.cuentas.SIN_REGISTRO}) · «${sinRegistro.cuenta}» · pedidos a la API: ${v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length}`,
+  );
+
+  // ── El detalle de un registro, al costado ───────────────────────────────────────────────────────────────────
+  await abrirLosDias();
+  const registrada = E.filas.map(textoDeLaFila).find((f) => f.estado === 'REGISTRADA' && f.registro);
+  await cupo(v, 60);
+  const alAbrir = v.urls.length;
+  await page.click(`.comida-del-dia__fila[data-registro="${registrada.registro}"]`);
+  await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const conDetalle = await registrosEnPantalla(page);
+  const leido = (await leerApi(v, `/nutrition/meal-records/${registrada.registro}`)).data;
+  const opcionDelDetalle = registrada.registrado.replace(/^Registrado: /, '').replace(/ (Rectificado|Corregido|Cargado otro día)/g, '');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-del-hecho'), { timeout: 10_000 }).catch(() => {});
+  await pausa(150);
+  const focoAlCerrar = await page.evaluate(() => document.activeElement?.getAttribute('data-registro') ?? null);
+  comprobar(
+    'F-18',
+    'Tocar una fila abre su registro al costado, sin tapar la lista: el título dice la comida y la opción y recibe el foco, el registro se lee una vez por su propia operación y dice la opción que da la API; en su tabla, la diferencia de cada ingrediente va con palabras, sin rayas; queda en la dirección; Escape lo cierra y el foco vuelve a la fila',
+    pedidos(`/nutrition/meal-records/${registrada.registro}`, alAbrir).length === 1 &&
+      conDetalle.detalle?.titulo === `${registrada.comida} · ${opcionDelDetalle}` &&
+      conDetalle.detalle.conElFoco &&
+      conDetalle.detalle.texto.includes(leido.option.label) &&
+      celdasBien(conDetalle.detalle.celdas, leido) &&
+      conDetalle.dias.length === E.dias.length &&
+      conDetalle.dias.flatMap((d) => d.filas).some((f) => f.elegida && f.registro === registrada.registro) &&
+      conDetalle.panel === null &&
+      focoAlCerrar === registrada.registro &&
+      !parametros(page).has('registro'),
+    `«${conDetalle.detalle?.titulo}» · foco en el título: ${conDetalle.detalle?.conElFoco} · lecturas del registro: ${pedidos(`/nutrition/meal-records/${registrada.registro}`, alAbrir).length} · la API: ${leido.option?.label} · diferencias: ${(conDetalle.detalle?.celdas ?? []).map((c) => c[3]).join(' | ') || 'sin tabla'} (a mano: ${diferenciaAMano(leido).join(' | ')}) · al cerrar, el foco en la fila: ${focoAlCerrar === registrada.registro}`,
+  );
+
+  // ── «Actualizar» conserva lo elegido; el período de 30 días ──────────────────────────────────────────────────
+  const hoyDelEscenario = hoy;
+  const alCambiar = await entrar(`${BASE}&p=30&ver=sin-registro`);
+  const treinta = await registrosEnPantalla(page);
+  const ctx30 = (await leerApi(v, `/advisees/${A}/nutrition/review-context?periodStart=${diaMenos(hoyDelEscenario, 29)}&periodEnd=${hoyDelEscenario}`)).data;
+  const E30 = esperado(ctx30, await leerLaLinea(ctx30.period.start, ctx30.period.end));
+  const diasCon = (clave, e) => e.dias.filter((d) => d.filas.some((f) => (clave === 'SIN_REGISTRO' ? f.estado === 'SIN_REGISTRO' : true))).length;
+  await cupo(v, 60);
+  const alActualizar = v.urls.length;
+  await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+  await quieto(page, v);
+  await page.waitForSelector(LISTA, { timeout: 30_000 });
+  const trasActualizar = await registrosEnPantalla(page);
+  comprobar(
+    'F-17',
+    'El período elegido va en la dirección (`p=30`): las dos lecturas piden esos 30 días, el control lo dice y las cantidades son las de ese período, contadas a mano. «Actualizar» vuelve a leer y conserva el período y la vista elegida',
+    pedidos('/nutrition/review-context', alCambiar).some((u) => u.includes(`periodStart=${diaMenos(hoyDelEscenario, 29)}`) && u.includes(`periodEnd=${hoyDelEscenario}`)) &&
+      pedidos(`/advisees/${A}/timeline`, alCambiar).length >= 1 &&
+      pedidos(`/advisees/${A}/timeline`, alCambiar).every((u) => u.includes(`periodStart=${ctx30.period.start}`) && u.includes(`periodEnd=${ctx30.period.end}`)) &&
+      /30 días/.test(treinta.periodo ?? '') &&
+      treinta.vistas.every((x) => x.cuenta === num(E30.cuentas[x.vista])) &&
+      treinta.vistas.find((x) => x.vista === 'SIN_REGISTRO')?.elegida === 'true' &&
+      pedidos('/nutrition/review-context', alActualizar).length === 1 &&
+      pedidos(`/advisees/${A}/timeline`, alActualizar).length >= 1 &&
+      parametros(page).get('p') === '30' &&
+      parametros(page).get('ver') === 'sin-registro' &&
+      igual(trasActualizar.vistas, treinta.vistas) &&
+      /30 días/.test(trasActualizar.periodo ?? ''),
+    `${treinta.periodo} · ${treinta.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E30.cuentas[k]).join(', ')} · tras «Actualizar»: p=${parametros(page).get('p')}, ver=${parametros(page).get('ver')}`,
+  );
+  // ── El control de período, usado: los atajos que admite, un rango propio y su tope ─────────────────────────────
+  await entrar(BASE);
+  const RANGO = '.registros .periodo-del-seguimiento__rango';
+  await clic(page, '.registros .periodo-del-seguimiento__boton', 'Período').catch(() => null);
+  await page.waitForSelector('.registros .periodo-del-seguimiento__opciones button', { timeout: 5_000 }).catch(() => {});
+  const atajos = await textos(page, '.registros .periodo-del-seguimiento__opciones button');
+  await cupo(v, 60);
+  const alElegirAtajo = v.urls.length;
+  await clic(page, '.registros .periodo-del-seguimiento__opciones button', '30 días').catch(() => null);
+  await page.waitForFunction(() => new URL(location.href).searchParams.get('p') === '30', { timeout: 10_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+  const conAtajo = await registrosEnPantalla(page);
+  const pidioTreinta = pedidos('/nutrition/review-context', alElegirAtajo).some((u) => u.includes(`periodStart=${diaMenos(hoyDelEscenario, 29)}`) && u.includes(`periodEnd=${hoyDelEscenario}`));
+  // Un rango propio de 100 días no sale: dice el tope y no le pide nada a la API.
+  await clic(page, '.registros .periodo-del-seguimiento__boton', 'Período').catch(() => null);
+  await page.waitForSelector(`${RANGO} input[type="date"]`, { timeout: 5_000 }).catch(() => {});
+  await page.evaluate((r) => document.querySelectorAll(`${r} input[type="date"]`).forEach((c, i) => c.setAttribute('data-rango', i === 0 ? 'desde' : 'hasta')), RANGO);
+  const alPasarse = v.urls.length;
+  await fijarFecha(page, `${RANGO} [data-rango="desde"]`, diaMenos(hoyDelEscenario, 99)).catch(() => {});
+  await fijarFecha(page, `${RANGO} [data-rango="hasta"]`, hoyDelEscenario).catch(() => {});
+  await clic(page, `${RANGO} button`, 'Aplicar').catch(() => null);
+  await pausa(300);
+  const tope = await texto(page, '.registros .periodo-del-seguimiento__panel .campo__error');
+  const pidioAlPasarse = v.urls.slice(alPasarse).filter((u) => u.startsWith('GET ')).length;
+  // Uno que entra: queda en la dirección con sus dos fechas, sin el atajo.
+  const desdePropio = diaMenos(hoyDelEscenario, 20);
+  const hastaPropio = diaMenos(hoyDelEscenario, 10);
+  await cupo(v, 60);
+  const alAplicar = v.urls.length;
+  await fijarFecha(page, `${RANGO} [data-rango="desde"]`, desdePropio).catch(() => {});
+  await fijarFecha(page, `${RANGO} [data-rango="hasta"]`, hastaPropio).catch(() => {});
+  await clic(page, `${RANGO} button`, 'Aplicar').catch(() => null);
+  await page.waitForFunction((d) => new URL(location.href).searchParams.get('desde') === d, { timeout: 10_000 }, desdePropio).catch(() => {});
+  await quieto(page, v);
+  await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+  const conRango = await registrosEnPantalla(page);
+  comprobar(
+    'F-17',
+    'El control de período ofrece los atajos que la lectura admite (7, 30 y 90 días; no «1 año»). Elegir «30 días» deja `p=30` en la dirección y lee esos 30 días. Un rango propio de 100 días no sale: dice el tope (92) y no le pide nada a la API. Uno de 11 días queda en la dirección con sus dos fechas, sin el atajo, y la pantalla lo dice sin «incluye hoy»',
+    igual(atajos, ['7 días', '30 días', '90 días']) &&
+      pidioTreinta &&
+      /30 días/.test(conAtajo.periodo ?? '') &&
+      /hasta 92 días/.test(tope) &&
+      pidioAlPasarse === 0 &&
+      parametros(page).get('desde') === desdePropio &&
+      parametros(page).get('hasta') === hastaPropio &&
+      !parametros(page).has('p') &&
+      pedidos('/nutrition/review-context', alAplicar).some((u) => u.includes(`periodStart=${desdePropio}`) && u.includes(`periodEnd=${hastaPropio}`)) &&
+      /11 días/.test(conRango.periodo ?? '') &&
+      !/incluye hoy/.test(conRango.periodo ?? '') &&
+      conRango.dias.length === 11,
+    `atajos: ${atajos.join(', ') || 'ninguno'} · con el atajo: ${conAtajo.periodo} · con 100 días: «${tope}», ${pidioAlPasarse} pedidos · con el rango propio: ${conRango.periodo} · ${conRango.dias.length} días a la vista`,
+  );
+  // Un período largo no se muestra entero de una vez: catorce días, y los demás a pedido (la lectura ya los trajo).
+  await entrar(`${BASE}&p=30`);
+  const largo = await registrosEnPantalla(page);
+  const alVerMas = v.urls.length;
+  const hayMas = !!largo.masDias;
+  if (hayMas) await clic(page, '.registros .linea__mas button', 'Ver días anteriores');
+  await pausa(300);
+  const masLargo = await registrosEnPantalla(page);
+  comprobar(
+    'F-19',
+    'Con 30 días se muestran catorce y «Ver días anteriores» trae otros catorce sin pedirle nada a la API; cada día dice la cuenta calculada a mano',
+    E30.dias.length === 30 &&
+      largo.dias.length === 14 &&
+      hayMas &&
+      masLargo.dias.length === 28 &&
+      v.urls.slice(alVerMas).filter((u) => u.startsWith('GET ')).length === 0 &&
+      masLargo.dias.every((d, i) => principalDe(E30.dias[i]) === null || d.principal === principalDe(E30.dias[i])),
+    `${largo.dias.length} días al entrar, ${masLargo.dias.length} después · «${largo.masDias}» · ${diasCon('SIN_REGISTRO', E30)} días con alguna comida sin registro`,
+  );
+
+  // ── Noventa días: la línea de tiempo llega en varias páginas, y hay días enteros sin registros ────────────────────
+  const alPedir90 = await entrar(`${BASE}&p=90`);
+  const ctx90 = (await leerApi(v, `/advisees/${A}/nutrition/review-context?periodStart=${diaMenos(hoyDelEscenario, 89)}&periodEnd=${hoyDelEscenario}`)).data;
+  const entradas90 = await leerLaLinea(ctx90.period.start, ctx90.period.end);
+  const E90 = esperado(ctx90, entradas90);
+  const paginas90 = pedidos(`/advisees/${A}/timeline`, alPedir90).length;
+  const noventa = await registrosEnPantalla(page);
+  while (await page.$('.registros .linea__mas button')) {
+    await clic(page, '.registros .linea__mas button', 'Ver días anteriores');
+    await pausa(150);
+  }
+  const todos90 = await registrosEnPantalla(page);
+  const sinNingunRegistro = E90.dias.filter((d) => d.sinRegistros && !d.sinComidasDelPlan).length;
+  comprobar(
+    'F-19',
+    'Con 90 días, la línea de tiempo se lee entera, de a 50 registros (tantas páginas como hagan falta), y las cantidades de las cinco vistas son las del período, contadas a mano; los días enteros sin registros dicen «Sin registro» y ninguno dice «0 de»',
+    entradas90.length > 50 &&
+      paginas90 === Math.ceil(entradas90.length / 50) &&
+      noventa.vistas.every((x) => x.cuenta === num(E90.cuentas[x.vista])) &&
+      todos90.dias.length === E90.dias.length &&
+      sinNingunRegistro > 0 &&
+      todos90.dias.filter((d) => d.principal === 'Sin registro').length === sinNingunRegistro &&
+      todos90.dias.every((d, i) => principalDe(E90.dias[i]) === null || d.principal === principalDe(E90.dias[i])) &&
+      !todos90.dias.some((d) => /\b0 de\b/.test(`${d.principal} ${d.notas.join(' ')}`)),
+    `${entradas90.length} registros en ${paginas90} páginas (a mano: ${Math.ceil(entradas90.length / 50)}) · ${noventa.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E90.cuentas[k]).join(', ')} · ${todos90.dias.length} días, ${sinNingunRegistro} sin ningún registro`,
+  );
+  // Los días que no aportan comidas del plan: lo dicen con su frase, y la pantalla dice cuántos son.
+  const sinComidas = ctx90.descriptiveContrast.days.filter((d) => d.meals.length === 0);
+  const sinPlan90 = sinComidas.filter((d) => !d.planId);
+  const sinDiaTipo90 = sinComidas.filter((d) => d.planId);
+  const cuantos = (n) => (n === 1 ? 'un día' : `${n} días`);
+  if (sinComidas.length > 0) {
+    const enPantalla90 = (d) => todos90.dias.find((x) => x.fecha === d.date) ?? null;
+    comprobar(
+      'F-16',
+      'Un día sin plan vigente, o de un plan con más de un día tipo y sin registros que digan cuál era, lo dice con su frase y no se abre (no tiene comidas del plan que mostrar); la pantalla dice cuántos días son, y sus comidas no entran en ninguna cantidad',
+      sinPlan90.every((d) => enPantalla90(d)?.principal === 'Ese día no había un plan vigente.') &&
+        sinDiaTipo90.every((d) => /más de un día tipo/.test(enPantalla90(d)?.principal ?? '')) &&
+        sinComidas.every((d) => enPantalla90(d)?.seAbre === d.outsidePrescription.length > 0) &&
+        (sinPlan90.length === 0 || (noventa.cuenta ?? '').includes(`${cuantos(sinPlan90.length)} sin plan vigente`)) &&
+        (sinDiaTipo90.length === 0 || (noventa.cuenta ?? '').includes(`${cuantos(sinDiaTipo90.length)} sin día tipo determinado`)),
+      `sin plan vigente: ${sinPlan90.length} · sin día tipo determinado: ${sinDiaTipo90.length} · «${noventa.cuenta}»`,
+    );
+  } else {
+    informar('F-16', 'Un día sin plan vigente o sin día tipo determinado', 'el escenario no tiene ninguno en los últimos 90 días: no se pudo mirar');
+  }
+
+  // ── El registro de una comida con cantidades informadas, abierto por su dirección (C-53) ──────────────────────
+  const informadaE = E90.filas.find((f) => f.opcion && f.entrada?.quality.includes('QUANTITIES_REPORTED')) ?? null;
+  if (informadaE) {
+    await entrar(`${BASE}&p=90&registro=${informadaE.opcion}`);
+    await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const informada = await page.evaluate(() => {
+      const d = document.querySelector('aside.detalle-del-hecho');
+      return {
+        titulo: d?.querySelector('h3')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
+        texto: d?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+        columnas: [...(d?.querySelectorAll('table thead th') ?? [])].map((th) => th.innerText.trim()),
+        celdas: [...(d?.querySelectorAll('table tbody tr') ?? [])].map((tr) => [...tr.children].map((c) => c.innerText.replace(/\s+/g, ' ').trim())),
+      };
+    });
+    const leidaInformada = (await leerApi(v, `/nutrition/meal-records/${informadaE.opcion}`)).data;
+    comprobar(
+      'C-53',
+      'El registro de una comida con cantidades informadas se abre por su dirección (aunque su día esté plegado o más abajo) y usa las palabras de BE: «Informó lo que comió de cada ingrediente», y la tabla de ingredientes con las columnas «Indicado», «Registrado» y «Diferencia», con la diferencia de cada ingrediente dicha con la resta o con palabras, sin rayas; dice la opción que da la API',
+      parametros(page).get('registro') === informadaE.opcion &&
+        (informada.titulo ?? '').startsWith(`${informadaE.comida} · `) &&
+        informada.texto.includes('Informó lo que comió de cada ingrediente') &&
+        igual(informada.columnas, ['Ingrediente', 'Indicado', 'Registrado', 'Diferencia']) &&
+        informada.texto.includes(leidaInformada.option.label) &&
+        celdasBien(informada.celdas, leidaInformada),
+      `«${informada.titulo}» · columnas: ${informada.columnas.join(', ') || 'sin tabla'} · la API: ${leidaInformada.option?.label} · diferencias: ${informada.celdas.map((c) => c[3]).join(' | ') || 'sin tabla'}`,
+    );
+    // «Actualizar» con el registro abierto: la sección se monta de nuevo con el registro ya en la dirección. Un vigía
+    // anota si el panel de encima llega a abrirse, aunque sea por un instante.
+    await page.evaluate(() => {
+      window.__panelDeEncima = 0;
+      window.__vigiaDelPanel?.disconnect();
+      window.__vigiaDelPanel = new MutationObserver(() => {
+        if (document.querySelector('dialog.dialogo--panel[open]')) window.__panelDeEncima += 1;
+      });
+      window.__vigiaDelPanel.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+    });
+    await cupo(v, 60);
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await quieto(page, v);
+    await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizarElRegistro = await page.evaluate(() => {
+      window.__vigiaDelPanel?.disconnect();
+      const d = document.querySelector('aside.detalle-del-hecho');
+      return { panel: window.__panelDeEncima ?? -1, titulo: d?.querySelector('h3')?.innerText.replace(/\s+/g, ' ').trim() ?? null };
+    });
+    comprobar(
+      'F-18',
+      '«Actualizar» con un registro abierto lo deja abierto al costado, con el registro en la dirección; la sección, que se vuelve a montar, no pasa por el panel de encima ni por un instante (a 1024 px el panel sí se abre: lo mira su comprobación)',
+      trasActualizarElRegistro.panel === 0 && !!informada.titulo && trasActualizarElRegistro.titulo === informada.titulo && parametros(page).get('registro') === informadaE.opcion,
+      `veces que el panel de encima estuvo abierto: ${trasActualizarElRegistro.panel} · al costado: «${trasActualizarElRegistro.titulo}»`,
+    );
+    const tapasDelRegistro = await tapasDeLaSuperficie(page, 'aside.detalle-del-hecho');
+    comprobar(
+      'C-53',
+      'La tabla de ingredientes del detalle no lleva una franja a los costados: las «tapas» de lo que se desplaza tienen el color del detalle donde está, no el del fondo de la página',
+      tapasBien(tapasDelRegistro),
+      tapasEnPalabras(tapasDelRegistro),
+    );
+  } else {
+    informar('C-53', 'El registro de una comida con cantidades informadas', 'el escenario no tiene ninguna en los últimos 90 días: no se pudo mirar');
+  }
+
+  // ── Una vista sin ninguna comida ────────────────────────────────────────────────────────────────────────────
+  const enCero = ORDEN.find((k) => E.cuentas[k] === 0);
+  if (enCero) {
+    const PARAMETRO = { DISTINTAS: 'distintas', SIN_CONFIRMAR: 'sin-confirmar', COMIDA_DIFERENTE: 'comida-diferente', SIN_REGISTRO: 'sin-registro' };
+    await entrar(`${BASE}&ver=${PARAMETRO[enCero]}`);
+    const vacia = await registrosEnPantalla(page);
+    comprobar(
+      'F-16',
+      'Una vista sin ninguna comida se muestra con su cero y, al elegirla, dice que ninguna coincide y cuántas hay en el período: no se confunde con un período vacío',
+      vacia.vistas.find((x) => x.vista === enCero)?.cuenta === '0' && /Ninguna comida del período coincide/.test(vacia.vacio ?? '') && (vacia.vacio ?? '').includes(`${num(E.cuentas.TODAS)} ${comidas(E.cuentas.TODAS)}`) && vacia.dias.length === 0,
+      `${enCero}: «${vacia.vacio}»`,
+    );
+  } else {
+    informar('F-16', 'Una vista sin ninguna comida', 'el escenario tiene comidas en las cinco vistas del período de entrada: no se pudo mirar');
+  }
+
+  // ── Si falla la segunda lectura, los días se ven igual y lo que depende de ella lo dice ─────────────────────────
+  const sinLinea = { coincide: (u) => u.includes(`/advisees/${A}/timeline`), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  await salir();
+  v.reglas.push(sinLinea);
+  await entrar(BASE);
+  const conFalla = await registrosEnPantalla(page);
+  await abrirLosDias();
+  const filasConFalla = (await registrosEnPantalla(page)).dias.flatMap((d) => d.filas);
+  v.reglas.splice(v.reglas.indexOf(sinLinea), 1);
+  await cupo(v, 60);
+  if (conFalla.falla) await clic(page, '.registros .estado-de-grafico--error button', 'Reintentar');
+  await quieto(page, v);
+  await page.waitForFunction(() => !document.querySelector('.registros .estado-de-grafico--error'), { timeout: 30_000 }).catch(() => {});
+  const repuesto = await registrosEnPantalla(page);
+  const sinNumero = (x, clave) => x.vistas.find((y) => y.vista === clave)?.cuenta ?? null;
+  comprobar(
+    'F-15',
+    'Si la línea de tiempo no se puede leer (un 503 simulado), los días y sus comidas siguen a la vista con lo que el contraste sabe; lo dice en su lugar con el motivo y «Reintentar»; las dos vistas que dependen de ella no llevan número (no un cero) y las otras tres sí. «Reintentar» trae lo que faltaba',
+    /No pudimos traer la opción ni las cantidades/.test(conFalla.falla ?? '') &&
+      /BE no está disponible en este momento/.test(conFalla.falla ?? '') &&
+      conFalla.dias.length === E.dias.length &&
+      E.dias.every((d, i) => principalDe(d) === null || conFalla.dias[i].principal === principalDe(d)) &&
+      sinNumero(conFalla, 'DISTINTAS') === null &&
+      sinNumero(conFalla, 'SIN_CONFIRMAR') === null &&
+      sinNumero(conFalla, 'TODAS') === num(E.cuentas.TODAS) &&
+      sinNumero(conFalla, 'SIN_REGISTRO') === num(E.cuentas.SIN_REGISTRO) &&
+      sinNumero(conFalla, 'COMIDA_DIFERENTE') === num(E.cuentas.COMIDA_DIFERENTE) &&
+      filasConFalla.length === E.filas.length &&
+      filasConFalla.filter((f) => f.estado === 'REGISTRADA').every((f) => /No se pudo traer/.test(f.cantidades) && /no se pudo traer/i.test(f.registrado)) &&
+      repuesto.falla === null &&
+      igual(repuesto.vistas.map((x) => x.cuenta), ORDEN.map((k) => num(E.cuentas[k]))),
+    `«${(conFalla.falla ?? '').slice(0, 110)}» · ${conFalla.vistas.map((x) => `${x.nombre} ${x.cuenta ?? 'sin número'}`).join(' · ')} · después: ${repuesto.vistas.map((x) => x.cuenta).join(', ')}`,
+  );
+
+  // ── La primera pantalla, la ayuda, el teclado y axe ─────────────────────────────────────────────────────────
+  await entrar(BASE);
+  const medida = await page.evaluate(() => {
+    const abajo = (s) => {
+      const e = [...document.querySelectorAll(s)].pop();
+      return e ? Math.round(e.getBoundingClientRect().bottom + scrollY) : null;
+    };
+    const todos = [...document.querySelectorAll('.registros .dia-de-registros')];
+    const dias = todos.map((d) => Math.round(d.getBoundingClientRect().bottom + scrollY));
+    // El primer día que arranca abierto (el que tiene algo distinto), y dónde termina.
+    const abierto = todos.findIndex((d) => d.dataset.abierto === 'si');
+    return { alto: document.documentElement.scrollHeight, lista: abajo('.registros .dia-de-registros'), vistas: abajo('.registros__vistas'), columnas: abajo('.registros__columnas'), dias, enteros: dias.filter((y) => y <= 900).length, abierto, finDelAbierto: abierto < 0 ? null : dias[abierto] };
+  });
+  informar('F-20', 'El alto de Registros con el período de entrada, a 1440 × 900', `${medida.alto} px · las vistas terminan a los ${medida.vistas} px, los nombres de las columnas a los ${medida.columnas} y el último de los ${medida.dias.length} días, a los ${medida.lista}`);
+  comprobar(
+    'F-20',
+    'A 1440 × 900, con el período de entrada, entran sin desplazarse las vistas, los nombres de las columnas y, entero, el primer día que tiene algo distinto, con sus comidas abiertas: lo que hay para mirar está en la primera pantalla',
+    medida.columnas !== null && medida.columnas <= 900 && medida.dias.length === E.dias.length && medida.abierto >= 0 && medida.finDelAbierto <= 900,
+    `el día abierto (el ${medida.abierto + 1}.º de la lista) termina a los ${medida.finDelAbierto} px · ${medida.enteros} de ${medida.dias.length} días enteros en los primeros 900 px; el último termina a los ${medida.lista}`,
+  );
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayuda = await page.evaluate(() => {
+    const d = document.querySelector('dialog.como-se-lee[open]');
+    if (!d) return { titulo: null, renglones: 0, vistas: [], foco: false };
+    return { titulo: d.querySelector('h2').innerText.trim(), renglones: d.querySelectorAll('.como-se-lee__lista > li').length, vistas: [...d.querySelectorAll('.como-se-lee__fuentes [data-vista]')].map((x) => x.dataset.vista), foco: document.activeElement === d.querySelector('h2') };
+  });
+  const faltasDeLaAyuda = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  const focoTrasLaAyuda = await page.evaluate(() => document.activeElement?.classList.contains('como-se-lee__boton') ?? false);
+  comprobar(
+    'F-14',
+    'Registros tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada marca y dice qué trae cada una de las cinco vistas; Escape la cierra y el foco vuelve al botón. Resumen y Revisiones todavía no tienen la suya, y no muestran el botón',
+    ayuda.titulo === 'Cómo se leen los Registros' && ayuda.renglones >= 10 && igual(ayuda.vistas, ORDEN) && ayuda.foco && focoTrasLaAyuda && faltasDeLaAyuda.length === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · ${ayuda.vistas.length} vistas · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}`,
+  );
+  await salir();
+  const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  comprobar('F-14', 'En Nutrición · Resumen, que todavía no tiene ayuda, el marco no muestra el botón (la misma consulta lo encuentra en Registros)', sinAyuda === 0, `${sinAyuda} botones`);
+  await entrar(BASE);
+  await abrirLosDias();
+  const faltas = await axe(page);
+  await page.click(`.comida-del-dia__fila[data-registro="${registrada.registro}"]`);
+  await page.waitForSelector('aside.detalle-del-hecho .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const faltasConDetalle = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-del-hecho'), { timeout: 10_000 }).catch(() => {});
+  comprobar('F-18', 'axe no encuentra faltas en Registros con todos los días abiertos, ni con el detalle de un registro al costado', faltas.length === 0 && faltasConDetalle.length === 0, `sin detalle: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · con detalle: ${faltasConDetalle.map((f) => f.id).join(', ') || 'sin faltas'}`);
+
+  // ── A 1024 px el detalle se abre encima ─────────────────────────────────────────────────────────────────────
+  await page.setViewport({ width: 1024, height: 900 });
+  await entrar(BASE);
+  await abrirLosDias();
+  await page.click(`.comida-del-dia__fila[data-registro="${registrada.registro}"]`);
+  await page.waitForSelector('dialog.dialogo--panel[open] .detalle-de-valores', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const angosto = await registrosEnPantalla(page);
+  const desborda = !(await sinDesborde(page));
+  if (angosto.panel) await clic(page, 'dialog.dialogo--panel[open] button', 'Cerrar');
+  await pausa(200);
+  await page.setViewport({ width: 1440, height: 900 });
+  comprobar(
+    'F-18',
+    'A 1024 px el registro se abre encima, en un panel que retiene el foco, con el mismo título; la página no desborda de costado',
+    angosto.detalle === null && (angosto.panel ?? '').includes(`${registrada.comida} · ${opcionDelDetalle}`) && (angosto.panel ?? '').includes(leido.option.label) && !desborda,
+    `panel: «${(angosto.panel ?? '').slice(0, 70)}» · al costado: ${angosto.detalle ? 'sí' : 'no'}${desborda ? ' · DESBORDA' : ''}`,
+  );
+  comprobar('—', 'Registros de Nutrición no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Entrenamiento · Registros (WP-ESCRITORIO-AREAS, parte 2) ──────────────────────────────────────────────────
+
+/** Lo que muestra Entrenamiento · Registros: las vistas, las filas que están a la vista y el detalle. */
+const sesionesEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const tabla = (d) =>
+      [...(d?.querySelectorAll('table.tabla-de-series tbody[data-ejercicio]') ?? [])].map((tb) => ({
+        ejercicio: t(tb.querySelector('.tabla-de-series__ejercicio strong')),
+        cabecera: t(tb.querySelector('.tabla-de-series__ejercicio')),
+        series: [...tb.querySelectorAll('tr:not(.tabla-de-series__ejercicio)')].map((tr) => ({
+          celdas: [...tr.children].map(t),
+          conDiferencia: tr.dataset.conDiferencia === 'si',
+          estado: tr.dataset.estado,
+          peso: Number(getComputedStyle(tr.children[3]).fontWeight),
+        })),
+      }));
+    const detalle = aLaVista(document.querySelector('aside.detalle-de-sesion'));
+    const panel = aLaVista(document.querySelector('dialog.dialogo--panel[open]'));
+    return {
+      titulo: t(document.querySelector('#titulo-sesiones')),
+      periodo: t(aLaVista(document.querySelector('.sesiones .periodo-del-seguimiento__boton'))),
+      vistas: [...document.querySelectorAll('.sesiones .vista-de-la-linea')].filter(aLaVista).map((b) => ({
+        vista: b.dataset.vista,
+        cuenta: b.querySelector('.vista-de-la-linea__cuenta')?.firstChild?.textContent?.trim() ?? null,
+        dice: t(b.querySelector('.vista-de-la-linea__cuenta')),
+        elegida: b.getAttribute('aria-pressed'),
+        nombre: [...b.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(''),
+      })),
+      cuenta: t(aLaVista(document.querySelector('.sesiones .registros__cuenta'))),
+      columnas: [...document.querySelectorAll('.sesiones__columnas span')].map((s) => s.textContent.trim()),
+      filas: [...document.querySelectorAll('.sesion-registrada')].filter(aLaVista).map((li) => {
+        const f = li.querySelector('.sesion-registrada__fila');
+        return {
+          id: f?.dataset.sesion ?? null,
+          clase: li.dataset.clase,
+          dia: t(li.querySelector('.sesion-registrada__dia')),
+          sesion: t(li.querySelector('.sesion-registrada__sesion')),
+          series: t(li.querySelector('.sesion-registrada__series')),
+          frente: t(li.querySelector('.sesion-registrada__frente')),
+          esBoton: f?.tagName === 'BUTTON',
+          elegida: f?.getAttribute('aria-current') === 'true',
+        };
+      }),
+      detalle: detalle
+        ? { titulo: t(detalle.querySelector('h3')), texto: t(detalle), cuando: t(detalle.querySelector('.detalle-de-sesion__cuando')), conElFoco: document.activeElement === detalle.querySelector('h3'), tabla: tabla(detalle), tiempos: t(detalle.querySelector('.detalle-de-sesion__tiempos')), mas: [...detalle.querySelectorAll('.detalle-de-sesion__mas summary')].map(t) }
+        : null,
+      panel: panel ? { texto: t(panel), tabla: tabla(panel) } : null,
+      masSesiones: t(aLaVista(document.querySelector('.sesiones .linea__mas'))),
+      vacio: t(aLaVista(document.querySelector('.sesiones .estado-vacio'))),
+      falla: t(aLaVista(document.querySelector('.sesiones > .estado-de-grafico--error, .sesiones .estado-de-grafico--error'))),
+      sinSesion: t(aLaVista(document.querySelector('.sesiones__sin-sesion'))),
+      aAnalizar: aLaVista(document.querySelector('.sesiones__a-analizar a'))?.getAttribute('href') ?? null,
+      titulos: [...document.querySelectorAll('.sesiones h2, .sesiones h3')].filter(aLaVista).map(t),
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/**
+ * Entrenamiento · Registros por sesión (maqueta 25; C-66, C-67 y C-68; F-24 en adelante). Lo esperado se calcula a mano
+ * con lo que devuelve la API: el contexto de revisión (las sesiones registradas), el plan de cada versión del período
+ * (lo indicado de cada serie) y la lista de versiones (su número). Va dentro de `funcional`; solo, con
+ * `node recorrido.mjs sesiones`.
+ */
+async function sesionesDeEntrenamiento(page, v) {
+  const A = estado.aseId;
+  const BASE = `/pro/advisees/training?id=${A}&vista=ejecuciones`;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const num = (n) => new Intl.NumberFormat('es-AR').format(n);
+  const pedidos = (fragmento, desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const LISTA = '.sesiones .sesion-registrada, .sesiones .estado-vacio';
+  const entrar = async (ruta) => {
+    await cupo(v, 60);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('#titulo-sesiones', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  /** Pide las sesiones anteriores hasta que estén todas a la vista (la lista se muestra de a quince). */
+  const verTodas = async () => {
+    while (await page.$('.sesiones .linea__mas button')) {
+      await clic(page, '.sesiones .linea__mas button', 'Ver sesiones anteriores').catch(() => null);
+      await pausa(150);
+    }
+  };
+  const salir = async () => {
+    await cupo(v, 60);
+    await ir(page, `/pro/advisees/training?id=${A}&vista=resumen`);
+    await page.waitForFunction(() => !document.querySelector('#titulo-sesiones'), { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+  };
+  const leerLosPlanes = async (ctx) => {
+    const planes = new Map();
+    for (const planId of [...new Set(ctx.registeredExecutions.map((x) => x.planId))]) planes.set(planId, (await leerApi(v, `/training/plans/${planId}/detail`)).data);
+    return planes;
+  };
+
+  // ── Lo esperado, a mano ─────────────────────────────────────────────────────────────────────────────────────
+  const CONDICION = { COMPLETED: 'Realizada', COMPLETED_WITH_DEVIATION: 'Realizada con desvío', NOT_COMPLETED: 'No realizada' };
+  const relReps = (o, r) => (!o ? 'SIN_OBJETIVO' : r === null ? 'SIN_DATO' : r < ('min' in o ? o.min : o.value) ? 'DEBAJO' : r > ('max' in o ? o.max : o.value) ? 'ENCIMA' : 'DENTRO');
+  const relRir = (o, r) => (o === null ? 'SIN_OBJETIVO' : r === null ? 'SIN_DATO' : r < o ? 'DEBAJO' : r > o ? 'ENCIMA' : 'IGUAL');
+  const relCarga = (o, r) => (o === null ? 'SIN_OBJETIVO' : r === null ? 'SIN_DATO' : o.unit !== r.unit ? 'OTRA_UNIDAD' : r.value < o.value ? 'DEBAJO' : r.value > o.value ? 'ENCIMA' : 'IGUAL');
+  const PALABRA = { DEBAJO: 'por debajo', ENCIMA: 'por encima', SIN_DATO: 'sin dato', OTRA_UNIDAD: 'otra unidad: no se compara' };
+  const cuantasSeries = (n) => `${n} ${n === 1 ? 'serie' : 'series'}`;
+  const mayuscula = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  /** Cómo quedó una serie registrada frente a su objetivo, con las palabras que tiene que decir la tabla. */
+  const frenteDeLaSerie = (planificada, objetivo, s) => {
+    const reps = relReps(planificada.repetitions, s.completedRepetitions);
+    const rir = relRir(objetivo?.rir ?? null, s.rir);
+    const carga = relCarga(objetivo?.suggestedLoad ?? null, s.load);
+    const partes = [];
+    if (reps !== 'SIN_OBJETIVO' && reps !== 'DENTRO') partes.push(`Rep.: ${PALABRA[reps]}`);
+    if (rir !== 'SIN_OBJETIVO' && rir !== 'IGUAL') partes.push(`RIR: ${PALABRA[rir]}`);
+    // Lo de la carga va aparte, en un renglón propio de la misma celda: se dice, y no cuenta como diferencia.
+    const deLaCarga = carga === 'DEBAJO' || carga === 'ENCIMA' ? `Carga: ${PALABRA[carga]} de la sugerida` : carga !== 'SIN_OBJETIVO' && carga !== 'IGUAL' ? `Carga: ${PALABRA[carga]}` : null;
+    const sinObjetivo = reps === 'SIN_OBJETIVO' && rir === 'SIN_OBJETIVO' && carga === 'SIN_OBJETIVO';
+    const principal = sinObjetivo ? 'Sin objetivo: no se compara' : reps === 'SIN_OBJETIVO' && rir === 'SIN_OBJETIVO' ? 'Sin objetivo de repeticiones ni de RIR' : partes.length === 0 ? 'Dentro de lo indicado' : partes.join(' · ');
+    return {
+      conDiferencia: ['DEBAJO', 'ENCIMA'].includes(reps) || ['DEBAJO', 'ENCIMA'].includes(rir),
+      conDato: reps === 'SIN_DATO' || rir === 'SIN_DATO',
+      comparada: !sinObjetivo,
+      texto: [principal, deLaCarga].filter(Boolean).join(' '),
+    };
+  };
+  /** Las sesiones del período, de la más nueva a la más vieja, con lo que tiene que decir cada fila y su tabla. */
+  const esperado = (ctx, planes) => {
+    const ejercicioDe = new Map();
+    for (const x of ctx.registeredExecutions) for (const p of x.plannedSession.prescriptions) ejercicioDe.set(p.exerciseVersionId, p.exerciseId);
+    const sesiones = ctx.registeredExecutions.map((x) => {
+      const vista = x.effectiveView;
+      const rige = vista.kind === 'CORRECTED' ? (x.corrections.find((c) => c.correctionId === vista.correctionId)?.correction ?? x.original) : vista.kind === 'ORIGINAL' ? x.original : null;
+      const plan = planes.get(x.planId) ?? null;
+      const delPlan = plan ? plan.blocks.flatMap((b) => [...b.sessions, ...b.microcycles.flatMap((m) => m.sessions)]).flatMap((s) => s.prescriptions) : null;
+      const base = { id: x.executionId, planId: x.planId, fecha: x.date, ocurrio: x.occurredAt, sesion: x.plannedSession.label, condicion: rige ? CONDICION[rige.sessionCondition] : null, corregida: vista.kind === 'CORRECTED', conDesvio: !!rige && rige.sessionCondition !== 'COMPLETED', seLeyo: !!plan, sinRegistrar: 0, conDiferencias: 0, tabla: [] };
+      if (!rige) return { ...base, clase: 'SIN_REGISTRO_VIGENTE', series: 'El registro vigente no se puede determinar', frente: 'No se compara' };
+      if (rige.sessionCondition === 'NOT_COMPLETED') return { ...base, clase: 'NO_REALIZADA', series: 'Sin series: la sesión se registró así', frente: 'No hay series que comparar' };
+      const porSerie = rige.granularity === 'SET';
+      let planificadas = 0, registradas = 0, deMas = 0, sinRegistrar = 0, conDiferencias = 0, conDato = 0, comparadas = 0, otros = 0;
+      const tabla = [];
+      for (const p of [...x.plannedSession.prescriptions].sort((a, b) => a.order - b.order)) {
+        const e = rige.exercises.find((y) => y.prescriptionId === p.prescriptionId) ?? null;
+        const objetivos = delPlan ? (delPlan.find((y) => y.prescriptionId === p.prescriptionId)?.sets ?? []) : null;
+        const mismo = !e || e.performedExerciseVersionId === p.exerciseVersionId || ejercicioDe.get(e.performedExerciseVersionId) === p.exerciseId;
+        const numeros = [...new Set([...p.sets.map((s) => s.setIndex), ...(e?.sets ?? []).map((s) => s.setIndex)])].sort((a, b) => a - b);
+        const filas = [];
+        let delOtro = 0;
+        for (const n of numeros) {
+          const planificada = p.sets.find((s) => s.setIndex === n) ?? null;
+          const s = e?.sets?.find((y) => y.setIndex === n) ?? null;
+          if (planificada) planificadas += 1;
+          if (!s) {
+            const resumida = !!e && !e.sets;
+            if (planificada && !resumida) sinRegistrar += 1;
+            filas.push({ numero: n, frente: resumida ? 'No se compara serie por serie' : 'Sin registro: no se compara', conDiferencia: false, reps: null });
+            continue;
+          }
+          if (!planificada) {
+            deMas += 1;
+            filas.push({ numero: n, frente: 'Adicional: no se compara', conDiferencia: false, reps: s.completedRepetitions });
+            continue;
+          }
+          registradas += 1;
+          if (!mismo) {
+            delOtro += 1;
+            filas.push({ numero: n, frente: null, conDiferencia: false, reps: s.completedRepetitions });
+            continue;
+          }
+          if (!plan) {
+            filas.push({ numero: n, frente: 'No se pudo leer lo indicado', conDiferencia: false, reps: s.completedRepetitions });
+            continue;
+          }
+          const r = frenteDeLaSerie(planificada, objetivos.find((y) => y.setIndex === n)?.target ?? null, s);
+          if (r.conDiferencia) conDiferencias += 1;
+          if (r.conDato) conDato += 1;
+          if (r.comparada) comparadas += 1;
+          filas.push({ numero: n, frente: r.texto, conDiferencia: r.conDiferencia, reps: s.completedRepetitions });
+        }
+        if (delOtro > 0) otros += 1;
+        tabla.push({ ejercicio: e?.performedExerciseName ?? p.exerciseName, registradas: filas.filter((f, i) => p.sets.some((s) => s.setIndex === f.numero) && e?.sets?.some((s) => s.setIndex === f.numero)).length, planificadas: p.sets.length, filas });
+      }
+      if (!porSerie) return { ...base, clase: 'RESUMIDA', series: 'Registro resumido: sin series', frente: 'No se compara serie por serie', tabla };
+      const partes = [];
+      if (sinRegistrar > 0) partes.push(`${cuantasSeries(sinRegistrar)} sin registrar`);
+      if (!plan) partes.push('no se pudo leer lo indicado');
+      else {
+        if (conDiferencias > 0) partes.push(`${cuantasSeries(conDiferencias)} con diferencias`);
+        if (conDato > 0) partes.push(`${cuantasSeries(conDato)} con un dato sin registrar`);
+      }
+      if (otros > 0) partes.push(otros === 1 ? 'un ejercicio no se compara' : `${otros} ejercicios no se comparan`);
+      return {
+        ...base,
+        clase: 'POR_SERIE',
+        sinRegistrar,
+        conDiferencias: plan ? conDiferencias : null,
+        series: `${registradas} de ${planificadas} ${planificadas === 1 ? 'registrada' : 'registradas'}${deMas > 0 ? ` · ${deMas} ${deMas === 1 ? 'adicional' : 'adicionales'}` : ''}`,
+        frente: partes.length > 0 ? mayuscula(partes.join(' · ')) : comparadas > 0 ? 'Dentro de lo indicado' : 'Sin objetivos que comparar',
+        tabla,
+      };
+    });
+    sesiones.sort((a, b) => (a.ocurrio < b.ocurrio ? 1 : a.ocurrio > b.ocurrio ? -1 : 0));
+    const sinLeer = sesiones.some((s) => s.clase === 'POR_SERIE' && !s.seLeyo);
+    const cuentas = {
+      TODAS: sesiones.length,
+      CON_DIFERENCIAS: sinLeer ? null : sesiones.filter((s) => (s.conDiferencias ?? 0) > 0).length,
+      CON_DESVIO_O_NO_REALIZADA: sesiones.filter((s) => s.conDesvio).length,
+      SIN_REGISTRAR: sesiones.filter((s) => s.sinRegistrar > 0).length,
+    };
+    return { sesiones, cuentas };
+  };
+  /** Lo que tiene que decir «Sesión y condición»: el nombre, la condición y, si rige una corrección, «Corregida». */
+  const sesionYCondicion = (s) => `Sesión y condición: ${[s.sesion, s.condicion, s.corregida ? 'Corregida' : null].filter(Boolean).join(' ')}`;
+  const filaBien = (vista, espera) =>
+    vista.id === espera.id && vista.clase === espera.clase && vista.sesion === sesionYCondicion(espera) && vista.series === `Series: ${espera.series}` && vista.frente === `Frente a lo indicado: ${espera.frente}` && vista.esBoton;
+  const ORDEN = ['TODAS', 'CON_DIFERENCIAS', 'CON_DESVIO_O_NO_REALIZADA', 'SIN_REGISTRAR'];
+  const cuentasBien = (vistas, cuentas) => igual(vistas.map((x) => x.vista), ORDEN) && vistas.every((x) => (cuentas[x.vista] === null ? x.cuenta === null : x.cuenta === num(cuentas[x.vista])));
+  const numerosDeVersion = (lista) => new Map(lista.filter((p) => p.activatedAt).sort((a, b) => (a.activatedAt < b.activatedAt ? -1 : 1)).map((p, i) => [p.planId, i + 1]));
+
+  // ── La entrada: el período que propone la API y sus lecturas ─────────────────────────────────────────────────
+  const alEntrar = await entrar(BASE);
+  const ctx = (await leerApi(v, `/advisees/${A}/training/review-context`)).data;
+  const planes = await leerLosPlanes(ctx);
+  const E = esperado(ctx, planes);
+  const inicial = await sesionesEnPantalla(page);
+  const dias = Math.round((Date.parse(`${ctx.period.end}T12:00:00Z`) - Date.parse(`${ctx.period.start}T12:00:00Z`)) / 86_400_000) + 1;
+  comprobar(
+    'F-24',
+    'Al entrar, Registros de Entrenamiento lee el contexto de revisión, sin período (lo propone la API), y una vez el plan de cada versión que aparece en el período; el control dice el período que propuso la API',
+    pedidos('/training/review-context', alEntrar).length === 1 &&
+      !/periodStart/.test(pedidos('/training/review-context', alEntrar)[0]) &&
+      [...planes.keys()].every((planId) => pedidos(`/training/plans/${planId}/detail`, alEntrar).length === 1) &&
+      (inicial.periodo ?? '').includes(`${dias} días`),
+    `contexto: ${pedidos('/training/review-context', alEntrar).length} · versiones del período: ${planes.size} · lecturas de planes: ${pedidos('/detail', alEntrar).length} · ${inicial.periodo} · la API: ${ctx.period.start} a ${ctx.period.end}`,
+  );
+
+  // Con el período de entrada puede haber muy pocas sesiones: lo demás se mira con 90 días, que tiene de todas las clases.
+  const alPedir90 = await entrar(`${BASE}&p=90`);
+  const ctx90 = (await leerApi(v, `/advisees/${A}/training/review-context?periodStart=${diaMenos(hoy, 89)}&periodEnd=${hoy}`)).data;
+  const planes90 = await leerLosPlanes(ctx90);
+  const E90 = esperado(ctx90, planes90);
+  const deEntrada = await sesionesEnPantalla(page);
+  const masSesiones = deEntrada.masSesiones;
+  const alVerMas = v.urls.length;
+  await verTodas();
+  const pedidosAlVerMas = v.urls.slice(alVerMas).filter((u) => u.startsWith('GET ')).length;
+  const noventa = await sesionesEnPantalla(page);
+  const distintas = noventa.filas.map((f, i) => (E90.sesiones[i] && filaBien(f, E90.sesiones[i]) ? null : i)).filter((i) => i !== null);
+  comprobar(
+    'C-68',
+    'Cada sesión registrada es una fila, de la más nueva a la más vieja: la sesión con su condición (la del registro que rige), cuántas series se registraron y cómo quedaron frente a lo indicado, calculado a mano; los nombres de las columnas están una vez; la fila entera es un botón',
+    noventa.titulo === 'Sesiones registradas' &&
+      pedidos('/training/review-context', alPedir90).some((u) => u.includes(`periodStart=${diaMenos(hoy, 89)}`) && u.includes(`periodEnd=${hoy}`)) &&
+      igual(noventa.columnas, ['Día', 'Sesión y condición', 'Series', 'Frente a lo indicado']) &&
+      noventa.filas.length === E90.sesiones.length &&
+      E90.sesiones.length > 0 &&
+      distintas.length === 0,
+    distintas.length === 0
+      ? `${noventa.filas.length} sesiones en 90 días, las ${E90.sesiones.length} esperadas · la primera: ${noventa.filas[0]?.dia} · ${noventa.filas[0]?.sesion}`
+      : `${distintas.length} filas distintas; la primera: ${JSON.stringify(noventa.filas[distintas[0]])} — a mano: ${JSON.stringify({ ...E90.sesiones[distintas[0]], tabla: undefined })}`,
+  );
+  comprobar(
+    'F-31',
+    'Un período largo no se muestra entero de una vez: quince sesiones, las más nuevas, y «Ver sesiones anteriores» trae las demás sin pedirle nada a la API',
+    E90.sesiones.length > 15 && deEntrada.filas.length === 15 && /Se ven 15 de/.test(masSesiones ?? '') && pedidosAlVerMas === 0 && noventa.filas.length === E90.sesiones.length,
+    `${deEntrada.filas.length} al entrar, ${noventa.filas.length} después · «${masSesiones}» · pedidos a la API: ${pedidosAlVerMas}`,
+  );
+  const porClase = (c) => E90.sesiones.filter((s) => s.clase === c);
+  const sinContar = [...porClase('NO_REALIZADA'), ...porClase('RESUMIDA')];
+  comprobar(
+    'F-25',
+    'Una sesión registrada como no realizada, o resumida, no se cuenta serie por serie: dice por qué no tiene series y ninguna fila dice «0 de»; una serie sin registrar se cuenta aparte y no es una diferencia',
+    sinContar.length > 0 &&
+      sinContar.every((s) => { const f = noventa.filas.find((x) => x.id === s.id); return !!f && !/\d+ de \d+/.test(f.series) && f.series === `Series: ${s.series}`; }) &&
+      !noventa.filas.some((f) => /\b0 de\b/.test(f.series)) &&
+      E90.sesiones.some((s) => s.sinRegistrar > 0),
+    `no realizadas: ${porClase('NO_REALIZADA').length} · resumidas: ${porClase('RESUMIDA').length} · con series sin registrar: ${E90.cuentas.SIN_REGISTRAR} · «${noventa.filas.find((x) => x.id === sinContar[0]?.id)?.series}»`,
+  );
+
+  // ── Las vistas con nombre y su cantidad ─────────────────────────────────────────────────────────────────────
+  comprobar(
+    'F-26',
+    'Las cuatro vistas están en su orden, cada una con la cantidad de sesiones que trae, contada a mano; «Con diferencias» cuenta las sesiones con alguna serie cuyas repeticiones o cuyo RIR quedaron fuera de lo indicado (la carga no cuenta); al entrar está elegida «Todas las sesiones»',
+    cuentasBien(noventa.vistas, E90.cuentas) &&
+      igual(noventa.vistas.map((x) => x.nombre), ['Todas las sesiones', 'Con diferencias', 'Con desvío o no realizada', 'Con series sin registrar']) &&
+      noventa.vistas.every((x) => x.elegida === (x.vista === 'TODAS' ? 'true' : 'false')) &&
+      noventa.vistas[0].dice === `${num(E90.cuentas.TODAS)} ${E90.cuentas.TODAS === 1 ? 'sesión' : 'sesiones'}`,
+    `${noventa.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => E90.cuentas[k]).join(', ')}`,
+  );
+  const alElegir = v.urls.length;
+  await page.click('.sesiones .vista-de-la-linea[data-vista="SIN_REGISTRAR"]').catch(() => {});
+  await page.waitForFunction(() => new URL(location.href).searchParams.get('ver') === 'sin-registrar', { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  await verTodas();
+  const conDiferencias = await sesionesEnPantalla(page);
+  await page.click('.sesiones .vista-de-la-linea[data-vista="SIN_REGISTRAR"]').catch(() => {});
+  await page.waitForFunction(() => !new URL(location.href).searchParams.has('ver'), { timeout: 10_000 }).catch(() => {});
+  await pausa(300);
+  const deVuelta = await sesionesEnPantalla(page);
+  const idsConDiferencias = E90.sesiones.filter((s) => s.sinRegistrar > 0).map((s) => s.id);
+  comprobar(
+    'F-26',
+    'Elegir «Con series sin registrar» no le pide nada a la API, queda en la dirección (`ver=sin-registrar`) y deja a la vista las sesiones que cuenta y ninguna otra; volver a tocarla deja «Todas las sesiones»',
+    v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      idsConDiferencias.length > 0 &&
+      idsConDiferencias.length < E90.sesiones.length &&
+      igual(conDiferencias.filas.map((f) => f.id), idsConDiferencias) &&
+      conDiferencias.vistas.find((x) => x.vista === 'SIN_REGISTRAR')?.elegida === 'true' &&
+      (conDiferencias.cuenta ?? '').startsWith(`${num(idsConDiferencias.length)} de ${num(E90.cuentas.TODAS)} sesiones`) &&
+      deVuelta.vistas.find((x) => x.vista === 'TODAS')?.elegida === 'true' &&
+      deVuelta.filas.length === Math.min(15, E90.sesiones.length),
+    `${conDiferencias.filas.length} filas (a mano: ${idsConDiferencias.length} de ${E90.sesiones.length}) · «${conDiferencias.cuenta}» · pedidos a la API: ${v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length}`,
+  );
+
+  // ── El detalle: una tabla con cada serie una sola vez ────────────────────────────────────────────────────────
+  const elegida = E90.sesiones.find((s) => s.clase === 'POR_SERIE' && (s.conDiferencias ?? 0) > 0) ?? E90.sesiones.find((s) => s.clase === 'POR_SERIE');
+  const versiones = numerosDeVersion((await leerApi(v, `/advisees/${A}/training/plans`)).data);
+  await cupo(v, 60);
+  const alAbrir = v.urls.length;
+  await page.click(`.sesion-registrada__fila[data-sesion="${elegida?.id}"]`).catch(() => {});
+  await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const conDetalle = await sesionesEnPantalla(page);
+  const tabla = conDetalle.detalle?.tabla ?? [];
+  const ejecucionElegida = elegida ? (ctx90.registeredExecutions.find((x) => x.executionId === elegida.id) ?? null) : null;
+  const tiemposReales = elegida ? (await leerApi(v, `/training/executions/${elegida.id}/timing`)).data : null;
+  const aUnClic = [
+    ...(tiemposReales?.state === 'NOT_STARTED' ? [] : ['Descansos y duración de cada serie']),
+    'Ver la sesión en el plan',
+    'Ver en un gráfico',
+    (ejecucionElegida?.corrections.length ?? 0) > 0 ? 'Registro original y correcciones' : 'Registro original',
+  ];
+  const tablaBien =
+    !!elegida &&
+    tabla.length === elegida.tabla.length &&
+    elegida.tabla.every((e, i) => {
+      const t = tabla[i];
+      return (
+        t.ejercicio === e.ejercicio &&
+        t.cabecera.includes(`${e.registradas} de ${e.planificadas} ${e.planificadas === 1 ? 'serie registrada' : 'series registradas'}`) &&
+        t.series.length === e.filas.length &&
+        e.filas.every((f, j) => {
+          const s = t.series[j];
+          return s.celdas[0] === String(f.numero) && (f.frente === null || s.celdas[3] === f.frente) && s.conDiferencia === f.conDiferencia && (f.conDiferencia ? s.peso >= 600 : s.peso < 600) && (f.reps === null || s.celdas[2].includes(`${f.reps} rep.`));
+        })
+      );
+    });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-de-sesion'), { timeout: 10_000 }).catch(() => {});
+  await pausa(150);
+  const focoAlCerrar = await page.evaluate(() => document.activeElement?.getAttribute('data-sesion') ?? null);
+  const nombreDeLaElegida = elegida ? (/^sesi[oó]n\b/i.test(elegida.sesion) ? elegida.sesion : `Sesión ${elegida.sesion}`) : null;
+  comprobar(
+    'C-66',
+    'Tocar una sesión abre su detalle al costado, sin tapar la lista: el título recibe el foco; la tabla tiene cada serie una sola vez, por ejercicio, con «N de M series registradas» y, de cada serie, cómo quedó frente a lo indicado (calculado a mano); la serie con una diferencia va en negrita y además lo dice; Escape lo cierra y el foco vuelve a la fila',
+    !!elegida &&
+      conDetalle.detalle?.titulo === nombreDeLaElegida &&
+      conDetalle.detalle.conElFoco &&
+      tablaBien &&
+      tabla.flatMap((t) => t.series).length === elegida.tabla.flatMap((e) => e.filas).length &&
+      conDetalle.filas.length === Math.min(15, E90.sesiones.length) &&
+      conDetalle.filas.some((f) => f.elegida && f.id === elegida.id) &&
+      conDetalle.panel === null &&
+      parametros(page).get('sesion') === null &&
+      focoAlCerrar === elegida.id,
+    `«${conDetalle.detalle?.titulo}» · ${tabla.length} ejercicios, ${tabla.flatMap((t) => t.series).length} series (a mano: ${elegida?.tabla.flatMap((e) => e.filas).length}) · con diferencia: ${tabla.flatMap((t) => t.series).filter((s) => s.conDiferencia).map((s) => s.celdas[3]).join(' | ') || 'ninguna'} · foco en el título: ${conDetalle.detalle?.conElFoco} · al cerrar, en la fila: ${focoAlCerrar === elegida?.id}`,
+  );
+  comprobar(
+    'F-27',
+    'El detalle dice cuándo ocurrió, cuándo se registró y frente a qué versión del plan (su número de orden de activación, calculado a mano); lee una vez los tiempos de esa sesión y no vuelve a leer el plan; lo demás de la sesión está a un clic (sin tiempos marcados, lo dice y no ofrece abrir descansos que no hay)',
+    !!elegida &&
+      (conDetalle.detalle?.cuando ?? '').includes(`frente al plan versión ${versiones.get(elegida.planId)}, el de ese día`) &&
+      /^Ocurrió el /.test(conDetalle.detalle?.cuando ?? '') &&
+      pedidos(`/training/executions/${elegida.id}/timing`, alAbrir).length === 1 &&
+      pedidos('/detail', alAbrir).length === 0 &&
+      igual(conDetalle.detalle?.mas, aUnClic) &&
+      /Tiempos de la sesión/.test(conDetalle.detalle?.tiempos ?? '') &&
+      (tiemposReales?.state !== 'NOT_STARTED' || /no tiene tiempos marcados/.test(conDetalle.detalle?.tiempos ?? '')),
+    `«${conDetalle.detalle?.cuando}» · versión a mano: ${versiones.get(elegida?.planId)} · lecturas de tiempos: ${pedidos('/timing', alAbrir).length} · a un clic: ${(conDetalle.detalle?.mas ?? []).join(' | ')} · ${(conDetalle.detalle?.tiempos ?? '').slice(0, 90)}`,
+  );
+
+  // ── La evolución de un ejercicio queda en Analizar; los días sin sesión ──────────────────────────────────────
+  comprobar(
+    'C-67',
+    'La evolución de un ejercicio ya no está en la sección: no hay un bloque «Planificado y registrado» ni un gráfico al entrar, y sí un enlace a Analizar, de la aplicación, con la pregunta del ejercicio y el período que se está mirando',
+    !noventa.titulos.some((t) => /Planificado y registrado|Evolución de un ejercicio/.test(t)) &&
+      igual(noventa.titulos, ['Sesiones registradas']) &&
+      (noventa.aAnalizar ?? '').startsWith(`/pro/advisees?id=${A}&vista=analizar&pregunta=progreso-de-un-ejercicio`) &&
+      (noventa.aAnalizar ?? '').endsWith('&p=90'),
+    `títulos de la sección: ${noventa.titulos.join(' | ')} · enlace: ${noventa.aAnalizar}`,
+  );
+  const sinSesion = ctx90.missingData.length;
+  await clic(page, '.sesiones__sin-sesion button', 'Ver los días').catch(() => null);
+  await pausa(200);
+  const conLosDias = await texto(page, '.sesiones__sin-sesion');
+  comprobar(
+    'F-25',
+    'Los días del período sin ninguna sesión registrada se dicen con su cantidad (la que da la API) y como falta de dato, no como sesiones que faltaron; «Ver los días» los lista',
+    sinSesion > 0 &&
+      (noventa.sinSesion ?? '').startsWith(`${num(sinSesion)} días del período sin sesión registrada.`) &&
+      /no hay dato/.test(noventa.sinSesion ?? '') &&
+      conLosDias.split(' · ').length >= sinSesion,
+    `«${(noventa.sinSesion ?? '').slice(0, 120)}» · la API: ${sinSesion} días`,
+  );
+
+  // ── «Más filtros», «Actualizar» y lo que vive en la dirección ────────────────────────────────────────────────
+  const versionConSesiones = [...new Set(E90.sesiones.map((s) => s.planId))].find((planId) => E90.sesiones.some((s) => s.planId !== planId)) ?? null;
+  if (versionConSesiones) {
+    const deLaVersion = E90.sesiones.filter((s) => s.planId === versionConSesiones);
+    const cuentasDeLaVersion = {
+      TODAS: deLaVersion.length,
+      CON_DIFERENCIAS: deLaVersion.filter((s) => (s.conDiferencias ?? 0) > 0).length,
+      CON_DESVIO_O_NO_REALIZADA: deLaVersion.filter((s) => s.conDesvio).length,
+      SIN_REGISTRAR: deLaVersion.filter((s) => s.sinRegistrar > 0).length,
+    };
+    await entrar(`${BASE}&p=90&version=${versionConSesiones}`);
+    await verTodas();
+    const filtrada = await sesionesEnPantalla(page);
+    // Para «Actualizar», una vista que en esa versión traiga alguna sesión y no todas: si no, no se sabría si se conservó.
+    const PARAMETRO = { CON_DIFERENCIAS: 'con-diferencias', CON_DESVIO_O_NO_REALIZADA: 'con-desvio', SIN_REGISTRAR: 'sin-registrar' };
+    const conVista = Object.keys(PARAMETRO).find((k) => cuentasDeLaVersion[k] > 0 && cuentasDeLaVersion[k] < deLaVersion.length) ?? Object.keys(PARAMETRO).find((k) => cuentasDeLaVersion[k] > 0) ?? 'CON_DIFERENCIAS';
+    const enLaVista = (s) => (conVista === 'CON_DIFERENCIAS' ? (s.conDiferencias ?? 0) > 0 : conVista === 'SIN_REGISTRAR' ? s.sinRegistrar > 0 : s.conDesvio);
+    const esperadas = deLaVersion.filter(enLaVista).map((s) => s.id);
+    await entrar(`${BASE}&p=90&version=${versionConSesiones}&ver=${PARAMETRO[conVista]}`);
+    await cupo(v, 60);
+    const alActualizar = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await quieto(page, v);
+    await page.waitForSelector(LISTA, { timeout: 30_000 }).catch(() => {});
+    await verTodas();
+    const trasActualizar = await sesionesEnPantalla(page);
+    comprobar(
+      'F-28',
+      'El período, la vista y el filtro por versión del plan viven en la dirección: con una versión elegida se ven solo sus sesiones, las cantidades de las cuatro vistas son las de esa versión (a mano) y la pantalla dice que hay un filtro puesto; «Actualizar» vuelve a leer y conserva el período, la versión y la vista',
+      deLaVersion.length > 0 &&
+        deLaVersion.length < E90.sesiones.length &&
+        igual(filtrada.filas.map((f) => f.id), deLaVersion.map((s) => s.id)) &&
+        cuentasBien(filtrada.vistas, cuentasDeLaVersion) &&
+        /con un filtro de «Más filtros»/.test(filtrada.cuenta ?? '') &&
+        esperadas.length > 0 &&
+        pedidos('/training/review-context', alActualizar).length === 1 &&
+        parametros(page).get('p') === '90' &&
+        parametros(page).get('version') === versionConSesiones &&
+        parametros(page).get('ver') === PARAMETRO[conVista] &&
+        igual(trasActualizar.filas.map((f) => f.id), esperadas),
+      `de esa versión: ${filtrada.filas.length} sesiones (a mano: ${deLaVersion.length} de ${E90.sesiones.length}) · ${filtrada.vistas.map((x) => `${x.nombre} ${x.cuenta}`).join(' · ')} — a mano: ${ORDEN.map((k) => cuentasDeLaVersion[k]).join(', ')} · «${filtrada.cuenta}» · tras «Actualizar», con «${PARAMETRO[conVista]}»: ${trasActualizar.filas.length} (a mano: ${esperadas.length})`,
+    );
+  } else {
+    informar('F-28', 'El filtro por versión del plan', 'las sesiones de los últimos 90 días son todas de una misma versión: no se pudo mirar');
+  }
+
+  // ── Los tiempos de una sesión, con una respuesta armada por el recorrido ─────────────────────────────────────
+  // El escenario no tiene ninguna sesión con tiempos marcados. Se entrega, para esta sesión, una respuesta que cumple el
+  // contrato de API-TIE-03: lo que se mira es la pantalla, no el cálculo de los tiempos (que tiene sus pruebas).
+  if (ejecucionElegida) {
+    const p1 = ejecucionElegida.plannedSession.prescriptions[0];
+    const instante = (segundos) => new Date(Date.parse(ejecucionElegida.occurredAt) + segundos * 1000).toISOString();
+    const conTiempos = {
+      coincide: (u) => u.includes(`/training/executions/${elegida.id}/timing`),
+      accion: 'entregar',
+      cuerpo: {
+        data: {
+          ...tiemposReales,
+          state: 'FINISHED',
+          startedAt: instante(0),
+          finishedAt: instante(3260),
+          session: { elapsed: { ms: 3_260_000, quality: 'MEASURED' }, pauses: { ms: 190_000, quality: 'MEASURED' }, withoutPauses: { ms: 3_070_000, quality: 'ESTIMATED' } },
+          exercises: [{ prescriptionId: p1.prescriptionId, duration: { ms: 905_000, quality: 'MEASURED' } }],
+          unassigned: { ms: 65_000, quality: 'MEASURED' },
+          // El primer descanso, medido. El segundo quedó abierto (la app se cerró en el medio): no tiene fin ni duración.
+          rests: [
+            { restId: 'descanso-del-recorrido-1', prescriptionId: p1.prescriptionId, setIndex: 1, startedAt: instante(60), finishedAt: instante(165), duration: { ms: 105_000, quality: 'MEASURED' }, recommendedSeconds: 90, differenceMs: 15_000 },
+            { restId: 'descanso-del-recorrido-2', prescriptionId: p1.prescriptionId, setIndex: 2, startedAt: instante(230), finishedAt: null, duration: { ms: null, quality: 'INCOMPLETE' }, recommendedSeconds: 90, differenceMs: null },
+          ],
+          timedSets: [{ timingId: 'serie-del-recorrido-1', prescriptionId: p1.prescriptionId, setIndex: 1, startedAt: instante(10), finishedAt: instante(50), duration: { ms: 40_000, quality: 'MEASURED' } }],
+        },
+      },
+    };
+    await salir();
+    v.reglas.push(conTiempos);
+    await entrar(`${BASE}&p=90&sesion=${elegida.id}`);
+    await page.waitForSelector('aside.detalle-de-sesion .datos-de-tiempo', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    await clic(page, 'aside.detalle-de-sesion .detalle-de-sesion__mas summary', 'Descansos y duración de cada serie').catch(() => null);
+    await pausa(300);
+    const tiemposEnPantalla = await page.evaluate(() => {
+      const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+      const d = document.querySelector('aside.detalle-de-sesion');
+      const abierto = [...(d?.querySelectorAll('.detalle-de-sesion__mas details[open]') ?? [])].find((x) => /Descansos y duración/.test(x.querySelector('summary')?.innerText ?? ''));
+      const cuerpo = abierto?.querySelector('tbody');
+      return {
+        renglon: t(d?.querySelector('.detalle-de-sesion__tiempos')),
+        ejercicio: t(cuerpo?.querySelector('.tabla-de-series__ejercicio')),
+        series: [...(cuerpo?.querySelectorAll('tr:not(.tabla-de-series__ejercicio)') ?? [])].map((tr) => [...tr.children].map(t)),
+        resto: t(abierto),
+      };
+    });
+    // La única captura de los tiempos en pantalla: sale de esta respuesta armada, y se llama así para que no se confunda.
+    await captura(page, v, 'sesion-con-tiempos-simulados-1440-azul-noche');
+    v.reglas.splice(v.reglas.indexOf(conTiempos), 1);
+    const primera = tiemposEnPantalla.series[0] ?? [];
+    const segunda = tiemposEnPantalla.series[1] ?? [];
+    const tercera = tiemposEnPantalla.series[2] ?? [];
+    comprobar(
+      'F-27',
+      'Con tiempos marcados (una respuesta armada por el recorrido: el escenario no tiene ninguna sesión con tiempos), el detalle dice los tres tiempos de la sesión, cada uno con su certeza, y «Descansos y duración de cada serie» abre en el lugar el descanso de cada serie frente al recomendado, su duración y el tiempo de cada ejercicio; un descanso que quedó abierto dice «Incompleto» (no se completa con otra hora) y una serie sin descanso marcado lo dice con palabras',
+      /Tiempo transcurrido 54:20 · medido/.test(tiemposEnPantalla.renglon ?? '') &&
+        /Pausas 03:10 · medido/.test(tiemposEnPantalla.renglon ?? '') &&
+        /Sin pausas 51:10 · estimado/.test(tiemposEnPantalla.renglon ?? '') &&
+        (tiemposEnPantalla.ejercicio ?? '').includes('15:05 · medido') &&
+        igual(primera, ['1', '01:45 registrado · 01:30 recomendado · +00:15', 'Duración medida 00:40']) &&
+        segunda[1] === 'Incompleto · 01:30 recomendado' &&
+        tercera[1] === 'Sin descanso marcado' &&
+        /Sin ejercicio asignado: 01:05 · medido/.test(tiemposEnPantalla.resto ?? '') &&
+        !tiemposEnPantalla.series.flat().includes('—'),
+      `«${(tiemposEnPantalla.renglon ?? '').slice(0, 110)}» · la serie 1: ${primera.join(' | ') || 'sin tabla'} · la serie 2: ${segunda.join(' | ')} · la serie 3: ${tercera.join(' | ')} · ${(tiemposEnPantalla.ejercicio ?? '').slice(0, 60)}`,
+    );
+
+    // ── Lo que quedó a un clic se abre: la sesión en el plan, el gráfico por serie y el registro original ─────────
+    await entrar(`${BASE}&p=90&sesion=${elegida.id}`);
+    await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const abrirEnElLugar = async (titulo) => {
+      await clic(page, 'aside.detalle-de-sesion .detalle-de-sesion__mas summary', titulo).catch(() => null);
+      await pausa(400);
+      return page.evaluate((x) => {
+        const d = [...document.querySelectorAll('aside.detalle-de-sesion .detalle-de-sesion__mas details[open]')].find((y) => (y.querySelector('summary')?.innerText ?? '').includes(x));
+        return d ? { texto: d.innerText.replace(/\s+/g, ' ').trim(), graficos: d.querySelectorAll('svg.recharts-surface, table').length } : null;
+      }, titulo);
+    };
+    const enElPlan = await abrirEnElLugar('Ver la sesión en el plan');
+    const elOriginal = await abrirEnElLugar('Registro original');
+    await clic(page, 'aside.detalle-de-sesion .detalle-de-sesion__mas summary', 'Ver en un gráfico').catch(() => null);
+    await page.waitForSelector('aside.detalle-de-sesion .detalle-de-sesion__mas details[open] svg.recharts-surface', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const elGrafico = await page.evaluate(() => document.querySelectorAll('aside.detalle-de-sesion .detalle-de-sesion__mas details[open] svg.recharts-surface').length);
+    comprobar(
+      'F-32',
+      'Nada de lo que se veía se quitó, está a un clic y se abre en el lugar: «Ver la sesión en el plan» muestra cada ejercicio indicado ese día; «Registro original», lo que registró la persona, con su condición; y «Ver en un gráfico», el gráfico por serie',
+      !!enElPlan &&
+        ejecucionElegida.plannedSession.prescriptions.every((p) => enElPlan.texto.includes(p.exerciseName)) &&
+        !!elOriginal &&
+        /Registrado el /.test(elOriginal.texto) &&
+        elOriginal.texto.includes(CONDICION[ejecucionElegida.original.sessionCondition]) &&
+        elGrafico >= 1,
+      `en el plan: ${ejecucionElegida.plannedSession.prescriptions.map((p) => p.exerciseName).join(', ')} · el original: «${(elOriginal?.texto ?? '').slice(0, 90)}» · gráficos: ${elGrafico}`,
+    );
+  }
+
+  // ── Si no se puede leer lo indicado, las sesiones se ven igual y lo dicen ────────────────────────────────────
+  const sinPlanes = { coincide: (u) => /\/training\/plans\/[^/]+\/detail/.test(u), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  await salir();
+  v.reglas.push(sinPlanes);
+  await entrar(`${BASE}&p=90`);
+  await verTodas();
+  const conFalla = await sesionesEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinPlanes), 1);
+  const ESinPlanes = esperado(ctx90, new Map());
+  await cupo(v, 60);
+  if (conFalla.falla) await clic(page, '.sesiones .estado-de-grafico--error button', 'Reintentar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForFunction(() => !document.querySelector('.sesiones .estado-de-grafico--error'), { timeout: 30_000 }).catch(() => {});
+  const repuesto = await sesionesEnPantalla(page);
+  comprobar(
+    'F-29',
+    'Si el plan de una versión no se puede leer (un 503 simulado), las sesiones siguen a la vista con lo registrado; un bloque lo dice, con «Reintentar»; cada sesión registrada serie por serie dice «No se pudo leer lo indicado» y ninguna dice «Dentro de lo indicado»; «Con diferencias» no lleva número (no un cero) y las otras vistas sí. «Reintentar» trae lo que faltaba',
+    /No pudimos leer lo indicado/.test(conFalla.falla ?? '') &&
+      conFalla.filas.length === ESinPlanes.sesiones.length &&
+      conFalla.filas.every((f, i) => filaBien(f, ESinPlanes.sesiones[i])) &&
+      ESinPlanes.sesiones.some((s) => /no se pudo leer lo indicado/i.test(s.frente)) &&
+      !conFalla.filas.some((f) => /Dentro de lo indicado/.test(f.frente)) &&
+      cuentasBien(conFalla.vistas, ESinPlanes.cuentas) &&
+      ESinPlanes.cuentas.CON_DIFERENCIAS === null &&
+      repuesto.falla === null &&
+      cuentasBien(repuesto.vistas, E90.cuentas),
+    `«${(conFalla.falla ?? '').slice(0, 110)}» · ${conFalla.vistas.map((x) => `${x.nombre} ${x.cuenta ?? 'sin número'}`).join(' · ')} · después: ${repuesto.vistas.map((x) => x.cuenta).join(', ')}`,
+  );
+
+  // ── «Actualizar» con una sesión abierta, la ayuda, la primera pantalla y axe ──────────────────────────────────
+  await entrar(`${BASE}&p=90&sesion=${elegida?.id}`);
+  await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.evaluate(() => {
+    window.__panelDeEncima = 0;
+    window.__vigiaDelPanel?.disconnect();
+    window.__vigiaDelPanel = new MutationObserver(() => {
+      if (document.querySelector('dialog.dialogo--panel[open]')) window.__panelDeEncima += 1;
+    });
+    window.__vigiaDelPanel.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+  });
+  await cupo(v, 60);
+  await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector('aside.detalle-de-sesion table.tabla-de-series', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const panelDeEncima = await page.evaluate(() => {
+    window.__vigiaDelPanel?.disconnect();
+    return window.__panelDeEncima ?? -1;
+  });
+  const trasActualizarLaSesion = await sesionesEnPantalla(page);
+  const medida = await page.evaluate(() => {
+    const abajo = (s) => {
+      const e = [...document.querySelectorAll(s)].pop();
+      return e ? Math.round(e.getBoundingClientRect().bottom + scrollY) : null;
+    };
+    const d = document.querySelector('aside.detalle-de-sesion');
+    return { alto: document.documentElement.scrollHeight, vistas: abajo('.sesiones .registros__vistas'), columnas: abajo('.sesiones__columnas'), lista: abajo('.sesiones__filas'), detalleAncho: d ? Math.round(d.getBoundingClientRect().width) : null, listaAncho: Math.round(document.querySelector('.sesiones__filas')?.getBoundingClientRect().width ?? 0) };
+  });
+  comprobar(
+    'F-28',
+    'La sesión abierta vive en la dirección: se abre al entrar con ella, y «Actualizar» la deja abierta al costado sin pasar por el panel de encima ni por un instante',
+    trasActualizarLaSesion.detalle?.titulo === nombreDeLaElegida && parametros(page).get('sesion') === elegida?.id && panelDeEncima === 0 && trasActualizarLaSesion.panel === null,
+    `«${trasActualizarLaSesion.detalle?.titulo}» · veces que el panel de encima estuvo abierto: ${panelDeEncima}`,
+  );
+  informar('F-30', 'Registros de Entrenamiento con 90 días y una sesión abierta, a 1440 × 900', `${medida.alto} px · las vistas terminan a los ${medida.vistas} px, los nombres de las columnas a los ${medida.columnas} y la lista de ${trasActualizarLaSesion.filas.length} sesiones (de ${E90.sesiones.length}), a los ${medida.lista} · la lista mide ${medida.listaAncho} px de ancho y el detalle, ${medida.detalleAncho}`);
+  comprobar(
+    'F-30',
+    'A 1440 × 900, con una sesión abierta, las vistas y los nombres de las columnas entran en la primera pantalla, y la lista conserva al menos 600 px de ancho al lado del detalle: no se aprieta hasta partir cada dato en varios renglones',
+    medida.columnas !== null && medida.columnas <= 900 && medida.listaAncho >= 600 && (medida.detalleAncho ?? 0) >= 500,
+    `la lista: ${medida.listaAncho} px · el detalle: ${medida.detalleAncho} px`,
+  );
+  const tapasAlCostado = await tapasDeLaSuperficie(page, 'aside.detalle-de-sesion');
+  const faltasConDetalle = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('aside.detalle-de-sesion'), { timeout: 10_000 }).catch(() => {});
+  const faltas = await axe(page);
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayuda = await page.evaluate(() => {
+    const d = document.querySelector('dialog.como-se-lee[open]');
+    if (!d) return { titulo: null, renglones: 0, vistas: [], foco: false };
+    return { titulo: d.querySelector('h2').innerText.trim(), renglones: d.querySelectorAll('.como-se-lee__lista > li').length, vistas: [...d.querySelectorAll('.como-se-lee__fuentes [data-vista]')].map((x) => x.dataset.vista), foco: document.activeElement === d.querySelector('h2') };
+  });
+  const faltasDeLaAyuda = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  comprobar(
+    'F-14',
+    'Registros de Entrenamiento tiene su ayuda en el marco del área: se abre por el título, explica cada cosa y dice qué trae cada una de las cuatro vistas; Entrenamiento · Resumen, que no tiene ayuda, no muestra el botón',
+    ayuda.titulo === 'Cómo se leen los Registros' && ayuda.renglones >= 10 && igual(ayuda.vistas, ORDEN) && ayuda.foco && faltasDeLaAyuda.length === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · ${ayuda.vistas.length} vistas · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}`,
+  );
+  comprobar('F-27', 'axe no encuentra faltas en Registros de Entrenamiento, ni con el detalle de una sesión al costado', faltas.length === 0 && faltasConDetalle.length === 0, `sin detalle: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · con detalle: ${faltasConDetalle.map((f) => f.id).join(', ') || 'sin faltas'}`);
+  await salir();
+  const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  comprobar('F-14', 'En Entrenamiento · Resumen el marco no muestra el botón de la ayuda (la misma consulta lo encuentra en Registros)', sinAyuda === 0, `${sinAyuda} botones`);
+
+  // ── A 1024 px el detalle se abre encima ─────────────────────────────────────────────────────────────────────
+  await page.setViewport({ width: 1024, height: 900 });
+  await entrar(`${BASE}&p=90`);
+  await page.click(`.sesion-registrada__fila[data-sesion="${elegida?.id}"]`).catch(() => {});
+  await page.waitForSelector('dialog.dialogo--panel[open] table.tabla-de-series', { timeout: 20_000 }).catch(() => {});
+  await quieto(page, v);
+  const angosto = await sesionesEnPantalla(page);
+  const desborda = !(await sinDesborde(page));
+  const tapasDelPanel = await tapasDeLaSuperficie(page, 'dialog.dialogo--panel[open]');
+  if (angosto.panel) await clic(page, 'dialog.dialogo--panel[open] button', 'Cerrar').catch(() => null);
+  await pausa(200);
+  await page.setViewport({ width: 1440, height: 900 });
+  comprobar(
+    'C-66',
+    'A 1024 px el detalle de la sesión se abre encima, en un panel que retiene el foco, con la misma tabla; la página no desborda de costado',
+    angosto.detalle === null && (angosto.panel?.texto ?? '').includes(nombreDeLaElegida ?? '···') && (angosto.panel?.tabla.length ?? 0) === (elegida?.tabla.length ?? -1) && !desborda,
+    `panel: «${(angosto.panel?.texto ?? '').slice(0, 60)}» · ejercicios en la tabla: ${angosto.panel?.tabla.length ?? 0} · al costado: ${angosto.detalle ? 'sí' : 'no'}${desborda ? ' · DESBORDA' : ''}`,
+  );
+  comprobar(
+    'C-66',
+    'La tabla de las series no lleva una franja a los costados, ni al costado ni en el panel de encima: las «tapas» de lo que se desplaza tienen el color de la superficie donde está, no el del fondo de la página',
+    tapasBien(tapasAlCostado) && tapasBien(tapasDelPanel),
+    `al costado — ${tapasEnPalabras(tapasAlCostado)} · en el panel — ${tapasEnPalabras(tapasDelPanel)}`,
+  );
+
+  // ── A 1280 px, con una sesión abierta, la lista queda angosta: ningún dato se sale de su columna ──────────────
+  // La marca más ancha de una fila es «Realizada con desvío»: se abre esa sesión, en la vista que la trae.
+  const conDesvioE = E90.sesiones.find((s) => s.condicion === CONDICION.COMPLETED_WITH_DEVIATION) ?? null;
+  if (conDesvioE) {
+    await page.setViewport({ width: 1280, height: 900 });
+    await entrar(`${BASE}&p=90&ver=con-desvio&sesion=${conDesvioE.id}`);
+    await page.waitForSelector('aside.detalle-de-sesion', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const angosta = await page.evaluate(() => {
+      const t = (e) => e.innerText.replace(/\s+/g, ' ').trim();
+      const celdas = [...document.querySelectorAll('.sesion-registrada__fila > span')];
+      // Un dato está fuera de su columna si su borde derecho pasa el de la celda que lo contiene.
+      const fuera = celdas.flatMap((c) => [...c.children].filter((x) => x.getBoundingClientRect().right > c.getBoundingClientRect().right + 1).map(t));
+      // Las partes de un dato de la tabla («77,5 kg ·», «6 rep. ·», «RIR 1»): una parte partida ocupa más de un renglón.
+      const partidas = () => {
+        const partes = [...document.querySelectorAll('aside.detalle-de-sesion .tabla-de-series--frente-a-lo-indicado .parte-de-dato')];
+        const altos = partes.map((p) => p.getBoundingClientRect().height);
+        const unRenglon = Math.min(...altos);
+        return { partes: partes.length, partidas: partes.filter((p, i) => altos[i] > unRenglon + 3).map(t) };
+      };
+      const conLaRegla = partidas();
+      // La misma medida sin la regla que mantiene entera cada parte, quitada en el navegador: dice si la medida ve algo.
+      const estilo = document.createElement('style');
+      estilo.textContent = '.parte-de-dato { display: inline !important; }';
+      document.head.append(estilo);
+      const sinLaRegla = partidas();
+      estilo.remove();
+      return {
+        celdas: celdas.length,
+        fuera,
+        marcas: [...document.querySelectorAll('.sesion-registrada__fila .etiqueta-de-dato')].map(t),
+        lista: Math.round(document.querySelector('.sesiones__filas')?.getBoundingClientRect().width ?? 0),
+        alCostado: !!document.querySelector('aside.detalle-de-sesion'),
+        conLaRegla,
+        sinLaRegla,
+        // Las frases de dos partes de la lista, tal como están en la página (sin normalizar los espacios).
+        frases: [...document.querySelectorAll('.sesion-registrada__frente')].map((c) => c.lastChild?.textContent ?? '').filter((x) => x.includes('·')),
+      };
+    });
+    await page.setViewport({ width: 1440, height: 900 });
+    comprobar(
+      'F-30',
+      'A 1280 px, con una sesión abierta al costado, la lista queda angosta y ningún dato se sale de su columna: la marca «Realizada con desvío» parte su texto adentro, sin pisar la columna de las series',
+      angosta.alCostado && angosta.marcas.includes(CONDICION.COMPLETED_WITH_DEVIATION) && angosta.fuera.length === 0,
+      `la lista: ${angosta.lista} px · ${angosta.celdas} datos · marcas: ${angosta.marcas.join(', ') || 'ninguna'} · fuera de su columna: ${angosta.fuera.join(' | ') || 'ninguno'}`,
+    );
+    comprobar(
+      'F-30',
+      'A 1280 px, en la tabla del detalle, lo que no entra en un renglón baja de a una parte entera: ninguna parte de un dato («RIR 1», «6 rep.») queda partida entre dos renglones',
+      angosta.conLaRegla.partes > 0 && angosta.conLaRegla.partidas.length === 0,
+      `${angosta.conLaRegla.partes} partes · partidas: ${angosta.conLaRegla.partidas.join(' | ') || 'ninguna'} · sin la regla (quitada en el navegador, para probar la medida): ${angosta.sinLaRegla.partidas.length} partidas${angosta.sinLaRegla.partidas.length > 0 ? `, la primera «${angosta.sinLaRegla.partidas[0]}»` : ''}`,
+    );
+    // En la lista las partes son frases y corren como cualquier texto; lo que no se parte es el espacio entre el número
+    // y lo que cuenta, y el que va antes del separador (U+00A0). Con espacios comunes quedaba «… · 1» y, abajo, «serie».
+    const NBSP = ' ';
+    const fraseBien = (x) => x.split(`${NBSP}· `).length >= 2 && !x.includes(' · ') && x.split(`${NBSP}· `).every((parte) => !/^\d+ /.test(parte));
+    comprobar(
+      'F-30',
+      'En la fila de una sesión, una frase de dos partes («1 serie con diferencias · un ejercicio no se compara») no deja el número separado de lo que cuenta ni el separador al principio de un renglón: esos dos espacios no se parten, y el texto que se lee no cambia',
+      angosta.frases.length > 0 && angosta.frases.every(fraseBien),
+      `${angosta.frases.length} frases de dos partes · la primera: «${(angosta.frases[0] ?? '').replaceAll(NBSP, '⍽')}» (⍽ es el espacio que no se parte)`,
+    );
+  } else {
+    informar('F-30', 'Una sesión «Realizada con desvío», a 1280 px', 'el escenario no tiene ninguna en los últimos 90 días: no se pudo mirar');
+  }
+  comprobar('—', 'Registros de Entrenamiento no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Nutrición · Registros: la estimación del profesional (WP-ESCRITORIO-AREAS, parte 1) ──────────────────────────
+
+/**
+ * La estimación del profesional sobre una comida diferente (NUT-12; C-50), que se agrega desde el detalle del registro.
+ * **Escribe en el escenario:** le suma una estimación a una comida diferente. Por eso no va dentro de `funcional`: corre
+ * sola (`node recorrido.mjs estimacion`) y última en la pasada completa, para que ningún otro recorrido lea lo que deja.
+ * Una de las comprobaciones mira una falla simulada por el recorrido (un 503 al guardar), y lo dice. Lo esperado sale de
+ * lo que devuelve la API antes y después de escribir.
+ */
+async function estimacionDeUnaComida(page, v) {
+  const A = estado.aseId;
+  const DESCRIPCION = 'Milanesa de carne al horno con ensalada';
+  const GRAMOS = '250';
+  const desde = diaMenos(hoy, 89);
+  const leerElContexto = async () => (await leerApi(v, `/advisees/${A}/nutrition/review-context?periodStart=${desde}&periodEnd=${hoy}`)).data;
+  const ingestaDe = (ctx, id) => ctx.registeredIntakes.find((i) => i.executionId === id) ?? null;
+  const antes = await leerElContexto();
+  const fuera = antes.descriptiveContrast.days.flatMap((d) => d.outsidePrescription.map((o) => ({ ...o, fecha: d.date }))).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  // Las filas que tiene que traer la vista «Comida diferente», a mano: una por comida del plan con alguna, y las sueltas.
+  const filasDeLaVista = antes.descriptiveContrast.days.reduce((n, d) => {
+    const enUnaComida = new Set(d.meals.flatMap((m) => m.differentMealExecutionIds));
+    return n + d.meals.filter((m) => m.differentMealExecutionIds.length > 0).length + d.outsidePrescription.filter((o) => !enUnaComida.has(o.executionId)).length;
+  }, 0);
+  // La comida diferente más nueva que todavía no tiene una estimación; si todas tienen, la más nueva.
+  const elegida = fuera.find((o) => (ingestaDe(antes, o.executionId)?.corrections.length ?? 0) === 0) ?? fuera[0] ?? null;
+  if (!elegida || !ingestaDe(antes, elegida.executionId)) {
+    informar('C-50', 'La estimación del profesional sobre una comida diferente', 'el escenario no tiene una comida diferente en los últimos 90 días: no se pudo mirar');
+    return;
+  }
+  const id = elegida.executionId;
+  const habia = ingestaDe(antes, id).corrections.length;
+  const POSTS = (desdeDonde) => v.urls.slice(desdeDonde).filter((u) => u.startsWith('POST ') && u.includes(`/nutrition/executions/${id}/corrections`));
+  const ESTIMACION = 'aside.detalle-del-hecho .estimacion-del-profesional';
+  const CAMPO = (sufijo) => `${ESTIMACION} input[id="est-${id}-${sufijo}"]`;
+  const leer = () =>
+    page.evaluate(
+      (estimacionS, registro) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector('aside.detalle-del-hecho');
+        const e = document.querySelector(estimacionS);
+        const valor = (sufijo) => e?.querySelector(`input[id$="-${sufijo}"]`)?.value ?? null;
+        return {
+          titulo: t(d?.querySelector('h3')),
+          texto: t(d) ?? '',
+          rasgos: [...(d?.querySelectorAll('.datos-del-hecho__rasgos .etiqueta-de-dato') ?? [])].map(t),
+          estimacion: t(e) ?? '',
+          formulario: !!e?.querySelector('fieldset'),
+          descripcion: valor('desc'),
+          gramos: valor('g'),
+          errores: [...(e?.querySelectorAll('.campo__error') ?? [])].map(t),
+          aviso: t(e?.querySelector('.aviso--error')),
+          filaElegida: document.querySelector(`.comida-del-dia [data-registro="${registro}"]`)?.getAttribute('aria-current') === 'true',
+          filas: [...document.querySelectorAll('.registros .comida-del-dia')].filter((x) => x.getClientRects().length > 0).length,
+        };
+      },
+      ESTIMACION,
+      id,
+    );
+  const escribir = async (sufijo, valor) => {
+    // Seleccionar todo con el teclado: tres clics no seleccionan el contenido de un campo de una sola palabra.
+    const enfocado = await page.focus(CAMPO(sufijo)).then(
+      () => true,
+      () => false,
+    );
+    if (!enfocado) return;
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyA');
+    await page.keyboard.up('Control');
+    await page.keyboard.press('Backspace');
+    if (valor) await page.type(CAMPO(sufijo), valor).catch(() => {});
+  };
+  /** Deja el formulario abierto y con lo escrito: una versión rota puede haberlo cerrado o vaciado, y hay que poder seguir. */
+  const dejarEscrito = async () => {
+    if (!(await leer()).formulario) {
+      await clic(page, `${ESTIMACION} button.boton--secundario`, 'Agregar estimación').catch(() => null);
+      await page.waitForSelector(`${ESTIMACION} fieldset`, { timeout: 10_000 }).catch(() => {});
+    }
+    const hay = await leer();
+    if (hay.descripcion !== DESCRIPCION) await escribir('desc', DESCRIPCION);
+    if (hay.gramos !== GRAMOS) await escribir('g', GRAMOS);
+  };
+  const guardar = () => clic(page, `${ESTIMACION} button.boton--primario`, 'Agregar estimación').catch(() => null);
+  const actualizar = () => clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+  const pregunta = (ms) =>
+    page.waitForSelector('dialog.dialogo[open]:not(.dialogo--panel)', { timeout: ms }).then(
+      () => true,
+      () => false,
+    );
+
+  // ── El registro de la comida diferente, abierto por su dirección ─────────────────────────────────────────────
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees/nutrition?id=${A}&vista=registros&p=90&ver=comida-diferente&registro=${id}`);
+  await page.waitForSelector('#titulo-registros', { timeout: 30_000 });
+  await quieto(page, v);
+  await page.waitForSelector(ESTIMACION, { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const alAbrir = await leer();
+  comprobar(
+    'C-50',
+    'El registro de una comida diferente se abre por su dirección, con la vista «Comida diferente» elegida: su fila queda marcada, el detalle dice «Fuera del plan», la descripción original y que los macros no se calculan, y ofrece «Agregar estimación»',
+    alAbrir.filaElegida &&
+      alAbrir.rasgos.includes('Fuera del plan') &&
+      (elegida.description ? alAbrir.texto.includes(elegida.description) : true) &&
+      /Macros sin calcular/.test(alAbrir.texto) &&
+      /Agregar estimación/.test(alAbrir.estimacion) &&
+      !alAbrir.formulario &&
+      filasDeLaVista > 0 &&
+      alAbrir.filas === filasDeLaVista,
+    `«${alAbrir.titulo}» · ${alAbrir.rasgos.join(', ') || 'sin etiquetas'} · ${alAbrir.filas} filas en la vista (a mano: ${filasDeLaVista}) · estimaciones que ya tenía: ${habia}`,
+  );
+
+  // ── Lo que no sale: sin describir nada, o con una cantidad que no es un número ───────────────────────────────
+  await clic(page, `${ESTIMACION} button.boton--secundario`, 'Agregar estimación').catch(() => null);
+  await page.waitForSelector(`${ESTIMACION} fieldset`, { timeout: 10_000 }).catch(() => {});
+  const alValidar = v.urls.length;
+  await guardar();
+  await pausa(300);
+  const vacio = await leer();
+  await escribir('desc', DESCRIPCION);
+  await escribir('g', 'doscientos');
+  await guardar();
+  await pausa(300);
+  const conLetras = await leer();
+  comprobar(
+    'F-18',
+    'La estimación no sale sin describir nada ni con una cantidad que no es un número: cada error se marca en su campo, con su motivo, y no se le pide nada a la API',
+    vacio.formulario &&
+      vacio.errores.some((e) => e.includes('Describí lo que estimás.')) &&
+      conLetras.errores.length === 1 &&
+      !conLetras.errores[0].includes('Describí') &&
+      conLetras.descripcion === DESCRIPCION &&
+      POSTS(alValidar).length === 0,
+    `sin describir: ${vacio.errores.join(' | ') || 'ningún error marcado'} · con «doscientos»: ${conLetras.errores.join(' | ') || 'ningún error marcado'} · pedidos a la API: ${POSTS(alValidar).length}`,
+  );
+  await escribir('g', GRAMOS);
+
+  // ── Con algo escrito, «Actualizar» pregunta antes ───────────────────────────────────────────────────────────
+  await cupo(v, 60);
+  const alPreguntar = v.urls.length;
+  await actualizar();
+  const pregunto = await pregunta(8_000);
+  let laPregunta = '(no preguntó)';
+  let leyoAlPreguntar = -1;
+  if (pregunto) {
+    laPregunta = await texto(page, 'dialog.dialogo[open]:not(.dialogo--panel)');
+    await pausa(600);
+    leyoAlPreguntar = v.urls.slice(alPreguntar).filter((u) => u.startsWith('GET ')).length;
+    await clic(page, 'dialog.dialogo[open]:not(.dialogo--panel) button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog.dialogo[open]:not(.dialogo--panel)'), { timeout: 10_000 }).catch(() => {});
+  } else {
+    await quieto(page, v);
+    await page.waitForSelector(ESTIMACION, { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+  }
+  const trasPreguntar = await leer();
+  comprobar(
+    'F-08',
+    'Con la estimación a medio escribir, «Actualizar» pregunta antes, dice qué se pierde (la estimación de una comida) y no lee nada; «Seguir editando» deja lo escrito y el registro abierto',
+    pregunto && /Tenés cambios sin guardar/.test(laPregunta) && /la estimación de una comida/.test(laPregunta) && leyoAlPreguntar === 0 && trasPreguntar.formulario && trasPreguntar.descripcion === DESCRIPCION && trasPreguntar.gramos === GRAMOS,
+    `«${laPregunta.slice(0, 150)}» · lecturas mientras pregunta: ${leyoAlPreguntar} · tras «Seguir editando»: «${trasPreguntar.descripcion}», «${trasPreguntar.gramos}»`,
+  );
+  await dejarEscrito();
+
+  // ── Si guardar falla, lo dice y no se pierde lo escrito ─────────────────────────────────────────────────────
+  const falla = { coincide: (u) => u.includes(`/nutrition/executions/${id}/corrections`), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+  v.reglas.push(falla);
+  await cupo(v, 60);
+  await guardar();
+  await page.waitForSelector(`${ESTIMACION} .aviso--error`, { timeout: 15_000 }).catch(() => {});
+  await quieto(page, v);
+  const conFalla = await leer();
+  v.reglas.splice(v.reglas.indexOf(falla), 1);
+  const trasLaFalla = ingestaDe(await leerElContexto(), id);
+  comprobar(
+    'F-18',
+    'Si guardar falla (un 503 simulado por el recorrido), lo dice con su motivo, el formulario sigue abierto con lo escrito y el registro queda como estaba',
+    !!conFalla.aviso && conFalla.formulario && conFalla.descripcion === DESCRIPCION && conFalla.gramos === GRAMOS && trasLaFalla?.corrections.length === habia,
+    `«${conFalla.aviso ?? 'sin aviso'}» · lo escrito: «${conFalla.descripcion}», «${conFalla.gramos}» · estimaciones en la API: ${trasLaFalla?.corrections.length} (había ${habia})`,
+  );
+  await dejarEscrito();
+
+  // ── Guardar: por la API, una vez, y la pantalla lo muestra ───────────────────────────────────────────────────
+  await cupo(v, 60);
+  const alGuardar = v.urls.length;
+  await guardar();
+  await page
+    .waitForFunction(
+      (s, d) => {
+        const e = document.querySelector(s);
+        return !!e && !e.querySelector('fieldset') && e.innerText.includes(d);
+      },
+      { timeout: 30_000 },
+      ESTIMACION,
+      DESCRIPCION,
+    )
+    .catch(() => {});
+  await quieto(page, v);
+  const guardado = await leer();
+  const despues = await leerElContexto();
+  const ingesta = ingestaDe(despues, id);
+  const ultima = ingesta?.corrections.at(-1) ?? null;
+  const item = ultima?.structuredEstimate.items[0] ?? null;
+  const original = despues.descriptiveContrast.days.flatMap((d) => d.outsidePrescription).find((o) => o.executionId === id)?.description ?? null;
+  comprobar(
+    'C-50',
+    '«Agregar estimación» guarda por la API con un solo pedido: la estimación queda en la historia del registro con lo escrito (la descripción y 250 g) y pasa a ser la vigente; la descripción original sigue igual. La pantalla la muestra con quién la hizo, sin cerrar el registro',
+    POSTS(alGuardar).length === 1 &&
+      ingesta?.corrections.length === habia + 1 &&
+      item?.description === DESCRIPCION &&
+      item?.quantity?.value === 250 &&
+      item?.quantity?.unit === 'g' &&
+      ingesta?.effectiveView.kind === 'CORRECTED' &&
+      ingesta?.effectiveView.correctionId === ultima?.correctionId &&
+      original === elegida.description &&
+      !guardado.formulario &&
+      guardado.estimacion.includes(DESCRIPCION) &&
+      /250 g/.test(guardado.estimacion) &&
+      guardado.estimacion.includes(ultima?.author.displayName ?? '···') &&
+      (elegida.description ? guardado.texto.includes(elegida.description) : true) &&
+      parametros(page).get('registro') === id &&
+      guardado.filaElegida,
+    `pedidos: ${POSTS(alGuardar).length} · en la API: ${ingesta?.corrections.length} estimaciones (había ${habia}), la última «${item?.description}» · ${item?.quantity ? `${item.quantity.value} ${item.quantity.unit}` : 'sin cantidad'} · original: «${original}» · en pantalla: «${guardado.estimacion.slice(0, 140)}»`,
+  );
+
+  // ── Ya no hay nada sin guardar: «Actualizar» no pregunta ─────────────────────────────────────────────────────
+  await cupo(v, 60);
+  const alActualizar = v.urls.length;
+  await actualizar();
+  const preguntoDeNuevo = await pregunta(2_500);
+  if (preguntoDeNuevo) await clic(page, 'dialog.dialogo[open]:not(.dialogo--panel) button', 'Actualizar y descartar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector(ESTIMACION, { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const trasActualizar = await leer();
+  const releyo = v.urls.slice(alActualizar).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/review-context')).length;
+  comprobar(
+    'F-08',
+    'Con la estimación guardada no queda nada sin guardar: «Actualizar» no pregunta, vuelve a leer y el registro sigue abierto, con la vista elegida y su estimación',
+    !preguntoDeNuevo && releyo === 1 && parametros(page).get('registro') === id && parametros(page).get('ver') === 'comida-diferente' && trasActualizar.estimacion.includes(DESCRIPCION) && !trasActualizar.formulario,
+    `preguntó: ${preguntoDeNuevo ? 'sí' : 'no'} · lecturas del contexto: ${releyo} · «${trasActualizar.estimacion.slice(0, 110)}»`,
+  );
+  comprobar('—', 'La estimación de una comida no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Antropometría · Tomas (WP-ESCRITORIO-AREAS, parte 3) ──────────────────────────────────────────────────────────
+
+/** Lo que «Tomas» tiene a la vista: la cuenta, la lista por tramos (o el selector), la toma abierta y el panel, si lo hay. */
+const tomasEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const lista = aLaVista(document.querySelector('nav.tomas-del-area__lista'));
+    const selector = aLaVista(document.querySelector('.tomas-del-area__selector select'));
+    const toma = document.querySelector('article.toma-abierta');
+    const panel = document.querySelector('dialog.dialogo--panel[open]');
+    return {
+      cuenta: t(document.querySelector('[data-cuenta-de-tomas]')),
+      bajada: t(document.querySelector('.tomas-del-area .registros__bajada')),
+      preparar: t(aLaVista(document.querySelector('.tomas-del-area__preparar button'))),
+      enPreparacion: t(aLaVista(document.querySelector('.tomas-del-area__preparar .nota'))),
+      tramos: lista
+        ? [...lista.querySelectorAll('.tramo-de-tomas')].map((x) => ({
+            protocolo: t(x.querySelector('.tramo-de-tomas__protocolo')),
+            tomas: [...x.querySelectorAll('button.toma-de-la-lista')].map((b) => ({ id: b.dataset.toma, fecha: t(b.querySelector('.toma-de-la-lista__fecha')), cuentas: t(b.querySelector('.toma-de-la-lista__cuentas')), elegida: b.getAttribute('aria-current') === 'true' })),
+          }))
+        : null,
+      opciones: selector ? [...selector.options].map((o) => ({ id: o.value, texto: o.textContent.replace(/\s+/g, ' ').trim(), elegida: o.selected })) : null,
+      toma: toma
+        ? {
+            id: toma.dataset.toma,
+            titulo: t(toma.querySelector('#titulo-toma')),
+            clase: t(toma.querySelector('.toma-abierta__encabezado .etiqueta-de-dato')),
+            metadatos: t(toma.querySelector('.toma-abierta__metadatos')),
+            categorias: [...toma.querySelectorAll('.categoria-de-resultados')].map((c) => ({
+              titulo: t(c.querySelector('h4')),
+              resultados: [...c.querySelectorAll('button.resultado-de-la-toma')].map((b) => ({ id: b.dataset.resultado, nombre: t(b.querySelector('.resultado-de-la-toma__nombre')), valor: t(b.querySelector('.resultado-de-la-toma__valor')), marcas: [...b.querySelectorAll('.etiqueta-de-dato')].map(t) })),
+            })),
+            sinCalculos: t(toma.querySelector('.resultados-de-la-toma__sin-calculos')),
+            anteriores: t(toma.querySelector('button[aria-controls="anteriores-sin-efecto"]')),
+            sinEfecto: [...toma.querySelectorAll('.anteriores-sin-efecto button.resultado-de-la-toma')].map((b) => ({ id: b.dataset.resultado, nombre: t(b.querySelector('.resultado-de-la-toma__nombre')), valor: t(b.querySelector('.resultado-de-la-toma__valor')) })),
+            fallaDeResultados: t(toma.querySelector('.resultados-de-la-toma .aviso--error')),
+            // Una toma de pocas mediciones pone sus familias una al lado de la otra; las demás, cada una en su lugar.
+            pocas: toma.querySelector('.familias-de-la-toma')?.classList.contains('familias-de-la-toma--pocas') ?? null,
+            familias: [...toma.querySelectorAll('.familia-de-la-toma')].map((f) => ({
+              familia: f.dataset.familia,
+              izquierda: Math.round(f.getBoundingClientRect().left),
+              derecha: Math.round(f.getBoundingClientRect().right),
+              arriba: Math.round(f.getBoundingClientRect().top),
+              titulo: t(f.querySelector('h4')),
+              filas: [...f.querySelectorAll('button.medicion-de-la-toma')].map((b) => ({ id: b.dataset.medicion, nombre: t(b.querySelector('.medicion-de-la-toma__nombre')), valor: t(b.querySelector('.medicion-de-la-toma__valor')), marcas: [...b.querySelectorAll('.etiqueta-de-dato')].map(t), anulada: b.dataset.anulada === 'si', rotulo: b.getAttribute('aria-label') })),
+            })),
+            // Los botones que hay entre las mediciones, además de las filas: «Corregir» y «Anular» ya no están ahí.
+            botonesSueltos: [...toma.querySelectorAll('.mediciones-de-la-toma button:not(.medicion-de-la-toma)')].map(t),
+          }
+        : null,
+      leyendo: !!aLaVista(document.querySelector('.tomas-del-area__toma .cargando')),
+      aviso: t(aLaVista(document.querySelector('.tomas-del-area__toma .aviso'))),
+      vacio: t(aLaVista(document.querySelector('.tomas-del-area .estado-vacio'))),
+      falla: t(aLaVista(document.querySelector('.seccion-del-area .estado-de-grafico--error, .tomas-del-area .estado-de-grafico--error'))),
+      panel: panel
+        ? {
+            titulo: t(panel.querySelector('.dialogo__encabezado h2')),
+            conElFoco: panel.contains(document.activeElement),
+            deDonde: t(panel.querySelector('.medicion-abierta__de-donde')),
+            valor: t(panel.querySelector('.medicion-abierta__valor')),
+            marcas: [...panel.querySelectorAll('.medicion-abierta__marcas .etiqueta-de-dato')].map(t),
+            datos: [...panel.querySelectorAll('.medicion-abierta__datos > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]),
+            historia: [...panel.querySelectorAll('.historia-de-medicion__evento')].map((e) => ({ tipo: e.dataset.evento, rige: e.dataset.rige === 'si', titulo: t(e.querySelector('.historia-de-medicion__titulo')), nota: t(e.querySelector('.nota')), cuando: t(e.querySelector('.historia-de-medicion__cuando')) })),
+            cambios: [...panel.querySelectorAll('.cambios-de-resultados')].map((u) => ({ clase: u.dataset.cambios, filas: [...u.querySelectorAll('li')].map((li) => ({ nombre: t(li.querySelector('.cambios-de-resultados__nombre')), valores: t(li.querySelector('.cambios-de-resultados__valores')) })) })),
+            bloques: [...panel.querySelectorAll('.medicion-abierta__bloque')].map((b) => ({ titulo: t(b.querySelector('h3')), texto: t(b) })),
+            entradas: panel.querySelectorAll('.entradas-del-calculo li').length,
+            acciones: [...panel.querySelectorAll('.medicion-abierta__pie button, .nuevo-calculo > .acciones button')].map(t),
+            formulario: panel.querySelector('[data-formulario]')?.dataset.formulario ?? null,
+            metodos: panel.querySelectorAll('#cal-metodo option').length,
+            exito: t(panel.querySelector('.aviso--exito')),
+            error: t(panel.querySelector('.aviso--error')),
+            texto: t(panel),
+          }
+        : null,
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/**
+ * Los cortes de renglón mal puestos en los textos que encuentra el selector (solo los que están a la vista): un número
+ * arriba y la palabra que cuenta abajo («1» / «anulada»), o el separador « · » al principio de un renglón. Mira dónde
+ * quedó cada letra en la pantalla, no cómo está armado el texto: sirve igual con espacios que no se parten, con partes
+ * que bajan enteras o sin nada de eso. Devuelve los cortes y cuántos textos ocupan más de un renglón (si ninguno lo
+ * hace, la medida no tuvo nada que mirar).
+ */
+const cortesMalPuestos = (page, selector) =>
+  page.evaluate((s) => {
+    const cortes = [];
+    let textos = 0;
+    let enVariosRenglones = 0;
+    for (const el of document.querySelectorAll(s)) {
+      if (el.getClientRects().length === 0) continue;
+      const nodos = [];
+      let total = 0;
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        nodos.push({ n, desde: total });
+        total += n.data.length;
+      }
+      const texto = nodos.map((x) => x.n.data).join('');
+      if (texto.trim() === '') continue;
+      textos += 1;
+      const arriba = (i) => {
+        const x = [...nodos].reverse().find((y) => y.desde <= i);
+        const r = document.createRange();
+        r.setStart(x.n, i - x.desde);
+        r.setEnd(x.n, i - x.desde + 1);
+        return Math.round(r.getBoundingClientRect().top);
+      };
+      const letras = [...texto].map((c, i) => (/\s/.test(c) ? null : arriba(i))).filter((y) => y !== null);
+      if (Math.max(...letras) - Math.min(...letras) > 3) enVariosRenglones += 1;
+      const cerca = (i) => texto.replace(/\s/g, ' ').slice(Math.max(0, i - 14), i + 16).trim();
+      // Un número y, después de un espacio, la palabra que cuenta: los dos en el mismo renglón.
+      for (const m of texto.matchAll(/\d\s(?=\p{L})/gu)) if (Math.abs(arriba(m.index) - arriba(m.index + 2)) > 3) cortes.push(`«${cerca(m.index)}»: el número, separado de su palabra`);
+      // El separador, en el renglón de lo que viene antes.
+      for (const m of texto.matchAll(/\S\s·/gu)) if (Math.abs(arriba(m.index) - arriba(m.index + 2)) > 3) cortes.push(`«${cerca(m.index)}»: el separador, al principio de un renglón`);
+    }
+    return { cortes, textos, enVariosRenglones };
+  }, selector);
+
+/** El orden del catálogo «Perfil antropométrico completo», escrito a mano: así van las mediciones dentro de su familia. */
+const CATALOGO_DE_MEDICIONES = [
+  'peso', 'talla', 'edad',
+  'pliegue-pectoral', 'pliegue-axilar-media', 'pliegue-triceps', 'pliegue-subescapular', 'pliegue-biceps', 'pliegue-cresta-iliaca', 'pliegue-supraespinal', 'pliegue-abdominal', 'pliegue-muslo-frontal', 'pliegue-pantorrilla', 'pliegue-antebrazo',
+  'perimetro-cuello', 'perimetro-hombros', 'perimetro-pecho', 'perimetro-brazo-relajado', 'perimetro-brazo-flexionado', 'perimetro-antebrazo', 'perimetro-muneca', 'perimetro-cintura', 'perimetro-abdomen', 'perimetro-cadera', 'perimetro-muslo', 'perimetro-pantorrilla', 'perimetro-tobillo',
+  'diametro-humero', 'diametro-biestiloideo', 'diametro-femur',
+];
+
+/**
+ * Lo que «Tomas» tiene que decir, escrito a mano con lo que devuelve la API: no se usa el módulo del dominio que arma la
+ * pantalla (`tomas-de-antropometria.ts`). Sí los nombres de las métricas, que son del catálogo.
+ * `yo` es la identidad de quien mira, para «la corregiste vos».
+ */
+function esperadoDeTomas({ lista, detalleDe, corridas, metodos, yo }) {
+  const dia = (iso) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(new Date(iso));
+  const hora = (iso) => new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(new Date(iso));
+  const fecha = (iso) => `${dia(iso)}, ${hora(iso)}`;
+  // Sin miles: ninguna medición del escenario llega a 1.000.
+  const num = (n) => String(n).replace('.', ',');
+  const FAMILIA = (m) => (['peso', 'talla'].includes(m) ? 'MASA_Y_ESTATURA' : m.startsWith('pliegue-') ? 'PLIEGUES' : m.startsWith('perimetro-') ? 'PERIMETROS' : m.startsWith('diametro-') ? 'DIAMETROS' : 'OTRAS');
+  const FAMILIAS = [
+    ['MASA_Y_ESTATURA', 'Masa y estatura', null],
+    ['PLIEGUES', 'Pliegues cutáneos', 'Pliegue'],
+    ['PERIMETROS', 'Perímetros', 'Perímetro'],
+    ['DIAMETROS', 'Diámetros', 'Diámetro'],
+    ['OTRAS', 'Otras mediciones del protocolo', null],
+  ];
+  const CLASE = { MEASURED: 'Medido', REPORTED: 'Reportado' };
+  const orden = (m) => (CATALOGO_DE_MEDICIONES.indexOf(m) < 0 ? 999 : CATALOGO_DE_MEDICIONES.indexOf(m));
+  const corto = (nombre, palabra) => {
+    if (!palabra || !nombre.startsWith(`${palabra} `)) return nombre;
+    const resto = nombre.slice(palabra.length + 1).replace(/^(de la|de los|de las|del|de) /, '');
+    return resto.charAt(0).toUpperCase() + resto.slice(1);
+  };
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const cuentas = (ms) => {
+    const anuladas = ms.filter((m) => m.condition === 'ANNULLED').length;
+    const corregidas = ms.filter((m) => m.condition !== 'ANNULLED' && m.corrections.length > 0).length;
+    return [plural(ms.length, 'medición', 'mediciones'), corregidas > 0 ? plural(corregidas, 'corregida', 'corregidas') : null, anuladas > 0 ? plural(anuladas, 'anulada', 'anuladas') : null].filter(Boolean).join(' · ');
+  };
+  const protocolo = (ms) => {
+    const cuenta = new Map();
+    for (const m of ms) cuenta.set(m.protocol.protocolName, (cuenta.get(m.protocol.protocolName) ?? 0) + 1);
+    return [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  };
+  const marcasDe = (m) => (m.condition === 'ANNULLED' ? ['Anulada'] : m.effectiveMagnitude === null ? ['Sin valor vigente'] : m.corrections.length > 0 ? ['Corregida'] : []);
+
+  const tomas = lista.map((t) => {
+    const d = detalleDe.get(t.evaluationId);
+    const ms = d.measurements;
+    const unaClase = new Set(ms.map((m) => m.dataClass)).size === 1;
+    const familias = FAMILIAS.flatMap(([clave, titulo, palabra]) => {
+      const suyas = ms.filter((m) => FAMILIA(m.metric) === clave).sort((a, b) => orden(a.metric) - orden(b.metric) || a.recordedAt.localeCompare(b.recordedAt));
+      if (suyas.length === 0) return [];
+      const unidades = new Set(suyas.map((m) => (m.effectiveMagnitude ?? m.magnitude).unit));
+      const unidad = suyas.length > 1 && unidades.size === 1 ? [...unidades][0] : null;
+      return [
+        {
+          familia: clave,
+          titulo: unidad ? `${titulo} · ${unidad}` : titulo,
+          filas: suyas.map((m) => {
+            const rige = m.effectiveMagnitude;
+            const marcas = [...(unaClase ? [] : [CLASE[m.dataClass]]), ...marcasDe(m)];
+            const completo = rige ? `${num(rige.value)} ${rige.unit}` : 'Sin valor vigente';
+            return {
+              id: m.measurementId,
+              nombre: corto(dominio.nombreDeMetrica(m.metric), palabra),
+              valor: rige ? (unidad ? num(rige.value) : `${num(rige.value)} ${rige.unit}`) : null,
+              marcas,
+              anulada: m.condition === 'ANNULLED',
+              rotulo: [`${dominio.nombreDeMetrica(m.metric)}: ${completo}`, ...marcas.filter((x) => x !== 'Sin valor vigente')].join(' · '),
+            };
+          }),
+        },
+      ];
+    });
+    return {
+      id: t.evaluationId,
+      fecha: `${dia(t.occurredAt)} · ${hora(t.occurredAt)}`,
+      titulo: `Toma del ${fecha(t.occurredAt)}`,
+      protocolo: protocolo(ms),
+      cuentas: cuentas(ms),
+      clase: unaClase ? CLASE[ms[0].dataClass] : null,
+      metadatos: [protocolo(ms), cuentas(ms), d.registeredAt ? `registrada el ${fecha(d.registeredAt)} por ${d.author.displayName}` : null, d.context ? `Contexto: «${d.context}»` : null].filter(Boolean).join(' · '),
+      familias,
+      mediciones: ms,
+    };
+  });
+  // Tramos seguidos del mismo protocolo, sin reordenar.
+  const tramos = [];
+  for (const t of tomas) {
+    const ultimo = tramos[tramos.length - 1];
+    if (ultimo && ultimo.protocolo === t.protocolo) ultimo.tomas.push(t);
+    else tramos.push({ protocolo: t.protocolo, tomas: [t] });
+  }
+
+  // Los resultados: por categoría del catálogo y, adentro, por método, versión y nombre. Nunca por «mejor».
+  const CATEGORIAS = [
+    ['INDICES', 'Índices'],
+    ['SUMAS_DE_PLIEGUES', 'Sumas de pliegues'],
+    ['GRASA_CORPORAL', 'Grasa corporal'],
+    ['MASAS', 'Masas corporales'],
+    ['SOMATOTIPO', 'Somatotipo'],
+    [null, 'Otros cálculos'],
+  ];
+  const vigente = (c) => c.effective && c.supersededByRunId === null;
+  const valorDe = (c) => {
+    const n = c.result.magnitude.value.toFixed(c.precision.decimals).replace('.', ',');
+    return c.result.magnitude.unit === 'adimensional' ? n : `${n} ${c.result.magnitude.unit}`;
+  };
+  const categoriaDe = (c) => (metodos.find((m) => m.methodVersionId === c.methodVersionId) ?? metodos.find((m) => m.methodId === c.methodId))?.category ?? null;
+  const resultadosDe = (tomaId) => {
+    const suyas = corridas.filter((c) => c.evaluationId === tomaId);
+    const vigentes = suyas.filter(vigente);
+    const categorias = CATEGORIAS.flatMap(([clave, titulo]) => {
+      const deEsta = vigentes
+        .filter((c) => categoriaDe(c) === clave)
+        .sort((a, b) => a.methodName.localeCompare(b.methodName, 'es') || a.methodVersion.localeCompare(b.methodVersion, 'es') || dominio.nombreDeMetrica(a.result.metric).localeCompare(dominio.nombreDeMetrica(b.result.metric), 'es'));
+      return deEsta.length === 0 ? [] : [{ titulo, resultados: deEsta.map((c) => ({ id: c.calculationRunId, nombre: c.methodName, valor: valorDe(c), marcas: c.referenceForPurpose ? ['Referencia'] : [] })) }];
+    });
+    return { categorias, sinEfecto: suyas.filter((c) => !vigente(c)), todas: suyas };
+  };
+
+  /** La historia de una medición, de lo más nuevo a lo más viejo, con las palabras de la pantalla. */
+  const historiaDe = (m) => {
+    const cadena = [];
+    let anterior = null;
+    for (let i = 0; i < m.corrections.length; i++) {
+      const sigue = m.corrections.find((c) => c.previousCorrectionId === anterior && !cadena.includes(c));
+      if (!sigue) break;
+      cadena.push(sigue);
+      anterior = sigue.correctionId;
+    }
+    const enOrden = cadena.length === m.corrections.length ? cadena : [...m.corrections].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
+    const hayVigente = m.effectiveMagnitude !== null && m.condition !== 'ANNULLED';
+    const quien = (autor, propio) => (yo && autor.identityId === yo ? propio : `${autor.displayName}.`);
+    const eventos = [];
+    if (m.annulment) eventos.push({ tipo: 'ANULACION', rige: false, titulo: 'Anulación', nota: `Por qué se anuló: «${m.annulment.reason}». ${quien(m.annulment.author, 'La anulaste vos.')}`, cuando: fecha(m.annulment.recordedAt) });
+    enOrden
+      .map((c, i) => ({ c, ultima: i === enOrden.length - 1 }))
+      .reverse()
+      .forEach(({ c, ultima }) =>
+        eventos.push({
+          tipo: 'CORRECCION',
+          rige: ultima && hayVigente,
+          titulo: `Corrección: ${num(c.magnitude.value)} ${c.magnitude.unit}${ultima && hayVigente ? ' Valor vigente' : ''}`,
+          nota: `Por qué se corrigió: «${c.reason}». ${quien(c.author, 'La corregiste vos.')}`,
+          cuando: fecha(c.recordedAt),
+        }),
+      );
+    const rigeElOriginal = enOrden.length === 0 && hayVigente;
+    eventos.push({
+      tipo: 'ORIGINAL',
+      rige: rigeElOriginal,
+      titulo: `Valor original: ${num(m.magnitude.value)} ${m.magnitude.unit}${rigeElOriginal ? ' Valor vigente' : ''}`,
+      nota: enOrden.length > 0 ? 'Se conserva: una corrección no lo borra.' : 'Sin correcciones: es el valor que se tomó.',
+      cuando: fecha(m.recordedAt),
+    });
+    return eventos;
+  };
+  return { tomas, tramos, resultadosDe, historiaDe, valorDe, fecha, num, vigente };
+}
+
+/**
+ * Antropometría · Tomas (maquetas 22 y 29; C-58, C-62 y C-64; F-33 a F-43), en lo que solo lee. Lo esperado se calcula a
+ * mano con lo que devuelve la API (la lista entera, el detalle de cada toma, las corridas y los métodos). Corregir,
+ * anular, calcular y dejar una referencia escriben: van en `medicionesDeUnaToma`, sobre las cuentas descartables. Va
+ * dentro de `funcional`; solo, con `node recorrido.mjs tomas`.
+ */
+async function tomasDeAntropometria(page, v) {
+  const A = estado.aseId;
+  const AREA = `/pro/advisees/anthropometry?id=${A}`;
+  const BASE = `${AREA}&vista=evaluaciones`;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const pedidos = (fragmento, desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const LISTO = 'article.toma-abierta, .tomas-del-area .estado-vacio, .tomas-del-area__toma .aviso, .seccion-del-area .estado-de-grafico--error';
+  const entrar = async (ruta) => {
+    await cupo(v, 45);
+    const desde = v.urls.length;
+    await ir(page, ruta);
+    await page.waitForSelector('#titulo-tomas', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    await page.waitForSelector(LISTO, { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    return desde;
+  };
+  const salir = async () => {
+    await cupo(v, 60);
+    await ir(page, `${AREA}&vista=evolucion`);
+    await page.waitForFunction(() => !document.querySelector('#titulo-tomas'), { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+  };
+  const leerTodas = async (ruta) => {
+    const todo = [];
+    let cursor = null;
+    do {
+      const r = await leerApi(v, `${ruta}?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      todo.push(...r.data);
+      cursor = r.page.hasMore ? r.page.nextCursor : null;
+    } while (cursor);
+    return todo;
+  };
+  const abrirFila = async (selector) => {
+    await page.click(selector).catch(() => {});
+    await page.waitForSelector('dialog.dialogo--panel[open] .medicion-abierta, dialog.dialogo--panel[open] .nuevo-calculo', { timeout: 15_000 }).catch(() => {});
+    await pausa(250);
+    return tomasEnPantalla(page);
+  };
+  const cerrarPanel = async () => {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.dialogo--panel[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(150);
+  };
+
+  // ── Al entrar: qué se lee, y cuántas veces ───────────────────────────────────────────────────────────────────
+  const desde = await entrar(BASE);
+  const inicial = await tomasEnPantalla(page);
+  // Lo esperado, a mano, después de que la página pidió lo suyo (así las lecturas del recorrido no se cuentan con ellas).
+  const alLeer = v.urls.length;
+  const yo = (await leerApi(v, '/me')).data.identityId;
+  const lista = (await leerTodas(`/advisees/${A}/anthropometry/evaluations`))
+    .filter((t) => t.state === 'REGISTERED')
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || (b.registeredAt ?? '').localeCompare(a.registeredAt ?? ''));
+  const detalleDe = new Map();
+  for (const t of lista) detalleDe.set(t.evaluationId, (await leerApi(v, `/anthropometry/evaluations/${t.evaluationId}`)).data);
+  const corridas = await leerTodas(`/advisees/${A}/calculations`);
+  const metodos = await leerTodas('/professional-methods');
+  const borradores = (await leerApi(v, `/advisees/${A}/anthropometry/evaluation-drafts`)).data;
+  const E = esperadoDeTomas({ lista, detalleDe, corridas, metodos, yo });
+  const deLaPagina = v.urls.slice(desde, alLeer);
+  const lecturas = (fragmento) => deLaPagina.filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+  const detallesPedidos = lista.map((t) => lecturas(`/anthropometry/evaluations/${t.evaluationId}`).length);
+  comprobar(
+    'F-33',
+    'Al entrar, «Tomas» lee la lista entera una vez, la toma en preparación una vez, y una vez el detalle de cada toma (hasta veinte): ninguno dos veces. Los métodos y los cálculos, una vez cada lista',
+    lecturas(`/advisees/${A}/anthropometry/evaluations?`).length === 1 &&
+      lecturas(`/advisees/${A}/anthropometry/evaluation-drafts`).length === 1 &&
+      lista.length > 1 &&
+      lista.length <= 20 &&
+      detallesPedidos.every((n) => n === 1) &&
+      lecturas('/professional-methods').length === Math.ceil(metodos.length / 50) &&
+      lecturas(`/advisees/${A}/calculations`).length === Math.max(1, Math.ceil(corridas.length / 50)),
+    `la lista: ${lecturas(`/advisees/${A}/anthropometry/evaluations?`).length} · en preparación: ${lecturas('/evaluation-drafts').length} · detalles: ${detallesPedidos.join(', ')} (de ${lista.length} tomas) · métodos: ${lecturas('/professional-methods').length} · cálculos: ${lecturas(`/advisees/${A}/calculations`).length}`,
+  );
+
+  // ── La lista, en tramos del mismo protocolo ──────────────────────────────────────────────────────────────────
+  const tramosALaVista = (inicial.tramos ?? []).map((x) => ({ protocolo: x.protocolo, tomas: x.tomas.map((y) => ({ id: y.id, fecha: y.fecha, cuentas: y.cuentas })) }));
+  const tramosEsperados = E.tramos.map((x) => ({ protocolo: x.protocolo, tomas: x.tomas.map((y) => ({ id: y.id, fecha: y.fecha, cuentas: y.cuentas })) }));
+  comprobar(
+    'C-64',
+    'La lista tiene todas las tomas registradas, por cuándo se tomaron y de la más nueva a la más vieja, en tramos seguidos del mismo protocolo (una toma con otro protocolo en el medio parte el tramo); cada una dice su día y hora y sus cuentas: mediciones, corregidas y anuladas, calculadas a mano con su detalle',
+    igual(tramosALaVista, tramosEsperados) && E.tramos.length >= 2 && E.tomas.some((x) => /corregida/.test(x.cuentas)) && E.tomas.some((x) => /anulada/.test(x.cuentas)),
+    igual(tramosALaVista, tramosEsperados)
+      ? `${E.tomas.length} tomas en ${E.tramos.length} tramos: ${E.tramos.map((x) => `${x.protocolo} (${x.tomas.length})`).join(' · ')}`
+      : `a la vista: ${JSON.stringify(tramosALaVista).slice(0, 260)} — a mano: ${JSON.stringify(tramosEsperados).slice(0, 260)}`,
+  );
+  comprobar(
+    'C-58',
+    'El título dice «Tomas», cuántas hay registradas (la cantidad de la lista entera) y que una toma registrada no se edita; la toma en preparación se anuncia solo si hay una, con sus mediciones',
+    inicial.cuenta === `${lista.length} registradas.` &&
+      /Una toma registrada no se edita: cada medición se corrige o se anula, y queda constancia\./.test(inicial.bajada ?? '') &&
+      inicial.preparar === (borradores.length > 0 ? 'Seguir con la toma en preparación' : 'Preparar una toma') &&
+      (borradores.length > 0 ? /Hay una toma en preparación/.test(inicial.enPreparacion ?? '') : inicial.enPreparacion === null),
+    `«${inicial.cuenta}» · botón: «${inicial.preparar}» · tomas en preparación según la API: ${borradores.length}${inicial.enPreparacion ? ` · «${inicial.enPreparacion}»` : ''}`,
+  );
+
+  // ── La toma que abre: la más reciente, con lo que vale para toda la toma dicho una vez ───────────────────────────
+  const primera = E.tomas[0];
+  comprobar(
+    'F-36',
+    'Sin una toma en la dirección abre la más reciente, marcada en la lista. Su encabezado dice cuándo se tomó, la clase del dato si todas las mediciones la comparten, y en un renglón el protocolo, las cuentas, cuándo se registró y quién',
+    inicial.toma?.id === primera.id &&
+      inicial.toma.titulo === primera.titulo &&
+      inicial.toma.clase === primera.clase &&
+      inicial.toma.metadatos === primera.metadatos &&
+      igual((inicial.tramos ?? []).flatMap((x) => x.tomas).filter((x) => x.elegida).map((x) => x.id), [primera.id]),
+    `«${inicial.toma?.titulo}» · ${inicial.toma?.clase ?? 'sin una clase común'} · «${(inicial.toma?.metadatos ?? '').slice(0, 130)}»`,
+  );
+
+  // ── Elegir otra toma: va a la dirección, y no vuelve a leer nada ─────────────────────────────────────────────────
+  // La más cargada que tenga una medición anulada: es la que más filas y más casos muestra.
+  const rica = [...E.tomas].filter((x) => x.id !== primera.id && x.mediciones.some((m) => m.condition === 'ANNULLED')).sort((a, b) => b.mediciones.length - a.mediciones.length)[0] ?? null;
+  await page.evaluate(() => {
+    window.__cargandoEnTomas = 0;
+    window.__vigiaDeTomas?.disconnect();
+    window.__vigiaDeTomas = new MutationObserver(() => {
+      if (document.querySelector('.tomas-del-area .cargando')) window.__cargandoEnTomas += 1;
+    });
+    window.__vigiaDeTomas.observe(document.body, { subtree: true, childList: true });
+  });
+  const alElegir = v.urls.length;
+  if (rica) await page.click(`button.toma-de-la-lista[data-toma="${rica.id}"]`).catch(() => {});
+  await page.waitForFunction((id) => document.querySelector('article.toma-abierta')?.dataset.toma === id, { timeout: 15_000 }, rica?.id ?? '').catch(() => {});
+  await pausa(400);
+  const cargandoAlElegir = await page.evaluate(() => {
+    window.__vigiaDeTomas?.disconnect();
+    return window.__cargandoEnTomas ?? -1;
+  });
+  const conLaRica = await tomasEnPantalla(page);
+  comprobar(
+    'F-33',
+    'Elegir otra toma la pone en la dirección (`evaluacion=`), la marca en la lista y la muestra sin pedirle nada a la API ni pasar por «Cargando…»: su detalle ya se había leído',
+    !!rica &&
+      parametros(page).get('evaluacion') === rica.id &&
+      conLaRica.toma?.id === rica.id &&
+      conLaRica.toma.titulo === rica.titulo &&
+      v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      cargandoAlElegir === 0 &&
+      igual((conLaRica.tramos ?? []).flatMap((x) => x.tomas).filter((x) => x.elegida).map((x) => x.id), [rica.id]),
+    rica ? `«${conLaRica.toma?.titulo}» · pedidos a la API: ${v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length} · veces que se vio «Cargando…»: ${cargandoAlElegir}` : 'el escenario no tiene otra toma con una medición anulada',
+  );
+
+  // ── Las mediciones, por familia: el valor que rige y solo la excepción marcada ─────────────────────────────────
+  const familiasALaVista = (conLaRica.toma?.familias ?? []).map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas }));
+  comprobar(
+    'F-36',
+    'Las mediciones van por familia, en el orden del dominio y, adentro, en el del catálogo; cada fila dice el nombre corto, el valor que rige y solo lo que se sale de lo común («Anulada», «Corregida»); la unidad va una vez en el título de la familia si todas la comparten, y si no, en cada fila. El lector de pantalla oye el nombre completo y el valor con su unidad',
+    !!rica && igual(familiasALaVista, rica.familias) && rica.familias.some((f) => / · /.test(f.titulo)) && rica.familias.some((f) => f.filas.some((x) => / /.test(x.valor ?? ''))) && rica.familias.some((f) => f.filas.some((x) => x.marcas.includes('Anulada'))),
+    rica && igual(familiasALaVista, rica.familias)
+      ? `${rica.familias.map((f) => `${f.titulo} (${f.filas.length})`).join(' · ')} · ${rica.familias.flatMap((f) => f.filas).find((x) => x.anulada)?.rotulo}`
+      : `a la vista: ${JSON.stringify(familiasALaVista).slice(0, 300)} — a mano: ${JSON.stringify(rica?.familias ?? null).slice(0, 300)}`,
+  );
+  // Una toma de pocas mediciones (la que abrió sola) no reserva el lugar de las familias que no tiene.
+  const separaciones = (familias) => familias.slice(1).map((f, i) => f.izquierda - familias[i].derecha);
+  const familiasAlEntrar = inicial.toma?.familias ?? [];
+  if (primera.mediciones.length <= 6 && familiasAlEntrar.length >= 2) {
+    comprobar(
+      'F-36',
+      'Una toma de hasta seis mediciones muestra sus familias una al lado de la otra, en un renglón, sin dejar vacío el lugar de las que no tiene: entre dos familias seguidas queda solo la separación de la grilla. Una toma más cargada conserva el lugar fijo de cada familia',
+      inicial.toma.pocas === true &&
+        familiasAlEntrar.every((f) => f.arriba === familiasAlEntrar[0].arriba) &&
+        separaciones(familiasAlEntrar).every((d) => d >= 0 && d <= 40) &&
+        !!rica &&
+        rica.mediciones.length > 6 &&
+        conLaRica.toma?.pocas === false,
+      `${primera.mediciones.length} mediciones: ${familiasAlEntrar.map((f) => f.titulo).join(' | ')} · separación: ${separaciones(familiasAlEntrar).join(', ')} px · la de ${rica?.mediciones.length ?? '—'} mediciones: ${conLaRica.toma?.pocas === false ? 'cada familia en su lugar' : 'como si fueran pocas'}`,
+    );
+  } else {
+    informar('F-36', 'Las familias de una toma de pocas mediciones', `la toma que abre sola tiene ${primera.mediciones.length} mediciones en ${familiasAlEntrar.length} familias: no se pudo mirar`);
+  }
+
+  // ── Una medición se abre en el panel; corregir y anular están ahí, no en la fila ─────────────────────────────────
+  const comun = rica ? rica.mediciones.find((m) => m.condition === 'EFFECTIVE' && m.corrections.length === 0) : null;
+  const alAbrir = v.urls.length;
+  const conElPanel = comun ? await abrirFila(`button.medicion-de-la-toma[data-medicion="${comun.measurementId}"]`) : conLaRica;
+  const historiaComun = comun ? E.historiaDe(comun) : [];
+  await cerrarPanel();
+  const focoAlCerrar = await page.evaluate(() => document.activeElement?.dataset?.medicion ?? null);
+  comprobar(
+    'C-62',
+    'Entre las mediciones no hay ningún botón «Corregir» ni «Anular»: la fila entera abre la medición en un panel, que retiene el foco, sin pedirle nada a la API. Ahí están su valor que rige, sus marcas, el protocolo, cuándo se tomó, su historia y los dos actos. Escape lo cierra y el foco vuelve a la fila',
+    !!comun &&
+      igual(conLaRica.toma?.botonesSueltos, []) &&
+      conElPanel.panel?.titulo === dominio.nombreDeMetrica(comun.metric) &&
+      conElPanel.panel.conElFoco &&
+      conElPanel.panel.valor === `${E.num(comun.effectiveMagnitude.value)} ${comun.effectiveMagnitude.unit}` &&
+      igual(conElPanel.panel.marcas, [comun.dataClass === 'REPORTED' ? 'Reportado' : 'Medido', 'Vigente']) &&
+      igual(conElPanel.panel.datos, [['Protocolo', comun.protocol.protocolName], ['Se tomó', E.fecha(comun.occurredAt)]]) &&
+      igual(conElPanel.panel.historia, historiaComun) &&
+      igual(conElPanel.panel.acciones, ['Corregir medición', 'Anular esta medición']) &&
+      v.urls.slice(alAbrir).filter((u) => u.startsWith('GET ')).length === 0 &&
+      focoAlCerrar === comun.measurementId,
+    comun
+      ? `«${conElPanel.panel?.titulo}» · ${conElPanel.panel?.valor} · ${conElPanel.panel?.marcas.join(', ')} · historia: ${conElPanel.panel?.historia.map((h) => h.titulo).join(' | ')} · acciones: ${conElPanel.panel?.acciones.join(', ')} · foco al cerrar: ${focoAlCerrar === comun.measurementId ? 'en la fila' : 'en otro lado'}`
+      : 'el escenario no tiene una medición vigente y sin correcciones en esa toma',
+  );
+
+  // ── Una medición anulada: se dice, conserva su valor y su historia, y no ofrece ninguna acción ─────────────────────
+  const anulada = rica ? rica.mediciones.find((m) => m.condition === 'ANNULLED') : null;
+  const conLaAnulada = anulada ? await abrirFila(`button.medicion-de-la-toma[data-medicion="${anulada.measurementId}"]`) : conLaRica;
+  await cerrarPanel();
+  comprobar(
+    'F-37',
+    'Una medición anulada se abre igual: dice «Anulada» y no «Vigente», conserva su valor a la vista, su historia empieza por la anulación con el motivo y quién la hizo, dice que no se reactiva, y no ofrece ni corregir ni anular (la misma consulta los encuentra en una medición vigente)',
+    !!anulada &&
+      conLaAnulada.panel?.marcas.includes('Anulada') &&
+      !conLaAnulada.panel.marcas.includes('Vigente') &&
+      conLaAnulada.panel.valor === `${E.num(anulada.effectiveMagnitude.value)} ${anulada.effectiveMagnitude.unit}` &&
+      igual(conLaAnulada.panel.historia, E.historiaDe(anulada)) &&
+      conLaAnulada.panel.historia[0]?.tipo === 'ANULACION' &&
+      !conLaAnulada.panel.historia.some((h) => h.rige) &&
+      /Una medición anulada no se reactiva\./.test(conLaAnulada.panel.texto) &&
+      igual(conLaAnulada.panel.acciones, []) &&
+      conLaAnulada.panel.bloques.some((b) => b.titulo === 'Lo que pasó con los resultados'),
+    anulada ? `${conLaAnulada.panel?.marcas.join(', ')} · ${conLaAnulada.panel?.valor} · ${conLaAnulada.panel?.historia.map((h) => `${h.titulo}: ${h.nota}`).join(' | ').slice(0, 200)} · acciones: ${conLaAnulada.panel?.acciones.length}` : 'el escenario no tiene una medición anulada',
+  );
+  // En el escenario principal la anulación se cargó sin cálculos que usaran la medición: el bloque lo dice con las
+  // palabras de una anulación. Los resultados que quedan sin efecto al anular de verdad se comprueban en `mediciones`.
+  const usabanLaAnulada = anulada ? corridas.filter((c) => c.evaluationId === rica.id && c.inputProvenance.some((i) => i.sourceRef === anulada.measurementId)) : [];
+  const bloqueDeLaAnulada = conLaAnulada.panel?.bloques.find((b) => b.titulo === 'Lo que pasó con los resultados') ?? null;
+  if (anulada && usabanLaAnulada.length === 0) {
+    comprobar(
+      'F-38',
+      'Si ningún resultado calculado de la toma usaba la medición anulada, «Lo que pasó con los resultados» lo dice con las palabras de una anulación: no habla de una corrección que no hubo, ni lista ningún resultado',
+      !!bloqueDeLaAnulada && /Ningún resultado calculado de esta toma quedó sin efecto por esta anulación\./.test(bloqueDeLaAnulada.texto) && !/correcci[oó]n/i.test(bloqueDeLaAnulada.texto) && igual(conLaAnulada.panel.cambios, []),
+      `«${bloqueDeLaAnulada?.texto ?? 'sin el bloque'}»`,
+    );
+  } else {
+    informar('F-38', 'Lo que pasó con los resultados de la medición anulada, en el escenario principal', anulada ? `${usabanLaAnulada.length} corridas de esa toma usaban la medición: «${(bloqueDeLaAnulada?.texto ?? '').slice(0, 160)}»` : 'sin medición anulada: no se pudo mirar');
+  }
+
+  // ── Una medición corregida: rige la corrección, y el original se conserva en la historia ───────────────────────────
+  const tomaCorregida = E.tomas.find((x) => x.mediciones.some((m) => m.condition === 'EFFECTIVE' && m.corrections.length > 0)) ?? null;
+  const corregida = tomaCorregida?.mediciones.find((m) => m.condition === 'EFFECTIVE' && m.corrections.length > 0) ?? null;
+  let conLaCorregida = conLaRica;
+  if (tomaCorregida && corregida) {
+    await page.click(`button.toma-de-la-lista[data-toma="${tomaCorregida.id}"]`).catch(() => {});
+    await page.waitForFunction((id) => document.querySelector('article.toma-abierta')?.dataset.toma === id, { timeout: 15_000 }, tomaCorregida.id).catch(() => {});
+    await pausa(300);
+    conLaCorregida = await abrirFila(`button.medicion-de-la-toma[data-medicion="${corregida.measurementId}"]`);
+    await cerrarPanel();
+  }
+  const filaCorregida = tomaCorregida?.familias.flatMap((f) => f.filas).find((x) => x.id === corregida?.measurementId) ?? null;
+  // La fila, leída de la pantalla: la toma de la medición corregida no es la que miró la comprobación de las familias.
+  const filaCorregidaALaVista = conLaCorregida.toma?.familias.flatMap((f) => f.filas).find((x) => x.id === corregida?.measurementId) ?? null;
+  const usanLaCorregida = corregida ? corridas.filter((c) => c.evaluationId === tomaCorregida.id && c.inputProvenance.some((i) => i.sourceRef === corregida.measurementId)) : [];
+  const bloqueDelCambio = conLaCorregida.panel?.bloques.find((b) => b.titulo === 'Lo que cambió con la corrección') ?? null;
+  comprobar(
+    'F-37',
+    'Una medición corregida muestra en la fila y en el panel el valor que rige, no el que se tomó primero, con la marca «Corregida». Su historia va de lo más nuevo a lo más viejo: la corrección, con su motivo y quién la hizo, marcada como el valor vigente; y el valor original, que se conserva',
+    !!corregida &&
+      corregida.effectiveMagnitude.value !== corregida.magnitude.value &&
+      filaCorregida?.marcas.includes('Corregida') &&
+      igual(filaCorregidaALaVista, filaCorregida) &&
+      conLaCorregida.panel?.valor === `${E.num(corregida.effectiveMagnitude.value)} ${corregida.effectiveMagnitude.unit}` &&
+      conLaCorregida.panel.marcas.includes('Corregida') &&
+      igual(conLaCorregida.panel.historia, E.historiaDe(corregida)) &&
+      conLaCorregida.panel.historia.filter((h) => h.rige).length === 1 &&
+      conLaCorregida.panel.historia[0].tipo === 'CORRECCION' &&
+      conLaCorregida.panel.historia.at(-1).titulo === `Valor original: ${E.num(corregida.magnitude.value)} ${corregida.magnitude.unit}`,
+    corregida
+      ? `la fila: ${filaCorregidaALaVista?.nombre} ${filaCorregidaALaVista?.valor} ${filaCorregidaALaVista?.marcas.join(', ')} · el panel: ${conLaCorregida.panel?.valor} (se tomó ${E.num(corregida.magnitude.value)}) · ${conLaCorregida.panel?.historia.map((h) => `${h.titulo} — ${h.nota}`).join(' | ').slice(0, 220)}`
+      : 'el escenario no tiene una medición corregida y vigente',
+  );
+  // En el escenario principal la corrección se cargó sin cálculos que la usen: el panel lo dice, sin inventar un cambio.
+  // Lo que cambia de verdad en los resultados al corregir se comprueba escribiendo, en `mediciones`.
+  if (corregida && usanLaCorregida.length === 0) {
+    comprobar(
+      'F-38',
+      'Si ningún resultado calculado de la toma usa la medición corregida, «Lo que cambió con la corrección» lo dice con esas palabras: no lista ningún resultado ni un «antes»',
+      !!bloqueDelCambio && /Ningún resultado calculado de esta toma cambió por esta corrección\./.test(bloqueDelCambio.texto) && igual(conLaCorregida.panel.cambios, []),
+      `«${bloqueDelCambio?.texto ?? 'sin el bloque'}»`,
+    );
+  } else {
+    informar('F-38', 'Lo que cambió con la corrección, en el escenario principal', corregida ? `${usanLaCorregida.length} corridas de esa toma usan la medición: «${(bloqueDelCambio?.texto ?? '').slice(0, 160)}»` : 'sin medición corregida: no se pudo mirar');
+  }
+
+  // ── Los resultados calculados: por categoría, cada uno con los decimales de su método ───────────────────────────
+  const conResultados = [...E.tomas].map((x) => ({ toma: x, r: E.resultadosDe(x.id) })).sort((a, b) => b.r.categorias.flatMap((c) => c.resultados).length - a.r.categorias.flatMap((c) => c.resultados).length)[0];
+  const sinResultados = E.tomas.find((x) => E.resultadosDe(x.id).todas.length === 0) ?? null;
+  const irALaToma = async (id) => {
+    await page.click(`button.toma-de-la-lista[data-toma="${id}"]`).catch(() => {});
+    await page.waitForFunction((x) => document.querySelector('article.toma-abierta')?.dataset.toma === x, { timeout: 15_000 }, id).catch(() => {});
+    await pausa(300);
+    return tomasEnPantalla(page);
+  };
+  const laDeResultados = await irALaToma(conResultados.toma.id);
+  const laSinResultados = sinResultados ? await irALaToma(sinResultados.id) : null;
+  const totalDeResultados = conResultados.r.categorias.flatMap((c) => c.resultados).length;
+  comprobar(
+    'F-39',
+    'Los resultados vigentes de la toma van por categoría del catálogo y, adentro, por método: cada uno con el nombre de su método y su valor con los decimales que el método declara. «Ver N anteriores, sin efecto» está solo si hay alguno. Una toma sin cálculos lo dice con sus palabras, y no muestra ninguna categoría',
+    totalDeResultados > 0 &&
+      igual(laDeResultados.toma?.categorias, conResultados.r.categorias) &&
+      (conResultados.r.sinEfecto.length > 0 ? new RegExp(`^Ver (1 anterior|${conResultados.r.sinEfecto.length} anteriores), sin efecto$`).test(laDeResultados.toma.anteriores ?? '') : laDeResultados.toma.anteriores === null) &&
+      laDeResultados.toma.sinCalculos === null &&
+      !!laSinResultados &&
+      laSinResultados.toma?.sinCalculos === 'Todavía no hay cálculos para esta toma.' &&
+      laSinResultados.toma.categorias.length === 0,
+    igual(laDeResultados.toma?.categorias, conResultados.r.categorias)
+      ? `${conResultados.r.categorias.map((c) => `${c.titulo}: ${c.resultados.map((x) => `${x.nombre} ${x.valor}`).join(', ')}`).join(' · ').slice(0, 220)} · sin efecto: ${conResultados.r.sinEfecto.length} · una toma sin cálculos: «${laSinResultados?.toma?.sinCalculos}»`
+      : `a la vista: ${JSON.stringify(laDeResultados.toma?.categorias).slice(0, 260)} — a mano: ${JSON.stringify(conResultados.r.categorias).slice(0, 260)}`,
+  );
+
+  // ── Un resultado y «Calcular con un método» se abren en el panel ────────────────────────────────────────────────
+  await irALaToma(conResultados.toma.id);
+  const unResultado = conResultados.r.categorias[0]?.resultados[0] ?? null;
+  const suCorrida = corridas.find((c) => c.calculationRunId === unResultado?.id) ?? null;
+  const conElResultado = unResultado ? await abrirFila(`button.resultado-de-la-toma[data-resultado="${unResultado.id}"]`) : laDeResultados;
+  await cerrarPanel();
+  const escriturasAntes = v.urls.filter((u) => /^(POST|PUT|DELETE) /.test(u)).length;
+  await clic(page, 'article.toma-abierta .toma-abierta__acciones-de-bloque button', 'Calcular con un método').catch(() => null);
+  await page.waitForSelector('dialog.dialogo--panel[open] .nuevo-calculo', { timeout: 15_000 }).catch(() => {});
+  await pausa(250);
+  const conElCalculo = await tomasEnPantalla(page);
+  await clic(page, 'dialog.dialogo--panel[open] .nuevo-calculo > .acciones button', 'Cancelar').catch(() => null);
+  await page.waitForFunction(() => !document.querySelector('dialog.dialogo--panel[open]'), { timeout: 10_000 }).catch(() => {});
+  const puedeSerReferencia = !!suCorrida && !suCorrida.referenceForPurpose && suCorrida.evaluationContext === 'REGISTERED' && E.vigente(suCorrida);
+  comprobar(
+    'F-39',
+    'Un resultado se abre en el panel: su método, su valor con la precisión declarada, la marca «Calculado», con qué se calculó (la versión, la regla, la precisión y una línea por entrada) y, si está vigente y no es ya la referencia, «Dejar como referencia». «Calcular con un método» se abre en el mismo panel, con todos los métodos del catálogo, y «Cancelar» lo cierra sin escribir nada',
+    !!suCorrida &&
+      conElResultado.panel?.titulo === 'Resultado calculado' &&
+      conElResultado.panel.deDonde === suCorrida.methodName &&
+      conElResultado.panel.valor === E.valorDe(suCorrida) &&
+      conElResultado.panel.marcas.includes('Calculado') &&
+      conElResultado.panel.entradas === suCorrida.inputProvenance.length &&
+      conElResultado.panel.bloques.some((b) => b.titulo === 'Con qué se calculó' && b.texto.includes(`Regla aplicada: ${suCorrida.ruleId}`)) &&
+      igual(conElResultado.panel.acciones, puedeSerReferencia ? ['Dejar como referencia'] : []) &&
+      conElCalculo.panel?.titulo === 'Calcular con un método' &&
+      conElCalculo.panel.metodos === metodos.length &&
+      metodos.length > 0 &&
+      v.urls.filter((u) => /^(POST|PUT|DELETE) /.test(u)).length === escriturasAntes,
+    `«${conElResultado.panel?.deDonde}» ${conElResultado.panel?.valor} · ${conElResultado.panel?.entradas} entradas · acciones: ${conElResultado.panel?.acciones.join(', ') || 'ninguna'} · métodos en el panel: ${conElCalculo.panel?.metodos} (el catálogo: ${metodos.length})`,
+  );
+
+  // ── «En preparación» ya no es una sección: la carga se abre desde «Tomas» ───────────────────────────────────────
+  await clic(page, '.tomas-del-area__preparar button', inicial.preparar ?? 'Preparar una toma').catch(() => null);
+  await page.waitForSelector('#titulo-preparacion', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const enLaCarga = await marcoEnPantalla(page);
+  const vistaDeLaCarga = parametros(page).get('vista');
+  const vuelta = await page.evaluate(() => {
+    const a = document.querySelector('.vuelta-a-la-seccion a');
+    return a ? { texto: a.innerText.replace(/\s+/g, ' ').trim(), href: a.getAttribute('href') } : null;
+  });
+  await clic(page, '.vuelta-a-la-seccion a', 'Tomas').catch(() => null);
+  await page.waitForSelector('#titulo-tomas', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  comprobar(
+    'F-35',
+    '«En preparación» dejó de ser una sección: el marco tiene tres (Tomas, Evolución y Lámina). El botón de «Tomas» abre la carga de una toma (`vista=preparacion`, que no cambió), con «Tomas» marcada y un enlace de la aplicación para volver, que vuelve a la lista',
+    vistaDeLaCarga === 'preparacion' &&
+      igual(enLaCarga?.pestanas.map((p) => p.texto), ['Tomas', 'Evolución', 'Lámina']) &&
+      enLaCarga.pestanas.find((p) => p.actual === 'page')?.texto === 'Tomas' &&
+      /^(Nueva toma|Toma en preparación)$/.test(enLaCarga.primerTitulo ?? '') &&
+      vuelta?.texto === 'Tomas' &&
+      /vista=evaluaciones/.test(vuelta.href ?? '') &&
+      parametros(page).get('vista') === 'evaluaciones',
+    `secciones: ${enLaCarga?.pestanas.map((p) => p.texto).join(', ')} · marcada: ${enLaCarga?.pestanas.find((p) => p.actual === 'page')?.texto} · la carga: «${enLaCarga?.primerTitulo}» · vuelta: «${vuelta?.texto}»`,
+  );
+
+  // ── «Actualizar» conserva la toma elegida y vuelve a leer ───────────────────────────────────────────────────────
+  await entrar(`${BASE}&evaluacion=${rica?.id ?? primera.id}`);
+  await cupo(v, 45);
+  const alActualizar = v.urls.length;
+  await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const trasActualizar = await tomasEnPantalla(page);
+  comprobar(
+    'F-33',
+    'La toma elegida vive en la dirección: se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta',
+    trasActualizar.toma?.id === (rica?.id ?? primera.id) && parametros(page).get('evaluacion') === (rica?.id ?? primera.id) && pedidos(`/advisees/${A}/anthropometry/evaluations?`, alActualizar).length === 1,
+    `«${trasActualizar.toma?.titulo}» · lecturas de la lista al actualizar: ${pedidos(`/advisees/${A}/anthropometry/evaluations?`, alActualizar).length}`,
+  );
+
+  // ── Una toma pedida que no está: la lista sigue completa ────────────────────────────────────────────────────────
+  await salir();
+  await entrar(`${BASE}&evaluacion=00000000-0000-4000-8000-000000000000`);
+  const pedidaQueNoEsta = await tomasEnPantalla(page);
+  await clic(page, '.tomas-del-area__toma .aviso button', 'Volver a la lista de tomas').catch(() => null);
+  await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  const deVueltaEnLaLista = await tomasEnPantalla(page);
+  comprobar(
+    'F-33',
+    'Una toma pedida por la dirección que no está disponible lo dice con el texto neutral, sin tapar la lista, que sigue completa; «Volver a la lista de tomas» saca el parámetro y abre la más reciente',
+    /La toma solicitada no está disponible\. La lista de tomas sigue completa\./.test(pedidaQueNoEsta.aviso ?? '') &&
+      pedidaQueNoEsta.toma === null &&
+      (pedidaQueNoEsta.tramos ?? []).flatMap((x) => x.tomas).length === lista.length &&
+      deVueltaEnLaLista.toma?.id === primera.id &&
+      !parametros(page).has('evaluacion'),
+    `«${(pedidaQueNoEsta.aviso ?? '').slice(0, 90)}» · tomas en la lista: ${(pedidaQueNoEsta.tramos ?? []).flatMap((x) => x.tomas).length} · después: «${deVueltaEnLaLista.toma?.titulo}»`,
+  );
+
+  // ── Las fallas se dicen, y no pasan por ausencia de datos (respuestas simuladas en el navegador) ────────────────────
+  await salir();
+  const sinLista = { coincide: (u) => u.includes(`/advisees/${A}/anthropometry/evaluations?`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+  v.reglas.push(sinLista);
+  await entrar(BASE);
+  const conLaListaCaida = await tomasEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinLista), 1);
+  const textoDeLaFalla = await texto(page, '.seccion-del-area');
+  await salir();
+  const sinCalculos = { coincide: (u) => u.includes(`/advisees/${A}/calculations`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+  v.reglas.push(sinCalculos);
+  await entrar(`${BASE}&evaluacion=${conResultados.toma.id}`);
+  const conLosCalculosCaidos = await tomasEnPantalla(page);
+  v.reglas.splice(v.reglas.indexOf(sinCalculos), 1);
+  await cupo(v, 60);
+  await clic(page, '.resultados-de-la-toma .aviso--error button', 'Reintentar').catch(() => null);
+  await quieto(page, v);
+  await page.waitForSelector('.categoria-de-resultados', { timeout: 20_000 }).catch(() => {});
+  const repuestos = await tomasEnPantalla(page);
+  comprobar(
+    'F-39',
+    'Si la lista de tomas no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Todavía no hay tomas registradas». Si lo que no se puede leer son los cálculos, la toma y sus mediciones siguen a la vista, el bloque de resultados dice que no pudo leerlos (no «todavía no hay cálculos») y «Reintentar» los trae',
+    conLaListaCaida.toma === null &&
+      conLaListaCaida.tramos === null &&
+      conLaListaCaida.vacio === null &&
+      /Reintentar/.test(textoDeLaFalla) &&
+      !/Todavía no hay tomas/.test(textoDeLaFalla) &&
+      conLosCalculosCaidos.toma?.id === conResultados.toma.id &&
+      conLosCalculosCaidos.toma.familias.length > 0 &&
+      /No pudimos leer los resultados calculados de esta toma\./.test(conLosCalculosCaidos.toma.fallaDeResultados ?? '') &&
+      conLosCalculosCaidos.toma.sinCalculos === null &&
+      conLosCalculosCaidos.toma.categorias.length === 0 &&
+      igual(repuestos.toma?.categorias, conResultados.r.categorias),
+    `sin la lista: «${textoDeLaFalla.slice(0, 90)}» · sin los cálculos: «${conLosCalculosCaidos.toma?.fallaDeResultados}», ${conLosCalculosCaidos.toma?.familias.length} familias a la vista · después de reintentar: ${repuestos.toma?.categorias.flatMap((c) => c.resultados).length} resultados`,
+  );
+
+  // ── La ayuda, la accesibilidad y los anchos ─────────────────────────────────────────────────────────────────────
+  await salir();
+  const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  await entrar(`${BASE}&evaluacion=${rica?.id ?? primera.id}`);
+  const medida = await page.evaluate(() => {
+    const ancho = (s) => Math.round(document.querySelector(s)?.getBoundingClientRect().width ?? 0);
+    const abajo = (s) => Math.round((document.querySelector(s)?.getBoundingClientRect().bottom ?? 0) + scrollY);
+    return { alto: document.documentElement.scrollHeight, lista: ancho('nav.tomas-del-area__lista'), toma: ancho('article.toma-abierta'), finDeLaToma: abajo('article.toma-abierta') };
+  });
+  informar('F-41', '«Tomas», con la toma más cargada del escenario principal abierta, a 1440 × 900', `${medida.alto} px · la lista mide ${medida.lista} px de ancho y la toma, ${medida.toma}; la toma termina a los ${medida.finDeLaToma} px`);
+  const faltas = await axe(page);
+  if (comun) await abrirFila(`button.medicion-de-la-toma[data-medicion="${comun.measurementId}"]`);
+  const faltasConElPanel = await axe(page);
+  const tapasDelPanel = await page.evaluate(() => document.querySelectorAll('dialog.dialogo--panel[open] .desplazable-x').length);
+  await cerrarPanel();
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayuda = await page.evaluate(() => {
+    const d = document.querySelector('dialog.como-se-lee[open]');
+    return d ? { titulo: d.querySelector('h2').innerText.trim(), renglones: d.querySelectorAll('.como-se-lee__lista > li').length, foco: document.activeElement === d.querySelector('h2') } : { titulo: null, renglones: 0, foco: false };
+  });
+  const faltasDeLaAyuda = await axe(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  comprobar(
+    'F-14',
+    '«Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rige, las marcas y los resultados; Evolución, que no tiene ayuda, no muestra el botón (la misma consulta lo encuentra en «Tomas»)',
+    ayuda.titulo === 'Cómo se leen las Tomas' && ayuda.renglones >= 8 && ayuda.foco && sinAyuda === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · botones de ayuda en Evolución: ${sinAyuda}`,
+  );
+  comprobar(
+    'F-37',
+    'axe no encuentra faltas en «Tomas», ni con una medición abierta en el panel, ni con la ayuda abierta',
+    faltas.length === 0 && faltasConElPanel.length === 0 && faltasDeLaAyuda.length === 0,
+    `la lista y la toma: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · con el panel: ${faltasConElPanel.map((f) => f.id).join(', ') || 'sin faltas'} · la ayuda: ${faltasDeLaAyuda.map((f) => f.id).join(', ') || 'sin faltas'}${tapasDelPanel ? ` · tablas en el panel: ${tapasDelPanel}` : ''}`,
+  );
+
+  // A 1280 px la toma sigue al costado de la lista; a 1024 la lista pasa arriba, como un selector.
+  const enAncho = async (ancho) => {
+    await page.setViewport({ width: ancho, height: 900 });
+    await pausa(300);
+    const p = await tomasEnPantalla(page);
+    return { p, desborda: !(await sinDesborde(page)), alto: p.alto };
+  };
+  const a1280 = await enAncho(1280);
+  const a1024 = await enAncho(1024);
+  const otra = E.tomas.find((x) => x.id !== (rica?.id ?? primera.id)) ?? null;
+  if (otra) await page.select('.tomas-del-area__selector select', otra.id).catch(() => {});
+  await page.waitForFunction((id) => document.querySelector('article.toma-abierta')?.dataset.toma === id, { timeout: 15_000 }, otra?.id ?? '').catch(() => {});
+  await pausa(300);
+  const conElSelector = await tomasEnPantalla(page);
+  await page.setViewport({ width: 1440, height: 900 });
+  await pausa(200);
+  informar('F-41', 'El alto de «Tomas» con esa toma, a 1280 y a 1024 px', `${a1280.alto} px y ${a1024.alto} px`);
+  comprobar(
+    'F-41',
+    'A 1280 px la lista sigue al costado de la toma. A 1024 px la lista pasa arriba, como un selector con las mismas tomas, sus mismas cuentas y sus tramos; elegir otra toma en el selector la abre y la pone en la dirección. En ningún ancho la página desborda de costado',
+    !a1280.desborda &&
+      !a1024.desborda &&
+      a1280.p.tramos !== null &&
+      a1280.p.opciones === null &&
+      a1024.p.tramos === null &&
+      igual(a1024.p.opciones?.map((o) => ({ id: o.id, texto: o.texto })), E.tomas.map((x) => ({ id: x.id, texto: `${x.fecha} · ${x.cuentas}` }))) &&
+      !!otra &&
+      conElSelector.toma?.id === otra.id &&
+      parametros(page).get('evaluacion') === otra.id,
+    `1280: ${a1280.p.tramos ? 'lista al costado' : 'sin lista'}${a1280.desborda ? ' · DESBORDA' : ''} · 1024: ${a1024.p.opciones?.length ?? 0} opciones en el selector (de ${E.tomas.length})${a1024.desborda ? ' · DESBORDA' : ''} · elegida por el selector: «${conElSelector.toma?.titulo}»`,
+  );
+  comprobar('—', '«Tomas» no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Antropometría · Tomas: lo que escribe (WP-ESCRITORIO-AREAS, parte 3) ──────────────────────────────────────────
+
+/**
+ * Corregir una medición, anular otra, calcular con un método y dejar un resultado como referencia, por la pantalla
+ * (C-62; F-37 a F-39), sobre la toma del perfil completo de las cuentas descartables (`datos/generar.mjs
+ * descartable-toma-completa`): 30 mediciones y 8 resultados calculados por la API, con la cintura mal tipeada. Al final,
+ * registrar una toma desde la carga, para ver que se vuelve a «Tomas» con esa toma abierta y el aviso a la vista (F-35).
+ * **Escribe:** por eso no va dentro de `funcional`. Corre sola (`node recorrido.mjs mediciones`), con esas cuentas recién
+ * generadas, y no toca los datos de A, B ni C. Lo esperado sale de lo que devuelve la API antes y después de cada
+ * escritura; lo que tiene que decir la pantalla, de `esperadoDeTomas`, escrito a mano. Una de las comprobaciones mira
+ * una falla simulada por el recorrido (un 503 al corregir), y lo dice.
+ */
+async function medicionesDeUnaToma() {
+  const d = estado.descartable;
+  const T = d?.tomaCompleta;
+  if (!T) throw new Error('faltan las cuentas descartables con la toma completa: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-toma-completa');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const BASE = `/pro/advisees/anthropometry?id=${A}&vista=evaluaciones`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const PANEL = 'dialog.dialogo--panel[open]';
+    const escrituras = (fragmento, desde) => v.urls.slice(desde).filter((u) => /^(POST|PUT) /.test(u) && u.includes(fragmento));
+    const leerTodas = async (ruta) => {
+      const todo = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `${ruta}?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        todo.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      return todo;
+    };
+    /** Lo que dice la API ahora, y lo que la pantalla tiene que decir con eso. */
+    const leerTodo = async () => {
+      const yo = (await leerApi(v, '/me')).data.identityId;
+      const lista = (await leerTodas(`/advisees/${A}/anthropometry/evaluations`)).filter((t) => t.state === 'REGISTERED').sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || (b.registeredAt ?? '').localeCompare(a.registeredAt ?? ''));
+      const detalleDe = new Map();
+      for (const t of lista) detalleDe.set(t.evaluationId, (await leerApi(v, `/anthropometry/evaluations/${t.evaluationId}`)).data);
+      const corridas = await leerTodas(`/advisees/${A}/calculations`);
+      const metodos = await leerTodas('/professional-methods');
+      const E = esperadoDeTomas({ lista, detalleDe, corridas, metodos, yo });
+      return { E, corridas, metodos, toma: E.tomas.find((x) => x.id === T.evaluationId), detalle: detalleDe.get(T.evaluationId) };
+    };
+    const fila = (id) => `button.medicion-de-la-toma[data-medicion="${id}"]`;
+    const abrirFila = async (selector) => {
+      await page.click(selector).catch(() => {});
+      await page.waitForSelector(`${PANEL} .medicion-abierta, ${PANEL} .nuevo-calculo`, { timeout: 15_000 }).catch(() => {});
+      await pausa(250);
+      return tomasEnPantalla(page);
+    };
+    const cerrarPanel = async () => {
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.querySelector('dialog.dialogo--panel[open]'), { timeout: 10_000 }).catch(() => {});
+      await pausa(150);
+    };
+    const escribir = async (selector, valor) => {
+      await page.focus(selector);
+      await page.keyboard.down('Control');
+      await page.keyboard.press('KeyA');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      if (valor) await page.type(selector, valor);
+    };
+    const apagado = (selector, contiene) => page.evaluate((s, c) => [...document.querySelectorAll(s)].find((b) => b.innerText.includes(c))?.disabled ?? null, selector, contiene);
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+    await ir(page, BASE);
+    await page.waitForSelector('article.toma-abierta', { timeout: 30_000 });
+    await quieto(page, v);
+
+    // ── La toma completa, como la dibuja la maqueta 22 ─────────────────────────────────────────────────────────
+    const antes = await leerTodo();
+    const alEntrar = await tomasEnPantalla(page);
+    const resultadosAntes = antes.E.resultadosDe(T.evaluationId);
+    comprobar(
+      'F-36',
+      'La toma del perfil completo abre sola (es la más reciente) y se lee como la maqueta 22: las 30 mediciones en sus cinco familias, en el orden del catálogo, con la unidad en el título de la familia donde todas la comparten; y sus resultados calculados, por categoría',
+      alEntrar.toma?.id === T.evaluationId &&
+        igual(alEntrar.toma.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), antes.toma.familias) &&
+        igual(antes.toma.familias.map((f) => [f.familia, f.filas.length]), [['MASA_Y_ESTATURA', 2], ['PLIEGUES', 11], ['PERIMETROS', 13], ['DIAMETROS', 3], ['OTRAS', 1]]) &&
+        igual(alEntrar.toma.categorias, resultadosAntes.categorias) &&
+        resultadosAntes.categorias.flatMap((c) => c.resultados).length === T.corridas.length &&
+        alEntrar.toma.anteriores === null &&
+        antes.toma.cuentas === '30 mediciones',
+      `${antes.toma.familias.map((f) => `${f.titulo} (${f.filas.length})`).join(' · ')} · ${resultadosAntes.categorias.map((c) => `${c.titulo} (${c.resultados.length})`).join(' · ')} · «${antes.toma.cuentas}»`,
+    );
+
+    // ── Corregir la cintura: primero una falla simulada, después de verdad ────────────────────────────────────────
+    const cintura = antes.detalle.measurements.find((m) => m.metric === 'perimetro-cintura');
+    const VALOR = '84';
+    const MOTIVO = 'Valor tipeado mal: era 84';
+    const FORM = `${PANEL} [data-formulario="corregir"]`;
+    await abrirFila(fila(cintura.measurementId));
+    await clic(page, `${PANEL} .medicion-abierta__pie button`, 'Corregir medición');
+    await page.waitForSelector(FORM, { timeout: 10_000 }).catch(() => {});
+    const sinNada = await apagado(`${FORM} .acciones button`, 'Corregir medición');
+    await escribir(`#corr-valor-${cintura.measurementId}`, '84,5,1');
+    await escribir(`#corr-motivo-${cintura.measurementId}`, MOTIVO);
+    const conAlgo = await apagado(`${FORM} .acciones button`, 'Corregir medición');
+    const alIntentar = v.urls.length;
+    await clic(page, `${FORM} .acciones button`, 'Corregir medición');
+    await pausa(300);
+    const numeroIlegible = await page.evaluate((id) => ({ invalido: document.querySelector(`#corr-valor-${id}`)?.getAttribute('aria-invalid'), texto: document.querySelector('dialog.dialogo--panel[open] [data-formulario="corregir"]')?.innerText.replace(/\s+/g, ' ').trim() ?? '' }), cintura.measurementId);
+    comprobar(
+      'F-37',
+      'Corregir pide el valor y el motivo: sin los dos el botón está apagado (con los dos, la misma consulta lo encuentra encendido). Un valor que no se entiende como número se marca en su campo y no sale ningún pedido',
+      sinNada === true && conAlgo === false && numeroIlegible.invalido === 'true' && escrituras('/corrections', alIntentar).length === 0,
+      `sin nada: ${sinNada ? 'apagado' : 'encendido'} · con valor y motivo: ${conAlgo ? 'apagado' : 'encendido'} · «84,5,1»: ${numeroIlegible.invalido === 'true' ? 'marcado en el campo' : 'sin marcar'} · pedidos: ${escrituras('/corrections', alIntentar).length}`,
+    );
+    await escribir(`#corr-valor-${cintura.measurementId}`, VALOR);
+    // Una falla al guardar (un 503 simulado en el navegador): se dice en el panel, y lo escrito queda.
+    const sinGuardar = { coincide: (u) => u.includes(`/anthropometry/evaluations/${T.evaluationId}/corrections`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    v.reglas.push(sinGuardar);
+    await clic(page, `${FORM} .acciones button`, 'Corregir medición');
+    await page.waitForSelector(`${PANEL} .aviso--error`, { timeout: 15_000 }).catch(() => {});
+    await quieto(page, v);
+    v.reglas.splice(v.reglas.indexOf(sinGuardar), 1);
+    const conLaFalla = await tomasEnPantalla(page);
+    const loEscrito = await page.evaluate((id) => [document.querySelector(`#corr-valor-${id}`)?.value ?? null, document.querySelector(`#corr-motivo-${id}`)?.value ?? null], cintura.measurementId);
+    comprobar(
+      'F-37',
+      'Si la corrección no se puede guardar (un 503 simulado), el panel lo dice adentro, sigue abierto con el formulario y lo escrito, y la medición no cambió',
+      !!conLaFalla.panel?.error && conLaFalla.panel.formulario === 'corregir' && igual(loEscrito, [VALOR, MOTIVO]) && conLaFalla.panel.valor === `${antes.E.num(cintura.magnitude.value)} cm` && !conLaFalla.panel.marcas.includes('Corregida'),
+      `«${(conLaFalla.panel?.error ?? '').slice(0, 90)}» · lo escrito: ${loEscrito.join(' | ')} · el valor: ${conLaFalla.panel?.valor}`,
+    );
+    const alCorregir = v.urls.length;
+    await clic(page, `${FORM} .acciones button`, 'Corregir medición');
+    await page.waitForSelector(`${PANEL} .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const corregido = await leerTodo();
+    const trasCorregir = await tomasEnPantalla(page);
+    const cinturaAhora = corregido.detalle.measurements.find((m) => m.measurementId === cintura.measurementId);
+    // Lo que cambió, a mano: las corridas vigentes de la toma que reemplazan a otra y usaron la cintura con otro valor.
+    const entrada = (c) => c.inputProvenance.find((i) => i.sourceRef === cintura.measurementId) ?? null;
+    const recalculadas = corregido.corridas
+      .filter((c) => c.evaluationId === T.evaluationId && corregido.E.vigente(c) && c.supersedesRunId && entrada(c))
+      .map((c) => ({ c, anterior: corregido.corridas.find((x) => x.calculationRunId === c.supersedesRunId) }))
+      .filter(({ c, anterior }) => anterior && entrada(anterior) && entrada(c).magnitude.value !== entrada(anterior).magnitude.value)
+      .sort((a, b) => a.c.methodName.localeCompare(b.c.methodName, 'es'))
+      .map(({ c, anterior }) => ({ nombre: c.methodName, valores: `${corregido.E.valorDe(c)} antes ${corregido.E.valorDe(anterior)}` }));
+    comprobar(
+      'F-37',
+      'Al corregir sale un solo pedido, con el valor, el motivo y la unidad de la medición. El panel sigue abierto y lo dice: el valor que rige es el corregido, con la marca «Corregida», y la historia tiene la corrección (con su motivo, «La corregiste vos» y marcada como el valor vigente) y el valor original, que se conserva',
+      escrituras(`/anthropometry/evaluations/${T.evaluationId}/corrections`, alCorregir).length === 1 &&
+        cinturaAhora.effectiveMagnitude.value === 84 &&
+        cinturaAhora.magnitude.value === cintura.magnitude.value &&
+        trasCorregir.panel?.exito === 'Corrección registrada. El valor original se conserva.' &&
+        trasCorregir.panel.valor === '84 cm' &&
+        trasCorregir.panel.marcas.includes('Corregida') &&
+        trasCorregir.panel.formulario === null &&
+        igual(trasCorregir.panel.historia, corregido.E.historiaDe(cinturaAhora)) &&
+        trasCorregir.panel.historia[0]?.titulo === 'Corrección: 84 cm Valor vigente' &&
+        trasCorregir.panel.historia[0].nota === `Por qué se corrigió: «${MOTIVO}». La corregiste vos.` &&
+        trasCorregir.panel.historia.at(-1).titulo === `Valor original: ${antes.E.num(cintura.magnitude.value)} cm`,
+      `pedidos: ${escrituras('/corrections', alCorregir).length} · «${trasCorregir.panel?.exito}» · ${trasCorregir.panel?.valor} · ${trasCorregir.panel?.historia.map((h) => `${h.titulo} — ${h.nota}`).join(' | ').slice(0, 200)}`,
+    );
+    const bloqueDelCambio = trasCorregir.panel?.bloques.find((b) => b.titulo === 'Lo que cambió con la corrección') ?? null;
+    comprobar(
+      'F-38',
+      '«Lo que cambió con la corrección» lista los resultados que la API volvió a calcular porque usaban la cintura, cada uno con el valor de ahora y el de antes (el de la corrida que reemplaza, según la API): no uno más ni uno menos, y ningún resultado que no la usa',
+      recalculadas.length >= 2 &&
+        !!bloqueDelCambio &&
+        bloqueDelCambio.texto.includes(`Se volvieron a calcular los ${recalculadas.length} resultados que usan esta medición. Los anteriores se conservan, sin efecto.`) &&
+        igual(trasCorregir.panel.cambios, [{ clase: 'recalculados', filas: recalculadas }]) &&
+        !recalculadas.some((r) => /Índice de masa corporal/.test(r.nombre)),
+      `${recalculadas.map((r) => `${r.nombre}: ${r.valores}`).join(' · ')} — a la vista: ${JSON.stringify(trasCorregir.panel?.cambios ?? null).slice(0, 200)}`,
+    );
+    const faltasConElCambio = await axe(page);
+    await cerrarPanel();
+    const conLaCorreccion = await tomasEnPantalla(page);
+    const resultadosCorregidos = corregido.E.resultadosDe(T.evaluationId);
+    comprobar(
+      'F-39',
+      'Cerrado el panel, la toma ya dice lo nuevo sin volver a entrar: la fila de la cintura muestra 84 con «Corregida», la lista dice «1 corregida», los resultados que usaban la cintura muestran su valor nuevo, y los anteriores quedan a un clic («Ver N anteriores, sin efecto»), cada uno con «Sin efecto»',
+      igual(conLaCorreccion.toma?.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), corregido.toma.familias) &&
+        corregido.toma.familias.flatMap((f) => f.filas).find((x) => x.id === cintura.measurementId)?.valor === '84' &&
+        (conLaCorreccion.tramos ?? []).flatMap((x) => x.tomas).find((x) => x.id === T.evaluationId)?.cuentas === '30 mediciones · 1 corregida' &&
+        igual(conLaCorreccion.toma.categorias, resultadosCorregidos.categorias) &&
+        resultadosCorregidos.sinEfecto.length === recalculadas.length &&
+        conLaCorreccion.toma.anteriores === `Ver ${recalculadas.length} anteriores, sin efecto`,
+      `la fila: ${JSON.stringify(conLaCorreccion.toma?.familias.flatMap((f) => f.filas).find((x) => x.id === cintura.measurementId) ?? null).slice(0, 150)} · «${conLaCorreccion.toma?.anteriores}»`,
+    );
+    await clic(page, 'article.toma-abierta button[aria-controls="anteriores-sin-efecto"]', 'anteriores').catch(() => null);
+    await pausa(250);
+    const conLosAnteriores = await tomasEnPantalla(page);
+    const sinEfectoEsperados = resultadosCorregidos.sinEfecto.map((c) => ({ id: c.calculationRunId, nombre: c.methodName, valor: corregido.E.valorDe(c) }));
+    const mismos = (a, b) => igual([...a].sort((x, y) => x.id.localeCompare(y.id)), [...b].sort((x, y) => x.id.localeCompare(y.id)));
+    comprobar(
+      'F-39',
+      'Los cálculos que quedaron sin efecto se abren a pedido, en el lugar: son los que la API da por reemplazados, cada uno con su método y el valor que tenía',
+      sinEfectoEsperados.length > 0 && mismos(conLosAnteriores.toma?.sinEfecto ?? [], sinEfectoEsperados),
+      `${(conLosAnteriores.toma?.sinEfecto ?? []).map((x) => `${x.nombre} ${x.valor}`).join(' · ')}`,
+    );
+
+    // ── Anular un pliegue que alimenta una suma: el resultado queda sin efecto, sin un cero en su lugar ───────────────
+    const pantorrilla = corregido.detalle.measurements.find((m) => m.metric === 'pliegue-pantorrilla');
+    const RAZON = 'El calibre estaba mal apoyado';
+    const ANULAR = `${PANEL} [data-formulario="anular"]`;
+    await abrirFila(fila(pantorrilla.measurementId));
+    await clic(page, `${PANEL} .medicion-abierta__pie button`, 'Anular esta medición');
+    await page.waitForSelector(ANULAR, { timeout: 10_000 }).catch(() => {});
+    const antesDeAnular = await page.evaluate(() => {
+      const f = document.querySelector('dialog.dialogo--panel[open] [data-formulario="anular"]');
+      const aviso = f?.querySelector('.aviso');
+      const boton = [...(f?.querySelectorAll('.acciones button') ?? [])].find((b) => b.innerText.includes('Anular esta medición'));
+      return { aviso: aviso?.innerText.replace(/\s+/g, ' ').trim() ?? '', avisoAntesDelBoton: !!aviso && !!boton && !!(aviso.compareDocumentPosition(boton) & Node.DOCUMENT_POSITION_FOLLOWING), apagado: boton?.disabled ?? null, primario: boton?.classList.contains('boton--primario') ?? null };
+    });
+    await escribir(`#anul-motivo-${pantorrilla.measurementId}`, RAZON);
+    const alAnular = v.urls.length;
+    await clic(page, `${ANULAR} .acciones button`, 'Anular esta medición');
+    await page.waitForSelector(`${PANEL} .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const anulado = await leerTodo();
+    const trasAnular = await tomasEnPantalla(page);
+    const pantorrillaAhora = anulado.detalle.measurements.find((m) => m.measurementId === pantorrilla.measurementId);
+    const quedaronSinEfecto = anulado.corridas
+      .filter((c) => c.evaluationId === T.evaluationId && !c.effective && c.supersededByRunId === null && c.inputProvenance.some((i) => i.sourceRef === pantorrilla.measurementId))
+      .sort((a, b) => a.methodName.localeCompare(b.methodName, 'es'))
+      .map((c) => ({ nombre: c.methodName, valores: `antes ${anulado.E.valorDe(c)}` }));
+    comprobar(
+      'F-37',
+      'Anular dice antes del botón que no borra nada y que no se reactiva, pide el motivo (sin él, el botón está apagado) y su botón no es el principal. Al anular sale un solo pedido; el panel sigue abierto y dice «Anulada», conserva el valor, cuenta la anulación con su motivo («La anulaste vos») y ya no ofrece ninguna acción',
+      /Anular no borra nada/.test(antesDeAnular.aviso) &&
+        /Una medición anulada no se reactiva\./.test(antesDeAnular.aviso) &&
+        antesDeAnular.avisoAntesDelBoton &&
+        antesDeAnular.apagado === true &&
+        antesDeAnular.primario === false &&
+        escrituras(`/anthropometry/measurements/${pantorrilla.measurementId}/annulments`, alAnular).length === 1 &&
+        pantorrillaAhora.condition === 'ANNULLED' &&
+        trasAnular.panel?.exito === 'Medición anulada. Su historia se conserva.' &&
+        trasAnular.panel.marcas.includes('Anulada') &&
+        !trasAnular.panel.marcas.includes('Vigente') &&
+        trasAnular.panel.valor === `${anulado.E.num(pantorrilla.magnitude.value)} mm` &&
+        igual(trasAnular.panel.historia, anulado.E.historiaDe(pantorrillaAhora)) &&
+        trasAnular.panel.historia[0]?.nota === `Por qué se anuló: «${RAZON}». La anulaste vos.` &&
+        igual(trasAnular.panel.acciones, []),
+      `antes: «${antesDeAnular.aviso.slice(0, 60)}…» · pedidos: ${escrituras('/annulments', alAnular).length} · «${trasAnular.panel?.exito}» · ${trasAnular.panel?.marcas.join(', ')} · ${trasAnular.panel?.historia[0]?.nota} · acciones: ${trasAnular.panel?.acciones.length}`,
+    );
+    const bloqueDeLaAnulacion = trasAnular.panel?.bloques.find((b) => b.titulo === 'Lo que pasó con los resultados') ?? null;
+    await cerrarPanel();
+    const conLaAnulacion = await tomasEnPantalla(page);
+    const resultadosTrasAnular = anulado.E.resultadosDe(T.evaluationId);
+    comprobar(
+      'F-38',
+      'Los resultados que usaban la medición anulada quedan sin efecto y sin un cálculo que los reemplace: el panel los nombra con el valor que tenían y dice que no se reemplazan por cero; en la toma dejan de estar entre los vigentes (no aparece un cero ni un resultado vacío) y pasan a los anteriores. La fila queda con «Anulada» y su valor, y la lista dice «1 anulada»',
+      quedaronSinEfecto.length >= 1 &&
+        !!bloqueDeLaAnulacion &&
+        bloqueDeLaAnulacion.texto.includes('No se pudo recalcular: falta una medición vigente. No se reemplaza por cero.') &&
+        igual(trasAnular.panel.cambios, [{ clase: 'sin-recalcular', filas: quedaronSinEfecto }]) &&
+        igual(conLaAnulacion.toma?.categorias, resultadosTrasAnular.categorias) &&
+        !resultadosTrasAnular.categorias.flatMap((c) => c.resultados).some((r) => quedaronSinEfecto.some((q) => q.nombre === r.nombre)) &&
+        igual(conLaAnulacion.toma.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), anulado.toma.familias) &&
+        anulado.toma.familias.flatMap((f) => f.filas).find((x) => x.id === pantorrilla.measurementId)?.anulada === true &&
+        (conLaAnulacion.tramos ?? []).flatMap((x) => x.tomas).find((x) => x.id === T.evaluationId)?.cuentas === '30 mediciones · 1 corregida · 1 anulada',
+      `${quedaronSinEfecto.map((r) => `${r.nombre}: ${r.valores}`).join(' · ')} · «${(bloqueDeLaAnulacion?.texto ?? '').slice(0, 140)}» · vigentes: ${resultadosTrasAnular.categorias.flatMap((c) => c.resultados).length}`,
+    );
+
+    // ── Calcular con un método que la toma cubre y todavía no tiene ───────────────────────────────────────────────
+    const vigentesAhora = new Set(anulado.corridas.filter((c) => c.evaluationId === T.evaluationId && anulado.E.vigente(c)).map((c) => c.methodVersionId));
+    const conValor = new Set(anulado.detalle.measurements.filter((m) => m.condition === 'EFFECTIVE' && m.effectiveMagnitude).map((m) => m.metric));
+    const metodo =
+      anulado.metodos.find((m) => /conicidad/i.test(m.name) && !vigentesAhora.has(m.methodVersionId) && m.requiredInputs.every((x) => conValor.has(x.metric))) ??
+      anulado.metodos.find((m) => !vigentesAhora.has(m.methodVersionId) && m.requiredInputs.every((x) => conValor.has(x.metric)));
+    await clic(page, 'article.toma-abierta .toma-abierta__acciones-de-bloque button', 'Calcular con un método');
+    await page.waitForSelector(`${PANEL} .nuevo-calculo`, { timeout: 15_000 }).catch(() => {});
+    if (metodo) await page.select('#cal-metodo', metodo.methodVersionId);
+    await pausa(300);
+    const fichaDelMetodo = await texto(page, `${PANEL} .ficha-de-metodo`);
+    const alCalcular = v.urls.length;
+    await clic(page, `${PANEL} .nuevo-calculo > .acciones button`, 'Calcular');
+    await page.waitForSelector(`${PANEL} .resultado-abierto .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const calculado = await leerTodo();
+    const trasCalcular = await tomasEnPantalla(page);
+    const nueva = calculado.corridas.find((c) => c.evaluationId === T.evaluationId && c.methodVersionId === metodo?.methodVersionId && calculado.E.vigente(c)) ?? null;
+    await cerrarPanel();
+    const conElNuevo = await tomasEnPantalla(page);
+    comprobar(
+      'F-39',
+      '«Calcular con un método» muestra la ficha del método elegido con lo que pide; al calcular sale un solo pedido y el panel pasa a mostrar el resultado nuevo, con su método, su valor con la precisión declarada y sus entradas. Cerrado el panel, el resultado está en su categoría, sin haber vuelto a entrar',
+      !!metodo &&
+        !!nueva &&
+        fichaDelMetodo.includes(metodo.name) &&
+        escrituras(`/advisees/${A}/calculations`, alCalcular).length === 1 &&
+        trasCalcular.panel?.titulo === 'Resultado calculado' &&
+        trasCalcular.panel.exito === 'Cálculo registrado. Queda con su método, su versión y sus entradas a la vista.' &&
+        trasCalcular.panel.deDonde === nueva.methodName &&
+        trasCalcular.panel.valor === calculado.E.valorDe(nueva) &&
+        trasCalcular.panel.entradas === nueva.inputProvenance.length &&
+        igual(conElNuevo.toma?.categorias, calculado.E.resultadosDe(T.evaluationId).categorias) &&
+        conElNuevo.toma.categorias.flatMap((c) => c.resultados).some((r) => r.id === nueva.calculationRunId),
+      metodo ? `«${metodo.name}» · pedidos: ${escrituras('/calculations', alCalcular).length} · ${trasCalcular.panel?.deDonde} ${trasCalcular.panel?.valor} · ${trasCalcular.panel?.entradas} entradas` : 'no hay un método que la toma cubra y no tenga calculado',
+    );
+
+    // ── Dejar un resultado como referencia: un acto del profesional, dicho antes del botón ─────────────────────────────
+    const paraReferencia = calculado.corridas.find((c) => c.evaluationId === T.evaluationId && calculado.E.vigente(c) && !c.referenceForPurpose && /7 pliegues, mujeres/.test(c.methodName)) ?? calculado.corridas.find((c) => c.evaluationId === T.evaluationId && calculado.E.vigente(c) && !c.referenceForPurpose);
+    await abrirFila(`button.resultado-de-la-toma[data-resultado="${paraReferencia.calculationRunId}"]`);
+    await clic(page, `${PANEL} .medicion-abierta__pie button`, 'Dejar como referencia');
+    await page.waitForSelector(`${PANEL} [data-formulario="referencia"]`, { timeout: 10_000 }).catch(() => {});
+    const antesDeLaReferencia = await texto(page, `${PANEL} [data-formulario="referencia"] .aviso`);
+    await escribir(`#ref-fundamento-${paraReferencia.calculationRunId}`, 'Es el método con que la vengo siguiendo');
+    const alAdoptar = v.urls.length;
+    await clic(page, `${PANEL} [data-formulario="referencia"] .acciones button`, 'Dejar como referencia');
+    await page.waitForSelector(`${PANEL} .aviso--exito`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const conReferencia = await leerTodo();
+    const trasAdoptar = await tomasEnPantalla(page);
+    await cerrarPanel();
+    const alFinal = await tomasEnPantalla(page);
+    const referencias = conReferencia.corridas.filter((c) => c.referenceForPurpose && c.purpose === paraReferencia.purpose).map((c) => c.calculationRunId);
+    comprobar(
+      'F-39',
+      '«Dejar como referencia» explica antes del botón que no cambia el cálculo ni borra los otros; al confirmarlo sale un solo pedido, el panel lo dice, el resultado queda marcado «Referencia» en el panel y en la toma, y ya no ofrece dejarlo otra vez. Es el único marcado: BE no marca ninguno por su cuenta',
+      /no cambia el cálculo ni borra los otros/.test(antesDeLaReferencia) &&
+        escrituras(`/advisees/${A}/calculation-references/`, alAdoptar).length === 1 &&
+        igual(referencias, [paraReferencia.calculationRunId]) &&
+        /^Referencia registrada\. Los demás cálculos se conservan\./.test(trasAdoptar.panel?.exito ?? '') &&
+        trasAdoptar.panel.marcas.includes('Referencia') &&
+        igual(trasAdoptar.panel.acciones, []) &&
+        igual(alFinal.toma?.categorias, conReferencia.E.resultadosDe(T.evaluationId).categorias) &&
+        igual(alFinal.toma.categorias.flatMap((c) => c.resultados).filter((r) => r.marcas.includes('Referencia')).map((r) => r.id), [paraReferencia.calculationRunId]),
+      `«${paraReferencia.methodName}» · pedidos: ${escrituras('/calculation-references/', alAdoptar).length} · «${trasAdoptar.panel?.exito}» · con «Referencia» en la toma: ${alFinal.toma?.categorias.flatMap((c) => c.resultados).filter((r) => r.marcas.includes('Referencia')).map((r) => r.nombre).join(', ')}`,
+    );
+    const faltas = await axe(page);
+    comprobar('F-37', 'axe no encuentra faltas en la toma completa, ni en el panel de una medición corregida con lo que cambió', faltas.length === 0 && faltasConElCambio.length === 0, `la toma: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · el panel: ${faltasConElCambio.map((f) => f.id).join(', ') || 'sin faltas'}`);
+
+    // ── Con la toma completa ya corregida y anulada: cómo corta cada renglón, en los tres anchos ──────────────────────
+    const TEXTOS_CON_NUMEROS = '.toma-de-la-lista__cuentas, .toma-abierta__metadatos, .resultado-de-la-toma__nombre';
+    const enUnRenglon = () =>
+      page.evaluate(() => {
+        const medio = (e) => (e ? Math.round(e.getBoundingClientRect().top + e.getBoundingClientRect().height / 2) : null);
+        const acciones = document.querySelector('.resultados-de-la-toma .toma-abierta__acciones-de-bloque');
+        // La nota del título («Cada uno, con su método…»): en cuántos renglones quedó su texto.
+        const nota = document.querySelector('.resultados-de-la-toma .toma-abierta__titulo-de-bloque .nota');
+        const rango = document.createRange();
+        if (nota) rango.selectNodeContents(nota);
+        const renglonesDeLaNota = nota ? new Set([...rango.getClientRects()].map((r) => Math.round(r.top))).size : 0;
+        return { titulo: medio(document.querySelector('#titulo-resultados')), acciones: medio(acciones), texto: acciones?.innerText.replace(/\s+/g, ' ').trim() ?? '', renglonesDeLaNota };
+      });
+    // Los anteriores quedaron abiertos más arriba: se pliegan, para medir el encabezado con «Ver N anteriores» escrito.
+    if (await page.evaluate(() => document.querySelector('article.toma-abierta button[aria-controls="anteriores-sin-efecto"]')?.getAttribute('aria-expanded') === 'true')) {
+      await clic(page, 'article.toma-abierta button[aria-controls="anteriores-sin-efecto"]', 'Ocultar').catch(() => null);
+      await pausa(250);
+    }
+    const cortes = {};
+    const encabezados = {};
+    for (const ancho of [1440, 1280, 1024]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(300);
+      cortes[ancho] = await cortesMalPuestos(page, TEXTOS_CON_NUMEROS);
+      encabezados[ancho] = await enUnRenglon();
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(200);
+    comprobar(
+      'F-41',
+      'A 1440, 1280 y 1024 px, ningún renglón deja un número separado de la palabra que cuenta («1» arriba y «anulada» abajo; «7» y «pliegues») ni el separador al principio: en las cuentas de la lista, en el renglón de la toma y en los nombres de los métodos. La medida mira dónde quedó cada letra, y hay textos que ocupan más de un renglón',
+      [1440, 1280, 1024].every((a) => cortes[a].cortes.length === 0 && cortes[a].textos >= 8) && cortes[1440].enVariosRenglones >= 1 && cortes[1280].enVariosRenglones >= 2,
+      [1440, 1280, 1024].map((a) => `${a}: ${cortes[a].textos} textos, ${cortes[a].enVariosRenglones} en más de un renglón${cortes[a].cortes.length > 0 ? ` · ${cortes[a].cortes.slice(0, 2).join(' · ')}` : ''}`).join(' — '),
+    );
+    comprobar(
+      'F-41',
+      'A 1440 px, con «Ver N anteriores, sin efecto» a la vista, el título de los resultados, su nota y sus dos acciones siguen en un renglón, como en la maqueta 22: las acciones no bajan, y la nota no se parte para dejarles lugar',
+      /^Ver \d+ anteriores, sin efecto Calcular con un método$/.test(encabezados[1440].texto) &&
+        encabezados[1440].titulo !== null &&
+        Math.abs(encabezados[1440].titulo - encabezados[1440].acciones) <= 6 &&
+        encabezados[1440].renglonesDeLaNota === 1,
+      `«${encabezados[1440].texto}» · el título, a los ${encabezados[1440].titulo} px; las acciones, a los ${encabezados[1440].acciones}; la nota, en ${encabezados[1440].renglonesDeLaNota} renglón · a 1280, a los ${encabezados[1280].titulo} y ${encabezados[1280].acciones}`,
+    );
+
+    // ── Registrar una toma por la pantalla: se vuelve a «Tomas» con esa toma abierta y el aviso a la vista ─────────────
+    // La toma nueva es de ocho días antes que la completa: no es la más reciente, así que «abre la recién registrada» no
+    // se confunde con «abre la más nueva».
+    const antesDeRegistrar = await leerTodo();
+    await clic(page, '.tomas-del-area__preparar button', 'Preparar una toma');
+    await page.waitForSelector('#titulo-preparacion', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const perfil = await page.evaluate(() => [...document.querySelectorAll('#ant-protocolo option')].find((o) => o.textContent.includes('Perfil antropométrico completo'))?.value ?? null);
+    if (perfil) await page.select('#ant-protocolo', perfil);
+    await fijarFecha(page, '#ant-momento', `${diaMenos(T.fecha, 8)}T09:15`);
+    await escribir('#ant-valor-peso', '61,4');
+    const alGuardar = v.urls.length;
+    await clic(page, '.acciones--fijas button', 'Guardar');
+    await page.waitForFunction(() => document.querySelector('#titulo-preparacion')?.innerText.trim() === 'Toma en preparación', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    // Con la toma guardada y sin registrar, «Tomas» lo dice, y el botón la retoma.
+    await clic(page, '.vuelta-a-la-seccion a', 'Tomas');
+    await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const conLaTomaEmpezada = await tomasEnPantalla(page);
+    // Con el texto que tenga el botón: si no dijera lo que tiene que decir, la comprobación falla y el camino sigue.
+    await clic(page, '.tomas-del-area__preparar button', conLaTomaEmpezada.preparar ?? 'Preparar una toma').catch(() => null);
+    await page.waitForSelector('#titulo-preparacion', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const alRetomar = await page.evaluate(() => ({ titulo: document.querySelector('#titulo-preparacion')?.innerText.trim() ?? null, peso: document.querySelector('#ant-valor-peso')?.value ?? null }));
+    comprobar(
+      'F-35',
+      'Con una toma guardada y sin registrar, «Tomas» lo dice: el botón pasa de «Preparar una toma» a «Seguir con la toma en preparación» y cuenta sus mediciones; la toma en preparación no está entre las registradas, y el botón lleva a la carga, que la retoma con lo guardado',
+      conLaTomaEmpezada.preparar === 'Seguir con la toma en preparación' &&
+        conLaTomaEmpezada.enPreparacion === 'Hay una toma en preparación, con 1 medición.' &&
+        conLaTomaEmpezada.cuenta === `${antesDeRegistrar.E.tomas.length} registradas.` &&
+        (conLaTomaEmpezada.tramos ?? []).flatMap((x) => x.tomas).length === antesDeRegistrar.E.tomas.length &&
+        alRetomar.titulo === 'Toma en preparación' &&
+        /^61[.,]4$/.test(alRetomar.peso ?? ''),
+      `botón: «${conLaTomaEmpezada.preparar}» · «${conLaTomaEmpezada.enPreparacion}» · «${conLaTomaEmpezada.cuenta}» · al retomar: «${alRetomar.titulo}», peso ${alRetomar.peso}`,
+    );
+    await clic(page, '.acciones--fijas button', 'Registrar toma');
+    await page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 }).catch(() => {});
+    await clic(page, 'dialog.dialogo[open] .acciones button', 'Registrar esta toma');
+    // El aviso dura unos segundos: se lee apenas aparece, antes de esperar a que la lista termine de cargar.
+    await page.waitForFunction(() => (document.querySelector('.aviso-flotante__texto')?.innerText.trim() ?? '') !== '', { timeout: 30_000 }).catch(() => {});
+    const avisoAlVolver = await page.evaluate(() => {
+      const a = document.querySelector('.tomas-del-area .aviso-flotante');
+      if (!a) return null;
+      const r = a.getBoundingClientRect();
+      return { texto: a.querySelector('.aviso-flotante__texto').innerText.replace(/\s+/g, ' ').trim(), aLaVista: r.width > 0 && r.top >= 0 && r.bottom <= innerHeight };
+    });
+    await page.waitForSelector('article.toma-abierta', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const registrada = await leerTodo();
+    const trasRegistrar = await tomasEnPantalla(page);
+    const nuevas = registrada.E.tomas.filter((x) => !antesDeRegistrar.E.tomas.some((y) => y.id === x.id));
+    const tomaNueva = nuevas[0] ?? null;
+    const enLista = (tramos) => (tramos ?? []).map((x) => ({ protocolo: x.protocolo, tomas: x.tomas.map((y) => ({ id: y.id, fecha: y.fecha, cuentas: y.cuentas })) }));
+    comprobar(
+      'F-35',
+      'Registrar una toma desde la carga vuelve a «Tomas» con esa toma abierta (no la más reciente: es de ocho días antes que la completa), puesta en la dirección y marcada en la lista, que la tiene en su lugar y cuenta una más; el botón vuelve a decir «Preparar una toma». Salieron un solo pedido para crear la toma en preparación y uno solo para registrarla',
+      nuevas.length === 1 &&
+        registrada.E.tomas[0].id !== tomaNueva.id &&
+        registrada.E.tomas.length === antesDeRegistrar.E.tomas.length + 1 &&
+        parametros(page).get('vista') === 'evaluaciones' &&
+        parametros(page).get('evaluacion') === tomaNueva.id &&
+        trasRegistrar.toma?.id === tomaNueva.id &&
+        trasRegistrar.toma.titulo === tomaNueva.titulo &&
+        tomaNueva.cuentas === '1 medición' &&
+        igual(trasRegistrar.toma.familias.map((f) => ({ familia: f.familia, titulo: f.titulo, filas: f.filas })), tomaNueva.familias) &&
+        igual(enLista(trasRegistrar.tramos), enLista(registrada.E.tramos)) &&
+        igual((trasRegistrar.tramos ?? []).flatMap((x) => x.tomas).filter((x) => x.elegida).map((x) => x.id), [tomaNueva.id]) &&
+        trasRegistrar.cuenta === `${registrada.E.tomas.length} registradas.` &&
+        trasRegistrar.preparar === 'Preparar una toma' &&
+        escrituras(`/advisees/${A}/anthropometry/evaluation-drafts`, alGuardar).length === 1 &&
+        escrituras('/register', alGuardar).length === 1,
+      tomaNueva
+        ? `«${trasRegistrar.toma?.titulo}» (la más reciente es «${registrada.E.tomas[0].titulo}») · ${tomaNueva.cuentas} · «${trasRegistrar.cuenta}» · en la dirección: ${parametros(page).get('evaluacion') === tomaNueva.id ? 'esa toma' : 'otra cosa'} · pedidos: ${escrituras(`/advisees/${A}/anthropometry/evaluation-drafts`, alGuardar).length} para crearla y ${escrituras('/register', alGuardar).length} para registrarla`
+        : `la API tiene ${nuevas.length} tomas nuevas`,
+    );
+    comprobar(
+      'F-35',
+      'Al volver de registrar, «Tomas» dice «Toma registrada. Ya forma parte de la evolución.» en un aviso que se ve entero dentro de la ventana (antes se decía en la carga, que se desmontaba al volver, y podía no verse)',
+      avisoAlVolver?.texto === 'Toma registrada. Ya forma parte de la evolución.' && avisoAlVolver.aLaVista,
+      avisoAlVolver ? `«${avisoAlVolver.texto}» · ${avisoAlVolver.aLaVista ? 'dentro de la ventana' : 'fuera de la ventana'}` : 'sin aviso',
+    );
+    comprobar('—', 'Corregir, anular, calcular, dejar una referencia y registrar una toma no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
+// ─── Información · Solicitudes (WP-ESCRITORIO-AREAS, parte 4) ──────────────────────────────────────────────────────
+
+/** Lo que «Solicitudes» tiene a la vista: la lista, las vistas y la solicitud abierta (al costado, o en el panel de encima). */
+const solicitudesEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => (e && e.getClientRects().length > 0 ? e : null);
+    const alCostado = aLaVista(document.querySelector('aside.detalle-de-solicitud'));
+    const panel = document.querySelector('dialog.dialogo--panel[open]');
+    const marco = alCostado ?? panel;
+    const abierta = marco?.querySelector('.solicitud-abierta') ?? null;
+    return {
+      titulo: t(document.querySelector('#titulo-solicitudes')),
+      bajada: t(document.querySelector('.solicitudes-del-area .registros__bajada')),
+      pedir: t(aLaVista(document.querySelector('.solicitudes-del-area__pedir button'))),
+      vistas: [...document.querySelectorAll('.solicitudes-del-area .vista-de-la-linea')].map((b) => ({ clave: b.dataset.vista, texto: t(b), elegida: b.getAttribute('aria-pressed') === 'true' })),
+      filas: [...document.querySelectorAll('button.solicitud-de-la-lista')].map((b) => ({
+        id: b.dataset.solicitud,
+        nombre: t(b.querySelector('.solicitud-de-la-lista__nombre')),
+        estado: t(b.querySelector('.etiqueta-de-dato')),
+        datos: t(b.querySelector('.solicitud-de-la-lista__datos')),
+        paraQue: t(b.querySelector('.solicitud-de-la-lista__para-que')),
+        elegida: b.getAttribute('aria-current') === 'true',
+      })),
+      alPie: t(document.querySelector('.solicitudes__al-pie')),
+      vacio: t(aLaVista(document.querySelector('.solicitudes-del-area .estado-vacio'))),
+      // Lo que la pantalla de antes tenía y esta no: un botón por renglón.
+      botonesVerDetalle: [...document.querySelectorAll('.solicitudes-del-area button')].filter((b) => /^(Ver detalle|Cerrar)$/.test(b.innerText.trim()) && !b.closest('.detalle-del-hecho, dialog')).length,
+      detalle: abierta
+        ? {
+            alCostado: !!alCostado,
+            id: abierta.dataset.solicitud,
+            titulo: t(marco.querySelector('.detalle-de-solicitud__titulo, .dialogo__encabezado h2')),
+            estado: t(marco.querySelector('.detalle-de-solicitud__titulo .etiqueta-de-dato, .detalle-de-solicitud__estado .etiqueta-de-dato')),
+            conElFoco: marco.contains(document.activeElement),
+            focoEnElTitulo: document.activeElement === marco.querySelector('.detalle-de-solicitud__titulo'),
+            datos: [...abierta.querySelectorAll('.solicitud-abierta__datos > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]),
+            procedencia: [...abierta.querySelectorAll('[data-procedencia]')].map(t),
+            columnas: aLaVista(abierta.querySelector('.lo-declarado__columnas')) ? [...abierta.querySelectorAll('.lo-declarado__columnas span')].map(t) : null,
+            filas: [...abierta.querySelectorAll('.lo-declarado__fila')].map((f) => ({ codigo: f.dataset.pregunta, pregunta: t(f.querySelector('dt')), respuesta: t(f.querySelector('dd')) })),
+            // En una ventana angosta la respuesta va debajo de su pregunta.
+            respuestaDebajo: [...abierta.querySelectorAll('.lo-declarado__fila')].every((f) => f.querySelector('dd').getBoundingClientRect().top >= f.querySelector('dt').getBoundingClientRect().bottom - 1),
+            pedidas: [...abierta.querySelectorAll('.preguntas-pedidas li')].map(t),
+            // Dónde quedó «Requerida» respecto del final de su pregunta: en ese mismo renglón o abajo, y si entraba al lado.
+            requeridas: [...abierta.querySelectorAll('.lo-declarado__fila dt, .preguntas-pedidas li')].flatMap((el) => {
+              const etiqueta = el.querySelector('.etiqueta-de-dato');
+              const pregunta = el.firstChild;
+              if (!etiqueta || pregunta?.nodeType !== Node.TEXT_NODE) return [];
+              const rango = document.createRange();
+              rango.selectNodeContents(pregunta);
+              const renglones = [...rango.getClientRects()];
+              const ultimo = renglones[renglones.length - 1];
+              const e = etiqueta.getBoundingClientRect();
+              return [{ renglones: renglones.length, alLado: e.top < ultimo.bottom && e.bottom > ultimo.top, entraba: ultimo.right + e.width + 8 <= el.getBoundingClientRect().right }];
+            }),
+            sinResponder: t(abierta.querySelector('.solicitud-abierta__sin-responder')),
+            historia: [...abierta.querySelectorAll('.historia-de-respuesta > li')].map((li) => ({
+              tipo: li.dataset.version,
+              rige: li.dataset.rige === 'si',
+              cuando: t(li.querySelector('.historia-de-medicion__cuando')),
+              titulo: t(li.querySelector('.historia-de-medicion__titulo')),
+              notas: [...li.querySelectorAll('p.nota')].map(t),
+              respuestas: [...li.querySelectorAll('.historia-de-respuesta__respuestas > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]),
+            })),
+            avisos: [...abierta.querySelectorAll('.aviso')].map(t),
+            leyendo: !!abierta.querySelector('.cargando'),
+            texto: t(abierta),
+          }
+        : null,
+      texto: t(document.querySelector('.seccion-del-area')),
+      alto: document.documentElement.scrollHeight,
+    };
+  });
+
+/** El cajón de «Pedir información», si está abierto: sus tres pasos, lo elegido, lo que falta, el pie y dónde está el foco. */
+const pedidoEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const d = document.querySelector('dialog.cajon[open]');
+    if (!d) return null;
+    const caja = (e) => {
+      const r = e.getBoundingClientRect();
+      return { izquierda: Math.round(r.left), derecha: Math.round(r.right), arriba: Math.round(r.top), abajo: Math.round(r.bottom), ancho: Math.round(r.width), alto: Math.round(r.height) };
+    };
+    const pie = d.querySelector('.cajon__pie');
+    const cuerpo = d.querySelector('.cajon__cuerpo');
+    const fija = d.querySelector('[data-area="fija"]');
+    const aElegir = d.querySelector('[data-area="a-elegir"]');
+    const foco = document.activeElement;
+    const enlace = d.querySelector('[data-desde-entrenamiento] a');
+    return {
+      titulo: t(d.querySelector('.cajon__cabecera h2')),
+      persona: t(d.querySelector('.cajon__sobretitulo')),
+      conElFoco: d.contains(foco),
+      focoEnElTitulo: foco === d.querySelector('.cajon__cabecera h2'),
+      // Dónde está el foco, dicho por lo que es: un formulario, una pregunta, el aviso de un rechazo, el área o el para qué.
+      foco:
+        foco?.closest('[data-formulario]')?.dataset.formulario ??
+        foco?.closest('tr[data-pregunta]')?.dataset.pregunta ??
+        (foco?.closest('.aviso') ? 'aviso' : foco?.closest('[data-area]') ? 'area' : foco?.closest('.pedido__dos-campos') ? 'para-que' : null),
+      caja: caja(d),
+      ventana: { ancho: innerWidth, alto: innerHeight },
+      pie: { caja: caja(pie), boton: t(pie.querySelector('button')), apagado: pie.querySelector('button').disabled, nota: t(pie.querySelector('.pedido__antes-de-enviar')) },
+      cuerpo: { alto: cuerpo.clientHeight, contenido: cuerpo.scrollHeight },
+      avisos: [...d.querySelectorAll('.pedido__aviso')].map(t),
+      desdeEntrenamiento: enlace ? { texto: t(enlace), href: enlace.getAttribute('href') } : null,
+      rechazo: t(d.querySelector('.aviso--error')),
+      // El número del paso y su nombre son dos piezas del mismo título: se leen con un espacio en el medio.
+      pasos: [...d.querySelectorAll('.paso-del-pedido')].map((p) => ({ clave: p.dataset.paso, titulo: (t(p.querySelector('h3')) ?? '').replace(/^(\d+)\s*/, '$1 '), nota: t(p.querySelector('.paso-del-pedido__cabecera .nota')) })),
+      formularios: [...d.querySelectorAll('.formulario-del-pedido')].map((f) => ({
+        clave: f.dataset.formulario,
+        nombre: t(f.querySelector('.formulario-del-pedido__nombre')),
+        cuenta: t(f.querySelector('.formulario-del-pedido__cuenta')),
+        elegido: f.querySelector('input').checked,
+        descripcion: t(f.querySelector('.formulario-del-pedido__descripcion')),
+        alto: Math.round(f.querySelector('label').getBoundingClientRect().height),
+      })),
+      // Lo que el paso 2 dice fuera de su tabla: que todavía no hay formulario elegido, o la nota de las requeridas.
+      notasDeLasPreguntas: [...d.querySelectorAll('[data-paso="preguntas"] > .nota')].map(t),
+      cuenta: t(d.querySelector('[data-elegidas]')),
+      columnas: [...d.querySelectorAll('.preguntas-del-pedido thead th')].map(t),
+      preguntas: [...d.querySelectorAll('.preguntas-del-pedido tr[data-pregunta]')].map((tr) => {
+        const pedir = tr.querySelector('.preguntas-del-pedido__casilla input');
+        const requerida = tr.querySelector('.preguntas-del-pedido__requerida input');
+        return {
+          codigo: tr.dataset.pregunta,
+          pedida: pedir.checked,
+          pregunta: t(tr.querySelector('th label')),
+          ayuda: t(tr.querySelector('.preguntas-del-pedido__ayuda')),
+          respondeCon: t(tr.querySelector('.preguntas-del-pedido__responde')),
+          requerida: requerida.checked,
+          requeridaApagada: requerida.disabled,
+          nombreDeRequerida: requerida.getAttribute('aria-label'),
+          alto: Math.round(tr.getBoundingClientRect().height),
+        };
+      }),
+      paraQue: d.querySelector('.pedido__dos-campos > .campo:first-child input')?.value ?? null,
+      area: fija
+        ? { fija: true, valor: fija.querySelector('input').value, soloLectura: fija.querySelector('input').readOnly, ayuda: t(fija.querySelector('.campo__ayuda')), opciones: [] }
+        : aElegir
+          ? { fija: false, valor: aElegir.querySelector('select').value, soloLectura: false, ayuda: t(aElegir.querySelector('.campo__ayuda')), opciones: [...aElegir.querySelector('select').options].map((o) => o.text) }
+          : null,
+      faltas: [...d.querySelectorAll('.campo__error')].map((e) => (t(e) ?? '').replace(/^⚠\s*/, '')),
+      texto: t(d),
+    };
+  });
+
+/**
+ * Lo que «Solicitudes» tiene que decir, escrito a mano con lo que devuelve la API (la lista, el detalle de cada solicitud
+ * y la versión de su formulario): no se usa el módulo del dominio que arma la pantalla (`solicitudes-de-informacion.ts`).
+ */
+function esperadoDeSolicitudes({ lista, detalleDe, formularioDe }) {
+  const AREA = { NUTRICION: 'Nutrición', ENTRENAMIENTO: 'Entrenamiento', ANTROPOMETRIA: 'Antropometría' };
+  const medio = (iso) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(new Date(iso));
+  const hora = (iso) => new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(new Date(iso));
+  // Sin el año si es del año en curso.
+  const corto = (iso) => (new Date(iso).getFullYear() === new Date().getFullYear() ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(new Date(iso)) : medio(iso));
+  const preguntas = (n) => (n === 1 ? '1 pregunta' : `${n} preguntas`);
+  const solicitudes = lista.map((s) => {
+    const respuesta = detalleDe.get(s.formRequestId)?.response ?? null;
+    const campos = new Map((formularioDe.get(s.templateVersionId)?.sections ?? []).flatMap((x) => x.fields.map((c) => [c.fieldCode, c])));
+    const valor = (a) => {
+      const texto = typeof a.value === 'number' ? String(a.value).replace('.', ',') : typeof a.value === 'boolean' ? (a.value ? 'Sí' : 'No') : a.value;
+      const unidad = a.unit ?? campos.get(a.fieldCode)?.unit ?? null;
+      return unidad ? `${texto} ${unidad}` : texto;
+    };
+    const en = (respuestas, codigo) => {
+      const a = respuestas.find((x) => x.fieldCode === codigo);
+      return a ? valor(a) : null;
+    };
+    // Las correcciones, por su cadena: cada una señala a la anterior.
+    const cadena = [];
+    let anterior = null;
+    for (let i = 0; i < (respuesta?.rectifications.length ?? 0); i++) {
+      const sigue = respuesta.rectifications.find((c) => c.previousRectificationId === anterior && !cadena.includes(c));
+      if (!sigue) break;
+      cadena.push(sigue);
+      anterior = sigue.rectificationId;
+    }
+    const laQueRige = respuesta?.effectiveView.kind === 'RECTIFIED' ? cadena.findIndex((c) => c.rectificationId === respuesta.effectiveView.rectificationId) : -1;
+    const versiones = respuesta ? [respuesta.original.answers, ...cadena.slice(0, laQueRige + 1).map((c) => c.answers)] : [];
+    const pedidas = [...campos.keys()].filter((c) => s.requestedFieldCodes.includes(c));
+    const filas = pedidas.map((codigo) => {
+      const rige = versiones.length > 0 ? en(versiones.at(-1), codigo) : null;
+      const distinto = versiones.slice(0, -1).reverse().map((r) => en(r, codigo)).find((x) => x !== rige);
+      const requerida = s.requiredFieldCodes.includes(codigo);
+      return {
+        codigo,
+        pregunta: `${campos.get(codigo).label}${requerida ? ' Requerida' : ''}`,
+        respuesta: `${rige ?? 'Sin responder'}${distinto !== undefined ? ' Corregida' : ''}${distinto === undefined ? '' : distinto === null ? ' Antes: sin responder.' : ` Antes: «${distinto}»`}`,
+      };
+    });
+    const cuenta = (respuestas) => {
+      const n = pedidas.filter((c) => respuestas.some((a) => a.fieldCode === c)).length;
+      return n >= pedidas.length ? (pedidas.length === 1 ? 'Respondió la pregunta.' : `Respondió las ${pedidas.length} preguntas.`) : `Respondió ${n} de las ${pedidas.length} preguntas.`;
+    };
+    const historia = respuesta
+      ? [
+          ...cadena
+            .map((c, i) => ({
+              tipo: 'CORRECCION',
+              rige: i === laQueRige,
+              cuando: `${corto(c.recordedAt)}, ${hora(c.recordedAt)}`,
+              titulo: `Corrección${i === laQueRige ? ' Vigente' : ''}`,
+              notas: [`Motivo que escribió: «${c.reason}»`, cuenta(c.answers)],
+              respuestas: pedidas.filter((p) => en(c.answers, p) !== null).map((p) => [campos.get(p).label, en(c.answers, p)]),
+            }))
+            .reverse(),
+          {
+            tipo: 'ORIGINAL',
+            rige: respuesta.effectiveView.kind === 'ORIGINAL',
+            cuando: `${corto(respuesta.submittedAt)}, ${hora(respuesta.submittedAt)}`,
+            titulo: `Respuesta original${respuesta.effectiveView.kind === 'ORIGINAL' ? ' Vigente' : ''}`,
+            notas: [cuenta(respuesta.original.answers)],
+            respuestas: pedidas.filter((p) => en(respuesta.original.answers, p) !== null).map((p) => [campos.get(p).label, en(respuesta.original.answers, p)]),
+          },
+        ]
+      : [];
+    const ultima = cadena.at(-1) ?? null;
+    return {
+      id: s.formRequestId,
+      respondida: s.status === 'RESPONDED',
+      corregida: cadena.length > 0,
+      fila: {
+        id: s.formRequestId,
+        nombre: s.templateName,
+        estado: s.status === 'RESPONDED' ? 'Respondida' : 'Sin responder',
+        datos: [`Pedido el ${corto(s.createdAt)}`, AREA[s.scope], preguntas(s.requestedFieldCodes.length), ...(cadena.length > 0 ? ['corrigió su respuesta'] : [])].join(' · '),
+        paraQue: `Para qué: «${s.purpose}»`,
+      },
+      datos: [
+        ['Lo pediste', `El ${medio(s.createdAt)} a las ${hora(s.createdAt)}, en ${AREA[s.scope]}`],
+        ['Para qué', `«${s.purpose}»`],
+        ...(respuesta
+          ? [['Respondió', `El ${corto(respuesta.submittedAt)} a las ${hora(respuesta.submittedAt)}${ultima ? ` y lo corrigió ${medio(ultima.recordedAt) === medio(respuesta.submittedAt) ? '' : `el ${corto(ultima.recordedAt)} `}a las ${hora(ultima.recordedAt)}` : ''}`]]
+          : []),
+      ],
+      filas,
+      pedidas: pedidas.map((c) => `${campos.get(c).label}${s.requiredFieldCodes.includes(c) ? ' Requerida' : ''}`),
+      historia,
+    };
+  });
+  return { solicitudes, de: (id) => solicitudes.find((x) => x.id === id) ?? null };
+}
+
+/**
+ * Información · Solicitudes y el pedido (maquetas 26 y 27; C-70 a C-74; F-05 y F-44 a F-57), sobre las cuentas descartables con sus tres
+ * solicitudes (`datos/generar.mjs descartable-solicitudes`): una respondida, una respondida y corregida por la persona, y
+ * una sin responder. Lo esperado se calcula a mano con lo que devuelve la API. **Escribe al final** (envía dos solicitudes
+ * por la pantalla, una de ellas llegando desde Entrenamiento): por eso no va dentro de `funcional`. Corre solo (`node recorrido.mjs solicitudes`), con esas cuentas
+ * recién generadas, y no toca los datos de A, B ni C. Tres comprobaciones miran fallas simuladas por el recorrido, y lo dicen.
+ */
+async function solicitudesDeInformacion() {
+  const d = estado.descartable;
+  if (!d?.solicitudes) throw new Error('faltan las cuentas descartables con sus solicitudes: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-solicitudes');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const AREA_DE_LA_PAGINA = `/pro/advisees/forms?id=${A}`;
+    const BASE = `${AREA_DE_LA_PAGINA}&vista=solicitudes`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const lecturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    const LISTO = 'button.solicitud-de-la-lista, .solicitudes-del-area .estado-vacio, .seccion-del-area .estado-de-grafico--error';
+    const entrar = async (ruta) => {
+      await cupo(v, 60);
+      const desde = v.urls.length;
+      await ir(page, ruta);
+      await page.waitForSelector('#titulo-solicitudes', { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.waitForSelector(LISTO, { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      return desde;
+    };
+    const salir = async () => {
+      await cupo(v, 60);
+      await ir(page, `/pro/advisees?id=${A}`);
+      await page.waitForFunction(() => !document.querySelector('#titulo-solicitudes'), { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+    };
+    const leerTodo = async () => {
+      const lista = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `/advisees/${A}/form-requests?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        lista.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      const detalleDe = new Map();
+      const formularioDe = new Map();
+      for (const s of lista) {
+        detalleDe.set(s.formRequestId, (await leerApi(v, `/form-requests/${s.formRequestId}`)).data);
+        if (!formularioDe.has(s.templateVersionId)) formularioDe.set(s.templateVersionId, (await leerApi(v, `/form-templates/${s.templateId}/versions/${s.templateVersionId}`)).data);
+      }
+      return { lista, detalleDe, formularioDe, E: esperadoDeSolicitudes({ lista, detalleDe, formularioDe }) };
+    };
+    const abrirSolicitud = async (id) => {
+      await page.click(`button.solicitud-de-la-lista[data-solicitud="${id}"]`).catch(() => {});
+      await page.waitForFunction((x) => document.querySelector('.solicitud-abierta')?.dataset.solicitud === x, { timeout: 15_000 }, id).catch(() => {});
+      await quieto(page, v);
+      return solicitudesEnPantalla(page);
+    };
+    const prohibidas = (texto) => dominio.terminosProhibidosDeFormulariosEn(texto ?? '');
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+
+    // ── Al entrar: qué se lee, y cuántas veces ───────────────────────────────────────────────────────────────────
+    const desde = await entrar(BASE);
+    const inicial = await solicitudesEnPantalla(page);
+    const alLeer = v.urls.length;
+    const { lista, E } = await leerTodo();
+    const respondidas = lista.filter((s) => s.status === 'RESPONDED');
+    const sinResponder = lista.filter((s) => s.status === 'PENDING');
+    const deLaPagina = v.urls.slice(desde, alLeer);
+    const lecturas = (fragmento) => deLaPagina.filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    comprobar(
+      'F-44',
+      'Al entrar, «Solicitudes» lee la lista entera una vez y, una vez, la respuesta de cada solicitud respondida (para decir en la lista cuál se corrigió): ninguna dos veces, y ninguna de las que están sin responder. No lee ningún formulario hasta que se abre una solicitud',
+      lecturas(`/advisees/${A}/form-requests?`).length === 1 &&
+        respondidas.length >= 2 &&
+        sinResponder.length >= 1 &&
+        respondidas.every((s) => lecturas(`/form-requests/${s.formRequestId}`).length === 1) &&
+        sinResponder.every((s) => lecturas(`/form-requests/${s.formRequestId}`).length === 0) &&
+        lecturas('/form-templates/').length === 0,
+      `la lista: ${lecturas(`/advisees/${A}/form-requests?`).length} · respuestas: ${respondidas.map((s) => lecturas(`/form-requests/${s.formRequestId}`).length).join(', ')} (de ${respondidas.length} respondidas) · de las sin responder: ${sinResponder.map((s) => lecturas(`/form-requests/${s.formRequestId}`).length).join(', ')} · formularios: ${lecturas('/form-templates/').length}`,
+    );
+
+    // ── La lista ─────────────────────────────────────────────────────────────────────────────────────────────────
+    const filasALaVista = inicial.filas.map(({ elegida, ...f }) => f);
+    comprobar(
+      'C-72',
+      'La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice el formulario, su estado, cuándo se pidió, en qué área, cuántas preguntas tiene, si la persona corrigió su respuesta, y para qué',
+      igual(filasALaVista, E.solicitudes.map((x) => x.fila)) && new Set(lista.map((s) => s.scope)).size >= 2 && E.solicitudes.some((x) => x.corregida) && inicial.detalle === null,
+      igual(filasALaVista, E.solicitudes.map((x) => x.fila)) ? E.solicitudes.map((x) => `${x.fila.nombre} [${x.fila.estado}] ${x.fila.datos}`).join(' | ') : `a la vista: ${JSON.stringify(filasALaVista).slice(0, 260)} — a mano: ${JSON.stringify(E.solicitudes.map((x) => x.fila)).slice(0, 260)}`,
+    );
+    const marco = await marcoEnPantalla(page);
+    comprobar(
+      'C-70',
+      '«Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola, y ningún renglón lleva un botón «Ver detalle» (el renglón entero abre la solicitud)',
+      igual(marco?.pestanas.map((p) => p.texto), ['Solicitudes']) && inicial.pedir === 'Pedir información' && inicial.botonesVerDetalle === 0 && inicial.filas.length > 0,
+      `secciones: ${marco?.pestanas.map((p) => p.texto).join(', ')} · botón: «${inicial.pedir}» · botones «Ver detalle» en la lista: ${inicial.botonesVerDetalle}`,
+    );
+
+    // ── Las vistas con nombre ────────────────────────────────────────────────────────────────────────────────────
+    const cuentasEsperadas = [
+      { clave: 'TODAS', texto: `Todas ${lista.length} ${lista.length === 1 ? 'solicitud' : 'solicitudes'}`, elegida: true },
+      { clave: 'SIN_RESPONDER', texto: `Sin responder ${sinResponder.length} ${sinResponder.length === 1 ? 'solicitud' : 'solicitudes'}`, elegida: false },
+      { clave: 'RESPONDIDAS', texto: `Respondidas ${respondidas.length} ${respondidas.length === 1 ? 'solicitud' : 'solicitudes'}`, elegida: false },
+    ];
+    const alElegir = v.urls.length;
+    await page.click('.solicitudes-del-area .vista-de-la-linea[data-vista="SIN_RESPONDER"]').catch(() => {});
+    await pausa(400);
+    const conLaVista = await solicitudesEnPantalla(page);
+    const pedidosAlElegir = v.urls.slice(alElegir).filter((u) => u.startsWith('GET ')).length;
+    const parametroDeLaVista = parametros(page).get('ver');
+    await page.click('.solicitudes-del-area .vista-de-la-linea[data-vista="SIN_RESPONDER"]').catch(() => {});
+    await pausa(400);
+    const deVueltaEnTodas = await solicitudesEnPantalla(page);
+    comprobar(
+      'F-45',
+      'Las tres vistas están en su orden, cada una con la cantidad de solicitudes que trae, contada a mano sobre la lista de la API; «Sin responder» y «Respondidas» suman «Todas». Elegir una no le pide nada a la API, queda en la dirección y deja a la vista las que cuenta; volver a tocarla deja «Todas»',
+      igual(inicial.vistas, cuentasEsperadas) &&
+        sinResponder.length + respondidas.length === lista.length &&
+        pedidosAlElegir === 0 &&
+        parametroDeLaVista === 'sin-responder' &&
+        igual(conLaVista.filas.map((f) => f.id), sinResponder.map((s) => s.formRequestId)) &&
+        conLaVista.vistas.find((x) => x.clave === 'SIN_RESPONDER')?.elegida === true &&
+        deVueltaEnTodas.filas.length === lista.length &&
+        !parametros(page).has('ver'),
+      `${inicial.vistas.map((x) => x.texto).join(' · ')} · al elegir «Sin responder»: ${conLaVista.filas.length} a la vista, ${pedidosAlElegir} pedidos, ver=${parametroDeLaVista}`,
+    );
+
+    // ── Una solicitud respondida y corregida: la respuesta que rige ──────────────────────────────────────────────
+    const corregida = E.solicitudes.find((x) => x.corregida) ?? null;
+    const alAbrir = v.urls.length;
+    const conLaCorregida = corregida ? await abrirSolicitud(corregida.id) : inicial;
+    const lecturasAlAbrir = { solicitud: lecturasDesde(alAbrir, '/form-requests/').length, formulario: lecturasDesde(alAbrir, '/form-templates/').length };
+    comprobar(
+      'C-71',
+      'Una solicitud respondida se abre al costado, sin tapar la lista, y el foco va a su título. Dice cuándo se pidió y en qué área, para qué, y cuándo respondió y corrigió la persona. «Declarado por la persona» se dice una vez. De cada pregunta pedida se lee la respuesta que rige —la de la corrección que señala la API—, con «Corregida» y lo que había antes, también si antes estaba sin responder; «Requerida» va junto a su pregunta',
+      !!corregida &&
+        conLaCorregida.detalle?.alCostado === true &&
+        conLaCorregida.detalle.id === corregida.id &&
+        conLaCorregida.detalle.focoEnElTitulo &&
+        conLaCorregida.filas.length === lista.length &&
+        igual(conLaCorregida.filas.filter((f) => f.elegida).map((f) => f.id), [corregida.id]) &&
+        igual(conLaCorregida.detalle.datos, corregida.datos) &&
+        igual(conLaCorregida.detalle.procedencia, ['Declarado por la persona']) &&
+        igual(conLaCorregida.detalle.columnas, ['Pregunta', 'Respuesta que rige']) &&
+        igual(conLaCorregida.detalle.filas, corregida.filas) &&
+        corregida.filas.some((f) => / Antes: «/.test(f.respuesta)) &&
+        corregida.filas.some((f) => / Antes: sin responder\./.test(f.respuesta)) &&
+        corregida.filas.some((f) => / Requerida$/.test(f.pregunta)) &&
+        parametros(page).get('solicitud') === corregida.id,
+      corregida && igual(conLaCorregida.detalle?.filas, corregida.filas)
+        ? `${conLaCorregida.detalle.datos.map((x) => x.join(': ')).join(' · ').slice(0, 170)} — ${corregida.filas.map((f) => `${f.pregunta}: ${f.respuesta}`).join(' | ')}`
+        : `a la vista: ${JSON.stringify(conLaCorregida.detalle?.filas ?? null).slice(0, 280)} — a mano: ${JSON.stringify(corregida?.filas ?? null).slice(0, 280)}`,
+    );
+    comprobar(
+      'F-44',
+      'Abrir una solicitud respondida no vuelve a leerla (su respuesta ya se leyó al entrar): lee una vez la versión de su formulario, de donde salen los textos de las preguntas',
+      lecturasAlAbrir.solicitud === 0 && lecturasAlAbrir.formulario === 1,
+      `al abrir: ${lecturasAlAbrir.solicitud} lecturas de la solicitud y ${lecturasAlAbrir.formulario} del formulario`,
+    );
+
+    // ── La historia de la respuesta: la original se conserva, y cada versión está a un clic ────────────────────────
+    const historiaALaVista = (conLaCorregida.detalle?.historia ?? []).map(({ respuestas, ...h }) => h);
+    await page.evaluate(() => [...document.querySelectorAll('.historia-de-respuesta > li[data-version="ORIGINAL"] button')].find((b) => /Ver lo que respondió/.test(b.innerText))?.click());
+    await pausa(250);
+    const conLaOriginalAbierta = await solicitudesEnPantalla(page);
+    const laOriginal = conLaOriginalAbierta.detalle?.historia.find((h) => h.tipo === 'ORIGINAL') ?? null;
+    comprobar(
+      'C-71',
+      'La historia va de lo más nuevo a lo más viejo: la corrección, marcada «Vigente», con el motivo que escribió la persona; y la respuesta original, que se conserva, con cuántas de las preguntas respondió (una cuenta, nunca una proporción). «Ver lo que respondió» abre, en el lugar, lo que dijo en esa versión',
+      !!corregida &&
+        igual(historiaALaVista, corregida.historia.map(({ respuestas, ...h }) => h)) &&
+        corregida.historia[0]?.tipo === 'CORRECCION' &&
+        corregida.historia[0].rige &&
+        corregida.historia.at(-1).tipo === 'ORIGINAL' &&
+        /^Respondió \d+ de las \d+ preguntas\.$/.test(corregida.historia.at(-1).notas[0]) &&
+        igual(laOriginal?.respuestas, corregida.historia.at(-1).respuestas) &&
+        laOriginal.respuestas.length >= 1,
+      corregida ? `${historiaALaVista.map((h) => `${h.cuando} ${h.titulo}: ${h.notas.join(' ')}`).join(' | ').slice(0, 250)} · en la original: ${JSON.stringify(laOriginal?.respuestas ?? null).slice(0, 110)}` : 'el escenario no tiene una solicitud corregida',
+    );
+
+    // ── Una respondida sin correcciones, con números: la unidad sale de la pregunta ────────────────────────────────
+    const conNumeros = E.solicitudes.find((x) => x.respondida && !x.corregida) ?? null;
+    const conLaDeNumeros = conNumeros ? await abrirSolicitud(conNumeros.id) : inicial;
+    comprobar(
+      'F-46',
+      'Una solicitud respondida y sin correcciones: rige la original, ninguna fila dice «Corregida» ni «Antes», y un número lleva la unidad de su pregunta (la APK no manda unidad)',
+      !!conNumeros &&
+        igual(conLaDeNumeros.detalle?.filas, conNumeros.filas) &&
+        !conNumeros.filas.some((f) => /Corregida|Antes:/.test(f.respuesta)) &&
+        conNumeros.filas.some((f) => /^\d+(,\d+)? \S+/.test(f.respuesta)) &&
+        igual(conLaDeNumeros.detalle.historia.map((h) => [h.tipo, h.rige, h.titulo]), [['ORIGINAL', true, 'Respuesta original Vigente']]),
+      conNumeros ? conNumeros.filas.map((f) => f.respuesta).join(' | ').slice(0, 240) : 'el escenario no tiene una respondida sin correcciones',
+    );
+    // La solicitud de seis preguntas es la más larga del escenario: cinco son requeridas, y varias ocupan dos renglones.
+    const etiquetas = conLaDeNumeros.detalle?.requeridas ?? [];
+    informar('F-51', '«Solicitudes», con la solicitud de seis preguntas abierta, a 1440 × 900', `${conLaDeNumeros.alto} px`);
+    comprobar(
+      'F-51',
+      'En el detalle, «Requerida» sigue a la última palabra de su pregunta: si entra al lado, no ocupa un renglón propio (con preguntas de dos renglones, cada fila medía un renglón más)',
+      etiquetas.length >= 3 && etiquetas.some((x) => x.renglones >= 2 && x.entraba) && etiquetas.every((x) => !x.entraba || x.alLado),
+      `${etiquetas.length} preguntas requeridas, ${etiquetas.filter((x) => x.renglones >= 2).length} de dos renglones o más: ${etiquetas.filter((x) => x.alLado).length} con la etiqueta al lado del final de la pregunta, ${etiquetas.filter((x) => x.entraba && !x.alLado).length} con la etiqueta abajo aunque entraba y ${etiquetas.filter((x) => !x.entraba).length} donde no entraba`,
+    );
+
+    // ── Una sin responder: se dice, sin tabla, sin historia y sin procedencia (no hay nada declarado) ────────────────
+    const pendiente = E.solicitudes.find((x) => !x.respondida) ?? null;
+    const alAbrirLaPendiente = v.urls.length;
+    const conLaPendiente = pendiente ? await abrirSolicitud(pendiente.id) : inicial;
+    comprobar(
+      'F-47',
+      'Una solicitud sin responder se abre igual, sin leer nada más que su formulario: dice las preguntas pedidas y «Todavía sin responder. No responder también es una opción.». No tiene tabla de respuestas, ni historia, ni «Declarado por la persona» (la misma consulta los encuentra en una respondida), y no hay ningún porcentaje',
+      !!pendiente &&
+        conLaPendiente.detalle?.id === pendiente.id &&
+        conLaPendiente.detalle.estado === 'Sin responder' &&
+        igual(conLaPendiente.detalle.datos, pendiente.datos) &&
+        igual(conLaPendiente.detalle.pedidas, pendiente.pedidas) &&
+        conLaPendiente.detalle.sinResponder === 'Todavía sin responder. No responder también es una opción.' &&
+        conLaPendiente.detalle.filas.length === 0 &&
+        conLaPendiente.detalle.historia.length === 0 &&
+        conLaPendiente.detalle.procedencia.length === 0 &&
+        conLaCorregida.detalle?.procedencia.length === 1 &&
+        lecturasDesde(alAbrirLaPendiente, '/form-requests/').length === 0 &&
+        !/%/.test(conLaPendiente.texto ?? ''),
+      pendiente ? `${conLaPendiente.detalle?.pedidas.join(' | ')} · «${conLaPendiente.detalle?.sinResponder}»` : 'el escenario no tiene una solicitud sin responder',
+    );
+
+    // ── Escape cierra y devuelve el foco; la solicitud abierta vive en la dirección ────────────────────────────────
+    await page.keyboard.press('Escape');
+    await pausa(300);
+    const trasEscape = await solicitudesEnPantalla(page);
+    const focoAlCerrar = await page.evaluate(() => document.activeElement?.dataset?.solicitud ?? null);
+    await entrar(`${BASE}&solicitud=${corregida?.id ?? ''}`);
+    await cupo(v, 60);
+    const alActualizar = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await quieto(page, v);
+    await page.waitForSelector('.solicitud-abierta', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizar = await solicitudesEnPantalla(page);
+    comprobar(
+      'F-48',
+      'Escape cierra el detalle y el foco vuelve al renglón de esa solicitud. La solicitud abierta vive en la dirección (`solicitud=`): se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta',
+      trasEscape.detalle === null &&
+        focoAlCerrar === pendiente?.id &&
+        trasActualizar.detalle?.id === corregida?.id &&
+        parametros(page).get('solicitud') === corregida?.id &&
+        lecturasDesde(alActualizar, `/advisees/${A}/form-requests?`).length === 1,
+      `tras Escape: ${trasEscape.detalle === null ? 'cerrado' : 'abierto'}, foco ${focoAlCerrar === pendiente?.id ? 'en el renglón' : 'en otro lado'} · tras «Actualizar»: «${trasActualizar.detalle?.titulo}», ${lecturasDesde(alActualizar, `/advisees/${A}/form-requests?`).length} lectura de la lista`,
+    );
+
+    // ── Las palabras: lo declarado no es una medición, y no responder no se mide ───────────────────────────────────
+    const textosDeLaSeccion = [inicial.texto, conLaCorregida.texto, conLaDeNumeros.texto, conLaPendiente.texto];
+    comprobar(
+      'F-49',
+      'En ningún estado de «Solicitudes» (la lista, una respondida y corregida, una respondida y una sin responder) el texto afirma una medición ni un diagnóstico, ni usa un porcentaje ni un término prohibido de formularios. La negación sí está: «No es una medición ni un diagnóstico.»',
+      textosDeLaSeccion.every((t) => prohibidas(t).length === 0) && /No es una medición ni un diagnóstico\./.test(conLaCorregida.texto ?? '') && prohibidas('Es una medición del profesional').length > 0,
+      textosDeLaSeccion.flatMap(prohibidas).join(', ') || 'ninguno',
+    );
+
+    // ── Las fallas se dicen, y no pasan por ausencia de datos (respuestas simuladas en el navegador) ───────────────
+    await salir();
+    const sinLista = { coincide: (u) => u.includes(`/advisees/${A}/form-requests?`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    v.reglas.push(sinLista);
+    await entrar(BASE);
+    const conLaListaCaida = await solicitudesEnPantalla(page);
+    v.reglas.splice(v.reglas.indexOf(sinLista), 1);
+    await salir();
+    const sinRespuesta = { coincide: (u) => u.includes(`/form-requests/${corregida?.id}`), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    const sinFormulario = { coincide: (u) => u.includes('/form-templates/'), accion: 'responder', status: 503, codigo: 'DB_UNAVAILABLE' };
+    v.reglas.push(sinRespuesta, sinFormulario);
+    await entrar(`${BASE}&solicitud=${corregida?.id ?? ''}`);
+    await page.waitForSelector('.solicitud-abierta .aviso--error', { timeout: 20_000 }).catch(() => {});
+    const conLasLecturasCaidas = await solicitudesEnPantalla(page);
+    v.reglas.splice(v.reglas.indexOf(sinRespuesta), 1);
+    v.reglas.splice(v.reglas.indexOf(sinFormulario), 1);
+    await cupo(v, 60);
+    for (const texto of ['No pudimos leer esta solicitud.', 'No pudimos leer las preguntas de este formulario.']) {
+      await page.evaluate((t) => [...document.querySelectorAll('.solicitud-abierta .aviso--error')].find((a) => a.innerText.includes(t))?.querySelector('button')?.click(), texto);
+      await quieto(page, v);
+    }
+    await page.waitForSelector('.lo-declarado__fila', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const repuesto = await solicitudesEnPantalla(page);
+    comprobar(
+      'F-50',
+      'Si la lista no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Todavía no le pediste información». Si lo que no se puede leer es la respuesta de una solicitud o las preguntas de su formulario, el detalle lo dice —no dice «sin responder», ni muestra el código de una pregunta— y cada «Reintentar» trae lo suyo',
+      conLaListaCaida.filas.length === 0 &&
+        conLaListaCaida.vacio === null &&
+        /Reintentar/.test(conLaListaCaida.texto ?? '') &&
+        !/Todavía no le pediste/.test(conLaListaCaida.texto ?? '') &&
+        conLasLecturasCaidas.detalle?.avisos.some((a) => /No pudimos leer esta solicitud\./.test(a)) &&
+        conLasLecturasCaidas.detalle.avisos.some((a) => /No pudimos leer las preguntas de este formulario\./.test(a)) &&
+        conLasLecturasCaidas.detalle.sinResponder === null &&
+        !/sin responder/i.test(conLasLecturasCaidas.detalle.texto) &&
+        !/[a-z]+_[a-z_]+/.test(conLasLecturasCaidas.detalle.texto) &&
+        igual(repuesto.detalle?.filas, corregida?.filas),
+      `sin la lista: «${(conLaListaCaida.texto ?? '').slice(0, 80)}» · sin la respuesta ni el formulario: ${conLasLecturasCaidas.detalle?.avisos.join(' | ').slice(0, 150)} · después de reintentar: ${repuesto.detalle?.filas.length ?? 0} filas`,
+    );
+
+    // ── La ayuda, la accesibilidad y los anchos ───────────────────────────────────────────────────────────────────
+    await entrar(`${BASE}&solicitud=${corregida?.id ?? ''}`);
+    await page.waitForSelector('.lo-declarado__fila', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const medida = await page.evaluate(() => {
+      const ancho = (s) => Math.round(document.querySelector(s)?.getBoundingClientRect().width ?? 0);
+      return { alto: document.documentElement.scrollHeight, lista: ancho('.solicitudes__lista'), detalle: ancho('aside.detalle-de-solicitud') };
+    });
+    informar('F-51', '«Solicitudes», con la solicitud corregida abierta, a 1440 × 900', `${medida.alto} px · la lista mide ${medida.lista} px de ancho y el detalle, ${medida.detalle}`);
+    const faltas = await axe(page);
+    await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+    const ayuda = await page.evaluate(() => {
+      const dialogo = document.querySelector('dialog.como-se-lee[open]');
+      return dialogo ? { titulo: dialogo.querySelector('h2').innerText.trim(), renglones: dialogo.querySelectorAll('.como-se-lee__lista > li').length, texto: dialogo.innerText } : { titulo: null, renglones: 0, texto: '' };
+    });
+    const faltasDeLaAyuda = await axe(page);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+    comprobar(
+      'F-14',
+      '«Solicitudes» tiene su ayuda en el marco del área: explica los estados, «Declarado por la persona», «Requerida» y la respuesta que rige, sin términos prohibidos',
+      ayuda.titulo === 'Cómo se leen las Solicitudes' && ayuda.renglones >= 7 && prohibidas(ayuda.texto).length === 0,
+      `«${ayuda.titulo}» · ${ayuda.renglones} renglones · prohibidos: ${prohibidas(ayuda.texto).join(', ') || 'ninguno'}`,
+    );
+    const enAncho = async (ancho) => {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      const p = await solicitudesEnPantalla(page);
+      return { p, desborda: !(await sinDesborde(page)), cortes: await cortesMalPuestos(page, '.solicitud-de-la-lista__datos'), faltas: await axe(page) };
+    };
+    const a1440 = await enAncho(1440);
+    const a1280 = await enAncho(1280);
+    const a1024 = await enAncho(1024);
+    await page.keyboard.press('Escape');
+    await pausa(300);
+    const cerradoA1024 = await solicitudesEnPantalla(page);
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    informar('F-51', 'El alto de «Solicitudes» con esa solicitud abierta, a 1280 y a 1024 px', `${a1280.p.alto} px y ${a1024.p.alto} px`);
+    comprobar(
+      'F-51',
+      'A 1280 px el detalle sigue al costado de la lista. A 1024 px se abre encima, en un panel que retiene el foco, con las mismas filas, la respuesta debajo de su pregunta y sin los nombres de las columnas; Escape lo cierra. En ningún ancho la página desborda de costado, ni un renglón deja un número separado de su palabra o el separador al principio',
+      a1280.p.detalle?.alCostado === true &&
+        a1024.p.detalle?.alCostado === false &&
+        a1024.p.detalle.conElFoco &&
+        igual(a1024.p.detalle.filas, corregida?.filas) &&
+        a1024.p.detalle.respuestaDebajo &&
+        a1024.p.detalle.columnas === null &&
+        a1440.p.detalle?.respuestaDebajo === false &&
+        cerradoA1024.detalle === null &&
+        [a1440, a1280, a1024].every((x) => !x.desborda && x.cortes.cortes.length === 0),
+      `1280: ${a1280.p.detalle?.alCostado ? 'al costado' : 'encima'} · 1024: ${a1024.p.detalle?.alCostado === false ? 'encima' : 'al costado'}, la respuesta ${a1024.p.detalle?.respuestaDebajo ? 'debajo' : 'al lado'} · cortes: ${[a1440, a1280, a1024].flatMap((x) => x.cortes.cortes).join(' | ') || 'ninguno'}${[a1440, a1280, a1024].some((x) => x.desborda) ? ' · DESBORDA' : ''}`,
+    );
+    comprobar(
+      'F-48',
+      'axe no encuentra faltas en «Solicitudes» con una solicitud abierta al costado (1440 y 1280 px), en el panel de encima (1024 px) ni con la ayuda abierta',
+      faltas.length === 0 && faltasDeLaAyuda.length === 0 && [a1440, a1280, a1024].every((x) => x.faltas.length === 0),
+      `al costado: ${faltas.map((f) => f.id).join(', ') || 'sin faltas'} · la ayuda: ${faltasDeLaAyuda.map((f) => f.id).join(', ') || 'sin faltas'} · 1280: ${a1280.faltas.map((f) => f.id).join(', ') || 'sin faltas'} · 1024: ${a1024.faltas.map((f) => f.id).join(', ') || 'sin faltas'}`,
+    );
+
+    // ── El pedido (maqueta 27): un cajón que se abre sobre «Solicitudes» ───────────────────────────────────────────
+    const CAJON = 'dialog.cajon[open]';
+    const EN = {
+      formulario: (clave) => `${CAJON} .formulario-del-pedido[data-formulario="${clave}"] input`,
+      pedir: (codigo) => `${CAJON} tr[data-pregunta="${codigo}"] .preguntas-del-pedido__casilla input`,
+      requerida: (codigo) => `${CAJON} tr[data-pregunta="${codigo}"] .preguntas-del-pedido__requerida input`,
+      paraQue: `${CAJON} .pedido__dos-campos > .campo:first-child input`,
+      area: `${CAJON} [data-area="a-elegir"] select`,
+      enviar: `${CAJON} [data-enviar]`,
+    };
+    const ENVIO = `/advisees/${A}/form-requests`;
+    const escriturasDesde = (desde) => v.urls.slice(desde).filter((u) => /^(POST|PUT|PATCH|DELETE) /.test(u));
+    const cajonCerrado = () => page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+    const abrirElPedido = async () => {
+      const marca = await clic(page, '.solicitudes-del-area__pedir button', 'Pedir información');
+      await page.waitForSelector(CAJON, { timeout: 15_000 }).catch(() => {});
+      await quieto(page, v);
+      return marca;
+    };
+    const elegirFormulario = async (clave) => {
+      await page.click(EN.formulario(clave)).catch(() => {});
+      await quieto(page, v);
+      await page.waitForSelector(`${CAJON} .preguntas-del-pedido`, { timeout: 15_000 }).catch(() => {});
+      return pedidoEnPantalla(page);
+    };
+    // Lo esperado, a mano con lo que devuelve la API: el catálogo y la versión de dos formularios.
+    const catalogo = (await leerApi(v, '/form-templates?limit=50')).data;
+    const habitos = catalogo.find((f) => f.key === 'FRM-HABITOS');
+    const deEntrenamiento = catalogo.find((f) => f.key === 'FRM-ENTRENAMIENTO');
+    const versionDe = async (f) => (await leerApi(v, `/form-templates/${f.templateId}/versions/${f.latestVersionId}`)).data;
+    const versionDeHabitos = await versionDe(habitos);
+    const versionDeEntrenamiento = await versionDe(deEntrenamiento);
+    const camposDe = (version) => version.sections.flatMap((s) => s.fields);
+    const codigos = camposDe(versionDeHabitos).map((c) => c.fieldCode);
+    const codigosDeEntrenamiento = camposDe(versionDeEntrenamiento).map((c) => c.fieldCode);
+    const respondeCon = (c) => (c.dataType === 'BOOLEAN' ? 'Sí o no' : c.dataType === 'NUMBER' ? (c.unit ? `Número · ${c.unit}` : 'Número') : 'Texto');
+    const cuantas = (n) => (n === 1 ? '1 pregunta' : `${n} preguntas`);
+    const sinBarra = (direccion) => (direccion ?? '').replace('/?', '?');
+    const PARA_QUE = 'Ajustar el plan a tu descanso';
+
+    // Abrir: qué se lee, dónde queda el foco y qué viene elegido.
+    await salir();
+    await entrar(BASE);
+    const antesDelPedido = await solicitudesEnPantalla(page);
+    const alAbrirElPedido = v.urls.length;
+    const botonDelPedido = await abrirElPedido();
+    const recienAbierto = await pedidoEnPantalla(page);
+    const marcoConElPedido = await marcoEnPantalla(page);
+    const detrasDelPedido = await solicitudesEnPantalla(page);
+    const vistaConElPedido = parametros(page).get('vista');
+    const leidoAlAbrir = { catalogo: lecturasDesde(alAbrirElPedido, '/form-templates').filter((u) => !u.includes('/versions/')).length, versiones: lecturasDesde(alAbrirElPedido, '/versions/').length, lista: lecturasDesde(alAbrirElPedido, `${ENVIO}?`).length };
+    comprobar(
+      'C-70',
+      '«Pedir información» abre un cajón sobre «Solicitudes», que sigue detrás con su lista y sin volver a leerla: la dirección dice `vista=pedir`, el marco sigue marcando «Solicitudes» y el cajón dice de quién es con las palabras del marco. El foco va a su título. Tiene los tres pasos a la vista, ningún formulario elegido, y al abrirse lee el catálogo una vez y ninguna versión',
+      vistaConElPedido === 'pedir' &&
+        recienAbierto?.titulo === 'Pedir información' &&
+        !!marcoConElPedido?.persona &&
+        recienAbierto.persona === marcoConElPedido.persona &&
+        recienAbierto.focoEnElTitulo &&
+        igual(marcoConElPedido.pestanas.map((p) => [p.texto, p.actual]), [['Solicitudes', 'page']]) &&
+        detrasDelPedido.filas.length === lista.length &&
+        detrasDelPedido.alto === antesDelPedido.alto &&
+        igual(recienAbierto.pasos.map((p) => p.titulo), ['1 Qué formulario', '2 Qué preguntas', '3 Para qué y en qué área']) &&
+        catalogo.length >= 3 &&
+        igual(recienAbierto.formularios.map((f) => [f.clave, f.nombre, f.cuenta, f.elegido, f.descripcion]), catalogo.map((f) => [f.key, f.name, cuantas(f.fieldCount), false, null])) &&
+        recienAbierto.preguntas.length === 0 &&
+        igual(recienAbierto.notasDeLasPreguntas, ['Al elegir un formulario vas a ver acá sus preguntas.']) &&
+        leidoAlAbrir.catalogo === 1 &&
+        leidoAlAbrir.versiones === 0 &&
+        leidoAlAbrir.lista === 0,
+      `vista=${vistaConElPedido} · «${recienAbierto?.persona}» (el marco: «${marcoConElPedido?.persona}») · foco ${recienAbierto?.focoEnElTitulo ? 'en el título' : 'en otro lado'} · ${recienAbierto?.pasos.map((p) => p.titulo).join(' | ')} · ${recienAbierto?.formularios.map((f) => `${f.nombre} (${f.cuenta})${f.elegido ? '*' : ''}`).join(', ')} · lecturas: ${leidoAlAbrir.catalogo} del catálogo, ${leidoAlAbrir.versiones} de versiones, ${leidoAlAbrir.lista} de la lista`,
+    );
+
+    // Elegir un formulario: sus preguntas vienen todas marcadas, ninguna requerida (F-05).
+    const alElegirFormulario = await elegirFormulario('FRM-HABITOS');
+    const versionesLeidas = lecturasDesde(alAbrirElPedido, '/versions/').length;
+    await page.click(EN.pedir(codigos[0])).catch(() => {});
+    await pausa(200);
+    const conUnaMenos = await pedidoEnPantalla(page);
+    // La «Requerida» de una pregunta sin pedir está apagada: tocarla no la marca. La de una pedida, sí.
+    await page.click(EN.requerida(codigos[0])).catch(() => {});
+    await page.click(EN.requerida(codigos[1])).catch(() => {});
+    await pausa(200);
+    const conUnaRequerida = await pedidoEnPantalla(page);
+    comprobar(
+      'C-73',
+      'Elegir un formulario lee su versión una vez, y muestra su descripción (la de los otros, no). Vienen todas sus preguntas marcadas y ninguna como requerida (decisión de Dirección del 2026-10-12); la cuenta dice cuántas se van a pedir y sigue a las casillas. «Responde con» es el tipo y la unidad de la API. La «Requerida» de una pregunta sin pedir está apagada y no se puede marcar; la de una pedida, sí. Cada fila y cada formulario miden 44 px o más',
+      versionesLeidas === 1 &&
+        codigos.length >= 3 &&
+        igual(alElegirFormulario?.formularios.map((f) => [f.clave, f.elegido, f.descripcion]), catalogo.map((f) => [f.key, f.key === 'FRM-HABITOS', f.key === 'FRM-HABITOS' ? f.purpose : null])) &&
+        igual(alElegirFormulario.columnas, ['Pedir', 'Pregunta', 'Responde con', 'Requerida']) &&
+        igual(alElegirFormulario.preguntas.map((p) => [p.codigo, p.pedida, p.requerida, p.requeridaApagada]), codigos.map((c) => [c, true, false, false])) &&
+        igual(alElegirFormulario.preguntas.map((p) => [p.pregunta, p.respondeCon, p.nombreDeRequerida]), camposDe(versionDeHabitos).map((c) => [c.label, respondeCon(c), `Requerida: ${c.label}`])) &&
+        new Set(camposDe(versionDeHabitos).map(respondeCon)).size >= 3 &&
+        alElegirFormulario.cuenta === `${codigos.length} de ${codigos.length} elegidas.` &&
+        /Vienen todas elegidas: desmarcá las que no necesites\./.test(alElegirFormulario.pasos[1]?.nota ?? '') &&
+        conUnaMenos?.cuenta === `${codigos.length - 1} de ${codigos.length} elegidas.` &&
+        igual(conUnaMenos.preguntas.map((p) => [p.pedida, p.requeridaApagada]), codigos.map((_, i) => [i !== 0, i === 0])) &&
+        igual(conUnaRequerida?.preguntas.map((p) => p.requerida), codigos.map((_, i) => i === 1)) &&
+        alElegirFormulario.preguntas.every((p) => p.alto >= 44) &&
+        alElegirFormulario.formularios.every((f) => f.alto >= 44),
+      `versiones leídas: ${versionesLeidas} · al elegir: ${alElegirFormulario?.preguntas.filter((p) => p.pedida).length} de ${codigos.length} marcadas, ${alElegirFormulario?.preguntas.filter((p) => p.requerida).length} requeridas · «${alElegirFormulario?.cuenta}» · ${alElegirFormulario?.preguntas.map((p) => p.respondeCon).join(', ')} · al desmarcar una: «${conUnaMenos?.cuenta}» · tras tocar las dos «Requerida»: ${conUnaRequerida?.preguntas.map((p) => (p.requerida ? 'sí' : 'no')).join(', ')} · filas de ${Math.min(...(alElegirFormulario?.preguntas.map((p) => p.alto) ?? [0]))} px o más`,
+    );
+    comprobar(
+      'C-74',
+      'La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vacías; la solicitud entera sí puede quedar sin responder—. Junto al botón, siempre a la vista, lo que hay que saber antes de enviar: que la va a ver en su teléfono (no que «le llega» un aviso, que BE no manda) y que no se puede cancelar ni editar. El cajón no usa «Alcance», «plantilla» ni «campo», ni ningún término prohibido de formularios',
+      igual(alElegirFormulario?.notasDeLasPreguntas, ['Si responde, las requeridas no pueden quedar vacías. La solicitud entera sí puede quedar sin responder.']) &&
+        alElegirFormulario.pie.nota === 'La va a ver en su teléfono, en «Información». No se puede cancelar ni editar después de enviarla.' &&
+        alElegirFormulario.pie.boton === 'Enviar solicitud' &&
+        alElegirFormulario.pie.caja.abajo <= alElegirFormulario.ventana.alto &&
+        !/Le llega/.test(alElegirFormulario.texto) &&
+        !/\b(Alcance|plantillas?|campos?)\b/i.test(alElegirFormulario.texto) &&
+        /Área/.test(alElegirFormulario.texto) &&
+        prohibidas(alElegirFormulario.texto).length === 0 &&
+        prohibidas('Es obligatorio responder').length > 0,
+      `«${alElegirFormulario?.pie.nota}» · el pie termina a ${alElegirFormulario?.pie.caja.abajo} px de ${alElegirFormulario?.ventana.alto} · ${/(Alcance|plantillas?|campos?)/i.exec(alElegirFormulario?.texto ?? '')?.[0] ?? 'sin palabras de antes'} · prohibidos: ${prohibidas(alElegirFormulario?.texto).join(', ') || 'ninguno'}`,
+    );
+
+    // Cerrar no escribe ni pierde lo armado; «Actualizar» pregunta antes de descartarlo; «atrás» también cierra.
+    await page.type(EN.paraQue, PARA_QUE);
+    const antesDeCerrar = await pedidoEnPantalla(page);
+    await page.keyboard.press('Escape');
+    await cajonCerrado();
+    await pausa(300);
+    const pedidoTrasEscape = { abierto: !!(await page.$(CAJON)), vista: parametros(page).get('vista'), focoEnElBoton: await page.evaluate((m) => document.activeElement?.getAttribute('data-recorrido') === m, botonDelPedido) };
+    const alPreguntar = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar').catch(() => null);
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
+    const preguntaAlActualizar = await page.evaluate(() => document.querySelector('dialog[open]')?.innerText.replace(/\s+/g, ' ').trim() ?? null);
+    await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    const leidoAlPreguntar = lecturasDesde(alPreguntar, '/').length;
+    await abrirElPedido();
+    const reabierto = await pedidoEnPantalla(page);
+    await page.evaluate(() => history.back());
+    await cajonCerrado();
+    await pausa(300);
+    const trasAtras = { abierto: !!(await page.$(CAJON)), vista: parametros(page).get('vista') };
+    const loArmado = (p) => (p ? { formulario: p.formularios.find((f) => f.elegido)?.clave ?? null, preguntas: p.preguntas.map((x) => [x.codigo, x.pedida, x.requerida]), cuenta: p.cuenta, paraQue: p.paraQue } : null);
+    comprobar(
+      'F-52',
+      'Escape cierra el cajón: la dirección vuelve a `vista=solicitudes`, el foco vuelve al botón que lo abrió y no sale ninguna escritura. Lo armado no se pierde por cerrar: al abrirlo de nuevo está como estaba (el formulario, la pregunta desmarcada, la requerida y el para qué). Con eso sin enviar, «Actualizar» pregunta antes de descartarlo, nombrándolo, y no lee nada. «Atrás», en el navegador, también lo cierra',
+      !pedidoTrasEscape.abierto &&
+        pedidoTrasEscape.vista === 'solicitudes' &&
+        pedidoTrasEscape.focoEnElBoton &&
+        escriturasDesde(alAbrirElPedido).length === 0 &&
+        antesDeCerrar?.paraQue === PARA_QUE &&
+        igual(loArmado(reabierto), loArmado(antesDeCerrar)) &&
+        reabierto.preguntas.some((x) => !x.pedida) &&
+        reabierto.preguntas.some((x) => x.requerida) &&
+        /el pedido de información/.test(preguntaAlActualizar ?? '') &&
+        leidoAlPreguntar === 0 &&
+        !trasAtras.abierto &&
+        trasAtras.vista === 'solicitudes',
+      `tras Escape: ${pedidoTrasEscape.abierto ? 'abierto' : 'cerrado'}, vista=${pedidoTrasEscape.vista}, foco ${pedidoTrasEscape.focoEnElBoton ? 'en el botón' : 'en otro lado'} · escrituras: ${escriturasDesde(alAbrirElPedido).length} · al reabrir: «${reabierto?.cuenta}», «${reabierto?.paraQue}» · «Actualizar»: «${(preguntaAlActualizar ?? '').slice(0, 120)}», ${leidoAlPreguntar} lecturas · tras «atrás»: ${trasAtras.abierto ? 'abierto' : 'cerrado'}, vista=${trasAtras.vista}`,
+    );
+
+    // Lo que falta para enviar se dice en su lugar, y no sale nada.
+    await salir();
+    await entrar(BASE);
+    await abrirElPedido();
+    const alFaltar = v.urls.length;
+    await page.click(EN.enviar).catch(() => {});
+    await pausa(300);
+    const sinNada = await pedidoEnPantalla(page);
+    const conHabitos = await elegirFormulario('FRM-HABITOS');
+    for (const c of codigos) await page.click(EN.pedir(c)).catch(() => {});
+    await page.click(EN.enviar).catch(() => {});
+    await pausa(300);
+    const sinPreguntas = await pedidoEnPantalla(page);
+    await page.click(EN.pedir(codigos[0])).catch(() => {});
+    await page.type(EN.paraQue, PARA_QUE);
+    await pausa(200);
+    const completando = await pedidoEnPantalla(page);
+    comprobar(
+      'F-53',
+      'Con algo sin completar, «Enviar solicitud» no envía nada y dice en su lugar qué falta, con el foco en lo primero que falta: sin nada elegido, el formulario y el para qué; con un formulario sin área propia y todas sus preguntas desmarcadas, alguna pregunta, el para qué y el área. Cada cosa deja de decirse cuando se completa',
+      igual(sinNada?.faltas, ['Elegí un formulario.', 'Escribí para qué lo necesitás.']) &&
+        sinNada.foco === catalogo[0].key &&
+        sinNada.rechazo === null &&
+        igual(sinPreguntas?.faltas, ['Elegí al menos una pregunta para pedir.', 'Escribí para qué lo necesitás.', 'Elegí en qué área lo pedís.']) &&
+        sinPreguntas.cuenta === `0 de ${codigos.length} elegidas.` &&
+        sinPreguntas.foco === codigos[0] &&
+        igual(completando?.faltas, ['Elegí en qué área lo pedís.']) &&
+        escriturasDesde(alFaltar).length === 0 &&
+        !!(await page.$(CAJON)),
+      `sin nada: ${sinNada?.faltas.join(' | ')} (foco en ${sinNada?.foco}) · sin preguntas: ${sinPreguntas?.faltas.join(' | ')} (foco en ${sinPreguntas?.foco}, «${sinPreguntas?.cuenta}») · completando: ${completando?.faltas.join(' | ')} · escrituras: ${escriturasDesde(alFaltar).length}`,
+    );
+
+    // El área: fija si el formulario tiene una propia; a elegir, sin ninguna elegida, si no.
+    const conElDeEntrenamiento = await elegirFormulario('FRM-ENTRENAMIENTO');
+    const aclaraciones = camposDe(versionDeEntrenamiento).map((c) => c.helpText);
+    await clic(page, `${CAJON} .preguntas-del-pedido__aclaraciones button`, 'Ver la aclaración de cada pregunta').catch(() => null);
+    await pausa(200);
+    const conAclaraciones = await pedidoEnPantalla(page);
+    informar(
+      'F-56',
+      'El pedido, a 1440 × 900, con el formulario más largo del catálogo (seis preguntas) elegido: antes era una página de 1.835 px (medida antes de recomponer); ahora, un cajón que no desplaza la página',
+      `el contenido del cajón mide ${conElDeEntrenamiento?.cuerpo.contenido} px, en ${conElDeEntrenamiento?.cuerpo.alto} a la vista; con las aclaraciones abiertas, ${conAclaraciones?.cuerpo.contenido}`,
+    );
+    comprobar(
+      'F-54',
+      'El área de la solicitud: con un formulario sin área propia (la API lo entrega sin área) hay que elegirla, se ofrecen las tres y no viene ninguna; con uno de un área sola (Entrenamiento) queda fija, en un campo que no se edita, y lo dice. Elegirlo a mano trae todas sus preguntas marcadas y ninguna requerida. La aclaración que la persona lee debajo de cada pregunta está a un clic, y es la de la API',
+      versionDeHabitos.domain === null &&
+        versionDeEntrenamiento.domain === 'ENTRENAMIENTO' &&
+        conHabitos?.area?.fija === false &&
+        conHabitos.area.valor === '' &&
+        igual(conHabitos.area.opciones, ['Elegí un área', 'Nutrición', 'Entrenamiento', 'Antropometría']) &&
+        conElDeEntrenamiento?.area?.fija === true &&
+        conElDeEntrenamiento.area.valor === 'Entrenamiento' &&
+        conElDeEntrenamiento.area.soloLectura &&
+        conElDeEntrenamiento.area.ayuda === 'Este formulario es solo de Entrenamiento.' &&
+        igual(conElDeEntrenamiento.preguntas.map((p) => [p.codigo, p.pedida, p.requerida]), codigosDeEntrenamiento.map((c) => [c, true, false])) &&
+        conElDeEntrenamiento.cuenta === `${codigosDeEntrenamiento.length} de ${codigosDeEntrenamiento.length} elegidas.` &&
+        conElDeEntrenamiento.desdeEntrenamiento === null &&
+        !conElDeEntrenamiento.faltas.includes('Elegí en qué área lo pedís.') &&
+        conElDeEntrenamiento.preguntas.every((p) => p.ayuda === null) &&
+        aclaraciones.some((a) => a) &&
+        igual(conAclaraciones?.preguntas.map((p) => p.ayuda), aclaraciones),
+      `Hábitos: ${conHabitos?.area?.fija ? 'fija' : `a elegir (${conHabitos?.area?.opciones.join(', ')}), elegida «${conHabitos?.area?.valor}»`} · Entrenamiento: ${conElDeEntrenamiento?.area?.fija ? `fija en «${conElDeEntrenamiento.area.valor}», «${conElDeEntrenamiento.area.ayuda}»` : 'a elegir'} · «${conElDeEntrenamiento?.cuenta}», ${conElDeEntrenamiento?.preguntas.filter((p) => p.requerida).length} requeridas · aclaraciones a la vista: ${conElDeEntrenamiento?.preguntas.filter((p) => p.ayuda).length} y, al pedirlas, ${conAclaraciones?.preguntas.filter((p) => p.ayuda).length}`,
+    );
+
+    // Los rechazos se dicen adentro del cajón, con el foco, y lo elegido sigue (respuestas simuladas en el navegador).
+    await elegirFormulario('FRM-HABITOS');
+    await page.select(EN.area, 'NUTRICION').catch(() => {});
+    await pausa(200);
+    const antesDeLosRechazos = await pedidoEnPantalla(page);
+    const rechazar = async (regla) => {
+      const desde = v.urls.length;
+      v.reglas.push(regla);
+      await page.click(EN.enviar).catch(() => {});
+      await page.waitForSelector(`${CAJON} .aviso--error`, { timeout: 20_000 }).catch(() => {});
+      await quieto(page, v);
+      v.reglas.splice(v.reglas.indexOf(regla), 1);
+      return { p: await pedidoEnPantalla(page), alResumen: lecturasDesde(desde, `/advisees/${A}/dashboard`).length };
+    };
+    const elEnvio = (u) => u.endsWith(ENVIO);
+    const noPertinente = await rechazar({ coincide: elEnvio, accion: 'responder', status: 422, codigo: 'FORM_REQUEST_NOT_ALLOWED' });
+    await cupo(v, 60);
+    const noDisponible = await rechazar({ coincide: elEnvio, accion: 'responder', status: 404, codigo: 'RESOURCE_NOT_FOUND' });
+    await cupo(v, 60);
+    const sinRed = await rechazar({ coincide: elEnvio, accion: 'cortar' });
+    // Cambiar algo después de un resultado incierto es otro intento: el botón deja de decir «Reintentar».
+    await page.type(EN.paraQue, '.');
+    await pausa(200);
+    const trasCambiar = await pedidoEnPantalla(page);
+    const despuesDeLosRechazos = (await leerApi(v, `${ENVIO}?limit=50`)).data.length;
+    comprobar(
+      'F-55',
+      'Un rechazo al enviar (simulado) se dice adentro del cajón, con el foco en el aviso, y lo elegido sigue como estaba. Si alguna pregunta no es pertinente para el área, lo dice con esas palabras; si la respuesta es «no disponible», dice el texto neutral del profesional y el marco vuelve a preguntar el acceso; sin conexión, dice que no se pudo confirmar y el botón pasa a «Reintentar», hasta que se cambia algo. Ninguna solicitud se creó',
+      noPertinente.p?.rechazo === 'Alguna de las preguntas pedidas no es pertinente para esta área. Revisá las preguntas o el área.' &&
+        noPertinente.p.foco === 'aviso' &&
+        noPertinente.alResumen === 0 &&
+        igual(loArmado(noPertinente.p), loArmado(antesDeLosRechazos)) &&
+        noPertinente.p.area?.valor === 'NUTRICION' &&
+        noDisponible.p?.rechazo === 'No encontramos un recurso disponible para esta acción.' &&
+        noDisponible.p.foco === 'aviso' &&
+        noDisponible.alResumen === 1 &&
+        sinRed.p?.rechazo === 'No pudimos confirmar el resultado. Reintentá.' &&
+        sinRed.p.pie.boton === 'Reintentar' &&
+        noPertinente.p.pie.boton === 'Enviar solicitud' &&
+        trasCambiar?.pie.boton === 'Enviar solicitud' &&
+        despuesDeLosRechazos === lista.length,
+      `422: «${noPertinente.p?.rechazo}» (foco en ${noPertinente.p?.foco}) · 404: «${noDisponible.p?.rechazo}», ${noDisponible.alResumen} pregunta al resumen · sin conexión: «${sinRed.p?.rechazo}», botón «${sinRed.p?.pie.boton}» y, al cambiar algo, «${trasCambiar?.pie.boton}» · solicitudes en la API: ${despuesDeLosRechazos} (había ${lista.length})`,
+    );
+
+    // Los anchos: 800 px al costado; a 1024, todo el ancho. El pie, siempre adentro de la ventana.
+    const conElCajonEn = async (ancho) => {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      return { p: await pedidoEnPantalla(page), desborda: !(await sinDesborde(page)), faltas: await axe(page) };
+    };
+    const c1440 = await conElCajonEn(1440);
+    const c1280 = await conElCajonEn(1280);
+    const c1024 = await conElCajonEn(1024);
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    informar('F-56', 'El cajón, a 1440 × 900, con un formulario de tres preguntas elegido y un rechazo a la vista', `mide ${c1440.p?.caja.ancho} × ${c1440.p?.caja.alto} px; su contenido, ${c1440.p?.cuerpo.contenido} px en ${c1440.p?.cuerpo.alto} a la vista`);
+    comprobar(
+      'F-56',
+      'A 1440 y a 1280 px el cajón mide 800 px, pegado al borde derecho y de arriba a abajo de la ventana, y la página sigue a la vista a su izquierda; a 1024 px ocupa todo el ancho. En los tres el pie, con «Enviar solicitud», queda adentro de la ventana, nada desborda de costado y axe no encuentra faltas con un formulario elegido y un rechazo a la vista',
+      [c1440, c1280].every((x) => x.p?.caja.ancho === 800 && x.p.caja.derecha === x.p.ventana.ancho && x.p.caja.arriba === 0 && x.p.caja.alto === 900) &&
+        c1024.p?.caja.ancho === 1024 &&
+        c1024.p.caja.izquierda === 0 &&
+        [c1440, c1280, c1024].every((x) => x.p.pie.caja.abajo <= 900 && x.p.pie.caja.arriba >= 0 && !x.desborda && x.faltas.length === 0),
+      [c1440, c1280, c1024].map((x) => `${x.p?.ventana.ancho}: cajón de ${x.p?.caja.ancho} px, queda ${x.p ? x.p.caja.izquierda : '?'} de la página a la vista, el pie termina a ${x.p?.pie.caja.abajo} · axe: ${x.faltas.map((f) => f.id).join(', ') || 'sin faltas'}${x.desborda ? ' · DESBORDA' : ''}`).join(' — '),
+    );
+
+    // ── Enviar (escribe): sale lo elegido, el cajón se cierra y la lista lo muestra ────────────────────────────────
+    await page.click(EN.pedir(codigos[0])).catch(() => {});
+    await page.click(EN.requerida(codigos[1])).catch(() => {});
+    await pausa(200);
+    const antesDeEnviar = await pedidoEnPantalla(page);
+    const alEnviar = v.urls.length;
+    await page.click(EN.enviar).catch(() => {});
+    await page.waitForFunction(() => (document.querySelector('.aviso-flotante__texto')?.innerText.trim() ?? '') !== '', { timeout: 30_000 }).catch(() => {});
+    const avisoDelEnvio = await page.evaluate(() => document.querySelector('.aviso-flotante__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? null);
+    await cajonCerrado();
+    await page.waitForSelector('button.solicitud-de-la-lista', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const despues = await leerTodo();
+    const trasEnviar = await solicitudesEnPantalla(page);
+    const cajonTrasEnviar = !!(await page.$(CAJON));
+    const nuevas = despues.lista.filter((s) => !lista.some((x) => x.formRequestId === s.formRequestId));
+    const laNueva = nuevas[0] ?? null;
+    const envios = v.urls.slice(alEnviar).filter((u) => u.startsWith('POST ') && u.endsWith(ENVIO)).length;
+    await abrirElPedido();
+    const pedidoNuevo = await pedidoEnPantalla(page);
+    await page.keyboard.press('Escape');
+    await cajonCerrado();
+    comprobar(
+      'F-05',
+      'Al enviar sale un solo pedido, con lo que quedó elegido: las preguntas marcadas (no la que se desmarcó), en el orden del formulario, la requerida, el para qué y el área. El cajón se cierra, la página queda en «Solicitudes» y lo dice; la lista se vuelve a leer y tiene una más, primera y sin responder, y las cantidades de las vistas suben. El pedido siguiente empieza de cero',
+      envios === 1 &&
+        nuevas.length === 1 &&
+        igual(antesDeEnviar?.preguntas.map((p) => [p.pedida, p.requerida]), codigos.map((_, i) => [i !== 0, i === 1])) &&
+        igual(laNueva.requestedFieldCodes, codigos.slice(1)) &&
+        igual(laNueva.requiredFieldCodes, [codigos[1]]) &&
+        laNueva.purpose === `${PARA_QUE}.` &&
+        laNueva.scope === 'NUTRICION' &&
+        laNueva.status === 'PENDING' &&
+        avisoDelEnvio === 'Solicitud enviada.' &&
+        !cajonTrasEnviar &&
+        parametros(page).get('vista') === 'solicitudes' &&
+        trasEnviar.filas[0]?.id === laNueva.formRequestId &&
+        igual(trasEnviar.filas.map(({ elegida, ...f }) => f), despues.E.solicitudes.map((x) => x.fila)) &&
+        trasEnviar.vistas.find((x) => x.clave === 'TODAS')?.texto === `Todas ${lista.length + 1} solicitudes` &&
+        trasEnviar.vistas.find((x) => x.clave === 'SIN_RESPONDER')?.texto === `Sin responder ${sinResponder.length + 1} solicitudes` &&
+        pedidoNuevo?.formularios.every((f) => !f.elegido) &&
+        pedidoNuevo.paraQue === '' &&
+        pedidoNuevo.preguntas.length === 0,
+      laNueva
+        ? `pedidos: ${envios} · pedidas: ${laNueva.requestedFieldCodes.join(', ')} · requeridas: ${laNueva.requiredFieldCodes.join(', ')} · ${laNueva.scope} · «${laNueva.purpose}» · «${avisoDelEnvio}» · ${trasEnviar.vistas.map((x) => x.texto).join(' · ')} · el pedido siguiente: ${pedidoNuevo?.formularios.filter((f) => f.elegido).length} formularios elegidos`
+        : `la API tiene ${nuevas.length} solicitudes nuevas · pedidos: ${envios} · «${avisoDelEnvio}»`,
+    );
+
+    // ── Desde Entrenamiento (DL-100): la precarga ratificada, y al enviar se vuelve a Entrenamiento (escribe) ──────
+    // La precarga, escrita a mano: las seis preguntas del formulario de Entrenamiento y, requeridas, las cinco primeras.
+    const PRECARGA = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
+    await salir();
+    await entrar(`${AREA_DE_LA_PAGINA}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`);
+    await page.waitForSelector(`${CAJON} .preguntas-del-pedido`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const desdeEntrenamiento = await pedidoEnPantalla(page);
+    // Cerrar deja a la persona en «Solicitudes», con la vuelta a Entrenamiento en el marco; al reabrir, sigue la precarga.
+    await page.keyboard.press('Escape');
+    await cajonCerrado();
+    await pausa(300);
+    const marcoTrasCerrar = await marcoEnPantalla(page);
+    const direccionTrasCerrar = { vista: parametros(page).get('vista'), volver: parametros(page).get('volver') };
+    await abrirElPedido();
+    const reabiertoDesdeEntrenamiento = await pedidoEnPantalla(page);
+    const alEnviarElContexto = v.urls.length;
+    await page.click(EN.enviar).catch(() => {});
+    await page.waitForFunction(() => location.pathname === '/pro/advisees/training', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const llegada = sinBarra(await page.evaluate(() => location.pathname + location.search));
+    // La página de Información se abandona al enviar: que la solicitud salió lo dice Entrenamiento, al llegar.
+    await page.waitForFunction(() => (document.querySelector('.aviso-flotante__texto')?.innerText.trim() ?? '') !== '', { timeout: 20_000 }).catch(() => {});
+    const avisoAlLlegar = await page.evaluate(() => document.querySelector('.aviso-flotante__texto')?.innerText.replace(/\s+/g, ' ').trim() ?? null);
+    const conElContexto = await leerTodo();
+    const elContexto = conElContexto.lista.find((s) => !despues.lista.some((x) => x.formRequestId === s.formRequestId)) ?? null;
+    const enviosDelContexto = v.urls.slice(alEnviarElContexto).filter((u) => u.startsWith('POST ') && u.endsWith(ENVIO)).length;
+    comprobar(
+      'F-57',
+      'Llegando desde Entrenamiento, el cajón se abre con la precarga ratificada (DL-100): el formulario de Entrenamiento, sus seis preguntas pedidas y cinco requeridas, el para qué y el área fija; lo dice, con un enlace para volver, y no dice «Vienen todas elegidas». Cerrarlo deja a la persona en «Solicitudes», con «Volver a Entrenamiento» en el marco, y al reabrirlo la precarga sigue. Al enviar sale un solo pedido con eso y se vuelve a Entrenamiento, que al llegar dice «Solicitud enviada.»',
+      desdeEntrenamiento?.formularios.find((f) => f.elegido)?.clave === 'FRM-ENTRENAMIENTO' &&
+        igual(desdeEntrenamiento.preguntas.map((p) => [p.codigo, p.pedida, p.requerida]), PRECARGA.map((c, i) => [c, true, i < 5])) &&
+        desdeEntrenamiento.cuenta === '6 de 6 elegidas.' &&
+        !/Vienen todas elegidas/.test(desdeEntrenamiento.texto) &&
+        desdeEntrenamiento.paraQue === 'Planificar tu entrenamiento' &&
+        desdeEntrenamiento.area?.fija === true &&
+        desdeEntrenamiento.area.valor === 'Entrenamiento' &&
+        desdeEntrenamiento.avisos.some((a) => a.startsWith('Viniste desde Entrenamiento: el formulario, las preguntas y el área ya están elegidos. Podés cambiarlos antes de enviar.')) &&
+        desdeEntrenamiento.desdeEntrenamiento?.texto === 'Volver a Entrenamiento' &&
+        sinBarra(desdeEntrenamiento.desdeEntrenamiento.href).startsWith(`/pro/advisees/training?id=${A}`) &&
+        direccionTrasCerrar.vista === 'solicitudes' &&
+        direccionTrasCerrar.volver === 'entrenamiento' &&
+        marcoTrasCerrar?.volver?.texto === 'Volver a Entrenamiento' &&
+        igual(loArmado(reabiertoDesdeEntrenamiento), loArmado(desdeEntrenamiento)) &&
+        enviosDelContexto === 1 &&
+        llegada.startsWith(`/pro/advisees/training?id=${A}`) &&
+        avisoAlLlegar === 'Solicitud enviada.' &&
+        !!elContexto &&
+        igual(elContexto.requestedFieldCodes, PRECARGA) &&
+        igual(elContexto.requiredFieldCodes, PRECARGA.slice(0, 5)) &&
+        elContexto.scope === 'ENTRENAMIENTO' &&
+        elContexto.purpose === 'Planificar tu entrenamiento',
+      `${desdeEntrenamiento?.formularios.find((f) => f.elegido)?.nombre}: ${desdeEntrenamiento?.preguntas.filter((p) => p.pedida).length} pedidas, ${desdeEntrenamiento?.preguntas.filter((p) => p.requerida).length} requeridas · «${desdeEntrenamiento?.paraQue}» · área ${desdeEntrenamiento?.area?.fija ? 'fija' : 'a elegir'} · tras cerrar: vista=${direccionTrasCerrar.vista}, «${marcoTrasCerrar?.volver?.texto}» · pedidos: ${enviosDelContexto} · llegó a ${llegada.slice(0, 60)}, que dice «${avisoAlLlegar}» · en la API: ${elContexto ? `${elContexto.requestedFieldCodes.length} pedidas, ${elContexto.requiredFieldCodes.length} requeridas, ${elContexto.scope}` : 'ninguna nueva'}`,
+    );
+    comprobar('—', '«Solicitudes» y el pedido no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
+// ─── Nutrición · Plan (WP-ESCRITORIO-AREAS, parte 5) ───────────────────────────────────────────────────────────
+
+/** Lo que «Plan», de Nutrición, tiene a la vista: la versión que se mira, el plan activo, el editor y los avisos. */
+const planEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+    const caja = (e) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { x: Math.round(r.left), y: Math.round(r.top + window.scrollY), ancho: Math.round(r.width), alto: Math.round(r.height) };
+    };
+    const segmentos = (f) => [...f.querySelectorAll('.segmento')].map((s) => ({ texto: t(s), valor: s.querySelector('input').value, elegido: s.querySelector('input').checked, caja: caja(s) }));
+    const raiz = document.querySelector('.plan');
+    const selector = raiz?.querySelector('[data-selector-de-version]') ?? null;
+    const activo = raiz?.querySelector('.plan__activo') ?? null;
+    const dia = activo?.querySelector('[data-dia-tipo]') ?? null;
+    const titulo = raiz?.querySelector('#titulo-borrador') ?? null;
+    return {
+      esta: !!raiz,
+      version: raiz?.dataset.version ?? null,
+      selector: selector ? { rotulo: t(selector.querySelector('legend')), opciones: segmentos(selector), nota: t(raiz.querySelector('.plan__selector .nota')) } : null,
+      editor: { esta: !!titulo, aLaVista: aLaVista(titulo), estado: t(raiz?.querySelector('.plan__preparacion p[aria-live="polite"]') ?? null) },
+      activo: activo
+        ? {
+            titulo: t(activo.querySelector('h2')),
+            soloLectura: t(activo.querySelector('.plan__encabezado .etiqueta-de-dato')),
+            frase: t(activo.querySelector('.plan__version')),
+            acciones: [...activo.querySelectorAll('.plan__acciones button')].map((b) => t(b)),
+            yaHay: t(activo.querySelector('.plan__ya-hay')),
+            aviso: t(activo.querySelector(':scope > .aviso')),
+            dia: dia ? { clase: dia.dataset.diaTipo, texto: t(dia), rotulo: t(dia.querySelector('legend, .dia-tipo-del-plan__rotulo')), opciones: dia.dataset.diaTipo === 'varios' ? segmentos(dia) : null, caja: caja(dia) } : null,
+            objetivo: {
+              estado: activo.querySelector('.plan__objetivo')?.dataset.objetivo ?? null,
+              titulo: t(activo.querySelector('.plan__objetivo-titulo')),
+              valores: [...activo.querySelectorAll('.plan__objetivo .tira-del-objetivo > div')].map((d) => t(d)),
+              nota: t(activo.querySelector('.plan__objetivo-nota')),
+              falla: t(activo.querySelector('.plan__objetivo-falla')),
+            },
+            cuenta: t(activo.querySelector('.comidas-del-plan__barra .nota')),
+            todas: t(activo.querySelector('[data-todas-las-comidas]')),
+            comidas: [...activo.querySelectorAll('.comida-del-plan')].map((c) => ({
+              orden: Number(c.dataset.comida),
+              abierta: c.hasAttribute('data-abierta'),
+              expandida: c.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+              nombre: t(c.querySelector('.comida-del-plan__nombre')),
+              cuenta: t(c.querySelector('.comida-del-plan__cuenta')),
+              nombres: t(c.querySelector('.comida-del-plan__opciones')),
+              caja: caja(c),
+              opciones: [...c.querySelectorAll('.opcion-del-plan')].map((o) => ({
+                orden: Number(o.dataset.opcion),
+                titulo: t(o.querySelector('.opcion-del-plan__titulo')),
+                receta: t(o.querySelector('.opcion-del-plan__receta')),
+                items: [...o.querySelectorAll('.items-del-plan li')].map((li) => ({ nombre: t(li.querySelector('.items-del-plan__nombre')), indicado: t(li.querySelector('.items-del-plan__indicado')), nota: t(li.querySelector('.items-del-plan__nota')) })),
+                sinItems: t(o.querySelector(':scope > .nota:not(.opcion-del-plan__receta)')),
+                caja: caja(o),
+              })),
+            })),
+            historial: {
+              titulo: t(activo.querySelector('.historial-del-plan h3')),
+              versiones: [...activo.querySelectorAll('.historial-del-plan__lista li')].map((li) => ({ numero: Number(li.dataset.version), vigente: li.hasAttribute('data-vigente'), texto: t(li) })),
+              huella: t(activo.querySelector('.historial-del-plan__huella')),
+              caja: caja(activo.querySelector('.historial-del-plan')),
+            },
+          }
+        : null,
+      vacio: raiz?.querySelector('.estado-vacio') ? { texto: t(raiz.querySelector('.estado-vacio')), botones: [...raiz.querySelectorAll('.estado-vacio button')].map((b) => t(b)) } : null,
+      falla: t(document.querySelector('.seccion-del-area .estado-de-grafico--error')),
+      avisos: [...document.querySelectorAll('.aviso-flotante__texto')].map(t),
+      errores: [...(raiz?.querySelectorAll(':scope > .aviso--error') ?? [])].map(t),
+      botones: [...document.querySelectorAll('main button')].filter(aLaVista).map((b) => t(b)),
+      main: t(document.querySelector('main')),
+    };
+  });
+
+/** El diálogo de «Empezar desde una plantilla», si está abierto. */
+const plantillasEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const d = [...document.querySelectorAll('dialog[open]')].find((x) => x.querySelector('h2')?.innerText.trim() === 'Empezar desde una plantilla');
+    if (!d) return null;
+    const confirmar = [...d.querySelectorAll('.acciones button')].at(-1);
+    return {
+      titulo: t(d.querySelector('h2')),
+      cargando: !!d.querySelector('.cargando'),
+      falla: t(d.querySelector('.estado-de-grafico--error')),
+      reintentar: !!d.querySelector('.estado-de-grafico--error button'),
+      plantillas: [...d.querySelectorAll('.plantilla-para-empezar')].map((p) => ({ nombre: t(p.querySelector('.plantilla-para-empezar__nombre')), detalle: t(p.querySelector('.plantilla-para-empezar__detalle')), elegida: p.querySelector('input').checked })),
+      error: t(d.querySelector('.aviso--error')),
+      confirmar: { texto: t(confirmar), apagado: confirmar.disabled },
+      texto: t(d),
+    };
+  });
+
+/**
+ * Lo que «Plan» tiene que decir de una versión activada, escrito a mano con lo que devuelve la API (la lista de versiones
+ * y la versión que se lee): no se usa el módulo del dominio que arma la pantalla (`plan-de-nutricion.ts`). Las
+ * cantidades del escenario son menores que mil: el número no lleva punto de miles.
+ */
+function esperadoDelPlan({ lista, activa }) {
+  const UNIDAD = { g: 'g', ml: 'ml', unit: 'unidad' };
+  const ESTADO = { RAW: 'crudo', COOKED: 'cocido', AS_PURCHASED: 'tal como se adquiere' };
+  const numero = (n) => String(n).replace('.', ',');
+  const activadas = lista.filter((x) => x.activatedAt).sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
+  const numeroDe = new Map(activadas.map((x, i) => [x.planId, i + 1]));
+  const dias = [...activa.dayTypes]
+    .sort((a, b) => a.order - b.order)
+    .map((d) => ({
+      orden: d.order,
+      nombre: d.label,
+      comidas: [...d.meals]
+        .sort((a, b) => a.order - b.order)
+        .map((m) => {
+          const opciones = [...m.options].sort((a, b) => a.order - b.order);
+          return {
+            orden: m.order,
+            nombre: m.label,
+            cuenta: opciones.length === 0 ? 'Sin opciones' : opciones.length === 1 ? '1 opción' : `${opciones.length} opciones · se elige una`,
+            nombres: opciones.map((o) => o.label).join(' · '),
+            opciones: opciones.map((o) => ({
+              orden: o.order,
+              titulo: opciones.length > 1 ? `Opción ${o.order}: ${o.label}` : o.label,
+              receta: o.recipe ? `Receta «${o.recipe.name}», versión ${o.recipe.versionNumber} · La opción lleva los ingredientes de una porción de la receta.` : null,
+              items: o.items.map((i) => ({
+                nombre: i.name,
+                indicado: [i.quantity ? `${numero(i.quantity.value)} ${UNIDAD[i.quantity.unit]}` : 'sin cantidad indicada', ...(i.preparationState ? [ESTADO[i.preparationState]] : [])].join(' · '),
+                nota: i.note ? `Nota: ${i.note}` : null,
+              })),
+            })),
+          };
+        }),
+    }));
+  return { numeroDe, activadas, dias, numero: numeroDe.get(activa.planId) };
+}
+
+async function planesDeNutricion() {
+  const d = estado.descartable;
+  if (!d?.planDeNutricion) throw new Error('faltan las cuentas descartables con su plan de Nutrición: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-plan');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const BASE = `/pro/advisees/nutrition?id=${A}&vista=plan`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const lecturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    const escriturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(fragmento));
+    const LISTO = '.plan, .seccion-del-area .estado-de-grafico--error, .seccion-del-area > .aviso';
+    const entrar = async (ruta) => {
+      await cupo(v, 60);
+      const desde = v.urls.length;
+      await ir(page, ruta);
+      await page.waitForSelector(LISTO, { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      return desde;
+    };
+    const salir = async () => {
+      await cupo(v, 60);
+      await ir(page, `/pro/advisees?id=${A}`);
+      await page.waitForFunction(() => !document.querySelector('.plan') && !document.querySelector('header.marco-del-area'), { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+    };
+    /** Entra con respuestas armadas por el recorrido (dichas como tales) y las retira al terminar de leer la pantalla. */
+    const conSimulacion = async (reglas, ruta, leer = planEnPantalla) => {
+      await salir();
+      v.reglas.push(...reglas);
+      try {
+        await entrar(ruta);
+        return await leer(page);
+      } finally {
+        v.reglas.length = 0;
+      }
+    };
+    const leerTodo = async () => {
+      const lista = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `/advisees/${A}/nutrition/plans?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        lista.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      const efectiva = lista.find((x) => x.isEffective) ?? null;
+      const activa = efectiva ? (await leerApi(v, `/nutrition/plans/${efectiva.planId}`)).data : null;
+      const objetivo = (await leerApi(v, `/advisees/${A}/nutrition/objectives/effective`)).data.objective;
+      return { lista, activa, objetivo, E: activa ? esperadoDelPlan({ lista, activa }) : null };
+    };
+    /** La fecha como la escribe el navegador de la página (su zona y sus abreviaturas): «12 oct» y «14:33». */
+    const enLaPagina = (iso) =>
+      page.evaluate((x) => {
+        const f = new Date(x);
+        const delAnio = f.getFullYear() === new Date().getFullYear();
+        return {
+          dia: delAnio ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(f) : new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(f),
+          hora: new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(f),
+        };
+      }, iso);
+    const historialEsperado = async (E) => {
+      const filas = [];
+      for (const x of [...E.activadas].reverse()) {
+        const f = await enLaPagina(x.activatedAt);
+        filas.push({ numero: E.numeroDe.get(x.planId), vigente: x.isEffective, texto: `Versión ${E.numeroDe.get(x.planId)} · activada el ${f.dia}, ${f.hora} · ${x.isEffective ? 'vigente' : 'anterior, conservada'}` });
+      }
+      return filas;
+    };
+    const tiraEsperada = (o) => {
+      const gramos = (m) => `${String(m.value).replace('.', ',')} g`;
+      return [`${new Intl.NumberFormat('es-AR').format(o.estimatedEnergyRequirement.value)} kcal`, gramos(o.macronutrientDistribution.carbohydrate), gramos(o.macronutrientDistribution.fat), gramos(o.macronutrientDistribution.protein)];
+    };
+    const ROTULOS = ['Calorías', 'Carbohidratos', 'Grasas', 'Proteínas'];
+    const tiraBien = (valores, o) => valores.length === 4 && valores.every((x, i) => x.startsWith(ROTULOS[i]) && x.endsWith(tiraEsperada(o)[i]));
+    /** Las comidas de la pantalla contra las del día esperado: nombre, cuenta, cuál está abierta y, abierta, sus opciones. */
+    const comidasBien = (enPantalla, dia, abiertas) =>
+      enPantalla.length === dia.comidas.length &&
+      enPantalla.every((c, i) => {
+        const e = dia.comidas[i];
+        const abierta = abiertas.includes(e.orden);
+        return (
+          c.orden === e.orden &&
+          c.nombre === e.nombre &&
+          c.cuenta === e.cuenta &&
+          c.abierta === abierta &&
+          c.expandida === String(abierta) &&
+          (abierta ? c.nombres === null && igual(c.opciones.map((o) => ({ orden: o.orden, titulo: o.titulo, receta: o.receta, items: o.items })), e.opciones) : c.nombres === e.nombres && c.opciones.length === 0)
+        );
+      });
+    const prohibidas = (texto) => dominio.terminosProhibidosEn(texto ?? '');
+    /** Cada texto del plan que puede ocupar más de un renglón: ahí se mira dónde quedó el separador y dónde cada número. */
+    const TEXTOS_DEL_PLAN = '.plan__version, .comida-del-plan__textos, .opcion-del-plan__titulo, .opcion-del-plan__receta, .items-del-plan li, .historial-del-plan__lista li, .plan__objetivo .tira-del-objetivo > div';
+    /** Un aviso flotante se va solo a los pocos segundos: se lo espera apenas se hace la acción, antes de mirar lo demás. */
+    const esperarAviso = (empieza) =>
+      page
+        .waitForFunction((t) => [...document.querySelectorAll('.aviso-flotante__texto')].some((e) => e.innerText.trim().startsWith(t)), { timeout: 40_000 }, empieza)
+        .then(() => true)
+        .catch(() => false);
+    const P = (page) => parametros(page);
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+
+    // ── Al entrar: qué se lee, y qué dice de la versión ──────────────────────────────────────────────────────────
+    const desde = await entrar(BASE);
+    const inicial = await planEnPantalla(page);
+    const alLeer = v.urls.length;
+    const { lista, activa, objetivo, E } = await leerTodo();
+    const lecturas = lecturasDesde(desde, '/nutrition/');
+    const deLaLista = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && /\/nutrition\/plans\?/.test(u)).length;
+    const delPlan = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && u.includes(`/nutrition/plans/${activa.planId}`)).length;
+    const delObjetivo = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/objectives/effective')).length;
+    const otrasDeNutricion = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/') && !/\/nutrition\/plans\?/.test(u) && !u.includes(`/nutrition/plans/${activa.planId}`) && !u.includes('/nutrition/objectives/effective'));
+    const fechaDeLaActiva = await enLaPagina(activa.activatedAt);
+    const fraseEsperada = `Versión ${E.numero} · activada el ${fechaDeLaActiva.dia} · es lo que ve el asesorado`;
+    comprobar(
+      'F-62',
+      'El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación (calculado a mano con la lista de la API). Para verlo se leen tres cosas, una vez cada una: la lista de versiones, la versión vigente y el objetivo vigente',
+      inicial.esta &&
+        inicial.version === 'activa' &&
+        inicial.selector === null &&
+        !inicial.editor.esta &&
+        inicial.activo?.titulo === 'Plan activo' &&
+        inicial.activo.soloLectura === 'Solo lectura' &&
+        inicial.activo.frase === fraseEsperada &&
+        E.numero === 2 &&
+        deLaLista === 1 &&
+        delPlan === 1 &&
+        delObjetivo === 1 &&
+        otrasDeNutricion.length === 0,
+      `«${inicial.activo?.titulo}» · «${inicial.activo?.soloLectura}» · «${inicial.activo?.frase}» · lecturas: lista ${deLaLista}, versión ${delPlan}, objetivo ${delObjetivo}, otras de Nutrición ${otrasDeNutricion.length} (${lecturas.length} en total)`,
+    );
+    const dia1 = E.dias[0];
+    const dia2 = E.dias[1];
+    comprobar(
+      'F-58',
+      'Con más de un día tipo, el plan se lee de a uno: un control con el nombre de cada día, en el orden del plan, y elegido el primero. A la vista están solo las comidas de ese día',
+      E.dias.length === 2 &&
+        inicial.activo?.dia?.clase === 'varios' &&
+        inicial.activo.dia.rotulo === 'Día tipo' &&
+        igual(inicial.activo.dia.opciones.map((o) => [o.texto, o.elegido]), E.dias.map((x, i) => [x.nombre, i === 0])) &&
+        igual(inicial.activo.comidas.map((c) => c.nombre), dia1.comidas.map((c) => c.nombre)) &&
+        inicial.activo.cuenta === `${dia1.comidas.length} comidas`,
+      `${inicial.activo?.dia?.opciones?.map((o) => `${o.texto}${o.elegido ? ' (elegido)' : ''}`).join(' | ')} · ${inicial.activo?.cuenta}: ${inicial.activo?.comidas.map((c) => c.nombre).join(', ')}`,
+    );
+    comprobar(
+      'F-59',
+      'Las comidas van plegadas, cada una en un renglón con su cantidad de opciones («N opciones · se elige una»; con una sola, «1 opción») y, plegada, los nombres de sus opciones. Al entrar está abierta la primera, con sus opciones y los ítems que devuelve la API',
+      comidasBien(inicial.activo?.comidas ?? [], dia1, [dia1.comidas[0].orden]) && inicial.activo.todas === 'Abrir todas las comidas' && dia1.comidas.some((c) => c.cuenta === '1 opción') && dia1.comidas.some((c) => c.cuenta === '3 opciones · se elige una'),
+      (inicial.activo?.comidas ?? []).map((c) => `${c.nombre}: ${c.cuenta}${c.abierta ? ` (abierta, ${c.opciones.length} opciones)` : ` — ${c.nombres}`}`).join(' · '),
+    );
+    comprobar(
+      'F-63',
+      'El objetivo del día está a la vista, al lado del día tipo: las calorías y los tres macros del objetivo que cita la versión, en el orden de la APK. Son los de la API',
+      inicial.activo?.objetivo.estado === 'listo' && inicial.activo.objetivo.titulo === 'Objetivo del día' && activa.objectiveVersionId === objetivo.versionId && tiraBien(inicial.activo.objetivo.valores, objetivo) && inicial.activo.objetivo.nota === null,
+      `${(inicial.activo?.objetivo.valores ?? []).join(' · ')} (la API: ${tiraEsperada(objetivo).join(' · ')})`,
+    );
+    const historial = await historialEsperado(E);
+    const primeraComida = inicial.activo?.comidas[0]?.caja;
+    const ultimaComida = inicial.activo?.comidas.at(-1)?.caja;
+    comprobar(
+      'F-64',
+      'El historial va al costado de las comidas, a la altura de la primera: las versiones activadas, de la más nueva a la más vieja, cada una con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea que se lee (sus primeros 16 caracteres)',
+      inicial.activo?.historial.titulo === 'Historial' &&
+        igual(inicial.activo.historial.versiones, historial) &&
+        historial.length === 2 &&
+        inicial.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+        !!primeraComida &&
+        inicial.activo.historial.caja.x >= primeraComida.x + primeraComida.ancho &&
+        Math.abs(inicial.activo.historial.caja.y - primeraComida.y) <= 2,
+      `${inicial.activo?.historial.versiones.map((x) => x.texto).join(' | ')} · «${inicial.activo?.historial.huella}» · el historial empieza a los ${inicial.activo?.historial.caja?.y} px y la primera comida a los ${primeraComida?.y}`,
+    );
+    informar('F-70', 'El alto de «Plan» al entrar, a 1440 × 900, con el plan de dos días tipo', `${await page.evaluate(() => document.documentElement.scrollHeight)} px · la última comida termina a los ${ultimaComida ? ultimaComida.y + ultimaComida.alto : '—'} px`);
+    comprobar(
+      'F-70',
+      'A 1440 × 900 el plan entra en la primera pantalla: el día tipo, el objetivo, las cuatro comidas (una abierta) y el historial, sin desplazarse',
+      !!ultimaComida && ultimaComida.y + ultimaComida.alto <= 900 && inicial.activo.historial.caja.y + inicial.activo.historial.caja.alto <= 900 && (await sinDesborde(page)),
+      `la última comida termina a los ${ultimaComida ? ultimaComida.y + ultimaComida.alto : '—'} px; el historial, a los ${inicial.activo ? inicial.activo.historial.caja.y + inicial.activo.historial.caja.alto : '—'}`,
+    );
+    comprobar(
+      'F-67',
+      'Sin una versión en preparación, y con un objetivo vigente, el plan activo ofrece tres acciones: «Guardar como plantilla», «Empezar desde una plantilla» y, la principal, «Crear nueva versión a partir de esta». Entrar no lee las plantillas',
+      igual(inicial.activo?.acciones, ['Guardar como plantilla', 'Empezar desde una plantilla', 'Crear nueva versión a partir de esta']) && inicial.activo.yaHay === null && lecturasDesde(desde, '/plan-templates').length === 0,
+      `${(inicial.activo?.acciones ?? []).join(' | ')} · lecturas de plantillas al entrar: ${lecturasDesde(desde, '/plan-templates').length}`,
+    );
+
+    // ── Elegir: el día tipo y las comidas abiertas viven en la dirección ─────────────────────────────────────────
+    const tocarDia = async (nombre) => {
+      await clic(page, '.plan__activo [data-dia-tipo] .segmento', nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+    const tocarComida = async (nombre) => {
+      await clic(page, '.comida-del-plan__boton', nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+    const antesDeElegir = v.urls.length;
+    await tocarDia(dia2.nombre);
+    const enDescanso = await planEnPantalla(page);
+    const direccionDescanso = Object.fromEntries(P(page));
+    await tocarComida(dia2.comidas[1].nombre);
+    const dosAbiertas = await planEnPantalla(page);
+    const direccionDos = Object.fromEntries(P(page));
+    await clic(page, '[data-todas-las-comidas]', 'Abrir todas las comidas');
+    await quieto(page, v, { silencio: 300 });
+    const todasAbiertas = await planEnPantalla(page);
+    const direccionTodas = Object.fromEntries(P(page));
+    await clic(page, '[data-todas-las-comidas]', 'Plegar todas');
+    await quieto(page, v, { silencio: 300 });
+    const todasPlegadas = await planEnPantalla(page);
+    const direccionNinguna = Object.fromEntries(P(page));
+    await tocarDia(dia1.nombre);
+    const deVuelta = await planEnPantalla(page);
+    const direccionDeVuelta = Object.fromEntries(P(page));
+    const pedidosAlElegir = v.urls.slice(antesDeElegir).filter((u) => !u.startsWith('OPTIONS '));
+    const ordenesDe = (dia) => dia.comidas.map((c) => c.orden);
+    comprobar(
+      'F-66',
+      'Lo elegido vive en la dirección de la página, por su número de orden. Elegir el segundo día tipo escribe «dia» y deja abierta su primera comida; abrir otra comida escribe «comidas» con las dos; «Abrir todas las comidas» las abre y pasa a decir «Plegar todas», que escribe «ninguna»; volver al primer día limpia la dirección. Nada de eso le pide algo a BE',
+      direccionDescanso.dia === String(dia2.orden) &&
+        direccionDescanso.comidas === undefined &&
+        comidasBien(enDescanso.activo?.comidas ?? [], dia2, [dia2.comidas[0].orden]) &&
+        enDescanso.activo.dia.opciones.find((o) => o.elegido)?.texto === dia2.nombre &&
+        direccionDos.comidas === `${dia2.comidas[0].orden}.${dia2.comidas[1].orden}` &&
+        comidasBien(dosAbiertas.activo?.comidas ?? [], dia2, [dia2.comidas[0].orden, dia2.comidas[1].orden]) &&
+        direccionTodas.comidas === ordenesDe(dia2).join('.') &&
+        comidasBien(todasAbiertas.activo?.comidas ?? [], dia2, ordenesDe(dia2)) &&
+        todasAbiertas.activo.todas === 'Plegar todas' &&
+        direccionNinguna.comidas === 'ninguna' &&
+        comidasBien(todasPlegadas.activo?.comidas ?? [], dia2, []) &&
+        todasPlegadas.activo.todas === 'Abrir todas las comidas' &&
+        direccionDeVuelta.dia === undefined &&
+        direccionDeVuelta.comidas === undefined &&
+        comidasBien(deVuelta.activo?.comidas ?? [], dia1, [dia1.comidas[0].orden]) &&
+        pedidosAlElegir.length === 0,
+      `dia=${direccionDescanso.dia} · comidas=${direccionDos.comidas} → ${direccionTodas.comidas} → ${direccionNinguna.comidas} → ${direccionDeVuelta.comidas ?? '(nada)'} · pedidos a BE mientras tanto: ${pedidosAlElegir.length}`,
+    );
+
+    // «Actualizar» vuelve a leer y no pierde lo elegido.
+    await entrar(`${BASE}&dia=${dia2.orden}&comidas=${dia2.comidas[1].orden}`);
+    const antesDeActualizar = await planEnPantalla(page);
+    const horaAntes = await texto(page, 'header.marco-del-area .ficha__consulta .nota');
+    const desdeActualizar = v.urls.length;
+    await pausa(1100);
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('.plan', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizar = await planEnPantalla(page);
+    const releidas = { lista: lecturasDesde(desdeActualizar, '/nutrition/plans?').length, version: lecturasDesde(desdeActualizar, `/nutrition/plans/${activa.planId}`).length, objetivo: lecturasDesde(desdeActualizar, '/nutrition/objectives/effective').length };
+    comprobar(
+      'F-66',
+      '«Actualizar» vuelve a leer las tres cosas y conserva lo elegido: el mismo día tipo y la misma comida abierta, que no es la primera',
+      comidasBien(antesDeActualizar.activo?.comidas ?? [], dia2, [dia2.comidas[1].orden]) &&
+        comidasBien(trasActualizar.activo?.comidas ?? [], dia2, [dia2.comidas[1].orden]) &&
+        trasActualizar.activo.dia.opciones.find((o) => o.elegido)?.texto === dia2.nombre &&
+        releidas.lista === 1 &&
+        releidas.version === 1 &&
+        releidas.objetivo === 1 &&
+        P(page).get('dia') === String(dia2.orden) &&
+        P(page).get('comidas') === String(dia2.comidas[1].orden),
+      `antes: ${antesDeActualizar.activo?.comidas.filter((c) => c.abierta).map((c) => c.nombre).join(', ')} · después: ${trasActualizar.activo?.comidas.filter((c) => c.abierta).map((c) => c.nombre).join(', ')} de «${trasActualizar.activo?.dia.opciones.find((o) => o.elegido)?.texto}» · releídas: ${JSON.stringify(releidas)} · ${horaAntes}`,
+    );
+    await salir();
+    await entrar(`${BASE}&dia=9&comidas=7.cena&version=otra`);
+    const conBasura = await planEnPantalla(page);
+    comprobar(
+      'F-66',
+      'Una dirección con valores que el plan no tiene (un día 9, una comida 7, una versión desconocida) no rompe ni muestra un día vacío: se ve el plan activo, en su primer día tipo, con todas las comidas plegadas',
+      conBasura.version === 'activa' && conBasura.activo?.dia?.opciones?.find((o) => o.elegido)?.texto === dia1.nombre && comidasBien(conBasura.activo.comidas, dia1, []) && v.errores.length === 0,
+      `«${conBasura.activo?.dia?.opciones?.find((o) => o.elegido)?.texto}» · ${conBasura.activo?.comidas.filter((c) => c.abierta).length} comidas abiertas`,
+    );
+
+    // ── Todas las comidas abiertas: las opciones lado a lado, la receta y la nota ────────────────────────────────
+    await salir();
+    await entrar(`${BASE}&comidas=${ordenesDe(dia1).join('.')}`);
+    const abierto = await planEnPantalla(page);
+    const almuerzo = abierto.activo?.comidas.find((c) => c.opciones.length === 3);
+    const merienda = abierto.activo?.comidas.find((c) => c.cuenta === '1 opción');
+    const deReceta = abierto.activo?.comidas.flatMap((c) => c.opciones).find((o) => o.receta);
+    const conNota = abierto.activo?.comidas.flatMap((c) => c.opciones).flatMap((o) => o.items).find((i) => i.nota);
+    const recetaDeLaApi = activa.dayTypes.flatMap((x) => x.meals).flatMap((m) => m.options).find((o) => o.recipe);
+    comprobar(
+      'F-60',
+      'Con todas las comidas abiertas, cada una muestra todas sus opciones a la vez, con los ítems que devuelve la API: el alimento a la izquierda y lo indicado a la derecha («150 g · cocido»). Las tres opciones del almuerzo están lado a lado, a la misma altura, y ninguna queda detrás de un «ver la opción 3». Con una sola opción, el título no lleva número',
+      comidasBien(abierto.activo?.comidas ?? [], dia1, ordenesDe(dia1)) &&
+        !!almuerzo &&
+        new Set(almuerzo.opciones.map((o) => o.caja.y)).size === 1 &&
+        new Set(almuerzo.opciones.map((o) => o.caja.x)).size === 3 &&
+        almuerzo.opciones.every((o) => /^Opción [123]: /.test(o.titulo)) &&
+        !!merienda &&
+        !/^Opción/.test(merienda.opciones[0].titulo) &&
+        !/Ver la opción/i.test(abierto.main) &&
+        abierto.activo.todas === 'Plegar todas',
+      `${almuerzo?.nombre}: ${almuerzo?.opciones.map((o) => `${o.titulo} (x ${o.caja.x}, y ${o.caja.y}; ${o.items.length} ítems)`).join(' | ')} · ${merienda?.nombre}: «${merienda?.opciones[0].titulo}»`,
+    );
+    comprobar(
+      'F-61',
+      'Una opción que nació de una receta lo dice con las palabras de BE («Receta «…», versión N» y que lleva los ingredientes de una porción), y sus ítems son los de la API. La nota de un ítem se lee debajo, como la lee el asesorado',
+      !!recetaDeLaApi &&
+        deReceta?.receta === `Receta «${recetaDeLaApi.recipe.name}», versión ${recetaDeLaApi.recipe.versionNumber} · La opción lleva los ingredientes de una porción de la receta.` &&
+        deReceta.items.length === recetaDeLaApi.items.length &&
+        deReceta.items.length > 0 &&
+        conNota?.nota === 'Nota: En crudo, al servir.',
+      `«${deReceta?.receta}» · ${deReceta?.items.map((i) => `${i.nombre} ${i.indicado}`).join('; ')} · «${conNota?.nombre}»: «${conNota?.nota}»`,
+    );
+    const palabras = prohibidas(abierto.main);
+    comprobar(
+      'F-70',
+      'En toda la sección, con todas las comidas abiertas, no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra el contenido (los nombres de las comidas y «se elige una»)',
+      palabras.length === 0 && dia1.comidas.every((c) => abierto.main.includes(c.nombre)) && abierto.main.includes('se elige una'),
+      palabras.length === 0 ? `sin palabras prohibidas en ${abierto.main.length} caracteres` : palabras.join(', '),
+    );
+    const cortes = await cortesMalPuestos(page, TEXTOS_DEL_PLAN);
+
+    // ── La ayuda de la vista ─────────────────────────────────────────────────────────────────────────────────────
+    await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+    const ayuda = await page.evaluate(() => {
+      const x = document.querySelector('dialog.como-se-lee[open]');
+      if (!x) return { titulo: null, renglones: 0, foco: false, texto: '' };
+      return { titulo: x.querySelector('h2').innerText.trim(), renglones: x.querySelectorAll('.como-se-lee__lista > li').length, foco: document.activeElement === x.querySelector('h2'), texto: x.innerText };
+    });
+    const faltasDeLaAyuda = await axe(page);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+    const focoTrasLaAyuda = await page.evaluate(() => document.activeElement?.classList.contains('como-se-lee__boton') ?? false);
+    comprobar(
+      'F-14',
+      '«Plan» tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada cosa que la pantalla escribe, sin palabras de la lista de Nutrición; Escape la cierra y el foco vuelve al botón',
+      ayuda.titulo === 'Cómo se lee el Plan' && ayuda.renglones >= 10 && ayuda.foco && focoTrasLaAyuda && faltasDeLaAyuda.length === 0 && prohibidas(ayuda.texto).length === 0,
+      `«${ayuda.titulo}» · ${ayuda.renglones} renglones · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}${prohibidas(ayuda.texto).length ? ` · ${prohibidas(ayuda.texto).join(', ')}` : ''}`,
+    );
+
+    // ── Accesibilidad y composición ──────────────────────────────────────────────────────────────────────────────
+    const faltasClaro = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasNoche = await axe(page);
+    await ponerTema(page, 'claro');
+    comprobar('F-70', 'axe no encuentra faltas en «Plan» con todas las comidas abiertas, en los dos temas', faltasClaro.length === 0 && faltasNoche.length === 0, `claro: ${faltasClaro.map((f) => f.id).join(', ') || 'sin faltas'} · azul noche: ${faltasNoche.map((f) => f.id).join(', ') || 'sin faltas'}`);
+    const anchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await salir();
+      await entrar(`${BASE}&comidas=${dia1.comidas[1].orden}`);
+      const p = await planEnPantalla(page);
+      const ultima = p.activo?.comidas.at(-1)?.caja;
+      const abiertaAhi = p.activo?.comidas.find((c) => c.abierta);
+      anchos.push({
+        ancho,
+        desborda: !(await sinDesborde(page)),
+        alCostado: !!ultima && p.activo.historial.caja.x >= ultima.x + ultima.ancho,
+        debajo: !!ultima && p.activo.historial.caja.y >= ultima.y + ultima.alto,
+        porFila: abiertaAhi ? new Set(abiertaAhi.opciones.map((o) => o.caja.x)).size : 0,
+        cortes: await cortesMalPuestos(page, TEXTOS_DEL_PLAN),
+        opcionMasAngosta: abiertaAhi ? Math.min(...abiertaAhi.opciones.map((o) => o.caja.ancho)) : 0,
+        alto: await page.evaluate(() => document.documentElement.scrollHeight),
+      });
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    const en = (ancho) => anchos.find((x) => x.ancho === ancho);
+    const todosLosCortes = [...cortes.cortes.map((c) => `1440: ${c}`), ...anchos.flatMap((x) => x.cortes.cortes.map((c) => `${x.ancho}: ${c}`))];
+    const enVariosRenglones = cortes.enVariosRenglones + anchos.reduce((n, x) => n + x.cortes.enVariosRenglones, 0);
+    comprobar(
+      'F-70',
+      'A 1440 px con todas las comidas abiertas, y a 1280, 1024, 768 y 390 con una, ningún renglón del plan empieza con el separador « · » ni deja un número separado de su unidad; la medida tuvo textos de más de un renglón que mirar',
+      todosLosCortes.length === 0 && cortes.textos > 20 && enVariosRenglones > 0,
+      todosLosCortes.length === 0 ? `${cortes.textos} textos a 1440 px · ${enVariosRenglones} en más de un renglón, sumando los cinco anchos` : todosLosCortes.slice(0, 4).join(' | '),
+    );
+    comprobar(
+      'F-70',
+      'El historial sigue al costado a 1280 px y pasa debajo de las comidas a 1024; las opciones se acomodan al ancho de su caja (a 390 px, una por fila) y ninguna queda más angosta de lo que se lee. A 1280, 1024, 768 y 390 px la página no desborda de costado',
+      anchos.every((x) => !x.desborda && x.opcionMasAngosta >= 250) && en(1280).alCostado && !en(1280).debajo && en(1024).debajo && !en(1024).alCostado && en(390).porFila === 1 && en(1280).porFila >= 2,
+      anchos.map((x) => `${x.ancho}: ${x.alto} px de alto, historial ${x.alCostado ? 'al costado' : x.debajo ? 'debajo' : '¿?'}, ${x.porFila} opciones por fila (la más angosta, ${x.opcionMasAngosta} px)${x.desborda ? ' · DESBORDA' : ''}`).join(' · '),
+    );
+
+    // ── Estados que el escenario no tiene, con respuestas simuladas en el navegador ──────────────────────────────
+    // La API y la base no se tocan: lo que se mira es qué hace la pantalla con cada respuesta.
+    const SIN_PLANES = { coincide: (u) => /\/nutrition\/plans\?/.test(u), accion: 'entregar', cuerpo: { data: [], page: { limit: 50, nextCursor: null, hasMore: false } } };
+    const SIN_OBJETIVO = { coincide: (u) => u.includes('/nutrition/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: null } } };
+    const sinNada = await conSimulacion([SIN_PLANES, SIN_OBJETIVO], BASE);
+    await captura(page, v, 'plan-sin-plan-ni-objetivo-simulado-1440-claro');
+    const sinPlan = await conSimulacion([SIN_PLANES], BASE);
+    await captura(page, v, 'plan-sin-plan-simulado-1440-claro');
+    comprobar(
+      'F-68',
+      '(Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece el paso que falta: «Ir a Resumen», y ninguna acción para crear un plan. Sin plan y con objetivo, ofrece «Crear nuevo plan», primero, y «Empezar desde una plantilla». En ningún caso muestra un historial vacío ni un día sin comidas',
+      sinNada.activo === null &&
+        (sinNada.vacio?.texto ?? '').startsWith('Todavía no hay un plan activo.') &&
+        sinNada.vacio.texto.includes('Para planificar, primero definí el objetivo') &&
+        igual(sinNada.vacio.botones, ['Ir a Resumen']) &&
+        sinPlan.activo === null &&
+        (sinPlan.vacio?.texto ?? '').startsWith('Todavía no hay un plan activo.') &&
+        igual(sinPlan.vacio.botones, ['Crear nuevo plan', 'Empezar desde una plantilla']) &&
+        !/Historial/.test(sinPlan.main) &&
+        !/Historial/.test(sinNada.main),
+      `sin objetivo: «${sinNada.vacio?.texto?.slice(0, 110)}» [${sinNada.vacio?.botones.join(' | ')}] · con objetivo: [${sinPlan.vacio?.botones.join(' | ')}]`,
+    );
+    const otroObjetivo = { ...objetivo, versionId: '00000000-0000-4000-8000-0000000000aa', predecessorVersionId: objetivo.versionId, estimatedEnergyRequirement: { value: 2600, unit: 'kcal/day' } };
+    const conOtroObjetivo = await conSimulacion([{ coincide: (u) => u.includes('/nutrition/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: otroObjetivo } } }], BASE);
+    await captura(page, v, 'plan-con-un-objetivo-mas-nuevo-simulado-1440-claro');
+    const sinVigente = await conSimulacion([SIN_OBJETIVO], BASE);
+    await captura(page, v, 'plan-sin-objetivo-vigente-simulado-1440-claro');
+    comprobar(
+      'F-63',
+      '(Respuestas simuladas.) Si hoy rige un objetivo más nuevo que el de la versión que se lee, la tira muestra el de la versión (2.250 kcal, no las 2.600 del más nuevo) y lo dice. Si hoy no hay objetivo vigente, también muestra el de la versión, lo dice, y en lugar de «Crear nueva versión» explica que primero hay que definir el objetivo',
+      conOtroObjetivo.activo?.objetivo.estado === 'listo' &&
+        tiraBien(conOtroObjetivo.activo.objetivo.valores, objetivo) &&
+        conOtroObjetivo.activo.objetivo.nota === 'Es el objetivo con el que se armó esta versión. Hoy rige uno más nuevo.' &&
+        conOtroObjetivo.activo.acciones.includes('Crear nueva versión a partir de esta') &&
+        sinVigente.activo?.objetivo.estado === 'listo' &&
+        tiraBien(sinVigente.activo.objetivo.valores, objetivo) &&
+        sinVigente.activo.objetivo.nota === 'Es el objetivo con el que se armó esta versión. Hoy no hay un objetivo vigente.' &&
+        igual(sinVigente.activo.acciones, ['Guardar como plantilla']) &&
+        (sinVigente.activo.aviso ?? '').startsWith('Para planificar, primero definí el objetivo'),
+      `más nuevo: ${conOtroObjetivo.activo?.objetivo.valores[0]} · «${conOtroObjetivo.activo?.objetivo.nota}» · sin vigente: «${sinVigente.activo?.objetivo.nota}» [${sinVigente.activo?.acciones.join(' | ')}]`,
+    );
+    // La lectura de los objetivos falla: el plan se ve igual, y la tira dice que no se pudo leer.
+    await salir();
+    const FALLA_DE_OBJETIVOS = { coincide: (u) => /\/nutrition\/objectives(\?|$)/.test(u), status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: otroObjetivo } } }, FALLA_DE_OBJETIVOS);
+    await entrar(BASE);
+    const conFallaDeObjetivo = await planEnPantalla(page);
+    await captura(page, v, 'plan-falla-del-objetivo-simulada-1440-claro');
+    v.reglas.splice(v.reglas.indexOf(FALLA_DE_OBJETIVOS), 1);
+    await clic(page, '.plan__objetivo-falla button', 'Reintentar').catch(() => null);
+    await quieto(page, v);
+    const trasReintentar = await planEnPantalla(page);
+    v.reglas.length = 0;
+    comprobar(
+      'F-63',
+      '(Falla simulada.) Si el objetivo de la versión no se puede leer, el plan se ve entero y la tira lo dice, sin ningún número, con «Reintentar»; al reintentar, aparece',
+      conFallaDeObjetivo.activo?.objetivo.estado === 'falla' &&
+        conFallaDeObjetivo.activo.objetivo.valores.length === 0 &&
+        (conFallaDeObjetivo.activo.objetivo.falla ?? '').startsWith('No pudimos leer el objetivo de esta versión.') &&
+        !/\d/.test(conFallaDeObjetivo.activo.objetivo.falla) &&
+        conFallaDeObjetivo.activo.comidas.length === dia1.comidas.length &&
+        trasReintentar.activo?.objetivo.estado === 'listo' &&
+        tiraBien(trasReintentar.activo.objetivo.valores, objetivo),
+      `«${conFallaDeObjetivo.activo?.objetivo.falla}» con ${conFallaDeObjetivo.activo?.comidas.length} comidas a la vista · al reintentar: ${trasReintentar.activo?.objetivo.valores[0]}`,
+    );
+    const conFalla = await conSimulacion([{ coincide: (u) => /\/nutrition\/plans\?/.test(u), status: 503, codigo: 'SERVICE_UNAVAILABLE' }], BASE);
+    comprobar(
+      'F-68',
+      '(Falla simulada.) Si la lista de versiones no se puede leer, la sección dice la falla con su motivo y «Reintentar»: no dice «Todavía no hay un plan activo», que sería presentar una falla como una ausencia',
+      !conFalla.esta && !!conFalla.falla && /Reintentar/.test(conFalla.falla) && !/Todavía no hay un plan activo/.test(conFalla.main),
+      `«${(conFalla.falla ?? '').slice(0, 140)}»`,
+    );
+    // Siete días tipo de nombre largo: los segmentos bajan de renglón, no se salen.
+    const sieteDias = { ...activa, dayTypes: Array.from({ length: 7 }, (_, i) => ({ ...activa.dayTypes[0], dayTypeId: `00000000-0000-4000-8000-00000000000${i + 1}`, order: i + 1, label: `Día de entrenamiento de fuerza número ${i + 1}, con merienda` })) };
+    await page.setViewport({ width: 1024, height: 900 });
+    const conSiete = await conSimulacion([{ coincide: (u) => u.includes(`/nutrition/plans/${activa.planId}`), accion: 'entregar', cuerpo: { data: sieteDias } }], `${BASE}&dia=6`);
+    const sieteDesborda = !(await sinDesborde(page));
+    await captura(page, v, 'plan-siete-dias-tipo-simulado-1024-claro');
+    await page.setViewport({ width: 1440, height: 900 });
+    const cajasDeLosSiete = conSiete.activo?.dia?.opciones ?? [];
+    comprobar(
+      'F-58',
+      '(Respuesta simulada.) Con siete días tipo de nombre largo, a 1024 px, los siete segmentos están enteros dentro de la pantalla, en más de un renglón, y la página no desborda; el elegido es el que pide la dirección (el sexto)',
+      cajasDeLosSiete.length === 7 && cajasDeLosSiete.every((c) => c.caja.x >= 0 && c.caja.x + c.caja.ancho <= 1024) && new Set(cajasDeLosSiete.map((c) => c.caja.y)).size > 1 && !sieteDesborda && cajasDeLosSiete.findIndex((c) => c.elegido) === 5,
+      `${cajasDeLosSiete.length} segmentos en ${new Set(cajasDeLosSiete.map((c) => c.caja.y)).size} renglones; el más ancho termina a los ${Math.max(0, ...cajasDeLosSiete.map((c) => c.caja.x + c.caja.ancho))} px${sieteDesborda ? ' · DESBORDA' : ''}`,
+    );
+    const unSoloDia = { ...activa, dayTypes: [activa.dayTypes[0]] };
+    const conUnDia = await conSimulacion([{ coincide: (u) => u.includes(`/nutrition/plans/${activa.planId}`), accion: 'entregar', cuerpo: { data: unSoloDia } }], BASE);
+    comprobar(
+      'F-58',
+      '(Respuesta simulada.) Con un solo día tipo no hay nada que elegir: la pantalla dice su nombre, sin control',
+      conUnDia.activo?.dia?.clase === 'unico' && conUnDia.activo.dia.texto === `Día tipo ${activa.dayTypes[0].label}` && conUnDia.activo.dia.opciones === null,
+      `«${conUnDia.activo?.dia?.texto}»`,
+    );
+
+    // ── Las plantillas ───────────────────────────────────────────────────────────────────────────────────────────
+    await salir();
+    await entrar(BASE);
+    const NOMBRE_DE_LA_PLANTILLA = `Plan del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    const antesDeGuardar = v.urls.length;
+    await clic(page, '[data-guardar-plantilla]', 'Guardar como plantilla');
+    await page.waitForSelector('dialog[open] input', { timeout: 10_000 });
+    await page.type('dialog[open] input', NOMBRE_DE_LA_PLANTILLA);
+    await clic(page, 'dialog[open] .acciones button', 'Guardar la plantilla');
+    const avisoDeGuardada = await esperarAviso('Plantilla guardada.');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const guardadas = escriturasDesde(antesDeGuardar, '/nutrition/plan-templates').length;
+    const abrirPlantillas = async () => {
+      await clic(page, '[data-empezar-desde-plantilla]', 'Empezar desde una plantilla');
+      await page.waitForFunction(() => [...document.querySelectorAll('dialog[open] h2')].some((h) => h.innerText.trim() === 'Empezar desde una plantilla'), { timeout: 10_000 }).catch(() => {});
+      await quieto(page, v);
+      return plantillasEnPantalla(page);
+    };
+    const cerrarPlantillas = async () => {
+      await clic(page, 'dialog[open] .acciones button', 'Cancelar').catch(() => null);
+      await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    };
+    const antesDeAbrir = v.urls.length;
+    const lasPlantillas = await abrirPlantillas();
+    const leidasAlAbrir = lecturasDesde(antesDeAbrir, '/nutrition/plan-templates').length;
+    await captura(page, v, 'plan-empezar-desde-una-plantilla-1440-claro');
+    await cerrarPlantillas();
+    const laGuardada = lasPlantillas?.plantillas.find((p) => p.nombre === NOMBRE_DE_LA_PLANTILLA);
+    const comidasDelPlan = activa.dayTypes.reduce((n, x) => n + x.meals.length, 0);
+    comprobar(
+      'F-67',
+      '«Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre un diálogo que recién entonces lee las plantillas, una vez: está la que se acaba de guardar, con sus comidas contadas a mano y «Sin cantidades»; ninguna viene elegida, y crear el borrador está apagado hasta elegir',
+      guardadas === 1 &&
+        avisoDeGuardada &&
+        leidasAlAbrir === 1 &&
+        lasPlantillas?.falla === null &&
+        !!laGuardada &&
+        laGuardada.detalle === `${comidasDelPlan} comidas · Sin cantidades` &&
+        lasPlantillas.plantillas.every((p) => !p.elegida) &&
+        lasPlantillas.confirmar.texto === 'Crear el borrador desde esta plantilla' &&
+        lasPlantillas.confirmar.apagado,
+      `escrituras: ${guardadas} · aviso de guardada: ${avisoDeGuardada ? 'sí' : 'no'} · lecturas al abrir: ${leidasAlAbrir} · «${laGuardada?.nombre}»: ${laGuardada?.detalle} · elegidas: ${lasPlantillas?.plantillas.filter((p) => p.elegida).length} · «${lasPlantillas?.confirmar.texto}» ${lasPlantillas?.confirmar.apagado ? 'apagado' : 'encendido'}`,
+    );
+    // La lectura de las plantillas falla, y después devuelve una lista vacía (las dos, simuladas).
+    const FALLA_DE_PLANTILLAS = { coincide: (u) => u.includes('/nutrition/plan-templates'), status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+    v.reglas.push(FALLA_DE_PLANTILLAS);
+    const conFallaDePlantillas = await abrirPlantillas();
+    await captura(page, v, 'plan-plantillas-que-no-se-leen-simulado-1440-claro');
+    v.reglas.length = 0;
+    await clic(page, 'dialog[open] .estado-de-grafico--error button', 'Reintentar').catch(() => null);
+    await quieto(page, v);
+    const trasReintentarPlantillas = await plantillasEnPantalla(page);
+    await cerrarPlantillas();
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/plan-templates'), accion: 'entregar', cuerpo: { data: [], page: { limit: 50, nextCursor: null, hasMore: false } } });
+    const sinPlantillas = await abrirPlantillas();
+    v.reglas.length = 0;
+    await cerrarPlantillas();
+    comprobar(
+      'F-67',
+      '(Respuestas simuladas.) Si las plantillas no se pueden leer, el diálogo dice la falla con su motivo y «Reintentar», y no «No tenés plantillas activas»; al reintentar, la lista aparece. Con la lista vacía de verdad, dice que no hay plantillas activas y dónde se arman',
+      !!conFallaDePlantillas?.falla &&
+        conFallaDePlantillas.falla.startsWith('No pudimos leer tus plantillas') &&
+        conFallaDePlantillas.reintentar &&
+        !/No tenés plantillas/.test(conFallaDePlantillas.texto) &&
+        conFallaDePlantillas.plantillas.length === 0 &&
+        trasReintentarPlantillas?.plantillas.some((p) => p.nombre === NOMBRE_DE_LA_PLANTILLA) &&
+        sinPlantillas?.falla === null &&
+        /No tenés plantillas activas para aplicar\./.test(sinPlantillas.texto) &&
+        /Guardar como plantilla/.test(sinPlantillas.texto),
+      `con la falla: «${(conFallaDePlantillas?.falla ?? '').slice(0, 110)}» · al reintentar: ${trasReintentarPlantillas?.plantillas.length} plantillas · vacía: «${(sinPlantillas?.texto ?? '').slice(28, 150)}»`,
+    );
+    // Crear el borrador desde la plantilla falla (simulado): el motivo se dice dentro del diálogo, que sigue abierto.
+    await abrirPlantillas();
+    await clic(page, 'dialog[open] .plantilla-para-empezar', NOMBRE_DE_LA_PLANTILLA);
+    const elegidaUna = await plantillasEnPantalla(page);
+    const FALLA_AL_CREAR = { coincide: (u) => u.endsWith('/nutrition/plans'), status: 503, codigo: 'SERVICE_UNAVAILABLE' };
+    v.reglas.push(FALLA_AL_CREAR);
+    await clic(page, 'dialog[open] .acciones button', 'Crear el borrador desde esta plantilla');
+    await page.waitForSelector('dialog[open] .aviso--error', { timeout: 15_000 }).catch(() => {});
+    await quieto(page, v);
+    const conFallaAlCrear = await plantillasEnPantalla(page);
+    await captura(page, v, 'plan-falla-al-crear-desde-la-plantilla-simulada-1440-claro');
+    v.reglas.length = 0;
+    await cerrarPlantillas();
+    const trasCancelar = await planEnPantalla(page);
+    comprobar(
+      'F-67',
+      '(Falla simulada.) Elegida una plantilla, crear el borrador se enciende. Si esa escritura falla, el motivo se dice dentro del diálogo, que sigue abierto con la plantilla elegida; al cancelar, el plan activo sigue como estaba, sin selector de versión',
+      elegidaUna?.plantillas.filter((p) => p.elegida).length === 1 &&
+        !elegidaUna.confirmar.apagado &&
+        !!conFallaAlCrear?.error &&
+        conFallaAlCrear.plantillas.find((p) => p.elegida)?.nombre === NOMBRE_DE_LA_PLANTILLA &&
+        trasCancelar.selector === null &&
+        trasCancelar.version === 'activa',
+      `«${conFallaAlCrear?.error}» · elegida: ${conFallaAlCrear?.plantillas.find((p) => p.elegida)?.nombre}`,
+    );
+
+    // ── Crear una versión nueva: aparece el selector ─────────────────────────────────────────────────────────────
+    const antesDeCrear = v.urls.length;
+    await clic(page, '[data-crear-version]', 'Crear nueva versión a partir de esta');
+    const avisoDeCreada = await esperarAviso('Borrador creado');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const conBorrador = await planEnPantalla(page);
+    const creadas = escriturasDesde(antesDeCrear, '/nutrition/plans').length;
+    const trasCrear = await leerTodo();
+    const elBorrador = trasCrear.lista.find((x) => x.state === 'DRAFT');
+    comprobar(
+      'F-65',
+      '«Crear nueva versión a partir de esta» hace una sola escritura y deja una versión en preparación. Arriba aparece el selector de versión, con «En preparación» elegida y, al lado, «El asesorado no la ve.»; la activa figura con su número («2 · activa»). Se ve el editor y no el plan activo, y ya no se ofrece crear otra versión',
+      creadas === 1 &&
+        !!elBorrador &&
+        elBorrador.predecessorPlanId === activa.planId &&
+        avisoDeCreada &&
+        conBorrador.version === 'preparacion' &&
+        conBorrador.selector?.rotulo === 'Versión' &&
+        igual(conBorrador.selector.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['2 · activa', false]]) &&
+        conBorrador.selector.nota === 'El asesorado no la ve.' &&
+        conBorrador.editor.aLaVista &&
+        conBorrador.activo === null &&
+        !conBorrador.botones.some((b) => /Crear nueva versión|Crear nuevo plan|Empezar desde una plantilla/.test(b)) &&
+        P(page).get('version') === null,
+      `escrituras: ${creadas} · aviso «Borrador creado»: ${avisoDeCreada ? 'sí' : 'no'} · ${conBorrador.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${conBorrador.selector?.nota}»`,
+    );
+
+    // ── El editor recompuesto (WP-ESCRITORIO-AREAS, parte 7, tramos 2 y 3; maquetas 17 y 18) ─────────────────────
+    // La versión en preparación recién creada es una copia de la activa: dos días tipo, y una comida con tres opciones,
+    // una de ellas de receta. Lo que el editor tiene que decir se escribe a mano con lo que devuelve la API: no se usa
+    // el módulo del dominio que arma la pantalla (`editor-del-plan-de-nutricion.ts`).
+    const EDITOR = '.plan__preparacion .editor-del-plan';
+    const ID_DEL_BORRADOR = elBorrador.planId;
+    const porOrden = (xs) => [...xs].sort((a, b) => a.order - b.order);
+    const cuentaDe = (n) => (n === 0 ? 'Sin opciones' : n === 1 ? '1 opción' : `${n} opciones · se elige una`);
+    const UNIDAD_DEL_CAMPO = { g: 'g', ml: 'ml', unit: 'unidad' };
+    const ESTADO_DEL_CAMPO = { RAW: 'Crudo', COOKED: 'Cocido', AS_PURCHASED: 'Tal como se adquiere' };
+    const conComa = (n) => String(n).replace('.', ',');
+    const estructuraDe = (version) =>
+      porOrden(version.dayTypes).map((dt) => ({
+        nombre: dt.label,
+        comidas: porOrden(dt.meals).map((m) => ({ nombre: m.label, opciones: porOrden(m.options).map((o) => ({ nombre: o.label, receta: o.recipe ?? null, items: porOrden(o.items) })) })),
+      }));
+    /** Lo que importa de una estructura para compararla: nombres, de qué receta sale cada opción y los tres datos de cada ítem. */
+    const resumenDe = (dias) =>
+      dias.map((x) => [x.nombre, x.comidas.map((m) => [m.nombre, m.opciones.map((o) => [o.nombre, o.receta ? o.receta.recipeVersionId : null, o.items.map((i) => [i.name, i.quantity ? `${i.quantity.value} ${i.quantity.unit}` : null, i.preparationState ?? null])])])]);
+    const leerElBorrador = async () => (await leerApi(v, `/nutrition/plans/${ID_DEL_BORRADOR}`)).data;
+    /** Lo que el editor tiene a la vista. */
+    const elEditor = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+        const raiz = document.querySelector(s);
+        if (!raiz) return null;
+        const campo = raiz.querySelector('.nombre-a-pedido input');
+        const panel = raiz.querySelector('.menu-de-acciones[data-abierto] .menu-de-acciones__lista');
+        return {
+          estado: t(raiz.querySelector('.editor-del-plan__estado')),
+          acciones: [...raiz.querySelectorAll('.editor-del-plan__acciones > button, .editor-del-plan__acciones > .menu-de-acciones > button')].map((b) => ({
+            nombre: b.getAttribute('aria-label') ?? t(b),
+            // «Apagado» es que no se puede usar: deshabilitado, o apagado conservando el foco (`aria-disabled`).
+            apagado: b.disabled || b.getAttribute('aria-disabled') === 'true',
+            deshabilitado: b.disabled,
+          })),
+          dias: [...raiz.querySelectorAll('[data-dia-tipo] .segmento')].map((x) => ({ texto: t(x), elegido: x.querySelector('input').checked })),
+          sinComidas: t(raiz.querySelector('.comidas-del-editor > .nota')),
+          objetivo: [...raiz.querySelectorAll('.plan__objetivo .tira-del-objetivo > div')].map(t),
+          comidas: [...raiz.querySelectorAll('.comida-del-editor')].map((c) => {
+            const o = c.querySelector('.opcion-del-editor');
+            const subir = [...c.querySelectorAll('.comida-del-editor__acciones > button')].find((b) => t(b) === 'Subir');
+            return {
+              posicion: Number(c.dataset.comida),
+              abierta: c.hasAttribute('data-abierta'),
+              expandida: c.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+              nombre: t(c.querySelector('.comida-del-plan__nombre')),
+              resumen: t(c.querySelector('[data-resumen]')),
+              avisos: t(c.querySelector('[data-avisos]')),
+              subirApagado: subir ? subir.disabled : null,
+              sinOpciones: t(c.querySelector('.comida-del-editor__opciones > .nota')),
+              pestanas: [...c.querySelectorAll('.pestana-de-opcion')].map((p) => ({ texto: t(p), elegida: p.querySelector('input').checked, receta: p.hasAttribute('data-receta') })),
+              cortadas: [...c.querySelectorAll('.pestana-de-opcion > span')].map((x) => x.scrollWidth > x.clientWidth + 1),
+              opcion: o
+                ? {
+                    numero: Number(o.dataset.opcion),
+                    columnas: [...o.querySelectorAll('.items-del-editor thead th')].map(t),
+                    items: [...o.querySelectorAll('tr.item-del-editor')].map((tr) => {
+                      const cantidad = tr.querySelector('input[id$="-cantidad"]');
+                      const unidad = tr.querySelector('select[id$="-unidad"]');
+                      const preparacion = tr.querySelector('select[id$="-preparacion"]');
+                      const error = tr.querySelector('.campo__error');
+                      return {
+                        nombre: t(tr.querySelector('th')),
+                        cantidad: cantidad.value,
+                        unidad: unidad.selectedOptions[0]?.textContent.trim() ?? null,
+                        unidadApagada: unidad.disabled,
+                        preparacion: preparacion.selectedOptions[0]?.textContent.trim() ?? null,
+                        nombres: [cantidad, unidad, preparacion, tr.querySelector('.item-del-editor__boton-de-quitar')].map((e) => e.getAttribute('aria-label')),
+                        // El error lleva delante un símbolo de aviso, que no se lee en voz alta: se compara el texto.
+                        error: error ? t(error).replace('⚠', '').trim() : null,
+                        invalida: cantidad.getAttribute('aria-invalid'),
+                      };
+                    }),
+                    receta: t(o.querySelector('.opcion-de-receta .insignia')),
+                    ingredientes: [...o.querySelectorAll('.opcion-de-receta li')].map(t),
+                    sinItems: t(o.querySelector(':scope > p.nota')),
+                    notasDeLaReceta: [...o.querySelectorAll('.opcion-de-receta > .nota')].map(t),
+                    pie: [...o.querySelectorAll('.opcion-del-editor__pie button')].map(t),
+                  }
+                : null,
+            };
+          }),
+          campos: [...raiz.querySelectorAll('input:not([type="radio"]), select, textarea')].filter(aLaVista).map((e) => e.id),
+          nombreAbierto: campo ? { id: campo.id, valor: campo.value, conFoco: document.activeElement === campo, seleccionado: campo.value.length > 0 && campo.selectionStart === 0 && campo.selectionEnd === campo.value.length } : null,
+          menu: panel ? [...panel.querySelectorAll(':scope > li')].map((li) => ({ texto: t(li.querySelector('button')), apagada: li.querySelector('button').disabled, motivo: t(li.querySelector('.menu-de-acciones__motivo')) })) : null,
+          aviso: t(raiz.querySelector(':scope > .aviso--error p')),
+          problemas: [...raiz.querySelectorAll('.problemas-del-plan li')].map((li) => ({ texto: t(li), esBoton: !!li.querySelector('button[data-problema]') })),
+          foco: document.activeElement?.id || null,
+          alto: document.documentElement.scrollHeight,
+          texto: t(raiz),
+        };
+      }, EDITOR);
+    const enElEditor = async (selector, contiene) => {
+      await clic(page, `${EDITOR} ${selector}`, contiene);
+      await pausa(250);
+    };
+    /** Abre o pliega una comida del día tipo que se mira, por su posición (desde uno). */
+    const alternarEnElEditor = async (n) => {
+      await page.click(`${EDITOR} .comida-del-editor[data-comida="${n}"] .comida-del-plan__boton`);
+      await pausa(250);
+    };
+    const abrirMenuDelEditor = async (donde) => {
+      await page.click(`${EDITOR} ${donde} .menu-de-acciones__boton`);
+      await page.waitForSelector(`${EDITOR} ${donde} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, { timeout: 5_000 }).catch(() => {});
+    };
+    const elegirDelMenu = async (texto) => {
+      await clic(page, `${EDITOR} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, texto);
+      await pausa(250);
+    };
+    /** El campo de un nombre recién abierto tiene el foco y el texto seleccionado: lo que se escribe lo reemplaza. */
+    const escribirElNombre = async (texto) => {
+      await page.keyboard.type(texto);
+      await page.keyboard.press('Enter');
+      await pausa(250);
+    };
+    const elegirDiaDelEditor = (nombre) => enElEditor('[data-dia-tipo] .segmento', nombre);
+    const tocarAccionDelEditor = (texto) => enElEditor('.editor-del-plan__acciones > button', texto);
+    /** Las escrituras sobre la versión en preparación, por lo que hacen: guardar (PATCH), validar y activar. */
+    const escriturasDelBorrador = (desde) => {
+      const todas = v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(`/nutrition/plans/${ID_DEL_BORRADOR}`));
+      return { guardar: todas.filter((u) => u.startsWith('PATCH ')).length, validar: todas.filter((u) => u.endsWith('/validate')).length, activar: todas.filter((u) => u.endsWith('/activate')).length };
+    };
+    const pedidosDesde = (desde) => v.urls.slice(desde).filter((u) => !u.startsWith('OPTIONS ')).length;
+    const esperarGuardado = async () => {
+      await page.waitForFunction((s) => document.querySelector(`${s} .editor-del-plan__estado`)?.innerText.trim() === 'Guardado', { timeout: 40_000 }, EDITOR).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+    };
+    const sinMotivo = (texto) => ({ texto, apagada: false, motivo: null });
+
+    const DB = estructuraDe(await leerElBorrador());
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const alEntrarAlEditor = await elEditor();
+    await captura(page, v, 'editor-al-entrar-1440-claro');
+    comprobar(
+      'F-89',
+      'La versión en preparación se abre con un día tipo a la vista y sus comidas plegadas: cada una, en un renglón, con su nombre y cuántas opciones tiene, como los da la API. No hay ningún campo a la vista. Arriba, el estado del guardado («Guardado») y, en este orden, el menú de la versión, «Validar plan», «Activar plan» y «Guardar cambios», apagado porque no hay nada que guardar (apagado, no deshabilitado: conserva el foco). El objetivo del día es el de la API. La página entera mide menos de 1.000 px a 1440 (medía 9.045)',
+      !!alEntrarAlEditor &&
+        DB.length === 2 &&
+        igual(alEntrarAlEditor.dias, DB.map((x, i) => ({ texto: x.nombre, elegido: i === 0 }))) &&
+        igual(alEntrarAlEditor.comidas.map((c) => [c.posicion, c.nombre, c.resumen, c.abierta, c.expandida, c.avisos]), DB[0].comidas.map((m, j) => [j + 1, m.nombre, cuentaDe(m.opciones.length), false, 'false', null])) &&
+        alEntrarAlEditor.campos.length === 0 &&
+        alEntrarAlEditor.nombreAbierto === null &&
+        alEntrarAlEditor.estado === 'Guardado' &&
+        igual(alEntrarAlEditor.acciones, [
+          { nombre: 'Más acciones de esta versión', apagado: false, deshabilitado: false },
+          { nombre: 'Validar plan', apagado: false, deshabilitado: false },
+          { nombre: 'Activar plan', apagado: false, deshabilitado: false },
+          { nombre: 'Guardar cambios', apagado: true, deshabilitado: false },
+        ]) &&
+        tiraBien(alEntrarAlEditor.objetivo, trasCrear.objetivo) &&
+        alEntrarAlEditor.alto <= 1000 &&
+        ['dia', 'comidas'].every((k) => P(page).get(k) === null),
+      `${alEntrarAlEditor?.alto} px · ${alEntrarAlEditor?.dias.map((x) => `${x.texto}${x.elegido ? ' (elegido)' : ''}`).join(' | ')} · ${alEntrarAlEditor?.comidas.map((c) => `${c.nombre}: ${c.resumen}`).join(' | ')} · campos a la vista: ${alEntrarAlEditor?.campos.length} · «${alEntrarAlEditor?.estado}» · ${alEntrarAlEditor?.acciones.map((a) => `${a.nombre}${a.apagado ? ' (apagado)' : ''}`).join(' | ')}`,
+    );
+
+    // El día tipo que se mira y las comidas abiertas: en la dirección.
+    const antesDeElegirElDia = v.urls.length;
+    await elegirDiaDelEditor(DB[1].nombre);
+    const enElSegundoDia = await elEditor();
+    const diaEnLaDireccionDelEditor = P(page).get('dia');
+    await alternarEnElEditor(2);
+    const conUnaComidaAbierta = await elEditor();
+    const comidasEnLaDireccionDelEditor = P(page).get('comidas');
+    const pedidosAlElegirElDia = pedidosDesde(antesDeElegirElDia);
+    const antesDeActualizarElEditor = v.urls.length;
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    for (let i = 0; i < 100 && lecturasDesde(antesDeActualizarElEditor, `/nutrition/plans/${ID_DEL_BORRADOR}`).length === 0; i++) await pausa(100);
+    await quieto(page, v);
+    await page.waitForSelector(`${EDITOR} .comida-del-editor`, { timeout: 30_000 }).catch(() => {});
+    const trasActualizarElEditor = await elEditor();
+    const direccionTrasActualizar = [P(page).get('dia'), P(page).get('comidas')];
+    await elegirDiaDelEditor(DB[0].nombre);
+    const deVueltaEnElPrimerDia = await elEditor();
+    comprobar(
+      'F-90',
+      'El día tipo que se mira y las comidas abiertas viven en la dirección, por su posición: elegir el segundo día deja `dia=2` y muestra sus comidas (las de la API), plegadas; abrir la segunda deja `comidas=2`. Ninguna de las dos cosas le pide nada a BE. «Actualizar» vuelve a leer la versión y deja a la vista el mismo día y la misma comida abierta. Al volver al primer día, la dirección queda limpia y no hay ninguna comida abierta',
+      DB[1].comidas.length >= 3 &&
+        diaEnLaDireccionDelEditor === '2' &&
+        igual(enElSegundoDia?.dias.map((x) => x.elegido), [false, true]) &&
+        igual(enElSegundoDia.comidas.map((c) => [c.nombre, c.resumen, c.abierta]), DB[1].comidas.map((m) => [m.nombre, cuentaDe(m.opciones.length), false])) &&
+        comidasEnLaDireccionDelEditor === '2' &&
+        igual(conUnaComidaAbierta?.comidas.map((c) => [c.abierta, c.expandida]), DB[1].comidas.map((_, j) => [j === 1, String(j === 1)])) &&
+        pedidosAlElegirElDia === 0 &&
+        lecturasDesde(antesDeActualizarElEditor, `/nutrition/plans/${ID_DEL_BORRADOR}`).length >= 1 &&
+        igual(direccionTrasActualizar, ['2', '2']) &&
+        igual(trasActualizarElEditor?.dias.map((x) => x.elegido), [false, true]) &&
+        igual(trasActualizarElEditor.comidas.map((c) => c.abierta), DB[1].comidas.map((_, j) => j === 1)) &&
+        ['dia', 'comidas'].every((k) => P(page).get(k) === null) &&
+        igual(deVueltaEnElPrimerDia?.dias.map((x) => x.elegido), [true, false]) &&
+        deVueltaEnElPrimerDia.comidas.every((c) => !c.abierta),
+      `dia=${diaEnLaDireccionDelEditor} · comidas=${comidasEnLaDireccionDelEditor} · pedidos al elegir: ${pedidosAlElegirElDia} · tras «Actualizar»: dia=${direccionTrasActualizar[0]}, comidas=${direccionTrasActualizar[1]}, abiertas: ${trasActualizarElEditor?.comidas.filter((c) => c.abierta).map((c) => c.nombre).join(', ')} · de vuelta en el primero: ${deVueltaEnElPrimerDia?.comidas.filter((c) => c.abierta).length} abiertas`,
+    );
+
+    // Una comida abierta: las opciones en pestañas y los ítems en una tabla; la de receta, en lectura.
+    const jRec = DB[0].comidas.findIndex((m) => m.opciones.length >= 2 && !m.opciones[0].receta && m.opciones.some((o) => o.receta));
+    if (jRec < 0) throw new Error('el plan descartable no tiene una comida con varias opciones y una de ellas de receta');
+    const M = DB[0].comidas[jRec];
+    const kRec = M.opciones.findIndex((o) => o.receta);
+    const COMIDA = `.comida-del-editor[data-comida="${jRec + 1}"]`;
+    const antesDeMirarLaComida = v.urls.length;
+    await alternarEnElEditor(jRec + 1);
+    const conLaTabla = await elEditor();
+    await captura(page, v, 'editor-una-comida-abierta-1440-claro');
+    await enElEditor(`${COMIDA} .pestana-de-opcion`, `${kRec + 1} · ${M.opciones[kRec].nombre}`);
+    const conLaReceta = await elEditor();
+    await captura(page, v, 'editor-una-opcion-de-receta-1440-claro');
+    await enElEditor(`${COMIDA} .pestana-de-opcion`, `1 · ${M.opciones[0].nombre}`);
+    const pedidosAlMirarLaComida = pedidosDesde(antesDeMirarLaComida);
+    const filasEsperadas = M.opciones[0].items.map((i) => ({
+      nombre: i.name,
+      cantidad: i.quantity ? conComa(i.quantity.value) : '',
+      unidad: UNIDAD_DEL_CAMPO[i.quantity?.unit ?? 'g'],
+      unidadApagada: !i.quantity,
+      preparacion: i.preparationState ? ESTADO_DEL_CAMPO[i.preparationState] : 'Sin indicar',
+      nombres: [`Cantidad de ${i.name}`, `Unidad de ${i.name}`, `Estado de preparación de ${i.name}`, `Quitar ${i.name}`],
+      error: null,
+      invalida: null,
+    }));
+    const laReceta = M.opciones[kRec].receta;
+    const ingredientesEsperados = M.opciones[kRec].items.map((i) => [i.name, ...(i.quantity ? [`${conComa(i.quantity.value)} ${UNIDAD_DEL_CAMPO[i.quantity.unit]}`] : []), ...(i.preparationState ? [ESTADO_DEL_CAMPO[i.preparationState].toLowerCase()] : [])].join(' · '));
+    comprobar(
+      'F-91',
+      'Abrir una comida muestra sus opciones en pestañas («N · nombre», y la de receta marcada), con la primera elegida, y los ítems de esa opción en una tabla: alimento, cantidad, unidad y estado de preparación, con los valores de la API. Cada campo dice de qué alimento es en su nombre accesible. La pestaña de la receta se lee y no se edita: la receta con su versión y los ingredientes de una porción, sin campos ni «Agregar ítem». Mirar no le pide nada a BE ni ensucia la versión',
+      igual(conLaTabla?.comidas[jRec].pestanas, M.opciones.map((o, k) => ({ texto: `${k + 1} · ${o.nombre}`, elegida: k === 0, receta: !!o.receta }))) &&
+        conLaTabla.comidas[jRec].opcion?.numero === 1 &&
+        igual(conLaTabla.comidas[jRec].opcion.columnas, ['Alimento', 'Cantidad', 'Unidad', 'Estado de preparación', 'Quitar']) &&
+        filasEsperadas.length >= 2 &&
+        igual(conLaTabla.comidas[jRec].opcion.items, filasEsperadas) &&
+        igual(conLaTabla.comidas[jRec].opcion.pie, ['Agregar ítem', 'Cambiar el nombre', 'Quitar opción 1']) &&
+        conLaTabla.comidas[jRec].subirApagado === (jRec === 0) &&
+        conLaTabla.comidas.every((c, j) => c.abierta === (j === jRec)) &&
+        igual(conLaReceta?.comidas[jRec].pestanas.map((p) => p.elegida), M.opciones.map((_, k) => k === kRec)) &&
+        conLaReceta.comidas[jRec].opcion?.numero === kRec + 1 &&
+        conLaReceta.comidas[jRec].opcion.receta === `Receta «${laReceta.name}», versión ${laReceta.versionNumber}` &&
+        ingredientesEsperados.length >= 1 &&
+        igual(conLaReceta.comidas[jRec].opcion.ingredientes, ingredientesEsperados) &&
+        conLaReceta.comidas[jRec].opcion.items.length === 0 &&
+        igual(conLaReceta.comidas[jRec].opcion.pie, ['Cambiar el nombre', `Quitar opción ${kRec + 1}`]) &&
+        conLaReceta.campos.length === 0 &&
+        conLaReceta.estado === 'Guardado' &&
+        pedidosAlMirarLaComida === 0,
+      `${M.nombre}: ${conLaTabla?.comidas[jRec].pestanas.map((p) => `${p.texto}${p.receta ? ' (receta)' : ''}`).join(' | ')} · ${conLaTabla?.comidas[jRec].opcion?.items.map((i) => `${i.nombre}: ${i.cantidad} ${i.unidad}, ${i.preparacion}`).join(' | ')} · la de receta: «${conLaReceta?.comidas[jRec].opcion?.receta}», ${conLaReceta?.comidas[jRec].opcion?.ingredientes.join(' | ')} · campos en la de receta: ${conLaReceta?.campos.length} · pedidos: ${pedidosAlMirarLaComida}`,
+    );
+
+    // Los nombres se cambian a pedido: el de una comida, el de una opción y el de un día tipo.
+    const NOMBRE_DE_LA_COMIDA = `${M.nombre} del recorrido`;
+    const NOMBRE_DE_LA_OPCION = `${M.opciones[0].nombre} (ajustada)`;
+    const NOMBRE_DEL_DIA = `${DB[1].nombre} (ajustado)`;
+    const antesDeLosNombres = v.urls.length;
+    await abrirMenuDelEditor('.editor-del-plan__acciones');
+    const menuDeLaVersionConReceta = (await elEditor())?.menu;
+    await captura(page, v, 'editor-el-menu-de-la-version-con-una-receta-1440-claro');
+    await page.keyboard.press('Escape');
+    await pausa(200);
+    const menuTrasEscape = (await elEditor())?.menu;
+    const focoTrasEscape = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? null);
+    await abrirMenuDelEditor(`${COMIDA} .comida-del-editor__acciones`);
+    const menuDeLaComida = (await elEditor())?.menu;
+    await captura(page, v, 'editor-el-menu-de-una-comida-1440-claro');
+    await elegirDelMenu('Cambiar el nombre');
+    const campoDeLaComida = (await elEditor())?.nombreAbierto;
+    await captura(page, v, 'editor-el-nombre-de-una-comida-1440-claro');
+    await escribirElNombre(NOMBRE_DE_LA_COMIDA);
+    const trasNombrarLaComida = await elEditor();
+    await enElEditor(`${COMIDA} .opcion-del-editor__pie button`, 'Cambiar el nombre');
+    const campoDeLaOpcion = (await elEditor())?.nombreAbierto;
+    await escribirElNombre(NOMBRE_DE_LA_OPCION);
+    const trasNombrarLaOpcion = await elEditor();
+    // El día tipo que se renombra es el segundo: al primero se lo busca por su nombre más adelante.
+    await elegirDiaDelEditor(DB[1].nombre);
+    await abrirMenuDelEditor('.editor-del-plan__dia');
+    const menuDelDia = (await elEditor())?.menu;
+    await elegirDelMenu('Cambiar el nombre');
+    const campoDelDia = (await elEditor())?.nombreAbierto;
+    await escribirElNombre(NOMBRE_DEL_DIA);
+    const trasNombrarElDia = await elEditor();
+    const pedidosAlNombrar = pedidosDesde(antesDeLosNombres);
+    comprobar(
+      'F-92',
+      'Los nombres se cambian a pedido. El menú «Más» de una comida ofrece «Cambiar el nombre», «Guardar como habitual» y «Quitar comida»; como esa comida tiene una opción de receta, «Guardar como habitual» está apagada y dice por qué. «Cambiar el nombre» abre el campo en el lugar, con el foco y el nombre seleccionado: lo que se escribe lo reemplaza, y Enter lo cierra. Lo mismo con la opción (la pestaña pasa a decir el nombre nuevo) y con el día tipo, desde su menú. Nada de esto le pide algo a BE; la versión queda con «Cambios sin guardar». El menú de la versión tiene una sola acción, «Guardar como plantilla», que con una opción de receta en el plan está apagada y dice por qué; Escape lo cierra y devuelve el foco a su botón',
+      menuDeLaVersionConReceta?.length === 1 &&
+        menuDeLaVersionConReceta[0].texto === 'Guardar como plantilla' &&
+        menuDeLaVersionConReceta[0].apagada &&
+        /^Las opciones que vienen de una receta/.test(menuDeLaVersionConReceta[0].motivo ?? '') &&
+        menuTrasEscape === null &&
+        focoTrasEscape === 'Más acciones de esta versión' &&
+        menuDeLaComida?.length === 3 &&
+        igual(menuDeLaComida[0], sinMotivo('Cambiar el nombre')) &&
+        menuDeLaComida[1].texto === 'Guardar como habitual' &&
+        menuDeLaComida[1].apagada &&
+        /^Las opciones que vienen de una receta/.test(menuDeLaComida[1].motivo ?? '') &&
+        igual(menuDeLaComida[2], sinMotivo('Quitar comida')) &&
+        igual(campoDeLaComida, { id: `comida-0-${jRec}`, valor: M.nombre, conFoco: true, seleccionado: true }) &&
+        trasNombrarLaComida?.nombreAbierto === null &&
+        trasNombrarLaComida.comidas[jRec].nombre === NOMBRE_DE_LA_COMIDA &&
+        trasNombrarLaComida.estado === 'Cambios sin guardar' &&
+        igual(campoDeLaOpcion, { id: `opcion-0-${jRec}-0`, valor: M.opciones[0].nombre, conFoco: true, seleccionado: true }) &&
+        trasNombrarLaOpcion?.nombreAbierto === null &&
+        trasNombrarLaOpcion.comidas[jRec].pestanas[0].texto === `1 · ${NOMBRE_DE_LA_OPCION}` &&
+        igual(menuDelDia, [sinMotivo('Cambiar el nombre'), sinMotivo('Quitar este día tipo')]) &&
+        igual(campoDelDia, { id: 'dia-1', valor: DB[1].nombre, conFoco: true, seleccionado: true }) &&
+        trasNombrarElDia?.nombreAbierto === null &&
+        igual(trasNombrarElDia.dias, [{ texto: DB[0].nombre, elegido: false }, { texto: NOMBRE_DEL_DIA, elegido: true }]) &&
+        pedidosAlNombrar === 0,
+      `menú: ${menuDeLaComida?.map((a) => `${a.texto}${a.apagada ? ` (apagada: «${(a.motivo ?? '').slice(0, 50)}…»)` : ''}`).join(' | ')} · el campo: ${JSON.stringify(campoDeLaComida)} · comida: «${trasNombrarLaComida?.comidas[jRec]?.nombre}» · pestaña: «${trasNombrarLaOpcion?.comidas[jRec]?.pestanas[0]?.texto}» · día: «${trasNombrarElDia?.dias[1]?.texto}» · «${trasNombrarLaComida?.estado}» · pedidos: ${pedidosAlNombrar}`,
+    );
+
+    // Agregar, mover y quitar, en el segundo día tipo.
+    const NOMBRE_DE_LA_OPCION_NUEVA = 'Opción del recorrido';
+    const NOMBRE_DE_LA_COMIDA_NUEVA = 'Colación del recorrido';
+    const D2 = DB[1];
+    const cuantasOpciones = D2.comidas[1].opciones.length + 1;
+    const cuantasComidas = D2.comidas.length + 1;
+    const antesDeAgregar = v.urls.length;
+    await alternarEnElEditor(2);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="2"] .comida-del-editor__opciones');
+    const menuDeAgregarOpcion = (await elEditor())?.menu;
+    await elegirDelMenu('Una opción nueva');
+    const conOpcionNueva = await elEditor();
+    await escribirElNombre(NOMBRE_DE_LA_OPCION_NUEVA);
+    const trasNombrarLaOpcionNueva = await elEditor();
+    await enElEditor('[data-agregar-comida]', 'Agregar comida');
+    const conComidaNueva = await elEditor();
+    await captura(page, v, 'editor-una-comida-recien-agregada-1440-claro');
+    await escribirElNombre(NOMBRE_DE_LA_COMIDA_NUEVA);
+    const trasNombrarLaComidaNueva = await elEditor();
+    await enElEditor(`.comida-del-editor[data-comida="${cuantasComidas}"] .comida-del-editor__acciones > button`, 'Subir');
+    const trasSubir = await elEditor();
+    const comidasEnLaDireccionTrasSubir = P(page).get('comidas');
+    await alternarEnElEditor(1);
+    const conLaPrimeraAbierta = await elEditor();
+    await alternarEnElEditor(1);
+    await enElEditor('[data-agregar-dia]', 'Agregar');
+    const conDiaNuevo = await elEditor();
+    const diaNuevoEnLaDireccion = P(page).get('dia');
+    await abrirMenuDelEditor('.editor-del-plan__dia');
+    await elegirDelMenu('Quitar este día tipo');
+    const trasQuitarElDia = await elEditor();
+    const diaTrasQuitar = P(page).get('dia');
+    const pedidosAlAgregar = pedidosDesde(antesDeAgregar);
+    comprobar(
+      'F-93',
+      'Agregar, mover y quitar. «Agregar opción» despliega dos caminos (una opción nueva o una receta); la opción nueva queda elegida, con su pestaña («Opción N»), sin ítems y con el campo de su nombre abierto. «Agregar comida» suma una comida al final, abierta, que dice «Falta el nombre» hasta que se lo escribe. «Subir» la mueve un lugar y lo abierto la acompaña (en la dirección también); en la primera comida, «Subir» está apagado. «Agregar» suma un día tipo, lo elige y abre su nombre; «Quitar este día tipo» lo saca y deja elegido el anterior. Nada de esto le pide algo a BE',
+      D2.comidas.length >= 3 &&
+        igual(menuDeAgregarOpcion, [sinMotivo('Una opción nueva'), sinMotivo('Agregar receta como opción')]) &&
+        conOpcionNueva?.comidas[1].pestanas.length === cuantasOpciones &&
+        igual(conOpcionNueva.comidas[1].pestanas.at(-1), { texto: `Opción ${cuantasOpciones}`, elegida: true, receta: false }) &&
+        conOpcionNueva.comidas[1].resumen === cuentaDe(cuantasOpciones) &&
+        conOpcionNueva.comidas[1].opcion?.sinItems === 'Esta opción todavía no tiene ítems.' &&
+        igual(conOpcionNueva.comidas[1].opcion.pie, ['Agregar ítem', 'Cambiar el nombre', `Quitar opción ${cuantasOpciones}`]) &&
+        igual(conOpcionNueva.nombreAbierto, { id: `opcion-1-1-${cuantasOpciones - 1}`, valor: `Opción ${cuantasOpciones}`, conFoco: true, seleccionado: true }) &&
+        trasNombrarLaOpcionNueva?.comidas[1].pestanas.at(-1).texto === `${cuantasOpciones} · ${NOMBRE_DE_LA_OPCION_NUEVA}` &&
+        conComidaNueva?.comidas.length === cuantasComidas &&
+        igual(
+          [conComidaNueva.comidas.at(-1)].map((c) => [c.nombre, c.resumen, c.avisos, c.abierta, c.sinOpciones]),
+          [[`Comida ${cuantasComidas}`, 'Sin opciones', 'Falta el nombre', true, 'Esta comida todavía no tiene opciones.']],
+        ) &&
+        igual(conComidaNueva.nombreAbierto, { id: `comida-1-${cuantasComidas - 1}`, valor: '', conFoco: true, seleccionado: false }) &&
+        trasNombrarLaComidaNueva?.nombreAbierto === null &&
+        igual([trasNombrarLaComidaNueva.comidas.at(-1)].map((c) => [c.nombre, c.avisos]), [[NOMBRE_DE_LA_COMIDA_NUEVA, null]]) &&
+        igual(trasSubir?.comidas.map((c) => [c.nombre, c.abierta]), [...D2.comidas.slice(0, -1).map((m, j) => [m.nombre, j === 1]), [NOMBRE_DE_LA_COMIDA_NUEVA, true], [D2.comidas.at(-1).nombre, false]]) &&
+        comidasEnLaDireccionTrasSubir === `2.${D2.comidas.length}` &&
+        igual(conLaPrimeraAbierta?.comidas.filter((c) => c.abierta).map((c) => c.subirApagado), [true, false, false]) &&
+        igual(conDiaNuevo?.dias, [{ texto: DB[0].nombre, elegido: false }, { texto: NOMBRE_DEL_DIA, elegido: false }, { texto: 'Día tipo 3', elegido: true }]) &&
+        igual(conDiaNuevo.nombreAbierto, { id: 'dia-2', valor: 'Día tipo 3', conFoco: true, seleccionado: true }) &&
+        conDiaNuevo.comidas.length === 0 &&
+        conDiaNuevo.sinComidas === 'Este día tipo todavía no tiene comidas.' &&
+        diaNuevoEnLaDireccion === '3' &&
+        igual(trasQuitarElDia?.dias, [{ texto: DB[0].nombre, elegido: false }, { texto: NOMBRE_DEL_DIA, elegido: true }]) &&
+        diaTrasQuitar === '2' &&
+        pedidosAlAgregar === 0,
+      `«Agregar opción»: ${menuDeAgregarOpcion?.map((a) => a.texto).join(' | ')} · pestañas: ${trasNombrarLaOpcionNueva?.comidas[1]?.pestanas.map((p) => p.texto).join(' | ')} · la comida nueva: «${conComidaNueva?.comidas.at(-1)?.nombre}», ${conComidaNueva?.comidas.at(-1)?.avisos} · tras «Subir»: ${trasSubir?.comidas.map((c) => `${c.nombre}${c.abierta ? ' (abierta)' : ''}`).join(' | ')}, comidas=${comidasEnLaDireccionTrasSubir} · días: ${conDiaNuevo?.dias.map((x) => x.texto).join(' | ')} → ${trasQuitarElDia?.dias.map((x) => x.texto).join(' | ')} · pedidos: ${pedidosAlAgregar}`,
+    );
+
+    // Lo que no deja guardar: una cantidad que no se entiende, en el segundo día tipo…
+    await alternarEnElEditor(1);
+    const CANTIDAD = '#item-1-0-0-0-cantidad';
+    const cantidadAntes = await page.$eval(CANTIDAD, (e) => e.value).catch(() => null);
+    await page.focus(CANTIDAD).catch(() => {});
+    await page.keyboard.press('End');
+    await page.keyboard.type('x');
+    await pausa(250);
+    const conIlegible = await elEditor();
+    await captura(page, v, 'editor-una-cantidad-que-no-se-entiende-1440-claro');
+    // …y una comida sin nombre, en el primero. El campo vacío no se cierra con Enter.
+    await elegirDiaDelEditor(DB[0].nombre);
+    await alternarEnElEditor(1);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__acciones');
+    await elegirDelMenu('Cambiar el nombre');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Enter');
+    await pausa(250);
+    const conElNombreVacio = await elEditor();
+    await alternarEnElEditor(1);
+    const plegadaSinNombre = await elEditor();
+    const antesDeIntentarGuardar = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await pausa(400);
+    const noDejaGuardar = await elEditor();
+    await captura(page, v, 'editor-lo-que-no-deja-guardar-1440-claro');
+    const escriturasAlIntentar = escriturasDelBorrador(antesDeIntentarGuardar);
+    // La cantidad está en el otro día tipo, en una comida plegada: su renglón lleva hasta el campo.
+    await enElEditor('.problemas-del-plan button', 'la cantidad no se entiende');
+    await pausa(300);
+    const enLaCantidad = await elEditor();
+    const direccionEnLaCantidad = [P(page).get('dia'), P(page).get('comidas')];
+    await page.keyboard.down('Control');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Control');
+    await page.keyboard.type('75,5');
+    await pausa(250);
+    const cantidadCorregida = await elEditor();
+    await tocarAccionDelEditor('Guardar cambios');
+    await pausa(400);
+    const faltaElNombre = await elEditor();
+    await enElEditor('.problemas-del-plan button', 'falta el nombre');
+    await pausa(300);
+    const enElNombre = await elEditor();
+    const direccionEnElNombre = [P(page).get('dia'), P(page).get('comidas')];
+    await escribirElNombre(DB[0].comidas[0].nombre);
+    const conElNombreDeVuelta = await elEditor();
+    const escriturasAntesDeGuardar = escriturasDelBorrador(antesDeIntentarGuardar);
+    comprobar(
+      'F-94',
+      'Lo que no deja guardar no queda escondido. Una cantidad que no es un número se marca en su campo, con el motivo, y el renglón de su comida lo dice («1 cantidad que no se entiende»). Un nombre vacío no se cierra con Enter, y su comida dice «Falta el nombre», también plegada. Con las dos cosas —una en cada día tipo—, «Guardar cambios» no escribe nada y las lista, en el orden del plan y con su lugar; cada renglón es un botón. El de la cantidad lleva al otro día tipo, abre la comida y deja el foco en el campo; corregida, la lista se va. Al guardar otra vez queda el nombre: su renglón abre el campo, con el foco',
+      cantidadAntes !== null &&
+        conIlegible?.comidas[0].avisos === '1 cantidad que no se entiende' &&
+        igual([conIlegible.comidas[0].opcion?.items[0]].map((i) => [i?.cantidad, i?.error, i?.invalida]), [[`${cantidadAntes}x`, 'Escribí un número: «150» o «72,5».', 'true']]) &&
+        conIlegible.comidas[0].opcion.items.slice(1).every((i) => i.error === null) &&
+        igual(conElNombreVacio?.nombreAbierto, { id: 'comida-0-0', valor: '', conFoco: true, seleccionado: false }) &&
+        igual([conElNombreVacio.comidas[0]].map((c) => [c.nombre, c.avisos, c.abierta]), [['Comida 1', 'Falta el nombre', true]]) &&
+        igual([plegadaSinNombre?.comidas[0]].map((c) => [c?.nombre, c?.avisos, c?.abierta]), [['Comida 1', 'Falta el nombre', false]]) &&
+        igual(escriturasAlIntentar, { guardar: 0, validar: 0, activar: 0 }) &&
+        noDejaGuardar?.aviso === 'Hay nombres sin completar y cantidades que no se entienden. Corregilos antes de guardar.' &&
+        igual(noDejaGuardar.problemas, [
+          { texto: `${DB[0].nombre} → Comida 1 → falta el nombre`, esBoton: true },
+          { texto: `${NOMBRE_DEL_DIA} → ${D2.comidas[0].nombre} → Opción 1 → Ítem 1 → la cantidad no se entiende`, esBoton: true },
+        ]) &&
+        noDejaGuardar.estado === 'Cambios sin guardar' &&
+        igual(direccionEnLaCantidad, ['2', '1']) &&
+        enLaCantidad?.foco === 'item-1-0-0-0-cantidad' &&
+        igual(enLaCantidad.comidas.map((c) => c.abierta), enLaCantidad.comidas.map((_, j) => j === 0)) &&
+        igual([cantidadCorregida?.comidas[0].opcion?.items[0]].map((i) => [i?.cantidad, i?.error, i?.invalida]), [['75,5', null, null]]) &&
+        cantidadCorregida.comidas[0].avisos === null &&
+        cantidadCorregida.aviso === null &&
+        faltaElNombre?.aviso === 'Hay nombres sin completar. Completalos antes de guardar.' &&
+        igual(faltaElNombre.problemas, [{ texto: `${DB[0].nombre} → Comida 1 → falta el nombre`, esBoton: true }]) &&
+        igual(direccionEnElNombre, [null, '1']) &&
+        igual(enElNombre?.nombreAbierto, { id: 'comida-0-0', valor: '', conFoco: true, seleccionado: false }) &&
+        conElNombreDeVuelta?.nombreAbierto === null &&
+        conElNombreDeVuelta.comidas[0].nombre === DB[0].comidas[0].nombre &&
+        conElNombreDeVuelta.comidas[0].avisos === null &&
+        igual(escriturasAntesDeGuardar, { guardar: 0, validar: 0, activar: 0 }),
+      `la cantidad: «${conIlegible?.comidas[0]?.opcion?.items[0]?.cantidad}», «${conIlegible?.comidas[0]?.opcion?.items[0]?.error}» · la comida: ${conIlegible?.comidas[0]?.avisos} · al guardar: «${noDejaGuardar?.aviso}» ${noDejaGuardar?.problemas.map((p) => `[${p.texto}]`).join(' ')} · escrituras: ${escriturasAlIntentar.guardar} · el de la cantidad lleva a dia=${direccionEnLaCantidad[0]}, comidas=${direccionEnLaCantidad[1]}, foco en ${enLaCantidad?.foco} · después: «${faltaElNombre?.aviso}» · el del nombre lleva a comidas=${direccionEnElNombre[1]}, foco en el campo: ${enElNombre?.nombreAbierto?.conFoco ? 'sí' : 'no'}`,
+    );
+
+    // Guardar: una sola escritura, y la API queda con lo que se hizo en pantalla.
+    const antesDeGuardarElEditor = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await esperarGuardado();
+    const trasGuardarElEditor = await elEditor();
+    const focoTrasGuardar = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? null);
+    const escriturasAlGuardar = escriturasDelBorrador(antesDeGuardarElEditor);
+    const borradorTrasGuardar = await leerElBorrador();
+    const esperadoTrasGuardar = structuredClone(DB);
+    esperadoTrasGuardar[0].comidas[jRec].nombre = NOMBRE_DE_LA_COMIDA;
+    esperadoTrasGuardar[0].comidas[jRec].opciones[0].nombre = NOMBRE_DE_LA_OPCION;
+    esperadoTrasGuardar[1].nombre = NOMBRE_DEL_DIA;
+    esperadoTrasGuardar[1].comidas[0].opciones[0].items[0].quantity.value = 75.5;
+    esperadoTrasGuardar[1].comidas[1].opciones.push({ nombre: NOMBRE_DE_LA_OPCION_NUEVA, receta: null, items: [] });
+    esperadoTrasGuardar[1].comidas.splice(D2.comidas.length - 1, 0, { nombre: NOMBRE_DE_LA_COMIDA_NUEVA, opciones: [] });
+    const trasGuardarTodo = await leerTodo();
+    comprobar(
+      'F-95',
+      'Con todo corregido, «Guardar cambios» hace una sola escritura y la API queda con lo que se hizo en pantalla, y nada más: la comida y la opción con sus nombres nuevos, el segundo día tipo con el suyo, la cantidad corregida (75,5), la opción nueva sin ítems y la comida nueva, sin opciones, en el lugar al que se la subió; lo demás, igual que antes (la opción de receta, con sus ingredientes). Guardar no activa: la versión sigue en preparación y la activa es la misma. El botón queda apagado, con el foco todavía en él',
+      igual(escriturasAlGuardar, { guardar: 1, validar: 0, activar: 0 }) &&
+        trasGuardarElEditor?.estado === 'Guardado' &&
+        igual(trasGuardarElEditor.acciones.at(-1), { nombre: 'Guardar cambios', apagado: true, deshabilitado: false }) &&
+        focoTrasGuardar === 'Guardar cambios' &&
+        igual(resumenDe(estructuraDe(borradorTrasGuardar)), resumenDe(esperadoTrasGuardar)) &&
+        borradorTrasGuardar.state === 'DRAFT' &&
+        trasGuardarTodo.activa.planId === activa.planId &&
+        (await planEnPantalla(page)).version === 'preparacion',
+      `escrituras: ${escriturasAlGuardar.guardar} · «${trasGuardarElEditor?.estado}» · foco en «${focoTrasGuardar}» · en la API: ${estructuraDe(borradorTrasGuardar).map((x) => `${x.nombre}: ${x.comidas.map((m) => `${m.nombre} (${m.opciones.length})`).join(', ')}`).join(' | ')} · estado: ${borradorTrasGuardar.state}`,
+    );
+
+    // «Validar plan»: los problemas están en el otro día tipo, y cada uno lleva a su lugar.
+    const antesDeValidar = v.urls.length;
+    await tocarAccionDelEditor('Validar plan');
+    await page.waitForSelector(`${EDITOR} .problemas-del-plan`, { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const conProblemas = await elEditor();
+    const escriturasAlValidar = escriturasDelBorrador(antesDeValidar);
+    await captura(page, v, 'editor-los-problemas-de-validar-1440-claro');
+    await enElEditor('.problemas-del-plan button', `${NOMBRE_DE_LA_COMIDA_NUEVA} → falta al menos una opción`);
+    await pausa(300);
+    const enElProblema = await elEditor();
+    const direccionEnElProblema = [P(page).get('dia'), P(page).get('comidas')];
+    await captura(page, v, 'editor-un-problema-en-su-lugar-1440-claro');
+    await abrirMenuDelEditor(`.comida-del-editor[data-comida="${D2.comidas.length}"] .comida-del-editor__acciones`);
+    await elegirDelMenu('Quitar comida');
+    await alternarEnElEditor(2);
+    await enElEditor('.comida-del-editor[data-comida="2"] .pestana-de-opcion', NOMBRE_DE_LA_OPCION_NUEVA);
+    await enElEditor('.comida-del-editor[data-comida="2"] .opcion-del-editor__pie button', 'Quitar opción');
+    const trasQuitarLoVacio = await elEditor();
+    const antesDeRevalidar = v.urls.length;
+    await tocarAccionDelEditor('Validar plan');
+    const avisoDeValido = await esperarAviso('Plan válido');
+    await esperarGuardado();
+    const trasRevalidar = await elEditor();
+    const escriturasAlRevalidar = escriturasDelBorrador(antesDeRevalidar);
+    const problemasEsperados = [`${NOMBRE_DEL_DIA} → ${D2.comidas[1].nombre} → Opción ${cuantasOpciones} → falta al menos un ítem`, `${NOMBRE_DEL_DIA} → ${NOMBRE_DE_LA_COMIDA_NUEVA} → falta al menos una opción`];
+    comprobar(
+      'F-96',
+      '«Validar plan», sin cambios por guardar, no guarda: valida (una escritura) y dice «Hay elementos por corregir» con cada problema y su lugar, por sus nombres: la opción sin ítems y la comida sin opciones, las dos en el día tipo que no se está mirando. Cada renglón es un botón: el de la comida lleva a su día, la abre y deja el foco en su renglón; ese renglón y el de la otra comida, plegada, dicen «1 problema para revisar». Quitadas la comida y la opción vacías, «Validar plan» guarda antes (una escritura) y valida: «Plan válido», sin lista',
+      igual(escriturasAlValidar, { guardar: 0, validar: 1, activar: 0 }) &&
+        conProblemas?.aviso === 'Hay elementos por corregir' &&
+        igual([...conProblemas.problemas.map((p) => p.texto)].sort(), [...problemasEsperados].sort()) &&
+        conProblemas.problemas.every((p) => p.esBoton) &&
+        igual(direccionEnElProblema, ['2', String(D2.comidas.length)]) &&
+        enElProblema?.foco === `abrir-comida-1-${D2.comidas.length - 1}` &&
+        igual(enElProblema.comidas.map((c) => [c.nombre, c.abierta, c.avisos]), [
+          ...D2.comidas.slice(0, -1).map((m, j) => [m.nombre, false, j === 1 ? '1 problema para revisar' : null]),
+          [NOMBRE_DE_LA_COMIDA_NUEVA, true, '1 problema para revisar'],
+          [D2.comidas.at(-1).nombre, false, null],
+        ]) &&
+        igual(trasQuitarLoVacio?.comidas.map((c) => c.nombre), D2.comidas.map((m) => m.nombre)) &&
+        trasQuitarLoVacio.comidas[1].pestanas.length === D2.comidas[1].opciones.length &&
+        trasQuitarLoVacio.problemas.length === 0 &&
+        igual(escriturasAlRevalidar, { guardar: 1, validar: 1, activar: 0 }) &&
+        avisoDeValido &&
+        trasRevalidar?.aviso === null &&
+        trasRevalidar.problemas.length === 0 &&
+        trasRevalidar.estado === 'Guardado',
+      `al validar: guardar ${escriturasAlValidar.guardar}, validar ${escriturasAlValidar.validar} · «${conProblemas?.aviso}» ${conProblemas?.problemas.map((p) => `[${p.texto}]`).join(' ')} · el de la comida lleva a dia=${direccionEnElProblema[0]}, comidas=${direccionEnElProblema[1]}, foco en ${enElProblema?.foco} · al revalidar: guardar ${escriturasAlRevalidar.guardar}, validar ${escriturasAlRevalidar.validar}, «Plan válido»: ${avisoDeValido ? 'sí' : 'no'}`,
+    );
+
+    // «Agregar receta como opción»: las recetas se eligen en un cajón, como los alimentos (DL-119). Se suma a la primera
+    // comida del segundo día tipo, que tiene una sola opción, y se guarda: los ítems los arma la API.
+    const recetasEnLaApi = (await leerApi(v, '/nutrition/recipes')).data;
+    const elCajonDeRecetas = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const dlg = document.querySelector('dialog.cajon[open]');
+        if (!dlg) return null;
+        return {
+          sobretitulo: t(dlg.querySelector('.cajon__sobretitulo')),
+          titulo: t(dlg.querySelector('.cajon__cabecera h2')),
+          recetas: [...dlg.querySelectorAll('.recetas-para-elegir .lista__item')].map((li) => ({ nombre: t(li.querySelector('.lista__titulo')), detalle: t(li.querySelector('.nota')), accion: t(li.querySelector('button')) })),
+          falla: t(dlg.querySelector('.aviso--error')),
+        };
+      });
+    const itemEnResumen = (i) => [i.name, i.quantity ? `${i.quantity.value} ${i.quantity.unit}` : null, i.preparationState ?? null];
+    const cuantasTenia = D2.comidas[0].opciones.length;
+    await alternarEnElEditor(1);
+    const antesDeLasRecetas = v.urls.length;
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__opciones');
+    await elegirDelMenu('Agregar receta como opción');
+    await page.waitForSelector('dialog.cajon[open] .recetas-para-elegir .lista__item', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const cajonDeRecetas = await elCajonDeRecetas();
+    const lecturasDeRecetas = lecturasDesde(antesDeLasRecetas, '/nutrition/recipes').length;
+    await captura(page, v, 'editor-las-recetas-en-el-cajon-1440-claro', { tope: 900 });
+    await clic(page, 'dialog.cajon[open] .recetas-para-elegir button', `Agregar receta como opción: ${laReceta.name}`).catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog.cajon[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(300);
+    const conLaRecetaNueva = await elEditor();
+    const focoTrasLaReceta = await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? null);
+    const antesDeGuardarLaReceta = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await esperarGuardado();
+    const conLaRecetaGuardada = await elEditor();
+    const escriturasDeLaReceta = escriturasDelBorrador(antesDeGuardarLaReceta);
+    const opcionesTrasLaReceta = estructuraDe(await leerElBorrador())[1].comidas[0].opciones;
+    await alternarEnElEditor(1);
+    comprobar(
+      'F-99',
+      '«Agregar receta como opción» abre las recetas propias en el cajón, que dice de qué comida es, con una sola lectura: cada receta, con su versión, sus porciones y lo que aporta una porción. Elegir una cierra el cajón y suma una opción con el nombre de la receta, elegida y marcada como receta: se lee y no se edita, y dice que sus ingredientes se cargan al guardar; el foco vuelve a «Agregar opción». Al guardar (una escritura), la API arma los ítems con los ingredientes de una porción —los mismos que tiene la otra opción de esa receta— y la pantalla los muestra',
+      recetasEnLaApi.length >= 1 &&
+        !!cajonDeRecetas &&
+        cajonDeRecetas.titulo === 'Agregar receta como opción' &&
+        cajonDeRecetas.sobretitulo === D2.comidas[0].nombre &&
+        cajonDeRecetas.falla === null &&
+        igual(cajonDeRecetas.recetas.map((r) => [r.nombre, r.accion]), recetasEnLaApi.map((r) => [r.name, `Agregar receta como opción: ${r.name}`])) &&
+        cajonDeRecetas.recetas.every((r, n) => (r.detalle ?? '').startsWith(`Versión ${recetasEnLaApi[n].versionNumber} · ${recetasEnLaApi[n].servings === 1 ? '1 porción' : `${recetasEnLaApi[n].servings} porciones`} · `)) &&
+        lecturasDeRecetas === 1 &&
+        igual(conLaRecetaNueva?.comidas[0].pestanas, [...D2.comidas[0].opciones.map((o, k) => ({ texto: `${k + 1} · ${o.nombre}`, elegida: false, receta: !!o.receta })), { texto: `${cuantasTenia + 1} · ${laReceta.name}`, elegida: true, receta: true }]) &&
+        conLaRecetaNueva.comidas[0].opcion?.receta === `Receta «${laReceta.name}», versión ${laReceta.versionNumber}` &&
+        conLaRecetaNueva.comidas[0].opcion.ingredientes.length === 0 &&
+        igual(conLaRecetaNueva.comidas[0].opcion.notasDeLaReceta, ['La opción lleva los ingredientes de una porción de la receta.', 'Los ingredientes de una porción se cargan al guardar el borrador.']) &&
+        igual(conLaRecetaNueva.comidas[0].opcion.pie, ['Cambiar el nombre', `Quitar opción ${cuantasTenia + 1}`]) &&
+        conLaRecetaNueva.estado === 'Cambios sin guardar' &&
+        (focoTrasLaReceta ?? '').startsWith('Agregar opción') &&
+        igual(escriturasDeLaReceta, { guardar: 1, validar: 0, activar: 0 }) &&
+        igual(conLaRecetaGuardada?.comidas[0].opcion?.ingredientes, ingredientesEsperados) &&
+        opcionesTrasLaReceta.length === cuantasTenia + 1 &&
+        opcionesTrasLaReceta.at(-1).nombre === laReceta.name &&
+        opcionesTrasLaReceta.at(-1).receta?.recipeVersionId === laReceta.recipeVersionId &&
+        igual(opcionesTrasLaReceta.at(-1).items.map(itemEnResumen), M.opciones[kRec].items.map(itemEnResumen)),
+      `el cajón: «${cajonDeRecetas?.sobretitulo}» · «${cajonDeRecetas?.titulo}» · ${cajonDeRecetas?.recetas.map((r) => `${r.nombre} (${r.detalle})`).join(' | ')} · lecturas: ${lecturasDeRecetas} · pestañas: ${conLaRecetaNueva?.comidas[0]?.pestanas.map((p) => `${p.texto}${p.receta ? ' (receta)' : ''}`).join(' | ')} · antes de guardar: ${conLaRecetaNueva?.comidas[0]?.opcion?.notasDeLaReceta?.at(-1)} · foco en «${(focoTrasLaReceta ?? '').slice(0, 30)}» · al guardar: ${escriturasDeLaReceta.guardar} escritura, ${conLaRecetaGuardada?.comidas[0]?.opcion?.ingredientes.join(' | ')}`,
+    );
+
+    // Las palabras, la accesibilidad y los anchos, con una comida abierta y su tabla a la vista.
+    await enElEditor('.comida-del-editor[data-comida="2"] .pestana-de-opcion', `1 · ${D2.comidas[1].opciones[0].nombre}`);
+    const paraLeerElEditor = await elEditor();
+    const faltasDelEditor = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasDelEditorDeNoche = await axe(page);
+    await captura(page, v, 'editor-una-comida-abierta-1440-azul-noche');
+    await ponerTema(page, 'claro');
+    const editorEnAnchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      const medida = await page.evaluate((s) => {
+        const raiz = document.querySelector(s);
+        const caja = raiz.getBoundingClientRect();
+        const afuera = [...raiz.querySelectorAll('*')].filter((e) => !e.closest('dialog') && e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1));
+        const nombre = raiz.querySelector('.comida-del-editor[data-abierta] .comida-del-plan__nombre');
+        const renglon = parseFloat(getComputedStyle(nombre).lineHeight) || 24;
+        const campos = [...raiz.querySelectorAll('.comida-del-editor[data-abierta] input:not([type="radio"]), .comida-del-editor[data-abierta] select')];
+        return {
+          afuera: afuera.length,
+          primeroAfuera: afuera[0] ? String(afuera[0].className).slice(0, 60) : null,
+          renglonesDelNombre: Math.round(nombre.getBoundingClientRect().height / renglon),
+          campos: campos.length,
+          camposALaVista: campos.filter((e) => e.getClientRects().length > 0 && e.getBoundingClientRect().width >= 44 && e.getBoundingClientRect().height >= 44).length,
+          alto: document.documentElement.scrollHeight,
+        };
+      }, EDITOR);
+      editorEnAnchos.push({ ancho, ...medida, desborda: !(await sinDesborde(page)) });
+      await captura(page, v, `editor-una-comida-abierta-${ancho}-claro`);
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    comprobar(
+      'F-97',
+      'Con una comida abierta, en el editor no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra los nombres de los alimentos. axe no encuentra faltas, en los dos temas. A 1280, 1024, 768 y 390 px la página no desborda, nada se sale del editor, el nombre de la comida abierta entra en dos renglones como mucho y todos sus campos están a la vista con su tamaño táctil',
+      !!paraLeerElEditor &&
+        prohibidas(paraLeerElEditor.texto).length === 0 &&
+        D2.comidas[1].opciones[0].items.length >= 1 &&
+        D2.comidas[1].opciones[0].items.every((i) => paraLeerElEditor.texto.includes(i.name)) &&
+        faltasDelEditor.length === 0 &&
+        faltasDelEditorDeNoche.length === 0 &&
+        editorEnAnchos.every((x) => !x.desborda && x.afuera === 0 && x.renglonesDelNombre <= 2 && x.campos >= 3 && x.camposALaVista === x.campos),
+      `palabras: ${prohibidas(paraLeerElEditor?.texto).join(', ') || 'ninguna'} · axe: ${[...faltasDelEditor, ...faltasDelEditorDeNoche].map((f) => f.id).join(', ') || 'sin faltas'} · ${editorEnAnchos.map((x) => `${x.ancho}: ${x.alto} px, el nombre en ${x.renglonesDelNombre} renglón(es), ${x.camposALaVista}/${x.campos} campos${x.afuera ? `, ${x.afuera} AFUERA (${x.primeroAfuera})` : ''}${x.desborda ? ', DESBORDA' : ''}`).join(' · ')}`,
+    );
+
+    // ── Pasar a la activa y volver no pierde lo escrito ──────────────────────────────────────────────────────────
+    // Lo escrito es el final del nombre de la primera comida del primer día tipo, que se cambia a pedido.
+    const AJUSTE = ' (ajuste)';
+    await elegirDiaDelEditor(DB[0].nombre);
+    const nombreAntes = (await elEditor()).comidas[0].nombre;
+    await alternarEnElEditor(1);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__acciones');
+    await elegirDelMenu('Cambiar el nombre');
+    await page.keyboard.press('End');
+    await page.keyboard.type(AJUSTE);
+    await page.keyboard.press('Enter');
+    await pausa(250);
+    await alternarEnElEditor(1);
+    const conCambios = await planEnPantalla(page);
+    const antesDePasar = v.urls.length;
+    const tocarVersion = async (cual) => {
+      await clic(page, '[data-selector-de-version] .segmento', cual);
+      await quieto(page, v, { silencio: 300 });
+    };
+    await tocarVersion('2 · activa');
+    const enLaActiva = await planEnPantalla(page);
+    const direccionEnLaActiva = P(page).get('version');
+    await captura(page, v, 'plan-la-activa-con-una-en-preparacion-1440-claro');
+    await tocarDia(dia2.nombre);
+    const diaEnLaActiva = P(page).get('dia');
+    await tocarVersion('En preparación');
+    const diaAlVolver = P(page).get('dia');
+    const deVueltaAlBorrador = await planEnPantalla(page);
+    const pedidosAlPasar = v.urls.slice(antesDePasar).filter((u) => !u.startsWith('OPTIONS '));
+    // El editor volvió en el segundo día tipo, que es el que se miraba en la activa: lo escrito está en el primero.
+    const diaDelEditorAlVolver = (await elEditor())?.dias.find((x) => x.elegido)?.texto ?? null;
+    await elegirDiaDelEditor(DB[0].nombre);
+    const nombreDespues = (await elEditor())?.comidas[0]?.nombre ?? null;
+    comprobar(
+      'F-65',
+      'Con cambios sin guardar en la versión en preparación, pasar a «2 · activa» muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra versión) y deja el editor fuera de la vista; volver a «En preparación» lo muestra con lo escrito intacto y «Cambios sin guardar», en el día tipo que se miraba en la activa. Ir y volver no le pide nada a BE, y la versión elegida queda en la dirección',
+      conCambios.editor.estado === 'Cambios sin guardar' &&
+        enLaActiva.version === 'activa' &&
+        direccionEnLaActiva === 'activa' &&
+        enLaActiva.activo?.titulo === 'Plan activo' &&
+        enLaActiva.activo.frase === fraseEsperada &&
+        igual(enLaActiva.activo.acciones, ['Guardar como plantilla']) &&
+        enLaActiva.activo.yaHay === 'Ya hay una versión en preparación: se sigue sobre esa.' &&
+        enLaActiva.editor.esta &&
+        !enLaActiva.editor.aLaVista &&
+        igual(enLaActiva.selector.opciones.map((o) => o.elegido), [false, true]) &&
+        deVueltaAlBorrador.version === 'preparacion' &&
+        deVueltaAlBorrador.editor.aLaVista &&
+        deVueltaAlBorrador.editor.estado === 'Cambios sin guardar' &&
+        nombreDespues === `${nombreAntes}${AJUSTE}` &&
+        P(page).get('version') === null &&
+        diaEnLaActiva === String(dia2.orden) &&
+        diaAlVolver === String(dia2.orden) &&
+        diaDelEditorAlVolver === NOMBRE_DEL_DIA &&
+        pedidosAlPasar.length === 0,
+      `«${nombreAntes}» → «${nombreDespues}» · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] «${enLaActiva.activo?.yaHay}» · editor a la vista: ${enLaActiva.editor.aLaVista ? 'sí' : 'no'} · al volver, el editor muestra «${diaDelEditorAlVolver}» · pedidos: ${pedidosAlPasar.length}`,
+    );
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
+    const pregunta = await page.evaluate(() => document.querySelector('dialog[open]')?.innerText.replace(/\s+/g, ' ').trim() ?? '');
+    await page.screenshot({ path: fileURLToPath(new URL('plan-actualizar-con-cambios-sin-guardar-1440-claro.png', DIR)) });
+    await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await quieto(page, v);
+    const sigueEscrito = (await elEditor())?.comidas[0]?.nombre ?? null;
+    comprobar(
+      'F-65',
+      'Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer y dice qué se perdería («el plan en preparación»); «Seguir editando» deja todo como estaba',
+      /Tenés cambios sin guardar/.test(pregunta) && /el plan en preparación/.test(pregunta) && sigueEscrito === `${nombreAntes}${AJUSTE}`,
+      `«${pregunta.slice(0, 170)}»`,
+    );
+
+    // ── Activar: guarda antes si hace falta, dice qué entra y qué queda, y ahí se fija la próxima revisión ───────
+    const elDialogoDeActivar = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const dlg = [...document.querySelectorAll('dialog[open]')].find((x) => t(x.querySelector('h2')) === 'Activar plan');
+        if (!dlg) return null;
+        return {
+          loQueCambia: [...dlg.querySelectorAll('[data-lo-que-cambia] p')].map(t),
+          destacado: [...dlg.querySelectorAll('[data-lo-que-cambia] strong')].map(t),
+          rotuloDeLaFecha: t(dlg.querySelector('label[for="proxima-revision"]')),
+          fecha: dlg.querySelector('#proxima-revision')?.value ?? null,
+          botones: [...dlg.querySelectorAll('.acciones button')].map((b) => ({ texto: t(b), conFoco: document.activeElement === b })),
+          error: t(dlg.querySelector('.aviso--error')),
+          texto: t(dlg),
+        };
+      });
+    // La activación sale con el segundo día tipo y una comida abierta en la dirección: la versión nueva se abre limpia.
+    await elegirDiaDelEditor(NOMBRE_DEL_DIA);
+    await alternarEnElEditor(1);
+    const direccionAntesDeActivar = [P(page).get('dia'), P(page).get('comidas')];
+    // (Falla simulada.) Hay cambios sin guardar: si no se pueden guardar, «Activar plan» no pregunta nada.
+    const antesDeLaFalla = v.urls.length;
+    v.reglas.push({ coincide: (u, req) => req.method() === 'PATCH' && u.includes(`/nutrition/plans/${ID_DEL_BORRADOR}`), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    let sinPoderGuardar = null;
+    let dialogoSinGuardar = 'sin mirar';
+    try {
+      await tocarAccionDelEditor('Activar plan');
+      await page.waitForFunction((s) => !!document.querySelector(`${s} > .aviso--error`), { timeout: 20_000 }, EDITOR).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+      sinPoderGuardar = await elEditor();
+      dialogoSinGuardar = await elDialogoDeActivar();
+    } finally {
+      v.reglas.length = 0;
+    }
+    const activacionesConLaFalla = escriturasDelBorrador(antesDeLaFalla).activar;
+    await page.screenshot({ path: fileURLToPath(new URL('activar-sin-poder-guardar-simulado-1440-claro.png', DIR)) });
+    // Sin la falla: guarda (una escritura) y recién entonces pregunta.
+    const antesDeAbrirElDialogo = v.urls.length;
+    await tocarAccionDelEditor('Activar plan');
+    await page.waitForSelector('dialog[open]', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const dialogoDeActivar = await elDialogoDeActivar();
+    const escriturasAlAbrir = escriturasDelBorrador(antesDeAbrirElDialogo);
+    const estadoConElDialogo = (await elEditor())?.estado ?? null;
+    const faltasDelDialogo = await axe(page);
+    await page.screenshot({ path: fileURLToPath(new URL('activar-el-plan-1440-claro.png', DIR)) });
+    const comidasDelBorrador = estructuraDe(await leerElBorrador()).reduce((n, x) => n + x.comidas.length, 0);
+    const antesDeVolver = v.urls.length;
+    await clic(page, 'dialog[open] .acciones button', 'Volver');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(200);
+    const trasVolver = {
+      escrituras: escriturasDelBorrador(antesDeVolver),
+      version: (await planEnPantalla(page)).version,
+      foco: await page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim() ?? null),
+    };
+    comprobar(
+      'F-98',
+      '«Activar plan» guarda antes si hay cambios, y recién entonces pregunta. (Falla simulada.) Si no se puede guardar, no abre el diálogo: dice por qué, la versión sigue con «Cambios sin guardar» y no se activa nada. Cuando sí se puede, hace una sola escritura y abre el diálogo, con el foco en «Volver»: dice qué entra («Esta versión pasa a ser la vigente: 2 días tipo y N comidas», contadas de la API y sin prometerle un número) y qué queda («La versión 2, activa desde el …, queda en el historial»), y trae «Próxima revisión (opcional)», vacía. «Volver» lo cierra sin escribir nada y devuelve el foco a «Activar plan». axe no encuentra faltas con el diálogo abierto',
+      igual(direccionAntesDeActivar, ['2', '1']) &&
+        dialogoSinGuardar === null &&
+        !!sinPoderGuardar?.aviso &&
+        sinPoderGuardar.estado === 'Cambios sin guardar' &&
+        activacionesConLaFalla === 0 &&
+        igual(escriturasAlAbrir, { guardar: 1, validar: 0, activar: 0 }) &&
+        estadoConElDialogo === 'Guardado' &&
+        igual(dialogoDeActivar?.loQueCambia, [`Esta versión pasa a ser la vigente: 2 días tipo y ${comidasDelBorrador} comidas.`, `La versión 2, activa desde el ${fechaDeLaActiva.dia}, queda en el historial.`]) &&
+        igual(dialogoDeActivar.destacado, ['Esta versión', 'La versión 2']) &&
+        dialogoDeActivar.rotuloDeLaFecha === 'Próxima revisión (opcional)' &&
+        dialogoDeActivar.fecha === '' &&
+        igual(dialogoDeActivar.botones, [{ texto: 'Volver', conFoco: true }, { texto: 'Activar esta versión', conFoco: false }]) &&
+        dialogoDeActivar.error === null &&
+        prohibidas(dialogoDeActivar.texto).length === 0 &&
+        faltasDelDialogo.length === 0 &&
+        igual(trasVolver.escrituras, { guardar: 0, validar: 0, activar: 0 }) &&
+        trasVolver.version === 'preparacion' &&
+        trasVolver.foco === 'Activar plan',
+      `con la falla: «${(sinPoderGuardar?.aviso ?? '').slice(0, 90)}», diálogo: ${dialogoSinGuardar === null ? 'no se abrió' : 'ABIERTO'}, activaciones: ${activacionesConLaFalla} · al abrir: guardar ${escriturasAlAbrir.guardar} · ${dialogoDeActivar?.loQueCambia.map((x) => `«${x}»`).join(' ')} · «${dialogoDeActivar?.rotuloDeLaFecha}»: «${dialogoDeActivar?.fecha}» · foco: ${dialogoDeActivar?.botones.find((b) => b.conFoco)?.texto} · axe: ${faltasDelDialogo.map((f) => f.id).join(', ') || 'sin faltas'} · «Volver»: ${trasVolver.escrituras.guardar + trasVolver.escrituras.activar} escrituras, foco en «${trasVolver.foco}»`,
+    );
+
+    // ── Activar, con la próxima revisión: la versión nueva pasa a ser la que se lee ──────────────────────────────
+    const PROXIMA_REVISION = new Date(Date.now() + 21 * 86_400_000).toISOString().slice(0, 10);
+    const antesDeActivar = v.urls.length;
+    await tocarAccionDelEditor('Activar plan');
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 });
+    await fijarFecha(page, '#proxima-revision', PROXIMA_REVISION);
+    await pausa(200);
+    await clic(page, 'dialog[open] .acciones button', 'Activar esta versión');
+    const avisoDeActivada = await esperarAviso('Versión activada.');
+    await page.waitForFunction(() => !document.querySelector('[data-selector-de-version]') && !!document.querySelector('.plan__activo'), { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const activada = await planEnPantalla(page);
+    await captura(page, v, 'plan-version-3-recien-activada-1440-claro');
+    const escriturasAlActivar = escriturasDelBorrador(antesDeActivar);
+    const trasActivar = await leerTodo();
+    const historialNuevo = await historialEsperado(trasActivar.E);
+    const fechaDeLaNueva = await enLaPagina(trasActivar.activa.activatedAt);
+    comprobar(
+      'F-65',
+      'Activar la versión en preparación, con una fecha de próxima revisión puesta en el diálogo, hace dos escrituras: guarda la fecha y activa. La versión pasa a ser la vigente, con esa fecha en la API: el selector desaparece, el plan activo dice «Versión 3 · … · es lo que ve el asesorado», su primera comida lleva el nombre que se escribió, el historial lista las tres (la 3, vigente; la 2 y la 1, conservadas) y la dirección queda limpia (traía el segundo día tipo y una comida abierta: la versión nueva se abre por el primero). Vuelve a ofrecerse crear una versión',
+      trasActivar.activa.planId === elBorrador.planId &&
+        trasActivar.E.numero === 3 &&
+        avisoDeActivada &&
+        igual(escriturasAlActivar, { guardar: 1, validar: 0, activar: 1 }) &&
+        trasActivar.activa.nextReviewAt === PROXIMA_REVISION &&
+        activada.selector === null &&
+        !activada.editor.esta &&
+        activada.version === 'activa' &&
+        activada.activo?.frase === `Versión 3 · activada el ${fechaDeLaNueva.dia} · es lo que ve el asesorado` &&
+        activada.activo.comidas[0].nombre === `${nombreAntes}${AJUSTE}` &&
+        activada.activo.dia.opciones.find((o) => o.elegido)?.texto === dia1.nombre &&
+        igual(activada.activo.historial.versiones, historialNuevo) &&
+        historialNuevo.length === 3 &&
+        igual(historialNuevo.map((x) => x.vigente), [true, false, false]) &&
+        activada.activo.historial.huella === `Huella de la instantánea: ${trasActivar.activa.snapshotDigest.slice(0, 16)}…` &&
+        activada.activo.acciones.includes('Crear nueva versión a partir de esta') &&
+        ['version', 'dia', 'comidas'].every((k) => P(page).get(k) === null),
+      `«${activada.activo?.frase}» · escrituras: guardar ${escriturasAlActivar.guardar}, activar ${escriturasAlActivar.activar} · próxima revisión en la API: ${trasActivar.activa.nextReviewAt} · primera comida: «${activada.activo?.comidas[0]?.nombre}» · ${activada.activo?.historial.versiones.map((x) => x.texto).join(' | ')}`,
+    );
+
+    // ── Empezar desde una plantilla, de verdad ───────────────────────────────────────────────────────────────────
+    await abrirPlantillas();
+    await clic(page, 'dialog[open] .plantilla-para-empezar', NOMBRE_DE_LA_PLANTILLA);
+    const antesDeAplicar = v.urls.length;
+    await clic(page, 'dialog[open] .acciones button', 'Crear el borrador desde esta plantilla');
+    const avisoDeAplicada = await esperarAviso('Borrador creado desde la plantilla.');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const desdePlantilla = await planEnPantalla(page);
+    const trasAplicar = await leerTodo();
+    const enLaLista = trasAplicar.lista.find((x) => x.state === 'DRAFT');
+    // De qué plantilla salió lo dice la lectura de la versión, no la lista.
+    const elDeLaPlantilla = enLaLista ? (await leerApi(v, `/nutrition/plans/${enLaLista.planId}`)).data : null;
+    comprobar(
+      'F-67',
+      'Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa, y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con la activa como «3 · activa»',
+      escriturasDesde(antesDeAplicar, '/nutrition/plans').length === 1 &&
+        !!elDeLaPlantilla &&
+        !!elDeLaPlantilla.templateOrigin &&
+        avisoDeAplicada &&
+        (await page.evaluate(() => !document.querySelector('dialog[open]'))) &&
+        desdePlantilla.version === 'preparacion' &&
+        igual(desdePlantilla.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['3 · activa', false]]) &&
+        desdePlantilla.editor.aLaVista,
+      `escrituras: ${escriturasDesde(antesDeAplicar, '/nutrition/plans').length} · aviso: ${avisoDeAplicada ? 'sí' : 'no'} · ${desdePlantilla.selector?.opciones.map((o) => o.texto).join(' | ')} · origen en la API: ${elDeLaPlantilla?.templateOrigin ? 'una plantilla' : 'ninguno'}`,
+    );
+    // ── Las comidas habituales y la plantilla, desde sus lugares nuevos (parte 7, tramos 2 y 3) ──────────────────
+    // La versión que salió de la plantilla no tiene opciones de receta: las dos cosas se pueden guardar. «Guardar como
+    // plantilla» va en el menú de la versión; «Guardar como habitual», en el menú de la comida; y la comida habitual se
+    // agrega al pie del día tipo.
+    const NOMBRE_DE_LA_HABITUAL = `Habitual del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    const DP = estructuraDe(elDeLaPlantilla);
+    const DIALOGO = 'dialog[open]:not(.cajon)';
+    const elDialogoAbierto = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const dlg = document.querySelector(s);
+        return dlg ? { titulo: t(dlg.querySelector('h2')), nombre: dlg.querySelector('input[id$="-nombre"]')?.value ?? null, botones: [...dlg.querySelectorAll('.acciones button')].map((b) => ({ texto: t(b), apagado: b.disabled })) } : null;
+      }, DIALOGO);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await abrirMenuDelEditor('.editor-del-plan__acciones');
+    const menuDeLaVersion = (await elEditor())?.menu;
+    await captura(page, v, 'editor-el-menu-de-la-version-1440-claro');
+    await elegirDelMenu('Guardar como plantilla');
+    await page.waitForSelector(DIALOGO, { timeout: 10_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const dialogoDePlantilla = await elDialogoAbierto();
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await alternarEnElEditor(1);
+    await abrirMenuDelEditor('.comida-del-editor[data-comida="1"] .comida-del-editor__acciones');
+    const menuDeLaComidaSinReceta = (await elEditor())?.menu;
+    await elegirDelMenu('Guardar como habitual');
+    await page.waitForSelector(`${DIALOGO} input[id$="-nombre"]`, { timeout: 10_000 }).catch(() => {});
+    await pausa(200);
+    const dialogoDeHabitual = await elDialogoAbierto();
+    // El nombre viene con el de la comida: se lo reemplaza entero.
+    await page.$eval(`${DIALOGO} input[id$="-nombre"]`, (i) => {
+      i.focus();
+      i.select();
+    });
+    await page.keyboard.type(NOMBRE_DE_LA_HABITUAL);
+    const antesDeGuardarLaHabitual = v.urls.length;
+    await clic(page, `${DIALOGO} .acciones button`, 'Guardar la comida habitual').catch(() => null);
+    const avisoDeHabitual = await esperarAviso('Comida habitual guardada.');
+    await quieto(page, v);
+    const escriturasDeLaHabitual = escriturasDesde(antesDeGuardarLaHabitual, '/nutrition/meal-presets').length;
+    const laHabitual = (await leerApi(v, '/nutrition/meal-presets')).data.find((h) => h.name === NOMBRE_DE_LA_HABITUAL) ?? null;
+    const AL_PIE = `${EDITOR} [data-habituales="comidas"]`;
+    await page.waitForSelector(`${AL_PIE} select`, { timeout: 20_000 }).catch(() => {});
+    const alPie = await page.evaluate((s) => {
+      const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+      const c = document.querySelector(s);
+      return c ? { rotulo: t(c.querySelector('label')), opciones: [...c.querySelectorAll('option')].map((o) => o.textContent.replace(/\s+/g, ' ').trim()), boton: { texto: t(c.querySelector('button')), apagado: c.querySelector('button').disabled } } : null;
+    }, AL_PIE);
+    if (laHabitual && alPie) {
+      await page.select(`${AL_PIE} select`, laHabitual.presetId);
+      await pausa(200);
+      await clic(page, `${AL_PIE} button`, 'Agregar esta comida habitual').catch(() => null);
+      await pausa(300);
+    }
+    const conLaHabitual = await elEditor();
+    const notaDeInsertada = await page.evaluate((s) => document.querySelector(`${s} [role="status"]`)?.innerText.trim() ?? null, AL_PIE);
+    await captura(page, v, 'editor-una-comida-habitual-agregada-1440-claro');
+    comprobar(
+      'F-100',
+      'Lo que se usa de vez en cuando sigue estando, en su menú. En una versión sin opciones de receta, el menú de la versión ofrece «Guardar como plantilla», que abre su diálogo, y el menú «Más» de una comida, «Guardar como habitual», encendida: su diálogo trae el nombre de la comida. Guardarla es una sola escritura y la pantalla lo avisa; recién entonces aparece, al pie del día tipo, «Agregar una comida habitual» con esa comida (cuántos alimentos tiene y que va sin cantidades). Agregarla la suma al final del día tipo, plegada, con sus opciones, y lo dice; la versión queda con «Cambios sin guardar»',
+      igual(menuDeLaVersion, [sinMotivo('Guardar como plantilla')]) &&
+        dialogoDePlantilla?.titulo === 'Guardar como plantilla' &&
+        igual(menuDeLaComidaSinReceta, [sinMotivo('Cambiar el nombre'), sinMotivo('Guardar como habitual'), sinMotivo('Quitar comida')]) &&
+        dialogoDeHabitual?.titulo === 'Guardar como habitual' &&
+        dialogoDeHabitual.nombre === DP[0].comidas[0].nombre &&
+        igual(dialogoDeHabitual.botones, [{ texto: 'Cancelar', apagado: false }, { texto: 'Guardar la comida habitual', apagado: false }]) &&
+        escriturasDeLaHabitual === 1 &&
+        avisoDeHabitual &&
+        !!laHabitual &&
+        alPie?.rotulo === 'Agregar una comida habitual' &&
+        igual(alPie.opciones, ['—', `${NOMBRE_DE_LA_HABITUAL} · ${laHabitual.itemCount} ${laHabitual.itemCount === 1 ? 'alimento' : 'alimentos'} · Sin cantidades`]) &&
+        igual(alPie.boton, { texto: 'Agregar esta comida habitual', apagado: true }) &&
+        igual(conLaHabitual?.comidas.map((c) => [c.nombre, c.resumen]), [...DP[0].comidas, DP[0].comidas[0]].map((m) => [m.nombre, cuentaDe(m.opciones.length)])) &&
+        conLaHabitual.comidas.at(-1).abierta === false &&
+        conLaHabitual.estado === 'Cambios sin guardar' &&
+        (notaDeInsertada ?? '').startsWith('Comida habitual agregada al borrador.'),
+      `menú de la versión: ${menuDeLaVersion?.map((a) => a.texto).join(' | ')} → «${dialogoDePlantilla?.titulo}» · menú de la comida: ${menuDeLaComidaSinReceta?.map((a) => `${a.texto}${a.apagada ? ' (apagada)' : ''}`).join(' | ')} → «${dialogoDeHabitual?.titulo}», nombre «${dialogoDeHabitual?.nombre}» · escrituras: ${escriturasDeLaHabitual} · al pie: ${alPie?.opciones.join(' | ')} · comidas: ${conLaHabitual?.comidas.map((c) => c.nombre).join(', ')} · «${(notaDeInsertada ?? '').slice(0, 60)}»`,
+    );
+
+    // ── «Agregar ítem» (WP-ESCRITORIO-AREAS, parte 7, primer tramo; maqueta 21) ──────────────────────────────────
+    // El borrador que salió de la plantilla está abierto en el editor. A la primera opción de su primera comida se le
+    // agregan ítems por las tres vías —el catálogo, un habitual y un alimento creado a mano— y después se guarda.
+    // La opción está dentro de su comida: si está plegada (al entrar al editor lo están todas), se abre.
+    const OPCION = `${EDITOR} .comida-del-editor[data-comida="1"] .opcion-del-editor`;
+    if ((await page.$(OPCION)) === null) await alternarEnElEditor(1);
+    const CAJON = 'dialog.cajon[open]';
+    const coma = (n) => String(n).replace('.', ',');
+    const laOpcion = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const o = document.querySelector(s);
+        if (!o) return null;
+        const pestana = t(o.closest('.comida-del-editor').querySelector('.pestana-de-opcion:has(input:checked)')) ?? '';
+        return {
+          // El nombre de la comida está en su renglón; el de la opción, en su pestaña («1 · nombre»).
+          comida: t(o.closest('.comida-del-editor').querySelector('.comida-del-plan__nombre')),
+          nombre: pestana.includes(' · ') ? pestana.slice(pestana.indexOf(' · ') + 3) : pestana,
+          items: [...o.querySelectorAll('tr.item-del-editor')].map((tr) => ({ nombre: t(tr.querySelector('th')), cantidad: tr.querySelector('input[id$="-cantidad"]')?.value ?? null, unidadApagada: tr.querySelector('select[id$="-unidad"]')?.disabled ?? null })),
+          buscadorAdentro: !!o.querySelector('.buscador'),
+          focoEnElBoton: document.activeElement === o.querySelector('[data-agregar-item]'),
+          estado: t(document.querySelector('.plan__preparacion p[aria-live="polite"]')),
+        };
+      }, OPCION);
+    const elCajon = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector(s);
+        if (!d) return null;
+        const caja = d.getBoundingClientRect();
+        return {
+          sobretitulo: t(d.querySelector('.cajon__sobretitulo')),
+          titulo: t(d.querySelector('.cajon__cabecera h2')),
+          focoEnElBuscador: document.activeElement === d.querySelector('.agregar-item__buscador input'),
+          izquierda: Math.round(caja.left),
+          ancho: Math.round(caja.width),
+          cuenta: t(d.querySelector('[data-cuenta-del-catalogo]')),
+          agregado: t(d.querySelector('[data-agregado]')),
+          habituales: [...d.querySelectorAll('[data-habituales] .agregar-item__fichas button')].map((b) => b.getAttribute('aria-label')),
+          sinHabituales: t(d.querySelector('[data-habituales] > .nota')),
+          fallaDeHabituales: t(d.querySelector('[data-habituales] .aviso--error')),
+          estado: d.querySelector('[data-resultados]')?.dataset.resultados ?? null,
+          delCatalogo: t(d.querySelector('.agregar-item__resultados .agregar-item__titulo .nota')),
+          columnas: [...d.querySelectorAll('.alimentos-del-catalogo thead th')].map(t),
+          filas: [...d.querySelectorAll('.alimentos-del-catalogo tbody tr')].map((tr) => ({
+            id: tr.dataset.alimento,
+            nombre: t(tr.querySelector('.alimentos-del-catalogo__nombre')),
+            detalle: t(tr.querySelector('.alimentos-del-catalogo__detalle')),
+            valores: [...tr.querySelectorAll('td.alimentos-del-catalogo__numero')].map(t),
+            habitual: tr.querySelector('.alimentos-del-catalogo__habitual')?.getAttribute('aria-pressed') ?? null,
+            nombreDeLaChinche: tr.querySelector('.alimentos-del-catalogo__habitual')?.getAttribute('aria-label') ?? null,
+            elegir: tr.querySelector('.alimentos-del-catalogo__acciones button:last-child')?.getAttribute('aria-label') ?? null,
+          })),
+          sinResultados: t(d.querySelector('[data-sin-resultados]')),
+          falla: t(d.querySelector('.agregar-item__resultados .aviso--error')),
+          pie: [...d.querySelectorAll('.cajon__pie button')].map(t),
+          antes: t(d.querySelector('.agregar-item__antes')),
+          volver: t(d.querySelector('.agregar-item__volver')),
+          // Cada error lleva delante un símbolo de aviso, que no se lee en voz alta: se compara el texto.
+          errores: [...d.querySelectorAll('.campo__error')].map((e) => t(e).replace('⚠', '').trim()),
+          campos: [...d.querySelectorAll('.agregar-item__otro label')].map(t),
+          texto: t(d),
+        };
+      }, CAJON);
+    const buscarEnLaApi = async (q) => {
+      const r = await fetch(`${API}/api/v1/nutrition/catalog-items/search`, { method: 'POST', headers: { Authorization: v.token, 'X-BE-Surface': 'WEB', Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ q, limit: 20 }) });
+      if (!r.ok) throw new Error(`búsqueda en el catálogo: ${r.status}`);
+      v.marcas.push(Date.now());
+      return r.json();
+    };
+    /** Si el cajón no está abierto (o quedó en «Crear manualmente»), lo deja abierto en la búsqueda: el recorrido sigue. */
+    const asegurarElCajon = async () => {
+      if ((await page.$(CAJON)) === null) {
+        // Al volver a entrar, las comidas están plegadas: la de la opción se abre antes.
+        if ((await page.$(OPCION)) === null) await alternarEnElEditor(1);
+        await clic(page, `${OPCION} [data-agregar-item]`, 'Agregar ítem').catch(() => null);
+        await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 15_000 }).catch(() => {});
+      }
+      if ((await page.$(`${CAJON} .agregar-item__buscador input`)) === null) {
+        await page.evaluate((s) => document.querySelector(`${s} .agregar-item__volver`)?.click(), CAJON);
+        await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 10_000 }).catch(() => {});
+      }
+    };
+    const buscarEnElCajon = async (q) => {
+      await cupo(v, 60);
+      await asegurarElCajon();
+      const campo = await page.$(`${CAJON} .agregar-item__buscador input`);
+      if (campo === null) return;
+      // Lo que hubiera escrito se reemplaza: se selecciona entero antes de escribir (el triple clic no alcanza).
+      await campo.evaluate((i) => {
+        i.focus();
+        i.select();
+      });
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type(q);
+      await page.keyboard.press('Enter');
+      await pausa(200);
+      await page.waitForFunction((s) => ['lista', 'falla'].includes(document.querySelector(`${s} [data-resultados]`)?.dataset.resultados), { timeout: 20_000 }, CAJON).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+    };
+    const tocarEnElCajon = async (selector) => {
+      await cupo(v, 60);
+      await page.evaluate((s) => document.querySelector(s)?.click(), `${CAJON} ${selector}`);
+      await quieto(page, v, { silencio: 300 });
+    };
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const antesDeAbrirDelCajon = await laOpcion();
+    const pedidosAntesDeAbrir = v.urls.length;
+    await clic(page, `${OPCION} [data-agregar-item]`, 'Agregar ítem');
+    await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 15_000 }).catch(() => {});
+    await pausa(300);
+    const abiertoDelCajon = await elCajon();
+    comprobar(
+      'F-82',
+      '«Agregar ítem» abre el buscador del catálogo en un cajón al costado, no dentro de la opción: dice de qué comida y de qué opción es, el foco está en el campo de búsqueda y abrirlo no le pide nada a BE. El cajón no ocupa toda la ventana: el editor sigue detrás. Antes de buscar no hay resultados ni un «no encontramos»; en el pie, lo que hay que saber antes de elegir y las otras dos vías',
+      !!abiertoDelCajon &&
+        !!antesDeAbrirDelCajon &&
+        antesDeAbrirDelCajon.buscadorAdentro === false &&
+        abiertoDelCajon.sobretitulo === `${antesDeAbrirDelCajon.comida} · opción 1: ${antesDeAbrirDelCajon.nombre}` &&
+        abiertoDelCajon.titulo === 'Agregar ítem' &&
+        abiertoDelCajon.focoEnElBuscador &&
+        abiertoDelCajon.izquierda >= 400 &&
+        abiertoDelCajon.ancho <= 820 &&
+        abiertoDelCajon.estado === 'sin-buscar' &&
+        abiertoDelCajon.filas.length === 0 &&
+        abiertoDelCajon.sinResultados === null &&
+        abiertoDelCajon.agregado === '' &&
+        igual(abiertoDelCajon.pie, ['Crear manualmente', 'Importar desde Open Food Facts']) &&
+        /sin cantidad/.test(abiertoDelCajon.antes ?? '') &&
+        v.urls.slice(pedidosAntesDeAbrir).filter((u) => !u.startsWith('OPTIONS ')).length === 0,
+      `«${abiertoDelCajon?.sobretitulo}» · «${abiertoDelCajon?.titulo}» · foco en el buscador: ${abiertoDelCajon?.focoEnElBuscador ? 'sí' : 'no'} · el cajón empieza a los ${abiertoDelCajon?.izquierda} px y mide ${abiertoDelCajon?.ancho} · pedidos al abrir: ${v.urls.slice(pedidosAntesDeAbrir).filter((u) => !u.startsWith('OPTIONS ')).length}`,
+    );
+    await captura(page, v, 'agregar-item-abierto-1440-claro', { tope: 900 });
+
+    // Buscar: los alimentos son los de la API, con sus cuatro valores, calculados a mano.
+    const BUSCADO = 'arroz';
+    const enElCatalogo = await buscarEnLaApi(BUSCADO);
+    const antesDeBuscar = v.urls.length;
+    await buscarEnElCajon(BUSCADO);
+    const conResultados = await elCajon();
+    const busquedas = v.urls.slice(antesDeBuscar).filter((u) => u.startsWith('POST ') && u.includes('/nutrition/catalog-items'));
+    const esperados = enElCatalogo.data.map((e) => ({
+      id: e.catalogItemId,
+      nombre: e.name,
+      valores: [`${coma(e.composition.energyKcal)} kcal`, `${coma(e.composition.carbohydrateG)} g`, `${coma(e.composition.fatG)} g`, `${coma(e.composition.proteinG)} g`],
+      cada: e.composition.referenceAmount === '100ml' ? 'cada 100 ml' : 'cada 100 g',
+      importado: !!e.externalSource,
+    }));
+    comprobar(
+      'F-83',
+      'Buscar es una sola lectura, con el texto en el cuerpo del pedido y no en la dirección. Los resultados van en una tabla: el alimento y, en este orden, calorías, carbohidratos, grasas y proteínas; son los que da la API para esa búsqueda, con sus valores escritos con coma. Cada uno dice si es cada 100 g o cada 100 ml, y de dónde se importó si vino de afuera. La cuenta («N en el catálogo») se dice porque la búsqueda trajo todo. El foco sigue en el campo',
+      enElCatalogo.data.length >= 2 &&
+        !enElCatalogo.page.hasMore &&
+        igual(busquedas, [`POST ${API}/api/v1/nutrition/catalog-items/search`]) &&
+        !v.urls.slice(antesDeBuscar).some((u) => u.toLowerCase().includes(BUSCADO)) &&
+        conResultados?.estado === 'lista' &&
+        igual(conResultados.columnas.slice(0, 5), ['Alimento', 'Calorías', 'Carbohidratos', 'Grasas', 'Proteínas']) &&
+        igual(conResultados.filas.map((f) => [f.id, f.nombre, f.valores]), esperados.map((e) => [e.id, e.nombre, e.valores])) &&
+        conResultados.filas.every((f, i) => (esperados[i].importado ? f.detalle.startsWith(`${esperados[i].cada} · Importado de `) : f.detalle === esperados[i].cada)) &&
+        conResultados.filas.every((f) => f.elegir === `Elegir ${f.nombre}` && f.habitual === 'false' && f.nombreDeLaChinche === `Marcar como habitual: ${f.nombre}`) &&
+        conResultados.cuenta === `${esperados.length} en el catálogo` &&
+        conResultados.delCatalogo === `${esperados.length} alimentos con «${BUSCADO}»` &&
+        conResultados.focoEnElBuscador,
+      `${busquedas.length} pedido · ${conResultados?.filas.map((f) => `${f.nombre}: ${f.valores.join(' · ')}`).join(' | ')} · «${conResultados?.cuenta}»`,
+    );
+
+    // Elegir no cierra el cajón: suma el ítem, sin cantidad, y lo dice.
+    const primero = esperados[0];
+    const segundo = esperados[1];
+    const antesDeElegirDelCajon = v.urls.length;
+    await tocarEnElCajon(`tr[data-alimento="${primero.id}"] .alimentos-del-catalogo__acciones button:last-child`);
+    const trasElegir = await elCajon();
+    await tocarEnElCajon(`tr[data-alimento="${segundo.id}"] .alimentos-del-catalogo__acciones button:last-child`);
+    const trasElSegundo = await elCajon();
+    const pedidosAlElegirDelCajon = v.urls.slice(antesDeElegirDelCajon).filter((u) => !u.startsWith('OPTIONS ')).length;
+    await captura(page, v, 'agregar-item-con-resultados-y-dos-agregados-1440-claro', { tope: 900 });
+    await tocarEnElCajon('.cajon__cerrar');
+    await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+    await pausa(300);
+    const trasCerrar = await laOpcion();
+    const nuevos = trasCerrar ? trasCerrar.items.slice(antesDeAbrirDelCajon.items.length) : [];
+    comprobar(
+      'F-84',
+      'Elegir un alimento lo suma a la opción y no cierra el cajón: lo anuncia («Agregado: …») y deja seguir; con el segundo dice cuántos van. Elegir no le pide nada a BE. Al cerrar, el foco vuelve a «Agregar ítem», la opción tiene los dos ítems nuevos al final, sin cantidad y con la unidad apagada, y el editor dice que hay cambios sin guardar',
+      !!trasElegir &&
+        trasElegir.agregado === `Agregado: ${primero.nombre}. Podés sumar otro o cerrar.` &&
+        trasElegir.estado === 'lista' &&
+        trasElegir.filas.length === esperados.length &&
+        trasElSegundo?.agregado === `Agregado: ${segundo.nombre} (van 2). Podés sumar otro o cerrar.` &&
+        pedidosAlElegirDelCajon === 0 &&
+        !!trasCerrar &&
+        (await page.evaluate((s) => !document.querySelector(s), CAJON)) &&
+        trasCerrar.focoEnElBoton &&
+        igual(nuevos, [primero, segundo].map((e) => ({ nombre: e.nombre, cantidad: '', unidadApagada: true }))) &&
+        trasCerrar.estado === 'Cambios sin guardar',
+      `«${trasElegir?.agregado}» · «${trasElSegundo?.agregado}» · pedidos al elegir: ${pedidosAlElegirDelCajon} · la opción: ${trasCerrar?.items.map((i) => i.nombre).join(', ')} · «${trasCerrar?.estado}» · foco en «Agregar ítem»: ${trasCerrar?.focoEnElBoton ? 'sí' : 'no'}`,
+    );
+
+    // Los habituales: se marcan con la chinche, quedan arriba y se agregan con un clic.
+    await clic(page, `${OPCION} [data-agregar-item]`, 'Agregar ítem');
+    await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 15_000 }).catch(() => {});
+    const alReabrir = await elCajon();
+    await buscarEnElCajon(BUSCADO);
+    const antesDeMarcar = v.urls.length;
+    await tocarEnElCajon(`tr[data-alimento="${segundo.id}"] .alimentos-del-catalogo__habitual`);
+    const marcado = await elCajon();
+    const escriturasAlMarcar = escriturasDesde(antesDeMarcar, `/nutrition/favorite-items/${segundo.id}`).length;
+    const habitualesEnLaApi = (await leerApi(v, '/nutrition/favorite-items')).data.map((e) => e.catalogItemId);
+    await tocarEnElCajon('[data-habituales] .agregar-item__fichas button');
+    const trasElHabitual = await elCajon();
+    await tocarEnElCajon(`tr[data-alimento="${segundo.id}"] .alimentos-del-catalogo__habitual`);
+    const desmarcado = await elCajon();
+    const habitualesAlFinal = (await leerApi(v, '/nutrition/favorite-items')).data.map((e) => e.catalogItemId);
+    comprobar(
+      'F-85',
+      'Cada vez que se abre, el cajón empieza con el buscador vacío. La chinche de un resultado lo marca como habitual con una sola escritura: queda apretada, cambia su nombre a «Quitar de habituales» y el alimento aparece arriba, en «Alimentos habituales», como una ficha que lo agrega con un clic. Volver a tocarla lo quita, y la ficha se va. Antes de marcar ninguno, el bloque dice cómo se marcan',
+      alReabrir?.estado === 'sin-buscar' &&
+        alReabrir.filas.length === 0 &&
+        alReabrir.agregado === '' &&
+        alReabrir.habituales.length === 0 &&
+        /Marcar como habitual/.test(alReabrir.sinHabituales ?? '') &&
+        escriturasAlMarcar === 1 &&
+        marcado?.filas.find((f) => f.id === segundo.id)?.habitual === 'true' &&
+        marcado.filas.find((f) => f.id === segundo.id)?.nombreDeLaChinche === `Quitar de habituales: ${segundo.nombre}` &&
+        marcado.filas.filter((f) => f.habitual === 'true').length === 1 &&
+        igual(marcado.habituales, [`Agregar ${segundo.nombre}`]) &&
+        igual(habitualesEnLaApi, [segundo.id]) &&
+        trasElHabitual?.agregado === `Agregado: ${segundo.nombre}. Podés sumar otro o cerrar.` &&
+        desmarcado?.filas.find((f) => f.id === segundo.id)?.habitual === 'false' &&
+        desmarcado.habituales.length === 0 &&
+        habitualesAlFinal.length === 0,
+      `al reabrir: ${alReabrir?.estado}, ${alReabrir?.habituales.length} habituales · escrituras al marcar: ${escriturasAlMarcar} · habituales: ${marcado?.habituales.join(', ')} · «${trasElHabitual?.agregado}» · al quitar: ${desmarcado?.habituales.length} en pantalla, ${habitualesAlFinal.length} en la API`,
+    );
+
+    // Una búsqueda sin resultados no es una búsqueda que falló.
+    await buscarEnElCajon('zzzzqqq');
+    const sinNadaDelCajon = await elCajon();
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/catalog-items/search'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    let conFallaDelCajon = null;
+    try {
+      await buscarEnElCajon(BUSCADO);
+      conFallaDelCajon = await elCajon();
+    } finally {
+      v.reglas.length = 0;
+    }
+    await tocarEnElCajon('.agregar-item__resultados .aviso--error button');
+    await page.waitForFunction((s) => document.querySelector(`${s} [data-resultados]`)?.dataset.resultados === 'lista', { timeout: 20_000 }, CAJON).catch(() => {});
+    const trasReintentarDelCajon = await elCajon();
+    comprobar(
+      'F-86',
+      'Una búsqueda que no encuentra nada lo dice y ofrece las otras dos vías; no muestra una tabla vacía ni una cuenta. Una búsqueda que falla (503 simulado) dice la falla con su motivo y «Reintentar», y no «No encontramos alimentos con ese nombre»; al reintentar, los resultados aparecen',
+      sinNadaDelCajon?.estado === 'lista' &&
+        sinNadaDelCajon.filas.length === 0 &&
+        /^No encontramos alimentos con ese nombre\./.test(sinNadaDelCajon.sinResultados ?? '') &&
+        sinNadaDelCajon.cuenta === null &&
+        conFallaDelCajon?.estado === 'falla' &&
+        /^No pudimos buscar en el catálogo\./.test(conFallaDelCajon.falla ?? '') &&
+        /Reintentar/.test(conFallaDelCajon.falla ?? '') &&
+        conFallaDelCajon.sinResultados === null &&
+        conFallaDelCajon.filas.length === 0 &&
+        trasReintentarDelCajon?.estado === 'lista' &&
+        trasReintentarDelCajon.filas.length === esperados.length,
+      `sin resultados: «${sinNadaDelCajon?.sinResultados}» · con la falla: «${(conFallaDelCajon?.falla ?? '').slice(0, 110)}» · al reintentar: ${trasReintentarDelCajon?.filas.length} alimentos`,
+    );
+
+    // «Crear manualmente»: adentro del cajón, con cada campo que falta dicho en su lugar.
+    const NOMBRE_DEL_NUEVO = `Alimento del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    await buscarEnElCajon(BUSCADO);
+    await tocarEnElCajon('.cajon__pie button');
+    await page.waitForSelector(`${CAJON} .agregar-item__otro`, { timeout: 10_000 }).catch(() => {});
+    const manual = await elCajon();
+    const antesDeCrearDelCajon = v.urls.length;
+    await tocarEnElCajon('.agregar-item__otro button[type="submit"]');
+    const conFaltantes = await elCajon();
+    const escriturasConFaltantes = escriturasDesde(antesDeCrearDelCajon, '/nutrition/catalog-items').length;
+    const escribirEn = async (sufijo, valor) => {
+      await page.type(`${CAJON} .agregar-item__otro input[id$="${sufijo}"]`, valor).catch(() => {});
+    };
+    await escribirEn('-nombre', NOMBRE_DEL_NUEVO);
+    await escribirEn('-kcal', '120');
+    await escribirEn('-c', '22,5');
+    await escribirEn('-g', '1,5');
+    await escribirEn('-p', '4');
+    await tocarEnElCajon('.agregar-item__otro button[type="submit"]');
+    await page.waitForSelector(`${CAJON} .agregar-item__buscador input`, { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const trasCrearDelCajon = await elCajon();
+    const creaciones = escriturasDesde(antesDeCrearDelCajon, '/nutrition/catalog-items').filter((u) => !u.includes('/search'));
+    const elNuevo = (await buscarEnLaApi(NOMBRE_DEL_NUEVO)).data.find((e) => e.name === NOMBRE_DEL_NUEVO) ?? null;
+    comprobar(
+      'F-87',
+      '«Crear manualmente» se abre dentro del cajón, en el lugar de los resultados, con «Volver a la búsqueda» y sin las acciones del pie; pide el nombre y, en el orden de BE, calorías, carbohidratos, grasas y proteínas. Enviarlo vacío no escribe nada y dice en cada campo qué falta. Con los cinco datos hace una sola escritura, suma el alimento a la opción, vuelve a la búsqueda con el foco en el campo y lo anuncia. El alimento queda en el catálogo con los valores que se escribieron',
+      !!manual &&
+        manual.volver === 'Volver a la búsqueda' &&
+        manual.pie.length === 0 &&
+        igual(manual.campos, ['Nombre', 'Calorías (kcal)', 'Carbohidratos (g)', 'Grasas (g)', 'Proteínas (g)']) &&
+        escriturasConFaltantes === 0 &&
+        conFaltantes?.errores.length === 5 &&
+        conFaltantes.errores[0] === 'Falta el nombre del alimento.' &&
+        conFaltantes.errores.slice(1).every((e) => e === 'Falta el valor cada 100 g.') &&
+        creaciones.length === 1 &&
+        trasCrearDelCajon?.agregado === `Agregado: ${NOMBRE_DEL_NUEVO} (van 2). Podés sumar otro o cerrar.` &&
+        trasCrearDelCajon.focoEnElBuscador &&
+        igual(trasCrearDelCajon.pie, ['Crear manualmente', 'Importar desde Open Food Facts']) &&
+        !!elNuevo &&
+        igual([elNuevo.composition.energyKcal, elNuevo.composition.carbohydrateG, elNuevo.composition.fatG, elNuevo.composition.proteinG], [120, 22.5, 1.5, 4]),
+      `campos: ${manual?.campos.join(', ')} · vacío: ${conFaltantes?.errores.length} campos marcados, ${escriturasConFaltantes} escrituras · al crear: ${creaciones.length} escritura, «${trasCrearDelCajon?.agregado}» · en el catálogo: ${elNuevo ? `${elNuevo.composition.energyKcal} kcal, ${elNuevo.composition.carbohydrateG} g, ${elNuevo.composition.fatG} g, ${elNuevo.composition.proteinG} g` : 'no está'}`,
+    );
+
+    // Las palabras, la accesibilidad y los anchos, con el cajón abierto y una búsqueda hecha.
+    await asegurarElCajon();
+    await buscarEnElCajon(BUSCADO);
+    const paraLeer = await elCajon();
+    const faltasDelCajon = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasDelCajonDeNoche = await axe(page);
+    await ponerTema(page, 'claro');
+    const enAnchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(400);
+      const c = await page.evaluate((s) => {
+        const d = document.querySelector(s);
+        if (!d || !d.querySelector('.cajon__pie')) return { cajon: 0, util: 0, izquierda: -1, afuera: 1, pieALaVista: false };
+        const caja = d.getBoundingClientRect();
+        // La tabla se desplaza dentro de su caja: lo de adentro no cuenta como «se sale».
+        const afuera = [...d.querySelectorAll('*')].filter((e) => !e.closest('.desplazable-x table') && e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1));
+        return { cajon: Math.round(caja.width), util: document.documentElement.clientWidth, izquierda: Math.round(caja.left), afuera: afuera.length, pieALaVista: d.querySelector('.cajon__pie').getBoundingClientRect().bottom <= window.innerHeight + 1 };
+      }, CAJON);
+      enAnchos.push({ ancho, ...c, desborda: !(await sinDesborde(page)) });
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    comprobar(
+      'F-88',
+      'Con una búsqueda hecha, en el cajón no hay un porcentaje ni una palabra de la lista de Nutrición; la misma consulta encuentra los nombres de los alimentos. axe no encuentra faltas con el cajón abierto, en los dos temas. A 1280 px el cajón sigue al costado; a 1024, 768 y 390 ocupa todo el ancho. En los cuatro, nada se sale del cajón, su pie queda a la vista y la página no desborda',
+      !!paraLeer &&
+        dominio.terminosProhibidosEn(paraLeer.texto).length === 0 &&
+        esperados.every((e) => paraLeer.texto.includes(e.nombre)) &&
+        faltasDelCajon.length === 0 &&
+        faltasDelCajonDeNoche.length === 0 &&
+        enAnchos.find((x) => x.ancho === 1280).izquierda > 0 &&
+        enAnchos.find((x) => x.ancho === 1280).cajon < 1280 &&
+        enAnchos.filter((x) => x.ancho <= 1024).every((x) => x.izquierda === 0 && x.cajon >= x.util - 1) &&
+        enAnchos.every((x) => x.afuera === 0 && x.pieALaVista && !x.desborda),
+      `palabras: ${dominio.terminosProhibidosEn(paraLeer?.texto ?? '').join(', ') || 'ninguna'} · axe: ${[...faltasDelCajon, ...faltasDelCajonDeNoche].map((f) => f.id).join(', ') || 'sin faltas'} · ${enAnchos.map((x) => `${x.ancho}: el cajón mide ${x.cajon} y empieza en ${x.izquierda}${x.afuera ? `, ${x.afuera} AFUERA` : ''}${x.desborda ? ', DESBORDA' : ''}${x.pieALaVista ? '' : ', el pie NO SE VE'}`).join(' · ')}`,
+    );
+
+    // Guardar: lo que se agregó queda en la API, en esa opción, sin cantidad.
+    await tocarEnElCajon('.cajon__cerrar');
+    await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+    const antesDeGuardarItems = v.urls.length;
+    const paraGuardar = await laOpcion();
+    await clic(page, '.plan__preparacion button', 'Guardar cambios');
+    await page.waitForFunction(() => document.querySelector('.plan__preparacion p[aria-live="polite"]')?.innerText.trim() === 'Guardado', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const guardada = await laOpcion();
+    const borradorGuardado = (await leerApi(v, `/nutrition/plans/${enLaLista.planId}`)).data;
+    const opcionEnLaApi = [...borradorGuardado.dayTypes].sort((a, b) => a.order - b.order)[0].meals.slice().sort((a, b) => a.order - b.order)[0].options.slice().sort((a, b) => a.order - b.order)[0];
+    const itemsEnLaApi = [...opcionEnLaApi.items].sort((a, b) => a.order - b.order);
+    const agregados = itemsEnLaApi.slice(antesDeAbrirDelCajon.items.length);
+    comprobar(
+      'F-84',
+      '«Guardar cambios» guarda la opción con lo que se agregó, con una sola escritura: en la API, sus últimos cuatro ítems son los dos elegidos del catálogo, el habitual y el que se creó a mano, en ese orden y sin cantidad. Guardar no activa: el selector sigue con «En preparación»',
+      paraGuardar?.items.length === antesDeAbrirDelCajon.items.length + 4 &&
+        escriturasDesde(antesDeGuardarItems, `/nutrition/plans/${enLaLista.planId}`).length === 1 &&
+        guardada?.estado === 'Guardado' &&
+        igual(agregados.map((i) => i.catalogItemId), [primero.id, segundo.id, segundo.id, elNuevo?.catalogItemId]) &&
+        agregados.every((i) => i.quantity === null && i.preparationState === null) &&
+        borradorGuardado.state === 'DRAFT' &&
+        (await planEnPantalla(page)).version === 'preparacion',
+      `en la pantalla: ${paraGuardar?.items.map((i) => i.nombre).join(', ')} · en la API: ${itemsEnLaApi.length} ítems, ${agregados.filter((i) => i.quantity === null).length} sin cantidad · estado: ${borradorGuardado.state}`,
+    );
+
+    // Lo que el escenario no tiene, con respuestas simuladas: los habituales que no se pueden leer y una búsqueda con más
+    // coincidencias que las veinte que se piden. Los habituales se leen al abrir el editor: hay que volver a entrar.
+    await salir();
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/favorite-items'), accion: 'responder', status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    let conHabitualesCaidos = null;
+    try {
+      await entrar(BASE);
+      await asegurarElCajon();
+      await pausa(300);
+      conHabitualesCaidos = await elCajon();
+    } finally {
+      v.reglas.length = 0;
+    }
+    await captura(page, v, 'agregar-item-habituales-que-no-se-leen-simulado-1440-claro', { tope: 900 });
+    await tocarEnElCajon('[data-habituales] .aviso--error button');
+    await page.waitForFunction((s) => !!document.querySelector(`${s} [data-habituales] > .nota`), { timeout: 20_000 }, CAJON).catch(() => {});
+    const habitualesReleidos = await elCajon();
+    comprobar(
+      'F-85',
+      '(Respuesta simulada.) Si los alimentos habituales no se pueden leer, el cajón lo dice, con su motivo y «Reintentar», y no «Todavía no marcaste alimentos habituales»; el buscador queda a la vista. Al reintentar, el bloque vuelve a decir cómo se marcan',
+      /^No pudimos leer tus alimentos habituales\./.test(conHabitualesCaidos?.fallaDeHabituales ?? '') &&
+        /Reintentar/.test(conHabitualesCaidos.fallaDeHabituales) &&
+        conHabitualesCaidos.sinHabituales === null &&
+        conHabitualesCaidos.habituales.length === 0 &&
+        conHabitualesCaidos.estado === 'sin-buscar' &&
+        habitualesReleidos?.fallaDeHabituales === null &&
+        /Marcar como habitual/.test(habitualesReleidos.sinHabituales ?? ''),
+      `con la falla: «${(conHabitualesCaidos?.fallaDeHabituales ?? '').slice(0, 120)}» · al reintentar: «${(habitualesReleidos?.sinHabituales ?? '').slice(0, 60)}»`,
+    );
+    const veinte = Array.from({ length: 20 }, (_, i) => ({ ...enElCatalogo.data[0], catalogItemId: `alimento-simulado-${i + 1}`, name: `Alimento simulado ${i + 1}` }));
+    v.reglas.push({ coincide: (u) => u.includes('/nutrition/catalog-items/search'), accion: 'entregar', cuerpo: { data: veinte, page: { limit: 20, nextCursor: 'cursor-simulado', hasMore: true } } });
+    let conMas = null;
+    try {
+      await buscarEnElCajon('alimento');
+      conMas = await elCajon();
+    } finally {
+      v.reglas.length = 0;
+    }
+    comprobar(
+      'F-83',
+      '(Respuesta simulada.) Con más coincidencias que las veinte que se piden, el cajón no dice una cuenta: la API no informa el total. Dice «Los primeros 20» y que hay más, para acotar la búsqueda',
+      conMas?.estado === 'lista' && conMas.filas.length === 20 && conMas.cuenta === null && conMas.delCatalogo === 'Los primeros 20 con «alimento»' && /Hay más alimentos que coinciden/.test(conMas.texto),
+      `${conMas?.filas.length} filas · cuenta: ${conMas?.cuenta ?? 'no se dice'} · «${conMas?.delCatalogo}»`,
+    );
+    await tocarEnElCajon('.cajon__cerrar');
+    await page.waitForFunction((s) => !document.querySelector(s), { timeout: 10_000 }, CAJON).catch(() => {});
+
+    // (Respuesta simulada.) Los topes del contrato, que el escenario no tiene: siete días tipo de nombre largo y una
+    // comida con doce opciones, la última de nombre muy largo. Se mira a 1024 px, el ancho más justo del escritorio.
+    const versionReal = (await leerApi(v, `/nutrition/plans/${enLaLista.planId}`)).data;
+    const diaReal = porOrden(versionReal.dayTypes)[0];
+    const opcionReal = porOrden(porOrden(diaReal.meals)[0].options)[0];
+    const idSimulado = (grupo, n) => `00000000-0000-4000-8000-${String(grupo).padStart(4, '0')}${String(n).padStart(8, '0')}`;
+    const NOMBRE_MUY_LARGO = 'Tarta de verduras de estación con ensalada de hojas verdes, tomate, zanahoria rallada y semillas';
+    const doceOpciones = Array.from({ length: 12 }, (_, n) => ({ ...opcionReal, optionId: idSimulado(2, n + 1), order: n + 1, label: n === 11 ? NOMBRE_MUY_LARGO : `Opción de prueba ${n + 1}` }));
+    const versionGrande = {
+      ...versionReal,
+      dayTypes: Array.from({ length: 7 }, (_, n) => ({
+        ...diaReal,
+        dayTypeId: idSimulado(1, n + 1),
+        order: n + 1,
+        label: `Día de entrenamiento de fuerza número ${n + 1}, con merienda`,
+        meals: porOrden(diaReal.meals).map((m, j) => (j === 0 ? { ...m, options: doceOpciones } : m)),
+      })),
+    };
+    await page.setViewport({ width: 1024, height: 900 });
+    const conLosTopes = await conSimulacion(
+      [{ coincide: (u, req) => req.method() === 'GET' && u.includes(`/nutrition/plans/${enLaLista.planId}`), accion: 'entregar', cuerpo: { data: versionGrande } }],
+      `${BASE}&dia=6&comidas=1`,
+      () => elEditor(),
+    );
+    const medirLosTopes = () =>
+      page.evaluate((s) => {
+        const raiz = document.querySelector(s);
+        if (!raiz) return null;
+        const caja = raiz.getBoundingClientRect();
+        const adentro = (e) => e.getBoundingClientRect().left >= caja.left - 1 && e.getBoundingClientRect().right <= caja.right + 1;
+        const renglones = (xs) => new Set(xs.map((e) => Math.round(e.getBoundingClientRect().top))).size;
+        const segmentos = [...raiz.querySelectorAll('[data-dia-tipo] .segmento')];
+        const pestanas = [...raiz.querySelectorAll('.comida-del-editor[data-abierta] .pestana-de-opcion')];
+        const agregarDia = raiz.querySelector('[data-agregar-dia]');
+        return {
+          segmentos: segmentos.length,
+          segmentosAdentro: segmentos.every(adentro),
+          renglonesDeSegmentos: renglones(segmentos),
+          pestanas: pestanas.length,
+          pestanasAdentro: pestanas.every(adentro),
+          renglonesDePestanas: renglones(pestanas),
+          agregarDiaApagado: agregarDia?.disabled ?? null,
+          tope: [...raiz.querySelectorAll('.editor-del-plan__dia > .nota')].map((e) => e.innerText.replace(/\s+/g, ' ').trim()).join(' '),
+          afuera: [...raiz.querySelectorAll('*')].filter((e) => !e.closest('dialog') && e.getClientRects().length > 0 && !adentro(e)).length,
+        };
+      }, EDITOR);
+    const topesMedidos = await medirLosTopes();
+    const topesDesbordan = !(await sinDesborde(page));
+    const antesDeElegirLaLarga = v.urls.length;
+    await enElEditor('.comida-del-editor[data-comida="1"] .pestana-de-opcion', '12 · Tarta de verduras').catch(() => null);
+    const conLaLargaElegida = await elEditor();
+    const topesConLaLarga = await medirLosTopes();
+    const laLargaDesborda = !(await sinDesborde(page));
+    await captura(page, v, 'editor-los-topes-simulado-1024-claro');
+    const pedidosConLosTopes = pedidosDesde(antesDeElegirLaLarga);
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(300);
+    comprobar(
+      'F-101',
+      '(Respuesta simulada.) Con los topes del contrato —siete días tipo de nombre largo y una comida con doce opciones—, a 1024 px: los siete segmentos y las doce pestañas están enteros dentro del editor, en más de un renglón; el día tipo que se mira es el que pide la dirección (el sexto); «Agregar» un día tipo está apagado y dice el tope; nada se sale del editor y la página no desborda',
+      conLosTopes?.dias.length === 7 &&
+        conLosTopes.dias.findIndex((x) => x.elegido) === 5 &&
+        conLosTopes.comidas[0]?.abierta === true &&
+        conLosTopes.comidas[0].pestanas.length === 12 &&
+        conLosTopes.estado === 'Guardado' &&
+        !!topesMedidos &&
+        topesMedidos.segmentos === 7 &&
+        topesMedidos.segmentosAdentro &&
+        topesMedidos.renglonesDeSegmentos > 1 &&
+        topesMedidos.pestanas === 12 &&
+        topesMedidos.pestanasAdentro &&
+        topesMedidos.renglonesDePestanas > 1 &&
+        topesMedidos.agregarDiaApagado === true &&
+        topesMedidos.tope === 'Un plan lleva hasta 7 días tipo.' &&
+        topesMedidos.afuera === 0 &&
+        !topesDesbordan,
+      `${topesMedidos?.segmentos} segmentos en ${topesMedidos?.renglonesDeSegmentos} renglones · ${topesMedidos?.pestanas} pestañas en ${topesMedidos?.renglonesDePestanas} renglones · «Agregar» apagado: ${topesMedidos?.agregarDiaApagado ? 'sí' : 'no'}, «${topesMedidos?.tope}» · afuera: ${topesMedidos?.afuera}${topesDesbordan ? ' · DESBORDA' : ''}`,
+    );
+    comprobar(
+      'F-102',
+      '(Respuesta simulada.) Una opción de nombre muy largo: su pestaña lo corta mientras no es la elegida —y la primera, de nombre corto, no se corta—; al pasar a esa opción, la pestaña lo muestra entero, sin salirse del editor ni hacer desbordar la página. Pasar de una pestaña a otra no le pide nada a BE',
+      conLosTopes?.comidas[0]?.pestanas.at(-1)?.texto === `12 · ${NOMBRE_MUY_LARGO}` &&
+        conLosTopes.comidas[0].cortadas.at(-1) === true &&
+        conLosTopes.comidas[0].cortadas[0] === false &&
+        conLosTopes.comidas[0].pestanas[0].elegida &&
+        conLaLargaElegida?.comidas[0]?.pestanas.at(-1)?.elegida === true &&
+        conLaLargaElegida.comidas[0].cortadas.at(-1) === false &&
+        !!topesConLaLarga &&
+        topesConLaLarga.pestanasAdentro &&
+        topesConLaLarga.afuera === 0 &&
+        !laLargaDesborda &&
+        pedidosConLosTopes === 0,
+      `sin elegir: ${conLosTopes?.comidas[0]?.cortadas.at(-1) ? 'cortada' : 'ENTERA'} · elegida: ${conLaLargaElegida?.comidas[0]?.cortadas.at(-1) ? 'CORTADA' : 'entera'} · adentro: ${topesConLaLarga?.pestanasAdentro ? 'sí' : 'NO'}${laLargaDesborda ? ' · DESBORDA' : ''} · pedidos: ${pedidosConLosTopes}`,
+    );
+
+    comprobar('—', '«Plan», de Nutrición, no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
+/**
+ * «Plan», de Nutrición, con el asesorado A (WP-ESCRITORIO-AREAS, parte 5): su plan tiene un solo día tipo y dos
+ * versiones activadas en otros meses. Solo lee. La misma pieza se mira además dentro de la ficha, en el detalle de la
+ * activación, que es una columna angosta. Lo que escribe y lo que A no tiene va en `planesDeNutricion`.
+ */
+async function planDeNutricionDeA(page, v) {
+  const A = estado.aseId;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const enLaPagina = (iso) =>
+    page.evaluate((x) => {
+      const f = new Date(x);
+      const delAnio = f.getFullYear() === new Date().getFullYear();
+      return {
+        dia: delAnio ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(f) : new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(f),
+        hora: new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(f),
+      };
+    }, iso);
+  await cupo(v, 60);
+  const desde = v.urls.length;
+  await ir(page, `/pro/advisees/nutrition?id=${A}&vista=plan`);
+  await page.waitForSelector('.plan, .seccion-del-area .estado-de-grafico--error', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const p = await planEnPantalla(page);
+  const deNutricion = v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes('/nutrition/')).length;
+  const lista = (await leerApi(v, `/advisees/${A}/nutrition/plans?limit=50`)).data;
+  const efectiva = lista.find((x) => x.isEffective);
+  const activa = (await leerApi(v, `/nutrition/plans/${efectiva.planId}`)).data;
+  const objetivo = (await leerApi(v, `/advisees/${A}/nutrition/objectives/effective`)).data.objective;
+  const E = esperadoDelPlan({ lista, activa });
+  const dia = E.dias[0];
+  const fechaDeLaActiva = await enLaPagina(activa.activatedAt);
+  const comidasComoLaApi = (enPantalla, abierta) =>
+    enPantalla.length === dia.comidas.length &&
+    enPantalla.every((c, i) => {
+      const e = dia.comidas[i];
+      const estaAbierta = e.orden === abierta;
+      return c.nombre === e.nombre && c.cuenta === e.cuenta && c.abierta === estaAbierta && (estaAbierta ? igual(c.opciones.map((o) => ({ orden: o.orden, titulo: o.titulo, receta: o.receta, items: o.items })), e.opciones) : c.nombres === e.nombres);
+    });
+  comprobar(
+    'F-58',
+    'El plan de A tiene un solo día tipo: no hay nada que elegir, y la pantalla dice su nombre, sin control. Sus comidas son las de la API, con la primera abierta; sin una versión en preparación no hay selector de versión ni editor',
+    E.dias.length === 1 && p.activo?.dia?.clase === 'unico' && p.activo.dia.texto === `Día tipo ${dia.nombre}` && comidasComoLaApi(p.activo.comidas, dia.comidas[0].orden) && p.selector === null && !p.editor.esta && !lista.some((x) => x.state === 'DRAFT'),
+    `«${p.activo?.dia?.texto}» · ${p.activo?.comidas.map((c) => `${c.nombre}: ${c.cuenta}`).join(' · ')}`,
+  );
+  const historial = [];
+  for (const x of [...E.activadas].reverse()) {
+    const f = await enLaPagina(x.activatedAt);
+    historial.push({ numero: E.numeroDe.get(x.planId), vigente: x.isEffective, texto: `Versión ${E.numeroDe.get(x.planId)} · activada el ${f.dia}, ${f.hora} · ${x.isEffective ? 'vigente' : 'anterior, conservada'}` });
+  }
+  const gramos = (m) => `${String(m.value).replace('.', ',')} g`;
+  const tira = [`${new Intl.NumberFormat('es-AR').format(objetivo.estimatedEnergyRequirement.value)} kcal`, gramos(objetivo.macronutrientDistribution.carbohydrate), gramos(objetivo.macronutrientDistribution.fat), gramos(objetivo.macronutrientDistribution.protein)];
+  const palabras = dominio.terminosProhibidosEn(p.main ?? '');
+  comprobar(
+    'F-62',
+    'El plan de A dice su versión con la fecha de otro mes, sin el año porque es el año en curso («Versión 2 · activada el 7 sept · es lo que ve el asesorado»); el historial, las dos versiones con su día y su hora; la tira, el objetivo de la API. Se leyeron tres cosas de Nutrición, y la sección no tiene palabras de la lista',
+    p.activo?.frase === `Versión ${E.numero} · activada el ${fechaDeLaActiva.dia} · es lo que ve el asesorado` &&
+      !/\d{4}/.test(p.activo.frase) &&
+      igual(p.activo.historial.versiones, historial) &&
+      historial.length >= 2 &&
+      p.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+      activa.objectiveVersionId === objetivo.versionId &&
+      p.activo.objetivo.valores.length === 4 &&
+      p.activo.objetivo.valores.every((x, i) => x.endsWith(tira[i])) &&
+      deNutricion === 3 &&
+      palabras.length === 0,
+    `«${p.activo?.frase}» · ${p.activo?.historial.versiones.map((x) => x.texto).join(' | ')} · ${p.activo?.objetivo.valores.map((x) => x.split(' ').slice(-2).join(' ')).join(' · ')} · lecturas de Nutrición: ${deNutricion}${palabras.length ? ` · ${palabras.join(', ')}` : ''}`,
+  );
+
+  // ── La misma pieza, en la ficha: el detalle de la activación, en la línea de tiempo ──────────────────────────
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees?id=${A}&vista=linea&p=90`);
+  await page.waitForSelector('.vista-de-la-linea[data-vista="HITOS"]', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.click('.vista-de-la-linea[data-vista="HITOS"]').catch(() => {});
+  await quieto(page, v);
+  const fila = `.entrada[data-id="nplan:${activa.planId}"] .entrada__fila`;
+  const estaLaActivacion = (await page.$(fila)) !== null;
+  if (!estaLaActivacion) {
+    informar('F-69', 'La planificación de una etapa, en la ficha', 'el período de 90 días no tiene la activación del plan vigente de A');
+  } else {
+    await page.click(fila);
+    await page.waitForSelector('.detalle-del-hecho .version-del-plan .comida-del-plan', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const leer = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector('.detalle-del-hecho');
+        const pieza = d?.querySelector('.version-del-plan') ?? null;
+        if (!pieza) return null;
+        const caja = d.getBoundingClientRect();
+        return {
+          renglon: t(pieza.querySelector(':scope > p')),
+          dia: t(pieza.querySelector('[data-dia-tipo]')),
+          comidas: [...pieza.querySelectorAll('.comida-del-plan')].map((c) => ({
+            nombre: t(c.querySelector('.comida-del-plan__nombre')),
+            cuenta: t(c.querySelector('.comida-del-plan__cuenta')),
+            abierta: c.hasAttribute('data-abierta'),
+            titulo: c.querySelector('.comida-del-plan__titulo').tagName,
+            opciones: [...c.querySelectorAll('.opcion-del-plan')].map((o) => ({ x: Math.round(o.getBoundingClientRect().left), titulo: o.querySelector('.opcion-del-plan__titulo').tagName, items: o.querySelectorAll('.items-del-plan li').length })),
+          })),
+          // Nada de la pieza se sale de la columna del detalle.
+          seSale: [...pieza.querySelectorAll('*')].filter((e) => e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1)).length,
+          ancho: Math.round(caja.width),
+          enlace: t(d.querySelector('.enlace-al-area a')),
+        };
+      });
+    const enLaFicha = await leer();
+    const direccionAntes = page.url();
+    const cerrada = enLaFicha?.comidas.findIndex((c) => !c.abierta) ?? -1;
+    if (cerrada >= 0) {
+      await page.evaluate((i) => document.querySelectorAll('.detalle-del-hecho .comida-del-plan__boton')[i].click(), cerrada);
+      await pausa(300);
+    }
+    const trasAbrir = await leer();
+    const abierta = enLaFicha?.comidas.find((c) => c.abierta);
+    comprobar(
+      'F-69',
+      'En la ficha, el detalle de la activación muestra la misma pieza en su columna angosta: el renglón de la versión, el día tipo, las comidas de la API con la primera abierta y sus opciones una debajo de la otra; nada se sale de la columna ni la página desborda. Los títulos bajan un nivel (el detalle ya tiene el suyo). Abrir otra comida no toca la dirección de la ficha',
+      !!enLaFicha &&
+        new RegExp(`^Solo lectura Versión ${E.numero} · activada el`).test(enLaFicha.renglon ?? '') &&
+        enLaFicha.dia === `Día tipo ${dia.nombre}` &&
+        igual(enLaFicha.comidas.map((c) => [c.nombre, c.cuenta]), dia.comidas.map((c) => [c.nombre, c.cuenta])) &&
+        igual(enLaFicha.comidas.map((c) => c.abierta), dia.comidas.map((_, i) => i === 0)) &&
+        !!abierta &&
+        abierta.opciones.length === dia.comidas[0].opciones.length &&
+        new Set(abierta.opciones.map((o) => o.x)).size === 1 &&
+        enLaFicha.comidas.every((c) => c.titulo === 'H4') &&
+        abierta.opciones.every((o) => o.titulo === 'H5') &&
+        enLaFicha.seSale === 0 &&
+        (await sinDesborde(page)) &&
+        cerrada >= 0 &&
+        trasAbrir.comidas[cerrada].abierta &&
+        trasAbrir.comidas[0].abierta &&
+        page.url() === direccionAntes &&
+        enLaFicha.enlace === 'Ver en Nutrición · Plan',
+      `columna de ${enLaFicha?.ancho} px · «${enLaFicha?.renglon}» · «${enLaFicha?.dia}» · ${enLaFicha?.comidas.map((c) => `${c.nombre}${c.abierta ? ' (abierta)' : ''}`).join(', ')} · ${abierta?.opciones.length} opciones en ${new Set(abierta?.opciones.map((o) => o.x)).size} columna · se salen ${enLaFicha?.seSale} · después: ${trasAbrir?.comidas.filter((c) => c.abierta).length} abiertas`,
+    );
+    await page.click('.detalle-del-hecho__cabecera button').catch(() => {});
+  }
+  await clic(page, '.vista-de-la-linea[data-vista="TODO"]', 'Todo').catch(() => null);
+  await quieto(page, v);
+  comprobar('—', '«Plan», de Nutrición (asesorado A), y su pieza en la ficha no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+// ─── Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6) ───────────────────────────────────────────────────────
+
+/** Lo que «Plan», de Entrenamiento, tiene a la vista: la versión que se mira, lo que se eligió, los ejercicios y el historial. */
+const planDeEntrenamientoEnPantalla = (page) =>
+  page.evaluate(() => {
+    const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+    const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+    const caja = (e) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { x: Math.round(r.left), y: Math.round(r.top + window.scrollY), ancho: Math.round(r.width), alto: Math.round(r.height) };
+    };
+    const raiz = document.querySelector('.plan');
+    const selector = raiz?.querySelector('[data-selector-de-version]') ?? null;
+    const activo = raiz?.querySelector('.plan__activo') ?? null;
+    const titulo = raiz?.querySelector('#titulo-borrador') ?? null;
+    // La imagen del ejercicio, en «Lo general»: si es una imagen ya dibujada o el recuadro de respaldo, y si queda dentro de la tarjeta.
+    const imagenDe = (e) => {
+      const i = e.querySelector('.ejercicio-del-plan__general .imagen-de-ejercicio');
+      if (!i) return null;
+      const r = i.getBoundingClientRect();
+      const c = e.getBoundingClientRect();
+      return { dibujada: i.tagName === 'IMG' && i.complete && i.naturalWidth > 0, alt: i.getAttribute('alt') ?? i.getAttribute('aria-label'), ancho: Math.round(r.width), alto: Math.round(r.height), adentro: r.left >= c.left - 1 && r.right <= c.right + 1 && r.top >= c.top - 1 && r.bottom <= c.bottom + 1 };
+    };
+    const nivel = (clave) => {
+      const n = activo?.querySelector(`.nivel-del-plan[data-nivel="${clave}"]`);
+      if (!n) return null;
+      const forma = n.dataset.forma;
+      const segmentos = [...n.querySelectorAll('.segmento')];
+      return {
+        forma,
+        rotulo: t(n.querySelector('legend, .nivel-del-plan__rotulo')),
+        opciones: forma === 'botones' ? segmentos.map((s) => ({ texto: t(s), elegido: s.querySelector('input').checked, caja: caja(s) })) : forma === 'lista' ? [...n.querySelectorAll('option')].map((o) => ({ texto: o.textContent.trim(), elegido: o.selected })) : null,
+        elegido: forma === 'unico' ? t(n.querySelector('strong')) : forma === 'botones' ? t(segmentos.find((s) => s.querySelector('input').checked)) : (n.querySelector('select')?.selectedOptions[0]?.textContent.trim() ?? null),
+        detalle: t(n.querySelector('.nivel-del-plan__detalle')),
+        posicion: t(n.querySelector('.nivel-del-plan__lista .nota')),
+        caja: caja(n),
+      };
+    };
+    return {
+      esta: !!raiz,
+      version: raiz?.dataset.version ?? null,
+      selector: selector ? { rotulo: t(selector.querySelector('legend')), opciones: [...selector.querySelectorAll('.segmento')].map((s) => ({ texto: t(s), elegido: s.querySelector('input').checked })), nota: t(raiz.querySelector('.plan__selector .nota')) } : null,
+      editor: { esta: !!titulo, aLaVista: aLaVista(titulo), estado: t(raiz?.querySelector('.plan__preparacion p[aria-live="polite"]') ?? null) },
+      activo: activo
+        ? {
+            titulo: t(activo.querySelector('h2')),
+            soloLectura: t(activo.querySelector('.plan__encabezado .etiqueta-de-dato')),
+            frase: t(activo.querySelector('.plan__version')),
+            acciones: [...activo.querySelectorAll('.plan__acciones button')].map((b) => t(b)),
+            yaHay: t(activo.querySelector('.plan__ya-hay')),
+            aviso: t(activo.querySelector(':scope > .aviso')),
+            bloque: nivel('bloque'),
+            microciclo: nivel('microciclo'),
+            sesion: nivel('sesion'),
+            sinNada: [...activo.querySelectorAll('.plan__niveles > .nota, .plan__activo > .nota, .ejercicios-del-plan > .nota')].map(t),
+            indicaciones: t(activo.querySelector('.indicaciones-de-la-sesion')),
+            cuenta: t(activo.querySelector('[data-cuenta-de-la-sesion]')),
+            todos: t(activo.querySelector('[data-todos-los-ejercicios]')),
+            ejercicios: [...activo.querySelectorAll('.ejercicio-del-plan')].map((e) => ({
+              orden: Number(e.dataset.ejercicio),
+              abierto: e.hasAttribute('data-abierta'),
+              expandido: e.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+              nombre: t(e.querySelector('.comida-del-plan__nombre')),
+              resumen: t(e.querySelector('[data-resumen]')),
+              titulo: t(e.querySelector('caption')),
+              columnas: [...e.querySelectorAll('thead th')].map(t),
+              filas: [...e.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map(t)),
+              tenues: [...e.querySelectorAll('tbody td .tenue')].length,
+              general: { titulo: t(e.querySelector('.ejercicio-del-plan__subtitulo')), datos: [...e.querySelectorAll('.lo-general-del-ejercicio > div')].map((d) => [t(d.querySelector('dt')), t(d.querySelector('dd'))]), imagen: imagenDe(e) },
+              caja: caja(e),
+              cajaDeSeries: caja(e.querySelector('.ejercicio-del-plan__series')),
+              cajaDeLoGeneral: caja(e.querySelector('.ejercicio-del-plan__general')),
+            })),
+            historial: {
+              titulo: t(activo.querySelector('.historial-del-plan h3')),
+              versiones: [...activo.querySelectorAll('.historial-del-plan__lista li')].map((li) => ({ numero: Number(li.dataset.version), vigente: li.hasAttribute('data-vigente'), texto: t(li) })),
+              huella: t(activo.querySelector('.historial-del-plan__huella')),
+              caja: caja(activo.querySelector('.historial-del-plan')),
+            },
+          }
+        : null,
+      vacio: raiz?.querySelector('.estado-vacio') ? { texto: t(raiz.querySelector('.estado-vacio')), botones: [...raiz.querySelectorAll('.estado-vacio button')].map((b) => t(b)) } : null,
+      falla: t(document.querySelector('.seccion-del-area .estado-de-grafico--error')),
+      botones: [...document.querySelectorAll('main button')].filter(aLaVista).map((b) => t(b)),
+      main: t(document.querySelector('main')),
+    };
+  });
+
+/**
+ * Una imagen de ejercicio armada por el recorrido, porque el escenario no tiene ejercicios con imagen: lo que la API
+ * diría de ella en una prescripción y las dos respuestas que la pantalla pide para mostrarla (el acceso firmado y el
+ * contenido). El acceso se entrega solo si el pedido lleva la sesión de la página: sin ella, la API de verdad lo rechaza.
+ */
+async function imagenDeEjercicioSimulada(page, v) {
+  const MEDIO = 'medio-simulado-por-el-recorrido';
+  const CONTENIDO = '/media/content/simulado-por-el-recorrido';
+  const ALT = 'Una barra con dos discos de cada lado, de frente (imagen sintética)';
+  // La sesión con la que la página venía leyendo hasta acá: es la que tiene que llevar el pedido del acceso.
+  const SESION = v.token;
+  const png = Buffer.from(
+    await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      c.width = 320;
+      c.height = 240;
+      const x = c.getContext('2d');
+      x.fillStyle = '#d7e0ea';
+      x.fillRect(0, 0, 320, 240);
+      x.fillStyle = '#0b2a4a';
+      x.fillRect(30, 112, 260, 16);
+      for (const [desde, alto] of [[50, 120], [78, 84], [222, 84], [250, 120]]) x.fillRect(desde, 120 - alto / 2, 20, alto);
+      return c.toDataURL('image/png').split(',')[1];
+    }),
+    'base64',
+  );
+  const enLaPrescripcion = (p, cuando) => ({ mediaId: MEDIO, imageVersion: 1, exerciseVersionId: p.exerciseVersionId, provenance: 'PERSON_PROVIDED', authorship: 'Recorrido (sintético)', license: { kind: 'NO_EXTERNAL_LICENSE', usage: 'Imagen sintética, armada por el recorrido' }, technicalReview: 'REVIEWED_BY_PROFESSIONAL', altText: ALT, associatedAt: cuando });
+  const enLaPrimera = (sesion, cuando) => ({ ...sesion, prescriptions: sesion.prescriptions.map((p, i) => (i === 0 ? { ...p, image: enLaPrescripcion(p, cuando) } : p)) });
+  return {
+    alt: ALT,
+    enLaPrescripcion,
+    /** El plan, con la imagen en el primer ejercicio de cada sesión. */
+    enElPlan: (plan) => ({ ...plan, blocks: plan.blocks.map((b) => ({ ...b, sessions: b.sessions.map((x) => enLaPrimera(x, plan.activatedAt)), microcycles: b.microcycles.map((m) => ({ ...m, sessions: m.sessions.map((x) => enLaPrimera(x, plan.activatedAt)) })) })) }),
+    accesosDesde: (desde) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(`/media/${MEDIO}/access`)),
+    reglas: [
+      {
+        coincide: (u, req) => u.includes(`/media/${MEDIO}/access`) && !!SESION && (req?.method() === 'OPTIONS' || req?.headers().authorization === SESION),
+        accion: 'entregar',
+        cuerpo: { data: { mediaId: MEDIO, path: CONTENIDO, expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() } },
+      },
+      { coincide: (u) => u.includes(CONTENIDO), accion: 'entregar-archivo', tipo: 'image/png', cuerpo: png },
+    ],
+  };
+}
+
+/**
+ * Lo que «Plan» tiene que decir de una versión activada de entrenamiento, escrito a mano con lo que devuelve la API (la
+ * lista de versiones y la versión con sus objetivos por serie): no se usa el módulo del dominio que arma la pantalla
+ * (`lectura-del-plan-de-entrenamiento.ts`). Las cantidades del escenario son menores que mil.
+ */
+function esperadoDelPlanDeEntrenamiento({ lista, activa }) {
+  const coma = (n) => String(n).replace('.', ',');
+  const reps = (r) => (r ? ('value' in r ? `${r.value} rep.` : `${r.min}–${r.max} rep.`) : null);
+  const carga = (c) => (c ? `${coma(c.value)} ${c.unit}` : null);
+  const rir = (x) => (x === null ? null : `RIR ${coma(x)}`);
+  const descanso = (s) => (s === null ? null : `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`);
+  const CRITERIO = { RIR: 'RIR', PERCENT_RM: '% RM' };
+  const BASE_DE_CARGA = { SINGLE_IMPLEMENT: 'una sola mancuerna o implemento', PER_IMPLEMENT: 'por mancuerna o implemento', TOTAL_EXTERNAL: 'carga externa total' };
+  const BASE_DE_REPETICIONES = { PER_SET: 'por serie', PER_SIDE: 'por lado; no se duplican' };
+  const series = (n) => `${n} ${n === 1 ? 'serie' : 'series'}`;
+  const enumerar = (x) => (x.length <= 1 ? (x[0] ?? '') : `${x.slice(0, -1).join(', ')} y ${x.at(-1)}`);
+  const enOrden = (x) => [...x].sort((a, b) => a.order - b.order);
+  const ejercicio = (p) => {
+    const sets = [...p.sets].sort((a, b) => a.setIndex - b.setIndex);
+    const o = sets.map((s) => ({ r: reps(s.target.repetitions), c: carga(s.target.suggestedLoad), i: rir(s.target.rir), d: descanso(s.target.restSeconds) }));
+    const igual = (k) => o.every((x) => x[k] === o[0][k]);
+    const criterioRir = p.intensity?.criterion === 'RIR';
+    const cambian = [...(igual('r') ? [] : ['repeticiones']), ...(igual('c') ? [] : ['carga']), ...(criterioRir && !igual('i') ? ['RIR'] : []), ...(igual('d') ? [] : ['descanso'])];
+    const intensidad = !p.intensity ? 'sin criterio de intensidad' : criterioRir ? (igual('i') ? o[0].i : null) : `${coma(p.intensity.target.value)} % RM`;
+    const cerrado =
+      cambian.length === 0
+        ? [o[0].r ? `${sets.length} × ${o[0].r}` : `${series(sets.length)} sin repeticiones fijadas`, o[0].c, intensidad, o[0].d ? `descanso ${o[0].d}` : null]
+        : [series(sets.length), igual('r') ? (o[0].r ?? 'sin repeticiones fijadas') : null, igual('c') ? o[0].c : null, intensidad, `${enumerar(cambian)} por serie`, igual('d') && o[0].d ? `descanso ${o[0].d}` : null];
+    const conRir = criterioRir || o.some((x) => x.i !== null);
+    const conNota = sets.some((s) => s.note);
+    return {
+      orden: p.order,
+      nombre: p.exerciseName,
+      cerrado: cerrado.filter(Boolean).join(' · '),
+      abierto: `${series(sets.length)} · ${p.intensity ? `criterio de intensidad: ${CRITERIO[p.intensity.criterion]}` : 'sin criterio de intensidad'}`,
+      columnas: ['Serie', 'Carga sugerida', 'Rep.', ...(conRir ? ['RIR'] : []), 'Descanso recomendado', ...(conNota ? ['Nota'] : [])],
+      filas: sets.map((s, n) => [String(s.setIndex), o[n].c ?? 'Sin objetivo', o[n].r ?? 'Sin objetivo', ...(conRir ? [o[n].i ?? 'Sin objetivo'] : []), o[n].d ?? 'Sin objetivo', ...(conNota ? [s.note ?? ''] : [])]),
+      general: [
+        ['Intensidad', p.intensity ? `${criterioRir ? `RIR ${coma(p.intensity.target.value)}` : `${coma(p.intensity.target.value)} % RM`}${p.intensity.target.reference ? ` (${p.intensity.target.reference.description})` : ''}` : 'Sin criterio de intensidad'],
+        ...(p.loadBasis ? [['La carga se cuenta', BASE_DE_CARGA[p.loadBasis]]] : []),
+        ...(p.repetitionBasis ? [['Las repeticiones', BASE_DE_REPETICIONES[p.repetitionBasis]]] : []),
+        ...p.professionalParameters.map((q) => [q.label, `${typeof q.value === 'number' ? coma(q.value) : q.value}${q.unit ? ` ${q.unit}` : ''}`]),
+        ...(p.note ? [['Notas', p.note]] : []),
+      ],
+    };
+  };
+  const sesion = (s) => {
+    const ejercicios = enOrden(s.prescriptions).map(ejercicio);
+    const cuantasSeries = s.prescriptions.reduce((n, p) => n + p.sets.length, 0);
+    return { orden: s.order, nombre: s.label, indicaciones: s.instructions, cuenta: `${ejercicios.length === 1 ? '1 ejercicio' : `${ejercicios.length} ejercicios`} · ${series(cuantasSeries)}`, ejercicios };
+  };
+  const activadas = lista.filter((x) => x.activatedAt).sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
+  const numeroDe = new Map(activadas.map((x, i) => [x.planId, i + 1]));
+  const bloques = enOrden(activa.blocks).map((b) => {
+    const cuantas = b.sessions.length + b.microcycles.reduce((n, m) => n + m.sessions.length, 0);
+    return {
+      orden: b.order,
+      nombre: b.label,
+      detalle: [cuantas === 0 ? 'sin sesiones' : cuantas === 1 ? '1 sesión' : `${cuantas} sesiones`, ...(b.purpose ? [`Propósito: ${b.purpose}`] : [])].join(' · '),
+      microciclos: enOrden(b.microcycles).map((m) => ({ orden: m.order, nombre: m.label, detalle: m.purpose ? `Propósito: ${m.purpose}` : null, sesiones: enOrden(m.sessions).map(sesion) })),
+      sesiones: enOrden(b.sessions).map(sesion),
+    };
+  });
+  return { numeroDe, activadas, bloques, numero: numeroDe.get(activa.planId) };
+}
+
+/** Los ejercicios de la pantalla contra los de la sesión esperada: plegado, su renglón; abierto, su tabla y lo general. */
+const ejerciciosComoLaApi = (enPantalla, sesion, abiertos) =>
+  enPantalla.length === sesion.ejercicios.length &&
+  enPantalla.every((e, i) => {
+    const x = sesion.ejercicios[i];
+    const abierto = abiertos.includes(x.orden);
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    return (
+      e.orden === x.orden &&
+      e.nombre === x.nombre &&
+      e.abierto === abierto &&
+      e.expandido === String(abierto) &&
+      (abierto ? e.resumen === x.abierto && e.titulo === 'Lo que recibe tu asesorado' && igual(e.columnas, x.columnas) && igual(e.filas, x.filas) && e.general.titulo === 'Lo general del ejercicio' && igual(e.general.datos, x.general) : e.resumen === x.cerrado && e.filas.length === 0)
+    );
+  });
+
+async function planesDeEntrenamiento() {
+  const d = estado.descartable;
+  if (!d?.planDeEntrenamiento) throw new Error('faltan las cuentas descartables con su plan de Entrenamiento: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-plan-de-entrenamiento');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const BASE = `/pro/advisees/training?id=${A}&vista=plan`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const lecturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(fragmento));
+    const escriturasDesde = (desde, fragmento) => v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(fragmento));
+    const entrar = async (ruta) => {
+      await cupo(v, 60);
+      const desde = v.urls.length;
+      await ir(page, ruta);
+      await page.waitForSelector('.plan, .seccion-del-area .estado-de-grafico--error, .seccion-del-area > .aviso', { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      return desde;
+    };
+    const salir = async () => {
+      await cupo(v, 60);
+      await ir(page, `/pro/advisees?id=${A}`);
+      await page.waitForFunction(() => !document.querySelector('.plan') && !document.querySelector('header.marco-del-area'), { timeout: 30_000 }).catch(() => {});
+      await quieto(page, v);
+    };
+    /** Entra con respuestas armadas por el recorrido (dichas como tales) y las retira al terminar de leer la pantalla. */
+    const conSimulacion = async (reglas, ruta, esperar = null) => {
+      await salir();
+      v.reglas.push(...reglas);
+      try {
+        await entrar(ruta);
+        if (esperar) {
+          await page.waitForSelector(esperar, { timeout: 15_000 }).catch(() => {});
+          await quieto(page, v, { silencio: 300 });
+        }
+        return await planDeEntrenamientoEnPantalla(page);
+      } finally {
+        v.reglas.length = 0;
+      }
+    };
+    const leerTodo = async () => {
+      const lista = [];
+      let cursor = null;
+      do {
+        const r = await leerApi(v, `/advisees/${A}/training/plans?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+        lista.push(...r.data);
+        cursor = r.page.hasMore ? r.page.nextCursor : null;
+      } while (cursor);
+      const efectiva = lista.find((x) => x.isEffective) ?? null;
+      const activa = efectiva ? (await leerApi(v, `/training/plans/${efectiva.planId}/detail`)).data : null;
+      return { lista, activa, E: activa ? esperadoDelPlanDeEntrenamiento({ lista, activa }) : null };
+    };
+    const enLaPagina = (iso) =>
+      page.evaluate((x) => {
+        const f = new Date(x);
+        const delAnio = f.getFullYear() === new Date().getFullYear();
+        return {
+          dia: delAnio ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(f) : new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(f),
+          hora: new Intl.DateTimeFormat('es-AR', { timeStyle: 'short', hourCycle: 'h23' }).format(f),
+        };
+      }, iso);
+    const historialEsperado = async (E) => {
+      const filas = [];
+      for (const x of [...E.activadas].reverse()) {
+        const f = await enLaPagina(x.activatedAt);
+        filas.push({ numero: E.numeroDe.get(x.planId), vigente: x.isEffective, texto: `Versión ${E.numeroDe.get(x.planId)} · activada el ${f.dia}, ${f.hora} · ${x.isEffective ? 'vigente' : 'anterior, conservada'}` });
+      }
+      return filas;
+    };
+    const prohibidas = (texto) => dominio.terminosProhibidosDeEntrenamientoEn(texto ?? '');
+    const TEXTOS_DEL_PLAN = '.plan__version, .nivel-del-plan__detalle, .indicaciones-de-la-sesion, .comida-del-plan__textos, .lo-general-del-ejercicio dd, .historial-del-plan__lista li, [data-cuenta-de-la-sesion]';
+    const esperarAviso = (empieza) =>
+      page
+        .waitForFunction((t) => [...document.querySelectorAll('.aviso-flotante__texto')].some((e) => e.innerText.trim().startsWith(t)), { timeout: 40_000 }, empieza)
+        .then(() => true)
+        .catch(() => false);
+    const P = () => parametros(page);
+    const direccion = () => Object.fromEntries(P());
+    const tocar = async (nivel, nombre) => {
+      await clic(page, `.plan__activo .nivel-del-plan[data-nivel="${nivel}"] .segmento`, nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+    const tocarEjercicio = async (nombre) => {
+      await clic(page, '.ejercicio-del-plan .comida-del-plan__boton', nombre);
+      await quieto(page, v, { silencio: 300 });
+    };
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+
+    // ── Al entrar ────────────────────────────────────────────────────────────────────────────────────────────────
+    const desde = await entrar(BASE);
+    const inicial = await planDeEntrenamientoEnPantalla(page);
+    const alLeer = v.urls.length;
+    const { lista, activa, E } = await leerTodo();
+    const leidas = v.urls.slice(desde, alLeer).filter((u) => u.startsWith('GET '));
+    const deLaLista = leidas.filter((u) => /\/training\/plans\?/.test(u)).length;
+    const delPlan = leidas.filter((u) => u.includes(`/training/plans/${activa.planId}/detail`)).length;
+    const delObjetivo = leidas.filter((u) => u.includes('/training/objectives/effective')).length;
+    const otras = leidas.filter((u) => u.includes('/training/') && !/\/training\/plans\?/.test(u) && !u.includes(`/training/plans/${activa.planId}/detail`) && !u.includes('/training/objectives/effective'));
+    const fechaDeLaActiva = await enLaPagina(activa.activatedAt);
+    const fraseEsperada = `Versión ${E.numero} · activada el ${fechaDeLaActiva.dia} · es lo que ve el asesorado`;
+    const b1 = E.bloques[0];
+    const b2 = E.bloques[1];
+    const sA = b1.sesiones[0];
+    const sB = b1.sesiones[1];
+    comprobar(
+      'F-71',
+      'El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación. Para verlo se leen tres cosas, una vez cada una: la lista de versiones, la versión vigente con sus objetivos por serie y el objetivo vigente. Las plantillas no se leen al entrar',
+      inicial.esta &&
+        inicial.version === 'activa' &&
+        inicial.selector === null &&
+        !inicial.editor.esta &&
+        inicial.activo?.titulo === 'Plan activo' &&
+        inicial.activo.soloLectura === 'Solo lectura' &&
+        inicial.activo.frase === fraseEsperada &&
+        E.numero === 2 &&
+        deLaLista === 1 &&
+        delPlan === 1 &&
+        delObjetivo === 1 &&
+        otras.length === 0 &&
+        igual(inicial.activo.acciones, ['Guardar como plantilla', 'Empezar desde una plantilla', 'Crear nueva versión a partir de esta']),
+      `«${inicial.activo?.frase}» · lecturas: lista ${deLaLista}, versión ${delPlan}, objetivo ${delObjetivo}, otras de Entrenamiento ${otras.length} · ${(inicial.activo?.acciones ?? []).join(' | ')}`,
+    );
+    comprobar(
+      'F-72',
+      'Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas sesiones tiene el elegido y su propósito; el primer bloque no usa microciclos, y no hay renglón de microciclo; con dos sesiones, un control, elegida la primera, y «Sin día asignado: tu asesorado elige cuál hace.». Las indicaciones de la sesión se leen antes de sus ejercicios',
+      E.bloques.length === 2 &&
+        inicial.activo?.bloque?.forma === 'botones' &&
+        inicial.activo.bloque.rotulo === 'Bloque' &&
+        igual(inicial.activo.bloque.opciones.map((o) => [o.texto, o.elegido]), E.bloques.map((b, i) => [b.nombre, i === 0])) &&
+        inicial.activo.bloque.detalle === b1.detalle &&
+        inicial.activo.microciclo === null &&
+        inicial.activo.sesion?.forma === 'botones' &&
+        igual(inicial.activo.sesion.opciones.map((o) => [o.texto, o.elegido]), b1.sesiones.map((s, i) => [s.nombre, i === 0])) &&
+        inicial.activo.sesion.detalle === 'Sin día asignado: tu asesorado elige cuál hace.' &&
+        inicial.activo.indicaciones === `Indicaciones de la sesión ${sA.indicaciones}`,
+      `${inicial.activo?.bloque?.opciones?.map((o) => `${o.texto}${o.elegido ? ' (elegido)' : ''}`).join(' | ')} · «${inicial.activo?.bloque?.detalle}» · ${inicial.activo?.sesion?.opciones?.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${inicial.activo?.sesion?.detalle}»`,
+    );
+    comprobar(
+      'F-73',
+      'Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series («3 × 5 rep. · 85 kg · RIR 2 · descanso 03:00»), calculado a mano con los objetivos que da la API. Al entrar está abierto el primero: dice cuántas series tiene y con qué criterio, y muestra «Lo que recibe tu asesorado», serie por serie, y «Lo general del ejercicio». La sesión dice cuántos ejercicios y cuántas series tiene',
+      ejerciciosComoLaApi(inicial.activo?.ejercicios ?? [], sA, [sA.ejercicios[0].orden]) && inicial.activo.cuenta === sA.cuenta && inicial.activo.todos === 'Abrir todos los ejercicios' && sA.ejercicios.length === 3,
+      `${inicial.activo?.cuenta} · ${(inicial.activo?.ejercicios ?? []).map((e) => `${e.nombre}: ${e.resumen}${e.abierto ? ` (abierto, ${e.filas.length} filas)` : ''}`).join(' | ')}`,
+    );
+    const historial = await historialEsperado(E);
+    const primero = inicial.activo?.ejercicios[0]?.caja;
+    comprobar(
+      'F-76',
+      'El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea. A 1440 × 900 entran el encabezado, lo que se elige, el primer ejercicio abierto entero y el historial',
+      inicial.activo?.historial.titulo === 'Historial' &&
+        igual(inicial.activo.historial.versiones, historial) &&
+        historial.length === 2 &&
+        inicial.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+        !!primero &&
+        inicial.activo.historial.caja.x >= primero.x + primero.ancho &&
+        Math.abs(inicial.activo.historial.caja.y - primero.y) <= 2 &&
+        primero.y + primero.alto <= 900 &&
+        inicial.activo.historial.caja.y + inicial.activo.historial.caja.alto <= 900 &&
+        (await sinDesborde(page)),
+      `${inicial.activo?.historial.versiones.map((x) => x.texto).join(' | ')} · el primer ejercicio termina a los ${primero ? primero.y + primero.alto : '—'} px; el historial empieza a los ${inicial.activo?.historial.caja?.y} (el ejercicio, a los ${primero?.y})`,
+    );
+    informar('F-80', 'El alto de «Plan», de Entrenamiento, al entrar, a 1440 × 900, con el plan de dos bloques', `${await page.evaluate(() => document.documentElement.scrollHeight)} px · el último ejercicio termina a los ${inicial.activo?.ejercicios.at(-1) ? inicial.activo.ejercicios.at(-1).caja.y + inicial.activo.ejercicios.at(-1).caja.alto : '—'} px`);
+
+    // ── La sesión B: objetivos distintos por serie, una nota y un ejercicio sin criterio ─────────────────────────
+    const antesDeElegir = v.urls.length;
+    await tocar('sesion', sB.nombre);
+    const enB = await planDeEntrenamientoEnPantalla(page);
+    const direccionB = direccion();
+    const banca = enB.activo?.ejercicios[0];
+    const bancaEsperada = sB.ejercicios[0];
+    const sinCriterio = sB.ejercicios.find((x) => x.abierto.endsWith('sin criterio de intensidad'));
+    comprobar(
+      'F-74',
+      'En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: la carga, las repeticiones, el RIR y el descanso recomendado. Una serie sin descanso recomendado dice «Sin objetivo», no un cero ni un hueco; la nota de una serie se lee en su fila (antes no se mostraba). Los valores heredados ya no llevan «· de la prescripción». «Lo general del ejercicio» dice la intensidad, cómo se cuenta la carga, qué cuentan las repeticiones y las notas',
+      direccionB.sesion === String(sB.orden) &&
+        ejerciciosComoLaApi(enB.activo?.ejercicios ?? [], sB, [bancaEsperada.orden]) &&
+        igual(banca.columnas, ['Serie', 'Carga sugerida', 'Rep.', 'RIR', 'Descanso recomendado', 'Nota']) &&
+        igual(banca.filas.map((f) => f[1]), ['62,5 kg', '62,5 kg', '62,5 kg', '60 kg']) &&
+        igual(banca.filas.map((f) => f[3]), ['RIR 2', 'RIR 2', 'RIR 1', 'RIR 1']) &&
+        igual(banca.filas.map((f) => f[4]), ['02:30', '02:30', '02:30', 'Sin objetivo']) &&
+        igual(banca.filas.map((f) => f[5]), ['', '', '', 'Si se pierde la técnica, cortar la serie.']) &&
+        banca.tenues === 1 &&
+        !/de la prescripción/.test(enB.main) &&
+        igual(banca.general.datos, [['Intensidad', 'RIR 2'], ['La carga se cuenta', 'carga externa total'], ['Las repeticiones', 'por serie'], ['Notas', 'Bajar en 3 segundos y subir en 1.']]),
+      `${banca?.nombre}: ${banca?.filas.map((f) => f.slice(1).join(' / ')).join(' | ')} · ${banca?.general.datos.map((x) => x.join(': ')).join(' · ')}`,
+    );
+    await tocarEjercicio('Dominadas');
+    const dosAbiertos = await planDeEntrenamientoEnPantalla(page);
+    const direccionDos = direccion();
+    await clic(page, '[data-todos-los-ejercicios]', 'Abrir todos los ejercicios');
+    await quieto(page, v, { silencio: 300 });
+    const todosAbiertos = await planDeEntrenamientoEnPantalla(page);
+    const direccionTodos = direccion();
+    await clic(page, '[data-todos-los-ejercicios]', 'Plegar todos');
+    await quieto(page, v, { silencio: 300 });
+    const todosPlegados = await planDeEntrenamientoEnPantalla(page);
+    const direccionNinguno = direccion();
+    const plegados = Object.fromEntries((todosPlegados.activo?.ejercicios ?? []).map((e) => [e.nombre, e.resumen]));
+    comprobar(
+      'F-73',
+      'Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00»); uno sin criterio de intensidad lo dice; y el que tiene objetivos distintos no se resume con su primera serie ni con un rango: dice qué cambia «por serie». Abierto, dice cuántas series son y con qué criterio. Los tres textos están escritos a mano en el recorrido',
+      plegados['Remo con barra'] === '4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00' &&
+        plegados['Dominadas'] === '4 × 6 rep. · sin criterio de intensidad · descanso 02:00' &&
+        plegados['Press de banca'] === '4 series · 6–8 rep. · carga, RIR y descanso por serie' &&
+        !/62,5|RIR \d/.test(plegados['Press de banca'] ?? '') &&
+        !!sinCriterio &&
+        banca.resumen === '4 series · criterio de intensidad: RIR',
+      Object.entries(plegados).map(([nombre, resumen]) => `${nombre}: ${resumen}`).join(' | '),
+    );
+    // El otro bloque usa microciclos: aparece su renglón, y la sesión, que es una sola, se dice por su nombre.
+    await tocar('bloque', b2.nombre);
+    const enB2 = await planDeEntrenamientoEnPantalla(page);
+    const direccionB2 = direccion();
+    await tocar('microciclo', b2.microciclos[1].nombre);
+    const enM2 = await planDeEntrenamientoEnPantalla(page);
+    const direccionM2 = direccion();
+    await tocar('bloque', b1.nombre);
+    const deVuelta = await planDeEntrenamientoEnPantalla(page);
+    const direccionDeVuelta = direccion();
+    const pedidosAlElegir = v.urls.slice(antesDeElegir).filter((u) => !u.startsWith('OPTIONS '));
+    const ordenes = (s) => s.ejercicios.map((x) => x.orden);
+    comprobar(
+      'F-75',
+      'Lo elegido vive en la dirección de la página, por su número de orden. Elegir la segunda sesión escribe «sesion»; abrir otro ejercicio, «ejercicios» con los dos; «Abrir todos los ejercicios» pasa a «Plegar todos», que escribe «ninguno». Elegir otro bloque escribe «bloque» y quita la sesión y los ejercicios, que eran del anterior; ese bloque usa microciclos, y aparece su renglón, con el propósito del elegido; elegir el segundo escribe «micro». Volver al primer bloque limpia la dirección. Nada de eso le pide algo a BE',
+      direccionDos.ejercicios === `${sB.ejercicios[0].orden}.${sB.ejercicios[2].orden}` &&
+        ejerciciosComoLaApi(dosAbiertos.activo?.ejercicios ?? [], sB, [sB.ejercicios[0].orden, sB.ejercicios[2].orden]) &&
+        direccionTodos.ejercicios === ordenes(sB).join('.') &&
+        ejerciciosComoLaApi(todosAbiertos.activo?.ejercicios ?? [], sB, ordenes(sB)) &&
+        todosAbiertos.activo.todos === 'Plegar todos' &&
+        direccionNinguno.ejercicios === 'ninguno' &&
+        ejerciciosComoLaApi(todosPlegados.activo?.ejercicios ?? [], sB, []) &&
+        direccionB2.bloque === String(b2.orden) &&
+        direccionB2.sesion === undefined &&
+        direccionB2.ejercicios === undefined &&
+        enB2.activo?.bloque.elegido === b2.nombre &&
+        enB2.activo.bloque.detalle === b2.detalle &&
+        enB2.activo.microciclo?.forma === 'botones' &&
+        igual(enB2.activo.microciclo.opciones.map((o) => [o.texto, o.elegido]), b2.microciclos.map((m, i) => [m.nombre, i === 0])) &&
+        enB2.activo.microciclo.detalle === b2.microciclos[0].detalle &&
+        enB2.activo.sesion?.forma === 'unico' &&
+        enB2.activo.sesion.elegido === b2.microciclos[0].sesiones[0].nombre &&
+        enB2.activo.sesion.detalle === null &&
+        ejerciciosComoLaApi(enB2.activo.ejercicios, b2.microciclos[0].sesiones[0], [b2.microciclos[0].sesiones[0].ejercicios[0].orden]) &&
+        direccionM2.micro === String(b2.microciclos[1].orden) &&
+        enM2.activo?.microciclo.detalle === null &&
+        ejerciciosComoLaApi(enM2.activo.ejercicios, b2.microciclos[1].sesiones[0], [b2.microciclos[1].sesiones[0].ejercicios[0].orden]) &&
+        ['bloque', 'micro', 'sesion', 'ejercicios'].every((k) => direccionDeVuelta[k] === undefined) &&
+        ejerciciosComoLaApi(deVuelta.activo?.ejercicios ?? [], sA, [sA.ejercicios[0].orden]) &&
+        pedidosAlElegir.length === 0,
+      `sesion=${direccionB.sesion} · ejercicios=${direccionDos.ejercicios} → ${direccionTodos.ejercicios} → ${direccionNinguno.ejercicios} · bloque=${direccionB2.bloque} («${enB2.activo?.microciclo?.opciones?.map((o) => o.texto).join(' | ')}», sesión «${enB2.activo?.sesion?.elegido}») · micro=${direccionM2.micro} · al volver: ${JSON.stringify(direccionDeVuelta)} · pedidos: ${pedidosAlElegir.length}`,
+    );
+
+    // «Actualizar» vuelve a leer y no pierde lo elegido; una dirección con basura no rompe.
+    await entrar(`${BASE}&bloque=${b2.orden}&micro=${b2.microciclos[1].orden}&ejercicios=ninguno`);
+    const desdeActualizar = v.urls.length;
+    await pausa(1100);
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('.plan', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const trasActualizar = await planDeEntrenamientoEnPantalla(page);
+    const releidas = { lista: lecturasDesde(desdeActualizar, '/training/plans?').length, version: lecturasDesde(desdeActualizar, `/training/plans/${activa.planId}/detail`).length, objetivo: lecturasDesde(desdeActualizar, '/training/objectives/effective').length };
+    await salir();
+    await entrar(`${BASE}&bloque=9&micro=9&sesion=7&ejercicios=8.x&version=otra`);
+    const conBasura = await planDeEntrenamientoEnPantalla(page);
+    comprobar(
+      'F-75',
+      '«Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microciclo y todos los ejercicios plegados). Una dirección con valores que el plan no tiene no rompe ni deja la pantalla vacía: se ve el plan activo, en su primer bloque y su primera sesión, con los ejercicios plegados',
+      trasActualizar.activo?.bloque.elegido === b2.nombre &&
+        trasActualizar.activo.microciclo?.elegido === b2.microciclos[1].nombre &&
+        ejerciciosComoLaApi(trasActualizar.activo.ejercicios, b2.microciclos[1].sesiones[0], []) &&
+        releidas.lista === 1 &&
+        releidas.version === 1 &&
+        releidas.objetivo === 1 &&
+        conBasura.version === 'activa' &&
+        conBasura.activo?.bloque?.elegido === b1.nombre &&
+        conBasura.activo.sesion?.elegido === sA.nombre &&
+        ejerciciosComoLaApi(conBasura.activo.ejercicios, sA, []) &&
+        v.errores.length === 0,
+      `después de «Actualizar»: ${trasActualizar.activo?.bloque?.elegido} · ${trasActualizar.activo?.microciclo?.elegido} · ${trasActualizar.activo?.ejercicios.filter((e) => e.abierto).length} abiertos · releídas: ${JSON.stringify(releidas)} · con basura: ${conBasura.activo?.bloque?.elegido} · ${conBasura.activo?.sesion?.elegido}`,
+    );
+
+    // ── Con todo abierto: palabras, cortes, accesibilidad y composición ──────────────────────────────────────────
+    await salir();
+    await entrar(`${BASE}&sesion=${sB.orden}&ejercicios=${ordenes(sB).join('.')}`);
+    const abierto = await planDeEntrenamientoEnPantalla(page);
+    const palabras = prohibidas(abierto.main);
+    const cortes = await cortesMalPuestos(page, TEXTOS_DEL_PLAN);
+    const ladoALado = abierto.activo?.ejercicios[0];
+    comprobar(
+      'F-80',
+      'Con los tres ejercicios de la sesión abiertos, en toda la sección no hay una palabra de la lista de Entrenamiento ni un porcentaje que no sea «% RM»; la misma consulta encuentra el contenido. En cada ejercicio, «Lo general» va al lado de la tabla de series, a su misma altura',
+      palabras.length === 0 &&
+        sB.ejercicios.every((x) => abierto.main.includes(x.nombre)) &&
+        abierto.main.includes('Lo que recibe tu asesorado') &&
+        ejerciciosComoLaApi(abierto.activo?.ejercicios ?? [], sB, ordenes(sB)) &&
+        !!ladoALado &&
+        ladoALado.cajaDeLoGeneral.x >= ladoALado.cajaDeSeries.x + ladoALado.cajaDeSeries.ancho &&
+        Math.abs(ladoALado.cajaDeLoGeneral.y - ladoALado.cajaDeSeries.y) <= 2,
+      palabras.length === 0 ? `sin palabras prohibidas en ${abierto.main.length} caracteres · lo general empieza a los ${ladoALado?.cajaDeLoGeneral.x} px y la tabla termina a los ${ladoALado ? ladoALado.cajaDeSeries.x + ladoALado.cajaDeSeries.ancho : '—'}` : palabras.join(', '),
+    );
+    await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+    await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+    const ayuda = await page.evaluate(() => {
+      const x = document.querySelector('dialog.como-se-lee[open]');
+      if (!x) return { titulo: null, renglones: 0, foco: false, texto: '' };
+      return { titulo: x.querySelector('h2').innerText.trim(), renglones: x.querySelectorAll('.como-se-lee__lista > li').length, foco: document.activeElement === x.querySelector('h2'), texto: x.innerText };
+    });
+    const faltasDeLaAyuda = await axe(page);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+    const focoTrasLaAyuda = await page.evaluate(() => document.activeElement?.classList.contains('como-se-lee__boton') ?? false);
+    comprobar(
+      'F-14',
+      '«Plan», de Entrenamiento, tiene su ayuda en el marco del área: se abre por el título, explica cada cosa que la pantalla escribe, sin palabras de la lista; Escape la cierra y el foco vuelve al botón',
+      ayuda.titulo === 'Cómo se lee el Plan' && ayuda.renglones >= 10 && ayuda.foco && focoTrasLaAyuda && faltasDeLaAyuda.length === 0 && prohibidas(ayuda.texto).length === 0,
+      `«${ayuda.titulo}» · ${ayuda.renglones} renglones · axe: ${faltasDeLaAyuda.length === 0 ? 'sin faltas' : faltasDeLaAyuda.map((f) => f.id).join(', ')}${prohibidas(ayuda.texto).length ? ` · ${prohibidas(ayuda.texto).join(', ')}` : ''}`,
+    );
+    const faltasClaro = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasNoche = await axe(page);
+    await ponerTema(page, 'claro');
+    comprobar('F-80', 'axe no encuentra faltas en «Plan», de Entrenamiento, con todos los ejercicios abiertos, en los dos temas', faltasClaro.length === 0 && faltasNoche.length === 0, `claro: ${faltasClaro.map((f) => f.id).join(', ') || 'sin faltas'} · azul noche: ${faltasNoche.map((f) => f.id).join(', ') || 'sin faltas'}`);
+    const anchos = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await salir();
+      await entrar(`${BASE}&sesion=${sB.orden}`);
+      const p = await planDeEntrenamientoEnPantalla(page);
+      const ultimo = p.activo?.ejercicios.at(-1)?.caja;
+      const elAbierto = p.activo?.ejercicios.find((e) => e.abierto);
+      anchos.push({
+        ancho,
+        desborda: !(await sinDesborde(page)),
+        alCostado: !!ultimo && p.activo.historial.caja.x >= ultimo.x + ultimo.ancho,
+        debajo: !!ultimo && p.activo.historial.caja.y >= ultimo.y + ultimo.alto,
+        loGeneralAlLado: !!elAbierto && elAbierto.cajaDeLoGeneral.x >= elAbierto.cajaDeSeries.x + elAbierto.cajaDeSeries.ancho,
+        loGeneralDebajo: !!elAbierto && elAbierto.cajaDeLoGeneral.y >= elAbierto.cajaDeSeries.y + elAbierto.cajaDeSeries.alto,
+        cortes: await cortesMalPuestos(page, TEXTOS_DEL_PLAN),
+        alto: await page.evaluate(() => document.documentElement.scrollHeight),
+      });
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    const en = (ancho) => anchos.find((x) => x.ancho === ancho);
+    const todosLosCortes = [...cortes.cortes.map((c) => `1440: ${c}`), ...anchos.flatMap((x) => x.cortes.cortes.map((c) => `${x.ancho}: ${c}`))];
+    comprobar(
+      'F-80',
+      'El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al lado de la tabla mientras entra, y pasa debajo cuando no (a 390 px). A 1280, 1024, 768 y 390 px la página no desborda de costado, y ningún renglón empieza con el separador « · » ni deja un número lejos de su unidad',
+      anchos.every((x) => !x.desborda && (x.loGeneralAlLado || x.loGeneralDebajo)) && en(1280).alCostado && !en(1280).debajo && en(1024).debajo && !en(1024).alCostado && en(1280).loGeneralAlLado && en(390).loGeneralDebajo && todosLosCortes.length === 0 && cortes.textos > 10,
+      todosLosCortes.length > 0 ? todosLosCortes.slice(0, 4).join(' | ') : anchos.map((x) => `${x.ancho}: ${x.alto} px de alto, historial ${x.alCostado ? 'al costado' : x.debajo ? 'debajo' : '¿?'}, lo general ${x.loGeneralAlLado ? 'al lado' : x.loGeneralDebajo ? 'debajo' : '¿?'}${x.desborda ? ' · DESBORDA' : ''}`).join(' · '),
+    );
+
+    // ── Estados que el escenario no tiene, con respuestas simuladas en el navegador ──────────────────────────────
+    const SIN_PLANES = { coincide: (u) => /\/training\/plans\?/.test(u), accion: 'entregar', cuerpo: { data: [], page: { limit: 50, nextCursor: null, hasMore: false } } };
+    const SIN_OBJETIVO = { coincide: (u) => u.includes('/training/objectives/effective'), accion: 'entregar', cuerpo: { data: { objective: null } } };
+    const sinNada = await conSimulacion([SIN_PLANES, SIN_OBJETIVO], BASE);
+    await captura(page, v, 'plan-de-entrenamiento-sin-plan-ni-objetivo-simulado-1440-claro');
+    const sinPlan = await conSimulacion([SIN_PLANES], BASE);
+    const sinVigente = await conSimulacion([SIN_OBJETIVO], BASE);
+    const conFalla = await conSimulacion([{ coincide: (u) => /\/training\/plans\?/.test(u), status: 503, codigo: 'SERVICE_UNAVAILABLE' }], BASE);
+    comprobar(
+      'F-78',
+      '(Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna acción para crear. Sin plan y con objetivo, «Crear plan», primero, y «Empezar desde una plantilla». Con plan y sin objetivo vigente, el plan se ve, y en lugar de «Crear nueva versión» explica que primero hay que definir el objetivo. Si la lista de versiones no se puede leer, dice la falla con «Reintentar», no que no hay plan',
+      sinNada.activo === null &&
+        (sinNada.vacio?.texto ?? '').startsWith('Todavía no hay un plan activo.') &&
+        sinNada.vacio.texto.includes('Para planificar, primero definí el objetivo') &&
+        igual(sinNada.vacio.botones, ['Ir a Resumen']) &&
+        sinPlan.activo === null &&
+        igual(sinPlan.vacio?.botones, ['Crear plan', 'Empezar desde una plantilla']) &&
+        !/Historial/.test(sinPlan.main) &&
+        igual(sinVigente.activo?.acciones, ['Guardar como plantilla']) &&
+        (sinVigente.activo.aviso ?? '').startsWith('Para planificar, primero definí el objetivo') &&
+        sinVigente.activo.ejercicios.length === sA.ejercicios.length &&
+        !conFalla.esta &&
+        !!conFalla.falla &&
+        /Reintentar/.test(conFalla.falla) &&
+        !/Todavía no hay un plan activo/.test(conFalla.main),
+      `sin objetivo: [${sinNada.vacio?.botones.join(' | ')}] · con objetivo: [${sinPlan.vacio?.botones.join(' | ')}] · con plan y sin objetivo: [${sinVigente.activo?.acciones.join(' | ')}] · falla: «${(conFalla.falla ?? '').slice(0, 90)}»`,
+    );
+    // Una sesión con % RM, su referencia y parámetros del profesional; un bloque con seis sesiones de nombre largo; y uno sin sesiones.
+    const primerBloque = activa.blocks.find((b) => b.order === 1);
+    const modelo = primerBloque.sessions.find((s) => s.order === 1);
+    const imagen = await imagenDeEjercicioSimulada(page, v);
+    const conPorcentaje = {
+      ...modelo.prescriptions[0],
+      image: imagen.enLaPrescripcion(modelo.prescriptions[0], activa.activatedAt),
+      intensity: { criterion: 'PERCENT_RM', target: { value: 72.5, reference: { description: '1RM estimado en la última evaluación' } } },
+      professionalParameters: [
+        { label: 'Tempo', value: '3-1-1' },
+        { label: 'Pausa abajo', value: 1.5, unit: 's' },
+      ],
+      sets: modelo.prescriptions[0].sets.map((s) => ({ ...s, target: { ...s.target, rir: null }, targetOrigin: { ...s.targetOrigin, rir: 'NONE' } })),
+    };
+    const seisSesiones = Array.from({ length: 6 }, (_, i) => ({ ...modelo, sessionId: `ses-simulada-${i + 1}`, order: i + 1, label: `Sesión ${i + 1} · tren superior con énfasis en empuje y tracción`, prescriptions: i === 0 ? [conPorcentaje] : modelo.prescriptions }));
+    const simulado = { ...activa, blocks: [{ ...primerBloque, sessions: seisSesiones }, { ...primerBloque, blockId: 'bloque-simulado-vacio', order: 2, label: 'Bloque sin sesiones', purpose: null, sessions: [] }] };
+    const REGLA_DEL_PLAN = { coincide: (u) => u.includes(`/training/plans/${activa.planId}/detail`), accion: 'entregar', cuerpo: { data: simulado } };
+    await page.setViewport({ width: 1024, height: 900 });
+    const conSeis = await conSimulacion([REGLA_DEL_PLAN], `${BASE}&sesion=4`);
+    const seisDesborda = !(await sinDesborde(page));
+    await page.setViewport({ width: 1440, height: 900 });
+    const antesDeLaImagen = v.urls.length;
+    const conPorciento = await conSimulacion([REGLA_DEL_PLAN, ...imagen.reglas], BASE, '.ejercicio-del-plan__general img.imagen-de-ejercicio');
+    const accesosAbierto = imagen.accesosDesde(antesDeLaImagen).length;
+    await captura(page, v, 'plan-de-entrenamiento-seis-sesiones-y-porcentaje-simulado-1440-claro');
+    const antesDePlegado = v.urls.length;
+    const conImagenPlegado = await conSimulacion([REGLA_DEL_PLAN, ...imagen.reglas], `${BASE}&ejercicios=ninguno`);
+    const accesosPlegado = imagen.accesosDesde(antesDePlegado).length;
+    const bloqueVacio = await conSimulacion([REGLA_DEL_PLAN], `${BASE}&bloque=2`);
+    const elDePorcentaje = conPorciento.activo?.ejercicios[0];
+    comprobar(
+      'F-72',
+      '(Respuesta simulada.) Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se mira y cuántas hay («4 de 6»), y elegida la que pide la dirección; a 1024 px la página no desborda. Un bloque sin sesiones lo dice, y no muestra una lista vacía ni un ejercicio',
+      conSeis.activo?.sesion?.forma === 'lista' &&
+        conSeis.activo.sesion.opciones.length === 6 &&
+        conSeis.activo.sesion.opciones.findIndex((o) => o.elegido) === 3 &&
+        conSeis.activo.sesion.posicion === '4 de 6' &&
+        !seisDesborda &&
+        bloqueVacio.activo?.bloque?.elegido === 'Bloque sin sesiones' &&
+        bloqueVacio.activo.sesion === null &&
+        bloqueVacio.activo.sinNada.includes('Acá no hay sesiones.') &&
+        bloqueVacio.activo.ejercicios.length === 0 &&
+        bloqueVacio.activo.bloque.detalle === 'sin sesiones',
+      `${conSeis.activo?.sesion?.forma}: ${conSeis.activo?.sesion?.opciones?.length} opciones, «${conSeis.activo?.sesion?.posicion}»${seisDesborda ? ' · DESBORDA' : ''} · bloque vacío: «${bloqueVacio.activo?.sinNada.join(' | ')}» («${bloqueVacio.activo?.bloque?.detalle}»)`,
+    );
+    comprobar(
+      'F-74',
+      '(Respuesta simulada.) Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los parámetros del profesional con su unidad (un número, con coma); la tabla no tiene columna de RIR, y la cabecera del ejercicio dice el criterio',
+      elDePorcentaje?.resumen === `${modelo.prescriptions[0].sets.length} series · criterio de intensidad: % RM` &&
+        !elDePorcentaje.columnas.includes('RIR') &&
+        igual(elDePorcentaje.general.datos.slice(0, 1), [['Intensidad', '72,5 % RM (1RM estimado en la última evaluación)']]) &&
+        elDePorcentaje.general.datos.some((x) => igual(x, ['Tempo', '3-1-1'])) &&
+        elDePorcentaje.general.datos.some((x) => igual(x, ['Pausa abajo', '1,5 s'])) &&
+        prohibidas(conPorciento.main).length === 0,
+      `${elDePorcentaje?.resumen} · ${elDePorcentaje?.columnas.join(', ')} · ${elDePorcentaje?.general.datos.map((x) => x.join(': ')).join(' · ')}`,
+    );
+    const laImagen = elDePorcentaje?.general.imagen ?? null;
+    comprobar(
+      'F-74',
+      '(Respuestas simuladas: el escenario no tiene ejercicios con imagen.) Un ejercicio con imagen la muestra en «Lo general», dibujada, con su texto alternativo y dentro de la tarjeta, sin tapar los datos. Su acceso se pide una sola vez, y recién con el ejercicio abierto: plegado, no hay imagen ni pedido',
+      !!laImagen &&
+        laImagen.dibujada &&
+        laImagen.alt === imagen.alt &&
+        laImagen.adentro &&
+        laImagen.ancho >= 48 &&
+        laImagen.alto >= 48 &&
+        accesosAbierto === 1 &&
+        conImagenPlegado.activo?.ejercicios.length === 1 &&
+        conImagenPlegado.activo.ejercicios[0].abierto === false &&
+        conImagenPlegado.activo.ejercicios[0].general.imagen === null &&
+        accesosPlegado === 0,
+      `abierto: ${laImagen ? `${laImagen.dibujada ? 'dibujada' : 'sin dibujar'}, ${laImagen.ancho} × ${laImagen.alto} px, «${laImagen.alt}»${laImagen.adentro ? '' : ' · SE SALE'}` : 'sin imagen'} · ${accesosAbierto} pedido de acceso · plegado: ${accesosPlegado} pedidos`,
+    );
+
+    // ── Las plantillas ───────────────────────────────────────────────────────────────────────────────────────────
+    await salir();
+    await entrar(BASE);
+    const NOMBRE_DE_LA_PLANTILLA = `Plan de entrenamiento del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+    const antesDeGuardar = v.urls.length;
+    await clic(page, '[data-guardar-plantilla]', 'Guardar como plantilla');
+    await page.waitForSelector('dialog[open] input', { timeout: 10_000 });
+    await page.type('dialog[open] input', NOMBRE_DE_LA_PLANTILLA);
+    await clic(page, 'dialog[open] .acciones button', 'Guardar la plantilla');
+    const avisoDeGuardada = await esperarAviso('Plantilla guardada.');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const guardadas = escriturasDesde(antesDeGuardar, '/training/plan-templates').length;
+    const abrirPlantillas = async () => {
+      await clic(page, '[data-empezar-desde-plantilla]', 'Empezar desde una plantilla');
+      await page.waitForFunction(() => [...document.querySelectorAll('dialog[open] h2')].some((h) => h.innerText.trim() === 'Empezar desde una plantilla'), { timeout: 10_000 }).catch(() => {});
+      await quieto(page, v);
+      return plantillasEnPantalla(page);
+    };
+    const cerrarPlantillas = async () => {
+      await clic(page, 'dialog[open] .acciones button', 'Cancelar').catch(() => null);
+      await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    };
+    const antesDeAbrir = v.urls.length;
+    const lasPlantillas = await abrirPlantillas();
+    const leidasAlAbrir = lecturasDesde(antesDeAbrir, '/training/plan-templates').length;
+    await captura(page, v, 'plan-de-entrenamiento-empezar-desde-una-plantilla-1440-claro');
+    await cerrarPlantillas();
+    v.reglas.push({ coincide: (u) => u.includes('/training/plan-templates'), status: 503, codigo: 'SERVICE_UNAVAILABLE' });
+    const conFallaDePlantillas = await abrirPlantillas();
+    v.reglas.length = 0;
+    await cerrarPlantillas();
+    const laGuardada = lasPlantillas?.plantillas.find((p) => p.nombre === NOMBRE_DE_LA_PLANTILLA);
+    const sesionesDelPlan = activa.blocks.reduce((n, b) => n + b.sessions.length + b.microcycles.reduce((m, x) => m + x.sessions.length, 0), 0);
+    comprobar(
+      'F-77',
+      '«Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre el diálogo común, que recién entonces lee las plantillas de entrenamiento, una vez: está la que se guardó, con sus sesiones contadas a mano y «Sin cargas»; ninguna viene elegida y crear el borrador está apagado. Si esa lectura falla (simulado), el diálogo dice la falla con «Reintentar», no «No tenés plantillas activas»',
+      guardadas === 1 &&
+        avisoDeGuardada &&
+        leidasAlAbrir === 1 &&
+        !!laGuardada &&
+        laGuardada.detalle === `${sesionesDelPlan} sesiones · Sin cargas` &&
+        lasPlantillas.plantillas.every((p) => !p.elegida) &&
+        lasPlantillas.confirmar.apagado &&
+        (conFallaDePlantillas?.falla ?? '').startsWith('No pudimos leer tus plantillas') &&
+        conFallaDePlantillas.reintentar &&
+        !/No tenés plantillas/.test(conFallaDePlantillas.texto),
+      `escrituras: ${guardadas} · aviso: ${avisoDeGuardada ? 'sí' : 'no'} · lecturas al abrir: ${leidasAlAbrir} · «${laGuardada?.nombre}»: ${laGuardada?.detalle} · con la falla: «${(conFallaDePlantillas?.falla ?? '').slice(0, 80)}»`,
+    );
+
+    // ── Crear una versión nueva y editarla con el editor recompuesto (WP-ESCRITORIO-AREAS, parte 8; maqueta 28) ──────
+    const antesDeCrear = v.urls.length;
+    await clic(page, '[data-crear-version]', 'Crear nueva versión a partir de esta');
+    const avisoDeCreada = await esperarAviso('Borrador creado.');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 30_000 }).catch(() => {});
+    await page.waitForSelector('.plan__preparacion .editor-de-entrenamiento .ejercicio-del-editor', { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const conBorrador = await planDeEntrenamientoEnPantalla(page);
+    const creadas = escriturasDesde(antesDeCrear, '/training/plans').length;
+    const elBorrador = (await leerTodo()).lista.find((x) => x.state === 'DRAFT');
+
+    // La versión en preparación recién creada es una copia de la activa: dos bloques, el primero con dos sesiones y el
+    // segundo con dos microciclos. Lo que el editor tiene que decir se escribe a mano con lo que devuelve la API (y con
+    // lo que ya se esperaba del plan activo): no se usa el módulo del dominio que arma la pantalla.
+    const EDITOR = '.plan__preparacion .editor-de-entrenamiento';
+    const ID_DEL_BORRADOR = elBorrador.planId;
+    const leerElBorrador = async () => (await leerApi(v, `/training/plans/${ID_DEL_BORRADOR}/detail`)).data;
+    const coma = (n) => String(n).replace('.', ',');
+    const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    const porOrden = (xs) => [...xs].sort((a, b) => a.order - b.order);
+    const sesionesDe = (b) => (b.microcycles.length > 0 ? porOrden(b.microcycles).flatMap((m) => porOrden(m.sessions)) : porOrden(b.sessions));
+    /**
+     * Lo que tiene que mostrar cada celda de un objetivo de una serie, escrito a mano con la API: la clave que no está es
+     * «toma de lo general» (en gris, con el valor de lo general o «Sin objetivo»); `null`, «Sin objetivo» elegido para la
+     * serie; un número, el propio.
+     */
+    const celdaEsperada = (serie, clave, general, escribir) => {
+      if (!(clave in serie) || serie[clave] === undefined) return { estado: 'de-lo-general', valor: '', gris: true, sinValor: general === null ? 'Sin objetivo' : escribir(general) };
+      if (serie[clave] === null) return { estado: 'sin-objetivo', valor: '', gris: false, sinValor: 'Sin objetivo' };
+      const n = clave === 'suggestedLoad' ? serie[clave].value : serie[clave];
+      return { estado: 'propio', valor: escribir(n), gris: true, sinValor: general === null ? 'Sin objetivo' : escribir(general) };
+    };
+    const filasEsperadas = (p) =>
+      [...p.sets]
+        .sort((a, b) => a.setIndex - b.setIndex)
+        .map((s, n) => ({
+          numero: String(n + 1),
+          repeticiones: s.target.repetitions ? ('value' in s.target.repetitions ? String(s.target.repetitions.value) : `${s.target.repetitions.min}-${s.target.repetitions.max}`) : '',
+          celdas: [
+            celdaEsperada(s, 'suggestedLoad', p.suggestedLoad ? p.suggestedLoad.value : null, coma),
+            ...(p.intensity?.criterion === 'RIR' ? [celdaEsperada(s, 'rir', p.intensity.target.value, coma)] : []),
+            celdaEsperada(s, 'restSeconds', p.restSeconds, mmss),
+          ],
+          nota: s.note ?? '',
+        }));
+    /** Lo que el editor tiene a la vista. */
+    const elEditor = () =>
+      page.evaluate((s) => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+        const caja = (e) => {
+          if (!e) return null;
+          const r = e.getBoundingClientRect();
+          return { x: Math.round(r.left), y: Math.round(r.top + window.scrollY), ancho: Math.round(r.width), alto: Math.round(r.height) };
+        };
+        const raiz = document.querySelector(s);
+        if (!raiz) return null;
+        const nombre = raiz.querySelector('.nombre-a-pedido input');
+        const textoAbierto = raiz.querySelector('.texto-a-pedido--abierto input, .texto-a-pedido--abierto textarea');
+        const panel = raiz.querySelector('.menu-de-acciones[data-abierto] .menu-de-acciones__lista');
+        const nivel = (clave) => {
+          const n = raiz.querySelector(`.niveles-del-editor > .nivel-del-plan[data-nivel="${clave}"]`);
+          if (!n) return null;
+          const segmentos = [...n.querySelectorAll('.segmento')];
+          return {
+            forma: n.dataset.forma,
+            opciones: segmentos.map((x) => ({ texto: t(x), elegido: x.querySelector('input').checked })),
+            elegido: n.dataset.forma === 'unico' ? t(n.querySelector('.nivel-del-plan__unico strong')) : t(segmentos.find((x) => x.querySelector('input').checked)),
+            detalle: t(n.querySelector('.nivel-del-plan__detalle')),
+            cuenta: t(n.querySelector('[data-cuenta-de-la-sesion]')),
+            proposito: t(n.querySelector('.texto-a-pedido .texto-a-pedido__texto')),
+            ofreceProposito: t(n.querySelector('.texto-a-pedido > .boton--enlace')),
+            sinNada: t(n.querySelector(':scope > .nota')),
+          };
+        };
+        return {
+          estado: t(raiz.querySelector('.editor-del-plan__estado')),
+          acciones: [...raiz.querySelectorAll('.editor-del-plan__acciones > button, .editor-del-plan__acciones > .menu-de-acciones > button')].map((b) => ({
+            nombre: b.getAttribute('aria-label') ?? t(b),
+            apagado: b.disabled || b.getAttribute('aria-disabled') === 'true',
+            deshabilitado: b.disabled,
+            describe: b.getAttribute('aria-describedby'),
+          })),
+          motivoSinActivar: t(document.getElementById('motivo-sin-activar')),
+          bloque: nivel('bloque'),
+          microciclo: nivel('microciclo'),
+          sesion: nivel('sesion'),
+          indicaciones: t(raiz.querySelector('.niveles-del-editor > .texto-a-pedido .texto-a-pedido__texto')),
+          ejercicios: [...raiz.querySelectorAll('.ejercicio-del-editor')].map((e) => ({
+            posicion: Number(e.dataset.ejercicio),
+            abierto: e.hasAttribute('data-abierta'),
+            expandido: e.querySelector('.comida-del-plan__boton').getAttribute('aria-expanded'),
+            nombre: t(e.querySelector('.comida-del-plan__nombre')),
+            resumen: t(e.querySelector('[data-resumen]')),
+            avisos: t(e.querySelector('[data-avisos]')),
+            columnas: [...e.querySelectorAll('.series-del-editor thead th')].map(t),
+            filas: [...e.querySelectorAll('.series-del-editor tbody tr')].map((tr) => ({
+              numero: t(tr.querySelector('th')),
+              repeticiones: tr.querySelector('td[data-etiqueta="Repeticiones"] input')?.value ?? null,
+              celdas: [...tr.querySelectorAll('.celda-de-objetivo')].map((c) => {
+                const i = c.querySelector('input');
+                return { estado: c.dataset.estado, valor: i.value, gris: i.hasAttribute('data-en-gris'), sinValor: i.placeholder };
+              }),
+              nota: tr.querySelector('.series-del-editor__nota input')?.value ?? null,
+            })),
+            invalidas: [...e.querySelectorAll('[aria-invalid="true"]')].map((x) => x.id),
+            errores: [...e.querySelectorAll('.campo__error')].map((x) => t(x).replace('⚠', '').trim()),
+            general: e.querySelector('.lo-general-del-editor')
+              ? {
+                  criterio: e.querySelector('select[id$="-criterio"]')?.value ?? null,
+                  objetivo: e.querySelector('input[id$="-objetivo"]')?.value ?? null,
+                  carga: e.querySelector('input[id$="-carga"]:not([id*="-serie-"])')?.value ?? null,
+                  unidad: e.querySelector('select[id$="-unidad"]')?.value ?? null,
+                  descanso: e.querySelector('input[id$="-descanso"]:not([id*="-serie-"])')?.value ?? null,
+                  nota: e.querySelector('textarea[id$="-nota"]')?.value ?? null,
+                }
+              : null,
+            cajaDeSeries: caja(e.querySelector('.ejercicio-del-editor__series')),
+            cajaDeLoGeneral: caja(e.querySelector('.ejercicio-del-editor__general')),
+          })),
+          sinEjercicios: t(raiz.querySelector('.ejercicios-del-editor > .nota')),
+          campos: [...raiz.querySelectorAll('input:not([type="radio"]), select, textarea')].filter(aLaVista).map((e) => e.id),
+          nombreAbierto: nombre ? { id: nombre.id, valor: nombre.value, conFoco: document.activeElement === nombre, seleccionado: nombre.value.length > 0 && nombre.selectionStart === 0 && nombre.selectionEnd === nombre.value.length } : null,
+          textoAbierto: textoAbierto ? { id: textoAbierto.id, valor: textoAbierto.value, conFoco: document.activeElement === textoAbierto } : null,
+          menu: panel ? [...panel.querySelectorAll(':scope > li')].map((li) => ({ texto: t(li.querySelector('button')), apagada: li.querySelector('button').disabled, motivo: t(li.querySelector('.menu-de-acciones__motivo')) })) : null,
+          aviso: t(raiz.querySelector(':scope > .aviso--error p')),
+          problemas: [...raiz.querySelectorAll('.problemas-del-plan li')].map((li) => ({ texto: t(li), esBoton: !!li.querySelector('button[data-problema]') })),
+          notaDeValidar: t(raiz.querySelector(':scope > .aviso--error > .nota, :scope > .aviso--error .nota:last-child')),
+          foco: document.activeElement?.id || null,
+          alto: document.documentElement.scrollHeight,
+          texto: t(raiz),
+        };
+      }, EDITOR);
+    const enElEditor = async (selector, contiene) => {
+      await clic(page, `${EDITOR} ${selector}`, contiene);
+      await pausa(250);
+    };
+    const tocarNivelDelEditor = (nivel, nombre) => enElEditor(`.niveles-del-editor > .nivel-del-plan[data-nivel="${nivel}"] .segmento`, nombre);
+    /** Abre o pliega un ejercicio de la sesión que se mira, por su posición (desde uno). */
+    const alternarEjercicio = async (n) => {
+      await page.click(`${EDITOR} .ejercicio-del-editor[data-ejercicio="${n}"] .comida-del-plan__boton`);
+      await pausa(250);
+    };
+    /** Abre un menú del editor por el selector de su botón (`#menu-del-bloque`, o el de una celda). */
+    const abrirMenu = async (boton) => {
+      await page.click(`${EDITOR} ${boton}`);
+      await page.waitForSelector(`${EDITOR} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, { timeout: 5_000 }).catch(() => {});
+    };
+    const elegirDelMenu = async (texto) => {
+      await clic(page, `${EDITOR} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, texto);
+      await pausa(250);
+    };
+    /** El botón de la celda de un objetivo, por el identificador de su campo. */
+    const menuDeLaCelda = (id) => `.celda-de-objetivo:has(#${id}) .menu-de-acciones__boton`;
+    /** Escribe en un campo del editor reemplazando lo que tenía, y sale de él (lo que se entendió pasa a su forma). */
+    const escribirEn = async (id, texto, { salir = true } = {}) => {
+      await page.focus(`#${id}`);
+      await page.evaluate((x) => document.getElementById(x).select(), id);
+      await page.keyboard.type(texto);
+      if (salir) await page.keyboard.press('Tab');
+      await pausa(200);
+    };
+    const tocarAccionDelEditor = (texto) => enElEditor('.editor-del-plan__acciones > button', texto);
+    /** Las escrituras sobre la versión en preparación, por lo que hacen: guardar (PATCH), validar y activar. */
+    const escriturasDelBorrador = (desde) => {
+      const todas = v.urls.slice(desde).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u) && u.includes(`/training/plans/${ID_DEL_BORRADOR}`));
+      return { guardar: todas.filter((u) => u.startsWith('PATCH ')).length, validar: todas.filter((u) => u.endsWith('/validate')).length, activar: todas.filter((u) => u.endsWith('/activate')).length };
+    };
+    const pedidosDesde = (desde) => v.urls.slice(desde).filter((u) => !u.startsWith('OPTIONS ')).length;
+    const esperarEstado = async (estadoEsperado) => {
+      await page.waitForFunction((s, e) => document.querySelector(`${s} .editor-del-plan__estado`)?.innerText.trim() === e, { timeout: 40_000 }, EDITOR, estadoEsperado).catch(() => {});
+      await quieto(page, v, { silencio: 300 });
+    };
+    const sinMotivo = (texto) => ({ texto, apagada: false, motivo: null });
+
+    // ── Al entrar ──
+    const DB = await leerElBorrador();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const alEntrarAlEditor = await elEditor();
+    await captura(page, v, 'editor-de-entrenamiento-al-entrar-1440-claro');
+    const bA = porOrden(DB.blocks)[0];
+    comprobar(
+      'F-103',
+      'La versión en preparación se abre en una sesión, con sus ejercicios plegados: cada uno en un renglón que dice lo que piden sus series, el mismo renglón que el plan activo (es una copia), calculado a mano con la API. Arriba, el estado del guardado y, en este orden, el menú de la versión, «Validar plan», «Activar plan» y «Guardar cambios», apagado (apagado, no deshabilitado: conserva el foco). El bloque y la sesión, con los nombres de la API; al lado del bloque, cuántas sesiones tiene y su propósito con «Cambiar»; al lado de la sesión, cuántos ejercicios y series tiene; debajo, sus indicaciones. No hay ningún campo a la vista, y la página entera mide menos de 1.000 px a 1440 (medía 28.413)',
+      !!alEntrarAlEditor &&
+        creadas === 1 &&
+        !!elBorrador &&
+        alEntrarAlEditor.estado === 'Guardado' &&
+        igual(alEntrarAlEditor.acciones.map((a) => [a.nombre, a.apagado, a.deshabilitado]), [
+          ['Más acciones de esta versión', false, false],
+          ['Validar plan', false, false],
+          ['Activar plan', false, false],
+          ['Guardar cambios', true, false],
+        ]) &&
+        alEntrarAlEditor.bloque?.forma === 'botones' &&
+        igual(alEntrarAlEditor.bloque.opciones, E.bloques.map((b, i) => ({ texto: b.nombre, elegido: i === 0 }))) &&
+        alEntrarAlEditor.bloque.detalle === E.bloques[0].detalle.split(' · ')[0] &&
+        alEntrarAlEditor.bloque.proposito === bA.purpose &&
+        alEntrarAlEditor.microciclo === null &&
+        igual(alEntrarAlEditor.sesion?.opciones, b1.sesiones.map((x, i) => ({ texto: x.nombre, elegido: i === 0 }))) &&
+        alEntrarAlEditor.sesion.detalle === 'Sin día asignado: tu asesorado elige cuál hace.' &&
+        alEntrarAlEditor.sesion.cuenta === sA.cuenta &&
+        alEntrarAlEditor.indicaciones === sA.indicaciones &&
+        igual(alEntrarAlEditor.ejercicios.map((e) => [e.posicion, e.nombre, e.resumen, e.abierto, e.expandido, e.avisos]), sA.ejercicios.map((x, i) => [i + 1, x.nombre, x.cerrado, false, 'false', null])) &&
+        alEntrarAlEditor.campos.length === 0 &&
+        alEntrarAlEditor.nombreAbierto === null &&
+        alEntrarAlEditor.alto <= 1000 &&
+        ['bloque', 'micro', 'sesion', 'ejercicios'].every((k) => P().get(k) === null),
+      `${alEntrarAlEditor?.alto} px · «${alEntrarAlEditor?.estado}» · ${alEntrarAlEditor?.acciones.map((a) => `${a.nombre}${a.apagado ? ' (apagado)' : ''}`).join(' | ')} · bloque: ${alEntrarAlEditor?.bloque?.opciones.map((o) => o.texto).join(' | ')} («${alEntrarAlEditor?.bloque?.detalle}», «${alEntrarAlEditor?.bloque?.proposito}») · ${alEntrarAlEditor?.sesion?.cuenta} · ${alEntrarAlEditor?.ejercicios.map((e) => `${e.nombre}: ${e.resumen}`).join(' | ')} · campos: ${alEntrarAlEditor?.campos.length}`,
+    );
+
+    // ── Lo que se mira, en la dirección, por posición ──
+    const antesDeMirar = v.urls.length;
+    await tocarNivelDelEditor('sesion', sB.nombre);
+    const enLaSesionB = await elEditor();
+    const dirSesionB = direccion();
+    await alternarEjercicio(1);
+    const dirConUnoAbierto = direccion();
+    await tocarNivelDelEditor('bloque', b2.nombre);
+    const enElBloque2 = await elEditor();
+    const dirBloque2 = direccion();
+    await tocarNivelDelEditor('microciclo', b2.microciclos[1].nombre);
+    const enElMicro2 = await elEditor();
+    const dirMicro2 = direccion();
+    await tocarNivelDelEditor('bloque', b1.nombre);
+    const dirDeVuelta = direccion();
+    const pedidosAlMirar = pedidosDesde(antesDeMirar);
+    comprobar(
+      'F-104',
+      'Lo que se mira en el editor vive en la dirección, por su posición: elegir la segunda sesión escribe `sesion=2` y muestra sus ejercicios (los de la API), plegados; abrir el primero escribe `ejercicios=1`. Elegir el segundo bloque escribe `bloque=2` y quita la sesión y los ejercicios; ese bloque usa microciclos: aparece su renglón, con el primero elegido, y la sesión, que es una sola, se dice por su nombre; elegir el segundo microciclo escribe `micro=2`. Volver al primer bloque limpia la dirección. Nada de eso le pide algo a BE',
+      dirSesionB.sesion === '2' &&
+        igual(enLaSesionB?.ejercicios.map((e) => [e.nombre, e.resumen, e.abierto]), sB.ejercicios.map((x) => [x.nombre, x.cerrado, false])) &&
+        enLaSesionB.sesion?.cuenta === sB.cuenta &&
+        dirConUnoAbierto.ejercicios === '1' &&
+        dirBloque2.bloque === '2' &&
+        dirBloque2.sesion === undefined &&
+        dirBloque2.ejercicios === undefined &&
+        igual(enElBloque2?.microciclo?.opciones, b2.microciclos.map((m, i) => ({ texto: m.nombre, elegido: i === 0 }))) &&
+        enElBloque2.sesion?.forma === 'unico' &&
+        enElBloque2.sesion.elegido === b2.microciclos[0].sesiones[0].nombre &&
+        igual(enElBloque2.ejercicios.map((e) => e.resumen), b2.microciclos[0].sesiones[0].ejercicios.map((x) => x.cerrado)) &&
+        dirMicro2.micro === '2' &&
+        enElMicro2?.sesion?.elegido === b2.microciclos[1].sesiones[0].nombre &&
+        ['bloque', 'micro', 'sesion', 'ejercicios'].every((k) => dirDeVuelta[k] === undefined) &&
+        pedidosAlMirar === 0,
+      `sesion=${dirSesionB.sesion} · ejercicios=${dirConUnoAbierto.ejercicios} · bloque=${dirBloque2.bloque} (${enElBloque2?.microciclo?.opciones.map((o) => o.texto).join(' | ')}; sesión «${enElBloque2?.sesion?.elegido}») · micro=${dirMicro2.micro} · al volver: ${JSON.stringify(dirDeVuelta)} · pedidos: ${pedidosAlMirar}`,
+    );
+
+    // ── Un ejercicio abierto: la tabla de series, con los tres estados de cada objetivo, y lo general ──
+    const pB = porOrden(porOrden(DB.blocks)[0].sessions)[1];
+    const bancaDelBorrador = porOrden(pB.prescriptions)[0];
+    await entrar(`${BASE}&sesion=2&ejercicios=1`);
+    const conLaTabla = await elEditor();
+    await captura(page, v, 'editor-de-entrenamiento-un-ejercicio-abierto-1440-claro');
+    const laTabla = conLaTabla?.ejercicios[0];
+    const filasDeBanca = filasEsperadas(bancaDelBorrador);
+    const estados = filasDeBanca.flatMap((f) => f.celdas.map((c) => c.estado));
+    comprobar(
+      'F-105',
+      'Abierto, un ejercicio muestra sus series en una tabla: «Serie», «Repeticiones», «Carga sugerida», «RIR» (con el criterio RIR), «Descanso» y «Nota», cada encabezado con lo que hace falta para llenarlo. Cada objetivo de cada serie está en una celda con sus tres estados, como los guardó la API: vacía y en gris lo que toma de lo general, con un valor el propio, y «Sin objetivo» elegido para la serie, en el color del texto. El descanso se lee «02:30». Ya no está «Así lo ve tu asesorado»: lo que se ve en la tabla es lo que recibe. Al lado, «Lo general del ejercicio», con el criterio, su objetivo, la carga con su unidad, el descanso y las notas de la API. El escenario tiene los tres estados',
+      !!laTabla &&
+        laTabla.abierto &&
+        laTabla.nombre === sB.ejercicios[0].nombre &&
+        laTabla.resumen === `${bancaDelBorrador.sets.length} series` &&
+        igual(laTabla.columnas, ['Serie', 'Repeticiones 8 u 8-12', `Carga sugerida ${bancaDelBorrador.suggestedLoad?.unit ?? 'kg'}`, 'RIR 0 a 10', 'Descanso 02:30', 'Nota']) &&
+        igual(laTabla.filas, filasDeBanca) &&
+        ['de-lo-general', 'propio', 'sin-objetivo'].every((x) => estados.includes(x)) &&
+        !/Así lo ve tu asesorado/.test(conLaTabla.texto) &&
+        igual(laTabla.general, {
+          criterio: bancaDelBorrador.intensity.criterion,
+          objetivo: coma(bancaDelBorrador.intensity.target.value),
+          carga: bancaDelBorrador.suggestedLoad ? coma(bancaDelBorrador.suggestedLoad.value) : '',
+          unidad: bancaDelBorrador.suggestedLoad?.unit ?? 'kg',
+          descanso: bancaDelBorrador.restSeconds === null ? '' : mmss(bancaDelBorrador.restSeconds),
+          nota: bancaDelBorrador.note ?? '',
+        }) &&
+        laTabla.cajaDeLoGeneral.x >= laTabla.cajaDeSeries.x + laTabla.cajaDeSeries.ancho &&
+        Math.abs(laTabla.cajaDeLoGeneral.y - laTabla.cajaDeSeries.y) <= 2,
+      `${laTabla?.nombre}: ${laTabla?.filas.map((f) => `${f.numero}: ${f.repeticiones} / ${f.celdas.map((c) => `${c.valor || c.sinValor}${c.estado === 'de-lo-general' ? ' (gris)' : c.estado === 'sin-objetivo' ? ' (elegido)' : ''}`).join(' / ')}${f.nota ? ` / «${f.nota}»` : ''}`).join(' | ')} · lo general: ${JSON.stringify(laTabla?.general)}`,
+    );
+    informar('F-105', 'El alto de «Plan», de Entrenamiento, con la versión en preparación y un ejercicio abierto, a 1440 × 900', `${conLaTabla?.alto} px (con los campos de antes, el mismo ejercicio abierto medía 2.932 px)`);
+
+    // ── Los nombres y los menús, a pedido ──
+    await entrar(BASE);
+    await abrirMenu('#menu-del-bloque');
+    const menuDelBloque = (await elEditor())?.menu;
+    await elegirDelMenu('Cambiar el nombre');
+    const conElNombreAbierto = await elEditor();
+    const AJUSTE = ' (ajuste)';
+    const nombreAntes = conElNombreAbierto?.nombreAbierto?.valor ?? null;
+    await page.keyboard.press('End');
+    await page.keyboard.type(AJUSTE);
+    await page.keyboard.press('Enter');
+    await pausa(300);
+    const conElNombreNuevo = await elEditor();
+    await abrirMenu('#menu-de-la-sesion');
+    const menuDeLaSesion = (await elEditor())?.menu;
+    await page.keyboard.press('Escape');
+    await tocarNivelDelEditor('bloque', b2.nombre);
+    await abrirMenu('#menu-del-microciclo');
+    const menuDelMicro = (await elEditor())?.menu;
+    await page.keyboard.press('Escape');
+    await abrirMenu('#menu-del-bloque');
+    const menuDelBloqueConMicros = (await elEditor())?.menu;
+    await page.keyboard.press('Escape');
+    await tocarNivelDelEditor('bloque', `${nombreAntes}${AJUSTE}`);
+    comprobar(
+      'F-108',
+      'Los nombres se cambian a pedido. El menú del bloque ofrece «Cambiar el nombre», «Organizar por microciclos» —apagada, y dice por qué: el bloque ya tiene sesiones— y «Quitar este bloque». «Cambiar el nombre» abre el campo en el lugar, con el foco y el nombre seleccionado; Enter lo cierra, el foco vuelve al botón del menú y el bloque se llama como se escribió. El menú de la sesión: «Cambiar el nombre», «Guardar como habitual» y «Quitar esta sesión»; el del microciclo: «Cambiar el nombre» y «Quitar este microciclo»; en un bloque que ya usa microciclos, el menú no ofrece organizarlo por microciclos. La versión queda con «Cambios sin guardar»',
+      igual(menuDelBloque, [sinMotivo('Cambiar el nombre'), { texto: 'Organizar por microciclos', apagada: true, motivo: 'Solo mientras el bloque no tiene sesiones: con microciclos, las sesiones van dentro de ellos.' }, sinMotivo('Quitar este bloque')]) &&
+        conElNombreAbierto?.nombreAbierto?.id === 'b0-nombre' &&
+        conElNombreAbierto.nombreAbierto.conFoco &&
+        conElNombreAbierto.nombreAbierto.seleccionado &&
+        nombreAntes === b1.nombre &&
+        conElNombreNuevo?.nombreAbierto === null &&
+        conElNombreNuevo.foco === 'menu-del-bloque' &&
+        conElNombreNuevo.bloque?.elegido === `${b1.nombre}${AJUSTE}` &&
+        conElNombreNuevo.estado === 'Cambios sin guardar' &&
+        igual(menuDeLaSesion, [sinMotivo('Cambiar el nombre'), sinMotivo('Guardar como habitual'), sinMotivo('Quitar esta sesión')]) &&
+        igual(menuDelMicro, [sinMotivo('Cambiar el nombre'), sinMotivo('Quitar este microciclo')]) &&
+        igual(menuDelBloqueConMicros, [sinMotivo('Cambiar el nombre'), sinMotivo('Quitar este bloque')]),
+      `bloque: ${menuDelBloque?.map((m) => `${m.texto}${m.apagada ? ` (apagada: ${m.motivo})` : ''}`).join(' | ')} · campo: ${conElNombreAbierto?.nombreAbierto?.id}${conElNombreAbierto?.nombreAbierto?.seleccionado ? ' (seleccionado)' : ''} · después: «${conElNombreNuevo?.bloque?.elegido}», foco en ${conElNombreNuevo?.foco} · sesión: ${menuDeLaSesion?.map((m) => m.texto).join(' | ')} · microciclo: ${menuDelMicro?.map((m) => m.texto).join(' | ')}`,
+    );
+
+    // Con cambios sin guardar, mirar la activa y volver no pierde nada.
+    const conCambios = await elEditor();
+    const antesDePasar = v.urls.length;
+    const tocarVersion = async (cual) => {
+      await clic(page, '[data-selector-de-version] .segmento', cual);
+      await quieto(page, v, { silencio: 300 });
+    };
+    await tocarVersion('2 · activa');
+    const enLaActiva = await planDeEntrenamientoEnPantalla(page);
+    const direccionEnLaActiva = P().get('version');
+    await captura(page, v, 'plan-de-entrenamiento-la-activa-con-una-en-preparacion-1440-claro');
+    await tocar('sesion', sB.nombre);
+    const sesionEnLaActiva = P().get('sesion');
+    await tocarVersion('En preparación');
+    const deVueltaAlBorrador = await planDeEntrenamientoEnPantalla(page);
+    const editorDeVuelta = await elEditor();
+    const pedidosAlPasar = v.urls.slice(antesDePasar).filter((u) => !u.startsWith('OPTIONS '));
+    comprobar(
+      'F-79',
+      '«Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «En preparación» elegida, «El asesorado no la ve.» y la activa como «2 · activa». Con cambios sin guardar, pasar a la activa muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra) y deja el editor fuera de la vista; volver lo muestra con lo escrito intacto, en la sesión que se miraba en la activa (la dirección usa los mismos nombres). Ir y volver no le pide nada a BE',
+      creadas === 1 &&
+        elBorrador.predecessorPlanId === activa.planId &&
+        avisoDeCreada &&
+        conBorrador.version === 'preparacion' &&
+        igual(conBorrador.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['2 · activa', false]]) &&
+        conBorrador.selector.nota === 'El asesorado no la ve.' &&
+        conBorrador.editor.aLaVista &&
+        conBorrador.activo === null &&
+        !conBorrador.botones.some((b) => /Crear nueva versión|Crear plan|Empezar desde una plantilla/.test(b)) &&
+        conCambios?.estado === 'Cambios sin guardar' &&
+        enLaActiva.version === 'activa' &&
+        direccionEnLaActiva === 'activa' &&
+        enLaActiva.activo?.frase === fraseEsperada &&
+        igual(enLaActiva.activo.acciones, ['Guardar como plantilla']) &&
+        enLaActiva.activo.yaHay === 'Ya hay una versión en preparación: se sigue sobre esa.' &&
+        enLaActiva.editor.esta &&
+        !enLaActiva.editor.aLaVista &&
+        sesionEnLaActiva === String(sB.orden) &&
+        deVueltaAlBorrador.version === 'preparacion' &&
+        deVueltaAlBorrador.editor.aLaVista &&
+        editorDeVuelta?.estado === 'Cambios sin guardar' &&
+        editorDeVuelta.bloque?.elegido === `${nombreAntes}${AJUSTE}` &&
+        editorDeVuelta.sesion?.elegido === sB.nombre &&
+        P().get('version') === null &&
+        pedidosAlPasar.length === 0,
+      `escrituras: ${creadas} · aviso: ${avisoDeCreada ? 'sí' : 'no'} · ${conBorrador.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · en la activa: [${enLaActiva.activo?.acciones.join(' | ')}] · de vuelta: «${editorDeVuelta?.bloque?.elegido}», sesión «${editorDeVuelta?.sesion?.elegido}», «${editorDeVuelta?.estado}» · pedidos al ir y volver: ${pedidosAlPasar.length}`,
+    );
+    await clic(page, 'header.marco-del-area .ficha__consulta button', 'Actualizar');
+    await page.waitForSelector('dialog[open]', { timeout: 10_000 }).catch(() => {});
+    const pregunta = await page.evaluate(() => document.querySelector('dialog[open]')?.innerText.replace(/\s+/g, ' ').trim() ?? '');
+    await clic(page, 'dialog[open] button', 'Seguir editando').catch(() => null);
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await quieto(page, v);
+
+    // ── Lo que no deja guardar: un RIR y un descanso mal escritos, en ejercicios que después se pliegan ──
+    // Antes, un descanso o un RIR por serie mal escritos viajaban como «nada» y se guardaban en silencio como «sin objetivo».
+    await alternarEjercicio(1);
+    await alternarEjercicio(2);
+    const idDelRir = 'b0-s1-p0-serie-1-rir';
+    const idDelDescanso = 'b0-s1-p1-descanso';
+    await escribirEn(idDelRir, 'dos');
+    await escribirEn(idDelDescanso, '90,5');
+    const conDatosMal = await elEditor();
+    await alternarEjercicio(1);
+    await alternarEjercicio(2);
+    const plegadosConDatosMal = await elEditor();
+    await tocarNivelDelEditor('sesion', sA.nombre);
+    const antesDeIntentar = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await pausa(400);
+    const sinGuardar = await elEditor();
+    await captura(page, v, 'editor-de-entrenamiento-lo-que-no-deja-guardar-1440-claro');
+    const escriturasAlIntentar = escriturasDelBorrador(antesDeIntentar);
+    await clic(page, `${EDITOR} .problemas-del-plan button[data-problema]`, 'el descanso no se entiende');
+    await pausa(500);
+    const enElDescanso = await elEditor();
+    const dirDelDescanso = direccion();
+    await clic(page, `${EDITOR} .problemas-del-plan button[data-problema]`, 'el RIR no se entiende');
+    await pausa(500);
+    const enElRir = await elEditor();
+    const dirDelRir = direccion();
+    const lugarDelEjercicio = `${nombreAntes}${AJUSTE} → ${sB.nombre} → Ejercicio`;
+    comprobar(
+      'F-107',
+      'Un RIR por serie y un descanso mal escritos no se guardan como otra cosa. La celda del RIR queda marcada y el campo del descanso dice el formato; plegados, cada ejercicio dice «1 dato que no se entiende» en su renglón. Desde otra sesión, «Guardar cambios» no le pide nada a BE: dice qué hay que corregir y lista cada cosa con su lugar, por sus nombres; cada renglón es un botón que elige la sesión, abre ese ejercicio y deja el foco en el campo que hay que corregir',
+      igual(conDatosMal?.ejercicios[0].invalidas, [idDelRir]) &&
+        igual(conDatosMal.ejercicios[1].errores, ['No se entiende: va como 02:30, o en segundos enteros.']) &&
+        plegadosConDatosMal?.ejercicios[0].avisos === '1 dato que no se entiende' &&
+        plegadosConDatosMal.ejercicios[1].avisos === '1 dato que no se entiende' &&
+        plegadosConDatosMal.ejercicios[0].resumen === `${bancaDelBorrador.sets.length} series` &&
+        escriturasAlIntentar.guardar === 0 &&
+        sinGuardar?.aviso === 'Hay datos que faltan o no se entienden. Corregilos antes de guardar.' &&
+        igual(sinGuardar.problemas, [
+          { texto: `${lugarDelEjercicio} 1 → Serie 2 → el RIR no se entiende`, esBoton: true },
+          { texto: `${lugarDelEjercicio} 2 → el descanso no se entiende: va como 02:30, o en segundos`, esBoton: true },
+        ]) &&
+        sinGuardar.estado === 'Cambios sin guardar' &&
+        dirDelDescanso.sesion === '2' &&
+        dirDelDescanso.ejercicios === '2' &&
+        enElDescanso?.foco === idDelDescanso &&
+        dirDelRir.ejercicios === '1' &&
+        enElRir?.foco === idDelRir,
+      `escrituras al intentar: ${escriturasAlIntentar.guardar} · «${sinGuardar?.aviso}» · ${sinGuardar?.problemas.map((p) => p.texto).join(' | ')} · al ir al descanso: sesion=${dirDelDescanso.sesion}, ejercicios=${dirDelDescanso.ejercicios}, foco en ${enElDescanso?.foco} · al ir al RIR: ejercicios=${dirDelRir.ejercicios}, foco en ${enElRir?.foco}`,
+    );
+
+    // ── Los tres estados, escritos, y guardados ──
+    // En «Press de bancaDelBorrador»: la carga propia en la serie 1; la serie 4 vuelve a tomar la carga de lo general; la serie 2 queda
+    // sin descanso; la 3 con un descanso propio, escrito en segundos; la 4 vuelve a tomar el descanso. El RIR de la serie 2,
+    // corregido. En el ejercicio 2, el descanso general se corrige escribiéndolo como «2:00».
+    await escribirEn(idDelRir, '1');
+    await escribirEn('b0-s1-p0-serie-0-carga', '65');
+    await abrirMenu(menuDeLaCelda('b0-s1-p0-serie-3-carga'));
+    await elegirDelMenu('Tomar de lo general');
+    await abrirMenu(menuDeLaCelda('b0-s1-p0-serie-1-descanso'));
+    const opcionesDeUnaCeldaQueToma = (await elEditor())?.menu;
+    await elegirDelMenu('Sin objetivo en esta serie');
+    await escribirEn('b0-s1-p0-serie-2-descanso', '105');
+    await abrirMenu(menuDeLaCelda('b0-s1-p0-serie-3-descanso'));
+    const opcionesDeUnaCeldaSinObjetivo = (await elEditor())?.menu;
+    await elegirDelMenu('Tomar de lo general');
+    await alternarEjercicio(2);
+    await escribirEn(idDelDescanso, '2:00');
+    const antesDeGuardar3 = await elEditor();
+    const antesDelGuardado = v.urls.length;
+    await tocarAccionDelEditor('Guardar cambios');
+    await esperarEstado('Guardado');
+    const trasGuardar = await elEditor();
+    const escriturasAlGuardar = escriturasDelBorrador(antesDelGuardado);
+    const DB2 = await leerElBorrador();
+    const banca2 = porOrden(porOrden(porOrden(DB2.blocks)[0].sessions)[1].prescriptions)[0];
+    const remo2 = porOrden(porOrden(porOrden(DB2.blocks)[0].sessions)[1].prescriptions)[1];
+    const series2 = [...banca2.sets].sort((a, b) => a.setIndex - b.setIndex);
+    const efectivoDe = (s, clave) => ({ valor: s.target[clave], origen: s.targetOrigin[clave] });
+    comprobar(
+      'F-106',
+      'Cada celda escribe uno de los tres estados, y eso es lo que se guarda. Escribir un número deja el propio; «Tomar de lo general» quita el de la serie; «Sin objetivo en esta serie» lo quita aunque lo general lo tenga. El botón de cada celda ofrece solo lo que cambia algo. Un descanso escrito en segundos se lee «01:45» al salir del campo, y uno escrito «2:00» se guarda como 120 segundos. «Guardar cambios» hace una sola escritura; la API devuelve, serie por serie, lo declarado y el objetivo que recibe el teléfono con su origen, y el editor queda como lo dejó la API, con «Guardado»',
+      igual(opcionesDeUnaCeldaQueToma, [sinMotivo('Sin objetivo en esta serie')]) &&
+        igual(opcionesDeUnaCeldaSinObjetivo, [sinMotivo('Tomar de lo general')]) &&
+        antesDeGuardar3?.ejercicios[0].filas[2].celdas.at(-1).valor === '01:45' &&
+        escriturasAlGuardar.guardar === 1 &&
+        trasGuardar?.estado === 'Guardado' &&
+        series2[0].suggestedLoad?.value === 65 &&
+        !('suggestedLoad' in series2[3]) &&
+        efectivoDe(series2[3], 'suggestedLoad').origen === 'PRESCRIPTION' &&
+        series2[1].rir === 1 &&
+        series2[1].restSeconds === null &&
+        efectivoDe(series2[1], 'restSeconds').valor === null &&
+        efectivoDe(series2[1], 'restSeconds').origen === 'SET' &&
+        series2[2].restSeconds === 105 &&
+        !('restSeconds' in series2[3]) &&
+        efectivoDe(series2[3], 'restSeconds').valor === banca2.restSeconds &&
+        remo2.restSeconds === 120 &&
+        igual(trasGuardar.ejercicios[0].filas, filasEsperadas(banca2)),
+      `escrituras: ${escriturasAlGuardar.guardar} · «${trasGuardar?.estado}» · en la API: ${series2.map((s) => `[carga ${'suggestedLoad' in s ? JSON.stringify(s.suggestedLoad) : 'de lo general'} · RIR ${'rir' in s ? s.rir : 'de lo general'} · descanso ${'restSeconds' in s ? s.restSeconds : 'de lo general'}]`).join(' ')} · el descanso del remo: ${remo2.restSeconds} s`,
+    );
+
+    // ── Agregar y quitar: un bloque, una sesión y un ejercicio desde el cajón ──
+    const antesDeAgregar = v.urls.length;
+    await enElEditor('[data-agregar-bloque]', 'Agregar');
+    const conBloqueNuevo = await elEditor();
+    const dirBloqueNuevo = direccion();
+    const NOMBRE_DEL_BLOQUE = 'Bloque del recorrido';
+    await page.keyboard.type(NOMBRE_DEL_BLOQUE);
+    await page.keyboard.press('Enter');
+    await pausa(300);
+    await abrirMenu('#agregar-sesion');
+    await elegirDelMenu('Una sesión nueva');
+    const conSesionNueva = await elEditor();
+    await page.keyboard.press('Enter');
+    await pausa(300);
+    await enElEditor('[data-agregar-ejercicio]', 'Agregar ejercicio');
+    await page.waitForSelector('dialog.cajon[open] input[type="search"], .cajon[open] input[type="search"]', { timeout: 10_000 }).catch(() => {});
+    const cajonAbierto = await page.evaluate(() => {
+      const c = document.querySelector('dialog[open]');
+      const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+      return c ? { titulo: t(c.querySelector('h2')), sobretitulo: t(c.querySelector('.cajon__sobretitulo')), focoEnLaBusqueda: document.activeElement?.type === 'search' } : null;
+    });
+    const busqueda = sA.ejercicios[0].nombre;
+    await page.keyboard.type(busqueda);
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('dialog[open] tr[data-ejercicio-del-catalogo]', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    await captura(page, v, 'editor-de-entrenamiento-agregar-ejercicio-1440-claro');
+    await clic(page, `dialog[open] tr[data-ejercicio-del-catalogo] button[aria-label="Elegir ${busqueda}"]`, 'Elegir');
+    await pausa(400);
+    const anunciado = await page.evaluate(() => document.querySelector('dialog[open] [data-agregado]')?.innerText.trim() ?? null);
+    const sigueAbierto = await page.evaluate(() => !!document.querySelector('dialog[open]'));
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    await pausa(300);
+    const conElEjercicio = await elEditor();
+    const focoTrasElCajon = await page.evaluate(() => document.activeElement?.hasAttribute('data-agregar-ejercicio') ?? false);
+    await alternarEjercicio(1);
+    await enElEditor('.ejercicio-del-editor[data-ejercicio="1"] .comida-del-editor__acciones .menu-de-acciones__boton', 'Más');
+    await elegirDelMenu(`Quitar ${busqueda}`);
+    const sinElEjercicio = await elEditor();
+    const escriturasAlAgregar = escriturasDelBorrador(antesDeAgregar);
+    comprobar(
+      'F-109',
+      '«Agregar», al lado del bloque, suma un bloque al final, lo elige y abre su nombre, seleccionado: lo que se escribe lo reemplaza. Un bloque nuevo no tiene sesiones y lo dice; «Agregar» de la sesión ofrece una sesión nueva o una habitual, y la nueva queda elegida con su nombre abierto. «Agregar ejercicio» abre el buscador en un cajón, que dice adónde se agrega y deja el foco en la búsqueda; elegir un ejercicio lo suma sin cerrar el cajón y lo anuncia; Escape lo cierra y el foco vuelve a «Agregar ejercicio». El ejercicio nuevo tiene una serie, sin repeticiones ni criterio, y lo dice; «Quitar», en su menú «Más», lo saca. Nada de esto escribe en BE',
+      dirBloqueNuevo.bloque === String(E.bloques.length + 1) &&
+        conBloqueNuevo?.nombreAbierto?.id === `b${E.bloques.length}-nombre` &&
+        conBloqueNuevo.nombreAbierto.conFoco &&
+        conBloqueNuevo.nombreAbierto.seleccionado &&
+        conBloqueNuevo.sesion?.forma === 'ninguna' &&
+        conBloqueNuevo.sesion.sinNada === 'Acá no hay sesiones.' &&
+        conSesionNueva?.bloque?.elegido === NOMBRE_DEL_BLOQUE &&
+        conSesionNueva.nombreAbierto?.id === `b${E.bloques.length}-s0-nombre` &&
+        conSesionNueva.nombreAbierto.valor === 'Sesión A' &&
+        conSesionNueva.nombreAbierto.conFoco &&
+        cajonAbierto?.titulo === 'Agregar ejercicio' &&
+        cajonAbierto.focoEnLaBusqueda &&
+        (cajonAbierto.sobretitulo ?? '').includes(`${NOMBRE_DEL_BLOQUE} · Sesión A`) &&
+        anunciado === `Agregado: ${busqueda}. Podés sumar otro o cerrar.` &&
+        sigueAbierto &&
+        focoTrasElCajon &&
+        igual(conElEjercicio?.ejercicios.map((e) => [e.nombre, e.resumen]), [[busqueda, '1 serie sin repeticiones fijadas · sin criterio de intensidad']]) &&
+        conElEjercicio.sesion?.cuenta === '1 ejercicio · 1 serie' &&
+        sinElEjercicio?.ejercicios.length === 0 &&
+        sinElEjercicio.sinEjercicios === 'Esta sesión no tiene ejercicios.' &&
+        escriturasAlAgregar.guardar === 0,
+      `bloque=${dirBloqueNuevo.bloque} (campo ${conBloqueNuevo?.nombreAbierto?.id}) · sesión: ${conSesionNueva?.nombreAbierto?.id} «${conSesionNueva?.nombreAbierto?.valor}» · cajón: «${cajonAbierto?.titulo}» / «${cajonAbierto?.sobretitulo}» · «${anunciado}» · foco al cerrar en «Agregar ejercicio»: ${focoTrasElCajon ? 'sí' : 'no'} · ${conElEjercicio?.ejercicios.map((e) => `${e.nombre}: ${e.resumen}`).join(' | ')} · escrituras: ${escriturasAlAgregar.guardar}`,
+    );
+
+    // ── Validar: un problema de la API lleva a su lugar ──
+    const antesDeValidar = v.urls.length;
+    await tocarNivelDelEditor('bloque', `${nombreAntes}${AJUSTE}`);
+    await tocarAccionDelEditor('Validar plan');
+    await page.waitForSelector(`${EDITOR} .problemas-del-plan button[data-problema]`, { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const conProblemas = await elEditor();
+    const escriturasAlValidar = escriturasDelBorrador(antesDeValidar);
+    await clic(page, `${EDITOR} .problemas-del-plan button[data-problema]`, 'falta al menos un ejercicio');
+    await pausa(500);
+    const enElProblema = await elEditor();
+    const dirDelProblema = direccion();
+    await abrirMenu('#menu-del-bloque');
+    await elegirDelMenu('Quitar este bloque');
+    const antesDeValidarBien = v.urls.length;
+    await tocarAccionDelEditor('Validar plan');
+    const avisoDeValido = await esperarAviso('El borrador no tiene problemas de estructura.');
+    await quieto(page, v, { silencio: 300 });
+    const trasValidarBien = await elEditor();
+    const textoDelAvisoValido = await page.evaluate(() => [...document.querySelectorAll('.aviso-flotante__texto')].map((e) => e.innerText.trim()).find((x) => x.startsWith('El borrador')) ?? null);
+    const escriturasAlValidarBien = escriturasDelBorrador(antesDeValidarBien);
+    comprobar(
+      'F-113',
+      '«Validar plan», con cambios sin guardar, guarda antes y valida (una escritura de cada una). La sesión vacía del bloque nuevo es un problema de la API: el aviso dice «Hay elementos por corregir antes de activar.», nombra el lugar sin rutas técnicas, como un botón, y recuerda que validar revisa la forma, no la calidad. El botón elige el bloque y la sesión y deja el foco en el menú de esa sesión. Quitado el bloque nuevo, «Validar plan» dice que no hay problemas de estructura, y también que eso no juzga el programa',
+      escriturasAlValidar.guardar === 1 &&
+        escriturasAlValidar.validar === 1 &&
+        conProblemas?.aviso === 'Hay elementos por corregir antes de activar.' &&
+        igual(conProblemas.problemas, [{ texto: `${NOMBRE_DEL_BLOQUE} → Sesión A → falta al menos un ejercicio`, esBoton: true }]) &&
+        (conProblemas.texto ?? '').includes('Validar revisa la forma del plan, no su calidad') &&
+        dirDelProblema.bloque === String(E.bloques.length + 1) &&
+        enElProblema?.foco === 'menu-de-la-sesion' &&
+        escriturasAlValidarBien.guardar === 1 &&
+        escriturasAlValidarBien.validar === 1 &&
+        avisoDeValido &&
+        textoDelAvisoValido === 'El borrador no tiene problemas de estructura. Validar revisa la forma del plan, no su calidad: no juzga el programa, la frecuencia ni la selección de ejercicios.' &&
+        trasValidarBien?.problemas.length === 0 &&
+        trasValidarBien.bloque?.opciones.length === E.bloques.length,
+      `escrituras: ${JSON.stringify(escriturasAlValidar)} · «${conProblemas?.aviso}» · ${conProblemas?.problemas.map((p) => p.texto).join(' | ')} · al ir: bloque=${dirDelProblema.bloque}, foco en ${enElProblema?.foco} · después de quitar el bloque: ${JSON.stringify(escriturasAlValidarBien)}, «${(textoDelAvisoValido ?? '').slice(0, 60)}…»`,
+    );
+
+    // ── Palabras, accesibilidad y anchos, con los ejercicios de la segunda sesión abiertos ──
+    await entrar(`${BASE}&sesion=2&ejercicios=1.2.3`);
+    const todoAbierto = await elEditor();
+    const palabrasDelEditor = prohibidas(todoAbierto?.texto ?? '');
+    const faltasDelEditorClaro = await axe(page);
+    await ponerTema(page, 'azul-noche');
+    const faltasDelEditorNoche = await axe(page);
+    await captura(page, v, 'editor-de-entrenamiento-un-ejercicio-abierto-1440-azul-noche');
+    await ponerTema(page, 'claro');
+    const anchosDelEditor = [];
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await entrar(`${BASE}&sesion=2&ejercicios=1`);
+      const x = await elEditor();
+      const e = x?.ejercicios[0];
+      anchosDelEditor.push({
+        ancho,
+        desborda: !(await sinDesborde(page)),
+        alLado: !!e && e.cajaDeLoGeneral.x >= e.cajaDeSeries.x + e.cajaDeSeries.ancho,
+        debajo: !!e && e.cajaDeLoGeneral.y >= e.cajaDeSeries.y + e.cajaDeSeries.alto,
+        alto: x?.alto,
+      });
+      await captura(page, v, `editor-de-entrenamiento-un-ejercicio-abierto-${ancho}-claro`);
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    const anchoDe = (a) => anchosDelEditor.find((x) => x.ancho === a);
+    comprobar(
+      'F-112',
+      'Con los ejercicios de una sesión abiertos, el editor no tiene una palabra de la lista de Entrenamiento, y axe no encuentra faltas en los dos temas. «Lo general» va al costado de la tabla a 1440 y debajo, en dos columnas, a 1280, 1024, 768 y 390: al costado, a 1280, a la nota le quedaba una columna de unos 80 px (DEC-30); a 768 y a 390 cada serie es un bloque. En ninguno de esos anchos la página desborda de costado',
+      palabrasDelEditor.length === 0 &&
+        (todoAbierto?.ejercicios ?? []).every((e) => e.abierto) &&
+        faltasDelEditorClaro.length === 0 &&
+        faltasDelEditorNoche.length === 0 &&
+        anchosDelEditor.every((x) => !x.desborda) &&
+        [1280, 1024, 768, 390].every((a) => anchoDe(a).debajo),
+      `palabras: ${palabrasDelEditor.join(', ') || 'ninguna'} · axe claro: ${faltasDelEditorClaro.map((f) => f.id).join(', ') || 'sin faltas'} · azul noche: ${faltasDelEditorNoche.map((f) => f.id).join(', ') || 'sin faltas'} · ${anchosDelEditor.map((x) => `${x.ancho}: ${x.alto} px, lo general ${x.alLado ? 'al costado' : x.debajo ? 'debajo' : '¿?'}${x.desborda ? ' · DESBORDA' : ''}`).join(' · ')}`,
+    );
+
+    // ── Activar: guarda antes, pregunta con lo que entra y lo que queda, y la próxima revisión es parte del acto ──
+    await escribirEn('b0-s1-p0-serie-0-nota', 'Controlar la bajada.');
+    const antesDeAbrirActivar = v.urls.length;
+    await tocarAccionDelEditor('Activar plan');
+    await page.waitForSelector('dialog[open]', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v, { silencio: 300 });
+    const leerElDialogo = () =>
+      page.evaluate(() => {
+        const d = document.querySelector('dialog[open]');
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        if (!d) return null;
+        return {
+          titulo: t(d.querySelector('h2')),
+          frases: [...d.querySelectorAll('[data-lo-que-cambia] p')].map(t),
+          fecha: d.querySelector('#trn-proxima-revision')?.value ?? null,
+          botones: [...d.querySelectorAll('.acciones button')].map((b) => ({ texto: t(b), conFoco: document.activeElement === b })),
+        };
+      });
+    const dialogoDeActivar = await leerElDialogo();
+    await captura(page, v, 'editor-de-entrenamiento-activar-1440-claro');
+    const escriturasAlAbrir = escriturasDelBorrador(antesDeAbrirActivar);
+    await clic(page, 'dialog[open] .acciones button', 'Volver');
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: 10_000 }).catch(() => {});
+    const escriturasAlVolver = escriturasDelBorrador(antesDeAbrirActivar);
+    const sesionesQueEntran = DB2.blocks.reduce((n, b) => n + b.sessions.length + b.microcycles.reduce((m, x) => m + x.sessions.length, 0), 0);
+    const fechaDeLaActivaSinAnio = (await enLaPagina(activa.activatedAt)).dia;
+    const REVISION = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+    await tocarAccionDelEditor('Activar plan');
+    await page.waitForSelector('dialog[open] #trn-proxima-revision', { timeout: 20_000 }).catch(() => {});
+    await fijarFecha(page, '#trn-proxima-revision', REVISION);
+    const fechaEscrita = await page.$eval('dialog[open] #trn-proxima-revision', (e) => e.value);
+    const antesDeActivar = v.urls.length;
+    await clic(page, 'dialog[open] .acciones button', 'Activar esta versión');
+    const avisoDeActivada = await esperarAviso('Plan activado.');
+    await page.waitForFunction(() => !document.querySelector('[data-selector-de-version]') && !!document.querySelector('.plan__activo'), { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const activada = await planDeEntrenamientoEnPantalla(page);
+    const trasActivar = await leerTodo();
+    const historialNuevo = await historialEsperado(trasActivar.E);
+    const fechaDeLaNueva = await enLaPagina(trasActivar.activa.activatedAt);
+    const escriturasAlActivar = escriturasDelBorrador(antesDeActivar);
+    comprobar(
+      'F-110',
+      '«Activar plan», con cambios sin guardar, guarda antes (una escritura) y recién entonces pregunta. El diálogo dice la consecuencia, qué entra («Esta versión pasa a ser la vigente: 2 bloques y N sesiones.») y qué queda («La versión 2, activa desde el …, queda en el historial.»), y trae la próxima revisión vacía; el foco empieza en «Volver». «Volver» no escribe nada. Con la fecha puesta, «Activar esta versión» guarda la fecha y activa (una escritura de cada una), y la API la devuelve como la próxima revisión de la versión activada',
+      escriturasAlAbrir.guardar === 1 &&
+        escriturasAlAbrir.activar === 0 &&
+        dialogoDeActivar?.titulo === 'Activar plan' &&
+        igual(dialogoDeActivar.frases, [`Esta versión pasa a ser la vigente: ${E.bloques.length === 1 ? '1 bloque' : `${E.bloques.length} bloques`} y ${sesionesQueEntran === 1 ? '1 sesión' : `${sesionesQueEntran} sesiones`}.`, `La versión 2, activa desde el ${fechaDeLaActivaSinAnio}, queda en el historial.`]) &&
+        dialogoDeActivar.fecha === '' &&
+        igual(dialogoDeActivar.botones, [{ texto: 'Volver', conFoco: true }, { texto: 'Activar esta versión', conFoco: false }]) &&
+        escriturasAlVolver.guardar === 1 &&
+        escriturasAlVolver.activar === 0 &&
+        fechaEscrita === REVISION &&
+        escriturasAlActivar.guardar === 1 &&
+        escriturasAlActivar.activar === 1 &&
+        avisoDeActivada &&
+        trasActivar.activa.planId === elBorrador.planId &&
+        (trasActivar.activa.nextReviewAt ?? '').slice(0, 10) === REVISION,
+      `al abrir: ${JSON.stringify(escriturasAlAbrir)} · «${dialogoDeActivar?.frases.join(' / ')}» · botones: ${dialogoDeActivar?.botones.map((b) => `${b.texto}${b.conFoco ? ' (con foco)' : ''}`).join(' | ')} · al volver: ${JSON.stringify(escriturasAlVolver)} · fecha: ${fechaEscrita} · al activar: ${JSON.stringify(escriturasAlActivar)} · en la API: ${trasActivar.activa.nextReviewAt}`,
+    );
+    comprobar(
+      'F-79',
+      'Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Activada, la versión en preparación pasa a ser la vigente: el selector desaparece, el plan dice «Versión 3 · … · es lo que ve el asesorado», su bloque lleva el nombre que se escribió, el historial lista las tres y la dirección queda limpia. El plan tiene objetivos distintos por serie, y se activa porque el titular ya usó una app que los muestra',
+      /Tenés cambios sin guardar/.test(pregunta) &&
+        /el plan en preparación/.test(pregunta) &&
+        trasActivar.activa.setTargetsDelivery.required === true &&
+        trasActivar.E.numero === 3 &&
+        activada.selector === null &&
+        !activada.editor.esta &&
+        activada.activo?.frase === `Versión 3 · activada el ${fechaDeLaNueva.dia} · es lo que ve el asesorado` &&
+        activada.activo.bloque.opciones.find((o) => o.elegido)?.texto === `${nombreAntes}${AJUSTE}` &&
+        igual(activada.activo.historial.versiones, historialNuevo) &&
+        igual(historialNuevo.map((x) => x.vigente), [true, false, false]) &&
+        ['version', 'bloque', 'micro', 'sesion', 'ejercicios'].every((k) => P().get(k) === null),
+      `«${pregunta.slice(0, 60)}…» · «${activada.activo?.frase}» · bloque: «${activada.activo?.bloque?.opciones?.find((o) => o.elegido)?.texto}» · ${activada.activo?.historial.versiones.map((x) => x.texto).join(' | ')}`,
+    );
+    await captura(page, v, 'plan-de-entrenamiento-version-3-recien-activada-1440-claro');
+
+    // ── Empezar desde una plantilla, de verdad ───────────────────────────────────────────────────────────────────
+    await abrirPlantillas();
+    await clic(page, 'dialog[open] .plantilla-para-empezar', NOMBRE_DE_LA_PLANTILLA);
+    const antesDeAplicar = v.urls.length;
+    await clic(page, 'dialog[open] .acciones button', 'Crear el borrador desde esta plantilla');
+    const avisoDeAplicada = await esperarAviso('Borrador creado desde la plantilla.');
+    await page.waitForSelector('[data-selector-de-version]', { timeout: 40_000 }).catch(() => {});
+    await quieto(page, v);
+    const desdePlantilla = await planDeEntrenamientoEnPantalla(page);
+    const enLaLista = (await leerTodo()).lista.find((x) => x.state === 'DRAFT');
+    const elDeLaPlantilla = enLaLista ? (await leerApi(v, `/training/plans/${enLaLista.planId}/detail`)).data : null;
+    comprobar(
+      'F-77',
+      'Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con «3 · activa»',
+      escriturasDesde(antesDeAplicar, '/training/plans').length === 1 &&
+        !!elDeLaPlantilla?.templateOrigin &&
+        avisoDeAplicada &&
+        (await page.evaluate(() => !document.querySelector('dialog[open]'))) &&
+        desdePlantilla.version === 'preparacion' &&
+        igual(desdePlantilla.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], ['3 · activa', false]]) &&
+        desdePlantilla.editor.aLaVista,
+      `escrituras: ${escriturasDesde(antesDeAplicar, '/training/plans').length} · aviso: ${avisoDeAplicada ? 'sí' : 'no'} · ${desdePlantilla.selector?.opciones.map((o) => o.texto).join(' | ')} · origen en la API: ${elDeLaPlantilla?.templateOrigin ? 'una plantilla' : 'ninguno'}`,
+    );
+    // ── Con el bloqueo de la app (respuesta simulada): «Activar plan» apagado, con su motivo ──
+    const ID_DESDE_LA_PLANTILLA = enLaLista?.planId ?? null;
+    let bloqueado = null;
+    let dialogoBloqueado = null;
+    let escriturasBloqueado = null;
+    let exigiaObjetivosPorSerie = null;
+    if (ID_DESDE_LA_PLANTILLA) {
+      const real = (await leerApi(v, `/training/plans/${ID_DESDE_LA_PLANTILLA}/detail`)).data;
+      exigiaObjetivosPorSerie = real.setTargetsDelivery.required;
+      await salir();
+      v.reglas.push({ coincide: (u) => u.includes(`/training/plans/${ID_DESDE_LA_PLANTILLA}/detail`), accion: 'entregar', cuerpo: { data: { ...real, setTargetsDelivery: { ...real.setTargetsDelivery, adviseeClientCapable: false } } } });
+      try {
+        await entrar(BASE);
+        await page.waitForSelector(`${EDITOR} .ejercicio-del-editor`, { timeout: 20_000 }).catch(() => {});
+        await quieto(page, v, { silencio: 300 });
+        bloqueado = await elEditor();
+        await captura(page, v, 'editor-de-entrenamiento-bloqueado-por-la-app-simulado-1440-claro');
+        const antes = v.urls.length;
+        await page.click(`${EDITOR} .editor-del-plan__acciones > button[aria-describedby="motivo-sin-activar"]`).catch(() => {});
+        await pausa(500);
+        dialogoBloqueado = await page.evaluate(() => !!document.querySelector('dialog[open]'));
+        escriturasBloqueado = v.urls.slice(antes).filter((u) => /^(POST|PATCH|PUT|DELETE) /.test(u)).length;
+      } finally {
+        v.reglas.length = 0;
+      }
+    }
+    const elDeActivar = bloqueado?.acciones.find((a) => a.nombre === 'Activar plan');
+    comprobar(
+      'F-111',
+      '(Respuesta simulada: el titular ya usó una app que muestra los objetivos por serie.) Si el asesorado todavía no usó una app que los muestre y el plan tiene objetivos distintos en algunas series, «Activar plan» está apagado —conserva el foco— y lo describe su motivo, que se lee arriba: «Todavía no podés activar este plan», por qué y qué se puede hacer. Tocarlo no abre nada ni escribe nada',
+      exigiaObjetivosPorSerie === true &&
+        !!elDeActivar &&
+        elDeActivar.apagado &&
+        !elDeActivar.deshabilitado &&
+        elDeActivar.describe === 'motivo-sin-activar' &&
+        (bloqueado.motivoSinActivar ?? '').startsWith('Todavía no podés activar este plan') &&
+        (bloqueado.motivoSinActivar ?? '').includes('Podés activarlo cuando tu asesorado abra Entrenamiento con BE actualizada') &&
+        dialogoBloqueado === false &&
+        escriturasBloqueado === 0,
+      `exige objetivos por serie: ${exigiaObjetivosPorSerie} · «Activar plan»: ${elDeActivar ? `${elDeActivar.apagado ? 'apagado' : 'encendido'}, descrito por ${elDeActivar.describe}` : 'no está'} · «${(bloqueado?.motivoSinActivar ?? '').slice(0, 70)}…» · diálogo: ${dialogoBloqueado ? 'se abrió' : 'no'} · escrituras: ${escriturasBloqueado}`,
+    );
+    comprobar('—', '«Plan», de Entrenamiento, no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+  } finally {
+    await navegador.close();
+  }
+}
+
+/**
+ * «Plan», de Entrenamiento, con el asesorado A (WP-ESCRITORIO-AREAS, parte 6): A tiene una versión en preparación, así
+ * que el selector de versión se ve de verdad. Solo lee. La misma pieza se mira además dentro de la ficha, en el detalle
+ * de la activación: antes de esta parte, abrir ese detalle rompía la página entera.
+ */
+async function planDeEntrenamientoDeA(page, v) {
+  const A = estado.aseId;
+  const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  await cupo(v, 60);
+  const desde = v.urls.length;
+  await ir(page, `/pro/advisees/training?id=${A}&vista=plan`);
+  await page.waitForSelector('.plan, .seccion-del-area .estado-de-grafico--error', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const alEntrar = await planDeEntrenamientoEnPantalla(page);
+  const lista = (await leerApi(v, `/advisees/${A}/training/plans?limit=50`)).data;
+  const efectiva = lista.find((x) => x.isEffective);
+  const activa = (await leerApi(v, `/training/plans/${efectiva.planId}/detail`)).data;
+  const E = esperadoDelPlanDeEntrenamiento({ lista, activa });
+  const hayBorrador = lista.some((x) => x.state === 'DRAFT');
+  await clic(page, '[data-selector-de-version] .segmento', `${E.numero} · activa`).catch(() => null);
+  await quieto(page, v, { silencio: 300 });
+  const p = await planDeEntrenamientoEnPantalla(page);
+  const sesion = E.bloques[0].sesiones[0];
+  const dia = await page.evaluate((x) => new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(new Date(x)), activa.activatedAt);
+  comprobar(
+    'F-79',
+    'A tiene una versión en preparación: al entrar a «Plan» se ve el selector, con «En preparación» elegida, y el editor; el plan activo no está a la vista. Al elegir «N · activa» se ve el plan activo, de solo lectura, con su versión y la fecha de otro mes sin el año, un solo bloque dicho por su nombre, los ejercicios de la API y «Guardar como plantilla» como única acción. Elegir no lee nada más',
+    hayBorrador &&
+      alEntrar.version === 'preparacion' &&
+      igual(alEntrar.selector?.opciones.map((o) => [o.texto, o.elegido]), [['En preparación', true], [`${E.numero} · activa`, false]]) &&
+      alEntrar.editor.aLaVista &&
+      alEntrar.activo === null &&
+      p.version === 'activa' &&
+      p.activo?.frase === `Versión ${E.numero} · activada el ${dia} · es lo que ve el asesorado` &&
+      !/\d{4}/.test(p.activo.frase) &&
+      p.activo.bloque?.forma === 'unico' &&
+      p.activo.bloque.elegido === E.bloques[0].nombre &&
+      p.activo.bloque.detalle === E.bloques[0].detalle &&
+      ejerciciosComoLaApi(p.activo.ejercicios, sesion, [sesion.ejercicios[0].orden]) &&
+      igual(p.activo.acciones, ['Guardar como plantilla']) &&
+      p.activo.historial.versiones.length === E.activadas.length &&
+      dominio.terminosProhibidosDeEntrenamientoEn(p.activo ? p.main : '').length === 0 &&
+      v.urls.slice(desde).filter((u) => u.startsWith('GET ') && u.includes(`/training/plans/${activa.planId}/detail`)).length === 1,
+    `al entrar: ${alEntrar.selector?.opciones.map((o) => `${o.texto}${o.elegido ? ' (elegida)' : ''}`).join(' | ')} · «${p.activo?.frase}» · bloque «${p.activo?.bloque?.elegido}» (${p.activo?.bloque?.forma}) · ${p.activo?.ejercicios.map((e) => `${e.nombre}: ${e.resumen}`).join(' | ')}`,
+  );
+
+  // ── La misma pieza, en la ficha: el detalle de la activación, en la línea de tiempo ──────────────────────────
+  await cupo(v, 60);
+  await ir(page, `/pro/advisees?id=${A}&vista=linea&p=90`);
+  await page.waitForSelector('.vista-de-la-linea[data-vista="HITOS"]', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
+  await page.click('.vista-de-la-linea[data-vista="HITOS"]').catch(() => {});
+  await quieto(page, v);
+  const fila = `.entrada[data-id="tplan:${activa.planId}"] .entrada__fila`;
+  if ((await page.$(fila)) === null) {
+    informar('F-81', 'La planificación de una etapa de entrenamiento, en la ficha', 'el período de 90 días no tiene la activación del plan vigente de A');
+  } else {
+    await page.click(fila);
+    await page.waitForSelector('.detalle-del-hecho .version-del-plan .ejercicio-del-plan', { timeout: 20_000 }).catch(() => {});
+    await quieto(page, v);
+    const leer = () =>
+      page.evaluate(() => {
+        const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
+        const d = document.querySelector('.detalle-del-hecho');
+        const pieza = d?.querySelector('.version-del-plan') ?? null;
+        if (!pieza) return null;
+        const caja = d.getBoundingClientRect();
+        // La tabla de series se desplaza dentro de su caja: lo de adentro de esa caja no cuenta como «se sale».
+        const afuera = [...pieza.querySelectorAll('*')].filter((e) => !e.closest('.desplazable-x table') && e.getClientRects().length > 0 && (e.getBoundingClientRect().right > caja.right + 1 || e.getBoundingClientRect().left < caja.left - 1));
+        return {
+          renglon: t(pieza.querySelector(':scope > p')),
+          bloque: t(pieza.querySelector('.nivel-del-plan[data-nivel="bloque"] strong')),
+          sesiones: [...pieza.querySelectorAll('.nivel-del-plan[data-nivel="sesion"] .segmento')].map((s) => ({ texto: t(s), elegida: s.querySelector('input').checked })),
+          ejercicios: [...pieza.querySelectorAll('.ejercicio-del-plan')].map((e) => ({ nombre: t(e.querySelector('.comida-del-plan__nombre')), resumen: t(e.querySelector('[data-resumen]')), abierto: e.hasAttribute('data-abierta'), titulo: e.querySelector('.comida-del-plan__titulo').tagName, filas: e.querySelectorAll('tbody tr').length })),
+          seSale: afuera.length,
+          ancho: Math.round(caja.width),
+          anchoDelEjercicio: Math.round(pieza.querySelector('.ejercicio-del-plan')?.getBoundingClientRect().width ?? 0),
+          enlace: t(d.querySelector('.enlace-al-area a')),
+          sigueLaBarra: !!document.querySelector('.menu-de-cuenta__boton'),
+        };
+      });
+    const enLaFicha = await leer();
+    const direccionAntes = page.url();
+    await page.evaluate(() => document.querySelectorAll('.detalle-del-hecho .nivel-del-plan[data-nivel="sesion"] .segmento input')[1]?.click());
+    await pausa(300);
+    const trasElegir = await leer();
+    const otra = E.bloques[0].sesiones[1];
+    comprobar(
+      'F-81',
+      'En la ficha, el detalle de la activación de un plan de entrenamiento muestra la misma pieza en su columna angosta, **y la página sigue en pie** (antes de esta parte, abrirlo la rompía entera: la pieza pedía el contexto de la pestaña Entrenamiento). Dice la versión, el bloque y las sesiones; los ejercicios son los de la API, con el primero abierto; cada ejercicio ocupa el ancho de la columna y nada se sale, salvo la tabla, que se desplaza dentro de su caja; los títulos bajan un nivel. Elegir otra sesión muestra sus ejercicios y no toca la dirección de la ficha',
+      !!enLaFicha &&
+        enLaFicha.sigueLaBarra &&
+        new RegExp(`^Versión ${E.numero} · activada el`).test(enLaFicha.renglon ?? '') &&
+        enLaFicha.bloque === E.bloques[0].nombre &&
+        igual(enLaFicha.sesiones.map((s) => [s.texto, s.elegida]), E.bloques[0].sesiones.map((s, i) => [s.nombre, i === 0])) &&
+        igual(enLaFicha.ejercicios.map((e) => [e.nombre, e.resumen, e.abierto]), sesion.ejercicios.map((x, i) => [x.nombre, i === 0 ? x.abierto : x.cerrado, i === 0])) &&
+        enLaFicha.ejercicios[0].filas === sesion.ejercicios[0].filas.length &&
+        enLaFicha.ejercicios.every((e) => e.titulo === 'H4') &&
+        enLaFicha.seSale === 0 &&
+        enLaFicha.anchoDelEjercicio >= enLaFicha.ancho * 0.8 &&
+        (await sinDesborde(page)) &&
+        !!otra &&
+        igual(trasElegir.ejercicios.map((e) => e.nombre), otra.ejercicios.map((x) => x.nombre)) &&
+        page.url() === direccionAntes &&
+        enLaFicha.enlace === 'Ver en Entrenamiento · Plan' &&
+        v.errores.length === 0,
+      `columna de ${enLaFicha?.ancho} px (el ejercicio ocupa ${enLaFicha?.anchoDelEjercicio}) · «${enLaFicha?.renglon}» · «${enLaFicha?.bloque}» · ${enLaFicha?.ejercicios.map((e) => `${e.nombre}${e.abierto ? ' (abierto)' : ''}`).join(', ')} · se salen ${enLaFicha?.seSale} · al elegir «${otra?.nombre}»: ${trasElegir?.ejercicios.map((e) => e.nombre).join(', ')} · errores de página: ${v.errores.length}`,
+    );
+    await page.click('.detalle-del-hecho__cabecera button').catch(() => {});
+    await page.waitForFunction(() => !document.querySelector('.detalle-del-hecho .version-del-plan'), { timeout: 10_000 }).catch(() => {});
+
+    // La imagen de un ejercicio, en la ficha: para leerla, la pieza pedía el contexto de la pestaña. Ahora el acceso se lo da quien la usa.
+    const imagen = await imagenDeEjercicioSimulada(page, v);
+    const antesDeLaImagen = v.urls.length;
+    v.reglas.push({ coincide: (u) => u.includes(`/training/plans/${activa.planId}/detail`), accion: 'entregar', cuerpo: { data: imagen.enElPlan(activa) } }, ...imagen.reglas);
+    let conImagen = null;
+    try {
+      await cupo(v, 60);
+      // Si la página se cayó al abrir el detalle anterior, la fila ya no está: la comprobación falla, y el recorrido sigue.
+      if ((await page.$(fila)) !== null) {
+        await page.click(fila);
+        await page.waitForSelector('.detalle-del-hecho .version-del-plan .ejercicio-del-plan__general img.imagen-de-ejercicio', { timeout: 20_000 }).catch(() => {});
+        await quieto(page, v, { silencio: 300 });
+        conImagen = await page.evaluate(() => {
+          const d = document.querySelector('.detalle-del-hecho');
+          const i = d?.querySelector('.version-del-plan .ejercicio-del-plan__general .imagen-de-ejercicio') ?? null;
+          if (!i) return { esta: false, sigueLaBarra: !!document.querySelector('.menu-de-cuenta__boton') };
+          const r = i.getBoundingClientRect();
+          const c = d.getBoundingClientRect();
+          return { esta: true, dibujada: i.tagName === 'IMG' && i.complete && i.naturalWidth > 0, alt: i.getAttribute('alt') ?? i.getAttribute('aria-label'), ancho: Math.round(r.width), adentro: r.left >= c.left - 1 && r.right <= c.right + 1, sigueLaBarra: !!document.querySelector('.menu-de-cuenta__boton') };
+        });
+        // La captura dice el tema que la página tiene en ese momento: acá no se cambia.
+        await captura(page, v, `plan-de-entrenamiento-en-la-ficha-con-imagen-simulada-1440-${await page.evaluate(() => document.documentElement.dataset.tema)}`);
+      }
+    } finally {
+      v.reglas.length = 0;
+    }
+    comprobar(
+      'F-81',
+      '(Respuestas simuladas: el escenario no tiene ejercicios con imagen.) En la ficha, un ejercicio con imagen la muestra, dibujada, con su texto alternativo y dentro de la columna: el acceso que la pieza le pedía al contexto de la pestaña ahora se lo da la ficha, con la sesión de la página. Se pide una vez, y la página sigue en pie',
+      !!conImagen?.esta && conImagen.dibujada && conImagen.alt === imagen.alt && conImagen.adentro && conImagen.sigueLaBarra && imagen.accesosDesde(antesDeLaImagen).length === 1 && (await sinDesborde(page)) && v.errores.length === 0,
+      conImagen?.esta ? `${conImagen.dibujada ? 'dibujada' : 'sin dibujar'}, ${conImagen.ancho} px de ancho, «${conImagen.alt}»${conImagen.adentro ? '' : ' · SE SALE'} · ${imagen.accesosDesde(antesDeLaImagen).length} pedido de acceso` : `sin imagen${conImagen?.sigueLaBarra ? '' : ' · ya no está la barra de la cuenta: la página se cayó o perdió la sesión'}`,
+    );
+    await page.click('.detalle-del-hecho__cabecera button').catch(() => {});
+  }
+  await clic(page, '.vista-de-la-linea[data-vista="TODO"]', 'Todo').catch(() => null);
+  await quieto(page, v);
+  comprobar('—', '«Plan», de Entrenamiento (asesorado A), y su pieza en la ficha no produjeron errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+}
+
+async function fichaRecompuesta({ resumen = true, linea = true, analizar = true, espacio = true, areas = true, registros = true, sesiones = true, tomas = true, plan = true, planDeEntrenamiento = true, estimacion = false } = {}) {
   const { navegador, page, v } = await abrir();
   // Los guiones que pide la página, desde antes de entrar: para saber con qué se cargó la ficha.
   const guiones = [];
@@ -4278,6 +12713,35 @@ async function fichaRecompuesta({ resumen = true, linea = true, analizar = true,
     if (espacio) {
       empezarDeCero();
       await espacioProfesional(page, v);
+    }
+    if (areas) {
+      empezarDeCero();
+      await marcoDeLasAreas(page, v);
+    }
+    if (registros) {
+      empezarDeCero();
+      await registrosDeNutricion(page, v);
+    }
+    if (sesiones) {
+      empezarDeCero();
+      await sesionesDeEntrenamiento(page, v);
+    }
+    if (tomas) {
+      empezarDeCero();
+      await tomasDeAntropometria(page, v);
+    }
+    if (plan) {
+      empezarDeCero();
+      await planDeNutricionDeA(page, v);
+    }
+    if (planDeEntrenamiento) {
+      empezarDeCero();
+      await planDeEntrenamientoDeA(page, v);
+    }
+    // Escribe en el escenario: solo cuando se lo pide (`estimacion`), nunca dentro de `funcional`.
+    if (estimacion) {
+      empezarDeCero();
+      await estimacionDeUnaComida(page, v);
     }
   } finally {
     await navegador.close();
@@ -4826,6 +13290,38 @@ async function descartable() {
         (personaDespues?.conAcceso ?? '').length > 0,
       `antes: ${espacioAntes.pantalla.personas.find((p) => p.id === d.aseId)?.conAcceso} · después: ${personaDespues?.conAcceso} · ${personaDespues?.sinAcceso.join('; ')}`,
     );
+    // e) El marco de un área, después de revocar (WP-ESCRITORIO-AREAS, parte 0), con respuestas reales de la API: el de
+    // Antropometría dice el estado de su vínculo con las palabras de BE y no «Activo», y su sección, el texto neutral.
+    // El de un área que sigue con acceso, mirado con el mismo selector, dice «Activo».
+    const RUTA_DEL_ALCANCE = { NUTRICION: 'nutrition', ENTRENAMIENTO: 'training', ANTROPOMETRIA: 'anthropometry' };
+    const conAcceso = (await leerApi(pro.v, '/me/relationships')).data.find(
+      (x) => x.advisee.identityId === d.aseId && x.scope.code !== 'ANTROPOMETRIA' && x.relationshipState === 'ACEPTADO' && x.consentState === 'ACTIVE' && x.accessMode === 'CONTEXTUAL',
+    );
+    const abrirArea = async (clave) => {
+      await cupo(pro.v, 60);
+      await ir(pro.page, `/pro/advisees/${clave}?id=${d.aseId}`);
+      await pro.page.waitForSelector('header.marco-del-area .ficha__consulta .nota', { timeout: 30_000 });
+      await quieto(pro.page, pro.v);
+    };
+    await abrirArea(RUTA_DEL_ALCANCE[conAcceso?.scope.code] ?? 'nutrition');
+    const marcoConAcceso = await marcoEnPantalla(pro.page);
+    await abrirArea('anthropometry');
+    await pro.page.waitForFunction(() => /No encontramos un recurso disponible/.test(document.querySelector('.seccion-del-area')?.innerText ?? ''), { timeout: 30_000 }).catch(() => {});
+    await quieto(pro.page, pro.v);
+    const marcoRevocado = await marcoEnPantalla(pro.page);
+    comprobar(
+      'F-09',
+      'Después de una revocación real, el marco de Antropometría dice «Consentimiento revocado» y «Acceso no disponible», no «Activo», y su sección dice el texto neutral de siempre; el de un área que sigue con acceso dice «Activo · acceso contextual»',
+      !!conAcceso &&
+        marcoRevocado?.acceso === 'Acceso actual Antropometría: Consentimiento revocado Acceso no disponible' &&
+        !/Activo/.test(marcoRevocado.acceso) &&
+        marcoRevocado.cuerpo.includes('No encontramos un recurso disponible para esta acción.') &&
+        marcoRevocado.pestanas.length === 3 &&
+        marcoConAcceso?.acceso === `Acceso actual ${conAcceso.scope.label}: Activo · acceso contextual`,
+      `Antropometría: ${marcoRevocado?.acceso} · «${(marcoRevocado?.cuerpo ?? '').slice(0, 70)}» · ${conAcceso?.scope.label ?? 'sin otra área con acceso'}: ${marcoConAcceso?.acceso}`,
+    );
+    // La imagen del marco con el área revocada (el tema claro quedó puesto en el paso anterior).
+    await captura(pro.page, pro.v, 'area-despues-de-revocar-1440-claro');
   } finally {
     await pro.navegador.close();
   }
@@ -4839,10 +13335,21 @@ try {
   if (modo === 'capturas' || modo === 'todo') await capturas();
   if (modo === 'descartable') await descartable();
   if (modo === 'menu') await encabezadoYMenu();
-  if (modo === 'analizar') await fichaRecompuesta({ resumen: false, linea: false, espacio: false });
-  if (modo === 'resumen') await fichaRecompuesta({ linea: false, analizar: false, espacio: false });
-  if (modo === 'linea') await fichaRecompuesta({ resumen: false, analizar: false, espacio: false });
-  if (modo === 'espacio') await fichaRecompuesta({ resumen: false, linea: false, analizar: false });
+  if (modo === 'analizar') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'resumen') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'linea') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'espacio') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'areas') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, registros: false, sesiones: false });
+  if (modo === 'registros') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, sesiones: false });
+  if (modo === 'sesiones') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false });
+  if (modo === 'tomas') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'plan') await fichaRecompuesta({ planDeEntrenamiento: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'plan-entrenamiento') await fichaRecompuesta({ plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false });
+  if (modo === 'mediciones') await medicionesDeUnaToma();
+  if (modo === 'solicitudes') await solicitudesDeInformacion();
+  if (modo === 'planes') await planesDeNutricion();
+  if (modo === 'entrenamientos') await planesDeEntrenamiento();
+  if (modo === 'estimacion') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));
 } finally {
