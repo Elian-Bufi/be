@@ -21,6 +21,7 @@ import {
   COPY_EVIDENCIA_VISUAL,
   COPY_NUTRICION,
   COPY_REGISTRO_DE_COMIDAS,
+  COPY_REVISIONES_PROPIAS,
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_UNIDAD,
   type HoyResponse,
@@ -125,11 +126,13 @@ function useHoy(token: string, salir: (m: Salida) => void) {
   return { r, cargar, sinActualizar, setDiaTipo, sesionPerdida };
 }
 
-export function PantallaDePlanActual({ token, salir }: { token: string; salir: (m: Salida) => void }) {
+export function PantallaDePlanActual({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: Ir }) {
   return (
     <View>
       <Titulo>{COPY_NUTRICION.planActual}</Titulo>
       <ContenidoDelPlan token={token} salir={salir} />
+      {/* REV-A (DL-134): las revisiones de tu profesional, completas. */}
+      <Boton texto={COPY_REVISIONES_PROPIAS.entrada} tipo="secundario" onPress={() => ir({ nombre: 'revisiones', area: 'NUTRICION' })} />
     </View>
   );
 }

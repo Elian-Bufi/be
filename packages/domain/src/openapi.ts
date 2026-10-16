@@ -125,6 +125,7 @@ import {
   PlanResponseSchema,
   RegistrarIngestaRequestSchema,
   RegistrarRevisionRequestSchema,
+  ListaDeRevisionesPropiasResponseSchema,
   RevisionResponseSchema,
   ValidacionDePlanResponseSchema,
   VersionEsperadaRequestSchema,
@@ -180,6 +181,7 @@ import {
   OcurrenciasDelPeriodoResponseSchema,
   PlanDeEntrenamientoResponseSchema,
   RegistrarRevisionDeEntrenamientoRequestSchema,
+  ListaDeRevisionesDeEntrenamientoPropiasResponseSchema,
   RevisionDeEntrenamientoResponseSchema,
 } from './contratos-entrenamiento';
 import {
@@ -2727,6 +2729,57 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
     fuente: '04 RF-062 (derivación: «10 preferencias») · pedido de Dirección del 2026-10-16 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
   },
+
+  // ─── REV-A (propuesta del 2026-09-29; opciones A tomadas el 2026-10-16 con el mandato de Dirección; DL-134) ─────────
+  // Las revisiones que los profesionales registraron sobre la persona, que ella lee completas (08 §6.2, 08:495).
+  {
+    id: 'API-NUT-19-LISTA',
+    metodo: 'get',
+    ruta: '/me/nutrition/reviews',
+    resumen:
+      'Las revisiones de Nutrición que los profesionales registraron sobre la persona, completas y sin notas ocultas (08 §6.2), de la más nueva a la más vieja. Siguen visibles con el vínculo en pausa o terminado; sin el A3 vigente, 403 (08:406).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeRevisionesPropiasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'variante del titular de API-NUT-19 (09v9:904) · ID propio de BE (sufijo LISTA) · docs/propuestas/REV-A · DEUDA_LEGAJO DL-134',
+  },
+  {
+    id: 'API-NUT-19-PROPIA',
+    metodo: 'get',
+    ruta: '/me/nutrition/reviews/{reviewId}',
+    resumen: 'Una revisión de Nutrición propia, completa. Una ajena o inexistente: el mismo 404. Sin el A3 vigente, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RevisionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante del titular de API-NUT-19 (09v9:904) · ID propio de BE (sufijo PROPIA) · docs/propuestas/REV-A · DEUDA_LEGAJO DL-134',
+  },
+  {
+    id: 'API-TRN-23-LISTA',
+    metodo: 'get',
+    ruta: '/me/training/reviews',
+    resumen:
+      'Las revisiones de Entrenamiento que los profesionales registraron sobre la persona, completas y sin notas ocultas (08 §6.2), de la más nueva a la más vieja. Siguen visibles con el vínculo en pausa o terminado; sin el A3 vigente, 403 (08:406).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeRevisionesDeEntrenamientoPropiasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'variante del titular de API-TRN-23 (09v10:1375) · ID propio de BE (sufijo LISTA) · docs/propuestas/REV-A · DEUDA_LEGAJO DL-134',
+  },
+  {
+    id: 'API-TRN-23-PROPIA',
+    metodo: 'get',
+    ruta: '/me/training/reviews/{reviewId}',
+    resumen: 'Una revisión de Entrenamiento propia, completa. Una ajena o inexistente: el mismo 404. Sin el A3 vigente, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RevisionDeEntrenamientoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante del titular de API-TRN-23 (09v10:1375) · ID propio de BE (sufijo PROPIA) · docs/propuestas/REV-A · DEUDA_LEGAJO DL-134',
+  },
 ];
 
 /**
@@ -2780,6 +2833,10 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-ING-03',
   'API-NOV-01',
   'API-NOV-02',
+  'API-NUT-19-LISTA',
+  'API-NUT-19-PROPIA',
+  'API-TRN-23-LISTA',
+  'API-TRN-23-PROPIA',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.

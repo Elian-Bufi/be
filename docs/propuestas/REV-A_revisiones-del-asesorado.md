@@ -1,6 +1,8 @@
 # Propuesta · El asesorado lee sus propias revisiones de entrenamiento y nutrición
 
-> **Estado:** PROPUESTA para decisión de Dirección. **No implementada.** Sale del trabajo condicionado de la tanda del 2026-09-29, y se corrigió en la auditoría de ese mismo día. Los identificadores `REV-A-*` son locales a esta propuesta.
+> **Estado (2026-10-16):** IMPLEMENTADA con las opciones A (D1, D2, D3 y D3-bis), tomadas con el mandato de Dirección de ese día; espera ratificación. Ver DEUDA_LEGAJO DL-134.
+>
+> **Estado anterior:** PROPUESTA para decisión de Dirección. **No implementada.** Sale del trabajo condicionado de la tanda del 2026-09-29, y se corrigió en la auditoría de ese mismo día. Los identificadores `REV-A-*` son locales a esta propuesta.
 
 Esta propuesta separa dos cosas:
 - **el derecho**, que el legajo ya estableció;

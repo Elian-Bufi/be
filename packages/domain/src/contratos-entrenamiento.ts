@@ -742,6 +742,9 @@ export const RevisionDeEntrenamientoSchema = z.strictObject({
 });
 export type RevisionDeEntrenamiento = z.infer<typeof RevisionDeEntrenamientoSchema>;
 export const RevisionDeEntrenamientoResponseSchema = z.strictObject({ data: RevisionDeEntrenamientoSchema });
+/** REV-A: las revisiones de entrenamiento propias, completas (API-TRN-23-LISTA y API-TRN-23-PROPIA). */
+export const ListaDeRevisionesDeEntrenamientoPropiasResponseSchema = z.strictObject({ data: z.array(RevisionDeEntrenamientoSchema), page: PaginaSchema });
+export type ListaDeRevisionesDeEntrenamientoPropiasResponse = z.infer<typeof ListaDeRevisionesDeEntrenamientoPropiasResponseSchema>;
 
 /**
  * API-TRN-21 (09v10:1269-1293). Read model: no persiste nada, y no define ni calcula volumen, marcas, mapa muscular

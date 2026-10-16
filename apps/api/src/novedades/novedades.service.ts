@@ -33,6 +33,7 @@ const SELECCION = {
   tipo: true,
   alcance: true,
   fuenteId: true,
+  referenciaId: true,
   fechaLocal: true,
   momentoDeOcurrencia: true,
   momentoDeRegistro: true,
@@ -257,7 +258,7 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
       occurredAt: f.momentoDeOcurrencia?.toISOString() ?? null,
       recordedAt: f.momentoDeRegistro.toISOString(),
       readAt: f.lectura?.momentoDeRegistro.toISOString() ?? null,
-      open: { view: vista, referenceId: vista === 'ADVISEE' ? f.fuenteId : null },
+      open: { view: vista, referenceId: vista === 'ADVISEE' ? f.fuenteId : vista === 'NUTRITION_REVIEW' || vista === 'TRAINING_REVIEW' ? f.referenciaId : null },
     };
   });
 }

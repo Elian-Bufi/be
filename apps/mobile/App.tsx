@@ -67,6 +67,7 @@ import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
+import { PantallaDeRevision, PantallaDeRevisiones } from './src/pantallas/revisiones';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
 import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
@@ -515,7 +516,9 @@ function Contenido() {
                 <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
               {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} llevarA={llevarA} /> : null}
-              {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} /> : null}
+              {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'revisiones' ? <PantallaDeRevisiones key={ruta.area} token={sesion.token} area={ruta.area} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'revision' ? <PantallaDeRevision key={ruta.id} token={sesion.token} area={ruta.area} id={ruta.id} salir={salir} /> : null}
               {ruta.nombre === 'registros-nutricionales' ? <PantallaDeRegistros token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'registro-nutricional' ? <PantallaDeRegistroNutricional key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'opcion-de-comida' ? (

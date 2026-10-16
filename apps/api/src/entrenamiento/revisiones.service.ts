@@ -18,6 +18,8 @@ import type { AplicacionDeRevisionDeEntrenamiento, Prisma, RevisionDeEntrenamien
 import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
+import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
+import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PublicadorDeNovedades } from '../novedades/publicador';
@@ -289,6 +291,54 @@ export class RevisionesDeEntrenamientoService {
         await this.decidir(tx, 'API-TRN-23', actor, r.proceso.asesoradoId, recurso, ctx);
         if (r.proceso.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-23', actorId: actor.identidadId, recurso, sujetoId: r.proceso.asesoradoId }, ctx);
         return { data: revisionApi(r, r.proceso.asesoradoId, await nombreVisibleDe(tx, actor.identidadId)) };
+      },
+    });
+  }
+
+  // ─── API-TRN-23-LISTA y API-TRN-23-PROPIA ─────────────────────────────────────────────────
+  /**
+   * REV-A (propuesta del 2026-09-29, opciones A tomadas el 2026-10-16 con el mandato de Dirección; DL-134): las revisiones de
+   * Entrenamiento sobre la persona, completas y sin notas ocultas (08 §6.2; 08:495). Las de todos sus profesionales, con el vínculo
+   * vigente, en pausa o terminado: los derechos del titular no dependen del acceso del profesional (08 §14.3). Exigen el A3
+   * vigente, como «Tu historial» (08:406; DL-089 y DL-115). Lo ajeno y lo inexistente dan el mismo 404, antes que el A3.
+   */
+  listarPropias(actor: ActorAutenticado, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: RevisionDeEntrenamiento[]; page: unknown }> {
+    const consulta = leerConsultaDeLista(query, {});
+    return this.ejecutor.leer({
+      operacion: 'API-TRN-23-LISTA',
+      casoDeUso: 'UC-P18',
+      actor,
+      ctx,
+      recursoIntentado: null,
+      lectura: async (tx) => {
+        await exigirA3Vigente(tx, actor.identidadId);
+        const filas = await tx.revisionDeEntrenamiento.findMany({
+          where: { proceso: { asesoradoId: actor.identidadId }, ...despuesDelCursor(consulta.cursor) },
+          include: { aplicacion: true },
+          orderBy: ORDEN_DE_LISTA,
+          take: consulta.limit + 1,
+        });
+        const { pagina, page } = paginar(filas, consulta.limit);
+        const nombres = new Map<string, string>();
+        for (const autor of new Set(pagina.map((r) => r.autorId))) nombres.set(autor, await nombreVisibleDe(tx, autor));
+        return { data: pagina.map((r) => revisionApi(r, actor.identidadId, nombres.get(r.autorId) as string)), page };
+      },
+    });
+  }
+
+  consultarPropia(actor: ActorAutenticado, reviewId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: RevisionDeEntrenamiento }> {
+    if (Object.keys(query ?? {}).length > 0) throw errores.solicitudInvalida(Object.keys(query).map((c) => ({ code: 'UNKNOWN_QUERY_PARAMETER', path: c })));
+    return this.ejecutor.leer({
+      operacion: 'API-TRN-23-PROPIA',
+      casoDeUso: 'UC-P18',
+      actor,
+      ctx,
+      recursoIntentado: { tipo: 'RevisionDeEntrenamiento', id: reviewId },
+      lectura: async (tx) => {
+        const r = esUuid(reviewId) ? await tx.revisionDeEntrenamiento.findUnique({ where: { id: reviewId }, include: { aplicacion: true, proceso: true } }) : null;
+        if (!r || r.proceso.asesoradoId !== actor.identidadId) throw errores.recursoNoEncontrado();
+        await exigirA3Vigente(tx, actor.identidadId);
+        return { data: revisionApi(r, actor.identidadId, await nombreVisibleDe(tx, r.autorId)) };
       },
     });
   }

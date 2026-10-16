@@ -138,6 +138,7 @@
 | DL-131 | Decisión de Dirección · 2026-10-12 (WP-ESCRITORIO-AREAS, F-05) | 09v16.1:1518-1528 (API-FRM-03, precondiciones) · 05:15096-15105 (§13.6.7) · 05 §13.6.8 (pasos 6 a 8) · DL-100 | Al elegir un formulario en «Pedir información», el website no traía ninguna pregunta marcada: había que marcarlas de a una. La implementación de WP-07 lo fundaba en «una plantilla con campos más amplios no amplía B2» | **DECIDIDA** 2026-10-12 · vienen todas marcadas y el profesional desmarca las que no necesita; ninguna viene como requerida; la API sigue evaluando la pertinencia de cada pregunta al crear la solicitud. **IMPLEMENTADA** en `wp-escritorio-areas` (parte 4), sin integrar |
 | DL-132 | Hallazgo de implementación · 2026-10-12 (WP-ESCRITORIO-AREAS, parte 5) | DL-119 (lo implementado) · DL-108 | «Guardar como plantilla» responde distinto con una opción de receta: en la versión en preparación dice que no se guarda; en el plan activo la guarda como una opción común, con los ingredientes de una porción, sin avisar | **ABIERTA** · se recomienda A (que el plan activo responda como el editor). Sin cambios en el código: es el comportamiento de `main` |
 | DL-133 | Pedido de Dirección · 2026-10-16 (WP-NOVEDADES-Y-AVISOS) | 04 RF-061, RF-062 · 05 UC-P30, UC-E08 · 06 §5.11 · 07 §23-24 · 09v12 §20-21 · B10-04 §42 | Novedades y avisos: la familia NOV, el envío después de confirmar, el cron de la plataforma y los recordatorios diarios de registro | **DECIDIDA** 2026-10-16 (Expo Push y recordatorios); D-1 a D-10 a ratificar · implementada en #163 |
+| DL-134 | Mandato de Dirección · 2026-10-16 (REV-A) | 08 §6.2, 08:495, §14.3, 08:406 · 09v12:844 · 04 RF-035, RF-046 · propuesta REV-A | La persona lee las revisiones que sus profesionales registraron sobre ella | **IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar |
 
 ---
 
@@ -3776,3 +3777,39 @@ sin recetas.
 **Provisorio en código:** todo lo de D-1 a D-10.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-10, o cambia las que quiera, y un teléfono real recibe un aviso con Firebase configurado.
+
+## DL-134 — REV-A: la persona lee las revisiones que sus profesionales registraron sobre ella
+
+**Prioridad:** media.
+
+**Documentos:**
+- **08:** §6.2 (matriz: «Revisiones/decisiones profesionales · C4 · ✔ (sin notas secretas)»), 08:495 («ve toda su historia»), 08 §14.3 y 08:406.
+- **09v12:** :844.
+- **04:** RF-035 y RF-046.
+- **La propuesta:** `docs/propuestas/REV-A_revisiones-del-asesorado.md`.
+
+**Estado:** IMPLEMENTADA el 2026-10-16 con las opciones A, tomadas por el ejecutor con el mandato de Dirección de ese día («si no es mucho el riesgo, directamente tómala»). **Espera ratificación.**
+
+**Por qué ahora.** WP-NOVEDADES-Y-AVISOS (DL-133) le avisa a la persona que su profesional registró una revisión. Sin REV-A, el aviso llevaba a una pantalla donde la revisión no se veía.
+
+**Lo decidido:**
+- **REV-A-D1 · A, completa:** período, evidencia, interpretación, resultado, fundamento, próxima acción, autor, fecha y aplicación. Es la misma forma que lee el profesional (`RevisionSchema`, `RevisionDeEntrenamientoSchema`): no se esconde ni se agrega nada.
+- **REV-A-D2 · A, desde que se registra,** con su aplicación a la vista («Todavía no se aplicó» o «Se aplicó el…»).
+- **REV-A-D3 · A, sigue con el vínculo en pausa o terminado, o el B2 revocado:** son derechos del titular (08 §14.3).
+- **REV-A-D3-bis · A, con el A3 revocado se suspende:** 403 ACTION_FORBIDDEN, como «Tu historial» (DL-089) y DL-115. Lo ajeno y lo inexistente dan el mismo 404, antes que el A3.
+- **REV-A-D4,** la exportación, queda con la exportación del titular, que todavía no existe.
+
+**Contrato.** Las variantes del titular de API-NUT-19 y API-TRN-23:
+- `GET /me/nutrition/reviews` (API-NUT-19-LISTA) y `GET /me/nutrition/reviews/{reviewId}` (API-NUT-19-PROPIA);
+- `GET /me/training/reviews` (API-TRN-23-LISTA) y `GET /me/training/reviews/{reviewId}` (API-TRN-23-PROPIA).
+
+Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta que ya lea la APK publicada.
+
+**APK.**
+- **Las entradas:** «Ver las revisiones de tu profesional» en «Plan actual» de Nutrición y en «Plan» e «Historial» de Entrenamiento.
+- **La lista y el detalle:** el resultado va con su nombre y con lo que significa para el plan, dicho para la persona (sin juicios ni puntajes).
+- **La novedad** de una revisión abre esa revisión.
+
+**Una medida compatible que queda para el website (propuesta §3, D1):** avisarle al profesional, al registrar, que la persona lee la interpretación y el fundamento. No es una restricción. Se recomienda sumarla.
+
+**Condición de cierre:** Dirección ratifica las opciones A (o cambia las que quiera), y la persona lee una revisión real en el teléfono.

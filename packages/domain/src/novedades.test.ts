@@ -36,6 +36,8 @@ test('cada tipo tiene su texto y su pantalla; el texto nombra a quien la origin√
   // El rechazo no nombra a la persona: sin v√≠nculo, el profesional no ve su nombre (DL-040).
   assert.doesNotMatch(textoDeNovedad('RELATIONSHIP_REQUEST_REJECTED', { alcance: 'NUTRICION', fuente: 'Diego Sosa' }).body, /Diego/);
   assert.equal(vistaDeNovedad('PLAN_ACTIVATED', 'ENTRENAMIENTO', false), 'TRAINING');
+  assert.equal(vistaDeNovedad('REVIEW_RECORDED', 'NUTRICION', false), 'NUTRITION_REVIEW');
+  assert.equal(vistaDeNovedad('REVIEW_RECORDED', 'ENTRENAMIENTO', false), 'TRAINING_REVIEW');
   assert.equal(vistaDeNovedad('RELATIONSHIP_REQUEST_ACCEPTED', 'NUTRICION', true), 'ADVISEE');
   assert.equal(vistaDeNovedad('RELATIONSHIP_REQUEST_ACCEPTED', 'NUTRICION', false), 'RELATIONSHIPS');
 });

@@ -172,7 +172,7 @@ La parte de avisos de la APK necesita **Firebase Cloud Messaging**, porque Expo 
 
 ## 11. Fuera de alcance
 
-- **Que el asesorado lea sus revisiones** (REV-A, propuesta sin decidir): hoy la novedad dice que hay una revisión, pero su contenido no se ve en la APK.
+- ~~Que el asesorado lea sus revisiones~~: se hizo el mismo día, aparte, con REV-A (DL-134). La novedad de una revisión abre esa revisión, completa.
 - **Los recibos de Expo:** saber si FCM entregó el aviso.
 - **El push en el navegador.**
 - **Correo y WhatsApp.**

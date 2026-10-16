@@ -260,6 +260,20 @@ export class NutricionController {
     return this.revisiones.consultar(actorDe(req), reviewId, query, contextoDe(req));
   }
 
+  /** API-NUT-19-LISTA (REV-A, DL-134): las revisiones de Nutrición propias, completas. */
+  @Get('me/nutrition/reviews')
+  misRevisiones(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.listarPropias(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-NUT-19-PROPIA (REV-A, DL-134). */
+  @Get('me/nutrition/reviews/:reviewId')
+  miRevision(@Param('reviewId') reviewId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.consultarPropia(actorDe(req), reviewId, query, contextoDe(req));
+  }
+
   /** API-NUT-20. */
   @Post('nutrition/reviews/:reviewId/apply')
   async aplicarRevision(@Param('reviewId') reviewId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {

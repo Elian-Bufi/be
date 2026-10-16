@@ -549,6 +549,13 @@ export type Revision = z.infer<typeof RevisionSchema>;
 export const AplicarRevisionResponseSchema = z.strictObject({ data: z.strictObject({ reviewId: IdOpaco, application: AplicacionDeRevisionSchema }) });
 export type AplicarRevisionResponse = z.infer<typeof AplicarRevisionResponseSchema>;
 export const RevisionResponseSchema = z.strictObject({ data: RevisionSchema });
+/**
+ * REV-A (propuesta del 2026-09-29, opciones A; tomadas el 2026-10-16 con el mandato de Dirección): las revisiones que los
+ * profesionales registraron sobre la persona, que ella lee completas, sin notas ocultas (08 §6.2 y 08:495, «sin notas
+ * secretas»). API-NUT-19-LISTA y API-NUT-19-PROPIA. La misma forma que lee el profesional: no se esconde ni se agrega nada.
+ */
+export const ListaDeRevisionesPropiasResponseSchema = z.strictObject({ data: z.array(RevisionSchema), page: PaginaSchema });
+export type ListaDeRevisionesPropiasResponse = z.infer<typeof ListaDeRevisionesPropiasResponseSchema>;
 
 export const ContextoDeRevisionResponseSchema = z.strictObject({
   data: z.strictObject({
