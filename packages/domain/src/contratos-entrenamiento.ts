@@ -349,6 +349,27 @@ export const CrearPlanDeEntrenamientoRequestSchema = z.strictObject({
 });
 export type CrearPlanDeEntrenamientoRequest = z.infer<typeof CrearPlanDeEntrenamientoRequestSchema>;
 
+// ─── WP-AGENDA-DE-ENTRENAMIENTO (DL-137): las fechas previstas de las sesiones ────────────────────────────
+
+/** Los días de la semana, con el lunes primero, como se lee un calendario en Argentina. */
+export const DIAS_DE_LA_SEMANA = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
+export const DiaDeLaSemanaSchema = z.enum(DIAS_DE_LA_SEMANA);
+export type DiaDeLaSemana = z.infer<typeof DiaDeLaSemanaSchema>;
+
+/**
+ * La agenda de una versión del plan (DL-137 D-1 y D-2): desde qué fecha rige, qué días de la semana va cada sesión y las
+ * fechas que el profesional movió a mano. BE arma con eso el calendario de fechas exactas. Va en el contenido de la
+ * versión y se versiona con el plan: activada, no se edita. Una sesión sin días no tiene fecha prevista y se hace a mano,
+ * como antes de la agenda.
+ */
+export const AgendaDeEntrenamientoSchema = z.strictObject({
+  startDate: FechaLocalSchema,
+  sessions: z.array(z.strictObject({ sessionId: IdDeNodoSchema, weekdays: z.array(DiaDeLaSemanaSchema).min(1).max(7) })).max(60),
+  /** La sesión deja de estar prevista en `from` y pasa a `to`. */
+  moves: z.array(z.strictObject({ sessionId: IdDeNodoSchema, from: FechaLocalSchema, to: FechaLocalSchema })).max(100),
+});
+export type AgendaDeEntrenamiento = z.infer<typeof AgendaDeEntrenamientoSchema>;
+
 export const VersionDePlanDeEntrenamientoSchema = z.strictObject({
   planId: IdOpaco,
   /** El Plan que agrupa las versiones (DL-046, por homología). */
@@ -371,6 +392,11 @@ export const VersionDePlanDeEntrenamientoSchema = z.strictObject({
    * valida con esquemas estrictos y no la conoce): ausente para el titular, `null` si no salió de una plantilla.
    */
   templateOrigin: z.strictObject({ templateId: IdOpaco, templateVersionId: IdOpaco }).nullable().optional(),
+  /**
+   * DL-137: la agenda, solo para quien declara la capacidad `training-agenda-1` (el website y la APK que la muestra). Las
+   * APK instaladas validan con esquemas estrictos y no la conocen: para ellas no viene. `null` si la versión no tiene.
+   */
+  agenda: AgendaDeEntrenamientoSchema.nullable().optional(),
   blocks: z.array(BloqueSchema),
 });
 export type VersionDePlanDeEntrenamiento = z.infer<typeof VersionDePlanDeEntrenamientoSchema>;
@@ -385,6 +411,8 @@ export const EditarPlanDeEntrenamientoRequestSchema = z.strictObject({
   /** Pasar el borrador al objetivo efectivo, por ejemplo después de CHANGE_OBJECTIVE. */
   objectiveVersionId: IdOpaco.optional(),
   nextReviewAt: FechaLocalSchema.nullable().optional(),
+  /** DL-137: la agenda del borrador. Ausente, no cambia; `null`, se quita. */
+  agenda: AgendaDeEntrenamientoSchema.nullable().optional(),
 });
 export type EditarPlanDeEntrenamientoRequest = z.infer<typeof EditarPlanDeEntrenamientoRequestSchema>;
 
