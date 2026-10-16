@@ -6,9 +6,12 @@
  * otro profesional).
  */
 import type { INestApplication } from '@nestjs/common';
+import { EvaluacionAntropometricaResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
+import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
+import { appDePrueba, claveDeIdempotencia, conSesion, simultaneos } from './soporte-api';
 import { CATALOGO_DEMO, circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
 import { prepararProfesional, prepararAsesorado, vinculoCompleto, revocarB2 } from './soporte-vinculo';
 
@@ -541,5 +544,155 @@ describe('RF-049 · el asesorado consulta su propia evolución desde la APK', ()
     expect(propia.body.data.honesty).toEqual({ interpolated: false, imputed: false, carriedForward: false });
     const peso = propia.body.data.metrics.find((s: { metricCode: string }) => s.metricCode === 'peso');
     expect(peso.series).toHaveLength(1);
+  });
+});
+
+/**
+ * DV-05 · casos del catálogo que hasta el 2026-10-16 no tenían una prueba escrita contra su oráculo
+ * (`docs/mesa/MESA_02/DV-05/MAPEO_DE_LOS_26_CASOS_2026-10-16.md`). Los datos siguen los del catálogo con los alias de la
+ * implementación: el perímetro de 92 cm es acá el peso de 72,5 kg, y MET-DEMO es el índice sintético de la migración.
+ */
+describe('DV-05 · antropometría: el hueco, la anulación, el borrador, el registro y la corrección', () => {
+  const haceDias = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+  const fechaLocal = (instante: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date(instante));
+  async function registradaEl(c: CircuitoAntropometrico, momento: string, peso: number) {
+    const b = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluation-drafts`, claveDeIdempotencia()).send(toma(c, [medicion('peso', peso, 'kg')], momento)).expect(201);
+    await conSesion(app, c.pro.token).post(`/api/v1/anthropometry/evaluation-drafts/${b.body.data.evaluationId}/register`, claveDeIdempotencia()).send({ expectedVersion: b.body.data.version }).expect(200);
+    return b.body.data.evaluationId as string;
+  }
+
+  it('TEST-DOM-001 · con mediciones en t0 y t2 y ninguna en t1, el hueco del medio es SIN_DATO y no lleva valor', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'dom-001');
+    await registradaEl(c, haceDias(6), 72.5);
+    await registradaEl(c, haceDias(2), 73);
+    const serie = await conSesion(app, c.pro.token)
+      .get(`/api/v1/advisees/${c.ase.id}/anthropometry/progress?periodStart=${fechaLocal(haceDias(6))}&periodEnd=${fechaLocal(haceDias(2))}&metric=peso`)
+      .expect(200);
+    const peso = serie.body.data.metrics[0];
+    expect(peso.series.map((p: { value: number }) => p.value)).toEqual([72.5, 73]);
+    // Los tres días del medio son un solo hueco: estado SIN_DATO y ningún campo donde poner un cero.
+    expect(peso.gaps).toHaveLength(1);
+    expect(peso.gaps[0]).toMatchObject({ state: 'NO_DATA', days: 3 });
+    expect(Object.keys(peso.gaps[0]).sort()).toEqual(['days', 'from', 'state', 'to']);
+    expect(serie.body.data.honesty).toEqual({ interpolated: false, imputed: false, carriedForward: false });
+  });
+
+  it('TEST-DOM-003 · anular no elimina el original: conserva su valor, su autoría y su momento, con la condición ANULADA', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'dom-003');
+    const e = await evaluacionRegistrada(c);
+    const ruta = `/api/v1/anthropometry/evaluations/${e.evaluationId}`;
+    const antes = (await conSesion(app, c.pro.token).get(ruta).expect(200)).body.data;
+    const original = antes.measurements.find((m: { metric: string }) => m.metric === 'peso');
+    await conSesion(app, c.pro.token).post(`/api/v1/anthropometry/measurements/${original.measurementId}/annulments`, claveDeIdempotencia()).send({ reason: 'Toma duplicada.' }).expect(201);
+
+    const despues = (await conSesion(app, c.pro.token).get(ruta).expect(200)).body.data;
+    const anulada = despues.measurements.find((m: { measurementId: string }) => m.measurementId === original.measurementId);
+    expect(anulada.condition).toBe('ANNULLED');
+    expect({ magnitude: anulada.magnitude, occurredAt: anulada.occurredAt, recordedAt: anulada.recordedAt }).toEqual({
+      magnitude: { value: 72.5, unit: 'kg' },
+      occurredAt: original.occurredAt,
+      recordedAt: original.recordedAt,
+    });
+    // La autoría de la medición es la de su evaluación, y anular no la cambia.
+    expect(despues.author).toEqual(antes.author);
+    expect(despues.author.identityId).toBe(c.pro.id);
+  });
+
+  it('TEST-DOM-004 · TEST-ANT-002 · con una registrada y un borrador posterior, la última registrada sigue siendo la registrada y el borrador no alimenta la evolución', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'dom-004');
+    const registrada = await registradaEl(c, haceDias(14), 72.5);
+    const borrador = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluation-drafts`, claveDeIdempotencia())
+      .send(toma(c, [medicion('peso', 60, 'kg')], haceDias(1)))
+      .expect(201);
+
+    const lista = await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`).expect(200);
+    expect(lista.body.data.map((e: { evaluationId: string; state: string }) => [e.evaluationId, e.state])).toEqual([[registrada, 'REGISTERED']]);
+    // Por la ruta de las registradas, el borrador no existe.
+    await conSesion(app, c.pro.token).get(`/api/v1/anthropometry/evaluations/${borrador.body.data.evaluationId}`).expect(404);
+    const serie = await conSesion(app, c.pro.token)
+      .get(`/api/v1/advisees/${c.ase.id}/anthropometry/progress?periodStart=${fechaLocal(haceDias(14))}&periodEnd=${fechaLocal(haceDias(0))}&metric=peso`)
+      .expect(200);
+    expect(serie.body.data.metrics[0].series.map((p: { value: number }) => p.value)).toEqual([72.5]);
+  });
+
+  it('TEST-RF-047 · M1 y M2 quedan directas y el derivado aparte, en la historia; con la capacidad suspendida o el B2 revocado no se registra nada, y registrar no abre un plan', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'rf-047');
+    const cuerpo = { ...toma(c, [medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]), requestedDerivedMethods: [{ methodVersionId: CATALOGO_DEMO.metodo.v2 }] };
+    const crear = () => conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`, claveDeIdempotencia()).send(cuerpo);
+    const creada = await crear().expect(201);
+    const leida = EvaluacionAntropometricaResponseSchema.parse((await conSesion(app, c.pro.token).get(`/api/v1/anthropometry/evaluations/${creada.body.data.evaluationId}`).expect(200)).body).data;
+    expect(leida.state).toBe('REGISTERED');
+    expect(leida.measurements.map((m) => [m.metric, m.dataClass, m.origin, m.magnitude.unit]).sort()).toEqual([['peso', 'MEASURED', 'DIRECT_CAPTURE', 'kg'], ['talla', 'MEASURED', 'DIRECT_CAPTURE', 'm']]);
+    // El derivado no es una medición más: va aparte, con su método y las mediciones que usó.
+    expect(leida.derivedResults).toHaveLength(1);
+    expect(leida.derivedResults[0]).toMatchObject({ methodVersionId: CATALOGO_DEMO.metodo.v2, metric: 'indice-demo' });
+    expect(leida.derivedResults[0]!.inputs.map((i) => i.measurementId).sort()).toEqual(leida.measurements.map((m) => m.measurementId).sort());
+    const historia = await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`).expect(200);
+    expect(historia.body.data.map((e: { evaluationId: string }) => e.evaluationId)).toEqual([leida.evaluationId]);
+
+    // Ramas negativas, por separado: sin vínculo, la capacidad suspendida y, rehabilitada, el B2 revocado.
+    const sinVinculo = await prepararProfesional(app, 'ant-rf-047-sin-vinculo', ['ANTROPOMETRIA']);
+    await conSesion(app, sinVinculo.token).post(`/api/v1/advisees/${c.ase.id}/anthropometry/evaluations`, claveDeIdempotencia()).send(cuerpo).expect(404);
+    const cliente = app.get(PrismaService);
+    const verificacion = app.get(VerificacionService);
+    await cliente.$transaction((tx) => verificacion.transicionarVerificacion(tx, c.pro.id, 'ANTROPOMETRIA', 'SuspenderAlcance', 'suspensión sintética', new Date()));
+    await crear().expect(404);
+    await cliente.$transaction((tx) => verificacion.transicionarVerificacion(tx, c.pro.id, 'ANTROPOMETRIA', 'RehabilitarAlcance', 'rehabilitación sintética', new Date()));
+    await revocarB2(app, c.ase, c.consentId).expect(200);
+    await crear().expect(404);
+    expect(await prisma.evaluacionAntropometrica.count({ where: { asesoradoId: c.ase.id } })).toBe(1);
+    // Registrar la evaluación no abre un proceso ni un plan de nutrición o de entrenamiento.
+    expect(await prisma.procesoOperativo.count({ where: { asesoradoId: c.ase.id } })).toBe(0);
+    expect(await prisma.planNutricional.count({ where: { asesoradoId: c.ase.id } })).toBe(0);
+    expect(await prisma.planDeEntrenamiento.count({ where: { asesoradoId: c.ase.id } })).toBe(0);
+  });
+
+  it('TEST-RF-050 · la corrección dice quién y cuándo, la corrida afectada se reemite relacionada, y ni dos correcciones simultáneas pisan nada', async () => {
+    const c = await circuitoAntropometrico(app, prisma, 'rf-050');
+    const e = await evaluacionRegistrada(c);
+    const [peso, talla] = ['peso', 'talla'].map((m) => e.measurements.find((x) => x.metric === m)!);
+    const cd1 = (
+      await conSesion(app, c.pro.token)
+        .post(`/api/v1/advisees/${c.ase.id}/calculations`, claveDeIdempotencia())
+        .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: [{ inputCode: 'PESO', sourceRef: peso!.measurementId }, { inputCode: 'TALLA', sourceRef: talla!.measurementId }] })
+        .expect(201)
+    ).body.data;
+    const ruta = `/api/v1/anthropometry/evaluations/${e.evaluationId}/corrections`;
+    const corregida = await conSesion(app, c.pro.token).post(ruta, claveDeIdempotencia()).send({ targetId: peso!.measurementId, reason: 'DEMO-ERROR-CARGA', magnitude: { value: 73, unit: 'kg' } }).expect(201);
+    expect(corregida.body.data.corrections[0]).toMatchObject({ reason: 'DEMO-ERROR-CARGA', author: { identityId: c.pro.id } });
+    expect(Number.isNaN(Date.parse(corregida.body.data.corrections[0].recordedAt))).toBe(false);
+    expect({ original: corregida.body.data.magnitude, efectiva: corregida.body.data.effectiveMagnitude }).toEqual({ original: { value: 72.5, unit: 'kg' }, efectiva: { value: 73, unit: 'kg' } });
+
+    // CD1 conserva su resultado; la corrida sucesora lo nombra y usa el valor corregido.
+    expect((await conSesion(app, c.pro.token).get(`/api/v1/calculations/${cd1.calculationRunId}`).expect(200)).body.data.result).toEqual(cd1.result);
+    const corridas = (await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/calculations`).expect(200)).body.data as { supersedesRunId: string | null; inputProvenance: { metric: string; magnitude: { value: number } }[] }[];
+    const sucesora = corridas.find((x) => x.supersedesRunId === cd1.calculationRunId);
+    expect(sucesora?.inputProvenance.find((i) => i.metric === 'peso')?.magnitude.value).toBe(73);
+
+    // Dos correcciones a la vez: ninguna falla con un error del servidor, ninguna se pierde y la cadena no se bifurca.
+    const simultaneas = await simultaneos(2, (i) => conSesion(app, c.pro.token).post(ruta, claveDeIdempotencia()).send({ targetId: peso!.measurementId, reason: `Corrección simultánea ${i}.`, magnitude: { value: 74 + i, unit: 'kg' } }));
+    expect(simultaneas.every((r) => r.status === 201 || r.status === 409)).toBe(true);
+    const final = (await conSesion(app, c.pro.token).get(`/api/v1/anthropometry/evaluations/${e.evaluationId}`).expect(200)).body.data.measurements.find((m: { measurementId: string }) => m.measurementId === peso!.measurementId);
+    expect(final.magnitude).toEqual({ value: 72.5, unit: 'kg' });
+    expect(final.corrections).toHaveLength(1 + simultaneas.filter((r) => r.status === 201).length);
+    const previas = (final.corrections as { previousCorrectionId: string | null }[]).map((x) => x.previousCorrectionId);
+    expect(new Set(previas).size).toBe(previas.length);
+  });
+
+  it('TEST-ANT-006 · adversarial 6, a la vez: de dos anulaciones simultáneas queda una sola, la otra la ve, y ninguna termina en un error del servidor', async () => {
+    // La CI del 2026-10-16 mostró que dos escrituras simultáneas sobre la misma medición leían la cadena antes del
+    // bloqueo: la segunda chocaba contra la unicidad y salía un 500. Ahora la medición se relee después del bloqueo.
+    const c = await circuitoAntropometrico(app, prisma, 'anular-a-la-vez');
+    const e = await evaluacionRegistrada(c);
+    const peso = e.measurements.find((m) => m.metric === 'peso')!;
+    const ruta = `/api/v1/anthropometry/measurements/${peso.measurementId}/annulments`;
+    const respuestas = await simultaneos(2, (i) => conSesion(app, c.pro.token).post(ruta, claveDeIdempotencia()).send({ reason: `Anulación simultánea ${i}.` }));
+    expect(respuestas.map((r) => r.status).sort()).toEqual([200, 201]);
+    const creada = respuestas.find((r) => r.status === 201)!;
+    const vista = respuestas.find((r) => r.status === 200)!;
+    expect(vista.body.data.alreadyAnnulled).toBe(true);
+    expect(vista.body.data.annulment.annulmentId).toBe(creada.body.data.annulment.annulmentId);
+    expect(await prisma.anulacionDeMedicion.count({ where: { medicionId: peso.measurementId } })).toBe(1);
   });
 });

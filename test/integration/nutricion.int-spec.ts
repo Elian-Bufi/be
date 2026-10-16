@@ -11,7 +11,7 @@
  * - D10 / TEST-RNF-REC-002: un reintento no duplica.
  */
 import type { INestApplication } from '@nestjs/common';
-import { serializacionCanonica } from '@be/domain';
+import { EvaluacionResponseSchema, serializacionCanonica } from '@be/domain';
 import { createHash, randomUUID } from 'node:crypto';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { ProcesoService } from '../../apps/api/src/proceso/proceso.service';
@@ -584,5 +584,41 @@ describe('Cierre de WP-06 · lo que la auditoría de entrenamiento encontró tam
       .send(cuerpoDeRevision([{ type: 'PLAN_VERSION', id: c.planId }], 'CHANGE_OBJECTIVE', { objective: cuerpoDeObjetivo(randomUUID()) }))
       .expect(422);
     expect(r.body.error).toMatchObject({ code: 'REVIEW_COMPONENT_REQUIRED', details: { issues: [{ code: 'EVALUATION_NOT_COMPATIBLE', path: 'nextAction.objective.evaluationId' }] } });
+  });
+});
+
+/**
+ * DV-05 TEST-RF-026 (UC-P09), con los alias del catálogo: DEMO-HABITO informado, DEMO-OBS observado y la corrida
+ * técnica CAL1 como dato calculado, con su método declarado. A02 no tiene relación con el nutricionista.
+ */
+describe('TEST-RF-026 · la evaluación nutricional queda en la historia del asesorado, con la fuente de cada dato', () => {
+  it('TEST-RF-026 · se asocia al asesorado y a quien tiene el vínculo, distingue informado, observado y calculado, y se consulta en la historia; sobre A02 no crea nada', async () => {
+    const pn = await prepararProfesional(app, 'rf026', ['NUTRICION']);
+    const a01 = await prepararAsesorado(app, 'rf026-a01', { a3: true });
+    const a02 = await prepararAsesorado(app, 'rf026-a02', { a3: true });
+    await vinculoCompleto(app, pn, a01, 'NUTRICION');
+    const calculado = { concept: 'Índice técnico de referencia', value: 23.67, unit: 'kg/m2', source: 'CALCULATED', methodStatement: 'Corrida técnica sintética CAL1.' };
+    const entradas = [
+      { concept: 'Hábito informado', value: 'DEMO-HABITO', source: 'REPORTED' },
+      { concept: 'Observación de la consulta', value: 'DEMO-OBS', source: 'OBSERVED' },
+      calculado,
+    ];
+    const evaluar = (asesoradoId: string, cuerpo: Record<string, unknown>) => conSesion(app, pn.token).post(`/api/v1/advisees/${asesoradoId}/nutrition/evaluations`).send(cuerpo);
+    // Un dato calculado sin método no se acepta: BE no rotula un cálculo como si fuera una medición.
+    await evaluar(a01.id, { ...cuerpoDeEvaluacion(), assessment: { entries: [{ ...calculado, methodStatement: null }] } }).expect(400);
+    const creada = await evaluar(a01.id, { ...cuerpoDeEvaluacion(), assessment: { entries: entradas } }).expect(201);
+
+    const ev = EvaluacionResponseSchema.parse((await conSesion(app, pn.token).get(`/api/v1/nutrition/evaluations/${creada.body.data.evaluationId}`).expect(200)).body).data;
+    expect({ asesorado: ev.adviseeId, autor: ev.professional.identityId }).toEqual({ asesorado: a01.id, autor: pn.id });
+    expect(ev.assessment.entries.map((d) => [d.value, d.source])).toEqual([['DEMO-HABITO', 'REPORTED'], ['DEMO-OBS', 'OBSERVED'], [23.67, 'CALCULATED']]);
+    expect(ev.assessment.entries[2]!.methodStatement).toBe('Corrida técnica sintética CAL1.');
+    const historia = await conSesion(app, pn.token).get(`/api/v1/advisees/${a01.id}/nutrition/evaluations`).expect(200);
+    expect(historia.body.data.map((e: { evaluationId: string }) => e.evaluationId)).toContain(ev.evaluationId);
+
+    // Variante A02: el mismo 404 que ante un asesorado inexistente, y ninguna evaluación creada para el tercero.
+    const ajeno = await evaluar(a02.id, { ...cuerpoDeEvaluacion(), assessment: { entries: entradas } }).expect(404);
+    const inventado = await evaluar(randomUUID(), { ...cuerpoDeEvaluacion(), assessment: { entries: entradas } }).expect(404);
+    expect(ajeno.body).toEqual(inventado.body);
+    expect(await prisma.evaluacionNutricional.count({ where: { asesoradoId: a02.id } })).toBe(0);
   });
 });
