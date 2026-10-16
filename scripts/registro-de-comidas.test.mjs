@@ -8,7 +8,8 @@
  *  3. «¿Cuánto comiste?» (`consumo-de-la-opcion.ts`): vacío no es cero, el cero no se acepta, la casilla, «No lo comí» y
  *     lo que vuelve a la pantalla al completar.
  *  4. La comida diferente (`borrador-de-comida-diferente.ts`): al menos texto o foto, la foto inválida, los estados del
- *     guardado y cuándo se pide otra ruta de subida.
+ *     guardado y cuándo se pide otra ruta de subida; la foto leída en bytes con su tipo real, el envío con el fetch de la
+ *     APK (`expo/fetch`) y qué rechazo de la API culpa a la foto (defecto de la 0.15.0-candidata.1, 2026-10-07).
  *  5. El comando único (`comando-de-registro.ts`): el doble toque, el reintento con la misma clave y el mismo cuerpo, y
  *     otro pedido con otra clave.
  *  6. Las comidas de hoy (`comidas-de-hoy.ts`): el registro efectivo de cada comida y la comida que se muestra.
@@ -267,7 +268,7 @@ test('3 · al completar o corregir, la pantalla parte de lo registrado, y solo u
 
 const CONTEXTO = { activePlanId: 'plan-1', dayTypeId: 'dia-1', mealId: 'almuerzo' };
 const AHORA = '2026-10-05T15:30:00.000Z';
-const FOTO = { uri: 'file:///cache/foto.jpg', tipo: 'image/jpeg', bytes: 1_500_000, ancho: 1600, alto: 1200 };
+const FOTO = { uri: 'file:///cache/foto.jpg', ancho: 1600, alto: 1200 };
 
 test('4 · hace falta una descripción o una foto; espacios solos no son una descripción', () => {
   assert.equal(borrador.hayContenido('Un sándwich', null), true, 'solo texto');
@@ -300,28 +301,116 @@ test('4 · el pedido de una comida diferente: texto, foto o los dos, sin macros 
   assert.equal(d.RegistroDiferenteRequestSchema.safeParse(vacia).success, false, 'el contrato también exige uno de los dos');
 });
 
-test('4 · la foto: JPEG, PNG o WebP, hasta 10 MB y entre 64 y 8000 píxeles por lado; si no, se dice por qué', () => {
-  assert.equal(borrador.tipoDeImagen('image/jpeg'), 'image/jpeg');
-  assert.equal(borrador.tipoDeImagen('image/jpg'), 'image/jpeg');
-  assert.equal(borrador.tipoDeImagen('image/png; charset=binary'), 'image/png');
-  assert.equal(borrador.tipoDeImagen(null, 'IMG_2026.WEBP'), 'image/webp', 'sin tipo declarado, por la extensión');
-  assert.equal(borrador.tipoDeImagen('image/gif', 'foto.jpg'), null, 'lo declarado manda: un GIF no es una foto aceptada');
-  assert.equal(borrador.tipoDeImagen('image/heic'), null);
-  assert.equal(borrador.tipoDeImagen(undefined, 'archivo'), null);
-  const elegir = (imagen) => borrador.fotoDesdeElSelector({ uri: 'file:///x.jpg', ...imagen });
-  assert.deepEqual(elegir({ mimeType: 'image/jpeg', fileSize: 2_000_000, width: 4000, height: 3000 }).foto, { uri: 'file:///x.jpg', tipo: 'image/jpeg', bytes: 2_000_000, ancho: 4000, alto: 3000 });
-  assert.equal(elegir({ mimeType: 'image/gif' }).motivo, 'TIPO');
-  assert.equal(elegir({ mimeType: 'image/png', fileSize: d.LIMITES_DE_MEDIO.bytesMaximos + 1 }).motivo, 'TAMANO');
-  assert.equal(elegir({ mimeType: 'image/png', fileSize: d.LIMITES_DE_MEDIO.bytesMaximos }).motivo, null, 'justo 10 MB, sí');
+test('4 · al elegir: que sea una imagen y sus medidas; el formato y el tamaño los decide el archivo que se sube', () => {
+  assert.equal(borrador.esImagen('image/jpeg'), true);
+  assert.equal(borrador.esImagen('image/png; charset=binary'), true);
+  // El selector, con calidad menor que 1, las vuelve a codificar en JPEG: se aceptan y decide el archivo.
+  assert.equal(borrador.esImagen('image/heic'), true, 'un HEIC de la galería');
+  assert.equal(borrador.esImagen('image/gif', 'foto.gif'), true, 'un GIF de la galería');
+  assert.equal(borrador.esImagen(null, 'IMG_2026.WEBP'), true, 'sin tipo declarado, por la extensión');
+  assert.equal(borrador.esImagen('video/mp4', 'foto.jpg'), false, 'lo declarado manda: un video no es una foto');
+  assert.equal(borrador.esImagen(undefined, 'archivo'), false);
+  const elegir = (imagen) => borrador.fotoDesdeElSelector({ uri: 'file:///x.jpeg', ...imagen });
+  assert.deepEqual(elegir({ mimeType: 'image/jpeg', fileSize: 2_000_000, width: 4000, height: 3000 }).foto, { uri: 'file:///x.jpeg', ancho: 4000, alto: 3000 });
+  assert.equal(elegir({ mimeType: 'video/mp4' }).motivo, 'TIPO');
+  assert.equal(elegir({ mimeType: 'image/heic', width: 4032, height: 3024 }).motivo, null);
+  // `fileSize` es el del original, no el del archivo comprimido que se sube: no decide.
+  assert.equal(elegir({ mimeType: 'image/jpeg', fileSize: d.LIMITES_DE_MEDIO.bytesMaximos + 1, width: 4000, height: 3000 }).motivo, null);
   assert.equal(elegir({ mimeType: 'image/png', width: 50, height: 400 }).motivo, 'DIMENSIONES');
   assert.equal(elegir({ mimeType: 'image/png', width: 8001, height: 400 }).motivo, 'DIMENSIONES');
+  assert.equal(elegir({ mimeType: 'image/jpeg', width: 8160, height: 6120 }).motivo, 'DIMENSIONES', 'una cámara de 50 megapíxeles');
   assert.equal(elegir({ mimeType: 'image/png', width: 7000, height: 7000 }).motivo, 'DIMENSIONES', 'más de 40 megapíxeles');
   // Lo que el selector no dice no invalida: se valida después con los bytes.
   assert.equal(elegir({ mimeType: 'image/jpeg' }).motivo, null);
-  assert.equal(borrador.motivoDeFotoInvalida({ ...FOTO, bytes: d.LIMITES_DE_MEDIO.bytesMaximos + 1 }), 'TAMANO');
   // El aviso de cada motivo es un texto del dominio.
   assert.equal(borrador.AVISO_DE_FOTO_INVALIDA.TIPO, C.fotoInvalida);
   assert.equal(borrador.AVISO_DE_FOTO_INVALIDA.DIMENSIONES, d.COPY_RECETAS.imagenInvalida);
+});
+
+// Los primeros bytes de cada formato, como los escriben Android y la API.
+const JPEG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe1, 0x00, 0x10]);
+const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+const WEBP = Uint8Array.from([...Buffer.from('RIFF'), 0x24, 0, 0, 0, ...Buffer.from('WEBPVP8 ')]);
+const HEIC = Uint8Array.from([0, 0, 0, 0x18, ...Buffer.from('ftypheic')]);
+const GIF = Uint8Array.from(Buffer.from('GIF89a'));
+
+test('4 · el tipo de la foto sale de sus bytes, como en la API: JPEG, PNG o WebP', () => {
+  assert.equal(borrador.tipoPorLosBytes(JPEG), 'image/jpeg');
+  assert.equal(borrador.tipoPorLosBytes(PNG), 'image/png');
+  assert.equal(borrador.tipoPorLosBytes(WEBP), 'image/webp');
+  assert.equal(borrador.tipoPorLosBytes(HEIC), null);
+  assert.equal(borrador.tipoPorLosBytes(GIF), null);
+  assert.equal(borrador.tipoPorLosBytes(new Uint8Array()), null);
+  assert.equal(borrador.tipoPorLosBytes(Uint8Array.from(Buffer.from('File not found'))), null);
+  assert.equal(borrador.motivoDeFotoInvalida({ tipo: 'image/jpeg', bytes: d.LIMITES_DE_MEDIO.bytesMaximos, ancho: 4000, alto: 3000 }), null, 'justo 10 MB, sí');
+  assert.equal(borrador.motivoDeFotoInvalida({ tipo: 'image/jpeg', bytes: d.LIMITES_DE_MEDIO.bytesMaximos + 1, ancho: 4000, alto: 3000 }), 'TAMANO');
+  assert.equal(borrador.motivoDeFotoInvalida({ tipo: 'image/jpeg', bytes: 0, ancho: null, alto: null }), 'TAMANO');
+  assert.equal(borrador.motivoDeFotoInvalida({ tipo: null, bytes: 1000, ancho: null, alto: null }), 'TIPO');
+});
+
+test('4 · leer la foto: bytes con su tipo real; un archivo que no se lee se puede reintentar, uno que no sirve se dice', async () => {
+  const con = (bytes, ok = true) => async () => ({ ok, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+  const camara = await borrador.leerLaFoto(FOTO, con(JPEG));
+  assert.equal(camara.ok, true);
+  assert.equal(camara.tipo, 'image/jpeg');
+  assert.ok(camara.bytes instanceof Uint8Array, 'bytes, nunca un Blob: expo/fetch respeta el Content-Type declarado');
+  assert.equal(camara.bytes.byteLength, JPEG.byteLength);
+  // Un WebP de la galería que el selector volvió a codificar: el archivo se llama .webp, pero es JPEG.
+  assert.equal((await borrador.leerLaFoto({ ...FOTO, uri: 'file:///cache/a.webp' }, con(JPEG))).tipo, 'image/jpeg');
+  assert.equal((await borrador.leerLaFoto(FOTO, con(PNG))).tipo, 'image/png');
+  assert.deepEqual(await borrador.leerLaFoto(FOTO, con(HEIC)), { ok: false, motivo: 'TIPO' });
+  assert.deepEqual(await borrador.leerLaFoto(FOTO, con(Uint8Array.from(Buffer.from('File not found')), false)), { ok: false, motivo: null }, 'el archivo ya no está');
+  assert.deepEqual(
+    await borrador.leerLaFoto(FOTO, async () => {
+      throw new Error('sin acceso');
+    }),
+    { ok: false, motivo: null },
+  );
+  const pesada = new Uint8Array(d.LIMITES_DE_MEDIO.bytesMaximos + 1);
+  pesada.set(JPEG);
+  assert.deepEqual(await borrador.leerLaFoto(FOTO, con(pesada)), { ok: false, motivo: 'TAMANO' }, 'más de 10 MB: no se pide la ruta');
+  assert.deepEqual(await borrador.leerLaFoto({ ...FOTO, ancho: 9000, alto: 3000 }, con(JPEG)), { ok: false, motivo: 'DIMENSIONES' });
+});
+
+test('4 · un rechazo de la API culpa a la foto solo si es por sus bytes o su tamaño; por la cabecera, es del envío', () => {
+  // El caso de la 0.15.0-candidata.1: la cabecera llegó vacía.
+  assert.equal(borrador.motivoDelRechazo('FILE_TYPE_NOT_ALLOWED', [{ code: 'FILE_TYPE_NOT_ALLOWED', path: 'Content-Type' }]), null);
+  assert.equal(borrador.motivoDelRechazo('FILE_TYPE_NOT_ALLOWED', [{ code: 'CONTENT_TYPE_DIFFERS_FROM_INTENT', path: 'Content-Type' }]), null);
+  assert.equal(borrador.motivoDelRechazo('FILE_TYPE_NOT_ALLOWED', [{ code: 'FILE_TYPE_NOT_ALLOWED', path: 'contentType' }]), null, 'lo declarado en la intención');
+  assert.equal(borrador.motivoDelRechazo('FILE_TYPE_NOT_ALLOWED', [{ code: 'FILE_TYPE_NOT_ALLOWED', path: '(body)' }]), 'TIPO');
+  assert.equal(borrador.motivoDelRechazo('FILE_CONTENT_INVALID', [{ code: 'IMAGE_DIMENSIONS_OUT_OF_RANGE', path: '(body)' }]), 'DIMENSIONES');
+  assert.equal(borrador.motivoDelRechazo('FILE_SIZE_NOT_ALLOWED', [{ code: 'FILE_TOO_LARGE', path: '(body)' }]), 'TAMANO');
+  assert.equal(borrador.motivoDelRechazo('VALIDATION_FAILED', [{ code: 'X', path: '(body)' }]), null);
+});
+
+test('4 · el envío con el fetch de la APK (expo/fetch, su código real): bytes conservan el Content-Type, un Blob sin tipo lo pisa', async () => {
+  // Expo 57 instala `expo/fetch` como fetch global (`expo/src/winter/runtime.native.ts`). Su normalización del cuerpo y de
+  // las cabeceras es JS: se transpila y se usa tal cual. Un `file://` le devuelve una respuesta sin Content-Type
+  // (`OkHttpFileUrlInterceptor.kt`), así que el Blob que daba `fetch(uri).blob()` tenía el tipo vacío.
+  const ts = require('typescript');
+  const expo = dirname(createRequire(resolve(RAIZ, 'apps/mobile/package.json')).resolve('expo/package.json'));
+  const cargar = (ruta, modulos) => {
+    const { outputText } = ts.transpileModule(readFileSync(resolve(expo, ruta), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } });
+    const module = { exports: {} };
+    new Function('exports', 'require', 'module', outputText)(module.exports, (m) => modulos[m], module);
+    return module.exports;
+  };
+  const runtime = readFileSync(resolve(expo, 'src/winter/runtime.native.ts'), 'utf8');
+  assert.match(runtime, /install\('fetch', \(\) => require\('\.\/fetch'\)\.fetch\)/, 'el fetch global de la APK es el de Expo');
+  const utils = cargar('src/winter/fetch/RequestUtils.ts', { '../../utils/blobUtils': cargar('src/utils/blobUtils.ts', {}), './convertFormData': {} });
+  const enviado = [];
+  const fetchDeExpo = async (url, init) => {
+    let headers = utils.normalizeHeadersInit(init.headers);
+    const { overriddenHeaders } = await utils.normalizeBodyInitAsync(init.body);
+    if (overriddenHeaders) headers = utils.overrideHeaders(headers, overriddenHeaders);
+    enviado.push(Object.fromEntries(headers.map(([k, v]) => [k.toLowerCase(), v]))['content-type']);
+    return new Response(JSON.stringify({ error: { code: 'FILE_TYPE_NOT_ALLOWED', message: 'x', details: { issues: [] } } }), { status: 422 });
+  };
+  const cliente = d.crearClienteBe({ baseUrl: 'https://api.test/api/v1', superficie: 'APK', fetch: fetchDeExpo });
+  const leida = await borrador.leerLaFoto(FOTO, async () => ({ ok: true, arrayBuffer: async () => JPEG.buffer.slice(0) }));
+  await cliente.subirMedio('/media/uploads/t', leida.bytes, leida.tipo);
+  await cliente.subirMedio('/media/uploads/t', new Blob([JPEG], { type: '' }), 'image/jpeg');
+  assert.deepEqual(enviado, ['image/jpeg', ''], 'con bytes llega el tipo declarado; con el Blob de la candidata llegaba vacío');
 });
 
 test('4 · los estados del guardado se distinguen, y nunca se anuncia «Guardado» antes de tiempo', () => {
@@ -568,8 +657,15 @@ test('7 · la cámara y la galería: el plugin con sus textos en español, sin m
   // La subida va por la intención (API-MED-01) y la ruta firmada (API-MED-02), con los bytes del archivo, y después el
   // registro (API-ING-02) con el comando único.
   const subir = DIFERENTE.slice(DIFERENTE.indexOf('async function subirLaFoto('), DIFERENTE.indexOf('async function guardar('));
-  assert.ok(subir.indexOf('leerBytes(') < subir.indexOf('api.crearIntencionDeSubida(') && subir.indexOf('api.crearIntencionDeSubida(') < subir.indexOf('api.subirMedio('));
+  assert.ok(subir.indexOf('leerLaFoto(') < subir.indexOf('api.crearIntencionDeSubida(') && subir.indexOf('api.crearIntencionDeSubida(') < subir.indexOf('api.subirMedio('));
   assert.match(subir, /purpose: 'MEAL_EVIDENCE'/);
+  // Los bytes con su tipo real, nunca un Blob (defecto de la 0.15.0-candidata.1: expo/fetch pisaba el Content-Type).
+  assert.match(subir, /contentType: leida\.tipo, byteSize: leida\.bytes\.byteLength/);
+  assert.match(subir, /api\.subirMedio\(ruta\.uploadPath, leida\.bytes, leida\.tipo\)/);
+  assert.doesNotMatch(DIFERENTE, /\.blob\(\)/);
+  // El tipo por los bytes cuenta con que el selector vuelva a codificar la imagen: la calidad tiene que ser menor que 1.
+  const calidad = Number(/quality: ([\d.]+)/.exec(DIFERENTE)?.[1]);
+  assert.ok(calidad > 0 && calidad < 1, `quality ${calidad}`);
   assert.match(DIFERENTE, /await registrarComida\(token, `\$\{intentoDeLaComida\(token, fecha, comidaId\)\}\|diferente`, cuerpo\)/);
 });
 
