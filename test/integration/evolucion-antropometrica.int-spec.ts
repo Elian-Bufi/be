@@ -13,6 +13,7 @@
  */
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { diferenciaDescriptiva, EvolucionResponseSchema, grupoVigente, observacionesDelGrupo, observacionPorId, prepararSerie, resumenDeObservacion, type EvolucionResponse } from '@be/domain';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { CATALOGO_DEMO, circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
@@ -122,6 +123,32 @@ describe('Evolución antropométrica visual · la presentación conserva lo que 
     expect(diferenciaDescriptiva(enKg!, enLb!)).toBeNull();
     // Un grupo que ya no existe cae al vigente: nunca queda un filtro obsoleto.
     expect(grupoVigente(serie, 'cmp-inexistente')).toBe(vigente);
+  });
+
+  it('TEST-RF-049 · EA1 y EA2 dan una diferencia descriptiva de 0,5 kg; EA3, en otra unidad, no se compara; el día sin toma es SIN_DATO; sin autorización, el mismo 404; y nada de puntaje', async () => {
+    const c = await circuitoAntropometrico(app, prisma, `evo-${++contador}`);
+    await registrada(c, haceDias(15), [medicion('peso', 72.5, 'kg')]);
+    await registrada(c, haceDias(8), [medicion('peso', 73, 'kg')]);
+    await registrada(c, haceDias(1), [medicion('peso', 161, 'lb')]);
+    // `evolucion` valida con el esquema estricto: si la respuesta trajera un puntaje u otro campo, la prueba falla ahí.
+    const datos = await evolucion(c, 20);
+    const peso = datos.metrics.find((m) => m.metricCode === 'peso')!;
+    const [ea1, ea2, ea3] = prepararSerie(peso, datos.period.timeZone).observaciones;
+    expect(diferenciaDescriptiva(ea1!, ea2!)).toEqual({ delta: 0.5, unidad: 'kg', dias: 7 });
+    // Otra unidad es otra serie: se marca como no comparable y no se fabrica una diferencia.
+    expect(ea3!.punto.incomparableWithPrevious).toContain('UNIT');
+    expect(diferenciaDescriptiva(ea2!, ea3!)).toBeNull();
+    expect(peso.gaps.length).toBeGreaterThan(0);
+    expect(peso.gaps.every((h) => h.state === 'NO_DATA' && !('value' in h))).toBe(true);
+    expect(JSON.stringify(datos)).not.toMatch(/"(score|healthScore|puntaje|grade|rating)"/i);
+
+    // Un profesional con vínculo propio en Nutrición, pero sin la capacidad antropométrica: el mismo 404 que lo inexistente.
+    const nutricionista = await prepararProfesional(app, `evo-nut-${contador}`, ['NUTRICION']);
+    await vinculoCompleto(app, nutricionista, c.ase, 'NUTRICION');
+    const ruta = (id: string) => `/api/v1/advisees/${id}/anthropometry/progress`;
+    const denegada = await conSesion(app, nutricionista.token).get(ruta(c.ase.id)).expect(404);
+    const inexistente = await conSesion(app, nutricionista.token).get(ruta(randomUUID())).expect(404);
+    expect(denegada.body).toEqual(inexistente.body);
   });
 
   it('con evaluaciones de otro profesional, la vista es parcial y esas observaciones no llegan', async () => {

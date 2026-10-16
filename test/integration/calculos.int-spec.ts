@@ -11,6 +11,7 @@
  * - el cálculo **no crea** objetivo ni prescripción, y la respuesta no dice que lo haya hecho (TEST-CAL-007).
  */
 import type { INestApplication } from '@nestjs/common';
+import { CorridaResponseSchema, ejecutar } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
@@ -228,6 +229,57 @@ describe('API-CAL-02/03 — las corridas coexisten (REG-06-205)', () => {
     expect(Object.keys(lista.body)).toEqual(['data', 'page']);
   });
 
+  it('TEST-DOM-005 · otra corrida sobre las mismas entradas es una corrida nueva, y la anterior queda como estaba (REG-06-205)', async () => {
+    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const ruta = `/api/v1/advisees/${c.ase.id}/calculations`;
+    const cuerpo = { purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: CATALOGO_DEMO.metodo.v2, inputBindings: bindings(porMetrica) };
+    const clave = claveDeIdempotencia();
+    const primera = (await pro.post(ruta, clave).send(cuerpo).expect(201)).body.data;
+    const segunda = (await pro.post(ruta).send(cuerpo).expect(201)).body.data;
+    expect(segunda.calculationRunId).not.toBe(primera.calculationRunId);
+    expect(segunda.supersedesRunId).toBeNull();
+    // Reintentar con la misma clave devuelve la primera: no hay una tercera.
+    const reintento = await pro.post(ruta, clave).send(cuerpo);
+    expect(reintento.body.data.calculationRunId).toBe(primera.calculationRunId);
+
+    // La primera, releída, es la misma: resultado, entradas y momento de registro.
+    const campos = (x: Record<string, unknown>) => ({ result: x.result, inputProvenance: x.inputProvenance, recordedAt: x.recordedAt, methodVersionId: x.methodVersionId });
+    const releida = (await pro.get(`/api/v1/calculations/${primera.calculationRunId}`).expect(200)).body.data;
+    expect(campos(releida)).toEqual(campos(primera));
+    expect(await prisma.ejecucionDeCalculo.count({ where: { id: { in: [primera.calculationRunId, segunda.calculationRunId] } } })).toBe(2);
+  });
+
+  it('TEST-RF-048 · una corrida histórica se reproduce con lo que guarda, y dice qué método y qué profesional la hicieron, sin diagnóstico', async () => {
+    // El escenario de TEST-CAL-001 (parte 2): un método propio con v1, y después se publica una v2 con otra precisión.
+    const metodoId = randomUUID();
+    const v1 = randomUUID();
+    const contenido = (decimales: number) =>
+      `{"finalidades":["SOPORTE_ANTROPOMETRICO"],"entradas":[{"codigo":"PESO","metrica":"peso","unidadesAdmitidas":["kg"],"procedenciasAdmitidas":["CAPTURA_DIRECTA"]},{"codigo":"TALLA","metrica":"talla","unidadesAdmitidas":["m"],"procedenciasAdmitidas":["CAPTURA_DIRECTA"]}],"salida":{"metrica":"indice-demo","unidad":"kg/m2"},"precision":{"decimales":${decimales},"modo":"MEDIO_ARRIBA"},"regla":"demo/peso-sobre-talla-cuadrado@1"}`;
+    const version = (id: string, previa: string | null, numero: string, decimales: number) =>
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "version_de_especificacion_antropometrica" ("id","especificacion_id","predecesora_id","version","nombre","contenido","procedencia")
+         VALUES ('${id}','${metodoId}',${previa ? `'${previa}'` : 'NULL'},'${numero}','Método reproducible v${numero} (demostración)','${contenido(decimales)}','{"rotulo":"Método sintético de demostración."}')`,
+      );
+    await prisma.$executeRawUnsafe(`INSERT INTO "especificacion_antropometrica" ("id","clave","tipo") VALUES ('${metodoId}','MET-REPRODUCIBLE-'||left('${metodoId}',8),'METODO')`);
+    await version(v1, null, '1', 3);
+    const { porMetrica } = await evaluacionRegistrada([medicion('peso', 72.5, 'kg'), medicion('talla', 1.75, 'm')]);
+    const corrida = (await pro.post(`/api/v1/advisees/${c.ase.id}/calculations`).send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: v1, inputBindings: bindings(porMetrica) }).expect(201)).body.data;
+    await version(randomUUID(), v1, '2', 1);
+
+    // Releída con la v2 ya publicada, la corrida valida contra el contrato estricto: no tiene ningún campo de más.
+    const historica = CorridaResponseSchema.parse((await pro.get(`/api/v1/calculations/${corrida.calculationRunId}`).expect(200)).body).data;
+    expect({ version: historica.methodVersionId, numero: historica.methodVersion, autor: historica.author.identityId }).toEqual({ version: v1, numero: '1', autor: c.pro.id });
+    expect(historica.methodName).toBe('Método reproducible v1 (demostración)');
+    // Con la regla, la precisión y las entradas que guarda, el resultado se vuelve a obtener exacto.
+    const modo = { HALF_UP: 'MEDIO_ARRIBA', DOWN: 'ABAJO', UP: 'ARRIBA' }[historica.precision.rounding];
+    const metodo = { regla: historica.ruleId, precision: { decimales: historica.precision.decimals, modo }, salida: { metrica: historica.result.metric, unidad: historica.result.magnitude.unit } };
+    const entradas = historica.inputProvenance.map((i) => ({ metrica: i.metric, magnitud: { valor: i.magnitude!.value, unidad: i.magnitude!.unit } }));
+    expect(ejecutar(metodo as never, entradas as never)).toMatchObject({ ok: true, magnitud: { valor: historica.result.magnitude.value } });
+    expect(historica.result.magnitude.value).toBe(23.673);
+    // Ninguna clave de la corrida la presenta como diagnóstico, riesgo o causa.
+    expect(JSON.stringify(Object.keys(historica))).not.toMatch(/diagn|risk|riesgo|cause|causa|interpret/i);
+  });
+
   it('TEST-CAL-001 (parte 2): publicar una versión nueva no reescribe la corrida ya hecha', async () => {
     // Un método propio de esta prueba, para publicarle una versión nueva sin tocar el catálogo del resto: las
     // versiones son append-only, así que una vez publicada no se puede deshacer (06 §4.4).
@@ -368,7 +420,7 @@ describe('API-CAL-02/03 — las corridas coexisten (REG-06-205)', () => {
 });
 
 describe('API-CAL-04 — adoptar una referencia es una relación (REG-06-207)', () => {
-  it('TEST-CAL-006: adoptar, reemplazar y volver a adoptar dejan historia y no tocan las corridas', async () => {
+  it('TEST-CAL-006: adoptar, reemplazar y volver a adoptar dejan historia y no tocan las corridas (TEST-DOM-006)', async () => {
     const propio = await circuitoAntropometrico(app, prisma, 'referencia');
     const suyo = conSesion(app, propio.pro.token);
     const corridaCon = async (peso: number) => {
