@@ -1410,6 +1410,172 @@ escritura), «guardar no escribe nada» (corregido, escribe una vez), «“Volve
 `antes-y-ahora-1440-claro.png`, `resumen-de-las-corridas.txt` y `resultados/` (los resultados de los dos recorridos de
 los editores, los veredictos de las roturas y las roturas de las reglas).
 
+## Parte 9 · Antropometría · Cargar una toma sobre la figura (2026-10-15)
+
+**La carga de una toma recompuesta (maqueta 23; C-60).** La maqueta dibujaba solo la mitad de los perímetros: los
+pliegues se dibujaron antes de programar (`parte-9/antes-de-programar/`, tres maneras de repartir los campos) y se
+programó la propuesta «b». **Dirección todavía no validó ese dibujo:** cambiar el reparto es cambiar una tabla
+(`TARJETAS_DE_LA_CARGA`), no la pantalla.
+
+**Qué cambió.** La carga era una lista de 30 campos por familia, con una silueta dibujada para BE al costado (de frente y
+de espalda, con puntos que llevaban al campo) y la barra de guardar fija al pie. Ahora **la figura de Dirección —la de la
+Lámina y del teléfono— tiene cada campo unido a su sitio por una guía**, de a una familia (perímetros o pliegues) y con
+la figura de hombre o de mujer; **con dato o sin dato se distingue por la forma,** con un solo color; los dos pliegues
+de la cara de atrás van en gris y lo dicen con una palabra; **arriba, en un renglón que queda a la vista, el estado del
+guardado y un solo botón lleno;** a la derecha, los datos de la toma y lo que el protocolo declara sin sitio en la figura
+(masa y estatura, diámetros, la edad), con «Agregar otra medición» para lo que no declara. Es otra composición de lo
+mismo: **no se agregó ni se quitó ninguna operación,** y lo que se manda al guardar es lo de siempre. No cambian la API,
+la base ni la APK. Sobre la base propia (`be_test_escritorio`) y la compilación estática del código de esta parte
+(`7ceee6f`).
+
+**Tres cosas de antes, corregidas (bajas).**
+- **«Cambios sin guardar» se encendía con tocar un campo,** aunque se volviera a lo mismo, y «Actualizar» preguntaba
+  igual. Ahora compara lo escrito con lo guardado.
+- **Una toma en preparación sin mediciones perdía su momento en pantalla:** se reconstruía desde la primera medición.
+  Ahora se lee de la toma. Esta segunda no tiene comprobación en pantalla: el recorrido guarda siempre con mediciones.
+- **Los rechazos de la API que se pueden explicar decían «El servicio no está disponible en este momento»,** como si
+  BE estuviera caído: una fecha de toma futura, corregir una medición anulada, un método al que le faltaba un dato.
+  Ahora cada uno dice su motivo; la fecha futura, además, se dice en su campo antes de escribir nada (F-138).
+
+**Medido en la página real,** con las cuentas descartables (la toma del perfil completo registrada, ninguna en
+preparación), el «Perfil antropométrico completo» elegido y nada escrito. El «antes» es la pantalla de la parte 10
+(`1724bc8`) compilada sobre el código de hoy y capturada con los mismos datos:
+
+| Alto de la página | Antes | Ahora |
+|---|---|---|
+| A 1440 × 900 | 3.034 px | 1.287 px |
+| A 1280 | 3.034 px | 1.333 px |
+| A 1024 | 3.034 px | 1.634 px |
+| Dónde se escribe cada medición | En una lista por familia, lejos de la figura (tocar un punto llevaba al campo) | En una tarjeta al costado de la figura, unida a su sitio |
+| Los pliegues de la cara de atrás | En una segunda silueta, de espalda | Sobre el frente, en gris, con la palabra «posterior» |
+| Guardar y registrar | En una barra fija al pie | Arriba, con el estado, y un solo botón lleno |
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| La carga sigue la maqueta 23: «Nueva toma», la cuenta del protocolo y «No es historia hasta que la registres.», el estado y «Guardar», el único lleno; «Perímetros 0 de 13» elegido, «Pliegues 0 de 11» y la figura de hombre; a 1440 la escena mide 880 × 632 y los datos 448, al lado (F-125) | `recorrido.mjs carga` (17 comprobaciones), en las cuentas descartables con la toma completa | Pasa | Verificado en pantalla |
+| Ningún sitio se mueve: en las dos figuras y en las dos familias, cada sitio queda a menos de 0,6 px de donde lo ponen las cuentas del dominio sobre la caja real de la imagen (440 × 660, la de cada figura), y no hay ninguno de más (F-126) | Lo mismo, midiendo en la página | Pasa: 13 perímetros y 11 pliegues en cada figura | Verificado en pantalla |
+| Cada campo está unido a su sitio (la guía sale del borde de la tarjeta a la altura del campo y llega al borde del sitio) y ninguna guía se cruza, en las cuatro combinaciones; el tronco a la derecha en perímetros, y solo el subescapular y el abdominal en pliegues; el foco recorre los perímetros en el orden exacto del protocolo (F-129) | Lo mismo | Pasa | Verificado en pantalla |
+| Los dos pliegues de la cara de atrás lo dicen tres veces: el sitio en gris, la guía punteada y «posterior» en el campo, con el nombre completo para el lector («Pliegue tricipital, posterior»); la leyenda dice las tres formas y los dos pares que casi coinciden (F-128) | Lo mismo | Pasa | Verificado en pantalla |
+| Escribir la cintura cambia la forma de su anillo (entero y punteado → la mitad de adelante llena) y no su color; suben «Perímetros 1 de 13» y la cuenta del título; aparece «Cambios sin guardar»; el sitio del campo con el foco lleva el halo (F-127) | Lo mismo | Pasa | Verificado en pantalla |
+| Tocar el sitio del abdominal (a la derecha) y el de la pantorrilla (a la izquierda) lleva el foco a su campo (F-130) | Lo mismo, con el mouse | Pasa | Verificado en pantalla |
+| Con «1.850» en el tricipital y Perímetros a la vista, «Guardar» no escribe nada; el aviso lista el campo y su enlace elige Pliegues (en la dirección), lleva el foco al tricipital y lo muestra marcado, con el motivo debajo (F-133) | Lo mismo | Pasa | Verificado en pantalla |
+| Guardar escribe una sola vez y manda lo escrito en las dos familias (la cintura en cm y el tricipital en mm, leídos después en la API); queda «Toma en preparación» con «Borrador» y «Guardado · …», el lleno pasa a «Registrar toma», y la familia y la figura elegidas siguen igual (F-132) | Lo mismo, en la cuenta descartable | Pasa | Verificado en pantalla |
+| Escribir el peso vuelve a «Cambios sin guardar»; borrarlo deja todo como estaba y vuelve a «Guardado · …» (F-132) | Lo mismo | Pasa | Verificado en pantalla |
+| «Fuera de la figura» tiene lo que el protocolo declara sin sitio: «Masa y estatura · 1 de 2», «Diámetros · cm · 0 de 3» con los nombres cortos y la edad en «Otras mediciones del protocolo · años · 0 de 1» (F-134) | Lo mismo | Pasa | Verificado en pantalla |
+| Con una fecha futura en «Cuándo se tomó», «Guardar» no escribe nada: el aviso dice «Cuándo se tomó: La fecha de la toma no puede ser futura.» y lleva hasta el campo, que queda marcado con el motivo (antes, «El servicio no está disponible»); el campo no ofrece fechas posteriores a este minuto (F-138) | `recorrido.mjs carga` | Pasa | Verificado en pantalla |
+| Los rechazos de la API que se pueden explicar dicen su motivo, y la fecha futura va a su campo; lo desconocido, la falta de red y el éxito no tienen texto propio; ningún texto deja ver un código ni dice que el servicio no está disponible (F-138) | `scripts/rechazos-de-antropometria.test.mjs` (5) | Pasan | Verificado automáticamente |
+| Con el «Protocolo de laboratorio» (peso y talla, sin sitios en la figura) no hay escena: los datos de la toma y sus mediciones van lado a lado, a todo el ancho, y lo escrito en la figura pasa a fuera del protocolo sin perderse; con el «Perfil» de nuevo, vuelve a sus campos (F-131) | Lo mismo | Pasa | Verificado en pantalla |
+| A 1280 la escena conserva 832 px y los datos se angostan al lado; a 1024 la escena ocupa el ancho y los datos van debajo; a 768 y 390, lista sin la figura; ningún ancho se desborda de costado (F-135) | Lo mismo, a cinco anchos | Pasa | Verificado en pantalla |
+| Axe no encuentra nada en la carga, en Claro y en Azul noche (F-136) | Lo mismo | Pasa | Verificado en pantalla |
+| Registrar desde la carga vuelve a «Tomas» con esa toma abierta y el aviso a la vista, con los botones de arriba (F-35, de la parte 3) | `recorrido.mjs mediciones`, adaptado a los botones nuevos | Pasa: 18 de 18 | Verificado en pantalla |
+| La composición: ningún sitio se mueve a ningún ancho, cada sitio tiene su campo una vez y del lado decidido, las tarjetas no se pisan ni bajan hasta la leyenda, ninguna guía se cruza, el orden del documento es el del protocolo y una fila que crece agranda su tarjeta | `scripts/composicion-de-la-carga.test.mjs` (7), con 13 roturas | Pasan; las 13 roturas, detectadas | Verificado automáticamente |
+| Los colores nuevos de la figura llegan a 3:1 contra el maniquí (su tono más oscuro, medido en las dos imágenes) y contra la escena, en los dos temas | `scripts/contraste.test.cjs`, con siete pares nuevos en lugar de los cuatro de la silueta | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de esta parte | La pasada completa del 15/10 (07:34 a 08:28, sobre `7ceee6f`): R capturas 60/60, funcional 324/324, descartable 22, mediciones 18, carga 15 (la comprobación 16, de un protocolo sin sitios en la figura, se sumó después: 16 de 16 sobre el código final), planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación 6. Solicitudes dio 20 de 32: la lista no se llegó a leer al entrar (cero pedidos a la API) y fallaron las doce comprobaciones que dependían de ella; lo demás pasó, también enviar dos solicitudes. Repetida enseguida, sola y con datos nuevos: 32 de 32 (`resultados/pasada-completa.txt`) | Verificado en pantalla |
+| Toda la batería de la CI | La CI de GitHub sobre el commit de código | En verde la corrida 38720978357, sobre `7ceee6f`: el legajo, la batería completa (typecheck, unit, build y audit), la integración y la imagen de la API | Verificado automáticamente |
+| La pantalla en sus estados: pliegues y perímetros con la figura de mujer y perímetros con la de hombre (1440, en los dos temas), y 1280, 1024, 768 y 390; y los otros dos protocolos del escenario («Pliegues y perímetros», con 6 y 8 sitios, y el de laboratorio, antes y después del arreglo) | `recorrido.mjs carga` (las capturas del final) y `mirar-carga.mjs` (el antes y el ahora, con los mismos datos; con otro protocolo, una variante que lo elige) | 28 capturas, y el antes y el ahora lado a lado | Observado en una captura real |
+
+Las comprobaciones negativas van con una positiva: «Guardar no escribe con un valor ilegible» (después, con el valor
+corregido, escribe una vez), «el color no cambia al escribir» (la forma sí), «a 768 no está la figura» (a 1024 sí) y
+«a la derecha, en pliegues, solo dos» (los demás, a la izquierda, contados).
+
+**La prueba de la prueba** (protocolo liviano del 14/10: la pantalla, solo en lo crítico).
+- **La composición, rota de a una regla:** 13 mutaciones de `composicion-de-la-carga.ts` —sitios corridos, anillos más
+  chicos, la imagen sin centrar, un campo que falta, una tarjeta del lado equivocado, la leyenda ignorada, dos guías que
+  se cruzan, la guía que sale o llega donde no debe, el documento por columnas, una fila que crece sin agrandar su
+  tarjeta, un pliegue posterior que no lo dice y una tarjeta vacía—, cada una contra su prueba en una copia. **Las 13,
+  detectadas** (`resultados/roturas-de-la-composicion.txt`).
+- **La pantalla, rota a propósito y compilada así,** en una tanda sobre `carga`, con tres roturas en lo que no se puede
+  romper: la figura que califica (un sitio con dato cambia de color), «Guardar» que no manda los pliegues y el aviso que
+  no lleva al campo de la otra familia. **Las tres, notadas, y ninguna otra comprobación falló**
+  (`resultados/compilacion-rota.txt`). La tercera habría cortado el recorrido (el campo que sigue no estaba en la
+  pantalla): antes de la tanda, el recorrido elige la familia por su cuenta y sigue.
+
+**Lo que mostraron las capturas y las primeras corridas.**
+- **A 1280 la figura pasaba a lista:** la columna de la escena medía 832 px con la tarjeta, y la escena, 798. Ahora la
+  columna cuenta el relleno y el borde de la tarjeta (866 px) y los datos se angostan hasta 320.
+- **«Medición del profesional» no entraba en su campo** con los datos de la toma en dos columnas: van uno debajo del
+  otro.
+- **«0 de 1» se partía en dos renglones** en el título de una familia, a 1280: las partes bajan enteras (`EnPartes`).
+- **«‹ Tomas» ocupaba un renglón propio:** va en el renglón del título, como en la maqueta.
+- **A 390, el control de las familias cortaba «0 de 11»:** en un teléfono los segmentos se achican.
+- **Con un protocolo sin sitios en la figura, los datos quedaban en la columna de la figura y la derecha, vacía:** se
+  vio mirando los otros dos protocolos del escenario, que ninguna prueba miraba. Ahora van lado a lado, a todo el ancho,
+  y el recorrido lo comprueba. Con «Pliegues y perímetros» (6 y 8 sitios) la figura dibuja solo los suyos.
+- **La leyenda va abajo a la derecha,** no a la izquierda como en el dibujo: de ese lado sobra lugar debajo de las
+  tarjetas del tronco, y a la izquierda la pila de pliegues no entraba sobre una leyenda de cinco renglones.
+
+**Lo que pasó con la máquina.** Una corrida de `mediciones` se cortó al entrar en «Tomas», antes de llegar a la carga
+(la página no terminó de cargar, con 400 a 700 MB libres); repetida enseguida, pasó entera (18 de 18). En la pasada
+completa, «Solicitudes» (de la parte 4, que esta parte no toca) no llegó a leer su lista al entrar; repetida sola, con
+datos nuevos, pasó entera (32 de 32).
+
+**Límites, dichos.**
+- **El reparto de los pliegues y los dos sitios que ubicó BE** (bicipital y cresta ilíaca) esperan la validación de
+  Dirección (F-128; §6).
+- **Solo el cuerpo entero:** la carga no ofrece los encuadres de tren superior e inferior, que siguen en la Lámina.
+- **En el dominio quedan la silueta vieja y sus pruebas,** sin uso (F-136; §6).
+- **Sin teléfono ni lector de pantalla reales:** el foco, los nombres accesibles y el orden se comprobaron con el
+  navegador y con axe. 768 y 390 px se miraron para que no se rompa.
+
+**Dónde está.** `EVIDENCIA/ESCRITORIO-AREAS/parte-9/carga/`: `antes/`, `ahora/`, `antes-y-ahora-1440-claro.png`,
+`del-recorrido/` y `resultados/` (los resultados de los recorridos, las roturas de la composición y el veredicto de la
+tanda rota).
+
+## Pasada de estética previa a la integración (2026-10-15)
+
+**A pedido de Dirección, antes de integrar:** se capturaron las 18 pantallas que entran con la integración (el Espacio
+profesional, las tres vistas de la ficha y las secciones de las cuatro áreas, más «Plantillas y habituales»), a 1440 y en
+los dos temas, y se miraron contra las maquetas y la guía. Las recompuestas por este paquete se ven parejas entre sí: el
+mismo marco, el mismo encabezado de sección (título, una frase y la acción o el período a la derecha) y los mismos
+controles. Se refinaron tres cosas (F-139 a F-141; código en `5d836c1`):
+- **Las etiquetas de estado,** con la forma de las maquetas: «Borrador» era una píldora en los editores y una etiqueta en
+  la carga de una toma.
+- **«Cómo se lee esta vista» en Evolución y Lámina,** en el marco, como en las demás secciones.
+- **Evolución, al ancho de las otras secciones de Antropometría,** con el período y la métrica a su medida.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Las pantallas refinadas: Evolución, su ayuda y la de la Lámina, el editor de Entrenamiento con «Borrador» y la revisión nueva, a 1440 | `ver.mjs` sobre los datos del día, mirando cada captura | Como se describe arriba | Observado en una captura real |
+| El resto del website sigue funcionando | La pasada completa de los recorridos, sobre la compilación de `5d836c1` | La pasada completa del 15/10 (09:36 a 10:32): R capturas 60, funcional 323 de 324, descartable 22, mediciones 18, carga 17, solicitudes 32, planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación 5 de 6. La de la funcional (F-14) afirmaba que Evolución no tiene ayuda, y ahora la tiene a propósito: se reescribió con una sección que sigue sin ayuda (el Resumen de Nutrición) y la positiva de Evolución, y `tomas` dio 24 de 24. La de la revocación (CP-23, los gráficos de Analizar después de revocar), repetida sola con datos nuevos: 6 de 6 | Verificado en pantalla |
+| Toda la batería de la CI | La CI de GitHub sobre el commit | En verde la corrida 38744400327, sobre `5d836c1`: el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
+
+**La crítica de diseño, aplicada antes de integrar.** Un revisor aparte, con el rol de director de diseño, miró las
+mismas capturas y dejó su opinión (`pasada-de-estetica/critica-de-diseno.md`). Dirección pidió aplicarla antes de
+integrar, también donde contradecía la paleta de Azul noche (F-142 a F-147; código en `e30009f` y `ff91adb`):
+- **Menos volumen:** un solo botón secundario (borde de 1 px gris medio, texto en peso 600), píldoras y etiquetas más
+  livianas, y el peso 700 solo para títulos y cifras grandes.
+- **El texto secundario de Azul noche, gris azulado** (`#a3b1c2`): el celeste se confundía con los enlaces.
+- **Sin rastros del navegador:** las listas desplegables y los desplegables, con la flecha de BE.
+- **Evolución, completa:** el control de período de las otras secciones, el azul de los datos, un eje parejo, las fechas
+  sin el año, la unidad derecha, la leyenda con las tres formas y el párrafo técnico solo para el lector de pantalla.
+- **Un botón apagado, gris neutro, y uno solo lleno en los editores.**
+- **Detalles:** la toma elegida, los estados vacíos, la barra de la revisión nueva, la Lámina (botonera pegada, al
+  ancho, y su ayuda sin «compositor de Dirección») y Plantillas.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Las pantallas, en los dos temas, a 1440 | `ver.mjs` sobre los datos del día, mirando cada captura | Como se describe arriba | Observado en una captura real |
+| Los colores nuevos llegan al contraste: el texto secundario de Azul noche, 4,5:1 o más sobre el fondo, las tarjetas y el fondo suave | `scripts/contraste.test.cjs` | Pasa | Verificado automáticamente |
+| El resto del website sigue funcionando | La pasada completa de los recorridos | La pasada completa del 15/10 (11:35 a 12:22), sobre `e30009f`: R capturas 60, descartable 22, mediciones 18, carga 17, solicitudes 32, planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación 6. La funcional de R, con la máquina corta de memoria, se cortó dos veces por el entorno (la base venció transacciones; una lectura no llegó a cargar) y la tercera, entera, dio 321 de 324: el marco medía 139,48 px y se redondeaba distinto según desde dónde se lo midiera (F-06), y E-47 esperaba los 143 de antes. Corregido en `ff91adb` (renglones de píxeles enteros: 140): R capturas 60 de 60, el marco de las áreas 21 de 21 y Analizar 44 de 44, y la funcional entera 322 de 324, con una lectura del acceso de Entrenamiento que no llegó a cargar (F-01 y, por su aviso, F-06), que pasaron en el modo del marco. Una primera corrida, a las 11:02, la cortó Claude Code por falta de memoria a los 2 de 14 | Verificado en pantalla |
+| Toda la batería de la CI | La CI de GitHub sobre el commit | En verde las corridas 38751316644 (sobre `e30009f`) y 38766974568 (sobre `ff91adb`): el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
+
+**Lo que queda, con su razón** (en §6 de la definición; la crítica, entera, en `pasada-de-estetica/critica-de-diseno.md`):
+- **Choca con algo ya decidido, para que decida Dirección:** el Resumen de la ficha más corto (sus frases las pidió la
+  pasada de comprensión y las fijan sus comprobaciones); el acceso como «Activo» en la primera fila («Activo · acceso
+  contextual» lo pide el legajo: B10-04, §28); la Línea de tiempo con todos los días en tarjeta y sin la barrita de los
+  hitos (así la dibuja la maqueta 02, validada); «Asesorado ·» repetido en «Tus asesorados» (el alias de DL-040). Los
+  íconos —el de cada métrica en Analizar y el del protocolo— se quedan: lo decidió Dirección el 15/10.
+- **Pide más que estilo, para después de integrar:** las fechas escritas con un control propio (su accesibilidad hay que
+  verificarla; la del nativo viene resuelta); los cuadros de texto sin la marca para agrandarlos; un mismo espacio entre
+  tarjetas y entre secciones (mueve el alto de todas las pantallas); el estado vacío y la pestaña única de Información;
+  las plantillas del Plan de Nutrición en un menú y la «Huella de la instantánea» (un dato de trazabilidad); «Abrir»
+  como enlace en «Pendientes» y como botón en «Tus asesorados»; y «Plantillas y habituales», «Mis recetas» y «Mis
+  ejercicios», que conservan el diseño anterior (centrado, con migas y un título grande).
+- **No es del website:** el «cm» chico de la vista previa de la Lámina (la imagen a escala; la que se descarga lo tiene a
+  su tamaño).
+- **El Resumen de Nutrición y el de Entrenamiento** conservan su diseño anterior (tarjetas apiladas a 72 rem, las
+  acciones al pie y sin «Cómo se lee esta vista»): no tienen maqueta.
+
 ## Parte 10 · Preparar revisión (2026-10-15)
 
 **La revisión nueva recompuesta (maqueta 06; C-14 y C-15), en Nutrición y en Entrenamiento.** La maqueta está dibujada

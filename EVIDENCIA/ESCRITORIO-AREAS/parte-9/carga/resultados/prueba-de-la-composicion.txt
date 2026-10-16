@@ -1,0 +1,56 @@
+TAP version 13
+# (node:23092) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/bufim/BE-Best-entrenamiento/apps/web/src/app/pro/advisees/anthropometry/composicion-de-la-carga.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to C:\\Users\\bufim\\BE-Best-entrenamiento\\apps\\web\\package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: ningún sitio se mueve: cada uno queda donde lo ponen las cuentas de la lámina, a cualquier ancho
+ok 1 - ningún sitio se mueve: cada uno queda donde lo ponen las cuentas de la lámina, a cualquier ancho
+  ---
+  duration_ms: 14.9688
+  type: 'test'
+  ...
+# Subtest: cada sitio que el protocolo declara tiene su campo, una sola vez, y del lado decidido
+ok 2 - cada sitio que el protocolo declara tiene su campo, una sola vez, y del lado decidido
+  ---
+  duration_ms: 7.2741
+  type: 'test'
+  ...
+# Subtest: las tarjetas no se pisan, quedan dentro de la escena y no bajan hasta la leyenda
+ok 3 - las tarjetas no se pisan, quedan dentro de la escena y no bajan hasta la leyenda
+  ---
+  duration_ms: 7.7564
+  type: 'test'
+  ...
+# Subtest: ninguna guía se cruza con otra, en las dos figuras y en las dos familias, y cada una va de su campo a su sitio
+ok 4 - ninguna guía se cruza con otra, en las dos figuras y en las dos familias, y cada una va de su campo a su sitio
+  ---
+  duration_ms: 10.7578
+  type: 'test'
+  ...
+# Subtest: dentro de cada tarjeta los campos van en el orden decidido: solo dos sitios a la misma altura cambian de fila entre sí; el documento va en el orden del protocolo
+ok 5 - dentro de cada tarjeta los campos van en el orden decidido: solo dos sitios a la misma altura cambian de fila entre sí; el documento va en el orden del protocolo
+  ---
+  duration_ms: 5.1268
+  type: 'test'
+  ...
+# Subtest: una fila que crece agranda su tarjeta y la guía de las de abajo sigue saliendo de su campo
+ok 6 - una fila que crece agranda su tarjeta y la guía de las de abajo sigue saliendo de su campo
+  ---
+  duration_ms: 1.0866
+  type: 'test'
+  ...
+# Subtest: el trazo de una guía y los arcos de un anillo
+ok 7 - el trazo de una guía y los arcos de un anillo
+  ---
+  duration_ms: 0.5066
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 817.7367

@@ -38,6 +38,7 @@ import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { motivoDelRechazo } from './rechazos-de-antropometria';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { useAntropometria } from './antropometria';
 import { Marca } from './marca';
@@ -99,7 +100,7 @@ export function DetalleDeMedicion({
     if (sesionPerdida(res) || accesoRetirado(res)) return setEnviando(false);
     if (!res.ok) {
       setEnviando(false);
-      return setError(mensajeDeFallo(res));
+      return setError(motivoDelRechazo(res)?.texto ?? mensajeDeFallo(res));
     }
     await onHecho(C.correccionHecha);
     setEnviando(false);
@@ -116,7 +117,7 @@ export function DetalleDeMedicion({
     if (sesionPerdida(res) || accesoRetirado(res)) return setEnviando(false);
     if (!res.ok) {
       setEnviando(false);
-      return setError(mensajeDeFallo(res));
+      return setError(motivoDelRechazo(res)?.texto ?? mensajeDeFallo(res));
     }
     await onHecho(res.datos.data.alreadyAnnulled ? C.yaAnulada : C.anulacionHecha);
     setEnviando(false);

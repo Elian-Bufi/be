@@ -1,6 +1,10 @@
 # Parte 9 · Cargar una toma sobre la figura: los pliegues, antes de programar
 
-**Estado: propuesta, a validar por Dirección. Nada de esto está programado.**
+**Estado: propuesta, a validar por Dirección.** El 2026-10-15 se programó la propuesta «b» (parte 9, PR #158; F-128):
+la pantalla está en `../carga/`. Cambiar el reparto es cambiar una tabla (`TARJETAS_DE_LA_CARGA`, en
+`apps/web/src/app/pro/advisees/anthropometry/composicion-de-la-carga.ts`); mover un sitio, el dato de
+`figura-de-lamina.ts`, que comparten la Lámina y el teléfono. La leyenda quedó abajo a la derecha, no a la izquierda
+como en este dibujo: de ese lado sobra lugar.
 
 La maqueta 23 (`EVIDENCIA/ESCRITORIO-AMABLE/diseno/maquetas/claro/23-cargar-una-toma.png`) dibuja la carga de una toma
 con la mitad de «Perímetros». La otra mitad, «Pliegues», figura solo como un botón («Pliegues 0 de 11»). La definición

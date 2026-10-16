@@ -163,6 +163,11 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   `#f2f6fc`, tarjetas blancas y azul `#1e6bf2`; «Azul noche», fondo `#011325`, tarjetas `#052238` y cian `#27d5f9`.
   En Claro, el website lleva cuatro colores de texto (secundario, enlace, error y éxito) un punto más oscuros que los
   medidos: los pone también sobre el velo azul de la cara pública, donde el valor medido no llegaba a 4,5:1.
+- **El texto secundario de Azul noche es gris azulado** (`#a3b1c2`), desde el 2026-10-15: el celeste de la paleta
+  medida (`#8dcae5`) se confundía con los enlaces y el tema quedaba de un solo color. El cian queda para enlaces, acentos
+  y datos. Lo pidió la crítica de diseño y lo aprobó Dirección. La APK conserva el celeste hasta su próxima versión.
+- **Un solo botón secundario** en el website: fondo de tarjeta, borde de 1 px gris medio y texto en peso 600. Uno lleno
+  por vista; uno apagado, gris neutro. Las píldoras de estado y las etiquetas, livianas: no tienen que parecer botones.
 - **El cian no es color de texto sobre fondo claro.** Marca el encabezado y lo elegido sobre azul profundo; un texto
   de acento usa el color de los enlaces, que sí está medido.
 - **El significado no va solo en el color.** Se dice también con forma, trazo, texto o estado accesible.
@@ -231,8 +236,9 @@ Información).
   y los primeros días; en el Espacio profesional, los pendientes y el directorio. A 1440 × 900, el Resumen muestra las
   tres tarjetas enteras y el valor de cada indicador (II.3); la línea de tiempo, seis días enteros con todos sus hechos;
   y el Espacio profesional, sus dos tarjetas enteras con siete pendientes (II.6). Si no entra, cambia la composición,
-  no la letra (I.5). La regla de los 390 px de ancho vale para el website del asesorado y para la pestaña Antropometría
-  (II.9 y II.10).
+  no la letra (I.5). La regla de los 390 px de ancho vale para el website del asesorado (II.10). La pestaña Antropometría
+  la dejó con la parte 9 de WP-ESCRITORIO-AREAS: la carga de una toma, con la figura y sus campos, es de escritorio, y en
+  un teléfono pasa a una lista (II.9).
 - **Zonas con sentido, no columnas porque sí.** En Analizar, una barra arriba (la pregunta, las métricas y los modos)
   y, debajo, los gráficos y la lectura lado a lado desde 1024 px; en el Resumen, una tarjeta por área, lado a lado, y
   debajo los indicadores. La grilla ubica; el orden del documento y del teclado es el que se ve (WCAG 1.3.2 y 2.4.3).
@@ -288,7 +294,7 @@ Información).
 - **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar), cada una con su ícono, que comparten el período, y
   **pestañas de área** para trabajar sobre el registro completo.
 - **El marco de una pestaña de área** (`marco-del-area.tsx`; WP-ESCRITORIO-AREAS) es el de la ficha llevado a
-  Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones, a la misma altura (143 px), para
+  Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones, a la misma altura (140 px), para
   que pasar de la ficha a un área no mueva nada de lugar. (1) El camino de vuelta, el área como título, la referencia
   de la persona y, a la derecha, «Actualizar» con la hora de la consulta; (2) el **acceso actual de esa área** (en
   Información, el de las tres); (3) las secciones, cada una con su ícono, y la ayuda de la vista cuando la tenga. No
@@ -835,6 +841,46 @@ otras pestañas. La pestaña tiene tres secciones: Tomas, Evolución y Lámina.
   `.medicion-de-la-toma` y `.resultado-de-la-toma` (una fila que abre su detalle); `.medicion-abierta` (el contenido
   del panel, de una medición o de un resultado), `.historia-de-medicion` y `.cambios-de-resultados`; y `Marca` (la
   clase de un dato o su excepción, con su ícono).
+
+**La carga de una toma** (`anthropometry/preparacion.tsx`, `figura-de-la-carga.tsx` y `composicion-de-la-carga.ts`;
+WP-ESCRITORIO-AREAS, parte 9; maqueta 23):
+- **Cada campo, unido a su sitio de la figura.** La figura es la de Dirección, la misma de la Lámina y del teléfono, y
+  los sitios son los del dominio: no se mueven para acomodar el dibujo ni para separar dos que de frente casi coinciden
+  (DL-113). A cada lado, tarjetas con los campos, apiladas a la altura de sus sitios; de cada campo sale una guía hasta
+  el borde de su sitio, y ninguna cruza a otra (una prueba lo fija, en las dos figuras y en las dos familias).
+- **Una familia por vez (perímetros o pliegues) y una figura por vez (hombre o mujer),** las dos en la dirección.
+  Ninguna es un dato: la figura arranca en hombre, como la Lámina. Cada familia dice cuántas de sus mediciones tienen
+  dato, y lo escrito en la otra no se pierde.
+- **Con dato o sin dato, por la forma; un solo color.** El anillo de un perímetro con dato tiene la mitad de adelante
+  llena; sin dato, va entero y punteado. El punto de un pliegue con dato es un aro lleno con su centro; sin dato, un aro
+  punteado y vacío. **Lo de la cara de atrás** (tricipital y subescapular) va en gris, con la guía punteada y la palabra
+  «posterior» en el campo: la figura está de frente.
+- **Pliegues:** los once sitios quedan del lado derecho de la persona. A la derecha de la figura van solo los dos que
+  están junto a la línea media; los demás, a la izquierda.
+- **Los campos son el camino del teclado y del lector de pantalla:** el dibujo va oculto para el lector, y tocar un
+  sitio lleva a su campo. El foco sigue el orden del protocolo, por tarjetas. El nombre que se ve es el corto
+  («Tricipital»); el que se oye, el completo («Pliegue tricipital, posterior»).
+- **Lo que el protocolo declara sin sitio en la figura va a la derecha, en «Fuera de la figura»:** por familia, con la
+  unidad si todas la comparten y su cuenta. Debajo, «Agregar otra medición», para lo que el protocolo no declara.
+- **Arriba, el estado del guardado y un solo botón lleno,** a la vista al desplazarse: «Guardar» si hay algo sin
+  guardar; si no, «Registrar toma». **«Cambios sin guardar» compara lo escrito con lo guardado,** y lo guardado dice la
+  hora que da la API.
+- **Un valor que no se puede leer:** el aviso lista el campo y lleva hasta él, aunque esté en la otra familia; el campo
+  queda marcado, con el motivo debajo. Lo mismo con una fecha de toma futura, que se dice antes de escribir nada. **Un
+  rechazo de la API que se puede explicar dice su motivo** (una medición anulada, un método al que le falta un dato):
+  nunca «El servicio no está disponible», que hace pensar que BE está caído.
+- **Colores:** tokens propios (`--escena`, `--figura-sitio`, `--figura-posterior`, `--figura-guia`), medidos a 3:1
+  contra el maniquí y contra la escena en los dos temas (I.6). La escena es plana.
+- **Anchos:** a 1440, la escena de 880 px y los datos de la toma en 448; a 1280, los datos se angostan para que la
+  escena no baje de 832; a 1024, la escena ocupa el ancho y los datos van debajo. **Con menos de 832 px de escena, los
+  campos van en lista, por tarjeta, sin la figura.**
+- **Piezas propias:** `.carga-de-la-toma` (la cabecera y el cuerpo), `.taller-de-la-carga`, `.escena-de-la-carga`,
+  `.tarjeta-de-la-carga`, `.medicion-de-la-carga` (`CampoDeMedicion`, la fila de un campo, también en «Fuera de la
+  figura»), `.sitio-de-la-carga`, `.guia-de-la-carga` y `.leyenda-de-la-carga`; y `componerLaCarga`, la composición,
+  sin interfaz.
+
+**Evolución y Lámina** tienen su «Cómo se lee esta vista» en el marco, como Tomas y la carga (pasada de estética del
+2026-10-15). Evolución usa el ancho de las otras secciones; la Lámina conserva el suyo (la imagen tiene su proporción).
 
 **Lámina:**
 - **Lo principal, primero.** El orden es: qué se muestra (la toma y la hoja); enseguida, la imagen con «Descargar
@@ -1396,6 +1442,16 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Los días de la evidencia | Una fila por día con registros: «11 sept · marcar las 3 comidas · sin marcar» y «Ver las 3». | Una grilla; en Nutrición, con los días sin registros a la vista y sin casilla. El nombre de cada casilla empieza por lo que se ve. | Ampliada | Áreas, 10 |
 | Los efectos de los resultados | Los seis a la vista, cada uno debajo de su resultado. | El del elegido, en un recuadro; los seis, a un clic, en «Qué hace cada resultado». | Sustituida | Áreas, 10 |
 | Los errores de la revisión de Entrenamiento | Solo en el resumen. | En el resumen y en cada campo, como en Nutrición. | Corregida | Áreas, 10 |
+| La carga de una toma | Una lista de 30 campos por familia, con una silueta dibujada para BE al costado (de frente y de espalda) y la barra de guardar al pie: 3.034 px a 1440 con el perfil completo. | La figura de Dirección con cada campo unido a su sitio, de a una familia; arriba, el estado del guardado y un solo botón lleno; a la derecha, los datos de la toma y lo que no tiene sitio en la figura: 1.287 px (II.9). | Sustituida | Áreas, 9 |
+| «Cambios sin guardar», en la carga de una toma | Bastaba con tocar un campo, aunque se volviera a lo mismo. | Compara lo escrito con lo guardado (II.9). | Corregida | Áreas, 9 |
+| Las etiquetas de estado («Borrador», «En preparación · sin registrar», «Solo lectura») | Una píldora en unas pantallas y una etiqueta en otras. | Una etiqueta, como en las maquetas; la píldora queda para el acceso del marco y los estados de una lista. | Aclarada | Áreas, pasada de estética |
+| «Cómo se lee esta vista», en Evolución y Lámina | Plegado dentro de la sección. | En el marco, como en las demás secciones (II.9). | Sustituida | Áreas, pasada de estética |
+| El botón secundario | Dos: el «secundario», con borde azul de 2 px, y el «quieto», con borde oscuro de 2 px, sin una regla entre ellos. | Uno solo, con borde de 1 px gris medio y texto en peso 600 (I.6). | Sustituida | Áreas, crítica de diseño |
+| El texto secundario en Azul noche | Celeste (`#8dcae5`), casi el color de los enlaces. | Gris azulado (`#a3b1c2`) (I.6). | Sustituida | Áreas, crítica de diseño |
+| Las listas desplegables y los desplegables | Con la flecha y el triángulo del navegador. | Con la flecha de BE; los desplegables, con 44 px. | Sustituida | Áreas, crítica de diseño |
+| El alto del marco de la ficha y de las áreas | 143 px. | 140 px, con renglones de píxeles enteros: con la píldora del acceso más liviana, un alto fraccionario se redondeaba distinto según desde dónde se lo midiera. | Sustituida | Áreas, crítica de diseño |
+| Antropometría · Evolución | Dos fechas vacías, puntos naranjas, un eje irregular y un párrafo técnico a la vista. | El control de período de las otras secciones, el azul de los datos, un eje parejo y el párrafo solo para el lector (II.9). | Sustituida | Áreas, crítica de diseño |
+| La regla de los 390 px, en Antropometría | La pestaña tenía que poder usarse a 390 px de ancho. | Es de escritorio: con menos de 832 px de escena, los campos de la carga van en lista, sin la figura (II.1, II.9). | Sustituida | Áreas, 9 |
 
 ---
 

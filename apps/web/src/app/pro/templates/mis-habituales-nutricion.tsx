@@ -64,7 +64,7 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
 
   return (
     <section className="seccion" aria-labelledby="titulo-habituales-nutricion">
-      <h2 id="titulo-habituales-nutricion">{COPY_HABITUALES.misHabituales} de nutrición</h2>
+      <h2 id="titulo-habituales-nutricion">Habituales de nutrición</h2>
       <Ayuda titulo="Quién ve tus habituales">
         <p>{COPY_HABITUALES.soloTuyos}</p>
       </Ayuda>

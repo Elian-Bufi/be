@@ -111,12 +111,19 @@ const PARES_WEB = [
   ['encabezado-foco', 'encabezado-fondo-2', NO_TEXTO, 'anillo de foco en el encabezado, del otro lado del degradé'],
 ];
 
-/** En las dos apariencias: la figura de la toma antropométrica se ve en cualquiera (tramo D; Dirección 2026-09-30). */
+/**
+ * En las dos apariencias: la figura de la carga de una toma se ve en cualquiera (WP-ESCRITORIO-AREAS, parte 9). Los
+ * sitios van sobre el maniquí, que es el mismo en los dos temas (`figura-cuerpo`, su tono más oscuro medido), y sus
+ * bordes y las guías, sobre la escena.
+ */
 const PARES_FIGURA = [
-  ['figura-trazo', 'superficie', NO_TEXTO, 'contorno de la silueta sobre su tarjeta'],
-  ['punto', 'figura-relleno', NO_TEXTO, 'punto de toma sobre la figura'],
-  ['punto', 'punto-halo', NO_TEXTO, 'punto de toma sobre su halo'],
-  ['punto', 'superficie', NO_TEXTO, 'anillo de perímetro que sale de la figura'],
+  ['figura-sitio', 'figura-cuerpo', NO_TEXTO, 'sitio de toma sobre el maniquí'],
+  ['figura-sitio', 'escena', NO_TEXTO, 'sitio de toma sobre la escena (los bordes de un anillo)'],
+  ['figura-sitio', 'figura-punto-relleno', NO_TEXTO, 'aro de un pliegue sobre su relleno'],
+  ['figura-posterior', 'figura-cuerpo', NO_TEXTO, 'pliegue de la cara de atrás sobre el maniquí'],
+  ['figura-posterior', 'escena', NO_TEXTO, 'guía de un pliegue de la cara de atrás sobre la escena'],
+  ['figura-guia', 'escena', NO_TEXTO, 'guía de un campo a su sitio, sobre la escena'],
+  ['figura-guia', 'figura-cuerpo', NO_TEXTO, 'guía de un campo a su sitio, sobre el maniquí'],
 ];
 
 const PARES_APK = [

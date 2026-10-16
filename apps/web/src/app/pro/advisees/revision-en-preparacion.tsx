@@ -189,7 +189,7 @@ export function CabeceraDeLaRevision({
     <div className="revision-nueva__cabecera">
       <div className="revision-nueva__titulo">
         <h2 id={idDelTitulo}>{titulo}</h2>
-        <span className="insignia revision-nueva__estado">En preparación · sin registrar</span>
+        <span className="etiqueta-de-dato revision-nueva__estado">En preparación · sin registrar</span>
       </div>
       <div className="revision-nueva__periodo">
         {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={onElegirPeriodo} /> : null}

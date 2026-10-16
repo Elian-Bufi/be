@@ -1,7 +1,7 @@
 // Recorrido real del entorno profesional (encargo §18; ACEPTACION.md): Chrome contra la web y la API locales, con los datos
 // sintéticos de `datos/regenerar.sh`. Interactúa con los controles y comprueba resultados; las capturas complementan.
 //
-// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|tomas|plan|plan-entrenamiento|mediciones|solicitudes|planes|entrenamientos|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
+// Uso: node recorrido.mjs [funcional|capturas|todo|descartable|menu|analizar|resumen|linea|espacio|areas|registros|sesiones|tomas|plan|plan-entrenamiento|mediciones|carga|solicitudes|planes|entrenamientos|estimacion]   (lee trabajo/estado.json; escribe trabajo/recorrido/)
 //
 // - Una sesión por cuenta y por navegador (el límite de inicios es 5 cada 15 minutos).
 // - Respeta el cupo de 120 lecturas protegidas por minuto: si se acerca, espera (`cupo`).
@@ -2093,8 +2093,9 @@ async function analizarRecompuesto(page, v) {
     }));
     comprobar(
       'E-47',
-      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo',
-      [1440, 1280, 1024].every((a) => marco[a].alto === 143 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && enLaLinea.boton === 'Cómo se lee esta vista' && enLaLinea.periodo && enLaLinea.alto === 143,
+      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (140 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo',
+      // 140 desde la crítica de diseño del 2026-10-15 (la píldora del acceso, más liviana: F-142); antes, 143.
+      [1440, 1280, 1024].every((a) => marco[a].alto === 140 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && enLaLinea.boton === 'Cómo se lee esta vista' && enLaLinea.periodo && enLaLinea.alto === 140,
       `${JSON.stringify(marco)} · Línea de tiempo: ${JSON.stringify(enLaLinea)}`,
     );
     comprobar(
@@ -7166,6 +7167,16 @@ async function tomasDeAntropometria(page, v) {
 
   // ── La ayuda, la accesibilidad y los anchos ─────────────────────────────────────────────────────────────────────
   await salir();
+  // Evolución tiene su ayuda (F-140); el Resumen de Nutrición, que no tiene, no muestra el botón.
+  const enEvolucion = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
+  await clic(page, 'header.marco-del-area .como-se-lee__boton', 'Cómo se lee esta vista').catch(() => null);
+  await page.waitForSelector('dialog.como-se-lee[open]', { timeout: 10_000 }).catch(() => {});
+  const ayudaDeEvolucion = await page.evaluate(() => document.querySelector('dialog.como-se-lee[open] h2')?.innerText.trim() ?? null);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
+  await ir(page, `/pro/advisees/nutrition?id=${A}&vista=resumen`);
+  await page.waitForSelector('header.marco-del-area', { timeout: 30_000 }).catch(() => {});
+  await quieto(page, v);
   const sinAyuda = await page.evaluate(() => document.querySelectorAll('header.marco-del-area .como-se-lee__boton').length);
   await entrar(`${BASE}&evaluacion=${rica?.id ?? primera.id}`);
   const medida = await page.evaluate(() => {
@@ -7190,9 +7201,9 @@ async function tomasDeAntropometria(page, v) {
   await page.waitForFunction(() => !document.querySelector('dialog.como-se-lee[open]'), { timeout: 10_000 }).catch(() => {});
   comprobar(
     'F-14',
-    '«Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rige, las marcas y los resultados; Evolución, que no tiene ayuda, no muestra el botón (la misma consulta lo encuentra en «Tomas»)',
-    ayuda.titulo === 'Cómo se leen las Tomas' && ayuda.renglones >= 8 && ayuda.foco && sinAyuda === 0,
-    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · botones de ayuda en Evolución: ${sinAyuda}`,
+    '«Tomas» tiene su ayuda en el marco del área: se abre por el título y explica la lista, el valor que rige, las marcas y los resultados. Evolución también tiene la suya (F-140), y una sección sin ayuda (el Resumen de Nutrición) no muestra el botón (la misma consulta lo encuentra en «Tomas» y en Evolución)',
+    ayuda.titulo === 'Cómo se leen las Tomas' && ayuda.renglones >= 8 && ayuda.foco && enEvolucion === 1 && ayudaDeEvolucion === 'Cómo se lee la Evolución' && sinAyuda === 0,
+    `«${ayuda.titulo}» · ${ayuda.renglones} renglones · en Evolución: ${enEvolucion} botón, «${ayudaDeEvolucion}» · botones de ayuda en el Resumen de Nutrición: ${sinAyuda}`,
   );
   comprobar(
     'F-37',
@@ -7619,7 +7630,7 @@ async function medicionesDeUnaToma() {
     await fijarFecha(page, '#ant-momento', `${diaMenos(T.fecha, 8)}T09:15`);
     await escribir('#ant-valor-peso', '61,4');
     const alGuardar = v.urls.length;
-    await clic(page, '.acciones--fijas button', 'Guardar');
+    await clic(page, '.carga-de-la-toma__acciones button', 'Guardar');
     await page.waitForFunction(() => document.querySelector('#titulo-preparacion')?.innerText.trim() === 'Toma en preparación', { timeout: 30_000 }).catch(() => {});
     await quieto(page, v);
     // Con la toma guardada y sin registrar, «Tomas» lo dice, y el botón la retoma.
@@ -7643,7 +7654,7 @@ async function medicionesDeUnaToma() {
         /^61[.,]4$/.test(alRetomar.peso ?? ''),
       `botón: «${conLaTomaEmpezada.preparar}» · «${conLaTomaEmpezada.enPreparacion}» · «${conLaTomaEmpezada.cuenta}» · al retomar: «${alRetomar.titulo}», peso ${alRetomar.peso}`,
     );
-    await clic(page, '.acciones--fijas button', 'Registrar toma');
+    await clic(page, '.carga-de-la-toma__acciones button', 'Registrar toma');
     await page.waitForSelector('dialog.dialogo[open]', { timeout: 10_000 }).catch(() => {});
     await clic(page, 'dialog.dialogo[open] .acciones button', 'Registrar esta toma');
     // El aviso dura unos segundos: se lee apenas aparece, antes de esperar a que la lista termine de cargar.
@@ -13687,6 +13698,522 @@ async function descartable() {
   }
 }
 
+// ─── Antropometría · La carga de una toma sobre la figura (WP-ESCRITORIO-AREAS, parte 9) ─────────────────────────────
+
+/**
+ * Lo que la carga de una toma tiene a la vista (maqueta 23): la cabecera, la escena con la imagen, cada sitio con su forma
+ * y su color, cada guía, cada tarjeta con sus campos, y lo de la columna de la derecha. Las medidas, en px de la escena.
+ */
+async function cargaEnPantalla(page) {
+  return page.evaluate(() => {
+    const t = (e) => (e?.innerText ?? '').replace(/\s+/g, ' ').trim();
+    const visible = (e) => !!e && e.getClientRects().length > 0;
+    const caja = (e) => {
+      const r = e.getBoundingClientRect();
+      return { x: r.left, y: r.top, ancho: r.width, alto: r.height };
+    };
+    const cabecera = document.querySelector('.carga-de-la-toma__cabecera');
+    const escena = document.querySelector('.escena-de-la-carga');
+    const ce = escena ? caja(escena) : null;
+    const img = escena?.querySelector('img.escena-de-la-carga__figura');
+    const svg = escena?.querySelector('svg.escena-de-la-carga__trazos');
+    const enEscena = (r) => ({ x: r.x - ce.x, y: r.y - ce.y, ancho: r.ancho, alto: r.alto });
+    const num = (e, a) => Number(e?.getAttribute(a));
+    const sitios = [...(escena?.querySelectorAll('[data-sitio]') ?? [])].map((g) => {
+      const toque = g.querySelector('.sitio-de-la-carga__toque');
+      const anillo = toque?.tagName.toLowerCase() === 'ellipse';
+      return {
+        clave: g.dataset.sitio,
+        conDato: g.dataset.conDato,
+        forma: anillo ? 'ANILLO' : 'PUNTO',
+        cx: num(toque, 'cx'),
+        cy: num(toque, 'cy'),
+        rx: anillo ? num(toque, 'rx') - 4 : null,
+        posterior: g.classList.contains('sitio-de-la-carga--posterior'),
+        lleno: !!g.querySelector('.sitio-de-la-carga__adelante, .sitio-de-la-carga__centro'),
+        punteado: !!g.querySelector('.sitio-de-la-carga__sin-dato, .sitio-de-la-carga__aro--sin-dato'),
+        halo: !!g.querySelector('.sitio-de-la-carga__halo'),
+        color: getComputedStyle(g).color,
+      };
+    });
+    const guias = [...(escena?.querySelectorAll('[data-guia]') ?? [])].map((g) => {
+      const d = g.querySelector('path').getAttribute('d');
+      const n = d.match(/-?\d+(\.\d+)?/g).map(Number);
+      return { clave: g.dataset.guia, desde: { x: n[0], y: n[1] }, quiebre: { x: n[2], y: n[1] }, hasta: { x: n[3], y: n[4] }, posterior: g.classList.contains('guia-de-la-carga--posterior'), punteada: getComputedStyle(g.querySelector('path')).strokeDasharray !== 'none' };
+    });
+    const filas = [...(escena?.querySelectorAll('[data-fila]') ?? [])].map((f) => {
+      const input = f.querySelector('input');
+      const tarjeta = f.closest('.tarjeta-de-la-carga');
+      return {
+        clave: f.dataset.fila,
+        nombre: t(f.querySelector('.medicion-de-la-carga__nombre')),
+        posterior: t(f.querySelector('.medicion-de-la-carga__posterior')),
+        etiqueta: input?.getAttribute('aria-label') ?? null,
+        valor: input?.value ?? null,
+        invalido: input?.getAttribute('aria-invalid') === 'true',
+        error: t(f.querySelector('.medicion-de-la-carga__error')),
+        lado: tarjeta?.classList.contains('tarjeta-de-la-carga--izquierda') ? 'IZQUIERDA' : 'DERECHA',
+        campo: input && ce ? enEscena(caja(input)) : null,
+        fila: ce ? enEscena(caja(f)) : null,
+        tarjeta: tarjeta && ce ? enEscena(caja(tarjeta)) : null,
+      };
+    });
+    const segmentos = [...document.querySelectorAll('.taller-de-la-carga__cabecera label.segmento')].map((l) => ({ texto: t(l), elegido: l.querySelector('input').checked }));
+    const datos = document.querySelector('.carga-de-la-toma__datos');
+    const fuera = [...document.querySelectorAll('.familia-de-la-carga')].map((f) => ({ titulo: t(f.querySelector('legend')), filas: [...f.querySelectorAll('[data-fila]')].map((x) => t(x.querySelector('.medicion-de-la-carga__nombre'))) }));
+    const botones = [...(cabecera?.querySelectorAll('button') ?? [])].map((b) => ({ texto: t(b), lleno: b.classList.contains('boton--primario'), apagado: b.disabled }));
+    return {
+      titulo: t(document.querySelector('#titulo-preparacion')),
+      borrador: t(cabecera?.querySelector('.etiqueta-de-dato')),
+      cuenta: t(cabecera?.querySelector('.carga-de-la-toma__cuenta')),
+      estado: t(cabecera?.querySelector('.carga-de-la-toma__estado')),
+      botones,
+      cabecera: cabecera ? caja(cabecera) : null,
+      segmentos,
+      enLista: !!escena?.classList.contains('escena-de-la-carga--en-lista'),
+      escena: ce,
+      imagen: img && ce ? { ...enEscena(caja(img)), archivo: img.getAttribute('src') } : null,
+      svg: svg && ce ? enEscena(caja(svg)) : null,
+      sitios,
+      guias,
+      filas,
+      leyenda: t(escena?.querySelector('.leyenda-de-la-carga')),
+      leyendaCaja: escena?.querySelector('.leyenda-de-la-carga') && ce ? enEscena(caja(escena.querySelector('.leyenda-de-la-carga'))) : null,
+      datos: datos ? caja(datos) : null,
+      fuera,
+      aviso: t(document.querySelector('.carga-de-la-toma .aviso')),
+      enlacesDelAviso: [...document.querySelectorAll('.carga-de-la-toma .aviso a')].map(t),
+      foco: document.activeElement?.id ?? null,
+      desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      alto: document.documentElement.scrollHeight,
+      ventana: innerWidth,
+      visibleLaImagen: visible(img),
+    };
+  });
+}
+
+/**
+ * La carga de una toma sobre la figura (maqueta 23; F-125 a F-136), en las cuentas descartables con la toma completa
+ * (`datos/generar.mjs descartable-toma-completa`). Lo esperado de cada sitio sale de las cuentas de la lámina del dominio
+ * sobre la caja real de la imagen; lo de cada campo, del protocolo que lee la API. **Escribe:** guarda una toma en
+ * preparación, así que corre sola (`node recorrido.mjs carga`), con esas cuentas recién generadas.
+ */
+async function cargaDeUnaToma() {
+  const d = estado.descartable;
+  if (!d?.tomaCompleta) throw new Error('faltan las cuentas descartables con la toma completa: datos/generar.mjs descartable-cuentas, descartable-datos y descartable-toma-completa');
+  const { navegador, page, v } = await abrir();
+  try {
+    const A = d.aseId;
+    const CARGA = `/pro/advisees/anthropometry?id=${A}&vista=preparacion`;
+    const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const cerca = (a, b, margen = 0.6) => Math.abs(a - b) <= margen;
+    const escrituras = (fragmento, desde) => v.urls.slice(desde).filter((u) => /^(POST|PUT) /.test(u) && u.includes(fragmento));
+    const escribir = async (selector, valor) => {
+      await page.focus(selector);
+      await page.keyboard.down('Control');
+      await page.keyboard.press('KeyA');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      if (valor) await page.type(selector, valor);
+      await pausa(120);
+    };
+    const elegirSegmento = async (texto) => {
+      await clic(page, '.taller-de-la-carga__cabecera label.segmento', texto).catch(() => null);
+      await pausa(350);
+    };
+    const fig = dominio.FIGURAS_DE_LA_LAMINA;
+
+    await iniciarSesion(page, v, d.proCorreo, `/pro/advisees?id=${A}`);
+    await quieto(page, v);
+    await ir(page, CARGA);
+    await page.waitForSelector('#titulo-preparacion', { timeout: 30_000 });
+    await quieto(page, v);
+    // El «Perfil antropométrico completo»: 30 mediciones, 24 con sitio en la figura.
+    const especificaciones = (await leerApi(v, '/anthropometry/specifications?kind=PROTOCOL')).data;
+    const perfil = especificaciones.find((e) => /Perfil antropométrico completo/.test(e.name));
+    if (!perfil) throw new Error('la API no tiene el «Perfil antropométrico completo»');
+    await page.select('#ant-protocolo', perfil.versionId);
+    await pausa(400);
+    const metricas = dominio.metricasDelProtocolo(perfil.content);
+    const claves = metricas.map((m) => m.clave);
+    const deLaFamilia = (sexo, familia) => claves.filter((c) => c in (familia === 'PERIMETROS' ? fig[sexo].ENTERO.perimetros : fig[sexo].ENTERO.pliegues));
+
+    // ── La pantalla de la maqueta 23, a 1440 ───────────────────────────────────────────────────────────────────────
+    const alEntrar = await cargaEnPantalla(page);
+    comprobar(
+      'F-125',
+      'La carga sigue la maqueta 23: arriba, «Nueva toma» (todavía no hay borrador), la cuenta del protocolo y «No es historia hasta que la registres.», el estado y «Guardar», el único lleno; a la izquierda, «Medidas en la figura» con «Perímetros 0 de 13» elegido, «Pliegues 0 de 11» y la figura de hombre; a la derecha, los datos de la toma y lo de fuera de la figura. A 1440 la escena mide 880 × 632 y los datos 448 de ancho, al lado',
+      alEntrar.titulo === 'Nueva toma' &&
+        alEntrar.borrador === '' &&
+        alEntrar.cuenta === `0 de ${claves.length} mediciones cargadas. No es historia hasta que la registres.` &&
+        alEntrar.estado === 'Todavía no se guardó.' &&
+        igual(alEntrar.botones, [{ texto: 'Guardar', lleno: true, apagado: false }]) &&
+        igual(alEntrar.segmentos.map((s) => [s.texto, s.elegido]), [
+          ['Perímetros 0 de 13', true],
+          ['Pliegues 0 de 11', false],
+          ['Hombre', true],
+          ['Mujer', false],
+        ]) &&
+        cerca(alEntrar.escena?.ancho ?? 0, 880, 2) &&
+        alEntrar.escena?.alto === 632 &&
+        cerca(alEntrar.datos?.ancho ?? 0, 448, 2) &&
+        alEntrar.datos.x > alEntrar.escena.x + alEntrar.escena.ancho &&
+        !alEntrar.enLista,
+      `«${alEntrar.titulo}» · «${alEntrar.cuenta}» · «${alEntrar.estado}» · ${alEntrar.botones.map((b) => `${b.texto}${b.lleno ? ' (lleno)' : ''}`).join(', ')} · ${alEntrar.segmentos.map((s) => `${s.texto}${s.elegido ? '*' : ''}`).join(' | ')} · escena ${Math.round(alEntrar.escena?.ancho ?? 0)} × ${alEntrar.escena?.alto} · datos ${Math.round(alEntrar.datos?.ancho ?? 0)}`,
+    );
+    informar('F-125', 'Alto de la página de la carga, a 1440 × 900, con el perfil completo y sin nada escrito', `${alEntrar.alto} px`);
+
+    // ── Los sitios no se mueven, en las dos figuras y en las dos familias ───────────────────────────────────────────
+    const casos = [];
+    const mirarCaso = async (sexo, familia) => {
+      const p = await cargaEnPantalla(page);
+      const esperadas = deLaFamilia(sexo, familia);
+      const desvios = [];
+      for (const clave of esperadas) {
+        const s = p.sitios.find((x) => x.clave === clave);
+        if (!s) {
+          desvios.push(`${clave}: no está`);
+          continue;
+        }
+        const e = familia === 'PERIMETROS' ? dominio.anilloEnLaLamina(p.imagen, fig[sexo].ENTERO.perimetros[clave]) : dominio.puntoEnLaLamina(p.imagen, fig[sexo].ENTERO.pliegues[clave]);
+        if (!cerca(s.cx, e.cx) || !cerca(s.cy, e.cy) || (familia === 'PERIMETROS' && !cerca(s.rx, e.rx))) desvios.push(`${clave}: ${s.cx},${s.cy} y no ${e.cx.toFixed(1)},${e.cy.toFixed(1)}`);
+      }
+      const sobran = p.sitios.filter((s) => !esperadas.includes(s.clave)).map((s) => s.clave);
+      casos.push({ sexo, familia, p, desvios, sobran, esperadas });
+      return p;
+    };
+    await mirarCaso('HOMBRE', 'PERIMETROS');
+    await elegirSegmento('Pliegues');
+    await mirarCaso('HOMBRE', 'PLIEGUES');
+    await clic(page, '.taller-de-la-carga__cabecera label.segmento', 'Mujer').catch(() => null);
+    await pausa(500);
+    await mirarCaso('MUJER', 'PLIEGUES');
+    await elegirSegmento('Perímetros');
+    await mirarCaso('MUJER', 'PERIMETROS');
+    comprobar(
+      'F-126',
+      'Los sitios son los de la lámina y no se mueve ninguno: en la figura de hombre y en la de mujer, en perímetros y en pliegues, cada sitio queda a menos de 0,6 px de donde lo ponen las cuentas del dominio sobre la caja real de la imagen (440 × 660, la que corresponde a cada figura), y no hay ninguno de más',
+      casos.every((c) => c.desvios.length === 0 && c.sobran.length === 0 && c.p.sitios.length === c.esperadas.length && cerca(c.p.imagen.ancho, 440, 0.5) && cerca(c.p.imagen.alto, 660, 0.5) && c.p.imagen.archivo === `/figura/${fig[c.sexo].ENTERO.archivo}`),
+      casos.map((c) => `${c.sexo} ${c.familia}: ${c.p.sitios.length} sitios, ${c.p.imagen?.archivo}${c.desvios.length ? `, ${c.desvios.slice(0, 2).join('; ')}` : ''}${c.sobran.length ? `, sobran ${c.sobran.join(', ')}` : ''}`).join(' · '),
+    );
+
+    // ── Cada campo, unido a su sitio; ninguna guía se cruza ─────────────────────────────────────────────────────────
+    const seCortan = (p1, p2, p3, p4) => {
+      const o = (a, b, q) => Math.sign((b.x - a.x) * (q.y - a.y) - (b.y - a.y) * (q.x - a.x));
+      return o(p1, p2, p3) * o(p1, p2, p4) < 0 && o(p3, p4, p1) * o(p3, p4, p2) < 0;
+    };
+    const tramos = (g) => [
+      [g.desde, g.quiebre],
+      [g.quiebre, g.hasta],
+    ];
+    const unidas = casos.map((c) => {
+      const malas = [];
+      for (const f of c.p.filas) {
+        const g = c.p.guias.find((x) => x.clave === f.clave);
+        const s = c.p.sitios.find((x) => x.clave === f.clave);
+        if (!g || !s) {
+          malas.push(`${f.clave}: sin guía o sin sitio`);
+          continue;
+        }
+        const borde = f.lado === 'IZQUIERDA' ? f.tarjeta.x + f.tarjeta.ancho : f.tarjeta.x;
+        const centroDelCampo = f.campo.y + f.campo.alto / 2;
+        if (!cerca(g.desde.x, borde, 1.5) || !cerca(g.desde.y, centroDelCampo, 2.5) || !cerca(g.hasta.y, s.cy, 0.6) || (f.lado === 'IZQUIERDA' ? g.hasta.x >= s.cx : g.hasta.x <= s.cx)) malas.push(`${f.clave}: de ${g.desde.x},${g.desde.y} a ${g.hasta.x},${g.hasta.y}`);
+      }
+      const cruces = [];
+      c.p.guias.forEach((a, i) => c.p.guias.slice(i + 1).forEach((b) => tramos(a).some(([p1, p2]) => tramos(b).some(([p3, p4]) => seCortan(p1, p2, p3, p4))) && cruces.push(`${a.clave} × ${b.clave}`)));
+      return { ...c, malas, cruces };
+    });
+    comprobar(
+      'F-129',
+      'Cada campo está unido a su sitio: la guía sale del borde de su tarjeta a la altura del campo y llega al borde del sitio, del lado de la tarjeta; ninguna guía se cruza con otra, en las dos figuras y en las dos familias. Los perímetros del tronco van a la derecha y los del brazo y la pierna a la izquierda; en pliegues, a la derecha solo el subescapular y el abdominal',
+      unidas.every((c) => c.malas.length === 0 && c.cruces.length === 0 && c.p.guias.length === c.esperadas.length) &&
+        igual(
+          unidas.find((c) => c.familia === 'PLIEGUES').p.filas.filter((f) => f.lado === 'DERECHA').map((f) => f.clave).sort(),
+          ['pliegue-abdominal', 'pliegue-subescapular'],
+        ) &&
+        igual(
+          unidas.find((c) => c.familia === 'PERIMETROS').p.filas.filter((f) => f.lado === 'DERECHA').map((f) => f.clave).sort(),
+          ['perimetro-abdomen', 'perimetro-cadera', 'perimetro-cintura', 'perimetro-cuello', 'perimetro-hombros', 'perimetro-pecho'],
+        ),
+      unidas.map((c) => `${c.sexo} ${c.familia}: ${c.p.guias.length} guías${c.malas.length ? `, ${c.malas.slice(0, 2).join('; ')}` : ''}${c.cruces.length ? `, se cruzan ${c.cruces.slice(0, 3).join(', ')}` : ''}`).join(' · '),
+    );
+    // El orden del documento (el del foco): el del protocolo, por tarjetas. En perímetros, exactamente el del protocolo.
+    const ordenDePerimetros = unidas.find((c) => c.sexo === 'MUJER' && c.familia === 'PERIMETROS').p.filas.map((f) => f.clave);
+    comprobar(
+      'F-129',
+      'El foco recorre los campos de la figura en el orden del protocolo: en perímetros, el del «Perfil antropométrico completo» exacto (arriba a la derecha, el brazo, la cintura y la pierna)',
+      igual(ordenDePerimetros, deLaFamilia('MUJER', 'PERIMETROS')),
+      ordenDePerimetros.map((c) => c.replace('perimetro-', '')).join(', '),
+    );
+
+    // ── Posterior: el gris, la guía punteada y la palabra ───────────────────────────────────────────────────────────
+    await elegirSegmento('Pliegues');
+    const pliegues = await cargaEnPantalla(page);
+    const posteriores = pliegues.sitios.filter((s) => s.posterior).map((s) => s.clave).sort();
+    comprobar(
+      'F-128',
+      'Los dos pliegues de la cara de atrás (tricipital y subescapular) lo dicen tres veces: el sitio en gris, la guía punteada y la palabra «posterior» en el campo, cuyo nombre para el lector de pantalla es el completo («Pliegue tricipital, posterior»). Los demás, no. La leyenda dice las tres formas y los dos pares que de frente casi coinciden',
+      igual(posteriores, ['pliegue-subescapular', 'pliegue-triceps']) &&
+        pliegues.guias.filter((g) => g.posterior).every((g) => g.punteada) &&
+        pliegues.guias.filter((g) => !g.posterior).every((g) => !g.punteada) &&
+        igual(pliegues.filas.filter((f) => f.posterior === 'posterior').map((f) => f.clave).sort(), ['pliegue-subescapular', 'pliegue-triceps']) &&
+        pliegues.filas.find((f) => f.clave === 'pliegue-triceps')?.etiqueta === 'Pliegue tricipital, posterior' &&
+        pliegues.filas.find((f) => f.clave === 'pliegue-triceps')?.nombre === 'Tricipital posterior' &&
+        pliegues.filas.find((f) => f.clave === 'pliegue-biceps')?.etiqueta === 'Pliegue bicipital' &&
+        new Set(pliegues.sitios.filter((s) => s.posterior).map((s) => s.color)).size === 1 &&
+        pliegues.sitios.find((s) => s.posterior)?.color !== pliegues.sitios.find((s) => !s.posterior)?.color &&
+        /Con dato Sin dato Posterior: en la cara de atrás/.test(pliegues.leyenda) &&
+        /tricipital y bicipital; cresta ilíaca y supraespinal/.test(pliegues.leyenda),
+      `posteriores: ${posteriores.join(', ')} · tricipital: «${pliegues.filas.find((f) => f.clave === 'pliegue-triceps')?.nombre}», lector: «${pliegues.filas.find((f) => f.clave === 'pliegue-triceps')?.etiqueta}» · leyenda: «${pliegues.leyenda}»`,
+    );
+
+    // ── Con dato o sin dato, por la forma: escribir cambia el dibujo y las cuentas, no el color ─────────────────────
+    await elegirSegmento('Perímetros');
+    const sinNada = await cargaEnPantalla(page);
+    const cinturaAntes = sinNada.sitios.find((s) => s.clave === 'perimetro-cintura');
+    await escribir('#ant-valor-perimetro-cintura', '84,5');
+    const conCintura = await cargaEnPantalla(page);
+    const cinturaDespues = conCintura.sitios.find((s) => s.clave === 'perimetro-cintura');
+    comprobar(
+      'F-127',
+      'Escribir un perímetro cambia la forma de su anillo y no su color: sin dato, entero y punteado; con dato, la mitad de adelante llena. Suben «Perímetros 1 de 13» y la cuenta del título, aparece «Cambios sin guardar» y «Guardar» sigue siendo el único lleno. Mientras el campo tiene el foco, su sitio lleva el halo',
+      cinturaAntes?.conDato === 'no' &&
+        cinturaAntes.punteado &&
+        !cinturaAntes.lleno &&
+        cinturaDespues?.conDato === 'si' &&
+        cinturaDespues.lleno &&
+        !cinturaDespues.punteado &&
+        cinturaDespues.color === cinturaAntes.color &&
+        cinturaDespues.halo &&
+        conCintura.segmentos[0]?.texto === 'Perímetros 1 de 13' &&
+        conCintura.cuenta.startsWith(`1 de ${claves.length} mediciones cargadas.`) &&
+        conCintura.estado === 'Cambios sin guardar' &&
+        igual(conCintura.botones, [{ texto: 'Guardar', lleno: true, apagado: false }]),
+      `antes: ${cinturaAntes?.conDato}, ${cinturaAntes?.punteado ? 'punteado' : 'lleno'} · después: ${cinturaDespues?.conDato}, ${cinturaDespues?.lleno ? 'mitad llena' : 'sin llenar'}, color ${cinturaDespues?.color === cinturaAntes?.color ? 'el mismo' : `${cinturaAntes?.color} → ${cinturaDespues?.color}`}, halo ${cinturaDespues?.halo ? 'sí' : 'no'} · «${conCintura.segmentos[0]?.texto}» · «${conCintura.cuenta}» · «${conCintura.estado}»`,
+    );
+
+    // ── Tocar un sitio lleva a su campo ──────────────────────────────────────────────────────────────────────────────
+    await elegirSegmento('Pliegues');
+    const tocarSitio = async (clave) => {
+      const centro = await page.evaluate((c) => {
+        const r = document.querySelector(`[data-sitio="${c}"] .sitio-de-la-carga__toque`)?.getBoundingClientRect();
+        return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
+      }, clave);
+      if (centro) await page.mouse.click(centro.x, centro.y);
+      await pausa(200);
+      return page.evaluate(() => document.activeElement?.id ?? null);
+    };
+    const focoAbdominal = await tocarSitio('pliegue-abdominal');
+    const focoPantorrilla = await tocarSitio('pliegue-pantorrilla');
+    comprobar(
+      'F-130',
+      'Tocar un sitio de la figura lleva el foco a su campo (el abdominal, a la derecha; la pantorrilla, a la izquierda): el dibujo es un atajo, los campos son el camino del teclado',
+      focoAbdominal === 'ant-valor-pliegue-abdominal' && focoPantorrilla === 'ant-valor-pliegue-pantorrilla',
+      `abdominal → ${focoAbdominal} · pantorrilla → ${focoPantorrilla}`,
+    );
+
+    // ── Un valor ilegible en la otra familia: el aviso lleva hasta el campo ─────────────────────────────────────────
+    await escribir('#ant-valor-pliegue-triceps', '1.850');
+    await elegirSegmento('Perímetros');
+    const antesDelAviso = v.urls.length;
+    await clic(page, '.carga-de-la-toma__acciones button', 'Guardar');
+    await page.waitForSelector('.carga-de-la-toma .aviso a', { timeout: 10_000 }).catch(() => {});
+    await pausa(300);
+    const conAviso = await cargaEnPantalla(page);
+    await clic(page, '.carga-de-la-toma .aviso a', 'Pliegue tricipital').catch(() => null);
+    await pausa(900);
+    const trasElEnlace = await cargaEnPantalla(page);
+    const tricipital = trasElEnlace.filas.find((f) => f.clave === 'pliegue-triceps');
+    comprobar(
+      'F-133',
+      'Con un valor que no se puede leer en un pliegue («1.850») y Perímetros a la vista, «Guardar» no escribe nada: el aviso lista el campo con su nombre completo, y su enlace elige Pliegues (queda en la dirección), lleva el foco al tricipital y lo muestra marcado, con el motivo debajo',
+      escrituras('/anthropometry/evaluation-drafts', antesDelAviso).length === 0 &&
+        conAviso.enlacesDelAviso.length === 1 &&
+        /^Pliegue tricipital: /.test(conAviso.enlacesDelAviso[0] ?? '') &&
+        parametros(page).get('medidas') === 'pliegues' &&
+        trasElEnlace.segmentos[1]?.elegido === true &&
+        trasElEnlace.foco === 'ant-valor-pliegue-triceps' &&
+        tricipital?.invalido === true &&
+        tricipital.error.length > 10,
+      `pedidos: ${escrituras('/anthropometry/evaluation-drafts', antesDelAviso).length} · enlaces: ${conAviso.enlacesDelAviso.join(' | ')} · medidas=${parametros(page).get('medidas')} · foco: ${trasElEnlace.foco} · error: «${tricipital?.error}»`,
+    );
+
+    // ── Una fecha futura: se dice en su campo, sin escribir nada (antes, «El servicio no está disponible») ───────────
+    const enElCampo = (d) => {
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+    const manana = enElCampo(new Date(Date.now() + 26 * 3600 * 1000));
+    await fijarFecha(page, '#ant-momento', manana);
+    const antesDeLaFecha = v.urls.length;
+    await clic(page, '.carga-de-la-toma__acciones button', 'Guardar');
+    await page.waitForSelector('.carga-de-la-toma .aviso a', { timeout: 10_000 }).catch(() => {});
+    await pausa(300);
+    const conFechaFutura = await cargaEnPantalla(page);
+    const elCampoDeLaFecha = await page.evaluate(() => {
+      const c = document.querySelector('#ant-momento');
+      const error = c?.closest('.campo')?.querySelector('.campo__error');
+      return { max: c?.getAttribute('max') ?? null, invalido: c?.getAttribute('aria-invalid') === 'true', error: (error?.innerText ?? '').replace(/\s+/g, ' ').trim() };
+    });
+    comprobar(
+      'F-138',
+      'Con una fecha futura en «Cuándo se tomó», «Guardar» no escribe nada: el aviso lo dice con el nombre del campo («La fecha de la toma no puede ser futura.», no «El servicio no está disponible») y lleva hasta él, que queda marcado con el motivo; el campo no ofrece fechas posteriores a este minuto',
+      escrituras('/anthropometry/evaluation-drafts', antesDeLaFecha).length === 0 &&
+        conFechaFutura.enlacesDelAviso.includes('Cuándo se tomó: La fecha de la toma no puede ser futura.') &&
+        !/no está disponible/i.test(conFechaFutura.aviso) &&
+        elCampoDeLaFecha.invalido &&
+        /La fecha de la toma no puede ser futura\./.test(elCampoDeLaFecha.error) &&
+        (elCampoDeLaFecha.max ?? '') < manana,
+      `pedidos: ${escrituras('/anthropometry/evaluation-drafts', antesDeLaFecha).length} · aviso: «${conFechaFutura.aviso.slice(0, 120)}» · campo: ${elCampoDeLaFecha.invalido ? 'marcado' : 'sin marcar'}, «${elCampoDeLaFecha.error}», máximo ${elCampoDeLaFecha.max}`,
+    );
+    // De vuelta a una fecha que vale: ayer a las 9:15.
+    await fijarFecha(page, '#ant-momento', `${diaMenos(hoy, 1)}T09:15`);
+
+    // ── Guardar: un solo pedido con lo escrito; después, «Guardado» y «Registrar toma» lleno ───────────────────────
+    // Pliegues, por las dudas: si el enlace del aviso no la eligió (la comprobación anterior lo dice), el camino sigue.
+    await elegirSegmento('Pliegues');
+    await escribir('#ant-valor-pliegue-triceps', '12,5');
+    const antesDeGuardar = v.urls.length;
+    await clic(page, '.carga-de-la-toma__acciones button', 'Guardar');
+    await page.waitForFunction(() => /^Guardado · /.test(document.querySelector('.carga-de-la-toma__estado')?.innerText.trim() ?? ''), { timeout: 30_000 }).catch(() => {});
+    await quieto(page, v);
+    const guardada = await cargaEnPantalla(page);
+    const borradores = (await leerApi(v, `/advisees/${A}/anthropometry/evaluation-drafts`)).data;
+    const borrador = borradores[0] ? (await leerApi(v, `/anthropometry/evaluation-drafts/${borradores[0].evaluationId}`)).data : null;
+    const enLaApi = (borrador?.measurements ?? []).map((m) => `${m.metric} ${m.magnitude.value} ${m.magnitude.unit}`).sort();
+    comprobar(
+      'F-132',
+      'Guardar escribe una sola vez y manda lo escrito (la cintura y el tricipital, cada uno con su unidad). Después el título dice «Toma en preparación» con «Borrador», el estado «Guardado · …» con la hora que da la API, y el lleno pasa a «Registrar toma»; lo escrito sigue en los campos y la familia y la figura elegidas siguen igual',
+      escrituras('/anthropometry/evaluation-drafts', antesDeGuardar).length === 1 &&
+        igual(enLaApi, ['perimetro-cintura 84.5 cm', 'pliegue-triceps 12.5 mm']) &&
+        guardada.titulo === 'Toma en preparación' &&
+        guardada.borrador === 'Borrador' &&
+        /^Guardado · /.test(guardada.estado) &&
+        igual(guardada.botones, [
+          { texto: 'Registrar toma', lleno: true, apagado: false },
+          { texto: 'Guardar', lleno: false, apagado: false },
+        ]) &&
+        guardada.filas.find((f) => f.clave === 'pliegue-triceps')?.valor === '12,5' &&
+        guardada.segmentos[1]?.elegido === true &&
+        guardada.segmentos[3]?.elegido === true &&
+        parametros(page).get('figura') === 'mujer',
+      `pedidos: ${escrituras('/anthropometry/evaluation-drafts', antesDeGuardar).length} · en la API: ${enLaApi.join(', ')} · «${guardada.titulo}» «${guardada.borrador}» · «${guardada.estado}» · ${guardada.botones.map((b) => `${b.texto}${b.lleno ? ' (lleno)' : ''}`).join(', ')}`,
+    );
+
+    // ── Fuera de la figura: lo que el protocolo declara sin sitio ───────────────────────────────────────────────────
+    await escribir('#ant-valor-peso', '61,4');
+    const conPeso = await cargaEnPantalla(page);
+    comprobar(
+      'F-134',
+      'Lo que el protocolo declara y no tiene sitio en la figura va a la derecha, por familia y con su cuenta: «Masa y estatura · 1 de 2» (el peso recién escrito), «Diámetros · cm · 0 de 3» con los nombres cortos, y la edad en «Otras mediciones del protocolo». Escribir el peso vuelve a «Cambios sin guardar» y el lleno vuelve a «Guardar»',
+      igual(conPeso.fuera.map((f) => f.titulo), ['Masa y estatura · 1 de 2', 'Diámetros · cm · 0 de 3', 'Otras mediciones del protocolo · años · 0 de 1']) &&
+        igual(conPeso.fuera.map((f) => f.filas), [['Peso', 'Talla'], ['Biepicondíleo del húmero (codo)', 'Biestiloideo (muñeca)', 'Bicondíleo del fémur (rodilla)'], ['Edad al momento de la toma']]) &&
+        conPeso.estado === 'Cambios sin guardar' &&
+        conPeso.botones.find((b) => b.lleno)?.texto === 'Guardar',
+      `${conPeso.fuera.map((f) => `${f.titulo}: ${f.filas.join(', ')}`).join(' · ')} · «${conPeso.estado}»`,
+    );
+    await escribir('#ant-valor-peso', '');
+    const sinPeso = await cargaEnPantalla(page);
+    comprobar(
+      'F-132',
+      '«Cambios sin guardar» compara lo escrito con lo guardado: borrar el peso recién escrito deja todo como estaba y el estado vuelve a «Guardado · …», con «Registrar toma» lleno',
+      /^Guardado · /.test(sinPeso.estado) && sinPeso.botones.find((b) => b.lleno)?.texto === 'Registrar toma',
+      `«${sinPeso.estado}»`,
+    );
+
+    // ── Los anchos: 1440, 1280, 1024 (escritorio); 768 y 390 (lista, sin figura) ─────────────────────────────────────
+    const anchos = {};
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(700);
+      anchos[ancho] = await cargaEnPantalla(page);
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+    await pausa(500);
+    const a = anchos;
+    comprobar(
+      'F-135',
+      'A 1280 la figura conserva su escena (832 px o más) y los datos se angostan a su lado; a 1024 la escena ocupa el ancho y los datos van debajo; a 768 y 390 los campos van en lista, sin la figura. En ningún ancho la página se desborda de costado',
+      a[1280].escena.ancho >= 832 &&
+        a[1280].datos.x > a[1280].escena.x + a[1280].escena.ancho &&
+        a[1280].datos.ancho >= 330 &&
+        !a[1280].enLista &&
+        !a[1024].enLista &&
+        a[1024].datos.y > a[1024].escena.y + a[1024].escena.alto &&
+        a[768].enLista &&
+        !a[768].visibleLaImagen &&
+        a[390].enLista &&
+        [1280, 1024, 768, 390].every((x) => a[x].desborde <= 0) &&
+        alEntrar.desborde <= 0,
+      [1280, 1024, 768, 390].map((x) => `${x}: escena ${Math.round(a[x].escena?.ancho ?? 0)}${a[x].enLista ? ' (lista)' : ''}, datos ${Math.round(a[x].datos?.ancho ?? 0)} ${a[x].datos && a[x].escena && a[x].datos.y > a[x].escena.y + a[x].escena.alto ? 'debajo' : 'al lado'}, desborde ${a[x].desborde}`).join(' · '),
+    );
+
+    // ── Un protocolo sin sitios en la figura ────────────────────────────────────────────────────────────────────────
+    const laboratorio = especificaciones.find((e) => /laboratorio/i.test(e.name));
+    if (laboratorio) {
+      const declaradas = dominio.metricasDelProtocolo(laboratorio.content);
+      await page.select('#ant-protocolo', laboratorio.versionId);
+      await pausa(500);
+      const sinFigura = await cargaEnPantalla(page);
+      const cajas = await page.evaluate(() => [...document.querySelectorAll('.carga-de-la-toma__datos > section')].map((x) => { const r = x.getBoundingClientRect(); return { x: r.left, y: r.top, ancho: r.width }; }));
+      comprobar(
+        'F-131',
+        'Con un protocolo que no tiene sitios en la figura («Protocolo de laboratorio», peso y talla), no hay escena ni «Medidas en la figura»: los datos de la toma y sus mediciones van lado a lado, a todo el ancho, y lo escrito en la figura pasa a fuera del protocolo, sin perderse',
+        !sinFigura.escena &&
+          sinFigura.segmentos.length === 0 &&
+          cajas.length === 2 &&
+          Math.abs(cajas[0].y - cajas[1].y) < 2 &&
+          cajas[1].x > cajas[0].x + cajas[0].ancho &&
+          sinFigura.cuenta.startsWith(`0 de ${declaradas.length} `) &&
+          / y 2 fuera del protocolo\./.test(sinFigura.cuenta) &&
+          sinFigura.desborde <= 0,
+        `escena: ${sinFigura.escena ? 'sí' : 'no'} · tarjetas: ${cajas.map((c) => `${Math.round(c.x)},${Math.round(c.y)} (${Math.round(c.ancho)} px)`).join(' y ')} · «${sinFigura.cuenta}»`,
+      );
+      await page.select('#ant-protocolo', perfil.versionId);
+      await pausa(500);
+    } else informar('F-131', 'Un protocolo sin sitios en la figura', 'el escenario no tiene el «Protocolo de laboratorio»: no se pudo mirar');
+
+    // ── Accesibilidad en los dos temas ───────────────────────────────────────────────────────────────────────────────
+    const axes = {};
+    for (const tema of ['azul-noche', 'claro']) {
+      await ponerTema(page, tema).catch(() => null);
+      await pausa(300);
+      axes[tema] = await axe(page);
+    }
+    comprobar(
+      'F-136',
+      'Axe no encuentra nada en la carga, en Claro y en Azul noche (con Pliegues y la figura de mujer a la vista, un campo con dato y uno sin dato)',
+      axes['azul-noche'].length === 0 && axes.claro.length === 0,
+      ['azul-noche', 'claro'].map((x) => `${x}: ${axes[x].length ? axes[x].map((y) => `${y.id} (${y.nodos}) ${y.ejemplo}`).join('; ') : 'nada'}`).join(' · '),
+    );
+    comprobar('—', 'La carga de una toma no produjo errores de página', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
+
+    // ── Capturas, al final (en Claro y en Azul noche; los anchos de escritorio y los dos angostos) ────────────────────
+    for (const tema of ['claro', 'azul-noche']) {
+      await ponerTema(page, tema).catch(() => null);
+      await page.setViewport({ width: 1440, height: 900 });
+      await elegirSegmento('Pliegues');
+      await page.evaluate(() => document.activeElement?.blur());
+      await captura(page, v, `carga-pliegues-mujer-1440-${tema}`);
+      await elegirSegmento('Perímetros');
+      await page.evaluate(() => document.activeElement?.blur());
+      await captura(page, v, `carga-perimetros-mujer-1440-${tema}`);
+    }
+    await clic(page, '.taller-de-la-carga__cabecera label.segmento', 'Hombre').catch(() => null);
+    await pausa(400);
+    await captura(page, v, 'carga-perimetros-hombre-1440-azul-noche');
+    await ponerTema(page, 'claro').catch(() => null);
+    for (const ancho of [1280, 1024, 768, 390]) {
+      await page.setViewport({ width: ancho, height: 900 });
+      await pausa(500);
+      await captura(page, v, `carga-perimetros-hombre-${ancho}-claro`);
+    }
+    await page.setViewport({ width: 1440, height: 900 });
+  } finally {
+    await navegador.close();
+  }
+}
+
 // ─── Principal ────────────────────────────────────────────────────────────────────────────────
 
 const inicio = new Date();
@@ -13710,6 +14237,7 @@ try {
   if (modo === 'planes') await planesDeNutricion();
   if (modo === 'entrenamientos') await planesDeEntrenamiento();
   if (modo === 'revisiones') await revisionesEnPreparacion();
+  if (modo === 'carga') await cargaDeUnaToma();
   if (modo === 'estimacion') await fichaRecompuesta({ planDeEntrenamiento: false, plan: false, tomas: false, resumen: false, linea: false, analizar: false, espacio: false, areas: false, registros: false, sesiones: false, estimacion: true });
 } catch (e) {
   comprobar('—', 'El recorrido terminó por una excepción', false, e instanceof Error ? e.message : String(e));

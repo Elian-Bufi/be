@@ -1557,241 +1557,6 @@ details summary {
   padding: 1.5rem;
 }
 
-/* ─── Toma antropométrica sobre la figura (tramo D; DL-073) ───────────── */
-/* Los datos de la toma, en dos columnas cuando entran. */
-.grilla-de-datos {
-  display: grid;
-  gap: 0 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
-}
-
-@media (min-width: 64rem) {
-  .grilla-de-datos .campo--ancho {
-    grid-column: span 2;
-  }
-}
-
-.toma {
-  display: grid;
-  /* Una columna que no pasa el ancho disponible: sin esto, la lista de mediciones imponía su ancho mínimo. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-@media (min-width: 56rem) {
-  .toma {
-    grid-template-columns: minmax(17rem, 0.8fr) minmax(0, 1.2fr);
-  }
-
-  .toma--sin-figura {
-    grid-template-columns: 1fr;
-  }
-
-  .toma__figura {
-    position: sticky;
-    top: 1rem;
-  }
-}
-
-.figura {
-  margin: 0;
-  padding: 0.75rem;
-  background: var(--superficie);
-  border: 1px solid var(--borde);
-  border-radius: 12px;
-}
-
-.figura__vistas {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.figura__vista {
-  width: 100%;
-  height: auto;
-  max-height: 28rem;
-}
-
-.figura__cuerpo {
-  fill: var(--figura-relleno);
-  stroke: var(--figura-trazo);
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-}
-
-.figura__rotulo {
-  fill: var(--tenue);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* Todos los puntos del mismo color, siempre: la forma dice si hay dato, el halo cuál se está cargando. */
-.figura__sitio {
-  cursor: pointer;
-}
-
-.figura__punto {
-  fill: var(--superficie);
-  stroke: var(--punto);
-  stroke-width: 2;
-}
-
-.figura__sitio--cargado .figura__punto {
-  fill: var(--punto);
-}
-
-.figura__anillo {
-  fill: none;
-  stroke: var(--punto);
-  stroke-width: 2;
-  stroke-dasharray: 3 2.5;
-}
-
-.figura__sitio--cargado .figura__anillo {
-  stroke-dasharray: none;
-  stroke-width: 2.6;
-}
-
-.figura__halo {
-  fill: none;
-  stroke: none;
-}
-
-.figura__sitio--activo .figura__halo,
-.figura__sitio:hover .figura__halo {
-  fill: var(--punto-halo);
-}
-
-.figura__leyenda {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 1rem;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--tenue);
-}
-
-.figura__leyenda > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.figura__muestra {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
-.figura__leyenda .figura__punto {
-  fill: var(--punto);
-}
-
-/* La lista densa de B10-07 §16: una fila por medición, el campo corto y la unidad al lado. */
-.medidas {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.medida {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 0.25rem 0.75rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 8px;
-  border-bottom: 1px solid var(--borde);
-}
-
-.medida:last-child {
-  border-bottom: none;
-}
-
-.medida--activa {
-  background: var(--fondo-suave);
-}
-
-.medida__nombre {
-  font-weight: 600;
-}
-
-.medida__entrada {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.medida__entrada input,
-.medida__entrada select {
-  font: inherit;
-  color: var(--texto);
-  background: var(--superficie);
-  min-height: 44px;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--borde-control);
-  border-radius: 8px;
-}
-
-.medida__entrada input {
-  width: 6.5rem;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.medida__entrada input[aria-invalid='true'] {
-  border: 2px solid var(--error);
-}
-
-.medida__unidad {
-  min-width: 2.5rem;
-  color: var(--tenue);
-}
-
-.medida__estado {
-  min-width: 5.5rem;
-  font-size: 0.85rem;
-  color: var(--tenue);
-  text-align: right;
-}
-
-.medida .campo__error {
-  grid-column: 1 / -1;
-}
-
-@media (max-width: 30rem) {
-  .medida {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .medida__estado {
-    grid-column: 1 / -1;
-    text-align: left;
-  }
-}
-
-/*
- * Con la letra grande en un teléfono, el nombre, el campo y el estado de cada medición van uno debajo del otro. Al lado
- * del campo, el nombre quedaba con una palabra por línea y se metía bajo la caja. Con la letra normal la lista mide más
- * de 17rem y no cambia nada (tanda del 2026-10-03). Va después de la regla de 30rem para ganarle en el teléfono.
- */
-.toma__lista {
-  container-type: inline-size;
-}
-
-@container (max-width: 17rem) {
-  .medida {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .medida__estado {
-    grid-column: 1 / -1;
-    min-width: 0;
-    text-align: left;
-  }
-}
-
 /* ─── WP-08 · el candidato de una importación: se distingue del catálogo, sin color de estado ─── */
 .candidato {
   border-left: 4px solid var(--azul);
@@ -10293,11 +10058,9 @@ button.comida-del-dia__fila > .icono:last-child {
   font-size: 1.3rem;
 }
 
+/* «En preparación · sin registrar»: una etiqueta de estado como las demás (`.etiqueta-de-dato`, maqueta 06). */
 .revision-nueva__estado {
-  border-width: 1px;
   color: var(--tenue);
-  font-size: 0.85rem;
-  font-weight: 650;
 }
 
 .revision-nueva__periodo {
@@ -10563,4 +10326,731 @@ button.comida-del-dia__fila > .icono:last-child {
   .resultado-de-revision__lista dd {
     margin-bottom: 0.4rem;
   }
+}
+
+/* ─── Antropometría · La carga de una toma (WP-ESCRITORIO-AREAS, parte 9; maqueta 23) ───────────── */
+/* Arriba, el título con la cuenta, el estado del guardado y los dos actos, pegados al desplazarse. Debajo, la figura con
+   sus campos a la izquierda y los datos de la toma a la derecha. La escena mide 632 px de alto y, a 1440, 880 de ancho:
+   la figura (440 × 660) va centrada y las tarjetas de 292 px, a los costados (`composicion-de-la-carga.ts`). Con menos
+   de 832 px de escena las tarjetas pisarían los brazos de la figura: los campos van en lista, sin la figura. A 1280 se
+   angostan los datos de la toma; a 1024, la figura ocupa el ancho y los datos van debajo. */
+.carga-de-la-toma {
+  container: carga / inline-size;
+}
+
+.carga-de-la-toma__cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  padding: 0.45rem 0;
+  background: var(--fondo);
+}
+
+.carga-de-la-toma__cabecera h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.carga-de-la-toma__vuelta {
+  margin: 0 0.25rem 0 0;
+}
+
+.carga-de-la-toma__cuenta {
+  margin: 0;
+  color: var(--tenue);
+}
+
+.carga-de-la-toma__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* El estado del borrador se dice con texto; el punto lo acompaña, no lo reemplaza. */
+.carga-de-la-toma__estado {
+  margin: 0 0.25rem 0 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.carga-de-la-toma__estado--cambios::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+  background: var(--texto);
+  vertical-align: 0.08em;
+}
+
+.carga-de-la-toma__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 0.6rem;
+}
+
+/* A 1440 la escena queda en 880 px y los datos en 448, como la maqueta. A 1280 los datos se angostan (hasta 320) para que
+   la escena no baje de 832: la primera columna es la escena más el relleno y el borde de su tarjeta (866 px). */
+@container carga (min-width: 75.125rem) {
+  .carga-de-la-toma__cuerpo {
+    grid-template-columns: minmax(54.125rem, 1fr) minmax(20rem, 28rem);
+  }
+}
+
+.carga-de-la-toma__datos {
+  display: grid;
+  gap: 0.75rem;
+  align-items: start;
+  min-width: 0;
+}
+
+/* Un protocolo sin sitios en la figura (peso y talla, por ejemplo): no hay escena, y los datos de la toma y sus
+   mediciones van lado a lado, a todo el ancho. */
+.carga-de-la-toma__cuerpo.carga-de-la-toma__cuerpo--sin-figura {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container carga (min-width: 48rem) {
+  .carga-de-la-toma__cuerpo--sin-figura .carga-de-la-toma__datos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container carga (min-width: 48rem) and (max-width: 75.12rem) {
+  .carga-de-la-toma__datos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.taller-de-la-carga {
+  container: taller / inline-size;
+  min-width: 0;
+  padding: 0.85rem 1rem 1rem;
+}
+
+/* En un teléfono los dos controles van uno debajo del otro, y los segmentos se achican para no cortar su cuenta. */
+@container taller (max-width: 30rem) {
+  .taller-de-la-carga .segmento {
+    gap: 0.3rem;
+    padding: 0 0.55rem;
+  }
+}
+
+.taller-de-la-carga__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-height: 44px;
+}
+
+.taller-de-la-carga__titulo {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.taller-de-la-carga__familia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.taller-de-la-carga__figura {
+  margin-left: auto;
+}
+
+.segmento__cuenta {
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* La escena: plana, sin degradé (las superficies de trabajo son mates). */
+.escena-de-la-carga {
+  position: relative;
+  margin-top: 0.6rem;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--escena);
+}
+
+.escena-de-la-carga__figura {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+.escena-de-la-carga__trazos {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.tarjeta-de-la-carga {
+  position: absolute;
+  width: 292px;
+  padding: 6px 12px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+/* En lista: las tarjetas una debajo de la otra, en el orden del documento, sin figura ni guías. */
+.escena-de-la-carga--en-lista {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.escena-de-la-carga--en-lista .tarjeta-de-la-carga {
+  position: static;
+  width: auto;
+}
+
+/* Un campo de medición: el nombre, el valor y su unidad en una fila de 48 px; el error, debajo, la hace crecer. */
+.medicion-de-la-carga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px 2.4rem;
+  align-items: center;
+  column-gap: 0.5rem;
+  min-height: 48px;
+}
+
+.medicion-de-la-carga:has(select) {
+  grid-template-columns: minmax(0, 1fr) 82px auto;
+}
+
+.medicion-de-la-carga + .medicion-de-la-carga {
+  border-top: 1px solid var(--borde);
+}
+
+.medicion-de-la-carga__nombre {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.medicion-de-la-carga--activa .medicion-de-la-carga__nombre {
+  font-weight: 600;
+}
+
+/* «posterior»: el sitio está en la cara de atrás. Lo dice el campo con una palabra, no solo el dibujo. */
+.medicion-de-la-carga__posterior {
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.medicion-de-la-carga__valor,
+.medicion-de-la-carga__unidades {
+  font: inherit;
+  min-height: 44px;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+}
+
+.medicion-de-la-carga__valor {
+  width: 82px;
+  padding: 0 0.6rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.medicion-de-la-carga__valor[aria-invalid='true'] {
+  border: 2px solid var(--error);
+}
+
+.medicion-de-la-carga__unidades {
+  padding: 0 0.4rem;
+}
+
+.medicion-de-la-carga__unidad {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.medicion-de-la-carga__error {
+  grid-column: 1 / -1;
+  margin: 0 0 0.45rem;
+}
+
+/* Los sitios: un solo color (el posterior, gris); la forma dice si hay dato. */
+.sitio-de-la-carga {
+  color: var(--figura-sitio);
+  cursor: pointer;
+  pointer-events: visiblePainted;
+}
+
+.sitio-de-la-carga--posterior {
+  color: var(--figura-posterior);
+}
+
+.sitio-de-la-carga__halo {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 7;
+  opacity: 0.22;
+}
+
+.sitio-de-la-carga__adelante {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+}
+
+.sitio-de-la-carga__atras {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-dasharray: 3 3.4;
+  opacity: 0.6;
+}
+
+.sitio-de-la-carga__sin-dato {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3.4;
+}
+
+.sitio-de-la-carga__aro {
+  fill: var(--figura-punto-relleno);
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
+.sitio-de-la-carga__aro--sin-dato {
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3.4;
+}
+
+.sitio-de-la-carga__centro {
+  fill: currentColor;
+}
+
+/* La zona de toque: invisible y más grande que el dibujo. */
+.sitio-de-la-carga__toque {
+  fill: transparent;
+  stroke: none;
+}
+
+.guia-de-la-carga path {
+  fill: none;
+  stroke: var(--figura-guia);
+  stroke-width: 1.3;
+}
+
+.guia-de-la-carga circle {
+  fill: var(--figura-guia);
+}
+
+.guia-de-la-carga--activa path {
+  stroke-width: 2.4;
+}
+
+.guia-de-la-carga--posterior path {
+  stroke: var(--figura-posterior);
+  stroke-dasharray: 3 5;
+}
+
+.guia-de-la-carga--posterior circle {
+  fill: var(--figura-posterior);
+}
+
+/* La leyenda, abajo a la derecha: de ese lado sobra lugar debajo de las tarjetas del tronco. */
+.leyenda-de-la-carga {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: min(22.5rem, calc(50% - 5rem));
+  color: var(--tenue);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.leyenda-de-la-carga p {
+  margin: 0;
+}
+
+.leyenda-de-la-carga__formas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.8rem;
+}
+
+.leyenda-de-la-carga__formas span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+/* Los datos de la toma y lo de fuera de la figura. */
+.datos-de-la-carga {
+  min-width: 0;
+  padding: 0.75rem 1.1rem 0.9rem;
+}
+
+.datos-de-la-carga h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+}
+
+/* Uno debajo del otro: con dos columnas, «Medición del profesional» no entraba en su campo. */
+.datos-de-la-carga__campos {
+  display: grid;
+  gap: 0;
+}
+
+.datos-de-la-carga__campos .campo {
+  min-width: 0;
+}
+
+.datos-de-la-carga__campos input {
+  width: 100%;
+}
+
+
+.familia-de-la-carga {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.familia-de-la-carga > legend {
+  padding: 0;
+  color: var(--tenue);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+
+.medicion-libre {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 0.75rem;
+  align-items: end;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.medicion-libre__titulo {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 600;
+}
+
+.medicion-libre .campo:first-of-type {
+  grid-column: 1 / -1;
+}
+
+.medicion-libre .campo input {
+  width: 100%;
+}
+
+.medicion-libre .boton--enlace {
+  justify-self: start;
+  margin-bottom: 0.75rem;
+}
+
+.datos-de-la-carga__agregar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  margin: 0.6rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.datos-de-la-carga__agregar .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+}
+
+.datos-de-la-carga__agregar .nota {
+  margin: 0;
+}
+
+/* ─── Antropometría · Evolución, al ancho de las otras secciones (pasada de estética del 2026-10-15) ─────────────── */
+/* El campo de la métrica era a la vez la fila de controles: su rótulo quedaba a la derecha, sobre un selector de todo el
+   ancho. */
+.campo.grafico__controles {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+}
+
+.campo.grafico__controles select {
+  width: min(28rem, 100%);
+}
+
+/* Una etiqueta de estado dentro de un título conserva su peso y su tamaño (como al lado de él). */
+h2 .etiqueta-de-dato,
+h3 .etiqueta-de-dato {
+  margin-left: 0.25rem;
+  font-weight: 500;
+  vertical-align: 0.2em;
+}
+
+/* ─── La crítica de diseño, aplicada antes de integrar (2026-10-15) ───────────────────────────────────────────────── */
+/* «Bajar el volumen»: un solo botón secundario, con borde de 1 px gris medio y texto en peso 600; el lleno sigue siendo
+   uno por vista. Las etiquetas y las píldoras de estado, más livianas, para que no parezcan botones. El peso 700 queda
+   para los títulos y las cifras grandes. */
+.boton {
+  border-width: 1px;
+  font-weight: 600;
+}
+
+.boton--secundario,
+.boton--quieto {
+  background: var(--superficie);
+  color: var(--texto);
+  border-color: var(--borde-control);
+}
+
+.boton--secundario:hover:not(:disabled),
+.boton--quieto:hover:not(:disabled) {
+  background: var(--fondo-suave);
+}
+
+.boton--peligro-secundario {
+  border-width: 1px;
+}
+
+/* Un botón apagado: gris neutro con su texto legible (antes, texto blanco sobre un celeste pálido). */
+.boton:disabled,
+.boton[aria-disabled='true'] {
+  opacity: 1;
+  background: var(--fondo-suave);
+  color: var(--tenue);
+  border-color: var(--borde);
+}
+
+.insignia {
+  padding: 0.05rem 0.6rem;
+  border-width: 1px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ficha__acceso .insignia {
+  background: var(--fondo-suave);
+}
+
+/* La línea de acceso: el rótulo, tenue; el área, en peso 600; el estado, en su píldora. */
+.ficha__acceso-titulo,
+.ficha__acceso-titulo strong {
+  color: var(--tenue);
+  font-weight: 500;
+}
+
+.ficha__acceso-areas strong,
+.estados-de-vinculo strong {
+  font-weight: 600;
+}
+
+.etiqueta-de-dato {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.375rem;
+}
+
+/* Las listas desplegables, con la flecha de BE y no la del navegador. */
+select:not([multiple]):not([size]) {
+  appearance: none;
+  padding-right: 2.4rem;
+  background-image: var(--flecha-de-lista);
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1rem 1rem;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+/* Los desplegables sin clase propia («Más preguntas», «Quién ve tus plantillas»): la flecha de BE en lugar del triángulo
+   del navegador, y 44 px para tocarlos. */
+details > summary:not([class]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  list-style: none;
+}
+
+details > summary:not([class])::-webkit-details-marker {
+  display: none;
+}
+
+details > summary:not([class])::before {
+  content: '';
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  background-color: currentColor;
+  -webkit-mask: var(--flecha-como-mascara) no-repeat center / contain;
+  mask: var(--flecha-como-mascara) no-repeat center / contain;
+  transform: rotate(-90deg);
+  transition: transform 120ms ease;
+}
+
+details[open] > summary:not([class])::before {
+  transform: none;
+}
+
+/* Un estado vacío no es una zona para soltar archivos: borde continuo y suave, no punteado. */
+.estado-vacio {
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+}
+
+/* La frase de la barra de una revisión nueva, sin la caja gris que la hacía parecer un campo apagado. */
+.barra-de-revision__texto {
+  padding: 0;
+  background: none;
+}
+
+/* La toma elegida: un fondo tenue con una barra al costado (el contorno parecía el foco del teclado). */
+.toma-de-la-lista[aria-current='true'] {
+  background: var(--fondo-suave);
+  box-shadow: inset 3px 0 0 var(--boton-fondo);
+}
+
+/* La Lámina elige cómo se ve con la misma botonera pegada que el resto (antes, píldoras azules sueltas). */
+.lamina__opciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+  width: fit-content;
+  overflow: hidden;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.lamina__opciones .chip {
+  min-height: 41px;
+  margin: 0;
+  padding: 0 0.9rem;
+  border: 0;
+  border-left: 1.5px solid var(--borde-control);
+  border-radius: 0;
+  background: transparent;
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.lamina__opciones .chip:first-child {
+  border-left: 0;
+}
+
+.lamina__opciones .chip[aria-pressed='true'] {
+  background: var(--texto);
+  color: var(--superficie);
+}
+
+.lamina__opciones .chip:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Evolución: el encabezado de las demás secciones (el título, una frase y el período a la derecha). */
+.evolucion {
+  display: grid;
+  gap: 1rem;
+}
+
+.evolucion__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+}
+
+.evolucion__encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.evolucion__bajada {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.evolucion__cuerpo {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.evolucion__metrica {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.grafico__unidad {
+  margin: 0 0 -0.5rem;
+  color: var(--tenue);
+  font-size: 0.8rem;
+}
+
+/* Los puntos de Evolución van en el azul de los datos, y la leyenda dice las tres formas. */
+.leyenda--evolucion .muestra--punto,
+.leyenda--evolucion .muestra--rombo {
+  background: var(--metrica-1);
+}
+
+.muestra--corregida {
+  position: relative;
+}
+
+.muestra--corregida::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.3rem;
+  margin: -0.15rem 0 0 -0.15rem;
+  border-radius: 50%;
+  background: var(--superficie);
+}
+
+/* El marco de la ficha y de las áreas, con renglones de píxeles enteros (53 + 36 + 50, más el borde: 140). Con la píldora
+   del acceso más liviana, el renglón del estado medía 35,7 px y el marco 139,48: medía lo mismo en todas las páginas,
+   pero redondeado daba 139 o 140 según desde dónde se lo midiera. */
+.marco-de-la-ficha__persona {
+  min-height: 3.3125rem;
+}
+
+.marco-de-la-ficha__estado {
+  min-height: 2.25rem;
+}
+
+.marco-de-la-ficha__vistas {
+  min-height: 3.125rem;
 }
