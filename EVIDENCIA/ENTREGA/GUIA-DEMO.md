@@ -1,4 +1,54 @@
-# Guía de demo de la entrega — BE (APK 0.13.1 · API y website en `6213ec8`)
+# Guía de demo de la entrega — BE (al 2026-10-16: API y website en `main`, APK 0.16.0-candidata.1)
+
+> **Qué cambió desde la versión del 2/10:**
+> - **La API ya no se duerme:** Render pasó a planes pagos el 16/10.
+> - **El profesional trabaja en un escritorio:** pendientes, asesorados con nombre y una ficha con Resumen, Línea de tiempo y Analizar.
+> - **Hay una cohorte de seis personas con historia,** de 6 meses a 3 años.
+> - **La APK suma:** Novedades con campana, avisos al teléfono (cuando esté Firebase), recordatorios diarios, «Tu nombre» y «Tus revisiones».
+>
+> El recorrido nuevo, con la cohorte, va primero. El recorrido detallado con las cuentas DEMO (antropometría sobre la figura, pedir información y la revocación) sigue más abajo y sigue valiendo.
+>
+> **Antes de mostrarlo:** ensayarlo una vez completo con el teléfono de la demo.
+
+## Antes de empezar
+
+| Qué | Dónde |
+|---|---|
+| Website | `https://be-web-1ngj.onrender.com` |
+| API | `https://be-api-hndp.onrender.com/health/ready` → `200`. Desde el 16/10 no se duerme: no hace falta despertarla |
+| **APK 0.16.0-candidata.1** | La prerelease `be-apk-0.16.0-candidata.1` en GitHub, con su `.sha256`. Se instala encima de la anterior, sin desinstalar (misma firma). Los avisos al teléfono necesitan el proyecto de Firebase (`docs/DESPLIEGUE.md`, «Avisos push»): mientras tanto, Cuenta dice que no están disponibles y las novedades se ven igual en la campana |
+| Cuentas de la cohorte | Fuera del repo, en `C:\Users\bufim\BE-datos-locales\cohorte-test\cuentas.env`. `PRO_N` es Lic. Sofía Paz (Nutrición y Antropometría), `PRO_T` es Prof. Martín Acosta (Entrenamiento) y `PRO_A` es Prof. Lucía Benítez (Antropometría). Las personas son `ASE_DIEGO`, `ASE_CAMILA`, `ASE_FEDERICO`, `ASE_NORMA`, `ASE_HECTOR` y `ASE_AGUSTINA` |
+| Cuentas DEMO | En `.env.cuentas-demo`, en el clon local de Dirección. DEMO-A01 se llama «Martina Gómez» y DEMO-A02 «Lucas Fernández» |
+
+**Quiénes son las seis personas** (`EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/LEEME.md`):
+- **Diego (3 años):** de 104,5 a 80,8 kg, y la sentadilla de 20 a 135 kg.
+- **Camila (un año y medio):** recomposición; los pliegues bajan con el peso igual.
+- **Federico (2 años):** rugby, con temporadas.
+- **Norma (71):** fuerza para no depender de nadie.
+- **Héctor (65):** derivado por la glucemia.
+- **Agustina (6 meses):** quiere ganar peso.
+
+**Los pendientes corren con el calendario.** Se fijaron el 16/10: ese día la revisión de Norma estaba vencida hace 4 días y la de Diego vencía en 3. Otro día, los números son otros.
+
+## Recorrido con la cohorte (unos 20 minutos)
+
+| # | Quién y dónde | Qué mostrar |
+|---|---|---|
+| A.1 | La cara pública del website | Qué es BE y **lo que no hace**: no diagnostica, no puntúa personas, no arma planes solo y nadie ve datos sin autorización |
+| A.2 | **Sofía Paz** en el website → espacio profesional | **Pendientes:** lo que hay que hacer hoy, como hechos con fecha («revisión vencida hace 4 días»), sin semáforos ni juicios. **Tus asesorados:** las personas por su nombre y «desde el…» de cada vínculo, la fecha real |
+| A.3 | La ficha de **Diego** | **Resumen** por área, la **Línea de tiempo** con sus hitos (planes, revisiones, tomas) y **Analizar**: el peso del último año (el período llega hasta 366 días), con las versiones del plan como bandas, y la comparación de etapas; en Entrenamiento, la sentadilla con las mismas bandas |
+| A.4 | **Martín Acosta** → la ficha de **Federico** → Entrenamiento | La revisión que vencía, preparada con la evidencia del período («Lo que miraste»). Registrar una revisión nueva: «Lo que observaste», «Lo que decidís» y el porqué. La ayuda avisa que la persona la va a leer completa |
+| A.5 | La APK con **Federico** | La **campana** con la novedad: «Prof. Martín Acosta registró una revisión de Entrenamiento». Tocarla abre la revisión completa, con lo que significa para su plan. Con Firebase, además, el teléfono avisa con «BE · Tenés una novedad.», sin nombres ni datos de salud |
+| A.6 | La APK con **Diego** | Inicio, Nutrición (el plan de hoy), Entrenamiento (la sesión por serie), Evolución y Novedades. En **Cuenta**: «Tu nombre», que es el que ven sus profesionales, y «Avisos en este teléfono», con los recordatorios de las 15:00 y las 22:00 si ese día no registró nada |
+| A.7 | Para cerrar | **Cómo se sabe que es cierto:** la CI con las pruebas contra PostgreSQL real; `docs/DEUDA_LEGAJO.md` con cada decisión; `docs/QUE-FALTA.md` con lo que queda |
+
+**Para la sección A.4:** registrar una revisión deja historia, porque no se borra. Si la demo se ensaya varias veces, conviene usar a Federico o a Norma, que ya tienen una revisión pendiente, y no a Diego, que es el ejemplo de los gráficos.
+
+---
+
+## Recorrido detallado con las cuentas DEMO (del 2/10; sigue valiendo)
+
+> En este recorrido, «Asesorado · c36743» ahora se ve como **Martina Gómez**: es DEMO-A01, que desde el 16/10 tiene nombre. La APK de la tabla «Antes de empezar» de abajo es la del 2/10: usar la 0.16.0-candidata.1.
 
 La demo para el tribunal (DV-11), en un solo recorrido de unos 25 minutos:
 - qué es BE;
@@ -14,7 +64,7 @@ El detalle de cada circuito está en la guía de su paquete (`EVIDENCIA/WP-04/GU
 
 Esta guía los junta. Las capturas de referencia del website están en `capturas-web/`. Son del 2026-09-24, anteriores a la lámina y a los avisos nuevos.
 
-## Antes de empezar
+### Antes de empezar
 
 | Qué | Dónde |
 |---|---|
@@ -33,7 +83,7 @@ Esta guía los junta. Las capturas de referencia del website están en `capturas
 | **DEMO-PA** | Profesional con la capacidad antropométrica | Website |
 | **DEMO-A01** | Asesorado, vinculado con los tres (verificado en `test` el 2026-09-24: vínculo aceptado y consentimiento activo en Nutrición, Entrenamiento y Antropometría). En el website aparece como **«Asesorado · c36743»**, el final de su identificador BE | APK, en el teléfono |
 
-## 1 · La cara pública (2 minutos)
+### 1 · La cara pública (2 minutos)
 
 | # | Qué hacer | Qué mostrar |
 |---|---|---|
@@ -41,7 +91,7 @@ Esta guía los junta. Las capturas de referencia del website están en `capturas
 | 1.2 | Bajar hasta el pie y señalar el aviso | «Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.» está en el pie de la cara pública y, con otras palabras, en el registro (08 §33). Desde WP-ESCRITORIO-AMABLE ya no va en la barra de cada pantalla; la APK conserva su franja |
 | 1.3 | «Ya tengo una cuenta» | El acceso, en el mismo tema oscuro. Iniciar sesión con **DEMO-PN** |
 
-## 2 · El espacio profesional (4 minutos)
+### 2 · El espacio profesional (4 minutos)
 
 | # | Qué hacer | Qué mostrar |
 |---|---|---|
@@ -49,7 +99,7 @@ Esta guía los junta. Las capturas de referencia del website están en `capturas
 | 2.2 | «Abrir» en la tarjeta «Asesorado · c36743» (DEMO-A01) | El header contextual (nombre, alcances, estado) y las **tarjetas de dominio**: plan vigente, objetivo con quién lo escribió, registros del período, revisiones. **Sin puntaje ni semáforo** (B10-08 §10) |
 | 2.3 | «Abrir Nutrición» → Registros | Lo prescripto y lo registrado por día. Un día sin registro dice «Sin registro»: **nunca un cero** (B10-10 §1) |
 
-## 3 · La toma sobre la figura, los cálculos y la lámina (7 minutos): el momento que más suma
+### 3 · La toma sobre la figura, los cálculos y la lámina (7 minutos): el momento que más suma
 
 Iniciar sesión con **DEMO-PA** → «Asesorado · c36743» → «Abrir Antropometría». Las pestañas son «Tomas», «En preparación», «Evolución» y «Lámina»: arrancar en **En preparación**.
 
@@ -63,7 +113,7 @@ Iniciar sesión con **DEMO-PA** → «Asesorado · c36743» → «Abrir Antropom
 | 3.6 | En «Tomas», abrir la evaluación registrada → «Cálculos» → «Calcular con un método» | El selector separa **«Se pueden calcular con esta toma»** de **«Les faltan datos de esta toma»**. El catálogo de BE tiene **21 métodos**, cada uno con su fuente y su población; en `test` se suma uno sintético de demostración. Elegir **«Índice de masa corporal (IMC)»**: la ficha dice qué da, qué pide con el valor de esta toma y en qué población se validó, y deja plegadas la fuente y la regla. «Calcular»: el aviso de éxito aparece abajo y se va solo. Después elegir un método de Durnin y Womersley: al lado de cada dato que la toma no tiene dice «Falta en esta toma», y «Calcular» queda deshabilitado. BE no calcula con lo que no hay. Si la toma ya tuviera ese resultado calculado con otro método, un aviso lo diría antes de calcular: los dos conviven, BE no elige |
 | 3.7 | «Ver lámina» en la misma evaluación → hoja «Pliegues» | La lámina del compositor arma la toma sobre la figura: **ubica cada medida y no califica ningún valor**. El bíceps y la cresta ilíaca tienen su lugar en la figura y aparecen cuando la toma los tiene. Al pie van las dos sumas de pliegues; acá, con dos pliegues, dicen «Sin calcular». «Descargar imagen» baja la lámina como PNG |
 
-## 4 · Información pertinente: pedir no es acceder (3 minutos)
+### 4 · Información pertinente: pedir no es acceder (3 minutos)
 
 | # | Qué hacer | Qué mostrar |
 |---|---|---|
@@ -72,7 +122,7 @@ Iniciar sesión con **DEMO-PA** → «Asesorado · c36743» → «Abrir Antropom
 | 4.3 | En la APK, con **DEMO-A01**: zona **Información** de la barra inferior | La solicitud, con quién la pidió y para qué. Responder un campo y dejar otro en blanco; «Enviar respuesta» |
 | 4.4 | Volver al website y actualizar | La respuesta llega rotulada **«Declarado por la persona»**: no es una medición ni un diagnóstico. El campo en blanco no aparece como un incumplimiento |
 
-## 5 · El asesorado en la APK (5 minutos)
+### 5 · El asesorado en la APK (5 minutos)
 
 Con **DEMO-A01** en el teléfono.
 
@@ -84,7 +134,7 @@ Con **DEMO-A01** en el teléfono.
 | 5.4 | Zona **Evolución**: «Mi evolución» | La última toma sobre la figura (los perímetros son elipses), los resultados calculados de esa toma con su método (por ejemplo, el IMC del paso 3.6) y la serie de cada medida, con los días sin medición como «Sin dato». Las explicaciones están plegadas en «Cómo se lee», y «La figura, en lista» es la tabla equivalente |
 | 5.5 | **Al final, porque deshace el acceso:** zona **Cuenta** → «Vínculos» → el de Nutrición → «Revocar acceso de …» → «Revocar acceso» | En el website, DEMO-PN **actualiza** el workspace: la tarjeta de Nutrición desaparece y queda un único aviso de vista parcial, sin decir por qué. El PDP decide en cada lectura. El profesional no vuelve a ver nada hasta que haya un consentimiento nuevo (el flujo está en `EVIDENCIA/WP-03/`) |
 
-## 6 · Cómo se sabe que todo esto es cierto (3 minutos)
+### 6 · Cómo se sabe que todo esto es cierto (3 minutos)
 
 | Pregunta del tribunal | Dónde está la respuesta |
 |---|---|
@@ -93,7 +143,7 @@ Con **DEMO-A01** en el teléfono.
 | ¿Qué quedó afuera y por qué? | `docs/DEUDA_LEGAJO.md`: cada deuda con lo que dice el legajo, las opciones y la decisión. El inventario de lo que falta, en `docs/QUE-FALTA.md` |
 | ¿Y las APIs externas? | Open Food Facts y wger están integradas desde el 2026-09-25 (WP-08, PR #72): el profesional importa un alimento o un ejercicio, lo revisa y queda con su procedencia a la vista. No están en este recorrido; el detalle, en `EVIDENCIA/WP-08/` |
 
-## Si algo falla
+### Si algo falla
 
 - **La API tarda o responde 502:** está despertando. Esperar un minuto y recargar.
 - **La APK no muestra la barra inferior o no carga una pantalla:** confirmar que es la 0.13.1 (Bienvenida, al pie). La barra y la figura en SVG viajan desde la 0.13.0. Además, los clientes validan cada respuesta con objetos estrictos: una versión vieja rechaza lo que no conoce.
