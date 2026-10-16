@@ -28,6 +28,7 @@ import {
   claveDeIdempotencia,
   conSesion,
   correoSintetico,
+  entornoDePrueba,
   CREDENCIAL_SINTETICA,
   cuerpoDeCierre,
   cuerpoDeRegistro,
@@ -39,7 +40,8 @@ import {
 } from './soporte-api';
 import { a3Vigente, aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 import { CATALOGO_DEMO, circuitoAntropometrico } from './soporte-antropometria';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { huellaDeSecretoDeInvitacion } from '../../apps/api/src/vinculo/invitaciones.service';
 import {
   activar,
   circuitoListoParaPlanificar,
@@ -1609,7 +1611,8 @@ it('TEST-CT (WP-INVITACION): INV-01 a 05, con éxitos y errores declarados', asy
   // Vencida: escrita directo en la base (la tabla solo admite agregar), con la vigencia máxima ya cumplida.
   const vencidaId = randomUUID();
   const tokenVencido = randomBytes(32).toString('base64url');
-  const sha = (t: string) => createHash('sha256').update(t, 'utf8').digest('hex');
+  // La misma huella con clave que guarda la API (DL-136 D-4), con el secreto de firma del entorno de prueba.
+  const sha = (t: string) => huellaDeSecretoDeInvitacion(entornoDePrueba().jwtSecret, t);
   await prisma.$executeRaw`
     INSERT INTO "invitacion_de_vinculo" ("id", "profesional_id", "alcance", "finalidad", "hash_del_token", "hash_del_codigo", "procedencia", "momento_de_ocurrencia", "vence_en")
     VALUES (${vencidaId}::uuid, ${pro.id}::uuid, 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', ${sha(tokenVencido)}, ${sha(randomUUID())}, '{}'::jsonb,
