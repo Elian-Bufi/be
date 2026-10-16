@@ -17,7 +17,7 @@
  * **Módulo, pestaña y barra son tres cosas.** `moduloDe` dice a qué módulo pertenece una pantalla; `pestanaActiva`, qué
  * destino de la barra se resalta (Cuenta no resalta ninguno: no es un sexto destino); la barra se ve con sesión.
  */
-import { CODIGOS_DE_SESION_NO_VALIDA, type Resultado, type SesionDeOcurrencia } from '@be/domain';
+import { CODIGOS_DE_SESION_NO_VALIDA, type Resultado, type SecretoDeInvitacionRequest, type SesionDeOcurrencia } from '@be/domain';
 import { useCallback, useState } from 'react';
 
 /** Las vistas de «Mi evolución», sus pestañas. */
@@ -43,6 +43,8 @@ export type Ruta =
   | { readonly nombre: 'revisiones'; readonly area: 'NUTRICION' | 'ENTRENAMIENTO'; readonly desde?: Ruta }
   | { readonly nombre: 'revision'; readonly area: 'NUTRICION' | 'ENTRENAMIENTO'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'vinculos'; readonly desde?: Ruta }
+  // WP-INVITACION (DL-136): la invitación de un profesional, desde su enlace o desde «Tengo un código».
+  | { readonly nombre: 'invitacion'; readonly secreto?: SecretoDeInvitacionRequest; readonly desde?: Ruta }
   | { readonly nombre: 'vinculo'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'consentimiento'; readonly vinculoId: string; readonly desde?: Ruta }
   | { readonly nombre: 'privacidad'; readonly desde?: Ruta }
@@ -170,6 +172,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'novedades':
     case 'vinculos':
     case 'vinculo':
+    case 'invitacion':
     case 'consentimiento':
     case 'privacidad':
       return 'cuenta';
@@ -254,6 +257,7 @@ function madre(ruta: Ruta): Ruta | null {
     case 'revision':
       return { nombre: 'revisiones', area: ruta.area };
     case 'vinculo':
+    case 'invitacion':
       return { nombre: 'vinculos' };
     case 'consentimiento':
       return { nombre: 'vinculo', id: ruta.vinculoId };

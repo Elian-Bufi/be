@@ -15,7 +15,7 @@
  *   cuenta, este teléfono deja de recibir los avisos de la cuenta, mientras la sesión todavía vale (DL-133).
  * - Cierre (PROTO-10-ACC-06): explicación → modal con consecuencias versionadas → «Confirmar cierre».
  */
-import { COPY, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
+import { COPY, COPY_INVITACION, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, Share, Text, View } from 'react-native';
 import { api, nuevaClaveDeIdempotencia } from '../api';
@@ -103,6 +103,8 @@ export function PantallaDeCuenta({
       <Titulo>Cuenta</Titulo>
       {/* Los módulos están en la barra de abajo y el menú auxiliar; acá queda lo de la cuenta. Vínculos sigue también acá. */}
       <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
+      {/* DL-136: si el profesional pasó un código en lugar del enlace, se escribe acá. */}
+      <Boton texto={COPY_INVITACION.tengoUnCodigo} tipo="secundario" onPress={() => ir({ nombre: 'invitacion' })} />
 
       <Seccion titulo="Estado de la cuenta">
         {cuenta.tipo === 'cargando' ? <Cargando /> : null}

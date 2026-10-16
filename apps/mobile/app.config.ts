@@ -19,6 +19,14 @@ const FONDO = '#011325';
 const SERVICIOS_DE_GOOGLE = process.env.GOOGLE_SERVICES_JSON?.trim() || null;
 
 /**
+ * WP-INVITACION (DL-136): el enlace de una invitación abre la APK por dos caminos.
+ * - El esquema propio be://, que usa la página /invitacion del website (un enlace intent: en Android).
+ * - El App Link https del website (WEB_BASE_URL, en el perfil de eas.json y en la construcción local), verificado con su
+ *   /.well-known/assetlinks.json: tocar el enlace en WhatsApp abre la app directo. Sin WEB_BASE_URL, solo el esquema.
+ */
+const HOST_DEL_WEBSITE = process.env.WEB_BASE_URL?.trim() ? new URL(process.env.WEB_BASE_URL.trim()).host : null;
+
+/**
  * La APK pide solo lo que usa (08, minimización). Las librerías declaran estos permisos y BE no los necesita:
  * - expo-notifications (0.16.0-candidata.1) trajo el arranque del sistema, que sirve para reprogramar avisos locales,
  *   el referidor de instalación de Google Play y las insignias del ícono de quince lanzadores. BE no programa avisos
@@ -58,6 +66,7 @@ const config: ExpoConfig = {
   owner: 'elianbufi',
   version: VERSION,
   orientation: 'portrait',
+  scheme: 'be',
   icon: './assets/icon.png',
   // Azul noche es el tema predeterminado; Claro se elige en Cuenta (src/apariencia.tsx). Los diálogos del sistema
   // quedan oscuros en los dos.
@@ -72,6 +81,18 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
     blockedPermissions: PERMISOS_QUE_BE_NO_USA,
+    ...(HOST_DEL_WEBSITE
+      ? {
+          intentFilters: [
+            {
+              action: 'VIEW',
+              autoVerify: true,
+              data: [{ scheme: 'https', host: HOST_DEL_WEBSITE, pathPrefix: '/invitacion' }],
+              category: ['BROWSABLE', 'DEFAULT'],
+            },
+          ],
+        }
+      : {}),
     ...(SERVICIOS_DE_GOOGLE ? { googleServicesFile: SERVICIOS_DE_GOOGLE } : {}),
   },
   // DL-012 (decisión del 2026-10-03): la credencial de la sesión va al almacenamiento seguro. El plugin la deja fuera
