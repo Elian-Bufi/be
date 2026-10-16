@@ -132,9 +132,14 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 ## 6. Documentos con estado viejo
 
 Son de orden, no de funcionalidad:
-- **WP-08 figura «sin integrar»** en `WP-08.md`, `DEFENSA/WP-08.md`, DL-086 y `EVIDENCIA/ENTREGA/LEEME.md`, pero está integrado desde #72.
-- **`DEUDA_LEGAJO.md`:** DL-072, DL-042, DL-084, DL-065, DL-108 y DL-093 tienen el estado desactualizado.
-- **LEEME «sin integrar»:** CARTERA, PLANTILLAS, HABITUALES, APARIENCIA-APK y ANTROPOMETRIA-EVOLUCION ya están integrados.
+- ~~**WP-08 figura «sin integrar»** en `WP-08.md`, `DEFENSA/WP-08.md`, DL-086 y `EVIDENCIA/ENTREGA/LEEME.md`, pero está integrado desde #72.~~ **Resuelto el 2026-10-16:** los cuatro dicen que WP-08 se integró el 2026-09-25 (`e83245d`) y salió en la APK 0.10.0. DL-086 quedó CERRADA.
+- ~~**`DEUDA_LEGAJO.md`:** DL-072, DL-042, DL-084, DL-065, DL-108 y DL-093 tienen el estado desactualizado.~~ **Resuelto el 2026-10-16:** la tabla y cada entrada dicen el estado real, con su PR:
+  - DL-042, cerrada;
+  - DL-072 y DL-093, implementadas;
+  - DL-084, resuelta con el provisorio;
+  - DL-065, con los oráculos escritos, a la espera del 11A;
+  - DL-108, integrada.
+- ~~**LEEME «sin integrar»:** CARTERA, PLANTILLAS, HABITUALES, APARIENCIA-APK y ANTROPOMETRIA-EVOLUCION ya están integrados.~~ **Resuelto el 2026-10-16:** los cinco dicen con qué PR se integraron el 2026-09-30 y dónde quedaron desplegados o publicados.
 
 ## 7. Fuera de alcance declarado
 

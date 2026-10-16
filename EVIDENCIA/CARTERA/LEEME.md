@@ -3,7 +3,9 @@
 > **Nota del 2026-10-03 (DL-116).** El ID de la operación pasa a **API-CAR-01**: API-DSH-04 es, en el 09, la línea
 > temporal. Esta evidencia conserva el ID con el que se hizo.
 
-Decisión de Elián del 2026-09-30 sobre la ficha `docs/propuestas/PF-07_vista-de-cartera.md`, registrada como DL-107. Rama `feat/cartera-profesional`, sobre `main` (`53cc70e`). Para auditoría, **sin integrar, sin desplegar y sin APK**.
+Decisión de Elián del 2026-09-30 sobre la ficha `docs/propuestas/PF-07_vista-de-cartera.md`, registrada como DL-107. Rama `feat/cartera-profesional`, sobre `main` (`53cc70e`). ~~Para auditoría, **sin integrar, sin desplegar y sin APK**.~~
+
+**Estado (2026-10-16):** integrado en `main` el 2026-09-30 con el PR #120 (`8013ed0`) y desplegado en `test` con `76f2a10` (`EVIDENCIA/PUBLICACION-0.12.1/LEEME.md`). No lleva APK: es del website profesional.
 
 ## Qué puede hacer el profesional
 

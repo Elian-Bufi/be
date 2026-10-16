@@ -3,7 +3,7 @@
 Orden de Dirección del 2026-09-30 (avance principal 1). Convierte la lectura de API-ANT-06 (RF-049; UC-P20) en una herramienta para explorar cambios en el tiempo, **sin cambiar contratos, API ni base**.
 
 - **Rama:** `feat/evolucion-antropometrica-visual`, sobre `main` (`53cc70e`).
-- **Estado:** para auditoría, **sin integrar, sin desplegar y sin APK**.
+- **Estado:** ~~para auditoría, **sin integrar, sin desplegar y sin APK**.~~ Al 2026-10-16: integrado en `main` el 2026-09-30 con el PR #116 (`754faa7`) y desplegado en `test` con `76f2a10` (`EVIDENCIA/PUBLICACION-0.12.1/LEEME.md`). No lleva APK: es del website profesional.
 - **Dependencias:** ninguna con los otros PR de la tanda. Comparte dos ayudas de teclado y puntero con los gráficos de entrenamiento (`apps/web/src/lib/graficos.ts`): nada más.
 
 ## Qué puede hacer el profesional

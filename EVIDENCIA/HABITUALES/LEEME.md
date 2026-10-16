@@ -1,6 +1,8 @@
 # Evidencia · «Mis habituales» del profesional (DL-109)
 
-Decisiones de Elián del 2026-09-30 (DL-109: elementos **y** bloques; reguardar con el mismo nombre **reemplaza, con aviso**), sobre las reglas de las plantillas (DL-108). Rama `feat/mis-habituales`, sobre `feat/plantillas-de-entrenamiento` (`f43d404`, PR #121). Para auditoría, **sin integrar, sin desplegar y sin APK**.
+Decisiones de Elián del 2026-09-30 (DL-109: elementos **y** bloques; reguardar con el mismo nombre **reemplaza, con aviso**), sobre las reglas de las plantillas (DL-108). Rama `feat/mis-habituales`, sobre `feat/plantillas-de-entrenamiento` (`f43d404`, PR #121). ~~Para auditoría, **sin integrar, sin desplegar y sin APK**.~~
+
+**Estado (2026-10-16):** integrado en `main` el 2026-09-30 con el PR #122 (`76f2a10`). Ese mismo commit es el que se desplegó en `test` (`EVIDENCIA/PUBLICACION-0.12.1/LEEME.md`). No lleva APK: es del website profesional.
 
 ## Qué puede hacer el profesional
 

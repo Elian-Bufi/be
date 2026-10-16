@@ -46,7 +46,7 @@
 | DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | **SIMPLIFICACIÓN DECLARADA** 2026-09-19 · consentimiento por alcance y finalidad; categorías especificadas y no implementadas |
 | DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | **DECIDIDA E IMPLEMENTADA** 2026-10-15 · el profesional ve el nombre visible del asesorado mientras el vínculo está vigente; si no, la referencia neutral (#159, sin integrar) |
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
-| DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA**: 8 y 7 (variante nutricional) **ejecutables desde WP-04**; 6, 10 y 7 (mediciones) en WP-05, antropometría |
+| DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **CERRADA** 2026-09-20 · condición de cierre cumplida: el 8 y el 7 nutricional, en WP-04; el 6, el 10 y el 7 de mediciones, en WP-05, en CI y en vivo contra `test` (API 0.5.1, `4e5503f`) |
 | DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
 | DL-044 | WP-03 · 2026-09-19 | 08 §13 · 08 §14.1 · 09v8:1385-1391 | Qué ve el profesional de un vínculo finalizado | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción B) |
 | DL-045 | WP-03 · 2026-09-19 | 05:2840-2845 (UC-P04 V02) · 06 §7.3.2 · INV-06-52 | Solicitud iniciada por el asesorado: el profesional no acepta | **DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A) |
@@ -69,14 +69,14 @@
 | DL-062 | WP-05 · 2026-09-20 | 09v11:309-332 · 09v16:1980-2000 · 06:6507 | `preparationReference` obligatorio en la importación, sin entidad ni API | **DECIDIDA** 2026-09-20 · opción A · el flujo va al paquete de integraciones |
 | DL-063 | WP-05 · 2026-09-20 | 08:1368, 08:1374, 08:1482, 08:1497 (R-18) | El borrador antropométrico no tiene plazo de expiración declarado | **DECIDIDA** 2026-09-20 · opción A · el parámetro sigue pendiente de fijar antes del primer dato real |
 | DL-064 | WP-05 · 2026-09-20 | 06:6350-6359 · 06:6513 · 09v11:664-706 · 10-B10-07:1051-1062 | La «evaluación de compatibilidad» es obligatoria y no está modelada como objeto | **DECIDIDA** 2026-09-20 · opción A · metadato calculado por tramo |
-| DL-065 | WP-05 · 2026-09-20 | 11A:573-587 · 11A:155-169 · DV-05:1144 | Siete de los once TEST-ANT son solo un título de una línea | **DECIDIDA** 2026-09-20 · opción A · se escriben los siete oráculos |
+| DL-065 | WP-05 · 2026-09-20 | 11A:573-587 · 11A:155-169 · DV-05:1144 | Siete de los once TEST-ANT son solo un título de una línea | **DECIDIDA** 2026-09-20 · opción A · los siete oráculos están escritos en `docs/paquetes/WP-05-ORACULOS.md` y pasan (#47, `3b9f50c`); se cierra cuando el 11A los incorpore |
 | DL-066 | WP-05 · 2026-09-20 | DV-05:1131 · 08:1330-1341 · 09v16:1764-1775 | El adversarial 10 no tiene test que pruebe el borrador **de otro profesional** | **DECIDIDA** 2026-09-20 · opción A · oráculo derivado TEST-ANT-012 |
 | DL-067 | WP-05 · 2026-09-20 | DV-05:1128 · 11A:540, 584, 625 · 06:6388-6398 | El adversarial 7 de mediciones no tiene ID de test asignado | **DECIDIDA** 2026-09-20 · opción A · TEST-ANT-009 y TEST-ANT-010 |
 | DL-068 | WP-05 · 2026-09-20 | 08:200, 08:1332, 08:1385, 08:1525 · 09v11:388-400 | Nadie define quién autoriza **crear** y **registrar** la evaluación | **DECIDIDA** 2026-09-20 · opción A · misma lista que la retoma del borrador |
 | DL-069 | WP-05 · 2026-09-20 | 09v11:534-538, 563-569, 726-748 | Objetos `{}` vacíos en los contratos de lectura de ANT-03, ANT-04 y ANT-06 | **DECIDIDA** 2026-09-20 · opción A · forma mínima definida y publicada |
 | DL-070 | WP-05 · 2026-09-20 | 09v11:713-757 · 04:583 | La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta | **DECIDIDA** 2026-09-20 · opción A · se mantiene el array de métricas |
 | DL-071 | WP-05 · 2026-09-20 | 09v11:592-605, 664 | ANT-05 no acepta el lote de correcciones ni los metadatos reconstruibles que el 09 admite | **DECIDIDA** 2026-09-20 · opción A · de a una; el lote cuando haya más de un tipo |
-| DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | **DECIDIDA** 2026-09-20 · opción A · sumar `status`, conservar `kind` (PENDIENTE de implementar) |
+| DL-072 | WP-05 · 2026-09-20 | 09v11:336-339 | ANT-01 filtra por `kind` y el 09 declara `status` | **DECIDIDA E IMPLEMENTADA** 2026-09-20 · opción A · `status` sumado, derivado de la cadena de versiones, y `kind` conservado (#47, `3b9f50c`) |
 | DL-073 | WP-05 · 2026-09-20 | 10-B10-07 · `direccion/UI-ANTROPOMETRIA.md` | El 10 declara la carga en formulario y Dirección pide la carga sobre la figura | **CERRADA** 2026-09-24 · opción A, en el tramo D de `docs/paquetes/WP-IDENTIDAD-VISUAL.md` |
 | DL-074 | WP-06 · 2026-09-21 | 05:109-113 · 05:9969 · B10-06:8-10 | El núcleo operable de entrenamiento vive en material no aprobado | **DECIDIDA** 2026-09-21 · opción A, como DL-058 |
 | DL-075 | WP-06 · 2026-09-21 | 11A:562-571 · 11A:151-169 · DV-05:1137-1148 | Los seis TEST-TRN son títulos de una línea, y entrenamiento no figura en la matriz de DV-05 | **DECIDIDA** 2026-09-21 · opción A · se escriben los seis oráculos |
@@ -88,16 +88,16 @@
 | DL-081 | WP-06 · 2026-09-21 | 06:5614-5632 · 06:80, 4103 · 09v12:326-332 | Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio | ABIERTA |
 | DL-082 | WP-06 · 2026-09-21 | 06:4651-4663 · 06:4958-4965 · 06:226 | No existe una regla equivalente a REG-06-125 para entrenamiento | ABIERTA |
 | DL-083 | WP-06 · 2026-09-21 | 08:238-246 · 08:304 · 08:291-293 | La matriz de pertinencia del 08 §11-bis no está instanciada para ENTRENAMIENTO | ABIERTA |
-| DL-084 | WP-06 · 2026-09-21 | DV-05:1128-1129 · DL-042 | Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron | ABIERTA |
+| DL-084 | WP-06 · 2026-09-21 | DV-05:1128-1129 · DL-042 | Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron | **RESUELTA** 2026-09-21 con el provisorio (opción A) · las variantes de entrenamiento del 7 y del 8 pasan en CI y en vivo contra `test` (API 0.6.0, `c50fdd9`; evidencia en #56) |
 | DL-085 | WP-06 · 2026-09-21 | B10-06:46, 773-776 · B10-10:53, 457-461 | Tres vocabularios para la misma distinción entre lo planificado y lo ejecutado | ABIERTA |
-| DL-086 | WP-06 · 2026-09-21 | 04:482, 378 · 04:1144 · 04:1130 · DL-056 | wger, Open Food Facts y el compromiso de dos APIs externas | **DECIDIDA** 2026-09-21 · opción A — **sin ejecutar**: wger quedó en WP-08, fuera del rango literal de ACTA-DIR-034 y de la entrega (2026-09-22); el compromiso está en cero (ver actualización del 2026-09-24) |
+| DL-086 | WP-06 · 2026-09-21 | 04:482, 378 · 04:1144 · 04:1130 · DL-056 | wger, Open Food Facts y el compromiso de dos APIs externas | **CERRADA** 2026-09-25 · el compromiso se cumplió con WP-08: Open Food Facts y wger, integrados en `main` con #72 (`e83245d`) después de que Dirección confirmara la cobertura del acta, y en la APK 0.10.0 (ver el cierre en la entrada) |
 | DL-087 | WP-06 · 2026-09-21 | 04:511 · 04:681-689 · DL-051 | RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1 | ABIERTA |
 | DL-088 | WP-06 · 2026-09-21 | 09v10 completo · DL-080 | Las formas que el contrato de entrenamiento no fija, decididas al escribirlo | ABIERTA |
 | DL-089 | WP-06 · 2026-09-21 | 08:199 · 08:58 · 05:8944 | Revocado el consentimiento, el asesorado deja de ver su propia historia de entrenamiento | **CERRADA** 2026-09-24 · opción A (PR #67) |
 | DL-090 | WP-06 · 2026-09-21 | 04:266-275 · B10-06:149-177 · adenda B10 v0.5:1290-1310 | RF-071 es P0 y ningún paquete lo tenía | **CERRADA** 2026-09-22 · WP-07 (PRs #58 a #65) |
 | DL-091 | WP-06 · 2026-09-21 | B10-06:1145-1148 · B10-10:36, 164-165, 376 | Cuatro patrones de pantalla corregidos en entrenamiento y no en nutrición ni antropometría | **CERRADA** 2026-09-24 · opción A (PRs #66, #68, #69) |
 | DL-092 | WP-07 · 2026-09-21 | 04:1176, 1297-1313 · 05 · 06 §20 · 08 §56 · 09 v0.16.1 · 10 Adenda v0.5 | El núcleo operable de RF-071 vive en seis documentos «NO APROBADO» | **DECIDIDA** 2026-09-21 · opción A |
-| DL-093 | WP-07 · 2026-09-21 | 06:8524-8529 (REG-06-210) · 09:1610-1618 | La Solicitud de formulario queda con dos estados, sin cancelar ni rechazar | **DECIDIDA** 2026-09-21 |
+| DL-093 | WP-07 · 2026-09-21 | 06:8524-8529 (REG-06-210) · 09:1610-1618 | La Solicitud de formulario queda con dos estados, sin cancelar ni rechazar | **DECIDIDA E IMPLEMENTADA** 2026-09-21 · el estado no se guarda: sale de la respuesta, que es una sola y de solo agregar, en la base (#60) y en la API (#61) |
 | DL-094 | WP-07 · 2026-09-21 | 11A:604-610 · 11A:194, 348-349 | Los siete TEST-FRM eran títulos de una línea | **CERRADA** 2026-09-22 · escritos en `docs/paquetes/WP-07-ORACULOS.md` |
 | DL-095 | WP-07 · 2026-09-22 | 09v16.1 §22.1-§22.8 · 08 §11-bis | Contratos de FRM con forma no definida en el 09 | ABIERTA |
 | DL-096 | Consolidación · 2026-09-24 | 08:199 · 08:58 · DL-089 · 09v10 TRN-08/09/19 | La APK no muestra la historia de entrenamiento que DL-089 le garantiza al asesorado | **CERRADA** 2026-09-27 · verificada en dispositivo con la APK 0.11.3 |
@@ -112,7 +112,7 @@
 | DL-105 | PF-03 · 2026-09-28 | 04 RF-040/042/045 · 05 UC-P17 · ficha PF-03 (PF03-D-1) | La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado | **DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual |
 | DL-106 | PF-03 · 2026-09-29 | 06 REG-06-131/132 · 09v10 TRN-15 a 20 · orden de Dirección del 2026-09-29 (comparación visual) | Una serie planificada que falta en un registro por serie no se puede declarar como no realizada | ABIERTA · la comparación la muestra como «sin dato» (provisorio, del lado que no inventa) |
 | DL-107 | PF-07 · 2026-09-30 | REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · ficha `docs/propuestas/PF-07_vista-de-cartera.md` | El profesional no tiene una vista de cartera: entra asesorado por asesorado sin saber a quién mirar hoy | **DECIDIDA** 2026-09-30 · API-DSH-04 «Pendientes», los siete tipos, ventana de 7 días, actividad solo como dato, orden fijo, arriba de «Tus asesorados» · implementada en #120 |
-| DL-108 | Plantillas · 2026-09-30 | DL-047 · RF-060 · INV-06-109 · ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` | Todo plan empieza en blanco o desde el plan anterior de la misma persona: no hay reutilización entre asesorados | **DECIDIDA** 2026-09-30 (D-1, D-2, D-3, D-5) · implementada en #121 (entrenamiento y comidas) |
+| DL-108 | Plantillas · 2026-09-30 | DL-047 · RF-060 · INV-06-109 · ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` | Todo plan empieza en blanco o desde el plan anterior de la misma persona: no hay reutilización entre asesorados | **DECIDIDA** 2026-09-30 (D-1, D-2, D-3, D-5) · implementada en #121 (entrenamiento y comidas), **integrada** en `main` el 2026-09-30 (`d2405ce`) y desplegada en `test` |
 | DL-109 | PF-09 · 2026-09-30 | ficha «Plantillas del profesional» (mejora C «Mis habituales») · DL-108 · 06 REG-06-111 | Lo que el profesional repite de a pedazos (un ejercicio, un alimento, una sesión, una comida) se vuelve a buscar y a escribir en cada plan | **DECIDIDA** 2026-09-30 · «Mis habituales»: elementos y bloques; reguardar con el mismo nombre reemplaza, con aviso · implementada en #122 |
 | DL-110 | Crítica de negocio · 2026-09-30 | REG-06-209 · UC-P32 · WP-07 D-D · T-06-33 · UC-P19 · DIR-10-MET-A · REG-06-151/157/162/168 | Formularios propios (mejora D) y protocolos propios de antropometría (mejora E) | **DECIDIDA** 2026-09-30 · D postergada (exclusión de P0 vigente); E: catálogo real de BE, sin protocolos ni fórmulas del profesional; contenido pendiente de Dirección |
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
@@ -1090,7 +1090,7 @@ decir «(sintética)».
 
 ## DL-042 — Casos adversariales de DV-05 que dependen de dominios
 
-**Prioridad:** alta · **Documento:** DV-05 (DV05.md:1116-1133) · brief WP-03 · **Estado:** ASIGNADA a WP-04 por Dirección (2026-09-19)
+**Prioridad:** alta · **Documento:** DV-05 (DV05.md:1116-1133) · brief WP-03 · **Estado:** **CERRADA** 2026-09-20, con la condición de cierre cumplida en WP-05. Antes: ASIGNADA a WP-04 por Dirección (2026-09-19)
 
 **Qué dice el legajo.**
 - DV-05 propone diez casos adversariales para ejecutar en vivo ante el tribunal (DV05.md:1116-1133).
@@ -1116,6 +1116,8 @@ WP-04 habilita el **8** (editar un plan activado) y el **7** en su variante nutr
 **Condición de cierre.** WP-04 deja ejecutables el 8 y el 7 nutricional; WP-05, el 6, el 10 y el 7 de mediciones.
 
 **Estado — 2026-09-20.** La parte de WP-04 está cumplida. El 8 y el 7 nutricional pasan en CI y en vivo contra `test` con `node scripts/adversariales-wp04.mjs` (`EVIDENCIA/WP-04/adversariales-test.json`). La corrida del 7 encontró un defecto del contraste, corregido en el PR #25 (`DEFENSA/WP-04.md` §5). DL-042 se cierra cuando WP-05 deje ejecutables el 6, el 10 y el 7 de mediciones.
+
+**Cierre (2026-09-20; anotado el 2026-10-16).** WP-05 los dejó ejecutables: el 6, el 10 y el 7 de mediciones pasan en CI y en vivo contra `test` (API 0.5.1, `4e5503f`, el merge de #43), con `node scripts/adversariales-wp05.mjs`. La corrida está en `EVIDENCIA/WP-05/adversariales-test.json` (rehecha en #44) y la lectura, en `DEFENSA/WP-05.md` §8. Con eso se cumple la condición de cierre.
 
 ## DL-043 — Contratos de REL con forma no definida en el 09
 
@@ -1540,7 +1542,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-065 — Siete de los once TEST-ANT son solo un título de una línea
 
-**Prioridad:** alta · **Documento:** 11A:573-587 · 11A:155-169 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
+**Prioridad:** alta · **Documento:** 11A:573-587 · 11A:155-169 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección) · los siete oráculos, escritos y en verde (#47); falta que el 11A los incorpore
 
 **Qué dice el legajo.** El 11A §16 enuncia los once escenarios como títulos, sin ninguno de los trece campos que su propia §6 declara obligatorios (11A:155-169). DV-05 materializa cuatro y lo admite: «Antropometría | 4 | 11» (DV-05:1144). TEST-ANT-005 a 011 no tienen oráculo en ninguna parte.
 
@@ -1553,6 +1555,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 **Provisorio en código.** A.
 
 **Decisión de Dirección (2026-09-20): opción A.** Se redactan los siete oráculos faltantes (TEST-ANT-005 a 011) con la plantilla de 11A §6 y quedan como entregable de legajo. El comportamiento ya está cubierto por pruebas que pasan; lo que falta es la **declaración de qué tenían que probar**, que es lo que una mesa puede exigir. Queda como trabajo pendiente del próximo tramo.
+
+**Hecho (2026-09-20; anotado el 2026-10-16).** El PR #47 (`3b9f50c`) escribió los siete oráculos, TEST-ANT-005 a 011, con la plantilla de 11A §6, en `docs/paquetes/WP-05-ORACULOS.md`. También sumó las pruebas de los dos que faltaban, TEST-ANT-005 y TEST-ANT-011: los siete pasan. Según ese archivo, la deuda se cierra cuando el 11A los incorpore y reemita su hash, y eso espera la reemisión del legajo.
 
 ## DL-066 — El adversarial 10 no tiene test que pruebe el borrador **de otro profesional**
 
@@ -1646,7 +1650,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-072 — ANT-01 filtra por `kind` y el 09 declara `status`
 
-**Prioridad:** baja · **Documento:** 09v11:336-339 · **Estado:** **DECIDIDA** 2026-09-20, opción A (Dirección)
+**Prioridad:** baja · **Documento:** 09v11:336-339 · **Estado:** **DECIDIDA E IMPLEMENTADA** 2026-09-20, opción A (Dirección) · #47
 
 **Qué dice el legajo.** `GET /anthropometry/specifications?limit=&cursor=&status=`.
 
@@ -1659,6 +1663,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 **Provisorio en código.** A pendiente: hoy está solo `kind`. El costo de sumarlo es bajo, y la decisión de qué significa `status` para una especificación versionada conviene tomarla junto con DL-064.
 
 **Decisión de Dirección (2026-09-20): opción A.** Se suma `status` como filtro y se conserva `kind`. Con DL-064 ya decidida, `status` para una especificación versionada significa vigente o histórica, **derivado de la cadena de versiones**, nunca una columna editable. **Es la única de las trece con trabajo pendiente de implementar**: hoy el catálogo publica solo `kind`.
+
+**Implementada (2026-09-20; anotado el 2026-10-16).** El PR #47 (`3b9f50c`) sumó a ANT-01 el filtro `status` (`CURRENT` o `HISTORICAL`) y conservó `kind`. El estado sale de la cadena de versiones, nunca de una columna (`apps/api/src/antropometria/especificaciones.service.ts`). Lo prueba `antropometria.int-spec.ts`, en el bloque «DL-072 · el catálogo declara y filtra por estado», que pasa en la CI de `main` (`EVIDENCIA/ENTREGA/resultados-integracion-796a5fe.md`).
 
 ## DL-073 — El 10 declara la carga en formulario y Dirección pide la carga sobre la figura
 
@@ -1861,7 +1867,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-084 — Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron
 
-**Prioridad:** media · **Documento:** DV-05:1128-1129 · DL-042 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** DV-05:1128-1129 · DL-042 · **Estado:** **RESUELTA** 2026-09-21 con el provisorio (opción A), en WP-06. Antes: ABIERTA
 
 **Qué dice el legajo.** El adversarial **8** (buscar un plan ya activado e intentar editarlo) es el propio de entrenamiento y cita `INV-06-04` como fuente (DV-05:1129), que es una regla, no un ID de test. Lo mismo el **7** (DV-05:1128), que cita `INV-06-176`.
 
@@ -1872,6 +1878,12 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Darlas por cubiertas con las variantes ya ejecutadas en los otros dominios.
 
 **Provisorio en código.** A. Es el adversarial propio del dominio: darlo por cubierto con la variante de otra vertical sería afirmar que está probado algo que no se probó.
+
+**Ejecutada (2026-09-21; anotado el 2026-10-16).** WP-06 corrió las dos variantes de entrenamiento en CI y en vivo contra `test` (API 0.6.0, `c50fdd9`, el merge de #55), con `node scripts/adversariales-wp06.mjs`, y las dos pasan:
+- el 8: editar un plan de entrenamiento ya activado da `422 PLAN_NOT_EDITABLE`, y la versión activada no cambia;
+- el 7: una sesión sin registro es «sin dato», nunca un cero.
+
+La corrida está en `EVIDENCIA/WP-06/adversariales-test.json` (#56). El oráculo de cada caso está en `docs/mesa/MESA_01/ESTADO_PUNTOS_5_11_WP-06.md`: INV-06-109 para el 8; H-09-TRN-01 y TEST-RF-045 para el 7.
 
 ## DL-085 — Tres vocabularios para la misma distinción entre lo planificado y lo ejecutado
 
@@ -1891,7 +1903,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-086 — wger, Open Food Facts y el compromiso de dos APIs externas
 
-**Prioridad:** alta · **Documento:** 04:482, 378 · 04:1144 · 04:1130 · DL-056 · **Estado:** **DECIDIDA** 2026-09-21 · wger se implementa en WP-07, no se difiere a un paquete indefinido
+**Prioridad:** alta · **Documento:** 04:482, 378 · 04:1144 · 04:1130 · DL-056 · **Estado:** **CERRADA** 2026-09-25 · WP-08 integró Open Food Facts y wger (#72). Antes: **DECIDIDA** 2026-09-21 · wger se implementa en WP-07, no se difiere a un paquete indefinido
 
 **Qué dice el legajo.** RF-038 (wger) es **P0 con la etiqueta «Compromiso académico de integración»** (04:482), *la misma etiqueta literal* que RF-028, Open Food Facts (04:378). Q-API-001 fija: «mínimo adoptado: 2 APIs externas; **Open Food Facts y wger satisfacen el compromiso**» (04:1144). La regla transversal 6 los ata juntos: «deberán demostrar importación, procedencia, caída y fallback» (04:1091).
 
@@ -1910,6 +1922,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 Resultado: **hoy el compromiso de Q-API-001 está en cero** —ni wger ni Open Food Facts—, que es exactamente lo que esta deuda advertía. RF-028 y RF-038 son P0 «Compromiso académico de integración», y el 09 v0.12 §5-§7 tiene sus cuatro operaciones completas (API-INT-NUT-02/03, API-INT-TRN-02/03). **Pendiente de Dirección:** confirmar si la integración entra en la entrega y bajo qué cobertura del acta.
 
 **Preparado el 2026-09-24:** WP-08 (`docs/paquetes/WP-08.md`) implementa las dos integraciones completas —Open Food Facts y wger, con candidato, revisión, procedencia y fallback— en el PR #72, **sin integrar a `main`** hasta esa confirmación (D-A del paquete). Si Dirección lo confirma, el compromiso de Q-API-001 queda cumplido entero.
+
+**Cierre (2026-09-25; anotado el 2026-10-16).** Dirección confirmó el 2026-09-25, en el PR #72, que ACTA-DIR-034 cubre WP-08. El paquete se integró en `main` ese mismo día (`e83245d`), junto con #84 y #85, y salió en la APK 0.10.0 (`be-apk-0.10.0`). Con Open Food Facts y wger en `main`, el compromiso de Q-API-001 quedó cumplido entero.
 
 ## DL-087 — RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1
 
@@ -2043,7 +2057,7 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 
 ## DL-093 — La máquina de estados de la Solicitud queda con dos estados, sin cancelar ni rechazar
 
-**Prioridad:** media · **Documento:** 06:8524-8529 (REG-06-210) · 09:1610-1618 (API-FRM-06) · **Estado:** DECIDIDA 2026-09-21
+**Prioridad:** media · **Documento:** 06:8524-8529 (REG-06-210) · 09:1610-1618 (API-FRM-06) · **Estado:** **DECIDIDA E IMPLEMENTADA** 2026-09-21 · en la base (#60) y en la API (#61)
 
 **Qué dice el legajo.** REG-06-210 declara «Estados mínimos: PENDIENTE, RESPONDIDA», sin tabla de transiciones, sin actor de creación nombrado y sin estados de caducidad, rechazo o retiro — a diferencia de la Solicitud de vínculo de B-03, que sí tiene cinco eventos con actor y guarda cada uno (06:3010-3040). El 09 no agrega ninguna operación para cancelar, rechazar o hacer caducar una Solicitud: API-FRM-06 expone en cambio `respondable: true/false` como «una proyección calculada con política actual; no crea un estado de dominio nuevo».
 
@@ -2054,6 +2068,10 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 - **B.** Agregar estados propios de dominio (`CADUCADA`, `RECHAZADA`, `RETIRADA`) que el legajo no declara.
 
 **Decisión de Elián (2026-09-21): opción A.** Es lo que el propio 09 ya resuelve con `respondable` como proyección, y sostiene el patrón «solo agregar» (sin DELETE) que rige el resto de BE. **Registrado** en `docs/paquetes/WP-07.md` §7.2, D-B, y ahora también en código: `packages/domain/src/formularios.ts` declara las dos transiciones con `TransicionDeMaquina` (mismo patrón CONV-06-03 que el resto del proyecto) y `contratos-wp07.test.ts` prueba que no hay retorno ni tercer estado. **Falta sostenerlo en la base** (constraint/trigger de Prisma) y en el servicio de la API — ninguno de los dos existe todavía.
+
+**Sostenido en la base y en la API (2026-09-21; anotado el 2026-10-16).** Los dos llegaron con WP-07, el mismo día:
+- **Base** (#60, `5716956`, migración `20260921220000_formularios_de_informacion_profesional`): el estado no se guarda en una columna. La Solicitud está RESPONDIDA cuando existe su respuesta, y hay una sola por Solicitud (índice único sobre `solicitud_id`). Las dos tablas son de solo agregar (triggers `be_solo_agregar`): sin tercer estado y sin vuelta atrás.
+- **API** (#61, `4ad6a6a`, `apps/api/src/formularios/respuestas.service.ts`): responder una Solicitud que ya no se puede responder da `422 FORM_REQUEST_NOT_RESPONDABLE`, y nunca queda una segunda respuesta (`formularios-recuperacion.int-spec.ts`).
 
 ## DL-094 — Los siete TEST-FRM son títulos de una línea, sin los trece campos de 11A §6
 
@@ -2354,7 +2372,7 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 
 ## DL-108 — Todo plan empieza en blanco: no hay reutilización entre asesorados
 
-**Prioridad:** media · **Documento:** DL-047 (nueva versión a partir de la efectiva) · RF-060 (procedencia del catálogo) · INV-06-109 · ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` · **Estado:** **DECIDIDA** 2026-09-30 · pendiente de implementar
+**Prioridad:** media · **Documento:** DL-047 (nueva versión a partir de la efectiva) · RF-060 (procedencia del catálogo) · INV-06-109 · ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` · **Estado:** **DECIDIDA** 2026-09-30 · ~~pendiente de implementar~~ implementada en #121 e integrada en `main` el 2026-09-30 (`d2405ce`)
 
 **Qué pasa hoy.** `CrearPlanDeEntrenamientoRequest` y `CrearPlanRequest` solo admiten una estructura escrita o `basedOnPlanId` de la misma persona. El profesional copia a mano de una pestaña a otra.
 
@@ -2366,6 +2384,8 @@ Se conservan las instantáneas históricas, la navegación corregida (DL-096) y 
 - Sin decidir todavía: D-4 (baja del profesional, recomendada (a)), D-6 (catálogo importado, recomendada (a)), D-7 (nombre canónico del paquete).
 
 **Cómo se ejecuta.** Según la ficha, §i: PR-1 dominio + API + Prisma (entrenamiento), PR-2 website, PR-3 nutrición; sin APK.
+
+**Estado (2026-10-16).** Se hizo en un solo PR, #121: plantillas de plan de entrenamiento y de comidas, API y website, sin APK. Se integró en `main` el 2026-09-30 (`d2405ce`) y se desplegó en `test` con `76f2a10` (`EVIDENCIA/PUBLICACION-0.12.1/LEEME.md`). La evidencia está en `EVIDENCIA/PLANTILLAS/LEEME.md`. D-4, D-6 y D-7 siguen sin decidir.
 
 ## DL-109 — «Mis habituales»: los elementos y bloques que el profesional repite
 

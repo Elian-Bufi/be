@@ -65,7 +65,7 @@ La revisión de cierre recorrió el estado desplegado como lo va a recorrer el t
 ## Lo que queda en manos de Dirección
 
 - **Las capturas de la APK** en el teléfono (WP-07 y 0.9.0), con la prueba de TalkBack y la letra del sistema al máximo que pide la revisión manual de RNF-ACC-001.
-- **WP-08** (PR #72, Open Food Facts y wger): implementado, revisado y al día con `main`. Espera que Dirección confirme que el ACTA-DIR-034 lo cubre. Integrarlo pide una APK nueva.
+- ~~**WP-08** (PR #72, Open Food Facts y wger): implementado, revisado y al día con `main`. Espera que Dirección confirme que el ACTA-DIR-034 lo cubre. Integrarlo pide una APK nueva.~~ **Resuelto el 2026-09-25:** Dirección confirmó en el PR #72 que el acta lo cubre. WP-08 se integró en `main` ese día (`e83245d`, con #84 y #85) y salió en la APK 0.10.0 (`be-apk-0.10.0`).
 - **Las deudas abiertas** de `docs/DEUDA_LEGAJO.md`, cada una con sus opciones.
 
 ## Límites del ambiente

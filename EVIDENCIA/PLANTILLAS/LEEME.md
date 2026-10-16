@@ -1,6 +1,8 @@
 # Evidencia · Plantillas del profesional (PF-09; DL-108) — entrenamiento
 
-Decisiones de Elián del 2026-09-30 sobre la ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` (D-1 a D-7), registradas como DL-108. Rama `feat/plantillas-de-entrenamiento`, sobre `main` (`53cc70e`). Para auditoría, **sin integrar, sin desplegar y sin APK**.
+Decisiones de Elián del 2026-09-30 sobre la ficha `docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md` (D-1 a D-7), registradas como DL-108. Rama `feat/plantillas-de-entrenamiento`, sobre `main` (`53cc70e`). ~~Para auditoría, **sin integrar, sin desplegar y sin APK**.~~
+
+**Estado (2026-10-16):** integrado en `main` el 2026-09-30 con el PR #121 (`d2405ce`) y desplegado en `test` con `76f2a10` (`EVIDENCIA/PUBLICACION-0.12.1/LEEME.md`). No lleva APK: es del website profesional.
 
 ## Qué puede hacer el profesional
 
