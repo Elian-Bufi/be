@@ -5,7 +5,7 @@
  *   cantidades ni se infiere de la foto o del texto. Los macros quedan «sin calcular».
  * - **La foto, con «Cámara» o «Galería»** (`expo-image-picker`). El permiso se pide al tocarlas, no antes. Cancelar no
  *   cambia nada del borrador, y antes de guardar la foto se puede quitar o reemplazar. Se valida en el teléfono con los
- *   límites de la API (`borrador-de-comida-diferente.ts`).
+ *   límites de la API (`borrador-de-comida-diferente.ts`), y se sube como bytes con su tipo real (`leerLaFoto`).
  * - **Guardar:** la intención de subida (API-MED-01), los bytes a la ruta firmada (API-MED-02) y el registro (API-ING-02),
  *   con el comando único. El botón dice en qué está: subiendo la foto, guardando, un error que se puede reintentar sin
  *   duplicar (la misma clave), o guardado. No se anuncia nada guardado hasta que la API lo confirma. Si la foto no sube, el
@@ -31,7 +31,8 @@ import {
   fotoDesdeElSelector,
   hayBorrador,
   hayContenido,
-  motivoDeFotoInvalida,
+  leerLaFoto,
+  motivoDelRechazo,
   pasoDeLaSubida,
   textoDelBotonDeGuardar,
   type EstadoDelGuardado,
@@ -56,7 +57,9 @@ const borradoresEnElSelector = new Map<string, { readonly descripcion: string; r
 
 const OPCIONES_DEL_SELECTOR: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
-  // Una sola foto, sin recortar. La calidad baja el peso de la subida; la API la recodifica igual, sin metadatos.
+  // Una sola foto, sin recortar. La calidad baja el peso de la subida; la API la recodifica igual, sin metadatos. Con una
+  // calidad menor que 1, además, el selector vuelve a codificar toda imagen en JPEG (o PNG, si lo era): un HEIC, un WebP o
+  // un GIF de la galería llegan como JPEG, y `leerLaFoto` declara el tipo que tienen los bytes.
   allowsEditing: false,
   allowsMultipleSelection: false,
   quality: 0.8,
@@ -185,42 +188,32 @@ export function PantallaDeComidaDiferente({
     setEstado((e) => (e.tipo === 'error-de-la-foto' ? EDITANDO : e));
   };
 
-  /** Los bytes de la foto, desde el archivo del teléfono. `null` si no se pudieron leer. */
-  async function leerBytes(uri: string): Promise<Blob | null> {
-    try {
-      const respuesta = await fetch(uri);
-      return await respuesta.blob();
-    } catch {
-      return null;
-    }
-  }
-
   /**
-   * Si la API rechazó la foto por lo que es (422: tipo, tamaño o contenido que no se decodifica o se pasa de las
-   * medidas), lo dice y la foto queda para reemplazarla o quitarla. Otra falla se puede reintentar.
+   * Si la API rechazó la foto por lo que es (422 por su tamaño o por sus bytes: un tipo no admitido, o un contenido que no
+   * se decodifica o se pasa de las medidas), lo dice y la foto queda para reemplazarla o quitarla. Otra falla, aun un 422
+   * por la cabecera, es del envío: se puede reintentar o guardar sin la foto.
    */
   function fotoRechazada(r: Resultado<unknown>): boolean {
-    if (r.ok || r.tipo !== 'API' || !/^FILE_/.test(r.codigo)) return false;
-    setAvisoDeFoto(r.codigo === 'FILE_CONTENT_INVALID' ? AVISO_DE_FOTO_INVALIDA.DIMENSIONES : AVISO_DE_FOTO_INVALIDA.TIPO);
-    return true;
+    if (r.ok || r.tipo !== 'API') return false;
+    const motivo = motivoDelRechazo(r.codigo, r.issues);
+    if (motivo) setAvisoDeFoto(AVISO_DE_FOTO_INVALIDA[motivo]);
+    return motivo !== null;
   }
 
   /** Deja la foto disponible en la API: pide la ruta si hace falta y sube los bytes. Devuelve el medio. */
   async function subirLaFoto(elegida: FotoElegida): Promise<ResultadoDeLaSubida> {
     const paso = pasoDeLaSubida(subida.current, elegida, relojDelServidor.ahora());
     if (paso === 'lista' && subida.current) return { ok: true, mediaId: subida.current.mediaId };
-    const bytes = await leerBytes(elegida.uri);
-    if (!bytes) return { ok: false, invalida: false };
-    // Lo que el selector no dijo (el tamaño, a veces) se valida con los bytes, antes de pedir la ruta.
-    const motivo = motivoDeFotoInvalida({ ...elegida, bytes: bytes.size });
-    if (motivo) {
-      setAvisoDeFoto(AVISO_DE_FOTO_INVALIDA[motivo]);
-      return { ok: false, invalida: true };
+    // Los bytes del archivo, con su tipo real y su tamaño, antes de pedir la ruta.
+    const leida = await leerLaFoto(elegida, (uri) => fetch(uri));
+    if (!leida.ok) {
+      if (leida.motivo) setAvisoDeFoto(AVISO_DE_FOTO_INVALIDA[leida.motivo]);
+      return { ok: false, invalida: leida.motivo !== null };
     }
     if (paso === 'pedir-ruta') {
       const r = await api.crearIntencionDeSubida(
         token,
-        { purpose: 'MEAL_EVIDENCE', contentType: elegida.tipo, byteSize: bytes.size, provenance: 'PERSON_PROVIDED', authorship: null },
+        { purpose: 'MEAL_EVIDENCE', contentType: leida.tipo, byteSize: leida.bytes.byteLength, provenance: 'PERSON_PROVIDED', authorship: null },
         claveDeLaRuta.actual(),
       );
       claveDeLaRuta.registrar(r);
@@ -233,7 +226,7 @@ export function PantallaDeComidaDiferente({
     }
     const ruta = subida.current;
     if (!ruta) return { ok: false, invalida: false };
-    const r = await api.subirMedio(ruta.uploadPath, bytes, elegida.tipo);
+    const r = await api.subirMedio(ruta.uploadPath, leida.bytes, leida.tipo);
     if (!r.ok) {
       // Una respuesta de la API cierra esa ruta: el próximo intento pide otra. Sin respuesta, se vuelve a subir ahí.
       if (r.tipo === 'API') subida.current = null;

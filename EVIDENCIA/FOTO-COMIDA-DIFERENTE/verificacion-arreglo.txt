@@ -1,0 +1,40 @@
+expo 57.0.23 · API https://be-api-hndp.onrender.com/api/v1
+
+camara-horizontal.jpeg · selector image/jpeg 4000×3000 · 1858308 bytes
+  al leer: 1858308 bytes, tipo real image/jpeg
+  API-MED-02: Content-Type enviado "image/jpeg" → 200 AVAILABLE · guardada 1600×1200, 150670 bytes, image/jpeg
+  guardada: jpeg 1600×1200 · EXIF ninguno · ICC ninguno · XMP ninguno
+
+camara-vertical.jpeg · selector image/jpeg 3000×4000 · 1853403 bytes
+  al leer: 1853403 bytes, tipo real image/jpeg
+  API-MED-02: Content-Type enviado "image/jpeg" → 200 AVAILABLE · guardada 1200×1600, 155947 bytes, image/jpeg
+  guardada: jpeg 1200×1600 · EXIF ninguno · ICC ninguno · XMP ninguno
+
+galeria-captura.png · selector image/png 1080×2400 · 4328484 bytes
+  al leer: 4328484 bytes, tipo real image/png
+  API-MED-02: Content-Type enviado "image/png" → 200 AVAILABLE · guardada 720×1600, 57171 bytes, image/jpeg
+  guardada: jpeg 720×1600 · EXIF ninguno · ICC ninguno · XMP ninguno
+
+galeria-webp.webp · selector image/webp 1600×1200 · 311509 bytes
+  al leer: 311509 bytes, tipo real image/jpeg
+  API-MED-02: Content-Type enviado "image/jpeg" → 200 AVAILABLE · guardada 1600×1200, 317424 bytes, image/jpeg
+  guardada: jpeg 1600×1200 · EXIF ninguno · ICC ninguno · XMP ninguno
+
+galeria-heic.jpeg · selector image/heic 4032×3024 · 1887232 bytes
+  al leer: 1887232 bytes, tipo real image/jpeg
+  API-MED-02: Content-Type enviado "image/jpeg" → 200 AVAILABLE · guardada 1600×1200, 149798 bytes, image/jpeg
+  guardada: jpeg 1600×1200 · EXIF ninguno · ICC ninguno · XMP ninguno
+
+galeria-gif.gif · selector image/gif 480×360 · 32525 bytes
+  al leer: 32525 bytes, tipo real image/jpeg
+  API-MED-02: Content-Type enviado "image/jpeg" → 200 AVAILABLE · guardada 480×360, 32689 bytes, image/jpeg
+  guardada: jpeg 480×360 · EXIF ninguno · ICC ninguno · XMP ninguno
+
+mas-de-10-mb.jpeg · selector image/jpeg 6000×6000 · 23510948 bytes
+  al leer: TAMANO (no se pidió la ruta) · aviso «Esa imagen no se puede usar: tiene que ser JPG, PNG o WebP, de hasta 10 MB.»
+
+reintentos
+  subida: 92dc6963 · repetida en la misma ruta: 92dc6963
+
+suprimidas 7 de 7 fotos de prueba
+RESULTADO: todo como se esperaba
