@@ -1,5 +1,11 @@
 # Evidencia · cierre de la entrega
 
+> **Nota del 2026-10-16: el estado vigente.** Lo que sigue en este archivo es el estado del 2026-09-24. El de hoy:
+> - **Desplegado en `test`:** API y website en `main`. Render está en planes pagos desde el 16/10: la base no vence y la API no se duerme (`docs/DESPLIEGUE.md`, «Planes de Render»).
+> - **APK:** la candidata `0.16.0-candidata.1`, como prerelease en GitHub. Trae los arreglos que Dirección encontró en el teléfono en la 0.15.0-candidata.1, las novedades, «Tu nombre» y «Tus revisiones». La estable sigue siendo la 0.13.2. Los avisos al teléfono esperan el proyecto de Firebase.
+> - **La demo, con la cohorte de seis personas y las cuentas DEMO:** `EVIDENCIA/ENTREGA/GUIA-DEMO.md`, actualizada el 16/10.
+> - **Lo que falta:** `docs/QUE-FALTA.md`. **Las decisiones que esperan ratificación de Dirección:** DL-133 (novedades y avisos) y DL-134 (REV-A), en `docs/DEUDA_LEGAJO.md`.
+>
 > **Nota del 2026-10-05.** La entrega es el **2026-10-20**, por instrucción de Dirección del 2026-10-05. Antes la había pasado del 2026-10-01 al 2026-10-10, el 2026-09-27. Ninguno de los dos cambios tiene un acta en el repositorio. Lo que sigue es el estado del 2026-09-24, preparado para la primera fecha. El estado vigente está en tres lugares:
 > - la demo, las URLs y los roles: `docs/mesa/MESA_01/ESTADO_PUNTOS_11_14_2026-10-02.md`;
 > - lo que falta: `docs/QUE-FALTA.md`;

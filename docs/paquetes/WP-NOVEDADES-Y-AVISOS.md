@@ -181,3 +181,15 @@ La parte de avisos de la APK necesita **Firebase Cloud Messaging**, porque Expo 
 
 - **DL-133** (decidida): la familia NOV, el modo, los recordatorios y las decisiones D-1 a D-10.
 - **Antes de datos reales** (08 §42): el DPA de Expo, el texto de privacidad que nombre el canal y el tiempo de retención de las novedades y los avisos.
+
+## 13. Estado (2026-10-16)
+
+| Qué | Estado |
+|---|---|
+| Implementado | API, website y APK (#163); REV-A, aparte (#164) |
+| CI | Verde en los dos PR, con las pruebas de integración contra PostgreSQL 16 |
+| Integrado | `main` en `1112928` (#163) y `077c328` (#164) |
+| Desplegado | `test`: la API y el website en `077c328`. Render desplegó #163 sin esperar la CI porque cambió el Blueprint (DL-008). Se aplicaron las migraciones |
+| Verificado en `test` | Novedades y preferencias responden para la cohorte; las seis personas leen sus revisiones (Diego, 8 de Nutrición y 8 de Entrenamiento); la campana del website, a 1440, 768 y 360 px. Los recordatorios de Diego se encendieron para comprobar la tarea de las 15:00 de punta a punta |
+| APK | Candidata `0.16.0-candidata.1` (versionCode 26), sin `google-services.json`: los avisos push esperan el proyecto de Firebase de Dirección |
+| Falta | Firebase y una construcción con avisos; la prueba en el teléfono; la ratificación de DL-133 y DL-134 |
