@@ -7,6 +7,8 @@
  * - La estimación de lo consumido sale de la API, con las cantidades confirmadas o informadas; sin ellas, «Macros sin
  *   calcular». Una foto no agrega macros.
  * - Las fotos son privadas (08 §21): se piden con su acceso firmado, que queda auditado, y no se guardan en el navegador.
+ * - Los mismos estados que una toma o una sesión (WP-DASHBOARD-COMPRENSION, §3.B): sin acceso (el PDP ya no deja leerlo,
+ *   o el registro no existe: el mismo texto, sin reintentar), y una falla recuperable con su motivo y «Reintentar».
  */
 import {
   COPY_RECETAS,
@@ -17,31 +19,36 @@ import {
   NUTRIENTES_CALCULADOS,
   UNIDAD_DE_NUTRIENTE,
   cantidad,
+  contrasteDeLaComida,
+  diferenciaDeLaFilaEnPalabras,
   nutrienteParaMostrar,
   type Nutrientes,
   type RegistroDeComida,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { useImagenDeMedio } from '../../../../lib/medios';
-import { useNutricion } from './nutricion';
+import { motivoDeFalla, textoDeFalla } from '../seguimiento/contexto';
 
-export function VerRegistro({ registroId }: { registroId: string }) {
-  const [abierto, setAbierto] = useState(false);
-  return (
-    <div className="ver-registro">
-      <button type="button" className="boton boton--enlace" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
-        {abierto ? COPY_REGISTRO_PARA_EL_PROFESIONAL.ocultarRegistro : COPY_REGISTRO_PARA_EL_PROFESIONAL.verRegistro}
-      </button>
-      {abierto ? <DetalleDeRegistro registroId={registroId} /> : null}
-    </div>
-  );
-}
-
-function DetalleDeRegistro({ registroId }: { registroId: string }) {
-  const { token, sesionPerdida } = useNutricion();
+/**
+ * El detalle, con la sesión por props: lo usan Nutrición · Registros (al costado de la lista) y la ficha del asesorado
+ * («Abrir registro» desde la línea de tiempo y desde Analizar), fuera de la pestaña Nutrición. La lectura es la misma
+ * API-ING-03, con su PDP.
+ */
+export function DetalleDeRegistroDeComida({
+  registroId,
+  token,
+  sesionPerdida,
+  onNoDisponible,
+}: {
+  registroId: string;
+  token: string;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  /** Avisa una vez que el registro ya no se puede leer con el acceso de ahora (quien lo abrió vuelve a preguntar). */
+  onNoDisponible?: () => void;
+}) {
   const [r, setR] = useState<Resultado<{ data: RegistroDeComida }> | null>(null);
   const cargar = useCallback(async () => {
     setR(null);
@@ -52,10 +59,25 @@ function DetalleDeRegistro({ registroId }: { registroId: string }) {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+  // Un 404 (o un 403) es «sin acceso»: el mismo texto para lo revocado y lo inexistente, y sin reintentar sin fin.
+  const sinAcceso = r !== null && !r.ok && r.tipo === 'API' && (r.codigo === 'RESOURCE_NOT_FOUND' || r.status === 403);
+  const aviso = useRef(onNoDisponible);
+  aviso.current = onNoDisponible;
+  useEffect(() => {
+    if (sinAcceso) aviso.current?.();
+  }, [sinAcceso]);
 
   if (r === null) return <Cargando />;
-  if (!r.ok) return <ErrorConReintento onReintentar={() => void cargar()} />;
-  const registro = r.datos.data;
+  if (sinAcceso) return <p className="nota">Este registro no está disponible con tu acceso actual.</p>;
+  if (!r.ok) return <ErrorConReintento mensaje={textoDeFalla(motivoDeFalla(r), 'el registro de comida')} onReintentar={() => void cargar()} />;
+  return <CuerpoDelRegistroDeComida registro={r.datos.data} token={token} sesionPerdida={sesionPerdida} />;
+}
+
+/**
+ * El registro ya leído, tal cual: lo usa el detalle de arriba y también «De dónde sale este dato» de Analizar, que lee
+ * todas las comidas de un día para decir qué aporta cada una y no las vuelve a pedir al abrir una.
+ */
+export function CuerpoDelRegistroDeComida({ registro, token, sesionPerdida }: { registro: RegistroDeComida; token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
   const nombreDeItem = new Map((registro.option?.items ?? []).map((i) => [i.itemId, i.name]));
   return (
     <div className="detalle-de-valores">
@@ -68,20 +90,7 @@ function DetalleDeRegistro({ registroId }: { registroId: string }) {
           {registro.consumption ? (
             <>
               <p>{COPY_REGISTRO_PARA_EL_PROFESIONAL.estadoDeCantidades[registro.consumption.status]}</p>
-              {registro.consumption.status === 'REPORTED' ? (
-                <ul className="lista-compacta">
-                  {registro.consumption.items.map((i) => (
-                    <li key={i.itemId}>
-                      {nombreDeItem.get(i.itemId) ?? 'Ingrediente'}:{' '}
-                      {i.notEaten
-                        ? COPY_REGISTRO_PARA_EL_PROFESIONAL.noLoComio
-                        : i.quantity
-                          ? cantidad(i.quantity.value, ETIQUETA_DE_UNIDAD[i.quantity.unit])
-                          : COPY_REGISTRO_PARA_EL_PROFESIONAL.sinCantidad}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+              <ContrasteConLaOpcion registro={registro} />
               {registro.consumption.source === 'RECTIFIED' && registro.consumption.rectifiedAt ? (
                 <p className="nota">{COPY_REGISTRO_PARA_EL_PROFESIONAL.rectificado(fecha(registro.consumption.rectifiedAt))}</p>
               ) : null}
@@ -108,13 +117,49 @@ function DetalleDeRegistro({ registroId }: { registroId: string }) {
           <p className="lista__titulo">{COPY_REGISTRO_PARA_EL_PROFESIONAL.fotos}</p>
           <div className="fotos-del-registro">
             {registro.evidence.map((e, n) => (
-              <FotoDelRegistro key={e.mediaId} medioId={e.mediaId} numero={n + 1} />
+              <FotoDelRegistro key={e.mediaId} medioId={e.mediaId} numero={n + 1} token={token} sesionPerdida={sesionPerdida} />
             ))}
           </div>
           <p className="nota">{COPY_REGISTRO_PARA_EL_PROFESIONAL.fotoPrivada}</p>
         </>
       ) : null}
       <p className="nota">Registrado el {fecha(registro.recordedAt)}</p>
+    </div>
+  );
+}
+
+/**
+ * Lo indicado y lo registrado, ingrediente por ingrediente (WP-DASHBOARD-COMPRENSION, eje 2): la opción tal como estaba
+ * en su versión del plan contra lo que la persona confirmó o informó. Sin confirmar sigue sin confirmar; la diferencia
+ * es una resta en la misma unidad, sin porcentaje ni juicio.
+ */
+function ContrasteConLaOpcion({ registro }: { registro: RegistroDeComida }) {
+  const c = contrasteDeLaComida(registro);
+  if (c.tipo !== 'CON_LA_OPCION' || c.filas.length === 0) return null;
+  return (
+    <div className="desplazable-x">
+      <table className="tabla tabla--compacta">
+        <caption className="visualmente-oculto">Lo indicado y lo registrado, por ingrediente</caption>
+        <thead>
+          <tr>
+            <th scope="col">Ingrediente</th>
+            <th scope="col">Indicado</th>
+            <th scope="col">Registrado</th>
+            <th scope="col">Diferencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          {c.filas.map((f) => (
+            <tr key={f.itemId}>
+              <th scope="row">{f.nombre}</th>
+              <td>{f.indicado}</td>
+              <td>{f.registrado}</td>
+              {/* Siempre con palabras: una raya sola se puede leer como «falta el dato» (C-51). */}
+              <td>{diferenciaDeLaFilaEnPalabras(f)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -139,8 +184,7 @@ function LoConsumido({ nutrientes, nombres }: { nutrientes: Nutrientes; nombres:
   );
 }
 
-function FotoDelRegistro({ medioId, numero }: { medioId: string; numero: number }) {
-  const { token, sesionPerdida } = useNutricion();
+function FotoDelRegistro({ medioId, numero, token, sesionPerdida }: { medioId: string; numero: number; token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
   const { estado } = useImagenDeMedio(token, medioId, sesionPerdida);
   const texto = COPY_REGISTRO_PARA_EL_PROFESIONAL.fotoDelAsesorado(numero);
   if (estado.tipo === 'lista') return <img className="imagen-de-receta" src={estado.dataUrl} alt={texto} />;

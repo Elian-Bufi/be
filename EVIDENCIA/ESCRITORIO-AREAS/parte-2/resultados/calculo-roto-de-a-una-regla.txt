@@ -1,0 +1,47 @@
+control (sin mutar): 14 pasan, 0 fallan
+DETECTADA carga-no-registrada-se-calla · una serie sin carga registrada no lo dice · fallan 2: «una serie registrada se dice con lo que tiene, y lo que no s» «el detalle es una tabla con cada serie una sola vez: lo indi»
+DETECTADA repeticiones-en-cero · las repeticiones sin registrar se dicen «0 rep.» · fallan 1: «una serie registrada se dice con lo que tiene, y lo que no s»
+DETECTADA sin-esfuerzo-percibido · el esfuerzo percibido no se muestra · fallan 1: «una serie registrada se dice con lo que tiene, y lo que no s»
+DETECTADA la-carga-cuenta · la carga por encima o por debajo cuenta como diferencia · fallan 2: «una serie frente a su objetivo: cuentan las repeticiones y e» «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA el-rir-no-cuenta · el RIR por encima o por debajo no cuenta como diferencia · fallan 3: «la fila de una sesión: «N de M registradas» y cuántas series» «el detalle es una tabla con cada serie una sola vez: lo indi» «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA las-repeticiones-no-cuentan · las repeticiones por encima o por debajo no cuentan · fallan 6: «una serie frente a su objetivo: cuentan las repeticiones y e» «la fila de una sesión: «N de M registradas» y cuántas series» «el detalle es una tabla con cada serie una sola vez: lo indi» «una serie sin registrar es un hueco: se cuenta aparte, no es» «rige la corrección vigente, y la serie que cambió lo dice» «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA sin-dato-es-diferencia · un dato sin registrar cuenta como diferencia · fallan 2: «una serie frente a su objetivo: cuentan las repeticiones y e» «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA sin-dato-no-se-anota · un dato sin registrar no se anota aparte · fallan 2: «una serie frente a su objetivo: cuentan las repeticiones y e» «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA la-carga-sin-decir-sugerida · la carga no dice que se compara con la sugerida · fallan 2: «una serie frente a su objetivo: cuentan las repeticiones y e» «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA la-carga-se-calla · una carga por encima de la sugerida no llega al detalle · fallan 1: «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA la-carga-sin-dato-se-calla · una carga sin registrar, con una sugerida, no se dice · fallan 1: «una serie frente a su objetivo: cuentan las repeticiones y e»
+DETECTADA el-rir-igual-se-dice · un RIR igual al indicado se lista como si fuera algo · fallan 4: «una serie frente a su objetivo: cuentan las repeticiones y e» «el detalle es una tabla con cada serie una sola vez: lo indi» «rige la corrección vigente, y la serie que cambió lo dice» «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA sin-objetivo-es-dentro · una serie sin ningún objetivo dice «Dentro de lo indicado» · fallan 2: «una serie frente a su objetivo: cuentan las repeticiones y e» «si lo indicado no fija ningún objetivo, la sesión no dice «D»
+DETECTADA solo-la-carga-es-dentro · una serie con solo la carga indicada dice «Dentro de lo indicado» · fallan 1: «una serie frente a su objetivo: cuentan las repeticiones y e»
+DETECTADA adicional-como-registrada · una serie de más cuenta como una de las indicadas · fallan 1: «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA resumida-como-sin-registrar · una serie de un registro resumido cuenta como sin registrar · fallan 1: «una sesión registrada como no realizada, o resumida, no se c»
+DETECTADA otro-ejercicio-se-compara · las series de otro ejercicio se comparan con lo indicado para el original · fallan 1: «si se registró otro ejercicio, sus series cuentan como regis»
+DETECTADA sin-leer-se-compara · sin lo indicado leído, la serie se compara igual (con las repeticiones solas) · fallan 1: «si no se pudo leer lo indicado, la sesión lo dice: no afirma»
+DETECTADA sin-leer-no-lo-dice-la-serie · sin lo indicado leído, la celda «Indicado» no avisa · fallan 1: «si no se pudo leer lo indicado, la sesión lo dice: no afirma»
+DETECTADA la-nota-se-pierde · la nota de la serie no llega al detalle · fallan 1: «el detalle es una tabla con cada serie una sola vez: lo indi»
+DETECTADA corregida-se-pierde · la serie corregida no lo dice · fallan 1: «rige la corrección vigente, y la serie que cambió lo dice»
+DETECTADA el-nombre-indicado · con otro ejercicio registrado, el detalle nombra el indicado · fallan 1: «si se registró otro ejercicio, sus series cuentan como regis»
+DETECTADA sin-en-lugar-de · con otro ejercicio registrado, no dice en lugar de cuál · fallan 1: «si se registró otro ejercicio, sus series cuentan como regis»
+DETECTADA sin-aviso-de-identidad · no se explica por qué no se compara otro ejercicio · fallan 1: «si se registró otro ejercicio, sus series cuentan como regis»
+DETECTADA cuenta-de-un-resumen · un ejercicio resumido dice «0 de 4 series registradas» · fallan 1: «una sesión registrada como no realizada, o resumida, no se c»
+DETECTADA nota-de-lo-indicado-siempre · la nota «sin carga ni RIR indicados» se pierde · fallan 1: «el detalle es una tabla con cada serie una sola vez: lo indi»
+DETECTADA no-realizada-por-serie · una sesión registrada como no realizada se cuenta serie por serie · fallan 3: «una sesión registrada como no realizada, o resumida, no se c» «las sesiones van de la más nueva a la más vieja, y cada vist» «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA resumida-por-serie · una sesión resumida se cuenta serie por serie · fallan 1: «una sesión registrada como no realizada, o resumida, no se c»
+DETECTADA con-desvio-es-solo-el-desvio · la sesión registrada como no realizada no entra en «Con desvío o no realizada» · fallan 1: «las sesiones van de la más nueva a la más vieja, y cada vist»
+DETECTADA el-motivo-se-pierde · el motivo que escribió la persona no llega · fallan 2: «una serie sin registrar es un hueco: se cuenta aparte, no es» «una sesión registrada como no realizada, o resumida, no se c»
+DETECTADA rige-el-original · con una corrección vigente, se cuenta el registro original · fallan 1: «rige la corrección vigente, y la serie que cambió lo dice»
+DETECTADA sin-leer-dice-cero · sin lo indicado leído, la sesión dice 0 diferencias · fallan 1: «si no se pudo leer lo indicado, la sesión lo dice: no afirma»
+DETECTADA sin-registrar-no-se-dice · la fila no dice cuántas series quedaron sin registrar · fallan 1: «una serie sin registrar es un hueco: se cuenta aparte, no es»
+DETECTADA sin-leer-no-lo-dice-la-fila · sin lo indicado leído, la fila no lo dice · fallan 2: «si no se pudo leer lo indicado, la sesión lo dice: no afirma» «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA diferencias-no-se-dicen · la fila no dice cuántas series tienen diferencias · fallan 4: «la fila de una sesión: «N de M registradas» y cuántas series» «una serie sin registrar es un hueco: se cuenta aparte, no es» «rige la corrección vigente, y la serie que cambió lo dice» «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA dato-sin-registrar-no-se-dice · la fila no dice que hay series con un dato sin registrar · fallan 1: «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA otro-ejercicio-no-se-dice · la fila no dice que un ejercicio no se compara · fallan 1: «si se registró otro ejercicio, sus series cuentan como regis»
+DETECTADA dentro-sin-comparar-nada · una sesión sin nada comparable dice «Dentro de lo indicado» · fallan 1: «si lo indicado no fija ningún objetivo, la sesión no dice «D»
+DETECTADA sin-adicionales-en-la-fila · la fila no dice las series de más · fallan 1: «una serie de más, un dato sin registrar y una carga por enci»
+DETECTADA de-la-mas-vieja · las sesiones van de la más vieja a la más nueva · fallan 2: «las sesiones van de la más nueva a la más vieja, y cada vist» «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA los-objetivos-de-otra-version · cada sesión no usa los objetivos de su versión · fallan 1: «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA vista-diferencias-con-sin-registrar · «Con diferencias» trae también las que tienen series sin registrar · fallan 1: «las sesiones van de la más nueva a la más vieja, y cada vist»
+DETECTADA vista-sin-registrar-todas · «Con series sin registrar» trae también las resumidas · fallan 1: «las sesiones van de la más nueva a la más vieja, y cada vist»
+DETECTADA cuenta-cero-sin-leer · con una versión sin leer, «Con diferencias» dice un número · fallan 1: «si una versión del plan no se pudo leer, «Con diferencias» q»
+DETECTADA sin-leer-por-una-no-realizada · una sesión no realizada de una versión sin leer deja a «Con diferencias» sin número · fallan 1: «si una versión del plan no se pudo leer, «Con diferencias» q»
+45 de 45 detectadas

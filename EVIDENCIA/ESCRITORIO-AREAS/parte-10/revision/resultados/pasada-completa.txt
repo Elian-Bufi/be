@@ -1,0 +1,19 @@
+inicio: 2026-10-15 02:05 · commit 7850b3d + cambios sin commit: 1
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 1 · 309 OK · 13 datos · 2 fallas · 322/324 comprobaciones bien; fallan: PRO-18, F-09
+FALLA PRO-18 · La comparación de dos etapas dice criterio, cobertura, duración y diferencia, sin causas — Comparación de dos etapas de Nutrición A Nutrición · versión 1 Ver la planificación de la etapa A Desde 24 jul, al activarse Hasta 9 sept, la reemplazó la versi
+FALLA F-09 · Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acceso no disponible» y deja de decir «Activo»; el de Entrenamiento, que no recibió ningún «no disponible», sigue diciendo el suyo. No dice quién lo retiró ni por qué — N
+rc-funcional: salida 0 · 76 OK · 10 datos · 0 fallas · 86 de 86 bien
+rc-revocacion: salida 1 · 1 OK · 0 datos · 1 fallas · 1 de 2 bien; con observaciones: — El recorrido terminó por una excepción
+FALLA — · El recorrido terminó por una excepción — Error: no encontré «Ver origen» en .panel-de-lectura button
+r-descartable: salida 0 · 22 OK · 0 datos · 0 fallas · 22/22 comprobaciones bien
+r-mediciones: salida 0 · 18 OK · 0 datos · 0 fallas · 18/18 comprobaciones bien
+r-solicitudes: salida 0 · 27 OK · 5 datos · 0 fallas · 32/32 comprobaciones bien
+r-planes: salida 0 · 56 OK · 1 datos · 0 fallas · 57/57 comprobaciones bien
+r-entrenamientos: salida 0 · 32 OK · 2 datos · 0 fallas · 34/34 comprobaciones bien
+r-revisiones: salida 0 · 15 OK · 1 datos · 0 fallas · 16/16 comprobaciones bien
+r-estimacion: salida 0 · 7 OK · 0 datos · 0 fallas · 7/7 comprobaciones bien
+fin: 2026-10-15 02:58

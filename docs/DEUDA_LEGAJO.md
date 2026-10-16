@@ -13,7 +13,7 @@
 | DL-006 | WP-01 · 2026-09-16 | 07 §36 | Pre-deploy `prisma migrate deploy` no disponible en plan gratuito de Render | ABIERTA |
 | DL-007 | WP-01 · 2026-09-16 | 07 §34 vs CAND-07-J | Runtime del website: imagen Next standalone vs export estático | ABIERTA |
 | DL-008 | WP-01 · 2026-09-18 | 07 §36 | La sincronización del Blueprint despliega sin esperar a la CI | ABIERTA |
-| DL-009 | WP-02 · 2026-09-18 | 06 §5.5/§5.12 · 05 UC-P25 · 09v8 | Perfil propio sin campos aprobados | ABIERTA |
+| DL-009 | WP-02 · 2026-09-18 | 06 §5.5/§5.12 · 05 UC-P25 · 09v8 | Perfil propio sin campos aprobados | **DECIDIDA E IMPLEMENTADA** 2026-10-15 · opción B, con un solo campo: el nombre visible, optativo, con versiones desde que la persona lo declara; API-ACC-06 (#159, sin integrar) |
 | DL-010 | WP-02 · 2026-09-18 | 09v8 ACC-01 · 08 §24.5 | El registro distingue identificador nuevo de existente (201/409) | ABIERTA |
 | DL-011 | WP-02 · 2026-09-18 | 06 INV-06-24, REG-06-19 · 08 §16 | Unicidad global del identificador, incluye cuentas cerradas | ABIERTA |
 | DL-012 | WP-02 · 2026-09-18 | 07 §43-bis · 08 §26 · 09v8 ACC-02 | Sesión: formato, transporte, TTL y renovación | **DECIDIDA** 2026-10-03 · sin renovación; en la APK, el token en el almacenamiento seguro hasta que vence (#136, sin integrar) |
@@ -44,7 +44,7 @@
 | DL-037 | WP-03 · 2026-09-19 | 06:3035-3040 · REG-06-49 · 09v8:1165-1176, 1960 · 09:853 | Solicitud: caducidad sin plazo, invalidación y respuesta al duplicado | ABIERTA |
 | DL-038 | WP-03 · 2026-09-19 | 06:3170-3175 · REG-06-50 · 09v8:1570-1660 · 09:2437-2519 | B2: nueva versión y reotorgamiento sin contrato | ABIERTA |
 | DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | **SIMPLIFICACIÓN DECLARADA** 2026-09-19 · consentimiento por alcance y finalidad; categorías especificadas y no implementadas |
-| DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | ABIERTA |
+| DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | **DECIDIDA E IMPLEMENTADA** 2026-10-15 · el profesional ve el nombre visible del asesorado mientras el vínculo está vigente; si no, la referencia neutral (#159, sin integrar) |
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
 | DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA**: 8 y 7 (variante nutricional) **ejecutables desde WP-04**; 6, 10 y 7 (mediciones) en WP-05, antropometría |
 | DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
@@ -130,6 +130,13 @@
 | DL-123 | Encargo de Dirección · 2026-10-06 | REG-06-134, 135, 136 · 09v10 §9 · DL-120 | Imagen del ejercicio: medio `EXERCISE_REFERENCE`, asociación de solo agregar, licencia honesta, procedencia y revisión técnica | **DECIDIDA** 2026-10-06 por el encargo · familia EJE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (las tres imágenes del paquete por el flujo real), con la CI en verde. Sin integrar. API-TRN-13 sigue con `didacticResources` vacío |
 | DL-124 | Encargo de Dirección · 2026-10-06 | REG-06-130, 131 · paquete de Dirección (DECISIONES_Y_TIEMPOS) | Tiempos de la sesión como eventos idempotentes con calidad: medido, estimado, incompleto o sin dato | **DECIDIDA** 2026-10-06 por el encargo · familia TIE. **IMPLEMENTADA** el 2026-10-06 en `wp-entrenamiento-series` y **probada localmente** (el guion de tiempos del paquete, de punta a punta), con la CI en verde. Sin integrar. Pendiente en Android: pantalla bloqueada, muerte del proceso y reloj monotónico durante la suspensión. Precierre del 2026-10-06 (§1, §3, §4): estados honestos del guardado local, cifrado AES-256-GCM con la clave en el almacén seguro y fuera del respaldo de Android; reloj desde el arranque con su base en cada instante (`ELAPSED_SINCE_BOOT`). **IMPLEMENTADO**; Android pendiente |
 | DL-125 | Encargo de Dirección · 2026-10-06 (precierre, §6) | 08 §12.2, §12.4 (08:386, 08:395), §13, §21 · 08:451 · DL-120 · DL-116 | El acto `EVIDENCIA_VISUAL` no tenía texto versionado, ni registro, ni lo exigían MED-01 y MED-03 | **PROPUESTA**, sin activar · texto versionado propuesto (`evidencia-visual-2026-10-propuesta`), acto registrable por alcance de Nutrición, familia propia EVI (API-EVI-01 a 04) y mapeo a MED-01 y MED-03 detrás de `BE_EVIDENCIA_VISUAL_EXIGIDA` (por defecto `false`). **Punto de aprobación pendiente:** Dirección aprueba el texto, con la validación jurídica, y decide activar la exigencia |
+| DL-126 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §18-§23 · B10-09 §15-§28 · 11A TEST-PRJ-001 · encargo §8-§13 | «Analizar» con hasta tres métricas sobre API-PRJ-01: el 09 define ocho proyecciones con resultado propio, y solo tres tienen una derivación definida en BE | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · las 8 claves en el contrato; 3 derivadas con el cálculo canónico del dominio; 5 responden `INSUFFICIENT_INFORMATION` con `SPECIFICATION_PENDING`. Diccionario de métricas versionado |
+| DL-127 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §16 · B10-08 §11-§12 · T-06-24 · DL-054 · DL-116 | API-DSH-04 (línea de tiempo) sin implementar: fuentes, forma de la entrada y filtros que el 09 no fija | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · ruta del 09; `occurredDate` para los hechos sin hora; extensiones de filtro `state`, `quality`, `planVersionId` y `exerciseId`; búsqueda en el cuerpo de API-DSH-04-BUSQUEDA (`POST …/timeline/search`), nunca en una URL |
+| DL-128 | Encargo de Dirección · 2026-10-08 (entorno profesional) | encargo §8 y §16 («guardar una vista personal») · 09 sin operación · 08 (preferencias sin datos de salud) | Vistas de análisis guardadas e indicadores fijados del Resumen: no existen en el 09 ni en el modelo | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · familia propia VAN (API-VAN-01 a 04), tabla aditiva `vista_de_analisis` con configuración sin datos de salud; los permisos se revalidan al abrir |
+| DL-129 | Encargo de Dirección · 2026-10-09 (comprensión profesional) | 09 v0.11 §15-§16, §19-§20 · B10-08 §8, §10-§12 · DL-126 · DL-127 · DL-128 · encargo §3-§9 | Comprender, investigar y actuar: el 09 no tiene «desde la última revisión», etapas de planificación ni preguntas profesionales | **PROPUESTA** en `wp-dashboard-comprension`, sin integrar · extensiones aditivas de lectura (DSH-03, DSH-04 `since`, PRJ-01) y reglas del dominio (síntesis, etapas, preguntas); API-ANT-06 y las APK sin cambios |
+| DL-130 | Encargo de Dirección · 2026-10-09 (§3.C) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · DL-127 | La búsqueda en los catálogos de alimentos y ejercicios lleva el texto en la URL | **PROPUESTA** en `wp-dashboard-comprension`, sin integrar · variantes `API-NUT-13-BUSQUEDA` y `API-TRN-13-BUSQUEDA` (POST con el texto en el cuerpo); el GET se conserva con su contrato |
+| DL-131 | Decisión de Dirección · 2026-10-12 (WP-ESCRITORIO-AREAS, F-05) | 09v16.1:1518-1528 (API-FRM-03, precondiciones) · 05:15096-15105 (§13.6.7) · 05 §13.6.8 (pasos 6 a 8) · DL-100 | Al elegir un formulario en «Pedir información», el website no traía ninguna pregunta marcada: había que marcarlas de a una. La implementación de WP-07 lo fundaba en «una plantilla con campos más amplios no amplía B2» | **DECIDIDA** 2026-10-12 · vienen todas marcadas y el profesional desmarca las que no necesita; ninguna viene como requerida; la API sigue evaluando la pertinencia de cada pregunta al crear la solicitud. **IMPLEMENTADA** en `wp-escritorio-areas` (parte 4), sin integrar |
+| DL-132 | Hallazgo de implementación · 2026-10-12 (WP-ESCRITORIO-AREAS, parte 5) | DL-119 (lo implementado) · DL-108 | «Guardar como plantilla» responde distinto con una opción de receta: en la versión en preparación dice que no se guarda; en el plan activo la guarda como una opción común, con los ingredientes de una porción, sin avisar | **ABIERTA** · se recomienda A (que el plan activo responda como el editor). Sin cambios en el código: es el comportamiento de `main` |
 
 ---
 
@@ -266,7 +273,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 ## DL-009 — Perfil propio sin campos aprobados
 
-**Prioridad:** media · **Documento:** 06 §5.5 y §5.12 · 05 UC-P25 · 09v8 ACC-01/06 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06 §5.5 y §5.12 · 05 UC-P25 · 09v8 ACC-01/06 · **Estado:** DECIDIDA E IMPLEMENTADA (2026-10-15)
 
 **Qué dice el legajo.**
 - UC-P25 exige que «el perfil propio queda asociado» (05:14047-14053).
@@ -284,6 +291,21 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Provisorio en código.** A. `PerfilPropio` existe con `versionEfectivaId = null`; INV-06-22 se cumple y DL-003 se cierra.
 
 **Condición de cierre.** Dirección aprueba los campos del perfil propio, o declara que el perfil no tiene contenido en el MVP y corrige §5.12.
+
+**Decisión de Dirección (2026-10-15).** «Pongámosle nombres, ya no id o esa “matrícula”; empecemos a usar datos,
+aunque sean sintéticos, lo más parecido a la realidad». Se implementó la opción B con un solo campo, en el PR #159:
+- **El nombre visible** (C3, «contacto mínimo del vínculo», 08 §11): optativo, de 1 a 60 caracteres, sin caracteres
+  de control ni invisibles. Lo declara, lo cambia o lo quita la persona, en «Cuenta» del website.
+- **Con historia** (§5.5; REG-06-20): cada cambio es una `VersionDePerfilPropio`, que la base solo deja agregar, y el
+  perfil apunta a la última. No hay versión en el alta: una persona sin nombre no tiene contenido que versionar
+  (§5.5.2, «exactamente una cuando existe contenido confirmado»). El alta no cambia.
+- **API-ACC-06** (`PATCH /me/profile`, con `expectedVersion`; 409, 422 y 400 como dice el 09v8:509-554) y su lectura,
+  **API-ACC-06-PROPIA** (`GET /me/profile`), una extensión declarada. `/me` no cambia: su respuesta es estricta, y la APK
+  instalada la valida campo por campo (ficha 1 de las fichas del 2026-10-02). La APK lo suma en su próxima versión.
+- **Pruebas:** `contratos-perfil-propio.test.ts` (dominio) y `perfil-propio.int-spec.ts` (integración, en la CI).
+
+**Lo que sigue abierto.** Otros campos del perfil (altura, nacimiento: DL-023 y DL-095) y §5.12 («1 : 1..N»), que
+el 06 tendría que leer como «1 : 0..N» mientras el contenido sea optativo.
 
 ## DL-010 — El registro distingue identificador nuevo de existente (201 frente a 409)
 
@@ -1012,7 +1034,7 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 ## DL-040 — Nombre visible de las partes sin campos de perfil aprobados
 
-**Prioridad:** media · **Documento:** 09v8:161-170 (ActorSummary) · 09v8:1523-1526 · 11A:196 · DL-009 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 09v8:161-170 (ActorSummary) · 09v8:1523-1526 · 11A:196 · DL-009 · **Estado:** DECIDIDA E IMPLEMENTADA (2026-10-15)
 
 **Qué dice el legajo.**
 - Los modelos de lectura de REL y CON muestran la contraparte como `ActorSummary { identityId, displayName }` (09v8:161-170), y CON-01 muestra `professional.displayName` (09v8:1523-1526).
@@ -1028,6 +1050,19 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Provisorio en código.** A.
 
 **Condición de cierre.** El 04 y el 05 aprueban los campos del perfil propio y del perfil profesional (DL-009).
+
+**Decisión de Dirección (2026-10-15).** El profesional ve a la persona por su nombre visible (DL-009, opción B), en el
+`displayName` de cada modelo de lectura: la cabecera de la ficha, «Tus asesorados», «Pendientes», la línea de tiempo,
+las sesiones, las solicitudes de vínculo y de información. Lo resuelve una sola función de la API
+(`nombresDeAsesoradosPorPar`, en `vinculo/lectura.ts`), con una regla:
+- **con un vínculo vigente** entre los dos (algún alcance aceptado o en pausa), el nombre que la persona declaró;
+- **sin vínculo vigente** (una solicitud pendiente, que todavía no aceptó; un vínculo que terminó) **o sin nombre,** la
+  referencia neutral de siempre («Asesorado · c36743»). El correo, nunca.
+
+En la ficha, la referencia va al lado del nombre, chica, como en la maqueta 01: distingue a dos personas que se llaman
+igual. «Tus asesorados» busca por nombre o por referencia («Buscar por nombre o referencia», el texto de la maqueta,
+que volvió). El nombre del profesional ya era visible (perfil profesional, DL-036); los datos de prueba dejaron de
+decir «(sintética)».
 
 ## DL-041 — El profesional sin Cartera
 
@@ -3329,3 +3364,349 @@ sintéticos (`evidencia-visual` 10/10 y el bloque de `contrato`, con una app con
 3. El 08 registra la activación, y el 05 y el 09 incorporan la familia EVI.
 
 **Condición de cierre.** Los tres pasos anteriores.
+
+## DL-126 — «Analizar» con hasta tres métricas sobre API-PRJ-01: tres de las ocho proyecciones tienen derivación
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §18-§23 (`ProjectionKey`, API-PRJ-01, estados longitudinales y vista
+parcial) · B10-09 §15-§28 · 11A TEST-PRJ-001 a 010 · encargo del 2026-10-08, §8 a §13 · **Estado:** PROPUESTA, sin
+integrar (`wp-dashboard-profesional`)
+
+**Qué dice el legajo.**
+- El 09 cierra la taxonomía en ocho proyecciones y pide que `result` sea una unión discriminada por clave.
+- Cada proyección se produce solo «si existe especificación de derivación trazable» (09 v0.11 §20.1). El 09 no fija qué
+  es una marca personal ni el volumen efectivo, y deja la ponderación por zonas a una especificación futura.
+- 11A TEST-PRJ-001 pide «catálogo = 8/8, 0 extra».
+
+**Qué pide el encargo.**
+- Una pantalla «Analizar» con hasta tres métricas, tres modos de lectura, presets por pregunta profesional, comparación de
+  períodos y vistas guardadas.
+- Un diccionario versionado de métricas que clasifique cada una como disponible, derivable, incompleta o futura.
+- No inventar valores ni pantallas aparentemente operativas.
+
+**Por qué no tal cual.** Cinco claves dependen de especificaciones que BE no tiene:
+- el volumen de carga externa con todas las bases de carga;
+- el mapeo de zonas musculares;
+- el umbral del profesional;
+- la definición de una marca.
+Producirlas sería inventar.
+
+**Opciones.**
+- **A.** API-PRJ-01 con las 8 claves en el contrato (8/8, ninguna extra).
+  - Se derivan las tres que tienen un cálculo canónico en el dominio:
+    - `NUTRITION_PRESCRIBED_VS_RECORDED`, con `calcularNutrientes`, sumando lo conocido y declarando lo que falta;
+    - `TRAINING_PROGRESSION_BY_EXERCISE`, con `comparacion-de-entrenamiento`;
+    - `ANTHROPOMETRY_LONGITUDINAL`, con `construirSerie` de ANT-06.
+  - Las otras cinco responden `INSUFFICIENT_INFORMATION` con `SPECIFICATION_PENDING`.
+  - Las métricas de «Analizar» son vistas de esas tres claves, descritas en un diccionario versionado.
+- **B.** Una operación nueva de BE, «serie de una métrica», paralela a PRJ-01. Duplica el contrato del 09 e introduce un
+  modelo canónico paralelo, que el encargo pide evitar.
+
+**Provisorio en código.** A.
+
+**Decisiones reversibles que toma esta propuesta:**
+- La semana va de lunes a domingo en la zona civil del asesorado, y una semana parcial se marca.
+- El período admite hasta 366 días.
+- La media semanal de nutrición es sobre los días con cantidades, con el denominador visible. No hay día «completo»: BE
+  no tiene ese mecanismo.
+- El RIR es ordinal y se resume con la mediana.
+- Carga, repeticiones y RIR se comparan **serie del mismo número contra serie del mismo número**, sesión por sesión, sin
+  mezclar kg con lb ni ejercicios distintos. No existe «la serie más pesada»: el 09 prohíbe máximos, sumas y promedios
+  entre series (09v10:1285-1295). Ninguna carga se llama 1RM ni marca.
+- Si el profesional ve al asesorado por otro alcance pero no por el de la clave pedida, la respuesta es 200 con
+  `NOT_AVAILABLE_TO_VIEW`, sin datos ni conteos (09 v0.11 §22: el dominio es legítimo de nombrar). Sin ningún alcance
+  permitido, 404 idéntico a un asesorado inexistente.
+- Cada clave acepta solo sus filtros; los demás son 400 `NOT_APPLICABLE_QUERY_PARAMETER`. La validación corre en el
+  guard, antes del PDP, y por eso recibe también la clave de la ruta (`pdp.guard.ts`).
+- El 09 declara `SESSION_MFA`; se implementa como `SESSION`, igual que en el resto de la demo sintética (DL-088 #17).
+- **Antropometría: todas las tomas.** La proyección conserva cada toma, también dos el mismo día (encargo §12), con
+  `construirSerieDeTomas`. API-ANT-06 no cambia: sigue con un punto por día, la primera toma vigente de su checkpoint
+  (REG-06-165). Es una diferencia declarada entre las dos lecturas, no una corrección de ANT-06.
+- **Escalones del requerimiento:** una versión del objetivo rige hasta su `vigenteHasta` o hasta que empieza su
+  sucesora, lo primero. Las versiones son de solo agregar y una reemplazada conserva `vigenteHasta` vacío: sin este corte,
+  dos escalones se superpondrían.
+
+**Correcciones de la revisión independiente del head fbeb256 de #153** (decisiones técnicas ya resueltas):
+- **Resúmenes sobre observaciones, en el rango exacto (hallazgo 2).** El resumen de un período, la comparación de dos
+  períodos y la referencia del cambio relativo se calculan sobre las observaciones de la métrica (el día en nutrición,
+  la sesión en entrenamiento, la toma en antropometría; `granoDeObservacion`), nunca sobre puntos agrupados por semana.
+  La semana es un grano de dibujo. Con el gráfico por semana, el website pide además la serie de observaciones: una
+  segunda lectura de API-PRJ-01, con el mismo PDP. Recibir una serie agrupada en esas funciones es un error de
+  programación y falla en voz alta (`exigirObservaciones`).
+  - Reproducción de la revisión: del 7 al 20 de septiembre de 2026, con un día de 1.000 kcal la primera semana y siete
+    de 2.000 la segunda. Ahora da 1.875 kcal (n = 8); con puntos semanales daba 1.500. Del 16 al 20 da 2.000 (n = 5);
+    antes, «sin valor».
+  - Ponderar semanas no alcanza: un rango que corta una semana no se puede recortar.
+- **Referencia explícita, separada del zoom (hallazgo 3).** La referencia es `{kind: 'FIRST_DAYS', days}` (los
+  primeros N días del período leído) o `{kind: 'RANGE', start, end}` (`ReferenciaDelCambioSchema`).
+  - Se calcula con `referenciaElegida`, que no recibe el intervalo visible: acercar, alejar o restablecer el gráfico no
+    la puede mover.
+  - Cambia solo con «Aplicar», en un editor que también deja copiar el intervalo visible como rango (y aun así hay que
+    aplicarlo).
+  - Queda en la URL (`ref=N` o `ref=AAAA-MM-DD_AAAA-MM-DD`), en pantalla (texto y banda «Referencia») y en las vistas
+    guardadas. `reference` reemplaza a `referenceDays` en la configuración de DL-128; la rama nunca se publicó, así que
+    no hay vistas viejas que migrar.
+  - Un rango que no cae entero en el período leído no se calcula (`FUERA_DEL_PERIODO`).
+- **Clase del dato antropométrico (hallazgo 5).** Cada punto lleva `dataClass`: `MEASURED`, `REPORTED` o `DERIVED`
+  (`null` fuera de antropometría).
+  - El gráfico dibuja con contorno cortado lo reportado por la persona y con un punto adentro lo calculado por un
+    método.
+  - La lectura, la tabla, el resumen en texto y el CSV (columna «Clase de dato») lo dicen en palabras, con las de la
+    pestaña de Antropometría: «Medido», «Reportado por la persona, no medido» y «Calculado por un método
+    (estimación)».
+- **La exportación pregunta con el acceso de ahora.** Antes de armar el CSV se vuelve a leer cada serie. Lo que ya no
+  está disponible no entra, se dice por qué y la pantalla se vuelve a pedir. Lo mismo pasa al abrir el origen de un
+  punto: si el PDP ya no lo deja leer, el panel no repite el valor y los gráficos se vuelven a pedir.
+
+**Condición de cierre.**
+1. Dirección aprueba el diccionario.
+2. El 09 incorpora la forma de los tres resultados.
+3. Las especificaciones de las otras cinco claves se definen, o se declaran fuera del alcance de la entrega.
+
+## DL-127 — API-DSH-04 en BE: fuentes, forma de la entrada y filtros que el 09 no fija
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §16 (09v11:964-1010) · B10-08 §11-§12 · 06 T-06-24 · DL-054 · DL-116 ·
+**Estado:** PROPUESTA, sin integrar (`wp-dashboard-profesional`)
+
+**Qué dice el legajo.**
+- La entrada tiene `timelineEntryId`, `domain`, `eventType`, `source`, `occurredAt`, `recordedAt`, `author`,
+  `provenance` y `relations`.
+- `occurredAt` y `recordedAt` son independientes; si uno falta, no se copia el otro.
+- Solo hay relaciones reconstruibles (plan → ejecución, original → corrección, revisión → acción).
+- Los filtros son `domain`, `type`, `periodStart` y `periodEnd`.
+
+**Qué falta en el 09.**
+- De qué fuentes sale cada tipo de evento.
+- Cómo se representa un hecho que solo tiene fecha.
+- Cómo se ordenan los empates y cómo se pagina de forma estable.
+- Si hay búsqueda.
+- Los filtros que pide el encargo: estado, calidad, versión de plan, ejercicio y texto.
+
+**Opciones.**
+- **A.**
+  - **Fuentes:** las tablas fuente de cada dominio, acotadas al profesional y a los alcances que el PDP permitió, y los
+    eventos de proceso persistidos (cumple la condición de cierre de DL-054 en esta parte).
+  - **Unidad de la entrada:** una por registro, sesión, toma, activación, revisión o hecho de proceso; nunca una por
+    ítem ni por evento técnico del cronómetro.
+  - **Fecha sin hora:** `occurredDate` acompaña a `occurredAt`, que es `null` cuando el hecho no tiene hora.
+  - **Orden y paginación:** fecha del hecho descendente, después `recordedAt` y el identificador, con un cursor opaco.
+  - **Extensiones de BE**, declaradas: `state`, `quality`, `planVersionId`, `exerciseId` y la búsqueda de texto, que
+    recorre el período completo del conjunto autorizado y viaja en el cuerpo de API-DSH-04-BUSQUEDA (ver abajo).
+  - **Rectificaciones y anulaciones:** son relaciones de la entrada original, no entradas de consumo nuevas.
+- **B.** Implementar solo los filtros del 09 y dejar la búsqueda y los filtros avanzados para después.
+
+**Provisorio en código.** A.
+
+**Decisiones de la implementación** (reversibles):
+- **Actos que BE registra en el momento** (activar un plan, registrar una revisión, abrir o cerrar un seguimiento): la
+  fuente guarda la ocurrencia y el registro, y son el mismo instante. No es copiar uno en el otro. Si una fila vieja no
+  tiene ocurrencia, va `null` y la fecha civil del registro se usa solo para ordenar.
+- **Relaciones:** sucesión de versiones, ejecución de una versión del plan, rectificación, anulación, corrección,
+  medición corregida o anulada y `REVIEW_APPLIED` (la versión del plan que nació de una revisión: «revisión → acción»
+  del 09).
+- **Bandas de vigencia:** `to` es el día del corte (activación de la sucesora o cierre del seguimiento), que ya es de la
+  siguiente. Una activación no es ejecución y la fecha de creación no es vigencia.
+- **Límite de página:** 20 por defecto y 50 como máximo, como el resto de las listas.
+- **`periodCounts`:** la respuesta suma los conteos del período (por tipo de evento, por rasgo de calidad y cargas
+  tardías) del conjunto autorizado, antes de los filtros. Sale de la misma lectura, así que no revela nada que la
+  lectura no muestre; evita que el Resumen pida una página por cada conteo (presupuesto de rendimiento, PRO-24).
+- **La búsqueda va en el cuerpo de un POST, nunca en una URL** (revisión independiente del head fbeb256 de #153,
+  hallazgo 4; reemplaza la decisión anterior, que dejaba `q` en la query de la API y declaraba el riesgo residual).
+  - **Por qué.** Que el texto no esté en la URL de la página no alcanza: viajaba en la URL de la API, que queda en el
+    historial de pedidos del navegador, en proxies y en las bitácoras de la plataforma de hosting, fuera del control de
+    BE. El texto lo escribe el profesional y puede nombrar algo de salud.
+  - **Cómo.** `POST /advisees/{adviseeId}/timeline/search`, con ID `API-DSH-04-BUSQUEDA` (variante de BE de API-DSH-04,
+    sufijo `BUSQUEDA` en la guardia de trazabilidad). El cuerpo (`BusquedaEnLineaDeTiempoRequestSchema`, estricto) lleva
+    `q` (1 a 100 caracteres) y los mismos filtros con sus tipos: período, área, tipo, estado, calidad, carga tardía
+    (booleano), versión de plan, ejercicio, `limit` y `cursor`. La URL lleva solo el asesorado.
+  - **Igual que API-DSH-04:** el mismo PDP por alcance, la misma lectura, la búsqueda en todo el período, el mismo orden
+    y el mismo cursor. Es una lectura: responde 200, no crea nada y no exige Idempotency-Key.
+  - **Antes del PDP:** el cuerpo se valida en el guard (`validarConsulta` recibe también el cuerpo). Un campo de más es
+    400 `UNKNOWN_FIELD`; un texto vacío o largo, 400 `INVALID_REQUEST`; un cursor alterado, 400 `INVALID_CURSOR`. El
+    400 no depende del titular.
+  - **API-DSH-04 ya no acepta `q`:** en la URL es un parámetro desconocido (400 `UNKNOWN_QUERY_PARAMETER`, sin eco del
+    valor). El cliente (`lineaDeTiempo`) arma la query solo con las claves declaradas, así que un objeto con un texto de
+    más tampoco lo lleva a la URL.
+  - **Registros:** el registro de requests guarda la ruta parametrizada (`/api/v1/advisees/:adviseeId/timeline/search`)
+    y nunca el cuerpo; el log técnico de errores guarda tipo y requestId. Lo prueban la integración (salida estándar y de
+    errores durante una búsqueda y un 400) y el recorrido (todas las URL pedidas por el navegador y el registro de la API
+    de la corrida).
+  - **Se aparta del 09** en el método: el 09 no tiene búsqueda en la línea de tiempo, así que la extensión ya era de BE;
+    ahora además usa POST para una lectura, como hacen las APIs que reciben criterios sensibles.
+- **`partialView`:** en la línea de tiempo, como en API-DSH-03, es verdadero si algún alcance quedó denegado (también
+  cuando el profesional simplemente no trabaja ese alcance con el asesorado). En una proyección habla solo de su propia
+  área: es verdadero si en el período hay datos de ese dominio que el profesional no ve (los de otro profesional), como
+  API-ANT-06 (09v11:786-796).
+
+**Condición de cierre.** Dirección aprueba la forma de la entrada, las extensiones y la búsqueda por POST, y el 09 las
+incorpora.
+
+## DL-128 — Vistas de análisis guardadas e indicadores fijados del Resumen
+
+**Prioridad:** media · **Documento:** encargo del 2026-10-08, §6.2 («indicadores fijados por el profesional»), §8
+(«guardar una vista personal y volver a abrirla»), §14 y §16 · 09 sin operación · 08 (los datos de salud no se copian
+en preferencias) · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-profesional`)
+
+**Qué pasa.**
+- El encargo pide guardar vistas de análisis y fijar indicadores en el Resumen, «por cuenta y con el mecanismo
+  adecuado», guardando la configuración y nunca los datos de salud.
+- El 09 no tiene ninguna operación de preferencias del profesional, salvo el umbral de PRJ-02 y 03, que tiene otra
+  semántica.
+- El modelo no tiene preferencias por cuenta.
+
+**Opciones.**
+- **A.** Una familia propia de BE, **VAN** (como TPL, HAB, CAR o EVI):
+  - API-VAN-01 lista, API-VAN-02 crea, API-VAN-03 reemplaza con versión esperada y API-VAN-04 borra;
+  - tabla aditiva `vista_de_analisis`, mutable y del profesional (como «Mis habituales»), con escrituras auditadas;
+  - la configuración se valida con un esquema del dominio y no admite datos de salud: solo identificadores de métricas,
+    período, modo, grano y capas;
+  - abrir una vista vuelve a pasar por el PDP en cada lectura de datos, así que una vista guardada no concede acceso;
+  - a lo sumo una configuración de indicadores del Resumen por profesional.
+- **B.** Guardar las vistas en el `localStorage` del navegador. No sobrevive a otro dispositivo ni a una sesión nueva en
+  otro navegador, y el encargo pide persistencia por cuenta.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba la familia y el 09 la incorpora o la declara extensión de BE.
+
+## DL-129 — Comprender, investigar y actuar: corte por revisión, etapas y preguntas
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §15 (API-DSH-03), §16 (API-DSH-04), §19-§20 (API-PRJ-01) · B10-08 §8, §10-§12 ·
+DL-126, DL-127, DL-128 · encargo del 2026-10-09, §3 a §9 · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-comprension`)
+
+**Qué pide el encargo.**
+- Un Resumen que prepare la consulta: «Para tu próxima revisión», con observaciones factuales, su origen, su alcance y su
+  corte, y «desde la última revisión» por área.
+- Entrar por preguntas profesionales con parámetros tipados.
+- Comparar por etapas reales de planificación, con reglas temporales explícitas.
+- Distinguir la función del dato (planificado o registrado), su clase (medido, reportado o calculado) y su calidad.
+
+**Qué falta en el 09.**
+- No hay corte por revisión: el dashboard dice la última revisión, pero no si se aplicó ni qué es nuevo desde entonces.
+- No hay etapas: las vigencias de los planes existen como bandas, sin instante de corte ni regla de atribución.
+- No hay preguntas ni naturaleza del método en las proyecciones: «calculado» se leía siempre como «estimación».
+
+**Opciones.**
+- **A.** Extensiones **aditivas** de lectura y reglas del dominio, sin operaciones nuevas:
+  - **API-DSH-03:** `lastReview.application` (si se aplicó, cuándo y qué creó), `draftPlan` (el borrador del plan, que no
+    rige) y `objective.effectiveFrom`. Solo lo lee la web.
+  - **API-DSH-04:** `since` (un instante, en la consulta y en el cuerpo de la búsqueda) filtra a lo nuevo desde ese corte, y
+    `sinceCounts` lo cuenta por clase (ocurrió después, se incorporó después o se corrigió después), dominio y tipo, con
+    los instantes de registro y de cada relación, nunca con un `updatedAt`. Desde la pasada del 2026-10-09, el rasgo de
+    calidad `QUANTITIES_DIFFER_FROM_PLAN` (una diferencia comprobada, ingrediente por ingrediente, entre las cantidades
+    informadas y la opción indicada) y el detalle «Frente a lo indicado»: el modo de registro no es una diferencia.
+  - **API-PRJ-01:** en cada punto, el método con su naturaleza (índice, suma de pliegues, estimación, componente del
+    somatotipo o sin especificar, desde la categoría de su ficha, DL-111) y las versiones del plan que ejecutan sus
+    registros; en cada vigencia, el instante y el motivo del corte; en las métricas antropométricas disponibles, cuántos
+    grupos de comparabilidad tienen. API-ANT-06 no cambia: la APK la valida con un esquema estricto.
+  - **Dominio:** la síntesis del Resumen (reglas determinísticas y plantillas fijas, sin calificar), las etapas (el día
+    del corte es de la etapa siguiente; dos activaciones el mismo día se separan por instantes; entrenamiento se resume
+    por la versión ejecutada, nutrición y antropometría por fechas, diciendo lo asociado a otra versión) y las seis
+    preguntas (nada se elige por la persona; lo de otro asesorado se vuelve a pedir).
+  - **Vistas guardadas:** la configuración puede llevar la pregunta y sus parámetros (identificadores).
+- **B.** Operaciones nuevas de «síntesis» en el servidor. Duplicaría el motor analítico y la historia de revisiones, que
+  el encargo prohíbe.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba las extensiones, las reglas temporales de las etapas y las plantillas de la
+síntesis, y el 09 las incorpora o las declara extensiones de BE.
+
+## DL-130 — Búsqueda en los catálogos con el texto en el cuerpo
+
+**Prioridad:** media · **Documento:** 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · DL-127 · encargo del
+2026-10-09, §3.C · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-comprension`)
+
+**Qué pasa.** Los buscadores de alimentos y de ejercicios de la web mandaban el texto en la URL (`?q=`), que queda en
+historiales, proxies y bitácoras de la plataforma, fuera del control de BE. Es el mismo riesgo que DL-127 corrigió en la
+línea de tiempo.
+
+**Opciones.**
+- **A.** Variantes de BE con sufijo `BUSQUEDA`: `POST /nutrition/catalog-items/search` (API-NUT-13-BUSQUEDA) y
+  `POST /training/exercises/search` (API-TRN-13-BUSQUEDA), con el texto, el límite y el cursor en un cuerpo estricto, la
+  misma lectura y la misma respuesta que el GET. Es una lectura: 200, sin Idempotency-Key. El registro de requests guarda
+  la ruta y nunca el cuerpo. La web usa las variantes; el GET con `q` se conserva con su contrato para los clientes
+  instalados (las APK no buscan en estos catálogos y no cambian).
+- **B.** Quitar `q` del GET. Rompería el contrato legado.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba las variantes y el 09 las incorpora.
+
+---
+
+## DL-131 — «Pedir información»: las preguntas vienen todas marcadas
+
+**Prioridad:** baja · **Documento:** 09v16.1:1518-1528 (API-FRM-03, precondiciones) · 05 §13.6.7 (05:15096-15105) y
+§13.6.8 (pasos 6 a 8) · DL-100 · criterio del escritorio, C-73 · **Estado:** DECIDIDA por Dirección el 2026-10-12;
+implementada en `wp-escritorio-areas` (parte 4), sin integrar
+
+**Qué pasa.** Al elegir un formulario, la pantalla del profesional no traía ninguna pregunta marcada: había que
+marcarlas de a una. El comentario del código lo fundaba en el legajo: «una plantilla con campos más amplios no amplía
+B2» (09:1528) y «la minimización es del profesional, no del catálogo». El legajo no pide ese paso. Sus precondiciones
+de FRM-03 son del servidor —«pertinencia» y «cada categoría/campo solicitado autorizado para ese contexto»
+(09:1518-1526)—, y su flujo dice que BE «presenta campos/secciones permitidos y su carácter requerido/opcional», que el
+profesional «confirma la solicitud» y que después BE «reevalúa autorización y pertinencia» (05 §13.6.8, pasos 6 a 8).
+La única precarga era la del formulario de Entrenamiento cuando se llega desde Entrenamiento (DL-100). El diseño
+validado del escritorio dibuja todas las preguntas elegidas (maqueta 27; C-73).
+
+**Opciones.**
+- **A. Todas marcadas** al elegir un formulario; el profesional desmarca las que no necesita. Ninguna viene como
+  requerida («Un campo requerido debe ser legítimo y visible como tal», 05 §13.6.7). La cuenta de las elegidas queda a
+  la vista y sigue a las casillas. La API no cambia: evalúa la pertinencia de cada pregunta al crear la solicitud y
+  rechaza la que no corresponde al área.
+- **B. Ninguna marcada,** como hasta ahora, con un «Elegir todas» a un clic.
+
+**Decisión de Dirección (2026-10-12).** A: «si vienen marcadas las opciones la respuesta es sí; si el profesional no
+quiere alguna, la destilda».
+
+**Lo que no cambia.** Solicitar no es consentir ni obtener acceso: el aviso sigue a la vista en el pedido. La
+existencia de un formulario no concede autorización: la evalúa el servidor en cada solicitud. Lo requerido sigue siendo
+un subconjunto de lo pedido, y no viene marcado por omisión; la excepción es la precarga ratificada del formulario de
+Entrenamiento al llegar desde Entrenamiento (DL-100), que ya existía.
+
+**El costo, dicho.** Con todo marcado, pedir de más cuesta menos que antes: la minimización depende de que el
+profesional desmarque. La pantalla lo acompaña con la cuenta («3 de 3 elegidas») y con la nota «Vienen todas elegidas:
+desmarcá las que no necesites».
+
+**Condición de cierre.** Ninguna pendiente del legajo. Queda para el uso real ver si la nota alcanza.
+
+---
+
+## DL-132 — «Guardar como plantilla» con opciones de receta: dos respuestas distintas para la misma acción
+
+**Prioridad:** baja · **Documento:** DL-119, lo implementado («Las plantillas y las comidas habituales no la aceptan
+(422)») · DL-108 (plantillas del profesional) · **Estado:** ABIERTA; encontrada el 2026-10-12, al
+recomponer «Plan» (WP-ESCRITORIO-AREAS, parte 5). No se cambió nada: es el comportamiento de `main`
+
+**Qué pasa.** «Guardar como plantilla» está en dos lugares de Nutrición y responde distinto cuando el plan tiene una
+opción que nació de una receta:
+
+- **En la versión en preparación** (el editor) no guarda: dice «Las opciones que vienen de una receta no se guardan en
+  plantillas ni en comidas habituales. Quitalas antes, o guardá la plantilla desde un plan sin recetas.»
+- **En el plan activo** guarda. La opción de receta entra a la plantilla como una opción común, con los ingredientes de
+  una porción, y pierde el vínculo con la receta. La pantalla no lo avisa.
+
+La API rechaza una plantilla que cite una receta (422). En el plan activo no hay rechazo porque la pantalla arma la
+plantilla desde la instantánea, donde la opción ya es una lista de ingredientes. Se vio en el recorrido de la parte 5,
+que guarda una plantilla desde un plan con una opción de receta: la API la acepta y la plantilla queda con siete
+comidas.
+
+**Por qué importa.** El mismo botón, con el mismo plan, dice que no en un lugar y que sí en el otro. Y en el que dice
+que sí, lo que queda guardado no es lo que el profesional ve: ve «Receta «Guiso de lentejas», versión 1» y guarda tres
+ingredientes sueltos.
+
+**Opciones.**
+- **A. Que el plan activo responda como el editor:** con una opción de receta, no abre el diálogo y dice lo mismo. Es
+  lo que BE ya declara, y es un cambio de pocas líneas en `nutrition/plan.tsx`.
+- **B. Que los dos guarden, y lo digan:** la plantilla lleva la opción como una opción común, con sus ingredientes, y
+  el diálogo avisa que no conserva el vínculo con la receta. Es más útil —hoy un plan con recetas no se puede volver
+  plantilla sin desarmarlo— y pide cambiar el editor, el texto y una decisión sobre qué pasa con la estimación.
+- **C. Dejarlo como está.**
+
+**Recomendación.** A, ahora: es coherente con lo que BE dice y no agrega nada. B queda como mejora, con su decisión.
+
+**Provisorio en código.** Ninguno: la parte 5 movió el botón de lugar y no cambió lo que hace. El recorrido `planes`
+guarda una plantilla desde un plan con una opción de receta: si se decide A, ese paso tiene que hacerse sobre un plan
+sin recetas.
+
+**Condición de cierre.** Dirección elige A, B o C.

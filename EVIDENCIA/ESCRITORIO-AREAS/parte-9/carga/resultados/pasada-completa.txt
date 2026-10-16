@@ -1,0 +1,35 @@
+Pasada completa de los recorridos (parte-1/todos-los-recorridos.sh, con r-carga), sobre la compilación de 7ceee6f:
+
+inicio: 2026-10-15 07:34 · commit 7ceee6f + cambios sin commit: 3
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 0 · 311 OK · 13 datos · 0 fallas · 324/324 comprobaciones bien
+rc-funcional: salida 0 · 76 OK · 10 datos · 0 fallas · 86 de 86 bien
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 22 OK · 0 datos · 0 fallas · 22/22 comprobaciones bien
+r-mediciones: salida 0 · 18 OK · 0 datos · 0 fallas · 18/18 comprobaciones bien
+r-carga: salida 0 · 14 OK · 1 datos · 0 fallas · 15/15 comprobaciones bien
+r-solicitudes: salida 1 · 15 OK · 5 datos · 12 fallas · 20/32 comprobaciones bien; fallan: F-44, C-72, C-70, F-45, C-71, F-44, C-71, F-4
+r-planes: salida 0 · 56 OK · 1 datos · 0 fallas · 57/57 comprobaciones bien
+r-entrenamientos: salida 0 · 32 OK · 2 datos · 0 fallas · 34/34 comprobaciones bien
+r-revisiones: salida 0 · 15 OK · 1 datos · 0 fallas · 16/16 comprobaciones bien
+r-estimacion: salida 0 · 7 OK · 0 datos · 0 fallas · 7/7 comprobaciones bien
+fin: 2026-10-15 08:28
+
+Las fallas de r-solicitudes en esa corrida (la lista no se llegó a leer al entrar: cero pedidos; todo lo que dependía de ella falló):
+FALLA F-44 · Al entrar, «Solicitudes» lee la lista entera una vez y, una vez, la respuesta de cada solicitud respondida (para decir en la lista cuál se corrigió): ninguna dos veces, y ninguna de 
+FALLA C-72 · La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice el formulario, su estado, cuándo se pidió, en qué área, cuántas preguntas tie
+FALLA C-70 · «Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola, y ningún renglón lleva un botón «Ver detalle» (el renglón entero abre la solicitud
+FALLA F-45 · Las tres vistas están en su orden, cada una con la cantidad de solicitudes que trae, contada a mano sobre la lista de la API; «Sin responder» y «Respondidas» suman «Todas». Elegir
+FALLA C-71 · Una solicitud respondida se abre al costado, sin tapar la lista, y el foco va a su título. Dice cuándo se pidió y en qué área, para qué, y cuándo respondió y corrigió la persona
+FALLA F-44 · Abrir una solicitud respondida no vuelve a leerla (su respuesta ya se leyó al entrar): lee una vez la versión de su formulario, de donde salen los textos de las preguntas — al abrir:
+FALLA C-71 · La historia va de lo más nuevo a lo más viejo: la corrección, marcada «Vigente», con el motivo que escribió la persona; y la respuesta original, que se conserva, con cuántas de la
+FALLA F-46 · Una solicitud respondida y sin correcciones: rige la original, ninguna fila dice «Corregida» ni «Antes», y un número lleva la unidad de su pregunta (la APK no manda unidad) — Gana
+FALLA F-51 · En el detalle, «Requerida» sigue a la última palabra de su pregunta: si entra al lado, no ocupa un renglón propio (con preguntas de dos renglones, cada fila medía un renglón más) 
+FALLA F-47 · Una solicitud sin responder se abre igual, sin leer nada más que su formulario: dice las preguntas pedidas y «Todavía sin responder. No responder también es una opción.». No tiene 
+FALLA F-48 · Escape cierra el detalle y el foco vuelve al renglón de esa solicitud. La solicitud abierta vive en la dirección (`solicitud=`): se abre al entrar con ella, y «Actualizar» vuelve a l
+FALLA F-49 · En ningún estado de «Solicitudes» (la lista, una respondida y corregida, una respondida y una sin responder) el texto afirma una medición ni un diagnóstico, ni usa un porcentaje ni 
+
+r-solicitudes, repetida enseguida sola, con cuentas descartables nuevas (08:29-08:31): 32/32 comprobaciones bien

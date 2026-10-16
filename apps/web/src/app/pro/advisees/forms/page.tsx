@@ -14,7 +14,7 @@ export default function PaginaDeFormularios() {
   return (
     <>
       <Encabezado navegacion={<NavegacionProfesional />} />
-      <main id="contenido" className="contenido contenido--ancho">
+      <main id="contenido" className="contenido contenido--ficha">
         <Suspense fallback={null}>
           <Formularios />
         </Suspense>

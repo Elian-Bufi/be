@@ -244,6 +244,8 @@ describe('08 §29 — historia por adición', () => {
     'decision_de_acceso',
     // PF-02 · DL-102
     'cita_de_respuesta_en_evaluacion_de_entrenamiento',
+    // DL-009 y DL-040 (2026-10-15): las versiones del perfil propio
+    'version_de_perfil_propio',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

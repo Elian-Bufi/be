@@ -6,7 +6,7 @@ import { errores } from '../http/errores';
 import { ZONA_POR_DEFECTO } from '../nutricion/zona';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ProcesoService } from '../proceso/proceso.service';
-import { nombreDeAsesorado } from '../vinculo/lectura';
+import { nombreDelPar, nombresDeAsesoradosPorPar } from '../vinculo/lectura';
 
 type Tx = Prisma.TransactionClient;
 
@@ -92,6 +92,8 @@ export async function leerCartera(prisma: PrismaService, pdp: PdpService, proces
 
   // 3. Una foto: todos los hechos en una transacción de lectura.
   const items = await prisma.$transaction(async (tx) => {
+    // Cada asesorado con su nombre si el vínculo está vigente; si no, la referencia neutral (DL-040).
+    const nombres = await nombresDeAsesoradosPorPar(tx, permitidos.map((p) => ({ profesionalId: actorId, asesoradoId: p.asesoradoId })));
     const filas: PendienteDeCartera[] = [];
     for (const p of permitidos) {
       const domain = CLAVE_DE_DOMINIO[p.alcance];
@@ -100,7 +102,7 @@ export async function leerCartera(prisma: PrismaService, pdp: PdpService, proces
       for (const h of hechos) {
         if (consulta.kind && h.kind !== consulta.kind) continue;
         filas.push({
-          advisee: { identityId: p.asesoradoId, displayName: nombreDeAsesorado(p.asesoradoId) },
+          advisee: { identityId: p.asesoradoId, displayName: nombreDelPar(nombres, { profesionalId: actorId, asesoradoId: p.asesoradoId }) },
           relationshipId: p.relationshipId,
           domain,
           kind: h.kind,

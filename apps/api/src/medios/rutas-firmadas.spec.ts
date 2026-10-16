@@ -43,6 +43,24 @@ describe('DL-120 · rutas firmadas de los medios privados', () => {
     expect(otroServidor.verificar(token, 'LECTURA')).toBeNull();
   });
 
+  it('la firma vale solo en su forma canónica: otro texto que decodifica a los mismos bytes no vale', () => {
+    const rutas = new RutasFirmadas(ENTORNO);
+    const token = rutas.firmar(MEDIO, 'LECTURA', rutas.vencimiento('LECTURA'));
+    const [carga, firma] = token.split('.') as [string, string];
+    // El último carácter de una firma de 32 bytes lleva 4 bits de dato y 2 de relleno: los tres caracteres que le
+    // siguen en el alfabeto decodifican a los mismos bytes. (La prueba de arriba cambia el último por «A» o por «B»:
+    // con una firma terminada en «A» —una de cada 16— la alterada era una de esas gemelas y pasaba como válida.)
+    const ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const ultimo = ALFABETO.indexOf(firma.slice(-1));
+    expect(ultimo % 4).toBe(0);
+    for (const paso of [1, 2, 3]) {
+      const gemela = `${firma.slice(0, -1)}${ALFABETO[ultimo + paso]}`;
+      expect(Buffer.from(gemela, 'base64url').equals(Buffer.from(firma, 'base64url'))).toBe(true);
+      expect(rutas.verificar(`${carga}.${gemela}`, 'LECTURA')).toBeNull();
+    }
+    expect(rutas.verificar(token, 'LECTURA')).not.toBeNull();
+  });
+
   it('la clave de las rutas es derivada: no es el secreto de las sesiones', () => {
     const rutas = new RutasFirmadas(ENTORNO);
     const clave = (rutas as unknown as { clave: Buffer }).clave;

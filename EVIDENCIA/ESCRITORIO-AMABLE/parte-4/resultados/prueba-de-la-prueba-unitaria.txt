@@ -1,0 +1,16 @@
+DETECTADA     una comida diferente entra en «Distinto de lo indicado» → falla: la cantidad que anuncia cada vista es la cantidad de hechos que trae c | una vista con dos rasgos de calidad los toma de áreas distintas: ningú | qué vista corresponde a unos filtros: la exacta, o ninguna si es una c
+DETECTADA     el último día leído se muestra aunque queden hechos por leer → falla: si quedan hechos por leer, el último día leído no se muestra por la mi
+DETECTADA     «falta algún nutriente» cuenta como rasgo → falla: los rasgos de un hecho: lo que se dice en su renglón, en orden fijo, y | un día sin novedades tiene solo sus comidas y ningún rasgo; una sesión
+DETECTADA     dentro del día, del más reciente al más viejo → falla: el día: primero los hitos, después las sesiones y las comidas en un gr | agrupar no pierde ni repite hechos: cada entrada del día está una vez,
+DETECTADA     una sesión es un hito → falla: un hito es todo lo que no se registra todos los días: ni una comida ni | el día: primero los hitos, después las sesiones y las comidas en un gr | agrupar no pierde ni repite hechos: cada entrada del día está una vez, | la cantidad que anuncia cada vista es la cantidad de hechos que trae c
+DETECTADA     una sola comida también se agrupa → falla: una sola comida va en su renglón: abrir un grupo de una no ahorra nada
+DETECTADA     la cuenta de una vista por tipos cuenta todos los hechos → falla: la cantidad que anuncia cada vista es la cantidad de hechos que trae c
+DETECTADA     «Sesión» se antepone siempre → falla: una sesión: su nombre en el plan (que puede traer un punto medio) y cu
+DETECTADA     «N series», sin «con datos» → falla: una sesión: su nombre en el plan (que puede traer un punto medio) y cu
+DETECTADA     la búsqueda repite lo que ya está a la vista → falla: con un texto buscado, el renglón dice por qué coincide cuando no está 
+DETECTADA     un plan activado, sin número de versión → falla: el número de versión de un plan activado sale de la entrada: su planif
+DETECTADA     la comida diferente, con los cubiertos → falla: cada rasgo tiene un ícono que existe, y cada relación con fecha, su ve
+DETECTADA     cada medición corregida, en su renglón → falla: lo que le pasó al registro después se dice una vez por clase de cambio
+DETECTADA     dos días sin hechos dichos como un tramo → falla: los días sin hechos se dicen con sus fechas: uno, dos o un tramo, y el
+
+14 de 14 mutaciones detectadas

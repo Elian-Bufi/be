@@ -1,0 +1,52 @@
+{
+  "modo": "estimacion",
+  "inicio": "2026-10-12T16:48:45.884Z",
+  "fin": "2026-10-12T16:49:05.567Z",
+  "hoy": "2026-10-12",
+  "total": 7,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "C-50",
+      "descripcion": "El registro de una comida diferente se abre por su dirección, con la vista «Comida diferente» elegida: su fila queda marcada, el detalle dice «Fuera del plan», la descripción original y que los macros no se calculan, y ofrece «Agregar estimación»",
+      "ok": true,
+      "detalle": "«Cena · comió algo diferente» · Fuera del plan, Cargado otro día · 4 filas en la vista (a mano: 4) · estimaciones que ya tenía: 0"
+    },
+    {
+      "pro": "F-18",
+      "descripcion": "La estimación no sale sin describir nada ni con una cantidad que no es un número: cada error se marca en su campo, con su motivo, y no se le pide nada a la API",
+      "ok": true,
+      "detalle": "sin describir: ⚠ Describí lo que estimás. · con «doscientos»: ⚠ Escribí un número: «150» o «72,5». · pedidos a la API: 0"
+    },
+    {
+      "pro": "F-08",
+      "descripcion": "Con la estimación a medio escribir, «Actualizar» pregunta antes, dice qué se pierde (la estimación de una comida) y no lee nada; «Seguir editando» deja lo escrito y el registro abierto",
+      "ok": true,
+      "detalle": "«Tenés cambios sin guardar «Actualizar» vuelve a leer todo lo que muestra esta sección. Si seguís, se pierde lo que escribiste y no guardaste en la est» · lecturas mientras pregunta: 0 · tras «Seguir editando»: «Milanesa de carne al horno con ensalada», «250»"
+    },
+    {
+      "pro": "F-18",
+      "descripcion": "Si guardar falla (un 503 simulado por el recorrido), lo dice con su motivo, el formulario sigue abierto con lo escrito y el registro queda como estaba",
+      "ok": true,
+      "detalle": "«El servicio no está disponible en este momento. Probá de nuevo más tarde.» · lo escrito: «Milanesa de carne al horno con ensalada», «250» · estimaciones en la API: 0 (había 0)"
+    },
+    {
+      "pro": "C-50",
+      "descripcion": "«Agregar estimación» guarda por la API con un solo pedido: la estimación queda en la historia del registro con lo escrito (la descripción y 250 g) y pasa a ser la vigente; la descripción original sigue igual. La pantalla la muestra con quién la hizo, sin cerrar el registro",
+      "ok": true,
+      "detalle": "pedidos: 1 · en la API: 1 estimaciones (había 0), la última «Milanesa de carne al horno con ensalada» · 250 g · original: «Milanesa con ensalada en un cumpleaños» · en pantalla: «Estimación profesional Milanesa de carne al horno con ensalada · 250 g (Profesional, 12 oct 2026, 13:48) Agregar estimación»"
+    },
+    {
+      "pro": "F-08",
+      "descripcion": "Con la estimación guardada no queda nada sin guardar: «Actualizar» no pregunta, vuelve a leer y el registro sigue abierto, con la vista elegida y su estimación",
+      "ok": true,
+      "detalle": "preguntó: no · lecturas del contexto: 1 · «Estimación profesional Milanesa de carne al horno con ensalada · 250 g (Profesional, 12 oct 2026, 13:48) Agreg»"
+    },
+    {
+      "pro": "—",
+      "descripcion": "La estimación de una comida no produjo errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

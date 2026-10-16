@@ -1,0 +1,46 @@
+{
+  "modo": "revocacion",
+  "inicio": "2026-10-10T21:40:35.057Z",
+  "fin": "2026-10-10T21:41:07.268Z",
+  "hoy": "2026-10-10",
+  "total": 6,
+  "fallas": 0,
+  "resultados": [
+    {
+      "clave": "R5",
+      "descripcion": "El asesorado revoca desde su web el acceso de Antropometría",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "Después de revocar, el origen dice «no está disponible» sin valores",
+      "ok": true,
+      "detalle": "Peso · 6 oct 2026 Cerrar Esta toma no está disponible con tu acceso actual. Ver en Antropometría · Evaluaciones"
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "La cabecera deja de decir «Activo» para Antropometría sin recargar; Nutrición sigue activa",
+      "ok": true,
+      "detalle": "antes: Acceso actual Nutrición y Antropometría: Activo · acceso contextual · después: Acceso actual Nutrición: Activo · acceso contextual Antropometría: Consentimiento revocado Acceso no disponible"
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "Los gráficos de Antropometría se retiran y dicen por qué, sin valores viejos",
+      "ok": true,
+      "detalle": "Comparación libre Sin pregunta: las métricas las elegís vos, de cualquier área. Empezar por una pregunta Más acciones Peso Quitar Peso Índice de masa corporal Quitar Índice de masa corporal 2 de 3 mét"
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "En el Resumen, Antropometría ya no aporta valores ni acciones; el resto del vínculo sigue",
+      "ok": true,
+      "detalle": "Asesorado · f7dc7b Solicitar contexto Actualizar Consultado a las 18:40 Acceso actual Nutrición: Activo · acceso contextual Antropometría: Consentimiento revocado Acceso no disponible Vista parcial según tu acceso actual. Resumen Línea de tiempo Analizar Perío"
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "En la otra pestaña, exportar con la pantalla vieja vuelve a consultar: no sale ningún archivo y dice por qué",
+      "ok": true,
+      "detalle": "No se descargó ningún archivo: Peso (no está disponible con tu acceso actual); Índice de masa corporal (no está disponible con tu acceso actual)."
+    }
+  ]
+}

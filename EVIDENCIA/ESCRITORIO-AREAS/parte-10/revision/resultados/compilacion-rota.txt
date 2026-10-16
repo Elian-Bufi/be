@@ -1,0 +1,6 @@
+NOTADA    el formulario se vuelve a armar al cambiar el período · «Con otro período, lo escrito y el resultado elegido siguen…»
+NOTADA    Entrenamiento abre con las sesiones marcadas · «En Entrenamiento, registrar sin nada dice lo que falta…»
+NOTADA    la barra no queda pegada abajo · «A 1440 los pasos van en dos tarjetas lado a lado…»
+NOTADA    los días sin registros no están en la grilla · «Con días sin registros en el período…»
+NOTADA    el recuadro dice el efecto de otro resultado · «Elegido un resultado, su efecto se lee debajo…»
+5 de 5 notadas · ninguna otra comprobación falló

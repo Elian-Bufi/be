@@ -1,0 +1,31 @@
+control de evidencia (sin mutar): 8 pasan, 0 fallan
+control de periodo (sin mutar): 5 pasan, 0 fallan
+DETECTADA dias-sin-el-ultimo · el último día del período no está en la grilla · fallan 1: «los días del período van todos, del primero al último, conta»
+DETECTADA dias-sin-el-primero · el primer día del período no está en la grilla · fallan 1: «los días del período van todos, del primero al último, conta»
+DETECTADA dias-con-tope-corto · la grilla se corta antes de los 92 días · fallan 1: «los días del período van todos, del primero al último, conta»
+DETECTADA dias-sin-fecha · un período sin comienzo arma días igual · fallan 1: «los días del período van todos, del primero al último, conta»
+DETECTADA dia-sin-la-parte · un día marcado en parte no dice cuántas de cuántas · fallan 1: «cada día dice cuántos registros tiene y, con una parte marca»
+DETECTADA dia-todo-como-parte · un día marcado entero dice «4 de 4» · fallan 1: «cada día dice cuántos registros tiene y, con una parte marca»
+DETECTADA dia-sin-singular · un día con una comida dice «1 comidas» · fallan 1: «cada día dice cuántos registros tiene y, con una parte marca»
+DETECTADA estado-todas-como-parte · el estado dicho de un grupo entero es «3 de 3 marcadas» · fallan 1: «cada día dice cuántos registros tiene y, con una parte marca»
+DETECTADA estado-sin-marcar-callado · un grupo sin nada marcado no lo dice · fallan 1: «cada día dice cuántos registros tiene y, con una parte marca»
+DETECTADA marcas-quedan-todas · lo marcado que quedó afuera sigue marcado · fallan 1: «al cambiar el período se quita solo lo marcado que quedó afu»
+DETECTADA marcas-se-borran-todas · cambiar el período borra todo lo marcado · fallan 1: «al cambiar el período se quita solo lo marcado que quedó afu»
+DETECTADA marcas-quitadas-calladas · no se dice cuántas marcas se quitaron · fallan 1: «al cambiar el período se quita solo lo marcado que quedó afu»
+DETECTADA aviso-sin-singular · el aviso de una sola marca la dice en plural · fallan 1: «al cambiar el período se quita solo lo marcado que quedó afu»
+DETECTADA aviso-sin-lo-escrito · el aviso no dice que lo escrito no cambió · fallan 1: «al cambiar el período se quita solo lo marcado que quedó afu»
+DETECTADA versiones-sin-hora · dos versiones del mismo día no se distinguen · fallan 1: «las versiones del plan se dicen por su fecha de activación, »
+DETECTADA versiones-siempre-con-hora · una versión sola también lleva la hora · fallan 1: «las versiones del plan se dicen por su fecha de activación, »
+DETECTADA versiones-de-otro-tipo · una versión del plan viaja como otro tipo de referencia · fallan 1: «las versiones del plan se dicen por su fecha de activación, »
+DETECTADA versiones-sin-vigente · la versión que rige no lo dice · fallan 1: «las versiones del plan se dicen por su fecha de activación, »
+DETECTADA versiones-todas-vigentes · todas las versiones dicen «vigente» · fallan 1: «las versiones del plan se dicen por su fecha de activación, »
+DETECTADA periodo-sin-tope · una revisión de hace más de 92 días da un período más largo · fallan 1: «una revisión de hace más de 92 días se recorta a los últimos»
+DETECTADA periodo-de-93-dias · el tope es de 93 días · fallan 1: «una revisión de hace más de 92 días se recorta a los últimos»
+DETECTADA periodo-desde-la-primera · el período sale de la primera revisión, no de la última · fallan 2: «BE propone desde el día civil de la última revisión hasta ho» ««Preparado por BE» se dice solo si el período es el que BE p»
+DETECTADA periodo-en-utc · el día de la última revisión se toma en UTC, no en la zona de la persona · fallan 2: «BE propone desde el día civil de la última revisión hasta ho» ««Preparado por BE» se dice solo si el período es el que BE p»
+DETECTADA periodo-sin-revisiones-inventa · sin revisiones, BE inventa un período · fallan 1: «BE propone desde el día civil de la última revisión hasta ho»
+DETECTADA procedencia-siempre-BE · cualquier período se dice «Preparado por BE» · fallan 1: ««Preparado por BE» se dice solo si el período es el que BE p»
+DETECTADA procedencia-sin-el-fin · un período con otro fin se dice preparado por BE · fallan 1: ««Preparado por BE» se dice solo si el período es el que BE p»
+DETECTADA procedencia-sin-revisiones-elegido · sin revisiones, un período elegido se dice propuesto por BE · fallan 1: «sin revisiones, el período que propone la API se dice como p»
+DETECTADA procedencia-recorte-callado · un período recortado a 92 días se dice «desde tu última revisión» · fallan 1: «una revisión de hace más de 92 días se recorta a los últimos»
+28 de 28 detectadas

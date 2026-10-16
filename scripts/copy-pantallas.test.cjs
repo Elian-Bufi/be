@@ -11,10 +11,10 @@
  */
 const assert = require('node:assert/strict');
 const { readdirSync, readFileSync } = require('node:fs');
-const { join } = require('node:path');
+const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
-const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeEntrenamientoEn } = require('../packages/domain/dist/index.js');
+const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn, terminosProhibidosDeFormulariosEn } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
 /** Los textos también viven en módulos sin JSX (`.ts`): se leen como TypeScript, no como TSX. */
@@ -65,6 +65,32 @@ const DOMINIOS = [
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },
+  {
+    // WP-ESCRITORIO-AMABLE, parte 5: el Espacio profesional (los pendientes de la cartera y el directorio). Una lista de
+    // personas no califica a nadie: ni «inactivo», ni «riesgo», ni un porcentaje (TEST-PRJ-009; DL-107).
+    nombre: 'el espacio profesional',
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
+    prohibidos: terminosProhibidosDeCarteraEn,
+    minimo: 8,
+  },
+  {
+    // WP-ESCRITORIO-AREAS, parte 4: Información del profesional (las solicitudes y el pedido). Pedir no es obligar, no
+    // responder no se mide, y lo declarado no es una medición ni un diagnóstico (09 §22.7): negarlo sí se puede decir.
+    // Hasta acá estas pantallas no las miraba ninguna prueba; el texto del dominio sí (`contratos-wp07.test.ts`).
+    nombre: 'información',
+    archivos: tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/forms')),
+    prohibidos: terminosProhibidosDeFormulariosEn,
+    minimo: 4,
+  },
+  {
+    // WP-ESCRITORIO-AREAS, parte 10: las piezas de una revisión que comparten Nutrición y Entrenamiento (la evidencia por
+    // día, la revisión en preparación, el período y su ayuda). Muestran texto de las dos áreas: pasan por las dos listas.
+    // Hasta acá la evidencia no la miraba ninguna prueba de palabras.
+    nombre: 'la revisión de Nutrición y de Entrenamiento',
+    archivos: ['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+    prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 5,
+  },
 ];
 
 /** Estilos de React Native: valores como '100%' no son texto para la persona. */
@@ -106,6 +132,59 @@ for (const dominio of DOMINIOS) {
   });
 }
 
+/**
+ * La ficha del asesorado (WP-ESCRITORIO-AMABLE, E-05): el marco, el Resumen, la Línea de tiempo y Analizar muestran las
+ * tres áreas, así que sus textos pasan por las tres listas a la vez.
+ *
+ * Un solo porcentaje es de la ficha, y está contado: el **cambio relativo** de Analizar, que compara un valor con otro
+ * del mismo dato (la referencia que elige el profesional). No es un puntaje ni dice cuánto «se cumplió». Los lugares
+ * donde se escribe están en `PORCENTAJES_DE_LA_FICHA`, uno por uno: un «%» en cualquier otro texto hace fallar la
+ * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más).
+ */
+const SEGUIMIENTO = join(RAIZ, 'apps/web/src/app/pro/advisees/seguimiento');
+const LA_FICHA = [
+  ...readdirSync(SEGUIMIENTO).filter((f) => /\.tsx?$/.test(f)).map((f) => join(SEGUIMIENTO, f)),
+  ...['workspace.tsx', 'periodo.tsx'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+];
+const PORCENTAJES_DE_LA_FICHA = [
+  // La lectura de un punto en «Cambio relativo»: «+3,2 % contra la referencia».
+  'analizar.tsx · % contra la referencia',
+  // La unidad del gráfico en «Cambio relativo», y las marcas de su eje.
+  'lienzo.tsx · %',
+  // El ancho del gráfico dentro de su caja: no es un texto para la persona.
+  'lienzo.tsx · 100%',
+];
+
+test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; su único porcentaje es el cambio relativo', () => {
+  assert.ok(LA_FICHA.length >= 20, `se esperaban las pantallas de la ficha, hay ${LA_FICHA.length}`);
+  const prohibidos = (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])];
+  const porcentajes = new Set();
+  const hallazgos = LA_FICHA.flatMap((a) =>
+    textosDe(a).flatMap(({ texto, linea }) =>
+      prohibidos(texto).flatMap((p) => {
+        const lugar = `${basename(a)} · ${texto}`;
+        if (p === '%' && PORCENTAJES_DE_LA_FICHA.includes(lugar)) {
+          porcentajes.add(lugar);
+          return [];
+        }
+        return [`${a.slice(RAIZ.length + 1)}:${linea} «${p}» en ${JSON.stringify(texto)}`];
+      }),
+    ),
+  );
+  assert.deepEqual(hallazgos, []);
+  assert.deepEqual([...porcentajes].sort(), [...PORCENTAJES_DE_LA_FICHA].sort(), 'cada porcentaje permitido sigue existiendo: si se fue, se saca de la lista');
+});
+
+test('T13 · en la ficha, un porcentaje fuera del cambio relativo se detecta (prueba de la prueba)', () => {
+  const prohibidos = (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])];
+  const contenido = 'export const X = () => <p>Registró el 82 % de las comidas</p>;';
+  const [{ texto }] = textosDe('resumen.tsx', contenido);
+  assert.deepEqual(prohibidos(texto), ['%']);
+  assert.equal(PORCENTAJES_DE_LA_FICHA.includes(`resumen.tsx · ${texto}`), false);
+  // Y una palabra que califica, en cualquier pantalla de la ficha.
+  assert.ok(prohibidos('La adherencia de la semana').includes('adherencia'));
+});
+
 test('T13 · el extractor encuentra un término prohibido en el copy e ignora los estilos', () => {
   const contenido = "const s = StyleSheet.create({ w: { width: '100%' } }); export const X = () => <p className=\"a\">Adherencia del 82 %</p>;";
   const textos = textosDe('fixture.tsx', contenido).map((t) => t.texto);
@@ -127,23 +206,35 @@ test('T13 · en antropometría, un juicio afirmativo se detecta y su negación e
  *
  * DL-113: el titular dejó de ser un `<h4>` por tarjeta y pasó a ser la fila de la lista de mediciones
  * (`medicion__fila`). Cambió dónde se busca; lo que se exige es lo mismo.
+ *
+ * WP-ESCRITORIO-AREAS, parte 3: las pantallas ya no eligen el valor. La fila de «Tomas» lo recibe de
+ * `medicionesPorFamilia` y el titular del panel, de `valorQueRige`, las dos del dominio, que leen `effectiveMagnitude`
+ * y tienen su prueba (`tomas-de-antropometria.test.ts`: «la fila muestra el valor que rige»). Lo que se exige es lo
+ * mismo, y se fija en tres lugares: que las dos pantallas usen esas funciones; que ninguna lea por su cuenta el valor
+ * que se tomó (`magnitude.value`); y que las funciones lean el vigente. El original entra a la pantalla solo por la
+ * historia de la medición, rotulado como tal. La unidad de origen sí se lee: una corrección la conserva.
  */
 test('T13 · el titular de la medición muestra el valor vigente, no el original', () => {
-  const archivo = join(RAIZ, 'apps/web/src/app/pro/advisees/anthropometry/evaluaciones.tsx');
-  const fuente = ts.createSourceFile(archivo, readFileSync(archivo, 'utf8'), ts.ScriptTarget.Latest, true, tipoDeArchivo(archivo));
-  let titular = null;
-  const visitar = (n) => {
-    if (ts.isJsxElement(n) && /className="medicion__fila"/.test(n.openingElement.getText())) titular = n.getText();
-    ts.forEachChild(n, visitar);
+  const leer = (ruta) => readFileSync(join(RAIZ, ruta), 'utf8');
+  const lista = leer('apps/web/src/app/pro/advisees/anthropometry/evaluaciones.tsx');
+  const panel = leer('apps/web/src/app/pro/advisees/anthropometry/medicion.tsx');
+  assert.match(lista, /medicionesPorFamilia\(/, 'la lista de mediciones sale de medicionesPorFamilia, del dominio');
+  assert.match(panel, /const titular = valorQueRige\(medicion\)/, 'el titular del panel sale de valorQueRige, del dominio');
+  assert.match(panel, /className="medicion-abierta__valor">\{titular \?\? C\.sinValorVigente\}/, 'el titular del panel muestra ese valor, o dice que no hay uno vigente');
+  for (const [nombre, fuente] of [['evaluaciones.tsx', lista], ['medicion.tsx', panel]]) {
+    assert.doesNotMatch(fuente, /magnitude\??\.value/, `${nombre} no lee un valor por su cuenta: ni el original ni el vigente`);
+  }
+  // Las dos funciones leen el valor que rige; el original solo aparece en la historia (`historiaDeLaMedicion`).
+  const dominio = leer('packages/domain/src/tomas-de-antropometria.ts');
+  const cuerpoDe = (nombre) => {
+    const desde = dominio.indexOf(nombre);
+    assert.ok(desde >= 0, `se esperaba ${nombre} en el dominio`);
+    return dominio.slice(desde, dominio.indexOf('\n}\n', desde));
   };
-  visitar(fuente);
-  assert.ok(titular, 'se esperaba el encabezado de la medición');
-  assert.match(titular, /effectiveMagnitude/, 'el titular tiene que leer effectiveMagnitude');
-  assert.doesNotMatch(
-    titular.replace(/effectiveMagnitude\s*\?\?\s*medicion\.magnitude/g, ''),
-    /medicion\.magnitude\b/,
-    'el original solo entra como respaldo de la cadena no resoluble, nunca como titular propio',
-  );
+  assert.match(dominio, /export const valorQueRige = \(m: Pick<Medicion, 'effectiveMagnitude'>\)/, 'valorQueRige solo puede leer effectiveMagnitude');
+  const fila = cuerpoDe('export function medicionesPorFamilia');
+  assert.match(fila, /const rige = m\.effectiveMagnitude;/, 'la fila toma el valor de effectiveMagnitude');
+  assert.doesNotMatch(fila, /m\.magnitude\.value/, 'la fila no muestra el valor original');
 });
 
 /**

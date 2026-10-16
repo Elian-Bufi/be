@@ -1,0 +1,32 @@
+NOTADA    el título del cajón no admite el foco: al abrirse, cae en «Cerrar» — C-70 (el cajón)
+tanda W (solicitudes): 1 de 1 roturas notadas · 1 comprobaciones fallaron y 25 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  C-70 · «Pedir información» abre un cajón sobre «Solicitudes»… — vista=pedir · «Asesorado · 9a709b» (el marco: «Asesorado · 9a709b») · foco en otro lado · 1 Qué formulario | 2 Qué preguntas | 3 Para qué y en qué área · Antece
+pasaron:
+  F-44 · Al entrar, «Solicitudes» lee la lista entera una vez y, una vez, la respuesta de cada solicitud respond
+  C-72 · La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice e
+  C-70 · «Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola, y ningún ren
+  F-45 · Las tres vistas están en su orden, cada una con la cantidad de solicitudes que trae, contada a mano sob
+  C-71 · Una solicitud respondida se abre al costado, sin tapar la lista, y el foco va a su título. Dice cuándo 
+  F-44 · Abrir una solicitud respondida no vuelve a leerla (su respuesta ya se leyó al entrar): lee una vez la v
+  C-71 · La historia va de lo más nuevo a lo más viejo: la corrección, marcada «Vigente», con el motivo que escr
+  F-46 · Una solicitud respondida y sin correcciones: rige la original, ninguna fila dice «Corregida» ni «Antes»
+  F-47 · Una solicitud sin responder se abre igual, sin leer nada más que su formulario: dice las preguntas pedi
+  F-48 · Escape cierra el detalle y el foco vuelve al renglón de esa solicitud. La solicitud abierta vive en la 
+  F-49 · En ningún estado de «Solicitudes» (la lista, una respondida y corregida, una respondida y una sin respo
+  F-50 · Si la lista no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Toda
+  F-14 · «Solicitudes» tiene su ayuda en el marco del área: explica los estados, «Declarado por la persona», «Re
+  F-51 · A 1280 px el detalle sigue al costado de la lista. A 1024 px se abre encima, en un panel que retiene el
+  F-48 · axe no encuentra faltas en «Solicitudes» con una solicitud abierta al costado (1440 y 1280 px), en el p
+  C-73 · Elegir un formulario lee su versión una vez, y muestra su descripción (la de los otros, no). Vienen tod
+  C-74 · La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vac
+  F-52 · Escape cierra el cajón: la dirección vuelve a `vista=solicitudes`, el foco vuelve al botón que lo abrió
+  F-53 · Con algo sin completar, «Enviar solicitud» no envía nada y dice en su lugar qué falta, con el foco en l
+  F-54 · El área de la solicitud: con un formulario sin área propia (la API lo entrega sin área) hay que elegirl
+  F-55 · Un rechazo al enviar (simulado) se dice adentro del cajón, con el foco en el aviso, y lo elegido sigue 
+  F-56 · A 1440 y a 1280 px el cajón mide 800 px, pegado al borde derecho y de arriba a abajo de la ventana, y l
+  F-05 · Al enviar sale un solo pedido, con lo que quedó elegido: las preguntas marcadas (no la que se desmarcó)
+  F-57 · Llegando desde Entrenamiento, el cajón se abre con la precarga ratificada (DL-100): el formulario de En
+  — · «Solicitudes» y el pedido no produjeron errores de página
+última línea: 29/30 comprobaciones bien; fallan: C-70

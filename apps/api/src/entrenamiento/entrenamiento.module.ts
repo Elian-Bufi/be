@@ -44,5 +44,7 @@ import { TiemposDeSesionService } from './tiempos.service';
     ImagenesDeEjercicioService,
     CompatibilidadDeClientesService,
   ],
+  // El entorno profesional (AnalisisModule) lee cada sesión con el mismo modelo de API-TRN-19.
+  exports: [EjecucionesDeEntrenamientoService],
 })
 export class EntrenamientoModule {}

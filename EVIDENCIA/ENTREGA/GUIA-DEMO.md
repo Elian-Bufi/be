@@ -38,7 +38,7 @@ Esta guía los junta. Las capturas de referencia del website están en `capturas
 | # | Qué hacer | Qué mostrar |
 |---|---|---|
 | 1.1 | Abrir el website | La landing: **qué es BE** con las palabras del legajo (02 §3.2), qué hace por el profesional y por el asesorado (02 §9) y **lo que BE no hace**: no diagnostica, no puntúa personas, no arma planes solo y nadie ve datos sin autorización (02 §14) |
-| 1.2 | Señalar el aviso del encabezado | «Ambiente de prueba · solo datos sintéticos» está en todas las pantallas (08 §33) |
+| 1.2 | Bajar hasta el pie y señalar el aviso | «Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.» está en el pie de la cara pública y, con otras palabras, en el registro (08 §33). Desde WP-ESCRITORIO-AMABLE ya no va en la barra de cada pantalla; la APK conserva su franja |
 | 1.3 | «Ya tengo una cuenta» | El acceso, en el mismo tema oscuro. Iniciar sesión con **DEMO-PN** |
 
 ## 2 · El espacio profesional (4 minutos)
@@ -51,7 +51,7 @@ Esta guía los junta. Las capturas de referencia del website están en `capturas
 
 ## 3 · La toma sobre la figura, los cálculos y la lámina (7 minutos): el momento que más suma
 
-Iniciar sesión con **DEMO-PA** → «Asesorado · c36743» → «Abrir Antropometría». Las pestañas son «Evaluaciones», «En preparación», «Evolución» y «Lámina»: arrancar en **En preparación**.
+Iniciar sesión con **DEMO-PA** → «Asesorado · c36743» → «Abrir Antropometría». Las pestañas son «Tomas», «En preparación», «Evolución» y «Lámina»: arrancar en **En preparación**.
 
 | # | Qué hacer | Qué mostrar |
 |---|---|---|
@@ -60,7 +60,7 @@ Iniciar sesión con **DEMO-PA** → «Asesorado · c36743» → «Abrir Antropom
 | 3.3 | Tocar un punto | Lleva a su campo en la lista, que es la tabla equivalente y el camino del teclado |
 | 3.4 | Cargar un pliegue tricipital de **8,5** y uno subescapular de **31**. En la lista, cargar también el peso (**70 kg**) y la talla (**172 cm**), que no tienen sitio en la figura | Los dos puntos se llenan **igual**. La figura dice dónde se midió y que ya hay dato, **nunca si el valor es alto o bajo**. Es RF-048 llevado al color, y lo sostiene una prueba: el punto no recibe el valor. El peso y la talla son para el paso 3.6 |
 | 3.5 | «Guardar» y después «Registrar evaluación» | «Guardado» aparece abajo, donde se está mirando. Registrar es un acto aparte: se confirma en un diálogo centrado, «Registrar esta evaluación». Después no se edita: se corrige agregando (RF-050) |
-| 3.6 | En «Evaluaciones», abrir la evaluación registrada → «Cálculos» → «Calcular con un método» | El selector separa **«Se pueden calcular con esta toma»** de **«Les faltan datos de esta toma»**. El catálogo de BE tiene **21 métodos**, cada uno con su fuente y su población; en `test` se suma uno sintético de demostración. Elegir **«Índice de masa corporal (IMC)»**: la ficha dice qué da, qué pide con el valor de esta toma y en qué población se validó, y deja plegadas la fuente y la regla. «Calcular»: el aviso de éxito aparece abajo y se va solo. Después elegir un método de Durnin y Womersley: al lado de cada dato que la toma no tiene dice «Falta en esta toma», y «Calcular» queda deshabilitado. BE no calcula con lo que no hay. Si la toma ya tuviera ese resultado calculado con otro método, un aviso lo diría antes de calcular: los dos conviven, BE no elige |
+| 3.6 | En «Tomas», abrir la evaluación registrada → «Cálculos» → «Calcular con un método» | El selector separa **«Se pueden calcular con esta toma»** de **«Les faltan datos de esta toma»**. El catálogo de BE tiene **21 métodos**, cada uno con su fuente y su población; en `test` se suma uno sintético de demostración. Elegir **«Índice de masa corporal (IMC)»**: la ficha dice qué da, qué pide con el valor de esta toma y en qué población se validó, y deja plegadas la fuente y la regla. «Calcular»: el aviso de éxito aparece abajo y se va solo. Después elegir un método de Durnin y Womersley: al lado de cada dato que la toma no tiene dice «Falta en esta toma», y «Calcular» queda deshabilitado. BE no calcula con lo que no hay. Si la toma ya tuviera ese resultado calculado con otro método, un aviso lo diría antes de calcular: los dos conviven, BE no elige |
 | 3.7 | «Ver lámina» en la misma evaluación → hoja «Pliegues» | La lámina del compositor arma la toma sobre la figura: **ubica cada medida y no califica ningún valor**. El bíceps y la cresta ilíaca tienen su lugar en la figura y aparecen cuando la toma los tiene. Al pie van las dos sumas de pliegues; acá, con dos pliegues, dicen «Sin calcular». «Descargar imagen» baja la lámina como PNG |
 
 ## 4 · Información pertinente: pedir no es acceder (3 minutos)

@@ -8,9 +8,14 @@
  * - la pestaña elegida siempre queda a la vista, aunque esté al final;
  * - el desplazamiento es solo horizontal, para no mover la página.
  * Siguen siendo enlaces con `aria-current`, en el mismo orden de tabulación.
+ *
+ * WP-ESCRITORIO-AMABLE: una pestaña puede llevar un ícono de la familia delante de su nombre. Es decorativo: el nombre
+ * del enlace sigue siendo su texto.
  */
+import type { NombreDeIcono } from '@be/domain';
 import Link from 'next/link';
 import { useEffect, useRef, type RefObject } from 'react';
+import { Icono } from './icono';
 
 export function Pestanas<C extends string>({
   etiqueta,
@@ -19,7 +24,7 @@ export function Pestanas<C extends string>({
   href,
 }: {
   etiqueta: string;
-  vistas: readonly { readonly clave: C; readonly texto: string }[];
+  vistas: readonly { readonly clave: C; readonly texto: string; readonly icono?: NombreDeIcono }[];
   actual: C;
   href: (clave: C) => string;
 }) {
@@ -31,6 +36,7 @@ export function Pestanas<C extends string>({
         {vistas.map((v) => (
           <li key={v.clave}>
             <Link href={href(v.clave)} aria-current={v.clave === actual ? 'page' : undefined} replace>
+              {v.icono ? <Icono nombre={v.icono} tamano={18} /> : null}
               {v.texto}
             </Link>
           </li>

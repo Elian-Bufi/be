@@ -1,0 +1,207 @@
+{
+  "modo": "solicitudes",
+  "inicio": "2026-10-12T16:46:18.463Z",
+  "fin": "2026-10-12T16:48:37.822Z",
+  "hoy": "2026-10-12",
+  "total": 32,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "F-44",
+      "descripcion": "Al entrar, «Solicitudes» lee la lista entera una vez y, una vez, la respuesta de cada solicitud respondida (para decir en la lista cuál se corrigió): ninguna dos veces, y ninguna de las que están sin responder. No lee ningún formulario hasta que se abre una solicitud",
+      "ok": true,
+      "detalle": "la lista: 1 · respuestas: 1, 1 (de 2 respondidas) · de las sin responder: 0 · formularios: 0"
+    },
+    {
+      "pro": "C-72",
+      "descripcion": "La lista tiene todas las solicitudes, en el orden de la API (la más nueva primero); cada renglón dice el formulario, su estado, cuándo se pidió, en qué área, cuántas preguntas tiene, si la persona corrigió su respuesta, y para qué",
+      "ok": true,
+      "detalle": "Hábitos y contexto [Sin responder] Pedido el 12 oct · Nutrición · 3 preguntas | Antecedentes de salud declarados [Respondida] Pedido el 12 oct · Entrenamiento · 2 preguntas · corrigió su respuesta | Antecedentes para entrenamiento [Respondida] Pedido el 12 oct · Entrenamiento · 6 preguntas"
+    },
+    {
+      "pro": "C-70",
+      "descripcion": "«Pedir información» es un botón de «Solicitudes», no una sección: el marco tiene una sola, y ningún renglón lleva un botón «Ver detalle» (el renglón entero abre la solicitud)",
+      "ok": true,
+      "detalle": "secciones: Solicitudes · botón: «Pedir información» · botones «Ver detalle» en la lista: 0"
+    },
+    {
+      "pro": "F-45",
+      "descripcion": "Las tres vistas están en su orden, cada una con la cantidad de solicitudes que trae, contada a mano sobre la lista de la API; «Sin responder» y «Respondidas» suman «Todas». Elegir una no le pide nada a la API, queda en la dirección y deja a la vista las que cuenta; volver a tocarla deja «Todas»",
+      "ok": true,
+      "detalle": "Todas 3 solicitudes · Sin responder 1 solicitud · Respondidas 2 solicitudes · al elegir «Sin responder»: 1 a la vista, 0 pedidos, ver=sin-responder"
+    },
+    {
+      "pro": "C-71",
+      "descripcion": "Una solicitud respondida se abre al costado, sin tapar la lista, y el foco va a su título. Dice cuándo se pidió y en qué área, para qué, y cuándo respondió y corrigió la persona. «Declarado por la persona» se dice una vez. De cada pregunta pedida se lee la respuesta que rige —la de la corrección que señala la API—, con «Corregida» y lo que había antes, también si antes estaba sin responder; «Requerida» va junto a su pregunta",
+      "ok": true,
+      "detalle": "Lo pediste: El 12 oct 2026 a las 13:46, en Entrenamiento · Para qué: «Necesito saber si hay lesiones o condiciones que cambien la carga del plan.» · Respondió: El 12 oct  — Condiciones de salud declaradas Requerida: Asma leve. Uso inhalador antes de entrenar. Corregida Antes: «Asma leve, desde hace años.» | Dolor o lesiones actuales: Molestia en el hombro derecho desde hace dos semanas. Corregida "
+    },
+    {
+      "pro": "F-44",
+      "descripcion": "Abrir una solicitud respondida no vuelve a leerla (su respuesta ya se leyó al entrar): lee una vez la versión de su formulario, de donde salen los textos de las preguntas",
+      "ok": true,
+      "detalle": "al abrir: 0 lecturas de la solicitud y 1 del formulario"
+    },
+    {
+      "pro": "C-71",
+      "descripcion": "La historia va de lo más nuevo a lo más viejo: la corrección, marcada «Vigente», con el motivo que escribió la persona; y la respuesta original, que se conserva, con cuántas de las preguntas respondió (una cuenta, nunca una proporción). «Ver lo que respondió» abre, en el lugar, lo que dijo en esa versión",
+      "ok": true,
+      "detalle": "12 oct, 13:46 Corrección Vigente: Motivo que escribió: «Me olvidé de aclarar que uso inhalador antes de entrenar.» Respondió las 2 preguntas. | 12 oct, 13:46 Respuesta original: Respondió 1 de las 2 preguntas. · en la original: [[\"Condiciones de salud declaradas\",\"Asma leve, desde hace años.\"]]"
+    },
+    {
+      "pro": "F-46",
+      "descripcion": "Una solicitud respondida y sin correcciones: rige la original, ninguna fila dice «Corregida» ni «Antes», y un número lleva la unidad de su pregunta (la APK no manda unidad)",
+      "ok": true,
+      "detalle": "Ganar fuerza en piernas y volver a correr 5 km | Gimnasio hace dos años, tres veces por semana; un año sin correr | 3 días por semana | 45 min | Gimnasio del barrio, con barras y máquinas | Me gusta el trabajo con barra; prefiero evitar la "
+    },
+    {
+      "pro": "F-51",
+      "descripcion": "«Solicitudes», con la solicitud de seis preguntas abierta, a 1440 × 900",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1236 px"
+    },
+    {
+      "pro": "F-51",
+      "descripcion": "En el detalle, «Requerida» sigue a la última palabra de su pregunta: si entra al lado, no ocupa un renglón propio (con preguntas de dos renglones, cada fila medía un renglón más)",
+      "ok": true,
+      "detalle": "5 preguntas requeridas, 5 de dos renglones o más: 5 con la etiqueta al lado del final de la pregunta, 0 con la etiqueta abajo aunque entraba y 0 donde no entraba"
+    },
+    {
+      "pro": "F-47",
+      "descripcion": "Una solicitud sin responder se abre igual, sin leer nada más que su formulario: dice las preguntas pedidas y «Todavía sin responder. No responder también es una opción.». No tiene tabla de respuestas, ni historia, ni «Declarado por la persona» (la misma consulta los encuentra en una respondida), y no hay ningún porcentaje",
+      "ok": true,
+      "detalle": "Horas de sueño habituales | Nivel de actividad física habitual | Fuma actualmente · «Todavía sin responder. No responder también es una opción.»"
+    },
+    {
+      "pro": "F-48",
+      "descripcion": "Escape cierra el detalle y el foco vuelve al renglón de esa solicitud. La solicitud abierta vive en la dirección (`solicitud=`): se abre al entrar con ella, y «Actualizar» vuelve a leer la lista y la deja abierta",
+      "ok": true,
+      "detalle": "tras Escape: cerrado, foco en el renglón · tras «Actualizar»: «Antecedentes de salud declarados Respondida», 1 lectura de la lista"
+    },
+    {
+      "pro": "F-49",
+      "descripcion": "En ningún estado de «Solicitudes» (la lista, una respondida y corregida, una respondida y una sin responder) el texto afirma una medición ni un diagnóstico, ni usa un porcentaje ni un término prohibido de formularios. La negación sí está: «No es una medición ni un diagnóstico.»",
+      "ok": true,
+      "detalle": "ninguno"
+    },
+    {
+      "pro": "F-50",
+      "descripcion": "Si la lista no se puede leer (un 503 simulado), la sección dice la falla con «Reintentar» y nunca «Todavía no le pediste información». Si lo que no se puede leer es la respuesta de una solicitud o las preguntas de su formulario, el detalle lo dice —no dice «sin responder», ni muestra el código de una pregunta— y cada «Reintentar» trae lo suyo",
+      "ok": true,
+      "detalle": "sin la lista: «Solicitudes Lo que le pediste a esta persona y lo que declaró. No responder tamb» · sin la respuesta ni el formulario: No pudimos leer esta solicitud. Reintentar | No pudimos leer las preguntas de este formulario. Reintentar · después de reintentar: 2 filas"
+    },
+    {
+      "pro": "F-51",
+      "descripcion": "«Solicitudes», con la solicitud corregida abierta, a 1440 × 900",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1105 px · la lista mide 520 px de ancho y el detalle, 836"
+    },
+    {
+      "pro": "F-14",
+      "descripcion": "«Solicitudes» tiene su ayuda en el marco del área: explica los estados, «Declarado por la persona», «Requerida» y la respuesta que rige, sin términos prohibidos",
+      "ok": true,
+      "detalle": "«Cómo se leen las Solicitudes» · 8 renglones · prohibidos: ninguno"
+    },
+    {
+      "pro": "F-51",
+      "descripcion": "El alto de «Solicitudes» con esa solicitud abierta, a 1280 y a 1024 px",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1207 px y 900 px"
+    },
+    {
+      "pro": "F-51",
+      "descripcion": "A 1280 px el detalle sigue al costado de la lista. A 1024 px se abre encima, en un panel que retiene el foco, con las mismas filas, la respuesta debajo de su pregunta y sin los nombres de las columnas; Escape lo cierra. En ningún ancho la página desborda de costado, ni un renglón deja un número separado de su palabra o el separador al principio",
+      "ok": true,
+      "detalle": "1280: al costado · 1024: encima, la respuesta debajo · cortes: ninguno"
+    },
+    {
+      "pro": "F-48",
+      "descripcion": "axe no encuentra faltas en «Solicitudes» con una solicitud abierta al costado (1440 y 1280 px), en el panel de encima (1024 px) ni con la ayuda abierta",
+      "ok": true,
+      "detalle": "al costado: sin faltas · la ayuda: sin faltas · 1280: sin faltas · 1024: sin faltas"
+    },
+    {
+      "pro": "C-70",
+      "descripcion": "«Pedir información» abre un cajón sobre «Solicitudes», que sigue detrás con su lista y sin volver a leerla: la dirección dice `vista=pedir`, el marco sigue marcando «Solicitudes» y el cajón dice de quién es con las palabras del marco. El foco va a su título. Tiene los tres pasos a la vista, ningún formulario elegido, y al abrirse lee el catálogo una vez y ninguna versión",
+      "ok": true,
+      "detalle": "vista=pedir · «Asesorado · b4719e» (el marco: «Asesorado · b4719e») · foco en el título · 1 Qué formulario | 2 Qué preguntas | 3 Para qué y en qué área · Antecedentes para entrenamiento (6 preguntas), Hábitos y contexto (3 preguntas), Antecedentes de salud declarados (3 preguntas) · lecturas: 1 del catálogo, 0 de versiones, 0 de la lista"
+    },
+    {
+      "pro": "C-73",
+      "descripcion": "Elegir un formulario lee su versión una vez, y muestra su descripción (la de los otros, no). Vienen todas sus preguntas marcadas y ninguna como requerida (decisión de Dirección del 2026-10-12); la cuenta dice cuántas se van a pedir y sigue a las casillas. «Responde con» es el tipo y la unidad de la API. La «Requerida» de una pregunta sin pedir está apagada y no se puede marcar; la de una pedida, sí. Cada fila y cada formulario miden 44 px o más",
+      "ok": true,
+      "detalle": "versiones leídas: 1 · al elegir: 3 de 3 marcadas, 0 requeridas · «3 de 3 elegidas.» · Número · h, Texto, Sí o no · al desmarcar una: «2 de 3 elegidas.» · tras tocar las dos «Requerida»: no, sí, no · filas de 45 px o más"
+    },
+    {
+      "pro": "C-74",
+      "descripcion": "La nota de las requeridas dice lo que pasa —si la persona responde, las requeridas no pueden quedar vacías; la solicitud entera sí puede quedar sin responder—. Junto al botón, siempre a la vista, lo que hay que saber antes de enviar: que la va a ver en su teléfono (no que «le llega» un aviso, que BE no manda) y que no se puede cancelar ni editar. El cajón no usa «Alcance», «plantilla» ni «campo», ni ningún término prohibido de formularios",
+      "ok": true,
+      "detalle": "«La va a ver en su teléfono, en «Información». No se puede cancelar ni editar después de enviarla.» · el pie termina a 900 px de 900 · sin palabras de antes · prohibidos: ninguno"
+    },
+    {
+      "pro": "F-52",
+      "descripcion": "Escape cierra el cajón: la dirección vuelve a `vista=solicitudes`, el foco vuelve al botón que lo abrió y no sale ninguna escritura. Lo armado no se pierde por cerrar: al abrirlo de nuevo está como estaba (el formulario, la pregunta desmarcada, la requerida y el para qué). Con eso sin enviar, «Actualizar» pregunta antes de descartarlo, nombrándolo, y no lee nada. «Atrás», en el navegador, también lo cierra",
+      "ok": true,
+      "detalle": "tras Escape: cerrado, vista=solicitudes, foco en el botón · escrituras: 0 · al reabrir: «2 de 3 elegidas.», «Ajustar el plan a tu descanso» · «Actualizar»: «Tenés cambios sin guardar «Actualizar» vuelve a leer todo lo que muestra esta sección. Si seguís, se pierde lo que escri», 0 lecturas · tras «atrás»: cerrado, vista=solicitudes"
+    },
+    {
+      "pro": "F-53",
+      "descripcion": "Con algo sin completar, «Enviar solicitud» no envía nada y dice en su lugar qué falta, con el foco en lo primero que falta: sin nada elegido, el formulario y el para qué; con un formulario sin área propia y todas sus preguntas desmarcadas, alguna pregunta, el para qué y el área. Cada cosa deja de decirse cuando se completa",
+      "ok": true,
+      "detalle": "sin nada: Elegí un formulario. | Escribí para qué lo necesitás. (foco en FRM-ENTRENAMIENTO) · sin preguntas: Elegí al menos una pregunta para pedir. | Escribí para qué lo necesitás. | Elegí en qué área lo pedís. (foco en horas_de_sueno, «0 de 3 elegidas.») · completando: Elegí en qué área lo pedís. · escrituras: 0"
+    },
+    {
+      "pro": "F-56",
+      "descripcion": "El pedido, a 1440 × 900, con el formulario más largo del catálogo (seis preguntas) elegido: antes era una página de 1.835 px (medida antes de recomponer); ahora, un cajón que no desplaza la página",
+      "ok": true,
+      "informativo": true,
+      "detalle": "el contenido del cajón mide 902 px, en 755 a la vista; con las aclaraciones abiertas, 1033"
+    },
+    {
+      "pro": "F-54",
+      "descripcion": "El área de la solicitud: con un formulario sin área propia (la API lo entrega sin área) hay que elegirla, se ofrecen las tres y no viene ninguna; con uno de un área sola (Entrenamiento) queda fija, en un campo que no se edita, y lo dice. Elegirlo a mano trae todas sus preguntas marcadas y ninguna requerida. La aclaración que la persona lee debajo de cada pregunta está a un clic, y es la de la API",
+      "ok": true,
+      "detalle": "Hábitos: a elegir (Elegí un área, Nutrición, Entrenamiento, Antropometría), elegida «» · Entrenamiento: fija en «Entrenamiento», «Este formulario es solo de Entrenamiento.» · «6 de 6 elegidas.», 0 requeridas · aclaraciones a la vista: 0 y, al pedirlas, 5"
+    },
+    {
+      "pro": "F-55",
+      "descripcion": "Un rechazo al enviar (simulado) se dice adentro del cajón, con el foco en el aviso, y lo elegido sigue como estaba. Si alguna pregunta no es pertinente para el área, lo dice con esas palabras; si la respuesta es «no disponible», dice el texto neutral del profesional y el marco vuelve a preguntar el acceso; sin conexión, dice que no se pudo confirmar y el botón pasa a «Reintentar», hasta que se cambia algo. Ninguna solicitud se creó",
+      "ok": true,
+      "detalle": "422: «Alguna de las preguntas pedidas no es pertinente para esta área. Revisá las preguntas o el área.» (foco en aviso) · 404: «No encontramos un recurso disponible para esta acción.», 1 pregunta al resumen · sin conexión: «No pudimos confirmar el resultado. Reintentá.», botón «Reintentar» y, al cambiar algo, «Enviar solicitud» · solicitudes en la API: 3 (había 3)"
+    },
+    {
+      "pro": "F-56",
+      "descripcion": "El cajón, a 1440 × 900, con un formulario de tres preguntas elegido y un rechazo a la vista",
+      "ok": true,
+      "informativo": true,
+      "detalle": "mide 800 × 900 px; su contenido, 786 px en 755 a la vista"
+    },
+    {
+      "pro": "F-56",
+      "descripcion": "A 1440 y a 1280 px el cajón mide 800 px, pegado al borde derecho y de arriba a abajo de la ventana, y la página sigue a la vista a su izquierda; a 1024 px ocupa todo el ancho. En los tres el pie, con «Enviar solicitud», queda adentro de la ventana, nada desborda de costado y axe no encuentra faltas con un formulario elegido y un rechazo a la vista",
+      "ok": true,
+      "detalle": "1440: cajón de 800 px, queda 640 de la página a la vista, el pie termina a 900 · axe: sin faltas — 1280: cajón de 800 px, queda 480 de la página a la vista, el pie termina a 900 · axe: sin faltas — 1024: cajón de 1024 px, queda 0 de la página a la vista, el pie termina a 900 · axe: sin faltas"
+    },
+    {
+      "pro": "F-05",
+      "descripcion": "Al enviar sale un solo pedido, con lo que quedó elegido: las preguntas marcadas (no la que se desmarcó), en el orden del formulario, la requerida, el para qué y el área. El cajón se cierra, la página queda en «Solicitudes» y lo dice; la lista se vuelve a leer y tiene una más, primera y sin responder, y las cantidades de las vistas suben. El pedido siguiente empieza de cero",
+      "ok": true,
+      "detalle": "pedidos: 1 · pedidas: nivel_de_actividad, fuma · requeridas: nivel_de_actividad · NUTRICION · «Ajustar el plan a tu descanso.» · «Solicitud enviada.» · Todas 4 solicitudes · Sin responder 2 solicitudes · Respondidas 2 solicitudes · el pedido siguiente: 0 formularios elegidos"
+    },
+    {
+      "pro": "F-57",
+      "descripcion": "Llegando desde Entrenamiento, el cajón se abre con la precarga ratificada (DL-100): el formulario de Entrenamiento, sus seis preguntas pedidas y cinco requeridas, el para qué y el área fija; lo dice, con un enlace para volver, y no dice «Vienen todas elegidas». Cerrarlo deja a la persona en «Solicitudes», con «Volver a Entrenamiento» en el marco, y al reabrirlo la precarga sigue. Al enviar sale un solo pedido con eso y se vuelve a Entrenamiento, que al llegar dice «Solicitud enviada.»",
+      "ok": true,
+      "detalle": "Antecedentes para entrenamiento: 6 pedidas, 5 requeridas · «Planificar tu entrenamiento» · área fija · tras cerrar: vista=solicitudes, «Volver a Entrenamiento» · pedidos: 1 · llegó a /pro/advisees/training?id=c91992f4-5c4e-4ba4-83cb-e82587b471, que dice «Solicitud enviada.» · en la API: 6 pedidas, 5 requeridas, ENTRENAMIENTO"
+    },
+    {
+      "pro": "—",
+      "descripcion": "«Solicitudes» y el pedido no produjeron errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

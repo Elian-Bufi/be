@@ -1,0 +1,52 @@
+control (sin mutar): 24 pasan, 0 fallan
+DETECTADA orden-al-reves · las tomas van de la más vieja a la más nueva · fallan 1: «las tomas van por cuándo se tomaron, la más nueva primero; c»
+DETECTADA empate-sin-registro · con la misma fecha no se mira cuál se registró después · fallan 1: «las tomas van por cuándo se tomaron, la más nueva primero; c»
+DETECTADA orden-toca-la-lista · ordenar cambia la lista que se le pasa · fallan 1: «las tomas van por cuándo se tomaron, la más nueva primero; c»
+DETECTADA tramos-juntan-todo · las tomas de un mismo protocolo se juntan aunque haya otra en el medio · fallan 1: «los tramos de protocolo son seguidos: una toma con otro prot»
+DETECTADA tramos-sin-leer-se-suman · una toma sin protocolo leído se suma al tramo de al lado · fallan 1: «una toma cuyo protocolo todavía no se leyó no se suma al tra»
+DETECTADA siempre-mediciones · una sola medición se dice «mediciones» · fallan 1: «las cuentas de una toma se dicen con sus plurales; lo que no»
+DETECTADA siempre-corregidas · una sola corregida se dice «corregidas» · fallan 1: «las cuentas de una toma se dicen con sus plurales; lo que no»
+DETECTADA siempre-anuladas · una sola anulada se dice «anuladas» · fallan 1: «las cuentas de una toma se dicen con sus plurales; lo que no»
+DETECTADA cero-corregidas-se-dice · se dice «0 corregidas» · fallan 1: «las cuentas de una toma se dicen con sus plurales; lo que no»
+DETECTADA cero-anuladas-se-dice · se dice «0 anuladas» · fallan 1: «las cuentas de una toma se dicen con sus plurales; lo que no»
+DETECTADA anulada-cuenta-como-corregida · una anulada que tenía una corrección cuenta también como corregida · fallan 1: «el resumen de una toma: su protocolo (el más frecuente), sus»
+DETECTADA protocolo-el-menos-frecuente · el protocolo de la toma es el menos frecuente · fallan 1: «el resumen de una toma: su protocolo (el más frecuente), sus»
+DETECTADA clase-comun-siempre · la toma dice una clase aunque sus mediciones mezclen dos · fallan 1: «el resumen de una toma: su protocolo (el más frecuente), sus»
+DETECTADA corto-con-preposicion · el nombre corto conserva la preposición · fallan 4: «el nombre corto saca la palabra de la familia y su preposici» «las mediciones van por familia en el orden del dominio y, ad» «la fila muestra el valor que rige, no el que se tomó primero» «el nombre accesible de una fila es el completo: con los cort»
+DETECTADA corto-en-minuscula · el nombre corto queda en minúscula · fallan 4: «el nombre corto saca la palabra de la familia y su preposici» «las mediciones van por familia en el orden del dominio y, ad» «la fila muestra el valor que rige, no el que se tomó primero» «el nombre accesible de una fila es el completo: con los cort»
+DETECTADA corto-recorta-lo-ajeno · se recorta un nombre que no lleva la palabra de su familia · fallan 1: «lo que no lleva la palabra de su familia, o no es del catálo»
+DETECTADA anulada-y-corregida · una anulada se dice además «corregida» · fallan 1: «en la fila solo se marca la excepción: una medición vigente »
+DETECTADA sin-valor-no-se-marca · una medición sin valor vigente no lo dice · fallan 1: «la fila muestra el valor que rige, no el que se tomó primero»
+DETECTADA corregida-no-se-marca · una medición corregida no lleva su marca · fallan 1: «la fila muestra el valor que rige, no el que se tomó primero»
+DETECTADA la-fila-muestra-el-original · la fila muestra el valor que se tomó primero, no el que rige · fallan 2: «la fila muestra el valor que rige, no el que se tomó primero» «en la fila solo se marca la excepción: una medición vigente »
+DETECTADA familias-al-reves · las familias van en otro orden · fallan 2: «las mediciones van por familia en el orden del dominio y, ad» «la unidad se dice una vez por familia si todas sus medicione»
+DETECTADA filas-sin-el-orden-del-catalogo · las mediciones de una familia van como llegaron · fallan 2: «las mediciones van por familia en el orden del dominio y, ad» «la unidad se dice una vez por familia si todas sus medicione»
+DETECTADA unidad-con-una-sola · una familia de una sola medición dice la unidad en su título · fallan 1: «la unidad se dice una vez por familia si todas sus medicione»
+DETECTADA unidad-aunque-difieran · la familia dice una unidad aunque sus mediciones tengan dos · fallan 1: «la unidad se dice una vez por familia si todas sus medicione»
+DETECTADA valor-siempre-con-unidad · la fila repite la unidad que ya dice el título · fallan 3: «la unidad se dice una vez por familia si todas sus medicione» «la fila muestra el valor que rige, no el que se tomó primero» «en la fila solo se marca la excepción: una medición vigente »
+DETECTADA valor-completo-sin-unidad · el valor que oye el lector de pantalla no lleva la unidad · fallan 2: «la unidad se dice una vez por familia si todas sus medicione» «la fila muestra el valor que rige, no el que se tomó primero»
+DETECTADA clase-en-cada-fila · cada fila repite la clase aunque toda la toma sea de una · fallan 3: «la fila muestra el valor que rige, no el que se tomó primero» «en la fila solo se marca la excepción: una medición vigente » «si la toma mezcla lo medido y lo reportado, cada fila dice s»
+DETECTADA clase-nunca · con clases mezcladas, la fila no dice la suya · fallan 1: «si la toma mezcla lo medido y lo reportado, cada fila dice s»
+DETECTADA nombre-accesible-corto · el nombre accesible es el corto · fallan 1: «el nombre accesible de una fila es el completo: con los cort»
+DETECTADA anulada-sin-atenuar · la fila de una anulada no se señala · fallan 1: «en la fila solo se marca la excepción: una medición vigente »
+DETECTADA historia-por-fecha · la historia ordena las correcciones por fecha y no por su cadena · fallan 1: «la historia va de lo más nuevo a lo más viejo, por la cadena»
+DETECTADA historia-al-reves · la historia va de lo más viejo a lo más nuevo · fallan 1: «la historia va de lo más nuevo a lo más viejo, por la cadena»
+DETECTADA rige-con-la-cadena-rota · con la cadena sin resolver, igual hay un valor vigente · fallan 1: «sin correcciones rige el original; con la cadena sin resolve»
+DETECTADA rige-en-una-anulada · en una medición anulada sigue rigiendo un valor · fallan 1: «una medición anulada cuenta su anulación primero, con el mot»
+DETECTADA rige-el-original-con-correcciones · con correcciones, el original también figura como vigente · fallan 1: «la historia va de lo más nuevo a lo más viejo, por la cadena»
+DETECTADA rigen-todas-las-correcciones · todas las correcciones figuran como vigentes · fallan 1: «la historia va de lo más nuevo a lo más viejo, por la cadena»
+DETECTADA todo-es-propio · toda corrección figura como hecha por quien mira · fallan 1: «la historia va de lo más nuevo a lo más viejo, por la cadena»
+DETECTADA la-anulacion-nunca-es-propia · la anulación nunca figura como propia · fallan 1: «una medición anulada cuenta su anulación primero, con el mot»
+DETECTADA anulacion-sin-motivo · la anulación no cuenta su motivo · fallan 1: «una medición anulada cuenta su anulación primero, con el mot»
+DETECTADA resultado-sin-su-precision · el resultado pierde los decimales que declara su método · fallan 2: «un resultado se dice con los decimales de su método, aunque » «lo que cambió con la corrección: la corrida vigente y la que»
+DETECTADA resultado-con-adimensional · un resultado sin unidad muestra «adimensional» · fallan 5: «un resultado se dice con los decimales de su método, aunque » «lo que cambió con la corrección: la corrida vigente y la que» «una corrida reemitida porque cambió otra de sus entradas no » «al anular una medición, los resultados que la usaban quedan » «una corrida que quedó sin efecto por otra de sus entradas no»
+DETECTADA cambios-de-otra-toma · se cuentan corridas de otra toma · fallan 1: «una corrida que nunca se reemplazó, una de otra toma y una y»
+DETECTADA cambio-por-otra-entrada · una corrida reemitida por otra entrada se le atribuye a esta medición · fallan 1: «una corrida reemitida porque cambió otra de sus entradas no »
+DETECTADA se-mira-la-reemplazada · también se mira la corrida que ya tiene sucesora · fallan 1: «lo que cambió con la corrección: la corrida vigente y la que»
+DETECTADA sin-atribuir-no-se-cuenta · lo que no se puede atribuir se calla · fallan 1: «si la API no dice con qué valor entró la medición, el cambio»
+DETECTADA anulada-sin-sus-resultados · al anular no se listan los resultados que quedaron sin efecto · fallan 1: «al anular una medición, los resultados que la usaban quedan »
+DETECTADA sin-efecto-por-otra-entrada · un resultado sin efecto por otra entrada se le cuenta a esta medición · fallan 1: «una corrida que quedó sin efecto por otra de sus entradas no»
+DETECTADA valor-viejo-se-calla · una corrida que quedó con un valor que ya no rige no se dice · fallan 1: «una corrida que quedó sin efecto por otra de sus entradas no»
+DETECTADA antes-y-ahora-al-reves · el valor de antes y el de ahora van cruzados · fallan 2: «lo que cambió con la corrección: la corrida vigente y la que» «una corrida reemitida porque cambió otra de sus entradas no »
+DETECTADA cambios-sin-orden · los resultados que cambiaron van como llegaron, no por método · fallan 1: «lo que cambió con la corrección: la corrida vigente y la que»
+50 de 50 detectadas

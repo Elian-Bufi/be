@@ -5,8 +5,8 @@
  * - «Guardar como plantilla»: un diálogo con nombre, descripción, el interruptor de cargas (D-2, apagado) y **cada nota
  *   de texto libre** para confirmarla o vaciarla antes de guardar (D-3). La estructura sale de la versión con
  *   `estructuraComoEntrada`, sin objetivo ni próxima revisión (D-5).
- * - «Empezar desde una plantilla»: elegir una plantilla activa y crear el borrador (API-TRN-07 con
- *   `fromTemplateVersionId`); el plan nace de la persona y se adapta en el editor.
+ * - «Empezar desde una plantilla» es el diálogo común a los planes (`../empezar-desde-plantilla.tsx`); el borrador lo crea
+ *   la sección «Plan» (API-TRN-07 con `fromTemplateVersionId`): nace de la persona y se adapta en el editor.
  * - La nota de origen en un borrador que salió de una plantilla.
  */
 import {
@@ -15,7 +15,6 @@ import {
   vaciarNota,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type OrigenDePlanEnPlantilla,
-  type ResumenDePlantillaDeEntrenamiento,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
@@ -118,40 +117,6 @@ export function DialogoGuardarPlantilla({
         <p>{COPY_PLANTILLAS.soloTuya}</p>
       </Ayuda>
     </DialogoDeConfirmacion>
-  );
-}
-
-/** Elegir una plantilla activa y crear el borrador desde ella. */
-export function InicioDesdePlantilla({ token, deshabilitado, onAplicar }: { token: string; deshabilitado: boolean; onAplicar: (templateVersionId: string) => void }) {
-  const id = useId();
-  const [plantillas, setPlantillas] = useState<readonly ResumenDePlantillaDeEntrenamiento[] | null>(null);
-  const [elegida, setElegida] = useState('');
-  useEffect(() => {
-    let vigente = true;
-    void api.listarPlantillasDeEntrenamiento(token, { state: 'ACTIVE' }).then((r) => {
-      if (vigente) setPlantillas(r.ok ? r.datos.data : []);
-    });
-    return () => {
-      vigente = false;
-    };
-  }, [token]);
-  if (plantillas === null) return null;
-  if (plantillas.length === 0) return <p className="nota">{COPY_PLANTILLAS.sinPlantillasActivas}</p>;
-  return (
-    <div className="campo">
-      <label htmlFor={`${id}-plantilla`}>{COPY_PLANTILLAS.empezarDesdePlantilla}</label>
-      <select id={`${id}-plantilla`} value={elegida} onChange={(e) => setElegida(e.target.value)}>
-        <option value="">—</option>
-        {plantillas.map((p) => (
-          <option key={p.templateId} value={p.versionId}>
-            {p.name} · {COPY_PLANTILLAS.sesiones(p.sessionCount)} · {p.copiedLoads ? COPY_PLANTILLAS.conCargas : COPY_PLANTILLAS.sinCargas}
-          </option>
-        ))}
-      </select>
-      <button type="button" className="boton boton--secundario" disabled={deshabilitado || !elegida} onClick={() => onAplicar(elegida)}>
-        {COPY_PLANTILLAS.aplicar}
-      </button>
-    </div>
   );
 }
 

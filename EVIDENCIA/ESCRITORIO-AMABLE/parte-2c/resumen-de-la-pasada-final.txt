@@ -1,0 +1,18 @@
+inicio: 2026-10-11 17:03 · commit 24a8b63 + cambios sin commit: 9
+datos: verificación: 26 de 26 comprobaciones coinciden verificación de comprensión: 10 de 10 
+r-capturas: salida 0 · 60 OK · 0 datos · 0 fallas · 60/60 comprobaciones bien
+rc-mirar: salida 0 · 20 OK · 0 datos · 0 fallas · 20 de 20 bien
+rc-capturas: salida 0 · 80 OK · 0 datos · 0 fallas · 80 de 80 bien
+r-funcional: salida 0 · 211 OK · 8 datos · 0 fallas · 219/219 comprobaciones bien
+rc-funcional: salida 1 · 74 OK · 9 datos · 2 fallas · 83 de 85 bien; con observaciones: C-21 Cambiar de ejercicio en el lugar trae su 
+FALLA C-21 · Cambiar de ejercicio en el lugar trae su respuesta sin pasar por el formulario, con la serie y la unidad que estaban elegidas — Ejercicio: Sentadilla · 14 sesiones · Serie: 1 · Unidad: kg · 0 gráficos · formulario: false
+FALLA CP-29 · El Resumen con la API en uso, dentro del presupuesto del paquete anterior (2,5 s) — 4089 ms
+rc-revocacion: salida 0 · 6 OK · 0 datos · 0 fallas · 6 de 6 bien
+r-descartable: salida 0 · 21 OK · 0 datos · 0 fallas · 21/21 comprobaciones bien
+fin: 2026-10-11 17:37
+
+Repeticiones de recorrido-comprension.mjs funcional, sola y sobre datos generados de nuevo:
+  segunda corrida: 82 de 85 (CP-07 y dos de C-21: la pantalla se leyó antes de que llegaran los gráficos, después de «Ver la respuesta»)
+  tercera corrida, con la espera corregida: 86 de 86 bien
+recorrido-comprension.mjs revocacion, con CP-23 reforzada: 6 de 6 bien
+recorrido.mjs analizar, sobre la compilación final (c1ee413): 44/44 comprobaciones bien

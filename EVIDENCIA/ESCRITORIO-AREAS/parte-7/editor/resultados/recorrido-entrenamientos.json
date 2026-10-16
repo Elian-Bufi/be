@@ -1,0 +1,143 @@
+{
+  "modo": "entrenamientos",
+  "inicio": "2026-10-13T06:10:02.961Z",
+  "fin": "2026-10-13T06:14:38.109Z",
+  "hoy": "2026-10-13",
+  "total": 22,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "F-71",
+      "descripcion": "El plan activo se presenta en un renglón: «Plan activo», «Solo lectura» y «Versión N · activada el … · es lo que ve el asesorado», con el número que le toca por su orden de activación. Para verlo se leen tres cosas, una vez cada una: la lista de versiones, la versión vigente con sus objetivos por serie y el objetivo vigente. Las plantillas no se leen al entrar",
+      "ok": true,
+      "detalle": "«Versión 2 · activada el 13 oct · es lo que ve el asesorado» · lecturas: lista 1, versión 1, objetivo 1, otras de Entrenamiento 0 · Guardar como plantilla | Empezar desde una plantilla | Crear nueva versión a partir de esta"
+    },
+    {
+      "pro": "F-72",
+      "descripcion": "Se mira una sesión por vez. Con dos bloques, un control con el nombre de cada uno y, al lado, cuántas sesiones tiene el elegido y su propósito; el primer bloque no usa microciclos, y no hay renglón de microciclo; con dos sesiones, un control, elegida la primera, y «Sin día asignado: tu asesorado elige cuál hace.». Las indicaciones de la sesión se leen antes de sus ejercicios",
+      "ok": true,
+      "detalle": "Fuerza: progresión (elegido) | Descarga · «2 sesiones · Propósito: Más carga, menos repeticiones» · A · Tren inferior (elegida) | B · Tren superior · «Sin día asignado: tu asesorado elige cuál hace.»"
+    },
+    {
+      "pro": "F-73",
+      "descripcion": "Los ejercicios van plegados, cada uno en un renglón con lo que piden sus series («3 × 5 rep. · 85 kg · RIR 2 · descanso 03:00»), calculado a mano con los objetivos que da la API. Al entrar está abierto el primero: dice cuántas series tiene y con qué criterio, y muestra «Lo que recibe tu asesorado», serie por serie, y «Lo general del ejercicio». La sesión dice cuántos ejercicios y cuántas series tiene",
+      "ok": true,
+      "detalle": "3 ejercicios · 10 series · Sentadilla: 4 series · criterio de intensidad: RIR (abierto, 4 filas) | Peso muerto: 3 × 5 rep. · 85 kg · RIR 2 · descanso 03:00 | Zancadas: 3 × 10 rep. · 10 kg · RIR 2 · descanso 01:30"
+    },
+    {
+      "pro": "F-76",
+      "descripcion": "El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea. A 1440 × 900 entran el encabezado, lo que se elige, el primer ejercicio abierto entero y el historial",
+      "ok": true,
+      "detalle": "Versión 2 · activada el 13 oct, 03:10 · vigente | Versión 1 · activada el 13 oct, 03:09 · anterior, conservada · el primer ejercicio termina a los 803 px; el historial empieza a los 468 (el ejercicio, a los 468)"
+    },
+    {
+      "pro": "F-80",
+      "descripcion": "El alto de «Plan», de Entrenamiento, al entrar, a 1440 × 900, con el plan de dos bloques",
+      "ok": true,
+      "informativo": true,
+      "detalle": "994 px · el último ejercicio termina a los 930 px"
+    },
+    {
+      "pro": "F-74",
+      "descripcion": "En un ejercicio con objetivos distintos por serie, cada serie muestra el suyo, el que resolvió la API: la carga, las repeticiones, el RIR y el descanso recomendado. Una serie sin descanso recomendado dice «Sin objetivo», no un cero ni un hueco; la nota de una serie se lee en su fila (antes no se mostraba). Los valores heredados ya no llevan «· de la prescripción». «Lo general del ejercicio» dice la intensidad, cómo se cuenta la carga, qué cuentan las repeticiones y las notas",
+      "ok": true,
+      "detalle": "Press de banca: 62,5 kg / 6–8 rep. / RIR 2 / 02:30 /  | 62,5 kg / 6–8 rep. / RIR 2 / 02:30 /  | 62,5 kg / 6–8 rep. / RIR 1 / 02:30 /  | 60 kg / 6–8 rep. / RIR 1 / Sin objetivo / Si se pierde la técnica, cortar la serie. · Intensidad: RIR 2 · La carga se cuenta: carga externa total · Las repeticiones: por serie · Notas: Bajar en 3 segundos y subir en 1."
+    },
+    {
+      "pro": "F-73",
+      "descripcion": "Plegado, un ejercicio con todas las series iguales se dice entero («4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00»); uno sin criterio de intensidad lo dice; y el que tiene objetivos distintos no se resume con su primera serie ni con un rango: dice qué cambia «por serie». Abierto, dice cuántas series son y con qué criterio. Los tres textos están escritos a mano en el recorrido",
+      "ok": true,
+      "detalle": "Press de banca: 4 series · 6–8 rep. · carga, RIR y descanso por serie | Remo con barra: 4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00 | Dominadas: 4 × 6 rep. · sin criterio de intensidad · descanso 02:00"
+    },
+    {
+      "pro": "F-75",
+      "descripcion": "Lo elegido vive en la dirección de la página, por su número de orden. Elegir la segunda sesión escribe «sesion»; abrir otro ejercicio, «ejercicios» con los dos; «Abrir todos los ejercicios» pasa a «Plegar todos», que escribe «ninguno». Elegir otro bloque escribe «bloque» y quita la sesión y los ejercicios, que eran del anterior; ese bloque usa microciclos, y aparece su renglón, con el propósito del elegido; elegir el segundo escribe «micro». Volver al primer bloque limpia la dirección. Nada de eso le pide algo a BE",
+      "ok": true,
+      "detalle": "sesion=2 · ejercicios=1.3 → 1.2.3 → ninguno · bloque=2 («Semana 1 | Semana 2», sesión «Cuerpo completo») · micro=2 · al volver: {\"id\":\"b672672a-ad74-4a01-8878-52c7dec4f2f4\",\"vista\":\"plan\"} · pedidos: 0"
+    },
+    {
+      "pro": "F-75",
+      "descripcion": "«Actualizar» vuelve a leer las tres cosas y conserva lo elegido (el segundo bloque, su segundo microciclo y todos los ejercicios plegados). Una dirección con valores que el plan no tiene no rompe ni deja la pantalla vacía: se ve el plan activo, en su primer bloque y su primera sesión, con los ejercicios plegados",
+      "ok": true,
+      "detalle": "después de «Actualizar»: Descarga · Semana 2 · 0 abiertos · releídas: {\"lista\":1,\"version\":1,\"objetivo\":1} · con basura: Fuerza: progresión · A · Tren inferior"
+    },
+    {
+      "pro": "F-80",
+      "descripcion": "Con los tres ejercicios de la sesión abiertos, en toda la sección no hay una palabra de la lista de Entrenamiento ni un porcentaje que no sea «% RM»; la misma consulta encuentra el contenido. En cada ejercicio, «Lo general» va al lado de la tabla de series, a su misma altura",
+      "ok": true,
+      "detalle": "sin palabras prohibidas en 1930 caracteres · lo general empieza a los 730 px y la tabla termina a los 702"
+    },
+    {
+      "pro": "F-14",
+      "descripcion": "«Plan», de Entrenamiento, tiene su ayuda en el marco del área: se abre por el título, explica cada cosa que la pantalla escribe, sin palabras de la lista; Escape la cierra y el foco vuelve al botón",
+      "ok": true,
+      "detalle": "«Cómo se lee el Plan» · 12 renglones · axe: sin faltas"
+    },
+    {
+      "pro": "F-80",
+      "descripcion": "axe no encuentra faltas en «Plan», de Entrenamiento, con todos los ejercicios abiertos, en los dos temas",
+      "ok": true,
+      "detalle": "claro: sin faltas · azul noche: sin faltas"
+    },
+    {
+      "pro": "F-80",
+      "descripcion": "El historial sigue al costado a 1280 px y pasa debajo de los ejercicios a 1024. «Lo general» sigue al lado de la tabla mientras entra, y pasa debajo cuando no (a 390 px). A 1280, 1024, 768 y 390 px la página no desborda de costado, y ningún renglón empieza con el separador « · » ni deja un número lejos de su unidad",
+      "ok": true,
+      "detalle": "1280: 1092 px de alto, historial al costado, lo general al lado · 1024: 1264 px de alto, historial debajo, lo general al lado · 768: 1522 px de alto, historial debajo, lo general debajo · 390: 2466 px de alto, historial debajo, lo general debajo"
+    },
+    {
+      "pro": "F-78",
+      "descripcion": "(Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece «Ir a Resumen», y ninguna acción para crear. Sin plan y con objetivo, «Crear plan», primero, y «Empezar desde una plantilla». Con plan y sin objetivo vigente, el plan se ve, y en lugar de «Crear nueva versión» explica que primero hay que definir el objetivo. Si la lista de versiones no se puede leer, dice la falla con «Reintentar», no que no hay plan",
+      "ok": true,
+      "detalle": "sin objetivo: [Ir a Resumen] · con objetivo: [Crear plan | Empezar desde una plantilla] · con plan y sin objetivo: [Guardar como plantilla] · falla: «No pudimos cargar esta vista BE no está disponible en este momento. Reintentá en unos minu»"
+    },
+    {
+      "pro": "F-72",
+      "descripcion": "(Respuesta simulada.) Con seis sesiones para elegir, no hay seis botones: una lista, que dice cuál se mira y cuántas hay («4 de 6»), y elegida la que pide la dirección; a 1024 px la página no desborda. Un bloque sin sesiones lo dice, y no muestra una lista vacía ni un ejercicio",
+      "ok": true,
+      "detalle": "lista: 6 opciones, «4 de 6» · bloque vacío: «Acá no hay sesiones.» («sin sesiones»)"
+    },
+    {
+      "pro": "F-74",
+      "descripcion": "(Respuesta simulada.) Con el criterio % RM, «Lo general» dice la intensidad con su referencia, y los parámetros del profesional con su unidad (un número, con coma); la tabla no tiene columna de RIR, y la cabecera del ejercicio dice el criterio",
+      "ok": true,
+      "detalle": "4 series · criterio de intensidad: % RM · Serie, Carga sugerida, Rep., Descanso recomendado · Intensidad: 72,5 % RM (1RM estimado en la última evaluación) · Tempo: 3-1-1 · Pausa abajo: 1,5 s"
+    },
+    {
+      "pro": "F-74",
+      "descripcion": "(Respuestas simuladas: el escenario no tiene ejercicios con imagen.) Un ejercicio con imagen la muestra en «Lo general», dibujada, con su texto alternativo y dentro de la tarjeta, sin tapar los datos. Su acceso se pide una sola vez, y recién con el ejercicio abierto: plegado, no hay imagen ni pedido",
+      "ok": true,
+      "detalle": "abierto: dibujada, 80 × 96 px, «Una barra con dos discos de cada lado, de frente (imagen sintética)» · 1 pedido de acceso · plegado: 0 pedidos"
+    },
+    {
+      "pro": "F-77",
+      "descripcion": "«Guardar como plantilla» guarda la versión activa con una sola escritura y lo avisa. «Empezar desde una plantilla» abre el diálogo común, que recién entonces lee las plantillas de entrenamiento, una vez: está la que se guardó, con sus sesiones contadas a mano y «Sin cargas»; ninguna viene elegida y crear el borrador está apagado. Si esa lectura falla (simulado), el diálogo dice la falla con «Reintentar», no «No tenés plantillas activas»",
+      "ok": true,
+      "detalle": "escrituras: 1 · aviso: sí · lecturas al abrir: 1 · «Plan de entrenamiento del recorrido 061419»: 4 sesiones · Sin cargas · con la falla: «No pudimos leer tus plantillas BE no está disponible en este momento. Reintentá »"
+    },
+    {
+      "pro": "F-79",
+      "descripcion": "«Crear nueva versión a partir de esta» hace una sola escritura y aparece el selector de versión, con «En preparación» elegida, «El asesorado no la ve.» y la activa como «2 · activa». Con cambios sin guardar, pasar a la activa muestra el plan activo (con «Guardar como plantilla» como única acción y la explicación de por qué no se crea otra) y deja el editor fuera de la vista; volver lo muestra con lo escrito intacto. Ir y volver no le pide nada a BE",
+      "ok": true,
+      "detalle": "escrituras: 1 · aviso: sí · En preparación (elegida) | 2 · activa · «Fuerza: progresión» → «Fuerza: progresión (ajuste)» · en la activa: [Guardar como plantilla] · pedidos al ir y volver: 0"
+    },
+    {
+      "pro": "F-79",
+      "descripcion": "Con cambios sin guardar, «Actualizar» pregunta antes de volver a leer. Guardar y activar la versión en preparación la convierte en la vigente: el selector desaparece, el plan dice «Versión 3 · … · es lo que ve el asesorado», su bloque lleva el nombre que se escribió, el historial lista las tres y la dirección queda limpia (traía la segunda sesión: la versión nueva se abre por la primera). El plan tiene objetivos distintos por serie, y se activa porque el titular ya usó una app que los muestra",
+      "ok": true,
+      "detalle": "«Tenés cambios sin guardar «Actualizar» vuelve a leer todo lo…» · «Versión 3 · activada el 13 oct · es lo que ve el asesorado» · bloque: «Fuerza: progresión (ajuste)» · Versión 3 · activada el 13 oct, 03:14 · vigente | Versión 2 · activada el 13 oct, 03:10 · anterior, conservada | Versión 1 · activada el 13 oct, 03:09 · anterior, conservada"
+    },
+    {
+      "pro": "F-77",
+      "descripcion": "Elegida la plantilla, «Crear el borrador desde esta plantilla» hace una sola escritura: el diálogo se cierra, la pantalla lo avisa y queda una versión en preparación que la API reconoce como salida de esa plantilla. El selector vuelve, con «3 · activa»",
+      "ok": true,
+      "detalle": "escrituras: 1 · aviso: sí · En preparación | 3 · activa · origen en la API: una plantilla"
+    },
+    {
+      "pro": "—",
+      "descripcion": "«Plan», de Entrenamiento, no produjo errores de página",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

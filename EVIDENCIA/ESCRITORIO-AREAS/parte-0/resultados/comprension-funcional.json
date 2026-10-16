@@ -1,0 +1,536 @@
+{
+  "modo": "funcional",
+  "inicio": "2026-10-12T00:04:15.429Z",
+  "fin": "2026-10-12T00:09:02.745Z",
+  "hoy": "2026-10-11",
+  "total": 86,
+  "fallas": 0,
+  "resultados": [
+    {
+      "clave": "CP-29",
+      "descripcion": "Primera carga del Resumen después de iniciar sesión, hasta la última respuesta",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1513 ms"
+    },
+    {
+      "clave": "CP-01",
+      "descripcion": "El Resumen presenta la persona y, por área, el objetivo y la síntesis, antes que los indicadores; no hay gráficos que explorar: las tarjetas no dibujan nada y los únicos dibujos son los minigráficos de los indicadores, después",
+      "ok": true,
+      "detalle": "Asesorado · 855763 · Nutrición › Entrenamiento › Antropometría › Indicadores › Empezar por una pregunta · 2 tarjetas con objetivo, 3 con hechos · 4 minigráficos, todos en los indicadores"
+    },
+    {
+      "clave": "CP-01",
+      "descripcion": "A 1440 × 900, el primer hecho de la síntesis (en la tarjeta de la primera área) se ve sin desplazarse",
+      "ok": true,
+      "detalle": "el primer hecho termina en y = 487"
+    },
+    {
+      "clave": "CP-02",
+      "descripcion": "Cada hecho dice su área y alcance y el hecho, y el renglón abre cómo profundizarlo; de dónde sale cada uno está en «Cómo se lee esta vista», una vez por regla",
+      "ok": true,
+      "detalle": "PROXIMA_REVISION(1) NOVEDADES_DESDE_EL_CORTE(1) COBERTURA_NUTRICIONAL(1) REVISION_SIN_APLICAR(1) BORRADOR_SIN_ACTIVAR(1) NOVEDADES_DESDE_EL_CORTE(1) COBERTURA_DE_ENTRENAMIENTO(1) CAMBIO_DE_COMPARABILIDAD(1) · fuentes en la ayuda: 11"
+    },
+    {
+      "clave": "CP-02",
+      "descripcion": "La síntesis se muestra entera: lo plegado dice cuántos hechos guarda y, abierto, están todos (los que había a la vista más los anunciados)",
+      "ok": true,
+      "detalle": "6 a la vista + 1 + 1 plegados = 8 hechos"
+    },
+    {
+      "clave": "CP-02",
+      "descripcion": "Ningún hecho califica a la persona",
+      "ok": true,
+      "detalle": "8 hechos leídos"
+    },
+    {
+      "clave": "CP-03",
+      "descripcion": "Cada área tiene su propio corte: la última revisión de Nutrición y la de Entrenamiento, en fechas distintas",
+      "ok": true,
+      "detalle": "Nutrición · Desde la revisión del 21 sept: | Entrenamiento · Desde la revisión del 2 oct: · a la vista: Desde la revisión del 21 sept · ver las revisiones de Nutrición · aplicada | Desde la revisión del 2 oct · ver las revisiones de Entrenamiento Próxima revisión acordada : sin fecha acordada"
+    },
+    {
+      "clave": "CP-05",
+      "descripcion": "Nutrición: lo que ocurrió después, lo cargado después y lo corregido después se cuentan aparte, como la API",
+      "ok": true,
+      "detalle": "«67 comidas registradas 2 hechos anteriores cargados después 1 registro anterior corregido o anulado» · API {\"ocurrieron\":67,\"incorporadas\":2,\"corregidas\":1}"
+    },
+    {
+      "clave": "CP-05",
+      "descripcion": "Entrenamiento: lo que ocurrió después, lo cargado después y lo corregido después se cuentan aparte, como la API",
+      "ok": true,
+      "detalle": "«3 sesiones registradas 2 hechos anteriores cargados después 1 registro anterior corregido o anulado» · API {\"ocurrieron\":3,\"incorporadas\":2,\"corregidas\":1}"
+    },
+    {
+      "clave": "CP-03",
+      "descripcion": "Abrir la ficha y la síntesis no registra nada: los cortes siguen iguales y la página no escribió",
+      "ok": true,
+      "detalle": "sin escrituras"
+    },
+    {
+      "clave": "R1",
+      "descripcion": "La observación abre la línea de tiempo filtrada a lo nuevo desde la revisión de Nutrición, con un aviso que lo explica; en la URL solo el instante y el área",
+      "ok": true,
+      "detalle": "70 hechos (la API cuenta 70) · áreas de los renglones: NUTRITION · Lo nuevo desde la revisión · Nutrición · Lo nuevo desde la revisión del 21 sept 2026, 11:00 (Nutrición): lo que ocurrió después, lo que se cargó después sobre días anteriores y lo q"
+    },
+    {
+      "clave": "R1",
+      "descripcion": "«Ver todo el período elegido» quita el corte y deja los demás filtros",
+      "ok": true,
+      "detalle": "/pro/advisees?id=ffa4bc7d-c5d2-4e62-8e30-434327855763&vista=linea&areas=NUTRITION"
+    },
+    {
+      "clave": "CP-07",
+      "descripcion": "La pregunta del ejercicio pide el ejercicio: no elige el primero por la persona",
+      "ok": true,
+      "detalle": "Datos para responder Carga, repeticiones y RIR de una serie, cada sesión con lo que indicaba su plan. Ejercicio Elegí un ejercicio Peso muerto · 14 sesiones Sen"
+    },
+    {
+      "clave": "CP-07",
+      "descripcion": "La respuesta del ejercicio, desde «Ver la respuesta» hasta sus tres gráficos dibujados",
+      "ok": true,
+      "informativo": true,
+      "detalle": "492 ms"
+    },
+    {
+      "clave": "CP-07",
+      "descripcion": "La pregunta arma la vista real: carga, repeticiones y RIR de la serie del ejercicio elegido, que se leen arriba, con su límite",
+      "ok": true,
+      "detalle": "Ejercicio: Peso muerto · 14 sesiones · Serie: 1 · Unidad: kg · Carga registrada en la serie cada sesión · kg | Repeticiones registradas en la serie cada sesión · rep | RIR declarado en la serie cada sesión · RIR"
+    },
+    {
+      "clave": "C-21",
+      "descripcion": "Con la pregunta del ejercicio no hay «Ver como», «Agrupar por» ni etiquetas de métricas (no hay nada para elegir ahí), y el título de cada gráfico dice solo la métrica: el ejercicio y la serie están una vez, arriba",
+      "ok": true,
+      "detalle": "{\"modos\":0,\"etiquetas\":0,\"titulos\":[\"Carga registrada en la serie\",\"Repeticiones registradas en la serie\",\"RIR declarado en la serie\"]}"
+    },
+    {
+      "clave": "C-21",
+      "descripcion": "La lectura dice la sesión una sola vez, arriba, y cada métrica dice su objetivo sin repetir el valor de las otras dos, que están al lado; se recorre por sesiones",
+      "ok": true,
+      "detalle": "{\"sesiones\":1,\"arriba\":\"Sesión: A · Tren inferior\",\"repetidos\":0,\"objetivos\":3,\"paso\":[\"Sesión anterior con datos\",\"Sesión siguiente con datos\"]}"
+    },
+    {
+      "clave": "C-21",
+      "descripcion": "Cambiar de ejercicio en el lugar trae su respuesta sin pasar por el formulario, con la serie y la unidad que estaban elegidas",
+      "ok": true,
+      "detalle": "Ejercicio: Sentadilla · 14 sesiones · Serie: 1 · Unidad: kg · 3 gráficos · formulario: false"
+    },
+    {
+      "clave": "CP-21",
+      "descripcion": "El origen del punto se abre al costado, en el lugar de la lectura y con los tres gráficos a la vista (la sesión), y al cerrarlo con Esc la vista sigue igual, con el foco en el disparador",
+      "ok": true,
+      "detalle": "foco en el disparador · {\"alCostado\":true,\"panel\":false,\"graficos\":3,\"focoEnElTitulo\":true} · scroll 0 · Volver a la lectura del 11 oct 2026 De dónde sale este dato Carga registrada en la serie · Peso muerto · serie 1 (kg) · 11 oct 2026 95 kg La carga registrada en"
+    },
+    {
+      "clave": "CP-21",
+      "descripcion": "Del origen a la pestaña del área y de vuelta: la ficha vuelve con la misma pregunta, ejercicio, serie, métricas y período",
+      "ok": true,
+      "detalle": "volver=vista=analizar&pregunta=progreso-de-un-ejercicio&ejercicio=e:4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e04&serie=1&unidad=kg&m=en"
+    },
+    {
+      "clave": "CP-04",
+      "descripcion": "Sin revisión previa, la síntesis habla del período seleccionado y lo dice (en la línea del alcance y en cada hecho); la cobertura está a la vista y aclara desde cuándo rige el plan",
+      "ok": true,
+      "detalle": "«En el período seleccionado · sin revisiones registradas Próxima revisión acordada : sin fecha acordada» · Nutrición · En el período seleccionado: 1 de 90 días con algún registro 2 registros: 1 con cantidades y 1 sin cantidades El plan rige desde el 11 oct: antes, en el período, no había un plan de este seguimiento."
+    },
+    {
+      "clave": "CP-08",
+      "descripcion": "Con una sola área autorizada, la ficha no muestra nada de las otras: ni tarjetas, ni hechos, ni conteos de sesiones o tomas",
+      "ok": true,
+      "detalle": "tarjetas: NUTRICION · Nutrición Abrir Nutrición Objetivo por día · desde el 11 oct Objetivo del día, en números Calorías (requerimiento energético estimado) 2.000 kcal Carbohidratos "
+    },
+    {
+      "clave": "CP-08",
+      "descripcion": "La pregunta de información, con acceso parcial, dice solo lo de Nutrición",
+      "ok": true,
+      "detalle": "La información disponible del 14 jul 2026 al 11 oct 2026 Describe lo que hay, de qué fechas y qué es comparable. No dice si alcanza: eso lo decidís vos. Nutrición Registros de comida 2 registros en 1 "
+    },
+    {
+      "clave": "R3",
+      "descripcion": "«Distintas de lo indicado» deja solo las comidas con una diferencia comprobada (las mismas que cuenta la API), informadas a mano, y cada una dice en cuántos ingredientes",
+      "ok": true,
+      "detalle": "3 filas de 3 · Del 14 jul 2026 al 11 oct 2026 · 3 comidas distintas de lo indicado. · 1 sept 2026 | Cena | Opción 1 · Salmón con papa | Informó las cantidades a mano | Distinta de lo indicado en 2 de 3 ingredientes | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Cena, 1 sept 2026"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Con cantidades informadas a mano: una igual a la opción dice «Igual a lo indicado» (el modo no es una diferencia) y una distinta, en cuántos ingredientes",
+      "ok": true,
+      "detalle": "4 filas de 4 · igual: 24 ago 2026 | Merienda | Opción 1 · Yogur con manzana | Informó las cantidades a mano | Igual a lo indicado | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Merienda, 24 ago 2026 · distinta: 1 sept 2026 | Cena | Opción 1 · Salmón con papa | Informó las cantidades a mano | Distinta de lo indicado en 2 de 3 ingredientes | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Cena, 1 sept 2026"
+    },
+    {
+      "clave": "CP-09",
+      "descripcion": "Sin confirmar sigue sin confirmar y una comida diferente queda fuera de lo indicado: ninguna se presenta como distinta",
+      "ok": true,
+      "detalle": "7 filas de 7 · 5 ago 2026 | Merienda | Opción 1 · Yogur con manzana | Sin confirmar las cantidades | No se puede comprobar: sin confirmar | versión 1 | Ver lo indicado y lo registrado : Comida registrada · Merienda, 5 ago 2026 · 10 oct 2026 | Cena | Una comida diferente (aproximada: Un plato) | Una comida diferente | No se compara: fuera de lo indicado | versión 2 | Ver lo indicado y lo registrado : Comida diferente · Cena, 10 oct 2026"
+    },
+    {
+      "clave": "CP-09",
+      "descripcion": "El detalle de una comida sin confirmar dice lo indicado por la opción y no da cantidades consumidas",
+      "ok": true,
+      "detalle": "Comida registrada · Merienda · 5 ago 2026 Cerrar Opción registrada: Yogur con manzana Cantidades sin confirmar Lo indicado y lo registrado, por ingrediente Ingrediente Indicado Registrado Diferencia Yogur natural 200 g s"
+    },
+    {
+      "clave": "CP-24",
+      "descripcion": "El detalle de una comida que ya no se puede leer dice «no está disponible con tu acceso actual», sin valores",
+      "ok": true,
+      "detalle": "Comida registrada · Merienda · 5 ago 2026 Cerrar Este registro no está disponible con tu acceso actual. Ver en Nutrición · Registros"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "«Solicitar contexto» abre el flujo de formularios con su retorno; salir sin enviar no crea ninguna solicitud",
+      "ok": true,
+      "detalle": "«Volver a la ficha, donde estabas» · 0 → 0 solicitudes · sin escrituras"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "La evidencia de la revisión de Nutrición se abre sin nada marcado y agrupada por día: una casilla por día, no una por comida",
+      "ok": true,
+      "detalle": "21 días para 65 comidas · Todavía no marcaste nada."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Alto de la evidencia de Nutrición: ahora y con una casilla por registro",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1707 px · 4154 px (65 comidas y 2 de planificación y objetivo, a 54 px cada una)"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "La evidencia ocupa menos de la mitad que una casilla por registro",
+      "ok": true,
+      "detalle": "1707 de 4154 px"
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Marcar un día marca, una por una, sus comidas, y el resumen lo dice como marcado",
+      "ok": true,
+      "detalle": "Marcaste 2 de 67: 2 comidas de 1 día."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Desmarcar una comida del día la saca de lo marcado y deja el día en estado mixto",
+      "ok": true,
+      "detalle": "Marcaste 1 de 67: 1 comida de 1 día."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "«Lo que marcaste» lista lo marcado y «Quitar» lo saca",
+      "ok": true,
+      "detalle": "1 listadas · Todavía no marcaste nada."
+    },
+    {
+      "clave": "R3",
+      "descripcion": "Abrir, marcar y cancelar la revisión no escribe nada",
+      "ok": true,
+      "detalle": "sin escrituras"
+    },
+    {
+      "clave": "CP-14",
+      "descripcion": "Las etapas salen de las activaciones reales: A termina el día anterior al corte, y lo dice con la versión que la reemplazó; B sigue vigente; sin doble conteo del día del corte",
+      "ok": true,
+      "detalle": "A Nutrición · versión 1 Ver la planificación de la etapa A Desde 20 jul, al activarse Hasta 5 sept, la reemplazó la versión 2 Duración 48 días Cobertu || B Nutrición · versión 2 Ver la planificación de la etapa B Desde 6 sept, al activarse Hasta Sigue vigente Duración 36 días, con hoy en curso Cobertura"
+    },
+    {
+      "clave": "C-12",
+      "descripcion": "Cada etapa es una tarjeta con su letra y su versión; con dos etapas en el área no se ofrece un selector de una sola opción",
+      "ok": true,
+      "detalle": "{\"selectores\":0,\"nombres\":[\"Nutrición · versión 1\",\"Nutrición · versión 2\"],\"letras\":\"AB\"}"
+    },
+    {
+      "clave": "CP-18",
+      "descripcion": "Calorías por etapa: la media de los días con valor (en la tabla) y la cobertura en días de la etapa (en su tarjeta, que dice de qué métricas es), calculadas a mano con los puntos de la API, coinciden; y la diferencia también",
+      "ok": true,
+      "detalle": "tabla: 1.243 kcal | 1.170 kcal | −73 kcal · tarjetas: Cobertura de Calorías y Proteínas: 48 días: 44 con valor · de ellos, 6 son subtotales (falta algún dato) · 4 sin registros · 1 día con registros asociados a otra versión || Cobertura de Calorías y Proteínas: 36 días: 35 con valor · de ellos, 1 es un subtotal (falta algún dato) · hoy, en curso: fuera · a mano: A 1242.6 (48 días: 44 con valor · 4 sin registros), B 1169.8 (36 días: 35 con valor · hoy, en curso: fuera de la media)"
+    },
+    {
+      "clave": "CP-18",
+      "descripcion": "El hueco de cuatro días de la etapa A queda en la cobertura como días sin registros: no sale del denominador",
+      "ok": true,
+      "detalle": "48 días: 44 con valor · de ellos, 6 son subtotales (falta algún dato) · 4 sin registros · 1 día con registros asociados a otra versión"
+    },
+    {
+      "clave": "C-12",
+      "descripcion": "La cobertura se dice una vez por etapa: las celdas de Calorías y de Proteínas no la repiten, y la de Registros, que cuenta días con registros, dice la suya; el criterio de cada métrica va debajo de su nombre",
+      "ok": true,
+      "detalle": "{\"Calorías\":[\"\",\"\"],\"Proteínas\":[\"\",\"\"],\"Registros\":[\"48 días: 44 con registros · 4 sin registros · 1 día con registros asociados a otra versión\",\"36 días: 36 con registros · hoy, en curso: el total incluye lo registrado hasta ahora · 1 día con registros asociados a otra versión\"]} · Cobertura de Calorías y Proteínas | Cobertura de Calorías y Proteínas"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "Con la pregunta de etapas, «Comparar otros dos períodos» es una opción plegada, justo debajo de la respuesta de las etapas, y no una sección más al final",
+      "ok": true,
+      "detalle": "{\"abierta\":false,\"justoDebajo\":true,\"rotulo\":\"Comparar otros dos períodos, con fechas elegidas a mano\"}"
+    },
+    {
+      "clave": "C-12",
+      "descripcion": "Debajo de la tabla hay un gráfico chico por métrica, con sus puntos, las dos etapas marcadas con su letra y las fechas al pie; el de las calorías dibuja además el objetivo. Los gráficos grandes, con sus modos, no están hasta que se piden",
+      "ok": true,
+      "detalle": "[{\"titulo\":\"Calorías registradas\",\"puntos\":80,\"etapas\":\"AB\",\"fechas\":[\"20 jul\",\"6 sept\",\"11 oct\"],\"objetivo\":2},{\"titulo\":\"Proteínas registradas\",\"puntos\":80,\"etapas\":\"AB\",\"fechas\":[\"20 jul\",\"6 sept\",\"11 oct\"],\"objetivo\":0},{\"titulo\":\"Registros de comida\",\"puntos\":80,\"etapas\":\"AB\",\"fechas\":[\"20 jul\",\"6 sept\",\"11 oct\"],\"objetivo\":0}] · grandes: 0 · botón: Abrir estos gráficos en grande"
+    },
+    {
+      "clave": "C-12",
+      "descripcion": "Las dos tarjetas y la tabla entran en la primera pantalla (1440 × 900): la respuesta se lee sin desplazarse",
+      "ok": true,
+      "detalle": "la tabla termina a los 812 px; la ventana mide 900"
+    },
+    {
+      "clave": "C-12",
+      "descripcion": "La medición de la primera pantalla detecta una respuesta que no entra: con las tarjetas más altas, da que la tabla termina fuera de la ventana",
+      "ok": true,
+      "detalle": "con las tarjetas altas la tabla termina a los 1024 px; la ventana mide 900"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "Sin repetir: sin el resumen en texto a la vista, sin la lista de etapas que repetía las tarjetas, y cada límite de interpretación a la vista una sola vez",
+      "ok": true,
+      "detalle": "causa ×1 · no se restan ×1 · resumen a la vista: false · lista de etapas: false"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "La letra no se achicó: la cobertura de cada etapa tiene el tamaño del texto (no menos de 0,95 rem)",
+      "ok": true,
+      "detalle": "16 px · raíz 16 px"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "«Comparar otros dos períodos» se abre con un toque y tiene sus cuatro fechas",
+      "ok": true,
+      "detalle": "4 campos de fecha"
+    },
+    {
+      "clave": "CP-18",
+      "descripcion": "Dos totales de duraciones distintas no se restan, y se dice por qué",
+      "ok": true,
+      "detalle": "Registros Total 159 registros 48 días: 44 con registros · 4 sin registros · 1 día con registros asociados a otra versión 124 registros 36 días: 36 con registros · hoy, en curso: el total incluye lo re"
+    },
+    {
+      "clave": "R4",
+      "descripcion": "«Abrir estos gráficos en grande» trae, en el lugar de los chicos, los gráficos de las métricas de la pregunta con el período de las dos etapas, sus modos y su pie; el resumen en texto sigue plegado y ningún límite se repite",
+      "ok": true,
+      "detalle": "3 gráficos · desde 2026-07-20 hasta 2026-10-11 · modos: 2 · botón: Volver a los gráficos chicos · causa ×1"
+    },
+    {
+      "clave": "CP-17",
+      "descripcion": "Agrupar por semana y acercar el gráfico no cambian la tabla A/B (resume las observaciones originales) ni la referencia fija",
+      "ok": true,
+      "detalle": "g=W · ref=14"
+    },
+    {
+      "clave": "C-12",
+      "descripcion": "«Volver a los gráficos chicos» los devuelve y cierra los grandes; la tabla no cambió",
+      "ok": true,
+      "detalle": "chicos: 3 · grandes: 0"
+    },
+    {
+      "clave": "CP-26",
+      "descripcion": "La vista guardada lleva la pregunta y sus parámetros como identificadores, sin resultados",
+      "ok": true,
+      "detalle": "{\"id\":\"comparar-etapas\",\"params\":{\"area\":\"NUTRICION\",\"stageA\":\"518de2ad-ea27-4ce2-8f05-7a579c1e250b\",\"stageB\":\"db2db359-0733-433e-9d00-186412dd66bb\"}}"
+    },
+    {
+      "clave": "CP-26",
+      "descripcion": "Reabierta en el mismo asesorado, vuelve la comparación de las mismas etapas",
+      "ok": true,
+      "detalle": "/pro/advisees?id=ffa4bc7d-c5d2-4e62-8e30-434327855763&vista=analizar&m=nutricion.energia%2Cnutricion.proteinas%2Cnutricion.registros&desde=2026-07-20&hasta=2026-10-11&g=W&ref=14&pregunta=comparar-etap"
+    },
+    {
+      "clave": "CP-26",
+      "descripcion": "Abierta en otro asesorado, las etapas del primero no aplican: se dice y se piden de nuevo, sin sustituirlas",
+      "ok": true,
+      "detalle": "¿Qué cambió entre dos etapas? Cambiar la pregunta Más acciones Datos para responder Dos etapas del plan con sus fechas, duración, observaciones y cobertura, resumidas con el mismo criterio. Lo elegido antes no aplica a e"
+    },
+    {
+      "clave": "CP-18",
+      "descripcion": "Con huecos, «Comparar dos períodos» dice los días del rango, cuántos tienen valor y cuántos no tienen registros (los mismos huecos que declara la API), con la media de los valores disponibles",
+      "ok": true,
+      "detalle": "A esperado: 14 días, 10 con valor, 4 sin registros (huecos de la API: 4), media 1285.3 · tabla: Media de los días con valor | 1.285 kcal 14 días: 10 con valor · 4 sin registros | 1.198 kcal 14 días: 14 con valor · de ellos, 1 es un subtotal (falta algún dato) | −87 kcal"
+    },
+    {
+      "clave": "CP-11",
+      "descripcion": "El peso reportado por la persona en el escenario",
+      "ok": true,
+      "informativo": true,
+      "detalle": "no se pudo leer por la proyección; se busca en la pantalla"
+    },
+    {
+      "clave": "CP-11",
+      "descripcion": "En el gráfico, el peso tiene puntos medidos y reportados y el IMC calculados, cada clase con su forma, y la leyenda lo dice",
+      "ok": true,
+      "detalle": "peso: REPORTED · IMC: DERIVED"
+    },
+    {
+      "clave": "CP-12",
+      "descripcion": "Al elegir el punto reportado, la lectura dice «Reportado por la persona, no medido» y el punto conserva su clase: el aro rodea la marca de la clase sin taparla",
+      "ok": true,
+      "detalle": "Lectura del 6 oct 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Peso 80 kg Sin faltantes · n = 1 Clase de dato: Reportado por la person · marca elegida: {\"hay\":true,\"clase\":\"REPORTED\",\"formas\":1,\"radioDeLaMarca\":5,\"aro\":{\"r\":10,\"relleno\":\"none\"}}"
+    },
+    {
+      "clave": "CP-12",
+      "descripcion": "La prueba de la prueba: con el aro oculto, la comprobación del punto elegido falla",
+      "ok": true,
+      "detalle": "sin el aro: {\"hay\":true,\"clase\":\"REPORTED\",\"formas\":1,\"radioDeLaMarca\":5,\"aro\":null}"
+    },
+    {
+      "clave": "CP-13",
+      "descripcion": "El IMC se dice calculado (un índice, no una estimación), con su método, en la lectura y en la tabla",
+      "ok": true,
+      "detalle": "Lectura del 9 oct 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Índice de masa corporal 25,1 kg/m² Sin faltantes · n = 1 Método: Índice de masa corporal (IMC) Clase de dato: Calculado: un índice "
+    },
+    {
+      "clave": "CP-11",
+      "descripcion": "El CSV dice la misma clase y el método: «Calculado: un índice…» con el nombre del método",
+      "ok": true,
+      "detalle": "BE-analisis-2026-07-14-a-2026-10-11.csv · Calculado: un índice calculado sobre medidas, no una estimación (Índice de masa corporal (IMC)) · Calculado: un índice calculado sobre medidas, no una estimación (Índice de masa corporal (IMC))"
+    },
+    {
+      "clave": "CP-25",
+      "descripcion": "La búsqueda de alimentos viaja en el cuerpo de un POST; ninguna URL lleva el texto",
+      "ok": true,
+      "detalle": "1 búsqueda(s) por cuerpo · OPTIONS /api/v1/nutrition/catalog-items/search · POST /api/v1/nutrition/catalog-items/search"
+    },
+    {
+      "clave": "CP-25",
+      "descripcion": "El registro de la API no tiene el texto buscado",
+      "ok": true,
+      "detalle": "12214465 caracteres revisados"
+    },
+    {
+      "clave": "CP-22",
+      "descripcion": "La respuesta lenta del asesorado anterior llega después de cambiar de persona y no se muestra: solo los datos de la persona elegida",
+      "ok": true,
+      "detalle": "Asesorado · ac2ffe · Calorías registradas por día · kcal"
+    },
+    {
+      "clave": "CP-06",
+      "descripcion": "Si falla la lectura de lo nuevo, la tarjeta de cada área con revisión dice «No pudimos completar esta parte» antes que sus hechos y con «Reintentar», nunca «No hay registros nuevos»; la de Antropometría sigue completa",
+      "ok": true,
+      "detalle": "NUTRICION: «No pudimos completar esta parte (lo nuevo desde la revisión). Reintentar Nutrición» · ENTRENAMIENTO: «No pudimos completar esta parte (lo nuevo desde la revisión). Reintentar Entrenamiento» · ANTROPOMETRIA: «»"
+    },
+    {
+      "clave": "R6",
+      "descripcion": "Con la nutrición sin responder, el peso se dibuja y las partes que faltan lo dicen con su reintento, sin ceros",
+      "ok": true,
+      "detalle": "Peso cada toma · kg"
+    },
+    {
+      "clave": "R6",
+      "descripcion": "Reintentar, con la API de nuevo disponible, trae los tres gráficos",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "clave": "R6",
+      "descripcion": "Un conflicto al guardar los indicadores se explica, la elección hecha sigue marcada y se vuelve a leer la guardada",
+      "ok": true,
+      "detalle": "Los indicadores cambiaron en otra pestaña. Tu elección sigue acá: si la guardás, reemplaza la que se guardó allá. · Proteínas, Carga · Peso muerto · serie 1 (kg), Peso"
+    },
+    {
+      "clave": "CP-28",
+      "descripcion": "Con el teclado se alcanzan los hechos de las tarjetas, la acción de cada área y las preguntas del Resumen, con el foco visible",
+      "ok": true,
+      "detalle": "33 Tab · 11 dentro (hecho, accion, pregunta) · Nutrición · Hoy: La próxima revisión acordada es el 14 oct ( | Nutrición · Desde la revisión del 21 sept: 67 comidas regist | Preparar la revisión de Nutrición | Entrenamiento · Hoy: La revisión del 2 oct está registrada y"
+    },
+    {
+      "clave": "CP-28",
+      "descripcion": "Con el zoom al 200 % (720 px de CSS), el Resumen no desborda de costado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "clave": "CP-28",
+      "descripcion": "En el árbol de accesibilidad del Resumen, los encabezados están (una por área, los indicadores y las preguntas) y ningún enlace o botón queda sin nombre",
+      "ok": true,
+      "detalle": "278 nodos · sin nombre: 0"
+    },
+    {
+      "clave": "CP-28",
+      "descripcion": "Lector de pantalla",
+      "ok": true,
+      "informativo": true,
+      "detalle": "No se probó con NVDA, JAWS ni Narrador: no están instalados (NVDA, JAWS) o no se pueden manejar ni escuchar de forma automática (Narrador). Se deja el árbol de accesibilidad y el guion para la prueba con una persona."
+    },
+    {
+      "clave": "CP-29",
+      "descripcion": "Resumen: desde la navegación hasta la última respuesta",
+      "ok": true,
+      "informativo": true,
+      "detalle": "944 ms · 10 pedidos a la API"
+    },
+    {
+      "clave": "CP-29",
+      "descripcion": "El Resumen con la API en uso, dentro del presupuesto del paquete anterior (2,5 s)",
+      "ok": true,
+      "detalle": "944 ms"
+    },
+    {
+      "clave": "CP-29",
+      "descripcion": "Analizar con tres métricas: desde la navegación hasta la última respuesta",
+      "ok": true,
+      "informativo": true,
+      "detalle": "922 ms · 11 pedidos a la API"
+    },
+    {
+      "clave": "CP-29",
+      "descripcion": "Comparar dos etapas: desde la navegación hasta la última respuesta",
+      "ok": true,
+      "informativo": true,
+      "detalle": "844 ms · 15 pedidos a la API"
+    },
+    {
+      "clave": "CP-29",
+      "descripcion": "Línea de tiempo con lo nuevo desde la revisión: desde la navegación hasta la última respuesta",
+      "ok": true,
+      "informativo": true,
+      "detalle": "402 ms · 4 pedidos a la API"
+    },
+    {
+      "clave": "CP-09",
+      "descripcion": "El contraste de entrenamiento muestra cada sesión con lo que indicaba la versión que ejecutó",
+      "ok": true,
+      "detalle": "Evolución de un ejercicio: Peso muerto Del 14 jul 2026 al 11 oct 2026. Cada sesión, con lo que indicaba la versión que ejecutó. Variable Repeticiones Carga (kg) RIR Serie Serie 1 Serie 2 Serie 3 Capas Planificado (línea discontinua, cuadrados; franja si es un "
+    },
+    {
+      "clave": "CP-19",
+      "descripcion": "«Preparar la revisión» abre el formulario con el período desde la última revisión, dicho como preparado por BE, y no escribe nada",
+      "ok": true,
+      "detalle": "sin escrituras"
+    },
+    {
+      "clave": "CP-19",
+      "descripcion": "La evidencia de la revisión de Entrenamiento se abre sin nada marcado",
+      "ok": true,
+      "detalle": "Todavía no marcaste nada. · 0 casillas marcadas"
+    },
+    {
+      "clave": "CP-20",
+      "descripcion": "La revisión envía una referencia por registro marcado: el día marcado como grupo viaja como sus sesiones, una por una, con la versión del plan",
+      "ok": true,
+      "detalle": "Marcaste 2 de 5: 1 sesión de 1 día y 1 versión del plan. · 2 referencias: EXECUTION, PLAN_VERSION"
+    },
+    {
+      "clave": "CP-20",
+      "descripcion": "Registrar la revisión hace una sola escritura y avisa, con la vuelta a la ficha en el mismo aviso",
+      "ok": true,
+      "detalle": "1 POST · Revisión registrada. Todavía no se aplicó: aplicala desde la lista. Volver a la ficha, donde estabas ×"
+    },
+    {
+      "clave": "CP-20",
+      "descripcion": "Revisiones en la lista, antes y después",
+      "ok": true,
+      "informativo": true,
+      "detalle": "0 → 0"
+    },
+    {
+      "clave": "CP-20",
+      "descripcion": "La ficha ya dice la revisión nueva (hoy, sin aplicar) y lo nuevo de Entrenamiento se cuenta desde ella: sin recargar ni duplicar",
+      "ok": true,
+      "detalle": "«Desde la revisión del 11 oct · ver las revisiones de Entrenamiento Próxima revisión acordada : sin fecha acordada» · La revisión del 11 oct está registrada y su resultado todavía no se aplicó. · Entrenamiento · Desde la revisión del 11 oct:"
+    },
+    {
+      "clave": "CP-25",
+      "descripcion": "Ningún pedido a la API llevó texto de búsqueda en la URL durante el recorrido",
+      "ok": true,
+      "detalle": "956 pedidos"
+    }
+  ]
+}

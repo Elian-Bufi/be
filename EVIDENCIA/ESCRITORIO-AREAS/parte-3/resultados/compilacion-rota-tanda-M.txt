@@ -1,0 +1,40 @@
+NOTADA    «Ver anteriores, sin efecto» aparece aunque no haya ninguno — F-36 (la toma completa)
+NOTADA    el botón de corregir no espera el valor ni el motivo — F-37 (corregir pide valor y motivo)
+NOTADA    una falla al guardar la corrección no se dice mientras el formulario está abierto — F-37 (una falla al corregir)
+NOTADA    después de corregir, el formulario queda abierto — F-37 (al corregir)
+NOTADA    «lo que cambió con la corrección» dice como valor de antes el de ahora — F-38 (lo que cambió)
+NOTADA    «Ver N anteriores, sin efecto» cuenta uno de más — F-39 (cerrado el panel)
+NOTADA    los cálculos sin efecto se nombran por lo que calculan, no por su método — F-39 (los que quedaron sin efecto)
+NOTADA    el formulario de anular no dice que una medición anulada no se reactiva — F-37 (anular)
+NOTADA    al anular una medición no se dicen los resultados que quedaron sin efecto — F-38 (lo que pasó al anular)
+NOTADA    después de calcular, el panel no pasa al resultado nuevo — F-39 (calcular)
+NOTADA    la toma no marca el resultado que quedó como referencia — F-39 (dejar como referencia)
+NOTADA    el botón «Ver lámina» queda sin nombre (solo el ícono) — F-37 (axe, la toma completa)
+NOTADA    al registrar una toma se vuelve a «Tomas» sin abrir la que se registró — F-35 (registrar una toma)
+NOTADA    al registrar una toma no se avisa en «Tomas» — F-35 (el aviso al volver)
+NOTADA    las partes de un dato dejan de bajar enteras: «1» queda arriba y «anulada» abajo — F-41 (los cortes de renglón)
+NO NOTADA «Calcular con un método» vuelve a su ancho de antes: el encabezado de los resultados se parte en dos renglones — F-41 (el encabezado de los resultados) · no falló: F-41 (el encabezado de los resultados)
+NOTADA    «Tomas» no dice que hay una toma en preparación — F-35 (seguir con la toma)
+tanda M (mediciones): 16 de 17 roturas notadas · 16 comprobaciones fallaron y 2 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-36 · La toma del perfil completo abre sola (es la más reci… — Masa y estatura (2) · Pliegues cutáneos · mm (11) · Perímetros · cm (13) · Diámetros · cm (3) · Otras mediciones del protocolo (1) · Índices (3) · Sumas de plie
+  F-37 · Corregir pide el valor y el motivo: sin los dos el bo… — sin nada: encendido · con valor y motivo: encendido · «84,5,1»: marcado en el campo · pedidos: 0
+  F-37 · Si la corrección no se puede guardar (un 503 simulado… — «» · lo escrito: 84 | Valor tipeado mal: era 84 · el valor: 48 cm
+  F-37 · Al corregir sale un solo pedido, con el valor, el mot… — pedidos: 1 · «Corrección registrada. El valor original se conserva.» · 84 cm · Corrección: 84 cm Valor vigente — Por qué se corrigió: «Valor tipeado mal: era 84
+  F-38 · «Lo que cambió con la corrección» lista los resultado… — Índice cintura/cadera: 0,81 antes 0,46 · Índice cintura/talla: 0,50 antes 0,29 · Masa grasa relativa (RFM), mujeres: 36,0 % antes 6,0 % — a la vista: [{"clase":
+  F-39 · Cerrado el panel, la toma ya dice lo nuevo sin volver… — la fila: {"id":"7bbc01f3-9db4-44f8-960d-a1b8d8911517","nombre":"Cintura","valor":"84","marcas":["Corregida"],"anulada":false,"rotulo":"Perímetro de cintura: 84 
+  F-39 · Los cálculos que quedaron sin efecto se abren a pedid… — Grasa corporal (RFM) 6,0 % · Índice cintura/talla 0,29 · Índice cintura/cadera 0,46
+  F-37 · Anular dice antes del botón que no borra nada y que n… — antes: «Anular no borra nada: la medición y su historia se conservan…» · pedidos: 1 · «Medición anulada. Su historia se conserva.» · Medido, Anulada · Por qué s
+  F-38 · Los resultados que usaban la medición anulada quedan … — Suma de 6 pliegues (ISAK): antes 134,0 mm · «Lo que pasó con los resultados Ningún resultado calculado de esta toma quedó sin efecto por esta anulación.» · vige
+  F-39 · «Calcular con un método» muestra la ficha del método … — «Masa libre de grasa (Durnin y Womersley), mujeres» · pedidos: 1 · null null · 0 entradas
+  F-39 · «Dejar como referencia» explica antes del botón que n… — «Jackson, Pollock y Ward, 7 pliegues, mujeres · Siri» · pedidos: 1 · «Referencia registrada. Los demás cálculos se conservan.» · con «Referencia» en la toma: 
+  F-37 · axe no encuentra faltas en la toma completa, ni en el… — la toma: button-name · el panel: sin faltas
+  F-41 · A 1440, 1280 y 1024 px, ningún renglón deja un número… — 1440: 13 textos, 5 en más de un renglón · «1 corregida · 1 anulada»: el número, separado de su palabra — 1280: 13 textos, 8 en más de un renglón · «1 corregida 
+  F-35 · Con una toma guardada y sin registrar, «Tomas» lo dic… — botón: «Preparar una toma» · «null» · «4 registradas.» · al retomar: «Toma en preparación», peso 61,4
+  F-35 · Registrar una toma desde la carga vuelve a «Tomas» co… — «Toma del 10 oct 2026, 08:40» (la más reciente es «Toma del 10 oct 2026, 08:40») · 1 medición · «5 registradas.» · en la dirección: otra cosa · pedidos: 1 para 
+  F-35 · Al volver de registrar, «Tomas» dice «Toma registrada… — sin aviso
+pasaron:
+  F-41 · A 1440 px, con «Ver N anteriores, sin efecto» a la vista, el título de los resultados y sus dos accione
+  — · Corregir, anular, calcular, dejar una referencia y registrar una toma no produjeron errores de página
+última línea: 2/18 comprobaciones bien; fallan: F-36, F-37, F-37, F-37, F-38, F-39, F-39, F-37, F-38, F-39, F-39, F-37, F-41, F-35, F-35, F-35

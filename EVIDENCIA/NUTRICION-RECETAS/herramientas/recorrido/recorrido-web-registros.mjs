@@ -2,6 +2,13 @@
 // estado de las cantidades, lo consumido estimado y la foto privada de la comida diferente. Además revisa el website en
 // el ancho de un teléfono (390 px): «Mis recetas», el editor con su foto y el plan, sin desplazamiento de costado.
 // Uso: node recorrido-web-registros.mjs [prefijo]   (el prefijo distingue las capturas, por ejemplo «tras-reinicio»)
+//
+// DESDE WP-ESCRITORIO-AREAS (parte 1, 2026-10-12) ESTE GUION YA NO CORRE CONTRA LA PANTALLA DE HOY: busca los botones
+// «Ver registro» de la pantalla de antes, y Registros pasó a ser una lista por día en la que la fila entera abre el
+// registro. Queda como constancia de la corrida de su paquete. Lo que protegía se mira ahora en
+// `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/recorrido.mjs` (modos `registros` y `estimacion`); lo que allá no se
+// mira (las fotos privadas y una comida diferente sin descripción, que el escenario de ese recorrido no tiene) está
+// dicho en `EVIDENCIA/ESCRITORIO-AREAS/ACEPTACION.md`.
 import { enTrabajo } from './rutas.mjs';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';

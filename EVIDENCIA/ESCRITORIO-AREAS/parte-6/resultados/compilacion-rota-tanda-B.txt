@@ -1,0 +1,11 @@
+NOTADA    la pieza del plan vuelve a pedir el contexto de la pestaña Entrenamiento — F-81 (la pieza en la ficha)
+NOTADA    con una versión en preparación, «Plan» abre por la activa — F-79 (el selector, con A)
+tanda B (plan-entrenamiento): 2 de 2 roturas notadas · 4 comprobaciones fallaron y 0 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-79 · A tiene una versión en preparación: al entrar a «Plan… — al entrar: En preparación | 2 · activa (elegida) · «Versión 2 · activada el 7 sept · es lo que ve el asesorado» · bloque «Fuerza progresión» (unico) · Sentadill
+  F-81 · En la ficha, el detalle de la activación de un plan d… — columna de undefined px (el ejercicio ocupa undefined) · «undefined» · «undefined» · undefined · se salen undefined · al elegir «B · Tren superior»: undefined ·
+  F-81 · (Respuestas simuladas: el escenario no tiene ejercici… — sin imagen · ya no está la barra de la cuenta: la página se cayó o perdió la sesión
+  — · «Plan», de Entrenamiento (asesorado A), y su pieza en la… — · «Plan», de Entrenamiento (asesorado A), y su pieza en la ficha no produjeron errores de página — Error: useEntrenamiento fuera de la pestaña Entrenamiento
+pasaron:
+última línea: 0/4 comprobaciones bien; fallan: F-79, F-81, F-81, —

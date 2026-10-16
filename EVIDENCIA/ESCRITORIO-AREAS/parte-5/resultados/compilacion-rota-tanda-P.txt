@@ -1,0 +1,57 @@
+NOTADA    la etiqueta del plan activo dice «Borrador» en lugar de «Solo lectura» — F-62 (el renglón de la versión)
+NOTADA    los días tipo van en el orden inverso al del plan — F-58 (el control de día tipo)
+NOTADA    una comida plegada no dice los nombres de sus opciones — F-59 (las comidas plegadas)
+NOTADA    la tira muestra el objetivo vigente aunque la versión cite otro — F-63 (otro objetivo)
+NOTADA    el historial dice el día de cada activación, sin la hora — F-64 (el historial)
+NOTADA    la nota de un ítem no se muestra — F-61 (la receta y la nota)
+NOTADA    las acciones van en otro orden: primero las que crean una versión — F-67 (las tres acciones)
+NOTADA    la ayuda del plan lleva el título genérico — F-14 (la ayuda)
+NOTADA    una lectura de plantillas que falla se presenta como «no tenés plantillas» — F-67 (la falla de las plantillas)
+NOTADA    crear el borrador desde una plantilla está encendido sin haber elegido ninguna — F-67 (guardar y listar)
+NOTADA    junto al selector no se dice que el asesorado no ve la versión en preparación — F-65 (crear)
+NOTADA    al pasar a la activa, el editor se desmonta: lo escrito sin guardar se pierde — F-65 (ir y volver)
+NOTADA    si crear el borrador desde la plantilla falla, el diálogo no dice nada — F-67 (la falla al crear)
+NOTADA    la tira del objetivo lleva otro título — F-63 (el objetivo)
+NOTADA    cada comida plegada ocupa 200 px de alto: el plan no entra en la primera pantalla — F-70 (la primera pantalla)
+NOTADA    el historial califica: «Cumplimiento del plan: 80%» — F-70 (las palabras)
+NOTADA    el separador de la opción de receta puede quedar al principio de un renglón — F-70 (los cortes)
+NOTADA    una lista de versiones que no se puede leer se presenta como «no hay plan» — F-68 (la falla de la lista)
+NOTADA    después de crear el borrador desde la plantilla, el diálogo queda abierto — F-67 (desde la plantilla)
+NOTADA    con un solo día tipo se dibuja igual un control de un solo segmento — F-58 (un día, simulado)
+tanda P (planes): 20 de 20 roturas notadas · 28 comprobaciones fallaron y 4 pasaron
+fallaron sin que se las esperara: ninguna
+con qué falló cada una:
+  F-62 · El plan activo se presenta en un renglón: «Plan activ… — «Plan activo» · «Borrador» · «Versión 2 · activada el 12 oct · es lo que ve el asesorado» · lecturas: lista 1, versión 1, objetivo 1, otras de Nutrición 0 (3 en
+  F-58 · Con más de un día tipo, el plan se lee de a uno: un c… — Día de descanso | Día de entrenamiento (elegido) · 4 comidas: Desayuno, Almuerzo, Merienda, Cena
+  F-59 · Las comidas van plegadas, cada una en un renglón con … — Desayuno: 2 opciones · se elige una (abierta, 2 opciones) · Almuerzo: 3 opciones · se elige una — null · Merienda: 1 opción — null · Cena: 2 opciones · se elige
+  F-63 · El objetivo del día está a la vista, al lado del día … — Calorías (requerimiento energético estimado) 2.250 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g (la API: 2.250 kcal · 220 g · 65 g · 130 g)
+  F-64 · El historial va al costado de las comidas, a la altur… — Versión 2 · activada el 12 oct · vigente | Versión 1 · activada el 12 oct · anterior, conservada · «Huella de la instantánea: 44b2d1e28d787140…» · el historial 
+  F-70 · A 1440 × 900 el plan entra en la primera pantalla: el… — la última comida termina a los 1357 px; el historial, a los 642
+  F-67 · Sin una versión en preparación, y con un objetivo vig… — Empezar desde una plantilla | Crear nueva versión a partir de esta | Guardar como plantilla · lecturas de plantillas al entrar: 0
+  F-66 · Lo elegido vive en la dirección de la página, por su … — dia=2 · comidas=1.2 → 1.2.3 → ninguna → (nada) · pedidos a BE mientras tanto: 0
+  F-66 · «Actualizar» vuelve a leer las tres cosas y conserva … — antes: Almuerzo · después: Almuerzo de «Día de descanso» · releídas: {"lista":1,"version":1,"objetivo":1} · Consultado a las 15:45
+  F-66 · Una dirección con valores que el plan no tiene (un dí… — «Día de entrenamiento» · 0 comidas abiertas
+  F-60 · Con todas las comidas abiertas, cada una muestra toda… — Almuerzo: Opción 1: Arroz con pollo y brócoli (x 49, y 936; 4 ítems) | Opción 2: Guiso de lentejas (x 379, y 936; 3 ítems) | Opción 3: Salmón con papa (x 709, y
+  F-61 · Una opción que nació de una receta lo dice con las pa… — «Receta «Guiso de lentejas», versión 1 · La opción lleva los ingredientes de una porción de la receta.» · Lentejas hervidas sin sal 200 g · cocido; Zanahoria he
+  F-70 · En toda la sección, con todas las comidas abiertas, n… — cumplimiento, %
+  F-14 · «Plan» tiene su ayuda en el marco del área («Cómo se … — «Cómo se lee esta vista» · 11 renglones · axe: sin faltas
+  F-70 · A 1440 px con todas las comidas abiertas, y a 1280, 1… — 1024: «jas», versión 1 · La opción ll»: el separador, al principio de un renglón
+  F-63 · (Respuestas simuladas.) Si hoy rige un objetivo más n… — más nuevo: Calorías (requerimiento energético estimado) 2.600 kcal · «null» · sin vigente: «Es el objetivo con el que se armó esta versión. Hoy no hay un objeti
+  F-63 · (Falla simulada.) Si el objetivo de la versión no se … — «null» con 4 comidas a la vista · al reintentar: Calorías (requerimiento energético estimado) 2.600 kcal
+  F-68 · (Falla simulada.) Si la lista de versiones no se pued… — «»
+  F-58 · (Respuesta simulada.) Con siete días tipo de nombre l… — 7 segmentos en 4 renglones; el más ancho termina a los 993 px
+  F-58 · (Respuesta simulada.) Con un solo día tipo no hay nad… — «Día tipo Día de entrenamiento»
+  F-67 · «Guardar como plantilla» guarda la versión activa con… — escrituras: 1 · aviso de guardada: sí · lecturas al abrir: 1 · «Plan del recorrido 185054»: 7 comidas · Sin cantidades · elegidas: 0 · «Crear el borrador desde 
+  F-67 · (Respuestas simuladas.) Si las plantillas no se puede… — con la falla: «» · al reintentar: 0 plantillas · vacía: «No tenés plantillas activas para aplicar. Se guardan desde una versión de plan, con «Guardar como plant
+  F-67 · (Falla simulada.) Elegida una plantilla, crear el bor… — «null» · elegida: Plan del recorrido 185054
+  F-65 · «Crear nueva versión a partir de esta» hace una sola … — escrituras: 1 · aviso «Borrador creado»: sí · En preparación (elegida) | 2 · activa · «null»
+  F-65 · Con cambios sin guardar en la versión en preparación,… — «Desayuno» → «Desayuno» · en la activa: [Guardar como plantilla] «Ya hay una versión en preparación: se sigue sobre esa.» · editor a la vista: no · pedidos: 4
+  F-65 · Con cambios sin guardar, «Actualizar» pregunta antes … — «»
+  F-65 · Activar la versión en preparación la convierte en la … — «Versión 3 · activada el 12 oct · es lo que ve el asesorado» · primera comida: «Desayuno» · Versión 3 · activada el 12 oct · vigente | Versión 2 · activada el 1
+  F-67 · Elegida la plantilla, «Crear el borrador desde esta p… — escrituras: 1 · aviso: sí · En preparación | 3 · activa · origen en la API: una plantilla
+pasaron:
+  F-70 · axe no encuentra faltas en «Plan» con todas las comidas abiertas, en los dos temas — claro: sin faltas 
+  F-70 · El historial sigue al costado a 1280 px y pasa debajo de las comidas a 1024; las opciones se acomodan a
+  F-68 · (Respuestas simuladas.) Sin plan y sin objetivo, la sección lo dice y ofrece el paso que falta: «Ir a R
+  — · «Plan», de Nutrición, no produjo errores de página
+última línea: 5/33 comprobaciones bien; fallan: F-62, F-58, F-59, F-63, F-64, F-70, F-67, F-66, F-66, F-66, F-60, F-61, F-70, F-14, F-70, F-63, F-63, F-68, F-58, F-58, F-67, F-67, F-67, F-65, F-65, F-65, F-65, F-67

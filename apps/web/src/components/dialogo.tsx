@@ -20,6 +20,8 @@ interface PropsDeDialogo {
   readonly enviando: boolean;
   readonly error?: string | null;
   readonly confirmarDeshabilitado?: boolean;
+  /** Al abrirse, el foco va a «Volver»: para un diálogo con un campo adentro, que si no se llevaría el foco. */
+  readonly focoEnVolver?: boolean;
   readonly onVolver: () => void;
   readonly onConfirmar: () => void;
 }
@@ -35,18 +37,23 @@ export function DialogoDeConfirmacion({
   enviando,
   error = null,
   confirmarDeshabilitado = false,
+  focoEnVolver = false,
   onVolver,
   onConfirmar,
 }: PropsDeDialogo) {
   const ref = useRef<HTMLDialogElement>(null);
+  const volver = useRef<HTMLButtonElement>(null);
   const id = useId();
 
   useEffect(() => {
     const dialogo = ref.current;
     if (!dialogo) return;
-    if (abierto && !dialogo.open) dialogo.showModal();
+    if (abierto && !dialogo.open) {
+      dialogo.showModal();
+      if (focoEnVolver) volver.current?.focus();
+    }
     if (!abierto && dialogo.open) dialogo.close();
-  }, [abierto]);
+  }, [abierto, focoEnVolver]);
 
   return (
     <dialog
@@ -66,7 +73,7 @@ export function DialogoDeConfirmacion({
         </Aviso>
       ) : null}
       <div className="acciones">
-        <button type="button" className="boton boton--secundario" onClick={onVolver} disabled={enviando}>
+        <button ref={volver} type="button" className="boton boton--secundario" onClick={onVolver} disabled={enviando}>
           {textoVolver}
         </button>
         <button

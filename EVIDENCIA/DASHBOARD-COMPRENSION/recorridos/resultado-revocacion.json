@@ -1,0 +1,46 @@
+{
+  "modo": "revocacion",
+  "inicio": "2026-10-09T08:30:19.037Z",
+  "fin": "2026-10-09T08:32:43.617Z",
+  "hoy": "2026-10-09",
+  "total": 6,
+  "fallas": 0,
+  "resultados": [
+    {
+      "clave": "R5",
+      "descripcion": "El asesorado revoca desde su web el acceso de Antropometría",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "Después de revocar, el origen dice «no está disponible» sin valores",
+      "ok": true,
+      "detalle": "Peso · 5 oct 2026 Cerrar Esta toma no está disponible con tu acceso actual. Ver en Antropometría · Evaluaciones"
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "La cabecera deja de decir «Activo» para Antropometría sin recargar; Nutrición sigue activa",
+      "ok": true,
+      "detalle": "antes: Acceso actual Antropometría y Nutrición: Activo · acceso contextual Actualizar Consultado a las 05:30:23 a. m. · después: Acceso actual Antropometría: Consentimiento revocado Acceso no disponible Nutrición: Activo · acceso contextual Actualizar Consultado a las 05:30:36 a. m."
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "Los gráficos de Antropometría se retiran y dicen por qué, sin valores viejos",
+      "ok": true,
+      "detalle": "Analizar Hasta tres métricas en el mismo tiempo. Coincidencia temporal: no indica causa. Métricas (2 de 3) Peso Quitar Peso Índice de masa corporal Quitar Índice de masa corporal Agregar una métrica L"
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "En el Resumen, Antropometría ya no aporta valores ni acciones; el resto del vínculo sigue",
+      "ok": true,
+      "detalle": "Espacio profesional Ficha del asesorado Asesorado · fe9a34 Acceso actual Antropometría: Consentimiento revocado Acceso no disponible Nutrición: Activo · acceso contextual Actualizar Consultado a las 05:30:36 a. m. Vista parcial según tu acceso actual. Resumen "
+    },
+    {
+      "clave": "CP-23",
+      "descripcion": "En la otra pestaña, exportar con la pantalla vieja vuelve a consultar: no sale ningún archivo y dice por qué",
+      "ok": true,
+      "detalle": "No se descargó ningún archivo: Peso (no está disponible con tu acceso actual); Índice de masa corporal (no está disponible con tu acceso actual)."
+    }
+  ]
+}

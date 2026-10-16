@@ -11,20 +11,21 @@
  * `TERMINOS_PROHIBIDOS_DE_ANTROPOMETRIA` lo verifica una prueba sobre este copy y sobre el texto de las pantallas,
  * igual que en nutrición (T13 de WP-04, extendido en WP-05).
  */
+import { numero } from './formato-numeros';
 
 export const COPY_ANTROPOMETRIA = {
   // ─── Pestaña y estados ────────────────────────────────────────────────────────────────────────
   pestana: 'Antropometría',
-  sinEvaluaciones: 'Todavía no hay evaluaciones registradas.',
-  sinBorrador: 'No hay ninguna evaluación en preparación.',
-  borradorEnCurso: 'Evaluación en preparación',
-  borradorNoEsHistoria: 'Una evaluación en preparación no forma parte de la historia: no aparece en la evolución ni como última evaluación registrada.',
-  evaluacionRegistrada: 'Evaluación registrada',
+  sinEvaluaciones: 'Todavía no hay tomas registradas.',
+  sinBorrador: 'No hay ninguna toma en preparación.',
+  borradorEnCurso: 'Toma en preparación',
+  borradorNoEsHistoria: 'Una toma en preparación no forma parte de la historia: no aparece en la evolución ni como última toma registrada.',
+  evaluacionRegistrada: 'Toma registrada',
   soloLectura: 'Solo lectura',
 
   // ─── Captura ──────────────────────────────────────────────────────────────────────────────────
-  nuevaEvaluacion: 'Nueva evaluación',
-  retomarBorrador: 'Retomar la evaluación en preparación',
+  nuevaEvaluacion: 'Nueva toma',
+  retomarBorrador: 'Seguir con la toma en preparación',
   agregarMedicion: 'Agregar medición',
   quitarMedicion: 'Quitar medición',
   metrica: 'Qué se midió',
@@ -39,13 +40,13 @@ export const COPY_ANTROPOMETRIA = {
   revisarAntesDeGuardar: 'Antes de guardar, revisá estas mediciones. Cada una lleva a su campo:',
 
   // ─── Registrar ────────────────────────────────────────────────────────────────────────────────
-  registrarEvaluacion: 'Registrar evaluación',
-  confirmarRegistro: 'Registrar esta evaluación',
+  registrarEvaluacion: 'Registrar toma',
+  confirmarRegistro: 'Registrar esta toma',
   explicacionDeRegistro:
     'Al registrarla pasa a formar parte de la historia del asesorado y de su evolución. Después no se edita: si hace falta cambiar un valor, se corrige o se anula la medición, y queda constancia.',
-  sinContenidoRegistrable: 'Una evaluación sin mediciones no se puede registrar.',
-  registroHecho: 'Evaluación registrada. Ya forma parte de la evolución.',
-  yaRegistrada: 'Esta evaluación ya está registrada. Para cambiar un valor, corregí o anulá la medición.',
+  sinContenidoRegistrable: 'Una toma sin mediciones no se puede registrar.',
+  registroHecho: 'Toma registrada. Ya forma parte de la evolución.',
+  yaRegistrada: 'Esta toma ya está registrada. Para cambiar un valor, corregí o anulá la medición.',
 
   // ─── Clases del dato (04:1090) ────────────────────────────────────────────────────────────────
   medido: 'Medido',
@@ -87,7 +88,7 @@ export const COPY_ANTROPOMETRIA = {
   asignacionAutomatica: 'Cada dato se toma de la medición de esta toma con la misma clave. Podés cambiarlo.',
   categoriaDeMetodo: { INDICES: 'Índices', SUMAS_DE_PLIEGUES: 'Sumas de pliegues', GRASA_CORPORAL: 'Grasa corporal', MASAS: 'Masas corporales', SOMATOTIPO: 'Somatotipo' } as Record<string, string>,
   calculoHecho: 'Cálculo registrado. Queda con su método, su versión y sus entradas a la vista.',
-  sinCalculos: 'Todavía no hay cálculos para esta evaluación.',
+  sinCalculos: 'Todavía no hay cálculos para esta toma.',
   sinMetodosSeleccionables: 'No hay métodos seleccionables en el catálogo.',
   metodoHistorico: 'Versión anterior del método. Se conserva para poder explicar los cálculos que la usaron.',
   explicacionDeCoexistencia:
@@ -103,7 +104,7 @@ export const COPY_ANTROPOMETRIA = {
   explicacionDeReferencia:
     'Dejar un cálculo como referencia no cambia el cálculo ni borra los otros, y no crea un objetivo ni una prescripción. La decisión sigue siendo tuya y queda registrada con su fecha.',
   referenciaReemplazada: 'Reemplaza a la referencia anterior, que se conserva.',
-  calculoEnPreparacion: 'De una evaluación en preparación',
+  calculoEnPreparacion: 'De una toma en preparación',
   calculoNoVigente: 'Sin efecto',
   explicacionDeCalculoNoVigente:
     'Este cálculo dejó de tener efecto: alguna de sus entradas se anuló, o lo reemplazó un cálculo posterior. Se conserva porque es parte de la historia.',
@@ -145,7 +146,7 @@ export const COPY_ANTROPOMETRIA = {
   comparableConElAnterior: 'Comparable con el punto anterior',
   corregida: 'Corregida',
   vistaParcial:
-    'Esta evolución se armó con lo que vos podés consultar. El asesorado tiene evaluaciones de otro profesional en este período: existen, y no se muestran acá.',
+    'Esta evolución se armó con lo que vos podés consultar. El asesorado tiene tomas de otro profesional en este período: existen, y no se muestran acá.',
   noComparable: 'No comparable con el punto anterior',
   motivoNoComparable: {
     PROTOCOL: 'Se tomó con otro protocolo',
@@ -207,7 +208,7 @@ export const COPY_ANTROPOMETRIA = {
   lamina: 'Lámina',
   verLamina: 'Ver lámina',
   explicacionDeLamina:
-    'La lámina arma con los datos registrados la del compositor de Dirección: ubica cada medida sobre la figura y no califica ningún valor. Los datos completos siguen en el detalle de cada evaluación.',
+    'La lámina arma una imagen con los datos registrados: ubica cada medida sobre la figura y no califica ningún valor. Los datos completos siguen en el detalle de cada toma.',
   laminaModo: 'Modo',
   laminaEncuadre: 'Encuadre',
   laminaTema: 'Tema de la lámina',
@@ -223,7 +224,7 @@ export const COPY_ANTROPOMETRIA = {
   laminaToma: 'Toma',
   laminaTomasDeLaSerie: 'Tomas de la serie',
   laminaAyudaDeLaSerie: 'Hasta ocho tomas registradas. En la lámina van por fecha: T1 es la más antigua.',
-  laminaSerieSinEntero: 'En Serie la figura va en tren superior o inferior, como en el compositor.',
+  laminaSerieSinEntero: 'En Serie, la figura va en tren superior o inferior.',
   laminaSeriesEnLaLamina: 'Qué va en la lámina',
   laminaAyudaDeSeries: 'Hasta ocho. Cada resultado calculado es una serie por método y versión: dos métodos no se comparan entre sí.',
   descargarImagen: 'Descargar imagen',
@@ -234,7 +235,7 @@ export const COPY_ANTROPOMETRIA = {
   laminaSinMedidas: 'Esta toma no tiene medidas para este encuadre.',
   laminaSinResultadosTitulo: 'Sin resultados calculados',
   laminaSinResultados: 'Todavía no hay resultados calculados para esta toma.',
-  laminaComoCalcular: 'Se calculan desde el detalle de la evaluación, en «Cálculos».',
+  laminaComoCalcular: 'Se calculan desde la toma, con «Calcular con un método».',
   laminaResultadosCalculados: 'Resultados calculados, cada uno con su método',
   laminaDatosDeLaToma: 'Datos de la toma',
   laminaOtrosCalculos: 'Otros cálculos',
@@ -253,19 +254,75 @@ export const COPY_ANTROPOMETRIA = {
   laminaEnOtroEncuadre: 'Con valor, en otro encuadre',
   laminaRepetidas: 'Con más de una medición vigente en la toma (la lámina muestra la más reciente)',
   laminaCalculosSinEfecto:
-    'Los cálculos sin efecto (reemplazados o con una entrada anulada) no van en la lámina; se conservan en el detalle de la evaluación.',
-  laminaNoEntran: 'No entran en la lámina (están en el detalle de la evaluación)',
+    'Los cálculos sin efecto (reemplazados o con una entrada anulada) no van en la lámina; se conservan en el detalle de la toma.',
+  laminaNoEntran: 'No entran en la lámina (están en el detalle de la toma)',
   laminaSeriesQueNoVan: 'Series que no van en la lámina',
   laminaListaIncompleta: 'La lista de cálculos llegó incompleta: puede faltar alguno.',
   laminaExplicacionDeResta:
     'La diferencia es una resta entre la primera y la última toma con dato, y se hace solo si comparten protocolo, método y unidad; si no, la tarjeta dice «No comparables». No califica el cambio, y una toma sin dato corta la línea.',
   laminaTomaNoCargo: 'No se pudo cargar una de las tomas.',
-  laminaEvaluacionPedidaNoEsta: 'La evaluación pedida no está entre las registradas: se muestra la más reciente.',
+  laminaEvaluacionPedidaNoEsta: 'La toma pedida no está entre las registradas: se muestra la más reciente.',
   laminaImagen: 'Imagen de la lámina',
   laminaMedidasEnLaFigura: 'medidas ubicadas sobre la figura',
   laminaResultadosEnLaImagen: 'resultados calculados',
   laminaSeriesEnLaImagen: 'series con sus valores por toma',
-  laminaDatosEnElDetalle: 'Los valores completos están en el detalle de cada evaluación.',
+  laminaDatosEnElDetalle: 'Los valores completos están en el detalle de cada toma.',
+
+  // ─── Tomas y una medición (website del profesional; WP-ESCRITORIO-AREAS, parte 3; maquetas 22 y 29) ────
+  tomas: 'Tomas',
+  tomasRegistradas: (n: number): string => (n === 1 ? '1 registrada.' : `${numero(n)} registradas.`),
+  unaTomaNoSeEdita: 'Una toma registrada no se edita: cada medición se corrige o se anula, y queda constancia.',
+  prepararUnaToma: 'Preparar una toma',
+  /** Hay una sola toma en preparación a la vez: el botón lo dice, para no abrir una ya empezada sin avisar. */
+  hayUnaTomaEnPreparacion: (mediciones: number): string =>
+    mediciones === 0 ? 'Hay una toma en preparación, todavía sin mediciones.' : `Hay una toma en preparación, con ${numero(mediciones)} ${mediciones === 1 ? 'medición' : 'mediciones'}.`,
+  volverATomas: 'Tomas',
+  elegirToma: 'Toma',
+  registradaEl: 'registrada el',
+  registradaPor: 'por',
+  contextoDeLaToma: 'Contexto',
+  leyendoLaToma: 'Leyendo la toma…',
+  tomaNoCargo: 'No pudimos leer esta toma.',
+  cadaUnoConSuMetodo: 'Cada uno, con su método. BE no elige uno.',
+  verAnterioresSinEfecto: (n: number): string => (n === 1 ? 'Ver 1 anterior, sin efecto' : `Ver ${numero(n)} anteriores, sin efecto`),
+  ocultarAnteriores: 'Ocultar los anteriores',
+  anterioresSinEfecto: 'Anteriores, sin efecto',
+  resultadosNoCargaron: 'No pudimos leer los resultados calculados de esta toma.',
+  resultadosIncompletos: 'La lista de cálculos llegó incompleta: puede faltar algún resultado.',
+  mediciones: 'Mediciones',
+  elegiUnaMedicion: 'Elegí una para ver su historia, corregirla o anularla.',
+  seTomo: 'Se tomó',
+  historiaDeLaMedicion: 'Historia de esta medición',
+  correccion: 'Corrección',
+  porQueSeCorrigio: 'Por qué se corrigió',
+  laCorregisteVos: 'La corregiste vos.',
+  laAnulasteVos: 'La anulaste vos.',
+  seConservaElOriginal: 'Se conserva: una corrección no lo borra.',
+  sinCorrecciones: 'Sin correcciones: es el valor que se tomó.',
+  anulacion: 'Anulación',
+  porQueSeAnulo: 'Por qué se anuló',
+  loQueCambioConLaCorreccion: 'Lo que cambió con la corrección',
+  loQuePasoConLosResultados: 'Lo que pasó con los resultados',
+  seVolvieronACalcular: (n: number): string =>
+    n === 1
+      ? 'Se volvió a calcular el resultado que usa esta medición. El anterior se conserva, sin efecto.'
+      : `Se volvieron a calcular los ${numero(n)} resultados que usan esta medición. Los anteriores se conservan, sin efecto.`,
+  antesDelCambio: 'antes',
+  quedaronSinEfecto: (n: number): string =>
+    n === 1 ? 'Un resultado que usaba esta medición quedó sin efecto y no se volvió a calcular.' : `${numero(n)} resultados que usaban esta medición quedaron sin efecto y no se volvieron a calcular.`,
+  cambioSinAtribuir: (n: number): string =>
+    n === 1
+      ? 'Otro resultado que usa esta medición se volvió a calcular, y no se puede decir con qué valor había entrado.'
+      : `Otros ${numero(n)} resultados que usan esta medición se volvieron a calcular, y no se puede decir con qué valor habían entrado.`,
+  ningunResultadoCambio: 'Ningún resultado calculado de esta toma cambió por esta corrección.',
+  ningunResultadoQuedoSinEfecto: 'Ningún resultado calculado de esta toma quedó sin efecto por esta anulación.',
+  /** Lo mismo que `explicacionDeCalculoNoVigente`, dicho de varios: encabeza la lista de los anteriores. */
+  explicacionDeAnterioresSinEfecto:
+    'Dejaron de tener efecto: alguna de sus entradas se anuló, o los reemplazó un cálculo posterior. Se conservan porque son parte de la historia.',
+  corregirConservaLaUnidad: 'Corregir pide el valor y el motivo, y conserva la unidad.',
+  detalleDelResultado: 'Resultado calculado',
+  calculadoEl: 'Calculado el',
+  queSeCalculo: 'Qué se calculó',
 } as const;
 
 export const ETIQUETA_DE_CLASE_DE_DATO = {

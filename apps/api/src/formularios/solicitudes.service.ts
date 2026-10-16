@@ -17,7 +17,7 @@ import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
-import { nombreDeAsesorado } from '../vinculo/lectura';
+import { nombreDeAsesoradoPara } from '../vinculo/lectura';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
 import { categoriasDeCampos, codigosDeCampo, respuestaApi, solicitudApi } from './lectura-formularios';
@@ -177,7 +177,9 @@ export class SolicitudesService {
         const visibles = filas.filter((f) => permitidos.has(f.alcance));
         const { pagina, page } = paginar(visibles, consulta.limit);
         const nombreProfesional = await this.nombreProfesional(tx, actor.identidadId);
-        return { data: pagina.map((s) => solicitudApi(s, nombreProfesional, nombreDeAsesorado(adviseeId), s.respuesta !== null)), page };
+        // La persona, con su nombre si el vínculo está vigente; si no, la referencia neutral (DL-040).
+        const nombreDelAsesorado = await nombreDeAsesoradoPara(tx, actor.identidadId, adviseeId);
+        return { data: pagina.map((s) => solicitudApi(s, nombreProfesional, nombreDelAsesorado, s.respuesta !== null)), page };
       },
     });
   }
@@ -217,7 +219,7 @@ export class SolicitudesService {
         const nombreProfesional = await this.nombreProfesional(tx, s.profesionalId);
         return {
           data: {
-            request: solicitudApi(s, nombreProfesional, nombreDeAsesorado(s.asesoradoId), respuesta !== null),
+            request: solicitudApi(s, nombreProfesional, await nombreDeAsesoradoPara(tx, s.profesionalId, s.asesoradoId), respuesta !== null),
             response: respuesta ? respuestaApi(respuesta) : null,
           },
         };
@@ -259,7 +261,7 @@ export class SolicitudesService {
           }
           const nombreProfesional = await this.nombreProfesional(tx, s.profesionalId);
           datos.push({
-            ...(solicitudApi(s, nombreProfesional, nombreDeAsesorado(actor.identidadId), s.respuesta !== null) as Record<string, unknown>),
+            ...(solicitudApi(s, nombreProfesional, await nombreDeAsesoradoPara(tx, s.profesionalId, actor.identidadId), s.respuesta !== null) as Record<string, unknown>),
             respondable: combos.get(clave) === true,
           });
         }

@@ -1,0 +1,42 @@
+recorrido.mjs linea sobre una compilación rota a propósito en ocho puntos (2026-10-11). Tiene que fallar.
+
+Lo que se rompió (mutante.cjs):
+- el registro no se monta de cero al cambiar de hecho, y el plan se abre sin su número de versión (lo protegen E-73 y E-74)
+- «Actualizar» conserva las tandas de la lectura anterior (E-76)
+- los días sin hechos se dicen también con un filtro (E-77 y E-68)
+- el día cortado por la tanda se muestra (E-71 y E-65)
+- la cantidad de «Hitos» no es la de la API (E-67 y E-69)
+- Escape desde la lista no cierra el detalle (E-70)
+- el renglón no dice por qué coincide una búsqueda (E-75)
+
+Fallaron:
+E-65 · Cada día se arma con lo que entrega la API: los hitos primero, las comidas en un renglón que dice cuántas son y cuántas tienen cada rasgo, y la tarjeta solo si hay una sesión, un hito o u
+E-71 · Se muestran días enteros: de la primera tanda de 50 hechos, el último día (que la tanda cortó) espera a «Ver días anteriores»; cada día a la vista tiene todos sus hechos, y el pie dice
+E-73 · Al tocar otro hecho mientras el primero todavía carga, el detalle queda con el segundo: la respuesta lenta del primero no lo pinta, y un solo renglón queda marcado — demorado: «Avena con 
+E-70 · Escape desde la lista cierra el detalle y deja el foco donde estaba; «Cerrar» lo devuelve al renglón del hecho; y si el grupo se cerró con el detalle abierto (se puede), al renglón del gr
+E-67 · Las vistas con nombre están en un renglón, en su orden, cada una con la cantidad de hechos del período que trae (las de la API); «Lo nuevo desde la revisión» no lleva número; al entrar 
+E-68 · Con una vista que recorta dentro del día («Sin confirmar»), cada hecho va en su renglón: no hay grupos de comidas ni días sin hechos — 3 renglones, 0 grupos
+E-69 · «Lo nuevo desde la revisión» ofrece cada área con la fecha de su revisión; elegida Nutrición, la URL lleva su instante y su área (la misma que escribe el Resumen), el aviso lo explica, 
+E-74 · El detalle de un plan activado abre su planificación con su número de versión (antes decía «Versión 0») — Versión 0 · activada el 6 sept 2026, 09:30 Huella de 
+E-75 · Al buscar una palabra que está en un dato que el renglón no muestra (el motivo de una sesión), el renglón dice dónde coincide; al buscar lo que el renglón ya dice («cena»), no agrega n
+E-76 · «Actualizar» con dos tandas leídas vuelve a leer la línea desde la primera: quedan los días enteros de la primera tanda, sin repetir ni perder hechos (antes le pegaba a la lectura nueva l
+E-77 · Entre dos días de la lista, los días sin ningún hecho se dicen con sus fechas (los de la API), nunca como un cero; con un filtro puesto no se dice ninguno — del 2026-08-09 al 2026-08-15: 
+
+Pasaron:
+E-71 · Si se mostrara el día cortado por la tanda, la comparación con la API lo detecta (prueba de la prueba) — 2026-09-30: 1 de 4 hechos en la primera tanda
+E-72 · A 1440 × 900, la primera pantalla muestra enteros al menos cinco días con todos sus hechos (antes, los primeros 50 hechos ocupaban casi doce pantallas); con la densidad de antes la misma med
+E-66 · Un grupo abierto muestra todas las comidas del día, de la más temprana a la más tardía, cada una con los rasgos que le da la API; el botón dice que está abierto — 2026-10-10: 08:00 Des
+E-70 · El detalle dice lo que el renglón ya no repite: cuándo ocurrió y cuándo se cargó (los instantes de la API, con quién lo cargó), sus relaciones, todos los datos de la entrada a un clic y
+E-70 · A 1024 px el detalle no entra al costado: se abre encima, en un panel que retiene el foco, con los mismos datos del hecho; Escape lo cierra y el foco vuelve al renglón; axe no encuentra falta
+E-67 · «Hitos» trae los hechos que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón a la vista es de la vis
+E-67 · «Distinto de lo indicado» trae los hechos que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón a la 
+E-67 · «Sin confirmar» trae los hechos que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón a la vista es d
+E-67 · Volver a tocar la vista elegida deja «Todo», con todos los hechos del período — {"elegidas":["TODO"],"cuenta":330,"calidad":null}
+E-78 · La ayuda de la Línea de tiempo se abre desde el marco como un diálogo, por el principio, explica cada parte con su muestra y lo que la vista no dice; qué trae cada vista está a un clic, co
+PRO-22 · Con el teclado se llega, en orden, a las vistas con nombre, el buscador, la lupa, «Más filtros» y los renglones de los días; cada uno mide 44 px o más y muestra el foco; Enter abre y ci
+PRO-22 · La línea de tiempo por día, con un grupo y el detalle abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas — {"claro":[],"azul-noche":[]}
+E-65 · La vista entera, con un grupo y el detalle abiertos, no tiene porcentajes ni palabras que califiquen: describe lo registrado — 2937 caracteres
+PRO-23 · La línea de tiempo por día no desborda de costado a 1440, 1280 ni 1024 px — {"1024":0,"1280":0,"1440":0}
+PRO-25 · Sin errores de JavaScript ni respuestas con error de la API durante el recorrido de la línea de tiempo por día — ninguno
+
+15/26 comprobaciones bien; fallan: E-65, E-71, E-73, E-70, E-67, E-68, E-69, E-74, E-75, E-76, E-77

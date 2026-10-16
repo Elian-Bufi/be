@@ -2,13 +2,14 @@
 
 /**
  * «Mis habituales» en el plan de comidas (PF-09 bis; DL-109), el mismo juego que en entrenamiento:
- * - **alimentos habituales**: los que el profesional marca en el buscador quedan en un bloque arriba de los resultados,
- *   para elegirlos sin buscar; marcar y quitar es una sola operación (API-HAN-02), con actualización optimista;
+ * - **alimentos habituales**: los que el profesional marca en «Agregar ítem» quedan arriba de los resultados, para
+ *   elegirlos sin buscar (`agregar-item.tsx`); marcar y quitar es una sola operación (API-HAN-02), con actualización
+ *   optimista; acá está la lectura, que dice si falló;
  * - **comidas habituales**: «Guardar como habitual» sobre una comida del borrador (nombre, el interruptor de cantidades
  *   apagado —DL-108 D-2— y cada nota de ítem para confirmarla o vaciarla —D-3—); guardar otra con el mismo nombre la
  *   **reemplaza**, con aviso (DL-109 D-2); «Agregar esta comida habitual» inserta una copia sin identificadores de nodo
  *   en el día tipo, así que se puede insertar dos veces: lo insertado ya es del plan.
- * Un profesional sin Nutrición recibe 403: los bloques quedan vacíos, sin aviso (el buscador sigue funcionando).
+ * Un profesional sin Nutrición recibe 403 en las comidas habituales: ese bloque queda vacío, sin aviso.
  */
 import {
   COPY_HABITUALES,
@@ -39,21 +40,31 @@ export interface AlimentosHabituales {
   /** Marca o quita, con actualización optimista; si la API falla, vuelve atrás y deja el motivo en `fallo`. */
   readonly alternar: (elemento: ElementoDeCatalogo) => Promise<void>;
   readonly fallo: string | null;
+  /** Si la lista se pudo leer: una lectura que falla no es «todavía no marcaste ninguno». */
+  readonly lectura: 'cargando' | 'lista' | 'falla';
+  readonly motivoDeLectura: string | null;
+  readonly recargar: () => void;
 }
 
-/** Carga una vez los alimentos habituales del profesional. Un 403 (sin Nutrición) o cualquier fallo: lista vacía, sin aviso. */
+/** Carga una vez los alimentos habituales del profesional, para todo el borrador. */
 export function useAlimentosHabituales(token: string): AlimentosHabituales {
   const [habituales, setHabituales] = useState<readonly ElementoDeCatalogo[]>([]);
   const [fallo, setFallo] = useState<string | null>(null);
+  const [lectura, setLectura] = useState<{ readonly estado: 'cargando' | 'lista' | 'falla'; readonly motivo: string | null }>({ estado: 'cargando', motivo: null });
+  const [vuelta, setVuelta] = useState(0);
   useEffect(() => {
     let vigente = true;
+    setLectura({ estado: 'cargando', motivo: null });
     void api.listarAlimentosHabituales(token).then((r) => {
-      if (vigente) setHabituales(r.ok ? r.datos.data : []);
+      if (!vigente) return;
+      setHabituales(r.ok ? r.datos.data : []);
+      setLectura(r.ok ? { estado: 'lista', motivo: null } : { estado: 'falla', motivo: mensajeDeFallo(r) });
     });
     return () => {
       vigente = false;
     };
-  }, [token]);
+  }, [token, vuelta]);
+  const recargar = useCallback(() => setVuelta((v) => v + 1), []);
   const esHabitual = useCallback((catalogItemId: string) => habituales.some((h) => h.catalogItemId === catalogItemId), [habituales]);
   const alternar = useCallback(
     async (elemento: ElementoDeCatalogo) => {
@@ -70,44 +81,7 @@ export function useAlimentosHabituales(token: string): AlimentosHabituales {
     },
     [habituales, token],
   );
-  return { habituales, esHabitual, alternar, fallo };
-}
-
-/** El bloque arriba de los resultados del buscador: un botón por alimento habitual; elegirlo es como elegir un resultado. */
-export function BloqueDeHabituales({ habituales, fallo, onElegir }: { habituales: readonly ElementoDeCatalogo[]; fallo: string | null; onElegir: (e: ElementoDeCatalogo) => void }) {
-  return (
-    <fieldset className="grupo habituales" data-habituales="alimentos">
-      <legend>{COPY_HABITUALES.misHabituales}</legend>
-      {habituales.length === 0 ? (
-        <p className="nota">{COPY_HABITUALES.sinAlimentosHabituales}</p>
-      ) : (
-        <ul className="lista-compacta">
-          {habituales.map((el) => (
-            <li key={el.catalogItemId}>
-              <button type="button" className="boton boton--enlace" onClick={() => onElegir(el)}>
-                {el.name}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {fallo ? (
-        <p className="nota" role="status">
-          {fallo}
-        </p>
-      ) : null}
-    </fieldset>
-  );
-}
-
-/** En cada resultado del buscador: «Marcar como habitual» / «Quitar de habituales», con `aria-pressed`. */
-export function BotonHabitual({ elemento, marcado, onAlternar }: { elemento: ElementoDeCatalogo; marcado: boolean; onAlternar: (e: ElementoDeCatalogo) => void }) {
-  const texto = marcado ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar;
-  return (
-    <button type="button" className="boton boton--enlace" aria-pressed={marcado} aria-label={`${texto}: ${elemento.name}`} onClick={() => onAlternar(elemento)}>
-      {texto}
-    </button>
-  );
+  return { habituales, esHabitual, alternar, fallo, lectura: lectura.estado, motivoDeLectura: lectura.motivo, recargar };
 }
 
 // ─── Comidas habituales ─────────────────────────────────────────────────────────────────────────────────────────────

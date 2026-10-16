@@ -1,0 +1,52 @@
+control (sin mutar): 12 pasan, 0 fallan
+DETECTADA ruta-sin-item · la ruta de un problema no llega hasta el ítem · fallan 3: «la ruta de un problema da las posiciones de su día tipo, su » «la ubicación de un problema se dice con los nombres, sin rut» «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA ruta-desde-uno · las posiciones de un problema se cuentan desde uno · fallan 4: «la ruta de un problema da las posiciones de su día tipo, su » «la ubicación de un problema se dice con los nombres, sin rut» «los problemas de una comida son los que están en ella o aden» «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA ruta-de-cualquier-cosa · lo que no es de la estructura cae en el primer día tipo · fallan 2: «la ruta de un problema da las posiciones de su día tipo, su » «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-sin-nombres · la ubicación de un problema no usa el nombre del día tipo · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-sin-la-comida · la ubicación de un problema no usa el nombre de la comida · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-del-plan-callada · un problema del plan entero no dice de qué es · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-opcion-desde-cero · la primera opción es la «Opción 0» · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-item-desde-cero · el primer ítem es el «Ítem 0» · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA ubicacion-con-otro-separador · la ubicación se separa con otro signo · fallan 1: «la ubicación de un problema se dice con los nombres, sin rut»
+DETECTADA problemas-de-cualquier-dia · una comida cuenta los problemas de la misma posición en otro día tipo · fallan 1: «los problemas de una comida son los que están en ella o aden»
+DETECTADA problemas-de-cualquier-comida · una comida cuenta los problemas de todo su día tipo · fallan 1: «los problemas de una comida son los que están en ella o aden»
+DETECTADA problemas-solo-de-la-comida · los problemas de adentro de una opción no se cuentan en su comida · fallan 1: «los problemas de una comida son los que están en ella o aden»
+DETECTADA dia-sin-nombre-pasa · un día tipo sin nombre no se lista · fallan 1: «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA comida-sin-nombre-pasa · una comida sin nombre no se lista · fallan 1: «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA opcion-sin-nombre-pasa · una opción sin nombre no se lista · fallan 1: «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA cantidad-ilegible-pasa · una cantidad que no se entiende no se lista · fallan 1: «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA ilegible-con-otro-codigo · una cantidad que no se entiende se lista como un nombre que falta · fallan 1: «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA ilegible-en-su-opcion · una cantidad que no se entiende se ubica en la opción, no en el ítem · fallan 1: «lo que no deja guardar se lista en el orden de la estructura»
+DETECTADA sin-cantidad-es-ilegible · un ítem sin cantidad cuenta como una cantidad que no se entiende · fallan 2: «lo que no deja guardar se lista en el orden de la estructura» «plegar no esconde lo que falta: una comida o una opción sin »
+DETECTADA nombre-de-espacios-vale · un nombre de solo espacios pasa por nombre · fallan 2: «lo que no deja guardar se lista en el orden de la estructura» «plegar no esconde lo que falta: una comida o una opción sin »
+DETECTADA aviso-de-las-dos-cosas-callado · con nombres y cantidades, el aviso habla solo de los nombres · fallan 1: «el aviso de lo que no deja guardar dice qué hay que corregir»
+DETECTADA aviso-cruzado · el aviso de los nombres se da por las cantidades · fallan 1: «el aviso de lo que no deja guardar dice qué hay que corregir»
+DETECTADA posicion-desde-cero · «dia=2» es el tercer día tipo · fallan 1: «el día tipo que se mira: el que pide la dirección, contando »
+DETECTADA posicion-inexistente-vacia · un día tipo que la versión no tiene deja la pantalla sin día · fallan 1: «el día tipo que se mira: el que pide la dirección, contando »
+DETECTADA posicion-sin-dias · una versión sin días tipo dice que mira el primero · fallan 1: «el día tipo que se mira: el que pide la dirección, contando »
+DETECTADA posicion-con-ceros · «02» vale como el segundo día tipo · fallan 1: «el día tipo que se mira: el que pide la dirección, contando »
+DETECTADA la-primera-se-escribe · mirar el primer día tipo igual ensucia la dirección · fallan 1: «el día tipo que se mira: el que pide la dirección, contando »
+DETECTADA pedido-de-posicion-desde-cero · el segundo día tipo se escribe «1» · fallan 1: «el día tipo que se mira: el que pide la dirección, contando »
+DETECTADA la-primera-abierta-al-entrar · al entrar al editor la primera comida está abierta · fallan 1: «en el editor, al entrar no hay ninguna comida abierta; la di»
+DETECTADA abiertas-por-parecido · «12» abre la primera y la segunda · fallan 1: «en el editor, al entrar no hay ninguna comida abierta; la di»
+DETECTADA abiertas-lo-que-pidan · una comida que el día no tiene queda abierta igual · fallan 1: «en el editor, al entrar no hay ninguna comida abierta; la di»
+DETECTADA abiertas-desde-cero · «comidas=2» abre la tercera · fallan 1: «en el editor, al entrar no hay ninguna comida abierta; la di»
+DETECTADA ninguna-se-escribe · sin comidas abiertas igual se escribe algo en la dirección · fallan 1: «en el editor, al entrar no hay ninguna comida abierta; la di»
+DETECTADA pedido-desordenado · las comidas abiertas se escriben en el orden en que se abrieron · fallan 1: «en el editor, al entrar no hay ninguna comida abierta; la di»
+DETECTADA pedido-con-coma · las comidas abiertas se escriben con coma, que la lectura no entiende · fallan 1: «en el editor, al entrar no hay ninguna comida abierta; la di»
+DETECTADA sin-nombre-callada · una comida sin nombre no lo dice en su renglón · fallan 1: «plegar no esconde lo que falta: una comida o una opción sin »
+DETECTADA opcion-sin-nombre-callada · una comida no dice que tiene una opción sin nombre · fallan 1: «plegar no esconde lo que falta: una comida o una opción sin »
+DETECTADA ilegibles-calladas · una comida no dice que adentro hay una cantidad que no se entiende · fallan 1: «plegar no esconde lo que falta: una comida o una opción sin »
+DETECTADA problemas-callados · una comida no dice cuántos problemas de «Validar» tiene adentro · fallan 1: «plegar no esconde lo que falta: una comida o una opción sin »
+DETECTADA titulo-desde-cero · la primera comida sin nombre es la «Comida 0» · fallan 1: «plegar no esconde lo que falta: una comida o una opción sin »
+DETECTADA titulo-con-espacios · el nombre de la comida va con los espacios de los costados · fallan 1: «una comida plegada dice su nombre y cuántas opciones tiene; »
+DETECTADA uno-en-plural · una sola cosa se dice en plural · fallan 2: «plegar no esconde lo que falta: una comida o una opción sin » «lo que entra al activar se cuenta de la estructura, en singu»
+DETECTADA pestana-sin-numero · la pestaña de una opción no lleva su número · fallan 1: «la pestaña de una opción lleva su número y su nombre; sin no»
+DETECTADA pestana-repite-el-numero · una opción recién nacida dice «4 · Opción 4» · fallan 1: «la pestaña de una opción lleva su número y su nombre; sin no»
+DETECTADA comidas-de-mas · lo que entra al activar cuenta comidas de más · fallan 1: «lo que entra al activar se cuenta de la estructura, en singu»
+DETECTADA dias-siempre-en-plural · un solo día tipo se dice «1 días tipo» · fallan 1: «lo que entra al activar se cuenta de la estructura, en singu»
+DETECTADA entra-con-numero · la versión que entra promete un número · fallan 1: «los textos de activar: la versión que entra no lleva un núme»
+DETECTADA queda-sin-fecha · la versión que queda no dice desde cuándo regía · fallan 1: «los textos de activar: la versión que entra no lleva un núme»
+DETECTADA queda-sin-numero · la versión que queda no dice su número · fallan 1: «los textos de activar: la versión que entra no lleva un núme»
+DETECTADA texto-con-palabra-prohibida · un texto de activar califica («adherencia») · fallan 1: «los textos de activar: la versión que entra no lleva un núme»
+50 de 50 detectadas

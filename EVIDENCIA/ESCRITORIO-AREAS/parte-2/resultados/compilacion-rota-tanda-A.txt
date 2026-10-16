@@ -1,0 +1,57 @@
+roto: al entrar, el control no dice el período que propuso la API (lo tienen que notar: F-24 (las lecturas de entrada))
+roto: la tercera columna cambia de nombre (lo tienen que notar: C-68 (cada sesión, una fila))
+roto: la nota de «Ver sesiones anteriores» dice que se ven todas (lo tienen que notar: F-31 (de a quince))
+roto: la cantidad de cada vista dice «registros» y no «sesiones» (lo tienen que notar: F-26 (las cuatro vistas))
+roto: con una vista elegida, la cuenta dice los números al revés (lo tienen que notar: F-26 (elegir una vista))
+roto: al abrir una sesión al costado, el foco no va a su título (lo tienen que notar: C-66 (el detalle, una tabla))
+roto: el detalle no dice el número de la versión del plan (lo tienen que notar: F-27 (cuándo y frente a qué versión))
+roto: el enlace a Analizar no lleva el período que se está mirando (lo tienen que notar: C-67 (la evolución, en Analizar))
+roto: los días sin sesión dicen uno de más (lo tienen que notar: F-25 (los días sin sesión))
+roto: el filtro por versión del plan no filtra (lo tienen que notar: F-28 (el filtro por versión))
+roto: «Sin pausas» muestra el tiempo transcurrido (lo tienen que notar: F-27 (los tiempos))
+roto: «Ver la sesión en el plan» se saltea el primer ejercicio (lo tienen que notar: F-32 (a un clic))
+roto: una versión del plan que no se pudo leer no se avisa: una falla pasa por ausencia de diferencias (lo tienen que notar: F-29 (falla lo indicado))
+roto: «Actualizar» cierra la sesión que estaba abierta (lo tienen que notar: F-28 (la sesión abierta))
+roto: con una sesión abierta, el detalle se queda con casi toda la ventana (lo tienen que notar: F-30 (la primera pantalla))
+roto: la ayuda no dice qué trae la primera vista (lo tienen que notar: F-14 (la ayuda))
+roto: el botón que cierra el detalle queda sin nombre (solo el ícono) (lo tienen que notar: F-27 (axe))
+roto: el botón de la ayuda de Registros aparece en todas las secciones de Entrenamiento (lo tienen que notar: F-14 (sin ayuda en Resumen))
+roto: en una ventana angosta el detalle de la sesión no se abre (lo tienen que notar: C-66 (a 1024 px))
+── compila la versión rota · 04:46:46
+compilado: web estática (apps/web/out)
+── recorrido · 04:48:49
+── veredicto · 04:50:20 · salida del recorrido: 0
+NOTADA    al entrar, el control no dice el período que propuso la API — F-24 (las lecturas de entrada)
+NOTADA    la tercera columna cambia de nombre — C-68 (cada sesión, una fila)
+NOTADA    la nota de «Ver sesiones anteriores» dice que se ven todas — F-31 (de a quince)
+NOTADA    la cantidad de cada vista dice «registros» y no «sesiones» — F-26 (las cuatro vistas)
+NOTADA    con una vista elegida, la cuenta dice los números al revés — F-26 (elegir una vista)
+NOTADA    al abrir una sesión al costado, el foco no va a su título — C-66 (el detalle, una tabla)
+NOTADA    el detalle no dice el número de la versión del plan — F-27 (cuándo y frente a qué versión)
+NOTADA    el enlace a Analizar no lleva el período que se está mirando — C-67 (la evolución, en Analizar)
+NOTADA    los días sin sesión dicen uno de más — F-25 (los días sin sesión)
+NOTADA    el filtro por versión del plan no filtra — F-28 (el filtro por versión)
+NOTADA    «Sin pausas» muestra el tiempo transcurrido — F-27 (los tiempos)
+NOTADA    «Ver la sesión en el plan» se saltea el primer ejercicio — F-32 (a un clic)
+NOTADA    una versión del plan que no se pudo leer no se avisa: una falla pasa por ausencia de diferencias — F-29 (falla lo indicado)
+NOTADA    «Actualizar» cierra la sesión que estaba abierta — F-28 (la sesión abierta)
+NOTADA    con una sesión abierta, el detalle se queda con casi toda la ventana — F-30 (la primera pantalla)
+NOTADA    la ayuda no dice qué trae la primera vista — F-14 (la ayuda)
+NO NOTADA el botón que cierra el detalle queda sin nombre (solo el ícono) — F-27 (axe) · no falló: F-27 (axe)
+NOTADA    el botón de la ayuda de Registros aparece en todas las secciones de Entrenamiento — F-14 (sin ayuda en Resumen)
+NOTADA    en una ventana angosta el detalle de la sesión no se abre — C-66 (a 1024 px)
+tanda A: 18 de 19 roturas notadas · 18 comprobaciones fallaron y 3 pasaron
+fallaron sin que se las esperara: ninguna
+pasaron:
+  F-25 · Una sesión registrada como no realizada, o resumida, no se cuenta serie por serie: dice por qué no tien
+  F-27 · axe no encuentra faltas en Registros de Entrenamiento, ni con el detalle de una sesión al costado — sin
+  — · Registros de Entrenamiento no produjo errores de página
+última línea: 4/22 comprobaciones bien; fallan: F-24, C-68, F-31, F-26, F-26, C-66, F-27, C-67, F-25, F-28, F-27, F-32, F-29, F-28, F-30, F-14, F-14, C-66
+FIN DE LA TANDA A · 04:50:23
+restaurado: app/globals.css
+restaurado: app/pro/advisees/training/ayuda-de-registros.tsx
+restaurado: app/pro/advisees/training/ejecuciones.tsx
+restaurado: app/pro/advisees/training/entrenamiento.tsx
+restaurado: app/pro/advisees/training/series-y-tiempos.tsx
+el dominio, compilado de nuevo desde su fuente restaurada
+la compilación buena del website volvió a su lugar

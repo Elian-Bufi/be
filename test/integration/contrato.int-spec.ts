@@ -123,7 +123,7 @@ afterAll(async () => {
 
 const CIERRE = '/api/v1/me/account-closure-requests';
 
-it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones', async () => {
+it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones, y las dos del perfil propio (DL-009)', async () => {
   const servidor = app.getHttpServer();
   // ACC-01
   const correo = correoSintetico('contrato');
@@ -158,6 +158,16 @@ it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de 
   await conSesion(app, token).get('/api/v1/me?x=1').expect(400);
   await request(servidor).get('/api/v1/me').expect(401);
   await conSesion(app, 'no-es-un-jwt').get('/api/v1/me').expect(401);
+  // ACC-06-PROPIA · ACC-06: el nombre visible del perfil propio (DL-009 y DL-040, 2026-10-15)
+  await conSesion(app, token).get('/api/v1/me/profile').expect(200);
+  await conSesion(app, token).get('/api/v1/me/profile?x=1').expect(400);
+  await request(servidor).get('/api/v1/me/profile').expect(401);
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v0', changes: { displayName: 'Ana Paz' } }).expect(200);
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v0', changes: { displayName: 'Otra' } }).expect(409); // VERSION_CONFLICT
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: '   ' } }).expect(422); // INVALID_PROFILE_DATA
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Ana', email: 'ana@example.invalid' } }).expect(400); // UNKNOWN_FIELD
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'uno', changes: { displayName: 'Ana' } }).expect(400); // INVALID_REQUEST
+  await request(servidor).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Ana' } }).expect(401);
   await conSesion(app, token).get('/api/v1/me/health-data-consent-requirement').expect(200);
   await conSesion(app, token).get('/api/v1/me/health-data-consent-requirement?x=1').expect(400);
   await request(servidor).get('/api/v1/me/health-data-consent-requirement').expect(401);
@@ -337,6 +347,13 @@ it('TEST-CT (WP-04): se ejercitan éxitos y errores de NUT e INT-NUT-01', async 
   await pro.get('/api/v1/nutrition/catalog-items?q=arroz').expect(200);
   await pro.get('/api/v1/nutrition/catalog-items?type=OTRO').expect(400);
   await ase.get('/api/v1/nutrition/catalog-items').expect(403);
+  // NUT-13-BUSQUEDA (DL-130): la misma lectura con el texto en el cuerpo; un campo de más, un cursor alterado o un parámetro
+  // en la URL son 400, y un asesorado no busca en el catálogo profesional.
+  await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', limit: 5 }).expect(200);
+  await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', orden: 'asc' }).expect(400); // UNKNOWN_FIELD
+  await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', cursor: 'basura' }).expect(400); // INVALID_CURSOR
+  await pro.post('/api/v1/nutrition/catalog-items/search?q=arroz').send({ q: 'arroz' }).expect(400); // INVALID_REQUEST: nada en la URL
+  await ase.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz' }).expect(403);
   const nuevo = { name: 'Galleta sintética', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 420, proteinG: 8, carbohydrateG: 70, fatG: 12 } };
   await pro.post('/api/v1/nutrition/catalog-items').send(nuevo).expect(201);
   await ase.post('/api/v1/nutrition/catalog-items').send(nuevo).expect(403);
@@ -861,6 +878,11 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await pro.get('/api/v1/training/exercises?q=press').expect(200);
   await pro.get('/api/v1/training/exercises?zona=pecho').expect(400);
   await ase.get('/api/v1/training/exercises').expect(403);
+  // TRN-13-BUSQUEDA (DL-130): la misma lectura con el texto en el cuerpo.
+  await pro.post('/api/v1/training/exercises/search').send({ q: 'press', limit: 5 }).expect(200);
+  await pro.post('/api/v1/training/exercises/search').send({ q: 'press', zona: 'pecho' }).expect(400); // UNKNOWN_FIELD
+  await pro.post('/api/v1/training/exercises/search').send({ q: 'press', cursor: 'basura' }).expect(400); // INVALID_CURSOR
+  await ase.post('/api/v1/training/exercises/search').send({ q: 'press' }).expect(403);
   const ejercicio = { name: 'Ejercicio sintético del contrato', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } };
   await pro.post('/api/v1/training/exercises').send(ejercicio).expect(201);
 
@@ -1390,6 +1412,76 @@ it('TEST-CT (DL-125): EVIDENCIA_VISUAL — EVI-01 a 04, y MED-01 con la exigenci
   } finally {
     await conExigencia.close();
   }
+});
+
+it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, DSH-04-BUSQUEDA, PRJ-01 y VAN-01 a 04, con éxitos y errores declarados', async () => {
+  const c = await circuitoConPlanActivo(app, 'contrato-dash');
+  const pro = conSesion(app, c.pro.token);
+  const tercero = conSesion(app, (await prepararProfesional(app, 'contrato-dash-tercero', ['NUTRICION'])).token);
+  const servidor = app.getHttpServer();
+  // DSH-04: la línea de tiempo; sin vínculo, el mismo 404 que un asesorado inexistente.
+  const linea = `/api/v1/advisees/${c.ase.id}/timeline`;
+  await pro.get(`${linea}?limit=5`).expect(200);
+  await pro.get(`${linea}?x=1`).expect(400); // INVALID_REQUEST: parámetro desconocido
+  await pro.get(`${linea}?periodStart=2026-10-09&periodEnd=2026-10-01`).expect(400); // INVALID_REQUEST: período invertido
+  await pro.get(`${linea}?cursor=basura`).expect(400); // INVALID_CURSOR
+  await pro.get(`${linea}?q=cena`).expect(400); // INVALID_REQUEST: el texto ya no va en la URL (DL-127)
+  // Extensión aditiva: el corte de una revisión (`since`) trae sus conteos; un instante mal formado es 400.
+  await pro.get(`${linea}?since=2026-09-20T15:00:00.000Z&limit=5`).expect(200);
+  await pro.get(`${linea}?since=ayer`).expect(400); // INVALID_REQUEST: INVALID_FILTER
+  await tercero.get(linea).expect(404);
+  await request(servidor).get(linea).expect(401);
+  // DSH-04-BUSQUEDA: la búsqueda con el texto en el cuerpo; mismos errores que la consulta, y UNKNOWN_FIELD.
+  const busqueda = `${linea}/search`;
+  await pro.post(busqueda).send({ q: 'cena', limit: 5 }).expect(200);
+  await pro.post(busqueda).send({ q: 'cena', since: '2026-09-20T15:00:00.000Z' }).expect(200);
+  await pro.post(busqueda).send({ q: 'cena', orden: 'asc' }).expect(400); // UNKNOWN_FIELD
+  await pro.post(busqueda).send({ q: '' }).expect(400); // INVALID_REQUEST: texto vacío
+  await pro.post(busqueda).send({ q: 'cena', cursor: 'basura' }).expect(400); // INVALID_CURSOR
+  await tercero.post(busqueda).send({ q: 'cena' }).expect(404);
+  await request(servidor).post(busqueda).send({ q: 'cena' }).expect(401);
+  // PRJ-01: una clave derivada, una sin especificación (200 con INSUFFICIENT_INFORMATION) y una de un alcance que este
+  // profesional no tiene con el asesorado (200 con NOT_AVAILABLE_TO_VIEW).
+  const proyeccion = (clave: string) => `/api/v1/advisees/${c.ase.id}/projections/${clave}`;
+  await pro.get(`${proyeccion('NUTRITION_PRESCRIBED_VS_RECORDED')}?metric=ENERGY`).expect(200);
+  await pro.get(proyeccion('TRAINING_PERSONAL_RECORDS')).expect(200);
+  await pro.get(proyeccion('TRAINING_PROGRESSION_BY_EXERCISE')).expect(200);
+  await pro.get(proyeccion('NO_EXISTE')).expect(400); // INVALID_REQUEST: clave fuera de la taxonomía
+  await pro.get(`${proyeccion('NUTRITION_PRESCRIBED_VS_RECORDED')}?metric=ENERGY&setIndex=1`).expect(400); // parámetro que no aplica
+  await tercero.get(proyeccion('NUTRITION_PRESCRIBED_VS_RECORDED')).expect(404);
+  await request(servidor).get(proyeccion('NUTRITION_PRESCRIBED_VS_RECORDED')).expect(401);
+  // VAN-01 a 04: las vistas guardadas, solo de profesionales.
+  const vistas = '/api/v1/me/analysis-views';
+  const configuracion = {
+    schemaVersion: 1,
+    metrics: [{ metricId: 'nutricion.energia', exerciseKey: null, setIndex: null, unit: null }],
+    mode: 'PANELS',
+    grain: 'DAY',
+    period: { kind: 'LAST_DAYS', days: 30 },
+    layers: { planBands: true, events: false },
+    reference: { kind: 'FIRST_DAYS', days: 7 },
+    comparison: null,
+  };
+  const indicadores = { schemaVersion: 1, metrics: [{ metricId: 'nutricion.energia', exerciseKey: null, setIndex: null, unit: null }] };
+  const clave = claveDeIdempotencia();
+  const vista = (await pro.post(vistas, clave).send({ usage: 'ANALYSIS', name: 'Contrato', configuration: configuracion }).expect(201)).body.data;
+  await pro.post(vistas, clave).send({ usage: 'ANALYSIS', name: 'Otra', configuration: configuracion }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(vistas).send({ usage: 'ANALYSIS', name: 'Con datos', configuration: { ...configuracion, adviseeId: c.ase.id } }).expect(400); // UNKNOWN_FIELD
+  await pro.post(vistas).send({ usage: 'SUMMARY_INDICATORS', name: 'Indicadores', configuration: indicadores }).expect(201);
+  await pro.post(vistas).send({ usage: 'SUMMARY_INDICATORS', name: 'Otros', configuration: indicadores }).expect(409); // RESOURCE_CONFLICT
+  await conSesion(app, c.ase.token).post(vistas).send({ usage: 'ANALYSIS', name: 'Mía', configuration: configuracion }).expect(403);
+  await pro.get(vistas).expect(200);
+  await pro.get(`${vistas}?x=1`).expect(400);
+  await conSesion(app, c.ase.token).get(vistas).expect(403);
+  await request(servidor).get(vistas).expect(401);
+  const ruta = `${vistas}/${vista.viewId}`;
+  await pro.put(ruta).send({ expectedVersion: vista.version, name: 'Contrato 2', configuration: configuracion }).expect(200);
+  await pro.put(ruta).send({ expectedVersion: vista.version, name: 'Vieja', configuration: configuracion }).expect(409); // VERSION_CONFLICT
+  await pro.put(ruta).send({ expectedVersion: 'v2', name: 'Indicadores', configuration: indicadores }).expect(422); // CONFIGURATION_USAGE_MISMATCH
+  await tercero.put(ruta).send({ expectedVersion: 'v2', name: 'Ajena', configuration: configuracion }).expect(404);
+  await tercero.delete(ruta).set('Idempotency-Key', claveDeIdempotencia()).expect(404);
+  await pro.delete(`${ruta}?x=1`).set('Idempotency-Key', claveDeIdempotencia()).expect(400);
+  await pro.delete(ruta).set('Idempotency-Key', claveDeIdempotencia()).expect(204);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

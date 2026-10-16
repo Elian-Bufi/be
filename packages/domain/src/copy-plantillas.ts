@@ -20,6 +20,12 @@ export const COPY_PLANTILLAS = {
   archivada: 'Archivada',
   sinPlantillas: 'Todavía no guardaste ninguna plantilla. Se guardan desde una versión de plan, con «Guardar como plantilla».',
   sinPlantillasActivas: 'No tenés plantillas activas para aplicar.',
+  /** El diálogo de «Empezar desde una plantilla» (WP-ESCRITORIO-AREAS, parte 5). Una lectura que falla no es «no tenés». */
+  noCargaron: 'No pudimos leer tus plantillas',
+  elegiUna: 'Elegí la plantilla con la que empieza la versión nueva. Nace como borrador: el asesorado no la ve hasta que la actives.',
+  dondeSeArman: 'Se guardan desde una versión de plan, con «Guardar como plantilla», o se escriben en «Plantillas y habituales».',
+  plantillasActivas: 'Plantillas activas',
+  creandoElBorrador: 'Creando el borrador…',
   queCopia: 'La plantilla copia la estructura (bloques, sesiones, ejercicios, series, intensidad y parámetros), no a la persona: no lleva objetivo ni próxima revisión.',
   cargas: 'Conservar las cargas sugeridas como referencia de la plantilla',
   cargasAyuda: 'Apagado, las cargas no se copian: son de cada persona. Encendido, quedan en la plantilla como referencia y las revisás al aplicarla.',

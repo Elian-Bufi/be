@@ -1,0 +1,1610 @@
+{
+  "modo": "funcional",
+  "inicio": "2026-10-12T06:44:49.297Z",
+  "fin": "2026-10-12T06:58:13.873Z",
+  "hoy": "2026-10-12",
+  "total": 265,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "PRO-24",
+      "descripcion": "Primera carga del Resumen, desde el envío del inicio de sesión hasta la última respuesta (puede incluir el arranque en frío de la API)",
+      "ok": true,
+      "informativo": true,
+      "detalle": "4954 ms"
+    },
+    {
+      "pro": "PRO-01",
+      "descripcion": "La ficha tiene las pestañas Resumen, Línea de tiempo y Analizar",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-02",
+      "descripcion": "Cuatro indicadores con unidad, regla, fecha y cobertura",
+      "ok": true,
+      "detalle": "Calorías registradas · analizar 1.210 kcal por día Media de los días con valor 2.000 0 90 días: 79 con valor · de ellos, 7 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media El plan rige desde el 21 jul | Proteínas registradas · analizar 83,9 g por día Media de los días con valor 150 0 90 días: 79 con valor · de ellos, 7 son subtotales (falta algún dato) · 10 s"
+    },
+    {
+      "pro": "PRO-11",
+      "descripcion": "La media de calorías no cuenta el día en curso y dice sus subtotales",
+      "ok": true,
+      "detalle": "Calorías registradas · analizar 1.210 kcal por día Media de los días con valor 2.000 0 90 días: 79 con valor · de ellos, 7 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media El plan rige desde el 21 jul"
+    },
+    {
+      "pro": "PRO-15",
+      "descripcion": "El peso compara solo dentro de su tramo comparable",
+      "ok": true,
+      "detalle": "Peso · analizar 79,8 kg Clase de dato: Medido Última toma: 11 oct 84 78 8 tomas: 5 del último tramo comparable Primera comparable del período: 80,2 kg el 23 sept · diferencia −0,4 kg (5 tomas comparables)"
+    },
+    {
+      "pro": "PRO-12",
+      "descripcion": "La cobertura por área dice su denominador y el Resumen no da porcentajes",
+      "ok": true,
+      "detalle": "Nutrición · En el período seleccionado: 80 de 90 días con algún registro 283 registros: 276 con cantidades y 7 sin cantidades El plan rige desde el 21 jul: antes, en el período, no había un plan de este seguimiento. 4 co"
+    },
+    {
+      "pro": "PRO-01",
+      "descripcion": "La línea de tiempo conserva el asesorado y el período",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-02",
+      "descripcion": "Los últimos hechos del período están a un clic del Resumen: la línea de tiempo anuncia al menos seis, y son los que tiene",
+      "ok": true,
+      "detalle": "48 hechos anunciados en la primera lectura; 48 en la lista"
+    },
+    {
+      "pro": "PRO-03",
+      "descripcion": "Los días van por la fecha del hecho, del más reciente al más viejo",
+      "ok": true,
+      "detalle": "2026-10-12, 2026-10-11, 2026-10-10, 2026-10-09…"
+    },
+    {
+      "pro": "PRO-17",
+      "descripcion": "El día se nombra en castellano, con mayúscula solo al principio: entero para el lector de pantalla, y corto a la vista",
+      "ok": true,
+      "detalle": "Lunes, 12 de octubre de 2026 · 12 oct / lunes"
+    },
+    {
+      "pro": "PRO-03",
+      "descripcion": "La toma de ayer cargada hoy queda en el día de ayer, con su etiqueta «Cargado otro día»",
+      "ok": true,
+      "detalle": "Antropometría: Toma antropométrica 2 mediciones Cargado otro día 08:00"
+    },
+    {
+      "pro": "E-66",
+      "descripcion": "Las comidas de ayer van en un renglón que dice cuántas son y lo que tienen de distinto (una anulada, una rectificada); cerrado no muestra ninguna, y abierto las muestra todas, del desayuno a la cena",
+      "ok": true,
+      "detalle": "Comidas 4 registradas 1 comida diferente 1 anulada 1 rectificada 4 cargadas otro día · cerrado: 0 a la vista · abierto: 08:00, 13:00, 17:00, 21:30"
+    },
+    {
+      "pro": "PRO-16",
+      "descripcion": "El almuerzo rectificado es una sola entrada, marcada «Rectificado»",
+      "ok": true,
+      "detalle": "13:00 Almuerzo Arroz con pollo y brócoli Rectificado Cargado otro día Porciones del plan"
+    },
+    {
+      "pro": "PRO-16",
+      "descripcion": "La merienda anulada sigue en la historia, marcada «Anulado»",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "Área y tipo combinados quedan en la URL y reducen el conjunto",
+      "ok": true,
+      "detalle": "285 de 329"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "«Ver días anteriores» completa el conjunto sin repetir ni perder entradas, todas de Nutrición, y lo que anuncian los renglones suma lo mismo",
+      "ok": true,
+      "detalle": "285 entradas, 285 distintas, 285 anunciadas"
+    },
+    {
+      "pro": "PRO-05",
+      "descripcion": "Un renglón abre el registro de comida de esa entrada, con cuándo ocurrió y cuándo se cargó",
+      "ok": true,
+      "detalle": "Detalle del registro Cerrar Cena · Milanesa con ensalada en un cumpleaños Nutrición Comida diferente Cargado otro día Ocurrió 11 oct, 21:30 Se cargó 12 oct, 03:"
+    },
+    {
+      "pro": "E-70",
+      "descripcion": "A 1440, el detalle se abre al costado y no tapa la lista: no es un diálogo, el renglón queda marcado, el foco pasa al detalle y la página no desborda",
+      "ok": true,
+      "detalle": "{\"modal\":false,\"alCostado\":true,\"elegido\":\"true\",\"focoEnElDetalle\":true,\"desborde\":0}"
+    },
+    {
+      "pro": "PRO-05",
+      "descripcion": "Al cerrar con Esc vuelve a la misma posición, con el foco en el disparador y la URL igual",
+      "ok": true,
+      "detalle": "scroll 515 → 515, foco ultimo"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "La búsqueda recorre el período y no viaja en la URL de la página",
+      "ok": true,
+      "detalle": "49 entradas; URL /pro/advisees?id=bdcb5727-f276-4032-be9f-0d7d733bff67&vista=linea"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "«Ver días anteriores» con la búsqueda activa completa las coincidencias de todo el período, sin repetir, y cada una a la vista en su renglón",
+      "ok": true,
+      "detalle": "79 de 79 en 2 página(s)"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "El texto buscado viaja en el cuerpo de un POST (API-DSH-04-BUSQUEDA): ninguna URL de la API lo lleva, tampoco la de «Ver días anteriores»",
+      "ok": true,
+      "detalle": "4 pedidos a la API durante la búsqueda, ninguno con el texto; 2 POST con el texto en el cuerpo (los de «Ver días anteriores», con su cursor)"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "Limpiar recupera la vista completa",
+      "ok": true,
+      "detalle": "329 de 329"
+    },
+    {
+      "pro": "PRO-24",
+      "descripcion": "El Resumen completo con la API en uso, desde el clic en la pestaña hasta la última respuesta",
+      "ok": true,
+      "detalle": "2033 ms (presupuesto 2.500 ms)"
+    },
+    {
+      "pro": "PRO-06",
+      "descripcion": "Una pregunta de tres métricas dibuja tres paneles",
+      "ok": true,
+      "detalle": "Calorías registradas por día · kcal | Proteínas registradas por día · g | Peso cada toma · kg"
+    },
+    {
+      "pro": "PRO-07",
+      "descripcion": "Cada panel conserva su unidad (kcal, g, kg)",
+      "ok": true,
+      "detalle": "Calorías registradas por día · kcal | Proteínas registradas por día · g | Peso cada toma · kg"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Separadas: los tres gráficos están dibujados y a la vista (ejes, curvas, marcas sin tapar y el color de cada métrica)",
+      "ok": true,
+      "detalle": "3 gráfico(s) · Calorías registradas por día: 990×126, ejes 7/3, curvas 3, marcas 80/80, tinta 17.5 %, color 4172 px · Proteínas registradas por dí: 990×126, ejes 7/5, curvas 3, marcas 80/80, tinta 19.0 %, color 5354 px · Peso cada toma · kg: 990×146, ejes 7/5, curvas 3, marcas 8/8, tinta 6.1 %, color 710 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Juntar kcal, g y kg se bloquea y dice por qué",
+      "ok": true,
+      "detalle": "{\"nombre\":\"Juntas\",\"deshabilitado\":true,\"descrito\":true} · «Juntas» pide métricas con la misma unidad. | «Cambio relativo»: Peso no tiene observaciones en los días de referencia."
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Sin observaciones del peso en la referencia, el cambio relativo se bloquea y lo dice",
+      "ok": true,
+      "detalle": "{\"nombre\":\"Cambio relativo\",\"deshabilitado\":true,\"descrito\":true} · «Juntas» pide métricas con la misma unidad. | «Cambio relativo»: Peso no tiene observaciones en los días de referencia."
+    },
+    {
+      "pro": "PRO-06",
+      "descripcion": "La cuarta métrica abre «Elegí cuál reemplazar»; cancelar conserva las tres",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "Con el teclado (Inicio y flecha) la fecha avanza, en la URL y en la lectura",
+      "ok": true,
+      "detalle": "2026-07-21 → 2026-07-22"
+    },
+    {
+      "pro": "PRO-09",
+      "descripcion": "Una fecha sin toma de peso dice «sin dato» y el más cercano «no es simultáneo»",
+      "ok": true,
+      "detalle": "2026-07-23: Peso Sin dato en esta fecha. El más cercano: 22 jul 2026, a 1 día: 82,4 kg. No es simultáneo."
+    },
+    {
+      "pro": "PRO-11",
+      "descripcion": "El día de hoy se lee como «día en curso»",
+      "ok": true,
+      "detalle": "Lectura del 12 oct 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Calorías 227 kcal Sin faltantes · día en curso: el valor todavía puede cambiar · n = 1 Objetivo: 1.950 kcal po"
+    },
+    {
+      "pro": "PRO-07",
+      "descripcion": "La fecha elegida es la misma en los tres paneles (una sola lectura para las tres)",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-26",
+      "descripcion": "El punto de energía de hoy abre su registro de comida",
+      "ok": true,
+      "detalle": "Volver a la lectura del 12 oct 2026 De dónde sale este dato Calorías registradas · 12 oct 2026 227 kcal Calorías registradas en los registros de comida con cantidades, por día. Sin faltantes · día en "
+    },
+    {
+      "pro": "PRO-05",
+      "descripcion": "Al cerrar el origen, la vista sigue igual (período, métricas, modo y fecha)",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-05",
+      "descripcion": "Desde la pestaña de Nutrición, «Atrás» devuelve el análisis tal como estaba",
+      "ok": true,
+      "detalle": "/pro/advisees?id=bdcb5727-f276-4032-be9f-0d7d733bff67&vista=analizar&pregunta=alimentacion-y-medidas&medida=antropometria.peso&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso&f=2026-10-12"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "El cambio relativo muestra su referencia (regla, rango, valor y n) y la lectura da el % y el valor real",
+      "ok": true,
+      "detalle": "Proteínas: el cero es la media de los días con valor del 15 jul 2026 al 21 jul 2026, 76,5 g (n = 1: pocas observaciones, la referencia es frágil) || Lectura del 12 oct 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Proteínas −82,8 % contra la referencia · valor real 13,2 g · sin falta"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo: el gráfico está dibujado y a la vista, con la banda de la referencia",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio frente a la referenci: 990×328, ejes 7/5, curvas 3, marcas 80/80, banda sí, tinta 15.0 %, color 9175 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "La referencia del cambio relativo y el % de una fecha no cambian al acercar (arrastre), alejar (fechas) ni restablecer el gráfico",
+      "ok": true,
+      "detalle": "acercado a «6 sept 2026 al 10 oct 2026», alejado a «3 ago 2026 al 12 oct 2026»: +38,1 % contra la referencia / +38,1 % contra la referencia / +38,1 % contra la referencia / +38,1 % contra la referencia · Proteínas: el cero es la media de los días con valor del 15 jul 2026 al 21 jul 2026, 76,5 g (n = 1: pocas obse"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambiar la referencia es explícito: copiar el intervalo no la cambia hasta «Aplicar»; después queda en la URL y en pantalla, con su rango",
+      "ok": true,
+      "detalle": "ref=2026-09-22_2026-10-11 · Referencia: rango fijo, del 22 sept 2026 al 11 oct 2026. No cambia al acercar, alejar o restablecer el gráfico."
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Restablecer el gráfico no deshace la referencia elegida",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-18",
+      "descripcion": "Por semana, la comparación de dos rangos que cortan semanas es la misma que por día y coincide con la media de los días calculada a mano, con la cobertura en días del rango",
+      "ok": true,
+      "detalle": "esperado A «1.192 kcal · 13 días: 13 con valor», B «1.071 kcal · 10 días: 10 con valor» · por día «Media de los días con valor | 1.192 kcal 13 días: 13 con valor · de ellos, 1 es un subtotal (falta algún dato) | 1.071 kcal 10 días: 10 con valor | −121 kcal» · por semana igual: sí"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Por semana: el gráfico semanal está dibujado y a la vista",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Calorías registradas por sem: 990×288, ejes 7/5, curvas 1, marcas 12/12, tinta 2.7 %, color 793 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Por semana, la referencia del cambio relativo es la misma que por día (los días de su rango, no las semanas)",
+      "ok": true,
+      "detalle": "Proteínas: el cero es la media de los días con valor del 15 jul 2026 al 21 jul 2026, 76,5 g (n = 1: pocas observaciones, la referencia es frágil)"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Cambio relativo por semana: dibujado y a la vista, con la banda de la referencia",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Cambio frente a la referenci: 990×328, ejes 7/5, curvas 1, marcas 12/12, banda sí, tinta 2.9 %, color 1766 px"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Proteínas y carbohidratos (misma familia y unidad) van juntas en un solo gráfico, con su unidad, y cada línea lleva su nombre al final",
+      "ok": true,
+      "detalle": "Proteínas y carbohidratos registrados por día · g · al final de cada línea: Carbohidratos, Proteínas · en el encabezado: Proteínas, Carbohidratos"
+    },
+    {
+      "pro": "PRO-08",
+      "descripcion": "Juntas: un gráfico con las dos curvas dibujadas y a la vista, cada una con su color",
+      "ok": true,
+      "detalle": "1 gráfico(s) · Proteínas y carbohidratos re: 990×328, ejes 7/5, curvas 6, marcas 160/160, tinta 17.4 %, color 6632/4790 px"
+    },
+    {
+      "pro": "PRO-18",
+      "descripcion": "La comparación de dos etapas dice criterio, cobertura, duración y diferencia, sin causas",
+      "ok": true,
+      "detalle": "Comparación de dos etapas de Nutrición A Nutrición · versión 1 Ver la planificación de la etapa A Desde 21 jul, al activarse Hasta 6 sept, la reemplazó la versión 2 Duración 48 días Cobertura de Calorías y Proteínas 48 días: 44 con valor · de ellos, 6 son subt"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "El CSV distingue calidad y día en curso, con período, zona y generación, sin nombre de persona en el archivo",
+      "ok": true,
+      "detalle": "BE-analisis-2026-07-15-a-2026-10-12.csv · 168 filas"
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "El CSV no tiene celdas que una planilla lea como fórmula",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-19",
+      "descripcion": "Guardar una vista la suma a la lista, que dice su referencia del cambio relativo",
+      "ok": true,
+      "detalle": "Recorrido 064449 · 3 métricas · referencia: del 22 sept 2026 al 28 sept 2026 Abrir Recorrido 064449 Guardar lo actual acá (Recorrido 064449) Borrar Recorrido 06"
+    },
+    {
+      "pro": "PRO-21",
+      "descripcion": "La respuesta lenta de «7 días» no pisa la de «90 días» elegida después",
+      "ok": true,
+      "detalle": "329 hechos (esperado 329)"
+    },
+    {
+      "pro": "PRO-21",
+      "descripcion": "Al cambiar de asesorado durante una respuesta lenta, no aparece nada del anterior: ni sus ejercicios en los indicadores, ni su tarjeta de Entrenamiento",
+      "ok": true,
+      "detalle": "Asesorado · 0a4e60 · tarjetas: NUTRICION, ANTROPOMETRIA · Calorías registradas · analizar Solo hay datos de hoy, que sigue en curso: todavía no hay un día completo que resumir. | Proteínas registradas · analizar Solo hay datos de hoy, que sigue en curso: todavía no hay un día completo que resumir. | Peso · analizar 64,3 kg Clase de dato: Medido Última toma: 2 oct 70 60 1 toma Una sola observación "
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "Asesorado B: un solo aviso de vista parcial, sin nombrar lo oculto",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "Asesorado B: la entrada de Analizar ofrece solo las áreas permitidas",
+      "ok": true,
+      "detalle": "Nutrición, Antropometría"
+    },
+    {
+      "pro": "PRO-21",
+      "descripcion": "Si falla el peso (503), energía y proteínas siguen dibujadas y el peso dice que BE no está disponible",
+      "ok": true,
+      "detalle": "Calorías registradas por día · kcal Objetivo 90 días: 79 con valor · 10 sin registros Calorías registradas (kcal), del 15/7/2026 al 12/10/2026: 80 observaciones con valor; la primera, 1.342 kcal el 21"
+    },
+    {
+      "pro": "PRO-21",
+      "descripcion": "«Reintentar» recupera el panel que faltaba",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-21",
+      "descripcion": "Con el límite de consultas, la línea de tiempo dice «esperá un minuto» y no «sin datos»",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-21",
+      "descripcion": "Sin red, el Resumen dice «no hay conexión con BE» y qué parte no se pudo completar, y no muestra ceros ni «sin datos»",
+      "ok": true,
+      "detalle": "Asesorado · 3bff67 Solicitar contexto Actualizar Consultado a las 03:46 Acceso actual Nutrición, Entrenamiento y Antropometría: Activo · acceso contextual Resumen Línea de tiempo Analizar Cómo se lee esta vista Período: 15 jul – 12 oct 2026 · 90 días · incluye"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "A 320 px (reflujo de WCAG 1.4.10) Analizar no desborda de costado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "Con el texto al 200 % (WCAG 1.4.4) no hay desborde de costado",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-25",
+      "descripcion": "Sin errores de JavaScript en la página durante el recorrido",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "axe (WCAG 2.2 A/AA) en resumen: sin violaciones automáticas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "axe (WCAG 2.2 A/AA) en registro: sin violaciones automáticas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "axe (WCAG 2.2 A/AA) en linea: sin violaciones automáticas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "axe (WCAG 2.2 A/AA) en analizar: sin violaciones automáticas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "axe (WCAG 2.2 A/AA) en errores: sin violaciones automáticas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-19",
+      "descripcion": "En una sesión nueva, la vista guardada reabre la misma configuración —también su referencia— y vuelve a pedir los datos",
+      "ok": true,
+      "detalle": "/pro/advisees?id=bdcb5727-f276-4032-be9f-0d7d733bff67&vista=analizar&p=30&m=nutricion.energia%2Cnutricion.proteinas%2Cantropometria.peso&ref=2026-09-22_2026-09-28"
+    },
+    {
+      "pro": "PRO-19",
+      "descripcion": "Borrar pide confirmación y la vista desaparece",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "Un tercero ve «no encontramos un recurso disponible»: ni pestañas, ni indicadores, ni gráficos",
+      "ok": true,
+      "detalle": "Asesorado Actualizar Consultado a las 03:47 Acceso actual No encontramos un recurso disponible para esta acción. Volver · 404 /api/v1/advisees/:id/projections/NUTRITION_PRESCRIBED_VS_RECORDED, 404 /api/v1/advisees/:id/projections/TRAINING_PROGRESSION_BY_EXERCISE, 404 /api/v1/advisees/:id/projections/ANTHROPOMETRY_LONGITUDINAL"
+    },
+    {
+      "pro": "E-96",
+      "descripcion": "Una cuenta profesional sin asesorados: «Nada pendiente con lo que BE puede saber…», las cinco vistas en cero, «Todavía no tenés asesorados activos en este contexto» y las solicitudes enviadas que dice la API. Cada lista dice que está vacía; ninguna es una falla",
+      "ok": true,
+      "detalle": "Nada pendiente con lo que BE puede saber. Lo que no está registrado, no está acá. · TODO 0 · REVISIONES 0 · PLANES 0 · FORMULARIOS 0 · EVALUACIONES 0 · Todavía no tenés asesorados activos en este contexto. · Solicitudes enviadas (0)"
+    },
+    {
+      "pro": "E-49",
+      "descripcion": "Una tarjeta por área, en el orden de BE, cada una con su título, «Abrir …» con retorno a la ficha, su contexto y su acción; después van los indicadores y las preguntas; no queda nada de la tabla, la lista ni «Acciones» de antes",
+      "ok": true,
+      "detalle": "Nutrición › Entrenamiento › Antropometría › Indicadores › Empezar por una pregunta · [[\"NUTRICION\",3,\"Preparar la revisión de Nutrición\"],[\"ENTRENAMIENTO\",2,\"Preparar la revisión de Entrenamiento\"],[\"ANTROPOMETRIA\",2,\"Preparar una toma\"]] · de antes: nada"
+    },
+    {
+      "pro": "E-55",
+      "descripcion": "A 1440 × 900 entran, sin desplazarse, las tres tarjetas enteras (con su acción) y el nombre y el valor de los cuatro indicadores",
+      "ok": true,
+      "detalle": "{\"tarjetas\":3,\"finDeLasTarjetas\":744,\"finDeLasAcciones\":729,\"tituloDeIndicadores\":756,\"indicadores\":4,\"finDeLosNombres\":824,\"finDeLosValores\":857,\"finDeLasReglas\":879,\"finDeLosGraficos\":945,\"finDeLosIndicadores\":1045,\"finDeLasPreguntas\":1111,\"alto\":1213,\"desborde\":0}"
+    },
+    {
+      "pro": "E-55",
+      "descripcion": "La medición detecta un contexto alto que saca los indicadores de la primera pantalla (la prueba de la prueba)",
+      "ok": true,
+      "detalle": "{\"tarjetas\":3,\"finDeLasTarjetas\":936,\"finDeLasAcciones\":921,\"tituloDeIndicadores\":948,\"indicadores\":4,\"finDeLosNombres\":1016,\"finDeLosValores\":1049,\"finDeLasReglas\":1071,\"finDeLosGraficos\":1137,\"finDeLosIndicadores\":1237,\"finDeLasPreguntas\":1303,\"alto\":1405,\"desborde\":0}"
+    },
+    {
+      "pro": "E-55",
+      "descripcion": "A 1440 × 900, dónde termina lo que sigue al valor de cada indicador (el borde de la ventana está en 900)",
+      "ok": true,
+      "informativo": true,
+      "detalle": "la regla, en 879; el minigráfico, en 945; la cobertura, en 1045; las preguntas, en 1111"
+    },
+    {
+      "pro": "E-55",
+      "descripcion": "Otras ventanas (ancho × alto): dónde terminan las tarjetas, los valores, las reglas, los minigráficos y los indicadores",
+      "ok": true,
+      "informativo": true,
+      "detalle": "{\"1920×950\":{\"tarjetas\":744,\"valores\":857,\"reglas\":879,\"graficos\":945,\"indicadores\":1045,\"alto\":1213},\"1280×900\":{\"tarjetas\":813,\"valores\":947,\"reglas\":969,\"graficos\":1035,\"indicadores\":1134,\"alto\":1322},\"1366×768\":{\"tarjetas\":813,\"valores\":926,\"reglas\":948,\"graficos\":1014,\"indicadores\":1114,\"alto\":1282}}"
+    },
+    {
+      "pro": "E-55",
+      "descripcion": "El alto del Resumen a 1440 px, con el asesorado A y 90 días (antes de esta parte, con el marco de hoy: 2.130 px)",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1213 px"
+    },
+    {
+      "pro": "E-59",
+      "descripcion": "La tira del objetivo dice las calorías del resumen de la ficha y los tres macros del objetivo efectivo (API-NUT-06, la misma versión), en el orden de la APK, cada uno con su palabra; arriba, «por día» y desde cuándo rige",
+      "ok": true,
+      "detalle": "pantalla: Calorías (requerimiento energético estimado) 1.950 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g («por día · desde el 7 sept») · esperado: Calorías (requerimiento energético estimado) 1.950 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g"
+    },
+    {
+      "pro": "E-59",
+      "descripcion": "Si la lectura de los macros falla (503 simulado), quedan las calorías, se dice que no se pudieron cargar —no que falten— y «Reintentar» los trae; nunca un cero",
+      "ok": true,
+      "detalle": "con la falla: Calorías (requerimiento energético estimado) 1.950 kcal · «No pudimos cargar los macros del objetivo. No es que falten: reintentá. Reintentar los macros del objetivo» · después de reintentar: Calorías (requerimiento energético estimado) 1.950 kcal · Carbohidratos 220 g · Grasas 65 g · Proteínas 130 g"
+    },
+    {
+      "pro": "E-51",
+      "descripcion": "Cada hecho es un renglón que dice su área y su alcance (también para el lector de pantalla), el hecho, y abre su evidencia; la última toma no se repite como hecho: está en el contexto de su tarjeta, con el botón que la abre",
+      "ok": true,
+      "detalle": "NUT:PROXIMA_REVISION→ NUT:NOVEDADES_DESDE_EL_CORTE→ NUT:COBERTURA_NUTRICIONAL→ ENT:REVISION_SIN_APLICAR→ ENT:BORRADOR_SIN_ACTIVAR→ ENT:NOVEDADES_DESDE_EL_CORTE→ ENT:COBERTURA_DE_ENTRENAMIENTO→ ANT:CAMBIO_DE_COMPARABILIDAD→ · toma: «Ver la toma: la última, el 11 oct»"
+    },
+    {
+      "pro": "E-51",
+      "descripcion": "Lo pendiente va primero en su tarjeta (antes del corte) y se reconoce por su ícono y su peso, no por un color; las cuentas no llevan ícono ni negrita",
+      "ok": true,
+      "detalle": "pendientes: PROXIMA_REVISION (ícono true, peso 650), REVISION_SIN_APLICAR (ícono true, peso 650), BORRADOR_SIN_ACTIVAR (ícono true, peso 650) · cuentas: NUTRICION (ícono false, peso 400), ENTRENAMIENTO (ícono false, peso 400)"
+    },
+    {
+      "pro": "E-51",
+      "descripcion": "Cada área dice su propio corte: la fecha de su última revisión y si ya se aplicó (si no, es un pendiente de esa tarjeta); Antropometría dice que no tiene revisiones y mira el período elegido",
+      "ok": true,
+      "detalle": "NUTRICION: «Desde la revisión del 22 sept · ver las revisiones de Nutrición · aplicada» · ENTRENAMIENTO: «Desde la revisión del 3 oct · ver las revisiones de Entrenamiento Próxima revisión acordada : sin fecha acordada» · ANTROPOMETRIA: «En el período seleccionado»"
+    },
+    {
+      "pro": "E-56",
+      "descripcion": "La próxima revisión acordada de cada área está en su tarjeta una sola vez: como pendiente si falta una semana o menos (o ya pasó); si no, junto al corte, con su fecha o «sin fecha acordada»",
+      "ok": true,
+      "detalle": "API: Nutrición 2026-10-15, Entrenamiento sin fecha · pantalla: NUTRICION: La próxima revisión acordada es el 15 oct (en 3 días). · ENTRENAMIENTO: Próxima revisión acordada: sin fecha acordada · ANTROPOMETRIA: —"
+    },
+    {
+      "pro": "E-51",
+      "descripcion": "La cobertura del período queda plegada en la tarjeta de un área con revisión (su título dice el alcance y cuántos hechos guarda); abierta, dice los días y los registros de la API, los anulados, los rectificados y las comidas diferentes, y que en Entrenamiento no hay «sesiones esperadas»",
+      "ok": true,
+      "detalle": "Nutrición: «Nutrición · En el período seleccionado: 80 de 90 días con algún registro 283 registros: 276 con cantidades y 7 sin cantidades El plan rige desde el 21 jul: antes, en el período, no había un plan de este seguimiento. 4 comidas diferentes, entre los registros sin cantidades 2 anulados, fuera de los totales 3 rectificados, contados una vez · Ver la información disponible» (esperado: 80 de"
+    },
+    {
+      "pro": "E-51",
+      "descripcion": "«Cargado otro día» es del período entero, no de un área: va al pie con el número de la API y lleva a esos hechos en la línea de tiempo",
+      "ok": true,
+      "detalle": "API: 27 · «Cargado otro día: 27 hechos del período se registraron un día posterior al que ocurrieron (carga tardía). Verlos en la línea de tiempo» → /pro/advisees?id=bdcb5727-f276-4032-be9f-0d7d733bff67&vista=linea&tardias=1"
+    },
+    {
+      "pro": "E-56",
+      "descripcion": "Un solo botón lleno en todo el Resumen: el del área con la próxima revisión acordada más cercana según el resumen de la ficha; los demás, con contorno. «Preparar la revisión…» lleva a su formulario preparado y «Preparar una toma», a la toma en preparación, los dos con retorno",
+      "ok": true,
+      "detalle": "fechas de la API: NUTRICION 2026-10-15 · lleno: NUTRICION"
+    },
+    {
+      "pro": "E-60",
+      "descripcion": "Las cuatro preguntas principales, con las palabras del dominio y en su orden; cada una arma «Analizar» desde cero (sin métricas ni fecha de un análisis anterior) y «Más preguntas» lleva a la entrada de Analizar",
+      "ok": true,
+      "detalle": "¿Qué cambió desde que empezó este plan? · ¿Lo registrado coincide con lo indicado? · ¿Cómo viene progresando este ejercicio? · ¿Con qué información cuento para revisar el objetivo?"
+    },
+    {
+      "pro": "E-53",
+      "descripcion": "Los cuatro indicadores por defecto son calorías y proteínas registradas, la carga de la primera serie del ejercicio más registrado y el peso, en el orden de las áreas; el valor de cada uno es el que sale de la API con su regla (media de los días con valor, mediana de las sesiones, última toma)",
+      "ok": true,
+      "detalle": "pantalla: Calorías registradas = 1.210 kcal por día (Media de los días con valor) · Proteínas registradas = 83,9 g por día (Media de los días con valor) · Carga · Peso muerto · serie 1 = 83,8 kg (Mediana de las sesiones) · Peso = 79,8 kg (Última toma: 11 oct) · esperado: Calorías registradas = 1.210 kcal por día (Media de los días con valor) · Proteínas registradas = 83,9 g por día (Media de los d"
+    },
+    {
+      "pro": "E-53",
+      "descripcion": "Cada indicador dice su cobertura con las palabras del dominio (los días con valor y sin registros, las sesiones, las tomas del tramo comparable); la carga dice además su última sesión, y el peso, la clase de su última toma, que es el único dato que la trae",
+      "ok": true,
+      "detalle": "Calorías registradas: 90 días: 79 con valor · de ellos, 7 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media [El plan rige desde el 21 jul] · Proteínas registradas: 90 días: 79 con valor · de ellos, 7 son subtotales (falta algún dato) · 10 sin registros · hoy, en curso: fuera de la media [El plan rige desde el 21 jul] · Carga · Peso muerto · serie 1: 12 sesione"
+    },
+    {
+      "pro": "E-64",
+      "descripcion": "El nombre de cada indicador es un enlace que abre su gráfico en «Analizar» (con su métrica y sin la fecha ni la pregunta de un análisis anterior), con una flecha y un nombre que lo dice",
+      "ok": true,
+      "detalle": "Calorías registradas · analizar → …&vista=analizar&m=nutricion.energia · Proteínas registradas · analizar → …&vista=analizar&m=nutricion.proteinas · Carga · Peso muerto · serie 1 · analizar → …&vista=analizar&m=entrenamiento.carga%7Ee%3A4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e04%7E1%7Ekg · Peso · analizar → …&vista=analizar&m=antropometria.peso"
+    },
+    {
+      "pro": "E-54",
+      "descripcion": "Cada minigráfico dibuja lo mismo que su serie de la API: un punto por día, sesión o toma con valor (los subtotales y el día en curso, huecos), una línea por tramo comparable, el gris de los días sin registros, y dos marcas en el eje que encierran todos los valores",
+      "ok": true,
+      "detalle": "Calorías registradas: {\"puntos\":80,\"huecos\":8,\"tramos\":2,\"grises\":2,\"marcas\":[\"2.000\",\"0\"]} · API {\"puntos\":80,\"huecos\":8,\"tramos\":2,\"grises\":2,\"minimo\":227.4,\"maximo\":1414.7} · Proteínas registradas: {\"puntos\":80,\"huecos\":8,\"tramos\":2,\"grises\":2,\"marcas\":[\"150\",\"0\"]} · API {\"puntos\":80,\"huecos\":8,\"tramos\":2,\"grises\":2,\"minimo\":13.2,\"maximo\":106.831} · Carga · Peso muerto · serie 1: {\"puntos\":12,\""
+    },
+    {
+      "pro": "E-54",
+      "descripcion": "El inicio del primer plan del período se marca en el minigráfico y se dice debajo («El plan rige desde el…») solo cuando empezó adentro del período, con la fecha de la API; el del peso, que no se registra contra un plan, no lo lleva",
+      "ok": true,
+      "detalle": "API: 2026-07-21, 2026-07-21, 2026-07-21, — · pantalla: 1 El plan rige desde el 21 jul · 1 El plan rige desde el 21 jul · 1 El plan rige desde el 21 jul · 0 —"
+    },
+    {
+      "pro": "E-54",
+      "descripcion": "El minigráfico es un dibujo propio, con el color de las métricas, sin foco ni nada para tocar, y con su descripción para el lector de pantalla; el Resumen no dibuja ningún gráfico de la biblioteca",
+      "ok": true,
+      "detalle": "4 propios, 0 de la biblioteca · Gráfico de Calorías registradas. Calorías registradas (kcal), del 15/7/2026 al 12/10/2026: 80 observaciones con valor; la primera, 1.342 kca…"
+    },
+    {
+      "pro": "E-54",
+      "descripcion": "La ficha se abre y muestra el Resumen, con sus cuatro minigráficos, sin haber cargado la biblioteca de gráficos",
+      "ok": true,
+      "detalle": "31 guiones cargados, ninguno de 6974.0f713a8589d76980.js · minigráficos al entrar: 4"
+    },
+    {
+      "pro": "E-58",
+      "descripcion": "«Actualizar» vuelve a leer todo lo que el Resumen muestra, no solo el acceso: el resumen por área, lo que hay en el período y su cobertura, lo nuevo desde cada revisión, los macros del objetivo y las series de los cuatro indicadores",
+      "ok": true,
+      "detalle": "14 lecturas después del clic"
+    },
+    {
+      "pro": "E-62",
+      "descripcion": "La ayuda del Resumen se abre desde el marco como un diálogo, por el principio (el foco va al título, que queda a la vista), explica cada parte con su muestra y lo que la vista no dice; axe no encuentra faltas con ella abierta; Escape la cierra y el foco vuelve al botón",
+      "ok": true,
+      "detalle": "Cómo se lee el Resumen · 13 renglones, 13 muestras · foco en el título: true, a la vista: true · axe: [] · Escape la cierra: true · foco después: «Cómo se lee esta vista»"
+    },
+    {
+      "pro": "E-62",
+      "descripcion": "«De dónde sale» cada hecho está en la ayuda, plegado y una vez por regla: todas las reglas de los hechos que hay en pantalla tienen su fuente («Sale de…»), y ningún renglón de las tarjetas la repite",
+      "ok": true,
+      "detalle": "en pantalla: PROXIMA_REVISION, NOVEDADES_DESDE_EL_CORTE, COBERTURA_NUTRICIONAL, REVISION_SIN_APLICAR, BORRADOR_SIN_ACTIVAR, COBERTURA_DE_ENTRENAMIENTO, CAMBIO_DE_COMPARABILIDAD · en la ayuda: 11 fuentes, p. ej. «Una revisión registrada, sin aplicar Sale de la última revisión registrada del área y su aplicación.»"
+    },
+    {
+      "pro": "E-63",
+      "descripcion": "A 1440 y 1280 px van tres áreas y cuatro indicadores por fila, y las preguntas en un renglón; a 1024, dos áreas y la tercera debajo de lado a lado, y los indicadores y las preguntas de a dos; a 768 y 390 nada desborda (una tarjeta por fila)",
+      "ok": true,
+      "detalle": "390: 1+1+1 tarjetas · 1+1+1+1 indicadores · 1+1+1+1 preguntas · desborde 0 | 768: 1+1+1 tarjetas · 2+2 indicadores · 2+2 preguntas · desborde 0 | 1024: 2+1 tarjetas · 2+2 indicadores · 2+2 preguntas · desborde 0 | 1280: 3 tarjetas · 4 indicadores · 4 preguntas · desborde 0 | 1440: 3 tarjetas · 4 indicadores · 4 preguntas · desborde 0"
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "El Resumen por área, con la cobertura abierta: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas, y los minigráficos se dibujan igual, con el color de las métricas de cada tema",
+      "ok": true,
+      "detalle": "{\"claro\":[],\"azul-noche\":[]}"
+    },
+    {
+      "pro": "E-63",
+      "descripcion": "Con dos áreas (el asesorado B, sin Entrenamiento): dos tarjetas y, en la columna que queda libre a su lado, las preguntas; debajo, los indicadores. No hay tarjeta de Entrenamiento ni se ofrece la pregunta del ejercicio (E-60)",
+      "ok": true,
+      "detalle": "NUTRICION, ANTROPOMETRIA · preguntas: ¿Qué cambió desde que empezó este plan? · ¿Lo registrado coincide con lo indicado? · ¿Con qué información cuento para revisar el objetivo? · {\"tarjetas\":[[32,228],[495,228]],\"preguntas\":{\"x\":957,\"y\":228,\"ancho\":451,\"fin\":630},\"indicadores\":{\"x\":32,\"y\":642,\"ancho\":1376,\"fin\":946}}"
+    },
+    {
+      "pro": "E-63",
+      "descripcion": "Con una sola área (el escenario E): su tarjeta a la izquierda y, a su costado, los indicadores y debajo las preguntas; se dice que no hay más indicadores con datos; sin revisiones, el alcance es el período y la cobertura está a la vista",
+      "ok": true,
+      "detalle": "NUTRICION · «En el período seleccionado · sin revisiones registradas Próxima revisión acordada : sin fecha acordada» · «Sin más indicadores con datos en este período. Probá con un período más largo o elegí otros indicadores.» · {\"tarjeta\":{\"x\":32,\"y\":228,\"ancho\":448,\"fin\":630},\"indicadores\":{\"x\":492,\"y\":228,\"ancho\":916,\"fin\":424},\"preguntas\":{\"x\":492,\"y\":436,\"ancho\":916,\"fin\":641}}"
+    },
+    {
+      "pro": "E-54",
+      "descripcion": "La misma medición detecta la biblioteca de gráficos cuando se abre «Analizar» (la prueba de la prueba)",
+      "ok": true,
+      "detalle": "6974.0f713a8589d76980.js"
+    },
+    {
+      "pro": "PRO-25",
+      "descripcion": "Sin errores de JavaScript durante el recorrido del Resumen por área, ni respuestas con error de la API con el asesorado A",
+      "ok": true,
+      "detalle": "ninguno"
+    },
+    {
+      "pro": "E-65",
+      "descripcion": "Cada día se arma con lo que entrega la API: los hitos primero, las comidas en un renglón que dice cuántas son y cuántas tienen cada rasgo, y la tarjeta solo si hay una sesión, un hito o un rasgo; hay días de las dos clases",
+      "ok": true,
+      "detalle": "11 días a la vista: 7 con tarjeta y 4 lisos"
+    },
+    {
+      "pro": "E-71",
+      "descripcion": "Se muestran días enteros: de la primera tanda de 50 hechos, el último día (que la tanda cortó) espera a «Ver días anteriores»; cada día a la vista tiene todos sus hechos, y el pie dice cuántos se ven y hasta qué día",
+      "ok": true,
+      "detalle": "11 días · el 2026-10-01 quedó cortado por la tanda y espera · Ver días anteriores Se ven 48 de 329 hechos, hasta el 2 oct."
+    },
+    {
+      "pro": "E-71",
+      "descripcion": "Si se mostrara el día cortado por la tanda, la comparación con la API lo detecta (prueba de la prueba)",
+      "ok": true,
+      "detalle": "2026-10-01: 2 de 5 hechos en la primera tanda"
+    },
+    {
+      "pro": "E-72",
+      "descripcion": "A 1440 × 900, la primera pantalla muestra enteros al menos cinco días con todos sus hechos (antes, los primeros 50 hechos ocupaban casi doce pantallas); con la densidad de antes la misma medición da menos (prueba de la prueba)",
+      "ok": true,
+      "detalle": "6 días enteros en 900 px (el séptimo termina en 926 px) · {\"1920×950\":7,\"1280×900\":5} · la página con la primera tanda mide 1352 px · con renglones de 215 px: 1"
+    },
+    {
+      "pro": "E-66",
+      "descripcion": "Un grupo abierto muestra todas las comidas del día, de la más temprana a la más tardía, cada una con los rasgos que le da la API; el botón dice que está abierto",
+      "ok": true,
+      "detalle": "2026-10-11: 08:00 Desayuno Avena con leche Cargado otro  | 13:00 Almuerzo Arroz con pollo y brócoli Rec | 17:00 Merienda Yogur con manzana Anulado Car | 21:30 Cena Milanesa con ensalada en un cumpl"
+    },
+    {
+      "pro": "E-70",
+      "descripcion": "El detalle dice lo que el renglón ya no repite: cuándo ocurrió y cuándo se cargó (los instantes de la API, con quién lo cargó), sus relaciones, todos los datos de la entrada a un clic y el camino a su pestaña; el renglón no los repite",
+      "ok": true,
+      "detalle": "Almuerzo · Arroz con pollo y brócoli · ocurrió 11 oct, 13:00 · se cargó 12 oct, 03:32 · Asesorado · 3bff67 · 2 relación(es) · 4 datos a un clic · el renglón no los repite: true"
+    },
+    {
+      "pro": "E-73",
+      "descripcion": "Al tocar otro hecho mientras el primero todavía carga, el detalle queda con el segundo: la respuesta lenta del primero no lo pinta, y un solo renglón queda marcado",
+      "ok": true,
+      "detalle": "demorado: «Avena con leche» · queda: «Almuerzo · Arroz con pollo y brócoli»"
+    },
+    {
+      "pro": "E-70",
+      "descripcion": "Escape desde la lista cierra el detalle y deja el foco donde estaba; «Cerrar» lo devuelve al renglón del hecho; y si el grupo se cerró con el detalle abierto (se puede), al renglón del grupo",
+      "ok": true,
+      "detalle": "{\"trasEscapeEnLaLista\":{\"detalle\":false,\"focoEnElGrupo\":true},\"trasCerrar\":{\"detalle\":false,\"focoEnElRenglon\":true},\"conElGrupoCerrado\":{\"detalle\":true,\"expandido\":\"false\"},\"focoTrasCerrarElGrupo\":true}"
+    },
+    {
+      "pro": "E-70",
+      "descripcion": "A 1024 px el detalle no entra al costado: se abre encima, en un panel que retiene el foco, con los mismos datos del hecho; Escape lo cierra y el foco vuelve al renglón; axe no encuentra faltas",
+      "ok": true,
+      "detalle": "panel: true · al costado: false · foco adentro: true · axe: [] · foco después: primero"
+    },
+    {
+      "pro": "E-67",
+      "descripcion": "Las vistas con nombre están en un renglón, en su orden, cada una con la cantidad de hechos del período que trae (las de la API); «Lo nuevo desde la revisión» no lleva número; al entrar está elegida «Todo»",
+      "ok": true,
+      "detalle": "TODO 329 · HITOS 19 · LO_NUEVO · DISTINTO_DE_LO_INDICADO 4 · SIN_CONFIRMAR 3"
+    },
+    {
+      "pro": "E-67",
+      "descripcion": "«Hitos» trae los hechos que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón a la vista es de la vista, y no hay otra elegida",
+      "ok": true,
+      "detalle": "botón 19 · cabecera 19 · API 19 · conteos del período 19 · 19 renglones · elegidas: HITOS"
+    },
+    {
+      "pro": "E-67",
+      "descripcion": "«Distinto de lo indicado» trae los hechos que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón a la vista es de la vista, y no hay otra elegida",
+      "ok": true,
+      "detalle": "botón 4 · cabecera 4 · API 4 · conteos del período 4 · 4 renglones · elegidas: DISTINTO_DE_LO_INDICADO"
+    },
+    {
+      "pro": "E-67",
+      "descripcion": "«Sin confirmar» trae los hechos que anuncia: la cantidad del botón, la de la cabecera y la de la API con ese filtro son la misma; la URL lleva solo ese filtro; cada renglón a la vista es de la vista, y no hay otra elegida",
+      "ok": true,
+      "detalle": "botón 3 · cabecera 3 · API 3 · conteos del período 3 · 3 renglones · elegidas: SIN_CONFIRMAR"
+    },
+    {
+      "pro": "E-68",
+      "descripcion": "Con una vista que recorta dentro del día («Sin confirmar»), cada hecho va en su renglón: no hay grupos de comidas ni días sin hechos",
+      "ok": true,
+      "detalle": "3 renglones, 0 grupos"
+    },
+    {
+      "pro": "E-67",
+      "descripcion": "Volver a tocar la vista elegida deja «Todo», con todos los hechos del período",
+      "ok": true,
+      "detalle": "{\"elegidas\":[\"TODO\"],\"cuenta\":329,\"calidad\":null}"
+    },
+    {
+      "pro": "E-69",
+      "descripcion": "«Lo nuevo desde la revisión» ofrece cada área con la fecha de su revisión; elegida Nutrición, la URL lleva su instante y su área (la misma que escribe el Resumen), el aviso lo explica, la cantidad es la de la API, y las demás vistas siguen diciendo las cantidades del período elegido",
+      "ok": true,
+      "detalle": "Nutrición · revisión del 22 sept | Entrenamiento · revisión del 3 oct · 70 hechos (la API cuenta 70) · TODO 329 · HITOS 19 · LO_NUEVO · DISTINTO_DE_LO_INDICADO 4 · SIN_CONFIRMAR 3"
+    },
+    {
+      "pro": "E-74",
+      "descripcion": "El detalle de un plan activado abre su planificación con su número de versión (antes decía «Versión 0»)",
+      "ok": true,
+      "detalle": "Versión 2 · activada el 7 sept 2026, 09:30 Huella de "
+    },
+    {
+      "pro": "E-75",
+      "descripcion": "Al buscar una palabra que está en un dato que el renglón no muestra (el motivo de una sesión), el renglón dice dónde coincide; al buscar lo que el renglón ya dice («cena»), no agrega nada",
+      "ok": true,
+      "detalle": "«Viaje» → Coincide en: Motivo: Viaje laboral (1 renglón/es) · «cena» → 49 renglones, 0 con aclaración"
+    },
+    {
+      "pro": "E-76",
+      "descripcion": "«Actualizar» con dos tandas leídas vuelve a leer la línea desde la primera: quedan los días enteros de la primera tanda, sin repetir ni perder hechos (antes le pegaba a la lectura nueva las tandas de la anterior)",
+      "ok": true,
+      "detalle": "97 hechos con dos tandas → 48 después de «Actualizar» (esperados 48) · 2 lectura(s) de la línea"
+    },
+    {
+      "pro": "E-77",
+      "descripcion": "Entre dos días de la lista, los días sin ningún hecho se dicen con sus fechas (los de la API), nunca como un cero; con un filtro puesto no se dice ninguno",
+      "ok": true,
+      "detalle": "del 2026-08-08 al 2026-08-17: 14 ago: sin hechos registrados | 11 ago: sin hechos registrados · con el filtro de Nutrición: 0 en 6 días"
+    },
+    {
+      "pro": "E-78",
+      "descripcion": "La ayuda de la Línea de tiempo se abre desde el marco como un diálogo, por el principio, explica cada parte con su muestra y lo que la vista no dice; qué trae cada vista está a un clic, con las cinco; axe no encuentra faltas; Escape la cierra y el foco vuelve al botón",
+      "ok": true,
+      "detalle": "Cómo se lee la Línea de tiempo · 12 renglones, 12 muestras · foco en el título: true · 5 vistas explicadas · axe: [] · Escape la cierra: true"
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "Con el teclado se llega, en orden, a las vistas con nombre, el buscador, la lupa, «Más filtros» y los renglones de los días; cada uno mide 44 px o más y muestra el foco; Enter abre y cierra un grupo",
+      "ok": true,
+      "detalle": "vista → vista → vista → vista → vista → buscar → lupa → filtros → fila → fila · altos: 44 px · Enter: true"
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "La línea de tiempo por día, con un grupo y el detalle abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas",
+      "ok": true,
+      "detalle": "{\"claro\":[],\"azul-noche\":[]}"
+    },
+    {
+      "pro": "E-65",
+      "descripcion": "La vista entera, con un grupo y el detalle abiertos, no tiene porcentajes ni palabras que califiquen: describe lo registrado",
+      "ok": true,
+      "detalle": "2784 caracteres"
+    },
+    {
+      "pro": "PRO-23",
+      "descripcion": "La línea de tiempo por día no desborda de costado a 1440, 1280 ni 1024 px",
+      "ok": true,
+      "detalle": "{\"1024\":0,\"1280\":0,\"1440\":0}"
+    },
+    {
+      "pro": "PRO-25",
+      "descripcion": "Sin errores de JavaScript ni respuestas con error de la API durante el recorrido de la línea de tiempo por día",
+      "ok": true,
+      "detalle": "ninguno"
+    },
+    {
+      "pro": "E-24",
+      "descripcion": "A 1440 × 900 y con tres métricas, la pregunta, las métricas, los modos, los gráficos y la lectura van en ese orden, la lectura queda al costado y los tres gráficos, con sus fechas, entran en la primera pantalla",
+      "ok": true,
+      "detalle": "{\"estan\":true,\"enOrden\":true,\"figuras\":3,\"finDeLasFechas\":887,\"lecturaAlCostado\":true,\"alto\":1093,\"desborde\":0}"
+    },
+    {
+      "pro": "E-24",
+      "descripcion": "La medición detecta una barra que saca los gráficos de la primera pantalla (la prueba de la prueba)",
+      "ok": true,
+      "detalle": "{\"estan\":true,\"enOrden\":true,\"figuras\":3,\"finDeLasFechas\":1207,\"lecturaAlCostado\":true,\"alto\":1413,\"desborde\":0}"
+    },
+    {
+      "pro": "E-24",
+      "descripcion": "La composición a 1280 × 900 (se informa; la primera pantalla se exige a 1440 × 900)",
+      "ok": true,
+      "informativo": true,
+      "detalle": "{\"estan\":true,\"enOrden\":true,\"figuras\":3,\"finDeLasFechas\":900,\"lecturaAlCostado\":true,\"alto\":1210,\"desborde\":0}"
+    },
+    {
+      "pro": "E-24",
+      "descripcion": "La composición a 1024 × 900 (se informa; la primera pantalla se exige a 1440 × 900)",
+      "ok": true,
+      "informativo": true,
+      "detalle": "{\"estan\":true,\"enOrden\":true,\"figuras\":3,\"finDeLasFechas\":957,\"lecturaAlCostado\":true,\"alto\":1266,\"desborde\":0}"
+    },
+    {
+      "pro": "E-24",
+      "descripcion": "La composición a 1366 × 768 (se informa; la primera pantalla se exige a 1440 × 900)",
+      "ok": true,
+      "informativo": true,
+      "detalle": "{\"estan\":true,\"enOrden\":true,\"figuras\":3,\"finDeLasFechas\":887,\"lecturaAlCostado\":true,\"alto\":1196,\"desborde\":0}"
+    },
+    {
+      "pro": "E-25",
+      "descripcion": "«Más acciones» está cerrado al entrar; abierto, tiene las vistas guardadas, la descarga, las dos capas, el intervalo con fechas y la comparación de dos períodos; el botón dice su estado y lo vuelve a cerrar",
+      "ok": true,
+      "detalle": "{\"alEntrar\":{\"expandido\":\"false\",\"panel\":false},\"abierto\":{\"expandido\":\"true\",\"controla\":true,\"panel\":true,\"vistas\":true,\"descarga\":true,\"capas\":[\"Etapas de los planes\",\"Hitos de planificación (activaciones, objetivos, revisiones)\"],\"intervalo\":true,\"comparar\":true},\"cerrado\":{\"expandido\":\"false\",\"panel\":false}}"
+    },
+    {
+      "pro": "E-25",
+      "descripcion": "El pie de los gráficos ofrece la tabla de datos, el resumen en texto, los hitos, las etapas y «Cómo se calcula», y abre debajo una cosa a la vez: abrir el resumen cierra la tabla, y volver a tocarlo lo cierra",
+      "ok": true,
+      "detalle": "{\"alEntrar\":{\"botones\":[\"Tabla de datos (81 fechas)\",\"Resumen en texto\",\"Hitos de planificación (11)\",\"Comparar etapas\",\"Cómo se calcula\"],\"abiertos\":[],\"regiones\":[]},\"conTabla\":{\"abiertos\":[\"Tabla de datos (81 fechas)\"],\"regiones\":[\"tabla-de-datos\"]},\"conResumen\":{\"abiertos\":[\"Resumen en texto\"],\"regiones\":[\"resumen-en-texto\"]},\"cerrado\":[]}"
+    },
+    {
+      "pro": "E-38",
+      "descripcion": "Lo desplegado (el panel de «Más acciones» y la tabla de datos) sigue abierto al cambiar las métricas y vuelve cerrado después de pasar por la entrada de Analizar",
+      "ok": true,
+      "detalle": "{\"trasOtraSeleccion\":{\"mas\":true,\"tabla\":true},\"enLaEntrada\":{\"preguntas\":6,\"mas\":false,\"graficos\":0},\"trasLaEntrada\":{\"mas\":false,\"tabla\":false}}"
+    },
+    {
+      "pro": "E-26",
+      "descripcion": "Todas las marcas de los tres gráficos son puntos (círculos), cada gráfico con el color de su métrica, y las muestras de las métricas son una línea con un punto",
+      "ok": true,
+      "detalle": "{\"porGrafico\":[80,80,8],\"formas\":[\"circle\",\"g\"],\"muestras\":[\"circle\",\"g\",\"line\"],\"colores\":[\"var(--metrica-1)\",\"var(--metrica-2)\",\"var(--metrica-3)\"]}"
+    },
+    {
+      "pro": "E-34",
+      "descripcion": "Analizar dice «Calorías» (en la etiqueta, en el título de su gráfico y entre las métricas que se pueden agregar) y no «Energía»; las métricas de Nutrición van en un solo orden: calorías, carbohidratos, grasas y proteínas",
+      "ok": true,
+      "detalle": "{\"etiquetas\":[\"Calorías\",\"Proteínas\",\"Peso\"],\"titulos\":[\"Calorías registradas por día · kcal\",\"Proteínas registradas por día · g\",\"Peso cada toma · kg\"],\"energia\":false,\"opciones\":[\"Calorías registradas\",\"Carbohidratos registrados\",\"Grasas registradas\",\"Proteínas registradas\",\"Fibra registrada\",\"Registros de comida\"]}"
+    },
+    {
+      "pro": "E-33",
+      "descripcion": "Los modos se llaman «Separadas», «Juntas» y «Cambio relativo», y la agrupación, «Registro», «Día» y «Semana»; en la URL siguen las mismas letras de antes (S para juntas, W para semana, y nada para separadas)",
+      "ok": true,
+      "detalle": "Ver como: Separadas, Juntas, Cambio relativo | Agrupar por: Registro, Día, Semana · modo=S · g=W · al volver: modo=null"
+    },
+    {
+      "pro": "E-27",
+      "descripcion": "El gráfico de calorías dibuja el objetivo: un tramo horizontal y discontinuo, del color de la métrica, por cada escalón del requerimiento que devuelve la API, con la muestra «Objetivo» en su encabezado; el de proteínas no lleva ninguno",
+      "ok": true,
+      "detalle": "API: 2100 kcal desde 2026-07-20; 1950 kcal desde 2026-09-07 · calorías: 2 tramo(s) [[113,609,31,\"6 5\"],[609,974,42,\"6 5\"]], muestra «Objetivo» · proteínas: 0 tramo(s)"
+    },
+    {
+      "pro": "E-27",
+      "descripcion": "La lectura dice el objetivo que rige en la fecha elegida, con el valor de la API, sin calcular una diferencia ni un porcentaje; la de proteínas no dice ninguno",
+      "ok": true,
+      "detalle": "Calorías 227 kcal Sin faltantes · día en curso: el valor todavía puede cambiar · n = 1 Objetivo: 1.950 kcal por día Registros: 1 · Con cantidades: 1 V · Proteínas 13,2 g Sin faltantes · día en curso: el valor todavía puede cambiar · n = 1 Registros: 1 · Con cantidades: 1 Ver origen de Proteínas"
+    },
+    {
+      "pro": "E-27",
+      "descripcion": "La tabla de datos tiene la columna del objetivo, una sola vez y al lado de las calorías, y en cada fecha dice el que regía ese día según la API",
+      "ok": true,
+      "detalle": "Fecha | Calorías (kcal) | Objetivo de calorías (kcal por día) | Proteínas (g) · 80 filas, 0 distintas de lo esperado · primera: [\"12 oct 2026\",\"227 kcal (día en curso)\",\"1.950\",\"13,2 g (día en curso)\"]"
+    },
+    {
+      "pro": "E-27",
+      "descripcion": "El resumen en texto y la descripción del gráfico dicen el objetivo con sus fechas, una vez: lo que el gráfico dibuja se puede leer sin verlo",
+      "ok": true,
+      "detalle": "esperado: «Objetivo de calorías (requerimiento energético estimado): 2.100 kcal por día desde el 20 jul 2026; 1.950 kcal por día desde el 7 sept 2026.» · en el resumen: sí · en la descripción: sí"
+    },
+    {
+      "pro": "E-28",
+      "descripcion": "Por día, el gráfico de calorías sombrea los días sin registros que declara la API (sin el día en curso) y su encabezado los cuenta, con la muestra gris; en «Juntas», dos métricas de Nutrición llevan el mismo sombreado; por semana no hay sombreado ni muestra, y el peso (cada toma) nunca lo lleva",
+      "ok": true,
+      "detalle": "API: 2026-07-15..2026-07-20, 2026-08-11..2026-08-14 (10 días) · por día: [{\"titulo\":\"Calorías registradas por día · kcal\",\"zonas\":2,\"cobertura\":\"90 días: 79 con valor · 10 sin registros\",\"muestra\":true},{\"titulo\":\"Peso cada toma · kg\",\"zonas\":0,\"cobertura\":\"8 tomas: 5 del último tramo comparable\",\"muestra\":false}] · por semana: {\"titulo\":\"Calorías registradas por semana · kcal\",\"zonas\":0,\"cobertur"
+    },
+    {
+      "pro": "E-29",
+      "descripcion": "Con calorías, proteínas y peso, las etapas de Nutrición están en los tres gráficos (el peso lleva las de las otras métricas) y su rótulo va una sola vez, en el primero, arriba del dibujo",
+      "ok": true,
+      "detalle": "esperado: Nutrición · versión 1 | Nutrición · versión 2 · [{\"bandas\":2,\"rotulos\":[\"Nutrición · versión 1\",\"Nutrición · versión 2\"],\"arriba\":true},{\"bandas\":2,\"rotulos\":[],\"arriba\":true},{\"bandas\":2,\"rotulos\":[],\"arriba\":true}]"
+    },
+    {
+      "pro": "E-29",
+      "descripcion": "En la pregunta del plan (que empieza el día de la activación), el gráfico rotula la versión elegida y no la anterior, que ya no se ve",
+      "ok": true,
+      "detalle": "[{\"bandas\":1,\"rotulos\":[\"Nutrición · versión 2\"],\"arriba\":true},{\"bandas\":1,\"rotulos\":[],\"arriba\":true},{\"bandas\":1,\"rotulos\":[],\"arriba\":true}]"
+    },
+    {
+      "pro": "E-30",
+      "descripcion": "Con varios cambios de protocolo en el período, el gráfico del peso marca cada uno con un número y la leyenda dice su fecha y su motivo; el de calorías no marca cortes (sus tramos son huecos)",
+      "ok": true,
+      "detalle": "API: 2026-09-02 Cambió el protocolo de medición; 2026-09-23 Cambió el protocolo de medición · {\"porGrafico\":[{\"lineas\":0,\"rotulos\":[]},{\"lineas\":2,\"rotulos\":[\"1\",\"2\"]}],\"leyenda\":[\"Hueco: subtotal (falta algún dato), o día o semana sin completar\",\"1 2 sept 2026: cambió el protocolo de medición (no se compara con lo anterior)\",\"2 23 sept 2026: cambió el protocolo de medición (no se compara con lo a"
+    },
+    {
+      "pro": "E-30",
+      "descripcion": "Con un solo cambio de protocolo a la vista, el gráfico lo marca con su motivo y su fecha escritos, y la leyenda no lo repite",
+      "ok": true,
+      "detalle": "del 2026-09-01 al 2026-10-12 · API: 2026-09-23 Cambió el protocolo de medición · {\"porGrafico\":[{\"lineas\":1,\"rotulos\":[\"Cambió el protocolo de medición · 23 sept\"]}],\"leyenda\":[\"Contorno cortado: reportado por la persona, no medido\"]}"
+    },
+    {
+      "pro": "E-31",
+      "descripcion": "Las líneas de los hitos de planificación no se dibujan con su lista cerrada; al abrirla, cada gráfico dibuja una por hito de la lista, y al cerrarla se van; son los de la API sin las tomas",
+      "ok": true,
+      "detalle": "11 hitos de planificación en la lista (la API: 11, y 8 tomas que no se listan) · líneas por gráfico: cerrada 0/0, abierta 11/11, cerrada otra vez 0/0"
+    },
+    {
+      "pro": "E-35",
+      "descripcion": "La lectura de un día completo dice su fecha, el valor de la API en grande con su unidad, «Ver origen» con el nombre de la métrica y el campo «Ir a una fecha» con esa fecha",
+      "ok": true,
+      "detalle": "API: 2026-10-10 = 1344.8 kcal · {\"titulo\":\"Lectura del 10 oct 2026\",\"valor\":\"1.345 kcal\",\"grande\":true,\"origen\":[\"Ver origen de Calorías\"],\"irAUnaFecha\":\"2026-10-10\"}"
+    },
+    {
+      "pro": "E-36",
+      "descripcion": "Con el día en curso a la vista, la leyenda explica el punto hueco; en una semana terminada y completa (siete puntos llenos) no hay leyenda: un estado que no aparece no ocupa lugar",
+      "ok": true,
+      "detalle": "90 días: Hueco: subtotal (falta algún dato), o día o semana sin completar · del 2026-10-04 al 2026-10-10: {\"leyenda\":0,\"marcas\":7}"
+    },
+    {
+      "pro": "E-39",
+      "descripcion": "Con 90 días a la vista, el aro de la fecha elegida (la última) rodea su marca y se ve entero en cada gráfico: nada lo recorta contra el borde",
+      "ok": true,
+      "detalle": "[[{\"entero\":true,\"recortado\":false,\"rodea\":true}],[{\"entero\":true,\"recortado\":false,\"rodea\":true}]]"
+    },
+    {
+      "pro": "E-39",
+      "descripcion": "La medición detecta un aro recortado (la prueba de la prueba)",
+      "ok": true,
+      "detalle": "[[{\"entero\":true,\"recortado\":true,\"rodea\":true}],[{\"entero\":true,\"recortado\":true,\"rodea\":true}]]"
+    },
+    {
+      "pro": "E-32",
+      "descripcion": "Cada gráfico dice en su encabezado el nombre, qué es cada punto y su unidad, y la cobertura; las fechas se escriben una sola vez, bajo el último, y los demás conservan las marcas del eje",
+      "ok": true,
+      "detalle": "[{\"titulo\":\"Calorías registradas\",\"detalle\":\"por día · kcal\",\"cobertura\":\"90 días: 79 con valor · 10 sin registros\",\"fechas\":0,\"marcasDelEje\":7},{\"titulo\":\"Proteínas registradas\",\"detalle\":\"por día · g\",\"cobertura\":\"90 días: 79 con valor · 10 sin registros\",\"fechas\":0,\"marcasDelEje\":7},{\"titulo\":\"Peso\",\"detalle\":\"cada toma · kg\",\"cobertura\":\"8 tomas: 5 del último tramo comparable\",\"fechas\":7,\"marc"
+    },
+    {
+      "pro": "E-41",
+      "descripcion": "La entrada de Analizar se llama «¿Qué querés mirar?» y tiene los dos caminos a la vista: las cuatro preguntas (y «Más preguntas») con las vistas guardadas debajo, y al costado las métricas para comparar, sin ningún gráfico todavía",
+      "ok": true,
+      "detalle": "{\"titulo\":\"¿Qué querés mirar?\",\"tarjetas\":[\"Empezar por una pregunta\",\"Retomar una vista guardada\",\"Comparar métricas, sin pregunta\"],\"alCostado\":true,\"preguntas\":4,\"masPreguntas\":\"Más preguntas (2)\",\"finDeVer\":860}"
+    },
+    {
+      "pro": "E-41",
+      "descripcion": "Las métricas se ofrecen por área, con lo que la API dice que hay en el período: las seis de Nutrición en su orden, las cuatro de Entrenamiento con el ejercicio más registrado elegido a la vista, y las cuatro medidas corporales con más tomas (las demás, en «Más medidas»)",
+      "ok": true,
+      "detalle": "API: 7 ejercicios (el primero, Peso muerto, 13 sesiones); medidas: Peso 8, Perímetro de cintura 4, Perímetro de cadera 3, Pliegue abdominal 3, Pliegue del muslo frontal 3, Pliegue de la pantorrilla 3, Pliegue subescapular 3, Pliegue supraespinal 3, Pliegue tricipital 3, Índice de masa corporal 2, Talla 2 · pantalla: [{\"titulo\":\"Nutrición\",\"aLaVista\":[\"Calorías\",\"Carbohidratos\",\"Grasas\",\"Proteínas\""
+    },
+    {
+      "pro": "E-42",
+      "descripcion": "Con tres métricas marcadas, las demás casillas quedan apagadas y el pie dice cuáles son y que para sumar otra hay que sacar una; al sacar una se vuelven a poder marcar. Una de Entrenamiento se nombra con su ejercicio, su serie y su unidad",
+      "ok": true,
+      "detalle": "con tres: Elegiste 3 de 3: Proteínas; Peso; Calorías. Para sumar otra, sacá una. · con dos: Elegiste 2 de 3: Proteínas; Calorías. · con la carga: Elegiste 3 de 3: Proteínas; Calorías; Carga · Peso muerto · serie 1 (kg). Para sumar otra, sacá una."
+    },
+    {
+      "pro": "E-41",
+      "descripcion": "«Ver los gráficos» arma la comparación libre con las tres métricas, en el orden en que se marcaron, y recién ahí las escribe en la URL",
+      "ok": true,
+      "detalle": "{\"titulo\":\"Comparación libre\",\"etiquetas\":[\"Proteínas\",\"Calorías\",\"Carga · Peso muerto · serie 1 (kg)\"],\"lugares\":3,\"entrada\":false} · m=nutricion.proteinas,nutricion.energia,entrenamiento.carga~e:4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e04~1~kg"
+    },
+    {
+      "pro": "E-41",
+      "descripcion": "Al quitar la última métrica de una comparación libre, Analizar vuelve a la entrada, con nada marcado",
+      "ok": true,
+      "detalle": "¿Qué querés mirar? · Elegiste 0 de 3. Marcá al menos una. · m=null"
+    },
+    {
+      "pro": "E-45",
+      "descripcion": "Si falla una de tres métricas, su bloque queda en su lugar, entre los dos gráficos, con el nombre de la métrica, «No pudimos completar esta parte», el motivo y «Reintentar»; las fechas siguen bajo el último gráfico, y «Reintentar» trae el gráfico que faltaba",
+      "ok": true,
+      "detalle": "[{\"grafico\":true,\"nombre\":\"Calorías registradas\",\"clase\":null,\"titulo\":null,\"texto\":null,\"reintentar\":false,\"fechas\":0},{\"grafico\":false,\"nombre\":\"Proteínas\",\"clase\":\"estado-de-grafico--error\",\"titulo\":\"No pudimos completar esta parte\",\"texto\":\"BE no está disponible en este momento. Reintentá en unos minutos. Las otras métricas siguen.\",\"reintentar\":true,\"fechas\":0},{\"grafico\":true,\"nombre\":\"Peso\""
+    },
+    {
+      "pro": "E-45",
+      "descripcion": "Mientras una métrica tarda en llegar, las otras dos ya están dibujadas y la que falta dice «Cargando…» en su lugar (la del medio); cuando llega, es su gráfico",
+      "ok": true,
+      "detalle": "mientras: [\"gráfico Calorías registradas\",\"estado-de-grafico--cargando: Cargando Peso…\",\"gráfico Proteínas registradas\"] · después: gráfico, gráfico, gráfico"
+    },
+    {
+      "pro": "E-46",
+      "descripcion": "En fechas sin registros ni tomas, cada métrica lo dice en su lugar («no es un cero»), sin gráfico vacío, sin «Reintentar» y sin presentarlo como una falla; la lectura dice para qué sirve",
+      "ok": true,
+      "detalle": "del 15 jul 2026 al 20 jul 2026 · [{\"grafico\":false,\"nombre\":\"Calorías\",\"clase\":\"estado-de-grafico--sin-puntos\",\"titulo\":\"Sin registros de comida en estas fechas\",\"texto\":\"No es un cero: no hay registros de comida del 15 jul 2026 al 20 jul 2026. Probá con un período más largo.\",\"reintentar\":false,\"fechas\":0},{\"grafico\":false,\"nombre\":\"Peso\",\"clase\":\"estado-de-grafico--sin-puntos\",\"titulo\":\"Sin toma"
+    },
+    {
+      "pro": "E-47",
+      "descripcion": "En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (143 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo",
+      "ok": true,
+      "detalle": "{\"1024\":{\"alto\":143,\"boton\":\"Cómo se lee esta vista\",\"anchoDelBoton\":44,\"desborde\":0},\"1280\":{\"alto\":143,\"boton\":\"Cómo se lee esta vista\",\"anchoDelBoton\":185,\"desborde\":0},\"1440\":{\"alto\":143,\"boton\":\"Cómo se lee esta vista\",\"anchoDelBoton\":185,\"desborde\":0}} · Línea de tiempo: {\"boton\":\"Cómo se lee esta vista\",\"periodo\":true,\"alto\":143}"
+    },
+    {
+      "pro": "E-47",
+      "descripcion": "La ayuda de Analizar se abre como un diálogo con su título, toma el foco, explica cada marca con su muestra y lo que la vista no dice; axe no encuentra faltas con ella abierta; Escape la cierra y el foco vuelve al botón",
+      "ok": true,
+      "detalle": "Cómo se lee Analizar · 11 renglones, 10 muestras · foco adentro: true · axe: [] · Escape la cierra: true · foco después: «Cómo se lee esta vista»"
+    },
+    {
+      "pro": "C-13",
+      "descripcion": "El origen de un dato va en el lugar de la lectura, al costado de los gráficos, que siguen a la vista: con su título (que recibe el foco), la métrica y la fecha, el valor de la API y «Volver a la lectura»; no se abre un panel encima",
+      "ok": true,
+      "detalle": "{\"alCostado\":true,\"panel\":false,\"graficos\":3,\"lecturaALaVista\":false,\"titulo\":\"De dónde sale este dato\",\"focoEnElTitulo\":true,\"metrica\":\"Calorías registradas · 10 oct 2026\",\"valor\":\"1.345 kcal\",\"filas\":4,\"sinLeer\":0,\"total\":\"Total del día 1.345 kcal\",\"chips\":0,\"volver\":\"Volver a la lectura del 10 oct 2026\",\"enlace\":\"Ver en Nutrición · Registros\",\"abiertas\":0,\"desborde\":0}"
+    },
+    {
+      "pro": "C-13",
+      "descripcion": "El origen lista cada comida de ese día en el orden en que ocurrió, con su hora, su comida, la opción y lo que aporta, como lo dice cada registro leído aparte; lo que aportan suma el valor del punto, y el total es ese valor",
+      "ok": true,
+      "detalle": "API: 2026-10-10 = 1344.8 kcal de 4 registros (suman 1344.8) · esperado: Desayuno|Avena con leche|222 kcal ‖ Almuerzo|Arroz con pollo y brócoli|440 kcal ‖ Merienda|Yogur con manzana|200 kcal ‖ Cena|Salmón con papa|484 kcal · pantalla: 08:00 Desayuno|Avena con leche|222 kcal ‖ 13:00 Almuerzo|Arroz con pollo y brócoli|440 kcal ‖ 17:00 Merienda|Yogur con manzana|200 kcal ‖ 21:00 Cena|Salmón con papa|4"
+    },
+    {
+      "pro": "C-13",
+      "descripcion": "Se lee un registro por comida al abrir el origen, y ninguno más al desplegar una: la fila abre su registro (la opción, cómo informó las cantidades y la estimación) con lo ya leído",
+      "ok": true,
+      "detalle": "4 lecturas al abrir (4 fuentes) · 0 al desplegar · Opción registrada: Avena con leche Confirmó las porciones del plan Lo indicado y lo registrado, por ingrediente Ingrediente Indicado Registrado Diferencia Avena"
+    },
+    {
+      "pro": "C-13",
+      "descripcion": "Escape cierra el origen y vuelve a la lectura: la dirección no cambió, los tres gráficos siguen y el foco vuelve a «Ver origen»; con el origen abierto, axe no encuentra faltas",
+      "ok": true,
+      "detalle": "cerró: true · foco: en «Ver origen» · axe: []"
+    },
+    {
+      "pro": "C-13",
+      "descripcion": "Un punto que sale de más de ocho registros (una semana) no los lee todos: ofrece elegir cuál abrir, y abre uno",
+      "ok": true,
+      "detalle": "27 fuentes en la API · 27 para elegir · 0 filas · 1 lectura al abrir"
+    },
+    {
+      "pro": "C-13",
+      "descripcion": "A 1024 px el origen se abre encima, en el panel que retiene el foco, con la misma lista de comidas y el mismo total; no hay nada al costado, y Escape lo cierra",
+      "ok": true,
+      "detalle": "panel: true · al costado: false · foco adentro: true · 4 filas · Total del día 1.345 kcal · desborde 0 · Escape lo cierra: true"
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "Analizar recompuesto, con «Más acciones» y la tabla de datos abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas",
+      "ok": true,
+      "detalle": "{\"claro\":[],\"azul-noche\":[]}"
+    },
+    {
+      "pro": "PRO-25",
+      "descripcion": "Sin errores de JavaScript ni respuestas con error de la API durante el recorrido de Analizar recompuesto",
+      "ok": true,
+      "detalle": "ninguno"
+    },
+    {
+      "pro": "E-93",
+      "descripcion": "El encabezado dice «Espacio profesional» (el único título de la página), «Hoy» con el día de la semana y el año de la fecha con que la API clasificó las revisiones, y «Solicitar vínculo»",
+      "ok": true,
+      "detalle": "Espacio profesional · Hoy, lunes 12 oct 2026 (la API dice 2026-10-12) · Solicitar vínculo"
+    },
+    {
+      "pro": "E-83",
+      "descripcion": "Al entrar, la página lee los pendientes una sola vez y de a 50 (la cartera entera, para poder contarla), y una vez cada una de las otras dos listas",
+      "ok": true,
+      "detalle": "GET /api/v1/me/portfolio?limit=50 · vínculos: 1 · solicitudes: 1"
+    },
+    {
+      "pro": "E-84",
+      "descripcion": "Las cinco vistas están en su orden, cada una con la cantidad de pendientes que trae (contada a mano sobre la lista de la API); las cuatro suman «Todo», una vista en cero se muestra con su cero, y al entrar está elegida «Todo»",
+      "ok": true,
+      "detalle": "TODO 2 · REVISIONES 1 · PLANES 1 · FORMULARIOS 0 · EVALUACIONES 0"
+    },
+    {
+      "pro": "E-87",
+      "descripcion": "Cada pendiente es una fila, en el orden de la API: la persona, el área y lo pendiente con su ícono y la frase de BE, debajo el último registro (el día en que ocurrió, en la zona de la respuesta) y «Abrir», que lleva a la vista que lo resuelve y se llama distinto en cada fila",
+      "ok": true,
+      "detalle": "Asesorado · 3bff67 · Nutrición · Revisión en 3 días · Último registro: 12 oct → /pro/advisees/nutrition?id=…&vista=revisiones | Asesorado · 3bff67 · Entrenamiento · Plan en borrador desde el 12 oct · Último registro: 12 oct → /pro/advisees/training?id=…&vista=plan"
+    },
+    {
+      "pro": "E-88",
+      "descripcion": "Con datos que el profesional puede ver enteros, el aviso de vista parcial no está (la API dice que no hay nada fuera de su alcance)",
+      "ok": true,
+      "detalle": "partialView: false · aviso: no está"
+    },
+    {
+      "pro": "E-84",
+      "descripcion": "Cada vista trae lo que anuncia: queda elegida ella sola, sus filas son las de sus tipos en el orden de la API, y elegirla no le pide nada a la API",
+      "ok": true,
+      "detalle": "REVISIONES: 1 · PLANES: 1 · FORMULARIOS: 0 · EVALUACIONES: 0 · pedidos a la API al elegir: 0"
+    },
+    {
+      "pro": "E-96",
+      "descripcion": "Una vista sin filas dice «Ningún pendiente coincide con lo elegido» y cuántos hay en total, con «Ver todo»: no dice que no hay nada pendiente (con «Todo» elegido, las filas están, con el mismo selector)",
+      "ok": true,
+      "detalle": "FORMULARIOS: Ningún pendiente coincide con lo elegido. Hay 2 pendientes en total. Ver todo | EVALUACIONES: Ningún pendiente coincide con lo elegido. Hay 2 pendientes en total. Ver todo"
+    },
+    {
+      "pro": "E-84",
+      "descripcion": "Volver a tocar la vista elegida deja «Todo», con todos los pendientes",
+      "ok": true,
+      "detalle": "2 filas"
+    },
+    {
+      "pro": "E-85",
+      "descripcion": "«Más filtros» guarda el área, el tipo exacto y el período del último registro. Con un área elegida las filas son las de esa área, ninguna vista queda elegida, lo puesto se lista con su salida y se dice cuántos coinciden de cuántos; sumar un tipo exacto acota más. Las cantidades de las vistas no cambian, y nada de esto le pide algo a la API",
+      "ok": true,
+      "detalle": "Nutrición: 1 de 2 · Área: Nutrición · «Un pendiente coincide, de 2.» · con Revisión próxima: 1 · Más filtros (2)"
+    },
+    {
+      "pro": "E-85",
+      "descripcion": "«Limpiar filtros» vuelve a «Todo», sin nada puesto",
+      "ok": true,
+      "detalle": "2 filas · Más filtros"
+    },
+    {
+      "pro": "E-86",
+      "descripcion": "El período se le pide a la API (una lectura, con sus dos fechas) y no cambia qué está pendiente: las filas son las mismas, y su último registro es el de ese período («Sin registros en el período» donde no hay). Lo puesto se lista con su salida; al quitarlo, el último registro vuelve a ser el de toda la historia",
+      "ok": true,
+      "detalle": "GET /api/v1/me/portfolio?periodStart=2025-09-07&periodEnd=2025-10-07&limit=50 · con período: Sin registros en el período · sin período: Último registro: 12 oct"
+    },
+    {
+      "pro": "E-88",
+      "descripcion": "«Actualizar», al pie de los pendientes, vuelve a leer las tres listas (una vez cada una) y dice a qué hora se consultó",
+      "ok": true,
+      "detalle": "/me/portfolio?limit=50 · /me/relationships · /me/relationship-requests · Consultado a las 03:53"
+    },
+    {
+      "pro": "E-98",
+      "descripcion": "Con una respuesta simulada que trae los siete tipos (la API y la base no se tocan), cada tipo se dice con su frase de BE, su ícono, su último registro («Sin registros todavía» donde no hay) y el destino de su «Abrir»; las vistas cuentan 7, 3, 2, 1 y 1",
+      "ok": true,
+      "detalle": "Revisión vencida hace 3 días (Último registro: 11 oct) → /pro/advisees/training?id=…&vista=revisiones | Revisión en 2 días (Último registro: 11 oct) → /pro/advisees/nutrition?id=…&vista=revisiones | Revisión pendiente desde el 13 sept (Último registro: 11 oct) → /pro/advisees/nutrition?id=…&vista=revisiones | Plan en borrador desde el 5 oct (Último registro: 10 oct) → /pro/advisees/training?id=…&v"
+    },
+    {
+      "pro": "E-88",
+      "descripcion": "Cuando la respuesta dice que hay datos fuera del alcance del profesional (respuesta simulada), el aviso de vista parcial está debajo de las vistas y arriba de la tabla, con el texto de BE: es el mismo lugar donde con los datos reales no hay nada",
+      "ok": true,
+      "detalle": "Hay datos de algún asesorado que no podés ver desde tu alcance: no se cuentan acá."
+    },
+    {
+      "pro": "E-94",
+      "descripcion": "A 1440 × 900, con siete pendientes (respuesta simulada) y los asesorados del escenario, los pendientes y el directorio terminan dentro de la primera pantalla (antes la página medía tres); con filas del alto de las tarjetas de antes, la misma medición da que no entran (prueba de la prueba)",
+      "ok": true,
+      "detalle": "los pendientes terminan en 854 px y el directorio en 606 px; la página mide 918 px · con filas de 215 px: 1908 px · en otras ventanas: 1920 × 950, 854 y 606 px; 1280 × 900, 980 y 606 px"
+    },
+    {
+      "pro": "E-96",
+      "descripcion": "Si la lectura de los pendientes falla, el bloque dice qué pasó, por qué y qué hacer («muchas consultas seguidas… Esperá un minuto»; sin red, «no hay conexión»): las vistas quedan sin número, «hoy» no se dice, no aparece «Nada pendiente», y el directorio sigue a la vista. «Reintentar» lo trae",
+      "ok": true,
+      "detalle": "No pudimos cargar los pendientes Hubo muchas consultas seguidas. Esperá un minuto y reintentá. Reintentar los pendientes | No pudimos cargar los pendientes No hay conexión con BE. Revisá la conexión y reintentá. Reintentar los pendientes | después: 2 filas"
+    },
+    {
+      "pro": "E-96",
+      "descripcion": "Si falla la lectura de los asesorados, el directorio lo dice con su motivo («BE no está disponible») y no dice que no hay asesorados; los pendientes siguen. «Reintentar» lo trae",
+      "ok": true,
+      "detalle": "No pudimos cargar tus asesorados BE no está disponible en este momento. Reintentá en unos minutos. Reintentar tus asesorados · pendientes a la vista: 2 · después: 4 personas"
+    },
+    {
+      "pro": "E-89",
+      "descripcion": "El directorio tiene una persona por renglón, tantas como asesorados distintos tiene el profesional en la API y en su orden; el título las cuenta; cada una dice su referencia, sus áreas con acceso en el orden de BE (y las que no lo tienen, con las palabras de BE), y «Abrir», que lleva a su ficha y la nombra",
+      "ok": true,
+      "detalle": "4 personas · Asesorado · a2a380: Nutrición | Asesorado · b085cc: Nutrición · Entrenamiento · Antropometría | Asesorado · 0a4e60: Nutrición · Antropometría | Asesorado · 3bff67: Nutrición · Entrenamiento · Antropometría"
+    },
+    {
+      "pro": "E-89",
+      "descripcion": "Tocar a una persona abre, en el lugar, el detalle de cada uno de sus vínculos: el área con su finalidad, el estado con las palabras de BE y desde cuándo. Volver a tocarla lo cierra",
+      "ok": true,
+      "detalle": "Asesorado · b085cc: Nutrición · Acompañamiento nutricional Activo · acceso contextual Desde el 12 oct 2026 | Entrenamiento · Planificación del entrenamiento Activo · acceso contextual Desde el 12 oct 2026 | Antropometría · Evaluación antropométrica Activo · acceso contextual Desde el 12 oct 2026"
+    },
+    {
+      "pro": "E-90",
+      "descripcion": "El buscador se llama «Buscar por referencia» (también para el lector de pantalla) y filtra mientras se escribe, sin pedirle nada a la API: con el final de una referencia, en mayúsculas, quedan las personas que la tienen y el título dice cuántas de cuántas; con algo que no coincide dice que ninguna referencia coincide (no que no hay asesorados) y ofrece quitar la búsqueda, que las trae a todas",
+      "ok": true,
+      "detalle": "«FF67»: Asesorado · 3bff67 (1 de 4 personas) · «zzzz»: Ninguna referencia coincide con «zzzz». Quitar la búsqueda · pedidos: 0"
+    },
+    {
+      "pro": "E-92",
+      "descripcion": "«Solicitudes enviadas (N)», al pie del directorio, dice cuántas envió el profesional (las de la API) y, si alguna espera respuesta, lo dice aparte. Abre un diálogo que retiene el foco y se abre por su título, con una fila por solicitud (la persona, el área con su finalidad y el estado con la palabra de BE). Escape lo cierra y devuelve el foco. Con un título que no puede recibir el foco, la misma medición dice que el foco no está en él (prueba de la prueba)",
+      "ok": true,
+      "detalle": "Solicitudes enviadas (9) · 9 filas · estados: Aceptada · axe: 0 · foco en el título: true; con el título sin foco posible: false · foco al cerrar: true"
+    },
+    {
+      "pro": "E-91",
+      "descripcion": "«Solicitar vínculo» abre el formulario de siempre en un diálogo que retiene el foco, con el foco en el primer campo: el identificador con su ayuda, el alcance, la finalidad que sale del alcance, y «Volver» y «Solicitar vínculo». Enviado vacío marca los dos campos y no le pide nada a la API. Escape lo cierra y devuelve el foco al botón",
+      "ok": true,
+      "detalle": "Identificador BE del asesorado, Alcance · Finalidad: — · vacío: ⚠ Ingresá el identificador BE del asesorado. ⚠ Elegí un alcance. · envíos: 0 · axe: 0 · foco al cerrar: true"
+    },
+    {
+      "pro": "E-91",
+      "descripcion": "Con un identificador que no es de nadie, el formulario lo pide una vez y dice lo mismo que diría por cualquier otro rechazo, sin revelar si la persona existe; queda abierto para corregir, y «Volver» lo cierra. La finalidad acompaña al alcance elegido",
+      "ok": true,
+      "detalle": "Finalidad: Acompañamiento nutricional · envíos: 1 · No pudimos enviar la solicitud con esos datos. Revisá el identificador y el alcance."
+    },
+    {
+      "pro": "E-95",
+      "descripcion": "Después de elegir vistas, filtrar, buscar y abrir los dos diálogos, la dirección sigue siendo `/pro`, sin parámetros: lo elegido es de la visita",
+      "ok": true,
+      "detalle": "/pro"
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "Con el teclado se llega, en el orden en que se ven, a «Solicitar vínculo», las cinco vistas, «Más filtros», el «Abrir» de cada pendiente, «Actualizar», el buscador, cada persona con su «Abrir» y las solicitudes; cada uno mide 44 px o más y muestra el foco",
+      "ok": true,
+      "detalle": "solicitar → vista → vista → vista → vista → vista → filtros → abrir-pendiente → abrir-pendiente → actualizar → buscar → persona → abrir-persona → persona → abrir-persona → persona → abrir-persona → persona → abrir-persona → solicitudes · altos: 44, 60 px"
+    },
+    {
+      "pro": "PRO-22",
+      "descripcion": "El Espacio profesional, con «Más filtros» y el detalle de una persona abiertos: axe no encuentra faltas de WCAG 2.2 AA en ninguno de los dos temas",
+      "ok": true,
+      "detalle": "{\"claro\":[],\"azul-noche\":[]}"
+    },
+    {
+      "pro": "E-87",
+      "descripcion": "La página entera, con «Más filtros» y el detalle de una persona abiertos, no tiene porcentajes ni palabras que califiquen a nadie: describe lo que está pendiente",
+      "ok": true,
+      "detalle": "1615 caracteres"
+    },
+    {
+      "pro": "E-94",
+      "descripcion": "A 1440 y a 1280 px el directorio va al lado de los pendientes; a 1024, debajo. La página no desborda de costado a 1440, 1280, 1024, 768 ni 390 px",
+      "ok": true,
+      "detalle": "390: debajo, termina en 1630 px · 768: debajo, termina en 1017 px · 1024: debajo, termina en 842 px · 1280: al lado, termina en 606 px · 1440: al lado, termina en 606 px"
+    },
+    {
+      "pro": "E-94",
+      "descripcion": "Dónde termina la última tarjeta a 1440 px con los datos del escenario (antes de esta parte la página medía 2.697 px, con las cuatro tarjetas abiertas)",
+      "ok": true,
+      "informativo": true,
+      "detalle": "606 px"
+    },
+    {
+      "pro": "PRO-25",
+      "descripcion": "Sin errores de JavaScript ni respuestas con error de la API durante el recorrido del Espacio profesional (fuera de las fallas y del rechazo pedidos a propósito)",
+      "ok": true,
+      "detalle": "ninguno"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Nutrición: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Nutrición · Asesorado · 3bff67 · Acceso actual Nutrición: Activo · acceso contextual (la API: Acceso actual Nutrición: Activo · acceso contextual) · Consultado a las 03:53 · Resumen*, Plan, Registros, Revisiones · migas: 0"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Entrenamiento: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Entrenamiento · Asesorado · 3bff67 · Acceso actual Entrenamiento: Activo · acceso contextual (la API: Acceso actual Entrenamiento: Activo · acceso contextual) · Consultado a las 03:53 · Resumen*, Plan, Registros, Revisiones · migas: 0"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Antropometría: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Antropometría · Asesorado · 3bff67 · Acceso actual Antropometría: Activo · acceso contextual (la API: Acceso actual Antropometría: Activo · acceso contextual) · Consultado a las 03:54 · Tomas*, En preparación, Evolución, Lámina · migas: 0"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Información: el marco dice el área (el único título de la página), de quién es, su acceso actual con las palabras de BE, «Actualizar» con la hora de la consulta y las secciones, cada una con su ícono y su dirección de siempre; no hay miga",
+      "ok": true,
+      "detalle": "Información · Asesorado · 3bff67 · Acceso actual Nutrición, Entrenamiento y Antropometría: Activo · acceso contextual (la API: Acceso actual Nutrición, Entrenamiento y Antropometría: Activo · acceso contextual) · Consultado a las 03:54 · Solicitudes*, Pedir información · migas: 0"
+    },
+    {
+      "pro": "F-07",
+      "descripcion": "Sin haber llegado desde la ficha (como desde un pendiente), el camino de vuelta de las cuatro áreas dice «Volver a la ficha» y lleva a la ficha de esa persona. Reemplaza a la miga, que ya no está en ninguna de las cuatro (la misma consulta encuentra la de «Plantillas y habituales»)",
+      "ok": true,
+      "detalle": "Nutrición: Volver a la ficha, 0 migas · Entrenamiento: Volver a la ficha, 0 migas · Antropometría: Volver a la ficha, 0 migas · Información: Volver a la ficha, 0 migas · «Plantillas y habituales»: 1"
+    },
+    {
+      "pro": "F-06",
+      "descripcion": "El alto del marco y de sus tres renglones, a 1440 px",
+      "ok": true,
+      "informativo": true,
+      "detalle": "ficha 143 px (53 + 39 + 50) · Nutrición 143 (53 + 39 + 50) · Entrenamiento 143 (53 + 39 + 50) · Antropometría 143 (53 + 39 + 50) · Información 143 (53 + 39 + 50)"
+    },
+    {
+      "pro": "F-06",
+      "descripcion": "El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura",
+      "ok": true,
+      "detalle": "ficha 143 · Nutrición 143 · Entrenamiento 143 · Antropometría 143 · Información 143"
+    },
+    {
+      "pro": "F-10",
+      "descripcion": "La sección arranca en la misma vertical que el marco y, mientras no se recomponga, conserva el ancho para el que se hizo (1.152 px a 1440)",
+      "ok": true,
+      "detalle": "Nutrición: marco desde 32, sección de 32 a 1184 · Entrenamiento: marco desde 32, sección de 32 a 1184 · Antropometría: marco desde 32, sección de 32 a 1184 · Información: marco desde 32, sección de 32 a 1184"
+    },
+    {
+      "pro": "C-65",
+      "descripcion": "«vista=ejecuciones» sigue abriendo los registros de Entrenamiento, que se leen «Registros» (y no el Resumen); «vista=preparacion» sigue abriendo la toma en preparación, y la primera sección de Antropometría se lee «Tomas». Ninguna sección dice «Ejecuciones» ni «Evaluaciones»",
+      "ok": true,
+      "detalle": "Entrenamiento: Registros («Planificado y registrado»; el Resumen empieza con «Estado del seguimiento») · Antropometría: Tomas, En preparación, Evolución, Lámina, elegida En preparación"
+    },
+    {
+      "pro": "F-07",
+      "descripcion": "Llegando desde la ficha, el camino de vuelta dice «Volver a la ficha, donde estabas», las cuatro secciones lo conservan y lleva a esa vista de la ficha, con su métrica",
+      "ok": true,
+      "detalle": "Volver a la ficha, donde estabas → /pro/advisees?id=bdcb5727-f276-4032-be9f-0d7d733bff67&vista=analizar&m=nutricion.energia · las secciones lo conservan: true · llegó a /pro/advisees?vista=analizar&m=nutricion.energia"
+    },
+    {
+      "pro": "F-07",
+      "descripcion": "Llegando a «Pedir información» desde Entrenamiento, el camino de vuelta dice «Volver a Entrenamiento» y lleva ahí: no dice «donde estabas» de un lugar de la ficha donde la persona no estaba",
+      "ok": true,
+      "detalle": "Volver a Entrenamiento → /pro/advisees/training?id=bdcb5727-f276-4032-be9f-0d7d733bff67&vista=resumen"
+    },
+    {
+      "pro": "F-08",
+      "descripcion": "«Actualizar» vuelve a pedir todo lo que la sección leyó al entrar (las mismas lecturas, una vez cada una, con los vínculos) y no abre ninguna pregunta; la hora es la de esa consulta",
+      "ok": true,
+      "detalle": "al entrar (5): /advisees/:a/nutrition/evaluations · /advisees/:a/nutrition/objectives · /advisees/:a/nutrition/plans · /advisees/:a/nutrition/review-context · /me/relationships — al actualizar (5): las mismas — Consultado a las 03:54"
+    },
+    {
+      "pro": "F-08",
+      "descripcion": "Con algo escrito sin guardar, «Actualizar» pregunta antes: dice qué se pierde y no lee nada; «Seguir editando» deja lo escrito como estaba; «Actualizar y descartar» vuelve a leer la sección",
+      "ok": true,
+      "detalle": "«Tenés cambios sin guardar «Actualizar» vuelve a leer todo lo que muestra esta sección. Si seguís, se pierde lo que escribiste y no guardaste en la rev» · lecturas mientras pregunta: 0 · tras «Seguir editando»: «Texto del recorrido, sin guardar.» · tras descartar: «», 5 lecturas"
+    },
+    {
+      "pro": "C-43",
+      "descripcion": "Si la sección no se puede leer por una falla (un 503 simulado en el navegador), lo dice en su lugar con el motivo y «Reintentar»; el marco sigue diciendo el acceso del vínculo y no pregunta nada más: una falla no es una revocación. «Reintentar» trae la sección",
+      "ok": true,
+      "detalle": "«No pudimos cargar esta vista BE no está disponible en este momento. Reintentá en unos minutos. Reintentar» · el marco: Acceso actual Nutrición: Activo · acceso contextual · lecturas del resumen del asesorado: 0 · tras reintentar: «Estado del seguimiento»"
+    },
+    {
+      "pro": "F-09",
+      "descripcion": "Si las lecturas de la sección responden «no disponible» (simulado), la sección dice el texto neutral de siempre y el marco pregunta una sola vez qué deja leer el resumen del asesorado; como el área se puede leer, sigue diciendo el acceso del vínculo",
+      "ok": true,
+      "detalle": "la sección: «No encontramos un recurso disponible para esta acción. Volver» · preguntas al resumen: 1 · el marco: Acceso actual Nutrición: Activo · acceso contextual"
+    },
+    {
+      "pro": "F-09",
+      "descripcion": "Si además el resumen dice que Nutrición ya no se puede leer (simulado), el marco de Nutrición dice «Acceso no disponible» y deja de decir «Activo»; el de Entrenamiento, que no recibió ningún «no disponible», sigue diciendo el suyo. No dice quién lo retiró ni por qué",
+      "ok": true,
+      "detalle": "Nutrición: Acceso actual Nutrición: Acceso no disponible · Entrenamiento: Acceso actual Entrenamiento: Activo · acceso contextual"
+    },
+    {
+      "pro": "F-09",
+      "descripcion": "Cuando las lecturas vuelven a responder, «Actualizar» trae la sección y el marco vuelve a decir el acceso del vínculo (vuelve a preguntar también el resumen, porque ya había tenido que preguntarlo)",
+      "ok": true,
+      "detalle": "la sección empieza con «Estado del seguimiento» · el marco: Acceso actual Nutrición: Activo · acceso contextual · preguntas al resumen: 1"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Si no se puede leer la cuenta (un 503 simulado), la página conserva el título del área y el camino de vuelta, y la falla va en el lugar de la sección, con «Reintentar»; no hay secciones ni acceso que mostrar. «Reintentar» trae el marco entero",
+      "ok": true,
+      "detalle": "con la falla: Antropometría · Volver a la ficha · 0 secciones · «No pudimos cargar esta vista. Reintentar» — después: 4 secciones · Acceso actual Antropometría: Activo · acceso contextual"
+    },
+    {
+      "pro": "F-01",
+      "descripcion": "Con el teclado, después del título se llega a «Actualizar» y después a las cuatro secciones, en su orden; axe no encuentra faltas en la página con el marco",
+      "ok": true,
+      "detalle": "Tab: Actualizar → Resumen → Plan → Registros → Revisiones → Ver plan · axe: sin faltas"
+    },
+    {
+      "pro": "F-06",
+      "descripcion": "A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página",
+      "ok": true,
+      "detalle": "1280 · Antropometría: 143 px (53 + 39 + 50) — 1280 · Información: 143 px (53 + 39 + 50) — 1024 · Antropometría: 143 px (53 + 39 + 50) — 1024 · Información: 143 px (53 + 39 + 50)"
+    },
+    {
+      "pro": "—",
+      "descripcion": "El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "F-15",
+      "descripcion": "Al entrar, Registros hace dos lecturas: el contexto de revisión, sin período (lo propone la API), y las comidas de la línea de tiempo de ese mismo período; el control dice el período que propuso la API",
+      "ok": true,
+      "detalle": "contexto: 1 · línea de tiempo: 1 · Período: 6 oct – 12 oct 2026 · 7 días · incluye hoy · la API: 2026-10-06 a 2026-10-12"
+    },
+    {
+      "pro": "C-49",
+      "descripcion": "El día es la unidad: están todos los días del período, del más nuevo al más viejo, cada uno dicho en un renglón con la cuenta calculada a mano («N de M comidas registradas», o «Sin registro» si no hay ninguno); los nombres de las columnas están una vez",
+      "ok": true,
+      "detalle": "10-12: 1 de 4 comidas registradas · 10-11: 2 de 4 comidas registradas · 10-10: 4 de 4 comidas registradas · 10-09: 4 de 4 comidas registradas · 10-08: 4 de 4 comidas registradas · 10-07: 4 de 4 comidas registradas · 10-06: 4 de 4 comidas registradas"
+    },
+    {
+      "pro": "C-49",
+      "descripcion": "Arrancan abiertos los días con una comida diferente o con algo distinto de lo indicado, y solo esos; los demás van en un renglón que se puede abrir",
+      "ok": true,
+      "detalle": "10-12 · 10-11 abierto · 10-10 · 10-09 · 10-08 · 10-07 · 10-06"
+    },
+    {
+      "pro": "F-16",
+      "descripcion": "Las cinco vistas están en su orden, cada una con la cantidad de comidas que trae (contada a mano sobre las dos respuestas de la API); registradas, con comida diferente y sin registro suman «Todas las comidas»; al entrar está elegida «Todas»",
+      "ok": true,
+      "detalle": "Todas las comidas 28 · Distinto de lo indicado 0 · Sin confirmar 0 · Comida diferente 1 · Sin registro 4 — a mano: 28, 0, 0, 1, 4 (23 registradas + 1 con comida diferente + 4 sin registro)"
+    },
+    {
+      "pro": "C-53",
+      "descripcion": "Cada comida del plan es una fila, en el orden del plan: lo registrado (la opción, «Sin registro», o los dos hechos de una comida diferente), cómo se informaron las cantidades y la diferencia observada, con las palabras del dominio; una fila sin registro no abre nada",
+      "ok": true,
+      "detalle": "28 filas, las 28 esperadas"
+    },
+    {
+      "pro": "C-50",
+      "descripcion": "Una comida diferente se lee en la comida donde se registró, con los dos hechos («Sin opción del plan registrada» y la comida diferente, con su descripción); no cuenta como registrada, y la vista «Comida diferente» la trae",
+      "ok": true,
+      "detalle": "Cena · Registrado: Sin opción del plan registrada Comida diferente: «Milanesa con ensalada en un cumpleaños», Un plato Cargado otro día · Diferencia observada: No se compara: fuera de lo indicado"
+    },
+    {
+      "pro": "C-51",
+      "descripcion": "Con las porciones del plan confirmadas la fila dice «Sin diferencia: son las porciones del plan», y nada más: no una raya, ni «igual» de algo que BE no comparó, ni las restas en cero que la API manda por cada ítem. Ninguna fila dice una raya suelta ni lista una resta en cero",
+      "ok": true,
+      "detalle": "23 filas con las porciones del plan · Diferencia observada: Sin diferencia: son las porciones del plan · restas en cero que manda la API en el período: 57"
+    },
+    {
+      "pro": "F-16",
+      "descripcion": "Elegir «Sin registro» no le pide nada a la API, queda en la dirección (`ver=sin-registro`) y deja a la vista las filas que cuenta, todas sin registro y ninguna otra; volver a tocarla deja «Todas las comidas»",
+      "ok": true,
+      "detalle": "4 filas (a mano: 4) · «4 de 28 comidas: sin registro» · pedidos a la API: 0"
+    },
+    {
+      "pro": "F-18",
+      "descripcion": "Tocar una fila abre su registro al costado, sin tapar la lista: el título dice la comida y la opción y recibe el foco, el registro se lee una vez por su propia operación y dice la opción que da la API; en su tabla, la diferencia de cada ingrediente va con palabras, sin rayas; queda en la dirección; Escape lo cierra y el foco vuelve a la fila",
+      "ok": true,
+      "detalle": "«Desayuno · Tostadas con queso» · foco en el título: true · lecturas del registro: 1 · la API: Tostadas con queso · diferencias: sin diferencia | sin diferencia (a mano: sin diferencia | sin diferencia) · al cerrar, el foco en la fila: true"
+    },
+    {
+      "pro": "F-17",
+      "descripcion": "El período elegido va en la dirección (`p=30`): las dos lecturas piden esos 30 días, el control lo dice y las cantidades son las de ese período, contadas a mano. «Actualizar» vuelve a leer y conserva el período y la vista elegida",
+      "ok": true,
+      "detalle": "Período: 13 sept – 12 oct 2026 · 30 días · incluye hoy · Todas las comidas 120 · Distinto de lo indicado 0 · Sin confirmar 0 · Comida diferente 1 · Sin registro 19 — a mano: 120, 0, 0, 1, 19 · tras «Actualizar»: p=30, ver=sin-registro"
+    },
+    {
+      "pro": "F-17",
+      "descripcion": "El control de período ofrece los atajos que la lectura admite (7, 30 y 90 días; no «1 año»). Elegir «30 días» deja `p=30` en la dirección y lee esos 30 días. Un rango propio de 100 días no sale: dice el tope (92) y no le pide nada a la API. Uno de 11 días queda en la dirección con sus dos fechas, sin el atajo, y la pantalla lo dice sin «incluye hoy»",
+      "ok": true,
+      "detalle": "atajos: 7 días, 30 días, 90 días · con el atajo: Período: 13 sept – 12 oct 2026 · 30 días · incluye hoy · con 100 días: «El período puede tener hasta 92 días.», 0 pedidos · con el rango propio: Período: 22 sept – 2 oct 2026 · 11 días · 11 días a la vista"
+    },
+    {
+      "pro": "F-19",
+      "descripcion": "Con 30 días se muestran catorce y «Ver días anteriores» trae otros catorce sin pedirle nada a la API; cada día dice la cuenta calculada a mano",
+      "ok": true,
+      "detalle": "14 días al entrar, 28 después · «Ver días anteriores Se ven 14 de 30 días, hasta el 29 sept.» · 10 días con alguna comida sin registro"
+    },
+    {
+      "pro": "F-19",
+      "descripcion": "Con 90 días, la línea de tiempo se lee entera, de a 50 registros (tantas páginas como hagan falta), y las cantidades de las cinco vistas son las del período, contadas a mano; los días enteros sin registros dicen «Sin registro» y ninguno dice «0 de»",
+      "ok": true,
+      "detalle": "285 registros en 6 páginas (a mano: 6) · Todas las comidas 338 · Distinto de lo indicado 3 · Sin confirmar 3 · Comida diferente 4 · Sin registro 55 — a mano: 338, 3, 3, 4, 55 · 90 días, 4 sin ningún registro"
+    },
+    {
+      "pro": "F-16",
+      "descripcion": "Un día sin plan vigente, o de un plan con más de un día tipo y sin registros que digan cuál era, lo dice con su frase y no se abre (no tiene comidas del plan que mostrar); la pantalla dice cuántos días son, y sus comidas no entran en ninguna cantidad",
+      "ok": true,
+      "detalle": "sin plan vigente: 6 · sin día tipo determinado: 0 · «338 comidas en 90 días · 6 días sin plan vigente»"
+    },
+    {
+      "pro": "C-53",
+      "descripcion": "El registro de una comida con cantidades informadas se abre por su dirección (aunque su día esté plegado o más abajo) y usa las palabras de BE: «Informó lo que comió de cada ingrediente», y la tabla de ingredientes con las columnas «Indicado», «Registrado» y «Diferencia», con la diferencia de cada ingrediente dicha con la resta o con palabras, sin rayas; dice la opción que da la API",
+      "ok": true,
+      "detalle": "«Cena · Salmón con papa» · columnas: Ingrediente, Indicado, Registrado, Diferencia · la API: Salmón con papa · diferencias: igual | −100 g | no se resta"
+    },
+    {
+      "pro": "F-18",
+      "descripcion": "«Actualizar» con un registro abierto lo deja abierto al costado, con el registro en la dirección; la sección, que se vuelve a montar, no pasa por el panel de encima ni por un instante (a 1024 px el panel sí se abre: lo mira su comprobación)",
+      "ok": true,
+      "detalle": "veces que el panel de encima estuvo abierto: 0 · al costado: «Cena · Salmón con papa»"
+    },
+    {
+      "pro": "F-16",
+      "descripcion": "Una vista sin ninguna comida se muestra con su cero y, al elegirla, dice que ninguna coincide y cuántas hay en el período: no se confunde con un período vacío",
+      "ok": true,
+      "detalle": "DISTINTAS: «Ninguna comida del período coincide con «Distinto de lo indicado». Hay 28 comidas en el período elegido. Ver todas las comidas»"
+    },
+    {
+      "pro": "F-15",
+      "descripcion": "Si la línea de tiempo no se puede leer (un 503 simulado), los días y sus comidas siguen a la vista con lo que el contraste sabe; lo dice en su lugar con el motivo y «Reintentar»; las dos vistas que dependen de ella no llevan número (no un cero) y las otras tres sí. «Reintentar» trae lo que faltaba",
+      "ok": true,
+      "detalle": "«No pudimos traer la opción ni las cantidades de cada registro BE no está disponible en este momento. Reintentá» · Todas las comidas 28 · Distinto de lo indicado sin número · Sin confirmar sin número · Comida diferente 1 · Sin registro 4 · después: 28, 0, 0, 1, 4"
+    },
+    {
+      "pro": "F-20",
+      "descripcion": "El alto de Registros con el período de entrada, a 1440 × 900",
+      "ok": true,
+      "informativo": true,
+      "detalle": "1073 px · las vistas terminan a los 327 px, los nombres de las columnas a los 365 y el último de los 7 días, a los 1009"
+    },
+    {
+      "pro": "F-20",
+      "descripcion": "A 1440 × 900, con el período de entrada, entran sin desplazarse las vistas, los nombres de las columnas y, entero, el primer día que tiene algo distinto, con sus comidas abiertas: lo que hay para mirar está en la primera pantalla",
+      "ok": true,
+      "detalle": "el día abierto (el 2.º de la lista) termina a los 744 px · 4 de 7 días enteros en los primeros 900 px; el último termina a los 1009"
+    },
+    {
+      "pro": "F-14",
+      "descripcion": "Registros tiene su ayuda en el marco del área («Cómo se lee esta vista»): se abre por el título, explica cada marca y dice qué trae cada una de las cinco vistas; Escape la cierra y el foco vuelve al botón. Las otras secciones de Nutrición todavía no tienen la suya, y no muestran el botón",
+      "ok": true,
+      "detalle": "«Cómo se leen los Registros» · 12 renglones · 5 vistas · axe: sin faltas"
+    },
+    {
+      "pro": "F-14",
+      "descripcion": "En Nutrición · Resumen, que todavía no tiene ayuda, el marco no muestra el botón (la misma consulta lo encuentra en Registros)",
+      "ok": true,
+      "detalle": "0 botones"
+    },
+    {
+      "pro": "F-18",
+      "descripcion": "axe no encuentra faltas en Registros con todos los días abiertos, ni con el detalle de un registro al costado",
+      "ok": true,
+      "detalle": "sin detalle: sin faltas · con detalle: sin faltas"
+    },
+    {
+      "pro": "F-18",
+      "descripcion": "A 1024 px el registro se abre encima, en un panel que retiene el foco, con el mismo título; la página no desborda de costado",
+      "ok": true,
+      "detalle": "panel: «Desayuno · Tostadas con queso Cerrar Opción registrada: Tostadas con q» · al costado: no"
+    },
+    {
+      "pro": "—",
+      "descripcion": "Registros de Nutrición no produjo errores de página",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "La navegación del profesional tiene sus cuatro lugares; «Cuenta» ya no está ahí: es el botón de la esquina",
+      "ok": true,
+      "detalle": "Espacio profesional · Plantillas y habituales · Mis recetas · Mis ejercicios + botón «Cuenta»"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "La barra de marca ocupa un solo renglón a 1440, 1280 y 1024 px y en la tablet de pie (768), con la navegación sin partir, el botón en la esquina y sin el aviso de ambiente (E-19)",
+      "ok": true,
+      "detalle": "{\"768\":{\"alto\":65,\"lineasDeNavegacion\":1,\"conAviso\":false,\"botonEnLaEsquina\":true,\"desborde\":0},\"1024\":{\"alto\":65,\"lineasDeNavegacion\":1,\"conAviso\":false,\"botonEnLaEsquina\":true,\"desborde\":0},\"1280\":{\"alto\":65,\"lineasDeNavegacion\":1,\"conAviso\":false,\"botonEnLaEsquina\":true,\"desborde\":0},\"1440\":{\"alto\":65,\"lineasDeNavegacion\":1,\"conAviso\":false,\"botonEnLaEsquina\":true,\"desborde\":0}}"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "La medición del encabezado detecta una navegación partida en dos líneas (la prueba de la prueba)",
+      "ok": true,
+      "detalle": "{\"alto\":101,\"lineasDeNavegacion\":2,\"conAviso\":false,\"botonEnLaEsquina\":false,\"desborde\":0}"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "El menú de la cuenta se abre con el teclado y ofrece los datos de la cuenta, la apariencia (dos opciones; la elegida es la que se ve) y cerrar sesión",
+      "ok": true,
+      "detalle": "{\"expandido\":\"true\",\"controla\":true,\"opciones\":[\"Datos de la cuenta Estado, privacidad y seguridad\",\"Cerrar sesión\"],\"grupo\":\"Apariencia\",\"temas\":[\"Azul noche (elegido)\",\"Claro\"],\"elegido\":\"azul-noche\",\"tema\":\"azul-noche\",\"entra\":true}"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "Elegir el otro tema lo aplica en el momento y lo guarda en el navegador, sin pedir nada a la API, sin salir de la ficha y sin cerrar el menú",
+      "ok": true,
+      "detalle": "{\"tema\":\"claro\",\"guardado\":\"claro\",\"panel\":true,\"ficha\":true,\"pedidos\":0}"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "axe (WCAG 2.2 A/AA) con el menú de la cuenta abierto, en azul-noche: sin violaciones automáticas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "axe (WCAG 2.2 A/AA) con el menú de la cuenta abierto, en claro: sin violaciones automáticas",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "Escape cierra el menú y devuelve el foco a su botón; salir de él con Tab también lo cierra, así el foco no queda detrás del panel",
+      "ok": true,
+      "detalle": "{\"conEscape\":{\"panel\":false,\"foco\":true,\"expandido\":\"false\"},\"paradas\":[\"Datos de la cuenta Est\",\"Claro\",\"Cerrar sesión\",\"fuera\"],\"conTab\":{\"panel\":false,\"focoFuera\":true}}"
+    },
+    {
+      "pro": "E-18",
+      "descripcion": "Las cuatro filas de «Empezar por una pregunta» miden lo mismo, una debajo de otra, a 1440, 1280 y 1024 px",
+      "ok": true,
+      "detalle": "{\"1024\":{\"cantidad\":4,\"anchos\":[433],\"altos\":[138],\"columnas\":1},\"1280\":{\"cantidad\":4,\"anchos\":[560],\"altos\":[90],\"columnas\":1},\"1440\":{\"cantidad\":4,\"anchos\":[640],\"altos\":[90],\"columnas\":1}}"
+    },
+    {
+      "pro": "E-18",
+      "descripcion": "La medición de las filas detecta una más baja que las otras, como estaban antes (la prueba de la prueba)",
+      "ok": true,
+      "detalle": "{\"cantidad\":4,\"anchos\":[433],\"altos\":[90,113,138],\"columnas\":1}"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "«Datos de la cuenta» abre la cuenta sin cerrar la sesión, con el tema elegido, y el menú se cierra al cambiar de página; estando ahí, ya no ofrece ese enlace",
+      "ok": true,
+      "detalle": "{\"titulo\":\"Cuenta\",\"panel\":false,\"conDatos\":true,\"tema\":\"claro\",\"opcionesEnCuenta\":[\"Cerrar sesión\"]}"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "«Cerrar sesión» cierra la sesión en la API (el token deja de servir) y lleva a «Iniciar sesión» con su aviso; la apariencia elegida sigue después de la recarga",
+      "ok": true,
+      "detalle": "{\"cierre\":[\"DELETE /api/v1/auth/sessions/current\"],\"tokenViejo\":401,\"aviso\":true,\"boton\":\"Apariencia\",\"tema\":\"claro\",\"ruta\":\"/login?aviso=sesion-cerrada\"}"
+    },
+    {
+      "pro": "E-17",
+      "descripcion": "Sin sesión, el botón de la esquina dice «Apariencia» y abre solo las dos opciones de apariencia",
+      "ok": true,
+      "detalle": "{\"boton\":\"Apariencia\",\"enlacesYBotones\":0,\"temas\":2,\"elegido\":\"claro\"}"
+    },
+    {
+      "pro": "E-19",
+      "descripcion": "El aviso de ambiente de prueba no está en la barra y sigue en el pie de la cara pública, donde se inicia sesión y se crea la cuenta",
+      "ok": true,
+      "detalle": "barra: «Saltar al contenido BE Apariencia Apariencia Azul noche Clar» · pie: «Términos y condiciones Política de privacidad Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas. Identidad del build: web 0.11.1 · commi»"
+    },
+    {
+      "pro": "PRO-04",
+      "descripcion": "El registro de la API tiene cada búsqueda como ruta parametrizada y nunca el texto buscado",
+      "ok": true,
+      "detalle": "4 línea(s) de búsqueda, p. ej. {\"nivel\":\"info\",\"metodo\":\"POST\",\"ruta\":\"/api/v1/advisees/:adviseeId/timeline/search\",\"status\":200,\"duracionMs\":225}; «cena» en el registro: no"
+    }
+  ]
+}

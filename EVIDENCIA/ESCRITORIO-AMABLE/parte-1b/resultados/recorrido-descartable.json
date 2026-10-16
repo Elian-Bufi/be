@@ -1,0 +1,112 @@
+{
+  "modo": "descartable",
+  "inicio": "2026-10-10T19:14:16.848Z",
+  "fin": "2026-10-10T19:15:22.692Z",
+  "hoy": "2026-10-10",
+  "total": 17,
+  "fallas": 0,
+  "resultados": [
+    {
+      "pro": "PRO-10",
+      "descripcion": "Peso e IMC en claro: los dos gráficos dibujados y a la vista",
+      "ok": true,
+      "detalle": "2 gráfico(s) · Peso · cada toma (kg): 631×192, ejes 7/5, curvas 1, marcas 3/3, tinta 5.8 %, color 176 px · Índice de masa corporal · ca: 631×192, ejes 7/5, curvas 1, marcas 2/2, tinta 6.1 %, color 138 px"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "En claro, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba)",
+      "ok": true,
+      "detalle": "Peso · cada toma (kg): 0 px sin dibujo (mínimo 90) · Índice de masa corporal : 0 px sin dibujo (mínimo 60)"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "En claro, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro en el IMC) y la leyenda lo dice",
+      "ok": true,
+      "detalle": "peso: REPORTED; IMC: DERIVED · Peso · círculo Índice de masa corporal · cuadrado Hueco: subtotal (falta algún dato), o día o semana sin completar Contorno cortado: reportado por la persona, no medido C"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "La captura analizar-clases-1440-claro tiene los dos gráficos dibujados",
+      "ok": true,
+      "detalle": "2 de 2"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "Peso e IMC en azul-noche: los dos gráficos dibujados y a la vista",
+      "ok": true,
+      "detalle": "2 gráfico(s) · Peso · cada toma (kg): 631×192, ejes 7/5, curvas 1, marcas 3/3, tinta 5.9 %, color 178 px · Índice de masa corporal · ca: 631×192, ejes 7/5, curvas 1, marcas 2/2, tinta 6.5 %, color 105 px"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "En azul-noche, con las series ocultas la medición de píxeles no da por dibujado ningún gráfico (prueba de la prueba)",
+      "ok": true,
+      "detalle": "Peso · cada toma (kg): 0 px sin dibujo (mínimo 90) · Índice de masa corporal : 0 px sin dibujo (mínimo 60)"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "En azul-noche, lo reportado y lo calculado se dibujan distinto (contorno cortado en el peso reportado, un punto adentro en el IMC) y la leyenda lo dice",
+      "ok": true,
+      "detalle": "peso: REPORTED; IMC: DERIVED · Peso · círculo Índice de masa corporal · cuadrado Hueco: subtotal (falta algún dato), o día o semana sin completar Contorno cortado: reportado por la persona, no medido C"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "La captura analizar-clases-1440-azul-noche tiene los dos gráficos dibujados",
+      "ok": true,
+      "detalle": "2 de 2"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "La lectura del día de la toma reportada dice «Reportado por la persona, no medido»",
+      "ok": true,
+      "detalle": "Lectura del 28 sept 2026 Fecha anterior con datos Fecha elegida Fecha siguiente con datos Peso 80,5 kg · sin faltantes · n = 1 Clase de dato: Reportado por la persona, no medido Ver el origen de este dato Índice de masa "
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "La tabla de datos marca el peso reportado y el IMC calculado (un índice, no una estimación); lo medido va sin marca",
+      "ok": true,
+      "detalle": "Tabla de datos (3 fechas) Valores por fecha de las métricas elegidas Fecha Peso (kg) Índice de masa corporal (kg/m²) 6 oct 2026 79,9 kg 25,2 kg/m² (calculado: un índice calculado sobre medidas, no una estimación) 28 sept 2026 80,5 kg (reportado por la persona,"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "El CSV tiene la columna «Clase de dato»: medido, reportado por la persona y calculado por un método",
+      "ok": true,
+      "detalle": "BE-analisis-2026-07-13-a-2026-10-10.csv · 81,2: Medido · 80,5: Reportado por la persona, no medido · 79,9: Medido · 25,60: Calculado: un índice calculado sobre medidas, no una estimación (Índice de masa corporal (IMC)) · 25,20: Calculado: un índice calculado sobre medidas, no una estimación (Índice de masa corporal (IMC))"
+    },
+    {
+      "pro": "PRO-10",
+      "descripcion": "Antes de revocar, el origen del peso reportado abre su toma, con la clase de cada medición («Reportado», la palabra de la pestaña de Antropometría)",
+      "ok": true,
+      "detalle": "Peso · 28 sept 2026 Cerrar 80,5 kg · sin faltantes · n = 1 Toma del 28 sept 2026, 08:30 · registrada el 10 oct 2026, 16:14 · Lic. Descartable (sintética) Mediciones de la toma Medición Valor vigente Clase Estado Peso 80,5 kg Reportado Vigente Protocolo: Perfil"
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "El asesorado revoca desde su web el acceso de Antropometría del profesional: explicación, confirmación y aviso",
+      "ok": true,
+      "detalle": "Revocar acceso de Lic. Descartable (sintética) Este consentimiento dejará de habilitar el acceso futuro asociado a este  · Acceso revocado El profesional ya no debe poder acceder mediante este consentimiento."
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "Después de revocar, «Descargar los datos» con la pantalla vieja vuelve a consultar: no sale ningún archivo y dice por qué; los gráficos se vuelven a pedir",
+      "ok": true,
+      "detalle": "2 gráficos antes · 0 archivo(s) nuevo(s) · aviso: No se descargó ningún archivo: Peso (no está disponible con tu acceso actual); Índice de masa corporal (no está disponible con tu acceso actual)."
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "Después de revocar, el origen de un punto que seguía en pantalla dice «no está disponible con tu acceso actual» y no repite el valor",
+      "ok": true,
+      "detalle": "Peso · 28 sept 2026 Cerrar Esta toma no está disponible con tu acceso actual. Ver en Antropometría · Evaluaciones"
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "Los gráficos se vuelven a pedir y dicen «no está disponible con tu acceso actual», sin un punto ni un valor de antes",
+      "ok": true,
+      "detalle": "Elegir un intervalo con fechas (también se puede arrastrar sobre un gráfico) Peso: no está disponible con tu acceso actual. Índice de masa corporal: no está disponible con tu acceso actual."
+    },
+    {
+      "pro": "PRO-20",
+      "descripcion": "Al volver a abrir Analizar y la línea de tiempo, no hay gráficos, valores ni tomas de Antropometría, ni el aviso de una descarga anterior; el resto del vínculo sigue",
+      "ok": true,
+      "detalle": "Elegir un intervalo con fechas (también se puede arrastrar sobre un gráfico) Peso: no está disponible con tu acceso actual. Índice de masa c · aviso de una descarga anterior: no · 0 entrada(s) en la línea de tiempo, ninguna de Antropometría"
+    }
+  ]
+}
