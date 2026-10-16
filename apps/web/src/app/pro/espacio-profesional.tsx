@@ -21,7 +21,7 @@
  * - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita (el retorno del inicio
  *   de sesión admite `/pro` a secas).
  */
-import { COPY_VINCULO, numero } from '@be/domain';
+import { COPY_INVITACION, COPY_VINCULO, numero } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../components/ayuda';
@@ -34,6 +34,7 @@ import { useListaCompleta } from '../../lib/lista-completa';
 import { useSesionRequerida } from '../../lib/sesion-requerida';
 import type { Periodo } from './advisees/periodo';
 import { Asesorados } from './asesorados';
+import { InvitarPersona } from './invitar-persona';
 import { Pendientes, type PaginaDeCartera } from './pendientes';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
@@ -122,6 +123,8 @@ export function EspacioProfesional() {
   );
 
   const [formulario, setFormulario] = useState(false);
+  // WP-INVITACION (DL-136): invitar por enlace, QR o código es el camino principal; el identificador queda como alternativa.
+  const [invitar, setInvitar] = useState(false);
   const [solicitudes, setSolicitudes] = useState<{ abiertas: boolean; aviso: string | null }>({ abiertas: false, aviso: null });
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -156,6 +159,10 @@ export function EspacioProfesional() {
       alLado={
         <>
           {hoy ? <p className="espacio-profesional__hoy">Hoy, {diaConSuSemana(hoy)}</p> : null}
+          <button type="button" className="boton boton--primario espacio-profesional__invitar" aria-haspopup="dialog" onClick={() => setInvitar(true)}>
+            <Icono nombre="persona" tamano={20} />
+            {COPY_INVITACION.invitar}
+          </button>
           <button type="button" className="boton boton--secundario espacio-profesional__solicitar" aria-haspopup="dialog" onClick={() => setFormulario(true)}>
             <Icono nombre="solicitud" tamano={20} />
             {COPY_VINCULO.solicitarVinculo}
@@ -180,6 +187,16 @@ export function EspacioProfesional() {
         </Asesorados>
       </div>
 
+      <InvitarPersona
+        abierto={invitar}
+        token={token}
+        sesionPerdida={sesionPerdida}
+        onCerrar={() => setInvitar(false)}
+        onConElIdentificador={() => {
+          setInvitar(false);
+          setFormulario(true);
+        }}
+      />
       <SolicitarVinculo
         abierto={formulario}
         token={token}
