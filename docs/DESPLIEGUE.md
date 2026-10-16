@@ -71,6 +71,13 @@ Van por identidad y no por correo. Si se publicara un correo antes de registrarl
 
 Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa para la capacidad antropométrica, que el 06 modela como transversal y «nunca tercera Especialidad» (06:2774): DEMO-PN la suma a su Especialidad Nutrición, y DEMO-PA la tiene sin ninguna Especialidad, que es la identidad válida de 06 §8.10. El tipo de perfil es de la identidad y no del alcance: la segunda declaración de una misma identidad no lo cambia.
 
+**La cohorte realista (desde el 2026-10-16, #160):**
+- **Profesionales:** Lic. Sofía Paz (Nutrición y Antropometría), Prof. Martín Acosta (Entrenamiento) y Prof. Lucía Benítez (Antropometría), declarados en `BE_DEMO_PROFESIONALES` además de los de la demostración.
+- **Asesorados:** seis personas con nombre, de 6 meses a 3 años de historia.
+- **Credenciales:** al azar y fuera del repo, en `C:\Users\bufim\BE-datos-locales\cohorte-test\cuentas.env`, en la máquina de Dirección.
+- **Cómo se cargó y qué es sintético:** `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/LEEME.md`.
+- **Acceso a la base:** la historia se escribe por SQL, con la base abierta solo a la IP de esa máquina mientras dura la carga. Es el acceso del operador que admite el 07 §29. Cada push a `main` sincroniza el Blueprint, y el `ipAllowList: []` de `render.yaml` vuelve a cerrarla.
+
 ### APK
 
 `apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:
