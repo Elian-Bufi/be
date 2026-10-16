@@ -7,10 +7,12 @@ import {
   CalidadDeEntradaSchema,
   DominioDeAnalisisSchema,
   EstadoDeEntradaSchema,
+  PreguntaElegidaSchema,
   TipoDeEventoSchema,
   type CalidadDeEntrada,
   type DominioDeAnalisis,
   type EstadoDeEntrada,
+  type PreguntaElegida,
   type ReferenciaDeMetrica,
   type ReferenciaDelCambio,
   type TipoDeEvento,
@@ -233,3 +235,100 @@ export function parametroDeReferenciaDelCambio(r: ReferenciaDelCambio): string |
 
 /** La clave estable de una referencia elegida (colores, claves de React y comparar selecciones). */
 export const claveDeLaReferencia = (r: ReferenciaDeMetrica): string => codificarReferencia(r);
+
+// ─── Pregunta profesional (encargo del 2026-10-09, eje 2) ───────────────────────────────────────
+
+/**
+ * La pregunta elegida y sus parámetros en la URL, solo identificadores: `pregunta`, `area`, `version`, `etapaA`, `etapaB`,
+ * `medida`, `ejercicio`, `serie` y `unidad`. Lo que no valida con el esquema del dominio se descarta entero.
+ */
+export function leerPregunta(params: URLSearchParams): PreguntaElegida | null {
+  const id = params.get('pregunta');
+  if (!id) return null;
+  const serie = params.get('serie');
+  const candidato = {
+    id,
+    params: Object.fromEntries(
+      Object.entries({
+        area: params.get('area'),
+        planVersionId: params.get('version'),
+        stageA: params.get('etapaA'),
+        stageB: params.get('etapaB'),
+        bodyMetric: params.get('medida'),
+        exerciseKey: params.get('ejercicio'),
+        setIndex: serie && /^[0-9]{1,2}$/.test(serie) ? Number(serie) : serie,
+        unit: params.get('unidad'),
+      }).filter(([, v]) => v !== null && v !== ''),
+    ),
+  };
+  const r = PreguntaElegidaSchema.safeParse(candidato);
+  return r.success ? r.data : null;
+}
+
+export function parametrosDePregunta(p: PreguntaElegida | null): Record<string, string | null> {
+  const x = p?.params ?? {};
+  return {
+    pregunta: p?.id ?? null,
+    area: x.area ?? null,
+    version: x.planVersionId ?? null,
+    etapaA: x.stageA ?? null,
+    etapaB: x.stageB ?? null,
+    medida: x.bodyMetric ?? null,
+    ejercicio: x.exerciseKey ?? null,
+    serie: x.setIndex === undefined ? null : String(x.setIndex),
+    unidad: x.unit ?? null,
+  };
+}
+
+// ─── Novedades desde un corte en la línea de tiempo (eje 1) ─────────────────────────────────────
+
+const INSTANTE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/;
+
+/** `novedades=<instante>`: el corte de una revisión (lo que trae algo nuevo desde entonces). No es texto: es un instante. */
+export function leerCorte(params: URLSearchParams): string | null {
+  const v = params.get('novedades');
+  return v && INSTANTE.test(v) && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null;
+}
+
+// ─── Retorno a la ficha desde otra pantalla (eje 5) ─────────────────────────────────────────────
+
+/**
+ * El valor de `volver` para salir de la ficha hacia una pestaña de área y regresar al mismo lugar: la query de la ficha
+ * sin el `id` (que ya va en la URL de destino). Solo identificadores, enumerados y fechas: nada escrito por la persona.
+ * Nunca vacío: la ficha en su estado inicial también es un lugar al que volver (`vista=resumen`), y sin `volver` la pestaña
+ * de área no ofrecía «Volver a la ficha, donde estabas».
+ */
+export function valorDeRetorno(params: URLSearchParams): string {
+  const p = new URLSearchParams(params.toString());
+  p.delete('id');
+  p.delete('volver');
+  if (!p.has('vista')) p.set('vista', 'resumen');
+  return p.toString();
+}
+
+/**
+ * La URL de regreso a la ficha a partir de `volver`, reconstruida con los mismos lectores de la ficha: lo que no valida se
+ * descarta y nunca se sale de `/pro/advisees` del mismo asesorado (la misma idea que el retorno seguro del login).
+ */
+export function retornoALaFicha(valor: string | null, id: string): string | null {
+  if (valor === null || !UUID.test(id) || valor.length > 2000) return null;
+  let p: URLSearchParams;
+  try {
+    p = new URLSearchParams(valor);
+  } catch {
+    return null;
+  }
+  const vista = leerVista(p.get('vista'));
+  const periodo = p.get('p') || p.get('desde') ? parametrosDePeriodo(leerPeriodo(p)) : {};
+  const corte = leerCorte(p);
+  const cambios: Record<string, string | null> = {
+    vista: vista === 'resumen' ? null : vista,
+    ...periodo,
+    ...(vista === 'linea' ? { ...parametrosDeFiltros(leerFiltrosDeLaLinea(p)), novedades: corte } : {}),
+    ...(vista === 'analizar' ? { ...parametrosDeAnalisis(leerAnalisis(p)), ...parametrosDePregunta(leerPregunta(p)), vista: 'analizar' } : {}),
+  };
+  return hrefConCambios('/pro/advisees', new URLSearchParams({ id }), cambios);
+}
+
+/** Agrega `volver` a una URL interna (la de una pestaña de área), si hay a dónde volver. */
+export const conRetorno = (href: string, volver: string | null): string => (volver ? `${href}${href.includes('?') ? '&' : '?'}volver=${encodeURIComponent(volver)}` : href);

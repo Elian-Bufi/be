@@ -22,7 +22,7 @@ import type { DefinicionDeMetrica } from './metricas-del-analisis';
 import { fechasDelRango, huecosDelRango, semanasDelPeriodo } from './series-del-analisis';
 
 /** Lo que el análisis lee de un registro (la forma de API-ING-03). */
-export type RegistroParaAnalisis = Pick<RegistroDeComida, 'recordId' | 'kind' | 'localDate' | 'occurredAt' | 'consumption' | 'consumed' | 'annulment'>;
+export type RegistroParaAnalisis = Pick<RegistroDeComida, 'recordId' | 'kind' | 'planId' | 'localDate' | 'occurredAt' | 'consumption' | 'consumed' | 'annulment'>;
 
 export const NUTRIENTE_DE_LA_METRICA: Readonly<Record<Exclude<MetricaNutricional, 'RECORDS'>, NutrienteCalculado>> = {
   ENERGY: 'energyKcal',
@@ -71,7 +71,12 @@ interface ValorDelDia {
   readonly cobertura: { readonly registros: number; readonly conCantidades: number; readonly sinCantidades: number };
   readonly rectificado: boolean;
   readonly fuentes: readonly string[];
+  /** Las versiones del plan que ejecutan los registros efectivos del día (su referencia histórica, sin reatribuir). */
+  readonly versiones: readonly string[];
 }
+
+/** Las versiones distintas de un conjunto de registros, ordenadas: la referencia que guardó cada registro. */
+const versionesDe = (registros: readonly RegistroParaAnalisis[]): string[] => [...new Set(registros.map((r) => r.planId))].sort();
 
 function valorDelDia(dia: DiaNutricional, nutriente: NutrienteCalculado): ValorDelDia {
   const conocidos: string[] = [];
@@ -89,6 +94,7 @@ function valorDelDia(dia: DiaNutricional, nutriente: NutrienteCalculado): ValorD
     cobertura: { registros: dia.registros.length, conCantidades, sinCantidades: dia.registros.length - conCantidades },
     rectificado: dia.registros.some((r) => r.consumption?.source === 'RECTIFIED'),
     fuentes: dia.registros.map((r) => r.recordId),
+    versiones: versionesDe(dia.registros),
   };
 }
 
@@ -128,6 +134,7 @@ export function serieNutricional(dias: readonly DiaNutricional[], definicion: De
           cobertura: { registros: d.registros.length, conCantidades: d.registros.filter((r) => r.consumed !== null).length, sinCantidades: d.registros.filter((r) => r.consumed === null).length },
           rectificado: false,
           fuentes: d.registros.map((r) => r.recordId),
+          versiones: versionesDe(d.registros),
         }))
       : dias.filter((d) => d.registros.length > 0).map((d) => valorDelDia(d, NUTRIENTE_DE_LA_METRICA[metrica]));
   const conRegistros = diarios.filter((d) => d.cobertura.registros > 0);
@@ -156,6 +163,8 @@ export function serieNutricional(dias: readonly DiaNutricional[], definicion: De
         corrected: d.rectificado,
         partialBucket: d.fecha === o.hoy,
         dataClass: null,
+        method: null,
+        planVersionIds: [...d.versiones],
         coverage: cobertura,
         missing: faltantesDe(d.faltan),
         detail: detalleDeCobertura(d.cobertura),
@@ -189,6 +198,8 @@ export function serieNutricional(dias: readonly DiaNutricional[], definicion: De
         corrected: delaSemana.some((d) => d.rectificado),
         partialBucket: s.parcial || parcialDeHoy,
         dataClass: null,
+        method: null,
+        planVersionIds: [...new Set(delaSemana.flatMap((d) => d.versiones))].sort(),
         coverage: { records: registros, recordsWithQuantities: conCantidades, recordsWithoutQuantities: registros - conCantidades, daysWithData: conValor.length, daysInBucket: s.diasEnElPeriodo },
         missing: faltantesDe(faltan),
         detail: [

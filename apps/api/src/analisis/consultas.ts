@@ -36,6 +36,8 @@ const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CLAVE_DE_EJERCICIO = /^[ev]:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CODIGO_ANTROPOMETRICO = /^[a-z0-9-]{1,80}$/;
+/** Un instante ISO 8601 con zona (`Z` o `±hh:mm`), como los que devuelve la API: el corte de una revisión. */
+const INSTANTE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/;
 
 export interface PeriodoDelAnalisis {
   readonly desde: string;
@@ -116,6 +118,11 @@ export interface ConsultaDeLineaDeTiempo {
   readonly soloTardias: boolean;
   readonly planVersionId: string | null;
   readonly exerciseKey: string | null;
+  /**
+   * Extensión aditiva (WP-DASHBOARD-COMPRENSION): el instante de un corte (la última revisión de un área). Con él, la
+   * respuesta trae `sinceCounts` y las entradas se filtran a las que traen algo nuevo desde ese instante.
+   */
+  readonly novedadesDesde: string | null;
   readonly q: string | null;
   readonly limite: number;
   readonly cursor: ClaveDeOrden | null;
@@ -126,7 +133,7 @@ export interface ConsultaDeLineaDeTiempo {
  * una URL queda en historiales y en bitácoras de proxies y de la plataforma. La búsqueda va en el cuerpo de
  * API-DSH-04-BUSQUEDA (DL-127); `q` en la URL es un parámetro desconocido (400).
  */
-const PARAMETROS_DE_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'limit', 'cursor'] as const;
+const PARAMETROS_DE_LINEA_DE_TIEMPO = ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'late', 'planVersionId', 'exerciseId', 'since', 'limit', 'cursor'] as const;
 
 /** La consulta de la línea de tiempo (09 v0.11 §16 y las extensiones de DL-127). Sin período: los últimos 30 días. */
 export function leerConsultaDeLineaDeTiempo(query: Record<string, unknown>): ConsultaDeLineaDeTiempo {
@@ -144,7 +151,7 @@ export function leerBusquedaDeLineaDeTiempo(query: Record<string, unknown>, _par
   sinParametrosDeQuery(query);
   const b = validarCuerpo(BusquedaEnLineaDeTiempoRequestSchema, cuerpo);
   const comoConsulta: Record<string, unknown> = {};
-  for (const clave of ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'planVersionId', 'exerciseId', 'cursor'] as const) {
+  for (const clave of ['periodStart', 'periodEnd', 'domain', 'type', 'state', 'quality', 'planVersionId', 'exerciseId', 'since', 'cursor'] as const) {
     if (b[clave] !== undefined) comoConsulta[clave] = b[clave];
   }
   if (b.late) comoConsulta.late = 'true';
@@ -160,6 +167,8 @@ function consultaDeLineaDeTiempo(query: Record<string, unknown>): ConsultaDeLine
   if (planVersionId !== null && !UUID.test(planVersionId)) invalida('INVALID_FILTER', 'planVersionId');
   const exerciseKey = texto(query, 'exerciseId') ?? null;
   if (exerciseKey !== null && !CLAVE_DE_EJERCICIO.test(exerciseKey)) invalida('INVALID_FILTER', 'exerciseId');
+  const since = texto(query, 'since') ?? null;
+  if (since !== null && (!INSTANTE.test(since) || Number.isNaN(Date.parse(since)))) invalida('INVALID_FILTER', 'since');
   let limite: number = LIMITE_DE_LINEA_DE_TIEMPO.porDefecto;
   const l = texto(query, 'limit');
   if (l !== undefined) {
@@ -179,6 +188,7 @@ function consultaDeLineaDeTiempo(query: Record<string, unknown>): ConsultaDeLine
     soloTardias: late === 'true',
     planVersionId: planVersionId?.toLowerCase() ?? null,
     exerciseKey: exerciseKey ? `${exerciseKey[0]}:${exerciseKey.slice(2).toLowerCase()}` : null,
+    novedadesDesde: since === null ? null : new Date(since).toISOString(),
     q: null,
     limite,
     cursor,

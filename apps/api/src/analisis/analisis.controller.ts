@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/
 import type { Prisma } from '@prisma/client';
 import {
   conteosDelPeriodo,
+  conteosDesde,
   cumpleFiltros,
   ordenarEntradas,
   paginarEntradas,
@@ -129,6 +130,7 @@ export class AnalisisController {
           exerciseKey: consulta.exerciseKey ?? undefined,
           q: consulta.q ?? undefined,
           soloTardias: consulta.soloTardias,
+          novedadesDesde: consulta.novedadesDesde ?? undefined,
         }),
       ),
     );
@@ -141,6 +143,7 @@ export class AnalisisController {
         sourceDomains: permitidos.map((a) => DOMINIO[a]),
         totalMatching: coinciden.length,
         periodCounts: conteosDelPeriodo(entradas),
+        sinceCounts: consulta.novedadesDesde ? conteosDesde(entradas, consulta.novedadesDesde) : null,
         searchScope: 'WHOLE_PERIOD',
         entries: [...pagina.entradas],
       },

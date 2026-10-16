@@ -6653,12 +6653,18 @@
                                                         "displayName"
                                                       ],
                                                       "additionalProperties": false
+                                                    },
+                                                    "effectiveFrom": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                                                     }
                                                   },
                                                   "required": [
                                                     "objectiveVersionId",
                                                     "estimatedEnergyRequirement",
-                                                    "authoredBy"
+                                                    "authoredBy",
+                                                    "effectiveFrom"
                                                   ],
                                                   "additionalProperties": false
                                                 },
@@ -6697,12 +6703,96 @@
                                                         "displayName"
                                                       ],
                                                       "additionalProperties": false
+                                                    },
+                                                    "application": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "appliedAt": {
+                                                              "type": "string",
+                                                              "format": "date-time",
+                                                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                            },
+                                                            "createdPlanId": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "minLength": 1
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            },
+                                                            "createdObjectiveVersionId": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "minLength": 1
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "appliedAt",
+                                                            "createdPlanId",
+                                                            "createdObjectiveVersionId"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
                                                     "reviewId",
                                                     "recordedAt",
-                                                    "author"
+                                                    "author",
+                                                    "application"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "draftPlan": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "planVersionId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "recordedAt": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                    },
+                                                    "fromReviewId": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "planVersionId",
+                                                    "recordedAt",
+                                                    "fromReviewId"
                                                   ],
                                                   "additionalProperties": false
                                                 },
@@ -6733,6 +6823,7 @@
                                             "activePlan",
                                             "objective",
                                             "lastReview",
+                                            "draftPlan",
                                             "registeredIntakes",
                                             "lastIntakeAt"
                                           ],
@@ -6850,12 +6941,18 @@
                                                         "displayName"
                                                       ],
                                                       "additionalProperties": false
+                                                    },
+                                                    "effectiveFrom": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                                                     }
                                                   },
                                                   "required": [
                                                     "objectiveVersionId",
                                                     "statement",
-                                                    "authoredBy"
+                                                    "authoredBy",
+                                                    "effectiveFrom"
                                                   ],
                                                   "additionalProperties": false
                                                 },
@@ -6894,12 +6991,96 @@
                                                         "displayName"
                                                       ],
                                                       "additionalProperties": false
+                                                    },
+                                                    "application": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "appliedAt": {
+                                                              "type": "string",
+                                                              "format": "date-time",
+                                                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                            },
+                                                            "createdPlanId": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "minLength": 1
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            },
+                                                            "createdObjectiveVersionId": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "minLength": 1
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "appliedAt",
+                                                            "createdPlanId",
+                                                            "createdObjectiveVersionId"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
                                                     "reviewId",
                                                     "recordedAt",
-                                                    "author"
+                                                    "author",
+                                                    "application"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "draftPlan": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "planVersionId": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    "recordedAt": {
+                                                      "type": "string",
+                                                      "format": "date-time",
+                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                    },
+                                                    "fromReviewId": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "planVersionId",
+                                                    "recordedAt",
+                                                    "fromReviewId"
                                                   ],
                                                   "additionalProperties": false
                                                 },
@@ -6930,6 +7111,7 @@
                                             "activePlan",
                                             "objective",
                                             "lastReview",
+                                            "draftPlan",
                                             "registeredExecutions",
                                             "lastExecutionAt"
                                           ],
@@ -12345,7 +12527,7 @@
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Texto a buscar en el nombre.",
+            "description": "Texto a buscar en el nombre. Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
             "schema": {
               "type": "string"
             }
@@ -13033,6 +13215,365 @@
           },
           "409": {
             "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nutrition/catalog-items/search": {
+      "post": {
+        "operationId": "API-NUT-13-BUSQUEDA",
+        "summary": "Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados.",
+        "description": "Fuente: 09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "FOOD"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "q"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "catalogItemId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "itemType": {
+                            "type": "string",
+                            "const": "FOOD"
+                          },
+                          "composition": {
+                            "type": "object",
+                            "properties": {
+                              "referenceAmount": {
+                                "type": "string",
+                                "enum": [
+                                  "100g",
+                                  "100ml"
+                                ]
+                              },
+                              "energyKcal": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "proteinG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "carbohydrateG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fatG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fiberG": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "referenceAmount",
+                              "energyKcal",
+                              "proteinG",
+                              "carbohydrateG",
+                              "fatG"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "provenance": {
+                            "type": "string",
+                            "enum": [
+                              "BE_SYNTHETIC_SEED",
+                              "PROFESSIONAL_MANUAL",
+                              "CONTROLLED_IMPORT"
+                            ]
+                          },
+                          "externalSource": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "provider": {
+                                    "type": "string",
+                                    "enum": [
+                                      "OPEN_FOOD_FACTS",
+                                      "WGER",
+                                      "USDA_FDC_SR_LEGACY"
+                                    ]
+                                  },
+                                  "externalId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "receivedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "license": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "url": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "attribution": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "label",
+                                      "url",
+                                      "attribution"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "usdaReference": {
+                                    "type": "object",
+                                    "properties": {
+                                      "dataset": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "ndbNumber": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "originalDescription": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "publishedOn": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "preparationDescription": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": [
+                                      "dataset",
+                                      "ndbNumber",
+                                      "originalDescription",
+                                      "publishedOn",
+                                      "preparationDescription"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "provider",
+                                  "externalId",
+                                  "receivedAt",
+                                  "license"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "available": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "catalogItemId",
+                          "versionId",
+                          "name",
+                          "itemType",
+                          "composition",
+                          "provenance",
+                          "externalSource",
+                          "available"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -36589,7 +37130,7 @@
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Texto a buscar en el nombre.",
+            "description": "Texto a buscar en el nombre. Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
             "schema": {
               "type": "string",
               "maxLength": 80
@@ -37271,6 +37812,356 @@
           },
           "422": {
             "description": "ErrorEnvelope: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/exercises/search": {
+      "post": {
+        "operationId": "API-TRN-13-BUSQUEDA",
+        "summary": "Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados.",
+        "description": "Fuente: 09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "q"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "exerciseId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "provenance": {
+                            "type": "string",
+                            "enum": [
+                              "BE_SYNTHETIC_SEED",
+                              "PROFESSIONAL_MANUAL",
+                              "CONTROLLED_IMPORT"
+                            ]
+                          },
+                          "externalSource": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "provider": {
+                                    "type": "string",
+                                    "enum": [
+                                      "OPEN_FOOD_FACTS",
+                                      "WGER"
+                                    ]
+                                  },
+                                  "externalId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "receivedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "license": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "url": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "attribution": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "label",
+                                      "url",
+                                      "attribution"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "provider",
+                                  "externalId",
+                                  "receivedAt",
+                                  "license"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "muscleZones": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "zoneId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "role": {
+                                  "type": "string",
+                                  "enum": [
+                                    "PRIMARY",
+                                    "SECONDARY"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "zoneId",
+                                "role"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "didacticResources": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "resourceId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "resourceVersionId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "const": "IMAGE"
+                                },
+                                "authorship": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "name"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "license": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "label"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "resourceId",
+                                "resourceVersionId",
+                                "type",
+                                "authorship",
+                                "license"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "available": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "exerciseId",
+                          "versionId",
+                          "name",
+                          "provenance",
+                          "externalSource",
+                          "muscleZones",
+                          "didacticResources",
+                          "available"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {
@@ -88326,6 +89217,7 @@
                                       "QUANTITIES_UNCONFIRMED",
                                       "QUANTITIES_FROM_PLAN",
                                       "QUANTITIES_REPORTED",
+                                      "QUANTITIES_DIFFER_FROM_PLAN",
                                       "NUTRIENTS_INCOMPLETE",
                                       "DIFFERENT_MEAL",
                                       "SESSION_SUMMARY_ONLY",
@@ -88358,6 +89250,80 @@
                             "recordedLate"
                           ],
                           "additionalProperties": false
+                        },
+                        "sinceCounts": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "since": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "counts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "OCURRIO_DESPUES",
+                                          "INCORPORADO_DESPUES",
+                                          "CORREGIDO_DESPUES"
+                                        ]
+                                      },
+                                      "domain": {
+                                        "type": "string",
+                                        "enum": [
+                                          "NUTRITION",
+                                          "TRAINING",
+                                          "ANTHROPOMETRY"
+                                        ]
+                                      },
+                                      "eventType": {
+                                        "type": "string",
+                                        "enum": [
+                                          "NUTRITION_PLAN_ACTIVATED",
+                                          "NUTRITION_OBJECTIVE_SET",
+                                          "MEAL_RECORDED",
+                                          "NUTRITION_REVIEW_RECORDED",
+                                          "TRAINING_PLAN_ACTIVATED",
+                                          "TRAINING_OBJECTIVE_SET",
+                                          "TRAINING_SESSION_RECORDED",
+                                          "TRAINING_REVIEW_RECORDED",
+                                          "ANTHROPOMETRIC_EVALUATION_RECORDED",
+                                          "FOLLOW_UP_OPENED",
+                                          "FOLLOW_UP_CLOSED"
+                                        ]
+                                      },
+                                      "count": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "domain",
+                                      "eventType",
+                                      "count"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "since",
+                                "counts"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "searchScope": {
                           "type": "string",
@@ -88536,6 +89502,7 @@
                                     "QUANTITIES_UNCONFIRMED",
                                     "QUANTITIES_FROM_PLAN",
                                     "QUANTITIES_REPORTED",
+                                    "QUANTITIES_DIFFER_FROM_PLAN",
                                     "NUTRIENTS_INCOMPLETE",
                                     "DIFFERENT_MEAL",
                                     "SESSION_SUMMARY_ONLY",
@@ -88673,6 +89640,7 @@
                         "sourceDomains",
                         "totalMatching",
                         "periodCounts",
+                        "sinceCounts",
                         "searchScope",
                         "entries"
                       ],
@@ -88869,6 +89837,11 @@
                     "type": "string",
                     "maxLength": 40
                   },
+                  "since": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
                   "limit": {
                     "type": "integer",
                     "minimum": 1,
@@ -88996,6 +89969,7 @@
                                       "QUANTITIES_UNCONFIRMED",
                                       "QUANTITIES_FROM_PLAN",
                                       "QUANTITIES_REPORTED",
+                                      "QUANTITIES_DIFFER_FROM_PLAN",
                                       "NUTRIENTS_INCOMPLETE",
                                       "DIFFERENT_MEAL",
                                       "SESSION_SUMMARY_ONLY",
@@ -89028,6 +90002,80 @@
                             "recordedLate"
                           ],
                           "additionalProperties": false
+                        },
+                        "sinceCounts": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "since": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "counts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "OCURRIO_DESPUES",
+                                          "INCORPORADO_DESPUES",
+                                          "CORREGIDO_DESPUES"
+                                        ]
+                                      },
+                                      "domain": {
+                                        "type": "string",
+                                        "enum": [
+                                          "NUTRITION",
+                                          "TRAINING",
+                                          "ANTHROPOMETRY"
+                                        ]
+                                      },
+                                      "eventType": {
+                                        "type": "string",
+                                        "enum": [
+                                          "NUTRITION_PLAN_ACTIVATED",
+                                          "NUTRITION_OBJECTIVE_SET",
+                                          "MEAL_RECORDED",
+                                          "NUTRITION_REVIEW_RECORDED",
+                                          "TRAINING_PLAN_ACTIVATED",
+                                          "TRAINING_OBJECTIVE_SET",
+                                          "TRAINING_SESSION_RECORDED",
+                                          "TRAINING_REVIEW_RECORDED",
+                                          "ANTHROPOMETRIC_EVALUATION_RECORDED",
+                                          "FOLLOW_UP_OPENED",
+                                          "FOLLOW_UP_CLOSED"
+                                        ]
+                                      },
+                                      "count": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "domain",
+                                      "eventType",
+                                      "count"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "since",
+                                "counts"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "searchScope": {
                           "type": "string",
@@ -89206,6 +90254,7 @@
                                     "QUANTITIES_UNCONFIRMED",
                                     "QUANTITIES_FROM_PLAN",
                                     "QUANTITIES_REPORTED",
+                                    "QUANTITIES_DIFFER_FROM_PLAN",
                                     "NUTRIENTS_INCOMPLETE",
                                     "DIFFERENT_MEAL",
                                     "SESSION_SUMMARY_ONLY",
@@ -89343,6 +90392,7 @@
                         "sourceDomains",
                         "totalMatching",
                         "periodCounts",
+                        "sinceCounts",
                         "searchScope",
                         "entries"
                       ],
@@ -89839,6 +90889,51 @@
                                                   }
                                                 ]
                                               },
+                                              "method": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "methodVersionId": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      },
+                                                      "name": {
+                                                        "type": [
+                                                          "string",
+                                                          "null"
+                                                        ]
+                                                      },
+                                                      "nature": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "INDEX",
+                                                          "SKINFOLD_SUM",
+                                                          "ESTIMATE",
+                                                          "SOMATOTYPE_RATING",
+                                                          "UNSPECIFIED"
+                                                        ]
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "methodVersionId",
+                                                      "name",
+                                                      "nature"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "planVersionIds": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
                                               "coverage": {
                                                 "anyOf": [
                                                   {
@@ -89991,6 +91086,8 @@
                                               "corrected",
                                               "partialBucket",
                                               "dataClass",
+                                              "method",
+                                              "planVersionIds",
                                               "coverage",
                                               "missing",
                                               "detail",
@@ -90237,6 +91334,32 @@
                                                 "type": "null"
                                               }
                                             ]
+                                          },
+                                          "endedAt": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "endReason": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SUCCESSOR_ACTIVATED",
+                                                  "FOLLOW_UP_CLOSED"
+                                                ]
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -90245,7 +91368,9 @@
                                           "label",
                                           "activatedAt",
                                           "from",
-                                          "to"
+                                          "to",
+                                          "endedAt",
+                                          "endReason"
                                         ],
                                         "additionalProperties": false
                                       }
@@ -90505,6 +91630,51 @@
                                                           }
                                                         ]
                                                       },
+                                                      "method": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "methodVersionId": {
+                                                                "type": "string",
+                                                                "minLength": 1
+                                                              },
+                                                              "name": {
+                                                                "type": [
+                                                                  "string",
+                                                                  "null"
+                                                                ]
+                                                              },
+                                                              "nature": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                  "INDEX",
+                                                                  "SKINFOLD_SUM",
+                                                                  "ESTIMATE",
+                                                                  "SOMATOTYPE_RATING",
+                                                                  "UNSPECIFIED"
+                                                                ]
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "methodVersionId",
+                                                              "name",
+                                                              "nature"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "planVersionIds": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        }
+                                                      },
                                                       "coverage": {
                                                         "anyOf": [
                                                           {
@@ -90657,6 +91827,8 @@
                                                       "corrected",
                                                       "partialBucket",
                                                       "dataClass",
+                                                      "method",
+                                                      "planVersionIds",
                                                       "coverage",
                                                       "missing",
                                                       "detail",
@@ -90804,6 +91976,32 @@
                                                 "type": "null"
                                               }
                                             ]
+                                          },
+                                          "endedAt": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "endReason": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SUCCESSOR_ACTIVATED",
+                                                  "FOLLOW_UP_CLOSED"
+                                                ]
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -90812,7 +92010,9 @@
                                           "label",
                                           "activatedAt",
                                           "from",
-                                          "to"
+                                          "to",
+                                          "endedAt",
+                                          "endReason"
                                         ],
                                         "additionalProperties": false
                                       }
@@ -90855,13 +92055,19 @@
                                             "items": {
                                               "type": "string"
                                             }
+                                          },
+                                          "comparabilityGroups": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
                                           }
                                         },
                                         "required": [
                                           "metricCode",
                                           "name",
                                           "observations",
-                                          "units"
+                                          "units",
+                                          "comparabilityGroups"
                                         ],
                                         "additionalProperties": false
                                       }
@@ -90991,6 +92197,51 @@
                                                       "type": "null"
                                                     }
                                                   ]
+                                                },
+                                                "method": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "methodVersionId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "name": {
+                                                          "type": [
+                                                            "string",
+                                                            "null"
+                                                          ]
+                                                        },
+                                                        "nature": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "INDEX",
+                                                            "SKINFOLD_SUM",
+                                                            "ESTIMATE",
+                                                            "SOMATOTYPE_RATING",
+                                                            "UNSPECIFIED"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "methodVersionId",
+                                                        "name",
+                                                        "nature"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "planVersionIds": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  }
                                                 },
                                                 "coverage": {
                                                   "anyOf": [
@@ -91144,6 +92395,8 @@
                                                 "corrected",
                                                 "partialBucket",
                                                 "dataClass",
+                                                "method",
+                                                "planVersionIds",
                                                 "coverage",
                                                 "missing",
                                                 "detail",
@@ -91431,6 +92684,72 @@
                                   "schemaVersion": {
                                     "type": "number",
                                     "const": 1
+                                  },
+                                  "question": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "enum": [
+                                          "cambio-desde-el-plan",
+                                          "registrado-vs-indicado",
+                                          "alimentacion-y-medidas",
+                                          "progreso-de-un-ejercicio",
+                                          "comparar-etapas",
+                                          "informacion-para-revisar"
+                                        ]
+                                      },
+                                      "params": {
+                                        "type": "object",
+                                        "properties": {
+                                          "area": {
+                                            "type": "string",
+                                            "enum": [
+                                              "NUTRICION",
+                                              "ENTRENAMIENTO"
+                                            ]
+                                          },
+                                          "planVersionId": {
+                                            "type": "string",
+                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                          },
+                                          "stageA": {
+                                            "type": "string",
+                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                          },
+                                          "stageB": {
+                                            "type": "string",
+                                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                          },
+                                          "bodyMetric": {
+                                            "type": "string",
+                                            "pattern": "^antropometria\\.[a-z0-9-]+$"
+                                          },
+                                          "exerciseKey": {
+                                            "type": "string",
+                                            "pattern": "^[ev]:[0-9a-fA-F-]{36}$"
+                                          },
+                                          "setIndex": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 30
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "kg",
+                                              "lb"
+                                            ]
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "params"
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "metrics": {
                                     "minItems": 1,
@@ -91976,6 +93295,72 @@
                             "type": "number",
                             "const": 1
                           },
+                          "question": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "enum": [
+                                  "cambio-desde-el-plan",
+                                  "registrado-vs-indicado",
+                                  "alimentacion-y-medidas",
+                                  "progreso-de-un-ejercicio",
+                                  "comparar-etapas",
+                                  "informacion-para-revisar"
+                                ]
+                              },
+                              "params": {
+                                "type": "object",
+                                "properties": {
+                                  "area": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRICION",
+                                      "ENTRENAMIENTO"
+                                    ]
+                                  },
+                                  "planVersionId": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "stageA": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "stageB": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "bodyMetric": {
+                                    "type": "string",
+                                    "pattern": "^antropometria\\.[a-z0-9-]+$"
+                                  },
+                                  "exerciseKey": {
+                                    "type": "string",
+                                    "pattern": "^[ev]:[0-9a-fA-F-]{36}$"
+                                  },
+                                  "setIndex": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 30
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "enum": [
+                                      "kg",
+                                      "lb"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "params"
+                            ],
+                            "additionalProperties": false
+                          },
                           "metrics": {
                             "minItems": 1,
                             "maxItems": 3,
@@ -92385,6 +93770,72 @@
                                 "schemaVersion": {
                                   "type": "number",
                                   "const": 1
+                                },
+                                "question": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "enum": [
+                                        "cambio-desde-el-plan",
+                                        "registrado-vs-indicado",
+                                        "alimentacion-y-medidas",
+                                        "progreso-de-un-ejercicio",
+                                        "comparar-etapas",
+                                        "informacion-para-revisar"
+                                      ]
+                                    },
+                                    "params": {
+                                      "type": "object",
+                                      "properties": {
+                                        "area": {
+                                          "type": "string",
+                                          "enum": [
+                                            "NUTRICION",
+                                            "ENTRENAMIENTO"
+                                          ]
+                                        },
+                                        "planVersionId": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "stageA": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "stageB": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "bodyMetric": {
+                                          "type": "string",
+                                          "pattern": "^antropometria\\.[a-z0-9-]+$"
+                                        },
+                                        "exerciseKey": {
+                                          "type": "string",
+                                          "pattern": "^[ev]:[0-9a-fA-F-]{36}$"
+                                        },
+                                        "setIndex": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 30
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "enum": [
+                                            "kg",
+                                            "lb"
+                                          ]
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "params"
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "metrics": {
                                   "minItems": 1,
@@ -92960,6 +94411,72 @@
                             "type": "number",
                             "const": 1
                           },
+                          "question": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "enum": [
+                                  "cambio-desde-el-plan",
+                                  "registrado-vs-indicado",
+                                  "alimentacion-y-medidas",
+                                  "progreso-de-un-ejercicio",
+                                  "comparar-etapas",
+                                  "informacion-para-revisar"
+                                ]
+                              },
+                              "params": {
+                                "type": "object",
+                                "properties": {
+                                  "area": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRICION",
+                                      "ENTRENAMIENTO"
+                                    ]
+                                  },
+                                  "planVersionId": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "stageA": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "stageB": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "bodyMetric": {
+                                    "type": "string",
+                                    "pattern": "^antropometria\\.[a-z0-9-]+$"
+                                  },
+                                  "exerciseKey": {
+                                    "type": "string",
+                                    "pattern": "^[ev]:[0-9a-fA-F-]{36}$"
+                                  },
+                                  "setIndex": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 30
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "enum": [
+                                      "kg",
+                                      "lb"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "params"
+                            ],
+                            "additionalProperties": false
+                          },
                           "metrics": {
                             "minItems": 1,
                             "maxItems": 3,
@@ -93349,6 +94866,72 @@
                                 "schemaVersion": {
                                   "type": "number",
                                   "const": 1
+                                },
+                                "question": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "enum": [
+                                        "cambio-desde-el-plan",
+                                        "registrado-vs-indicado",
+                                        "alimentacion-y-medidas",
+                                        "progreso-de-un-ejercicio",
+                                        "comparar-etapas",
+                                        "informacion-para-revisar"
+                                      ]
+                                    },
+                                    "params": {
+                                      "type": "object",
+                                      "properties": {
+                                        "area": {
+                                          "type": "string",
+                                          "enum": [
+                                            "NUTRICION",
+                                            "ENTRENAMIENTO"
+                                          ]
+                                        },
+                                        "planVersionId": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "stageA": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "stageB": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "bodyMetric": {
+                                          "type": "string",
+                                          "pattern": "^antropometria\\.[a-z0-9-]+$"
+                                        },
+                                        "exerciseKey": {
+                                          "type": "string",
+                                          "pattern": "^[ev]:[0-9a-fA-F-]{36}$"
+                                        },
+                                        "setIndex": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 30
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "enum": [
+                                            "kg",
+                                            "lb"
+                                          ]
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "params"
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "metrics": {
                                   "minItems": 1,

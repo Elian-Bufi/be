@@ -120,6 +120,12 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
     (x) => x.comparacion.fecha >= o.desde && x.comparacion.fecha <= o.hasta,
   );
   const unidad = o.metrica === 'LOAD' ? o.unidad : UNIDAD_DE_LA_METRICA[o.metrica];
+  // La versión que ejecuta cada sesión es la que guardó su registro: una sesión del plan anterior cargada después no se reatribuye.
+  const versionDe = new Map(ejecuciones.map((e) => [e.executionId, e.planId] as const));
+  const versionesDe = (x: ObservacionDeEvolucion) => {
+    const v = versionDe.get(x.comparacion.executionId);
+    return v ? [v] : [];
+  };
   const notas: string[] = [...definicion.limites];
   let puntos: PuntoAnalitico[] = [];
 
@@ -145,6 +151,8 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
         corrected: c.fuente.tipo === 'correccion',
         partialBucket: false,
         dataClass: null,
+        method: null,
+        planVersionIds: versionesDe(x),
         coverage: null,
         missing: [],
         detail: [
@@ -174,6 +182,8 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
             corrected: deLaSemana.some((p) => p.corrected),
             partialBucket: s.parcial,
             dataClass: null,
+            method: null,
+            planVersionIds: [...new Set(deLaSemana.flatMap((p) => p.planVersionIds))].sort(),
             coverage: null,
             missing: [],
             detail: [{ label: 'Sesiones registradas', value: String(deLaSemana.length) }],
@@ -212,6 +222,8 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
         corrected: p.fila?.corregida ?? false,
         partialBucket: false,
         dataClass: null,
+        method: null,
+        planVersionIds: versionesDe(p.observacion),
         coverage: null,
         missing: [],
         detail: [

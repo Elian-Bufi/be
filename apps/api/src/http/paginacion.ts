@@ -95,3 +95,11 @@ export function paginar<T extends { momentoDeRegistro: Date; id: string }>(
     page: { limit, nextCursor: hayMas && ultima ? escribirCursor(ultima.momentoDeRegistro, ultima.id) : null, hasMore: hayMas },
   };
 }
+
+/**
+ * Una búsqueda que llegó en el cuerpo de un POST (DL-127, DL-130), como la consulta de URL equivalente: la misma lectura
+ * valida el límite, el cursor y los filtros con las mismas reglas que el GET. Solo se copian las claves declaradas.
+ */
+export function comoConsultaDeLista(b: { readonly q: string; readonly type?: string; readonly limit?: number; readonly cursor?: string }): Record<string, unknown> {
+  return { q: b.q, ...(b.type !== undefined ? { type: b.type } : {}), ...(b.limit !== undefined ? { limit: String(b.limit) } : {}), ...(b.cursor !== undefined ? { cursor: b.cursor } : {}) };
+}

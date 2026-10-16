@@ -12,6 +12,8 @@
  *   confunden con ninguna métrica.
  * - **La clase del dato** se ve en el punto: un valor reportado por la persona tiene el contorno cortado, y uno
  *   calculado por un método (una estimación), un punto adentro. Lo medido es la marca llena de siempre.
+ * - **Un día o una semana sin completar no se une a la línea** (WP-DASHBOARD-COMPRENSION, eje 6): el día en curso es un
+ *   punto hueco suelto, para que un subtotal de la mañana no se lea como una caída. La lectura dice que sigue en curso.
  * - **El valor exacto no depende del puntero:** el panel de lectura y la tabla lo dicen; el teclado mueve la fecha
  *   elegida (flechas, Inicio y Fin) y el arrastre sobre un panel es solo un atajo de los campos de fecha (WCAG 2.5.7).
  */
@@ -90,6 +92,8 @@ function Forma({ forma, cx, cy, r, color, hueco, trazo = 2, clase = null }: { fo
 export interface SerieParaDibujar {
   readonly indice: number;
   readonly nombre: string;
+  /** El título completo del panel: la métrica, lo que es cada punto y (en el lienzo) la unidad. */
+  readonly titulo?: string;
   readonly unidad: string;
   readonly serie: SerieAnalitica;
   /** El valor que se dibuja de cada punto (el real o el cambio relativo); `null` no se dibuja. */
@@ -118,12 +122,15 @@ interface PropsDelLienzo {
   readonly descripcion: string;
 }
 
+/** El título con su unidad, una sola vez: el nombre de una carga ya la dice («serie 1 (kg)»). */
+const conUnidad = (titulo: string, unidad: string): string => (titulo.includes(`(${unidad})`) ? titulo : `${titulo} (${unidad})`);
+
 export function Lienzo(p: PropsDelLienzo) {
   if (p.modo === 'PANELS') {
     return (
       <div className="paneles-sincronizados">
         {p.series.map((s) => (
-          <Panel key={s.indice} {...p} series={[s]} titulo={`${s.nombre} (${s.unidad})`} unidad={s.unidad} alto={190} />
+          <Panel key={s.indice} {...p} series={[s]} titulo={conUnidad(s.titulo ?? s.nombre, s.unidad)} unidad={s.unidad} alto={190} />
         ))}
       </div>
     );
@@ -160,12 +167,14 @@ function Panel({
     for (const s of series) {
       const segmentos = [...new Set(s.serie.points.map((pt) => pt.segment))];
       segmentos.forEach((_, j) => columnas.push({ clave: `s${s.indice}_${j}`, indice: s.indice }));
+      // Lo que todavía no se completó va en una columna propia: un punto suelto, sin línea que lo una.
+      if (s.serie.points.some((pt) => pt.partialBucket)) columnas.push({ clave: `s${s.indice}_curso`, indice: s.indice });
       for (const pt of s.serie.points) {
         const v = s.valor(pt);
         if (v === null) continue;
         const x = xDe(pt);
         if (x < x0 || x > x1) continue;
-        const clave = `s${s.indice}_${segmentos.indexOf(pt.segment)}`;
+        const clave = pt.partialBucket ? `s${s.indice}_curso` : `s${s.indice}_${segmentos.indexOf(pt.segment)}`;
         const fila = mapa.get(x) ?? { x };
         fila[clave] = v;
         mapa.set(x, fila);
@@ -306,7 +315,8 @@ function Panel({
               tick={{ fill: 'var(--tenue)', fontSize: 12 }}
               axisLine={{ stroke: 'var(--borde-control)' }}
             />
-            <YAxis width={58} domain={['auto', 'auto']} tickFormatter={(v: number) => numero(v)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }} />
+            {/* Una métrica entera (repeticiones, RIR, conteos) no tiene marcas como «5,25 rep». */}
+            <YAxis width={58} domain={['auto', 'auto']} allowDecimals={modo === 'RELATIVE' || series.some((s) => s.decimales > 0)} tickFormatter={(v: number) => numero(v)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }} />
             {tramos.map((t) => {
               const e = ESTILOS[t.indice] ?? ESTILOS[0];
               return <Line key={t.clave} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={2} strokeDasharray={modo === 'PANELS' ? undefined : e.trazo} connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;

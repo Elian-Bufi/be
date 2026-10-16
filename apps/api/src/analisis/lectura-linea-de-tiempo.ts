@@ -1,5 +1,7 @@
 import {
+  comidaFrenteALoIndicado,
   ejerciciosComparables,
+  frenteALoIndicadoEnPalabras,
   observacionesDelEjercicio,
   redondeoDePresentacion,
   registradoTarde,
@@ -29,7 +31,7 @@ type Tx = Prisma.TransactionClient;
  * - **Solo relaciones que las fuentes ya contienen** (TEST-TIM-002): sucesión de versiones, ejecución de una versión,
  *   rectificación, anulación, corrección y la versión que nació de una revisión. Nunca por cercanía temporal.
  * - **Una anulación no borra la entrada** (B10-08 §12): el registro sigue, marcado.
- * - **Sin juicios:** los detalles son hechos («Cantidades: informadas»), no calificaciones.
+ * - **Sin juicios:** los detalles son hechos («Cantidades: informadas a mano»), no calificaciones.
  * - **Las fotos no viajan:** se dice «con foto»; el medio privado se abre en su registro, con su recurso protegido.
  */
 
@@ -57,7 +59,7 @@ const MOTIVO_DE_CIERRE: Readonly<Record<string, string>> = {
   CIERRE_DE_CUENTA: 'Cierre de cuenta',
 };
 
-const CANTIDADES: Readonly<Record<string, string>> = { UNCONFIRMED: 'sin confirmar', PLAN_PORTIONS: 'las del plan', REPORTED: 'informadas' };
+const CANTIDADES: Readonly<Record<string, string>> = { UNCONFIRMED: 'sin confirmar', PLAN_PORTIONS: 'las del plan, confirmadas', REPORTED: 'informadas a mano' };
 
 const NOMBRE_DEL_ALCANCE: Readonly<Record<AlcanceDelAnalisis | 'ANTROPOMETRIA', string>> = { NUTRICION: 'nutrición', ENTRENAMIENTO: 'entrenamiento', ANTROPOMETRIA: 'antropometría' };
 const DOMINIO_DEL_ALCANCE: Readonly<Record<AlcanceDelAnalisis | 'ANTROPOMETRIA', DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
@@ -154,6 +156,10 @@ export function entradasDeComidas(registros: readonly RegistroDeComida[], asesor
     if (r.consumption?.status === 'UNCONFIRMED') calidad.push('QUANTITIES_UNCONFIRMED');
     if (r.consumption?.status === 'PLAN_PORTIONS') calidad.push('QUANTITIES_FROM_PLAN');
     if (r.consumption?.status === 'REPORTED') calidad.push('QUANTITIES_REPORTED');
+    // El modo no dice si difiere: unas cantidades informadas pueden coincidir con la opción. La diferencia se comprueba
+    // ingrediente por ingrediente, con el mismo contraste del dominio que se abre al costado.
+    const frente = comidaFrenteALoIndicado(r);
+    if (frente.resultado === 'DIFERENCIA_COMPROBADA') calidad.push('QUANTITIES_DIFFER_FROM_PLAN');
     const incompletos = r.consumed ? Object.values(r.consumed).some((v) => v.value === null) : false;
     if (incompletos) calidad.push('NUTRIENTS_INCOMPLETE');
     const energia = r.consumed?.energyKcal.value ?? null;
@@ -172,6 +178,8 @@ export function entradasDeComidas(registros: readonly RegistroDeComida[], asesor
         ...(r.description ? [{ label: 'Descripción', value: r.description }] : []),
         ...(r.approximateQuantity ? [{ label: 'Cantidad aproximada', value: r.approximateQuantity }] : []),
         ...(r.consumption ? [{ label: 'Cantidades', value: CANTIDADES[r.consumption.status] ?? r.consumption.status }] : []),
+        // Solo con cantidades informadas BE compara: el resultado va aparte del modo.
+        ...(frente.modo === 'INFORMADAS' ? [{ label: 'Frente a lo indicado', value: frenteALoIndicadoEnPalabras(frente) }] : []),
         // El mismo redondeo que la pantalla de registro: el valor coincide en los dos lugares (encargo §11).
         ...(energia !== null ? [{ label: 'Energía registrada', value: `${redondeoDePresentacion(energia, 'energyKcal')} kcal` }] : []),
         ...(incompletos ? [{ label: 'Nutrientes', value: 'falta el dato de alguno' }] : []),

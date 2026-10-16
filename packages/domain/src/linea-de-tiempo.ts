@@ -10,7 +10,20 @@
  * - **La búsqueda** recorre todo el conjunto autorizado del período: título y detalles visibles, sin distinguir
  *   mayúsculas ni acentos.
  */
-import { CalidadDeEntradaSchema, TIPOS_DE_EVENTO, type CalidadDeEntrada, type ConteosDelPeriodo, type DominioDeAnalisis, type EntradaDeLineaDeTiempo, type EstadoDeEntrada, type TipoDeEvento } from './contratos-analisis';
+import {
+  CalidadDeEntradaSchema,
+  DominioDeAnalisisSchema,
+  TIPOS_DE_EVENTO,
+  type CalidadDeEntrada,
+  type ConteosDelPeriodo,
+  type DominioDeAnalisis,
+  type EntradaDeLineaDeTiempo,
+  type EstadoDeEntrada,
+  type NovedadDesde,
+  type NovedadesDesde,
+  type RelacionDeEntrada,
+  type TipoDeEvento,
+} from './contratos-analisis';
 import { fechaCivil } from './fechas-civiles';
 
 /** Compara dos entradas en el orden de la línea de tiempo (la primera del resultado es la más reciente). */
@@ -89,6 +102,57 @@ export interface FiltrosDeLineaDeTiempo {
   readonly q?: string;
   /** Solo las registradas en un día posterior al del hecho. */
   readonly soloTardias?: boolean;
+  /** Solo lo que es nuevo desde un instante de corte (una revisión registrada): ver `novedadDesde`. */
+  readonly novedadesDesde?: string;
+}
+
+// ─── Novedades desde un corte (encargo del 2026-10-09, eje 1) ───────────────────────────────────
+
+/** Las relaciones que cambian un registro ya hecho: una rectificación, una anulación o una corrección. */
+const CAMBIOS_DE_UN_REGISTRO: ReadonlySet<RelacionDeEntrada['kind']> = new Set(['RECTIFIED', 'ANNULLED', 'CORRECTED', 'MEASUREMENT_CORRECTED', 'MEASUREMENT_ANNULLED']);
+
+/**
+ * Qué trae una entrada de nuevo desde un instante de corte, el de una revisión registrada. Son dos preguntas distintas y
+ * no se mezclan: cuándo **ocurrió** el hecho y cuándo **se incorporó** a BE (o se corrigió).
+ * - `OCURRIO_DESPUES`: se registró después del corte y el hecho también es posterior.
+ * - `INCORPORADO_DESPUES`: se registró después del corte, pero el hecho es anterior. Una toma vieja cargada hoy es
+ *   información nueva aunque haya ocurrido antes.
+ * - `CORREGIDO_DESPUES`: se registró antes del corte, y una rectificación, anulación o corrección con instante posterior lo
+ *   cambió. Se usa el instante de esa relación, nunca un `updatedAt` genérico.
+ * - `null`: nada nuevo desde el corte.
+ * El corte se excluye (cuenta lo estrictamente posterior: la revisión misma no es una novedad). Un hecho que solo tiene
+ * fecha, del mismo día civil del corte (en la zona de la entrada) y registrado después, se cuenta como ocurrido después:
+ * sin hora no se puede saber. Una entrada sin instante de registro se juzga por su hecho.
+ */
+export function novedadDesde(e: EntradaDeLineaDeTiempo, desde: string): NovedadDesde | null {
+  const corte = Date.parse(desde);
+  const ocurrioDespues = () => (e.occurredAt !== null ? Date.parse(e.occurredAt) > corte : e.occurredDate >= fechaCivil(desde, e.timeZone));
+  if (e.recordedAt === null ? ocurrioDespues() : Date.parse(e.recordedAt) > corte) return ocurrioDespues() ? 'OCURRIO_DESPUES' : 'INCORPORADO_DESPUES';
+  if (e.relations.some((r) => CAMBIOS_DE_UN_REGISTRO.has(r.kind) && r.at !== null && Date.parse(r.at) > corte)) return 'CORREGIDO_DESPUES';
+  return null;
+}
+
+/** Cuántas novedades hay desde el corte, por clase, dominio y tipo de evento, en el orden del contrato. */
+export function conteosDesde(entradas: readonly EntradaDeLineaDeTiempo[], desde: string): NovedadesDesde {
+  const cuenta = new Map<string, number>();
+  for (const e of entradas) {
+    const n = novedadDesde(e, desde);
+    if (n === null) continue;
+    const clave = `${n}|${e.domain}|${e.eventType}`;
+    cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
+  }
+  const clases: readonly NovedadDesde[] = ['OCURRIO_DESPUES', 'INCORPORADO_DESPUES', 'CORREGIDO_DESPUES'];
+  return {
+    since: desde,
+    counts: clases.flatMap((kind) =>
+      DominioDeAnalisisSchema.options.flatMap((domain) =>
+        TIPOS_DE_EVENTO.flatMap((eventType) => {
+          const count = cuenta.get(`${kind}|${domain}|${eventType}`);
+          return count ? [{ kind, domain, eventType, count }] : [];
+        }),
+      ),
+    ),
+  };
 }
 
 /** Minúsculas y sin acentos: «Almuerzo» y «almuérzo» coinciden. */
@@ -111,6 +175,7 @@ export function cumpleFiltros(e: EntradaDeLineaDeTiempo, f: FiltrosDeLineaDeTiem
   if (f.planVersionId && e.planVersionId !== f.planVersionId) return false;
   if (f.exerciseKey && !e.exerciseKeys.includes(f.exerciseKey)) return false;
   if (f.soloTardias && !e.recordedLate) return false;
+  if (f.novedadesDesde && novedadDesde(e, f.novedadesDesde) === null) return false;
   if (f.q) {
     const palabras = normalizarTexto(f.q).split(' ').filter(Boolean);
     const texto = textoBuscable(e);

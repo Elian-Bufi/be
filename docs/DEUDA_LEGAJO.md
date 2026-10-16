@@ -133,6 +133,8 @@
 | DL-126 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §18-§23 · B10-09 §15-§28 · 11A TEST-PRJ-001 · encargo §8-§13 | «Analizar» con hasta tres métricas sobre API-PRJ-01: el 09 define ocho proyecciones con resultado propio, y solo tres tienen una derivación definida en BE | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · las 8 claves en el contrato; 3 derivadas con el cálculo canónico del dominio; 5 responden `INSUFFICIENT_INFORMATION` con `SPECIFICATION_PENDING`. Diccionario de métricas versionado |
 | DL-127 | Encargo de Dirección · 2026-10-08 (entorno profesional) | 09 v0.11 §16 · B10-08 §11-§12 · T-06-24 · DL-054 · DL-116 | API-DSH-04 (línea de tiempo) sin implementar: fuentes, forma de la entrada y filtros que el 09 no fija | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · ruta del 09; `occurredDate` para los hechos sin hora; extensiones de filtro `state`, `quality`, `planVersionId` y `exerciseId`; búsqueda en el cuerpo de API-DSH-04-BUSQUEDA (`POST …/timeline/search`), nunca en una URL |
 | DL-128 | Encargo de Dirección · 2026-10-08 (entorno profesional) | encargo §8 y §16 («guardar una vista personal») · 09 sin operación · 08 (preferencias sin datos de salud) | Vistas de análisis guardadas e indicadores fijados del Resumen: no existen en el 09 ni en el modelo | **PROPUESTA** en `wp-dashboard-profesional`, sin integrar · familia propia VAN (API-VAN-01 a 04), tabla aditiva `vista_de_analisis` con configuración sin datos de salud; los permisos se revalidan al abrir |
+| DL-129 | Encargo de Dirección · 2026-10-09 (comprensión profesional) | 09 v0.11 §15-§16, §19-§20 · B10-08 §8, §10-§12 · DL-126 · DL-127 · DL-128 · encargo §3-§9 | Comprender, investigar y actuar: el 09 no tiene «desde la última revisión», etapas de planificación ni preguntas profesionales | **PROPUESTA** en `wp-dashboard-comprension`, sin integrar · extensiones aditivas de lectura (DSH-03, DSH-04 `since`, PRJ-01) y reglas del dominio (síntesis, etapas, preguntas); API-ANT-06 y las APK sin cambios |
+| DL-130 | Encargo de Dirección · 2026-10-09 (§3.C) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · DL-127 | La búsqueda en los catálogos de alimentos y ejercicios lleva el texto en la URL | **PROPUESTA** en `wp-dashboard-comprension`, sin integrar · variantes `API-NUT-13-BUSQUEDA` y `API-TRN-13-BUSQUEDA` (POST con el texto en el cuerpo); el GET se conserva con su contrato |
 
 ---
 
@@ -3535,3 +3537,67 @@ en preferencias) · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-profesion
 **Provisorio en código.** A.
 
 **Condición de cierre.** Dirección aprueba la familia y el 09 la incorpora o la declara extensión de BE.
+
+## DL-129 — Comprender, investigar y actuar: corte por revisión, etapas y preguntas
+
+**Prioridad:** alta · **Documento:** 09 v0.11 §15 (API-DSH-03), §16 (API-DSH-04), §19-§20 (API-PRJ-01) · B10-08 §8, §10-§12 ·
+DL-126, DL-127, DL-128 · encargo del 2026-10-09, §3 a §9 · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-comprension`)
+
+**Qué pide el encargo.**
+- Un Resumen que prepare la consulta: «Para tu próxima revisión», con observaciones factuales, su origen, su alcance y su
+  corte, y «desde la última revisión» por área.
+- Entrar por preguntas profesionales con parámetros tipados.
+- Comparar por etapas reales de planificación, con reglas temporales explícitas.
+- Distinguir la función del dato (planificado o registrado), su clase (medido, reportado o calculado) y su calidad.
+
+**Qué falta en el 09.**
+- No hay corte por revisión: el dashboard dice la última revisión, pero no si se aplicó ni qué es nuevo desde entonces.
+- No hay etapas: las vigencias de los planes existen como bandas, sin instante de corte ni regla de atribución.
+- No hay preguntas ni naturaleza del método en las proyecciones: «calculado» se leía siempre como «estimación».
+
+**Opciones.**
+- **A.** Extensiones **aditivas** de lectura y reglas del dominio, sin operaciones nuevas:
+  - **API-DSH-03:** `lastReview.application` (si se aplicó, cuándo y qué creó), `draftPlan` (el borrador del plan, que no
+    rige) y `objective.effectiveFrom`. Solo lo lee la web.
+  - **API-DSH-04:** `since` (un instante, en la consulta y en el cuerpo de la búsqueda) filtra a lo nuevo desde ese corte, y
+    `sinceCounts` lo cuenta por clase (ocurrió después, se incorporó después o se corrigió después), dominio y tipo, con
+    los instantes de registro y de cada relación, nunca con un `updatedAt`. Desde la pasada del 2026-10-09, el rasgo de
+    calidad `QUANTITIES_DIFFER_FROM_PLAN` (una diferencia comprobada, ingrediente por ingrediente, entre las cantidades
+    informadas y la opción indicada) y el detalle «Frente a lo indicado»: el modo de registro no es una diferencia.
+  - **API-PRJ-01:** en cada punto, el método con su naturaleza (índice, suma de pliegues, estimación, componente del
+    somatotipo o sin especificar, desde la categoría de su ficha, DL-111) y las versiones del plan que ejecutan sus
+    registros; en cada vigencia, el instante y el motivo del corte; en las métricas antropométricas disponibles, cuántos
+    grupos de comparabilidad tienen. API-ANT-06 no cambia: la APK la valida con un esquema estricto.
+  - **Dominio:** la síntesis del Resumen (reglas determinísticas y plantillas fijas, sin calificar), las etapas (el día
+    del corte es de la etapa siguiente; dos activaciones el mismo día se separan por instantes; entrenamiento se resume
+    por la versión ejecutada, nutrición y antropometría por fechas, diciendo lo asociado a otra versión) y las seis
+    preguntas (nada se elige por la persona; lo de otro asesorado se vuelve a pedir).
+  - **Vistas guardadas:** la configuración puede llevar la pregunta y sus parámetros (identificadores).
+- **B.** Operaciones nuevas de «síntesis» en el servidor. Duplicaría el motor analítico y la historia de revisiones, que
+  el encargo prohíbe.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba las extensiones, las reglas temporales de las etapas y las plantillas de la
+síntesis, y el 09 las incorpora o las declara extensiones de BE.
+
+## DL-130 — Búsqueda en los catálogos con el texto en el cuerpo
+
+**Prioridad:** media · **Documento:** 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · DL-127 · encargo del
+2026-10-09, §3.C · **Estado:** PROPUESTA, sin integrar (`wp-dashboard-comprension`)
+
+**Qué pasa.** Los buscadores de alimentos y de ejercicios de la web mandaban el texto en la URL (`?q=`), que queda en
+historiales, proxies y bitácoras de la plataforma, fuera del control de BE. Es el mismo riesgo que DL-127 corrigió en la
+línea de tiempo.
+
+**Opciones.**
+- **A.** Variantes de BE con sufijo `BUSQUEDA`: `POST /nutrition/catalog-items/search` (API-NUT-13-BUSQUEDA) y
+  `POST /training/exercises/search` (API-TRN-13-BUSQUEDA), con el texto, el límite y el cursor en un cuerpo estricto, la
+  misma lectura y la misma respuesta que el GET. Es una lectura: 200, sin Idempotency-Key. El registro de requests guarda
+  la ruta y nunca el cuerpo. La web usa las variantes; el GET con `q` se conserva con su contrato para los clientes
+  instalados (las APK no buscan en estos catálogos y no cambian).
+- **B.** Quitar `q` del GET. Rompería el contrato legado.
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Dirección aprueba las variantes y el 09 las incorpora.

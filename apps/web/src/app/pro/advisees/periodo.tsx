@@ -21,9 +21,9 @@ const DIAS_MAXIMOS = 92;
 const hoyLocal = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
 const dias = (desde: string, hasta: string): number => (new Date(`${hasta}T12:00:00Z`).getTime() - new Date(`${desde}T12:00:00Z`).getTime()) / 86_400_000;
 
-export function FiltroDePeriodo({ id, onAplicar, diasMaximos = DIAS_MAXIMOS }: { id: string; onAplicar: (p: Periodo) => void; diasMaximos?: number }) {
-  const [desde, setDesde] = useState('');
-  const [hasta, setHasta] = useState('');
+export function FiltroDePeriodo({ id, onAplicar, diasMaximos = DIAS_MAXIMOS, inicial }: { id: string; onAplicar: (p: Periodo) => void; diasMaximos?: number; inicial?: Periodo }) {
+  const [desde, setDesde] = useState(inicial?.periodStart ?? '');
+  const [hasta, setHasta] = useState(inicial?.periodEnd ?? '');
   const [error, setError] = useState<{ campo: 'desde' | 'hasta'; texto: string } | null>(null);
 
   function aplicar(e: FormEvent) {

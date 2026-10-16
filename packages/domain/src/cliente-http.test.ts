@@ -51,6 +51,7 @@ const LINEA_VACIA = {
     sourceDomains: ['NUTRITION'],
     totalMatching: 0,
     periodCounts: { byEventType: [], byQuality: [], recordedLate: 0 },
+    sinceCounts: null,
     searchScope: 'WHOLE_PERIOD',
     entries: [],
   },

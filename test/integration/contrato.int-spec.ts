@@ -337,6 +337,13 @@ it('TEST-CT (WP-04): se ejercitan éxitos y errores de NUT e INT-NUT-01', async 
   await pro.get('/api/v1/nutrition/catalog-items?q=arroz').expect(200);
   await pro.get('/api/v1/nutrition/catalog-items?type=OTRO').expect(400);
   await ase.get('/api/v1/nutrition/catalog-items').expect(403);
+  // NUT-13-BUSQUEDA (DL-130): la misma lectura con el texto en el cuerpo; un campo de más, un cursor alterado o un parámetro
+  // en la URL son 400, y un asesorado no busca en el catálogo profesional.
+  await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', limit: 5 }).expect(200);
+  await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', orden: 'asc' }).expect(400); // UNKNOWN_FIELD
+  await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', cursor: 'basura' }).expect(400); // INVALID_CURSOR
+  await pro.post('/api/v1/nutrition/catalog-items/search?q=arroz').send({ q: 'arroz' }).expect(400); // INVALID_REQUEST: nada en la URL
+  await ase.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz' }).expect(403);
   const nuevo = { name: 'Galleta sintética', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 420, proteinG: 8, carbohydrateG: 70, fatG: 12 } };
   await pro.post('/api/v1/nutrition/catalog-items').send(nuevo).expect(201);
   await ase.post('/api/v1/nutrition/catalog-items').send(nuevo).expect(403);
@@ -861,6 +868,11 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await pro.get('/api/v1/training/exercises?q=press').expect(200);
   await pro.get('/api/v1/training/exercises?zona=pecho').expect(400);
   await ase.get('/api/v1/training/exercises').expect(403);
+  // TRN-13-BUSQUEDA (DL-130): la misma lectura con el texto en el cuerpo.
+  await pro.post('/api/v1/training/exercises/search').send({ q: 'press', limit: 5 }).expect(200);
+  await pro.post('/api/v1/training/exercises/search').send({ q: 'press', zona: 'pecho' }).expect(400); // UNKNOWN_FIELD
+  await pro.post('/api/v1/training/exercises/search').send({ q: 'press', cursor: 'basura' }).expect(400); // INVALID_CURSOR
+  await ase.post('/api/v1/training/exercises/search').send({ q: 'press' }).expect(403);
   const ejercicio = { name: 'Ejercicio sintético del contrato', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } };
   await pro.post('/api/v1/training/exercises').send(ejercicio).expect(201);
 
@@ -1404,11 +1416,15 @@ it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, DSH-04-BUSQUEDA, PRJ-01 y VAN-01
   await pro.get(`${linea}?periodStart=2026-10-09&periodEnd=2026-10-01`).expect(400); // INVALID_REQUEST: período invertido
   await pro.get(`${linea}?cursor=basura`).expect(400); // INVALID_CURSOR
   await pro.get(`${linea}?q=cena`).expect(400); // INVALID_REQUEST: el texto ya no va en la URL (DL-127)
+  // Extensión aditiva: el corte de una revisión (`since`) trae sus conteos; un instante mal formado es 400.
+  await pro.get(`${linea}?since=2026-09-20T15:00:00.000Z&limit=5`).expect(200);
+  await pro.get(`${linea}?since=ayer`).expect(400); // INVALID_REQUEST: INVALID_FILTER
   await tercero.get(linea).expect(404);
   await request(servidor).get(linea).expect(401);
   // DSH-04-BUSQUEDA: la búsqueda con el texto en el cuerpo; mismos errores que la consulta, y UNKNOWN_FIELD.
   const busqueda = `${linea}/search`;
   await pro.post(busqueda).send({ q: 'cena', limit: 5 }).expect(200);
+  await pro.post(busqueda).send({ q: 'cena', since: '2026-09-20T15:00:00.000Z' }).expect(200);
   await pro.post(busqueda).send({ q: 'cena', orden: 'asc' }).expect(400); // UNKNOWN_FIELD
   await pro.post(busqueda).send({ q: '' }).expect(400); // INVALID_REQUEST: texto vacío
   await pro.post(busqueda).send({ q: 'cena', cursor: 'basura' }).expect(400); // INVALID_CURSOR
