@@ -320,3 +320,41 @@ test('TEST-TVCC-012 · interpretación: no se presenta como retención, adherenc
   recorrer(r);
   assert.deepEqual(claves.filter((k) => /reten|adheren|score|ranking|salud|health|clinic/i.test(k)), []);
 });
+
+test('DL-135 D-3 · lo que fija la revisión al aplicarse ya es el ciclo siguiente, también la versión de plan que crea un AJUSTAR', () => {
+  const pro = id('pro');
+  const ase = id('ase');
+  // El plan fija el 10/10. El 3/10 el profesional revisa antes de tiempo con AJUSTAR: la aplicación activa la versión 2
+  // del plan, que fija el 20/11, y la revisión fija después el 30/11. Las dos expectativas nacen de esa revisión.
+  const e1 = expectativa('2026-10-10', en('2026-09-01T10:00'));
+  const r1: RevisionTvcc30 = {
+    id: id('rev'),
+    resultado: 'AJUSTAR',
+    registradaEn: en('2026-10-03T09:00'),
+    aplicacion: { eventoId: id('evt'), tipo: 'CONTINUIDAD', registradaEn: en('2026-10-03T09:05'), versionDePlanCreadaId: 'version-ajustada' },
+  };
+  const e2 = expectativa('2026-11-20', en('2026-10-03T09:05'), { predecesoraId: e1.id, versionDePlanId: 'version-ajustada' });
+  const e3 = expectativa('2026-11-30', en('2026-10-03T09:05'), { predecesoraId: e2.id, revisionId: r1.id, versionDePlanId: null });
+  const proceso: ProcesoTvcc30 = { procesoId: id('proc'), alcance: 'NUTRICION', profesionalId: pro, asesoradoId: ase, expectativas: [e1, e2, e3], revisiones: [r1], cierreSinRevision: null };
+  const vinculos = [aceptado(pro, ase, 'NUTRICION')];
+  // La revisión cerró el ciclo del 10/10, antes de que venciera; no «revisó» lo que ella misma fijó.
+  const oct = calcularTvcc30({ corte: CORTE, procesos: [proceso], vinculos, cuentasDemo: [] });
+  assert.deepEqual(
+    oct.universo.map((c) => [c.cicloId, c.ancla, c.origenDelAncla, c.expectativas, c.numerador, c.cierre?.revisionId]),
+    [[`${proceso.procesoId}#1`, '2026-10-10', 'REVISADO_ANTES_DE_VENCER', [e1.id], 'INCLUIDO', r1.id]],
+  );
+  // El ciclo siguiente rige con la última fecha que quedó vigente, el 30/11 (la del 20/11 se reemplazó en el mismo acto).
+  // Con el corte del 30/11 venció sin revisión: entra en D y no en N.
+  const nov = calcularTvcc30({ corte: '2026-11-30', procesos: [proceso], vinculos, cuentasDemo: [] });
+  assert.deepEqual(nov.universo.map((c) => [c.cicloId, c.ancla, c.expectativas, c.numerador]), [[`${proceso.procesoId}#2`, '2026-11-30', [e2.id, e3.id], 'NO_INCLUIDO']]);
+});
+
+test('DL-135 D-6 · si el vínculo termina después del vencimiento, el ciclo vencido queda en D y no en N', () => {
+  const s = seguimiento('2026-10-01');
+  // Venció el 1/10 sin revisión, y el 5/10 la persona terminó el vínculo, lo que cerró el seguimiento.
+  const proceso: ProcesoTvcc30 = { ...s.proceso, cierreSinRevision: { motivo: 'FINALIZACION_DE_VINCULO', registradoEn: en('2026-10-05T10:00') } };
+  const vinculo: HistoriaDelAlcanceTvcc30 = { ...s.vinculo, estados: [...s.vinculo.estados, { desde: en('2026-10-05T10:00'), estado: 'FINALIZADO' }] };
+  const r = calcularTvcc30({ corte: CORTE, procesos: [proceso], vinculos: [vinculo], cuentasDemo: [] });
+  assert.deepEqual(r.universo.map((c) => [c.ancla, c.origenDelAncla, c.clasificacion, c.numerador]), [['2026-10-01', 'VENCIO', 'ELEGIBLE', 'NO_INCLUIDO']]);
+  assert.deepEqual(r.valor, { estado: 'CALCULADO', n: 0, d: 1, tasa: 0, porcentaje: 0 });
+});
