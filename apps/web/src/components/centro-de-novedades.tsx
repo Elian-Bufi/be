@@ -23,13 +23,14 @@ export type EspacioDeNovedades = 'pro' | 'cuenta';
 
 const POR_PAGINA = '30';
 
-/** Adónde lleva cada novedad en el website; `null` cuando se ve en la app. */
-export function destinoDeNovedad(n: Novedad, espacio: EspacioDeNovedades): string | null {
-  if (espacio === 'pro') {
-    if (n.open.view === 'ADVISEE' && n.open.referenceId) return `/pro/advisees?id=${encodeURIComponent(n.open.referenceId)}`;
-    if (n.open.view === 'RELATIONSHIPS' || n.open.view === 'ADVISEE') return '/pro';
-    return null;
-  }
+/**
+ * Adónde lleva cada novedad en el website; `null` cuando se ve en la app (un plan, una revisión, un recordatorio). La API
+ * ya eligió la vista según quién la lee (la ficha o el espacio profesional para el profesional, los vínculos para la
+ * persona): el destino no depende de en qué página está abierta la lista.
+ */
+export function destinoDeNovedad(n: Novedad): string | null {
+  if (n.open.view === 'ADVISEE') return n.open.referenceId ? `/pro/advisees?id=${encodeURIComponent(n.open.referenceId)}` : '/pro';
+  if (n.open.view === 'PRO_HOME') return '/pro';
   if (n.open.view === 'RELATIONSHIPS') return '/account/relationships';
   return null;
 }
@@ -78,7 +79,7 @@ export function CentroDeNovedades({ espacio }: { espacio: EspacioDeNovedades }) 
       setAviso(COPY_NOVEDADES.errorAlCargar);
       return;
     }
-    const destino = destinoDeNovedad(r.datos.data, espacio);
+    const destino = destinoDeNovedad(r.datos.data);
     if (destino) {
       router.push(destino);
       return;
@@ -103,7 +104,7 @@ export function CentroDeNovedades({ espacio }: { espacio: EspacioDeNovedades }) 
       </p>
       <ul className="novedades__lista">
         {estado.items.map((n) => {
-          const destino = destinoDeNovedad(n, espacio);
+          const destino = destinoDeNovedad(n);
           return (
             <li key={n.newsId} className={`novedad${n.readAt ? '' : ' novedad--sin-leer'}`}>
               <span className="novedad__icono">
@@ -117,7 +118,7 @@ export function CentroDeNovedades({ espacio }: { espacio: EspacioDeNovedades }) 
                 <p>{n.body}</p>
                 <p className="nota">
                   {fecha(n.occurredAt ?? n.recordedAt)}
-                  {destino === null && espacio === 'cuenta' && n.open.view !== 'NEWS' ? ' · Se ve en la app de BE.' : ''}
+                  {destino === null && n.open.view !== 'NEWS' ? ' · Se ve en la app de BE.' : ''}
                 </p>
               </div>
               <button type="button" className="boton boton--secundario novedad__abrir" onClick={() => void abrir(n)} disabled={abriendo !== null}>

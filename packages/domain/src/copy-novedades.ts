@@ -65,7 +65,15 @@ export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lec
       return 'TRAINING';
     case 'CONSENT_REVOKED':
       return 'ADVISEE';
+    // Para el profesional: la ficha de la persona si hay o hubo vínculo; el espacio profesional si es una solicitud. Para
+    // la persona: sus vínculos.
+    case 'RELATIONSHIP_REQUEST_RECEIVED':
+    case 'RELATIONSHIP_REQUEST_REJECTED':
+      return lectorEsProfesional ? 'PRO_HOME' : 'RELATIONSHIPS';
     case 'RELATIONSHIP_REQUEST_ACCEPTED':
+    case 'RELATIONSHIP_PAUSED':
+    case 'RELATIONSHIP_RESUMED':
+    case 'RELATIONSHIP_ENDED':
       return lectorEsProfesional ? 'ADVISEE' : 'RELATIONSHIPS';
     default:
       return 'RELATIONSHIPS';

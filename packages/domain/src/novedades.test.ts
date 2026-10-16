@@ -40,6 +40,10 @@ test('cada tipo tiene su texto y su pantalla; el texto nombra a quien la originÃ
   assert.equal(vistaDeNovedad('REVIEW_RECORDED', 'ENTRENAMIENTO', false), 'TRAINING_REVIEW');
   assert.equal(vistaDeNovedad('RELATIONSHIP_REQUEST_ACCEPTED', 'NUTRICION', true), 'ADVISEE');
   assert.equal(vistaDeNovedad('RELATIONSHIP_REQUEST_ACCEPTED', 'NUTRICION', false), 'RELATIONSHIPS');
+  // El profesional que lee una solicitud va a su espacio; con vÃ­nculo, a la ficha de la persona.
+  assert.equal(vistaDeNovedad('RELATIONSHIP_REQUEST_RECEIVED', 'NUTRICION', true), 'PRO_HOME');
+  assert.equal(vistaDeNovedad('RELATIONSHIP_PAUSED', 'NUTRICION', true), 'ADVISEE');
+  assert.equal(vistaDeNovedad('RELATIONSHIP_PAUSED', 'NUTRICION', false), 'RELATIONSHIPS');
 });
 
 test('las franjas: la tarde de 14 a 18 y la noche de 21 a 23; fuera de eso, ninguna', () => {

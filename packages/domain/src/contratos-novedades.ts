@@ -46,9 +46,10 @@ export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
 /**
  * La pantalla que resuelve la novedad. La abre el cliente y esa pantalla vuelve a autorizar: la novedad no concede nada
  * (INV-06-33). `referenceId` es lo que esa pantalla necesita (el asesorado en `ADVISEE`, la revisión en `NUTRITION_REVIEW`
- * y `TRAINING_REVIEW`, que la persona lee completa desde REV-A), o `null`.
+ * y `TRAINING_REVIEW`, que la persona lee completa desde REV-A), o `null`. `PRO_HOME` es el espacio profesional (las
+ * solicitudes), para el profesional que lee una novedad de una solicitud.
  */
-export const VISTAS_DE_NOVEDAD = ['NEWS', 'NUTRITION', 'TRAINING', 'RELATIONSHIPS', 'ADVISEE', 'NUTRITION_REVIEW', 'TRAINING_REVIEW'] as const;
+export const VISTAS_DE_NOVEDAD = ['NEWS', 'NUTRITION', 'TRAINING', 'RELATIONSHIPS', 'ADVISEE', 'NUTRITION_REVIEW', 'TRAINING_REVIEW', 'PRO_HOME'] as const;
 export type VistaDeNovedad = (typeof VISTAS_DE_NOVEDAD)[number];
 
 export const NovedadSchema = z.strictObject({
