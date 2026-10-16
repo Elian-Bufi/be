@@ -6,7 +6,9 @@
 databases:
   - name: be-db-test
     region: frankfurt
-    plan: free # expira a los 30 días (07 §31; ver DECISIONES_TECNICAS.md)
+    # Plan pago desde el 2026-10-16 (Dirección): el gratuito vencía el 2026-10-18, antes de la entrega. Una base paga no
+    # vence; pasar de gratuita a paga conserva los datos. Basic-256mb es la instancia mínima (07 §31).
+    plan: basic-256mb
     postgresMajorVersion: "16" # alineado con el harness postgres:16-alpine (07 §21, §35)
     databaseName: be_test
     user: be_test
@@ -17,7 +19,8 @@ services:
     name: be-api
     runtime: docker
     region: frankfurt
-    plan: free
+    # Starter desde el 2026-10-16 (Dirección): la gratuita se apagaba a los 15 minutos sin tráfico y tardaba ~30 s en volver.
+    plan: starter
     branch: main
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
@@ -54,8 +57,11 @@ services:
       #   Habilitación antropométrica efectiva» es una identidad válida (06 §8.10).
       # El tipo de perfil (SANITARIO / NO_SANITARIO) es de la identidad, no del alcance: la segunda declaración de una
       # misma identidad no lo cambia.
+      # Desde el 2026-10-16, también los profesionales de la cohorte realista (pedido de Dirección: personas con nombre y
+      # años de historia): Lic. Sofía Paz (Nutrición y Antropometría), Prof. Martín Acosta (Entrenamiento) y Prof. Lucía
+      # Benítez (Antropometría). Cuentas sintéticas @example.invalid, como las demás; sus credenciales viven fuera del repo.
       - key: BE_DEMO_PROFESIONALES
-        value: "9172fae6-13b8-4d34-8139-711b89d460c4|NUTRICION|SANITARIO|Lic. Demo Nutrición;81e11918-19f7-4f56-ac5c-1420a3da77bb|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo Entrenamiento;9172fae6-13b8-4d34-8139-711b89d460c4|ANTROPOMETRIA|SANITARIO|Lic. Demo Nutrición;c837438d-b72f-413c-a433-9ab9ae010e4c|ANTROPOMETRIA|NO_SANITARIO|Prof. Demo Antropometría"
+        value: "9172fae6-13b8-4d34-8139-711b89d460c4|NUTRICION|SANITARIO|Lic. Demo Nutrición;81e11918-19f7-4f56-ac5c-1420a3da77bb|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo Entrenamiento;9172fae6-13b8-4d34-8139-711b89d460c4|ANTROPOMETRIA|SANITARIO|Lic. Demo Nutrición;c837438d-b72f-413c-a433-9ab9ae010e4c|ANTROPOMETRIA|NO_SANITARIO|Prof. Demo Antropometría;240099e8-c7c0-4f8c-b45e-d6bbe00b774c|NUTRICION|SANITARIO|Lic. Sofía Paz;240099e8-c7c0-4f8c-b45e-d6bbe00b774c|ANTROPOMETRIA|SANITARIO|Lic. Sofía Paz;1c936397-98bc-4869-92ef-f723df9c7f59|ENTRENAMIENTO|NO_SANITARIO|Prof. Martín Acosta;f589af26-3dfe-483d-a112-a608ddc38d3d|ANTROPOMETRIA|NO_SANITARIO|Prof. Lucía Benítez"
       # DL-125 (precierre del 2026-10-06, §6): el acto EVIDENCIA_VISUAL del 08 §12.4. Con "true", subir la foto de una
       # comida exige haber registrado la información destacada para el profesional de Nutrición, y ese profesional ve las
       # fotos solo con el acto vigente. El texto es una PROPUESTA, pendiente de aprobación de Dirección y de validación
