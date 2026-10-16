@@ -6,7 +6,9 @@
 databases:
   - name: be-db-test
     region: frankfurt
-    plan: free # expira a los 30 días (07 §31; ver DECISIONES_TECNICAS.md)
+    # Plan pago desde el 2026-10-16 (Dirección): el gratuito vencía el 2026-10-18, antes de la entrega. Una base paga no
+    # vence; pasar de gratuita a paga conserva los datos. Basic-256mb es la instancia mínima (07 §31).
+    plan: basic-256mb
     postgresMajorVersion: "16" # alineado con el harness postgres:16-alpine (07 §21, §35)
     databaseName: be_test
     user: be_test
@@ -17,7 +19,8 @@ services:
     name: be-api
     runtime: docker
     region: frankfurt
-    plan: free
+    # Starter desde el 2026-10-16 (Dirección): la gratuita se apagaba a los 15 minutos sin tráfico y tardaba ~30 s en volver.
+    plan: starter
     branch: main
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
