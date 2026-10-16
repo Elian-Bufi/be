@@ -5,6 +5,7 @@
 > - **El profesional trabaja en un escritorio:** pendientes, asesorados con nombre y una ficha con Resumen, Línea de tiempo y Analizar.
 > - **Hay una cohorte de seis personas con historia,** de 6 meses a 3 años.
 > - **La APK suma:** Novedades con campana, avisos al teléfono (cuando esté Firebase), recordatorios diarios, «Tu nombre» y «Tus revisiones».
+> - **La métrica de la tesis se calcula:** la TVCC-30, con sus doce pruebas, reproducible y guardada (A.7).
 >
 > El recorrido nuevo, con la cohorte, va primero. El recorrido detallado con las cuentas DEMO (antropometría sobre la figura, pedir información y la revocación) sigue más abajo y sigue valiendo.
 >
@@ -40,7 +41,8 @@
 | A.4 | **Martín Acosta** → la ficha de **Federico** → Entrenamiento | La revisión que vencía, preparada con la evidencia del período («Lo que miraste»). Registrar una revisión nueva: «Lo que observaste», «Lo que decidís» y el porqué. La ayuda avisa que la persona la va a leer completa |
 | A.5 | La APK con **Federico** | La **campana** con la novedad: «Prof. Martín Acosta registró una revisión de Entrenamiento». Tocarla abre la revisión completa, con lo que significa para su plan. Con Firebase, además, el teléfono avisa con «BE · Tenés una novedad.», sin nombres ni datos de salud |
 | A.6 | La APK con **Diego** | Inicio, Nutrición (el plan de hoy), Entrenamiento (la sesión por serie), Evolución y Novedades. En **Cuenta**: «Tu nombre», que es el que ven sus profesionales, y «Avisos en este teléfono», con los recordatorios de las 15:00 y las 22:00 si ese día no registró nada |
-| A.7 | Para cerrar | **Cómo se sabe que es cierto:** la CI con las pruebas contra PostgreSQL real; `docs/DEUDA_LEGAJO.md` con cada decisión; `docs/QUE-FALTA.md` con lo que queda |
+| A.7 | La métrica de la tesis | **TVCC-30**, la North Star: de los ciclos de seguimiento que vencieron en los últimos 30 días, cuántos se cerraron con una revisión aplicada. Con la cohorte, el 16/10 da **5 de 7 (71,4 %)**, y los dos abiertos son los pendientes de A.2. Si en A.4 la revisión de Federico se registra y se aplica, el número sube; mirar pantallas no lo mueve. Es un comando interno (`docs/paquetes/WP-TVCC-30.md` §5), y cada corrida queda guardada con su huella (`EVIDENCIA/TVCC-30`) |
+| A.8 | Para cerrar | **Cómo se sabe que es cierto:** la CI con las pruebas contra PostgreSQL real; `docs/DEUDA_LEGAJO.md` con cada decisión; `docs/QUE-FALTA.md` con lo que queda |
 
 **Para la sección A.4:** registrar una revisión deja historia, porque no se borra. Si la demo se ensaya varias veces, conviene usar a Federico o a Norma, que ya tienen una revisión pendiente, y no a Diego, que es el ejemplo de los gráficos.
 
