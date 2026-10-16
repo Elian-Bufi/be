@@ -16,7 +16,7 @@
  *   todos, a un clic (C-15).
  * - **Un error se dice en el resumen y en su campo** (B10-10:164-165; DL-091 punto 3): las dos áreas igual.
  */
-import { COPY_NUTRICION } from '@be/domain';
+import { COPY_NUTRICION, COPY_REVISIONES_PROPIAS } from '@be/domain';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { motivoDeFalla, textoDeFalla } from '../../../lib/fallas';
 import type { Resultado } from '../../../lib/api';
@@ -41,9 +41,10 @@ interface DelArea {
 
 /**
  * La ayuda de la interpretación, en las dos áreas: describe lo observado y no es un diagnóstico. Es la frase de BE
- * (`COPY_NUTRICION`); Entrenamiento no tenía ninguna, y la toma.
+ * (`COPY_NUTRICION`); Entrenamiento no tenía ninguna, y la toma. Desde REV-A (DL-134), además, avisa que la persona lee
+ * la revisión completa en su app: es información para quien escribe, no una restricción (propuesta REV-A, §3, D1).
  */
-export const AYUDA_DE_LA_INTERPRETACION = COPY_NUTRICION.interpretacionNoDiagnostica;
+export const AYUDA_DE_LA_INTERPRETACION = `${COPY_NUTRICION.interpretacionNoDiagnostica} ${COPY_REVISIONES_PROPIAS.laPersonaLaLee}`;
 
 /** Lo que la dirección pierde al salir de una revisión en preparación: vuelve a la lista (DEC-17). */
 export const SALIR_DE_LA_REVISION: Readonly<Record<string, null>> = { preparar: null, p: null, desde: null, hasta: null };

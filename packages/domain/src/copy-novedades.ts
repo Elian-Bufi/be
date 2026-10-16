@@ -55,15 +55,25 @@ export function textoDeNovedad(tipo: TipoDeNovedad, d: DatosDelTexto): TextoDeNo
 export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lectorEsProfesional: boolean): VistaDeNovedad {
   switch (tipo) {
     case 'PLAN_ACTIVATED':
-    case 'REVIEW_RECORDED':
       return alcance === 'ENTRENAMIENTO' ? 'TRAINING' : alcance === 'NUTRICION' ? 'NUTRITION' : 'NEWS';
+    // REV-A (DL-134): la persona lee la revisión completa.
+    case 'REVIEW_RECORDED':
+      return alcance === 'ENTRENAMIENTO' ? 'TRAINING_REVIEW' : alcance === 'NUTRICION' ? 'NUTRITION_REVIEW' : 'NEWS';
     case 'MEAL_LOG_REMINDER':
       return 'NUTRITION';
     case 'TRAINING_LOG_REMINDER':
       return 'TRAINING';
     case 'CONSENT_REVOKED':
       return 'ADVISEE';
+    // Para el profesional: la ficha de la persona si hay o hubo vínculo; el espacio profesional si es una solicitud. Para
+    // la persona: sus vínculos.
+    case 'RELATIONSHIP_REQUEST_RECEIVED':
+    case 'RELATIONSHIP_REQUEST_REJECTED':
+      return lectorEsProfesional ? 'PRO_HOME' : 'RELATIONSHIPS';
     case 'RELATIONSHIP_REQUEST_ACCEPTED':
+    case 'RELATIONSHIP_PAUSED':
+    case 'RELATIONSHIP_RESUMED':
+    case 'RELATIONSHIP_ENDED':
       return lectorEsProfesional ? 'ADVISEE' : 'RELATIONSHIPS';
     default:
       return 'RELATIONSHIPS';
@@ -108,4 +118,30 @@ export const COPY_NOVEDADES = {
   recordatorioEntrenamiento: 'Recordarme registrar el entrenamiento (22:00, si ese día no registré ninguno)',
   recordatoriosExplicacion: 'Los recordatorios llegan como avisos y quedan en Novedades. Podés apagarlos cuando quieras.',
   guardado: 'Guardado.',
+} as const;
+
+/**
+ * REV-A (DL-134): las revisiones que la persona lee en la APK. El resultado lleva su nombre (ETIQUETA_DE_RESULTADO) y lo
+ * que significa para su plan, dicho para ella: sin juicios ni puntajes (REG-06-117 y 125).
+ */
+export const COPY_REVISIONES_PROPIAS = {
+  titulo: 'Tus revisiones',
+  entrada: 'Ver las revisiones de tu profesional',
+  /** Para el profesional, al escribir la revisión (propuesta REV-A, §3, D1): información, no una restricción. */
+  laPersonaLaLee: 'La persona lee la revisión completa en su app: lo que observaste, lo que decidís y por qué.',
+  explicacion: 'Las revisiones que registraron tus profesionales, completas: qué observaron, qué decidieron, por qué y qué sigue.',
+  vacio: 'Todavía no hay revisiones registradas.',
+  sinA3: 'Para ver tu historia, BE necesita tu autorización de datos de salud vigente. Podés darla en Cuenta, en Privacidad.',
+  noDisponible: 'Esta revisión no está disponible.',
+  sinAplicar: 'Todavía no se aplicó.',
+  aplicadaEl: (dia: string) => `Se aplicó el ${dia}.`,
+  revisionDel: (fecha: string) => `Revisión del ${fecha}`,
+  queSignifica: {
+    MAINTAIN: 'Tu plan sigue igual.',
+    ADJUST: 'Tu profesional va a preparar una versión ajustada de tu plan. Cuando la active, vas a ver el aviso.',
+    REPLACE: 'Tu profesional va a preparar un plan nuevo que reemplaza al actual. Cuando lo active, vas a ver el aviso.',
+    RESCHEDULE_REVIEW: 'Se fijó otra fecha para la próxima revisión. Tu plan sigue igual.',
+    CHANGE_OBJECTIVE: 'Cambia el objetivo de tu seguimiento. El plan se ajusta aparte.',
+    FINALIZE: 'Se cierra este seguimiento. Tu historia se conserva.',
+  } as Readonly<Record<'MAINTAIN' | 'ADJUST' | 'REPLACE' | 'RESCHEDULE_REVIEW' | 'CHANGE_OBJECTIVE' | 'FINALIZE', string>>,
 } as const;

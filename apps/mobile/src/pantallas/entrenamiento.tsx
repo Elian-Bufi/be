@@ -24,6 +24,7 @@ import {
   COPY,
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
+  COPY_REVISIONES_PROPIAS,
   duracionParaMostrar,
   ETIQUETA_DE_CALIDAD_DE_TIEMPO,
   ETIQUETA_DE_GRANULARIDAD,
@@ -220,6 +221,8 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
       <Titulo>{COPY_ENTRENAMIENTO.pestana}</Titulo>
       <Pestanas etiqueta="Qué ver de tu entrenamiento" opciones={VISTAS} valor={vista} alElegir={setVista} />
       {contenido}
+      {/* REV-A (DL-134): las revisiones de tu profesional, completas; son historia, así que están aunque no haya plan. */}
+      {vista !== 'HOY' ? <Boton texto={COPY_REVISIONES_PROPIAS.entrada} tipo="secundario" onPress={() => ir({ nombre: 'revisiones', area: 'ENTRENAMIENTO' })} /> : null}
     </View>
   );
 }

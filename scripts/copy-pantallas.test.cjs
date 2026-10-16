@@ -36,6 +36,8 @@ const INICIO_COMUN = ['inicio.tsx', 'tarjeta-de-inicio.tsx', 'inicio-informacion
 const NOVEDADES = [
   inicio('novedades.tsx'),
   inicio('cuenta-avisos-y-nombre.tsx'),
+  // REV-A (DL-134): las revisiones propias, con todas las listas: el resultado se dice sin juicios ni puntajes.
+  inicio('revisiones.tsx'),
   join(RAIZ, 'apps/web/src/components/centro-de-novedades.tsx'),
   join(RAIZ, 'apps/web/src/components/campana-de-novedades.tsx'),
   join(RAIZ, 'packages/domain/src/copy-novedades.ts'),

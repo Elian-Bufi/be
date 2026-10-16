@@ -288,6 +288,20 @@ export class EntrenamientoController {
     return this.revisiones.consultar(actorDe(req), reviewId, query, contextoDe(req));
   }
 
+  /** API-TRN-23-LISTA (REV-A, DL-134): las revisiones de Entrenamiento propias, completas. */
+  @Get('me/training/reviews')
+  misRevisiones(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.listarPropias(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-TRN-23-PROPIA (REV-A, DL-134). */
+  @Get('me/training/reviews/:reviewId')
+  miRevision(@Param('reviewId') reviewId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.consultarPropia(actorDe(req), reviewId, query, contextoDe(req));
+  }
+
   /** API-TRN-24. */
   @Post('training/reviews/:reviewId/apply')
   async aplicarRevision(@Param('reviewId') reviewId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {

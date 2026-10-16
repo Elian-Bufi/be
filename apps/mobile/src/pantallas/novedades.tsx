@@ -27,6 +27,11 @@ export function rutaDeNovedad(n: Pick<Novedad, 'open'>): Ruta | null {
       return { nombre: 'entrenamiento' };
     case 'RELATIONSHIPS':
       return { nombre: 'vinculos' };
+    // REV-A (DL-134): la novedad de una revisión abre esa revisión, completa.
+    case 'NUTRITION_REVIEW':
+      return n.open.referenceId ? { nombre: 'revision', area: 'NUTRICION', id: n.open.referenceId } : { nombre: 'revisiones', area: 'NUTRICION' };
+    case 'TRAINING_REVIEW':
+      return n.open.referenceId ? { nombre: 'revision', area: 'ENTRENAMIENTO', id: n.open.referenceId } : { nombre: 'revisiones', area: 'ENTRENAMIENTO' };
     default:
       return null;
   }

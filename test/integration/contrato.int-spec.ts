@@ -417,6 +417,14 @@ it('TEST-CT (WP-04): se ejercitan éxitos y errores de NUT e INT-NUT-01', async 
   const rev = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'MAINTAIN', { nextReviewAt: '2030-01-01' })).expect(201);
   await pro.get(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}`).expect(200);
   await pro.get(`/api/v1/nutrition/reviews/${ajeno}`).expect(404);
+  // NUT-19-LISTA y NUT-19-PROPIA (REV-A, DL-134): la persona lee sus revisiones; la ajena o inexistente, el mismo 404.
+  await ase.get('/api/v1/me/nutrition/reviews?limit=5').expect(200);
+  await ase.get('/api/v1/me/nutrition/reviews?x=1').expect(400); // INVALID_REQUEST
+  await ase.get('/api/v1/me/nutrition/reviews?cursor=basura').expect(400); // INVALID_CURSOR
+  await request(app.getHttpServer()).get('/api/v1/me/nutrition/reviews').expect(401);
+  await ase.get(`/api/v1/me/nutrition/reviews/${rev.body.data.reviewId}`).expect(200);
+  await ase.get(`/api/v1/me/nutrition/reviews/${rev.body.data.reviewId}?x=1`).expect(400);
+  await pro.get(`/api/v1/me/nutrition/reviews/${rev.body.data.reviewId}`).expect(404);
   await pro.post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/apply`).send({ expectedVersion: 'v2' }).expect(409);
   await pro.post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/apply`).send({ expectedVersion: 'v1' }).expect(200);
   await pro.post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/apply`).send({ expectedVersion: 'v1' }).expect(409);
@@ -767,6 +775,14 @@ it('TEST-CT (WP-06, tramos 3 y 4): se ejercitan éxitos y errores de la ejecuci�
   const mantener = (await pro.post(revisiones).send(revision('MAINTAIN', undefined, { nextReviewAt: '2030-01-01' })).expect(201)).body.data;
   await pro.get(`/api/v1/training/reviews/${mantener.reviewId}`).expect(200);
   await pro.get(`/api/v1/training/reviews/${ajeno}`).expect(404);
+  // TRN-23-LISTA y TRN-23-PROPIA (REV-A, DL-134).
+  await ase.get('/api/v1/me/training/reviews?limit=5').expect(200);
+  await ase.get('/api/v1/me/training/reviews?x=1').expect(400); // INVALID_REQUEST
+  await ase.get('/api/v1/me/training/reviews?cursor=basura').expect(400); // INVALID_CURSOR
+  await request(app.getHttpServer()).get('/api/v1/me/training/reviews').expect(401);
+  await ase.get(`/api/v1/me/training/reviews/${mantener.reviewId}`).expect(200);
+  await ase.get(`/api/v1/me/training/reviews/${mantener.reviewId}?x=1`).expect(400);
+  await pro.get(`/api/v1/me/training/reviews/${mantener.reviewId}`).expect(404);
   const aplicar = (id: string, expectedVersion = 'v1') => pro.post(`/api/v1/training/reviews/${id}/apply`).send({ expectedVersion });
   await aplicar(mantener.reviewId, 'v2').expect(409); // VERSION_CONFLICT
   await aplicar(mantener.reviewId).expect(200);
@@ -1364,6 +1380,9 @@ it('TEST-CT (WP-ENTRENAMIENTO-SERIES): las 9 operaciones SER, TIE y EJE, y MED c
   await ase.post(`/api/v1/me/health-data-consents/${await a3Vigente(app, plan.ase.token)}/revoke`).send({}).expect(200);
   await ase.get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(403);
   await ase.get(`/api/v1/training/executions/${executionId}/timing`).expect(403);
+  // REV-A (DL-134): sin A3 vigente, las revisiones propias tampoco se leen (403), como «Tu historial».
+  await ase.get('/api/v1/me/training/reviews').expect(403);
+  await ase.get('/api/v1/me/nutrition/reviews').expect(403);
   expect((await ase.get('/api/v1/me/training/session-in-progress').expect(200)).body.data.inProgress).toBeNull();
   const cierre = corrida([{ s: 950, evento: { type: 'SESSION_FINISHED', resolution: 'LEFT_INCOMPLETE' } }], Date.now() - 60 * 60 * 1000, 'corrida-del-contrato', eventos.length + 1);
   await mandarEventos(app, plan.ase, borrador.draftId, cierre).expect(404);
@@ -1500,7 +1519,8 @@ it('TEST-CT (WP-NOVEDADES-Y-AVISOS): NOV-01 a 06, con éxitos y errores declarad
   await ase.get(`/api/v1/me/news/${id}?x=1`).expect(400);
   await pro.get(`/api/v1/me/news/${id}`).expect(404);
   // NOV-03 y 04: un teléfono.
-  const telefono = '00000000-0000-4000-8000-00000000c0de';
+  // Un teléfono nuevo en cada corrida: el contrato no depende de lo que dejó otra en la misma base.
+  const telefono = randomUUID();
   const suscripcion = `/api/v1/me/push-subscriptions/${telefono}`;
   await ase.put(suscripcion).send({ expoPushToken: 'ExponentPushToken[contrato-sintetico-1]', platform: 'ANDROID' }).expect(200);
   await ase.put(suscripcion).send({ expoPushToken: 'no-es-un-token', platform: 'ANDROID' }).expect(400); // INVALID_REQUEST

@@ -166,6 +166,7 @@ import {
   ObjetivoEfectivoResponseSchema,
   ObjetivoResponseSchema,
   PlanResponseSchema,
+  ListaDeRevisionesPropiasResponseSchema,
   RevisionResponseSchema,
   ValidacionDePlanResponseSchema,
   type CorregirIngestaRequest,
@@ -247,6 +248,7 @@ import {
   OcurrenciasDelPeriodoResponseSchema,
   PlanDeEntrenamientoResponseSchema,
   RegistrarRevisionDeEntrenamientoRequestSchema,
+  ListaDeRevisionesDeEntrenamientoPropiasResponseSchema,
   RevisionDeEntrenamientoResponseSchema,
 } from './contratos-entrenamiento';
 import {
@@ -1217,6 +1219,22 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-VAN-04. */
     borrarVistaDeAnalisis(token: string, viewId: string, claveDeIdempotencia: string) {
       return llamar('DELETE', `/me/analysis-views/${encodeURIComponent(viewId)}`, { token, claveDeIdempotencia, esquema: null });
+    },
+    /** API-NUT-19-LISTA (REV-A, DL-134): las revisiones de Nutrición propias, completas. */
+    consultarMisRevisionesNutricionales(token: string, filtro: { cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/nutrition/reviews${query(filtro)}`, { token, esquema: ListaDeRevisionesPropiasResponseSchema });
+    },
+    /** API-NUT-19-PROPIA: una revisión de Nutrición propia. */
+    consultarMiRevisionNutricional(token: string, reviewId: string) {
+      return llamar('GET', `/me/nutrition/reviews/${encodeURIComponent(reviewId)}`, { token, esquema: RevisionResponseSchema });
+    },
+    /** API-TRN-23-LISTA (REV-A, DL-134): las revisiones de Entrenamiento propias, completas. */
+    consultarMisRevisionesDeEntrenamiento(token: string, filtro: { cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/training/reviews${query(filtro)}`, { token, esquema: ListaDeRevisionesDeEntrenamientoPropiasResponseSchema });
+    },
+    /** API-TRN-23-PROPIA: una revisión de Entrenamiento propia. */
+    consultarMiRevisionDeEntrenamiento(token: string, reviewId: string) {
+      return llamar('GET', `/me/training/reviews/${encodeURIComponent(reviewId)}`, { token, esquema: RevisionDeEntrenamientoResponseSchema });
     },
     /** API-NOV-01: las novedades propias, de la más nueva a la más vieja, con las no leídas (DL-133). */
     consultarNovedades(token: string, filtro: { cursor?: string; limit?: string } = {}) {

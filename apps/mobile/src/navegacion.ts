@@ -39,6 +39,9 @@ export type Ruta =
   | { readonly nombre: 'cuenta'; readonly desde?: Ruta }
   // WP-NOVEDADES-Y-AVISOS (DL-133): el centro de novedades, desde la campana de la cabecera o al tocar un aviso.
   | { readonly nombre: 'novedades'; readonly desde?: Ruta }
+  // REV-A (DL-134): las revisiones propias de un área, y una revisión.
+  | { readonly nombre: 'revisiones'; readonly area: 'NUTRICION' | 'ENTRENAMIENTO'; readonly desde?: Ruta }
+  | { readonly nombre: 'revision'; readonly area: 'NUTRICION' | 'ENTRENAMIENTO'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'vinculos'; readonly desde?: Ruta }
   | { readonly nombre: 'vinculo'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'consentimiento'; readonly vinculoId: string; readonly desde?: Ruta }
@@ -157,6 +160,9 @@ export function moduloDe(ruta: Ruta): Modulo | null {
       return 'entrenamiento';
     case 'mi-evolucion':
       return 'evolucion';
+    case 'revisiones':
+    case 'revision':
+      return ruta.area === 'NUTRICION' ? 'nutricion' : 'entrenamiento';
     case 'mis-solicitudes':
     case 'mi-solicitud':
       return 'informacion';
@@ -243,6 +249,10 @@ function madre(ruta: Ruta): Ruta | null {
       return { nombre: 'hoy' };
     case 'registro-nutricional':
       return { nombre: 'registros-nutricionales' };
+    case 'revisiones':
+      return ruta.area === 'NUTRICION' ? { nombre: 'plan-actual' } : { nombre: 'entrenamiento' };
+    case 'revision':
+      return { nombre: 'revisiones', area: ruta.area };
     case 'vinculo':
       return { nombre: 'vinculos' };
     case 'consentimiento':
@@ -271,6 +281,8 @@ function identificador(ruta: Ruta): string | null {
   if ('vinculoId' in ruta) return ruta.vinculoId;
   if ('draftId' in ruta) return ruta.draftId;
   if (ruta.nombre === 'comida-diferente') return ruta.comidaId;
+  // REV-A: las revisiones de Nutrición y las de Entrenamiento son dos pantallas distintas.
+  if (ruta.nombre === 'revisiones') return ruta.area;
   return null;
 }
 
@@ -335,6 +347,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Cuenta';
     case 'novedades':
       return 'Volver a Novedades';
+    case 'revisiones':
+      return 'Volver a Tus revisiones';
     case 'vinculos':
       return 'Volver a Vínculos';
     case 'vinculo':

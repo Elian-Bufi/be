@@ -12,6 +12,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { ListaDeNovedadesResponseSchema, NovedadResponseSchema, PreferenciasDeAvisosResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import request from 'supertest';
@@ -31,6 +32,9 @@ afterAll(async () => {
 });
 
 const REFERENCIA = /^Asesorado · [0-9a-f]{6}$/;
+/** Identificadores y tokens nuevos en cada corrida: la prueba no depende de lo que dejó otra en la misma base. */
+const sufijo = () => randomUUID().replace(/-/g, '').slice(0, 12);
+const tokenDePrueba = (nombre: string) => `ExponentPushToken[${nombre}-${sufijo()}]`;
 const novedades = async (a: INestApplication, token: string) => ListaDeNovedadesResponseSchema.parse((await conSesion(a, token).get('/api/v1/me/news?limit=50').expect(200)).body);
 
 describe('RF-061 · el centro de novedades', () => {
@@ -105,9 +109,9 @@ describe('RF-062 · los teléfonos suscriptos y las preferencias', () => {
   it('un teléfono es de una cuenta por vez: si otra lo registra, la anterior deja de recibir; retirarlo es idempotente; el token no va a la auditoría', async () => {
     const a = await circuitoConPlanActivo(app, 'nov-tel-a');
     const b = await circuitoConPlanActivo(app, 'nov-tel-b');
-    const telefono = '00000000-0000-4000-8000-0000000000a1';
+    const telefono = randomUUID();
     const ruta = `/api/v1/me/push-subscriptions/${telefono}`;
-    const token = 'ExponentPushToken[telefono-compartido-1]';
+    const token = tokenDePrueba('telefono-compartido');
     await conSesion(app, a.ase.token).put(ruta).send({ expoPushToken: token, platform: 'ANDROID' }).expect(200);
     // Repetirlo igual no cambia nada.
     await conSesion(app, a.ase.token).put(ruta).send({ expoPushToken: token, platform: 'ANDROID' }).expect(200);
@@ -125,7 +129,7 @@ describe('RF-062 · los teléfonos suscriptos y las preferencias', () => {
     expect((await prisma.suscripcionPush.findMany({ where: { dispositivoId: telefono } })).map((f) => f.motivoDeBaja)).toEqual(['OTRA_CUENTA', 'RETIRADA']);
     const auditoria = await prisma.registroDeAuditoria.findMany({ where: { operacion: { in: ['API-NOV-03', 'API-NOV-04'] }, actorId: { in: [a.ase.id, b.ase.id] } } });
     expect(auditoria.length).toBe(3);
-    expect(JSON.stringify(auditoria)).not.toContain('telefono-compartido');
+    expect(JSON.stringify(auditoria)).not.toContain(token);
   });
 
   it('las preferencias empiezan apagadas; cambiarlas queda en la auditoría, y repetirlas no', async () => {
@@ -197,12 +201,13 @@ describe('RF-062 y DL-133 · los avisos y los recordatorios diarios', () => {
   it('a quien lo activó y no registró comidas le llega un recordatorio y un aviso sin contenido; repetir la corrida no crea otro; con una comida, ya no; sin B2, tampoco', async () => {
     const c = await circuitoConPlanActivo(conAvisos, 'nov-rec');
     await conSesion(conAvisos, c.ase.token).put('/api/v1/me/notification-preferences').send({ mealLogReminder: true, trainingLogReminder: true }).expect(200);
-    const token = 'ExponentPushToken[recordatorio-ok-1]';
-    await conSesion(conAvisos, c.ase.token).put('/api/v1/me/push-subscriptions/00000000-0000-4000-8000-0000000000b1').send({ expoPushToken: token, platform: 'ANDROID' }).expect(200);
+    const token = tokenDePrueba('recordatorio-ok');
+    await conSesion(conAvisos, c.ase.token).put(`/api/v1/me/push-subscriptions/${randomUUID()}`).send({ expoPushToken: token, platform: 'ANDROID' }).expect(200);
     // Otra persona con el recordatorio activo y un teléfono que Expo ya no reconoce.
     const otra = await circuitoConPlanActivo(conAvisos, 'nov-rec-invalido');
     await conSesion(conAvisos, otra.ase.token).put('/api/v1/me/notification-preferences').send({ mealLogReminder: true, trainingLogReminder: false }).expect(200);
-    await conSesion(conAvisos, otra.ase.token).put('/api/v1/me/push-subscriptions/00000000-0000-4000-8000-0000000000b2').send({ expoPushToken: 'ExponentPushToken[telefono-invalido-1]', platform: 'ANDROID' }).expect(200);
+    const telefonoInvalido = randomUUID();
+    await conSesion(conAvisos, otra.ase.token).put(`/api/v1/me/push-subscriptions/${telefonoInvalido}`).send({ expoPushToken: tokenDePrueba('telefono-invalido'), platform: 'ANDROID' }).expect(200);
     const previos = expo.pedidos.length;
 
     // Otros archivos de prueba pueden compartir la base: se cuenta lo de estas personas, no el total de la corrida.
@@ -224,7 +229,7 @@ describe('RF-062 y DL-133 · los avisos y los recordatorios diarios', () => {
     expect(JSON.stringify(enviados)).not.toMatch(/Profesional sintético|Nutrición|comida|kcal|Asesorado/);
     expect(expo.pedidos[expo.pedidos.length - 1]!.encabezados.authorization).toBe('Bearer token-de-acceso-sintetico');
     // El teléfono que Expo no reconoce queda dado de baja.
-    expect((await prisma.suscripcionPush.findFirst({ where: { dispositivoId: '00000000-0000-4000-8000-0000000000b2' } }))?.motivoDeBaja).toBe('TOKEN_INVALIDO');
+    expect((await prisma.suscripcionPush.findFirst({ where: { dispositivoId: telefonoInvalido } }))?.motivoDeBaja).toBe('TOKEN_INVALIDO');
 
     // Repetir la franja no crea otro recordatorio ni otro aviso.
     const avisosAntes = expo.pedidos.flatMap((p) => p.mensajes).filter((m) => m.to === token).length;
@@ -251,8 +256,9 @@ describe('RF-062 y DL-133 · los avisos y los recordatorios diarios', () => {
   it('las novedades de antes de suscribir el teléfono no se avisan, y una ya leída tampoco', async () => {
     const c = await circuitoConPlanActivo(conAvisos, 'nov-antes');
     const previos = expo.pedidos.length;
-    await conSesion(conAvisos, c.ase.token).put('/api/v1/me/push-subscriptions/00000000-0000-4000-8000-0000000000c1').send({ expoPushToken: 'ExponentPushToken[antes-de-suscribir-1]', platform: 'ANDROID' }).expect(200);
+    const token = tokenDePrueba('antes-de-suscribir');
+    await conSesion(conAvisos, c.ase.token).put(`/api/v1/me/push-subscriptions/${randomUUID()}`).send({ expoPushToken: token, platform: 'ANDROID' }).expect(200);
     await correr('AFTERNOON').expect(200);
-    expect(expo.pedidos.slice(previos).flatMap((p) => p.mensajes).filter((m) => m.to === 'ExponentPushToken[antes-de-suscribir-1]')).toEqual([]);
+    expect(expo.pedidos.slice(previos).flatMap((p) => p.mensajes).filter((m) => m.to === token)).toEqual([]);
   });
 });

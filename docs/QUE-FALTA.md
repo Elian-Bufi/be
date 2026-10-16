@@ -66,7 +66,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 **Formularios y asesorado**
 - Campos de selección y de fecha (DEC-04, DL-103).
 - Perfil reutilizable (DL-095).
-- El asesorado no lee sus propias revisiones (REV-A).
+- ~~El asesorado no lee sus propias revisiones (REV-A).~~ **Hecho el 2026-10-16** con las opciones A (DL-134): lista y detalle en la APK, y la novedad de una revisión la abre.
 - El piloto de inteligencia supervisada (PF-08).
 
 **UX** (`docs/ux/GUIA-UX-UI.md` §12)
@@ -85,7 +85,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
   - decidir DL-115, el A3 del titular en antropometría y formularios;
   - las decisiones D-1 a D-7 de la matriz de DV-05 y las dudas de las reconciliaciones de DV-02 y DV-06;
   - las preguntas abiertas de la ficha de métodos (§15.2).
-- **Abiertas con provisorio en el código:** DL-106, DL-108 (D-4, D-6 y D-7), DL-063 (plazo del borrador antropométrico), REV-A (D1 a D4), PF-03 (D-2 a D-9), PF-04 (D-1 a D-11), DEC-01 a DEC-13 del Plan Funcional y el logo con alas. Además, unas cincuenta DL de plataforma, cuenta, vínculos, nutrición y entrenamiento: la lista completa está en la tabla de `docs/DEUDA_LEGAJO.md`.
+- **Abiertas con provisorio en el código:** DL-106, DL-108 (D-4, D-6 y D-7), DL-063 (plazo del borrador antropométrico), REV-A (D1 a D3-bis implementadas con las opciones A el 2026-10-16, a ratificar, DL-134; D4 va con la exportación), PF-03 (D-2 a D-9), PF-04 (D-1 a D-11), DEC-01 a DEC-13 del Plan Funcional y el logo con alas. Además, unas cincuenta DL de plataforma, cuenta, vínculos, nutrición y entrenamiento: la lista completa está en la tabla de `docs/DEUDA_LEGAJO.md`.
 - **Decididas, pero esperan la reemisión del legajo** (el manifiesto impide editarlo desde el repo):
   - DL-007, DL-030 y DL-032 a 034;
   - DL-044, DL-045 y DL-058 a 061;
