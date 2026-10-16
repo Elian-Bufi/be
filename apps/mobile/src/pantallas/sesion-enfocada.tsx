@@ -559,7 +559,7 @@ export function explicacionDelConflicto(problema: Extract<ProblemaDeSincronizaci
   }
   switch (problema.motivo) {
     case 'ANOTHER_SESSION_IN_PROGRESS':
-      return 'Tenés otro entrenamiento sin finalizar. Finalizalo o dejalo incompleto desde Entrenamiento, y después reintentá.';
+      return 'Esta sesión se inició con otro entrenamiento sin finalizar. Continualo o dejalo incompleto: después, esta sesión se vuelve a enviar sin perder lo que marcaste ni lo que escribiste.';
     case 'SESSION_FINISHED':
       return 'Este entrenamiento ya se cerró en otro dispositivo. Los tiempos que marcaste acá no se guardaron.';
     case 'SESSION_ALREADY_STARTED':

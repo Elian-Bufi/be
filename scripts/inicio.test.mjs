@@ -459,7 +459,7 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
   const claves = [...PANTALLA.matchAll(/useLecturaRecordada\(token, (`[^`]+`|'[^']+')/g)].map((m) => m[1]);
   assert.deepEqual(
     claves.sort(),
-    ['`entrenamiento-hoy:${dia}`', '`hoy-nutricional:${dia}:${diaTipo ?? \'\'}`', "'inicio-ultimo-registro'", '`inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`', "'inicio-pendientes'", "'mi-evolucion:ultimos-90'"].sort(),
+    ['`entrenamiento-hoy:${dia}`', "'entrenamiento-en-curso'", '`hoy-nutricional:${dia}:${diaTipo ?? \'\'}`', "'inicio-ultimo-registro'", '`inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`', "'inicio-pendientes'", "'mi-evolucion:ultimos-90'"].sort(),
   );
   // Las cinco tarjetas están en la pantalla, cada una con su lectura.
   const PRINCIPAL = fuente('inicio.tsx');
@@ -470,6 +470,8 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
   const ENTRENAMIENTO = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), 'utf8');
   assert.match(NUTRICION, /useSeleccionRecordada<string \| undefined>\(token, 'hoy-nutricional:dia', undefined\)/);
   assert.match(ENTRENAMIENTO, /useLecturaRecordada\(token, `entrenamiento-hoy:\$\{hoyDeLaApi\}`/);
+  // La sesión en curso (API-TIE-04) también es la misma lectura en Inicio y en Entrenamiento.
+  assert.match(ENTRENAMIENTO, /useLecturaRecordada\(token, 'entrenamiento-en-curso', pedirEnCurso, sesionPerdida\)/);
   // «Hoy» de Nutrición es la misma lectura en Inicio y en Nutrición: la misma clave, con el mismo día y el mismo día del plan.
   assert.ok(NUTRICION.includes("useLecturaRecordada(token, `hoy-nutricional:${hoyDeLaApi}:${diaTipo ?? ''}`"));
 });
