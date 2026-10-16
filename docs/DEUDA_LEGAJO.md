@@ -137,6 +137,7 @@
 | DL-130 | Encargo de Dirección · 2026-10-09 (§3.C) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · DL-127 | La búsqueda en los catálogos de alimentos y ejercicios lleva el texto en la URL | **PROPUESTA** en `wp-dashboard-comprension`, sin integrar · variantes `API-NUT-13-BUSQUEDA` y `API-TRN-13-BUSQUEDA` (POST con el texto en el cuerpo); el GET se conserva con su contrato |
 | DL-131 | Decisión de Dirección · 2026-10-12 (WP-ESCRITORIO-AREAS, F-05) | 09v16.1:1518-1528 (API-FRM-03, precondiciones) · 05:15096-15105 (§13.6.7) · 05 §13.6.8 (pasos 6 a 8) · DL-100 | Al elegir un formulario en «Pedir información», el website no traía ninguna pregunta marcada: había que marcarlas de a una. La implementación de WP-07 lo fundaba en «una plantilla con campos más amplios no amplía B2» | **DECIDIDA** 2026-10-12 · vienen todas marcadas y el profesional desmarca las que no necesita; ninguna viene como requerida; la API sigue evaluando la pertinencia de cada pregunta al crear la solicitud. **IMPLEMENTADA** en `wp-escritorio-areas` (parte 4), sin integrar |
 | DL-132 | Hallazgo de implementación · 2026-10-12 (WP-ESCRITORIO-AREAS, parte 5) | DL-119 (lo implementado) · DL-108 | «Guardar como plantilla» responde distinto con una opción de receta: en la versión en preparación dice que no se guarda; en el plan activo la guarda como una opción común, con los ingredientes de una porción, sin avisar | **ABIERTA** · se recomienda A (que el plan activo responda como el editor). Sin cambios en el código: es el comportamiento de `main` |
+| DL-133 | Pedido de Dirección · 2026-10-16 (WP-NOVEDADES-Y-AVISOS) | 04 RF-061, RF-062 · 05 UC-P30, UC-E08 · 06 §5.11 · 07 §23-24 · 09v12 §20-21 · B10-04 §42 | Novedades y avisos: la familia NOV, el envío después de confirmar, el cron de la plataforma y los recordatorios diarios de registro | **DECIDIDA** 2026-10-16 (Expo Push y recordatorios); D-1 a D-10 a ratificar · implementada en #163 |
 
 ---
 
@@ -3710,3 +3711,68 @@ guarda una plantilla desde un plan con una opción de receta: si se decide A, es
 sin recetas.
 
 **Condición de cierre.** Dirección elige A, B o C.
+
+## DL-133 — Novedades y avisos: la familia NOV, el modo de envío y los recordatorios diarios de registro
+
+**Prioridad:** media.
+
+**Documentos:**
+- **04:** RF-061 (P1) y RF-062 (P2).
+- **05:** UC-P30 y UC-E08.
+- **06:** §5.11.
+- **07:** §23 y §24.
+- **08:** Expo Push como encargado, AR→US; el push token es C3.
+- **09v12:** §20-21.
+- **B10-04:** §42.
+
+**Estado:** DECIDIDA por Dirección el 2026-10-16 («ya puedes empezar con Expo Push»; los recordatorios de comidas y de entrenamiento). Las decisiones D-1 a D-10 las tomó el ejecutor con el mandato de ese día («si no es mucho el riesgo, directamente tómala») y **esperan ratificación**. IMPLEMENTADA en WP-NOVEDADES-Y-AVISOS (#163).
+
+**Qué dice el legajo y qué faltaba.**
+- **El 09v12 solo bosqueja el contrato:** `GET /me/news`, `GET /me/news/{newsId}` y `PUT|DELETE /me/push-subscriptions/{deviceId}`, sin IDs del inventario P0 ni formas de respuesta.
+- **El 07 §24 fija el modo:** sin infraestructura asíncrona; el primer escalón es «un cron administrado de la plataforma llamando un endpoint interno idempotente». Expo Push se envía «post-commit, best-effort, fuera de transacción, con la novedad interna como fuente de verdad».
+- **Los recordatorios de registro no están en el legajo.** Los pidió Dirección.
+
+**Decisiones (a ratificar).**
+- **D-1 · La familia NOV:** API-NOV-01 a 06 (el bosquejo del 09v12 y las preferencias). La ruta de la tarea, `POST /internal/reminder-runs`, va fuera de `/api/v1` y del OpenAPI, como `/health`, protegida con `BE_SECRETO_DE_TAREAS`.
+- **D-2 · El texto lo arma BE al leer.** La novedad guarda el tipo, el área, quién y la referencia; el texto sale del copy del dominio. Así nunca lleva datos de salud (INV-06-32). `kind` y `open.view` son texto, no enumeraciones estrictas, para que un tipo nuevo no deje sin leer a una APK instalada.
+- **D-3 · Qué deja novedad:**
+  - plan activado y revisión registrada (Nutrición y Entrenamiento), por pedido de Dirección;
+  - solicitud recibida, aceptada y rechazada; pausa, reanudación y fin del vínculo; revocación del B2 (B10-04 §42).
+  - Quedan fuera: «revisión aplicada» (la activación del plan nuevo ya avisa), «consentimiento pendiente» y la Antropometría (sin plan ni revisión).
+- **D-4 · El aviso.** Uno por teléfono por pasada, con texto genérico («Tenés una novedad.», «Tenés un recordatorio para hoy.»). Solo de las novedades de las últimas 24 horas, posteriores a la suscripción y no leídas. Hasta tres intentos. `DeviceNotRegistered` da de baja la suscripción.
+- **D-5 · Los recordatorios:**
+  - comidas a las 15:00 y a las 22:00; entrenamiento a las 22:00 (el mismo aviso que el de comidas, si son los dos);
+  - solo con la preferencia activa, un plan vigente, ningún registro ese día y el PDP a favor (`evaluarSinRegistrar`);
+  - zona `America/Argentina/Buenos_Aires`;
+  - **el entrenamiento se recuerda todos los días:** el plan no tiene días de la semana, así que también llega en un día de descanso. El texto lo contempla y se apaga con su casilla.
+- **D-6 · Preferencias apagadas por defecto.** Al activar los avisos por primera vez en la APK se encienden las dos, porque se activan para eso, y se apagan con su casilla.
+- **D-7 · Un teléfono es de una cuenta por vez.** Si otra cuenta lo registra, la anterior queda dada de baja (`OTRA_CUENTA`). Antes de cerrar la sesión o la cuenta, la APK retira el teléfono; si la sesión vence, no: al volver a entrar se renueva el token.
+- **D-8 · La tarea programada:** el cron `be-recordatorios` de Render (Starter; se cobra por minuto, con un mínimo de un dólar por mes). Corre a las 18:00 y a las 01:00 UTC; llama a la API, que decide la franja por su hora.
+- **D-9 · El canal en test:** `BE_AVISOS_PUSH=expo`. `EXPO_ACCESS_TOKEN` es opcional (la seguridad reforzada de Expo) y se carga a mano.
+- **D-10 · Firebase:** la APK toma el `google-services.json` de una ruta fuera del repo (`GOOGLE_SERVICES_JSON`). Sin él se construye igual y dice que los avisos no están disponibles.
+
+**Opciones para lo que más pesa:**
+- **D-5:**
+  - **A.** Como está: todos los días.
+  - **B.** Entrenamiento solo si en los últimos N días hubo al menos una sesión, para no insistir en una pausa larga.
+  - **C.** Días de la semana en el plan; es otro paquete.
+- **D-6:**
+  - **A.** Encendidos al activar los avisos.
+  - **B.** Apagados hasta que la persona los encienda.
+- **D-8:**
+  - **A.** El cron de Render.
+  - **B.** Un temporizador dentro de la API, sin costo, pero fuera del 07 §24.
+  - **C.** Una tarea programada de GitHub Actions, sin costo, pero sin hora exacta y fuera de la plataforma.
+
+**Recomendación.** Ratificar como está: A, A y A.
+
+**Lo que queda abierto:**
+- **La persona no lee sus revisiones:** ve que hay una revisión pero no la lee (REV-A, propuesta sin decidir).
+- **Sin recibos de Expo:** BE no lee si FCM entregó el aviso.
+- **Una sesión vencida sigue suscripta.** Una cuenta cuya sesión venció sigue suscripta en ese teléfono hasta que otra cuenta lo registre o la persona vuelva a entrar. El aviso no muestra nada sin sesión (UC-E08 E03).
+- **Cerrar las sesiones desde otro lado no retira el teléfono.** «Cerrar todas las sesiones» desde el website no retira el teléfono.
+- **Antes de datos reales (08 §42):** el DPA de Expo, el texto de privacidad que nombre el canal y la retención de las novedades y los avisos.
+
+**Provisorio en código:** todo lo de D-1 a D-10.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-10, o cambia las que quiera, y un teléfono real recibe un aviso con Firebase configurado.
