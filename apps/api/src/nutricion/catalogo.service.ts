@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoResuelto, type FuenteExternaDeAlimento } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
+import { CON_MARCA, SIN_MARCA } from '../http/busqueda';
 import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
@@ -57,7 +58,7 @@ export class CatalogoService {
        WHERE NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
          AND v."disponibilidad" = 'DISPONIBLE'
          AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${actor.identidadId}::uuid)
-         AND v."nombre" ILIKE ${patron}
+         AND lower(translate(v."nombre", ${CON_MARCA}, ${SIN_MARCA})) LIKE lower(translate(${patron}, ${CON_MARCA}, ${SIN_MARCA}))
          AND (${cursor === null} OR (v."momento_de_registro", v."id") < (${cursor?.momento ?? new Date(0)}, ${cursor?.id ?? '00000000-0000-0000-0000-000000000000'}::uuid))
        ORDER BY v."momento_de_registro" DESC, v."id" DESC
        LIMIT ${consulta.limit + 1}`;
