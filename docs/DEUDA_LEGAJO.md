@@ -60,7 +60,7 @@
 | DL-053 | WP-04 · 2026-09-19 | 04:446, 04:1141 · 11A:213 · 06:3504, 3612-3619, 7714 | Q-007: abierta en el 04 y el 11A, resuelta en el 06 | ABIERTA |
 | DL-054 | WP-04 · 2026-09-19 | 05:7117, 7075-7094 · 06:5967-5982 · brief WP-04 | Pendiente de revisión y timeline sin Cartera | ABIERTA |
 | DL-055 | WP-04 · 2026-09-19 | 09v9:158, 175-179, 601-644, 671, 804-806, 862 · CONS:655 | Contratos NUT con forma no definida en el 09 | ABIERTA |
-| DL-056 | WP-04 · 2026-09-19 | 04:378-385 (RF-028) · 05:5777, 5921 · brief WP-04 | RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado | **DECIDIDA** 2026-09-19 · opción A: paquete de integraciones posterior a WP-04 |
+| DL-056 | WP-04 · 2026-09-19 | 04:378-385 (RF-028) · 05:5777, 5921 · brief WP-04 | RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado | **CERRADA** 2026-09-25 · opción A cumplida: RF-028 quedó en WP-08, integrado en `main` con #72 (`e83245d`); la búsqueda por texto sigue en DL-098 |
 | DL-057 | WP-04 · 2026-09-20 | 08:145, 08:197-198, 08:215 · 06:4274-4282 (REG-06-102) · 04:463 (RF-025) | Datos nutricionales de otro profesional del mismo alcance | ABIERTA |
 | DL-058 | WP-05 · 2026-09-20 | 06:8941-8986 · 04:6, 04:17 · 08:1703-1706 · 10-B10-07:10-12 | El núcleo operable de antropometría vive en material declarado «NO APROBADO» | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
 | DL-059 | WP-05 · 2026-09-20 | DV-05:1127 · 05:10879-10881 · 09v16:1959-1974 · 11A:581 | Qué responde la segunda anulación de la misma medición | **DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor |
@@ -1380,7 +1380,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-056 — RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado
 
-**Prioridad:** alta · **Documento:** 04:378-385 (RF-028) · 05:5777, 05:5921 · 11A:206 · 12 (fila RF-028) · brief WP-04 · **Estado:** ABIERTA
+**Prioridad:** alta · **Documento:** 04:378-385 (RF-028) · 05:5777, 05:5921 · 11A:206 · 12 (fila RF-028) · brief WP-04 · **Estado:** CERRADA 2026-09-25 (ver «Cierre», al final de esta entrada)
 
 **Qué dice el legajo.**
 - RF-028 es P0, «Compromiso académico de integración»: consulta e importación controlada desde Open Food Facts, con fallback a catálogo propio y carga manual.
@@ -1396,6 +1396,8 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 **Resolución — DECIDIDA el 2026-09-19.** Dirección eligió A: RF-028, UC-I07, UC-I08 y API-INT-NUT-02 y 03 van a un paquete de integraciones posterior a WP-04, antes de la entrega.
 
 **Condición de cierre.** RF-028 queda asignado a un paquete o se declara fuera de la entrega con fundamento.
+
+**Cierre (2026-09-25; verificado el 2026-10-16).** RF-028 quedó asignado a WP-08, que se integró en `main` con #72 (`e83245d`), #84 y #85, y salió en la APK 0.10.0. Ver DL-086, también cerrada. La búsqueda por texto en Open Food Facts sigue abierta en DL-098.
 
 ## DL-057 — Datos nutricionales de otro profesional del mismo alcance
 

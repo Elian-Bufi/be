@@ -1,6 +1,8 @@
 # TPL — Ficha: plantillas del profesional para planes de entrenamiento y de comidas
 
-> **Estado:** PROPUESTA (2026-09-30). Pendiente de decisión de Dirección: D-1 a D-7 (§h). Nada de esto está implementado.
+> **Estado (2026-10-16):** decidida (DL-108: D-1, D-2, D-3 y D-5) e implementada en #121, integrado en `main` el 2026-09-30 (`d2405ce`). D-4, D-6 y D-7 siguen sin decidir.
+>
+> **Estado anterior:** PROPUESTA (2026-09-30). Pendiente de decisión de Dirección: D-1 a D-7 (§h). Nada de esto estaba implementado.
 > **Base:** `main` en `53cc70e`, contrastado con la crítica de negocio del mismo día (`CRITICA-DE-NEGOCIO_2026-09-30.md`, mejora A).
 > **Identificadores:** TPL, TPL-CU, TPL-CA y TPL-V son locales a esta ficha. Anclajes del legajo que se reutilizan: **DL-047** (nueva versión a partir de la efectiva), **REG-06-145** (próxima revisión), **REG-06-111** (parámetros con unidad), **RF-060** (procedencia del catálogo), **INV-06-109** (la versión activada no se edita) y los permisos del PDP. Las decisiones que Dirección tome se registran como DL en `docs/DEUDA_LEGAJO.md`.
 

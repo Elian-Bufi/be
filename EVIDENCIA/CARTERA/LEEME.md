@@ -24,7 +24,7 @@ Cada fila trae la **última actividad registrada** del asesorado en ese dominio 
 ## Cómo está hecho
 
 - `packages/domain/src/cartera.ts`: clasificación de la revisión (vencida / próxima / sin fecha / todavía no), orden por urgencia objetiva con empates por antigüedad, copy con un control de términos que califiquen (los de los tres dominios más «inactivo», «riesgo», «alerta», «ranking», «racha»).
-- `packages/domain/src/fechas-civiles.ts`: fecha civil por zona, días de calendario, inicio del día y validez de una fecha. Compartible con la evolución antropométrica (#116) cuando se integre.
+- `packages/domain/src/fechas-civiles.ts`: fecha civil por zona, días de calendario, inicio del día y validez de una fecha. Compartible con la evolución antropométrica (#116, integrada el 2026-09-30).
 - `apps/api/src/cartera/`: `GET /me/portfolio`. Recorre los vínculos con alcance ACEPTADO del profesional; el PDP decide y **registra** por asesorado y alcance (como API-DSH-03); todos los hechos se leen en **una** transacción; paginación por cursor sobre la lista ordenada; tope de 200 asesorados por lectura. Sin tablas nuevas.
 - `apps/web/src/app/pro/pendientes.tsx`: la sección, con los mismos componentes de lista, período y avisos que el resto del website.
 
