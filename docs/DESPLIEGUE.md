@@ -77,6 +77,7 @@ Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa pa
 - **Credenciales:** al azar y fuera del repo, en `C:\Users\bufim\BE-datos-locales\cohorte-test\cuentas.env`, en la máquina de Dirección.
 - **Cómo se cargó y qué es sintético:** `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/LEEME.md`.
 - **Acceso a la base:** la historia se escribe por SQL, con la base abierta solo a la IP de esa máquina mientras dura la carga. Es el acceso del operador que admite el 07 §29. Cada push a `main` sincroniza el Blueprint, y el `ipAllowList: []` de `render.yaml` vuelve a cerrarla.
+- **Cargada en test el 2026-10-16** (de 06:35 a 06:46, sobre `4f10121`). Se comprobó de dos maneras: contando en la base las comidas, sesiones y tomas de cada persona (las mismas que en local), y entrando por la API con cada profesional para ver sus vínculos, con la fecha real de «Desde el…», y sus pendientes. Los pendientes se fijaron contra ese día y corren con el calendario. Por ejemplo, la revisión de Diego, que ese día faltaba 3 días, desde el 2026-10-20 aparece vencida.
 
 ### APK
 
