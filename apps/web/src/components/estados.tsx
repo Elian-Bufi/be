@@ -21,9 +21,11 @@ export function Cargando() {
 }
 
 /** Lo que todavía no hay, dicho como tal, con el paso siguiente si existe (una acción real, nunca un dato inventado). */
-export function EstadoVacio({ titulo, children, accion }: { titulo: string; children?: ReactNode; accion?: ReactNode }) {
+export function EstadoVacio({ titulo, children, accion, icono }: { titulo: string; children?: ReactNode; accion?: ReactNode; icono?: NombreDeIcono }) {
   return (
-    <div className="estado-vacio">
+    <div className={icono ? 'estado-vacio estado-vacio--con-icono' : 'estado-vacio'}>
+      {/* Con un ícono, el estado se dibuja como lo que es (qué falta y qué se puede hacer), no como una caja vacía. */}
+      {icono ? <Icono nombre={icono} tamano={24} /> : null}
       <p className="estado-vacio__titulo">{titulo}</p>
       {children}
       {accion ? <div className="acciones">{accion}</div> : null}

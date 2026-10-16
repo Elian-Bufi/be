@@ -4,7 +4,9 @@
  * «Tus asesorados» (REL-05; WP-ESCRITORIO-AMABLE, parte 5): un directorio para entrar a la ficha de una persona.
  * - Una persona por renglón, con sus áreas (`directorio.ts`): las que tienen acceso se nombran solas y las que no, con
  *   las palabras de BE. El detalle de cada vínculo (finalidad, estado y desde cuándo) está a un clic, en el lugar.
- * - Se busca por la referencia, mientras se escribe y sin pedirle nada a la API: la lista ya está leída entera.
+ * - Se busca por el nombre o por la referencia, mientras se escribe y sin pedirle nada a la API: la lista ya está leída
+ *   entera. Con un nombre visible (DL-040, decidida por Dirección el 2026-10-15), la referencia corta va al lado, chica:
+ *   distingue a dos personas que se llaman igual.
  * - La cantidad del título cuenta personas, no vínculos. Con una búsqueda dice cuántas coinciden y de cuántas.
  * - Una falla de esta lectura no esconde los pendientes, y dice su motivo.
  */
@@ -84,15 +86,15 @@ export function Asesorados({
           {/* No hay nada que enviar: se filtra mientras se escribe. El rótulo existe aunque no se vea. */}
           <div className="buscador-del-directorio" role="search">
             <label htmlFor={`${id}-buscar`} className="visualmente-oculto">
-              Buscar por referencia
+              Buscar por nombre o referencia
             </label>
             <Icono nombre="buscar" tamano={20} />
-            <input id={`${id}-buscar`} type="search" value={buscado} maxLength={60} onChange={(e) => setBuscado(e.target.value)} placeholder="Buscar por referencia" autoComplete="off" spellCheck={false} />
+            <input id={`${id}-buscar`} type="search" value={buscado} maxLength={60} onChange={(e) => setBuscado(e.target.value)} placeholder="Buscar por nombre o referencia" autoComplete="off" spellCheck={false} />
           </div>
 
           {coinciden.length === 0 ? (
             <EstadoVacio
-              titulo={`Ninguna referencia coincide con «${buscado.trim()}».`}
+              titulo={`Ningún nombre ni referencia coincide con «${buscado.trim()}».`}
               accion={
                 <button type="button" className="boton boton--secundario" onClick={() => setBuscado('')}>
                   Quitar la búsqueda
@@ -130,7 +132,10 @@ function Persona({ persona, abierta, alAlternar }: { persona: PersonaDelDirector
       {/* La referencia y las áreas son el resumen de la persona y, a la vez, lo que abre el detalle de sus vínculos. */}
       <button type="button" className="persona__datos" aria-expanded={abierta} aria-controls={`${id}-vinculos`} onClick={alAlternar}>
         <span className="persona__resumen">
-          <span className="persona__nombre">{persona.nombre}</span>
+          <span className="persona__quien">
+            <span className="persona__nombre">{persona.nombre}</span>
+            {persona.nombre.endsWith(persona.referencia) ? null : <span className="persona__referencia">{persona.referencia}</span>}
+          </span>
           {persona.conAcceso.length > 0 ? <span className="persona__con-acceso">{persona.conAcceso.join(' · ')}</span> : null}
           {persona.sinAcceso.map((a) => (
             <span key={a.area} className="persona__sin-acceso">
@@ -161,9 +166,11 @@ function Persona({ persona, abierta, alAlternar }: { persona: PersonaDelDirector
           : null}
       </ul>
       {/* La ficha es una por persona, aunque los vínculos sean por área (DL-039). Va después del detalle en el documento,
-          para que el detalle siga a lo que lo abre; a la vista, está al lado de la referencia. */}
-      <Link className="boton boton--quieto boton--compacto persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`} aria-label={`Abrir la ficha de ${persona.nombre}`}>
+          para que el detalle siga a lo que lo abre; a la vista, está al lado de la referencia. Es un enlace, como «Abrir»
+          en «Pendientes»: una columna de botones con borde pesaba de más (crítica de diseño, 2026-10-15). */}
+      <Link className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`} aria-label={`Abrir la ficha de ${persona.nombre}`}>
         Abrir
+        <Icono nombre="derecha" tamano={18} />
       </Link>
     </li>
   );

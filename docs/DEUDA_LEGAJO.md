@@ -13,7 +13,7 @@
 | DL-006 | WP-01 · 2026-09-16 | 07 §36 | Pre-deploy `prisma migrate deploy` no disponible en plan gratuito de Render | ABIERTA |
 | DL-007 | WP-01 · 2026-09-16 | 07 §34 vs CAND-07-J | Runtime del website: imagen Next standalone vs export estático | ABIERTA |
 | DL-008 | WP-01 · 2026-09-18 | 07 §36 | La sincronización del Blueprint despliega sin esperar a la CI | ABIERTA |
-| DL-009 | WP-02 · 2026-09-18 | 06 §5.5/§5.12 · 05 UC-P25 · 09v8 | Perfil propio sin campos aprobados | ABIERTA |
+| DL-009 | WP-02 · 2026-09-18 | 06 §5.5/§5.12 · 05 UC-P25 · 09v8 | Perfil propio sin campos aprobados | **DECIDIDA E IMPLEMENTADA** 2026-10-15 · opción B, con un solo campo: el nombre visible, optativo, con versiones desde que la persona lo declara; API-ACC-06 (#159, sin integrar) |
 | DL-010 | WP-02 · 2026-09-18 | 09v8 ACC-01 · 08 §24.5 | El registro distingue identificador nuevo de existente (201/409) | ABIERTA |
 | DL-011 | WP-02 · 2026-09-18 | 06 INV-06-24, REG-06-19 · 08 §16 | Unicidad global del identificador, incluye cuentas cerradas | ABIERTA |
 | DL-012 | WP-02 · 2026-09-18 | 07 §43-bis · 08 §26 · 09v8 ACC-02 | Sesión: formato, transporte, TTL y renovación | **DECIDIDA** 2026-10-03 · sin renovación; en la APK, el token en el almacenamiento seguro hasta que vence (#136, sin integrar) |
@@ -44,7 +44,7 @@
 | DL-037 | WP-03 · 2026-09-19 | 06:3035-3040 · REG-06-49 · 09v8:1165-1176, 1960 · 09:853 | Solicitud: caducidad sin plazo, invalidación y respuesta al duplicado | ABIERTA |
 | DL-038 | WP-03 · 2026-09-19 | 06:3170-3175 · REG-06-50 · 09v8:1570-1660 · 09:2437-2519 | B2: nueva versión y reotorgamiento sin contrato | ABIERTA |
 | DL-039 | WP-03 · 2026-09-19 | 06:251, 06:262 · 09v8:1518-1562, 1962 · 08:307, 08:368, 08:374 | Finalidad y categorías pertinentes sin catálogo | **SIMPLIFICACIÓN DECLARADA** 2026-09-19 · consentimiento por alcance y finalidad; categorías especificadas y no implementadas |
-| DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | ABIERTA |
+| DL-040 | WP-03 · 2026-09-19 | 09v8:161-170, 1523-1526 · 11A:196 · DL-009 | Nombre visible de las partes sin campos de perfil aprobados | **DECIDIDA E IMPLEMENTADA** 2026-10-15 · el profesional ve el nombre visible del asesorado mientras el vínculo está vigente; si no, la referencia neutral (#159, sin integrar) |
 | DL-041 | WP-03 · 2026-09-19 | 10-B01:645-663, 1019-1031, 1310-1319 · brief WP-03 | El profesional sin Cartera | ABIERTA |
 | DL-042 | WP-03 · 2026-09-19 | DV-05 (DV05.md:1116-1133) · brief WP-03 | Casos adversariales de DV-05 que dependen de dominios | **ASIGNADA**: 8 y 7 (variante nutricional) **ejecutables desde WP-04**; 6, 10 y 7 (mediciones) en WP-05, antropometría |
 | DL-043 | WP-03 · 2026-09-19 | 09v8:1161-1163, 1208-1220, 1309-1311, 1389, 1447-1490, 1764-1778 | Contratos de REL con forma no definida en el 09 | ABIERTA |
@@ -273,7 +273,7 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 
 ## DL-009 — Perfil propio sin campos aprobados
 
-**Prioridad:** media · **Documento:** 06 §5.5 y §5.12 · 05 UC-P25 · 09v8 ACC-01/06 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06 §5.5 y §5.12 · 05 UC-P25 · 09v8 ACC-01/06 · **Estado:** DECIDIDA E IMPLEMENTADA (2026-10-15)
 
 **Qué dice el legajo.**
 - UC-P25 exige que «el perfil propio queda asociado» (05:14047-14053).
@@ -291,6 +291,21 @@ La observación sobre las actas 001–020 no incluidas en la entrega queda como 
 **Provisorio en código.** A. `PerfilPropio` existe con `versionEfectivaId = null`; INV-06-22 se cumple y DL-003 se cierra.
 
 **Condición de cierre.** Dirección aprueba los campos del perfil propio, o declara que el perfil no tiene contenido en el MVP y corrige §5.12.
+
+**Decisión de Dirección (2026-10-15).** «Pongámosle nombres, ya no id o esa “matrícula”; empecemos a usar datos,
+aunque sean sintéticos, lo más parecido a la realidad». Se implementó la opción B con un solo campo, en el PR #159:
+- **El nombre visible** (C3, «contacto mínimo del vínculo», 08 §11): optativo, de 1 a 60 caracteres, sin caracteres
+  de control ni invisibles. Lo declara, lo cambia o lo quita la persona, en «Cuenta» del website.
+- **Con historia** (§5.5; REG-06-20): cada cambio es una `VersionDePerfilPropio`, que la base solo deja agregar, y el
+  perfil apunta a la última. No hay versión en el alta: una persona sin nombre no tiene contenido que versionar
+  (§5.5.2, «exactamente una cuando existe contenido confirmado»). El alta no cambia.
+- **API-ACC-06** (`PATCH /me/profile`, con `expectedVersion`; 409, 422 y 400 como dice el 09v8:509-554) y su lectura,
+  **API-ACC-06-PROPIA** (`GET /me/profile`), una extensión declarada. `/me` no cambia: su respuesta es estricta, y la APK
+  instalada la valida campo por campo (ficha 1 de las fichas del 2026-10-02). La APK lo suma en su próxima versión.
+- **Pruebas:** `contratos-perfil-propio.test.ts` (dominio) y `perfil-propio.int-spec.ts` (integración, en la CI).
+
+**Lo que sigue abierto.** Otros campos del perfil (altura, nacimiento: DL-023 y DL-095) y §5.12 («1 : 1..N»), que
+el 06 tendría que leer como «1 : 0..N» mientras el contenido sea optativo.
 
 ## DL-010 — El registro distingue identificador nuevo de existente (201 frente a 409)
 
@@ -1019,7 +1034,7 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 
 ## DL-040 — Nombre visible de las partes sin campos de perfil aprobados
 
-**Prioridad:** media · **Documento:** 09v8:161-170 (ActorSummary) · 09v8:1523-1526 · 11A:196 · DL-009 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 09v8:161-170 (ActorSummary) · 09v8:1523-1526 · 11A:196 · DL-009 · **Estado:** DECIDIDA E IMPLEMENTADA (2026-10-15)
 
 **Qué dice el legajo.**
 - Los modelos de lectura de REL y CON muestran la contraparte como `ActorSummary { identityId, displayName }` (09v8:161-170), y CON-01 muestra `professional.displayName` (09v8:1523-1526).
@@ -1035,6 +1050,19 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Provisorio en código.** A.
 
 **Condición de cierre.** El 04 y el 05 aprueban los campos del perfil propio y del perfil profesional (DL-009).
+
+**Decisión de Dirección (2026-10-15).** El profesional ve a la persona por su nombre visible (DL-009, opción B), en el
+`displayName` de cada modelo de lectura: la cabecera de la ficha, «Tus asesorados», «Pendientes», la línea de tiempo,
+las sesiones, las solicitudes de vínculo y de información. Lo resuelve una sola función de la API
+(`nombresDeAsesoradosPorPar`, en `vinculo/lectura.ts`), con una regla:
+- **con un vínculo vigente** entre los dos (algún alcance aceptado o en pausa), el nombre que la persona declaró;
+- **sin vínculo vigente** (una solicitud pendiente, que todavía no aceptó; un vínculo que terminó) **o sin nombre,** la
+  referencia neutral de siempre («Asesorado · c36743»). El correo, nunca.
+
+En la ficha, la referencia va al lado del nombre, chica, como en la maqueta 01: distingue a dos personas que se llaman
+igual. «Tus asesorados» busca por nombre o por referencia («Buscar por nombre o referencia», el texto de la maqueta,
+que volvió). El nombre del profesional ya era visible (perfil profesional, DL-036); los datos de prueba dejaron de
+decir «(sintética)».
 
 ## DL-041 — El profesional sin Cartera
 

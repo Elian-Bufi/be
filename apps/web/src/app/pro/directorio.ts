@@ -5,9 +5,10 @@
  * - Un área con acceso se nombra sola. Una sin acceso se dice con las palabras de BE (`estadoParaMostrar`, 10-B04 §28,
  *   H10-04-04): «Pausado · sin acceso» no es «Finalizado», ni «Acceso pendiente de autorización del asesorado».
  * - Nada se pierde: cada vínculo, con su finalidad, su estado y desde cuándo, queda en el detalle de la persona.
- * - El asesorado no tiene alias (DL-040): su nombre visible es su referencia, y se busca por ella.
+ * - El asesorado se ve con el nombre de su perfil mientras el vínculo esté vigente (DL-040, decidida por Dirección el
+ *   2026-10-15) y, si no, con su referencia neutral. Se busca por los dos: el nombre y la referencia corta.
  */
-import { ALCANCES, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, normalizarTexto, type Alcance, type Vinculo } from '@be/domain';
+import { ALCANCES, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, normalizarTexto, referenciaCorta, type Alcance, type Vinculo } from '@be/domain';
 
 export interface VinculoDelDirectorio {
   readonly relationshipId: string;
@@ -25,7 +26,10 @@ export interface VinculoDelDirectorio {
 
 export interface PersonaDelDirectorio {
   readonly identityId: string;
+  /** Como lo da la API: el nombre visible o, sin él, la referencia neutral («Asesorado · a9be23»). */
   readonly nombre: string;
+  /** La referencia corta («a9be23»): va al lado de un nombre, para distinguir a dos personas que se llaman igual. */
+  readonly referencia: string;
   /** Todos sus vínculos con este profesional: en el orden de las áreas de BE y, dentro de un área, el más nuevo primero. */
   readonly vinculos: readonly VinculoDelDirectorio[];
   /** Las áreas con acceso activo, en el orden de BE, sin repetir. */
@@ -85,7 +89,7 @@ export function armarElDirectorio(vinculos: readonly Vinculo[], profesionalId: s
       const elQueMasDice = [...delArea].sort((a, b) => PESO_DEL_ESTADO[a.relationshipState] - PESO_DEL_ESTADO[b.relationshipState])[0] as Vinculo;
       sinAcceso.push({ area: elQueMasDice.scope.label, estado: estadoEnUnaFrase(vinculoDelDirectorio(elQueMasDice)) });
     }
-    return { identityId, nombre, vinculos: ordenados.map(vinculoDelDirectorio), conAcceso, sinAcceso };
+    return { identityId, nombre, referencia: referenciaCorta(identityId), vinculos: ordenados.map(vinculoDelDirectorio), conAcceso, sinAcceso };
   });
 }
 
@@ -95,12 +99,12 @@ const llano = (texto: string): string =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-/** Las personas cuya referencia contiene todas las palabras buscadas. Sin nada que buscar, todas. */
-export function buscarEnElDirectorio<P extends Pick<PersonaDelDirectorio, 'nombre'>>(personas: readonly P[], buscado: string): P[] {
+/** Las personas cuyo nombre o referencia contienen todas las palabras buscadas. Sin nada que buscar, todas. */
+export function buscarEnElDirectorio<P extends Pick<PersonaDelDirectorio, 'nombre' | 'referencia'>>(personas: readonly P[], buscado: string): P[] {
   const palabras = llano(buscado).split(' ').filter(Boolean);
   if (palabras.length === 0) return [...personas];
   return personas.filter((p) => {
-    const nombre = llano(p.nombre);
+    const nombre = llano(`${p.nombre} ${p.referencia}`);
     return palabras.every((palabra) => nombre.includes(palabra));
   });
 }

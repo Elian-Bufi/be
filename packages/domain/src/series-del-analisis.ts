@@ -434,6 +434,30 @@ export function partesDeLaCobertura(r: ResumenDeUnPeriodo): string[] {
   ];
 }
 
+/**
+ * La misma cobertura en dos renglones cortos, para la tarjeta de un indicador del Resumen (la crítica de diseño del
+ * 2026-10-15 encontró el pie en cuatro líneas; la maqueta 01 usaba dos). Son las mismas cuentas y las mismas palabras
+ * que `partesDeLaCobertura`, más cortas; la frase entera sigue en la tabla de etapas y en «Comparar dos períodos».
+ * - `principal`: con qué se calcula el número. En días, los días con valor y los días sin registros, que el minigráfico
+ *   sombrea; en sesiones o tomas, la cobertura entera, que ya es corta.
+ * - `detalle`: lo que cambia cómo se lee el número: cuántos de esos días son subtotales, los días con registros sin
+ *   cantidades o sin el nutriente, y que hoy, en curso, queda fuera de la media.
+ */
+export function coberturaBreve(r: ResumenDeUnPeriodo): { readonly principal: readonly string[]; readonly detalle: readonly string[] } {
+  if (r.dias === null) return { principal: partesDeLaCobertura(r), detalle: [] };
+  const total = r.regla === 'TOTAL';
+  const d = r.dias;
+  return {
+    principal: [`${contar(r.duracionDias, 'día', 'días')}: ${numero(r.n)} ${total ? 'con registros' : 'con valor'}`, ...(d.sinRegistros > 0 ? [`${numero(d.sinRegistros)} sin registros`] : [])],
+    detalle: [
+      ...(r.parciales > 0 ? [contar(r.parciales, 'subtotal', 'subtotales')] : []),
+      ...(d.sinCantidades > 0 ? [`${numero(d.sinCantidades)} sin cantidades`] : []),
+      ...(d.sinDatoDelNutriente > 0 ? [`${numero(d.sinDatoDelNutriente)} sin dato del nutriente`] : []),
+      ...(d.hoyEnCurso ? [total ? 'hoy, en curso: el total incluye lo registrado hasta ahora' : 'hoy, en curso: fuera de la media'] : []),
+    ],
+  };
+}
+
 // ─── Resumen textual (alternativa al gráfico) ───────────────────────────────────────────────────
 
 const fechaCorta = (f: string): string => `${Number(f.slice(8, 10))}/${Number(f.slice(5, 7))}/${f.slice(0, 4)}`;

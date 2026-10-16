@@ -692,8 +692,10 @@ async function funcional() {
     );
     // WP-DASHBOARD-COMPRENSION (pasada del 2026-10-09): la cobertura de los indicadores es la misma de las tablas
     // (`partesDeLaCobertura`): «hoy, en curso: fuera de la media» y «de ellos, N son subtotales (falta algún dato)».
+    // Desde la crítica de diseño del 2026-10-15 va en su versión corta (`coberturaBreve`): «N subtotales».
     comprobar('PRO-11', 'La media de calorías no cuenta el día en curso y dice sus subtotales', /hoy, en curso: fuera de la media/.test(ind[0]) && /subtotal/.test(ind[0]), ind[0]);
-    comprobar('PRO-15', 'El peso compara solo dentro de su tramo comparable', /tomas comparables|no hay con qué comparar/.test(ind[3]), ind[3]);
+    // «del último tramo comparable», en la cobertura, y «Primera comparable», en la nota (antes, «(N tomas comparables)»).
+    comprobar('PRO-15', 'El peso compara solo dentro de su tramo comparable', /\d+ del último tramo comparable[\s\S]*Primera comparable: |no hay con qué comparar/.test(ind[3]), ind[3]);
     // La cobertura del área está en su tarjeta, plegada cuando el área tiene una revisión (E-51): se abre y se lee. La
     // frase es la del dominio («80 de 90 días con algún registro»; antes la pantalla la escribía «80 días de 90…»). El
     // «sin porcentajes» se mira ahora sobre todo el Resumen, con la cobertura abierta.
@@ -2091,11 +2093,14 @@ async function analizarRecompuesto(page, v) {
       periodo: !!document.querySelector('.periodo-del-seguimiento__boton'),
       alto: Math.round(document.querySelector('.marco-de-la-ficha').getBoundingClientRect().height),
     }));
+    // El alto del marco en cada ancho. Desde la crítica de diseño del 2026-10-15: 140 (la píldora del acceso, más liviana:
+    // F-142; antes, 143) y, desde 1.400 px, 104, porque el acceso sube al primer renglón (F-148). Que el botón de la ayuda
+    // no lo haga crecer se sigue mirando igual: el mismo alto exacto en Analizar y en la Línea de tiempo.
+    const ALTO_DEL_MARCO = { 1440: 104, 1280: 140, 1024: 140 };
     comprobar(
       'E-47',
-      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (140 px a 1440, 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo',
-      // 140 desde la crítica de diseño del 2026-10-15 (la píldora del acceso, más liviana: F-142); antes, 143.
-      [1440, 1280, 1024].every((a) => marco[a].alto === 140 && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && enLaLinea.boton === 'Cómo se lee esta vista' && enLaLinea.periodo && enLaLinea.alto === 140,
+      'En Analizar, el marco de la ficha ofrece «Cómo se lee esta vista» sin crecer (104 px a 1440, con el acceso en el primer renglón; 140 a 1280 y 1024; a 1024, el botón queda con su ícono y conserva su nombre); en la Línea de tiempo el botón también está, y el marco mide lo mismo',
+      [1440, 1280, 1024].every((a) => marco[a].alto === ALTO_DEL_MARCO[a] && marco[a].boton === 'Cómo se lee esta vista' && marco[a].desborde <= 1) && marco[1024].anchoDelBoton < 60 && marco[1440].anchoDelBoton > 120 && enLaLinea.boton === 'Cómo se lee esta vista' && enLaLinea.periodo && enLaLinea.alto === ALTO_DEL_MARCO[1440],
       `${JSON.stringify(marco)} · Línea de tiempo: ${JSON.stringify(enLaLinea)}`,
     );
     comprobar(
@@ -2688,7 +2693,9 @@ async function resumenPorArea(page, v, guiones) {
         indicadores[2].cobertura === `${contar(enElPeriodo(carga).length, 'sesión', 'sesiones')}: ${num(sesiones.length)} con valor` &&
         indicadores[2].notas.includes(`Última sesión: ${fechaBreve(ultimaSesion.date)} · ${num(Number(ultimaSesion.value.toFixed(1)), 1)} ${ej.loadUnits[0]}`) &&
         indicadores[3].cobertura.startsWith(contar(conValorDelPeso.length, 'toma', 'tomas')) &&
-        indicadores[3].notas.some((n) => /^Primera comparable del período: [\d.,]+ kg el \d{1,2} [a-z]{3,4} · diferencia [+−-]?[\d.,]+ kg \(\d+ tomas comparables\)$|^Una sola observación comparable: no hay con qué comparar\.$/.test(n)) &&
+        // Desde la crítica de diseño del 2026-10-15, sin «del período» ni «(N tomas comparables)»: la cobertura, en el
+        // renglón de arriba, ya dice cuántas son del último tramo comparable.
+        indicadores[3].notas.some((n) => /^Primera comparable: [\d.,]+ kg el \d{1,2} [a-z]{3,4} · diferencia [+−-]?[\d.,]+ kg$|^Una sola observación comparable: no hay con qué comparar\.$/.test(n)) &&
         indicadores[3].clase === `Clase de dato: ${CLASE[ultimaToma.dataClass]}` &&
         indicadores.slice(0, 3).every((i) => i.clase === null),
       indicadores.map((i) => `${i.nombre}: ${i.cobertura} [${i.notas.join(' | ')}]${i.clase ? ` {${i.clase}}` : ''}`).join(' · '),
@@ -2970,6 +2977,8 @@ async function lineaPorDia(page, v) {
           novedades: d.dataset.novedades,
           fin: Math.round(d.getBoundingClientRect().bottom + scrollY),
           tarjeta: estilo.borderTopWidth !== '0px' && estilo.borderTopStyle !== 'none' && estilo.backgroundColor !== 'rgba(0, 0, 0, 0)',
+          contorno: estilo.borderTopWidth !== '0px' && estilo.borderTopStyle !== 'none' && estilo.borderBottomWidth !== '0px',
+          pesoDeLaFecha: Number(getComputedStyle(d.querySelector('.linea-de-tiempo__numero')).fontWeight),
           sueltos: [...d.querySelectorAll('.linea-de-tiempo__hechos > .entrada')].map((e) => ({ id: e.dataset.id, hito: e.dataset.hito === 'si', rasgos: [...e.querySelectorAll('[data-rasgo]')].map((r) => r.dataset.rasgo), texto: e.innerText.replace(/\s+/g, ' ').trim() })),
           grupo: grupo
             ? {
@@ -3035,11 +3044,13 @@ async function lineaPorDia(page, v) {
     return faltas.length ? [`${d.fecha}: ${faltas.join('; ')}`] : [];
   });
   const conTarjeta = enPantalla.filter((d) => d.tarjeta).length;
+  // Desde la crítica de diseño del 2026-10-15 (F-149), todos los días tienen el contorno de su tarjeta y la fecha con el
+  // mismo peso; `tarjeta` sigue siendo la tarjeta llena (contorno y fondo), la que distingue al día con algo para mirar.
   comprobar(
     'E-65',
-    'Cada día se arma con lo que entrega la API: los hitos primero, las comidas en un renglón que dice cuántas son y cuántas tienen cada rasgo, y la tarjeta solo si hay una sesión, un hito o un rasgo; hay días de las dos clases',
-    diferencias.length === 0 && enPantalla.length >= 5 && conTarjeta > 0 && conTarjeta < enPantalla.length,
-    diferencias.length ? diferencias.slice(0, 4).join(' · ') : `${enPantalla.length} días a la vista: ${conTarjeta} con tarjeta y ${enPantalla.length - conTarjeta} lisos`,
+    'Cada día se arma con lo que entrega la API: los hitos primero, las comidas en un renglón que dice cuántas son y cuántas tienen cada rasgo, y la tarjeta llena solo si hay una sesión, un hito o un rasgo (la del día tranquilo, sin fondo); hay días de las dos clases, todos con el contorno y la fecha en el mismo peso',
+    diferencias.length === 0 && enPantalla.length >= 5 && conTarjeta > 0 && conTarjeta < enPantalla.length && enPantalla.every((d) => d.contorno && d.pesoDeLaFecha === enPantalla[0].pesoDeLaFecha),
+    diferencias.length ? diferencias.slice(0, 4).join(' · ') : `${enPantalla.length} días a la vista: ${conTarjeta} con tarjeta llena y ${enPantalla.length - conTarjeta} sin fondo · pesos de la fecha: ${[...new Set(enPantalla.map((d) => d.pesoDeLaFecha))].join(', ')}`,
   );
 
   // E-71 · Días enteros: el último día leído espera ─────────────────────────────────────────────────────
@@ -4051,9 +4062,11 @@ async function espacioProfesional(page, v) {
   }, buscador);
   const antesDeBuscar = v.urls.length;
   const laDeA = personasEsperadas.find((p) => p.id === estado.aseId) ?? personasEsperadas[0];
-  // El final de una referencia, en mayúsculas: quiénes la tienen se calcula a mano sobre los nombres de la API.
-  const buscado = laDeA.nombre.slice(-4).toUpperCase();
-  const lasQueCoinciden = personasEsperadas.filter((p) => p.nombre.toLowerCase().includes(buscado.toLowerCase())).map((p) => p.id);
+  // El final de una referencia, en mayúsculas: quiénes la tienen se calcula a mano sobre los nombres de la API y las
+  // referencias (desde el 2026-10-15, con DL-040, una persona con nombre visible se busca también por su referencia).
+  const referenciaDe = (id) => id.replace(/-/g, '').slice(-6);
+  const buscado = referenciaDe(laDeA.id).slice(-4).toUpperCase();
+  const lasQueCoinciden = personasEsperadas.filter((p) => `${p.nombre} ${referenciaDe(p.id)}`.toLowerCase().includes(buscado.toLowerCase())).map((p) => p.id);
   await page.type(buscador, buscado);
   await pausa(300);
   const buscada = await espacioEnPantalla(page);
@@ -4070,15 +4083,15 @@ async function espacioProfesional(page, v) {
   const otraVezTodas = await espacioEnPantalla(page);
   comprobar(
     'E-90',
-    'El buscador se llama «Buscar por referencia» (también para el lector de pantalla) y filtra mientras se escribe, sin pedirle nada a la API: con el final de una referencia, en mayúsculas, quedan las personas que la tienen y el título dice cuántas de cuántas; con algo que no coincide dice que ninguna referencia coincide (no que no hay asesorados) y ofrece quitar la búsqueda, que las trae a todas',
-    rotuloDelBuscador.rotulo === 'Buscar por referencia' &&
-      rotuloDelBuscador.ejemplo === 'Buscar por referencia' &&
+    'El buscador se llama «Buscar por nombre o referencia» (también para el lector de pantalla; el texto de la maqueta, que volvió con DL-040) y filtra mientras se escribe, sin pedirle nada a la API: con el final de una referencia, en mayúsculas, quedan las personas que la tienen y el título dice cuántas de cuántas; con algo que no coincide dice que ningún nombre ni referencia coincide (no que no hay asesorados) y ofrece quitar la búsqueda, que las trae a todas',
+    rotuloDelBuscador.rotulo === 'Buscar por nombre o referencia' &&
+      rotuloDelBuscador.ejemplo === 'Buscar por nombre o referencia' &&
       lasQueCoinciden.length >= 1 &&
       lasQueCoinciden.length < personasEsperadas.length &&
       igual(buscada.personas.map((p) => p.id), lasQueCoinciden) &&
       buscada.cuentaDelDirectorio === `${num(lasQueCoinciden.length)} de ${num(personasEsperadas.length)} personas` &&
       sinNadie.personas.length === 0 &&
-      sinNadie.sinReferencias === 'Ninguna referencia coincide con «zzzz». Quitar la búsqueda' &&
+      sinNadie.sinReferencias === 'Ningún nombre ni referencia coincide con «zzzz». Quitar la búsqueda' &&
       sinNadie.directorioVacio === null &&
       sinNadie.cuentaDelDirectorio === `0 de ${num(personasEsperadas.length)} personas` &&
       otraVezTodas.personas.length === personasEsperadas.length &&
@@ -4300,7 +4313,10 @@ const marcoEnPantalla = (page) =>
     const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
     const caja = (e) => {
       if (!e) return null;
-      const r = e.getBoundingClientRect();
+      // Un renglón que no dibuja su caja (desde 1.400 px, el de la persona reparte sus partes en la grilla del marco):
+      // su lugar es el de sus partes.
+      const rs = getComputedStyle(e).display === 'contents' ? [...e.children].map((c) => c.getBoundingClientRect()) : [e.getBoundingClientRect()];
+      const r = { top: Math.min(...rs.map((x) => x.top)), bottom: Math.max(...rs.map((x) => x.bottom)), left: Math.min(...rs.map((x) => x.left)), right: Math.max(...rs.map((x) => x.right)) };
       return { arriba: Math.round(r.top + scrollY), abajo: Math.round(r.bottom + scrollY), izquierda: Math.round(r.left), derecha: Math.round(r.right) };
     };
     const marco = document.querySelector('header.marco-del-area');
@@ -4408,11 +4424,17 @@ async function marcoDeLasAreas(page, v) {
   await ir(page, FICHA_A);
   await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
   await quieto(page, v);
-  const ficha = await page.evaluate(() => {
-    const alto = (e) => Math.round(e.getBoundingClientRect().height);
-    const marco = document.querySelector('header.marco-de-la-ficha');
-    return { alto: alto(marco), renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(alto) };
-  });
+  const medirLaFicha = () =>
+    page.evaluate(() => {
+      // Como en `marcoEnPantalla`: un renglón que no dibuja su caja mide lo que sus partes.
+      const alto = (e) => {
+        const rs = getComputedStyle(e).display === 'contents' ? [...e.children].map((c) => c.getBoundingClientRect()) : [e.getBoundingClientRect()];
+        return Math.round(Math.max(...rs.map((x) => x.bottom)) - Math.min(...rs.map((x) => x.top)));
+      };
+      const marco = document.querySelector('header.marco-de-la-ficha');
+      return { alto: alto(marco), renglones: [...marco.querySelectorAll('.marco-de-la-ficha__persona, .marco-de-la-ficha__estado, .marco-de-la-ficha__vistas')].map(alto) };
+    });
+  const ficha = await medirLaFicha();
 
   // F-01 · El marco, en las cuatro áreas ─────────────────────────────────────────────────────────────────
   const medidas = [];
@@ -4461,10 +4483,15 @@ async function marcoDeLasAreas(page, v) {
 
   // F-06 · Los mismos tres renglones que la ficha ───────────────────────────────────────────────────────────
   informar('F-06', 'El alto del marco y de sus tres renglones, a 1440 px', `ficha ${ficha.alto} px (${ficha.renglones.join(' + ')}) · ${medidas.map((x) => `${x.area} ${x.alto} (${x.renglones.join(' + ')})`).join(' · ')}`);
+  // A 1440, desde la crítica de diseño del 2026-10-15, el acceso va en el primer renglón (F-148): el marco tiene dos
+  // renglones, el de la persona (con el acceso al lado) y el de las secciones, y esos dos se comparan al píxel. El acceso
+  // va adentro del primero: en la ficha, con el nombre y la referencia al lado, se parte en dos líneas sin agrandarlo
+  // (F-157), y en un área entra en una. Lo que protege la comprobación es lo mismo: nada se mueve al pasar de una a otra.
+  const dentroDelPrimero = (r) => r.length === 3 && r[1] <= r[0];
   comprobar(
     'F-06',
-    'El marco tiene tres renglones y mide lo mismo en las cuatro áreas y en la ficha: al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura',
-    medidas.every((x) => x.renglones.length === 3 && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
+    'El marco mide lo mismo en las cuatro áreas y en la ficha, renglón por renglón (el de la persona, con el acceso adentro, y el de las secciones): al pasar de la ficha a un área, o de un área a otra, las secciones y lo que está debajo quedan a la misma altura',
+    dentroDelPrimero(ficha.renglones) && medidas.every((x) => dentroDelPrimero(x.renglones) && x.alto === ficha.alto && x.renglones[0] === ficha.renglones[0] && x.renglones[2] === ficha.renglones[2]),
     `ficha ${ficha.alto} · ${medidas.map((x) => `${x.area} ${x.alto}`).join(' · ')}`,
   );
   // F-10 · La sección conserva su ancho y arranca donde arranca el marco ────────────────────────────────────
@@ -4712,9 +4739,16 @@ async function marcoDeLasAreas(page, v) {
   );
 
   // El marco a 1280 y a 1024 px ───────────────────────────────────────────────────────────────────────────
+  // Contra la ficha medida en el mismo ancho: desde la crítica de diseño del 2026-10-15 (F-148), a 1440 el acceso sube
+  // al primer renglón y el marco mide otra cosa que a 1280 y 1024, donde conserva sus tres renglones.
   const anchos = [];
+  const fichaEn = {};
   for (const ancho of [1280, 1024]) {
     await page.setViewport({ width: ancho, height: 900 });
+    await ir(page, FICHA_A);
+    await page.waitForSelector('header.marco-de-la-ficha .ficha__consulta .nota', { timeout: 30_000 });
+    await quieto(page, v);
+    fichaEn[ancho] = await medirLaFicha();
     for (const area of [AREAS[2], AREAS[3]]) {
       await entrar(`/pro/advisees/${area.clave}?id=${A}`);
       const m = await marcoEnPantalla(page);
@@ -4724,9 +4758,9 @@ async function marcoDeLasAreas(page, v) {
   await page.setViewport({ width: 1440, height: 900 });
   comprobar(
     'F-06',
-    'A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de 1440: nada baja de renglón ni desborda la página',
-    anchos.every((x) => !x.desborda && x.alto === ficha.alto && igual(x.renglones, ficha.renglones)),
-    anchos.map((x) => `${x.ancho} · ${x.area}: ${x.alto} px (${x.renglones.join(' + ')})${x.desborda ? ' DESBORDA' : ''}`).join(' — '),
+    'A 1280 y a 1024 px el marco de Antropometría y el de Información (los de textos más largos) conservan sus tres renglones con el alto de la ficha en ese ancho: nada baja de renglón ni desborda la página',
+    anchos.every((x) => !x.desborda && x.renglones.length === 3 && x.alto === fichaEn[x.ancho].alto && igual(x.renglones, fichaEn[x.ancho].renglones)),
+    `${anchos.map((x) => `${x.ancho} · ${x.area}: ${x.alto} px (${x.renglones.join(' + ')})${x.desborda ? ' DESBORDA' : ''}`).join(' — ')} · la ficha: ${[1280, 1024].map((a) => `${a} · ${fichaEn[a].alto} px (${fichaEn[a].renglones.join(' + ')})`).join(', ')}`,
   );
   comprobar('—', 'El marco de las áreas no produjo errores de página ni respuestas con error fuera de las simuladas', v.errores.length === 0, v.errores.slice(0, 3).join(' | '));
 }
@@ -8709,11 +8743,47 @@ async function solicitudesDeInformacion() {
 
 // ─── Nutrición · Plan (WP-ESCRITORIO-AREAS, parte 5) ───────────────────────────────────────────────────────────
 
+/**
+ * Elige una acción del menú «Plantillas» del encabezado del plan activo, de Nutrición o de Entrenamiento. Desde la crítica
+ * de diseño del 2026-10-15 (F-150) las dos acciones de plantillas van en ese menú; antes eran dos botones. Lo que hacen
+ * no cambió.
+ */
+const elegirEnPlantillas = async (page, texto) => {
+  const MENU = '.plan__activo .plan__acciones .menu-de-acciones';
+  await page.click(`${MENU} .menu-de-acciones__boton`);
+  await page.waitForSelector(`${MENU}[data-abierto] .menu-de-acciones__accion`, { timeout: 5_000 }).catch(() => {});
+  await clic(page, `${MENU}[data-abierto] .menu-de-acciones__accion`, texto);
+};
+
 /** Lo que «Plan», de Nutrición, tiene a la vista: la versión que se mira, el plan activo, el editor y los avisos. */
 const planEnPantalla = (page) =>
-  page.evaluate(() => {
+  page.evaluate(async () => {
     const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
     const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+    // Las acciones del encabezado del plan activo. Desde la crítica de diseño del 2026-10-15 (F-150), las de plantillas
+    // van en el menú «Plantillas»: se abre, se leen y se cierra, y el foco vuelve adonde estaba. Primero las del menú y
+    // después los botones sueltos: el mismo orden en que se leían cuando eran botones.
+    const accionesDelEncabezado = async (activo) => {
+      const lista = activo.querySelector('.plan__acciones');
+      if (!lista) return [];
+      const menu = lista.querySelector('.menu-de-acciones');
+      let delMenu = [];
+      if (menu) {
+        const foco = document.activeElement;
+        const boton = menu.querySelector('.menu-de-acciones__boton');
+        const esperar = async (listo) => {
+          for (let i = 0; i < 40 && !listo(); i++) await new Promise((r) => setTimeout(r, 25));
+        };
+        boton.click();
+        await esperar(() => !!menu.querySelector('.menu-de-acciones__accion'));
+        delMenu = [...menu.querySelectorAll('.menu-de-acciones__accion')].map(t);
+        boton.click();
+        await esperar(() => !menu.querySelector('.menu-de-acciones__accion'));
+        if (foco instanceof HTMLElement && foco !== document.body) foco.focus({ preventScroll: true });
+        else boton.blur();
+      }
+      return [...delMenu, ...[...lista.querySelectorAll(':scope > button')].map(t)];
+    };
     const caja = (e) => {
       if (!e) return null;
       const r = e.getBoundingClientRect();
@@ -8735,7 +8805,7 @@ const planEnPantalla = (page) =>
             titulo: t(activo.querySelector('h2')),
             soloLectura: t(activo.querySelector('.plan__encabezado .etiqueta-de-dato')),
             frase: t(activo.querySelector('.plan__version')),
-            acciones: [...activo.querySelectorAll('.plan__acciones button')].map((b) => t(b)),
+            acciones: await accionesDelEncabezado(activo),
             yaHay: t(activo.querySelector('.plan__ya-hay')),
             aviso: t(activo.querySelector(':scope > .aviso')),
             dia: dia ? { clase: dia.dataset.diaTipo, texto: t(dia), rotulo: t(dia.querySelector('legend, .dia-tipo-del-plan__rotulo')), opciones: dia.dataset.diaTipo === 'varios' ? segmentos(dia) : null, caja: caja(dia) } : null,
@@ -8768,7 +8838,8 @@ const planEnPantalla = (page) =>
             historial: {
               titulo: t(activo.querySelector('.historial-del-plan h3')),
               versiones: [...activo.querySelectorAll('.historial-del-plan__lista li')].map((li) => ({ numero: Number(li.dataset.version), vigente: li.hasAttribute('data-vigente'), texto: t(li) })),
-              huella: t(activo.querySelector('.historial-del-plan__huella')),
+              huella: activo.querySelector('.historial-del-plan__huella')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+              huellaPlegada: !!activo.querySelector('details.historial-del-plan__constancia:not([open]) .historial-del-plan__huella'),
               caja: caja(activo.querySelector('.historial-del-plan')),
             },
           }
@@ -9004,11 +9075,12 @@ async function planesDeNutricion() {
     const ultimaComida = inicial.activo?.comidas.at(-1)?.caja;
     comprobar(
       'F-64',
-      'El historial va al costado de las comidas, a la altura de la primera: las versiones activadas, de la más nueva a la más vieja, cada una con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea que se lee (sus primeros 16 caracteres)',
+      'El historial va al costado de las comidas, a la altura de la primera: las versiones activadas, de la más nueva a la más vieja, cada una con su número, su día y su hora, y cuál es la vigente; al pie, plegada en «Constancia técnica» (desde la crítica de diseño del 2026-10-15), la huella de la instantánea que se lee (sus primeros 16 caracteres)',
       inicial.activo?.historial.titulo === 'Historial' &&
         igual(inicial.activo.historial.versiones, historial) &&
         historial.length === 2 &&
         inicial.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+        inicial.activo.historial.huellaPlegada &&
         !!primeraComida &&
         inicial.activo.historial.caja.x >= primeraComida.x + primeraComida.ancho &&
         Math.abs(inicial.activo.historial.caja.y - primeraComida.y) <= 2,
@@ -9316,7 +9388,7 @@ async function planesDeNutricion() {
     await entrar(BASE);
     const NOMBRE_DE_LA_PLANTILLA = `Plan del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
     const antesDeGuardar = v.urls.length;
-    await clic(page, '[data-guardar-plantilla]', 'Guardar como plantilla');
+    await elegirEnPlantillas(page, 'Guardar como plantilla');
     await page.waitForSelector('dialog[open] input', { timeout: 10_000 });
     await page.type('dialog[open] input', NOMBRE_DE_LA_PLANTILLA);
     await clic(page, 'dialog[open] .acciones button', 'Guardar la plantilla');
@@ -9325,7 +9397,7 @@ async function planesDeNutricion() {
     await quieto(page, v);
     const guardadas = escriturasDesde(antesDeGuardar, '/nutrition/plan-templates').length;
     const abrirPlantillas = async () => {
-      await clic(page, '[data-empezar-desde-plantilla]', 'Empezar desde una plantilla');
+      await elegirEnPlantillas(page, 'Empezar desde una plantilla');
       await page.waitForFunction(() => [...document.querySelectorAll('dialog[open] h2')].some((h) => h.innerText.trim() === 'Empezar desde una plantilla'), { timeout: 10_000 }).catch(() => {});
       await quieto(page, v);
       return plantillasEnPantalla(page);
@@ -11057,9 +11129,33 @@ async function planDeNutricionDeA(page, v) {
 
 /** Lo que «Plan», de Entrenamiento, tiene a la vista: la versión que se mira, lo que se eligió, los ejercicios y el historial. */
 const planDeEntrenamientoEnPantalla = (page) =>
-  page.evaluate(() => {
+  page.evaluate(async () => {
     const t = (e) => e?.innerText.replace(/\s+/g, ' ').trim() ?? null;
     const aLaVista = (e) => !!e && e.getClientRects().length > 0;
+    // Las acciones del encabezado del plan activo. Desde la crítica de diseño del 2026-10-15 (F-150), las de plantillas
+    // van en el menú «Plantillas»: se abre, se leen y se cierra, y el foco vuelve adonde estaba. Primero las del menú y
+    // después los botones sueltos: el mismo orden en que se leían cuando eran botones.
+    const accionesDelEncabezado = async (activo) => {
+      const lista = activo.querySelector('.plan__acciones');
+      if (!lista) return [];
+      const menu = lista.querySelector('.menu-de-acciones');
+      let delMenu = [];
+      if (menu) {
+        const foco = document.activeElement;
+        const boton = menu.querySelector('.menu-de-acciones__boton');
+        const esperar = async (listo) => {
+          for (let i = 0; i < 40 && !listo(); i++) await new Promise((r) => setTimeout(r, 25));
+        };
+        boton.click();
+        await esperar(() => !!menu.querySelector('.menu-de-acciones__accion'));
+        delMenu = [...menu.querySelectorAll('.menu-de-acciones__accion')].map(t);
+        boton.click();
+        await esperar(() => !menu.querySelector('.menu-de-acciones__accion'));
+        if (foco instanceof HTMLElement && foco !== document.body) foco.focus({ preventScroll: true });
+        else boton.blur();
+      }
+      return [...delMenu, ...[...lista.querySelectorAll(':scope > button')].map(t)];
+    };
     const caja = (e) => {
       if (!e) return null;
       const r = e.getBoundingClientRect();
@@ -11102,7 +11198,7 @@ const planDeEntrenamientoEnPantalla = (page) =>
             titulo: t(activo.querySelector('h2')),
             soloLectura: t(activo.querySelector('.plan__encabezado .etiqueta-de-dato')),
             frase: t(activo.querySelector('.plan__version')),
-            acciones: [...activo.querySelectorAll('.plan__acciones button')].map((b) => t(b)),
+            acciones: await accionesDelEncabezado(activo),
             yaHay: t(activo.querySelector('.plan__ya-hay')),
             aviso: t(activo.querySelector(':scope > .aviso')),
             bloque: nivel('bloque'),
@@ -11130,7 +11226,8 @@ const planDeEntrenamientoEnPantalla = (page) =>
             historial: {
               titulo: t(activo.querySelector('.historial-del-plan h3')),
               versiones: [...activo.querySelectorAll('.historial-del-plan__lista li')].map((li) => ({ numero: Number(li.dataset.version), vigente: li.hasAttribute('data-vigente'), texto: t(li) })),
-              huella: t(activo.querySelector('.historial-del-plan__huella')),
+              huella: activo.querySelector('.historial-del-plan__huella')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+              huellaPlegada: !!activo.querySelector('details.historial-del-plan__constancia:not([open]) .historial-del-plan__huella'),
               caja: caja(activo.querySelector('.historial-del-plan')),
             },
           }
@@ -11418,11 +11515,12 @@ async function planesDeEntrenamiento() {
     const primero = inicial.activo?.ejercicios[0]?.caja;
     comprobar(
       'F-76',
-      'El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál es la vigente; al pie, la huella de la instantánea. A 1440 × 900 entran el encabezado, lo que se elige, el primer ejercicio abierto entero y el historial',
+      'El historial va al costado de los ejercicios, a la altura del primero: las versiones activadas, de la más nueva a la más vieja, con su número, su día y su hora, y cuál es la vigente; al pie, plegada en «Constancia técnica», la huella de la instantánea. A 1440 × 900 entran el encabezado, lo que se elige, el primer ejercicio abierto entero y el historial',
       inicial.activo?.historial.titulo === 'Historial' &&
         igual(inicial.activo.historial.versiones, historial) &&
         historial.length === 2 &&
         inicial.activo.historial.huella === `Huella de la instantánea: ${activa.snapshotDigest.slice(0, 16)}…` &&
+        inicial.activo.historial.huellaPlegada &&
         !!primero &&
         inicial.activo.historial.caja.x >= primero.x + primero.ancho &&
         Math.abs(inicial.activo.historial.caja.y - primero.y) <= 2 &&
@@ -11727,7 +11825,7 @@ async function planesDeEntrenamiento() {
     await entrar(BASE);
     const NOMBRE_DE_LA_PLANTILLA = `Plan de entrenamiento del recorrido ${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
     const antesDeGuardar = v.urls.length;
-    await clic(page, '[data-guardar-plantilla]', 'Guardar como plantilla');
+    await elegirEnPlantillas(page, 'Guardar como plantilla');
     await page.waitForSelector('dialog[open] input', { timeout: 10_000 });
     await page.type('dialog[open] input', NOMBRE_DE_LA_PLANTILLA);
     await clic(page, 'dialog[open] .acciones button', 'Guardar la plantilla');
@@ -11736,7 +11834,7 @@ async function planesDeEntrenamiento() {
     await quieto(page, v);
     const guardadas = escriturasDesde(antesDeGuardar, '/training/plan-templates').length;
     const abrirPlantillas = async () => {
-      await clic(page, '[data-empezar-desde-plantilla]', 'Empezar desde una plantilla');
+      await elegirEnPlantillas(page, 'Empezar desde una plantilla');
       await page.waitForFunction(() => [...document.querySelectorAll('dialog[open] h2')].some((h) => h.innerText.trim() === 'Empezar desde una plantilla'), { timeout: 10_000 }).catch(() => {});
       await quieto(page, v);
       return plantillasEnPantalla(page);

@@ -27,7 +27,7 @@
  * con la hora; el acceso actual; y las tres vistas con el período. Siempre se sabe dónde se está sin desplazarse. La miga se retiró: la barra
  * de marca ya vuelve al Espacio profesional.
  */
-import { COPY_VINCULO, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -165,7 +165,12 @@ export function Workspace() {
     <header className="marco-de-la-ficha" aria-labelledby="titulo-asesorado">
       <div className="marco-de-la-ficha__ancho">
         <div className="marco-de-la-ficha__persona">
-          <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
+          <div className="marco-de-la-ficha__nombre">
+            <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
+            {/* Con un nombre visible (DL-040, 2026-10-15), la referencia va al lado, chica, como en la maqueta 01: distingue a
+                dos personas que se llaman igual. Sin nombre, el título ya es la referencia. */}
+            {nombre && !nombre.endsWith(referenciaCorta(id)) ? <span className="marco-de-la-ficha__referencia">{referenciaNeutral(id)}</span> : null}
+          </div>
           {disponible ? (
             // Vuelve a esta misma vista de la ficha al enviar o al salir sin enviar (retorno validado).
             <Link className="boton boton--quieto boton--compacto" href={conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, valorDeRetorno(new URLSearchParams(parametros.toString())))}>

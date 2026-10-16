@@ -2,15 +2,20 @@
 
 /**
  * Lo que comparten las secciones «Plan» de Nutrición y de Entrenamiento (WP-ESCRITORIO-AREAS, partes 5 y 6): el selector
- * de versión y el historial.
+ * de versión, el historial y el menú de las plantillas.
  * - **El selector** aparece cuando hay una versión en preparación y una activa (C-39): se mira una u otra. La que está
  *   en preparación no lleva número hasta activarse: se nombra por lo que es.
  * - **El historial** lista las versiones activadas, de la más nueva a la más vieja, con su día y su hora, y cuál rige
- *   (lo dice la API, no la fecha). Al pie, la huella de la instantánea que se está leyendo.
+ *   (lo dice la API, no la fecha). Al pie, plegada, la huella de la instantánea que se está leyendo: es una constancia
+ *   técnica, que no hace falta para leer el plan (crítica de diseño del 2026-10-15).
+ * - **Las plantillas,** en un menú del encabezado del plan activo: se usan de vez en cuando, y con sus dos botones el
+ *   encabezado quedaba apretado contra la acción principal (crítica de diseño del 2026-10-15).
  */
-import { COPY_DE_VERSIONES, type VersionDelHistorial } from '@be/domain';
+import { COPY_DE_VERSIONES, COPY_PLANTILLAS, type VersionDelHistorial } from '@be/domain';
 import { useId } from 'react';
 import { EnPartes } from '../../../components/en-partes';
+import { Icono } from '../../../components/icono';
+import { MenuDeAcciones } from '../../../components/menu-de-acciones';
 import { diaSinElAnioEnCurso, horaDelDia } from '../../../lib/formato';
 
 /** La versión que se mira: la que está en preparación o la activa. */
@@ -59,10 +64,32 @@ export function HistorialDelPlan({ historial, huella }: { historial: readonly Ve
         </ol>
       )}
       {huella ? (
-        <p className="nota historial-del-plan__huella">
-          {COPY_DE_VERSIONES.huella}: <span className="huella">{huella.slice(0, 16)}…</span>
-        </p>
+        <details className="historial-del-plan__constancia">
+          <summary>Constancia técnica</summary>
+          <p className="nota historial-del-plan__huella">
+            {COPY_DE_VERSIONES.huella}: <span className="huella">{huella.slice(0, 16)}…</span>
+          </p>
+        </details>
       ) : null}
     </aside>
+  );
+}
+
+/**
+ * «Plantillas», en el encabezado del plan activo: guardar la versión activa como plantilla y, si se puede crear una
+ * versión, empezarla desde una plantilla. Lo que no se puede hacer no se ofrece, como antes con sus botones.
+ */
+export function MenuDePlantillas({ alGuardar, alEmpezar }: { alGuardar: () => void; alEmpezar: (() => void) | null }) {
+  return (
+    <MenuDeAcciones
+      rotulo={alEmpezar ? 'guardar esta versión o empezar desde una plantilla' : 'guardar esta versión como plantilla'}
+      texto="Plantillas"
+      icono="plantillas"
+      conFlecha
+      acciones={[
+        { clave: 'guardar', texto: COPY_PLANTILLAS.guardarComoPlantilla, icono: <Icono nombre="plantillas" tamano={18} />, alElegir: alGuardar },
+        ...(alEmpezar ? [{ clave: 'empezar', texto: COPY_PLANTILLAS.empezarDesdePlantilla, icono: <Icono nombre="plantillas" tamano={18} />, alElegir: alEmpezar }] : []),
+      ]}
+    />
   );
 }

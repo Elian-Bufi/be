@@ -20,6 +20,7 @@ import { fechaLocalEn } from '../nutricion/zona';
 import { conReintento, momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { actorDe, SesionGuard } from '../sesion/sesion.guard';
+import { nombreDeAsesoradoPara } from '../vinculo/lectura';
 import { leerBusquedaDeLineaDeTiempo, leerConsultaDeLineaDeTiempo, leerConsultaDeProyeccion, type ConsultaDeLineaDeTiempo, type ConsultaDeProyeccion } from './consultas';
 import { ejecucionesDelPeriodo, hayRegistrosDeOtros, registrosDeComidaDelPeriodo, versionesActivadas, versionesDeObjetivo, ZONA } from './fuentes';
 import {
@@ -97,19 +98,21 @@ export class AnalisisController {
     const { entradas, generatedAt } = await conReintento(() =>
       this.prisma.$transaction(async (tx) => {
         const nombres = new NombresDeAutores(tx);
+        // El autor de las comidas y de las sesiones es la persona: con su nombre si el vínculo está vigente (DL-040).
+        const nombreDelTitular = await nombreDeAsesoradoPara(tx, profesionalId, titularId);
         const todas: EntradaDeLineaDeTiempo[] = [];
         if (permitidos.includes('NUTRICION')) {
           const versiones = await versionesActivadas(tx, 'NUTRICION', profesionalId, titularId);
           todas.push(...(await entradasDeVersiones(versiones, 'NUTRICION', desde, hasta, nombres)));
           todas.push(...(await entradasDeObjetivos(await versionesDeObjetivo(tx, 'NUTRICION', profesionalId, titularId), 'NUTRICION', desde, hasta, nombres)));
-          todas.push(...entradasDeComidas(await registrosDeComidaDelPeriodo(tx, profesionalId, titularId, desde, hasta), titularId, versiones));
+          todas.push(...entradasDeComidas(await registrosDeComidaDelPeriodo(tx, profesionalId, titularId, desde, hasta), titularId, versiones, nombreDelTitular));
           todas.push(...(await entradasDeRevisiones(tx, 'NUTRICION', profesionalId, titularId, desde, hasta, nombres)));
         }
         if (permitidos.includes('ENTRENAMIENTO')) {
           const versiones = await versionesActivadas(tx, 'ENTRENAMIENTO', profesionalId, titularId);
           todas.push(...(await entradasDeVersiones(versiones, 'ENTRENAMIENTO', desde, hasta, nombres)));
           todas.push(...(await entradasDeObjetivos(await versionesDeObjetivo(tx, 'ENTRENAMIENTO', profesionalId, titularId), 'ENTRENAMIENTO', desde, hasta, nombres)));
-          todas.push(...entradasDeSesiones(await ejecucionesDelPeriodo(tx, this.ejecuciones, profesionalId, titularId, desde, hasta), versiones));
+          todas.push(...entradasDeSesiones(await ejecucionesDelPeriodo(tx, this.ejecuciones, profesionalId, titularId, desde, hasta), versiones, nombreDelTitular));
           todas.push(...(await entradasDeRevisiones(tx, 'ENTRENAMIENTO', profesionalId, titularId, desde, hasta, nombres)));
         }
         if (permitidos.includes('ANTROPOMETRIA')) todas.push(...(await entradasDeTomas(tx, profesionalId, titularId, desde, hasta, nombres)));

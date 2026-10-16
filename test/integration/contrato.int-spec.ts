@@ -123,7 +123,7 @@ afterAll(async () => {
 
 const CIERRE = '/api/v1/me/account-closure-requests';
 
-it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones', async () => {
+it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones, y las dos del perfil propio (DL-009)', async () => {
   const servidor = app.getHttpServer();
   // ACC-01
   const correo = correoSintetico('contrato');
@@ -158,6 +158,16 @@ it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de 
   await conSesion(app, token).get('/api/v1/me?x=1').expect(400);
   await request(servidor).get('/api/v1/me').expect(401);
   await conSesion(app, 'no-es-un-jwt').get('/api/v1/me').expect(401);
+  // ACC-06-PROPIA · ACC-06: el nombre visible del perfil propio (DL-009 y DL-040, 2026-10-15)
+  await conSesion(app, token).get('/api/v1/me/profile').expect(200);
+  await conSesion(app, token).get('/api/v1/me/profile?x=1').expect(400);
+  await request(servidor).get('/api/v1/me/profile').expect(401);
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v0', changes: { displayName: 'Ana Paz' } }).expect(200);
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v0', changes: { displayName: 'Otra' } }).expect(409); // VERSION_CONFLICT
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: '   ' } }).expect(422); // INVALID_PROFILE_DATA
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Ana', email: 'ana@example.invalid' } }).expect(400); // UNKNOWN_FIELD
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'uno', changes: { displayName: 'Ana' } }).expect(400); // INVALID_REQUEST
+  await request(servidor).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Ana' } }).expect(401);
   await conSesion(app, token).get('/api/v1/me/health-data-consent-requirement').expect(200);
   await conSesion(app, token).get('/api/v1/me/health-data-consent-requirement?x=1').expect(400);
   await request(servidor).get('/api/v1/me/health-data-consent-requirement').expect(401);

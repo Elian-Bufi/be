@@ -371,26 +371,35 @@ export function textoDelAlcance(a: AlcanceDeObservacion, f: FormatoDeLaSintesis)
   }
 }
 
-/** El texto de una observación: un hecho, sin calificar. La acción la dibuja la web. */
+/**
+ * El texto de una observación: un hecho, sin calificar. La acción la dibuja la web.
+ *
+ * Lo pendiente y los cambios se dicen en un renglón corto, como la maqueta 01 («Próxima revisión: 30 sept · en 2
+ * días»): la crítica de diseño del 2026-10-15 encontró oraciones en negrita de dos líneas en cada tarjeta. Lo que se
+ * sacó de la frase está en «Cómo se lee esta vista» (que registrar no es aplicar, que un borrador no rige hasta que se
+ * active). El alcance de cada hecho («Desde la revisión del 20 sept») va en el encabezado de su grupo, y para el lector
+ * de pantalla, delante del renglón: la frase no lo repite.
+ */
 export function textoDeObservacion(o: ObservacionDelResumen, f: FormatoDeLaSintesis): string {
   switch (o.regla) {
     case 'REVISION_SIN_APLICAR':
-      return `La revisión del ${f.dia(o.args.registradaEl)} está registrada y su resultado todavía no se aplicó.`;
+      return `Revisión del ${f.dia(o.args.registradaEl)} registrada, sin aplicar`;
     case 'PROXIMA_REVISION': {
       const { dias, fecha } = o.args;
-      if (dias === 0) return `La próxima revisión acordada es hoy, ${f.fecha(fecha)}.`;
-      if (dias > 0) return `La próxima revisión acordada es el ${f.fecha(fecha)} (${dias === 1 ? 'mañana' : `en ${numero(dias)} días`}).`;
-      return `La próxima revisión acordada era el ${f.fecha(fecha)} (hace ${cuenta(-dias, ['día', 'días'])}).`;
+      if (dias === 0) return `Próxima revisión: hoy, ${f.fecha(fecha)}`;
+      if (dias > 0) return `Próxima revisión: ${f.fecha(fecha)} · ${dias === 1 ? 'mañana' : `en ${numero(dias)} días`}`;
+      return `Revisión acordada para el ${f.fecha(fecha)} · hace ${cuenta(-dias, ['día', 'días'])}`;
     }
     case 'BORRADOR_SIN_ACTIVAR':
-      return `Hay una versión nueva del plan en borrador, ${o.args.deLaRevision ? 'creada al aplicar una revisión' : 'creada'} el ${f.dia(o.args.registradoEl)}. No rige hasta que se active.`;
+      return `Plan en borrador del ${f.dia(o.args.registradoEl)}${o.args.deLaRevision ? ' (de una revisión)' : ''}, sin activar`;
     case 'PLAN_ACTIVADO_DESPUES_DEL_CORTE':
-      return `El plan vigente se activó el ${f.dia(o.args.activadoEl)}, después de la última revisión.`;
+      return `Plan activado el ${f.dia(o.args.activadoEl)}`;
     case 'OBJETIVO_NUEVO_DESPUES_DEL_CORTE':
-      return `El objetivo vigente rige desde el ${f.dia(o.args.rigeDesde)}${o.args.porLaRevision ? ', creado al aplicar la última revisión' : ', después de la última revisión'}.`;
+      return `Objetivo vigente desde el ${f.dia(o.args.rigeDesde)}${o.args.porLaRevision ? ', creado al aplicar la revisión' : ''}`;
     case 'CAMBIO_DE_COMPARABILIDAD': {
-      const nombres = o.args.medidas.map((m) => m.nombre).join(', ');
-      return `${o.args.medidas.length === 1 ? 'Una medida cambió' : `${numero(o.args.medidas.length)} medidas cambiaron`} de protocolo, método o unidad en el período (${nombres}): ${o.args.medidas.length === 1 ? 'su serie se corta' : 'sus series se cortan'} donde cambia.`;
+      const nombres = o.args.medidas.map((m) => m.nombre);
+      const lista = nombres.length === 1 ? (nombres[0] as string) : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+      return nombres.length === 1 ? `${lista} cambió de protocolo, método o unidad: la serie se corta ahí` : `${lista} cambiaron de protocolo, método o unidad: las series se cortan ahí`;
     }
     case 'NOVEDADES_DESDE_EL_CORTE': {
       const { ocurrieron, incorporadas, corregidas, nombreDelRegistro } = o.args;

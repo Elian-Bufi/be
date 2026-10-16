@@ -136,8 +136,8 @@ export async function escenarioD(c) {
        VALUES ($1::uuid,$2::uuid,$3::date,$4::date,$5,$6::jsonb,$7,'MANTENER'::"ResultadoDeRevision",$8,$9::jsonb,$10::uuid,$11::jsonb,$12,$12)`,
       revisionN, proceso('NUTRICION'), diaMenos(hoy, 50), diaMenos(hoy, 20), ZONA,
       JSON.stringify([{ type: 'PLAN_VERSION', id: e.nutricion.planV2 }]),
-      'Interpretación sintética: registra con regularidad. No es un diagnóstico.',
-      'Fundamento sintético del profesional.',
+      'Registra con regularidad; los almuerzos de la semana son fuera de casa. Sigue con el plan.',
+      'Lo registrado alcanza para decidir: las semanas sin registros fueron pocas.',
       JSON.stringify({ description: 'Seguir con el plan vigente y revisar en tres semanas.', nextReviewAt: d.proximaRevision }),
       e.proId, PROCEDENCIA, d.corteDeNutricion,
     );
@@ -180,8 +180,8 @@ export async function escenarioD(c) {
        VALUES ($1::uuid,$2::uuid,$3::date,$4::date,$5,$6::jsonb,$7,'AJUSTAR'::"ResultadoDeRevision",$8,$9::jsonb,$10::uuid,$11::jsonb,$12,$12)`,
       revisionT, proceso('ENTRENAMIENTO'), diaMenos(hoy, 35), diaMenos(hoy, 9), ZONA,
       JSON.stringify([{ type: 'PLAN_VERSION', id: e.entrenamiento.planV2 }]),
-      'Interpretación sintética: la carga de la sentadilla subió de forma estable. No es un diagnóstico.',
-      'Fundamento sintético del profesional.',
+      'La carga de la sentadilla subió de forma estable; el peso muerto se estancó en las últimas dos semanas.',
+      'Lo registrado alcanza para decidir: las semanas sin registros fueron pocas.',
       JSON.stringify({ description: 'Ajustar el volumen del bloque siguiente.' }),
       e.proId, PROCEDENCIA, d.corteDeEntrenamiento,
     );
@@ -244,6 +244,8 @@ export async function escenarioE(c) {
   const aseEId = await registrarCuenta(correo, 'APK');
   const pro = await sesion(e.proCorreo);
   const aseE = await sesion(correo, 'APK');
+  // Su nombre visible (DL-009 y DL-040), como lo declararía desde «Mi cuenta».
+  await pedir('PATCH', '/me/profile', { token: aseE, superficie: 'APK', cuerpo: { expectedVersion: 'v0', changes: { displayName: 'Joaquín Medina' } } });
   await pedir('POST', '/me/health-data-consents', { token: aseE, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
   await vincular(pro, aseE, aseEId, 'NUTRICION');
   const ev = (await pedir('POST', `/advisees/${aseEId}/nutrition/evaluations`, { token: pro, cuerpo: cuerpoDeEvaluacionNutricional(new Date(Date.now() - 3 * 3600_000)) })).data.evaluationId;

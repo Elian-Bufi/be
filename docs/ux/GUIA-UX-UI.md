@@ -294,9 +294,10 @@ Información).
 - **Tres vistas en pestañas** (Resumen, Línea de tiempo, Analizar), cada una con su ícono, que comparten el período, y
   **pestañas de área** para trabajar sobre el registro completo.
 - **El marco de una pestaña de área** (`marco-del-area.tsx`; WP-ESCRITORIO-AREAS) es el de la ficha llevado a
-  Nutrición, Entrenamiento, Antropometría e Información: los mismos tres renglones, a la misma altura (140 px), para
-  que pasar de la ficha a un área no mueva nada de lugar. (1) El camino de vuelta, el área como título, la referencia
-  de la persona y, a la derecha, «Actualizar» con la hora de la consulta; (2) el **acceso actual de esa área** (en
+  Nutrición, Entrenamiento, Antropometría e Información: las mismas partes, a la misma altura (140 px; 104 desde
+  1.400 px, donde el acceso sube al primer renglón), para que pasar de la ficha a un área no mueva nada de lugar.
+  (1) El camino de vuelta, el área como título, la persona (su nombre visible o su referencia, DL-040) y, a la
+  derecha, «Actualizar» con la hora de la consulta; (2) el **acceso actual de esa área** (en
   Información, el de las tres); (3) las secciones, cada una con su ícono, y la ayuda de la vista cuando la tenga. No
   lleva miga.
   - **El camino de vuelta está siempre:** «Volver a la ficha, donde estabas» si se llegó desde la ficha; «Volver a la
@@ -679,7 +680,7 @@ crear otro, se usa uno de estos.
 | `.detalle-del-hecho` | El detalle de lo elegido, al costado de su lista, sin taparla; acompaña el desplazamiento | El de un hecho de la línea de tiempo |
 | `renglonDelHecho` (website) · `rasgosDeUnHecho` (dominio) | Cómo se escribe un hecho en un renglón, y qué rasgos lleva. Sale de la entrada de la API; no calcula ni completa | «Sesión A · Tren inferior · 7 series con datos» |
 | `.tarjeta-del-espacio` | Una tarjeta del Espacio profesional: el ícono, el título y lo que lo acompaña, en un renglón | «Pendientes», «Tus asesorados» |
-| `.persona` | Una persona del directorio: su referencia y sus áreas abren el detalle de sus vínculos; al lado, «Abrir» | «Asesorado · a9be23 · Nutrición · Entrenamiento · Antropometría» |
+| `.persona` | Una persona del directorio: su nombre (o su referencia) y sus áreas abren el detalle de sus vínculos; al lado, «Abrir», un enlace | «Martina Gómez a9be23 · Nutrición · Entrenamiento · Antropometría» |
 | `todasLasPaginas` (dominio) · `useListaCompleta` | Una lista leída entera, para contarla o buscar en ella: dice si quedó incompleta y, si falló, por qué | Los pendientes de la cartera; los vínculos de la ficha |
 | `motivoDeFalla` · `razonDeFalla` · `ICONO_DE_FALLA` (`lib/fallas.ts`) | Por qué falló una lectura, con sus palabras y su ícono, en todo el website profesional | «Hubo muchas consultas seguidas. Esperá un minuto y reintentá.» |
 | `.dialogo--formulario` | Un formulario corto en un diálogo: el foco en el primer campo, «Volver» y la acción | «Solicitar vínculo» |
@@ -1452,6 +1453,17 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | El alto del marco de la ficha y de las áreas | 143 px. | 140 px, con renglones de píxeles enteros: con la píldora del acceso más liviana, un alto fraccionario se redondeaba distinto según desde dónde se lo midiera. | Sustituida | Áreas, crítica de diseño |
 | Antropometría · Evolución | Dos fechas vacías, puntos naranjas, un eje irregular y un párrafo técnico a la vista. | El control de período de las otras secciones, el azul de los datos, un eje parejo y el párrafo solo para el lector (II.9). | Sustituida | Áreas, crítica de diseño |
 | La regla de los 390 px, en Antropometría | La pestaña tenía que poder usarse a 390 px de ancho. | Es de escritorio: con menos de 832 px de escena, los campos de la carga van en lista, sin la figura (II.1, II.9). | Sustituida | Áreas, 9 |
+| El alto del marco a 1.440 px y más | 140 px: el acceso, en su propio renglón. | 104 px: desde 1.400 px el acceso va en el primer renglón, entre quién es y «Actualizar», sin acortar «Activo · acceso contextual» (F-148). Por debajo, 140. | Sustituida | Áreas, refinamiento |
+| Resumen · lo pendiente y los cambios | Oraciones en negrita de dos líneas («La revisión del 6 oct está registrada y su resultado todavía no se aplicó.»). | Un renglón, como la maqueta 01 («Revisión del 6 oct registrada, sin aplicar»); el detalle, en «Cómo se lee esta vista» (F-151). | Sustituida | Áreas, refinamiento |
+| Resumen · el pie de un indicador | Cuatro líneas: la cobertura entera, con sus aclaraciones. | Dos o tres: con qué se calcula y lo que cambia cómo se lee (`coberturaBreve`); la cobertura entera, en Analizar (F-151). | Sustituida | Áreas, refinamiento |
+| Línea de tiempo · los días | Con tarjeta los días con algo para mirar; lisos y con la fecha en peso normal, los otros. | Todos en su tarjeta, con la fecha en un peso: llena o sin fondo (F-149). La marca del hito, de todo el alto. | Sustituida | Áreas, refinamiento |
+| Plan activo · las plantillas | Dos botones al lado de la acción principal; la huella de la instantánea a la vista. | Un menú «Plantillas»; la huella, plegada en «Constancia técnica» (F-150). | Sustituida | Áreas, refinamiento |
+| «Abrir» en «Tus asesorados» | Un botón con borde. | Un enlace con su flecha, como en «Pendientes» (F-152). | Sustituida | Áreas, refinamiento |
+| Plantillas, Mis recetas y Mis ejercicios | Centradas (76 rem) y con un título más grande. | Al ancho del Espacio y con su título; las plantillas, en dos columnas desde 1.280 px (F-153). | Sustituida | Áreas, refinamiento |
+| Información sin solicitudes | Una caja con una frase y el botón arriba. | El ícono, la frase y «Pedir información» adentro (F-154). | Sustituida | Áreas, refinamiento |
+| El espacio entre tarjetas y secciones | De 10 a 26 px, según la pantalla. | 24 px entre tarjetas y 32 entre secciones (F-155); la carga de una toma conserva 16 px entre la figura y los datos, que a 1280 necesitan su ancho. | Sustituida | Áreas, refinamiento |
+| Los cuadros de texto | Con la marca para agrandarlos. | Crecen con lo escrito, sin la marca, donde el navegador sabe hacerlo (F-156). | Sustituida | Áreas, refinamiento |
+| La persona, para el profesional | «Asesorado · c36743», una referencia derivada del identificador (DL-040, provisorio). | Su nombre visible mientras el vínculo esté vigente, con la referencia chica al lado en la ficha; si no, la referencia (F-157; DL-009 y DL-040). | Sustituida | Áreas, refinamiento |
 
 ---
 

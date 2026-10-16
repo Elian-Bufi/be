@@ -3,6 +3,8 @@
 //
 // Fases (en orden; cada una guarda lo suyo en trabajo/estado.json):
 //   cuentas    por la API: profesional, otro profesional, asesorado A y asesorado B. Imprime BE_DEMO_PROFESIONALES:
+//              (desde el 2026-10-15, cada asesorado declara un nombre visible en su perfil, DL-009 y DL-040: lo pone
+//              la fase que abre su primera sesión, «base», «volumen», «descartable-datos» o el escenario E)
 //              hay que reiniciar la API con ese valor para que los verifique (DL-036).
 //   base       por la API: vínculos, B2, A3, evaluaciones, objetivos y los borradores de la etapa 1.
 //   historia   por SQL, con las fechas del escenario: activación de la etapa 1 y de la etapa 2 (los borradores de la
@@ -118,6 +120,17 @@ async function vincular(pro, ase, aseId, alcance) {
   return vinculoId;
 }
 
+/**
+ * Los nombres de los asesorados sintéticos: nombres comunes, como los de una consulta real (pedido de Dirección del
+ * 2026-10-15). Cada persona lo declara en su perfil (API-ACC-06), como haría desde «Mi cuenta».
+ */
+export const NOMBRES = { A: 'Martina Gómez', B: 'Lucas Fernández', C: 'Valentina Ruiz', E: 'Joaquín Medina', DESCARTABLE: 'Tomás Herrera' };
+
+/** El nombre visible de la persona de esa sesión, en su primera versión del perfil. */
+async function ponerNombre(token, nombre) {
+  await pedir('PATCH', '/me/profile', { token, superficie: 'APK', cuerpo: { expectedVersion: 'v0', changes: { displayName: nombre } } });
+}
+
 // ─── Base de datos (SQL parametrizado; los disparadores quedan activos) ───────────────────────────────────────────
 
 const prisma = new PrismaClient({ datasources: { db: { url: BASE } } });
@@ -225,18 +238,18 @@ async function cuentas() {
   const aseId = await registrarCuenta(correos.aseCorreo, 'APK');
   const aseBId = await registrarCuenta(correos.aseBCorreo, 'APK');
   guardarEstado({ ...correos, proId, terceroId, aseId, aseBId, hoy: hoyCivil() });
-  const nombre = 'Lic. Sofía Paz (sintética)';
+  const nombre = 'Lic. Sofía Paz';
   console.log(
-    `BE_DEMO_PROFESIONALES=${proId}|NUTRICION|SANITARIO|${nombre};${proId}|ENTRENAMIENTO|SANITARIO|${nombre};${proId}|ANTROPOMETRIA|SANITARIO|${nombre};${terceroId}|NUTRICION|SANITARIO|Lic. Tercera (sintética)`,
+    `BE_DEMO_PROFESIONALES=${proId}|NUTRICION|SANITARIO|${nombre};${proId}|ENTRENAMIENTO|SANITARIO|${nombre};${proId}|ANTROPOMETRIA|SANITARIO|${nombre};${terceroId}|NUTRICION|SANITARIO|Lic. Paula Ríos`,
   );
 }
 
 const cuerpoDeEvaluacionNutricional = (ocurrio) => ({
   occurredAt: ocurrio.toISOString(),
-  context: 'Consulta inicial sintética.',
+  context: 'Primera consulta: quiere ordenar las comidas de la semana y llegar con energía a los entrenamientos.',
   assessment: { entries: [{ concept: 'Comidas por día', value: 4, unit: 'comidas', source: 'REPORTED' }] },
   evidenceReferences: [],
-  professionalNotes: 'Notas sintéticas del profesional.',
+  professionalNotes: 'Desayuna apurada; almuerza en el trabajo de lunes a viernes. Prefiere preparaciones simples.',
 });
 const cuerpoDeObjetivoNutricional = (evaluationId, desde, kcal) => ({
   evaluationId,
@@ -245,7 +258,7 @@ const cuerpoDeObjetivoNutricional = (evaluationId, desde, kcal) => ({
   estimatedEnergyRequirement: { value: kcal, unit: 'kcal/day' },
   macronutrientDistribution: { protein: { value: 130, unit: 'g/day' }, carbohydrate: { value: 220, unit: 'g/day' }, fat: { value: 65, unit: 'g/day' } },
   mealDistribution: 'Cuatro comidas.',
-  rationale: 'Fundamento profesional sintético: decisión del profesional, sin cálculo de BE.',
+  rationale: 'Repartir las proteínas en las cuatro comidas y sostener la energía de los días de entrenamiento.',
   methodStatement: null,
 });
 
@@ -258,6 +271,8 @@ async function base() {
   for (const t of [ase, aseB]) {
     await pedir('POST', '/me/health-data-consents', { token: t, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
   }
+  await ponerNombre(ase, NOMBRES.A);
+  await ponerNombre(aseB, NOMBRES.B);
   const vinculos = {};
   for (const alcance of ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']) vinculos[alcance] = await vincular(pro, ase, e.aseId, alcance);
   // El asesorado B trabaja con este profesional solo Nutrición y Antropometría: su ficha es una vista parcial.
@@ -277,7 +292,7 @@ async function base() {
         occurredAt: inicio.toISOString(),
         assessment: { entries: [{ concept: 'Experiencia en entrenamiento de fuerza', value: 'Un año, con interrupciones', source: 'REPORTED' }] },
         evidenceReferences: [],
-        professionalNotes: 'Notas sintéticas del profesional.',
+        professionalNotes: 'Entrena a la tarde, tres veces por semana. Buena técnica en sentadilla; le cuesta sostener la espalda en el peso muerto.',
       },
     })
   ).data.evaluationId;
@@ -288,8 +303,8 @@ async function base() {
         evaluationId: evT,
         effectiveFrom: inicio.toISOString(),
         effectiveUntil: null,
-        objective: { statement: 'Ganar fuerza en los básicos con técnica estable (objetivo sintético).' },
-        rationale: 'Fundamento sintético: decisión del profesional, sin cálculo de BE.',
+        objective: { statement: 'Ganar fuerza en sentadilla y peso muerto sin perder la técnica.' },
+        rationale: 'Progresión de cargas semana a semana, con dos repeticiones en reserva.',
       },
     })
   ).data;
@@ -326,7 +341,7 @@ async function historia() {
     await sql(
       tx,
       `INSERT INTO "version_de_objetivo_nutricional" ("id","objetivo_id","predecesora_id","evaluacion_id","vigente_desde","requerimiento_energetico","distribucion_de_macronutrientes","distribucion_por_comida","fundamento","autor_id","procedencia","momento_de_registro")
-       VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6::jsonb,$7::jsonb,'Cuatro comidas.','Ajuste sintético de la etapa 2: decisión del profesional.',$8::uuid,$9::jsonb,$5)`,
+       VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6::jsonb,$7::jsonb,'Cuatro comidas.','Bajar un poco las calorías de la cena y mantener las proteínas.',$8::uuid,$9::jsonb,$5)`,
       objetivoV2,
       v1.objetivoId,
       e.nutricion.objetivoV1,
@@ -615,14 +630,15 @@ async function volumen() {
   const aseCId = await registrarCuenta(aseCCorreo, 'APK');
   const pro = await sesion(e.proCorreo);
   const aseC = await sesion(aseCCorreo, 'APK');
+  await ponerNombre(aseC, NOMBRES.C);
   await pedir('POST', '/me/health-data-consents', { token: aseC, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
   for (const alcance of ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']) await vincular(pro, aseC, aseCId, alcance);
   const inicio = instante(diaMenos(hoy, 366), '09:00');
   const evN = (await pedir('POST', `/advisees/${aseCId}/nutrition/evaluations`, { token: pro, cuerpo: cuerpoDeEvaluacionNutricional(inicio) })).data.evaluationId;
   const obN = (await pedir('POST', `/advisees/${aseCId}/nutrition/objectives`, { token: pro, cuerpo: cuerpoDeObjetivoNutricional(evN, inicio, 2100) })).data;
   const planN = (await pedir('POST', `/advisees/${aseCId}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: obN.versionId, initialStructure: PLANES_NUTRICIONALES.v1 } })).data;
-  const evT = (await pedir('POST', `/advisees/${aseCId}/training/evaluations`, { token: pro, cuerpo: { occurredAt: inicio.toISOString(), assessment: { entries: [{ concept: 'Experiencia', value: 'Sintética', source: 'REPORTED' }] }, evidenceReferences: [], professionalNotes: 'Volumen sintético.' } })).data.evaluationId;
-  const obT = (await pedir('POST', `/advisees/${aseCId}/training/objectives`, { token: pro, cuerpo: { evaluationId: evT, effectiveFrom: inicio.toISOString(), effectiveUntil: null, objective: { statement: 'Objetivo sintético de volumen.' }, rationale: 'Fundamento sintético.' } })).data;
+  const evT = (await pedir('POST', `/advisees/${aseCId}/training/evaluations`, { token: pro, cuerpo: { occurredAt: inicio.toISOString(), assessment: { entries: [{ concept: 'Experiencia', value: 'Tres años', source: 'REPORTED' }] }, evidenceReferences: [], professionalNotes: 'Entrena cuatro veces por semana desde hace tres años.' } })).data.evaluationId;
+  const obT = (await pedir('POST', `/advisees/${aseCId}/training/objectives`, { token: pro, cuerpo: { evaluationId: evT, effectiveFrom: inicio.toISOString(), effectiveUntil: null, objective: { statement: 'Mantener la fuerza y mejorar la resistencia.' }, rationale: 'Volumen moderado, con una semana de descarga por mes.' } })).data;
   const planT = (await pedir('POST', `/advisees/${aseCId}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: obT.versionId, initialStructure: PLANES_DE_ENTRENAMIENTO.v1 } })).data;
   const instN = await activarEnElPasado('NUTRICION', planN.planId, instante(diaMenos(hoy, 366), '09:30'), e.proId, aseCId);
   await activarEnElPasado('ENTRENAMIENTO', planT.planId, instante(diaMenos(hoy, 366), '10:00'), e.proId, aseCId);
@@ -634,7 +650,7 @@ async function volumen() {
 }
 
 /** El nombre del profesional descartable (BE_DEMO_PROFESIONALES); el asesorado lo ve en su vínculo. */
-const PROFESIONAL_DESCARTABLE = 'Lic. Descartable (sintética)';
+const PROFESIONAL_DESCARTABLE = 'Lic. Andrés Molina';
 /** El IMC del catálogo de BE (DL-111): peso en kg y talla en cm, de captura directa o reportados por la persona. */
 const REGLA_DEL_IMC = 'be/imc@1';
 
@@ -660,6 +676,7 @@ async function descartableDatos() {
   const hoy = hoyCivil();
   const pro = await sesion(d.proCorreo);
   const ase = await sesion(d.aseCorreo, 'APK');
+  await ponerNombre(ase, NOMBRES.DESCARTABLE);
   await pedir('POST', '/me/health-data-consents', { token: ase, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
   const vinculos = {};
   for (const alcance of ['NUTRICION', 'ANTROPOMETRIA']) vinculos[alcance] = await vincular(pro, ase, d.aseId, alcance);
@@ -902,7 +919,7 @@ async function descartablePlan() {
       token: pro,
       cuerpo: {
         name: 'Guiso de lentejas',
-        description: 'Receta sintética de demostración.',
+        description: 'Rinde dos porciones; se puede dejar lista la noche anterior.',
         servings: 2,
         ingredients: [ingrediente('lentejas', 400, 'COOKED'), ingrediente('zanahoria', 200, 'COOKED'), ingrediente('aceite', 20, 'RAW')],
         steps: ['Rehogar la zanahoria en el aceite.', 'Sumar las lentejas y cocinar diez minutos.'],
@@ -971,9 +988,9 @@ async function descartablePlanDeEntrenamiento() {
       token: pro,
       cuerpo: {
         occurredAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
-        assessment: { entries: [{ concept: 'Experiencia en entrenamiento de fuerza', value: 'Dos años (dato sintético)', source: 'REPORTED' }] },
+        assessment: { entries: [{ concept: 'Experiencia en entrenamiento de fuerza', value: 'Dos años', source: 'REPORTED' }] },
         evidenceReferences: [],
-        professionalNotes: 'Notas sintéticas del profesional.',
+        professionalNotes: 'Entrena a la tarde, tres veces por semana. Buena técnica en sentadilla; le cuesta sostener la espalda en el peso muerto.',
       },
     })
   ).data.evaluationId;
@@ -984,8 +1001,8 @@ async function descartablePlanDeEntrenamiento() {
         evaluationId: evaluacion,
         effectiveFrom: new Date(Date.now() - 3600_000).toISOString(),
         effectiveUntil: null,
-        objective: { statement: 'Ganar fuerza en los básicos con técnica estable (objetivo sintético).' },
-        rationale: 'Fundamento sintético: decisión del profesional, sin cálculo de BE.',
+        objective: { statement: 'Ganar fuerza en sentadilla y peso muerto sin perder la técnica.' },
+        rationale: 'Progresión de cargas semana a semana, con dos repeticiones en reserva.',
       },
     })
   ).data;

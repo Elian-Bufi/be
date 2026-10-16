@@ -1,5 +1,9 @@
 # Fichas para Dirección: perfil del asesorado y administración mínima
 
+> **Nota del 2026-10-15.** Dirección decidió la ficha 1: opción B, con el nombre visible como único campo (DL-009 y
+> DL-040, PR #159). El riesgo de la APK instalada se evitó sin una APK nueva: `/me` no cambia y el perfil se lee con
+> una operación aparte (`GET /me/profile`); la persona carga su nombre desde «Cuenta», en el website.
+>
 > **Nota del 2026-10-05.** La entrega pasó al 2026-10-20. Donde estas fichas dicen «10/10», la dependencia se lee contra el 20/10. Las recomendaciones no se reescribieron.
 
 **Fecha:** 2026-10-02 · **Para:** Dirección (Elián) · **De:** el ejecutor técnico

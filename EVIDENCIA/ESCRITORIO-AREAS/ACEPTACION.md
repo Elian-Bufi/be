@@ -1559,7 +1559,7 @@ integrar, también donde contradecía la paleta de Azul noche (F-142 a F-147; c�
 | El resto del website sigue funcionando | La pasada completa de los recorridos | La pasada completa del 15/10 (11:35 a 12:22), sobre `e30009f`: R capturas 60, descartable 22, mediciones 18, carga 17, solicitudes 32, planes 57, entrenamientos 34, revisiones 16 y estimación 7; RC mirar 20, capturas 80, funcional 86 y revocación 6. La funcional de R, con la máquina corta de memoria, se cortó dos veces por el entorno (la base venció transacciones; una lectura no llegó a cargar) y la tercera, entera, dio 321 de 324: el marco medía 139,48 px y se redondeaba distinto según desde dónde se lo midiera (F-06), y E-47 esperaba los 143 de antes. Corregido en `ff91adb` (renglones de píxeles enteros: 140): R capturas 60 de 60, el marco de las áreas 21 de 21 y Analizar 44 de 44, y la funcional entera 322 de 324, con una lectura del acceso de Entrenamiento que no llegó a cargar (F-01 y, por su aviso, F-06), que pasaron en el modo del marco. Una primera corrida, a las 11:02, la cortó Claude Code por falta de memoria a los 2 de 14 | Verificado en pantalla |
 | Toda la batería de la CI | La CI de GitHub sobre el commit | En verde las corridas 38751316644 (sobre `e30009f`) y 38766974568 (sobre `ff91adb`): el legajo, la batería completa, la integración y la imagen de la API | Verificado automáticamente |
 
-**Lo que queda, con su razón** (en §6 de la definición; la crítica, entera, en `pasada-de-estetica/critica-de-diseno.md`):
+**Lo que quedaba, con su razón** (Dirección decidió el mismo día hacer lo que recomendé: ver «Refinamiento antes de integrar», más abajo; la crítica, entera, en `pasada-de-estetica/critica-de-diseno.md`):
 - **Choca con algo ya decidido, para que decida Dirección:** el Resumen de la ficha más corto (sus frases las pidió la
   pasada de comprensión y las fijan sus comprobaciones); el acceso como «Activo» en la primera fila («Activo · acceso
   contextual» lo pide el legajo: B10-04, §28); la Línea de tiempo con todos los días en tarjeta y sin la barrita de los
@@ -1575,6 +1575,44 @@ integrar, también donde contradecía la paleta de Azul noche (F-142 a F-147; c�
   su tamaño).
 - **El Resumen de Nutrición y el de Entrenamiento** conservan su diseño anterior (tarjetas apiladas a 72 rem, las
   acciones al pie y sin «Cómo se lee esta vista»): no tienen maqueta.
+
+## Refinamiento antes de integrar: la crítica aprobada y los nombres (2026-10-15)
+
+**Lo que pidió Dirección.** Sobre lo que la crítica de diseño señalaba y chocaba con decisiones suyas, Dirección pidió una
+recomendación imparcial, punto por punto, y después: «haz todos los que me recomendaste… pongámosle nombres, ya no id o
+esa “matrícula”, empecemos a usar datos aunque sean sintéticos lo más parecido a la realidad. Terminemos este
+refinamiento antes de integrar». Va en el PR #159, sobre #158:
+- **La CI, fija en Ubuntu 24.04** (`1fb67de`): desde el 2026-10-19, `ubuntu-latest` pasa a ser Ubuntu 26.04.
+- **Las recomendaciones** (`5daa966`, F-148 a F-156): el marco con el acceso en el primer renglón desde 1.400 px (104 px);
+  el Resumen corto, con el pie de cada indicador en dos o tres renglones; la Línea de tiempo con todos los días en su
+  tarjeta; las plantillas del plan en un menú y la huella plegada; «Abrir» como enlace en «Tus asesorados»; Plantillas,
+  Mis recetas y Mis ejercicios al ancho; Información vacía con su botón adentro; 24 px entre tarjetas y 32 entre
+  secciones; los cuadros de texto que crecen solos.
+- **Los nombres** (`1929cfe` y `9157e13`, F-157; DL-009 opción B y DL-040): el nombre visible del perfil propio, con
+  versiones, API-ACC-06 y su lectura, «Tu nombre» en «Cuenta», y el profesional que lo ve mientras el vínculo esté
+  vigente. Los datos de prueba tienen nombres (Martina Gómez, Lucas Fernández, Valentina Ruiz, Joaquín Medina, Tomás
+  Herrera) y textos como los de una consulta real.
+- **Lo que encontró la primera pasada** (`16fad8b`): los cuadros de texto vacíos quedaban de un renglón (una regla con
+  más peso fijaba 44 px), y la carga de una toma perdía 8 px en la columna de datos a 1280; además, F-06 comparaba 1280 y
+  1024 contra el alto de 1440.
+
+| Qué | Cómo se comprobó | Resultado | Estado |
+|---|---|---|---|
+| Las pantallas cambiadas, en los dos temas, a 1440 | `ver.mjs` sobre los datos del día, mirando cada captura; las finales, con los nombres, en `pasada-de-estetica/refinamiento/` (Resumen, Línea de tiempo, Espacio, Plan, Plantillas, Información vacía y Cuenta) | El Resumen mide 1.180 px en lugar de 1.265 y sus valores entran en la primera pantalla; la cabecera, en dos renglones; la Línea de tiempo, pareja | Observado en una captura real |
+| Los textos cortos dicen lo mismo, y la cobertura corta no agrega ni saca cuentas | Pruebas del dominio (`comprension-del-dashboard.test.ts`), con dos mutaciones (sin los subtotales; sin «sin aplicar») que las hacen fallar | 758 de 758 | Verificado automáticamente |
+| El nombre visible: la operación, el conflicto de versión, la validación, la historia solo por adición y quién lo ve en cada estado del vínculo | `contratos-perfil-propio.test.ts` (dominio) y `perfil-propio.int-spec.ts` (integración, PostgreSQL real en la CI); TEST-CT ejerce las dos operaciones | Pasan | Verificado automáticamente |
+| La búsqueda de «Tus asesorados», por nombre o por referencia | `scripts/espacio-profesional.test.mjs` y E-90 | Pasa | Verificado automáticamente |
+| Toda la batería de la CI, en Ubuntu 24.04 | La CI de GitHub sobre cada commit | En verde las corridas 38790887594 (`5daa966`), 38797843143 (`9157e13`) y 38803096189 (`16fad8b`): el legajo, la batería completa, la integración (con `perfil-propio.int-spec.ts`) y la imagen de la API, que aplica la migración. La de `1929cfe` falló solo en TEST-CT, que exige ejercer cada operación del contrato: lo corrigió `9157e13` | Verificado automáticamente |
+| El resto del website sigue funcionando | Dos pasadas completas de los recorridos, sobre datos regenerados con los nombres | Primera (16:34 a 17:30, sobre `5daa966` y los nombres sin commit): R capturas 60, comprensión 20 y 80, revocación 6, descartable 22, mediciones 18, solicitudes 32, planes 57, entrenamientos 34 y estimación 7, enteras; la carga, 15 de 17, y las revisiones, 15 de 16: los dos defectos que corrigió `16fad8b`; la funcional, 320 de 324, y la de comprensión, 81 de 86, con fallas del entorno (memoria libre de 350 a 400 MB) que pasaron en la segunda. Segunda (17:34 a 18:28, sobre `16fad8b`): todo entero salvo la funcional, 323 de 324 (F-06 comparaba la altura interna del acceso, que en la ficha va en dos líneas dentro del primer renglón: se ajustó a medir los renglones), una captura de Analizar a 768 sin dibujar y la revocación cortada por una excepción del entorno. Repetidas solas: el modo `areas` 21 de 21 (con la F-06 nueva), las capturas 60 de 60 y la revocación 6 de 6 | Verificado automáticamente; una mutación (el marco de las áreas en tres renglones a 1440) hace fallar la F-06 nueva |
+
+**Lo que queda, con su razón:**
+- **De la crítica, sin hacer:** la etiqueta de la clase del dato en los cuatro indicadores (sería fija y podría no ser
+  cierta: solo el peso la trae del dato) y un control de fecha propio (el nativo trae resueltos el teclado y el lector
+  de pantalla). Los íconos se quedan, como decidió Dirección.
+- **El nombre en la APK:** la APK instalada no lo muestra ni lo pide; lo suma en su próxima versión. La persona lo carga
+  desde «Cuenta», en el website.
+- **Las cuentas de demostración de `test`:** no tienen nombre hasta que cada una lo cargue. Ponérselos es un paso del
+  despliegue, con autorización de Dirección.
 
 ## Parte 10 · Preparar revisión (2026-10-15)
 

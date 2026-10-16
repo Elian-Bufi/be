@@ -96,6 +96,10 @@ function DeResumen() {
           <strong>Lo pendiente va primero,</strong> con su ícono y en negrita: una revisión sin aplicar, la próxima revisión acordada cuando falta una semana o menos (o ya pasó) y un borrador sin activar. Después, los
           cambios de planificación o de comparabilidad, lo nuevo y, al final, la cobertura. Son reglas fijas, sin inteligencia artificial y sin calificar.
         </Renglon>
+        <Renglon muestra={<Icono nombre="borrador" tamano={20} />}>
+          <strong>Registrar no es aplicar.</strong> Una revisión registrada todavía no cambia nada: el plan o el objetivo que resulten de ella rigen cuando la aplicás. Un plan en borrador tampoco rige hasta que lo
+          actives.
+        </Renglon>
         <Renglon muestra={<Icono nombre="cargado-otro-dia" tamano={20} />}>
           <strong>«Desde la revisión»</strong> separa lo que ocurrió después, lo que se cargó después sobre días anteriores y lo que se corrigió después, con los instantes de registro de cada dato. Cada área tiene su
           propia revisión; sin revisiones, lo nuevo se mira en el período elegido. Abrir la ficha no registra una revisión ni una nota.
@@ -112,7 +116,8 @@ function DeResumen() {
         </Renglon>
         <Renglon muestra={<Icono nombre="analizar" tamano={20} />}>
           <strong>Un indicador</strong> es un número del período con su regla: la media de los días con valor, la mediana de las sesiones o la última toma del tramo comparable. Debajo, cuántos días, sesiones o tomas lo
-          sostienen. No hay verde ni rojo, ni distancia a un objetivo.
+          sostienen y lo que cambia cómo se lee: cuántos de esos días son subtotales (falta algún dato) y que hoy, en curso, no entra en la media. La cobertura entera de cada uno está en «Analizar». No hay verde ni rojo,
+          ni distancia a un objetivo.
         </Renglon>
         <Renglon muestra={<Marca indice={0} />}>
           <strong>El gráfico chico</strong> tiene un punto por día, sesión o toma. La línea se corta donde no hubo registros y donde cambió el protocolo, el método o la unidad. El nombre del indicador abre el gráfico
@@ -156,7 +161,8 @@ function DeLinea() {
           <strong>El día es la unidad.</strong> Los días van del más nuevo al más viejo. Dentro de cada día, primero los hitos, después las sesiones y al final las comidas; cada clase, en el orden en que ocurrió.
         </Renglon>
         <Renglon muestra={<Icono nombre="hito" tamano={20} />}>
-          <strong>Un hito</strong> lleva una barra a la izquierda: un plan activado, un objetivo, una revisión, una toma antropométrica o un seguimiento que se abre o se cierra. Es todo lo que no se registra todos los días.
+          <strong>Un hito</strong> lleva una barra a la izquierda, de todo el alto de su renglón: un plan activado, un objetivo, una revisión, una toma antropométrica o un seguimiento que se abre o se cierra. Es todo lo
+          que no se registra todos los días.
         </Renglon>
         <Renglon muestra={<Icono nombre="nutricion" tamano={20} />}>
           <strong>«Comidas»</strong> junta las comidas del día en un renglón, que dice cuántas son y cuántas tienen algo distinto de lo de siempre. Se abre en el lugar, del desayuno a la cena. Una sola comida va en su propio
@@ -170,8 +176,8 @@ function DeLinea() {
           <strong>Cargado otro día:</strong> el hecho está en el día en que ocurrió, no en el que se cargó. Una corrección no es un registro nuevo y no lo mueve; un registro anulado sigue en la historia, con su etiqueta.
         </Renglon>
         <Renglon muestra={<Icono nombre="lista" tamano={20} />}>
-          <strong>Un día en una tarjeta</strong> tiene una sesión, un hito o alguna etiqueta. <strong>Un día liso</strong> tiene solo sus comidas, sin nada distinto de lo de siempre. Es para ubicar qué mirar: no dice nada
-          más del día.
+          <strong>Cada día va en su tarjeta.</strong> Llena, si tiene una sesión, un hito o alguna etiqueta; <strong>sin fondo,</strong> si tiene solo sus comidas, sin nada distinto de lo de siempre. Es para ubicar qué
+          mirar: no dice nada más del día.
         </Renglon>
         <Renglon muestra={<span className="muestra-de-hueco" />}>
           <strong>Gris:</strong> días sin hechos registrados entre dos días de la lista. No son ceros: BE no tiene hechos de esos días en las áreas que podés ver. Se dicen solo cuando mirás «Todo».

@@ -1,11 +1,12 @@
 import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { CLAVE_DE_DOMINIO, type DashboardResponse } from '@be/domain';
+import type { Prisma } from '@prisma/client';
 import { decisionesDe, OperacionProtegida, PdpGuard, type SolicitudAutorizada } from '../autorizacion/pdp.guard';
 import { errores } from '../http/errores';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProcesoService } from '../proceso/proceso.service';
 import { actorDe, SesionGuard } from '../sesion/sesion.guard';
-import { nombreDeAsesorado } from '../vinculo/lectura';
+import { nombreDeAsesoradoPara } from '../vinculo/lectura';
 import { resumenDeAntropometria, resumenDeEntrenamiento, resumenDeNutricion, type Periodo } from './lectura-dashboard';
 
 /**
@@ -57,7 +58,8 @@ export class DashboardController {
 
     return {
       data: {
-        advisee: { identityId: titularId, displayName: nombreDeAsesorado(titularId) },
+        // Con su nombre si el vínculo está vigente; si no, la referencia neutral (DL-040).
+        advisee: { identityId: titularId, displayName: await nombreDeAsesoradoPara(this.prisma as unknown as Prisma.TransactionClient, profesionalId, titularId) },
         period: periodo,
         partialView: decisiones.porAlcance.some((d) => !d.decision.permitida),
         domains: dominios,

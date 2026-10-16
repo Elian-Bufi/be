@@ -16,7 +16,6 @@ import {
 import type { Prisma } from '@prisma/client';
 import { nombreVisibleDe } from '../entrenamiento/lectura-entrenamiento';
 import { fechaLocalEn, finDelDiaLocal, inicioDelDiaLocal } from '../nutricion/zona';
-import { nombreDeAsesorado } from '../vinculo/lectura';
 import { ZONA, type AlcanceDelAnalisis, type VersionActivada, type VersionDeObjetivo } from './fuentes';
 
 type Tx = Prisma.TransactionClient;
@@ -148,7 +147,8 @@ export async function entradasDeObjetivos(objetivos: readonly VersionDeObjetivo[
 
 // ─── Nutrición: un registro de comida por entrada ───────────────────────────────────────────────
 
-export function entradasDeComidas(registros: readonly RegistroDeComida[], asesoradoId: string, versiones: readonly VersionActivada[]): EntradaDeLineaDeTiempo[] {
+/** `nombreDelAsesorado`: con el que lo ve el profesional que lee (`nombreDeAsesoradoPara`, DL-040). */
+export function entradasDeComidas(registros: readonly RegistroDeComida[], asesoradoId: string, versiones: readonly VersionActivada[], nombreDelAsesorado: string): EntradaDeLineaDeTiempo[] {
   const numero = new Map(versiones.map((v) => [v.id, v.numero]));
   return registros.map((r) => {
     const calidad: CalidadDeEntrada[] = [];
@@ -171,7 +171,7 @@ export function entradasDeComidas(registros: readonly RegistroDeComida[], asesor
       eventType: 'MEAL_RECORDED',
       source: { type: 'MEAL_RECORD', id: r.recordId },
       ...tiempos(new Date(r.occurredAt), new Date(r.recordedAt), r.localDate),
-      author: { identityId: asesoradoId, displayName: nombreDeAsesorado(asesoradoId), role: 'ADVISEE' },
+      author: { identityId: asesoradoId, displayName: nombreDelAsesorado, role: 'ADVISEE' },
       title: r.kind === 'DIFFERENT' ? `Comida diferente · ${comida}` : `Comida registrada · ${comida}`,
       details: [
         ...(r.option ? [{ label: 'Opción', value: r.option.label ? `${r.option.order} · ${r.option.label}` : String(r.option.order) }] : []),
@@ -224,7 +224,8 @@ export function clavesDeEjercicioPorSesion(ejecuciones: readonly EjecucionDeEntr
   return porSesion;
 }
 
-export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamiento[], versiones: readonly VersionActivada[]): EntradaDeLineaDeTiempo[] {
+/** `nombreDelAsesorado`: con el que lo ve el profesional que lee (`nombreDeAsesoradoPara`, DL-040). */
+export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamiento[], versiones: readonly VersionActivada[], nombreDelAsesorado: string): EntradaDeLineaDeTiempo[] {
   const numero = new Map(versiones.map((v) => [v.id, v.numero]));
   const claves = clavesDeEjercicioPorSesion(ejecuciones);
   return ejecuciones.map((x) => {
@@ -244,7 +245,7 @@ export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamient
       eventType: 'TRAINING_SESSION_RECORDED',
       source: { type: 'TRAINING_EXECUTION', id: x.executionId },
       ...tiempos(new Date(x.occurredAt), new Date(x.recordedAt), x.date),
-      author: { identityId: x.adviseeId, displayName: nombreDeAsesorado(x.adviseeId), role: 'ADVISEE' },
+      author: { identityId: x.adviseeId, displayName: nombreDelAsesorado, role: 'ADVISEE' },
       title: `Sesión registrada · ${x.plannedSession.label}`,
       details: [
         ...(vigente ? [{ label: 'Condición', value: CONDICION[vigente.sessionCondition] }] : [{ label: 'Registro vigente', value: 'no se puede resolver la corrección' }]),
