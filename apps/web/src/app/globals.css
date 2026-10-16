@@ -332,6 +332,12 @@ code {
   max-width: 76rem;
 }
 
+/* La ficha del asesorado es un tablero de escritorio: en pantallas anchas usa el ancho (el profesional trabaja en una
+   computadora; los anchos chicos solo tienen que no romperse). */
+.contenido--seguimiento {
+  max-width: 100rem;
+}
+
 .nota {
   color: var(--tenue);
   font-size: 0.92rem;
@@ -2538,5 +2544,518 @@ html:has(.acciones--fijas) {
 
   .imagen-de-receta--chica {
     width: 100%;
+  }
+}
+
+/* ─── Entorno profesional de seguimiento: Resumen, Línea de tiempo y Analizar (WP-DASHBOARD-PROFESIONAL) ─── */
+/* Escritorio primero (notebook), operable en tablet y teléfono: los controles se apilan, los paneles ocupan el ancho y
+   solo las tablas se desplazan de costado, nunca la página (WCAG 1.4.10). Números tabulares en series y tablas. */
+.barra-del-seguimiento {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* En escritorio, las pestañas y el período comparten una fila: el contenido de la vista empieza más arriba. */
+@media (min-width: 64rem) {
+  .barra-del-seguimiento {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    column-gap: 2rem;
+    border-bottom: 1px solid var(--borde);
+    margin-bottom: 0.5rem;
+  }
+
+  .barra-del-seguimiento .pestanas ul {
+    margin: 0;
+    border-bottom: 0;
+  }
+
+  .barra-del-seguimiento .periodo-del-seguimiento {
+    flex: 1 1 32rem;
+    justify-content: flex-end;
+    padding-bottom: 0.45rem;
+  }
+
+  .barra-del-seguimiento .periodo-del-seguimiento__titulo {
+    flex: 1 1 14rem;
+    text-align: right;
+  }
+}
+
+.periodo-del-seguimiento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.periodo-del-seguimiento__titulo {
+  margin: 0;
+  flex: 1 1 18rem;
+}
+
+.periodo-del-seguimiento__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.periodo-del-seguimiento__rango {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+  width: 100%;
+}
+
+.periodo-del-seguimiento__rango .campo,
+.filtros-de-linea .campo {
+  flex: 0 1 14rem;
+  min-width: 10rem;
+  margin: 0;
+}
+
+.filtros-de-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.filtros-de-linea .campo--busqueda {
+  flex: 1 1 18rem;
+}
+
+.filtros-avanzados {
+  flex: 1 1 100%;
+}
+
+.filtros-avanzados[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filtros-activos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.filtros-activos ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.linea-de-tiempo__dia {
+  border-top: 1px solid var(--borde);
+  padding-top: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.linea-de-tiempo__dia h3 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.linea-de-tiempo__entradas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.entrada {
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-control);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  background: var(--superficie);
+}
+
+/* Anulado: la entrada sigue, con su marca de texto y el contenido atenuado (no tachado: tiene que poder leerse). */
+.entrada--anulada {
+  border-left-style: dashed;
+  background: var(--fondo-suave);
+}
+
+.entrada__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  margin: 0;
+}
+
+.entrada__area {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tenue);
+}
+
+.entrada__hora {
+  font-variant-numeric: tabular-nums;
+  color: var(--tenue);
+}
+
+.entrada__detalles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.25rem;
+  margin: 0.35rem 0;
+}
+
+.entrada__detalles div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.entrada__detalles dt {
+  color: var(--tenue);
+}
+
+.entrada__detalles dt::after {
+  content: ':';
+}
+
+.entrada__detalles dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.entrada__relaciones {
+  margin: 0.25rem 0;
+  padding-left: 1.1rem;
+  font-size: 0.92rem;
+}
+
+/*
+ * El registro de origen: en escritorio, un panel lateral a la derecha de toda la altura, con la lista o el gráfico a la
+ * vista detrás (el velo los atenúa, no los tapa). Más angosto, un diálogo centrado.
+ */
+.dialogo--panel {
+  max-width: min(44rem, calc(100vw - 1rem));
+  width: 100%;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+@media (min-width: 64rem) {
+  .dialogo--panel {
+    margin: 0 0 0 auto;
+    width: min(42rem, 46vw);
+    max-width: none;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    border-width: 0 0 0 1px;
+  }
+}
+
+.dialogo__encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/*
+ * Analizar es para escritorio. El orden del documento (y del teclado) es siempre: qué se elige, los gráficos, la lectura y
+ * las opciones; la grilla solo los ubica, sin reordenarlos (WCAG 1.3.2 y 2.4.3).
+ * - Desde 80rem (1280 px): tres columnas; la lectura queda fija al costado de los gráficos mientras se recorren las fechas.
+ * - Desde 64rem (1024 px): dos columnas; la lectura, debajo de los gráficos.
+ * - Más angosto (no es el objetivo): una columna, sin desbordes.
+ */
+.analizar__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'seleccion' 'lienzo' 'lectura' 'opciones';
+  gap: 1rem;
+}
+
+@media (min-width: 64rem) {
+  .analizar__cuerpo {
+    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
+    grid-template-areas: 'seleccion lienzo' 'opciones lienzo' 'opciones lectura';
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
+    column-gap: 1.5rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  .analizar__cuerpo {
+    grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr) minmax(16rem, 21rem);
+    grid-template-areas: 'seleccion lienzo lectura' 'opciones lienzo lectura';
+    grid-template-rows: auto 1fr;
+  }
+
+  .analizar__lectura {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+
+.analizar__seleccion,
+.analizar__opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.analizar__seleccion {
+  grid-area: seleccion;
+}
+
+.analizar__opciones {
+  grid-area: opciones;
+}
+
+.analizar__lienzo {
+  grid-area: lienzo;
+  min-width: 0;
+}
+
+.analizar__lectura {
+  grid-area: lectura;
+  min-width: 0;
+}
+
+.analizar__lectura .panel-de-lectura {
+  margin: 0;
+}
+
+.agregar > summary,
+.presets > summary {
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.metricas-elegidas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.metricas-elegidas li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.marca-de-metrica {
+  flex: none;
+  vertical-align: middle;
+}
+
+.agregar-metrica {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.agregar-metrica .campo {
+  margin: 0;
+}
+
+.presets ul,
+.preguntas,
+.recientes,
+.lista-de-vistas {
+  list-style: none;
+  margin: 0.25rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.boton--pregunta {
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
+.referencias {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.modo-elegible .nota {
+  margin: 0 0 0.25rem 1.75rem;
+}
+
+/* La referencia del cambio relativo: la vigente, qué la cambia y el editor, uno debajo del otro (DL-126). */
+.referencia-del-cambio {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.referencia-del-cambio p {
+  margin: 0.25rem 0 0;
+}
+
+.referencia-del-cambio__editor {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.referencia-vigente {
+  margin: 0.25rem 0;
+}
+
+.paneles-sincronizados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.grafico__titulo {
+  font-weight: 700;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.panel-de-lectura .acciones {
+  align-items: flex-end;
+}
+
+.panel-de-lectura .campo {
+  margin: 0;
+}
+
+.panel-de-lectura__metrica {
+  border-top: 1px solid var(--borde);
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-de-lectura__metrica p {
+  margin: 0.15rem 0;
+}
+
+.tabla--numeros td,
+.cobertura dd,
+.indicador__valor {
+  font-variant-numeric: tabular-nums;
+}
+
+.indicadores {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.indicador {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  background: var(--fondo-suave);
+}
+
+.indicador h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.indicador__valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.15rem 0;
+}
+
+.editor-de-indicadores {
+  margin-top: 0.75rem;
+}
+
+.cobertura {
+  margin: 0;
+}
+
+/* Lo que pasó en el período: cobertura y últimos hechos, lado a lado en escritorio. */
+.resumen__periodo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (min-width: 64rem) {
+  .resumen__periodo {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+}
+
+.cobertura div {
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.cobertura dt {
+  font-weight: 700;
+}
+
+.cobertura dd {
+  margin: 0.15rem 0 0;
+}
+
+.como-se-calcula,
+.tabla-de-datos,
+.intervalo,
+.vistas-guardadas,
+.no-ofrecidas {
+  margin: 0.75rem 0;
+}
+
+.hitos {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+}
+
+.hitos ul {
+  margin: 0.25rem 0;
+  padding-left: 1.1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paneles-sincronizados *,
+  .linea-de-tiempo * {
+    transition: none !important;
+    animation: none !important;
   }
 }

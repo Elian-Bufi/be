@@ -11,6 +11,7 @@ import {
   checkpointsSinDato,
   consecuenciasDeRecalculo,
   construirSerie,
+  construirSerieDeTomas,
   convertir,
   dependientesDe,
   evaluarAnulacion,
@@ -189,6 +190,28 @@ test('TEST-ANT-010 · lo no comparable se conserva y se marca: no forma línea c
   const segundo = serie.puntos[1];
   assert.equal(segundo?.disponibilidad, 'REGISTRADO', 'el dato no comparable se conserva, no se elimina');
   assert.deepEqual(segundo?.disponibilidad === 'REGISTRADO' ? segundo.incomparableConElAnterior : [], ['UNIDAD']);
+});
+
+test('dos tomas del mismo día siguen siendo dos (encargo del 2026-10-08 §12): la serie de tomas no elige una', () => {
+  const tomas = [
+    observacion('2026-09-01', 72.5, { origenId: 'manana' }),
+    observacion('2026-09-01', 73.1, { origenId: 'tarde' }),
+    observacion('2026-09-03', 160, { origenId: 'otra-unidad', ficha: { ...FICHA, unidad: 'lb' } }),
+  ];
+  // API-ANT-06 conserva un punto por día: la primera toma vigente.
+  const porDia = construirSerie('peso', ['2026-09-01', '2026-09-02', '2026-09-03'], tomas);
+  assert.deepEqual(porDia.puntos.map((p) => (p.disponibilidad === 'REGISTRADO' ? p.origenId : p.disponibilidad)), ['manana', 'SIN_DATO', 'otra-unidad']);
+  // La proyección: las dos tomas del 1, en orden; el 2 sin dato; y la comparabilidad contra el punto anterior.
+  const deTomas = construirSerieDeTomas('peso', ['2026-09-01', '2026-09-02', '2026-09-03'], tomas);
+  assert.deepEqual(
+    deTomas.puntos.map((p) => (p.disponibilidad === 'REGISTRADO' ? [p.fechaLocal, p.origenId, p.incomparableConElAnterior] : [p.fechaLocal, p.disponibilidad])),
+    [
+      ['2026-09-01', 'manana', []],
+      ['2026-09-01', 'tarde', []],
+      ['2026-09-02', 'SIN_DATO'],
+      ['2026-09-03', 'otra-unidad', ['UNIDAD']],
+    ],
+  );
 });
 
 test('INV-06-178 · cada punto conserva su clase y su origen', () => {

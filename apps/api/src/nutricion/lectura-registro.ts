@@ -57,12 +57,28 @@ export function comidaDe(instantanea: ContenidoDeInstantanea, mealId: string, da
 }
 
 /**
+ * Los macros ya calculados, por opción congelada y por cantidades. El cálculo es puro y exacto (racionales), y en una
+ * lectura larga cientos de registros repiten la misma opción con las mismas cantidades: un año de comidas pasaba de
+ * calcularlo 2.900 veces a una decena (PRO-24). La clave es el objeto de la opción de la instantánea leída en esa
+ * consulta; una lectura nueva trae objetos nuevos, así que nada se comparte entre consultas ni sobrevive a ellas.
+ */
+const macrosCalculados = new WeakMap<OpcionDeInstantanea, Map<string, Nutrientes>>();
+
+/**
  * Los macros de los ítems de una opción con las composiciones congeladas: SUM_SOURCE_PER_100G_V1. Cada faltante se nombra
  * por el `itemId`. Sin cantidad, sin dato o en una unidad sin equivalencia, el nutriente queda sin total.
  */
 function macros(opcion: OpcionDeInstantanea, cantidades?: CantidadesConsumidas): Nutrientes {
+  let calculados = macrosCalculados.get(opcion);
+  if (!calculados) {
+    calculados = new Map();
+    macrosCalculados.set(opcion, calculados);
+  }
+  const clave = cantidades ? JSON.stringify(cantidades.items) : '';
+  const hecho = calculados.get(clave);
+  if (hecho) return hecho;
   const informados = new Map((cantidades?.items ?? []).map((i) => [i.itemId, i]));
-  return nutrientesDelResultado(
+  const resultado = nutrientesDelResultado(
     calcularNutrientes(
       opcion.items.map((it) => {
         if (!cantidades) return { clave: it.itemId, cantidad: it.quantity, composicion: it.composition };
@@ -71,6 +87,8 @@ function macros(opcion: OpcionDeInstantanea, cantidades?: CantidadesConsumidas):
       }),
     ),
   );
+  calculados.set(clave, resultado);
+  return resultado;
 }
 
 /**

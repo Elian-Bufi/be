@@ -43,6 +43,37 @@ test('cliente: el registro envía A1 y A2 con la versión vigente, superficie e 
   assert.equal(cuerpo.registrationIntent, 'ADVISEE');
 });
 
+const LINEA_VACIA = {
+  data: {
+    period: { start: '2026-09-01', end: '2026-09-30', timeZone: 'America/Argentina/Buenos_Aires' },
+    partialView: false,
+    generatedAt: '2026-09-30T12:00:00.000Z',
+    sourceDomains: ['NUTRITION'],
+    totalMatching: 0,
+    periodCounts: { byEventType: [], byQuality: [], recordedLate: 0 },
+    searchScope: 'WHOLE_PERIOD',
+    entries: [],
+  },
+  page: { limit: 20, nextCursor: null, hasMore: false },
+};
+
+test('cliente: el texto buscado en la línea de tiempo viaja en el cuerpo de un POST, nunca en una URL (DL-127)', async () => {
+  const llamadas: Llamada[] = [];
+  const cliente = crearClienteBe({ baseUrl: 'https://api.example.invalid/api/v1', superficie: 'WEB', fetch: fetchFalso(200, LINEA_VACIA, llamadas) });
+  const asesorado = '6f1c1a4e-0000-4000-8000-000000000002';
+  const r = await cliente.buscarEnLineaDeTiempo('token', asesorado, { q: 'cena con nombre propio', periodStart: '2026-09-01', periodEnd: '2026-09-30', limit: 20 });
+  assert.equal(r.ok, true);
+  assert.equal(llamadas[0]!.url, `https://api.example.invalid/api/v1/advisees/${asesorado}/timeline/search`);
+  assert.equal(llamadas[0]!.init.method, 'POST');
+  assert.deepEqual(JSON.parse(String(llamadas[0]!.init.body)), { q: 'cena con nombre propio', periodStart: '2026-09-01', periodEnd: '2026-09-30', limit: 20 });
+  // La consulta sin búsqueda: aunque el objeto traiga un `q` de más, solo las claves declaradas llegan a la URL.
+  const conDeMas = { periodStart: '2026-09-01', q: 'cena con nombre propio' } as unknown as Parameters<typeof cliente.lineaDeTiempo>[2];
+  await cliente.lineaDeTiempo('token', asesorado, conDeMas);
+  assert.equal(llamadas[1]!.url, `https://api.example.invalid/api/v1/advisees/${asesorado}/timeline?periodStart=2026-09-01`);
+  assert.equal(llamadas[1]!.init.body, undefined);
+  assert.ok(llamadas.every((l) => !/nombre|propio|cena/i.test(l.url)));
+});
+
 test('cliente: una respuesta 2xx con otra forma no se interpreta (validación de contrato)', async () => {
   const cliente = crearClienteBe({ baseUrl: '/api/v1', superficie: 'WEB', fetch: fetchFalso(201, { data: { identityId: 'x', rol: 'ADMIN' } }) });
   const r = await cliente.registrar({ correo: 'a@example.invalid', contrasena: 'clave-sintetica-01' }, 'clave-de-prueba-01');

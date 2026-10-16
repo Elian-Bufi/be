@@ -61,6 +61,13 @@
   --grafico-planificado: #1f5bc4;
   --grafico-registrado: #c2410c;
   --grafico-hueco: #6b7a90;
+  /* Las tres métricas de «Analizar» (WP-DASHBOARD-PROFESIONAL): azul, violeta y verde azulado. Ni rojo ni verde, que se
+     leerían como juicio, ni el ámbar del foco (`scripts/contraste.test.cjs` mide la diferencia perceptual). Además del
+     color, cada una tiene forma (círculo, cuadrado o triángulo), trazo (continuo, rayado o punteado) y su nombre en la
+     leyenda y la tabla (WCAG 1.4.1). */
+  --metrica-1: #0b62a4;
+  --metrica-2: #7b3fb5;
+  --metrica-3: #00708a;
   /* Sombras y velo: no son texto ni bordes de control */
   --sombra-suave: 0 1px 2px rgb(4 33 63 / 6%), 0 1px 1px rgb(4 33 63 / 4%);
   --sombra: 0 20px 50px rgb(4 33 63 / 30%);
@@ -104,6 +111,11 @@
   --grafico-planificado: #5ee0fb;
   --grafico-registrado: #ff9b5c;
   --grafico-hueco: #7fa3c8;
+  /* Las tres métricas sobre navy: las mismas familias, más claras, lejos del cian de los enlaces, del menta del éxito, del
+     salmón del error y del amarillo del foco. */
+  --metrica-1: #7cb8ff;
+  --metrica-2: #c9a7ff;
+  --metrica-3: #2bb3a3;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --sombra-desplazamiento: rgb(94 224 251 / 40%);

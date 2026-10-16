@@ -164,7 +164,68 @@ const PARES_GRAFICO = [
   ['grafico-planificado', 'fondo-suave', NO_TEXTO, 'muestra de lo planificado en la leyenda'],
   ['grafico-registrado', 'fondo-suave', NO_TEXTO, 'muestra de lo registrado en la leyenda'],
   ['grafico-hueco', 'superficie', NO_TEXTO, 'rayado de una sesión sin dato en el gráfico'],
+  // «Analizar» (WP-DASHBOARD-PROFESIONAL): línea, punto y muestra de cada métrica, sobre el lienzo y en la leyenda.
+  ['metrica-1', 'superficie', NO_TEXTO, 'línea y puntos de la primera métrica'],
+  ['metrica-2', 'superficie', NO_TEXTO, 'línea y puntos de la segunda métrica'],
+  ['metrica-3', 'superficie', NO_TEXTO, 'línea y puntos de la tercera métrica'],
+  ['metrica-1', 'fondo-suave', NO_TEXTO, 'primera métrica sobre una banda de vigencia o en el panel de lectura'],
+  ['metrica-2', 'fondo-suave', NO_TEXTO, 'segunda métrica sobre una banda de vigencia o en el panel de lectura'],
+  ['metrica-3', 'fondo-suave', NO_TEXTO, 'tercera métrica sobre una banda de vigencia o en el panel de lectura'],
 ];
+
+/** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
+function lab(hex) {
+  const [r, g, b] = rgb(hex).map(lineal);
+  const x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+  const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+  const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+  return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+}
+const deltaE = (a, b) => Math.hypot(...lab(a).map((v, i) => v - lab(b)[i]));
+
+/** El matiz de un color, en grados (HSL). */
+function matiz(hex) {
+  const [r, g, b] = rgb(hex).map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (d === 0) return null;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+}
+
+/**
+ * La decisión de la paleta de «Analizar»: ninguna métrica es roja, ámbar ni verde, porque se leerían como un juicio
+ * (malo, alerta o bueno) o como el foco. Sus matices quedan entre los azules, los cianes y los violetas (170° a 300°).
+ */
+test('website · las métricas de «Analizar» no tienen matices de juicio (ni rojo, ni ámbar, ni verde)', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const m of ['metrica-1', 'metrica-2', 'metrica-3']) {
+      const h = matiz(tema[m]);
+      if (h === null || h < 170 || h > 300) fallas.push(`${nombreDelTema} · ${m} ${tema[m]}: matiz ${h === null ? 'gris' : h.toFixed(0)}°`);
+    }
+  }
+  assert.deepEqual(fallas, []);
+});
+
+/**
+ * Las tres métricas de «Analizar» se distinguen entre sí y de lo que significa otra cosa: el foco, el error, el éxito
+ * y los enlaces. ΔE ≥ 20 (una diferencia que se ve a simple vista); la forma y el trazo dan la segunda vía.
+ */
+test('website · las métricas de «Analizar» no se confunden entre sí ni con el foco, el error, el éxito o los enlaces', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    const metricas = ['metrica-1', 'metrica-2', 'metrica-3'];
+    for (const m of metricas) {
+      for (const otro of ['foco', 'error', 'exito', 'enlace', ...metricas.filter((x) => x !== m)]) {
+        const d = deltaE(tema[m], tema[otro]);
+        if (d < 20) fallas.push(`${nombreDelTema} · ${m} ${tema[m]} y ${otro} ${tema[otro]}: ΔE ${d.toFixed(1)}`);
+      }
+    }
+  }
+  assert.deepEqual(fallas, []);
+});
 
 test('la fórmula de contraste es la de WCAG 2.2', () => {
   assert.equal(contraste('#000000', '#ffffff').toFixed(2), '21.00');

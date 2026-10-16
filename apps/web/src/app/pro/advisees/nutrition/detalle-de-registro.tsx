@@ -42,6 +42,14 @@ export function VerRegistro({ registroId }: { registroId: string }) {
 
 function DetalleDeRegistro({ registroId }: { registroId: string }) {
   const { token, sesionPerdida } = useNutricion();
+  return <DetalleDeRegistroDeComida registroId={registroId} token={token} sesionPerdida={sesionPerdida} />;
+}
+
+/**
+ * El mismo detalle, con la sesión por props: lo usa también la ficha del asesorado («Abrir registro» desde la línea de
+ * tiempo y desde Analizar), fuera de la pestaña Nutrición. La lectura es la misma API-ING-03, con su PDP.
+ */
+export function DetalleDeRegistroDeComida({ registroId, token, sesionPerdida }: { registroId: string; token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
   const [r, setR] = useState<Resultado<{ data: RegistroDeComida }> | null>(null);
   const cargar = useCallback(async () => {
     setR(null);
@@ -108,7 +116,7 @@ function DetalleDeRegistro({ registroId }: { registroId: string }) {
           <p className="lista__titulo">{COPY_REGISTRO_PARA_EL_PROFESIONAL.fotos}</p>
           <div className="fotos-del-registro">
             {registro.evidence.map((e, n) => (
-              <FotoDelRegistro key={e.mediaId} medioId={e.mediaId} numero={n + 1} />
+              <FotoDelRegistro key={e.mediaId} medioId={e.mediaId} numero={n + 1} token={token} sesionPerdida={sesionPerdida} />
             ))}
           </div>
           <p className="nota">{COPY_REGISTRO_PARA_EL_PROFESIONAL.fotoPrivada}</p>
@@ -139,8 +147,7 @@ function LoConsumido({ nutrientes, nombres }: { nutrientes: Nutrientes; nombres:
   );
 }
 
-function FotoDelRegistro({ medioId, numero }: { medioId: string; numero: number }) {
-  const { token, sesionPerdida } = useNutricion();
+function FotoDelRegistro({ medioId, numero, token, sesionPerdida }: { medioId: string; numero: number; token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
   const { estado } = useImagenDeMedio(token, medioId, sesionPerdida);
   const texto = COPY_REGISTRO_PARA_EL_PROFESIONAL.fotoDelAsesorado(numero);
   if (estado.tipo === 'lista') return <img className="imagen-de-receta" src={estado.dataUrl} alt={texto} />;
