@@ -139,6 +139,7 @@
 | DL-132 | Hallazgo de implementación · 2026-10-12 (WP-ESCRITORIO-AREAS, parte 5) | DL-119 (lo implementado) · DL-108 | «Guardar como plantilla» responde distinto con una opción de receta: en la versión en preparación dice que no se guarda; en el plan activo la guarda como una opción común, con los ingredientes de una porción, sin avisar | **ABIERTA** · se recomienda A (que el plan activo responda como el editor). Sin cambios en el código: es el comportamiento de `main` |
 | DL-133 | Pedido de Dirección · 2026-10-16 (WP-NOVEDADES-Y-AVISOS) | 04 RF-061, RF-062 · 05 UC-P30, UC-E08 · 06 §5.11 · 07 §23-24 · 09v12 §20-21 · B10-04 §42 | Novedades y avisos: la familia NOV, el envío después de confirmar, el cron de la plataforma y los recordatorios diarios de registro | **DECIDIDA** 2026-10-16 (Expo Push y recordatorios); D-1 a D-10 a ratificar · implementada en #163 |
 | DL-134 | Mandato de Dirección · 2026-10-16 (REV-A) | 08 §6.2, 08:495, §14.3, 08:406 · 09v12:844 · 04 RF-035, RF-046 · propuesta REV-A | La persona lee las revisiones que sus profesionales registraron sobre ella | **IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar |
+| DL-135 | Mandato de Dirección · 2026-10-16 (WP-TVCC-30) | 02 §16 · 04 RF-058 · 05 UC-S01 · 06 B-12 (REG-06-186 a 201) · 07 §24, §42.1 · 09 ANA-P1, TRACE-DEBT-12-001 · 11A §21 · 12 §12-27 | TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado | **IMPLEMENTADA** 2026-10-16; D-1 a D-9 a ratificar |
 
 ---
 
@@ -3813,3 +3814,78 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 **Una medida compatible que queda para el website (propuesta §3, D1):** avisarle al profesional, al registrar, que la persona lee la interpretación y el fundamento. No es una restricción. Se recomienda sumarla.
 
 **Condición de cierre:** Dirección ratifica las opciones A (o cambia las que quiera), y la persona lee una revisión real en el teléfono.
+
+## DL-135 — TVCC-30: la métrica de validación de la tesis, calculada y conservada
+
+**Prioridad:** media (P1; no bloquea P0).
+
+**Documentos:**
+- **02:** §16, la North Star.
+- **04:** RF-058.
+- **05:** UC-S01 (§14.10).
+- **06:** B-12, REG-06-186 a 201. Consume REG-06-75, 145, 146, 149 y 150.
+- **07:** §24 y §42.1: cálculo a pedido desde el dominio, módulo `analitica`, no es telemetría.
+- **09:** ANA-P1 «internal/reproducible; HTTP only when 12 closes spec», y TRACE-DEBT-12-001.
+- **11A:** §21, TEST-TVCC-001 a 012.
+- **12:** §12 a §27, SPEC-TVCC30-v1 (candidata).
+- **El paquete:** `docs/paquetes/WP-TVCC-30.md`.
+
+**Estado:** IMPLEMENTADA el 2026-10-16. La tomó el ejecutor con el mandato de Dirección de ese día: «que vayas haciendo los casos de uso y los requisitos funcionales que faltan» y «si no es mucho el riesgo, directamente tómala». **Espera ratificación.**
+
+**Qué dice el legajo.**
+- **El 12** fija la especificación candidata: la ventana de 30 fechas en Buenos Aires, el universo, los cinco criterios de elegibilidad, N, D y la fórmula. Además:
+  - con D = 0 no se publica 0 %;
+  - con un candidato no resoluble no se produce valor;
+  - mismas fuentes, misma versión y mismo corte dan el mismo resultado;
+  - otra especificación es otro resultado;
+  - las reglas contra la manipulación.
+- **El 06 (B-12)** consume los hechos y no los recrea. Conserva el resultado histórico con su universo y sus motivos.
+- **El 09** la declara interna, sin HTTP hasta que el 12 cierre la especificación.
+
+**Lo que el legajo deja a la implementación, y cómo se decidió:**
+- **D-1 · Qué es un ciclo.** Un tramo de la cadena de expectativas de revisión de un Proceso operativo (`proxima_revision`, REG-06-145/146). Termina en la expectativa que satisface una revisión aplicada (REG-06-150.4).
+  - *Alternativas descartadas:*
+    - un ciclo por versión de plan: no toda versión fija una revisión;
+    - el período de cada revisión: un ciclo sin revisar no tiene período.
+- **D-2 · El ancla, el fin canónico del ciclo.** Es la fecha de la primera expectativa del tramo que venció estando vigente.
+  - Reprogramar después del vencimiento no la corre (06 §12.8.3; 12 §24).
+  - Si una revisión cerró el ciclo antes de que venciera, el ancla es la fecha que tenía en ese momento.
+  - Una expectativa sin fecha vence al registrarse (REG-06-150.3).
+  - *Alternativas descartadas:*
+    - la última fecha del tramo: una reprogramación tardía escondería un ciclo vencido;
+    - la fecha de la revisión para los ciclos cerrados antes: dos revisiones seguidas pondrían dos ciclos en la misma ventana.
+- **D-3 · Qué cierra un ciclo.** La primera revisión cuya aplicación (`ContinuidadOCierreAplicado`, REG-06-75) se registró con esa expectativa vigente.
+  - Lo que la revisión fija al aplicarse ya es el ciclo siguiente.
+  - Una segunda revisión sobre la misma expectativa no suma.
+  - Una revisión sin aplicar no cierra nada (REG-06-149).
+  - *A tener en cuenta:* una segunda revisión aplicada poco después de la primera cierra antes de tiempo el ciclo siguiente. Es una revisión real y trazable, así que cuenta. Si Dirección prefiere otra cosa, es una versión nueva del mapeo.
+- **D-4 · Las cuentas demo.** BE no las marca en su modelo: los profesionales demo y los de la cohorte se habilitan por el mismo servicio interno (DL-036). Por eso cada corrida declara sus cuentas demo, y el resultado dice cuántas.
+  - En test, las cinco DEMO. Sus identificadores están fuera del repo, en `BE-datos-locales/cohorte-test/cuentas-demo-tvcc30.txt`.
+- **D-5 · El vínculo elegible.** El vínculo por alcance ACEPTADO y el B2 VIGENTE en el momento en que el ciclo venció. Si una revisión lo cerró antes, en el momento en que se aplicó.
+  - Pausado, terminado o con el B2 revocado: excluido, con su motivo.
+  - Sin historia del vínculo: no resoluble.
+- **D-6 · El seguimiento cerrado sin revisión.** Pasa cuando el vínculo termina o la cuenta se cierra.
+  - Si el ciclo todavía no había vencido, queda excluido (`SEGUIMIENTO_CERRADO_ANTES_DEL_ANCLA`).
+  - Si ya había vencido, queda en D y no en N.
+- **D-7 · Antes del corte.** Registrado (`momento_de_registro`) antes de las 00:00 del día siguiente al corte, en Buenos Aires. No se usa el momento de ocurrencia, que se puede declarar hacia atrás (12 §24).
+- **D-8 · Sin HTTP.** Lo corre el responsable de validación, el actor de UC-S01, con un comando: `node apps/api/dist/analitica/calcular-tvcc30.js`.
+  - En test, desde la consola de Render.
+  - El 09 no cambia y no hay operación nueva: TRACE-DEBT-12-001 se respeta.
+- **D-9 · La conservación.** Cada corrida es una fila de `resultado_tvcc30`, que solo admite agregar.
+  - Es sucesora de la última del mismo corte y zona, y lleva la huella SHA-256 de su forma canónica.
+  - La base controla que N y D vayan juntos, que N ≤ D, y que solo haya tasa con D > 0 y nada no resoluble.
+
+**Pruebas:**
+- las doce TEST-TVCC del 11A, contra la regla: `packages/domain/src/tvcc30.test.ts`;
+- TEST-RF-058 contra PostgreSQL, con recorridos reales por la API: `test/integration/tvcc30.int-spec.ts`.
+
+**Primer resultado.** Es una demostración con datos sintéticos, no una medición. En la cohorte local, con corte el 2026-10-16:
+- **U = 7, D = 7, N = 5: 71,4 %.**
+- **Los dos ciclos sin cerrar** son los pendientes que muestra el escritorio:
+  - la revisión de Nutrición de Norma, vencida el 12/10;
+  - la de Entrenamiento de Federico, preparada pero sin aplicar, vencida el 15/10.
+- **En test:** falta correrlo desde la consola de Render.
+
+**Condición de cierre:**
+- Dirección ratifica D-1 a D-9, o las cambia (eso es otra versión del mapeo);
+- el 12 pasa la especificación de candidata a vigente.

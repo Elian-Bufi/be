@@ -4,7 +4,11 @@
 > - el escritorio profesional por áreas (#153 a #159), con Pendientes, Resumen, Línea de tiempo, Analizar y Preparar revisión;
 > - la cohorte de seis personas con historia (#161);
 > - las novedades, los avisos y los recordatorios (#163);
-> - REV-A (#164).
+> - REV-A (#164);
+> - el buscador sin tildes, el retiro de los teléfonos al revocar sesiones y la guía de demo con la cohorte (#165);
+> - la APK con solo los permisos que usa, para la próxima construcción (#166).
+>
+> Además quedó implementada la TVCC-30, la métrica de validación de la tesis (RF-058 · UC-S01, DL-135). Se corre con un comando interno, sin HTTP, y su integración sigue en su PR.
 >
 > La APK 0.16.0-candidata.1 lleva todo eso y los arreglos de la 0.15.0-candidata.1. Las marcas de este documento están al día en lo que se tocó ese día; el resto sigue siendo del 2/10.
 >
@@ -41,7 +45,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 | Qué | Requisitos | Estado |
 |---|---|---|
 | **Alta y verificación de profesionales, y rol administrador** (WP-09). Hoy un profesional se habilita con un servicio interno y cuentas demo. El administrador es actor en RF-011, RF-012 y RF-014, y exige MFA siempre (08 §25) | RF-007 a RF-014 · RF-067 · UC-P01 a P03 · UC-E01 · API-PRO-01 a 13 · DL-036 | Fuera del tramo. Ficha del 2/10 en `docs/propuestas/PERFIL-DEL-ASESORADO-Y-ADMINISTRACION_fichas.md`. **La mesa pide distintos roles, no un administrador** |
-| **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107) y los resúmenes por dominio (DL-031) |
+| **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107), los resúmenes por dominio (DL-031) y la línea de tiempo del escritorio. **La TVCC-30 (RF-058 · UC-S01) quedó hecha el 2026-10-16** (DL-135): cálculo interno y conservado, sin HTTP, como dice el 09. Faltan las notas de coordinación (RF-057) y las proyecciones |
 | **Perfil del asesorado** con nombre visible. El perfil propio existía sin contenido (RF-017 parcial desde WP-02); el nombre visible sale del 09v8 §3.2 y del B10-08 §5.4 | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | **Hecho el 2026-10-15** (decisión de Dirección; PR #159, sin integrar): el nombre visible con versiones, API-ACC-06 y su lectura, «Tu nombre» en «Cuenta», y el profesional lo ve con un vínculo vigente. Falta en la APK, que lo suma en su próxima versión; otros campos del perfil siguen en DL-023 y DL-095 |
 | **Novedades y avisos push**: el centro de novedades, los avisos por Expo y los recordatorios diarios de registro | RF-061 · RF-062 · UC-P30 · UC-E08 · API-NOV-01 a 06 · DL-133 | **Hecho el 2026-10-16** (pedido de Dirección; PR #163): website y APK. Para que un teléfono reciba avisos falta el proyecto de Firebase de Dirección (`docs/DESPLIEGUE.md`, «Avisos push») |
 | **Exportar los datos del titular** y los pasos 2 y 3 de la revocación de A3 | DL-021 · REV-A-D4 | Sin implementar |
