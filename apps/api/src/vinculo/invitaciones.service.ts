@@ -23,7 +23,7 @@ import {
   type VistaPreviaDeInvitacionResponse,
 } from '@be/domain';
 import { Prisma } from '@prisma/client';
-import { createHash, createHmac, randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import type { Entorno } from '../config/entorno';
 import { ENTORNO } from '../config/tokens';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
@@ -40,11 +40,20 @@ import { itemDeSolicitud, nombreDeProfesional, resumenDeAlcance } from './lectur
 import { alcanceYFinalidadDelPedido, exigirClave, SolicitudesService } from './solicitudes.service';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const sha256 = (texto: string): string => createHash('sha256').update(texto, 'utf8').digest('hex');
+
+/**
+ * La huella con la que se guarda y se busca un secreto de invitación: HMAC-SHA256 con una clave derivada del secreto de
+ * firma, no un SHA-256 simple. El código tiene 40 bits: con su SHA-256, una copia de la base alcanzaría para probar todos
+ * los códigos fuera de línea. Con la huella con clave, sin el secreto del servidor no se puede (08 §24.3; DL-136 D-4).
+ */
+export function huellaDeSecretoDeInvitacion(secretoDeFirma: string, secreto: string): string {
+  const clave = createHmac('sha256', secretoDeFirma).update('BE · huellas de los secretos de las invitaciones · v1').digest();
+  return createHmac('sha256', clave).update(secreto, 'utf8').digest('hex');
+}
 
 type InvitacionConResolucion = Prisma.InvitacionDeVinculoGetPayload<{ include: { resolucion: true } }>;
 
-/** Dónde se busca una invitación: el SHA-256 del token del enlace o del código normalizado. Nunca el valor. */
+/** Dónde se busca una invitación: la huella con clave del token del enlace o del código normalizado. Nunca el valor. */
 type Busqueda = { readonly hashDelToken: string } | { readonly hashDelCodigo: string };
 
 /**
@@ -58,13 +67,15 @@ type Busqueda = { readonly hashDelToken: string } | { readonly hashDelCodigo: st
  * - **Sin oráculo** (08 §24.5): una invitación que no existe, un token o un código mal escritos, o un profesional que ya no
  *   está disponible responden el mismo 404, con límite de intentos por cuenta.
  * - **El token y el código no se guardan**: BE los calcula con HMAC desde el id de la invitación y una clave derivada del
- *   secreto del servidor, guarda su SHA-256, y los vuelve a calcular solo para responder el reintento de API-INV-01 con la
+ *   secreto del servidor, guarda su huella con clave (no un SHA-256 simple: ver huellaDeSecretoDeInvitacion), y los vuelve a calcular solo para responder el reintento de API-INV-01 con la
  *   misma Idempotency-Key (el registro de idempotencia guarda la respuesta sin ellos).
  */
 @Injectable()
 export class InvitacionesService {
   /** Clave de los secretos de las invitaciones, derivada del secreto de firma con una etiqueta propia (separación de usos). */
   private readonly clave: Buffer;
+  /** La huella con clave de un token o un código: lo único que se guarda y por lo que se busca. */
+  private readonly huella: (secreto: string) => string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -75,6 +86,7 @@ export class InvitacionesService {
     @Inject(ENTORNO) entorno: Entorno,
   ) {
     this.clave = createHmac('sha256', entorno.jwtSecret).update('BE · secretos de las invitaciones de vínculo · v1').digest();
+    this.huella = (secreto) => huellaDeSecretoDeInvitacion(entorno.jwtSecret, secreto);
   }
 
   // ─── API-INV-01 ────────────────────────────────────────────────────────────────────────────
@@ -105,8 +117,8 @@ export class InvitacionesService {
               profesionalId: actor.identidadId,
               alcance,
               finalidad: FINALIDAD_DE_ALCANCE[alcance],
-              hashDelToken: sha256(token),
-              hashDelCodigo: sha256(codigo),
+              hashDelToken: this.huella(token),
+              hashDelCodigo: this.huella(codigo),
               procedencia: procedencia as unknown as Prisma.InputJsonValue,
               momentoDeOcurrencia: ctx.momentoDeRecepcion,
               venceEn: new Date(ctx.momentoDeRecepcion.getTime() + VIGENCIA_DE_LA_INVITACION_MS),
@@ -180,7 +192,7 @@ export class InvitacionesService {
     // Cada intento cuenta, exista o no la invitación: el 429 tampoco es un oráculo (08 §24.5).
     this.limitador.consumir('invitacion', null, actor.identidadId);
     try {
-      const busqueda = busquedaDe(secreto);
+      const busqueda = busquedaDe(secreto, this.huella);
       const invitacion = busqueda
         ? await this.prisma.invitacionDeVinculo.findUnique({
             where: busqueda,
@@ -215,8 +227,8 @@ export class InvitacionesService {
     exigirClave(clave);
     const secreto = validarCuerpo(SecretoDeInvitacionRequestSchema, cuerpo);
     this.limitador.consumir('invitacion', null, actor.identidadId);
-    const busqueda = busquedaDe(secreto);
-    // La huella no lleva el secreto: lleva su SHA-256, el mismo que ya guarda la invitación (08 §24.3).
+    const busqueda = busquedaDe(secreto, this.huella);
+    // La huella del pedido no lleva el secreto: lleva su huella con clave, la misma que ya guarda la invitación (08 §24.3).
     const huella = IdempotenciaService.huella({ busqueda });
     const procedencia = procedenciaDe(ctx, 'UC-P04', operacion);
     try {
@@ -313,7 +325,7 @@ export class InvitacionesService {
     const id = cuerpo.data.invitationId;
     const fila = await this.prisma.invitacionDeVinculo.findUniqueOrThrow({ where: { id }, select: { hashDelToken: true, hashDelCodigo: true } });
     const { token, codigo } = this.secretosDe(id);
-    if (sha256(token) !== fila.hashDelToken || sha256(codigo) !== fila.hashDelCodigo) throw errores.invitacionNoRecuperable();
+    if (this.huella(token) !== fila.hashDelToken || this.huella(codigo) !== fila.hashDelCodigo) throw errores.invitacionNoRecuperable();
     const respuesta: InvitacionCreadaResponse = { data: { ...cuerpo.data, token, code: formatearCodigo(codigo) } };
     return { estadoHttp: guardado.estadoHttp, cuerpo: respuesta as unknown as Prisma.InputJsonValue };
   }
@@ -366,13 +378,13 @@ export class InvitacionesService {
 }
 
 /** El hash por el que se busca: el del token si tiene forma de token, el del código si se normaliza; si no, ninguno. */
-function busquedaDe(secreto: SecretoDeInvitacionRequest): Busqueda | null {
+function busquedaDe(secreto: SecretoDeInvitacionRequest, huella: (s: string) => string): Busqueda | null {
   if ('token' in secreto) {
     const token = secreto.token.trim();
-    return esTokenDeInvitacion(token) ? { hashDelToken: sha256(token) } : null;
+    return esTokenDeInvitacion(token) ? { hashDelToken: huella(token) } : null;
   }
   const codigo = normalizarCodigo(secreto.code);
-  return codigo ? { hashDelCodigo: sha256(codigo) } : null;
+  return codigo ? { hashDelCodigo: huella(codigo) } : null;
 }
 
 /** Una invitación usada, anulada o vencida ya no sirve: 422 con su motivo (quien pregunta tiene el secreto). */

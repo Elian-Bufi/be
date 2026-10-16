@@ -3964,9 +3964,9 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 - **D-4 · El token y el código.**
   - **El token:** 32 bytes en base64url (43 caracteres). El enlace lo lleva en el fragmento (`<origen web>/invitacion#t=<token>`), que el navegador no manda al servidor: no queda en ningún registro de acceso. El dominio arma y lee el enlace (`enlaceDeInvitacion`, `tokenDelFragmento`).
   - **El código:** 8 símbolos de un alfabeto de 32 sin los que se confunden (sin 0, 1, I ni O), que se muestra `XXXX-XXXX` y se normaliza antes de buscarlo (mayúsculas, sin espacios ni guiones, también los del teclado del teléfono).
-  - **Se guarda solo el SHA-256 de cada uno** (08 §24.3). El código es único entre todas las invitaciones: más estricto que «entre las vigentes», y un código viejo nunca apunta a otra invitación.
+  - **Se guarda solo una huella con clave de cada uno** (08 §24.3): HMAC-SHA256 con una clave derivada del secreto de firma, no un SHA-256 simple. El código tiene 40 bits y con su SHA-256 una copia de la base alcanzaría para probarlos todos fuera de línea; con la huella con clave, sin el secreto del servidor no se puede (lo señaló la revisión del 2026-10-16 y se corrigió antes de integrar). El código es único entre todas las invitaciones: más estricto que «entre las vigentes», y un código viejo nunca apunta a otra invitación.
   - *Alternativas descartadas:* el token en la query (queda en los registros del servidor y del proxy); un código de 6 símbolos (30 bits, poco); la unicidad solo entre las vigentes (el estado depende de la hora, y un índice parcial no la puede expresar).
-- **D-5 · Idempotente sin guardar los secretos.** El token y el código se calculan con HMAC-SHA256 desde el id de la invitación y una clave derivada del secreto de firma del servidor, con una etiqueta propia. El registro de idempotencia guarda la respuesta sin ellos; un reintento con la misma clave los vuelve a calcular y los compara con los hashes.
+- **D-5 · Idempotente sin guardar los secretos.** El token y el código se calculan con HMAC-SHA256 desde el id de la invitación y una clave derivada del secreto de firma del servidor, con una etiqueta propia. El registro de idempotencia guarda la respuesta sin ellos; un reintento con la misma clave los vuelve a calcular y los compara con las huellas guardadas.
   - *Alternativas descartadas:*
     - guardar la respuesta completa: el token quedaría en claro en `registro_de_idempotencia`, que solo se agrega (viola 08 §24.3);
     - INV-01 sin Idempotency-Key: un reintento crea otra invitación;
@@ -4006,7 +4006,7 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 - `test/integration/contrato.int-spec.ts` observa las cinco operaciones; `schema.int-spec.ts`, que las dos tablas rechazan TRUNCATE.
 
 **Lo que queda abierto:**
-- **El código, frente a una copia de la base:** su SHA-256 se revierte probando los 2^40 códigos (minutos con hardware común). Lo mitigan los 7 días y el uso único. Antes de datos reales (08 §42) conviene guardar un HMAC con un secreto del servidor en lugar del SHA-256 del código. El token (256 bits) no tiene ese problema.
+- ~~**El código, frente a una copia de la base.**~~ **Resuelto antes de integrar (2026-10-16):** se guarda la huella con clave (D-4), así que una copia de la base sola no alcanza para probar los códigos. Lo que queda: rotar el secreto de firma invalida las huellas guardadas, y las invitaciones pendientes dejan de encontrarse (vencen a los 7 días de todos modos).
 - **La retención** de las invitaciones y sus resoluciones (08 §17).
 - **La declaración de mayoría de edad del alta (DL-023)** no es parte de esta API: va con el registro.
 - **La web y la APK:** «Invitar» en el espacio profesional (enlace, «Compartir por WhatsApp», QR y código) y la pantalla de la persona.

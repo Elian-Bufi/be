@@ -18,8 +18,9 @@ import {
   type Alcance,
 } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import request from 'supertest';
+import { huellaDeSecretoDeInvitacion } from '../../apps/api/src/vinculo/invitaciones.service';
 import { appDePrueba, claveDeIdempotencia, conSesion, entornoDePrueba, resumenDeRespuestas, simultaneos, transicionPorServicio } from './soporte-api';
 import { aceptar, consentir, dashboard, prepararAsesorado, prepararProfesional, solicitar, vinculoCompleto, type Parte } from './soporte-vinculo';
 
@@ -35,7 +36,8 @@ afterAll(async () => {
 });
 
 type Secreto = { token: string } | { code: string };
-const sha256 = (texto: string): string => createHash('sha256').update(texto, 'utf8').digest('hex');
+/** La misma huella con clave que guarda la API, con el secreto de firma del entorno de prueba. */
+const huella = (secreto: string): string => huellaDeSecretoDeInvitacion(entornoDePrueba().jwtSecret, secreto);
 
 function invitar(a: INestApplication, pro: Parte, alcance: Alcance = 'NUTRICION', clave = claveDeIdempotencia()) {
   return conSesion(a, pro.token).post('/api/v1/relationship-invitations', clave).send({ scope: { code: alcance }, purpose: FINALIDAD_DE_ALCANCE[alcance] });
@@ -73,14 +75,14 @@ async function invitacionVencida(pro: Parte, alcance: Alcance = 'NUTRICION'): Pr
   const codigo = codigoDesdeBytes(randomBytes(BYTES_DEL_CODIGO));
   await prisma.$executeRaw`
     INSERT INTO "invitacion_de_vinculo" ("id", "profesional_id", "alcance", "finalidad", "hash_del_token", "hash_del_codigo", "procedencia", "momento_de_ocurrencia", "vence_en")
-    VALUES (${id}::uuid, ${pro.id}::uuid, ${alcance}::"Alcance", ${FINALIDAD_DE_ALCANCE[alcance]}::"Finalidad", ${sha256(token)}, ${sha256(codigo)},
+    VALUES (${id}::uuid, ${pro.id}::uuid, ${alcance}::"Alcance", ${FINALIDAD_DE_ALCANCE[alcance]}::"Finalidad", ${huella(token)}, ${huella(codigo)},
             '{"fuente":"PROPIA","casoDeUso":"PRUEBA","operacion":"INVITACION_VENCIDA","superficie":null,"requestId":null}'::jsonb,
             now() - interval '8 days', now() - interval '1 day')`;
   return { id, token, code: formatearCodigo(codigo) };
 }
 
 describe('API-INV-01 y 02 — el profesional invita y ve sus invitaciones', () => {
-  it('crea una invitación pendiente por 7 días; el token y el código salen solo en la respuesta, y la base guarda su SHA-256', async () => {
+  it('crea una invitación pendiente por 7 días; el token y el código salen solo en la respuesta, y la base guarda su huella con clave', async () => {
     const pro = await prepararProfesional(app, 'inv-crear', ['NUTRICION']);
     const clave = claveDeIdempotencia();
     const r = InvitacionCreadaResponseSchema.parse((await invitar(app, pro, 'NUTRICION', clave).expect(201)).body).data;
@@ -89,8 +91,8 @@ describe('API-INV-01 y 02 — el profesional invita y ve sus invitaciones', () =
 
     // Solo el hash, en la invitación y en ningún otro lado: ni en la fila, ni en el registro de idempotencia, ni en la auditoría.
     const fila = await prisma.invitacionDeVinculo.findUniqueOrThrow({ where: { id: r.invitationId } });
-    expect(fila.hashDelToken).toBe(sha256(r.token));
-    expect(fila.hashDelCodigo).toBe(sha256(r.code.replace('-', '')));
+    expect(fila.hashDelToken).toBe(huella(r.token));
+    expect(fila.hashDelCodigo).toBe(huella(r.code.replace('-', '')));
     const codigo = r.code.replace('-', '');
     const [texto] = await prisma.$queryRaw<{ fila: string; idempotencia: string; auditoria: string }[]>`
       SELECT (SELECT row_to_json(i)::text FROM "invitacion_de_vinculo" i WHERE i."id" = ${r.invitationId}::uuid) AS "fila",
@@ -431,11 +433,11 @@ describe('La base sostiene la invitación aunque el código se equivoque', () =>
     const insertar = (venceEn: string, hashDelToken: string, profesionalId = pro.id) => prisma.$executeRawUnsafe(
       `INSERT INTO "invitacion_de_vinculo" ("profesional_id", "alcance", "finalidad", "hash_del_token", "hash_del_codigo", "procedencia", "momento_de_ocurrencia", "vence_en")
        VALUES ($1::uuid, 'NUTRICION', 'ACOMPANAMIENTO_NUTRICIONAL', $2, $3, '{}'::jsonb, now(), now() + $4::interval)`,
-      profesionalId, hashDelToken, sha256(randomUUID()), venceEn,
+      profesionalId, hashDelToken, huella(randomUUID()), venceEn,
     );
-    await expect(insertar('8 days', sha256(randomUUID()))).rejects.toThrow(/invitacion_de_vinculo_vigencia/);
+    await expect(insertar('8 days', huella(randomUUID()))).rejects.toThrow(/invitacion_de_vinculo_vigencia/);
     await expect(insertar('7 days', 'token-en-claro')).rejects.toThrow(/invitacion_de_vinculo_solo_hashes/);
-    await expect(insertar('7 days', sha256(randomUUID()), ase.id)).rejects.toThrow(/perfil profesional/);
+    await expect(insertar('7 days', huella(randomUUID()), ase.id)).rejects.toThrow(/perfil profesional/);
 
     const resolver = (tipo: 'USADA' | 'REVOCADA', actorId: string, solicitudId: string | null) =>
       prisma.$executeRaw`
