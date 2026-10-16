@@ -59,6 +59,7 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 | `BE_DEMO_PROFESIONALES` | `render.yaml` (no es secreto) | Profesionales demo que el servicio interno verifica y habilita al arrancar (DL-036). Formato `identidadId|ALCANCE|TIPO|Nombre visible`, separados por `;`. Solo con `APP_ENV` test o development, y solo prepara cuentas sintéticas (`@example.invalid`) |
 | `SOLICITUD_DE_VINCULO_CADUCIDAD_DIAS` | opcional (por defecto 30) | 1 a 365. Caducidad perezosa de las solicitudes pendientes (DL-037) |
 | `RATE_LIMIT_CONSULTA_PROTEGIDA_MAX` / `_WINDOW_MS` | opcionales (por defecto 120 por minuto) | Límite por actor de las lecturas protegidas (DSH-03, REL-06, CON-01). Cada una registra decisiones que no se borran |
+| `RATE_LIMIT_INVITACION_MAX` / `_WINDOW_MS` | opcionales (por defecto 10 cada 15 minutos) | Límite por cuenta, desde cualquier red, para ver o usar una invitación con su token o su código (API-INV-04 y 05; DL-136) |
 
 ### Cuentas profesionales demo (MESA-01 punto 14)
 

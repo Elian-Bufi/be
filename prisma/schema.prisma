@@ -205,6 +205,10 @@ model Identidad {
   suscripcionesPush          SuscripcionPush[]           @relation("SuscripcionPushDeLaIdentidad")
   preferenciasDeRecordatorio PreferenciaDeRecordatorio[] @relation("PreferenciaDeRecordatorioDeLaIdentidad")
 
+  // WP-INVITACION (DL-136)
+  invitacionesDeVinculo    InvitacionDeVinculo[]    @relation("InvitacionDelProfesional")
+  resolucionesDeInvitacion ResolucionDeInvitacion[] @relation("ResolucionDeInvitacionDelActor")
+
   @@map("identidad")
 }
 
@@ -605,12 +609,14 @@ model SolicitudDeVinculo {
   /// Cuándo salió de PENDIENTE.
   momentoDeResolucion DateTime?                  @map("momento_de_resolucion") @db.Timestamptz(3)
 
-  profesional      Identidad            @relation("SolicitudDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict)
-  asesorado        Identidad            @relation("SolicitudAlAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict)
-  antecedente      SolicitudDeVinculo?  @relation("Reiteracion", fields: [antecedenteId], references: [id], onDelete: Restrict)
-  reiteraciones    SolicitudDeVinculo[] @relation("Reiteracion")
+  profesional      Identidad                @relation("SolicitudDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict)
+  asesorado        Identidad                @relation("SolicitudAlAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict)
+  antecedente      SolicitudDeVinculo?      @relation("Reiteracion", fields: [antecedenteId], references: [id], onDelete: Restrict)
+  reiteraciones    SolicitudDeVinculo[]     @relation("Reiteracion")
   alcanceDeVinculo AlcanceDeVinculo?
   eventos          EventoDeVinculo[]
+  /// DL-136: las invitaciones que, al usarse, dieron esta solicitud (o la encontraron pendiente).
+  invitaciones     ResolucionDeInvitacion[]
 
   @@index([profesionalId, estado])
   @@index([asesoradoId, estado])
@@ -3055,4 +3061,66 @@ model ResultadoTvcc30 {
 
   @@index([corte, zona])
   @@map("resultado_tvcc30")
+}
+
+// ─── WP-INVITACION (DEUDA_LEGAJO DL-136; aprobado por Dirección el 2026-10-16) ───────────────────────────────────────
+// La invitación previa a Identidad BE (06 §7.4; 05 UC-P04 V04 y UC-P05 V01) con token de un solo uso y vencimiento,
+// persistido solo como hash (08 §24.3). packages/domain/src/contratos-invitaciones.ts. Lo que Prisma no modela (la historia
+// por adición, los CHECK y la coherencia de cada resolución con su invitación) está en la migración 20261016180000.
+
+/// Cómo terminó una invitación. Sin resolución, está pendiente o vencida (el estado se deriva de `vence_en`).
+enum TipoDeResolucionDeInvitacion {
+  /// Alguien la usó: nació la solicitud de vínculo del profesional dirigida a esa persona (API-INV-05).
+  USADA
+  /// El profesional la anuló antes de que se usara o venciera (API-INV-03).
+  REVOCADA
+}
+
+/// Invitación de vínculo (06 §7.4: «una invitación puede existir con referencia pendiente … sin presuponer correo, teléfono
+/// ni proveedor»). No es una solicitud: no tiene destinatario hasta que alguien la usa, y usarla crea la solicitud de
+/// REL-01 (REG-06-46: asociarla no acepta nada). Guarda el SHA-256 del token del enlace y del código corto, nunca los
+/// valores (08 §24.3). Solo se agrega: cómo terminó es su resolución, otra fila.
+model InvitacionDeVinculo {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId       String    @map("profesional_id") @db.Uuid
+  alcance             Alcance
+  /// La del alcance (DL-039), la que confirma el profesional al invitar (05 UC-P04, paso 7).
+  finalidad           Finalidad
+  /// SHA-256 (hex) del token del enlace: 32 bytes en base64url.
+  hashDelToken        String    @unique @map("hash_del_token")
+  /// SHA-256 (hex) del código corto normalizado (8 símbolos, sin guion). Único entre todas las invitaciones.
+  hashDelCodigo       String    @unique @map("hash_del_codigo")
+  procedencia         Json
+  momentoDeOcurrencia DateTime  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  /// 7 días después de crearla (Dirección, 2026-10-16). La base no admite más.
+  venceEn             DateTime  @map("vence_en") @db.Timestamptz(3)
+
+  profesional Identidad               @relation("InvitacionDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  resolucion  ResolucionDeInvitacion?
+
+  @@index([profesionalId, momentoDeRegistro(sort: Desc), id(sort: Desc)])
+  @@map("invitacion_de_vinculo")
+}
+
+/// Cómo terminó una invitación: una sola resolución por invitación (la clave primaria es la invitación), así dos usos
+/// simultáneos, o un uso y una anulación, no pueden quedar los dos. Solo se agrega.
+model ResolucionDeInvitacion {
+  invitacionId         String                       @id @map("invitacion_id") @db.Uuid
+  tipo                 TipoDeResolucionDeInvitacion
+  /// USADA: quien la usó (el asesorado de la solicitud). REVOCADA: el profesional que la creó.
+  actorId              String                       @map("actor_id") @db.Uuid
+  /// La solicitud de vínculo que nació al usarla (o la equivalente pendiente que ya existía, REG-06-44). Solo en USADA.
+  solicitudDeVinculoId String?                      @map("solicitud_de_vinculo_id") @db.Uuid
+  procedencia          Json
+  momentoDeOcurrencia  DateTime                     @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro    DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  invitacion         InvitacionDeVinculo @relation(fields: [invitacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor              Identidad           @relation("ResolucionDeInvitacionDelActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  solicitudDeVinculo SolicitudDeVinculo? @relation(fields: [solicitudDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([solicitudDeVinculoId])
+  @@index([actorId])
+  @@map("resolucion_de_invitacion")
 }

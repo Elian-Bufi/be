@@ -103,3 +103,4 @@ export * from './iconos';
 export * from './contratos-novedades';
 export * from './copy-novedades';
 export * from './tvcc30';
+export * from './contratos-invitaciones';

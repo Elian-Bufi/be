@@ -140,6 +140,7 @@
 | DL-133 | Pedido de Dirección · 2026-10-16 (WP-NOVEDADES-Y-AVISOS) | 04 RF-061, RF-062 · 05 UC-P30, UC-E08 · 06 §5.11 · 07 §23-24 · 09v12 §20-21 · B10-04 §42 | Novedades y avisos: la familia NOV, el envío después de confirmar, el cron de la plataforma y los recordatorios diarios de registro | **DECIDIDA** 2026-10-16 (Expo Push y recordatorios); D-1 a D-10 a ratificar · implementada en #163 |
 | DL-134 | Mandato de Dirección · 2026-10-16 (REV-A) | 08 §6.2, 08:495, §14.3, 08:406 · 09v12:844 · 04 RF-035, RF-046 · propuesta REV-A | La persona lee las revisiones que sus profesionales registraron sobre ella | **IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar |
 | DL-135 | Mandato de Dirección · 2026-10-16 (WP-TVCC-30) | 02 §16 · 04 RF-058 · 05 UC-S01 · 06 B-12 (REG-06-186 a 201) · 07 §24, §42.1 · 09 ANA-P1, TRACE-DEBT-12-001 · 11A §21 · 12 §12-27 | TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado | **IMPLEMENTADA** 2026-10-16; D-1 a D-9 a ratificar |
+| DL-136 | Aprobación de Dirección · 2026-10-16 (WP-INVITACION) | 06 §7.3, §7.4 (REG-06-44, 45, 46; INV-06-55, 56) · 05 UC-P04 V04, UC-P05 V01 · 08 §24.3, §24.5 · 09v8 REL-01 · DL-023 · DL-035 | Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK |
 
 ---
 
@@ -636,6 +637,8 @@ La parte (b) sigue en PASS. Evidencia: `EVIDENCIA/WP-03/resultados-integracion-m
 
 **Condición de cierre.** Antes de cualquier dato real (gate 08 §42), el 09 incorpora los campos y el 10 las pantallas.
 
+**Avance del 2026-10-16 (DL-136).** La invitación con token de un solo uso, vencimiento y hash (08:568) está en la API: la familia INV. Falta la declaración de mayoría de edad del alta.
+
 ## DL-024 — Desvíos de copy y de UI
 
 **Prioridad:** baja · **Documento:** 10-B02 · 10-ADD · 10-B01 · **Estado:** ABIERTA
@@ -937,6 +940,8 @@ Confiar en más saltos de `X-Forwarded-For` no sirve: la API también recibe tr�
 **Provisorio en código.** A.
 
 **Condición de cierre.** El 09 o el 10 definen el mecanismo: invitación o descubrimiento.
+
+**Avance del 2026-10-16 (DL-136).** Dirección aprobó la invitación por enlace, QR o código, y está en la API (familia INV). La opción A sigue hasta que la web y la APK la ofrezcan.
 
 ## DL-036 — Verificación y habilitación mínimas sin operación viable
 
@@ -3911,3 +3916,104 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 **Condición de cierre:**
 - Dirección ratifica D-1 a D-9, o las cambia (eso es otra versión del mapeo);
 - el 12 pasa la especificación de candidata a vigente.
+
+## DL-136 — Invitación de vínculo por enlace, QR o código: la familia INV
+
+**Prioridad:** media.
+
+**Documentos:**
+- **06:** §7.3 (la solicitud conserva «asesorado o referencia de invitación pendiente»; REG-06-44 y 45) y §7.4 (invitación previa a Identidad BE; REG-06-46; INV-06-55 e INV-06-56).
+- **05:** UC-P04 V04 («El mecanismo de identificación, entrega y vinculación posterior pertenece a `DERIVAR 06/08/09/10`») y UC-P05 V01 («BE vincula la decisión con la invitación correcta sin crear una segunda relación»).
+- **08:** §24.3 («Alta del asesorado por invitación con token de un solo uso, con expiración, persistido **solo como hash**») y §24.5 (sin revelar existencia de cuentas «en ningún flujo (login, recuperación, invitaciones)»).
+- **09v8:** REL-01 (09v8:1108-1192), «Crear solicitud/invitación». El 09 no contrata ninguna operación de invitación.
+- **DL-023** (alta por invitación y declaración de mayoría de edad) y **DL-035** (cómo identifica el profesional al asesorado, opción A provisoria).
+- **El paquete:** WP-INVITACION.
+
+**Estado:** IMPLEMENTADA (API) el 2026-10-16. Falta la web y la APK.
+
+**Qué pasaba.** El profesional se vinculaba con la persona solo si ella copiaba su identificador BE (un UUID) y se lo pasaba por fuera de BE (DL-035, opción A). Funciona, pero es incómodo y no es lo que describe el legajo: el 08 habla de una invitación con token de un solo uso, y el 05 deja el mecanismo a 06/08/09/10.
+
+**Qué aprobó Dirección el 2026-10-16.** «Sí, en cuanto a tus recomendaciones, están todas aprobadas»:
+- el profesional crea una invitación y la comparte como enlace (por ejemplo, con un botón «Compartir por WhatsApp»), como QR (el mismo enlace) o como código corto;
+- es de un solo uso, vence a los 7 días, el profesional la puede anular y no revela datos personales;
+- la persona la abre, entra o se registra, y ve «<nombre visible del profesional> te invita a acompañarte en <área>. ¿Aceptás?»;
+- **siguen los actos explícitos de siempre:** aceptar la solicitud de vínculo (REL-03) y otorgar B2 (CON-01/02). No se saltea nada: solo desaparece copiar el identificador.
+
+**La familia INV** (IDs propios de BE, como NOV en DL-133). Todas con sesión; el token y el código van siempre en el cuerpo, nunca en la URL.
+
+| ID | Operación | Respuesta | Errores propios |
+|---|---|---|---|
+| API-INV-01 | `POST /api/v1/relationship-invitations` `{ scope: { code }, purpose }`, con Idempotency-Key | 201 `{ invitationId, token, code, scope, purpose, state, createdAt, expiresAt, … }`: la única vez que se ven el token y el código | 422 SCOPE_NOT_AVAILABLE, PURPOSE_REQUIRED, VALIDATION_FAILED, INVALID_STATE_TRANSITION (las de REL-01 para el profesional) |
+| API-INV-02 | `GET /api/v1/relationship-invitations?limit&cursor&state` | Las propias, con el estado derivado (PENDING, USED, EXPIRED, REVOKED), `usedAt`, `revokedAt` y la solicitud que nació. Nunca el token ni el código | 400 INVALID_CURSOR |
+| API-INV-03 | `POST /api/v1/relationship-invitations/{invitationId}/revoke` `{}`, con Idempotency-Key | 200 con la invitación anulada | 404 idéntico para una ajena o inexistente; 422 INVITATION_EXPIRED, INVITATION_USED, INVITATION_REVOKED |
+| API-INV-04 | `POST /api/v1/relationship-invitations/preview` `{ token }` o `{ code }` | 200 `{ professional: { displayName }, scope, purpose, expiresAt, state }` | 404 idéntico; 429 RATE_LIMITED |
+| API-INV-05 | `POST /api/v1/relationship-invitations/claim` `{ token }` o `{ code }`, con Idempotency-Key | Como REL-01: 201 con la solicitud creada, o 200 `{ relationshipRequestId, deduplicated: true }` | 404 idéntico; 409 RESOURCE_CONFLICT (vínculo vigente, como REL-01); 422 COUNTERPART_NOT_ELIGIBLE (el profesional usa la suya), INVITATION_EXPIRED, INVITATION_USED, INVITATION_REVOKED; 429 RATE_LIMITED |
+
+**Lo decidido** (con el mandato del día; todo espera ratificación):
+- **D-1 · La invitación es un objeto propio, no una solicitud con el asesorado pendiente.** Usarla crea la solicitud. La solicitud de BE exige un asesorado: la columna, el índice de equivalencia de REG-06-44 y el trigger de la máquina. Una invitación no tiene destinatario hasta que alguien la usa. REG-06-46 se cumple igual: la solicitud nace PENDIENTE, sin vínculo, B2 ni acceso (INV-06-55, INV-06-56), y su resolución dice de qué invitación nació.
+  - *Alternativas descartadas:*
+    - una solicitud con el asesorado vacío y una referencia de invitación, como permite el 06 §7.3: cambia una tabla existente (no aditiva), y una solicitud sin destinatario no se deduplica ni se le muestra a nadie;
+    - el campo `origin` de REL-01 (09v8:1144-1153): queda para cuando el 09 contrate la invitación.
+- **D-2 · Usarla es exactamente REL-01:** el mismo código (`SolicitudesService.crearEnTransaccion`), sin reglas propias de solicitud.
+  - Iniciada por el profesional (06:3012, «actor iniciador») y dirigida a quien la usa.
+  - Las mismas reglas: cuentas operativas, profesional verificado y habilitado, vínculo vigente (el mismo 409), equivalente pendiente (el mismo 200 deduplicado) y la caducidad de la solicitud (DL-037).
+  - El hecho `SolicitudDeVinculoCreada` lleva como actor al profesional, porque la propuesta es suya y la transición `CrearSolicitud` se evalúa con ese actor; la procedencia dice API-INV-05 y el request de quien la usó. Quien la usó es el actor de la resolución `USADA` y de la auditoría.
+  - *Alternativa descartada:* el actor del hecho es quien la usa. El historial de REL-06 diría «la creó la persona» junto a `initiatedBy: PROFESSIONAL`.
+- **D-3 · Sin novedad «solicitud recibida» al usarla:** quien la usa la acaba de pedir, y nadie recibe una novedad de algo que hizo él mismo (la regla del publicador, DL-133). El profesional ve la invitación usada en INV-02, la solicitud en REL-02, y la novedad de siempre cuando la persona acepta.
+  - *Alternativa:* una novedad nueva, «usaron tu invitación», para el profesional. Es un tipo nuevo del centro de novedades; queda abierta.
+- **D-4 · El token y el código.**
+  - **El token:** 32 bytes en base64url (43 caracteres). El enlace lo lleva en el fragmento (`<origen web>/invitacion#t=<token>`), que el navegador no manda al servidor: no queda en ningún registro de acceso. El dominio arma y lee el enlace (`enlaceDeInvitacion`, `tokenDelFragmento`).
+  - **El código:** 8 símbolos de un alfabeto de 32 sin los que se confunden (sin 0, 1, I ni O), que se muestra `XXXX-XXXX` y se normaliza antes de buscarlo (mayúsculas, sin espacios ni guiones, también los del teclado del teléfono).
+  - **Se guarda solo una huella con clave de cada uno** (08 §24.3): HMAC-SHA256 con una clave derivada del secreto de firma, no un SHA-256 simple. El código tiene 40 bits y con su SHA-256 una copia de la base alcanzaría para probarlos todos fuera de línea; con la huella con clave, sin el secreto del servidor no se puede (lo señaló la revisión del 2026-10-16 y se corrigió antes de integrar). El código es único entre todas las invitaciones: más estricto que «entre las vigentes», y un código viejo nunca apunta a otra invitación.
+  - *Alternativas descartadas:* el token en la query (queda en los registros del servidor y del proxy); un código de 6 símbolos (30 bits, poco); la unicidad solo entre las vigentes (el estado depende de la hora, y un índice parcial no la puede expresar).
+- **D-5 · Idempotente sin guardar los secretos.** El token y el código se calculan con HMAC-SHA256 desde el id de la invitación y una clave derivada del secreto de firma del servidor, con una etiqueta propia. El registro de idempotencia guarda la respuesta sin ellos; un reintento con la misma clave los vuelve a calcular y los compara con las huellas guardadas.
+  - *Alternativas descartadas:*
+    - guardar la respuesta completa: el token quedaría en claro en `registro_de_idempotencia`, que solo se agrega (viola 08 §24.3);
+    - INV-01 sin Idempotency-Key: un reintento crea otra invitación;
+    - responder el reintento sin los secretos: el profesional se queda con una invitación que no puede compartir.
+  - *A tener en cuenta:* si se rota `JWT_SECRET`, el reintento de una creación anterior responde 409 (se anula y se crea otra). Los enlaces y códigos ya entregados siguen sirviendo: se validan por su hash.
+- **D-6 · Un solo uso, también bajo concurrencia.** La invitación y su resolución solo se agregan, y el estado se deriva. Hay una resolución por invitación (clave primaria).
+  - Usar y anular bloquean la invitación (`FOR NO KEY UPDATE`) después de las cuentas, en el orden único de `prisma/concurrencia.ts` (identidad → invitación → solicitud), y leen la resolución en otra sentencia.
+  - Dos usos simultáneos, o un uso y una anulación, dejan una sola resolución; el que pierde recibe 422 INVITATION_USED o INVITATION_REVOKED, nunca un 500.
+  - *Alternativa descartada:* un estado mutable con versión y los hechos en `evento_de_vinculo`, el patrón de la solicitud. `evento_de_vinculo` exige el asesorado, que la invitación no tiene hasta que se usa.
+- **D-7 · Los errores.**
+  - **El mismo 404 RESOURCE_NOT_FOUND** para la que no existe, el token o el código mal escritos, la ajena (al anular) y la de un profesional que ya no está disponible (suspendido, cerrado o sin el alcance verificado y habilitado), como el 404 que REL-01 le da al asesorado (09v8:1188). El motivo real queda solo en la auditoría.
+  - **422 INVITATION_EXPIRED, INVITATION_USED e INVITATION_REVOKED:** códigos nuevos. Quien los recibe tiene el token o el código, así que decir por qué ya no sirve no revela nada.
+  - **422 COUNTERPART_NOT_ELIGIBLE** si el profesional usa la suya: lo mismo que REL-01 con su propio identificador.
+  - *Alternativas descartadas:* 410 (no está en los estados del 09); un solo código con el motivo en `details`.
+- **D-8 · Límite de intentos:** ver y usar, 10 cada 15 minutos por cuenta y desde cualquier red (`RATE_LIMIT_INVITACION_*`). Cada intento cuenta antes de buscar: el 429 llega igual exista o no la invitación (08 §24.5). Con 2^40 códigos, adivinar uno no es viable.
+  - *Alternativa:* por red y por cuenta, como el login. Más configuración para el mismo efecto: las dos operaciones exigen sesión.
+- **D-9 · Ver exige sesión**, como se aprobó: la persona entra o se registra antes de ver quién la invita. Ver no crea nada y queda auditado.
+  - *Alternativa descartada:* ver sin sesión. Le mostraría el nombre del profesional a cualquiera que tenga el enlace.
+- **D-10 · La finalidad:** INV-01 pide el alcance y la finalidad, con las reglas de REL-01: el profesional confirma la finalidad al invitar (05 UC-P04, paso 7). El cliente manda la del alcance (DL-039).
+- **D-11 · Lo que la base garantiza aunque el código se equivoque:**
+  - solo SHA-256 en hexadecimal, y distintos entre sí;
+  - una vigencia de 7 días como máximo;
+  - la finalidad del alcance;
+  - quien invita tiene perfil profesional;
+  - nada se resuelve fuera de la vigencia;
+  - la anula su profesional;
+  - la usa otra persona, y la solicitud es la de ese profesional para esa persona, en ese alcance;
+  - las dos tablas solo se agregan, también frente a TRUNCATE.
+- **D-12 · El cierre de la cuenta del profesional** no anula sus invitaciones pendientes con un hecho: quedan inutilizables (ver y usar exigen su cuenta operativa) y nadie más las ve.
+  - *Alternativa:* anularlas al cerrar. Toca el servicio de cierre; queda para cuando se decida su retención.
+
+**Base de datos.** Migración aditiva `20261016180000_invitaciones_de_vinculo`: `invitacion_de_vinculo`, `resolucion_de_invitacion` y la enumeración `TipoDeResolucionDeInvitacion` (`USADA`, `REVOCADA`). Sin booleanos.
+
+**Pruebas:**
+- el código, el token, el enlace, el estado derivado y el contrato de la familia: `packages/domain/src/invitaciones.test.ts`;
+- contra PostgreSQL, con recorridos reales por la API: `test/integration/invitaciones.int-spec.ts`. Cubre el uso único, el vencimiento, la anulación, el mismo 404, el límite de intentos, el profesional que usa la suya, el vínculo vigente, la equivalente pendiente, los usos simultáneos (uno gana; los demás, 422) y la cadena completa: usar → aceptar → B2 → el profesional ve el vínculo;
+- `test/integration/contrato.int-spec.ts` observa las cinco operaciones; `schema.int-spec.ts`, que las dos tablas rechazan TRUNCATE.
+
+**Lo que queda abierto:**
+- ~~**El código, frente a una copia de la base.**~~ **Resuelto antes de integrar (2026-10-16):** se guarda la huella con clave (D-4), así que una copia de la base sola no alcanza para probar los códigos. Lo que queda: rotar el secreto de firma invalida las huellas guardadas, y las invitaciones pendientes dejan de encontrarse (vencen a los 7 días de todos modos).
+- **La retención** de las invitaciones y sus resoluciones (08 §17).
+- **La declaración de mayoría de edad del alta (DL-023)** no es parte de esta API: va con el registro.
+- **La web y la APK:** «Invitar» en el espacio profesional (enlace, «Compartir por WhatsApp», QR y código) y la pantalla de la persona.
+
+**Provisorio en código:** D-1 a D-12.
+
+**Condición de cierre:**
+- la web y la APK ofrecen la invitación, y una persona real la usa desde el teléfono;
+- Dirección ratifica D-1 a D-12, o cambia las que quiera;
+- con eso, DL-035 se cierra (el identificador deja de copiarse a mano), y DL-023 queda solo con la declaración de edad.
