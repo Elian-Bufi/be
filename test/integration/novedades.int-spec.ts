@@ -132,6 +132,14 @@ describe('RF-062 · los teléfonos suscriptos y las preferencias', () => {
     expect(JSON.stringify(auditoria)).not.toContain(token);
   });
 
+  it('cerrar todas las sesiones retira también los teléfonos de la cuenta (DL-133)', async () => {
+    const c = await circuitoConPlanActivo(app, 'nov-cerrar-todas');
+    const telefono = randomUUID();
+    await conSesion(app, c.ase.token).put(`/api/v1/me/push-subscriptions/${telefono}`).send({ expoPushToken: tokenDePrueba('cerrar-todas'), platform: 'ANDROID' }).expect(200);
+    await conSesion(app, c.ase.token).delete('/api/v1/auth/sessions').expect(204);
+    expect((await prisma.suscripcionPush.findFirst({ where: { dispositivoId: telefono } }))?.motivoDeBaja).toBe('RETIRADA');
+  });
+
   it('las preferencias empiezan apagadas; cambiarlas queda en la auditoría, y repetirlas no', async () => {
     const c = await circuitoConPlanActivo(app, 'nov-pref');
     const ruta = '/api/v1/me/notification-preferences';

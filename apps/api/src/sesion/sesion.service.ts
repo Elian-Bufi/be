@@ -207,7 +207,8 @@ export class SesionService {
  * Revocación server-side (08 §26.3): todas las sesiones ACTIVAS pasan a REVOCADA y el tokenVersion avanza, así
  * ningún token emitido antes vuelve a autenticar aunque no haya expirado (07 §43-bis A+B). Devuelve cuántas revocó.
  * La finalización es el mayor entre el momento de la revocación y el inicio de cada sesión: una sesión emitida mientras
- * la revocación esperaba el bloqueo no queda «finalizada antes de empezar» (T-06-24).
+ * la revocación esperaba el bloqueo no queda «finalizada antes de empezar» (T-06-24). Con las sesiones, se retiran los
+ * teléfonos que reciben los avisos de la cuenta (DL-133).
  */
 export async function revocarSesiones(
   tx: Prisma.TransactionClient,
@@ -221,5 +222,10 @@ export async function revocarSesiones(
            "momento_de_finalizacion" = GREATEST(${momento}::timestamptz, "momento_de_ocurrencia")
      WHERE "identidad_id" = ${identidadId}::uuid AND "estado" = 'ACTIVA'`;
   await tx.controlDeSesion.update({ where: { identidadId }, data: { version: { increment: 1 } } });
+  // DL-133: sin sesiones, ningún teléfono sigue recibiendo los avisos de la cuenta (cerrar todas las sesiones, suspender o
+  // cerrar la cuenta). La APK que los tenía activos los vuelve a registrar cuando la persona entra de nuevo.
+  await tx.$executeRaw`
+    UPDATE "suscripcion_push" SET "momento_de_baja" = GREATEST(${momento}::timestamptz, "momento_de_alta"), "motivo_de_baja" = 'RETIRADA'
+     WHERE "identidad_id" = ${identidadId}::uuid AND "momento_de_baja" IS NULL`;
   return revocadas;
 }

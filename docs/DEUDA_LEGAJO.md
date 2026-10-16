@@ -3771,7 +3771,7 @@ sin recetas.
 - **La persona no lee sus revisiones:** ve que hay una revisión pero no la lee (REV-A, propuesta sin decidir).
 - **Sin recibos de Expo:** BE no lee si FCM entregó el aviso.
 - **Una sesión vencida sigue suscripta.** Una cuenta cuya sesión venció sigue suscripta en ese teléfono hasta que otra cuenta lo registre o la persona vuelva a entrar. El aviso no muestra nada sin sesión (UC-E08 E03).
-- **Cerrar las sesiones desde otro lado no retira el teléfono.** «Cerrar todas las sesiones» desde el website no retira el teléfono.
+- ~~**Cerrar las sesiones desde otro lado no retira el teléfono.**~~ Resuelto el mismo día: revocar todas las sesiones, suspender o cerrar la cuenta retira también los teléfonos de la cuenta (`revocarSesiones`). La APK que tenía los avisos activos los vuelve a registrar cuando la persona entra de nuevo.
 - **Antes de datos reales (08 §42):** el DPA de Expo, el texto de privacidad que nombre el canal y la retención de las novedades y los avisos.
 
 **Provisorio en código:** todo lo de D-1 a D-10.
