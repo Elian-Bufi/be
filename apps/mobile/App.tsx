@@ -32,18 +32,23 @@
  * - WP-NOVEDADES-Y-AVISOS (DL-133; RF-061 y RF-062): la campana de la cabecera abre Novedades y dice cuántas hay sin
  *   leer; tocar un aviso de BE también abre Novedades (con la sesión, o después de iniciarla: el aviso no muestra nada,
  *   UC-E08 E03). Con los avisos activos para la cuenta, al entrar se renueva el token del teléfono.
+ * - WP-INVITACION (DL-136): el enlace de una invitación (App Link del website o be://) abre la pantalla de la invitación;
+ *   sin sesión, queda pendiente hasta iniciarla, igual que un aviso tocado.
  * Identidad del build visible en Bienvenida (07 §34, TEST-APK-008).
  */
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
+import type { SecretoDeInvitacionRequest } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, BackHandler, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, apiConfigurada, consultarCuentaConSenal, extra } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas, SEPARACION_DE_LA_BARRA, VeloDeLaBarra } from './src/barra-de-zonas';
 import { almacenSeguro } from './src/almacen-seguro';
 import { esAvisoDeBe, renovar } from './src/avisos';
+import { invitacionDelEnlace } from './src/enlace-de-invitacion';
+import { PantallaDeInvitacion } from './src/pantallas/invitacion';
 import { avisoQueAbrioLaApp, dependenciasDeAvisos, escucharAvisosRecibidos, escucharAvisosTocados } from './src/avisos-del-telefono';
 import { Cabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
@@ -174,6 +179,8 @@ function Contenido() {
   // DL-133: las novedades sin leer, para la campana; `null` mientras no se sabe. Y si un aviso tocado espera la sesión.
   const [sinLeer, setSinLeer] = useState<number | null>(null);
   const avisoPendiente = useRef(esAvisoDeBe(avisoQueAbrioLaApp()));
+  /** DL-136: la invitación de un enlace que llegó sin sesión; se abre al iniciarla. */
+  const invitacionPendiente = useRef<SecretoDeInvitacionRequest | null>(null);
 
   /** Muestra una pantalla ya resuelta. La usan `ir` (que resuelve el origen con `navegar`) y volver (con `anterior`). */
   const mostrar = useCallback(
@@ -345,6 +352,11 @@ function Contenido() {
       avisoPendiente.current = false;
       ir({ nombre: 'novedades' });
     }
+    if (invitacionPendiente.current) {
+      const secreto = invitacionPendiente.current;
+      invitacionPendiente.current = null;
+      ir({ nombre: 'invitacion', secreto });
+    }
     const alVolver = AppState.addEventListener('change', (momento) => {
       if (momento === 'active') void actualizarSinLeer();
     });
@@ -354,6 +366,20 @@ function Contenido() {
       alLlegar();
     };
   }, [tokenDeLaSesion, actualizarSinLeer, ir]);
+
+  // DL-136: el enlace de una invitación, con la app cerrada (el enlace que la abrió) o abierta. Con sesión, abre la
+  // invitación; sin sesión, queda pendiente: no se interrumpe la verificación de una credencial guardada.
+  useEffect(() => {
+    const abrir = (url: string | null) => {
+      const secreto = invitacionDelEnlace(url);
+      if (!secreto) return;
+      if (sesionActual.current) ir({ nombre: 'invitacion', secreto });
+      else invitacionPendiente.current = secreto;
+    };
+    void Linking.getInitialURL().then(abrir).catch(() => undefined);
+    const suscripcion = Linking.addEventListener('url', ({ url }) => abrir(url));
+    return () => suscripcion.remove();
+  }, [ir]);
 
   // Tocar un aviso de BE abre Novedades; sin sesión, queda pendiente hasta iniciarla (el aviso no muestra nada).
   useEffect(
@@ -509,6 +535,9 @@ function Contenido() {
               {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} sesionRecordada={recordada} /> : null}
               {ruta.nombre === 'novedades' ? <PantallaDeNovedades token={sesion.token} salir={salir} ir={ir} alCambiarSinLeer={setSinLeer} /> : null}
               {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
+              {ruta.nombre === 'invitacion' ? (
+                <PantallaDeInvitacion key={ruta.secreto ? JSON.stringify(ruta.secreto) : 'codigo'} token={sesion.token} secreto={ruta.secreto} salir={salir} ir={ir} />
+              ) : null}
               {ruta.nombre === 'vinculo' ? (
                 <PantallaDeVinculo key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
