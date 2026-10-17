@@ -127,6 +127,21 @@ export const COPY_VINCULO = {
   vinculoActivoAccesoPendiente: 'Vínculo activo',
   accesoPendienteDelAsesorado: 'Acceso pendiente de autorización del asesorado',
 
+  // ─── El paso que falta para el acceso (pedido de Dirección del 2026-10-17) ─────────────────────
+  /**
+   * Asesorado: autorizó al profesional, pero sin A3 vigente el acceso no es efectivo (RF-023). Es su propio dato, así
+   * que se le dice qué falta y dónde se da. A3 sigue siendo un acto aparte: el aviso no lo otorga ni lo presupone.
+   */
+  faltaUnPaso: 'Falta un paso',
+  faltaElTratamientoDeDatos:
+    'Para que tus profesionales puedan ver tus datos, falta que autorices el tratamiento de datos de salud. Es una autorización aparte, y la decidís vos.',
+  irAPrivacidad: 'Ir a Privacidad',
+  /**
+   * Profesional: la ficha de alguien con un vínculo vigente que hoy no deja leer. No dice por qué (UC-I02 E05): la A3,
+   * una suspensión o una habilitación retirada se ven igual.
+   */
+  sinAccesoPorAhora: 'Por ahora no tenés acceso a la información de esta persona. Si cambia, la ficha se completa sola al actualizar.',
+
   // ─── No revelable, vista parcial y conflictos (10-B04 §40; 10-B10) ──────────────────────────
   /** 10-B04:1150-1156 (asesorado). */
   noPudimosAbrir: 'No pudimos abrir este contenido.',

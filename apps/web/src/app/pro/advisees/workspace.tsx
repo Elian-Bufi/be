@@ -229,12 +229,15 @@ export function Workspace() {
   );
 
   if (!disponible) {
+    // Con un vínculo vigente a la vista (el encabezado ya lo muestra), «no encontramos un recurso» confundía: se dice que
+    // por ahora no hay acceso, sin decir por qué (UC-I02 E05). Sin vínculo vigente, el texto neutral de siempre.
+    const conVinculoVigente = encabezado.tipo === 'listo' && encabezado.vinculos.some((v) => v.relationshipState === 'ACEPTADO');
     return (
       <div className="ficha">
         {marco(null)}
         <div className="ficha__cuerpo">
           <Aviso tipo="info">
-            <p>{COPY_VINCULO.recursoNoDisponible}</p>
+            <p>{conVinculoVigente ? COPY_VINCULO.sinAccesoPorAhora : COPY_VINCULO.recursoNoDisponible}</p>
             <p>
               <Link href="/pro">{COPY_VINCULO.volver}</Link>
             </p>
