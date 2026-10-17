@@ -132,11 +132,23 @@ services:
       # cambiar también connect-src de la CSP y API_BASE_URL de apps/mobile/eas.json.
       - key: BE_API_BASE_URL
         value: https://be-api-hndp.onrender.com
+      # DL-138 (WP-ACCESO-GOOGLE): «Continuar con Google» aparece solo si el build tiene BE_GOOGLE_WEB_CLIENT_ID, el client
+      # ID «Aplicación web» de Google. No está acá: se carga a mano en be-web → Environment, con «Save, rebuild, and
+      # deploy» (no es un secreto; docs/DESPLIEGUE.md, «Entrar con Google»). Sin ella, el website queda como siempre.
     # Sin rewrite /api/* (DL-030, decisión de Dirección del 2026-09-19): el website llama a la API directo, con CORS
     # (07 CAND-07-J opción B), para que la API vea la IP real (08 §12.2). Detrás del rewrite veía un pool de IPs del
     # proxy. El Blueprint conserva las reglas de ruteo que se omiten del archivo: la regla vieja se borra también en el
     # dashboard (be-web → Redirects/Rewrites), y DESPLIEGUE verifica en negativo que /api/* ya no llega a la API.
     # 07 §29: HSTS/CSP en el web.
+    # DL-138 (WP-ACCESO-GOOGLE): Google Identity Services, el botón «Continuar con Google», necesita dos cosas, y nada más:
+    # - en la CSP, su script (script-src …/gsi/client), su hoja de estilos (style-src …/gsi/style), el marco donde dibuja
+    #   el botón (frame-src …/gsi/) y sus pedidos (connect-src …/gsi/). Todo bajo https://accounts.google.com/gsi/, como lo
+    #   indica Google; ningún otro origen. La cuenta se elige en una ventana de Google, fuera de la página.
+    # - el Referrer-Policy en strict-origin-when-cross-origin, el que recomienda Google, en lugar de no-referrer: Google
+    #   valida el client ID contra el origen del website que lee del Referer, y sin él rechaza todo («The given origin is
+    #   not allowed for the given client ID»). Hacia otros sitios viaja solo el origen (https://be-web-1ngj.onrender.com/),
+    #   nunca la ruta ni la consulta, y nada si la página es https y el destino no. El token de una invitación va en el
+    #   fragmento, que no viaja nunca. Es también lo que hace el navegador cuando el sitio no dice nada.
     headers:
       - path: /*
         name: Strict-Transport-Security
@@ -149,10 +161,10 @@ services:
         value: DENY
       - path: /*
         name: Referrer-Policy
-        value: no-referrer
+        value: strict-origin-when-cross-origin
       - path: /*
         name: Permissions-Policy
         value: camera=(), microphone=(), geolocation=()
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-api-hndp.onrender.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
