@@ -9,7 +9,7 @@
  * Solo se listan los ítems en los que esta cuenta es el asesorado, y como recibidas las que inició el profesional: el
  * APK es la superficie del asesorado (10-B01:100-119). `expectedVersion` es la versión que la tarjeta mostró.
  */
-import { COPY, COPY_INVITACION, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, type Resultado, type SolicitudDeVinculo, type Vinculo } from '@be/domain';
+import { COPY, COPY_INVITACION, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, type Resultado, type SolicitudDeVinculo, type Vinculo } from '@be/domain';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
@@ -104,6 +104,8 @@ export function PantallaDeVinculos({
           <TarjetaDeVinculo key={v.relationshipId} v={v} onVer={() => ir({ nombre: 'vinculo', id: v.relationshipId })} />
         ))}
         <VerMas estado={vinculos.estado} onVerMas={vinculos.verMas} />
+        {/* DL-140: lo que tus profesionales se escriben entre ellos sobre vos. */}
+        {propios.length > 0 ? <Boton texto={COPY_NOTAS_DE_COORDINACION.entradaPropias} tipo="secundario" onPress={() => ir({ nombre: 'notas-de-coordinacion' })} /> : null}
       </Seccion>
 
       <Seccion titulo="Solicitudes anteriores">
