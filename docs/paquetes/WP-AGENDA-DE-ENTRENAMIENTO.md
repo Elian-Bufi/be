@@ -100,5 +100,7 @@ Al principio se pensó en un campo opcional que solo viajara a quien declarara u
 
 ## 7. Estado (2026-10-16)
 
-- **Dominio y API: hechos**, con sus pruebas (DL-137 en DEUDA_LEGAJO).
-- **Sigue:** el editor del website; después la APK, con la próxima construcción.
+- **Dominio y API: integrados** (#174, main 984b81a), con sus pruebas (DL-137 en DEUDA_LEGAJO).
+- **Website:** en el editor, «Días de entrenamiento» (plegado en un renglón): los días de cada sesión en una tabla, la fecha de inicio, las dos semanas que siguen como calendario, mover una fecha y volverla a su día, y quitar los días. El renglón de la sesión dice sus días, y la lectura del plan activo también. El diálogo de activar muestra los días.
+- **APK:** «Hoy» con agenda muestra «Hoy te toca», «Te quedó pendiente» (con «Hacerla hoy» y «Saltearla»), «Lo que viene» y las otras sesiones plegadas. Al empezar una sesión con otra pendiente, pregunta si la saltea o la deja pendiente. Una «no realizada» de un día pasado ya no pide hora.
+- **Falta:** la construcción de la APK y probarla en el teléfono.

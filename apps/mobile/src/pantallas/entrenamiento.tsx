@@ -22,6 +22,7 @@ import {
   cantidad,
   cantidadDeSeries,
   COPY,
+  COPY_AGENDA_DE_ENTRENAMIENTO as AG,
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
   COPY_REVISIONES_PROPIAS,
@@ -35,6 +36,7 @@ import {
   registroVigente,
   textoDeDuracion,
   vistaDeOcurrencia,
+  type AgendaDeHoyResponse,
   type BorradorDeEjecucion,
   type EjecucionDeEntrenamiento,
   type HoyDeEntrenamientoResponse,
@@ -139,6 +141,22 @@ function preguntar(titulo: string, detalle: string, accion: string): Promise<boo
         { text: accion, style: 'destructive', onPress: () => resolver(true) },
       ],
       { cancelable: true, onDismiss: () => resolver(false) },
+    ),
+  );
+}
+
+/** DL-137: al empezar una sesión con otra pendiente, qué hace la persona con la pendiente. */
+function preguntarPorLaPendiente(p: { readonly etiqueta: string; readonly fecha: string }): Promise<'saltear' | 'dejar' | 'cancelar'> {
+  return new Promise((resolver) =>
+    Alert.alert(
+      AG.preguntaPendiente(p.etiqueta, p.fecha),
+      AG.preguntaPendienteDetalle,
+      [
+        { text: 'Cancelar', style: 'cancel', onPress: () => resolver('cancelar') },
+        { text: AG.dejarlaPendiente, onPress: () => resolver('dejar') },
+        { text: AG.saltearla, onPress: () => resolver('saltear') },
+      ],
+      { cancelable: true, onDismiss: () => resolver('cancelar') },
     ),
   );
 }
@@ -263,11 +281,37 @@ function HoyDeEntrenamiento({
     setDelDia({ fecha: otroDia, ocurrencias: res.datos.data.occurrences });
   }
 
+  // DL-137: la agenda del día (API-AGE-01). Si el plan no tiene días, o la API todavía no la ofrece, «Hoy» sigue como
+  // siempre: todas las sesiones, y la persona elige.
+  // La misma lectura que la tarjeta de Inicio: la misma clave, con el día civil de la API.
+  const diaDeLaApi = useDiaDeLaApi();
+  const pedirAgenda = useCallback(() => api.agendaDeEntrenamiento(token), [token]);
+  const lecturaDeLaAgenda = useLecturaRecordada(token, `entrenamiento-agenda:${diaDeLaApi}`, pedirAgenda, sesionPerdida);
+  const agenda = lecturaDeLaAgenda.r?.ok && lecturaDeLaAgenda.r.datos.data.planState === 'AVAILABLE' && lecturaDeLaAgenda.r.datos.data.startDate ? lecturaDeLaAgenda.r.datos.data : null;
+  const recargarTodo = () => {
+    recargar();
+    void lecturaDeLaAgenda.cargar();
+  };
+
   const remota = enCurso.r?.ok ? enCurso.r.datos.data.inProgress : null;
   // Primero la que informa la API, que es la que impide iniciar otra; después la del teléfono (`sesion-en-curso.ts`).
   const ahora: EnCurso | null = sesionEnCursoParaMostrar(remota, local.sesiones());
   // Una sesión en curso de otro día (pasó la medianoche): se retoma desde acá, aunque no esté en la lista de hoy.
   const deOtroDia = ahora && !hoy.occurrences.some((o) => o.occurrenceId === ahora.occurrenceId) ? ahora : null;
+  const tarjeta = (o: Ocurrencia, pendiente: PendienteParaPreguntar | null = null) => (
+    <TarjetaDeOcurrencia
+      key={o.occurrenceId}
+      ocurrencia={o}
+      hoy={hoy.date}
+      token={token}
+      sesionPerdida={sesionPerdida}
+      accesoRetirado={accesoRetirado}
+      ir={ir}
+      enCurso={ahora?.occurrenceId === o.occurrenceId}
+      pendiente={pendiente}
+      alSaltear={recargarTodo}
+    />
+  );
 
   return (
     <View>
@@ -286,10 +330,14 @@ function HoyDeEntrenamiento({
           }}
         />
       ) : null}
-      {hoy.occurrences.length > 1 ? <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo> : null}
-      {hoy.occurrences.map((o) => (
-        <TarjetaDeOcurrencia key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} enCurso={ahora?.occurrenceId === o.occurrenceId} />
-      ))}
+      {agenda ? (
+        <AgendaDelDia agenda={agenda} hoy={hoy} tarjeta={tarjeta} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} alSaltear={recargarTodo} />
+      ) : (
+        <>
+          {hoy.occurrences.length > 1 ? <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo> : null}
+          {hoy.occurrences.map((o) => tarjeta(o))}
+        </>
+      )}
       {hoy.planState === 'AVAILABLE' ? (
         // Plegado: es para lo que quedó sin registrar; lo de hoy va primero.
         <Desplegable titulo={COPY_ENTRENAMIENTO.registrarOtroDia} abiertoAlInicio={delDia !== null || aviso !== null}>
@@ -315,8 +363,171 @@ function HoyDeEntrenamiento({
           ) : null}
         </Desplegable>
       ) : null}
-      <Boton texto="Actualizar" tipo="enlace" onPress={recargar} />
+      <Boton texto="Actualizar" tipo="enlace" onPress={recargarTodo} />
     </View>
+  );
+}
+
+type AgendaDelDiaApi = AgendaDeHoyResponse['data'];
+
+/** Una sesión pendiente, para preguntar por ella antes de empezar otra (Dirección, 2026-10-16). */
+interface PendienteParaPreguntar {
+  readonly etiqueta: string;
+  readonly fecha: string;
+  readonly occurrenceId: string;
+}
+
+/**
+ * DL-137 D-5: saltear es registrar la sesión «no realizada» en su fecha prevista, sin hora (la API pone el final de ese
+ * día). Si el borrador de esa fecha ya tiene datos cargados no se toca: se le pide a la persona que lo abra. Devuelve
+ * `null` si quedó registrada, o el motivo para mostrar.
+ */
+async function saltearSesion(token: string, occurrenceId: string, clave: string, sesionPerdida: AlPerderLaSesion): Promise<string | null | 'sesion'> {
+  const b = await api.abrirBorradorDeEjecucion(token, occurrenceId);
+  if (sesionPerdida(b)) return 'sesion';
+  if (!b.ok) return falloDe(b).mensaje;
+  const borrador = b.datos.data;
+  if (borrador.state === 'REGISTERED') return null;
+  if (borrador.granularity !== null || borrador.exercises.length > 0 || borrador.sessionSummary !== null) return AG.conDatosCargados;
+  const g = await api.guardarBorradorDeEjecucion(token, borrador.draftId, { expectedVersion: borrador.version, changes: { sessionCondition: 'NOT_COMPLETED' } });
+  if (sesionPerdida(g)) return 'sesion';
+  if (!g.ok) return falloDe(g).mensaje;
+  const c = await api.confirmarEjecucion(token, borrador.draftId, g.datos.data.version, clave);
+  if (sesionPerdida(c)) return 'sesion';
+  if (!c.ok) return c.tipo === 'API' && c.codigo === 'EXECUTION_ALREADY_REGISTERED' ? null : esIncierto(c) ? COPY.resultadoIncierto : falloDe(c).mensaje;
+  return null;
+}
+
+/**
+ * La agenda del día (DL-137): lo que toca hoy, lo que quedó pendiente con «Hacerla hoy» y «Saltearla», lo que viene, y
+ * las otras sesiones del plan plegadas (se puede entrenar fuera de la agenda). Los nombres salen de las ocurrencias de
+ * «Hoy», que traen todas las sesiones del plan.
+ */
+function AgendaDelDia({
+  agenda,
+  hoy,
+  tarjeta,
+  token,
+  sesionPerdida,
+  accesoRetirado,
+  ir,
+  alSaltear,
+}: {
+  agenda: AgendaDelDiaApi;
+  hoy: HoyDeEntrenamientoResponse['data'];
+  tarjeta: (o: Ocurrencia, pendiente?: PendienteParaPreguntar | null) => ReactNode;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
+  ir: Ir;
+  alSaltear: () => void;
+}) {
+  const deLaSesion = (sessionId: string): Ocurrencia | undefined => hoy.occurrences.find((o) => o.plannedSession.sessionId === sessionId);
+  const deHoy = agenda.today.flatMap((f) => deLaSesion(f.sessionId) ?? []);
+  const previstasHoy = new Set(agenda.today.map((f) => f.sessionId));
+  const otras = hoy.occurrences.filter((o) => !previstasHoy.has(o.plannedSession.sessionId));
+  const pendientes = agenda.pending.flatMap((p) => {
+    const o = deLaSesion(p.sessionId);
+    return o ? [{ ...p, ocurrenciaDeHoy: o }] : [];
+  });
+  /** Al empezar una sesión, la primera pendiente de otra sesión: la persona decide si la saltea o la deja. */
+  const pendienteParaPreguntar = (o: Ocurrencia): PendienteParaPreguntar | null => {
+    const p = pendientes.find((x) => x.sessionId !== o.plannedSession.sessionId);
+    return p ? { etiqueta: p.ocurrenciaDeHoy.plannedSession.label, fecha: p.plannedDate, occurrenceId: p.occurrenceId } : null;
+  };
+
+  return (
+    <View>
+      <Subtitulo>{AG.hoyTeToca}</Subtitulo>
+      {deHoy.length === 0 ? <Parrafo tenue>{AG.hoyNoHaySesion}</Parrafo> : deHoy.map((o) => tarjeta(o, pendienteParaPreguntar(o)))}
+      {pendientes.length > 0 ? (
+        <>
+          <Subtitulo>{AG.tePendiente}</Subtitulo>
+          {pendientes.map((p) => (
+            <TarjetaDePendiente
+              key={p.occurrenceId}
+              etiqueta={p.ocurrenciaDeHoy.plannedSession.label}
+              fecha={p.plannedDate}
+              occurrenceId={p.occurrenceId}
+              ocurrenciaDeHoy={p.ocurrenciaDeHoy}
+              token={token}
+              sesionPerdida={sesionPerdida}
+              accesoRetirado={accesoRetirado}
+              ir={ir}
+              alSaltear={alSaltear}
+            />
+          ))}
+        </>
+      ) : null}
+      {agenda.upcoming.length > 0 ? (
+        <>
+          <Subtitulo>{AG.loQueViene}</Subtitulo>
+          {agenda.upcoming.map((u) => (
+            <Text key={`${u.plannedDate}-${u.sessionId}`} style={estilos.ejercicioDeLaSesion}>
+              {AG.proxima(deLaSesion(u.sessionId)?.plannedSession.label ?? AG.sesion, u.plannedDate, hoy.date)}
+            </Text>
+          ))}
+        </>
+      ) : null}
+      {otras.length > 0 ? (
+        <Desplegable titulo={AG.otrasSesiones}>
+          <Parrafo tenue>{AG.otrasSesionesAyuda}</Parrafo>
+          {otras.map((o) => tarjeta(o, pendienteParaPreguntar(o)))}
+        </Desplegable>
+      ) : null}
+    </View>
+  );
+}
+
+/** Una sesión que quedó pendiente: hacerla hoy (la ocurrencia de hoy de esa sesión la resuelve, D-4) o saltearla. */
+function TarjetaDePendiente({
+  etiqueta,
+  fecha: prevista,
+  occurrenceId,
+  ocurrenciaDeHoy,
+  token,
+  sesionPerdida,
+  accesoRetirado,
+  ir,
+  alSaltear,
+}: {
+  etiqueta: string;
+  fecha: string;
+  occurrenceId: string;
+  ocurrenciaDeHoy: Ocurrencia;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
+  ir: Ir;
+  alSaltear: () => void;
+}) {
+  const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: ocurrenciaDeHoy, token, sesionPerdida, accesoRetirado, ir });
+  const intento = useClaveDeIntento();
+  const [salteando, setSalteando] = useState(false);
+  const [problema, setProblema] = useState<string | null>(null);
+
+  async function saltear() {
+    if (!(await preguntar(AG.saltearTitulo, AG.saltearDetalle(etiqueta, prevista), AG.saltearla))) return;
+    setSalteando(true);
+    setProblema(null);
+    const motivo = await saltearSesion(token, occurrenceId, intento.actual(), sesionPerdida);
+    setSalteando(false);
+    if (motivo === 'sesion') return;
+    if (motivo !== COPY.resultadoIncierto) intento.descartar();
+    if (motivo) return setProblema(motivo);
+    void AccessibilityInfo.announceForAccessibility(AG.salteada);
+    alSaltear();
+  }
+
+  return (
+    <Tarjeta>
+      <Subtitulo>{AG.pendiente(etiqueta, prevista)}</Subtitulo>
+      {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
+      {problema ? <Aviso tipo="error" titulo={problema} /> : null}
+      {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
+      <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />
+      <Boton texto={AG.saltearla} tipo="secundario" onPress={() => void saltear()} ocupado={salteando} deshabilitado={abriendo} />
+    </Tarjeta>
   );
 }
 
@@ -554,6 +765,8 @@ function TarjetaDeOcurrencia({
   accesoRetirado,
   ir,
   enCurso,
+  pendiente = null,
+  alSaltear,
 }: {
   ocurrencia: Ocurrencia;
   hoy: string;
@@ -562,11 +775,36 @@ function TarjetaDeOcurrencia({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: (r: Ruta) => void;
   enCurso: boolean;
+  /** DL-137: una sesión pendiente de otro día, para preguntar por ella antes de empezar esta. */
+  pendiente?: PendienteParaPreguntar | null;
+  alSaltear?: () => void;
 }) {
   const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
+  const intentoDeSaltear = useClaveDeIntento();
+  const [problema, setProblema] = useState<string | null>(null);
   const vista = vistaDeOcurrencia(o, hoy);
   const deHoy = o.date === hoy;
   const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS';
+
+  /**
+   * Empezar una sesión con otra pendiente: la persona decide si la saltea o la deja pendiente (Dirección, 2026-10-16).
+   * BE no la saltea solo: dejarla pendiente es tan válido como saltearla.
+   */
+  async function empezar() {
+    setProblema(null);
+    if (pendiente && deHoy && !continuar) {
+      const decision = await preguntarPorLaPendiente(pendiente);
+      if (decision === 'cancelar') return;
+      if (decision === 'saltear') {
+        const motivo = await saltearSesion(token, pendiente.occurrenceId, intentoDeSaltear.actual(), sesionPerdida);
+        if (motivo === 'sesion') return;
+        if (motivo !== COPY.resultadoIncierto) intentoDeSaltear.descartar();
+        if (motivo) return setProblema(motivo);
+        alSaltear?.();
+      }
+    }
+    await abrir();
+  }
   // Hoy se entrena con los cronómetros; otro día se registra lo hecho, sin cronómetros.
   const accion = deHoy
     ? continuar
@@ -590,12 +828,13 @@ function TarjetaDeOcurrencia({
       <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
       {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
+      {problema ? <Aviso tipo="error" titulo={problema} /> : null}
       {/* Otra sesión en curso: continuarla o dejarla incompleta; dejada incompleta, se vuelve a intentar iniciar esta. */}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
       {o.execution.state === 'REGISTERED' && o.execution.executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: o.execution.executionId! })} />
       ) : (
-        <Boton texto={accion} onPress={() => void abrir()} ocupado={abriendo} />
+        <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
       )}
       {o.plannedSession.prescriptions.map((p) => (
         <Text key={p.prescriptionId} style={estilos.ejercicioDeLaSesion}>
@@ -910,7 +1149,8 @@ export function PantallaDeSesion({
       if (!s.borrador.sessionCondition) return setAviso({ tipo: 'error', texto: 'Falta indicar cómo resultó la sesión.' });
       if (motivo.trim() !== (s.borrador.reason ?? '').trim() && !(await guardarEnElBorrador({ reason: motivo.trim() || null }))) return;
       s = entrenamientoLocal.sesion(draftId);
-      if (s?.borrador && s.borrador.date !== hoyEn(s.borrador.timeZone) && !s.borrador.occurredAt) {
+      // Una «no realizada» de un día pasado no tiene hora: la API pone el último instante de ese día (DL-137 D-5).
+      if (s?.borrador && s.borrador.date !== hoyEn(s.borrador.timeZone) && !s.borrador.occurredAt && s.borrador.sessionCondition !== 'NOT_COMPLETED') {
         if (!/^\d{2}:\d{2}$/.test(hora)) return setAviso({ tipo: 'error', texto: COPY_ENTRENAMIENTO.horaRequerida });
         // Argentina no tiene horario de verano desde 2009: la zona del demo es UTC-3 todo el año. La API igual verifica
         // que el instante caiga en el día de la sesión.
@@ -1068,7 +1308,9 @@ export function PantallaDeSesion({
             deshabilitado={ocupado}
           />
         </Seccion>
-        {!deHoy && !borrador?.occurredAt ? <Campo etiqueta={`${COPY_ENTRENAMIENTO.horaDeLaSesion} (HH:MM)`} value={hora} onChangeText={setHora} keyboardType="numbers-and-punctuation" /> : null}
+        {!deHoy && !borrador?.occurredAt && borrador?.sessionCondition !== 'NOT_COMPLETED' ? (
+          <Campo etiqueta={`${COPY_ENTRENAMIENTO.horaDeLaSesion} (HH:MM)`} value={hora} onChangeText={setHora} keyboardType="numbers-and-punctuation" />
+        ) : null}
         {estadoDelEnvio}
         <Parrafo tenue>{COPY_ENTRENAMIENTO.confirmarEsDefinitivo}</Parrafo>
         <Boton texto={e.finalizarEntrenamiento} onPress={() => void finalizar()} ocupado={ocupado} />
