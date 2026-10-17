@@ -2,7 +2,8 @@
 
 /**
  * PROTO-10-ACC-05 — login neutral, sin recuperación (fuera de alcance). Un único mensaje para todo fallo de
- * credenciales o de estado de cuenta (10-B02:198-225). Después del login se aterriza en Cuenta (DL-025).
+ * credenciales o de estado de cuenta (10-B02:198-225). Después del login, el profesional aterriza en su espacio y el resto
+ * en Cuenta (DL-025; pedido de Dirección del 2026-10-17), salvo que haya un retorno pedido.
  * DL-138: «Continuar con Google» arriba del formulario, si el build tiene el client ID. La sesión que abre Google se guarda
  * igual que la del login y lleva al mismo destino.
  */
@@ -14,6 +15,7 @@ import { AccesoConGoogle } from '../../components/acceso-con-google';
 import { Aviso, Campo, ResumenDeErrores } from '../../components/formulario';
 import { api } from '../../lib/api';
 import { avisoDe, COPY, destinoSeguro } from '../../lib/copy';
+import { buscarInicioPropio } from '../../lib/inicio';
 import { useSesion } from '../../lib/sesion';
 
 type Estado = { tipo: 'editando' } | { tipo: 'enviando' } | { tipo: 'error'; mensaje: string };
@@ -29,10 +31,19 @@ export function FormularioDeLogin() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'editando' });
   const [intento, setIntento] = useState(0);
 
-  /** La sesión de API-ACC-02 o de Google (API-GOO-01 a 03): se guarda igual y lleva al mismo destino. */
+  /**
+   * La sesión de API-ACC-02 o de Google (API-GOO-01 a 03): se guarda igual y lleva al mismo destino. Con un retorno
+   * pedido, vuelve ahí; si no, al inicio de la cuenta: el profesional, a su espacio, y el resto, a Cuenta.
+   */
   function entrar(respuesta: IniciarSesionResponse) {
-    guardar(respuesta.data.session.accessToken, respuesta.data.session.expiresAt);
-    router.push(destinoSeguro(parametros.get('volver')));
+    const token = respuesta.data.session.accessToken;
+    guardar(token, respuesta.data.session.expiresAt);
+    const volver = parametros.get('volver');
+    if (volver) {
+      router.push(destinoSeguro(volver));
+      return;
+    }
+    void buscarInicioPropio(token).then((destino) => router.push(destino));
   }
 
   async function enviar(evento: FormEvent) {

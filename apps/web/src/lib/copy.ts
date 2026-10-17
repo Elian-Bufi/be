@@ -50,3 +50,13 @@ export function destinoSeguro(valor: string | null): string {
   const [nombre, id, ...resto] = valor.slice(corte + 1).split(/[=&]/);
   return RUTAS_CON_ID.has(ruta) && nombre === parametro && resto.length === 0 && id && UUID.test(id) ? `${ruta}?${parametro}=${id}` : '/account';
 }
+
+/**
+ * El inicio de quien tiene sesión (DL-025; pedido de Dirección del 2026-10-17): el profesional entra a su espacio, y el
+ * resto, a Cuenta. Es adonde lleva el login sin un retorno pedido, y adonde lleva la portada con la sesión abierta.
+ * La capacidad la informa la API (ACC-05) y solo elige la página: no autoriza nada, porque `/pro` vuelve a preguntar.
+ * Sin la respuesta de la API (`null`), Cuenta.
+ */
+export function inicioPropio(capacidades: readonly string[] | null): '/pro' | '/account' {
+  return capacidades?.includes('PROFESSIONAL_WORKSPACE') ? '/pro' : '/account';
+}

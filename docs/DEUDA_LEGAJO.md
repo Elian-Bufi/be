@@ -688,6 +688,19 @@ La parte (b) sigue en PASS. Evidencia: `EVIDENCIA/WP-03/resultados-integracion-m
 
 **WP-03 (2026-09-19).** Se suman rutas neutrales del asesorado para vínculos, consentimientos y A3, siempre bajo `/account` y nunca bajo `/pro` (10-B01, criterio 11A n.º 1: «asesorado nunca entra al shell profesional»). El APK sigue siendo la superficie primaria del asesorado.
 
+**Pedido de Dirección (2026-10-17), al probar el website.**
+- **Qué observó:**
+  - después de iniciar sesión, el profesional caía en Cuenta (nombre, identificador, privacidad, seguridad) y tenía que tocar «Ir al espacio profesional»;
+  - con la sesión abierta, la portada seguía diciendo «Comenzar» y «Ya tengo una cuenta».
+- **Qué pidió:** que el profesional entre directo a su espacio, y que Cuenta quede donde ya está, en el menú de la cuenta.
+- **Qué cambió en el website:**
+  - sin un retorno pedido, el login lleva al profesional a `/pro` y al resto a `/account`;
+  - la portada con la sesión abierta lleva a ese mismo inicio;
+  - la capacidad la informa la API (ACC-05) y solo elige la página, no autoriza nada: `/pro` vuelve a preguntar;
+  - el asesorado sigue sin entrar nunca al espacio profesional (criterio 11A n.º 1);
+  - un retorno pedido (`?volver=`) se respeta como antes.
+- **Recargar la página** sigue cerrando la sesión del website (DL-012): la portada sin sesión no cambia.
+
 ## DL-026 — Idempotencia y códigos no definidos
 
 **Prioridad:** media · **Documento:** 09:253-262 · 09v7 T07 · 09v8 ACC-01 · **Estado:** ABIERTA

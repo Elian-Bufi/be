@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { destinoSeguro } = await import('../apps/web/src/lib/copy.ts');
+const { destinoSeguro, inicioPropio } = await import('../apps/web/src/lib/copy.ts');
 
 const UUID = '0b6a7f52-3c1d-4e8f-9a2b-5c6d7e8f9a01';
 
@@ -43,4 +43,12 @@ test('cualquier otra cosa vuelve a Cuenta', () => {
   ]) {
     assert.equal(destinoSeguro(valor), '/account', valor);
   }
+});
+
+test('sin un retorno pedido, el profesional entra a su espacio y el resto a Cuenta (DL-025, 2026-10-17)', () => {
+  assert.equal(inicioPropio(['PROFESSIONAL_WORKSPACE']), '/pro');
+  assert.equal(inicioPropio(['OTRA', 'PROFESSIONAL_WORKSPACE']), '/pro');
+  assert.equal(inicioPropio([]), '/account');
+  // Si la API no respondió, Cuenta: ahí se reintenta, y el enlace al espacio aparece cuando la API lo informa.
+  assert.equal(inicioPropio(null), '/account');
 });
