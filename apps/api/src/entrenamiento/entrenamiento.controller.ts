@@ -131,14 +131,15 @@ export class EntrenamientoController {
 
   /**
    * API-TRN-13-BUSQUEDA (DL-130): la misma lectura con el texto en el cuerpo. Es una lectura: 200, sin Idempotency-Key.
-   * El registro de requests guarda solo la ruta, nunca el cuerpo.
+   * El registro de requests guarda solo la ruta, nunca el cuerpo. Cada ejercicio suma el nombre alternativo que
+   * coincidió (DL-141): esta operación es del website, no de la APK instalada.
    */
   @Post('training/exercises/search')
   @HttpCode(200)
   buscarEjercicios(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     sinParametrosDeQuery(query);
     const b = validarCuerpo(BusquedaDeEjerciciosRequestSchema, cuerpo);
-    return this.catalogo.listar(actorDe(req), comoConsultaDeLista(b));
+    return this.catalogo.buscar(actorDe(req), comoConsultaDeLista(b));
   }
 
   /** API-INT-TRN-01. */

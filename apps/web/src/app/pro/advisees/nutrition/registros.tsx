@@ -37,6 +37,7 @@ import {
   MODO_EN_UN_RENGLON,
   motivoDeNumeroIlegible,
   NOMBRE_DEL_RASGO,
+  nombreAlternativoComoAclaracion,
   numero,
   opcionDeUnaComida,
   rasgosDeLaFila,
@@ -48,6 +49,7 @@ import {
   type ContextoDeRevisionResponse,
   type DiaDeRegistros,
   type ElementoDeCatalogo,
+  type ElementoEncontrado,
   type EntradaDeLineaDeTiempo,
   type FilaDeRegistro,
   type Ingesta,
@@ -573,7 +575,7 @@ function EstimacionDelProfesional({ ingesta, onCambio }: { ingesta: Ingesta; onC
   const [alimento, setAlimento] = useState<ElementoDeCatalogo | null>(null);
   const [busqueda, setBusqueda] = useState('');
   useCambiosSinGuardar(abierto && (descripcion.trim() !== '' || gramos.trim() !== '' || alimento !== null), 'la estimación de una comida');
-  const [opciones, setOpciones] = useState<ElementoDeCatalogo[]>([]);
+  const [opciones, setOpciones] = useState<ElementoEncontrado[]>([]);
   /** El mismo error que se avisa arriba se marca en su campo (B10-10:164-165; DL-091 punto 3). */
   const [errores, setErrores] = useState<{ descripcion?: string; gramos?: string }>({});
   const [fallo, setFallo] = useState<string | null>(null);
@@ -655,6 +657,8 @@ function EstimacionDelProfesional({ ingesta, onCambio }: { ingesta: Ingesta; onC
                 <li key={o.catalogItemId}>
                   <button type="button" className="boton boton--enlace" onClick={() => setAlimento(o)}>
                     {o.name}
+                    {/* DL-141: si apareció por un nombre alternativo, cuál: «Palta (aguacate)». */}
+                    {o.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(o.matchedAlternativeName)})</span> : null}
                   </button>
                 </li>
               ))}

@@ -12,8 +12,9 @@
  * - «Crear manualmente» e «Importar desde wger» se abren adentro, con «Volver a la búsqueda».
  * - Al abrirse, el foco va al campo de búsqueda; cada vez que se abre, empieza vacío.
  * - Si los ejercicios habituales no se pueden leer, se dice: no es «todavía no marcaste ninguno».
+ * - Si un ejercicio apareció por un nombre alternativo, se dice cuál: «Press de banca (bench press)» (DL-141).
  */
-import { COPY_ENTRENAMIENTO, COPY_HABITUALES, COPY_INTEGRACIONES, type EjercicioDeCatalogo } from '@be/domain';
+import { COPY_ENTRENAMIENTO, COPY_HABITUALES, COPY_INTEGRACIONES, nombreAlternativoComoAclaracion, type EjercicioDeCatalogo, type EjercicioEncontrado } from '@be/domain';
 import { useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
@@ -31,7 +32,7 @@ type Modo = 'buscar' | 'manual' | 'importar';
 type Busqueda =
   | { readonly tipo: 'sin-buscar' }
   | { readonly tipo: 'buscando'; readonly texto: string }
-  | { readonly tipo: 'lista'; readonly texto: string; readonly ejercicios: readonly EjercicioDeCatalogo[] }
+  | { readonly tipo: 'lista'; readonly texto: string; readonly ejercicios: readonly EjercicioEncontrado[] }
   | { readonly tipo: 'falla'; readonly texto: string; readonly motivo: string };
 
 export function AgregarEjercicio({
@@ -252,7 +253,10 @@ function ContenidoDeAgregarEjercicio({
                   return (
                     <tr key={ej.versionId} data-ejercicio-del-catalogo={ej.versionId}>
                       <th scope="row">
-                        <span className="alimentos-del-catalogo__nombre">{ej.name}</span>
+                        <span className="alimentos-del-catalogo__nombre">
+                          {ej.name}
+                          {ej.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(ej.matchedAlternativeName)})</span> : null}
+                        </span>
                         {procedencia ? <span className="nota alimentos-del-catalogo__detalle">{procedencia}</span> : null}
                       </th>
                       <td className="alimentos-del-catalogo__acciones">

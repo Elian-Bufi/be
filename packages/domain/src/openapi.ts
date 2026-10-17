@@ -134,6 +134,7 @@ import {
   IngestaResponseSchema,
   ListaDeCatalogoResponseSchema,
   BusquedaEnCatalogoRequestSchema,
+  BusquedaEnCatalogoResponseSchema,
   ListaDeEvaluacionesResponseSchema,
   ListaDeIngestasResponseSchema,
   ListaDeObjetivosResponseSchema,
@@ -191,6 +192,7 @@ import {
   HoyDeEntrenamientoResponseSchema,
   ListaDeEjerciciosResponseSchema,
   BusquedaDeEjerciciosRequestSchema,
+  BusquedaDeEjerciciosResponseSchema,
   ListaDeEvaluacionesDeEntrenamientoResponseSchema,
   ListaDeObjetivosDeEntrenamientoResponseSchema,
   ListaDePlanesDeEntrenamientoResponseSchema,
@@ -330,7 +332,7 @@ const ALCANCE: ParametroDeQuery = { nombre: 'scope', descripcion: 'Filtra por al
 
 /** Cómo compara el buscador de los catálogos de alimentos y de ejercicios (DL-139): lo dicen sus cuatro operaciones. */
 const COMO_BUSCA_EL_CATALOGO =
-  'Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139).';
+  'Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).';
 
 /** Errores de una escritura REL/CON sobre un recurso que puede no ser revelable para el actor (09:213-233). */
 const ESCRITURA_REVELABLE: Errores = {
@@ -934,7 +936,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-NUT-13',
     metodo: 'get',
     ruta: '/nutrition/catalog-items',
-    resumen: 'Catálogo nutricional BE: el sembrado (global) y el propio del profesional. Solo profesionales de Nutrición.',
+    resumen:
+      'Catálogo nutricional BE: el sembrado (global), lo importado de Open Food Facts (de todos los profesionales, uno por producto, con su fuente; DL-141) y lo cargado a mano por el profesional. Solo profesionales de Nutrición.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -949,20 +952,20 @@ const DEFINIDAS: readonly Operacion[] = [
     ],
     exitos: [{ status: 200, schema: ListaDeCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v9:648-654 · REG-06-99, 135 · DEUDA_LEGAJO DL-139',
+    fuente: '09v9:648-654 · REG-06-99, 135 · DEUDA_LEGAJO DL-139, DL-141',
   },
   {
     id: 'API-NUT-13-BUSQUEDA',
     metodo: 'post',
     ruta: '/nutrition/catalog-items/search',
     resumen:
-      `Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. ${COMO_BUSCA_EL_CATALOGO}`,
+      `Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141). ${COMO_BUSCA_EL_CATALOGO}`,
     autenticacion: 'SESSION',
     idempotencia: false,
     request: BusquedaEnCatalogoRequestSchema,
-    exitos: [{ status: 200, schema: ListaDeCatalogoResponseSchema }],
+    exitos: [{ status: 200, schema: BusquedaEnCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130, DL-139',
+    fuente: '09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130, DL-139, DL-141',
   },
   {
     id: 'API-INT-NUT-01',
@@ -981,20 +984,20 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/nutrition/catalog-import-candidates',
     resumen:
-      'Consultar un alimento en Open Food Facts por su código de barras y crear un candidato de importación: todavía no es un elemento del catálogo. Proveedor caído → 503 con el catálogo propio y la carga manual disponibles.',
+      'Consultar un alimento en Open Food Facts por su código de barras y crear un candidato de importación: todavía no es un elemento del catálogo. Si ese producto ya está en el catálogo (lo importó otro profesional, o vos), existingCatalogItem lo trae tal como está: importar el candidato usa ese y no crea otro (DL-141). Proveedor caído → 503 con el catálogo propio y la carga manual disponibles.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearCandidatoDeAlimentoRequestSchema,
     exitos: [{ status: 201, schema: CandidatoDeAlimentoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['IMPORT_SOURCE_NOT_FOUND'], 503: ['DEPENDENCY_UNAVAILABLE'] },
-    fuente: '09v12:166-236 · RF-028 · UC-I07 · UC-I08 · docs/paquetes/WP-08.md',
+    fuente: '09v12:166-236 · RF-028 · UC-I07 · UC-I08 · docs/paquetes/WP-08.md · DEUDA_LEGAJO DL-141',
   },
   {
     id: 'API-INT-NUT-03',
     metodo: 'post',
     ruta: '/nutrition/catalog-import-candidates/{candidateId}/resolve',
     resumen:
-      'Resolver un candidato propio: IMPORT lo incorpora al catálogo con procedencia CONTROLLED_IMPORT y los datos corregidos; REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.',
+      'Resolver un candidato propio: IMPORT lo incorpora al catálogo con procedencia CONTROLLED_IMPORT y los datos corregidos, y queda para todos los profesionales; si el producto ya estaba, la resolución apunta al que hay, no crea otro y lo devuelve en existingCatalogItem (la revisión queda registrada sin cambiarlo; DL-141). REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: ResolverCandidatoDeAlimentoRequestSchema,
@@ -1007,7 +1010,7 @@ const DEFINIDAS: readonly Operacion[] = [
       409: ['IDEMPOTENCY_KEY_REUSED'],
       422: ['IMPORT_CANDIDATE_NOT_RESOLVABLE', 'REVIEWED_CONTENT_INVALID'],
     },
-    fuente: '09v12:238-305 · RF-028 · RF-060 · UC-I07',
+    fuente: '09v12:238-305 · RF-028 · RF-060 · UC-I07 · DEUDA_LEGAJO DL-141',
   },
   {
     id: 'API-NUT-14',
@@ -1587,7 +1590,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-13',
     metodo: 'get',
     ruta: '/training/exercises',
-    resumen: 'Catálogo propio de ejercicios, con procedencia. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.',
+    resumen:
+      'Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -1601,20 +1605,20 @@ const DEFINIDAS: readonly Operacion[] = [
     ],
     exitos: [{ status: 200, schema: ListaDeEjerciciosResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v10:838-854 · RF-037 · INV-06-143 · DEUDA_LEGAJO DL-139',
+    fuente: '09v10:838-854 · RF-037 · INV-06-143 · DEUDA_LEGAJO DL-139, DL-141',
   },
   {
     id: 'API-TRN-13-BUSQUEDA',
     metodo: 'post',
     ruta: '/training/exercises/search',
     resumen:
-      `Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados. ${COMO_BUSCA_EL_CATALOGO}`,
+      `Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados, con su forma. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141). ${COMO_BUSCA_EL_CATALOGO}`,
     autenticacion: 'SESSION',
     idempotencia: false,
     request: BusquedaDeEjerciciosRequestSchema,
-    exitos: [{ status: 200, schema: ListaDeEjerciciosResponseSchema }],
+    exitos: [{ status: 200, schema: BusquedaDeEjerciciosResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130, DL-139',
+    fuente: '09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130, DL-139, DL-141',
   },
   {
     id: 'API-INT-TRN-01',
@@ -1880,20 +1884,20 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/training/catalog-import-candidates',
     resumen:
-      'Consultar un ejercicio en wger por su número y crear un candidato de importación. Los músculos que declara wger son dato del proveedor: nunca se copian como zona BE. Proveedor caído → 503.',
+      'Consultar un ejercicio en wger por su número y crear un candidato de importación. Los músculos que declara wger son dato del proveedor: nunca se copian como zona BE. Si ese ejercicio ya está en el catálogo, existingExercise lo trae tal como está: importar el candidato usa ese y no crea otro (DL-141). Proveedor caído → 503.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearCandidatoDeEjercicioRequestSchema,
     exitos: [{ status: 201, schema: CandidatoDeEjercicioResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['IMPORT_SOURCE_NOT_FOUND'], 503: ['DEPENDENCY_UNAVAILABLE'] },
-    fuente: '09v12:349-381 · RF-038 · UC-I07 · UC-I08 · docs/paquetes/WP-08.md',
+    fuente: '09v12:349-381 · RF-038 · UC-I07 · UC-I08 · docs/paquetes/WP-08.md · DEUDA_LEGAJO DL-141',
   },
   {
     id: 'API-INT-TRN-03',
     metodo: 'post',
     ruta: '/training/catalog-import-candidates/{candidateId}/resolve',
     resumen:
-      'Resolver un candidato propio de wger: IMPORT crea el ejercicio con procedencia CONTROLLED_IMPORT y sin zonas BE; REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.',
+      'Resolver un candidato propio de wger: IMPORT crea el ejercicio con procedencia CONTROLLED_IMPORT y sin zonas BE, y queda para todos los profesionales; si ya estaba, la resolución apunta al que hay, no crea otro y lo devuelve en existingExercise (la revisión queda registrada sin cambiarlo; DL-141). REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: ResolverCandidatoDeEjercicioRequestSchema,
@@ -1906,7 +1910,7 @@ const DEFINIDAS: readonly Operacion[] = [
       409: ['IDEMPOTENCY_KEY_REUSED'],
       422: ['IMPORT_CANDIDATE_NOT_RESOLVABLE', 'REVIEWED_CONTENT_INVALID'],
     },
-    fuente: '09v12:383-411 · RF-038 · RF-060 · UC-I07',
+    fuente: '09v12:383-411 · RF-038 · RF-060 · UC-I07 · DEUDA_LEGAJO DL-141',
   },
   {
     id: 'API-TRN-14',

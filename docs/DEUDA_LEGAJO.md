@@ -145,6 +145,7 @@
 | DL-138 | Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE) | 04 RF-001, RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.6, §24.7 a, §42 ítem 22 · 09 §12 y 09v12 §11 (bosquejo) · DL-012 · DL-023 | Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta | **IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono |
 | DL-139 | Pedido de Dirección · 2026-10-16 (WP-BUSQUEDA) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · B10-05 §18 · B10-06 `CAND-10-TRN-05` · 07 §53 · DL-130 · DL-098 | El buscador de los catálogos exigía lo escrito tal cual: no toleraba el orden de las palabras, el plural ni los errores de tipeo | **IMPLEMENTADA** 2026-10-16 en `wp-busqueda`, sin integrar (migración aditiva con `pg_trgm`); D-1 a D-8 a ratificar |
 | DL-140 | Aprobación de Dirección · 2026-10-16 (WP-NOTAS-DE-COORDINACION) | 04 RF-057 · 05 UC-E07 (§11.8) · 06 T-06-43 · 08 §9.15, 08:495, §11-bis.3, Q-005 y §14, VJR-5 · 09 §11.6 (API-CRD-01) · 11A TEST-RF-057, TEST-UC-E07 · propuesta NOTAS-DE-COORDINACION | La nota de coordinación entre los profesionales de una persona: quién la recibe, quién la lee, el texto libre acotado, lo citado y que solo se agrega | **IMPLEMENTADA** 2026-10-17 con las opciones recomendadas CRD-D1 a CRD-D8 (API, web y APK en `wp-notas-de-coordinacion`, sin integrar); E-1 a E-11 a ratificar; falta la APK en el teléfono |
+| DL-141 | Aprobación de Dirección · 2026-10-16 (WP-CATALOGO-BASE, tanda 3) | 04 RF-060 · 05 UC-I07 · 06 REG-06-99 a 101, REG-06-112, INV-06-143 · 08 (licencias de los proveedores) · DL-097 · DL-098 · DL-099 · DL-139 | Lo importado de wger y de Open Food Facts lo veía solo quien lo importó, y se repetía; no había nombres alternativos («bench press», «aguacate»); faltaba un catálogo base de fuentes libres | **IMPLEMENTADO el tramo 1** 2026-10-17 en `wp-catalogo-base-1`, sin integrar: lo importado es de todos, uno por ítem externo (D-1), y los nombres alternativos con el buscador (D-2); siguen el catálogo de wger y el de USDA; D-1 y D-2 a ratificar |
 
 ---
 
@@ -4275,7 +4276,7 @@ Y **API-ACC-01** suma `adultDeclaration: { versionId, declared }`: sin ella, 422
 - **integración** (`test/integration/busqueda-tolerante.int-spec.ts`), con las filas sembradas y con las propias: el orden de las palabras, los plurales, los errores de tipeo, sin falsos parecidos («leche», «zapato», una palabra ajena), los comodines, el orden del resultado, la paginación por grupos, los parecidos solo en la primera página, que un parecido no muestra lo que no se ve, y API-TRN-13 contra el esquema congelado de la APK. `busqueda-sin-tildes.int-spec.ts` sigue igual y en verde.
 
 **Lo que queda abierto:**
-- **Los nombres alternativos** (palta y aguacate, frutilla y fresa, «squat»): Dirección aprobó una tabla de nombres alternativos para alimentos y ejercicios (tanda 3 del 2026-10-16). Es otro paquete; este buscador los buscaría como más nombres de cada ítem.
+- **Los nombres alternativos** (palta y aguacate, frutilla y fresa, «squat»): Dirección aprobó una tabla de nombres alternativos para alimentos y ejercicios (tanda 3 del 2026-10-16). Es otro paquete; este buscador los buscaría como más nombres de cada ítem. *Hecho en DL-141 (tramo 1, D-2).*
 - **Algunos errores en palabras cortas:** «biseps» por «bíceps» (0,4), «frutiya» por «frutillas» (0,38) y «tomte» por «tomate» (0,44) quedan afuera con 0,45. Bajar el umbral trae falsos parecidos. Una normalización fonética (z, s y c; v y b; ll e y) sería otra decisión.
 - **La web no distingue los parecidos:** se muestran como un resultado más. Marcarlos («¿Quisiste decir…?») necesita un dato nuevo en la respuesta, en una operación nueva para no tocar lo que leen las APK instaladas.
 - La línea de tiempo y el directorio (D-8), y **DL-098** (los proveedores).
@@ -4286,6 +4287,8 @@ Y **API-ACC-01** suma `adultDeclaration: { versionId, declared }`: sin ella, 422
 **Condición de cierre:**
 - Dirección prueba el buscador en el website, con sus palabras;
 - ratifica D-1 a D-8, o cambia las que quiera (el umbral, el «casi nada», los conectores).
+
+---
 
 ## DL-140 — La nota de coordinación entre los profesionales de una persona: API-CRD-01, su lectura en la línea de tiempo y la de la persona
 
@@ -4366,3 +4369,114 @@ Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea
 - Dirección ratifica E-1 a E-11, o cambia las que quiera;
 - una persona real lee en el teléfono una nota que escribió su profesional;
 - antes de datos reales, VJR-5 y el texto que la acompaña.
+
+---
+
+## DL-141 — El catálogo de todos: lo importado sirve a todos los profesionales, y los nombres alternativos
+
+**Prioridad:** media.
+
+**Documentos:**
+- **04 RF-060:** la importación controlada, con la revisión del profesional; identificar el proveedor, la fecha y la referencia de un dato externo donde se usa.
+- **05 UC-I07:** la corrección no oculta la fuente.
+- **06 REG-06-99 a 101 y REG-06-112:** el elemento de catálogo con identificador estable, sus versiones solo agregadas, y la instantánea que no se reescribe. **INV-06-143:** el catálogo no es una recomendación ni una prescripción.
+- **08:** las licencias de los proveedores (Open Food Facts publica con ODbL; wger, con la licencia de cada entrada).
+- **DL-097, DL-098 y DL-099:** la importación de WP-08. **DL-139:** el buscador.
+- **El paquete:** WP-CATALOGO-BASE (`docs/paquetes/WP-CATALOGO-BASE.md`).
+
+**Estado:** tramo 1 (D-1 y D-2) IMPLEMENTADO el 2026-10-17 en `wp-catalogo-base-1`, sobre `wp-busqueda` (#177), sin integrar. Siguen los tramos 2 (el catálogo base de entrenamiento, de wger) y 3 (el de alimentos, de USDA).
+
+**Qué pasaba.**
+- Un ejercicio de wger o un alimento de Open Food Facts importado (WP-08) lo veía solo quien lo importó. Otro profesional que quería el mismo lo importaba de nuevo, repetía la revisión y quedaban dos elementos.
+- No había nombres alternativos: «bench press» no encontraba «Press de banca», ni «aguacate», «Palta».
+
+**Qué aprobó Dirección el 2026-10-16** (tanda 3, entera):
+- «lo importado de OFF y de wger queda para todos los profesionales, con su fuente»;
+- «una tabla de nombres alternativos para ejercicios y alimentos: castellano, el de otros países y el inglés»;
+- un catálogo base de 300 a 500 alimentos y 150 a 250 ejercicios de fuentes libres citadas, empezando por wger (tramos 2 y 3);
+- el orden: primero el buscador (DL-139), después este paquete.
+
+**Qué cambia para el profesional:**
+- Ve lo que importó cualquier profesional, con su fuente («Importado de wger · 24 sept 2026»), y lo usa como lo sembrado: lo elige, lo prescribe, lo pone en una receta o lo marca como habitual.
+- Si consulta en wger o en Open Food Facts algo que ya está, el website se lo dice antes de revisarlo: «Ya está en el catálogo BE», con el nombre y la composición que tiene, y el botón «Usar el del catálogo BE». Lo agrega sin repetir la revisión y sin crear otro.
+- Busca con el nombre que conoce: «bench press» trae «Press de banca (bench press)»; «estocadas», «Zancadas (estocadas)»; «aguacate», «Palta (aguacate)». También en plural («aguacates») y con un error de tipeo («aguacte», «dedlift»).
+- **Para la persona no cambia nada a la vista:** su plan cita el mismo ítem, con su nombre. Al buscar qué ejercicio hizo, también encuentra lo importado.
+
+**El contrato:**
+
+| Operación | Qué cambia |
+|---|---|
+| API-NUT-13-BUSQUEDA y API-TRN-13-BUSQUEDA (las del website) | Cada fila suma `matchedAlternativeName`: el nombre alternativo que coincidió, tal como está guardado, o `null` si coincidió el principal (o no hay texto). Las filas y su orden son los de la lectura legada. Esquemas nuevos: `BusquedaEnCatalogoResponseSchema` y `BusquedaDeEjerciciosResponseSchema` |
+| API-NUT-13 y API-TRN-13 (las legadas; la APK instalada lee API-TRN-13) | La misma forma de siempre, sin el campo nuevo. Buscan también en los nombres alternativos y traen lo importado de todos. La prueba valida API-TRN-13 contra el esquema congelado de la APK |
+| API-INT-NUT-02 y API-INT-TRN-02 (consultar el proveedor) | El candidato suma `existingCatalogItem` (alimento) o `existingExercise` (ejercicio): el ítem que ya está en el catálogo por ese mismo ítem externo, entero, o `null` |
+| API-INT-NUT-03 y API-INT-TRN-03 (resolver) | Con IMPORT, `catalogItem` o `exercise` es el elemento al que apunta la resolución: el que creó o el que ya estaba. Si ya estaba, `existingCatalogItem` o `existingExercise` lo trae entero; si no, y con REJECT, `null`. Sin estados ni códigos nuevos |
+
+Los campos nuevos van en seis operaciones del website: la APK instalada no las usa (no están en `packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`, y la APK no las llama). El website valida cada respuesta con un esquema estricto: durante el despliegue, una pestaña abierta antes que busque o importe puede ver «respuesta no reconocida» hasta recargar, como con los campos de DL-119. El website y la API salen del mismo commit.
+
+**Lo decidido** (D-1, D-2, D-5 y D-6 del paquete, y lo que hubo que decidir para implementarlas; todo espera ratificación):
+- **D-1 · Lo importado es de todos los profesionales.**
+  - Un ítem importado se ve para todos, con su proveedor, su fecha y su licencia, igual que hoy.
+  - Hay uno solo por ítem externo (proveedor más identificador). Si un profesional importa uno que ya está, la resolución de su candidato apunta al existente: no se crea otro.
+  - *Alternativas descartadas:* seguir por profesional (duplica la revisión y los ítems); que pase a todos recién después de una revisión de BE (no hay nadie que la haga).
+- **D-1.a · Cuál es el elemento de cada ítem externo:** una tabla aparte, `item_externo_de_catalogo`, con clave primaria (proveedor, identificador) y el elemento. Solo se agrega. La escribe la resolución que crea el elemento, y «lo de todos» es lo que está en esa tabla.
+  - *Alternativas descartadas:* columnas nuevas en el elemento (las tablas del catálogo solo se agregan: completar las filas que ya hay obligaría a reescribirlas); buscarlo en la procedencia JSON de la versión (sin una clave única, dos importaciones simultáneas crean dos).
+- **D-1.b · Dos importaciones a la vez:** un cerrojo de transacción por proveedor e identificador (`pg_advisory_xact_lock`), tomado después del candidato (`prisma/concurrencia.ts`). La segunda espera a que la primera confirme y encuentra el elemento que creó. La clave primaria lo sostiene igual si el código se equivocara.
+  - *Alternativa descartada:* dejar que choque con la clave y reintentar: la segunda respondería un error en vez del elemento.
+- **D-1.c · La revisión de quien llega después queda registrada, pero no cambia el ítem.** Se valida igual que siempre: el 422 `REVIEWED_CONTENT_INVALID` no depende de lo que hizo otro profesional. Queda en su resolución, con los campos que difieren de lo que trajo el proveedor, y el elemento sigue como lo dejó quien lo importó primero.
+  - *Alternativas descartadas:* aplicar la revisión como una versión nueva del ítem de todos (cualquiera cambiaría lo que usan los demás; quién puede corregir lo compartido es otra decisión); no validar la revisión cuando el ítem ya está (el 422 dependería del estado de la base).
+- **D-1.d · Cómo lo dice la respuesta:** un campo con el ítem entero, en el candidato y en la resolución, en vez de otro estado. El website lo ofrece antes de la revisión y, si otro profesional lo importó mientras tanto, agrega el que ya estaba, con su nombre y su composición.
+  - *Alternativas descartadas:* un 409 (el profesional consiguió lo que quería: el ítem está); un valor nuevo de `decision` (la decisión fue importar; lo que cambia es el efecto); que el website relea el catálogo (otra lectura, y mientras tanto mostraría su propia revisión en lugar del ítem que quedó).
+- **D-1.e · La persona también lo ve.** El asesorado consulta el catálogo de ejercicios para declarar lo que realmente hizo (B10-06:762-768). Lo importado pasa a ser del catálogo de todos, como lo sembrado: tiene una fuente pública, no es de nadie en particular y la respuesta no dice quién lo importó. Así, lo que la persona encuentra lo puede citar al registrar, y el profesional del plan también lo ve. Lo cargado a mano sigue siendo solo de su profesional. Nutrición no cambia: la persona no consulta el catálogo nutricional.
+  - *Alternativas descartadas:* que vea solo lo importado por sus profesionales (con un elemento por ítem externo, «importado por» deja de tener sentido: el segundo profesional no lo creó); solo lo citado en sus planes (no alcanza para declarar otro ejercicio).
+- **D-1.f · Lo importado antes de DL-141:** la migración registra el más antiguo de cada ítem externo, que pasa a ser de todos. Si un mismo ítem se había importado más de una vez, los demás siguen siendo de quien los importó: nada se reescribe ni se fusiona, y los planes que los citan siguen igual.
+  - *Alternativa descartada:* mostrarlos todos a todos (el buscador mostraría repetidos).
+- **D-1.g · Quién lo revisó no se muestra todavía.** El paquete dice «con su proveedor, su licencia y quién lo revisó». Queda registrado (el autor de la resolución que lo creó), pero ninguna respuesta lo dice: mostrar el nombre de un profesional a todos los demás es una divulgación nueva, y API-TRN-13 no puede sumar campos. Va con la página de fuentes (D-6), con decisión de Dirección.
+- **D-2 · Los nombres alternativos van en su propia tabla.**
+  - Una por catálogo: `nombre_alternativo_de_ejercicio` y `nombre_alternativo_de_alimento`. El nombre es del ítem, no de una versión. Lleva su idioma (`ES`, `EN`), su región si corresponde (ISO 3166-1 alfa-2: `AR`, `ES`, `MX`…) y su origen: `SIEMBRA_DE_BE` (lo curó BE y lo siembra una migración revisada en el PR), `PROVEEDOR` (con cuál: wger para ejercicios, Open Food Facts para alimentos) o `PROFESIONAL` (con quién).
+  - Solo se agregan. Retirar un nombre es un hecho nuevo, en su tabla de retiros (uno por nombre, con el motivo): el buscador deja de usarlo y el nombre queda en la historia.
+  - El buscador (DL-139) busca también en ellos, con sus reglas. Todas las palabras tienen que estar en un mismo nombre: «bench sentadilla» no mezcla dos. El ítem va en el grupo de su nombre que mejor coincide; a igual grupo, gana el principal.
+  - Las búsquedas del website dicen cuál coincidió, y el website lo muestra entre paréntesis y en minúscula: «Press de banca (bench press)». Las lecturas legadas no lo dicen.
+  - *Alternativas descartadas:* una lista dentro de la versión del ítem (versionar un nombre alternativo obligaría a versionar el ítem); un campo «nombre en inglés» (se queda corto con los otros países); una sola tabla para los dos catálogos (las claves foráneas serían opcionales, y cada catálogo ya tiene las suyas); un índice único por nombre (un nombre retirado no podría volver a agregarse igual).
+- **D-2.a · La siembra de este tramo, chica y a propósito** (`20261017010200_…`): el inglés de los doce ejercicios de demostración («Squat», «Bench press», «Deadlift»…, con «Military press» y «Overhead press» para el press militar), «Estocadas» (AR) y «Desplantes» (MX) para las zancadas, «Empuje de cadera» para el hip thrust, y diecisiete de alimentos: «Aguacate» y «Avocado» (palta), «Fresas» y «Strawberries» (frutillas), «Plátano» (banana, solo ES: en otros países es otra fruta), «Boniato» (ES) y «Camote» (MX) para la batata, «Patata» (ES), «Calabaza» (zapallo), «Pasta de maní» (AR), «Crema de cacahuete» (ES) y «Peanut butter», «Zumo de naranja natural» (ES), «Leche desnatada» (ES), «Chicken breast», «Egg» y «Chickpeas». Origen `SIEMBRA_DE_BE`, la siembra en la procedencia, UUID v5 deterministas y `ON CONFLICT DO NOTHING`: correrla dos veces no agrega nada.
+- **D-2.b · Agregar o retirar nombres desde el website no entra en este tramo.** Las tablas ya lo admiten (origen `PROFESIONAL`, retiro con su autor); falta la operación, y decidir quién puede tocar lo que es de todos.
+- **D-5 · Lo sintético de demostración se queda,** porque lo citan los planes de la cohorte y de las pruebas. Este tramo no lo toca.
+  - *Alternativa descartada:* retirarlo. Las instantáneas no se reescriben (REG-06-112), así que no cambia nada de lo ya citado, pero confunde a la cohorte.
+- **D-6 · Las fuentes, a la vista:** lo importado ya dice su proveedor y su fecha donde se elige, y su licencia al consultarlo. La licencia en cada fila del buscador («wger · CC BY-SA 4.0», «USDA FoodData Central · dominio público») y la página «Fuentes del catálogo» llegan con los catálogos base (tramos 2 y 3), que son los que la necesitan.
+
+**Base de datos.** Tres migraciones, sin booleanos:
+- `20261017010000_lo_importado_es_de_todos`:
+  - la tabla `item_externo_de_catalogo`, solo agregada. Un ítem externo apunta solo a un importado (`CONTROLLED_IMPORT`) que vino de ese mismo proveedor e identificador (`be_item_externo_de_catalogo_guardar`), y Open Food Facts es nutrición y wger, entrenamiento;
+  - los importados que ya había: el más antiguo de cada ítem externo;
+  - la resolución de un candidato puede apuntar a un elemento sin crear versión. El CHECK `resolucion_de_candidato_efecto_coherente` deja de exigir `version_creada_id` al importar; los índices únicos pasan a ser «una sola resolución crea el elemento» (`resolucion_de_candidato_crea_un_elemento_nutricional`, `…_crea_un_ejercicio`); y `be_resolucion_de_candidato_insertar` exige, además de lo de WP-08, que el elemento sea el del ítem externo del candidato.
+- `20261017010100_nombres_alternativos`: las enumeraciones `IdiomaDeNombre` y `OrigenDeNombreAlternativo`, y las cuatro tablas de nombres y retiros, solo agregadas, con sus CHECK: el nombre sin espacios en los bordes y de hasta 120 caracteres, la región como código de país, el origen coherente y el retiro con su motivo.
+- `20261017010200_nombres_alternativos_del_catalogo_de_demostracion`: la siembra (D-2.a).
+
+El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre principal y sus nombres alternativos vigentes.
+
+**El website:** los cuatro buscadores (agregar un alimento o un ejercicio en el editor del plan, los ingredientes de una receta y el alimento de una estimación en los registros) muestran «(bench press)» junto al nombre cuando coincidió un nombre alternativo. «Importar desde Open Food Facts» e «Importar desde wger» muestran «Ya está en el catálogo BE» cuando corresponde, con «Usar el del catálogo BE», y agregan el ítem tal como está en el catálogo.
+
+**Pruebas:**
+- **dominio** (`packages/domain/src/catalogo-base.test.ts`): cómo se muestra el nombre alternativo; el campo nuevo, presente y estricto en las dos búsquedas; que el esquema congelado de API-TRN-13 lo rechazaría (por eso no va ahí); el candidato y la resolución con el ítem que ya estaba. `contratos-wp08.test.ts` suma el campo al candidato.
+- **unitarias** (`apps/api/src/http/busqueda.spec.ts`): las dos consultas del buscador con nombres alternativos y sin ellos.
+- **integración** (`test/integration/catalogo-compartido.int-spec.ts`):
+  - lo que importa un profesional lo encuentra, lo marca y lo usa en una receta otro; importarlo de nuevo apunta al mismo elemento, no crea otro ni lo cambia, y su revisión queda registrada;
+  - tres importaciones simultáneas del mismo producto dejan un solo elemento;
+  - el ejercicio de wger que importó uno lo prescribe otro, y la persona lo ve en su plan (API-TRN-09) y en el catálogo (API-TRN-13), los dos validados contra los esquemas congelados de la APK;
+  - la base sostiene uno por ítem externo: la clave, lo sembrado, otro producto, el dominio del proveedor y una resolución que apunte a otro importado;
+  - los nombres alternativos de ejercicios y de alimentos, en plural y con errores de tipeo, el principal primero, todas las palabras en un mismo nombre, y el campo solo en las búsquedas del website;
+  - un nombre de un profesional y su retiro, y los CHECK del origen, la región y el nombre;
+  - las cinco tablas rechazan UPDATE y DELETE; la siembra es idempotente y cada nombre es de un ítem sembrado.
+  - `integraciones.int-spec.ts` usa productos que nadie importó donde cuenta lo que se crea (lo importado ya es de todos); `comprension.int-spec.ts` compara las filas de la búsqueda con las de la lectura legada; `schema.int-spec.ts` suma las cinco tablas a las que rechazan TRUNCATE.
+
+**Lo que queda:**
+- **Tramo 2 · el catálogo base de entrenamiento (D-3):** entre 150 y 250 ejercicios de wger con la licencia de cada entrada, y el inglés como nombre alternativo con origen `PROVEEDOR`. Van como `CONTROLLED_IMPORT` de WGER y se registran en `item_externo_de_catalogo`, así importar uno que ya está apunta al del catálogo base. La tabla ya los admite sin profesional que los importe, como los de USDA (DL-119).
+- **Tramo 3 · el catálogo base de alimentos (D-4):** entre 300 y 500 de USDA FoodData Central, con nombres en castellano rioplatense y el inglés como nombre alternativo.
+- **D-6:** la licencia en cada fila del buscador y la página «Fuentes del catálogo»; ahí también, si Dirección lo decide, quién revisó cada importado (D-1.g).
+- Agregar y retirar nombres alternativos desde el website (D-2.b).
+- Si wger trae un ejercicio solo en inglés y el profesional lo traduce, ese inglés podría quedar como nombre alternativo de origen `PROVEEDOR`. Hoy el candidato guarda un solo nombre.
+
+**Provisorio en código:** D-1 (con D-1.a a D-1.g) y D-2 (con D-2.a y D-2.b).
+
+**Condición de cierre:**
+- Dirección ratifica D-1 y D-2, o cambia las que quiera;
+- los tramos 2 y 3 integrados, con la página de fuentes.

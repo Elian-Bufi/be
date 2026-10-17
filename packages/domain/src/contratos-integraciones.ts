@@ -12,9 +12,15 @@
  * - el contenido revisado con la misma forma que el candidato, y su completitud validada en el servicio, para que un
  *   faltante sea el `422 REVIEWED_CONTENT_INVALID` del 09 con la ruta de lo que falta;
  * - el éxito de TRN-03, «mismo patrón» que NUT-03 (09v12:369).
+ *
+ * DL-141 D-1: lo importado es de todos los profesionales y hay un solo elemento por ítem externo (proveedor más
+ * identificador). El candidato y la resolución dicen si el ítem ya estaba en el catálogo, con el elemento que hay: el
+ * website lo ofrece en lugar de repetir la revisión, y lo agrega tal como está en el catálogo.
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
+import { EjercicioDeCatalogoSchema } from './contratos-entrenamiento';
+import { ElementoDeCatalogoSchema } from './contratos-nutricion';
 import { LicenciaExternaSchema, ProveedorExternoSchema } from './contratos-procedencia-externa';
 
 const Sha256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -93,9 +99,22 @@ const baseDeCandidato = {
   expiresAt: Instante,
   provenance: ProcedenciaDeCandidatoSchema,
 };
-export const CandidatoDeAlimentoSchema = z.strictObject({ ...baseDeCandidato, provider: z.literal('OPEN_FOOD_FACTS'), candidate: AlimentoCandidatoSchema });
+/**
+ * DL-141 D-1: el alimento que ya está en el catálogo BE por este mismo ítem externo (lo importó otro profesional, o vos),
+ * tal como está, o `null`. Importar el candidato usa ese y no crea otro. Lo ven todos los profesionales.
+ */
+const AlimentoQueYaEstaSchema = ElementoDeCatalogoSchema.nullable();
+/** DL-141 D-1: lo mismo para un ejercicio de wger. */
+const EjercicioQueYaEstaSchema = EjercicioDeCatalogoSchema.nullable();
+
+export const CandidatoDeAlimentoSchema = z.strictObject({
+  ...baseDeCandidato,
+  provider: z.literal('OPEN_FOOD_FACTS'),
+  candidate: AlimentoCandidatoSchema,
+  existingCatalogItem: AlimentoQueYaEstaSchema,
+});
 export type CandidatoDeAlimento = z.infer<typeof CandidatoDeAlimentoSchema>;
-export const CandidatoDeEjercicioSchema = z.strictObject({ ...baseDeCandidato, provider: z.literal('WGER'), candidate: EjercicioCandidatoSchema });
+export const CandidatoDeEjercicioSchema = z.strictObject({ ...baseDeCandidato, provider: z.literal('WGER'), candidate: EjercicioCandidatoSchema, existingExercise: EjercicioQueYaEstaSchema });
 export type CandidatoDeEjercicio = z.infer<typeof CandidatoDeEjercicioSchema>;
 export const CandidatoDeAlimentoResponseSchema = z.strictObject({ data: CandidatoDeAlimentoSchema });
 export const CandidatoDeEjercicioResponseSchema = z.strictObject({ data: CandidatoDeEjercicioSchema });
@@ -132,16 +151,22 @@ const baseDeResolucion = {
   correctedFields: z.array(z.string()),
   resolvedAt: Instante,
 };
-/** El éxito del 09 (09v12:277-289) más `candidateId`, `correctedFields` y `resolvedAt` (D-I). */
+/**
+ * El éxito del 09 (09v12:277-289) más `candidateId`, `correctedFields` y `resolvedAt` (D-I). Con IMPORT, `catalogItem`
+ * es el elemento al que apunta la resolución: el que creó o, si el ítem externo ya estaba, el que había (DL-141 D-1);
+ * en ese caso `existingCatalogItem` lo trae entero, y la revisión queda registrada sin cambiarlo.
+ */
 export const ResolucionDeAlimentoSchema = z.strictObject({
   ...baseDeResolucion,
   catalogItem: z.strictObject({ catalogItemId: IdOpaco, versionId: IdOpaco }).nullable(),
+  existingCatalogItem: AlimentoQueYaEstaSchema,
 });
 export type ResolucionDeAlimento = z.infer<typeof ResolucionDeAlimentoSchema>;
 /** «Mismo patrón» (09v12:390), con el nombre que el catálogo de entrenamiento ya usa para sus elementos. */
 export const ResolucionDeEjercicioSchema = z.strictObject({
   ...baseDeResolucion,
   exercise: z.strictObject({ exerciseId: IdOpaco, versionId: IdOpaco }).nullable(),
+  existingExercise: EjercicioQueYaEstaSchema,
 });
 export type ResolucionDeEjercicio = z.infer<typeof ResolucionDeEjercicioSchema>;
 export const ResolucionDeAlimentoResponseSchema = z.strictObject({ data: ResolucionDeAlimentoSchema });

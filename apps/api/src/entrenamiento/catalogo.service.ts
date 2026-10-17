@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { CrearEjercicioRequestSchema, type EjercicioDeCatalogo, type ValidationIssue } from '@be/domain';
+import { CrearEjercicioRequestSchema, type EjercicioDeCatalogo, type EjercicioEncontrado, type ValidationIssue } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda } from '../http/busqueda';
+import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda, type ConNombreAlternativo } from '../http/busqueda';
 import { errores } from '../http/errores';
 import { leerConsultaDeLista } from '../http/paginacion';
+import { EJERCICIO_DE_UN_ITEM_EXTERNO } from '../integraciones/item-externo';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,12 +24,31 @@ export type Ambito = 'PROFESIONAL' | 'ASESORADO';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Los ejercicios `e` que ve quien tiene estos creadores visibles: lo sembrado y lo importado de wger, que son de todos
+ * (DL-141 D-1), y lo cargado a mano por ellos. La consulta tiene que llamar `e` al ejercicio.
+ */
+export function ejercicioVisible(creadores: readonly string[]): Prisma.Sql {
+  return Prisma.sql`(e."procedencia" = 'BE_SYNTHETIC_SEED' OR ${EJERCICIO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ANY(${[...creadores]}::uuid[]))`;
+}
+
+/** DL-141 D-2: los nombres alternativos vigentes (sin retiro) del ejercicio `e`, para el buscador. */
+const NOMBRES_ALTERNATIVOS = Prisma.sql`SELECT n."nombre" FROM "nombre_alternativo_de_ejercicio" n
+  WHERE n."ejercicio_id" = e."id" AND NOT EXISTS (SELECT 1 FROM "retiro_de_nombre_alternativo_de_ejercicio" r WHERE r."nombre_id" = n."id")`;
+
+/** Las columnas de una fila de ejercicio (`FilaDeEjercicio`), con la versión `v` y el ejercicio `e`. */
+const COLUMNAS = Prisma.sql`e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
+       e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
+       v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`;
+
+/**
  * Catálogo propio de ejercicios (RF-037; API-TRN-13 y API-INT-TRN-01).
  * - Ejercicio con identificador estable y versiones inmutables; la prescripción cita una **versión** (09v10:323,
  *   336), y la instantánea congela su nombre al activar: un cambio de catálogo no la reescribe (REG-06-112).
- * - Ámbitos, como en nutrición (REG-06-135): lo sembrado es global; lo que carga un profesional es suyo.
+ * - Ámbitos, como en nutrición (REG-06-135): lo sembrado es global; lo que carga un profesional es suyo. Lo importado
+ *   de wger es de todos, uno por ejercicio de wger, con su fuente (DL-141 D-1).
  * - **El asesorado también lo consulta**, a diferencia del nutricional: para sustituir un ejercicio tiene que poder
- *   buscar el que realmente hizo (B10-06:762-768). Ve lo sembrado y lo que cargaron los profesionales de sus planes
+ *   buscar el que realmente hizo (B10-06:762-768). Ve lo sembrado, lo importado (como lo sembrado: es del catálogo de
+ *   todos, con una fuente pública, y no dice quién lo importó) y lo que cargaron los profesionales de sus planes
  *   **activados** con los que el acceso sigue vigente: un borrador no le existe (09v10:683) y, revocado el
  *   consentimiento, lo de ese profesional deja de verse (08:979).
  * - El catálogo **no calcula**: sin porcentaje de músculo trabajado ni volumen (09v10:854).
@@ -37,35 +57,45 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export class CatalogoDeEjerciciosService {
   constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorDeEntrenamiento, private readonly pdp: PdpService) {}
 
-  // ─── API-TRN-13 ────────────────────────────────────────────────────────────────────────────
+  // ─── API-TRN-13 y su búsqueda ──────────────────────────────────────────────────────────────
   /**
    * El buscador tolera tildes, mayúsculas, el orden de las palabras, los plurales y los errores de tipeo
-   * (`http/busqueda.ts`; DL-139), también para el asesorado que busca qué hizo en lugar de lo prescripto. Sin texto, el
-   * catálogo entero, lo más nuevo primero.
+   * (`http/busqueda.ts`; DL-139), y busca también en los nombres alternativos (DL-141), también para el asesorado que
+   * busca qué hizo en lugar de lo prescripto. Sin texto, el catálogo entero, lo más nuevo primero. Responde con la forma
+   * de siempre: la APK instalada la lee con un esquema congelado.
    */
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioDeCatalogo[]; page: unknown }> {
+    const { filas, page } = await this.buscarFilas(actor, query);
+    return { data: filas.map(ejercicioApi), page };
+  }
+
+  /** API-TRN-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2). Solo el website. */
+  async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
+    const { filas, page } = await this.buscarFilas(actor, query);
+    return { data: filas.map((f) => ({ ...ejercicioApi(f), matchedAlternativeName: f.nombreAlternativo })), page };
+  }
+
+  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeEjercicio & ConNombreAlternativo)[]; page: unknown }> {
     const { q: crudo, cursor: cursorEscrito, ...resto } = query;
     if (crudo !== undefined && typeof crudo !== 'string') throw errores.solicitudInvalida([{ code: 'INVALID_FILTER', path: 'q' }]);
     const consulta = leerConsultaDeLista(resto, {});
     const cursor = leerCursorDeBusqueda(cursorEscrito);
     const q = (crudo ?? '').trim().slice(0, 80);
     const creadores = await this.creadoresVisibles(this.prisma, actor.identidadId, 'CUALQUIERA');
-    const { filas, page } = await buscarEnCatalogo<FilaDeEjercicio>(
+    return buscarEnCatalogo<FilaDeEjercicio>(
       this.prisma,
       {
-        columnas: Prisma.sql`e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-               e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
-               v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`,
+        columnas: COLUMNAS,
         tablas: Prisma.sql`"version_de_ejercicio" v JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'
-           AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ANY(${creadores}::uuid[]))`,
+           AND ${ejercicioVisible(creadores)}`,
+        nombresAlternativos: NOMBRES_ALTERNATIVOS,
       },
       leerBusqueda(q),
       consulta.limit,
       cursor,
     );
-    return { data: filas.map(ejercicioApi), page };
   }
 
   // ─── API-INT-TRN-01 ────────────────────────────────────────────────────────────────────────
@@ -126,24 +156,37 @@ export class CatalogoDeEjerciciosService {
 
   /**
    * Las versiones de ejercicio que un actor puede citar, por identificador de versión: para prescribir (el
-   * profesional: lo sembrado y lo propio) o para declarar lo que realmente hizo (el asesorado: lo sembrado y lo de
-   * sus profesionales). Una versión fuera de su ámbito no existe para él.
-   * - Al registrar o corregir una ejecución, el asesorado cita lo sembrado y lo del profesional **de ese plan**: el
-   *   catálogo manual de otro profesional no entra en un registro que después lee un tercero.
+   * profesional: lo sembrado, lo importado y lo propio) o para declarar lo que realmente hizo (el asesorado: lo sembrado,
+   * lo importado y lo de sus profesionales). Una versión fuera de su ámbito no existe para él.
+   * - Al registrar o corregir una ejecución, el asesorado cita lo sembrado, lo importado y lo del profesional **de ese
+   *   plan**: el catálogo manual de otro profesional no entra en un registro que después lee un tercero. Lo importado sí:
+   *   es de todos (DL-141 D-1), así que quien lea el registro también lo ve.
    */
   async citables(cliente: Cliente, actorId: string, ambito: Ambito, versionIds: readonly string[], profesionalDelPlan?: string): Promise<Map<string, FilaDeEjercicio>> {
     const validos = [...new Set(versionIds)].filter((id) => UUID.test(id)).map((id) => id.toLowerCase());
     if (validos.length === 0) return new Map();
     const creadores = ambito === 'ASESORADO' && profesionalDelPlan ? [profesionalDelPlan] : await this.creadoresVisibles(cliente, actorId, ambito);
     const filas = await cliente.$queryRaw<FilaDeEjercicio[]>`
-      SELECT e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
-             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
+      SELECT ${COLUMNAS}
         FROM "version_de_ejercicio" v
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE v."id" = ANY(${validos}::uuid[])
-         AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ANY(${creadores}::uuid[]))`;
+         AND ${ejercicioVisible(creadores)}`;
     return new Map(filas.map((f) => [f.versionId, f]));
+  }
+
+  /**
+   * DL-141 D-1: el ejercicio de un ítem externo de wger, en su versión vigente y tal como lo ve cualquier profesional (es
+   * de todos). Lo usa la importación para ofrecer el que ya está y para apuntar la resolución a él.
+   */
+  async vigenteDelEjercicio(cliente: Cliente, ejercicioId: string): Promise<EjercicioDeCatalogo | null> {
+    const [fila] = await cliente.$queryRaw<FilaDeEjercicio[]>`
+      SELECT ${COLUMNAS}
+        FROM "version_de_ejercicio" v
+        JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
+       WHERE e."id" = ${ejercicioId}::uuid
+         AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")`;
+    return fila ? ejercicioApi(fila) : null;
   }
 
   /**

@@ -9,12 +9,12 @@
  * - API-PRJ-01: cada punto dice la versión del plan que ejecutan sus registros; la vigencia dice su instante de corte, y
  *   su número es el orden de activación (no el token de concurrencia).
  * - API-NUT-13-BUSQUEDA y API-TRN-13-BUSQUEDA: la misma lectura que el GET, con el texto en el cuerpo y fuera de todo
- *   registro.
+ *   registro. Desde DL-141 cada fila suma el nombre alternativo que coincidió; las filas y su orden son los del GET.
  * - API-DSH-04 (pasada del 2026-10-09): el modo de registro de las cantidades no es una diferencia; la diferencia con la
  *   opción indicada se comprueba ingrediente por ingrediente y tiene su propio rasgo de calidad.
  */
 import type { INestApplication } from '@nestjs/common';
-import { DashboardResponseSchema, LineaDeTiempoResponseSchema, ListaDeCatalogoResponseSchema, ProyeccionResponseSchema } from '@be/domain';
+import { BusquedaEnCatalogoResponseSchema, DashboardResponseSchema, LineaDeTiempoResponseSchema, ListaDeCatalogoResponseSchema, ProyeccionResponseSchema } from '@be/domain';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { circuitoConPlanActivo, cuerpoDeRevision } from './soporte-nutricion';
 
@@ -179,12 +179,14 @@ describe('API-DSH-04: el modo de registro no es una diferencia con lo indicado (
 });
 
 describe('Búsqueda en los catálogos con el texto en el cuerpo (DL-130)', () => {
-  it('la misma respuesta que el GET legado, y el texto no queda en el registro de requests ni en el log', async () => {
+  it('las mismas filas que el GET legado, y el texto no queda en el registro de requests ni en el log', async () => {
     const c = await circuitoConPlanActivo(app, 'comprension-catalogo');
     const pro = conSesion(app, c.pro.token);
     const porGet = ListaDeCatalogoResponseSchema.parse((await pro.get('/api/v1/nutrition/catalog-items?q=arroz&limit=5').expect(200)).body);
-    const porPost = ListaDeCatalogoResponseSchema.parse((await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', limit: 5 }).expect(200)).body);
-    expect(porPost).toEqual(porGet);
+    const porPost = BusquedaEnCatalogoResponseSchema.parse((await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', limit: 5 }).expect(200)).body);
+    // DL-141: la búsqueda del website suma el nombre alternativo que coincidió («arroz» coincide con los principales).
+    expect(porPost.data.map((i) => i.matchedAlternativeName)).toEqual(porPost.data.map(() => null));
+    expect({ ...porPost, data: porPost.data.map(({ matchedAlternativeName: _, ...i }) => i) }).toEqual(porGet);
 
     const TEXTO = 'Ingrediente con nombre propio';
     const lineas: string[] = [];

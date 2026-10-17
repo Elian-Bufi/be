@@ -20,6 +20,12 @@ import { errores } from './errores';
  *
  * El orden del resultado: primero el nombre igual a lo escrito, después los que empiezan con la primera palabra, después
  * los que tienen todas las palabras y al final los parecidos. Dentro de cada grupo, como siempre: lo más nuevo primero.
+ *
+ * **Los nombres alternativos (DL-141, D-2).** Un ítem también se encuentra por sus nombres alternativos vigentes:
+ * «aguacate» encuentra «Palta» y «bench press», «Press de banca». Cada nombre se mide solo, con las mismas reglas (todas
+ * las palabras tienen que estar en un mismo nombre: «bench sentadilla» no mezcla dos), y el ítem va en el grupo de su
+ * nombre que mejor coincide; a igual grupo gana el principal. La fila dice qué nombre alternativo coincidió
+ * (`nombreAlternativo`), o `null` si fue el principal: lo muestran solo las operaciones que no lee la APK instalada.
  */
 export const CON_MARCA = 'ÁÀÄÂÃÉÈËÊÍÌÏÎÓÒÖÔÕÚÙÜÛÑÇáàäâãéèëêíìïîóòöôõúùüûñç';
 export const SIN_MARCA = 'AAAAAEEEEIIIIOOOOOUUUUNCaaaaaeeeeiiiiooooouuuunc';
@@ -163,6 +169,16 @@ export interface CatalogoBuscable {
   readonly tablas: Prisma.Sql;
   /** Lo que puede ver quien busca: la versión vigente, disponible y de su ámbito. */
   readonly visibles: Prisma.Sql;
+  /**
+   * DL-141 D-2: los nombres alternativos vigentes del ítem de la fila, como una consulta que devuelve la columna
+   * `"nombre"` y puede usar los alias de `tablas`. Sin esto, se busca solo en el nombre principal.
+   */
+  readonly nombresAlternativos?: Prisma.Sql;
+}
+
+/** Lo que el buscador suma a cada fila: el nombre alternativo que coincidió, o `null` si fue el principal (DL-141). */
+export interface ConNombreAlternativo {
+  readonly nombreAlternativo: string | null;
 }
 
 export interface ResultadoDeBusqueda<F> {
@@ -170,13 +186,23 @@ export interface ResultadoDeBusqueda<F> {
   readonly page: { readonly limit: number; readonly nextCursor: string | null; readonly hasMore: boolean };
 }
 
-/** El nombre como se compara: sin marcas, en minúsculas y con un espacio entre palabras. */
-const NOMBRE_COMPARABLE = Prisma.sql`btrim(regexp_replace(lower(translate(v."nombre", ${CON_MARCA}, ${SIN_MARCA})), '[[:space:]]+', ' ', 'g'))`;
+/** Un nombre como se compara: sin marcas, en minúsculas y con un espacio entre palabras. */
+const comparable = (nombre: Prisma.Sql): Prisma.Sql => Prisma.sql`btrim(regexp_replace(lower(translate(${nombre}, ${CON_MARCA}, ${SIN_MARCA})), '[[:space:]]+', ' ', 'g'))`;
+
+/**
+ * Los nombres de la fila contra los que se compara, cada uno ya comparable en `cmp."nombre"`: el principal (orden 0, sin
+ * alternativo) y los alternativos vigentes (orden 1, con el nombre tal como está guardado en `cmp."alternativo"`).
+ */
+function nombresDeLaFila(catalogo: CatalogoBuscable): Prisma.Sql {
+  const principal = Prisma.sql`SELECT NULL::text AS "alternativo", 0 AS "orden", ${comparable(Prisma.sql`v."nombre"`)} AS "nombre"`;
+  if (!catalogo.nombresAlternativos) return Prisma.sql`(${principal})`;
+  return Prisma.sql`(${principal} UNION ALL SELECT a."nombre", 1, ${comparable(Prisma.sql`a."nombre"`)} FROM (${catalogo.nombresAlternativos}) a)`;
+}
 
 /** Para LIKE: `\`, `%` y `_` se buscan como letras. */
 const literal = (texto: string): string => texto.replace(/[\\%_]/g, (c) => `\\${c}`);
 
-/** La palabra está dentro del nombre comparable (`cmp."nombre"`), en alguna de sus formas. */
+/** La palabra está dentro de un nombre comparable (`cmp."nombre"`), en alguna de sus formas. */
 function contiene(p: PalabraBuscada): Prisma.Sql {
   return Prisma.sql`(${Prisma.join(
     p.formas.map((f) => Prisma.sql`cmp."nombre" LIKE ${`%${literal(f)}%`}`),
@@ -189,8 +215,7 @@ function todasLasPalabras(b: Busqueda): Prisma.Sql {
 }
 
 /** El grupo de cada nombre: 0 igual a lo escrito (en singular o en plural), 1 empieza con la primera palabra, 2 el resto. */
-function grupo(b: Busqueda | null): Prisma.Sql {
-  if (b === null) return Prisma.sql`2`;
+function grupo(b: Busqueda): Prisma.Sql {
   const iguales = [...formasDeLaPalabra(b.texto)];
   const comienzos = (b.palabras[0]?.formas ?? []).map((f) => `${literal(f)}%`);
   return Prisma.sql`CASE WHEN cmp."nombre" = ANY(${iguales}::text[]) THEN 0 WHEN cmp."nombre" LIKE ANY(${comienzos}::text[]) THEN 1 ELSE 2 END`;
@@ -209,11 +234,12 @@ function parecido(p: PalabraBuscada): Prisma.Sql {
 
 /**
  * Busca por nombre en un catálogo, con la paginación por cursor de siempre (`{ data, page }`):
- * 1. **Los que tienen todas las palabras**, por grupo y, dentro de cada grupo, lo más nuevo primero. El cursor lleva el
- *    grupo del último servido, así que las páginas siguen el mismo orden.
+ * 1. **Los que tienen todas las palabras** en alguno de sus nombres, por grupo y, dentro de cada grupo, lo más nuevo
+ *    primero. El cursor lleva el grupo del último servido, así que las páginas siguen el mismo orden.
  * 2. **Los parecidos**, solo en la primera página y solo si la búsqueda exacta trajo menos de `POCOS_RESULTADOS` y no
  *    tiene más páginas: completan la página, del más parecido al menos parecido, y no tienen página siguiente. Cada
- *    palabra tiene que estar en el nombre o parecerse a una de sus palabras al menos `UMBRAL_DE_PARECIDO`.
+ *    palabra tiene que estar en un mismo nombre o parecerse a una de sus palabras al menos `UMBRAL_DE_PARECIDO`.
+ * Cada fila dice qué nombre alternativo coincidió (DL-141), o `null` si fue el principal.
  */
 export async function buscarEnCatalogo<F extends { readonly versionId: string; readonly momentoDeRegistro: Date }>(
   cliente: Pick<Prisma.TransactionClient, '$queryRaw'>,
@@ -221,18 +247,27 @@ export async function buscarEnCatalogo<F extends { readonly versionId: string; r
   busqueda: Busqueda | null,
   limite: number,
   cursor: CursorDeBusqueda | null,
-): Promise<ResultadoDeBusqueda<F>> {
+): Promise<ResultadoDeBusqueda<F & ConNombreAlternativo>> {
   const despuesDelCursor =
     cursor === null
       ? Prisma.sql`TRUE`
       : Prisma.sql`(grp."grupo" > ${cursor.grupo}::int OR (grp."grupo" = ${cursor.grupo}::int AND (v."momento_de_registro", v."id") < (${cursor.momento}, ${cursor.id}::uuid)))`;
-  const exactas = await cliente.$queryRaw<(F & { grupo: number })[]>`
-    SELECT ${catalogo.columnas}, grp."grupo"
+  const nombres = nombresDeLaFila(catalogo);
+  // El nombre de la fila que mejor coincide: el de menor grupo y, a igual grupo, el principal. Sin texto, todo en el último
+  // grupo y sin alternativo.
+  const mejorNombre =
+    busqueda === null
+      ? Prisma.sql`(SELECT 2 AS "grupo", NULL::text AS "alternativo")`
+      : Prisma.sql`(SELECT ${grupo(busqueda)} AS "grupo", cmp."alternativo"
+           FROM ${nombres} cmp
+          WHERE ${todasLasPalabras(busqueda)}
+          ORDER BY 1, cmp."orden", cmp."alternativo"
+          LIMIT 1)`;
+  const exactas = await cliente.$queryRaw<(F & ConNombreAlternativo & { grupo: number })[]>`
+    SELECT ${catalogo.columnas}, grp."grupo", grp."alternativo" AS "nombreAlternativo"
       FROM ${catalogo.tablas}
-     CROSS JOIN LATERAL (SELECT ${NOMBRE_COMPARABLE} AS "nombre") cmp
-     CROSS JOIN LATERAL (SELECT ${grupo(busqueda)} AS "grupo") grp
+     CROSS JOIN LATERAL ${mejorNombre} grp
      WHERE ${catalogo.visibles}
-       AND ${busqueda === null ? Prisma.sql`TRUE` : todasLasPalabras(busqueda)}
        AND ${despuesDelCursor}
      ORDER BY grp."grupo", v."momento_de_registro" DESC, v."id" DESC
      LIMIT ${limite + 1}`;
@@ -240,17 +275,22 @@ export async function buscarEnCatalogo<F extends { readonly versionId: string; r
   const pagina = exactas.slice(0, limite);
   const ultima = pagina[pagina.length - 1];
 
-  let parecidas: F[] = [];
+  let parecidas: (F & ConNombreAlternativo)[] = [];
   if (busqueda !== null && cursor === null && !hayMas && pagina.length < Math.min(POCOS_RESULTADOS, limite) && busqueda.palabras.some((p) => p.formas.some(admiteParecido))) {
-    parecidas = await cliente.$queryRaw<F[]>`
-      SELECT ${catalogo.columnas}
+    // El nombre más parecido de cada fila; las que ya trajo la búsqueda exacta (por cualquiera de sus nombres) no vuelven.
+    parecidas = await cliente.$queryRaw<(F & ConNombreAlternativo)[]>`
+      SELECT ${catalogo.columnas}, par."alternativo" AS "nombreAlternativo"
         FROM ${catalogo.tablas}
-       CROSS JOIN LATERAL (SELECT ${NOMBRE_COMPARABLE} AS "nombre") cmp
-       CROSS JOIN LATERAL (SELECT ARRAY[${Prisma.join(busqueda.palabras.map(parecido))}]::real[] AS "puntajes") par
+       CROSS JOIN LATERAL (
+         SELECT cmp."alternativo", (SELECT sum(u) FROM unnest(pts."puntajes") AS u) AS "suma"
+           FROM ${nombres} cmp
+          CROSS JOIN LATERAL (SELECT ARRAY[${Prisma.join(busqueda.palabras.map(parecido))}]::real[] AS "puntajes") pts
+          WHERE (SELECT min(u) FROM unnest(pts."puntajes") AS u) >= ${UMBRAL_DE_PARECIDO}::real
+          ORDER BY 2 DESC, cmp."orden", cmp."alternativo"
+          LIMIT 1) par
        WHERE ${catalogo.visibles}
-         AND NOT (${todasLasPalabras(busqueda)})
-         AND (SELECT min(u) FROM unnest(par."puntajes") AS u) >= ${UMBRAL_DE_PARECIDO}::real
-       ORDER BY (SELECT sum(u) FROM unnest(par."puntajes") AS u) DESC, v."momento_de_registro" DESC, v."id" DESC
+         AND NOT EXISTS (SELECT 1 FROM ${nombres} cmp WHERE ${todasLasPalabras(busqueda)})
+       ORDER BY par."suma" DESC, v."momento_de_registro" DESC, v."id" DESC
        LIMIT ${limite - pagina.length}`;
   }
 
