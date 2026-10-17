@@ -97,6 +97,20 @@ const DOMINIOS = [
     minimo: 4,
   },
   {
+    // WP-NOTAS-DE-COORDINACION (DL-140): el diálogo y el Resumen del website, la pantalla de la APK y su copy. Una nota habla
+    // de cualquier área: pasa por la lista de nutrición y por la de la cartera, que ya reúne las de entrenamiento,
+    // antropometría e información.
+    nombre: 'las notas de coordinación',
+    archivos: [
+      join(RAIZ, 'apps/web/src/app/pro/advisees/nota-de-coordinacion.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/seguimiento/notas-del-equipo.tsx'),
+      inicio('notas-de-coordinacion.tsx'),
+      join(RAIZ, 'packages/domain/src/copy-notas-de-coordinacion.ts'),
+    ],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeCarteraEn(texto)])],
+    minimo: 4,
+  },
+  {
     // WP-ESCRITORIO-AREAS, parte 10: las piezas de una revisión que comparten Nutrición y Entrenamiento (la evidencia por
     // día, la revisión en preparación, el período y su ayuda). Muestran texto de las dos áreas: pasan por las dos listas.
     // Hasta acá la evidencia no la miraba ninguna prueba de palabras.

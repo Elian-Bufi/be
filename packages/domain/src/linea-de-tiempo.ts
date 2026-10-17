@@ -229,8 +229,10 @@ export const NOMBRE_DE_TIPO_DE_EVENTO: Readonly<Record<TipoDeEvento, string>> = 
   ANTHROPOMETRIC_EVALUATION_RECORDED: 'Toma antropométrica',
   FOLLOW_UP_OPENED: 'Seguimiento abierto',
   FOLLOW_UP_CLOSED: 'Seguimiento cerrado',
+  COORDINATION_NOTE_RECORDED: 'Nota de coordinación',
 };
 
+/** El área de cada tipo. `null`: el tipo no es de un área fija (un seguimiento de cualquiera; una nota, de la que la escribió). */
 export const DOMINIO_DE_TIPO_DE_EVENTO: Readonly<Record<TipoDeEvento, DominioDeAnalisis | null>> = {
   NUTRITION_PLAN_ACTIVATED: 'NUTRITION',
   NUTRITION_OBJECTIVE_SET: 'NUTRITION',
@@ -243,6 +245,7 @@ export const DOMINIO_DE_TIPO_DE_EVENTO: Readonly<Record<TipoDeEvento, DominioDeA
   ANTHROPOMETRIC_EVALUATION_RECORDED: 'ANTHROPOMETRY',
   FOLLOW_UP_OPENED: null,
   FOLLOW_UP_CLOSED: null,
+  COORDINATION_NOTE_RECORDED: null,
 };
 
 export const NOMBRE_DE_DOMINIO: Readonly<Record<DominioDeAnalisis, string>> = { NUTRITION: 'Nutrición', TRAINING: 'Entrenamiento', ANTHROPOMETRY: 'Antropometría' };

@@ -72,10 +72,13 @@ test('un hito es todo lo que no se registra todos los días: ni una comida ni un
     'ANTHROPOMETRIC_EVALUATION_RECORDED',
     'FOLLOW_UP_OPENED',
     'FOLLOW_UP_CLOSED',
+    // DL-140: la nota de coordinación también es un hito.
+    'COORDINATION_NOTE_RECORDED',
   ]);
   // Cada tipo del contrato es un hito o es de todos los días: ninguno queda sin clase si el contrato suma un tipo.
   assert.equal(TIPOS_DE_HITO.length + 2, TIPOS_DE_EVENTO.length);
-  // Los de planificación son los que «Analizar» dibuja como líneas: los mismos, sin la toma (que ahí ya es un punto).
+  // Los de planificación son los que «Analizar» dibuja como líneas: los mismos, sin la toma (que ahí ya es un punto) y sin
+  // la nota de coordinación (no cambia lo que se le indica a nadie, DL-140).
   assert.deepEqual(
     [...TIPOS_DE_HITO_DE_PLANIFICACION].sort(),
     ['FOLLOW_UP_CLOSED', 'FOLLOW_UP_OPENED', 'NUTRITION_OBJECTIVE_SET', 'NUTRITION_PLAN_ACTIVATED', 'NUTRITION_REVIEW_RECORDED', 'TRAINING_OBJECTIVE_SET', 'TRAINING_PLAN_ACTIVATED', 'TRAINING_REVIEW_RECORDED'],

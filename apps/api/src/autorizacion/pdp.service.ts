@@ -233,6 +233,68 @@ export class PdpService {
   }
 
   /**
+   * DL-140 (UC-E07): las identidades de una nota de coordinación —el autor, la persona y los candidatos a recibirla—,
+   * bloqueadas en modo compartido en una sola sentencia y en orden de id, antes que cualquier otra fila. Después, la decisión
+   * del autor y la de cada destinatario toman cada una lo suyo (`be_bloquear_lo_que_corta`); como todo corte que empieza por
+   * una cuenta (cerrar, suspender) ya encuentra tomadas todas las identidades que esta transacción va a mirar, decidir por
+   * varios pares no invierte el orden único con nadie.
+   */
+  async bloquearIdentidades(tx: Prisma.TransactionClient, ids: readonly string[]): Promise<void> {
+    const validos = [...new Set(ids.filter((id) => UUID.test(id)).map((id) => id.toLowerCase()))];
+    if (validos.length === 0) return;
+    await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ANY(${validos}::uuid[]) ORDER BY "id" FOR SHARE`;
+  }
+
+  /**
+   * DL-140 (UC-E07, paso 5: «BE ejecuta UC-I02 para la visibilidad resultante»). Para cada candidato a recibir una nota de
+   * coordinación, decide los tres alcances del par (candidato, titular) dentro de la transacción de la nota, con los mismos
+   * bloqueos y la misma función que cualquier decisión, y registra cada una: el actor es el autor, que es quien opera, y el
+   * candidato queda como el recurso. Puede recibirla quien tenga algún alcance permitido: vínculo aceptado y B2 vigente, con
+   * su cuenta, su verificación y su habilitación en orden (CRD-D1).
+   * No lanza: un candidato sin acceso no recibe la nota. Y no se captura para la idempotencia: el reintento de la misma
+   * escritura vuelve a decidir solo al autor (la nota ya tiene sus destinatarios).
+   */
+  async decidirDestinatariosEnTransaccion(
+    tx: Prisma.TransactionClient,
+    p: { readonly operacion: string; readonly autorId: string; readonly titularId: string; readonly candidatos: readonly string[] },
+    ctx: ContextoDeSolicitud,
+  ): Promise<{ readonly identidadId: string; readonly alcances: readonly Alcance[] }[]> {
+    const titularId = p.titularId.toLowerCase();
+    const candidatos = [...new Set(p.candidatos.filter((c) => UUID.test(c)).map((c) => c.toLowerCase()))].sort();
+    const habilitados: { identidadId: string; alcances: Alcance[] }[] = [];
+    for (const candidato of candidatos) {
+      await this.bloquearLoQueCorta(tx, candidato, titularId);
+      const evaluadas = (await this.leerFilas(tx, candidato, titularId)).map((fila) => {
+        const hechos = aHechos(candidato, fila);
+        return { fila, hechos, decision: evaluarAutorizacion(hechos) };
+      });
+      await tx.decisionDeAcceso.createMany({
+        data: evaluadas.map(({ fila, hechos, decision }) => ({
+          operacion: p.operacion,
+          resultado: decision.permitida ? 'PERMITIDA' : 'DENEGADA',
+          actorId: p.autorId,
+          sujetoId: hechos.titular?.identidadId ?? null,
+          alcance: hechos.operacion.alcance,
+          finalidad: hechos.operacion.finalidad,
+          dimensionesDesfavorables: [...decision.dimensionesDesfavorables],
+          alcanceDeVinculoId: decision.permitida ? decision.alcanceDeVinculoId : (hechos.alcanceDeVinculo?.id ?? null),
+          consentimientoId: decision.permitida ? decision.consentimientoId : (hechos.consentimiento?.id ?? null),
+          versionDeConsentimientoId: decision.permitida ? decision.versionDeConsentimientoId : fila.version_cabeza_id,
+          versionDeMatriz: null,
+          recursoTipo: 'DestinatarioDeNota',
+          recursoId: candidato,
+          superficie: ctx.superficie,
+          requestId: ctx.requestId,
+          momentoDeOcurrencia: fila.momento,
+        })),
+      });
+      const alcances = evaluadas.filter((e) => e.decision.permitida).map((e) => e.hechos.operacion.alcance);
+      if (alcances.length > 0) habilitados.push({ identidadId: candidato, alcances });
+    }
+    return habilitados;
+  }
+
+  /**
    * Registra una decisión denegada fuera de la transacción revertida (ver `DenegacionDelPdp`). Si el registro falla, la
    * respuesta sigue siendo el 404: denegar no depende de poder auditar (UC-I02 E06 exige lo inverso).
    */

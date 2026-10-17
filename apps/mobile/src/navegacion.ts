@@ -43,6 +43,9 @@ export type Ruta =
   | { readonly nombre: 'revisiones'; readonly area: 'NUTRICION' | 'ENTRENAMIENTO'; readonly desde?: Ruta }
   | { readonly nombre: 'revision'; readonly area: 'NUTRICION' | 'ENTRENAMIENTO'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'vinculos'; readonly desde?: Ruta }
+  // WP-NOTAS-DE-COORDINACION (DL-140): las notas que tus profesionales se escriben entre ellos sobre vos, desde Cuenta y
+  // desde Vínculos.
+  | { readonly nombre: 'notas-de-coordinacion'; readonly desde?: Ruta }
   // WP-INVITACION (DL-136): la invitación de un profesional, desde su enlace o desde «Tengo un código».
   | { readonly nombre: 'invitacion'; readonly secreto?: SecretoDeInvitacionRequest; readonly desde?: Ruta }
   | { readonly nombre: 'vinculo'; readonly id: string; readonly desde?: Ruta }
@@ -171,6 +174,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'cuenta':
     case 'novedades':
     case 'vinculos':
+    case 'notas-de-coordinacion':
     case 'vinculo':
     case 'invitacion':
     case 'consentimiento':
@@ -234,6 +238,7 @@ function madre(ruta: Ruta): Ruta | null {
     case 'novedades':
       return INICIO;
     case 'vinculos':
+    case 'notas-de-coordinacion':
     case 'privacidad':
       return { nombre: 'cuenta' };
     case 'historial-de-entrenamiento':
@@ -355,6 +360,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Tus revisiones';
     case 'vinculos':
       return 'Volver a Vínculos';
+    case 'notas-de-coordinacion':
+      return 'Volver a Notas entre tus profesionales';
     case 'vinculo':
       return 'Volver al vínculo';
     case 'privacidad':

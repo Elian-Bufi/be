@@ -43,6 +43,7 @@ import { diaDelAnioEnCurso } from '../../../../lib/formato';
 import { razonDeFalla, useLectura, useSeguimiento, type Lectura } from './contexto';
 import { hoyEn, parametrosDePregunta, restarDias } from './estado';
 import { ICONO_DE_FALLA } from './iconos-de-metrica';
+import { NotasRecientesDelEquipo } from './notas-del-equipo';
 import { TarjetasDeArea } from './resumen-area';
 import { IndicadoresDelResumen } from './resumen-indicadores';
 import { useDisponibles, type Disponibles } from './series';
@@ -107,18 +108,21 @@ export function ResumenDelSeguimiento() {
   );
   const indicadores = <IndicadoresDelResumen disponibles={disponibles} formato={formato} />;
   const tardias = delPeriodo.tipo === 'listo' ? delPeriodo.datos.data.periodCounts.recordedLate : 0;
+  // DL-140 (CRD-D8): las notas recientes del equipo van después de los indicadores: lo de la persona primero.
+  const notas = <NotasRecientesDelEquipo />;
   return (
     <>
       {areas === 0 ? <EstadoVacio titulo="Ninguna área disponible con tu acceso actual">El acceso de cada área se ve en el encabezado de la ficha.</EstadoVacio> : null}
       {areas === 1 ? (
-        // Una sola área: su tarjeta a la izquierda y, al costado, los indicadores y las preguntas. En el documento van
-        // en ese mismo orden.
+        // Una sola área: su tarjeta a la izquierda y, al costado, los indicadores, las notas del equipo y las preguntas. En
+        // el documento van en ese mismo orden.
         <div className="resumen resumen--una-area">
           <div className="areas" data-areas={areas}>
             {tarjetas}
           </div>
           <div className="resumen__costado">
             {indicadores}
+            {notas}
             <PreguntasDelResumen />
           </div>
         </div>
@@ -131,6 +135,7 @@ export function ResumenDelSeguimiento() {
             <PreguntasDelResumen />
           </div>
           {indicadores}
+          {notas}
         </div>
       ) : null}
       {areas === 3 ? (
@@ -141,6 +146,7 @@ export function ResumenDelSeguimiento() {
             {tarjetas}
           </div>
           {indicadores}
+          {notas}
           <PreguntasDelResumen />
         </div>
       ) : null}

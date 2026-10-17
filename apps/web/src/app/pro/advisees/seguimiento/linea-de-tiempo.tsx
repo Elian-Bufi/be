@@ -76,6 +76,7 @@ import { motivoDeFalla, razonDeFalla, textoDeFalla, useLectura, useSeguimiento, 
 import { hoyEn, leerCorte, leerFiltrosDeLaLinea, parametrosDeFiltros, restarDias, SIN_FILTROS, type FiltrosDeLaLinea } from './estado';
 import { cambiosDelRegistro, dondeCoincide, frenteALoIndicadoDe, ICONO_DEL_RASGO, numeroDeVersionDe, relacionesEnPalabras, renglonDelHecho, textoDelHueco, tituloDelHecho } from './hecho-en-un-renglon';
 import { ICONO_DE_FALLA } from './iconos-de-metrica';
+import { AccionesDeLaNota } from './notas-del-equipo';
 
 const PanelDeRegistro = dynamic(() => import('./registro-original').then((m) => m.PanelDeRegistro), { ssr: false });
 const ContenidoDelRegistro = dynamic(() => import('./registro-original').then((m) => m.ContenidoDelRegistro), { ssr: false, loading: () => <Cargando /> });
@@ -480,6 +481,7 @@ export function LineaDeTiempo() {
                     {tituloDelHecho(elegido)}
                   </h3>
                   <DatosDelHecho e={elegido} zona={zona} hoy={hoy} />
+                  <AccionesDeLaNota e={elegido} />
                   {/* La clave hace que cada hecho monte su registro de cero: una respuesta lenta de otro no lo pinta. */}
                   <ContenidoDelRegistro key={elegido.timelineEntryId} origen={elegido.source} numeroDeVersion={numeroDeVersionDe(elegido)} />
                   <EnlaceAlArea origen={elegido.source} />
@@ -496,7 +498,12 @@ export function LineaDeTiempo() {
         onCerrar={() => setElegido(null)}
         numeroDeVersion={elegido ? numeroDeVersionDe(elegido) : undefined}
       >
-        {elegido && !alCostado ? <DatosDelHecho e={elegido} zona={zona} hoy={hoy} /> : null}
+        {elegido && !alCostado ? (
+          <>
+            <DatosDelHecho e={elegido} zona={zona} hoy={hoy} />
+            <AccionesDeLaNota e={elegido} />
+          </>
+        ) : null}
       </PanelDeRegistro>
     </section>
   );

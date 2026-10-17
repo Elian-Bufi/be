@@ -74,6 +74,7 @@ import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeRevision, PantallaDeRevisiones } from './src/pantallas/revisiones';
+import { PantallaDeNotasDeCoordinacion } from './src/pantallas/notas-de-coordinacion';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
 import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
@@ -536,6 +537,7 @@ function Contenido() {
               {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} sesionRecordada={recordada} /> : null}
               {ruta.nombre === 'novedades' ? <PantallaDeNovedades token={sesion.token} salir={salir} ir={ir} alCambiarSinLeer={setSinLeer} /> : null}
               {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
+              {ruta.nombre === 'notas-de-coordinacion' ? <PantallaDeNotasDeCoordinacion token={sesion.token} salir={salir} /> : null}
               {ruta.nombre === 'invitacion' ? (
                 <PantallaDeInvitacion key={ruta.secreto ? JSON.stringify(ruta.secreto) : 'codigo'} token={sesion.token} secreto={ruta.secreto} salir={salir} ir={ir} />
               ) : null}
