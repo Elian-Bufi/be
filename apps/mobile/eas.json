@@ -12,7 +12,8 @@
       },
       "env": {
         "APP_ENV": "test",
-        "API_BASE_URL": "https://be-api-hndp.onrender.com"
+        "API_BASE_URL": "https://be-api-hndp.onrender.com",
+        "WEB_BASE_URL": "https://be-web-1ngj.onrender.com"
       }
     },
     "production": {
