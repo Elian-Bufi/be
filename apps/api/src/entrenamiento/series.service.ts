@@ -89,6 +89,8 @@ export class ObjetivosPorSerieService {
             templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null,
             blocks: bloquesConObjetivosApi(contenido, resolver, imagenes),
             setTargetsDelivery: { required: exigeObjetivosPorSerie(contenido), adviseeClientCapable: await this.compatibilidad.titularCapaz(tx, titular) },
+            // DL-137: en una activada, la de la instantánea; en un borrador, la que se está editando.
+            agenda: contenido.agenda ?? null,
           },
         };
       },

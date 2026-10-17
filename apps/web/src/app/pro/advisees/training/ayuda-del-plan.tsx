@@ -27,7 +27,7 @@ export function AyudaDelPlanDeEntrenamiento() {
           <strong>Se mira una sesión por vez.</strong> Se eligen el bloque, el microciclo —si el bloque los usa— y la sesión. Con una sola cosa para elegir, la pantalla dice su nombre; con muchas, las ofrece en una lista.
         </Renglon>
         <Renglon muestra={<Icono nombre="reloj" tamano={20} />}>
-          <strong>«{C.sinDiaAsignado}»</strong> El plan no fija qué día va cada sesión: el teléfono las muestra todas y la persona elige cuál hace.
+          <strong>Los días de entrenamiento.</strong> Con días, cada sesión dice cuándo va, la persona ve la que le toca, puede pasarla a otro día o saltearla, y recibe los avisos de las 10 y de las 22. Sin días (<strong>«{C.sinDiaAsignado}»</strong>), el teléfono muestra todas las sesiones y la persona elige cuál hace.
         </Renglon>
         <Renglon muestra={<Icono nombre="entrenamiento" tamano={20} />}>
           <strong>Cada ejercicio es un renglón que se abre en el lugar.</strong> Plegado dice lo que piden sus series («<EnPartes texto="4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00" />»). Si algo cambia de una serie a otra, no lo resume: dice

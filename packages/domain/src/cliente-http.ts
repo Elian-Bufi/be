@@ -250,6 +250,7 @@ import {
   EditarPlanDeEntrenamientoRequestSchema,
   EjecucionDeEntrenamientoResponseSchema,
   EjercicioDeCatalogoResponseSchema,
+  AgendaDeHoyResponseSchema,
   HoyDeEntrenamientoResponseSchema,
   ListaDeEjerciciosResponseSchema,
   ListaDeEvaluacionesDeEntrenamientoResponseSchema,
@@ -1171,6 +1172,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-14. */
     hoyDeEntrenamiento(token: string) {
       return llamar('GET', '/me/training/today', { token, esquema: HoyDeEntrenamientoResponseSchema });
+    },
+    /** API-AGE-01 (DL-137): lo previsto para hoy, lo pendiente y lo que viene. */
+    agendaDeEntrenamiento(token: string) {
+      return llamar('GET', '/me/training/agenda', { token, esquema: AgendaDeHoyResponseSchema });
     },
     /** DL-078: para registrar en diferido. */
     ocurrenciasDeEntrenamiento(token: string, periodo: { periodStart: string; periodEnd: string }) {

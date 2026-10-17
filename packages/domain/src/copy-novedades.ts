@@ -15,10 +15,15 @@ export interface TextoDeNovedad {
 export interface DatosDelTexto {
   readonly alcance: Alcance | null;
   readonly fuente: string | null;
+  /** La fecha civil de la novedad: la del día del recordatorio o, en una sesión pendiente, la fecha prevista (DL-137). */
+  readonly fecha?: string | null;
 }
 
 const area = (alcance: Alcance | null): string => (alcance ? ETIQUETA_DE_ALCANCE[alcance] : 'BE');
 const quien = (fuente: string | null, siNoHay: string): string => fuente ?? siNoHay;
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'] as const;
+/** «del miércoles»: el día de la semana de una fecha civil, sin depender de la zona. */
+const delDia = (fecha: string | null | undefined): string => (fecha ? `del ${DIAS[new Date(`${fecha}T12:00:00Z`).getUTCDay()]}` : 'de un día anterior');
 
 /** El título y el texto de cada tipo. Un tipo que este código no conoce no llega acá: la API solo emite los conocidos. */
 export function textoDeNovedad(tipo: TipoDeNovedad, d: DatosDelTexto): TextoDeNovedad {
@@ -47,7 +52,11 @@ export function textoDeNovedad(tipo: TipoDeNovedad, d: DatosDelTexto): TextoDeNo
     case 'MEAL_LOG_REMINDER':
       return { title: 'Recordatorio', body: 'Hoy todavía no registraste comidas. Si ya comiste, registralo en Nutrición.' };
     case 'TRAINING_LOG_REMINDER':
-      return { title: 'Recordatorio', body: 'Hoy todavía no registraste un entrenamiento. Si entrenaste, registralo en Entrenamiento.' };
+      return { title: 'Recordatorio', body: 'Hoy tenías una sesión de entrenamiento y todavía no la registraste. Si entrenaste, registrala; si no, podés hacerla otro día o saltearla.' };
+    case 'TRAINING_SESSION_TODAY_REMINDER':
+      return { title: 'Entrenamiento de hoy', body: 'Hoy tenés una sesión de tu plan de entrenamiento. Abrí Entrenamiento para verla.' };
+    case 'TRAINING_SESSION_PENDING_REMINDER':
+      return { title: 'Sesión pendiente', body: `Te quedó pendiente una sesión ${delDia(d.fecha)}. Podés hacerla hoy o saltearla, desde Entrenamiento.` };
   }
 }
 
@@ -62,6 +71,8 @@ export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lec
     case 'MEAL_LOG_REMINDER':
       return 'NUTRITION';
     case 'TRAINING_LOG_REMINDER':
+    case 'TRAINING_SESSION_TODAY_REMINDER':
+    case 'TRAINING_SESSION_PENDING_REMINDER':
       return 'TRAINING';
     case 'CONSENT_REVOKED':
       return 'ADVISEE';
@@ -81,7 +92,8 @@ export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lec
 }
 
 /** Los recordatorios son de BE; las demás novedades, de una persona. */
-export const esRecordatorio = (tipo: string): boolean => tipo === 'MEAL_LOG_REMINDER' || tipo === 'TRAINING_LOG_REMINDER';
+export const esRecordatorio = (tipo: string): boolean =>
+  tipo === 'MEAL_LOG_REMINDER' || tipo === 'TRAINING_LOG_REMINDER' || tipo === 'TRAINING_SESSION_TODAY_REMINDER' || tipo === 'TRAINING_SESSION_PENDING_REMINDER';
 
 /** El título del aviso push: siempre el mismo. */
 export const TITULO_DEL_AVISO_PUSH = 'BE';
@@ -115,7 +127,7 @@ export const COPY_NOVEDADES = {
   avisosSinPermiso: 'Android no le dio permiso a BE para mostrar avisos. Podés darlo en los ajustes del teléfono.',
   avisosNoDisponibles: 'Los avisos todavía no están disponibles en esta versión de la app. Tus novedades siguen acá.',
   recordatorioComidas: 'Recordarme registrar las comidas (15:00 y 22:00, si ese día no registré ninguna)',
-  recordatorioEntrenamiento: 'Recordarme registrar el entrenamiento (22:00, si ese día no registré ninguno)',
+  recordatorioEntrenamiento: 'Recordarme mis sesiones de entrenamiento (10:00 el día que toca o si quedó una pendiente, y 22:00 si no la registré)',
   recordatoriosExplicacion: 'Los recordatorios llegan como avisos y quedan en Novedades. Podés apagarlos cuando quieras.',
   guardado: 'Guardado.',
 } as const;

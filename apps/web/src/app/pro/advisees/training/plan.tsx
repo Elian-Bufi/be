@@ -19,6 +19,7 @@
  *   la otra se sigue en el mismo lugar.
  */
 import {
+  COPY_AGENDA_DE_ENTRENAMIENTO,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
   COPY_ENTRENAMIENTO,
   COPY_PLANTILLAS,
@@ -46,6 +47,7 @@ import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
+import { resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { EditorDePlan } from './editor';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
@@ -348,8 +350,16 @@ function SesionQueSeMira({
   // Lo primero no se escribe: es lo que se ve sin pedir nada.
   const orden = <T extends { readonly order: number }>(lista: readonly T[], elegido: number): string | null => (Math.min(...lista.map((x) => x.order)) === elegido ? null : String(elegido));
   if (!mira.bloque) return <p className="nota">{C.sinBloques}</p>;
+  // DL-137: con agenda, qué días va cada sesión y desde cuándo.
+  const agenda = version.agenda && version.agenda.sessions.length > 0 ? version.agenda : null;
+  const diasDeLaSesion = agenda?.sessions.find((x) => x.sessionId === mira.sesion?.sessionId)?.weekdays ?? [];
   return (
     <>
+      {agenda ? (
+        <p className="nota plan__agenda" data-agenda-del-plan>
+          <strong>{COPY_AGENDA_DE_ENTRENAMIENTO.titulo}:</strong> {resumenDeLaAgenda(agenda, sesionesParaLaAgenda(version.blocks))}
+        </p>
+      ) : null}
       <div className="plan__niveles">
         <SelectorDeNivel nivel="bloque" rotulo={C.bloque} opciones={version.blocks} elegido={mira.bloque} onElegir={(o) => alPedir({ bloque: orden(version.blocks, o), ...LO_DE_ADENTRO.bloque })}>
           <span className="nota nivel-del-plan__detalle">
@@ -367,8 +377,14 @@ function SesionQueSeMira({
         ) : null}
         {mira.sesion ? (
           <SelectorDeNivel nivel="sesion" rotulo={C.sesion} opciones={mira.sesiones} elegido={mira.sesion} onElegir={(o) => alPedir({ sesion: orden(mira.sesiones, o), ...LO_DE_ADENTRO.sesion })}>
-            {/* El plan no asigna días: con más de una sesión, la persona elige cuál hace. */}
-            {mira.sesiones.length > 1 ? <span className="nota nivel-del-plan__detalle">{C.sinDiaAsignado}</span> : null}
+            {/* Con agenda, los días de esta sesión (DL-137); sin agenda, con más de una sesión, la persona elige cuál hace. */}
+            {agenda ? (
+              <span className="nota nivel-del-plan__detalle" data-dias-de-la-sesion>
+                {diasDeLaSesion.length > 0 ? COPY_AGENDA_DE_ENTRENAMIENTO.diasDeLaSesion(diasDeLaSesion) : COPY_AGENDA_DE_ENTRENAMIENTO.sinDias}
+              </span>
+            ) : mira.sesiones.length > 1 ? (
+              <span className="nota nivel-del-plan__detalle">{C.sinDiaAsignado}</span>
+            ) : null}
           </SelectorDeNivel>
         ) : (
           <p className="nota">{C.sinSesiones}</p>

@@ -9545,6 +9545,178 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
+/* La agenda del plan (DL-137): plegada es un renglón; abierta, los días de cada sesión, el inicio y dos semanas. */
+.agenda-del-plan {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.agenda-del-plan > .nota {
+  margin: 0;
+}
+
+.agenda-del-plan__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.agenda-del-plan__cabecera h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.agenda-del-plan__cabecera .boton {
+  margin-left: auto;
+}
+
+.agenda-del-plan__resumen {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-del-plan__inicio {
+  max-width: 22rem;
+}
+
+.agenda-del-plan__semana {
+  border-collapse: collapse;
+  width: max-content;
+  max-width: 100%;
+}
+
+.agenda-del-plan__semana th,
+.agenda-del-plan__semana td {
+  padding: 0.2rem 0.25rem;
+  text-align: center;
+}
+
+.agenda-del-plan__semana th[scope='row'] {
+  padding-right: 0.9rem;
+  text-align: left;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.agenda-del-plan__semana thead th {
+  color: var(--tenue);
+  font-size: 0.85rem;
+}
+
+.agenda-del-plan__semana abbr {
+  text-decoration: none;
+}
+
+.agenda-del-plan__dia {
+  padding: 0.3rem 0.5rem;
+}
+
+.agenda-del-plan__subtitulo {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+}
+
+.agenda-del-plan__calendario {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-del-plan__fecha {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  min-height: 4.5rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.agenda-del-plan__fecha[data-pasado] {
+  opacity: 0.6;
+}
+
+.agenda-del-plan__fecha[data-hoy] {
+  border-color: var(--azul);
+  box-shadow: inset 0 0 0 1px var(--azul);
+}
+
+.agenda-del-plan__numero {
+  color: var(--tenue);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.agenda-del-plan__sesiones {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-del-plan__sesion {
+  display: grid;
+  gap: 0.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.agenda-del-plan__sesion .nota {
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.agenda-del-plan__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  font-weight: 400;
+}
+
+.agenda-del-plan__mover {
+  display: grid;
+  gap: 0.4rem;
+  max-width: 26rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.agenda-del-plan__mover p {
+  margin: 0;
+}
+
+/* Una ventana angosta: la semana no entra en siete columnas sin aplastar los nombres; va de a una fecha por renglón. */
+@media (max-width: 48rem) {
+  .agenda-del-plan__calendario {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agenda-del-plan__fecha {
+    min-height: 0;
+  }
+
+  .agenda-del-plan__fecha:not(:has(.agenda-del-plan__sesion)) {
+    display: none;
+  }
+}
+
 .recetas-para-elegir {
   display: grid;
   gap: 0.75rem;

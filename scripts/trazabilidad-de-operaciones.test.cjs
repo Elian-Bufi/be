@@ -21,12 +21,13 @@ const DOCS_DEL_09 = [path.join(RAIZ, 'docs/legajo/09_BE_LEG_09_v0.16.1.md'), ...
 const INVENTARIO = path.join(RAIZ, 'docs/legajo/09_AUX/INVENTARIO_API_P0_BE_LEG_09_v0.16.1_122_OPERACIONES_2026-09-07.md');
 const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js'));
 
-/** Las familias propias de BE, cada una con la DL que la declara. */
 /**
+ * Las familias propias de BE, cada una con la DL que la declara.
+ * AGE (DL-137): la agenda del día del titular, una operación propia porque «Hoy» no cambia de forma.
  * GOO (DL-138): el 09 solo bosqueja el acceso con Google («Google federated authorize/complete — P1», 09 §12 y 09v12 §11)
  * sin IDs; BE verifica el ID token que el cliente obtuvo de Google, y lo declara como familia propia.
  */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', GOO: 'DL-138' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138' };
 /**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, y la
  * búsqueda con el texto en el cuerpo, DL-127).
