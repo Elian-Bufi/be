@@ -55,6 +55,15 @@ export interface ContextoDelSeguimiento {
   readonly href: (cambios: Readonly<Record<string, string | null>>) => string;
   /** Navega a esa URL reemplazando la entrada del historial (los filtros no llenan el «Atrás» del navegador). */
   readonly ir: (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => void;
+  /** La identidad del profesional que mira la ficha: decide, por ejemplo, si una nota de coordinación es suya. */
+  readonly yoId: string;
+  /** DL-140: abre «Escribir una nota de coordinación» (el diálogo vive en la ficha), o la corrección de una nota propia. */
+  readonly abrirNota: (pedido: PedidoDeNota) => void;
+}
+
+/** Lo que se le pide al diálogo de la nota: escribir una nueva, o corregir una propia con otra que la cita (CRD-D7). */
+export interface PedidoDeNota {
+  readonly corrige?: { readonly noteId: string; readonly fecha: string; readonly origen: DominioDeAnalisis } | null;
 }
 
 const Contexto = createContext<ContextoDelSeguimiento | null>(null);
@@ -74,6 +83,8 @@ export function ProveedorDelSeguimiento({
   panel,
   recargarPanel,
   versionDeAcceso,
+  yoId,
+  abrirNota,
   children,
 }: {
   token: string;
@@ -84,6 +95,8 @@ export function ProveedorDelSeguimiento({
   panel: PanelDelResumen;
   recargarPanel: () => void;
   versionDeAcceso: number;
+  yoId: string;
+  abrirNota: (pedido: PedidoDeNota) => void;
   children: ReactNode;
 }) {
   const params = useSearchParams();
@@ -102,8 +115,8 @@ export function ProveedorDelSeguimiento({
     [router, ruta, parametros],
   );
   const valor = useMemo(
-    () => ({ token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir }),
-    [token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir],
+    () => ({ token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir, yoId, abrirNota }),
+    [token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir, yoId, abrirNota],
   );
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

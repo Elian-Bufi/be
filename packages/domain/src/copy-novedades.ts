@@ -17,6 +17,11 @@ export interface DatosDelTexto {
   readonly fuente: string | null;
   /** La fecha civil de la novedad: la del día del recordatorio o, en una sesión pendiente, la fecha prevista (DL-137). */
   readonly fecha?: string | null;
+  /**
+   * La persona sobre la que trata una nota de coordinación (DL-140), con el nombre que este profesional puede ver de ella
+   * (DL-040: el visible con un vínculo vigente; si no, la referencia neutral).
+   */
+  readonly sujeto?: string | null;
 }
 
 const area = (alcance: Alcance | null): string => (alcance ? ETIQUETA_DE_ALCANCE[alcance] : 'BE');
@@ -57,6 +62,9 @@ export function textoDeNovedad(tipo: TipoDeNovedad, d: DatosDelTexto): TextoDeNo
       return { title: 'Entrenamiento de hoy', body: 'Hoy tenés una sesión de tu plan de entrenamiento. Abrí Entrenamiento para verla.' };
     case 'TRAINING_SESSION_PENDING_REMINDER':
       return { title: 'Sesión pendiente', body: `Te quedó pendiente una sesión ${delDia(d.fecha)}. Podés hacerla hoy o saltearla, desde Entrenamiento.` };
+    // DL-140 (CRD-D6): quién la escribió y sobre quién; nunca el texto, que se lee en la ficha con su autorización.
+    case 'COORDINATION_NOTE_RECEIVED':
+      return { title: 'Nota de coordinación', body: `${quien(d.fuente, 'Otro profesional')} dejó una nota de coordinación sobre ${d.sujeto ?? 'una persona que acompañás'}.` };
   }
 }
 
@@ -75,6 +83,8 @@ export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lec
     case 'TRAINING_SESSION_PENDING_REMINDER':
       return 'TRAINING';
     case 'CONSENT_REVOKED':
+    // DL-140: la ficha de la persona sobre la que trata la nota; su Resumen muestra las notas recientes del equipo.
+    case 'COORDINATION_NOTE_RECEIVED':
       return 'ADVISEE';
     // Para el profesional: la ficha de la persona si hay o hubo vínculo; el espacio profesional si es una solicitud. Para
     // la persona: sus vínculos.

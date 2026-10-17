@@ -3,8 +3,10 @@ import {
   ejerciciosComparables,
   frenteALoIndicadoEnPalabras,
   observacionesDelEjercicio,
+  paraQuienEs,
   redondeoDePresentacion,
   registradoTarde,
+  tituloDeLaNota,
   type Alcance,
   type CalidadDeEntrada,
   type DominioDeAnalisis,
@@ -14,6 +16,7 @@ import {
   type RegistroDeEjecucion,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
+import { INCLUIR_NOTA, notasComoLasLee } from '../coordinacion/lectura-notas';
 import { nombreVisibleDe } from '../entrenamiento/lectura-entrenamiento';
 import { fechaLocalEn, finDelDiaLocal, inicioDelDiaLocal } from '../nutricion/zona';
 import { ZONA, type AlcanceDelAnalisis, type VersionActivada, type VersionDeObjetivo } from './fuentes';
@@ -389,4 +392,61 @@ export async function entradasDeTomas(tx: Tx, profesionalId: string, asesoradoId
     });
   }
   return salida;
+}
+
+// ─── Notas de coordinación (DL-140): un hito por nota ───────────────────────────────────────────
+
+/**
+ * Las notas de coordinación sobre la persona que este profesional escribió o recibió (RF-057; UC-E07, postcondición 9;
+ * 09 §11.6: «la lectura autorizada de la nota se consume por dashboard/timeline»). No dependen de un alcance permitido en
+ * particular: la nota no es un dato de un área sino una comunicación dirigida a él. Las lee mientras tenga el acceso de la
+ * línea de tiempo con esa persona (algún alcance permitido; si no, el guard ya respondió 404): con el vínculo en pausa o
+ * terminado, no (08 Q-005, §14). Su `domain` es el área desde la que se escribió.
+ * El texto va entero en el detalle, que es donde se abre; la entrada no lleva nada que la nota no diga.
+ */
+export async function entradasDeNotas(tx: Tx, lectorId: string, asesoradoId: string, desde: string, hasta: string): Promise<EntradaDeLineaDeTiempo[]> {
+  const ventana = { gte: inicioDelDiaLocal(desde, ZONA), lt: finDelDiaLocal(hasta, ZONA) };
+  const filas = await tx.notaDeCoordinacion.findMany({
+    where: { asesoradoId, momentoDeOcurrencia: ventana, OR: [{ autorId: lectorId }, { destinatarios: { some: { destinatarioId: lectorId } } }] },
+    include: INCLUIR_NOTA,
+  });
+  const notas = await notasComoLasLee(tx, filas, { tipo: 'PROFESIONAL', id: lectorId });
+  return notas.map((n, i) => {
+    const fila = filas[i]!;
+    return {
+      timelineEntryId: `cnote:${n.noteId}`,
+      domain: DOMINIO_DEL_ALCANCE[n.originScope.code],
+      eventType: 'COORDINATION_NOTE_RECORDED',
+      source: { type: 'COORDINATION_NOTE', id: n.noteId },
+      // La nota ocurre cuando se escribe: BE la registra en ese momento.
+      ...tiempos(fila.momentoDeOcurrencia, fila.momentoDeRegistro),
+      author: { identityId: n.author.identityId, displayName: n.author.displayName, role: 'PROFESSIONAL' },
+      title: tituloDeLaNota(n.purpose),
+      details: [
+        { label: 'Desde', value: n.originScope.label },
+        { label: 'Para', value: paraQuienEs(n.recipients.mode, n.recipients.people.map((p) => p.displayName)) },
+        { label: 'Nota', value: n.text },
+      ],
+      state: 'EFFECTIVE',
+      quality: [],
+      planVersionId: null,
+      exerciseKeys: [],
+      relations: [
+        // CRD-D5: se ve que existe; abrirlo es otra lectura, con su propio permiso.
+        ...n.references.map((r) => ({ kind: 'REFERS_TO' as const, at: null, target: { type: r.type, id: r.id }, label: `Cita: ${r.label}` })),
+        // CRD-D7: la que corrige, con su fecha si este profesional también la puede leer.
+        ...(n.corrects
+          ? [{ kind: 'CORRECTS_NOTE' as const, at: null, target: { type: 'COORDINATION_NOTE' as const, id: n.corrects.noteId }, label: `Corrige la nota del ${fechaCorta(civil(new Date(n.corrects.recordedAt)))}` }]
+          : fila.corrigeAId
+            ? [{ kind: 'CORRECTS_NOTE' as const, at: null, target: null, label: 'Corrige una nota anterior' }]
+            : []),
+        ...n.correctedBy.map((c) => ({
+          kind: 'CORRECTED_BY_NOTE' as const,
+          at: c.recordedAt,
+          target: { type: 'COORDINATION_NOTE' as const, id: c.noteId },
+          label: `La corrige la nota del ${fechaCorta(civil(new Date(c.recordedAt)))}`,
+        })),
+      ],
+    };
+  });
 }

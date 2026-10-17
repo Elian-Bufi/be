@@ -177,6 +177,8 @@ const RUTAS = [
   { nombre: 'inicio' },
   { nombre: 'cuenta' },
   { nombre: 'vinculos' },
+  // DL-140: las notas de coordinación que lee la persona.
+  { nombre: 'notas-de-coordinacion' },
   { nombre: 'vinculo', id: 'v1' },
   { nombre: 'consentimiento', vinculoId: 'v1' },
   { nombre: 'privacidad' },
@@ -223,7 +225,7 @@ test('módulo, pestaña activa y barra son tres cosas: Cuenta es un módulo que 
     if (nav.requiereSesion(ruta)) assert.ok(modulo, `«${ruta.nombre}» no tiene módulo`);
     else assert.equal(modulo, null, `«${ruta.nombre}» está fuera de la sesión`);
   }
-  for (const nombre of ['cuenta', 'vinculos', 'privacidad']) {
+  for (const nombre of ['cuenta', 'vinculos', 'privacidad', 'notas-de-coordinacion']) {
     assert.equal(nav.moduloDe({ nombre }), 'cuenta');
     assert.equal(nav.pestanaActiva({ nombre }), null, `«${nombre}» no resalta ningún destino`);
   }
@@ -267,6 +269,20 @@ test('Privacidad vuelve al aviso de A3 desde el que se abrió; desde Cuenta, a C
   const privacidad = nav.navegar(cuenta, { nombre: 'privacidad' });
   assert.deepEqual(nav.anterior(privacidad), cuenta);
   assert.deepEqual(nav.anterior(nav.anterior(privacidad)), { nombre: 'mi-evolucion' });
+});
+
+test('DL-140: «Notas entre tus profesionales» se abre desde Cuenta y desde Vínculos, y vuelve adonde se abrió', () => {
+  const cuenta = nav.navegar({ nombre: 'inicio' }, { nombre: 'cuenta' });
+  const desdeCuenta = nav.navegar(cuenta, { nombre: 'notas-de-coordinacion' });
+  assert.deepEqual(nav.anterior(desdeCuenta), cuenta);
+  const vinculos = nav.navegar(cuenta, { nombre: 'vinculos' });
+  assert.deepEqual(nav.anterior(nav.navegar(vinculos, { nombre: 'notas-de-coordinacion' })), vinculos);
+  // Sin origen, vuelve a Cuenta.
+  assert.deepEqual(nav.anterior({ nombre: 'notas-de-coordinacion' }), { nombre: 'cuenta' });
+  const CUENTA = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/cuenta.tsx'), 'utf8');
+  const VINCULOS = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/vinculos.tsx'), 'utf8');
+  for (const fuente of [CUENTA, VINCULOS]) assert.match(fuente, /ir\(\{ nombre: 'notas-de-coordinacion' \}\)/);
+  assert.equal(nav.textoDeVolverA({ nombre: 'notas-de-coordinacion' }), 'Volver a Notas entre tus profesionales');
 });
 
 test('el menú auxiliar lleva a funciones que ya existen, fuera de la barra, y lo abierto vuelve a la raíz del menú', () => {

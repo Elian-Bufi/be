@@ -70,6 +70,14 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
       const motivo = detalle(e, 'Motivo');
       return { icono: 'seguimiento', nombre: e.title, dato: motivo ? `Motivo: ${motivo}` : null, modo: null };
     }
+    // DL-140 (CRD-D8): un hito con su finalidad y quién la escribió; el texto se lee al abrirla. El ícono de los renglones
+    // de texto: una nota es lo que alguien escribió.
+    case 'COORDINATION_NOTE_RECORDED': {
+      const corte = e.title.indexOf(' · ');
+      const finalidad = corte < 0 ? null : e.title.slice(corte + 3);
+      const autor = e.author?.displayName ?? null;
+      return { icono: 'texto', nombre: corte < 0 ? e.title : e.title.slice(0, corte), dato: [finalidad, autor ? `de ${autor}` : null].filter(Boolean).join(' · ') || null, modo: null };
+    }
   }
 }
 
@@ -77,6 +85,8 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
 export const tituloDelHecho = (e: EntradaDeLineaDeTiempo): string => {
   const r = renglonDelHecho(e);
   // El dato de una comida es su opción o su descripción: nombra al registro. El de los demás es una cuenta o un resultado.
+  // Una nota de coordinación se titula con su finalidad, como llega de la API («Nota de coordinación · Pedido de coordinación»).
+  if (e.eventType === 'COORDINATION_NOTE_RECORDED') return e.title;
   return e.eventType === 'MEAL_RECORDED' && r.dato ? `${r.nombre} · ${r.dato}` : r.nombre;
 };
 

@@ -22,6 +22,7 @@ import { AntropometriaModule } from './antropometria/antropometria.module';
 import { EntrenamientoModule } from './entrenamiento/entrenamiento.module';
 import { FormulariosModule } from './formularios/formularios.module';
 import { NovedadesModule } from './novedades/novedades.module';
+import { CoordinacionModule } from './coordinacion/coordinacion.module';
 import { MediosModule } from './medios/medios.module';
 import { NutricionModule } from './nutricion/nutricion.module';
 import { ProcesoModule } from './proceso/proceso.module';
@@ -84,6 +85,8 @@ export class AppModule {
         EntrenamientoModule,
         FormulariosModule,
         NovedadesModule,
+        // DL-140: las notas de coordinación entre los profesionales de una persona.
+        CoordinacionModule,
       ],
       // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
       providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],

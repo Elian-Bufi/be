@@ -99,6 +99,9 @@ export function EnlaceAlArea({ origen }: { origen: OrigenDeDato }) {
 /** El registro de origen, leído por su propia operación. Lo usan el panel y el detalle al costado de la línea de tiempo. */
 export function ContenidoDelRegistro({ origen, onNoDisponible, numeroDeVersion }: { origen: OrigenDeDato; onNoDisponible?: () => void; numeroDeVersion?: number }) {
   const { token, sesionPerdida } = useSeguimiento();
+  // DL-140: una nota de coordinación no tiene otro registro que abrir: está entera en su detalle (la lectura es la línea de
+  // tiempo, 09 §11.6).
+  if (origen.type === 'COORDINATION_NOTE') return null;
   if (origen.type === 'NUTRITION_PLAN_VERSION') return <VersionDeNutricion planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;
   if (origen.type === 'TRAINING_PLAN_VERSION') return <VersionDeEntrenamiento planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;
   if (origen.type === 'MEAL_RECORD') return <DetalleDeRegistroDeComida registroId={origen.id} token={token} sesionPerdida={sesionPerdida} onNoDisponible={onNoDisponible} />;

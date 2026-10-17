@@ -9,6 +9,7 @@
  * - las de WP-06: la familia TRN, la carga manual de ejercicios y la lectura por período (docs/paquetes/WP-06.md §4).
  * - las de WP-07: la familia FRM, transversal a los tres dominios (docs/paquetes/WP-07.md §4).
  * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
+ * - las de WP-NOTAS-DE-COORDINACION: API-CRD-01 y sus dos variantes (docs/paquetes/WP-NOTAS-DE-COORDINACION.md; DL-140).
  */
 import { z } from 'zod';
 import {
@@ -258,6 +259,12 @@ import {
   RegistrarComidaRequestSchema,
   RegistroDeComidaResponseSchema,
 } from './contratos-registro-de-comidas';
+import {
+  CrearNotaDeCoordinacionRequestSchema,
+  DestinatariosPosiblesResponseSchema,
+  ListaDeNotasPropiasResponseSchema,
+  NotaDeCoordinacionResponseSchema,
+} from './contratos-notas-de-coordinacion';
 
 type Codigo = keyof typeof CodigoDeError;
 type Errores = Partial<Record<400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503, readonly Codigo[]>>;
@@ -2984,6 +2991,52 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'variante del titular de API-TRN-23 (09v10:1375) · ID propio de BE (sufijo PROPIA) · docs/propuestas/REV-A · DEUDA_LEGAJO DL-134',
   },
+
+  // ─── WP-NOTAS-DE-COORDINACION (DL-140; aprobado por Dirección el 2026-10-16): RF-057 · UC-E07 · API-CRD-01 ────────────
+  // 09 §11.6: una sola escritura P0; la lectura del profesional es la línea de tiempo (API-DSH-04). Las dos variantes de
+  // abajo son lo que la escritura necesita (a quién) y lo que el 08 §9.15 le garantiza a la persona (sin notas secretas).
+  {
+    id: 'API-CRD-01',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/coordination-notes',
+    resumen:
+      'Registrar una nota de coordinación sobre la persona, para todos los profesionales que hoy la acompañan o para uno en particular (solo los que tienen un vínculo aceptado y el B2 vigente, según el PDP). El autor escribe desde un área suya con la persona, con una finalidad de la lista cerrada, hasta 600 caracteres de texto y hasta tres referencias de su área. La nota no prescribe, no modifica planes ni objetivos, no registra revisiones, no cierra ciclos y no transfiere responsabilidad. Solo se agrega: para corregirla, otra nota que la cita. Cada destinatario recibe una novedad, sin el texto. Sin acceso del autor a la persona en esa área: el mismo 404 que una persona inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearNotaDeCoordinacionRequestSchema,
+    exitos: [{ status: 201, schema: NotaDeCoordinacionResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['COORDINATION_RECIPIENT_NOT_AVAILABLE', 'COORDINATION_REFERENCE_INVALID'],
+    },
+    fuente: '09 §11.6 (API-CRD-01) · 04 RF-057 · 05 UC-E07 (§11.8) · 06 T-06-43 · 08 §9.15 y §11-bis · DEUDA_LEGAJO DL-140',
+  },
+  {
+    id: 'API-CRD-01-LISTA',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/coordination-notes/recipients',
+    resumen:
+      'A quién se le puede escribir hoy una nota sobre la persona y desde qué área: las áreas del profesional con ella que el PDP permite, y los otros profesionales que hoy la acompañan (vínculo aceptado y B2 vigente en algún alcance), con sus áreas. No trae ninguna nota: el profesional las lee en la línea de tiempo (API-DSH-04). Sin ningún alcance permitido: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: DestinatariosPosiblesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante de API-CRD-01 (09 §11.6): los destinatarios que UC-E07 deja elegir (paso 4) · ID propio de BE (sufijo LISTA) · DEUDA_LEGAJO DL-140 (CRD-D1)',
+  },
+  {
+    id: 'API-CRD-01-PROPIA',
+    metodo: 'get',
+    ruta: '/me/coordination-notes',
+    resumen:
+      'Las notas de coordinación que los profesionales escribieron sobre la persona, todas y completas, de la más nueva a la más vieja: en BE no hay notas secretas sobre el titular (08 §9.15). Siguen visibles con el vínculo en pausa o terminado; sin el A3 vigente, 403 (08:406).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeNotasPropiasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'variante del titular de API-CRD-01 (09 §11.6) · 08 §9.15 y 08:495 · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-140 (CRD-D2)',
+  },
 ];
 
 /**
@@ -3041,6 +3094,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-NUT-19-PROPIA',
   'API-TRN-23-LISTA',
   'API-TRN-23-PROPIA',
+  'API-CRD-01-LISTA',
+  'API-CRD-01-PROPIA',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.

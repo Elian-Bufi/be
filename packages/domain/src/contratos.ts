@@ -160,6 +160,18 @@ export const CodigoDeError = {
   GOOGLE_ACCOUNT_NOT_FOUND: 'GOOGLE_ACCOUNT_NOT_FOUND',
   /** La cuenta BE ya tiene otra cuenta de Google, o esa cuenta de Google ya es de otra cuenta BE. */
   GOOGLE_ACCOUNT_ALREADY_LINKED: 'GOOGLE_ACCOUNT_ALREADY_LINKED',
+  // CRD (09 §11.6; WP-NOTAS-DE-COORDINACION, DL-140). Quien los recibe ya está autorizado sobre la persona: el autor sin
+  // acceso recibe antes el 404 neutral (UC-E07, paso 3).
+  /**
+   * UC-E07 E01: la nota no tiene a quién llegar con esa visibilidad. El profesional elegido no la acompaña hoy con su
+   * autorización vigente, o con «todos» no hay ningún otro que la acompañe. `details.issues` dice cuál.
+   */
+  COORDINATION_RECIPIENT_NOT_AVAILABLE: 'COORDINATION_RECIPIENT_NOT_AVAILABLE',
+  /**
+   * CRD-D5 y CRD-D7: algo citado no se puede citar (no existe, no es del autor con esta persona, no es de su área de origen
+   * o no está registrado), o la nota que dice corregir no es una nota suya sobre esta persona. `details.issues` dice cuál.
+   */
+  COORDINATION_REFERENCE_INVALID: 'COORDINATION_REFERENCE_INVALID',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

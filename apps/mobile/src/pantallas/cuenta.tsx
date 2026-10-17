@@ -1,5 +1,6 @@
 /**
- * APK · Cuenta: Vínculos · Estado · Tu identificador BE · Privacidad · Apariencia · Seguridad · Cerrar mi cuenta
+ * APK · Cuenta: Vínculos · Notas entre tus profesionales (DL-140) · Estado · Tu identificador BE · Privacidad · Apariencia
+ * · Seguridad · Cerrar mi cuenta
  * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5). Desde DL-117 (Dirección, 2026-10-04), Cuenta se abre desde
  * el avatar de la cabecera y vuelve a la pantalla desde la que se abrió. No es un destino de la barra ni el menú de las
  * zonas: reúne lo que es de la cuenta.
@@ -15,7 +16,7 @@
  *   cuenta, este teléfono deja de recibir los avisos de la cuenta, mientras la sesión todavía vale (DL-133).
  * - Cierre (PROTO-10-ACC-06): explicación → modal con consecuencias versionadas → «Confirmar cierre».
  */
-import { COPY, COPY_INVITACION, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
+import { COPY, COPY_INVITACION, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, Share, Text, View } from 'react-native';
 import { api, nuevaClaveDeIdempotencia } from '../api';
@@ -103,6 +104,8 @@ export function PantallaDeCuenta({
       <Titulo>Cuenta</Titulo>
       {/* Los módulos están en la barra de abajo y el menú auxiliar; acá queda lo de la cuenta. Vínculos sigue también acá. */}
       <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
+      {/* DL-140: lo que tus profesionales se escriben entre ellos sobre vos (08 §9.15: sin notas secretas). */}
+      <Boton texto={COPY_NOTAS_DE_COORDINACION.entradaPropias} tipo="secundario" onPress={() => ir({ nombre: 'notas-de-coordinacion' })} />
       {/* DL-136: si el profesional pasó un código en lugar del enlace, se escribe acá. */}
       <Boton texto={COPY_INVITACION.tengoUnCodigo} tipo="secundario" onPress={() => ir({ nombre: 'invitacion' })} />
 

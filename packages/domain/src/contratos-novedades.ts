@@ -47,6 +47,11 @@ export const TIPOS_DE_NOVEDAD = [
   'TRAINING_SESSION_TODAY_REMINDER',
   /** DL-137: a la mañana (10:00), le quedó pendiente una sesión de los dos días anteriores; la fecha es la prevista. */
   'TRAINING_SESSION_PENDING_REMINDER',
+  /**
+   * DL-140 (CRD-D6): a cada profesional que recibe una nota de coordinación, de quién es y sobre qué persona. Nunca el
+   * texto de la nota: se lee en la línea de tiempo de la ficha, que vuelve a autorizar.
+   */
+  'COORDINATION_NOTE_RECEIVED',
 ] as const;
 export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
 
@@ -54,7 +59,8 @@ export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
  * La pantalla que resuelve la novedad. La abre el cliente y esa pantalla vuelve a autorizar: la novedad no concede nada
  * (INV-06-33). `referenceId` es lo que esa pantalla necesita (el asesorado en `ADVISEE`, la revisión en `NUTRITION_REVIEW`
  * y `TRAINING_REVIEW`, que la persona lee completa desde REV-A), o `null`. `PRO_HOME` es el espacio profesional (las
- * solicitudes), para el profesional que lee una novedad de una solicitud.
+ * solicitudes), para el profesional que lee una novedad de una solicitud. Una nota de coordinación (DL-140) abre la ficha
+ * de la persona sobre la que trata, en `ADVISEE`.
  */
 export const VISTAS_DE_NOVEDAD = ['NEWS', 'NUTRITION', 'TRAINING', 'RELATIONSHIPS', 'ADVISEE', 'NUTRITION_REVIEW', 'TRAINING_REVIEW', 'PRO_HOME'] as const;
 export type VistaDeNovedad = (typeof VISTAS_DE_NOVEDAD)[number];

@@ -215,6 +215,11 @@ model Identidad {
   invitacionesDeVinculo    InvitacionDeVinculo[]    @relation("InvitacionDelProfesional")
   resolucionesDeInvitacion ResolucionDeInvitacion[] @relation("ResolucionDeInvitacionDelActor")
 
+  // WP-NOTAS-DE-COORDINACION (DL-140)
+  notasDeCoordinacionEscritas  NotaDeCoordinacion[] @relation("NotaDeCoordinacionDelAutor")
+  notasDeCoordinacionSobreElla NotaDeCoordinacion[] @relation("NotaDeCoordinacionDelAsesorado")
+  notasDeCoordinacionRecibidas DestinatarioDeNota[] @relation("DestinatarioDeNotaDeCoordinacion")
+
   // WP-CATALOGO-BASE (DL-141)
   nombresAlternativosDeEjercicio          NombreAlternativoDeEjercicio[]         @relation("NombreAlternativoDeEjercicioDelProfesional")
   nombresAlternativosDeAlimento           NombreAlternativoDeAlimento[]          @relation("NombreAlternativoDeAlimentoDelProfesional")
@@ -3024,6 +3029,8 @@ enum TipoDeNovedad {
   RECORDATORIO_DE_ENTRENAMIENTO
   RECORDATORIO_DE_SESION_DEL_DIA
   RECORDATORIO_DE_SESION_PENDIENTE
+  /// DL-140 (CRD-D6): a cada profesional que recibe una nota de coordinación. La referencia es la nota.
+  NOTA_DE_COORDINACION_RECIBIDA
 }
 
 enum PlataformaDeAviso {
@@ -3273,4 +3280,95 @@ model ResolucionDeInvitacion {
   @@index([solicitudDeVinculoId])
   @@index([actorId])
   @@map("resolucion_de_invitacion")
+}
+
+// ─── WP-NOTAS-DE-COORDINACION (DEUDA_LEGAJO DL-140; aprobado por Dirección el 2026-10-16) ───────────────────────────
+// RF-057 (P0) · UC-E07 · API-CRD-01 (09 §11.6) · 06 T-06-43 (M-11): autor, destinatario, alcance y pertinencia, sin
+// transferencia de responsabilidad. packages/domain/src/contratos-notas-de-coordinacion.ts. Lo que Prisma no modela (la
+// historia por adición, los CHECK, que quien escribe y quien recibe sean profesionales, que lo citado sea del autor con
+// esa persona y de su área, y que toda nota tenga a quién llegar) está en la migración 20261017000100.
+
+/// CRD-D4: para qué le escribe un profesional a otro. No es la finalidad del tratamiento (la del alcance, DL-039).
+enum FinalidadDeNotaDeCoordinacion {
+  CONTEXTO_PARA_TU_AREA
+  CAMBIO_EN_MI_AREA
+  PEDIDO_DE_COORDINACION
+}
+
+/// CRD-D1: todos los profesionales que acompañaban a la persona al escribirla, o uno elegido.
+enum ModoDeDestinatariosDeNota {
+  TODOS
+  UNO
+}
+
+/// CRD-D5: lo que una nota cita, siempre del área de origen del autor y suyo con esa persona.
+enum TipoDeReferenciaDeNota {
+  VERSION_DE_PLAN_NUTRICIONAL
+  REVISION_NUTRICIONAL
+  VERSION_DE_PLAN_DE_ENTRENAMIENTO
+  REVISION_DE_ENTRENAMIENTO
+  EVALUACION_ANTROPOMETRICA
+}
+
+/// T-06-43 — Nota de coordinación (RF-057; UC-E07). La escribe un profesional autorizado sobre una persona, desde un área
+/// suya con ella, para los profesionales que la acompañan. No prescribe, no modifica planes ni objetivos, no registra
+/// revisiones, no cierra ciclos ni transfiere responsabilidad: no toca ninguna otra tabla. El texto es libre y acotado
+/// (CRD-D3). Solo se agrega (CRD-D7; 08 §29): para corregirla, otra nota del mismo autor que la cita (`corrige_a_id`).
+model NotaDeCoordinacion {
+  id                  String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  autorId             String                        @map("autor_id") @db.Uuid
+  asesoradoId         String                        @map("asesorado_id") @db.Uuid
+  /// CRD-D4: el área del autor con esa persona desde la que escribe (con dos áreas, la elige).
+  alcanceDeOrigen     Alcance                       @map("alcance_de_origen")
+  finalidad           FinalidadDeNotaDeCoordinacion
+  modoDeDestinatarios ModoDeDestinatariosDeNota     @map("modo_de_destinatarios")
+  /// Hasta 600 caracteres, sin espacios en los bordes. Sin adjuntos ni resúmenes automáticos (08 §11-bis.3).
+  texto               String
+  corrigeAId          String?                       @map("corrige_a_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                      @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  autor         Identidad            @relation("NotaDeCoordinacionDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado     Identidad            @relation("NotaDeCoordinacionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  corrigeA      NotaDeCoordinacion?  @relation("CorreccionDeNota", fields: [corrigeAId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  correcciones  NotaDeCoordinacion[] @relation("CorreccionDeNota")
+  destinatarios DestinatarioDeNota[]
+  referencias   ReferenciaDeNota[]
+
+  @@index([asesoradoId, momentoDeRegistro(sort: Desc), id(sort: Desc)])
+  @@index([autorId])
+  @@index([corrigeAId])
+  @@map("nota_de_coordinacion")
+}
+
+/// CRD-D1: los profesionales concretos que la recibieron, guardados al escribirla. Así la visibilidad no cambia sola si
+/// después se suma otro profesional; y leerla exige además, cada vez, el acceso de ese día (08 Q-005, §14). Solo se agrega.
+model DestinatarioDeNota {
+  notaId            String   @map("nota_id") @db.Uuid
+  destinatarioId    String   @map("destinatario_id") @db.Uuid
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  nota         NotaDeCoordinacion @relation(fields: [notaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  destinatario Identidad          @relation("DestinatarioDeNotaDeCoordinacion", fields: [destinatarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([notaId, destinatarioId])
+  @@index([destinatarioId])
+  @@map("destinatario_de_nota")
+}
+
+/// CRD-D5: un recurso citado, por su identificador (no hay clave foránea: puede ser de cuatro tablas; la coherencia la
+/// controla la migración). Nombrarlo no da acceso: se abre con el permiso que ya se tenía (UC-E07 E05). Solo se agrega.
+model ReferenciaDeNota {
+  notaId            String                 @map("nota_id") @db.Uuid
+  orden             Int
+  tipo              TipoDeReferenciaDeNota
+  recursoId         String                 @map("recurso_id") @db.Uuid
+  momentoDeRegistro DateTime               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  nota NotaDeCoordinacion @relation(fields: [notaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([notaId, orden])
+  @@unique([notaId, tipo, recursoId])
+  @@map("referencia_de_nota")
 }

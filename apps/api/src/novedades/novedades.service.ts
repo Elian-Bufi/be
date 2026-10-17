@@ -220,6 +220,14 @@ export class NovedadesService {
  */
 async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[]): Promise<Novedad[]> {
   const fuentes = [...new Set(filas.map((f) => f.fuenteId).filter((x): x is string => x !== null))];
+  // DL-140: quien escribió una nota de coordinación es siempre un profesional, y la nota es sobre una persona que el
+  // lector acompaña (o acompañaba): se nombra por la regla de DL-040, con el vínculo de hoy entre los dos.
+  const deNotas = filas.filter((f) => f.tipo === 'NOTA_DE_COORDINACION_RECIBIDA' && f.referenciaId !== null);
+  const autoresDeNotas = new Set(deNotas.map((f) => f.fuenteId).filter((x): x is string => x !== null));
+  const notas =
+    deNotas.length > 0
+      ? new Map((await tx.notaDeCoordinacion.findMany({ where: { id: { in: deNotas.map((f) => f.referenciaId as string) } }, select: { id: true, asesoradoId: true } })).map((n) => [n.id, n.asesoradoId]))
+      : new Map<string, string>();
   const asesoradosDelLector = new Set<string>();
   const nombresDeProfesionales = new Map<string, string>();
   let nombresDeAsesorados = new Map<string, string>();
@@ -229,25 +237,31 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
        WHERE EXISTS (SELECT 1 FROM "vinculo" v WHERE v."profesional_id" = ${lectorId}::uuid AND v."asesorado_id" = f."id")
           OR EXISTS (SELECT 1 FROM "solicitud_de_vinculo" s WHERE s."profesional_id" = ${lectorId}::uuid AND s."asesorado_id" = f."id")`;
     for (const p of propios) asesoradosDelLector.add(p.id);
-    const profesionales = fuentes.filter((f) => !asesoradosDelLector.has(f));
+    const profesionales = fuentes.filter((f) => !asesoradosDelLector.has(f) || autoresDeNotas.has(f));
     if (profesionales.length > 0) {
       const perfiles = await tx.perfilProfesional.findMany({ where: { identidadId: { in: profesionales } }, select: { identidadId: true, nombreVisible: true } });
       for (const p of perfiles) nombresDeProfesionales.set(p.identidadId, nombreDeProfesional(p));
     }
-    nombresDeAsesorados = await nombresDeAsesoradosPorPar(tx, [...asesoradosDelLector].map((a) => ({ profesionalId: lectorId, asesoradoId: a })));
+    const pares = [...asesoradosDelLector, ...notas.values()].map((a) => ({ profesionalId: lectorId, asesoradoId: a }));
+    nombresDeAsesorados = await nombresDeAsesoradosPorPar(tx, pares);
   }
   return filas.map((f) => {
     const tipo = TIPO_API[f.tipo];
-    const lectorEsProfesional = f.fuenteId !== null && asesoradosDelLector.has(f.fuenteId);
+    const esNota = f.tipo === 'NOTA_DE_COORDINACION_RECIBIDA';
+    const lectorEsProfesional = esNota || (f.fuenteId !== null && asesoradosDelLector.has(f.fuenteId));
     const fuente =
       f.fuenteId === null
         ? null
-        : lectorEsProfesional
+        : !esNota && lectorEsProfesional
           ? nombreDelPar(nombresDeAsesorados, { profesionalId: lectorId, asesoradoId: f.fuenteId })
           : (nombresDeProfesionales.get(f.fuenteId) ?? nombreDeProfesional(null));
+    // La persona sobre la que trata la nota: la ficha que abre la novedad.
+    const sujetoId = esNota && f.referenciaId ? (notas.get(f.referenciaId) ?? null) : null;
+    const sujeto = sujetoId ? nombreDelPar(nombresDeAsesorados, { profesionalId: lectorId, asesoradoId: sujetoId }) : null;
     const fecha = f.fechaLocal ? f.fechaLocal.toISOString().slice(0, 10) : null;
-    const texto = textoDeNovedad(tipo, { alcance: f.alcance, fuente, fecha });
+    const texto = textoDeNovedad(tipo, { alcance: f.alcance, fuente, fecha, sujeto });
     const vista = vistaDeNovedad(tipo, f.alcance, lectorEsProfesional);
+    const ficha = esNota ? sujetoId : f.fuenteId;
     return {
       newsId: f.id,
       kind: tipo,
@@ -259,7 +273,7 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
       occurredAt: f.momentoDeOcurrencia?.toISOString() ?? null,
       recordedAt: f.momentoDeRegistro.toISOString(),
       readAt: f.lectura?.momentoDeRegistro.toISOString() ?? null,
-      open: { view: vista, referenceId: vista === 'ADVISEE' ? f.fuenteId : vista === 'NUTRITION_REVIEW' || vista === 'TRAINING_REVIEW' ? f.referenciaId : null },
+      open: { view: vista, referenceId: vista === 'ADVISEE' ? ficha : vista === 'NUTRITION_REVIEW' || vista === 'TRAINING_REVIEW' ? f.referenciaId : null },
     };
   });
 }

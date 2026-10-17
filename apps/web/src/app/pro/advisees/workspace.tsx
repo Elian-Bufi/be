@@ -26,8 +26,12 @@
  * franja de lado a lado, pegada a la barra de marca, en tres renglones: quién es, con «Solicitar contexto» y «Actualizar»
  * con la hora; el acceso actual; y las tres vistas con el período. Siempre se sabe dónde se está sin desplazarse. La miga se retiró: la barra
  * de marca ya vuelve al Espacio profesional.
+ *
+ * WP-NOTAS-DE-COORDINACION (DL-140): «Nota de coordinación», al lado de «Solicitar contexto», abre el diálogo para escribirle
+ * a los otros profesionales que acompañan a la persona (UC-E07: se coordina desde el tablero). El diálogo es uno para toda la
+ * ficha: lo abren también el Resumen y el detalle de una nota propia, para corregirla.
  */
-import { COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -39,9 +43,10 @@ import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
+import { DialogoDeNota } from './nota-de-coordinacion';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
-import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen } from './seguimiento/contexto';
+import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
 import { conRetorno, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
@@ -74,6 +79,12 @@ export function Workspace() {
   const generacion = useRef(0);
   const ultimaConsulta = useRef(0);
   const yoId = yo.tipo === 'listo' ? yo.id : null;
+  // DL-140: el diálogo de la nota de coordinación es uno solo para toda la ficha; `null`, cerrado.
+  const [nota, setNota] = useState<PedidoDeNota | null>(null);
+  const abrirNota = useCallback((pedido: PedidoDeNota) => setNota(pedido), []);
+  const cerrarNota = useCallback(() => setNota(null), []);
+  // Una nota enviada aparece en la línea de tiempo y en el Resumen: se repiten las lecturas de la vista abierta.
+  const notaEnviada = useCallback(() => setVersionDeAcceso((v) => v + 1), []);
 
   const leer = useCallback(
     async (silencioso: boolean) => {
@@ -178,6 +189,13 @@ export function Workspace() {
               Solicitar contexto
             </Link>
           ) : null}
+          {/* DL-140 (UC-E07: «se coordina desde el tablero»): una nota para los otros profesionales de la persona. */}
+          {disponible ? (
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => abrirNota({})}>
+              <Icono nombre="texto" tamano={18} />
+              {COPY_NOTAS_DE_COORDINACION.escribirCorto}
+            </button>
+          ) : null}
           {/* «Actualizar» vuelve a preguntar todo lo de la ficha, no solo el acceso: va con la hora, a la derecha. */}
           <div className="ficha__consulta">
             <button type="button" className="boton boton--quieto boton--compacto" onClick={actualizar} disabled={panel.tipo === 'cargando'}>
@@ -237,6 +255,8 @@ export function Workspace() {
         panel={panel}
         recargarPanel={consultar}
         versionDeAcceso={versionDeAcceso}
+        yoId={yo.id}
+        abrirNota={abrirNota}
       >
         {marco(
           <div className="marco-de-la-ficha__vistas">
@@ -253,6 +273,7 @@ export function Workspace() {
           {vista === 'linea' ? <LineaDeTiempo /> : null}
           {vista === 'analizar' ? <Analizar /> : null}
         </div>
+        <DialogoDeNota pedido={nota} token={token} asesoradoId={id} nombreDelAsesorado={nombre} sesionPerdida={sesionPerdida} onCerrar={cerrarNota} onEnviada={notaEnviada} />
       </ProveedorDelSeguimiento>
     </div>
   );

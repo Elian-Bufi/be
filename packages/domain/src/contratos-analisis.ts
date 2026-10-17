@@ -64,6 +64,8 @@ export const TipoDeOrigenSchema = z.enum([
   'ANTHROPOMETRIC_MEASUREMENT',
   'CALCULATION_RUN',
   'FOLLOW_UP_PROCESS',
+  /** DL-140: una nota de coordinación entre los profesionales de la persona (RF-057; UC-E07). */
+  'COORDINATION_NOTE',
 ]);
 export type TipoDeOrigen = z.infer<typeof TipoDeOrigenSchema>;
 export const OrigenDeDatoSchema = z.strictObject({ type: TipoDeOrigenSchema, id: IdOpaco });
@@ -355,6 +357,12 @@ export const TIPOS_DE_EVENTO = [
   'ANTHROPOMETRIC_EVALUATION_RECORDED',
   'FOLLOW_UP_OPENED',
   'FOLLOW_UP_CLOSED',
+  /**
+   * DL-140: una nota de coordinación (RF-057; UC-E07, postcondición 9: «aparece en la línea temporal según política»). La
+   * ven su autor y sus destinatarios; su `domain` es el área de origen, desde la que se escribió, aunque quien la recibe
+   * no tenga ese alcance: no es un dato de esa área sino una comunicación dirigida a él.
+   */
+  'COORDINATION_NOTE_RECORDED',
 ] as const;
 export const TipoDeEventoSchema = z.enum(TIPOS_DE_EVENTO);
 export type TipoDeEvento = z.infer<typeof TipoDeEventoSchema>;
@@ -383,10 +391,23 @@ export type CalidadDeEntrada = z.infer<typeof CalidadDeEntradaSchema>;
 
 /**
  * Solo relaciones que las fuentes ya contienen (09 v0.11 §16; B10-08 §11.3): nunca por cercanía temporal
- * (11A TEST-TIM-002).
+ * (11A TEST-TIM-002). Las tres últimas son de una nota de coordinación (DL-140): lo que cita de su área (`REFERS_TO`; verlo
+ * no lo abre, CRD-D5), la nota anterior que corrige (`CORRECTS_NOTE`) y la que la corrige después (`CORRECTED_BY_NOTE`).
  */
 export const RelacionDeEntradaSchema = z.strictObject({
-  kind: z.enum(['RECTIFIED', 'ANNULLED', 'CORRECTED', 'EXECUTES_PLAN_VERSION', 'SUCCEEDS_VERSION', 'MEASUREMENT_CORRECTED', 'MEASUREMENT_ANNULLED', 'REVIEW_APPLIED']),
+  kind: z.enum([
+    'RECTIFIED',
+    'ANNULLED',
+    'CORRECTED',
+    'EXECUTES_PLAN_VERSION',
+    'SUCCEEDS_VERSION',
+    'MEASUREMENT_CORRECTED',
+    'MEASUREMENT_ANNULLED',
+    'REVIEW_APPLIED',
+    'REFERS_TO',
+    'CORRECTS_NOTE',
+    'CORRECTED_BY_NOTE',
+  ]),
   at: Instante.nullable(),
   target: OrigenDeDatoSchema.nullable(),
   label: z.string(),

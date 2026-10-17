@@ -124,6 +124,15 @@ test('los hitos: cada uno con su ícono, su nombre y el dato que lo distingue', 
   assert.equal(renglonDelHecho(entrada('TRAINING_OBJECTIVE_SET', 'Objetivo de entrenamiento definido', [['Objetivo', 'Ganar fuerza en los básicos']])).dato, 'Ganar fuerza en los básicos');
   assert.deepEqual(renglonDelHecho(entrada('FOLLOW_UP_OPENED', 'Seguimiento de entrenamiento abierto')), { icono: 'seguimiento', nombre: 'Seguimiento de entrenamiento abierto', dato: null, modo: null });
   assert.equal(renglonDelHecho(entrada('FOLLOW_UP_CLOSED', 'Seguimiento de nutrición cerrado', [['Motivo', 'Fin del vínculo']])).dato, 'Motivo: Fin del vínculo');
+  // DL-140: una nota de coordinación dice para qué es y quién la escribió; el texto, al abrirla. El detalle lleva la finalidad.
+  const nota = entrada('COORDINATION_NOTE_RECORDED', 'Nota de coordinación · Pedido de coordinación', [['Desde', 'Nutrición'], ['Para', 'Prof. Martín Acosta'], ['Nota', 'Texto sintético.']], {
+    author: { identityId: 'a', displayName: 'Lic. Sofía Paz', role: 'PROFESSIONAL' },
+    source: { type: 'COORDINATION_NOTE', id: 'n' },
+  });
+  assert.deepEqual(renglonDelHecho(nota), { icono: 'texto', nombre: 'Nota de coordinación', dato: 'Pedido de coordinación · de Lic. Sofía Paz', modo: null });
+  assert.equal(tituloDelHecho(nota), 'Nota de coordinación · Pedido de coordinación');
+  // Sin autor ni finalidad en el título, no inventa nada.
+  assert.deepEqual(renglonDelHecho(entrada('COORDINATION_NOTE_RECORDED', 'Nota de coordinación')), { icono: 'texto', nombre: 'Nota de coordinación', dato: null, modo: null });
 });
 
 test('si la API cambia un título o un rótulo, el renglón no inventa: muestra el título entero y lo que haya', () => {
@@ -143,7 +152,7 @@ test('cada rasgo tiene un ícono que existe, y cada relación con fecha, su verb
   // El catálogo de íconos reserva el desvío para «una comida diferente o una sesión con cambios», el mismo en las dos áreas.
   assert.equal(ICONO_DEL_RASGO.COMIDA_DIFERENTE, 'desvio');
   assert.equal(ICONO_DEL_RASGO.SESION_CON_CAMBIOS, 'desvio');
-  const iconos = ['nutricion', 'entrenamiento', 'antropometria', 'revision', 'plan', 'objetivo', 'seguimiento', 'a-mano'];
+  const iconos = ['nutricion', 'entrenamiento', 'antropometria', 'revision', 'plan', 'objetivo', 'seguimiento', 'a-mano', 'texto'];
   for (const i of iconos) assert.ok(ICONOS[i], i);
   assert.deepEqual(Object.keys(VERBO_DE_LA_RELACION).sort(), ['ANNULLED', 'CORRECTED', 'MEASUREMENT_ANNULLED', 'MEASUREMENT_CORRECTED', 'RECTIFIED']);
 });
