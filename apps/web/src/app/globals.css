@@ -1564,6 +1564,39 @@ details summary {
   padding: 1.5rem;
 }
 
+/* DL-138: «Continuar con Google» arriba del formulario, con «o con tu correo» entre los dos. El botón lo dibuja Google en
+   su propio marco (sus colores son los de Google, no los de BE); acá solo se reserva su lugar, el alto del botón grande,
+   para que el formulario no salte cuando termina de cargar. */
+.acceso-con-google {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0 0 1rem;
+}
+
+.acceso-con-google__boton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+}
+
+.acceso-con-google__separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--tenue);
+}
+
+.acceso-con-google__separador::before,
+.acceso-con-google__separador::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--borde);
+}
+
 /* ─── WP-08 · el candidato de una importación: se distingue del catálogo, sin color de estado ─── */
 .candidato {
   border-left: 4px solid var(--azul);

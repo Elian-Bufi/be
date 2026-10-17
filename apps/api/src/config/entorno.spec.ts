@@ -32,7 +32,36 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       evidenciaVisualExigida: false,
       avisos: { canal: 'desactivado', expoUrl: 'https://exp.host', expoToken: null, presupuestoMs: 5000 },
       secretoDeTareas: null,
+      google: { clientIds: [], jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs', presupuestoMs: 5000 },
     });
+  });
+
+  it('DL-138 · Google: sin client IDs, apagado; los client IDs se leen separados por coma; un valor que no es un client ID o una URL de claves sin https no arranca, y el mensaje no repite el valor', () => {
+    const web = '000000000001-sinteticoweb.apps.googleusercontent.com';
+    const apk = '000000000001-sinteticoapk.apps.googleusercontent.com';
+    expect(leerEntorno({ ...BASE, GOOGLE_CLIENT_IDS: ` ${web}, ${apk},${web} ` }).google).toEqual({
+      clientIds: [web, apk],
+      jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs',
+      presupuestoMs: 5000,
+    });
+    // Fuera de producción, las pruebas leen las claves de un servidor local.
+    expect(leerEntorno({ ...BASE, GOOGLE_JWKS_URL: 'http://127.0.0.1:4010/certs' }).google.jwksUrl).toBe('http://127.0.0.1:4010/certs');
+    const fallas: [Record<string, string>, RegExp][] = [
+      [{ GOOGLE_CLIENT_IDS: 'GOCSPX-secreto-sintetico-pegado' }, /GOOGLE_CLIENT_IDS/],
+      [{ GOOGLE_CLIENT_IDS: `${web},otro-sintetico.example.invalid` }, /GOOGLE_CLIENT_IDS/],
+      [{ GOOGLE_JWKS_URL: 'http://claves-sinteticas.example.invalid/certs' }, /GOOGLE_JWKS_URL/],
+      [{ APP_ENV: 'production', GOOGLE_JWKS_URL: 'http://127.0.0.1:4010/certs' }, /GOOGLE_JWKS_URL/],
+    ];
+    for (const [cambio, nombre] of fallas) {
+      let mensaje = '';
+      try {
+        leerEntorno({ ...BASE, ...cambio });
+      } catch (e) {
+        mensaje = (e as Error).message;
+      }
+      expect(mensaje).toMatch(nombre);
+      for (const [clave, valor] of Object.entries(cambio)) if (clave !== 'APP_ENV') expect(mensaje).not.toContain(valor);
+    }
   });
 
   it('DL-133 · los avisos: desactivados por defecto; «expo» los activa con su origen y su token; el secreto de la tarea, de 32 caracteres; ningún mensaje repite un valor', () => {

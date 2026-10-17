@@ -71,6 +71,12 @@ export const AZUL_NOCHE = {
   // servidor aplana la transparencia al guardar la imagen. Igual en los dos temas, para que la imagen no deje franjas.
   // No lleva texto encima.
   fondoDeIlustracion: '#FFFFFF',
+  // La «G» del botón «Continuar con Google» (DL-138): los cuatro colores de la marca de Google, iguales en los dos temas,
+  // porque las pautas de Google no dejan cambiarlos. Es un logotipo: no es texto ni borde de control.
+  googleAzul: '#4285F4',
+  googleVerde: '#34A853',
+  googleAmarillo: '#FBBC05',
+  googleRojo: '#EA4335',
 };
 
 export const CLARO: Paleta = {
@@ -117,6 +123,10 @@ export const CLARO: Paleta = {
   vidrioFilo: '#0A1F4414',
   vidrioBrillo: '#FFFFFF00',
   fondoDeIlustracion: '#FFFFFF',
+  googleAzul: '#4285F4',
+  googleVerde: '#34A853',
+  googleAmarillo: '#FBBC05',
+  googleRojo: '#EA4335',
 };
 
 export type Paleta = { readonly [K in keyof typeof AZUL_NOCHE]: string };

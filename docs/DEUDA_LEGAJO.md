@@ -27,7 +27,7 @@
 | DL-020 | WP-02 · 2026-09-18 | 06 §5.7.4 · 05 · 09 | Suspensión y restablecimiento sin UC ni operación | ABIERTA |
 | DL-021 | WP-02 · 2026-09-18 | 08 §12.2/§12.4 · 06 §5.4.2 | Actos A1/A2 y datos del alta fuera del modelo del 06 | ABIERTA |
 | DL-022 | WP-02 · 2026-09-18 | 08 §12.2 · 05 UC-I11 · 09v7 T12 | Canal o superficie sin campo contractual | ABIERTA |
-| DL-023 | WP-02 · 2026-09-18 | 08 §24.3, §24.7 · 04 RF-001 | Alta por invitación y declaración de mayoría de edad | ABIERTA |
+| DL-023 | WP-02 · 2026-09-18 | 08 §24.3, §24.7 · 04 RF-001 | Alta por invitación y declaración de mayoría de edad | **IMPLEMENTADA** 2026-10-16 · la invitación (DL-136) y la declaración de mayoría de edad en toda alta (DL-138), con su casilla en la web y la APK (`wp-acceso-google`, sin integrar); falta el procedimiento ante un menor descubierto (08 §24.7 c) |
 | DL-024 | WP-02 · 2026-09-18 | 10-B02 · 10-ADD · 10-B01 | Desvíos de copy y de UI | ABIERTA |
 | DL-025 | WP-02 · 2026-09-18 | 05:1021 · 10-B01 | Superficie web del asesorado | ABIERTA |
 | DL-026 | WP-02 · 2026-09-18 | 09:253-262 · 09v7 T07 · 09v8 | Idempotencia y códigos no definidos | ABIERTA |
@@ -142,6 +142,7 @@
 | DL-135 | Mandato de Dirección · 2026-10-16 (WP-TVCC-30) | 02 §16 · 04 RF-058 · 05 UC-S01 · 06 B-12 (REG-06-186 a 201) · 07 §24, §42.1 · 09 ANA-P1, TRACE-DEBT-12-001 · 11A §21 · 12 §12-27 | TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado | **IMPLEMENTADA** 2026-10-16; D-1 a D-9 a ratificar |
 | DL-136 | Aprobación de Dirección · 2026-10-16 (WP-INVITACION) | 06 §7.3, §7.4 (REG-06-44, 45, 46; INV-06-55, 56) · 05 UC-P04 V04, UC-P05 V01 · 08 §24.3, §24.5 · 09v8 REL-01 · DL-023 · DL-035 | Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK |
 | DL-137 | Pedido de Dirección · 2026-10-16 (WP-AGENDA-DE-ENTRENAMIENTO) | 06 B-08 (REG-06-111, 114, 115, 126, 131) · DL-077 · DL-088 · DL-133 D-5 · WP-06 §9.2 | El plan de entrenamiento no tenía días: el recordatorio llegaba todos los días y BE no sabía qué sesión tocaba ni cuál quedó pendiente | **IMPLEMENTADA** 2026-10-16: días de cada sesión, lo pendiente, saltear y los avisos de las 10 y las 22 (API #174; editor del website y pantalla de la APK); falta la APK en un teléfono; D-1 a D-9 a ratificar |
+| DL-138 | Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE) | 04 RF-001, RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.6, §24.7 a, §42 ítem 22 · 09 §12 y 09v12 §11 (bosquejo) · DL-012 · DL-023 | Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta | **IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono |
 
 ---
 
@@ -639,6 +640,10 @@ La parte (b) sigue en PASS. Evidencia: `EVIDENCIA/WP-03/resultados-integracion-m
 **Condición de cierre.** Antes de cualquier dato real (gate 08 §42), el 09 incorpora los campos y el 10 las pantallas.
 
 **Avance del 2026-10-16 (DL-136).** La invitación con token de un solo uso, vencimiento y hash (08:568) está en la API: la familia INV. Falta la declaración de mayoría de edad del alta.
+
+**Avance del 2026-10-16 (DL-138).** La declaración de mayoría de edad está en la API, en toda alta: la local (API-ACC-01) y la de Google (API-GOO-03). Es un acto `MAYORIA_DE_EDAD` con la versión del texto que la persona vio («Declaro que tengo 18 años o más. BE es solo para personas adultas.»), sin fecha de nacimiento (minimización: el 08:572 admite «fecha de nacimiento/mayoría de edad»). Sin la declaración no hay alta. Quedan la casilla en la web y en la APK, y el procedimiento ante un menor que declaró falsamente (08 §24.7 c), que el gate §42-22 pide ensayado.
+
+**Avance del 2026-10-16, la web y la APK (DL-138).** La casilla está en las dos altas de las dos apps, la de correo y la de Google: la tercera casilla, con el texto de la versión vigente como etiqueta, nunca premarcada; sin marcarla no se envía el alta. Está en la rama `wp-acceso-google`, sin integrar. Queda el procedimiento ante un menor descubierto (08 §24.7 c).
 
 ## DL-024 — Desvíos de copy y de UI
 
@@ -4097,3 +4102,103 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 **Condición de cierre:**
 - el editor y la APK lo ofrecen, y una persona real recibe los avisos en el teléfono;
 - Dirección ratifica D-1 a D-9, o cambia las que quiera.
+
+## DL-138 — Entrar con Google verificado por la API, y la declaración de mayoría de edad en toda alta: la familia GOO
+
+**Prioridad:** alta (va antes de la entrega).
+
+**Documentos:**
+- **04:** RF-003 (P1, «Acceder mediante Google sin duplicar identidad»: «Google no concede roles ni verificaciones; la indisponibilidad del proveedor no impide el acceso local») y RF-001 («un correo ya asociado no produce una segunda cuenta»).
+- **05:** UC-E05, con sus excepciones E01 (proveedor indisponible: «se informa la contingencia y se ofrece acceso local»), E02 (identidad ambigua: «no se vincula ni crea sesión hasta resolver la asociación») y E03 (resultado no verificable: «no se crea sesión»). UC-E06 (administrar métodos, P2) queda fuera.
+- **06:** B-01 §5.6, «Método de acceso»: local o federado, nunca una identidad paralela (REG-06-21; INV-06-21 e INV-06-24).
+- **08:** §24.1 (BE es la fuente de identidad; Google es un método de acceso), §24.5 (sin revelar la existencia de cuentas), §24.6 (el cambio de método de acceso es auditable), §24.7 a («el alta requiere declaración de fecha de nacimiento/mayoría de edad») y §42, ítem 22.
+- **09:** §12 («Google Identity · RF-003 P1 · outlined») y 09v12 §11, que bosqueja `POST /auth/federated/google/authorize` y `/complete` y aclara: «Los paths finales pueden ajustarse al mecanismo OAuth sin cambiar la semántica». No contrata ninguna operación.
+- **DL-012** (sesiones), **DL-023** (la declaración de mayoría de edad) y **DL-133/DL-136** (cómo se declaran las familias propias de BE).
+- **El paquete:** WP-ACCESO-GOOGLE.
+
+**Estado:** IMPLEMENTADA el 2026-10-16: la API y, en la misma rama (`wp-acceso-google`, sin integrar), la web y la APK (ver el avance). Falta que Dirección cree los client IDs de Google y que una persona real entre con Google desde el teléfono.
+
+**Qué pasaba.** Solo se entraba con correo y contraseña: RF-003 quedó fuera de alcance desde WP-02 (el enum de métodos tenía solo `LOCAL`). Y el alta no pedía la declaración de mayoría de edad (DL-023, opción A provisoria).
+
+**Qué aprobó Dirección el 2026-10-16.** «Sí, en cuanto a tus recomendaciones, están todas aprobadas»:
+1. **Entrar con Google, verificado por la propia API de BE.** El cliente obtiene un ID token de Google; la API lo verifica y abre o crea la cuenta BE. No Firebase Authentication. Las sesiones, la revocación y los permisos de BE siguen como están.
+2. **Si ya hay una cuenta BE con ese mismo correo** (método local), Google se le vincula **solo después de que la persona confirma la contraseña de esa cuenta**. Nunca se vincula sola.
+3. **El correo y la contraseña siguen** como método de acceso.
+4. **Antes de la entrega.**
+
+A eso se suma lo que pide el legajo: **toda alta, local y con Google, exige que la persona declare que es adulta** (08 §24.7 a; el MVP atiende solo a personas adultas).
+
+**El desvío del bosquejo del 09.** El 09 bosqueja un flujo «authorize/complete» (la API como cliente OAuth, con redirección, `state` y PKCE). BE verifica en cambio el **ID token** que el cliente obtiene con las bibliotecas de Google (Google Identity Services en el website, el Google Sign-In de Play Services en la APK; ver el avance). Es el camino estándar para aplicaciones nativas y no deja ningún secreto de cliente en los dispositivos. La semántica del bosquejo se conserva: Google identifica un método de acceso, BE conserva la identidad, no se crea una segunda, el acceso local no se degrada y una falla de Google no lo bloquea. El `state` contra CSRF del bosquejo protege la redirección al servidor, que acá no existe: la sesión de BE es un Bearer en memoria (DL-012), sin cookie que un tercero pueda forzar.
+
+**La familia GOO** (IDs propios de BE, como NOV e INV). Las tres son públicas: autentican con el ID token, que viaja solo en el cuerpo. Responden la sesión **exactamente como API-ACC-02** (la misma fila de sesión, el mismo Bearer de 12 h, la misma superficie y la misma revocación).
+
+| ID | Operación | Respuesta | Errores propios |
+|---|---|---|---|
+| API-GOO-01 | `POST /api/v1/auth/federated/google/sessions` `{ idToken }` | 201 la sesión, si esa cuenta de Google ya es un método de una identidad | 401 GOOGLE_TOKEN_INVALID; 401 INVALID_CREDENTIALS (cuenta suspendida o cerrada, como el login); 404 GOOGLE_ACCOUNT_NOT_FOUND y 409 GOOGLE_LINK_REQUIRED, los dos con `details.email`; 422 GOOGLE_EMAIL_NOT_VERIFIED; 429; 503 DEPENDENCY_UNAVAILABLE |
+| API-GOO-02 | `POST /api/v1/auth/federated/google/links` `{ idToken, credential }` | 201 la sesión de la cuenta local, con el método GOOGLE agregado | 401 GOOGLE_TOKEN_INVALID; 401 INVALID_CREDENTIALS (el mismo del login: contraseña incorrecta, correo sin cuenta con contraseña, cuenta no operativa); 409 GOOGLE_ACCOUNT_ALREADY_LINKED; 422 GOOGLE_EMAIL_NOT_VERIFIED; 429; 503 |
+| API-GOO-03 | `POST /api/v1/auth/federated/google/registrations` `{ idToken, registrationIntent, termsAcceptance, privacyAcknowledgement, adultDeclaration }` | 201 la sesión de la identidad nueva; 200 si esa cuenta de Google ya tenía identidad | 401 GOOGLE_TOKEN_INVALID, INVALID_CREDENTIALS; 409 GOOGLE_LINK_REQUIRED (con `details.email`), REGISTRATION_NOT_AVAILABLE; 422 VALIDATION_FAILED (la declaración), TERMS_VERSION_NOT_ACCEPTABLE, PRIVACY_VERSION_NOT_ACCEPTABLE, GOOGLE_EMAIL_NOT_VERIFIED; 429; 503 |
+
+Y **API-ACC-01** suma `adultDeclaration: { versionId, declared }`: sin ella, 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue `ADULT_DECLARATION_REQUIRED` (D-10); sin marcar, 422 VALIDATION_FAILED con `ADULT_DECLARATION_REQUIRED`; con otra versión, 422 VALIDATION_FAILED con `ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE`.
+
+**Lo decidido** (con el mandato del día; todo espera ratificación):
+- **D-1 · La API verifica el ID token, sin dependencias nuevas.** Lee las claves públicas de Google (el JWKS de `https://www.googleapis.com/oauth2/v3/certs`) y verifica la firma RS256 con `node:crypto`. Exige el emisor (`accounts.google.com` o `https://accounts.google.com`), la audiencia (uno de los client IDs de BE; con varias, la parte autorizada `azp` también), el vencimiento y la emisión con una tolerancia de 60 s, una vigencia de un día como máximo, un `sub` válido y `email_verified === true`. El algoritmo es fijo: nunca el que declare el token (sin `none`, sin HS256).
+  - *Alternativas descartadas:* `google-auth-library` (una dependencia nueva para lo mismo, con su propia superficie de auditoría; ver DL-114); el endpoint `tokeninfo` de Google (una llamada a Google en cada acceso, y Google no lo recomienda para producción); Firebase Authentication (descartada por Dirección).
+- **D-2 · La configuración.** `GOOGLE_CLIENT_IDS`: los client IDs del website y de la APK, separados por coma. Son públicos, no secretos; un valor que no tiene la forma de un client ID de Google no arranca (un secreto pegado por error, por ejemplo), y el mensaje nunca repite el valor. **Sin la variable, la familia GOO responde 503 DEPENDENCY_UNAVAILABLE con `details.fallback.localAccess: true`** (UC-E05 E01), y el acceso local sigue igual. `GOOGLE_JWKS_URL` se puede cambiar para que las pruebas firmen con claves propias sin red, como WP-08 D-H; en producción, solo https.
+- **D-3 · Qué toma BE de Google: el `sub` y el correo verificado. Nada más.** El `sub` es el identificador estable de la cuenta, que Google nunca reasigna; el correo, normalizado como el identificador local. Ni el nombre ni la foto (minimización): el nombre visible sigue siendo el que la persona declara (DL-009).
+- **D-4 · El método GOOGLE.** Un `metodo_de_acceso` con `tipo = GOOGLE`, `referencia` = el `sub` y una columna nueva, `correo`, con el correo verificado al asociarlo (solo GOOGLE la lleva: CHECK). Un `sub` es de una sola identidad (el índice único de siempre) y una identidad tiene como máximo una cuenta de Google (índice parcial).
+- **D-5 · Un correo es de una sola identidad, también entre métodos** (RF-001; INV-06-21). Sin esto, quien creara la cuenta con Google podría después registrarse con el mismo correo y contraseña, y tener dos identidades. Ningún índice único lo puede decir (la misma identidad sí tiene los dos métodos con el mismo correo: es la vinculación), así que toda alta y toda vinculación toman un **cerrojo transaccional por correo** antes de mirar si está libre, y un **disparador** de la base repite la verificación con el mismo cerrojo. Consecuencias:
+  - el alta local con el correo de una cuenta creada con Google responde el mismo 409 neutral de siempre (DL-010);
+  - el alta con Google con el correo de una cuenta local responde GOOGLE_LINK_REQUIRED: nunca una identidad paralela.
+  - *Alternativas descartadas:* no guardar el correo de Google (deja la doble identidad); una tabla de correos aparte (más cambios y un traspaso de los datos existentes, para la misma garantía).
+- **D-6 · Vincular exige la contraseña, con las reglas del login.** API-GOO-02 verifica la contraseña de la cuenta local del mismo correo con el mismo trabajo en todas las ramas (bcrypt contra el señuelo si no hay credencial), responde **el mismo 401 neutral que API-ACC-02** y consume **los mismos cupos de intentos que el login para ese correo**: vincular no es otra vía para probar contraseñas. Solo se vincula un Google con el mismo correo que la cuenta; vincular uno con otro correo es UC-E06 (P2), fuera de alcance. Repetir la vinculación con la misma cuenta abre otra sesión sin duplicar nada.
+- **D-7 · Entrar con Google nunca vincula ni crea.** Si ninguna identidad tiene esa cuenta de Google, API-GOO-01 dice qué falta: 409 GOOGLE_LINK_REQUIRED (hay una cuenta con contraseña y ese correo) o 404 GOOGLE_ACCOUNT_NOT_FOUND (el cliente ofrece el alta), con el correo en `details` para que la pantalla no tenga que leer el token. **No es enumeración** (08 §24.5): la respuesta solo la recibe quien tiene un ID token válido de Google para ese correo, es decir, su dueño. Una cuenta suspendida o cerrada recibe el 401 neutral del login (UC-P26 E02).
+- **D-8 · El alta con Google, sin Idempotency-Key e idempotente por la cuenta de Google.** Si el `sub` ya tiene identidad, abre la sesión y responde 200: un reintento después de perder la respuesta no crea otra, y altas simultáneas con la misma cuenta terminan en una sola identidad. No hay activación: Google verificó el correo.
+  - *Alternativa descartada:* una Idempotency-Key con la respuesta guardada, como API-ACC-01. Guardaría el Bearer en claro en `registro_de_idempotencia`, que solo se agrega (el mismo motivo que DL-136 D-5).
+- **D-9 · La declaración de mayoría de edad.** Un acto registrable `MAYORIA_DE_EDAD` con la evidencia del 08 §12.2: la versión del texto que la persona vio (`mayoria-de-edad-2026-10`, «Declaro que tengo 18 años o más. BE es solo para personas adultas.»), su hash, la finalidad (`ELEGIBILIDAD_POR_MAYORIA_DE_EDAD`, la «finalidad exclusiva de elegibilidad» del 08:572), la superficie y la evidencia técnica. Una por identidad, no se revoca (el cierre la conserva como evidencia del alta) y la declara su titular: la base lo exige. **Sin fecha de nacimiento:** el 08:572 admite «fecha de nacimiento/mayoría de edad», y la fecha sería un dato C3 más sin otra finalidad. El texto no lleva el aviso de demostración: es la declaración de la persona, con las palabras aprobadas, no un texto legal de BE.
+  - *Alternativa:* pedir la fecha de nacimiento y calcular la edad. Más datos para la misma decisión.
+- **D-10 · Las APK instaladas.** Desde este cambio, una APK instalada no puede crear cuentas: no muestra la casilla. El alta local sin la declaración responde 422 **TERMS_VERSION_NOT_ACCEPTABLE** con el issue `ADULT_DECLARATION_REQUIRED`, porque es el único código que esas APK traducen a «Los textos cambiaron. Actualizá la app para continuar.» (y el website instalado, a «Los textos cambiaron… Recargá la página»). Es cierto en lo que importa: cambió el conjunto de textos del alta. Con la declaración sin marcar o con otra versión, el 422 VALIDATION_FAILED con el issue preciso.
+  - *Alternativa:* VALIDATION_FAILED también para la falta. Más puro, pero la APK instalada diría «El servicio no está disponible en este momento».
+- **D-11 · Los cupos de intentos.** API-GOO-01: el global por red antes de verificar el token, y los del login por cuenta, con la cuenta de Google como identificador (no comparte el cupo de la contraseña, porque no prueba ningún secreto de BE). API-GOO-02: los del login con el correo como identificador, compartidos con API-ACC-02 (D-6). API-GOO-03: el del registro por red, como API-ACC-01.
+- **D-12 · Las claves de Google.** Se guardan según su `Cache-Control` (entre un minuto y un día). Un `kid` desconocido relee las claves, porque Google las rota, pero como mucho una vez por minuto: un token inventado no hace que BE consulte a Google en cada pedido. Sin respuesta de Google se siguen usando las ya leídas (Google las publica con días de margen); sin ninguna, 503.
+- **D-13 · Auditoría y rastro.** Cada rechazo queda en la auditoría con su motivo real (`TOKEN_FIRMA`, `TOKEN_AUDIENCIA`, `TOKEN_VENCIDO`, `CORREO_NO_VERIFICADO`, `GOOGLE_NO_CONFIGURADO`, `CLAVES_NO_DISPONIBLES`, `VINCULACION_REQUERIDA`, `CUENTA_DE_GOOGLE_INEXISTENTE`, `CUENTA_SUSPENDIDA`…). La vinculación deja el hecho `MetodoDeAccesoAsociado` (REG-06-21) y una fila de auditoría del cambio de método (08 §24.6). **El ID token no queda en ningún registro**: ni en la auditoría, ni en los hechos, ni en la procedencia, ni en los logs (lo verifica una prueba).
+
+**Base de datos.** Dos migraciones aditivas, sin tablas nuevas ni booleanos:
+- `20261016220000_tipos_de_acceso_google`: `TipoDeMetodoDeAcceso.GOOGLE`, `TipoDeTexto.MAYORIA_DE_EDAD` y `TipoDeActoRegistrable.MAYORIA_DE_EDAD` (aparte: PostgreSQL no deja usar un valor de enum en la transacción que lo agrega).
+- `20261016220100_acceso_google`: la versión del texto; la columna `metodo_de_acceso.correo` con su índice y dos CHECK (solo GOOGLE la lleva; la forma del `sub` y del correo); `metodo_de_acceso_un_google_por_identidad` (índice parcial); el disparador `metodo_de_acceso_sin_identidad_paralela` (D-5); `acto_registrable_una_mayoria_de_edad` (índice parcial); y el disparador de los actos con un agregado: un `MAYORIA_DE_EDAD` declara una versión de su tipo y lo declara su titular.
+
+**Pruebas:**
+- **contra PostgreSQL, con un Google falso local** (claves RSA propias; ninguna prueba llama a Google): `test/integration/acceso-google.int-spec.ts`. Cubre el alta con Google con sus tres actos, la falta de la declaración, el reintento y seis altas simultáneas con la misma cuenta (una identidad); entrar con una cuenta existente, la inexistente y la suspendida o cerrada; la cuenta local con el mismo correo (vinculación requerida, la contraseña incorrecta con la respuesta del login, la correcta, y después entrar sin contraseña); el cupo compartido con el login; el alta local con el correo de una cuenta de Google; lo que la base rechaza por sí sola; los tokens con otra firma, otra audiencia, vencidos, de otro emisor, con `alg: none` o sin el correo verificado; que el token no quede en ningún registro; y Google sin configurar o caído;
+- **el verificador, sin red:** `apps/api/src/acceso-google/verificador-de-google.spec.ts`;
+- **la declaración en el alta local:** `test/integration/registro.int-spec.ts`; **el contrato:** `contrato.int-spec.ts` observa las tres operaciones (y el 503 en una segunda app sin client IDs); **la base:** `schema.int-spec.ts` fija que el disparador toma el cerrojo con la misma clave que el código;
+- **el dominio:** `packages/domain/src/acceso-google.test.ts` (la regla de la declaración, los schemas, el OpenAPI, el cliente y el copy).
+
+**Lo que tiene que hacer Dirección** (sin esto, la API ya responde un 503 limpio y el acceso local sigue igual):
+1. En Google Cloud Console, en un proyecto de BE: configurar la **pantalla de consentimiento de OAuth** (externa; nombre BE, correo de soporte y el dominio del website), en modo de prueba con los usuarios de prueba, o publicada.
+2. Crear un **client ID de tipo «Aplicación web»**, con el origen autorizado del website (la URL de Render del website de test). Lo usa el website, y la APK también, como `webClientId`.
+3. Crear un **client ID de tipo «Android»**, con el paquete `com.elianbufi.be` y la huella SHA-1 del certificado con que se firma la APK. Sale de `keytool -list -v` sobre el keystore, o de la página de firma de la app en Play si la firma Google; la sesión principal la provee.
+4. Cargar los dos en be-api como `GOOGLE_CLIENT_IDS`, separados por coma. No son secretos y no hace falta el secreto de cliente.
+5. Cargar el client ID «Aplicación web» en el build del website (`BE_GOOGLE_WEB_CLIENT_ID`, en be-web) y en el de la APK (`GOOGLE_WEB_CLIENT_ID`). Sin eso no aparece el botón (docs/DESPLIEGUE.md, «Entrar con Google»).
+
+**Avance del 2026-10-16: el website y la APK** (rama `wp-acceso-google`, sin integrar; sin probar con Google real ni en el teléfono).
+- **La casilla de mayoría de edad** en el alta con correo de las dos apps, con el texto de la versión vigente como etiqueta; sin marcarla no se envía el alta. Con esto el alta del website vuelve a funcionar al integrar (D-10); las APK ya instaladas siguen diciendo «Actualizá la app».
+- **«Continuar con Google»** en Iniciar sesión y en Crear cuenta, solo si el build tiene el client ID «Aplicación web» (`BE_GOOGLE_WEB_CLIENT_ID` en el website, `GOOGLE_WEB_CLIENT_ID` en la APK); sin él, nada cambia. Una regla del dominio para las dos apps (`pasoDeAccesoConGoogle`): la sesión se guarda como la del login; GOOGLE_LINK_REQUIRED lleva a confirmar la contraseña (API-GOO-02); GOOGLE_ACCOUNT_NOT_FOUND, al alta con las tres casillas (API-GOO-03, como asesorado: igual que el alta con correo, DL-024); el 503, a «Ahora no podemos usar Google» con el correo y la contraseña a mano.
+- **El website** usa Google Identity Services. En be-web, la CSP admite solo `https://accounts.google.com/gsi/`, y el Referrer-Policy pasa de `no-referrer` a `strict-origin-when-cross-origin`: Google valida el client ID con el origen que lee del Referer, y sin él rechaza todo. Hacia otros sitios viaja solo el origen.
+- **La APK** usa `@react-native-google-signin/google-signin` 16.1.5, gratuita y fijada. En Android es el Google Sign-In de Play Services, que Google marcó como heredado: la versión con Credential Manager es paga. Se carga recién al tocar el botón, y sin su plugin de configuración, que en Android no hace falta (solo configura iOS o Firebase).
+- **Pruebas:** `pasos-de-acceso-google.test.ts` y `scripts/acceso-con-google.test.mjs`.
+
+**Lo que queda abierto:**
+- **La web y la APK:** hechas en `wp-acceso-google` (ver el avance), sin integrar. Hasta que se integren, el alta local de la web no funciona en un ambiente con esta API (D-10): conviene integrar la API y la web juntas. Las APK instaladas no pueden crear cuentas hasta actualizarse.
+- **El texto de privacidad (A2) no nombra a Google.** Antes de datos reales tiene que decir que, si la persona entra con Google, BE recibe de Google su identificador de cuenta y su correo verificado (08 §34, inventario de terceros). Es un texto legal: no se tocó.
+- **Un correo que Google reasigna** (una cuenta de Google borrada y otra nueva con el mismo correo): el `sub` nuevo no encuentra identidad, y su alta responde el 409 neutral, porque el correo es de otra identidad. Se resolvería con UC-E06.
+- **El correo guardado es el del momento de asociar.** Si cambia en Google, BE sigue entrando por el `sub` y conserva el anterior; actualizarlo sería un hecho nuevo (el método solo se agrega).
+- **Retirar o cambiar la cuenta de Google vinculada, o agregarle una contraseña a una cuenta creada con Google:** UC-E06 (P2), fuera de alcance.
+- **Sin un nonce del servidor:** un ID token robado se podría usar hasta que vence (una hora). Viaja solo por HTTPS y en el cuerpo, y nunca se registra. *Alternativa:* una operación que emita un nonce firmado y verificar el `nonce` del token (una llamada más por acceso).
+- **El procedimiento ante un menor que declaró falsamente** (08 §24.7 c) y su ensayo (gate §42, ítem 22) no son parte de este paquete.
+
+**Provisorio en código:** D-1 a D-13.
+
+**Condición de cierre:**
+- Dirección crea los client IDs y los carga en be-api;
+- la web y la APK ofrecen «Continuar con Google» y la casilla de mayoría de edad, y una persona real entra con Google desde el teléfono;
+- Dirección ratifica D-1 a D-13, o cambia las que quiera;
+- con eso, DL-023 queda cerrada en lo que toca al alta (la invitación y la declaración), y lo que resta del 08 §24.7 es el procedimiento ante un menor descubierto.

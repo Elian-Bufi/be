@@ -147,6 +147,19 @@ export const CodigoDeError = {
   INVITATION_USED: 'INVITATION_USED',
   /** El profesional la anuló. */
   INVITATION_REVOKED: 'INVITATION_REVOKED',
+  // GOO (familia propia de BE; WP-ACCESO-GOOGLE, DL-138). Quien los recibe tiene un ID token válido de Google para ese
+  // correo: lo que se le dice es sobre su propia cuenta, no revela la de otro (08 §24.5). Google sin configurar o caído
+  // responde 503 DEPENDENCY_UNAVAILABLE, con el acceso local disponible (UC-E05 E01).
+  /** El ID token no se pudo verificar: firma, emisor, audiencia, vencimiento o forma. */
+  GOOGLE_TOKEN_INVALID: 'GOOGLE_TOKEN_INVALID',
+  /** Google no verificó el correo de esa cuenta: BE no lo puede usar para encontrar ni crear una cuenta. */
+  GOOGLE_EMAIL_NOT_VERIFIED: 'GOOGLE_EMAIL_NOT_VERIFIED',
+  /** Hay una cuenta BE con contraseña y ese correo: vincular Google exige confirmar la contraseña (API-GOO-02). */
+  GOOGLE_LINK_REQUIRED: 'GOOGLE_LINK_REQUIRED',
+  /** Ninguna cuenta BE usa esa cuenta de Google ni ese correo: el cliente ofrece crearla (API-GOO-03). */
+  GOOGLE_ACCOUNT_NOT_FOUND: 'GOOGLE_ACCOUNT_NOT_FOUND',
+  /** La cuenta BE ya tiene otra cuenta de Google, o esa cuenta de Google ya es de otra cuenta BE. */
+  GOOGLE_ACCOUNT_ALREADY_LINKED: 'GOOGLE_ACCOUNT_ALREADY_LINKED',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 
@@ -175,6 +188,14 @@ export const Instante = z.iso.datetime({ offset: true });
 export const IdOpaco = z.string().min(1);
 
 // ─── API-ACC-01 — Registrar identidad ───────────────────────────────────────────────────────────
+/**
+ * 08 §24.7 a: «el alta requiere declaración de fecha de nacimiento/mayoría de edad» (gate §42, ítem 22). BE pide la
+ * declaración, con la versión del texto que la persona vio, como A1 y A2 (08 §12.2), y `declared: true` (DL-138). En el
+ * schema es optativa para que la API responda un 422 preciso, y no un 400 de forma: sin ella no hay alta.
+ */
+export const DeclaracionDeMayoriaDeEdadSchema = z.strictObject({ versionId: IdOpaco, declared: z.boolean() });
+export type DeclaracionDeMayoriaDeEdad = z.infer<typeof DeclaracionDeMayoriaDeEdadSchema>;
+
 export const RegistrarIdentidadRequestSchema = z.strictObject({
   registrationIntent: RegistrationIntentSchema,
   identity: z.strictObject({
@@ -185,6 +206,8 @@ export const RegistrarIdentidadRequestSchema = z.strictObject({
   profile: z.strictObject({}).optional(),
   termsAcceptance: z.strictObject({ versionId: IdOpaco }),
   privacyAcknowledgement: z.strictObject({ versionId: IdOpaco }),
+  /** Obligatoria desde DL-138 (2026-10-16); ver `DeclaracionDeMayoriaDeEdadSchema`. */
+  adultDeclaration: DeclaracionDeMayoriaDeEdadSchema.optional(),
 });
 export type RegistrarIdentidadRequest = z.infer<typeof RegistrarIdentidadRequestSchema>;
 

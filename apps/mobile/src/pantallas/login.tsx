@@ -1,21 +1,27 @@
 /**
  * APK · Iniciar sesión (PROTO-10-ACC-05): un único mensaje neutral para todo fallo (10-B02:198-225). Sin recuperación.
+ * DL-138: «Continuar con Google» arriba del correo y la contraseña, si el build tiene el client ID. La sesión que abre
+ * Google sigue el mismo camino que la del login.
  */
 import { COPY } from '@be/domain';
 import { useState } from 'react';
 import { api } from '../api';
 import { Aviso, Boton, Campo, Titulo } from '../ui';
+import { AccesoConGoogle, type AlIniciar } from './acceso-con-google';
 
 export function PantallaDeLogin({
   aviso,
   alIniciar,
   irARegistro,
+  subir,
 }: {
   aviso?: string;
   /** El identificador de la identidad solo sirve para mostrar lo propio (por ejemplo, los vínculos donde es asesorado). */
   /** `fechaDelServidor`: la cabecera `Date` de la respuesta, para medir la vigencia contra el reloj del servidor. */
-  alIniciar: (token: string, expiresAt: string, identidadId: string, fechaDelServidor: string | null) => void;
+  alIniciar: AlIniciar;
   irARegistro: () => void;
+  /** Lleva la pantalla al principio, donde aparecen los pasos y los avisos de Google. */
+  subir: () => void;
 }) {
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -42,29 +48,31 @@ export function PantallaDeLogin({
   return (
     <>
       <Titulo>Iniciar sesión</Titulo>
-      {aviso && !error ? <Aviso tipo="info" titulo={aviso} /> : null}
-      {error ? <Aviso tipo="error" titulo={error} /> : null}
-      <Campo
-        etiqueta="Correo electrónico"
-        value={correo}
-        onChangeText={setCorreo}
-        autoCapitalize="none"
-        autoCorrect={false}
-        autoComplete="email"
-        keyboardType="email-address"
-        textContentType="username"
-      />
-      <Campo
-        etiqueta="Contraseña"
-        value={contrasena}
-        onChangeText={setContrasena}
-        secureTextEntry
-        autoCapitalize="none"
-        autoComplete="current-password"
-        textContentType="password"
-      />
-      <Boton texto={enviando ? 'Iniciando sesión…' : COPY.iniciarSesion} onPress={enviar} ocupado={enviando} />
-      <Boton texto="¿No tenés cuenta? Crear cuenta" tipo="enlace" onPress={irARegistro} />
+      <AccesoConGoogle alIniciar={alIniciar} subir={subir}>
+        {aviso && !error ? <Aviso tipo="info" titulo={aviso} /> : null}
+        {error ? <Aviso tipo="error" titulo={error} /> : null}
+        <Campo
+          etiqueta="Correo electrónico"
+          value={correo}
+          onChangeText={setCorreo}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="username"
+        />
+        <Campo
+          etiqueta="Contraseña"
+          value={contrasena}
+          onChangeText={setContrasena}
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="current-password"
+          textContentType="password"
+        />
+        <Boton texto={enviando ? 'Iniciando sesión…' : COPY.iniciarSesion} onPress={enviar} ocupado={enviando} />
+        <Boton texto="¿No tenés cuenta? Crear cuenta" tipo="enlace" onPress={irARegistro} />
+      </AccesoConGoogle>
     </>
   );
 }

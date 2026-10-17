@@ -12,6 +12,7 @@
  * - Precierre del 2026-10-06: EVIDENCIA_VISUAL (EVI-01 a 04, DL-125), y MED-01 con la exigencia activa, en una segunda app
  *   con el mismo observador.
  * - WP-INVITACION: la familia INV (DL-136), con la invitación vencida escrita directo en la base.
+ * - WP-ACCESO-GOOGLE: la familia GOO (DL-138) contra un Google falso local, y el 503 en una segunda app sin client IDs.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -37,6 +38,7 @@ import {
   registrar,
   registrarOk,
   tokenDe,
+  transicionPorServicio,
 } from './soporte-api';
 import { a3Vigente, aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 import { CATALOGO_DEMO, circuitoAntropometrico } from './soporte-antropometria';
@@ -68,6 +70,7 @@ import {
   estructuraDeEntrenamiento,
 } from './soporte-entrenamiento';
 import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
+import { googleDePrueba, idTokenDeGoogle, levantarGoogleFalso, reclamosDeGoogle, subSintetico, type GoogleFalso } from './soporte-google';
 import { alimentosUsda, cuerpoDeReceta, estructuraConRecetas, FOTOS, leerContenido, RECETAS, subirBytes, subirImagen } from './soporte-recetas';
 import {
   abrirBorrador,
@@ -99,6 +102,7 @@ const observadas: Observada[] = [];
 const prisma = new PrismaClient();
 let app: INestApplication;
 let proveedor: ProveedorFalso;
+let google: GoogleFalso;
 
 /** El observador: cada respuesta real, con su método, su ruta, su status y su código. */
 function observar(a: INestApplication): void {
@@ -116,11 +120,14 @@ function observar(a: INestApplication): void {
 
 beforeAll(async () => {
   proveedor = await levantarProveedorFalso();
-  app = await appDePrueba({ proveedores: { openFoodFactsUrl: proveedor.url, wgerUrl: proveedor.url, presupuestoMs: 1_500 } }, observar);
+  // DL-138: un Google falso local para la familia GOO; ninguna prueba consulta a Google.
+  google = await levantarGoogleFalso();
+  app = await appDePrueba({ proveedores: { openFoodFactsUrl: proveedor.url, wgerUrl: proveedor.url, presupuestoMs: 1_500 }, ...googleDePrueba(google) }, observar);
 });
 afterAll(async () => {
   await app.close();
   await proveedor.cerrar();
+  await google.cerrar();
   await prisma.$disconnect();
 });
 
@@ -1622,6 +1629,84 @@ it('TEST-CT (WP-INVITACION): INV-01 a 05, con éxitos y errores declarados', asy
             now() - interval '8 days', now() - interval '1 day')`;
   await o.post('/api/v1/relationship-invitations/claim').send({ token: tokenVencido }).expect(422); // INVITATION_EXPIRED
   await p.post(`/api/v1/relationship-invitations/${vencidaId}/revoke`).send({}).expect(422); // INVITATION_EXPIRED
+});
+
+it('TEST-CT (WP-ACCESO-GOOGLE): GOO-01 a 03 y la declaración de mayoría de edad de ACC-01, con éxitos y errores declarados (DL-138)', async () => {
+  const servidor = app.getHttpServer();
+  const RUTA = '/api/v1/auth/federated/google';
+  const cuerpoDeAlta = (idToken: string, cambios: Record<string, unknown> = {}) => ({
+    idToken,
+    registrationIntent: 'ADVISEE',
+    termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
+    privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+    adultDeclaration: { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
+    ...cambios,
+  });
+  const tokenGoogle = (sub: string, correo: string, cambios: Record<string, unknown> = {}) => idTokenDeGoogle(google, reclamosDeGoogle(sub, correo, cambios));
+  const entrar = (a: INestApplication, idToken: string) => request(a.getHttpServer()).post(`${RUTA}/sessions`).send({ idToken });
+  const vincular = (idToken: string, credential: string) => request(servidor).post(`${RUTA}/links`).send({ idToken, credential });
+  const crear = (a: INestApplication, cuerpo: Record<string, unknown>) => request(a.getHttpServer()).post(`${RUTA}/registrations`).send(cuerpo);
+
+  // ACC-01: sin la declaración (un cliente anterior) y sin marcarla.
+  const { adultDeclaration: _sinDeclaracion, ...anterior } = cuerpoDeRegistro(correoSintetico('ct-mayoria'));
+  await request(servidor).post('/api/v1/registrations').set('Idempotency-Key', claveDeIdempotencia()).send(anterior).expect(422); // TERMS_VERSION_NOT_ACCEPTABLE
+  await request(servidor)
+    .post('/api/v1/registrations')
+    .set('Idempotency-Key', claveDeIdempotencia())
+    .send({ ...anterior, adultDeclaration: { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: false } })
+    .expect(422); // VALIDATION_FAILED
+
+  // GOO-03
+  const subNuevo = subSintetico();
+  const correoNuevo = correoSintetico('ct-goo');
+  const tokenNuevo = tokenGoogle(subNuevo, correoNuevo);
+  await crear(app, cuerpoDeAlta(tokenNuevo)).expect(201);
+  await crear(app, cuerpoDeAlta(tokenNuevo)).expect(200); // la cuenta de Google ya tiene identidad
+  await crear(app, { ...cuerpoDeAlta(tokenNuevo), rol: 'X' }).expect(400); // UNKNOWN_FIELD
+  await crear(app, { ...cuerpoDeAlta(tokenNuevo), idToken: '' }).expect(400); // INVALID_REQUEST
+  await crear(app, cuerpoDeAlta(tokenNuevo, { adultDeclaration: undefined })).expect(422); // VALIDATION_FAILED
+  await crear(app, cuerpoDeAlta(tokenNuevo, { termsAcceptance: { versionId: 'vieja' } })).expect(422); // TERMS_VERSION_NOT_ACCEPTABLE
+  await crear(app, cuerpoDeAlta(tokenNuevo, { privacyAcknowledgement: { versionId: 'vieja' } })).expect(422); // PRIVACY_VERSION_NOT_ACCEPTABLE
+  await crear(app, cuerpoDeAlta(tokenGoogle(subSintetico(), correoSintetico('ct-goo-nv'), { email_verified: false }))).expect(422); // GOOGLE_EMAIL_NOT_VERIFIED
+  await crear(app, cuerpoDeAlta(tokenGoogle(subSintetico(), correoSintetico('ct-goo-aud'), { aud: '000000000009-otraapp.apps.googleusercontent.com', azp: undefined }))).expect(401); // GOOGLE_TOKEN_INVALID
+  // Un correo que ya es de otra identidad, con otra cuenta de Google: el 409 neutral del registro.
+  await crear(app, cuerpoDeAlta(tokenGoogle(subSintetico(), correoNuevo))).expect(409); // REGISTRATION_NOT_AVAILABLE
+  const correoLocal = correoSintetico('ct-goo-local');
+  await registrarOk(app, correoLocal);
+  const tokenLocal = tokenGoogle(subSintetico(), correoLocal);
+  await crear(app, cuerpoDeAlta(tokenLocal)).expect(409); // GOOGLE_LINK_REQUIRED
+
+  // GOO-01
+  await entrar(app, tokenNuevo).expect(201);
+  await entrar(app, tokenLocal).expect(409); // GOOGLE_LINK_REQUIRED
+  await entrar(app, tokenGoogle(subSintetico(), correoSintetico('ct-goo-nadie'))).expect(404); // GOOGLE_ACCOUNT_NOT_FOUND
+  await entrar(app, tokenGoogle(subSintetico(), correoSintetico('ct-goo-nv2'), { email_verified: false })).expect(422); // GOOGLE_EMAIL_NOT_VERIFIED
+  await entrar(app, `${tokenNuevo.split('.').slice(0, 2).join('.')}.firmaajena`).expect(401); // GOOGLE_TOKEN_INVALID
+  await request(servidor).post(`${RUTA}/sessions`).send({ idToken: tokenNuevo, otro: 1 }).expect(400); // UNKNOWN_FIELD
+  await request(servidor).post(`${RUTA}/sessions?x=1`).send({ idToken: tokenNuevo }).expect(400); // INVALID_REQUEST
+  const subSuspendida = subSintetico();
+  const correoSuspendida = correoSintetico('ct-goo-susp');
+  const suspendida = (await crear(app, cuerpoDeAlta(tokenGoogle(subSuspendida, correoSuspendida))).expect(201)).body.data.actor.identityId as string;
+  await transicionPorServicio(app, suspendida, 'SuspenderCuenta');
+  await entrar(app, tokenGoogle(subSuspendida, correoSuspendida)).expect(401); // INVALID_CREDENTIALS
+
+  // GOO-02
+  await vincular(tokenLocal, OTRA_CREDENCIAL_SINTETICA).expect(401); // INVALID_CREDENTIALS
+  await vincular(tokenLocal, CREDENCIAL_SINTETICA).expect(201);
+  await vincular(tokenGoogle(subSintetico(), correoLocal), CREDENCIAL_SINTETICA).expect(409); // GOOGLE_ACCOUNT_ALREADY_LINKED
+  await vincular(tokenGoogle(subSintetico(), correoSintetico('ct-goo-nv3'), { email_verified: false }), CREDENCIAL_SINTETICA).expect(422); // GOOGLE_EMAIL_NOT_VERIFIED
+  await vincular('no-es-un-token', CREDENCIAL_SINTETICA).expect(401); // GOOGLE_TOKEN_INVALID
+  await request(servidor).post(`${RUTA}/links`).send({ idToken: tokenLocal }).expect(400); // INVALID_REQUEST
+
+  // 503: una app sin GOOGLE_CLIENT_IDS, con el mismo observador.
+  const sinGoogle = await appDePrueba({}, observar);
+  try {
+    await entrar(sinGoogle, tokenNuevo).expect(503);
+    await request(sinGoogle.getHttpServer()).post(`${RUTA}/links`).send({ idToken: tokenNuevo, credential: CREDENCIAL_SINTETICA }).expect(503);
+    await crear(sinGoogle, cuerpoDeAlta(tokenNuevo)).expect(503);
+  } finally {
+    await sinGoogle.close();
+  }
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

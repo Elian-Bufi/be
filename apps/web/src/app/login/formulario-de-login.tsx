@@ -3,10 +3,14 @@
 /**
  * PROTO-10-ACC-05 — login neutral, sin recuperación (fuera de alcance). Un único mensaje para todo fallo de
  * credenciales o de estado de cuenta (10-B02:198-225). Después del login se aterriza en Cuenta (DL-025).
+ * DL-138: «Continuar con Google» arriba del formulario, si el build tiene el client ID. La sesión que abre Google se guarda
+ * igual que la del login y lleva al mismo destino.
  */
+import type { IniciarSesionResponse } from '@be/domain';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { AccesoConGoogle } from '../../components/acceso-con-google';
 import { Aviso, Campo, ResumenDeErrores } from '../../components/formulario';
 import { api } from '../../lib/api';
 import { avisoDe, COPY, destinoSeguro } from '../../lib/copy';
@@ -25,6 +29,12 @@ export function FormularioDeLogin() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'editando' });
   const [intento, setIntento] = useState(0);
 
+  /** La sesión de API-ACC-02 o de Google (API-GOO-01 a 03): se guarda igual y lleva al mismo destino. */
+  function entrar(respuesta: IniciarSesionResponse) {
+    guardar(respuesta.data.session.accessToken, respuesta.data.session.expiresAt);
+    router.push(destinoSeguro(parametros.get('volver')));
+  }
+
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
     if (estado.tipo === 'enviando') return;
@@ -39,8 +49,7 @@ export function FormularioDeLogin() {
     const r = await api.iniciarSesion(correo, contrasena);
     if (r.ok) {
       setContrasena('');
-      guardar(r.datos.data.session.accessToken, r.datos.data.session.expiresAt);
-      router.push(destinoSeguro(parametros.get('volver')));
+      entrar(r.datos);
       return;
     }
     if (r.tipo === 'RED') return setEstado({ tipo: 'error', mensaje: COPY.resultadoIncierto });
@@ -54,46 +63,48 @@ export function FormularioDeLogin() {
   const enviando = estado.tipo === 'enviando';
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
-      {aviso && estado.tipo === 'editando' && lista.length === 0 ? (
-        <Aviso tipo="info" enfocar>
-          <p>{aviso}</p>
-        </Aviso>
-      ) : null}
-      <ResumenDeErrores titulo={COPY.resumenDeErrores(lista.length)} errores={lista} intento={intento} />
-      {estado.tipo === 'error' ? (
-        <Aviso tipo="error" enfocar>
-          <p>{estado.mensaje}</p>
-        </Aviso>
-      ) : null}
+    <AccesoConGoogle alEntrar={entrar}>
+      <form className="formulario" onSubmit={enviar} noValidate>
+        {aviso && estado.tipo === 'editando' && lista.length === 0 ? (
+          <Aviso tipo="info" enfocar>
+            <p>{aviso}</p>
+          </Aviso>
+        ) : null}
+        <ResumenDeErrores titulo={COPY.resumenDeErrores(lista.length)} errores={lista} intento={intento} />
+        {estado.tipo === 'error' ? (
+          <Aviso tipo="error" enfocar>
+            <p>{estado.mensaje}</p>
+          </Aviso>
+        ) : null}
 
-      <Campo
-        id="correo"
-        etiqueta="Correo electrónico"
-        type="email"
-        autoComplete="username"
-        inputMode="email"
-        required
-        value={correo}
-        onChange={(e) => setCorreo(e.target.value)}
-        error={errores.correo}
-      />
-      <Campo
-        id="contrasena"
-        etiqueta="Contraseña"
-        type="password"
-        autoComplete="current-password"
-        required
-        value={contrasena}
-        onChange={(e) => setContrasena(e.target.value)}
-        error={errores.contrasena}
-      />
-      <button className="boton boton--primario" type="submit" disabled={enviando} aria-busy={enviando}>
-        {enviando ? 'Iniciando sesión…' : COPY.iniciarSesion}
-      </button>
-      <p>
-        ¿No tenés cuenta? <Link href="/register">Crear cuenta</Link>
-      </p>
-    </form>
+        <Campo
+          id="correo"
+          etiqueta="Correo electrónico"
+          type="email"
+          autoComplete="username"
+          inputMode="email"
+          required
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+          error={errores.correo}
+        />
+        <Campo
+          id="contrasena"
+          etiqueta="Contraseña"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={contrasena}
+          onChange={(e) => setContrasena(e.target.value)}
+          error={errores.contrasena}
+        />
+        <button className="boton boton--primario" type="submit" disabled={enviando} aria-busy={enviando}>
+          {enviando ? 'Iniciando sesión…' : COPY.iniciarSesion}
+        </button>
+        <p>
+          ¿No tenés cuenta? <Link href="/register">Crear cuenta</Link>
+        </p>
+      </form>
+    </AccesoConGoogle>
   );
 }

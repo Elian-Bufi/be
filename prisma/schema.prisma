@@ -33,9 +33,11 @@ enum EstadoOperativoDeCuenta {
   CERRADA
 }
 
-/// T-06-03 — tipo de método de acceso. WP-02 solo implementa LOCAL (RF-003 federado fuera de alcance).
+/// T-06-03 — tipo de método de acceso. LOCAL desde WP-02; GOOGLE desde WP-ACCESO-GOOGLE (RF-003, UC-E05; DL-138): la
+/// cuenta de Google verificada por la API, como un método más de la misma identidad BE.
 enum TipoDeMetodoDeAcceso {
   LOCAL
+  GOOGLE
 }
 
 /// Estado de sesión — infraestructura (06:1839 no la define). Lista blanca: ACTIVA → FINALIZADA | REVOCADA.
@@ -69,6 +71,8 @@ enum TipoDeTexto {
   CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO
   /// La información destacada de las fotos de comidas (08 §12.4, §21.3). Precierre del 2026-10-06: una propuesta (DL-125).
   EVIDENCIA_VISUAL
+  /// La declaración de mayoría de edad del alta (08 §24.7 a; gate §42, ítem 22; DL-138).
+  MAYORIA_DE_EDAD
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -78,6 +82,8 @@ enum TipoDeActoRegistrable {
   DATOS_SALUD_BE
   /// 08:395 — información destacada de la evidencia visual (fotos de una comida), dentro del alcance B2 (DL-120).
   EVIDENCIA_VISUAL
+  /// 08 §24.7 a — la declaración de mayoría de edad del alta, local o con Google (DL-138). Una por identidad; no se revoca.
+  MAYORIA_DE_EDAD
 }
 
 /// 08 §12.2 «estado (VIGENTE/REVOCADO)». Única transición: VIGENTE → REVOCADO, solo para tipos revocables.
@@ -250,12 +256,18 @@ model VersionDePerfilPropio {
 
 /// T-06-03 — Método de acceso (06 §5.6). Identidad 1 : 0..N; un método vigente → como máximo 1 Identidad (INV-06-24).
 /// La unicidad (tipo, referencia) es global e incluye cuentas cerradas (DEUDA_LEGAJO DL-011).
+/// DL-138 (en la migración 20261016200100): como máximo un método GOOGLE por identidad (índice parcial), y un correo es de
+/// una sola identidad, sea el de un método LOCAL o el de uno GOOGLE (disparador con cerrojo por correo; INV-06-21).
 model MetodoDeAcceso {
   id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   identidadId         String               @map("identidad_id") @db.Uuid
   tipo                TipoDeMetodoDeAcceso
-  /// Identificador local normalizado (correo en minúsculas). Dato C3 (08 §4).
+  /// LOCAL: el identificador local normalizado (correo en minúsculas). GOOGLE: el `sub` de la cuenta de Google, su
+  /// identificador estable que Google nunca reasigna (DL-138). Dato C3 (08 §4).
   referencia          String
+  /// Solo GOOGLE (CHECK): el correo que Google verificó al asociar la cuenta, normalizado como el identificador local. Con
+  /// él, un correo no queda en dos identidades (RF-001; INV-06-21). Dato C3. LOCAL lo tiene en `referencia`.
+  correo              String?
   procedencia         Json
   momentoDeOcurrencia DateTime?            @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime             @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
@@ -266,6 +278,7 @@ model MetodoDeAcceso {
   /// D3 de WP-02: dos registros concurrentes con el mismo correo no crean dos identidades.
   @@unique([tipo, referencia])
   @@index([identidadId])
+  @@index([correo])
   @@map("metodo_de_acceso")
 }
 

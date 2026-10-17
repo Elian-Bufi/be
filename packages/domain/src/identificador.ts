@@ -4,7 +4,11 @@
  * Las mismas reglas corren en API, website y APK para que los clientes no mantengan otra definición (09v7 T21).
  */
 
-export const TipoDeMetodoDeAcceso = { LOCAL: 'LOCAL' } as const;
+/**
+ * LOCAL: correo y contraseña. GOOGLE (RF-003, UC-E05; DL-138): la cuenta de Google, por su identificador estable (`sub`),
+ * verificada por la API. Los dos son métodos de la misma identidad BE, nunca una identidad paralela (INV-06-21).
+ */
+export const TipoDeMetodoDeAcceso = { LOCAL: 'LOCAL', GOOGLE: 'GOOGLE' } as const;
 export type TipoDeMetodoDeAcceso = (typeof TipoDeMetodoDeAcceso)[keyof typeof TipoDeMetodoDeAcceso];
 
 /**

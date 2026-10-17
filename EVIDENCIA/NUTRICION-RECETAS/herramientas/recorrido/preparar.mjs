@@ -26,9 +26,10 @@ if (fase === 'cuentas') {
   const proCorreo = `pro-recetas-${sufijo}@example.invalid`;
   const aseCorreo = `ase-recetas-${sufijo}@example.invalid`;
   const otroCorreo = `otro-ase-${sufijo}@example.invalid`;
-  const pro = exigir(await api.registrar({ correo: proCorreo, contrasena: CRED }, clave()), 'registro de la profesional');
-  const ase = exigir(await apk.registrar({ correo: aseCorreo, contrasena: CRED }, clave()), 'registro del asesorado');
-  const otro = exigir(await apk.registrar({ correo: otroCorreo, contrasena: CRED }, clave()), 'registro de otro asesorado');
+  // DL-138: toda alta declara la mayoría de edad (las personas sintéticas son adultas).
+  const pro = exigir(await api.registrar({ correo: proCorreo, contrasena: CRED, mayoriaDeEdad: true }, clave()), 'registro de la profesional');
+  const ase = exigir(await apk.registrar({ correo: aseCorreo, contrasena: CRED, mayoriaDeEdad: true }, clave()), 'registro del asesorado');
+  const otro = exigir(await apk.registrar({ correo: otroCorreo, contrasena: CRED, mayoriaDeEdad: true }, clave()), 'registro de otro asesorado');
   fs.writeFileSync(ESTADO, JSON.stringify({ proCorreo, proId: pro.data.identityId, aseCorreo, aseId: ase.data.identityId, otroCorreo, otroId: otro.data.identityId }, null, 2));
   console.log(`BE_DEMO_PROFESIONALES=${pro.data.identityId}|NUTRICION|SANITARIO|Lic. Demo Nutrición`);
 } else if (fase === 'vinculo') {

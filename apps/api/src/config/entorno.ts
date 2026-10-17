@@ -80,7 +80,21 @@ export interface Entorno {
    * mínimo, lo genera Render). Sin valor, esa ruta responde 404.
    */
   readonly secretoDeTareas: string | null;
+  /**
+   * WP-ACCESO-GOOGLE (DL-138) · entrar con Google, verificado por la API (RF-003, UC-E05).
+   * - `GOOGLE_CLIENT_IDS`: los client IDs de OAuth de BE que puede nombrar la audiencia del ID token (el del website y el
+   *   de la APK), separados por coma. Son públicos, no secretos. Sin valor, la familia GOO responde 503 y el acceso local
+   *   sigue igual (UC-E05 E01: «se informa la contingencia y se ofrece acceso local»).
+   * - `GOOGLE_JWKS_URL`: de dónde se leen las claves públicas de Google. Por defecto, la de Google; https en producción.
+   *   Configurable para que las pruebas firmen con claves propias y nunca dependan de la red (como WP-08 D-H).
+   */
+  readonly google: { readonly clientIds: readonly string[]; readonly jwksUrl: string; readonly presupuestoMs: number };
 }
+
+/** Dónde publica Google las claves con que firma los ID tokens (OpenID Connect, `jwks_uri` de accounts.google.com). */
+export const JWKS_DE_GOOGLE = 'https://www.googleapis.com/oauth2/v3/certs';
+/** La forma de un client ID de OAuth de Google: `<número>-<letras y números>.apps.googleusercontent.com`. */
+const CLIENT_ID_DE_GOOGLE = /^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com$/;
 
 export const CANALES_DE_AVISOS = ['expo', 'desactivado'] as const;
 export type CanalDeAvisos = (typeof CANALES_DE_AVISOS)[number];
@@ -203,6 +217,17 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
   const secretoDeTareas = (env.BE_SECRETO_DE_TAREAS ?? '').trim() || null;
   if (secretoDeTareas !== null && secretoDeTareas.length < 32) errores.push('BE_SECRETO_DE_TAREAS debe tener al menos 32 caracteres');
 
+  // DL-138: los client IDs de Google y el origen de sus claves. Un client ID mal copiado (o un secreto pegado en su lugar)
+  // no arranca; el mensaje nombra la variable, nunca el valor.
+  const clientIds = (env.GOOGLE_CLIENT_IDS ?? '')
+    .split(',')
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
+  if (clientIds.some((c) => !CLIENT_ID_DE_GOOGLE.test(c))) errores.push('GOOGLE_CLIENT_IDS solo admite client IDs de Google (…apps.googleusercontent.com), separados por coma');
+  const jwksUrl = (env.GOOGLE_JWKS_URL ?? '').trim() || JWKS_DE_GOOGLE;
+  const jwksLocal = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/\S*$/.test(jwksUrl);
+  if (!/^https:\/\/[a-z0-9.-]+(:\d+)?\/\S*$/i.test(jwksUrl) && !(jwksLocal && appEnv !== 'production')) errores.push('GOOGLE_JWKS_URL debe ser una URL https');
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -223,6 +248,7 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     evidenciaVisualExigida: exigida === 'true',
     avisos: { canal: canal as CanalDeAvisos, expoUrl, expoToken, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS },
     secretoDeTareas,
+    google: { clientIds: [...new Set(clientIds)], jwksUrl, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS },
   };
 }
 

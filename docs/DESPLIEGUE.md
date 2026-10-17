@@ -33,7 +33,7 @@ Los subdominios `onrender.com` son globales: `be-api` y `be-web` ya pertenecían
 | Si cambia la URL de… | Hay que actualizar |
 |---|---|
 | la **API** (`be-api-hndp`) | en `render.yaml`, `BE_API_BASE_URL` y `connect-src` de la CSP de `be-web` (y el `destination` del rewrite `/api/*` mientras exista, DL-030); `API_BASE_URL` de `apps/mobile/eas.json` (con rebuild del APK) |
-| el **website** (`be-web-1ngj`) | solo `CORS_ALLOWED_ORIGINS` de `be-api` en `render.yaml` |
+| el **website** (`be-web-1ngj`) | `CORS_ALLOWED_ORIGINS` de `be-api` en `render.yaml`; `WEB_BASE_URL` de `apps/mobile/eas.json` (los enlaces de invitación, DL-136, con rebuild del APK); y el origen autorizado del client ID «Aplicación web» de Google (DL-138) |
 
 **Historia del Blueprint (2026-09-18).** El Blueprint original quedó conectado al repositorio renombrado `be-archivo-wp01` y se desconectó. Dirección creó uno nuevo sobre `Elian-Bufi/be`, que **adoptó** `be-api` y `be-db-test` sin recrearlos (URL de la API y base intactas) y **creó** un `be-web` nuevo: `be-web-izpg` pasó a `be-web-1ngj`. Desde entonces `render.yaml` vuelve a sincronizarse solo con cada push a `main`.
 
@@ -105,6 +105,21 @@ Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa pa
 **Opcional:** la seguridad reforzada de Expo. En expo.dev, Account settings → Access tokens → «Enhanced Security for Push Notifications», y un token de acceso cargado a mano en be-api como `EXPO_ACCESS_TOKEN`. Así nadie que tenga un token de teléfono puede mandarle avisos en nombre de BE.
 
 **Comprobar el cron sin esperar a las 15:00:** Render → be-recordatorios → «Trigger Run». Fuera de las franjas (de 14 a 18 y de 21 a 23), la API responde 409 y el log lo dice: no crea nada.
+
+### Entrar con Google (DL-138, WP-ACCESO-GOOGLE)
+
+La API verifica el ID token de Google con las claves públicas de Google: no hay secreto que guardar. **Sin `GOOGLE_CLIENT_IDS`, «Continuar con Google» responde que Google no está disponible y el correo y la contraseña siguen igual.** Y sin el client ID en el build, el website y la APK ni muestran el botón. Para activarlo, una sola vez, en <https://console.cloud.google.com> con la cuenta de Dirección:
+1. Un proyecto `BE` y su **pantalla de consentimiento de OAuth** (externa; nombre BE, correo de soporte y el dominio del website), en modo de prueba con los usuarios de prueba: mientras esté en prueba, solo esas cuentas de Google pueden entrar. BE no pide permisos aparte de los básicos (el correo y el perfil), que no requieren la verificación de Google.
+2. Credenciales → «Crear ID de cliente de OAuth» → **Aplicación web**, con el origen autorizado del website de test (`https://be-web-1ngj.onrender.com`; para probar en local, también `http://localhost` y `http://localhost:3000`). Sin URI de redirección: el website recibe el ID token en una ventana de Google. Lo usan el website y la APK.
+3. Otro → **Android**, con el paquete `com.elianbufi.be` y la huella SHA-1 del certificado que firma la APK: el keystore de EAS que se usa también en los builds locales (nunca uno nuevo). Sale de expo.dev → proyecto `elianbufi/be` → Credentials → Android → `com.elianbufi.be`, o de `keytool -list -v` sobre el keystore. No se escribe en la app: Google reconoce a la APK por el paquete y la huella. Una APK firmada con otra clave (la de depuración, por ejemplo) necesita su propio client ID Android.
+4. En be-api, la variable `GOOGLE_CLIENT_IDS` con los dos IDs separados por coma, cargada a mano (no es un secreto; un valor con otra forma no deja arrancar la API).
+5. **El website:** en be-web → Environment, `BE_GOOGLE_WEB_CLIENT_ID` con el client ID «Aplicación web», y «Save, rebuild, and deploy» (es un sitio estático: el valor entra al construirlo). La CSP y el Referrer-Policy de `render.yaml` ya admiten Google Identity Services. Sin la variable, el website queda como siempre; con un valor con otra forma, el build falla sin mostrarlo.
+6. **La APK:** se construye con `GOOGLE_WEB_CLIENT_ID=<el client ID «Aplicación web»>` en el entorno, en la generación y en Gradle, como `API_BASE_URL` (en EAS, en el `env` del perfil o como variable del proyecto). Es el client ID web, no el Android: la APK le pide a Google un ID token para el servidor. Sin la variable, la APK no muestra el botón.
+
+**Comprobar:** en el website, Iniciar sesión muestra «Continuar con Google» arriba del correo; con un usuario de prueba sin cuenta BE, sigue «Crear tu cuenta con Google» con las tres casillas; con el correo de una cuenta con contraseña, pide confirmarla una vez; después, entra con Google directo. Lo mismo en la APK. **Si falla:**
+- el website muestra el error de Google «The given origin is not allowed for the given client ID»: falta el origen del website en el client ID web (o el Referrer-Policy de be-web no es `strict-origin-when-cross-origin`);
+- la APK dice «Ahora no podemos usar Google» justo después de elegir la cuenta: casi siempre es el `DEVELOPER_ERROR` de Google, el client ID Android no coincide con el paquete o con la huella de la firma, o está en otro proyecto que el client ID web;
+- las dos dicen «Ahora no podemos usar Google» después de elegir la cuenta, y la API registra `GOOGLE_NO_CONFIGURADO`: falta `GOOGLE_CLIENT_IDS` en be-api.
 
 ### APK
 

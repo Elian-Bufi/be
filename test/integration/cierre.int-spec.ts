@@ -72,7 +72,7 @@ describe('TEST-AUTH-012 — el cierre invalida las sesiones actuales', () => {
 });
 
 describe('TEST-AUTH-013 — sin borrado silencioso', () => {
-  it('TEST-AUTH-013 (b): la identidad sigue presente en CERRADA con perfil, método, actos A1/A2 y eventos; el cierre queda asentado', async () => {
+  it('TEST-AUTH-013 (b): la identidad sigue presente en CERRADA con perfil, método, actos A1/A2, la declaración de mayoría de edad y eventos; el cierre queda asentado', async () => {
     const { id, res } = await cuentaCerrada('auth013');
     const identidad = await prisma.identidad.findUniqueOrThrow({
       where: { id },
@@ -81,7 +81,8 @@ describe('TEST-AUTH-013 — sin borrado silencioso', () => {
     expect(identidad.estadoOperativoDeCuenta).toBe('CERRADA');
     expect(identidad.perfilPropio).not.toBeNull();
     expect(identidad.metodosDeAcceso).toHaveLength(1); // el identificador sigue reservado (DL-011)
-    expect(identidad.actos.map((a) => `${a.tipo}:${a.estado}`).sort()).toEqual(['PRIVACIDAD_INFO:VIGENTE', 'TERMINOS:REVOCADO']);
+    // La declaración de mayoría de edad (DL-138) no se revoca: queda como evidencia del alta, igual que A2.
+    expect(identidad.actos.map((a) => `${a.tipo}:${a.estado}`).sort()).toEqual(['MAYORIA_DE_EDAD:VIGENTE', 'PRIVACIDAD_INFO:VIGENTE', 'TERMINOS:REVOCADO']);
     expect(identidad.actos.find((a) => a.tipo === 'TERMINOS')?.momentoDeRevocacion).toBeInstanceOf(Date);
     expect(identidad.solicitudDeCierreDeCuenta).toMatchObject({
       id: res.body.data.id,
@@ -215,6 +216,8 @@ describe('TEST-UC-P27 / TEST-CT-P1-ACC-P1-03 — cierre de cuenta', () => {
         identity: { localIdentifier: correo, localCredential: 'clave-sintetica-nueva-01' },
         termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
         privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+        // DL-138: toda alta declara la mayoría de edad; sin ella respondería 422 antes de mirar el correo.
+        adultDeclaration: { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
       })
       .expect(409);
     expect(res.body.error.code).toBe('REGISTRATION_NOT_AVAILABLE');

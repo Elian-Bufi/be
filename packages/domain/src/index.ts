@@ -106,3 +106,7 @@ export * from './tvcc30';
 export * from './contratos-invitaciones';
 export * from './agenda-de-entrenamiento';
 export * from './copy-agenda-de-entrenamiento';
+export * from './mayoria-de-edad';
+export * from './contratos-acceso-google';
+export * from './copy-acceso-google';
+export * from './pasos-de-acceso-google';

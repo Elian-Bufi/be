@@ -31,6 +31,8 @@ const ENTORNO = {
   // DL-133: sin canal de avisos y sin la ruta interna, salvo la prueba que los configura.
   avisos: { canal: 'desactivado' as const, expoUrl: 'http://127.0.0.1:1', expoToken: null, presupuestoMs: 2000 },
   secretoDeTareas: null,
+  // DL-138: sin client IDs, la familia GOO responde 503; nunca se consulta a Google.
+  google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 1000 },
 };
 
 function directorioCon(migraciones: string[]): string {

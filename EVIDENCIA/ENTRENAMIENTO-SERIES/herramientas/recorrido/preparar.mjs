@@ -31,10 +31,11 @@ if (fase === 'cuentas') {
     aseCorreo: `ase-entrenamiento-${sufijo}@example.invalid`,
     otroCorreo: `otro-ase-entrenamiento-${sufijo}@example.invalid`,
   };
-  const pro = exigir(await api.registrar({ correo: correos.proCorreo, contrasena: CRED }, clave()), 'registro del profesional');
-  const otroPro = exigir(await api.registrar({ correo: correos.otroProCorreo, contrasena: CRED }, clave()), 'registro del otro profesional');
-  const ase = exigir(await apk.registrar({ correo: correos.aseCorreo, contrasena: CRED }, clave()), 'registro del asesorado');
-  const otro = exigir(await apk.registrar({ correo: correos.otroCorreo, contrasena: CRED }, clave()), 'registro del otro asesorado');
+  // DL-138: toda alta declara la mayoría de edad (las personas sintéticas son adultas).
+  const pro = exigir(await api.registrar({ correo: correos.proCorreo, contrasena: CRED, mayoriaDeEdad: true }, clave()), 'registro del profesional');
+  const otroPro = exigir(await api.registrar({ correo: correos.otroProCorreo, contrasena: CRED, mayoriaDeEdad: true }, clave()), 'registro del otro profesional');
+  const ase = exigir(await apk.registrar({ correo: correos.aseCorreo, contrasena: CRED, mayoriaDeEdad: true }, clave()), 'registro del asesorado');
+  const otro = exigir(await apk.registrar({ correo: correos.otroCorreo, contrasena: CRED, mayoriaDeEdad: true }, clave()), 'registro del otro asesorado');
   fs.writeFileSync(
     ESTADO,
     JSON.stringify({ ...correos, proId: pro.data.identityId, otroProId: otroPro.data.identityId, aseId: ase.data.identityId, otroId: otro.data.identityId }, null, 2),

@@ -57,6 +57,7 @@ import { useCuentaDelEntrenamiento } from './src/entrenamiento-en-curso';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { MenuAuxiliar } from './src/menu-auxiliar';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
+import type { AlIniciar } from './src/pantallas/acceso-con-google';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeComidaDiferente } from './src/pantallas/comida-diferente';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
@@ -452,6 +453,24 @@ function Contenido() {
   const espacioDeLaBarra = conBarra && altoDeLaBarra > 0 ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
   const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
 
+  /**
+   * La sesión nueva, de Iniciar sesión o de Google (DL-138: entrar, vincular o crear la cuenta desde Iniciar sesión o desde
+   * Crear cuenta). Es la misma sesión de BE, venga de donde venga, y sigue el mismo camino.
+   */
+  const entrar: AlIniciar = (token, expiresAt, identidadId, fechaDelServidor) => {
+    intentoDeRecuperacion.current++;
+    memoria.olvidarLaSesion();
+    alturas.current.clear();
+    const nueva = crearSesion({ token, identidadId, expiresAt, fechaDelServidor }, performance.now(), Date.now());
+    setSesion(nueva);
+    setRecordada(null);
+    // La credencial va al almacenamiento seguro. Si no se pudo guardar, Cuenta lo dice: no se promete recordarla.
+    void guarda.guardar({ token, identidadId, expiresAt, vigenciaMs: nueva.vigenciaMs }).then((guardada) => {
+      if (sesionActual.current?.token === token) setRecordada(guardada);
+    });
+    ir(alIniciarSesion(ruta));
+  };
+
   return (
     // «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
     // (adjustResize deja de tener efecto), así que sin esto el teclado tapa los campos de abajo (validación de la 0.11.2).
@@ -506,27 +525,9 @@ function Contenido() {
             </View>
           ) : null}
 
-          {ruta.nombre === 'registro' ? <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} mostrarAviso={subir} /> : null}
+          {ruta.nombre === 'registro' ? <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} mostrarAviso={subir} alIniciar={entrar} /> : null}
 
-          {ruta.nombre === 'login' ? (
-            <PantallaDeLogin
-              aviso={ruta.aviso}
-              irARegistro={() => ir({ nombre: 'registro' })}
-              alIniciar={(token, expiresAt, identidadId, fechaDelServidor) => {
-                intentoDeRecuperacion.current++;
-                memoria.olvidarLaSesion();
-                alturas.current.clear();
-                const nueva = crearSesion({ token, identidadId, expiresAt, fechaDelServidor }, performance.now(), Date.now());
-                setSesion(nueva);
-                setRecordada(null);
-                // La credencial va al almacenamiento seguro. Si no se pudo guardar, Cuenta lo dice: no se promete recordarla.
-                void guarda.guardar({ token, identidadId, expiresAt, vigenciaMs: nueva.vigenciaMs }).then((guardada) => {
-                  if (sesionActual.current?.token === token) setRecordada(guardada);
-                });
-                ir(alIniciarSesion(ruta));
-              }}
-            />
-          ) : null}
+          {ruta.nombre === 'login' ? <PantallaDeLogin aviso={ruta.aviso} irARegistro={() => ir({ nombre: 'registro' })} alIniciar={entrar} subir={subir} /> : null}
 
           {requiereSesion(ruta) && sesion ? (
             <>
