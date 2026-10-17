@@ -27,6 +27,21 @@ const SERVICIOS_DE_GOOGLE = process.env.GOOGLE_SERVICES_JSON?.trim() || null;
 const HOST_DEL_WEBSITE = process.env.WEB_BASE_URL?.trim() ? new URL(process.env.WEB_BASE_URL.trim()).host : null;
 
 /**
+ * WP-ACCESO-GOOGLE (DL-138): «Continuar con Google» aparece solo si el build tiene `GOOGLE_WEB_CLIENT_ID`, el client ID
+ * «Aplicación web» de Google (el mismo del website). Con él, la APK pide el ID token que verifica la API. Es público, no
+ * un secreto. Google reconoce a la APK por el paquete y la huella SHA-1 de su firma, con el client ID «Android» del mismo
+ * proyecto, que no se escribe acá (docs/DESPLIEGUE.md, «Entrar con Google»). Va en el entorno de la generación y de Gradle,
+ * como API_BASE_URL. Un valor con otra forma corta el build, como en la API: puede ser un secreto pegado por error, y el
+ * mensaje no lo repite.
+ * Sin plugin de configuración: en Android la biblioteca no lo necesita (se enlaza sola). El suyo solo configura iOS, que
+ * BE no construye, o Firebase, que BE no usa para entrar.
+ */
+const CLIENT_ID_WEB_DE_GOOGLE = process.env.GOOGLE_WEB_CLIENT_ID?.trim() || null;
+if (CLIENT_ID_WEB_DE_GOOGLE && !/^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com$/.test(CLIENT_ID_WEB_DE_GOOGLE)) {
+  throw new Error('GOOGLE_WEB_CLIENT_ID no tiene la forma de un client ID de Google (…apps.googleusercontent.com) (DL-138)');
+}
+
+/**
  * La APK pide solo lo que usa (08, minimización). Las librerías declaran estos permisos y BE no los necesita:
  * - expo-notifications (0.16.0-candidata.1) trajo el arranque del sistema, que sirve para reprogramar avisos locales,
  *   el referidor de instalación de Google Play y las insignias del ícono de quince lanzadores. BE no programa avisos
@@ -120,6 +135,7 @@ const config: ExpoConfig = {
   extra: {
     appEnv: process.env.APP_ENV ?? 'development',
     apiBaseUrl: process.env.API_BASE_URL ?? null,
+    googleWebClientId: CLIENT_ID_WEB_DE_GOOGLE,
     commit: process.env.EAS_BUILD_GIT_COMMIT_HASH ?? null,
     construidoEn: new Date().toISOString(),
     // Identificador público del proyecto en EAS (no es un secreto).
