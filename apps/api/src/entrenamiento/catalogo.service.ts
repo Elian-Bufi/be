@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { CrearEjercicioRequestSchema, type EjercicioDeCatalogo, type ValidationIssue } from '@be/domain';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { CON_MARCA, SIN_MARCA } from '../http/busqueda';
+import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda } from '../http/busqueda';
 import { errores } from '../http/errores';
-import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
+import { leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,34 +38,34 @@ export class CatalogoDeEjerciciosService {
   constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorDeEntrenamiento, private readonly pdp: PdpService) {}
 
   // ─── API-TRN-13 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * El buscador tolera tildes, mayúsculas, el orden de las palabras, los plurales y los errores de tipeo
+   * (`http/busqueda.ts`; DL-139), también para el asesorado que busca qué hizo en lugar de lo prescripto. Sin texto, el
+   * catálogo entero, lo más nuevo primero.
+   */
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioDeCatalogo[]; page: unknown }> {
-    const { q: crudo, ...resto } = query;
+    const { q: crudo, cursor: cursorEscrito, ...resto } = query;
     if (crudo !== undefined && typeof crudo !== 'string') throw errores.solicitudInvalida([{ code: 'INVALID_FILTER', path: 'q' }]);
     const consulta = leerConsultaDeLista(resto, {});
+    const cursor = leerCursorDeBusqueda(cursorEscrito);
     const q = (crudo ?? '').trim().slice(0, 80);
     const creadores = await this.creadoresVisibles(this.prisma, actor.identidadId, 'CUALQUIERA');
-    const patron = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-    const cursor = consulta.cursor;
-    const filas = await this.prisma.$queryRaw<FilaDeEjercicio[]>`
-      SELECT e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
-             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
-        FROM "version_de_ejercicio" v
-        JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
-       WHERE NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
-         AND v."disponibilidad" = 'DISPONIBLE'
-         AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ANY(${creadores}::uuid[]))
-         AND lower(translate(v."nombre", ${CON_MARCA}, ${SIN_MARCA})) LIKE lower(translate(${patron}, ${CON_MARCA}, ${SIN_MARCA}))
-         AND (${cursor === null} OR (v."momento_de_registro", v."id") < (${cursor?.momento ?? new Date(0)}, ${cursor?.id ?? '00000000-0000-0000-0000-000000000000'}::uuid))
-       ORDER BY v."momento_de_registro" DESC, v."id" DESC
-       LIMIT ${consulta.limit + 1}`;
-    const hayMas = filas.length > consulta.limit;
-    const pagina = filas.slice(0, consulta.limit);
-    const ultima = pagina[pagina.length - 1];
-    return {
-      data: pagina.map(ejercicioApi),
-      page: { limit: consulta.limit, nextCursor: hayMas && ultima ? escribirCursor(ultima.momentoDeRegistro, ultima.versionId) : null, hasMore: hayMas },
-    };
+    const { filas, page } = await buscarEnCatalogo<FilaDeEjercicio>(
+      this.prisma,
+      {
+        columnas: Prisma.sql`e."id"::text AS "ejercicioId", v."id"::text AS "versionId", v."nombre", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
+               e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
+               v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`,
+        tablas: Prisma.sql`"version_de_ejercicio" v JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"`,
+        visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
+           AND v."disponibilidad" = 'DISPONIBLE'
+           AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ANY(${creadores}::uuid[]))`,
+      },
+      leerBusqueda(q),
+      consulta.limit,
+      cursor,
+    );
+    return { data: filas.map(ejercicioApi), page };
   }
 
   // ─── API-INT-TRN-01 ────────────────────────────────────────────────────────────────────────

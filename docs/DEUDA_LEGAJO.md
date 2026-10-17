@@ -143,6 +143,7 @@
 | DL-136 | Aprobación de Dirección · 2026-10-16 (WP-INVITACION) | 06 §7.3, §7.4 (REG-06-44, 45, 46; INV-06-55, 56) · 05 UC-P04 V04, UC-P05 V01 · 08 §24.3, §24.5 · 09v8 REL-01 · DL-023 · DL-035 | Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK |
 | DL-137 | Pedido de Dirección · 2026-10-16 (WP-AGENDA-DE-ENTRENAMIENTO) | 06 B-08 (REG-06-111, 114, 115, 126, 131) · DL-077 · DL-088 · DL-133 D-5 · WP-06 §9.2 | El plan de entrenamiento no tenía días: el recordatorio llegaba todos los días y BE no sabía qué sesión tocaba ni cuál quedó pendiente | **IMPLEMENTADA** 2026-10-16: días de cada sesión, lo pendiente, saltear y los avisos de las 10 y las 22 (API #174; editor del website y pantalla de la APK); falta la APK en un teléfono; D-1 a D-9 a ratificar |
 | DL-138 | Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE) | 04 RF-001, RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.6, §24.7 a, §42 ítem 22 · 09 §12 y 09v12 §11 (bosquejo) · DL-012 · DL-023 | Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta | **IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono |
+| DL-139 | Pedido de Dirección · 2026-10-16 (WP-BUSQUEDA) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · B10-05 §18 · B10-06 `CAND-10-TRN-05` · 07 §53 · DL-130 · DL-098 | El buscador de los catálogos exigía lo escrito tal cual: no toleraba el orden de las palabras, el plural ni los errores de tipeo | **IMPLEMENTADA** 2026-10-16 en `wp-busqueda`, sin integrar (migración aditiva con `pg_trgm`); D-1 a D-8 a ratificar |
 | DL-140 | Aprobación de Dirección · 2026-10-16 (WP-NOTAS-DE-COORDINACION) | 04 RF-057 · 05 UC-E07 (§11.8) · 06 T-06-43 · 08 §9.15, 08:495, §11-bis.3, Q-005 y §14, VJR-5 · 09 §11.6 (API-CRD-01) · 11A TEST-RF-057, TEST-UC-E07 · propuesta NOTAS-DE-COORDINACION | La nota de coordinación entre los profesionales de una persona: quién la recibe, quién la lee, el texto libre acotado, lo citado y que solo se agrega | **IMPLEMENTADA** 2026-10-17 con las opciones recomendadas CRD-D1 a CRD-D8 (API, web y APK en `wp-notas-de-coordinacion`, sin integrar); E-1 a E-11 a ratificar; falta la APK en el teléfono |
 
 ---
@@ -4203,6 +4204,75 @@ Y **API-ACC-01** suma `adultDeclaration: { versionId, declared }`: sin ella, 422
 - la web y la APK ofrecen «Continuar con Google» y la casilla de mayoría de edad, y una persona real entra con Google desde el teléfono;
 - Dirección ratifica D-1 a D-13, o cambia las que quiera;
 - con eso, DL-023 queda cerrada en lo que toca al alta (la invitación y la declaración), y lo que resta del 08 §24.7 es el procedimiento ante un menor descubierto.
+
+## DL-139 — El buscador de los catálogos: el orden de las palabras, los plurales y los errores de tipeo
+
+**Prioridad:** media.
+
+**Documentos:**
+- **09v9:648-654** (API-NUT-13) y **09v10:838-854** (API-TRN-13): `q` es el texto a buscar en el nombre. El 09 no dice cómo se compara ni en qué orden vuelven los resultados.
+- **B10-05 §18** (`CAND-10-NUT-05`) y **B10-06** (`CAND-10-TRN-05`): «Agregar ítem → buscar catálogo BE», sin más detalle.
+- **07 §53** (07:2542, «PostgreSQL estándar (sin extensiones propietarias; Prisma)») y §53-bis.3 (07:2641: lo que no se usa son las «Extensiones de PostgreSQL exclusivas del proveedor», porque rompen el `pg_dump` portable).
+- **DL-130** (las variantes `BUSQUEDA`, con el texto en el cuerpo) y **DL-098** (la búsqueda en los proveedores, abierta).
+- **El paquete:** WP-BUSQUEDA.
+
+**Estado:** IMPLEMENTADA el 2026-10-16 en `wp-busqueda`, sin integrar.
+
+**Qué pasaba.** El buscador encontraba un nombre solo si contenía lo escrito tal cual y de corrido (desde la mañana del 16, sin tildes ni mayúsculas). «pollo pechuga» no encontraba «Pechuga de pollo», «huevos» no encontraba «Huevo» y «manzna» no encontraba nada.
+
+**Qué pidió Dirección el 2026-10-16** (tanda 3, aprobada entera): «la búsqueda: el orden de las palabras, los plurales y los errores de tipeo».
+
+**Qué cambia para quien busca:**
+- «pollo pechuga» encuentra «Pechuga de pollo»; «banca press», «Press de banca»; «curl biceps», «Curl de bíceps».
+- «huevos» encuentra «Huevo»; «limones», «Limón»; «nueces», «Nuez»; «nuez», «Nueces»; «sentadillas», «Sentadilla».
+- «manzna» encuentra «Manzana»; «sentadila», «Sentadilla»; «merlusa», «Merluza»; «zanahria», «Zanahoria».
+- Primero va el nombre igual a lo escrito: «huevos» trae primero «Huevo», y «brocoli» trae «Brócoli» antes que «Brócoli hervido y escurrido, sin sal».
+- Es igual en los buscadores de la web (el editor de planes, las recetas y los registros) y en la API para el asesorado que busca qué ejercicio hizo. Las respuestas no cambian de forma.
+
+**Lo decidido** (con el mandato del día; todo espera ratificación):
+- **D-1 · Cada palabra, en cualquier orden.** Lo escrito se parte en palabras por los espacios, y cada una tiene que estar dentro del nombre. Los signos pegados a una palabra no cuentan («pollo,»); los del medio sí («1,5%»). Los conectores cortos (a, al, con, de, del, e, el, en, la, las, lo, los, o, u, y) no se exigen si hay otras palabras. «sin» sí se exige, porque dice algo («café sin azúcar»).
+  - *Alternativa descartada:* la búsqueda de texto completo de PostgreSQL (`to_tsvector('spanish', …)`). Recorta las palabras con reglas propias poco previsibles, no encuentra una palabra a medio escribir («pech») sin otra sintaxis, necesita otra extensión para las tildes y no tolera errores de tipeo.
+- **D-2 · El plural, con cuatro reglas y sin diccionario** (`formasDeLaPalabra`): sin la «s» final, sin la «es» final (no después de «c»), «ces» → «z» y «z» → «ces». Ninguna forma queda con menos de tres letras: «res» no se recorta. Basta con que una forma esté dentro del nombre, así que una forma de más solo agrega resultados.
+  - *Alternativa descartada:* un lematizador (Snowball u otro). Es más completo, pero recorta de más y es difícil de predecir. Dirección pidió el plural, no la raíz de cada palabra.
+- **D-3 · Los errores de tipeo, con `pg_trgm` y palabra por palabra.** Una palabra que no está en el nombre igual lo encuentra si ella, o una de sus formas, se parece a una de sus palabras: `strict_word_similarity(forma, nombre) ≥ 0,45` («manznas» se mide también como «manzna»). Vale para formas de al menos cuatro letras o números, sin signos: así «%» y «_» se siguen buscando tal cual. Cada palabra escrita tiene que estar o parecerse: «manzna helicoptero» no trae «Manzana».
+  - **El umbral, medido en PostgreSQL 16 con `pg_trgm` 1.6** (similitud de trigramas, de 0 a 1): entran «sentadila» (0,75 con «sentadilla»), «cebola» (0,67), «zanahria» (0,58), «espinca» (0,55), «garbansos» (0,54), «manzna» (0,5), «pechga» (0,5) y «merlusa», «naranaj» y «triseps» (0,455). Quedan afuera «leche» con «lechuga» (0,4), «escalador» con «escalera» (0,36), «zapato» con «zapallo» (0,36), «pera» con «perejil» (0,3) y «helicoptero» con todo. Con 0,5 se perdían «merlusa» y los demás cambios de una letra en palabras de siete; con 0,4 entraba «lechuga» al buscar «leche».
+  - *Alternativas descartadas:*
+    - `similarity` contra el nombre entero: castiga los nombres largos («sentadila» contra «Sentadilla búlgara sintética» apenas pasa de 0,3);
+    - `word_similarity`, que no respeta dónde empiezan las palabras: premia el comienzo y no separa un error de una palabra ajena. «zapato» y «zapallo» dan 0,57, lo mismo que «manzna» y «manzana», y «leche» con «lechuga», 0,67;
+    - la distancia de Levenshtein (`fuzzystrmatch`): precisa para errores de una letra, pero es otra extensión, y hay que partir el nombre en palabras dentro de la consulta;
+    - en memoria, sobre los candidatos: hoy alcanzaría, porque los catálogos son chicos, pero lee el catálogo visible entero en cada búsqueda, duplica la normalización y saca de la base el orden y la paginación.
+  - **Por qué no choca con el 07 §53:** `pg_trgm` es parte de PostgreSQL (contrib), no de un proveedor. Viene con la imagen `postgres:16-alpine` de la CI, con el PostgreSQL embebido de las pruebas locales, con Render y con cualquier PostgreSQL administrado, y `pg_dump` la lleva. Desde PostgreSQL 13 es de confianza: la crea el dueño de la base, sin superusuario.
+- **D-4 · «Casi nada» es menos de 3.** Si las palabras traen menos de 3 nombres, la primera página se completa con los parecidos, detrás de los exactos y del más parecido al menos parecido. Los parecidos van solo en la primera página y no tienen página siguiente. Una búsqueda con resultados suficientes no trae parecidos, y una página pedida con cursor tampoco.
+  - *Alternativas descartadas:* parecidos siempre, mezclados (ruido cuando lo escrito existe); solo cuando no hay ninguno (no es el «casi nada» del pedido); paginar los parecidos (el cursor tendría que llevar el puntaje, y la web nunca pide una segunda página: muestra las primeras 20).
+- **D-5 · El orden:** primero el nombre igual a lo escrito (también en singular o en plural), después los que empiezan con la primera palabra, después los que tienen todas y al final los parecidos. Dentro de cada grupo, el orden de siempre: lo más nuevo primero y, a igualdad, por identificador.
+  - *Alternativas descartadas:* el orden de siempre para todo (el nombre exacto quedaba en la segunda página si había más de 20 coincidencias más nuevas, y con el catálogo base aprobado «pollo» o «arroz» van a traer muchas); alfabético dentro de cada grupo (cambia el orden que ya conocen la web y las pruebas).
+- **D-6 · El cursor lleva el grupo.** Sigue opaco: base64url de [momento, id, grupo], así que cada página sigue el mismo orden. Uno de antes de este cambio ([momento, id]) se lee como del último grupo: la lista sin texto sigue exactamente donde estaba.
+  - *Alternativa descartada:* recalcular el grupo del último servido leyendo su versión. Es otra lectura por página, y depende de que esa fila se siga viendo.
+- **D-7 · Las cuatro operaciones buscan igual,** para el profesional y para el asesorado: API-NUT-13 y API-NUT-13-BUSQUEDA, API-TRN-13 y API-TRN-13-BUSQUEDA. Las respuestas no cambian de forma: la prueba de esta DL valida API-TRN-13, que lee la APK instalada, contra su esquema congelado. Cambia qué filas vienen y en qué orden. El contrato (`openapi.ts`) lo dice en las cuatro.
+- **D-8 · Qué búsquedas quedan como están:**
+  - **la de la línea de tiempo** (API-DSH-04-BUSQUEDA, DL-127): ya exige todas las palabras en cualquier orden y sin tildes, pero busca en el texto de los hechos de una persona, no en un nombre de catálogo, y cuenta las coincidencias (`totalMatching`). Un parecido sumaría hechos que solo se parecen a lo buscado en el registro de salud de alguien;
+  - **la del directorio de asesorados** del website: filtra en la pantalla nombres y referencias de personas. El plural no aplica a un nombre, y un parecido mostraría a otra persona;
+  - **«Mis habituales», «Mis recetas» y «Mis ejercicios»:** son listas, sin búsqueda por texto. Si alguna la suma, que use este mismo módulo (`apps/api/src/http/busqueda.ts`);
+  - **la de los proveedores externos** (Open Food Facts y wger): sigue en DL-098.
+
+**Base de datos.** Migración aditiva `20261016230000_busqueda_con_errores_de_tipeo`: `CREATE EXTENSION IF NOT EXISTS pg_trgm`. Sin índices: cada búsqueda recorre el catálogo visible, que hoy son 48 alimentos y 12 ejercicios sembrados más los propios de cada profesional (el catálogo base aprobado lo lleva a unos cientos). Si llega a miles, el paso siguiente es un índice GIN de trigramas sobre el nombre comparable.
+
+**Pruebas:**
+- **unitarias** (`apps/api/src/http/busqueda.spec.ts`): las formas de cada palabra, cómo se parte lo escrito, qué palabra admite parecido, el cursor (también uno anterior) y las dos consultas sin base, con un cliente que guarda lo que se le pide: los comodines escapados en cada forma, cuándo se buscan parecidos y cuándo no, y el cursor con el grupo;
+- **integración** (`test/integration/busqueda-tolerante.int-spec.ts`), con las filas sembradas y con las propias: el orden de las palabras, los plurales, los errores de tipeo, sin falsos parecidos («leche», «zapato», una palabra ajena), los comodines, el orden del resultado, la paginación por grupos, los parecidos solo en la primera página, que un parecido no muestra lo que no se ve, y API-TRN-13 contra el esquema congelado de la APK. `busqueda-sin-tildes.int-spec.ts` sigue igual y en verde.
+
+**Lo que queda abierto:**
+- **Los nombres alternativos** (palta y aguacate, frutilla y fresa, «squat»): Dirección aprobó una tabla de nombres alternativos para alimentos y ejercicios (tanda 3 del 2026-10-16). Es otro paquete; este buscador los buscaría como más nombres de cada ítem.
+- **Algunos errores en palabras cortas:** «biseps» por «bíceps» (0,4), «frutiya» por «frutillas» (0,38) y «tomte» por «tomate» (0,44) quedan afuera con 0,45. Bajar el umbral trae falsos parecidos. Una normalización fonética (z, s y c; v y b; ll e y) sería otra decisión.
+- **La web no distingue los parecidos:** se muestran como un resultado más. Marcarlos («¿Quisiste decir…?») necesita un dato nuevo en la respuesta, en una operación nueva para no tocar lo que leen las APK instaladas.
+- La línea de tiempo y el directorio (D-8), y **DL-098** (los proveedores).
+- **Un índice**, si el catálogo crece a miles.
+
+**Provisorio en código:** D-1 a D-8.
+
+**Condición de cierre:**
+- Dirección prueba el buscador en el website, con sus palabras;
+- ratifica D-1 a D-8, o cambia las que quiera (el umbral, el «casi nada», los conectores).
 
 ## DL-140 — La nota de coordinación entre los profesionales de una persona: API-CRD-01, su lectura en la línea de tiempo y la de la persona
 

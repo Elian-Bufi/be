@@ -12831,7 +12831,7 @@
       "get": {
         "operationId": "API-NUT-13",
         "summary": "Catálogo nutricional BE: el sembrado (global) y el propio del profesional. Solo profesionales de Nutrición.",
-        "description": "Fuente: 09v9:648-654 · REG-06-99, 135. AuthN: SESSION.",
+        "description": "Fuente: 09v9:648-654 · REG-06-99, 135 · DEUDA_LEGAJO DL-139. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -12862,7 +12862,7 @@
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Texto a buscar en el nombre. Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
+            "description": "Texto a buscar en el nombre. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
             "schema": {
               "type": "string"
             }
@@ -13584,8 +13584,8 @@
     "/nutrition/catalog-items/search": {
       "post": {
         "operationId": "API-NUT-13-BUSQUEDA",
-        "summary": "Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados.",
-        "description": "Fuente: 09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130. AuthN: SESSION.",
+        "summary": "Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139).",
+        "description": "Fuente: 09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130, DL-139. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -37521,7 +37521,7 @@
       "get": {
         "operationId": "API-TRN-13",
         "summary": "Catálogo propio de ejercicios, con procedencia. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.",
-        "description": "Fuente: 09v10:838-854 · RF-037 · INV-06-143. AuthN: SESSION.",
+        "description": "Fuente: 09v10:838-854 · RF-037 · INV-06-143 · DEUDA_LEGAJO DL-139. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -37552,7 +37552,7 @@
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Texto a buscar en el nombre. Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
+            "description": "Texto a buscar en el nombre. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
             "schema": {
               "type": "string",
               "maxLength": 80
@@ -38268,8 +38268,8 @@
     "/training/exercises/search": {
       "post": {
         "operationId": "API-TRN-13-BUSQUEDA",
-        "summary": "Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados.",
-        "description": "Fuente: 09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130. AuthN: SESSION.",
+        "summary": "Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139).",
+        "description": "Fuente: 09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130, DL-139. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
