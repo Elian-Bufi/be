@@ -27,7 +27,7 @@
 | DL-020 | WP-02 · 2026-09-18 | 06 §5.7.4 · 05 · 09 | Suspensión y restablecimiento sin UC ni operación | ABIERTA |
 | DL-021 | WP-02 · 2026-09-18 | 08 §12.2/§12.4 · 06 §5.4.2 | Actos A1/A2 y datos del alta fuera del modelo del 06 | ABIERTA |
 | DL-022 | WP-02 · 2026-09-18 | 08 §12.2 · 05 UC-I11 · 09v7 T12 | Canal o superficie sin campo contractual | ABIERTA |
-| DL-023 | WP-02 · 2026-09-18 | 08 §24.3, §24.7 · 04 RF-001 | Alta por invitación y declaración de mayoría de edad | **IMPLEMENTADA (API)** 2026-10-16 · la invitación (DL-136) y la declaración de mayoría de edad en toda alta (DL-138); falta web y APK, y el procedimiento ante un menor descubierto (08 §24.7 c) |
+| DL-023 | WP-02 · 2026-09-18 | 08 §24.3, §24.7 · 04 RF-001 | Alta por invitación y declaración de mayoría de edad | **IMPLEMENTADA** 2026-10-16 · la invitación (DL-136) y la declaración de mayoría de edad en toda alta (DL-138), con su casilla en la web y la APK (`wp-acceso-google`, sin integrar); falta el procedimiento ante un menor descubierto (08 §24.7 c) |
 | DL-024 | WP-02 · 2026-09-18 | 10-B02 · 10-ADD · 10-B01 | Desvíos de copy y de UI | ABIERTA |
 | DL-025 | WP-02 · 2026-09-18 | 05:1021 · 10-B01 | Superficie web del asesorado | ABIERTA |
 | DL-026 | WP-02 · 2026-09-18 | 09:253-262 · 09v7 T07 · 09v8 | Idempotencia y códigos no definidos | ABIERTA |
@@ -141,7 +141,7 @@
 | DL-134 | Mandato de Dirección · 2026-10-16 (REV-A) | 08 §6.2, 08:495, §14.3, 08:406 · 09v12:844 · 04 RF-035, RF-046 · propuesta REV-A | La persona lee las revisiones que sus profesionales registraron sobre ella | **IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar |
 | DL-135 | Mandato de Dirección · 2026-10-16 (WP-TVCC-30) | 02 §16 · 04 RF-058 · 05 UC-S01 · 06 B-12 (REG-06-186 a 201) · 07 §24, §42.1 · 09 ANA-P1, TRACE-DEBT-12-001 · 11A §21 · 12 §12-27 | TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado | **IMPLEMENTADA** 2026-10-16; D-1 a D-9 a ratificar |
 | DL-136 | Aprobación de Dirección · 2026-10-16 (WP-INVITACION) | 06 §7.3, §7.4 (REG-06-44, 45, 46; INV-06-55, 56) · 05 UC-P04 V04, UC-P05 V01 · 08 §24.3, §24.5 · 09v8 REL-01 · DL-023 · DL-035 | Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK |
-| DL-138 | Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE) | 04 RF-001, RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.6, §24.7 a, §42 ítem 22 · 09 §12 y 09v12 §11 (bosquejo) · DL-012 · DL-023 | Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK, y los client IDs de Google |
+| DL-138 | Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE) | 04 RF-001, RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.6, §24.7 a, §42 ítem 22 · 09 §12 y 09v12 §11 (bosquejo) · DL-012 · DL-023 | Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta | **IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono |
 
 ---
 
@@ -641,6 +641,8 @@ La parte (b) sigue en PASS. Evidencia: `EVIDENCIA/WP-03/resultados-integracion-m
 **Avance del 2026-10-16 (DL-136).** La invitación con token de un solo uso, vencimiento y hash (08:568) está en la API: la familia INV. Falta la declaración de mayoría de edad del alta.
 
 **Avance del 2026-10-16 (DL-138).** La declaración de mayoría de edad está en la API, en toda alta: la local (API-ACC-01) y la de Google (API-GOO-03). Es un acto `MAYORIA_DE_EDAD` con la versión del texto que la persona vio («Declaro que tengo 18 años o más. BE es solo para personas adultas.»), sin fecha de nacimiento (minimización: el 08:572 admite «fecha de nacimiento/mayoría de edad»). Sin la declaración no hay alta. Quedan la casilla en la web y en la APK, y el procedimiento ante un menor que declaró falsamente (08 §24.7 c), que el gate §42-22 pide ensayado.
+
+**Avance del 2026-10-16, la web y la APK (DL-138).** La casilla está en las dos altas de las dos apps, la de correo y la de Google: la tercera casilla, con el texto de la versión vigente como etiqueta, nunca premarcada; sin marcarla no se envía el alta. Está en la rama `wp-acceso-google`, sin integrar. Queda el procedimiento ante un menor descubierto (08 §24.7 c).
 
 ## DL-024 — Desvíos de copy y de UI
 
@@ -4034,7 +4036,7 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 - **DL-012** (sesiones), **DL-023** (la declaración de mayoría de edad) y **DL-133/DL-136** (cómo se declaran las familias propias de BE).
 - **El paquete:** WP-ACCESO-GOOGLE.
 
-**Estado:** IMPLEMENTADA (API) el 2026-10-16. Falta la web y la APK, y que Dirección cree los client IDs de Google.
+**Estado:** IMPLEMENTADA el 2026-10-16: la API y, en la misma rama (`wp-acceso-google`, sin integrar), la web y la APK (ver el avance). Falta que Dirección cree los client IDs de Google y que una persona real entre con Google desde el teléfono.
 
 **Qué pasaba.** Solo se entraba con correo y contraseña: RF-003 quedó fuera de alcance desde WP-02 (el enum de métodos tenía solo `LOCAL`). Y el alta no pedía la declaración de mayoría de edad (DL-023, opción A provisoria).
 
@@ -4046,7 +4048,7 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 
 A eso se suma lo que pide el legajo: **toda alta, local y con Google, exige que la persona declare que es adulta** (08 §24.7 a; el MVP atiende solo a personas adultas).
 
-**El desvío del bosquejo del 09.** El 09 bosqueja un flujo «authorize/complete» (la API como cliente OAuth, con redirección, `state` y PKCE). BE verifica en cambio el **ID token** que el cliente obtiene con las bibliotecas de Google (Google Identity Services en el website, Credential Manager en la APK). Es el camino estándar para aplicaciones nativas y no deja ningún secreto de cliente en los dispositivos. La semántica del bosquejo se conserva: Google identifica un método de acceso, BE conserva la identidad, no se crea una segunda, el acceso local no se degrada y una falla de Google no lo bloquea. El `state` contra CSRF del bosquejo protege la redirección al servidor, que acá no existe: la sesión de BE es un Bearer en memoria (DL-012), sin cookie que un tercero pueda forzar.
+**El desvío del bosquejo del 09.** El 09 bosqueja un flujo «authorize/complete» (la API como cliente OAuth, con redirección, `state` y PKCE). BE verifica en cambio el **ID token** que el cliente obtiene con las bibliotecas de Google (Google Identity Services en el website, el Google Sign-In de Play Services en la APK; ver el avance). Es el camino estándar para aplicaciones nativas y no deja ningún secreto de cliente en los dispositivos. La semántica del bosquejo se conserva: Google identifica un método de acceso, BE conserva la identidad, no se crea una segunda, el acceso local no se degrada y una falla de Google no lo bloquea. El `state` contra CSRF del bosquejo protege la redirección al servidor, que acá no existe: la sesión de BE es un Bearer en memoria (DL-012), sin cookie que un tercero pueda forzar.
 
 **La familia GOO** (IDs propios de BE, como NOV e INV). Las tres son públicas: autentican con el ID token, que viaja solo en el cuerpo. Responden la sesión **exactamente como API-ACC-02** (la misma fila de sesión, el mismo Bearer de 12 h, la misma superficie y la misma revocación).
 
@@ -4092,12 +4094,20 @@ Y **API-ACC-01** suma `adultDeclaration: { versionId, declared }`: sin ella, 422
 
 **Lo que tiene que hacer Dirección** (sin esto, la API ya responde un 503 limpio y el acceso local sigue igual):
 1. En Google Cloud Console, en un proyecto de BE: configurar la **pantalla de consentimiento de OAuth** (externa; nombre BE, correo de soporte y el dominio del website), en modo de prueba con los usuarios de prueba, o publicada.
-2. Crear un **client ID de tipo «Aplicación web»**, con el origen autorizado del website (la URL de Render del website de test). Lo usa el website, y la APK también, como `serverClientId`.
+2. Crear un **client ID de tipo «Aplicación web»**, con el origen autorizado del website (la URL de Render del website de test). Lo usa el website, y la APK también, como `webClientId`.
 3. Crear un **client ID de tipo «Android»**, con el paquete `com.elianbufi.be` y la huella SHA-1 del certificado con que se firma la APK. Sale de `keytool -list -v` sobre el keystore, o de la página de firma de la app en Play si la firma Google; la sesión principal la provee.
 4. Cargar los dos en be-api como `GOOGLE_CLIENT_IDS`, separados por coma. No son secretos y no hace falta el secreto de cliente.
+5. Cargar el client ID «Aplicación web» en el build del website (`BE_GOOGLE_WEB_CLIENT_ID`, en be-web) y en el de la APK (`GOOGLE_WEB_CLIENT_ID`). Sin eso no aparece el botón (docs/DESPLIEGUE.md, «Entrar con Google»).
+
+**Avance del 2026-10-16: el website y la APK** (rama `wp-acceso-google`, sin integrar; sin probar con Google real ni en el teléfono).
+- **La casilla de mayoría de edad** en el alta con correo de las dos apps, con el texto de la versión vigente como etiqueta; sin marcarla no se envía el alta. Con esto el alta del website vuelve a funcionar al integrar (D-10); las APK ya instaladas siguen diciendo «Actualizá la app».
+- **«Continuar con Google»** en Iniciar sesión y en Crear cuenta, solo si el build tiene el client ID «Aplicación web» (`BE_GOOGLE_WEB_CLIENT_ID` en el website, `GOOGLE_WEB_CLIENT_ID` en la APK); sin él, nada cambia. Una regla del dominio para las dos apps (`pasoDeAccesoConGoogle`): la sesión se guarda como la del login; GOOGLE_LINK_REQUIRED lleva a confirmar la contraseña (API-GOO-02); GOOGLE_ACCOUNT_NOT_FOUND, al alta con las tres casillas (API-GOO-03, como asesorado: igual que el alta con correo, DL-024); el 503, a «Ahora no podemos usar Google» con el correo y la contraseña a mano.
+- **El website** usa Google Identity Services. En be-web, la CSP admite solo `https://accounts.google.com/gsi/`, y el Referrer-Policy pasa de `no-referrer` a `strict-origin-when-cross-origin`: Google valida el client ID con el origen que lee del Referer, y sin él rechaza todo. Hacia otros sitios viaja solo el origen.
+- **La APK** usa `@react-native-google-signin/google-signin` 16.1.5, gratuita y fijada. En Android es el Google Sign-In de Play Services, que Google marcó como heredado: la versión con Credential Manager es paga. Se carga recién al tocar el botón, y sin su plugin de configuración, que en Android no hace falta (solo configura iOS o Firebase).
+- **Pruebas:** `pasos-de-acceso-google.test.ts` y `scripts/acceso-con-google.test.mjs`.
 
 **Lo que queda abierto:**
-- **La web y la APK:** «Continuar con Google» junto al correo y la contraseña, la pantalla para confirmar la contraseña (D-6), el alta con Google con sus tres casillas, y la casilla de mayoría de edad en el alta local. **Mientras tanto, el alta local de la web y de las APK instaladas no funciona** (D-10): conviene integrar esta API junto con la web, o aceptar esa ventana en test.
+- **La web y la APK:** hechas en `wp-acceso-google` (ver el avance), sin integrar. Hasta que se integren, el alta local de la web no funciona en un ambiente con esta API (D-10): conviene integrar la API y la web juntas. Las APK instaladas no pueden crear cuentas hasta actualizarse.
 - **El texto de privacidad (A2) no nombra a Google.** Antes de datos reales tiene que decir que, si la persona entra con Google, BE recibe de Google su identificador de cuenta y su correo verificado (08 §34, inventario de terceros). Es un texto legal: no se tocó.
 - **Un correo que Google reasigna** (una cuenta de Google borrada y otra nueva con el mismo correo): el `sub` nuevo no encuentra identidad, y su alta responde el 409 neutral, porque el correo es de otra identidad. Se resolvería con UC-E06.
 - **El correo guardado es el del momento de asociar.** Si cambia en Google, BE sigue entrando por el `sub` y conserva el anterior; actualizarlo sería un hecho nuevo (el método solo se agrega).

@@ -106,11 +106,12 @@ jobs:
           test "$(jq -r .data.version.commit ready.json)" = "${{ github.sha }}"
           curl -fsS http://localhost:3000/health/live
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/v1/no-existe)" = "404"
-      - name: Smoke e2e del artefacto — registro A1+A2 → login → /me → A3 no otorgado → logout (WP-02)
+      - name: Smoke e2e del artefacto — registro A1+A2 y mayoría de edad → login → /me → A3 no otorgado → logout (WP-02; DL-138)
         run: |
           B=http://localhost:3000/api/v1
           CORREO="persona-ci-${{ github.run_id }}@example.invalid"
-          jq -n --arg c "$CORREO" '{registrationIntent:"ADVISEE",identity:{localIdentifier:$c,localCredential:"clave-sintetica-de-ci-01"},termsAcceptance:{versionId:"terminos-2026-09-demo"},privacyAcknowledgement:{versionId:"privacidad-2026-09-demo"}}' > alta.json
+          # DL-138: toda alta declara la mayoría de edad; sin la declaración, la API responde 422.
+          jq -n --arg c "$CORREO" '{registrationIntent:"ADVISEE",identity:{localIdentifier:$c,localCredential:"clave-sintetica-de-ci-01"},termsAcceptance:{versionId:"terminos-2026-09-demo"},privacyAcknowledgement:{versionId:"privacidad-2026-09-demo"},adultDeclaration:{versionId:"mayoria-de-edad-2026-10",declared:true}}' > alta.json
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H "Idempotency-Key: ci-${{ github.run_id }}" -d @alta.json $B/registrations)" = "201"
           jq -n --arg c "$CORREO" '{method:"LOCAL",identifier:$c,credential:"clave-sintetica-de-ci-01"}' > login.json
           TOKEN=$(curl -fsS -H 'Content-Type: application/json' -d @login.json $B/auth/sessions | jq -r .data.session.accessToken)
