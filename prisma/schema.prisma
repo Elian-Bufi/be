@@ -220,6 +220,12 @@ model Identidad {
   notasDeCoordinacionSobreElla NotaDeCoordinacion[] @relation("NotaDeCoordinacionDelAsesorado")
   notasDeCoordinacionRecibidas DestinatarioDeNota[] @relation("DestinatarioDeNotaDeCoordinacion")
 
+  // WP-CATALOGO-BASE (DL-141)
+  nombresAlternativosDeEjercicio          NombreAlternativoDeEjercicio[]         @relation("NombreAlternativoDeEjercicioDelProfesional")
+  nombresAlternativosDeAlimento           NombreAlternativoDeAlimento[]          @relation("NombreAlternativoDeAlimentoDelProfesional")
+  retirosDeNombresAlternativosDeEjercicio RetiroDeNombreAlternativoDeEjercicio[] @relation("RetiroDeNombreAlternativoDeEjercicioDelProfesional")
+  retirosDeNombresAlternativosDeAlimento  RetiroDeNombreAlternativoDeAlimento[]  @relation("RetiroDeNombreAlternativoDeAlimentoDelProfesional")
+
   @@map("identidad")
 }
 
@@ -1145,9 +1151,13 @@ model ElementoDeCatalogoNutricional {
   creadoPorId       String?               @map("creado_por_id") @db.Uuid
   momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  versiones    VersionDeElementoNutricional[]
-  importadoPor ResolucionDeCandidato[]        @relation("ElementoImportado")
-  habitualesDe AlimentoHabitual[]             @relation("AlimentoHabitualDelCatalogo")
+  versiones           VersionDeElementoNutricional[]
+  importadoPor        ResolucionDeCandidato[]        @relation("ElementoImportado")
+  habitualesDe        AlimentoHabitual[]             @relation("AlimentoHabitualDelCatalogo")
+  /// DL-141 D-1: el ítem externo que representa, si lo importó un profesional (uno solo por ítem externo).
+  itemExterno         ItemExternoDeCatalogo?
+  /// DL-141 D-2: los otros nombres con los que se lo encuentra.
+  nombresAlternativos NombreAlternativoDeAlimento[]
 
   @@map("elemento_de_catalogo_nutricional")
 }
@@ -1784,12 +1794,16 @@ model EjercicioDeCatalogo {
   creadoPorId       String?               @map("creado_por_id") @db.Uuid
   momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  creadoPor    Identidad?                      @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  versiones    VersionDeEjercicio[]
-  importadoPor ResolucionDeCandidato[]         @relation("EjercicioImportado")
-  habitualesDe EjercicioHabitual[]             @relation("EjercicioHabitualDelCatalogo")
+  creadoPor           Identidad?                      @relation("EjercicioCreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones           VersionDeEjercicio[]
+  importadoPor        ResolucionDeCandidato[]         @relation("EjercicioImportado")
+  habitualesDe        EjercicioHabitual[]             @relation("EjercicioHabitualDelCatalogo")
   /// DL-123: la historia de su imagen (solo los cargados a mano por un profesional la tienen).
-  imagenes     AsociacionDeImagenDeEjercicio[]
+  imagenes            AsociacionDeImagenDeEjercicio[]
+  /// DL-141 D-1: el ítem externo que representa, si lo importó un profesional (uno solo por ítem externo).
+  itemExterno         ItemExternoDeCatalogo?
+  /// DL-141 D-2: los otros nombres con los que se lo encuentra.
+  nombresAlternativos NombreAlternativoDeEjercicio[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2312,6 +2326,127 @@ model ResolucionDeCandidato {
   ejercicio           EjercicioDeCatalogo?           @relation("EjercicioImportado", fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("resolucion_de_candidato")
+}
+
+// ─── WP-CATALOGO-BASE · Lo importado es de todos y los nombres alternativos (DL-141) ─────────────────
+
+/// DL-141 D-1 · un ítem de un proveedor externo en el catálogo BE: uno solo por proveedor e identificador, y lo ven
+/// todos los profesionales. Lo registra la resolución que lo importó primero; las que vienen después apuntan al mismo
+/// elemento (sin `version_creada_id`). Los importados antes de DL-141 se registraron con la migración, el más antiguo de
+/// cada ítem externo. Append-only.
+model ItemExternoDeCatalogo {
+  proveedor             ProveedorExterno
+  idExterno             String           @map("id_externo")
+  /// Un alimento de Open Food Facts.
+  elementoNutricionalId String?          @unique @map("elemento_nutricional_id") @db.Uuid
+  /// Un ejercicio de wger.
+  ejercicioId           String?          @unique @map("ejercicio_id") @db.Uuid
+  procedencia           Json
+  momentoDeRegistro     DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elementoNutricional ElementoDeCatalogoNutricional? @relation(fields: [elementoNutricionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejercicio           EjercicioDeCatalogo?           @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([proveedor, idExterno])
+  @@map("item_externo_de_catalogo")
+}
+
+/// DL-141 D-2 · el idioma de un nombre alternativo.
+enum IdiomaDeNombre {
+  ES
+  EN
+}
+
+/// DL-141 D-2 · de dónde salió un nombre alternativo.
+enum OrigenDeNombreAlternativo {
+  /// Lo curó BE y lo siembra una migración revisada en el PR: el catálogo de demostración y los catálogos base.
+  SIEMBRA_DE_BE
+  /// Lo declara el proveedor del ítem (el nombre en inglés de wger, por ejemplo).
+  PROVEEDOR
+  /// Lo agregó un profesional.
+  PROFESIONAL
+}
+
+/// DL-141 D-2 · otro nombre con el que se conoce un ejercicio: el de otro país o el inglés. Es del ejercicio y no de una
+/// versión, así que una versión nueva no lo arrastra ni lo pierde. El buscador lo usa como un nombre más. Solo se
+/// agrega; retirarlo es un hecho aparte (`RetiroDeNombreAlternativoDeEjercicio`).
+model NombreAlternativoDeEjercicio {
+  id                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId       String                    @map("ejercicio_id") @db.Uuid
+  nombre            String
+  idioma            IdiomaDeNombre
+  /// El país donde se usa, en ISO 3166-1 alfa-2 (AR, ES, MX…); NULL si no es de un país en particular.
+  region            String?
+  origen            OrigenDeNombreAlternativo
+  /// Solo con origen PROVEEDOR.
+  proveedor         ProveedorExterno?
+  /// Solo con origen PROFESIONAL.
+  profesionalId     String?                   @map("profesional_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejercicio   EjercicioDeCatalogo                   @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad?                            @relation("NombreAlternativoDeEjercicioDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  retiro      RetiroDeNombreAlternativoDeEjercicio?
+
+  @@index([ejercicioId])
+  @@map("nombre_alternativo_de_ejercicio")
+}
+
+/// DL-141 D-2 · retirar un nombre alternativo de un ejercicio: el nombre queda en la historia y el buscador deja de
+/// usarlo. Uno por nombre. Append-only.
+model RetiroDeNombreAlternativoDeEjercicio {
+  nombreId          String   @id @map("nombre_id") @db.Uuid
+  motivo            String
+  /// Quién lo retiró; NULL si lo retiró BE con una migración.
+  profesionalId     String?  @map("profesional_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  nombre      NombreAlternativoDeEjercicio @relation(fields: [nombreId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad?                   @relation("RetiroDeNombreAlternativoDeEjercicioDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("retiro_de_nombre_alternativo_de_ejercicio")
+}
+
+/// DL-141 D-2 · otro nombre con el que se conoce un alimento: el de otro país («aguacate», «fresas») o el inglés. Las
+/// mismas reglas que el de un ejercicio.
+model NombreAlternativoDeAlimento {
+  id                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String                    @map("elemento_id") @db.Uuid
+  nombre            String
+  idioma            IdiomaDeNombre
+  /// El país donde se usa, en ISO 3166-1 alfa-2 (AR, ES, MX…); NULL si no es de un país en particular.
+  region            String?
+  origen            OrigenDeNombreAlternativo
+  /// Solo con origen PROVEEDOR.
+  proveedor         ProveedorExterno?
+  /// Solo con origen PROFESIONAL.
+  profesionalId     String?                   @map("profesional_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento    ElementoDeCatalogoNutricional        @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad?                           @relation("NombreAlternativoDeAlimentoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  retiro      RetiroDeNombreAlternativoDeAlimento?
+
+  @@index([elementoId])
+  @@map("nombre_alternativo_de_alimento")
+}
+
+/// DL-141 D-2 · retirar un nombre alternativo de un alimento. Las mismas reglas que el de un ejercicio.
+model RetiroDeNombreAlternativoDeAlimento {
+  nombreId          String   @id @map("nombre_id") @db.Uuid
+  motivo            String
+  /// Quién lo retiró; NULL si lo retiró BE con una migración.
+  profesionalId     String?  @map("profesional_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  nombre      NombreAlternativoDeAlimento @relation(fields: [nombreId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad?                  @relation("RetiroDeNombreAlternativoDeAlimentoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("retiro_de_nombre_alternativo_de_alimento")
 }
 
 // ─── PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108) ─────────────────────────────

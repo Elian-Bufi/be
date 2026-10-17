@@ -131,14 +131,15 @@ export class NutricionController {
 
   /**
    * API-NUT-13-BUSQUEDA (DL-130): la misma lectura con el texto en el cuerpo. Es una lectura: 200, sin Idempotency-Key.
-   * El registro de requests guarda solo la ruta, nunca el cuerpo.
+   * El registro de requests guarda solo la ruta, nunca el cuerpo. Cada alimento suma el nombre alternativo que coincidió
+   * (DL-141).
    */
   @Post('nutrition/catalog-items/search')
   @HttpCode(200)
   buscarEnCatalogo(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     sinParametrosDeQuery(query);
     const b = validarCuerpo(BusquedaEnCatalogoRequestSchema, cuerpo);
-    return this.catalogo.listar(actorDe(req), comoConsultaDeLista(b));
+    return this.catalogo.buscar(actorDe(req), comoConsultaDeLista(b));
   }
 
   /** API-INT-NUT-01. */

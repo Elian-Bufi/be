@@ -7,12 +7,14 @@ import {
   ResolverCandidatoDeAlimentoRequestSchema,
   type AlimentoCandidato,
   type CandidatoDeAlimento,
+  type ElementoDeCatalogo,
   type ResolucionDeAlimento,
 } from '@be/domain';
 import type { CandidatoDeImportacion, Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import { candidatoPropio, exigirResoluble, fuenteExternaDe, fundamentoDe, procedenciaDeCandidato, vencimientoDe } from '../integraciones/candidatos';
+import { bloquearItemExterno, elementoDelItemExterno, registrarItemExterno } from '../integraciones/item-externo';
 import { OpenFoodFacts } from '../integraciones/open-food-facts';
 import { ProveedorNoDisponible, registrarProveedorNoDisponible } from '../integraciones/proveedor-http';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
@@ -30,7 +32,9 @@ import { registrarEventoDeNutricion } from './eventos';
  * - importar valida como la carga manual y deja en la procedencia del elemento qué vino del proveedor y qué corrigió
  *   el profesional; el candidato conserva lo recibido;
  * - si el proveedor no responde, 503 con el catálogo propio y la carga manual disponibles, y nada se inventa;
- * - ningún I/O externo ocurre dentro de la transacción (09v12:84).
+ * - ningún I/O externo ocurre dentro de la transacción (09v12:84);
+ * - lo importado es de todos los profesionales y hay uno solo por producto (DL-141 D-1): el candidato dice si ya está
+ *   (`existingCatalogItem`) y, si está, importar apunta la resolución a ese y no crea otro.
  */
 @Injectable()
 export class ImportacionNutricionalService {
@@ -86,7 +90,11 @@ export class ImportacionNutricionalService {
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
           },
         });
-        return { estadoHttp: 201, cuerpo: { data: candidatoApi(fila) }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: fila.id } };
+        // DL-141: si el producto ya está en el catálogo, se ofrece ese en lugar de repetir la revisión. Es un aviso: la
+        // resolución vuelve a mirar, con el cerrojo del ítem externo.
+        const yaEsta = await elementoDelItemExterno(tx, 'OPEN_FOOD_FACTS', fila.idExterno);
+        const existente = yaEsta ? await this.catalogo.vigenteDelElemento(tx, yaEsta) : null;
+        return { estadoHttp: 201, cuerpo: { data: candidatoApi(fila, existente) }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: fila.id } };
       },
     });
   }
@@ -114,17 +122,49 @@ export class ImportacionNutricionalService {
           const r = await tx.resolucionDeCandidato.create({
             data: { candidatoId: c.id, decision: 'RECHAZAR', fundamento, autorId: actor.identidadId, procedencia: procedencia as unknown as Prisma.InputJsonValue },
           });
-          const data: ResolucionDeAlimento = { candidateId: c.id, decision: 'REJECT', catalogItem: null, correctedFields: [], resolvedAt: r.momentoDeRegistro.toISOString() };
+          const data: ResolucionDeAlimento = { candidateId: c.id, decision: 'REJECT', catalogItem: null, correctedFields: [], resolvedAt: r.momentoDeRegistro.toISOString(), existingCatalogItem: null };
           return { estadoHttp: 200, cuerpo: { data }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: c.id } };
         }
 
-        // RF-028: «datos insuficientes se corrigen o rechazan». Lo que falta se dice por ruta.
+        // RF-028: «datos insuficientes se corrigen o rechazan». Lo que falta se dice por ruta. Se valida siempre igual,
+        // esté o no el producto en el catálogo: el 422 no depende de lo que hizo otro profesional.
         const revisado: AlimentoCandidato = pedido.reviewedContent;
         const faltantes = faltantesDeAlimento(revisado);
         if (faltantes.length > 0) throw errores.contenidoRevisadoInvalido(faltantes);
         const corregidos = camposCorregidosDeAlimento(c.contenido as unknown as AlimentoCandidato, revisado);
         const composicion = composicionCompleta(revisado.composition);
         const nombre = (revisado.name as string).trim();
+
+        // DL-141 D-1: uno solo por producto. El cerrojo ordena dos importaciones simultáneas del mismo, aunque sean de
+        // profesionales distintos: la segunda encuentra el que creó la primera.
+        await bloquearItemExterno(tx, 'OPEN_FOOD_FACTS', c.idExterno);
+        const yaEsta = await elementoDelItemExterno(tx, 'OPEN_FOOD_FACTS', c.idExterno);
+        if (yaEsta) {
+          const existente = await this.catalogo.vigenteDelElemento(tx, yaEsta);
+          if (!existente) throw errores.interno();
+          // La resolución apunta al que ya está y no crea versión: la revisión queda registrada sin cambiarlo.
+          const r = await tx.resolucionDeCandidato.create({
+            data: {
+              candidatoId: c.id,
+              decision: 'IMPORTAR',
+              contenidoRevisado: { name: nombre, composition: composicion } as unknown as Prisma.InputJsonValue,
+              camposCorregidos: corregidos as unknown as Prisma.InputJsonValue,
+              fundamento,
+              elementoNutricionalId: yaEsta,
+              autorId: actor.identidadId,
+              procedencia: procedencia as unknown as Prisma.InputJsonValue,
+            },
+          });
+          const data: ResolucionDeAlimento = {
+            candidateId: c.id,
+            decision: 'IMPORT',
+            catalogItem: { catalogItemId: existente.catalogItemId, versionId: existente.versionId },
+            correctedFields: corregidos,
+            resolvedAt: r.momentoDeRegistro.toISOString(),
+            existingCatalogItem: existente,
+          };
+          return { estadoHttp: 200, cuerpo: { data }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: c.id } };
+        }
 
         const elemento = await tx.elementoDeCatalogoNutricional.create({ data: { procedencia: 'CONTROLLED_IMPORT', creadoPorId: actor.identidadId } });
         const version = await tx.versionDeElementoNutricional.create({
@@ -136,6 +176,13 @@ export class ImportacionNutricionalService {
             // Lo que el catálogo muestra como procedencia (RF-060): de dónde vino y qué se corrigió.
             procedencia: { ...procedencia, carga: 'IMPORTACION_CONTROLADA', candidatoId: c.id, fuenteExterna: fuenteExternaDe(c), camposCorregidos: corregidos } as unknown as Prisma.InputJsonValue,
           },
+        });
+        // Desde ahora este es el alimento de ese código de barras, para todos (DL-141 D-1).
+        await registrarItemExterno(tx, {
+          proveedor: 'OPEN_FOOD_FACTS',
+          idExterno: c.idExterno,
+          elementoNutricionalId: elemento.id,
+          procedencia: { ...procedencia, candidatoId: c.id } as unknown as Prisma.InputJsonValue,
         });
         const r = await tx.resolucionDeCandidato.create({
           data: {
@@ -167,6 +214,7 @@ export class ImportacionNutricionalService {
           catalogItem: { catalogItemId: elemento.id, versionId: version.id },
           correctedFields: corregidos,
           resolvedAt: r.momentoDeRegistro.toISOString(),
+          existingCatalogItem: null,
         };
         return { estadoHttp: 200, cuerpo: { data }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: c.id } };
       },
@@ -174,7 +222,7 @@ export class ImportacionNutricionalService {
   }
 }
 
-function candidatoApi(c: CandidatoDeImportacion): CandidatoDeAlimento {
+function candidatoApi(c: CandidatoDeImportacion, existente: ElementoDeCatalogo | null): CandidatoDeAlimento {
   return {
     candidateId: c.id,
     provider: 'OPEN_FOOD_FACTS',
@@ -183,5 +231,6 @@ function candidatoApi(c: CandidatoDeImportacion): CandidatoDeAlimento {
     expiresAt: c.venceEn.toISOString(),
     candidate: c.contenido as unknown as AlimentoCandidato,
     provenance: procedenciaDeCandidato(c),
+    existingCatalogItem: existente,
   };
 }

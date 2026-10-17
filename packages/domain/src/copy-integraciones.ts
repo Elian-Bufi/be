@@ -53,6 +53,13 @@ export const COPY_INTEGRACIONES = {
   vence: 'Si no lo resolvés, vence el',
   importadoDe: 'Importado de',
   noVerificadoPorBe: 'Dato de un proveedor externo, revisado por un profesional: no es un dato verificado por BE.',
+  // DL-141 D-1: lo que se incorpora de un proveedor es de todos los profesionales, y hay uno solo por ítem externo.
+  yaEstaEnElCatalogo: 'Ya está en el catálogo BE',
+  yaEstaElAlimento:
+    'Un profesional ya incorporó este producto, con su revisión, y está en el catálogo BE para todos. Si lo agregás, se usa ese: no se crea otro ni hace falta revisarlo de nuevo.',
+  yaEstaElEjercicio:
+    'Un profesional ya incorporó este ejercicio de wger, con su revisión, y está en el catálogo BE para todos. Si lo agregás, se usa ese: no se crea otro ni hace falta revisarlo de nuevo.',
+  usarElDelCatalogo: 'Usar el del catálogo BE',
 } as const;
 
 /**

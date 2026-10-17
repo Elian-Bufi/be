@@ -56,6 +56,7 @@ export * from './contratos-procedencia-externa';
 export * from './contratos-integraciones';
 export * from './integraciones';
 export * from './copy-integraciones';
+export * from './nombres-alternativos';
 export * from './figura-antropometrica';
 export * from './figura-de-lamina';
 export * from './lamina';

@@ -452,8 +452,19 @@ export const EjercicioDeCatalogoSchema = z.strictObject({
 export type EjercicioDeCatalogo = z.infer<typeof EjercicioDeCatalogoSchema>;
 export const ListaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioDeCatalogoSchema), page: PaginaSchema });
 /**
+ * DL-141 D-2: un ejercicio que encontró el buscador del website (API-TRN-13-BUSQUEDA), con el nombre alternativo que
+ * coincidió con lo buscado. API-TRN-13, la que lee la APK instalada con su esquema congelado, responde sin este campo.
+ */
+export const EjercicioEncontradoSchema = EjercicioDeCatalogoSchema.extend({
+  /** El nombre alternativo que coincidió («Bench press» al buscar «bench press»), tal como está guardado; `null` si coincidió el principal, o sin texto. */
+  matchedAlternativeName: z.string().nullable(),
+});
+export type EjercicioEncontrado = z.infer<typeof EjercicioEncontradoSchema>;
+export const BusquedaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioEncontradoSchema), page: PaginaSchema });
+/**
  * API-TRN-13-BUSQUEDA (DL-130): la búsqueda de ejercicios con el texto en el **cuerpo**, nunca en una URL. Es una lectura
- * y responde lo mismo que API-TRN-13, que se conserva con su contrato para los clientes instalados.
+ * y trae las mismas filas que API-TRN-13, que se conserva con su contrato para los clientes instalados; cada una suma el
+ * nombre alternativo que coincidió (DL-141).
  */
 export const BusquedaDeEjerciciosRequestSchema = z.strictObject({
   q: z.string().trim().max(80),

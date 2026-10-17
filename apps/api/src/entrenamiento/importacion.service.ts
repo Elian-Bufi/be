@@ -6,12 +6,14 @@ import {
   ResolverCandidatoDeEjercicioRequestSchema,
   type CandidatoDeEjercicio,
   type EjercicioCandidato,
+  type EjercicioDeCatalogo,
   type ResolucionDeEjercicio,
 } from '@be/domain';
 import type { CandidatoDeImportacion, Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import { candidatoPropio, exigirResoluble, fuenteExternaDe, fundamentoDe, procedenciaDeCandidato, vencimientoDe } from '../integraciones/candidatos';
+import { bloquearItemExterno, elementoDelItemExterno, registrarItemExterno } from '../integraciones/item-externo';
 import { ProveedorNoDisponible, registrarProveedorNoDisponible } from '../integraciones/proveedor-http';
 import { Wger } from '../integraciones/wger';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
@@ -27,6 +29,9 @@ import { registrarEventoDeEntrenamiento } from './eventos';
  * una propia: **la relación músculo/zona que declara wger no se acepta como canónica** (09v12:397-401). El ejercicio
  * importado entra al catálogo sin zonas BE —la relación es 0..N (REG-06-139)— y los músculos de wger quedan en el
  * candidato como dato del proveedor.
+ *
+ * DL-141 D-1: el ejercicio importado es de todos los profesionales y hay uno solo por ejercicio de wger. El candidato
+ * dice si ya está (`existingExercise`); si está, importar apunta la resolución a ese y no crea otro.
  */
 @Injectable()
 export class ImportacionDeEjerciciosService {
@@ -80,7 +85,11 @@ export class ImportacionDeEjerciciosService {
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
           },
         });
-        return { estadoHttp: 201, cuerpo: { data: candidatoApi(fila) }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: fila.id } };
+        // DL-141: si el ejercicio ya está en el catálogo, se ofrece ese en lugar de repetir la revisión. Es un aviso: la
+        // resolución vuelve a mirar, con el cerrojo del ítem externo.
+        const yaEsta = await elementoDelItemExterno(tx, 'WGER', fila.idExterno);
+        const existente = yaEsta ? await this.catalogo.vigenteDelEjercicio(tx, yaEsta) : null;
+        return { estadoHttp: 201, cuerpo: { data: candidatoApi(fila, existente) }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: fila.id } };
       },
     });
   }
@@ -108,15 +117,47 @@ export class ImportacionDeEjerciciosService {
           const r = await tx.resolucionDeCandidato.create({
             data: { candidatoId: c.id, decision: 'RECHAZAR', fundamento, autorId: actor.identidadId, procedencia: procedencia as unknown as Prisma.InputJsonValue },
           });
-          const data: ResolucionDeEjercicio = { candidateId: c.id, decision: 'REJECT', exercise: null, correctedFields: [], resolvedAt: r.momentoDeRegistro.toISOString() };
+          const data: ResolucionDeEjercicio = { candidateId: c.id, decision: 'REJECT', exercise: null, correctedFields: [], resolvedAt: r.momentoDeRegistro.toISOString(), existingExercise: null };
           return { estadoHttp: 200, cuerpo: { data }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: c.id } };
         }
 
+        // La revisión se valida siempre igual, esté o no el ejercicio en el catálogo: el 422 no depende de lo que hizo otro.
         const revisado = pedido.reviewedContent;
         const faltantes = faltantesDeEjercicio(revisado);
         if (faltantes.length > 0) throw errores.contenidoRevisadoInvalido(faltantes);
         const corregidos = camposCorregidosDeEjercicio(c.contenido as unknown as EjercicioCandidato, revisado);
         const nombre = (revisado.name as string).trim();
+
+        // DL-141 D-1: uno solo por ejercicio de wger. El cerrojo ordena dos importaciones simultáneas del mismo, aunque
+        // sean de profesionales distintos: la segunda encuentra el que creó la primera.
+        await bloquearItemExterno(tx, 'WGER', c.idExterno);
+        const yaEsta = await elementoDelItemExterno(tx, 'WGER', c.idExterno);
+        if (yaEsta) {
+          const existente = await this.catalogo.vigenteDelEjercicio(tx, yaEsta);
+          if (!existente) throw errores.interno();
+          // La resolución apunta al que ya está y no crea versión: la revisión queda registrada sin cambiarlo.
+          const r = await tx.resolucionDeCandidato.create({
+            data: {
+              candidatoId: c.id,
+              decision: 'IMPORTAR',
+              contenidoRevisado: { name: nombre } as unknown as Prisma.InputJsonValue,
+              camposCorregidos: corregidos as unknown as Prisma.InputJsonValue,
+              fundamento,
+              ejercicioId: yaEsta,
+              autorId: actor.identidadId,
+              procedencia: procedencia as unknown as Prisma.InputJsonValue,
+            },
+          });
+          const data: ResolucionDeEjercicio = {
+            candidateId: c.id,
+            decision: 'IMPORT',
+            exercise: { exerciseId: existente.exerciseId, versionId: existente.versionId },
+            correctedFields: corregidos,
+            resolvedAt: r.momentoDeRegistro.toISOString(),
+            existingExercise: existente,
+          };
+          return { estadoHttp: 200, cuerpo: { data }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: c.id } };
+        }
 
         const ejercicio = await tx.ejercicioDeCatalogo.create({ data: { procedencia: 'CONTROLLED_IMPORT', creadoPorId: actor.identidadId } });
         const version = await tx.versionDeEjercicio.create({
@@ -126,6 +167,13 @@ export class ImportacionDeEjerciciosService {
             disponibilidad: 'DISPONIBLE',
             procedencia: { ...procedencia, carga: 'IMPORTACION_CONTROLADA', candidatoId: c.id, fuenteExterna: fuenteExternaDe(c), camposCorregidos: corregidos } as unknown as Prisma.InputJsonValue,
           },
+        });
+        // Desde ahora este es el ejercicio de ese número de wger, para todos (DL-141 D-1).
+        await registrarItemExterno(tx, {
+          proveedor: 'WGER',
+          idExterno: c.idExterno,
+          ejercicioId: ejercicio.id,
+          procedencia: { ...procedencia, candidatoId: c.id } as unknown as Prisma.InputJsonValue,
         });
         const r = await tx.resolucionDeCandidato.create({
           data: {
@@ -157,6 +205,7 @@ export class ImportacionDeEjerciciosService {
           exercise: { exerciseId: ejercicio.id, versionId: version.id },
           correctedFields: corregidos,
           resolvedAt: r.momentoDeRegistro.toISOString(),
+          existingExercise: null,
         };
         return { estadoHttp: 200, cuerpo: { data }, sujetoId: null, recurso: { tipo: 'CandidatoDeImportacion', id: c.id } };
       },
@@ -164,7 +213,7 @@ export class ImportacionDeEjerciciosService {
   }
 }
 
-function candidatoApi(c: CandidatoDeImportacion): CandidatoDeEjercicio {
+function candidatoApi(c: CandidatoDeImportacion, existente: EjercicioDeCatalogo | null): CandidatoDeEjercicio {
   return {
     candidateId: c.id,
     provider: 'WGER',
@@ -173,5 +222,6 @@ function candidatoApi(c: CandidatoDeImportacion): CandidatoDeEjercicio {
     expiresAt: c.venceEn.toISOString(),
     candidate: c.contenido as unknown as EjercicioCandidato,
     provenance: procedenciaDeCandidato(c),
+    existingExercise: existente,
   };
 }
