@@ -451,7 +451,7 @@ test('sin mediciones en 90 días, «Mi evolución» mira hacia atrás hasta un a
 // ─── 5. Lo que se ve en el código de la pantalla ───────────────────────────────────────────────
 
 /** La pantalla y sus tarjetas, una por módulo (`inicio-*.tsx`), con sus piezas comunes. */
-const ARCHIVOS = ['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-informacion.tsx', 'inicio-mediciones.tsx', 'tarjeta-de-inicio.tsx'];
+const ARCHIVOS = ['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-informacion.tsx', 'inicio-mediciones.tsx', 'tarjeta-de-inicio.tsx', 'inicio-acceso.tsx'];
 const fuente = (archivo) => readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas', archivo), 'utf8');
 const PANTALLA = ARCHIVOS.map(fuente).join('\n');
 
