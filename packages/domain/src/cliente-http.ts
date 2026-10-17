@@ -86,6 +86,15 @@ import {
   type ReemplazarPreferenciasDeAvisosRequest,
 } from './contratos-novedades';
 import {
+  DestinatariosPosiblesResponseSchema,
+  ListaDeNotasPropiasResponseSchema,
+  NotaDeCoordinacionResponseSchema,
+  type CrearNotaDeCoordinacionRequest,
+  type DestinatariosPosiblesResponse,
+  type ListaDeNotasPropiasResponse,
+  type NotaDeCoordinacionResponse,
+} from './contratos-notas-de-coordinacion';
+import {
   LineaDeTiempoResponseSchema,
   ListaDeVistasResponseSchema,
   ProyeccionResponseSchema,
@@ -1360,6 +1369,23 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      */
     usarInvitacion(token: string, secreto: SecretoDeInvitacionRequest, claveDeIdempotencia: string): Promise<Resultado<RespuestaDeCrearSolicitud>> {
       return llamar('POST', '/relationship-invitations/claim', { token, claveDeIdempotencia, esquema: RespuestaDeCrearSolicitudSchema, cuerpo: secreto });
+    },
+
+    // ─── CRD · notas de coordinación (WP-NOTAS-DE-COORDINACION; DL-140) ───────────────────────────
+    /**
+     * API-CRD-01: el profesional registra una nota sobre la persona. La lee en la línea de tiempo (API-DSH-04, tipo
+     * `COORDINATION_NOTE_RECORDED`); la persona, con `misNotasDeCoordinacion`.
+     */
+    crearNotaDeCoordinacion(token: string, asesoradoId: string, cuerpo: CrearNotaDeCoordinacionRequest, claveDeIdempotencia: string): Promise<Resultado<NotaDeCoordinacionResponse>> {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/coordination-notes`, { token, claveDeIdempotencia, esquema: NotaDeCoordinacionResponseSchema, cuerpo });
+    },
+    /** API-CRD-01-LISTA: desde qué área puede escribir y a quién (los otros profesionales que hoy acompañan a la persona). */
+    destinatariosDeNota(token: string, asesoradoId: string): Promise<Resultado<DestinatariosPosiblesResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/coordination-notes/recipients`, { token, esquema: DestinatariosPosiblesResponseSchema });
+    },
+    /** API-CRD-01-PROPIA: las notas de coordinación sobre la persona, todas (08 §9.15). */
+    misNotasDeCoordinacion(token: string, filtro: { cursor?: string; limit?: string } = {}): Promise<Resultado<ListaDeNotasPropiasResponse>> {
+      return llamar('GET', `/me/coordination-notes${query(filtro)}`, { token, esquema: ListaDeNotasPropiasResponseSchema });
     },
     /** API-EJE-01: los ejercicios propios, con su imagen vigente. */
     ejerciciosPropios(token: string) {

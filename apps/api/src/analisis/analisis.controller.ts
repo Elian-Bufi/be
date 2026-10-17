@@ -25,6 +25,7 @@ import { leerBusquedaDeLineaDeTiempo, leerConsultaDeLineaDeTiempo, leerConsultaD
 import { ejecucionesDelPeriodo, hayRegistrosDeOtros, registrosDeComidaDelPeriodo, versionesActivadas, versionesDeObjetivo, ZONA } from './fuentes';
 import {
   entradasDeComidas,
+  entradasDeNotas,
   entradasDeObjetivos,
   entradasDeRevisiones,
   entradasDeSeguimientos,
@@ -57,6 +58,8 @@ const DOMINIO: Readonly<Record<Alcance, DominioDeAnalisis>> = { NUTRICION: 'NUTR
  * - Este controlador no decide: lee **solo** los alcances permitidos, en una transacción de lectura (una foto), y siempre
  *   acotado a los planes, procesos y evaluaciones del profesional que consulta. Un alcance denegado no aporta ni un dato,
  *   ni un conteo, ni una coincidencia de búsqueda (TEST-DSH-002).
+ * - Las notas de coordinación (DL-140) no son datos de un área: se suman para su autor y sus destinatarios, con el área
+ *   desde la que se escribieron, mientras quien consulta tenga algún alcance permitido con la persona (09 §11.6).
  * - `partialView` es un aviso único (B10-08 §8.4).
  */
 @Controller()
@@ -117,6 +120,8 @@ export class AnalisisController {
         }
         if (permitidos.includes('ANTROPOMETRIA')) todas.push(...(await entradasDeTomas(tx, profesionalId, titularId, desde, hasta, nombres)));
         todas.push(...(await entradasDeSeguimientos(tx, permitidos, profesionalId, titularId, desde, hasta, nombres)));
+        // DL-140: las notas de coordinación que este profesional escribió o recibió, con algún alcance permitido (el guard).
+        todas.push(...(await entradasDeNotas(tx, profesionalId, titularId, desde, hasta)));
         return { entradas: todas, generatedAt: (await momentoDeLaBase(tx)).toISOString() };
       }),
     );

@@ -28,11 +28,12 @@ export const esHito = (e: EntradaDeLineaDeTiempo): boolean => !DE_TODOS_LOS_DIAS
 
 /**
  * Los hitos de planificación: los que marcan un antes y un después en lo que se le indica a la persona (un plan que se
- * activa, un objetivo, una revisión, un seguimiento que se abre o se cierra). Son los hitos menos las tomas: una toma es
- * una medición, y en un gráfico ya es un punto. «Analizar» dibuja estos como líneas verticales; la línea de tiempo
- * destaca todos los hitos. Los dos conjuntos salen de acá, para que no se separen.
+ * activa, un objetivo, una revisión, un seguimiento que se abre o se cierra). Son los hitos menos las tomas y las notas de
+ * coordinación: una toma es una medición, y en un gráfico ya es un punto; una nota no cambia lo que se le indica a nadie
+ * (UC-E07: no prescribe ni modifica, DL-140). «Analizar» dibuja estos como líneas verticales; la línea de tiempo destaca
+ * todos los hitos. Los dos conjuntos salen de acá, para que no se separen.
  */
-export const TIPOS_DE_HITO_DE_PLANIFICACION: readonly TipoDeEvento[] = TIPOS_DE_HITO.filter((t) => t !== 'ANTHROPOMETRIC_EVALUATION_RECORDED');
+export const TIPOS_DE_HITO_DE_PLANIFICACION: readonly TipoDeEvento[] = TIPOS_DE_HITO.filter((t) => t !== 'ANTHROPOMETRIC_EVALUATION_RECORDED' && t !== 'COORDINATION_NOTE_RECORDED');
 
 // ─── Los rasgos de un hecho ─────────────────────────────────────────────────────────────────────
 
@@ -257,7 +258,8 @@ export const VISTAS_DE_LA_LINEA: readonly VistaDeLaLinea[] = [
   {
     clave: 'HITOS',
     nombre: 'Hitos',
-    queTrae: 'Lo que no es el registro de todos los días: planes activados, objetivos, revisiones, tomas antropométricas y seguimientos que se abren o se cierran.',
+    queTrae:
+      'Lo que no es el registro de todos los días: planes activados, objetivos, revisiones, tomas antropométricas, seguimientos que se abren o se cierran y notas de coordinación.',
     tipos: TIPOS_DE_HITO,
     calidades: [],
   },

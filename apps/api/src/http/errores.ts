@@ -166,6 +166,13 @@ export const errores = {
   cuentaDeGoogleInexistente: (correo: string) =>
     new ErrorDeApi(404, CodigoDeError.GOOGLE_ACCOUNT_NOT_FOUND, 'Todavía no hay una cuenta BE con esa cuenta de Google.', { email: correo }),
   cuentaDeGoogleYaVinculada: () => new ErrorDeApi(409, CodigoDeError.GOOGLE_ACCOUNT_ALREADY_LINKED, 'La cuenta BE ya está vinculada con otra cuenta de Google.'),
+  // ─── WP-NOTAS-DE-COORDINACION (DL-140) ────────────────────────────────────────────────────────────────────────────
+  /** UC-E07 E01: con esa visibilidad, la nota no tiene a quién llegar. Llega después de autorizar al autor. */
+  destinatarioDeNotaNoDisponible: (issues: ValidationIssue[]) =>
+    new ErrorDeApi(422, CodigoDeError.COORDINATION_RECIPIENT_NOT_AVAILABLE, 'La nota no tiene a quién llegar con su autorización vigente.', { issues }),
+  /** CRD-D5 y CRD-D7: algo citado no se puede citar, o la nota que dice corregir no es una suya sobre esta persona. */
+  referenciaDeNotaInvalida: (issues: ValidationIssue[]) =>
+    new ErrorDeApi(422, CodigoDeError.COORDINATION_REFERENCE_INVALID, 'Algo de lo que cita la nota no se puede citar.', { issues }),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };

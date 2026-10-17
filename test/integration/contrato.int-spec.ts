@@ -13,6 +13,7 @@
  *   con el mismo observador.
  * - WP-INVITACION: la familia INV (DL-136), con la invitación vencida escrita directo en la base.
  * - WP-ACCESO-GOOGLE: la familia GOO (DL-138) contra un Google falso local, y el 503 en una segunda app sin client IDs.
+ * - WP-NOTAS-DE-COORDINACION: API-CRD-01 (09 §11.6) y sus dos variantes, CRD-01-LISTA y CRD-01-PROPIA (DL-140).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -1707,6 +1708,43 @@ it('TEST-CT (WP-ACCESO-GOOGLE): GOO-01 a 03 y la declaración de mayoría de eda
   } finally {
     await sinGoogle.close();
   }
+});
+
+it('TEST-CT (WP-NOTAS-DE-COORDINACION): CRD-01, CRD-01-LISTA y CRD-01-PROPIA, con éxitos y errores declarados (DL-140)', async () => {
+  const servidor = app.getHttpServer();
+  const c = await circuitoConPlanActivo(app, 'ct-crd');
+  const ent = await prepararProfesional(app, 'ct-crd-ent', ['ENTRENAMIENTO']);
+  await vinculoCompleto(app, ent, c.ase, 'ENTRENAMIENTO');
+  const ajeno = await prepararProfesional(app, 'ct-crd-ajeno', ['NUTRICION']);
+  const p = conSesion(app, c.pro.token);
+  const ruta = `/api/v1/advisees/${c.ase.id}/coordination-notes`;
+  const cuerpo = { originScope: 'NUTRICION', purpose: 'CONTEXT_FOR_YOUR_AREA', recipients: { mode: 'ALL' }, text: 'Nota sintética del contrato.' };
+
+  // CRD-01
+  const clave = claveDeIdempotencia();
+  await p.post(ruta, clave).send({ ...cuerpo, references: [{ type: 'NUTRITION_PLAN_VERSION', id: c.planId }] }).expect(201);
+  await p.post(ruta, clave).send({ ...cuerpo, text: 'Otra.' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await p.post(ruta).send({ ...cuerpo, adjunto: 'x' }).expect(400); // UNKNOWN_FIELD
+  await p.post(ruta).send({ ...cuerpo, text: '' }).expect(400); // INVALID_REQUEST
+  await p.post(`${ruta}?x=1`).send(cuerpo).expect(400); // INVALID_REQUEST
+  await conSesion(app, ajeno.token).post(ruta).send(cuerpo).expect(404);
+  await p.post(ruta).send({ ...cuerpo, recipients: { mode: 'ONE', identityId: ajeno.id } }).expect(422); // COORDINATION_RECIPIENT_NOT_AVAILABLE
+  await p.post(ruta).send({ ...cuerpo, references: [{ type: 'NUTRITION_REVIEW', id: randomUUID() }] }).expect(422); // COORDINATION_REFERENCE_INVALID
+  await request(servidor).post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401);
+
+  // CRD-01-LISTA
+  await p.get(`${ruta}/recipients`).expect(200);
+  await p.get(`${ruta}/recipients?x=1`).expect(400);
+  await conSesion(app, ajeno.token).get(`${ruta}/recipients`).expect(404);
+  await request(servidor).get(`${ruta}/recipients`).expect(401);
+
+  // CRD-01-PROPIA
+  const a = conSesion(app, c.ase.token);
+  await a.get('/api/v1/me/coordination-notes?limit=5').expect(200);
+  await a.get('/api/v1/me/coordination-notes?x=1').expect(400); // INVALID_REQUEST
+  await a.get('/api/v1/me/coordination-notes?cursor=basura').expect(400); // INVALID_CURSOR
+  await p.get('/api/v1/me/coordination-notes').expect(403); // ACTION_FORBIDDEN: sin A3 propio
+  await request(servidor).get('/api/v1/me/coordination-notes').expect(401);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
