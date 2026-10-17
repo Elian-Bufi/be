@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoResuelto, type FuenteExternaDeAlimento } from '@be/domain';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { CON_MARCA, SIN_MARCA } from '../http/busqueda';
-import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
+import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda } from '../http/busqueda';
+import { leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -42,33 +42,32 @@ export class CatalogoService {
   constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorNutricional) {}
 
   // ─── API-NUT-13 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * El buscador tolera tildes, mayúsculas, el orden de las palabras, los plurales y los errores de tipeo
+   * (`http/busqueda.ts`; DL-139). Sin texto, el catálogo entero, lo más nuevo primero.
+   */
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: ElementoDeCatalogo[]; page: unknown }> {
     const q = typeof query.q === 'string' ? query.q.trim().slice(0, 80) : '';
-    const { q: _q, ...resto } = query;
+    const { q: _q, cursor: cursorEscrito, ...resto } = query;
     const consulta = leerConsultaDeLista(resto, { type: ['FOOD'] });
+    const cursor = leerCursorDeBusqueda(cursorEscrito);
     await this.exigirProfesionalDeNutricion(this.prisma, actor.identidadId);
-    const patron = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-    const cursor = consulta.cursor;
-    const filas = await this.prisma.$queryRaw<FilaDeCatalogo[]>`
-      SELECT e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
-             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
-        FROM "version_de_elemento_nutricional" v
-        JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
-       WHERE NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
-         AND v."disponibilidad" = 'DISPONIBLE'
-         AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${actor.identidadId}::uuid)
-         AND lower(translate(v."nombre", ${CON_MARCA}, ${SIN_MARCA})) LIKE lower(translate(${patron}, ${CON_MARCA}, ${SIN_MARCA}))
-         AND (${cursor === null} OR (v."momento_de_registro", v."id") < (${cursor?.momento ?? new Date(0)}, ${cursor?.id ?? '00000000-0000-0000-0000-000000000000'}::uuid))
-       ORDER BY v."momento_de_registro" DESC, v."id" DESC
-       LIMIT ${consulta.limit + 1}`;
-    const hayMas = filas.length > consulta.limit;
-    const pagina = filas.slice(0, consulta.limit);
-    const ultima = pagina[pagina.length - 1];
-    return {
-      data: pagina.map(elementoApi),
-      page: { limit: consulta.limit, nextCursor: hayMas && ultima ? escribirCursor(ultima.momentoDeRegistro, ultima.versionId) : null, hasMore: hayMas },
-    };
+    const { filas, page } = await buscarEnCatalogo<FilaDeCatalogo>(
+      this.prisma,
+      {
+        columnas: Prisma.sql`e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
+               e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
+               v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`,
+        tablas: Prisma.sql`"version_de_elemento_nutricional" v JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"`,
+        visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
+           AND v."disponibilidad" = 'DISPONIBLE'
+           AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${actor.identidadId}::uuid)`,
+      },
+      leerBusqueda(q),
+      consulta.limit,
+      cursor,
+    );
+    return { data: filas.map(elementoApi), page };
   }
 
   // ─── API-INT-NUT-01 ────────────────────────────────────────────────────────────────────────
