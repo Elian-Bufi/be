@@ -1,6 +1,8 @@
 # Propuesta · Notas de coordinación entre los profesionales de una persona (RF-057 · UC-E07 · API-CRD-01)
 
-> **Estado (2026-10-16):** PROPUESTA para decisión de Dirección. **No implementada.** La escribió el ejecutor con el mandato del 16/10 («que vayas haciendo los casos de uso y los requisitos funcionales que faltan»).
+> **Estado (2026-10-17):** DECIDIDA e IMPLEMENTADA. Dirección aprobó el 2026-10-16 hacerla «con todas las opciones recomendadas» (CRD-D1 a CRD-D8, la opción A o la recomendada en cada una), y está hecha en `wp-notas-de-coordinacion`, sin integrar: la API, el website y la APK. Las decisiones están en DEUDA_LEGAJO DL-140 (con E-1 a E-11, las que tomó el ejecutor al implementarla, a ratificar), y el paquete en `docs/paquetes/WP-NOTAS-DE-COORDINACION.md`. Esta ficha se conserva como la propuesta que se aprobó.
+>
+> **Estado anterior (2026-10-16):** PROPUESTA para decisión de Dirección. **No implementada.** La escribió el ejecutor con el mandato del 16/10 («que vayas haciendo los casos de uso y los requisitos funcionales que faltan»).
 >
 > **Por qué no se implementó en el mismo día:**
 > - es P0, pero obliga a decidir quién lee una nota de texto libre sobre una persona, y el 08 tiene dos reglas que tiran para lados distintos (§2);

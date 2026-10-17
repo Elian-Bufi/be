@@ -143,6 +143,7 @@
 | DL-136 | Aprobación de Dirección · 2026-10-16 (WP-INVITACION) | 06 §7.3, §7.4 (REG-06-44, 45, 46; INV-06-55, 56) · 05 UC-P04 V04, UC-P05 V01 · 08 §24.3, §24.5 · 09v8 REL-01 · DL-023 · DL-035 | Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK |
 | DL-137 | Pedido de Dirección · 2026-10-16 (WP-AGENDA-DE-ENTRENAMIENTO) | 06 B-08 (REG-06-111, 114, 115, 126, 131) · DL-077 · DL-088 · DL-133 D-5 · WP-06 §9.2 | El plan de entrenamiento no tenía días: el recordatorio llegaba todos los días y BE no sabía qué sesión tocaba ni cuál quedó pendiente | **IMPLEMENTADA** 2026-10-16: días de cada sesión, lo pendiente, saltear y los avisos de las 10 y las 22 (API #174; editor del website y pantalla de la APK); falta la APK en un teléfono; D-1 a D-9 a ratificar |
 | DL-138 | Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE) | 04 RF-001, RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.6, §24.7 a, §42 ítem 22 · 09 §12 y 09v12 §11 (bosquejo) · DL-012 · DL-023 | Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta | **IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono |
+| DL-140 | Aprobación de Dirección · 2026-10-16 (WP-NOTAS-DE-COORDINACION) | 04 RF-057 · 05 UC-E07 (§11.8) · 06 T-06-43 · 08 §9.15, 08:495, §11-bis.3, Q-005 y §14, VJR-5 · 09 §11.6 (API-CRD-01) · 11A TEST-RF-057, TEST-UC-E07 · propuesta NOTAS-DE-COORDINACION | La nota de coordinación entre los profesionales de una persona: quién la recibe, quién la lee, el texto libre acotado, lo citado y que solo se agrega | **IMPLEMENTADA** 2026-10-17 con las opciones recomendadas CRD-D1 a CRD-D8 (API, web y APK en `wp-notas-de-coordinacion`, sin integrar); E-1 a E-11 a ratificar; falta la APK en el teléfono |
 
 ---
 
@@ -4202,3 +4203,83 @@ Y **API-ACC-01** suma `adultDeclaration: { versionId, declared }`: sin ella, 422
 - la web y la APK ofrecen «Continuar con Google» y la casilla de mayoría de edad, y una persona real entra con Google desde el teléfono;
 - Dirección ratifica D-1 a D-13, o cambia las que quiera;
 - con eso, DL-023 queda cerrada en lo que toca al alta (la invitación y la declaración), y lo que resta del 08 §24.7 es el procedimiento ante un menor descubierto.
+
+## DL-140 — La nota de coordinación entre los profesionales de una persona: API-CRD-01, su lectura en la línea de tiempo y la de la persona
+
+**Prioridad:** alta (RF-057 es P0, del núcleo que no se recorta).
+
+**Documentos:**
+- **04:** RF-057 (P0): «documentar contexto de coordinación sin transferir responsabilidad ni facultades entre especialidades». La nota conserva autor, destinatarios o alcance y dominio; no modifica planes ajenos; solo la consultan actores autorizados.
+- **05:** UC-E07 (§11.8), extensión de UC-P24, con UC-I02 y UC-I03: los límites a la vista (paso 6), el autor y la visibilidad autorizados en dos tiempos (pasos 3 y 5), «no existe chat general», «una referencia protegida no se vuelve visible por incluirla en la nota».
+- **06:** T-06-43 (M-11): autor, destinatario, alcance y pertinencia, sin transferencia de responsabilidad.
+- **08:** §9.15 y 08:495 (la persona ve toda su historia: sin notas secretas); §11-bis.3 (el texto libre queda fuera de la vista pertinente por defecto y no se resume automáticamente); Q-005 y §14 (con el vínculo en pausa o terminado no hay lectura profesional); §52, VJR-5 (la circulación intra-equipo, sin validar).
+- **09:** §11.6, API-CRD-01 `POST /api/v1/advisees/{adviseeId}/coordination-notes`. «No se crea un GET P0 específico»: la lectura autorizada es la de la línea de tiempo y el tablero.
+- **11A:** TEST-RF-057 y TEST-UC-E07.
+- **La propuesta:** `docs/propuestas/NOTAS-DE-COORDINACION_ficha.md`. **El paquete:** `docs/paquetes/WP-NOTAS-DE-COORDINACION.md`.
+
+**Estado:** IMPLEMENTADA el 2026-10-17 en `wp-notas-de-coordinacion`, sin integrar: la API, el website y la APK. Falta construir la APK y probarla en el teléfono.
+
+**Qué decidió Dirección el 2026-10-16.** Hacerla «con todas las opciones recomendadas» de la propuesta: CRD-D1 a CRD-D8, la opción A o la recomendada en cada una.
+
+**Lo decidido** (aprobado):
+- **D-1 (CRD-D1) · Quién la recibe.** El autor elige entre «todos los profesionales que acompañan a la persona» y uno en particular. En los dos casos, solo los que ese día tienen con ella un vínculo aceptado y el B2 vigente, en cualquier alcance. Los destinatarios concretos se guardan al escribirla (`destinatario_de_nota`): la visibilidad no cambia sola si después se suma otro profesional.
+  - *Alternativas descartadas:* B, siempre todos; C, por alcance («quien lleve Nutrición»), que se rompe cuando una misma persona lleva dos áreas.
+- **D-2 (CRD-D2) · La lee la persona,** en la APK («Notas entre tus profesionales») y en su historia. Al escribirla, el profesional ve «La persona también la lee, en su app».
+  - *Alternativa descartada:* B, solo por la exportación de sus datos (se aparta del autoservicio del 08:495).
+- **D-3 (CRD-D3) · Texto libre acotado:** hasta 600 caracteres, con el aviso «Escribí solo lo que el otro profesional necesita para su trabajo», sin adjuntos y sin resúmenes automáticos.
+  - *Alternativa descartada:* B, solo plantillas cerradas con campos estructurados: más seguro, pero limita lo que se puede decir.
+- **D-4 (CRD-D4) · La finalidad, de una lista cerrada:** «Contexto para tu área», «Cambio en mi área que conviene que sepas» y «Pedido de coordinación». El área de origen es la del autor con esa persona; si tiene dos, elige.
+- **D-5 (CRD-D5) · Lo citado,** solo del área de origen del autor y suyo con esa persona (una versión activada de su plan, una revisión suya o una toma registrada), por identificador. Quien la recibe ve que existe («Plan de Nutrición, versión 3, activada el 10/10/2026»), pero lo abre solo con el permiso que ya tenía.
+- **D-6 (CRD-D6) · Una novedad de la familia NOV para cada destinatario:** «Lic. Sofía Paz dejó una nota de coordinación sobre Diego Sosa», sin el texto. El aviso push sigue genérico («Tenés una novedad.»).
+- **D-7 (CRD-D7) · Solo se agrega.** No se edita ni se borra. Para corregirla, otra nota que la cita («Corrige la nota del 12/10/2026»).
+- **D-8 (CRD-D8) · Dónde aparece:** en la Línea de tiempo de la ficha, como el hito «Nota de coordinación» (autor, finalidad y fecha; el texto, al abrirla); en el Resumen, «Notas recientes del equipo» (las tres últimas); y en la APK, «Notas entre tus profesionales».
+
+**El contrato.** API-CRD-01 es exactamente la del 09 (la guardia de trazabilidad lo controla). Las dos lecturas nuevas son variantes con sufijo (DL-116):
+
+| ID | Operación | Respuesta | Errores propios |
+|---|---|---|---|
+| API-CRD-01 | `POST /api/v1/advisees/{adviseeId}/coordination-notes` `{ originScope, purpose, recipients: { mode: "ALL" } \| { mode: "ONE", identityId }, text, references?, correctsNoteId? }`, con Idempotency-Key | 201 `{ data: nota }`: autor, área de origen, finalidad, destinatarios (el modo y las personas), texto, referencias con su rótulo, la nota que corrige y las que la corrigen, fecha | 404 RESOURCE_NOT_FOUND (el mismo para una persona inexistente, sin vínculo con el autor o fuera de su área); 409 IDEMPOTENCY_KEY_REUSED; 422 COORDINATION_RECIPIENT_NOT_AVAILABLE, COORDINATION_REFERENCE_INVALID |
+| API-CRD-01-LISTA | `GET /api/v1/advisees/{adviseeId}/coordination-notes/recipients` | 200 `{ data: { origins, recipients } }`: las áreas del autor con la persona y los otros profesionales que hoy la acompañan, con sus áreas | 404 (sin ningún alcance permitido); 429 |
+| API-CRD-01-PROPIA | `GET /api/v1/me/coordination-notes?limit&cursor` | 200 `{ data: [nota], page }`: todas las notas sobre la persona, de la más nueva a la más vieja | 403 ACTION_FORBIDDEN (sin el A3 vigente); 400 INVALID_CURSOR; 429 |
+
+Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea el website: API-DSH-04 (y DSH-04-BUSQUEDA) trae las notas como entradas `COORDINATION_NOTE_RECORDED`, con el origen `COORDINATION_NOTE` y las relaciones `REFERS_TO`, `CORRECTS_NOTE` y `CORRECTED_BY_NOTE`; API-NOV-01 y 02, la novedad `COORDINATION_NOTE_RECEIVED`, que abre la ficha (`ADVISEE`, con la persona). Ninguna respuesta que lee la APK instalada cambia (la prueba C01): las novedades ya tenían `kind` y `open.view` como texto (DL-133 D-2).
+
+**Lo que tuvo que decidir el ejecutor además de las ocho** (a ratificar):
+- **E-1 · El profesional lee las notas en la línea de tiempo, sin un GET propio,** como fijan el 09 §11.6 y la propuesta (§3). El Resumen lee las tres últimas con API-DSH-04 filtrada por el tipo, en el último año. Las dos operaciones nuevas no leen notas del profesional: -LISTA dice a quién escribirle (CRD-D1 lo necesita para elegir) y -PROPIA es la lectura de la persona (CRD-D2).
+  - *Alternativa descartada:* `GET /advisees/{adviseeId}/coordination-notes` para el profesional, el bosquejo del 09v12 §19 que el 09 v0.13 retiró a propósito para no duplicar la superficie de la línea de tiempo.
+- **E-2 · En la línea de tiempo, la nota lleva como `domain` el área desde la que se escribió,** aunque quien la recibe no tenga ese alcance con la persona. TEST-DSH-002 («un alcance denegado no aporta ni un dato») sigue valiendo para los datos de un área: la nota no es un dato de esa área sino una comunicación dirigida a ese profesional. Se ve mientras el lector tenga algún alcance permitido con la persona; sin ninguno, la línea de tiempo entera responde 404. No es un hito de planificación: «Analizar» no la dibuja como línea.
+- **E-3 · «Hoy la acompaña» lo decide el PDP:** al menos un alcance permitido para el par (destinatario, persona). Eso es el vínculo aceptado y el B2 vigente de CRD-D1, y además la cuenta operativa de los dos, la verificación y la habilitación del profesional y el A3 de la persona: más estricto que la letra, del lado que no amplía nada. Cada decisión queda registrada, con el autor como actor y el destinatario como recurso.
+- **E-4 · Los candidatos de «todos»** son los profesionales con algún vínculo con la persona, en cualquier estado; el PDP decide cuáles la reciben. Con «todos» y nadie habilitado, o con «uno» que no está habilitado (también el autor o la persona), 422 COORDINATION_RECIPIENT_NOT_AVAILABLE. El autor ya pasó el PDP y tiene la lista de a quién escribirle, así que el 422 no revela nada que no tenga.
+  - *Alternativa descartada:* 404 también para el destinatario: el autor no sabría por qué no se envió.
+- **E-5 · Los bloqueos:** las identidades del autor, de la persona y de los candidatos se bloquean juntas, en modo compartido y en orden, antes de decidir; después cada par toma sus filas como cualquier decisión del PDP. Así decidir por varios pares no invierte el orden único con un corte.
+- **E-6 · La persona no recibe una novedad por una nota sobre ella:** CRD-D6 habla de los destinatarios. La lee en «Notas entre tus profesionales», que se abre desde Cuenta y desde Vínculos.
+- **E-7 · La corrección** cita una nota propia sobre la misma persona y puede ir a otros destinatarios. Quien lee la corrección y no puede leer la original ve «Corrige una nota anterior», sin la fecha ni el enlace.
+- **E-8 · En el website la finalidad no viene elegida:** se elige a propósito, como el destinatario de «uno en particular».
+- **E-9 · Ni el website ni la APK abren lo citado desde la nota:** lo nombran. El autor lo tiene en su área; quien la recibe no podría abrirlo (las lecturas son de cada profesional con la persona).
+- **E-10 · La nota es el hecho:** solo se agrega, con su procedencia, y la auditoría registra el acto en la misma transacción. No hay otra tabla de eventos.
+- **E-11 · La sesión:** SESSION, como FRM-03. El 09 pide SESSION_MFA con datos reales sensibles (08 §25), que BE todavía no tiene (DL-088 #17).
+
+**Base de datos.** Dos migraciones aditivas:
+- `20261017000000_tipo_de_novedad_de_nota_de_coordinacion`: `TipoDeNovedad.NOTA_DE_COORDINACION_RECIBIDA`, sola (PostgreSQL no deja usar un valor de enum en la transacción que lo agrega). No cambia `novedad_recordatorio_coherente`: no es un recordatorio, así que exige quien la originó y ningún día.
+- `20261017000100_notas_de_coordinacion`: tres enumeraciones (`FinalidadDeNotaDeCoordinacion`, `ModoDeDestinatariosDeNota`, `TipoDeReferenciaDeNota`) y tres tablas (`nota_de_coordinacion`, `destinatario_de_nota`, `referencia_de_nota`), sin booleanos. La base garantiza, aunque el código se equivoque: las tres solo se agregan, también frente a TRUNCATE; el texto va de 1 a 600 caracteres, sin espacios en los bordes; escribe un profesional sobre otra persona; la reciben otros profesionales, nunca el autor ni la persona; «uno en particular» tiene un solo destinatario; toda nota tiene destinatarios (constraint diferido); una corrección cita una nota del mismo autor sobre la misma persona; lo citado es del autor con esa persona, de su área de origen y está registrado (una versión activada, una revisión, una toma registrada); y la novedad de una nota nombra la nota (CHECK con el tipo comparado como texto).
+
+**Pruebas:**
+- **dominio** (`packages/domain/src/notas-de-coordinacion.test.ts`, 11 pruebas): el contrato, el copy contra las listas de términos prohibidos de los tres dominios, de la cartera y de Información, los cuatro límites y los dos avisos, los rótulos de lo citado, la novedad sin el texto y el aviso genérico, el hito y el OpenAPI;
+- **integración contra PostgreSQL** (`test/integration/notas-de-coordinacion.int-spec.ts`, 10 pruebas): TEST-RF-057 y TEST-UC-E07, con un Expo Push falso local. Para todos y para uno; el autor sin vínculo o fuera de su área, el mismo 404 que una persona inexistente; quien pierde el vínculo (pausa, B2 revocado, fin) deja de leerla y una nota nueva no le llega; la persona las lee siempre, y sin A3, 403; lo citado ajeno, de otra área o en borrador, 422, y nombrarlo no lo abre; el texto no va ni en la novedad ni en el aviso; la base rechaza UPDATE y DELETE y sostiene sus garantías; la corrección; la idempotencia;
+- `test/integration/contrato.int-spec.ts` observa las tres operaciones y `schema.int-spec.ts`, que las tres tablas rechazan TRUNCATE;
+- **website y APK:** `scripts/hecho-en-un-renglon.test.mjs` (el renglón de la nota), `scripts/historial-navegacion.test.mjs` (la pantalla de la APK, desde Cuenta y desde Vínculos) y `scripts/copy-pantallas.test.cjs` (las pantallas nuevas contra las listas).
+
+**Lo que queda abierto:**
+- **La APK construida y en el teléfono,** y las capturas del website.
+- **VJR-5 (08 §52):** que los profesionales de una persona se pasen información sobre ella (¿cesión del art. 11, encargo o mismo responsable?) no está validado jurídicamente. Antes de datos reales, el texto de B2 o el de privacidad tiene que decir que los profesionales que la acompañan pueden dejarse notas sobre ella y que ella las lee.
+- **UC-E07 E02 a E04** (un intento de prescribir, de modificar un plan o de registrar una revisión escrito en el texto): BE no analiza el texto (CRD-D3: sin resúmenes ni interpretaciones automáticas). Lo sostienen los límites a la vista, la finalidad cerrada y que la nota no tiene ningún campo que cambie otra cosa.
+- **UC-E07 V05** (un borrador visible solo para el autor): no entra. Sería una nota privada (propuesta §4; 08 §9.15).
+- **La retención** de las notas (08 §17), como el resto de la historia.
+- **La novedad para la persona** (E-6): si Dirección la quiere, es un tipo más.
+
+**Provisorio en código:** E-1 a E-11.
+
+**Condición de cierre:**
+- Dirección ratifica E-1 a E-11, o cambia las que quiera;
+- una persona real lee en el teléfono una nota que escribió su profesional;
+- antes de datos reales, VJR-5 y el texto que la acompaña.
