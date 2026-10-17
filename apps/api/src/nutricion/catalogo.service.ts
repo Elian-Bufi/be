@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoResuelto, type FuenteExternaDeAlimento } from '@be/domain';
+import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoEncontrado, type ElementoResuelto, type FuenteExternaDeAlimento } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda } from '../http/busqueda';
+import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda, type ConNombreAlternativo } from '../http/busqueda';
 import { leerConsultaDeLista } from '../http/paginacion';
+import { ALIMENTO_DE_UN_ITEM_EXTERNO } from '../integraciones/item-externo';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,10 +31,28 @@ interface FilaDeCatalogo {
 }
 
 /**
+ * Los alimentos `e` que ve un profesional: lo sembrado por una migración (sin profesional que lo cargue), lo importado de
+ * Open Food Facts, que es de todos (DL-141 D-1), y lo propio. La consulta tiene que llamar `e` al elemento.
+ */
+function alimentoVisible(profesionalId: string): Prisma.Sql {
+  return Prisma.sql`(e."creado_por_id" IS NULL OR ${ALIMENTO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ${profesionalId}::uuid)`;
+}
+
+/** DL-141 D-2: los nombres alternativos vigentes (sin retiro) del alimento `e`, para el buscador. */
+const NOMBRES_ALTERNATIVOS = Prisma.sql`SELECT n."nombre" FROM "nombre_alternativo_de_alimento" n
+  WHERE n."elemento_id" = e."id" AND NOT EXISTS (SELECT 1 FROM "retiro_de_nombre_alternativo_de_alimento" r WHERE r."nombre_id" = n."id")`;
+
+/** Las columnas de una fila del catálogo (`FilaDeCatalogo`), con la versión `v` y el elemento `e`. */
+const COLUMNAS = Prisma.sql`e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
+       e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
+       v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`;
+
+/**
  * Catálogo nutricional propio (RF-027; API-NUT-13 y API-INT-NUT-01).
  * - Ítem con identificador estable y versiones inmutables (REG-06-99). La vigente es la terminal de la cadena.
  * - Ámbitos (REG-06-135): lo sembrado por una migración es global (sin profesional que lo cargue: el catálogo sintético de
- *   WP-04 y los alimentos de referencia de USDA, DL-119); lo que carga o importa un profesional es de su ámbito.
+ *   WP-04 y los alimentos de referencia de USDA, DL-119); lo importado de Open Food Facts es de todos los profesionales,
+ *   uno por producto, con su fuente (DL-141 D-1); lo que carga un profesional es de su ámbito.
  * - Un cambio del catálogo no toca planes activados: la instantánea guarda su propia copia (REG-06-101).
  * - No es dato de salud (08:168), pero solo lo usa un profesional con Nutrición verificada y habilitada.
  */
@@ -41,33 +60,43 @@ interface FilaDeCatalogo {
 export class CatalogoService {
   constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorNutricional) {}
 
-  // ─── API-NUT-13 ────────────────────────────────────────────────────────────────────────────
+  // ─── API-NUT-13 y su búsqueda ──────────────────────────────────────────────────────────────
   /**
    * El buscador tolera tildes, mayúsculas, el orden de las palabras, los plurales y los errores de tipeo
-   * (`http/busqueda.ts`; DL-139). Sin texto, el catálogo entero, lo más nuevo primero.
+   * (`http/busqueda.ts`; DL-139), y busca también en los nombres alternativos (DL-141). Sin texto, el catálogo entero, lo
+   * más nuevo primero.
    */
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: ElementoDeCatalogo[]; page: unknown }> {
+    const { filas, page } = await this.buscarFilas(actor, query);
+    return { data: filas.map(elementoApi), page };
+  }
+
+  /** API-NUT-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2). */
+  async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: ElementoEncontrado[]; page: unknown }> {
+    const { filas, page } = await this.buscarFilas(actor, query);
+    return { data: filas.map((f) => ({ ...elementoApi(f), matchedAlternativeName: f.nombreAlternativo })), page };
+  }
+
+  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeCatalogo & ConNombreAlternativo)[]; page: unknown }> {
     const q = typeof query.q === 'string' ? query.q.trim().slice(0, 80) : '';
     const { q: _q, cursor: cursorEscrito, ...resto } = query;
     const consulta = leerConsultaDeLista(resto, { type: ['FOOD'] });
     const cursor = leerCursorDeBusqueda(cursorEscrito);
     await this.exigirProfesionalDeNutricion(this.prisma, actor.identidadId);
-    const { filas, page } = await buscarEnCatalogo<FilaDeCatalogo>(
+    return buscarEnCatalogo<FilaDeCatalogo>(
       this.prisma,
       {
-        columnas: Prisma.sql`e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-               e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
-               v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`,
+        columnas: COLUMNAS,
         tablas: Prisma.sql`"version_de_elemento_nutricional" v JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'
-           AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${actor.identidadId}::uuid)`,
+           AND ${alimentoVisible(actor.identidadId)}`,
+        nombresAlternativos: NOMBRES_ALTERNATIVOS,
       },
       leerBusqueda(q),
       consulta.limit,
       cursor,
     );
-    return { data: filas.map(elementoApi), page };
   }
 
   // ─── API-INT-NUT-01 ────────────────────────────────────────────────────────────────────────
@@ -120,7 +149,7 @@ export class CatalogoService {
     });
   }
 
-  /** Ítems disponibles para el profesional (global + propios), con su versión vigente: validan y arman la instantánea. */
+  /** Ítems disponibles para el profesional (global, importados y propios), con su versión vigente: validan y arman la instantánea. */
   async disponibles(cliente: Cliente, profesionalId: string, ids: readonly string[]): Promise<Map<string, ElementoResuelto>> {
     const filas = await this.filasDisponibles(cliente, profesionalId, ids);
     return new Map(filas.map((f) => [f.elementoId, { versionId: f.versionId, name: f.nombre, composition: f.composicion }]));
@@ -136,15 +165,27 @@ export class CatalogoService {
     const validos = [...new Set(ids)].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
     if (validos.length === 0) return [];
     return cliente.$queryRaw<FilaDeCatalogo[]>`
-      SELECT e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre", v."composicion", (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
-             e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
-             v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"
+      SELECT ${COLUMNAS}
         FROM "version_de_elemento_nutricional" v
         JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
        WHERE e."id" = ANY(${validos}::uuid[])
          AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
          AND v."disponibilidad" = 'DISPONIBLE'
-         AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${profesionalId}::uuid)`;
+         AND ${alimentoVisible(profesionalId)}`;
+  }
+
+  /**
+   * DL-141 D-1: el alimento de un ítem externo de Open Food Facts, en su versión vigente y tal como lo ve cualquier
+   * profesional (es de todos). Lo usa la importación para ofrecer el que ya está y para apuntar la resolución a él.
+   */
+  async vigenteDelElemento(cliente: Cliente, elementoId: string): Promise<ElementoDeCatalogo | null> {
+    const [fila] = await cliente.$queryRaw<FilaDeCatalogo[]>`
+      SELECT ${COLUMNAS}
+        FROM "version_de_elemento_nutricional" v
+        JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
+       WHERE e."id" = ${elementoId}::uuid
+         AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")`;
+    return fila ? elementoApi(fila) : null;
   }
 
   /** Solo un profesional con Nutrición verificada y habilitada usa el catálogo nutricional (también para importar, WP-08). */
@@ -154,9 +195,9 @@ export class CatalogoService {
 
   /**
    * DL-119 · las versiones que cita una receta, por elemento **y** versión: la versión es de ese elemento, está
-   * disponible y el elemento es global o propio de este profesional. Las que no cumplen no figuran en el mapa (quien llama
-   * responde CATALOG_REFERENCE_INVALID con la ruta). No exige que sea la versión vigente: una receta conserva la versión
-   * que citó aunque el catálogo emita otra.
+   * disponible y el elemento es global, importado (de todos, DL-141) o propio de este profesional. Las que no cumplen no
+   * figuran en el mapa (quien llama responde CATALOG_REFERENCE_INVALID con la ruta). No exige que sea la versión vigente:
+   * una receta conserva la versión que citó aunque el catálogo emita otra.
    */
   async versionesCitables(cliente: Cliente, profesionalId: string, ids: readonly string[]): Promise<Map<string, VersionCitable>> {
     const validos = [...new Set(ids)].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
@@ -167,7 +208,7 @@ export class CatalogoService {
         JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
        WHERE v."id" = ANY(${validos}::uuid[])
          AND v."disponibilidad" = 'DISPONIBLE'
-         AND (e."creado_por_id" IS NULL OR e."creado_por_id" = ${profesionalId}::uuid)`;
+         AND ${alimentoVisible(profesionalId)}`;
     return new Map(filas.map((f) => [f.versionId, f]));
   }
 

@@ -171,7 +171,7 @@ import {
   ElementoDeCatalogoResponseSchema,
   HoyResponseSchema,
   IngestaResponseSchema,
-  ListaDeCatalogoResponseSchema,
+  BusquedaEnCatalogoResponseSchema,
   ListaDeEvaluacionesResponseSchema,
   ListaDeIngestasResponseSchema,
   ListaDeObjetivosResponseSchema,
@@ -252,7 +252,7 @@ import {
   EjercicioDeCatalogoResponseSchema,
   AgendaDeHoyResponseSchema,
   HoyDeEntrenamientoResponseSchema,
-  ListaDeEjerciciosResponseSchema,
+  BusquedaDeEjerciciosResponseSchema,
   ListaDeEvaluacionesDeEntrenamientoResponseSchema,
   ListaDeObjetivosDeEntrenamientoResponseSchema,
   ListaDePlanesDeEntrenamientoResponseSchema,
@@ -829,10 +829,11 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
     /**
      * API-NUT-13-BUSQUEDA (DL-130): buscar en el catálogo con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
-     * clave de idempotencia. API-NUT-13 (`q` en la URL) queda como contrato legado de la API.
+     * clave de idempotencia. API-NUT-13 (`q` en la URL) queda como contrato legado de la API. Cada alimento trae el nombre
+     * alternativo que coincidió, si fue por uno (DL-141).
      */
     buscarEnCatalogo(token: string, texto: string) {
-      return llamar('POST', '/nutrition/catalog-items/search', { token, esquema: ListaDeCatalogoResponseSchema, cuerpo: { q: texto, limit: 20 } });
+      return llamar('POST', '/nutrition/catalog-items/search', { token, esquema: BusquedaEnCatalogoResponseSchema, cuerpo: { q: texto, limit: 20 } });
     },
     /** API-INT-NUT-01. */
     crearElementoDeCatalogo(token: string, cuerpo: CrearElementoDeCatalogoRequest, claveDeIdempotencia: string) {
@@ -1137,10 +1138,11 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
     /**
      * API-TRN-13-BUSQUEDA (DL-130): buscar ejercicios con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
-     * clave de idempotencia. API-TRN-13 (`q` en la URL) queda como contrato legado de la API.
+     * clave de idempotencia. API-TRN-13 (`q` en la URL) queda como contrato legado de la API. Cada ejercicio trae el nombre
+     * alternativo que coincidió, si fue por uno (DL-141).
      */
     buscarEjercicios(token: string, texto: string) {
-      return llamar('POST', '/training/exercises/search', { token, esquema: ListaDeEjerciciosResponseSchema, cuerpo: { q: texto, limit: 20 } });
+      return llamar('POST', '/training/exercises/search', { token, esquema: BusquedaDeEjerciciosResponseSchema, cuerpo: { q: texto, limit: 20 } });
     },
     /** API-INT-TRN-01: carga manual, con cero zonas hasta WP-07. */
     crearEjercicio(token: string, nombre: string, claveDeIdempotencia: string) {

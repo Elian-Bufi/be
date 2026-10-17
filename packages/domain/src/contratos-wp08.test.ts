@@ -58,6 +58,8 @@ test('B10-10 §1 · un nutriente que el proveedor no trajo viaja null; un negati
       license: { id: 'ODbL-1.0', label: 'Open Database License 1.0', url: 'https://opendatacommons.org/licenses/odbl/1-0/', attribution: 'Colaboradores de Open Food Facts' },
       sourceUrl: 'https://world.openfoodfacts.org/product/7790001000013',
     },
+    // DL-141 D-1: el producto todavía no está en el catálogo.
+    existingCatalogItem: null,
   };
   assert.equal(CandidatoDeAlimentoSchema.safeParse({ ...base, candidate: { name: null, composition: { referenceAmount: '100g', energyKcal: null, proteinG: null, carbohydrateG: null, fatG: null } } }).success, true);
   // La base tampoco se supone: si el proveedor no la declara sin ambigüedad, viaja null y la elige quien revisa.

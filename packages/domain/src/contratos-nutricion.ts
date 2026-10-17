@@ -316,9 +316,19 @@ export const ElementoDeCatalogoSchema = z.strictObject({
 export type ElementoDeCatalogo = z.infer<typeof ElementoDeCatalogoSchema>;
 export const ListaDeCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoDeCatalogoSchema), page: PaginaSchema });
 /**
+ * DL-141 D-2: un alimento que encontró el buscador del website (API-NUT-13-BUSQUEDA), con el nombre alternativo que
+ * coincidió con lo buscado. API-NUT-13 responde sin este campo: la forma de las lecturas legadas no cambia.
+ */
+export const ElementoEncontradoSchema = ElementoDeCatalogoSchema.extend({
+  /** El nombre alternativo que coincidió («Aguacate» al buscar «aguacate»), tal como está guardado; `null` si coincidió el principal, o sin texto. */
+  matchedAlternativeName: z.string().nullable(),
+});
+export type ElementoEncontrado = z.infer<typeof ElementoEncontradoSchema>;
+export const BusquedaEnCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoEncontradoSchema), page: PaginaSchema });
+/**
  * API-NUT-13-BUSQUEDA (DL-130): la búsqueda en el catálogo con el texto en el **cuerpo**, nunca en una URL (historiales,
- * proxies, bitácoras). Es una lectura: no crea ni cambia nada y responde lo mismo que API-NUT-13, que se conserva con su
- * contrato para los clientes instalados.
+ * proxies, bitácoras). Es una lectura: no crea ni cambia nada y trae las mismas filas que API-NUT-13, que se conserva con
+ * su contrato para los clientes instalados; cada una suma el nombre alternativo que coincidió (DL-141).
  */
 export const BusquedaEnCatalogoRequestSchema = z.strictObject({
   q: z.string().trim().max(80),

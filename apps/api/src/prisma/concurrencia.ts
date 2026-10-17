@@ -8,6 +8,8 @@ import { errores } from '../http/errores';
  *   identidad → verificación/habilitación → (DL-136) invitación de vínculo → solicitud → alcance de vínculo
  *   → consentimiento → acto A3 → (DL-125) acto EVIDENCIA_VISUAL → (WP-04) plan nutricional → versión de plan
  *   → cerrojo de capacidad → Proceso → objetivo → ingesta.
+ * La importación controlada no toma ninguno de esos: toma su candidato y, después, el cerrojo de su ítem externo
+ * (DL-141, `integraciones/item-externo.ts`). Ninguna otra transacción toma ese cerrojo.
  * Y con `FOR NO KEY UPDATE`, no `FOR UPDATE`: ninguna transacción cambia claves, y así no choca con el `FOR KEY SHARE`
  * que toman las claves foráneas al insertar hechos y decisiones. El PDP toma `FOR SHARE` en el mismo orden
  * (pdp.service.ts), lo que da un orden total entre cada decisión y cada corte (revocar, pausar, finalizar, cerrar).

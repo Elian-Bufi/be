@@ -84,9 +84,9 @@
   - la persona sigue viendo su plan igual.
 - **Contenido:** una prueba que recorre el archivo del catálogo base y exige, en cada ítem, fuente, licencia, nombre en castellano y, en los alimentos, una composición completa.
 
-## 6. Estado (2026-10-16)
+## 6. Estado (2026-10-17)
 
-Definido. Va después del buscador (DL-139), en tres tramos:
-1. D-1 y D-2;
+Va después del buscador (DL-139), en tres tramos:
+1. **D-1 y D-2: IMPLEMENTADO** el 2026-10-17 en `wp-catalogo-base-1`, sobre `wp-busqueda` (#177), sin integrar. Lo importado es de todos, uno por ítem externo, y el buscador usa los nombres alternativos, con una siembra chica para el catálogo de demostración. Lo que hubo que decidir para implementarlo (D-1.a a D-1.g, D-2.a y D-2.b), el contrato, la base y las pruebas están en DEUDA_LEGAJO DL-141. Lo que falta de D-6 (la licencia en cada fila y la página de fuentes) va con los tramos 2 y 3.
 2. el catálogo de entrenamiento;
 3. el de alimentos.

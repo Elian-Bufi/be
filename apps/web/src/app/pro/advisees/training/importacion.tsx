@@ -9,6 +9,9 @@
  * - Si wger no responde, el aviso ofrece el catálogo BE y la carga manual (UC-I08).
  * - «Corregido» se marca con la misma regla que registra la API, y un resultado incierto congela el candidato: solo se
  *   reintenta la misma decisión, con la misma clave (09:253-262).
+ * - Lo incorporado es de todos los profesionales, y hay uno solo por ejercicio de wger (DL-141): si ya está en el
+ *   catálogo, se ofrece ese, sin repetir la revisión, y se agrega tal como está. Si otro profesional lo incorpora mientras
+ *   tanto, la API responde con el que ya estaba y se agrega ese.
  */
 import {
   camposCorregidosDeEjercicio,
@@ -117,6 +120,8 @@ export function ImportacionDeWger({ id, onIncorporado, onCargarManualmente }: { 
       setNumero('');
       return setAviso({ tipo: 'exito', texto: COPY_INTEGRACIONES.rechazado });
     }
+    // DL-141: si ya estaba en el catálogo, se agrega el que hay, con su nombre; la revisión quedó registrada.
+    if (resultado.existingExercise) return onIncorporado(resultado.existingExercise);
     onIncorporado({
       exerciseId: resultado.exercise.exerciseId,
       versionId: resultado.exercise.versionId,
@@ -130,6 +135,7 @@ export function ImportacionDeWger({ id, onIncorporado, onCargarManualmente }: { 
   }
 
   const c = candidato?.candidate;
+  const yaEsta = candidato?.existingExercise ?? null;
   const lista = (xs: readonly string[]) => (xs.length > 0 ? xs.join(', ') : COPY_INTEGRACIONES.noVinoDelProveedor);
   return (
     <fieldset className="grupo">
@@ -175,7 +181,33 @@ export function ImportacionDeWger({ id, onIncorporado, onCargarManualmente }: { 
         </Aviso>
       ) : null}
 
-      {candidato && c ? (
+      {candidato && c && yaEsta ? (
+        <section className="candidato" aria-labelledby={`${id}-candidato`} data-ya-esta-en-el-catalogo>
+          <h4 id={`${id}-candidato`}>{COPY_INTEGRACIONES.yaEstaEnElCatalogo}</h4>
+          <p className="nota">
+            {COPY_INTEGRACIONES.fuente}: {ETIQUETA_DE_PROVEEDOR.WGER} · ejercicio {candidato.externalId} · {COPY_INTEGRACIONES.licencia}: {candidato.provenance.license.label}
+            {candidato.provenance.license.attribution ? ` (${candidato.provenance.license.attribution})` : ''}
+          </p>
+          <Aviso tipo="info">
+            <p>{COPY_INTEGRACIONES.yaEstaElEjercicio}</p>
+            <p>
+              <strong>{yaEsta.name}</strong>
+              {procedenciaDeEjercicio(yaEsta) ? ` · ${procedenciaDeEjercicio(yaEsta)}` : ''}
+            </p>
+          </Aviso>
+          <div className="acciones">
+            {/* La revisión es la del catálogo: el nombre que ya tiene. */}
+            <button type="button" className="boton boton--primario" onClick={() => void resolver({ decision: 'IMPORT', reviewedContent: { name: yaEsta.name }, rationale: null })} disabled={edicionBloqueada}>
+              {COPY_INTEGRACIONES.usarElDelCatalogo}
+            </button>
+            <button type="button" className="boton boton--secundario" onClick={() => decidir('REJECT')} disabled={edicionBloqueada}>
+              {COPY_INTEGRACIONES.rechazar}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {candidato && c && !yaEsta ? (
         <section className="candidato" aria-labelledby={`${id}-candidato`}>
           <h4 id={`${id}-candidato`}>{COPY_INTEGRACIONES.candidatoTitulo}</h4>
           <Ayuda titulo="Qué es un candidato">

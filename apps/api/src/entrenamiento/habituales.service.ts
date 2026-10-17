@@ -26,7 +26,7 @@ import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
-import { CatalogoDeEjerciciosService } from './catalogo.service';
+import { CatalogoDeEjerciciosService, ejercicioVisible } from './catalogo.service';
 import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import { ejercicioApi, type FilaDeEjercicio } from './lectura-entrenamiento';
@@ -108,7 +108,7 @@ export class HabitualesDeEntrenamientoService {
         const existente = esUuid(exerciseId) ? await tx.ejercicioHabitual.findUnique({ where: { profesionalId_ejercicioId: { profesionalId: actor.identidadId, ejercicioId: exerciseId } } }) : null;
         const momento = await momentoDeLaBase(tx);
         if (pedido.state === 'MARKED') {
-          // Solo se marca lo que este profesional puede prescribir hoy: lo sembrado y lo propio, disponible.
+          // Solo se marca lo que este profesional puede prescribir hoy: lo sembrado, lo importado (DL-141) y lo propio, disponible.
           const vigente = esUuid(exerciseId) ? (await this.versionesVigentes(tx, actor.identidadId, [exerciseId])).get(exerciseId) : undefined;
           if (!vigente || !vigente.disponible) {
             throw new ErrorDeApi(422, CodigoDeError.EXERCISE_REFERENCE_INVALID, 'Ese ejercicio no está disponible para marcarlo como habitual.', { issues: [{ code: 'EXERCISE_NOT_AVAILABLE', path: 'exerciseId' }] });
@@ -270,7 +270,8 @@ export class HabitualesDeEntrenamientoService {
 
   /**
    * La versión vigente (la terminal de la cadena) de cada ejercicio, entre los que este profesional puede citar: lo
-   * sembrado y lo propio (cargado a mano o importado por él). Un ejercicio fuera de su ámbito no figura.
+   * sembrado, lo importado de wger (de todos, DL-141) y lo cargado a mano por él. Un ejercicio fuera de su ámbito no
+   * figura.
    */
   private async versionesVigentes(tx: Tx, profesionalId: string, ejercicioIds: readonly string[]): Promise<Map<string, FilaDeEjercicio>> {
     const validos = [...new Set(ejercicioIds)].filter(esUuid);
@@ -283,7 +284,7 @@ export class HabitualesDeEntrenamientoService {
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE e."id" = ANY(${validos}::uuid[])
          AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
-         AND (e."procedencia" = 'BE_SYNTHETIC_SEED' OR e."creado_por_id" = ${profesionalId}::uuid)`;
+         AND ${ejercicioVisible([profesionalId])}`;
     return new Map(filas.map((f) => [f.ejercicioId, f]));
   }
 

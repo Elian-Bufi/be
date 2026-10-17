@@ -5,6 +5,7 @@
  *
  * Todos los datos son inventados: códigos de barras de prueba, nombres y composiciones sintéticas.
  */
+import { randomInt } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
@@ -30,6 +31,17 @@ export const OFF = {
   /** Un 404 que no es de Open Food Facts (HTML): la ruta cambió, no es «no existe». */
   rutaRota: '7790000000123',
 } as const;
+
+/**
+ * DL-141 D-1: lo importado es de todos y hay uno solo por producto, así que una prueba que necesita **crear** el alimento
+ * importado (y no encontrar el que dejó otra prueba) pide un código propio. El proveedor falso responde cualquier código
+ * `7799…` como un producto completo, con un nombre que lleva los últimos nueve dígitos del código.
+ */
+export function codigoDePruebaUnico(): string {
+  return `7799${String(randomInt(0, 1_000_000_000)).padStart(9, '0')}`;
+}
+export const nombreDelProductoUnico = (codigo: string): string => `Galletitas de prueba ${codigo.slice(-9)}`;
+const PRODUCTO_UNICO = /^7799\d{9}$/;
 
 /** Números de ejercicio de prueba. */
 export const WGER = {
@@ -119,6 +131,7 @@ export async function levantarProveedorFalso(): Promise<ProveedorFalso> {
         res.writeHead(404, { 'Content-Type': 'text/html' });
         return void res.end('<html><body>Not Found</body></html>');
       }
+      if (PRODUCTO_UNICO.test(codigo!)) return json(200, { status: 1, product: { ...productoCompleto, code: codigo, product_name_es: nombreDelProductoUnico(codigo!) } });
       // Open Food Facts responde así cuando no tiene el producto.
       return json(404, { code: codigo, status: 0, status_verbose: 'product not found' });
     }

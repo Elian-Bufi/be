@@ -272,6 +272,12 @@ describe('08 §29 — historia por adición', () => {
     // DL-136 (2026-10-16): las invitaciones de vínculo y cómo terminó cada una
     'invitacion_de_vinculo',
     'resolucion_de_invitacion',
+    // DL-141 (2026-10-17): el ítem externo de cada importado, y los nombres alternativos con sus retiros
+    'item_externo_de_catalogo',
+    'nombre_alternativo_de_ejercicio',
+    'retiro_de_nombre_alternativo_de_ejercicio',
+    'nombre_alternativo_de_alimento',
+    'retiro_de_nombre_alternativo_de_alimento',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

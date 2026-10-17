@@ -14,11 +14,13 @@ import {
   ETIQUETA_DE_PROVEEDOR,
   leerNumero,
   motivoDeNumeroIlegible,
+  nombreAlternativoComoAclaracion,
   nutrienteParaMostrar,
   type CalcularRecetaRequest,
   type CalculoDeReceta,
   type DetalleDeRecetaResponse,
   type ElementoDeCatalogo,
+  type ElementoEncontrado,
   type EstadoDePreparacion,
   type Receta,
 } from '@be/domain';
@@ -465,7 +467,7 @@ function BuscadorDeAlimentos({
   onElegir: (e: ElementoDeCatalogo) => void;
 }) {
   const [texto, setTexto] = useState('');
-  const [resultados, setResultados] = useState<readonly ElementoDeCatalogo[] | null>(null);
+  const [resultados, setResultados] = useState<readonly ElementoEncontrado[] | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [fallo, setFallo] = useState(false);
 
@@ -513,7 +515,11 @@ function BuscadorDeAlimentos({
           <ul className="lista">
             {resultados.map((e) => (
               <li key={e.catalogItemId} className="lista__item">
-                <p className="lista__titulo">{e.name}</p>
+                <p className="lista__titulo">
+                  {e.name}
+                  {/* DL-141: si apareció por un nombre alternativo, cuál: «Palta (aguacate)». */}
+                  {e.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(e.matchedAlternativeName)})</span> : null}
+                </p>
                 <p className="nota">
                   {COPY_RECETAS.cada100(String(e.composition.energyKcal).replace('.', ','), e.composition.referenceAmount)}
                   {fuenteDelAlimento(e) ? ` · ${fuenteDelAlimento(e)}` : ''}

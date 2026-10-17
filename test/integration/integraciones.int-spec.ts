@@ -8,7 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { prepararAsesorado, prepararProfesional } from './soporte-vinculo';
-import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
+import { codigoDePruebaUnico, levantarProveedorFalso, nombreDelProductoUnico, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -36,34 +36,38 @@ describe('TEST-RF-028 · Open Food Facts: importación controlada con procedenci
   it('pasos 1 a 3: consultar no incorpora; importar con una corrección conserva lo recibido y el catálogo muestra la fuente', async () => {
     const pro = await nutricionista();
     const s = conSesion(app, pro.token);
+    // DL-141: lo importado es de todos, así que la prueba usa un producto que nadie importó todavía.
+    const codigo = codigoDePruebaUnico();
+    const nombre = nombreDelProductoUnico(codigo);
+    const buscar = async () => ListaDeCatalogoResponseSchema.parse((await s.get(`/api/v1/nutrition/catalog-items?q=${encodeURIComponent(nombre)}`).expect(200)).body).data;
 
-    const creado = await s.post(NUT).send(pedirAlimento(OFF.completo)).expect(201);
+    const creado = await s.post(NUT).send(pedirAlimento(codigo)).expect(201);
     const candidato = CandidatoDeAlimentoResponseSchema.parse(creado.body).data;
     expect(candidato.candidate).toEqual({
-      name: 'Galletitas de prueba',
+      name: nombre,
       composition: { referenceAmount: '100g', energyKcal: 452, proteinG: 8.5, carbohydrateG: 66, fatG: 17.25 },
     });
-    expect(candidato.provenance).toMatchObject({ provider: 'OPEN_FOOD_FACTS', externalId: OFF.completo, license: { id: 'ODbL-1.0' } });
+    expect(candidato.provenance).toMatchObject({ provider: 'OPEN_FOOD_FACTS', externalId: codigo, license: { id: 'ODbL-1.0' } });
     expect(candidato.provenance.contentDigest).toMatch(/^[0-9a-f]{64}$/);
     expect(new Date(candidato.expiresAt).getTime() - new Date(candidato.receivedAt).getTime()).toBe(7 * 24 * 60 * 60 * 1000);
+    expect(candidato.existingCatalogItem).toBeNull();
 
     // No hay importación ciega: sin resolver, el catálogo no cambió.
-    const antes = ListaDeCatalogoResponseSchema.parse((await s.get('/api/v1/nutrition/catalog-items?q=Galletitas%20de%20prueba').expect(200)).body).data;
-    expect(antes).toEqual([]);
+    expect(await buscar()).toEqual([]);
 
     const resuelto = await s
       .post(`${NUT}/${candidato.candidateId}/resolve`)
-      .send({ decision: 'IMPORT', reviewedContent: { name: 'Galletitas de prueba', composition: { ...candidato.candidate.composition, energyKcal: 450 } }, rationale: 'Ajusté las kcal al envase.' })
+      .send({ decision: 'IMPORT', reviewedContent: { name: nombre, composition: { ...candidato.candidate.composition, energyKcal: 450 } }, rationale: 'Ajusté las kcal al envase.' })
       .expect(200);
-    expect(resuelto.body.data).toMatchObject({ candidateId: candidato.candidateId, decision: 'IMPORT', correctedFields: ['composition.energyKcal'] });
+    expect(resuelto.body.data).toMatchObject({ candidateId: candidato.candidateId, decision: 'IMPORT', correctedFields: ['composition.energyKcal'], existingCatalogItem: null });
 
-    const despues = ListaDeCatalogoResponseSchema.parse((await s.get('/api/v1/nutrition/catalog-items?q=Galletitas%20de%20prueba').expect(200)).body).data;
+    const despues = await buscar();
     expect(despues).toHaveLength(1);
     expect(despues[0]).toMatchObject({
       catalogItemId: resuelto.body.data.catalogItem.catalogItemId,
       provenance: 'CONTROLLED_IMPORT',
       composition: { energyKcal: 450 },
-      externalSource: { provider: 'OPEN_FOOD_FACTS', externalId: OFF.completo, receivedAt: candidato.receivedAt, license: { id: 'ODbL-1.0' } },
+      externalSource: { provider: 'OPEN_FOOD_FACTS', externalId: codigo, receivedAt: candidato.receivedAt, license: { id: 'ODbL-1.0' } },
     });
 
     // La corrección no oculta la fuente: el candidato conserva lo que llegó.
@@ -223,12 +227,14 @@ describe('TEST-UC-I07 · el candidato es de quien lo pidió, y la base sostiene 
     // A tiene las dos capacidades: así el corte entre dominios es el del candidato, no el de la capacidad.
     const a = await prepararProfesional(app, `imp-dos-${++contador}`, ['NUTRICION', 'ENTRENAMIENTO']);
     const b = await nutricionista();
+    // Un producto que nadie importó todavía (DL-141): así resolverlo lo crea, y se cuenta.
+    const codigo = codigoDePruebaUnico();
     const clave = claveDeIdempotencia();
-    const creado = await conSesion(app, a.token).post(NUT, clave).send(pedirAlimento(OFF.completo)).expect(201);
+    const creado = await conSesion(app, a.token).post(NUT, clave).send(pedirAlimento(codigo)).expect(201);
     const id = creado.body.data.candidateId as string;
-    const ruta = `/api/v2/product/${OFF.completo}.json`;
+    const ruta = `/api/v2/product/${codigo}.json`;
     const consultasAntes = proveedor.consultas.get(ruta) ?? 0;
-    const repetido = await conSesion(app, a.token).post(NUT, clave).send(pedirAlimento(OFF.completo)).expect(201);
+    const repetido = await conSesion(app, a.token).post(NUT, clave).send(pedirAlimento(codigo)).expect(201);
     expect(repetido.body).toEqual(creado.body);
     expect(proveedor.consultas.get(ruta) ?? 0).toBe(consultasAntes);
 
@@ -262,7 +268,7 @@ describe('TEST-UC-I07 · el candidato es de quien lo pidió, y la base sostiene 
   it('dos resoluciones concurrentes con claves distintas: una incorpora, la otra es 422, y hay un solo elemento', async () => {
     const pro = await nutricionista();
     const s = conSesion(app, pro.token);
-    const candidato = (await s.post(NUT).send(pedirAlimento(OFF.completo)).expect(201)).body.data;
+    const candidato = (await s.post(NUT).send(pedirAlimento(codigoDePruebaUnico())).expect(201)).body.data;
     const cuerpo = { decision: 'IMPORT', reviewedContent: candidato.candidate };
     const resolver = () => conSesion(app, pro.token).post(`${NUT}/${candidato.candidateId}/resolve`, claveDeIdempotencia()).send(cuerpo).then((r) => r);
     const respuestas = await Promise.all([resolver(), resolver()]);

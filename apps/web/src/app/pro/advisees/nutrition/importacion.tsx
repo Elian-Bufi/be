@@ -10,6 +10,9 @@
  * - Si el proveedor no responde, el aviso ofrece el catálogo BE y la carga manual, y el editor sigue (B10-05 §20).
  * - Un resultado incierto congela el candidato: solo se puede reintentar **la misma** decisión, con la misma clave, para
  *   que el servidor devuelva lo que ya hizo en vez de incorporar dos veces (09:253-262).
+ * - Lo incorporado es de todos los profesionales, y hay uno solo por producto (DL-141): si ya está en el catálogo, se
+ *   ofrece ese, sin repetir la revisión, y se agrega tal como está. Si otro profesional lo incorpora mientras tanto, la
+ *   API responde con el que ya estaba y se agrega ese.
  */
 import {
   camposCorregidosDeAlimento,
@@ -179,6 +182,8 @@ export function ImportacionDeOpenFoodFacts({ id, onIncorporado, onCargarManualme
       setCodigo('');
       return setAviso({ tipo: 'exito', texto: COPY_INTEGRACIONES.rechazado });
     }
+    // DL-141: si ya estaba en el catálogo, se agrega el que hay, con su nombre y su composición; la revisión quedó registrada.
+    if (resultado.existingCatalogItem) return onIncorporado(resultado.existingCatalogItem);
     const c = pedido.reviewedContent.composition;
     onIncorporado({
       catalogItemId: resultado.catalogItem.catalogItemId,
@@ -198,6 +203,7 @@ export function ImportacionDeOpenFoodFacts({ id, onIncorporado, onCargarManualme
   }
 
   const proveedor = ETIQUETA_DE_PROVEEDOR.OPEN_FOOD_FACTS;
+  const yaEsta = candidato?.existingCatalogItem ?? null;
   // La misma regla que la API usa para `correctedFields`: lo que la pantalla marca es lo que queda registrado.
   const corregidos = candidato && revision ? new Set(camposCorregidosDeAlimento(candidato.candidate, revisadoDe(revision))) : new Set<string>();
   const marca = (ruta: string) => (corregidos.has(ruta) ? ` · ${COPY_INTEGRACIONES.corregido}` : '');
@@ -246,7 +252,34 @@ export function ImportacionDeOpenFoodFacts({ id, onIncorporado, onCargarManualme
         </Aviso>
       ) : null}
 
-      {candidato && revision ? (
+      {candidato && revision && yaEsta ? (
+        <section className="candidato" aria-labelledby={`${id}-candidato`} data-ya-esta-en-el-catalogo>
+          <h4 id={`${id}-candidato`}>{COPY_INTEGRACIONES.yaEstaEnElCatalogo}</h4>
+          <p className="nota">
+            {COPY_INTEGRACIONES.fuente}: {proveedor} · código {candidato.externalId} · {COPY_INTEGRACIONES.licencia}: {candidato.provenance.license.label}
+            {candidato.provenance.license.attribution ? ` (${candidato.provenance.license.attribution})` : ''}
+          </p>
+          <Aviso tipo="info">
+            <p>{COPY_INTEGRACIONES.yaEstaElAlimento}</p>
+            <p>
+              <strong>{yaEsta.name}</strong> · {yaEsta.composition.referenceAmount === '100ml' ? COPY_INTEGRACIONES.cada100ml.toLowerCase() : COPY_INTEGRACIONES.cada100g.toLowerCase()}:{' '}
+              {cantidad(yaEsta.composition.energyKcal, 'kcal')}
+              {procedenciaDeElemento(yaEsta) ? ` · ${procedenciaDeElemento(yaEsta)}` : ''}
+            </p>
+          </Aviso>
+          <div className="acciones">
+            {/* La revisión es la del catálogo: el nombre y la composición que ya tiene. */}
+            <button type="button" className="boton boton--primario" onClick={() => void resolver(usarElQueYaEsta(yaEsta))} disabled={edicionBloqueada}>
+              {COPY_INTEGRACIONES.usarElDelCatalogo}
+            </button>
+            <button type="button" className="boton boton--secundario" onClick={() => decidir('REJECT')} disabled={edicionBloqueada}>
+              {COPY_INTEGRACIONES.rechazar}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {candidato && revision && !yaEsta ? (
         <section className="candidato" aria-labelledby={`${id}-candidato`}>
           <h4 id={`${id}-candidato`}>{COPY_INTEGRACIONES.candidatoTitulo}</h4>
           <Ayuda titulo="Qué es un candidato">
@@ -335,6 +368,15 @@ export function ImportacionDeOpenFoodFacts({ id, onIncorporado, onCargarManualme
       ) : null}
     </fieldset>
   );
+}
+
+/**
+ * DL-141: incorporar un producto que ya está en el catálogo. La revisión que se manda es la del catálogo (su nombre y su
+ * composición), así que siempre está completa; la API apunta la resolución al que ya está y no cambia nada de él.
+ */
+function usarElQueYaEsta(e: ElementoDeCatalogo): ResolverCandidatoDeAlimentoRequest {
+  const { referenceAmount, energyKcal, proteinG, carbohydrateG, fatG } = e.composition;
+  return { decision: 'IMPORT', reviewedContent: { name: e.name, composition: { referenceAmount, energyKcal, proteinG, carbohydrateG, fatG } }, rationale: null };
 }
 
 /** «Importado de Open Food Facts · 24 sept 2026»: la procedencia de un elemento donde se lo elige (RF-060). */

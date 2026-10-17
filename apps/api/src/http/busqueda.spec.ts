@@ -208,3 +208,46 @@ describe('DL-139 · las dos consultas del buscador, sin base', () => {
     expect(consultas[0]!.sql).toContain('ORDER BY grp."grupo", v."momento_de_registro" DESC, v."id" DESC');
   });
 });
+
+describe('DL-141 · los nombres alternativos en las dos consultas, sin base', () => {
+  interface Fila {
+    readonly versionId: string;
+    readonly momentoDeRegistro: Date;
+  }
+  const BASE = { columnas: Prisma.sql`v."id"::text AS "versionId"`, tablas: Prisma.sql`"version" v`, visibles: Prisma.sql`TRUE` };
+  const CON_ALTERNATIVOS = { ...BASE, nombresAlternativos: Prisma.sql`SELECT n."nombre" FROM "nombre_alternativo" n WHERE n."item_id" = v."id"` };
+
+  function clienteFalso(...respuestas: Fila[][]) {
+    const consultas: Prisma.Sql[] = [];
+    const cliente = {
+      $queryRaw: (partes: TemplateStringsArray, ...valores: unknown[]) => {
+        consultas.push(Prisma.sql(partes, ...valores));
+        return Promise.resolve(respuestas.shift() ?? []);
+      },
+    } as unknown as Pick<Prisma.TransactionClient, '$queryRaw'>;
+    return { cliente, consultas };
+  }
+
+  it('cada fila se mide contra el nombre principal y sus alternativos, y dice cuál coincidió', async () => {
+    const { cliente, consultas } = clienteFalso([], []);
+    await buscarEnCatalogo<Fila>(cliente, CON_ALTERNATIVOS, leerBusqueda('aguacte'), 20, null);
+    expect(consultas).toHaveLength(2);
+    for (const c of consultas) {
+      expect(c.sql).toContain('UNION ALL');
+      expect(c.sql).toContain('FROM "nombre_alternativo" n');
+      expect(c.sql).toContain('AS "nombreAlternativo"');
+    }
+    // Las que ya coinciden por alguno de sus nombres no vuelven entre los parecidos.
+    expect(consultas[1]!.sql).toContain('NOT EXISTS');
+  });
+
+  it('sin nombres alternativos, solo el principal; y sin texto, ninguno coincide', async () => {
+    const sin = clienteFalso([]);
+    await buscarEnCatalogo<Fila>(sin.cliente, BASE, leerBusqueda('pollo'), 20, null);
+    expect(sin.consultas[0]!.sql).not.toContain('UNION ALL');
+    const sinTexto = clienteFalso([]);
+    await buscarEnCatalogo<Fila>(sinTexto.cliente, CON_ALTERNATIVOS, null, 20, null);
+    expect(sinTexto.consultas[0]!.sql).toContain('NULL::text AS "alternativo"');
+    expect(sinTexto.consultas[0]!.sql).not.toContain('nombre_alternativo');
+  });
+});

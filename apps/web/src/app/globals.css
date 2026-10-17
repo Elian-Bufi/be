@@ -9003,6 +9003,12 @@ button.comida-del-dia__fila > .icono:last-child {
   font-weight: 600;
 }
 
+/* DL-141 D-2: el nombre alternativo por el que se lo encontró, «Press de banca (bench press)». Aclara, no compite. */
+.nombre-alternativo {
+  font-weight: 400;
+  color: var(--tenue);
+}
+
 .alimentos-del-catalogo__detalle {
   display: block;
   margin: 0;

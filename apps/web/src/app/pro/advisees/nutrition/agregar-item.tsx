@@ -15,8 +15,19 @@
  *   a la búsqueda»: no hay un diálogo encima de otro.
  * - Al abrirse, el foco va al campo de búsqueda: es para lo que se abre.
  * La cuenta («4 en el catálogo») se dice solo cuando la búsqueda trajo todo: se piden 20 y la API no informa el total.
+ * Si un alimento apareció por un nombre alternativo, se dice cuál: «Palta (aguacate)» (DL-141).
  */
-import { cantidad as formatearCantidad, COPY_HABITUALES, COPY_INTEGRACIONES, COPY_NUTRICION, leerNumero, motivoDeNumeroIlegible, type ElementoDeCatalogo } from '@be/domain';
+import {
+  cantidad as formatearCantidad,
+  COPY_HABITUALES,
+  COPY_INTEGRACIONES,
+  COPY_NUTRICION,
+  leerNumero,
+  motivoDeNumeroIlegible,
+  nombreAlternativoComoAclaracion,
+  type ElementoDeCatalogo,
+  type ElementoEncontrado,
+} from '@be/domain';
 import { useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { Cajon } from '../../../../components/cajon';
 import { Cargando } from '../../../../components/estados';
@@ -33,7 +44,7 @@ const CUANTOS_SE_PIDEN = 20;
 type Busqueda =
   | { readonly tipo: 'sin-buscar' }
   | { readonly tipo: 'buscando'; readonly texto: string }
-  | { readonly tipo: 'lista'; readonly texto: string; readonly alimentos: readonly ElementoDeCatalogo[]; readonly hayMas: boolean }
+  | { readonly tipo: 'lista'; readonly texto: string; readonly alimentos: readonly ElementoEncontrado[]; readonly hayMas: boolean }
   | { readonly tipo: 'falla'; readonly texto: string; readonly motivo: string };
 
 /** Los cuatro valores de un alimento, en el orden de BE: calorías, carbohidratos, grasas y proteínas. */
@@ -287,7 +298,10 @@ function ContenidoDeAgregarItem({
                     return (
                       <tr key={el.catalogItemId} data-alimento={el.catalogItemId}>
                         <th scope="row">
-                          <span className="alimentos-del-catalogo__nombre">{el.name}</span>
+                          <span className="alimentos-del-catalogo__nombre">
+                            {el.name}
+                            {el.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(el.matchedAlternativeName)})</span> : null}
+                          </span>
                           <span className="nota alimentos-del-catalogo__detalle">
                             {el.composition.referenceAmount === '100ml' ? 'cada 100 ml' : 'cada 100 g'}
                             {procedencia ? ` · ${procedencia}` : ''}
