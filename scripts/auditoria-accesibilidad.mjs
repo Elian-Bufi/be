@@ -90,7 +90,8 @@ async function recorrer(ancho, alto, superficie) {
   await auditar(s('Crear cuenta'), 'acceso');
   await P.goto(`${web}/legal/terminos`, { waitUntil: 'networkidle2', timeout: 180_000 });
   await auditar(s('Términos'), 'acceso');
-  await P.goto(`${web}/login`, { waitUntil: 'networkidle2', timeout: 180_000 });
+  // Con el retorno a Cuenta: sin él, el profesional entra a su espacio (DL-025, 2026-10-17), y el recorrido empieza por Cuenta.
+  await P.goto(`${web}/login?volver=/account`, { waitUntil: 'networkidle2', timeout: 180_000 });
   await auditar(s('Iniciar sesión'), 'acceso');
   await P.waitForFunction(() => {
     const e = document.querySelector('#correo');
