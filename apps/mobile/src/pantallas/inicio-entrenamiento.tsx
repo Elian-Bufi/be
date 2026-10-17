@@ -5,7 +5,16 @@
  * (WP-ENTRENAMIENTO-SERIES §7.1). Una sesión en curso de otro día o de otro dispositivo (API-TIE-04) se muestra arriba,
  * para continuarla o dejarla incompleta, como en Entrenamiento: con ella abierta no se inicia otra (`sesion-en-curso.ts`).
  */
-import { COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, numero, vistaDeOcurrencia, type HoyDeEntrenamientoResponse, type Ocurrencia, type Resultado } from '@be/domain';
+import {
+  COPY_AGENDA_DE_ENTRENAMIENTO as AG,
+  COPY_ENTRENAMIENTO,
+  COPY_ENTRENAMIENTO_POR_SERIE,
+  numero,
+  vistaDeOcurrencia,
+  type HoyDeEntrenamientoResponse,
+  type Ocurrencia,
+  type Resultado,
+} from '@be/domain';
 import { useCallback, useMemo, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
@@ -30,6 +39,10 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
   // da, vale la del teléfono.
   const pedirEnCurso = useCallback(() => api.sesionEnCurso(token), [token]);
   const enCurso = useLecturaRecordada(token, 'entrenamiento-en-curso', pedirEnCurso, sesionPerdida);
+  // DL-137: con agenda, Inicio muestra lo que toca hoy y lo pendiente (la misma lectura que Entrenamiento, API-AGE-01).
+  const pedirAgenda = useCallback(() => api.agendaDeEntrenamiento(token), [token]);
+  const lecturaDeLaAgenda = useLecturaRecordada(token, `entrenamiento-agenda:${dia}`, pedirAgenda, sesionPerdida);
+  const agenda = lecturaDeLaAgenda.r?.ok && lecturaDeLaAgenda.r.datos.data.planState === 'AVAILABLE' && lecturaDeLaAgenda.r.datos.data.startDate ? lecturaDeLaAgenda.r.datos.data : null;
   const local = useEntrenamientoLocal();
   const remota = enCurso.r?.ok ? enCurso.r.datos.data.inProgress : null;
   const ahora = sesionEnCursoParaMostrar(remota, local.sesiones());
@@ -70,7 +83,24 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
           <Parrafo>Tu plan no tiene sesiones para hoy.</Parrafo>
         </>
       );
-    else
+    else if (agenda) {
+      // Con agenda: solo la sesión de hoy, y lo pendiente en un renglón (se resuelve en Entrenamiento).
+      const etiqueta = (sessionId: string): string => hoy.occurrences.find((o) => o.plannedSession.sessionId === sessionId)?.plannedSession.label ?? AG.sesion;
+      const deHoy = hoy.occurrences.filter((o) => agenda.today.some((f) => f.sessionId === o.plannedSession.sessionId));
+      contenido = (
+        <>
+          {avisoDeOtroDia}
+          {deHoy.length === 0 ? <Parrafo>{AG.hoyNoHaySesion}</Parrafo> : null}
+          {deHoy.map((o) => (
+            <SesionDeHoy key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} enCurso={ahora?.occurrenceId === o.occurrenceId} />
+          ))}
+          {agenda.pending.map((p) => (
+            <Parrafo key={p.occurrenceId}>{`${AG.tePendiente}: ${AG.pendiente(etiqueta(p.sessionId), p.plannedDate)}`}</Parrafo>
+          ))}
+          {deHoy.length === 0 && agenda.upcoming[0] ? <Parrafo tenue>{AG.proxima(etiqueta(agenda.upcoming[0].sessionId), agenda.upcoming[0].plannedDate, hoy.date)}</Parrafo> : null}
+        </>
+      );
+    } else
       contenido = (
         <>
           {avisoDeOtroDia}

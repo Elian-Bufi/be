@@ -27,12 +27,14 @@
  */
 import {
   COPY,
+  COPY_AGENDA_DE_ENTRENAMIENTO,
   COPY_COMPATIBILIDAD_DE_CLIENTES,
   COPY_DE_ACTIVAR_EL_PLAN,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
   COPY_ENTRENAMIENTO,
   COPY_HABITUALES,
   COPY_PLANTILLAS,
+  PROBLEMA_DE_AGENDA,
   PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO as N,
   avisoDeLoQueNoDejaGuardarElEntrenamiento,
   cuentaDeLaSesion,
@@ -48,6 +50,7 @@ import {
   problemasDelEjercicio,
   sesionesDelBloque,
   ubicacionDelProblemaDeEntrenamiento,
+  type AgendaDeEntrenamiento,
   type ImagenDeEjercicio,
   type PlanConObjetivos,
   type SesionHabitual,
@@ -67,6 +70,8 @@ import { api } from '../../../../lib/api';
 import { diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { hoyEn } from '../seguimiento/estado';
+import { AgendaDelPlan, agendaVigente, resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
 import { EjercicioDelEditor, type BloqueE, type Bloques, type PrescripcionE, type SesionE } from './ejercicio-del-editor';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
@@ -122,7 +127,14 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   [N.rirIlegible]: 'el RIR no se entiende',
   [N.descansoIlegible]: 'el descanso no se entiende: va como 02:30, o en segundos',
   [N.parametroIncompleto]: 'a un parámetro le falta el nombre o el valor',
+  // La agenda (DL-137): lo que la API rechaza de los días de entrenamiento.
+  ...PROBLEMA_DE_AGENDA,
 };
+
+/** Dónde está un problema, en palabras: los de la agenda, en «Días de entrenamiento». */
+const dondeEsta = (p: ValidationIssue, bloques: Bloques): string =>
+  p.path.startsWith('agenda') ? COPY_AGENDA_DE_ENTRENAMIENTO.titulo : ubicacionDelProblemaDeEntrenamiento(p.path, bloques);
+
 
 const esDelEditor = (codigo: string): boolean => (Object.values(N) as readonly string[]).includes(codigo);
 
@@ -179,6 +191,9 @@ export function EditorDePlan({
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [imagenes, setImagenes] = useState<Record<string, ImagenDeEjercicio | null>>({});
   const [proximaRevision, setProximaRevision] = useState('');
+  // La agenda (DL-137): los días de cada sesión. Se ve plegada en un renglón y se abre para cambiarla.
+  const [agenda, setAgenda] = useState<AgendaDeEntrenamiento | null>(null);
+  const [agendaAbierta, setAgendaAbierta] = useState(false);
   const [sucio, setSucio] = useState(false);
   useCambiosSinGuardar(sucio, 'el plan en preparación');
   const [guardando, setGuardando] = useState(false);
@@ -211,6 +226,7 @@ export function EditorDePlan({
     setNombres(nombresDe(r.datos.data));
     setImagenes(imagenesDe(r.datos.data));
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
+    setAgenda(r.datos.data.agenda);
     setSucio(false);
   }, [token, planId, sesionPerdida]);
 
@@ -250,7 +266,15 @@ export function EditorDePlan({
     setGuardando(true);
     setMensaje(null);
     const actualizarObjetivo = objetivoVigente && objetivoVigente !== version.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
-    const r = await api.editarPlanDeEntrenamiento(token, planId, { expectedVersion: version.version, changes: { blocks: bloques }, nextReviewAt: proximaRevision || null, ...actualizarObjetivo });
+    // La agenda viaja siempre: la que se ve, o `null` si no quedó ninguna sesión con días (DL-137).
+    const dias = agendaVigente(agenda, sesionesParaLaAgenda(bloques));
+    const r = await api.editarPlanDeEntrenamiento(token, planId, {
+      expectedVersion: version.version,
+      changes: { blocks: bloques },
+      nextReviewAt: proximaRevision || null,
+      agenda: dias && dias.sessions.length > 0 ? dias : null,
+      ...actualizarObjetivo,
+    });
     if (sesionPerdida(r) || accesoRetirado(r)) {
       setGuardando(false);
       return null;
@@ -270,6 +294,7 @@ export function EditorDePlan({
     setVersion(guardada);
     if (detalle.ok) {
       setBloques(aEntrada(detalle.datos.data));
+      setAgenda(detalle.datos.data.agenda);
       setNombres((n) => ({ ...n, ...nombresDe(detalle.datos.data) }));
       setImagenes((x) => ({ ...x, ...imagenesDe(detalle.datos.data) }));
     }
@@ -339,6 +364,16 @@ export function EditorDePlan({
   // objetivos distintos por serie (la misma regla que aplica la API) y el asesorado todavía no usó una app que los
   // muestre (API-SER-01), no se puede activar: se dice por qué, y la API lo rechaza igual (409 CLIENT_CAPABILITY_REQUIRED).
   const exigeObjetivosPorSerie = planExigeObjetivosPorSerie({ blocks: bloques });
+
+  // La agenda que se ve: sin las sesiones que se sacaron ni los movimientos que dejaron de tener sentido (DL-137).
+  const sesionesDeLaAgenda = sesionesParaLaAgenda(bloques);
+  const agendaVisible = agendaVigente(agenda, sesionesDeLaAgenda);
+  const cambiarAgenda = (a: AgendaDeEntrenamiento | null) => {
+    setAgenda(a);
+    setSucio(true);
+    setProblemas(null);
+    setMensaje(null);
+  };
   const bloqueadoPorLaApp = exigeObjetivosPorSerie && !version.setTargetsDelivery.adviseeClientCapable;
 
   // ── Lo que se mira: el bloque, el microciclo y la sesión, por su posición, según la dirección ──────────────────
@@ -350,6 +385,7 @@ export function EditorDePlan({
   const sesiones: readonly SesionE[] = (microciclo ? microciclo.sessions : bloque?.sessions) ?? [];
   const k = mira.sesion;
   const sesion = k >= 0 ? sesiones[k] : undefined;
+  const diasDeEstaSesion = sesion?.sessionId ? (agendaVisible?.sessions.find((x) => x.sessionId === sesion.sessionId)?.weekdays ?? []) : [];
   // El prefijo de los identificadores de lo que cuelga del bloque o del microciclo: `b0`, `b0-m1`.
   const prefijo = `b${i}${j !== null ? `-m${j}` : ''}`;
   const abiertos = ejerciciosAbiertosEnElEditor(sesion?.prescriptions.length ?? 0, parametros.get('ejercicios'));
@@ -591,7 +627,7 @@ export function EditorDePlan({
                   {/* Cada problema lleva a su lugar: con una sesión por vez y los ejercicios plegados, no hay que ir a buscarlo. */}
                   {lugarDelProblemaDeEntrenamiento(p.path).bloque === null ? (
                     <>
-                      {ubicacionDelProblemaDeEntrenamiento(p.path, bloques)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
+                      {dondeEsta(p, bloques)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
                     </>
                   ) : (
                     <button type="button" className="boton boton--enlace" data-problema onClick={() => irAlProblema(p)}>
@@ -605,6 +641,16 @@ export function EditorDePlan({
           {mensaje.deValidar ? <p className="nota">{COPY_ENTRENAMIENTO.noJuzga}</p> : null}
         </Aviso>
       ) : null}
+
+      <AgendaDelPlan
+        agenda={agendaVisible}
+        sesiones={sesionesDeLaAgenda}
+        hoy={hoyEn()}
+        abierta={agendaAbierta}
+        onAbrir={() => setAgendaAbierta(true)}
+        onCerrar={() => setAgendaAbierta(false)}
+        onCambiar={cambiarAgenda}
+      />
 
       <div className="plan__niveles niveles-del-editor">
         {bloque ? (
@@ -726,8 +772,14 @@ export function EditorDePlan({
                 { clave: 'quitar', texto: 'Quitar esta sesión', alElegir: quitarSesion },
               ]}
             />
-            {/* El plan no asigna días: con más de una sesión, la persona elige cuál hace. */}
-            {sesiones.length > 1 ? <span className="nota nivel-del-plan__detalle">{C.sinDiaAsignado}</span> : null}
+            {/* Con agenda, los días de esta sesión (DL-137); sin agenda, con más de una sesión, la persona elige cuál hace. */}
+            {agendaVisible ? (
+              <span className="nota nivel-del-plan__detalle" data-dias-de-la-sesion>
+                {diasDeEstaSesion.length > 0 ? COPY_AGENDA_DE_ENTRENAMIENTO.diasDeLaSesion(diasDeEstaSesion) : COPY_AGENDA_DE_ENTRENAMIENTO.sinDias}
+              </span>
+            ) : sesiones.length > 1 ? (
+              <span className="nota nivel-del-plan__detalle">{C.sinDiaAsignado}</span>
+            ) : null}
             <span className="nota nivel-del-plan__cuenta" data-cuenta-de-la-sesion>
               <EnPartes texto={cuentaDeLaSesion(sesion)} />
             </span>
@@ -871,6 +923,11 @@ export function EditorDePlan({
             </p>
           ))}
         </div>
+        {agendaVisible && agendaVisible.sessions.length > 0 ? (
+          <p className="nota" data-dias-al-activar>
+            <strong>{COPY_AGENDA_DE_ENTRENAMIENTO.titulo}:</strong> {resumenDeLaAgenda(agendaVisible, sesionesDeLaAgenda)}
+          </p>
+        ) : null}
         <Campo
           id="trn-proxima-revision"
           etiqueta={`${COPY_DE_ACTIVAR_EL_PLAN.proximaRevision} (${COPY_DE_ACTIVAR_EL_PLAN.opcional})`}

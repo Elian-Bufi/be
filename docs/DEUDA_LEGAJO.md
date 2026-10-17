@@ -141,7 +141,7 @@
 | DL-134 | Mandato de Dirección · 2026-10-16 (REV-A) | 08 §6.2, 08:495, §14.3, 08:406 · 09v12:844 · 04 RF-035, RF-046 · propuesta REV-A | La persona lee las revisiones que sus profesionales registraron sobre ella | **IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar |
 | DL-135 | Mandato de Dirección · 2026-10-16 (WP-TVCC-30) | 02 §16 · 04 RF-058 · 05 UC-S01 · 06 B-12 (REG-06-186 a 201) · 07 §24, §42.1 · 09 ANA-P1, TRACE-DEBT-12-001 · 11A §21 · 12 §12-27 | TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado | **IMPLEMENTADA** 2026-10-16; D-1 a D-9 a ratificar |
 | DL-136 | Aprobación de Dirección · 2026-10-16 (WP-INVITACION) | 06 §7.3, §7.4 (REG-06-44, 45, 46; INV-06-55, 56) · 05 UC-P04 V04, UC-P05 V01 · 08 §24.3, §24.5 · 09v8 REL-01 · DL-023 · DL-035 | Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales | **IMPLEMENTADA (API)** 2026-10-16; falta web y APK |
-| DL-137 | Pedido de Dirección · 2026-10-16 (WP-AGENDA-DE-ENTRENAMIENTO) | 06 B-08 (REG-06-111, 114, 115, 126, 131) · DL-077 · DL-088 · DL-133 D-5 · WP-06 §9.2 | El plan de entrenamiento no tenía días: el recordatorio llegaba todos los días y BE no sabía qué sesión tocaba ni cuál quedó pendiente | **IMPLEMENTADA (API)** 2026-10-16: días de cada sesión, lo pendiente, saltear y los avisos de las 10 y las 22; falta el editor del website y la APK; D-1 a D-9 a ratificar |
+| DL-137 | Pedido de Dirección · 2026-10-16 (WP-AGENDA-DE-ENTRENAMIENTO) | 06 B-08 (REG-06-111, 114, 115, 126, 131) · DL-077 · DL-088 · DL-133 D-5 · WP-06 §9.2 | El plan de entrenamiento no tenía días: el recordatorio llegaba todos los días y BE no sabía qué sesión tocaba ni cuál quedó pendiente | **IMPLEMENTADA** 2026-10-16: días de cada sesión, lo pendiente, saltear y los avisos de las 10 y las 22 (API #174; editor del website y pantalla de la APK); falta la APK en un teléfono; D-1 a D-9 a ratificar |
 
 ---
 
@@ -4034,7 +4034,7 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 - **DL-133 D-5:** el recordatorio de entrenamiento llegaba todos los días; su opción C era «días de la semana en el plan; es otro paquete».
 - **El paquete:** WP-AGENDA-DE-ENTRENAMIENTO (`docs/paquetes/WP-AGENDA-DE-ENTRENAMIENTO.md`).
 
-**Estado:** IMPLEMENTADA (API) el 2026-10-16. Falta el editor del website y la APK.
+**Estado:** IMPLEMENTADA el 2026-10-16: la API integrada (#174) y, en el PR siguiente, el editor del website y la pantalla de la APK. Falta la APK construida y en un teléfono.
 
 **Qué pasaba.** El plan de entrenamiento no tenía días. «Hoy» listaba todas las sesiones y la persona elegía cuál hacía (DL-077), y el recordatorio de las 22:00 llegaba todos los días, también en los de descanso. BE no podía decir qué sesión tocaba ni cuál quedó pendiente.
 
@@ -4088,8 +4088,8 @@ Son lecturas protegidas, con el límite por actor. No cambia ninguna respuesta q
 - **integración** (`agenda-de-entrenamiento.int-spec.ts`): guardar, podar, quitar, la instantánea y la sucesora; la agenda del día; saltear sin hora; los avisos de las 10 y de las 22, una sola vez, y nada sin agenda; `contrato.int-spec.ts` observa API-AGE-01.
 
 **Lo que queda abierto:**
-- **El editor del website:** los días de cada sesión, la fecha de inicio, la vista previa del calendario y mover una fecha.
-- **La APK:** lo de hoy, lo pendiente con «Hacerla hoy» y «Saltearla», lo que viene, y la pregunta por la pendiente al registrar la sesión siguiente (Dirección). Una salteada se ve como «No realizada», sin la hora convencional.
+- **La APK construida y en un teléfono:** la pantalla ya está (lo de hoy, lo pendiente con «Hacerla hoy» y «Saltearla», lo que viene, y la pregunta por la pendiente al empezar otra sesión).
+- **Un plan con microciclos:** cada sesión de cada microciclo tiene sus propios días; la agenda no recorre los microciclos semana a semana (D-1). Si Dirección lo pide, es otra decisión.
 - Varias pendientes dan un aviso cada una, dos mañanas como mucho.
 
 **Provisorio en código:** D-1 a D-9.
