@@ -3,7 +3,7 @@
  * la API de BE. RF-003 (P1), 05 UC-E05, 06 B-01 §5.6 («Método de acceso»: local o federado, nunca una identidad
  * paralela), 08 §24.1 y 09 §12 («Google federated authorize/complete — P1», solo bosquejado). IDs propios de BE, familia
  * GOO (API-GOO-01 a 03).
- * - **El cliente consigue un ID token de Google** (Google Identity Services en el website, Credential Manager en la APK)
+ * - **El cliente consigue un ID token de Google** (Google Identity Services en el website, Google Sign-In en la APK)
  *   y lo manda en el cuerpo, nunca en la URL. La API lo verifica contra las claves públicas de Google: firma RS256,
  *   emisor, audiencia (los client IDs de BE), vencimiento y correo verificado. No hay secreto de cliente en los
  *   dispositivos ni Firebase Authentication.

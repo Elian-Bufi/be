@@ -107,3 +107,4 @@ export * from './contratos-invitaciones';
 export * from './mayoria-de-edad';
 export * from './contratos-acceso-google';
 export * from './copy-acceso-google';
+export * from './pasos-de-acceso-google';

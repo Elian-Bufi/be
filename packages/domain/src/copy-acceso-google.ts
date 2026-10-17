@@ -27,4 +27,19 @@ export const COPY_ACCESO_GOOGLE = {
   yaVinculada: 'Tu cuenta BE ya está vinculada con otra cuenta de Google. Entrá con tu correo y tu contraseña.',
   /** Un 401 neutral, como el del acceso local: no dice qué falló (10-B02:198-225). */
   accesoFallido: 'No pudimos verificar los datos de acceso.',
+  // Las piezas de los pasos, iguales en el website y en la APK.
+  /** Mientras BE verifica lo que respondió Google (API-GOO-01). */
+  verificando: 'Verificando tu cuenta de Google…',
+  /** La etiqueta del campo del paso de vincular: es la contraseña de BE, no la de Google. */
+  contrasena: 'Contraseña de BE',
+  contrasenaRequerida: 'Ingresá tu contraseña de BE.',
+  vinculando: 'Confirmando…',
+  creando: 'Creando tu cuenta…',
+  /** Salir de un paso sin seguir con Google: vuelve al correo y la contraseña. */
+  volver: 'Volver',
+  /**
+   * 08 §33: en el ambiente de prueba van solo datos sintéticos, y con Google el correo no se inventa: es el de la cuenta.
+   * Es el mismo aviso que el alta con correo, para la cuenta de Google.
+   */
+  avisoDePrueba: 'Ambiente de prueba: BE guarda el correo de esta cuenta de Google. Usá una cuenta de Google de prueba.',
 } as const;
