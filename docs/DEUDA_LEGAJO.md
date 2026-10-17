@@ -145,7 +145,8 @@
 | DL-138 | Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE) | 04 RF-001, RF-003 · 05 UC-E05 · 06 §5.6 (REG-06-21; INV-06-21, 24) · 08 §24.1, §24.5, §24.6, §24.7 a, §42 ítem 22 · 09 §12 y 09v12 §11 (bosquejo) · DL-012 · DL-023 | Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta | **IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono |
 | DL-139 | Pedido de Dirección · 2026-10-16 (WP-BUSQUEDA) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · B10-05 §18 · B10-06 `CAND-10-TRN-05` · 07 §53 · DL-130 · DL-098 | El buscador de los catálogos exigía lo escrito tal cual: no toleraba el orden de las palabras, el plural ni los errores de tipeo | **IMPLEMENTADA** 2026-10-16 en `wp-busqueda`, sin integrar (migración aditiva con `pg_trgm`); D-1 a D-8 a ratificar |
 | DL-140 | Aprobación de Dirección · 2026-10-16 (WP-NOTAS-DE-COORDINACION) | 04 RF-057 · 05 UC-E07 (§11.8) · 06 T-06-43 · 08 §9.15, 08:495, §11-bis.3, Q-005 y §14, VJR-5 · 09 §11.6 (API-CRD-01) · 11A TEST-RF-057, TEST-UC-E07 · propuesta NOTAS-DE-COORDINACION | La nota de coordinación entre los profesionales de una persona: quién la recibe, quién la lee, el texto libre acotado, lo citado y que solo se agrega | **IMPLEMENTADA** 2026-10-17 con las opciones recomendadas CRD-D1 a CRD-D8 (API, web y APK en `wp-notas-de-coordinacion`, sin integrar); E-1 a E-11 a ratificar; falta la APK en el teléfono |
-| DL-141 | Aprobación de Dirección · 2026-10-16 (WP-CATALOGO-BASE, tanda 3) | 04 RF-060 · 05 UC-I07 · 06 REG-06-99 a 101, REG-06-112, INV-06-143 · 08 (licencias de los proveedores) · DL-097 · DL-098 · DL-099 · DL-139 | Lo importado de wger y de Open Food Facts lo veía solo quien lo importó, y se repetía; no había nombres alternativos («bench press», «aguacate»); faltaba un catálogo base de fuentes libres | **IMPLEMENTADO el tramo 1** 2026-10-17 en `wp-catalogo-base-1`, sin integrar: lo importado es de todos, uno por ítem externo (D-1), y los nombres alternativos con el buscador (D-2); siguen el catálogo de wger y el de USDA; D-1 y D-2 a ratificar |
+| DL-141 | Aprobación de Dirección · 2026-10-16 (WP-CATALOGO-BASE, tanda 3) | 04 RF-060 · 05 UC-I07 · 06 REG-06-99 a 101, REG-06-112, INV-06-143 · 08 (licencias de los proveedores) · DL-097 · DL-098 · DL-099 · DL-139 | Lo importado de wger y de Open Food Facts lo veía solo quien lo importó, y se repetía; no había nombres alternativos («bench press», «aguacate»); faltaba un catálogo base de fuentes libres | **INTEGRADO el tramo 1** 2026-10-17 (#180): lo importado es de todos, uno por ítem externo (D-1), y los nombres alternativos con el buscador (D-2); siguen el catálogo de wger y el de USDA; D-1 y D-2 a ratificar |
+| DL-143 | Pedido de Dirección · 2026-10-17 (al probar la invitación) | 04 RF-021, RF-023 · 08 §24 (A3 como acto aparte) · 10-B02 §7 · 10-B04 §10-§14, §41 · CAND-10-CON-02 · UC-I02 E05 · DL-136 | Una persona aceptó el vínculo y autorizó al profesional, pero sin el tratamiento de datos de salud (A3) el acceso no era efectivo: la APK decía «Activo» y el profesional, «Acceso no disponible» | **IMPLEMENTADO** 2026-10-17: el último paso A3 en el mismo recorrido, el recordatorio en Inicio y una pista general para el profesional; la causa exacta para el profesional, a decidir |
 
 ---
 
@@ -4384,7 +4385,7 @@ Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea
 - **DL-097, DL-098 y DL-099:** la importación de WP-08. **DL-139:** el buscador.
 - **El paquete:** WP-CATALOGO-BASE (`docs/paquetes/WP-CATALOGO-BASE.md`).
 
-**Estado:** tramo 1 (D-1 y D-2) IMPLEMENTADO el 2026-10-17 en `wp-catalogo-base-1`, sobre `wp-busqueda` (#177), sin integrar. Siguen los tramos 2 (el catálogo base de entrenamiento, de wger) y 3 (el de alimentos, de USDA).
+**Estado:** tramo 1 (D-1 y D-2) INTEGRADO el 2026-10-17 (#180), con la CI en verde. Siguen los tramos 2 (el catálogo base de entrenamiento, de wger) y 3 (el de alimentos, de USDA).
 
 **Qué pasaba.**
 - Un ejercicio de wger o un alimento de Open Food Facts importado (WP-08) lo veía solo quien lo importó. Otro profesional que quería el mismo lo importaba de nuevo, repetía la revisión y quedaban dos elementos.
@@ -4480,3 +4481,49 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
 **Condición de cierre:**
 - Dirección ratifica D-1 y D-2, o cambia las que quiera;
 - los tramos 2 y 3 integrados, con la página de fuentes.
+
+---
+
+## DL-143 — Aceptar un vínculo es un solo recorrido: el último paso es el tratamiento de datos de salud
+
+**Prioridad:** alta (la persona cree que su profesional la acompaña y no es así).
+
+**Documentos:**
+- **04 RF-021 y RF-023:** el acceso exige el vínculo aceptado, el consentimiento al profesional y el tratamiento de datos de salud (A3) vigente.
+- **08 §24 y 10-B02 §7:** A3 es un acto aparte, explícito, con «Ahora no» igual de visible; crear la cuenta no lo otorga.
+- **10-B04 §10-§14 y CAND-10-CON-02:** el consentimiento al profesional y su pantalla de éxito («nunca "Ahora [Profesional] puede ver todos tus datos"»).
+- **10-B04 §41 y UC-I02 E05:** el profesional ve «Acceso no disponible» sin la causa.
+- **DL-136:** la invitación.
+
+**Qué pasó (2026-10-17).** Dirección creó una cuenta nueva con Google, aceptó la invitación de un profesional y lo autorizó.
+- La APK dijo «Acceso autorizado · Estado: Activo», y el vínculo, «Consentimiento: no efectivo», sin decir por qué.
+- El profesional vio «Vínculo activo · Acceso no disponible», y al abrir la ficha, «No encontramos un recurso disponible para esta acción».
+- Faltaba A3, en Privacidad. Dirección: «yo puedo creer que estoy vinculado como usuario hacia mi profesional y en realidad no»; «si está siendo un punto de fricción para mí, también lo va a ser para el usuario».
+
+**Qué pidió Dirección:**
+- que el mismo flujo de aceptar diga que hace falta el consentimiento y lleve a darlo, «así lo hace todo de una»;
+- que, si no lo da, quede un aviso que lleve a los permisos;
+- que el profesional sepa que es porque la persona no aceptó los permisos.
+
+**Qué se implementó** (PR #181):
+- **APK, el último paso:**
+  - después de autorizar al profesional, si A3 no está vigente (CON-05), debajo aparece «Último paso: tus datos de salud» con el mismo bloque de Privacidad: el texto de la versión aplicable, «Autorizar» y «Ahora no»;
+  - sigue siendo un acto aparte: nada queda otorgado por haber autorizado al profesional;
+  - «Ahora no» lo pliega a un aviso con «Ir a Privacidad».
+- **APK, el vínculo:** si el consentimiento está activo pero el acceso no es efectivo y falta A3, el mismo paso.
+- **APK, Inicio:** arriba de todo, solo si hace falta, «Tu profesional todavía no puede ver tus datos», con lo que le falta a cada vínculo (su autorización, o A3) y «Completar», que lleva al vínculo. Si el acceso no es efectivo por otra razón, de la que la persona no puede ocuparse, no aparece.
+- **APK y website, al aceptar:** el texto dice que también hace falta el tratamiento de datos de salud, si todavía no se dio.
+- **Website, la ficha:** con un vínculo vigente que hoy no deja leer, «Por ahora no tenés acceso a la información de esta persona. Si se vinculó hace poco, puede que todavía no haya completado sus autorizaciones en la app.» Sin un vínculo vigente, el texto neutral de siempre.
+
+**Lo que queda a decidir: qué sabe el profesional.**
+- **Implementado, A · una pista general.** No dice la causa: la A3, una revocación, una suspensión o una habilitación retirada se ven igual (UC-I02 E05). Nombra el caso más común sin afirmarlo.
+- **B · la causa exacta cuando A3 nunca se otorgó.** El profesional vería «Acceso pendiente de autorización del asesorado», el mismo texto que ya ve cuando falta el consentimiento a él. Si A3 se revocó, seguiría «Acceso no disponible».
+  - Costo: una operación nueva de la API (la lista de vínculos la lee la APK instalada) y una excepción a 10-B04 §41.
+  - Riesgo: el profesional distingue «nunca lo dio» de «lo retiró», y eso deja ver una decisión de privacidad de la persona.
+- **Recomendación: A.** Con el último paso en el recorrido de aceptar, el caso se vuelve raro, y la persona no queda expuesta.
+
+**Provisorio en código:** todo lo de arriba, con A.
+
+**Condición de cierre:**
+- Dirección elige A o B;
+- una persona nueva acepta una invitación en el teléfono y termina con el acceso efectivo en un solo recorrido.

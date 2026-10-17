@@ -139,7 +139,7 @@ export function PantallaDeVinculo({
           {activo && v.consentState === 'ACTIVE' ? <Boton texto={COPY_VINCULO.revisarConsentimiento} tipo="secundario" onPress={irAConsentimiento} /> : null}
           {/* Autorizado pero sin efecto: si es por el tratamiento de datos de salud, se dice y se ofrece el camino (2026-10-17). */}
           {activo && v.consentState === 'ACTIVE' && v.accessMode !== 'CONTEXTUAL' ? (
-            <PasoQueFaltaParaElAcceso token={token} irAPrivacidad={() => ir({ nombre: 'privacidad' })} />
+            <PasoQueFaltaParaElAcceso token={token} sesionPerdida={sesionPerdida} irAPrivacidad={() => ir({ nombre: 'privacidad' })} alCompletar={recargar} />
           ) : null}
           {v.consent?.state === 'ACTIVE' ? (
             <RevocarConsentimiento

@@ -20,7 +20,12 @@ export const COPY_VINCULO = {
     `Vas a iniciar un vínculo con ${profesional} para ${alcance}. Después podrás revisar qué datos necesita y decidir si autorizás ese acceso.`,
   /** 10-B04:294-303. */
   vinculoAceptado: 'Vínculo aceptado',
-  vinculoAceptadoDetalle: 'Ahora revisá qué información solicita el profesional antes de autorizar el acceso.',
+  /**
+   * Pedido de Dirección del 2026-10-17: decir desde acá que el acceso necesita la autorización al profesional y, si
+   * todavía no se dio, la del tratamiento de datos de salud (A3). Las dos son actos aparte; ninguna se da sola.
+   */
+  vinculoAceptadoDetalle:
+    'Ahora revisá qué información solicita el profesional antes de autorizar el acceso. Para que pueda acompañarte también hace falta que autorices el tratamiento de tus datos de salud, si todavía no lo hiciste.',
   revisarConsentimiento: 'Revisar consentimiento',
   /** 10-B04:323. */
   solicitudRechazada: 'Solicitud rechazada',
@@ -136,11 +141,22 @@ export const COPY_VINCULO = {
   faltaElTratamientoDeDatos:
     'Para que tus profesionales puedan ver tus datos, falta que autorices el tratamiento de datos de salud. Es una autorización aparte, y la decidís vos.',
   irAPrivacidad: 'Ir a Privacidad',
+  /** El último paso del recorrido de aceptar, con el bloque A3 de Privacidad. */
+  ultimoPasoTitulo: 'Último paso: tus datos de salud',
+  ultimoPasoListo: 'Listo',
+  ultimoPasoListoDetalle: 'Autorizaste el tratamiento de tus datos de salud. De tu parte, ya no falta nada.',
+  /** Inicio: un vínculo aceptado al que le falta un paso de la persona (su autorización, o la A3). */
+  inicioAccesoIncompletoTitulo: 'Tu profesional todavía no puede ver tus datos',
+  inicioFaltaAutorizar: (profesional: string, alcance: string) => `${profesional} (${alcance}): falta que autorices su acceso.`,
+  inicioFaltaElTratamiento: (profesional: string, alcance: string) => `${profesional} (${alcance}): falta el tratamiento de tus datos de salud.`,
+  completarElPaso: 'Completar',
   /**
    * Profesional: la ficha de alguien con un vínculo vigente que hoy no deja leer. No dice por qué (UC-I02 E05): la A3,
-   * una suspensión o una habilitación retirada se ven igual.
+   * una suspensión o una habilitación retirada se ven igual. La pista es general: el caso más común es una persona que
+   * recién se vinculó y no terminó sus autorizaciones (Dirección, 2026-10-17).
    */
-  sinAccesoPorAhora: 'Por ahora no tenés acceso a la información de esta persona. Si cambia, la ficha se completa sola al actualizar.',
+  sinAccesoPorAhora:
+    'Por ahora no tenés acceso a la información de esta persona. Si se vinculó hace poco, puede que todavía no haya completado sus autorizaciones en la app. Cuando cambie, la ficha se completa al actualizar.',
 
   // ─── No revelable, vista parcial y conflictos (10-B04 §40; 10-B10) ──────────────────────────
   /** 10-B04:1150-1156 (asesorado). */

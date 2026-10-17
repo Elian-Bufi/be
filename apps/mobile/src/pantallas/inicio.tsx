@@ -15,12 +15,15 @@
  *   progreso. Un registro de comida no se presenta como una comida del plan.
  * - El saludo es neutro: el perfil no tiene nombre (DL-009, D-2).
  * - El día es el de la API: a la medianoche cambia, y las tarjetas de hoy vuelven a leer (`useDiaDeLaApi`).
+ * - Arriba de todo, solo si hace falta: «Tu profesional todavía no puede ver tus datos» (`AccesoIncompleto`; Dirección,
+ *   2026-10-17), con el paso que le falta a cada vínculo.
  */
 import { Text, View } from 'react-native';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { fechaLarga } from '../formato';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { Titulo } from '../ui';
+import { AccesoIncompleto } from './inicio-acceso';
 import { ActividadDeEntrenamiento, EntrenamientoDeHoy } from './inicio-entrenamiento';
 import { Pendientes } from './inicio-informacion';
 import { Mediciones } from './inicio-mediciones';
@@ -34,6 +37,7 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
     <View>
       <Titulo>Hola</Titulo>
       <Text style={estilos.fechaDeHoy}>{fechaLarga(hoy)}</Text>
+      <AccesoIncompleto token={token} sesionPerdida={sesionPerdida} ir={ir} />
       <EntrenamientoDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
       <NutricionDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
       <Pendientes token={token} sesionPerdida={sesionPerdida} ir={ir} />

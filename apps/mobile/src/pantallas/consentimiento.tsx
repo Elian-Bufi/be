@@ -8,8 +8,9 @@
  * - Vigente con esta misma versión: no hay nada que decidir. Vigente con otra: se avisa que hay una versión nueva. Con el
  *   vínculo en pausa o finalizado la API no admite consentir, y el acto no se ofrece.
  * - Éxito (CAND-10-CON-02): profesional, alcance, finalidad, fecha y estado, con «Ver vínculo». Nunca «Ahora
- *   [Profesional] puede ver todos tus datos». Si falta el tratamiento de datos de salud (A3), debajo va «Falta un paso»
- *   con el camino a Privacidad (`PasoQueFaltaParaElAcceso`; pedido de Dirección del 2026-10-17).
+ *   [Profesional] puede ver todos tus datos». Si falta el tratamiento de datos de salud (A3), debajo va el último paso,
+ *   con el mismo bloque de Privacidad: un acto aparte, en el mismo recorrido (`PasoQueFaltaParaElAcceso`; pedido de
+ *   Dirección del 2026-10-17).
  */
 import {
   COPY,
@@ -123,7 +124,7 @@ export function PantallaDeConsentimiento({
           <Dato etiqueta="Estado" valor={COPY_VINCULO.estadoDeConsentimiento.ACTIVE} />
           <Boton texto={COPY_VINCULO.verVinculo} onPress={() => ir({ nombre: 'vinculo', id: d.relationshipId }, 'reemplazar')} />
         </Aviso>
-        <PasoQueFaltaParaElAcceso token={token} irAPrivacidad={() => ir({ nombre: 'privacidad' })} />
+        <PasoQueFaltaParaElAcceso token={token} sesionPerdida={sesionPerdida} irAPrivacidad={() => ir({ nombre: 'privacidad' })} />
       </>
     );
   }
