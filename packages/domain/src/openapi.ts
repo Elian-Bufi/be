@@ -321,6 +321,10 @@ const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de pág
 const CURSOR: ParametroDeQuery = { nombre: 'cursor', descripcion: 'Cursor opaco de la página siguiente.', schema: { type: 'string' } };
 const ALCANCE: ParametroDeQuery = { nombre: 'scope', descripcion: 'Filtra por alcance.', schema: { type: 'string', enum: ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'] } };
 
+/** Cómo compara el buscador de los catálogos de alimentos y de ejercicios (DL-139): lo dicen sus cuatro operaciones. */
+const COMO_BUSCA_EL_CATALOGO =
+  'Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139).';
+
 /** Errores de una escritura REL/CON sobre un recurso que puede no ser revelable para el actor (09:213-233). */
 const ESCRITURA_REVELABLE: Errores = {
   ...SESION,
@@ -929,25 +933,29 @@ const DEFINIDAS: readonly Operacion[] = [
     query: [
       LIMIT,
       CURSOR,
-      { nombre: 'q', descripcion: 'Texto a buscar en el nombre. Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).', schema: { type: 'string' } },
+      {
+        nombre: 'q',
+        descripcion: `Texto a buscar en el nombre. ${COMO_BUSCA_EL_CATALOGO} Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).`,
+        schema: { type: 'string' },
+      },
       { nombre: 'type', descripcion: 'FOOD.', schema: { type: 'string', enum: ['FOOD'] } },
     ],
     exitos: [{ status: 200, schema: ListaDeCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v9:648-654 · REG-06-99, 135',
+    fuente: '09v9:648-654 · REG-06-99, 135 · DEUDA_LEGAJO DL-139',
   },
   {
     id: 'API-NUT-13-BUSQUEDA',
     metodo: 'post',
     ruta: '/nutrition/catalog-items/search',
     resumen:
-      'Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados.',
+      `Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. ${COMO_BUSCA_EL_CATALOGO}`,
     autenticacion: 'SESSION',
     idempotencia: false,
     request: BusquedaEnCatalogoRequestSchema,
     exitos: [{ status: 200, schema: ListaDeCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130',
+    fuente: '09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130, DL-139',
   },
   {
     id: 'API-INT-NUT-01',
@@ -1578,24 +1586,28 @@ const DEFINIDAS: readonly Operacion[] = [
     query: [
       LIMIT,
       CURSOR,
-      { nombre: 'q', descripcion: 'Texto a buscar en el nombre. Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).', schema: { type: 'string', maxLength: 80 } },
+      {
+        nombre: 'q',
+        descripcion: `Texto a buscar en el nombre. ${COMO_BUSCA_EL_CATALOGO} Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).`,
+        schema: { type: 'string', maxLength: 80 },
+      },
     ],
     exitos: [{ status: 200, schema: ListaDeEjerciciosResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v10:838-854 · RF-037 · INV-06-143',
+    fuente: '09v10:838-854 · RF-037 · INV-06-143 · DEUDA_LEGAJO DL-139',
   },
   {
     id: 'API-TRN-13-BUSQUEDA',
     metodo: 'post',
     ruta: '/training/exercises/search',
     resumen:
-      'Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados.',
+      `Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados. ${COMO_BUSCA_EL_CATALOGO}`,
     autenticacion: 'SESSION',
     idempotencia: false,
     request: BusquedaDeEjerciciosRequestSchema,
     exitos: [{ status: 200, schema: ListaDeEjerciciosResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
-    fuente: '09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130',
+    fuente: '09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130, DL-139',
   },
   {
     id: 'API-INT-TRN-01',
