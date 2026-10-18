@@ -106,7 +106,11 @@ export function ResumenDelSeguimiento() {
       onAbrirToma={(evaluationId) => setOrigen({ origen: { type: 'ANTHROPOMETRIC_EVALUATION', id: evaluationId }, titulo: 'Última toma' })}
     />
   );
-  const indicadores = <IndicadoresDelResumen disponibles={disponibles} formato={formato} />;
+  // Sin nada registrado en ningún área (DL-145), los indicadores y las preguntas no tienen sobre qué hablar: la tarjeta
+  // de cada área ofrece empezar el plan, y eso es lo único que hay que hacer.
+  const conAlgoRegistrado = (d.nutrition.available && !!d.nutrition.summary) || (d.training.available && !!d.training.summary) || (d.anthropometry.available && !!d.anthropometry.summary);
+  const indicadores = conAlgoRegistrado ? <IndicadoresDelResumen disponibles={disponibles} formato={formato} /> : null;
+  const preguntas = conAlgoRegistrado ? <PreguntasDelResumen /> : null;
   const tardias = delPeriodo.tipo === 'listo' ? delPeriodo.datos.data.periodCounts.recordedLate : 0;
   // DL-140 (CRD-D8): las notas recientes del equipo van después de los indicadores: lo de la persona primero.
   const notas = <NotasRecientesDelEquipo />;
@@ -123,7 +127,7 @@ export function ResumenDelSeguimiento() {
           <div className="resumen__costado">
             {indicadores}
             {notas}
-            <PreguntasDelResumen />
+            {preguntas}
           </div>
         </div>
       ) : null}
@@ -132,7 +136,7 @@ export function ResumenDelSeguimiento() {
         <div className="resumen">
           <div className="areas" data-areas={areas}>
             {tarjetas}
-            <PreguntasDelResumen />
+            {preguntas}
           </div>
           {indicadores}
           {notas}
@@ -147,7 +151,7 @@ export function ResumenDelSeguimiento() {
           </div>
           {indicadores}
           {notas}
-          <PreguntasDelResumen />
+          {preguntas}
         </div>
       ) : null}
       {/* Lo que no es de un área sola: cuántos hechos se cargaron otro día. Se ven, uno por uno, en la línea de tiempo. */}

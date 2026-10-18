@@ -7,6 +7,7 @@
  * como «BE recomienda» (B05:195-210).
  */
 import {
+  COPY_PRIMER_PLAN,
   cantidad,
   COPY_NUTRICION,
   type ContextoDeRevisionResponse,
@@ -131,7 +132,12 @@ function Resumen({
                   </button>
                 </>
               ) : (
-                COPY_NUTRICION.sinPlanActivo
+                <>
+                  {COPY_NUTRICION.sinPlanActivo}{' '}
+                  <button type="button" className="boton boton--enlace" onClick={onIrAlPlan}>
+                    {COPY_PRIMER_PLAN.titulo}
+                  </button>
+                </>
               )}
             </dd>
           </div>

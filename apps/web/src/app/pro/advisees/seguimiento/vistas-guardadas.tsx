@@ -161,7 +161,7 @@ export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estad
         <h3 id={`${id}-titulo`}>
           <Icono nombre="guardar" tamano={20} /> Retomar una vista guardada
         </h3>
-        <p className="tarjeta-de-entrada__bajada">Guardan qué mirar, no los datos. Sirven para cualquier asesorado.</p>
+        <p className="tarjeta-de-entrada__bajada">Guardan qué mirar, no los datos.</p>
         {sinLista ? (
           <p className="campo__error">
             {textoDeFalla(sinLista, 'tus vistas guardadas')}{' '}

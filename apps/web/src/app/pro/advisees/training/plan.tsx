@@ -20,6 +20,7 @@
  */
 import {
   COPY_AGENDA_DE_ENTRENAMIENTO,
+  COPY_PRIMER_PLAN,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
   COPY_ENTRENAMIENTO,
   COPY_PLANTILLAS,
@@ -34,23 +35,26 @@ import {
   type PlanConObjetivos,
   type Prescripcion,
   type ResumenDeVersionDePlanDeEntrenamiento,
+  type EvaluacionDeEntrenamiento,
   type VersionDelHistorial,
 } from '@be/domain';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { EnPartes, conNumerosPegados } from '../../../../components/en-partes';
-import { EstadoVacio } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, type Resultado } from '../../../../lib/api';
+import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
+import { PrimerPlan } from '../primer-plan';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { EditorDePlan } from './editor';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
+import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
 import { DialogoGuardarPlantilla } from './plantillas';
 
 /**
@@ -64,6 +68,9 @@ interface Datos {
   readonly activa: PlanConObjetivos | null;
   /** El objetivo vigente hoy: con él nace una versión nueva. */
   readonly objetivo: string | null;
+  /** Desde cuándo rige y qué dice: «Empezar el plan» lo muestra como el paso que ya está (DL-145). */
+  readonly objetivoDesde: string | null;
+  readonly objetivoTexto: string | null;
 }
 
 /** Lo que pide la dirección de la sección, y lo que se quita al elegir cada cosa: lo de más adentro vuelve a lo primero. */
@@ -83,6 +90,12 @@ export function VistaDePlan() {
   const intentoDeCrear = useClaveDeIntento();
   const intentoDeAplicar = useClaveDeIntento();
 
+  // Lo que la página de formularios dejó dicho al volver de un pedido hecho desde «Empezar el plan» (DL-145).
+  useEffect(() => {
+    const alLlegar = tomarAvisoPara('/pro/advisees/training');
+    if (alLlegar) setAviso({ tipo: 'exito', texto: alLlegar });
+  }, []);
+
   const cargar = useCallback(async () => {
     setR(null);
     // Todas las versiones, no las primeras: el número de cada una es su lugar entre todas las activadas.
@@ -98,7 +111,11 @@ export function VistaDePlan() {
       if (!v.ok) return setR(v as Resultado<never>);
       activa = v.datos.data;
     }
-    setR({ ok: true, datos: { versiones: lista.datos.data, activa, objetivo: ob.datos.data.objective?.versionId ?? null } });
+    const vigente = ob.datos.data.objective;
+    setR({
+      ok: true,
+      datos: { versiones: lista.datos.data, activa, objetivo: vigente?.versionId ?? null, objetivoDesde: vigente?.effectiveFrom ?? null, objetivoTexto: vigente?.objective.statement ?? null },
+    });
   }, [token, asesoradoId, sesionPerdida]);
 
   useEffect(() => {
@@ -252,10 +269,11 @@ export function VistaDePlan() {
 
                 {mostrada === 'activa' && !activa ? (
                   <>
-                    {/* En el encabezado la principal va última, contra el borde; donde todavía no hay un plan, primera. */}
-                    <EstadoVacio
-                      titulo={COPY_ENTRENAMIENTO.sinPlanActivo}
-                      accion={
+                    {/* Sin plan: los tres pasos en orden, en esta misma pantalla (DL-145). La acción principal va primera. */}
+                    <PrimerPlanDeEntrenamiento
+                      objetivoDesde={r.datos.objetivoDesde}
+                      objetivoTexto={r.datos.objetivoTexto}
+                      accionesDelPlan={
                         sePuedeCrear ? (
                           <>
                             {crearLaVersion}
@@ -263,13 +281,11 @@ export function VistaDePlan() {
                           </>
                         ) : null
                       }
-                    >
-                      {!objetivo ? (
-                        <p>
-                          {C.primeroElObjetivo} {irAlResumen}
-                        </p>
-                      ) : null}
-                    </EstadoVacio>
+                      onObjetivo={() => {
+                        setAviso({ tipo: 'exito', texto: COPY_PRIMER_PLAN.objetivoDefinido });
+                        void cargar();
+                      }}
+                    />
                     {historial.length > 0 ? <HistorialDelPlan historial={historial} huella={null} /> : null}
                   </>
                 ) : null}
@@ -452,5 +468,67 @@ export function PlanSoloLectura({ version, numero: numeroDeVersion, acceso }: { 
       ) : null}
       <SesionQueSeMira version={version} pedido={pedido} alPedir={(cambios) => setPedido((p) => ({ ...p, ...cambios }))} acceso={acceso} nivel={4} />
     </div>
+  );
+}
+
+/**
+ * «Empezar el plan» de Entrenamiento (DL-145): lee las evaluaciones y pone los formularios de Resumen en el paso que toca.
+ * Una lectura que falla se dice como falla, nunca como «todavía no hay evaluación» (`EstadoDeLectura`).
+ */
+function PrimerPlanDeEntrenamiento({
+  objetivoDesde,
+  objetivoTexto,
+  accionesDelPlan,
+  onObjetivo,
+}: {
+  objetivoDesde: string | null;
+  objetivoTexto: string | null;
+  accionesDelPlan: ReactNode;
+  onObjetivo: () => void;
+}) {
+  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const [r, setR] = useState<Resultado<readonly EvaluacionDeEntrenamiento[]> | null>(null);
+  const [abierto, setAbierto] = useState<'evaluacion' | 'objetivo' | null>(null);
+  const leer = useCallback(async () => {
+    const res = await api.listarEvaluacionesDeEntrenamiento(token, asesoradoId);
+    if (sesionPerdida(res)) return;
+    setR(res.ok ? { ok: true, datos: res.datos.data } : (res as Resultado<never>));
+  }, [token, asesoradoId, sesionPerdida]);
+  useEffect(() => {
+    void leer();
+  }, [leer]);
+  const evaluaciones = r?.ok ? r.datos : [];
+  const ultima = [...evaluaciones].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0] ?? null;
+  return (
+    <EstadoDeLectura r={r} onReintentar={() => void leer()}>
+      <PrimerPlan
+        evaluacion={ultima ? diaSinElAnioEnCurso(ultima.occurredAt) : false}
+        objetivoDesde={objetivoDesde ? diaSinElAnioEnCurso(objetivoDesde) : null}
+        objetivoTexto={objetivoTexto}
+        abierto={abierto}
+        onAbrir={setAbierto}
+        formularioDeEvaluacion={
+          <FormularioDeEvaluacion
+            onRegistrada={() => {
+              setAbierto('objetivo');
+              void leer();
+            }}
+            onCancelar={() => setAbierto(null)}
+          />
+        }
+        formularioDeObjetivo={
+          <FormularioDeObjetivo
+            evaluaciones={evaluaciones}
+            onEmitido={() => {
+              setAbierto(null);
+              onObjetivo();
+            }}
+            onCancelar={() => setAbierto(null)}
+          />
+        }
+        accionesDelPlan={accionesDelPlan}
+        pedirInformacion={`/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento-plan`}
+      />
+    </EstadoDeLectura>
   );
 }

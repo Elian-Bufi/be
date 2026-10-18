@@ -10,6 +10,7 @@
  *   por la persona, con su fecha, y nunca como un dato observado por el profesional (CA-FOR-04).
  */
 import {
+  COPY_PRIMER_PLAN,
   COPY_ENTRENAMIENTO,
   COPY_FORMULARIOS,
   ETIQUETA_DE_FUENTE,
@@ -135,7 +136,7 @@ export function VistaDeResumen() {
             ) : (
               <div className="acciones">
                 <button type="button" className="boton boton--secundario" onClick={() => setFormulario('objetivo')} disabled={r.datos.evaluaciones.length === 0}>
-                  {COPY_ENTRENAMIENTO.nuevaVersionDeObjetivo}
+                  {r.datos.objetivo ? COPY_ENTRENAMIENTO.nuevaVersionDeObjetivo : COPY_ENTRENAMIENTO.definirObjetivo}
                 </button>
               </div>
             )}
@@ -218,7 +219,7 @@ function Estado({ datos, onIrA }: { datos: Datos; onIrA: (v: 'plan' | 'ejecucion
           <dd>
             {activo ? `Activado el ${fecha(activo.activatedAt as string)}` : COPY_ENTRENAMIENTO.sinPlanActivo}{' '}
             <button type="button" className="boton boton--enlace" onClick={() => onIrA('plan')}>
-              Ver plan
+              {activo ? 'Ver plan' : COPY_PRIMER_PLAN.titulo}
             </button>
           </dd>
         </div>
@@ -292,7 +293,7 @@ const ahoraLocal = (): string => {
 };
 
 /** Evaluación: datos previos con su fuente (B10-06 §3). Un dato calculado declara su método: BE no calcula. */
-function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: () => void; onCancelar: () => void }) {
+export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: () => void; onCancelar: () => void }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [datos, setDatos] = useState<Dato[]>([datoVacio()]);
@@ -549,7 +550,7 @@ function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: ()
 }
 
 /** Objetivo: un enunciado con fundamento, fundado en una evaluación. El 09 no fija su contenido (09v10:228). */
-function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { evaluaciones: readonly EvaluacionDeEntrenamiento[]; onEmitido: () => void; onCancelar: () => void }) {
+export function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { evaluaciones: readonly EvaluacionDeEntrenamiento[]; onEmitido: () => void; onCancelar: () => void }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [evaluacion, setEvaluacion] = useState(evaluaciones[0]?.evaluationId ?? '');

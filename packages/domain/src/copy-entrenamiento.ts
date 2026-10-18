@@ -76,6 +76,8 @@ export const COPY_ENTRENAMIENTO = {
   objetivoVigente: 'Objetivo vigente',
   nuevaEvaluacion: 'Nueva evaluación',
   nuevaVersionDeObjetivo: 'Nueva versión de objetivo',
+  /** El primero, cuando todavía no hay ninguno (como en Nutrición; DL-145). Después, «Nueva versión de objetivo» (B10-06:253-259). */
+  definirObjetivo: 'Definir el objetivo',
   crearPlan: 'Crear plan',
   crearNuevaVersion: 'Crear nueva versión a partir de esta',
   borrador: 'Borrador',
@@ -197,7 +199,8 @@ export const COPY_ENTRENAMIENTO = {
   corregidoPorVos: 'Corregido por vos',
 
   // PF-02 · contexto declarado conectado con la evaluación (DL-100, DL-102)
-  solicitarContexto: 'Solicitar contexto',
+  /** Antes «Solicitar contexto»: lo mismo se llama igual en todos lados (DL-145). */
+  solicitarContexto: 'Pedir información',
   ayudaSolicitarContexto:
     'Le pide a la persona «Antecedentes para entrenamiento»: qué busca, su experiencia, cuánto tiempo tiene, dónde entrena y qué prefiere. Pedir no da acceso a nada nuevo hasta que responda.',
   contextoDeclarado: 'Contexto declarado por la persona',

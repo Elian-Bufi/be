@@ -15,7 +15,7 @@
  *
  * Parte 4: **«Pedir información» dejó de ser una sección.** El marco tiene una sola, «Solicitudes» (`solicitudes.tsx`),
  * y el pedido es un cajón que se abre sobre ella (`pedir.tsx`). `vista=pedir` sigue abriéndolo: la usan el marco de la
- * ficha, Entrenamiento («Solicitar contexto») y el botón de la sección. Cerrarlo deja `vista=solicitudes` con lo demás de
+ * ficha, Entrenamiento («Pedir información») y el botón de la sección. Cerrarlo deja `vista=solicitudes` con lo demás de
  * la dirección como estaba: la persona queda en Información, y el marco le ofrece la vuelta a donde vino. Lo que
  * «Solicitudes» elige —la vista y la solicitud abierta— también vive en la dirección (`ver=`, `solicitud=`), y
  * «Actualizar» lo conserva.
@@ -30,7 +30,6 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
-import { AyudaDeSolicitudes } from './ayuda-de-solicitudes';
 import { PedidoDeInformacion } from './pedir';
 import { VistaDeSolicitudes } from './solicitudes';
 
@@ -78,8 +77,13 @@ export function Formularios() {
   const { token, sesionPerdida } = sesion;
 
   const retorno = useRetornoALaFicha(id);
-  // Desde Entrenamiento se llega con `volver=entrenamiento`, que no es una dirección de la ficha: la vuelta es a Entrenamiento.
-  const vuelta = parametros.get('volver') === 'entrenamiento' ? { href: `/pro/advisees/training?id=${encodeURIComponent(id)}&vista=resumen`, texto: 'Volver a Entrenamiento' } : null;
+  // Desde Entrenamiento se llega con `volver=entrenamiento` (la evaluación, en Resumen) o `volver=entrenamiento-plan`
+  // («Empezar el plan», DL-145): no son direcciones de la ficha, y la vuelta es a esa sección de Entrenamiento.
+  const volver = parametros.get('volver');
+  const vuelta =
+    volver === 'entrenamiento' || volver === 'entrenamiento-plan'
+      ? { href: `/pro/advisees/training?id=${encodeURIComponent(id)}&vista=${volver === 'entrenamiento-plan' ? 'plan' : 'resumen'}`, texto: 'Volver a Entrenamiento' }
+      : null;
   const enLaDireccion = parametros.toString();
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
@@ -108,7 +112,6 @@ export function Formularios() {
       vista="solicitudes"
       href={() => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=solicitudes`, retorno.valor)}
       ancho
-      ayuda={<AyudaDeSolicitudes />}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

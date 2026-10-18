@@ -102,9 +102,11 @@ export function PedidoDeInformacion({
   const [tocado, setTocado] = useState(false);
   useCambiosSinGuardar(tocado, 'el pedido de información');
 
-  const desdeEntrenamiento = parametros.get('volver') === 'entrenamiento';
+  // `entrenamiento-plan`: el pedido sale de «Empezar el plan» (DL-145) y vuelve al Plan, con lo mismo precargado.
+  const volver = parametros.get('volver');
+  const desdeEntrenamiento = volver === 'entrenamiento' || volver === 'entrenamiento-plan';
   const precargar = desdeEntrenamiento && parametros.get('plantilla') === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla;
-  const rutaDeEntrenamiento = `${RUTA_DE_ENTRENAMIENTO}?id=${encodeURIComponent(asesoradoId)}`;
+  const rutaDeEntrenamiento = `${RUTA_DE_ENTRENAMIENTO}?id=${encodeURIComponent(asesoradoId)}${volver === 'entrenamiento-plan' ? '&vista=plan' : ''}`;
   const cuerpo = useRef<HTMLDivElement>(null);
   const estaAbierto = useRef(abierto);
   estaAbierto.current = abierto;

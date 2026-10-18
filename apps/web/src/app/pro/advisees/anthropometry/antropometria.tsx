@@ -30,10 +30,6 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
-import { AyudaDeLaCarga } from './ayuda-de-la-carga';
-import { AyudaDeEvolucion } from './ayuda-de-evolucion';
-import { AyudaDeLaLamina } from './ayuda-de-la-lamina';
-import { AyudaDeTomas } from './ayuda-de-tomas';
 import { VistaDeEvaluaciones } from './evaluaciones';
 import { VistaDeEvolucion } from './evolucion';
 import { VistaDePreparacion } from './preparacion';
@@ -147,7 +143,6 @@ export function Antropometria() {
       retirado={retirado}
       onActualizar={volverALeer}
       ancho
-      ayuda={vista === 'evaluaciones' ? <AyudaDeTomas /> : vista === 'preparacion' ? <AyudaDeLaCarga /> : vista === 'evolucion' ? <AyudaDeEvolucion /> : <AyudaDeLaLamina />}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

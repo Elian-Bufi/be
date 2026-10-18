@@ -758,7 +758,6 @@ export function Analizar() {
     <section className={sinTarjeta ? 'seccion analizar analizar--sin-tarjeta' : 'seccion analizar'} aria-labelledby={`${id}-titulo`}>
       <div className={enCurso ? 'pregunta-en-curso pregunta-activa' : 'pregunta-en-curso'}>
         <h2 id={`${id}-titulo`}>{laPregunta ? laPregunta.pregunta : sinEntrada ? '¿Qué querés mirar?' : 'Comparación libre'}</h2>
-        {sinEntrada ? <p className="pregunta-en-curso__detalle">Dos caminos para lo mismo: una pregunta que ya trae los gráficos armados, o las métricas que elijas.</p> : null}
         {!sinEntrada && !laPregunta ? <p className="pregunta-en-curso__detalle">Sin pregunta: las métricas las elegís vos, de cualquier área.</p> : null}
         {enCurso && pregunta && destino && !delEjercicio ? (
           <p className="pregunta-en-curso__detalle">

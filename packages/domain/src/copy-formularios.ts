@@ -53,7 +53,7 @@ export const COPY_FORMULARIOS = {
   pedidoEl: 'Pedido el',
   respondidoEl: 'Respondido el',
   pedidoPor: 'Pedido por',
-  sinRespuestaTodavia: 'Todavía sin responder. No responder también es una opción.',
+  sinRespuestaTodavia: 'Todavía sin responder.',
   yaNoSePuedeResponder: 'Esta solicitud ya no se puede responder.',
 
   // ─── Responder (APK) ──────────────────────────────────────────────────────────────────────────

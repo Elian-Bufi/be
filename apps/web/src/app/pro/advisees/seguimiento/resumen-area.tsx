@@ -18,6 +18,7 @@
  * no tiene tarjeta, ni a medias. Una parte que no se pudo leer se dice primero, en su tarjeta.
  */
 import {
+  COPY_PRIMER_PLAN,
   claveDeObservacion,
   COPY_VINCULO,
   DIAS_DE_ANTICIPACION_DE_LA_REVISION,
@@ -171,7 +172,7 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
               <AccionDeRevisar area="NUTRICION" resumen={d.nutrition.summary} href={ruta('NUTRICION', 'revisiones', '&preparar=1')} llena={llena === 'NUTRICION'} />
             </>
           ) : (
-            <p className="tenue area__sin-datos">{COPY_VINCULO.sinDatosTodavia}</p>
+            <EmpezarElPlan href={ruta('NUTRICION', 'plan')} />
           )}
         </Tarjeta>
       ) : null}
@@ -205,13 +206,13 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
                 revision={d.training.summary.lastReview}
                 revisiones={ruta('ENTRENAMIENTO', 'revisiones')}
                 proxima={proximaDe(d.training.summary)}
-                detallesDeLaCobertura={[{ cifra: null, texto: 'Sin calendario prescripto, no hay «sesiones esperadas».' }]}
+                detallesDeLaCobertura={[]}
                 {...comunes}
               />
               <AccionDeRevisar area="ENTRENAMIENTO" resumen={d.training.summary} href={ruta('ENTRENAMIENTO', 'revisiones', '&preparar=1')} llena={llena === 'ENTRENAMIENTO'} />
             </>
           ) : (
-            <p className="tenue area__sin-datos">{COPY_VINCULO.sinDatosTodavia}</p>
+            <EmpezarElPlan href={ruta('ENTRENAMIENTO', 'plan')} />
           )}
         </Tarjeta>
       ) : null}
@@ -264,6 +265,22 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
 }
 
 const cuenta = (n: number, uno: string, varios: string): ParteDeObservacion => ({ cifra: numero(n), texto: n === 1 ? uno : varios });
+
+/**
+ * Un área todavía sin nada registrado (ni objetivo, ni plan, ni registros): lo que hay que hacer es empezar el plan, y el
+ * botón lleva al Plan del área, donde están los tres pasos (DL-145).
+ */
+function EmpezarElPlan({ href }: { href: string }) {
+  return (
+    <div className="area__sin-datos">
+      <p className="tenue">{COPY_VINCULO.sinDatosTodavia}</p>
+      <Link className="boton boton--primario" href={href}>
+        <Icono nombre="plan" tamano={18} />
+        {COPY_PRIMER_PLAN.titulo}
+      </Link>
+    </div>
+  );
+}
 
 function Tarjeta({ area, abrir, children }: { area: AreaDelResumen; abrir: string; children: ReactNode }) {
   const id = useId();

@@ -23,11 +23,11 @@
  *   dice quién retiró el acceso ni por qué.
  *
  * WP-ESCRITORIO-AMABLE (parte 1): **el marco de la ficha.** Lo que no cambia al pasar de una vista a otra va en una
- * franja de lado a lado, pegada a la barra de marca, en tres renglones: quién es, con «Solicitar contexto» y «Actualizar»
+ * franja de lado a lado, pegada a la barra de marca, en tres renglones: quién es, con «Pedir información» y «Actualizar»
  * con la hora; el acceso actual; y las tres vistas con el período. Siempre se sabe dónde se está sin desplazarse. La miga se retiró: la barra
  * de marca ya vuelve al Espacio profesional.
  *
- * WP-NOTAS-DE-COORDINACION (DL-140): «Nota de coordinación», al lado de «Solicitar contexto», abre el diálogo para escribirle
+ * WP-NOTAS-DE-COORDINACION (DL-140): «Nota de coordinación», al lado de «Pedir información», abre el diálogo para escribirle
  * a los otros profesionales que acompañan a la persona (UC-E07: se coordina desde el tablero). El diálogo es uno para toda la
  * ficha: lo abren también el Resumen y el detalle de una nota propia, para corregirla.
  */
@@ -45,7 +45,6 @@ import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesi
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
 import { DialogoDeNota } from './nota-de-coordinacion';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
-import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
 import { conRetorno, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
@@ -170,7 +169,7 @@ export function Workspace() {
 
   /**
    * El marco (B10-01): quién es, el acceso actual por área y cuándo se consultó; nada de ficha clínica. Con la ficha
-   * disponible suma «Solicitar contexto» y, debajo, las tres vistas y el período, que necesitan el contexto de la ficha.
+   * disponible suma «Pedir información» y, debajo, las tres vistas y el período, que necesitan el contexto de la ficha.
    */
   const marco = (vistas: ReactNode) => (
     <header className="marco-de-la-ficha" aria-labelledby="titulo-asesorado">
@@ -186,7 +185,7 @@ export function Workspace() {
             // Vuelve a esta misma vista de la ficha al enviar o al salir sin enviar (retorno validado).
             <Link className="boton boton--quieto boton--compacto" href={conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, valorDeRetorno(new URLSearchParams(parametros.toString())))}>
               <Icono nombre="solicitar" tamano={18} />
-              Solicitar contexto
+              Pedir información
             </Link>
           ) : null}
           {/* DL-140 (UC-E07: «se coordina desde el tablero»): una nota para los otros profesionales de la persona. */}
@@ -216,7 +215,9 @@ export function Workspace() {
             {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} sePuedeLeer={lecturaSegun(panel)} /> : null}
           </div>
           {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}
-          {panel.tipo === 'listo' && panel.datos.partialView ? (
+          {/* «Vista parcial» cuando falta un área del profesional (pausada o sin acceso), no por las áreas en las que no
+              trabaja con esta persona (DL-145): esas no son una parte que le falte. */}
+          {panel.tipo === 'listo' && panel.datos.partialView && encabezado.tipo === 'listo' && encabezado.vinculos.some((v) => v.relationshipState !== 'FINALIZADO' && v.accessMode !== 'CONTEXTUAL') ? (
             <p className="nota marco-de-la-ficha__aviso">
               <Icono nombre="oculto" tamano={18} />
               {COPY_VINCULO.vistaParcial}
@@ -265,8 +266,6 @@ export function Workspace() {
           <div className="marco-de-la-ficha__vistas">
             <PestanasDelSeguimiento actual={vista} />
             <div className="marco-de-la-ficha__derecha">
-              {/* La ayuda de la vista que se está mirando: una sola, siempre en el mismo lugar (C-04). */}
-              <ComoSeLeeEstaVista vista={vista} />
               <SelectorDePeriodo />
             </div>
           </div>,

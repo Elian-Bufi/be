@@ -42,7 +42,6 @@ export function tituloDeLaReferencia(ref: ReferenciaDeMetrica, definicion: Defin
 
 const MEDIDAS_DE_ENTRENAMIENTO = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'ENTRENAMIENTO' && m.implementada);
 const DE_NUTRICION = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'NUTRICION' && m.implementada);
-const NO_OFRECIDAS = METRICAS_DEL_DICCIONARIO.filter((m) => !m.implementada);
 
 type Area = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
 
@@ -251,16 +250,6 @@ export function SelectorDeMetricas({
             </>
           ) : null}
         </fieldset>
-        <details className="no-ofrecidas">
-          <summary>Lo que todavía no se ofrece, y por qué</summary>
-          <ul>
-            {NO_OFRECIDAS.map((m) => (
-              <li key={m.id}>
-                <strong>{m.nombre}:</strong> {m.explicacion}
-              </li>
-            ))}
-          </ul>
-        </details>
       </details>
 
       <DialogoDeReemplazo

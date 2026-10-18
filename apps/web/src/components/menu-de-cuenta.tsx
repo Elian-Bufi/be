@@ -122,6 +122,16 @@ export function MenuDeCuenta() {
               </span>
             </Link>
           ) : null}
+          {/* La guía (DL-145): las ayudas de las pantallas, juntas. Solo en el espacio profesional, que es de lo que habla. */}
+          {conSesion && ruta.startsWith('/pro') && ruta !== '/pro/guia' ? (
+            <Link href="/pro/guia" className="menu-de-cuenta__opcion">
+              <Icono nombre="ayuda" />
+              <span>
+                Guía del espacio profesional
+                <span className="nota">Cómo se lee cada pantalla</span>
+              </span>
+            </Link>
+          ) : null}
           <fieldset className="menu-de-cuenta__apariencia">
             <legend>Apariencia</legend>
             {TEMAS.map((t) => (

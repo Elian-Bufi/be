@@ -10,7 +10,7 @@
  */
 import { cantidad, COPY_HABITUALES, ETIQUETA_DE_PREPARACION, type ComidaHabitual, type ElementoDeCatalogo } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
-import { Ayuda, AvisoFlotante } from '../../../components/ayuda';
+import { AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -65,9 +65,7 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
   return (
     <section className="seccion" aria-labelledby="titulo-habituales-nutricion">
       <h2 id="titulo-habituales-nutricion">Habituales de nutrición</h2>
-      <Ayuda titulo="Quién ve tus habituales">
-        <p>{COPY_HABITUALES.soloTuyos}</p>
-      </Ayuda>
+      <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
       {aviso && aviso.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => setAviso(null)}>
           <p>{aviso.texto}</p>

@@ -165,7 +165,7 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
       </div>
       <p className="acciones">
         <Link className="boton boton--secundario" href={ruta('forms', 'pedir')}>
-          Solicitar contexto
+          Pedir información
         </Link>
       </p>
     </section>

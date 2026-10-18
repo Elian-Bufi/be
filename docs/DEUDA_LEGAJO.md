@@ -146,7 +146,9 @@
 | DL-139 | Pedido de Dirección · 2026-10-16 (WP-BUSQUEDA) | 09v9:648-654 (API-NUT-13) · 09v10:838-854 (API-TRN-13) · B10-05 §18 · B10-06 `CAND-10-TRN-05` · 07 §53 · DL-130 · DL-098 | El buscador de los catálogos exigía lo escrito tal cual: no toleraba el orden de las palabras, el plural ni los errores de tipeo | **IMPLEMENTADA** 2026-10-16 en `wp-busqueda`, sin integrar (migración aditiva con `pg_trgm`); D-1 a D-8 a ratificar |
 | DL-140 | Aprobación de Dirección · 2026-10-16 (WP-NOTAS-DE-COORDINACION) | 04 RF-057 · 05 UC-E07 (§11.8) · 06 T-06-43 · 08 §9.15, 08:495, §11-bis.3, Q-005 y §14, VJR-5 · 09 §11.6 (API-CRD-01) · 11A TEST-RF-057, TEST-UC-E07 · propuesta NOTAS-DE-COORDINACION | La nota de coordinación entre los profesionales de una persona: quién la recibe, quién la lee, el texto libre acotado, lo citado y que solo se agrega | **IMPLEMENTADA** 2026-10-17 con las opciones recomendadas CRD-D1 a CRD-D8 (API, web y APK en `wp-notas-de-coordinacion`, sin integrar); E-1 a E-11 a ratificar; falta la APK en el teléfono |
 | DL-141 | Aprobación de Dirección · 2026-10-16 (WP-CATALOGO-BASE, tanda 3) | 04 RF-060 · 05 UC-I07 · 06 REG-06-99 a 101, REG-06-112, INV-06-143 · 08 (licencias de los proveedores) · DL-097 · DL-098 · DL-099 · DL-139 | Lo importado de wger y de Open Food Facts lo veía solo quien lo importó, y se repetía; no había nombres alternativos («bench press», «aguacate»); faltaba un catálogo base de fuentes libres | **INTEGRADO el tramo 1** 2026-10-17 (#180): lo importado es de todos, uno por ítem externo (D-1), y los nombres alternativos con el buscador (D-2); siguen el catálogo de wger y el de USDA; D-1 y D-2 a ratificar |
-| DL-143 | Pedido de Dirección · 2026-10-17 (al probar la invitación) | 04 RF-021, RF-023 · 08 §24 (A3 como acto aparte) · 10-B02 §7 · 10-B04 §10-§14, §41 · CAND-10-CON-02 · UC-I02 E05 · DL-136 | Una persona aceptó el vínculo y autorizó al profesional, pero sin el tratamiento de datos de salud (A3) el acceso no era efectivo: la APK decía «Activo» y el profesional, «Acceso no disponible» | **IMPLEMENTADO** 2026-10-17: el último paso A3 en el mismo recorrido, el recordatorio en Inicio y una pista general para el profesional; la causa exacta para el profesional, a decidir |
+| DL-143 | Pedido de Dirección · 2026-10-17 (al probar la invitación) | 04 RF-021, RF-023 · 08 §24 (A3 como acto aparte) · 10-B02 §7 · 10-B04 §10-§14, §41 · CAND-10-CON-02 · UC-I02 E05 · DL-136 | Una persona aceptó el vínculo y autorizó al profesional, pero sin el tratamiento de datos de salud (A3) el acceso no era efectivo: la APK decía «Activo» y el profesional, «Acceso no disponible» | **INTEGRADO** 2026-10-17 (#181): el último paso A3 en el mismo recorrido, el recordatorio en Inicio y una pista general para el profesional; **Dirección eligió A** el 2026-10-18 |
+| DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
+| DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
 
 ---
 
@@ -4522,8 +4524,112 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
   - Riesgo: el profesional distingue «nunca lo dio» de «lo retiró», y eso deja ver una decisión de privacidad de la persona.
 - **Recomendación: A.** Con el último paso en el recorrido de aceptar, el caso se vuelve raro, y la persona no queda expuesta.
 
-**Provisorio en código:** todo lo de arriba, con A.
+**Decisión de Dirección (2026-10-18): A**, «la opción recomendada».
 
 **Condición de cierre:**
-- Dirección elige A o B;
-- una persona nueva acepta una invitación en el teléfono y termina con el acceso efectivo en un solo recorrido.
+- una persona nueva acepta una invitación en el teléfono y termina con el acceso efectivo en un solo recorrido (llega con la próxima APK).
+
+---
+
+## DL-144 — Formularios de inicio: que la persona los complete sin que el profesional los mande
+
+**Prioridad:** media (es lo que hace falta para que el primer plan salga de lo que la persona contó).
+
+**Documentos:**
+- **04 RF-071:** solicitar y completar información profesional pertinente; hoy, siempre a pedido del profesional.
+- **08:** la minimización (juntar solo lo necesario) y la finalidad de cada dato.
+- **DL-100:** los formularios sembrados son un catálogo sintético de demostración, con preguntas de producto, no un instrumento clínico.
+- **DL-102:** la evaluación cita las respuestas por referencia.
+- **DL-143:** el recorrido de aceptar un vínculo, donde entraría el pedido.
+
+**Qué pidió Dirección (2026-10-18).** «Un formulario base, con las preguntas que son genéricas y que cualquier profesional haría, que quede por default, que tiene para completar ese formulario, sin que se lo envíe el profesional; como mucho, que el profesional se lo pueda reenviar si quiere actualizar esa información.»
+
+**Lo que ya hay.**
+- Tres formularios base sembrados: «Salud» (FRM-SALUD), «Hábitos y contexto» (FRM-HABITOS) y «Antecedentes para entrenamiento» (FRM-ENTRENAMIENTO).
+- El profesional los manda a mano, uno por uno, desde Información.
+- La persona los responde en la APK y la evaluación los cita.
+
+**Lo que hace el mercado.** Everfit tiene un «Onboarding Flow» que manda formularios de alta automáticos según el tipo de cliente, según su propio blog. En Trainerize, lo que se encontró pasa por integraciones con Zapier.
+
+**Opciones.**
+- **A · BE los pide solo, al aceptar el vínculo (recomendada).**
+  - Aparecen en el mismo recorrido del teléfono, después del permiso de datos de salud (DL-143): «Para empezar, tu profesional necesita esto».
+  - El profesional elige cuáles pide por defecto, y puede pedir que la persona los actualice.
+  - Usa lo que ya existe: la solicitud, la respuesta, el consentimiento y las citas. Cada respuesta va al profesional que la pidió, para un fin concreto.
+- **B · Un perfil de salud propio de la persona, sin que nadie lo pida,** que se comparte con cada profesional.
+  - Descartada por ahora: junta datos de salud sin un fin concreto, cuando el legajo pide juntar solo lo necesario, y es un concepto nuevo del legajo.
+- **C · Un botón «Enviar los formularios de inicio» en la ficha.**
+  - Es el mínimo. Sirve para las personas que ya están vinculadas, y convive con A.
+
+**Ojo.** Si algún día se usa el PAR-Q+, el cuestionario de aptitud para la actividad física más usado, va completo y sin cambios (lo exige su colaboración).
+
+**Provisorio en código:** nada todavía. Toca la API, la APK y el website.
+
+**Condición de cierre:**
+- Dirección elige A, B o C (o A con C);
+- queda implementado después de la entrega, con su prueba en el teléfono.
+
+---
+
+## DL-145 — El espacio profesional sin vueltas: «Empezar el plan», los verbos de los pendientes, la guía y menos texto
+
+**Prioridad:** alta (el profesional no encontraba cómo planificar).
+
+**Documentos:**
+- **B10-06:** el plan nace de un objetivo vigente, y el objetivo de una evaluación (09v10:613). B10-06:253-259: «Nueva versión de objetivo», nunca «Editar objetivo actual».
+- **10-B04 §41 y UC-I02 E05:** lo que el profesional no ve no se explica.
+- **DL-025:** el inicio de cada cuenta (el profesional entra a su espacio).
+- **DL-047:** «Crear nueva versión a partir de esta».
+- **DL-113:** la guía de UX; lo que el legajo exige decir queda dicho, aunque se pliegue.
+- **DL-137:** los días de entrenamiento.
+- **DL-140:** las notas de coordinación (CRD-D8).
+- **El análisis:** `docs/ux/ANALISIS-ESPACIO-PROFESIONAL-2026-10-18.md`, con las capturas del website de test.
+
+**Qué pasó (2026-10-18).**
+- Dirección quiso armar el plan de entrenamiento de una persona nueva y no encontró dónde.
+- El Plan vacío decía «primero definí el objetivo» y mandaba a Resumen. Ahí el botón del objetivo estaba apagado hasta registrar una evaluación, que estaba más abajo.
+- Dirección pidió revisar los flujos del profesional, sacar el ruido y las explicaciones de las pantallas («debería ser intuitivo»), con las heurísticas y lo último del área, como un product manager.
+
+**Qué se implementó** (todo en el website; la API no cambia):
+- **E-1 · «Empezar el plan».** El Plan de Nutrición y el de Entrenamiento, sin plan activo ni en preparación, muestran tres pasos en orden en la misma pantalla:
+  - evaluación inicial, objetivo y plan, con los mismos formularios de Resumen;
+  - el paso que toca está abierto; los que ya están dicen «Listo»; los que vienen dicen después de cuál;
+  - desde la evaluación se puede pedir información a la persona: en Entrenamiento, con «Antecedentes para entrenamiento» precargado, y al enviar se vuelve al Plan (`volver=entrenamiento-plan`).
+  La regla de B10-06 queda igual: lo que cambia es que el profesional ya no tiene que descubrir el orden.
+- **E-2 · Las entradas.** «Empezar el plan» también en la tarjeta del área de la ficha (cuando el área no tiene nada registrado) y en el Resumen de cada área.
+- **E-3 · El verbo de cada pendiente.** El botón ya no dice «Abrir» en todas las filas: «Empezar el plan», «Seguir el borrador», «Revisar», «Ver la solicitud», «Seguir la toma». Lleva a la misma vista de antes.
+- **E-4 · La Guía del espacio profesional** (`/pro/guia`, desde el menú de la cuenta).
+  - Las once ayudas «Cómo se lee esta vista» salen de las pantallas y se leen juntas en la guía, como texto corrido.
+  - Nada se borra: lo que esas ayudas decían, y lo que el legajo exige poder leer (DL-113), queda en la guía.
+  - También «Lo que todavía no se ofrece, y por qué», que estaba plegado en Analizar.
+- **E-5 · Menos texto en las pantallas:**
+  - sale el subtítulo de Pendientes («Lo que BE puede saber con lo registrado. No es una evaluación de nadie»);
+  - el vacío de Pendientes se acorta («Nada pendiente con lo registrado»);
+  - Registros: la etiqueta «Sin registrar» ya dice que no hay dato, así que sale la aclaración;
+  - Información: «No responder también es una opción» se le dice a la persona, no al profesional;
+  - Tomas: «Una toma registrada no se edita» sale del subtítulo, y queda en la guía y al corregir;
+  - Analizar: sale «Dos caminos para lo mismo…»;
+  - las vistas guardadas se acortan («Guardan qué mirar, no los datos»);
+  - «Quién ve tus plantillas» y «Quién ve tus habituales» pasan de plegables a una línea a la vista;
+  - la tarjeta de Entrenamiento ya no dice «Sin calendario prescripto, no hay "sesiones esperadas"», que dejó de ser cierto con los días de entrenamiento (DL-137).
+- **E-6 · El vocabulario:**
+  - «Pedir información» en todos lados (antes también «Solicitar contexto»);
+  - «Área» al solicitar un vínculo (antes «Alcance»), y la finalidad aparece cuando hay un área elegida;
+  - lo que decide el asesorado, a la vista en una línea en lugar de un plegable;
+  - «Definir el objetivo» para el primero, como en Nutrición; después sigue «Nueva versión de objetivo» (B10-06).
+- **E-7 · La ficha según el momento de la persona:**
+  - sin nada registrado en ningún área, la ficha no muestra indicadores ni «Empezar por una pregunta»: la tarjeta del área ofrece empezar el plan;
+  - «Notas recientes del equipo» aparece cuando hay alguna nota (escribir una sigue en el encabezado; una falla de lectura se dice igual). Ajusta CRD-D8 (DL-140);
+  - «Vista parcial según tu acceso actual» aparece cuando falta un área del profesional (pausada o sin acceso), no por las áreas en las que no trabaja con esa persona.
+
+**Lo que no se hizo, y por qué:**
+- **El área ya elegida al invitar o al solicitar un vínculo** cuando el profesional trabaja en una sola: el website no sabe en cuáles trabaja. Hace falta ese dato de la API: después de la entrega.
+- **El encabezado de la ficha** (once elementos): toca las maquetas que Dirección validó el 2026-10-10. Después de la entrega.
+- **«Mis ejercicios» como grilla:** después de la entrega.
+- **«Activo · acceso contextual» (10-B04) y «Crear nueva versión a partir de esta» (DL-047):** vienen del legajo y de una decisión; cambiarlos lo decide Dirección.
+
+**Provisorio en código:** E-1 a E-7.
+
+**Condición de cierre:**
+- Dirección ratifica E-1 a E-7, o cambia las que quiera;
+- un profesional arma el primer plan de una persona nueva sin ayuda, en la prueba con profesionales del análisis.
