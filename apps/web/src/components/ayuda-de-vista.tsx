@@ -8,7 +8,7 @@
  * - Se abre por el principio: el foco va al título. Si fuera al primer control (el botón «Cerrar», al final), una ayuda
  *   más alta que la ventana se abriría mostrando su último renglón.
  */
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icono } from './icono';
 
 /** Una explicación con su muestra al costado: lo que se ve en la pantalla, al lado de lo que significa. */
@@ -23,6 +23,17 @@ export function RenglonDeAyuda({ muestra, children }: { muestra: ReactNode; chil
   );
 }
 
+/**
+ * La Guía del espacio profesional (DL-145; Dirección, 2026-10-18): las ayudas ya no están en cada pantalla, que tiene
+ * que entenderse sola. Lo que explicaban, y lo que el legajo exige poder leer (DL-113), queda junto en `/pro/guia`.
+ * Adentro de `GuiaDeAyudas`, cada ayuda es una sección con su título, sin botón ni diálogo.
+ */
+const EnLaGuia = createContext(false);
+
+export function GuiaDeAyudas({ children }: { children: ReactNode }) {
+  return <EnLaGuia.Provider value={true}>{children}</EnLaGuia.Provider>;
+}
+
 export function AyudaDeVista({
   titulo,
   deQue,
@@ -33,6 +44,7 @@ export function AyudaDeVista({
   deQue: string;
   children: ReactNode;
 }) {
+  const enLaGuia = useContext(EnLaGuia);
   const id = useId();
   const dialogo = useRef<HTMLDialogElement>(null);
   const encabezado = useRef<HTMLHeadingElement>(null);
@@ -44,6 +56,14 @@ export function AyudaDeVista({
   useEffect(() => {
     if (dialogo.current?.open) dialogo.current.close();
   }, [deQue]);
+  if (enLaGuia) {
+    return (
+      <section className="guia__seccion como-se-lee" aria-labelledby={`${id}-titulo`}>
+        <h3 id={`${id}-titulo`}>{titulo}</h3>
+        {children}
+      </section>
+    );
+  }
   return (
     <>
       <button type="button" className="boton boton--enlace como-se-lee__boton" aria-haspopup="dialog" onClick={abrir}>

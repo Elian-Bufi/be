@@ -2,7 +2,8 @@
 
 **Estado:** vigente desde el 2026-10-01 (DL-113), ampliada el 2026-10-03 con la candidata 0.13.2 y reorganizada el
 2026-10-09 con WP-DASHBOARD-COMPRENSION (en borrador, en la rama de ese paquete). Desde el 2026-10-10 la amplía
-WP-ESCRITORIO-AMABLE, también en borrador (V.3). A ratificar por Dirección.
+WP-ESCRITORIO-AMABLE, también en borrador (V.3). El 2026-10-18 la cambia DL-145 (el espacio profesional sin vueltas: II.11).
+A ratificar por Dirección.
 **Alcance:** el website del profesional y del asesorado (`apps/web`) y la APK del asesorado (`apps/mobile`).
 **Cuándo se usa:** en cada pantalla nueva y en cada cambio de una pantalla existente. Antes de abrir el PR se recorre la
 [lista de control](#parte-iv--verificación-y-lista-de-control).
@@ -277,14 +278,15 @@ Información).
   foco no puede quedar detrás de un panel (WCAG 2.2, 2.4.11).
 - **El marco de la ficha** (`workspace.tsx`; WP-ESCRITORIO-AMABLE): una franja de lado a lado, pegada a la barra de
   marca, con lo que no cambia al pasar de una vista a otra. Tiene tres renglones fijos, sin depender del largo del
-  nombre: (1) el nombre visible como título, «Solicitar contexto» y, a la derecha, «Actualizar» con la hora de la
+  nombre: (1) el nombre visible como título, «Pedir información» y, a la derecha, «Actualizar» con la hora de la
   consulta; (2) el **acceso actual por área**, dicho una vez si todas las áreas están en el mismo estado, y el aviso
-  de vista parcial; (3) las tres vistas y, a la derecha, «Cómo se lee esta vista» y el período. La ficha no lleva
+  de vista parcial, cuando falta un área del profesional; (3) las tres vistas y, a la derecha, el período. La ficha no lleva
   miga: la barra de marca ya vuelve al Espacio profesional.
-- **«Cómo se lee esta vista»** (`como-se-lee.tsx`) es **una sola ayuda por vista,** siempre en el mismo lugar del
-  marco. Es un diálogo: explica cada marca con su muestra al lado, qué se dibuja y qué no dice la pantalla. No
-  reemplaza lo que depende de los datos que se miran («Cómo se calcula», la cobertura, el límite de una pregunta), que
-  sigue en su lugar. Cada vista suma la suya con su parte del paquete; a 1024 px el botón queda con su ícono solo.
+- **Las ayudas de las vistas viven en la Guía del espacio profesional** (`/pro/guia`, desde el menú de la cuenta;
+  DL-145, 2026-10-18). Las pantallas ya no tienen «Cómo se lee esta vista»: tienen que entenderse solas. La guía junta
+  lo que esas ayudas explicaban y lo que el legajo exige poder leer (DL-113). Una ayuda nueva entra en la guía, no en
+  la pantalla: es una `AyudaDeVista`, que adentro de `GuiaDeAyudas` se muestra como texto corrido. Lo que depende de
+  los datos que se miran («Cómo se calcula», la cobertura, el límite de una pregunta) sigue en su lugar.
 - **El período es un solo control.** A la vista dice qué período es, cuántos días tiene y si incluye hoy. Al abrirlo
   están los atajos (7, 30 y 90 días, y un año) y el rango propio, con dos campos de fecha. Elegir cierra el control;
   Escape también, y devuelve el foco al botón.
@@ -313,8 +315,7 @@ Información).
   - **Lo que una sección elige vive en la dirección:** el período, la vista y lo que está abierto. Como «Actualizar»
     vuelve a montar la sección, lo que quede en su memoria se pierde: una sección recompuesta lo lleva a la dirección
     (`ir`, del contexto del área), y «Actualizar» y volver atrás lo conservan. Al cambiar de sección no se lleva.
-  - **La ayuda de la vista** («Cómo se lee esta vista») va en el renglón de las secciones, a la derecha, solo en las
-    secciones que la tienen (`AyudaDeVista`).
+  - **Las secciones no llevan ayuda:** lo que explicaría va en la Guía del espacio profesional (DL-145).
 - **La dirección dice dónde se está:** se navega con el router (`ir`, `irA`), no cambiando un estado escondido. La URL
   guarda la vista, el período, los filtros, las métricas, la pregunta y la fecha elegida, **solo como identificadores,
   enumerados y fechas**. El texto que escribe la persona (una búsqueda) y los borradores no van en la URL. Atrás vuelve
@@ -332,7 +333,7 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
 - **Cada hecho del Resumen** está en la tarjeta de su área, bajo su alcance («Desde la revisión del 20 sept» o «En el
   período seleccionado»; lo pendiente es de hoy), y el renglón entero abre lo que lo profundiza. El área y el alcance
   van también escritos en cada renglón, para el lector de pantalla. De dónde sale un hecho es cómo se arma, no un dato
-  que cambie de un renglón a otro: se dice una vez por regla, en «Cómo se lee esta vista». La hora de los datos es
+  que cambie de un renglón a otro: se dice una vez por regla, en la Guía del espacio profesional. La hora de los datos es
   una sola, la del marco, y «Actualizar» vuelve a leer todo lo que la vista muestra.
 - **La cobertura que hace falta para leer un número va junto al número:** cada indicador dice la suya, a la vista. La
   cobertura del área es un hecho más de su tarjeta, el de menor prioridad: queda plegada cuando el área tiene una
@@ -913,6 +914,24 @@ WP-ESCRITORIO-AREAS, parte 9; maqueta 23):
   y se muestra como data URL.
 
 ---
+
+### II.11 Sin vueltas (DL-145, 2026-10-18)
+
+Lo que salió del análisis de los flujos del profesional (`docs/ux/ANALISIS-ESPACIO-PROFESIONAL-2026-10-18.md`):
+- **Un estado vacío lleva a la tarea.** No alcanza con decir qué falta: el vacío tiene el botón que lo resuelve, o lleva
+  a donde se resuelve. El Plan sin plan muestra «Empezar el plan», con sus tres pasos en orden (evaluación, objetivo y
+  plan) en la misma pantalla.
+- **Un requisito se guía, no se esconde.** Si una acción necesita otra antes, la pantalla las muestra en orden, con la
+  que toca abierta. Un botón apagado con una línea gris no es una guía.
+- **El botón dice qué hace.** Una fila que dice qué está pendiente lleva el verbo que lo resuelve («Empezar el plan»,
+  «Revisar»), no un «Abrir» igual para todas.
+- **Una pantalla del profesional no explica cómo se lee.** Si necesita explicación, se cambia la pantalla; lo que el
+  legajo exige poder leer va en la Guía del espacio profesional. Siguen a la vista el consentimiento y los efectos antes
+  de actuar, y el contexto del dato (I.2).
+- **Lo que no aplica no se muestra.** Una ficha sin nada registrado no muestra indicadores ni preguntas sobre un plan
+  que no existe; una tarjeta vacía sin acción (las notas del equipo sin notas) no aparece.
+- **Lo mismo se llama igual.** «Pedir información» (no «Solicitar contexto»), «Área» (no «Alcance») en lo que ve el
+  profesional.
 
 ## Parte III · APK del asesorado
 

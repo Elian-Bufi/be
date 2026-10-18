@@ -139,8 +139,7 @@ const dias = (n: number): string => `${numero(n)} ${n === 1 ? 'día' : 'días'}`
 /** Textos de la cartera. Las fechas llegan ya formateadas por la pantalla. */
 export const COPY_CARTERA = {
   titulo: 'Pendientes',
-  subtitulo: 'Lo que BE puede saber con lo registrado. No es una evaluación de nadie.',
-  vacio: 'Nada pendiente con lo que BE puede saber. Lo que no está registrado, no está acá.',
+  vacio: 'Nada pendiente con lo registrado.',
   vistaParcial: 'Hay datos de algún asesorado que no podés ver desde tu alcance: no se cuentan acá.',
   dominio: { nutrition: 'Nutrición', training: 'Entrenamiento', anthropometry: 'Antropometría' } as const,
   pendiente: {
@@ -157,6 +156,19 @@ export const COPY_CARTERA = {
   /** Sin período elegido se mira toda la historia: decir «en el período» sería hablar de uno que no hay. */
   sinRegistrosTodavia: 'Sin registros todavía',
   abrir: 'Abrir',
+  /**
+   * El verbo de cada pendiente (Dirección, 2026-10-18; DL-145): el botón dice qué se hace al tocarlo, y lleva a la vista
+   * que lo resuelve (`rutaQueResuelve`). «Abrir» quedaba igual en todas las filas, aunque cada una dijera qué faltaba.
+   */
+  accion: {
+    REVIEW_OVERDUE: 'Revisar',
+    REVIEW_DUE_SOON: 'Revisar',
+    REVIEW_UNDATED: 'Revisar',
+    PLAN_DRAFT_PENDING: 'Seguir el borrador',
+    NO_ACTIVE_PLAN: 'Empezar el plan',
+    FORM_REQUEST_OPEN: 'Ver la solicitud',
+    ANTHRO_DRAFT_PENDING: 'Seguir la toma',
+  } as const,
   filtroDominio: 'Área',
   filtroTipo: 'Tipo de pendiente',
   todos: 'Todos',

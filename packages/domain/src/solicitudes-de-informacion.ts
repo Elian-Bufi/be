@@ -188,7 +188,7 @@ const preguntasEnPalabras = (n: number): string => (n === 1 ? '1 pregunta' : `${
  * cuenta («Respondió 1 de las 2 preguntas») no es un porcentaje, y va solo en la historia de una respuesta.
  */
 export const COPY_SOLICITUDES = {
-  bajada: 'Lo que le pediste a esta persona y lo que declaró. No responder también es una opción.',
+  bajada: 'Lo que le pediste a esta persona y lo que declaró.',
   ver: 'Ver',
   vista: { TODAS: 'Todas', SIN_RESPONDER: 'Sin responder', RESPONDIDAS: 'Respondidas' } as Readonly<Record<VistaDeSolicitudes, string>>,
   unidadDeLaVista: ['solicitud', 'solicitudes'] as const,

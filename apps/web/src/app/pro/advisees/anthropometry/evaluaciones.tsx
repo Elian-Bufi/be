@@ -176,15 +176,14 @@ export function VistaDeEvaluaciones() {
       ) : null}
       <div className="registros__encabezado">
         <h2 id="titulo-tomas">{C.tomas}</h2>
-        <p className="nota registros__bajada">
-          {tomas && tomas.length > 0 ? (
+        {tomas && tomas.length > 0 ? (
+          <p className="nota registros__bajada">
             <span data-cuenta-de-tomas>
               {lista?.ok && !lista.datos.completa ? 'Al menos ' : ''}
-              {C.tomasRegistradas(tomas.length)}{' '}
+              {C.tomasRegistradas(tomas.length)}
             </span>
-          ) : null}
-          {C.unaTomaNoSeEdita}
-        </p>
+          </p>
+        ) : null}
         {lista?.ok ? (
           <div className="tomas-del-area__preparar">
             {lista.datos.borrador ? <p className="nota">{C.hayUnaTomaEnPreparacion(lista.datos.borrador.mediciones)}</p> : null}

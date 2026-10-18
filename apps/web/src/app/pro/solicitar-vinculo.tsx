@@ -14,7 +14,6 @@
  */
 import { ALCANCES, COPY, COPY_VINCULO, ETIQUETA_DE_ALCANCE, ETIQUETA_DE_FINALIDAD, FINALIDAD_DE_ALCANCE, type Alcance } from '@be/domain';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { Ayuda } from '../../components/ayuda';
 import { Aviso, Campo } from '../../components/formulario';
 import { api, type Resultado } from '../../lib/api';
 import { esIncierto, useClaveDeIntento } from '../../lib/intento';
@@ -63,7 +62,7 @@ export function SolicitarVinculo({
     if (enviando) return;
     const encontrados: typeof errores = {};
     if (!asesorado.trim()) encontrados.asesorado = 'Ingresá el identificador BE del asesorado.';
-    if (!alcance) encontrados.alcance = 'Elegí un alcance.';
+    if (!alcance) encontrados.alcance = 'Elegí un área.';
     setErrores(encontrados);
     if (Object.keys(encontrados).length > 0 || !alcance) return;
 
@@ -118,7 +117,7 @@ export function SolicitarVinculo({
           spellCheck={false}
         />
         <div className={`campo${errores.alcance ? ' campo--error' : ''}`}>
-          <label htmlFor={`${id}-alcance`}>{COPY_VINCULO.alcance}</label>
+          <label htmlFor={`${id}-alcance`}>Área</label>
           <select
             id={`${id}-alcance`}
             value={alcance}
@@ -126,7 +125,7 @@ export function SolicitarVinculo({
             aria-describedby={errores.alcance ? `${id}-alcance-error` : undefined}
             onChange={(e) => editar(() => setAlcance(e.target.value as Alcance | ''))}
           >
-            <option value="">Elegí un alcance</option>
+            <option value="">Elegí un área</option>
             {ALCANCES.map((a) => (
               <option key={a} value={a}>
                 {ETIQUETA_DE_ALCANCE[a]}
@@ -140,12 +139,12 @@ export function SolicitarVinculo({
             </p>
           ) : null}
         </div>
-        <p>
-          <strong>{COPY_VINCULO.finalidad}:</strong> {finalidad}
-        </p>
-        <Ayuda titulo="Qué decide el asesorado">
-          <p>La finalidad es la del alcance. El asesorado decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
-        </Ayuda>
+        {alcance ? (
+          <p>
+            <strong>{COPY_VINCULO.finalidad}:</strong> {finalidad}
+          </p>
+        ) : null}
+        <p className="nota">El asesorado decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
         <div className="acciones">
           <button type="button" className="boton boton--secundario" onClick={onCerrar} disabled={enviando}>
             Volver

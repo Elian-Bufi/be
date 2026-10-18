@@ -10,7 +10,7 @@
  */
 import { COPY_PLANTILLAS, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Ayuda, AvisoFlotante } from '../../../components/ayuda';
+import { AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -67,9 +67,7 @@ export function MisPlantillas() {
       {sinArea ? null : (
       <section className="seccion" aria-labelledby="titulo-plantillas">
         <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
-        <Ayuda titulo="Quién ve tus plantillas">
-          <p>{COPY_PLANTILLAS.soloTuya}</p>
-        </Ayuda>
+        <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
         {/* Sin plantillas y sin filtro, el filtro no tiene nada que filtrar: aparece cuando hay alguna. */}
         {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
         <div className="campo">

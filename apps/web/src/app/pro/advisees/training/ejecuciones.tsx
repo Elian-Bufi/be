@@ -149,7 +149,7 @@ export function VistaDeEjecuciones() {
       <div className="registros__encabezado">
         <h2 id="titulo-sesiones">Sesiones registradas</h2>
         <p className="nota registros__bajada">
-          Lo indicado y lo registrado, serie por serie. Lo que no se registró dice «{COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar}»: no se interpreta.
+          Lo indicado y lo registrado, serie por serie.
         </p>
         {/* El período queda fuera del estado de lectura: si no se puede leer, sigue ahí para cambiarlo (B10-06:956-961). */}
         {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} /> : null}
@@ -472,7 +472,7 @@ function DiasSinSesion({ dias }: { dias: readonly string[] }) {
   return (
     <div className="sesiones__sin-sesion">
       <p>
-        <strong>{dias.length === 1 ? 'Un día del período' : `${numero(dias.length)} días del período`} sin sesión registrada.</strong> Sin registro no quiere decir que no haya entrenado: no hay dato.{' '}
+        <strong>{dias.length === 1 ? 'Un día del período' : `${numero(dias.length)} días del período`} sin sesión registrada.</strong>{' '}
         <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={`${id}-dias`} onClick={() => setAbierto(!abierto)}>
           {abierto ? 'Ocultar los días' : 'Ver los días'}
         </button>

@@ -150,7 +150,7 @@ export function VistaDeRegistros() {
       <div className="registros__encabezado">
         <h2 id="titulo-registros">{COPY_NUTRICION.registros}</h2>
         <p className="nota registros__bajada">
-          Lo indicado y lo registrado, día por día. Lo que no se registró dice «{COPY_NUTRICION.sinRegistro}»: no se interpreta.
+          Lo indicado y lo registrado, día por día.
         </p>
         {/* El período queda fuera del estado de lectura: si no se puede leer, sigue ahí para cambiarlo (B10-10:376). */}
         {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} /> : null}

@@ -23,9 +23,6 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
-import { AyudaDeRevisiones } from '../ayuda-de-revisiones';
-import { AyudaDeRegistrosDeEntrenamiento } from './ayuda-de-registros';
-import { AyudaDelPlanDeEntrenamiento } from './ayuda-del-plan';
 import { VistaDeEjecuciones } from './ejecuciones';
 import { VistaDePlan } from './plan';
 import { VistaDeResumen } from './resumen';
@@ -112,9 +109,8 @@ export function Entrenamiento() {
       href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)}
       retirado={retirado}
       onActualizar={volverALeer}
-      // Registros (parte 2), Plan (parte 8) y Revisiones (parte 10) ya están recompuestas: usan todo el ancho y tienen su ayuda.
+      // Registros (parte 2), Plan (parte 8) y Revisiones (parte 10) ya están recompuestas: usan todo el ancho.
       ancho={vista === 'ejecuciones' || vista === 'plan' || vista === 'revisiones'}
-      ayuda={vista === 'ejecuciones' ? <AyudaDeRegistrosDeEntrenamiento /> : vista === 'plan' ? <AyudaDelPlanDeEntrenamiento /> : vista === 'revisiones' ? <AyudaDeRevisiones area="ENTRENAMIENTO" /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

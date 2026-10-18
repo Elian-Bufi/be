@@ -22,7 +22,6 @@ import type { Disponibles } from './series';
 
 const DE_NUTRICION = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'NUTRICION' && m.implementada);
 const DE_ENTRENAMIENTO = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'ENTRENAMIENTO' && m.implementada);
-const NO_OFRECIDAS = METRICAS_DEL_DICCIONARIO.filter((m) => !m.implementada);
 /** Cuántas medidas corporales van a la vista; las demás, en «Más medidas». */
 const MEDIDAS_A_LA_VISTA = 4;
 
@@ -189,16 +188,6 @@ export function ElegirMetricasDeEntrada({ disponibles, onVer }: { disponibles: D
         </button>
       </div>
 
-      <details className="no-ofrecidas">
-        <summary>Lo que todavía no se ofrece, y por qué</summary>
-        <ul>
-          {NO_OFRECIDAS.map((m) => (
-            <li key={m.id}>
-              <strong>{m.nombre}:</strong> {m.explicacion}
-            </li>
-          ))}
-        </ul>
-      </details>
     </section>
   );
 }

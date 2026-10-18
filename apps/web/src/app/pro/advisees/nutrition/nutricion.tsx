@@ -23,9 +23,6 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
-import { AyudaDeRevisiones } from '../ayuda-de-revisiones';
-import { AyudaDeRegistros } from './ayuda-de-registros';
-import { AyudaDelPlan } from './ayuda-del-plan';
 import { VistaDePlan } from './plan';
 import { VistaDeRegistros } from './registros';
 import { VistaDeResumen } from './resumen';
@@ -118,7 +115,6 @@ export function Nutricion() {
       onActualizar={volverALeer}
       // Plan, Registros y Revisiones ya están recompuestas: usan todo el ancho y tienen su ayuda. Resumen conserva el suyo.
       ancho={vista === 'registros' || vista === 'plan' || vista === 'revisiones'}
-      ayuda={vista === 'registros' ? <AyudaDeRegistros /> : vista === 'plan' ? <AyudaDelPlan /> : vista === 'revisiones' ? <AyudaDeRevisiones area="NUTRICION" /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

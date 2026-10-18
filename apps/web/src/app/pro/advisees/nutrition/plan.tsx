@@ -16,12 +16,14 @@
 import {
   COPY_DEL_PLAN,
   COPY_NUTRICION,
+  COPY_PRIMER_PLAN,
   COPY_PLANTILLAS,
   diaTipoElegido,
   estructuraNutricionalComoEntrada,
   historialDeVersiones,
   numerosDeVersionDePlan,
   todasLasPaginas,
+  type EvaluacionNutricional,
   type VersionDelHistorial,
   type VersionDeObjetivo,
   type VersionDePlan,
@@ -29,16 +31,18 @@ import {
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { EnPartes } from '../../../../components/en-partes';
-import { Cargando, EstadoVacio } from '../../../../components/estados';
+import { Cargando } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, type Resultado } from '../../../../lib/api';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
+import { PrimerPlan } from '../primer-plan';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { EditorDeBorrador } from './editor';
+import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
 import { ComidasDelPlan, SelectorDeDiaTipo } from './estructura-del-plan';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional } from './plantillas';
@@ -246,16 +250,15 @@ export function VistaDePlan() {
 
                 {mostrada === 'activa' && !activa ? (
                   <>
-                    <EstadoVacio titulo={COPY_NUTRICION.sinPlanActivo} accion={empezarElPlan}>
-                      {!objetivo ? (
-                        <p>
-                          {COPY_DEL_PLAN.primeroElObjetivo}{' '}
-                          <button type="button" className="boton boton--enlace" onClick={() => irA('resumen')}>
-                            {COPY_DEL_PLAN.irAResumen}
-                          </button>
-                        </p>
-                      ) : null}
-                    </EstadoVacio>
+                    {/* Sin plan: los tres pasos en orden, en esta misma pantalla (DL-145). La acción principal va primera. */}
+                    <PrimerPlanDeNutricion
+                      objetivoDesde={objetivo?.effectiveFrom ?? null}
+                      accionesDelPlan={empezarElPlan}
+                      onObjetivo={() => {
+                        setAviso({ tipo: 'exito', texto: COPY_PRIMER_PLAN.objetivoDefinido });
+                        void cargar();
+                      }}
+                    />
                     {historial.length > 0 ? <HistorialDelPlan historial={historial} huella={null} /> : null}
                   </>
                 ) : null}
@@ -409,5 +412,56 @@ export function VersionSoloLectura({ version, numero }: { version: VersionDePlan
       <SelectorDeDiaTipo dias={version.dayTypes} elegido={dia} onElegir={(orden) => setPedido({ dia: String(orden), comidas: null })} />
       {dia ? <ComidasDelPlan dia={dia} pedido={pedido.comidas} onPedir={(comidas) => setPedido((p) => ({ ...p, comidas }))} nivel={4} /> : <p className="nota">{COPY_DEL_PLAN.sinDiasTipo}</p>}
     </div>
+  );
+}
+
+/**
+ * «Empezar el plan» de Nutrición (DL-145): lee las evaluaciones y pone los formularios de Resumen en el paso que toca.
+ * Una lectura que falla se dice como falla, nunca como «todavía no hay evaluación» (`EstadoDeLectura`).
+ */
+function PrimerPlanDeNutricion({ objetivoDesde, accionesDelPlan, onObjetivo }: { objetivoDesde: string | null; accionesDelPlan: ReactNode; onObjetivo: () => void }) {
+  const { token, asesoradoId, sesionPerdida } = useNutricion();
+  const [r, setR] = useState<Resultado<readonly EvaluacionNutricional[]> | null>(null);
+  const [abierto, setAbierto] = useState<'evaluacion' | 'objetivo' | null>(null);
+  const leer = useCallback(async () => {
+    const res = await api.listarEvaluaciones(token, asesoradoId);
+    if (sesionPerdida(res)) return;
+    setR(res.ok ? { ok: true, datos: res.datos.data } : (res as Resultado<never>));
+  }, [token, asesoradoId, sesionPerdida]);
+  useEffect(() => {
+    void leer();
+  }, [leer]);
+  const evaluaciones = r?.ok ? r.datos : [];
+  const ultima = [...evaluaciones].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0] ?? null;
+  return (
+    <EstadoDeLectura r={r} onReintentar={() => void leer()}>
+      <PrimerPlan
+        evaluacion={ultima ? diaSinElAnioEnCurso(ultima.occurredAt) : false}
+        objetivoDesde={objetivoDesde ? diaSinElAnioEnCurso(objetivoDesde) : null}
+        abierto={abierto}
+        onAbrir={setAbierto}
+        formularioDeEvaluacion={
+          <FormularioDeEvaluacion
+            onRegistrada={() => {
+              setAbierto('objetivo');
+              void leer();
+            }}
+            onCancelar={() => setAbierto(null)}
+          />
+        }
+        formularioDeObjetivo={
+          <FormularioDeObjetivo
+            evaluaciones={evaluaciones}
+            onEmitido={() => {
+              setAbierto(null);
+              onObjetivo();
+            }}
+            onCancelar={() => setAbierto(null)}
+          />
+        }
+        accionesDelPlan={accionesDelPlan}
+        pedirInformacion={`/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir`}
+      />
+    </EstadoDeLectura>
   );
 }

@@ -16,7 +16,7 @@
  * - **«Actualizar», con la hora de la consulta.** Vuelve a leer todo lo que la sección muestra: la sección se monta de
  *   nuevo y cada una de sus lecturas sale otra vez. Si hay algo escrito sin guardar (lo avisa quien lo tiene, con
  *   `useCambiosSinGuardar`), antes pregunta: nada se pierde en silencio.
- * - **Las secciones,** con su ícono, y la ayuda de la que se está mirando, cuando la tenga.
+ * - **Las secciones,** con su ícono. Sus ayudas están en la Guía del espacio profesional (DL-145).
  * Los estados (sin sesión, cargando, falla, sin espacio profesional, «no disponible») conservan el título y el camino de
  * vuelta.
  */
@@ -143,7 +143,6 @@ export function MarcoDelArea<C extends string>({
   href,
   retirado = false,
   onActualizar,
-  ayuda = null,
   ancho = false,
   children,
 }: {
@@ -166,8 +165,6 @@ export function MarcoDelArea<C extends string>({
   retirado?: boolean;
   /** Lo que el área tiene que hacer además cuando se pide «Actualizar» (dejar de dar el contenido por retirado). */
   onActualizar?: () => void;
-  /** La ayuda de la sección que se mira («Cómo se lee esta vista»), si ya la tiene. */
-  ayuda?: ReactNode;
   /** La sección usa todo el ancho del marco. Las que todavía no se recompusieron conservan el suyo. */
   ancho?: boolean;
   children: ReactNode;
@@ -305,7 +302,6 @@ export function MarcoDelArea<C extends string>({
           {listo && !retirado ? (
             <div className="marco-de-la-ficha__vistas">
               <Pestanas etiqueta={etiqueta} vistas={vistas} actual={vista} href={href} />
-              {ayuda ? <div className="marco-de-la-ficha__derecha">{ayuda}</div> : null}
             </div>
           ) : null}
         </div>

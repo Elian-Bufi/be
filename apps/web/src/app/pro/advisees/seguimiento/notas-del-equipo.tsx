@@ -37,6 +37,8 @@ export function NotasRecientesDelEquipo() {
   );
   const notas = lectura.tipo === 'listo' ? lectura.datos.data.entries : [];
   const total = lectura.tipo === 'listo' ? lectura.datos.data.totalMatching : 0;
+  // Sin notas no hay tarjeta (DL-145): escribir una sigue a mano en el encabezado de la ficha. Una falla sí se dice.
+  if (lectura.tipo !== 'error' && notas.length === 0) return null;
   return (
     <section className="notas-del-equipo" aria-labelledby={`${id}-titulo`}>
       <div className="notas-del-equipo__caja">

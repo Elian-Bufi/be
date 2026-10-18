@@ -11884,3 +11884,134 @@ details[open] > summary:not([class])::before {
 .acciones-de-la-nota .nota {
   margin: 0;
 }
+
+/* «Empezar el plan» (DL-145): los tres pasos del Plan vacío, en orden. El que toca, destacado; los listos, con su tilde;
+   los que vienen, en tenue. Los formularios de cada paso se abren adentro, sin salir del Plan. */
+.primer-plan {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem 1.4rem;
+  box-shadow: var(--sombra-suave);
+  max-width: 56rem;
+}
+
+.primer-plan > h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.3rem;
+}
+
+.primer-plan__pasos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.primer-plan__paso {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 0.9rem 0;
+}
+
+.primer-plan__paso + .primer-plan__paso {
+  border-top: 1px solid var(--borde);
+}
+
+.primer-plan__marca {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 2px solid var(--borde-control);
+  color: var(--tenue);
+}
+
+.primer-plan__paso--ahora .primer-plan__marca {
+  background: var(--boton-fondo);
+  border-color: var(--boton-fondo);
+  color: var(--boton-texto);
+}
+
+.primer-plan__paso--listo .primer-plan__marca {
+  background: var(--exito-fondo);
+  border-color: var(--exito);
+  color: var(--exito);
+}
+
+.primer-plan__cuerpo {
+  min-width: 0;
+}
+
+.primer-plan__cuerpo > h3 {
+  margin: 0.25rem 0 0.35rem;
+  font-size: 1.05rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.primer-plan__paso--despues .primer-plan__cuerpo > h3 {
+  color: var(--tenue);
+}
+
+.primer-plan__listo {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--exito);
+}
+
+.primer-plan__enunciado {
+  margin: 0 0 0.25rem;
+}
+
+.primer-plan .acciones {
+  margin-top: 0.5rem;
+}
+
+/* La Guía del espacio profesional (DL-145): las ayudas de las pantallas, juntas, como texto corrido. */
+.guia__indice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+}
+
+.guia__indice a {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+  text-decoration: none;
+}
+
+.guia {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.guia__parte {
+  display: grid;
+  gap: 1rem;
+}
+
+.guia__parte > h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.guia__seccion {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 1.1rem 1.4rem 1.25rem;
+}
+
+.guia__seccion > h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}

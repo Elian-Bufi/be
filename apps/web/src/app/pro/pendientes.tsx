@@ -130,7 +130,6 @@ export function Pendientes({
       <div className="tarjeta-del-espacio__cabecera">
         <Icono nombre="pendientes" tamano={24} />
         <h2 id={`${id}-titulo`}>{COPY_CARTERA.titulo}</h2>
-        <p className="nota">{COPY_CARTERA.subtitulo}</p>
       </div>
 
       {/* Qué ver. Las cantidades salen de la cartera leída entera: sin ella (cargando o con una falla) no hay número. */}
@@ -310,8 +309,8 @@ export function Pendientes({
                         </span>
                       </td>
                       <td className="pendiente__abrir">
-                        <Link className="pendiente__enlace" href={rutaQueResuelve(p)} aria-label={`${COPY_CARTERA.abrir}: ${p.advisee.displayName}, ${area}, ${texto}`}>
-                          {COPY_CARTERA.abrir}
+                        <Link className="pendiente__enlace" href={rutaQueResuelve(p)} aria-label={`${COPY_CARTERA.accion[p.kind]}: ${p.advisee.displayName}, ${area}, ${texto}`}>
+                          {COPY_CARTERA.accion[p.kind]}
                           <Icono nombre="derecha" tamano={18} />
                         </Link>
                       </td>
