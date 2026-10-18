@@ -32,6 +32,7 @@ import { DialogoDeConfirmacion, SelectorDeMotivo, useAccionConfirmada } from '..
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { PasoQueFaltaParaElAcceso } from '../paso-que-falta';
 import { AvisoDeAccesoRevocado, RevocarConsentimiento } from '../revocacion';
 import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
 
@@ -136,6 +137,10 @@ export function PantallaDeVinculo({
           {activo && v.consentState === 'REVOKED' ? <Boton texto={COPY_VINCULO.autorizarNuevamente} onPress={irAConsentimiento} /> : null}
           {/* Con el consentimiento vigente, la pantalla del acto dice si hay una versión nueva para revisar. */}
           {activo && v.consentState === 'ACTIVE' ? <Boton texto={COPY_VINCULO.revisarConsentimiento} tipo="secundario" onPress={irAConsentimiento} /> : null}
+          {/* Autorizado pero sin efecto: si es por el tratamiento de datos de salud, se dice y se ofrece el camino (2026-10-17). */}
+          {activo && v.consentState === 'ACTIVE' && v.accessMode !== 'CONTEXTUAL' ? (
+            <PasoQueFaltaParaElAcceso token={token} sesionPerdida={sesionPerdida} irAPrivacidad={() => ir({ nombre: 'privacidad' })} alCompletar={recargar} />
+          ) : null}
           {v.consent?.state === 'ACTIVE' ? (
             <RevocarConsentimiento
               token={token}

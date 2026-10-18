@@ -36,9 +36,9 @@ import { AvisoDeAccesoRevocado, RevocarConsentimiento } from '../revocacion';
 import { TextoDesplegable } from '../texto-versionado';
 import { Aviso, Boton, Dato, Desplegable, Insignia, Parrafo, Seccion, Tarjeta, Titulo, estilosPorTema } from '../ui';
 
-type RequisitoA3 = RequisitoDeConsentimientoDeSaludResponse['data'];
+export type RequisitoA3 = RequisitoDeConsentimientoDeSaludResponse['data'];
 type CargaA3 = { readonly tipo: 'cargando' } | { readonly tipo: 'error'; readonly sinConexion: boolean } | { readonly tipo: 'listo'; readonly datos: RequisitoA3 };
-type ResultadoA3 = 'otorgada' | 'revocada';
+export type ResultadoA3 = 'otorgada' | 'revocada';
 
 export function PantallaDePrivacidad({
   token,
@@ -171,7 +171,7 @@ type ActoA3 = { readonly tipo: 'libre' } | { readonly tipo: 'enviando' } | { rea
  * A3 según CON-05: `currentConsent` es el último acto; `null` = nunca otorgado. Sin A3 vigente, el texto de la versión
  * aplicable se muestra de entrada: es lo que se acepta y no hay un resumen aprobado que lo reemplace (10-B02 §7.1).
  */
-function TratamientoDeDatosDeSalud({
+export function TratamientoDeDatosDeSalud({
   datos,
   token,
   sesionPerdida,
