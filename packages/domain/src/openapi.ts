@@ -332,7 +332,7 @@ const ALCANCE: ParametroDeQuery = { nombre: 'scope', descripcion: 'Filtra por al
 
 /** Cómo compara el buscador de los catálogos de alimentos y de ejercicios (DL-139): lo dicen sus cuatro operaciones. */
 const COMO_BUSCA_EL_CATALOGO =
-  'Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).';
+  'Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).';
 
 /** Errores de una escritura REL/CON sobre un recurso que puede no ser revelable para el actor (09:213-233). */
 const ESCRITURA_REVELABLE: Errores = {
@@ -959,7 +959,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/nutrition/catalog-items/search',
     resumen:
-      `Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141). ${COMO_BUSCA_EL_CATALOGO}`,
+      `Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141); y origin, para decir de dónde sale en la fila: quién lo cargó si es una carga a mano (loadedBy) y la condición de la correspondencia con su fuente si BE la registró como aproximada (approximateCorrespondence; DL-141 D-6). ${COMO_BUSCA_EL_CATALOGO}`,
     autenticacion: 'SESSION',
     idempotencia: false,
     request: BusquedaEnCatalogoRequestSchema,
@@ -1612,7 +1612,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/training/exercises/search',
     resumen:
-      `Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados, con su forma. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141). ${COMO_BUSCA_EL_CATALOGO}`,
+      `Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados, con su forma. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141); y origin, para decir de dónde sale en la fila: quién lo cargó si es una carga a mano (loadedBy) y la condición de la correspondencia con su fuente si BE la registró como aproximada (approximateCorrespondence; DL-141 D-6). ${COMO_BUSCA_EL_CATALOGO}`,
     autenticacion: 'SESSION',
     idempotencia: false,
     request: BusquedaDeEjerciciosRequestSchema,

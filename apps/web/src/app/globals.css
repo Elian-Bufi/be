@@ -9149,6 +9149,27 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
+/*
+ * DL-141 D-6: el origen del ítem en la fila del buscador («USDA», «wger · CC BY-SA 4.0», «Demostración»). En el tono de
+ * la nota de la fila: aclara, no compite con el nombre. El subrayado de puntos dice que hay un detalle (la pista) y un
+ * enlace a «Fuentes del catálogo»; al llegarle, el color del enlace.
+ */
+.origen-en-el-catalogo {
+  color: inherit;
+  font-weight: 400;
+}
+
+.origen-en-el-catalogo--enlace {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.origen-en-el-catalogo--enlace:hover,
+.origen-en-el-catalogo--enlace:focus-visible {
+  color: var(--enlace);
+  text-decoration-style: solid;
+}
+
 .alimentos-del-catalogo__detalle {
   display: block;
   margin: 0;

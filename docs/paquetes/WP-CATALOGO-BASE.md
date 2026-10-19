@@ -88,9 +88,9 @@
 
 Va después del buscador (DL-139), en tres tramos:
 1. **D-1 y D-2: INTEGRADO** el 2026-10-17 (#180). Lo importado es de todos, uno por ítem externo, y el buscador usa los nombres alternativos, con una siembra chica para el catálogo de demostración. Lo que hubo que decidir para implementarlo (D-1.a a D-1.g, D-2.a y D-2.b), el contrato, la base y las pruebas están en DEUDA_LEGAJO DL-141.
-2. **D-3 · el catálogo de entrenamiento: IMPLEMENTADO** el 2026-10-19 en `wp-catalogo-base-2-3` (#184, en borrador), sin integrar. 186 ejercicios de wger, cada texto con su licencia (CC BY-SA 3.0, CC BY-SA 4.0 o CC0) y su autoría, con el inglés y los nombres de otros países como nombres alternativos.
-3. **D-4 · el de alimentos: IMPLEMENTADO** en el mismo PR. 385 alimentos de USDA FoodData Central · SR Legacy (dominio público), con nombres en castellano rioplatense, la composición completa cada 100 g y el inglés y los nombres de otros países como nombres alternativos.
+2. **D-3 · el catálogo de entrenamiento: INTEGRADO** el 2026-10-19 (#184). 186 ejercicios de wger, cada texto con su licencia (CC BY-SA 3.0, CC BY-SA 4.0 o CC0) y su autoría, con el inglés y los nombres de otros países como nombres alternativos.
+3. **D-4 · el de alimentos: INTEGRADO** en el mismo PR. 385 alimentos de USDA FoodData Central · SR Legacy (dominio público), con nombres en castellano rioplatense, la composición completa cada 100 g y el inglés y los nombres de otros países como nombres alternativos.
 
 De los tramos 2 y 3: los datos curados y cómo se regeneran están en `prisma/datos/catalogo-base/` (con su LEEME); las decisiones para implementarlos (D-3.a a D-3.f y D-4.a a D-4.e), con sus alternativas, las migraciones y las pruebas, en DEUDA_LEGAJO DL-141. Las atribuciones que piden las licencias están en `docs/catalogo/FUENTES.md`, generado desde los datos.
 
-Falta lo de D-6 en el website: la página «Fuentes del catálogo», que sale de ese documento, y la licencia en cada fila del buscador.
+D-6 en el website: la página «Fuentes del catálogo» está INTEGRADA (#185). El origen en cada fila del buscador, la correspondencia de los cortes vacunos con su fuente y la búsqueda que tolera que el catálogo crezca están IMPLEMENTADOS en la rama `wp-catalogo-confiable` (en borrador, sin integrar), por el encargo de consolidación de Dirección del 2026-10-19 (bloque 4): las decisiones D-6 en la fila, D-7, D-8 y la propuesta D-9 (las fuentes para los alimentos argentinos que faltan, en `docs/catalogo/FUENTES-ARGENTINAS.md`) están en DEUDA_LEGAJO DL-141.

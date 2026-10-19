@@ -11,7 +11,7 @@ export const COPY_FUENTES_DEL_CATALOGO = {
   alimentos: {
     titulo: 'Alimentos: USDA FoodData Central',
     texto:
-      'La composición de los alimentos del catálogo base sale de FoodData Central (SR Legacy), del Servicio de Investigación Agrícola del Departamento de Agricultura de los Estados Unidos. Es de dominio público (CC0 1.0). Los nombres en castellano los curó BE; la descripción original, en inglés, queda como nombre alternativo. Ningún valor se completa ni se estima.',
+      'La composición de los alimentos del catálogo base sale de FoodData Central (SR Legacy), del Servicio de Investigación Agrícola del Departamento de Agricultura de los Estados Unidos. Es de dominio público (CC0 1.0). Los nombres en castellano los curó BE; la descripción original, en inglés, queda como nombre alternativo. Ningún valor se completa ni se estima. Cada corte vacuno lleva el nombre de la pieza que describe USDA, y si la correspondencia con el corte argentino es aproximada, lo dice donde se elige.',
     cita: 'Cita: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, SR Legacy (2019).',
   },
   ejercicios: {

@@ -6,7 +6,11 @@
  * - **el buscador del website lo encuentra** por el nombre en castellano, por el inglés y por el de otro país, y dice cuál
  *   coincidió; las lecturas legadas lo encuentran igual, sin el campo;
  * - **importar desde wger un ejercicio que ya está en el catálogo base** apunta al sembrado y no crea otro (D-1);
- * - **la persona** ve un ejercicio del catálogo base en su plan y en el catálogo, tal como los lee la APK instalada.
+ * - **la persona** ve un ejercicio del catálogo base en su plan y en el catálogo, tal como los lee la APK instalada;
+ * - **la correspondencia con la fuente** (encargo de Dirección del 2026-10-19, bloque 4): los cortes vacunos con un nombre
+ *   fiel son una versión nueva, con la misma composición y la misma fuente, y la anterior queda; los nombres que nombraban
+ *   otro ingrediente u otra preparación ya no encuentran su alimento; y el buscador del website dice el origen de cada
+ *   fila, con la equivalencia aproximada a la vista (D-6).
  */
 import type { INestApplication } from '@nestjs/common';
 import {
@@ -47,12 +51,20 @@ afterAll(async () => {
 const TRN = '/api/v1/training/catalog-import-candidates';
 const SIEMBRA_DE_EJERCICIOS = 'WP-CATALOGO-BASE · DL-141 · tramo 2';
 const SIEMBRA_DE_ALIMENTOS = 'WP-CATALOGO-BASE · DL-141 · tramo 3';
+const MARCA_DE_LA_CORRECCION = 'WP-CATALOGO-BASE · DL-141 · correspondencia de cortes';
 const entrenador = () => prepararProfesional(app, `catbase-trn-${++contador}`, ['ENTRENAMIENTO']);
 const nutricionista = () => prepararProfesional(app, `catbase-nut-${++contador}`, ['NUTRICION']);
 
 const leer = (...partes: string[]) => readFileSync(join(RAIZ, ...partes), 'utf8');
 const EJERCICIOS = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'ejercicios.json')).ejercicios as { wgerId: number; nombre: string }[];
 const ALIMENTOS = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'alimentos.json')).alimentos as { fdcId: string; nombre: string }[];
+interface Correcciones {
+  cortes: { fdcId: string; nombreAnterior: string; nombre: string; correspondencia: 'DIRECTA' | 'APROXIMADA'; nota: string | null }[];
+  nombresRetirados: { fdcId: string; nombre: string }[];
+  nombresNuevos: { fdcId: string; nombre: string }[];
+}
+const CORRECCIONES = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'correcciones.json')) as Correcciones;
+const CORTES_QUE_CAMBIAN = CORRECCIONES.cortes.filter((c) => c.nombre !== c.nombreAnterior);
 
 /** Las inserciones de una migración del catálogo base, tal como están en el repositorio, con cuántas filas trae cada una. */
 function insercionesDe(carpeta: string): { sentencia: string; filas: number }[] {
@@ -64,6 +76,7 @@ function insercionesDe(carpeta: string): { sentencia: string; filas: number }[] 
 }
 const DE_EJERCICIOS = insercionesDe('20261019120000_catalogo_base_de_ejercicios');
 const DE_ALIMENTOS = insercionesDe('20261019120100_catalogo_base_de_alimentos');
+const DE_CORRECCIONES = insercionesDe('20261019210000_catalogo_base_correspondencia_de_cortes');
 
 /**
  * Lo que vería la APK instalada en una respuesta: su esquema congelado, leído con el zod del dominio, como en la prueba
@@ -101,13 +114,17 @@ describe('DL-141 tramos 2 y 3 · la siembra del catálogo base', () => {
              (SELECT count(*)::int FROM "nombre_alternativo_de_ejercicio" WHERE "procedencia" ->> 'siembra' = ${SIEMBRA_DE_EJERCICIOS}) AS "nombresDeEjercicios",
              (SELECT count(*)::int FROM "version_de_elemento_nutricional" WHERE "procedencia" ->> 'siembra' = ${SIEMBRA_DE_ALIMENTOS}) AS "versionesDeAlimentos",
              (SELECT count(DISTINCT "elemento_id")::int FROM "version_de_elemento_nutricional" WHERE "procedencia" ->> 'siembra' = ${SIEMBRA_DE_ALIMENTOS}) AS "alimentos",
-             (SELECT count(*)::int FROM "nombre_alternativo_de_alimento" WHERE "procedencia" ->> 'siembra' = ${SIEMBRA_DE_ALIMENTOS}) AS "nombresDeAlimentos"`;
+             (SELECT count(*)::int FROM "nombre_alternativo_de_alimento" WHERE "procedencia" ->> 'siembra' = ${SIEMBRA_DE_ALIMENTOS}) AS "nombresDeAlimentos",
+             (SELECT count(*)::int FROM "version_de_elemento_nutricional" WHERE "procedencia" ->> 'siembra' = ${MARCA_DE_LA_CORRECCION}) AS "versionesCorregidas",
+             (SELECT count(*)::int FROM "retiro_de_nombre_alternativo_de_alimento" WHERE "procedencia" ->> 'siembra' = ${MARCA_DE_LA_CORRECCION}) AS "nombresRetirados",
+             (SELECT count(*)::int FROM "nombre_alternativo_de_alimento" WHERE "procedencia" ->> 'siembra' = ${MARCA_DE_LA_CORRECCION}) AS "nombresNuevos"`;
     return fila!;
   }
 
-  it('cada fila de las dos migraciones está en la base, y correrlas de nuevo no agrega nada', async () => {
+  it('cada fila de las tres migraciones está en la base, y correrlas de nuevo no agrega nada', async () => {
     expect(DE_EJERCICIOS.map((i) => i.filas)).toEqual([EJERCICIOS.length, EJERCICIOS.length, EJERCICIOS.length, expect.any(Number)]);
     expect(DE_ALIMENTOS.map((i) => i.filas)).toEqual([ALIMENTOS.length, ALIMENTOS.length, expect.any(Number)]);
+    expect(DE_CORRECCIONES.map((i) => i.filas)).toEqual([CORTES_QUE_CAMBIAN.length, CORRECCIONES.nombresRetirados.length, CORRECCIONES.nombresNuevos.length]);
     const antes = await contar();
     expect(antes).toEqual({
       versionesDeEjercicios: EJERCICIOS.length,
@@ -117,12 +134,15 @@ describe('DL-141 tramos 2 y 3 · la siembra del catálogo base', () => {
       versionesDeAlimentos: ALIMENTOS.length,
       alimentos: ALIMENTOS.length,
       nombresDeAlimentos: DE_ALIMENTOS[2]!.filas,
+      versionesCorregidas: CORTES_QUE_CAMBIAN.length,
+      nombresRetirados: CORRECCIONES.nombresRetirados.length,
+      nombresNuevos: CORRECCIONES.nombresNuevos.length,
     });
-    for (const { sentencia } of [...DE_EJERCICIOS, ...DE_ALIMENTOS]) await prisma.$executeRawUnsafe(sentencia);
+    for (const { sentencia } of [...DE_EJERCICIOS, ...DE_ALIMENTOS, ...DE_CORRECCIONES]) await prisma.$executeRawUnsafe(sentencia);
     expect(await contar()).toEqual(antes);
   });
 
-  it('respeta las cadenas de versiones: cada ítem sembrado tiene una sola versión, la primera, y no es de ningún profesional', async () => {
+  it('respeta las cadenas de versiones: cada ítem sembrado tiene su primera versión, y no es de ningún profesional; un corte corregido suma una sola más', async () => {
     const [fila] = await prisma.$queryRaw<Record<string, number>[]>`
       SELECT (SELECT count(*)::int FROM "version_de_ejercicio" v JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
                WHERE v."procedencia" ->> 'siembra' = ${SIEMBRA_DE_EJERCICIOS}
@@ -131,8 +151,18 @@ describe('DL-141 tramos 2 y 3 · la siembra del catálogo base', () => {
              (SELECT count(*)::int FROM "version_de_elemento_nutricional" v JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
                WHERE v."procedencia" ->> 'siembra' = ${SIEMBRA_DE_ALIMENTOS}
                  AND (v."predecesora_id" IS NOT NULL OR e."procedencia" <> 'CONTROLLED_IMPORT' OR e."creado_por_id" IS NOT NULL
-                      OR (SELECT count(*) FROM "version_de_elemento_nutricional" o WHERE o."elemento_id" = e."id") <> 1)) AS "alimentos"`;
+                      OR (SELECT count(*) FROM "version_de_elemento_nutricional" o WHERE o."elemento_id" = e."id"
+                           AND o."procedencia" ->> 'siembra' IS DISTINCT FROM ${MARCA_DE_LA_CORRECCION}) <> 1)) AS "alimentos"`;
     expect(fila).toEqual({ ejercicios: 0, alimentos: 0 });
+    // La versión corregida sigue a la del tramo 3 de su mismo alimento, es la vigente y no hay otra.
+    const [corregidas] = await prisma.$queryRaw<Record<string, number>[]>`
+      SELECT count(*)::int AS "total",
+             count(*) FILTER (WHERE a."procedencia" ->> 'siembra' = ${SIEMBRA_DE_ALIMENTOS} AND a."elemento_id" = v."elemento_id" AND a."predecesora_id" IS NULL
+                                AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id"))::int AS "encadenadas"
+        FROM "version_de_elemento_nutricional" v
+        JOIN "version_de_elemento_nutricional" a ON a."id" = v."predecesora_id"
+       WHERE v."procedencia" ->> 'siembra' = ${MARCA_DE_LA_CORRECCION}`;
+    expect(corregidas).toEqual({ total: CORTES_QUE_CAMBIAN.length, encadenadas: CORTES_QUE_CAMBIAN.length });
   });
 
   it('cada ejercicio sembrado trae su fuente y su licencia, es el de su ítem externo y dice lo que declara wger', async () => {
@@ -233,6 +263,113 @@ describe('DL-141 tramos 2 y 3 · el buscador encuentra el catálogo base por cua
     // API-NUT-13 encuentra igual, con su forma de siempre.
     const legado = ListaDeCatalogoResponseSchema.parse((await s.get(`/api/v1/nutrition/catalog-items?q=${encodeURIComponent('frijoles negros')}`).expect(200)).body);
     expect(legado.data.map((i) => i.name)).toContain('Porotos negros secos, crudos');
+  });
+});
+
+// ─── La correspondencia con la fuente y el origen en la fila ────────────────────────────────────
+
+describe('Encargo de Dirección del 2026-10-19, bloque 4 · la correspondencia con la fuente y el origen en la fila del buscador', () => {
+  interface Version {
+    id: string;
+    predecesora: string | null;
+    nombre: string;
+    composicion: unknown;
+    procedencia: Record<string, unknown>;
+  }
+  /** Las versiones de un alimento de USDA, de la primera a la vigente. */
+  const versionesDe = (fdcId: string) =>
+    prisma.$queryRaw<Version[]>`
+      SELECT v."id"::text AS "id", v."predecesora_id"::text AS "predecesora", v."nombre", v."composicion", v."procedencia"
+        FROM "version_de_elemento_nutricional" v
+       WHERE v."procedencia" -> 'fuenteExterna' ->> 'provider' = 'USDA_FDC_SR_LEGACY' AND v."procedencia" -> 'fuenteExterna' ->> 'externalId' = ${fdcId}
+       ORDER BY v."momento_de_registro"`;
+
+  it('cada corte corregido es una versión nueva: el nombre fiel, la misma composición y la misma fuente; la anterior queda con su nombre', async () => {
+    expect(CORTES_QUE_CAMBIAN.map((c) => c.fdcId)).toEqual(['174055', '168634', '168745', '169563', '168733']);
+    for (const c of CORTES_QUE_CAMBIAN) {
+      const [anterior, vigente, ...otras] = await versionesDe(c.fdcId);
+      expect(otras).toEqual([]);
+      expect(anterior).toMatchObject({ predecesora: null, nombre: c.nombreAnterior, procedencia: { siembra: SIEMBRA_DE_ALIMENTOS } });
+      expect(vigente).toMatchObject({
+        predecesora: anterior!.id,
+        nombre: c.nombre,
+        procedencia: { siembra: MARCA_DE_LA_CORRECCION, correccion: { nombreAnterior: c.nombreAnterior }, correspondencia: { tipo: c.correspondencia, nota: c.nota } },
+      });
+      // Los datos de la fuente, tal cual: la composición (con sus valores faltantes) y la fuente externa.
+      expect(vigente!.composicion).toEqual(anterior!.composicion);
+      expect(FuenteExternaDeAlimentoSchema.parse(vigente!.procedencia.fuenteExterna)).toEqual(anterior!.procedencia.fuenteExterna);
+      expect(vigente!.procedencia).toMatchObject({ fuente: 'usda-fdc-sr-legacy', carga: 'IMPORTACION_CONTROLADA', recurso: anterior!.procedencia.recurso });
+    }
+    // La bola de lomo ya tenía un nombre fiel: está revisada, pero no tiene otra versión.
+    expect((await versionesDe('173125')).map((v) => v.nombre)).toEqual(['Bola de lomo, magra, cruda']);
+  });
+
+  it('el buscador del website trae la versión vigente con su origen: la equivalencia aproximada, a la vista; lo cargado a mano, de quién es', async () => {
+    const pro = await nutricionista();
+    const s = conSesion(app, pro.token);
+    const buscar = async (q: string) => BusquedaEnCatalogoResponseSchema.parse((await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50 }).expect(200)).body).data;
+
+    const cuadril = CORTES_QUE_CAMBIAN.find((c) => c.fdcId === '174055')!;
+    const enCuadril = await buscar('cuadril');
+    expect(enCuadril.map((e) => e.name)).not.toContain(cuadril.nombreAnterior);
+    expect(enCuadril.find((e) => e.name === cuadril.nombre)).toMatchObject({
+      versionId: (await versionesDe('174055'))[1]!.id,
+      provenance: 'CONTROLLED_IMPORT',
+      externalSource: { provider: 'USDA_FDC_SR_LEGACY', externalId: '174055' },
+      origin: { loadedBy: null, approximateCorrespondence: cuadril.nota },
+    });
+    // Una correspondencia directa no se marca: el bife de vacío es el flank steak de USDA. «vacío» lo sigue encontrando,
+    // ahora con su nombre fiel.
+    const enVacio = await buscar('vacío');
+    expect(enVacio.find((e) => e.name === 'Bife de vacío, magro y grasa, crudo')).toMatchObject({ origin: { loadedBy: null, approximateCorrespondence: null } });
+    expect(enVacio.map((e) => e.name)).not.toContain('Vacío, magro y grasa, crudo');
+
+    // Lo cargado a mano dice que es de quien busca.
+    await s.post('/api/v1/nutrition/catalog-items').send({ name: 'Cuadril trilimbo de la casa', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 150, proteinG: 21, carbohydrateG: 0, fatG: 7 } }).expect(201);
+    expect((await buscar('cuadril trilimbo'))[0]).toMatchObject({ provenance: 'PROFESSIONAL_MANUAL', origin: { loadedBy: 'YOU', approximateCorrespondence: null } });
+
+    // API-NUT-13 trae la misma versión vigente, en su forma de siempre: sin el origen.
+    const legado = ListaDeCatalogoResponseSchema.parse((await s.get(`/api/v1/nutrition/catalog-items?q=${encodeURIComponent('cuadril')}`).expect(200)).body);
+    expect(legado.data.map((i) => i.name)).toContain(cuadril.nombre);
+    expect(legado.data.map((i) => i.name)).not.toContain(cuadril.nombreAnterior);
+  });
+
+  it('un nombre alternativo retirado ya no encuentra su alimento y queda en la historia con su motivo; el nuevo lo encuentra', async () => {
+    const pro = await nutricionista();
+    const s = conSesion(app, pro.token);
+    const pares = async (q: string) =>
+      BusquedaEnCatalogoResponseSchema.parse((await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50 }).expect(200)).body).data.map((e) => [e.name, e.matchedAlternativeName]);
+    expect((await pares('copos de avena')).filter(([, alternativo]) => alternativo === 'Copos de avena')).toEqual([]);
+    expect((await pares('entrecot')).filter(([, alternativo]) => alternativo === 'Entrecot')).toEqual([]);
+    expect(await pares('lomo alto sin tapa')).toEqual(
+      expect.arrayContaining([
+        ['Ojo de bife, magro, crudo', 'Lomo alto sin tapa'],
+        ['Ojo de bife, magro, a la parrilla', 'Lomo alto sin tapa'],
+      ]),
+    );
+    // Retirar no borra: cada nombre retirado sigue en su tabla, con su retiro y su motivo.
+    const [historia] = await prisma.$queryRaw<{ nombres: number; conMotivo: number }[]>`
+      SELECT count(*)::int AS "nombres", count(*) FILTER (WHERE btrim(r."motivo") <> '')::int AS "conMotivo"
+        FROM "nombre_alternativo_de_alimento" n
+        JOIN "retiro_de_nombre_alternativo_de_alimento" r ON r."nombre_id" = n."id"
+       WHERE r."procedencia" ->> 'siembra' = ${MARCA_DE_LA_CORRECCION}`;
+    expect(historia).toEqual({ nombres: CORRECCIONES.nombresRetirados.length, conMotivo: CORRECCIONES.nombresRetirados.length });
+  });
+
+  it('el buscador de ejercicios también dice el origen: wger con su licencia, la demostración y lo cargado a mano; API-TRN-13, sin el campo', async () => {
+    const pro = await entrenador();
+    const s = conSesion(app, pro.token);
+    const buscar = async (q: string) => BusquedaDeEjerciciosResponseSchema.parse((await s.post('/api/v1/training/exercises/search').send({ q, limit: 50 }).expect(200)).body).data;
+    expect((await buscar('press de banca plano con barra'))[0]).toMatchObject({
+      provenance: 'CONTROLLED_IMPORT',
+      externalSource: { provider: 'WGER', license: { id: 'CC-BY-SA-3.0' } },
+      origin: { loadedBy: null, approximateCorrespondence: null },
+    });
+    expect((await buscar('sentadilla'))[0]).toMatchObject({ name: 'Sentadilla', provenance: 'BE_SYNTHETIC_SEED', origin: { loadedBy: null, approximateCorrespondence: null } });
+    await s.post('/api/v1/training/exercises').send({ name: 'Remo trilimbo propio', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } }).expect(201);
+    expect((await buscar('remo trilimbo propio'))[0]).toMatchObject({ provenance: 'PROFESSIONAL_MANUAL', origin: { loadedBy: 'YOU', approximateCorrespondence: null } });
+    const legado = (await s.get(`/api/v1/training/exercises?q=${encodeURIComponent('remo trilimbo propio')}`).expect(200)).body;
+    expect(comoLaLeeLaApkInstalada('API-TRN-13', legado)).toEqual([]);
   });
 });
 

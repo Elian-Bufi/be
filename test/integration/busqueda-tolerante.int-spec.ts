@@ -5,6 +5,10 @@
  * y con las propias de cada profesional. Alimentos (API-NUT-13 y su búsqueda) y ejercicios (API-TRN-13 y su búsqueda).
  *
  * «Trilimbo» es una palabra inventada: con ella, el conjunto de candidatos es conocido y el orden se puede afirmar entero.
+ *
+ * Las pruebas no dependen de cuántos ítems tenga el catálogo (encargo de Dirección del 2026-10-19, bloque 4): «encuentra»
+ * recorre todas las páginas, y el orden se afirma solo donde es el pedido (el nombre igual primero, los parecidos del más
+ * cercano al menos cercano), también con más ítems parecidos que una página.
  */
 import type { INestApplication } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
@@ -30,6 +34,19 @@ interface Pagina {
   readonly page: { readonly limit: number; readonly nextCursor: string | null; readonly hasMore: boolean };
 }
 
+/** Los nombres de todas las páginas de una búsqueda, siguiendo el cursor: lo que encuentra, tenga el catálogo lo que tenga. */
+async function todasLasPaginas(pedir: (cursor: string | undefined) => Promise<Pagina>): Promise<string[]> {
+  const nombres: string[] = [];
+  let cursor: string | undefined;
+  for (let i = 0; i < 40; i++) {
+    const p = await pedir(cursor);
+    nombres.push(...p.data.map((x) => x.name));
+    if (!p.page.nextCursor) return nombres;
+    cursor = p.page.nextCursor;
+  }
+  throw new Error('la búsqueda no terminó en 40 páginas');
+}
+
 /** Un profesional de Nutrición nuevo, con su catálogo propio y el buscador del website (API-NUT-13-BUSQUEDA). */
 async function deNutricion() {
   const pro = await prepararProfesional(app, `busq-nut-${++contador}`, ['NUTRICION']);
@@ -39,8 +56,10 @@ async function deNutricion() {
       for (const name of nombres) await s.post('/api/v1/nutrition/catalog-items').send({ name, itemType: 'FOOD', composition: composicion }).expect(201);
     },
     buscar: async (q: string, extra: Record<string, unknown> = {}): Promise<Pagina> => (await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50, ...extra }).expect(200)).body,
-    nombres: async (q: string): Promise<string[]> => ((await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50 }).expect(200)).body as Pagina).data.map((i) => i.name),
-    porUrl: async (q: string): Promise<string[]> => ((await s.get(`/api/v1/nutrition/catalog-items?q=${encodeURIComponent(q)}&limit=50`).expect(200)).body as Pagina).data.map((i) => i.name),
+    nombres: (q: string): Promise<string[]> =>
+      todasLasPaginas(async (cursor) => (await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50, ...(cursor ? { cursor } : {}) }).expect(200)).body as Pagina),
+    porUrl: (q: string): Promise<string[]> =>
+      todasLasPaginas(async (cursor) => (await s.get(`/api/v1/nutrition/catalog-items?q=${encodeURIComponent(q)}&limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`).expect(200)).body as Pagina),
   };
 }
 
@@ -53,7 +72,8 @@ async function deEntrenamiento() {
     cargar: async (...nombres: string[]) => {
       for (const name of nombres) await s.post('/api/v1/training/exercises').send({ name, muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } }).expect(201);
     },
-    nombres: async (q: string): Promise<string[]> => ((await s.post('/api/v1/training/exercises/search').send({ q, limit: 50 }).expect(200)).body as Pagina).data.map((e) => e.name),
+    nombres: (q: string): Promise<string[]> =>
+      todasLasPaginas(async (cursor) => (await s.post('/api/v1/training/exercises/search').send({ q, limit: 50, ...(cursor ? { cursor } : {}) }).expect(200)).body as Pagina),
   };
 }
 
@@ -150,13 +170,15 @@ describe('DL-139 · alimentos: el orden de las palabras, los plurales y los erro
   it('los parecidos completan solo la primera página, del más parecido al menos parecido, y no tienen página siguiente', async () => {
     const nut = await deNutricion();
     await nut.cargar('Trilimbo', 'Trilimbo tostado', 'Galleta de trilimbo');
-    // «trilinbo» no está en ningún nombre: los tres se parecen igual (0,5), y van del más nuevo al más viejo.
+    // «trilinbo» no está en ningún nombre: los tres se parecen igual palabra por palabra (0,5), y van del nombre entero
+    // más cercano a lo escrito al menos cercano (0,5; 0,32 y 0,26), no del más nuevo al más viejo: así un catálogo que
+    // crece no saca de la primera página al que más se parece.
     const r = await nut.buscar('trilinbo', { limit: 2 });
-    expect(r.data.map((i) => i.name)).toEqual(['Galleta de trilimbo', 'Trilimbo tostado']);
+    expect(r.data.map((i) => i.name)).toEqual(['Trilimbo', 'Trilimbo tostado']);
     expect(r.page).toEqual({ limit: 2, nextCursor: null, hasMore: false });
     // Con un exacto, los parecidos van detrás.
     await nut.cargar('Trilinbo dulce');
-    expect(await nut.nombres('trilinbo')).toEqual(['Trilinbo dulce', 'Galleta de trilimbo', 'Trilimbo tostado', 'Trilimbo']);
+    expect(await nut.nombres('trilinbo')).toEqual(['Trilinbo dulce', 'Trilimbo', 'Trilimbo tostado', 'Galleta de trilimbo']);
   });
 
   it('un parecido nunca muestra lo que no se ve: el alimento propio de otro profesional no aparece ni con un error de tipeo', async () => {
@@ -186,6 +208,22 @@ describe('DL-139 · ejercicios: el mismo buscador', () => {
     const otra = await deEntrenamiento();
     expect(await otra.nombres('escalador trilinbo')).toEqual([]);
     expect(await duena.nombres('escalador trilinbo')).toEqual(['Escalador trilimbo']);
+  });
+
+  it('crecer no saca a «Sentadilla» de la primera página: con más sentadillas que una página, «sentadila» la trae primero, también en API-TRN-13', async () => {
+    const trn = await deEntrenamiento();
+    // Veinticinco sentadillas propias, más nuevas que todo el catálogo: a igual parecido palabra por palabra, la más nueva
+    // iba primero y la de demostración salía de la primera página (veinte, como pide la APK instalada).
+    await trn.cargar(...Array.from({ length: 25 }, (_, i) => `Sentadilla trilimbo ${i + 1}`));
+    const legado = (await trn.s.get(`/api/v1/training/exercises?q=${encodeURIComponent('sentadila')}`).expect(200)).body as Pagina;
+    expect(legado.data).toHaveLength(20);
+    expect(legado.data[0]!.name).toBe('Sentadilla');
+    expect(comoLaLeeLaApkInstalada('API-TRN-13', legado)).toEqual([]);
+    const delWebsite = (await trn.s.post('/api/v1/training/exercises/search').send({ q: 'sentadila' }).expect(200)).body as Pagina;
+    expect(delWebsite.data[0]!.name).toBe('Sentadilla');
+    // Sin el error de tipeo, el nombre igual va primero, como siempre, y todas se encuentran página por página.
+    expect((await trn.nombres('sentadilla'))[0]).toBe('Sentadilla');
+    expect(await trn.nombres('sentadilla trilimbo')).toHaveLength(25);
   });
 
   it('API-TRN-13, la que lee la APK instalada, responde con la misma forma de siempre también con parecidos', async () => {

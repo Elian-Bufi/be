@@ -21,11 +21,12 @@ import { Cajon } from '../../../../components/cajon';
 import { Cargando } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
+import { OrigenEnElCatalogo } from '../../../../components/origen-en-el-catalogo';
 import { api } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
-import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
+import { ImportacionDeWger } from './importacion';
 
 type Modo = 'buscar' | 'manual' | 'importar';
 
@@ -248,7 +249,6 @@ function ContenidoDeAgregarEjercicio({
               </thead>
               <tbody>
                 {ejercicios.map((ej) => {
-                  const procedencia = [ej.provenance === 'PROFESSIONAL_MANUAL' ? 'cargado por vos' : null, procedenciaDeEjercicio(ej)].filter(Boolean).join(' · ');
                   const marcado = habituales.esHabitual(ej.exerciseId);
                   return (
                     <tr key={ej.versionId} data-ejercicio-del-catalogo={ej.versionId}>
@@ -257,7 +257,10 @@ function ContenidoDeAgregarEjercicio({
                           {ej.name}
                           {ej.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(ej.matchedAlternativeName)})</span> : null}
                         </span>
-                        {procedencia ? <span className="nota alimentos-del-catalogo__detalle">{procedencia}</span> : null}
+                        {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. */}
+                        <span className="nota alimentos-del-catalogo__detalle">
+                          <OrigenEnElCatalogo item={ej} />
+                        </span>
                       </th>
                       <td className="alimentos-del-catalogo__acciones">
                         <button
