@@ -179,6 +179,9 @@ export function EditorDeBorrador({
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
   // «Guardar como habitual» sobre una comida del borrador (DL-109): la posición de la comida elegida, o nada.
   const [guardarHabitual, setGuardarHabitual] = useState<{ readonly i: number; readonly j: number } | null>(null);
+  // «Agregar comida ▾ → Una comida habitual» (bloque 5 del encargo de consolidación): el selector aparece a pedido, como en
+  // Entrenamiento.
+  const [insertandoComida, setInsertandoComida] = useState(false);
   const comidasHabituales = useComidasHabituales(token);
   // Los alimentos habituales se cargan una vez para todo el borrador.
   const alimentosHabituales = useAlimentosHabituales(token);
@@ -633,17 +636,60 @@ export function EditorDeBorrador({
             />
           ))}
           <div className="editor-del-plan__al-pie">
-            <button type="button" className="boton boton--quieto" data-agregar-comida onClick={agregarComida}>
-              <Icono nombre="mas" tamano={18} />
-              Agregar comida
-            </button>
-            <InsertarComidaHabitual
-              comidas={comidasHabituales.lista}
-              onInsertar={(comida, nombresNuevos) => {
-                setNombres((n) => ({ ...n, ...nombresNuevos }));
-                cambiar((x) => (x[i]!.meals.push(comida), x));
-              }}
+            {/* Una sola entrada para sumar una comida, como «Agregar ▾» en Entrenamiento: vacía o una habitual. Sin
+                habituales guardadas, la opción queda apagada y dice cómo se guardan. */}
+            <MenuDeAcciones
+              id="agregar-comida"
+              rotulo="agregar una comida"
+              texto="Agregar comida"
+              icono="mas"
+              conFlecha
+              alineado="izquierda"
+              acciones={[
+                { clave: 'nueva', texto: 'Una comida vacía', alElegir: agregarComida },
+                {
+                  clave: 'habitual',
+                  texto: 'Una comida habitual',
+                  alElegir: () => setInsertandoComida(true),
+                  noSePuede: comidasHabituales.lista === null ? 'Leyendo tus comidas habituales…' : comidasHabituales.lista.length === 0 ? COPY_HABITUALES.sinComidas : null,
+                },
+              ]}
             />
+            {insertandoComida ? (
+              <div
+                className="comida-habitual-a-pedido"
+                onKeyDown={(e) => {
+                  if (e.key !== 'Escape') return;
+                  e.stopPropagation();
+                  setInsertandoComida(false);
+                  document.getElementById('agregar-comida')?.focus();
+                }}
+              >
+                <InsertarComidaHabitual
+                  comidas={comidasHabituales.lista}
+                  onInsertar={(comida, nombresNuevos) => {
+                    const j = dia?.meals.length ?? 0;
+                    setNombres((n) => ({ ...n, ...nombresNuevos }));
+                    cambiar((x) => (x[i]!.meals.push(comida), x));
+                    dejarAbiertas(new Set([...abiertas, j]));
+                    setInsertandoComida(false);
+                    // DL-113: el resultado de una acción, donde se está mirando; el foco vuelve a «Agregar comida».
+                    setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaComida });
+                    document.getElementById('agregar-comida')?.focus();
+                  }}
+                />
+                <button
+                  type="button"
+                  className="boton boton--enlace"
+                  onClick={() => {
+                    setInsertandoComida(false);
+                    document.getElementById('agregar-comida')?.focus();
+                  }}
+                >
+                  {COPY_HABITUALES.cancelar}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

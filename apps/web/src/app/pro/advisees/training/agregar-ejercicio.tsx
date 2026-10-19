@@ -14,7 +14,7 @@
  * - Si los ejercicios habituales no se pueden leer, se dice: no es «todavía no marcaste ninguno».
  * - Si un ejercicio apareció por un nombre alternativo, se dice cuál: «Press de banca (bench press)» (DL-141).
  */
-import { COPY_ENTRENAMIENTO, COPY_HABITUALES, COPY_INTEGRACIONES, nombreAlternativoComoAclaracion, type EjercicioDeCatalogo, type EjercicioEncontrado } from '@be/domain';
+import { COPY_ENTRENAMIENTO, COPY_HABITUALES, COPY_INTEGRACIONES, habitualesQueCoinciden, nombreAlternativoComoAclaracion, type EjercicioDeCatalogo, type EjercicioEncontrado } from '@be/domain';
 import { useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
@@ -161,6 +161,9 @@ function ContenidoDeAgregarEjercicio({
   }
 
   const ejercicios = busqueda.tipo === 'lista' ? busqueda.ejercicios : [];
+  // Los habituales se filtran mientras se escribe; el catálogo, al enviar (bloque 5).
+  const filtro = texto.trim();
+  const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
   return (
     <div className="agregar-item agregar-ejercicio">
       <form onSubmit={enviar} className="agregar-item__buscador" role="search">
@@ -185,7 +188,11 @@ function ContenidoDeAgregarEjercicio({
         <h3 id={`${id}-habituales`} className="agregar-item__titulo">
           <Icono nombre="habitual" tamano={18} />
           {COPY_HABITUALES.misHabituales}
-          {habituales.habituales.length > 0 ? <span className="nota">Los que marcaste: se agregan con un clic.</span> : null}
+          {habituales.habituales.length > 0 ? (
+            <span className="nota" data-habituales-coinciden={filtro ? alaVista.length : undefined}>
+              {filtro ? COPY_HABITUALES.coinciden(alaVista.length, habituales.habituales.length, filtro) : 'Los que marcaste: se agregan con un clic.'}
+            </span>
+          ) : null}
         </h3>
         {habituales.lectura === 'falla' ? (
           <Aviso tipo="error">
@@ -198,9 +205,13 @@ function ContenidoDeAgregarEjercicio({
           <Cargando />
         ) : habituales.habituales.length === 0 ? (
           <p className="nota">{COPY_HABITUALES.sinEjerciciosHabituales}</p>
+        ) : alaVista.length === 0 ? (
+          <p className="nota" data-habituales-sin-coincidencias>
+            {COPY_HABITUALES.ningunoCoincide(filtro)}
+          </p>
         ) : (
           <ul className="agregar-item__fichas">
-            {habituales.habituales.map((h) => (
+            {alaVista.map((h) => (
               <li key={h.exerciseId}>
                 <button type="button" className="boton boton--quieto boton--compacto" aria-label={`Agregar ${h.name}`} onClick={() => elegir(h)}>
                   <Icono nombre="mas" tamano={18} />

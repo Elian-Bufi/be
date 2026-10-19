@@ -516,8 +516,9 @@ export function EditorDePlan({
     cambiar((x) => (lasSesiones(x).push(structuredClone(h.structure)), x));
     elegirSesion(n);
     setInsertandoHabitual(false);
-    // DL-113: es el resultado de una acción, así que aparece donde se está mirando.
+    // DL-113: es el resultado de una acción, así que aparece donde se está mirando; el foco vuelve a «Agregar».
     setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaSesion });
+    document.getElementById('agregar-sesion')?.focus();
   };
   const cambiarEjercicio = (l: number, c: Partial<PrescripcionE>) =>
     cambiar((x) => {
@@ -574,7 +575,7 @@ export function EditorDePlan({
           clave: 'habitual',
           texto: 'Una sesión habitual',
           alElegir: () => setInsertandoHabitual(true),
-          noSePuede: sesionesHabituales.sesiones.length === 0 ? 'Todavía no guardaste ninguna sesión como habitual.' : null,
+          noSePuede: sesionesHabituales.sesiones.length === 0 ? COPY_HABITUALES.sinSesiones : null,
         },
       ]}
     />
@@ -863,10 +864,26 @@ export function EditorDePlan({
           />
         ) : null}
         {insertandoHabitual ? (
-          <div className="sesion-habitual-a-pedido" data-habituales="sesiones">
+          <div
+            className="sesion-habitual-a-pedido"
+            data-habituales="sesiones"
+            onKeyDown={(e) => {
+              if (e.key !== 'Escape') return;
+              e.stopPropagation();
+              setInsertandoHabitual(false);
+              document.getElementById('agregar-sesion')?.focus();
+            }}
+          >
             <InsertarSesionHabitual id={prefijo} sesiones={sesionesHabituales.sesiones} onInsertar={insertarSesion} />
-            <button type="button" className="boton boton--enlace" onClick={() => setInsertandoHabitual(false)}>
-              Cancelar
+            <button
+              type="button"
+              className="boton boton--enlace"
+              onClick={() => {
+                setInsertandoHabitual(false);
+                document.getElementById('agregar-sesion')?.focus();
+              }}
+            >
+              {COPY_HABITUALES.cancelar}
             </button>
           </div>
         ) : null}

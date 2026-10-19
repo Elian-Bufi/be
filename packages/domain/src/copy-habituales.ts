@@ -38,8 +38,8 @@ export const COPY_HABITUALES = {
   cancelar: 'Cancelar',
   seReemplazaSesion: (nombre: string): string => `Ya tenés una sesión habitual «${nombre}»: se reemplaza por esta.`,
   seReemplazaComida: (nombre: string): string => `Ya tenés una comida habitual «${nombre}»: se reemplaza por esta.`,
-  guardadaSesion: 'Sesión habitual guardada. La encontrás en «Agregar una sesión habitual» y en «Plantillas y habituales».',
-  guardadaComida: 'Comida habitual guardada. La encontrás en «Agregar una comida habitual» y en «Plantillas y habituales».',
+  guardadaSesion: 'Sesión habitual guardada. La encontrás en «Agregar», como «Una sesión habitual», y en «Plantillas y habituales».',
+  guardadaComida: 'Comida habitual guardada. La encontrás en «Agregar comida», como «Una comida habitual», y en «Plantillas y habituales».',
   insertadaSesion: 'Sesión habitual agregada al borrador. Es de este plan: revisá las cargas y las notas.',
   insertadaComida: 'Comida habitual agregada al borrador. Es de este plan: revisá las cantidades y las notas.',
   quitado: 'Habitual quitado.',
@@ -55,4 +55,7 @@ export const COPY_HABITUALES = {
   soloTuyos: 'Solo vos ves tus habituales. Lo que agregás a un borrador queda en ese plan y no cambia si después editás el habitual.',
   nombreTomado: 'Ya tenés un habitual con ese nombre.',
   elementoNoDisponible: 'Ya no está disponible en el catálogo.',
+  /** El buscador filtra los habituales mientras se escribe (bloque 5 del encargo de consolidación). */
+  coinciden: (cuantos: number, total: number, texto: string): string => `${cuantos} de ${total} con «${texto}»`,
+  ningunoCoincide: (texto: string): string => `Ninguno de tus habituales tiene «${texto}». El catálogo se busca con Enter.`,
 } as const;

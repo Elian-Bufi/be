@@ -235,15 +235,19 @@ export function DialogoGuardarComidaHabitual({
  * guardar el borrador) y entrega los nombres vigentes de sus alimentos para mostrarlos en el editor. Sin comidas
  * habituales no se muestra: la entrada a la función es «Guardar como habitual» sobre una comida.
  */
+/**
+ * Elegir una comida habitual e insertar una copia (sin identificadores) al final del día tipo. Se abre a pedido, desde
+ * «Agregar comida ▾ → Una comida habitual»: al aparecer, el foco va a la lista; lo agregado lo anuncia el editor.
+ */
 export function InsertarComidaHabitual({ comidas, onInsertar }: { comidas: readonly ComidaHabitual[] | null; onInsertar: (comida: Comida, nombres: Readonly<Record<string, string>>) => void }) {
   const id = useId();
   const [elegida, setElegida] = useState('');
-  const [aviso, setAviso] = useState<string | null>(null);
   if (comidas === null || comidas.length === 0) return null;
   return (
     <div className="campo" data-habituales="comidas">
       <label htmlFor={`${id}-comida`}>{COPY_HABITUALES.agregarComida}</label>
-      <select id={`${id}-comida`} value={elegida} onChange={(e) => setElegida(e.target.value)}>
+      {/* Se muestra porque la persona lo acaba de pedir: el foco va a la lista. */}
+      <select id={`${id}-comida`} value={elegida} onChange={(e) => setElegida(e.target.value)} autoFocus>
         <option value="">—</option>
         {comidas.map((c) => (
           <option key={c.presetId} value={c.presetId}>
@@ -261,16 +265,10 @@ export function InsertarComidaHabitual({ comidas, onInsertar }: { comidas: reado
           const nombres: Record<string, string> = {};
           for (const [catalogItemId, it] of Object.entries(c.items)) nombres[catalogItemId] = it.name;
           onInsertar(sinIdentificadoresDeComida(structuredClone(c.structure)), nombres);
-          setAviso(COPY_HABITUALES.insertadaComida);
         }}
       >
         {COPY_HABITUALES.insertarComida}
       </button>
-      {aviso ? (
-        <p className="nota" role="status">
-          {aviso}
-        </p>
-      ) : null}
     </div>
   );
 }

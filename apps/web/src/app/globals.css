@@ -9683,27 +9683,11 @@ button.comida-del-dia__fila > .icono:last-child {
   gap: 0.6rem 1.25rem;
 }
 
-/* «Agregar una comida habitual», al pie del día tipo: su rótulo, la lista y el botón, en un renglón mientras entren;
-   lo que avisa al agregar, debajo. */
-.editor-del-plan__al-pie [data-habituales='comidas'] {
-  flex: 1 1 28rem;
-  flex-flow: row wrap;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
+/* «Una comida habitual», elegida desde «Agregar comida» (bloque 5): ocupa lo que queda del renglón, como la sesión
+   habitual en Entrenamiento (las reglas de `.sesion-habitual-a-pedido` valen para las dos). */
+.editor-del-plan__al-pie > .comida-habitual-a-pedido {
+  flex: 1 1 32rem;
   min-width: 0;
-  margin: 0;
-}
-
-.editor-del-plan__al-pie [data-habituales='comidas'] > select {
-  flex: 1 1 14rem;
-  width: auto;
-  min-width: 0;
-  max-width: 24rem;
-}
-
-.editor-del-plan__al-pie [data-habituales='comidas'] > .nota {
-  flex-basis: 100%;
-  margin: 0;
 }
 
 /* Los problemas de «Validar»: cada uno es un enlace a su lugar. */
@@ -10046,15 +10030,17 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 100%;
 }
 
-/* «Agregar una sesión habitual», a pedido: la lista, su botón y «Cancelar», en un renglón. */
-.sesion-habitual-a-pedido {
+/* «Agregar una sesión habitual» o «… comida habitual», a pedido: la lista, su botón y «Cancelar», en un renglón. */
+.sesion-habitual-a-pedido,
+.comida-habitual-a-pedido {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.5rem 0.75rem;
 }
 
-.sesion-habitual-a-pedido > .campo {
+.sesion-habitual-a-pedido > .campo,
+.comida-habitual-a-pedido > .campo {
   flex: 0 1 44rem;
   flex-flow: row wrap;
   align-items: center;
@@ -10063,13 +10049,15 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
-.sesion-habitual-a-pedido > .campo > select {
+.sesion-habitual-a-pedido > .campo > select,
+.comida-habitual-a-pedido > .campo > select {
   flex: 1 1 14rem;
   width: auto;
   min-width: 0;
 }
 
-.sesion-habitual-a-pedido > .boton--enlace {
+.sesion-habitual-a-pedido > .boton--enlace,
+.comida-habitual-a-pedido > .boton--enlace {
   min-height: 44px;
 }
 

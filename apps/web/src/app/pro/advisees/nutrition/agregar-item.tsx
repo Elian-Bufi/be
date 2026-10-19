@@ -20,6 +20,7 @@
 import {
   cantidad as formatearCantidad,
   COPY_HABITUALES,
+  habitualesQueCoinciden,
   COPY_INTEGRACIONES,
   COPY_NUTRICION,
   leerNumero,
@@ -180,6 +181,9 @@ function ContenidoDeAgregarItem({
   }
 
   const alimentos = busqueda.tipo === 'lista' ? busqueda.alimentos : [];
+  // Los habituales se filtran mientras se escribe; el catálogo, al enviar (bloque 5).
+  const filtro = texto.trim();
+  const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
   return (
     <div className="agregar-item">
       <form onSubmit={enviar} className="agregar-item__buscador" role="search">
@@ -209,7 +213,11 @@ function ContenidoDeAgregarItem({
         <h3 id={`${id}-habituales`} className="agregar-item__titulo">
           <Icono nombre="habitual" tamano={18} />
           {COPY_HABITUALES.alimentosHabituales}
-          {habituales.habituales.length > 0 ? <span className="nota">Los que marcaste: se agregan con un clic.</span> : null}
+          {habituales.habituales.length > 0 ? (
+            <span className="nota" data-habituales-coinciden={filtro ? alaVista.length : undefined}>
+              {filtro ? COPY_HABITUALES.coinciden(alaVista.length, habituales.habituales.length, filtro) : 'Los que marcaste: se agregan con un clic.'}
+            </span>
+          ) : null}
         </h3>
         {habituales.lectura === 'falla' ? (
           <Aviso tipo="error">
@@ -222,9 +230,13 @@ function ContenidoDeAgregarItem({
           <Cargando />
         ) : habituales.habituales.length === 0 ? (
           <p className="nota">{COPY_HABITUALES.sinAlimentosHabituales}</p>
+        ) : alaVista.length === 0 ? (
+          <p className="nota" data-habituales-sin-coincidencias>
+            {COPY_HABITUALES.ningunoCoincide(filtro)}
+          </p>
         ) : (
           <ul className="agregar-item__fichas">
-            {habituales.habituales.map((el) => (
+            {alaVista.map((el) => (
               <li key={el.catalogItemId}>
                 <button type="button" className="boton boton--quieto boton--compacto" aria-label={`Agregar ${el.name}`} onClick={() => elegir(el)}>
                   <Icono nombre="mas" tamano={18} />

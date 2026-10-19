@@ -224,7 +224,8 @@ export function InsertarSesionHabitual({ id, sesiones, onInsertar }: { id: strin
   return (
     <div className="campo">
       <label htmlFor={`${id}-habitual`}>{COPY_HABITUALES.agregarSesion}</label>
-      <select id={`${id}-habitual`} value={elegida} onChange={(e) => setElegida(e.target.value)}>
+      {/* Se muestra porque la persona lo acaba de pedir («Agregar ▾ → Una sesión habitual»): el foco va a la lista. */}
+      <select id={`${id}-habitual`} value={elegida} onChange={(e) => setElegida(e.target.value)} autoFocus>
         <option value="">—</option>
         {sesiones.map((h) => (
           <option key={h.presetId} value={h.presetId}>
