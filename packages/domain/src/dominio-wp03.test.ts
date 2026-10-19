@@ -530,7 +530,8 @@ test('10-B04:627-638 — cada evento de las tres máquinas tiene etiqueta humana
 test('10-B04 §28-§29 y H10-04-04 — el profesional ve el estado mínimo, nunca la razón del bloqueo', () => {
   const pro = (relationshipState: 'ACEPTADO' | 'PAUSADO' | 'FINALIZADO', consentState: 'REQUIRED' | 'ACTIVE' | 'REVOKED', accessMode: 'BLOCKED' | 'CONTEXTUAL') =>
     estadoParaMostrar({ relationshipState, consentState, accessMode }, 'PROFESSIONAL');
-  assert.deepEqual(pro('ACEPTADO', 'ACTIVE', 'CONTEXTUAL'), { estado: 'Activo · acceso contextual', detalle: null });
+  // DL-146: el formato de 10-B04 §28 («estado del vínculo · estado mínimo de autorización»), con palabras del oficio.
+  assert.deepEqual(pro('ACEPTADO', 'ACTIVE', 'CONTEXTUAL'), { estado: 'Activo · con acceso', detalle: null });
   assert.deepEqual(pro('ACEPTADO', 'REQUIRED', 'BLOCKED'), { estado: 'Vínculo activo', detalle: 'Acceso pendiente de autorización del asesorado' });
   assert.deepEqual(pro('ACEPTADO', 'REVOKED', 'BLOCKED'), { estado: 'Consentimiento revocado', detalle: 'Acceso no disponible' });
   // A3 revocada, cuenta suspendida o habilitación retirada: lo mismo, sin distinguir la causa (UC-I02 E05).

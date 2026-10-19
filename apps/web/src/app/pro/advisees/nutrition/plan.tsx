@@ -446,6 +446,7 @@ function PrimerPlanDeNutricion({ objetivoDesde, accionesDelPlan, onObjetivo }: {
         onAbrir={setAbierto}
         formularioDeEvaluacion={
           <FormularioDeEvaluacion
+            conTitulo={false}
             onRegistrada={() => {
               setAbierto('objetivo');
               void leer();

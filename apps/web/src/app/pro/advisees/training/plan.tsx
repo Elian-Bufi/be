@@ -513,6 +513,7 @@ function PrimerPlanDeEntrenamiento({
         onAbrir={setAbierto}
         formularioDeEvaluacion={
           <FormularioDeEvaluacion
+            conTitulo={false}
             onRegistrada={() => {
               setAbierto('objetivo');
               void leer();

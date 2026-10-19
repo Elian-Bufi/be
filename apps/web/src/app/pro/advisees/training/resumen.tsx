@@ -10,6 +10,9 @@
  *   por la persona, con su fecha, y nunca como un dato observado por el profesional (CA-FOR-04).
  */
 import {
+  CONCEPTOS_FRECUENTES_DE_ENTRENAMIENTO,
+  COPY_DE_LA_EVALUACION,
+  type ConceptoFrecuente,
   COPY_PRIMER_PLAN,
   COPY_ENTRENAMIENTO,
   COPY_FORMULARIOS,
@@ -48,6 +51,7 @@ import {
   type FuenteDeContexto,
 } from './contexto-citable';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 
 interface Datos {
   readonly evaluaciones: readonly EvaluacionDeEntrenamiento[];
@@ -293,7 +297,12 @@ const ahoraLocal = (): string => {
 };
 
 /** Evaluación: datos previos con su fuente (B10-06 §3). Un dato calculado declara su método: BE no calcula. */
-export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: () => void; onCancelar: () => void }) {
+/**
+ * DL-146: dentro de «Empezar el plan», el paso ya se llama «Evaluación inicial» (`conTitulo={false}`). Los conceptos
+ * frecuentes llenan el primer dato vacío; el contexto declarado sin respuestas ocupa una línea; el contexto y las notas,
+ * opcionales, van plegados.
+ */
+export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = true }: { onRegistrada: () => void; onCancelar: () => void; conTitulo?: boolean }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [datos, setDatos] = useState<Dato[]>([datoVacio()]);
@@ -315,6 +324,11 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
   const [cambiadas, setCambiadas] = useState<readonly string[]>([]);
   const plantillas = useRef(new Map());
   const cambiar = (i: number, cambio: Partial<Dato>) => setDatos((ds) => ds.map((d, j) => (j === i ? { ...d, ...cambio } : d)));
+  function elegirConcepto(c: ConceptoFrecuente) {
+    const i = lugarDelConcepto(datos);
+    setDatos((ds) => (i < ds.length ? ds.map((d, j) => (j === i ? { ...d, concepto: c.concepto, unidad: c.unidad } : d)) : [...ds, { ...datoVacio(), concepto: c.concepto, unidad: c.unidad }]));
+    window.setTimeout(() => document.getElementById(`trn-dato-${i}-valor`)?.focus(), 0);
+  }
   const fuente = useMemo<FuenteDeContexto>(
     () => ({
       listar: (cursor) => api.listarSolicitudesDeFormulario(token, asesoradoId, { status: 'RESPONDED', limit: LIMITE_DE_PAGINA, ...(cursor ? { cursor } : {}) }),
@@ -433,12 +447,13 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
 
   return (
     <form className="formulario" onSubmit={enviar} noValidate>
-      <h3>{COPY_ENTRENAMIENTO.nuevaEvaluacion}</h3>
+      {conTitulo ? <h3>{COPY_ENTRENAMIENTO.nuevaEvaluacion}</h3> : null}
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={envios} />
       <Campo id="trn-evaluacion-ocurrencia" etiqueta="Fecha y hora de la evaluación" type="datetime-local" value={ocurrencia} onChange={(e) => setOcurrencia(e.target.value)} required />
       <fieldset className="grupo">
         <legend>Datos de la evaluación</legend>
         <p className="campo__ayuda">Cada dato indica de dónde sale: lo informado por el asesorado no es un diagnóstico.</p>
+        <ConceptosFrecuentes conceptos={CONCEPTOS_FRECUENTES_DE_ENTRENAMIENTO} usados={datos.map((d) => d.concepto)} etiqueta={COPY_DE_LA_EVALUACION.paraEmpezar} onElegir={elegirConcepto} />
         {datos.map((d, i) => (
           <div key={i} className="fila-de-dato">
             <Campo id={`trn-dato-${i}-concepto`} etiqueta="Concepto" value={d.concepto} onChange={(e) => cambiar(i, { concepto: e.target.value })} maxLength={120} />
@@ -468,10 +483,15 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
       </fieldset>
       <fieldset className="grupo" id="trn-contexto">
         <legend>{COPY_ENTRENAMIENTO.contextoDeclarado}</legend>
-        <p className="campo__ayuda">{COPY_ENTRENAMIENTO.ayudaContextoDeclarado}</p>
-        <p className="campo__ayuda" id="trn-contexto-limite">
-          {COPY_ENTRENAMIENTO.limiteDeCitas} Marcaste {citadas.length} de {MAXIMO_DE_CITAS}.
-        </p>
+        {/* Sin respuestas que citar, el bloque es una línea: lo que se explica sirve cuando hay algo para marcar. */}
+        {cargaDeContexto === 'listo' && citables.length === 0 && !siguiente ? null : (
+          <>
+            <p className="campo__ayuda">{COPY_ENTRENAMIENTO.ayudaContextoDeclarado}</p>
+            <p className="campo__ayuda" id="trn-contexto-limite">
+              {COPY_ENTRENAMIENTO.limiteDeCitas} Marcaste {citadas.length} de {MAXIMO_DE_CITAS}.
+            </p>
+          </>
+        )}
         {conflicto ? (
           <Aviso tipo="error" enfocar>
             <p>{COPY_ENTRENAMIENTO.contextoCambio}</p>
@@ -523,15 +543,18 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
           </button>
         ) : null}
       </fieldset>
-      <div className="campo">
-        <label htmlFor="trn-evaluacion-contexto">Contexto (opcional)</label>
-        <p className="campo__ayuda">En qué situación se hizo la evaluación: consulta inicial, cambio de bloque, vuelta de una lesión.</p>
-        <textarea id="trn-evaluacion-contexto" rows={2} value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={1000} />
-      </div>
-      <div className="campo">
-        <label htmlFor="trn-evaluacion-notas">Notas del profesional (opcional)</label>
-        <textarea id="trn-evaluacion-notas" rows={2} value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} />
-      </div>
+      <details className="campos-opcionales" open={contexto !== '' || notas !== '' ? true : undefined}>
+        <summary>{COPY_DE_LA_EVALUACION.contextoYNotas}</summary>
+        <div className="campo">
+          <label htmlFor="trn-evaluacion-contexto">Contexto (opcional)</label>
+          <p className="campo__ayuda">En qué situación se hizo la evaluación: consulta inicial, cambio de bloque, vuelta de una lesión.</p>
+          <textarea id="trn-evaluacion-contexto" rows={2} value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={1000} />
+        </div>
+        <div className="campo">
+          <label htmlFor="trn-evaluacion-notas">Notas del profesional (opcional)</label>
+          <textarea id="trn-evaluacion-notas" rows={2} value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} />
+        </div>
+      </details>
       {fallo ? (
         <Aviso tipo="error" enfocar>
           <p>{fallo}</p>

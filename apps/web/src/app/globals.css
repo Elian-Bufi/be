@@ -2367,6 +2367,42 @@ html:has(.acciones--fijas) {
   margin: 0.5rem 0;
 }
 
+/* DL-146: los conceptos frecuentes de una evaluación, como fichas para tocar; lo opcional, plegado. */
+.conceptos-frecuentes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.concepto-frecuente {
+  min-height: 2.25rem;
+  padding: 0.2rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.concepto-frecuente:hover {
+  background: var(--fondo-suave);
+}
+
+.campos-opcionales {
+  margin: 0.25rem 0 1rem;
+}
+
+.campos-opcionales > summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  font-weight: 600;
+  color: var(--enlace);
+}
+
 /* DL-146: «Mis ejercicios» en grilla. Cada tarjeta, con su imagen, su nombre y su fecha; la que se edita ocupa el ancho. */
 .grilla-de-ejercicios {
   list-style: none;

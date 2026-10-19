@@ -149,7 +149,7 @@
 | DL-143 | Pedido de Dirección · 2026-10-17 (al probar la invitación) | 04 RF-021, RF-023 · 08 §24 (A3 como acto aparte) · 10-B02 §7 · 10-B04 §10-§14, §41 · CAND-10-CON-02 · UC-I02 E05 · DL-136 | Una persona aceptó el vínculo y autorizó al profesional, pero sin el tratamiento de datos de salud (A3) el acceso no era efectivo: la APK decía «Activo» y el profesional, «Acceso no disponible» | **INTEGRADO** 2026-10-17 (#181): el último paso A3 en el mismo recorrido, el recordatorio en Inicio y una pista general para el profesional; **Dirección eligió A** el 2026-10-18 |
 | DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
-| DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
+| DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla, la evaluación más corta y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
 
 ---
 
@@ -4675,10 +4675,17 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
   - «Crear nueva versión a partir de esta» pasa a **«Nueva versión del plan»**, como «Nueva versión de objetivo» (B10-06). La pista dice por qué no es una edición: «La versión activa no se edita: la nueva parte de ella y rige recién cuando la actives».
   - *Alternativa descartada:* dejarlos como estaban (son los dos que el análisis marcó como palabras del sistema).
 
+- **G-6 · El formulario de evaluación, más corto** (Entrenamiento y Nutrición). Lo había anticipado el análisis: arrancaba con «Concepto» y «Valor» en blanco.
+  - **Conceptos frecuentes para tocar** («Días disponibles por semana», «Lesiones o molestias», «Peso», «Alergias o intolerancias»…): llenan el primer dato vacío con su unidad y llevan al valor. Son atajos para escribir, no un instrumento: el concepto sigue siendo texto libre y la fuente la declara el profesional (DL-048, opción A; DL-100). Los que ya están no se ofrecen de nuevo.
+  - **El contexto declarado por la persona,** sin respuestas que citar, es una línea.
+  - **El contexto y las notas,** opcionales, van plegados después de los datos; se abren solos si tienen texto.
+  - **Dentro de «Empezar el plan»** sale el título «Nueva evaluación»: el paso ya se llama «Evaluación inicial».
+  - *Alternativa descartada:* un formulario fijo por área (sería un instrumento clínico que el legajo no aprobó, REG-06-110).
+
 **Lo que no cambia:** la API; la cadena evaluación, objetivo y plan; los textos de consentimiento; la Guía, que sigue entera.
 
 **Lo que queda:** el encabezado de la ficha como lo propone el análisis (toca las maquetas validadas el 2026-10-10); los formularios de inicio (DL-144); la prueba con cinco profesionales.
 
-**Provisorio en código:** G-1 a G-5.
+**Provisorio en código:** G-1 a G-6.
 
-**Condición de cierre:** Dirección ratifica G-1 a G-5, o cambia las que quiera.
+**Condición de cierre:** Dirección ratifica G-1 a G-6, o cambia las que quiera.
