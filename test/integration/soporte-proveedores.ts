@@ -3,7 +3,8 @@
  * un tercero: la CI no depende de que otro servicio esté arriba, y cada caso —completo, incompleto, inexistente,
  * caído, lento— se reproduce igual siempre.
  *
- * Todos los datos son inventados: códigos de barras de prueba, nombres y composiciones sintéticas.
+ * Todos los datos son inventados: códigos de barras de prueba, nombres y composiciones sintéticas. La excepción es el
+ * ejercicio del catálogo base (`WGER_DEL_CATALOGO_BASE`), que repite los nombres y las autorías que wger publica para él.
  */
 import { randomInt } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
@@ -56,6 +57,13 @@ export const WGER = {
   /** La traducción elegida no informa su licencia ni su autor. */
   sinAutor: '907',
 } as const;
+
+/**
+ * DL-141, tramo 2: un ejercicio que el catálogo base ya sembró desde wger, el press de banca (número 73). El proveedor falso
+ * lo responde con los nombres de wger, para probar que importarlo apunta al sembrado y no crea otro. Va aparte de `WGER`:
+ * esos números no pueden ser del catálogo base (lo exige `scripts/catalogo-base.test.mjs`).
+ */
+export const WGER_DEL_CATALOGO_BASE = '73';
 
 const productoCompleto = {
   code: OFF.completo,
@@ -155,6 +163,14 @@ export async function levantarProveedorFalso(): Promise<ProveedorFalso> {
           translations: [null, 7, { language: 4, name: 'Plancha\u0000 lateral\t ', license: 2, license_author: 'autora\u0007-sintetica' }],
         });
       if (numero === WGER.sinAutor) return json(200, ejercicio(907, [{ language: 4, name: 'Puente de glúteos', license: 99 } as never]));
+      if (numero === WGER_DEL_CATALOGO_BASE)
+        return json(
+          200,
+          ejercicio(73, [
+            { language: 2, name: 'Bench Press', license: 1, license_author: 'sistab2' },
+            { language: 4, name: 'Press de Banca', license: 2, license_author: 'wgerjhn' },
+          ]),
+        );
       return json(404, { detail: 'No Exercise matches the given query.' });
     }
     json(404, {});
