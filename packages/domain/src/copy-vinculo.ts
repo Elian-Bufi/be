@@ -284,6 +284,8 @@ export const COPY_INVITACION = {
    * profesional. Se puede cambiar, y la API valida la habilitación real (422 SCOPE_NOT_AVAILABLE).
    */
   areaSugerida: 'Sugerida por tus vínculos: podés elegir otra.',
+  /** La API no habilita al profesional en esa área (422 SCOPE_NOT_AVAILABLE): se dice junto al campo, que es lo que se corrige. */
+  areaNoHabilitada: 'Tu cuenta no está habilitada para invitar en esa área. Elegí otra.',
   crear: 'Crear invitación',
   creando: 'Creando la invitación…',
   lista: 'La invitación está lista',

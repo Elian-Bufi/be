@@ -16,7 +16,6 @@ import {
   ALCANCES,
   COPY,
   COPY_INVITACION,
-  COPY_VINCULO,
   ETIQUETA_DE_ALCANCE,
   enlaceDeInvitacion,
   type Alcance,
@@ -109,7 +108,14 @@ export function InvitarPersona({
     }
     if (sesionPerdida(r)) return;
     if (esIncierto(r)) return setEstado({ tipo: 'error', texto: COPY.resultadoIncierto, incierto: true });
-    setEstado({ tipo: 'error', texto: r.tipo === 'API' && r.codigo === 'SCOPE_NOT_AVAILABLE' ? COPY_VINCULO.solicitudNoDisponible : COPY.noDisponible, incierto: false });
+    // El área es lo que se corrige: el error va junto al campo, no arriba del formulario (bloque 5).
+    if (r.tipo === 'API' && r.codigo === 'SCOPE_NOT_AVAILABLE') {
+      setErrorDeArea(COPY_INVITACION.areaNoHabilitada);
+      setEstado({ tipo: 'eligiendo' });
+      window.setTimeout(() => document.getElementById(`${id}-area`)?.focus(), 0);
+      return;
+    }
+    setEstado({ tipo: 'error', texto: COPY.noDisponible, incierto: false });
   }
 
   async function copiar(que: 'enlace' | 'mensaje', texto: string) {
