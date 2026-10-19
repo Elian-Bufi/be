@@ -4387,7 +4387,10 @@ Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea
 - **DL-097, DL-098 y DL-099:** la importación de WP-08. **DL-139:** el buscador.
 - **El paquete:** WP-CATALOGO-BASE (`docs/paquetes/WP-CATALOGO-BASE.md`).
 
-**Estado:** tramo 1 (D-1 y D-2) INTEGRADO el 2026-10-17 (#180), con la CI en verde. Siguen los tramos 2 (el catálogo base de entrenamiento, de wger) y 3 (el de alimentos, de USDA).
+**Estado:**
+- tramo 1 (D-1 y D-2) INTEGRADO el 2026-10-17 (#180), con la CI en verde;
+- tramos 2 (el catálogo base de entrenamiento, de wger: 186 ejercicios) y 3 (el de alimentos, de USDA: 385) IMPLEMENTADOS el 2026-10-19 en `wp-catalogo-base-2-3` (#184, en borrador), sin integrar: los datos curados, el generador, las dos migraciones, las pruebas y `docs/catalogo/FUENTES.md`;
+- falta lo de D-6 en el website: la página «Fuentes del catálogo» y la licencia en cada fila del buscador.
 
 **Qué pasaba.**
 - Un ejercicio de wger o un alimento de Open Food Facts importado (WP-08) lo veía solo quien lo importó. Otro profesional que quería el mismo lo importaba de nuevo, repetía la revisión y quedaban dos elementos.
@@ -4416,7 +4419,7 @@ Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea
 
 Los campos nuevos van en seis operaciones del website: la APK instalada no las usa (no están en `packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`, y la APK no las llama). El website valida cada respuesta con un esquema estricto: durante el despliegue, una pestaña abierta antes que busque o importe puede ver «respuesta no reconocida» hasta recargar, como con los campos de DL-119. El website y la API salen del mismo commit.
 
-**Lo decidido** (D-1, D-2, D-5 y D-6 del paquete, y lo que hubo que decidir para implementarlas; todo espera ratificación):
+**Lo decidido** (D-1 a D-6 del paquete, y lo que hubo que decidir para implementarlas; todo espera ratificación):
 - **D-1 · Lo importado es de todos los profesionales.**
   - Un ítem importado se ve para todos, con su proveedor, su fecha y su licencia, igual que hoy.
   - Hay uno solo por ítem externo (proveedor más identificador). Si un profesional importa uno que ya está, la resolución de su candidato apunta al existente: no se crea otro.
@@ -4442,9 +4445,35 @@ Los campos nuevos van en seis operaciones del website: la APK instalada no las u
   - *Alternativas descartadas:* una lista dentro de la versión del ítem (versionar un nombre alternativo obligaría a versionar el ítem); un campo «nombre en inglés» (se queda corto con los otros países); una sola tabla para los dos catálogos (las claves foráneas serían opcionales, y cada catálogo ya tiene las suyas); un índice único por nombre (un nombre retirado no podría volver a agregarse igual).
 - **D-2.a · La siembra de este tramo, chica y a propósito** (`20261017010200_…`): el inglés de los doce ejercicios de demostración («Squat», «Bench press», «Deadlift»…, con «Military press» y «Overhead press» para el press militar), «Estocadas» (AR) y «Desplantes» (MX) para las zancadas, «Empuje de cadera» para el hip thrust, y diecisiete de alimentos: «Aguacate» y «Avocado» (palta), «Fresas» y «Strawberries» (frutillas), «Plátano» (banana, solo ES: en otros países es otra fruta), «Boniato» (ES) y «Camote» (MX) para la batata, «Patata» (ES), «Calabaza» (zapallo), «Pasta de maní» (AR), «Crema de cacahuete» (ES) y «Peanut butter», «Zumo de naranja natural» (ES), «Leche desnatada» (ES), «Chicken breast», «Egg» y «Chickpeas». Origen `SIEMBRA_DE_BE`, la siembra en la procedencia, UUID v5 deterministas y `ON CONFLICT DO NOTHING`: correrla dos veces no agrega nada.
 - **D-2.b · Agregar o retirar nombres desde el website no entra en este tramo.** Las tablas ya lo admiten (origen `PROFESIONAL`, retiro con su autor); falta la operación, y decidir quién puede tocar lo que es de todos.
+- **D-3 · El catálogo base de entrenamiento sale de wger** (tramo 2): 186 ejercicios frecuentes de gimnasio, peso corporal, máquinas, mancuernas, poleas, movilidad y cardio básico, cada uno con la licencia que wger declara para sus textos (CC BY-SA 3.0, CC BY-SA 4.0 o CC0 1.0) y su autoría. Sin imágenes ni descripciones. Van como `CONTROLLED_IMPORT` de WGER, sin profesional que los cargue, y quedan en `item_externo_de_catalogo`.
+- **D-3.a · El número de wger es el del ejercicio** (el `id` de `exerciseinfo`), el mismo que consulta la importación de WP-08: importar después ese número apunta al sembrado (D-1).
+  - *Alternativas descartadas:* el UUID de wger o el número de la traducción (la importación no los usa: el mismo ejercicio quedaría dos veces).
+- **D-3.b · El nombre en castellano, y de qué texto sale su licencia.** Es la traducción de wger, revisada (a lo sumo cambian las mayúsculas), cuando sirve: 90. Si no, es una traducción propia de BE del nombre en inglés: 96. Pasa cuando wger no lo tiene en castellano, cuando el suyo es de España («tumbado», «polichilenas»), cuando dice otra cosa («Curl cuadriceps» para la extensión de cuádriceps, «Zancadas con peso» para las de peso corporal) o cuando repite un nombre de demostración («Press de banca», «Dominadas»).
+  - La procedencia dice cuál de las dos es y de qué traducción de wger sale. La licencia de la fuente externa es la de ese texto: la traducción al castellano o, si el nombre es propio, la inglesa, porque es una obra derivada que se comparte con su misma licencia. La importación de WP-08 también usa la licencia de la traducción, no la del ejercicio.
+  - *Alternativas descartadas:* la traducción de wger siempre (no es rioplatense y a veces está mal); la licencia del ejercicio para todo (no es la del texto que se incorpora).
+- **D-3.c · Los nombres alternativos.** El inglés y, cuando BE no la usa como nombre, la traducción al castellano de wger van con origen `PROVEEDOR`, tal cual los publica wger y con su licencia en la procedencia. No van si son iguales al nombre («Burpees», «Superman»). Los de otros países los curó BE (`SIEMBRA_DE_BE`): «Estocadas» (AR), «Desplantes» (MX), «Serrucho» y «Polea al pecho» (AR), «Vuelos laterales» (AR), «Pájaros» (ES)…
+  - *Alternativa descartada:* corregir el inglés de wger («Benchpress Dumbbells»): ya no sería lo que declara el proveedor. Un inglés mejor va aparte, curado por BE («Back squat», «Dead bug»).
+- **D-3.d · La categoría, los músculos y el material de wger van en la procedencia de la versión,** rotulados como lo que declara wger: no son zonas musculares de BE (09v12:397-401) y el ejercicio sigue sin zonas (REG-06-139).
+  - *Alternativas descartadas:* convertirlos en zonas BE (no se aceptan como canónicos); dejarlos afuera (D-3 los pide). La importación de WP-08 los deja solo en el candidato, porque ahí los revisa el profesional.
+- **D-3.e · Un ejercicio que un profesional ya importó no se vuelve a crear.** La migración saltea los números de wger que ya tienen ítem externo (la base de test puede tenerlos) y les suma los nombres alternativos al ejercicio que ya estaba.
+  - *Alternativa descartada:* crear igual el del catálogo base: habría dos por ítem externo, contra D-1.
+- **D-3.f · A lo sumo 18 ejercicios con la palabra «sentadilla».** La búsqueda con errores de tipeo de API-TRN-13, la que lee la APK instalada, completa una página de 20 con los parecidos, del más nuevo al más viejo: con más, la «Sentadilla» de demostración saldría de la primera página. Lo exige la prueba de contenido. Entran 13.
+- **D-4 · El catálogo base de alimentos usa USDA FoodData Central** (tramo 3): 385 alimentos frecuentes en Argentina, crudos o en preparaciones simples, de 17 grupos (cereales y panificados, legumbres, verduras, frutas, carnes vacunas, otras carnes, cerdo y fiambres, aves, pescados y mariscos, huevos, leches y postres, quesos, aceites y grasas, frutos secos y semillas, azúcares y dulces, bebidas, condimentos). Lo que no tiene un equivalente razonable no entra, y ningún valor se estima: la yerba mate, el queso cremoso, el dulce de membrillo, el matambre, el asado de tira y el pejerrey quedan afuera.
+- **D-4.a · Solo SR Legacy.** El proveedor del dominio para USDA es `USDA_FDC_SR_LEGACY` (DL-119), y la procedencia sigue la de DL-119 al pie de la letra: FDC, licencia CC0-1.0, «USDA Agricultural Research Service» y `usdaReference` (conjunto, NDB, descripción original, publicación y la preparación en castellano). Los ocho de DL-119 no se repiten: solo suman su inglés como nombre alternativo.
+  - *Alternativa descartada:* Foundation Foods (menos alimentos y casi ninguno preparado, y sería otro conjunto con otra referencia).
+- **D-4.b · La composición, tal cual SR Legacy y completa:** energía, proteínas, carbohidratos «by difference», grasas y fibra, cada 100 g. Un alimento al que SR Legacy no le informa la fibra no entra (el aceto balsámico, por ejemplo). El alcohol de la cerveza y del vino no entra en la composición, que no lo tiene; queda en los datos para la prueba de coherencia de la energía.
+  - *Alternativas descartadas:* completar una fibra que falta con cero (sería inventarla); sumar el alcohol a la composición (cambia el contrato que lee el website).
+- **D-4.c · Los alimentos de USDA no van a `item_externo_de_catalogo`:** USDA no es un proveedor de importación, y los ven todos porque no son de nadie, como los de DL-119.
+  - *Alternativa descartada:* sumar USDA a `ProveedorExterno` (es la enumeración de la importación de WP-08: candidatos, ítems externos y la forma que lee la APK).
+- **D-4.d · Los nombres alternativos de los alimentos son todos `SIEMBRA_DE_BE`,** también el inglés, que es la descripción original de USDA (sin la nota «Includes foods for USDA's Food Distribution Program»), porque el origen `PROVEEDOR` de la tabla de alimentos admite solo Open Food Facts. La procedencia dice que el inglés es de USDA.
+  - *Alternativa descartada:* ampliar ese CHECK (un cambio de esquema para un tramo de datos).
+- **D-4.e · Los nombres:** castellano rioplatense, con la preparación cuando importa («Zapallo anco al horno, sin sal», «Carne picada vacuna 90 % magra, cruda»), y nunca el nombre exacto de uno de WP-04 o de DL-119 (D-5). Los cortes vacunos llevan el nombre argentino de su equivalente de USDA: lomo (tenderloin), bife de chorizo (top loin), ojo de bife (rib eye), cuadril (top sirloin), peceto (eye of round), nalga (top round), bola de lomo (tip round), vacío (flank), entraña (outside skirt), osobuco (shank). El inglés de USDA, como nombre alternativo, deja ver el corte de origen. La merluza es la «whiting» de USDA (merluza plateada, del mismo género que la argentina) y lo dice el nombre: «Merluza (whiting), cruda».
+  - *Alternativa descartada:* el corte argentino sin el de USDA a la vista (no se podría revisar la equivalencia).
+- **D-3 y D-4 · Cómo se siembran.** Los datos curados viven en `prisma/datos/catalogo-base/` (`ejercicios.json`, `alimentos.json` y su LEEME): lo que decide BE (qué entra, el nombre, la preparación, los nombres alternativos) y lo que dice la fuente, que completa y verifica `scripts/catalogo-base/completar-con-las-fuentes.mjs` contra lo bajado el 2026-10-19 (el CSV de SR Legacy, con su SHA-256, y la API de wger). `scripts/catalogo-base/generar-migracion.mjs` escribe las dos migraciones y `docs/catalogo/FUENTES.md`: UUID v5 en el espacio «be.dl-141.catalogo-base», la marca de la siembra en la procedencia (`WP-CATALOGO-BASE · DL-141 · tramo 2` y `· tramo 3`) y el momento 2026-10-19; dos corridas dan los mismos archivos. Una migración aplicada no se regenera: un cambio posterior al catálogo base es una migración nueva.
+  - *Alternativas descartadas:* pedir los datos a wger y a USDA al arrancar (D-3); escribir el SQL a mano (no se podría verificar contra la fuente).
 - **D-5 · Lo sintético de demostración se queda,** porque lo citan los planes de la cohorte y de las pruebas. Este tramo no lo toca.
   - *Alternativa descartada:* retirarlo. Las instantáneas no se reescriben (REG-06-112), así que no cambia nada de lo ya citado, pero confunde a la cohorte.
-- **D-6 · Las fuentes, a la vista:** lo importado ya dice su proveedor y su fecha donde se elige, y su licencia al consultarlo. La licencia en cada fila del buscador («wger · CC BY-SA 4.0», «USDA FoodData Central · dominio público») y la página «Fuentes del catálogo» llegan con los catálogos base (tramos 2 y 3), que son los que la necesitan.
+- **D-6 · Las fuentes, a la vista:** lo importado ya dice su proveedor y su fecha donde se elige, y su licencia al consultarlo. `docs/catalogo/FUENTES.md` reúne las atribuciones que piden las licencias: la cita de USDA y, ejercicio por ejercicio, cada texto de wger con su licencia y su autoría (o que wger no la declara). Se genera desde los datos, así que no se desincroniza. Falta el website: la página «Fuentes del catálogo», que sale de ese documento, y la licencia en cada fila del buscador («wger · CC BY-SA 4.0», «USDA FoodData Central · dominio público»).
 
 **Base de datos.** Tres migraciones, sin booleanos:
 - `20261017010000_lo_importado_es_de_todos`:
@@ -4453,6 +4482,11 @@ Los campos nuevos van en seis operaciones del website: la APK instalada no las u
   - la resolución de un candidato puede apuntar a un elemento sin crear versión. El CHECK `resolucion_de_candidato_efecto_coherente` deja de exigir `version_creada_id` al importar; los índices únicos pasan a ser «una sola resolución crea el elemento» (`resolucion_de_candidato_crea_un_elemento_nutricional`, `…_crea_un_ejercicio`); y `be_resolucion_de_candidato_insertar` exige, además de lo de WP-08, que el elemento sea el del ítem externo del candidato.
 - `20261017010100_nombres_alternativos`: las enumeraciones `IdiomaDeNombre` y `OrigenDeNombreAlternativo`, y las cuatro tablas de nombres y retiros, solo agregadas, con sus CHECK: el nombre sin espacios en los bordes y de hasta 120 caracteres, la región como código de país, el origen coherente y el retiro con su motivo.
 - `20261017010200_nombres_alternativos_del_catalogo_de_demostracion`: la siembra (D-2.a).
+
+Y dos de datos de los tramos 2 y 3, generadas (D-3 y D-4), que solo agregan filas:
+- `20261019120000_catalogo_base_de_ejercicios`: los 186 ejercicios, su primera versión, su ítem externo y 266 nombres alternativos. Un número de wger que ya tiene ítem externo no se crea de nuevo, y sus nombres van al ejercicio que ya estaba (D-3.e).
+- `20261019120100_catalogo_base_de_alimentos`: los 385 alimentos, su primera versión y 660 nombres alternativos (también el inglés de los ocho de DL-119). Un FDC que ya está en el catálogo no se crea de nuevo.
+- Cada inserción saltea lo que ya está (`ON CONFLICT DO NOTHING`, `WHERE NOT EXISTS`): correrlas otra vez no agrega nada.
 
 El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre principal y sus nombres alternativos vigentes.
 
@@ -4470,18 +4504,32 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
   - un nombre de un profesional y su retiro, y los CHECK del origen, la región y el nombre;
   - las cinco tablas rechazan UPDATE y DELETE; la siembra es idempotente y cada nombre es de un ítem sembrado.
   - `integraciones.int-spec.ts` usa productos que nadie importó donde cuenta lo que se crea (lo importado ya es de todos); `comprension.int-spec.ts` compara las filas de la búsqueda con las de la lectura legada; `schema.int-spec.ts` suma las cinco tablas a las que rechazan TRUNCATE.
+- **contenido de los tramos 2 y 3** (`scripts/catalogo-base.test.mjs`, en `npm test`):
+  - cada ítem con su fuente, su licencia y su nombre en castellano; la procedencia, validada con los esquemas estrictos del dominio;
+  - en los alimentos, la composición completa, sin negativos y con la energía coherente con sus macronutrientes (los factores generales de Atwater, con margen para los específicos de USDA);
+  - los nombres alternativos, con su idioma, su región y su origen, y lo atribuido a wger es un texto de wger;
+  - sin nombres repetidos ni iguales a los de demostración o de DL-119; ningún FDC de DL-119; ningún número del proveedor falso de las pruebas;
+  - las licencias de wger, las mismas que usa la importación de WP-08;
+  - las dos migraciones y FUENTES.md son exactamente lo que produce el generador, y solo agregan.
+- **integración de los tramos 2 y 3** (`test/integration/catalogo-base.int-spec.ts`):
+  - cada fila de las migraciones está en la base, correrlas de nuevo no agrega nada, y cada ítem sembrado tiene una sola versión y no es de ningún profesional;
+  - cada ejercicio es el de su ítem externo, con su licencia; cada alimento, con la procedencia de DL-119 y su composición;
+  - el buscador del website encuentra lo sembrado por el castellano, el inglés y el de otro país, con `matchedAlternativeName`; las lecturas legadas, igual;
+  - importar desde wger un ejercicio del catálogo base devuelve `existingExercise`, la resolución apunta al sembrado y no se crea otro ejercicio ni otra versión (el proveedor falso suma el número 73);
+  - la persona ve un ejercicio del catálogo base en su plan (API-TRN-09) y en el catálogo (API-TRN-13), validados contra los esquemas congelados de la APK.
+  - Dos pruebas que suponían que lo único sembrado era lo de demostración: `entrenamiento.int-spec.ts` recorre todas las páginas del catálogo, y `catalogo-compartido.int-spec.ts` busca el ítem de demostración dentro del grupo del nombre igual, porque «bench press» y «aguacate» también son nombres del catálogo base.
 
 **Lo que queda:**
-- **Tramo 2 · el catálogo base de entrenamiento (D-3):** entre 150 y 250 ejercicios de wger con la licencia de cada entrada, y el inglés como nombre alternativo con origen `PROVEEDOR`. Van como `CONTROLLED_IMPORT` de WGER y se registran en `item_externo_de_catalogo`, así importar uno que ya está apunta al del catálogo base. La tabla ya los admite sin profesional que los importe, como los de USDA (DL-119).
-- **Tramo 3 · el catálogo base de alimentos (D-4):** entre 300 y 500 de USDA FoodData Central, con nombres en castellano rioplatense y el inglés como nombre alternativo.
-- **D-6:** la licencia en cada fila del buscador y la página «Fuentes del catálogo»; ahí también, si Dirección lo decide, quién revisó cada importado (D-1.g).
-- Agregar y retirar nombres alternativos desde el website (D-2.b).
+- **D-6 en el website:** la página «Fuentes del catálogo», desde `docs/catalogo/FUENTES.md`, y la licencia en cada fila del buscador; ahí también, si Dirección lo decide, quién revisó cada importado (D-1.g).
+- Integrar los tramos 2 y 3 (#184). En la base de test, un ejercicio de wger que algún profesional ya haya importado no se duplica: queda el suyo, con los nombres del catálogo base (D-3.e).
+- Agregar y retirar nombres alternativos desde el website (D-2.b), y decidir quién puede corregir un ítem que es de todos (D-1.c): hoy un ítem del catálogo base no se corrige desde la aplicación.
+- Lo que el catálogo base no trae porque SR Legacy no lo tiene (la yerba mate, cortes y quesos argentinos): otra fuente con licencia, como la tabla argentina cuando haya permiso de sus autores (D-4).
 - Si wger trae un ejercicio solo en inglés y el profesional lo traduce, ese inglés podría quedar como nombre alternativo de origen `PROVEEDOR`. Hoy el candidato guarda un solo nombre.
 
-**Provisorio en código:** D-1 (con D-1.a a D-1.g) y D-2 (con D-2.a y D-2.b).
+**Provisorio en código:** D-1 (con D-1.a a D-1.g), D-2 (con D-2.a y D-2.b), D-3 (con D-3.a a D-3.f) y D-4 (con D-4.a a D-4.e).
 
 **Condición de cierre:**
-- Dirección ratifica D-1 y D-2, o cambia las que quiera;
+- Dirección ratifica D-1 a D-4, o cambia las que quiera;
 - los tramos 2 y 3 integrados, con la página de fuentes.
 
 ---
