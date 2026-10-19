@@ -20,6 +20,9 @@ export function Pie() {
             <li>
               <Link href="/legal/privacidad">Política de privacidad</Link>
             </li>
+            <li>
+              <Link href="/legal/fuentes">Fuentes del catálogo</Link>
+            </li>
           </ul>
         </nav>
         <p>Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.</p>

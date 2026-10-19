@@ -109,6 +109,7 @@ export * from './agenda-de-entrenamiento';
 export * from './copy-agenda-de-entrenamiento';
 export * from './copy-primer-plan';
 export * from './copy-pistas';
+export * from './copy-fuentes-del-catalogo';
 export * from './conceptos-frecuentes';
 export * from './mayoria-de-edad';
 export * from './contratos-acceso-google';
