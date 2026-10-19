@@ -15,7 +15,7 @@
  * Desde la parte 1, lo que una sección elige (el período, la vista, lo que está abierto) vive en la dirección, como en la
  * ficha: «Actualizar» vuelve a leer sin perderlo, y volver atrás lo recupera. Al cambiar de sección no se lleva.
  */
-import { COPY_NUTRICION } from '@be/domain';
+import { COPY_PISTAS, COPY_NUTRICION } from '@be/domain';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Resultado } from '../../../../lib/api';
@@ -23,16 +23,19 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
+import { AyudaDeRevisiones } from '../ayuda-de-revisiones';
+import { AyudaDeRegistros } from './ayuda-de-registros';
+import { AyudaDelPlan } from './ayuda-del-plan';
 import { VistaDePlan } from './plan';
 import { VistaDeRegistros } from './registros';
 import { VistaDeResumen } from './resumen';
 import { VistaDeRevisiones } from './revisiones';
 
 export const VISTAS = [
-  { clave: 'resumen', texto: COPY_NUTRICION.resumen, icono: 'resumen' },
-  { clave: 'plan', texto: 'Plan', icono: 'plan' },
-  { clave: 'registros', texto: COPY_NUTRICION.registros, icono: 'lista' },
-  { clave: 'revisiones', texto: COPY_NUTRICION.revisiones, icono: 'revision' },
+  { clave: 'resumen', texto: COPY_NUTRICION.resumen, icono: 'resumen', pista: COPY_PISTAS.secciones.resumen },
+  { clave: 'plan', texto: 'Plan', icono: 'plan', pista: COPY_PISTAS.secciones.plan },
+  { clave: 'registros', texto: COPY_NUTRICION.registros, icono: 'lista', pista: COPY_PISTAS.secciones.registrosDeComidas },
+  { clave: 'revisiones', texto: COPY_NUTRICION.revisiones, icono: 'revision', pista: COPY_PISTAS.secciones.revisiones },
 ] as const;
 export type Vista = (typeof VISTAS)[number]['clave'];
 
@@ -115,6 +118,7 @@ export function Nutricion() {
       onActualizar={volverALeer}
       // Plan, Registros y Revisiones ya están recompuestas: usan todo el ancho y tienen su ayuda. Resumen conserva el suyo.
       ancho={vista === 'registros' || vista === 'plan' || vista === 'revisiones'}
+      ayuda={vista === 'registros' ? <AyudaDeRegistros /> : vista === 'plan' ? <AyudaDelPlan /> : vista === 'revisiones' ? <AyudaDeRevisiones area="NUTRICION" /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

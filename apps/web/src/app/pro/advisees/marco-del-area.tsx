@@ -16,11 +16,12 @@
  * - **«Actualizar», con la hora de la consulta.** Vuelve a leer todo lo que la sección muestra: la sección se monta de
  *   nuevo y cada una de sus lecturas sale otra vez. Si hay algo escrito sin guardar (lo avisa quien lo tiene, con
  *   `useCambiosSinGuardar`), antes pregunta: nada se pierde en silencio.
- * - **Las secciones,** con su ícono. Sus ayudas están en la Guía del espacio profesional (DL-145).
+ * - **Las secciones,** con su ícono, y la ayuda corta de la que se está mirando («Cómo se lee esta vista», DL-146): lo
+ *   que no se deduce mirando. La ayuda entera está en la Guía del espacio profesional.
  * Los estados (sin sesión, cargando, falla, sin espacio profesional, «no disponible») conservan el título y el camino de
  * vuelta.
  */
-import { COPY, COPY_VINCULO, todasLasPaginas, type DashboardResponse, type NombreDeIcono, type Vinculo } from '@be/domain';
+import { COPY_PISTAS, COPY, COPY_VINCULO, todasLasPaginas, type DashboardResponse, type NombreDeIcono, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DialogoDeConfirmacion } from '../../../components/dialogo';
@@ -34,6 +35,7 @@ import { horaDelDia } from '../../../lib/formato';
 import { SinEspacioProfesional, type useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, type LecturaPorArea } from './acceso-por-area';
 import { hoyEn, periodoEnInstantes, restarDias } from './seguimiento/estado';
+import { Pista } from '../../../components/pista';
 
 /** El alcance de los vínculos de un área (`scope.code`). */
 export type AlcanceDelArea = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
@@ -144,6 +146,7 @@ export function MarcoDelArea<C extends string>({
   retirado = false,
   onActualizar,
   ancho = false,
+  ayuda = null,
   children,
 }: {
   /** El alcance del área, o `null` si la pestaña es de las tres (Información). */
@@ -158,7 +161,7 @@ export function MarcoDelArea<C extends string>({
   retorno: { readonly href: string | null };
   /** Otro camino de vuelta que el de la ficha, cuando se llegó desde otra pestaña de área. */
   vuelta?: { readonly href: string; readonly texto: string } | null;
-  vistas: readonly { readonly clave: C; readonly texto: string; readonly icono?: NombreDeIcono }[];
+  vistas: readonly { readonly clave: C; readonly texto: string; readonly icono?: NombreDeIcono; readonly pista?: string }[];
   vista: C;
   href: (clave: C) => string;
   /** Una escritura recibió el «no disponible»: el contenido del área se retira entero. */
@@ -167,6 +170,8 @@ export function MarcoDelArea<C extends string>({
   onActualizar?: () => void;
   /** La sección usa todo el ancho del marco. Las que todavía no se recompusieron conservan el suyo. */
   ancho?: boolean;
+  /** La ayuda corta de la sección que se mira («Cómo se lee esta vista», DL-146), si la tiene. */
+  ayuda?: ReactNode;
   children: ReactNode;
 }) {
   const { token, sesionPerdida, yo, cargarYo } = sesion;
@@ -271,10 +276,12 @@ export function MarcoDelArea<C extends string>({
             {listo && nombre ? <p className="marco-del-area__persona">{nombre}</p> : null}
             {listo ? (
               <div className="ficha__consulta">
-                <button type="button" className="boton boton--quieto boton--compacto" onClick={actualizar} disabled={acceso.tipo === 'cargando'}>
-                  <Icono nombre="actualizar" tamano={18} />
-                  Actualizar
-                </button>
+                <Pista texto={COPY_PISTAS.ficha.actualizar}>
+                  <button type="button" className="boton boton--quieto boton--compacto" onClick={actualizar} disabled={acceso.tipo === 'cargando'}>
+                    <Icono nombre="actualizar" tamano={18} />
+                    Actualizar
+                  </button>
+                </Pista>
                 {consultadoEn ? <span className="nota">Consultado a las {horaDelDia(consultadoEn)}</span> : null}
               </div>
             ) : null}
@@ -302,6 +309,7 @@ export function MarcoDelArea<C extends string>({
           {listo && !retirado ? (
             <div className="marco-de-la-ficha__vistas">
               <Pestanas etiqueta={etiqueta} vistas={vistas} actual={vista} href={href} />
+              {ayuda ? <div className="marco-de-la-ficha__derecha">{ayuda}</div> : null}
             </div>
           ) : null}
         </div>

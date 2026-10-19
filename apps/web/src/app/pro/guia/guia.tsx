@@ -2,11 +2,11 @@
 
 /**
  * La Guía del espacio profesional (DL-145): las ayudas de cada pantalla, en el orden en que se trabaja con una persona.
- * Son las mismas piezas que antes se abrían con «Cómo se lee esta vista»; adentro de `GuiaDeAyudas` se muestran como
- * texto corrido. Una ayuda nueva entra acá, no en la pantalla.
+ * Son las mismas piezas que se abren con «Cómo se lee esta vista»; adentro de `GuiaDeAyudas` se muestran enteras, como
+ * texto corrido. La pantalla trae solo sus renglones esenciales y un enlace al ancla de su sección (DL-146).
  */
 import { METRICAS_DEL_DICCIONARIO } from '@be/domain';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { GuiaDeAyudas } from '../../../components/ayuda-de-vista';
 import { AyudaDeEvolucion } from '../advisees/anthropometry/ayuda-de-evolucion';
 import { AyudaDeLaCarga } from '../advisees/anthropometry/ayuda-de-la-carga';
@@ -32,6 +32,11 @@ const PARTES = [
 ] as const;
 
 export function Guia() {
+  // El enlace del diálogo de una pantalla trae el ancla de su ayuda: al llegar navegando, se lleva la sección a la vista.
+  useEffect(() => {
+    const ancla = decodeURIComponent(window.location.hash.slice(1));
+    if (ancla) document.getElementById(ancla)?.scrollIntoView();
+  }, []);
   return (
     <GuiaDeAyudas>
       <nav className="guia__indice" aria-label="Partes de la guía">

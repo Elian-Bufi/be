@@ -4,6 +4,7 @@
  * nunca un texto clínico. La búsqueda libre de la línea de tiempo NO viaja en la URL de la página (DL-127).
  */
 import {
+  COPY_PISTAS,
   CalidadDeEntradaSchema,
   DominioDeAnalisisSchema,
   EstadoDeEntradaSchema,
@@ -19,9 +20,9 @@ import {
 } from '@be/domain';
 
 export const VISTAS_DEL_SEGUIMIENTO = [
-  { clave: 'resumen', texto: 'Resumen', icono: 'resumen' },
-  { clave: 'linea', texto: 'Línea de tiempo', icono: 'linea-de-tiempo' },
-  { clave: 'analizar', texto: 'Analizar', icono: 'analizar' },
+  { clave: 'resumen', texto: 'Resumen', icono: 'resumen', pista: COPY_PISTAS.vistas.resumen },
+  { clave: 'linea', texto: 'Línea de tiempo', icono: 'linea-de-tiempo', pista: COPY_PISTAS.vistas.linea },
+  { clave: 'analizar', texto: 'Analizar', icono: 'analizar', pista: COPY_PISTAS.vistas.analizar },
 ] as const;
 export type VistaDelSeguimiento = (typeof VISTAS_DEL_SEGUIMIENTO)[number]['clave'];
 

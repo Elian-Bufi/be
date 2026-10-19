@@ -20,13 +20,13 @@ export function AyudaDeTomas() {
           <strong>Las tomas van por cuándo se tomaron,</strong> la más nueva primero, en tramos del mismo protocolo: se ve dónde cambió. Cada una dice cuántas mediciones tiene y, si las hay, cuántas con una corrección
           y cuántas anuladas.
         </Renglon>
-        <Renglon muestra={<Icono nombre="borrador" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="borrador" tamano={20} />}>
           <strong>Una toma registrada no se edita:</strong> cada medición se corrige o se anula, y queda constancia. {C.borradorNoEsHistoria}
         </Renglon>
-        <Renglon muestra={<Icono nombre="medido" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="medido" tamano={20} />}>
           <strong>Medido, reportado o calculado.</strong> {C.explicacionDeClases} Si todas las mediciones de la toma son de una clase, se dice una vez, arriba; si no, cada fila dice la suya.
         </Renglon>
-        <Renglon muestra={<Icono nombre="corregido" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="corregido" tamano={20} />}>
           <strong>El valor de cada fila es el que rige:</strong> si la medición se corrigió, el corregido. El original no se pierde: está en la historia de la medición, con el motivo y quién la corrigió.
         </Renglon>
         <Renglon muestra={<Icono nombre="anulado" tamano={20} />}>
@@ -38,13 +38,13 @@ export function AyudaDeTomas() {
         <Renglon muestra={<Icono nombre="protocolo" tamano={20} />}>
           <strong>La unidad se dice una vez por familia</strong> cuando todas sus mediciones la comparten; si no, en cada fila. BE no convierte unidades: cada valor queda en la que se tomó.
         </Renglon>
-        <Renglon muestra={<Icono nombre="calculado" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="calculado" tamano={20} />}>
           <strong>Resultados calculados.</strong> {C.explicacionDeCoexistencia} {C.noEsDiagnostico}
         </Renglon>
         <Renglon muestra={<Icono nombre="referencia" tamano={20} />}>
           <strong>Referencia.</strong> {C.explicacionDeReferencia}
         </Renglon>
-        <Renglon muestra={<Icono nombre="reloj" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="reloj" tamano={20} />}>
           <strong>Anteriores, sin efecto.</strong> {C.explicacionDeAnterioresSinEfecto} Están a un clic, al lado del título de los resultados.
         </Renglon>
         <Renglon muestra={<Icono nombre="derecha" tamano={20} />}>

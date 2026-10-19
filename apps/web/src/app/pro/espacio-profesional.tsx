@@ -38,6 +38,7 @@ import { InvitarPersona } from './invitar-persona';
 import { Pendientes, type PaginaDeCartera } from './pendientes';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
+import { areaUnicaDelProfesional } from './directorio';
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -151,6 +152,8 @@ export function EspacioProfesional() {
     void enviadas.recargar();
   };
   const propias = enviadas.estado.tipo === 'listo' ? solicitudesEnviadasPor(enviadas.estado.items, yo.id) : null;
+  // DL-146: si trabajás en una sola área, invitar y solicitar la traen elegida.
+  const areaSugerida = vinculos.estado.tipo === 'listo' ? areaUnicaDelProfesional(vinculos.estado.items, yo.id) : null;
   const sinResponder = propias ? propias.filter((s) => s.state === 'PENDIENTE').length : 0;
   const hoy = cartera.estado.tipo === 'listo' ? cartera.estado.primera.meta.today : null;
 
@@ -189,6 +192,7 @@ export function EspacioProfesional() {
 
       <InvitarPersona
         abierto={invitar}
+        areaSugerida={areaSugerida}
         token={token}
         sesionPerdida={sesionPerdida}
         onCerrar={() => setInvitar(false)}
@@ -199,6 +203,7 @@ export function EspacioProfesional() {
       />
       <SolicitarVinculo
         abierto={formulario}
+        areaSugerida={areaSugerida}
         token={token}
         sesionPerdida={sesionPerdida}
         onCerrar={() => setFormulario(false)}

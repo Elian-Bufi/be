@@ -140,6 +140,10 @@ export const COPY_EJERCICIOS_PROPIOS = {
   sinImagen: 'Sin imagen',
   elegirImagen: 'Elegir una imagen',
   reemplazarImagen: 'Elegir otra imagen para reemplazarla',
+  /** DL-146: la grilla de «Mis ejercicios»; el formulario de la imagen se abre en el ejercicio que se edita. */
+  agregarImagen: 'Agregar una imagen',
+  cambiarImagen: 'Cambiar la imagen',
+  cerrarImagen: 'Cerrar',
   vistaPrevia: 'Vista previa (todavía no se guardó)',
   procedencia: 'Procedencia',
   elegirProcedencia: 'Elegí la procedencia',

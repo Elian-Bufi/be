@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { armarElDirectorio, buscarEnElDirectorio, estadoEnUnaFrase } = await import('../apps/web/src/app/pro/directorio.ts');
+const { areaUnicaDelProfesional, armarElDirectorio, buscarEnElDirectorio, estadoEnUnaFrase } = await import('../apps/web/src/app/pro/directorio.ts');
 const { ICONO_DEL_AREA_DE_CARTERA, ICONO_DEL_PENDIENTE, ICONO_DE_LA_VISTA_DE_PENDIENTES, rutaQueResuelve, textoDePendiente, ultimoRegistroDe } = await import('../apps/web/src/app/pro/pendiente-en-una-fila.ts');
 const { diaConSuSemana, diaDelAnioEnCurso } = await import('../apps/web/src/lib/formato.ts');
 const { COPY_VINCULO, ICONOS, TIPOS_DE_PENDIENTE, VISTAS_DE_PENDIENTES, estadoParaMostrar } = await import('../packages/domain/dist/index.js');
@@ -74,7 +74,15 @@ test('un área sin acceso se dice con las palabras de BE, las mismas de `estadoP
   assert.equal(conAcceso.vinculos[0].estado, COPY_VINCULO.accesoContextual);
 });
 
-test('«con acceso» es exactamente lo que BE llama «Activo · acceso contextual», en las 18 combinaciones de estados', () => {
+test('DL-146: el área viene elegida solo si todos los vínculos del profesional son de una misma área', () => {
+  assert.equal(areaUnicaDelProfesional([], YO), null, 'sin vínculos, ninguna');
+  assert.equal(areaUnicaDelProfesional([vinculo('a1', 'ENTRENAMIENTO'), vinculo('a2', 'ENTRENAMIENTO', { relationshipState: 'FINALIZADO' })], YO), 'ENTRENAMIENTO', 'de cualquier estado');
+  assert.equal(areaUnicaDelProfesional([vinculo('a1', 'NUTRICION'), vinculo('a1', 'ANTROPOMETRIA')], YO), null, 'dos áreas: lo decide el profesional');
+  const deOtro = { ...vinculo('a3', 'NUTRICION'), professional: { identityId: 'otro', displayName: 'Otro' } };
+  assert.equal(areaUnicaDelProfesional([vinculo('a1', 'ENTRENAMIENTO'), deOtro], YO), 'ENTRENAMIENTO', 'los vínculos de otro profesional no cuentan');
+});
+
+test('«con acceso» es exactamente lo que BE llama «Activo · con acceso», en las 18 combinaciones de estados', () => {
   for (const relationshipState of ['ACEPTADO', 'PAUSADO', 'FINALIZADO']) {
     for (const consentState of ['REQUIRED', 'ACTIVE', 'REVOKED']) {
       for (const accessMode of ['BLOCKED', 'CONTEXTUAL']) {
@@ -95,7 +103,7 @@ test('con varios vínculos en un área, el resumen dice uno: el que da acceso; s
   const viejo = { relationshipState: 'FINALIZADO', acceptedAt: '2026-03-01T12:00:00.000Z' };
   const [reanudado] = armarElDirectorio([vinculo('a9be23', 'NUTRICION', viejo), vinculo('a9be23', 'NUTRICION')], YO);
   assert.deepEqual([reanudado.conAcceso, reanudado.sinAcceso], [['Nutrición'], []], 'un vínculo terminado no tapa al que hoy da acceso');
-  assert.deepEqual(reanudado.vinculos.map((v) => v.estado), ['Activo · acceso contextual', 'Finalizado'], 'el detalle los trae a los dos, el más nuevo primero');
+  assert.deepEqual(reanudado.vinculos.map((v) => v.estado), ['Activo · con acceso', 'Finalizado'], 'el detalle los trae a los dos, el más nuevo primero');
 
   const [pausado] = armarElDirectorio([vinculo('a9be23', 'NUTRICION', viejo), vinculo('a9be23', 'NUTRICION', { relationshipState: 'PAUSADO', pausedBy: 'PROFESSIONAL' })], YO);
   assert.deepEqual(pausado.sinAcceso, [{ area: 'Nutrición', estado: 'Pausado · sin acceso' }]);

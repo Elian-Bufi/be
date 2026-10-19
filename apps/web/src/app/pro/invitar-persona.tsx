@@ -43,12 +43,15 @@ const fechaDeVencimiento = (iso: string): string =>
 
 export function InvitarPersona({
   abierto,
+  areaSugerida = null,
   token,
   sesionPerdida,
   onCerrar,
   onConElIdentificador,
 }: {
   abierto: boolean;
+  /** El área en la que trabaja el profesional, si es una sola (DL-146): viene elegida. */
+  areaSugerida?: Alcance | null;
   token: string;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
   onCerrar: () => void;
@@ -82,9 +85,10 @@ export function InvitarPersona({
     if (abierto && !d.open) {
       d.showModal();
       void cargar();
+      if (areaSugerida) setAlcance((elegida) => elegida || areaSugerida);
     }
     if (!abierto && d.open) d.close();
-  }, [abierto, cargar]);
+  }, [abierto, cargar, areaSugerida]);
 
   async function crear(evento: FormEvent) {
     evento.preventDefault();

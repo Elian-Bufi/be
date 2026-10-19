@@ -8,8 +8,9 @@ export const metadata: Metadata = { title: 'Guía del espacio profesional · BE'
 
 /**
  * Website `/pro/guia` (DL-145; Dirección, 2026-10-18): cómo se lee cada pantalla del espacio profesional, todo junto.
- * Las pantallas ya no tienen su «Cómo se lee esta vista»: tienen que entenderse solas. Lo que esas ayudas explicaban, y
- * lo que el legajo exige poder leer (DL-113), queda acá. No lee datos ni pide sesión: es texto.
+ * Desde DL-146 (2026-10-19), cada pantalla vuelve a tener su «Cómo se lee esta vista», corta: solo lo que no se deduce
+ * mirando, con un enlace a su sección de acá. La ayuda entera, y lo que el legajo exige poder leer (DL-113), queda acá.
+ * No lee datos ni pide sesión: es texto.
  */
 export default function PaginaDeLaGuia() {
   return (

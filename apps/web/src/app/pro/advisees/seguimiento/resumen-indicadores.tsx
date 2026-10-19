@@ -14,6 +14,7 @@
  * falla nunca es «sin datos», y «sin datos» nunca es un cero.
  */
 import {
+  COPY_PISTAS,
   claseEnPalabras,
   definicionDeMetrica,
   inicioDelPrimerPlan,
@@ -41,6 +42,7 @@ import { Minigrafico } from './minigrafico';
 import { nombreDeLaReferencia } from './selector';
 import { useSeriesDelAnalisis, type Disponibles, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
+import { Pista } from '../../../../components/pista';
 
 const MAXIMO_DE_INDICADORES = 4;
 type Guardada = Extract<VistaDeAnalisis, { usage: 'SUMMARY_INDICATORS' }>;
@@ -115,9 +117,11 @@ function Indicadores({
         <p className="metadatos">
           Del {formato.fecha(periodo.desde)} al {formato.fecha(periodo.hasta)} · describen lo registrado, sin calificar
         </p>
-        <button type="button" className="boton boton--enlace" aria-expanded={editando} aria-controls={`${id}-editor`} onClick={() => setEditando(!editando)}>
-          {editando ? 'Cerrar' : 'Elegir indicadores'}
-        </button>
+        <Pista texto={COPY_PISTAS.resumen.elegirIndicadores}>
+          <button type="button" className="boton boton--enlace" aria-expanded={editando} aria-controls={`${id}-editor`} onClick={() => setEditando(!editando)}>
+            {editando ? 'Cerrar' : 'Elegir indicadores'}
+          </button>
+        </Pista>
       </div>
       {disponibles.falla ? <ErrorConReintento mensaje={textoDeFalla(disponibles.falla, 'qué datos hay en el período')} onReintentar={disponibles.recargar} /> : null}
       {sinLeerLaEleccion ? <p className="nota">No pudimos leer los indicadores que elegiste: se muestran los de por defecto. Tu elección sigue guardada.</p> : null}

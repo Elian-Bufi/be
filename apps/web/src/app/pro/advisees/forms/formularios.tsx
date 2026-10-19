@@ -20,7 +20,7 @@
  * «Solicitudes» elige —la vista y la solicitud abierta— también vive en la dirección (`ver=`, `solicitud=`), y
  * «Actualizar» lo conserva.
  */
-import { COPY_FORMULARIOS } from '@be/domain';
+import { COPY_PISTAS, COPY_FORMULARIOS } from '@be/domain';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
@@ -30,11 +30,12 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
+import { AyudaDeSolicitudes } from './ayuda-de-solicitudes';
 import { PedidoDeInformacion } from './pedir';
 import { VistaDeSolicitudes } from './solicitudes';
 
 /** La sección que se ve en el marco: una sola. */
-export const SECCIONES = [{ clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes, icono: 'informacion' }] as const;
+export const SECCIONES = [{ clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes, icono: 'informacion', pista: COPY_PISTAS.secciones.solicitudes }] as const;
 
 /** Los valores de `vista` que la página admite: la sección y el pedido, que se abre sobre ella. */
 export const VISTAS = ['solicitudes', 'pedir'] as const;
@@ -112,6 +113,7 @@ export function Formularios() {
       vista="solicitudes"
       href={() => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=solicitudes`, retorno.valor)}
       ancho
+      ayuda={<AyudaDeSolicitudes />}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

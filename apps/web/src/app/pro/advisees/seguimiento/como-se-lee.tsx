@@ -12,7 +12,7 @@
  */
 import { FUENTE_DE_LA_REGLA, VISTAS_DE_LA_LINEA, type ReglaDelResumen } from '@be/domain';
 import type { ReactNode } from 'react';
-import { AyudaDeVista, RenglonDeAyuda as Renglon } from '../../../../components/ayuda-de-vista';
+import { AyudaDeVista, RenglonDeAyuda as Renglon, SoloEnLaGuia } from '../../../../components/ayuda-de-vista';
 import { Icono } from '../../../../components/icono';
 import type { VistaDelSeguimiento } from './estado';
 import { Marca } from './marca';
@@ -25,26 +25,26 @@ function DeAnalizar() {
         <Renglon muestra={<Icono nombre="pregunta" tamano={20} />}>
           <strong>Dos formas de entrar.</strong> Una pregunta ya trae sus gráficos armados; o elegís vos las métricas, de cualquier área. Si cambiás una métrica a mano, la pregunta se deja.
         </Renglon>
-        <Renglon muestra={<Marca indice={0} />}>
+        <Renglon esencial muestra={<Marca indice={0} />}>
           <strong>Un punto es un registro:</strong> un día, una sesión o una toma (lo dice el encabezado de cada gráfico). La línea une solo puntos que se pueden comparar: se corta donde no hubo registros y donde cambió el
           protocolo, el método o la unidad.
         </Renglon>
-        <Renglon muestra={<Marca indice={0} hueco />}>
+        <Renglon esencial muestra={<Marca indice={0} hueco />}>
           <strong>Hueco:</strong> un subtotal (falta algún dato), o un día o una semana sin completar. El día en curso va suelto, para que la mañana no se lea como una caída.
         </Renglon>
-        <Renglon muestra={<Marca indice={0} clase="REPORTED" />}>
+        <Renglon esencial muestra={<Marca indice={0} clase="REPORTED" />}>
           <strong>Contorno cortado:</strong> lo informó la persona, no se midió.
         </Renglon>
-        <Renglon muestra={<Marca indice={0} clase="DERIVED" />}>
+        <Renglon esencial muestra={<Marca indice={0} clase="DERIVED" />}>
           <strong>Con un punto adentro:</strong> lo calculó un método. La lectura dice si es un índice, una suma o una estimación.
         </Renglon>
-        <Renglon muestra={<Marca indice={0} plan />}>
+        <Renglon esencial muestra={<Marca indice={0} plan />}>
           <strong>Línea discontinua:</strong> lo planificado en la misma unidad; hoy, el objetivo de calorías. Va junto a lo registrado para ubicarlo: no se resta ni se califica.
         </Renglon>
-        <Renglon muestra={<span className="muestra-de-hueco" />}>
+        <Renglon esencial muestra={<span className="muestra-de-hueco" />}>
           <strong>Gris:</strong> días sin registros. No son ceros.
         </Renglon>
-        <Renglon muestra={<Icono nombre="etapa" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="etapa" tamano={20} />}>
           <strong>Las franjas</strong> son las etapas del plan: desde que se activó una versión hasta que se activó la siguiente.
         </Renglon>
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
@@ -96,11 +96,11 @@ function DeResumen() {
           <strong>Lo pendiente va primero,</strong> con su ícono y en negrita: una revisión sin aplicar, la próxima revisión acordada cuando falta una semana o menos (o ya pasó) y un borrador sin activar. Después, los
           cambios de planificación o de comparabilidad, lo nuevo y, al final, la cobertura. Son reglas fijas, sin inteligencia artificial y sin calificar.
         </Renglon>
-        <Renglon muestra={<Icono nombre="borrador" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="borrador" tamano={20} />}>
           <strong>Registrar no es aplicar.</strong> Una revisión registrada todavía no cambia nada: el plan o el objetivo que resulten de ella rigen cuando la aplicás. Un plan en borrador tampoco rige hasta que lo
           actives.
         </Renglon>
-        <Renglon muestra={<Icono nombre="cargado-otro-dia" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="cargado-otro-dia" tamano={20} />}>
           <strong>«Desde la revisión»</strong> separa lo que ocurrió después, lo que se cargó después sobre días anteriores y lo que se corrigió después, con los instantes de registro de cada dato. Cada área tiene su
           propia revisión; sin revisiones, lo nuevo se mira en el período elegido. Abrir la ficha no registra una revisión ni una nota.
         </Renglon>
@@ -114,7 +114,7 @@ function DeResumen() {
           <strong>«Preparar la revisión»</strong> abre el formulario con el período desde la última revisión. No registra nada hasta que lo confirmes. El botón va lleno en una sola tarjeta: la del área con la próxima
           revisión acordada más cercana. Esa fecha la fijaste vos: BE no decide qué es urgente.
         </Renglon>
-        <Renglon muestra={<Icono nombre="analizar" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="analizar" tamano={20} />}>
           <strong>Un indicador</strong> es un número del período con su regla: la media de los días con valor, la mediana de las sesiones o la última toma del tramo comparable. Debajo, cuántos días, sesiones o tomas lo
           sostienen y lo que cambia cómo se lee: cuántos de esos días son subtotales (falta algún dato) y que hoy, en curso, no entra en la media. La cobertura entera de cada uno está en «Analizar». No hay verde ni rojo,
           ni distancia a un objetivo.
@@ -123,13 +123,13 @@ function DeResumen() {
           <strong>El gráfico chico</strong> tiene un punto por día, sesión o toma. La línea se corta donde no hubo registros y donde cambió el protocolo, el método o la unidad. El nombre del indicador abre el gráfico
           grande en «Analizar», con cada valor.
         </Renglon>
-        <Renglon muestra={<Marca indice={0} hueco />}>
+        <Renglon esencial muestra={<Marca indice={0} hueco />}>
           <strong>Hueco:</strong> un subtotal (falta algún dato) o el día en curso, que va suelto y no entra en la media.
         </Renglon>
-        <Renglon muestra={<span className="muestra-de-hueco" />}>
+        <Renglon esencial muestra={<span className="muestra-de-hueco" />}>
           <strong>Gris:</strong> días sin registros. No son ceros.
         </Renglon>
-        <Renglon muestra={<span className="muestra-de-inicio" />}>
+        <Renglon esencial muestra={<span className="muestra-de-inicio" />}>
           <strong>Línea punteada:</strong> desde cuándo rige el primer plan del período. Antes de ese día no había un plan de este seguimiento en el que registrar.
         </Renglon>
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
@@ -137,6 +137,7 @@ function DeResumen() {
         </Renglon>
       </ul>
       {/* Antes iba en cada renglón de la lista («Sale de…»): ahora se dice una vez por regla, y se abre si hace falta. */}
+      <SoloEnLaGuia>
       <details className="como-se-lee__fuentes">
         <summary>De dónde sale cada hecho ({Object.keys(HECHO_DE_LA_REGLA).length})</summary>
         <dl>
@@ -148,6 +149,7 @@ function DeResumen() {
           ))}
         </dl>
       </details>
+      </SoloEnLaGuia>
     </>
   );
 }
@@ -160,7 +162,7 @@ function DeLinea() {
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
           <strong>El día es la unidad.</strong> Los días van del más nuevo al más viejo. Dentro de cada día, primero los hitos, después las sesiones y al final las comidas; cada clase, en el orden en que ocurrió.
         </Renglon>
-        <Renglon muestra={<Icono nombre="hito" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="hito" tamano={20} />}>
           <strong>Un hito</strong> lleva una barra a la izquierda, de todo el alto de su renglón: un plan activado, un objetivo, una revisión, una toma antropométrica o un seguimiento que se abre o se cierra. Es todo lo
           que no se registra todos los días.
         </Renglon>
@@ -168,18 +170,18 @@ function DeLinea() {
           <strong>«Comidas»</strong> junta las comidas del día en un renglón, que dice cuántas son y cuántas tienen algo distinto de lo de siempre. Se abre en el lugar, del desayuno a la cena. Una sola comida va en su propio
           renglón.
         </Renglon>
-        <Renglon muestra={<Icono nombre="sin-confirmar" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="sin-confirmar" tamano={20} />}>
           <strong>Las etiquetas</strong> dicen cómo se registró un hecho o qué le pasó después: sin confirmar, distinta de lo indicado, comida diferente, sesión con cambios, no realizada o resumida, rectificado, corregido,
           anulado y cargado otro día. Son datos, no calificaciones. «Falta algún nutriente» depende del alimento: se ve en el detalle y se filtra en «Más filtros».
         </Renglon>
-        <Renglon muestra={<Icono nombre="cargado-otro-dia" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="cargado-otro-dia" tamano={20} />}>
           <strong>Cargado otro día:</strong> el hecho está en el día en que ocurrió, no en el que se cargó. Una corrección no es un registro nuevo y no lo mueve; un registro anulado sigue en la historia, con su etiqueta.
         </Renglon>
-        <Renglon muestra={<Icono nombre="lista" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="lista" tamano={20} />}>
           <strong>Cada día va en su tarjeta.</strong> Llena, si tiene una sesión, un hito o alguna etiqueta; <strong>sin fondo,</strong> si tiene solo sus comidas, sin nada distinto de lo de siempre. Es para ubicar qué
           mirar: no dice nada más del día.
         </Renglon>
-        <Renglon muestra={<span className="muestra-de-hueco" />}>
+        <Renglon esencial muestra={<span className="muestra-de-hueco" />}>
           <strong>Gris:</strong> días sin hechos registrados entre dos días de la lista. No son ceros: BE no tiene hechos de esos días en las áreas que podés ver. Se dicen solo cuando mirás «Todo».
         </Renglon>
         <Renglon muestra={<Icono nombre="ver" tamano={20} />}>
@@ -201,6 +203,7 @@ function DeLinea() {
           <strong>«Ver días anteriores»</strong> trae más días. Se muestran días enteros: un día aparece cuando están todos sus hechos.
         </Renglon>
       </ul>
+      <SoloEnLaGuia>
       <details className="como-se-lee__fuentes">
         <summary>Qué trae cada vista ({VISTAS_DE_LA_LINEA.length + 1})</summary>
         <dl>
@@ -219,6 +222,7 @@ function DeLinea() {
           </div>
         </dl>
       </details>
+      </SoloEnLaGuia>
     </>
   );
 }
