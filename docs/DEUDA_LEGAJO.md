@@ -4390,8 +4390,8 @@ Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea
 
 **Estado:**
 - tramo 1 (D-1 y D-2) INTEGRADO el 2026-10-17 (#180), con la CI en verde;
-- tramos 2 (el catálogo base de entrenamiento, de wger: 186 ejercicios) y 3 (el de alimentos, de USDA: 385) IMPLEMENTADOS el 2026-10-19 en `wp-catalogo-base-2-3` (#184, en borrador), sin integrar: los datos curados, el generador, las dos migraciones, las pruebas y `docs/catalogo/FUENTES.md`;
-- falta lo de D-6 en el website: la página «Fuentes del catálogo» y la licencia en cada fila del buscador.
+- tramos 2 (el catálogo base de entrenamiento, de wger: 186 ejercicios) y 3 (el de alimentos, de USDA: 385) INTEGRADOS el 2026-10-19 (#184), con la CI en verde: los datos curados, el generador, las dos migraciones, las pruebas y `docs/catalogo/FUENTES.md`;
+- D-6 en el website: la página pública «Fuentes del catálogo» (`/legal/fuentes`, enlazada desde el pie) HECHA el 2026-10-19; falta la licencia en cada fila del buscador.
 
 **Qué pasaba.**
 - Un ejercicio de wger o un alimento de Open Food Facts importado (WP-08) lo veía solo quien lo importó. Otro profesional que quería el mismo lo importaba de nuevo, repetía la revisión y quedaban dos elementos.
@@ -4521,8 +4521,8 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
   - Dos pruebas que suponían que lo único sembrado era lo de demostración: `entrenamiento.int-spec.ts` recorre todas las páginas del catálogo, y `catalogo-compartido.int-spec.ts` busca el ítem de demostración dentro del grupo del nombre igual, porque «bench press» y «aguacate» también son nombres del catálogo base.
 
 **Lo que queda:**
-- **D-6 en el website:** la página «Fuentes del catálogo», desde `docs/catalogo/FUENTES.md`, y la licencia en cada fila del buscador; ahí también, si Dirección lo decide, quién revisó cada importado (D-1.g).
-- Integrar los tramos 2 y 3 (#184). En la base de test, un ejercicio de wger que algún profesional ya haya importado no se duplica: queda el suyo, con los nombres del catálogo base (D-3.e).
+- **D-6 en el website:** la página «Fuentes del catálogo» ya está (`/legal/fuentes`): la cita de USDA, las licencias de wger y de Open Food Facts, y un enlace a `docs/catalogo/FUENTES.md` del repositorio público con la autoría de cada ejercicio (un enlace a un recurso con esos datos es una forma razonable de atribuir: CC BY-SA 4.0, §3(a)(2)). Falta la licencia en cada fila del buscador, que pide un campo nuevo en las búsquedas del website; ahí también, si Dirección lo decide, quién revisó cada importado (D-1.g).
+- En la base de test, un ejercicio de wger que algún profesional ya haya importado no se duplica: queda el suyo, con los nombres del catálogo base (D-3.e).
 - Agregar y retirar nombres alternativos desde el website (D-2.b), y decidir quién puede corregir un ítem que es de todos (D-1.c): hoy un ítem del catálogo base no se corrige desde la aplicación.
 - Lo que el catálogo base no trae porque SR Legacy no lo tiene (la yerba mate, cortes y quesos argentinos): otra fuente con licencia, como la tabla argentina cuando haya permiso de sus autores (D-4).
 - Si wger trae un ejercicio solo en inglés y el profesional lo traduce, ese inglés podría quedar como nombre alternativo de origen `PROVEEDOR`. Hoy el candidato guarda un solo nombre.
