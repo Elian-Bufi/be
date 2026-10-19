@@ -339,7 +339,10 @@ describe('Encargo de Dirección del 2026-10-19, bloque 4 · la correspondencia c
     const s = conSesion(app, pro.token);
     const pares = async (q: string) =>
       BusquedaEnCatalogoResponseSchema.parse((await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50 }).expect(200)).body).data.map((e) => [e.name, e.matchedAlternativeName]);
-    expect((await pares('copos de avena')).filter(([, alternativo]) => alternativo === 'Copos de avena')).toEqual([]);
+    // «Copos de avena» sigue nombrando la avena arrollada cruda (es lo que son), y ya no la avena cocida.
+    const enCopos = await pares('copos de avena');
+    expect(enCopos).toContainEqual(['Avena arrollada, cruda', 'Copos de avena']);
+    expect(enCopos.filter(([nombre]) => nombre === 'Avena cocida con agua, sin sal')).toEqual([]);
     expect((await pares('entrecot')).filter(([, alternativo]) => alternativo === 'Entrecot')).toEqual([]);
     expect(await pares('lomo alto sin tapa')).toEqual(
       expect.arrayContaining([
