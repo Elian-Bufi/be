@@ -23,6 +23,7 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
         registro: { maximo: 10, ventanaMs: 3600000 },
         consultaProtegida: { maximo: 120, ventanaMs: 60000 },
         invitacion: { maximo: 10, ventanaMs: 900000 },
+        reanudacion: { maximo: 300, ventanaMs: 900000 },
       },
       saltosDeProxy: 1,
       caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,

@@ -29,7 +29,7 @@ import { Icono } from './icono';
 export function MenuDeCuenta() {
   const id = useId();
   const ruta = usePathname();
-  const { sesion } = useSesion();
+  const { sesion, cerrada } = useSesion();
   const raiz = useRef<HTMLDivElement>(null);
   const boton = useRef<HTMLButtonElement>(null);
   const [abierto, setAbierto] = useState(false);
@@ -86,6 +86,8 @@ export function MenuDeCuenta() {
     setProblema(null);
     const r = await api.finalizarSesion(token);
     if (r.ok || (r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo))) {
+      // DL-147: la API borró la cookie de reanudación; las otras pestañas se enteran y olvidan la sesión.
+      cerrada();
       window.location.assign('/login?aviso=sesion-cerrada');
       return;
     }

@@ -39,6 +39,7 @@ import { Pendientes, type PaginaDeCartera } from './pendientes';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
 import { areaUnicaDelProfesional } from './directorio';
+import { EsperandoSesion } from '../../lib/sesion';
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -132,7 +133,7 @@ export function EspacioProfesional() {
   if (!token) {
     return (
       <Pagina>
-        <p className="nota">Redirigiendo a Iniciar sesión…</p>
+        <EsperandoSesion />
       </Pagina>
     );
   }

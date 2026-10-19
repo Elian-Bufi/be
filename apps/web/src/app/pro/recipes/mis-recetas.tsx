@@ -19,6 +19,7 @@ import { useListaPaginada } from '../../../lib/lista';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { EditorDeReceta } from './editor-de-receta';
 import { ImagenGuardada } from './imagen-de-receta';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 export function MisRecetas() {
   const parametros = useSearchParams();
@@ -48,7 +49,7 @@ export function MisRecetas() {
   );
   const ir = useCallback((consulta: string) => router.push(consulta ? `${ruta}?${consulta}` : ruta), [router, ruta]);
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   if (yo.tipo === 'cargando') return <Cargando />;
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
   if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;

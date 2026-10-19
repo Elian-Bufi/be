@@ -36,6 +36,7 @@ import { SinEspacioProfesional, type useEspacioProfesional } from '../espacio-pr
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, type LecturaPorArea } from './acceso-por-area';
 import { hoyEn, periodoEnInstantes, restarDias } from './seguimiento/estado';
 import { Pista } from '../../../components/pista';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 /** El alcance de los vínculos de un área (`scope.code`). */
 export type AlcanceDelArea = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
@@ -318,7 +319,7 @@ export function MarcoDelArea<C extends string>({
         <div className={ancho ? 'seccion-del-area seccion-del-area--ancha' : 'seccion-del-area'} key={version}>
           <Contexto.Provider value={contexto}>
             <ContextoDeLaPersona.Provider value={nombre}>
-              {!token ? <p className="nota">Redirigiendo a Iniciar sesión…</p> : null}
+              {!token ? <EsperandoSesion /> : null}
               {token && yo.tipo === 'cargando' ? <Cargando /> : null}
               {token && yo.tipo === 'error' ? <ErrorConReintento onReintentar={cargarYo} /> : null}
               {token && yo.tipo === 'sin-espacio' ? <SinEspacioProfesional /> : null}

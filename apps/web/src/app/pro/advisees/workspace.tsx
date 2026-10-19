@@ -51,6 +51,7 @@ import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
 import { Pista } from '../../../components/pista';
 import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.Analizar), { ssr: false, loading: () => <Cargando /> });
 
@@ -161,7 +162,7 @@ export function Workspace() {
     return () => document.removeEventListener('visibilitychange', alVolver);
   }, [leer]);
 
-  if (!token) return <p className="nota ficha__cuerpo">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion className="nota ficha__cuerpo" />;
   if (yo.tipo === 'cargando') return <div className="ficha__cuerpo"><Cargando /></div>;
   if (yo.tipo === 'error') return <div className="ficha__cuerpo"><ErrorConReintento onReintentar={cargarYo} /></div>;
   if (yo.tipo === 'sin-espacio') return <div className="ficha__cuerpo"><SinEspacioProfesional /></div>;

@@ -31,7 +31,7 @@ import { ErrorConReintento } from '../../components/estados';
 import { Aviso } from '../../components/formulario';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../lib/api';
 import { COPY } from '../../lib/copy';
-import { useSesion } from '../../lib/sesion';
+import { useSesion, EsperandoSesion } from '../../lib/sesion';
 import { fecha } from '../../lib/formato';
 
 const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], string> = {
@@ -44,7 +44,7 @@ type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'er
 
 export function Cuenta() {
   const router = useRouter();
-  const { sesion, olvidar } = useSesion();
+  const { sesion, olvidar, cerrada } = useSesion();
   const saliendo = useRef(false);
   const [cuenta, setCuenta] = useState<Carga<MeResponse['data']>>({ tipo: 'cargando' });
   const [a3, setA3] = useState<Carga<RequisitoDeConsentimientoDeSaludResponse['data']>>({ tipo: 'cargando' });
@@ -104,12 +104,16 @@ export function Cuenta() {
     if (!token || accion.tipo === 'ocupado') return;
     setAccion({ tipo: 'ocupado', que });
     const r = que === 'una' ? await api.finalizarSesion(token) : await api.cerrarTodasLasSesiones(token);
-    if (r.ok) return salir(`/login?aviso=${que === 'una' ? 'sesion-cerrada' : 'sesiones-cerradas'}`);
+    if (r.ok) {
+      // DL-147: la API borró la cookie de reanudación; las otras pestañas se enteran y olvidan la sesión.
+      cerrada();
+      return salir(`/login?aviso=${que === 'una' ? 'sesion-cerrada' : 'sesiones-cerradas'}`);
+    }
     if (sesionPerdida(r)) return;
     setAccion({ tipo: 'error', mensaje: r.tipo === 'RED' ? COPY.resultadoIncierto : COPY.noDisponible });
   }
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
 
   return (
     <div className="secciones">
