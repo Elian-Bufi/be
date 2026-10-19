@@ -18,6 +18,7 @@
  * no tiene tarjeta, ni a medias. Una parte que no se pudo leer se dice primero, en su tarjeta.
  */
 import {
+  COPY_PISTAS,
   COPY_PRIMER_PLAN,
   claveDeObservacion,
   COPY_VINCULO,
@@ -50,6 +51,7 @@ import { conRetorno, hoyEn, restarDias, valorDeRetorno } from './estado';
 import { ICONO_DEL_AREA } from './iconos-de-metrica';
 import type { Disponibles } from './series';
 import { TiraDelObjetivo, type MacrosDelObjetivo } from './tira-del-objetivo';
+import { Pista } from '../../../../components/pista';
 
 type AreaConPlan = 'NUTRICION' | 'ENTRENAMIENTO';
 const RUTA_DEL_AREA: Readonly<Record<AreaDelResumen, string>> = { NUTRICION: 'nutrition', ENTRENAMIENTO: 'training', ANTROPOMETRIA: 'anthropometry' };
@@ -520,10 +522,12 @@ function AccionDeRevisar({ area, resumen, href, llena }: { area: AreaConPlan; re
   if (!resumen.activePlan) return null;
   return (
     <div className="area__accion">
-      <Link className={llena ? 'boton boton--primario' : 'boton boton--secundario'} href={href}>
-        <Icono nombre="revision" tamano={20} />
-        Preparar la revisión de {NOMBRE_DEL_AREA[area]}
-      </Link>
+      <Pista texto={COPY_PISTAS.revision.preparar}>
+        <Link className={llena ? 'boton boton--primario' : 'boton boton--secundario'} href={href}>
+          <Icono nombre="revision" tamano={20} />
+          Preparar la revisión de {NOMBRE_DEL_AREA[area]}
+        </Link>
+      </Pista>
     </div>
   );
 }

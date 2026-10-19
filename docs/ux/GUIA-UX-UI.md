@@ -282,11 +282,17 @@ Información).
   consulta; (2) el **acceso actual por área**, dicho una vez si todas las áreas están en el mismo estado, y el aviso
   de vista parcial, cuando falta un área del profesional; (3) las tres vistas y, a la derecha, el período. La ficha no lleva
   miga: la barra de marca ya vuelve al Espacio profesional.
-- **Las ayudas de las vistas viven en la Guía del espacio profesional** (`/pro/guia`, desde el menú de la cuenta;
-  DL-145, 2026-10-18). Las pantallas ya no tienen «Cómo se lee esta vista»: tienen que entenderse solas. La guía junta
-  lo que esas ayudas explicaban y lo que el legajo exige poder leer (DL-113). Una ayuda nueva entra en la guía, no en
-  la pantalla: es una `AyudaDeVista`, que adentro de `GuiaDeAyudas` se muestra como texto corrido. Lo que depende de
-  los datos que se miran («Cómo se calcula», la cobertura, el límite de una pregunta) sigue en su lugar.
+- **Cada vista tiene su ayuda corta; la Guía, la entera** (DL-146, 2026-10-19, sobre DL-145). «Cómo se lee esta vista»
+  va en el marco, siempre en el mismo lugar (C-04), y su diálogo trae solo lo que no se deduce mirando: los renglones
+  `esencial` de su `AyudaDeVista` (qué quiere decir una marca, «registrar no es aplicar», «sin dato no es cero»). Abajo,
+  «Todo el detalle, en la Guía» lleva a su sección de `/pro/guia`, donde la misma ayuda se lee entera, con los detalles
+  plegados (`SoloEnLaGuia`). Un renglón nuevo es esencial solo si sin él se lee mal la pantalla. Lo que depende de los
+  datos que se miran («Cómo se calcula», la cobertura, el límite de una pregunta) sigue en su lugar.
+- **Las pistas** (`components/pista.tsx`; los textos, en `COPY_PISTAS`): una frase al pasar el mouse por una acción o un
+  título, o al llegarle con el teclado. Van donde una acción tiene efectos («Nueva versión del plan», «Registrar») o un
+  término no es del oficio (el estado del acceso), no en cada etiqueta. Nunca llevan algo imprescindible para decidir
+  (I.2). Cumplen WCAG 2.2 1.4.13: se puede pasar el mouse por encima, Escape las cierra, y se quedan mientras el mouse o
+  el foco sigan ahí. No se usa el atributo `title` del navegador.
 - **El período es un solo control.** A la vista dice qué período es, cuántos días tiene y si incluye hoy. Al abrirlo
   están los atajos (7, 30 y 90 días, y un año) y el rango propio, con dos campos de fecha. Elegir cierra el control;
   Escape también, y devuelve el foco al botón.
@@ -315,7 +321,7 @@ Información).
   - **Lo que una sección elige vive en la dirección:** el período, la vista y lo que está abierto. Como «Actualizar»
     vuelve a montar la sección, lo que quede en su memoria se pierde: una sección recompuesta lo lleva a la dirección
     (`ir`, del contexto del área), y «Actualizar» y volver atrás lo conservan. Al cambiar de sección no se lleva.
-  - **Las secciones no llevan ayuda:** lo que explicaría va en la Guía del espacio profesional (DL-145).
+  - **Cada sección lleva su ayuda corta** en el marco, y su pista en la pestaña (DL-146): la entera está en la Guía.
 - **La dirección dice dónde se está:** se navega con el router (`ir`, `irA`), no cambiando un estado escondido. La URL
   guarda la vista, el período, los filtros, las métricas, la pregunta y la fecha elegida, **solo como identificadores,
   enumerados y fechas**. El texto que escribe la persona (una búsqueda) y los borradores no van en la URL. Atrás vuelve
@@ -925,9 +931,10 @@ Lo que salió del análisis de los flujos del profesional (`docs/ux/ANALISIS-ESP
   que toca abierta. Un botón apagado con una línea gris no es una guía.
 - **El botón dice qué hace.** Una fila que dice qué está pendiente lleva el verbo que lo resuelve («Empezar el plan»,
   «Revisar»), no un «Abrir» igual para todas.
-- **Una pantalla del profesional no explica cómo se lee.** Si necesita explicación, se cambia la pantalla; lo que el
-  legajo exige poder leer va en la Guía del espacio profesional. Siguen a la vista el consentimiento y los efectos antes
-  de actuar, y el contexto del dato (I.2).
+- **Una pantalla del profesional no se explica en su cuerpo.** Si necesita explicación, primero se cambia la pantalla.
+  Lo que no se deduce mirando va en su ayuda corta, en el marco, y en las pistas; lo demás, y lo que el legajo exige
+  poder leer, en la Guía (DL-146). Siguen a la vista el consentimiento y los efectos antes de actuar, y el contexto del
+  dato (I.2).
 - **Lo que no aplica no se muestra.** Una ficha sin nada registrado no muestra indicadores ni preguntas sobre un plan
   que no existe; una tarjeta vacía sin acción (las notas del equipo sin notas) no aparece.
 - **Lo mismo se llama igual.** «Pedir información» (no «Solicitar contexto»), «Área» (no «Alcance») en lo que ve el

@@ -124,8 +124,12 @@ export const COPY_VINCULO = {
   estadoDeSolicitud: { PENDIENTE: 'Pendiente', ACEPTADA: 'Aceptada', RECHAZADA: 'Rechazada', CADUCADA: 'Caducada', INVALIDADA: 'Sin efecto' },
   /** 10-B04:538-553. «No efectivo»: activo pero el vínculo no permite el acceso, sin sugerir revocación. */
   estadoDeConsentimiento: { ACTIVE: 'Activo', REVOKED: 'Revocado', NO_EFECTIVO: 'No efectivo', REQUIRED: 'Pendiente de tu decisión' },
-  /** 10-B04:825-846; H10-04-04 (10-B04:1489-1491). */
-  accesoContextual: 'Activo · acceso contextual',
+  /**
+   * 10-B04:825-846; H10-04-04 (10-B04:1489-1491). El 10 da «Activo · acceso contextual» como ejemplo del formato
+   * «estado del vínculo · estado mínimo de autorización»; DL-146 dice lo mismo con palabras del oficio. La pista del
+   * encabezado explica el alcance (`COPY_PISTAS.acceso.conAcceso`).
+   */
+  accesoContextual: 'Activo · con acceso',
   accesoPendiente: 'Acceso pendiente de autorización',
   accesoNoDisponible: 'Acceso no disponible',
   pausadoSinAcceso: 'Pausado · sin acceso',

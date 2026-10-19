@@ -14,7 +14,7 @@ export function AyudaDelPlan() {
     <AyudaDeVista titulo="Cómo se lee el Plan" deQue="nutricion-plan">
       <p className="nota">La planificación de comidas, tal como la ve el asesorado. Dice lo indicado: no lo que comió, ni si alcanza.</p>
       <ul className="como-se-lee__lista">
-        <Renglon muestra={<Icono nombre="candado" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="candado" tamano={20} />}>
           <strong>El plan activo es de solo lectura.</strong> Se muestra desde su instantánea: lo que se guardó al activarlo, que es lo que ve el asesorado. No se edita: para cambiarlo se crea una versión nueva, y la activa
           sigue igual hasta que actives la otra.
         </Renglon>
@@ -27,16 +27,16 @@ export function AyudaDelPlan() {
         <Renglon muestra={<Icono nombre="comida" tamano={20} />}>
           <strong>Cada comida es un renglón que se abre en el lugar.</strong> Plegada dice cuántas opciones tiene y cómo se llaman; «{COPY_DEL_PLAN.abrirTodas}» muestra el día entero.
         </Renglon>
-        <Renglon muestra={<Icono nombre="opciones" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="opciones" tamano={20} />}>
           <strong>De las opciones de una comida se elige una.</strong> Van lado a lado y en el orden del plan. No son equivalencias nutricionales: cada una es una comida distinta, y ninguna es la principal.
         </Renglon>
         <Renglon muestra={<Icono nombre="alimento" tamano={20} />}>
           <strong>Cada ítem dice lo indicado:</strong> la cantidad, la unidad y el estado de preparación («120 g · cocido»). «{COPY_DEL_PLAN.sinCantidad}» es eso: el plan no la dice. No es un cero.
         </Renglon>
-        <Renglon muestra={<Icono nombre="receta" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="receta" tamano={20} />}>
           <strong>Una opción que nació de una receta</strong> dice de cuál y de qué versión. Lleva los ingredientes de una porción, congelados al activar: si después cambiás la receta, esta versión del plan no cambia.
         </Renglon>
-        <Renglon muestra={<Icono nombre="objetivo" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="objetivo" tamano={20} />}>
           <strong>El objetivo del día</strong> son las calorías y los macros del objetivo con el que se armó esta versión. Es lo indicado para el día, no una suma de las comidas ni lo consumido. Si hoy rige un objetivo más
           nuevo, la pantalla lo dice.
         </Renglon>

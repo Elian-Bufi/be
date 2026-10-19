@@ -11,11 +11,14 @@
  *
  * WP-ESCRITORIO-AMABLE: una pestaña puede llevar un ícono de la familia delante de su nombre. Es decorativo: el nombre
  * del enlace sigue siendo su texto.
+ *
+ * DL-146: y una pista, que dice en una frase qué hay en esa sección al pasar el mouse o llegar con el teclado.
  */
 import type { NombreDeIcono } from '@be/domain';
 import Link from 'next/link';
 import { useEffect, useRef, type RefObject } from 'react';
 import { Icono } from './icono';
+import { Pista } from './pista';
 
 export function Pestanas<C extends string>({
   etiqueta,
@@ -24,7 +27,7 @@ export function Pestanas<C extends string>({
   href,
 }: {
   etiqueta: string;
-  vistas: readonly { readonly clave: C; readonly texto: string; readonly icono?: NombreDeIcono }[];
+  vistas: readonly { readonly clave: C; readonly texto: string; readonly icono?: NombreDeIcono; readonly pista?: string }[];
   actual: C;
   href: (clave: C) => string;
 }) {
@@ -33,14 +36,15 @@ export function Pestanas<C extends string>({
   return (
     <nav className="pestanas" aria-label={etiqueta}>
       <ul ref={lista} className="desplazable-x">
-        {vistas.map((v) => (
-          <li key={v.clave}>
+        {vistas.map((v) => {
+          const enlace = (
             <Link href={href(v.clave)} aria-current={v.clave === actual ? 'page' : undefined} replace>
               {v.icono ? <Icono nombre={v.icono} tamano={18} /> : null}
               {v.texto}
             </Link>
-          </li>
-        ))}
+          );
+          return <li key={v.clave}>{v.pista ? <Pista texto={v.pista}>{enlace}</Pista> : enlace}</li>;
+        })}
       </ul>
     </nav>
   );

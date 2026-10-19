@@ -5,7 +5,8 @@
  *
  * Salió de `workspace.tsx` sin cambiar una clase ni una palabra: la ficha lo usa como antes.
  */
-import { COPY_VINCULO, estadoParaMostrar, type DashboardResponse, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_PISTAS, COPY_VINCULO, estadoParaMostrar, type DashboardResponse, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { Pista } from '../../../components/pista';
 
 export const DOMINIO_DEL_ALCANCE: Readonly<Record<string, DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
 export const CLAVE_DEL_DOMINIO: Readonly<Record<DominioDeAnalisis, keyof DashboardResponse['data']['domains']>> = { NUTRITION: 'nutrition', TRAINING: 'training', ANTHROPOMETRY: 'anthropometry' };
@@ -32,10 +33,28 @@ export function estadoDelArea(v: Vinculo, sePuedeLeer: LecturaPorArea): { estado
   return e;
 }
 
+/** La pista de un estado del acceso (DL-146). Un estado que BE no conoce va sin pista. */
+export function pistaDelAcceso(e: { estado: string; detalle: string | null }): string | null {
+  if (e.estado === COPY_VINCULO.accesoContextual) return COPY_PISTAS.acceso.conAcceso;
+  if (e.estado === COPY_VINCULO.accesoNoDisponible) return COPY_PISTAS.acceso.noDisponible;
+  if (e.estado === COPY_VINCULO.pausadoSinAcceso) return COPY_PISTAS.acceso.pausado;
+  if (e.estado === COPY_VINCULO.estadoDeVinculo.FINALIZADO) return COPY_PISTAS.acceso.finalizado;
+  if (e.estado === 'Consentimiento revocado') return COPY_PISTAS.acceso.revocado;
+  if (e.estado === COPY_VINCULO.vinculoActivoAccesoPendiente) return e.detalle === COPY_VINCULO.accesoPendienteDelAsesorado ? COPY_PISTAS.acceso.pendiente : COPY_PISTAS.acceso.noDisponible;
+  return null;
+}
+
+function Insignia({ estado }: { estado: { estado: string; detalle: string | null } }) {
+  const insignia = <span className="insignia">{estado.estado}</span>;
+  const pista = pistaDelAcceso(estado);
+  return pista ? <Pista texto={pista}>{insignia}</Pista> : insignia;
+}
+
 /**
  * El acceso actual por área. Si todas las áreas están en el mismo estado, se dice una vez («Nutrición, Entrenamiento y
- * Antropometría: Activo · acceso contextual»): repetir tres veces el mismo estado ocupaba una línea más de identidad
- * técnica (encargo §10). Si difieren, cada área con el suyo.
+ * Antropometría: Activo · con acceso»): repetir tres veces el mismo estado ocupaba una línea más de identidad técnica
+ * (encargo §10). Si difieren, cada área con el suyo. Cada estado lleva su pista (DL-146): qué quiere decir, sin la causa
+ * cuando BE no la dice.
  */
 export function AccesoPorArea({ vinculos, sePuedeLeer }: { vinculos: readonly Vinculo[]; sePuedeLeer: LecturaPorArea }) {
   const filas = [...vinculos].sort((a, b) => lugarDelArea(a) - lugarDelArea(b)).map((v) => ({ v, e: estadoDelArea(v, sePuedeLeer) }));
@@ -44,7 +63,7 @@ export function AccesoPorArea({ vinculos, sePuedeLeer }: { vinculos: readonly Vi
     const nombres = filas.map((f) => f.v.scope.label);
     return (
       <p className="ficha__acceso-areas">
-        <strong>{`${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`}</strong>: <span className="insignia">{primero.e.estado}</span>
+        <strong>{`${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`}</strong>: <Insignia estado={primero.e} />
       </p>
     );
   }
@@ -52,7 +71,7 @@ export function AccesoPorArea({ vinculos, sePuedeLeer }: { vinculos: readonly Vi
     <ul className="estados-de-vinculo estados-de-vinculo--en-linea">
       {filas.map(({ v, e }) => (
         <li key={v.relationshipId}>
-          <strong>{v.scope.label}</strong>: <span className="insignia">{e.estado}</span>
+          <strong>{v.scope.label}</strong>: <Insignia estado={e} />
           {e.detalle ? <> {e.detalle}</> : null}
         </li>
       ))}

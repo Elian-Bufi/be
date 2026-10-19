@@ -6,7 +6,7 @@
  * sección. El botón y el diálogo son los de la ficha (`AyudaDeVista`); va en el marco del área.
  */
 import { VISTAS_DE_REGISTROS } from '@be/domain';
-import { AyudaDeVista, RenglonDeAyuda as Renglon } from '../../../../components/ayuda-de-vista';
+import { AyudaDeVista, RenglonDeAyuda as Renglon, SoloEnLaGuia } from '../../../../components/ayuda-de-vista';
 import { Icono } from '../../../../components/icono';
 
 export function AyudaDeRegistros() {
@@ -22,20 +22,20 @@ export function AyudaDeRegistros() {
           <strong>Cada comida del plan es una fila,</strong> en el orden del plan: la opción que registró la persona, cómo informó las cantidades y la diferencia observada. «N de M comidas registradas» es una cuenta: no
           dice si alcanza.
         </Renglon>
-        <Renglon muestra={<Icono nombre="sin-datos" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="sin-datos" tamano={20} />}>
           <strong>«Sin registro»</strong> es eso: no hay dato de esa comida. No es un cero, y no se interpreta. Un día sin ningún registro dice «Sin registro», no «0 de 4».
         </Renglon>
-        <Renglon muestra={<Icono nombre="plan" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="plan" tamano={20} />}>
           <strong>Porciones del plan:</strong> la persona confirmó las cantidades indicadas. No hay diferencia que comprobar: son las del plan.
         </Renglon>
-        <Renglon muestra={<Icono nombre="a-mano" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="a-mano" tamano={20} />}>
           <strong>Cantidades informadas:</strong> la persona escribió lo que comió de cada ingrediente. BE lo compara con la opción indicada, ingrediente por ingrediente, y dice si coincide. Las restas que se pueden hacer van
           al lado («Pollo +30 g»). Una diferencia es un dato, no una calificación.
         </Renglon>
-        <Renglon muestra={<Icono nombre="sin-confirmar" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="sin-confirmar" tamano={20} />}>
           <strong>Sin confirmar:</strong> registró la opción y no confirmó las cantidades. Sigue sin confirmar: no se completa con las porciones del plan.
         </Renglon>
-        <Renglon muestra={<Icono nombre="desvio" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="desvio" tamano={20} />}>
           <strong>Comida diferente:</strong> registró algo que no es una opción del plan. Va en la comida donde lo registró y no la marca como registrada; si no la registró en ninguna, va en un renglón propio del día.
           Queda fuera de lo indicado: no se compara.
         </Renglon>
@@ -58,6 +58,7 @@ export function AyudaDeRegistros() {
           y volver atrás los conservan.
         </Renglon>
       </ul>
+      <SoloEnLaGuia>
       <details className="como-se-lee__fuentes">
         <summary>Qué trae cada vista ({VISTAS_DE_REGISTROS.length})</summary>
         <dl>
@@ -69,6 +70,7 @@ export function AyudaDeRegistros() {
           ))}
         </dl>
       </details>
+      </SoloEnLaGuia>
     </AyudaDeVista>
   );
 }

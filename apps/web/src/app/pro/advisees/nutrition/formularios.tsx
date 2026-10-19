@@ -9,6 +9,9 @@
  * - Adenda de formularios: etiqueta persistente, unidad visible, errores junto al campo y «requerido» solo si lo es.
  */
 import {
+  CONCEPTOS_FRECUENTES_DE_NUTRICION,
+  COPY_DE_LA_EVALUACION,
+  type ConceptoFrecuente,
   COPY_NUTRICION,
   ETIQUETA_DE_FUENTE,
   leerNumero,
@@ -23,6 +26,7 @@ import { api } from '../../../../lib/api';
 import { dia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useNutricion } from './nutricion';
+import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
 interface Dato {
@@ -39,7 +43,11 @@ const ahoraLocal = (): string => {
   return d.toISOString().slice(0, 16);
 };
 
-export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistrada: (evaluationId: string) => void; onCancelar: () => void }) {
+/**
+ * DL-146: dentro de «Empezar el plan», el paso ya se llama «Evaluación inicial» (`conTitulo={false}`). Los conceptos
+ * frecuentes llenan el primer dato vacío; el contexto y las notas, opcionales, van plegados después de los datos.
+ */
+export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = true }: { onRegistrada: (evaluationId: string) => void; onCancelar: () => void; conTitulo?: boolean }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [datos, setDatos] = useState<Dato[]>([datoVacio()]);
@@ -52,6 +60,11 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
   const [fallo, setFallo] = useState<string | null>(null);
 
   const cambiar = (i: number, cambio: Partial<Dato>) => setDatos((ds) => ds.map((d, j) => (j === i ? { ...d, ...cambio } : d)));
+  function elegirConcepto(c: ConceptoFrecuente) {
+    const i = lugarDelConcepto(datos);
+    setDatos((ds) => (i < ds.length ? ds.map((d, j) => (j === i ? { ...d, concepto: c.concepto, unidad: c.unidad } : d)) : [...ds, { ...datoVacio(), concepto: c.concepto, unidad: c.unidad }]));
+    window.setTimeout(() => document.getElementById(`dato-${i}-valor`)?.focus(), 0);
+  }
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -95,16 +108,13 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
   const porCampo = erroresPorCampo(errores);
   return (
     <form className="formulario" onSubmit={enviar} noValidate>
-      <h3>{COPY_NUTRICION.nuevaEvaluacion}</h3>
+      {conTitulo ? <h3>{COPY_NUTRICION.nuevaEvaluacion}</h3> : null}
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={envios} />
       <Campo id="evaluacion-ocurrencia" etiqueta="Fecha y hora de la evaluación" type="datetime-local" value={ocurrencia} onChange={(e) => setOcurrencia(e.target.value)} required />
-      <div className="campo">
-        <label htmlFor="evaluacion-contexto">Contexto (opcional)</label>
-        <textarea id="evaluacion-contexto" rows={2} value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={1000} />
-      </div>
       <fieldset className="grupo">
         <legend>Datos de la evaluación</legend>
         <p className="campo__ayuda">Cada dato indica de dónde sale. Un dato calculado declara el método: BE no calcula.</p>
+        <ConceptosFrecuentes conceptos={CONCEPTOS_FRECUENTES_DE_NUTRICION} usados={datos.map((d) => d.concepto)} etiqueta={COPY_DE_LA_EVALUACION.paraEmpezar} onElegir={elegirConcepto} />
         {datos.map((d, i) => (
           <div key={i} className="fila-de-dato">
             <Campo id={`dato-${i}-concepto`} etiqueta="Concepto" value={d.concepto} onChange={(e) => cambiar(i, { concepto: e.target.value })} maxLength={120} error={porCampo[`dato-${i}-concepto`] ?? null} />
@@ -134,10 +144,17 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar }: { onRegistr
           Agregar dato
         </button>
       </fieldset>
-      <div className="campo">
-        <label htmlFor="evaluacion-notas">Notas del profesional (opcional)</label>
-        <textarea id="evaluacion-notas" rows={3} value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} />
-      </div>
+      <details className="campos-opcionales" open={contexto !== '' || notas !== '' ? true : undefined}>
+        <summary>{COPY_DE_LA_EVALUACION.contextoYNotas}</summary>
+        <div className="campo">
+          <label htmlFor="evaluacion-contexto">Contexto (opcional)</label>
+          <textarea id="evaluacion-contexto" rows={2} value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={1000} />
+        </div>
+        <div className="campo">
+          <label htmlFor="evaluacion-notas">Notas del profesional (opcional)</label>
+          <textarea id="evaluacion-notas" rows={3} value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} />
+        </div>
+      </details>
       {fallo ? (
         <Aviso tipo="error" enfocar>
           <p>{fallo}</p>
