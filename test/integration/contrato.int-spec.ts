@@ -134,7 +134,7 @@ afterAll(async () => {
 
 const CIERRE = '/api/v1/me/account-closure-requests';
 
-it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones, y las dos del perfil propio (DL-009)', async () => {
+it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones, las dos del perfil propio (DL-009) y la reanudación del website (DL-147)', async () => {
   const servidor = app.getHttpServer();
   // ACC-01
   const correo = correoSintetico('contrato');
@@ -162,6 +162,13 @@ it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de 
   await login(app, correo, OTRA_CREDENCIAL_SINTETICA).expect(401);
   await request(servidor).post('/api/v1/auth/sessions').send({ method: 'GOOGLE', identifier: correo, credential: CREDENCIAL_SINTETICA }).expect(400);
   await request(servidor).post('/api/v1/auth/sessions').send({ method: 'LOCAL', identifier: correo, credential: CREDENCIAL_SINTETICA, rol: 'X' }).expect(400);
+
+  // ACC-02-REANUDACION (DL-147): la cookie de reanudación que manda el login del website.
+  const entradaWeb = await login(app, correo, CREDENCIAL_SINTETICA, 'WEB').expect(201);
+  const cookieWeb = ([] as string[]).concat(entradaWeb.headers['set-cookie'] ?? []).find((c) => c.startsWith('__Secure-be-reanudacion='))?.split(';')[0] ?? '';
+  await request(servidor).post('/api/v1/auth/sessions/resume').set('X-BE-Surface', 'WEB').set('Cookie', cookieWeb).expect(200);
+  await request(servidor).post('/api/v1/auth/sessions/resume?x=1').set('X-BE-Surface', 'WEB').set('Cookie', cookieWeb).expect(400);
+  await request(servidor).post('/api/v1/auth/sessions/resume').set('X-BE-Surface', 'WEB').expect(401); // AUTHENTICATION_REQUIRED
 
   // ACC-05 · CON-05 · ACC-04 · ACC-03
   const token = await tokenDe(app, correo);
