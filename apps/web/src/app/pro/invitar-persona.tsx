@@ -218,7 +218,7 @@ export function InvitarPersona({
               id={`${id}-area`}
               value={alcance}
               aria-invalid={errorDeArea ? true : undefined}
-              aria-describedby={errorDeArea ? `${id}-area-error` : undefined}
+              aria-describedby={[errorDeArea ? `${id}-area-error` : null, areaSugerida && alcance === areaSugerida ? `${id}-area-sugerida` : null].filter(Boolean).join(' ') || undefined}
               onChange={(e) => {
                 setAlcance(e.target.value as Alcance | '');
                 intento.descartar();
@@ -232,6 +232,11 @@ export function InvitarPersona({
                 </option>
               ))}
             </select>
+            {areaSugerida && alcance === areaSugerida ? (
+              <p id={`${id}-area-sugerida`} className="campo__ayuda">
+                {COPY_INVITACION.areaSugerida}
+              </p>
+            ) : null}
             {errorDeArea ? (
               <p id={`${id}-area-error`} className="campo__error">
                 <span aria-hidden="true">⚠ </span>

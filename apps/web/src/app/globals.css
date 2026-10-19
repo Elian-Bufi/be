@@ -9298,6 +9298,29 @@ button.comida-del-dia__fila > .icono:last-child {
   cursor: not-allowed;
 }
 
+/* Una acción con lo que hace debajo (bloque 5): el nombre arriba y la línea chica en el tenue; el ícono, con la primera línea. */
+.menu-de-acciones__accion:has(.menu-de-acciones__detalle) {
+  align-items: flex-start;
+  padding-block: 0.5rem;
+}
+
+.menu-de-acciones__accion:has(.menu-de-acciones__detalle) > svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.menu-de-acciones__textos {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.menu-de-acciones__detalle {
+  color: var(--tenue);
+  font-size: 0.86rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
 /* Por qué una acción no se puede usar: debajo de ella, con el mismo margen. */
 .menu-de-acciones__motivo {
   margin: 0 0.7rem 0.45rem;
@@ -11447,15 +11470,12 @@ details[open] > summary:not([class])::before {
 @media (min-width: 87.5rem) {
   .marco-de-la-ficha__ancho {
     display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    /* Quién es, la acción del momento, «Más», el acceso y «Actualizar» (bloque 5). En un área, el tercero es el área. */
+    grid-template-columns: auto auto auto minmax(0, 1fr) auto;
     grid-template-rows: minmax(2.75rem, auto) auto;
     align-items: center;
     column-gap: 1rem;
     padding-top: 0.5625rem;
-  }
-
-  .marco-del-area .marco-de-la-ficha__ancho {
-    grid-template-columns: auto auto auto minmax(0, 1fr) auto;
   }
 
   .marco-de-la-ficha__persona {

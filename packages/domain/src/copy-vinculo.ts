@@ -279,6 +279,11 @@ export const COPY_INVITACION = {
   ayuda: 'Creá una invitación y mandásela por WhatsApp, mostrale el QR o pasale el código. Es para una sola persona y vence a los 7 días.',
   area: 'Área',
   elegirArea: 'Elegí un área',
+  /**
+   * Bloque 5 del encargo de consolidación: el área que se elige sola es una sugerencia, sacada de los vínculos del
+   * profesional. Se puede cambiar, y la API valida la habilitación real (422 SCOPE_NOT_AVAILABLE).
+   */
+  areaSugerida: 'Sugerida por tus vínculos: podés elegir otra.',
   crear: 'Crear invitación',
   creando: 'Creando la invitación…',
   lista: 'La invitación está lista',
