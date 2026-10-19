@@ -7,7 +7,7 @@
  * el marco del área.
  */
 import { COPY_COMPARACION, COPY_ENTRENAMIENTO_POR_SERIE, VISTAS_DE_SESIONES } from '@be/domain';
-import { AyudaDeVista, RenglonDeAyuda as Renglon } from '../../../../components/ayuda-de-vista';
+import { AyudaDeVista, RenglonDeAyuda as Renglon, SoloEnLaGuia } from '../../../../components/ayuda-de-vista';
 import { Icono } from '../../../../components/icono';
 
 export function AyudaDeRegistrosDeEntrenamiento() {
@@ -18,14 +18,14 @@ export function AyudaDeRegistrosDeEntrenamiento() {
         <Renglon muestra={<Icono nombre="lista" tamano={20} />}>
           <strong>Cada sesión registrada es una fila,</strong> de la más nueva a la más vieja: el día, la sesión y su condición, cuántas series se registraron y cómo quedaron frente a lo indicado. {COPY_COMPARACION.soloRegistradas}
         </Renglon>
-        <Renglon muestra={<Icono nombre="plan" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="plan" tamano={20} />}>
           <strong>Lo indicado es lo del plan de ese día:</strong> cada sesión se compara con la versión del plan con que se registró, no con la vigente hoy. Cambiar el plan después no cambia lo que se lee acá.
         </Renglon>
-        <Renglon muestra={<Icono nombre="series" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="series" tamano={20} />}>
           <strong>«7 de 10 registradas»</strong> es una cuenta de las series indicadas que tienen registro. Una serie sin registrar no quiere decir que no se haya hecho: no hay dato. Una serie que se hizo de más se dice aparte
           («1 adicional»).
         </Renglon>
-        <Renglon muestra={<Icono nombre="distinto" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="distinto" tamano={20} />}>
           <strong>Una serie con diferencias</strong> es una serie registrada cuyas repeticiones o cuyo RIR quedaron por encima o por debajo de lo indicado. Es un dato, no una calificación: por encima no es mejor ni peor.
         </Renglon>
         <Renglon muestra={<Icono nombre="carga" tamano={20} />}>
@@ -34,10 +34,10 @@ export function AyudaDeRegistrosDeEntrenamiento() {
         <Renglon muestra={<Icono nombre="sin-datos" tamano={20} />}>
           <strong>Un dato que no se registró no es una diferencia:</strong> se dice aparte («RIR: sin dato»). {COPY_COMPARACION.ausenciaNoEsCero}
         </Renglon>
-        <Renglon muestra={<Icono nombre="desvio" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="desvio" tamano={20} />}>
           <strong>La condición es lo que declaró la persona</strong> al registrar la sesión. No sale de comparar las series: una sesión puede estar registrada como realizada y tener series con diferencias, y al revés.
         </Renglon>
-        <Renglon muestra={<Icono nombre="texto" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="texto" tamano={20} />}>
           <strong>Una sesión resumida no tiene series:</strong> la persona escribió un resumen en lugar de registrar serie por serie. No se cuenta ni se compara, y no dice «0 de 10».
         </Renglon>
         <Renglon muestra={<Icono nombre="repetir" tamano={20} />}>
@@ -60,6 +60,7 @@ export function AyudaDeRegistrosDeEntrenamiento() {
           <strong>La evolución de un ejercicio</strong> a lo largo de las sesiones está en Analizar, en la ficha: desde acá hay un enlace.
         </Renglon>
       </ul>
+      <SoloEnLaGuia>
       <details className="como-se-lee__fuentes">
         <summary>Qué trae cada vista ({VISTAS_DE_SESIONES.length})</summary>
         <dl>
@@ -71,6 +72,7 @@ export function AyudaDeRegistrosDeEntrenamiento() {
           ))}
         </dl>
       </details>
+      </SoloEnLaGuia>
     </AyudaDeVista>
   );
 }

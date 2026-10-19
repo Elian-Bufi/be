@@ -31,7 +31,7 @@
  * a los otros profesionales que acompañan a la persona (UC-E07: se coordina desde el tablero). El diálogo es uno para toda la
  * ficha: lo abren también el Resumen y el detalle de una nota propia, para corregirla.
  */
-import { COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -49,6 +49,8 @@ import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type Pedi
 import { conRetorno, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
+import { Pista } from '../../../components/pista';
+import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
 
 const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.Analizar), { ssr: false, loading: () => <Cargando /> });
 
@@ -183,24 +185,30 @@ export function Workspace() {
           </div>
           {disponible ? (
             // Vuelve a esta misma vista de la ficha al enviar o al salir sin enviar (retorno validado).
-            <Link className="boton boton--quieto boton--compacto" href={conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, valorDeRetorno(new URLSearchParams(parametros.toString())))}>
-              <Icono nombre="solicitar" tamano={18} />
-              Pedir información
-            </Link>
+            <Pista texto={COPY_PISTAS.ficha.pedirInformacion}>
+              <Link className="boton boton--quieto boton--compacto" href={conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, valorDeRetorno(new URLSearchParams(parametros.toString())))}>
+                <Icono nombre="solicitar" tamano={18} />
+                Pedir información
+              </Link>
+            </Pista>
           ) : null}
           {/* DL-140 (UC-E07: «se coordina desde el tablero»): una nota para los otros profesionales de la persona. */}
           {disponible ? (
-            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => abrirNota({})}>
-              <Icono nombre="texto" tamano={18} />
-              {COPY_NOTAS_DE_COORDINACION.escribirCorto}
-            </button>
+            <Pista texto={COPY_PISTAS.ficha.notaDeCoordinacion}>
+              <button type="button" className="boton boton--quieto boton--compacto" onClick={() => abrirNota({})}>
+                <Icono nombre="texto" tamano={18} />
+                {COPY_NOTAS_DE_COORDINACION.escribirCorto}
+              </button>
+            </Pista>
           ) : null}
           {/* «Actualizar» vuelve a preguntar todo lo de la ficha, no solo el acceso: va con la hora, a la derecha. */}
           <div className="ficha__consulta">
-            <button type="button" className="boton boton--quieto boton--compacto" onClick={actualizar} disabled={panel.tipo === 'cargando'}>
-              <Icono nombre="actualizar" tamano={18} />
-              Actualizar
-            </button>
+            <Pista texto={COPY_PISTAS.ficha.actualizar}>
+              <button type="button" className="boton boton--quieto boton--compacto" onClick={actualizar} disabled={panel.tipo === 'cargando'}>
+                <Icono nombre="actualizar" tamano={18} />
+                Actualizar
+              </button>
+            </Pista>
             {consultadoEn ? <span className="nota">Consultado a las {horaDelDia(consultadoEn)}</span> : null}
           </div>
         </div>
@@ -266,6 +274,8 @@ export function Workspace() {
           <div className="marco-de-la-ficha__vistas">
             <PestanasDelSeguimiento actual={vista} />
             <div className="marco-de-la-ficha__derecha">
+              {/* La ayuda corta de la vista que se está mirando: una sola, siempre en el mismo lugar (C-04; DL-146). */}
+              <ComoSeLeeEstaVista vista={vista} />
               <SelectorDePeriodo />
             </div>
           </div>,

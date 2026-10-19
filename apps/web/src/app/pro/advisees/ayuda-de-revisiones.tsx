@@ -24,7 +24,7 @@ export function AyudaDeRevisiones({ area }: { area: 'NUTRICION' | 'ENTRENAMIENTO
           <strong>El período</strong> lo prepara BE desde tu última revisión hasta hoy, y lo dice al lado. Lo podés cambiar, hasta 92 días: lo que escribiste no se pierde, y de lo marcado se quita solo lo que quedó
           afuera.
         </Renglon>
-        <Renglon muestra={<Icono nombre="tilde" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="tilde" tamano={20} />}>
           <strong>Lo que miraste:</strong> nada viene marcado. Marcar un día marca cada una de sus {registros}; «Ver» las muestra para marcarlas una por una. Marcar es tu declaración de lo que examinaste: BE no
           lo elige.
         </Renglon>
@@ -42,11 +42,11 @@ export function AyudaDeRevisiones({ area }: { area: 'NUTRICION' | 'ENTRENAMIENTO
         <Renglon muestra={<Icono nombre="texto" tamano={20} />}>
           <strong>Lo que observaste</strong> describe lo observado. No es un diagnóstico.
         </Renglon>
-        <Renglon muestra={<Icono nombre="objetivo" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="objetivo" tamano={20} />}>
           <strong>Lo que decidís:</strong> BE no sugiere un resultado. El elegido dice qué pasa al aplicarlo; «Qué hace cada resultado» los muestra todos.
           {nutricion ? null : ` ${COPY_ENTRENAMIENTO.progresionComoAjuste}`}
         </Renglon>
-        <Renglon muestra={<Icono nombre="aplicar" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="aplicar" tamano={20} />}>
           <strong>Registrar no cambia el plan.</strong> La barra de abajo queda a la vista mientras escribís. Aplicar es otro paso, desde la lista: la revisión queda registrada aunque todavía no se aplique.
         </Renglon>
       </ul>

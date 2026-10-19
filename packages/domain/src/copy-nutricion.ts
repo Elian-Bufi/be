@@ -71,7 +71,8 @@ export const COPY_NUTRICION = {
     'Estás por activar esta versión. El asesorado pasará a consultar esta planificación como vigente. La versión anterior se conservará en el historial.',
   noPudimosActivar: 'No pudimos activar esta versión. Revisá el estado actual antes de volver a intentarlo.',
   soloLectura: 'Solo lectura',
-  crearNuevaVersion: 'Crear nueva versión a partir de esta',
+  /** DL-047 (B10-05 CAND-NUT-D: «Crear nueva versión a partir de esta»), dicho corto por DL-146; la pista explica el porqué. */
+  crearNuevaVersion: 'Nueva versión del plan',
   sinCapacidad: 'No hay capacidad disponible para iniciar un nuevo seguimiento. Los seguimientos vigentes no se modifican.',
   estadoDePreparacion: 'Estado de preparación',
   registros: 'Registros',

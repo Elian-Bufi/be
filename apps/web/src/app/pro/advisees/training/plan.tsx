@@ -3,7 +3,7 @@
 /**
  * Plan de entrenamiento (B10-06 §9-§10, §24), recompuesto en WP-ESCRITORIO-AREAS, parte 6 (maqueta 24; C-69, C-80, C-81).
  * - La versión activa se muestra en solo lectura, desde la instantánea: lo que ve el asesorado (REG-06-112). Para
- *   cambiarla: «Crear nueva versión a partir de esta» (DL-047).
+ *   cambiarla: «Nueva versión del plan» (DL-047).
  * - Un solo borrador por plan: si ya hay uno, se sigue sobre ese y no se ofrece crear otro.
  * - Activar no se hace desde «Guardar» (B10-06:609): es un acto aparte, con su consecuencia a la vista.
  * - La versión activa se lee con API-SER-01: cada serie muestra el objetivo que recibe el teléfono, heredado o propio
@@ -19,6 +19,7 @@
  *   la otra se sigue en el mismo lugar.
  */
 import {
+  COPY_PISTAS,
   COPY_AGENDA_DE_ENTRENAMIENTO,
   COPY_PRIMER_PLAN,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
@@ -56,6 +57,7 @@ import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
 import { DialogoGuardarPlantilla } from './plantillas';
+import { Pista } from '../../../../components/pista';
 
 /**
  * Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. Lo usa
@@ -197,12 +199,14 @@ export function VistaDePlan() {
                 {COPY_PLANTILLAS.empezarDesdePlantilla}
               </button>
             );
-            const crearLaVersion = (
+            const botonDeLaVersion = (
               <button type="button" className="boton boton--primario" onClick={() => void crear(activa ? activa.planId : null)} disabled={creando} data-crear-version>
                 <Icono nombre={activa ? 'duplicar' : 'plan'} tamano={18} />
                 {activa ? COPY_ENTRENAMIENTO.crearNuevaVersion : COPY_ENTRENAMIENTO.crearPlan}
               </button>
             );
+            // DL-146: la pista dice por qué es una versión nueva y no una edición (DL-047; UC-P10 V07).
+            const crearLaVersion = activa ? <Pista texto={COPY_PISTAS.plan.nuevaVersion}>{botonDeLaVersion}</Pista> : botonDeLaVersion;
             const irAlResumen = (
               <button type="button" className="boton boton--enlace" onClick={() => irA('resumen')}>
                 {C.irAResumen}

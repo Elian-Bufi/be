@@ -15,7 +15,7 @@
  * Desde la parte 2, lo que Registros elige (el período, la vista, los filtros y la sesión abierta) vive en la dirección,
  * como en Nutrición: «Actualizar» vuelve a leer sin perderlo. Al cambiar de sección no se lleva.
  */
-import { COPY_ENTRENAMIENTO } from '@be/domain';
+import { COPY_PISTAS, COPY_ENTRENAMIENTO } from '@be/domain';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Resultado } from '../../../../lib/api';
@@ -23,16 +23,19 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
+import { AyudaDeRevisiones } from '../ayuda-de-revisiones';
+import { AyudaDeRegistrosDeEntrenamiento } from './ayuda-de-registros';
+import { AyudaDelPlanDeEntrenamiento } from './ayuda-del-plan';
 import { VistaDeEjecuciones } from './ejecuciones';
 import { VistaDePlan } from './plan';
 import { VistaDeResumen } from './resumen';
 import { VistaDeRevisiones } from './revisiones';
 
 export const VISTAS = [
-  { clave: 'resumen', texto: COPY_ENTRENAMIENTO.resumen, icono: 'resumen' },
-  { clave: 'plan', texto: COPY_ENTRENAMIENTO.plan, icono: 'plan' },
-  { clave: 'ejecuciones', texto: COPY_ENTRENAMIENTO.ejecuciones, icono: 'lista' },
-  { clave: 'revisiones', texto: COPY_ENTRENAMIENTO.revisiones, icono: 'revision' },
+  { clave: 'resumen', texto: COPY_ENTRENAMIENTO.resumen, icono: 'resumen', pista: COPY_PISTAS.secciones.resumen },
+  { clave: 'plan', texto: COPY_ENTRENAMIENTO.plan, icono: 'plan', pista: COPY_PISTAS.secciones.plan },
+  { clave: 'ejecuciones', texto: COPY_ENTRENAMIENTO.ejecuciones, icono: 'lista', pista: COPY_PISTAS.secciones.registrosDeSesiones },
+  { clave: 'revisiones', texto: COPY_ENTRENAMIENTO.revisiones, icono: 'revision', pista: COPY_PISTAS.secciones.revisiones },
 ] as const;
 export type Vista = (typeof VISTAS)[number]['clave'];
 
@@ -109,8 +112,9 @@ export function Entrenamiento() {
       href={(clave) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${clave}`, retorno.valor)}
       retirado={retirado}
       onActualizar={volverALeer}
-      // Registros (parte 2), Plan (parte 8) y Revisiones (parte 10) ya están recompuestas: usan todo el ancho.
+      // Registros (parte 2), Plan (parte 8) y Revisiones (parte 10) ya están recompuestas: usan todo el ancho y tienen su ayuda.
       ancho={vista === 'ejecuciones' || vista === 'plan' || vista === 'revisiones'}
+      ayuda={vista === 'ejecuciones' ? <AyudaDeRegistrosDeEntrenamiento /> : vista === 'plan' ? <AyudaDelPlanDeEntrenamiento /> : vista === 'revisiones' ? <AyudaDeRevisiones area="ENTRENAMIENTO" /> : null}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

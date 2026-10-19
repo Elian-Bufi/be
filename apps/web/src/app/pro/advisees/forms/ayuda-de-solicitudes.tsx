@@ -17,19 +17,19 @@ export function AyudaDeSolicitudes() {
         <Renglon muestra={<Icono nombre="lista" tamano={20} />}>
           <strong>Las solicitudes van de la más nueva a la más vieja.</strong> Cada una dice cuándo la pediste, en qué área, cuántas preguntas tiene y para qué. Tocá una para ver su detalle.
         </Renglon>
-        <Renglon muestra={<Icono nombre="reloj" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="reloj" tamano={20} />}>
           <strong>{F.pendiente}.</strong> La persona todavía no respondió, y puede no hacerlo: no responder también es una opción. No se cuentan días ni se marca como una falta.
         </Renglon>
-        <Renglon muestra={<Icono nombre="reportado" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="reportado" tamano={20} />}>
           <strong>{F.declaradoPorLaPersona}.</strong> {F.noEsMedicion} Se dice una vez, para todas las respuestas de la solicitud.
         </Renglon>
         <Renglon muestra={<Icono nombre="tilde" tamano={20} />}>
           <strong>{C.requerida}.</strong> {C.siRespondeLasRequeridas} La solicitud entera sí puede quedar sin responder.
         </Renglon>
-        <Renglon muestra={<Icono nombre="corregido" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="corregido" tamano={20} />}>
           <strong>{C.respuestaQueRige}.</strong> Si la persona corrigió su respuesta, rige la corrección: la fila dice «{C.corregida}» y qué había antes. La respuesta original se conserva, en la historia, con el motivo que escribió.
         </Renglon>
-        <Renglon muestra={<Icono nombre="texto" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="texto" tamano={20} />}>
           <strong>{C.sinResponder}, en una pregunta.</strong> La persona respondió la solicitud y dejó esa pregunta sin contestar. Es un hueco: no se muestra vacío ni con un cero.
         </Renglon>
         <Renglon muestra={<Icono nombre="solicitar" tamano={20} />}>

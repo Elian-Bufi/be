@@ -18,7 +18,7 @@
  * del marco y tiene su ayuda; las tomas se leen una vez por visita y se vuelven a leer con «Actualizar» (el marco, además,
  * vuelve a preguntar el acceso al volver a la pestaña del navegador y ante un «no disponible»).
  */
-import { COPY_ANTROPOMETRIA } from '@be/domain';
+import { COPY_PISTAS, COPY_ANTROPOMETRIA } from '@be/domain';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -30,6 +30,10 @@ import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
+import { AyudaDeEvolucion } from './ayuda-de-evolucion';
+import { AyudaDeLaCarga } from './ayuda-de-la-carga';
+import { AyudaDeLaLamina } from './ayuda-de-la-lamina';
+import { AyudaDeTomas } from './ayuda-de-tomas';
 import { VistaDeEvaluaciones } from './evaluaciones';
 import { VistaDeEvolucion } from './evolucion';
 import { VistaDePreparacion } from './preparacion';
@@ -39,9 +43,9 @@ const VistaDeLamina = dynamic(() => import('./lamina').then((m) => m.VistaDeLami
 
 /** Las secciones que se ven en el marco. */
 export const SECCIONES = [
-  { clave: 'evaluaciones', texto: COPY_ANTROPOMETRIA.tomas, icono: 'lista' },
-  { clave: 'evolucion', texto: COPY_ANTROPOMETRIA.evolucion, icono: 'analizar' },
-  { clave: 'lamina', texto: COPY_ANTROPOMETRIA.lamina, icono: 'imagen' },
+  { clave: 'evaluaciones', texto: COPY_ANTROPOMETRIA.tomas, icono: 'lista', pista: COPY_PISTAS.secciones.tomas },
+  { clave: 'evolucion', texto: COPY_ANTROPOMETRIA.evolucion, icono: 'analizar', pista: COPY_PISTAS.secciones.evolucion },
+  { clave: 'lamina', texto: COPY_ANTROPOMETRIA.lamina, icono: 'imagen', pista: COPY_PISTAS.secciones.lamina },
 ] as const;
 type Seccion = (typeof SECCIONES)[number]['clave'];
 
@@ -143,6 +147,7 @@ export function Antropometria() {
       retirado={retirado}
       onActualizar={volverALeer}
       ancho
+      ayuda={vista === 'evaluaciones' ? <AyudaDeTomas /> : vista === 'preparacion' ? <AyudaDeLaCarga /> : vista === 'evolucion' ? <AyudaDeEvolucion /> : <AyudaDeLaLamina />}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>

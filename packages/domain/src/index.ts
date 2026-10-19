@@ -108,6 +108,7 @@ export * from './contratos-invitaciones';
 export * from './agenda-de-entrenamiento';
 export * from './copy-agenda-de-entrenamiento';
 export * from './copy-primer-plan';
+export * from './copy-pistas';
 export * from './mayoria-de-edad';
 export * from './contratos-acceso-google';
 export * from './copy-acceso-google';

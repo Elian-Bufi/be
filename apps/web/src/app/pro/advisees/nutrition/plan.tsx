@@ -3,7 +3,7 @@
 /**
  * NUT-04 Plan (B05:355-398; 1301-1339), recompuesto en WP-ESCRITORIO-AREAS, parte 5 (maqueta 16; C-31, C-35, C-39, C-45).
  * - La versión activa se muestra en solo lectura, desde la instantánea: lo que ve el asesorado (REG-06-105). No hay
- *   botón que la edite (INV-06-109). Para corregirla: «Crear nueva versión a partir de esta» (CAND-NUT-D; DL-047).
+ *   botón que la edite (INV-06-109). Para corregirla: «Nueva versión del plan» (CAND-NUT-D; DL-047).
  * - Un solo borrador por plan (REG-06-12): si ya hay uno, se sigue sobre ese y no se ofrece crear otro.
  * - «Borrador creado», no «Plan creado correctamente» (B05:378-398).
  * - **Un selector de versión** cuando hay una en preparación y una activa (C-39): se mira una u otra. La que está en
@@ -14,6 +14,7 @@
  * - Una versión en preparación sigue en el editor de siempre, hasta su parte (la 7).
  */
 import {
+  COPY_PISTAS,
   COPY_DEL_PLAN,
   COPY_NUTRICION,
   COPY_PRIMER_PLAN,
@@ -46,6 +47,7 @@ import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
 import { ComidasDelPlan, SelectorDeDiaTipo } from './estructura-del-plan';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional } from './plantillas';
+import { Pista } from '../../../../components/pista';
 
 type Resumen = Omit<VersionDePlan, 'dayTypes'>;
 
@@ -173,12 +175,14 @@ export function VistaDePlan() {
                 {COPY_PLANTILLAS.empezarDesdePlantilla}
               </button>
             );
-            const crearLaVersion = (
+            const botonDeLaVersion = (
               <button type="button" className="boton boton--primario" onClick={() => void crear(activa ? activa.planId : null)} disabled={creando} data-crear-version>
                 <Icono nombre={activa ? 'duplicar' : 'plan'} tamano={18} />
                 {activa ? COPY_NUTRICION.crearNuevaVersion : COPY_NUTRICION.crearNuevoPlan}
               </button>
             );
+            // DL-146: la pista dice por qué es una versión nueva y no una edición (DL-047; UC-P10 V07).
+            const crearLaVersion = activa ? <Pista texto={COPY_PISTAS.plan.nuevaVersion}>{botonDeLaVersion}</Pista> : botonDeLaVersion;
             // En el encabezado la principal va última, contra el borde, y las plantillas en su menú; donde todavía no hay
             // un plan, la principal va primera y las plantillas con su botón.
             const empezarElPlan = sePuedeCrear ? (

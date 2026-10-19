@@ -79,7 +79,8 @@ export const COPY_ENTRENAMIENTO = {
   /** El primero, cuando todavía no hay ninguno (como en Nutrición; DL-145). Después, «Nueva versión de objetivo» (B10-06:253-259). */
   definirObjetivo: 'Definir el objetivo',
   crearPlan: 'Crear plan',
-  crearNuevaVersion: 'Crear nueva versión a partir de esta',
+  /** DL-047 (B10-05 CAND-NUT-D: «Crear nueva versión a partir de esta»), dicho corto por DL-146; la pista explica el porqué. */
+  crearNuevaVersion: 'Nueva versión del plan',
   borrador: 'Borrador',
   activo: 'Activo',
   anterior: 'Anterior',

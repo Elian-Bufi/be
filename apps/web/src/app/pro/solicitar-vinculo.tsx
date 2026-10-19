@@ -22,12 +22,15 @@ type Envio = { tipo: 'editando' } | { tipo: 'enviando' } | { tipo: 'error'; text
 
 export function SolicitarVinculo({
   abierto,
+  areaSugerida = null,
   token,
   sesionPerdida,
   onCerrar,
   alEnviar,
 }: {
   abierto: boolean;
+  /** El área en la que trabaja el profesional, si es una sola (DL-146): viene elegida. */
+  areaSugerida?: Alcance | null;
   token: string;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
   onCerrar: () => void;
@@ -46,9 +49,12 @@ export function SolicitarVinculo({
   useEffect(() => {
     const d = dialogo.current;
     if (!d) return;
-    if (abierto && !d.open) d.showModal();
+    if (abierto && !d.open) {
+      d.showModal();
+      if (areaSugerida) setAlcance((elegida) => elegida || areaSugerida);
+    }
     if (!abierto && d.open) d.close();
-  }, [abierto]);
+  }, [abierto, areaSugerida]);
 
   // Cambiar los datos es otro intento lógico: la key de un intento incierto no se reusa con datos distintos.
   function editar(cambio: () => void) {

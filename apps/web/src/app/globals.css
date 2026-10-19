@@ -2367,6 +2367,51 @@ html:has(.acciones--fijas) {
   margin: 0.5rem 0;
 }
 
+/* DL-146: «Mis ejercicios» en grilla. Cada tarjeta, con su imagen, su nombre y su fecha; la que se edita ocupa el ancho. */
+.grilla-de-ejercicios {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 1rem;
+}
+
+.ejercicio-propio {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.ejercicio-propio .imagen-de-ejercicio {
+  width: 100%;
+  max-width: none;
+  aspect-ratio: 1;
+}
+
+.ejercicio-propio .lista__titulo,
+.ejercicio-propio .nota {
+  margin: 0;
+}
+
+.ejercicio-propio--editando {
+  grid-column: 1 / -1;
+  justify-items: stretch;
+}
+
+.ejercicio-propio__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
 .figura-de-receta figcaption {
   margin-top: 0.35rem;
 }
@@ -4695,7 +4740,8 @@ a.observacion__fila:focus-visible {
 }
 
 /* El enlace es chico a la vista y cómodo de tocar: el relleno agranda lo que se toca sin mover lo demás. */
-.indicadores-del-resumen > .encabezado-de-bloque > .boton--enlace {
+.indicadores-del-resumen > .encabezado-de-bloque > .boton--enlace,
+.indicadores-del-resumen > .encabezado-de-bloque > .pista > .boton--enlace {
   margin: -0.6rem 0;
   padding: 0.6rem 0;
 }
@@ -5318,6 +5364,62 @@ a.observacion__fila:focus-visible {
 .como-se-lee .acciones {
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+/* DL-146: el diálogo corto lleva a la Guía, a la izquierda, y se cierra a la derecha. */
+.como-se-lee .acciones.como-se-lee__acciones {
+  justify-content: space-between;
+  align-items: center;
+}
+
+/*
+ * La pista (DL-146): el texto corto que aparece al pasar el mouse por un título o una acción, o al llegarle con el
+ * teclado. Fija a la ventana (la ubica `components/pista.tsx`), con los colores de la superficie, como las lecturas de
+ * los gráficos.
+ */
+.pista {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.pista__globo {
+  position: fixed;
+  z-index: 1000;
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 1rem));
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra-suave);
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+}
+
+.pista__globo[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pista__globo:not([hidden]) {
+    animation: pista-aparece 120ms ease-out;
+  }
+}
+
+@keyframes pista-aparece {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* Un formulario corto no ocupa todo el ancho del escritorio: un desplegable de 1300 px se recorre mal con la vista. */
@@ -10517,8 +10619,13 @@ button.comida-del-dia__fila > .icono:last-child {
     width: 100%;
   }
 
-  .barra-de-revision__acciones .boton {
+  .barra-de-revision__acciones .boton,
+  .barra-de-revision__acciones > .pista {
     flex: 1 1 8rem;
+  }
+
+  .barra-de-revision__acciones > .pista > .boton {
+    width: 100%;
   }
 }
 
@@ -11278,7 +11385,7 @@ details[open] > summary:not([class])::before {
 /* ─── Refinamiento de la crítica de diseño (2026-10-15, con la decisión de Dirección) ────────────── */
 
 /* El marco, con el acceso en el primer renglón cuando hay lugar (1.400 px o más; la maqueta 01 lo dibuja ahí, con
-   «Activo» corto). El texto no se acorta: «Activo · acceso contextual» lo pide el legajo (B10-04, §28). Quién es, el
+   «Activo» corto). El texto no se acorta: el formato «estado · acceso» lo pide el legajo (B10-04, §28; desde DL-146, «Activo · con acceso»). Quién es, el
    acceso y «Actualizar» van en una grilla; si el acceso no entra en una línea, se parte en dos dentro de su lugar, sin
    empujar a los demás. Por debajo de 1.400 px sigue en su propio renglón, como antes. Los renglones miden píxeles
    enteros (9 + 44 + 50, más el borde: 104), y el acceso en una línea, 24: medidos con decimales en la ficha y en un

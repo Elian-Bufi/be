@@ -16,7 +16,7 @@ export function AyudaDelPlanDeEntrenamiento() {
     <AyudaDeVista titulo="Cómo se lee el Plan" deQue="entrenamiento-plan">
       <p className="nota">La planificación de entrenamiento, tal como la recibe el asesorado. Dice lo indicado: no lo que hizo, ni cómo le fue.</p>
       <ul className="como-se-lee__lista">
-        <Renglon muestra={<Icono nombre="candado" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="candado" tamano={20} />}>
           <strong>El plan activo es de solo lectura.</strong> Se muestra desde su instantánea: lo que se guardó al activarlo, que es lo que ve el asesorado. No se edita: para cambiarlo se crea una versión nueva, y la activa
           sigue igual hasta que actives la otra.
         </Renglon>
@@ -26,18 +26,18 @@ export function AyudaDelPlanDeEntrenamiento() {
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
           <strong>Se mira una sesión por vez.</strong> Se eligen el bloque, el microciclo —si el bloque los usa— y la sesión. Con una sola cosa para elegir, la pantalla dice su nombre; con muchas, las ofrece en una lista.
         </Renglon>
-        <Renglon muestra={<Icono nombre="reloj" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="reloj" tamano={20} />}>
           <strong>Los días de entrenamiento.</strong> Con días, cada sesión dice cuándo va, la persona ve la que le toca, puede pasarla a otro día o saltearla, y recibe los avisos de las 10 y de las 22. Sin días (<strong>«{C.sinDiaAsignado}»</strong>), el teléfono muestra todas las sesiones y la persona elige cuál hace.
         </Renglon>
         <Renglon muestra={<Icono nombre="entrenamiento" tamano={20} />}>
           <strong>Cada ejercicio es un renglón que se abre en el lugar.</strong> Plegado dice lo que piden sus series («<EnPartes texto="4 × 8–10 rep. · 47,5 kg · RIR 2 · descanso 02:00" />»). Si algo cambia de una serie a otra, no lo resume: dice
           «carga y RIR por serie», y el detalle está al abrirlo.
         </Renglon>
-        <Renglon muestra={<Icono nombre="series" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="series" tamano={20} />}>
           <strong>«{C.loQueRecibe}»</strong> es el objetivo de cada serie como lo resolvió BE: el propio de la serie o, si no tiene, el general del ejercicio. Es lo que la persona ve en el teléfono al registrar.
           «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» es eso: esa serie no tiene ese objetivo. No es un cero.
         </Renglon>
-        <Renglon muestra={<Icono nombre="carga" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="carga" tamano={20} />}>
           <strong>La carga sugerida no es el criterio de intensidad.</strong> Es una referencia que acompaña al criterio (RIR o % RM). Un ejercicio sin criterio de intensidad es válido, y la pantalla lo dice.
         </Renglon>
         <Renglon muestra={<Icono nombre="descanso" tamano={20} />}>
@@ -53,7 +53,7 @@ export function AyudaDelPlanDeEntrenamiento() {
         <Renglon muestra={<Icono nombre="borrador" tamano={20} />}>
           <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. El asesorado no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
         </Renglon>
-        <Renglon muestra={<Icono nombre="series" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="series" tamano={20} />}>
           <strong>En la versión en preparación, cada serie se escribe en una fila.</strong> En gris, lo que la serie toma de lo general del ejercicio; un valor escrito es el suyo; «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}», que se elige con la flecha de la celda, quiere decir que esa
           serie no tiene ese objetivo aunque lo general lo tenga. Lo que ves en la tabla es lo que recibe tu asesorado.
         </Renglon>

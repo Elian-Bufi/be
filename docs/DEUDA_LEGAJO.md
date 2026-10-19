@@ -149,6 +149,7 @@
 | DL-143 | Pedido de Dirección · 2026-10-17 (al probar la invitación) | 04 RF-021, RF-023 · 08 §24 (A3 como acto aparte) · 10-B02 §7 · 10-B04 §10-§14, §41 · CAND-10-CON-02 · UC-I02 E05 · DL-136 | Una persona aceptó el vínculo y autorizó al profesional, pero sin el tratamiento de datos de salud (A3) el acceso no era efectivo: la APK decía «Activo» y el profesional, «Acceso no disponible» | **INTEGRADO** 2026-10-17 (#181): el último paso A3 en el mismo recorrido, el recordatorio en Inicio y una pista general para el profesional; **Dirección eligió A** el 2026-10-18 |
 | DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
+| DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
 
 ---
 
@@ -4599,7 +4600,7 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
 - **E-2 · Las entradas.** «Empezar el plan» también en la tarjeta del área de la ficha (cuando el área no tiene nada registrado) y en el Resumen de cada área.
 - **E-3 · El verbo de cada pendiente.** El botón ya no dice «Abrir» en todas las filas: «Empezar el plan», «Seguir el borrador», «Revisar», «Ver la solicitud», «Seguir la toma». Lleva a la misma vista de antes.
 - **E-4 · La Guía del espacio profesional** (`/pro/guia`, desde el menú de la cuenta).
-  - Las once ayudas «Cómo se lee esta vista» salen de las pantallas y se leen juntas en la guía, como texto corrido.
+  - Las once ayudas «Cómo se lee esta vista» salen de las pantallas y se leen juntas en la guía, como texto corrido. **Corregido el 2026-10-19 (DL-146, G-1):** vuelven a la pantalla, cortas; la Guía las sigue teniendo enteras.
   - Nada se borra: lo que esas ayudas decían, y lo que el legajo exige poder leer (DL-113), queda en la guía.
   - También «Lo que todavía no se ofrece, y por qué», que estaba plegado en Analizar.
 - **E-5 · Menos texto en las pantallas:**
@@ -4623,13 +4624,61 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
   - «Vista parcial según tu acceso actual» aparece cuando falta un área del profesional (pausada o sin acceso), no por las áreas en las que no trabaja con esa persona.
 
 **Lo que no se hizo, y por qué:**
-- **El área ya elegida al invitar o al solicitar un vínculo** cuando el profesional trabaja en una sola: el website no sabe en cuáles trabaja. Hace falta ese dato de la API: después de la entrega.
-- **El encabezado de la ficha** (once elementos): toca las maquetas que Dirección validó el 2026-10-10. Después de la entrega.
-- **«Mis ejercicios» como grilla:** después de la entrega.
-- **«Activo · acceso contextual» (10-B04) y «Crear nueva versión a partir de esta» (DL-047):** vienen del legajo y de una decisión; cambiarlos lo decide Dirección.
+- **El área ya elegida al invitar o al solicitar un vínculo:** hecho el 2026-10-19 con DL-146 (G-3), desde los vínculos del profesional, sin un dato nuevo de la API.
+- **El encabezado de la ficha** (once elementos): toca las maquetas que Dirección validó el 2026-10-10. Sigue pendiente; DL-146 le suma las pistas.
+- **«Mis ejercicios» como grilla:** hecho el 2026-10-19 con DL-146 (G-4).
+- **«Activo · acceso contextual» (10-B04) y «Crear nueva versión a partir de esta» (DL-047):** decididos el 2026-10-19 por delegación de Dirección, con DL-146 (G-5).
 
 **Provisorio en código:** E-1 a E-7.
 
 **Condición de cierre:**
 - Dirección ratifica E-1 a E-7, o cambia las que quiera;
 - un profesional arma el primer plan de una persona nueva sin ayuda, en la prueba con profesionales del análisis.
+
+---
+
+## DL-146 — Las ayudas, cortas y en su lugar; las pistas al pasar el mouse; y lo que quedaba del análisis
+
+**Prioridad:** alta (pedido de Dirección antes de la entrega).
+
+**Documentos:**
+- **DL-145:** el análisis del espacio profesional y la Guía (E-4), que sacó las ayudas de las pantallas.
+- **DL-113 y GUIA-UX-UI I.2:** lo que el legajo exige decir queda dicho; el contexto que hace falta para decidir no se pliega.
+- **WP-ESCRITORIO-AMABLE C-04:** una sola ayuda por vista, siempre en el mismo lugar del marco.
+- **10-B04 §28 y H10-04-04:** el encabezado dice el estado del vínculo y el estado mínimo de autorización, con palabras de BE y nunca `B2=true`. Da «Activo · acceso contextual» como ejemplo de ese formato.
+- **10-B04 §41 y UC-I02 E05:** el profesional no ve la causa de «Acceso no disponible».
+- **B10-05 CAND-NUT-D y DL-047:** «Crear nueva versión a partir de esta» (UC-P10 V07).
+- **WCAG 2.2, 1.4.13** (contenido que aparece al pasar el puntero o al enfocar).
+
+**Qué pidió Dirección (2026-10-19):**
+- «Lo único que no sacaría del todo […] es cómo se lee el resumen de la ficha de ayuda. Ataquemos el problema y hagamos la corrección que decís de aclarar ahí mismo y hacerlo intuitivo, pero no sacaría la ficha de ayuda.»
+- «Si es muy larga y hay cosas que son explícitas u obvias, podemos achicarla y dejar conceptos complejos únicamente.»
+- «O mismo también podría haber ese pequeño texto que sale sobre la pantalla cuando el mouse pasa por arriba de algún título o acción.»
+- «Sé que podrás aplicar todas las correcciones de la mejor manera y con criterio profesional»: por eso entran acá lo que el análisis había dejado para después y los dos textos que esperaban su decisión.
+
+**Qué se implementó** (website y textos del dominio; la API no cambia):
+- **G-1 · La ayuda vuelve a cada pantalla, corta.** «Cómo se lee esta vista» vuelve al marco de la ficha y de cada área, en el mismo lugar de antes (C-04).
+  - El diálogo trae solo lo que no se deduce mirando: las marcas de los gráficos, «registrar no es aplicar», «sin dato no es cero», lo indicado frente a lo registrado. Son los renglones marcados `esencial`: de 2 a 7 por pantalla, contra 4 a 15 antes.
+  - Abajo, «Todo el detalle, en la Guía» lleva a la sección de esa pantalla en la Guía (`/pro/guia#ayuda-…`), que sigue entera, con los detalles plegados («De dónde sale cada hecho», «Qué trae cada vista»).
+  - *Alternativas descartadas:* dejar la ayuda solo en la Guía (Dirección quiere tenerla en la pantalla); volver a la ayuda larga (era el ruido del análisis); una versión corta escrita aparte (dos textos que se separan con el tiempo: acá es el mismo texto, en dos medidas).
+- **G-2 · Las pistas.** Un texto de una frase al pasar el mouse por una acción o un título, o al llegarle con el teclado (`components/pista.tsx`; los textos, en `COPY_PISTAS`).
+  - Están en: «Pedir información», «Nota de coordinación» y «Actualizar»; el estado del acceso de cada área; las vistas de la ficha y las secciones de cada área; «Nueva versión del plan»; «Preparar la revisión»; «Registrar» la revisión; y «Elegir indicadores».
+  - Cumplen WCAG 2.2 1.4.13: se puede pasar el mouse por encima, Escape las cierra y se quedan mientras el mouse o el foco sigan ahí. El lector de pantalla las lee como descripción del control.
+  - No llevan nada imprescindible para decidir: eso sigue en la vista (GUIA-UX-UI I.2).
+  - El estado del acceso dice qué quiere decir, sin la causa cuando BE no la muestra («Por ahora no podés ver los datos de esta área»).
+  - *Alternativas descartadas:* el atributo `title` del navegador (no aparece con el teclado, tarda, no se puede leer con el mouse encima y el lector de pantalla no lo lee siempre); una pista en cada etiqueta (sería ruido: van donde una acción tiene efectos o un término no es del oficio).
+- **G-3 · El área ya elegida al invitar o al solicitar un vínculo,** si todos los vínculos del profesional son de una misma área. No hace falta un dato nuevo de la API: alcanza con sus vínculos. Con dos o más áreas, o sin vínculos todavía, no se elige ninguna.
+  - *Alternativa descartada:* esperar que la API diga en qué áreas trabaja cada profesional (es una operación nueva, y los vínculos ya lo dicen).
+- **G-4 · «Mis ejercicios» en grilla.** Cada ejercicio es una tarjeta con su imagen, su nombre y su fecha, y «Agregar una imagen» o «Cambiar la imagen». El formulario de la imagen se abre solo en el que se edita: antes, cuatro ejercicios ocupaban 3.124 px. «Qué son tus ejercicios» pasa de plegable a una línea a la vista.
+- **G-5 · Los dos textos que esperaban la decisión de Dirección:**
+  - «Activo · acceso contextual» pasa a **«Activo · con acceso»**. Conserva el formato de 10-B04 §28 («estado del vínculo · estado mínimo de autorización»), que da el texto como ejemplo; la pista dice el alcance: «Ves lo que la persona registra en esta área mientras el vínculo y su autorización sigan vigentes».
+  - «Crear nueva versión a partir de esta» pasa a **«Nueva versión del plan»**, como «Nueva versión de objetivo» (B10-06). La pista dice por qué no es una edición: «La versión activa no se edita: la nueva parte de ella y rige recién cuando la actives».
+  - *Alternativa descartada:* dejarlos como estaban (son los dos que el análisis marcó como palabras del sistema).
+
+**Lo que no cambia:** la API; la cadena evaluación, objetivo y plan; los textos de consentimiento; la Guía, que sigue entera.
+
+**Lo que queda:** el encabezado de la ficha como lo propone el análisis (toca las maquetas validadas el 2026-10-10); los formularios de inicio (DL-144); la prueba con cinco profesionales.
+
+**Provisorio en código:** G-1 a G-5.
+
+**Condición de cierre:** Dirección ratifica G-1 a G-5, o cambia las que quiera.

@@ -38,7 +38,7 @@ export interface PersonaDelDirectorio {
   readonly sinAcceso: readonly { readonly area: string; readonly estado: string }[];
 }
 
-/** El acceso activo, con la misma regla que `estadoParaMostrar` para «Activo · acceso contextual». */
+/** El acceso activo, con la misma regla que `estadoParaMostrar` para «Activo · con acceso» (DL-146; antes, «Activo · acceso contextual»). */
 const tieneAcceso = (v: Pick<Vinculo, 'relationshipState' | 'consentState' | 'accessMode'>): boolean => v.relationshipState === 'ACEPTADO' && v.consentState === 'ACTIVE' && v.accessMode === 'CONTEXTUAL';
 
 /** De varios vínculos de un área sin acceso, cuál se dice en el resumen: el vigente antes que el pausado, y este antes que el finalizado. */
@@ -59,6 +59,17 @@ function vinculoDelDirectorio(v: Vinculo): VinculoDelDirectorio {
 }
 
 /** El estado de un vínculo en una frase: las palabras de BE, con su detalle si lo tiene. */
+/**
+ * DL-146 (Dirección, 2026-10-19; hallazgo 7 del análisis del 2026-10-18): el área en la que trabaja el profesional, si
+ * es una sola. Sale de todos sus vínculos como profesional, de cualquier estado: «Invitar a una persona» y «Solicitar
+ * vínculo» la traen elegida. Con dos o más áreas, o sin vínculos todavía, no se elige ninguna: lo decide el profesional.
+ */
+export function areaUnicaDelProfesional(vinculos: readonly Pick<Vinculo, 'scope' | 'professional'>[], profesionalId: string): Alcance | null {
+  const areas = new Set(vinculos.filter((v) => v.professional.identityId === profesionalId).map((v) => v.scope.code));
+  const [unica] = [...areas];
+  return areas.size === 1 && unica && (ALCANCES as readonly string[]).includes(unica) ? (unica as Alcance) : null;
+}
+
 export const estadoEnUnaFrase = (v: Pick<VinculoDelDirectorio, 'estado' | 'detalle'>): string => (v.detalle ? `${v.estado} · ${v.detalle}` : v.estado);
 
 /**

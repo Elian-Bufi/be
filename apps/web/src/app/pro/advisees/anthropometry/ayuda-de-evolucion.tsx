@@ -18,10 +18,10 @@ export function AyudaDeEvolucion() {
           <strong>El período y la métrica:</strong> arriba se eligen las fechas y la medición que se mira. Si una métrica no
           está en el período nuevo, se pasa a la primera y se dice.
         </Renglon>
-        <Renglon muestra={<Icono nombre="sin-datos" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="sin-datos" tamano={20} />}>
           <strong>Sin dato.</strong> {C.explicacionDeSinDato}
         </Renglon>
-        <Renglon muestra={<Icono nombre="protocolo" tamano={20} />}>
+        <Renglon esencial muestra={<Icono nombre="protocolo" tamano={20} />}>
           <strong>Comparables o no.</strong> {C.explicacionDeComparabilidad}
         </Renglon>
         <Renglon muestra={<Icono nombre="tabla" tamano={20} />}>

@@ -7,12 +7,26 @@
  * - Se abre a pedido, toma el foco, Escape lo cierra y el foco vuelve al botón.
  * - Se abre por el principio: el foco va al título. Si fuera al primer control (el botón «Cerrar», al final), una ayuda
  *   más alta que la ventana se abriría mostrando su último renglón.
+ *
+ * **Dos medidas de la misma ayuda (DL-146; Dirección, 2026-10-19: «no sacaría la ficha de ayuda… dejar conceptos complejos
+ * únicamente»).** En la pantalla, el diálogo trae solo lo que no se deduce mirando: los renglones marcados `esencial`
+ * (qué quiere decir una marca, «registrar no es aplicar», «sin dato no es cero»). Lo demás, y los detalles que se leen con
+ * tiempo, quedan en la Guía del espacio profesional (`/pro/guia`), a un clic desde el mismo diálogo. Adentro de
+ * `GuiaDeAyudas`, cada ayuda es una sección entera, con su título, sin botón ni diálogo.
  */
+import Link from 'next/link';
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icono } from './icono';
 
-/** Una explicación con su muestra al costado: lo que se ve en la pantalla, al lado de lo que significa. */
-export function RenglonDeAyuda({ muestra, children }: { muestra: ReactNode; children: ReactNode }) {
+const EnLaGuia = createContext(false);
+
+/**
+ * Una explicación con su muestra al costado: lo que se ve en la pantalla, al lado de lo que significa.
+ * `esencial`: va también en el diálogo de la pantalla. Sin esa marca, se lee solo en la Guía.
+ */
+export function RenglonDeAyuda({ muestra, esencial = false, children }: { muestra: ReactNode; esencial?: boolean; children: ReactNode }) {
+  const enLaGuia = useContext(EnLaGuia);
+  if (!enLaGuia && !esencial) return null;
   return (
     <li>
       <span className="como-se-lee__muestra" aria-hidden="true">
@@ -23,16 +37,18 @@ export function RenglonDeAyuda({ muestra, children }: { muestra: ReactNode; chil
   );
 }
 
-/**
- * La Guía del espacio profesional (DL-145; Dirección, 2026-10-18): las ayudas ya no están en cada pantalla, que tiene
- * que entenderse sola. Lo que explicaban, y lo que el legajo exige poder leer (DL-113), queda junto en `/pro/guia`.
- * Adentro de `GuiaDeAyudas`, cada ayuda es una sección con su título, sin botón ni diálogo.
- */
-const EnLaGuia = createContext(false);
+/** Lo que va solo en la Guía: los detalles que el diálogo de la pantalla deja para leer con tiempo. */
+export function SoloEnLaGuia({ children }: { children: ReactNode }) {
+  return useContext(EnLaGuia) ? <>{children}</> : null;
+}
 
+/** La Guía del espacio profesional (DL-145): las ayudas enteras, juntas y como texto corrido. */
 export function GuiaDeAyudas({ children }: { children: ReactNode }) {
   return <EnLaGuia.Provider value={true}>{children}</EnLaGuia.Provider>;
 }
+
+/** El ancla de cada ayuda en la Guía: el diálogo de la pantalla lleva directo a su sección. */
+export const anclaDeLaAyuda = (deQue: string): string => `ayuda-${deQue}`;
 
 export function AyudaDeVista({
   titulo,
@@ -40,7 +56,7 @@ export function AyudaDeVista({
   children,
 }: {
   titulo: string;
-  /** La vista de la que es la ayuda: si cambia con el diálogo abierto (Atrás del navegador), se cierra. */
+  /** La vista de la que es la ayuda: si cambia con el diálogo abierto (Atrás del navegador), se cierra. Es también su ancla en la Guía. */
   deQue: string;
   children: ReactNode;
 }) {
@@ -58,7 +74,7 @@ export function AyudaDeVista({
   }, [deQue]);
   if (enLaGuia) {
     return (
-      <section className="guia__seccion como-se-lee" aria-labelledby={`${id}-titulo`}>
+      <section className="guia__seccion como-se-lee" id={anclaDeLaAyuda(deQue)} aria-labelledby={`${id}-titulo`}>
         <h3 id={`${id}-titulo`}>{titulo}</h3>
         {children}
       </section>
@@ -75,7 +91,10 @@ export function AyudaDeVista({
           {titulo}
         </h2>
         {children}
-        <div className="acciones">
+        <div className="acciones como-se-lee__acciones">
+          <Link className="boton boton--enlace" href={`/pro/guia#${anclaDeLaAyuda(deQue)}`}>
+            Todo el detalle, en la Guía
+          </Link>
           <button type="button" className="boton boton--secundario" onClick={() => dialogo.current?.close()}>
             Cerrar
           </button>

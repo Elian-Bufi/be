@@ -16,7 +16,7 @@
  *   todos, a un clic (C-15).
  * - **Un error se dice en el resumen y en su campo** (B10-10:164-165; DL-091 punto 3): las dos áreas igual.
  */
-import { COPY_NUTRICION, COPY_REVISIONES_PROPIAS } from '@be/domain';
+import { COPY_PISTAS, COPY_NUTRICION, COPY_REVISIONES_PROPIAS } from '@be/domain';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { motivoDeFalla, textoDeFalla } from '../../../lib/fallas';
 import type { Resultado } from '../../../lib/api';
@@ -25,6 +25,7 @@ import { ControlDePeriodo } from './control-de-periodo';
 import { periodoPreparado, procedenciaDelPeriodo } from './periodo-de-la-revision';
 import { ATAJOS_DE_UN_AREA, cambiosDePeriodo, MAXIMO_DE_DIAS_DE_UN_AREA, periodoALaVista, periodoPedidoEnUnArea, type PeriodoDeUnArea } from './periodo-de-un-area';
 import { hoyEn } from './seguimiento/estado';
+import { Pista } from '../../../components/pista';
 
 /** Lo que una revisión en preparación necesita de su contexto, en las dos áreas. */
 export interface ContextoDeUnaRevision {
@@ -321,9 +322,11 @@ export function BarraDeLaRevision({ enviando, bloqueo, textoDelBoton, alCancelar
         <button type="button" className="boton boton--secundario" onClick={alCancelar} disabled={enviando}>
           Cancelar
         </button>
-        <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando} aria-disabled={bloqueo ? true : undefined} aria-describedby={bloqueo ? `${id}-motivo` : undefined}>
-          {enviando ? 'Registrando…' : textoDelBoton}
-        </button>
+        <Pista texto={COPY_PISTAS.revision.registrar}>
+          <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando} aria-disabled={bloqueo ? true : undefined} aria-describedby={bloqueo ? `${id}-motivo` : undefined}>
+            {enviando ? 'Registrando…' : textoDelBoton}
+          </button>
+        </Pista>
       </div>
     </div>
   );
