@@ -52,6 +52,7 @@ import {
 } from './contexto-citable';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
+import { evaluacionMasReciente } from '../evaluacion-reciente';
 
 interface Datos {
   readonly evaluaciones: readonly EvaluacionDeEntrenamiento[];
@@ -576,7 +577,11 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
 export function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { evaluaciones: readonly EvaluacionDeEntrenamiento[]; onEmitido: () => void; onCancelar: () => void }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
-  const [evaluacion, setEvaluacion] = useState(evaluaciones[0]?.evaluationId ?? '');
+  const [evaluacion, setEvaluacion] = useState(evaluacionMasReciente(evaluaciones));
+  // En el primer plan, el formulario se abre apenas se registra la evaluación, antes de que la lista vuelva a leerse.
+  useEffect(() => {
+    if (evaluaciones.length > 0) setEvaluacion((e) => e || evaluacionMasReciente(evaluaciones));
+  }, [evaluaciones]);
   const [enunciado, setEnunciado] = useState('');
   const [fundamento, setFundamento] = useState('');
   const [desde, setDesde] = useState(ahoraLocal());

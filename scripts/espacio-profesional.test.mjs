@@ -239,3 +239,17 @@ test('la acción principal de la ficha: revisión de la semana, después el borr
   assert.equal(rutaDeLaAccion(accionDeLaFicha(dos, HOY), 'a b'), '/pro/advisees/training?id=a%20b&vista=revisiones&preparar=1');
   assert.equal(rutaDeLaAccion(accionDeLaFicha(dominios(legible(resumen()), ajeno), HOY), 'x'), '/pro/advisees/nutrition?id=x&vista=plan');
 });
+
+// ─── La evaluación que el objetivo propone de entrada (bloque 5) ───────────────────────────────────────────────────
+
+const { evaluacionMasReciente } = await import('../apps/web/src/app/pro/advisees/evaluacion-reciente.ts');
+
+test('el objetivo propone la evaluación más reciente; sin evaluaciones, ninguna', () => {
+  const evs = [
+    { evaluationId: 'vieja', occurredAt: '2026-09-01T10:00:00.000Z' },
+    { evaluationId: 'nueva', occurredAt: '2026-10-19T09:30:00.000Z' },
+    { evaluationId: 'media', occurredAt: '2026-10-01T10:00:00.000Z' },
+  ];
+  assert.equal(evaluacionMasReciente(evs), 'nueva');
+  assert.equal(evaluacionMasReciente([]), '');
+});
