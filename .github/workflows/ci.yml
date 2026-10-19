@@ -71,6 +71,50 @@ jobs:
           path: resultados-integracion.json
           if-no-files-found: error
 
+  recorridos:
+    # Bloque 6 del encargo de consolidación (2026-10-19): Chrome contra el website (export estático, con la CSP de
+    # render.yaml) y la API locales, sobre un PostgreSQL efímero. Cada recorrido tiene sus propias cuentas sintéticas
+    # (test/navegador/LEEME.md). Corre en paralelo con los demás trabajos.
+    name: recorridos · navegador (website + API + PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: be_recorridos
+          POSTGRES_PASSWORD: be_recorridos_sintetico
+          POSTGRES_DB: be_recorridos
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U be_recorridos -d be_recorridos"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Build de la API
+        run: npm run build:api
+      - name: Build del website contra la API local de los recorridos
+        run: npm run build:web
+        env:
+          BE_API_BASE_URL: http://localhost:3101
+      - name: Recorridos (sesión, pistas, borrador, conflicto, primer plan, retorno y gráfico)
+        run: node test/navegador/correr.mjs resultados-recorridos
+        env:
+          BE_RECORRIDOS_DATABASE_URL: postgresql://be_recorridos:be_recorridos_sintetico@localhost:5432/be_recorridos
+          CHROME: /usr/bin/google-chrome
+      - name: Resultados, capturas de las fallas y registro de la API (datos sintéticos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-recorridos
+          path: resultados-recorridos
+          if-no-files-found: warn
+
   imagen-api:
     name: imagen API · migrate deploy + readiness (ASR-09)
     runs-on: ubuntu-24.04
