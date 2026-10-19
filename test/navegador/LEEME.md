@@ -13,12 +13,14 @@ Bloque 6 del encargo de consolidación del espacio profesional (2026-10-19): «u
 | `primerPlan` | Ficha nueva → «Empezar el plan» → evaluación → objetivo (propone la evaluación recién registrada) → plan. De vuelta en la ficha, la acción es «Seguir el borrador». | DL-145 y bloque 5 |
 | `retorno` | Desde la Línea de tiempo de 30 días, «Preparar la revisión de Nutrición» y después «Volver a la ficha, donde estabas»: vuelve a la misma vista y el mismo período. | Bloque 5 |
 | `grafico` | El gráfico de evolución dibuja los tres pesos a la altura de su valor, leída con las marcas del eje. El tiempo está a escala, no hay rombos (todo es comparable), la tabla dice lo mismo, e Inicio y Fin eligen la primera y la última toma. | B10-07 |
+| `primeraInvitacion` | Sin vínculos, «Invitar a una persona» no elige un área. Un área en la que la cuenta no está habilitada se rechaza en el servidor y el error queda junto al campo, que se marca y recibe el foco. Con un área habilitada, la invitación se crea. | Bloque 5 |
+| `areaSugerida` | Con vínculos en una sola de sus dos áreas, esa viene elegida y dice que es una sugerencia, también en la descripción accesible del campo. Se puede cambiar, y la invitación se crea con la otra área. | Bloque 5 |
 
 ## Cómo están hechos
 
 - **Cada recorrido tiene sus cuentas y sus datos.** `preparar.mjs` registra un profesional y una persona por recorrido, con correos nuevos en cada corrida (`@example.invalid`). Ningún recorrido usa lo que deja otro. Se pueden correr solos (`--solo`) y en cualquier orden.
 - **La habilitación profesional se declara al arrancar la API** (`BE_DEMO_PROFESIONALES`, DL-036). Por eso la API arranca dos veces: una para registrar las cuentas y otra, con esos profesionales habilitados, antes de preparar los datos y de cualquier recorrido. No es un reinicio para esconder una falla ni para vaciar un límite.
-- **Límites:** son los de siempre, salvo el de altas (`RATE_LIMIT_REGISTRO_MAX=200`), porque cada corrida registra catorce cuentas desde la misma dirección. El limitador se prueba en las pruebas de integración.
+- **Límites:** son los de siempre, salvo el de altas (`RATE_LIMIT_REGISTRO_MAX=200`), porque cada corrida registra dos cuentas por recorrido desde la misma dirección. El limitador se prueba en las pruebas de integración.
 - **Los datos pasan por la API**, como los cargaría cada persona: el profesional desde el website y la persona desde la APK. No hay SQL ni disparadores apagados.
 - **Las comprobaciones miran resultados:** la dirección, lo que dice la pantalla, lo que guardó el servidor, la cookie, el árbol de accesibilidad y, en el gráfico, dónde quedó cada punto. Un título o una leyenda no alcanzan.
 - **Una falla deja evidencia:** una captura y el texto de cada pestaña del recorrido, `resultados.json` y el registro de la API. En la CI se suben como artefacto `resultados-recorridos`.

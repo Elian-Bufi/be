@@ -389,9 +389,49 @@ async function grafico({ p, d }) {
   await p.waitForFunction((v) => document.querySelector('.detalle-de-valores')?.textContent.includes(v), { timeout: ESPERA }, String(esperados[2]).replace('.', ','));
 }
 
+/** Abre «Invitar a una persona» y devuelve el selector del área de ese diálogo. */
+async function abrirInvitar(p) {
+  await clic(p, '.espacio-profesional__invitar', dominio.COPY_INVITACION.invitar);
+  const area = await elemento(p, 'dialog[open] select');
+  return area;
+}
+
+/** Bloque 5: sin vínculos no hay área sugerida; elegir una no habilitada lo dice junto al campo, y una habilitada crea. */
+async function primeraInvitacion({ p, d }) {
+  await entrar(p, d.pro.correo);
+  const area = await abrirInvitar(p);
+  await pausa(800);
+  assert.equal(await area.evaluate((s) => s.value), '', 'sin vínculos, ninguna área elegida de entrada');
+  assert.ok(!(await p.evaluate((t) => document.querySelector('dialog[open]').innerText.includes(t), dominio.COPY_INVITACION.areaSugerida)), 'sin sugerencia');
+  // El servidor valida la habilitación real: Antropometría no está habilitada para esta cuenta.
+  await area.select('ANTROPOMETRIA');
+  await clic(p, 'dialog[open] form button[type="submit"]');
+  await p.waitForFunction((t) => document.querySelector('dialog[open] .campo__error')?.textContent.includes(t), { timeout: ESPERA }, dominio.COPY_INVITACION.areaNoHabilitada);
+  assert.equal(await area.evaluate((s) => s.getAttribute('aria-invalid')), 'true', 'el campo queda marcado');
+  assert.ok(await area.evaluate((s) => s === document.activeElement), 'el foco vuelve al área');
+  await area.select('ENTRENAMIENTO');
+  await clic(p, 'dialog[open] form button[type="submit"]');
+  await p.waitForFunction(() => !document.querySelector('dialog[open] form select'), { timeout: ESPERA });
+}
+
+/** Bloque 5: con vínculos en una sola de sus dos áreas, esa viene elegida, se dice que es una sugerencia y se puede cambiar. */
+async function areaSugerida({ p, d }) {
+  await entrar(p, d.pro.correo);
+  const area = await abrirInvitar(p);
+  await p.waitForFunction(() => document.querySelector('dialog[open] select')?.value === 'NUTRICION', { timeout: ESPERA });
+  await p.waitForFunction((t) => document.querySelector('dialog[open]').innerText.includes(t), { timeout: ESPERA }, dominio.COPY_INVITACION.areaSugerida);
+  const nodo = await p.accessibility.snapshot({ root: area, interestingOnly: false });
+  assert.ok((nodo?.description ?? '').includes(dominio.COPY_INVITACION.areaSugerida), 'la sugerencia es parte de la descripción del campo');
+  await area.select('ENTRENAMIENTO');
+  await pausa(200);
+  assert.ok(!(await p.evaluate((t) => document.querySelector('dialog[open]').innerText.includes(t), dominio.COPY_INVITACION.areaSugerida)), 'al elegir otra, deja de decir «sugerida»');
+  await clic(p, 'dialog[open] form button[type="submit"]');
+  await p.waitForFunction(() => !document.querySelector('dialog[open] form select'), { timeout: ESPERA });
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

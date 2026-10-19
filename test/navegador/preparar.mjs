@@ -17,16 +17,23 @@ export function diaMas(fecha, dias) {
 }
 const instante = (fecha, hora) => new Date(`${fecha}T${hora}:00-03:00`);
 
-/** Qué necesita cada recorrido. Las áreas son las del vínculo (y las de la habilitación del profesional). */
+/**
+ * Qué necesita cada recorrido: las áreas en que el profesional está habilitado, las de sus vínculos con la persona (por
+ * omisión, las mismas) y lo que tiene que encontrar hecho.
+ */
 export const RECORRIDOS = {
-  sesion: { alcances: ['NUTRICION'], datos: [] },
-  pistas: { alcances: ['NUTRICION'], datos: [] },
-  primerPlan: { alcances: ['NUTRICION'], datos: [] },
-  borrador: { alcances: ['NUTRICION'], datos: ['borrador'] },
-  conflicto: { alcances: ['NUTRICION'], datos: ['borrador'] },
-  retorno: { alcances: ['NUTRICION'], datos: ['plan-con-revision'] },
-  grafico: { alcances: ['ANTROPOMETRIA'], datos: ['tomas'] },
+  sesion: { habilitado: ['NUTRICION'], datos: [] },
+  pistas: { habilitado: ['NUTRICION'], datos: [] },
+  primerPlan: { habilitado: ['NUTRICION'], datos: [] },
+  borrador: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  retorno: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
+  grafico: { habilitado: ['ANTROPOMETRIA'], datos: ['tomas'] },
+  // El área sugerida al invitar (bloque 5): sin vínculos, ninguna; con vínculos en una sola de dos áreas, esa.
+  primeraInvitacion: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: [], datos: [] },
+  areaSugerida: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: ['NUTRICION'], datos: [] },
 };
+const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
 export const nombreDeLaPersona = (recorrido) => `Persona ${recorrido}`;
 export const nombreDelProfesional = (recorrido) => `Lic. Recorrido ${recorrido}`;
@@ -41,7 +48,7 @@ export async function cuentas(corrida) {
     estado[recorrido] = { pro, ase };
   }
   const demo = Object.entries(RECORRIDOS)
-    .flatMap(([recorrido, r]) => r.alcances.map((alcance) => `${estado[recorrido].pro.id}|${alcance}|SANITARIO|${nombreDelProfesional(recorrido)}`))
+    .flatMap(([recorrido, r]) => r.habilitado.map((alcance) => `${estado[recorrido].pro.id}|${alcance}|SANITARIO|${nombreDelProfesional(recorrido)}`))
     .join(';');
   return { estado, demo };
 }
@@ -121,7 +128,7 @@ export async function datos(estado) {
     await ponerNombre(ase, e.ase.nombre);
     await pedir('POST', '/me/health-data-consents', { token: ase, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
     e.vinculos = {};
-    for (const alcance of r.alcances) e.vinculos[alcance] = await vincular(pro, ase, e.ase.id, alcance);
+    for (const alcance of vinculosDe(r)) e.vinculos[alcance] = await vincular(pro, ase, e.ase.id, alcance);
 
     if (r.datos.includes('borrador')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);

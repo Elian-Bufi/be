@@ -102,7 +102,7 @@ jobs:
         run: npm run build:web
         env:
           BE_API_BASE_URL: http://localhost:3101
-      - name: Recorridos (sesión, pistas, borrador, conflicto, primer plan, retorno y gráfico)
+      - name: Recorridos (sesión, pistas, borrador, conflicto, primer plan, retorno, gráfico y área sugerida)
         run: node test/navegador/correr.mjs resultados-recorridos
         env:
           BE_RECORRIDOS_DATABASE_URL: postgresql://be_recorridos:be_recorridos_sintetico@localhost:5432/be_recorridos
