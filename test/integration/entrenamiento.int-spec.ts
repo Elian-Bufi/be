@@ -150,11 +150,27 @@ describe('UC-P14 · objetivo de entrenamiento (RF-064; API-TRN-04 a 06)', () => 
 
 // ─── RF-037 · Catálogo propio de ejercicios ─────────────────────────────────────────────────────
 
+/**
+ * Todas las páginas de una lectura del catálogo de ejercicios, siguiendo el cursor. Desde el catálogo base de wger
+ * (DL-141, tramo 2), lo sembrado ocupa varias páginas, y lo sintético de demostración, que es lo más viejo, va al final.
+ */
+async function todasLasPaginas(pedir: (cursor: string | null) => Promise<{ body: { data: Record<string, unknown>[]; page: { nextCursor: string | null } } }>) {
+  const filas: Record<string, unknown>[] = [];
+  let cursor: string | null = null;
+  do {
+    const { body } = await pedir(cursor);
+    filas.push(...body.data);
+    cursor = body.page.nextCursor;
+  } while (cursor !== null);
+  return filas;
+}
+
 describe('RF-037 · catálogo propio de ejercicios (API-TRN-13 y API-INT-TRN-01)', () => {
   it('INV-06-143 · el catálogo sembrado está rotulado como sintético, y sin zonas ni porcentajes inventados', async () => {
     const c = await fresco();
-    const r = await conSesion(app, c.pro.token).get('/api/v1/training/exercises?limit=50').expect(200);
-    const sembrados = r.body.data.filter((e: { provenance: string }) => e.provenance === 'BE_SYNTHETIC_SEED');
+    const s = conSesion(app, c.pro.token);
+    const todos = await todasLasPaginas((cursor) => s.get(`/api/v1/training/exercises?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`).expect(200));
+    const sembrados = todos.filter((e) => e.provenance === 'BE_SYNTHETIC_SEED');
     expect(sembrados).toHaveLength(12);
     for (const e of sembrados) {
       expect(e.muscleZones).toEqual([]);
@@ -167,10 +183,15 @@ describe('RF-037 · catálogo propio de ejercicios (API-TRN-13 y API-INT-TRN-01)
 
   it('la búsqueda filtra por nombre', async () => {
     const c = await fresco();
-    const r = await conSesion(app, c.pro.token).get('/api/v1/training/exercises?q=press').expect(200);
-    const nombres = r.body.data.map((e: { name: string }) => e.name).sort();
-    expect(nombres).toEqual(expect.arrayContaining(['Press con mancuernas', 'Press de banca', 'Press militar']));
-    expect(nombres.every((n: string) => n.toLowerCase().includes('press'))).toBe(true);
+    const s = conSesion(app, c.pro.token);
+    // Con el catálogo base de wger (DL-141, tramo 2), «press» trae más de una página: se recorren todas.
+    const filas = await todasLasPaginas((cursor) => s.get(`/api/v1/training/exercises?q=press&limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`).expect(200));
+    expect(filas.map((e) => e.name)).toEqual(expect.arrayContaining(['Press con mancuernas', 'Press de banca', 'Press militar']));
+    // Cada fila tiene «press» en su nombre o en el nombre alternativo con el que coincidió (DL-141 D-2: la «Prensa de
+    // piernas» es la «Leg Press» de wger). La búsqueda del website dice cuál, con las mismas filas.
+    const encontrados = await todasLasPaginas((cursor) => s.post('/api/v1/training/exercises/search').send({ q: 'press', limit: 50, ...(cursor ? { cursor } : {}) }).expect(200));
+    expect(encontrados.map((e) => e.exerciseId)).toEqual(filas.map((e) => e.exerciseId));
+    expect(encontrados.filter((e) => !`${e.name} ${e.matchedAlternativeName ?? ''}`.toLowerCase().includes('press'))).toEqual([]);
   });
 
   it('§9.8 · la carga manual entra en WP-06 con cero zonas, y es del ámbito de quien la cargó (REG-06-135)', async () => {

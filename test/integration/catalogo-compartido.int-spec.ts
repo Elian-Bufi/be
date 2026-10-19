@@ -254,6 +254,20 @@ describe('DL-141 D-1 · lo importado es de todos los profesionales, con su fuent
 
 // ─── D-2 · los nombres alternativos ──────────────────────────────────────────────────────────────────────────
 
+/**
+ * Las filas del grupo del nombre igual a lo escrito, que van primero (DL-139): las que se llaman así o tienen un nombre
+ * alternativo así. Desde los catálogos base (DL-141, tramos 2 y 3) puede haber más de una: la de demostración y la
+ * sembrada desde wger o USDA («Bench Press», «Aguacate»), y entre ellas va primero la más nueva.
+ */
+function grupoDelNombreIgual(filas: (string | null)[][], nombre: string): (string | null)[][] {
+  const igual = (n: string | null) => n !== null && n.toLowerCase() === nombre;
+  const fin = filas.findIndex((f) => !f.some(igual));
+  const grupo = fin === -1 ? filas : filas.slice(0, fin);
+  // Ninguna fila con ese nombre queda después: van todas primero.
+  expect(filas.slice(grupo.length).filter((f) => f.some(igual))).toEqual([]);
+  return grupo;
+}
+
 describe('DL-141 D-2 · los nombres alternativos encuentran el ítem, y solo las búsquedas del website dicen cuál coincidió', () => {
   it('ejercicios: el inglés y el de otro país, también en singular y con un error de tipeo; el principal gana y las palabras van en un mismo nombre; API-TRN-13 sin el campo', async () => {
     const pro = await entrenador();
@@ -261,8 +275,10 @@ describe('DL-141 D-2 · los nombres alternativos encuentran el ítem, y solo las
     const buscar = async (q: string) =>
       BusquedaDeEjerciciosResponseSchema.parse((await s.post('/api/v1/training/exercises/search').send({ q, limit: 50 }).expect(200)).body).data.map((e) => [e.name, e.matchedAlternativeName]);
 
-    // «bench press» es igual al nombre alternativo: va primero, en el grupo del nombre igual.
-    expect((await buscar('bench press'))[0]).toEqual(['Press de banca', 'Bench press']);
+    // «bench press» es igual al nombre alternativo: va primero, en el grupo del nombre igual (con el press de banca del
+    // catálogo base, que wger llama «Bench Press»).
+    const benchPress = grupoDelNombreIgual(await buscar('bench press'), 'bench press');
+    expect(benchPress).toContainEqual(['Press de banca', 'Bench press']);
     expect(await buscar('squat')).toContainEqual(['Sentadilla', 'Squat']);
     // El de otro país, y en singular dentro del plural.
     expect(await buscar('estocadas')).toContainEqual(['Zancadas', 'Estocadas']);
@@ -280,8 +296,10 @@ describe('DL-141 D-2 · los nombres alternativos encuentran el ítem, y solo las
 
     // API-TRN-13, la que lee la APK instalada: encuentra igual, sin el campo nuevo y en su forma congelada.
     const legado = (await s.get(`/api/v1/training/exercises?q=${encodeURIComponent('bench press')}`).expect(200)).body;
-    expect(legado.data[0]).toMatchObject({ name: 'Press de banca' });
-    expect(legado.data[0]).not.toHaveProperty('matchedAlternativeName');
+    const deDemostracion = (legado.data as { name: string }[]).findIndex((e) => e.name === 'Press de banca');
+    expect(deDemostracion).toBeGreaterThanOrEqual(0);
+    expect(deDemostracion).toBeLessThan(benchPress.length);
+    for (const e of legado.data) expect(e).not.toHaveProperty('matchedAlternativeName');
     expect(comoLaLeeLaApkInstalada('API-TRN-13', legado)).toEqual([]);
   });
 
@@ -291,8 +309,9 @@ describe('DL-141 D-2 · los nombres alternativos encuentran el ítem, y solo las
     const buscar = async (q: string) =>
       BusquedaEnCatalogoResponseSchema.parse((await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50 }).expect(200)).body).data.map((e) => [e.name, e.matchedAlternativeName]);
 
-    expect((await buscar('aguacate'))[0]).toEqual(['Palta', 'Aguacate']);
-    expect((await buscar('aguacates'))[0]).toEqual(['Palta', 'Aguacate']);
+    // «Aguacate» es también un nombre de la palta del catálogo base de USDA (DL-141, tramo 3): las dos van primero.
+    expect(grupoDelNombreIgual(await buscar('aguacate'), 'aguacate')).toContainEqual(['Palta', 'Aguacate']);
+    expect(grupoDelNombreIgual(await buscar('aguacates'), 'aguacate')).toContainEqual(['Palta', 'Aguacate']);
     expect(await buscar('aguacte')).toContainEqual(['Palta', 'Aguacate']);
     expect(await buscar('fresa')).toContainEqual(['Frutillas', 'Fresas']);
     // Sin tildes, como el principal.
