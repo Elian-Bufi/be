@@ -46,7 +46,7 @@ base PostgreSQL #rb.version.split(" ").at(1) con las #rb.migraciones migraciones
 - *Relaciones.* Pata de gallo (notación de ingeniería de la información): en cada extremo, el mínimo y el máximo de
   filas relacionadas. Las cardinalidades salen del esquema: una clave foránea única es «cero o uno»; si no, «cero o
   muchos».
-- *Otras vistas.* Una #id("FK") marcada con ↗ apunta a una entidad de otra vista (sección 6.5).
+- *Otras vistas.* Una #id("FK") marcada con ↗ apunta a una entidad de otra vista (apartado 6.5).
 
 == Cifras de la base
 

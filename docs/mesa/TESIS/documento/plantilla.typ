@@ -287,6 +287,8 @@
   show table: set par(justify: false)
   show table.cell.where(y: 0): set text(weight: 600, hyphenate: false)
   show raw: set text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt)
+  // Un fragmento de código corto en el texto (un nombre de archivo, una ruta) no se corta en sus guiones.
+  show raw.where(block: false): it => if it.text.len() <= 30 { box(it) } else { it }
   show link: set text(fill: azul)
   set list(indent: 4pt, body-indent: 6pt)
   set enum(indent: 4pt, body-indent: 6pt)

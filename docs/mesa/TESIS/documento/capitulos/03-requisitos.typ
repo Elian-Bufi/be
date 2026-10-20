@@ -76,7 +76,7 @@ particular:
 - *Necesidad* y *reglas*: el 04 no tiene esos campos. Se redactaron para esta tesis a partir de la obligación, del
   modelo de dominio (06), de la política de seguridad (08) y de las decisiones registradas; cuando una regla sale de
   un identificador (#id("REG-06"), #id("INV-06"), #id("DL")), se lo cita.
-- *Plataforma*: la prevista en DV-03 y la implementada, que puede ser más amplia (sección 3.6).
+- *Plataforma*: la prevista en DV-03 y la implementada, que puede ser más amplia o, en un caso, menor (apartado 3.6).
 - *Prueba*: el caso del plan de pruebas del legajo (11A), los archivos de prueba que lo ejercitan en la CI y, si la
   hay, la verificación remota o en el teléfono, con fecha. Una prueba que pasa en la CI no se presenta como
   comprobación en el ambiente remoto.
@@ -116,7 +116,7 @@ Del núcleo P0 (59 requisitos), los únicos sin implementar son los ocho del alt
 la capacidad antropométrica (#id("RF-008") a #id("RF-014") y #id("RF-067")), que Dirección dejó fuera de esta entrega:
 los profesionales de la demostración se habilitan con un servicio interno (DL-036). Otros dos están implementados en
 parte: #id("RF-017") (el perfil propio tiene un solo campo aprobado) y #id("RF-043") (la sustitución de ejercicios,
-un defecto abierto de la candidata, DL-151). La sección 3.7 detalla cada brecha.
+un defecto abierto de la candidata, DL-151). El apartado 3.7 detalla cada brecha.
 
 #{
   let letra = (verificado: "V", implementado: "I", parcial: "P", pendiente: "N", fuera: "F")

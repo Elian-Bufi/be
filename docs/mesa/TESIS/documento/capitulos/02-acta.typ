@@ -216,7 +216,7 @@ ellos declaran coautoría de un asistente de IA; hay 191 cambios integrados por 
   columns: (1fr, 1.15fr, 1.3fr),
   table.header([Rol], [Quién], [Responsabilidades y evidencia]),
   [Dirección del proyecto y autoría académica], [Elián Bufi #pendiente("confirmar nómina completa del grupo")], [Define alcance y prioridades, aprueba cada etapa por acta (ACTA-DIR-021 a 034), decide las tensiones con el legajo (DEUDA_LEGAJO) e integra los cambios. Prueba la APK en el teléfono. Evidencia: actas firmadas, decisiones registradas, autoría de los commits.],
-  [Análisis, especificación y ejecución técnica asistida], [Asistentes de IA bajo dirección del autor: Claude (Anthropic), mediante Claude Code], [Implementación, pruebas, documentación técnica y verificaciones, siempre sobre ramas y pull requests que integra la Dirección. Evidencia: coautoría declarada en 639 commits.],
+  [Análisis, especificación y ejecución técnica asistida], [Asistentes de IA bajo dirección del autor: Claude (Anthropic), mediante Claude Code], [Implementación, pruebas, documentación técnica y verificaciones, siempre sobre ramas y pull requests que integra Dirección. Evidencia: coautoría declarada en 639 commits.],
   [Producción y revisión de derivaciones de mesa], [ChatGPT y Codex (OpenAI), según los propios documentos de mesa], [DV-03 y la corrección v5 de MESA-02, con contrarrevisión cruzada. Evidencia: notas de DV-02 y del estándar de calidad de MESA-02.],
 )
 
