@@ -11739,6 +11739,24 @@ details[open] > summary:not([class])::before {
   }
 }
 
+/* Escritorio angosto (1.024 a 1.199 px): la barra entra en un renglón. A 1.024 px, «Cuenta» bajaba a un segundo renglón
+   (lo mostró la captura en tablet del recorrido de navegador `pistas`; bloque 5 del encargo de consolidación). La
+   campana cede su palabra, como en la tablet, y queda con su número y su nombre accesible; los lugares van un poco más
+   juntos y «Cuenta» conserva la suya. */
+@media (min-width: 64rem) and (max-width: 74.99rem) {
+  .encabezado {
+    column-gap: 1.25rem;
+  }
+
+  .campana-de-novedades__palabra {
+    display: none;
+  }
+
+  .campana-de-novedades {
+    padding: 0.25rem 0.6rem;
+  }
+}
+
 .novedades__lista {
   list-style: none;
   margin: 0.75rem 0 1rem;
