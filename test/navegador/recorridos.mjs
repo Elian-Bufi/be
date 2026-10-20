@@ -235,6 +235,9 @@ async function pistas({ contexto, p, d, salida }) {
   await p.setViewport({ width: 1024, height: 768 });
   await pausa(400);
   assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'en tablet no hay desplazamiento horizontal');
+  // La barra superior, en un renglón: la marca y «Cuenta» a la misma altura (a 1.024 px, «Cuenta» bajaba a otro renglón).
+  const barra = await p.evaluate(() => ({ marca: document.querySelector('.encabezado__marca').getBoundingClientRect().top, cuenta: document.querySelector('.encabezado .menu-de-cuenta').getBoundingClientRect().top }));
+  assert.ok(Math.abs(barra.marca - barra.cuenta) < 12, `la barra superior entra en un renglón a 1.024 px (${barra.marca} y ${barra.cuenta})`);
   await p.focus('.marco-de-la-ficha .menu-de-acciones__boton');
   await p.keyboard.press('Enter');
   await elemento(p, '.marco-de-la-ficha .menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Pedir información');
