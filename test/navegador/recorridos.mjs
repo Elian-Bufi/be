@@ -20,7 +20,7 @@ async function hidratado(p, selector) {
   await p.waitForFunction((s) => {
     const e = document.querySelector(s);
     return !!e && Object.keys(e).some((k) => k.startsWith('__reactProps'));
-  }, { timeout: 60_000 }, selector);
+  }, { timeout: 60_000, polling: 100 }, selector);
 }
 
 /** El elemento visible que coincide con el selector y, si se pide, contiene el texto. */
@@ -148,6 +148,9 @@ async function sesion({ contexto, p, d }) {
   await esperarCamino(p, '/login');
 
   // Un enlace directo a la ficha, sin sesión: pide entrar y después vuelve a la misma persona, con la vista y el período.
+  // La otra pestaña ya no hace falta, y esta pasa adelante: el clic espera cuadros, y una pestaña de fondo no los dibuja.
+  await p2.close();
+  await p.bringToFront();
   await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=linea&p=30`, { waitUntil: 'networkidle2' });
   await esperarCamino(p, '/login');
   await hidratado(p, '#correo');
