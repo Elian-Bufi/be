@@ -4392,7 +4392,7 @@ Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea
 - tramo 1 (D-1 y D-2) INTEGRADO el 2026-10-17 (#180), con la CI en verde;
 - tramos 2 (el catálogo base de entrenamiento, de wger: 186 ejercicios) y 3 (el de alimentos, de USDA: 385) INTEGRADOS el 2026-10-19 (#184), con la CI en verde: los datos curados, el generador, las dos migraciones, las pruebas y `docs/catalogo/FUENTES.md`;
 - D-6 en el website: la página pública «Fuentes del catálogo» (`/legal/fuentes`, enlazada desde el pie) HECHA el 2026-10-19;
-- el origen en cada fila del buscador (lo que faltaba de D-6), la correspondencia de los cortes con su fuente (D-7) y la búsqueda que tolera crecer (D-8): HECHOS el 2026-10-19 en la rama `wp-catalogo-confiable` (PR en borrador, sin integrar), por el encargo de consolidación de Dirección (bloque 4). Las fuentes para los alimentos argentinos que faltan (D-9), propuestas.
+- el origen en cada fila del buscador (lo que faltaba de D-6), la correspondencia de los cortes con su fuente (D-7) y la búsqueda que tolera crecer (D-8): HECHOS el 2026-10-19 en la rama `wp-catalogo-confiable` (#189, en borrador, sin integrar, con la CI en verde), por el encargo de consolidación de Dirección (bloque 4). Las fuentes para los alimentos argentinos que faltan (D-9), propuestas.
 
 **Qué pasaba.**
 - Un ejercicio de wger o un alimento de Open Food Facts importado (WP-08) lo veía solo quien lo importó. Otro profesional que quería el mismo lo importaba de nuevo, repetía la revisión y quedaban dos elementos.
@@ -4477,7 +4477,7 @@ Los campos nuevos van en seis operaciones del website: la APK instalada no las u
   - *Alternativa descartada:* retirarlo. Las instantáneas no se reescriben (REG-06-112), así que no cambia nada de lo ya citado, pero confunde a la cohorte.
 - **D-6 · Las fuentes, a la vista:** lo importado ya dice su proveedor y su fecha donde se elige, y su licencia al consultarlo. `docs/catalogo/FUENTES.md` reúne las atribuciones que piden las licencias: la cita de USDA y, ejercicio por ejercicio, cada texto de wger con su licencia y su autoría (o que wger no la declara). Se genera desde los datos, así que no se desincroniza. Falta el website: la página «Fuentes del catálogo», que sale de ese documento, y la licencia en cada fila del buscador («wger · CC BY-SA 4.0», «USDA FoodData Central · dominio público»).
 
-**La correspondencia con la fuente, el origen en la fila y la búsqueda que crece** (encargo de consolidación de Dirección del 2026-10-19, bloque 4; rama `wp-catalogo-confiable`, en borrador). Todo espera ratificación:
+**La correspondencia con la fuente, el origen en la fila y la búsqueda que crece** (encargo de consolidación de Dirección del 2026-10-19, bloque 4; #189, rama `wp-catalogo-confiable`, en borrador). Todo espera ratificación:
 - **D-7 · Un corte se llama como la pieza que describe su composición.** Se revisaron cuadril, entraña, vacío y bola de lomo, crudos y cocidos, contra el glosario de cortes de exportación de la SAGPyA que publica el IPCVA y las especificaciones IMPS 100 de USDA (la tabla, con la pieza, la preparación, la grasa y el fundamento de cada uno, está en `docs/catalogo/FUENTES.md`):
   - «Cuadril, magro, crudo/asado» pasa a «Cuadril sin colita (top sirloin), magro, crudo/asado», con la correspondencia **aproximada** (el top sirloin de USDA es el cuadril sin la colita, con la tapa o sin ella: SR Legacy no lo aclara);
   - «Vacío, magro y grasa, crudo/asado» pasa a «Bife de vacío, …» (el flank steak de USDA es el M. rectus abdominis, el bife de vacío del glosario; el vacío entero suma el transverso, los oblicuos y más grasa, y SR Legacy no lo publica);
@@ -4547,7 +4547,7 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
 
 **Lo que queda:**
 - **D-6:** la página «Fuentes del catálogo» (`/legal/fuentes`) y el origen en cada fila del buscador están hechos; falta, si Dirección lo decide, decir quién revisó cada importado (D-1.g).
-- **Integrar** la rama `wp-catalogo-confiable` (D-6 en la fila, D-7 y D-8) y aplicar su migración en test: el encargo no autoriza publicar.
+- **Integrar** #189 (D-6 en la fila, D-7 y D-8) y aplicar su migración en test: el encargo no autoriza publicar.
 - «Arrachera» (MX), sin una fuente de cortes mexicana que la confirme (D-7.b).
 - En la base de test, un ejercicio de wger que algún profesional ya haya importado no se duplica: queda el suyo, con los nombres del catálogo base (D-3.e).
 - Agregar y retirar nombres alternativos desde el website (D-2.b), y decidir quién puede corregir un ítem que es de todos (D-1.c): hoy un ítem del catálogo base no se corrige desde la aplicación.
