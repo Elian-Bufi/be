@@ -10,10 +10,10 @@
 <text x="54" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
 <path d="M 16 431.5 L 45 431.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 39 434.86 L 46 431.5 L 39 428.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
 <text x="54" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include» o «extend»</text>
-<rect x="332.11" y="406" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
-<text x="370.11" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pendiente o fuera de alcance</text>
-<rect x="332.11" y="425" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
-<text x="370.11" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">todos incluyen además UC-I02 y UC-I03</text>
+<rect x="335.46" y="406" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="373.46" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pendiente o fuera de alcance</text>
+<rect x="335.46" y="425" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="373.46" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03 y UC-I11, en cada ficha</text>
 <path d="M 68.85 107.66 L 137 82" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 67.99 122.27 L 137 158" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 63.62 244.76 L 137 158" fill="none" stroke="#33475F" stroke-width="1.1"/>

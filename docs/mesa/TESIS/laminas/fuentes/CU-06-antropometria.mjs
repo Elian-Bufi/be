@@ -48,5 +48,5 @@ export function dibujar(L) {
       ['as', 'UC-P22'],
     ],
   });
-  leyendaDeCasos(L, { y: 400, extend: true, estados: true, columnas: 2, nota: 'UC-P19 y UC-P21 incluyen UC-I10; todos, UC-I02 y UC-I03' });
+  leyendaDeCasos(L, { y: 400, extend: true, estados: true, columnas: 2, nota: 'UC-I02, UC-I03, UC-I08 y UC-I10, en cada ficha' });
 }

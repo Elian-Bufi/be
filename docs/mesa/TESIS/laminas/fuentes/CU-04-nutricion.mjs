@@ -52,7 +52,7 @@ export function dibujar(L) {
     items: [
       { muestra: 'linea', texto: 'asociación (actor principal)' },
       { muestra: 'linea-discontinua:flecha', texto: '«include»' },
-      { muestra: 'nota', texto: 'todos incluyen además UC-I02 y UC-I03' },
+      { muestra: 'nota', texto: 'UC-I02, UC-I03 y UC-I11, en cada ficha' },
     ],
   });
 }

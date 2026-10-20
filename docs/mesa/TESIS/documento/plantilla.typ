@@ -235,6 +235,8 @@
   // Una fila de tabla o de ficha no se parte entre dos páginas.
   set table.cell(breakable: false)
   set grid.cell(breakable: false)
+  // Un identificador escrito en el texto (UC-P14, RF-051, DL-147) no se corta en su guion; uno muy largo sí puede.
+  show regex("\b(?:RF|RNF|UC|DL|ADR|TEST|API|DER|CU|CL|ARQ|COMP|INV|REG|ASR|DEC|PE|PF|WP|DV)-[A-Z0-9]+(?:-[A-Z0-9]+)*\b"): it => if it.text.len() <= 15 { box(it) } else { it }
   set heading(numbering: "1.1")
   show heading: set text(fill: tinta, hyphenate: false)
   show heading.where(level: 1): it => context {

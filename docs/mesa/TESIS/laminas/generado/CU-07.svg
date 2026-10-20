@@ -10,8 +10,8 @@
 <text x="54" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
 <path d="M 16 431.5 L 45 431.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 39 434.86 L 46 431.5 L 39 428.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
 <text x="54" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include» o «extend»</text>
-<rect x="294.22" y="406" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
-<text x="332.22" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">todos incluyen UC-I02 y UC-I03; UC-S01 corre sin HTTP</text>
+<rect x="254.95" y="406" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="292.95" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02 y UC-I03, en cada ficha; UC-S01 es un proceso interno, sin la API</text>
 <path d="M 68.58 109 L 142 78" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 66.98 125.98 L 142 176" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 69.89 321.99 L 142 330" fill="none" stroke="#33475F" stroke-width="1.1"/>

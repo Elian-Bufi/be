@@ -77,10 +77,12 @@ cuenta recién creada.
   recuadro(titulo: [Solo para la evaluación], tipo: "decision")[
     Estas credenciales son de cuentas sintéticas del ambiente de test. No dan acceso a datos de personas reales.
   ]
+  // El correo puede cortarse después de «@» y de cada «.», sin silabeo: no invade la columna de la contraseña.
+  let correo(t) = text(font: "JetBrains Mono", size: 10pt, hyphenate: false, lang: "en", t.replace("@", "@\u{200b}").replace(".", ".\u{200b}"))
   table(
-    columns: (40mm, 24mm, 1fr, 40mm),
+    columns: (32mm, 24mm, 1fr, 46mm),
     table.header([Cuenta], [Rol], [Correo], [Contraseña]),
-    ..privado.credenciales.map(c => (c.cuenta, c.rol, raw(c.correo), raw(c.clave))).flatten(),
+    ..privado.credenciales.map(c => (c.cuenta, c.rol, correo(c.correo), raw(c.clave))).flatten(),
   )
 } else {
   [Las credenciales de las cuentas de la tabla anterior figuran en la versión de evaluación de este documento.

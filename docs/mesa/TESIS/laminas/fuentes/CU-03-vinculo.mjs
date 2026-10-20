@@ -28,5 +28,5 @@ export function dibujar(L) {
       ['as', 'UC-P04'], ['as', 'UC-P05'], ['as', 'UC-P07'], ['as', 'UC-P06'], ['as', 'UC-P08'],
     ],
   });
-  leyendaDeCasos(L, { y: 418, nota: 'todos incluyen UC-I02 y UC-I03; UC-E04 (vista CU-06) invoca UC-P04' });
+  leyendaDeCasos(L, { y: 418, relaciones: false, nota: 'UC-I02, UC-I03 y UC-I11, en cada ficha; UC-E04 (vista CU-06) invoca UC-P04' });
 }

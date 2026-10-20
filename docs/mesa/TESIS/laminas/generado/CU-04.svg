@@ -8,10 +8,10 @@
 <rect x="6" y="418" width="716" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
 <path d="M 16 430.5 L 45 430.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
 <text x="54" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
-<path d="M 254.23 430.5 L 283.23 430.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 277.23 433.86 L 284.23 430.5 L 277.23 427.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
-<text x="292.23" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include»</text>
-<rect x="409.98" y="424" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
-<text x="447.98" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">todos incluyen además UC-I02 y UC-I03</text>
+<path d="M 256.47 430.5 L 285.47 430.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 279.47 433.86 L 286.47 430.5 L 279.47 427.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="294.47" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include»</text>
+<rect x="414.45" y="424" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="452.45" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03 y UC-I11, en cada ficha</text>
 <path d="M 64.37 140.42 L 148 52" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 69.6 149.74 L 148 133" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 67.23 163.1 L 148 214" fill="none" stroke="#33475F" stroke-width="1.1"/>

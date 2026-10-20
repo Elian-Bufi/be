@@ -18,7 +18,7 @@
   (titulo: "Entrenamiento", vista: "CU-05", casos: ("UC-P14", "UC-P15", "UC-P16", "UC-P17", "UC-P18", "UC-E02"),
     texto: [El mismo circuito para el entrenamiento, con la prescripción por serie y la corrección trazable de lo registrado.]),
   (titulo: "Antropometría", vista: "CU-06", casos: ("UC-P19", "UC-P20", "UC-E03", "UC-I09", "UC-P21", "UC-P22", "UC-E04"),
-    texto: [La toma de mediciones con cálculos reproducibles, su corrección o anulación sin borrar y la evolución en el tiempo. Publicar y descubrir servicios antropométricos (P1) sigue pendiente.]),
+    texto: [La toma de mediciones con cálculos reproducibles, su corrección o anulación sin borrar y la evolución en el tiempo. Publicar y descubrir servicios antropométricos (prioridad P1) sigue pendiente.]),
   (titulo: "Seguimiento y coordinación", vista: "CU-07", casos: ("UC-P23", "UC-P24", "UC-E07", "UC-P31", "UC-S01"),
     texto: [La cartera con sus pendientes, la ficha de cada persona con la línea de tiempo y las notas entre profesionales, el progreso que ve la persona y la métrica TVCC-30.]),
   (titulo: "Información, novedades y avisos", vista: "CU-08", casos: ("UC-P32", "UC-P33", "UC-P30", "UC-E08"),
@@ -27,10 +27,27 @@
     texto: [Casos incluidos que invocan varios circuitos. UC-I02 (autorización) y UC-I03 (auditoría e historia) los incluye todo caso protegido; por eso no se dibujan en cada vista y se declaran en su nota.]),
 )
 
-#let lista-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { enum(..items, tight: true, numbering: "1.") }
-#let viñetas-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { list(..items, tight: true, marker: [–]) }
+// Texto citado del 05. Se quitan marcas que dejó la extracción (la regla «---» al final de una cita, las viñetas «- »
+// y el «;» final de un ítem), las enumeraciones «; o;» se leen «o», las comillas inglesas pasan a «» y se corrigen dos
+// tildes del original. Los valores de una enumeración del código (MANTENER, REPROGRAMAR_REVISION: palabras en
+// mayúsculas de seis o más caracteres) salen en monoespaciada.
+#let texto-05(s) = {
+  if type(s) != str { return s }
+  let t = s.trim()
+  t = t.replace(regex("\s*-{3,}\s*$"), "")
+  t = t.replace(regex("(^|:\s*|;\s*)-\s+"), m => m.captures.at(0))
+  t = t.replace(regex(";\s*o;\s*"), " o ").replace(regex(";\s*y;\s*"), " y ")
+  t = t.replace(regex(";\s*$"), "")
+  t = t.replace("“", "«").replace("”", "»")
+  t = t.replace("auditoria", "auditoría").replace("método/version", "método/versión")
+  if not t.contains("`") { t = t.replace(regex("\b[A-Z][A-Z0-9_]{5,}\b"), m => "`" + m.text + "`") }
+  con-codigo(t)
+}
+
+#let lista-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { enum(..items.map(texto-05), tight: true, numbering: "1.") }
+#let viñetas-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { list(..items.map(texto-05), tight: true, marker: [–]) }
 #let alternativas(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else {
-  list(tight: true, marker: [–], ..items.map(a => [#text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, weight: 600, a.id) #a.titulo#if a.at("resultado", default: none) != none [: #a.resultado]]))
+  list(tight: true, marker: [–], ..items.map(a => [#text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, weight: 600, a.id) #texto-05(a.titulo)#if a.at("resultado", default: none) != none [: #texto-05(a.resultado)]]))
 }
 
 /// Ficha de un caso de uso con los campos que pide la escuela.
@@ -45,36 +62,39 @@
   let post = c.at("postcondiciones", default: ())
   let cierre = c.at("cierre", default: none)
   block(width: 100%, above: 14pt, below: 6pt, breakable: true, {
-    block(breakable: false, below: 4pt, stroke: (top: 1pt + azul), inset: (top: 6pt), grid(
-      columns: (auto, 1fr, auto),
-      column-gutter: 8pt,
-      align: (left + horizon, left + horizon, right + horizon),
-      text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, c.id),
-      [#text(weight: 600, size: 10.5pt, c.nombre) #text(size: 10pt, fill: tinta-suave)[· #lower(c.at("tipo", default: "")) · #c.at("canal", default: "") · 05 §#c.seccion05]],
-      estado(e.estado),
-    ))
+    block(breakable: false, below: 4pt, stroke: (top: 1pt + azul), inset: (top: 6pt), {
+      set par(justify: false)
+      grid(
+        columns: (auto, 1fr, auto),
+        column-gutter: 8pt,
+        align: (left + top, left + top, right + top),
+        text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, c.id),
+        [#text(weight: 600, size: 10.5pt, c.nombre) #box(text(size: 10pt, fill: tinta-suave)[· #lower(c.at("tipo", default: "")) · #c.at("canal", default: "") · 05~§#c.seccion05])],
+        estado(e.estado),
+      )
+    })
     set text(size: 10pt, hyphenate: false)
     set par(justify: false)
     grid(
       columns: (31mm, 1fr),
       column-gutter: 8pt,
       row-gutter: 5pt,
-      ..fila("Objetivo", c.objetivo),
+      ..fila("Objetivo", texto-05(c.objetivo)),
       ..fila("Actores", [
-        *Principal:* #if actor != none { actor } else { text(fill: tinta-suave)[el 05 no lo declara: lo ejecuta el caso que lo invoca (Sistema BE)] }
+        *Principal:* #if actor != none { texto-05(actor) } else { text(fill: tinta-suave)[no declarado en el 05; lo ejecuta el caso que lo invoca (Sistema BE)] }
         #if secundarios != none and secundarios.len() > 0 [ · *secundarios:* #secundarios.join(" ")]
       ]),
       ..fila("Disparador", if disparador != none {
-        [#disparador #if origen == "invocado" { text(fill: tinta-suave, size: 10pt)[(«invocado por», en el 05)] } else if origen == "extension" { text(fill: tinta-suave, size: 10pt)[(«condición de extensión», en el 05)] }]
+        [#texto-05(disparador) #if origen == "invocado" { text(fill: tinta-suave, size: 10pt)[(«invocado por», en el 05)] } else if origen == "extension" { text(fill: tinta-suave, size: 10pt)[(«condición de extensión», en el 05)] }]
       } else if flujo.len() > 0 {
-        [#text(fill: tinta-suave)[El 05 no declara un disparador; el flujo empieza así:] «#flujo.first()»]
+        [#text(fill: tinta-suave)[El 05 no declara un disparador; el flujo empieza así:] «#texto-05(flujo.first())»]
       } else { text(fill: tinta-suave, "No declarado en el 05.") }),
       ..fila("Precondiciones", lista-o(c.at("precondiciones", default: ()), "El 05 no declara precondiciones para este caso.")),
       ..fila("Flujo principal", lista-o(flujo, "—")),
       ..fila("Alternativas", alternativas(c.at("variantes", default: ()), "El 05 no define variantes para este caso.")),
       ..fila("Excepciones", alternativas(c.at("excepciones", default: ()), "El 05 no define excepciones para este caso.")),
       ..fila("Postcondiciones", if post != none and post.len() > 0 { viñetas-o(post, "") } else if cierre != none {
-        [#text(fill: tinta-suave)[El 05 no declara postcondiciones; su criterio de cierre dice:] «#cierre»]
+        [#text(fill: tinta-suave)[El 05 no declara postcondiciones; su criterio de cierre dice:] «#texto-05(cierre)»]
       } else { text(fill: tinta-suave, "No declaradas en el 05.") }),
       ..fila("Requisitos", c.rf.map(id).join(", ")),
       ..fila("Relaciones", {
@@ -85,7 +105,11 @@
         if ext != none and ext.len() > 0 { partes.push([lo extiende #ext.map(id).join(", ")]) }
         if partes.len() > 0 { partes.join(" · ") } else { text(fill: tinta-suave, "—") }
       }),
-      ..fila("Implementación", [#estado(e.estado)#if e.nota != "" [ #e.nota] · #c.evidencia.pruebas.len() archivo#if c.evidencia.pruebas.len() != 1 [s] de prueba #if c.evidencia.pruebas.len() == 1 [lo cita] else [lo citan]]),
+      ..fila("Implementación", {
+        let n = c.evidencia.pruebas.len()
+        let nota = e.nota.trim().trim(".", at: end)
+        [#estado(e.estado)#if nota != "" [ #con-codigo(nota)] · #if n == 0 [ningún archivo de prueba lo cita] else if n == 1 [1 archivo de prueba lo cita] else [#n archivos de prueba lo citan]]
+      }),
     )
   })
 }
@@ -125,7 +149,15 @@ se asocian a su paquete. Cada paquete indica en su solapa la vista de detalle.
 == Vistas por módulo y fichas
 
 Cada módulo se presenta con su diagrama y, a continuación, las fichas de sus casos. En cada diagrama se dibuja el actor
-principal de cada caso; los actores secundarios figuran en las fichas.
+principal de cada caso; los actores secundarios figuran en las fichas. Cuando el 05 declara varios actores principales
+(UC-P26 y UC-P28: profesional, asesorado o administrador), la vista dibuja los que actúan en ese módulo y la ficha los
+nombra a todos. Para no recargar las vistas, las inclusiones que se repiten en muchos casos (UC-I02 autorización,
+UC-I03 auditoría e historia, UC-I11 encauzar por la superficie prevista) no se dibujan: cada ficha las lista en
+«Relaciones».
+
+Las fichas citan el 05 tal como está escrito, con dos arreglos de forma: se quitan las marcas que dejó la extracción
+(viñetas y reglas de Markdown) y se corrigen tildes faltantes. Donde el 05 encadena dos ramas en un mismo flujo (por
+ejemplo, aceptar y rechazar), el paso «El caso finaliza» cierra la primera y la numeración sigue con la segunda.
 
 #for p in PAQUETES {
   heading(level: 3, p.titulo)
@@ -135,7 +167,7 @@ principal de cada caso; los actores secundarios figuran en las fichas.
     if n.ancho > 600 {
       pagina-apaisada(lamina(p.vista, "Casos de uso · " + p.titulo, fuente: "05 v0.15 y datos/estado.json"))
     } else {
-      lamina(p.vista, "Casos de uso · " + p.titulo, alcance: "Página vertical: sus nueve casos incluidos y de extensión no entran a 10 pt en una apaisada", fuente: "05 v0.15 y datos/estado.json")
+      lamina(p.vista, "Casos de uso · " + p.titulo, alcance: "Lámina vertical: sus nueve casos incluidos y de extensión no entran a 10 pt en una apaisada", fuente: "05 v0.15 y datos/estado.json")
     }
   }
   for id-caso in p.casos { ficha(caso(id-caso)) }
