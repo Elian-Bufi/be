@@ -72,6 +72,17 @@ export function useCambiosSinGuardar(hay: boolean, que: string): void {
     marco.anotarCambios(clave, que);
     return () => marco.anotarCambios(clave, null);
   }, [marco, hay, que, clave]);
+  // Bloque 3 del encargo de consolidación: recargar o cerrar la pestaña con algo sin guardar pide confirmar (el navegador
+  // muestra su propio aviso). Lo que nunca llegó al servidor no se guarda en el navegador.
+  useEffect(() => {
+    if (!hay) return;
+    const alSalir = (evento: BeforeUnloadEvent) => {
+      evento.preventDefault();
+      evento.returnValue = '';
+    };
+    window.addEventListener('beforeunload', alSalir);
+    return () => window.removeEventListener('beforeunload', alSalir);
+  }, [hay]);
 }
 
 /**

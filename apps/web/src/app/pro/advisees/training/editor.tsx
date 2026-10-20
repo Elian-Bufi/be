@@ -28,6 +28,7 @@
 import {
   COPY,
   COPY_AGENDA_DE_ENTRENAMIENTO,
+  COPY_GUARDADO,
   COPY_COMPATIBILIDAD_DE_CLIENTES,
   COPY_DE_ACTIVAR_EL_PLAN,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
@@ -56,7 +57,7 @@ import {
   type SesionHabitual,
   type ValidationIssue,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
@@ -67,7 +68,9 @@ import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { api } from '../../../../lib/api';
-import { diaSinElAnioEnCurso } from '../../../../lib/formato';
+import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
+import { useAutoguardado } from '../../../../lib/autoguardado';
+import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { hoyEn } from '../seguimiento/estado';
@@ -197,6 +200,13 @@ export function EditorDePlan({
   const [sucio, setSucio] = useState(false);
   useCambiosSinGuardar(sucio, 'el plan en preparación');
   const [guardando, setGuardando] = useState(false);
+  // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
+  // el autoguardado. «Guardado» solo con la respuesta del servidor; un 409 por versión no pisa nada.
+  const [fallo, setFallo] = useState(false);
+  const [conflicto, setConflicto] = useState(false);
+  const [guardadoA, setGuardadoA] = useState<string | null>(null);
+  // Cuántas ediciones hubo: lo que se escribe mientras viaja un guardado no se pisa con la respuesta.
+  const ediciones = useRef(0);
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deValidar?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
   const [confirmar, setConfirmar] = useState(false);
@@ -228,7 +238,13 @@ export function EditorDePlan({
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
     setAgenda(r.datos.data.agenda);
     setSucio(false);
+    setFallo(false);
+    setConflicto(false);
   }, [token, planId, sesionPerdida]);
+
+  useEffect(() => {
+    ediciones.current += 1;
+  }, [bloques, agenda, proximaRevision]);
 
   useEffect(() => {
     void cargar();
@@ -253,18 +269,22 @@ export function EditorDePlan({
   };
 
   /** Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. */
-  async function guardar(): Promise<PlanConObjetivos | null> {
+  async function guardar(automatico = false): Promise<PlanConObjetivos | null> {
     if (!version) return null;
     // Un nombre vacío o un dato que no se entiende pueden estar en otro bloque, en otra sesión o en un ejercicio
     // plegado: se listan, y cada uno lleva a su lugar. Nada de eso viaja: un dato mal escrito se guardaría como «nada».
     const impide = loQueNoDejaGuardarElEntrenamiento(bloques);
     if (impide.length > 0) {
+      // El autoguardado espera a que se pueda guardar: no abre avisos mientras se escribe.
+      if (automatico) return null;
       setProblemas(impide);
       setMensaje({ tipo: 'error', texto: avisoDeLoQueNoDejaGuardarElEntrenamiento(impide) });
       return null;
     }
+    const edicionesAlEnviar = ediciones.current;
+    const bloquesEnviados = bloques;
     setGuardando(true);
-    setMensaje(null);
+    if (!automatico) setMensaje(null);
     const actualizarObjetivo = objetivoVigente && objetivoVigente !== version.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
     // La agenda viaja siempre: la que se ve, o `null` si no quedó ninguna sesión con días (DL-137).
     const dias = agendaVigente(agenda, sesionesParaLaAgenda(bloques));
@@ -281,6 +301,21 @@ export function EditorDePlan({
     }
     if (!r.ok) {
       setGuardando(false);
+      if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+        // Si el intento anterior se perdió en la red, lo guardado puede ser lo nuestro: entonces no hay conflicto.
+        const actual = fallo ? await api.planConObjetivos(token, planId) : null;
+        if (actual?.ok && JSON.stringify(aEntrada(actual.datos.data)) === JSON.stringify(bloquesEnviados) && (actual.datos.data.nextReviewAt ?? '') === proximaRevision) {
+          setVersion(actual.datos.data);
+          setFallo(false);
+          setGuardadoA(horaDelDia(new Date()));
+          if (ediciones.current === edicionesAlEnviar) setSucio(false);
+          return actual.datos.data;
+        }
+        setConflicto(true);
+        return null;
+      }
+      setFallo(true);
+      if (automatico) return null;
       if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
       return null;
@@ -292,15 +327,31 @@ export function EditorDePlan({
     if (sesionPerdida(detalle)) return null;
     const guardada: PlanConObjetivos = detalle.ok ? detalle.datos.data : { ...version, version: r.datos.data.version, nextReviewAt: r.datos.data.nextReviewAt, objectiveVersionId: r.datos.data.objectiveVersionId };
     setVersion(guardada);
+    setFallo(false);
+    setConflicto(false);
+    setGuardadoA(horaDelDia(new Date()));
+    // Lo escrito mientras viajaba el guardado se conserva: sigue pendiente y viaja en el próximo, con la versión nueva.
+    const sinCambiosDespues = ediciones.current === edicionesAlEnviar;
     if (detalle.ok) {
-      setBloques(aEntrada(detalle.datos.data));
-      setAgenda(detalle.datos.data.agenda);
+      if (sinCambiosDespues) {
+        setBloques(aEntrada(detalle.datos.data));
+        setAgenda(detalle.datos.data.agenda);
+      }
       setNombres((n) => ({ ...n, ...nombresDe(detalle.datos.data) }));
       setImagenes((x) => ({ ...x, ...imagenesDe(detalle.datos.data) }));
     }
-    setSucio(false);
+    if (sinCambiosDespues) setSucio(false);
     return guardada;
   }
+
+  // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
+  const puedeGuardar = loQueNoDejaGuardarElEntrenamiento(bloques).length === 0;
+  const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision], [bloques, agenda, proximaRevision]);
+  useAutoguardado({
+    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla,
+    cambios: cambiosParaGuardar,
+    guardar: () => void guardar(true),
+  });
 
   async function validar() {
     const v = sucio ? await guardar() : version;
@@ -543,9 +594,7 @@ export function EditorDePlan({
           </span>
         </h2>
         <div className="editor-del-plan__acciones">
-          <p className="editor-del-plan__estado" aria-live="polite" data-estado={guardando ? 'guardando' : sucio ? 'sin-guardar' : 'guardado'}>
-            {guardando ? COPY_ENTRENAMIENTO.guardando : sucio ? COPY_ENTRENAMIENTO.cambiosSinGuardar : COPY_ENTRENAMIENTO.guardado}
-          </p>
+          <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
           <MenuDeAcciones
             rotulo="Más acciones de esta versión"
             acciones={[{ clave: 'plantilla', texto: COPY_PLANTILLAS.guardarComoPlantilla, alElegir: () => setGuardarPlantilla(true), noSePuede: antesHayQueCorregir }]}
@@ -590,6 +639,15 @@ export function EditorDePlan({
       <p className="nota editor-del-plan__que-es">
         El asesorado no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
       </p>
+      {conflicto ? (
+        <Aviso tipo="error" enfocar>
+          <p>{COPY_GUARDADO.conflicto}</p>
+          <p className="nota">{COPY_GUARDADO.cargarGuardadaAclaracion}</p>
+          <button type="button" className="boton boton--secundario" onClick={() => void cargar()}>
+            {COPY_GUARDADO.cargarGuardada}
+          </button>
+        </Aviso>
+      ) : null}
       {version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
       {bloqueadoPorLaApp ? (
         <Aviso tipo="info">

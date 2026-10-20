@@ -9364,6 +9364,24 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
+/* Bloque 3 del encargo: el estado de escritura de un borrador (components/estado-de-guardado.tsx). */
+.estado-de-guardado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.estado-de-guardado[data-estado="guardado"],
+.estado-de-guardado[data-estado="guardando"] {
+  color: var(--tenue);
+}
+
+.estado-de-guardado[data-estado="fallo"],
+.carga-de-la-toma__estado--fallo {
+  color: var(--error);
+}
+
 .editor-del-plan__que-es {
   margin: 0;
 }

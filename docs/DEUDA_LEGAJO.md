@@ -150,6 +150,7 @@
 | DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
 | DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla, la evaluación más corta y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
+| DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
 
 ---
@@ -4840,3 +4841,48 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - Dirección ratifica D-1 a D-7;
 - la verificación en el despliegue real pasa en los tres navegadores;
 - se decide si se pide un dominio propio.
+
+---
+
+## DL-148 — Los borradores: estado de escritura inequívoco, autoguardado de los planes y conflicto explícito
+
+**Prioridad:** alta (bloque 3 del encargo de consolidación, con DL-147).
+
+**Documentos:**
+- **B10-06:1145-1148:** una escritura denegada retira el contenido.
+- **DL-047:** la versión en preparación.
+- **El control de versión del 09:** `expectedVersion`; la respuesta a una versión distinta es 409.
+- **DL-147:** la sesión que sobrevive a una recarga.
+- **El inventario:** `docs/ux/BORRADORES.md`.
+
+**Qué pedía el encargo:**
+- inventariar qué persiste cada editor;
+- estados de escritura inequívocos («Guardando», «Guardado», «Pendiente de guardar», «No se pudo guardar»);
+- un autoguardado que guarde la preparación y nunca confirme un acto;
+- dos pestañas sin sobrescrituras silenciosas;
+- reintentos sin duplicados;
+- y no prometer recuperar lo que nunca se guardó.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · Cuatro estados, una regla.** `estadoDeGuardado`, en el dominio, y `EstadoDeGuardado`, en el website. «Guardado» solo con la respuesta del servidor. Van en los dos editores de plan y en la toma en preparación, que ya tenían una línea de estado.
+- **D-2 · El autoguardado de los planes en preparación** (Nutrición y Entrenamiento).
+  - Corre en la primera pausa de 4 s, solo si no falta completar nada, sin un guardado en curso, sin un conflicto pendiente y sin un acto abierto (activar, guardar como plantilla).
+  - Al volver la conexión, reintenta.
+  - Sin cambios en la API: usa el PATCH del borrador con `expectedVersion`.
+  - La toma, con mediciones que se cargan de a una, sigue guardándose con «Guardar», con los cuatro estados.
+  - *Alternativa descartada:* autoguardar la toma (cada campo sería una escritura, y una medición a medio escribir no se guarda: hay que confirmar).
+- **D-3 · El conflicto se dice.** Un 409 por versión no pisa nada. El editor dice que el borrador cambió en otra pestaña o en otro equipo, deja lo escrito a la vista para copiarlo y ofrece «Cargar la versión guardada». Si el intento anterior se perdió en la red, el editor relee antes: si lo guardado es lo suyo, no hay conflicto.
+  - *Alternativa descartada:* reintentar con la versión nueva (pisaría lo de la otra pestaña sin decirlo).
+- **D-4 · Lo escrito mientras viaja un guardado no se pisa.** Un contador de ediciones decide si la respuesta reemplaza la pantalla. Si hubo cambios, sigue pendiente y viaja en el siguiente guardado, con la versión nueva.
+- **D-5 · Salir con algo sin guardar pide confirmar** (`beforeunload`, el aviso del navegador), además de «Actualizar», que ya preguntaba.
+  - Nada se guarda en el navegador: un borrador es información de salud.
+  - *Alternativa descartada:* guardarlo en localStorage o en IndexedDB para recuperarlo después de cerrar la página (información de salud en el navegador por tiempo indefinido; el encargo lo pide evitar).
+- **D-6 · Lo que no tiene borrador, no se simula.**
+  - La revisión, la evaluación, el objetivo, el pedido de información y la nota se envían de una vez.
+  - Un borrador de revisión pide una operación nueva de la API: queda como propuesta (bloque 7 del encargo).
+
+**Pruebas:**
+- **Dominio:** `estado-de-guardado.test.ts`, la regla de los cuatro estados.
+- **Navegador en la CI** (bloque 6): retomar un borrador después de recargar y resolver un conflicto entre dos pestañas.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-6, y el recorrido de navegador de la CI pasa.
