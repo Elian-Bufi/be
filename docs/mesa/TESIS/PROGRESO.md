@@ -33,7 +33,7 @@
 | A | Cierre técnico autorizado (etapas 2 a 5 del encargo por etapas) | **hecho** (ver bitácora); falta el informe final | 2026-10-20 |
 | B | Inventario de fuentes y versión de referencia (`datos/version.json`: main `0fb1bff`) | **hecho** | 2026-10-20 |
 | C | Guía visual, motor de láminas y dos láminas patrón (ARQ-02, DER-03) | **hecho** (`c290925`) | 2026-10-20 |
-| D | Documento: 14 apartados | en curso: 1 a 6 escritos; 10, 12 y 13 en su forma final; siguen 7, 8, 9, 11, 14 y la ficha | 2026-10-20 |
+| D | Documento: 14 apartados | **hecho** (1 a 14; 10, 12 y 13 con sus campos diferidos al cierre) | 2026-10-20 |
 | E | Anexos: flujos, DFD, secuencias y estados, trazabilidad, glosario | pendiente | |
 | F | Tres pasadas de revisión | pendiente | |
 | G | Base de la defensa: guion, preguntas, demo, presentación | pendiente | |
@@ -81,7 +81,13 @@
   temporal (borrada): 113 tablas, 78 enumeraciones, 212 FK (todas RESTRICT), 125 índices únicos (34 parciales), 134
   CHECK, 275 disparadores (16 de restricción), 73 funciones de disparador. **Las cifras anotadas antes (262 disparadores,
   128 únicos, 36 parciales, 133 CHECK) estaban mal y no se usan.** Anexos con letras (A a L) y su propia numeración.
-- **Cómo seguir:** `node herramientas/casos-de-prueba.mjs` y `node herramientas/vistas-der-json.mjs` si cambian las
-  fuentes; `node laminas/construir.mjs [ID]` (láminas) y `node construir-documento.mjs --png <carpeta>` (documento y
-  páginas para revisar). Próximo: apartado 7 (clases), 8 (arquitectura: ARQ-01 contexto y ARQ-03 despliegue), 9
-  (componentes), 11 (guion de demo), 14 (usuarios) y la ficha; después los anexos A a F y H a L.
+- **2026-10-20 08:10** — Apartados 7 (clases: CL-01 dominio, CL-02 escritura protegida, CL-03 jerarquías), 8 (ARQ-01
+  contexto, ARQ-03 despliegue), 9 (COMP-01 sistema, COMP-02 módulos; 191 operaciones en 30 familias), 11 (guion de
+  demo), 14 (las 14 cuentas sintéticas entran en test, verificado sin escribir nada; credenciales solo en
+  `BE-datos-locales/tesis/privado.json`) y la ficha del apartado 1. Portada con una captura real del website en test.
+  La API de test corre 0fb1bff desde las 02:33 (Render la reconstruyó).
+- **Para Dirección:** la persona de verificación del 20/10 («Verificación QA», vínculo finalizado) aparece en la cartera de
+  Sofía como «Asesorado · bea2eb · Nutrición: Finalizado». Es historia (no se borra); para la demo conviene saberlo.
+- **Cómo seguir:** anexos A a F y H a L (G hecho), después las tres pasadas de revisión, la base de la defensa y el
+  informe final. Herramientas: `node herramientas/<herramienta>.mjs`; láminas: `node laminas/construir.mjs [ID]`;
+  documento: `node construir-documento.mjs [--png <carpeta>] [--evaluacion]`.
