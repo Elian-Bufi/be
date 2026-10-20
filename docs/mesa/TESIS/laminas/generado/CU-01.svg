@@ -7,13 +7,15 @@
 <text x="151.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[límite del sistema]</text>
 <rect x="6" y="400" width="716" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
 <path d="M 16 412.5 L 45 412.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
-<text x="54" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
+<text x="54" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación con un actor</text>
 <path d="M 16 431.5 L 45 431.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 39 434.86 L 46 431.5 L 39 428.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
 <text x="54" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include» o «extend»</text>
-<rect x="324.07" y="406" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
-<text x="362.07" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pendiente o fuera de alcance</text>
-<rect x="324.07" y="425" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
-<text x="362.07" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-P25 y UC-P26 incluyen UC-I11 y UC-I03</text>
+<rect x="207.8" y="406" width="30" height="13" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="245.8" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">sistema externo</text>
+<rect x="207.8" y="425" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="245.8" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pendiente o fuera de alcance</text>
+<rect x="424.78" y="406" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="462.78" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-P25 y UC-P26 incluyen UC-I11 y UC-I03</text>
 <path d="M 74.87 149.73 L 284 72" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 653.13 149.73 L 444 72" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 76 156 L 284 156" fill="none" stroke="#33475F" stroke-width="1.1"/>

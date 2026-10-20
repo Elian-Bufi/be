@@ -592,7 +592,11 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       const alto = cabecera + filasPorCol * 19 + (t ? 4 : 2);
       // Columnas con el ancho de su texto más largo, repartiendo el sobrante en partes iguales.
       const anchosTexto = Array.from({ length: columnas }, (_, c) => Math.max(...items.slice(c * filasPorCol, (c + 1) * filasPorCol).map((it) => ancho(it.texto, TX.texto)), 0));
-      const necesario = anchosTexto.reduce((s, a) => s + 38 + a, 0);
+      // Cada columna reserva para sus muestras el ancho de la más ancha: una muestra de texto («PK FK») o de etiqueta
+      // («chip:parcial», como la marca de estado de las láminas) puede pasar de los 30 pt de una muestra dibujada.
+      const anchoDeMuestra = (it) => (it.muestra.startsWith('texto:') ? ancho(it.muestra.slice(6), TX.idFuerte) : it.muestra.startsWith('chip:') ? ancho(it.muestra.slice(5), TX.texto) + 12 : 30);
+      const anchosMuestra = Array.from({ length: columnas }, (_, c) => Math.max(30, ...items.slice(c * filasPorCol, (c + 1) * filasPorCol).map(anchoDeMuestra)));
+      const necesario = anchosTexto.reduce((s, a, c) => s + anchosMuestra[c] + 8 + a, 0);
       const extra = Math.max(0, (w - 20 - necesario) / columnas);
       if (necesario > w - 20) textos.push({ x, y, w: 1, h: 1, tamano: 0, de: 'leyenda-desborde', texto: 'leyenda más ancha que su caja' });
       capas.marcos.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(alto)}" rx="5" fill="${C.papel}" stroke="${C.borde_suave}" stroke-width="1"/>`);
@@ -602,10 +606,15 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
         items.slice(c * filasPorCol, (c + 1) * filasPorCol).forEach((it, fil) => {
           const yi = y + cabecera + fil * 19;
           if (it.muestra.startsWith('texto:')) linea(capas.marcos, xCol, yi + 10.5, it.muestra.slice(6), TX.idFuerte, { color: C.sistema.trazo, de: 'leyenda' });
-          else capas.marcos.push(muestra(it.muestra, xCol, yi, 30, 13));
-          linea(capas.marcos, xCol + 38, yi + 10.5, it.texto, TX.texto, { color: C.tinta, de: 'leyenda' });
+          else if (it.muestra.startsWith('chip:')) {
+            const t = it.muestra.slice(5);
+            const wc = ancho(t, TX.texto) + 12;
+            capas.marcos.push(`<rect x="${r2(xCol)}" y="${r2(yi - 1)}" width="${r2(wc)}" height="15" rx="7.5" fill="${C.pendiente.relleno}" stroke="${C.pendiente.trazo}" stroke-width="1.1"/>`);
+            linea(capas.marcos, xCol + wc / 2, yi + 10.5, t, TX.texto, { ancla: 'middle', color: C.pendiente.texto, de: 'leyenda' });
+          } else capas.marcos.push(muestra(it.muestra, xCol, yi, 30, 13));
+          linea(capas.marcos, xCol + anchosMuestra[c] + 8, yi + 10.5, it.texto, TX.texto, { color: C.tinta, de: 'leyenda' });
         });
-        xCol += 38 + anchosTexto[c] + extra;
+        xCol += anchosMuestra[c] + 8 + anchosTexto[c] + extra;
       }
       return alto;
     },
@@ -628,6 +637,7 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       const wTexto = Math.max(...lineas.map((l) => ancho(l, TX.titulo)));
       const base = y + 48 * s + 16;
       // Fondo blanco detrás del nombre, como un solo bloque: una asociación que pasa por debajo no atraviesa el texto.
+      // (Probado sin el bloque, con halo letra por letra: la línea tacha el nombre; se descartó el 2026-10-20.)
       {
         const { ascendente, descendente } = alturas(TX.titulo);
         const y0 = base - ascendente - 2;

@@ -35,9 +35,9 @@
 | C | Guía visual, motor de láminas y dos láminas patrón (ARQ-02, DER-03) | **hecho** (`c290925`) | 2026-10-20 |
 | D | Documento: 14 apartados | **hecho** (1 a 14; 10, 12 y 13 con sus campos diferidos al cierre) | 2026-10-20 |
 | E | Anexos A a L: flujos, DFD, secuencias y estados, trazabilidad, diccionario, decisiones, glosario, referencias, discrepancias, convenciones | **hecho** (`5509615` y siguiente) | 2026-10-20 |
-| F | Tres pasadas de revisión | en curso: cobertura y consistencia hechas; de la visual y editorial, aplicadas la editorial y las visuales de las páginas 125 a 352 (`27d7707`); falta la de las páginas 1 a 124 | 2026-10-20 |
+| F | Tres pasadas de revisión | **hecho**: cobertura, consistencia y la visual y editorial (un revisor editorial, tres visuales y dos de cierre), aplicadas en `27d7707` a la parte 4 | 2026-10-20 |
 | G | Base de la defensa: guion, preguntas, demo, presentación | **hecho** (`dd9c2e0`; presentación en https://claude.ai/artifact/9LiufGdUTJjAbEonGT8t2U) | 2026-10-20 |
-| H | Informe final | pendiente | |
+| H | Informe final | **hecho** (`INFORME.md`) | 2026-10-20 |
 
 ## Bitácora
 
@@ -111,6 +111,18 @@
   estados más anchas, láminas DER con aire, secuencias con rótulos que entran, glosario, referencias, K19). **Corrección
   de datos:** las herramientas de operaciones no leían los identificadores API-ACC-P1-03 ni API-INT-*-0n, ni las rutas
   escritas como constantes; ahora dan 191 operaciones con detalle y 142 con caso de uso (antes 184 y 136).
-- **Cómo seguir:** aplicar la revisión visual de las páginas 1 a 124 cuando llegue, volver a compilar y mirar las
-  páginas tocadas, repetir la prueba de explicación, compilar la versión de evaluación y escribir el informe final. Herramientas: `node herramientas/<herramienta>.mjs`; láminas: `node laminas/construir.mjs [ID]`;
+- **2026-10-20 08:13** — Informe final (`INFORME.md`, `f4e824a`).
+- **2026-10-20 08:28** — Pasada 3, parte 3 (`603fef0`): la revisión de las páginas 45 a 104 (fichas de casos de uso:
+  texto del 05 sin marcas de la extracción, encabezados, concordancias, leyendas de las vistas verificadas contra las
+  fichas) y la tabla de credenciales de la versión de evaluación, revisada con los datos enmascarados. Ese revisor no
+  llegó a las páginas 1 a 44 ni al final del apartado 4: van dos revisores de cierre. PR en borrador #199 (sin
+  integrar). **Incidente:** al revisar la versión de evaluación, una salida de consola mostró un fragmento de la
+  contraseña de una cuenta sintética de test (Martín Acosta); no quedó en el repositorio ni en ningún archivo.
+- **2026-10-20 08:50** — Pasada 3, parte 4: los dos revisores de cierre (páginas 1 a 44 y final del apartado 4). Tabla de
+  la competencia en una página apaisada; identificadores, versiones, nombres en camelCase y marcas sin cortes en el
+  texto; estados de los entregables («Completo», «Diferido al cierre»); fichas de requisitos con más aire y etiquetas
+  de plataforma iguales; criterio de «Verificado en test»; relaciones del 05 que su índice no registra (K20);
+  leyendas de las vistas de casos de uso con sistemas externos y la marca «parcial».
+- **Cómo seguir:** la tesis v1 está cerrada en la rama `mesa/tesis-v1` (PR en borrador #199). Lo que falta lo completa
+  Dirección: ver `INFORME.md`, «Lo que necesita Dirección». Herramientas: `node herramientas/<herramienta>.mjs`; láminas: `node laminas/construir.mjs [ID]`;
   documento: `node construir-documento.mjs [--png <carpeta>] [--evaluacion]`.

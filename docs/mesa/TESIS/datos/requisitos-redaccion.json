@@ -373,7 +373,7 @@
     "RF-051": {
       "necesidad": "Una persona necesita encontrar un servicio antropométrico y pedir vínculo.",
       "reglas": [
-        "Sin reservas, pagos, ranking ni reputación."
+        "Sin reservas, pagos, clasificaciones ni reputación."
       ]
     },
     "RF-052": {
@@ -457,10 +457,10 @@
     }
   },
   "rnf": {
-    "RNF-SEC-001": "Punto único de decisión (PDP) en la API, igual para el website y la APK; recorridos «accesoRevocado» y «sesionRevocada» en la CI.",
+    "RNF-SEC-001": "Punto único de decisión (PDP) en la API, igual para el website y la APK; recorridos `accesoRevocado` y `sesionRevocada` en la CI.",
     "RNF-SEC-002": "Contraseñas con bcrypt de costo 10 como mínimo y una verificación señuelo cuando la cuenta no existe (08 §24.2); sesión firmada; en el website, cookie HttpOnly y Secure de un solo uso (DL-147); secretos generados por Render, nunca en el repositorio.",
     "RNF-SEC-003": "Límite de intentos de acceso en memoria de la instancia (DL-015, provisorio).",
-    "RNF-SEC-004": "Solo existe el ambiente test, con datos sintéticos; producción separada es una condición pendiente del gate del 08 §42.",
+    "RNF-SEC-004": "Solo existe el ambiente test, con datos sintéticos; producción separada es una condición pendiente para pasar a producción (08 §42).",
     "RNF-SEC-005": "Auditoría y decisiones de acceso en la misma transacción que la operación (RegistroDeAuditoria, DecisionDeAcceso).",
     "RNF-SEC-006": "Cada área en su módulo y sus tablas; el acceso se evalúa por alcance.",
     "RNF-PRI-001": "Los avisos push no llevan datos sensibles; la foto de una comida es privada.",
@@ -471,24 +471,24 @@
     "RNF-PERF-003": "Integraciones con tiempo acotado y continuidad con el catálogo propio (RF-059).",
     "RNF-AVA-001": "API en plan pago (Starter) desde el 2026-10-16: ya no se apaga por inactividad.",
     "RNF-AVA-002": "Base PostgreSQL administrada (Basic-256mb), persistente.",
-    "RNF-REC-001": "Pendiente: la restauración probada es condición del gate del 08 §42.",
+    "RNF-REC-001": "Pendiente: la restauración probada es condición para pasar a producción (08 §42).",
     "RNF-REC-002": "Idempotency-Key en las escrituras sensibles (RegistroDeIdempotencia).",
     "RNF-REL-001": "Ningún éxito antes de la respuesta del servidor: «Pendiente de guardar» frente a «Guardado a las…» (DL-148).",
-    "RNF-ACC-001": "Prueba automática de contraste en npm test y auditoría axe-core de los recorridos núcleo (42 pantallas, cero violaciones, 2026-09-24); TalkBack sin probar en un teléfono.",
-    "RNF-ACC-002": "Copy sin diagnóstico ni causalidad, fijado por pruebas de textos.",
+    "RNF-ACC-001": "Prueba automática de contraste en `npm test`. Antes, el 2026-09-24, una auditoría axe-core de los recorridos núcleo (42 pantallas, cero violaciones), que no se repitió sobre la versión de referencia. TalkBack, sin probar en un teléfono.",
+    "RNF-ACC-002": "Textos de las pantallas sin diagnóstico ni causalidad, fijados por pruebas de redacción.",
     "RNF-ACC-003": "Website diseñado para escritorio (1440, 1280 y 1024 px); APK para Android con letra del sistema.",
-    "RNF-PORT-001": "APK instalable desde las releases de GitHub; la 0.17.0-candidata.3 falta probarla en un Android físico.",
+    "RNF-PORT-001": "APK instalable desde las versiones publicadas en GitHub; falta probar la 0.17.0-candidata.3 en un Android físico.",
     "RNF-MAN-001": "Monolito modular con dominio compartido (@be/domain) como fuente única de contratos y textos.",
-    "RNF-MAN-002": "Contrato OpenAPI generado desde el dominio; guardia de trazabilidad de operaciones; prueba de lecturas congeladas de las APK (#198, sin integrar).",
-    "RNF-MAN-003": "51 migraciones aplicadas con prisma migrate deploy en la CI y en cada despliegue.",
+    "RNF-MAN-002": "Contrato OpenAPI generado desde el dominio y guardia de trazabilidad de operaciones. Pendiente: la prueba de lecturas congeladas de las APK (PR #198, en borrador).",
+    "RNF-MAN-003": "51 migraciones aplicadas con `prisma migrate deploy` en la CI y en cada despliegue.",
     "RNF-MAN-004": "Pruebas por nivel: dominio, unitarias, integración con PostgreSQL real y recorridos de navegador.",
     "RNF-OBS-001": "El registro de la API no imprime datos sensibles; los errores devuelven un sobre con código y X-Request-Id.",
-    "RNF-OBS-002": "/health, /health/live y /health/ready con la versión y el commit desplegado.",
+    "RNF-OBS-002": "`/health`, `/health/live` y `/health/ready` con la versión y el commit desplegado.",
     "RNF-OBS-003": "Trazabilidad requisito → caso → contrato → prueba (anexo F) y bloque de traza en los commits.",
     "RNF-INT-001": "Los proveedores se usan detrás de adaptadores; la caída de uno no detiene el núcleo.",
     "RNF-INT-002": "Fechas civiles de Buenos Aires para períodos; instantes en UTC; unidades con su magnitud.",
     "RNF-INT-003": "Importación controlada con revisión y normalización (WP-08).",
-    "RNF-SCA-001": "Escala de demostración: la cartera tiene un tope de 200 asesorados por profesional.",
+    "RNF-SCA-001": "Escala de demostración: cada lectura de la cartera (API-CAR-01) reúne hasta 200 asesorados; por encima, la ficha prevé otra estrategia. No limita los vínculos: la capacidad vale «sin límite» por omisión (RNF-SCA-002).",
     "RNF-SCA-002": "La capacidad existe separada de las habilitaciones y vale «sin límite» por omisión (DL-051).",
     "RNF-DAT-001": "Estados con listas blancas de transición exigidas por disparadores en la base.",
     "RNF-DAT-002": "Procedencia obligatoria en las tablas de hechos (campo procedencia).",

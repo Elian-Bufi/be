@@ -19,13 +19,13 @@ export function dibujar(L) {
   const X2 = 82 + 346 - 14 - 65;
   const pos = {
     'UC-P14': { x: X1, y: 72 }, 'UC-P15': { x: X1, y: 172 }, 'UC-P16': { x: X1, y: 294 }, 'UC-P18': { x: X1, y: 416 },
-    'UC-P17': { x: X1, y: 498 }, 'UC-E02': { x: X1, y: 568 },
+    'UC-P17': { x: X1, y: 490 }, 'UC-E02': { x: X1, y: 560 },
     'UC-I13': { x: X2, y: 72 }, 'UC-I07': { x: X2, y: 142 }, 'UC-I08': { x: X2, y: 202 }, 'UC-I04': { x: X2, y: 264 },
-    'UC-I10': { x: X2, y: 324 }, 'UC-I05': { x: X2, y: 386 }, 'UC-I06': { x: X2, y: 446 }, 'UC-I12': { x: X2, y: 568 },
+    'UC-I10': { x: X2, y: 324 }, 'UC-I05': { x: X2, y: 386 }, 'UC-I06': { x: X2, y: 446 }, 'UC-I12': { x: X2, y: 560 },
   };
   componerVistaDeCasos(L, {
     ancho: meta.ancho,
-    marco: { x: 82, y: 6, w: 346, h: 600, titulo: 'BE' },
+    marco: { x: 82, y: 6, w: 346, h: 588, titulo: 'BE' },
     anchoCaso: 130,
     posiciones: pos,
     xActorIzquierda: 40,
@@ -56,5 +56,5 @@ export function dibujar(L) {
       ['wger', 'UC-I07'],
     ],
   });
-  leyendaDeCasos(L, { y: 614, w: 470, extend: true, columnas: 2, nota: 'incluyen UC-I02 y UC-I03; UC-P14 incluye UC-I12' });
+  leyendaDeCasos(L, { y: 600, w: 470, extend: true, externos: true, parcial: true, columnas: 2, nota: 'UC-I02, UC-I03 y UC-I12 de UC-P14, en cada ficha' });
 }

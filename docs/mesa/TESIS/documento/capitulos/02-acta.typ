@@ -4,7 +4,7 @@
 
 Este apartado presenta BE antes que su técnica: qué problema aborda, para quién, con qué objetivo y hasta dónde llega.
 Se apoya en los documentos canónicos 02 (visión y alcance) y 03 (modelo de negocio), en el acta DV-02 de septiembre y
-en lo que efectivamente quedó implementado en la versión de referencia (#id("main 0fb1bff"), 20 de octubre de 2026).
+en lo que efectivamente quedó implementado en la versión de referencia (#id("main 0fb1bff"), 2026-10-20).
 Cada afirmación de alcance remite a un requisito (#id("RF")) o a una decisión registrada.
 
 == El problema y cómo lo aborda BE
@@ -83,15 +83,14 @@ interfaz, el modelo de datos, la implementación y la verificación, con trazabi
 
 == Alcance
 
-El alcance se describe por capacidades, con estados que este documento nunca mezcla: *implementado* (está en la
-versión de referencia, completo o en parte), *aprobado pendiente* (está en el legajo y no se construyó), *fuera de
-alcance* (Dirección lo dejó fuera de esta entrega) y *propuesta* (no aprobado). El detalle por requisito y su
-evidencia están en el apartado 3.
+El alcance se describe por capacidades, con los estados del apartado 1.4. Cada fila lleva el estado de la mayor parte
+de la capacidad y nombra aparte, con su requisito, lo que está parcial, pendiente o fuera de alcance. Lo que no está
+aprobado son *propuestas* y va al final. El detalle por requisito y su evidencia están en el apartado 3.
 
 #table(
   columns: (34mm, 33mm, 21mm, 1fr),
   table.header([Capacidad], [Requisitos], [Superficie], [Estado en la versión de referencia]),
-  [Identidad, sesión y cuenta], [#id("RF-001") a #id("RF-007"), #id("RF-069")], [W · A], [#estado("implementado") Acceso con Google; la sesión del website sobrevive a una recarga. Fuera de alcance: recuperar el acceso (#id("RF-005")).],
+  [Identidad, sesión y cuenta], [#id("RF-001") a #id("RF-007"), #id("RF-069")], [W · A], [#estado("implementado") Acceso con Google; la sesión del website sobrevive a una recarga. Parcial: vincular métodos de acceso (#id("RF-004")). Fuera de alcance: recuperar el acceso (#id("RF-005")).],
   [Alta y verificación de profesionales; administración], [#id("RF-008") a #id("RF-014"), #id("RF-067"), #id("RF-068")], [W], [#estado("fuera") Los profesionales de prueba se habilitan con un servicio interno (DL-036). Pendiente: las incidencias administrativas (#id("RF-068"), prioridad P1), que dependen del rol de administración.],
   [Vínculo, consentimiento y autorización], [#id("RF-015"), #id("RF-017") a #id("RF-025")], [W · A], [#estado("implementado") Invitación por enlace, código o QR. Parcial: el perfil propio tiene un solo campo (#id("RF-017")).],
   [Circuito de nutrición], [#id("RF-026") a #id("RF-035")], [W · A], [#estado("implementado") Con recetas propias y catálogo de USDA.],
@@ -146,11 +145,11 @@ están en el apartado 8 (registros de decisión de arquitectura).
 == Análisis de mercado
 
 *Hechos (con su fuente).* El Censo Nacional de Profesionales en Nutrición 2023 de FAGRAN relevó un universo de 16.507
-profesionales matriculados o asociados en sus 24 entidades miembro; respondieron 9.721 (59 %). El lugar de trabajo más
-mencionado fue el consultorio particular (43,8 %) y el 56 % de quienes trabajaban tenía más de un empleo [C52]. El
+profesionales matriculados o asociados en sus 24 entidades miembro; respondieron 9.721 (59~%). El lugar de trabajo más
+mencionado fue el consultorio particular (43,8~%) y el 56~% de quienes trabajaban tenía más de un empleo [C52]. El
 censo no cubre todo el país (Tucumán no participó y la asociación es voluntaria). Del lado de la demanda, la 4.ª
-Encuesta Nacional de Factores de Riesgo (INDEC, 2018) midió exceso de peso en el 66,1 % de las personas de 18 años o
-más y actividad física baja en el 44,2 % [C53]. Para gimnasios y entrenadores no se encontraron datos defendibles:
+Encuesta Nacional de Factores de Riesgo (INDEC, 2018) midió exceso de peso en el 66,1~% de las personas de 18 años o
+más y actividad física baja en el 44,2~% [C53]. Para gimnasios y entrenadores no se encontraron datos defendibles:
 solo estimaciones privadas citadas por la prensa, sin el informe original.
 
 *Inferencias (no son hechos de las fuentes).* Un profesional de la nutrición que trabaja en consultorio propio y en más
@@ -165,17 +164,19 @@ el encuadre, sin precios fijados. La validación prevista es la prueba con profe
 
 == Comparación con la competencia
 
-Se relevaron el 20 de octubre de 2026 nueve productos en sus fuentes primarias (sitio oficial, centro de ayuda,
+Se relevaron el 2026-10-20 nueve productos en sus fuentes primarias (sitio oficial, centro de ayuda,
 términos): los cinco del acta de septiembre, que siguen en línea (Hexfit cambió de dirección), y cuatro nuevos, entre
 ellos uno argentino. La regla de lectura es estricta: «—» significa *no encontrado en las páginas consultadas*, no
 «no lo tiene»; «sí\*» significa sí, con alcance limitado. Las citas textuales y los localizadores están en
 `docs/mesa/TESIS/fuentes/COMPETENCIA-2026-10-20.md`.
 
+#pagina-apaisada[
+#set text(hyphenate: false)
 #figure(
   kind: table,
   caption: [Comparación de funciones publicadas (consulta del 2026-10-20). Los números entre corchetes remiten a la bibliografía del anexo J.],
   table(
-    columns: (1.25fr, auto, auto, auto, auto, auto, auto, auto),
+    columns: (56mm, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
     align: (left, center, center, center, center, center, center, center),
     table.header([Producto], [App o portal], [Varios profesionales], [Control del titular], [Historial o versiones], [Nutrición y entren.], [Antropometría], [Declara IA o puntajes]),
     [Nutrium [C1–C5]], [sí], [sí\*], [—], [—], [sí\*], [sí], [sí],
@@ -186,10 +187,11 @@ ellos uno argentino. La regla de lectura es estricta: «—» significa *no enco
     [ABC Trainerize [C32–C38]], [sí], [no#super[a]], [—], [sí\*], [sí], [sí], [sí],
     [TrueCoach [C39–C43]], [sí], [sí\*], [—], [sí\*], [sí\*], [sí], [sí],
     [Everfit [C44–C49]], [sí], [sí], [—], [sí\*], [sí], [sí], [sí],
-    [MediFlow, Argentina [C50–C51]], [sí], [sí\*], [—], [sí], [—], [sí], [sí],
+    [MediFlow, Argentina #box[[C50–C51]]], [sí], [sí\*], [—], [sí], [—], [sí], [sí],
     table.cell(colspan: 8, align: left, text(size: 10pt)[#super[a] La fuente lo niega: «As of now, the platform does not support this feature» [C33]. En «Declara IA o puntajes», «sí» significa que la fuente menciona generación automática, IA o puntajes; varios productos aclaran que el profesional revisa lo generado.]),
   ),
 )
+]
 
 *Lectura.* La documentación pública muestra solapamiento funcional amplio: todos ofrecen una aplicación o portal para
 el cliente y casi todos permiten trabajar en equipo con permisos. En el eje del control del titular no se encontró, en
@@ -207,7 +209,7 @@ profesionales; una comparación empírica exigiría cuentas de prueba en cada pr
 == Roles del equipo y responsabilidades
 
 Las responsabilidades se atribuyen solo con evidencia. El historial de Git de la versión de referencia tiene 852
-commits entre el 16 de septiembre y el 20 de octubre de 2026, todos con la cuenta del autor como responsable, y 639 de
+commits entre el 2026-09-16 y el 2026-10-20, todos con la cuenta del autor como responsable, y 639 de
 ellos declaran coautoría de un asistente de IA; hay 191 cambios integrados por pull request.
 
 #table(

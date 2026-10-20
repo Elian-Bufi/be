@@ -7,7 +7,8 @@
 #let red = json("../../datos/requisitos-redaccion.json")
 #let rnf = csv("../../../MESA_02/DV-03/DV-03_RNF_POR_CATEGORIA.csv").slice(1)
 
-#let nombre-plataforma = (W: "Website", A: "APK", S: "API (sin pantalla propia)")
+#let nombre-plataforma = (W: "website", A: "APK", S: "API (sin pantalla propia)")
+#let canal-previsto = (WEBSITE: "website", APK: "APK", TRANSVERSAL: "compartida")
 #let plataformas(p) = if p == "" { "—" } else { p.clusters().map(c => nombre-plataforma.at(c)).join(" · ") }
 #let corto(ruta) = ruta.split("/").last().replace(regex("\.(int-spec|spec|test)\.(ts|tsx|mjs|cjs)$"), "").replace(regex("\.mjs$"), "")
 #let pruebas-de(r) = {
@@ -26,12 +27,13 @@
     (if x.tipo == "telefono" { "Teléfono " } else { "Test " }) + x.fecha + " (" + v + ")"
   })
   block(breakable: false, width: 100%, above: 10pt, below: 4pt, stroke: (top: 0.8pt + borde), inset: (top: 6pt), {
+    set par(justify: false)
     grid(
       columns: (auto, 1fr, auto),
       column-gutter: 8pt,
-      align: (left + horizon, left + horizon, right + horizon),
+      align: (left + top, left + top, right + top),
       text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, r.id),
-      text(weight: 600, size: 10.5pt, r.titulo),
+      text(weight: 600, size: 10.5pt, hyphenate: false, r.titulo),
       estado(e.estado),
     )
     v(3pt)
@@ -40,20 +42,20 @@
     grid(
       columns: (31mm, 1fr),
       column-gutter: 8pt,
-      row-gutter: 4.5pt,
+      row-gutter: 7pt,
       text(fill: tinta-suave, "Actor"), [#r.actor · prioridad #r.prioridad.slice(0, 2)],
       text(fill: tinta-suave, "Necesidad"), d.necesidad,
       text(fill: tinta-suave, "Comportamiento"), con-codigo(r.obligacion),
       text(fill: tinta-suave, "Reglas"), list(..d.reglas, tight: true, marker: [–]),
       text(fill: tinta-suave, "Aceptación"), con-codigo(r.aceptacion),
-      text(fill: tinta-suave, "Plataforma"), [Prevista: #lower(r.canal) (DV-03) · implementada: #plataformas(e.plataformas)],
+      text(fill: tinta-suave, "Plataforma"), [Prevista: #canal-previsto.at(r.canal) (DV-03) · implementada: #plataformas(e.plataformas)],
       text(fill: tinta-suave, "Caso de uso"), if r.ucs.len() > 0 { r.ucs.map(id).join(", ") } else { "—" },
       text(fill: tinta-suave, "Prueba"), {
         [Plan: #id(r.prueba11A)]
-        if pruebas.len() > 0 { [ · CI: #pruebas.slice(0, calc.min(4, pruebas.len())).map(p => raw(p)).join(", ")#if pruebas.len() > 4 [ y #(pruebas.len() - 4) más]] }
+        if pruebas.len() > 0 { [ · CI: #pruebas.slice(0, calc.min(4, pruebas.len())).map(p => raw(p)).join(", ")#if pruebas.len() > 4 [ y #(pruebas.len() - 4)~más]] }
         if verif.len() > 0 { [ · #verif.join(" · ")] }
       },
-      ..if e.nota != "" { (text(fill: tinta-suave, "Estado"), con-codigo(e.nota)) } else { () },
+      text(fill: tinta-suave, "Estado"), if e.nota != "" { con-codigo(e.nota) } else { text(fill: tinta-suave, "Sin observaciones.") },
     )
   })
 }
@@ -81,8 +83,11 @@ particular:
 
 Los estados son cinco: #estado("verificado") (implementado y comprobado contra el ambiente test o en el teléfono, con
 fecha), #estado("implementado") (implementado y cubierto por pruebas que pasan en la CI de la versión de referencia),
-#estado("parcial"), #estado("pendiente") (aprobado y no implementado) y #estado("fuera") (fuera de alcance declarado
-por Dirección para esta entrega). El registro de verificaciones está al final de este apartado.
+#estado("parcial") (una parte implementada y otra no), #estado("pendiente") (aprobado y no implementado) y
+#estado("fuera") (fuera de alcance declarado por Dirección para esta entrega). Una verificación cuenta para el estado
+solo si ejercita el criterio de aceptación con una versión que ya tenía esa implementación; por eso T-015, hecha con
+la 0.15.0-candidata.1, figura como antecedente y no cambia el estado. El registro de verificaciones está al final de
+este apartado. Comportamiento y aceptación se citan del 04 tal como están, con sus términos en inglés.
 
 == Resumen
 
@@ -161,8 +166,11 @@ website y la APK se comportan igual.
 == Superficie implementada distinta de la prevista
 
 Algunos requisitos que DV-03 asignó a una superficie se implementaron también en la otra, porque la persona administra
-su cuenta y sus permisos tanto en la APK como en el website. Ninguno se implementó en una superficie menor que la
-prevista.
+su cuenta y sus permisos tanto en la APK como en el website (tabla). Uno quedó en una superficie menor que la prevista:
+#id("RF-066"), la capacidad del profesional, que existe en la API sin pantalla propia y por eso está parcial. Entre las
+funciones compartidas, varias se ejercen en una sola superficie además del servidor, por lo que son: la línea de
+tiempo (#id("RF-054")) es del profesional, en el website; los avisos al teléfono (#id("RF-062")), de la APK; los cálculos
+y las integraciones (#id("RF-048"), #id("RF-059") y #id("RF-060")), del website.
 
 #{
   let mapa = (WEBSITE: "W", APK: "A", TRANSVERSAL: "WA")
@@ -173,7 +181,7 @@ prevista.
   table(
     columns: (auto, 1fr, auto, auto),
     table.header([Requisito], [Título], [Prevista], [Implementada]),
-    ..distintos.map(r => (id(r.id), r.titulo, lower(r.canal), plataformas(est.requisitos.at(r.id).plataformas))).flatten(),
+    ..distintos.map(r => (id(r.id), r.titulo, canal-previsto.at(r.canal), plataformas(est.requisitos.at(r.id).plataformas))).flatten(),
   )
 }
 
@@ -182,9 +190,9 @@ prevista.
 #table(
   columns: (auto, 1fr, auto, 1.3fr),
   table.header([Requisito], [Título], [Estado], [Motivo y referencia]),
-  ..ev.filter(r => est.requisitos.at(r.id).estado in ("parcial", "pendiente", "fuera")).map(r => {
+  ..ev.filter(r => est.requisitos.at(r.id).estado in ("parcial", "pendiente", "fuera")).sorted(key: r => (("parcial", "pendiente", "fuera").position(x => x == est.requisitos.at(r.id).estado), r.id)).map(r => {
     let e = est.requisitos.at(r.id)
-    (id(r.id), r.titulo, estado(e.estado), e.nota)
+    (id(r.id), r.titulo, estado(e.estado), con-codigo(e.nota))
   }).flatten(),
 )
 
@@ -197,10 +205,14 @@ No se presentan como exigencia de la escuela.
 #table(
   columns: (auto, 1fr, 1.45fr),
   table.header([ID], [Requisito no funcional (04)], [Evidencia en la versión de referencia]),
-  ..rnf.map(f => (id(f.at(0)), f.at(2), red.rnf.at(f.at(0), default: "—"))).flatten(),
+  ..rnf.map(f => (id(f.at(0)), f.at(2), con-codigo(red.rnf.at(f.at(0), default: "—")))).flatten(),
 )
 
 == Registro de verificaciones citadas
+
+Las verificaciones en test se hicieron sobre despliegues del 2026-10-20 que, en lo verificado, se comportan como
+#id("0fb1bff") (el apartado 5.5 da la versión de cada una). Las del teléfono se hicieron con la 0.17.0-candidata.2; la .3
+agrega a la APK el recorrido de DL-143 y el aviso «Falta un paso», que faltan probar en un teléfono.
 
 #table(
   columns: (auto, auto, 1fr),

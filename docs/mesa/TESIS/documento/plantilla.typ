@@ -39,6 +39,7 @@
   let nombres = (
     verificado: "Verificado en test",
     implementado: "Implementado",
+    completo: "Completo",
     parcial: "Parcial",
     pendiente: "Pendiente",
     fuera: "Fuera de alcance",
@@ -46,7 +47,7 @@
     propuesta: "Propuesta",
     diferido: "Diferido al cierre",
   )
-  let paleta = C.estado.at(if clave in C.estado { clave } else if clave == "propuesta" { "pendiente" } else { "fuera" })
+  let paleta = C.estado.at(if clave in C.estado { clave } else if clave == "completo" { "implementado" } else if clave == "propuesta" { "pendiente" } else { "fuera" })
   box(
     inset: (x: 4.5pt, y: 2pt),
     radius: 7pt,
@@ -79,7 +80,8 @@
   if type(s) != str { return s }
   let negritas(t) = {
     // Un identificador con guiones bajos (TRANSICIONES_DE_SOLICITUD_DE_FORMULARIO) puede cortarse después de cada uno.
-    let t = t.replace("_", "_\u{200b}")
+    // Las comillas inglesas pasan a las latinas del documento.
+    let t = t.replace("_", "_\u{200b}").replace("“", "«").replace("”", "»")
     let partes = t.split("**")
     if calc.even(partes.len()) { return t.replace("**", "") }
     for (i, p) in partes.enumerate() { if calc.odd(i) { strong(p) } else { p } }
@@ -235,8 +237,16 @@
   // Una fila de tabla o de ficha no se parte entre dos páginas.
   set table.cell(breakable: false)
   set grid.cell(breakable: false)
-  // Un identificador escrito en el texto (UC-P14, RF-051, DL-147) no se corta en su guion; uno muy largo sí puede.
-  show regex("\b(?:RF|RNF|UC|DL|ADR|TEST|API|DER|CU|CL|ARQ|COMP|INV|REG|ASR|DEC|PE|PF|WP|DV)-[A-Z0-9]+(?:-[A-Z0-9]+)*\b"): it => if it.text.len() <= 15 { box(it) } else { it }
+  // Un identificador escrito en el texto (UC-P14, RF-051, DL-147, ACTA-DIR-021, T-INV) no se corta en su guion; uno muy
+  // largo sí puede.
+  show regex("\b(?:RF|RNF|UC|DL|ADR|TEST|API|DER|CU|CL|ARQ|COMP|INV|REG|ASR|DEC|PE|PF|WP|DV|ACTA|MESA|T|V|H|E|D|B|C|Q)-[A-Z0-9]+(?:-[A-Z0-9]+)*\b"): it => if it.text.len() <= 15 { box(it) } else { it }
+  // Una versión (0.17.0-candidata.3, be-apk-0.13.2) tampoco se corta.
+  show regex("\b(?:be-apk-)?\d+\.\d+\.\d+(?:-candidata\.\d+)?\b"): it => box(it)
+  // Un nombre en camelCase o PascalCase (accesoRevocado, RegistroDeAuditoria) no se silabea: el corto no se corta y el
+  // largo puede cortarse solo antes de una mayúscula interna.
+  show regex("\b[A-Za-z][a-z0-9]+(?:[A-Z][a-z0-9]+)+\b"): it => if it.text.len() <= 20 { box(it) } else { partible(it.text) }
+  // Marcas y siglas que el silabeo partía (US-DA, Ex-po, Fire-base).
+  show regex("\b(?:USDA|Expo|Firebase|Typst|Puppeteer|Testcontainers|Android|Render)\b"): it => box(it)
   set heading(numbering: "1.1")
   show heading: set text(fill: tinta, hyphenate: false)
   show heading.where(level: 1): it => context {
@@ -261,7 +271,7 @@
   show heading.where(level: 3): it => block(above: 14pt, below: 7pt, text(size: tokens.tipografia.documento.h3 * 1pt, weight: 600, it.body))
   set figure(numbering: (..n) => context numbering(if en-anexos.get() { "A.1" } else { "1.1" }, counter(heading).get().first(), ..n))
   set figure.caption(separator: [ — ])
-  show figure.caption: set text(size: 10pt)
+  show figure.caption: set text(size: 10pt, hyphenate: false)
   show figure.caption: set par(justify: false)
   show figure.where(kind: table): set figure.caption(position: top)
   set table(

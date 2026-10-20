@@ -29,11 +29,12 @@ teléfono.
    migraciones (113 tablas, 212 claves foráneas, 275 disparadores), el contrato publicado (191 operaciones en 30
    familias), los casos de prueba (59 de DV-05: 42 pasan en la CI, 9 en parte, 8 no ejecutables) y el registro de
    decisiones. Las referencias cruzadas entre apartados, anexos y láminas se recorrieron una por una.
-3. **Calidad visual y editorial a tamaño real.** Un revisor editorial y tres visuales, uno por tramo de páginas, más
-   la presentación dibujada a 1920 × 1080. Lo que encontraron se corrigió (`27d7707` y siguientes): composición del
+3. **Calidad visual y editorial a tamaño real.** Un revisor editorial, tres visuales (uno por tramo de páginas) y dos
+   de cierre para las páginas que quedaron sin mirar, más la presentación dibujada a 1920 × 1080. Lo que encontraron se corrigió (`27d7707` y siguientes): composición del
    código sin silabeo, filas que no se parten, fichas que no quedan con el encabezado solo, láminas del DER con aire
    entre filas, rótulos de las secuencias que entran en su flecha (un control nuevo del motor lo impide de ahora en
-   más), y datos que estaban mal leídos (seis operaciones del contrato y las rutas escritas como constantes).
+   más), datos que estaban mal leídos (seis operaciones del contrato y las rutas escritas como constantes) y relaciones del
+   05 que su índice no registra, anotadas en las fichas y en el anexo K (K20).
 4. **Prueba de explicación.** Las 20 láminas principales se explican en 37 a 47 segundos cada una
    (`defensa/explicaciones.json`).
 5. **Compilación reproducible.** La misma fuente da el mismo PDF, byte a byte; nada privado ni ningún carácter de
@@ -56,10 +57,10 @@ teléfono.
 
 ## Pendientes y defectos registrados
 
-El anexo K los lista con su severidad (19 puntos). Los de severidad alta: **K1**, la candidata 0.17.0 perdió la
+El anexo K los lista con su severidad (20 puntos). Los de severidad alta: **K1**, la candidata 0.17.0 perdió la
 sustitución de ejercicios que tenía la 0.13.2 (DL-151; arreglo en un PR en borrador), y **K14**, la candidata no se
 probó entera en el teléfono y ningún aviso push llegó todavía a un teléfono real. El resto son documentos del
-repositorio que quedaron atrás de lo integrado o que el 05 no completa (K5 a K12 y K18), pruebas que faltan (K13 y
+repositorio que quedaron atrás de lo integrado o que el 05 no completa (K5 a K12, K18 y K20), pruebas que faltan (K13 y
 K15 a K17) y diferencias menores del código con su documentación o con el legajo (K2 a K4 y K19). Ninguno se corrigió en el producto: el encargo pedía
 documentar, no cambiar el producto para que coincida con un gráfico.
 

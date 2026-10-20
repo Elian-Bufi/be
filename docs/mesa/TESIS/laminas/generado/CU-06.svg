@@ -7,13 +7,13 @@
 <text x="147.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[límite del sistema]</text>
 <rect x="6" y="400" width="716" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
 <path d="M 16 412.5 L 45 412.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
-<text x="54" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
+<text x="54" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación con un actor</text>
 <path d="M 16 431.5 L 45 431.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 39 434.86 L 46 431.5 L 39 428.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
 <text x="54" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include» o «extend»</text>
-<rect x="314.23" y="406" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
-<text x="352.23" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pendiente o fuera de alcance</text>
-<rect x="314.23" y="425" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
-<text x="352.23" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03, UC-I08 y UC-I10, en cada ficha</text>
+<rect x="306.45" y="406" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="344.45" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pendiente o fuera de alcance</text>
+<rect x="306.45" y="425" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="344.45" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03, UC-I08 y UC-I10, en cada ficha</text>
 <path d="M 66.62 123.5 L 130 78" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 68.5 141.19 L 130 168" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 61.37 149.37 L 130 262" fill="none" stroke="#33475F" stroke-width="1.1"/>

@@ -42,5 +42,5 @@ export function dibujar(L) {
   L.relacion({ de: 'UC-E06', a: 'UC-P26', estilo: 'discontinuo', fin: 'flecha', palabra: 'extend', angDe: 270, angA: 90 });
   L.relacion({ de: 'UC-E09', a: 'UC-P26', estilo: 'discontinuo', fin: 'flecha', palabra: 'extend', angDe: 240, angA: 52 });
 
-  leyendaDeCasos(L, { y: 400, extend: true, estados: true, columnas: 2, nota: 'UC-P25 y UC-P26 incluyen UC-I11 y UC-I03' });
+  leyendaDeCasos(L, { y: 400, extend: true, estados: true, externos: true, columnas: 3, nota: 'UC-P25 y UC-P26 incluyen UC-I11 y UC-I03' });
 }

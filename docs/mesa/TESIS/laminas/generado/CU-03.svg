@@ -7,9 +7,9 @@
 <text x="179.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[límite del sistema]</text>
 <rect x="6" y="418" width="716" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
 <path d="M 16 430.5 L 45 430.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
-<text x="54" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
-<rect x="242.29" y="424" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
-<text x="280.29" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03 y UC-I11, en cada ficha; UC-E04 (vista CU-06) invoca UC-P04</text>
+<text x="54" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación con un actor</text>
+<rect x="234.52" y="424" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="272.52" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03 y UC-I11, en cada ficha; UC-E04 (vista CU-06) invoca UC-P04</text>
 <path d="M 79.86 158.98 L 279 52" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 79.48 176.68 L 279 295" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 649.43 197.43 L 449 52" fill="none" stroke="#33475F" stroke-width="1.1"/>

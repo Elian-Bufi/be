@@ -37,5 +37,5 @@ export function dibujar(L) {
       ['rv', 'UC-S01'],
     ],
   });
-  leyendaDeCasos(L, { y: 400, extend: true, columnas: 2, nota: 'UC-I02 y UC-I03, en cada ficha; UC-S01 es un proceso interno, sin la API' });
+  leyendaDeCasos(L, { y: 400, extend: true, soloExtend: true, columnas: 2, nota: 'UC-I02 y UC-I03, en cada ficha; UC-S01 es un proceso interno, sin la API' });
 }

@@ -34,6 +34,7 @@ por eso K18 aparece entre los documentos.
   [K11], [El 05 no declara algunos campos: el disparador de UC-P25 a UC-P33 y el actor y las postcondiciones de varios incluidos. El apartado 4 lo indica en cada ficha.], [baja], [Completar el 05 en su próxima versión (lo decide Dirección).],
   [K12], [Una fuente de la competencia cambió de dirección (Hexfit) entre la primera consulta y la del 2026-10-20.], [baja], [Ninguna: se cita la dirección vigente.],
   [K18], [La tabla de `docs/DEUDA_LEGAJO.md` quedó atrás de lo integrado en DL-012, DL-120, DL-136, DL-138, DL-140, DL-141, DL-147, DL-148 y DL-150 (dice, por ejemplo, «falta web y APK», «sin integrar» o «once recorridos»; anexo H). DL-115 es el punto K5.], [media], [Actualizar los estados al integrar cada PR.],
+  [K20], [*El índice de relaciones del 05 no coincide con sus flujos.* UC-E02 invoca UC-I12 (paso 9) y UC-I09 invoca UC-I13 sin declararlo; UC-E04 invoca UC-P04; UC-P30 nombra su extensión UC-E08 (V03) sin registrarla; y UC-P14 incluye UC-I12 sin un paso que lo invoque. El disparador de UC-I12 llama a UC-E03 «Corregir evaluación antropométrica», que el 05 nombra «Corregir o anular medición antropométrica». Las fichas muestran el índice y anotan lo que dicen los flujos; las láminas dibujan los flujos (apartado 4).], [baja], [Corregir el índice del 05 en su próxima versión (lo decide Dirección).],
 )
 
 == En la evidencia y las pruebas

@@ -38,5 +38,5 @@ export function dibujar(L) {
       ['expo', 'UC-E08'],
     ],
   });
-  leyendaDeCasos(L, { y: 400, extend: true, columnas: 2 });
+  leyendaDeCasos(L, { y: 400, extend: true, soloExtend: true, externos: true, columnas: 2, nota: 'UC-I02 y UC-I03, en cada ficha' });
 }

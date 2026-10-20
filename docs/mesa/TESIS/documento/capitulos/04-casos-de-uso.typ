@@ -24,7 +24,7 @@
   (titulo: "Información, novedades y avisos", vista: "CU-08", casos: ("UC-P32", "UC-P33", "UC-P30", "UC-E08"),
     texto: [El pedido de información pertinente con una plantilla versionada, el centro de novedades y los avisos al teléfono, que nunca llevan datos sensibles.]),
   (titulo: "Incluidos compartidos", vista: none, casos: ("UC-I02", "UC-I03", "UC-I04", "UC-I05", "UC-I06", "UC-I07", "UC-I08", "UC-I10", "UC-I12", "UC-I13"),
-    texto: [Casos incluidos que invocan varios circuitos. UC-I02 (autorización) y UC-I03 (auditoría e historia) los incluye todo caso protegido; por eso no se dibujan en cada vista y se declaran en su nota.]),
+    texto: [Casos incluidos a los que recurren varios circuitos. UC-I02 (autorización) y UC-I03 (auditoría e historia) los incluye todo caso protegido; por eso no se dibujan en cada vista y se declaran en su nota.]),
 )
 
 // Texto citado del 05. Se quitan marcas que dejó la extracción (la regla «---» al final de una cita, las viñetas «- »
@@ -39,15 +39,24 @@
   t = t.replace(regex(";\s*o;\s*"), " o ").replace(regex(";\s*y;\s*"), " y ")
   t = t.replace(regex(";\s*$"), "")
   t = t.replace("“", "«").replace("”", "»")
-  t = t.replace("auditoria", "auditoría").replace("método/version", "método/versión")
+  t = t.replace(regex(":\s*text\s+"), ": ")
+  t = t.replace("auditoria", "auditoría").replace(regex("/version\b"), "/versión")
+  t = t.replace(regex("\b(0[1-9]|1[0-2])/(0[1-9]|1[0-2])\b"), m => m.captures.at(0) + " y " + m.captures.at(1))
   if not t.contains("`") { t = t.replace(regex("\b[A-Z][A-Z0-9_]{5,}\b"), m => "`" + m.text + "`") }
   con-codigo(t)
 }
 
+#let DEL-FLUJO = (
+  "UC-E02": [también incluye #id("UC-I12") (paso 9)],
+  "UC-I09": [incluye #id("UC-I13")],
+  "UC-E04": [invoca #id("UC-P04")],
+  "UC-P30": [lo extiende #id("UC-E08") (V03)],
+)
+
 #let lista-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { enum(..items.map(texto-05), tight: true, numbering: "1.") }
 #let viñetas-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { list(..items.map(texto-05), tight: true, marker: [–]) }
 #let alternativas(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else {
-  list(tight: true, marker: [–], ..items.map(a => [#text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, weight: 600, a.id) #texto-05(a.titulo)#if a.at("resultado", default: none) != none [: #texto-05(a.resultado)]]))
+  list(tight: true, marker: [–], ..items.map(a => [#text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, weight: 600, a.id) #if a.at("resultado", default: none) != none [#texto-05(a.titulo): #texto-05(a.resultado)] else [#texto-05(con-punto(a.titulo))]]))
 }
 
 /// Ficha de un caso de uso con los campos que pide la escuela.
@@ -61,7 +70,13 @@
   let flujo = c.at("flujo", default: ())
   let post = c.at("postcondiciones", default: ())
   let cierre = c.at("cierre", default: none)
+  let filas(..f) = grid(columns: (31mm, 1fr), column-gutter: 8pt, row-gutter: 8pt, ..f)
+  let canal = c.at("canal", default: "").replace("Website", "website").replace("Transversal", "transversal")
   block(width: 100%, above: 14pt, below: 6pt, breakable: true, {
+    set text(size: 10pt, hyphenate: false)
+    set par(justify: false)
+    // El encabezado y sus dos primeras filas no se separan: ninguna ficha empieza sola al pie de una página.
+    block(breakable: false, below: 8pt, {
     block(breakable: false, below: 4pt, stroke: (top: 1pt + azul), inset: (top: 6pt), {
       set par(justify: false)
       grid(
@@ -69,21 +84,21 @@
         column-gutter: 8pt,
         align: (left + top, left + top, right + top),
         text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, c.id),
-        [#text(weight: 600, size: 10.5pt, c.nombre) #box(text(size: 10pt, fill: tinta-suave)[· #lower(c.at("tipo", default: "")) · #c.at("canal", default: "") · 05~§#c.seccion05])],
+        [#text(weight: 600, size: 10.5pt, c.nombre) #box(text(size: 10pt, fill: tinta-suave)[· #lower(c.at("tipo", default: "")) · #canal · 05~§#c.seccion05])],
         estado(e.estado),
       )
     })
-    set text(size: 10pt, hyphenate: false)
-    set par(justify: false)
-    grid(
-      columns: (31mm, 1fr),
-      column-gutter: 8pt,
-      row-gutter: 5pt,
-      ..fila("Objetivo", texto-05(c.objetivo)),
+    filas(
+      ..fila("Objetivo", texto-05(con-punto(c.objetivo))),
       ..fila("Actores", [
         *Principal:* #if actor != none { texto-05(actor) } else { text(fill: tinta-suave)[no declarado en el 05; lo ejecuta el caso que lo invoca (Sistema BE)] }
-        #if secundarios != none and secundarios.len() > 0 [ · *secundarios:* #secundarios.join(" ")]
+        #if secundarios != none and secundarios.len() > 0 [ #linebreak() *Secundarios:* #secundarios.map(x => x.trim().trim(".", at: end)).join(", ").]
       ]),
+    )
+    })
+    // Las filas largas (un flujo de veinte pasos) pueden seguir en la página siguiente, sin dejar un hueco.
+    set grid.cell(breakable: true)
+    filas(
       ..fila("Disparador", if disparador != none {
         [#texto-05(disparador) #if origen == "invocado" { text(fill: tinta-suave, size: 10pt)[(«invocado por», en el 05)] } else if origen == "extension" { text(fill: tinta-suave, size: 10pt)[(«condición de extensión», en el 05)] }]
       } else if flujo.len() > 0 {
@@ -104,11 +119,12 @@
         if inc != none and inc.len() > 0 { partes.push([incluye #inc.map(id).join(", ")]) }
         if ext != none and ext.len() > 0 { partes.push([lo extiende #ext.map(id).join(", ")]) }
         if partes.len() > 0 { partes.join(" · ") } else { text(fill: tinta-suave, "—") }
+        if c.id in DEL-FLUJO { [ #text(fill: tinta-suave)[· según su flujo, #DEL-FLUJO.at(c.id), que el índice del 05 no registra (anexo K, K20)]] }
       }),
       ..fila("Implementación", {
         let n = c.evidencia.pruebas.len()
         let nota = e.nota.trim().trim(".", at: end)
-        [#estado(e.estado)#if nota != "" [ #con-codigo(nota)] · #if n == 0 [ningún archivo de prueba lo cita] else if n == 1 [1 archivo de prueba lo cita] else [#n archivos de prueba lo citan]]
+        [#estado(e.estado)#if nota != "" [ #con-codigo(nota)] · #box[#if n == 0 [ningún archivo de prueba lo cita] else if n == 1 [1 archivo de prueba lo cita] else [#n archivos de prueba lo citan]]]
       }),
     )
   })
@@ -119,8 +135,9 @@
 Los casos de uso son los 56 del documento canónico 05 (versión 0.15): 33 principales, 13 incluidos, 9 de extensión y 1
 de soporte. Las fichas reproducen el 05 sin reescribirlo; esta tesis agrega a cada una su estado en la implementación.
 Los diagramas siguen UML 2.5.1: el rectángulo es el límite del sistema; las líneas continuas, asociaciones entre un actor
-y un caso; las discontinuas con flecha, relaciones «include» (el caso base incluye siempre al otro) o «extend» (el caso
-que extiende agrega conducta al caso base bajo una condición, y la flecha apunta al base). Cada elipse lleva el
+y un caso; las discontinuas con flecha, relaciones «include» (el caso base invoca al otro como parte de su flujo; en el
+05 algunas inclusiones son condicionales) o «extend» (el caso que extiende agrega conducta al caso base bajo una
+condición, y la flecha apunta al base). Cada elipse lleva el
 identificador y un rótulo corto; el nombre completo está en su ficha.
 
 == Actores
@@ -149,14 +166,18 @@ se asocian a su paquete. Cada paquete indica en su solapa la vista de detalle.
 == Vistas por módulo y fichas
 
 Cada módulo se presenta con su diagrama y, a continuación, las fichas de sus casos. En cada diagrama se dibuja el actor
-principal de cada caso; los actores secundarios figuran en las fichas. Cuando el 05 declara varios actores principales
+principal de cada caso y, cuando intervienen, los sistemas externos (Google, Open Food Facts, wger, Expo Push); los
+actores secundarios figuran en las fichas. Cuando el 05 declara varios actores principales
 (UC-P26 y UC-P28: profesional, asesorado o administrador), la vista dibuja los que actúan en ese módulo y la ficha los
 nombra a todos. Para no recargar las vistas, las inclusiones que se repiten en muchos casos (UC-I02 autorización,
 UC-I03 auditoría e historia, UC-I11 encauzar por la superficie prevista) no se dibujan: cada ficha las lista en
 «Relaciones».
 
-Las fichas citan el 05 tal como está escrito, con dos arreglos de forma: se quitan las marcas que dejó la extracción
-(viñetas y reglas de Markdown) y se corrigen tildes faltantes. Donde el 05 encadena dos ramas en un mismo flujo (por
+Las fichas citan el 05 tal como está escrito, con sus barras, sus «≠» y sus pasos sin sujeto, y con tres arreglos de
+forma: se quitan las marcas que dejó la extracción (viñetas y reglas de Markdown), se corrigen tildes faltantes y las
+remisiones del tipo «06/08» se leen «06 y 08». Los números de dos cifras son documentos del legajo: 04 requisitos, 05
+casos de uso, 06 dominio, 07 arquitectura, 08 seguridad, 09 contratos, 10 experiencia de uso, 11 pruebas y 12
+trazabilidad; «DERIVAR 06» es una marca del 05 que remite el detalle a ese documento. Donde el 05 encadena dos ramas en un mismo flujo (por
 ejemplo, aceptar y rechazar), el paso «El caso finaliza» cierra la primera y la numeración sigue con la segunda.
 
 #for p in PAQUETES {
@@ -167,7 +188,7 @@ ejemplo, aceptar y rechazar), el paso «El caso finaliza» cierra la primera y l
     if n.ancho > 600 {
       pagina-apaisada(lamina(p.vista, "Casos de uso · " + p.titulo, fuente: "05 v0.15 y datos/estado.json"))
     } else {
-      lamina(p.vista, "Casos de uso · " + p.titulo, alcance: "Lámina vertical: sus nueve casos incluidos y de extensión no entran a 10 pt en una apaisada", fuente: "05 v0.15 y datos/estado.json")
+      lamina(p.vista, "Casos de uso · " + p.titulo, alcance: "Los casos del entrenamiento con sus incluidos y extensiones, en una lámina vertical", fuente: "05 v0.15 y datos/estado.json")
     }
   }
   for id-caso in p.casos { ficha(caso(id-caso)) }
@@ -177,7 +198,7 @@ ejemplo, aceptar y rechazar), el paso «El caso finaliza» cierra la primera y l
 
 #table(
   columns: (auto, 1fr, auto, auto, auto),
-  table.header([Caso], [Nombre (05)], [Vista], [Estado], [Pruebas que lo citan]),
+  table.header([Caso], [Nombre (05)], [Vista], [Estado], [Pruebas]),
   ..PAQUETES.map(p => p.casos.map(idc => {
     let c = caso(idc)
     (id(idc), c.nombre, if p.vista != none { p.vista } else { "compartido" }, estado(est.casos.at(idc).estado), str(c.evidencia.pruebas.len()))

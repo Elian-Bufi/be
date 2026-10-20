@@ -2,21 +2,26 @@
 <title>Casos de uso · Entrenamiento</title>
 <desc>De la evaluación a la revisión con decisión de continuidad, y la corrección de lo registrado. · Fuente: 05 v0.15 §9 y su índice de relaciones · datos/estado.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado con un defecto abierto</desc>
 <rect x="0" y="0" width="482" height="668" fill="#FFFFFF"/>
-<rect x="82" y="6" width="346" height="600" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<rect x="82" y="6" width="346" height="588" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
 <text x="92" y="22" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">BE</text>
 <text x="111.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[límite del sistema]</text>
-<rect x="6" y="614" width="470" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
-<path d="M 16 626.5 L 45 626.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
-<text x="54" y="630.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
-<path d="M 16 645.5 L 45 645.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 39 648.86 L 46 645.5 L 39 642.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
-<text x="54" y="649.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include» o «extend»</text>
-<rect x="186.99" y="620" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
-<text x="224.99" y="630.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">incluyen UC-I02 y UC-I03; UC-P14 incluye UC-I12</text>
+<rect x="6" y="600" width="470" height="65" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 16 612.5 L 45 612.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<text x="54" y="616.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación con un actor</text>
+<path d="M 16 631.5 L 45 631.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 39 634.86 L 46 631.5 L 39 628.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="635.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include» o «extend»</text>
+<rect x="16" y="644" width="30" height="13" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="54" y="654.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">sistema externo</text>
+<rect x="169.91" y="605" width="43.67" height="15" rx="7.5" fill="#FFF7ED" stroke="#B45309" stroke-width="1.1"/>
+<text x="191.75" y="616.5" font-family="Inter" font-size="10" font-weight="400" fill="#7C2D12" text-anchor="middle">parcial</text>
+<text x="221.59" y="616.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">implementado en parte</text>
+<rect x="169.91" y="625" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="221.59" y="635.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03 y UC-I12 de UC-P14, en cada ficha</text>
 <path d="M 45.93 215.5 L 96 72" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 52.23 219.29 L 96 172" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 52.12 245.81 L 96 294" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 45.25 249.72 L 96 416" fill="none" stroke="#33475F" stroke-width="1.1"/>
-<path d="M 57.99 496.64 L 96 498" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 57.9 494.08 L 96 490" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 437.02 140.88 L 414 142" fill="none" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 226 72 L 284 72" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
 <path d="M 277 75.36 L 284 72 L 277 68.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
@@ -32,10 +37,10 @@
 <path d="M 278.51 391.49 L 284 386 L 276.28 385.15" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
 <path d="M 221.27 423.94 L 284 446" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
 <path d="M 276.28 446.85 L 284 446 L 278.51 440.51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
-<path d="M 161 544.7 L 161 524.59" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
-<path d="M 164.36 531.59 L 161 524.59 L 157.64 531.59" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
-<path d="M 226 568 L 284 568" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
-<path d="M 277 571.36 L 284 568 L 277 564.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 161 536.7 L 161 516.59" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 164.36 523.59 L 161 516.59 L 157.64 523.59" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 226 560 L 284 560" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 277 563.36 L 284 560 L 277 556.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
 <ellipse cx="161" cy="72" rx="65" ry="28.48" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
 <text x="161" y="69.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P14</text>
 <text x="161" y="81.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Evaluación y objetivo</text>
@@ -48,9 +53,9 @@
 <ellipse cx="161" cy="416" rx="65" ry="21.19" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
 <text x="161" y="413.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P18</text>
 <text x="161" y="425.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Revisar y decidir</text>
-<ellipse cx="161" cy="498" rx="65" ry="26.59" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
-<text x="161" y="495.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P17</text>
-<text x="161" y="507.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Consultar y registrar</text>
+<ellipse cx="161" cy="490" rx="65" ry="26.59" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="161" y="487.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P17</text>
+<text x="161" y="499.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Consultar y registrar</text>
 <ellipse cx="349" cy="72" rx="65" ry="27.41" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
 <text x="349" y="69.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I13</text>
 <text x="349" y="81.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Cálculo reproducible</text>
@@ -72,12 +77,12 @@
 <ellipse cx="349" cy="446" rx="65" ry="26.31" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
 <text x="349" y="443.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I06</text>
 <text x="349" y="455.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Continuidad o cierre</text>
-<ellipse cx="161" cy="568" rx="65" ry="23.3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
-<text x="161" y="565.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-E02</text>
-<text x="161" y="577.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Corregir ejecución</text>
-<ellipse cx="349" cy="568" rx="65" ry="25.24" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
-<text x="349" y="565.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I12</text>
-<text x="349" y="577.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Corrección trazable</text>
+<ellipse cx="161" cy="560" rx="65" ry="23.3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="161" y="557.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-E02</text>
+<text x="161" y="569.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Corregir ejecución</text>
+<ellipse cx="349" cy="560" rx="65" ry="25.24" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="349" y="557.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I12</text>
+<text x="349" y="569.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Corrección trazable</text>
 <circle cx="40" cy="215.5" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
 <path d="M 40 222.5 L 40 242.5 M 28 229.5 L 52 229.5 M 40 242.5 L 30 256.5 M 40 242.5 L 50 256.5" stroke="#0E7490" stroke-width="1.6" fill="none" stroke-linecap="round"/>
 <circle cx="40" cy="479" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
@@ -98,12 +103,12 @@
 <text x="246.24" y="382.14" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
 <rect x="234.04" y="409.39" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
 <text x="259.03" y="420.08" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
-<rect x="165" y="527.25" width="48.07" height="14.8" fill="#FFFFFF" opacity="0.94"/>
-<text x="189.04" y="537.93" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«extend»</text>
-<rect x="230.01" y="549.2" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
-<text x="255" y="559.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
-<rect x="177.78" y="463.41" width="42.22" height="16" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1"/>
-<text x="198.89" y="475.01" font-family="Inter" font-size="10" font-weight="500" fill="#7C2D12" text-anchor="middle">parcial</text>
+<rect x="165" y="519.25" width="48.07" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="189.04" y="529.93" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«extend»</text>
+<rect x="230.01" y="541.2" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="255" y="551.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="177.78" y="455.41" width="42.22" height="16" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1"/>
+<text x="198.89" y="467.01" font-family="Inter" font-size="10" font-weight="500" fill="#7C2D12" text-anchor="middle">parcial</text>
 <rect x="365.78" y="289.3" width="42.22" height="16" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1"/>
 <text x="386.89" y="300.9" font-family="Inter" font-size="10" font-weight="500" fill="#7C2D12" text-anchor="middle">parcial</text>
 <rect x="-1.89" y="259.84" width="83.79" height="31.39" rx="2" fill="#FFFFFF"/>
