@@ -310,8 +310,11 @@ async function borrador({ p, d, salida }) {
 }
 
 async function renombrarComida(p, n, nombre) {
-  await clic(p, `.comida-del-editor[data-comida="${n}"] button.menu-de-acciones__boton[aria-label^="más acciones de"]`);
-  await clic(p, '.menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Cambiar el nombre');
+  const comida = `.comida-del-editor[data-comida="${n}"]`;
+  // Las comidas del editor empiezan plegadas: su menú «Más» aparece al abrirla.
+  if (!(await p.$(`${comida}[data-abierta]`))) await clic(p, `${comida} .comida-del-plan__boton`);
+  await clic(p, `${comida} .comida-del-editor__acciones .menu-de-acciones__boton`);
+  await clic(p, `${comida} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
   await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
   await p.keyboard.down('Control');
   await p.keyboard.press('KeyA');
@@ -422,7 +425,8 @@ async function grafico({ p, d }) {
     };
     const puntos = [...document.querySelectorAll('.grafico__lienzo g.grafico__elegible circle[r="6"]')].map(centro);
     const rombos = document.querySelectorAll('.grafico__lienzo g.grafico__elegible rect').length;
-    const marcas = [...document.querySelectorAll('.grafico__lienzo .recharts-yAxis .recharts-cartesian-axis-tick text')]
+    // Las marcas del eje vertical son los únicos textos numéricos del dibujo (las del tiempo son fechas con letras).
+    const marcas = [...document.querySelectorAll('.grafico__lienzo svg text')].filter((t) => /^[\d.,]+$/.test(t.textContent.trim()))
       .map((t) => ({ valor: Number(t.textContent.replace(/\./g, '').replace(',', '.')), y: centro(t).y }))
       .filter((m) => Number.isFinite(m.valor));
     return { puntos, rombos, marcas, tabla: document.querySelector('.evolucion table')?.innerText ?? '' };
