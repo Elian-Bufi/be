@@ -334,5 +334,29 @@
   "conectores": 13,
   "cruces": 0,
   "hallazgos": []
+ },
+ "ARQ-01": {
+  "titulo": "Contexto de BE (C4, nivel 1)",
+  "archivoFuente": "laminas/fuentes/ARQ-01-contexto.mjs",
+  "lamina": "ARQ-01",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 8,
+  "conectores": 7,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "ARQ-03": {
+  "titulo": "Despliegue del ambiente test (C4)",
+  "archivoFuente": "laminas/fuentes/ARQ-03-despliegue.mjs",
+  "lamina": "ARQ-03",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 13,
+  "conectores": 11,
+  "cruces": 0,
+  "hallazgos": []
  }
 }
