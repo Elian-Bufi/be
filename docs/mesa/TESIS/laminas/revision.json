@@ -358,5 +358,29 @@
   "conectores": 11,
   "cruces": 0,
   "hallazgos": []
+ },
+ "COMP-01": {
+  "titulo": "Componentes · El sistema y sus interfaces",
+  "archivoFuente": "laminas/fuentes/COMP-01-sistema.mjs",
+  "lamina": "COMP-01",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 10,
+  "conectores": 14,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "COMP-02": {
+  "titulo": "Componentes · Los módulos de la API",
+  "archivoFuente": "laminas/fuentes/COMP-02-api.mjs",
+  "lamina": "COMP-02",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 23,
+  "conectores": 7,
+  "cruces": 0,
+  "hallazgos": []
  }
 }

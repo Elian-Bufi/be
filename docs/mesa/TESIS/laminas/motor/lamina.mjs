@@ -380,6 +380,57 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
     altoDeClase({ estereotipo, atributos = [], operaciones = [] }) {
       return (estereotipo ? 13 : 0) + 20 + (atributos.length ? atributos.length * 14 + 6 : 6) + (operaciones.length ? operaciones.length * 14 + 6 : 6);
     },
+    /**
+     * Componente UML: rectángulo con el ícono de componente arriba a la derecha, el nombre y un detalle opcional
+     * (por ejemplo, las familias de operaciones que provee). tipo: sistema, externo o pendiente.
+     */
+    componente({ id: nid, x, y, w, h, nombre, detalle, estereotipo = 'component', tipo = 'sistema', enfasis = false }) {
+      const p = PALETA[enfasis ? 'enfasis' : tipo] ?? PALETA.sistema;
+      const g = guionDe(tipo);
+      const lineasDetalle = detalle ? envolver(detalle, w - 16, TX.meta) : [];
+      const conEstereotipo = estereotipo !== null;
+      const yNombre = conEstereotipo ? 29 : 17;
+      const alto = h ?? yNombre + 2 + lineasDetalle.length * 13 + 8;
+      const n = registrarNodo({ id: nid, x, y, w, h: alto, tipo: 'componente', rect: true });
+      capas.nodos.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(alto)}" rx="3" fill="${p.relleno}" stroke="${p.trazo}" stroke-width="${enfasis ? T.trazo.enfasis : T.trazo.nodo}"${g ? ` stroke-dasharray="${g}"` : ''}/>`);
+      // Ícono de componente (UML 2): una caja con dos solapas a la izquierda.
+      const ix = x + w - 20;
+      const iy = y + 6;
+      capas.nodos.push(
+        `<rect x="${r2(ix)}" y="${r2(iy)}" width="13" height="15" fill="${C.papel}" stroke="${p.trazo}" stroke-width="0.9"/>`,
+        `<rect x="${r2(ix - 3)}" y="${r2(iy + 3)}" width="7" height="3.2" fill="${C.papel}" stroke="${p.trazo}" stroke-width="0.9"/>`,
+        `<rect x="${r2(ix - 3)}" y="${r2(iy + 9)}" width="7" height="3.2" fill="${C.papel}" stroke="${p.trazo}" stroke-width="0.9"/>`,
+      );
+      if (conEstereotipo) linea(capas.nodos, x + 8, y + 14, `«${estereotipo}»`, TX.meta, { color: C.tinta_suave, de: nid });
+      linea(capas.nodos, x + 8, y + yNombre, nombre, { ...TX.titulo, tamano: 10.5 }, { color: C.tinta, de: nid });
+      lineasDetalle.forEach((l, i) => linea(capas.nodos, x + 8, y + yNombre + 15 + i * 13, l, TX.meta, { color: C.tinta_suave, de: nid }));
+      const necesario = Math.max(ancho(nombre, { ...TX.titulo, tamano: 10.5 }) + 34, conEstereotipo ? ancho(`«${estereotipo}»`, TX.meta) + 34 : 0);
+      if (necesario > w) n.desborde = `${nombre}: el nombre no entra (${Math.ceil(necesario)} > ${w})`;
+      if (yNombre + 15 + (lineasDetalle.length - 1) * 13 + 4 > alto) n.desborde = `${nombre}: el detalle no entra en el alto (${alto})`;
+      return n;
+    },
+    /**
+     * Interfaz provista (notación de chupetín): una línea corta desde el lado del componente y un círculo con su nombre.
+     * Devuelve el nodo del círculo, para que otro componente lo requiera con una dependencia.
+     */
+    interfaz({ id: nid, de, lado = 'e', t = 0.5, largo = 22, nombre, ladoRotulo }) {
+      const n0 = nodos.get(de);
+      const p0 = anclaDe(n0, lado, t);
+      const [dx, dy] = p0.dir;
+      const r = 6;
+      const c = { x: p0.x + dx * (largo + r), y: p0.y + dy * (largo + r) };
+      capas.conectores.push(`<path d="M ${r2(p0.x)} ${r2(p0.y)} L ${r2(c.x - dx * r)} ${r2(c.y - dy * r)}" stroke="${C.linea}" stroke-width="${T.trazo.conector}" fill="none"/>`);
+      capas.nodos.push(`<circle cx="${r2(c.x)}" cy="${r2(c.y)}" r="${r}" fill="${C.papel}" stroke="${C.linea}" stroke-width="1.2"/>`);
+      const nodo = registrarNodo({ id: nid, x: c.x - r, y: c.y - r, w: 2 * r, h: 2 * r, tipo: 'interfaz', rect: false, forma: 'elipse', centro: c });
+      segmentos.push({ a: p0, b: { x: c.x - dx * r, y: c.y - dy * r }, de: conectores.length, nodos: [de, nid] });
+      conectores.push({ de, a: nid, pts: [p0, c] });
+      const lr = ladoRotulo ?? (dy !== 0 ? 'der' : 'arriba');
+      const wN = ancho(nombre, TX.meta);
+      const tx = lr === 'der' ? c.x + r + 4 : lr === 'izq' ? c.x - r - 4 - wN : c.x - wN / 2;
+      const ty = lr === 'arriba' ? c.y - r - 4 : lr === 'abajo' ? c.y + r + 12 : c.y + 4;
+      linea(capas.rotulos, tx, ty, nombre, TX.meta, { color: C.tinta, de: nid });
+      return nodo;
+    },
     /** Leyenda con muestras reales. items: [{ muestra, texto }]. Devuelve el alto. */
     leyenda({ x, y, w, items, titulo: t = 'Referencias', columnas = 1 }) {
       const filasPorCol = Math.ceil(items.length / columnas);
@@ -793,6 +844,8 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       return `<path d="M ${r2(x)} ${r2(yc)} L ${r2(x + largo)} ${r2(yc)}" stroke="${C.linea}" stroke-width="${T.trazo.conector}" fill="none"${g ? ` stroke-dasharray="${g}"` : ''}/>${fin ? punta(fin, { x: x + w, y: yc }, [1, 0], C.linea) : ''}`;
     }
     if (tipo === 'marco') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" rx="3" fill="${C.fondo_suave}" stroke="${C.tinta_suave}" stroke-width="1"/>`;
+    if (tipo === 'interfaz') return `<path d="M ${r2(x)} ${r2(y + h / 2)} L ${r2(x + w - 12)} ${r2(y + h / 2)}" stroke="${C.linea}" stroke-width="${T.trazo.conector}"/><circle cx="${r2(x + w - 6)}" cy="${r2(y + h / 2)}" r="5.5" fill="${C.papel}" stroke="${C.linea}" stroke-width="1.2"/>`;
+    if (tipo === 'componente') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" rx="3" fill="${C.sistema.relleno}" stroke="${C.sistema.trazo}" stroke-width="${T.trazo.nodo}"/><rect x="${r2(x + w - 11)}" y="${r2(y + 2.5)}" width="7" height="8" fill="${C.papel}" stroke="${C.sistema.trazo}" stroke-width="0.8"/>`;
     if (tipo === 'enfasis') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" rx="3" fill="${C.enfasis.relleno}" stroke="${C.enfasis.trazo}" stroke-width="${T.trazo.enfasis}"/>`;
     if (tipo === 'referida') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" rx="2" fill="${C.papel}" stroke="${C.nota.trazo}" stroke-width="1.1" stroke-dasharray="${GUION.discontinuo}"/>`;
     throw new Error(`muestra desconocida: ${tipo}`);
