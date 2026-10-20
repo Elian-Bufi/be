@@ -29,6 +29,7 @@ import {
   historialDeVersiones,
   lineasDePrescripcion,
   loQueSeMiraDelPlan,
+  nombresEnUnaFrase,
   numerosDeVersionDePlan,
   sesionesDelBloque,
   todasLasPaginas,
@@ -82,6 +83,8 @@ const TODO_LO_ELEGIDO = { version: null, bloque: null, micro: null, sesion: null
 export function VistaDePlan() {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir, irA } = useEntrenamiento();
   const [r, setR] = useState<Resultado<Datos> | null>(null);
+  // Qué lectura falló, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
+  const [queFallo, setQueFallo] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [creando, setCreando] = useState(false);
   // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108): abre el diálogo con la estructura de esa versión.
@@ -100,9 +103,11 @@ export function VistaDePlan() {
 
   const cargar = useCallback(async () => {
     setR(null);
+    setQueFallo(null);
     // Todas las versiones, no las primeras: el número de cada una es su lugar entre todas las activadas.
     const [lista, ob] = await Promise.all([todasLasPaginas((f) => api.listarPlanesDeEntrenamiento(token, asesoradoId, f)), api.objetivoDeEntrenamientoEfectivo(token, asesoradoId)]);
     if (sesionPerdida(lista) || sesionPerdida(ob)) return;
+    if (!lista.ok || !ob.ok) setQueFallo(nombresEnUnaFrase([lista.ok ? null : 'las versiones del plan', ob.ok ? null : 'el objetivo vigente'].filter((x): x is string => x !== null)));
     if (!lista.ok) return setR(lista as Resultado<never>);
     if (!ob.ok) return setR(ob as Resultado<never>);
     const efectiva = lista.datos.data.find((v) => v.isEffective);
@@ -110,7 +115,10 @@ export function VistaDePlan() {
     if (efectiva) {
       const v = await api.planConObjetivos(token, efectiva.planId);
       if (sesionPerdida(v)) return;
-      if (!v.ok) return setR(v as Resultado<never>);
+      if (!v.ok) {
+        setQueFallo('la versión activa del plan');
+        return setR(v as Resultado<never>);
+      }
       activa = v.datos.data;
     }
     const vigente = ob.datos.data.objective;
@@ -182,7 +190,7 @@ export function VistaDePlan() {
   };
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
+    <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
       {r?.ok
         ? (() => {
             const { versiones, activa } = r.datos;
@@ -504,7 +512,7 @@ function PrimerPlanDeEntrenamiento({
   const evaluaciones = r?.ok ? r.datos : [];
   const ultima = [...evaluaciones].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0] ?? null;
   return (
-    <EstadoDeLectura r={r} onReintentar={() => void leer()}>
+    <EstadoDeLectura r={r} onReintentar={() => void leer()} que="las evaluaciones">
       <PrimerPlan
         evaluacion={ultima ? diaSinElAnioEnCurso(ultima.occurredAt) : false}
         objetivoDesde={objetivoDesde ? diaSinElAnioEnCurso(objetivoDesde) : null}

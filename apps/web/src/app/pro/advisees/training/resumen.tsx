@@ -20,6 +20,7 @@ import {
   ETIQUETA_DE_RESULTADO,
   etiquetaDeCondicionRegistrada,
   leerNumero,
+  nombresEnUnaFrase,
   numero,
   registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
@@ -65,6 +66,8 @@ interface Datos {
 export function VistaDeResumen() {
   const { token, asesoradoId, sesionPerdida, irA } = useEntrenamiento();
   const [r, setR] = useState<Resultado<Datos> | null>(null);
+  // Qué lecturas fallaron, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
+  const [queFallo, setQueFallo] = useState<string | null>(null);
   const [formulario, setFormulario] = useState<'evaluacion' | 'objetivo' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   // Lo que alguien dejó dicho para esta página antes de volver a ella: «Solicitud enviada.», cuando el pedido de
@@ -76,6 +79,7 @@ export function VistaDeResumen() {
 
   const cargar = useCallback(async () => {
     setR(null);
+    setQueFallo(null);
     const [ev, ob, hi, pl, cx] = await Promise.all([
       api.listarEvaluacionesDeEntrenamiento(token, asesoradoId),
       api.objetivoDeEntrenamientoEfectivo(token, asesoradoId),
@@ -84,6 +88,10 @@ export function VistaDeResumen() {
       api.contextoDeRevisionDeEntrenamiento(token, asesoradoId),
     ]);
     for (const x of [ev, ob, hi, pl, cx]) if (sesionPerdida(x)) return;
+    const fallaron = [ev.ok ? null : 'las evaluaciones', ob.ok ? null : 'el objetivo vigente', hi.ok ? null : 'el historial de objetivos', pl.ok ? null : 'las versiones del plan', cx.ok ? null : 'el estado del seguimiento'].filter(
+      (x): x is string => x !== null,
+    );
+    if (fallaron.length > 0) setQueFallo(nombresEnUnaFrase(fallaron));
     for (const x of [ev, ob, hi, pl, cx]) if (!x.ok) return setR(x as Resultado<never>);
     if (!ev.ok || !ob.ok || !hi.ok || !pl.ok || !cx.ok) return;
     setR({ ok: true, datos: { evaluaciones: ev.datos.data, objetivo: ob.datos.data.objective, historia: hi.datos.data, planes: pl.datos.data, contexto: cx.datos.data } });
@@ -94,7 +102,7 @@ export function VistaDeResumen() {
   }, [cargar]);
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
+    <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
       {r?.ok ? (
         <div className="secciones">
           {aviso ? (

@@ -10,6 +10,7 @@ import {
   COPY_PRIMER_PLAN,
   cantidad,
   COPY_NUTRICION,
+  nombresEnUnaFrase,
   type ContextoDeRevisionResponse,
   type EvaluacionNutricional,
   type VersionDeObjetivo,
@@ -33,11 +34,14 @@ interface Datos {
 export function VistaDeResumen() {
   const { token, asesoradoId, sesionPerdida, irA } = useNutricion();
   const [r, setR] = useState<Resultado<Datos> | null>(null);
+  // Qué lecturas fallaron, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
+  const [queFallo, setQueFallo] = useState<string | null>(null);
   const [formulario, setFormulario] = useState<'evaluacion' | 'objetivo' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
+    setQueFallo(null);
     const [ev, ob, pl, cx] = await Promise.all([
       api.listarEvaluaciones(token, asesoradoId),
       api.listarObjetivos(token, asesoradoId),
@@ -46,7 +50,10 @@ export function VistaDeResumen() {
     ]);
     for (const x of [ev, ob, pl, cx]) if (sesionPerdida(x)) return;
     const fallo = [ev, ob, pl, cx].find((x) => !x.ok);
-    if (fallo) return setR(fallo as Resultado<Datos>);
+    if (fallo) {
+      setQueFallo(nombresEnUnaFrase([ev.ok ? null : 'las evaluaciones', ob.ok ? null : 'los objetivos', pl.ok ? null : 'las versiones del plan', cx.ok ? null : 'el estado del seguimiento'].filter((x): x is string => x !== null)));
+      return setR(fallo as Resultado<Datos>);
+    }
     if (!ev.ok || !ob.ok || !pl.ok || !cx.ok) return;
     setR({ ok: true, datos: { evaluaciones: ev.datos.data, objetivos: ob.datos.data, planes: pl.datos.data, contexto: cx.datos.data } });
   }, [token, asesoradoId, sesionPerdida]);
@@ -56,7 +63,7 @@ export function VistaDeResumen() {
   }, [cargar]);
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
+    <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
       {r?.ok ? (
         <Resumen
           datos={r.datos}
