@@ -150,8 +150,9 @@
 | DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
 | DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla, la evaluación más corta y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
-| DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
+| DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
+| DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 
 ---
 
@@ -4886,3 +4887,98 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - **Navegador en la CI** (bloque 6): retomar un borrador después de recargar y resolver un conflicto entre dos pestañas.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-6, y el recorrido de navegador de la CI pasa.
+
+---
+
+## DL-149 — El flujo profesional, pulido: la acción del momento, «Más», los habituales donde se agrega, las pistas, el área sugerida y los vacíos
+
+**Prioridad:** alta (bloque 5 del encargo de consolidación; con dos puntos del bloque 3).
+
+**Documentos:**
+- **La maqueta 01 aprobada:** el encabezado de la ficha.
+- **B10-01:** el marco de la ficha.
+- **DL-145:** «Empezar el plan».
+- **DL-146:** ayuda breve en la vista, detalle en la Guía y pistas.
+- **DL-109:** «Mis habituales».
+- **DL-140:** la nota de coordinación.
+- **WCAG 2.2:** 1.4.13 (contenido al pasar el mouse) y 2.4.11 (foco no tapado).
+- **Los recorridos de navegador:** DL-150.
+
+**Qué pedía el encargo:**
+- **Encabezado:** una acción principal según el contexto, las secundarias en un menú comprensible, y el período solo donde cambia la lectura.
+- **Caminos:** distintos y previsibles para una ficha nueva, una con borrador y una con plan vigente.
+- **Pistas:** verificadas con mouse, teclado, Escape, zoom y tacto.
+- **Área sugerida:** visible y editable, validada en el servidor.
+- **Estados:** vacíos distintos de sin resultados, errores parciales que no borran el resto, y un solo «Reintentar» por operación.
+- **Editores:** plantillas y habituales donde se busca y se agrega.
+- **Estética:** escritorio y tablet.
+- **Del bloque 3:** al cambiar de asesorado, limpiar lo del anterior; un corte de red no pierde lo escrito.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · Una acción del momento, o ninguna** (`accionDeLaFicha`).
+  - Gana la revisión acordada vencida o de los próximos 7 días: «Preparar la revisión de …».
+  - Después, el borrador: «Seguir el borrador».
+  - Después, un área sin plan: «Empezar el plan». También un área legible sin ningún dato, que el tablero manda con el resumen en `null`.
+  - Con dos áreas legibles, el texto dice de cuál es. Con todo al día no hay acción: la ficha no inventa una urgencia, y la fecha de la revisión la fijó el profesional.
+  - *Alternativa descartada:* una acción fija o varias a la vista (era la densidad pendiente).
+- **D-2 · «Más» agrupa lo de vez en cuando:** «Pedir información» y «Nota de coordinación».
+  - Cada una con una línea que dice qué hace: en una lista no hay un «pasar el mouse» que sirva. El nombre accesible es el de la acción y la línea es su descripción.
+  - «Actualizar» y la hora siguen a la vista (B10-01).
+- **D-3 · El marco a 1.400 px o más tiene cinco columnas también en la ficha.** Antes, la quinta pieza caía en una columna implícita a la derecha de «Actualizar».
+- **D-4 · El período ya estaba donde cambia la lectura.** Está en las tres vistas de la ficha, que lo usan, y en Registros, Sesiones, Evolución y la revisión de cada área. No se agregó ni se quitó.
+- **D-5 · La pista responde al mouse y al lápiz, no al dedo.**
+  - Un toque emulaba «pasar el mouse» y la pista quedaba abierta encima del contenido.
+  - Lo que explica está en la vista o en la Guía, y el lector de pantalla la sigue leyendo.
+  - *Alternativa descartada:* mantenerla abierta con un toque largo. No es un gesto estándar y choca con seleccionar texto.
+- **D-6 · El área sugerida es solo una sugerencia.**
+  - Viene elegida si el profesional tiene vínculos en una sola área, y lo dice: «Sugerida por tus vínculos: podés elegir otra.», también en la descripción accesible del campo.
+  - La lista de áreas sigue completa y el servidor valida la habilitación. El rechazo (422) se dice junto al campo, que recibe el foco.
+  - Nunca otorga un consentimiento.
+- **D-7 · Habituales donde se agrega.**
+  - «Agregar comida ▾» ofrece «Una comida vacía» o «Una comida habitual», como «Agregar ▾» de Entrenamiento. Sin habituales, la opción está apagada y dice cómo se guardan. Si no se pudieron leer, lo dice y ofrece volver a leerlas.
+  - El buscador de «Agregar ítem» y «Agregar ejercicio» filtra los habituales mientras se escribe (`habitualesQueCoinciden`). El catálogo se sigue buscando al enviar.
+  - Foco y Escape: el selector aparece con el foco, y Escape o «Cancelar» devuelven el foco a «Agregar».
+  - Las plantillas siguen donde nace un plan («Empezar desde una plantilla») y donde se guarda una («Guardar como plantilla»).
+  - *Alternativa descartada:* aplicar una plantilla sobre un borrador existente. Sería una operación masiva para una fricción chica, y el encargo pide evitarlas.
+- **D-8 · El objetivo propone la evaluación más reciente** (`evaluacionMasReciente`). En el primer plan, el formulario se abría antes de que llegara la evaluación recién registrada y quedaba sin elegir.
+- **D-9 · Vacíos, fallas parciales y un solo «Reintentar»** (relevamiento de todo el espacio profesional).
+  - **Vacío y sin resultados son distintos.**
+    - Un filtro de plantillas sin coincidencias dice «Ninguna plantilla activa/archivada» y ofrece «Ver todas», en lugar de «Todavía no guardaste ninguna».
+    - Los buscadores del catálogo y el de recetas dicen el término y ofrecen «Limpiar búsqueda».
+  - **Un solo «Reintentar» por lectura, que dice qué reintenta.**
+    - En la ficha: el encabezado ya no tiene uno propio («Actualizar» vuelve a pedir el acceso); el Resumen tiene «Reintentar lo que faltó» arriba de las tarjetas; los indicadores, uno solo.
+    - En Analizar: «Reintentar las métricas que fallaron». En Comparar etapas, uno debajo de la tabla. Cada uno vuelve a pedir solo lo que falló.
+    - En Sesiones, el detalle remite al de la lista.
+    - En `/pro`, cada lista el suyo.
+  - **Una falla no se dice como ausencia.** Esto vale para:
+    - la información para revisar;
+    - los datos para responder una pregunta;
+    - las etapas;
+    - los habituales;
+    - lo citable de una nota;
+    - la toma en preparación.
+
+    En cada caso dice que no se pudo leer, con su reintento, nunca «no hay».
+  - **Lo leído no se borra.** Un «Actualizar» que falla deja la lista leída, con la hora, si es la misma consulta. Si cambió el período, es una falla: no se muestra una lista vieja como nueva.
+  - **Resumen y Plan de cada área:** la falla dice qué lectura no llegó. Conservar el resto de la vista pide rehacer cómo se arman sus datos y queda pendiente.
+- **D-10 · Del bloque 3.**
+  - **Al cambiar de asesorado, la ficha y las áreas se vuelven a montar** (`PorAsesorado`). Nada de la persona anterior queda a la vista mientras llega lo nuevo. Lo escrito sin guardar de la anterior también se descarta: los planes se guardan solos en la primera pausa y nada se guarda en el navegador.
+  - **Lo que vive en la dirección de una página se cambia con la historia del navegador** (`cambiarLaDireccion`). Pasa con la vista, el período, el día tipo, las comidas abiertas y la receta abierta.
+    - Antes lo hacía el enrutador de Next, que en el export estático le pide la página al servidor en cada cambio. Sin conexión, la pestaña terminaba en la página de error del navegador, con lo escrito sin guardar adentro. Lo encontró el recorrido `borrador`.
+    - De paso, cada cambio de vista ya no hace un pedido de red.
+- **D-11 · Tablet y escritorio angosto.** Entre 1.024 y 1.199 px, la campana de novedades cede su palabra (queda su número y su nombre accesible) para que la barra entre en un renglón. Antes, a 1.024 px, «Cuenta» bajaba a otro.
+
+**Pruebas:**
+- **Unidad:**
+  - la acción de la ficha (con el resumen en `null`) y su dirección;
+  - la evaluación más reciente;
+  - el área única;
+  - el filtro de habituales y su texto.
+- **Pruebas de los scripts y del dominio:** completas, con los textos nuevos.
+- **Navegador en la CI (DL-150):**
+  - `pistas`: mouse, teclado, Escape, bordes, tablet con «Más» por teclado, 200 %, tacto y árbol de accesibilidad;
+  - `borrador`, `conflicto`, `primerPlan` y `retorno`: las tres acciones del momento y el corte de conexión;
+  - `primeraInvitacion` y `areaSugerida`.
+- **Pendiente:** cuatro comprobaciones de la herramienta de evidencia de WP-DASHBOARD (`recorrido.mjs` E-45, C-43 y F-86; `recorrido-comprension.mjs` CP-06) esperan los «Reintentar» y los textos anteriores. No corren en la CI. Se actualizan en su próxima corrida, con la pantalla a la vista.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-11 y los recorridos pasan en la CI de main.
