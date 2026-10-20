@@ -21,7 +21,8 @@
 import { COPY_PISTAS, COPY_ANTROPOMETRIA } from '@be/domain';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { cambiarLaDireccion } from '../../../../lib/direccion';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -101,7 +102,6 @@ export function Antropometria() {
   const vistaPedida = parametros.get('vista');
   const vista: Vista = VISTAS.some((v) => v === vistaPedida) ? (vistaPedida as Vista) : 'evaluaciones';
   const ruta = usePathname();
-  const router = useRouter();
   const sesion = useEspacioProfesional(`/pro/advisees/anthropometry?id=${id}`);
   const { token, sesionPerdida, yo } = sesion;
   const miIdentidad = yo.tipo === 'listo' ? yo.id : null;
@@ -110,8 +110,8 @@ export function Antropometria() {
   const hrefDe = useCallback((v: Vista) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor), [ruta, id, retorno.valor]);
   const irA = useCallback(
     (v: Vista, evaluacionId?: string) =>
-      router.replace(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}${evaluacionId ? `&evaluacion=${encodeURIComponent(evaluacionId)}` : ''}`, retorno.valor)),
-    [router, ruta, id, retorno.valor],
+      cambiarLaDireccion(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}${evaluacionId ? `&evaluacion=${encodeURIComponent(evaluacionId)}` : ''}`, retorno.valor)),
+    [ruta, id, retorno.valor],
   );
   const [retirado, setRetirado] = useState(false);
   const accesoRetirado = useCallback((r: Resultado<unknown>) => {
@@ -123,8 +123,8 @@ export function Antropometria() {
   const [avisoDeTomas, avisarEnTomas] = useState<string | null>(null);
   const enLaDireccion = parametros.toString();
   const ir = useCallback(
-    (cambios: Readonly<Record<string, string | null>>) => router.replace(hrefConCambios(ruta, new URLSearchParams(enLaDireccion), cambios), { scroll: false }),
-    [router, ruta, enLaDireccion],
+    (cambios: Readonly<Record<string, string | null>>) => cambiarLaDireccion(hrefConCambios(ruta, new URLSearchParams(enLaDireccion), cambios)),
+    [ruta, enLaDireccion],
   );
   const contexto = useMemo(
     () => (token ? { token, asesoradoId: id, miIdentidad, sesionPerdida, accesoRetirado, irA, parametros: new URLSearchParams(parametros.toString()), ir, avisoDeTomas, avisarEnTomas } : null),
