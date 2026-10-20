@@ -830,6 +830,11 @@ export function Analizar() {
           disponibles={disponibles}
           cargando={etapasDelAno.cargando}
           falla={etapasDelAno.falla}
+          fallaDe={etapasDelAno.fallaDe}
+          onReintentar={() => {
+            etapasDelAno.reintentar();
+            if (disponibles.falla) disponibles.recargar();
+          }}
           onListo={() => setCambiandoPregunta(false)}
         />
       ) : null}

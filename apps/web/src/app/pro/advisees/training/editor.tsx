@@ -575,8 +575,27 @@ export function EditorDePlan({
           clave: 'habitual',
           texto: 'Una sesión habitual',
           alElegir: () => setInsertandoHabitual(true),
-          noSePuede: sesionesHabituales.sesiones.length === 0 ? COPY_HABITUALES.sinSesiones : null,
+          // Mientras se leen, o si no se pudieron leer, no se dice «todavía no guardaste» (bloque 5).
+          noSePuede:
+            sesionesHabituales.sesiones.length > 0
+              ? null
+              : sesionesHabituales.lectura === 'cargando'
+                ? 'Leyendo tus sesiones habituales…'
+                : sesionesHabituales.lectura === 'falla'
+                  ? COPY_HABITUALES.sesionesNoSeLeyeron
+                  : COPY_HABITUALES.sinSesiones,
         },
+        // Si la lectura falló, se vuelve a pedir desde el mismo menú; si quedaron algunas leídas, lo dice su línea.
+        ...(sesionesHabituales.lectura === 'falla'
+          ? [
+              {
+                clave: 'releer',
+                texto: COPY_HABITUALES.volverALeerSesiones,
+                detalle: sesionesHabituales.sesiones.length > 0 ? COPY_HABITUALES.algunasSesionesNoSeLeyeron : null,
+                alElegir: () => void sesionesHabituales.recargar(),
+              },
+            ]
+          : []),
       ]}
     />
   );

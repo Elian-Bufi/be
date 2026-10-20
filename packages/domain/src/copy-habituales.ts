@@ -21,6 +21,15 @@ export const COPY_HABITUALES = {
   insertarComida: 'Agregar esta comida habitual',
   sinSesiones: 'Todavía no guardaste sesiones habituales. Se guardan desde una sesión del editor, con «Guardar como habitual».',
   sinComidas: 'Todavía no guardaste comidas habituales. Se guardan desde una comida del editor, con «Guardar como habitual».',
+  /**
+   * La lectura de las sesiones o las comidas habituales falló (encargo de consolidación, bloque 5): la opción del menú va
+   * apagada con este motivo, y otra acción las vuelve a leer. No es «todavía no guardaste».
+   */
+  sesionesNoSeLeyeron: 'No pudimos leer tus sesiones habituales.',
+  algunasSesionesNoSeLeyeron: 'No pudimos leer todas tus sesiones habituales.',
+  comidasNoSeLeyeron: 'No pudimos leer tus comidas habituales.',
+  volverALeerSesiones: 'Volver a leer tus sesiones habituales',
+  volverALeerComidas: 'Volver a leer tus comidas habituales',
   queCopiaSesion: 'La sesión habitual copia los ejercicios, las series, la intensidad y los parámetros, no a la persona. Al agregarla a un borrador pasa a ser de ese plan.',
   queCopiaComida: 'La comida habitual copia las opciones y los alimentos, no a la persona: no lleva cantidades. Al agregarla a un borrador pasa a ser de ese plan.',
   cargas: 'Conservar las cargas sugeridas como referencia',

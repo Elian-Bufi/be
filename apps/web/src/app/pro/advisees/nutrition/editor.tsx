@@ -637,7 +637,8 @@ export function EditorDeBorrador({
           ))}
           <div className="editor-del-plan__al-pie">
             {/* Una sola entrada para sumar una comida, como «Agregar ▾» en Entrenamiento: vacía o una habitual. Sin
-                habituales guardadas, la opción queda apagada y dice cómo se guardan. */}
+                habituales guardadas, la opción queda apagada y dice cómo se guardan. Si no se pudieron leer, apagada con
+                ese motivo, y una acción más para volver a leerlas (no es «todavía no guardaste ninguna»). */}
             <MenuDeAcciones
               id="agregar-comida"
               rotulo="agregar una comida"
@@ -651,8 +652,16 @@ export function EditorDeBorrador({
                   clave: 'habitual',
                   texto: 'Una comida habitual',
                   alElegir: () => setInsertandoComida(true),
-                  noSePuede: comidasHabituales.lista === null ? 'Leyendo tus comidas habituales…' : comidasHabituales.lista.length === 0 ? COPY_HABITUALES.sinComidas : null,
+                  noSePuede:
+                    comidasHabituales.lista === null
+                      ? 'Leyendo tus comidas habituales…'
+                      : comidasHabituales.falla
+                        ? COPY_HABITUALES.comidasNoSeLeyeron
+                        : comidasHabituales.lista.length === 0
+                          ? COPY_HABITUALES.sinComidas
+                          : null,
                 },
+                ...(comidasHabituales.falla ? [{ clave: 'releer', texto: COPY_HABITUALES.volverALeerComidas, alElegir: () => void comidasHabituales.recargar() }] : []),
               ]}
             />
             {insertandoComida ? (

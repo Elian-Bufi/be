@@ -9,7 +9,8 @@
  *   apagado —DL-108 D-2— y cada nota de ítem para confirmarla o vaciarla —D-3—); guardar otra con el mismo nombre la
  *   **reemplaza**, con aviso (DL-109 D-2); «Agregar esta comida habitual» inserta una copia sin identificadores de nodo
  *   en el día tipo, así que se puede insertar dos veces: lo insertado ya es del plan.
- * Un profesional sin Nutrición recibe 403 en las comidas habituales: ese bloque queda vacío, sin aviso.
+ * Un profesional sin Nutrición recibe 403 en las comidas habituales: ese bloque queda vacío, sin aviso. Cualquier otra
+ * falla de esa lectura se dice (`falla`): no es «todavía no guardaste ninguna» (encargo de consolidación, bloque 5).
  */
 import {
   COPY_HABITUALES,
@@ -21,7 +22,7 @@ import {
   type ComidaHabitual,
   type ElementoDeCatalogo,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -87,28 +88,34 @@ export function useAlimentosHabituales(token: string): AlimentosHabituales {
 // ─── Comidas habituales ─────────────────────────────────────────────────────────────────────────────────────────────
 
 export interface ComidasHabituales {
-  /** `null` mientras carga; vacía si no hay o si el profesional no tiene Nutrición (403). */
+  /** `null` mientras carga; vacía si no hay, si el profesional no tiene Nutrición (403) o si la lectura falló. */
   readonly lista: readonly ComidaHabitual[] | null;
+  /** La lectura falló (y no fue un 403): la lista vacía no quiere decir que no haya. */
+  readonly falla: boolean;
+  /** Vuelve a leer. Después de una falla, mientras lee, la lista vuelve a «leyendo». */
   readonly recargar: () => Promise<void>;
 }
 
 /** Las comidas habituales del profesional (primera página, tope de la API): para el selector y para avisar el reemplazo. */
 export function useComidasHabituales(token: string): ComidasHabituales {
-  const [lista, setLista] = useState<readonly ComidaHabitual[] | null>(null);
+  const [estado, setEstado] = useState<{ readonly lista: readonly ComidaHabitual[] | null; readonly falla: boolean }>({ lista: null, falla: false });
+  // Una respuesta vieja no pisa una lectura posterior.
+  const generacion = useRef(0);
   const recargar = useCallback(async () => {
+    const esta = ++generacion.current;
+    setEstado((e) => (e.falla ? { lista: null, falla: false } : e));
     const r = await api.listarComidasHabituales(token, {});
-    setLista(r.ok ? r.datos.data : []);
+    if (esta !== generacion.current) return;
+    const sinNutricion = !r.ok && r.tipo === 'API' && r.status === 403;
+    setEstado(r.ok ? { lista: r.datos.data, falla: false } : { lista: [], falla: !sinNutricion });
   }, [token]);
   useEffect(() => {
-    let vigente = true;
-    void api.listarComidasHabituales(token, {}).then((r) => {
-      if (vigente) setLista(r.ok ? r.datos.data : []);
-    });
+    void recargar();
     return () => {
-      vigente = false;
+      generacion.current += 1;
     };
-  }, [token]);
-  return { lista, recargar };
+  }, [recargar]);
+  return { lista: estado.lista, falla: estado.falla, recargar };
 }
 
 const normalizar = nombreNormalizadoDePlantilla;
