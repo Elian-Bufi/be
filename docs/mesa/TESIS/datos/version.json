@@ -1,0 +1,27 @@
+{
+  "_que_es": "Versión de referencia que documenta la tesis. Se actualiza acá (y solo acá) al rehacer el corte; el documento y las láminas la leen.",
+  "documento": {
+    "titulo": "BE — Plataforma integrada de inteligencia en salud",
+    "subtitulo": "Documentación del trabajo final · Analista de Sistemas",
+    "version": "1.0 (primera versión profesional, en revisión)",
+    "fechaDeCorte": "2026-10-20"
+  },
+  "fecha": "2026-10-20",
+  "commit": "0fb1bffdc2a7b2824db424febd18e94621fa33cf",
+  "commitCorto": "0fb1bff",
+  "commitFecha": "2026-10-20T02:22:05-03:00",
+  "rama": "main",
+  "repositorio": "Elian-Bufi/be (GitHub, público)",
+  "ambiente": {
+    "nombre": "test",
+    "proveedor": "Render, región Frankfurt",
+    "website": { "commit": "0fb1bff", "comprobado": "2026-10-20T02:24-03:00", "como": "el HTML de /login lleva el commit" },
+    "api": { "commit": "20f1bb7", "aplicacion": "0.11.1", "comprobado": "2026-10-20T02:24-03:00", "como": "/health/ready (version.commit)", "nota": "#192 no cambia la API: 20f1bb7 es el mismo estado de API que 0fb1bff" },
+    "datos": "solo sintéticos"
+  },
+  "apk": {
+    "estable": { "version": "0.13.2", "commit": "4b49d43", "publicada": "2026-10-03", "release": "be-apk-0.13.2" },
+    "candidata": { "version": "0.17.0-candidata.3", "commit": "cf55288", "base": "main 4091d5e más la versión", "publicada": "2026-10-19", "release": "be-apk-0.17.0-candidata.3", "estado": "pendiente de las pruebas en el teléfono" }
+  },
+  "ci": { "ejecucion": "CI de main sobre 0fb1bff", "resultado": "verde (legajo, verificar, integración, recorridos, imagen API)" }
+}
