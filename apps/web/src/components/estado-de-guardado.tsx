@@ -15,7 +15,7 @@ export function EstadoDeGuardado({ className, ...entrada }: EntradaDeGuardado & 
   const { tipo, texto } = estadoDeGuardado(entrada);
   return (
     <p className={['estado-de-guardado', className].filter(Boolean).join(' ')} data-estado={tipo} role="status" aria-live="polite">
-      <Icono nombre={ICONO[tipo]} tamano={16} />
+      <Icono nombre={ICONO[tipo]} tamano={15} />
       {texto}
     </p>
   );
