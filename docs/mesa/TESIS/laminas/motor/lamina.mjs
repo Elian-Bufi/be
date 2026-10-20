@@ -284,7 +284,7 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
      * inicio/fin: puntas (flecha, flecha_llena, triangulo, rombo, rombo_lleno, uno, cero_o_uno, uno_o_muchos, cero_o_muchos).
      * etiqueta: { texto, tecnologia, segmento ('mayor' o índice), pos (0..1), lado (arriba, abajo, izq, der), dx, dy }.
      */
-    conector({ de, lado, t = 0.5, campo, a, ladoA, tA = 0.5, campoA, ruta = 'orto', via, medio, estilo = 'continuo', inicio, fin = 'flecha', etiqueta, color = C.linea, ancho: grosor = T.trazo.conector }) {
+    conector({ de, lado, t = 0.5, campo, a, ladoA, tA = 0.5, campoA, ruta = 'orto', via, medio, estilo = 'continuo', inicio, fin = 'flecha', etiqueta, multiplicidad, color = C.linea, ancho: grosor = T.trazo.conector }) {
       const nA = nodos.get(de);
       const nB = nodos.get(a);
       if (!nA || !nB) throw new Error(`conector con nodo inexistente: ${de} → ${a}`);
@@ -318,10 +318,68 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       if (fin) capas.conectores.push(punta(fin, pts[pts.length - 1], dir(pts[pts.length - 2], pts[pts.length - 1]), color));
       if (inicio) capas.conectores.push(punta(inicio, pts[0], dir(pts[1], pts[0]), color));
       if (etiqueta) rotularConector(pts, etiqueta, nIndex);
+      // Multiplicidades (UML): un texto corto junto a cada extremo, del lado indicado o arriba/derecha del tramo.
+      if (multiplicidad) {
+        const poner = (texto, P, Q, lado) => {
+          if (!texto) return;
+          const [dx, dy] = dir(P, Q);
+          const w = ancho(texto, TX.texto);
+          const horizontal = Math.abs(dy) < 0.01;
+          const s1 = lado === 'abajo' || lado === 'izq' ? -1 : 1;
+          const cx = P.x + dx * (horizontal ? 6 + w / 2 : 0) + (horizontal ? 0 : s1 * (6 + w / 2));
+          const cy = P.y + dy * (horizontal ? 0 : 13) + (horizontal ? -s1 * 7 : 0);
+          linea(capas.rotulos, cx, cy + (horizontal ? (s1 > 0 ? -1 : 9) : 4), texto, TX.texto, { ancla: 'middle', color: C.tinta, de: `conector:${nIndex}` });
+        };
+        poner(multiplicidad.inicio, pts[0], pts[1], multiplicidad.ladoInicio);
+        poner(multiplicidad.fin, pts[pts.length - 1], pts[pts.length - 2], multiplicidad.ladoFin);
+      }
       conectores.push({ de, a, pts });
       return pts;
     },
 
+    /**
+     * Clase UML con tres compartimentos: nombre (con estereotipo opcional, en cursiva si es abstracta), atributos y
+     * operaciones. Cada renglón es texto ya formateado («+ activar(): Resultado»). El alto sale del contenido.
+     */
+    clase({ id: nid, x, y, w, nombre, estereotipo, abstracta = false, atributos = [], operaciones = [], tipo = 'sistema', enfasis = false }) {
+      const p = PALETA[enfasis ? 'enfasis' : tipo] ?? PALETA.sistema;
+      const g = guionDe(tipo);
+      const hCab = (estereotipo ? 13 : 0) + 20;
+      const renglon = 14;
+      const hAtr = atributos.length ? atributos.length * renglon + 6 : 6;
+      const hOp = operaciones.length ? operaciones.length * renglon + 6 : 6;
+      const h = hCab + hAtr + hOp;
+      const n = registrarNodo({ id: nid, x, y, w, h, tipo: 'clase', rect: true });
+      capas.nodos.push(
+        `<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" rx="2" fill="${C.papel}" stroke="${p.trazo}" stroke-width="${enfasis ? T.trazo.enfasis : T.trazo.nodo}"${g ? ` stroke-dasharray="${g}"` : ''}/>`,
+        `<rect x="${r2(x + 0.6)}" y="${r2(y + 0.6)}" width="${r2(w - 1.2)}" height="${r2(hCab - 0.6)}" fill="${p.cabecera ?? p.relleno}"/>`,
+        `<line x1="${r2(x)}" y1="${r2(y + hCab)}" x2="${r2(x + w)}" y2="${r2(y + hCab)}" stroke="${p.trazo}" stroke-width="0.8"/>`,
+        `<line x1="${r2(x)}" y1="${r2(y + hCab + hAtr)}" x2="${r2(x + w)}" y2="${r2(y + hCab + hAtr)}" stroke="${p.trazo}" stroke-width="0.8"/>`,
+      );
+      let yy = y + 4;
+      if (estereotipo) {
+        linea(capas.nodos, x + w / 2, yy + 9.5, `«${estereotipo}»`, TX.meta, { ancla: 'middle', color: C.tinta_suave, de: nid });
+        yy += 13;
+      }
+      const estNombre = { ...TX.titulo, tamano: 10.5, cursiva: abstracta };
+      linea(capas.nodos, x + w / 2, yy + 12, nombre, estNombre, { ancla: 'middle', color: C.tinta, de: nid });
+      const anchos = [ancho(nombre, estNombre) + 16, estereotipo ? ancho(`«${estereotipo}»`, TX.meta) + 16 : 0];
+      atributos.forEach((t, i) => {
+        linea(capas.nodos, x + 8, y + hCab + 3 + (i + 1) * renglon - 3, t, TX.texto, { color: C.tinta, de: nid });
+        anchos.push(ancho(t, TX.texto) + 16);
+      });
+      operaciones.forEach((t, i) => {
+        linea(capas.nodos, x + 8, y + hCab + hAtr + 3 + (i + 1) * renglon - 3, t, TX.texto, { color: C.tinta, de: nid });
+        anchos.push(ancho(t, TX.texto) + 16);
+      });
+      const necesario = Math.max(...anchos);
+      if (necesario > w) n.desborde = `${nombre}: el texto no entra (${Math.ceil(necesario)} > ${w})`;
+      return n;
+    },
+    /** Alto que tendrá una clase (para ubicarla antes de dibujarla). */
+    altoDeClase({ estereotipo, atributos = [], operaciones = [] }) {
+      return (estereotipo ? 13 : 0) + 20 + (atributos.length ? atributos.length * 14 + 6 : 6) + (operaciones.length ? operaciones.length * 14 + 6 : 6);
+    },
     /** Leyenda con muestras reales. items: [{ muestra, texto }]. Devuelve el alto. */
     leyenda({ x, y, w, items, titulo: t = 'Referencias', columnas = 1 }) {
       const filasPorCol = Math.ceil(items.length / columnas);

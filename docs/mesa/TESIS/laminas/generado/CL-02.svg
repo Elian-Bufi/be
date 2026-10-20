@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="CL-02">
+<title>Clases · Implementación de una escritura protegida</title>
+<desc>Nivel de implementación: las clases de la API que intervienen al activar un plan, con sus dependencias y su generalización. · Fuente: apps/api/src (nutricion, plataforma, autorizacion, sesion, prisma) · packages/domain/src/autorizacion.ts · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="10" y="408" width="500" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 20 420.5 L 49 420.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 43 423.86 L 50 420.5 L 43 417.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="58" y="424.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">dependencia (inyección)</text>
+<path d="M 283.98 420.5 L 312.98 420.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 313.98 420.5 L 303.98 426.5 L 303.98 414.5 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="321.98" y="424.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">generalización</text>
+<path d="M 160 343 L 180 343" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 173 346.36 L 180 343 L 173 339.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 310 343 L 335 343" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 328 346.36 L 335 343 L 328 339.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 70 315 L 70 176" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 73.36 183 L 70 176 L 66.64 183" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 415 315 L 415 241" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 415 231 L 421 241 L 409 241 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 305 130 L 305 117 Q 305 112 300 112 L 130.5 112 Q 125.5 112 125.5 107 L 125.5 54" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 128.86 61 L 125.5 54 L 122.14 61" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 335 130 L 335 107 Q 335 102 330 102 L 317.5 102 Q 312.5 102 312.5 97 L 312.5 54" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 315.86 61 L 312.5 54 L 309.14 61" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 415 130 L 415 54" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 418.36 61 L 415 54 L 411.64 61" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 525 130 L 525 113 Q 525 108 530 108 L 607.25 108 Q 612.25 108 612.25 103 L 612.25 54" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 615.61 61 L 612.25 54 L 608.89 61" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 689.8 54 L 689.8 130" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 686.44 123 L 689.8 130 L 693.16 123" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 59.5 130 L 59.5 54" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 62.86 61 L 59.5 54 L 56.14 61" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="10" y="8" width="165" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="8.6" width="163.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="28" x2="175" y2="28" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="34" x2="175" y2="34" stroke="#1453C9" stroke-width="0.8"/>
+<text x="92.5" y="24" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PrismaService</text>
+<text x="18" y="48" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">$transaction()</text>
+<rect x="197" y="8" width="165" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="197.6" y="8.6" width="163.8" height="19.4" fill="#DCE8FC"/>
+<line x1="197" y1="28" x2="362" y2="28" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="197" y1="34" x2="362" y2="34" stroke="#1453C9" stroke-width="0.8"/>
+<text x="279.5" y="24" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">IdempotenciaService</text>
+<text x="205" y="48" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">ejecutar()</text>
+<rect x="384" y="8" width="165" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="384.6" y="8.6" width="163.8" height="19.4" fill="#DCE8FC"/>
+<line x1="384" y1="28" x2="549" y2="28" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="384" y1="34" x2="549" y2="34" stroke="#1453C9" stroke-width="0.8"/>
+<text x="466.5" y="24" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">AuditoriaService</text>
+<text x="392" y="48" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">registrar()</text>
+<rect x="571" y="8" width="165" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="571.6" y="8.6" width="163.8" height="19.4" fill="#DCE8FC"/>
+<line x1="571" y1="28" x2="736" y2="28" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="571" y1="34" x2="736" y2="34" stroke="#1453C9" stroke-width="0.8"/>
+<text x="653.5" y="24" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PdpService</text>
+<text x="579" y="48" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">decidirEnTransaccion()</text>
+<rect x="10" y="130" width="165" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="130.6" width="163.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="150" x2="175" y2="150" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="156" x2="175" y2="156" stroke="#1453C9" stroke-width="0.8"/>
+<text x="92.5" y="146" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">SesionGuard</text>
+<text x="18" y="170" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">canActivate()</text>
+<rect x="290" y="130" width="250" height="101" rx="2" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
+<rect x="290.6" y="130.6" width="248.8" height="32.4" fill="#DCE8FC"/>
+<line x1="290" y1="163" x2="540" y2="163" stroke="#0A1F44" stroke-width="0.8"/>
+<line x1="290" y1="183" x2="540" y2="183" stroke="#0A1F44" stroke-width="0.8"/>
+<text x="415" y="143.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«abstract»</text>
+<text x="415" y="159" font-family="Inter" font-size="10.5" font-weight="600" font-style="italic" fill="#0A1F44" text-anchor="middle">EjecutorDeDominio</text>
+<text x="298" y="177" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">- alcance: Alcance</text>
+<text x="298" y="197" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">+ escribirIdempotente()</text>
+<text x="298" y="211" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">+ escribir()</text>
+<text x="298" y="225" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">+ leer()</text>
+<rect x="571" y="130" width="165" height="73" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="571.6" y="130.6" width="163.8" height="32.4" fill="#DCE8FC"/>
+<line x1="571" y1="163" x2="736" y2="163" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="571" y1="169" x2="736" y2="169" stroke="#1453C9" stroke-width="0.8"/>
+<text x="653.5" y="143.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«utility»</text>
+<text x="653.5" y="159" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">autorizacion.ts</text>
+<text x="579" y="183" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">evaluarAutorizacion()</text>
+<text x="579" y="197" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">modoDeAcceso()</text>
+<rect x="10" y="315" width="150" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="315.6" width="148.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="335" x2="160" y2="335" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="341" x2="160" y2="341" stroke="#1453C9" stroke-width="0.8"/>
+<text x="85" y="331" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">NutricionController</text>
+<text x="18" y="355" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">activarPlan()</text>
+<rect x="180" y="315" width="130" height="74" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="180.6" y="315.6" width="128.8" height="19.4" fill="#DCE8FC"/>
+<line x1="180" y1="335" x2="310" y2="335" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="180" y1="341" x2="310" y2="341" stroke="#1453C9" stroke-width="0.8"/>
+<text x="245" y="331" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PlanesService</text>
+<text x="188" y="355" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">crearBorrador()</text>
+<text x="188" y="369" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">validar()</text>
+<text x="188" y="383" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">activar()</text>
+<rect x="335" y="315" width="160" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="335.6" y="315.6" width="158.8" height="19.4" fill="#DCE8FC"/>
+<line x1="335" y1="335" x2="495" y2="335" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="335" y1="341" x2="495" y2="341" stroke="#1453C9" stroke-width="0.8"/>
+<text x="415" y="331" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorNutricional</text>
+<text x="343" y="355" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">constructor(…)</text>
+<path d="M 520 300 L 733 300 L 742 309 L 742 390.8 L 520 390.8 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 733 300 L 733 309 L 742 309" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="529" y="316.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Lo que no se dibuja</text>
+<text x="529" y="329.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Otras siete subclases de</text>
+<text x="529" y="342.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">EjecutorDeDominio (CL-03). PlanesService</text>
+<text x="529" y="355.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">también usa PdpService, CatalogoService,</text>
+<text x="529" y="367.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">EvaluacionesService, ProcesoService, las</text>
+<text x="529" y="380.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">plantillas y las novedades.</text>
+<rect x="75" y="238.1" width="66.36" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="77" y="248.79" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">@UseGuards</text>
+</svg>

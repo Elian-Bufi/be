@@ -298,5 +298,41 @@
   "conectores": 15,
   "cruces": 0,
   "hallazgos": []
+ },
+ "CL-01": {
+  "titulo": "Clases · Modelo de dominio del circuito nutricional",
+  "archivoFuente": "laminas/fuentes/CL-01-dominio.mjs",
+  "lamina": "CL-01",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 12,
+  "conectores": 9,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CL-02": {
+  "titulo": "Clases · Implementación de una escritura protegida",
+  "archivoFuente": "laminas/fuentes/CL-02-escritura.mjs",
+  "lamina": "CL-02",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 11,
+  "conectores": 10,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CL-03": {
+  "titulo": "Clases · Jerarquías de la API",
+  "archivoFuente": "laminas/fuentes/CL-03-jerarquias.mjs",
+  "lamina": "CL-03",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 17,
+  "conectores": 13,
+  "cruces": 0,
+  "hallazgos": []
  }
 }
