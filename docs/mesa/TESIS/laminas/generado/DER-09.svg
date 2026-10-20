@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="DER-09">
+<title>DER · Entrenamiento · evaluación, objetivo y plan</title>
+<desc>Evaluación, objetivo y plan de entrenamiento con sus versiones; la evaluación cita respuestas de la persona. · Fuente: prisma/schema.prisma · sección WP-06 · Circuito de entrenamiento · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="8" y="422" width="734" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 18 434.5 L 48 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 43 440 L 43 429" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 38.5 440 L 38.5 429" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<text x="56" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">uno y solo uno</text>
+<path d="M 141.21 434.5 L 171.21 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 166.21 440 L 166.21 429" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="158.71" cy="434.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="179.21" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o uno</text>
+<path d="M 245.78 434.5 L 275.78 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 275.78 440.5 L 265.78 434.5 L 275.78 428.5 M 275.78 434.5 L 265.78 434.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="260.78" cy="434.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="283.78" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o muchos</text>
+<text x="370.1" y="438.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK FK</text>
+<text x="408.1" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">claves · * obligatorio · o opcional</text>
+<text x="578.4" y="438.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">↗</text>
+<text x="616.4" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clave hacia otra vista</text>
+<path d="M 88 173.5 L 88 199.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 82.5 194.5 L 93.5 194.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 82.5 190 L 93.5 190" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 94 173.5 L 88 183.5 L 82 173.5 M 88 173.5 L 88 183.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="88" cy="188.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 283.17 173.5 L 283.17 199.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 277.67 194.5 L 288.67 194.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 277.67 190 L 288.67 190" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 289.17 173.5 L 283.17 183.5 L 277.17 173.5 M 283.17 173.5 L 283.17 183.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="283.17" cy="188.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 303.45 24 L 303.45 15 Q 303.45 10 308.45 10 L 338.45 10 Q 343.45 10 343.45 15 L 343.45 24" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 337.95 19 L 348.95 19" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="343.45" cy="11.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 297.95 19 L 308.95 19" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="303.45" cy="11.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 198.67 116.25 L 188.33 116.25 Q 183.33 116.25 183.33 121.25 L 183.33 226.25 Q 183.33 231.25 178.33 231.25 L 168 231.25" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 173 225.75 L 173 236.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 177.5 225.75 L 177.5 236.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 198.67 122.25 L 188.67 116.25 L 198.67 110.25 M 198.67 116.25 L 188.67 116.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="183.67" cy="116.25" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 449.03 199.5 L 449.03 173.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 454.53 178.5 L 443.53 178.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="449.03" cy="186" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 443.53 194.5 L 454.53 194.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="449.03" cy="187" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 516.63 173.5 L 516.63 199.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 511.13 194.5 L 522.13 194.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 511.13 190 L 522.13 190" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 522.63 173.5 L 516.63 183.5 L 510.63 173.5 M 516.63 173.5 L 516.63 183.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="516.63" cy="188.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 503.11 24 L 503.11 15 Q 503.11 10 508.11 10 L 538.11 10 Q 543.11 10 543.11 15 L 543.11 24" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 537.61 19 L 548.61 19" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="543.11" cy="11.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 497.61 19 L 508.61 19" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="503.11" cy="11.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 398.33 131.75 L 388 131.75 Q 383 131.75 383 126.75 L 383 74.75 Q 383 69.75 378 69.75 L 367.67 69.75" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 372.67 64.25 L 372.67 75.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 377.17 64.25 L 377.17 75.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 398.33 137.75 L 388.33 131.75 L 398.33 125.75 M 398.33 131.75 L 388.33 131.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="383.33" cy="131.75" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 598 85.25 L 587.67 85.25 Q 582.67 85.25 582.67 80.25 L 582.67 74.75 Q 582.67 69.75 577.67 69.75 L 567.33 69.75" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 572.33 64.25 L 572.33 75.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 576.83 64.25 L 576.83 75.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 593 90.75 L 593 79.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="585.5" cy="85.25" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<rect x="8" y="199.5" width="160" height="135.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 8.6 221.5 L 8.6 202.5 Q 8.6 200.1 11 200.1 L 165 200.1 Q 167.4 200.1 167.4 202.5 L 167.4 221.5 Z" fill="#DCE8FC"/>
+<line x1="8" y1="221.5" x2="168" y2="221.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="16" y="214.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">EvaluacionDeEntrenamiento</text>
+<text x="15" y="235.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="33" y="235.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="235.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="15" y="250.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="33" y="250.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="250.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
+<text x="161" y="250.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="15" y="266.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="33" y="266.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="266.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
+<text x="161" y="266.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="33" y="281.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="281.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">valoracion</text>
+<text x="33" y="297.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="297.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">referencias</text>
+<text x="33" y="312.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="45" y="312.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">notas</text>
+<text x="45" y="328.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 4 atributos más</text>
+<rect x="8" y="24" width="160" height="149.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 8.6 60 L 8.6 27 Q 8.6 24.6 11 24.6 L 165 24.6 Q 167.4 24.6 167.4 27 L 167.4 60 Z" fill="#DCE8FC"/>
+<line x1="8" y1="60" x2="168" y2="60" stroke="#1453C9" stroke-width="0.8"/>
+<text x="16" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CitaDeRespuestaEn</text>
+<text x="16" y="53.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">EvaluacionDeEntrenamiento</text>
+<text x="15" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="51" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="73.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="15" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
+<text x="51" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="89.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">evaluacionId</text>
+<text x="15" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U2</text>
+<text x="51" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="104.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">respuestaId</text>
+<text x="161" y="104.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="15" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="51" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="63" y="120.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">rectificacionId</text>
+<text x="161" y="120.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="15" y="135.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U2</text>
+<text x="51" y="135.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="135.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">codigoDeCampo</text>
+<text x="15" y="151.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="51" y="151.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="151.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">orden</text>
+<text x="63" y="166.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 1 atributo más</text>
+<rect x="198.67" y="199.5" width="169" height="89" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 199.27 221.5 L 199.27 202.5 Q 199.27 200.1 201.67 200.1 L 364.67 200.1 Q 367.07 200.1 367.07 202.5 L 367.07 221.5 Z" fill="#DCE8FC"/>
+<line x1="198.67" y1="221.5" x2="367.67" y2="221.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="206.67" y="214.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">ObjetivoDeEntrenamiento</text>
+<text x="205.67" y="235.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="241.67" y="235.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="253.67" y="235.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="205.67" y="250.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
+<text x="241.67" y="250.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="253.67" y="250.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
+<text x="360.67" y="250.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="205.67" y="266.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
+<text x="241.67" y="266.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="253.67" y="266.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
+<text x="360.67" y="266.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="253.67" y="281.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 1 atributo más</text>
+<rect x="198.67" y="24" width="169" height="149.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 199.27 60 L 199.27 27 Q 199.27 24.6 201.67 24.6 L 364.67 24.6 Q 367.07 24.6 367.07 27 L 367.07 60 Z" fill="#DCE8FC"/>
+<line x1="198.67" y1="60" x2="367.67" y2="60" stroke="#1453C9" stroke-width="0.8"/>
+<text x="206.67" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">VersionDeObjetivo</text>
+<text x="206.67" y="53.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DeEntrenamiento</text>
+<text x="205.67" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="241.67" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="253.67" y="73.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="205.67" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="241.67" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="253.67" y="89.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">objetivoId</text>
+<text x="205.67" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK UK</text>
+<text x="241.67" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="253.67" y="104.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">predecesoraId</text>
+<text x="205.67" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="241.67" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="253.67" y="120.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">evaluacionId</text>
+<text x="241.67" y="135.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="253.67" y="135.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">vigenteDesde</text>
+<text x="205.67" y="151.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="241.67" y="151.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="253.67" y="151.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">revisionDeOrigenId</text>
+<text x="360.67" y="151.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="253.67" y="166.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 6 atributos más</text>
+<rect x="398.33" y="199.5" width="169" height="104.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 398.93 221.5 L 398.93 202.5 Q 398.93 200.1 401.33 200.1 L 564.33 200.1 Q 566.73 200.1 566.73 202.5 L 566.73 221.5 Z" fill="#DCE8FC"/>
+<line x1="398.33" y1="221.5" x2="567.33" y2="221.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="406.33" y="214.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">PlanDeEntrenamiento</text>
+<text x="405.33" y="235.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="441.33" y="235.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453.33" y="235.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="405.33" y="250.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
+<text x="441.33" y="250.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453.33" y="250.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
+<text x="560.33" y="250.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="405.33" y="266.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
+<text x="441.33" y="266.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453.33" y="266.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
+<text x="560.33" y="266.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="405.33" y="281.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK UK</text>
+<text x="441.33" y="281.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="453.33" y="281.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">versionEfectivaId</text>
+<text x="453.33" y="297.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 1 atributo más</text>
+<rect x="398.33" y="24" width="169" height="149.5" rx="3" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
+<path d="M 398.93 60 L 398.93 27 Q 398.93 24.6 401.33 24.6 L 564.33 24.6 Q 566.73 24.6 566.73 27 L 566.73 60 Z" fill="#DCE8FC"/>
+<line x1="398.33" y1="60" x2="567.33" y2="60" stroke="#0A1F44" stroke-width="0.8"/>
+<text x="406.33" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">VersionDePlan</text>
+<text x="406.33" y="53.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DeEntrenamiento</text>
+<text x="405.33" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="441.33" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453.33" y="73.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="405.33" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="441.33" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453.33" y="89.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">planId</text>
+<text x="405.33" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK UK</text>
+<text x="441.33" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="453.33" y="104.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">predecesoraId</text>
+<text x="441.33" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453.33" y="120.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<text x="405.33" y="135.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="441.33" y="135.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453.33" y="135.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">versionDeObjetivoId</text>
+<text x="405.33" y="151.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="441.33" y="151.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="453.33" y="151.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">revisionDeOrigenId</text>
+<text x="560.33" y="151.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="453.33" y="166.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 8 atributos más</text>
+<rect x="598" y="24" width="144" height="118.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 598.6 60 L 598.6 27 Q 598.6 24.6 601 24.6 L 739 24.6 Q 741.4 24.6 741.4 27 L 741.4 60 Z" fill="#DCE8FC"/>
+<line x1="598" y1="60" x2="742" y2="60" stroke="#1453C9" stroke-width="0.8"/>
+<text x="606" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">InstantaneaDePlan</text>
+<text x="606" y="53.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DeEntrenamiento</text>
+<text x="605" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="641" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="653" y="73.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="605" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK UK</text>
+<text x="641" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="653" y="89.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">versionDePlanId</text>
+<text x="641" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="653" y="104.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">contenido</text>
+<text x="641" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="653" y="120.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">huella</text>
+<text x="653" y="135.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 1 atributo más</text>
+<path d="M 598 199.5 L 733 199.5 L 742 208.5 L 742 303.1 L 598 303.1 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 733 199.5 L 733 208.5 L 742 208.5" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="607" y="216.19" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">El mismo circuito</text>
+<text x="607" y="228.99" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Como en nutrición: la</text>
+<text x="607" y="241.79" font-family="Inter" font-size="10" font-weight="400" fill="#566881">versión del plan apunta a</text>
+<text x="607" y="254.59" font-family="Inter" font-size="10" font-weight="400" fill="#566881">la del objetivo, el plan</text>
+<text x="607" y="267.39" font-family="Inter" font-size="10" font-weight="400" fill="#566881">señala su versión efectiva</text>
+<text x="607" y="280.19" font-family="Inter" font-size="10" font-weight="400" fill="#566881">y la instantánea guarda lo</text>
+<text x="607" y="292.99" font-family="Inter" font-size="10" font-weight="400" fill="#566881">emitido.</text>
+</svg>

@@ -33,7 +33,7 @@
 | A | Cierre técnico autorizado (etapas 2 a 5 del encargo por etapas) | **hecho** (ver bitácora); falta el informe final | 2026-10-20 |
 | B | Inventario de fuentes y versión de referencia (`datos/version.json`: main `0fb1bff`) | **hecho** | 2026-10-20 |
 | C | Guía visual, motor de láminas y dos láminas patrón (ARQ-02, DER-03) | **hecho** (`c290925`) | 2026-10-20 |
-| D | Documento: 14 apartados | en curso: 1 a 5 escritos (2 a 4 en `03e53d9`); 10, 12 y 13 en su forma final; siguen 6 a 9, 11, 14 y la ficha | 2026-10-20 |
+| D | Documento: 14 apartados | en curso: 1 a 6 escritos; 10, 12 y 13 en su forma final; siguen 7, 8, 9, 11, 14 y la ficha | 2026-10-20 |
 | E | Anexos: flujos, DFD, secuencias y estados, trazabilidad, glosario | pendiente | |
 | F | Tres pasadas de revisión | pendiente | |
 | G | Base de la defensa: guion, preguntas, demo, presentación | pendiente | |
@@ -71,6 +71,17 @@
 - **Hallazgos para el anexo K:** la fila de DL-115 en la tabla de `docs/DEUDA_LEGAJO.md` dice «sin integrar» (se integró
   con la 0.13.2); el mapeo del 16/10 afirma que no hay línea temporal entre dominios y que push está fuera de alcance
   (las dos cosas ya existían ese día); las pruebas del teléfono del 17/10 (Google e invitaciones) no tienen acta escrita.
-- **Cómo seguir:** `node herramientas/casos-de-prueba.mjs` (si cambian las pruebas), `node laminas/construir.mjs [ID]`
-  (láminas) y `node construir-documento.mjs --png <carpeta>` (documento y páginas para revisar). Próximo: apartado 6
-  (DER-00 por dominios y una vista por dominio, diccionario en el anexo G), después 7, 8, 9, 11, 14 y la ficha.
+- **2026-10-20 07:45** — Apartado 6 (DER) y anexo G (diccionario). Motor: compositor de vistas del DER
+  (`laminas/motor/der-vista.mjs`): grilla declarada por vista, medida con la tipografía real, todas las relaciones del
+  esquema trazadas solas, carriles ordenados por fuerza bruta para minimizar cruces (y penalizar superposiciones), lazos
+  por un lado libre o por arriba, ajuste automático de atributos visibles. Cabeceras de entidad en dos renglones y
+  columna de claves adaptativa. Láminas DER-00 (paquetes por dominio, con «pastillas» de cantidad) y DER-01 a DER-14
+  (DER-03 sigue siendo la patrón). Cruces inevitables: 2 en DER-04 y 2 en DER-11 (relaciones en sentidos opuestos).
+  Cifras de la base verificadas en el catálogo de PostgreSQL 16.14 con las 51 migraciones aplicadas en una base
+  temporal (borrada): 113 tablas, 78 enumeraciones, 212 FK (todas RESTRICT), 125 índices únicos (34 parciales), 134
+  CHECK, 275 disparadores (16 de restricción), 73 funciones de disparador. **Las cifras anotadas antes (262 disparadores,
+  128 únicos, 36 parciales, 133 CHECK) estaban mal y no se usan.** Anexos con letras (A a L) y su propia numeración.
+- **Cómo seguir:** `node herramientas/casos-de-prueba.mjs` y `node herramientas/vistas-der-json.mjs` si cambian las
+  fuentes; `node laminas/construir.mjs [ID]` (láminas) y `node construir-documento.mjs --png <carpeta>` (documento y
+  páginas para revisar). Próximo: apartado 7 (clases), 8 (arquitectura: ARQ-01 contexto y ARQ-03 despliegue), 9
+  (componentes), 11 (guion de demo), 14 (usuarios) y la ficha; después los anexos A a F y H a L.

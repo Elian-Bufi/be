@@ -18,6 +18,9 @@
 #let acento = rgb(C.acento)
 #let acento-oscuro = rgb(C.acento_oscuro)
 
+/// Verdadero desde el comienzo de los anexos: cambia «Apartado» por «Anexo» y la numeración de las figuras.
+#let en-anexos = state("en-anexos", false)
+
 #let variante = sys.inputs.at("variante", default: "publica")
 #let es-evaluacion = variante == "evaluacion"
 #let privado = if es-evaluacion { json(sys.inputs.at("privado")) } else { none }
@@ -160,14 +163,14 @@
   )
   set heading(numbering: "1.1")
   show heading: set text(fill: tinta)
-  show heading.where(level: 1): it => {
+  show heading.where(level: 1): it => context {
     pagebreak(weak: true)
     counter(figure.where(kind: image)).update(0)
     counter(figure.where(kind: table)).update(0)
     v(6pt)
     block(below: 14pt, {
       if it.numbering != none {
-        text(size: 11pt, weight: 600, fill: acento-oscuro, "Apartado " + numbering(it.numbering, ..counter(heading).get()))
+        text(size: 11pt, weight: 600, fill: acento-oscuro, (if en-anexos.get() { "Anexo " } else { "Apartado " }) + numbering(it.numbering, ..counter(heading).get()))
         linebreak()
       }
       text(size: tokens.tipografia.documento.h1 * 1pt, weight: 600, it.body)
@@ -180,7 +183,7 @@
     it.body
   }))
   show heading.where(level: 3): it => block(above: 14pt, below: 7pt, text(size: tokens.tipografia.documento.h3 * 1pt, weight: 600, it.body))
-  set figure(numbering: (..n) => numbering("1.1", counter(heading).get().first(), ..n))
+  set figure(numbering: (..n) => context numbering(if en-anexos.get() { "A.1" } else { "1.1" }, counter(heading).get().first(), ..n))
   set figure.caption(separator: [ — ])
   show figure.caption: set text(size: 10pt)
   show figure.caption: set par(justify: false)

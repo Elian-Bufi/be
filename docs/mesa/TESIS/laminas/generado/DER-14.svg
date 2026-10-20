@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="DER-14">
+<title>DER · Plataforma · historia, auditoría y medios</title>
+<desc>Los registros transversales: eventos de dominio, auditoría, idempotencia, medios privados y capacidades de los clientes. · Fuente: prisma/schema.prisma · secciones Historia, WP-NUTRICION-RECETAS (medios) y Compatibilidad de clientes · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="8" y="422" width="734" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 18 434.5 L 48 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 43 440 L 43 429" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 38.5 440 L 38.5 429" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<text x="56" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">uno y solo uno</text>
+<path d="M 141.21 434.5 L 171.21 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 166.21 440 L 166.21 429" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="158.71" cy="434.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="179.21" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o uno</text>
+<path d="M 245.78 434.5 L 275.78 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 275.78 440.5 L 265.78 434.5 L 275.78 428.5 M 275.78 434.5 L 265.78 434.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="260.78" cy="434.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="283.78" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o muchos</text>
+<text x="370.1" y="438.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK FK</text>
+<text x="408.1" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">claves · * obligatorio · o opcional</text>
+<text x="578.4" y="438.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">↗</text>
+<text x="616.4" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clave hacia otra vista</text>
+<path d="M 492 169.5 L 492 143.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 497.5 148.5 L 486.5 148.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 497.5 153 L 486.5 153" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 486.5 164.5 L 497.5 164.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="492" cy="157" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<rect x="8" y="8" width="128" height="120" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 8.6 30 L 8.6 11 Q 8.6 8.6 11 8.6 L 133 8.6 Q 135.4 8.6 135.4 11 L 135.4 30 Z" fill="#DCE8FC"/>
+<line x1="8" y1="30" x2="136" y2="30" stroke="#1453C9" stroke-width="0.8"/>
+<text x="16" y="23.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">EventoDeDominio</text>
+<text x="15" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="33" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="33" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">tipo</text>
+<text x="15" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="33" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">identidadId</text>
+<text x="129" y="74.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="33" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="45" y="90.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">actorId</text>
+<text x="33" y="105.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="45" y="105.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">actorServicio</text>
+<text x="45" y="121.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 7 atributos más</text>
+<rect x="8" y="169.5" width="128" height="120" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 8.6 191.5 L 8.6 172.5 Q 8.6 170.1 11 170.1 L 133 170.1 Q 135.4 170.1 135.4 172.5 L 135.4 191.5 Z" fill="#DCE8FC"/>
+<line x1="8" y1="191.5" x2="136" y2="191.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="16" y="184.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">RegistroDeAuditoria</text>
+<text x="15" y="205.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="33" y="205.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="205.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="33" y="220.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="220.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">operacion</text>
+<text x="33" y="236.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="236.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">resultado</text>
+<text x="33" y="251.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="45" y="251.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">motivo</text>
+<text x="33" y="267.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="45" y="267.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">actorId</text>
+<text x="45" y="282.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 7 atributos más</text>
+<rect x="169.5" y="8" width="213" height="135.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 170.1 30 L 170.1 11 Q 170.1 8.6 172.5 8.6 L 379.5 8.6 Q 381.9 8.6 381.9 11 L 381.9 30 Z" fill="#DCE8FC"/>
+<line x1="169.5" y1="30" x2="382.5" y2="30" stroke="#1453C9" stroke-width="0.8"/>
+<text x="177.5" y="23.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">RegistroDeIdempotencia</text>
+<text x="176.5" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="194.5" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="206.5" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="176.5" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="194.5" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="206.5" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">operacion</text>
+<text x="176.5" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="194.5" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="206.5" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">ambito</text>
+<text x="176.5" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="194.5" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="206.5" y="90.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clave</text>
+<text x="194.5" y="105.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="206.5" y="105.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">huella</text>
+<text x="194.5" y="121.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="206.5" y="121.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estadoHttp</text>
+<text x="206.5" y="136.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
+<rect x="416" y="8" width="152" height="135.5" rx="3" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
+<path d="M 416.6 30 L 416.6 11 Q 416.6 8.6 419 8.6 L 565 8.6 Q 567.4 8.6 567.4 11 L 567.4 30 Z" fill="#DCE8FC"/>
+<line x1="416" y1="30" x2="568" y2="30" stroke="#0A1F44" stroke-width="0.8"/>
+<text x="424" y="23.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Medio</text>
+<text x="423" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="441" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="423" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="441" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">propietarioId</text>
+<text x="561" y="59.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="441" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
+<text x="441" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453" y="90.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<text x="441" y="105.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="453" y="105.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">procedenciaDeImagen</text>
+<text x="441" y="121.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="453" y="121.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">autoria</text>
+<text x="453" y="136.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 17 atributos más</text>
+<rect x="416" y="169.5" width="152" height="73.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 416.6 191.5 L 416.6 172.5 Q 416.6 170.1 419 170.1 L 565 170.1 Q 567.4 170.1 567.4 172.5 L 567.4 191.5 Z" fill="#DCE8FC"/>
+<line x1="416" y1="191.5" x2="568" y2="191.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="424" y="184.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">ContenidoDeMedio</text>
+<text x="423" y="205.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK·FK</text>
+<text x="459" y="205.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="471" y="205.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">medioId</text>
+<text x="459" y="220.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="471" y="220.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">bytes</text>
+<text x="471" y="236.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 1 atributo más</text>
+<rect x="169.5" y="169.5" width="213" height="120" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 170.1 191.5 L 170.1 172.5 Q 170.1 170.1 172.5 170.1 L 379.5 170.1 Q 381.9 170.1 381.9 172.5 L 381.9 191.5 Z" fill="#DCE8FC"/>
+<line x1="169.5" y1="191.5" x2="382.5" y2="191.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="177.5" y="184.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CapacidadDeClienteDeclarada</text>
+<text x="176.5" y="205.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="212.5" y="205.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="224.5" y="205.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="176.5" y="220.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
+<text x="212.5" y="220.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="224.5" y="220.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">identidadId</text>
+<text x="375.5" y="220.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="176.5" y="236.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="212.5" y="236.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="224.5" y="236.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">capacidad</text>
+<text x="212.5" y="251.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="224.5" y="251.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">superficie</text>
+<text x="212.5" y="267.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="224.5" y="267.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">momentoDePrimeraDeclaracion</text>
+<text x="212.5" y="282.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="224.5" y="282.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">momentoDeUltimaDeclaracion</text>
+<path d="M 590 8 L 733 8 L 742 17 L 742 111.6 L 590 111.6 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 733 8 L 733 17 L 742 17" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="599" y="24.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Solo se agregan filas</text>
+<text x="599" y="37.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Eventos, auditoría e</text>
+<text x="599" y="50.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">idempotencia son</text>
+<text x="599" y="63.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">append-only. La auditoría</text>
+<text x="599" y="75.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">vive en la base, separada</text>
+<text x="599" y="88.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">de los logs, sin IP ni</text>
+<text x="599" y="101.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">identificadores en claro.</text>
+<path d="M 590 119.6 L 733 119.6 L 742 128.6 L 742 210.4 L 590 210.4 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 733 119.6 L 733 128.6 L 742 128.6" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="599" y="136.29" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Fotos en la base</text>
+<text x="599" y="149.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Los bytes de cada imagen</text>
+<text x="599" y="161.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">se guardan aparte de sus</text>
+<text x="599" y="174.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">datos y se borran solo</text>
+<text x="599" y="187.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">cuando el medio ya fue</text>
+<text x="599" y="200.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">suprimido (DL-120).</text>
+</svg>

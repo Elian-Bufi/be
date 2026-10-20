@@ -32,6 +32,40 @@ export const TX = {
 };
 const interlinea = (e) => e.tamano * 1.28;
 
+// ─── Medidas de una entidad del DER (también las usa el compositor de vistas antes de dibujar) ─────────────────
+const TX_ENTIDAD = { ...TX.titulo, tamano: 10.5 };
+export const FILA_DE_ENTIDAD = 15.5;
+/** Cabecera de una entidad: una línea si entra en `w`; si no, dos, cortadas en el límite de palabra más parejo. */
+export function cabeceraDeEntidad(nombre, w = Infinity) {
+  if (16 + ancho(nombre, TX_ENTIDAD) <= w) return { lineas: [nombre], alto: 22 };
+  const cortes = [...nombre.matchAll(/(?<=[a-z0-9])(?=[A-Z])/g)].map((m) => m.index);
+  let mejor = null;
+  for (const i of cortes) {
+    const lineas = [nombre.slice(0, i), nombre.slice(i)];
+    const m = Math.max(...lineas.map((l) => ancho(l, TX_ENTIDAD)));
+    if (!mejor || m < mejor.m) mejor = { m, lineas };
+  }
+  return mejor ? { lineas: mejor.lineas, alto: 36 } : { lineas: [nombre], alto: 22 };
+}
+/** Columnas de una fila: clave, obligatoriedad y nombre. La clave toma el ancho de la más larga de la entidad. */
+export function sangriasDeFilas(filas) {
+  const wClave = Math.max(0, ...filas.map((f) => (f.clave ? ancho(f.clave, TX.idFuerte) : 0)));
+  const xNulo = 7 + (wClave ? wClave + 6 : 0);
+  return { xNulo, xNombre: xNulo + ancho('*', TX.id) + 6 };
+}
+const anchoDeFila = (f, xNombre) => xNombre + ancho(f.nombre, { ...TX.texto, peso: f.clave?.includes('PK') ? 600 : 400 }) + (f.externo ? 8 + ancho('↗', TX.meta) : 0) + 7;
+/** Ancho mínimo para que entren la cabecera (en una o dos líneas) y todas las filas. */
+export function anchoMinimoDeEntidad(nombre, filas, omitidos = 0) {
+  const { xNombre } = sangriasDeFilas(filas);
+  const filasW = Math.max(0, ...filas.map((f) => anchoDeFila(f, xNombre)), omitidos ? xNombre + ancho(`+ ${omitidos} atributos más`, { ...TX.texto, cursiva: true }) + 7 : 0);
+  const unaLinea = 16 + ancho(nombre, TX_ENTIDAD);
+  const dos = cabeceraDeEntidad(nombre, 0);
+  const cabW = 16 + Math.max(...dos.lineas.map((l) => ancho(l, TX_ENTIDAD)));
+  // Si las filas ya obligan a un ancho donde el nombre entra en una línea, se usa una sola.
+  return Math.ceil(Math.max(filasW, filasW >= unaLinea ? unaLinea : cabW));
+}
+export const altoDeEntidad = (nombre, w, nFilas, omitidos = 0) => cabeceraDeEntidad(nombre, w).alto + (nFilas + (omitidos ? 1 : 0)) * FILA_DE_ENTIDAD + 5;
+
 export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '', estado = '', version = '' }) {
   const capas = { fondo: [], marcos: [], conectores: [], nodos: [], rotulos: [], frente: [] };
   const nodos = new Map();
@@ -44,6 +78,7 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
 
   // ─── Texto ──────────────────────────────────────────────────────────────────────────────────
   function linea(capa, x, yBase, contenido, estilo, { ancla = 'start', color = C.tinta, de = null, registrar = true, halo = false } = {}) {
+    if (!Number.isFinite(x) || !Number.isFinite(yBase)) throw new Error(`${id}: texto «${String(contenido).slice(0, 30)}» sin posición válida (${x}, ${yBase})`);
     const w = ancho(contenido, estilo);
     const { ascendente, descendente } = alturas(estilo);
     const x0 = ancla === 'middle' ? x - w / 2 : ancla === 'end' ? x - w : x;
@@ -197,8 +232,9 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
      */
     entidad({ id: nid, x, y, w, nombre, filas, omitidos = 0, tipo = 'sistema', enfasis = false, marca }) {
       const p = tipo === 'referida' ? { trazo: C.nota.trazo, relleno: C.papel, cabecera: C.fondo_suave } : PALETA[enfasis ? 'enfasis' : 'sistema'];
-      const cab = 22;
-      const fila = 15.5;
+      const cabecera = marca ? { lineas: [nombre], alto: 22 } : cabeceraDeEntidad(nombre, w);
+      const cab = cabecera.alto;
+      const fila = FILA_DE_ENTIDAD;
       const alto = cab + (filas.length + (omitidos ? 1 : 0)) * fila + 5;
       const n = registrarNodo({ id: nid, x, y, w, h: alto, tipo: 'entidad', rect: true, filas: filas.map((f) => f.nombre), cab, fila });
       const g = tipo === 'referida' ? GUION.discontinuo : null;
@@ -207,30 +243,31 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
         `<path d="M ${r2(x + 0.6)} ${r2(y + cab)} L ${r2(x + 0.6)} ${r2(y + E.radio_entidad)} Q ${r2(x + 0.6)} ${r2(y + 0.6)} ${r2(x + E.radio_entidad)} ${r2(y + 0.6)} L ${r2(x + w - E.radio_entidad)} ${r2(y + 0.6)} Q ${r2(x + w - 0.6)} ${r2(y + 0.6)} ${r2(x + w - 0.6)} ${r2(y + E.radio_entidad)} L ${r2(x + w - 0.6)} ${r2(y + cab)} Z" fill="${p.cabecera ?? C.sistema.cabecera}"/>`,
         `<line x1="${r2(x)}" y1="${r2(y + cab)}" x2="${r2(x + w)}" y2="${r2(y + cab)}" stroke="${p.trazo}" stroke-width="0.8"/>`,
       );
-      linea(capas.nodos, x + 8, y + 15.2, nombre, { ...TX.titulo, tamano: 10.5 }, { color: tipo === 'referida' ? C.tinta_suave : C.tinta, de: nid });
+      cabecera.lineas.forEach((l, i) => linea(capas.nodos, x + 8, y + 15.2 + i * 14, l, TX_ENTIDAD, { color: tipo === 'referida' ? C.tinta_suave : C.tinta, de: nid }));
       if (marca) {
         const wm = ancho(marca, TX.meta);
         linea(capas.nodos, x + w - 8, y + 15.2, marca, TX.meta, { ancla: 'end', color: C.tinta_suave, de: nid });
         if (wm + ancho(nombre, { ...TX.titulo, tamano: 10.5 }) + 22 > w) n.desborde = `${nombre}: cabecera con marca demasiado ancha`;
       }
+      const sangria = sangriasDeFilas(filas);
       filas.forEach((f, i) => {
         const yb = y + cab + i * fila + 11.6 + 2;
         if (f.clave) linea(capas.nodos, x + 7, yb, f.clave, TX.idFuerte, { color: f.clave.includes('PK') ? C.sistema.trazo : C.tinta_suave, de: nid });
-        linea(capas.nodos, x + 46, yb, f.nulo ?? '*', TX.id, { color: C.tinta_suave, de: nid });
-        const xNombre = x + 58;
+        linea(capas.nodos, x + sangria.xNulo, yb, f.nulo ?? '*', TX.id, { color: C.tinta_suave, de: nid });
+        const xNombre = x + sangria.xNombre;
         const estiloNombre = { ...TX.texto, peso: f.clave?.includes('PK') ? 600 : 400 };
         linea(capas.nodos, xNombre, yb, f.nombre, estiloNombre, { color: C.tinta, de: nid });
         if (f.externo) linea(capas.nodos, x + w - 7, yb, '↗', TX.meta, { ancla: 'end', color: C.tinta_suave, de: nid });
-        const wf = 58 + ancho(f.nombre, estiloNombre) + (f.externo ? 8 + ancho('↗', TX.meta) : 0) + 7;
+        const wf = sangria.xNombre + ancho(f.nombre, estiloNombre) + (f.externo ? 8 + ancho('↗', TX.meta) : 0) + 7;
         if (wf > w) n.desborde = `${nombre}.${f.nombre}: la fila no entra (${Math.ceil(wf)} > ${w})`;
       });
       if (omitidos) {
         const yb = y + cab + filas.length * fila + 11.6 + 2;
-        linea(capas.nodos, x + 58, yb, `+ ${omitidos} atributo${omitidos === 1 ? '' : 's'} más`, { ...TX.texto, cursiva: true }, { color: C.tinta_suave, de: nid });
-        const wf = 58 + ancho(`+ ${omitidos} atributos más`, { ...TX.texto, cursiva: true }) + 7;
+        linea(capas.nodos, x + sangria.xNombre, yb, `+ ${omitidos} atributo${omitidos === 1 ? '' : 's'} más`, { ...TX.texto, cursiva: true }, { color: C.tinta_suave, de: nid });
+        const wf = sangria.xNombre + ancho(`+ ${omitidos} atributos más`, { ...TX.texto, cursiva: true }) + 7;
         if (wf > w) n.desborde = `${nombre}: la fila de omitidos no entra (${Math.ceil(wf)} > ${w})`;
       }
-      const anchoCab = 16 + ancho(nombre, { ...TX.titulo, tamano: 10.5 }) + (marca ? 8 + ancho(marca, TX.meta) : 0);
+      const anchoCab = 16 + Math.max(...cabecera.lineas.map((l) => ancho(l, TX_ENTIDAD))) + (marca ? 8 + ancho(marca, TX.meta) : 0);
       if (anchoCab > w) n.desborde = `${nombre}: la cabecera no entra (${Math.ceil(anchoCab)} > ${w})`;
       n.anclaFila = (campo, lado) => {
         const i = filas.findIndex((f) => f.nombre === campo);
@@ -301,7 +338,8 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       for (let c = 0; c < columnas; c++) {
         items.slice(c * filasPorCol, (c + 1) * filasPorCol).forEach((it, fil) => {
           const yi = y + cabecera + fil * 19;
-          capas.marcos.push(muestra(it.muestra, xCol, yi, 30, 13));
+          if (it.muestra.startsWith('texto:')) linea(capas.marcos, xCol, yi + 10.5, it.muestra.slice(6), TX.idFuerte, { color: C.sistema.trazo, de: 'leyenda' });
+          else capas.marcos.push(muestra(it.muestra, xCol, yi, 30, 13));
           linea(capas.marcos, xCol + 38, yi + 10.5, it.texto, TX.texto, { color: C.tinta, de: 'leyenda' });
         });
         xCol += 38 + anchosTexto[c] + extra;
@@ -428,6 +466,15 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
     },
 
     /** Texto libre (por ejemplo, una aclaración junto a un grupo). */
+    /** Rótulo corto sobre una línea (por ejemplo, una cantidad): fondo de papel, borde suave y texto centrado. */
+    pastilla({ cx, cy, texto: tx, estilo = TX.meta, color = C.tinta }) {
+      const w = ancho(tx, estilo) + 8;
+      const { ascendente, descendente } = alturas(estilo);
+      const h = ascendente + descendente + 4;
+      capas.frente.push(`<rect x="${r2(cx - w / 2)}" y="${r2(cy - h / 2)}" width="${r2(w)}" height="${r2(h)}" rx="${r2(h / 2)}" fill="${C.papel}" stroke="${C.borde_suave}" stroke-width="0.8"/>`);
+      linea(capas.frente, cx, cy + (ascendente - descendente) / 2, tx, estilo, { ancla: 'middle', color, de: 'pastilla', halo: true });
+      return { w, h };
+    },
     texto({ x, y, texto: tx, estilo = TX.texto, color = C.tinta_suave, ancla = 'start', ancho: wMax, de = null }) {
       const lineas = wMax ? envolver(tx, wMax, estilo) : [tx];
       const dueno = de ?? `texto-${textos.length}`;

@@ -29,115 +29,115 @@
 <line x1="8" y1="30" x2="204" y2="30" stroke="#1453C9" stroke-width="0.8"/>
 <text x="16" y="23.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">InvitacionDeVinculo</text>
 <text x="15" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
-<text x="54" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="66" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="33" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
 <text x="15" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
-<text x="54" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="66" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
+<text x="33" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
 <text x="197" y="59.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
-<text x="54" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="66" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance</text>
-<text x="54" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="66" y="90.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
+<text x="33" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance</text>
+<text x="33" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="90.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
 <text x="15" y="105.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">UK</text>
-<text x="54" y="105.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="66" y="105.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">hashDelToken</text>
+<text x="33" y="105.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="105.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">hashDelToken</text>
 <text x="15" y="121.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">UK</text>
-<text x="54" y="121.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="66" y="121.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">hashDelCodigo</text>
-<text x="54" y="136.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="66" y="136.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">venceEn</text>
-<text x="66" y="152.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
+<text x="33" y="121.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="121.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">hashDelCodigo</text>
+<text x="33" y="136.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="45" y="136.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">venceEn</text>
+<text x="45" y="152.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
 <rect x="266" y="8" width="196" height="104.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
 <path d="M 266.6 30 L 266.6 11 Q 266.6 8.6 269 8.6 L 459 8.6 Q 461.4 8.6 461.4 11 L 461.4 30 Z" fill="#DCE8FC"/>
 <line x1="266" y1="30" x2="462" y2="30" stroke="#1453C9" stroke-width="0.8"/>
 <text x="274" y="23.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">ResolucionDeInvitacion</text>
 <text x="273" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK·FK</text>
-<text x="312" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">invitacionId</text>
-<text x="312" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">tipo</text>
+<text x="309" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="321" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">invitacionId</text>
+<text x="309" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="321" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">tipo</text>
 <text x="273" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
-<text x="312" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">actorId</text>
+<text x="309" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="321" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">actorId</text>
 <text x="455" y="74.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
 <text x="273" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
-<text x="312" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
-<text x="324" y="90.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">solicitudDeVinculoId</text>
-<text x="324" y="105.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
+<text x="309" y="90.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="321" y="90.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">solicitudDeVinculoId</text>
+<text x="321" y="105.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
 <rect x="524" y="8" width="196" height="89" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
 <path d="M 524.6 30 L 524.6 11 Q 524.6 8.6 527 8.6 L 717 8.6 Q 719.4 8.6 719.4 11 L 719.4 30 Z" fill="#DCE8FC"/>
 <line x1="524" y1="30" x2="720" y2="30" stroke="#1453C9" stroke-width="0.8"/>
 <text x="532" y="23.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Vinculo</text>
 <text x="531" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
-<text x="570" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="567" y="43.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="43.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
 <text x="531" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
-<text x="570" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
+<text x="567" y="59.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="59.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
 <text x="713" y="59.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
 <text x="531" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
-<text x="570" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
+<text x="567" y="74.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="74.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
 <text x="713" y="74.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
-<text x="582" y="90.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 2 atributos más</text>
+<text x="579" y="90.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 2 atributos más</text>
 <rect x="266" y="200" width="196" height="197.5" rx="3" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
 <path d="M 266.6 222 L 266.6 203 Q 266.6 200.6 269 200.6 L 459 200.6 Q 461.4 200.6 461.4 203 L 461.4 222 Z" fill="#DCE8FC"/>
 <line x1="266" y1="222" x2="462" y2="222" stroke="#0A1F44" stroke-width="0.8"/>
 <text x="274" y="215.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">SolicitudDeVinculo</text>
 <text x="273" y="235.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
-<text x="312" y="235.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="235.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="291" y="235.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="235.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
 <text x="273" y="251.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
-<text x="312" y="251.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="251.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
+<text x="291" y="251.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="251.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesionalId</text>
 <text x="455" y="251.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
 <text x="273" y="266.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
-<text x="312" y="266.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="266.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
+<text x="291" y="266.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="266.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
 <text x="455" y="266.6" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
-<text x="312" y="282.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="282.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance</text>
-<text x="312" y="297.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="297.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
-<text x="312" y="313.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="313.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">iniciador</text>
-<text x="312" y="328.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="328.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
-<text x="312" y="344.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="344.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">version</text>
+<text x="291" y="282.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="282.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance</text>
+<text x="291" y="297.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="297.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
+<text x="291" y="313.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="313.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">iniciador</text>
+<text x="291" y="328.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="328.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<text x="291" y="344.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="344.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">version</text>
 <text x="273" y="359.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
-<text x="312" y="359.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
-<text x="324" y="359.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">antecedenteId</text>
-<text x="312" y="375.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="324" y="375.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">venceEn</text>
-<text x="324" y="390.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 4 atributos más</text>
+<text x="291" y="359.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="303" y="359.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">antecedenteId</text>
+<text x="291" y="375.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="303" y="375.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">venceEn</text>
+<text x="303" y="390.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 4 atributos más</text>
 <rect x="524" y="200" width="196" height="182" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
 <path d="M 524.6 222 L 524.6 203 Q 524.6 200.6 527 200.6 L 717 200.6 Q 719.4 200.6 719.4 203 L 719.4 222 Z" fill="#DCE8FC"/>
 <line x1="524" y1="222" x2="720" y2="222" stroke="#1453C9" stroke-width="0.8"/>
 <text x="532" y="215.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">AlcanceDeVinculo</text>
 <text x="531" y="235.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
-<text x="570" y="235.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="235.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="567" y="235.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="235.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
 <text x="531" y="251.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
-<text x="570" y="251.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="251.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">vinculoId</text>
-<text x="570" y="266.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="266.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance</text>
-<text x="570" y="282.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="282.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
+<text x="567" y="251.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="251.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">vinculoId</text>
+<text x="567" y="266.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="266.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance</text>
+<text x="567" y="282.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="282.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
 <text x="531" y="297.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK UK</text>
-<text x="570" y="297.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="297.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">solicitudDeOrigenId</text>
-<text x="570" y="313.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="313.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
-<text x="570" y="328.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
-<text x="582" y="328.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">version</text>
-<text x="570" y="344.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
-<text x="582" y="344.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pausadoPor</text>
-<text x="570" y="359.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
-<text x="582" y="359.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">motivoDeUltimaTransicion</text>
-<text x="582" y="375.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
+<text x="567" y="297.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="297.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">solicitudDeOrigenId</text>
+<text x="567" y="313.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="313.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<text x="567" y="328.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="579" y="328.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">version</text>
+<text x="567" y="344.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="579" y="344.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pausadoPor</text>
+<text x="567" y="359.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="579" y="359.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">motivoDeUltimaTransicion</text>
+<text x="579" y="375.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
 <path d="M 8 172 L 227 172 L 236 181 L 236 275.6 L 8 275.6 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
 <path d="M 227 172 L 227 181 L 236 181" fill="none" stroke="#9AA8BC" stroke-width="1"/>
 <text x="17" y="188.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Cómo leer las filas</text>
