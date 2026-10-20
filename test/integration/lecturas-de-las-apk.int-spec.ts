@@ -78,8 +78,13 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
   const apk = new LaApk(version, () => app);
   /** La etiqueta de las cuentas sintéticas: el versionCode, corto, para que los correos no se acerquen a 64 caracteres. */
   const corta = `apk${apk.congelado.apk.versionCode}`;
-  /** Un `it` que corre solo si esta APK llama la operación (si no, queda como omitido en el informe). */
-  const siLee = (operacion: string) => (apk.lee(operacion) ? it : it.skip);
+  /**
+   * Un caso que existe solo si esta APK llama la operación: lo que una APK no lee no se pide en su nombre, y la suite no
+   * suma casos omitidos. El cierre de cada bloque exige igual haber leído todo lo que esa APK lee.
+   */
+  const siLee = (operacion: string, nombre: string, prueba: () => Promise<void>): void => {
+    if (apk.lee(operacion)) it(nombre, prueba);
+  };
 
   // ─── La cuenta ─────────────────────────────────────────────────────────────────────────────────
 
@@ -289,7 +294,7 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     expect(apk.rechazos()).toEqual([]);
   });
 
-  siLee('API-MED-01')('la foto de una comida con la exigencia de la evidencia visual: el 403 con el vínculo y la versión del texto, que la APK lee para mostrarlos (DL-125)', async () => {
+  siLee('API-MED-01', 'la foto de una comida con la exigencia de la evidencia visual: el 403 con el vínculo y la versión del texto, que la APK lee para mostrarlos (DL-125)', async () => {
     const conExigencia = await appDePrueba({ ...googleDePrueba(google), evidenciaVisualExigida: true });
     try {
       const c = await circuitoConPlanActivo(conExigencia, etiqueta(`${corta}-evi`));
@@ -493,7 +498,7 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
 
   // ─── Lo que solo leen las candidatas ───────────────────────────────────────────────────────────
 
-  siLee('API-NOV-01')('las novedades, los avisos del teléfono, las preferencias y las notas de coordinación (NOV-01 a 06, CRD-01-PROPIA)', async () => {
+  siLee('API-NOV-01', 'las novedades, los avisos del teléfono, las preferencias y las notas de coordinación (NOV-01 a 06, CRD-01-PROPIA)', async () => {
     const c = await circuitoConPlanActivo(app, etiqueta(`${corta}-nov`));
     const token = c.ase.token;
     // La nota de coordinación (DL-140), de la nutricionista a todos los profesionales de la persona.
@@ -518,7 +523,7 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     expect(apk.rechazos()).toEqual([]);
   });
 
-  siLee('API-GOO-01')('entrar con Google: crear la cuenta, entrar, la cuenta que no existe, vincular una cuenta con contraseña (GOO-01 a 03, DL-138)', async () => {
+  siLee('API-GOO-01', 'entrar con Google: crear la cuenta, entrar, la cuenta que no existe, vincular una cuenta con contraseña (GOO-01 a 03, DL-138)', async () => {
     const t = apk.textos;
     const deLaApk = (sub: string, correo: string) => idTokenDeGoogle(google, reclamosDeGoogle(sub, correo, { aud: CLIENTE_APK, azp: CLIENTE_APK }));
     const nueva = deLaApk(subSintetico(), correoSintetico(etiqueta(`${corta}-goo`)));
