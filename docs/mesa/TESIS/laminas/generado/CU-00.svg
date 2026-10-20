@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="728pt" height="448pt" viewBox="0 0 728 448" data-lamina="CU-00">
+<title>Casos de uso · Vista general por paquetes</title>
+<desc>Los 56 casos de uso del legajo en ocho paquetes y una franja de incluidos compartidos, con su estado y sus actores. · Fuente: 05 v0.15 (índice de casos) · datos/estado.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado con pendientes</desc>
+<rect x="0" y="0" width="728" height="448" fill="#FFFFFF"/>
+<rect x="92" y="6" width="540" height="384" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="102" y="22" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">BE</text>
+<text x="121.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[límite del sistema]</text>
+<path d="M 106 51 L 106 37 Q 106 34 109 34 L 292.29 34 Q 295.29 34 295.29 37 L 295.29 51" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="106" y="51" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="115" y="47" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CU-03 · Vínculo y consentimiento</text>
+<path d="M 368 51 L 368 37 Q 368 34 371 34 L 507.98 34 Q 510.98 34 510.98 37 L 510.98 51" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="368" y="51" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="377" y="47" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CU-01 · Acceso y cuenta</text>
+<path d="M 106 119 L 106 105 Q 106 102 109 102 L 237.22 102 Q 240.22 102 240.22 105 L 240.22 119" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="106" y="119" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="115" y="115" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CU-06 · Antropometría</text>
+<path d="M 368 119 L 368 105 Q 368 102 371 102 L 472.61 102 Q 475.61 102 475.61 105 L 475.61 119" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="368" y="119" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="377" y="115" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CU-04 · Nutrición</text>
+<path d="M 106 187 L 106 173 Q 106 170 109 170 L 304.66 170 Q 307.66 170 307.66 173 L 307.66 187" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="106" y="187" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="115" y="183" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CU-07 · Seguimiento y coordinación</text>
+<path d="M 368 187 L 368 173 Q 368 170 371 170 L 499.6 170 Q 502.6 170 502.6 173 L 502.6 187" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="368" y="187" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="377" y="183" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CU-05 · Entrenamiento</text>
+<path d="M 106 255 L 106 241 Q 106 238 109 238 L 330.52 238 Q 333.52 238 333.52 241 L 333.52 255" fill="#FFF7ED" stroke="#B45309" stroke-width="1.1" stroke-dasharray="1.4 2.4"/>
+<rect x="106" y="255" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#B45309" stroke-width="1.1" stroke-dasharray="1.4 2.4"/>
+<text x="115" y="251" font-family="Inter" font-size="10.5" font-weight="600" fill="#7C2D12">CU-02 · Alta profesional y administración</text>
+<path d="M 368 255 L 368 241 Q 368 238 371 238 L 593.41 238 Q 596.41 238 596.41 241 L 596.41 255" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="368" y="255" width="250" height="45" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="377" y="251" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">CU-08 · Información, novedades y avisos</text>
+<path d="M 106 323 L 106 309 Q 106 306 109 306 L 334.13 306 Q 337.13 306 337.13 309 L 337.13 323" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="106" y="323" width="512" height="59" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="115" y="319" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Incluidos compartidos por varios circuitos</text>
+<rect x="6" y="398" width="716" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<rect x="16" y="404" width="30" height="13" rx="3" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="54" y="414.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">paquete: vista de detalle y nombre en la solapa</text>
+<rect x="16" y="423" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="54" y="433.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">paquete mayormente pendiente o fuera de alcance</text>
+<path d="M 350.95 410.5 L 379.95 410.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<text x="388.95" y="414.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación de un sistema externo o del administrador</text>
+<rect x="350.95" y="423" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="388.95" y="433.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profesional y asesorado participan en los ocho paquetes</text>
+<path d="M 670.95 65.95 L 618 73.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 670.95 133.95 L 618 141.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 670.95 201.95 L 618 209.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 670.95 269.95 L 618 277.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 60.23 312.97 L 106 277.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<circle cx="46" cy="93" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
+<path d="M 46 100 L 46 120 M 34 107 L 58 107 M 46 120 L 36 134 M 46 120 L 56 134" stroke="#0E7490" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="46" cy="207" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
+<path d="M 46 214 L 46 234 M 34 221 L 58 221 M 46 234 L 36 248 M 46 234 L 56 248" stroke="#0E7490" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="46" cy="307" r="7" fill="#FFFFFF" stroke="#B45309" stroke-width="1.6" stroke-dasharray="1.4 2.4"/>
+<path d="M 46 314 L 46 334 M 34 321 L 58 321 M 46 334 L 36 348 M 46 334 L 56 348" stroke="#B45309" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="1.4 2.4"/>
+<circle cx="682" cy="53.84" r="4.34" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.6" stroke-dasharray="4.5 3"/>
+<path d="M 682 58.18 L 682 70.58 M 674.56 62.52 L 689.44 62.52 M 682 70.58 L 675.8 79.26 M 682 70.58 L 688.2 79.26" stroke="#5B6B80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="4.5 3"/>
+<circle cx="682" cy="121.84" r="4.34" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.6" stroke-dasharray="4.5 3"/>
+<path d="M 682 126.18 L 682 138.58 M 674.56 130.52 L 689.44 130.52 M 682 138.58 L 675.8 147.26 M 682 138.58 L 688.2 147.26" stroke="#5B6B80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="4.5 3"/>
+<circle cx="682" cy="189.84" r="4.34" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.6" stroke-dasharray="4.5 3"/>
+<path d="M 682 194.18 L 682 206.58 M 674.56 198.52 L 689.44 198.52 M 682 206.58 L 675.8 215.26 M 682 206.58 L 688.2 215.26" stroke="#5B6B80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="4.5 3"/>
+<circle cx="682" cy="257.84" r="4.34" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.6" stroke-dasharray="4.5 3"/>
+<path d="M 682 262.18 L 682 274.58 M 674.56 266.52 L 689.44 266.52 M 682 274.58 L 675.8 283.26 M 682 274.58 L 688.2 283.26" stroke="#5B6B80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="4.5 3"/>
+<text x="115" y="68" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P04 · P05 · P06 · P07 · P08</text>
+<text x="115" y="86" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">5 implementados</text>
+<text x="377" y="68" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P25–P27 · E05 · E06 · E09 · I11</text>
+<text x="377" y="86" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">4 implementados · 2 parciales · 1 fuera de alcance</text>
+<text x="115" y="136" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P19–P22 · E03 · E04 · I09</text>
+<text x="115" y="154" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">4 implementados · 3 pendientes</text>
+<text x="377" y="136" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P09–P13</text>
+<text x="377" y="154" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">5 implementados</text>
+<text x="115" y="204" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P23 · P24 · P31 · E07 · S01</text>
+<text x="115" y="222" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">5 implementados</text>
+<text x="377" y="204" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P14–P18 · E02</text>
+<text x="377" y="222" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">5 implementados · 1 parcial</text>
+<text x="115" y="272" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P01–P03 · P28 · P29 · E01 · I01</text>
+<text x="115" y="290" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">1 parcial · 1 pendiente · 5 fuera de alcance</text>
+<text x="377" y="272" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">P30 · P32 · P33 · E08</text>
+<text x="377" y="290" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">4 implementados</text>
+<text x="115" y="340" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#1453C9">I02 autorización · I03 auditoría · I04 · I05 · I06 · I07 · I08 · I10 · I12 · I13</text>
+<text x="115" y="358" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">9 implementados · 1 parcial · I02 e I03 los incluye todo caso protegido</text>
+<rect x="12.76" y="137.34" width="66.48" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="46" y="150" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Profesional</text>
+<rect x="14.23" y="251.34" width="63.54" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="46" y="264" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Asesorado</text>
+<rect x="5.1" y="351.34" width="81.8" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="46" y="364" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Administrador</text>
+<rect x="660.05" y="82.6" width="43.9" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="682" y="95.26" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Google</text>
+<rect x="634.03" y="150.6" width="95.94" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="682" y="163.26" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Open Food Facts</text>
+<rect x="665.51" y="218.6" width="32.98" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="682" y="231.26" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">wger</text>
+<rect x="651.07" y="286.6" width="61.86" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="682" y="299.26" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Expo Push</text>
+</svg>

@@ -1,0 +1,110 @@
+{
+ "_que_es": "Filas de docs/DEUDA_LEGAJO.md (tabla de decisiones) y el título de cada sección, sin reescribir.",
+ "decisiones": [
+  {
+   "id": "DL-012",
+   "origen": "WP-02 · 2026-09-18",
+   "problema": "Sesión: formato, transporte, TTL y renovación",
+   "estado": "DECIDIDA 2026-10-03 · sin renovación; en la APK, el token en el almacenamiento seguro hasta que vence (#136, sin integrar)",
+   "titulo": "Sesión: formato, transporte, TTL y renovación"
+  },
+  {
+   "id": "DL-030",
+   "origen": "WP-02 · 2026-09-19",
+   "problema": "Detrás del rewrite del website, la API no ve la IP del cliente",
+   "estado": "DECIDIDA E IMPLEMENTADA 2026-09-19 · opción B, desvío fundamentado de 07 CAND-07-J C · verificada en `test` · solo falta que el 07 la incorpore",
+   "titulo": "Detrás del rewrite del website, la API no ve la IP del cliente"
+  },
+  {
+   "id": "DL-036",
+   "origen": "WP-03 · 2026-09-19",
+   "problema": "Verificación y habilitación mínimas sin operación viable",
+   "estado": "ABIERTA",
+   "titulo": "Verificación y habilitación mínimas sin operación viable"
+  },
+  {
+   "id": "DL-039",
+   "origen": "WP-03 · 2026-09-19",
+   "problema": "Finalidad y categorías pertinentes sin catálogo",
+   "estado": "SIMPLIFICACIÓN DECLARADA 2026-09-19 · consentimiento por alcance y finalidad; categorías especificadas y no implementadas",
+   "titulo": "Finalidad y categorías pertinentes sin catálogo"
+  },
+  {
+   "id": "DL-115",
+   "origen": "Matriz de DV-05 · 2026-10-02",
+   "problema": "Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan",
+   "estado": "DECIDIDA 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios`, sin integrar: va con la candidata 0.13.2",
+   "titulo": "Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios"
+  },
+  {
+   "id": "DL-120",
+   "origen": "Encargo de Dirección · 2026-10-05",
+   "problema": "Medios privados activados en el MVP sintético; almacenamiento en PostgreSQL detrás de una interfaz, en lugar de S3",
+   "estado": "DECIDIDA 2026-10-05 la activación, con persistencia en la base existente. IMPLEMENTADA el 2026-10-06 en `wp-nutricion-recetas` y probada localmente. Sin integrar; pendientes la prueba remota y en Android. Para la demo sigue PostgreSQL (decisión del 2026-10-06), y S3 (07 §25) queda abierto. Pendiente normativo aislado: el acto `EVIDENCIA_VISUAL` (08 §12.4) tiene desde el precierre del 2026-10-06 un texto propuesto, su flujo y su mapeo a MED-01 y MED-03, sin activar (DL-125)",
+   "titulo": "Medios privados activados; almacenamiento en PostgreSQL en lugar de S3"
+  },
+  {
+   "id": "DL-133",
+   "origen": "Pedido de Dirección · 2026-10-16 (WP-NOVEDADES-Y-AVISOS)",
+   "problema": "Novedades y avisos: la familia NOV, el envío después de confirmar, el cron de la plataforma y los recordatorios diarios de registro",
+   "estado": "DECIDIDA 2026-10-16 (Expo Push y recordatorios); D-1 a D-10 a ratificar · implementada en #163",
+   "titulo": "Novedades y avisos: la familia NOV, el modo de envío y los recordatorios diarios de registro"
+  },
+  {
+   "id": "DL-135",
+   "origen": "Mandato de Dirección · 2026-10-16 (WP-TVCC-30)",
+   "problema": "TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado",
+   "estado": "IMPLEMENTADA 2026-10-16; D-1 a D-9 a ratificar",
+   "titulo": "TVCC-30: la métrica de validación de la tesis, calculada y conservada"
+  },
+  {
+   "id": "DL-136",
+   "origen": "Aprobación de Dirección · 2026-10-16 (WP-INVITACION)",
+   "problema": "Invitación de vínculo por enlace, QR o código: la familia INV, un solo uso, 7 días, anulable, sin datos personales",
+   "estado": "IMPLEMENTADA (API) 2026-10-16; falta web y APK",
+   "titulo": "Invitación de vínculo por enlace, QR o código: la familia INV"
+  },
+  {
+   "id": "DL-138",
+   "origen": "Aprobación de Dirección · 2026-10-16 (WP-ACCESO-GOOGLE)",
+   "problema": "Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta",
+   "estado": "IMPLEMENTADA 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono",
+   "titulo": "Entrar con Google verificado por la API, y la declaración de mayoría de edad en toda alta: la familia GOO"
+  },
+  {
+   "id": "DL-140",
+   "origen": "Aprobación de Dirección · 2026-10-16 (WP-NOTAS-DE-COORDINACION)",
+   "problema": "La nota de coordinación entre los profesionales de una persona: quién la recibe, quién la lee, el texto libre acotado, lo citado y que solo se agrega",
+   "estado": "IMPLEMENTADA 2026-10-17 con las opciones recomendadas CRD-D1 a CRD-D8 (API, web y APK en `wp-notas-de-coordinacion`, sin integrar); E-1 a E-11 a ratificar; falta la APK en el teléfono",
+   "titulo": "La nota de coordinación entre los profesionales de una persona: API-CRD-01, su lectura en la línea de tiempo y la de la persona"
+  },
+  {
+   "id": "DL-141",
+   "origen": "Aprobación de Dirección · 2026-10-16 (WP-CATALOGO-BASE, tanda 3)",
+   "problema": "Lo importado de wger y de Open Food Facts lo veía solo quien lo importó, y se repetía; no había nombres alternativos («bench press», «aguacate»); faltaba un catálogo base de fuentes libres",
+   "estado": "INTEGRADO el tramo 1 2026-10-17 (#180): lo importado es de todos, uno por ítem externo (D-1), y los nombres alternativos con el buscador (D-2); siguen el catálogo de wger y el de USDA; D-1 y D-2 a ratificar",
+   "titulo": "El catálogo de todos: lo importado sirve a todos los profesionales, y los nombres alternativos"
+  },
+  {
+   "id": "DL-147",
+   "origen": "Encargo de consolidación de Dirección · 2026-10-19 (bloque 3)",
+   "problema": "Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A)",
+   "estado": "IMPLEMENTADO 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue",
+   "titulo": "La sesión del website sobrevive a una recarga: reanudación con cookie HttpOnly y rotativa"
+  },
+  {
+   "id": "DL-148",
+   "origen": "Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores)",
+   "problema": "Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera",
+   "estado": "IMPLEMENTADO 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar",
+   "titulo": "Los borradores: estado de escritura inequívoco, autoguardado de los planes y conflicto explícito"
+  },
+  {
+   "id": "DL-150",
+   "origen": "Encargo de consolidación de Dirección · 2026-10-19 (bloque 6)",
+   "problema": "No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales",
+   "estado": "IMPLEMENTADO 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar",
+   "titulo": "Recorridos de navegador en la CI y la prueba con profesionales"
+  }
+ ]
+}

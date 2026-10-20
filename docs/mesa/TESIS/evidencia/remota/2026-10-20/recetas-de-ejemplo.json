@@ -1,0 +1,446 @@
+{
+  "resumen": {
+    "origen": "https://be-api-hndp.onrender.com",
+    "revisadoEl": "2026-10-20T05:23:41.512Z",
+    "recetasDeLaCuenta": 0,
+    "recetasDeLaCuentaConImagen": 0,
+    "preparadas": 16,
+    "cargables": 16,
+    "conFoto": 0,
+    "verificadas": 16,
+    "yaEnLaCuenta": 0,
+    "carpetaDeFotos": "no se pasó --fotos"
+  },
+  "recetas": [
+    {
+      "numero": 1,
+      "nombre": "Avena cocida con banana y canela",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        },
+        {
+          "caso": "con 2 porciones",
+          "coincide": true,
+          "diferencias": []
+        },
+        {
+          "caso": "con 50 g más de Avena arrollada, cruda",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "345.54",
+        "carbohydrateG": "61.1318",
+        "fatG": "6.9228",
+        "proteinG": "13.0298",
+        "fiberG": "7.702"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "01-avena-cocida-con-banana-y-canela.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 2,
+      "nombre": "Tostadas integrales con palta y huevo",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "308.7",
+        "carbohydrateG": "30.451",
+        "fatG": "14.735",
+        "proteinG": "14.76",
+        "fiberG": "6.95"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "02-tostadas-integrales-con-palta-y-huevo.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 3,
+      "nombre": "Yogur natural con granola y frutillas",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "294.3",
+        "carbohydrateG": "31.628",
+        "fatG": "14.033",
+        "proteinG": "11.577",
+        "fiberG": "4.27"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "03-yogur-natural-con-granola-y-frutillas.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 4,
+      "nombre": "Licuado de banana con leche y avena",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "307.6",
+        "carbohydrateG": "52.948",
+        "fatG": "6.65",
+        "proteinG": "12.188",
+        "fiberG": "5.14"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "04-licuado-de-banana-con-leche-y-avena.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 5,
+      "nombre": "Tostadas integrales con queso crema y tomate",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "305.6",
+        "carbohydrateG": "30.946",
+        "fatG": "16.036",
+        "proteinG": "10.634",
+        "fiberG": "4.56"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "05-tostadas-integrales-con-queso-crema-y-tomate.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 6,
+      "nombre": "Milanesa de carne al horno con puré de calabaza",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "396",
+        "carbohydrateG": "39.155",
+        "fatG": "8.2925",
+        "proteinG": "43.6625",
+        "fiberG": "7.525"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "06-milanesa-de-carne-al-horno-con-pure-de-calabaza.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 7,
+      "nombre": "Bife a la plancha con papas al horno y ensalada",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "528.8",
+        "carbohydrateG": "46.847",
+        "fatG": "20.14",
+        "proteinG": "40.554",
+        "fiberG": "6.01"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "07-bife-a-la-plancha-con-papas-al-horno-y-ensalada.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 8,
+      "nombre": "Merluza al horno con puré de papa y brócoli",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "342",
+        "carbohydrateG": "47.2",
+        "fatG": "2.575",
+        "proteinG": "33.265",
+        "fiberG": "6.9"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "08-merluza-al-horno-con-pure-de-papa-y-brocoli.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 9,
+      "nombre": "Fideos con salsa bolognesa",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        },
+        {
+          "caso": "con 2 porciones",
+          "coincide": true,
+          "diferencias": []
+        },
+        {
+          "caso": "con 50 g más de Fideos de trigo hervidos, sin sal",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "506.8",
+        "carbohydrateG": "73.502",
+        "fatG": "10.1",
+        "proteinG": "29.58",
+        "fiberG": "6.01"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "09-fideos-con-salsa-bolognesa.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 10,
+      "nombre": "Guiso de lentejas con verduras",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "300.5",
+        "carbohydrateG": "57.204",
+        "fatG": "0.99",
+        "proteinG": "19.635",
+        "fiberG": "19.31"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "10-guiso-de-lentejas-con-verduras.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 11,
+      "nombre": "Tarta de acelga con ensalada de tomate",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "353.5",
+        "carbohydrateG": "40.969",
+        "fatG": "15.467",
+        "proteinG": "14.112",
+        "fiberG": "5.43"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "11-tarta-de-acelga-con-ensalada-de-tomate.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 12,
+      "nombre": "Bowl de quinoa con garbanzos, huevo y verduras",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "537.1",
+        "carbohydrateG": "66.096",
+        "fatG": "20.991",
+        "proteinG": "22.65",
+        "fiberG": "13.64"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "12-bowl-de-quinoa-con-garbanzos-huevo-y-verduras.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 13,
+      "nombre": "Wok de pollo con verduras y arroz",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        },
+        {
+          "caso": "con 2 porciones",
+          "coincide": true,
+          "diferencias": []
+        },
+        {
+          "caso": "con 50 g más de Pechuga de pollo sin piel ni hueso, cruda",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "511.4",
+        "carbohydrateG": "53.441",
+        "fatG": "14.666",
+        "proteinG": "39.191",
+        "fiberG": "3.66"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "13-wok-de-pollo-con-verduras-y-arroz.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 14,
+      "nombre": "Hamburguesa casera al plato con ensalada",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "293.9",
+        "carbohydrateG": "6.415",
+        "fatG": "15.255",
+        "proteinG": "31.604",
+        "fiberG": "1.95"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "14-hamburguesa-casera-al-plato-con-ensalada.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 15,
+      "nombre": "Omelette de espinaca con tostada",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "276.6",
+        "carbohydrateG": "15.711",
+        "fatG": "15.794",
+        "proteinG": "18.011",
+        "fiberG": "3.12"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "15-omelette-de-espinaca-con-tostada.jpg",
+      "enLaCuenta": null
+    },
+    {
+      "numero": 16,
+      "nombre": "Manzana con nueces",
+      "problemas": [],
+      "cargable": true,
+      "verificada": true,
+      "comprobaciones": [
+        {
+          "caso": "la receta",
+          "coincide": true,
+          "diferencias": []
+        }
+      ],
+      "porPorcion": {
+        "energyKcal": "208.8",
+        "carbohydrateG": "23.457",
+        "fatG": "13.297",
+        "proteinG": "3.436",
+        "fiberG": "4.94"
+      },
+      "foto": null,
+      "problemasDeFoto": [],
+      "fotoEsperada": "16-manzana-con-nueces.jpg",
+      "enLaCuenta": null
+    }
+  ]
+}
