@@ -20,6 +20,16 @@ export const COPY_PLANTILLAS = {
   archivada: 'Archivada',
   sinPlantillas: 'Todavía no guardaste ninguna plantilla. Se guardan desde una versión de plan, con «Guardar como plantilla».',
   sinPlantillasActivas: 'No tenés plantillas activas para aplicar.',
+  /**
+   * «Mis plantillas» con el filtro «Estado» puesto y nada que coincida (encargo de consolidación, bloque 5): lo que no hay
+   * es una plantilla con ese estado, no una plantilla. El filtro queda a la vista y «Ver todas» lo quita.
+   */
+  ningunaActiva: 'Ninguna plantilla activa.',
+  ningunaArchivada: 'Ninguna plantilla archivada.',
+  verTodas: 'Ver todas',
+  /** Una lectura de «Mis plantillas» que falla no es «todavía no guardaste ninguna». */
+  noSeLeyeronLasDeEntrenamiento: 'No pudimos leer tus plantillas de entrenamiento.',
+  noSeLeyeronLasDeComidas: 'No pudimos leer tus plantillas de comidas.',
   /** El diálogo de «Empezar desde una plantilla» (WP-ESCRITORIO-AREAS, parte 5). Una lectura que falla no es «no tenés». */
   noCargaron: 'No pudimos leer tus plantillas',
   elegiUna: 'Elegí la plantilla con la que empieza la versión nueva. Nace como borrador: el asesorado no la ve hasta que la actives.',

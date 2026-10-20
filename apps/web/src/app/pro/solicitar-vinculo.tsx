@@ -12,7 +12,7 @@
  * - Al enviarse, el diálogo se cierra y la página dice qué pasó: un aviso que queda adentro de un diálogo cerrado no lo
  *   lee nadie.
  */
-import { ALCANCES, COPY, COPY_VINCULO, ETIQUETA_DE_ALCANCE, ETIQUETA_DE_FINALIDAD, FINALIDAD_DE_ALCANCE, type Alcance } from '@be/domain';
+import { ALCANCES, COPY, COPY_INVITACION, COPY_VINCULO, ETIQUETA_DE_ALCANCE, ETIQUETA_DE_FINALIDAD, FINALIDAD_DE_ALCANCE, type Alcance } from '@be/domain';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Aviso, Campo } from '../../components/formulario';
 import { api, type Resultado } from '../../lib/api';
@@ -128,7 +128,7 @@ export function SolicitarVinculo({
             id={`${id}-alcance`}
             value={alcance}
             aria-invalid={errores.alcance ? true : undefined}
-            aria-describedby={errores.alcance ? `${id}-alcance-error` : undefined}
+            aria-describedby={[errores.alcance ? `${id}-alcance-error` : null, areaSugerida && alcance === areaSugerida ? `${id}-alcance-sugerida` : null].filter(Boolean).join(' ') || undefined}
             onChange={(e) => editar(() => setAlcance(e.target.value as Alcance | ''))}
           >
             <option value="">Elegí un área</option>
@@ -138,6 +138,11 @@ export function SolicitarVinculo({
               </option>
             ))}
           </select>
+          {areaSugerida && alcance === areaSugerida ? (
+            <p id={`${id}-alcance-sugerida`} className="campo__ayuda">
+              {COPY_INVITACION.areaSugerida}
+            </p>
+          ) : null}
           {errores.alcance ? (
             <p id={`${id}-alcance-error`} className="campo__error">
               <span aria-hidden="true">⚠ </span>

@@ -6,7 +6,8 @@
  * cada sesión —buscar en el catálogo BE, elegir un habitual, crear un ejercicio a mano e importar uno desde wger
  * (B10-06:485-498; WP-08)—, y nada más. Es el cajón de «Agregar ítem» del plan de comidas, con las mismas reglas:
  * - **Busca al enviar** (Enter o «Buscar»). Una búsqueda que falla dice su motivo y se reintenta: no es «No encontramos
- *   ejercicios con ese nombre» (B10-10:41).
+ *   ejercicios con ese nombre» (B10-10:41). Una sin resultados dice qué se buscó y ofrece «Limpiar búsqueda», que vacía
+ *   el campo (y el filtro de los habituales) y devuelve el foco al campo (bloque 5 del encargo de consolidación).
  * - **Elegir no cierra el cajón:** el ejercicio se suma a la sesión, con una serie y sin criterio, y el cajón lo
  *   anuncia. Se pueden sumar varios seguidos; se cierra con «Cerrar» o con Escape.
  * - «Crear manualmente» e «Importar desde wger» se abren adentro, con «Volver a la búsqueda».
@@ -14,7 +15,7 @@
  * - Si los ejercicios habituales no se pueden leer, se dice: no es «todavía no marcaste ninguno».
  * - Si un ejercicio apareció por un nombre alternativo, se dice cuál: «Press de banca (bench press)» (DL-141).
  */
-import { COPY_ENTRENAMIENTO, COPY_HABITUALES, COPY_INTEGRACIONES, nombreAlternativoComoAclaracion, type EjercicioDeCatalogo, type EjercicioEncontrado } from '@be/domain';
+import { COPY_ENTRENAMIENTO, COPY_HABITUALES, COPY_INTEGRACIONES, habitualesQueCoinciden, nombreAlternativoComoAclaracion, type EjercicioDeCatalogo, type EjercicioEncontrado } from '@be/domain';
 import { useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
@@ -124,6 +125,13 @@ function ContenidoDeAgregarEjercicio({
     e.preventDefault();
     void buscar(texto.trim());
   };
+  /** «Limpiar búsqueda»: el campo vacío (y con él el filtro de los habituales), el foco en él y el cajón como al abrirse. */
+  const limpiar = () => {
+    pedido.current += 1;
+    setTexto('');
+    setBusqueda({ tipo: 'sin-buscar' });
+    campo.current?.focus();
+  };
   const elegir = (e: EjercicioDeCatalogo) => {
     onElegir(e);
     setAgregado((a) => ({ nombre: e.name, veces: (a?.veces ?? 0) + 1 }));
@@ -162,6 +170,11 @@ function ContenidoDeAgregarEjercicio({
   }
 
   const ejercicios = busqueda.tipo === 'lista' ? busqueda.ejercicios : [];
+  // Los habituales se filtran mientras se escribe; el catálogo, al enviar (bloque 5).
+  const filtro = texto.trim();
+  const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
+  // Con el catálogo ya buscado con ese texto, los habituales no repiten que se busca con Enter: el resultado está debajo.
+  const catalogoBuscado = busqueda.tipo !== 'sin-buscar' && busqueda.texto === filtro;
   return (
     <div className="agregar-item agregar-ejercicio">
       <form onSubmit={enviar} className="agregar-item__buscador" role="search">
@@ -186,7 +199,11 @@ function ContenidoDeAgregarEjercicio({
         <h3 id={`${id}-habituales`} className="agregar-item__titulo">
           <Icono nombre="habitual" tamano={18} />
           {COPY_HABITUALES.misHabituales}
-          {habituales.habituales.length > 0 ? <span className="nota">Los que marcaste: se agregan con un clic.</span> : null}
+          {habituales.habituales.length > 0 ? (
+            <span className="nota" data-habituales-coinciden={filtro ? alaVista.length : undefined}>
+              {filtro ? COPY_HABITUALES.coinciden(alaVista.length, habituales.habituales.length, filtro) : 'Los que marcaste: se agregan con un clic.'}
+            </span>
+          ) : null}
         </h3>
         {habituales.lectura === 'falla' ? (
           <Aviso tipo="error">
@@ -199,9 +216,13 @@ function ContenidoDeAgregarEjercicio({
           <Cargando />
         ) : habituales.habituales.length === 0 ? (
           <p className="nota">{COPY_HABITUALES.sinEjerciciosHabituales}</p>
+        ) : alaVista.length === 0 ? (
+          <p className="nota" data-habituales-sin-coincidencias>
+            {COPY_HABITUALES.ningunoCoincide(filtro, catalogoBuscado)}
+          </p>
         ) : (
           <ul className="agregar-item__fichas">
-            {habituales.habituales.map((h) => (
+            {alaVista.map((h) => (
               <li key={h.exerciseId}>
                 <button type="button" className="boton boton--quieto boton--compacto" aria-label={`Agregar ${h.name}`} onClick={() => elegir(h)}>
                   <Icono nombre="mas" tamano={18} />
@@ -234,7 +255,18 @@ function ContenidoDeAgregarEjercicio({
             </button>
           </Aviso>
         ) : null}
-        {busqueda.tipo === 'lista' && ejercicios.length === 0 ? <p data-sin-resultados>No encontramos ejercicios con ese nombre. Podés crearlo a mano o importarlo, con los botones de abajo.</p> : null}
+        {busqueda.tipo === 'lista' && ejercicios.length === 0 ? (
+          <>
+            <p data-sin-resultados>
+              {busqueda.texto ? `Ningún ejercicio coincide con «${busqueda.texto}».` : 'El catálogo no trajo ejercicios.'} Podés crearlo a mano o importarlo, con los botones de abajo.
+            </p>
+            <div className="acciones">
+              <button type="button" className="boton boton--secundario boton--compacto" onClick={limpiar}>
+                Limpiar búsqueda
+              </button>
+            </div>
+          </>
+        ) : null}
         {busqueda.tipo === 'lista' && ejercicios.length > 0 ? (
           <div className="desplazable-x">
             <table className="tabla alimentos-del-catalogo ejercicios-del-catalogo">

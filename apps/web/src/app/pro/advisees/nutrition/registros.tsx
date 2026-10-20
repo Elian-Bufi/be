@@ -291,7 +291,12 @@ function Contraste({ contexto, linea, hoy, onReintentarLaLinea, onCambio }: { co
         {sinContar.sinDiaTipo > 0 ? ` · ${sinContar.sinDiaTipo === 1 ? 'un día' : `${sinContar.sinDiaTipo} días`} sin día tipo determinado: sus comidas no se pueden contar` : ''}
       </p>
 
-      {aLaVista.length === 0 ? (
+      {/* Sin ninguna comida en el período, una vista elegida no es la que deja afuera: se dice el vacío del período, no «Hay 0». */}
+      {aLaVista.length === 0 && vista !== 'TODAS' && total === 0 && deLaVista !== null ? (
+        <EstadoVacio titulo="El período no tiene comidas para mostrar.">
+          <p className="nota">No es un cero: no hay comidas del plan ni registros en estas fechas. Probá con un período más largo.</p>
+        </EstadoVacio>
+      ) : aLaVista.length === 0 ? (
         <EstadoVacio
           titulo={vista === 'TODAS' ? 'El período no tiene días para mostrar.' : deLaVista === null ? `No se puede saber qué comidas trae «${definicion.nombre}».` : `Ninguna comida del período coincide con «${definicion.nombre}».`}
           accion={

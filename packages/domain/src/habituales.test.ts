@@ -7,6 +7,7 @@ import { terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
 import { terminosProhibidosEn } from './copy-nutricion';
 import { vaciarNota } from './plantillas-de-plan';
 import {
+  habitualesQueCoinciden,
   itemsDeLaComida,
   nombreNormalizadoDeHabitual,
   notasDeLaComida,
@@ -115,4 +116,18 @@ test('TEST-PRJ-009 · el copy de los habituales no califica ni promete, con los 
   const textos = Object.values(COPY_HABITUALES).map((v) => (typeof v === 'function' ? (v as (...a: never[]) => string)(...(['Pierna A', 2] as never[])) : v));
   textos.push(COPY_HABITUALES.ejercicios(1), COPY_HABITUALES.alimentos(3), COPY_HABITUALES.actualizada('3 sept 2026'));
   assert.deepEqual(textos.flatMap((t) => [...terminosProhibidosDeEntrenamientoEn(t), ...terminosProhibidosEn(t)].map((p) => `${p} en «${t}»`)), []);
+});
+
+test('el buscador filtra los habituales palabra por palabra, sin acentos ni mayúsculas; sin texto, todos', () => {
+  const lista = [{ name: 'Arroz blanco, cocido' }, { name: 'Pechuga de pollo' }, { name: 'Sentadilla búlgara' }];
+  assert.equal(habitualesQueCoinciden(lista, ''), lista);
+  assert.equal(habitualesQueCoinciden(lista, '   '), lista);
+  assert.deepEqual(habitualesQueCoinciden(lista, 'cocido ARROZ'), [lista[0]]);
+  assert.deepEqual(habitualesQueCoinciden(lista, 'bulgara'), [lista[2]]);
+  assert.deepEqual(habitualesQueCoinciden(lista, 'pollo  de'), [lista[1]]);
+  assert.deepEqual(habitualesQueCoinciden(lista, 'arroz pollo'), []);
+  assert.equal(COPY_HABITUALES.coinciden(1, 12, 'arr'), '1 de 12 con «arr»');
+  assert.equal(COPY_HABITUALES.ningunoCoincide('kiwi'), 'Ninguno de tus habituales tiene «kiwi». El catálogo se busca con Enter.');
+  // Con el catálogo ya buscado con el mismo texto, no se repite la pista de Enter: su resultado ya está a la vista.
+  assert.equal(COPY_HABITUALES.ningunoCoincide('kiwi', true), 'Ninguno de tus habituales tiene «kiwi».');
 });

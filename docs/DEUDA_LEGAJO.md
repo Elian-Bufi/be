@@ -150,6 +150,10 @@
 | DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
 | DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla, la evaluación más corta y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
+| DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
+| DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
+| DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
+| DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 
 ---
 
@@ -374,6 +378,8 @@ el 06 tendría que leer como «1 : 0..N» mientras el contenido sea optativo.
 - **B.** Cookie httpOnly en el website y SecureStore en el APK, con refresh rotativo (T-10 del 07).
 
 **Provisorio en código.** A, con TTL de 12 h y `renewable: false`.
+
+**Sustituida en el website por DL-147 (2026-10-19).** Una recarga ya no obliga a volver a entrar: la cookie de reanudación (HttpOnly) devuelve un token de la misma sesión. La APK sigue con lo decidido el 2026-10-03 (abajo).
 
 **Condición de cierre.** Se implementa el refresh rotativo (T-10) o Dirección ratifica A para el MVP.
 
@@ -4765,3 +4771,320 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
 **Provisorio en código:** G-1 a G-6.
 
 **Condición de cierre:** Dirección ratifica G-1 a G-6, o cambia las que quiera.
+
+---
+
+## DL-147 — La sesión del website sobrevive a una recarga: reanudación con cookie HttpOnly y rotativa
+
+**Prioridad:** alta (primera prioridad del encargo de consolidación).
+
+**Documentos:**
+- **07:789 y §43-bis:** «JWT en memoria […] hasta la introducción del refresh rotativo, que moverá el refresh a almacenamiento seguro (cookie httpOnly para web; SecureStore para APK)».
+- **08 §26:** sesiones revocables del lado del servidor.
+- **DL-012:** la sesión del website en memoria (opción A) y la de la APK en SecureStore.
+- **DL-030:** el website llama a la API directo, con CORS, para que la API vea la IP real.
+- **DL-138:** el acceso con Google abre la misma sesión.
+- **OWASP, Session Management Cheat Sheet.**
+
+**Qué pedía el encargo (2026-10-19, bloque 3).**
+- Actualizar la página conserva una sesión todavía válida, y entrar por un enlace autorizado recupera el contexto después de identificarse.
+- Las credenciales de renovación quedan fuera del JavaScript del navegador: nada de contraseñas, Bearer ni refresh tokens en localStorage o sessionStorage.
+- El servidor sigue decidiendo: restaurar no restaura un permiso revocado.
+
+**Lo que condiciona el diseño: website y API son sitios distintos.**
+- `onrender.com` está en la lista de sufijos públicos (Public Suffix List, sección de Render). Por eso be-web-…onrender.com y be-api-…onrender.com son dos sitios.
+- Una cookie de la API es, para el website, una cookie de terceros. `SameSite=Lax` o `Strict` no viajaría.
+
+**Lo decidido** (todo provisorio en código, a ratificar):
+- **D-1 · Una cookie de reanudación, no un refresh general.**
+  - Al abrir una sesión desde el website (API-ACC-02 y API-GOO-01 a 03), la API manda `__Secure-be-reanudacion`: `HttpOnly; Secure; SameSite=None; Partitioned`, con `Path=/api/v1/auth/sessions` y `Max-Age` igual a lo que le queda a la sesión.
+  - `Partitioned` (CHIPS) guarda la cookie en la partición del website: la mandan solo los pedidos que salen de él, aunque el navegador bloquee las cookies de terceros sin partición.
+  - El secreto es de 256 bits; la base guarda su huella SHA-256, nunca el secreto.
+  - La APK no la recibe.
+- **D-2 · API-ACC-02-REANUDACION** (`POST /api/v1/auth/sessions/resume`): con la cookie, devuelve un token nuevo de la MISMA sesión, con el mismo id y el mismo vencimiento (12 h desde el inicio, sin extender: DL-012). Una sesión finalizada, revocada, vencida, de otra superficie, con otra versión de control o de una cuenta que no opera no se reanuda. Vencida responde `SESSION_EXPIRED`, para que el website lo explique; lo demás, `SESSION_INVALID`; sin cookie, `AUTHENTICATION_REQUIRED`. Un rechazo borra la cookie.
+- **D-3 · Rotativa, con margen para dos pestañas.**
+  - Cada reanudación cambia el secreto. Cada fila de `reanudacion_de_sesion` reemplaza a la anterior (cadena por `predecesora_id`, única), y la vigente es la que no tiene sucesora.
+  - Dos pestañas que recargan a la vez presentan el mismo secreto: la segunda llega con uno recién reemplazado y vale dentro de 2 minutos, sin rotar otra vez. Las reanudaciones de una sesión se serializan con un bloqueo de su fila.
+  - Fuera del margen, un secreto reemplazado es una copia: la sesión se revoca (`REANUDACION_REUTILIZADA`), y con ella el token de las pestañas abiertas.
+- **D-4 · Sin superficie de CSRF en los datos.**
+  - Ninguna operación de datos se autentica con la cookie: siguen con el Bearer en memoria.
+  - La reanudación exige `X-BE-Surface: WEB`, una cabecera propia que obliga a la verificación previa de CORS, y, con orígenes configurados, un `Origin` de la lista. El cupo es de 300 reanudaciones cada 15 minutos por red (`RATE_LIMIT_REANUDACION_*`): un consultorio entero puede salir por la misma IP.
+  - CORS pasa a `credentials: true` para el origen del website. La cookie solo viaja a `/api/v1/auth/sessions`.
+- **D-5 · Nada en el almacenamiento del navegador.** El token sigue en memoria de la pestaña; la cookie es HttpOnly, y el JavaScript del website no la ve.
+- **D-6 · El website:**
+  - al cargar dice «Recuperando tu sesión…», sin mandar a Iniciar sesión ni mostrar datos de nadie;
+  - una falla de red o del servidor se reintenta dos veces;
+  - entre pestañas (`BroadcastChannel`, sin tokens en los mensajes), cerrar la sesión en una la cierra en las demás, y entrar con otra cuenta recarga las que mostraban otra;
+  - si la sesión venció, la entrada lo dice («Tu sesión venció…») y después vuelve al mismo lugar: la ruta, la vista y el período, si tienen una forma conocida (`destinoSeguro` y `retornoDeLaPagina`). Lo escrito sin guardar no se confirma solo: la página se vuelve a montar.
+- **D-6 bis · Una falla de conexión se dice como tal** (agregado el 2026-10-19, antes de integrar):
+  - al entrar, un pedido que no llega dice «No pudimos conectarnos con BE: no es un problema de tu correo ni de tu contraseña»;
+  - al recargar, si después de los dos reintentos no hubo conexión, la entrada lo dice (`aviso=sin-conexion`): no es que la sesión haya vencido. Cuando la conexión vuelve, la reanudación se intenta sola.
+- **D-7 · La APK no cambia:** sigue con su token en SecureStore (DL-012, 2026-10-03) y nunca manda credenciales (`credentials: 'omit'`).
+
+**Alternativas descartadas:**
+- **Guardar el token en sessionStorage o localStorage:** el encargo lo prohíbe, y un XSS se lo lleva.
+- **Servir la API bajo el dominio del website** (un proxy en el mismo sitio): DL-030 descartó el rewrite de Render porque ocultaba la IP del cliente, y los límites de intentos van por IP. Un proxy propio que la reenvíe es un servicio más.
+- **Un dominio propio para website y API** (`app.…` y `api.…`, el mismo sitio): la cookie sería de primera parte. Es la solución de fondo, pero pide comprar el dominio y configurarlo en Render. Queda como propuesta para Dirección.
+- **Rotar sin margen:** dos pestañas que recargan a la vez revocarían la sesión.
+- **No rotar:** el 07 pide refresh rotativo, y la rotación detecta una copia de la cookie.
+
+**Contrato:**
+- operación nueva API-ACC-02-REANUDACION, sufijo de BE sobre API-ACC-02 (la guardia de trazabilidad suma `REANUDACION`);
+- API-ACC-02 y API-GOO-01 a 03 mandan la cookie en el website;
+- API-ACC-03 y 04 la borran.
+
+Las respuestas no cambian de forma, y la APK instalada no se entera.
+
+**Base de datos:**
+- `20261019200000_motivo_reanudacion_reutilizada`: el motivo nuevo de revocación, en su propia migración como pide PostgreSQL.
+- `20261019200100_reanudacion_de_sesion_web`: la tabla `reanudacion_de_sesion`.
+  - Solo se agrega y no admite TRUNCATE.
+  - Su trigger exige una sesión activa del website, una sola fila inicial por sesión y una predecesora de la misma sesión.
+  - La huella tiene la forma de un SHA-256.
+
+**Pruebas:**
+- **Integración** (`test/integration/reanudacion-de-sesion.int-spec.ts`):
+  - los atributos de la cookie, y que la APK no la reciba;
+  - que reanudar devuelva la misma sesión y el mismo vencimiento, con un token que autentica;
+  - la rotación y la cadena;
+  - sin cookie, con otra forma o desconocida;
+  - otra superficie;
+  - dos pestañas dentro del margen;
+  - cuatro pedidos simultáneos, que rotan una vez;
+  - el reuso fuera del margen, que revoca;
+  - cerrar la sesión, cerrar todas y la cuenta suspendida;
+  - la sesión vencida;
+  - el origen ajeno, la verificación previa y CORS con credenciales;
+  - la historia solo agregada y el trigger.
+- **Dominio:** las credenciales solo en las operaciones de sesión del website, nunca en la APK.
+- **Scripts:** `scripts/retorno-seguro.test.mjs` (la vista y el período en el retorno).
+
+**Lo que falta, y cómo se verifica:**
+- **En el despliegue real:** las cookies entre los dos dominios de Render no se pueden probar en local con los mismos sitios. Hay que entrar, recargar, abrir otra pestaña, cerrar la sesión y esperar el vencimiento en Chrome, Edge y Firefox.
+- **Safari** (corregido el 2026-10-19 a pedido de Dirección):
+  - Desde la 26.2, del 12 de diciembre de 2025, vuelve a aceptar cookies particionadas (CHIPS), que se piden con el atributo `Partitioned`, como la nuestra. Las había incorporado en la 18.4 y las quitó en la 18.5. Fuente: [WebKit Features for Safari 26.2](https://webkit.org/blog/17640/webkit-features-for-safari-26-2/).
+  - WebKit documenta el caso de un iframe, no el de la respuesta a un pedido entre sitios como el nuestro: queda por verificar en un Safari real.
+  - En una versión sin CHIPS, el comportamiento es el de antes (volver a entrar), y la reanudación lo dice como sesión inexistente.
+- **El recorrido de navegador en la CI** (bloque 6 del encargo): entrar y recargar.
+
+**Condición de cierre:**
+- Dirección ratifica D-1 a D-7;
+- la verificación en el despliegue real pasa en los tres navegadores;
+- se decide si se pide un dominio propio.
+
+---
+
+## DL-148 — Los borradores: estado de escritura inequívoco, autoguardado de los planes y conflicto explícito
+
+**Prioridad:** alta (bloque 3 del encargo de consolidación, con DL-147).
+
+**Documentos:**
+- **B10-06:1145-1148:** una escritura denegada retira el contenido.
+- **DL-047:** la versión en preparación.
+- **El control de versión del 09:** `expectedVersion`; la respuesta a una versión distinta es 409.
+- **DL-147:** la sesión que sobrevive a una recarga.
+- **El inventario:** `docs/ux/BORRADORES.md`.
+
+**Qué pedía el encargo:**
+- inventariar qué persiste cada editor;
+- estados de escritura inequívocos («Guardando», «Guardado», «Pendiente de guardar», «No se pudo guardar»);
+- un autoguardado que guarde la preparación y nunca confirme un acto;
+- dos pestañas sin sobrescrituras silenciosas;
+- reintentos sin duplicados;
+- y no prometer recuperar lo que nunca se guardó.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · Cuatro estados, una regla.** `estadoDeGuardado`, en el dominio, y `EstadoDeGuardado`, en el website. «Guardado» solo con la respuesta del servidor. Van en los dos editores de plan y en la toma en preparación, que ya tenían una línea de estado.
+- **D-2 · El autoguardado de los planes en preparación** (Nutrición y Entrenamiento).
+  - Corre en la primera pausa de 4 s, solo si no falta completar nada, sin un guardado en curso, sin un conflicto pendiente y sin un acto abierto (activar, guardar como plantilla).
+  - Al volver la conexión, reintenta.
+  - Sin cambios en la API: usa el PATCH del borrador con `expectedVersion`.
+  - La toma, con mediciones que se cargan de a una, sigue guardándose con «Guardar», con los cuatro estados.
+  - *Alternativa descartada:* autoguardar la toma (cada campo sería una escritura, y una medición a medio escribir no se guarda: hay que confirmar).
+- **D-3 · El conflicto se dice.** Un 409 por versión no pisa nada. El editor dice que el borrador cambió en otra pestaña o en otro equipo, deja lo escrito a la vista para copiarlo y ofrece «Cargar la versión guardada». Si el intento anterior se perdió en la red, el editor relee antes: si lo guardado es lo suyo, no hay conflicto.
+  - *Alternativa descartada:* reintentar con la versión nueva (pisaría lo de la otra pestaña sin decirlo).
+- **D-4 · Lo escrito mientras viaja un guardado no se pisa.** Un contador de ediciones decide si la respuesta reemplaza la pantalla. Si hubo cambios, sigue pendiente y viaja en el siguiente guardado, con la versión nueva.
+- **D-5 · Salir con algo sin guardar pide confirmar** (`beforeunload`, el aviso del navegador), además de «Actualizar», que ya preguntaba.
+  - Nada se guarda en el navegador: un borrador es información de salud.
+  - *Alternativa descartada:* guardarlo en localStorage o en IndexedDB para recuperarlo después de cerrar la página (información de salud en el navegador por tiempo indefinido; el encargo lo pide evitar).
+- **D-6 · Lo que no tiene borrador, no se simula.**
+  - La revisión, la evaluación, el objetivo, el pedido de información y la nota se envían de una vez.
+  - Un borrador de revisión pide una operación nueva de la API: queda como propuesta (bloque 7 del encargo).
+
+**Pruebas:**
+- **Dominio:** `estado-de-guardado.test.ts`, la regla de los cuatro estados.
+- **Navegador en la CI** (bloque 6): retomar un borrador después de recargar y resolver un conflicto entre dos pestañas.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-6, y el recorrido de navegador de la CI pasa.
+
+---
+
+## DL-149 — El flujo profesional, pulido: la acción del momento, «Más», los habituales donde se agrega, las pistas, el área sugerida y los vacíos
+
+**Prioridad:** alta (bloque 5 del encargo de consolidación; con dos puntos del bloque 3).
+
+**Documentos:**
+- **La maqueta 01 aprobada:** el encabezado de la ficha.
+- **B10-01:** el marco de la ficha.
+- **DL-145:** «Empezar el plan».
+- **DL-146:** ayuda breve en la vista, detalle en la Guía y pistas.
+- **DL-109:** «Mis habituales».
+- **DL-140:** la nota de coordinación.
+- **WCAG 2.2:** 1.4.13 (contenido al pasar el mouse) y 2.4.11 (foco no tapado).
+- **Los recorridos de navegador:** DL-150.
+
+**Qué pedía el encargo:**
+- **Encabezado:** una acción principal según el contexto, las secundarias en un menú comprensible, y el período solo donde cambia la lectura.
+- **Caminos:** distintos y previsibles para una ficha nueva, una con borrador y una con plan vigente.
+- **Pistas:** verificadas con mouse, teclado, Escape, zoom y tacto.
+- **Área sugerida:** visible y editable, validada en el servidor.
+- **Estados:** vacíos distintos de sin resultados, errores parciales que no borran el resto, y un solo «Reintentar» por operación.
+- **Editores:** plantillas y habituales donde se busca y se agrega.
+- **Estética:** escritorio y tablet.
+- **Del bloque 3:** al cambiar de asesorado, limpiar lo del anterior; un corte de red no pierde lo escrito.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · Una acción del momento, o ninguna** (`accionDeLaFicha`).
+  - Gana la revisión acordada vencida o de los próximos 7 días: «Preparar la revisión de …».
+  - Después, el borrador: «Seguir el borrador».
+  - Después, un área sin plan: «Empezar el plan». También un área legible sin ningún dato, que el tablero manda con el resumen en `null`.
+  - Con dos áreas legibles, el texto dice de cuál es. Con todo al día no hay acción: la ficha no inventa una urgencia, y la fecha de la revisión la fijó el profesional.
+  - *Alternativa descartada:* una acción fija o varias a la vista (era la densidad pendiente).
+- **D-2 · «Más» agrupa lo de vez en cuando:** «Pedir información» y «Nota de coordinación».
+  - Cada una con una línea que dice qué hace: en una lista no hay un «pasar el mouse» que sirva. El nombre accesible es el de la acción y la línea es su descripción.
+  - «Actualizar» y la hora siguen a la vista (B10-01).
+- **D-3 · El marco a 1.400 px o más tiene cinco columnas también en la ficha.** Antes, la quinta pieza caía en una columna implícita a la derecha de «Actualizar».
+- **D-4 · El período ya estaba donde cambia la lectura.** Está en las tres vistas de la ficha, que lo usan, y en Registros, Sesiones, Evolución y la revisión de cada área. No se agregó ni se quitó.
+- **D-5 · La pista responde al mouse y al lápiz, no al dedo.**
+  - Un toque emulaba «pasar el mouse» y la pista quedaba abierta encima del contenido.
+  - Lo que explica está en la vista o en la Guía, y el lector de pantalla la sigue leyendo.
+  - *Alternativa descartada:* mantenerla abierta con un toque largo. No es un gesto estándar y choca con seleccionar texto.
+- **D-6 · El área sugerida es solo una sugerencia.**
+  - Viene elegida si el profesional tiene vínculos en una sola área, y lo dice: «Sugerida por tus vínculos: podés elegir otra.», también en la descripción accesible del campo.
+  - La lista de áreas sigue completa y el servidor valida la habilitación. El rechazo (422) se dice junto al campo, que recibe el foco.
+  - Nunca otorga un consentimiento.
+- **D-7 · Habituales donde se agrega.**
+  - «Agregar comida ▾» ofrece «Una comida vacía» o «Una comida habitual», como «Agregar ▾» de Entrenamiento. Sin habituales, la opción está apagada y dice cómo se guardan. Si no se pudieron leer, lo dice y ofrece volver a leerlas.
+  - El buscador de «Agregar ítem» y «Agregar ejercicio» filtra los habituales mientras se escribe (`habitualesQueCoinciden`). El catálogo se sigue buscando al enviar.
+  - Foco y Escape: el selector aparece con el foco, y Escape o «Cancelar» devuelven el foco a «Agregar».
+  - Las plantillas siguen donde nace un plan («Empezar desde una plantilla») y donde se guarda una («Guardar como plantilla»).
+  - *Alternativa descartada:* aplicar una plantilla sobre un borrador existente. Sería una operación masiva para una fricción chica, y el encargo pide evitarlas.
+- **D-8 · El objetivo propone la evaluación más reciente** (`evaluacionMasReciente`). En el primer plan, el formulario se abría antes de que llegara la evaluación recién registrada y quedaba sin elegir.
+- **D-9 · Vacíos, fallas parciales y un solo «Reintentar»** (relevamiento de todo el espacio profesional).
+  - **Vacío y sin resultados son distintos.**
+    - Un filtro de plantillas sin coincidencias dice «Ninguna plantilla activa/archivada» y ofrece «Ver todas», en lugar de «Todavía no guardaste ninguna».
+    - Los buscadores del catálogo y el de recetas dicen el término y ofrecen «Limpiar búsqueda».
+  - **Un solo «Reintentar» por lectura, que dice qué reintenta.**
+    - En la ficha: el encabezado ya no tiene uno propio («Actualizar» vuelve a pedir el acceso); el Resumen tiene «Reintentar lo que faltó» arriba de las tarjetas; los indicadores, uno solo.
+    - En Analizar: «Reintentar las métricas que fallaron». En Comparar etapas, uno debajo de la tabla. Cada uno vuelve a pedir solo lo que falló.
+    - En Sesiones, el detalle remite al de la lista.
+    - En `/pro`, cada lista el suyo.
+  - **Una falla no se dice como ausencia.** Esto vale para:
+    - la información para revisar;
+    - los datos para responder una pregunta;
+    - las etapas;
+    - los habituales;
+    - lo citable de una nota;
+    - la toma en preparación.
+
+    En cada caso dice que no se pudo leer, con su reintento, nunca «no hay».
+  - **Lo leído no se borra.** Un «Actualizar» que falla deja la lista leída, con la hora, si es la misma consulta. Si cambió el período, es una falla: no se muestra una lista vieja como nueva.
+  - **Resumen y Plan de Nutrición y de Entrenamiento ya no son «todo o nada»** (`lecturas-parciales.tsx`).
+    - En el Resumen, cada lectura tiene su estado: si falla una, lo demás sigue a la vista, cada dato que dependía de ella dice «No se pudo leer» y un solo «Reintentar lo que faltó» vuelve a pedir solo eso.
+    - En el Plan, si falla el objetivo vigente o la versión activa, el plan sigue a la vista con el aviso de lo que falta. Crear una versión espera a leerlo, porque nace de los dos, y nunca aparece «Primero definí el objetivo» por una falla.
+    - Sin las versiones del plan no hay nada que mostrar: esa falla sigue siendo la de la vista entera. Un 404 sigue siendo «no disponible».
+- **D-10 · Del bloque 3.**
+  - **Al cambiar de asesorado, la ficha y las áreas se vuelven a montar** (`PorAsesorado`). Nada de la persona anterior queda a la vista mientras llega lo nuevo. Lo escrito sin guardar de la anterior también se descarta: los planes se guardan solos en la primera pausa y nada se guarda en el navegador.
+  - **Lo que vive en la dirección de una página se cambia con la historia del navegador** (`cambiarLaDireccion`). Pasa con la vista, el período, el día tipo, las comidas abiertas y la receta abierta.
+    - Antes lo hacía el enrutador de Next, que en el export estático le pide la página al servidor en cada cambio. Sin conexión, la pestaña terminaba en la página de error del navegador, con lo escrito sin guardar adentro. Lo encontró el recorrido `borrador`.
+    - De paso, cada cambio de vista ya no hace un pedido de red.
+- **D-11 · Tablet y escritorio angosto.** Entre 1.024 y 1.199 px, la campana de novedades cede su palabra (queda su número y su nombre accesible) para que la barra entre en un renglón. Antes, a 1.024 px, «Cuenta» bajaba a otro.
+
+**Pruebas:**
+- **Navegador, la falla parcial:** el recorrido `faltaUnaParte` simula en el navegador que falla solo el objetivo, mira el plan con el aviso y sin «crear versión», y reintenta.
+- **Unidad:**
+  - la acción de la ficha (con el resumen en `null`) y su dirección;
+  - la evaluación más reciente;
+  - el área única;
+  - el filtro de habituales y su texto.
+- **Pruebas de los scripts y del dominio:** completas, con los textos nuevos.
+- **Navegador en la CI (DL-150):**
+  - `pistas`: mouse, teclado, Escape, bordes, tablet con «Más» por teclado, 200 %, tacto y árbol de accesibilidad;
+  - `borrador`, `conflicto`, `primerPlan` y `retorno`: las tres acciones del momento y el corte de conexión;
+  - `primeraInvitacion` y `areaSugerida`.
+- **Pendiente:** cuatro comprobaciones de la herramienta de evidencia de WP-DASHBOARD (`recorrido.mjs` E-45, C-43 y F-86; `recorrido-comprension.mjs` CP-06) esperan los «Reintentar» y los textos anteriores. No corren en la CI. Se actualizan en su próxima corrida, con la pantalla a la vista.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-11 y los recorridos pasan en la CI de main.
+
+---
+
+## DL-150 — Recorridos de navegador en la CI y la prueba con profesionales
+
+**Prioridad:** alta (bloque 6 del encargo de consolidación: «verificación que proteja el trabajo diario»).
+
+**Documentos:**
+- **El encargo, bloque 6:** pide recorridos de navegador en la CI y una prueba breve con profesionales.
+- **07 §35:** la CI verifica cada empuje y cada PR.
+- **DL-036:** la habilitación de profesionales de demostración, declarada al arrancar la API.
+- **DL-146, DL-147 y DL-148:** lo que los recorridos protegen.
+- **Los recorridos:** `test/navegador/LEEME.md`.
+- **El protocolo:** `docs/ux/PRUEBA-CON-PROFESIONALES.md`.
+
+**Qué pedía el encargo:**
+- Recorrer en el navegador:
+  - entrar y recargar;
+  - retomar un borrador;
+  - avanzar por evaluación, objetivo y plan;
+  - resolver un conflicto;
+  - volver desde una revisión conservando el contexto.
+- Cuentas y datos propios de cada recorrido, sin dependencias entre pruebas y sin reinicios para esconder fallas.
+- En los gráficos, valores y estados, no solo títulos.
+- Una prueba breve con profesionales que mida finalización, dudas, errores y ayuda.
+- Las pruebas del teléfono de la candidata.3, pendientes y a la vista.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · El arnés es nuevo y chico, en `test/navegador/`.**
+  - Toma del arnés de `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas` la idea y las ayudas: cuentas por la API, `puppeteer-core` y la CSP de `render.yaml`.
+  - No toma sus 14.000 líneas ni su escenario compartido.
+  - *Alternativa descartada:* correr ese arnés en la CI. Sus partes dependen del escenario A/B/C, que es compartido.
+- **D-2 · Cada recorrido tiene un profesional y una persona propios**, con correos nuevos en cada corrida, y sus datos cargados por la API.
+  - Ninguno usa lo que deja otro, y se puede correr solo (`--solo`).
+- **D-3 · La API arranca dos veces, antes de cualquier recorrido.** La habilitación de profesionales de prueba se declara al arrancar (DL-036).
+  - El límite de altas se configura en 200 para ese ambiente. Cada corrida registra dos cuentas por recorrido desde una sola dirección. El limitador se prueba en integración.
+  - No hay otros reinicios ni otros límites cambiados.
+- **D-4 · La base se declara siempre.** `BE_RECORRIDOS_DATABASE_URL` tiene que ser local y llamarse `be_recorridos…`; si no, el script se detiene antes de tocar nada.
+- **D-5 · Las comprobaciones miran resultados**, no títulos:
+  - la dirección, el texto y lo que guardó el servidor;
+  - la cookie de reanudación, con sus atributos;
+  - el almacenamiento del navegador, sin tokens;
+  - el árbol de accesibilidad.
+  - En el gráfico, la altura de cada punto leída con las marcas del eje, el tiempo a escala y la tabla.
+- **D-6 · Evidencia visual del código probado.** Cada corrida guarda capturas de los momentos clave en escritorio y tablet, y de cada falla. Se suben como artefacto de la CI.
+- **D-7 · La prueba con profesionales es un protocolo, no un resultado.** Cinco tareas, con su consigna, su criterio de éxito y qué se mide. Nadie que no participe figura como validación humana.
+
+**Pruebas:** los doce recorridos del trabajo `recorridos` de la CI:
+- `sesion`, con el enlace directo sin sesión
+- `pistas`, con la tablet
+- `borrador`, con el corte de conexión
+- `conflicto`
+- `primerPlan`
+- `retorno`
+- `grafico`
+- `primeraInvitacion`
+- `areaSugerida`
+- `sesionRevocada`
+- `accesoRevocado`
+- `faltaUnaParte`, con una lectura que falla, simulada en el navegador
+
+Las dos primeras corridas encontraron dos fallas del website que se corrigieron en DL-149:
+- la ficha nueva sin acción, porque un área sin datos llega con el resumen en `null`;
+- la pestaña que caía en la página de error al cambiar la dirección sin conexión.
+
+También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran del propio recorrido: la pestaña de fondo, la comida plegada y las marcas del eje.
+
+**Lo que no cubren:**
+- el teléfono;
+- un lector de pantalla real;
+- la prueba con personas.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-7, los recorridos pasan en la CI de main, y la prueba con profesionales se hace y se informa.

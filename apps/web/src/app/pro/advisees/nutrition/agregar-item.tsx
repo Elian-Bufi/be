@@ -9,6 +9,8 @@
  * - **Busca al enviar** (Enter o la lupa), como antes. Los resultados van en una tabla con las calorías y los tres
  *   macros de cada alimento, en el orden de BE; los de un líquido lo dicen («cada 100 ml»).
  * - **Una búsqueda que falla dice su motivo y se reintenta:** no es «No encontramos alimentos con ese nombre».
+ * - **Una búsqueda sin resultados dice qué se buscó** y ofrece «Limpiar búsqueda», que vacía el campo (y con él el filtro
+ *   de los habituales), devuelve el foco al campo y deja el cajón como al abrirse (bloque 5 del encargo de consolidación).
  * - **Elegir no cierra el cajón:** el alimento se suma a la opción, sin cantidad, y el cajón lo anuncia («Agregado:
  *   Arroz»). Se pueden sumar varios seguidos; se cierra con «Cerrar» o con Escape.
  * - «Crear manualmente» e «Importar desde Open Food Facts» se abren adentro, en el lugar de los resultados, con «Volver
@@ -20,6 +22,7 @@
 import {
   cantidad as formatearCantidad,
   COPY_HABITUALES,
+  habitualesQueCoinciden,
   COPY_INTEGRACIONES,
   COPY_NUTRICION,
   leerNumero,
@@ -143,6 +146,13 @@ function ContenidoDeAgregarItem({
     e.preventDefault();
     void buscar(texto.trim());
   };
+  /** «Limpiar búsqueda»: el campo vacío (y con él el filtro de los habituales), el foco en él y el cajón como al abrirse. */
+  const limpiar = () => {
+    pedido.current += 1;
+    setTexto('');
+    setBusqueda({ tipo: 'sin-buscar' });
+    campo.current?.focus();
+  };
   const elegir = (e: ElementoDeCatalogo) => {
     onElegir(e);
     setAgregado((a) => ({ nombre: e.name, veces: (a?.veces ?? 0) + 1 }));
@@ -181,6 +191,11 @@ function ContenidoDeAgregarItem({
   }
 
   const alimentos = busqueda.tipo === 'lista' ? busqueda.alimentos : [];
+  // Los habituales se filtran mientras se escribe; el catálogo, al enviar (bloque 5).
+  const filtro = texto.trim();
+  const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
+  // Con el catálogo ya buscado con ese texto, los habituales no repiten que se busca con Enter: el resultado está debajo.
+  const catalogoBuscado = busqueda.tipo !== 'sin-buscar' && busqueda.texto === filtro;
   return (
     <div className="agregar-item">
       <form onSubmit={enviar} className="agregar-item__buscador" role="search">
@@ -210,7 +225,11 @@ function ContenidoDeAgregarItem({
         <h3 id={`${id}-habituales`} className="agregar-item__titulo">
           <Icono nombre="habitual" tamano={18} />
           {COPY_HABITUALES.alimentosHabituales}
-          {habituales.habituales.length > 0 ? <span className="nota">Los que marcaste: se agregan con un clic.</span> : null}
+          {habituales.habituales.length > 0 ? (
+            <span className="nota" data-habituales-coinciden={filtro ? alaVista.length : undefined}>
+              {filtro ? COPY_HABITUALES.coinciden(alaVista.length, habituales.habituales.length, filtro) : 'Los que marcaste: se agregan con un clic.'}
+            </span>
+          ) : null}
         </h3>
         {habituales.lectura === 'falla' ? (
           <Aviso tipo="error">
@@ -223,9 +242,13 @@ function ContenidoDeAgregarItem({
           <Cargando />
         ) : habituales.habituales.length === 0 ? (
           <p className="nota">{COPY_HABITUALES.sinAlimentosHabituales}</p>
+        ) : alaVista.length === 0 ? (
+          <p className="nota" data-habituales-sin-coincidencias>
+            {COPY_HABITUALES.ningunoCoincide(filtro, catalogoBuscado)}
+          </p>
         ) : (
           <ul className="agregar-item__fichas">
-            {habituales.habituales.map((el) => (
+            {alaVista.map((el) => (
               <li key={el.catalogItemId}>
                 <button type="button" className="boton boton--quieto boton--compacto" aria-label={`Agregar ${el.name}`} onClick={() => elegir(el)}>
                   <Icono nombre="mas" tamano={18} />
@@ -264,7 +287,16 @@ function ContenidoDeAgregarItem({
           </Aviso>
         ) : null}
         {busqueda.tipo === 'lista' && alimentos.length === 0 ? (
-          <p data-sin-resultados>No encontramos alimentos con ese nombre. Podés crearlo a mano o importarlo, con los botones de abajo.</p>
+          <>
+            <p data-sin-resultados>
+              {busqueda.texto ? `Ningún alimento coincide con «${busqueda.texto}».` : 'El catálogo no trajo alimentos.'} Podés crearlo a mano o importarlo, con los botones de abajo.
+            </p>
+            <div className="acciones">
+              <button type="button" className="boton boton--secundario boton--compacto" onClick={limpiar}>
+                Limpiar búsqueda
+              </button>
+            </div>
+          </>
         ) : null}
         {busqueda.tipo === 'lista' && alimentos.length > 0 ? (
           <>

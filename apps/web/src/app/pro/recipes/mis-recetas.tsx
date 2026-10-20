@@ -8,24 +8,25 @@
  * - Un profesional sin el área de Nutrición recibe 403 y la página lo dice: mostrar u ocultar no autoriza nada.
  */
 import { COPY_RECETAS, nutrienteParaMostrar, type Receta } from '@be/domain';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
 import { api } from '../../../lib/api';
+import { cambiarLaDireccion } from '../../../lib/direccion';
 import { fecha } from '../../../lib/formato';
 import { useListaPaginada } from '../../../lib/lista';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { EditorDeReceta } from './editor-de-receta';
 import { ImagenGuardada } from './imagen-de-receta';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 export function MisRecetas() {
   const parametros = useSearchParams();
   const recetaId = parametros.get('receta');
   const nueva = parametros.get('nueva') === '1';
   const ruta = usePathname();
-  const router = useRouter();
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(recetaId ? `/pro/recipes?receta=${recetaId}` : '/pro/recipes');
   const [aviso, setAviso] = useState<string | null>(null);
   // Cada guardado vuelve a montar el editor con lo que respondió la API (la versión nueva y su historial).
@@ -46,9 +47,10 @@ export function MisRecetas() {
     ),
     sesionPerdida,
   );
-  const ir = useCallback((consulta: string) => router.push(consulta ? `${ruta}?${consulta}` : ruta), [router, ruta]);
+  // La receta abierta vive en la dirección: se cambia sin pedido al servidor, como en la ficha (bloque 3).
+  const ir = useCallback((consulta: string) => cambiarLaDireccion(consulta ? `${ruta}?${consulta}` : ruta, { agregarAlHistorial: true }), [ruta]);
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   if (yo.tipo === 'cargando') return <Cargando />;
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
   if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
@@ -72,7 +74,7 @@ export function MisRecetas() {
           onGuardada={(r: Receta, texto) => {
             setAviso(texto);
             setMontaje((n) => n + 1);
-            if (r.recipeId !== recetaId) router.replace(`${ruta}?receta=${encodeURIComponent(r.recipeId)}`);
+            if (r.recipeId !== recetaId) cambiarLaDireccion(`${ruta}?receta=${encodeURIComponent(r.recipeId)}`);
           }}
         />
       </>

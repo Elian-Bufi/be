@@ -20,6 +20,7 @@ import { api } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useSesionRequerida } from '../../../../lib/sesion-requerida';
+import { EsperandoSesion } from '../../../../lib/sesion';
 
 type Requisitos = RequisitosDeConsentimientoResponse['data'];
 type Vinculo = DetalleDeVinculoResponse['data'];
@@ -53,7 +54,7 @@ export function Consentimiento() {
     void cargar();
   }, [cargar]);
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   if (carga.tipo === 'cargando') return <Cargando />;
   if (carga.tipo === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (carga.tipo === 'no-revelable') {

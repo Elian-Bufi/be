@@ -27,30 +27,38 @@
  * con la hora; el acceso actual; y las tres vistas con el período. Siempre se sabe dónde se está sin desplazarse. La miga se retiró: la barra
  * de marca ya vuelve al Espacio profesional.
  *
- * WP-NOTAS-DE-COORDINACION (DL-140): «Nota de coordinación», al lado de «Pedir información», abre el diálogo para escribirle
- * a los otros profesionales que acompañan a la persona (UC-E07: se coordina desde el tablero). El diálogo es uno para toda la
- * ficha: lo abren también el Resumen y el detalle de una nota propia, para corregirla.
+ * WP-NOTAS-DE-COORDINACION (DL-140): «Nota de coordinación» abre el diálogo para escribirle a los otros profesionales que
+ * acompañan a la persona (UC-E07: se coordina desde el tablero). El diálogo es uno para toda la ficha: lo abren también el
+ * Resumen y el detalle de una nota propia, para corregirla.
+ *
+ * Bloque 5 del encargo de consolidación (2026-10-19): la densidad del primer renglón. Sobre la maqueta 01 aprobada, va UNA
+ * acción principal según el momento de la persona (`accionDeLaFicha`: preparar la revisión de la semana, seguir el borrador
+ * o empezar el plan; con todo al día, ninguna), y lo de vez en cuando, «Pedir información» y «Nota de coordinación», en el
+ * menú «Más». «Actualizar» y la hora de la consulta siguen a la vista (B10-01).
  */
 import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
+import { MenuDeAcciones } from '../../../components/menu-de-acciones';
 import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
+import { accionDeLaFicha, rutaDeLaAccion } from './accion-de-la-ficha';
 import { DialogoDeNota } from './nota-de-coordinacion';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
-import { conRetorno, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
+import { conRetorno, hoyEn, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
 import { Pista } from '../../../components/pista';
 import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.Analizar), { ssr: false, loading: () => <Cargando /> });
 
@@ -66,6 +74,7 @@ const VOLVER_A_PREGUNTAR_AL_VOLVER_MS = 60_000;
 
 export function Workspace() {
   const parametros = useSearchParams();
+  const router = useRouter();
   const id = parametros.get('id') ?? '';
   const vista = leerVista(parametros.get('vista'));
   const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
@@ -161,17 +170,20 @@ export function Workspace() {
     return () => document.removeEventListener('visibilitychange', alVolver);
   }, [leer]);
 
-  if (!token) return <p className="nota ficha__cuerpo">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion className="nota ficha__cuerpo" />;
   if (yo.tipo === 'cargando') return <div className="ficha__cuerpo"><Cargando /></div>;
   if (yo.tipo === 'error') return <div className="ficha__cuerpo"><ErrorConReintento onReintentar={cargarYo} /></div>;
   if (yo.tipo === 'sin-espacio') return <div className="ficha__cuerpo"><SinEspacioProfesional /></div>;
 
   const nombre = panel.tipo === 'listo' ? panel.datos.advisee.displayName : encabezado.tipo === 'listo' && encabezado.vinculos[0] ? encabezado.vinculos[0].advisee.displayName : null;
   const disponible = panel.tipo !== 'no-disponible';
+  const accion = panel.tipo === 'listo' ? accionDeLaFicha(panel.datos.domains, hoyEn()) : null;
+  const retorno = valorDeRetorno(new URLSearchParams(parametros.toString()));
 
   /**
    * El marco (B10-01): quién es, el acceso actual por área y cuándo se consultó; nada de ficha clínica. Con la ficha
-   * disponible suma «Pedir información» y, debajo, las tres vistas y el período, que necesitan el contexto de la ficha.
+   * disponible suma la acción principal del momento, el menú «Más» y, debajo, las vistas y el período, que necesitan el
+   * contexto de la ficha.
    */
   const marco = (vistas: ReactNode) => (
     <header className="marco-de-la-ficha" aria-labelledby="titulo-asesorado">
@@ -183,23 +195,26 @@ export function Workspace() {
                 dos personas que se llaman igual. Sin nombre, el título ya es la referencia. */}
             {nombre && !nombre.endsWith(referenciaCorta(id)) ? <span className="marco-de-la-ficha__referencia">{referenciaNeutral(id)}</span> : null}
           </div>
-          {disponible ? (
-            // Vuelve a esta misma vista de la ficha al enviar o al salir sin enviar (retorno validado).
-            <Pista texto={COPY_PISTAS.ficha.pedirInformacion}>
-              <Link className="boton boton--quieto boton--compacto" href={conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, valorDeRetorno(new URLSearchParams(parametros.toString())))}>
-                <Icono nombre="solicitar" tamano={18} />
-                Pedir información
+          {/* La acción principal, según el momento de la persona (bloque 5). Con todo al día no hay ninguna. */}
+          {disponible && accion ? (
+              <Link className="boton boton--secundario boton--compacto" href={conRetorno(rutaDeLaAccion(accion, id), retorno)} data-accion-de-la-ficha={accion.tipo}>
+                <Icono nombre={accion.tipo === 'revisar' ? 'revision' : accion.tipo === 'borrador' ? 'borrador' : 'plan'} tamano={18} />
+                {accion.texto}
               </Link>
-            </Pista>
           ) : null}
-          {/* DL-140 (UC-E07: «se coordina desde el tablero»): una nota para los otros profesionales de la persona. */}
+          {/* Lo de vez en cuando, junto: pedir información (vuelve a esta vista al enviar o al salir) y escribir una nota de
+              coordinación para los otros profesionales de la persona (DL-140; UC-E07). */}
           {disponible ? (
-            <Pista texto={COPY_PISTAS.ficha.notaDeCoordinacion}>
-              <button type="button" className="boton boton--quieto boton--compacto" onClick={() => abrirNota({})}>
-                <Icono nombre="texto" tamano={18} />
-                {COPY_NOTAS_DE_COORDINACION.escribirCorto}
-              </button>
-            </Pista>
+            <MenuDeAcciones
+              rotulo="Más acciones de la ficha"
+              texto="Más"
+              conFlecha
+              alineado="izquierda"
+              acciones={[
+                { clave: 'pedir', texto: 'Pedir información', detalle: COPY_PISTAS.ficha.pedirInformacion, icono: <Icono nombre="solicitar" tamano={18} />, alElegir: () => router.push(conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, retorno)) },
+                { clave: 'nota', texto: COPY_NOTAS_DE_COORDINACION.escribirCorto, detalle: COPY_PISTAS.ficha.notaDeCoordinacion, icono: <Icono nombre="texto" tamano={18} />, alElegir: () => abrirNota({}) },
+              ]}
+            />
           ) : null}
           {/* «Actualizar» vuelve a preguntar todo lo de la ficha, no solo el acceso: va con la hora, a la derecha. */}
           <div className="ficha__consulta">
@@ -219,7 +234,12 @@ export function Workspace() {
               <strong>Acceso actual</strong>
             </p>
             {encabezado.tipo === 'cargando' ? <Cargando /> : null}
-            {encabezado.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
+            {/* Sin un «Reintentar» propio: es la misma lectura que la del cuerpo, y «Actualizar», arriba, la vuelve a pedir. */}
+            {encabezado.tipo === 'error' ? (
+              <Aviso tipo="error">
+                <p>{COPY_VINCULO.accesoNoSeLeyo}</p>
+              </Aviso>
+            ) : null}
             {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} sePuedeLeer={lecturaSegun(panel)} /> : null}
           </div>
           {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}

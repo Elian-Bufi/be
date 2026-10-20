@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Encabezado } from '../../../../components/encabezado';
 import { NavegacionProfesional } from '../../../../components/navegacion';
 import { Formularios } from './formularios';
+import { PorAsesorado } from '../por-asesorado';
 
 export const metadata: Metadata = { title: 'Información · BE' };
 
@@ -16,7 +17,9 @@ export default function PaginaDeFormularios() {
       <Encabezado navegacion={<NavegacionProfesional />} />
       <main id="contenido" className="contenido contenido--ficha">
         <Suspense fallback={null}>
-          <Formularios />
+          <PorAsesorado>
+            <Formularios />
+          </PorAsesorado>
         </Suspense>
       </main>
     </>

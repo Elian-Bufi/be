@@ -5,83 +5,107 @@
  * última evaluación, estado del seguimiento y revisión pendiente. Sin «score de adherencia», semáforo clínico ni
  * «paciente en riesgo» (B05:171-177). Los valores del objetivo se muestran como «declarados por el profesional», nunca
  * como «BE recomienda» (B05:195-210).
+ *
+ * Bloque 5 del encargo de consolidación (2026-10-19): las cuatro lecturas tienen cada una su estado. Si falla una, el
+ * resto sigue a la vista, el aviso de arriba dice qué falta y vuelve a pedir solo eso, y cada dato que dependía de lo
+ * que falta dice «No se pudo leer», nunca «no hay» (`lecturas-parciales.tsx`).
  */
-import {
-  COPY_PRIMER_PLAN,
-  cantidad,
-  COPY_NUTRICION,
-  type ContextoDeRevisionResponse,
-  type EvaluacionNutricional,
-  type VersionDeObjetivo,
-  type VersionDePlan,
-} from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { COPY_PRIMER_PLAN, cantidad, COPY_NUTRICION, type ContextoDeRevisionResponse, type EvaluacionNutricional, type VersionDeObjetivo, type VersionDePlan } from '@be/domain';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
-import { api, type Resultado } from '../../../../lib/api';
+import { Cargando } from '../../../../components/estados';
+import { api } from '../../../../lib/api';
 import { dia, fecha } from '../../../../lib/formato';
-import { EstadoDeLectura, useNutricion } from './nutricion';
+import { datosDe, fallo, LecturasParciales, SegunLectura, type Lectura } from '../lecturas-parciales';
+import { useNutricion } from './nutricion';
 import { numerosDeVersion } from './plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
 
-interface Datos {
-  evaluaciones: EvaluacionNutricional[];
-  objetivos: VersionDeObjetivo[];
-  planes: Omit<VersionDePlan, 'dayTypes'>[];
-  contexto: ContextoDeRevisionResponse['data'];
+interface Lecturas {
+  readonly evaluaciones: Lectura<EvaluacionNutricional[]>;
+  readonly objetivos: Lectura<VersionDeObjetivo[]>;
+  readonly planes: Lectura<Omit<VersionDePlan, 'dayTypes'>[]>;
+  readonly contexto: Lectura<ContextoDeRevisionResponse['data']>;
 }
+type Clave = keyof Lecturas;
+const TODAS: readonly Clave[] = ['evaluaciones', 'objetivos', 'planes', 'contexto'];
+const NOMBRE: Readonly<Record<Clave, string>> = {
+  evaluaciones: 'las evaluaciones',
+  objetivos: 'los objetivos',
+  planes: 'las versiones del plan',
+  contexto: 'el estado del seguimiento',
+};
 
 export function VistaDeResumen() {
   const { token, asesoradoId, sesionPerdida, irA } = useNutricion();
-  const [r, setR] = useState<Resultado<Datos> | null>(null);
+  const [lecturas, setLecturas] = useState<Lecturas>({ evaluaciones: null, objetivos: null, planes: null, contexto: null });
   const [formulario, setFormulario] = useState<'evaluacion' | 'objetivo' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Una respuesta que llega después de un pedido más nuevo de la misma lectura no lo pisa.
+  const turnos = useRef<Record<Clave, number>>({ evaluaciones: 0, objetivos: 0, planes: 0, contexto: 0 });
 
-  const cargar = useCallback(async () => {
-    setR(null);
-    const [ev, ob, pl, cx] = await Promise.all([
-      api.listarEvaluaciones(token, asesoradoId),
-      api.listarObjetivos(token, asesoradoId),
-      api.listarPlanes(token, asesoradoId),
-      api.contextoDeRevision(token, asesoradoId),
-    ]);
-    for (const x of [ev, ob, pl, cx]) if (sesionPerdida(x)) return;
-    const fallo = [ev, ob, pl, cx].find((x) => !x.ok);
-    if (fallo) return setR(fallo as Resultado<Datos>);
-    if (!ev.ok || !ob.ok || !pl.ok || !cx.ok) return;
-    setR({ ok: true, datos: { evaluaciones: ev.datos.data, objetivos: ob.datos.data, planes: pl.datos.data, contexto: cx.datos.data } });
-  }, [token, asesoradoId, sesionPerdida]);
+  /** Lee lo pedido (todo, o solo lo que falló); lo demás queda como está. */
+  const leer = useCallback(
+    async (cuales: readonly Clave[]) => {
+      const turno = Object.fromEntries(cuales.map((c) => [c, ++turnos.current[c]])) as Partial<Record<Clave, number>>;
+      const pedido = (c: Clave) => cuales.includes(c);
+      // Lo que se vuelve a pedir pasa a «Cargando…» en su lugar; lo demás queda a la vista.
+      setLecturas((l) => ({
+        evaluaciones: pedido('evaluaciones') ? null : l.evaluaciones,
+        objetivos: pedido('objetivos') ? null : l.objetivos,
+        planes: pedido('planes') ? null : l.planes,
+        contexto: pedido('contexto') ? null : l.contexto,
+      }));
+      const [ev, ob, pl, cx] = await Promise.all([
+        pedido('evaluaciones') ? api.listarEvaluaciones(token, asesoradoId) : null,
+        pedido('objetivos') ? api.listarObjetivos(token, asesoradoId) : null,
+        pedido('planes') ? api.listarPlanes(token, asesoradoId) : null,
+        pedido('contexto') ? api.contextoDeRevision(token, asesoradoId) : null,
+      ]);
+      for (const x of [ev, ob, pl, cx]) if (x && sesionPerdida(x)) return;
+      const vigente = (c: Clave) => turno[c] === turnos.current[c];
+      setLecturas((l) => ({
+        evaluaciones: ev && vigente('evaluaciones') ? datosDe(ev) : l.evaluaciones,
+        objetivos: ob && vigente('objetivos') ? datosDe(ob) : l.objetivos,
+        planes: pl && vigente('planes') ? datosDe(pl) : l.planes,
+        contexto: cx && vigente('contexto') ? datosDe(cx) : l.contexto,
+      }));
+    },
+    [token, asesoradoId, sesionPerdida],
+  );
 
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    void leer(TODAS);
+  }, [leer]);
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
-      {r?.ok ? (
-        <Resumen
-          datos={r.datos}
-          formulario={formulario}
-          aviso={aviso}
-          onCerrarAviso={() => setAviso(null)}
-          onFormulario={(f) => {
-            setAviso(null);
-            setFormulario(f);
-          }}
-          onListo={(texto) => {
-            setFormulario(null);
-            setAviso(texto);
-            void cargar();
-          }}
-          onIrAlPlan={() => irA('plan')}
-          onIrARevisiones={() => irA('revisiones')}
-        />
-      ) : null}
-    </EstadoDeLectura>
+    <LecturasParciales
+      lecturas={TODAS.map((c) => ({ nombre: NOMBRE[c], lectura: lecturas[c] }))}
+      onReintentar={() => void leer(TODAS.filter((c) => fallo(lecturas[c])))}
+    >
+      <Resumen
+        lecturas={lecturas}
+        formulario={formulario}
+        aviso={aviso}
+        onCerrarAviso={() => setAviso(null)}
+        onFormulario={(f) => {
+          setAviso(null);
+          setFormulario(f);
+        }}
+        onListo={(texto) => {
+          setFormulario(null);
+          setAviso(texto);
+          void leer(TODAS);
+        }}
+        onIrAlPlan={() => irA('plan')}
+        onIrARevisiones={() => irA('revisiones')}
+      />
+    </LecturasParciales>
   );
 }
 
 function Resumen({
-  datos,
+  lecturas,
   formulario,
   aviso,
   onCerrarAviso,
@@ -90,7 +114,7 @@ function Resumen({
   onIrAlPlan,
   onIrARevisiones,
 }: {
-  datos: Datos;
+  lecturas: Lecturas;
   formulario: 'evaluacion' | 'objetivo' | null;
   aviso: string | null;
   onCerrarAviso: () => void;
@@ -99,12 +123,11 @@ function Resumen({
   onIrAlPlan: () => void;
   onIrARevisiones: () => void;
 }) {
-  const efectivo = datos.objetivos.find((o) => o.isEffective) ?? null;
-  const activo = datos.planes.find((p) => p.isEffective) ?? null;
-  const borrador = datos.planes.find((p) => p.state === 'DRAFT') ?? null;
-  const ultima = datos.evaluaciones[0] ?? null;
-  const proceso = datos.contexto.process;
-  const pendiente = datos.contexto.pendingReview;
+  const { evaluaciones, objetivos, planes, contexto } = lecturas;
+  const efectivo = objetivos?.ok ? (objetivos.datos.find((o) => o.isEffective) ?? null) : null;
+  const borrador = planes?.ok ? (planes.datos.find((p) => p.state === 'DRAFT') ?? null) : null;
+  // Una versión nueva del objetivo se funda en una evaluación y reemplaza a la vigente: hacen falta las dos lecturas.
+  const objetivoNoSePuede = !evaluaciones?.ok || !objetivos?.ok ? 'Para una versión nueva del objetivo hay que poder leer las evaluaciones y el objetivo vigente.' : null;
 
   return (
     <div className="secciones">
@@ -119,26 +142,35 @@ function Resumen({
         <dl className="datos">
           <div>
             <dt>Seguimiento nutricional</dt>
-            <dd>{proceso ? (proceso.state === 'ABIERTO' ? 'Abierto' : 'Cerrado') : 'Todavía no empezó: empieza al activar el primer plan.'}</dd>
+            <dd>
+              <SegunLectura lectura={contexto}>
+                {(c) => (c.process ? (c.process.state === 'ABIERTO' ? 'Abierto' : 'Cerrado') : 'Todavía no empezó: empieza al activar el primer plan.')}
+              </SegunLectura>
+            </dd>
           </div>
           <div>
             <dt>{COPY_NUTRICION.planActivo}</dt>
             <dd>
-              {activo ? (
-                <>
-                  Versión {numerosDeVersion(datos.planes).get(activo.planId)} · activada el {fecha(activo.activatedAt as string)}{' '}
-                  <button type="button" className="boton boton--enlace" onClick={onIrAlPlan}>
-                    Ver plan
-                  </button>
-                </>
-              ) : (
-                <>
-                  {COPY_NUTRICION.sinPlanActivo}{' '}
-                  <button type="button" className="boton boton--enlace" onClick={onIrAlPlan}>
-                    {COPY_PRIMER_PLAN.titulo}
-                  </button>
-                </>
-              )}
+              <SegunLectura lectura={planes}>
+                {(versiones) => {
+                  const activo = versiones.find((p) => p.isEffective) ?? null;
+                  return activo ? (
+                    <>
+                      Versión {numerosDeVersion(versiones).get(activo.planId)} · activada el {fecha(activo.activatedAt as string)}{' '}
+                      <button type="button" className="boton boton--enlace" onClick={onIrAlPlan}>
+                        Ver plan
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {COPY_NUTRICION.sinPlanActivo}{' '}
+                      <button type="button" className="boton boton--enlace" onClick={onIrAlPlan}>
+                        {COPY_PRIMER_PLAN.titulo}
+                      </button>
+                    </>
+                  );
+                }}
+              </SegunLectura>
             </dd>
           </div>
           {borrador ? (
@@ -154,21 +186,27 @@ function Resumen({
           ) : null}
           <div>
             <dt>Última evaluación</dt>
-            <dd>{ultima ? dia(ultima.occurredAt) : 'Sin evaluaciones registradas.'}</dd>
+            <dd>
+              <SegunLectura lectura={evaluaciones}>{(lista) => (lista[0] ? dia(lista[0].occurredAt) : 'Sin evaluaciones registradas.')}</SegunLectura>
+            </dd>
           </div>
           <div>
             <dt>{COPY_NUTRICION.revisionPendiente}</dt>
             <dd>
-              {pendiente.pending ? (
-                <>
-                  Pendiente desde el {dia(`${pendiente.since}T12:00:00Z`)}{' '}
-                  <button type="button" className="boton boton--enlace" onClick={onIrARevisiones}>
-                    Ir a Revisiones
-                  </button>
-                </>
-              ) : (
-                'No hay una revisión pendiente.'
-              )}
+              <SegunLectura lectura={contexto}>
+                {(c) =>
+                  c.pendingReview.pending ? (
+                    <>
+                      Pendiente desde el {dia(`${c.pendingReview.since}T12:00:00Z`)}{' '}
+                      <button type="button" className="boton boton--enlace" onClick={onIrARevisiones}>
+                        Ir a Revisiones
+                      </button>
+                    </>
+                  ) : (
+                    'No hay una revisión pendiente.'
+                  )
+                }
+              </SegunLectura>
             </dd>
           </div>
         </dl>
@@ -176,7 +214,9 @@ function Resumen({
 
       <section className="seccion" aria-labelledby="titulo-objetivo">
         <h2 id="titulo-objetivo">Objetivo</h2>
-        {efectivo ? (
+        {objetivos === null ? <Cargando /> : null}
+        {objetivos && !objetivos.ok ? <p className="nota">No se pudo leer el objetivo: el aviso de arriba lo vuelve a pedir.</p> : null}
+        {objetivos?.ok && efectivo ? (
           <>
             <p className="nota">{COPY_NUTRICION.objetivoDeclarado}</p>
             <dl className="datos">
@@ -200,14 +240,14 @@ function Resumen({
                 <dd>{dia(efectivo.effectiveFrom)}</dd>
               </div>
             </dl>
-            {datos.objetivos.length > 1 ? (
+            {objetivos.datos.length > 1 ? (
               <details>
-                <summary>Historia del objetivo ({datos.objetivos.length} versiones)</summary>
+                <summary>Historia del objetivo ({objetivos.datos.length} versiones)</summary>
                 <ol className="historial">
-                  {datos.objetivos.map((o, i) => (
+                  {objetivos.datos.map((o, i) => (
                     <li key={o.versionId}>
                       <span className="historial__evento">
-                        V{datos.objetivos.length - i} · {o.isEffective ? 'vigente' : 'anterior'}
+                        V{objetivos.datos.length - i} · {o.isEffective ? 'vigente' : 'anterior'}
                       </span>{' '}
                       {cantidad(o.estimatedEnergyRequirement.value, 'kcal')} · {dia(o.createdAt)} · {o.authoredBy.displayName}
                     </li>
@@ -216,9 +256,8 @@ function Resumen({
               </details>
             ) : null}
           </>
-        ) : (
-          <p>{COPY_NUTRICION.sinObjetivo}</p>
-        )}
+        ) : null}
+        {objetivos?.ok && !efectivo ? <p>{COPY_NUTRICION.sinObjetivo}</p> : null}
       </section>
 
       {formulario === 'evaluacion' ? (
@@ -226,20 +265,27 @@ function Resumen({
           <FormularioDeEvaluacion onRegistrada={() => onListo(COPY_NUTRICION.evaluacionRegistrada)} onCancelar={() => onFormulario(null)} />
         </section>
       ) : null}
-      {formulario === 'objetivo' ? (
+      {formulario === 'objetivo' && evaluaciones?.ok ? (
         <section className="seccion">
-          <FormularioDeObjetivo evaluaciones={datos.evaluaciones} onEmitido={() => onListo('Nueva versión de objetivo guardada.')} onCancelar={() => onFormulario(null)} />
+          <FormularioDeObjetivo evaluaciones={evaluaciones.datos} onEmitido={() => onListo('Nueva versión de objetivo guardada.')} onCancelar={() => onFormulario(null)} />
         </section>
       ) : null}
       {formulario === null ? (
-        <div className="acciones">
-          <button type="button" className="boton boton--primario" onClick={() => onFormulario('evaluacion')}>
-            {COPY_NUTRICION.nuevaEvaluacion}
-          </button>
-          <button type="button" className="boton boton--secundario" onClick={() => onFormulario('objetivo')}>
-            {efectivo ? COPY_NUTRICION.nuevaVersionDeObjetivo : COPY_NUTRICION.definirObjetivo}
-          </button>
-        </div>
+        <>
+          <div className="acciones">
+            <button type="button" className="boton boton--primario" onClick={() => onFormulario('evaluacion')}>
+              {COPY_NUTRICION.nuevaEvaluacion}
+            </button>
+            <button type="button" className="boton boton--secundario" onClick={() => onFormulario('objetivo')} disabled={!!objetivoNoSePuede} aria-describedby={objetivoNoSePuede ? 'objetivo-no-se-puede' : undefined}>
+              {efectivo ? COPY_NUTRICION.nuevaVersionDeObjetivo : COPY_NUTRICION.definirObjetivo}
+            </button>
+          </div>
+          {objetivoNoSePuede && (evaluaciones !== null && objetivos !== null) ? (
+            <p id="objetivo-no-se-puede" className="nota">
+              {objetivoNoSePuede}
+            </p>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

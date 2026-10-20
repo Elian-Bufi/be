@@ -109,6 +109,7 @@ export * from './agenda-de-entrenamiento';
 export * from './copy-agenda-de-entrenamiento';
 export * from './copy-primer-plan';
 export * from './copy-pistas';
+export * from './estado-de-guardado';
 export * from './copy-fuentes-del-catalogo';
 export * from './copy-origen-en-el-catalogo';
 export * from './conceptos-frecuentes';
