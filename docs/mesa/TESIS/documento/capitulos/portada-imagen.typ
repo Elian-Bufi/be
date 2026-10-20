@@ -1,19 +1,20 @@
 #import "../plantilla.typ": *
 
-// Imagen representativa de la portada: capturas reales del website y de la APK de la versión documentada.
-// Mientras no estén tomadas, se muestra el recuadro identificado (no se usa una imagen genérica ni generada).
-#let capturas = (web: "../../imagenes/portada-website.png", apk: "../../imagenes/portada-apk.png")
-#let hay-capturas = sys.inputs.at("capturas", default: "no") == "si"
+// Imagen representativa de la portada: una captura real del website en el ambiente de test, en la versión documentada
+// (herramientas/capturar-website.mjs, 2026-10-20). La APK no tiene todavía una captura nativa de esta versión: cuando
+// la haya (imagenes/portada-apk.png), se compila con --input apk=si y se suma al lado.
+#let ver = json("../../datos/version.json")
+#let con-apk = sys.inputs.at("apk", default: "no") == "si"
 
-#if hay-capturas {
+#let web = box(stroke: 0.8pt + borde, radius: 4pt, clip: true, image("../imagenes/portada-website.png", width: 100%))
+#if con-apk {
   grid(
     columns: (1fr, 0.36fr),
     column-gutter: 10pt,
     align: bottom,
-    box(stroke: 0.8pt + borde, radius: 4pt, clip: true, image(capturas.web, width: 100%)),
-    box(stroke: 0.8pt + borde, radius: 10pt, clip: true, image(capturas.apk, width: 100%)),
+    web,
+    box(stroke: 0.8pt + borde, radius: 10pt, clip: true, image("../imagenes/portada-apk.png", width: 100%)),
   )
-} else {
-  box(width: 100%, height: 78mm, stroke: (paint: rgb(C.pendiente.trazo), thickness: 0.8pt, dash: "dashed"), radius: 3pt,
-    align(center + horizon, text(size: 10pt, fill: rgb(C.pendiente.texto))[Imagen representativa: capturas del website y de la APK \ de la versión documentada (pendiente de captura)]))
-}
+} else { web }
+#v(3pt)
+#text(size: 10pt, fill: tinta-suave)[La ficha de una persona en el espacio profesional: objetivo y plan vigentes, la revisión acordada, las tomas y los indicadores del período. Ambiente de test, versión #ver.commitCorto, #ver.fecha. Persona y datos sintéticos.]

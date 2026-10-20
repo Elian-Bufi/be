@@ -56,6 +56,6 @@
     columns: (auto, auto),
     column-gutter: 1fr,
     [Presentación: #if mes-de-presentacion != none { strong(mes-de-presentacion) } else { pendiente("mes y año de presentación — a completar") }],
-    text(size: 10pt, fill: tinta-suave)[Documento versión #version.documento.version.split(" ").first() · corte #version.fecha · commit #version.commitCorto],
+    text(size: 10pt, fill: tinta-suave, hyphenate: false)[Documento versión #version.documento.version.split(" ").first() · corte #version.fecha · commit #version.commitCorto],
   )
 ]
