@@ -146,13 +146,17 @@ export async function leerSerie(token: string, asesoradoId: string, p: SeriePedi
   return { estado: estadoDe(r, o), respuestas: o ? [r, o] : [r] };
 }
 
-/** Las series de las métricas elegidas. Una respuesta tardía de otra selección se descarta. */
+/**
+ * Las series de las métricas elegidas. Una respuesta tardía de otra selección se descarta. `recargar` vuelve a leer todas
+ * (un permiso que cambió); `reintentarFallidas`, solo las que fallaron: es el único «Reintentar» de la vista, y las que se
+ * leyeron bien no vuelven a «cargando» (encargo de consolidación, bloque 5).
+ */
 export function useSeriesDelAnalisis(
   metricas: readonly ReferenciaDeMetrica[],
   grano: GranoElegido,
   /** Otro período que el de la ficha (por ejemplo, el que cubre dos etapas). */
   periodoPropio?: Periodo,
-): { readonly series: readonly SerieDelAnalisis[]; readonly recargar: () => void } {
+): { readonly series: readonly SerieDelAnalisis[]; readonly recargar: () => void; readonly reintentarFallidas: () => void } {
   const { token, asesoradoId, periodo: periodoDeLaFicha, sesionPerdida, avisarSinAcceso, versionDeAcceso } = useSeguimiento();
   const periodo = periodoPropio ?? periodoDeLaFicha;
   const [estados, setEstados] = useState<Readonly<Record<string, EstadoDeSerie>>>({});
@@ -168,27 +172,36 @@ export function useSeriesDelAnalisis(
     [metricas, grano],
   );
   const clave = `${asesoradoId}|${periodo.desde}|${periodo.hasta}|${pedidas.map((p) => `${p.clave}@${p.grano}`).join(',')}|${vuelta}|${versionDeAcceso}`;
+  /** Lee una serie y la guarda, si la lectura sigue siendo la vigente (`esta`). */
+  const leerUna = (p: SeriePedida, esta: number) => {
+    void leerSerie(token, asesoradoId, p, periodo).then(({ estado, respuestas }) => {
+      if (esta !== generacion.current || respuestas.some((r) => sesionPerdida(r))) return;
+      setEstados((e) => ({ ...e, [p.clave]: estado }));
+      // §3.A: el encabezado no puede seguir diciendo «Activo» si la serie dice que el área no está disponible.
+      if (estado.tipo === 'sin-acceso') avisarSinAcceso(DOMINIO_DEL_AREA[p.definicion.area]);
+    });
+  };
   useEffect(() => {
     const esta = ++generacion.current;
     setEstados({});
-    for (const p of pedidas) {
-      void leerSerie(token, asesoradoId, p, periodo).then(({ estado, respuestas }) => {
-        if (esta !== generacion.current || respuestas.some((r) => sesionPerdida(r))) return;
-        setEstados((e) => ({ ...e, [p.clave]: estado }));
-        // §3.A: el encabezado no puede seguir diciendo «Activo» si la serie dice que el área no está disponible.
-        if (estado.tipo === 'sin-acceso') avisarSinAcceso(DOMINIO_DEL_AREA[p.definicion.area]);
-      });
-    }
+    for (const p of pedidas) leerUna(p, esta);
     // `clave` resume lo que cambia la lectura; `pedidas` y `periodo` están dentro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave]);
+  // Las fallidas vuelven a «cargando» y se leen otra vez dentro de la misma lectura: otra selección las descarta.
+  const reintentarFallidas = () => {
+    const fallidas = pedidas.filter((p) => estados[p.clave]?.tipo === 'error');
+    if (fallidas.length === 0) return;
+    setEstados((e) => Object.fromEntries(Object.entries(e).filter(([c]) => !fallidas.some((p) => p.clave === c))));
+    for (const p of fallidas) leerUna(p, generacion.current);
+  };
   const series = pedidas.map((p) => {
     const estado = estados[p.clave] ?? { tipo: 'cargando' as const };
     // La unidad antropométrica sale de los datos: la definición se rehace con ella.
     const definicion = estado.tipo === 'lista' && p.definicion.area === 'ANTROPOMETRIA' ? (definicionDe(p.ref, estado.serie.unit) ?? p.definicion) : p.definicion;
     return { ref: p.ref, clave: p.clave, definicion, grano: p.grano, estado };
   });
-  return { series, recargar: () => setVuelta((v) => v + 1) };
+  return { series, recargar: () => setVuelta((v) => v + 1), reintentarFallidas };
 }
 
 const DOMINIO_DEL_AREA: Readonly<Record<DefinicionDeMetrica['area'], DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };

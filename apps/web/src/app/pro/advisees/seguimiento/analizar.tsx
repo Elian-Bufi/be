@@ -171,7 +171,7 @@ export function Analizar() {
       : false;
   // La entrada de Analizar: sin pregunta ni métricas. Quitar la última métrica de una comparación libre vuelve acá.
   const sinEntrada = pregunta === null && estado.metricas.length === 0;
-  const { series, recargar } = useSeriesDelAnalisis(estado.metricas, estado.grano);
+  const { series, recargar, reintentarFallidas } = useSeriesDelAnalisis(estado.metricas, estado.grano);
   const [intervalo, setIntervalo] = useState<{ desde: string; hasta: string } | null>(null);
   const desde = intervalo && intervalo.desde >= periodo.desde ? intervalo.desde : periodo.desde;
   const hasta = intervalo && intervalo.hasta <= periodo.hasta ? intervalo.hasta : periodo.hasta;
@@ -189,11 +189,15 @@ export function Analizar() {
     setIntervalo(null);
     setPuntoAbierto(null);
   }, [seleccion, pregunta?.id]);
-  /** Un solo «Reintentar» trae todo lo que falló: las series y, si falló, qué hay en el período. */
+  /**
+   * Un solo «Reintentar», sobre los gráficos, trae lo que falló: las métricas que no se leyeron (las demás no se vuelven a
+   * pedir) y, si falló, qué hay en el período. Cada métrica que falló lo dice en su lugar, sin un botón propio.
+   */
   const reintentar = () => {
-    recargar();
+    reintentarFallidas();
     if (disponibles.falla) disponibles.recargar();
   };
+  const fallidas = series.filter((s) => s.estado.tipo === 'error').length;
   // La planificación de una etapa abierta desde la lista de etapas del gráfico (eje 4).
   const [planAbierto, setPlanAbierto] = useState<EtapaDePlanificacion | null>(null);
   // `sinAcceso`: el origen ya no se puede leer con el acceso de ahora; el valor que quedó en pantalla no se repite.
@@ -372,7 +376,7 @@ export function Analizar() {
   const bloques = series.flatMap((s, i) => {
     const sinPuntos = { tipo: 'sin-puntos', area: s.definicion.area, desde, hasta } as const;
     const sinGrafico: EstadoSinGrafico | null = s.estado.tipo === 'sin-datos' ? sinPuntos : s.estado.tipo !== 'lista' ? s.estado : tienePuntos(s as Lista) ? null : sinPuntos;
-    return sinGrafico ? [{ indice: i, nodo: <EstadoDeUnaSerie indice={i} nombre={nombres[i] ?? s.definicion.nombre} estado={sinGrafico} onReintentar={reintentar} /> }] : [];
+    return sinGrafico ? [{ indice: i, nodo: <EstadoDeUnaSerie indice={i} nombre={nombres[i] ?? s.definicion.nombre} estado={sinGrafico} /> }] : [];
   });
   const laPregunta = pregunta ? preguntaProfesional(pregunta.id) : null;
   const enCurso = pregunta !== null && destino !== null && !cambiandoPregunta;
@@ -544,6 +548,18 @@ export function Analizar() {
           {cuerpoALaVista ? (
           <div className="analizar__dos-columnas" data-con-origen={puntoAbierto && alCostado ? 'si' : undefined}>
             <div className="tarjeta-de-graficos analizar__lienzo">
+              {fallidas > 0 ? (
+                <BloqueDeEstado
+                  tipo="error"
+                  icono="aviso"
+                  titulo={fallidas === 1 ? 'Una métrica no se pudo leer' : `${numero(fallidas)} métricas no se pudieron leer`}
+                  onReintentar={reintentar}
+                  textoDelBoton="Reintentar las métricas que fallaron"
+                  rol="alert"
+                >
+                  {fallidas === series.length ? 'Cada una lo dice en su lugar.' : 'Cada una lo dice en su lugar; las demás se leyeron.'}
+                </BloqueDeEstado>
+              ) : null}
               {intervalo ? (
                 <p className="nota">
                   Intervalo: {diaCivil(desde)} al {diaCivil(hasta)}.{' '}
@@ -1063,9 +1079,10 @@ const SIN_PUNTOS: Readonly<Record<DefinicionDeMetrica['area'], { readonly titulo
 /**
  * Lo que una métrica elegida muestra cuando no es un gráfico (WP-ESCRITORIO-AMABLE, pantalla 15): va en el lugar de su
  * gráfico, con su nombre y su color, y dice qué pasa y qué se puede hacer. El estado se reconoce por su ícono y por su
- * título, no por un color. Una falla nunca se presenta como ausencia de datos, y una ausencia nunca como un cero.
+ * título, no por un color. Una falla nunca se presenta como ausencia de datos, y una ausencia nunca como un cero. Una
+ * falla no lleva su propio «Reintentar»: hay uno solo, sobre los gráficos, para todas las que fallaron.
  */
-function EstadoDeUnaSerie({ indice, nombre, estado, onReintentar }: { indice: number; nombre: string; estado: EstadoSinGrafico; onReintentar: () => void }) {
+function EstadoDeUnaSerie({ indice, nombre, estado }: { indice: number; nombre: string; estado: EstadoSinGrafico }) {
   const c: { readonly icono: NombreDeIcono; readonly titulo: string | null; readonly texto: string } =
     estado.tipo === 'cargando'
       ? { icono: 'cargando', titulo: null, texto: `Cargando ${nombre}…` }
@@ -1083,7 +1100,7 @@ function EstadoDeUnaSerie({ indice, nombre, estado, onReintentar }: { indice: nu
           <Marca indice={indice} /> <strong>{nombre}</strong>
         </span>
       </p>
-      <BloqueDeEstado tipo={estado.tipo} icono={c.icono} titulo={c.titulo} onReintentar={estado.tipo === 'error' ? onReintentar : null}>
+      <BloqueDeEstado tipo={estado.tipo} icono={c.icono} titulo={c.titulo}>
         {c.texto}
       </BloqueDeEstado>
     </>
