@@ -4960,7 +4960,10 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 
     En cada caso dice que no se pudo leer, con su reintento, nunca «no hay».
   - **Lo leído no se borra.** Un «Actualizar» que falla deja la lista leída, con la hora, si es la misma consulta. Si cambió el período, es una falla: no se muestra una lista vieja como nueva.
-  - **Resumen y Plan de cada área:** la falla dice qué lectura no llegó. Conservar el resto de la vista pide rehacer cómo se arman sus datos y queda pendiente.
+  - **Resumen y Plan de Nutrición y de Entrenamiento ya no son «todo o nada»** (`lecturas-parciales.tsx`).
+    - En el Resumen, cada lectura tiene su estado: si falla una, lo demás sigue a la vista, cada dato que dependía de ella dice «No se pudo leer» y un solo «Reintentar lo que faltó» vuelve a pedir solo eso.
+    - En el Plan, si falla el objetivo vigente o la versión activa, el plan sigue a la vista con el aviso de lo que falta. Crear una versión espera a leerlo, porque nace de los dos, y nunca aparece «Primero definí el objetivo» por una falla.
+    - Sin las versiones del plan no hay nada que mostrar: esa falla sigue siendo la de la vista entera. Un 404 sigue siendo «no disponible».
 - **D-10 · Del bloque 3.**
   - **Al cambiar de asesorado, la ficha y las áreas se vuelven a montar** (`PorAsesorado`). Nada de la persona anterior queda a la vista mientras llega lo nuevo. Lo escrito sin guardar de la anterior también se descarta: los planes se guardan solos en la primera pausa y nada se guarda en el navegador.
   - **Lo que vive en la dirección de una página se cambia con la historia del navegador** (`cambiarLaDireccion`). Pasa con la vista, el período, el día tipo, las comidas abiertas y la receta abierta.
@@ -4969,6 +4972,7 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - **D-11 · Tablet y escritorio angosto.** Entre 1.024 y 1.199 px, la campana de novedades cede su palabra (queda su número y su nombre accesible) para que la barra entre en un renglón. Antes, a 1.024 px, «Cuenta» bajaba a otro.
 
 **Pruebas:**
+- **Navegador, la falla parcial:** el recorrido `faltaUnaParte` simula en el navegador que falla solo el objetivo, mira el plan con el aviso y sin «crear versión», y reintenta.
 - **Unidad:**
   - la acción de la ficha (con el resumen en `null`) y su dirección;
   - la evaluación más reciente;

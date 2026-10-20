@@ -20,7 +20,6 @@ import {
   ETIQUETA_DE_RESULTADO,
   etiquetaDeCondicionRegistrada,
   leerNumero,
-  nombresEnUnaFrase,
   numero,
   registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
@@ -35,6 +34,8 @@ import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
+import { Cargando } from '../../../../components/estados';
+import { datosDe, fallo, LecturasParciales, SegunLectura, type Lectura } from '../lecturas-parciales';
 import { dia, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import {
@@ -51,25 +52,40 @@ import {
   type Citable,
   type FuenteDeContexto,
 } from './contexto-citable';
-import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { useEntrenamiento } from './entrenamiento';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
 
-interface Datos {
-  readonly evaluaciones: readonly EvaluacionDeEntrenamiento[];
-  readonly objetivo: VersionDeObjetivoDeEntrenamiento | null;
-  readonly historia: readonly VersionDeObjetivoDeEntrenamiento[];
-  readonly planes: readonly ResumenDeVersionDePlanDeEntrenamiento[];
-  readonly contexto: ContextoDeRevisionDeEntrenamientoResponse['data'];
+interface Lecturas {
+  readonly evaluaciones: Lectura<readonly EvaluacionDeEntrenamiento[]>;
+  /** El objetivo vigente; adentro, `null` si no hay. */
+  readonly objetivo: Lectura<VersionDeObjetivoDeEntrenamiento | null>;
+  readonly historia: Lectura<readonly VersionDeObjetivoDeEntrenamiento[]>;
+  readonly planes: Lectura<readonly ResumenDeVersionDePlanDeEntrenamiento[]>;
+  readonly contexto: Lectura<ContextoDeRevisionDeEntrenamientoResponse['data']>;
 }
+type Clave = keyof Lecturas;
+const TODAS: readonly Clave[] = ['evaluaciones', 'objetivo', 'historia', 'planes', 'contexto'];
+const NOMBRE: Readonly<Record<Clave, string>> = {
+  evaluaciones: 'las evaluaciones',
+  objetivo: 'el objetivo vigente',
+  historia: 'el historial de objetivos',
+  planes: 'las versiones del plan',
+  contexto: 'el estado del seguimiento',
+};
 
+/**
+ * Bloque 5 del encargo de consolidación (2026-10-19): las cinco lecturas tienen cada una su estado. Si falla una, el
+ * resto sigue a la vista, el aviso de arriba dice qué falta y vuelve a pedir solo eso, y cada dato que dependía de lo
+ * que falta dice «No se pudo leer», nunca «no hay» (`lecturas-parciales.tsx`).
+ */
 export function VistaDeResumen() {
   const { token, asesoradoId, sesionPerdida, irA } = useEntrenamiento();
-  const [r, setR] = useState<Resultado<Datos> | null>(null);
-  // Qué lecturas fallaron, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
-  const [queFallo, setQueFallo] = useState<string | null>(null);
+  const [lecturas, setLecturas] = useState<Lecturas>({ evaluaciones: null, objetivo: null, historia: null, planes: null, contexto: null });
   const [formulario, setFormulario] = useState<'evaluacion' | 'objetivo' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Una respuesta que llega después de un pedido más nuevo de la misma lectura no lo pisa.
+  const turnos = useRef<Record<Clave, number>>({ evaluaciones: 0, objetivo: 0, historia: 0, planes: 0, contexto: 0 });
   // Lo que alguien dejó dicho para esta página antes de volver a ella: «Solicitud enviada.», cuando el pedido de
   // contexto salió de acá (CA-FOR-06). Se toma una vez.
   useEffect(() => {
@@ -77,90 +93,121 @@ export function VistaDeResumen() {
     if (alLlegar) setAviso(alLlegar);
   }, []);
 
-  const cargar = useCallback(async () => {
-    setR(null);
-    setQueFallo(null);
-    const [ev, ob, hi, pl, cx] = await Promise.all([
-      api.listarEvaluacionesDeEntrenamiento(token, asesoradoId),
-      api.objetivoDeEntrenamientoEfectivo(token, asesoradoId),
-      api.listarObjetivosDeEntrenamiento(token, asesoradoId),
-      api.listarPlanesDeEntrenamiento(token, asesoradoId),
-      api.contextoDeRevisionDeEntrenamiento(token, asesoradoId),
-    ]);
-    for (const x of [ev, ob, hi, pl, cx]) if (sesionPerdida(x)) return;
-    const fallaron = [ev.ok ? null : 'las evaluaciones', ob.ok ? null : 'el objetivo vigente', hi.ok ? null : 'el historial de objetivos', pl.ok ? null : 'las versiones del plan', cx.ok ? null : 'el estado del seguimiento'].filter(
-      (x): x is string => x !== null,
-    );
-    if (fallaron.length > 0) setQueFallo(nombresEnUnaFrase(fallaron));
-    for (const x of [ev, ob, hi, pl, cx]) if (!x.ok) return setR(x as Resultado<never>);
-    if (!ev.ok || !ob.ok || !hi.ok || !pl.ok || !cx.ok) return;
-    setR({ ok: true, datos: { evaluaciones: ev.datos.data, objetivo: ob.datos.data.objective, historia: hi.datos.data, planes: pl.datos.data, contexto: cx.datos.data } });
-  }, [token, asesoradoId, sesionPerdida]);
+  /** Lee lo pedido (todo, o solo lo que falló); lo demás queda como está. */
+  const leer = useCallback(
+    async (cuales: readonly Clave[]) => {
+      const turno = Object.fromEntries(cuales.map((c) => [c, ++turnos.current[c]])) as Partial<Record<Clave, number>>;
+      const pedido = (c: Clave) => cuales.includes(c);
+      // Lo que se vuelve a pedir pasa a «Cargando…» en su lugar; lo demás queda a la vista.
+      setLecturas((l) => ({
+        evaluaciones: pedido('evaluaciones') ? null : l.evaluaciones,
+        objetivo: pedido('objetivo') ? null : l.objetivo,
+        historia: pedido('historia') ? null : l.historia,
+        planes: pedido('planes') ? null : l.planes,
+        contexto: pedido('contexto') ? null : l.contexto,
+      }));
+      const [ev, ob, hi, pl, cx] = await Promise.all([
+        pedido('evaluaciones') ? api.listarEvaluacionesDeEntrenamiento(token, asesoradoId) : null,
+        pedido('objetivo') ? api.objetivoDeEntrenamientoEfectivo(token, asesoradoId) : null,
+        pedido('historia') ? api.listarObjetivosDeEntrenamiento(token, asesoradoId) : null,
+        pedido('planes') ? api.listarPlanesDeEntrenamiento(token, asesoradoId) : null,
+        pedido('contexto') ? api.contextoDeRevisionDeEntrenamiento(token, asesoradoId) : null,
+      ]);
+      for (const x of [ev, ob, hi, pl, cx]) if (x && sesionPerdida(x)) return;
+      const vigente = (c: Clave) => turno[c] === turnos.current[c];
+      setLecturas((l) => ({
+        evaluaciones: ev && vigente('evaluaciones') ? datosDe(ev) : l.evaluaciones,
+        objetivo: ob && vigente('objetivo') ? (ob.ok ? { ok: true, datos: ob.datos.data.objective } : (ob as Resultado<never>)) : l.objetivo,
+        historia: hi && vigente('historia') ? datosDe(hi) : l.historia,
+        planes: pl && vigente('planes') ? datosDe(pl) : l.planes,
+        contexto: cx && vigente('contexto') ? datosDe(cx) : l.contexto,
+      }));
+    },
+    [token, asesoradoId, sesionPerdida],
+  );
 
   useEffect(() => {
-    void cargar();
-  }, [cargar]);
+    void leer(TODAS);
+  }, [leer]);
+
+  const { evaluaciones, objetivo, historia } = lecturas;
+  // Una versión nueva del objetivo se funda en una evaluación y reemplaza a la vigente: hacen falta las dos lecturas.
+  const sePuedeEmitir = !!evaluaciones?.ok && !!objetivo?.ok && evaluaciones.datos.length > 0;
+  const porQueNo =
+    evaluaciones === null || objetivo === null
+      ? null
+      : !evaluaciones.ok || !objetivo.ok
+        ? 'Para una versión nueva del objetivo hay que poder leer las evaluaciones y el objetivo vigente.'
+        : evaluaciones.datos.length === 0
+          ? 'El objetivo se funda en una evaluación: registrá una primero.'
+          : null;
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
-      {r?.ok ? (
-        <div className="secciones">
-          {aviso ? (
-            <AvisoFlotante onCerrar={() => setAviso(null)}>
-              <p>{aviso}</p>
-            </AvisoFlotante>
+    <LecturasParciales lecturas={TODAS.map((c) => ({ nombre: NOMBRE[c], lectura: lecturas[c] }))} onReintentar={() => void leer(TODAS.filter((c) => fallo(lecturas[c])))}>
+      <div className="secciones">
+        {aviso ? (
+          <AvisoFlotante onCerrar={() => setAviso(null)}>
+            <p>{aviso}</p>
+          </AvisoFlotante>
+        ) : null}
+        <Estado lecturas={lecturas} onIrA={irA} />
+
+        <section className="seccion" aria-labelledby="titulo-objetivo">
+          <h2 id="titulo-objetivo">{COPY_ENTRENAMIENTO.objetivoVigente}</h2>
+          <SegunLectura lectura={objetivo}>
+            {(vigente) =>
+              vigente ? (
+                <>
+                  <p>{vigente.objective.statement}</p>
+                  <p className="nota">
+                    Fundamento: {vigente.rationale} · vigente desde el {fecha(vigente.effectiveFrom)}
+                  </p>
+                </>
+              ) : (
+                <p>{COPY_ENTRENAMIENTO.sinObjetivo}</p>
+              )
+            }
+          </SegunLectura>
+          {historia?.ok && historia.datos.length > 1 ? (
+            <details>
+              <summary>Historial del objetivo ({historia.datos.length} versiones)</summary>
+              <ol className="historial">
+                {historia.datos.map((v) => (
+                  <li key={v.versionId}>
+                    {fecha(v.createdAt)} · {v.objective.statement} {v.isEffective ? <span className="insignia">vigente</span> : null}
+                  </li>
+                ))}
+              </ol>
+            </details>
           ) : null}
-          <Estado datos={r.datos} onIrA={irA} />
+          {formulario === 'objetivo' && evaluaciones?.ok ? (
+            <FormularioDeObjetivo
+              evaluaciones={evaluaciones.datos}
+              onEmitido={() => {
+                setFormulario(null);
+                setAviso('Nueva versión del objetivo emitida. La anterior se conserva en el historial.');
+                void leer(TODAS);
+              }}
+              onCancelar={() => setFormulario(null)}
+            />
+          ) : (
+            <div className="acciones">
+              <button type="button" className="boton boton--secundario" onClick={() => setFormulario('objetivo')} disabled={!sePuedeEmitir}>
+                {objetivo?.ok && objetivo.datos ? COPY_ENTRENAMIENTO.nuevaVersionDeObjetivo : COPY_ENTRENAMIENTO.definirObjetivo}
+              </button>
+            </div>
+          )}
+          {porQueNo ? <p className="nota">{porQueNo}</p> : null}
+        </section>
 
-          <section className="seccion" aria-labelledby="titulo-objetivo">
-            <h2 id="titulo-objetivo">{COPY_ENTRENAMIENTO.objetivoVigente}</h2>
-            {r.datos.objetivo ? (
-              <>
-                <p>{r.datos.objetivo.objective.statement}</p>
-                <p className="nota">
-                  Fundamento: {r.datos.objetivo.rationale} · vigente desde el {fecha(r.datos.objetivo.effectiveFrom)}
-                </p>
-              </>
-            ) : (
-              <p>{COPY_ENTRENAMIENTO.sinObjetivo}</p>
-            )}
-            {r.datos.historia.length > 1 ? (
-              <details>
-                <summary>Historial del objetivo ({r.datos.historia.length} versiones)</summary>
-                <ol className="historial">
-                  {r.datos.historia.map((v) => (
-                    <li key={v.versionId}>
-                      {fecha(v.createdAt)} · {v.objective.statement} {v.isEffective ? <span className="insignia">vigente</span> : null}
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            ) : null}
-            {formulario === 'objetivo' ? (
-              <FormularioDeObjetivo
-                evaluaciones={r.datos.evaluaciones}
-                onEmitido={() => {
-                  setFormulario(null);
-                  setAviso('Nueva versión del objetivo emitida. La anterior se conserva en el historial.');
-                  void cargar();
-                }}
-                onCancelar={() => setFormulario(null)}
-              />
-            ) : (
-              <div className="acciones">
-                <button type="button" className="boton boton--secundario" onClick={() => setFormulario('objetivo')} disabled={r.datos.evaluaciones.length === 0}>
-                  {r.datos.objetivo ? COPY_ENTRENAMIENTO.nuevaVersionDeObjetivo : COPY_ENTRENAMIENTO.definirObjetivo}
-                </button>
-              </div>
-            )}
-            {r.datos.evaluaciones.length === 0 ? <p className="nota">El objetivo se funda en una evaluación: registrá una primero.</p> : null}
-          </section>
-
-          <section className="seccion" aria-labelledby="titulo-evaluacion">
-            <h2 id="titulo-evaluacion">Evaluaciones</h2>
-            {r.datos.evaluaciones.length === 0 ? <p>{COPY_ENTRENAMIENTO.sinEvaluacion}</p> : null}
+        <section className="seccion" aria-labelledby="titulo-evaluacion">
+          <h2 id="titulo-evaluacion">Evaluaciones</h2>
+          {evaluaciones === null ? <Cargando /> : null}
+          {evaluaciones && !evaluaciones.ok ? <p className="nota">No se pudieron leer las evaluaciones: el aviso de arriba las vuelve a pedir.</p> : null}
+          {evaluaciones?.ok && evaluaciones.datos.length === 0 ? <p>{COPY_ENTRENAMIENTO.sinEvaluacion}</p> : null}
+          {evaluaciones?.ok ? (
             <ul className="lista">
-              {r.datos.evaluaciones.map((e) => (
+              {evaluaciones.datos.map((e) => (
                 <li key={e.evaluationId} className="lista__item">
                   <p className="lista__titulo">Evaluación del {fecha(e.occurredAt)}</p>
                   <dl className="datos">
@@ -181,86 +228,113 @@ export function VistaDeResumen() {
                 </li>
               ))}
             </ul>
-            {formulario === 'evaluacion' ? (
-              <FormularioDeEvaluacion
-                onRegistrada={() => {
-                  setFormulario(null);
-                  setAviso('Evaluación registrada.');
-                  void cargar();
-                }}
-                onCancelar={() => setFormulario(null)}
-              />
-            ) : (
-              <>
-                <div className="acciones">
-                  <button type="button" className="boton boton--secundario" onClick={() => setFormulario('evaluacion')}>
-                    {COPY_ENTRENAMIENTO.nuevaEvaluacion}
-                  </button>
-                  {/* PF-02 (CA-FOR-06): pedir contexto desde acá y volver acá al enviarlo. */}
-                  <Link className="boton boton--secundario" href={`/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`}>
-                    {COPY_ENTRENAMIENTO.solicitarContexto}
-                  </Link>
-                </div>
-                <Ayuda titulo="Qué se le pide a la persona">
-                  <p>{COPY_ENTRENAMIENTO.ayudaSolicitarContexto}</p>
-                </Ayuda>
-              </>
-            )}
-          </section>
-        </div>
-      ) : null}
-    </EstadoDeLectura>
+          ) : null}
+          {formulario === 'evaluacion' ? (
+            <FormularioDeEvaluacion
+              onRegistrada={() => {
+                setFormulario(null);
+                setAviso('Evaluación registrada.');
+                void leer(TODAS);
+              }}
+              onCancelar={() => setFormulario(null)}
+            />
+          ) : (
+            <>
+              <div className="acciones">
+                <button type="button" className="boton boton--secundario" onClick={() => setFormulario('evaluacion')}>
+                  {COPY_ENTRENAMIENTO.nuevaEvaluacion}
+                </button>
+                {/* PF-02 (CA-FOR-06): pedir contexto desde acá y volver acá al enviarlo. */}
+                <Link className="boton boton--secundario" href={`/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`}>
+                  {COPY_ENTRENAMIENTO.solicitarContexto}
+                </Link>
+              </div>
+              <Ayuda titulo="Qué se le pide a la persona">
+                <p>{COPY_ENTRENAMIENTO.ayudaSolicitarContexto}</p>
+              </Ayuda>
+            </>
+          )}
+        </section>
+      </div>
+    </LecturasParciales>
   );
 }
 
-/** Estado del seguimiento, plan activo, última sesión registrada, última revisión y próxima acción. */
-function Estado({ datos, onIrA }: { datos: Datos; onIrA: (v: 'plan' | 'ejecuciones' | 'revisiones') => void }) {
-  const activo = datos.planes.find((p) => p.isEffective) ?? null;
-  const ultima = [...datos.contexto.registeredExecutions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0] ?? null;
-  const revision = datos.contexto.previousReviews[0] ?? null;
-  const proceso = datos.contexto.process;
+/** Estado del seguimiento, plan activo, última sesión registrada, última revisión y próxima acción. Cada dato, según su lectura. */
+function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | 'ejecuciones' | 'revisiones') => void }) {
+  const { planes, contexto } = lecturas;
   return (
     <section className="seccion" aria-labelledby="titulo-estado">
       <h2 id="titulo-estado">Estado del seguimiento</h2>
       <dl className="datos">
         <div>
           <dt>Seguimiento</dt>
-          <dd>{proceso ? (proceso.state === 'ABIERTO' ? 'Abierto' : 'Cerrado') : 'Empieza al activar el primer plan'}</dd>
+          <dd>
+            <SegunLectura lectura={contexto}>{(c) => (c.process ? (c.process.state === 'ABIERTO' ? 'Abierto' : 'Cerrado') : 'Empieza al activar el primer plan')}</SegunLectura>
+          </dd>
         </div>
         <div>
           <dt>Plan activo</dt>
           <dd>
-            {activo ? `Activado el ${fecha(activo.activatedAt as string)}` : COPY_ENTRENAMIENTO.sinPlanActivo}{' '}
-            <button type="button" className="boton boton--enlace" onClick={() => onIrA('plan')}>
-              {activo ? 'Ver plan' : COPY_PRIMER_PLAN.titulo}
-            </button>
+            <SegunLectura lectura={planes}>
+              {(versiones) => {
+                const activo = versiones.find((p) => p.isEffective) ?? null;
+                return (
+                  <>
+                    {activo ? `Activado el ${fecha(activo.activatedAt as string)}` : COPY_ENTRENAMIENTO.sinPlanActivo}{' '}
+                    <button type="button" className="boton boton--enlace" onClick={() => onIrA('plan')}>
+                      {activo ? 'Ver plan' : COPY_PRIMER_PLAN.titulo}
+                    </button>
+                  </>
+                );
+              }}
+            </SegunLectura>
           </dd>
         </div>
         <div>
           {/* El período es el que devolvió la lectura, no un «últimos 7 días» fijo que podía no ser cierto (DL-091 punto 2). */}
           <dt>
-            Última sesión registrada ({dia(`${datos.contexto.period.start}T12:00:00Z`)} a {dia(`${datos.contexto.period.end}T12:00:00Z`)})
+            Última sesión registrada
+            {contexto?.ok ? ` (${dia(`${contexto.datos.period.start}T12:00:00Z`)} a ${dia(`${contexto.datos.period.end}T12:00:00Z`)})` : ''}
           </dt>
           <dd>
-            {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(ultima))}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
-            <button type="button" className="boton boton--enlace" onClick={() => onIrA('ejecuciones')}>
-              Ver registros
-            </button>
+            <SegunLectura lectura={contexto}>
+              {(c) => {
+                const ultima = [...c.registeredExecutions].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0] ?? null;
+                return (
+                  <>
+                    {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(ultima))}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
+                    <button type="button" className="boton boton--enlace" onClick={() => onIrA('ejecuciones')}>
+                      Ver registros
+                    </button>
+                  </>
+                );
+              }}
+            </SegunLectura>
           </dd>
         </div>
         <div>
           <dt>Última revisión</dt>
           <dd>
-            {revision ? `${ETIQUETA_DE_RESULTADO[revision.result]} · ${fecha(revision.recordedAt)} · Próxima acción: ${revision.nextAction.description}` : 'Todavía no hay revisiones.'}{' '}
-            <button type="button" className="boton boton--enlace" onClick={() => onIrA('revisiones')}>
-              Ver revisiones
-            </button>
+            <SegunLectura lectura={contexto}>
+              {(c) => {
+                const revision = c.previousReviews[0] ?? null;
+                return (
+                  <>
+                    {revision ? `${ETIQUETA_DE_RESULTADO[revision.result]} · ${fecha(revision.recordedAt)} · Próxima acción: ${revision.nextAction.description}` : 'Todavía no hay revisiones.'}{' '}
+                    <button type="button" className="boton boton--enlace" onClick={() => onIrA('revisiones')}>
+                      Ver revisiones
+                    </button>
+                  </>
+                );
+              }}
+            </SegunLectura>
           </dd>
         </div>
       </dl>
-      {datos.contexto.pendingReview.pending ? (
+      {contexto?.ok && contexto.datos.pendingReview.pending ? (
         <Aviso tipo="info">
-          <p>Revisión pendiente desde el {dia(`${datos.contexto.pendingReview.since}T12:00:00Z`)}.</p>
+          <p>Revisión pendiente desde el {dia(`${contexto.datos.pendingReview.since}T12:00:00Z`)}.</p>
         </Aviso>
       ) : null}
     </section>
