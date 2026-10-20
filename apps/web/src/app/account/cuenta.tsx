@@ -44,7 +44,7 @@ type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'er
 
 export function Cuenta() {
   const router = useRouter();
-  const { sesion, olvidar, cerrada } = useSesion();
+  const { sesion, olvidar, cerrada, vencida, sinConexion } = useSesion();
   const saliendo = useRef(false);
   const [cuenta, setCuenta] = useState<Carga<MeResponse['data']>>({ tipo: 'cargando' });
   const [a3, setA3] = useState<Carga<RequisitoDeConsentimientoDeSaludResponse['data']>>({ tipo: 'cargando' });
@@ -93,12 +93,13 @@ export function Cuenta() {
 
   useEffect(() => {
     if (!token) {
-      if (!saliendo.current) router.replace('/login?volver=/account');
+      // Como en las demás páginas (`useSesionRequerida`): la entrada dice si la sesión venció o si no hubo conexión (DL-147).
+      if (!saliendo.current) router.replace(`/login?volver=/account${vencida ? '&aviso=sesion-vencida' : sinConexion ? '&aviso=sin-conexion' : ''}`);
       return;
     }
     void cargarCuenta();
     void cargarA3();
-  }, [token, cargarCuenta, cargarA3, router]);
+  }, [token, cargarCuenta, cargarA3, router, vencida, sinConexion]);
 
   async function cerrarSesion(que: 'una' | 'todas') {
     if (!token || accion.tipo === 'ocupado') return;
