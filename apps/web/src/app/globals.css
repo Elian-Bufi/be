@@ -9178,6 +9178,27 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
+/*
+ * DL-141 D-6: el origen del ítem en la fila del buscador («USDA», «wger · CC BY-SA 4.0», «Demostración»). En el tono de
+ * la nota de la fila: aclara, no compite con el nombre. El subrayado de puntos dice que hay un detalle (la pista) y un
+ * enlace a «Fuentes del catálogo»; al llegarle, el color del enlace.
+ */
+.origen-en-el-catalogo {
+  color: inherit;
+  font-weight: 400;
+}
+
+.origen-en-el-catalogo--enlace {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.origen-en-el-catalogo--enlace:hover,
+.origen-en-el-catalogo--enlace:focus-visible {
+  color: var(--enlace);
+  text-decoration-style: solid;
+}
+
 .alimentos-del-catalogo__detalle {
   display: block;
   margin: 0;
@@ -9327,6 +9348,29 @@ button.comida-del-dia__fila > .icono:last-child {
   cursor: not-allowed;
 }
 
+/* Una acción con lo que hace debajo (bloque 5): el nombre arriba y la línea chica en el tenue; el ícono, con la primera línea. */
+.menu-de-acciones__accion:has(.menu-de-acciones__detalle) {
+  align-items: flex-start;
+  padding-block: 0.5rem;
+}
+
+.menu-de-acciones__accion:has(.menu-de-acciones__detalle) > svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.menu-de-acciones__textos {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.menu-de-acciones__detalle {
+  color: var(--tenue);
+  font-size: 0.86rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
 /* Por qué una acción no se puede usar: debajo de ella, con el mismo margen. */
 .menu-de-acciones__motivo {
   margin: 0 0.7rem 0.45rem;
@@ -9391,6 +9435,24 @@ button.comida-del-dia__fila > .icono:last-child {
 
 .editor-del-plan__estado[data-estado="guardado"] {
   color: var(--tenue);
+}
+
+/* Bloque 3 del encargo: el estado de escritura de un borrador (components/estado-de-guardado.tsx). */
+.estado-de-guardado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.estado-de-guardado[data-estado="guardado"],
+.estado-de-guardado[data-estado="guardando"] {
+  color: var(--tenue);
+}
+
+.estado-de-guardado[data-estado="fallo"],
+.carga-de-la-toma__estado--fallo {
+  color: var(--error);
 }
 
 .editor-del-plan__que-es {
@@ -9671,27 +9733,11 @@ button.comida-del-dia__fila > .icono:last-child {
   gap: 0.6rem 1.25rem;
 }
 
-/* «Agregar una comida habitual», al pie del día tipo: su rótulo, la lista y el botón, en un renglón mientras entren;
-   lo que avisa al agregar, debajo. */
-.editor-del-plan__al-pie [data-habituales='comidas'] {
-  flex: 1 1 28rem;
-  flex-flow: row wrap;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
+/* «Una comida habitual», elegida desde «Agregar comida» (bloque 5): ocupa lo que queda del renglón, como la sesión
+   habitual en Entrenamiento (las reglas de `.sesion-habitual-a-pedido` valen para las dos). */
+.editor-del-plan__al-pie > .comida-habitual-a-pedido {
+  flex: 1 1 32rem;
   min-width: 0;
-  margin: 0;
-}
-
-.editor-del-plan__al-pie [data-habituales='comidas'] > select {
-  flex: 1 1 14rem;
-  width: auto;
-  min-width: 0;
-  max-width: 24rem;
-}
-
-.editor-del-plan__al-pie [data-habituales='comidas'] > .nota {
-  flex-basis: 100%;
-  margin: 0;
 }
 
 /* Los problemas de «Validar»: cada uno es un enlace a su lugar. */
@@ -10034,15 +10080,17 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 100%;
 }
 
-/* «Agregar una sesión habitual», a pedido: la lista, su botón y «Cancelar», en un renglón. */
-.sesion-habitual-a-pedido {
+/* «Agregar una sesión habitual» o «… comida habitual», a pedido: la lista, su botón y «Cancelar», en un renglón. */
+.sesion-habitual-a-pedido,
+.comida-habitual-a-pedido {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.5rem 0.75rem;
 }
 
-.sesion-habitual-a-pedido > .campo {
+.sesion-habitual-a-pedido > .campo,
+.comida-habitual-a-pedido > .campo {
   flex: 0 1 44rem;
   flex-flow: row wrap;
   align-items: center;
@@ -10051,13 +10099,15 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
-.sesion-habitual-a-pedido > .campo > select {
+.sesion-habitual-a-pedido > .campo > select,
+.comida-habitual-a-pedido > .campo > select {
   flex: 1 1 14rem;
   width: auto;
   min-width: 0;
 }
 
-.sesion-habitual-a-pedido > .boton--enlace {
+.sesion-habitual-a-pedido > .boton--enlace,
+.comida-habitual-a-pedido > .boton--enlace {
   min-height: 44px;
 }
 
@@ -11458,15 +11508,12 @@ details[open] > summary:not([class])::before {
 @media (min-width: 87.5rem) {
   .marco-de-la-ficha__ancho {
     display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    /* Quién es, la acción del momento, «Más», el acceso y «Actualizar» (bloque 5). En un área, el tercero es el área. */
+    grid-template-columns: auto auto auto minmax(0, 1fr) auto;
     grid-template-rows: minmax(2.75rem, auto) auto;
     align-items: center;
     column-gap: 1rem;
     padding-top: 0.5625rem;
-  }
-
-  .marco-del-area .marco-de-la-ficha__ancho {
-    grid-template-columns: auto auto auto minmax(0, 1fr) auto;
   }
 
   .marco-de-la-ficha__persona {
@@ -11733,6 +11780,24 @@ details[open] > summary:not([class])::before {
 /* En el teléfono y en la tablet de pie la palabra cede su lugar, como la del botón de la cuenta: queda la campana con su
    número y su nombre accesible («Novedades, 2 sin leer»). */
 @media (max-width: 63.99rem) {
+  .campana-de-novedades__palabra {
+    display: none;
+  }
+
+  .campana-de-novedades {
+    padding: 0.25rem 0.6rem;
+  }
+}
+
+/* Escritorio angosto (1.024 a 1.199 px): la barra entra en un renglón. A 1.024 px, «Cuenta» bajaba a un segundo renglón
+   (lo mostró la captura en tablet del recorrido de navegador `pistas`; bloque 5 del encargo de consolidación). La
+   campana cede su palabra, como en la tablet, y queda con su número y su nombre accesible; los lugares van un poco más
+   juntos y «Cuenta» conserva la suya. */
+@media (min-width: 64rem) and (max-width: 74.99rem) {
+  .encabezado {
+    column-gap: 1.25rem;
+  }
+
   .campana-de-novedades__palabra {
     display: none;
   }

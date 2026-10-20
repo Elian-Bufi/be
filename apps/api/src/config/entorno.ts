@@ -31,6 +31,9 @@ export interface Entorno {
    * sin límite, una sola cuenta podría llenar la base (revisión adversarial del PDP, hallazgo 11).
    * WP-INVITACION (DL-136): ver o usar una invitación, 10 / 15 min por cuenta, desde cualquier red (como el cupo por
    * identificador del login, DL-030): adivinar un código de 40 bits no es viable con ese ritmo.
+   * DL-147: reanudar la sesión del website, 300 / 15 min por red: cada recarga de cada pestaña es una, y un consultorio
+   * entero puede salir por la misma IP. El secreto es de 256 bits: el cupo no protege de adivinarlo sino de un cliente que
+   * reintenta sin parar.
    */
   readonly limites: {
     readonly login: Limite;
@@ -39,6 +42,7 @@ export interface Entorno {
     readonly registro: Limite;
     readonly consultaProtegida: Limite;
     readonly invitacion: Limite;
+    readonly reanudacion: Limite;
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
@@ -172,6 +176,7 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
       errores,
     ),
     invitacion: limite(env.RATE_LIMIT_INVITACION_MAX, env.RATE_LIMIT_INVITACION_WINDOW_MS, 10, 15 * 60 * 1000, 'RATE_LIMIT_INVITACION', errores),
+    reanudacion: limite(env.RATE_LIMIT_REANUDACION_MAX, env.RATE_LIMIT_REANUDACION_WINDOW_MS, 300, 15 * 60 * 1000, 'RATE_LIMIT_REANUDACION', errores),
   };
 
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);

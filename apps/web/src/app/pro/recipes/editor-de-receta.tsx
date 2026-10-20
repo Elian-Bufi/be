@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Ayuda } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso, Campo, ResumenDeErrores, erroresPorCampo } from '../../../components/formulario';
+import { OrigenEnElCatalogo } from '../../../components/origen-en-el-catalogo';
 import { api, type Resultado } from '../../../lib/api';
 import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
@@ -467,25 +468,46 @@ function BuscadorDeAlimentos({
   onElegir: (e: ElementoDeCatalogo) => void;
 }) {
   const [texto, setTexto] = useState('');
-  const [resultados, setResultados] = useState<readonly ElementoEncontrado[] | null>(null);
+  // Lo que trajo la última búsqueda, con el texto con que se buscó: sin resultados, el mensaje lo dice.
+  const [resultados, setResultados] = useState<{ readonly texto: string; readonly alimentos: readonly ElementoEncontrado[] } | null>(null);
   const [buscando, setBuscando] = useState(false);
-  const [fallo, setFallo] = useState(false);
+  // Una búsqueda que falló, con su texto (para reintentarla tal cual) y su motivo.
+  const [fallo, setFallo] = useState<{ readonly texto: string; readonly motivo: string } | null>(null);
+  const campo = useRef<HTMLInputElement>(null);
+  // Una respuesta que llega después de otra búsqueda (o de limpiar) no pisa a la más nueva.
+  const pedido = useRef(0);
 
-  async function buscar() {
-    if (!texto.trim()) return;
+  async function buscar(que = texto.trim()) {
+    if (!que) return;
+    const esta = ++pedido.current;
     setBuscando(true);
-    setFallo(false);
-    const r = await api.buscarEnCatalogo(token, texto.trim());
+    setFallo(null);
+    const r = await api.buscarEnCatalogo(token, que);
+    if (esta !== pedido.current) return;
     setBuscando(false);
     if (sesionPerdida(r)) return;
-    if (!r.ok) return setFallo(true);
-    setResultados(r.datos.data.filter((e) => e.available));
+    // Los resultados de la búsqueda anterior no quedan a la vista debajo de una falla: no son de este texto.
+    if (!r.ok) {
+      setResultados(null);
+      return setFallo({ texto: que, motivo: mensajeDeFallo(r) });
+    }
+    setResultados({ texto: que, alimentos: r.datos.data.filter((e) => e.available) });
   }
+  /** «Limpiar búsqueda»: el campo vacío, el foco en él y el buscador como al empezar. */
+  const limpiar = () => {
+    pedido.current += 1;
+    setBuscando(false);
+    setTexto('');
+    setResultados(null);
+    setFallo(null);
+    campo.current?.focus();
+  };
 
   return (
     <div className="buscador">
       <div className="fila-de-dato">
         <Campo
+          ref={campo}
           id="receta-buscar-texto"
           etiqueta={COPY_RECETAS.buscarIngrediente}
           value={texto}
@@ -505,24 +527,34 @@ function BuscadorDeAlimentos({
       </div>
       {fallo ? (
         <Aviso tipo="error">
-          <p>No pudimos buscar en el catálogo. Probá de nuevo.</p>
+          <p>
+            No pudimos buscar «{fallo.texto}» en el catálogo. {fallo.motivo}
+          </p>
+          <button type="button" className="boton boton--secundario" onClick={() => void buscar(fallo.texto)} disabled={buscando}>
+            Reintentar
+          </button>
         </Aviso>
       ) : null}
       {resultados ? (
-        resultados.length === 0 ? (
-          <p className="nota">No encontramos alimentos con ese nombre.</p>
+        resultados.alimentos.length === 0 ? (
+          <div className="acciones">
+            <p className="nota">Ningún alimento coincide con «{resultados.texto}».</p>
+            <button type="button" className="boton boton--enlace" onClick={limpiar}>
+              Limpiar búsqueda
+            </button>
+          </div>
         ) : (
           <ul className="lista">
-            {resultados.map((e) => (
+            {resultados.alimentos.map((e) => (
               <li key={e.catalogItemId} className="lista__item">
                 <p className="lista__titulo">
                   {e.name}
                   {/* DL-141: si apareció por un nombre alternativo, cuál: «Palta (aguacate)». */}
                   {e.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(e.matchedAlternativeName)})</span> : null}
                 </p>
+                {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. */}
                 <p className="nota">
-                  {COPY_RECETAS.cada100(String(e.composition.energyKcal).replace('.', ','), e.composition.referenceAmount)}
-                  {fuenteDelAlimento(e) ? ` · ${fuenteDelAlimento(e)}` : ''}
+                  {COPY_RECETAS.cada100(String(e.composition.energyKcal).replace('.', ','), e.composition.referenceAmount)} · <OrigenEnElCatalogo item={e} />
                 </p>
                 <button
                   type="button"

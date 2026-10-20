@@ -150,6 +150,10 @@
 | DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
 | DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla, la evaluación más corta y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
+| DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
+| DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
+| DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
+| DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 
 ---
 
@@ -374,6 +378,8 @@ el 06 tendría que leer como «1 : 0..N» mientras el contenido sea optativo.
 - **B.** Cookie httpOnly en el website y SecureStore en el APK, con refresh rotativo (T-10 del 07).
 
 **Provisorio en código.** A, con TTL de 12 h y `renewable: false`.
+
+**Sustituida en el website por DL-147 (2026-10-19).** Una recarga ya no obliga a volver a entrar: la cookie de reanudación (HttpOnly) devuelve un token de la misma sesión. La APK sigue con lo decidido el 2026-10-03 (abajo).
 
 **Condición de cierre.** Se implementa el refresh rotativo (T-10) o Dirección ratifica A para el MVP.
 
@@ -4391,7 +4397,8 @@ Y dos lecturas existentes suman algo, sin cambiar de forma para nadie que no sea
 **Estado:**
 - tramo 1 (D-1 y D-2) INTEGRADO el 2026-10-17 (#180), con la CI en verde;
 - tramos 2 (el catálogo base de entrenamiento, de wger: 186 ejercicios) y 3 (el de alimentos, de USDA: 385) INTEGRADOS el 2026-10-19 (#184), con la CI en verde: los datos curados, el generador, las dos migraciones, las pruebas y `docs/catalogo/FUENTES.md`;
-- D-6 en el website: la página pública «Fuentes del catálogo» (`/legal/fuentes`, enlazada desde el pie) HECHA el 2026-10-19; falta la licencia en cada fila del buscador.
+- D-6 en el website: la página pública «Fuentes del catálogo» (`/legal/fuentes`, enlazada desde el pie) HECHA el 2026-10-19;
+- el origen en cada fila del buscador (lo que faltaba de D-6), la correspondencia de los cortes con su fuente (D-7) y la búsqueda que tolera crecer (D-8): HECHOS el 2026-10-19 en la rama `wp-catalogo-confiable` (#189, en borrador, sin integrar, con la CI en verde), por el encargo de consolidación de Dirección (bloque 4). Las fuentes para los alimentos argentinos que faltan (D-9), propuestas.
 
 **Qué pasaba.**
 - Un ejercicio de wger o un alimento de Open Food Facts importado (WP-08) lo veía solo quien lo importó. Otro profesional que quería el mismo lo importaba de nuevo, repetía la revisión y quedaban dos elementos.
@@ -4468,13 +4475,32 @@ Los campos nuevos van en seis operaciones del website: la APK instalada no las u
   - *Alternativa descartada:* sumar USDA a `ProveedorExterno` (es la enumeración de la importación de WP-08: candidatos, ítems externos y la forma que lee la APK).
 - **D-4.d · Los nombres alternativos de los alimentos son todos `SIEMBRA_DE_BE`,** también el inglés, que es la descripción original de USDA (sin la nota «Includes foods for USDA's Food Distribution Program»), porque el origen `PROVEEDOR` de la tabla de alimentos admite solo Open Food Facts. La procedencia dice que el inglés es de USDA.
   - *Alternativa descartada:* ampliar ese CHECK (un cambio de esquema para un tramo de datos).
-- **D-4.e · Los nombres:** castellano rioplatense, con la preparación cuando importa («Zapallo anco al horno, sin sal», «Carne picada vacuna 90 % magra, cruda»), y nunca el nombre exacto de uno de WP-04 o de DL-119 (D-5). Los cortes vacunos llevan el nombre argentino de su equivalente de USDA: lomo (tenderloin), bife de chorizo (top loin), ojo de bife (rib eye), cuadril (top sirloin), peceto (eye of round), nalga (top round), bola de lomo (tip round), vacío (flank), entraña (outside skirt), osobuco (shank). El inglés de USDA, como nombre alternativo, deja ver el corte de origen. La merluza es la «whiting» de USDA (merluza plateada, del mismo género que la argentina) y lo dice el nombre: «Merluza (whiting), cruda».
+- **D-4.e · Los nombres:** castellano rioplatense, con la preparación cuando importa («Zapallo anco al horno, sin sal», «Carne picada vacuna 90 % magra, cruda»), y nunca el nombre exacto de uno de WP-04 o de DL-119 (D-5). Los cortes vacunos llevan el nombre argentino de su equivalente de USDA: lomo (tenderloin), bife de chorizo (top loin), ojo de bife (rib eye), cuadril (top sirloin), peceto (eye of round), nalga (top round), bola de lomo (tip round), vacío (flank), entraña (outside skirt), osobuco (shank). El inglés de USDA, como nombre alternativo, deja ver el corte de origen. *Corregido el 2026-10-19 (D-7):* cuadril, vacío y entraña llevan el nombre de la pieza de USDA («Cuadril sin colita (top sirloin)», «Bife de vacío», «Entraña fina»). La merluza es la «whiting» de USDA (merluza plateada, del mismo género que la argentina) y lo dice el nombre: «Merluza (whiting), cruda».
   - *Alternativa descartada:* el corte argentino sin el de USDA a la vista (no se podría revisar la equivalencia).
 - **D-3 y D-4 · Cómo se siembran.** Los datos curados viven en `prisma/datos/catalogo-base/` (`ejercicios.json`, `alimentos.json` y su LEEME): lo que decide BE (qué entra, el nombre, la preparación, los nombres alternativos) y lo que dice la fuente, que completa y verifica `scripts/catalogo-base/completar-con-las-fuentes.mjs` contra lo bajado el 2026-10-19 (el CSV de SR Legacy, con su SHA-256, y la API de wger). `scripts/catalogo-base/generar-migracion.mjs` escribe las dos migraciones y `docs/catalogo/FUENTES.md`: UUID v5 en el espacio «be.dl-141.catalogo-base», la marca de la siembra en la procedencia (`WP-CATALOGO-BASE · DL-141 · tramo 2` y `· tramo 3`) y el momento 2026-10-19; dos corridas dan los mismos archivos. Una migración aplicada no se regenera: un cambio posterior al catálogo base es una migración nueva.
   - *Alternativas descartadas:* pedir los datos a wger y a USDA al arrancar (D-3); escribir el SQL a mano (no se podría verificar contra la fuente).
 - **D-5 · Lo sintético de demostración se queda,** porque lo citan los planes de la cohorte y de las pruebas. Este tramo no lo toca.
   - *Alternativa descartada:* retirarlo. Las instantáneas no se reescriben (REG-06-112), así que no cambia nada de lo ya citado, pero confunde a la cohorte.
 - **D-6 · Las fuentes, a la vista:** lo importado ya dice su proveedor y su fecha donde se elige, y su licencia al consultarlo. `docs/catalogo/FUENTES.md` reúne las atribuciones que piden las licencias: la cita de USDA y, ejercicio por ejercicio, cada texto de wger con su licencia y su autoría (o que wger no la declara). Se genera desde los datos, así que no se desincroniza. Falta el website: la página «Fuentes del catálogo», que sale de ese documento, y la licencia en cada fila del buscador («wger · CC BY-SA 4.0», «USDA FoodData Central · dominio público»).
+
+**La correspondencia con la fuente, el origen en la fila y la búsqueda que crece** (encargo de consolidación de Dirección del 2026-10-19, bloque 4; #189, rama `wp-catalogo-confiable`, en borrador). Todo espera ratificación:
+- **D-7 · Un corte se llama como la pieza que describe su composición.** Se revisaron cuadril, entraña, vacío y bola de lomo, crudos y cocidos, contra el glosario de cortes de exportación de la SAGPyA que publica el IPCVA y las especificaciones IMPS 100 de USDA (la tabla, con la pieza, la preparación, la grasa y el fundamento de cada uno, está en `docs/catalogo/FUENTES.md`):
+  - «Cuadril, magro, crudo/asado» pasa a «Cuadril sin colita (top sirloin), magro, crudo/asado», con la correspondencia **aproximada** (el top sirloin de USDA es el cuadril sin la colita, con la tapa o sin ella: SR Legacy no lo aclara);
+  - «Vacío, magro y grasa, crudo/asado» pasa a «Bife de vacío, …» (el flank steak de USDA es el M. rectus abdominis, el bife de vacío del glosario; el vacío entero suma el transverso, los oblicuos y más grasa, y SR Legacy no lo publica);
+  - «Entraña, magra, asada» pasa a «Entraña fina, …» (el outside skirt de USDA es el diafragma; la entraña gruesa es otra pieza);
+  - «Bola de lomo, magra, cruda» ya era fiel: queda revisada, sin otra versión.
+  - *Alternativas descartadas:* dejar el nombre y marcar solo la aproximación (el nombre seguiría diciendo «vacío»); retirar los ítems (la composición es válida para su pieza y hay planes que la citan); crear ítems nuevos (el registro de USDA es el mismo: duplicaría el catálogo).
+- **D-7.a · Cómo se corrige un ítem ya publicado:** una migración nueva, `20261019210000_catalogo_base_correspondencia_de_cortes`, generada desde `prisma/datos/catalogo-base/correcciones.json`. Cada corte que cambia de nombre es una **versión nueva**, sucesora de la del tramo 3, con la composición, la disponibilidad y la fuente externa copiadas tal cual de la anterior; la procedencia suma `correspondencia` (`DIRECTA` o `APROXIMADA`, con la nota, la pieza, la preparación, la grasa, el fundamento y las dos fuentes con su SHA-256) y `correccion` (el nombre anterior). La versión anterior queda, y las instantáneas que la citan conservan su nombre. Las migraciones de los tramos 2 y 3 no se regeneraron.
+  - *Alternativas descartadas:* regenerar la migración del tramo 3 (Prisma la rechazaría en test: ya está aplicada); un campo nuevo en la composición (cambiaría la forma de todas las lecturas del catálogo).
+- **D-7.b · Un nombre alternativo ayuda a encontrar; no convierte dos alimentos en el mismo.** Se retiraron once, con su motivo, porque nombraban otro ingrediente u otra preparación: «Copos de avena» (ES) y «Avena en hojuelas» (MX) de la avena cocida, «Surimi» del kanikama, «Tomate triturado» (ES) del puré de tomate, «Queso rallado» (AR) del parmesano, «Queso por salut» (AR) del port-salut de USDA, «Cajeta» (MX) del dulce de leche, «Lechuga criolla» (AR) de la lechuga de hoja verde, «Compota de manzana» del puré sin azúcar y «Entrecot» (ES) de los dos ojos de bife; y se sumó «Lomo alto sin tapa» (ES) a los ojos de bife, que es el nombre del glosario. Retirar es un hecho aparte (`retiro_de_nombre_alternativo_de_alimento`): el nombre queda en la historia.
+  - Se quedan «Cadera» (ES), que es el nombre del cuadril («Cuadril (o cadera)» en el glosario), y «Arrachera» (MX), que nombra la entraña fina; ninguna de las dos fuentes de cortes cubre México: **a revisar** con una fuente mexicana.
+  - *Alternativa descartada:* dejar todos los nombres porque el principal ya dice qué es (el nombre alternativo aparece junto al principal, «Ojo de bife (entrecot)», y afirma que son lo mismo).
+- **D-6 en la fila del buscador (completa la D-6).** Cada fila de los cuatro buscadores del website dice de dónde sale el ítem, breve y a la vista («USDA», «wger · CC BY-SA 4.0», «Open Food Facts · ODbL 1.0», «Demostración», «Cargado por vos»), con la equivalencia aproximada también a la vista («USDA · equivalencia aproximada»). El origen es un enlace a «Fuentes del catálogo», en su sección y en otra pestaña (el plan o la receta quedan como estaban), con una pista (DL-146) que da el detalle: el registro de USDA y su descripción original, la licencia y la autoría de wger, la fecha de lo importado, en qué es aproximada. Lo cargado a mano va como texto, sin enlace. Los textos están en el dominio (`copy-origen-en-el-catalogo.ts`).
+  - **El contrato:** API-NUT-13-BUSQUEDA y API-TRN-13-BUSQUEDA suman `origin` a cada fila: `loadedBy` (`YOU` o `ANOTHER_PROFESSIONAL` en una carga a mano; `null` en lo sembrado y lo importado, que no dice quién lo importó, D-1.g) y `approximateCorrespondence` (la nota de una correspondencia `APROXIMADA`, tal como está en la procedencia; si no, `null`). La procedencia y la fuente externa ya venían en la fila. Las lecturas legadas no cambian: la APK instalada lee API-TRN-13 con su esquema congelado, que rechazaría el campo. Como con `matchedAlternativeName`, una pestaña abierta antes del despliegue puede ver «respuesta no reconocida» en el buscador hasta recargar.
+  - *Alternativas descartadas:* armar los textos en la API (el copy vive en el dominio); un botón por fila que despliegue el detalle (satura la lista y suma una parada de teclado más que el enlace); el detalle solo al pasar el mouse sobre un texto (no se llega con el teclado).
+- **D-8 · La búsqueda tolera que el catálogo crezca.** Se quitó la regla del LEEME que limitaba a 18 las sentadillas (la puso una prueba, no la curaduría). Con un error de tipeo, la primera página se completa con los parecidos; a igual parecido palabra por palabra, ahora va primero el nombre entero más cercano a lo escrito (`similarity` de `pg_trgm`) y recién después lo más nuevo: «sentadila» trae primero «Sentadilla» aunque haya más sentadillas que una página, también en API-TRN-13. Solo cambia el orden de los parecidos, que no tienen página siguiente: el cursor y la forma de las respuestas son los de siempre. Las pruebas de búsqueda recorren todas las páginas.
+  - *Alternativas descartadas:* subir el tope (seguiría decidiendo el catálogo por una prueba); ordenar por cercanía también dentro de los grupos exactos (cambiaría el cursor, y el nombre igual a lo escrito ya va primero).
+- **D-9 · Los alimentos argentinos que faltan:** las fuentes posibles, sus condiciones, la procedencia por nutriente y la diferencia entre carbohidratos totales y disponibles están en `docs/catalogo/FUENTES-ARGENTINAS.md`, con los borradores de los pedidos de permiso, **sin enviar**. La recomendada es ARGENFOODS (UNLu): datos analíticos argentinos de cortes y quesos, con los carbohidratos totales por diferencia que ya usa el catálogo; sus condiciones piden permiso escrito para incorporarlos a un sistema con fines comerciales. SARA 2 es una compilación: cada valor arrastra las condiciones de su fuente, que la tabla marca con colores.
 
 **Base de datos.** Tres migraciones, sin booleanos:
 - `20261017010000_lo_importado_es_de_todos`:
@@ -4488,6 +4514,8 @@ Y dos de datos de los tramos 2 y 3, generadas (D-3 y D-4), que solo agregan fila
 - `20261019120000_catalogo_base_de_ejercicios`: los 186 ejercicios, su primera versión, su ítem externo y 266 nombres alternativos. Un número de wger que ya tiene ítem externo no se crea de nuevo, y sus nombres van al ejercicio que ya estaba (D-3.e).
 - `20261019120100_catalogo_base_de_alimentos`: los 385 alimentos, su primera versión y 660 nombres alternativos (también el inglés de los ocho de DL-119). Un FDC que ya está en el catálogo no se crea de nuevo.
 - Cada inserción saltea lo que ya está (`ON CONFLICT DO NOTHING`, `WHERE NOT EXISTS`): correrlas otra vez no agrega nada.
+
+Y una de datos de la correspondencia (D-7.a), generada, que solo agrega filas: `20261019210000_catalogo_base_correspondencia_de_cortes`, con cinco versiones nuevas (los cortes que cambian de nombre, cada una solo si la del tramo 3 sigue siendo la vigente), once retiros de nombres alternativos y dos nombres nuevos.
 
 El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre principal y sus nombres alternativos vigentes.
 
@@ -4511,27 +4539,33 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
   - los nombres alternativos, con su idioma, su región y su origen, y lo atribuido a wger es un texto de wger;
   - sin nombres repetidos ni iguales a los de demostración o de DL-119; ningún FDC de DL-119; ningún número del proveedor falso de las pruebas;
   - las licencias de wger, las mismas que usa la importación de WP-08;
-  - las dos migraciones y FUENTES.md son exactamente lo que produce el generador, y solo agregan.
+  - las tres migraciones y FUENTES.md son exactamente lo que produce el generador, y solo agregan;
+  - la correspondencia (D-7): los cuatro cortes del encargo, crudos y cocidos, revisados una vez cada uno; cada corrección con su pieza, su preparación, su grasa y su fundamento, y la nota si es aproximada; el nombre nuevo conserva la preparación y la grasa; la versión nueva solo cambia la marca de la siembra y suma la correspondencia, sin tocar la fuente externa; cada nombre retirado existía, con su motivo y el identificador de la fila que sembró el tramo 3.
+  - Se quitó la prueba de las «pocas sentadillas» (D-8).
 - **integración de los tramos 2 y 3** (`test/integration/catalogo-base.int-spec.ts`):
   - cada fila de las migraciones está en la base, correrlas de nuevo no agrega nada, y cada ítem sembrado tiene una sola versión y no es de ningún profesional;
   - cada ejercicio es el de su ítem externo, con su licencia; cada alimento, con la procedencia de DL-119 y su composición;
   - el buscador del website encuentra lo sembrado por el castellano, el inglés y el de otro país, con `matchedAlternativeName`; las lecturas legadas, igual;
   - importar desde wger un ejercicio del catálogo base devuelve `existingExercise`, la resolución apunta al sembrado y no se crea otro ejercicio ni otra versión (el proveedor falso suma el número 73);
   - la persona ve un ejercicio del catálogo base en su plan (API-TRN-09) y en el catálogo (API-TRN-13), validados contra los esquemas congelados de la APK.
+  - la correspondencia (D-7): cada corte corregido es una versión nueva con el nombre fiel, la misma composición y la misma fuente, y la anterior queda con su nombre; el buscador del website trae la vigente con `origin.approximateCorrespondence` cuando es aproximada; un nombre retirado ya no encuentra su alimento y queda en la historia; «Lomo alto sin tapa» encuentra el ojo de bife; el origen de lo de wger, lo de demostración y lo cargado a mano; API-TRN-13, sin el campo.
   - Dos pruebas que suponían que lo único sembrado era lo de demostración: `entrenamiento.int-spec.ts` recorre todas las páginas del catálogo, y `catalogo-compartido.int-spec.ts` busca el ítem de demostración dentro del grupo del nombre igual, porque «bench press» y «aguacate» también son nombres del catálogo base.
 
 **Lo que queda:**
-- **D-6 en el website:** la página «Fuentes del catálogo» ya está (`/legal/fuentes`): la cita de USDA, las licencias de wger y de Open Food Facts, y un enlace a `docs/catalogo/FUENTES.md` del repositorio público con la autoría de cada ejercicio (un enlace a un recurso con esos datos es una forma razonable de atribuir: CC BY-SA 4.0, §3(a)(2)). Falta la licencia en cada fila del buscador, que pide un campo nuevo en las búsquedas del website; ahí también, si Dirección lo decide, quién revisó cada importado (D-1.g).
+- **D-6:** la página «Fuentes del catálogo» (`/legal/fuentes`) y el origen en cada fila del buscador están hechos; falta, si Dirección lo decide, decir quién revisó cada importado (D-1.g).
+- **Integrar** #189 (D-6 en la fila, D-7 y D-8) y aplicar su migración en test: el encargo no autoriza publicar.
+- «Arrachera» (MX), sin una fuente de cortes mexicana que la confirme (D-7.b).
 - En la base de test, un ejercicio de wger que algún profesional ya haya importado no se duplica: queda el suyo, con los nombres del catálogo base (D-3.e).
 - Agregar y retirar nombres alternativos desde el website (D-2.b), y decidir quién puede corregir un ítem que es de todos (D-1.c): hoy un ítem del catálogo base no se corrige desde la aplicación.
-- Lo que el catálogo base no trae porque SR Legacy no lo tiene (la yerba mate, cortes y quesos argentinos): otra fuente con licencia, como la tabla argentina cuando haya permiso de sus autores (D-4).
+- Lo que el catálogo base no trae porque SR Legacy no lo tiene (la yerba mate, el vacío entero, la entraña gruesa, quesos argentinos): otra fuente con licencia (D-9). Dirección decide si se pide el permiso a la UNLu (ARGENFOODS), quién lo firma y si el uso de BE es comercial; los borradores están en `docs/catalogo/FUENTES-ARGENTINAS.md`.
 - Si wger trae un ejercicio solo en inglés y el profesional lo traduce, ese inglés podría quedar como nombre alternativo de origen `PROVEEDOR`. Hoy el candidato guarda un solo nombre.
 
-**Provisorio en código:** D-1 (con D-1.a a D-1.g), D-2 (con D-2.a y D-2.b), D-3 (con D-3.a a D-3.f) y D-4 (con D-4.a a D-4.e).
+**Provisorio en código:** D-1 (con D-1.a a D-1.g), D-2 (con D-2.a y D-2.b), D-3 (con D-3.a a D-3.f), D-4 (con D-4.a a D-4.e) y, en la rama `wp-catalogo-confiable`, D-6 en la fila, D-7 (con D-7.a y D-7.b) y D-8.
 
 **Condición de cierre:**
-- Dirección ratifica D-1 a D-4, o cambia las que quiera;
-- los tramos 2 y 3 integrados, con la página de fuentes.
+- Dirección ratifica D-1 a D-8, o cambia las que quiera, y decide D-9;
+- los tramos 2 y 3 integrados, con la página de fuentes;
+- la correspondencia y el origen en la fila integrados.
 
 ---
 
@@ -4737,3 +4771,320 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
 **Provisorio en código:** G-1 a G-6.
 
 **Condición de cierre:** Dirección ratifica G-1 a G-6, o cambia las que quiera.
+
+---
+
+## DL-147 — La sesión del website sobrevive a una recarga: reanudación con cookie HttpOnly y rotativa
+
+**Prioridad:** alta (primera prioridad del encargo de consolidación).
+
+**Documentos:**
+- **07:789 y §43-bis:** «JWT en memoria […] hasta la introducción del refresh rotativo, que moverá el refresh a almacenamiento seguro (cookie httpOnly para web; SecureStore para APK)».
+- **08 §26:** sesiones revocables del lado del servidor.
+- **DL-012:** la sesión del website en memoria (opción A) y la de la APK en SecureStore.
+- **DL-030:** el website llama a la API directo, con CORS, para que la API vea la IP real.
+- **DL-138:** el acceso con Google abre la misma sesión.
+- **OWASP, Session Management Cheat Sheet.**
+
+**Qué pedía el encargo (2026-10-19, bloque 3).**
+- Actualizar la página conserva una sesión todavía válida, y entrar por un enlace autorizado recupera el contexto después de identificarse.
+- Las credenciales de renovación quedan fuera del JavaScript del navegador: nada de contraseñas, Bearer ni refresh tokens en localStorage o sessionStorage.
+- El servidor sigue decidiendo: restaurar no restaura un permiso revocado.
+
+**Lo que condiciona el diseño: website y API son sitios distintos.**
+- `onrender.com` está en la lista de sufijos públicos (Public Suffix List, sección de Render). Por eso be-web-…onrender.com y be-api-…onrender.com son dos sitios.
+- Una cookie de la API es, para el website, una cookie de terceros. `SameSite=Lax` o `Strict` no viajaría.
+
+**Lo decidido** (todo provisorio en código, a ratificar):
+- **D-1 · Una cookie de reanudación, no un refresh general.**
+  - Al abrir una sesión desde el website (API-ACC-02 y API-GOO-01 a 03), la API manda `__Secure-be-reanudacion`: `HttpOnly; Secure; SameSite=None; Partitioned`, con `Path=/api/v1/auth/sessions` y `Max-Age` igual a lo que le queda a la sesión.
+  - `Partitioned` (CHIPS) guarda la cookie en la partición del website: la mandan solo los pedidos que salen de él, aunque el navegador bloquee las cookies de terceros sin partición.
+  - El secreto es de 256 bits; la base guarda su huella SHA-256, nunca el secreto.
+  - La APK no la recibe.
+- **D-2 · API-ACC-02-REANUDACION** (`POST /api/v1/auth/sessions/resume`): con la cookie, devuelve un token nuevo de la MISMA sesión, con el mismo id y el mismo vencimiento (12 h desde el inicio, sin extender: DL-012). Una sesión finalizada, revocada, vencida, de otra superficie, con otra versión de control o de una cuenta que no opera no se reanuda. Vencida responde `SESSION_EXPIRED`, para que el website lo explique; lo demás, `SESSION_INVALID`; sin cookie, `AUTHENTICATION_REQUIRED`. Un rechazo borra la cookie.
+- **D-3 · Rotativa, con margen para dos pestañas.**
+  - Cada reanudación cambia el secreto. Cada fila de `reanudacion_de_sesion` reemplaza a la anterior (cadena por `predecesora_id`, única), y la vigente es la que no tiene sucesora.
+  - Dos pestañas que recargan a la vez presentan el mismo secreto: la segunda llega con uno recién reemplazado y vale dentro de 2 minutos, sin rotar otra vez. Las reanudaciones de una sesión se serializan con un bloqueo de su fila.
+  - Fuera del margen, un secreto reemplazado es una copia: la sesión se revoca (`REANUDACION_REUTILIZADA`), y con ella el token de las pestañas abiertas.
+- **D-4 · Sin superficie de CSRF en los datos.**
+  - Ninguna operación de datos se autentica con la cookie: siguen con el Bearer en memoria.
+  - La reanudación exige `X-BE-Surface: WEB`, una cabecera propia que obliga a la verificación previa de CORS, y, con orígenes configurados, un `Origin` de la lista. El cupo es de 300 reanudaciones cada 15 minutos por red (`RATE_LIMIT_REANUDACION_*`): un consultorio entero puede salir por la misma IP.
+  - CORS pasa a `credentials: true` para el origen del website. La cookie solo viaja a `/api/v1/auth/sessions`.
+- **D-5 · Nada en el almacenamiento del navegador.** El token sigue en memoria de la pestaña; la cookie es HttpOnly, y el JavaScript del website no la ve.
+- **D-6 · El website:**
+  - al cargar dice «Recuperando tu sesión…», sin mandar a Iniciar sesión ni mostrar datos de nadie;
+  - una falla de red o del servidor se reintenta dos veces;
+  - entre pestañas (`BroadcastChannel`, sin tokens en los mensajes), cerrar la sesión en una la cierra en las demás, y entrar con otra cuenta recarga las que mostraban otra;
+  - si la sesión venció, la entrada lo dice («Tu sesión venció…») y después vuelve al mismo lugar: la ruta, la vista y el período, si tienen una forma conocida (`destinoSeguro` y `retornoDeLaPagina`). Lo escrito sin guardar no se confirma solo: la página se vuelve a montar.
+- **D-6 bis · Una falla de conexión se dice como tal** (agregado el 2026-10-19, antes de integrar):
+  - al entrar, un pedido que no llega dice «No pudimos conectarnos con BE: no es un problema de tu correo ni de tu contraseña»;
+  - al recargar, si después de los dos reintentos no hubo conexión, la entrada lo dice (`aviso=sin-conexion`): no es que la sesión haya vencido. Cuando la conexión vuelve, la reanudación se intenta sola.
+- **D-7 · La APK no cambia:** sigue con su token en SecureStore (DL-012, 2026-10-03) y nunca manda credenciales (`credentials: 'omit'`).
+
+**Alternativas descartadas:**
+- **Guardar el token en sessionStorage o localStorage:** el encargo lo prohíbe, y un XSS se lo lleva.
+- **Servir la API bajo el dominio del website** (un proxy en el mismo sitio): DL-030 descartó el rewrite de Render porque ocultaba la IP del cliente, y los límites de intentos van por IP. Un proxy propio que la reenvíe es un servicio más.
+- **Un dominio propio para website y API** (`app.…` y `api.…`, el mismo sitio): la cookie sería de primera parte. Es la solución de fondo, pero pide comprar el dominio y configurarlo en Render. Queda como propuesta para Dirección.
+- **Rotar sin margen:** dos pestañas que recargan a la vez revocarían la sesión.
+- **No rotar:** el 07 pide refresh rotativo, y la rotación detecta una copia de la cookie.
+
+**Contrato:**
+- operación nueva API-ACC-02-REANUDACION, sufijo de BE sobre API-ACC-02 (la guardia de trazabilidad suma `REANUDACION`);
+- API-ACC-02 y API-GOO-01 a 03 mandan la cookie en el website;
+- API-ACC-03 y 04 la borran.
+
+Las respuestas no cambian de forma, y la APK instalada no se entera.
+
+**Base de datos:**
+- `20261019200000_motivo_reanudacion_reutilizada`: el motivo nuevo de revocación, en su propia migración como pide PostgreSQL.
+- `20261019200100_reanudacion_de_sesion_web`: la tabla `reanudacion_de_sesion`.
+  - Solo se agrega y no admite TRUNCATE.
+  - Su trigger exige una sesión activa del website, una sola fila inicial por sesión y una predecesora de la misma sesión.
+  - La huella tiene la forma de un SHA-256.
+
+**Pruebas:**
+- **Integración** (`test/integration/reanudacion-de-sesion.int-spec.ts`):
+  - los atributos de la cookie, y que la APK no la reciba;
+  - que reanudar devuelva la misma sesión y el mismo vencimiento, con un token que autentica;
+  - la rotación y la cadena;
+  - sin cookie, con otra forma o desconocida;
+  - otra superficie;
+  - dos pestañas dentro del margen;
+  - cuatro pedidos simultáneos, que rotan una vez;
+  - el reuso fuera del margen, que revoca;
+  - cerrar la sesión, cerrar todas y la cuenta suspendida;
+  - la sesión vencida;
+  - el origen ajeno, la verificación previa y CORS con credenciales;
+  - la historia solo agregada y el trigger.
+- **Dominio:** las credenciales solo en las operaciones de sesión del website, nunca en la APK.
+- **Scripts:** `scripts/retorno-seguro.test.mjs` (la vista y el período en el retorno).
+
+**Lo que falta, y cómo se verifica:**
+- **En el despliegue real:** las cookies entre los dos dominios de Render no se pueden probar en local con los mismos sitios. Hay que entrar, recargar, abrir otra pestaña, cerrar la sesión y esperar el vencimiento en Chrome, Edge y Firefox.
+- **Safari** (corregido el 2026-10-19 a pedido de Dirección):
+  - Desde la 26.2, del 12 de diciembre de 2025, vuelve a aceptar cookies particionadas (CHIPS), que se piden con el atributo `Partitioned`, como la nuestra. Las había incorporado en la 18.4 y las quitó en la 18.5. Fuente: [WebKit Features for Safari 26.2](https://webkit.org/blog/17640/webkit-features-for-safari-26-2/).
+  - WebKit documenta el caso de un iframe, no el de la respuesta a un pedido entre sitios como el nuestro: queda por verificar en un Safari real.
+  - En una versión sin CHIPS, el comportamiento es el de antes (volver a entrar), y la reanudación lo dice como sesión inexistente.
+- **El recorrido de navegador en la CI** (bloque 6 del encargo): entrar y recargar.
+
+**Condición de cierre:**
+- Dirección ratifica D-1 a D-7;
+- la verificación en el despliegue real pasa en los tres navegadores;
+- se decide si se pide un dominio propio.
+
+---
+
+## DL-148 — Los borradores: estado de escritura inequívoco, autoguardado de los planes y conflicto explícito
+
+**Prioridad:** alta (bloque 3 del encargo de consolidación, con DL-147).
+
+**Documentos:**
+- **B10-06:1145-1148:** una escritura denegada retira el contenido.
+- **DL-047:** la versión en preparación.
+- **El control de versión del 09:** `expectedVersion`; la respuesta a una versión distinta es 409.
+- **DL-147:** la sesión que sobrevive a una recarga.
+- **El inventario:** `docs/ux/BORRADORES.md`.
+
+**Qué pedía el encargo:**
+- inventariar qué persiste cada editor;
+- estados de escritura inequívocos («Guardando», «Guardado», «Pendiente de guardar», «No se pudo guardar»);
+- un autoguardado que guarde la preparación y nunca confirme un acto;
+- dos pestañas sin sobrescrituras silenciosas;
+- reintentos sin duplicados;
+- y no prometer recuperar lo que nunca se guardó.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · Cuatro estados, una regla.** `estadoDeGuardado`, en el dominio, y `EstadoDeGuardado`, en el website. «Guardado» solo con la respuesta del servidor. Van en los dos editores de plan y en la toma en preparación, que ya tenían una línea de estado.
+- **D-2 · El autoguardado de los planes en preparación** (Nutrición y Entrenamiento).
+  - Corre en la primera pausa de 4 s, solo si no falta completar nada, sin un guardado en curso, sin un conflicto pendiente y sin un acto abierto (activar, guardar como plantilla).
+  - Al volver la conexión, reintenta.
+  - Sin cambios en la API: usa el PATCH del borrador con `expectedVersion`.
+  - La toma, con mediciones que se cargan de a una, sigue guardándose con «Guardar», con los cuatro estados.
+  - *Alternativa descartada:* autoguardar la toma (cada campo sería una escritura, y una medición a medio escribir no se guarda: hay que confirmar).
+- **D-3 · El conflicto se dice.** Un 409 por versión no pisa nada. El editor dice que el borrador cambió en otra pestaña o en otro equipo, deja lo escrito a la vista para copiarlo y ofrece «Cargar la versión guardada». Si el intento anterior se perdió en la red, el editor relee antes: si lo guardado es lo suyo, no hay conflicto.
+  - *Alternativa descartada:* reintentar con la versión nueva (pisaría lo de la otra pestaña sin decirlo).
+- **D-4 · Lo escrito mientras viaja un guardado no se pisa.** Un contador de ediciones decide si la respuesta reemplaza la pantalla. Si hubo cambios, sigue pendiente y viaja en el siguiente guardado, con la versión nueva.
+- **D-5 · Salir con algo sin guardar pide confirmar** (`beforeunload`, el aviso del navegador), además de «Actualizar», que ya preguntaba.
+  - Nada se guarda en el navegador: un borrador es información de salud.
+  - *Alternativa descartada:* guardarlo en localStorage o en IndexedDB para recuperarlo después de cerrar la página (información de salud en el navegador por tiempo indefinido; el encargo lo pide evitar).
+- **D-6 · Lo que no tiene borrador, no se simula.**
+  - La revisión, la evaluación, el objetivo, el pedido de información y la nota se envían de una vez.
+  - Un borrador de revisión pide una operación nueva de la API: queda como propuesta (bloque 7 del encargo).
+
+**Pruebas:**
+- **Dominio:** `estado-de-guardado.test.ts`, la regla de los cuatro estados.
+- **Navegador en la CI** (bloque 6): retomar un borrador después de recargar y resolver un conflicto entre dos pestañas.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-6, y el recorrido de navegador de la CI pasa.
+
+---
+
+## DL-149 — El flujo profesional, pulido: la acción del momento, «Más», los habituales donde se agrega, las pistas, el área sugerida y los vacíos
+
+**Prioridad:** alta (bloque 5 del encargo de consolidación; con dos puntos del bloque 3).
+
+**Documentos:**
+- **La maqueta 01 aprobada:** el encabezado de la ficha.
+- **B10-01:** el marco de la ficha.
+- **DL-145:** «Empezar el plan».
+- **DL-146:** ayuda breve en la vista, detalle en la Guía y pistas.
+- **DL-109:** «Mis habituales».
+- **DL-140:** la nota de coordinación.
+- **WCAG 2.2:** 1.4.13 (contenido al pasar el mouse) y 2.4.11 (foco no tapado).
+- **Los recorridos de navegador:** DL-150.
+
+**Qué pedía el encargo:**
+- **Encabezado:** una acción principal según el contexto, las secundarias en un menú comprensible, y el período solo donde cambia la lectura.
+- **Caminos:** distintos y previsibles para una ficha nueva, una con borrador y una con plan vigente.
+- **Pistas:** verificadas con mouse, teclado, Escape, zoom y tacto.
+- **Área sugerida:** visible y editable, validada en el servidor.
+- **Estados:** vacíos distintos de sin resultados, errores parciales que no borran el resto, y un solo «Reintentar» por operación.
+- **Editores:** plantillas y habituales donde se busca y se agrega.
+- **Estética:** escritorio y tablet.
+- **Del bloque 3:** al cambiar de asesorado, limpiar lo del anterior; un corte de red no pierde lo escrito.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · Una acción del momento, o ninguna** (`accionDeLaFicha`).
+  - Gana la revisión acordada vencida o de los próximos 7 días: «Preparar la revisión de …».
+  - Después, el borrador: «Seguir el borrador».
+  - Después, un área sin plan: «Empezar el plan». También un área legible sin ningún dato, que el tablero manda con el resumen en `null`.
+  - Con dos áreas legibles, el texto dice de cuál es. Con todo al día no hay acción: la ficha no inventa una urgencia, y la fecha de la revisión la fijó el profesional.
+  - *Alternativa descartada:* una acción fija o varias a la vista (era la densidad pendiente).
+- **D-2 · «Más» agrupa lo de vez en cuando:** «Pedir información» y «Nota de coordinación».
+  - Cada una con una línea que dice qué hace: en una lista no hay un «pasar el mouse» que sirva. El nombre accesible es el de la acción y la línea es su descripción.
+  - «Actualizar» y la hora siguen a la vista (B10-01).
+- **D-3 · El marco a 1.400 px o más tiene cinco columnas también en la ficha.** Antes, la quinta pieza caía en una columna implícita a la derecha de «Actualizar».
+- **D-4 · El período ya estaba donde cambia la lectura.** Está en las tres vistas de la ficha, que lo usan, y en Registros, Sesiones, Evolución y la revisión de cada área. No se agregó ni se quitó.
+- **D-5 · La pista responde al mouse y al lápiz, no al dedo.**
+  - Un toque emulaba «pasar el mouse» y la pista quedaba abierta encima del contenido.
+  - Lo que explica está en la vista o en la Guía, y el lector de pantalla la sigue leyendo.
+  - *Alternativa descartada:* mantenerla abierta con un toque largo. No es un gesto estándar y choca con seleccionar texto.
+- **D-6 · El área sugerida es solo una sugerencia.**
+  - Viene elegida si el profesional tiene vínculos en una sola área, y lo dice: «Sugerida por tus vínculos: podés elegir otra.», también en la descripción accesible del campo.
+  - La lista de áreas sigue completa y el servidor valida la habilitación. El rechazo (422) se dice junto al campo, que recibe el foco.
+  - Nunca otorga un consentimiento.
+- **D-7 · Habituales donde se agrega.**
+  - «Agregar comida ▾» ofrece «Una comida vacía» o «Una comida habitual», como «Agregar ▾» de Entrenamiento. Sin habituales, la opción está apagada y dice cómo se guardan. Si no se pudieron leer, lo dice y ofrece volver a leerlas.
+  - El buscador de «Agregar ítem» y «Agregar ejercicio» filtra los habituales mientras se escribe (`habitualesQueCoinciden`). El catálogo se sigue buscando al enviar.
+  - Foco y Escape: el selector aparece con el foco, y Escape o «Cancelar» devuelven el foco a «Agregar».
+  - Las plantillas siguen donde nace un plan («Empezar desde una plantilla») y donde se guarda una («Guardar como plantilla»).
+  - *Alternativa descartada:* aplicar una plantilla sobre un borrador existente. Sería una operación masiva para una fricción chica, y el encargo pide evitarlas.
+- **D-8 · El objetivo propone la evaluación más reciente** (`evaluacionMasReciente`). En el primer plan, el formulario se abría antes de que llegara la evaluación recién registrada y quedaba sin elegir.
+- **D-9 · Vacíos, fallas parciales y un solo «Reintentar»** (relevamiento de todo el espacio profesional).
+  - **Vacío y sin resultados son distintos.**
+    - Un filtro de plantillas sin coincidencias dice «Ninguna plantilla activa/archivada» y ofrece «Ver todas», en lugar de «Todavía no guardaste ninguna».
+    - Los buscadores del catálogo y el de recetas dicen el término y ofrecen «Limpiar búsqueda».
+  - **Un solo «Reintentar» por lectura, que dice qué reintenta.**
+    - En la ficha: el encabezado ya no tiene uno propio («Actualizar» vuelve a pedir el acceso); el Resumen tiene «Reintentar lo que faltó» arriba de las tarjetas; los indicadores, uno solo.
+    - En Analizar: «Reintentar las métricas que fallaron». En Comparar etapas, uno debajo de la tabla. Cada uno vuelve a pedir solo lo que falló.
+    - En Sesiones, el detalle remite al de la lista.
+    - En `/pro`, cada lista el suyo.
+  - **Una falla no se dice como ausencia.** Esto vale para:
+    - la información para revisar;
+    - los datos para responder una pregunta;
+    - las etapas;
+    - los habituales;
+    - lo citable de una nota;
+    - la toma en preparación.
+
+    En cada caso dice que no se pudo leer, con su reintento, nunca «no hay».
+  - **Lo leído no se borra.** Un «Actualizar» que falla deja la lista leída, con la hora, si es la misma consulta. Si cambió el período, es una falla: no se muestra una lista vieja como nueva.
+  - **Resumen y Plan de Nutrición y de Entrenamiento ya no son «todo o nada»** (`lecturas-parciales.tsx`).
+    - En el Resumen, cada lectura tiene su estado: si falla una, lo demás sigue a la vista, cada dato que dependía de ella dice «No se pudo leer» y un solo «Reintentar lo que faltó» vuelve a pedir solo eso.
+    - En el Plan, si falla el objetivo vigente o la versión activa, el plan sigue a la vista con el aviso de lo que falta. Crear una versión espera a leerlo, porque nace de los dos, y nunca aparece «Primero definí el objetivo» por una falla.
+    - Sin las versiones del plan no hay nada que mostrar: esa falla sigue siendo la de la vista entera. Un 404 sigue siendo «no disponible».
+- **D-10 · Del bloque 3.**
+  - **Al cambiar de asesorado, la ficha y las áreas se vuelven a montar** (`PorAsesorado`). Nada de la persona anterior queda a la vista mientras llega lo nuevo. Lo escrito sin guardar de la anterior también se descarta: los planes se guardan solos en la primera pausa y nada se guarda en el navegador.
+  - **Lo que vive en la dirección de una página se cambia con la historia del navegador** (`cambiarLaDireccion`). Pasa con la vista, el período, el día tipo, las comidas abiertas y la receta abierta.
+    - Antes lo hacía el enrutador de Next, que en el export estático le pide la página al servidor en cada cambio. Sin conexión, la pestaña terminaba en la página de error del navegador, con lo escrito sin guardar adentro. Lo encontró el recorrido `borrador`.
+    - De paso, cada cambio de vista ya no hace un pedido de red.
+- **D-11 · Tablet y escritorio angosto.** Entre 1.024 y 1.199 px, la campana de novedades cede su palabra (queda su número y su nombre accesible) para que la barra entre en un renglón. Antes, a 1.024 px, «Cuenta» bajaba a otro.
+
+**Pruebas:**
+- **Navegador, la falla parcial:** el recorrido `faltaUnaParte` simula en el navegador que falla solo el objetivo, mira el plan con el aviso y sin «crear versión», y reintenta.
+- **Unidad:**
+  - la acción de la ficha (con el resumen en `null`) y su dirección;
+  - la evaluación más reciente;
+  - el área única;
+  - el filtro de habituales y su texto.
+- **Pruebas de los scripts y del dominio:** completas, con los textos nuevos.
+- **Navegador en la CI (DL-150):**
+  - `pistas`: mouse, teclado, Escape, bordes, tablet con «Más» por teclado, 200 %, tacto y árbol de accesibilidad;
+  - `borrador`, `conflicto`, `primerPlan` y `retorno`: las tres acciones del momento y el corte de conexión;
+  - `primeraInvitacion` y `areaSugerida`.
+- **Pendiente:** cuatro comprobaciones de la herramienta de evidencia de WP-DASHBOARD (`recorrido.mjs` E-45, C-43 y F-86; `recorrido-comprension.mjs` CP-06) esperan los «Reintentar» y los textos anteriores. No corren en la CI. Se actualizan en su próxima corrida, con la pantalla a la vista.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-11 y los recorridos pasan en la CI de main.
+
+---
+
+## DL-150 — Recorridos de navegador en la CI y la prueba con profesionales
+
+**Prioridad:** alta (bloque 6 del encargo de consolidación: «verificación que proteja el trabajo diario»).
+
+**Documentos:**
+- **El encargo, bloque 6:** pide recorridos de navegador en la CI y una prueba breve con profesionales.
+- **07 §35:** la CI verifica cada empuje y cada PR.
+- **DL-036:** la habilitación de profesionales de demostración, declarada al arrancar la API.
+- **DL-146, DL-147 y DL-148:** lo que los recorridos protegen.
+- **Los recorridos:** `test/navegador/LEEME.md`.
+- **El protocolo:** `docs/ux/PRUEBA-CON-PROFESIONALES.md`.
+
+**Qué pedía el encargo:**
+- Recorrer en el navegador:
+  - entrar y recargar;
+  - retomar un borrador;
+  - avanzar por evaluación, objetivo y plan;
+  - resolver un conflicto;
+  - volver desde una revisión conservando el contexto.
+- Cuentas y datos propios de cada recorrido, sin dependencias entre pruebas y sin reinicios para esconder fallas.
+- En los gráficos, valores y estados, no solo títulos.
+- Una prueba breve con profesionales que mida finalización, dudas, errores y ayuda.
+- Las pruebas del teléfono de la candidata.3, pendientes y a la vista.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · El arnés es nuevo y chico, en `test/navegador/`.**
+  - Toma del arnés de `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas` la idea y las ayudas: cuentas por la API, `puppeteer-core` y la CSP de `render.yaml`.
+  - No toma sus 14.000 líneas ni su escenario compartido.
+  - *Alternativa descartada:* correr ese arnés en la CI. Sus partes dependen del escenario A/B/C, que es compartido.
+- **D-2 · Cada recorrido tiene un profesional y una persona propios**, con correos nuevos en cada corrida, y sus datos cargados por la API.
+  - Ninguno usa lo que deja otro, y se puede correr solo (`--solo`).
+- **D-3 · La API arranca dos veces, antes de cualquier recorrido.** La habilitación de profesionales de prueba se declara al arrancar (DL-036).
+  - El límite de altas se configura en 200 para ese ambiente. Cada corrida registra dos cuentas por recorrido desde una sola dirección. El limitador se prueba en integración.
+  - No hay otros reinicios ni otros límites cambiados.
+- **D-4 · La base se declara siempre.** `BE_RECORRIDOS_DATABASE_URL` tiene que ser local y llamarse `be_recorridos…`; si no, el script se detiene antes de tocar nada.
+- **D-5 · Las comprobaciones miran resultados**, no títulos:
+  - la dirección, el texto y lo que guardó el servidor;
+  - la cookie de reanudación, con sus atributos;
+  - el almacenamiento del navegador, sin tokens;
+  - el árbol de accesibilidad.
+  - En el gráfico, la altura de cada punto leída con las marcas del eje, el tiempo a escala y la tabla.
+- **D-6 · Evidencia visual del código probado.** Cada corrida guarda capturas de los momentos clave en escritorio y tablet, y de cada falla. Se suben como artefacto de la CI.
+- **D-7 · La prueba con profesionales es un protocolo, no un resultado.** Cinco tareas, con su consigna, su criterio de éxito y qué se mide. Nadie que no participe figura como validación humana.
+
+**Pruebas:** los doce recorridos del trabajo `recorridos` de la CI:
+- `sesion`, con el enlace directo sin sesión
+- `pistas`, con la tablet
+- `borrador`, con el corte de conexión
+- `conflicto`
+- `primerPlan`
+- `retorno`
+- `grafico`
+- `primeraInvitacion`
+- `areaSugerida`
+- `sesionRevocada`
+- `accesoRevocado`
+- `faltaUnaParte`, con una lectura que falla, simulada en el navegador
+
+Las dos primeras corridas encontraron dos fallas del website que se corrigieron en DL-149:
+- la ficha nueva sin acción, porque un área sin datos llega con el resumen en `null`;
+- la pestaña que caía en la página de error al cambiar la dirección sin conexión.
+
+También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran del propio recorrido: la pestaña de fondo, la comida plegada y las marcas del eje.
+
+**Lo que no cubren:**
+- el teléfono;
+- un lector de pantalla real;
+- la prueba con personas.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-7, los recorridos pasan en la CI de main, y la prueba con profesionales se hace y se informa.

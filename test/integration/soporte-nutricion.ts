@@ -4,6 +4,7 @@
  * NUT. Los alimentos salen del catálogo sintético sembrado por la migración.
  */
 import type { INestApplication } from '@nestjs/common';
+import { haceUnRatoHoy } from './soporte-tiempo';
 import request from 'supertest';
 import { conSesion, claveDeIdempotencia } from './soporte-api';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
@@ -23,7 +24,7 @@ export async function alimento(app: INestApplication, pro: Parte, nombre: string
 
 export function cuerpoDeEvaluacion(): Record<string, unknown> {
   return {
-    occurredAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    occurredAt: haceUnRatoHoy(60).toISOString(),
     context: 'Consulta inicial sintética.',
     assessment: {
       entries: [
@@ -40,7 +41,7 @@ export function cuerpoDeEvaluacion(): Record<string, unknown> {
 export function cuerpoDeObjetivo(evaluationId: string, kcal = 2200): Record<string, unknown> {
   return {
     evaluationId,
-    effectiveFrom: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    effectiveFrom: haceUnRatoHoy(30).toISOString(),
     effectiveUntil: null,
     estimatedEnergyRequirement: { value: kcal, unit: 'kcal/day' },
     macronutrientDistribution: {

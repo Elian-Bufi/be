@@ -366,7 +366,17 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
   async function llamar<S extends EsquemaDeContrato | null>(
     metodo: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     ruta: string,
-    extra: { token?: string; cuerpo?: unknown; claveDeIdempotencia?: string; esquema: S },
+    extra: {
+      token?: string;
+      cuerpo?: unknown;
+      claveDeIdempotencia?: string;
+      esquema: S;
+      /**
+       * DL-147: la operación abre, reanuda o cierra una sesión del website, y viaja con la cookie de reanudación
+       * (HttpOnly, de la API). Solo en la superficie WEB: la APK nunca manda ni recibe cookies.
+       */
+      conCookies?: boolean;
+    },
   ): Promise<Resultado<S extends EsquemaDeContrato ? SalidaDe<S> : null>> {
     const encabezados: Record<string, string> = { Accept: 'application/json', 'X-BE-Surface': opciones.superficie };
     if (capacidades) encabezados[HEADER_DE_CAPACIDADES] = capacidades;
@@ -380,7 +390,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         method: metodo,
         headers: encabezados,
         body: extra.cuerpo === undefined ? undefined : JSON.stringify(extra.cuerpo),
-        credentials: 'omit',
+        credentials: extra.conCookies && opciones.superficie === 'WEB' ? 'include' : 'omit',
         cache: 'no-store',
       });
     } catch {
@@ -472,11 +482,11 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      * disponible y el acceso local sigue.
      */
     iniciarSesionConGoogle(idToken: string): Promise<Resultado<IniciarSesionResponse>> {
-      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.sesiones, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken } });
+      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.sesiones, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken }, conCookies: true });
     },
     /** API-GOO-02 (DL-138): vincular Google a la cuenta con contraseña del mismo correo, confirmando esa contraseña. */
     vincularGoogle(idToken: string, contrasena: string): Promise<Resultado<IniciarSesionResponse>> {
-      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.vinculos, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken, credential: contrasena } });
+      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.vinculos, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken, credential: contrasena }, conCookies: true });
     },
     /**
      * API-GOO-03 (DL-138): crear la cuenta con Google, con los mismos actos que `registrar` y la casilla de mayoría de
@@ -492,6 +502,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
           privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
           adultDeclaration: declaracionDeMayoriaDeEdad(mayoriaDeEdad),
         },
+        conCookies: true,
       });
     },
     /** API-ACC-02. */
@@ -499,15 +510,23 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       return llamar('POST', '/auth/sessions', {
         esquema: IniciarSesionResponseSchema,
         cuerpo: { method: 'LOCAL', identifier: correo, credential: contrasena },
+        conCookies: true,
       });
     },
-    /** API-ACC-03. */
-    finalizarSesion(token: string): Promise<Resultado<null>> {
-      return llamar('DELETE', '/auth/sessions/current', { token, esquema: null });
+    /**
+     * API-ACC-02-REANUDACION (DL-147): después de recargar, el website pide un token nuevo de la misma sesión con la cookie
+     * de reanudación. Sin cookie, o con una sesión que ya no sirve, responde un código de sesión (401).
+     */
+    reanudarSesion(): Promise<Resultado<IniciarSesionResponse>> {
+      return llamar('POST', '/auth/sessions/resume', { esquema: IniciarSesionResponseSchema, conCookies: true });
     },
-    /** API-ACC-04. */
+    /** API-ACC-03. En el website, también borra la cookie de reanudación (DL-147). */
+    finalizarSesion(token: string): Promise<Resultado<null>> {
+      return llamar('DELETE', '/auth/sessions/current', { token, esquema: null, conCookies: true });
+    },
+    /** API-ACC-04. En el website, también borra la cookie de reanudación de este navegador (DL-147). */
     cerrarTodasLasSesiones(token: string): Promise<Resultado<null>> {
-      return llamar('DELETE', '/auth/sessions', { token, esquema: null });
+      return llamar('DELETE', '/auth/sessions', { token, esquema: null, conCookies: true });
     },
     /** API-ACC-05. */
     consultarCuenta(token: string): Promise<Resultado<MeResponse>> {

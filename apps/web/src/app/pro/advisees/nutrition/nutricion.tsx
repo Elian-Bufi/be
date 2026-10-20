@@ -16,7 +16,8 @@
  * ficha: «Actualizar» vuelve a leer sin perderlo, y volver atrás lo recupera. Al cambiar de sección no se lleva.
  */
 import { COPY_PISTAS, COPY_NUTRICION } from '@be/domain';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { cambiarLaDireccion } from '../../../../lib/direccion';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Resultado } from '../../../../lib/api';
 import { useEspacioProfesional } from '../../espacio-profesional';
@@ -76,12 +77,11 @@ export function Nutricion() {
   const vistaPedida = parametros.get('vista');
   const vista: Vista = VISTAS.some((v) => v.clave === vistaPedida) ? (vistaPedida as Vista) : 'resumen';
   const ruta = usePathname();
-  const router = useRouter();
   const sesion = useEspacioProfesional(`/pro/advisees/nutrition?id=${id}`);
   const { token, sesionPerdida } = sesion;
 
   const retorno = useRetornoALaFicha(id);
-  const irA = useCallback((v: Vista) => router.replace(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor)), [router, ruta, id, retorno.valor]);
+  const irA = useCallback((v: Vista) => cambiarLaDireccion(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor)), [ruta, id, retorno.valor]);
   const [retirado, setRetirado] = useState(false);
   const accesoRetirado = useCallback((r: Resultado<unknown>) => {
     if (r.ok || r.tipo !== 'API' || r.codigo !== 'RESOURCE_NOT_FOUND') return false;
@@ -93,10 +93,10 @@ export function Nutricion() {
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
       const destino = hrefConCambios(ruta, new URLSearchParams(enLaDireccion), cambios);
-      if (opciones?.agregarAlHistorial) router.push(destino, { scroll: false });
-      else router.replace(destino, { scroll: false });
+      // Sin pedido al servidor: sin conexión, el enrutador navegaba a la página de error del navegador (bloque 3).
+      cambiarLaDireccion(destino, { agregarAlHistorial: opciones?.agregarAlHistorial });
     },
-    [router, ruta, enLaDireccion],
+    [ruta, enLaDireccion],
   );
   const contexto = useMemo(
     () => (token ? { token, asesoradoId: id, sesionPerdida, accesoRetirado, irA, parametros, ir } : null),

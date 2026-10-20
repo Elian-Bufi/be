@@ -21,6 +21,7 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../lib/inte
 import { useListaPaginada } from '../../../lib/lista';
 import { useSesionRequerida } from '../../../lib/sesion-requerida';
 import type { Resultado } from '../../../lib/api';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 type Decision = { tipo: 'aceptada'; vinculoId: string } | { tipo: 'rechazada' };
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; id: string };
@@ -63,7 +64,7 @@ export function Vinculos() {
     void anteriores.recargar();
   }, [pendientes, vinculos, anteriores]);
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   if (yo.tipo === 'cargando') return <Cargando />;
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
 

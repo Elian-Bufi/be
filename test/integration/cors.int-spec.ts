@@ -29,7 +29,9 @@ it('preflight del registro desde el website: 204 con el origen y los headers del
   expect(res.headers['access-control-allow-origin']).toBe(WEBSITE);
   // `x-be-capabilities`: lo que el cliente sabe mostrar (DL-122, precierre del 2026-10-06). Nunca autoriza.
   expect(res.headers['access-control-allow-headers']).toBe('authorization,content-type,idempotency-key,x-be-surface,x-be-capabilities');
-  expect(res.headers['access-control-allow-credentials']).toBeUndefined();
+  // DL-147: el website manda la cookie de reanudación (solo a /api/v1/auth/sessions); las operaciones de datos siguen con el
+  // Bearer, así que permitir credenciales no hace que ninguna dependa de una cookie.
+  expect(res.headers['access-control-allow-credentials']).toBe('true');
 });
 
 it('preflight de un DELETE con Authorization (cerrar sesión): permitido desde el website', async () => {

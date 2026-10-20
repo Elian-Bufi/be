@@ -49,6 +49,7 @@ import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
+import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
 import { PrimerPlan } from '../primer-plan';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
@@ -73,6 +74,11 @@ interface Datos {
   /** Desde cuándo rige y qué dice: «Empezar el plan» lo muestra como el paso que ya está (DL-145). */
   readonly objetivoDesde: string | null;
   readonly objetivoTexto: string | null;
+  /**
+   * Lo que no se pudo leer, para decirlo sin borrar el resto (bloque 5 del encargo de consolidación): el objetivo vigente
+   * o la versión activa. Sin las versiones no hay plan que mostrar, y esa falla sigue siendo la de la vista entera.
+   */
+  readonly faltan: { readonly objetivo: Resultado<never> | null; readonly activa: Resultado<never> | null };
 }
 
 /** Lo que pide la dirección de la sección, y lo que se quita al elegir cada cosa: lo de más adentro vuelve a lo primero. */
@@ -82,6 +88,8 @@ const TODO_LO_ELEGIDO = { version: null, bloque: null, micro: null, sesion: null
 export function VistaDePlan() {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir, irA } = useEntrenamiento();
   const [r, setR] = useState<Resultado<Datos> | null>(null);
+  // Qué lectura falló, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
+  const [queFallo, setQueFallo] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [creando, setCreando] = useState(false);
   // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108): abre el diálogo con la estructura de esa versión.
@@ -98,27 +106,48 @@ export function VistaDePlan() {
     if (alLlegar) setAviso({ tipo: 'exito', texto: alLlegar });
   }, []);
 
-  const cargar = useCallback(async () => {
-    setR(null);
-    // Todas las versiones, no las primeras: el número de cada una es su lugar entre todas las activadas.
-    const [lista, ob] = await Promise.all([todasLasPaginas((f) => api.listarPlanesDeEntrenamiento(token, asesoradoId, f)), api.objetivoDeEntrenamientoEfectivo(token, asesoradoId)]);
-    if (sesionPerdida(lista) || sesionPerdida(ob)) return;
-    if (!lista.ok) return setR(lista as Resultado<never>);
-    if (!ob.ok) return setR(ob as Resultado<never>);
-    const efectiva = lista.datos.data.find((v) => v.isEffective);
-    let activa: PlanConObjetivos | null = null;
-    if (efectiva) {
-      const v = await api.planConObjetivos(token, efectiva.planId);
-      if (sesionPerdida(v)) return;
-      if (!v.ok) return setR(v as Resultado<never>);
-      activa = v.datos.data;
-    }
-    const vigente = ob.datos.data.objective;
-    setR({
-      ok: true,
-      datos: { versiones: lista.datos.data, activa, objetivo: vigente?.versionId ?? null, objetivoDesde: vigente?.effectiveFrom ?? null, objetivoTexto: vigente?.objective.statement ?? null },
-    });
-  }, [token, asesoradoId, sesionPerdida]);
+  /** Las versiones, el objetivo vigente y la versión activa. Con `vaciar` en falso, el plan queda a la vista mientras se vuelve a leer. */
+  const cargar = useCallback(
+    async (vaciar: boolean = true) => {
+      if (vaciar) {
+        setR(null);
+        setQueFallo(null);
+      }
+      // Todas las versiones, no las primeras: el número de cada una es su lugar entre todas las activadas.
+      const [lista, ob] = await Promise.all([todasLasPaginas((f) => api.listarPlanesDeEntrenamiento(token, asesoradoId, f)), api.objetivoDeEntrenamientoEfectivo(token, asesoradoId)]);
+      if (sesionPerdida(lista) || sesionPerdida(ob)) return;
+      // Sin las versiones no hay plan que mostrar: esa falla es la de la vista entera. Un 404 es que el área dejó de poder leerse.
+      if (!lista.ok) {
+        setQueFallo('las versiones del plan');
+        return setR(lista as Resultado<never>);
+      }
+      if (seRetiro(ob)) return setR(ob as Resultado<never>);
+      const efectiva = lista.datos.data.find((v) => v.isEffective);
+      let activa: PlanConObjetivos | null = null;
+      let faltaLaActiva: Resultado<never> | null = null;
+      if (efectiva) {
+        const v = await api.planConObjetivos(token, efectiva.planId);
+        if (sesionPerdida(v)) return;
+        if (seRetiro(v)) return setR(v as Resultado<never>);
+        if (v.ok) activa = v.datos.data;
+        else faltaLaActiva = v as Resultado<never>;
+      }
+      const vigente = ob.ok ? ob.datos.data.objective : null;
+      setQueFallo(null);
+      setR({
+        ok: true,
+        datos: {
+          versiones: lista.datos.data,
+          activa,
+          objetivo: vigente?.versionId ?? null,
+          objetivoDesde: vigente?.effectiveFrom ?? null,
+          objetivoTexto: vigente?.objective.statement ?? null,
+          faltan: { objetivo: ob.ok ? null : (ob as Resultado<never>), activa: faltaLaActiva },
+        },
+      });
+    },
+    [token, asesoradoId, sesionPerdida],
+  );
 
   useEffect(() => {
     void cargar();
@@ -182,17 +211,18 @@ export function VistaDePlan() {
   };
 
   return (
-    <EstadoDeLectura r={r} onReintentar={cargar}>
+    <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
       {r?.ok
         ? (() => {
-            const { versiones, activa } = r.datos;
+            const { versiones, activa, faltan } = r.datos;
             const borrador = versiones.find((v) => v.state === 'DRAFT') ?? null;
             const historial = historialDeVersiones(versiones);
             const numeroDeLaActiva = activa ? (historial.find((v) => v.planId === activa.planId)?.numero ?? 1) : null;
             // Con una versión en preparación, es la que se muestra, salvo que la dirección pida la activa y la haya.
             const mostrada: VersionMostrada = borrador && !(activa && parametros.get('version') === 'activa') ? 'preparacion' : 'activa';
-            // Las acciones que crean una versión: solo sin borrador, y con un objetivo vigente del que nacer.
-            const sePuedeCrear = !borrador && !!objetivo;
+            // Las acciones que crean una versión: solo sin borrador, con un objetivo vigente del que nacer y, si hay una versión
+            // activa, habiéndola leído (la nueva nace de ella).
+            const sePuedeCrear = !borrador && !!objetivo && !faltan.activa;
             const desdeUnaPlantilla = (
               <button type="button" className="boton boton--quieto" onClick={abrirDesdePlantilla} disabled={creando} data-empezar-desde-plantilla>
                 <Icono nombre="plantillas" tamano={18} />
@@ -224,6 +254,12 @@ export function VistaDePlan() {
                     <p>{aviso.texto}</p>
                   </Aviso>
                 ) : null}
+                {/* Lo que no se pudo leer, dicho una vez arriba y sin borrar el resto (bloque 5): crear una versión espera a leerlo. */}
+                <AvisoDeLoQueFalta
+                  faltan={[...(faltan.objetivo ? [{ nombre: 'el objetivo vigente', lectura: faltan.objetivo }] : []), ...(faltan.activa ? [{ nombre: 'la versión activa del plan', lectura: faltan.activa }] : [])]}
+                  mientrasTanto={borrador ? null : 'Mientras tanto, no se puede crear una versión nueva'}
+                  onReintentar={() => void cargar(false)}
+                />
 
                 {borrador && activa ? <SelectorDeVersion mostrada={mostrada} numeroDeLaActiva={numeroDeLaActiva ?? 1} onElegir={(cual) => ir({ version: cual === 'activa' ? 'activa' : null })} /> : null}
 
@@ -260,7 +296,7 @@ export function VistaDePlan() {
                       </>
                     }
                     aviso={
-                      !objetivo && !borrador ? (
+                      !objetivo && !borrador && !faltan.objetivo ? (
                         <Aviso tipo="info">
                           <p>
                             {C.primeroElObjetivo} {irAlResumen}
@@ -271,7 +307,10 @@ export function VistaDePlan() {
                   />
                 ) : null}
 
-                {mostrada === 'activa' && !activa ? (
+                {/* Si no se pudo leer la versión activa o el objetivo, los pasos de «Empezar el plan» dirían que no hay: va la historia. */}
+                {mostrada === 'activa' && !activa && (faltan.activa || faltan.objetivo) && historial.length > 0 ? <HistorialDelPlan historial={historial} huella={null} /> : null}
+
+                {mostrada === 'activa' && !activa && !faltan.activa && !faltan.objetivo ? (
                   <>
                     {/* Sin plan: los tres pasos en orden, en esta misma pantalla (DL-145). La acción principal va primera. */}
                     <PrimerPlanDeEntrenamiento
@@ -504,7 +543,7 @@ function PrimerPlanDeEntrenamiento({
   const evaluaciones = r?.ok ? r.datos : [];
   const ultima = [...evaluaciones].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0] ?? null;
   return (
-    <EstadoDeLectura r={r} onReintentar={() => void leer()}>
+    <EstadoDeLectura r={r} onReintentar={() => void leer()} que="las evaluaciones">
       <PrimerPlan
         evaluacion={ultima ? diaSinElAnioEnCurso(ultima.occurredAt) : false}
         objetivoDesde={objetivoDesde ? diaSinElAnioEnCurso(objetivoDesde) : null}
