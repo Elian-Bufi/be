@@ -15,9 +15,10 @@ versiona, porque el repositorio es público; Dirección lo conserva.
   [Un rótulo con el nombre del proyecto], [Encabezado de cada página: «BE · Plataforma integrada de inteligencia en salud» y el apartado en curso.], estado("implementado"),
   [Índice], [Índice al comienzo, con los apartados, sus secciones y los anexos; en el PDF, cada entrada es un enlace.], estado("implementado"),
   [Numeración de páginas], [Pie de cada página: «Página N de M».], estado("implementado"),
-  [Portada con logotipo, nombre, imagen, integrantes con correo institucional, mes y año], [Logotipo y correos en la versión de evaluación; el mes y el año, a completar por Dirección (no se deducen).], [#estado("parcial") campos a completar],
+  [Portada con logotipo, nombre, imagen, integrantes con correo institucional, mes y año], [Logotipo en la versión de evaluación; los correos institucionales y el mes y el año, a completar por Dirección (no se deducen).], [#estado("parcial") campos a completar],
+  [Toda información adicional que se considere necesaria], [Anexos A a L, después del apartado 14: flujos, diagramas de flujo de datos, secuencias y estados, trazabilidad, diccionario de datos, decisiones, glosario, referencias, discrepancias y convenciones.], estado("implementado"),
   [Entregables digitales con nombres claros y sus enlaces], [Apartados 11, 12 y 13: los campos de los enlaces quedan para el cierre, por decisión de Dirección.], estado("diferido"),
-  [Buena calidad], [Figuras vectoriales generadas de fuentes editables, con texto de 10 pt como mínimo y revisión automática y visual (anexo L).], estado("implementado"),
+  [Presentaciones y videos con buena calidad visual y sonora], [Figuras vectoriales generadas de fuentes editables, con texto de 10 pt como mínimo y revisión automática y visual (anexo L). La presentación de la defensa va aparte, en 16:9 y con 18 pt como mínimo; el video de la demostración se graba al cierre, con el apartado 11.], [#estado("parcial") video al cierre],
 )
 
 == Procedimiento de entrega

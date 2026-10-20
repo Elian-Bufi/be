@@ -1,0 +1,19 @@
+{
+  "v": 4,
+  "createdOnFiles": { "v": 1, "at": "2026-10-20T09:55:00Z" },
+  "lists": "css",
+  "title": "BE · Defensa de tesis",
+  "order": ["cover", "problema", "propuesta", "alcance", "contexto", "circuito", "demo", "arquitectura", "operacion", "datos", "estados", "calidad", "falta", "metodo", "sigue", "preguntas"],
+  "sections": {
+    "s1": { "description": "Qué es BE, para quién y qué no hace.", "start": "cover" },
+    "s2": { "description": "Cómo funciona, de punta a punta.", "start": "contexto" },
+    "s3": { "description": "La demo, en vivo o con su plan B.", "start": "demo" },
+    "s4": { "description": "Por dentro: arquitectura, una operación protegida, los datos y los estados.", "start": "arquitectura" },
+    "s5": { "description": "Cómo se sabe que funciona y qué falta.", "start": "calidad" },
+    "s6": { "description": "Método, lo que sigue y preguntas.", "start": "metodo" }
+  },
+  "faces": {
+    "inter": { "family": "Inter", "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" }
+  },
+  "designSystems": []
+}

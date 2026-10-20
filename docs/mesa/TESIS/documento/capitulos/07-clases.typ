@@ -78,8 +78,8 @@ errores propios sobre `Error`.
   columns: (auto, 1fr),
   table.header([Grupo de módulos], [Qué contiene y quién lo usa]),
   [Reglas puras], [`autorizacion.ts` (la decisión del PDP en siete dimensiones), `versionado.ts` (cadenas de versiones y correcciones), `calculo.ts` y `formulas-antropometricas.ts`, `tvcc30.ts`, `fechas-civiles.ts`, `maquina.ts` (transiciones de estado). Las usan los servicios de la API; las pruebas de dominio las ejercitan sin base de datos.],
-  [Contratos (23 módulos `contratos-*.ts`)], [Los esquemas zod de cada familia de operaciones: la API valida con ellos lo que recibe y lo que responde, y las pantallas los usan para leer. `openapi.ts` genera el contrato publicado a partir de ellos.],
-  [Textos (20 módulos `copy-*.ts`)], [Los textos de las pantallas del website y de la APK, en un solo lugar, con pruebas de redacción.],
+  [Contratos (23 módulos `contratos*.ts`)], [Los esquemas zod de cada familia de operaciones: la API valida con ellos lo que recibe y lo que responde, y las pantallas los usan para leer. `openapi.ts` genera el contrato publicado a partir de ellos.],
+  [Textos (20 módulos `copy*.ts`)], [Los textos de las pantallas del website y de la APK, en un solo lugar, con pruebas de redacción.],
   [Lógica de pantallas compartida], [Editores de plan, línea de tiempo, síntesis del resumen, presentación de la prescripción, estado de guardado: decisiones de presentación que el website y la APK comparten.],
 )
 

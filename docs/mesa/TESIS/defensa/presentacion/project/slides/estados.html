@@ -1,0 +1,29 @@
+<section id="estados" data-transition="fade" style="background:#F7F9FC;color:#0A1F44;font-family:'Inter', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-size:64px;font-weight:700;line-height:1.15">Estados con reglas, no con banderas</h2>
+<div style="display:flex;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:28px;background:#FFFFFF;border:2px solid #DCE6F4;border-radius:20px;padding:40px">
+<h3 style="font-size:40px;font-weight:700">El proceso de seguimiento</h3>
+<div style="display:flex;align-items:center;gap:24px">
+<p style="font-size:36px;font-weight:700;background:#DCE8FC;border:2px solid #1453C9;border-radius:40px;padding:16px 28px">ABIERTO</p>
+<x-shape kind="arrow-right" style="width:96px;height:44px;background:#33475F"></x-shape>
+<p style="font-size:36px;font-weight:700;background:#DCE8FC;border:2px solid #1453C9;border-radius:40px;padding:16px 28px">CERRADO</p>
+</div>
+<p style="font-size:36px;line-height:1.35;color:#33475F">Una revisión que no finaliza lo deja abierto.</p>
+<p style="font-size:36px;line-height:1.35;color:#33475F">Lo cierran FINALIZAR, el fin del vínculo o el cierre de la cuenta. No se reabre.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:28px;background:#FFFFFF;border:2px solid #DCE6F4;border-radius:20px;padding:40px">
+<h3 style="font-size:40px;font-weight:700">El consentimiento</h3>
+<div style="display:flex;align-items:center;gap:24px">
+<p style="font-size:36px;font-weight:700;background:#E7F9FD;border:2px solid #0E7490;border-radius:40px;padding:16px 28px">VIGENTE</p>
+<div style="display:flex;flex-direction:column;gap:12px">
+<x-shape kind="arrow-right" style="width:96px;height:44px;background:#33475F"></x-shape>
+<x-shape kind="arrow-left" style="width:96px;height:44px;background:#33475F"></x-shape>
+</div>
+<p style="font-size:36px;font-weight:700;background:#E7F9FD;border:2px solid #0E7490;border-radius:40px;padding:16px 28px">REVOCADO</p>
+</div>
+<p style="font-size:36px;line-height:1.35;color:#33475F">Lo decide siempre el asesorado.</p>
+<p style="font-size:36px;line-height:1.35;color:#33475F">Revocar corta hacia adelante; puede volver a otorgarlo.</p>
+</div>
+</div>
+<aside>Las piezas importantes tienen máquinas de estados, y las transiciones están en tablas del dominio que el servicio consulta antes de escribir y la base refuerza. Dos ejemplos. El proceso de seguimiento se abre al activar un plan; cada revisión que no finaliza lo deja abierto, y lo cierran una revisión que finaliza, el fin del vínculo o el cierre de la cuenta; cerrado, no se reabre. El consentimiento lo decide siempre el asesorado: lo otorga, lo revoca y lo puede volver a otorgar, y la revocación corta hacia adelante. Las cinco máquinas reales, con sus tablas, están en el anexo E.</aside>
+</section>
