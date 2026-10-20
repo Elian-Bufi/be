@@ -16,6 +16,7 @@ Bloque 6 del encargo de consolidación del espacio profesional (2026-10-19): «u
 | `primeraInvitacion` | Sin vínculos, «Invitar a una persona» no elige un área. Un área en la que la cuenta no está habilitada se rechaza en el servidor y el error queda junto al campo, que se marca y recibe el foco. Con un área habilitada, la invitación se crea. | Bloque 5 |
 | `sesionRevocada` | Con la ficha abierta, «Cerrar todas las sesiones» desde otro lado. Al actualizar, la pestaña va a entrar, con el aviso y el retorno a la ficha, y la cookie ya no la revive. | Bloque 3 |
 | `accesoRevocado` | La persona retira el consentimiento desde su teléfono. Al actualizar, la ficha dice «Acceso no disponible» y no ofrece acciones; recargar recupera la sesión, no el permiso. | Bloque 3 |
+| `faltaUnaParte` | En el navegador, sin tocar la API, falla una sola lectura: el objetivo vigente en el Plan y el estado del seguimiento en el Resumen. La vista muestra lo que llegó, el aviso dice qué falta, no aparece «crear versión» ni un «no hay», y «Reintentar lo que faltó» lo completa. | Bloque 5 |
 | `areaSugerida` | Con vínculos en una sola de sus dos áreas, esa viene elegida y dice que es una sugerencia, también en la descripción accesible del campo. Se puede cambiar, y la invitación se crea con la otra área. | Bloque 5 |
 
 ## Cómo están hechos

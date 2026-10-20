@@ -528,9 +528,58 @@ async function accesoRevocado({ p, d }) {
   assert.ok(!(await p.$('[data-accion-de-la-ficha]')), 'recargar recupera la sesión, no el permiso');
 }
 
+/**
+ * Bloque 5: si falla UNA lectura (simulada en el navegador, sin tocar la API), la vista muestra lo que llegó, dice qué
+ * falta, no lo confunde con «no hay» y «Reintentar lo que faltó» lo completa. En el Plan falla el objetivo vigente; en el
+ * Resumen, el estado del seguimiento.
+ */
+async function faltaUnaParte({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  const base = `/api/v1/advisees/${d.ase.id}/nutrition`;
+  const fallan = new Set([`${base}/objectives/effective`, `${base}/review-context`]);
+  await p.setRequestInterception(true);
+  p.on('request', (req) => {
+    if (req.isInterceptResolutionHandled()) return;
+    if (req.method() === 'GET' && fallan.has(new URL(req.url()).pathname)) {
+      return req.respond({
+        status: 503,
+        headers: { 'Access-Control-Allow-Origin': WEB, 'Access-Control-Expose-Headers': 'x-request-id', Vary: 'Origin' },
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } }),
+      });
+    }
+    return req.continue();
+  });
+
+  // El Plan: la versión activa a la vista, el aviso de lo que falta y nada de «crear versión» ni «primero el objetivo».
+  await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  await esperarTexto(p, 'Falta una parte de esta vista');
+  await esperarTexto(p, 'el objetivo vigente');
+  await elemento(p, '.plan[data-version="activa"]');
+  assert.ok(!(await p.evaluate((t) => document.body.innerText.includes(t), dominio.COPY_DEL_PLAN.primeroElObjetivo)), 'una falla no se dice como «no hay objetivo»');
+  assert.ok(!(await p.$('[data-crear-version]')), 'mientras falta el objetivo, no se ofrece crear una versión');
+  await captura(p, salida, 'plan-falta-el-objetivo-1440');
+  fallan.delete(`${base}/objectives/effective`);
+  await clic(p, 'button', 'Reintentar lo que faltó');
+  await p.waitForFunction(() => !document.body.innerText.includes('Falta una parte de esta vista'), { timeout: ESPERA });
+  await elemento(p, '[data-crear-version]');
+
+  // El Resumen: falla el estado del seguimiento; la última evaluación y el plan activo siguen a la vista.
+  await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=resumen`, { waitUntil: 'networkidle2' });
+  await esperarTexto(p, 'el estado del seguimiento');
+  await esperarTexto(p, 'No se pudo leer.');
+  assert.ok(!(await p.evaluate(() => document.body.innerText.includes('No hay una revisión pendiente.'))), 'una falla no se dice como «no hay revisión pendiente»');
+  assert.ok(await p.evaluate(() => /Versión \d+ · activada el/.test(document.body.innerText)), 'el plan activo sigue a la vista');
+  await captura(p, salida, 'resumen-falta-el-seguimiento-1440');
+  fallan.clear();
+  await clic(p, 'button', 'Reintentar lo que faltó');
+  await p.waitForFunction(() => !document.body.innerText.includes('No se pudo leer.'), { timeout: ESPERA });
+  await esperarTexto(p, 'Pendiente desde el');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

@@ -5034,7 +5034,7 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - **D-6 · Evidencia visual del código probado.** Cada corrida guarda capturas de los momentos clave en escritorio y tablet, y de cada falla. Se suben como artefacto de la CI.
 - **D-7 · La prueba con profesionales es un protocolo, no un resultado.** Cinco tareas, con su consigna, su criterio de éxito y qué se mide. Nadie que no participe figura como validación humana.
 
-**Pruebas:** los once recorridos del trabajo `recorridos` de la CI, verdes en la tercera corrida:
+**Pruebas:** los doce recorridos del trabajo `recorridos` de la CI:
 - `sesion`, con el enlace directo sin sesión
 - `pistas`, con la tablet
 - `borrador`, con el corte de conexión
@@ -5046,6 +5046,7 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - `areaSugerida`
 - `sesionRevocada`
 - `accesoRevocado`
+- `faltaUnaParte`, con una lectura que falla, simulada en el navegador
 
 Las dos primeras corridas encontraron dos fallas del website que se corrigieron en DL-149:
 - la ficha nueva sin acción, porque un área sin datos llega con el resumen en `null`;

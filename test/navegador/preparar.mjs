@@ -35,6 +35,8 @@ export const RECORRIDOS = {
   // Bloque 3: el servidor sigue decidiendo; recargar recupera la sesión, no un permiso ni una sesión revocados.
   sesionRevocada: { habilitado: ['NUTRICION'], datos: [] },
   accesoRevocado: { habilitado: ['NUTRICION'], datos: [] },
+  // Bloque 5: una lectura que falla no borra el resto de la vista.
+  faltaUnaParte: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
