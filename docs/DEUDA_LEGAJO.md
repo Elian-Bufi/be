@@ -153,6 +153,7 @@
 | DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
 | DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
+| DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 
 ---
 
@@ -4986,3 +4987,76 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - **Pendiente:** cuatro comprobaciones de la herramienta de evidencia de WP-DASHBOARD (`recorrido.mjs` E-45, C-43 y F-86; `recorrido-comprension.mjs` CP-06) esperan los «Reintentar» y los textos anteriores. No corren en la CI. Se actualizan en su próxima corrida, con la pantalla a la vista.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-11 y los recorridos pasan en la CI de main.
+
+---
+
+## DL-150 — Recorridos de navegador en la CI y la prueba con profesionales
+
+**Prioridad:** alta (bloque 6 del encargo de consolidación: «verificación que proteja el trabajo diario»).
+
+**Documentos:**
+- **El encargo, bloque 6:** pide recorridos de navegador en la CI y una prueba breve con profesionales.
+- **07 §35:** la CI verifica cada empuje y cada PR.
+- **DL-036:** la habilitación de profesionales de demostración, declarada al arrancar la API.
+- **DL-146, DL-147 y DL-148:** lo que los recorridos protegen.
+- **Los recorridos:** `test/navegador/LEEME.md`.
+- **El protocolo:** `docs/ux/PRUEBA-CON-PROFESIONALES.md`.
+
+**Qué pedía el encargo:**
+- Recorrer en el navegador:
+  - entrar y recargar;
+  - retomar un borrador;
+  - avanzar por evaluación, objetivo y plan;
+  - resolver un conflicto;
+  - volver desde una revisión conservando el contexto.
+- Cuentas y datos propios de cada recorrido, sin dependencias entre pruebas y sin reinicios para esconder fallas.
+- En los gráficos, valores y estados, no solo títulos.
+- Una prueba breve con profesionales que mida finalización, dudas, errores y ayuda.
+- Las pruebas del teléfono de la candidata.3, pendientes y a la vista.
+
+**Lo decidido** (provisorio en código, a ratificar):
+- **D-1 · El arnés es nuevo y chico, en `test/navegador/`.**
+  - Toma del arnés de `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas` la idea y las ayudas: cuentas por la API, `puppeteer-core` y la CSP de `render.yaml`.
+  - No toma sus 14.000 líneas ni su escenario compartido.
+  - *Alternativa descartada:* correr ese arnés en la CI. Sus partes dependen del escenario A/B/C, que es compartido.
+- **D-2 · Cada recorrido tiene un profesional y una persona propios**, con correos nuevos en cada corrida, y sus datos cargados por la API.
+  - Ninguno usa lo que deja otro, y se puede correr solo (`--solo`).
+- **D-3 · La API arranca dos veces, antes de cualquier recorrido.** La habilitación de profesionales de prueba se declara al arrancar (DL-036).
+  - El límite de altas se configura en 200 para ese ambiente. Cada corrida registra dos cuentas por recorrido desde una sola dirección. El limitador se prueba en integración.
+  - No hay otros reinicios ni otros límites cambiados.
+- **D-4 · La base se declara siempre.** `BE_RECORRIDOS_DATABASE_URL` tiene que ser local y llamarse `be_recorridos…`; si no, el script se detiene antes de tocar nada.
+- **D-5 · Las comprobaciones miran resultados**, no títulos:
+  - la dirección, el texto y lo que guardó el servidor;
+  - la cookie de reanudación, con sus atributos;
+  - el almacenamiento del navegador, sin tokens;
+  - el árbol de accesibilidad.
+  - En el gráfico, la altura de cada punto leída con las marcas del eje, el tiempo a escala y la tabla.
+- **D-6 · Evidencia visual del código probado.** Cada corrida guarda capturas de los momentos clave en escritorio y tablet, y de cada falla. Se suben como artefacto de la CI.
+- **D-7 · La prueba con profesionales es un protocolo, no un resultado.** Cinco tareas, con su consigna, su criterio de éxito y qué se mide. Nadie que no participe figura como validación humana.
+
+**Pruebas:** los doce recorridos del trabajo `recorridos` de la CI:
+- `sesion`, con el enlace directo sin sesión
+- `pistas`, con la tablet
+- `borrador`, con el corte de conexión
+- `conflicto`
+- `primerPlan`
+- `retorno`
+- `grafico`
+- `primeraInvitacion`
+- `areaSugerida`
+- `sesionRevocada`
+- `accesoRevocado`
+- `faltaUnaParte`, con una lectura que falla, simulada en el navegador
+
+Las dos primeras corridas encontraron dos fallas del website que se corrigieron en DL-149:
+- la ficha nueva sin acción, porque un área sin datos llega con el resumen en `null`;
+- la pestaña que caía en la página de error al cambiar la dirección sin conexión.
+
+También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran del propio recorrido: la pestaña de fondo, la comida plegada y las marcas del eje.
+
+**Lo que no cubren:**
+- el teléfono;
+- un lector de pantalla real;
+- la prueba con personas.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-7, los recorridos pasan en la CI de main, y la prueba con profesionales se hace y se informa.
