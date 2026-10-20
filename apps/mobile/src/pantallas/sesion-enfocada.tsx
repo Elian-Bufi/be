@@ -179,6 +179,7 @@ export function EjercicioActivo({
         {onSustituir ? (
           <Pressable accessibilityRole="button" onPress={onSustituir} style={({ pressed }) => [estilos.enlaceConFlecha, pressed && estilos.presionado]}>
             <Text style={estilos.textoDeEnlace}>{COPY_ENTRENAMIENTO.sustituirEjercicio}</Text>
+            <Flecha color={COLOR.acento} hacia="derecha" tamano={18} />
           </Pressable>
         ) : null}
       </View>
