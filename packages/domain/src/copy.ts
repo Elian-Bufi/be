@@ -23,6 +23,8 @@ export const COPY = {
   iniciarSesion: 'Iniciar sesión',
   /** 10-B02:198-225 — neutral: no dice qué falló. */
   loginFallido: 'No pudimos verificar los datos de acceso.',
+  /** DL-147: una falla de red al entrar no es un problema de los datos de acceso, y lo dice. */
+  loginSinConexion: 'No pudimos conectarnos con BE: no es un problema de tu correo ni de tu contraseña. Revisá la conexión y volvé a intentar.',
   /** 10-B02:310-347 — literal, sin CTA de otorgamiento (DL-024). */
   cuentaSinA3: 'Para usar funciones que procesan datos de salud, revisá y autorizá el tratamiento correspondiente.',
   /** 10-B02:535-551. */

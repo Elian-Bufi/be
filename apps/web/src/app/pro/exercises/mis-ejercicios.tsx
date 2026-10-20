@@ -19,6 +19,7 @@ import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { ImagenDeEjercicio, ImagenGuardadaDeEjercicio } from './imagen-de-ejercicio';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-area' } | { tipo: 'listo'; ejercicios: EjercicioPropio[] };
 
@@ -69,7 +70,7 @@ export function MisEjercicios() {
     setEditando(null);
   };
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   if (yo.tipo === 'cargando') return <Cargando />;
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
   if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;

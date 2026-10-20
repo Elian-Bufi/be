@@ -374,6 +374,18 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: '09v8:311-393',
   },
   {
+    id: 'API-ACC-02-REANUDACION',
+    metodo: 'post',
+    ruta: '/auth/sessions/resume',
+    resumen:
+      'Reanudar la sesión del website después de recargar: con la cookie de reanudación (HttpOnly, Secure, SameSite=None, Partitioned, solo para /api/v1/auth/sessions) devuelve un token nuevo de la MISMA sesión, que vence cuando ella vence, y rota la cookie. Solo superficie WEB. Una sesión finalizada, revocada, vencida o de una cuenta que ya no opera no se reanuda; una cookie ya reemplazada fuera del margen de gracia revoca la sesión.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: IniciarSesionResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST'], 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED'], 429: ['RATE_LIMITED'] },
+    fuente: '07:789 y §43-bis (refresh rotativo con cookie httpOnly para web) · DEUDA_LEGAJO DL-147 (sustituye la opción A de DL-012 en el website)',
+  },
+  {
     id: 'API-ACC-03',
     metodo: 'delete',
     ruta: '/auth/sessions/current',

@@ -580,6 +580,173 @@
         }
       }
     },
+    "/auth/sessions/resume": {
+      "post": {
+        "operationId": "API-ACC-02-REANUDACION",
+        "summary": "Reanudar la sesión del website después de recargar: con la cookie de reanudación (HttpOnly, Secure, SameSite=None, Partitioned, solo para /api/v1/auth/sessions) devuelve un token nuevo de la MISMA sesión, que vence cuando ella vence, y rota la cookie. Solo superficie WEB. Una sesión finalizada, revocada, vencida o de una cuenta que ya no opera no se reanuda; una cookie ya reemplazada fuera del margen de gracia revoca la sesión.",
+        "description": "Fuente: 07:789 y §43-bis (refresh rotativo con cookie httpOnly para web) · DEUDA_LEGAJO DL-147 (sustituye la opción A de DL-012 en el website). AuthN: PUBLIC.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "session": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "renewable": {
+                              "type": "boolean"
+                            },
+                            "accessToken": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "tokenType": {
+                              "type": "string",
+                              "const": "Bearer"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "expiresAt",
+                            "renewable",
+                            "accessToken",
+                            "tokenType"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "actor": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "accountOperationalState": {
+                              "type": "string",
+                              "enum": [
+                                "OPERATIVA",
+                                "SUSPENDIDA",
+                                "CERRADA"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "accountOperationalState"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "session",
+                        "actor"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/sessions/current": {
       "delete": {
         "operationId": "API-ACC-03",

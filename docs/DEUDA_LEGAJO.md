@@ -150,6 +150,7 @@
 | DL-144 | Pedido de Dirección · 2026-10-18 | 04 RF-071 · 08 (minimización y finalidad) · DL-100 · DL-102 · DL-143 | Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano | **PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir |
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
 | DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla, la evaluación más corta y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
+| DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
 
 ---
 
@@ -374,6 +375,8 @@ el 06 tendría que leer como «1 : 0..N» mientras el contenido sea optativo.
 - **B.** Cookie httpOnly en el website y SecureStore en el APK, con refresh rotativo (T-10 del 07).
 
 **Provisorio en código.** A, con TTL de 12 h y `renewable: false`.
+
+**Sustituida en el website por DL-147 (2026-10-19).** Una recarga ya no obliga a volver a entrar: la cookie de reanudación (HttpOnly) devuelve un token de la misma sesión. La APK sigue con lo decidido el 2026-10-03 (abajo).
 
 **Condición de cierre.** Se implementa el refresh rotativo (T-10) o Dirección ratifica A para el MVP.
 
@@ -4737,3 +4740,103 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
 **Provisorio en código:** G-1 a G-6.
 
 **Condición de cierre:** Dirección ratifica G-1 a G-6, o cambia las que quiera.
+
+---
+
+## DL-147 — La sesión del website sobrevive a una recarga: reanudación con cookie HttpOnly y rotativa
+
+**Prioridad:** alta (primera prioridad del encargo de consolidación).
+
+**Documentos:**
+- **07:789 y §43-bis:** «JWT en memoria […] hasta la introducción del refresh rotativo, que moverá el refresh a almacenamiento seguro (cookie httpOnly para web; SecureStore para APK)».
+- **08 §26:** sesiones revocables del lado del servidor.
+- **DL-012:** la sesión del website en memoria (opción A) y la de la APK en SecureStore.
+- **DL-030:** el website llama a la API directo, con CORS, para que la API vea la IP real.
+- **DL-138:** el acceso con Google abre la misma sesión.
+- **OWASP, Session Management Cheat Sheet.**
+
+**Qué pedía el encargo (2026-10-19, bloque 3).**
+- Actualizar la página conserva una sesión todavía válida, y entrar por un enlace autorizado recupera el contexto después de identificarse.
+- Las credenciales de renovación quedan fuera del JavaScript del navegador: nada de contraseñas, Bearer ni refresh tokens en localStorage o sessionStorage.
+- El servidor sigue decidiendo: restaurar no restaura un permiso revocado.
+
+**Lo que condiciona el diseño: website y API son sitios distintos.**
+- `onrender.com` está en la lista de sufijos públicos (Public Suffix List, sección de Render). Por eso be-web-…onrender.com y be-api-…onrender.com son dos sitios.
+- Una cookie de la API es, para el website, una cookie de terceros. `SameSite=Lax` o `Strict` no viajaría.
+
+**Lo decidido** (todo provisorio en código, a ratificar):
+- **D-1 · Una cookie de reanudación, no un refresh general.**
+  - Al abrir una sesión desde el website (API-ACC-02 y API-GOO-01 a 03), la API manda `__Secure-be-reanudacion`: `HttpOnly; Secure; SameSite=None; Partitioned`, con `Path=/api/v1/auth/sessions` y `Max-Age` igual a lo que le queda a la sesión.
+  - `Partitioned` (CHIPS) guarda la cookie en la partición del website: la mandan solo los pedidos que salen de él, aunque el navegador bloquee las cookies de terceros sin partición.
+  - El secreto es de 256 bits; la base guarda su huella SHA-256, nunca el secreto.
+  - La APK no la recibe.
+- **D-2 · API-ACC-02-REANUDACION** (`POST /api/v1/auth/sessions/resume`): con la cookie, devuelve un token nuevo de la MISMA sesión, con el mismo id y el mismo vencimiento (12 h desde el inicio, sin extender: DL-012). Una sesión finalizada, revocada, vencida, de otra superficie, con otra versión de control o de una cuenta que no opera no se reanuda. Vencida responde `SESSION_EXPIRED`, para que el website lo explique; lo demás, `SESSION_INVALID`; sin cookie, `AUTHENTICATION_REQUIRED`. Un rechazo borra la cookie.
+- **D-3 · Rotativa, con margen para dos pestañas.**
+  - Cada reanudación cambia el secreto. Cada fila de `reanudacion_de_sesion` reemplaza a la anterior (cadena por `predecesora_id`, única), y la vigente es la que no tiene sucesora.
+  - Dos pestañas que recargan a la vez presentan el mismo secreto: la segunda llega con uno recién reemplazado y vale dentro de 2 minutos, sin rotar otra vez. Las reanudaciones de una sesión se serializan con un bloqueo de su fila.
+  - Fuera del margen, un secreto reemplazado es una copia: la sesión se revoca (`REANUDACION_REUTILIZADA`), y con ella el token de las pestañas abiertas.
+- **D-4 · Sin superficie de CSRF en los datos.**
+  - Ninguna operación de datos se autentica con la cookie: siguen con el Bearer en memoria.
+  - La reanudación exige `X-BE-Surface: WEB`, una cabecera propia que obliga a la verificación previa de CORS, y, con orígenes configurados, un `Origin` de la lista. El cupo es de 300 reanudaciones cada 15 minutos por red (`RATE_LIMIT_REANUDACION_*`): un consultorio entero puede salir por la misma IP.
+  - CORS pasa a `credentials: true` para el origen del website. La cookie solo viaja a `/api/v1/auth/sessions`.
+- **D-5 · Nada en el almacenamiento del navegador.** El token sigue en memoria de la pestaña; la cookie es HttpOnly, y el JavaScript del website no la ve.
+- **D-6 · El website:**
+  - al cargar dice «Recuperando tu sesión…», sin mandar a Iniciar sesión ni mostrar datos de nadie;
+  - una falla de red o del servidor se reintenta dos veces;
+  - entre pestañas (`BroadcastChannel`, sin tokens en los mensajes), cerrar la sesión en una la cierra en las demás, y entrar con otra cuenta recarga las que mostraban otra;
+  - si la sesión venció, la entrada lo dice («Tu sesión venció…») y después vuelve al mismo lugar: la ruta, la vista y el período, si tienen una forma conocida (`destinoSeguro` y `retornoDeLaPagina`). Lo escrito sin guardar no se confirma solo: la página se vuelve a montar.
+- **D-6 bis · Una falla de conexión se dice como tal** (agregado el 2026-10-19, antes de integrar):
+  - al entrar, un pedido que no llega dice «No pudimos conectarnos con BE: no es un problema de tu correo ni de tu contraseña»;
+  - al recargar, si después de los dos reintentos no hubo conexión, la entrada lo dice (`aviso=sin-conexion`): no es que la sesión haya vencido. Cuando la conexión vuelve, la reanudación se intenta sola.
+- **D-7 · La APK no cambia:** sigue con su token en SecureStore (DL-012, 2026-10-03) y nunca manda credenciales (`credentials: 'omit'`).
+
+**Alternativas descartadas:**
+- **Guardar el token en sessionStorage o localStorage:** el encargo lo prohíbe, y un XSS se lo lleva.
+- **Servir la API bajo el dominio del website** (un proxy en el mismo sitio): DL-030 descartó el rewrite de Render porque ocultaba la IP del cliente, y los límites de intentos van por IP. Un proxy propio que la reenvíe es un servicio más.
+- **Un dominio propio para website y API** (`app.…` y `api.…`, el mismo sitio): la cookie sería de primera parte. Es la solución de fondo, pero pide comprar el dominio y configurarlo en Render. Queda como propuesta para Dirección.
+- **Rotar sin margen:** dos pestañas que recargan a la vez revocarían la sesión.
+- **No rotar:** el 07 pide refresh rotativo, y la rotación detecta una copia de la cookie.
+
+**Contrato:**
+- operación nueva API-ACC-02-REANUDACION, sufijo de BE sobre API-ACC-02 (la guardia de trazabilidad suma `REANUDACION`);
+- API-ACC-02 y API-GOO-01 a 03 mandan la cookie en el website;
+- API-ACC-03 y 04 la borran.
+
+Las respuestas no cambian de forma, y la APK instalada no se entera.
+
+**Base de datos:**
+- `20261019200000_motivo_reanudacion_reutilizada`: el motivo nuevo de revocación, en su propia migración como pide PostgreSQL.
+- `20261019200100_reanudacion_de_sesion_web`: la tabla `reanudacion_de_sesion`.
+  - Solo se agrega y no admite TRUNCATE.
+  - Su trigger exige una sesión activa del website, una sola fila inicial por sesión y una predecesora de la misma sesión.
+  - La huella tiene la forma de un SHA-256.
+
+**Pruebas:**
+- **Integración** (`test/integration/reanudacion-de-sesion.int-spec.ts`):
+  - los atributos de la cookie, y que la APK no la reciba;
+  - que reanudar devuelva la misma sesión y el mismo vencimiento, con un token que autentica;
+  - la rotación y la cadena;
+  - sin cookie, con otra forma o desconocida;
+  - otra superficie;
+  - dos pestañas dentro del margen;
+  - cuatro pedidos simultáneos, que rotan una vez;
+  - el reuso fuera del margen, que revoca;
+  - cerrar la sesión, cerrar todas y la cuenta suspendida;
+  - la sesión vencida;
+  - el origen ajeno, la verificación previa y CORS con credenciales;
+  - la historia solo agregada y el trigger.
+- **Dominio:** las credenciales solo en las operaciones de sesión del website, nunca en la APK.
+- **Scripts:** `scripts/retorno-seguro.test.mjs` (la vista y el período en el retorno).
+
+**Lo que falta, y cómo se verifica:**
+- **En el despliegue real:** las cookies entre los dos dominios de Render no se pueden probar en local con los mismos sitios. Hay que entrar, recargar, abrir otra pestaña, cerrar la sesión y esperar el vencimiento en Chrome, Edge y Firefox.
+- **Safari** (corregido el 2026-10-19 a pedido de Dirección):
+  - Desde la 26.2, del 12 de diciembre de 2025, vuelve a aceptar cookies particionadas (CHIPS), que se piden con el atributo `Partitioned`, como la nuestra. Las había incorporado en la 18.4 y las quitó en la 18.5. Fuente: [WebKit Features for Safari 26.2](https://webkit.org/blog/17640/webkit-features-for-safari-26-2/).
+  - WebKit documenta el caso de un iframe, no el de la respuesta a un pedido entre sitios como el nuestro: queda por verificar en un Safari real.
+  - En una versión sin CHIPS, el comportamiento es el de antes (volver a entrar), y la reanudación lo dice como sesión inexistente.
+- **El recorrido de navegador en la CI** (bloque 6 del encargo): entrar y recargar.
+
+**Condición de cierre:**
+- Dirección ratifica D-1 a D-7;
+- la verificación en el despliegue real pasa en los tres navegadores;
+- se decide si se pide un dominio propio.

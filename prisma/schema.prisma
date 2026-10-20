@@ -52,6 +52,8 @@ enum MotivoDeRevocacionDeSesion {
   REVOCACION_POR_TITULAR
   CIERRE_DE_CUENTA
   SUSPENSION_DE_CUENTA
+  /// DL-147: una reanudación del website ya reemplazada volvió a presentarse fuera del margen de gracia.
+  REANUDACION_REUTILIZADA
 }
 
 /// 08 §12.2 «canal/superficie», declarado por el cliente (DEUDA_LEGAJO DL-022).
@@ -322,10 +324,32 @@ model Sesion {
   momentoDeFinalizacion DateTime?                   @map("momento_de_finalizacion") @db.Timestamptz(3)
   motivoDeRevocacion    MotivoDeRevocacionDeSesion? @map("motivo_de_revocacion")
 
-  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  identidad     Identidad             @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  /// DL-147: las reanudaciones de una sesión del website, de la más vieja a la vigente.
+  reanudaciones ReanudacionDeSesion[]
 
   @@index([identidadId, estado])
   @@map("sesion")
+}
+
+/// DL-147 — La reanudación de una sesión del website después de recargar (el «refresh rotativo» del 07 §43-bis, con cookie
+/// httpOnly). Cada reanudación agrega una fila con la huella del secreto de la cookie, que reemplaza a la anterior; la
+/// vigente es la que no tiene sucesora. El secreto no se guarda. Solo se agrega, y solo para una sesión activa del website (trigger).
+model ReanudacionDeSesion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sesionId          String   @map("sesion_id") @db.Uuid
+  /// La reanudación que esta reemplaza (cada reanudación rota el secreto); NULL en la primera, la del inicio de sesión.
+  predecesoraId     String?  @unique @map("predecesora_id") @db.Uuid
+  /// SHA-256 en hexadecimal del secreto que viaja en la cookie.
+  huella            String   @unique
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  sesion      Sesion               @relation(fields: [sesionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora ReanudacionDeSesion? @relation("CadenaDeReanudacion", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    ReanudacionDeSesion? @relation("CadenaDeReanudacion")
+
+  @@index([sesionId])
+  @@map("reanudacion_de_sesion")
 }
 
 /// tokenVersion por cuenta (07:1795 «refuerzo barato»). Separado de Identidad para no agregarle campos ajenos al 06.

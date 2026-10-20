@@ -21,6 +21,7 @@ import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesi
 import { MisHabitualesDeEntrenamiento } from './mis-habituales';
 import { MisHabitualesDeNutricion } from './mis-habituales-nutricion';
 import { MisPlantillasNutricionales } from './mis-plantillas-nutricion';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 type Estado = 'ACTIVE' | 'ARCHIVED';
 
@@ -47,7 +48,7 @@ export function MisPlantillas() {
     sesionPerdida,
   );
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   if (yo.tipo === 'cargando') return <Cargando />;
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
   if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
