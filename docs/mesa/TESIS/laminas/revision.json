@@ -382,5 +382,101 @@
   "conectores": 7,
   "cruces": 0,
   "hallazgos": []
+ },
+ "B-01": {
+  "titulo": "Flujo integral profesional–asesorado",
+  "archivoFuente": "laminas/fuentes/B-01-flujo-integral.mjs",
+  "lamina": "B-01",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 16,
+  "conectores": 17,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "C-01": {
+  "titulo": "Flujo de nutrición",
+  "archivoFuente": "laminas/fuentes/C-01-flujo-nutricion.mjs",
+  "lamina": "C-01",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 14,
+  "conectores": 16,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "C-02": {
+  "titulo": "Flujo de entrenamiento",
+  "archivoFuente": "laminas/fuentes/C-02-flujo-entrenamiento.mjs",
+  "lamina": "C-02",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 15,
+  "conectores": 14,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "C-03": {
+  "titulo": "Flujo de antropometría",
+  "archivoFuente": "laminas/fuentes/C-03-flujo-antropometria.mjs",
+  "lamina": "C-03",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 12,
+  "conectores": 10,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "D-00": {
+  "titulo": "DFD de contexto (nivel 0)",
+  "archivoFuente": "laminas/fuentes/D-00-dfd-contexto.mjs",
+  "lamina": "D-00",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 7,
+  "conectores": 11,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "D-01": {
+  "titulo": "DFD de nivel 1 · acceso, vínculo y catálogos",
+  "archivoFuente": "laminas/fuentes/D-01-dfd-nivel-1-alta.mjs",
+  "lamina": "D-01",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 12,
+  "conectores": 15,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "D-02": {
+  "titulo": "DFD de nivel 1 · planificar, registrar y revisar",
+  "archivoFuente": "laminas/fuentes/D-02-dfd-nivel-1-seguimiento.mjs",
+  "lamina": "D-02",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 10,
+  "conectores": 16,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "D-03": {
+  "titulo": "DFD de nivel 1 · avisos y medición",
+  "archivoFuente": "laminas/fuentes/D-03-dfd-nivel-1-avisos.mjs",
+  "lamina": "D-03",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 11,
+  "conectores": 12,
+  "cruces": 0,
+  "hallazgos": []
  }
 }

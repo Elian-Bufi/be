@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="D-02">
+<title>DFD de nivel 1 · planificar, registrar y revisar</title>
+<desc>Procesos 4 a 6 del nivel 1: el plan, los registros del asesorado y del profesional, y la revisión; con sus almacenes. · Fuente: apps/api/src (nutricion, entrenamiento, antropometria, proceso, dashboard, analisis) · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="0" y="422" width="750" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<rect x="10" y="428" width="30" height="13" rx="3" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="48" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">persona externa</text>
+<rect x="130.22" y="428" width="30" height="13" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="168.22" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">sistema externo</text>
+<circle cx="263.76" cy="434.5" r="7.5" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="286.76" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">proceso numerado</text>
+<rect x="381.4" y="428" width="30" height="13" fill="#F4F7FC"/><path d="M 411.4 428 L 381.4 428 L 381.4 441 L 411.4 441 M 389.4 428 L 389.4 441" fill="none" stroke="#0A1F44" stroke-width="1.1"/>
+<text x="419.4" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">almacén de datos</text>
+<path d="M 508.34 434.5 L 537.34 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 531.34 437.86 L 538.34 434.5 L 531.34 431.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="546.34" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">flujo de datos; dos puntas: lee y escribe</text>
+<path d="M 329.14 102.88 L 139.52 195.66" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 144.33 189.57 L 139.52 195.66 L 147.29 195.6" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 71.48 92 L 90.06 172.14" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 85.21 166.08 L 90.06 172.14 L 91.75 164.56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 144 215 L 172 215" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 165 218.36 L 172 215 L 165 211.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 151 211.64 L 144 215 L 151 218.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 130.27 183.07 L 282 23" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 279.62 30.39 L 282 23 L 274.75 25.77" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 131.45 245.78 L 288 399" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 280.65 396.51 L 288 399 L 285.35 391.7" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 140.03 233.26 L 325.81 318" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 318.04 318.15 L 325.81 318 L 320.83 312.04" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 375 318 L 375 259" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 378.36 266 L 375 259 L 371.64 266" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 375 102.88 L 375 171" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 371.64 164 L 375 171 L 378.36 164" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 318 215 L 331 215" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 324 218.36 L 331 215 L 324 211.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 419 215 L 437 215" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 430 218.36 L 437 215 L 430 211.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 606 215 L 587 215" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 594 211.64 L 587 215 L 594 218.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 599 218.36 L 606 215 L 599 211.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 404.93 102.88 L 607.9 202.2" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 600.14 202.14 L 607.9 202.2 L 603.09 196.1" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 614.06 189.62 L 436.79 102.88" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 444.55 102.94 L 436.79 102.88 L 441.6 108.97" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 609.97 233.26 L 424.19 318" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 429.17 312.04 L 424.19 318 L 431.96 318.15" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 619.73 183.07 L 468 23" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 475.25 25.77 L 468 23 L 470.38 30.39" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 618.72 245.94 L 464 399" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 466.61 391.69 L 464 399 L 471.34 396.47" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="100" cy="215" r="44" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="100" y="187" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">4</text>
+<text x="100" y="223.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Planificar</text>
+<circle cx="375" cy="215" r="44" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="187" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">5</text>
+<text x="375" y="223.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Registrar</text>
+<circle cx="650" cy="215" r="44" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="650" y="187" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">6</text>
+<text x="650" y="216.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Revisar y</text>
+<text x="650" y="230.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">analizar</text>
+<rect x="300" y="58" width="150" height="44.88" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="375" y="77.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Profesional</text>
+<text x="375" y="90.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[website]</text>
+<rect x="310" y="318" width="130" height="44.88" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="375" y="337.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Asesorado</text>
+<text x="375" y="350.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[APK]</text>
+<rect x="282" y="8" width="186" height="30" fill="#F4F7FC" stroke="none"/>
+<path d="M 468 8 L 282 8 L 282 38 L 468 38 M 306 8 L 306 38" fill="none" stroke="#0A1F44" stroke-width="1.2"/>
+<text x="288" y="27" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">D2</text>
+<text x="313" y="27" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">Profesionales y procesos</text>
+<rect x="288" y="384" width="176" height="30" fill="#F4F7FC" stroke="none"/>
+<path d="M 464 384 L 288 384 L 288 414 L 464 414 M 312 384 L 312 414" fill="none" stroke="#0A1F44" stroke-width="1.2"/>
+<text x="294" y="403" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">D7</text>
+<text x="319" y="403" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">Seguimiento y novedades</text>
+<rect x="16" y="62" width="104" height="30" fill="#F4F7FC" stroke="none"/>
+<path d="M 120 62 L 16 62 L 16 92 L 120 92 M 40 62 L 40 92" fill="none" stroke="#0A1F44" stroke-width="1.2"/>
+<text x="22" y="81" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">D4</text>
+<text x="47" y="81" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">Catálogos</text>
+<rect x="172" y="200" width="146" height="30" fill="#F4F7FC" stroke="none"/>
+<path d="M 318 200 L 172 200 L 172 230 L 318 230 M 196 200 L 196 230" fill="none" stroke="#0A1F44" stroke-width="1.2"/>
+<text x="178" y="219" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">D5</text>
+<text x="203" y="219" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">Planes y objetivos</text>
+<rect x="437" y="200" width="150" height="30" fill="#F4F7FC" stroke="none"/>
+<path d="M 587 200 L 437 200 L 437 230 L 587 230 M 461 200 L 461 230" fill="none" stroke="#0A1F44" stroke-width="1.2"/>
+<text x="443" y="219" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">D6</text>
+<text x="468" y="219" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">Registros y revisiones</text>
+<rect x="212.09" y="164.61" width="72.99" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="248.59" y="175.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">evaluación,</text>
+<text x="248.59" y="188.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">objetivo y plan</text>
+<rect x="85.39" y="106.7" width="90.5" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="130.64" y="117.39" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">alimentos, recetas</text>
+<text x="130.64" y="130.19" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">y ejercicios</text>
+<rect x="139.59" y="69.77" width="78.54" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="178.85" y="80.46" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">proceso abierto</text>
+<rect x="204.67" y="297.05" width="45.22" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="227.28" y="307.74" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">novedad</text>
+<rect x="223.55" y="239.36" width="39.22" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="243.17" y="250.05" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">plan y</text>
+<text x="243.17" y="262.85" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">agenda</text>
+<rect x="379" y="274.7" width="52.34" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="405.17" y="285.39" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">comidas y</text>
+<text x="405.17" y="298.19" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">sesiones</text>
+<rect x="379" y="123.14" width="64.89" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="411.44" y="133.83" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">tomas antro-</text>
+<text x="411.44" y="146.63" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">pométricas</text>
+<rect x="477.14" y="162.84" width="41.24" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="497.76" y="173.53" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">revisión</text>
+<rect x="503.29" y="103.37" width="37.57" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="522.08" y="114.05" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">ficha y</text>
+<text x="522.08" y="126.85" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">cartera</text>
+<rect x="483.43" y="249.06" width="49.82" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="508.34" y="259.75" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">evolución</text>
+<rect x="539.6" y="65.12" width="59.42" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="569.31" y="75.81" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">continuidad</text>
+<text x="569.31" y="88.61" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">o cierre</text>
+<rect x="501.06" y="297.19" width="45.22" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="523.67" y="307.87" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">novedad</text>
+</svg>

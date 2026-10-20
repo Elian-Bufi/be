@@ -431,6 +431,148 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       linea(capas.rotulos, tx, ty, nombre, TX.meta, { color: C.tinta, de: nid });
       return nodo;
     },
+    // ─── Formas de actividad, estados, secuencia y DFD ────────────────────────────────────────
+    /** Nodo inicial (UML): círculo lleno. */
+    nodoInicial({ id: nid, cx, cy, r = 7 }) {
+      capas.nodos.push(`<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r}" fill="${C.tinta}"/>`);
+      return registrarNodo({ id: nid, x: cx - r, y: cy - r, w: 2 * r, h: 2 * r, tipo: 'inicio', rect: true, forma: 'elipse', centro: { x: cx, y: cy } });
+    },
+    /** Nodo final (UML): círculo con un punto lleno adentro. */
+    nodoFinal({ id: nid, cx, cy, r = 9 }) {
+      capas.nodos.push(`<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r}" fill="${C.papel}" stroke="${C.tinta}" stroke-width="1.4"/>`, `<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r - 4}" fill="${C.tinta}"/>`);
+      return registrarNodo({ id: nid, x: cx - r, y: cy - r, w: 2 * r, h: 2 * r, tipo: 'final', rect: true, forma: 'elipse', centro: { x: cx, y: cy } });
+    },
+    /** Decisión o fusión (UML): rombo. Los lados n, s, e y o anclan en sus vértices. */
+    decision({ id: nid, cx, cy, w = 28, h = 28 }) {
+      capas.nodos.push(`<path d="M ${r2(cx)} ${r2(cy - h / 2)} L ${r2(cx + w / 2)} ${r2(cy)} L ${r2(cx)} ${r2(cy + h / 2)} L ${r2(cx - w / 2)} ${r2(cy)} Z" fill="${C.papel}" stroke="${C.tinta}" stroke-width="1.3"/>`);
+      return registrarNodo({ id: nid, x: cx - w / 2, y: cy - h / 2, w, h, tipo: 'decision', rect: true, forma: 'rombo' });
+    },
+    /**
+     * Caja redondeada con texto centrado: una acción (diagrama de actividad) o un estado (máquina de estados). El alto
+     * sale del texto salvo `h`. tipo: sistema, persona, externo o pendiente (colores de la guía).
+     */
+    redondeado({ id: nid, x, y, w, h, titulo: t, detalle, tipo = 'sistema', enfasis = false, radio = 10 }) {
+      const p = PALETA[enfasis ? 'enfasis' : tipo] ?? PALETA.sistema;
+      const g = guionDe(tipo);
+      const wTexto = w - 16;
+      const ren = [];
+      for (const l of envolver(t, wTexto, { ...TX.titulo, tamano: 10.5 })) ren.push({ texto: l, estilo: { ...TX.titulo, tamano: 10.5 } });
+      if (detalle) for (const l of envolver(detalle, wTexto, TX.meta)) ren.push({ texto: l, estilo: TX.meta, color: C.tinta_suave, antes: ren.length && ren[ren.length - 1].estilo !== TX.meta ? 2 : 0 });
+      const hTexto = altoDeRenglones(ren);
+      const alto = h ?? hTexto + 14;
+      capas.nodos.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(alto)}" rx="${radio}" fill="${p.relleno}" stroke="${p.trazo}" stroke-width="${enfasis ? T.trazo.enfasis : T.trazo.nodo}"${g ? ` stroke-dasharray="${g}"` : ''}/>`);
+      bloque(capas.nodos, x + w / 2, y + (alto - hTexto) / 2, ren, { ancla: 'middle', de: nid });
+      return registrarNodo({ id: nid, x, y, w, h: alto, tipo: 'redondeado', rect: true });
+    },
+    /** Alto que tendrá una caja redondeada con ese texto y ese ancho. */
+    altoDeRedondeado({ w, titulo: t, detalle }) {
+      const wTexto = w - 16;
+      const ren = envolver(t, wTexto, { ...TX.titulo, tamano: 10.5 }).map((l) => ({ estilo: { ...TX.titulo, tamano: 10.5 } }));
+      if (detalle) for (const l of envolver(detalle, wTexto, TX.meta)) ren.push({ estilo: TX.meta, antes: 0 });
+      return altoDeRenglones(ren) + 14;
+    },
+    /** Línea de vida (secuencia): cabecera con el nombre y una línea discontinua hasta `hasta`. Devuelve el nodo. */
+    lineaDeVida({ id: nid, x, y, w, nombre, detalle, hasta, tipo = 'sistema', h }) {
+      const p = PALETA[tipo] ?? PALETA.sistema;
+      const g = guionDe(tipo);
+      const cab = cabeceraDeEntidad(nombre, w);
+      const ren = cab.lineas.map((l) => ({ texto: l, estilo: TX_ENTIDAD }));
+      if (detalle) ren.push({ texto: detalle, estilo: TX.meta, color: C.tinta_suave });
+      const alto = h ?? altoDeRenglones(ren) + 10;
+      capas.nodos.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(alto)}" rx="3" fill="${p.relleno}" stroke="${p.trazo}" stroke-width="${T.trazo.nodo}"${g ? ` stroke-dasharray="${g}"` : ''}/>`);
+      bloque(capas.nodos, x + w / 2, y + (alto - altoDeRenglones(ren)) / 2, ren, { ancla: 'middle', de: nid });
+      const n = registrarNodo({ id: nid, x, y, w, h: alto, tipo: 'linea-de-vida', rect: true });
+      const necesario = Math.max(...ren.map((r) => ancho(r.texto, r.estilo))) + 8;
+      if (necesario > w) n.desborde = `${nombre}: la cabecera no entra (${Math.ceil(necesario)} > ${w})`;
+      const cx = x + w / 2;
+      capas.marcos.push(`<path d="M ${r2(cx)} ${r2(y + alto)} L ${r2(cx)} ${r2(hasta)}" stroke="${C.tinta_suave}" stroke-width="1" stroke-dasharray="${GUION.discontinuo}" fill="none"/>`);
+      n.cx = cx;
+      return n;
+    },
+    /** Barra de ejecución (secuencia): el tramo de una línea de vida en el que el participante está trabajando. */
+    activacion({ cx, y1, y2 }) {
+      capas.marcos.push(`<rect x="${r2(cx - 4)}" y="${r2(y1)}" width="8" height="${r2(y2 - y1)}" fill="${C.papel}" stroke="${C.tinta_suave}" stroke-width="1"/>`);
+    },
+    /**
+     * Mensaje (secuencia) de x1 a x2 a la altura y. tipo: sinc (línea continua, punta llena), retorno (discontinua,
+     * punta abierta) o asinc (continua, punta abierta). Si x1 = x2, es un mensaje a sí mismo (un lazo a la derecha).
+     */
+    mensaje({ x1, x2, y, texto, tipo = 'sinc', lado = 'arriba' }) {
+      const g = tipo === 'retorno' ? GUION.discontinuo : null;
+      const fin = tipo === 'sinc' ? 'flecha_llena' : 'flecha';
+      let pts;
+      if (Math.abs(x1 - x2) < 0.5) pts = [{ x: x1, y }, { x: x1 + 26, y }, { x: x1 + 26, y: y + 14 }, { x: x1 + 3, y: y + 14 }];
+      else pts = [{ x: x1, y }, { x: x2, y }];
+      const dibujo = pts.map((p) => ({ ...p }));
+      if (fin === 'flecha_llena') acortar(dibujo, dibujo.length - 1, 6);
+      capas.conectores.push(`<path d="M ${dibujo.map((p) => `${r2(p.x)} ${r2(p.y)}`).join(' L ')}" fill="none" stroke="${C.linea}" stroke-width="${T.trazo.conector}"${g ? ` stroke-dasharray="${g}"` : ''}/>`);
+      capas.conectores.push(punta(fin, pts[pts.length - 1], dir(pts[pts.length - 2], pts[pts.length - 1]), C.linea));
+      const nIndex = conectores.length;
+      for (let i = 0; i < pts.length - 1; i++) segmentos.push({ a: pts[i], b: pts[i + 1], de: nIndex, nodos: [] });
+      conectores.push({ de: null, a: null, pts });
+      if (texto) {
+        const xm = Math.abs(x1 - x2) < 0.5 ? x1 + 32 : (x1 + x2) / 2;
+        const ancla = Math.abs(x1 - x2) < 0.5 ? 'start' : 'middle';
+        const yt = Math.abs(x1 - x2) < 0.5 ? y + 11 : lado === 'arriba' ? y - 5 : y + 14;
+        const wt = ancho(texto, TX.texto);
+        const x0 = ancla === 'middle' ? xm - wt / 2 : xm;
+        capas.rotulos.push(`<rect x="${r2(x0 - 2)}" y="${r2(yt - 10)}" width="${r2(wt + 4)}" height="13.5" fill="${C.papel}" opacity="0.94"/>`);
+        linea(capas.rotulos, xm, yt, texto, TX.texto, { ancla, color: C.tinta, de: `conector:${nIndex}`, halo: true });
+      }
+      return pts;
+    },
+    /** Fragmento combinado (secuencia): marco con su operador (alt, opt, loop) y separadores con su guarda. */
+    fragmento({ x, y, w, h, operador, guardas = [] }) {
+      const wOp = ancho(operador, { ...TX.meta, peso: 600 }) + 14;
+      capas.marcos.push(
+        `<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" fill="none" stroke="${C.tinta_suave}" stroke-width="1"/>`,
+        `<path d="M ${r2(x)} ${r2(y + 15)} L ${r2(x + wOp)} ${r2(y + 15)} L ${r2(x + wOp + 6)} ${r2(y + 9)} L ${r2(x + wOp + 6)} ${r2(y)}" fill="${C.fondo_suave}" stroke="${C.tinta_suave}" stroke-width="1"/>`,
+      );
+      linea(capas.marcos, x + 6, y + 11.5, operador, { ...TX.meta, peso: 600 }, { color: C.tinta, de: 'fragmento' });
+      for (const gd of guardas) {
+        if (gd.separador) capas.marcos.push(`<path d="M ${r2(x)} ${r2(gd.y)} L ${r2(x + w)} ${r2(gd.y)}" stroke="${C.tinta_suave}" stroke-width="1" stroke-dasharray="${GUION.discontinuo}"/>`);
+        linea(capas.marcos, x + (gd.separador ? 8 : wOp + 12), gd.y + (gd.separador ? 13 : 11.5), `[${gd.texto}]`, TX.meta, { color: C.tinta_suave, de: 'fragmento' });
+      }
+    },
+    /** Proceso (DFD, Yourdon/DeMarco): círculo con su número arriba y el nombre al centro. */
+    proceso({ id: nid, cx, cy, r = 46, numero, nombre }) {
+      capas.nodos.push(`<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r}" fill="${C.sistema.relleno}" stroke="${C.sistema.trazo}" stroke-width="${T.trazo.nodo}"/>`);
+      linea(capas.nodos, cx, cy - r + 16, String(numero), TX.idFuerte, { ancla: 'middle', color: C.sistema.trazo, de: nid });
+      const ren = envolver(nombre, r * 1.62, { ...TX.titulo, tamano: 10.5 }).map((l) => ({ texto: l, estilo: { ...TX.titulo, tamano: 10.5 } }));
+      const hT = altoDeRenglones(ren);
+      bloque(capas.nodos, cx, cy - hT / 2 + 5, ren, { ancla: 'middle', de: nid });
+      return registrarNodo({ id: nid, x: cx - r, y: cy - r, w: 2 * r, h: 2 * r, tipo: 'proceso', rect: true, forma: 'elipse', centro: { x: cx, y: cy } });
+    },
+    /** Almacén de datos (DFD): rectángulo abierto a la derecha con su código (D1, D2…) separado por una línea. */
+    almacen({ id: nid, x, y, w, h = 30, codigo, nombre }) {
+      const wc = ancho(codigo, TX.idFuerte) + 12;
+      capas.nodos.push(
+        `<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" fill="${C.fondo_suave}" stroke="none"/>`,
+        `<path d="M ${r2(x + w)} ${r2(y)} L ${r2(x)} ${r2(y)} L ${r2(x)} ${r2(y + h)} L ${r2(x + w)} ${r2(y + h)} M ${r2(x + wc)} ${r2(y)} L ${r2(x + wc)} ${r2(y + h)}" fill="none" stroke="${C.tinta}" stroke-width="1.2"/>`,
+      );
+      linea(capas.nodos, x + 6, y + h / 2 + 4, codigo, TX.idFuerte, { color: C.sistema.trazo, de: nid });
+      linea(capas.nodos, x + wc + 7, y + h / 2 + 4, nombre, TX.texto, { color: C.tinta, de: nid });
+      const n = registrarNodo({ id: nid, x, y, w, h, tipo: 'almacen', rect: true });
+      if (wc + 14 + ancho(nombre, TX.texto) > w) n.desborde = `${nombre}: el nombre no entra en el almacén`;
+      return n;
+    },
+    /**
+     * Carril de un diagrama de actividad (UML: partición): una banda horizontal con su cabecera a la izquierda, que dice
+     * quién actúa y por dónde (por ejemplo, «Profesional» y «website»). Funciona como marco: no es un nodo conectable.
+     */
+    carril({ id: nid, x, y, w, h, titulo: t, subtitulo, wCabecera = 86, relleno = C.papel }) {
+      capas.fondo.push(
+        `<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" fill="${relleno}" stroke="${C.tinta_suave}" stroke-width="1"/>`,
+        `<rect x="${r2(x)}" y="${r2(y)}" width="${r2(wCabecera)}" height="${r2(h)}" fill="${C.sistema.cabecera}" stroke="${C.tinta_suave}" stroke-width="1"/>`,
+      );
+      const ren = [];
+      for (const l of envolver(t, wCabecera - 14, TX.marco)) ren.push({ texto: l, estilo: TX.marco, color: C.tinta });
+      if (subtitulo) for (const l of envolver(subtitulo, wCabecera - 14, TX.meta)) ren.push({ texto: l, estilo: TX.meta, color: C.tinta_suave, antes: ren.length && ren[ren.length - 1].estilo === TX.marco ? 2 : 0 });
+      bloque(capas.fondo, x + wCabecera / 2, y + (h - altoDeRenglones(ren)) / 2, ren, { ancla: 'middle', de: nid });
+      const n = { id: nid, x, y, w, h, marco: true, carril: true, cuerpo: { x: x + wCabecera, w: w - wCabecera } };
+      nodos.set(nid, n);
+      return n;
+    },
     /** Leyenda con muestras reales. items: [{ muestra, texto }]. Devuelve el alto. */
     leyenda({ x, y, w, items, titulo: t = 'Referencias', columnas = 1 }) {
       const filasPorCol = Math.ceil(items.length / columnas);
@@ -652,6 +794,11 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       return { x: desde.x + ux * t, y: desde.y + uy * t };
     }
     if (n.forma === 'actor') return { x: desde.x + ux * n.radio, y: desde.y + uy * n.radio };
+    if (n.forma === 'rombo') {
+      const t = 1 / (Math.abs(ux) / (n.w / 2) + Math.abs(uy) / (n.h / 2));
+      const c = { x: n.x + n.w / 2, y: n.y + n.h / 2 };
+      return { x: c.x + ux * t, y: c.y + uy * t };
+    }
     // Caja: salir por el borde del rectángulo.
     const tx = ux > 0 ? (n.x + n.w - desde.x) / ux : ux < 0 ? (n.x - desde.x) / ux : Infinity;
     const ty = uy > 0 ? (n.y + n.h - desde.y) / uy : uy < 0 ? (n.y - desde.y) / uy : Infinity;
@@ -783,7 +930,7 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
             const py = caja.y + caja.h * fy;
             if (((px - cx) / a) ** 2 + ((py - cy) / bb) ** 2 < 1) { n += 4; break; }
           }
-        } else if (solapan(caja, nd, -1)) n += 4;
+        } else if (nd.forma === 'rombo' ? cajaSobreForma(caja, nd, 1) : solapan(caja, nd, -1)) n += 4;
       }
       for (const c of colocados) if (solapan(caja, c, -2)) n += 4;
       for (const tx of textos) if (solapan(caja, tx, -1)) n += 4;
@@ -843,6 +990,22 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       const largo = fin && /^(uno|cero|muchos)/.test(fin) ? w : w - 1;
       return `<path d="M ${r2(x)} ${r2(yc)} L ${r2(x + largo)} ${r2(yc)}" stroke="${C.linea}" stroke-width="${T.trazo.conector}" fill="none"${g ? ` stroke-dasharray="${g}"` : ''}/>${fin ? punta(fin, { x: x + w, y: yc }, [1, 0], C.linea) : ''}`;
     }
+    // Muestras de los diagramas de actividad, estados, secuencia y DFD.
+    const yc = y + h / 2;
+    const xc = x + w / 2;
+    if (tipo === 'inicio') return `<circle cx="${r2(xc)}" cy="${r2(yc)}" r="6" fill="${C.tinta}"/>`;
+    if (tipo === 'final') return `<circle cx="${r2(xc)}" cy="${r2(yc)}" r="6.5" fill="${C.papel}" stroke="${C.tinta}" stroke-width="1.3"/><circle cx="${r2(xc)}" cy="${r2(yc)}" r="3.5" fill="${C.tinta}"/>`;
+    if (tipo === 'rombo') return `<path d="M ${r2(xc)} ${r2(y - 1)} L ${r2(xc + 9)} ${r2(yc)} L ${r2(xc)} ${r2(y + h + 1)} L ${r2(xc - 9)} ${r2(yc)} Z" fill="${C.papel}" stroke="${C.tinta}" stroke-width="1.2"/>`;
+    if (tipo === 'proceso') return `<circle cx="${r2(xc)}" cy="${r2(yc)}" r="7.5" fill="${C.sistema.relleno}" stroke="${C.sistema.trazo}" stroke-width="${T.trazo.nodo}"/>`;
+    if (tipo === 'almacen') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" fill="${C.fondo_suave}"/><path d="M ${r2(x + w)} ${r2(y)} L ${r2(x)} ${r2(y)} L ${r2(x)} ${r2(y + h)} L ${r2(x + w)} ${r2(y + h)} M ${r2(x + 8)} ${r2(y)} L ${r2(x + 8)} ${r2(y + h)}" fill="none" stroke="${C.tinta}" stroke-width="1.1"/>`;
+    const accion = tipo.match(/^accion(?:-(persona|pendiente))?$/);
+    if (accion || tipo === 'estado') {
+      const p = PALETA[accion?.[1] ?? 'sistema'];
+      const g = guionDe(accion?.[1] ?? 'sistema');
+      return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" rx="6" fill="${p.relleno}" stroke="${p.trazo}" stroke-width="${T.trazo.nodo}"${g ? ` stroke-dasharray="${g}"` : ''}/>`;
+    }
+    if (tipo === 'linea-de-vida') return `<rect x="${r2(x + 4)}" y="${r2(y)}" width="${w - 8}" height="8" rx="2" fill="${C.sistema.relleno}" stroke="${C.sistema.trazo}" stroke-width="1"/><path d="M ${r2(xc)} ${r2(y + 8)} L ${r2(xc)} ${r2(y + h + 2)}" stroke="${C.tinta_suave}" stroke-dasharray="${GUION.discontinuo}"/>`;
+    if (tipo === 'fragmento') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" fill="none" stroke="${C.tinta_suave}" stroke-width="1"/><path d="M ${r2(x)} ${r2(y + 7)} L ${r2(x + 11)} ${r2(y + 7)} L ${r2(x + 14)} ${r2(y + 4)} L ${r2(x + 14)} ${r2(y)}" fill="${C.fondo_suave}" stroke="${C.tinta_suave}" stroke-width="1"/>`;
     if (tipo === 'marco') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" rx="3" fill="${C.fondo_suave}" stroke="${C.tinta_suave}" stroke-width="1"/>`;
     if (tipo === 'interfaz') return `<path d="M ${r2(x)} ${r2(y + h / 2)} L ${r2(x + w - 12)} ${r2(y + h / 2)}" stroke="${C.linea}" stroke-width="${T.trazo.conector}"/><circle cx="${r2(x + w - 6)}" cy="${r2(y + h / 2)}" r="5.5" fill="${C.papel}" stroke="${C.linea}" stroke-width="1.2"/>`;
     if (tipo === 'componente') return `<rect x="${r2(x)}" y="${r2(y)}" width="${w}" height="${h}" rx="3" fill="${C.sistema.relleno}" stroke="${C.sistema.trazo}" stroke-width="${T.trazo.nodo}"/><rect x="${r2(x + w - 11)}" y="${r2(y + 2.5)}" width="7" height="8" fill="${C.papel}" stroke="${C.sistema.trazo}" stroke-width="0.8"/>`;
@@ -862,6 +1025,15 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
     if (conectables.length > 25) hallazgos.push(`densidad: ${conectables.length} nodos (máximo 25)`);
     if (conectores.length > 40) hallazgos.push(`densidad: ${conectores.length} conectores (máximo 40)`);
     for (const n of conectables) if (n.desborde) hallazgos.push(`desborde: ${n.desborde}`);
+    for (let i = 0; i < conectables.length; i++)
+      for (let j = i + 1; j < conectables.length; j++) {
+        const a = conectables[i];
+        const b = conectables[j];
+        const formaA = a.forma === 'elipse' || a.forma === 'rombo';
+        const formaB = b.forma === 'elipse' || b.forma === 'rombo';
+        const pisan = !formaA && !formaB ? solapan(a, b, 0.5) : formaA && !formaB ? cajaSobreForma(b, a) : cajaSobreForma(a, b);
+        if (pisan) hallazgos.push(`nodos que se pisan: ${a.id} y ${b.id}`);
+      }
     // Fuera del lienzo.
     for (const t of textos) if (t.x < 0 || t.y < 0 || t.x + t.w > W + 0.5 || t.y + t.h > H + 0.5) hallazgos.push(`texto fuera del lienzo: «${t.texto}»`);
     for (const n of conectables) if (n.x < 0 || n.y < 0 || n.x + n.w > W + 0.5 || n.y + n.h > H + 0.5) hallazgos.push(`nodo fuera del lienzo: ${n.id}`);
@@ -875,7 +1047,7 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       }
     // Rótulos de conectores sobre nodos o sobre otros conectores.
     for (const t of textos.filter((x) => String(x.de).startsWith('conector:'))) {
-      for (const n of conectables) if (solapan(t, n, 0)) hallazgos.push(`rótulo sobre el nodo ${n.id}: «${t.texto}»`);
+      for (const n of conectables) if (cajaSobreForma(t, n)) hallazgos.push(`rótulo sobre el nodo ${n.id}: «${t.texto}»`);
       const propio = Number(String(t.de).split(':')[1]);
       for (const s of segmentos) if (s.de !== propio && cruzaCaja(s, t, 1)) hallazgos.push(`rótulo atravesado por otro conector: «${t.texto}»`);
     }
@@ -920,8 +1092,31 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
     };
   }
   const solapan = (a, b, m) => a.x < b.x + b.w - m && b.x < a.x + a.w - m && a.y < b.y + b.h - m && b.y < a.y + a.h - m;
+  /** Un punto dentro de la forma real de un nodo (elipse, rombo o rectángulo), agrandada en `margen`. */
+  function dentroDeForma(n, px, py, margen = 0) {
+    const cx = n.x + n.w / 2;
+    const cy = n.y + n.h / 2;
+    const a = n.w / 2 + margen;
+    const b = n.h / 2 + margen;
+    if (n.forma === 'elipse') return ((px - cx) / a) ** 2 + ((py - cy) / b) ** 2 < 1;
+    if (n.forma === 'rombo') return Math.abs(px - cx) / a + Math.abs(py - cy) / b < 1;
+    return px > n.x - margen && px < n.x + n.w + margen && py > n.y - margen && py < n.y + n.h + margen;
+  }
+  /** Una caja de texto sobre la forma real de un nodo: puntos de la caja dentro de la forma, o vértices de la forma dentro de la caja. */
+  function cajaSobreForma(c, n, margen = 0) {
+    if (n.forma !== 'elipse' && n.forma !== 'rombo') return solapan(c, n, -margen);
+    for (let i = 0; i <= 6; i++) for (let j = 0; j <= 3; j++) if (dentroDeForma(n, c.x + (c.w * i) / 6, c.y + (c.h * j) / 3, margen)) return true;
+    const cx = n.x + n.w / 2;
+    const cy = n.y + n.h / 2;
+    for (const [px, py] of [[cx, n.y], [cx, n.y + n.h], [n.x, cy], [n.x + n.w, cy], [cx, cy]]) if (px > c.x && px < c.x + c.w && py > c.y && py < c.y + c.h) return true;
+    return false;
+  }
   function cruzaCaja(s, c, margen) {
-    // Segmento contra un rectángulo (o una elipse, si el nodo lo es) achicado o agrandado en `margen`.
+    // Segmento contra un rectángulo (o una elipse o un rombo, si el nodo lo es) achicado o agrandado en `margen`.
+    if (c.forma === 'rombo') {
+      for (let k = 1; k < 40; k++) if (dentroDeForma(c, s.a.x + ((s.b.x - s.a.x) * k) / 40, s.a.y + ((s.b.y - s.a.y) * k) / 40, margen)) return true;
+      return false;
+    }
     if (c.forma === 'elipse') {
       const a = c.w / 2 + margen;
       const b = c.h / 2 + margen;
