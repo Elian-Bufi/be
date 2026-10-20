@@ -574,7 +574,10 @@ async function faltaUnaParte({ p, d, salida }) {
   fallan.clear();
   await clic(p, 'button', 'Reintentar lo que faltó');
   await p.waitForFunction(() => !document.body.innerText.includes('No se pudo leer.'), { timeout: ESPERA });
-  await esperarTexto(p, 'Pendiente desde el');
+  // Leído el estado del seguimiento: el plan activo lo abrió, y la revisión acordada (en 3 días) todavía no está pendiente.
+  await esperarTexto(p, 'Abierto');
+  await esperarTexto(p, 'No hay una revisión pendiente.');
+  assert.ok(!(await p.evaluate(() => document.body.innerText.includes('Falta una parte de esta vista'))), 'después de reintentar, no queda el aviso');
 }
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
