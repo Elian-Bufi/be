@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { CREDENCIAL, dominio } from './api.mjs';
+import { CREDENCIAL, dominio, pedir, sesion as sesionPorApi } from './api.mjs';
 import { API, WEB } from './entorno.mjs';
 
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -146,6 +146,20 @@ async function sesion({ contexto, p, d }) {
   assert.ok(!(await contexto.cookies()).some((c) => c.name === '__Secure-be-reanudacion'), 'al salir, la cookie se borra');
   await p.goto(`${WEB}/pro`, { waitUntil: 'networkidle2' });
   await esperarCamino(p, '/login');
+
+  // Un enlace directo a la ficha, sin sesión: pide entrar y después vuelve a la misma persona, con la vista y el período.
+  await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=linea&p=30`, { waitUntil: 'networkidle2' });
+  await esperarCamino(p, '/login');
+  await hidratado(p, '#correo');
+  await p.type('#correo', d.pro.correo);
+  await p.type('#contrasena', CREDENCIAL);
+  await clic(p, 'form button[type="submit"]', 'Iniciar sesión');
+  await esperarCamino(p, '/pro/advisees');
+  const vuelta = ruta(p).parametros;
+  assert.equal(vuelta.get('id'), d.ase.id, 'vuelve a la misma persona');
+  assert.equal(vuelta.get('vista'), 'linea', 'con la misma vista');
+  assert.equal(vuelta.get('p'), '30', 'y el mismo período');
+  await p.waitForFunction((n) => document.querySelector('#titulo-asesorado')?.textContent?.includes(n), { timeout: ESPERA }, d.ase.nombre);
 }
 
 /** DL-146 y bloque 5: la pista de «Actualizar» con mouse, teclado, Escape, bordes, zoom, tacto y árbol de accesibilidad. */
@@ -275,6 +289,14 @@ async function borrador({ p, d, salida }) {
   await renombrarComida(p, 1, NUEVO);
   await esperarGuardado(p);
   await captura(p, salida, 'editor-guardado-1440');
+
+  // Sin conexión, lo escrito queda en pantalla y el estado lo dice; al volver la conexión, se guarda solo.
+  await p.setOfflineMode(true);
+  await renombrarComida(p, 2, 'Almuerzo sin conexión');
+  await p.waitForFunction(() => document.querySelector('.editor-del-plan__estado')?.dataset.estado === 'fallo', { timeout: ESPERA, polling: 200 });
+  await captura(p, salida, 'editor-sin-conexion-1440');
+  await p.setOfflineMode(false);
+  await esperarGuardado(p);
   // Sin cambios pendientes, salir no pregunta (no hay diálogo de «salir sin guardar»).
   let pregunto = false;
   p.once('dialog', async (dialogo) => {
@@ -283,6 +305,7 @@ async function borrador({ p, d, salida }) {
   });
   await p.reload({ waitUntil: 'networkidle2' });
   await elemento(p, '.comida-del-editor[data-comida="1"]', NUEVO);
+  await elemento(p, '.comida-del-editor[data-comida="2"]', 'Almuerzo sin conexión');
   assert.equal(pregunto, false, 'con todo guardado, recargar no pregunta');
 }
 
@@ -465,9 +488,39 @@ async function areaSugerida({ p, d, salida }) {
   await p.waitForFunction(() => !document.querySelector('dialog[open] form select'), { timeout: ESPERA });
 }
 
+/** Bloque 3: «Cerrar todas las sesiones» desde otro lado deja afuera a la pestaña abierta, y la cookie no la revive. */
+async function sesionRevocada({ p, d }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  const otra = await sesionPorApi(d.pro.correo);
+  await pedir('DELETE', '/auth/sessions', { token: otra, clave: false });
+  await clic(p, '.ficha__consulta .pista > button', 'Actualizar');
+  await esperarCamino(p, '/login');
+  const aviso = ruta(p).parametros;
+  assert.ok(['sesion-no-valida', 'sesion-vencida'].includes(aviso.get('aviso') ?? ''), `el login dice por qué (${aviso.get('aviso')})`);
+  assert.ok((aviso.get('volver') ?? '').startsWith('/pro/advisees'), 'y vuelve a la ficha después de entrar');
+  await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}`, { waitUntil: 'networkidle2' });
+  await esperarCamino(p, '/login');
+}
+
+/** Bloque 3: si la persona retira el consentimiento, la ficha lo dice al actualizar, y recargar no devuelve el acceso. */
+async function accesoRevocado({ p, d }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await elemento(p, '[data-accion-de-la-ficha="empezar"]');
+  const ase = await sesionPorApi(d.ase.correo, 'APK');
+  await pedir('POST', `/me/consents/${d.consentimientos.NUTRICION}/revoke`, { token: ase, superficie: 'APK', cuerpo: {} });
+  await clic(p, '.ficha__consulta .pista > button', 'Actualizar');
+  await p.waitForFunction(() => !document.querySelector('[data-accion-de-la-ficha]'), { timeout: ESPERA });
+  await esperarTexto(p, dominio.COPY_VINCULO.accesoNoDisponible);
+  await p.reload({ waitUntil: 'networkidle2' });
+  await esperarTexto(p, dominio.COPY_VINCULO.accesoNoDisponible);
+  assert.ok(!(await p.$('[data-accion-de-la-ficha]')), 'recargar recupera la sesión, no el permiso');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

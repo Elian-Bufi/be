@@ -51,8 +51,8 @@ export async function vincular(pro, ase, aseId, alcance) {
   });
   const vinculoId = aceptada.data.relationshipId;
   const requisitos = await pedir('GET', `/relationships/${vinculoId}/consent-requirements`, { token: ase, superficie: 'APK' });
-  await pedir('POST', `/relationships/${vinculoId}/consents`, { token: ase, superficie: 'APK', cuerpo: { consentVersionId: requisitos.data.consentVersion.id } });
-  return vinculoId;
+  const consentimiento = await pedir('POST', `/relationships/${vinculoId}/consents`, { token: ase, superficie: 'APK', cuerpo: { consentVersionId: requisitos.data.consentVersion.id } });
+  return { vinculoId, consentId: consentimiento.data.consentId };
 }
 
 /** El nombre visible de la persona, en la primera versión de su perfil (DL-009, DL-040). */

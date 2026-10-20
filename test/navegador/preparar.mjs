@@ -32,6 +32,9 @@ export const RECORRIDOS = {
   // El área sugerida al invitar (bloque 5): sin vínculos, ninguna; con vínculos en una sola de dos áreas, esa.
   primeraInvitacion: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: [], datos: [] },
   areaSugerida: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: ['NUTRICION'], datos: [] },
+  // Bloque 3: el servidor sigue decidiendo; recargar recupera la sesión, no un permiso ni una sesión revocados.
+  sesionRevocada: { habilitado: ['NUTRICION'], datos: [] },
+  accesoRevocado: { habilitado: ['NUTRICION'], datos: [] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
@@ -128,7 +131,12 @@ export async function datos(estado) {
     await ponerNombre(ase, e.ase.nombre);
     await pedir('POST', '/me/health-data-consents', { token: ase, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
     e.vinculos = {};
-    for (const alcance of vinculosDe(r)) e.vinculos[alcance] = await vincular(pro, ase, e.ase.id, alcance);
+    e.consentimientos = {};
+    for (const alcance of vinculosDe(r)) {
+      const { vinculoId, consentId } = await vincular(pro, ase, e.ase.id, alcance);
+      e.vinculos[alcance] = vinculoId;
+      e.consentimientos[alcance] = consentId;
+    }
 
     if (r.datos.includes('borrador')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
