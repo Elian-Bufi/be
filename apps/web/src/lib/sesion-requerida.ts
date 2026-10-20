@@ -17,7 +17,7 @@ import { useSesion } from './sesion';
 
 export function useSesionRequerida(volver: string) {
   const router = useRouter();
-  const { sesion, olvidar, restaurando, vencida } = useSesion();
+  const { sesion, olvidar, restaurando, vencida, sinConexion } = useSesion();
   const saliendo = useRef(false);
   const token = sesion?.token ?? null;
 
@@ -46,8 +46,9 @@ export function useSesionRequerida(volver: string) {
 
   useEffect(() => {
     if (restaurando || token || saliendo.current) return;
-    router.replace(`/login?volver=${volverA()}${vencida ? '&aviso=sesion-vencida' : ''}`);
-  }, [token, restaurando, vencida, router, volverA]);
+    // Una sesión que no se pudo recuperar por la conexión no es una sesión vencida: la entrada dice cuál de las dos fue.
+    router.replace(`/login?volver=${volverA()}${vencida ? '&aviso=sesion-vencida' : sinConexion ? '&aviso=sin-conexion' : ''}`);
+  }, [token, restaurando, vencida, sinConexion, router, volverA]);
 
   return { token, salir, sesionPerdida, restaurando };
 }

@@ -10,6 +10,8 @@ export const AVISOS = {
   'sesion-no-valida': 'La sesión ya no es válida. Iniciá sesión para continuar.',
   // DL-147: la sesión dura 12 h desde que se inició; al volver a entrar, se vuelve al mismo lugar.
   'sesion-vencida': 'Tu sesión venció. Volvé a entrar para seguir donde estabas.',
+  // DL-147: la reanudación falló por la conexión, no por la sesión ni por los datos de acceso.
+  'sin-conexion': 'No pudimos conectarnos con BE para recuperar tu sesión: no venció ni tus datos están mal. Cuando vuelva la conexión seguimos solos; si no, volvé a entrar.',
   reautenticar: 'Por seguridad, volvé a iniciar sesión para confirmar esta acción.',
   'cierre-registrado': 'Solicitud de cierre registrada.',
 } as const;

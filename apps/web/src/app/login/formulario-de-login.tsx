@@ -76,7 +76,8 @@ export function FormularioDeLogin() {
       entrar(r.datos);
       return;
     }
-    if (r.tipo === 'RED') return setEstado({ tipo: 'error', mensaje: COPY.resultadoIncierto });
+    // Sin conexión, el mensaje lo dice: no es «datos incorrectos» (DL-147).
+    if (r.tipo === 'RED') return setEstado({ tipo: 'error', mensaje: COPY.loginSinConexion });
     if (r.codigo === 'INVALID_CREDENTIALS') return setEstado({ tipo: 'error', mensaje: COPY.loginFallido });
     if (r.codigo === 'RATE_LIMITED') return setEstado({ tipo: 'error', mensaje: COPY.demasiadosIntentos });
     if (r.codigo === 'INVALID_REQUEST' || r.codigo === 'UNKNOWN_FIELD') return setEstado({ tipo: 'error', mensaje: COPY.loginFallido });

@@ -25,7 +25,11 @@ interface Sesion {
   readonly identidadId: string;
 }
 
-type Estado = { readonly tipo: 'restaurando' } | { readonly tipo: 'sin-sesion'; readonly vencida: boolean } | ({ readonly tipo: 'con-sesion' } & Sesion);
+/** `sinConexion`: no se pudo preguntar por la sesión (sin conexión con BE, o BE no respondió). No es que haya vencido. */
+type Estado =
+  | { readonly tipo: 'restaurando' }
+  | { readonly tipo: 'sin-sesion'; readonly vencida: boolean; readonly sinConexion?: boolean }
+  | ({ readonly tipo: 'con-sesion' } & Sesion);
 
 interface ContextoDeSesion {
   readonly sesion: Sesion | null;
@@ -33,6 +37,11 @@ interface ContextoDeSesion {
   readonly restaurando: boolean;
   /** La última sesión de esta pestaña venció (o la API dijo que venció al reanudar): la página de entrada lo explica. */
   readonly vencida: boolean;
+  /**
+   * No se pudo recuperar la sesión porque no hubo conexión con BE (o no respondió): la entrada lo dice, para no confundirlo
+   * con una sesión vencida ni con datos mal escritos, y al volver la conexión se vuelve a intentar sola.
+   */
+  readonly sinConexion: boolean;
   /** La sesión que acaba de abrir API-ACC-02 o la familia GOO. */
   readonly guardar: (respuesta: IniciarSesionResponse) => void;
   /** Olvidar el token de esta pestaña (la API dijo que la sesión ya no sirve). */
@@ -81,7 +90,7 @@ export function ProveedorDeSesion({ children }: { children: ReactNode }) {
         continue;
       }
       const vencida = r.tipo === 'API' && r.codigo === 'SESSION_EXPIRED';
-      setEstado((e) => (e.tipo === 'restaurando' ? { tipo: 'sin-sesion', vencida } : e));
+      setEstado((e) => (e.tipo === 'restaurando' ? { tipo: 'sin-sesion', vencida, sinConexion: pasajera } : e));
       return;
     }
   }, []);
@@ -108,6 +117,18 @@ export function ProveedorDeSesion({ children }: { children: ReactNode }) {
       c.close();
       canal.current = null;
     };
+  }, [reanudar]);
+
+  // Si la sesión no se pudo recuperar por falta de conexión, se vuelve a intentar sola cuando la conexión vuelve.
+  useEffect(() => {
+    const alVolver = () => {
+      const e = actual.current;
+      if (e.tipo !== 'sin-sesion' || !e.sinConexion) return;
+      setEstado({ tipo: 'restaurando' });
+      void reanudar();
+    };
+    window.addEventListener('online', alVolver);
+    return () => window.removeEventListener('online', alVolver);
   }, [reanudar]);
 
   const guardar = useCallback(
@@ -142,6 +163,7 @@ export function ProveedorDeSesion({ children }: { children: ReactNode }) {
       sesion: estado.tipo === 'con-sesion' ? { token: estado.token, expiraEn: estado.expiraEn, identidadId: estado.identidadId } : null,
       restaurando: estado.tipo === 'restaurando',
       vencida: estado.tipo === 'sin-sesion' && estado.vencida,
+      sinConexion: estado.tipo === 'sin-sesion' && !!estado.sinConexion,
       guardar,
       olvidar,
       cerrada,

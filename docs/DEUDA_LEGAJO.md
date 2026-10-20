@@ -4785,6 +4785,9 @@ El buscador sigue sin índices (DL-139): cada fila se mide contra su nombre prin
   - una falla de red o del servidor se reintenta dos veces;
   - entre pestañas (`BroadcastChannel`, sin tokens en los mensajes), cerrar la sesión en una la cierra en las demás, y entrar con otra cuenta recarga las que mostraban otra;
   - si la sesión venció, la entrada lo dice («Tu sesión venció…») y después vuelve al mismo lugar: la ruta, la vista y el período, si tienen una forma conocida (`destinoSeguro` y `retornoDeLaPagina`). Lo escrito sin guardar no se confirma solo: la página se vuelve a montar.
+- **D-6 bis · Una falla de conexión se dice como tal** (agregado el 2026-10-19, antes de integrar):
+  - al entrar, un pedido que no llega dice «No pudimos conectarnos con BE: no es un problema de tu correo ni de tu contraseña»;
+  - al recargar, si después de los dos reintentos no hubo conexión, la entrada lo dice (`aviso=sin-conexion`): no es que la sesión haya vencido. Cuando la conexión vuelve, la reanudación se intenta sola.
 - **D-7 · La APK no cambia:** sigue con su token en SecureStore (DL-012, 2026-10-03) y nunca manda credenciales (`credentials: 'omit'`).
 
 **Alternativas descartadas:**
@@ -4827,7 +4830,10 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 
 **Lo que falta, y cómo se verifica:**
 - **En el despliegue real:** las cookies entre los dos dominios de Render no se pueden probar en local con los mismos sitios. Hay que entrar, recargar, abrir otra pestaña, cerrar la sesión y esperar el vencimiento en Chrome, Edge y Firefox.
-- **Safari:** sin soporte de cookies particionadas, el comportamiento es el de antes (volver a entrar), y la reanudación lo dice como sesión inexistente.
+- **Safari** (corregido el 2026-10-19 a pedido de Dirección):
+  - Desde la 26.2, del 12 de diciembre de 2025, vuelve a aceptar cookies particionadas (CHIPS), que se piden con el atributo `Partitioned`, como la nuestra. Las había incorporado en la 18.4 y las quitó en la 18.5. Fuente: [WebKit Features for Safari 26.2](https://webkit.org/blog/17640/webkit-features-for-safari-26-2/).
+  - WebKit documenta el caso de un iframe, no el de la respuesta a un pedido entre sitios como el nuestro: queda por verificar en un Safari real.
+  - En una versión sin CHIPS, el comportamiento es el de antes (volver a entrar), y la reanudación lo dice como sesión inexistente.
 - **El recorrido de navegador en la CI** (bloque 6 del encargo): entrar y recargar.
 
 **Condición de cierre:**
