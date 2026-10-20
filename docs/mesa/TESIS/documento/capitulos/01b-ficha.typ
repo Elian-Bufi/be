@@ -78,14 +78,12 @@ lo que Dirección completará al final: el Gantt y los enlaces.
 - *Identificadores.* RF (requisito funcional), UC (caso de uso), TEST (caso de prueba), API (operación del contrato),
   DL (decisión registrada en `docs/DEUDA_LEGAJO.md`), ADR (decisión de arquitectura del legajo). El legajo es el
   conjunto de documentos canónicos del proyecto (`docs/legajo`); este documento lo cita y no lo reescribe.
-- *Figuras.* Cada lámina lleva su identificador, su fuente y la versión. Se generan de una fuente editable por
-  figura (anexo L).
+- *Figuras y tablas.* Cada lámina lleva su identificador, su fuente y la versión, y sale de una fuente editable
+  (anexo L). Llevan número las figuras y las cinco tablas que resumen una comparación o una medición (2.1, 3.1, 5.1,
+  5.2 y 6.1); las demás se leen junto al párrafo que las presenta.
 - *Dos versiones del PDF.* La pública, en el repositorio, deja como campos a completar el logotipo de la escuela, los
   correos institucionales y las credenciales. La de evaluación los incorpora y se compila fuera del repositorio.
-- *Dirección.* El rol que dirige el proyecto y decide su alcance (apartado 2.10). «Lo decidió Dirección» remite
-  siempre a una decisión registrada.
-- *Tablas.* Las figuras llevan número y leyenda. Las tablas se leen junto al párrafo que las presenta; solo las cinco
-  que resumen una comparación o una medición (2.1, 3.1, 5.1, 5.2 y 6.1) llevan número.
+- *Dirección.* El rol que dirige el proyecto (apartado 2.10); «lo decidió Dirección» remite a una decisión registrada.
 - *Lo que no se hizo.* Cuando algo no se pudo comprobar, el documento lo dice y dice por qué.
 
 == Procedimiento de entrega

@@ -35,7 +35,7 @@
 | C | Guía visual, motor de láminas y dos láminas patrón (ARQ-02, DER-03) | **hecho** (`c290925`) | 2026-10-20 |
 | D | Documento: 14 apartados | **hecho** (1 a 14; 10, 12 y 13 con sus campos diferidos al cierre) | 2026-10-20 |
 | E | Anexos A a L: flujos, DFD, secuencias y estados, trazabilidad, diccionario, decisiones, glosario, referencias, discrepancias, convenciones | **hecho** (`5509615` y siguiente) | 2026-10-20 |
-| F | Tres pasadas de revisión | en curso: cobertura y consistencia hechas; la visual y editorial, con cuatro revisores | 2026-10-20 |
+| F | Tres pasadas de revisión | en curso: cobertura y consistencia hechas; de la visual y editorial, aplicadas la editorial y las visuales de las páginas 125 a 352 (`27d7707`); falta la de las páginas 1 a 124 | 2026-10-20 |
 | G | Base de la defensa: guion, preguntas, demo, presentación | **hecho** (`dd9c2e0`; presentación en https://claude.ai/artifact/9LiufGdUTJjAbEonGT8t2U) | 2026-10-20 |
 | H | Informe final | pendiente | |
 
@@ -98,10 +98,19 @@
   con una sola numeración, porque en una sola no se leía a tamaño real.
 - **2026-10-20 06:20** — Anexo E (secuencias E-01 activar un plan y E-02 recuperar la sesión; estados E-03 vínculo y
   E-04 consentimiento, plan y proceso) y el texto de los anexos B a E, con «En 30 segundos» por figura. Herramientas
-  nuevas: `operaciones-y-casos.mjs` (142 operaciones con el caso de uso que dejan en su procedencia, leído del código),
+  nuevas: `operaciones-y-casos.mjs` (136 operaciones con el caso de uso que dejan en su procedencia, leído del código),
   `operaciones-detalle.mjs` (método, ruta y resumen del contrato) y `maquinas-de-estado.mjs` (las cinco tablas de
   transición del dominio, copiadas). 44 láminas sin hallazgos automáticos; documento de 352 páginas.
-- **Cómo seguir:** las tres pasadas de revisión (cobertura académica, consistencia técnica, calidad visual y editorial
-  a tamaño real), después la base de la defensa (guion, preguntas, demo con respaldo de capturas, presentación 16:9 con
-  notas) y el informe final. Herramientas: `node herramientas/<herramienta>.mjs`; láminas: `node laminas/construir.mjs [ID]`;
+- **2026-10-20 06:48** — Base de la defensa (`dd9c2e0`): guion con tiempos, demo de siete minutos con plan B de doce
+  capturas tomadas en test, 22 preguntas con respaldo, presentación de 16 diapositivas con notas del orador y el
+  `LEEME.md` de entrada. Prueba de explicación: 20 de 20 entre 37 y 47 segundos.
+- **2026-10-20 06:54** — Compilación reproducible (`0e19b1d`): el documento y las láminas fijan la fecha de creación con
+  la del commit de referencia; dos compilaciones dan el mismo archivo.
+- **2026-10-20 08:05** — Pasada 3, parte 1 (`27d7707`): correcciones de la revisión editorial y de las visuales de las
+  páginas 125 a 352 (composición del código sin silabeo, filas que no se parten, fichas con su encabezado, tablas de
+  estados más anchas, láminas DER con aire, secuencias con rótulos que entran, glosario, referencias, K19). **Corrección
+  de datos:** las herramientas de operaciones no leían los identificadores API-ACC-P1-03 ni API-INT-*-0n, ni las rutas
+  escritas como constantes; ahora dan 191 operaciones con detalle y 142 con caso de uso (antes 184 y 136).
+- **Cómo seguir:** aplicar la revisión visual de las páginas 1 a 124 cuando llegue, volver a compilar y mirar las
+  páginas tocadas, repetir la prueba de explicación, compilar la versión de evaluación y escribir el informe final. Herramientas: `node herramientas/<herramienta>.mjs`; láminas: `node laminas/construir.mjs [ID]`;
   documento: `node construir-documento.mjs [--png <carpeta>] [--evaluacion]`.

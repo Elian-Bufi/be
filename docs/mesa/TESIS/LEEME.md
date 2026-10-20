@@ -8,8 +8,9 @@ Primera versión profesional de la documentación de tesis de BE (Analista de Si
 
 1. **El documento:** `salida/BE-tesis-v1.pdf`, la versión pública: los 14 apartados en el orden de la escuela y los
    anexos A a L. Tiene rótulo, índice navegable y numeración de páginas.
-2. **La defensa:** `defensa/LEEME.md` (guion, demo con plan B, preguntas probables y la presentación).
-3. **El avance y cómo seguir:** `PROGRESO.md`.
+2. **El informe final:** `INFORME.md` (qué se entregó, cómo se revisó y qué falta completar).
+3. **La defensa:** `defensa/LEEME.md` (guion, demo con plan B, preguntas probables y la presentación).
+4. **El avance y cómo seguir:** `PROGRESO.md`.
 
 La **versión de evaluación** (con el logotipo de la escuela, los integrantes y las credenciales del apartado 14) no se
 guarda en el repositorio, que es público: se compila con `--evaluacion` y queda en

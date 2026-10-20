@@ -91,6 +91,13 @@
   }
 }
 
+/// Regla para un bloque: los hashes de commit (siete caracteres hexadecimales con letras y números) van en
+/// monoespaciada, como en el resto del documento.
+#let hashes-en-codigo(cuerpo) = {
+  show regex("\b[0-9a-f]{7}\b"): it => if it.text.contains(regex("[0-9]")) and it.text.contains(regex("[a-f]")) { text(font: "JetBrains Mono", hyphenate: false, lang: "en", it.text) } else { it }
+  cuerpo
+}
+
 /// Una oración citada que termina sin punto (como varios resultados esperados de DV-05) lo recibe.
 #let con-punto(s) = {
   if type(s) != str or s.trim() == "" { return s }

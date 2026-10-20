@@ -89,7 +89,7 @@ alcance* (Dirección lo dejó fuera de esta entrega) y *propuesta* (no aprobado)
 evidencia están en el apartado 3.
 
 #table(
-  columns: (1.35fr, auto, auto, 1.3fr),
+  columns: (34mm, 33mm, 21mm, 1fr),
   table.header([Capacidad], [Requisitos], [Superficie], [Estado en la versión de referencia]),
   [Identidad, sesión y cuenta], [#id("RF-001") a #id("RF-007"), #id("RF-069")], [W · A], [#estado("implementado") Acceso con Google; la sesión del website sobrevive a una recarga. Fuera de alcance: recuperar el acceso (#id("RF-005")).],
   [Alta y verificación de profesionales; administración], [#id("RF-008") a #id("RF-014"), #id("RF-067"), #id("RF-068")], [W], [#estado("fuera") Los profesionales de prueba se habilitan con un servicio interno (DL-036). Pendiente: las incidencias administrativas (#id("RF-068"), P1), que dependen del rol de administración.],

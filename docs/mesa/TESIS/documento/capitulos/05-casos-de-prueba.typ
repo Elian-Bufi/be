@@ -44,7 +44,7 @@
 #let ficha(c) = {
   let fila(etiqueta, contenido) = (text(fill: tinta-suave, etiqueta), contenido)
   let filas(..f) = grid(columns: (31mm, 1fr), column-gutter: 8pt, row-gutter: 5pt, ..f)
-  block(width: 100%, above: 14pt, below: 6pt, breakable: true, {
+  block(width: 100%, above: 14pt, below: 6pt, breakable: true, hashes-en-codigo({
     set text(size: 10pt, hyphenate: false)
     set par(justify: false)
     // El encabezado y sus dos primeras filas no se separan: ninguna ficha empieza sola al pie de una página.
@@ -88,14 +88,14 @@
       } else { ejecucion-ci }),
       ..fila("Evidencia", evidencias(c.evidencia)),
     )
-  })
+  }))
 }
 
 /// Ficha de un caso ejecutado fuera de la CI (test o teléfono).
 #let ficha-ejecutada(c) = {
   let fila(etiqueta, contenido) = (text(fill: tinta-suave, etiqueta), contenido)
   let filas(..f) = grid(columns: (31mm, 1fr), column-gutter: 8pt, row-gutter: 5pt, ..f)
-  block(width: 100%, above: 14pt, below: 6pt, breakable: true, {
+  block(width: 100%, above: 14pt, below: 6pt, breakable: true, hashes-en-codigo({
     set text(size: 10pt, hyphenate: false)
     set par(justify: false)
     block(breakable: false, below: 5pt, {
@@ -123,7 +123,7 @@
       ..fila("Evidencia", if c.evidencia.len() > 0 { list(tight: true, marker: [–], ..c.evidencia.map(e => raw(e))) } else { text(fill: tinta-suave, "Sin evidencia escrita en el repositorio.") }),
       ..fila("Límites", c.limites),
     )
-  })
+  }))
 }
 
 = Casos de prueba

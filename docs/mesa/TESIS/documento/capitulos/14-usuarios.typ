@@ -14,9 +14,9 @@
 }
 
 #let COHORTE = (
-  (nombre: "Lic. Sofía Paz", plataforma: [website (/pro)], permisos: [Nutrición y Antropometría con quien la aceptó y dio el consentimiento], escenario: [cartera de cinco personas de la cohorte, más una sexta de la verificación del 2026-10-20 (anexo K, K16); planes, revisiones y tomas; ficha de Diego Sosa con tres años de historia]),
-  (nombre: "Prof. Martín Acosta", plataforma: [website (/pro)], permisos: [Entrenamiento, con las mismas condiciones], escenario: [planes por serie, ejecución y revisión; la revisión del día de Federico Álvarez]),
-  (nombre: "Prof. Lucía Benítez", plataforma: [website (/pro)], permisos: [solo Antropometría (capacidad transversal)], escenario: [tomas y cálculos de Camila Ortiz (recomposición)]),
+  (nombre: "Lic. Sofía Paz", plataforma: [website #box[(/pro)]], permisos: [Nutrición y Antropometría con quien la aceptó y dio el consentimiento], escenario: [cartera de cinco personas de la cohorte, más una sexta de la verificación del 2026-10-20 (anexo K, K16); planes, revisiones y tomas; ficha de Diego Sosa con tres años de historia]),
+  (nombre: "Prof. Martín Acosta", plataforma: [website #box[(/pro)]], permisos: [Entrenamiento, con las mismas condiciones], escenario: [planes por serie, ejecución y revisión; la revisión del día de Federico Álvarez]),
+  (nombre: "Prof. Lucía Benítez", plataforma: [website #box[(/pro)]], permisos: [solo Antropometría (capacidad transversal)], escenario: [tomas y cálculos de Camila Ortiz (recomposición)]),
   (nombre: "Diego Sosa", plataforma: [APK y website (cuenta)], permisos: [lo propio: plan del día, registro, evolución, vínculos y consentimientos], escenario: [tres años en tres áreas: de 104,5 a 80,8 kg]),
   (nombre: "Camila Ortiz", plataforma: [APK y website (cuenta)], permisos: [lo propio], escenario: [año y medio: recomposición con el peso estable]),
   (nombre: "Federico Álvarez", plataforma: [APK y website (cuenta)], permisos: [lo propio], escenario: [rugby: temporadas y dos días tipo en el plan]),
