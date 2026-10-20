@@ -115,7 +115,7 @@ los profesionales de la demostración se habilitan con un servicio interno (DL-0
   let fila(canal) = ev.filter(r => r.canal == canal).map(r => box(inset: (right: 3pt, bottom: 3pt), {
     let e = est.requisitos.at(r.id).estado
     let paleta = C.estado.at(if e in C.estado { e } else { "fuera" })
-    box(fill: rgb(paleta.fondo), radius: 2pt, inset: (x: 3pt, y: 2pt), text(font: "JetBrains Mono", size: 9.5pt, fill: rgb(paleta.texto), weight: 600, r.id.slice(3) + " " + letra.at(e)))
+    box(fill: rgb(paleta.fondo), radius: 2pt, inset: (x: 3pt, y: 2pt), text(font: "JetBrains Mono", size: 10pt, fill: rgb(paleta.texto), weight: 600, r.id.slice(3) + " " + letra.at(e)))
   }))
   figure(
     kind: image,

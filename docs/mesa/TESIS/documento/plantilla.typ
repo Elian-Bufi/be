@@ -28,7 +28,7 @@
   inset: (x: 4pt, y: 1.5pt),
   radius: 2pt,
   fill: rgb(C.estado.pendiente.fondo),
-  text(fill: rgb(C.estado.pendiente.texto), weight: 500, size: 0.95em, "[" + texto + "]"),
+  text(fill: rgb(C.estado.pendiente.texto), weight: 500, size: 1em, "[" + texto + "]"),
 )
 
 /// Marca de estado (el significado está en el texto, no solo en el color).
@@ -48,12 +48,32 @@
     inset: (x: 4.5pt, y: 2pt),
     radius: 7pt,
     fill: rgb(paleta.fondo),
-    text(fill: rgb(paleta.texto), weight: 600, size: 9.5pt, nombres.at(clave, default: clave)),
+    text(fill: rgb(paleta.texto), weight: 600, size: 10pt, nombres.at(clave, default: clave)),
   )
 }
 
 /// Identificador canónico (RF-021, UC-P09, API-NUT-13…).
-#let id(t) = text(font: "JetBrains Mono", size: 0.92em, weight: 500, fill: tinta, t)
+#let id(t) = text(font: "JetBrains Mono", size: 1em, weight: 500, fill: tinta, t)
+
+/// Resultado de un caso de prueba (como `estado`: el texto dice el resultado y el color acompaña).
+#let resultado(clave) = {
+  let nombres = (
+    cubierto: "Pasa en la CI",
+    pasa: "Pasa",
+    parcial: "Pasa en parte",
+    en-parte: "Pasa en parte",
+    no-ejecutable: "No ejecutable",
+    sin-ejecutar: "Sin ejecutar",
+  )
+  let tono = if clave in ("cubierto", "pasa") { "verificado" } else if clave in ("parcial", "en-parte") { "parcial" } else if clave == "sin-ejecutar" { "pendiente" } else { "fuera" }
+  let paleta = C.estado.at(tono)
+  box(
+    inset: (x: 4.5pt, y: 2pt),
+    radius: 7pt,
+    fill: rgb(paleta.fondo),
+    text(fill: rgb(paleta.texto), weight: 600, size: 10pt, nombres.at(clave, default: clave)),
+  )
+}
 
 /// Recuadro de lectura: aclaraciones, decisiones o advertencias.
 #let recuadro(titulo: none, tipo: "nota", cuerpo) = {
@@ -87,7 +107,7 @@
       text(weight: 600, titulo)
       if alcance != none { [. ] + alcance }
       linebreak()
-      text(fill: tinta-suave, size: 9.5pt, "Lámina " + id-lamina + (if fuente != none { " · Fuente: " + fuente } else { "" }) + " · Versión " + version.commitCorto)
+      text(fill: tinta-suave, size: 10pt, "Lámina " + id-lamina + (if fuente != none { " · Fuente: " + fuente } else { "" }) + " · Versión " + version.commitCorto)
     }),
   )
   if etiqueta != none [#f #label(etiqueta)] else { f }
@@ -110,7 +130,7 @@
     margin: (top: 26mm, bottom: 22mm, left: 22mm, right: 18mm),
     header: context {
       if counter(page).get().first() > 1 {
-        set text(size: 9.5pt, fill: tinta-suave)
+        set text(size: 10pt, fill: tinta-suave)
         let pagina = here().page()
         let capitulos = query(heading.where(level: 1)).filter(h => h.location().page() <= pagina)
         let actual = if capitulos.len() > 0 { capitulos.last() } else { none }
@@ -127,7 +147,7 @@
     },
     footer: context {
       if counter(page).get().first() > 1 {
-        set text(size: 9.5pt, fill: tinta-suave)
+        set text(size: 10pt, fill: tinta-suave)
         line(length: 100%, stroke: 0.6pt + borde)
         v(-4pt)
         grid(
@@ -162,18 +182,22 @@
   show heading.where(level: 3): it => block(above: 14pt, below: 7pt, text(size: tokens.tipografia.documento.h3 * 1pt, weight: 600, it.body))
   set figure(numbering: (..n) => numbering("1.1", counter(heading).get().first(), ..n))
   set figure.caption(separator: [ — ])
-  show figure.caption: set text(size: 9.5pt)
+  show figure.caption: set text(size: 10pt)
   show figure.caption: set par(justify: false)
   show figure.where(kind: table): set figure.caption(position: top)
   set table(
     stroke: (x, y) => (top: if y == 0 { none } else { 0.5pt + borde }, bottom: 0.5pt + borde),
     inset: (x: 5pt, y: 4.5pt),
     fill: (x, y) => if y == 0 { cabecera-tabla },
+    // Dentro de una figura, el texto de las celdas heredaría el centrado: va a la izquierda y arriba.
+    align: left + top,
   )
+  // Una tabla larga dentro de una figura puede seguir en la página siguiente.
+  show figure.where(kind: table): set block(breakable: true)
   show table: set text(size: tokens.tipografia.documento.tabla * 1pt)
   show table: set par(justify: false)
-  show table.cell.where(y: 0): set text(weight: 600)
-  show raw: set text(font: "JetBrains Mono", size: 9.5pt)
+  show table.cell.where(y: 0): set text(weight: 600, hyphenate: false)
+  show raw: set text(font: "JetBrains Mono", size: 10pt)
   show link: set text(fill: azul)
   set list(indent: 4pt, body-indent: 6pt)
   set enum(indent: 4pt, body-indent: 6pt)

@@ -183,7 +183,7 @@ ellos uno argentino. La regla de lectura es estricta: «—» significa *no enco
     [TrueCoach [C39–C43]], [sí], [sí\*], [—], [sí\*], [sí\*], [sí], [sí],
     [Everfit [C44–C49]], [sí], [sí], [—], [sí\*], [sí], [sí], [sí],
     [MediFlow, Argentina [C50–C51]], [sí], [sí\*], [—], [sí], [—], [sí], [sí],
-    table.cell(colspan: 8, align: left, text(size: 9.5pt)[#super[a] La fuente lo niega: «As of now, the platform does not support this feature» [C33]. En «Declara IA o puntajes», «sí» significa que la fuente menciona generación automática, IA o puntajes; varios productos aclaran que el profesional revisa lo generado.]),
+    table.cell(colspan: 8, align: left, text(size: 10pt)[#super[a] La fuente lo niega: «As of now, the platform does not support this feature» [C33]. En «Declara IA o puntajes», «sí» significa que la fuente menciona generación automática, IA o puntajes; varios productos aclaran que el profesional revisa lo generado.]),
   ),
 )
 

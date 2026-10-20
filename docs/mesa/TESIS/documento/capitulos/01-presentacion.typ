@@ -19,7 +19,7 @@
       image(sys.inputs.at("logo"), width: 58mm)
     } else {
       box(width: 58mm, height: 19.3mm, stroke: (paint: rgb(C.pendiente.trazo), thickness: 0.8pt, dash: "dashed"), radius: 2pt, inset: 6pt,
-        align(center + horizon, text(size: 9.5pt, fill: rgb(C.pendiente.texto), [Logotipo oficial de la Escuela Da Vinci \ (se incorpora en la versión de evaluación)])))
+        align(center + horizon, text(size: 10pt, fill: rgb(C.pendiente.texto), [Logotipo oficial de la Escuela Da Vinci \ (se incorpora en la versión de evaluación)])))
     },
     align(right, text(size: 11pt, fill: tinta-suave)[Escuela Da Vinci \ Carrera Analista de Sistemas \ *Trabajo final de carrera*]),
   )
@@ -47,7 +47,7 @@
       columns: (1fr, 1fr),
       column-gutter: 18pt,
       row-gutter: 6pt,
-      text(size: 9.5pt, weight: 600, fill: tinta-suave, "INTEGRANTES"), text(size: 9.5pt, weight: 600, fill: tinta-suave, "CORREO INSTITUCIONAL"),
+      text(size: 10pt, weight: 600, fill: tinta-suave, "INTEGRANTES"), text(size: 10pt, weight: 600, fill: tinta-suave, "CORREO INSTITUCIONAL"),
       ..integrantes.map(i => (text(weight: 600, i.nombre), if i.correo != none { i.correo } else { pendiente("correo @davinci.edu.ar — a completar") })).flatten(),
     )
   })
@@ -56,6 +56,6 @@
     columns: (auto, auto),
     column-gutter: 1fr,
     [Presentación: #if mes-de-presentacion != none { strong(mes-de-presentacion) } else { pendiente("mes y año de presentación — a completar") }],
-    text(size: 9.5pt, fill: tinta-suave)[Documento versión #version.documento.version.split(" ").first() · corte #version.fecha · commit #version.commitCorto],
+    text(size: 10pt, fill: tinta-suave)[Documento versión #version.documento.version.split(" ").first() · corte #version.fecha · commit #version.commitCorto],
   )
 ]
