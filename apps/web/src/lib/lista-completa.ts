@@ -4,7 +4,8 @@
  * Una lista leída entera (`todasLasPaginas`, del dominio), para una pantalla que la cuenta o busca en ella: una cantidad
  * dicha sobre una lista a medias sería un número que no es.
  * - Mientras se vuelve a leer, lo que había sigue a la vista, marcado como «actualizando»: la pantalla no salta.
- * - Si falla, guarda el motivo: «esperá un minuto» no es lo mismo que «revisá la conexión» (`fallas.ts`).
+ * - Si falla, guarda el motivo: «esperá un minuto» no es lo mismo que «revisá la conexión» (`fallas.ts`). Si ya había
+ *   una lista, sigue a la vista con la falla al lado (`fallaAlActualizar`): un «Actualizar» que falla no borra lo leído.
  * - Una respuesta vieja no pisa a una posterior.
  * - `consultado` es el momento en que llegó la última lectura, en el reloj del navegador.
  */
@@ -25,6 +26,8 @@ export type EstadoDeListaCompleta<P extends PaginaDeUnaLista<unknown>> =
       readonly completa: boolean;
       readonly consultado: Date;
       readonly actualizando: boolean;
+      /** La última vez que se volvió a leer, falló: lo que se ve es lo de `consultado`. `null` si llegó. */
+      readonly fallaAlActualizar: MotivoDeFalla | null;
     };
 
 export function useListaCompleta<P extends PaginaDeUnaLista<unknown>>(
@@ -43,8 +46,11 @@ export function useListaCompleta<P extends PaginaDeUnaLista<unknown>>(
     setEstado((e) => (e.tipo === 'listo' ? { ...e, actualizando: true } : { tipo: 'cargando' }));
     const r = await todasLasPaginas(pedir, { limite, maximoDePaginas: tope.current });
     if (esta !== generacion.current || sesionPerdida(r)) return;
-    if (!r.ok) return setEstado({ tipo: 'error', motivo: motivoDeFalla(r) });
-    setEstado({ tipo: 'listo', items: r.datos.data, primera: r.datos.primera, completa: r.datos.completa, consultado: new Date(), actualizando: false });
+    if (!r.ok) {
+      const motivo = motivoDeFalla(r);
+      return setEstado((e) => (e.tipo === 'listo' ? { ...e, actualizando: false, fallaAlActualizar: motivo } : { tipo: 'error', motivo }));
+    }
+    setEstado({ tipo: 'listo', items: r.datos.data, primera: r.datos.primera, completa: r.datos.completa, consultado: new Date(), actualizando: false, fallaAlActualizar: null });
   }, [pedir, sesionPerdida, limite]);
 
   const verMas = useCallback(() => {
