@@ -66,5 +66,6 @@ export const COPY_HABITUALES = {
   elementoNoDisponible: 'Ya no está disponible en el catálogo.',
   /** El buscador filtra los habituales mientras se escribe (bloque 5 del encargo de consolidación). */
   coinciden: (cuantos: number, total: number, texto: string): string => `${cuantos} de ${total} con «${texto}»`,
-  ningunoCoincide: (texto: string): string => `Ninguno de tus habituales tiene «${texto}». El catálogo se busca con Enter.`,
+  /** Con el catálogo ya buscado con ese mismo texto, no se repite que se busca con Enter: su resultado está debajo. */
+  ningunoCoincide: (texto: string, catalogoBuscado = false): string => `Ninguno de tus habituales tiene «${texto}».${catalogoBuscado ? '' : ' El catálogo se busca con Enter.'}`,
 } as const;

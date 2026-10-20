@@ -128,4 +128,6 @@ test('el buscador filtra los habituales palabra por palabra, sin acentos ni may�
   assert.deepEqual(habitualesQueCoinciden(lista, 'arroz pollo'), []);
   assert.equal(COPY_HABITUALES.coinciden(1, 12, 'arr'), '1 de 12 con «arr»');
   assert.equal(COPY_HABITUALES.ningunoCoincide('kiwi'), 'Ninguno de tus habituales tiene «kiwi». El catálogo se busca con Enter.');
+  // Con el catálogo ya buscado con el mismo texto, no se repite la pista de Enter: su resultado ya está a la vista.
+  assert.equal(COPY_HABITUALES.ningunoCoincide('kiwi', true), 'Ninguno de tus habituales tiene «kiwi».');
 });
