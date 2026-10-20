@@ -71,7 +71,8 @@ node recetas.mjs cargar  --origen <API> --cuentas <cuentas.env> --fotos <carpeta
 
 ## La revisión del 2026-10-19 contra test
 
-`revisar --origen https://be-api-hndp.onrender.com`, sin escribir nada:
+`revisar --origen https://be-api-hndp.onrender.com`, sin escribir nada (el informe completo, con cada comprobación, está
+en `revision-test-2026-10-19.json`; la hora es UTC):
 
 | Preparadas | Cargables | Con foto | Verificadas | Ya en la cuenta |
 |---|---|---|---|---|
@@ -101,10 +102,52 @@ con el número de dos cifras al principio. La herramienta las busca por el núme
 `15-omelette-de-espinaca-con-tostada.jpg` · `16-manzana-con-nueces.jpg`
 
 **Lo que se espera de cada una** (`FOTO_ESPERADA` en `manifiesto.mjs`; `revisar` lo comprueba):
-- JPEG, PNG o WebP de hasta 10 MB; el servidor la recodifica en JPEG de hasta 1600 px por el lado mayor, sin metadatos;
-- horizontal, cerca de 4:3 (de 1,25 a 1,40), con el lado mayor desde 1200 px;
+- JPEG, PNG o WebP de hasta 10 MB; el servidor la recodifica en JPEG de hasta 1600 px por el lado mayor, sin metadatos,
+  y no la agranda: el lado mayor, desde 1600 px;
+- horizontal, cerca de 4:3 (de 1,25 a 1,40), con **el plato dentro de la franja central de 16:10** (en una de 1600 ×
+  1200, los 1000 px del medio): el website la muestra en 4:3 y la APK en 16:10, las dos recortando al centro, así que se
+  ve entero en las dos;
 - el plato entero y centrado, con aire alrededor, sobre un fondo neutro y con luz pareja; la misma escala y el mismo
   ángulo en las dieciséis (cenital o a 45°), una porción como la de la receta;
 - sin texto, marcas, manos ni personas: es una **imagen de referencia** de la preparación, no la foto de lo que comió
   alguien, y no mide la porción.
 - Se suben como «Generada por IA para BE» (`AI_GENERATED`), como las de la demostración.
+
+## La calidad de las imágenes de receta (revisión del 2026-10-19)
+
+Se revisó el circuito de medios para las imágenes de receta en el website y en la APK (código de `main` en `d3e7c69`):
+
+| Dónde | Proporción | Recorte | Sin foto |
+|---|---|---|---|
+| Website, tarjeta de «Mis recetas» | 4:3, 104 × 78 px | al centro (`cover`) | ícono en el mismo marco |
+| Website, detalle de la receta | 4:3, hasta 448 × 336 px | al centro | no dibuja el marco |
+| APK, carrusel, detalle de la opción y opción registrada | 16:10, el ancho de la pantalla | al centro | ícono y «Sin imagen de referencia» |
+
+Lo que ya estaba bien: el espacio se reserva antes de cargar (no hay saltos), el texto alternativo dice «Imagen de
+referencia: …» y el aviso de que no mide la porción va en la descripción del grupo; las fotos privadas de un registro
+(`MEAL_EVIDENCE`) siguen separadas de las de receta (`RECIPE_REFERENCE`): otra finalidad al subir, otra regla al asociar,
+otra al leer, otra auditoría y otro componente.
+
+**Arreglado en el website (este PR):**
+- si la imagen no se pudo mostrar, el detalle lo dice y ofrece «Reintentar» (antes se veía igual que «sin imagen», y
+  recargar la página cerraba la sesión);
+- mientras carga, el indicador de siempre; sin imagen, el ícono del plato de la familia de BE en lugar de un emoji;
+- las imágenes de receta se recuerdan en la pestaña: ir y volver de «Mis recetas» ya no repite el acceso y la descarga
+  de cada una (cada acceso se audita y consume el cupo de lecturas: con dieciséis recetas, unas pocas idas y vueltas por
+  minuto llegaban al límite). Las fotos privadas de un registro no se recuerdan;
+- en la tarjeta, la imagen es decorativa (el nombre ya está en el título y en «Abrir»); en una columna angosta, no pasa
+  del tamaño del detalle; y se decodifica sin frenar la página.
+
+**Para decidir:** la proporción. El website muestra 4:3 y la APK 16:10. Con fotos 4:3 y el plato en la franja central
+no se pierde nada; si Dirección quiere que el profesional vea exactamente el recorte de la persona, el website puede
+pasar a 16:10 solo para recetas (un modificador de estilo; las fotos de los registros no cambian).
+
+**Propuesta para la API, no implementada:** una miniatura de 480 px por el lado mayor, generada en el mismo
+procesamiento de la imagen y guardada junto al medio, que la supresión borra igual que el original; la pediría la
+tarjeta con un parámetro del acceso (`?variant=THUMBNAIL`) sin cambiar la forma de la respuesta. Hoy la tarjeta de
+104 × 78 px baja la imagen entera de 1600 px como data URL (la CSP del website admite solo `self` y `data:`).
+
+**En la APK (no se publica en este encargo; queda anotado):** al fallar desaparece el rótulo y la tarjeta salta unos
+20 dp; la imagen se decodifica entera (1600 px) para un marco de unos 330 dp; y en Android las imágenes podrían quedar en
+la caché de disco del cargador, lo que para las fotos privadas de un registro habría que revisar contra el 08 (la
+supresión alcanza las cachés de lectura). A verificar en un teléfono.

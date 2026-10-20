@@ -198,7 +198,8 @@ test('las fotos: el archivo que se espera, sus medidas leídas sin decodificar, 
   assert.equal(medidasDeImagen(Buffer.from('no es una imagen')), null);
   assert.deepEqual(problemasDeLaFoto(jpeg(2000, 1500), '01-avena.jpg'), []);
   assert.equal(problemasDeLaFoto(jpeg(800, 600), '01-avena.jpg').length, 1, 'chica');
-  assert.equal(problemasDeLaFoto(jpeg(1500, 1500), '01-avena.jpg').length, 1, 'cuadrada');
+  assert.equal(problemasDeLaFoto(jpeg(1800, 1800), '01-avena.jpg').length, 1, 'cuadrada');
+  assert.equal(problemasDeLaFoto(jpeg(1200, 900), '01-avena.jpg').length, 1, 'el servidor no la agranda: desde 1600 px');
   assert.equal(problemasDeLaFoto(png(1600, 1200), '01-avena.jpg').length, 1, 'la extensión no es la del contenido');
   // Los dieciséis archivos esperados, distintos.
   const archivos = manifiesto.recetas.map((r) => r.imagen);

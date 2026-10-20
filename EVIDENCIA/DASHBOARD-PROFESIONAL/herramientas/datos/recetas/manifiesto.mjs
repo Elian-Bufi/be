@@ -159,12 +159,14 @@ export function medidasDeImagen(bytes) {
 
 /**
  * Lo que se espera de una foto de receta antes de subirla (encargo del 2026-10-19, bloque 4: un criterio común de
- * encuadre y proporción). El servidor la recodifica en JPEG de hasta 1600 px por el lado mayor (LIMITES_DE_MEDIO).
+ * encuadre y proporción). El servidor la recodifica en JPEG de hasta 1600 px por el lado mayor (LIMITES_DE_MEDIO) y no la
+ * agranda: desde 1600 px, se ve con la misma nitidez en todos lados. El website la muestra en 4:3 y la APK en 16:10, las
+ * dos recortando al centro: una foto 4:3 con el plato dentro de la franja central de 16:10 se ve entera en las dos.
  */
 export const FOTO_ESPERADA = {
   bytesMaximos: 10 * 1024 * 1024,
-  ladoMayorMinimo: 1200,
-  /** Horizontal 4:3, con margen: 1,25 a 1,40 (el detalle la muestra entera en 4:3 y la tarjeta la recorta al centro). */
+  ladoMayorMinimo: 1600,
+  /** Horizontal, cerca de 4:3: de 1,25 a 1,40. */
   proporcionMinima: 1.25,
   proporcionMaxima: 1.4,
 };
