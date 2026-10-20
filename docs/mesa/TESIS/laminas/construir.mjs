@@ -18,7 +18,7 @@ const filtros = args.filter((a) => !a.startsWith('--'));
 
 
 const carpetaFuentes = join(aqui, 'fuentes');
-const archivos = readdirSync(carpetaFuentes).filter((n) => n.endsWith('.mjs')).sort();
+const archivos = readdirSync(carpetaFuentes).filter((n) => n.endsWith('.mjs') && !n.startsWith('_')).sort();
 const dirs = { generado: join(aqui, 'generado'), svg: join(aqui, 'exportaciones/svg'), pdf: join(aqui, 'exportaciones/pdf'), png: join(aqui, 'exportaciones/png') };
 for (const d of Object.values(dirs)) mkdirSync(d, { recursive: true });
 const rutaRevision = join(aqui, 'revision.json');

@@ -1,0 +1,499 @@
+{
+  "_que_es": "Redacción de la tesis para dos campos que el documento 04 no tiene: la necesidad (por qué el actor necesita el requisito) y las reglas que lo gobiernan. Se apoya en la obligación y la aceptación del 04, en el 06 y el 08 y en las decisiones registradas (DL). El texto canónico (actor, obligación, aceptación) se toma literal del 04 y no está acá.",
+  "requisitos": {
+    "RF-001": {
+      "necesidad": "Profesionales y personas necesitan una cuenta propia, que no dependa de un profesional ni de un plan comercial.",
+      "reglas": [
+        "Un mismo correo no crea una segunda identidad (DL-010, DL-011).",
+        "El alta exige aceptar términos (A1), leer la información de privacidad (A2) y declarar la mayoría de edad (DL-023).",
+        "Registrarse no verifica especialidades ni da acceso a datos de terceros."
+      ]
+    },
+    "RF-002": {
+      "necesidad": "Cada actor necesita entrar y salir de forma segura, y que una cuenta no habilitada no pueda operar.",
+      "reglas": [
+        "Toda falla de credenciales o de estado de cuenta responde igual, sin revelar cuál fue (DL-014).",
+        "Cerrar la sesión la invalida en el servidor; «cerrar todas» revoca también las de los teléfonos.",
+        "En el website, la reanudación usa una cookie HttpOnly rotativa y de un solo uso, nunca un token guardado en el navegador (DL-147)."
+      ]
+    },
+    "RF-003": {
+      "necesidad": "Quien prefiere Google necesita entrar sin crear una segunda identidad ni perder su historia.",
+      "reglas": [
+        "BE sigue siendo la fuente de identidad: Google no concede roles ni verificaciones.",
+        "La API verifica la firma y la audiencia del ID token con las claves públicas de Google (DL-138).",
+        "Si el correo ya tiene contraseña, se pide confirmarla una vez para vincular."
+      ]
+    },
+    "RF-004": {
+      "necesidad": "La persona necesita cambiar cómo entra sin fragmentar su identidad.",
+      "reglas": [
+        "Agregar un método no altera vínculos ni historia.",
+        "No se puede dejar la cuenta sin un método utilizable."
+      ]
+    },
+    "RF-005": {
+      "necesidad": "Quien olvidó su contraseña necesita recuperarla sin perder su identidad.",
+      "reglas": [
+        "La respuesta inicial debe ser neutra: no revela si la cuenta existe."
+      ]
+    },
+    "RF-006": {
+      "necesidad": "El actor necesita saber en qué estado está su cuenta y qué le falta para usar cada capacidad.",
+      "reglas": [
+        "Un estado incompleto no se presenta como habilitado.",
+        "Cuenta, perfil, especialidad, habilitación y vínculo se distinguen."
+      ]
+    },
+    "RF-007": {
+      "necesidad": "Cada actor necesita llegar a sus funciones desde la superficie que le corresponde sin conocer rutas internas.",
+      "reglas": [
+        "El profesional opera en el website; la persona, desde «Hoy» en la APK.",
+        "Lo que una pantalla muestra no reemplaza la autorización del servidor."
+      ]
+    },
+    "RF-069": {
+      "necesidad": "La persona necesita poder cerrar su cuenta sin que eso se confunda con un borrado de su historia.",
+      "reglas": [
+        "Una cuenta cerrada no inicia sesiones nuevas.",
+        "El cierre revoca sesiones y conserva la evidencia según la política aprobada (DL-016, DL-019)."
+      ]
+    },
+    "RF-008": {
+      "necesidad": "El profesional necesita presentarse con un perfil antes de operar.",
+      "reglas": [
+        "El perfil no es una especialidad verificada ni autoriza sobre asesorados."
+      ]
+    },
+    "RF-009": {
+      "necesidad": "El profesional necesita declarar cada especialidad con su evidencia.",
+      "reglas": [
+        "Cada especialidad se evalúa por separado; la antropometría es una capacidad transversal."
+      ]
+    },
+    "RF-010": {
+      "necesidad": "El profesional necesita enviar su evidencia a revisión y conocer su estado.",
+      "reglas": [
+        "No opera la especialidad mientras no alcance el estado habilitante."
+      ]
+    },
+    "RF-011": {
+      "necesidad": "La administración necesita revisar la evidencia con trazabilidad.",
+      "reglas": [
+        "La revisión no se presenta como certificación oficial."
+      ]
+    },
+    "RF-012": {
+      "necesidad": "La administración necesita aprobar, rechazar o suspender cada especialidad por separado.",
+      "reglas": [
+        "Respeta los estados de DEC-005; la resolución afecta solo el alcance elegido."
+      ]
+    },
+    "RF-013": {
+      "necesidad": "El profesional necesita corregir una solicitud observada sin perder la anterior.",
+      "reglas": [
+        "La nueva presentación queda relacionada con la anterior."
+      ]
+    },
+    "RF-014": {
+      "necesidad": "La administración necesita suspender y rehabilitar una capacidad sin borrar registros.",
+      "reglas": [
+        "La rehabilitación exige una resolución explícita."
+      ]
+    },
+    "RF-015": {
+      "necesidad": "La plataforma necesita que cada permiso dependa de su propia condición, para que un cambio comercial o de verificación no abra datos.",
+      "reglas": [
+        "Identidad, especialidad verificada, habilitación, vínculo, consentimiento y autorización se evalúan por separado (PDP).",
+        "Cada denegación puede atribuirse a la condición que faltó."
+      ]
+    },
+    "RF-067": {
+      "necesidad": "Un profesional con formación antropométrica necesita declararla aparte de sus especialidades.",
+      "reglas": [
+        "La capacidad antropométrica es transversal: nunca una tercera especialidad (06:2774)."
+      ]
+    },
+    "RF-068": {
+      "necesidad": "Los usuarios necesitan reportar problemas operativos y conocer cómo se resolvieron.",
+      "reglas": [
+        "El historial de la incidencia no se sobrescribe."
+      ]
+    },
+    "RF-070": {
+      "necesidad": "El profesional necesita calcular con métodos conocidos y poder reproducir después qué calculó y con qué datos.",
+      "reglas": [
+        "Cada ejecución conserva método, versión, entradas y procedencia.",
+        "Un resultado no cambia solo el objetivo, la prescripción ni el plan (INV-06-133).",
+        "Varias ejecuciones conviven sin promediarse."
+      ]
+    },
+    "RF-071": {
+      "necesidad": "El profesional necesita pedir información pertinente con una estructura conocida, y la persona necesita responderla sabiendo quién la pide y para qué.",
+      "reglas": [
+        "La plantilla es versionada y la solicitud queda dentro de un alcance y una finalidad.",
+        "La respuesta es autoinformada: no es una medición ni un diagnóstico.",
+        "Rectificar crea un registro nuevo."
+      ]
+    },
+    "RF-017": {
+      "necesidad": "La persona necesita un perfil propio que no le pertenezca a ningún profesional.",
+      "reglas": [
+        "Completar el perfil no da acceso a terceros.",
+        "Hoy el único campo aprobado es el nombre visible, con versiones (DL-009); el profesional lo ve con un vínculo vigente (DL-040)."
+      ]
+    },
+    "RF-018": {
+      "necesidad": "El profesional necesita iniciar la relación con una persona para un área y una finalidad concretas.",
+      "reglas": [
+        "Una solicitud pendiente no habilita acceso.",
+        "No puede haber dos solicitudes PENDIENTES equivalentes (índice único parcial, REG-06-44).",
+        "La invitación es de un solo uso, vence y solo se guarda el hash de su token y su código (DL-136)."
+      ]
+    },
+    "RF-019": {
+      "necesidad": "La persona necesita decidir expresamente con quién trabaja.",
+      "reglas": [
+        "Antes de aceptar no existe acceso profesional.",
+        "Aceptar no es consentir: el permiso de datos de salud se pide en el mismo recorrido, con «Ahora no» igual de visible (DL-143)."
+      ]
+    },
+    "RF-020": {
+      "necesidad": "La persona necesita autorizar el uso de sus datos para una finalidad concreta y saber qué aceptó.",
+      "reglas": [
+        "Un consentimiento por alcance de vínculo y finalidad, con una cadena lineal de versiones (REG-06-12).",
+        "Cada versión guarda el texto aceptado, la superficie y el momento."
+      ]
+    },
+    "RF-021": {
+      "necesidad": "La plataforma necesita decidir cada acceso con todas las condiciones vigentes, igual en todas las superficies.",
+      "reglas": [
+        "Siete dimensiones: rol, especialidad o capacidad, situación, vínculo, consentimiento, finalidad y alcance.",
+        "Ante la duda se deniega; un recurso ajeno o inexistente responde el mismo 404.",
+        "Cada decisión se registra en la misma transacción (DecisionDeAcceso)."
+      ]
+    },
+    "RF-022": {
+      "necesidad": "La persona necesita poder retirar su permiso y que el corte sea efectivo.",
+      "reglas": [
+        "La revocación corta las lecturas y escrituras futuras del alcance.",
+        "La historia anterior no se borra; el efecto queda auditado."
+      ]
+    },
+    "RF-023": {
+      "necesidad": "Cada actor necesita ver con quién tiene relación y con qué permisos.",
+      "reglas": [
+        "El profesional solo ve sus propias relaciones.",
+        "Lo que se muestra coincide con la autorización efectiva."
+      ]
+    },
+    "RF-024": {
+      "necesidad": "Cualquiera de las partes necesita poder pausar o terminar la relación sin perder la historia.",
+      "reglas": [
+        "Pausar y finalizar exigen un motivo de una lista cerrada (DL-033).",
+        "Solo quien pausó puede reanudar.",
+        "Un alcance FINALIZADO no vuelve atrás."
+      ]
+    },
+    "RF-025": {
+      "necesidad": "La persona necesita conservar su historia aunque cambie de profesional.",
+      "reglas": [
+        "Un vínculo nuevo no altera la autoría histórica ni transfiere acceso.",
+        "Qué ve un profesional nuevo del mismo alcance sigue abierto (DL-057)."
+      ]
+    },
+    "RF-026": {
+      "necesidad": "El profesional de nutrición necesita registrar su evaluación como base del plan.",
+      "reglas": [
+        "Distingue información informada, observada y calculada.",
+        "Una evaluación no activa un plan ni es un diagnóstico."
+      ]
+    },
+    "RF-027": {
+      "necesidad": "El profesional necesita alimentos confiables para armar planes aunque un proveedor externo falle.",
+      "reglas": [
+        "Cada alimento indica su procedencia (USDA, Open Food Facts, propio).",
+        "Un cambio en el catálogo no altera planes ya activados: el plan guarda la versión del alimento."
+      ]
+    },
+    "RF-028": {
+      "necesidad": "El profesional necesita sumar alimentos de una base abierta sin cargarlos a mano.",
+      "reglas": [
+        "La importación se revisa antes de incorporarse y guarda proveedor, fecha y licencia (ODbL)."
+      ]
+    },
+    "RF-029": {
+      "necesidad": "El profesional necesita un objetivo explícito que fundamente el plan.",
+      "reglas": [
+        "Un objetivo nuevo es una versión nueva relacionada con su evaluación; no reescribe el anterior."
+      ]
+    },
+    "RF-030": {
+      "necesidad": "El profesional necesita armar el plan con tiempo, retomarlo y no perder lo escrito.",
+      "reglas": [
+        "El borrador no es visible para la persona.",
+        "La pantalla distingue «Pendiente de guardar» de «Guardado a las…» (respuesta del servidor).",
+        "Dos pestañas no se pisan: la segunda recibe un conflicto explícito (DL-148)."
+      ]
+    },
+    "RF-031": {
+      "necesidad": "El profesional necesita que lo que la persona ve sea exactamente lo que activó.",
+      "reglas": [
+        "Activar crea una versión inmutable con su instantánea; no hay dos versiones vigentes.",
+        "Un plan inválido no se activa."
+      ]
+    },
+    "RF-032": {
+      "necesidad": "La persona necesita saber qué le toca hoy según su plan vigente.",
+      "reglas": [
+        "Muestra solo la versión vigente y un estado claro si no hay plan.",
+        "No expone datos administrativos."
+      ]
+    },
+    "RF-033": {
+      "necesidad": "La persona necesita registrar lo que efectivamente hizo, y el profesional, verlo.",
+      "reglas": [
+        "El registro queda asociado al plan vigente; un reintento no duplica el hecho (idempotencia).",
+        "La foto de una comida es un medio privado, guardado en la base detrás de una interfaz y separado de las imágenes de receta (DL-120).",
+        "Una corrección es un registro nuevo (DL-121)."
+      ]
+    },
+    "RF-034": {
+      "necesidad": "El profesional necesita ver juntos lo indicado y lo registrado antes de decidir.",
+      "reglas": [
+        "Abrir la pantalla no cuenta como revisión: la revisión se registra (RF-056)."
+      ]
+    },
+    "RF-035": {
+      "necesidad": "El profesional necesita cerrar cada revisión con una decisión de cómo seguir.",
+      "reglas": [
+        "La decisión queda vinculada con la revisión y la persona la lee en la APK.",
+        "La historia anterior se conserva."
+      ]
+    },
+    "RF-036": {
+      "necesidad": "El profesional de entrenamiento necesita registrar su evaluación inicial.",
+      "reglas": [
+        "Se distingue de la ejecución posterior."
+      ]
+    },
+    "RF-064": {
+      "necesidad": "El profesional necesita un objetivo de entrenamiento explícito y vigente.",
+      "reglas": [
+        "Los cambios conservan el historial."
+      ]
+    },
+    "RF-037": {
+      "necesidad": "El profesional necesita ejercicios propios para planificar aunque wger falle.",
+      "reglas": [
+        "Cada ejercicio tiene procedencia; un cambio no reescribe sesiones ya prescriptas."
+      ]
+    },
+    "RF-038": {
+      "necesidad": "El profesional necesita sumar ejercicios de una base abierta.",
+      "reglas": [
+        "Se valida antes de incorporar y se conserva la licencia (CC BY-SA)."
+      ]
+    },
+    "RF-039": {
+      "necesidad": "El profesional necesita organizar el entrenamiento en bloques y sesiones.",
+      "reglas": [
+        "El borrador no se presenta como activo."
+      ]
+    },
+    "RF-040": {
+      "necesidad": "La persona necesita saber exactamente qué ejecutar en cada serie.",
+      "reglas": [
+        "La prescripción puede ser por serie (DL-122) con unidades interpretables."
+      ]
+    },
+    "RF-041": {
+      "necesidad": "El profesional necesita que el plan activado quede fijo y reproducible.",
+      "reglas": [
+        "Activar crea una versión inmutable; una sustitución queda relacionada con la anterior."
+      ]
+    },
+    "RF-042": {
+      "necesidad": "La persona necesita ver la sesión de hoy y sus indicaciones.",
+      "reglas": [
+        "Distingue sin sesión, sesión pendiente y sesión registrada; la agenda del día viene de API-AGE-01 (DL-137)."
+      ]
+    },
+    "RF-043": {
+      "necesidad": "La persona necesita registrar lo que hizo realmente, aunque difiera de lo indicado.",
+      "reglas": [
+        "Lo ejecutado se guarda aparte de lo planificado, con su relación.",
+        "Un reintento no duplica la sesión; hay a lo sumo una sesión en curso por persona (DL-124)."
+      ]
+    },
+    "RF-044": {
+      "necesidad": "Quien registró algo mal necesita corregirlo sin ocultar el original.",
+      "reglas": [
+        "La corrección identifica motivo, actor y registro previo; el original queda."
+      ]
+    },
+    "RF-045": {
+      "necesidad": "El profesional necesita comparar lo indicado con lo ejecutado antes de decidir la progresión.",
+      "reglas": [
+        "Una visualización aislada no cuenta como revisión."
+      ]
+    },
+    "RF-046": {
+      "necesidad": "El profesional necesita registrar cómo sigue el plan después de revisarlo.",
+      "reglas": [
+        "Progresar o iniciar un bloque nuevo se registra como ajuste o sustitución según su efecto (DEC-043)."
+      ]
+    },
+    "RF-047": {
+      "necesidad": "El profesional habilitado necesita registrar mediciones con protocolo y contexto.",
+      "reglas": [
+        "Las mediciones se distinguen de los cálculos.",
+        "Se validan capacidad, vínculo y consentimiento antes de registrar."
+      ]
+    },
+    "RF-048": {
+      "necesidad": "El profesional necesita resultados derivados que pueda reproducir y explicar.",
+      "reglas": [
+        "Cada cálculo guarda método, versión y entradas; no se presenta como diagnóstico."
+      ]
+    },
+    "RF-049": {
+      "necesidad": "La persona y el profesional necesitan ver la evolución en el tiempo con unidades y procedencia.",
+      "reglas": [
+        "No hay puntaje global de salud; la figura no colorea por rango."
+      ]
+    },
+    "RF-050": {
+      "necesidad": "El profesional necesita corregir o anular una medición sin borrarla.",
+      "reglas": [
+        "Corregir o anular crea un registro nuevo con motivo; una anulada no es una borrada.",
+        "Dos correcciones simultáneas de la misma medición no terminan en error de servidor."
+      ]
+    },
+    "RF-051": {
+      "necesidad": "Una persona necesita encontrar un servicio antropométrico y pedir vínculo.",
+      "reglas": [
+        "Sin reservas, pagos, ranking ni reputación."
+      ]
+    },
+    "RF-052": {
+      "necesidad": "El profesional necesita ver de un vistazo a quiénes atiende y qué requiere acción.",
+      "reglas": [
+        "Excluye relaciones ajenas; distingue pendientes, activos y cerrados."
+      ]
+    },
+    "RF-053": {
+      "necesidad": "El profesional necesita una síntesis del proceso de la persona, con lo que le está autorizado.",
+      "reglas": [
+        "Cada dato conserva su área y procedencia; los faltantes se muestran como tales; no hay puntaje global."
+      ]
+    },
+    "RF-054": {
+      "necesidad": "El profesional necesita reconstruir qué pasó y cuándo.",
+      "reglas": [
+        "La línea de tiempo no mezcla lo planificado con lo ejecutado; cada evento dice fecha, área y autor."
+      ]
+    },
+    "RF-055": {
+      "necesidad": "El profesional necesita saber qué revisiones tiene pendientes y por qué.",
+      "reglas": [
+        "La señal explica el motivo y no es una alerta clínica."
+      ]
+    },
+    "RF-056": {
+      "necesidad": "El profesional necesita dejar registrada la revisión con su decisión y su próxima acción.",
+      "reglas": [
+        "La revisión identifica evidencia, período, autor, fundamento y resultado (DEC-043), y alimenta la TVCC-30."
+      ]
+    },
+    "RF-057": {
+      "necesidad": "Los profesionales de una misma persona necesitan coordinarse sin entrar en el área del otro.",
+      "reglas": [
+        "La nota tiene autor, destinatarios y área; no transfiere responsabilidad ni modifica planes ajenos (DL-140)."
+      ]
+    },
+    "RF-058": {
+      "necesidad": "El proyecto necesita medir de forma auditable si los ciclos de seguimiento se cierran.",
+      "reglas": [
+        "Un ciclo cerrado exige una revisión válida y una próxima acción admitida; se excluyen cuentas de demostración (DL-135)."
+      ]
+    },
+    "RF-065": {
+      "necesidad": "La persona necesita entender su propia evolución en cada área.",
+      "reglas": [
+        "Distingue áreas y períodos y no atribuye causalidad."
+      ]
+    },
+    "RF-066": {
+      "necesidad": "La plataforma necesita representar el límite de capacidad de un profesional sin cobrar.",
+      "reglas": [
+        "Alcanzar el límite no borra datos ni corta procesos vigentes; impide activar procesos nuevos."
+      ]
+    },
+    "RF-059": {
+      "necesidad": "Profesionales y personas necesitan seguir trabajando si un proveedor externo cae.",
+      "reglas": [
+        "El núcleo sigue con el catálogo propio y la carga manual; el usuario ve el estado."
+      ]
+    },
+    "RF-060": {
+      "necesidad": "Quien usa un dato externo necesita saber de dónde salió.",
+      "reglas": [
+        "Cada fila del buscador muestra su origen (USDA, Open Food Facts, wger, propio) (DL-141)."
+      ]
+    },
+    "RF-061": {
+      "necesidad": "Cada actor necesita enterarse de lo que pasó en su cuenta aunque no reciba avisos.",
+      "reglas": [
+        "Las novedades respetan el alcance del actor y no son alertas clínicas."
+      ]
+    },
+    "RF-062": {
+      "necesidad": "La persona necesita un aviso en el teléfono cuando algo requiere su atención.",
+      "reglas": [
+        "El aviso no lleva datos sensibles («BE · Tenés una novedad.»).",
+        "Si Expo no responde, la novedad queda igual en el centro (RF-061)."
+      ]
+    }
+  },
+  "rnf": {
+    "RNF-SEC-001": "Punto único de decisión (PDP) en la API, igual para el website y la APK; recorridos «accesoRevocado» y «sesionRevocada» en la CI.",
+    "RNF-SEC-002": "Contraseñas con bcrypt de costo 10 como mínimo y una verificación señuelo cuando la cuenta no existe (08 §24.2); sesión firmada; en el website, cookie HttpOnly y Secure de un solo uso (DL-147); secretos generados por Render, nunca en el repositorio.",
+    "RNF-SEC-003": "Límite de intentos de acceso en memoria de la instancia (DL-015, provisorio).",
+    "RNF-SEC-004": "Solo existe el ambiente test, con datos sintéticos; producción separada es una condición pendiente del gate del 08 §42.",
+    "RNF-SEC-005": "Auditoría y decisiones de acceso en la misma transacción que la operación (RegistroDeAuditoria, DecisionDeAcceso).",
+    "RNF-SEC-006": "Cada área en su módulo y sus tablas; el acceso se evalúa por alcance.",
+    "RNF-PRI-001": "Los avisos push no llevan datos sensibles; la foto de una comida es privada.",
+    "RNF-PRI-002": "Revocar corta el acceso futuro; probado en integración y en el recorrido «accesoRevocado».",
+    "RNF-PRI-003": "Cada superficie muestra lo de su actor; la API decide (X-BE-Surface).",
+    "RNF-PERF-001": "Sin medición formal de rendimiento en esta versión.",
+    "RNF-PERF-002": "Sin medición formal; los estados de carga y de demora están diseñados (APK: «Está tardando más de lo habitual»).",
+    "RNF-PERF-003": "Integraciones con tiempo acotado y continuidad con el catálogo propio (RF-059).",
+    "RNF-AVA-001": "API en plan pago (Starter) desde el 2026-10-16: ya no se apaga por inactividad.",
+    "RNF-AVA-002": "Base PostgreSQL administrada (Basic-256mb), persistente.",
+    "RNF-REC-001": "Pendiente: la restauración probada es condición del gate del 08 §42.",
+    "RNF-REC-002": "Idempotency-Key en las escrituras sensibles (RegistroDeIdempotencia).",
+    "RNF-REL-001": "Ningún éxito antes de la respuesta del servidor: «Pendiente de guardar» frente a «Guardado a las…» (DL-148).",
+    "RNF-ACC-001": "Prueba automática de contraste en npm test y auditoría axe-core de los recorridos núcleo (42 pantallas, cero violaciones, 2026-09-24); TalkBack sin probar en un teléfono.",
+    "RNF-ACC-002": "Copy sin diagnóstico ni causalidad, fijado por pruebas de textos.",
+    "RNF-ACC-003": "Website diseñado para escritorio (1440, 1280 y 1024 px); APK para Android con letra del sistema.",
+    "RNF-PORT-001": "APK instalable desde las releases de GitHub; la 0.17.0-candidata.3 falta probarla en un Android físico.",
+    "RNF-MAN-001": "Monolito modular con dominio compartido (@be/domain) como fuente única de contratos y textos.",
+    "RNF-MAN-002": "Contrato OpenAPI generado desde el dominio; guardia de trazabilidad de operaciones; prueba de lecturas congeladas de las APK (#198, sin integrar).",
+    "RNF-MAN-003": "51 migraciones aplicadas con prisma migrate deploy en la CI y en cada despliegue.",
+    "RNF-MAN-004": "Pruebas por nivel: dominio, unitarias, integración con PostgreSQL real y recorridos de navegador.",
+    "RNF-OBS-001": "El registro de la API no imprime datos sensibles; los errores devuelven un sobre con código y X-Request-Id.",
+    "RNF-OBS-002": "/health, /health/live y /health/ready con la versión y el commit desplegado.",
+    "RNF-OBS-003": "Trazabilidad requisito → caso → contrato → prueba (anexo F) y bloque de traza en los commits.",
+    "RNF-INT-001": "Los proveedores se usan detrás de adaptadores; la caída de uno no detiene el núcleo.",
+    "RNF-INT-002": "Fechas civiles de Buenos Aires para períodos; instantes en UTC; unidades con su magnitud.",
+    "RNF-INT-003": "Importación controlada con revisión y normalización (WP-08).",
+    "RNF-SCA-001": "Escala de demostración: la cartera tiene un tope de 200 asesorados por profesional.",
+    "RNF-SCA-002": "La capacidad existe separada de las habilitaciones y vale «sin límite» por omisión (DL-051).",
+    "RNF-DAT-001": "Estados con listas blancas de transición exigidas por disparadores en la base.",
+    "RNF-DAT-002": "Procedencia obligatoria en las tablas de hechos (campo procedencia).",
+    "RNF-DAT-003": "Versiones encadenadas y tablas de solo agregar; nada se sobrescribe en silencio.",
+    "RNF-DAT-004": "Validación con zod en el contrato y errores por campo.",
+    "RNF-DAT-005": "Ocurrencia y registro separados en cada hecho; la TVCC-30 se conserva con su ventana."
+  }
+}

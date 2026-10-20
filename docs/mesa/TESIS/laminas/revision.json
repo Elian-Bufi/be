@@ -22,5 +22,113 @@
   "conectores": 5,
   "cruces": 0,
   "hallazgos": []
+ },
+ "CU-04": {
+  "titulo": "Casos de uso · Nutrición",
+  "archivoFuente": "laminas/fuentes/CU-04-nutricion.mjs",
+  "lamina": "CU-04",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 15,
+  "conectores": 13,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-05": {
+  "titulo": "Casos de uso · Entrenamiento",
+  "archivoFuente": "laminas/fuentes/CU-05-entrenamiento.mjs",
+  "lamina": "CU-05",
+  "ancho": 482,
+  "alto": 668,
+  "fuenteMinima": 10,
+  "nodos": 17,
+  "conectores": 15,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-01": {
+  "titulo": "Casos de uso · Acceso y cuenta",
+  "archivoFuente": "laminas/fuentes/CU-01-acceso.mjs",
+  "lamina": "CU-01",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 9,
+  "conectores": 10,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-02": {
+  "titulo": "Casos de uso · Alta profesional y administración",
+  "archivoFuente": "laminas/fuentes/CU-02-alta-profesional.mjs",
+  "lamina": "CU-02",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 10,
+  "conectores": 11,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-03": {
+  "titulo": "Casos de uso · Vínculo y consentimiento",
+  "archivoFuente": "laminas/fuentes/CU-03-vinculo.mjs",
+  "lamina": "CU-03",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 7,
+  "conectores": 7,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-06": {
+  "titulo": "Casos de uso · Antropometría",
+  "archivoFuente": "laminas/fuentes/CU-06-antropometria.mjs",
+  "lamina": "CU-06",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 11,
+  "conectores": 12,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-07": {
+  "titulo": "Casos de uso · Seguimiento y coordinación",
+  "archivoFuente": "laminas/fuentes/CU-07-seguimiento.mjs",
+  "lamina": "CU-07",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 8,
+  "conectores": 5,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-08": {
+  "titulo": "Casos de uso · Información, novedades y avisos",
+  "archivoFuente": "laminas/fuentes/CU-08-informacion.mjs",
+  "lamina": "CU-08",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 7,
+  "conectores": 6,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "CU-00": {
+  "titulo": "Casos de uso · Vista general por paquetes",
+  "archivoFuente": "laminas/fuentes/CU-00-general.mjs",
+  "lamina": "CU-00",
+  "ancho": 728,
+  "alto": 448,
+  "fuenteMinima": 10,
+  "nodos": 7,
+  "conectores": 5,
+  "cruces": 0,
+  "hallazgos": []
  }
 }

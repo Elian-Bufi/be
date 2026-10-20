@@ -30,9 +30,9 @@
 
 | # | Hito | Estado | Fecha |
 |---|---|---|---|
-| A | Cierre técnico autorizado (etapas 2 a 5 del encargo por etapas) | en curso | 2026-10-20 |
-| B | Inventario de fuentes y versión de referencia | pendiente | |
-| C | Guía visual, motor de láminas y dos láminas patrón (arquitectura y DER) | pendiente | |
+| A | Cierre técnico autorizado (etapas 2 a 5 del encargo por etapas) | **hecho** (ver bitácora); falta el informe final | 2026-10-20 |
+| B | Inventario de fuentes y versión de referencia (`datos/version.json`: main `0fb1bff`) | **hecho** | 2026-10-20 |
+| C | Guía visual, motor de láminas y dos láminas patrón (ARQ-02, DER-03) | **hecho** (`c290925`) | 2026-10-20 |
 | D | Documento: 14 apartados | pendiente | |
 | E | Anexos: flujos, DFD, secuencias y estados, trazabilidad, glosario | pendiente | |
 | F | Tres pasadas de revisión | pendiente | |
@@ -49,6 +49,16 @@
   los cortes aplicada.
 - **2026-10-20 02:22** — #192 integrado (`0fb1bff`; solo cambia el website). Revisión de solo lectura de las 16 recetas
   contra la API de test (`20f1bb7`): 16 cargables, 16 verificadas, 0 con foto, 0 en la cuenta de Sofía. Nada escrito.
+- **2026-10-20 03:10** — Etapa 5: el agente dejó #198 en borrador (CI verde, `ac1a183`): las APK 0.13.2 y
+  0.17.0-candidata.3 leen 82 operaciones distintas (44 y 80); se congelaron sus esquemas y una prueba de integración
+  lee respuestas reales con ellos; sin incompatibilidad nueva; DL-152 D-1 a D-5 a ratificar. No se integró.
+- **2026-10-20 03:40** — Hito C: guía visual (`estilo/tokens.json`), motor de láminas con revisión automática, ARQ-02 y
+  DER-03 aprobadas como patrón (revisadas sueltas y dentro del PDF), plantilla Typst con variante pública y de
+  evaluación, portada y esqueleto de los 14 apartados. Commit `c290925`, rama subida.
+- **Cómo seguir:** `node laminas/construir.mjs [ID]` (láminas) y `node construir-documento.mjs --png <carpeta>`
+  (documento y páginas para revisar). Próximo: extraer las 56 fichas de DV-04 y la evidencia por caso
+  (`herramientas/evidencia-por-caso.mjs`), asignar estados con fundamento (`datos/estado.json`) y escribir los
+  apartados 2 a 9 en orden.
 - Inventario técnico: `herramientas/leer-esquema.mjs` → `datos/esquema.json` (113 modelos, 78 enumeraciones, 212
   relaciones); `herramientas/evidencia-por-requisito.mjs` → `datos/evidencia-rf.json` (69 RF con su evidencia). Contra
   el inventario del 09, 104 de 122 operaciones P0 implementadas (faltan las 13 PRO, DSH-01/02/05, PRJ-02/03).

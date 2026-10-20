@@ -111,7 +111,8 @@
     header: context {
       if counter(page).get().first() > 1 {
         set text(size: 9.5pt, fill: tinta-suave)
-        let capitulos = query(selector(heading.where(level: 1)).before(here()))
+        let pagina = here().page()
+        let capitulos = query(heading.where(level: 1)).filter(h => h.location().page() <= pagina)
         let actual = if capitulos.len() > 0 { capitulos.last() } else { none }
         grid(
           columns: (1fr, auto),

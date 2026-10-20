@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="728pt" height="448pt" viewBox="0 0 728 448" data-lamina="CU-01">
+<title>Casos de uso · Acceso y cuenta</title>
+<desc>Registro, sesión y cierre de la cuenta, y las extensiones de la sesión: Google, métodos de acceso y recuperación. · Fuente: 05 v0.15 §12 y su índice de relaciones · datos/estado.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado con pendientes</desc>
+<rect x="0" y="0" width="728" height="448" fill="#FFFFFF"/>
+<rect x="122" y="6" width="484" height="388" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="132" y="22" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">BE</text>
+<text x="151.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[límite del sistema]</text>
+<rect x="6" y="400" width="716" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 16 412.5 L 45 412.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<text x="54" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
+<path d="M 16 431.5 L 45 431.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 39 434.86 L 46 431.5 L 39 428.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="54" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include» o «extend»</text>
+<rect x="324.07" y="406" width="30" height="13" rx="3" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="362.07" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pendiente o fuera de alcance</text>
+<rect x="324.07" y="425" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="362.07" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-P25 y UC-P26 incluyen UC-I11 y UC-I03</text>
+<path d="M 74.87 149.73 L 284 72" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 653.13 149.73 L 444 72" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 76 156 L 284 156" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 652 156 L 444 156" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 74.82 162.4 L 284 242" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 653.18 162.4 L 444 242" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 75.46 328.37 L 138 344" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 246 324.02 L 314.75 259.51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 311.94 266.75 L 314.75 259.51 L 307.34 261.85" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 364 320.58 L 364 264.22" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 367.36 271.22 L 364 264.22 L 360.64 271.22" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 482 324 L 413.25 259.51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 420.66 261.85 L 413.25 259.51 L 416.06 266.75" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="364" cy="72" rx="80" ry="22.22" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="364" y="69.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P25</text>
+<text x="364" y="81.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Registrar identidad</text>
+<ellipse cx="364" cy="156" rx="80" ry="22.22" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="364" y="153.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P27</text>
+<text x="364" y="165.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Cerrar la cuenta</text>
+<ellipse cx="364" cy="242" rx="80" ry="22.22" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="364" y="239.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P26</text>
+<text x="364" y="251.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Iniciar y cerrar sesión</text>
+<ellipse cx="210" cy="344" rx="72" ry="23.08" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="210" y="341.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-E05</text>
+<text x="210" y="353.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Acceder con Google</text>
+<ellipse cx="364" cy="344" rx="72" ry="23.42" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="364" y="341.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-E06</text>
+<text x="364" y="353.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Administrar métodos</text>
+<ellipse cx="518" cy="344" rx="72" ry="23.09" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="518" y="341.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#7C2D12" text-anchor="middle">UC-E09</text>
+<text x="518" y="353.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Recuperar el acceso</text>
+<circle cx="58" cy="139" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
+<path d="M 58 146 L 58 166 M 46 153 L 70 153 M 58 166 L 48 180 M 58 166 L 68 180" stroke="#0E7490" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="670" cy="139" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
+<path d="M 670 146 L 670 166 M 658 153 L 682 153 M 670 166 L 660 180 M 670 166 L 680 180" stroke="#0E7490" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="58" cy="307" r="7" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.6" stroke-dasharray="4.5 3"/>
+<path d="M 58 314 L 58 334 M 46 321 L 70 321 M 58 334 L 48 348 M 58 334 L 68 348" stroke="#5B6B80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="4.5 3"/>
+<rect x="238.65" y="265.52" width="48.07" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="262.69" y="276.2" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«extend»</text>
+<rect x="368" y="285" width="48.07" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="392.04" y="295.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«extend»</text>
+<rect x="441.27" y="265.51" width="48.07" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="465.31" y="276.2" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«extend»</text>
+<rect x="395.78" y="41.78" width="42.22" height="16" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1"/>
+<text x="416.89" y="53.38" font-family="Inter" font-size="10" font-weight="500" fill="#7C2D12" text-anchor="middle">parcial</text>
+<rect x="387.78" y="312.58" width="42.22" height="16" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1"/>
+<text x="408.89" y="324.18" font-family="Inter" font-size="10" font-weight="500" fill="#7C2D12" text-anchor="middle">parcial</text>
+<rect x="526.06" y="312.91" width="57.94" height="16" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1"/>
+<text x="555.03" y="324.51" font-family="Inter" font-size="10" font-weight="500" fill="#7C2D12" text-anchor="middle">pendiente</text>
+<rect x="26.23" y="183.34" width="63.54" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="58" y="196" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Asesorado</text>
+<rect x="636.76" y="183.34" width="66.48" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="670" y="196" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Profesional</text>
+<rect x="36.05" y="351.34" width="43.9" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="58" y="364" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Google</text>
+</svg>
