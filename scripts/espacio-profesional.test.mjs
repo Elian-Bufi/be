@@ -235,6 +235,8 @@ test('la acción principal de la ficha: revisión de la semana, después el borr
   assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan() })), legible(resumen({ draftPlan: { planVersionId: 'b', recordedAt: '2026-10-18T12:00:00.000Z', fromReviewId: null } }))), HOY).texto, 'Seguir el borrador de Entrenamiento');
   // Lo que el profesional no puede leer no cuenta.
   assert.equal(accionDeLaFicha(dominios(ajeno, ajeno), HOY), null);
+  // Un área legible sin ningún dato llega con el resumen en null: es un área sin plan, y la acción es empezarlo.
+  assert.deepEqual(accionDeLaFicha(dominios(legible(null), ajeno), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan', vista: 'plan', extra: '' });
   // La dirección: el área, la vista y, para la revisión, el formulario abierto (`preparar=1`); el id va codificado.
   assert.equal(rutaDeLaAccion(accionDeLaFicha(dos, HOY), 'a b'), '/pro/advisees/training?id=a%20b&vista=revisiones&preparar=1');
   assert.equal(rutaDeLaAccion(accionDeLaFicha(dominios(legible(resumen()), ajeno), HOY), 'x'), '/pro/advisees/nutrition?id=x&vista=plan');

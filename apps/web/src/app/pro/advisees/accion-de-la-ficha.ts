@@ -7,6 +7,8 @@
  * 3. Un área sin plan vigente ni borrador: «Empezar el plan».
  * Con todo al día, ninguna: la ficha no inventa una urgencia. Una ficha nueva, una con borrador y una con plan vigente
  * ofrecen así caminos distintos y previsibles; las tarjetas del Resumen siguen teniendo los suyos.
+ * Un área legible sin ningún dato todavía llega con el resumen en `null` (el tablero no inventa ceros): para la ficha es
+ * un área sin plan, y la acción es empezarlo (lo encontró el recorrido de navegador `primerPlan`).
  */
 import type { DashboardResponse } from '@be/domain';
 
@@ -39,23 +41,23 @@ export function accionDeLaFicha(dominios: Dominios, hoy: string): AccionDeLaFich
       ['NUTRICION', dominios.nutrition],
       ['ENTRENAMIENTO', dominios.training],
     ] as const
-  ).flatMap(([area, d]) => (d.available && d.summary ? [{ area, resumen: d.summary }] : []));
+  ).flatMap(([area, d]) => (d.available ? [{ area, resumen: d.summary }] : []));
   // Con dos áreas, el texto dice de cuál es; con una, no hace falta.
   const deCual = (area: AreaDeLaAccion) => (legibles.length > 1 ? ` de ${NOMBRE[area]}` : '');
 
   const revisiones = legibles
     .flatMap(({ area, resumen }) => {
-      const fecha = resumen.activePlan?.nextReviewAt ?? null;
+      const fecha = resumen?.activePlan?.nextReviewAt ?? null;
       return fecha && dias(hoy, fecha) <= DIAS_DE_ANTICIPACION ? [{ area, fecha }] : [];
     })
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
   const revision = revisiones[0];
   if (revision) return { tipo: 'revisar', area: revision.area, texto: `Preparar la revisión de ${NOMBRE[revision.area]}`, vista: 'revisiones', extra: '&preparar=1' };
 
-  const borrador = legibles.find(({ resumen }) => resumen.draftPlan);
+  const borrador = legibles.find(({ resumen }) => resumen?.draftPlan);
   if (borrador) return { tipo: 'borrador', area: borrador.area, texto: `Seguir el borrador${deCual(borrador.area)}`, vista: 'plan', extra: '' };
 
-  const sinPlan = legibles.find(({ resumen }) => !resumen.activePlan);
+  const sinPlan = legibles.find(({ resumen }) => !resumen?.activePlan);
   if (sinPlan) return { tipo: 'empezar', area: sinPlan.area, texto: `Empezar el plan${deCual(sinPlan.area)}`, vista: 'plan', extra: '' };
   return null;
 }
