@@ -153,6 +153,7 @@
 | DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
 | DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
+| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **IMPLEMENTADA** 2026-10-20 (rama `wp-compatibilidad-apk`, sin integrar): lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
 
 ---
 
@@ -4986,3 +4987,74 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - **Pendiente:** cuatro comprobaciones de la herramienta de evidencia de WP-DASHBOARD (`recorrido.mjs` E-45, C-43 y F-86; `recorrido-comprension.mjs` CP-06) esperan los «Reintentar» y los textos anteriores. No corren en la CI. Se actualizan en su próxima corrida, con la pantalla a la vista.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-11 y los recorridos pasan en la CI de main.
+
+## DL-152 — Lo que leen las APK instaladas: congelado por versión y leído contra la API de hoy
+
+**Prioridad:** alta (antes de pasar una candidata a estable).
+
+**Documentos:**
+- **09v7 T19:** un endpoint nuevo es compatible; cambiar la forma de uno que lee un cliente instalado, no.
+- **C01** (WP-ENTRENAMIENTO-SERIES) y **D10** (WP-NUTRICION-RECETAS): «lo nuevo va en operaciones nuevas».
+- **DL-122:** las capacidades que declara la APK (`X-BE-Capabilities`).
+- **DL-138 D-10:** una APK sin la casilla de mayoría de edad ya no crea cuentas.
+- **DL-151** (PR #195): la sustitución de ejercicios que perdieron las candidatas 0.15 a 0.17.
+
+**Qué pidió Dirección (2026-10-20):** «Ampliá las pruebas de compatibilidad para cubrir las respuestas que realmente leen la estable y la 0.17.0-candidata.3, incluyendo las lecturas actualmente fuera de las verificaciones existentes. No promociones una candidata a estable mientras siga la regresión o falten las pruebas del teléfono.»
+
+**Estado:** IMPLEMENTADA el 2026-10-20 en la rama `wp-compatibilidad-apk` (PR en borrador), sin integrar.
+
+**Qué pasaba:**
+- Lo congelado (`packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`) eran 16 lecturas de la 0.13.2: NUT-14 a 16 y 16-LISTA; TRN-08, 09, 13 a 20, 14-PERIODO y 19-LISTA.
+- Las APK validan **toda** respuesta con el cliente compartido (`crearClienteBe`): cada 2xx con el esquema de su método, y cada rechazo con el sobre de error (si no lo reconocen, dicen «respuesta no reconocida»).
+- Relevado en el código de cada tag, la 0.13.2 (`4b49d43`) llama 44 operaciones y la 0.17.0-candidata.3 (`cf55288`), 80. Fuera de lo congelado quedaban, en las dos, ACC, CON, REL, FRM y ANT-06-PROPIA; y en la candidata, además, ING, MED, EVI, INV, GOO, NOV, CRD-01-PROPIA, SER-02, TIE, AGE-01 y REV-A (NUT-19 y TRN-23).
+
+**Lo decidido** (a ratificar):
+- **D-1 · Qué se congela.** Un archivo por APK, `packages/domain/fixtures/lecturas-de-la-apk/<versión>.json`, con:
+  - la versión, el versionCode, el tag y el commit;
+  - cómo pide: las cabeceras (`X-BE-Surface` y las capacidades), las versiones de los textos que manda como aceptadas y, por operación, si lleva la sesión y la Idempotency-Key;
+  - por operación: el verbo, la ruta, los métodos del cliente que la llaman, el esquema de la respuesta y el del pedido, en JSON Schema del lado de la entrada (lo que acepta `safeParse`);
+  - el sobre de error y los detalles que la candidata lee con su esquema (GOOGLE_LINK_REQUIRED, GOOGLE_ACCOUNT_NOT_FOUND, VISUAL_EVIDENCE_ACT_REQUIRED).
+  - *Por qué JSON Schema:* es lo que ya usaba C01, se lee con `z.fromJSONSchema` del mismo zod de las APK (4.6.5), se revisa en un diff y no trae código viejo al repo. La prueba del dominio verifica que la ida y vuelta por zod da el mismo esquema: la prueba de integración lee exactamente lo congelado.
+  - *Lo que JSON Schema no dice:* cuatro `refine` (el rango de repeticiones, la unidad de un parámetro numérico, la vigencia del objetivo de una revisión y el instante monotónico de un evento). El script los anota y la prueba de integración los revisa aparte; uno nuevo hace fallar la prueba del dominio hasta que se escriba su verificación. Tampoco dice el recorte de espacios (`trim`): un texto hecho solo de espacios pasaría la prueba y la APK lo rechazaría. La API recorta al guardar.
+  - *Alternativas descartadas:* copiar el dominio compilado de cada APK (fiel también en los `refine`, pero cientos de KB de código ilegible por versión); leer los tags con git durante la CI (necesita el historial completo y los tags en cada corrida).
+- **D-2 · Cómo se genera.** `node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-<versión>`:
+  - lee del tag las fuentes del dominio y de la APK, transpila ese dominio y lo carga con el zod del repo (se niega si la APK usaba otra versión);
+  - del cliente de ese commit saca el verbo, la ruta y el esquema de cada método; de la APK, qué métodos usa; del contrato de ese commit, la operación de cada ruta.
+  - No se edita a mano, y da siempre el mismo archivo.
+- **D-3 · La prueba.** `test/integration/lecturas-de-las-apk.int-spec.ts`, en la CI de integración (PostgreSQL real):
+  - por cada APK congelada pide cada operación que esa APK llama, **como la pide**: su ruta, sus cabeceras, la sesión y la Idempotency-Key solo donde las manda, los textos de su commit y un cuerpo que se valida antes contra su pedido congelado;
+  - lee la respuesta real con el esquema congelado de esa APK, y cada rechazo con su sobre y sus detalles;
+  - usa datos que recorren las ramas más cargadas: una opción de receta con imagen, «Piernas A» con la imagen del ejercicio, eventos de tiempo, revisiones con un objetivo nuevo y un formulario rectificado;
+  - al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada lectura suya tenga escenario.
+- **D-4 · El contrato de hoy.** La prueba del dominio (`lecturas-de-la-apk.test.ts`, en `npm test`) exige que cada operación que llama una APK vigente siga en `OPERACIONES` con su verbo y su ruta, y que no pida sesión ni Idempotency-Key donde la APK no las manda.
+- **D-5 · Lo que ya se sabe que no tiene éxito.** El alta de la 0.13.2 (API-ACC-01) responde 422 TERMS_VERSION_NOT_ACCEPTABLE por DL-138 D-10. La prueba lee ese rechazo con el sobre de la 0.13.2, que lo traduce a «Los textos cambiaron. Actualizá la app para continuar.».
+
+**Cómo se actualiza al publicar una APK:**
+1. Taggearla `be-apk-<versión>`, como cada publicación.
+2. Correr el script con ese tag y sumar la versión a `VIGENTES` en `lecturas-de-la-apk.test.ts`.
+3. La prueba de integración corre sola con el archivo nuevo. Si la APK lee algo que ningún escenario pide, falla hasta que se agregue.
+4. Cuando ya no haya teléfonos con una versión, se borra su archivo y se saca de `VIGENTES`.
+
+Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
+
+**La regla para promover.** Una candidata no pasa a estable mientras:
+- siga la regresión de la sustitución de ejercicios (DL-151, PR #195): la candidata.3 ya no llama API-TRN-13, con la que la 0.13.2 busca el ejercicio que sustituye;
+- falten las pruebas en el teléfono;
+- o esta prueba falle para la candidata o para la estable.
+
+**Lo que mostró el relevamiento:**
+- Para las 124 lecturas (44 de la estable y 80 de la candidata), el contrato de hoy declara la misma forma que congeló cada APK. La única diferencia es API-INV-05, donde el cliente lee con la unión de las dos respuestas del contrato (201 y 200).
+- En los pedidos, la única diferencia es el alta de la 0.13.2 (D-5).
+- La API no valida sus respuestas contra el contrato. Por eso la prueba lee respuestas reales: una respuesta puede traer algo que el contrato no declara.
+
+**Pruebas:**
+- **Dominio** (`lecturas-de-la-apk.test.ts`): están las dos APK vigentes con su tag y su commit; la ida y vuelta por zod; el contrato de hoy; lo que JSON Schema no representa.
+- **Integración** (`lecturas-de-las-apk.int-spec.ts`): las 44 y las 80 lecturas con datos reales, más el cierre que exige haberlas leído todas.
+
+**Lo que queda abierto:**
+- Las pruebas en el teléfono.
+- C01 y D10 siguen como estaban: comparan el contrato de hoy con la forma congelada de 16 lecturas. Esta DL las incluye; retirarlas lo decide Dirección.
+
+**Provisorio en código:** D-1 a D-5.
+
+**Condición de cierre:** la prueba en verde en la CI de main, y la regla aplicada en la próxima promoción a estable.
