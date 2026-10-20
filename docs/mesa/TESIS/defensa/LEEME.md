@@ -24,4 +24,4 @@ diagramas y remiten a la lámina completa.
 
 **Antes de la mesa, a cargo de Dirección:** la nómina del grupo, los correos y el mes y año en la portada del mazo y de
 la tesis; la versión de la APK para la demo; un ensayo completo; y, si se puede, capturas nativas de la APK candidata
-para reemplazar los renders del plan B.
+para reemplazar las vistas en navegador del plan B.

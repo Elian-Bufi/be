@@ -1,4 +1,4 @@
-// Diagrama de secuencia (UML 2.5) de la reanudación de la sesión del website (DL-147): al cargar la página, el website
+// Diagrama de secuencia (UML 2.5.1) de la reanudación de la sesión del website (DL-147): al cargar la página, el website
 // pide un token nuevo de la MISMA sesión con la cookie HttpOnly de la API; el servidor decide y rota el secreto.
 // Nombres de clases y métodos de apps/api/src/sesion y apps/web/src/lib/sesion.tsx.
 export const meta = {
@@ -33,8 +33,8 @@ export function dibujar(L) {
   propio('web', 58, 'carga: «Recuperando tu sesión…»');
   m('web', 'ctl', 92, 'POST /auth/sessions/resume');
   m('ctl', 'rea', 112, 'reanudar(cookie, origen)');
-  propio('rea', 120, 'superficie WEB y origen permitido');
-  m('rea', 'bd', 156, 'BEGIN; huella del secreto; bloquea la sesión');
+  propio('rea', 116, 'superficie WEB y origen permitido');
+  m('rea', 'bd', 162, ['BEGIN; huella del secreto;', 'bloquea la sesión']);
   L.fragmento({
     x: 30,
     y: 168,
@@ -47,12 +47,12 @@ export function dibujar(L) {
       { texto: 'copia vieja, sesión vencida o cuenta que ya no opera', y: 318, separador: true },
     ],
   });
-  m('rea', 'bd', 198, 'secreto nuevo que reemplaza; auditoría; COMMIT');
-  m('rea', 'ctl', 220, 'la misma sesión + secreto nuevo', 'retorno');
+  m('rea', 'bd', 198, ['rota el secreto;', 'auditoría; COMMIT']);
+  m('rea', 'ctl', 220, ['la misma sesión', '+ secreto nuevo'], 'retorno');
   m('ctl', 'web', 242, '200: token + cookie nueva', 'retorno');
   m('rea', 'ctl', 286, 'la misma sesión, sin rotar', 'retorno');
   m('ctl', 'web', 306, '200: token', 'retorno');
-  m('rea', 'bd', 346, 'revoca la sesión si es una copia', 'sinc');
+  m('rea', 'bd', 346, ['revoca la sesión', 'si es una copia'], 'sinc');
   m('rea', 'ctl', 364, 'rechazada', 'retorno');
   m('ctl', 'web', 384, '401 y borra la cookie', 'retorno');
   propio('web', 398, 'guarda el token solo en memoria');

@@ -3,10 +3,11 @@
 
 = Flujos por área
 
-El flujo integral del anexo B es igual para las tres áreas. Lo que cambia de un área a otra es qué se planifica, qué
-registra cada persona y qué queda de cada registro. Este anexo dibuja esas diferencias con la misma notación (diagrama
-de actividad de UML 2.5 con carriles, anexo B). Nutrición y entrenamiento tienen plan, proceso y revisión con resultado;
-antropometría no tiene plan ni proceso: la toma y sus cálculos son la información misma.
+El flujo integral del anexo B vale para nutrición y entrenamiento. Lo que cambia de un área a otra es qué se
+planifica, qué registra cada persona y qué queda de cada registro. Este anexo dibuja esas diferencias con la misma
+notación (diagrama de actividad de UML 2.5.1 con carriles, anexo B). Nutrición y entrenamiento tienen plan, proceso
+operativo y revisión con resultado; antropometría no tiene plan ni proceso operativo: la toma y sus cálculos son la
+información misma.
 
 == Nutrición
 
@@ -57,7 +58,8 @@ calcular» hasta que el profesional lo estructure como estimación (API-NUT-21, 
   ([Ve su agenda], ("API-AGE-01", "API-TRN-14")),
   ([Inicia la sesión · Abre el borrador], ("API-TRN-15", "API-TIE-04")),
   ([Registra cada serie], ("API-SER-02", "API-TRN-17", "API-TIE-01")),
-  ([Confirma la sesión · Registra la ejecución], ("API-TRN-18", "API-TRN-20")),
+  ([Confirma la sesión · Registra la ejecución], ("API-TRN-18",)),
+  ([Corregir agrega otra (detalle de «Registra la ejecución»)], ("API-TRN-20",)),
   ([Revisa y decide], ("API-TRN-21", "API-TRN-22")),
   ([Aplica la revisión], ("API-TRN-24",)),
 ))

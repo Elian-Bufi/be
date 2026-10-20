@@ -401,6 +401,54 @@
     "apps/api/src/nutricion/registro-de-comidas.service.ts"
    ]
   },
+  "API-INT-NUT-01": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/catalogo.service.ts"
+   ]
+  },
+  "API-INT-NUT-02": {
+   "casos": [
+    "UC-I07"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/importacion.service.ts"
+   ]
+  },
+  "API-INT-NUT-03": {
+   "casos": [
+    "UC-I07"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/importacion.service.ts"
+   ]
+  },
+  "API-INT-TRN-01": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/catalogo.service.ts"
+   ]
+  },
+  "API-INT-TRN-02": {
+   "casos": [
+    "UC-I07"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/importacion.service.ts"
+   ]
+  },
+  "API-INT-TRN-03": {
+   "casos": [
+    "UC-I07"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/importacion.service.ts"
+   ]
+  },
   "API-INV-01": {
    "casos": [
     "UC-P04"

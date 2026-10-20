@@ -31,14 +31,14 @@ su proceso.
 #table(
   columns: (1fr, 1fr, 1fr, 1.1fr),
   table.header([Clase], [Tabla (vista del DER)], [Servicio de la API], [Operaciones]),
-  [AlcanceDeVinculo], [`alcance_de_vinculo` (DER-03)], [`VinculosService`], [pausar, reanudar y finalizar (`/relationships/{id}/pause`, `resume`, `finalize`)],
-  [Consentimiento], [`consentimiento` (DER-04)], [`ConsentimientoProfesionalService`], [otorgar y revocar (`/me/consents/{id}/revoke`, API-CON-04)],
-  [EvaluacionNutricional], [`evaluacion_nutricional` (DER-06)], [`EvaluacionesService`], [registrar y consultar],
-  [VersionDeObjetivo], [`version_de_objetivo_nutricional` (DER-06)], [`EvaluacionesService`], [definir el objetivo (`crearObjetivo`)],
-  [VersionDePlan], [`version_de_plan_nutricional` (DER-06)], [`PlanesService`], [validar y activar (API-NUT-11 y 12)],
-  [IngestaNutricional], [`ingesta_nutricional` (DER-07)], [`IngestasService`, `RegistroDeComidasService`], [registrar, corregir y anular],
-  [RevisionNutricional], [`revision_nutricional` (DER-07)], [`RevisionesService`], [registrar y aplicar (`/nutrition/reviews/{id}/apply`)],
-  [ProcesoOperativo y ProximaRevision], [`proceso_operativo`, `proxima_revision` (DER-02)], [`ProcesoService`], [se abren y avanzan como efecto de activar y aplicar],
+  [#partible("AlcanceDeVinculo")], [#cp("alcance_de_vinculo") (DER-03)], [#cp("VinculosService")], [pausar, reanudar y finalizar (#cp("/relationships/{id}/pause"), #cp("resume"), #cp("finalize"))],
+  [Consentimiento], [#cp("consentimiento") (DER-04)], [#cp("ConsentimientoProfesionalService")], [otorgar y revocar (#cp("/me/consents/{id}/revoke"), API-CON-04)],
+  [#partible("EvaluacionNutricional")], [#cp("evaluacion_nutricional") (DER-06)], [#cp("EvaluacionesService")], [registrar y consultar],
+  [#partible("VersionDeObjetivo") «nutricional»], [#cp("version_de_objetivo_nutricional") (DER-06)], [#cp("EvaluacionesService")], [definir el objetivo (#cp("crearObjetivo"))],
+  [#partible("VersionDePlan") «nutricional»], [#cp("version_de_plan_nutricional") (DER-06)], [#cp("PlanesService")], [validar y activar (API-NUT-11 y 12)],
+  [#partible("IngestaNutricional")], [#cp("ingesta_nutricional") (DER-07)], [#cp("IngestasService"), #cp("RegistroDeComidasService")], [registrar, corregir y anular],
+  [#partible("RevisionNutricional")], [#cp("revision_nutricional") (DER-07)], [#cp("RevisionesService")], [registrar y aplicar (#cp("/nutrition/reviews/{id}/apply"))],
+  [#partible("ProcesoOperativo") y #partible("ProximaRevision")], [#cp("proceso_operativo"), #cp("proxima_revision") (DER-02)], [#cp("ProcesoService")], [se abren y avanzan como efecto de activar y aplicar],
 )
 
 == Implementación de una escritura protegida
@@ -85,7 +85,8 @@ errores propios sobre `Error`.
 
 == Correspondencia con el DER
 
-Las clases de dominio (CL-01) son un subconjunto de las entidades del DER, con los mismos nombres y las mismas
-multiplicidades. Las clases de implementación (CL-02 y CL-03) no tienen tabla: son servicios, guardas y ejecutores
+Las clases de dominio (CL-01) son un subconjunto de las entidades del DER, con sus nombres y sus multiplicidades. Dos
+nombres van abreviados con el estereotipo «nutricional»: VersionDeObjetivo y VersionDePlan son, en el DER,
+VersionDeObjetivoNutricional y VersionDePlanNutricional. Las clases de implementación (CL-02 y CL-03) no tienen tabla: son servicios, guardas y ejecutores
 que leen y escriben esas tablas a través de `PrismaService`. Las tablas que no aparecen en CL-01 se manejan igual,
 cada una desde el servicio de su módulo; el apartado 9 muestra los módulos y sus dependencias.

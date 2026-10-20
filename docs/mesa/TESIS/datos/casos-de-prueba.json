@@ -4,7 +4,7 @@
   "MATRIZ_DE_RECONCILIACION_DV-05_2026-10.csv",
   "MAPEO_DE_LOS_26_CASOS_2026-10-16.md"
  ],
- "generado": "2026-10-20T07:02:08.268Z",
+ "generado": "2026-10-20T10:35:35.181Z",
  "casos": [
   {
    "id": "TEST-RF-001",
@@ -19,8 +19,8 @@
    "relacionDerivada": false,
    "objetivo": "Comprobar el criterio de aceptación de RF-001 («Registrar una identidad BE»).",
    "pasosLista": [
-    "Contar identidades asociadas al email:",
-    "2. Completar el alta A y observar identificador propio y estado de cuenta.",
+    "Contar identidades asociadas al email: 0.",
+    "Completar el alta A y observar identificador propio y estado de cuenta.",
     "Repetir el alta B con el mismo email.",
     "Consultar el conteo: permanece 1, sin segunda identidad.",
     "Comprobar que ninguna alta verificó especialidades, otorgó A3/B2 ni habilitó datos de terceros. Registrar respuesta neutra según 09, sin fijar un mensaje de duplicado que enumere cuentas."
@@ -41,6 +41,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -123,6 +125,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable; lo citado pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -203,6 +207,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable; lo citado pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -284,6 +290,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable",
    "evidencia": [
     {
@@ -341,6 +349,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable; lo citado pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -410,6 +420,8 @@
    "claseOrigen": "mapeo 2026-10-16: PARCIAL",
    "claseAnterior": "parcial",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -518,6 +530,8 @@
    "claseOrigen": "mapeo 2026-10-16: PARCIAL",
    "claseAnterior": "parcial",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -640,6 +654,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -713,6 +729,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -786,6 +804,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -868,6 +888,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -925,6 +947,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -990,6 +1014,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -1072,6 +1098,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -1136,6 +1164,8 @@
    "claseOrigen": "mapeo 2026-10-16: PARCIAL",
    "claseAnterior": "parcial",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -1225,6 +1255,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -1297,6 +1329,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -1355,6 +1389,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -1413,12 +1449,14 @@
    "esperado": "La pantalla distingue ausencia de sesión, sesión pendiente y ejecución registrada; no requiere rutas internas; solo muestra datos autorizados.",
    "fuente": "BE-LEG-11A §7",
    "observado": "Sin plan, o antes de la activación, no hay sesiones. Una sesión sin registro es NOT_STARTED, sin condición; registrada, trae la suya. El asesorado nunca ve un borrador como plan. Con el B2 revocado, NOT_AVAILABLE. La pantalla de la APK pasa por vistaDeOcurrencia, que distingue «sin registro» de «no realizada», y se llega por la barra, sin rutas.",
-   "pendiente": "Nota de modelo: BE no asigna sesiones a días (DL-077); con plan vigente todas las sesiones son de hoy, y el «día sin sesión» se da sin plan o antes de activarlo. La pantalla en el teléfono se verifica con capturas, no con una prueba automática de UI.",
-   "pendienteOriginal": null,
+   "pendiente": "Conciliar el caso con la agenda (DL-137): un día sin sesión, uno con la sesión planificada sin registro y uno con la ejecución registrada, en la misma semana. La pantalla en el teléfono se verifica con capturas, no con una prueba automática de interfaz.",
+   "pendienteOriginal": "Nota de modelo: BE no asigna sesiones a días (DL-077); con plan vigente todas las sesiones son de hoy, y el «día sin sesión» se da sin plan o antes de activarlo. La pantalla en el teléfono se verifica con capturas, no con una prueba automática de UI.",
    "clase": "parcial",
    "claseOrigen": "mapeo 2026-10-16: PARCIAL",
    "claseAnterior": "parcial",
-   "actualizacion": null,
+   "actualizacion": "La nota de modelo de la conciliación (BE no asignaba sesiones a días, DL-077) quedó superada el 2026-10-16: la agenda de entrenamiento (DL-137) ubica cada sesión del plan en días de la semana y distingue lo pendiente y lo salteado. Este caso no se volvió a conciliar con la agenda.",
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -1531,6 +1569,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -1621,6 +1661,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -1702,6 +1744,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -1786,6 +1830,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -1867,7 +1913,9 @@
    "clase": "parcial",
    "claseOrigen": "mapeo 2026-10-16: PARCIAL",
    "claseAnterior": "parcial",
-   "actualizacion": "Corrección del mapeo del 16/10, que dice que no hay línea temporal entre dominios: existe desde el 16/10 (API-DSH-04, DL-127, escritorio profesional). Sus pruebas verifican fecha de ocurrencia y de registro, dominio, autor, relación con el plan ejecutado y que un alcance denegado no aporte nada; ninguna nombra el caso ni la prueba con dos alcances permitidos.",
+   "actualizacion": "Corrección de la conciliación y del mapeo, que dicen que no hay línea temporal entre dominios: está en main desde el 2026-10-16 (API-DSH-04, DL-127, escritorio profesional). Sus pruebas verifican fecha de ocurrencia y de registro, dominio, autor, relación con el plan ejecutado y que un alcance denegado no aporte nada; ninguna nombra el caso ni la prueba con dos alcances permitidos.",
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable; lo citado pasa (CI `33784f1`), pero no verifica el oráculo",
    "evidencia": [
     {
@@ -1947,12 +1995,14 @@
    "esperado": "La caída de Google, Open Food Facts, wger, Maps o Push no impide crear, consultar, ejecutar o revisar un plan; el usuario conoce el estado y la alternativa.",
    "fuente": "`UC-I08` · `ASR-10`",
    "observado": "Con Open Food Facts caído: 503 DEPENDENCY_UNAVAILABLE con fallback: {catalog, manualEntry}, sin candidato, y la carga manual sigue (201). Con wger caído: 503. El núcleo (crear, activar, consultar, registrar, revisar) pasa en la CI con los proveedores inalcanzables.",
-   "pendiente": "Probar que con Expo Push caído el centro de novedades sigue, y afirmar el fallback de wger (details.fallback) con el núcleo andando en la misma prueba (PE-11). La variante de mapas no es ejecutable: el descubrimiento con mapa (RF-051) está fuera de alcance.",
+   "pendiente": "Probar que con Expo Push caído el centro de novedades sigue, y afirmar el respaldo manual de wger (`details.fallback`) con el núcleo andando en la misma prueba (PE-11). La variante de mapas no es ejecutable: el descubrimiento con mapa (RF-051) no está implementado.",
    "pendienteOriginal": "No ejecutable: las variantes de Google, Maps y Push, porque ninguno está integrado (acceso con Google y notificaciones push están fuera de alcance, docs/QUE-FALTA.md §7; el descubrimiento con mapa, RF-051, quedó fuera en WP-03). Ejecutable y sin aserción: el fallback de wger (details.fallback) y el núcleo con el proveedor caído dentro de la misma prueba (→ PE-11).",
    "clase": "parcial",
    "claseOrigen": "mapeo 2026-10-16: PARCIAL",
    "claseAnterior": "parcial",
-   "actualizacion": "El acceso con Google está integrado desde el 17/10 (DL-138) y tiene su variante de caída probada (503 con el acceso local disponible; con las claves ya leídas se sigue entrando). Los avisos por Expo Push existen desde el 16/10 (DL-133), pero falta probar que con Expo caído el centro de novedades sigue. El mapa (RF-051) sigue fuera.",
+   "actualizacion": "El acceso con Google está integrado desde el 2026-10-17 (DL-138) y tiene su variante de caída probada (503 con el acceso local disponible; con las claves ya leídas se sigue entrando). Los avisos por Expo Push existen desde el 2026-10-16 (DL-133), pero falta probar que con Expo caído el centro de novedades sigue. El mapa (RF-051) sigue pendiente.",
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -2034,6 +2084,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2092,6 +2144,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2149,6 +2203,8 @@
    "claseOrigen": "conciliación 2026-10: En parte",
    "claseAnterior": "parcial",
    "actualizacion": "Lo pendiente se escribió con DL-115 (opción A, 2026-10-02): a3-del-titular.int-spec.ts prueba la variante del titular (A3 nunca otorgado: 403) y que lo de otro titular sigue dando el mismo 404 (PE-01 de la conciliación).",
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba y, en antropometría, por lectura del código hoy fallaría (H-1)",
    "evidencia": [
     {
@@ -2222,6 +2278,8 @@
    "claseOrigen": "conciliación 2026-10: En parte",
    "claseAnterior": "parcial",
    "actualizacion": "El hallazgo H-1 se corrigió con DL-115 (opción A): la evolución antropométrica propia, el detalle de los formularios y «Tu plan de hoy» exigen el A3 vigente, y a3-del-titular.int-spec.ts lo prueba con la misma sesión.",
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba y, por lectura del código, hoy fallaría (H-1)",
    "evidencia": [
     {
@@ -2304,6 +2362,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2362,6 +2422,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2427,6 +2489,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2492,6 +2556,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2549,6 +2615,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2614,6 +2682,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable",
    "evidencia": [],
    "citasVigentes": 0,
@@ -2654,6 +2724,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2711,6 +2783,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2761,6 +2835,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2820,6 +2896,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2910,6 +2988,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -2983,6 +3063,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3056,6 +3138,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3137,6 +3221,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -3203,16 +3289,10 @@
    "claseOrigen": "mapeo 2026-10-16: CUBIERTO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
-    {
-     "archivo": "calculos.int-spec.ts",
-     "ruta": "test/integration/calculos.int-spec.ts",
-     "linea": null,
-     "titulo": "TEST-CAL-006: adoptar, reemplazar y volver a adoptar dejan historia y no tocan las corridas",
-     "vigente": true,
-     "situacion": "vigente"
-    },
     {
      "archivo": "dominio-calculo.test.ts",
      "ruta": "packages/domain/src/dominio-calculo.test.ts",
@@ -3230,7 +3310,7 @@
      "situacion": "vigente"
     }
    ],
-   "citasVigentes": 3,
+   "citasVigentes": 2,
    "citasNoHalladas": []
   },
   {
@@ -3269,6 +3349,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable; lo citado pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3336,6 +3418,8 @@
    "claseOrigen": "conciliación 2026-10: En parte",
    "claseAnterior": "parcial",
    "actualizacion": "La línea de tiempo (API-DSH-04) relee una comida registrada tarde: ocurrencia de hace tres días, distinta del registro, marcada como tardía. Falta hacerlo por la lectura de la ingesta, como pide el caso (PE-03).",
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -3410,6 +3494,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3476,6 +3562,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": "La prueba citada de la parte 2 no usa MET-DEMO: crea su propio método (`MET-SUCESION`), con la v1 de tres decimales y la v2 de uno (`test/integration/calculos.int-spec.ts`). MET-DEMO es el de la parte 1.",
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3533,6 +3621,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3591,6 +3681,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3640,6 +3732,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3698,6 +3792,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable; lo citado pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3780,6 +3876,8 @@
    "claseOrigen": "mapeo 2026-10-16: PARCIAL",
    "claseAnterior": "parcial",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -3869,6 +3967,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -3936,6 +4036,8 @@
    "claseOrigen": "mapeo 2026-10-16: NO_IMPLEMENTADO",
    "claseAnterior": "no-ejecutable",
    "actualizacion": null,
+   "observadoFuente": "el mapeo del 2026-10-16",
+   "notaDeLectura": null,
    "resultadoConciliacion": "No ejecutable",
    "evidencia": [
     {
@@ -3986,6 +4088,8 @@
    "claseOrigen": "conciliación 2026-10: En parte",
    "claseAnterior": "parcial",
    "actualizacion": "La prueba de TEST-RF-047, agregada el 2026-10-16, lee la evaluación (API-ANT-04) con las mediciones directas y el resultado derivado aparte, con su método y sus entradas: era lo pendiente (PE-14).",
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -4077,6 +4181,8 @@
    "claseOrigen": "mapeo 2026-10-16: AGREGADO",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {
@@ -4150,6 +4256,8 @@
    "claseOrigen": "conciliación 2026-10: En parte",
    "claseAnterior": "parcial",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": null,
    "resultadoConciliacion": "Lo citado pasa (CI `33784f1`); lo pendiente no tiene prueba",
    "evidencia": [
     {
@@ -4223,6 +4331,8 @@
    "claseOrigen": "conciliación 2026-10: Cubierto (nombra el caso)",
    "claseAnterior": "cubierto",
    "actualizacion": null,
+   "observadoFuente": "la conciliación del 2026-10-02",
+   "notaDeLectura": "La prueba citada corrige un peso (72,5 kg a 71,2 kg y después a 71 kg) en lugar del perímetro de 92 cm de DV-05 (`test/integration/antropometria.int-spec.ts`); afirma el mismo comportamiento.",
    "resultadoConciliacion": "Pasa (CI `33784f1`)",
    "evidencia": [
     {

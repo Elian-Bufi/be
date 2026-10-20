@@ -73,6 +73,7 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
   const segmentos = []; // { a, b, de } de conectores
   const conectores = [];
   const glifosFaltantes = [];
+  const mensajesAnchos = [];
   const rotulosPendientes = [];
   let defsId = 0;
 
@@ -511,13 +512,21 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       for (let i = 0; i < pts.length - 1; i++) segmentos.push({ a: pts[i], b: pts[i + 1], de: nIndex, nodos: [] });
       conectores.push({ de: null, a: null, pts });
       if (texto) {
-        const xm = Math.abs(x1 - x2) < 0.5 ? x1 + 32 : (x1 + x2) / 2;
-        const ancla = Math.abs(x1 - x2) < 0.5 ? 'start' : 'middle';
-        const yt = Math.abs(x1 - x2) < 0.5 ? y + 11 : lado === 'arriba' ? y - 5 : y + 14;
-        const wt = ancho(texto, TX.texto);
-        const x0 = ancla === 'middle' ? xm - wt / 2 : xm;
-        capas.rotulos.push(`<rect x="${r2(x0 - 2)}" y="${r2(yt - 10)}" width="${r2(wt + 4)}" height="13.5" fill="${C.papel}" opacity="0.94"/>`);
-        linea(capas.rotulos, xm, yt, texto, TX.texto, { ancla, color: C.tinta, de: `conector:${nIndex}`, halo: true });
+        // Uno o varios renglones. Arriba de la flecha, el último renglón queda justo sobre ella; abajo (o en un mensaje
+        // a sí mismo), el primero queda justo debajo.
+        const lineas = [].concat(texto);
+        const propio = Math.abs(x1 - x2) < 0.5;
+        const xm = propio ? x1 + 32 : (x1 + x2) / 2;
+        const ancla = propio ? 'start' : 'middle';
+        lineas.forEach((t, k) => {
+          const yt = propio ? y + 11 + k * 13.5 : lado === 'arriba' ? y - 5 - (lineas.length - 1 - k) * 13.5 : y + 14 + k * 13.5;
+          const wt = ancho(t, TX.texto);
+          // Un rótulo más ancho que su flecha tapa las barras de activación y corta las líneas de vida.
+          if (!propio && wt > Math.abs(x2 - x1) - 6) mensajesAnchos.push(t);
+          const x0 = ancla === 'middle' ? xm - wt / 2 : xm;
+          capas.rotulos.push(`<rect x="${r2(x0 - 2)}" y="${r2(yt - 10)}" width="${r2(wt + 4)}" height="13.5" fill="${C.papel}" opacity="0.94"/>`);
+          linea(capas.rotulos, xm, yt, t, TX.texto, { ancla, color: C.tinta, de: `conector:${nIndex}`, halo: true });
+        });
       }
       return pts;
     },
@@ -1022,6 +1031,7 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
     const hallazgos = [];
     if (textos.some((t) => t.de === 'leyenda-desborde')) hallazgos.push('la leyenda no entra en su caja');
     for (const g of glifosFaltantes) hallazgos.push(`glifo que la tipografía no tiene: ${g}`);
+    for (const t of mensajesAnchos) hallazgos.push(`rótulo más ancho que su mensaje: «${t}»`);
     const fuenteMinima = Math.min(...textos.filter((t) => t.tamano > 0).map((t) => t.tamano));
     if (fuenteMinima < F.minimo) hallazgos.push(`tipografía de ${fuenteMinima} pt, por debajo de ${F.minimo}`);
     const conectables = [...nodos.values()].filter((n) => n.rect);

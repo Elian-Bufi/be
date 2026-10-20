@@ -93,22 +93,22 @@
 <text x="25" y="41.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Cada proceso escribe su historia y su auditoría</text>
 <text x="25" y="54.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">en D8 en la misma transacción; no se dibuja</text>
 <text x="25" y="67.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">para no repetirlo.</text>
+<rect x="279.46" y="151.15" width="34.71" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="281.46" y="161.84" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">sesión</text>
 <rect x="167.71" y="272.28" width="64.45" height="14.8" fill="#FFFFFF" opacity="0.94"/>
 <text x="169.71" y="282.97" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">credenciales</text>
 <rect x="93.35" y="284.9" width="34.71" height="14.8" fill="#FFFFFF" opacity="0.94"/>
 <text x="126.06" y="295.59" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="end">sesión</text>
 <rect x="239.65" y="87.31" width="64.45" height="14.8" fill="#FFFFFF" opacity="0.94"/>
 <text x="271.87" y="98" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">credenciales</text>
-<rect x="308" y="129.69" width="34.71" height="14.8" fill="#FFFFFF" opacity="0.94"/>
-<text x="325.35" y="140.38" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">sesión</text>
 <rect x="115.77" y="184.59" width="43.61" height="27.6" fill="#FFFFFF" opacity="0.94"/>
 <text x="137.58" y="195.28" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">claves</text>
 <text x="137.58" y="208.08" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">públicas</text>
 <rect x="98.11" y="153.95" width="47.84" height="27.6" fill="#FFFFFF" opacity="0.94"/>
 <text x="122.03" y="164.64" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">identidad</text>
 <text x="122.03" y="177.44" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">y sesión</text>
-<rect x="326.7" y="106.71" width="49.3" height="14.8" fill="#FFFFFF" opacity="0.94"/>
-<text x="351.35" y="117.4" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">invitación</text>
+<rect x="326.95" y="115.74" width="49.3" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="351.6" y="126.43" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">invitación</text>
 <rect x="398.54" y="98.58" width="44.82" height="27.6" fill="#FFFFFF" opacity="0.94"/>
 <text x="420.95" y="109.27" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">enlace</text>
 <text x="420.95" y="122.07" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">y código</text>

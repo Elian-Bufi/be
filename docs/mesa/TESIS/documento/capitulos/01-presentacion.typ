@@ -38,7 +38,7 @@
     },
   )
   #v(10pt)
-  #text(size: 12pt, fill: tinta-suave)[Profesionales de nutrición, entrenamiento y antropometría trabajan con la misma persona sin mezclar sus áreas: la persona decide quién accede, cada plan activado queda como versión y nada de lo registrado se borra.]
+  #text(size: 12pt, fill: tinta-suave)[Profesionales de nutrición, entrenamiento y antropometría trabajan con la misma persona sin mezclar sus áreas: la persona decide quién accede, cada plan activado queda como versión y corregir no borra lo registrado.]
   #v(14pt)
   #include "portada-imagen.typ"
   #v(1fr)

@@ -1,7 +1,7 @@
 // Piezas comunes de los diagramas de flujo de datos (anexo D), en notación de Yourdon y DeMarco: el proceso es un
 // círculo con su número, el almacén es un rectángulo abierto con su código (D1 a D8) y la entidad externa, un
-// rectángulo. Cada flujo lleva el nombre del dato que viaja, nunca un verbo. Una flecha con dos puntas es un almacén
-// que el proceso lee y escribe.
+// rectángulo. Cada flujo lleva el nombre del dato que viaja, nunca un verbo. Una flecha con dos puntas entre un
+// proceso y un almacén indica que el proceso lee y escribe en ese almacén.
 
 /** Flujo de datos recto entre dos nodos, recortado en el borde de cada forma. */
 export function flujoDeDatos(L, de, a, texto, { doble = false, desplazamiento = 0, lado, pos, manual = false } = {}) {

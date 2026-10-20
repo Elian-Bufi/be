@@ -33,9 +33,9 @@ for (const a of archivos) {
   const s = readFileSync(a, 'utf8');
   const constantes = Object.fromEntries([...s.matchAll(/const ([A-Z][A-Z_]+) = '(UC-[A-Z]\d+)'/g)].map((m) => [m[1], m[2]]));
   const caso = (literal, constante) => literal ?? constantes[constante] ?? null;
-  for (const m of s.matchAll(new RegExp(String.raw`operacion: '(API-[A-Z]+-\d+[A-Z0-9-]*)',[\s\S]{0,200}?casoDeUso: ${CASO}`, 'g'))) agregar(m[1], caso(m[2], m[3]), a);
-  for (const m of s.matchAll(new RegExp(String.raw`casoDeUso: ${CASO},[\s\S]{0,200}?operacion: '(API-[A-Z]+-\d+[A-Z0-9-]*)'`, 'g'))) agregar(m[3], caso(m[1], m[2]), a);
-  for (const m of s.matchAll(new RegExp(String.raw`const operacion = '(API-[A-Z]+-\d+[A-Z0-9-]*)';[\s\S]{0,600}?procedenciaDe\(ctx, ${CASO}, operacion\)`, 'g'))) agregar(m[1], caso(m[2], m[3]), a);
+  for (const m of s.matchAll(new RegExp(String.raw`operacion: '(API-[A-Z]+-[A-Z0-9-]+)',[\s\S]{0,200}?casoDeUso: ${CASO}`, 'g'))) agregar(m[1], caso(m[2], m[3]), a);
+  for (const m of s.matchAll(new RegExp(String.raw`casoDeUso: ${CASO},[\s\S]{0,200}?operacion: '(API-[A-Z]+-[A-Z0-9-]+)'`, 'g'))) agregar(m[3], caso(m[1], m[2]), a);
+  for (const m of s.matchAll(new RegExp(String.raw`const operacion = '(API-[A-Z]+-[A-Z0-9-]+)';[\s\S]{0,600}?procedenciaDe\(ctx, ${CASO}, operacion\)`, 'g'))) agregar(m[1], caso(m[2], m[3]), a);
 }
 const operaciones = Object.fromEntries(
   [...mapa.entries()].sort(([a], [b]) => a.localeCompare(b, 'es', { numeric: true })).map(([op, v]) => [op, { casos: [...v.casos].sort(), archivos: [...v.archivos].sort() }]),

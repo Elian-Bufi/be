@@ -147,7 +147,7 @@ const ACTUALIZACIONES = {
   },
   'TEST-RF-054': {
     clase: 'parcial',
-    nota: 'Corrección del mapeo del 16/10, que dice que no hay línea temporal entre dominios: existe desde el 16/10 (API-DSH-04, DL-127, escritorio profesional). Sus pruebas verifican fecha de ocurrencia y de registro, dominio, autor, relación con el plan ejecutado y que un alcance denegado no aporte nada; ninguna nombra el caso ni la prueba con dos alcances permitidos.',
+    nota: 'Corrección de la conciliación y del mapeo, que dicen que no hay línea temporal entre dominios: está en main desde el 2026-10-16 (API-DSH-04, DL-127, escritorio profesional). Sus pruebas verifican fecha de ocurrencia y de registro, dominio, autor, relación con el plan ejecutado y que un alcance denegado no aporte nada; ninguna nombra el caso ni la prueba con dos alcances permitidos.',
     pendiente: 'Una prueba que nombre el caso y afirme, con dos alcances permitidos, el dominio, el autor y la procedencia de cada entrada, y que lo planificado no se mezcle con lo ejecutado.',
     pruebas: [
       '`analisis.int-spec.ts` › «una entrada por hecho, con ocurrió y registrado independientes, y la carga tardía dicha»',
@@ -156,13 +156,25 @@ const ACTUALIZACIONES = {
   },
   'TEST-RF-059': {
     clase: 'parcial',
-    nota: 'El acceso con Google está integrado desde el 17/10 (DL-138) y tiene su variante de caída probada (503 con el acceso local disponible; con las claves ya leídas se sigue entrando). Los avisos por Expo Push existen desde el 16/10 (DL-133), pero falta probar que con Expo caído el centro de novedades sigue. El mapa (RF-051) sigue fuera.',
-    pendiente: 'Probar que con Expo Push caído el centro de novedades sigue, y afirmar el fallback de wger (details.fallback) con el núcleo andando en la misma prueba (PE-11). La variante de mapas no es ejecutable: el descubrimiento con mapa (RF-051) está fuera de alcance.',
+    nota: 'El acceso con Google está integrado desde el 2026-10-17 (DL-138) y tiene su variante de caída probada (503 con el acceso local disponible; con las claves ya leídas se sigue entrando). Los avisos por Expo Push existen desde el 2026-10-16 (DL-133), pero falta probar que con Expo caído el centro de novedades sigue. El mapa (RF-051) sigue pendiente.',
+    pendiente: 'Probar que con Expo Push caído el centro de novedades sigue, y afirmar el respaldo manual de wger (`details.fallback`) con el núcleo andando en la misma prueba (PE-11). La variante de mapas no es ejecutable: el descubrimiento con mapa (RF-051) no está implementado.',
     pruebas: [
       '`acceso-google.int-spec.ts` › «sin GOOGLE_CLIENT_IDS, las tres operaciones responden 503 DEPENDENCY_UNAVAILABLE con el acceso local a mano»',
       '`acceso-google.int-spec.ts` › «con Google caído antes de leer sus claves: 503; con las claves ya leídas, se sigue entrando aunque Google no responda»',
     ],
   },
+  'TEST-RF-042': {
+    clase: 'parcial',
+    nota: 'La nota de modelo de la conciliación (BE no asignaba sesiones a días, DL-077) quedó superada el 2026-10-16: la agenda de entrenamiento (DL-137) ubica cada sesión del plan en días de la semana y distingue lo pendiente y lo salteado. Este caso no se volvió a conciliar con la agenda.',
+    pendiente: 'Conciliar el caso con la agenda (DL-137): un día sin sesión, uno con la sesión planificada sin registro y uno con la ejecución registrada, en la misma semana. La pantalla en el teléfono se verifica con capturas, no con una prueba automática de interfaz.',
+  },
+};
+
+// Notas de lectura de esta tesis: dicen qué hace exactamente la prueba citada cuando no coincide con los datos de DV-05.
+// Se comprobaron en el código de la versión de referencia.
+const NOTAS = {
+  'TEST-CAL-001': 'La prueba citada de la parte 2 no usa MET-DEMO: crea su propio método (`MET-SUCESION`), con la v1 de tres decimales y la v2 de uno (`test/integration/calculos.int-spec.ts`). MET-DEMO es el de la parte 1.',
+  'TEST-ANT-004': 'La prueba citada corrige un peso (72,5 kg a 71,2 kg y después a 71 kg) en lugar del perímetro de 92 cm de DV-05 (`test/integration/antropometria.int-spec.ts`); afirma el mismo comportamiento.',
 };
 
 // DV-05 no declara requisito ni caso de uso en los 34 casos de escenario (familias AUTH, DOM, CAL, FRM y ANT). Esta tesis
@@ -207,11 +219,22 @@ const DERIVADOS = {
 
 const titulosRf = new Map(JSON.parse(readFileSync(join(aqui, '../datos/evidencia-rf.json'), 'utf8')).requisitos.map((r) => [r.id, r.titulo]));
 const lista = (s) => (s && s !== '—' ? s.split(/[\s,;]+/).filter((x) => /^(RF|UC)-/.test(x)) : []);
-const pasosEnLista = (s) =>
-  s
-    .split(/(?:^|\s)\d+\.\s+/)
-    .map((x) => x.trim())
-    .filter(Boolean);
+// Los pasos de DV-05 vienen numerados en un solo renglón («1. … 2. …»). Se corta solo en el número que sigue, para que
+// un «0.» dentro de un paso (TEST-RF-001: «…asociadas al email: 0.») no se tome como el comienzo de otro.
+const pasosEnLista = (s) => {
+  let resto = s.trim();
+  if (!/^1\.\s+/.test(resto)) return [resto];
+  resto = resto.replace(/^1\.\s+/, '');
+  const pasos = [];
+  for (let n = 2; ; n++) {
+    const m = resto.match(new RegExp(String.raw`(?:^|\s)${n}\.\s+`));
+    if (!m) break;
+    pasos.push(resto.slice(0, m.index).trim());
+    resto = resto.slice(m.index + m[0].length);
+  }
+  pasos.push(resto.trim());
+  return pasos.filter(Boolean);
+};
 
 const casos = diseno.map((d) => {
   const c = conciliacion.get(d.ID) ?? {};
@@ -227,7 +250,11 @@ const casos = diseno.map((d) => {
   const claseAnterior = clase;
   if (act) clase = act.clase;
   const textoEvidencia = [c.prueba_o_evidencia ?? '', mp?.detalle ?? '', ...(act?.pruebas ?? [])].join(' ');
-  const evidencia = citas(textoEvidencia);
+  // Una cita que es el comienzo de otra del mismo archivo (la conciliación y el mapeo citan la misma prueba con títulos
+  // de distinto largo) se cuenta una sola vez, con el título completo.
+  const evidencia = citas(textoEvidencia).filter(
+    (e, _, todas) => !e.titulo || !todas.some((o) => o !== e && o.archivo === e.archivo && o.titulo && o.titulo !== e.titulo && o.titulo.startsWith(e.titulo.replace(/…$/, ''))),
+  );
   const declaradoRf = lista(d.RF);
   const declaradoUc = lista(d.UC);
   const derivado = !declaradoRf.length && DERIVADOS[d.ID] ? DERIVADOS[d.ID] : null;
@@ -262,6 +289,9 @@ const casos = diseno.map((d) => {
     claseOrigen: mp ? `mapeo 2026-10-16: ${mp.clase}` : `conciliación 2026-10: ${c.categoria ?? '—'}`,
     claseAnterior,
     actualizacion: act?.nota ?? null,
+    // De dónde sale lo «Observado»: cuando hay una actualización, la ficha lo muestra como cita de su documento.
+    observadoFuente: mp?.clase === 'NO_IMPLEMENTADO' || !c.que_verifica_la_asercion ? 'el mapeo del 2026-10-16' : 'la conciliación del 2026-10-02',
+    notaDeLectura: NOTAS[d.ID] ?? null,
     resultadoConciliacion: c.resultado ?? null,
     evidencia,
     citasVigentes: evidencia.filter((e) => e.vigente).length,

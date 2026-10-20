@@ -5,7 +5,7 @@
 #let rfs = json("../../datos/evidencia-rf.json").requisitos
 #let est = json("../../datos/estado.json")
 #let casos = json("../../datos/casos-de-prueba.json").casos
-#let corte(s) = s.replace(regex("([/._·])"), m => m.captures.at(0) + "\u{200b}")
+#let corte(s) = text(hyphenate: false, lang: "en", s.replace(regex("([/._·])"), m => m.captures.at(0) + "\u{200b}"))
 #let res = (cubierto: "✓", parcial: "◐", "no-ejecutable": "✗")
 
 = Matriz de trazabilidad
@@ -14,13 +14,14 @@ La matriz une, para cada requisito funcional, su estado en la versión de refere
 el contrato que lo sostiene según el documento 12 del legajo, el caso de prueba del plan 11A y su resultado, la
 cantidad de archivos de prueba que lo ejercitan en la CI y las decisiones registradas que lo afectan.
 
-En la columna de casos: ✓ pasa en la CI, ◐ pasa en parte, ✗ no es ejecutable con lo que se entrega (apartado 5).
+En la columna de casos: ✓ pasa en la CI, ◐ pasa en parte, ✗ no es ejecutable con lo que se entrega (apartado 5). La
+columna «Contrato» cita el documento 12 tal como está escrito, en buena parte en inglés.
 
 #{
   set text(size: 10pt, hyphenate: false)
   set par(justify: false)
   table(
-    columns: (15mm, 27mm, 24mm, 1fr, 28mm, 12mm, 24mm),
+    columns: (15mm, 31mm, 24mm, 1fr, 28mm, 12mm, 24mm),
     table.header([RF], [Estado], [Casos de uso], [Contrato (documento 12)], [Casos de prueba], [Arch.], [Decisiones]),
     ..rfs.map(r => {
       let cs = casos.filter(c => r.id in c.rfs)

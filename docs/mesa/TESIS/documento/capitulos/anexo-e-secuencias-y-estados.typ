@@ -32,12 +32,12 @@ la base refuerza.
 
 == Notación
 
-*Secuencia (UML 2.5).* Cada participante tiene su cabecera y su línea de vida discontinua; el tiempo corre hacia abajo.
+*Secuencia (UML 2.5.1).* Cada participante tiene su cabecera y su línea de vida discontinua; el tiempo corre hacia abajo.
 La flecha continua con punta llena es una llamada; la discontinua con punta abierta, una respuesta; la continua con
 punta abierta, un mensaje asíncrono. La barra angosta sobre una línea de vida es el tramo en que ese participante está
 trabajando. Un marco «alt» separa alternativas, cada una con su guarda entre corchetes.
 
-*Estados (UML 2.5).* El círculo lleno es el estado inicial; la caja redondeada, un estado; la flecha, una transición
+*Estados (UML 2.5.1).* El círculo lleno es el estado inicial; la caja redondeada, un estado; la flecha, una transición
 con su nombre y quién puede dispararla; el círculo con un punto, el fin. Una transición que sale y vuelve al mismo
 estado no lo cambia, pero queda registrada como evento.
 
@@ -65,7 +65,7 @@ Lo que la secuencia demuestra, cada punto con su fuente en el código:
   bloqueados. Una revocación que llega antes se ve; una que llega después espera (ADR-02).
 - *Un reintento no duplica.* La clave de idempotencia se bloquea al empezar; un reintento con la misma clave vuelve a
   pasar por el PDP y, si sigue permitido, recibe la respuesta guardada sin escribir de nuevo.
-- *Lo que se deniega no deja rastro de datos.* Si el PDP deniega, lanza `DenegacionDelPdp`: la transacción se revierte
+- *Lo que se deniega no cambia datos.* Si el PDP deniega, lanza `DenegacionDelPdp`: la transacción se revierte
   entera, la decisión denegada se registra aparte y la respuesta es el mismo 404 que para un recurso inexistente.
 - *El aviso no frena a nadie.* `DespachadorDeAvisos.programar()` agenda dos pasadas, a los 2 y a los 20 segundos, fuera
   de la transacción. Si Expo Push no responde, la novedad ya está guardada y el aviso se reintenta en otra pasada.

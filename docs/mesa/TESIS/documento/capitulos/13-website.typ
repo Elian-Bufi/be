@@ -5,8 +5,8 @@
 #table(
   columns: (auto, 1fr),
   table.header([Campo], [Enlace]),
-  [Website hosteado], pendiente("enlace — pendiente de incorporación al cierre"),
-  [Código fuente del website], pendiente("enlace al repositorio — pendiente de incorporación al cierre"),
+  [Website hosteado], pendiente("Pendiente de incorporación en el cierre"),
+  [Código fuente del website], pendiente("Pendiente de incorporación en el cierre"),
 )
 
 #recuadro(titulo: [Por qué los campos están vacíos])[

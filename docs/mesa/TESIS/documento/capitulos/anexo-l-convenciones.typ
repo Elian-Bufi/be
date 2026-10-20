@@ -4,6 +4,8 @@
 // cada lámina con su revisión automática).
 #let tk = json("../../estilo/tokens.json")
 #let rev = json("../../laminas/revision.json")
+// Los tamaños con coma decimal, como se escriben en castellano (10,5 pt).
+#let num(x) = str(x).replace(".", ",")
 #let muestra(hex, borde: none) = box(width: 14pt, height: 9pt, radius: 2pt, fill: rgb(hex), stroke: if borde != none { 0.8pt + rgb(borde) } else { 0.6pt + borde })
 
 = Convenciones gráficas y procedimiento de las figuras
@@ -30,10 +32,10 @@ entienda impreso en blanco y negro o con daltonismo.
 #table(
   columns: (40mm, 1fr),
   table.header([Tipografía], [Uso y tamaños]),
-  [#tk.tipografia.texto], [Texto y títulos. En el documento: cuerpo #tk.tipografia.documento.cuerpo pt, tablas #tk.tipografia.documento.tabla pt; ningún rótulo baja de 10 pt.],
+  [#tk.tipografia.texto], [Texto y títulos. En el documento: cuerpo #num(tk.tipografia.documento.cuerpo) pt, tablas #num(tk.tipografia.documento.tabla) pt; ningún rótulo baja de 10 pt.],
   [#tk.tipografia.codigo], [Identificadores (RF-021, UC-P11, API-NUT-12), nombres de tablas y rutas.],
-  [En las láminas], [Mínimo #tk.tipografia.lamina.minimo pt, al tamaño final de impresión (la lámina se dibuja en puntos: 1 unidad = 1 pt).],
-  [En la proyección], [Mínimo #tk.tipografia.proyeccion.minimo pt; títulos de #tk.tipografia.proyeccion.titulo pt.],
+  [En las láminas], [Mínimo #num(tk.tipografia.lamina.minimo) pt, al tamaño final de impresión (la lámina se dibuja en puntos: 1 unidad = 1 pt).],
+  [En la proyección], [Mínimo #num(tk.tipografia.proyeccion.minimo) pt; títulos de #num(tk.tipografia.proyeccion.titulo) pt.],
 )
 
 == Notaciones por tipo de figura
@@ -41,11 +43,11 @@ entienda impreso en blanco y negro o con daltonismo.
 #table(
   columns: (34mm, 1fr),
   table.header([Figura], [Notación]),
-  [Casos de uso (CU)], [UML 2.5: el rectángulo es el límite del sistema; actor a los costados; asociación continua; «include» y «extend» discontinuas con flecha (la de extend apunta al caso base). Rótulo corto con identificador; los incluidos transversales se declaran en la nota.],
+  [Casos de uso (CU)], [UML 2.5.1: el rectángulo es el límite del sistema; actor a los costados; asociación continua; «include» y «extend» discontinuas con flecha (la de extend apunta al caso base). Rótulo corto con identificador; los incluidos transversales se declaran en la nota.],
   [DER], [Nivel lógico derivado del esquema; pata de gallo con obligatoriedad de Barker (`*` y `o`); claves PK, FK, UK y U1; ↗ para una clave que apunta a otra vista.],
-  [Clases (CL)], [UML 2.5 con tres compartimentos; el nombre en cursiva y «abstract» para lo abstracto; generalización con triángulo vacío; realización discontinua; dependencia discontinua con flecha; composición con rombo lleno del lado del todo; multiplicidad en cada extremo.],
+  [Clases (CL)], [UML 2.5.1 con tres compartimentos; el nombre en cursiva y «abstract» para lo abstracto; generalización con triángulo vacío; realización discontinua; dependencia discontinua con flecha; composición con rombo lleno del lado del todo; multiplicidad en cada extremo.],
   [Arquitectura (ARQ)], [Modelo C4: contexto, contenedores y despliegue; cada relación con un verbo y, si corresponde, la tecnología entre corchetes.],
-  [Componentes (COMP)], [UML 2.5: componente con su ícono; interfaz provista como chupetín; quien la requiere, con una dependencia discontinua.],
+  [Componentes (COMP)], [UML 2.5.1: componente con su ícono; interfaz provista como chupetín; quien la requiere, con una dependencia discontinua.],
   [Flujos, DFD y secuencias], [Las del anexo correspondiente (B a E), declaradas en cada uno.],
 )
 
@@ -57,7 +59,7 @@ densidad, textos que se pisan, rótulos sobre nodos o bordes, conectores que atr
 faltan en la tipografía. Después, la revisión visual se hace sobre la figura exportada y sobre la página del PDF.
 
 #table(
-  columns: (52mm, 1fr),
+  columns: (68mm, 1fr),
   table.header([Comando], [Qué hace]),
   [`node laminas/construir.mjs [ID]`], [Dibuja una o todas las láminas: SVG en `laminas/generado`, y PDF, PNG y SVG con encabezado y pie en `laminas/exportaciones`.],
   [`node construir-documento.mjs`], [Compila el documento público en `salida/BE-tesis-v1.pdf`.],
@@ -78,5 +80,5 @@ faltan en la tipografía. Después, la revisión visual se hace sobre la figura 
   )
 }
 
-Los cruces que quedan son inevitables con las relaciones de esa vista (dos relaciones en sentidos opuestos sobre el
-mismo tramo) y se revisaron a mano.
+Los cruces que quedan, dos en DER-04 y dos en DER-11, son inevitables con las relaciones de esas vistas (dos relaciones
+en sentidos opuestos sobre el mismo tramo) y se revisaron a mano.

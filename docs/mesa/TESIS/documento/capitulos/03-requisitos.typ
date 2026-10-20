@@ -30,7 +30,7 @@
       columns: (auto, 1fr, auto),
       column-gutter: 8pt,
       align: (left + horizon, left + horizon, right + horizon),
-      text(font: "JetBrains Mono", weight: 600, size: 10.5pt, fill: azul, r.id),
+      text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, r.id),
       text(weight: 600, size: 10.5pt, r.titulo),
       estado(e.estado),
     )
@@ -43,9 +43,9 @@
       row-gutter: 4.5pt,
       text(fill: tinta-suave, "Actor"), [#r.actor · prioridad #r.prioridad.slice(0, 2)],
       text(fill: tinta-suave, "Necesidad"), d.necesidad,
-      text(fill: tinta-suave, "Comportamiento"), r.obligacion,
+      text(fill: tinta-suave, "Comportamiento"), con-codigo(r.obligacion),
       text(fill: tinta-suave, "Reglas"), list(..d.reglas, tight: true, marker: [–]),
-      text(fill: tinta-suave, "Aceptación"), r.aceptacion,
+      text(fill: tinta-suave, "Aceptación"), con-codigo(r.aceptacion),
       text(fill: tinta-suave, "Plataforma"), [Prevista: #lower(r.canal) (DV-03) · implementada: #plataformas(e.plataformas)],
       text(fill: tinta-suave, "Caso de uso"), if r.ucs.len() > 0 { r.ucs.map(id).join(", ") } else { "—" },
       text(fill: tinta-suave, "Prueba"), {
@@ -53,7 +53,7 @@
         if pruebas.len() > 0 { [ · CI: #pruebas.slice(0, calc.min(4, pruebas.len())).map(p => raw(p)).join(", ")#if pruebas.len() > 4 [ y #(pruebas.len() - 4) más]] }
         if verif.len() > 0 { [ · #verif.join(" · ")] }
       },
-      ..if e.nota != "" { (text(fill: tinta-suave, "Estado"), e.nota) } else { () },
+      ..if e.nota != "" { (text(fill: tinta-suave, "Estado"), con-codigo(e.nota)) } else { () },
     )
   })
 }
@@ -68,7 +68,8 @@ el servidor sin pantalla propia, forman las *funciones compartidas*.
 
 == Cómo leer cada requisito
 
-Cada ficha tiene los campos que pide la escuela y dos que agrega esta tesis para que la lectura sea honesta:
+Cada ficha tiene los campos que pide la escuela. Algunos no están en el documento 04 o se completan de una manera
+particular:
 
 - *Necesidad* y *reglas*: el 04 no tiene esos campos. Se redactaron para esta tesis a partir de la obligación, del
   modelo de dominio (06), de la política de seguridad (08) y de las decisiones registradas; cuando una regla sale de
@@ -108,14 +109,16 @@ por Dirección para esta entrega). El registro de verificaciones está al final 
 
 Del núcleo P0 (59 requisitos), los únicos sin implementar son los ocho del alta y la verificación de profesionales y de
 la capacidad antropométrica (#id("RF-008") a #id("RF-014") y #id("RF-067")), que Dirección dejó fuera de esta entrega:
-los profesionales de la demostración se habilitan con un servicio interno (DL-036). La sección 3.7 detalla cada brecha.
+los profesionales de la demostración se habilitan con un servicio interno (DL-036). Otros dos están implementados en
+parte: #id("RF-017") (el perfil propio tiene un solo campo aprobado) y #id("RF-043") (la sustitución de ejercicios,
+un defecto abierto de la candidata, DL-151). La sección 3.7 detalla cada brecha.
 
 #{
   let letra = (verificado: "V", implementado: "I", parcial: "P", pendiente: "N", fuera: "F")
   let fila(canal) = ev.filter(r => r.canal == canal).map(r => box(inset: (right: 3pt, bottom: 3pt), {
     let e = est.requisitos.at(r.id).estado
     let paleta = C.estado.at(if e in C.estado { e } else { "fuera" })
-    box(fill: rgb(paleta.fondo), radius: 2pt, inset: (x: 3pt, y: 2pt), text(font: "JetBrains Mono", size: 10pt, fill: rgb(paleta.texto), weight: 600, r.id.slice(3) + " " + letra.at(e)))
+    box(fill: rgb(paleta.fondo), radius: 2pt, inset: (x: 3pt, y: 2pt), text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, fill: rgb(paleta.texto), weight: 600, r.id.slice(3) + " " + letra.at(e)))
   }))
   figure(
     kind: image,

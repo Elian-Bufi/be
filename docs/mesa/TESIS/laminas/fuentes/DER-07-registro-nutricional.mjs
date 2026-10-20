@@ -25,7 +25,7 @@ export function dibujar(L) {
         RevisionNutricional: [2, 1],
       },
       maximo: { IngestaNutricional: 6 },
-      separacionFilas: 22,
+      separacionFilas: 42,
       enfasis: ['IngestaNutricional'],
     },
     {

@@ -14,7 +14,7 @@
 }
 
 #let COHORTE = (
-  (nombre: "Lic. Sofía Paz", plataforma: [website (/pro)], permisos: [Nutrición y Antropometría con quien la aceptó y dio el consentimiento], escenario: [cartera de cinco personas, planes, revisiones y tomas; ficha de Diego Sosa con tres años de historia]),
+  (nombre: "Lic. Sofía Paz", plataforma: [website (/pro)], permisos: [Nutrición y Antropometría con quien la aceptó y dio el consentimiento], escenario: [cartera de cinco personas de la cohorte, más una sexta de la verificación del 2026-10-20 (anexo K, K16); planes, revisiones y tomas; ficha de Diego Sosa con tres años de historia]),
   (nombre: "Prof. Martín Acosta", plataforma: [website (/pro)], permisos: [Entrenamiento, con las mismas condiciones], escenario: [planes por serie, ejecución y revisión; la revisión del día de Federico Álvarez]),
   (nombre: "Prof. Lucía Benítez", plataforma: [website (/pro)], permisos: [solo Antropometría (capacidad transversal)], escenario: [tomas y cálculos de Camila Ortiz (recomposición)]),
   (nombre: "Diego Sosa", plataforma: [APK y website (cuenta)], permisos: [lo propio: plan del día, registro, evolución, vínculos y consentimientos], escenario: [tres años en tres áreas: de 104,5 a 80,8 kg]),
@@ -50,7 +50,7 @@ La verificación entró con cada cuenta en test, leyó su perfil y sus vínculos
 #{
   set text(size: 10pt)
   table(
-    columns: (30mm, 22mm, 1fr, 1fr, 30mm, 17mm),
+    columns: (28mm, 22mm, 1fr, 1fr, 26mm, 26mm),
     table.header([Cuenta], [Plataforma], [Permisos], [Escenario demostrable], [Vínculos], [Acceso]),
     ..COHORTE.map(c => {
       let r = fila(c.nombre)

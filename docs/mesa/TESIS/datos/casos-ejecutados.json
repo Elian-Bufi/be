@@ -31,7 +31,7 @@
       "fecha": "2026-10-20",
       "ejecutor": "Claude Code, con un guion de verificación remota",
       "evidencia": ["evidencia/remota/2026-10-20/sesion-chrome.json", "evidencia/remota/2026-10-20/sesion-edge.json", "evidencia/remota/2026-10-20/guiones/verificar-sesion.mjs"],
-      "limites": "Safari y Firefox no se probaron. La afirmación sobre CHIPS en Safari 26.2 queda para una revisión humana con el equipo de Apple."
+      "limites": "Safari y Firefox no se probaron. La afirmación sobre CHIPS en Safari 26.2 queda para una revisión humana en un equipo Apple (Mac o iPhone)."
     },
     {
       "id": "V-BOR",
@@ -134,7 +134,7 @@
       "uc": ["UC-P12", "UC-P17", "UC-P20"],
       "decisiones": ["DL-118", "DL-122", "DL-123", "DL-124"],
       "objetivo": "Recorrer en el teléfono lo que la persona hace cada día.",
-      "precondiciones": "APK 0.15.0-candidata.1 (versionCode 25) contra test; plan Piernas A activado el 8/10.",
+      "precondiciones": "APK 0.15.0-candidata.1 (versionCode 25) contra test; plan Piernas A activado el 2026-10-08.",
       "datos": "Cuenta sintética de asesorado de la demo.",
       "pasos": ["Abrir Antropometría y Mi evolución.", "Registrar comidas, también una diferente con foto.", "Iniciar y registrar una sesión de entrenamiento por serie."],
       "esperado": "Cada registro se guarda y se ve; sin errores.",
@@ -169,9 +169,9 @@
     }
   ],
   "pendientesDelTelefono": [
-    { "que": "La candidata 0.17.0-candidata.3 entera", "por_que": "No se probó en el teléfono; la estable sigue siendo la 0.13.2. Su compatibilidad con la API se prueba en la CI (PR #198, en borrador).", "fuente": "DL-150 (bloque 6) y prerelease be-apk-0.17.0-candidata.3" },
+    { "que": "La candidata 0.17.0-candidata.3 entera", "por_que": "No se probó en el teléfono; la estable sigue siendo la 0.13.2. Lo que lee de la API quedó congelado y probado en la CI del PR #198 (DL-152, en borrador y en verde); entra en la CI de main cuando se integre.", "fuente": "DL-152 y prerelease be-apk-0.17.0-candidata.3" },
     { "que": "Avisos push reales (Expo y Firebase)", "por_que": "Se probaron en la API y en la CI; falta un aviso recibido en un teléfono real.", "fuente": "DL-133, condición de cierre" },
-    { "que": "Agenda de entrenamiento por días", "por_que": "Integrada (#174 y #175); falta la APK construida y en un teléfono.", "fuente": "DL-137" },
+    { "que": "Agenda de entrenamiento por días", "por_que": "Integrada (#174 y #175) y presente en las candidatas 0.17.0-candidata.2 y .3; falta probarla en un teléfono.", "fuente": "DL-137" },
     { "que": "Los arreglos de la 0.15.0-candidata.1", "por_que": "Foto de una comida diferente (#151) e iniciar con otra sesión abierta (#152): corregidos y sin volver a probar.", "fuente": "T-015 y docs/QUE-FALTA.md" },
     { "que": "Recuperar la sustitución de ejercicios", "por_que": "La 0.13.2 la tenía y la candidata no (regresión, DL-151); la recuperación está en un PR en borrador.", "fuente": "PR #195 (borrador)" },
     { "que": "Lector de pantalla (TalkBack)", "por_que": "La prueba que pide el plan 11A no se hizo.", "fuente": "EVIDENCIA/ENTREGA/GUIA-DE-CAPTURAS-APK.md, paso 5.3" }

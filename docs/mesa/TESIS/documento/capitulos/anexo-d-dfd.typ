@@ -13,19 +13,20 @@ de contexto, con BE como un solo proceso, y el nivel 1, que lo abre en ocho proc
 
 Se usa la notación de Yourdon y DeMarco:
 
-- *Proceso:* un círculo con su número y un nombre que empieza con un verbo. El de contexto es el 0; los del nivel 1, del
+- *Proceso:* un círculo con su número y un nombre que empieza con un verbo. El de contexto es el 0 y lleva el nombre
+  del sistema («BE: seguimiento profesional»), como es costumbre en el diagrama de contexto; los del nivel 1, del
   1 al 8. Un proceso del nivel 2 sería 4.1, 4.2…; esta versión no llega a ese nivel.
 - *Almacén de datos:* un rectángulo abierto con su código (D1 a D8) y su nombre. Cada almacén es un grupo de vistas del
   DER del apartado 6, así el DFD y el DER cuentan la misma base.
 - *Entidad externa:* un rectángulo con quien está afuera de BE: una persona o un sistema, con el mismo color y el mismo
   borde que en los diagramas de arquitectura.
-- *Flujo de datos:* una flecha con el nombre del dato que viaja, nunca un verbo. Una flecha con dos puntas es un almacén
-  que el proceso lee y escribe. Un flujo sin nombre entre un proceso y un almacén lleva registros completos del almacén
+- *Flujo de datos:* una flecha con el nombre del dato que viaja, nunca un verbo. Una flecha con dos puntas entre un proceso y
+  un almacén indica que el proceso lee y escribe en ese almacén. Un flujo sin nombre entre un proceso y un almacén lleva registros completos del almacén
   (convención de Yourdon).
 
 Dos cosas no se dibujan para no repetirlas en cada proceso, y se declaran acá: todo proceso que escribe deja su
 historia y su auditoría en D8 (Historia y auditoría) en la misma transacción que su efecto, y todo acceso a datos de
-salud lo decide el punto único de autorización (PDP), que lee el vínculo y el consentimiento en D3 y registra ahí su
+salud lo decide el punto único de decisión de autorización (PDP), que lee el vínculo y el consentimiento en D3 y registra ahí su
 decisión.
 
 == Contexto
@@ -51,10 +52,10 @@ con una sola numeración: D-01 lo que pone en marcha el seguimiento (procesos 1 
 
 #recuadro(titulo: [En 30 segundos], tipo: "decision")[
   Primero hay que entrar (1), vincularse y consentir (2), y tener de dónde elegir alimentos, recetas y ejercicios (3).
-  Con eso, el profesional planifica (4): el plan queda en D5 y el proceso abierto en D2. Lo que registran el asesorado y
-  el profesional va a D6 (5). La revisión lee D6, escribe su resultado y mueve el proceso (6). Cada hecho que alguien
-  tiene que ver deja una novedad en D7, que el proceso 7 entrega y avisa por push. El 8 mide la TVCC-30 leyendo procesos,
-  vínculos y revisiones.
+  Con eso, el profesional planifica (4): el plan queda en D5 y el proceso operativo abierto en D2. Lo que registran el asesorado y
+  el profesional va a D6 (5). La revisión lee D6, escribe su resultado y hace avanzar el proceso operativo (6). Cada hecho que alguien
+  tiene que ver deja una novedad en D7, que el proceso 7 entrega y avisa por push. El 8 mide la TVCC-30 leyendo procesos
+  operativos, vínculos y revisiones.
 ]
 
 #pagina-apaisada[

@@ -20,7 +20,7 @@
 
 = Diagrama de componentes
 
-Los diagramas de componentes (UML 2.5) muestran cómo se arma el software: qué piezas hay, qué interfaz provee cada una
+Los diagramas de componentes (UML 2.5.1) muestran cómo se arma el software: qué piezas hay, qué interfaz provee cada una
 y quién la requiere. Están en dos niveles: el sistema completo y la API por dentro. Cada componente nombra su lugar en
 el repositorio, para que se pueda ir del dibujo al código.
 
@@ -49,25 +49,26 @@ requiere la tarea programada. La API, a su vez, requiere la base de datos y tres
 == Los módulos de la API
 
 La API tiene #mods.len() módulos de NestJS. Cinco son globales (base de datos, plataforma, autorización, proceso y
-novedades): los usan todos sin importarlos. El resto se agrupa por responsabilidad: acceso, vínculo, seguimiento y los
+novedades): los usan todos sin importarlos. La figura los agrupa como «Comunes» junto con el de salud del servicio
+(`/health/ready`), que no es global. El resto se agrupa por responsabilidad: acceso, vínculo, seguimiento y los
 dominios de salud. Las flechas son las importaciones declaradas en cada `*.module.ts`; casi todos importan además el
 módulo de sesión, que no se dibuja.
 
 #pagina-apaisada[
-  #lamina("COMP-02", "Los módulos de la API", alcance: "Los 22 módulos agrupados, las familias de operaciones que expone cada uno y sus dependencias", fuente: "apps/api/src/*/…module.ts", etiqueta: "fig-comp-api")
+  #lamina("COMP-02", "Los módulos de la API", alcance: "Los 22 módulos agrupados, las familias de operaciones que expone cada uno y sus dependencias", fuente: "apps/api/src/*/*.module.ts", etiqueta: "fig-comp-api")
 ]
 
 #{
   set text(size: 10pt)
   table(
-    columns: (32mm, 26mm, 1fr, 13mm, 13mm, 1fr),
+    columns: (36mm, 33mm, 1fr, 13mm, 13mm, 1fr),
     align: (left, left, left, center, center, left),
     table.header([Módulo], [Carpeta], [Familias que expone], [Contr.], [Serv.], [Importa]),
     ..mods.map(m => {
       let fs = m.controladores.map(c => c.operaciones.map(o => o.replace(regex("^API-"), "").replace(regex("-.*$"), ""))).flatten().dedup()
       (
-        text(font: "JetBrains Mono", m.modulo.replace("Module", "")) + if m.global { text(fill: tinta-suave)[ (global)] },
-        raw(m.carpeta),
+        text(font: "JetBrains Mono", hyphenate: false, lang: "en", partible(m.modulo.replace("Module", ""))) + if m.global { text(fill: tinta-suave, hyphenate: false)[ (global)] },
+        cp(m.carpeta),
         if fs.len() > 0 { fs.join(" · ") } else { text(fill: tinta-suave, "—") },
         str(m.controladores.len()),
         str(m.servicios.len()),
@@ -82,7 +83,8 @@ módulo de sesión, que no se dibuja.
 Cada operación del contrato tiene un identificador `API-FAMILIA-NN` y pertenece a una familia. Las familias son las
 interfaces que provee la API: #fam.operaciones operaciones en #fam.familias.keys().len() familias. Trece vienen del legajo
 (09): ACC, REL, CON, NUT, INT, TRN, ANT, DSH, PRJ, CRD, MTH, CAL y FRM; la familia PRO (verificación profesional)
-quedó fuera de la entrega. Las otras diecisiete son extensiones registradas como decisiones (anexo H). El contrato
+quedó fuera de la entrega. Las otras diecisiete son extensiones registradas como decisiones en `docs/DEUDA_LEGAJO.md` (el anexo H resume
+las principales). El contrato
 publicado se genera de `packages/domain/src/openapi.ts` y la CI verifica que coincida con el código
 (`scripts/generar-openapi.cjs --verificar`).
 
@@ -93,10 +95,10 @@ publicado se genera de `packages/domain/src/openapi.ts` y la CI verifica que coi
     align: (left, left, center, left),
     table.header([Sigla], [Qué agrupa], [Oper.], [Primera operación]),
     ..fam.familias.pairs().sorted(key: p => p.at(0)).map(((f, v)) => (
-      text(font: "JetBrains Mono", f),
+      text(font: "JetBrains Mono", hyphenate: false, lang: "en", f),
       QUE.at(f, default: text(fill: tinta-suave, "—")),
       str(v.n),
-      text(font: "JetBrains Mono", size: 10pt, v.ejemplo.replace("/", "/\u{200b}")),
+      text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, v.ejemplo.replace("/", "/\u{200b}")),
     )).flatten(),
   )
 }

@@ -28,7 +28,7 @@ export function dibujar(L) {
   L.almacen({ id: 'd4', x: 604, y: 104, w: 120, codigo: 'D4', nombre: 'Catálogos' });
 
   flujoDeDatos(L, 'pro', 'p1', 'credenciales', { desplazamiento: 7 });
-  flujoDeDatos(L, 'p1', 'pro', 'sesión', { desplazamiento: 7 });
+  flujoDeDatos(L, 'p1', 'pro', 'sesión', { desplazamiento: 7, pos: 0.22, lado: 'der', manual: true });
   flujoDeDatos(L, 'ase', 'p1', 'credenciales', { desplazamiento: 7, pos: 0.7, lado: 'der', manual: true });
   flujoDeDatos(L, 'p1', 'ase', 'sesión', { desplazamiento: 7, pos: 0.5, lado: 'izq', manual: true });
   flujoDeDatos(L, 'goo', 'p1', ['claves', 'públicas']);

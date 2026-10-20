@@ -99,14 +99,15 @@ Son las uniones que la vista general dibuja como líneas.
 #{
   set text(size: 10pt)
   table(
-    columns: (16mm, 1fr, 1fr, 16mm),
+    columns: (16mm, 1.25fr, 1fr, 16mm),
     table.header([Desde], [Entidad y clave], [Apunta a], [Vista]),
-    ..cev.map(c => (id(c.de), [#c.desde.#c.campos.join(", ")], c.hacia, id(c.a))).flatten(),
+    ..cev.map(c => (id(c.de), partible(c.desde + "." + c.campos.join(", ")), partible(c.hacia), id(c.a))).flatten(),
   )
 }
 
-#let total-identidad = esq.relaciones.filter(r => r.hacia == "Identidad").map(r => r.clavesForaneas.len()).sum()
-Hacia Identidad (DER-01) apuntan #total-identidad claves foráneas de las otras trece vistas. Sus nombres dicen qué
+// Solo las claves que llegan desde otras vistas: las internas de DER-01 (perfil, métodos, sesiones) no se cuentan.
+#let total-identidad = esq.relaciones.filter(r => r.hacia == "Identidad" and r.desde not in vista("DER-01").modelos).map(r => r.clavesForaneas.len()).sum()
+Hacia Identidad (DER-01) apuntan #total-identidad claves foráneas desde las otras trece vistas. Sus nombres dicen qué
 papel cumple la persona en cada registro:
 
 #table(
@@ -117,7 +118,7 @@ papel cumple la persona en cada registro:
 
 == Lo que garantiza la base
 
-Cuatro familias de reglas sostienen la historia clínica. Todas están en las migraciones y se prueban en la CI.
+Cuatro familias de reglas sostienen la historia del seguimiento. Todas están en las migraciones y se prueban en la CI.
 
 - *Nada se borra en cascada.* Las #rb.clavesForaneas claves foráneas son RESTRICT. Corregir, anular o rectificar agrega
   filas encadenadas; el original queda.
@@ -133,7 +134,7 @@ Cuatro familias de reglas sostienen la historia clínica. Todas están en las mi
   table(
     columns: (1fr, 1.2fr, 22mm),
     table.header([Índice (tabla)], [Definición: columnas y condición], [Migración]),
-    ..parciales.map(p => ([#text(font: "JetBrains Mono", p.indice.replace("_", "_\u{200b}")) #linebreak() #text(fill: tinta-suave)[(#p.tabla.replace("_", "_\u{200b}"))]], text(font: "JetBrains Mono", p.definicion.replace("_", "_\u{200b}")), [#p.migracion.slice(0, 4)-#p.migracion.slice(4, 6)-#p.migracion.slice(6, 8)])).flatten(),
+    ..parciales.map(p => ([#text(font: "JetBrains Mono", hyphenate: false, lang: "en", p.indice.replace("_", "_\u{200b}")) #linebreak() #text(fill: tinta-suave)[(#p.tabla.replace("_", "_\u{200b}"))]], text(font: "JetBrains Mono", hyphenate: false, lang: "en", p.definicion.replace("_", "_\u{200b}")), [#p.migracion.slice(0, 4)-#p.migracion.slice(4, 6)-#p.migracion.slice(6, 8)])).flatten(),
   )
 }
 
@@ -161,10 +162,10 @@ el esquema y las migraciones de entonces (`docs/mesa/MESA_02/DV-06/RECONCILIACIO
 *Lo que cambió después de la conciliación.* El esquema pasó de 83 a #esq.modelos.len() modelos. De las 14 entidades
 que faltaban, cinco se implementaron: la novedad interna y la notificación push (DL-133), la TVCC-30 (DL-135), la
 evidencia visual de la ingesta (DL-119 y DL-120) y la nota de coordinación (DL-140). El ciclo cerrado trazable no
-tiene tabla: la TVCC-30 lo reconstruye de los hechos en cada corrida. Siguen sin implementar, fuera de alcance: la
-incidencia administrativa (RF-068), la zona muscular y su relación con el ejercicio (DL-081), el servicio
-antropométrico publicado (RF-051), el grupo de intercambio y el nutriente crítico (modalidad B), el atlas de
-porciones y el recurso didáctico de catálogo. La conciliación no se rehízo entera: este apartado actualiza solo lo
+tiene tabla: la TVCC-30 lo reconstruye de los hechos en cada corrida. Siguen sin implementar la
+incidencia administrativa (RF-068) y el servicio antropométrico publicado (RF-051), los dos aprobados y pendientes
+(apartado 3.7), y además la zona muscular y su relación con el ejercicio (DL-081), el grupo de intercambio y el
+nutriente crítico (modalidad B), el atlas de porciones y el recurso didáctico de catálogo. La conciliación no se rehízo entera: este apartado actualiza solo lo
 que cambió y lo marca en el anexo K.
 
 El diccionario de datos completo (cada columna con su tipo lógico y físico, su obligatoriedad, su clave y su

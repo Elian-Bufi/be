@@ -18,16 +18,21 @@ decisiones son del profesional; BE las registra y las hace cumplir.
 *Respaldo:* apartado 2 (límites); C-01 (la comida diferente queda «sin calcular»).
 
 **3. ¿Qué quedó fuera de esta entrega?**
-La verificación de profesionales y de su capacidad (RF-008 a RF-014 y RF-067: los profesionales de la demo se habilitan
-con un servicio interno, DL-036), el administrador previsto por el legajo y cinco operaciones del núcleo P0 del
-contrato (DSH-01, 02 y 05, cubiertas en parte por la cartera, y PRJ-02 y 03).
-*Respaldo:* apartado 3 (brechas); anexo K (K4).
+Fuera de alcance, por decisión de Dirección: la verificación de profesionales y de su capacidad (RF-008 a RF-014 y
+RF-067; los profesionales de la demo se habilitan con un servicio interno, DL-036) y la recuperación del acceso
+(RF-005). Aprobados y sin construir: las incidencias administrativas (RF-068), que dependen del administrador previsto
+por el legajo, y la publicación de servicios antropométricos (RF-051). En parte: vincular métodos de acceso (RF-004:
+solo Google a una cuenta con contraseña), el perfil propio (RF-017: un solo campo aprobado), la sustitución de
+ejercicios en la candidata (RF-043, DL-151) y la capacidad del profesional, que existe pero no se configura desde una
+pantalla (RF-066). Del contrato P0 faltan cinco operaciones: DSH-01, 02 y 05 (cubiertas en parte por la cartera, la
+ficha y «Mi evolución») y PRJ-02 y 03.
+*Respaldo:* apartado 3 (brechas); anexo K (K1 y K4).
 
 ## Privacidad y seguridad
 
 **4. ¿Quién puede ver los datos de salud de una persona?**
 Solo un profesional con un vínculo aceptado para esa área y con el consentimiento vigente del asesorado, más el
-tratamiento de datos de salud (A3) aceptado. Lo decide un único punto de autorización (PDP), igual para el website y la
+tratamiento de datos de salud (A3) aceptado. Lo decide el punto único de decisión de autorización (PDP), igual para el website y la
 APK, dentro de la misma transacción que la operación, y cada decisión queda registrada.
 *Respaldo:* apartado 7 (CL-02), anexo E (E-01); `apps/api/src/autorizacion/pdp.service.ts`.
 
@@ -124,7 +129,7 @@ arreglo está en un PR en borrador. Por eso la candidata no se promovió a estab
 **20. ¿Qué es la TVCC-30?**
 La métrica de validación de la tesis: de los ciclos de seguimiento que vencieron en una ventana de 30 días, cuántos
 tuvieron una revisión profesional aplicada antes del corte. No es retención ni resultado de salud. Sobre la cohorte
-sintética, el 2026-10-16, dio 5 de 7 (71,4 %): es una demostración del cálculo, no una medición del servicio.
+sintética local, el 2026-10-16, dio 5 de 7 (71,4 %): es una demostración del cálculo, no una medición del servicio.
 *Respaldo:* RF-058, DL-135; `EVIDENCIA/TVCC-30/LEEME.md`; anexo D (proceso 8).
 
 ## Método

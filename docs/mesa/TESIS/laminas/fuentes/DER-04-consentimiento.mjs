@@ -23,7 +23,7 @@ export function dibujar(L) {
         EventoDeVinculo: [2, 1],
       },
       maximo: 6,
-      separacionFilas: 26,
+      separacionFilas: 42,
       enfasis: ['Consentimiento'],
     },
     {

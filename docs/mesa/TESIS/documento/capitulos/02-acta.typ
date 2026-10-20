@@ -13,7 +13,7 @@ Un nutricionista arma un plan en un documento, lo envía por mensajería y anota
 entrenador hace lo mismo por su lado. La persona que los consulta registra lo que come en una aplicación de consumo,
 si es que registra algo. Nadie ve el proceso completo, nadie puede reconstruir por qué se decidió lo que se decidió y
 la persona no controla quién accede a qué parte de su información de salud. Esta descripción es la *hipótesis de
-problema* del proyecto (documento 02): no surge de entrevistas realizadas y se valida con la prueba con profesionales
+problema* del proyecto (documento 02): no surge de entrevistas realizadas y se validará con la prueba con profesionales
 descripta en 2.8.
 
 BE aborda ese problema con cuatro decisiones de diseño, cada una implementada en la versión de referencia:
@@ -27,7 +27,8 @@ BE aborda ese problema con cuatro decisiones de diseño, cada una implementada e
   no reemplaza al plan: el profesional los compara en una revisión con decisión de continuidad (#id("RF-033"),
   #id("RF-043"), #id("RF-056")).
 + *Nada se borra.* Una corrección o una anulación es un registro nuevo que cita al original. La base de datos lo exige
-  con disparadores, no solo la aplicación (apartado 6).
+  con disparadores, no solo la aplicación (apartado 6). La única excepción es la foto de una comida que la persona
+  pide suprimir: se borran sus bytes y queda la constancia, con su momento (API-MED-05).
 
 #recuadro(titulo: [Lo que BE no hace], tipo: "decision")[
   BE no diagnostica ni califica: no calcula puntajes de adherencia ni de salud. Muestra hechos (qué se indicó, qué se
@@ -51,7 +52,8 @@ BE se dirige a dos poblaciones vinculadas y prevé una tercera que hoy no tiene 
 == Uso previsto
 
 Un profesional habilitado invita a una persona (enlace, código o QR) o le envía una solicitud. La persona acepta el
-vínculo y, en el mismo recorrido, otorga el permiso de datos de salud para esa finalidad. A partir de ahí el
+vínculo y, en el mismo recorrido, autoriza el acceso para esa finalidad (B2) y, si todavía no lo hizo, el tratamiento de
+sus datos de salud (A3). A partir de ahí el
 profesional evalúa, fija un objetivo, diseña un plan en borrador y lo activa. La persona consulta en la APK lo que
 tiene para hoy y registra lo que hizo. El profesional revisa periódicamente lo registrado contra lo indicado y decide
 cómo seguir. Si la persona trabaja con más de un profesional, cada uno opera en su alcance y pueden dejarse notas de
@@ -68,11 +70,11 @@ separada de la ejecución real y sin que el sistema sustituya el criterio profes
 #table(
   columns: (auto, 1fr, 1fr),
   table.header([N.º], [Objetivo específico], [Cómo se comprueba]),
-  [O1], [Gobernar cada acceso a datos de salud por alcance, finalidad y consentimiento vigente, igual en el website y en la APK.], [Requisitos #id("RF-020") a #id("RF-023"); punto único de decisión (PDP) en el apartado 8; pruebas de acceso revocado (apartado 5).],
-  [O2], [Versionar la planificación: lo activado no se modifica.], [Requisitos #id("RF-031") y #id("RF-041"); restricciones de la base (apartado 6).],
-  [O3], [Registrar la ejecución separada de lo indicado y revisarla con decisión de continuidad.], [Requisitos #id("RF-033"), #id("RF-043"), #id("RF-056"); casos #id("UC-P12"), #id("UC-P13"), #id("UC-P17"), #id("UC-P18").],
-  [O4], [Conservar toda la historia: corregir y anular sin borrar.], [Requisitos #id("RF-044") y #id("RF-050"); disparadores de solo agregar (apartado 6).],
-  [O5], [Medir el resultado del servicio con una métrica reproducible: la tasa de ciclos cerrados en 30 días (TVCC-30).], [Requisito #id("RF-058") y caso #id("UC-S01").],
+  [O1], [Gobernar cada acceso a datos de salud por alcance, finalidad y consentimiento vigente, igual en el website y en la APK.], [Requisitos #id("RF-020") a #id("RF-023")\; punto único de decisión de autorización (PDP) en el apartado 8; pruebas de acceso revocado (apartado 5).],
+  [O2], [Versionar la planificación: lo activado no se modifica.], [Requisitos #id("RF-031") y #id("RF-041")\; restricciones de la base (apartado 6).],
+  [O3], [Registrar la ejecución separada de lo indicado y revisarla con decisión de continuidad.], [Requisitos #id("RF-033"), #id("RF-043"), #id("RF-056")\; casos #id("UC-P12"), #id("UC-P13"), #id("UC-P17"), #id("UC-P18").],
+  [O4], [Conservar toda la historia: corregir y anular sin borrar.], [Requisitos #id("RF-044") y #id("RF-050")\; disparadores de solo agregar (apartado 6).],
+  [O5], [Medir el resultado del servicio con una métrica reproducible: la tasa de ciclos cerrados en 30 días (TVCC-30).], [Cálculo implementado (#id("RF-058"), #id("UC-S01")) y demostrado con datos sintéticos; la medición con profesionales reales queda pendiente.],
 )
 
 *Objetivo académico.* Demostrar un ciclo completo de análisis de sistemas, desde los requisitos hasta los contratos de
@@ -81,28 +83,30 @@ interfaz, el modelo de datos, la implementación y la verificación, con trazabi
 
 == Alcance
 
-El alcance se describe por capacidades y en tres niveles que este documento nunca mezcla: *implementado* (está en la
-versión de referencia), *aprobado pendiente* (está en el legajo y no se construyó) y *propuesta* (no aprobado). El
-detalle por requisito y su evidencia están en el apartado 3.
+El alcance se describe por capacidades, con estados que este documento nunca mezcla: *implementado* (está en la
+versión de referencia, completo o en parte), *aprobado pendiente* (está en el legajo y no se construyó), *fuera de
+alcance* (Dirección lo dejó fuera de esta entrega) y *propuesta* (no aprobado). El detalle por requisito y su
+evidencia están en el apartado 3.
 
 #table(
   columns: (1.35fr, auto, auto, 1.3fr),
   table.header([Capacidad], [Requisitos], [Superficie], [Estado en la versión de referencia]),
-  [Identidad, sesión y cuenta], [#id("RF-001") a #id("RF-007"), #id("RF-069")], [W · A], [#estado("implementado") Acceso con Google; la sesión del website sobrevive a una recarga. Pendiente: recuperar el acceso (#id("RF-005")).],
-  [Alta y verificación de profesionales; administración], [#id("RF-008") a #id("RF-014"), #id("RF-067"), #id("RF-068")], [W], [#estado("fuera") Los profesionales de prueba se habilitan con un servicio interno (DL-036).],
+  [Identidad, sesión y cuenta], [#id("RF-001") a #id("RF-007"), #id("RF-069")], [W · A], [#estado("implementado") Acceso con Google; la sesión del website sobrevive a una recarga. Fuera de alcance: recuperar el acceso (#id("RF-005")).],
+  [Alta y verificación de profesionales; administración], [#id("RF-008") a #id("RF-014"), #id("RF-067"), #id("RF-068")], [W], [#estado("fuera") Los profesionales de prueba se habilitan con un servicio interno (DL-036). Pendiente: las incidencias administrativas (#id("RF-068"), P1), que dependen del rol de administración.],
   [Vínculo, consentimiento y autorización], [#id("RF-015"), #id("RF-017") a #id("RF-025")], [W · A], [#estado("implementado") Invitación por enlace, código o QR. Parcial: el perfil propio tiene un solo campo (#id("RF-017")).],
   [Circuito de nutrición], [#id("RF-026") a #id("RF-035")], [W · A], [#estado("implementado") Con recetas propias y catálogo de USDA.],
-  [Circuito de entrenamiento], [#id("RF-036") a #id("RF-046"), #id("RF-064")], [W · A], [#estado("implementado") Con prescripción por serie y agenda. Defecto abierto: sustitución de ejercicios en la candidata (DL-151).],
+  [Circuito de entrenamiento], [#id("RF-036") a #id("RF-046"), #id("RF-064")], [W · A], [#estado("implementado") Con prescripción por serie y agenda. Parcial: sustituir un ejercicio durante la sesión (#id("RF-043")), un defecto abierto de la candidata (DL-151).],
   [Antropometría], [#id("RF-047") a #id("RF-051")], [W · A], [#estado("implementado") Pendiente: publicar y descubrir servicios (#id("RF-051"), P1).],
   [Seguimiento: cartera, ficha, línea de tiempo, notas, TVCC-30], [#id("RF-052") a #id("RF-058"), #id("RF-065"), #id("RF-066")], [W · A], [#estado("implementado") Parcial: la capacidad del profesional, sin interfaz (#id("RF-066")).],
-  [Integraciones y avisos], [#id("RF-059") a #id("RF-062")], [W · A], [#estado("implementado") Los avisos al teléfono falta probarlos en un equipo.],
+  [Integraciones y avisos], [#id("RF-059") a #id("RF-062")], [W · A], [#estado("implementado") Falta probar los avisos push en un teléfono.],
   [Métodos de cálculo e información pertinente], [#id("RF-070"), #id("RF-071")], [W · A], [#estado("implementado")],
 )
 
-*Propuestas (no implementadas ni aprobadas):* las seis ampliaciones del bloque 7 del encargo de consolidación (A a F),
-diseñadas contra el código y sin empezar (PR 193); la biblioteca de recetas de BE; los rangos de macronutrientes por
-día y por comida, pedido abierto sin decisión; y el piloto de inteligencia supervisada (PF-08). Se mencionan para
-mostrar la evolución prevista (anexo H), no como capacidades.
+*Propuestas (no implementadas ni aprobadas):* seis ampliaciones (A a F) planteadas el 2026-10-19 y diseñadas contra
+el código, sin empezar (PR \#193); la biblioteca de recetas de BE; los rangos de macronutrientes por día y por comida,
+pedido abierto sin decisión; y el piloto de inteligencia supervisada (PF-08, en
+`docs/propuestas/BE_Plan_Funcional_Profesional_v1-1.md`). Se mencionan para mostrar hacia dónde puede crecer BE, no
+como capacidades; sus fichas están en `docs/propuestas/`.
 
 == Límites
 
@@ -196,7 +200,7 @@ versión publicada y Healthie conserva los planes desactivados.
 
 *Conclusión defendible.* BE no se presenta como el único que integra áreas ni como el único que cuida datos. Su aporte
 es hacer explícita y comprobable una combinación: el titular decide por finalidad, lo indicado se versiona, lo
-registrado se separa de lo indicado y nada se borra, en las dos superficies y con trazabilidad desde el requisito hasta
+registrado se separa de lo indicado y corregir no borra, en las dos superficies y con trazabilidad desde el requisito hasta
 la prueba. Si esa combinación resuelve el problema del público objetivo es la hipótesis que valida la prueba con
 profesionales; una comparación empírica exigiría cuentas de prueba en cada producto y el mismo protocolo.
 

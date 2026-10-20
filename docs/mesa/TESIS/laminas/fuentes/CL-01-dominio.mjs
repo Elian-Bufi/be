@@ -24,13 +24,13 @@ export function dibujar(L) {
   C('con', 2, 0, { nombre: 'Consentimiento', atributos: ['finalidad', 'situacion, version'], operaciones: ['otorgar()', 'revocar()'] });
   // Fila 1: evaluación, objetivo, versión del plan y plan.
   C('eva', 0, 1, { nombre: 'EvaluacionNutricional', atributos: ['valoracion', 'referencias'] });
-  C('obj', 1, 1, { nombre: 'VersionDeObjetivo', estereotipo: 'nutricional', atributos: ['vigenteDesde', 'distribución de macros'] });
+  C('obj', 1, 1, { nombre: 'VersionDeObjetivo', estereotipo: 'nutricional', atributos: ['vigenteDesde', 'requerimientoEnergetico'] });
   C('ver', 2, 1, { nombre: 'VersionDePlan', estereotipo: 'nutricional', atributos: ['version', 'estado'], operaciones: ['validar()', 'activar()'], enfasis: true });
   C('pla', 3, 1, { nombre: 'PlanNutricional', atributos: [] });
   // Fila 2: próxima revisión, proceso, revisión e ingesta.
   C('pro', 0, 2, { nombre: 'ProximaRevision', atributos: ['fechaObjetivo', 'fuente'] });
   C('prc', 1, 2, { nombre: 'ProcesoOperativo', atributos: ['alcance', 'estado'] });
-  C('rev', 2, 2, { nombre: 'RevisionNutricional', atributos: ['periodo', 'resultado'], operaciones: ['registrar()', 'aplicar()'] });
+  C('rev', 2, 2, { nombre: 'RevisionNutricional', atributos: ['periodoInicio, periodoFin', 'resultado'], operaciones: ['registrar()', 'aplicar()'] });
   C('ing', 3, 2, { nombre: 'IngestaNutricional', atributos: ['origen, modo', 'fechaLocal'], operaciones: ['registrar()', 'corregir()', 'anular()'] });
 
   const n = (id) => L.nodos.get(id);

@@ -8,7 +8,7 @@
 
 #let PAQUETES = (
   (titulo: "Acceso y cuenta", vista: "CU-01", casos: ("UC-P25", "UC-P26", "UC-P27", "UC-E05", "UC-E06", "UC-E09", "UC-I11"),
-    texto: [El registro de la identidad, la sesión y el cierre de la cuenta son comunes a profesionales y asesorados. El acceso con Google, la administración de métodos y la recuperación son extensiones de la sesión; la recuperación sigue pendiente (fuera de esta entrega).]),
+    texto: [El registro de la identidad, la sesión y el cierre de la cuenta son comunes a profesionales y asesorados. El acceso con Google, la administración de métodos y la recuperación son extensiones de la sesión; la recuperación quedó fuera del alcance de esta entrega.]),
   (titulo: "Alta profesional y administración", vista: "CU-02", casos: ("UC-P01", "UC-P02", "UC-E01", "UC-P03", "UC-P28", "UC-P29", "UC-I01"),
     texto: [El legajo prevé que un profesional pida verificación y que un administrador la resuelva. Esa parte quedó fuera de esta entrega: los profesionales sintéticos se habilitan con un servicio interno (DL-036). La vista se incluye para mostrar con precisión la frontera de lo implementado.]),
   (titulo: "Vínculo y consentimiento", vista: "CU-03", casos: ("UC-P04", "UC-P05", "UC-P06", "UC-P07", "UC-P08"),
@@ -30,7 +30,7 @@
 #let lista-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { enum(..items, tight: true, numbering: "1.") }
 #let viñetas-o(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else { list(..items, tight: true, marker: [–]) }
 #let alternativas(items, vacio) = if items == none or items.len() == 0 { text(fill: tinta-suave, vacio) } else {
-  list(tight: true, marker: [–], ..items.map(a => [#text(font: "JetBrains Mono", size: 10pt, weight: 600, a.id) #a.titulo#if a.at("resultado", default: none) != none [: #a.resultado]]))
+  list(tight: true, marker: [–], ..items.map(a => [#text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, weight: 600, a.id) #a.titulo#if a.at("resultado", default: none) != none [: #a.resultado]]))
 }
 
 /// Ficha de un caso de uso con los campos que pide la escuela.
@@ -49,7 +49,7 @@
       columns: (auto, 1fr, auto),
       column-gutter: 8pt,
       align: (left + horizon, left + horizon, right + horizon),
-      text(font: "JetBrains Mono", weight: 600, size: 10.5pt, fill: azul, c.id),
+      text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, c.id),
       [#text(weight: 600, size: 10.5pt, c.nombre) #text(size: 10pt, fill: tinta-suave)[· #lower(c.at("tipo", default: "")) · #c.at("canal", default: "") · 05 §#c.seccion05]],
       estado(e.estado),
     ))
@@ -85,7 +85,7 @@
         if ext != none and ext.len() > 0 { partes.push([lo extiende #ext.map(id).join(", ")]) }
         if partes.len() > 0 { partes.join(" · ") } else { text(fill: tinta-suave, "—") }
       }),
-      ..fila("Implementación", [#estado(e.estado)#if e.nota != "" [ #e.nota] · #c.evidencia.pruebas.len() archivo#if c.evidencia.pruebas.len() != 1 [s] de prueba lo citan]),
+      ..fila("Implementación", [#estado(e.estado)#if e.nota != "" [ #e.nota] · #c.evidencia.pruebas.len() archivo#if c.evidencia.pruebas.len() != 1 [s] de prueba #if c.evidencia.pruebas.len() == 1 [lo cita] else [lo citan]]),
     )
   })
 }
@@ -135,7 +135,7 @@ principal de cada caso; los actores secundarios figuran en las fichas.
     if n.ancho > 600 {
       pagina-apaisada(lamina(p.vista, "Casos de uso · " + p.titulo, fuente: "05 v0.15 y datos/estado.json"))
     } else {
-      lamina(p.vista, "Casos de uso · " + p.titulo, alcance: "página vertical por la cantidad de casos secundarios", fuente: "05 v0.15 y datos/estado.json")
+      lamina(p.vista, "Casos de uso · " + p.titulo, alcance: "Página vertical: sus nueve casos incluidos y de extensión no entran a 10 pt en una apaisada", fuente: "05 v0.15 y datos/estado.json")
     }
   }
   for id-caso in p.casos { ficha(caso(id-caso)) }

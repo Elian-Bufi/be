@@ -9,7 +9,7 @@ versiona, porque el repositorio es público; Dirección lo conserva.
 == Criterios de forma y cómo los cumple este documento
 
 #table(
-  columns: (1fr, 1.2fr, 30mm),
+  columns: (1fr, 1.2fr, 34mm),
   table.header([Criterio de la escuela], [Cómo se cumple], [Estado]),
   [Un solo PDF con los catorce entregables, en el orden indicado], [Apartados 1 a 14 en ese orden; los anexos van después del 14.], estado("implementado"),
   [Un rótulo con el nombre del proyecto], [Encabezado de cada página: «BE · Plataforma integrada de inteligencia en salud» y el apartado en curso.], estado("implementado"),

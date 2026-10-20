@@ -62,8 +62,8 @@ El documento sigue el orden de «Entregables» (versión 2025.05). Los anexos va
   [10], [Diagrama de Gantt], estado("diferido"),
   [11], [URL a una demo de la APK y del website], [#estado("diferido") (guion listo)],
   [12], [URL para descargar la APK y URL de su código fuente], estado("diferido"),
-  [13], [URL del website y URL de su código fuente], estado("diferido"),
-  [14], [Usuarios con diferentes roles], [#estado("verificado") (credenciales en la versión de evaluación)],
+  [13], [URL del website hosteado y URL de su código fuente], estado("diferido"),
+  [14], [Usuarios para acceder a la APK y al website con diferentes roles], [#estado("verificado") (credenciales en la versión de evaluación)],
 )
 
 En la tabla, «Implementado» indica que el apartado está completo en esta versión. «Diferido al cierre» corresponde a
@@ -82,10 +82,14 @@ lo que Dirección completará al final: el Gantt y los enlaces.
   figura (anexo L).
 - *Dos versiones del PDF.* La pública, en el repositorio, deja como campos a completar el logotipo de la escuela, los
   correos institucionales y las credenciales. La de evaluación los incorpora y se compila fuera del repositorio.
+- *Dirección.* El rol que dirige el proyecto y decide su alcance (apartado 2.10). «Lo decidió Dirección» remite
+  siempre a una decisión registrada.
+- *Tablas.* Las figuras llevan número y leyenda. Las tablas se leen junto al párrafo que las presenta; solo las cinco
+  que resumen una comparación o una medición (2.1, 3.1, 5.1, 5.2 y 6.1) llevan número.
 - *Lo que no se hizo.* Cuando algo no se pudo comprobar, el documento lo dice y dice por qué.
 
 == Procedimiento de entrega
 
 Según «Entregables», un integrante envía este PDF desde su correo institucional, con copia al resto de los
 integrantes, a `coordinacion.as@davinci.edu.ar`. Después, el tutor o la tutora lo revisa y pide las correcciones
-necesarias, antes de la presentación ante el tribunal. Este documento no envía nada: el envío lo hace Dirección.
+necesarias, antes de la presentación ante el tribunal. Este documento no envía nada: el envío lo hace un integrante del grupo, como indica la escuela.

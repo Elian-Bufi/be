@@ -4,8 +4,8 @@
 
 = Diagrama de arquitectura
 
-La arquitectura se presenta con el modelo C4 en tres niveles: el contexto (quién usa BE y con qué sistemas se
-comunica), los contenedores (las piezas que se despliegan por separado) y el despliegue (dónde corre cada una). Todo
+La arquitectura se presenta con dos niveles del modelo C4, el contexto (quién usa BE y con qué sistemas se comunica)
+y los contenedores (las piezas que se despliegan por separado), más su diagrama de despliegue (dónde corre cada una). Todo
 describe el ambiente #ver.ambiente.nombre, el único desplegado: #ver.ambiente.proveedor, con website en
 #id(ver.ambiente.website.commit) y API en #id(ver.ambiente.api.commit), y datos solo sintéticos.
 
@@ -13,9 +13,9 @@ describe el ambiente #ver.ambiente.nombre, el único desplegado: #ver.ambiente.p
 
 BE es un solo sistema para tres tipos de persona. El asesorado lo usa desde la APK y desde el navegador; el
 profesional, desde el navegador; el responsable de validación mide la TVCC-30 con un comando interno, sin HTTP. BE
-depende de tres servicios externos: Google para entrar con una cuenta de Google, Expo Push y Firebase para que los
-avisos lleguen al teléfono, y Open Food Facts y wger para importar alimentos y ejercicios. El administrador que prevé
-el legajo no existe en esta entrega (apartado 2.6).
+depende de tres grupos de servicios externos: Google, para entrar con una cuenta de Google; Expo Push y Firebase Cloud
+Messaging (FCM), para que los avisos lleguen al teléfono; y Open Food Facts y wger, para importar alimentos y
+ejercicios. El administrador que prevé el legajo no existe en esta entrega (apartado 2.5).
 
 #pagina-apaisada[
   #lamina("ARQ-01", "Contexto de BE (C4, nivel 1)", alcance: "Personas y sistemas externos con los que se comunica BE", fuente: "docs/DESPLIEGUE.md, apps/api/src y RF-058", etiqueta: "fig-arq-contexto")
@@ -38,7 +38,8 @@ Render aloja los cuatro servicios del ambiente en Frankfurt: el sitio estático 
 un contenedor Docker (`be-api`, plan Starter), la base PostgreSQL 16 en red privada (`be-db-test`, plan Basic) y la
 tarea programada (`be-recordatorios`, a las 01, 13 y 18 UTC: 22, 10 y 15 h de Argentina). Un cambio llega así:
 
-+ Se integra en `main` por un PR, con la CI en verde (legajo, pruebas, recorridos e imagen de la API).
++ Se integra en `main` por un PR, con la CI en verde. La rama exige cuatro de sus cinco trabajos (legajo, verificación,
+  integración e imagen de la API); los recorridos de navegador corren en cada PR, pero no bloquean la integración.
 + Render despliega solo cuando la CI pasa (`autoDeployTrigger: checksPass`).
 + La API aplica las migraciones al arrancar y recibe tráfico recién cuando `/health/ready` responde.
 
@@ -54,11 +55,11 @@ Google y la API lo verifica con las claves públicas de Google (DL-138), sin gua
 == Decisiones que dan forma a la arquitectura
 
 Las siete decisiones de arquitectura del legajo (`docs/mesa/MESA_02/DV-08_09/DV-08_ADR.md`) siguen vigentes. Durante la
-construcción se tomaron otras, registradas como deudas del legajo resueltas (`docs/DEUDA_LEGAJO.md`). El anexo H las
-detalla con su contexto, sus alternativas y sus consecuencias.
+construcción se tomaron otras, registradas como deudas del legajo resueltas (`docs/DEUDA_LEGAJO.md`). El anexo H resume
+las principales, con su contexto, sus alternativas y sus consecuencias.
 
 #table(
-  columns: (22mm, 1fr, 30mm),
+  columns: (22mm, 1fr, 34mm),
   table.header([Decisión], [Qué se decidió], [Estado]),
   [ADR-01], [Monolito modular sobre una sola base PostgreSQL, con transacciones locales.], estado("implementado"),
   [ADR-02], [Un único punto de decisión de autorización (PDP) para toda operación protegida.], estado("implementado"),

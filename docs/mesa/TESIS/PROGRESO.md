@@ -98,7 +98,7 @@
   con una sola numeración, porque en una sola no se leía a tamaño real.
 - **2026-10-20 06:20** — Anexo E (secuencias E-01 activar un plan y E-02 recuperar la sesión; estados E-03 vínculo y
   E-04 consentimiento, plan y proceso) y el texto de los anexos B a E, con «En 30 segundos» por figura. Herramientas
-  nuevas: `operaciones-y-casos.mjs` (136 operaciones con el caso de uso que dejan en su procedencia, leído del código),
+  nuevas: `operaciones-y-casos.mjs` (142 operaciones con el caso de uso que dejan en su procedencia, leído del código),
   `operaciones-detalle.mjs` (método, ruta y resumen del contrato) y `maquinas-de-estado.mjs` (las cinco tablas de
   transición del dominio, copiadas). 44 láminas sin hallazgos automáticos; documento de 352 páginas.
 - **Cómo seguir:** las tres pasadas de revisión (cobertura académica, consistencia técnica, calidad visual y editorial

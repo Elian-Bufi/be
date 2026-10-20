@@ -59,33 +59,42 @@ son las que dan forma al producto que se presenta. La columna «Registro» copia
     table.header([DL], [Qué se decidió], [Registro], [En #id("0fb1bff")]),
     ..dec.map(d => {
       let e = d.estado.replace("`", "")
-      let corto = if e.clusters().len() > 150 { e.clusters().slice(0, 148).join() + "…" } else { e }
+      let corto = titulo-citado(e, maximo: 150)
       (
         raw(d.id),
         if d.titulo != none { d.titulo } else { d.problema },
-        text(fill: tinta-suave, corto),
+        text(fill: tinta-suave, hyphenate: false, corto),
         EN-0FB1BFF.at(d.id, default: text(fill: tinta-suave, "—")),
       )
     }).flatten(),
   )
 }
 
-En varias filas el registro quedó atrás de lo integrado (DL-115, DL-136, DL-138, DL-147, DL-148 y DL-150): el anexo K
-lo registra para que se actualice.
+En varias filas el registro quedó atrás de lo integrado (DL-012, DL-115, DL-120, DL-136, DL-138, DL-140, DL-141,
+DL-147, DL-148 y DL-150): el anexo K lo registra para que se actualice.
 
 == Evolución
 
 BE se construyó por paquetes de trabajo, cada uno integrado con su CI en verde y, cuando cambiaba la APK, con una
 versión publicada. Las versiones de la APK cuentan esa historia.
 
+// Tres releases no dicen en el nombre qué trajeron; su descripción sale del cuerpo del release en GitHub.
+#let QUE-TRAJO = (
+  "0.3.0": "WP-03: vínculo, consentimiento y PDP (vínculos, consentimiento por área y privacidad)",
+  "0.4.0": "WP-04: circuito nutricional de la persona (hoy, plan actual y registros)",
+  "0.17.0-candidata.3": "aceptar un vínculo es un solo recorrido (DL-143) y «Falta un paso» en Inicio",
+)
+// Todas las descripciones empiezan con mayúscula, aunque el nombre del release no lo haga.
+#let mayuscula(t) = { let c = t.clusters(); if c.len() == 0 { t } else { upper(c.first()) + c.slice(1).join() } }
+
 #{
   set text(size: 10pt)
   table(
-    columns: (34mm, 20mm, 1fr),
+    columns: (34mm, 24mm, 1fr),
     table.header([Versión], [Publicada], [Qué trajo (nombre del release)]),
-    ..apk.map(v => (raw(v.version), v.publicada, v.nombre.replace(regex("^(APK BE |APK |BE APK |BE )"), "").replace(regex("^[0-9.]+(-candidata\.[0-9]+)?( \(test\))?[: —-]*"), ""))).flatten(),
+    ..apk.map(v => (raw(v.version), v.publicada, mayuscula(if v.version in QUE-TRAJO { QUE-TRAJO.at(v.version) } else { v.nombre.replace(regex("^(APK BE |APK |BE APK |BE )"), "").replace(regex("^[0-9.]+(-candidata\.[0-9]+)?( \(test\))?[: —-]*"), "") }))).flatten(),
   )
 }
 
-La estable es la 0.13.2 (2026-10-03). Las candidatas posteriores esperan las pruebas en el teléfono antes de pasar a
+No se publicó una versión 0.8.0: después de la 0.7.0 vino la 0.9.0. La estable es la 0.13.2 (2026-10-03). Las candidatas posteriores esperan las pruebas en el teléfono antes de pasar a
 estables (apartado 5.9).

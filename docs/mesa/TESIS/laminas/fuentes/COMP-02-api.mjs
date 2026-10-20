@@ -17,7 +17,7 @@ export const meta = {
   id: 'COMP-02',
   titulo: 'Componentes · Los módulos de la API',
   alcance: 'Los 22 módulos de NestJS agrupados por responsabilidad, las familias de operaciones que expone cada uno y sus dependencias.',
-  fuente: 'apps/api/src/*/…module.ts · datos/modulos-api.json',
+  fuente: 'apps/api/src/*/*.module.ts · datos/modulos-api.json',
   estado: 'implementado',
   ancho: 750,
   alto: 456,
@@ -25,8 +25,8 @@ export const meta = {
 
 export function dibujar(L) {
   const caja = (id, modulo, x, y, w = 112, detalle) => L.componente({ id, x, y, w, h: 50, nombre: modulo.replace('Module', ''), estereotipo: null, detalle: detalle ?? familias(modulo) });
-  // Comunes: globales, disponibles para todos sin importarlos.
-  L.paquete({ id: 'p-com', x: 8, y: 8, w: 734, h: 82, titulo: 'Comunes (globales)' });
+  // Comunes: los cinco globales, disponibles para todos sin importarlos, y el de salud del servicio.
+  L.paquete({ id: 'p-com', x: 8, y: 8, w: 734, h: 82, titulo: 'Comunes (cinco globales y Health)' });
   const com = [
     ['PrismaModule', 'acceso a la base'],
     ['PlataformaModule', 'auditoría e idempotencia'],

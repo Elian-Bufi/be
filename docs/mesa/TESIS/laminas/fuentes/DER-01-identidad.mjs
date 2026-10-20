@@ -29,6 +29,7 @@ export function dibujar(L) {
         CredencialLocal: [3, 0],
       },
       maximo: 4,
+      separacionFilas: 42,
       enfasis: ['Identidad'],
     },
     {

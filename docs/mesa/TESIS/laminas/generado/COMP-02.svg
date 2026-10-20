@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="COMP-02">
 <title>Componentes · Los módulos de la API</title>
-<desc>Los 22 módulos de NestJS agrupados por responsabilidad, las familias de operaciones que expone cada uno y sus dependencias. · Fuente: apps/api/src/*/…module.ts · datos/modulos-api.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<desc>Los 22 módulos de NestJS agrupados por responsabilidad, las familias de operaciones que expone cada uno y sus dependencias. · Fuente: apps/api/src/*/*.module.ts · datos/modulos-api.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
 <rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
-<path d="M 8 25 L 8 11 Q 8 8 11 8 L 124.91 8 Q 127.91 8 127.91 11 L 127.91 25" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<path d="M 8 25 L 8 11 Q 8 8 11 8 L 199.77 8 Q 202.77 8 202.77 11 L 202.77 25" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
 <rect x="8" y="25" width="734" height="65" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
-<text x="17" y="21" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Comunes (globales)</text>
+<text x="17" y="21" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Comunes (cinco globales y Health)</text>
 <path d="M 8 119 L 8 105 Q 8 102 11 102 L 61.24 102 Q 64.24 102 64.24 105 L 64.24 119" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
 <rect x="8" y="119" width="250" height="121" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
 <text x="17" y="115" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Acceso</text>

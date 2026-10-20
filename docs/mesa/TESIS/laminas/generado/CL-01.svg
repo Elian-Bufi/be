@@ -59,7 +59,7 @@
 <text x="277.5" y="163.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«nutricional»</text>
 <text x="277.5" y="179" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">VersionDeObjetivo</text>
 <text x="213" y="197" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">vigenteDesde</text>
-<text x="213" y="211" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">distribución de macros</text>
+<text x="213" y="211" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">requerimientoEnergetico</text>
 <rect x="400" y="150" width="145" height="101" rx="2" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
 <rect x="400.6" y="150.6" width="143.8" height="32.4" fill="#DCE8FC"/>
 <line x1="400" y1="183" x2="545" y2="183" stroke="#0A1F44" stroke-width="0.8"/>
@@ -94,7 +94,7 @@
 <line x1="400" y1="320" x2="545" y2="320" stroke="#1453C9" stroke-width="0.8"/>
 <line x1="400" y1="354" x2="545" y2="354" stroke="#1453C9" stroke-width="0.8"/>
 <text x="472.5" y="316" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">RevisionNutricional</text>
-<text x="408" y="334" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">periodo</text>
+<text x="408" y="334" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">periodoInicio, periodoFin</text>
 <text x="408" y="348" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">resultado</text>
 <text x="408" y="368" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">registrar()</text>
 <text x="408" y="382" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">aplicar()</text>

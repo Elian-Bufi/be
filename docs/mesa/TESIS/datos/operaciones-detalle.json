@@ -53,6 +53,12 @@
     "UC-P25"
    ]
   },
+  "API-ACC-P1-03": {
+   "metodo": "POST",
+   "ruta": "/me/account-closure-requests",
+   "resumen": "Cerrar la propia cuenta (P1, síncrono). Revoca sesiones, suprime el hash de la credencial, finaliza los vínculos por eventos y preserva la historia.",
+   "casos": []
+  },
   "API-CON-05": {
    "metodo": "GET",
    "ruta": "/me/health-data-consent-requirement",
@@ -314,8 +320,32 @@
   "API-NUT-13-BUSQUEDA": {
    "metodo": "POST",
    "ruta": "/nutrition/catalog-items/search",
-   "resumen": "Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027).",
+   "resumen": "Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141); y origin, para decir de dónde sale en la fila: quién lo cargó si es una carga a mano (loadedBy) y la condición de la correspondencia con su fuente si BE la registró como aproximada (approximateCorrespondence; DL-141 D-6). ${COMO_BUSCA_EL_CATALOGO}",
    "casos": []
+  },
+  "API-INT-NUT-01": {
+   "metodo": "POST",
+   "ruta": "/nutrition/catalog-items",
+   "resumen": "Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027).",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-INT-NUT-02": {
+   "metodo": "POST",
+   "ruta": "/nutrition/catalog-import-candidates",
+   "resumen": "Consultar un alimento en Open Food Facts por su código de barras y crear un candidato de importación: todavía no es un elemento del catálogo. Si ese producto ya está en el catálogo (lo importó otro profesional, o vos), existingCatalogItem lo trae tal como está: importar el candidato usa ese y no crea otro (DL-141). Proveedor caído → 503 con el catálogo propio y la carga manual disponibles.",
+   "casos": [
+    "UC-I07"
+   ]
+  },
+  "API-INT-NUT-03": {
+   "metodo": "POST",
+   "ruta": "/nutrition/catalog-import-candidates/{candidateId}/resolve",
+   "resumen": "Resolver un candidato propio: IMPORT lo incorpora al catálogo con procedencia CONTROLLED_IMPORT y los datos corregidos, y queda para todos los profesionales; si el producto ya estaba, la resolución apunta al que hay, no crea otro y lo devuelve en existingCatalogItem (la revisión queda registrada sin cambiarlo; DL-141). REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.",
+   "casos": [
+    "UC-I07"
+   ]
   },
   "API-NUT-14": {
    "metodo": "GET",
@@ -636,8 +666,16 @@
   "API-TRN-13-BUSQUEDA": {
    "metodo": "POST",
    "ruta": "/training/exercises/search",
-   "resumen": "Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; no altera instantáneas activas.",
+   "resumen": "Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados, con su forma. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141); y origin, para decir de dónde sale en la fila: quién lo cargó si es una carga a mano (loadedBy) y la condición de la correspondencia con su fuente si BE la registró como aproximada (approximateCorrespondence; DL-141 D-6). ${COMO_BUSCA_EL_CATALOGO}",
    "casos": []
+  },
+  "API-INT-TRN-01": {
+   "metodo": "POST",
+   "ruta": "/training/exercises",
+   "resumen": "Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; no altera instantáneas activas.",
+   "casos": [
+    "UC-P15"
+   ]
   },
   "API-TPL-01": {
    "metodo": "POST",
@@ -797,6 +835,22 @@
    "resumen": "Renombrar o quitar una comida habitual propia; no cambia la estructura (para eso se vuelve a guardar desde el editor). Exige expectedVersion. Ajena o inexistente: 404, sin distinguir.",
    "casos": [
     "UC-P10"
+   ]
+  },
+  "API-INT-TRN-02": {
+   "metodo": "POST",
+   "ruta": "/training/catalog-import-candidates",
+   "resumen": "Consultar un ejercicio en wger por su número y crear un candidato de importación. Los músculos que declara wger son dato del proveedor: nunca se copian como zona BE. Si ese ejercicio ya está en el catálogo, existingExercise lo trae tal como está: importar el candidato usa ese y no crea otro (DL-141). Proveedor caído → 503.",
+   "casos": [
+    "UC-I07"
+   ]
+  },
+  "API-INT-TRN-03": {
+   "metodo": "POST",
+   "ruta": "/training/catalog-import-candidates/{candidateId}/resolve",
+   "resumen": "Resolver un candidato propio de wger: IMPORT crea el ejercicio con procedencia CONTROLLED_IMPORT y sin zonas BE, y queda para todos los profesionales; si ya estaba, la resolución apunta al que hay, no crea otro y lo devuelve en existingExercise (la revisión queda registrada sin cambiarlo; DL-141). REJECT no crea nada. Un candidato ajeno es 404; uno resuelto o vencido, 422.",
+   "casos": [
+    "UC-I07"
    ]
   },
   "API-TRN-14": {
@@ -1307,19 +1361,19 @@
   },
   "API-GOO-01": {
    "metodo": "POST",
-   "ruta": null,
+   "ruta": "/auth/federated/google/sessions",
    "resumen": "Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.",
    "casos": []
   },
   "API-GOO-02": {
    "metodo": "POST",
-   "ruta": null,
+   "ruta": "/auth/federated/google/links",
    "resumen": "Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.",
    "casos": []
   },
   "API-GOO-03": {
    "metodo": "POST",
-   "ruta": null,
+   "ruta": "/auth/federated/google/registrations",
    "resumen": "Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.",
    "casos": []
   },

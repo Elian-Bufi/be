@@ -99,10 +99,10 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 ### 7 · Demo: el mismo Diego en las dos plataformas
 
 - Website · el espacio profesional, en test
-- APK · render del cliente real; no es una captura nativa
-- Plan B: capturas del 20/10 contra la misma versión, 0fb1bff
+- APK · vista en el navegador, no es una captura nativa
+- Plan B: capturas del 20 de octubre, misma versión (0fb1bff)
 - *Imagen:* El espacio profesional de Sofía Paz en el website: pendientes y cartera de asesorados
-- *Imagen:* La pantalla de Nutrición de la APK: el almuerzo con tres opciones del plan, en un render del cliente real en el navegador
+- *Imagen:* La pantalla de Nutrición de la APK: el almuerzo con tres opciones del plan, en una vista del cliente real dibujada en el navegador
 
 > **Notas del orador.** La demo dura siete minutos y sigue a la misma persona, Diego Sosa, en las dos plataformas. En el website, con Sofía Paz: el espacio profesional, la ficha de Diego con su resumen, la línea de tiempo y el análisis del último año; el plan de nutrición con sus cinco versiones; la antropometría. Con Martín Acosta, el entrenamiento. En la APK: el plan del día, registrar una comida y la sesión serie por serie. Si la red o Render fallan, sigo con las capturas de esta mañana, tomadas contra la misma versión. Las de la APK son renders del cliente real en el navegador y lo digo al mostrarlas. Guion y respaldo: defensa/DEMO.md.
 
@@ -161,7 +161,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 
 ### 11 · Estados con reglas, no con banderas
 
-- El proceso de seguimiento
+- El proceso operativo
 - ABIERTO
 - CERRADO
 - Una revisión que no finaliza lo deja abierto.
@@ -172,7 +172,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Lo decide siempre el asesorado.
 - Revocar corta hacia adelante; puede volver a otorgarlo.
 
-> **Notas del orador.** Las piezas importantes tienen máquinas de estados, y las transiciones están en tablas del dominio que el servicio consulta antes de escribir y la base refuerza. Dos ejemplos. El proceso de seguimiento se abre al activar un plan; cada revisión que no finaliza lo deja abierto, y lo cierran una revisión que finaliza, el fin del vínculo o el cierre de la cuenta; cerrado, no se reabre. El consentimiento lo decide siempre el asesorado: lo otorga, lo revoca y lo puede volver a otorgar, y la revocación corta hacia adelante. Las cinco máquinas reales, con sus tablas, están en el anexo E.
+> **Notas del orador.** Las piezas importantes tienen máquinas de estados, y las transiciones están en tablas del dominio que el servicio consulta antes de escribir y la base refuerza. Dos ejemplos. El proceso operativo se abre al activar un plan; cada revisión que no finaliza lo deja abierto, y lo cierran una revisión que finaliza, el fin del vínculo o el cierre de la cuenta; cerrado, no se reabre. El consentimiento lo decide siempre el asesorado: lo otorga, lo revoca y lo puede volver a otorgar, y la revocación corta hacia adelante. Las cinco máquinas reales, con sus tablas, están en el anexo E.
 
 ## Cómo se sabe que funciona y qué falta.
 
@@ -187,7 +187,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Verificado en test el 20/10
 - Sesión: Chrome 15 de 15 y Edge 13 de 13. Borradores 11 de 11. Recetas 16 de 16.
 
-> **Notas del orador.** ¿Cómo sé que funciona? De los cincuenta y nueve casos de prueba diseñados en el legajo, cuarenta y dos pasan en la integración continua, nueve pasan en parte y ocho no se pueden ejecutar con lo que se entrega, y cada uno tiene su motivo en el apartado 5. La CI de la versión que presento corre ochocientas treinta y dos pruebas de dominio, ochocientas veintitrés de integración contra PostgreSQL y doce recorridos de navegador, todo en verde. Y además verifiqué en el ambiente de prueba, hoy, la sesión que sobrevive a la recarga, los borradores y las recetas. La trazabilidad de requisito a prueba es el anexo F.
+> **Notas del orador.** ¿Cómo sé que funciona? De los cincuenta y nueve casos de prueba diseñados en el legajo, cuarenta y dos pasan en la integración continua, nueve pasan en parte y ocho no se pueden ejecutar con lo que se entrega, y cada uno tiene su motivo en el apartado 5. La CI de la versión que presento corre ochocientas treinta y dos pruebas de dominio, ochocientas veintitrés de integración contra PostgreSQL y doce recorridos de navegador, todo en verde. Y además verifiqué en el ambiente de prueba, el 20 de octubre, la sesión que sobrevive a la recarga, los borradores y las recetas. La trazabilidad de requisito a prueba es el anexo F.
 
 ### 13 · Lo que falta, dicho sin vueltas
 

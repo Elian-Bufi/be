@@ -10,7 +10,7 @@ respaldo: una captura verificada para mostrar si fallan la red, Render o el tel�
 - **Respaldo de la APK:** no hay capturas nativas de la candidata 0.17.0 (anexo K, K17). Se usan dos fuentes, siempre con
   su rótulo:
   - capturas nativas del teléfono de Dirección con la APK **0.9.1** (2026-09-25): `EVIDENCIA/ENTREGA/capturas-apk/`;
-  - renders del cliente real de la APK en el navegador, contra la API real, del 2026-10-06 (llevan una franja roja que
+  - vistas del cliente real de la APK dibujadas en el navegador, contra la API real, del 2026-10-06 (llevan una franja roja que
     dice que no son la APK): `EVIDENCIA/NUTRICION-RECETAS/capturas-apk-api-real/` y
     `EVIDENCIA/ENTRENAMIENTO-SERIES/capturas-apk-api-real/`.
 
@@ -33,12 +33,13 @@ respaldo: una captura verificada para mostrar si fallan la red, Render o el tel�
 | 2:00 | Sofía · Nutrición | El plan activo en solo lectura y su historial de cinco versiones; los registros, con la comida diferente | Activar es versionar; nada se pisa | `05-nutricion-plan.png`, `06-nutricion-registros.png`, `07-nutricion-revisiones.png` |
 | 3:00 | Sofía · Antropometría | Las tomas y la evolución del peso, con «cómo se obtuvo» cada valor | Tomas inmutables; evolución sin interpolar | `08-antropometria-tomas.png`, `09-antropometria-evolucion.png` |
 | 3:45 | Martín Acosta · Entrenamiento | El estado del seguimiento: plan activo, última sesión y revisión pendiente | Lo mismo en otra área, con otro profesional | `10-entrenamiento.png` |
-| 4:30 | Diego · APK | El plan del día con el carrusel de opciones, «Comí esta opción» y «Comí algo diferente» | El circuito del asesorado | `EVIDENCIA/NUTRICION-RECETAS/capturas-apk-api-real/40` a `44` (renders rotulados) |
-| 5:30 | Diego · APK | La sesión por serie: carga, repeticiones y RIR, con el descanso | El registro serie por serie | `EVIDENCIA/ENTRENAMIENTO-SERIES/capturas-apk-api-real/apk-04` a `apk-07` (renders rotulados) |
-| 6:15 | Diego · website | Sus vínculos: un área por vínculo, cada una con su consentimiento; sus novedades | Consentir es por área y se puede revocar | `12-asesorado-vinculos.png`, `13-asesorado-novedades.png` |
+| 4:30 | Diego · APK | El plan del día con el carrusel de opciones, «Comí esta opción» y «Comí algo diferente» | El circuito del asesorado | `EVIDENCIA/NUTRICION-RECETAS/capturas-apk-api-real/40` a `44` (vistas rotuladas) |
+| 5:30 | Diego · APK | La sesión por serie: carga, repeticiones y RIR, con el descanso | El registro serie por serie | `EVIDENCIA/ENTRENAMIENTO-SERIES/capturas-apk-api-real/apk-04` a `apk-07` (vistas rotuladas) |
+| 6:15 | Diego · website | Sus vínculos, cada uno con sus áreas y cada área con su consentimiento; sus novedades | Consentir es por área y se puede revocar | `12-asesorado-vinculos.png`, `13-asesorado-novedades.png` |
 
 Si sobra tiempo, el paso 8 del apartado 11 (revocar el consentimiento de un área y ver que el profesional pierde el
-acceso) es el más fuerte para la pregunta sobre privacidad. Después hay que volver a autorizar el área.
+acceso) es el más fuerte para la pregunta sobre privacidad. Se hace con Federico, nunca con Diego, y después hay que
+volver a autorizar el área.
 
 ## Cuidados
 
@@ -59,7 +60,7 @@ acceso) es el más fuerte para la pregunta sobre privacidad. Después hay que vo
 
 1. Decirlo en una frase («Render no responde; sigo con las capturas de esta mañana, tomadas contra la misma versión»).
 2. Abrir `respaldo-demo/` en el visor de imágenes, en el orden de la tabla.
-3. Para la APK, abrir los renders rotulados o las capturas nativas de la 0.9.1, y decir cuál es cuál.
+3. Para la APK, abrir las vistas rotuladas o las capturas nativas de la 0.9.1, y decir cuál es cuál.
 4. Al terminar, si la red volvió, ofrecer mostrar en vivo un solo paso.
 
 ## Cómo regenerar el respaldo del website

@@ -10,7 +10,7 @@ los estados por los que pasa cada pieza.
 
 == Notación
 
-Diagrama de actividad de UML 2.5 con particiones, que acá se llaman carriles. Cada carril dice quién actúa y por
+Diagrama de actividad de UML 2.5.1 con particiones, que acá se llaman carriles. Cada carril dice quién actúa y por
 dónde: el profesional desde el website, BE (la API y su base de datos) y el asesorado desde la APK. Las acciones de una
 persona y las de BE tienen colores distintos, pero además están en carriles distintos, así el significado no depende del
 color. El rombo es una decisión (una entrada, varias salidas) o una fusión (varias entradas, una salida), y cada salida

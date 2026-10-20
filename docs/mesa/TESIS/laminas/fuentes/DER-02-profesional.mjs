@@ -32,7 +32,7 @@ export function dibujar(L) {
       notas: { columna: 2, desdeFila: 2, limite: 414 },
       propias: [
         {
-          titulo: 'Lo que garantiza la base',
+          titulo: 'La base lo garantiza',
           texto: 'A lo sumo un proceso ABIERTO por profesional, asesorado y área; CERRADO es terminal. La capacidad se versiona por adición. En esta entrega la verificación y la habilitación las asigna un servicio interno (DL-036).',
         },
       ],

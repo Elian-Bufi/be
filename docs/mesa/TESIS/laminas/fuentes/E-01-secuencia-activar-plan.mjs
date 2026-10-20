@@ -22,11 +22,13 @@ export function dibujar(L) {
     ['des', 'DespachadorDeAvisos'],
     ['exp', 'Expo Push', 'externo'],
   ];
-  const paso = 93.6;
+  // Centros de las líneas de vida: la separación de cada par depende del rótulo más ancho que viaja entre ellas (la
+  // revisión automática controla que ningún rótulo sea más ancho que su flecha).
+  const centros = [46, 151, 239, 327, 415, 524, 612, 706];
   const hasta = 420;
   const x = {};
   P.forEach(([id, nombre, tipo = 'sistema', detalle], i) => {
-    const n = L.lineaDeVida({ id, x: 4 + i * paso, y: 4, w: 84, h: 40, nombre, detalle, hasta, tipo });
+    const n = L.lineaDeVida({ id, x: centros[i] - 42, y: 4, w: 84, h: 40, nombre, detalle, hasta, tipo });
     x[id] = n.cx;
   });
   // Barras de ejecución de los participantes que trabajan a lo largo del pedido.
@@ -38,15 +40,15 @@ export function dibujar(L) {
   L.activacion({ cx: x.des, y1: 404, y2: 418 });
 
   const m = (de, a, y, texto, tipo = 'sinc') => L.mensaje({ x1: x[de] + (x[a] > x[de] ? 4 : -4), x2: x[a] + (x[a] > x[de] ? -4 : 4), y, texto, tipo });
-  m('web', 'pla', 62, 'POST /plans/{id}/activate');
-  m('pla', 'eje', 82, 'escribirIdempotente()');
-  m('eje', 'ide', 102, 'ejecutar(clave, fn)');
+  m('web', 'pla', 62, 'API-NUT-12');
+  m('pla', 'eje', 82, ['escribir', 'Idempotente()']);
+  m('eje', 'ide', 102, 'ejecutar()');
   m('ide', 'bd', 122, 'BEGIN; bloquea la clave');
   L.fragmento({ x: 96, y: 132, w: 562, h: 230, operador: 'alt', guardas: [{ texto: 'primera vez con esta clave', y: 132 }, { texto: 'reintento con la misma clave', y: 330, separador: true }] });
   m('ide', 'eje', 164, 'fn(tx)');
   m('eje', 'pla', 180, 'efecto(tx)');
   m('pla', 'pdp', 200, 'decidirEnTransaccion()');
-  m('pdp', 'bd', 220, 'hechos; guarda la decisión');
+  m('pdp', 'bd', 220, ['hechos;', 'guarda la decisión']);
   m('pdp', 'pla', 240, 'permitida', 'retorno');
   m('pla', 'bd', 260, 'instantánea, ACTIVADA, proceso, novedad');
   m('pla', 'des', 280, 'programar()', 'asinc');

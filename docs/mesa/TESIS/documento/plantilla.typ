@@ -51,12 +51,60 @@
     inset: (x: 4.5pt, y: 2pt),
     radius: 7pt,
     fill: rgb(paleta.fondo),
-    text(fill: rgb(paleta.texto), weight: 600, size: 10pt, nombres.at(clave, default: clave)),
+    text(fill: rgb(paleta.texto), weight: 600, size: 10pt, hyphenate: false, nombres.at(clave, default: clave)),
   )
 }
 
 /// Identificador canónico (RF-021, UC-P09, API-NUT-13…).
-#let id(t) = text(font: "JetBrains Mono", size: 1em, weight: 500, fill: tinta, t)
+// En una caja: un identificador no se corta en su guion (nada de «TEST-» al final de un renglón y «AUTH-010» al otro).
+// Los muy largos (API-ANT-06-PROPIA) pueden cortarse en un guion propio, sin repetirlo, antes que salirse de la columna.
+#let id(t) = {
+  let cuerpo = text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 1em, weight: 500, fill: tinta, t)
+  if type(t) == str and t.len() > 15 { cuerpo } else { box(cuerpo) }
+}
+
+/// Un nombre largo (Entidad.clave, una ruta, una tabla) con cortes permitidos después de «.», «/» y «_» y antes de cada
+/// mayúscula interna, sin guiones de partición: no invade la columna vecina.
+#let partible(t) = text(hyphenate: false, lang: "en", t
+  .replace(regex("[./_]"), m => m.text + "\u{200b}")
+  .replace(regex("([a-z])([A-Z])"), m => m.captures.at(0) + "\u{200b}" + m.captures.at(1)))
+
+/// Código (una tabla, un servicio, una ruta) en monoespaciada y con los mismos cortes permitidos que `partible`.
+#let cp(t) = text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt, partible(t))
+
+/// Un texto que viene de una fuente con marcas de Markdown (DV-05, los comentarios del esquema, las notas del
+/// registro): los tramos entre acentos graves salen en monoespaciada, con cortes en «_» y «.» y sin partición; los
+/// tramos entre dobles asteriscos, en negrita. Con una marca suelta, el texto sale sin esas marcas.
+#let con-codigo(s) = {
+  if type(s) != str { return s }
+  let negritas(t) = {
+    // Un identificador con guiones bajos (TRANSICIONES_DE_SOLICITUD_DE_FORMULARIO) puede cortarse después de cada uno.
+    let t = t.replace("_", "_\u{200b}")
+    let partes = t.split("**")
+    if calc.even(partes.len()) { return t.replace("**", "") }
+    for (i, p) in partes.enumerate() { if calc.odd(i) { strong(p) } else { p } }
+  }
+  let partes = s.split("`")
+  if calc.even(partes.len()) { return negritas(s.replace("`", "")) }
+  for (i, p) in partes.enumerate() {
+    if calc.odd(i) { cp(p) } else { negritas(p) }
+  }
+}
+
+/// Una oración citada que termina sin punto (como varios resultados esperados de DV-05) lo recibe.
+#let con-punto(s) = {
+  if type(s) != str or s.trim() == "" { return s }
+  let t = s.trim()
+  if t.last().match(regex("[\p{L}\p{N})»”`]")) != none { t + "." } else { t }
+}
+
+/// Un título citado, recortado en el límite de una palabra y con las comillas internas como “…”.
+#let titulo-citado(t, maximo: 110) = {
+  let t = t.replace("«", "“").replace("»", "”")
+  if t.clusters().len() <= maximo { return t }
+  let palabras = t.clusters().slice(0, maximo - 1).join().split(" ")
+  palabras.slice(0, calc.max(1, palabras.len() - 1)).join(" ").trim(regex("[\s,;:.·–-]+"), at: end) + "…"
+}
 
 /// Resultado de un caso de prueba (como `estado`: el texto dice el resultado y el color acompaña).
 #let resultado(clave) = {
@@ -74,7 +122,7 @@
     inset: (x: 4.5pt, y: 2pt),
     radius: 7pt,
     fill: rgb(paleta.fondo),
-    text(fill: rgb(paleta.texto), weight: 600, size: 10pt, nombres.at(clave, default: clave)),
+    text(fill: rgb(paleta.texto), weight: 600, size: 10pt, hyphenate: false, nombres.at(clave, default: clave)),
   )
 }
 
@@ -119,6 +167,20 @@
 /// Página apaisada para una lámina ancha (728 pt). El texto que la explica va en la página anterior o siguiente.
 #let pagina-apaisada(cuerpo) = page(flipped: true, margin: (top: 20mm, bottom: 16mm, x: 16mm), cuerpo)
 
+/// El texto plano de un contenido (para comparar títulos).
+#let a-texto(c) = {
+  if type(c) == str { c } else if c.has("text") { c.text } else if c.has("children") { c.children.map(a-texto).join("") } else if c.has("body") { a-texto(c.body) } else if c.func() == [ ].func() { " " } else { "" }
+}
+
+/// Títulos abreviados para el encabezado de página (el título completo queda en el índice y en la página).
+#let CORTOS = (
+  "URL a una demo de la APK y del website": "Demo de la APK y del website",
+  "URL para descargar la APK y URL de su código fuente": "Descarga y código de la APK",
+  "URL del website hosteado y URL de su código fuente": "Website y su código",
+  "Usuarios para acceder a la APK y al website con diferentes roles": "Usuarios y roles",
+  "Convenciones gráficas y procedimiento de las figuras": "Convenciones gráficas",
+)
+
 // ─── Plantilla ───────────────────────────────────────────────────────────────────────────────────────────────
 #let tesis(cuerpo) = {
   set document(
@@ -137,11 +199,13 @@
         let pagina = here().page()
         let capitulos = query(heading.where(level: 1)).filter(h => h.location().page() <= pagina)
         let actual = if capitulos.len() > 0 { capitulos.last() } else { none }
+        // Los títulos largos de la escuela (apartados 11 a 14) van abreviados en el encabezado, para que entre en un renglón.
+        let titulo = if actual != none { CORTOS.at(a-texto(actual.body), default: actual.body) } else { none }
         grid(
-          columns: (1fr, auto),
-          text(weight: 600, fill: tinta, "BE") + text(" · Plataforma integrada de inteligencia en salud"),
+          columns: (auto, 1fr),
+          text(weight: 600, fill: tinta, "BE") + text(hyphenate: false, " · Plataforma integrada de inteligencia en salud"),
           if actual != none {
-            (if actual.numbering != none { numbering(actual.numbering, ..counter(heading).at(actual.location())) + " " } else { "" }) + actual.body
+            align(right, text(hyphenate: false, (if actual.numbering != none { numbering(actual.numbering, ..counter(heading).at(actual.location())) + " " } else { "" }) + titulo))
           },
         )
         v(-4pt)
@@ -161,8 +225,11 @@
       }
     },
   )
+  // Una fila de tabla o de ficha no se parte entre dos páginas.
+  set table.cell(breakable: false)
+  set grid.cell(breakable: false)
   set heading(numbering: "1.1")
-  show heading: set text(fill: tinta)
+  show heading: set text(fill: tinta, hyphenate: false)
   show heading.where(level: 1): it => context {
     pagebreak(weak: true)
     counter(figure.where(kind: image)).update(0)
@@ -200,7 +267,7 @@
   show table: set text(size: tokens.tipografia.documento.tabla * 1pt)
   show table: set par(justify: false)
   show table.cell.where(y: 0): set text(weight: 600, hyphenate: false)
-  show raw: set text(font: "JetBrains Mono", size: 10pt)
+  show raw: set text(font: "JetBrains Mono", hyphenate: false, lang: "en", size: 10pt)
   show link: set text(fill: azul)
   set list(indent: 4pt, body-indent: 6pt)
   set enum(indent: 4pt, body-indent: 6pt)

@@ -1,7 +1,7 @@
 // El detalle de cada operación del contrato publicado (packages/domain/src/openapi.ts: método, ruta y resumen) junto
 // con el caso de uso que deja en su procedencia (datos/operaciones-y-casos.json, de herramientas/operaciones-y-casos.mjs).
 // Salida: datos/operaciones-detalle.json. Uso: node herramientas/operaciones-detalle.mjs
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,13 +10,25 @@ const raiz = resolve(aqui, '../../../..');
 const fuente = readFileSync(join(raiz, 'packages/domain/src/openapi.ts'), 'utf8');
 const casos = JSON.parse(readFileSync(join(aqui, '../datos/operaciones-y-casos.json'), 'utf8')).operaciones;
 
-// Cada operación empieza con «id: 'API-…'»; se lee el bloque hasta la siguiente.
-const inicios = [...fuente.matchAll(/id: '(API-[A-Z]+-\d+[A-Z0-9-]*)',/g)];
+// Una ruta escrita como constante (por ejemplo RUTAS_DE_ACCESO_GOOGLE.sesiones) se resuelve con su definición.
+const constantes = {};
+for (const archivo of readdirSync(join(raiz, 'packages/domain/src')).filter((n) => n.endsWith('.ts'))) {
+  const t = readFileSync(join(raiz, 'packages/domain/src', archivo), 'utf8');
+  for (const c of t.matchAll(/export const ([A-Z_]+) = \{([^}]*)\}/g)) {
+    for (const k of c[2].matchAll(/(\w+): '([^']+)'/g)) constantes[`${c[1]}.${k[1]}`] = k[2];
+  }
+}
+
+// Cada operación empieza con «id: 'API-…'» (también API-ACC-P1-03 o API-INT-NUT-01); se lee el bloque hasta la
+// siguiente.
+const inicios = [...fuente.matchAll(/id: '(API-[A-Z]+-[A-Z0-9-]+)',/g)];
 const operaciones = {};
 inicios.forEach((m, i) => {
   const bloque = fuente.slice(m.index, i + 1 < inicios.length ? inicios[i + 1].index : fuente.length);
   const metodo = bloque.match(/metodo: '(\w+)'/)?.[1]?.toUpperCase() ?? null;
-  const ruta = bloque.match(/ruta: '([^']+)'/)?.[1] ?? null;
+  const constante = bloque.match(/ruta: ([A-Z_]+\.\w+),/)?.[1];
+  const ruta = bloque.match(/ruta: '([^']+)'/)?.[1] ?? (constante ? constantes[constante] : null) ?? null;
+  if (!ruta) throw new Error(`${m[1]} sin ruta`);
   // El resumen es una cadena entre comillas simples (puede seguir en el renglón siguiente) o entre acentos graves.
   const r = bloque.match(/resumen:\s*'((?:[^'\\]|\\.)*)'/) ?? bloque.match(/resumen:\s*`([^`]*)`/);
   const resumen = r ? r[1].replace(/\\'/g, "'").replace(/\s+/g, ' ').trim() : null;

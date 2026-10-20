@@ -19,7 +19,7 @@ export function dibujar(L) {
   const caso = (uc, cx, cy, w = 160) => {
     const { tipo, estado } = tipoDeCaso(uc);
     L.casoDeUso({ id: uc, cx, cy, w, idTexto: uc, titulo: ROTULO[uc], tipo });
-    if (estado === 'parcial' || estado === 'pendiente') L.etiquetaDeEstado(uc, estado, 'pendiente');
+    if (estado === 'parcial' || estado === 'pendiente' || estado === 'fuera') L.etiquetaDeEstado(uc, estado === 'fuera' ? 'fuera de alcance' : estado, 'pendiente');
   };
   caso('UC-P25', 364, 72);
   caso('UC-P27', 364, 156);

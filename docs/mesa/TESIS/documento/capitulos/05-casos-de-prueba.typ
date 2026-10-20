@@ -13,7 +13,7 @@
 #let FAMILIAS = (
   (clave: "RF", titulo: "Requisitos (TEST-RF)", texto: [Un caso por requisito del plan 11A: el oráculo es el criterio de aceptación del requisito.]),
   (clave: "AUTH", titulo: "Autorización, consentimiento y cierre (TEST-AUTH)", texto: [Los escenarios adversariales de acceso: lo que el sistema tiene que negar aunque la interfaz lo ofrezca.]),
-  (clave: "DOM", titulo: "Reglas del dominio (TEST-DOM)", texto: [Las invariantes que sostienen la historia clínica: «sin dato» no es cero, corregir no borra, una versión nueva no reescribe la anterior.]),
+  (clave: "DOM", titulo: "Reglas del dominio (TEST-DOM)", texto: [Las invariantes que sostienen la historia del seguimiento: «sin dato» no es cero, corregir no borra, una versión nueva no reescribe la anterior.]),
   (clave: "CAL", titulo: "Cálculos reproducibles (TEST-CAL)", texto: [Cada corrida cita la versión exacta del método y no se sobrescribe.]),
   (clave: "FRM", titulo: "Información pertinente (TEST-FRM)", texto: [Plantillas, permisos y procedencia de lo que responde la persona.]),
   (clave: "ANT", titulo: "Antropometría (TEST-ANT)", texto: [Toma, borrador, registro y corrección de las mediciones.]),
@@ -23,7 +23,7 @@
 #let ejecucion-ci = [CI de #id("0fb1bff") · corrida 39374515693 · 2026-10-20 · GitHub Actions (Ubuntu 24.04, PostgreSQL 16)]
 
 #let cita(e) = {
-  [#id(e.archivo)#if e.titulo != none [ › «#{ if e.titulo.clusters().len() > 110 { e.titulo.clusters().slice(0, 108).join() + "…" } else { e.titulo } }»]#if e.situacion == "titulo-actualizado" [ #text(fill: tinta-suave)[(título actualizado en el repositorio)]]]
+  [#id(e.archivo)#if e.titulo != none [ › «#con-codigo(titulo-citado(e.titulo))»]#if e.situacion == "titulo-actualizado" [ #text(fill: tinta-suave)[(título actualizado en el repositorio)]]]
 }
 
 #let evidencias(lista, maximo: 3) = {
@@ -43,36 +43,43 @@
 /// Ficha de un caso diseñado (DV-05) con su ejecución en la versión de referencia.
 #let ficha(c) = {
   let fila(etiqueta, contenido) = (text(fill: tinta-suave, etiqueta), contenido)
+  let filas(..f) = grid(columns: (31mm, 1fr), column-gutter: 8pt, row-gutter: 5pt, ..f)
   block(width: 100%, above: 14pt, below: 6pt, breakable: true, {
-    block(breakable: false, below: 4pt, stroke: (top: 1pt + azul), inset: (top: 6pt), grid(
-      columns: (auto, 1fr, auto),
-      column-gutter: 8pt,
-      align: (left + horizon, left + horizon, right + horizon),
-      text(font: "JetBrains Mono", weight: 600, size: 10.5pt, fill: azul, c.id),
-      [#text(size: 10pt, fill: tinta-suave)[#c.prioridad · #c.nivel · #c.canal]],
-      resultado(c.clase),
-    ))
     set text(size: 10pt, hyphenate: false)
     set par(justify: false)
-    grid(
-      columns: (31mm, 1fr),
-      column-gutter: 8pt,
-      row-gutter: 5pt,
-      ..fila("Requisito y caso", [
-        #c.rfs.map(id).join(", ") · #c.ucs.map(id).join(", ")
-        #if c.relacionDerivada { text(fill: tinta-suave)[ (derivado por esta tesis de la fuente del caso: #c.fuente.replace("`", ""))] }
-      ]),
-      ..fila("Objetivo", c.objetivo),
-      ..fila("Precondiciones", c.precondiciones),
-      ..fila("Datos sintéticos", c.datos),
-      ..fila("Pasos", enum(tight: true, ..c.pasosLista)),
-      ..fila("Esperado", c.esperado),
+    // El encabezado y sus dos primeras filas no se separan: ninguna ficha empieza sola al pie de una página.
+    block(breakable: false, below: 5pt, {
+      block(below: 4pt, stroke: (top: 1pt + azul), inset: (top: 6pt), grid(
+        columns: (auto, 1fr, auto),
+        column-gutter: 8pt,
+        align: (left + horizon, left + horizon, right + horizon),
+        text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, c.id),
+        [#text(size: 10pt, fill: tinta-suave)[#c.prioridad · #c.nivel · #c.canal.replace("Apk", "APK")]],
+        resultado(c.clase),
+      ))
+      filas(
+        ..fila("Requisito y caso", [
+          #c.rfs.map(id).join(", ") · #c.ucs.map(id).join(", ")
+          #if c.relacionDerivada { text(fill: tinta-suave)[ (derivado por esta tesis de la fuente del caso: #c.fuente.replace("`", ""))] }
+        ]),
+        ..fila("Objetivo", c.objetivo),
+      )
+    })
+    filas(
+      ..fila("Precondiciones", con-codigo(c.precondiciones)),
+      ..fila("Datos sintéticos", con-codigo(c.datos)),
+      ..fila("Pasos", enum(tight: true, ..c.pasosLista.map(con-codigo))),
+      ..fila("Esperado", con-codigo(con-punto(c.esperado))),
       ..fila("Observado", {
-        if c.observado != "" { c.observado } else { text(fill: tinta-suave, "—") }
-        if c.actualizacion != none { [ #text(weight: 600, fill: azul)[Actualización 2026-10-20:] #c.actualizacion] }
+        // Con una actualización, lo observado original se muestra como cita de su documento, para que no se lea como vigente.
+        if c.observado == "" { text(fill: tinta-suave, "—") } else if c.actualizacion != none {
+          [#text(fill: tinta-suave)[Según #c.observadoFuente:] «#con-codigo(c.observado)»]
+        } else { con-codigo(c.observado) }
+        if c.actualizacion != none { [ #text(weight: 600, fill: azul)[Actualización 2026-10-20:] #con-codigo(c.actualizacion)] }
+        if c.notaDeLectura != none { [ #text(weight: 600, fill: azul)[Nota de esta tesis:] #con-codigo(c.notaDeLectura)] }
       }),
       ..if c.clase != "cubierto" and c.pendiente != "" and c.pendiente != "—" {
-        fila("Pendiente", [#c.pendiente#if c.pendienteOriginal != none [ #text(fill: tinta-suave)[(actualizado el 2026-10-20)]]])
+        fila("Pendiente", [#con-codigo(c.pendiente)#if c.pendienteOriginal != none [ #text(fill: tinta-suave)[(actualizado el 2026-10-20)]]])
       } else { () },
       ..fila("Ejecución", if c.clase == "no-ejecutable" {
         [Sin ejecución en esta entrega: depende de funcionalidad no implementada o fuera de alcance.]
@@ -87,28 +94,30 @@
 /// Ficha de un caso ejecutado fuera de la CI (test o teléfono).
 #let ficha-ejecutada(c) = {
   let fila(etiqueta, contenido) = (text(fill: tinta-suave, etiqueta), contenido)
+  let filas(..f) = grid(columns: (31mm, 1fr), column-gutter: 8pt, row-gutter: 5pt, ..f)
   block(width: 100%, above: 14pt, below: 6pt, breakable: true, {
-    block(breakable: false, below: 4pt, stroke: (top: 1pt + azul), inset: (top: 6pt), grid(
-      columns: (auto, 1fr, auto),
-      column-gutter: 8pt,
-      align: (left + horizon, left + horizon, right + horizon),
-      text(font: "JetBrains Mono", weight: 600, size: 10.5pt, fill: azul, c.id),
-      text(weight: 600, size: 10.5pt, c.nombre),
-      resultado(c.estado),
-    ))
     set text(size: 10pt, hyphenate: false)
     set par(justify: false)
-    grid(
-      columns: (31mm, 1fr),
-      column-gutter: 8pt,
-      row-gutter: 5pt,
-      ..fila("Requisito y caso", [#c.rf.map(id).join(", ") · #c.uc.map(id).join(", ") · decisiones #c.decisiones.map(id).join(", ")]),
-      ..fila("Objetivo", c.objetivo),
-      ..fila("Precondiciones", c.precondiciones),
-      ..fila("Datos sintéticos", c.datos),
-      ..fila("Pasos", enum(tight: true, ..c.pasos)),
-      ..fila("Esperado", c.esperado),
-      ..fila("Observado", c.observado),
+    block(breakable: false, below: 5pt, {
+      block(below: 4pt, stroke: (top: 1pt + azul), inset: (top: 6pt), grid(
+        columns: (auto, 1fr, auto),
+        column-gutter: 8pt,
+        align: (left + horizon, left + horizon, right + horizon),
+        text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, size: 10.5pt, fill: azul, c.id),
+        text(weight: 600, size: 10.5pt, c.nombre),
+        resultado(c.estado),
+      ))
+      filas(
+        ..fila("Requisito y caso", [#c.rf.map(id).join(", ") · #c.uc.map(id).join(", ") · #if c.decisiones.len() == 1 [decisión] else [decisiones] #c.decisiones.map(id).join(", ")]),
+        ..fila("Objetivo", c.objetivo),
+      )
+    })
+    filas(
+      ..fila("Precondiciones", con-codigo(c.precondiciones)),
+      ..fila("Datos sintéticos", con-codigo(c.datos)),
+      ..fila("Pasos", enum(tight: true, ..c.pasos.map(con-codigo))),
+      ..fila("Esperado", con-codigo(con-punto(c.esperado))),
+      ..fila("Observado", con-codigo(c.observado)),
       ..fila("Entorno", c.entorno),
       ..fila("Versión y fecha", [#c.version · #c.fecha · #c.ejecutor]),
       ..fila("Evidencia", if c.evidencia.len() > 0 { list(tight: true, marker: [–], ..c.evidencia.map(e => raw(e))) } else { text(fill: tinta-suave, "Sin evidencia escrita en el repositorio.") }),
@@ -121,7 +130,8 @@
 
 Este apartado separa dos cosas que suelen mezclarse. Un *caso diseñado* dice qué hay que comprobar, con qué datos, en
 qué pasos y con qué resultado esperado. Un *caso ejecutado* dice qué se comprobó, en qué versión, en qué entorno, cuándo
-y con qué evidencia. Los 59 casos diseñados son los de DV-05, derivados del plan de pruebas 11A del legajo. La
+y con qué evidencia. Los 59 casos diseñados son los de DV-05, que los eligió del plan de pruebas 11A del legajo con un criterio
+explícito. La
 ejecución sale de la integración continua (CI) de la versión de referencia, de verificaciones contra el despliegue de
 test y de pruebas en el teléfono. Un contador de pruebas verdes no reemplaza a estos casos: las fichas dicen qué afirma
 cada prueba y qué queda sin afirmar.
@@ -133,7 +143,7 @@ cada prueba y qué queda sin afirmar.
   De los #casos.len() casos diseñados, *#n-cub pasan en la CI*, *#n-par pasan en parte* (lo que se probó pasa; una parte
   del oráculo no tiene prueba) y *#n-noe no son ejecutables* con lo que se entrega, porque dependen de funciones fuera
   de alcance o no implementadas. Ningún caso falla. Fuera de la CI se ejecutaron #ej.casos.len() casos más: tres contra
-  test con navegadores reales y cuatro en el teléfono.
+  test (dos con un navegador real y uno por la API) y cuatro en el teléfono.
 ]
 
 == Estrategia y niveles de prueba
@@ -147,7 +157,7 @@ cada prueba y qué queda sin afirmar.
     [Pantallas sin navegador], [Textos, navegación, contraste, geometría de gráficos y reglas de las pantallas del website y la APK.], [`node:test` · CI], [435 de 435],
     [Integración], [La API real contra PostgreSQL 16 con las migraciones, los disparadores y las restricciones de la base.], [Jest y Testcontainers · CI], [61 suites, 823 de 823],
     [Recorridos de navegador], [El trabajo diario del profesional en el website, con Chrome, la API y una base real.], [Puppeteer · CI], [12 de 12],
-    [Verificación remota], [Lo que solo se ve en el despliegue: cookies entre sitios, HTTPS, red real.], [Puppeteer y Chrome o Edge · test], [3 casos],
+    [Verificación remota], [Lo que solo se ve en el despliegue: cookies entre sitios, HTTPS, red real, el catálogo desplegado.], [Puppeteer con Chrome o Edge; un guion por la API · test], [3 casos: 2 con navegador, 1 por la API],
     [Teléfono], [La APK instalada, con Google, QR y la cámara reales.], [Manual, Dirección · teléfono contra test], [4 casos],
   ),
   caption: [Niveles de prueba y su resultado en la versión de referencia],
@@ -164,7 +174,7 @@ con sus migraciones.
   table.header([Entorno], [Configuración], [Versión]),
   [CI], [GitHub Actions, Ubuntu 24.04, PostgreSQL 16 en contenedor, Chrome de la imagen para los recorridos. Datos creados por cada prueba.], [#id("0fb1bff")],
   [Test], [Render, región Frankfurt: website estático, API en Docker, PostgreSQL 16 privado, tarea programada de recordatorios. Solo datos sintéticos.], [website y API #id("0fb1bff")],
-  [Teléfono], [Android de Dirección, con la APK instalada desde los prereleases de GitHub, contra la API de test.], [estable 0.13.2; probadas 0.14.0-candidata.1, 0.15.0-candidata.1 y 0.17.0-candidata.2],
+  [Teléfono], [Android de Dirección, con la APK instalada desde las versiones preliminares publicadas en GitHub, contra la API de test.], [estable 0.13.2; probadas 0.14.0-candidata.1, 0.15.0-candidata.1 y 0.17.0-candidata.2],
 )
 
 La API de test corrió #id("20f1bb7") hasta las 02:33 del 2026-10-20, cuando Render la reconstruyó en #id("0fb1bff"):
@@ -182,8 +192,11 @@ mismo comportamiento en esas partes; cada ficha dice exactamente sobre qué vers
 - *Actualización.* La conciliación es del 2026-10-02 y el mapeo, del 2026-10-16. Seis casos cambiaron después, por
   pruebas nuevas o por funciones integradas; se comprobaron en el código y la ficha lo dice con su fuente. Esos dos
   documentos no se reescriben: quedan como registro de su fecha.
-- *Referencias PE-nn.* Son las pruebas propuestas por la conciliación para completar cada caso
-  (`docs/mesa/MESA_02/DV-05/MATRIZ_DE_RECONCILIACION_DV-05_2026-10.md`, §5).
+- *Referencias PE-nn y H-n.* Las PE-nn son las pruebas que la conciliación propuso para completar cada caso, y las H-n,
+  sus hallazgos (`docs/mesa/MESA_02/DV-05/MATRIZ_DE_RECONCILIACION_DV-05_2026-10.md`, §5 y §3).
+- *Redacción de DV-05.* Precondiciones, datos, pasos y resultado esperado se citan como los escribió DV-05, con sus
+  términos técnicos en inglés, sus fechas abreviadas y el punto decimal; lo que agrega esta tesis está en español y con
+  coma decimal.
 
 #figure(
   table(
@@ -215,7 +228,8 @@ mismo comportamiento en esas partes; cada ficha dice exactamente sobre qué vers
 
 Estos casos comprueban lo que la CI no puede ver: el comportamiento en el despliegue real (cookies entre sitios, HTTPS,
 latencia) y en un teléfono. Los tres primeros los ejecutó un guion contra test, con cuentas sintéticas nuevas o de la
-cohorte sintética. Sus informes y guiones están en `docs/mesa/TESIS/evidencia/remota/2026-10-20/`. Los cuatro
+cohorte sintética: dos con un navegador sin interfaz gráfica (la sesión, en Chrome y en Edge; el borrador, solo en
+Chrome) y uno solo contra la API (las recetas, sin escribir nada). Sus informes y guiones están en `docs/mesa/TESIS/evidencia/remota/2026-10-20/`. Los cuatro
 siguientes los probó Dirección en su teléfono.
 
 #for c in ej.casos { ficha-ejecutada(c) }
@@ -238,30 +252,32 @@ tampoco declara requisito ni caso de uso: esta tesis los deriva de la fuente que
 Doce recorridos protegen el trabajo diario del profesional en el website. Cada uno crea sus propias cuentas sintéticas
 (`@example.invalid`), carga los datos por la API (como lo harían el profesional desde el website y la persona desde la
 APK) y comprueba resultados: la dirección, lo que dice la pantalla, lo que guardó el servidor, la cookie y el árbol de
-accesibilidad. Están en `test/navegador/` y pasaron 12 de 12 en #id("0fb1bff").
+accesibilidad. Están en `test/navegador/` y pasaron 12 de 12 en #id("0fb1bff"). La columna «Protege» nombra la decisión
+o el caso de uso que cuida cada recorrido; «Revisión 19/10» marca los defectos que encontró la revisión de
+consolidación del 2026-10-19 y que el recorrido impide que vuelvan.
 
 #table(
-  columns: (32mm, 1fr, 18mm),
+  columns: (40mm, 1fr, 22mm),
   table.header([Recorrido], [Qué comprueba], [Protege]),
   [`sesion`], [Entrar, recargar en /pro y en la ficha (con vista y período), otra pestaña sin volver a entrar; la cookie de reanudación con sus atributos y ningún token en el almacenamiento del navegador.], [DL-147],
   [`pistas`], [Las pistas con el mouse y con el teclado: aparecen, se pueden recorrer y Escape las cierra sin mover el foco.], [DL-146],
   [`borrador`], [«Guardado a las…» solo con la respuesta del servidor; sin conexión lo escrito queda y se guarda al volver.], [DL-148],
   [`conflicto`], [Dos pestañas sobre el mismo borrador: la segunda no pisa; «Cargar la versión guardada» trae lo de la primera.], [DL-148],
   [`primerPlan`], [Ficha nueva, evaluación, objetivo y plan; de vuelta, la acción es «Seguir el borrador».], [DL-145],
-  [`retorno`], [Desde la línea de tiempo a preparar la revisión y de vuelta a la misma vista y período.], [bloque 5],
-  [`grafico`], [El gráfico de evolución dibuja cada valor a su altura, con el tiempo a escala, y la tabla dice lo mismo.], [bloque 5],
-  [`primeraInvitacion`], [Sin vínculos no se elige un área; un área no habilitada se rechaza en el servidor y el error queda junto al campo.], [bloque 5],
-  [`areaSugerida`], [Con vínculos en una sola área, esa viene sugerida y se puede cambiar.], [bloque 5],
-  [`sesionRevocada`], [Cerrar todas las sesiones desde otro lado: la pestaña va a entrar y la cookie no la revive.], [bloque 3],
-  [`accesoRevocado`], [La persona retira el consentimiento: la ficha dice «Acceso no disponible» y no ofrece acciones.], [bloque 3],
-  [`faltaUnaParte`], [Si falla una sola lectura, la vista muestra lo que llegó y dice qué falta, sin ofrecer acciones engañosas.], [bloque 5],
+  [`retorno`], [Desde la línea de tiempo a preparar la revisión y de vuelta a la misma vista y período.], [Revisión 19/10],
+  [`grafico`], [El gráfico de evolución dibuja cada valor a su altura, con el tiempo a escala, y la tabla dice lo mismo.], [Revisión 19/10],
+  [`primeraInvitacion`], [Sin vínculos no se elige un área; un área no habilitada se rechaza en el servidor y el error queda junto al campo.], [Revisión 19/10],
+  [`areaSugerida`], [Con vínculos en una sola área, esa viene sugerida y se puede cambiar.], [Revisión 19/10],
+  [`sesionRevocada`], [Cerrar todas las sesiones desde otro lado: la pestaña lleva a «Entrar» y la cookie no la revive.], [DL-147],
+  [`accesoRevocado`], [La persona retira el consentimiento: la ficha dice «Acceso no disponible» y no ofrece acciones.], [UC-P08],
+  [`faltaUnaParte`], [Si falla una sola lectura, la vista muestra lo que llegó y dice qué falta, sin ofrecer acciones engañosas.], [Revisión 19/10],
 )
 
 == Cobertura por requisito
 
 La tabla cruza cada requisito con su estado (apartado 3), los casos diseñados que lo comprueban, los ejecutados fuera de
-la CI y la cantidad de archivos de prueba que lo citan. Un requisito sin caso diseñado puede tener pruebas: el plan 11A
-eligió un subconjunto, y las pruebas crecieron con cada paquete.
+la CI y la cantidad de archivos de prueba que lo citan. Un requisito sin caso diseñado puede tener pruebas: DV-05
+eligió 59 de los casos del plan 11A, y las pruebas crecieron con cada paquete.
 
 #{
   set text(size: 10pt)
@@ -289,31 +305,31 @@ eligió un subconjunto, y las pruebas crecieron con cada paquete.
 === Casos no ejecutables en esta entrega
 
 #table(
-  columns: (30mm, 1fr),
+  columns: (34mm, 1fr),
   table.header([Caso], [Por qué no se puede ejecutar]),
-  ..casos.filter(c => c.clase == "no-ejecutable").map(c => (id(c.id), if c.pendiente != "" { c.pendiente } else { c.observado })).flatten(),
+  ..casos.filter(c => c.clase == "no-ejecutable").map(c => (id(c.id), con-codigo(if c.pendiente != "" { c.pendiente } else { c.observado }))).flatten(),
 )
 
 === Casos que pasan en parte
 
 #table(
-  columns: (30mm, 1fr),
+  columns: (34mm, 1fr),
   table.header([Caso], [Lo que falta probar]),
-  ..casos.filter(c => c.clase == "parcial").map(c => (id(c.id), [#c.pendiente#if c.pendienteOriginal != none [ #text(fill: tinta-suave)[(actualizado el 2026-10-20)]]])).flatten(),
+  ..casos.filter(c => c.clase == "parcial").map(c => (id(c.id), [#con-codigo(c.pendiente)#if c.pendienteOriginal != none [ #text(fill: tinta-suave)[(actualizado el 2026-10-20)]]])).flatten(),
 )
 
 === Pruebas pendientes en el teléfono
 
 #table(
-  columns: (1fr, 1.3fr, 34mm),
+  columns: (1fr, 1.3fr, 46mm),
   table.header([Qué], [Por qué falta], [Fuente]),
-  ..ej.pendientesDelTelefono.map(p => (p.que, p.por_que, p.fuente)).flatten(),
+  ..ej.pendientesDelTelefono.map(p => (p.que, p.por_que, partible(p.fuente))).flatten(),
 )
 
 === Navegadores y revisiones humanas
 
 - *Safari y Firefox* no se probaron contra test. La reanudación de sesión usa una cookie particionada (CHIPS); su
-  comportamiento en Safari 26.2 queda para una revisión humana en un equipo de Apple.
+  comportamiento en Safari 26.2 queda para una revisión humana en un equipo Apple (Mac o iPhone).
 - *Lector de pantalla:* el website se revisó con el árbol de accesibilidad en los recorridos; la APK con TalkBack, no.
 - *Prueba con profesionales:* el protocolo existe (#id("DL-150"), PR \#191); la sesión con profesionales reales no se
   hizo.

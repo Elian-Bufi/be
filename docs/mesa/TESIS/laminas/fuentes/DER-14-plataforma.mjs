@@ -23,6 +23,7 @@ export function dibujar(L) {
         ContenidoDeMedio: [2, 1],
       },
       maximo: { Medio: 6, EventoDeDominio: 5, RegistroDeAuditoria: 5 },
+      separacionFilas: 42,
       enfasis: ['Medio'],
     },
     {

@@ -144,7 +144,7 @@
   },
   "GOO": {
    "n": 3,
-   "ejemplo": "POST RUTAS_DE_ACCESO_GOOGLE.sesiones",
+   "ejemplo": "POST /auth/federated/google/sessions",
    "resumen": "Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible."
   },
   "CRD": {

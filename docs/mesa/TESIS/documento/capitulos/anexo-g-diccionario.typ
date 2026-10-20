@@ -9,8 +9,8 @@
 #let serpiente(s) = lower(s.replace(regex("([a-z0-9])([A-Z])"), m => m.captures.at(0) + "_" + m.captures.at(1)))
 // Puntos de corte invisibles para que los identificadores largos se partan dentro de su celda: entre palabras de un
 // nombre en camelCase, después de un guion bajo y después de paréntesis o comas.
-#let corte(s) = s.replace(regex("([a-z0-9])([A-Z])"), m => m.captures.at(0) + "\u{200b}" + m.captures.at(1)).replace(regex("([_(,.])"), m => m.captures.at(0) + "\u{200b}")
-#let predeterminado(p) = if p == "now()" { raw(p) } else if p.starts-with("dbgenerated(\"gen_random_uuid()\")") { [UUID aleatorio (#raw("gen_random_uuid()"))] } else { text(font: "JetBrains Mono", corte(p)) }
+#let corte(s) = text(hyphenate: false, lang: "en", s.replace(regex("([a-z0-9])([A-Z])"), m => m.captures.at(0) + "\u{200b}" + m.captures.at(1)).replace(regex("([_(,.])"), m => m.captures.at(0) + "\u{200b}"))
+#let predeterminado(p) = if p == "now()" { raw(p) } else if p.starts-with("dbgenerated(\"gen_random_uuid()\")") { [UUID aleatorio (#raw("gen_random_uuid()"))] } else { text(font: "JetBrains Mono", hyphenate: false, lang: "en", corte(p)) }
 #let columnas(m) = m.campos.filter(c => not c.lista and (c.escalar or c.tipo in nombres-enum))
 
 #let clave(m, c) = {
@@ -27,9 +27,9 @@
 #let tipo(c) = {
   let t = c.tipo
   let f = c.at("tipoFisico", default: none)
-  if c.tipo in nombres-enum { [#text(font: "JetBrains Mono", corte(t)) #text(fill: tinta-suave)[(enum.)]] } else if f != none and f != t {
-    [#text(font: "JetBrains Mono", t) #text(fill: tinta-suave)[(#corte(f))]]
-  } else { text(font: "JetBrains Mono", t) }
+  if c.tipo in nombres-enum { [#text(font: "JetBrains Mono", hyphenate: false, lang: "en", corte(t)) #text(fill: tinta-suave)[(enum.)]] } else if f != none and f != t {
+    [#text(font: "JetBrains Mono", hyphenate: false, lang: "en", t) #text(fill: tinta-suave)[(#corte(f))]]
+  } else { text(font: "JetBrains Mono", hyphenate: false, lang: "en", t) }
 }
 
 #let descripcion(c) = {
@@ -37,25 +37,25 @@
   let p = c.at("predeterminado", default: none)
   let fisica = c.at("columna", default: none)
   let partes = ()
-  if d != none { partes.push(d) }
+  if d != none { partes.push(con-codigo(d)) }
   if p != none { partes.push([predeterminado: #predeterminado(p)]) }
-  if fisica != none and fisica != serpiente(c.nombre) { partes.push([columna física: #text(font: "JetBrains Mono", corte(fisica))]) }
+  if fisica != none and fisica != serpiente(c.nombre) { partes.push([columna física: #text(font: "JetBrains Mono", hyphenate: false, lang: "en", corte(fisica))]) }
   if partes.len() == 0 { text(fill: tinta-suave, "—") } else { partes.join([ · ]) }
 }
 
 #let ficha-modelo(m) = {
   // La cabecera y la descripción quedan pegadas a la tabla (sticky): ninguna queda sola al pie de una página.
   block(breakable: false, sticky: true, above: 12pt, below: 4pt, {
-    text(font: "JetBrains Mono", weight: 600, fill: azul, m.nombre)
+    text(font: "JetBrains Mono", hyphenate: false, lang: "en", weight: 600, fill: azul, m.nombre)
     h(6pt)
     text(fill: tinta-suave)[tabla #raw(m.tabla)]
   })
-  if m.at("doc", default: none) != none { block(sticky: true, below: 4pt, text(size: 10pt, fill: tinta-suave, m.doc)) }
+  block(sticky: true, below: 4pt, text(size: 10pt, fill: tinta-suave, if m.at("doc", default: none) != none { con-codigo(m.doc) } else [Sin comentario en el esquema.]))
   set text(size: 10pt, hyphenate: false)
   table(
-    columns: (30%, 22%, 9%, 14%, 25%),
+    columns: (30%, 19%, 9%, 17%, 25%),
     table.header([Columna], [Tipo], [Nulo], [Clave], [Descripción]),
-    ..columnas(m).map(c => (text(font: "JetBrains Mono", corte(c.nombre)), tipo(c), if c.opcional { "sí" } else { "no" }, clave(m, c), descripcion(c))).flatten(),
+    ..columnas(m).map(c => (text(font: "JetBrains Mono", hyphenate: false, lang: "en", corte(c.nombre)), tipo(c), if c.opcional { "sí" } else { "no" }, clave(m, c), descripcion(c))).flatten(),
   )
 }
 
@@ -70,10 +70,12 @@ El diccionario reproduce el esquema de la versión de referencia (#id("0fb1bff")
 - *Tipo.* El tipo lógico de Prisma y, entre paréntesis, el físico de PostgreSQL cuando se fija (por ejemplo,
   `Uuid` o `Timestamptz(3)`).
 - *Nulo.* «sí» si la columna admite nulo.
-- *Clave.* PK clave primaria; FK, con la entidad a la que apunta; UK única. Las unicidades compuestas y las parciales
-  están en el apartado 6.6.
+- *Clave.* PK clave primaria; FK, con la entidad a la que apunta; UK única. Las unicidades compuestas se marcan en las
+  láminas del apartado 6.4 (U1, U2…), y las parciales están en el apartado 6.6.
 - *Descripción.* El comentario del esquema, cuando lo hay, con la referencia al legajo (06, 08, 09) o a la decisión
-  que la fija.
+  que la fija. Los comentarios se citan como están en el código; algunos usan términos en inglés: «append-only» (solo
+  se agrega), «allowlist» (lista blanca), «timeline» (línea de tiempo), «domain-agnostic» (independiente del dominio).
+  Donde el esquema no tiene comentario, el diccionario lo dice.
 
 #for v in vistas {
   heading(level: 2, [#v.id · #v.titulo])
@@ -88,9 +90,9 @@ El diccionario reproduce el esquema de la versión de referencia (#id("0fb1bff")
     columns: (30%, 35%, 35%),
     table.header([Enumeración], [Valores], [Descripción]),
     ..esq.enums.map(e => (
-      text(font: "JetBrains Mono", corte(e.nombre)),
-      text(font: "JetBrains Mono", e.valores.map(x => corte(x.valor)).join(", ")),
-      if e.at("doc", default: none) != none { e.doc } else { text(fill: tinta-suave, "—") },
+      text(font: "JetBrains Mono", hyphenate: false, lang: "en", corte(e.nombre)),
+      text(font: "JetBrains Mono", hyphenate: false, lang: "en", e.valores.map(x => corte(x.valor)).join(", ")),
+      if e.at("doc", default: none) != none { con-codigo(e.doc) } else { text(fill: tinta-suave, "—") },
     )).flatten(),
   )
 }

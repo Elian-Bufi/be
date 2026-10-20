@@ -31,7 +31,7 @@ export function dibujar(L) {
   });
   const ext = (id, y, props) => L.caja({ id, x: X.x, y, w: X.w, tipo: 'externo', ...props });
   ext('goo', 22, { titulo: 'Google', tecnologia: 'Identidad', descripcion: 'Cuenta de Google para entrar.' });
-  ext('exp', 170, { titulo: 'Expo Push y FCM', tecnologia: 'Avisos', descripcion: 'Entregan el aviso al teléfono.' });
+  ext('exp', 170, { titulo: 'Expo Push y Firebase', tecnologia: 'Avisos', descripcion: 'Entregan el aviso al teléfono.' });
   ext('cat', 312, { titulo: 'Open Food Facts y wger', tecnologia: 'Catálogos abiertos', descripcion: 'Alimentos y ejercicios.' });
   L.caja({ id: 'adm', x: 285, y: 338, w: 144, tipo: 'pendiente', titulo: 'Administrador', tecnologia: 'Persona prevista', descripcion: 'Fuera de esta entrega.' });
 

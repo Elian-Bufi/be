@@ -25,7 +25,7 @@ notas del orador; acá va el orden, el tiempo, qué mostrar y de dónde sale cad
 | 12:45 | 8 · Por dentro | Cinco piezas y una sola base | Apartado 8, ARQ-02 |
 | 13:45 | 9 · Una operación protegida | Los seis pasos de activar un plan | Anexo E, E-01 |
 | 15:00 | 10 · Los datos | Las cifras de la base | Apartado 6 |
-| 15:45 | 11 · Estados | Proceso y consentimiento | Anexo E, E-03 y E-04 |
+| 15:45 | 11 · Estados | Proceso y consentimiento | Anexo E, E-04 |
 | 16:30 | 12 · Cómo se sabe que funciona | Casos, CI y verificaciones en test | Apartado 5, anexo F |
 | 17:30 | 13 · Lo que falta | Dicho antes de que lo pregunten | Anexo K |
 | 18:30 | 14 · Cómo se trabajó | Legajo, paquetes, CI, decisiones; IA declarada | Apartado 2 (roles) |

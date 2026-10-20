@@ -27,7 +27,7 @@ export function dibujar(L) {
         PreferenciaDeRecordatorio: [3, 0],
       },
       maximo: 3,
-      separacionFilas: 22,
+      separacionFilas: 42,
       enfasis: ['Novedad'],
     },
     {
