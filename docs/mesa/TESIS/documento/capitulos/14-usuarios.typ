@@ -28,8 +28,9 @@
 = Usuarios para acceder a la APK y al website con diferentes roles
 
 Todas las cuentas son sintéticas: ninguna persona es real y los datos son de demostración, cargados con la procedencia
-`DATOS-SINTETICOS` (anexo A). Las credenciales no están en el repositorio, que es público: se entregan en la versión de
-evaluación de este documento, que se compila fuera del repositorio.
+`DATOS-SINTETICOS` (cómo se cargaron: `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/LEEME.md`). Las
+credenciales no están en el repositorio, que es público: se entregan en la versión de evaluación de este documento,
+que se compila fuera del repositorio.
 
 == Roles y permisos
 

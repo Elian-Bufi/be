@@ -1,0 +1,426 @@
+{
+ "_que_es": "Bibliografía de la competencia (fuentes/COMPETENCIA-2026-10-20.md §5 y §6), extraída sin reescribir.",
+ "competencia": [
+  {
+   "n": 1,
+   "autor": "Nutrium",
+   "titulo": "What are the features of the Nutrium mobile app for nutrition clients?",
+   "url": "https://help.nutrium.com/en/articles/3372169-what-are-the-features-of-the-nutrium-mobile-app-for-nutrition-clients",
+   "fecha": "17/09/2025"
+  },
+  {
+   "n": 2,
+   "autor": "Nutrium",
+   "titulo": "Is there a Nutrium mobile app for nutrition professionals?",
+   "url": "https://help.nutrium.com/en/articles/4101215-is-there-a-nutrium-mobile-app-for-nutrition-professionals",
+   "fecha": "22/04/2024"
+  },
+  {
+   "n": 3,
+   "autor": "Nutrium",
+   "titulo": "How do I use body composition predictive equations?",
+   "url": "https://help.nutrium.com/en/articles/596297-how-do-i-use-body-composition-predictive-equations",
+   "fecha": "16/09/2025"
+  },
+  {
+   "n": 4,
+   "autor": "Nutrium",
+   "titulo": "Terms and Conditions - Client.",
+   "url": "https://nutrium.com/en/terms_and_conditions/clients",
+   "fecha": "19/03/2024"
+  },
+  {
+   "n": 5,
+   "autor": "Nutrium",
+   "titulo": "The World's #1 Nutrition Software.",
+   "url": "https://nutrium.com/en/professionals",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 6,
+   "autor": "Hexfit",
+   "titulo": "Client tracking software for fitness professionals.",
+   "url": "https://hexfit.com/en/",
+   "fecha": "01/10/2026"
+  },
+  {
+   "n": 7,
+   "autor": "Hexfit",
+   "titulo": "Profiles and access.",
+   "url": "https://help.hexfit.com/en/articles/4270056-profiles-and-access",
+   "fecha": "20/05/2026"
+  },
+  {
+   "n": 8,
+   "autor": "Hexfit",
+   "titulo": "Nutrition Tracking Software for Trainers and Fitness Professionals.",
+   "url": "https://hexfit.com/en/nutrition-tracking/",
+   "fecha": "01/10/2026"
+  },
+  {
+   "n": 9,
+   "autor": "Hexfit",
+   "titulo": "Hexfit Go, your clients' mobile app.",
+   "url": "https://hexfit.com/en/hexfit-go-app/",
+   "fecha": "01/10/2026"
+  },
+  {
+   "n": 10,
+   "autor": "Hexfit",
+   "titulo": "Hexfit Lab, Physical and Postural Testing.",
+   "url": "https://hexfit.com/en/hexfit-lab/",
+   "fecha": "01/10/2026"
+  },
+  {
+   "n": 11,
+   "autor": "Hexfit",
+   "titulo": "Contact us.",
+   "url": "https://hexfit.com/en/contact/",
+   "fecha": "01/10/2026"
+  },
+  {
+   "n": 12,
+   "autor": "NutriAdmin",
+   "titulo": "Introduction to NutriAdmin's Client Portal.",
+   "url": "https://nutriadmin.com/docs/introduction-to-the-client-portal-in-nutriadmin/",
+   "fecha": "«Updated 2 years ago»"
+  },
+  {
+   "n": 13,
+   "autor": "NutriAdmin",
+   "titulo": "Professional Software for Nutritionists & Dietitians.",
+   "url": "https://nutriadmin.com/",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 14,
+   "autor": "NutriAdmin",
+   "titulo": "Nutrition Team Software.",
+   "url": "https://nutriadmin.com/use-cases/nutrition-team-software",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 15,
+   "autor": "NutriAdmin",
+   "titulo": "Software for Personal Trainers.",
+   "url": "https://nutriadmin.com/use-cases/software-for-personal-trainers",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 16,
+   "autor": "NutriAdmin",
+   "titulo": "GDPR Information.",
+   "url": "https://nutriadmin.com/docs/nutriadmin-gdpr-general-data-protection-regulation-information/",
+   "fecha": "«Updated 2 years ago»"
+  },
+  {
+   "n": 17,
+   "autor": "Healthie",
+   "titulo": "Care Teams.",
+   "url": "https://help.gethealthie.com/article/480-care-teams",
+   "fecha": "05/09/2025"
+  },
+  {
+   "n": 18,
+   "autor": "Healthie",
+   "titulo": "Healthie Mobile Apps for iOS and Android.",
+   "url": "https://help.gethealthie.com/article/196-healthie-mobile-apps-for-ios-and-android",
+   "fecha": "15/06/2026"
+  },
+  {
+   "n": 19,
+   "autor": "Healthie",
+   "titulo": "Clients Having Multiple Accounts with Providers.",
+   "url": "https://help.gethealthie.com/article/471-clients-having-multiple-accounts-with-healthie-providers",
+   "fecha": "29/05/2026"
+  },
+  {
+   "n": 20,
+   "autor": "Healthie",
+   "titulo": "Getting Started: Care / Treatment Plans.",
+   "url": "https://help.gethealthie.com/article/371-care-plans",
+   "fecha": "28/07/2025"
+  },
+  {
+   "n": 21,
+   "autor": "Healthie",
+   "titulo": "Getting Started: Metrics.",
+   "url": "https://help.gethealthie.com/article/103-tracking-metrics-and-adding-custom-metrics",
+   "fecha": "03/09/2026"
+  },
+  {
+   "n": 22,
+   "autor": "Healthie",
+   "titulo": "Patient consent for AI Scribe.",
+   "url": "https://help.gethealthie.com/article/1270-patient-consent-for-ai-scribe",
+   "fecha": "28/05/2026"
+  },
+  {
+   "n": 23,
+   "autor": "Healthie",
+   "titulo": "Terms of Use.",
+   "url": "https://www.gethealthie.com/terms",
+   "fecha": "17/02/2026"
+  },
+  {
+   "n": 24,
+   "autor": "Healthie",
+   "titulo": "Deep Dive: Team Member Permissions.",
+   "url": "https://help.gethealthie.com/article/801-deep-dive-organization-settings",
+   "fecha": "01/10/2026"
+  },
+  {
+   "n": 25,
+   "autor": "Practice Better",
+   "titulo": "All-In-One EHR & Practice Management Software.",
+   "url": "https://practicebetter.io/",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 26,
+   "autor": "Practice Better",
+   "titulo": "Official Information About Practice Better.",
+   "url": "https://practicebetter.io/llm-info",
+   "fecha": "13/03/2026"
+  },
+  {
+   "n": 27,
+   "autor": "Practice Better",
+   "titulo": "Health & Wellness Client Portal Software.",
+   "url": "https://practicebetter.io/features/client-portal",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 28,
+   "texto": "Practice Better. *Managing Roles & Permissions for Team Members* (†). https://help.practicebetter.io/hc/en-us/articles/360035388752-Managing-Roles-Permissions-for-Team-Members (08/09/2026)"
+  },
+  {
+   "n": 29,
+   "texto": "Practice Better. *Sharing Protocols With Clients* (†). https://help.practicebetter.io/hc/en-us/articles/360052049372-Sharing-Protocols-With-Clients (10/08/2026)"
+  },
+  {
+   "n": 30,
+   "texto": "Practice Better. *Autosave and Version History* (†). https://help.practicebetter.io/hc/en-us/articles/8432347410331-Autosave-and-Version-History (02/09/2026)"
+  },
+  {
+   "n": 31,
+   "texto": "Practice Better. *Using the Lifestyle Journal to log Measurements & Vitals* (†). https://help.practicebetter.io/hc/en-us/articles/30480477045275-Using-the-Lifestyle-Journal-to-log-Measurements-Vitals (02/10/2026)"
+  },
+  {
+   "n": 32,
+   "autor": "ABC Trainerize",
+   "titulo": "Personal Training Software for Fitness Professionals.",
+   "url": "https://www.trainerize.com/",
+   "fecha": "© 2012-2026"
+  },
+  {
+   "n": 33,
+   "texto": "ABC Trainerize. *Can I Assign a Client to Multiple Trainers?* (†). https://help.trainerize.com/hc/en-us/articles/23332207757332-Can-I-Assign-a-Client-to-Multiple-Trainers (14/06/2026)"
+  },
+  {
+   "n": 34,
+   "texto": "ABC Trainerize. *Trainer, Manager and Staff Permissions* (†). https://help.trainerize.com/hc/en-us/articles/360000695586-Trainer-Manager-and-Staff-Permissions (04/09/2026)"
+  },
+  {
+   "n": 35,
+   "texto": "ABC Trainerize. *Tracking and Measuring Client Progress* (†). https://help.trainerize.com/hc/en-us/articles/360033938972-Tracking-and-Measuring-Client-Progress (19/08/2026)"
+  },
+  {
+   "n": 36,
+   "texto": "ABC Trainerize. *Client Goals, Meal Plans and Training Phases* (†). https://help.trainerize.com/hc/en-us/articles/360035849451-Client-Goals-Meal-Plans-and-Training-Phases (01/07/2026)"
+  },
+  {
+   "n": 37,
+   "texto": "ABC Trainerize. *How to Download the ABC Trainerize App* (†). https://help.trainerize.com/hc/en-us/articles/208689016-How-to-Download-the-ABC-Trainerize-App (08/08/2026)"
+  },
+  {
+   "n": 38,
+   "texto": "Dornellas, C. *Can AI Create Personalized Workouts and Meal Plans While You Stay in Control?* ABC Trainerize. https://www.trainerize.com/blog/ai-coaching-software-with-coach-control/ (11/09/2026)"
+  },
+  {
+   "n": 39,
+   "autor": "TrueCoach",
+   "titulo": "#1 Personal Trainer Software.",
+   "url": "https://truecoach.co/",
+   "fecha": "© 2026"
+  },
+  {
+   "n": 40,
+   "autor": "TrueCoach",
+   "titulo": "Team Accounts.",
+   "url": "https://help.truecoach.co/en/articles/2403964-team-accounts",
+   "fecha": "22/03/2023"
+  },
+  {
+   "n": 41,
+   "autor": "TrueCoach",
+   "titulo": "Using TrueCoach for Nutrition Clients.",
+   "url": "https://help.truecoach.co/en/articles/3047504-using-truecoach-for-nutrition-clients",
+   "fecha": "22/03/2023"
+  },
+  {
+   "n": 42,
+   "autor": "TrueCoach",
+   "titulo": "The TrueCoach Client Experience.",
+   "url": "https://help.truecoach.co/en/articles/2403707-the-truecoach-client-experience",
+   "fecha": "03/08/2022"
+  },
+  {
+   "n": 43,
+   "autor": "TrueCoach",
+   "titulo": "AI Workout Library for Personal Trainers.",
+   "url": "https://truecoach.co/learning-resources/ai-workout-builder-for-personal-trainers/",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 44,
+   "autor": "Everfit",
+   "titulo": "Fitness and Wellness Coaching Platform.",
+   "url": "https://everfit.io/",
+   "fecha": "© 2026"
+  },
+  {
+   "n": 45,
+   "autor": "Everfit",
+   "titulo": "Permission Settings: Add a sub-coach to manage your client.",
+   "url": "https://help.everfit.io/en/articles/6809708-permission-settings-add-a-sub-coach-to-manage-your-client",
+   "fecha": "14/02/2025"
+  },
+  {
+   "n": 46,
+   "autor": "Everfit",
+   "titulo": "Client App: Health App Integration.",
+   "url": "https://help.everfit.io/en/articles/4604646-client-app-health-app-integration",
+   "fecha": "«Updated today»"
+  },
+  {
+   "n": 47,
+   "autor": "Everfit",
+   "titulo": "Nutrition Coaching: Macros.",
+   "url": "https://help.everfit.io/en/articles/4578482-nutrition-coaching-macros-myfitnesspal-integration",
+   "fecha": "14/07/2026"
+  },
+  {
+   "n": 48,
+   "autor": "Everfit",
+   "titulo": "Remove a client from an assigned program.",
+   "url": "https://help.everfit.io/en/articles/3365738-remove-a-client-from-an-assigned-program",
+   "fecha": "08/10/2025"
+  },
+  {
+   "n": 49,
+   "autor": "Everfit",
+   "titulo": "Terms of Service.",
+   "url": "https://everfit.io/tos/",
+   "fecha": "26/11/2024"
+  },
+  {
+   "n": 50,
+   "autor": "MediFlow",
+   "titulo": "Software para Nutricionistas: Pacientes, Planes y Seguimiento.",
+   "url": "https://mediflow.com.ar/software-para-nutricionistas",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 51,
+   "autor": "MediFlow",
+   "titulo": "Software Médico y Gestión de Consultorios en Argentina.",
+   "url": "https://mediflow.com.ar/",
+   "fecha": "sin fecha"
+  },
+  {
+   "n": 52,
+   "texto": "Barbero L, Rodríguez YL, Cáceres AM, Malavasi MC, Barbieri LE, Bruveris AP, Canziani C. *Censo Nacional de Profesionales en Nutrición. Resultados de 2023.* Diaeta (B. Aires) 2025;43:e25043011. https://diaeta.aalen.org.ar/index.php/2022/article/view/101 (publicado el 13/01/2026)"
+  },
+  {
+   "n": 53,
+   "texto": "INDEC y Secretaría de Gobierno de Salud. *4.° Encuesta Nacional de Factores de Riesgo. Resultados definitivos* (octubre de 2019). https://www.indec.gob.ar/ftp/cuadros/publicaciones/enfr_2018_resultados_definitivos.pdf"
+  },
+  {
+   "n": 54,
+   "autor": "Healthie",
+   "titulo": "HIPAA Compliant Electronic Health Record Software.",
+   "url": "https://www.gethealthie.com/",
+   "fecha": "sin fecha"
+  }
+ ],
+ "noSePudieronAbrir": [
+  "`https://www.argentina.gob.ar/salud/oferhus/datos/formaciongrado/nutricion`: 403 en dos intentos.",
+  "`https://mediflow.com.ar/faq`: 404, aunque la portada la enlaza.",
+  "Centros de ayuda de Practice Better y Trainerize como HTML: 403 (se leyeron por su API pública; ver la nota inicial)."
+ ],
+ "notacion": [
+  {
+   "fuente": "OMG, Unified Modeling Language 2.5.1",
+   "url": "https://www.omg.org/spec/UML/2.5.1",
+   "abierta": "sí (índice)",
+   "tomado": "Versión 2.5.1, «Document Status: formal», «Publication Date: December 2017»; documento normativo `formal/17-12-05` (https://www.omg.org/spec/UML/2.5.1/PDF). El PDF no se pudo abrir con la herramienta de consulta (supera su límite de 10 MiB): las reglas UML puntuales se contrastan contra el PDF cuando se descarga y se lee por cláusula (ver §3)"
+  },
+  {
+   "fuente": "C4, Diagram review checklist",
+   "url": "https://c4model.com/diagrams/checklist",
+   "abierta": "sí",
+   "tomado": "21 preguntas: título; tipo y alcance comprensibles; leyenda; nombre, tipo, responsabilidad y tecnología de cada elemento; significado de siglas, colores, formas, íconos, bordes y tamaños; cada flecha con rótulo de intención que coincida con su dirección y, cuando aplica, con su tecnología; significado de puntas y estilos de línea"
+  },
+  {
+   "fuente": "C4, Notation",
+   "url": "https://c4model.com/diagrams/notation",
+   "abierta": "sí",
+   "tomado": "Notación independiente; cada diagrama debe entenderse solo; título con tipo y alcance; leyenda; tipo explícito y descripción corta por elemento; tecnología en contenedores y componentes; líneas unidireccionales con rótulo específico (evitar «Uses»); colores consistentes entre diagramas y legibles en blanco y negro y con daltonismo"
+  },
+  {
+   "fuente": "C4, Container diagram",
+   "url": "https://c4model.com/diagrams/container",
+   "abierta": "sí",
+   "tomado": "Zoom dentro del límite de un solo sistema; un contenedor es una aplicación o un almacén de datos; personas y sistemas vecinos como apoyo; no muestra despliegue (agrupamiento, réplicas): para eso, un diagrama de despliegue por ambiente"
+  },
+  {
+   "fuente": "C4, Deployment diagram",
+   "url": "https://c4model.com/diagrams/deployment",
+   "abierta": "sí",
+   "tomado": "Instancias de sistemas y contenedores sobre nodos de despliegue de un ambiente (producción, staging, desarrollo); nodos anidables (PaaS, contenedor, servidor de base de datos); los íconos de proveedor van en la leyenda"
+  },
+  {
+   "fuente": "draw.io, Entity relationship tables",
+   "url": "https://www.drawio.com/docs/diagram-types/entity-relationship-tables/",
+   "abierta": "sí",
+   "tomado": "Entidades como tablas con filas de PK y FK; la notación más común es pata de gallo; no fija estilos"
+  },
+  {
+   "fuente": "draw.io, UML class diagrams",
+   "url": "https://www.drawio.com/docs/diagram-types/uml/class-diagrams/",
+   "abierta": "sí",
+   "tomado": "Tres compartimentos (nombre; `atributo: tipo`; `operación(parámetro: tipo): tipo`); visibilidad + - # ~; herencia con triángulo abierto en la clase padre; realización punteada con triángulo; dependencia punteada con flecha abierta; agregación con rombo vacío y composición con rombo lleno del lado del todo; multiplicidades como rótulos"
+  },
+  {
+   "fuente": "PlantUML, Use case diagram",
+   "url": "https://plantuml.com/use-case-diagram",
+   "abierta": "sí",
+   "tomado": "Actores y casos; agrupación con `rectangle` o `package`; `include` y `extends` con línea punteada y flecha; generalización con triángulo; «left to right direction» suele leerse mejor"
+  },
+  {
+   "fuente": "PlantUML, Component diagram",
+   "url": "https://plantuml.com/component-diagram",
+   "abierta": "sí",
+   "tomado": "Componentes, interfaces como círculo, dependencias punteadas con rótulo, paquetes y nodos como agrupación, puertos; notación UML 2 por defecto"
+  },
+  {
+   "fuente": "draw.io, Data flow diagrams",
+   "url": "https://www.drawio.com/docs/diagram-types/data-flow-diagrams/",
+   "abierta": "sí",
+   "tomado": "Entidad externa como rectángulo, proceso «usually a circle», almacén como rectángulo abierto, flujo como conector con flecha; las flechas son datos, no control; sin rombos de decisión; numeración opcional; nivel 0 = contexto"
+  },
+  {
+   "fuente": "Wikipedia, Data-flow diagram (rev. 17/02/2026)",
+   "url": "https://en.wikipedia.org/wiki/Data-flow_diagram",
+   "abierta": "sí",
+   "tomado": "Numeración jerárquica (1.1, 1.2…; 2.1.1…) que se mantiene entre niveles; consistencia: cada almacén con entrada y salida y los flujos de un nivel presentes en el diagrama que lo describe; contexto con un único proceso; atribución de la notación a DeMarco (1979) y a Gane y Sarson (1979), libros que no se consultaron"
+  },
+  {
+   "fuente": "uml-diagrams.org",
+   "url": null,
+   "abierta": "**no**",
+   "tomado": "Falla de certificado TLS; no se usó"
+  }
+ ]
+}
