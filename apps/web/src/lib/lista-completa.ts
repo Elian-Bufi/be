@@ -39,6 +39,9 @@ export function useListaCompleta<P extends PaginaDeUnaLista<unknown>>(
   const [estado, setEstado] = useState<EstadoDeListaCompleta<P>>({ tipo: 'cargando' });
   const generacion = useRef(0);
   const tope = useRef(paginas);
+  // Con qué pedido se leyó la lista que está a la vista. Si falla una lectura de otra consulta (otro período), la lista
+  // anterior no queda a la vista como si fuera de la nueva: es una falla, como antes.
+  const leidaCon = useRef<typeof pedir>(null);
 
   const leer = useCallback(async () => {
     if (!pedir) return;
@@ -48,8 +51,10 @@ export function useListaCompleta<P extends PaginaDeUnaLista<unknown>>(
     if (esta !== generacion.current || sesionPerdida(r)) return;
     if (!r.ok) {
       const motivo = motivoDeFalla(r);
-      return setEstado((e) => (e.tipo === 'listo' ? { ...e, actualizando: false, fallaAlActualizar: motivo } : { tipo: 'error', motivo }));
+      const mismaConsulta = leidaCon.current === pedir;
+      return setEstado((e) => (e.tipo === 'listo' && mismaConsulta ? { ...e, actualizando: false, fallaAlActualizar: motivo } : { tipo: 'error', motivo }));
     }
+    leidaCon.current = pedir;
     setEstado({ tipo: 'listo', items: r.datos.data, primera: r.datos.primera, completa: r.datos.completa, consultado: new Date(), actualizando: false, fallaAlActualizar: null });
   }, [pedir, sesionPerdida, limite]);
 
