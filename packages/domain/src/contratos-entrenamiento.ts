@@ -40,7 +40,7 @@ import {
   ValoracionSchema,
   ZonaHorariaSchema,
 } from './contratos-nutricion';
-import { FuenteExternaSchema } from './contratos-procedencia-externa';
+import { FuenteExternaSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
@@ -453,11 +453,14 @@ export type EjercicioDeCatalogo = z.infer<typeof EjercicioDeCatalogoSchema>;
 export const ListaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioDeCatalogoSchema), page: PaginaSchema });
 /**
  * DL-141 D-2: un ejercicio que encontró el buscador del website (API-TRN-13-BUSQUEDA), con el nombre alternativo que
- * coincidió con lo buscado. API-TRN-13, la que lee la APK instalada con su esquema congelado, responde sin este campo.
+ * coincidió con lo buscado y (D-6) lo que hace falta para decir su origen en la fila. API-TRN-13, la que lee la APK
+ * instalada con su esquema congelado, responde sin estos campos.
  */
 export const EjercicioEncontradoSchema = EjercicioDeCatalogoSchema.extend({
   /** El nombre alternativo que coincidió («Bench press» al buscar «bench press»), tal como está guardado; `null` si coincidió el principal, o sin texto. */
   matchedAlternativeName: z.string().nullable(),
+  /** DL-141 D-6: quién lo cargó y si su correspondencia con la fuente es aproximada. */
+  origin: OrigenEnElBuscadorSchema,
 });
 export type EjercicioEncontrado = z.infer<typeof EjercicioEncontradoSchema>;
 export const BusquedaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioEncontradoSchema), page: PaginaSchema });

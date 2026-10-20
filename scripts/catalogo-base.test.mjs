@@ -13,16 +13,23 @@ import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+  agregadoALaProcedencia,
   CARPETA_DE_ALIMENTOS,
+  CARPETA_DE_CORRECCIONES,
   CARPETA_DE_EJERCICIOS,
   comparable,
   composicionDeAlimento,
+  cortesQueCambian,
+  idDeNombreDeAlimento,
   nombreEnInglesDeUsda,
   nombresAlternativosDeAlimento,
   nombresAlternativosDeEjercicio,
+  nombresAlternativosVigentes,
+  nombresVigentes,
   procedenciaDeAlimento,
   procedenciaDeEjercicio,
   sqlDeAlimentos,
+  sqlDeCorrecciones,
   sqlDeEjercicios,
   uuidV5,
 } from './catalogo-base/sql.mjs';
@@ -34,6 +41,7 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const leer = (...partes) => readFileSync(join(RAIZ, ...partes), 'utf8');
 const ejercicios = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'ejercicios.json'));
 const alimentos = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'alimentos.json'));
+const correcciones = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'correcciones.json'));
 
 const repetidos = (lista) => lista.filter((x, i) => lista.indexOf(x) !== i);
 /** Los alimentos que USDA ya nombra en castellano: su descripción y el nombre coinciden. */
@@ -148,13 +156,8 @@ test('ejercicios: sin nombres repetidos, y ninguno igual a uno de los doce de de
   assert.deepEqual(curados.filter((n) => sinteticos.includes(comparable(n))), []);
 });
 
-test('ejercicios: pocas sentadillas, para que la búsqueda con errores de tipeo de la APK (20 por página) siga mostrando la de demostración', () => {
-  // API-TRN-13 completa la primera página con los parecidos, del más nuevo al más viejo; «sentadila» trae todos los que
-  // tienen la palabra «sentadilla». Con 19 o más del catálogo base, la sintética saldría de la primera página
-  // (busqueda-tolerante.int-spec.ts).
-  const conLaPalabra = ejercicios.ejercicios.filter((e) => [e.nombre, ...nombresAlternativosDeEjercicio(e).map((n) => n.nombre)].some((n) => comparable(n).split(/[^a-z0-9]+/).includes('sentadilla')));
-  assert.ok(conLaPalabra.length <= 18, `son ${conLaPalabra.length}`);
-});
+// Cuántos ejercicios tienen una palabra no es una regla del catálogo: la búsqueda tolera que crezca (encargo de Dirección
+// del 2026-10-19, bloque 4). Lo prueba busqueda-tolerante.int-spec.ts con más sentadillas que una página.
 
 // ─── Alimentos (tramo 3, D-4) ────────────────────────────────────────────────────────────────────
 
@@ -234,10 +237,94 @@ test('alimentos: los nombres alternativos; el inglés es la descripción de USDA
 
 test('alimentos: sin nombres repetidos, y ninguno igual a uno sintético de WP-04 ni a uno de DL-119 (D-5)', () => {
   assert.equal(SINTETICOS_DE_NUTRICION.length, 40);
-  const nombres = alimentos.alimentos.map((a) => comparable(a.nombre));
-  assert.deepEqual(repetidos(nombres), []);
   const yaSembrados = [...SINTETICOS_DE_NUTRICION, ...DE_DL119.map((x) => x.nombre)].map(comparable);
-  assert.deepEqual(alimentos.alimentos.filter((a) => yaSembrados.includes(comparable(a.nombre))).map((a) => a.nombre), []);
+  // Los del tramo 3 y los vigentes, con las correcciones.
+  for (const lista of [alimentos.alimentos.map((a) => a.nombre), [...nombresVigentes(alimentos, correcciones).values()]]) {
+    assert.deepEqual(repetidos(lista.map(comparable)), []);
+    assert.deepEqual(lista.filter((n) => yaSembrados.includes(comparable(n))), []);
+  }
+});
+
+// ─── La correspondencia con la fuente (encargo de Dirección del 2026-10-19, bloque 4) ──────────────
+
+const CORTES_REVISADOS = /^(cuadril|entrana|vacio|bife de vacio|bola de lomo)\b/;
+
+test('correspondencia: los cuatro cortes del encargo están revisados, crudos y cocidos, cada uno una sola vez', () => {
+  const revisados = correcciones.cortes.map((c) => c.fdcId);
+  assert.deepEqual(repetidos(revisados), []);
+  // Cuadril, entraña, vacío y bola de lomo: todas sus variantes sembradas, con el nombre del tramo 3 o el vigente.
+  const vigentes = nombresVigentes(alimentos, correcciones);
+  const variantes = alimentos.alimentos.filter((a) => CORTES_REVISADOS.test(comparable(a.nombre)) || CORTES_REVISADOS.test(comparable(vigentes.get(a.fdcId))));
+  assert.deepEqual(variantes.map((a) => a.fdcId).sort(), [...revisados].sort());
+  assert.equal(variantes.length, 6);
+});
+
+test('correspondencia: cada corte con su pieza, su preparación, su grasa y su fundamento; el nombre nuevo conserva preparación y grasa', () => {
+  for (const c of correcciones.cortes) {
+    const que = `FDC ${c.fdcId}`;
+    const a = alimentos.alimentos.find((x) => x.fdcId === c.fdcId);
+    assert.ok(a, `${que}: es un alimento del tramo 3 (no de DL-119)`);
+    assert.equal(a.nombre, c.nombreAnterior, `${que}: el nombre anterior es el sembrado`);
+    exigirNombre(c.nombre, que);
+    assert.ok(['DIRECTA', 'APROXIMADA'].includes(c.correspondencia), `${que}: la correspondencia`);
+    for (const campo of ['pieza', 'grasa', 'fundamento']) assert.ok(typeof c[campo] === 'string' && c[campo].trim().length > 10, `${que}: ${campo}`);
+    assert.ok(typeof c.preparacion === 'string' && /^(crud|asad|cocid|hervid|a la parrilla)/.test(c.preparacion), `${que}: la preparación de USDA`);
+    // Una correspondencia aproximada dice en qué: es lo que muestra el buscador.
+    if (c.correspondencia === 'APROXIMADA') assert.ok(typeof c.nota === 'string' && c.nota.trim().length > 10, `${que}: la nota de la aproximación`);
+    else assert.equal(c.nota, null, `${que}: una directa no lleva nota`);
+    // El nombre corrige la pieza, nunca la preparación ni la grasa: «…, magro, crudo» sigue «…, magro, crudo».
+    assert.deepEqual(c.nombre.split(', ').slice(1), c.nombreAnterior.split(', ').slice(1), `${que}: «${c.nombre}» conserva la preparación y la grasa`);
+    assert.ok(a.usda.descripcion.length > 20, `${que}: la descripción original completa de USDA`);
+  }
+  // Los que cambian de nombre: los que no están en el catálogo como su pieza (el vacío entero, la entraña sin decir cuál
+  // y el cuadril con la colita).
+  assert.deepEqual(cortesQueCambian(correcciones).map((c) => c.fdcId), ['174055', '168634', '168745', '169563', '168733']);
+});
+
+test('correspondencia: la versión nueva suma la correspondencia sin tocar la fuente externa, y sus fuentes están identificadas', () => {
+  for (const f of Object.values(correcciones.fuentes)) {
+    assert.match(f.url, /^https:\/\//);
+    assert.match(f.sha256, /^[0-9a-f]{64}$/);
+    assert.match(f.consultadoEl, /^\d{4}-\d{2}-\d{2}$/);
+  }
+  for (const c of cortesQueCambian(correcciones)) {
+    const a = alimentos.alimentos.find((x) => x.fdcId === c.fdcId);
+    const anterior = procedenciaDeAlimento(a, alimentos.fuente);
+    const agregado = agregadoALaProcedencia(c, correcciones.fuentes);
+    // La migración las une con «||»: del agregado, solo la marca de la siembra pisa una clave de la procedencia anterior.
+    assert.deepEqual(Object.keys(agregado).filter((k) => k in anterior), ['siembra']);
+    const nueva = { ...anterior, ...agregado };
+    assert.equal(nueva.siembra, 'WP-CATALOGO-BASE · DL-141 · correspondencia de cortes');
+    assert.deepEqual([nueva.fuente, nueva.carga, nueva.recurso], [anterior.fuente, anterior.carga, anterior.recurso]);
+    assert.deepEqual(d.FuenteExternaDeAlimentoSchema.parse(nueva.fuenteExterna), anterior.fuenteExterna);
+    assert.equal(nueva.correspondencia.tipo, c.correspondencia);
+    assert.equal(nueva.correspondencia.fuentes.length, 2);
+    assert.equal(nueva.correccion.nombreAnterior, c.nombreAnterior);
+  }
+});
+
+test('correspondencia: los nombres retirados existían, cada uno con su motivo; los nuevos son válidos y no se repiten', () => {
+  for (const n of correcciones.nombresRetirados) {
+    const a = alimentos.alimentos.find((x) => x.fdcId === n.fdcId);
+    assert.ok(a, `${n.nombre}: de un alimento del tramo 3`);
+    assert.ok(nombresAlternativosDeAlimento(a.nombre, a.usda.descripcion, a.nombresAlternativos).some((s) => s.nombre === n.nombre && s.region === n.region), `${n.nombre}: lo sembró el tramo 3`);
+    assert.ok(n.motivo.trim().length > 20, `${n.nombre}: el motivo`);
+    // El mismo identificador que le dio la migración del tramo 3: el retiro apunta a esa fila.
+    assert.ok(leer('prisma', 'migrations', CARPETA_DE_ALIMENTOS, 'migration.sql').includes(`('${idDeNombreDeAlimento(n.fdcId, n)}', `), `${n.nombre}: su fila`);
+  }
+  assert.deepEqual(repetidos(correcciones.nombresRetirados.map((n) => idDeNombreDeAlimento(n.fdcId, n))), []);
+  for (const n of correcciones.nombresNuevos) {
+    exigirNombre(n.nombre, `nuevo ${n.nombre}`);
+    assert.ok(['ES', 'EN'].includes(n.idioma) && (n.region === null || /^[A-Z]{2}$/.test(n.region)), n.nombre);
+    assert.ok(n.fundamento.trim().length > 20, `${n.nombre}: el fundamento`);
+  }
+  // Con las correcciones, ningún alimento repite un nombre alternativo ni repite su nombre principal.
+  const vigentes = nombresVigentes(alimentos, correcciones);
+  for (const a of alimentos.alimentos) {
+    const nombres = nombresAlternativosVigentes(a, correcciones).map((n) => comparable(n.nombre));
+    assert.deepEqual(repetidos(nombres), [], `FDC ${a.fdcId}`);
+    assert.ok(!nombres.includes(comparable(vigentes.get(a.fdcId))), `FDC ${a.fdcId}: ningún alternativo repite el principal`);
+  }
 });
 
 // ─── Las migraciones ─────────────────────────────────────────────────────────────────────────────
@@ -249,19 +336,23 @@ test('el UUID v5 es el del RFC 4122 (el vector de www.example.com en el espacio 
 test('las migraciones y el documento de fuentes son exactamente lo que produce el generador desde los datos', () => {
   assert.equal(leer('prisma', 'migrations', CARPETA_DE_EJERCICIOS, 'migration.sql'), sqlDeEjercicios(ejercicios));
   assert.equal(leer('prisma', 'migrations', CARPETA_DE_ALIMENTOS, 'migration.sql'), sqlDeAlimentos(alimentos));
-  assert.equal(leer('docs', 'catalogo', 'FUENTES.md'), fuentesEnMarkdown(ejercicios, alimentos));
+  assert.equal(leer('prisma', 'migrations', CARPETA_DE_CORRECCIONES, 'migration.sql'), sqlDeCorrecciones(correcciones, alimentos));
+  assert.equal(leer('docs', 'catalogo', 'FUENTES.md'), fuentesEnMarkdown(ejercicios, alimentos, correcciones));
   // Y producirlo dos veces da el mismo texto.
   assert.equal(sqlDeEjercicios(ejercicios), sqlDeEjercicios(JSON.parse(JSON.stringify(ejercicios))));
   assert.equal(sqlDeAlimentos(alimentos), sqlDeAlimentos(JSON.parse(JSON.stringify(alimentos))));
+  assert.equal(sqlDeCorrecciones(correcciones, alimentos), sqlDeCorrecciones(JSON.parse(JSON.stringify(correcciones)), alimentos));
 });
 
 test('las migraciones van después de la última de main, y cada inserción ignora lo que ya está', () => {
-  for (const carpeta of [CARPETA_DE_EJERCICIOS, CARPETA_DE_ALIMENTOS]) {
+  // La de las correcciones va después de las que corrige: esas ya están aplicadas y no se regeneran.
+  assert.ok(CARPETA_DE_CORRECCIONES > CARPETA_DE_ALIMENTOS && CARPETA_DE_ALIMENTOS > CARPETA_DE_EJERCICIOS);
+  for (const carpeta of [CARPETA_DE_EJERCICIOS, CARPETA_DE_ALIMENTOS, CARPETA_DE_CORRECCIONES]) {
     assert.ok(carpeta > '20261017010200_nombres_alternativos_del_catalogo_de_demostracion', carpeta);
     const sql = leer('prisma', 'migrations', carpeta, 'migration.sql');
     const sentencias = sql.split(/;\s*\n/).filter((s) => s.includes('INSERT INTO'));
     assert.ok(sentencias.length >= 3);
-    for (const s of sentencias) assert.match(s, /ON CONFLICT (\("id"\) )?DO NOTHING$/, 'cada inserción saltea lo que ya está');
+    for (const s of sentencias) assert.match(s, /ON CONFLICT (\("(id|nombre_id)"\) )?DO NOTHING$/, 'cada inserción saltea lo que ya está');
     // Solo agrega: ni UPDATE, ni DELETE, ni cambios de esquema.
     assert.doesNotMatch(sql, /^\s*(UPDATE|DELETE|ALTER|DROP|CREATE|TRUNCATE)\b/im);
   }

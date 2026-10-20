@@ -13029,7 +13029,7 @@
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Texto a buscar en el nombre. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
+            "description": "Texto a buscar en el nombre. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). Contrato legado: la web busca con API-NUT-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
             "schema": {
               "type": "string"
             }
@@ -13751,7 +13751,7 @@
     "/nutrition/catalog-items/search": {
       "post": {
         "operationId": "API-NUT-13-BUSQUEDA",
-        "summary": "Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141). Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).",
+        "summary": "Búsqueda en el catálogo nutricional con el texto en el cuerpo, para que nunca quede en una URL (historiales, proxies, bitácoras). Es la misma lectura que API-NUT-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-NUT-13 se conserva para los clientes instalados. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141); y origin, para decir de dónde sale en la fila: quién lo cargó si es una carga a mano (loadedBy) y la condición de la correspondencia con su fuente si BE la registró como aproximada (approximateCorrespondence; DL-141 D-6). Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).",
         "description": "Fuente: 09v9:648-654 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-NUT-13) · DEUDA_LEGAJO DL-130, DL-139, DL-141. AuthN: SESSION.",
         "security": [
           {
@@ -14010,6 +14010,41 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "origin": {
+                            "type": "object",
+                            "properties": {
+                              "loadedBy": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "YOU",
+                                      "ANOTHER_PROFESSIONAL"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "approximateCorrespondence": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "loadedBy",
+                              "approximateCorrespondence"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -14021,7 +14056,8 @@
                           "provenance",
                           "externalSource",
                           "available",
-                          "matchedAlternativeName"
+                          "matchedAlternativeName",
+                          "origin"
                         ],
                         "additionalProperties": false
                       }
@@ -38122,7 +38158,7 @@
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Texto a buscar en el nombre. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
+            "description": "Texto a buscar en el nombre. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). Contrato legado: la web busca con API-TRN-13-BUSQUEDA, con el texto en el cuerpo (DL-130).",
             "schema": {
               "type": "string",
               "maxLength": 80
@@ -38838,7 +38874,7 @@
     "/training/exercises/search": {
       "post": {
         "operationId": "API-TRN-13-BUSQUEDA",
-        "summary": "Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados, con su forma. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141). Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).",
+        "summary": "Búsqueda de ejercicios en el catálogo con el texto en el cuerpo, para que nunca quede en una URL. Es la misma lectura que API-TRN-13: no crea ni cambia nada, responde 200 y no exige Idempotency-Key. API-TRN-13 se conserva para los clientes instalados, con su forma. Trae las mismas filas, y cada una suma matchedAlternativeName: el nombre alternativo que coincidió, o null si coincidió el principal (DL-141); y origin, para decir de dónde sale en la fila: quién lo cargó si es una carga a mano (loadedBy) y la condición de la correspondencia con su fuente si BE la registró como aproximada (approximateCorrespondence; DL-141 D-6). Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).",
         "description": "Fuente: 09v10:838-854 · encargo del 2026-10-09 §3.C · ID propio de BE (variante BUSQUEDA de API-TRN-13) · DEUDA_LEGAJO DL-130, DL-139, DL-141. AuthN: SESSION.",
         "security": [
           {
@@ -39088,6 +39124,41 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "origin": {
+                            "type": "object",
+                            "properties": {
+                              "loadedBy": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "YOU",
+                                      "ANOTHER_PROFESSIONAL"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "approximateCorrespondence": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "loadedBy",
+                              "approximateCorrespondence"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -39099,7 +39170,8 @@
                           "muscleZones",
                           "didacticResources",
                           "available",
-                          "matchedAlternativeName"
+                          "matchedAlternativeName",
+                          "origin"
                         ],
                         "additionalProperties": false
                       }

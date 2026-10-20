@@ -4,7 +4,7 @@
  * autoría). Función pura, como `sql.mjs`: la usan el generador y la prueba de contenido, que exige que el documento del
  * repositorio sea exactamente este. La página «Fuentes del catálogo» del website sale de este documento.
  */
-import { baseDelNombre, nombreEnInglesDeUsda, nombresAlternativosDeEjercicio } from './sql.mjs';
+import { baseDelNombre, nombreEnInglesDeUsda, nombresAlternativosDeEjercicio, nombresVigentes } from './sql.mjs';
 
 /** Una celda de tabla de Markdown: sin barras verticales ni saltos de línea. */
 const celda = (texto) => String(texto).replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
@@ -21,10 +21,47 @@ function licencia(fuente, numero) {
 /** «Bench Press» · CC BY-SA 3.0 · sistab2 */
 const texto = (fuente, t) => `«${celda(t.nombre)}» · ${licencia(fuente, t.licencia)} · ${t.autoria ? celda(t.autoria) : 'sin autoría declarada en wger'}`;
 
-export function fuentesEnMarkdown(ejercicios, alimentos) {
+/** La correspondencia de los cortes vacunos con su pieza de USDA y los nombres alternativos revisados (`correcciones.json`). */
+function correspondenciaEnMarkdown(alimentos, correcciones) {
+  const porFdc = new Map(alimentos.alimentos.map((a) => [a.fdcId, a]));
+  const vigentes = nombresVigentes(alimentos, correcciones);
+  const fuente = (f) => `[${celda(f.cita)}](${f.url}) (SHA-256 \`${f.sha256}\`, consultado el ${f.consultadoEl})`;
+  const region = (r) => (r ? ` (${r})` : '');
+  return [
+    '### La correspondencia de los cortes vacunos',
+    '',
+    'Un nombre regional parecido no prueba una composición equivalente. Cada corte vacuno se revisó contra dos fuentes de',
+    'cortes, y su nombre dice la pieza de USDA que describe la composición. Si la correspondencia es aproximada, lo dice la',
+    'procedencia del alimento y el buscador lo muestra donde se elige. Un nombre que cambió es una versión nueva del alimento:',
+    'lo ya citado conserva el nombre de su momento.',
+    '',
+    ...Object.values(correcciones.fuentes).map((f) => `- ${fuente(f)}.${f.nota ? ` ${celda(f.nota)}` : ''}`),
+    '',
+    '| Alimento en BE | FDC · NDB | Descripción original de USDA | Pieza o músculo | Preparación | Grasa | Correspondencia | Fundamento |',
+    '|---|---|---|---|---|---|---|---|',
+    ...correcciones.cortes.map((c) => {
+      const a = porFdc.get(c.fdcId);
+      const antes = c.nombre === c.nombreAnterior ? '' : ` (antes, «${celda(c.nombreAnterior)}»)`;
+      const tipo = c.correspondencia === 'APROXIMADA' ? `aproximada: ${celda(c.nota)}` : 'directa';
+      return `| ${celda(vigentes.get(c.fdcId))}${antes} | [${c.fdcId}](https://fdc.nal.usda.gov/food-details/${c.fdcId}/nutrients) · ${a.usda.ndbNumber} | ${celda(a.usda.descripcion)} | ${celda(c.pieza)} | ${celda(c.preparacion)} | ${celda(c.grasa)} | ${tipo} | ${celda(c.fundamento)} |`;
+    }),
+    '',
+    'Los nombres alternativos ayudan a encontrar, pero no convierten dos alimentos en el mismo. Con el mismo criterio se',
+    'retiraron los que nombraban otro ingrediente u otra preparación, y se sumó el nombre de la fuente de cortes:',
+    '',
+    '| Nombre alternativo | Alimento en BE | Qué se hizo |',
+    '|---|---|---|',
+    ...correcciones.nombresRetirados.map((n) => `| ${celda(n.nombre)}${region(n.region)} | ${celda(vigentes.get(n.fdcId))} | Se retiró: ${celda(n.motivo)} |`),
+    ...correcciones.nombresNuevos.map((n) => `| ${celda(n.nombre)}${region(n.region)} | ${celda(vigentes.get(n.fdcId))} | Se sumó: ${celda(n.fundamento)} |`),
+    '',
+  ];
+}
+
+export function fuentesEnMarkdown(ejercicios, alimentos, correcciones) {
   const fe = ejercicios.fuente;
   const fa = alimentos.fuente;
   const cuantosDeWger = ejercicios.ejercicios.filter((e) => e.origenDelNombre === 'WGER').length;
+  const vigentes = nombresVigentes(alimentos, correcciones);
   const lineas = [
     '# Fuentes del catálogo base',
     '',
@@ -42,14 +79,16 @@ export function fuentesEnMarkdown(ejercicios, alimentos) {
     `- **Qué se tomó:** de ${alimentos.alimentos.length} alimentos, la composición cada 100 g (energía, proteínas, carbohidratos «by difference», grasas y`,
     '  fibra), el NDB, la fecha de publicación y la descripción original en inglés, que también es un nombre alternativo. A los',
     `  ${alimentos.alimentosDeDl119.length} alimentos de USDA que ya estaban (DL-119) se les sumó la descripción en inglés como nombre alternativo.`,
-    '- **Qué es de BE:** el nombre en castellano rioplatense, la preparación en castellano y los nombres de otros países.',
-    '  Ningún valor de la composición se completó ni se estimó.',
+    '- **Qué es de BE:** el nombre en castellano rioplatense, la preparación en castellano, los nombres de otros países y la',
+    '  correspondencia de los cortes vacunos con su pieza de USDA (abajo). Ningún valor de la composición se completó ni se',
+    '  estimó.',
     `- **Descarga:** ${fa.descarga} (SHA-256 \`${fa.sha256}\`), el ${fa.descargadoEl}.`,
     '',
     '| Alimento en BE | FDC | Descripción original de USDA |',
     '|---|---|---|',
-    ...alimentos.alimentos.map((a) => `| ${celda(a.nombre)} | [${a.fdcId}](https://fdc.nal.usda.gov/food-details/${a.fdcId}/nutrients) | ${celda(nombreEnInglesDeUsda(a.usda.descripcion))} |`),
+    ...alimentos.alimentos.map((a) => `| ${celda(vigentes.get(a.fdcId))} | [${a.fdcId}](https://fdc.nal.usda.gov/food-details/${a.fdcId}/nutrients) | ${celda(nombreEnInglesDeUsda(a.usda.descripcion))} |`),
     '',
+    ...correspondenciaEnMarkdown(alimentos, correcciones),
     '## Ejercicios · wger',
     '',
     `- **Cita:** ${fe.cita}`,

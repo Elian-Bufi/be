@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Ayuda } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso, Campo, ResumenDeErrores, erroresPorCampo } from '../../../components/formulario';
+import { OrigenEnElCatalogo } from '../../../components/origen-en-el-catalogo';
 import { api, type Resultado } from '../../../lib/api';
 import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
@@ -551,9 +552,9 @@ function BuscadorDeAlimentos({
                   {/* DL-141: si apareció por un nombre alternativo, cuál: «Palta (aguacate)». */}
                   {e.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(e.matchedAlternativeName)})</span> : null}
                 </p>
+                {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. */}
                 <p className="nota">
-                  {COPY_RECETAS.cada100(String(e.composition.energyKcal).replace('.', ','), e.composition.referenceAmount)}
-                  {fuenteDelAlimento(e) ? ` · ${fuenteDelAlimento(e)}` : ''}
+                  {COPY_RECETAS.cada100(String(e.composition.energyKcal).replace('.', ','), e.composition.referenceAmount)} · <OrigenEnElCatalogo item={e} />
                 </p>
                 <button
                   type="button"

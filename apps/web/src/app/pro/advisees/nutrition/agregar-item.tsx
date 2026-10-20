@@ -36,10 +36,11 @@ import { Cajon } from '../../../../components/cajon';
 import { Cargando } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
+import { OrigenEnElCatalogo } from '../../../../components/origen-en-el-catalogo';
 import { api } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import type { AlimentosHabituales } from './habituales';
-import { ImportacionDeOpenFoodFacts, procedenciaDeElemento } from './importacion';
+import { ImportacionDeOpenFoodFacts } from './importacion';
 import { useNutricion } from './nutricion';
 
 const CUANTOS_SE_PIDEN = 20;
@@ -324,7 +325,6 @@ function ContenidoDeAgregarItem({
                 </thead>
                 <tbody>
                   {alimentos.map((el) => {
-                    const procedencia = procedenciaDeElemento(el);
                     const marcado = habituales.esHabitual(el.catalogItemId);
                     const [calorias, carbohidratos, grasas, proteinas] = valoresDe(el);
                     return (
@@ -334,9 +334,9 @@ function ContenidoDeAgregarItem({
                             {el.name}
                             {el.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(el.matchedAlternativeName)})</span> : null}
                           </span>
+                          {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. */}
                           <span className="nota alimentos-del-catalogo__detalle">
-                            {el.composition.referenceAmount === '100ml' ? 'cada 100 ml' : 'cada 100 g'}
-                            {procedencia ? ` · ${procedencia}` : ''}
+                            {el.composition.referenceAmount === '100ml' ? 'cada 100 ml' : 'cada 100 g'} · <OrigenEnElCatalogo item={el} />
                           </span>
                         </th>
                         <td className="alimentos-del-catalogo__numero" data-etiqueta="Calorías">

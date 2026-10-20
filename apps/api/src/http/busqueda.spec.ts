@@ -7,6 +7,7 @@ import {
   formasDeLaPalabra,
   leerBusqueda,
   leerCursorDeBusqueda,
+  origenEnElBuscador,
   SIN_MARCA,
   sinMarcas,
   UMBRAL_DE_PARECIDO,
@@ -170,6 +171,19 @@ describe('DL-139 · las dos consultas del buscador, sin base', () => {
     expect(consultas[1]!.values).toEqual(expect.arrayContaining(['manzna', UMBRAL_DE_PARECIDO, 20]));
   });
 
+  it('a igual parecido, primero el nombre entero más cercano a lo escrito, y recién después lo más nuevo', async () => {
+    // «sentadila» se parece igual a todas las sentadillas, palabra por palabra: sin el desempate, las más nuevas sacarían
+    // a «Sentadilla» de la primera página cuando el catálogo crece (encargo de Dirección del 2026-10-19, bloque 4).
+    const { cliente, consultas } = clienteFalso([], []);
+    await buscarEnCatalogo<Fila>(cliente, CATALOGO, leerBusqueda('Sentadila'), 20, null);
+    expect(consultas[1]!.sql).toContain('similarity(');
+    expect(consultas[1]!.sql).toContain('ORDER BY par."suma" DESC, par."cercania" DESC, v."momento_de_registro" DESC, v."id" DESC');
+    // Se compara lo escrito ya normalizado, como el nombre.
+    expect(consultas[1]!.values).toContain('sentadila');
+    // Las exactas no cambian: el cursor sigue llevando [momento, id, grupo].
+    expect(consultas[0]!.sql).toContain('ORDER BY grp."grupo", v."momento_de_registro" DESC, v."id" DESC');
+  });
+
   it('una palabra en plural se mide por parecido también en singular', async () => {
     const { cliente, consultas } = clienteFalso([], []);
     await buscarEnCatalogo<Fila>(cliente, CATALOGO, leerBusqueda('manznas'), 20, null);
@@ -249,5 +263,26 @@ describe('DL-141 · los nombres alternativos en las dos consultas, sin base', ()
     await buscarEnCatalogo<Fila>(sinTexto.cliente, CON_ALTERNATIVOS, null, 20, null);
     expect(sinTexto.consultas[0]!.sql).toContain('NULL::text AS "alternativo"');
     expect(sinTexto.consultas[0]!.sql).not.toContain('nombre_alternativo');
+  });
+});
+
+describe('DL-141 D-6 · el origen de una fila del buscador del website', () => {
+  const YO = '00000000-0000-4000-8000-000000000001';
+  const OTRO = '00000000-0000-4000-8000-000000000002';
+
+  it('una carga a mano dice si la hizo quien busca u otro profesional; lo sembrado y lo importado, nadie', () => {
+    expect(origenEnElBuscador({ procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: YO, correspondencia: null }, YO)).toEqual({ loadedBy: 'YOU', approximateCorrespondence: null });
+    expect(origenEnElBuscador({ procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: OTRO, correspondencia: null }, YO)).toEqual({ loadedBy: 'ANOTHER_PROFESSIONAL', approximateCorrespondence: null });
+    expect(origenEnElBuscador({ procedencia: 'BE_SYNTHETIC_SEED', creadoPorId: null, correspondencia: null }, YO).loadedBy).toBeNull();
+    // Un importado puede tener a quien lo importó, pero es de todos (DL-141 D-1): no se dice quién.
+    expect(origenEnElBuscador({ procedencia: 'CONTROLLED_IMPORT', creadoPorId: OTRO, correspondencia: null }, YO).loadedBy).toBeNull();
+  });
+
+  it('solo una correspondencia APROXIMADA con su nota llega a la fila; una directa o mal formada, no', () => {
+    const aproximada = { tipo: 'APROXIMADA', nota: 'Es el top sirloin de USDA: el cuadril sin la colita.' };
+    expect(origenEnElBuscador({ procedencia: 'CONTROLLED_IMPORT', creadoPorId: null, correspondencia: aproximada }, YO).approximateCorrespondence).toBe(aproximada.nota);
+    for (const otra of [{ tipo: 'DIRECTA', nota: null }, { tipo: 'APROXIMADA', nota: '  ' }, { tipo: 'APROXIMADA' }, 'APROXIMADA', 3, null]) {
+      expect(origenEnElBuscador({ procedencia: 'CONTROLLED_IMPORT', creadoPorId: null, correspondencia: otra }, YO).approximateCorrespondence).toBeNull();
+    }
   });
 });
