@@ -531,7 +531,10 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       linea(capas.marcos, x + 6, y + 11.5, operador, { ...TX.meta, peso: 600 }, { color: C.tinta, de: 'fragmento' });
       for (const gd of guardas) {
         if (gd.separador) capas.marcos.push(`<path d="M ${r2(x)} ${r2(gd.y)} L ${r2(x + w)} ${r2(gd.y)}" stroke="${C.tinta_suave}" stroke-width="1" stroke-dasharray="${GUION.discontinuo}"/>`);
-        linea(capas.marcos, x + (gd.separador ? 8 : wOp + 12), gd.y + (gd.separador ? 13 : 11.5), `[${gd.texto}]`, TX.meta, { color: C.tinta_suave, de: 'fragmento' });
+        const gx = x + (gd.separador ? 8 : wOp + 12);
+        const gy = gd.y + (gd.separador ? 13 : 11.5);
+        capas.marcos.push(`<rect x="${r2(gx - 2)}" y="${r2(gy - 10)}" width="${r2(ancho(`[${gd.texto}]`, TX.meta) + 4)}" height="13.5" fill="${C.papel}"/>`);
+        linea(capas.marcos, gx, gy, `[${gd.texto}]`, TX.meta, { color: C.tinta_suave, de: 'fragmento' });
       }
     },
     /** Proceso (DFD, Yourdon/DeMarco): círculo con su número arriba y el nombre al centro. */
@@ -1051,6 +1054,9 @@ export function crearLamina({ id, titulo, alcance, ancho: W, alto: H, fuente = '
       const propio = Number(String(t.de).split(':')[1]);
       for (const s of segmentos) if (s.de !== propio && cruzaCaja(s, t, 1)) hallazgos.push(`rótulo atravesado por otro conector: «${t.texto}»`);
     }
+    // Textos libres (aclaraciones) sobre un nodo.
+    for (const t of textos.filter((x) => String(x.de).startsWith('texto')))
+      for (const n of conectables) if (cajaSobreForma(t, n)) hallazgos.push(`texto libre sobre el nodo ${n.id}: «${t.texto}»`);
     // Textos de nodos atravesados por un conector (los que tienen fondo blanco quedan por encima de la línea).
     for (const tx of textos.filter((x) => !String(x.de).startsWith('conector:') && !x.halo && x.de !== 'leyenda' && !String(x.de).startsWith('texto') && !nodos.get(x.de)?.marco))
       for (const s of segmentos) if (cruzaCaja(s, tx, 0.5)) { hallazgos.push(`texto atravesado por un conector: «${tx.texto}»`); break; }

@@ -27,7 +27,7 @@ export function dibujar(L) {
 
   L.nodoInicial({ id: 'ini', cx: 89, cy: g.pro.cy });
   accion(L, g, { id: 'p1', carril: 'pro', cx: c[1], titulo: 'Invita a una persona', detalle: 'elige el área' });
-  accion(L, g, { id: 'b1', carril: 'be', cx: c[1], titulo: 'Crea la invitación', detalle: 'enlace, QR y código' });
+  accion(L, g, { id: 'b1', carril: 'be', cx: c[1], titulo: 'Crea la invitación', detalle: 'de un solo uso' });
   accion(L, g, { id: 'a1', carril: 'ase', cx: c[1], titulo: 'Abre la invitación y acepta', detalle: 've quién invita y para qué' });
   accion(L, g, { id: 'b2', carril: 'be', cx: c[2], titulo: 'Vínculo aceptado', detalle: 'solicitud creada y aceptada' });
   accion(L, g, { id: 'a3', carril: 'ase', cx: c[3], titulo: 'Autoriza el acceso', detalle: 'consentimiento y datos de salud' });
@@ -44,7 +44,7 @@ export function dibujar(L) {
 
   flujo(L, { de: 'ini', lado: 'e', a: 'p1', ladoA: 'o' });
   flujo(L, { de: 'p1', lado: 's', a: 'b1', ladoA: 'n' });
-  flujo(L, { de: 'b1', lado: 's', a: 'a1', ladoA: 'n', etiqueta: { texto: ['enlace, QR', 'o código'], lado: 'der', auto: true } });
+  flujo(L, { de: 'b1', lado: 's', a: 'a1', ladoA: 'n', etiqueta: { texto: ['el profesional', 'lo comparte'], lado: 'der', auto: true } });
   flujo(L, { de: 'a1', lado: 'e', a: 'b2', ladoA: 's', tA: 0.3 });
   flujo(L, { de: 'b2', lado: 's', t: 0.72, a: 'a3', ladoA: 'o' });
   flujo(L, { de: 'a3', lado: 'n', a: 'b3', ladoA: 's' });

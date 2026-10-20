@@ -6,7 +6,7 @@ export const meta = {
   id: 'D-02',
   titulo: 'DFD de nivel 1 · planificar, registrar y revisar',
   alcance: 'Procesos 4 a 6 del nivel 1: el plan, los registros del asesorado y del profesional, y la revisión; con sus almacenes.',
-  fuente: 'apps/api/src (nutricion, entrenamiento, antropometria, proceso, dashboard, analisis)',
+  fuente: 'apps/api/src (nutricion, entrenamiento, antropometria, formularios, proceso, coordinacion, dashboard, analisis)',
   estado: 'implementado',
   ancho: 750,
   alto: 456,
@@ -33,17 +33,17 @@ export function dibujar(L) {
   L.relacion({ de: 'p4', a: 'd7', fin: 'flecha', extremoA: 'o', etiqueta: 'novedad' });
   flujoDeDatos(L, 'p4', 'ase', ['plan y', 'agenda']);
   // 5 · Registrar
-  flujoDeDatos(L, 'ase', 'p5', ['comidas y', 'sesiones']);
-  flujoDeDatos(L, 'pro', 'p5', ['tomas antro-', 'pométricas']);
+  flujoDeDatos(L, 'ase', 'p5', ['comidas, sesiones', 'y respuestas']);
+  flujoDeDatos(L, 'pro', 'p5', ['tomas y pedidos', 'de información']);
   L.relacion({ de: 'd5', a: 'p5', fin: 'flecha' });
   L.relacion({ de: 'p5', a: 'd6', fin: 'flecha' });
   // 6 · Revisar y analizar
   L.relacion({ de: 'p6', a: 'd6', fin: 'flecha', inicio: 'flecha' });
-  flujoDeDatos(L, 'pro', 'p6', 'revisión', { desplazamiento: 7 });
+  flujoDeDatos(L, 'pro', 'p6', ['revisión y notas', 'de coordinación'], { desplazamiento: 7 });
   flujoDeDatos(L, 'p6', 'pro', ['ficha y', 'cartera'], { desplazamiento: 7 });
   flujoDeDatos(L, 'p6', 'ase', 'evolución');
   L.relacion({ de: 'p6', a: 'd2', fin: 'flecha', extremoA: 'e', rotulo: { texto: ['continuidad', 'o cierre'] }, etiqueta: 'continuidad' });
-  L.relacion({ de: 'p6', a: 'd7', fin: 'flecha', extremoA: 'e', etiqueta: 'novedad' });
+  L.relacion({ de: 'p6', a: 'd7', fin: 'flecha', extremoA: 'e', etiqueta: 'novedad y nota' });
 
   L.leyenda({ x: 0, y: 422, w: 750, columnas: 5, titulo: null, items: LEYENDA_DFD });
 }

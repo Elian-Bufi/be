@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="D-02">
 <title>DFD de nivel 1 · planificar, registrar y revisar</title>
-<desc>Procesos 4 a 6 del nivel 1: el plan, los registros del asesorado y del profesional, y la revisión; con sus almacenes. · Fuente: apps/api/src (nutricion, entrenamiento, antropometria, proceso, dashboard, analisis) · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<desc>Procesos 4 a 6 del nivel 1: el plan, los registros del asesorado y del profesional, y la revisión; con sus almacenes. · Fuente: apps/api/src (nutricion, entrenamiento, antropometria, formularios, proceso, coordinacion, dashboard, analisis) · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
 <rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
 <rect x="0" y="422" width="750" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
 <rect x="10" y="428" width="30" height="13" rx="3" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
@@ -96,14 +96,15 @@
 <rect x="223.55" y="239.36" width="39.22" height="27.6" fill="#FFFFFF" opacity="0.94"/>
 <text x="243.17" y="250.05" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">plan y</text>
 <text x="243.17" y="262.85" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">agenda</text>
-<rect x="379" y="274.7" width="52.34" height="27.6" fill="#FFFFFF" opacity="0.94"/>
-<text x="405.17" y="285.39" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">comidas y</text>
-<text x="405.17" y="298.19" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">sesiones</text>
-<rect x="379" y="123.14" width="64.89" height="27.6" fill="#FFFFFF" opacity="0.94"/>
-<text x="411.44" y="133.83" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">tomas antro-</text>
-<text x="411.44" y="146.63" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">pométricas</text>
-<rect x="477.14" y="162.84" width="41.24" height="14.8" fill="#FFFFFF" opacity="0.94"/>
-<text x="497.76" y="173.53" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">revisión</text>
+<rect x="379" y="265.26" width="91.42" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="424.71" y="275.95" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">comidas, sesiones</text>
+<text x="424.71" y="288.75" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">y respuestas</text>
+<rect x="288.94" y="128.59" width="82.06" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="329.97" y="139.28" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">tomas y pedidos</text>
+<text x="329.97" y="152.08" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">de información</text>
+<rect x="451.28" y="169.32" width="80.34" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="491.45" y="180.01" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">revisión y notas</text>
+<text x="491.45" y="192.81" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">de coordinación</text>
 <rect x="503.29" y="103.37" width="37.57" height="27.6" fill="#FFFFFF" opacity="0.94"/>
 <text x="522.08" y="114.05" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">ficha y</text>
 <text x="522.08" y="126.85" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">cartera</text>
@@ -112,6 +113,6 @@
 <rect x="539.6" y="65.12" width="59.42" height="27.6" fill="#FFFFFF" opacity="0.94"/>
 <text x="569.31" y="75.81" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">continuidad</text>
 <text x="569.31" y="88.61" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">o cierre</text>
-<rect x="501.06" y="297.19" width="45.22" height="14.8" fill="#FFFFFF" opacity="0.94"/>
-<text x="523.67" y="307.87" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">novedad</text>
+<rect x="528.35" y="340.97" width="77.25" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="566.98" y="351.66" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">novedad y nota</text>
 </svg>

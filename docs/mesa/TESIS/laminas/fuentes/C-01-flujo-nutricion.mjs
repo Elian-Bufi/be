@@ -6,7 +6,7 @@ export const meta = {
   id: 'C-01',
   titulo: 'Flujo de nutrición',
   alcance: 'Del plan a la revisión: activación, registro de comidas por opción del plan o diferente, y el resultado de la revisión.',
-  fuente: 'apps/api/src/nutricion (planes, ingestas, revisiones) · apps/mobile/src/pantallas (nutricion-hoy, comida-diferente) · packages/domain/src/revision.ts',
+  fuente: 'apps/api/src/nutricion (planes, registro-de-comidas, revisiones) · apps/mobile/src/pantallas (nutricion-hoy, comida-diferente) · packages/domain/src/revision.ts',
   estado: 'implementado',
   ancho: 750,
   alto: 456,

@@ -1,0 +1,1381 @@
+{
+ "fuente": "packages/domain/src/openapi.ts y la procedencia de cada escritura en apps/api/src",
+ "operaciones": {
+  "API-ACC-01": {
+   "metodo": "POST",
+   "ruta": "/registrations",
+   "resumen": "Registrar identidad BE y perfil propio con A1 (términos), A2 (privacidad) y la declaración de mayoría de edad (08 §24.7 a) como actos separados. No concede A3. Sin la declaración no hay alta: un cuerpo que no la trae (un cliente anterior a DL-138) recibe 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue ADULT_DECLARATION_REQUIRED, para que las APK instaladas pidan actualizar; sin marcar o con otra versión, 422 VALIDATION_FAILED con ADULT_DECLARATION_REQUIRED o ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE. Un correo que ya usa otra cuenta, también con Google, responde el mismo 409 neutral.",
+   "casos": []
+  },
+  "API-ACC-02": {
+   "metodo": "POST",
+   "ruta": "/auth/sessions",
+   "resumen": "Iniciar sesión local. Todo fallo de credenciales o de estado de cuenta responde el mismo 401 neutral.",
+   "casos": []
+  },
+  "API-ACC-02-REANUDACION": {
+   "metodo": "POST",
+   "ruta": "/auth/sessions/resume",
+   "resumen": "Reanudar la sesión del website después de recargar: con la cookie de reanudación (HttpOnly, Secure, SameSite=None, Partitioned, solo para /api/v1/auth/sessions) devuelve un token nuevo de la MISMA sesión, que vence cuando ella vence, y rota la cookie. Solo superficie WEB. Una sesión finalizada, revocada, vencida o de una cuenta que ya no opera no se reanuda; una cookie ya reemplazada fuera del margen de gracia revoca la sesión.",
+   "casos": []
+  },
+  "API-ACC-03": {
+   "metodo": "DELETE",
+   "ruta": "/auth/sessions/current",
+   "resumen": "Finalizar la sesión actual. Idempotente: repetir responde 204.",
+   "casos": []
+  },
+  "API-ACC-04": {
+   "metodo": "DELETE",
+   "ruta": "/auth/sessions",
+   "resumen": "Revocar todas las sesiones del titular.",
+   "casos": []
+  },
+  "API-ACC-05": {
+   "metodo": "GET",
+   "ruta": "/me",
+   "resumen": "Identidad, estado operativo y sesión propios. `actorCapabilities` encauza superficies y no es PDP. No incluye A3.",
+   "casos": []
+  },
+  "API-ACC-06": {
+   "metodo": "PATCH",
+   "ruta": "/me/profile",
+   "resumen": "Editar el perfil propio con la versión esperada: hoy, el nombre visible (o quitarlo). Cada cambio es una versión. Lo ve el profesional con un vínculo vigente; si no, la referencia neutral.",
+   "casos": [
+    "UC-P25"
+   ]
+  },
+  "API-ACC-06-PROPIA": {
+   "metodo": "GET",
+   "ruta": "/me/profile",
+   "resumen": "El perfil propio con su versión efectiva, para editarlo. Va aparte de /me, cuya respuesta estricta valida la APK instalada.",
+   "casos": [
+    "UC-P25"
+   ]
+  },
+  "API-CON-05": {
+   "metodo": "GET",
+   "ruta": "/me/health-data-consent-requirement",
+   "resumen": "Requisito A3 y el último acto A3 del titular. `currentConsent: null` = A3 nunca otorgado.",
+   "casos": []
+  },
+  "API-REL-01": {
+   "metodo": "POST",
+   "ruta": "/relationship-requests",
+   "resumen": "Crear una solicitud de vínculo por alcance y finalidad. No concede acceso. Una equivalente pendiente se devuelve con 200 deduplicado (REG-06-44).",
+   "casos": [
+    "UC-P04"
+   ]
+  },
+  "API-REL-02": {
+   "metodo": "GET",
+   "ruta": "/me/relationship-requests",
+   "resumen": "Solicitudes propias, enviadas y recibidas. No incluye información sanitaria.",
+   "casos": []
+  },
+  "API-REL-03": {
+   "metodo": "POST",
+   "ruta": "/relationship-requests/{requestId}/accept",
+   "resumen": "Aceptar una solicitud (solo el asesorado titular). Crea el Vínculo por Alcance. No concede consentimiento.",
+   "casos": [
+    "UC-P05"
+   ]
+  },
+  "API-REL-04": {
+   "metodo": "POST",
+   "ruta": "/relationship-requests/{requestId}/reject",
+   "resumen": "Rechazar una solicitud (solo el asesorado titular). La solicitud y su historia se conservan.",
+   "casos": [
+    "UC-P05"
+   ]
+  },
+  "API-REL-05": {
+   "metodo": "GET",
+   "ruta": "/me/relationships",
+   "resumen": "Vínculos por alcance propios, con el modo de acceso calculado por el PDP (diagnóstico, no permiso).",
+   "casos": []
+  },
+  "API-REL-06": {
+   "metodo": "GET",
+   "ruta": "/relationships/{relationshipId}",
+   "resumen": "Detalle de un vínculo propio. No participante o inexistente → 404 idéntico.",
+   "casos": []
+  },
+  "API-REL-07": {
+   "metodo": "POST",
+   "ruta": "/relationships/{relationshipId}/pause",
+   "resumen": "Pausar un vínculo por alcance, con motivo. El acceso profesional pasa a cero en la operación siguiente; no revoca B2.",
+   "casos": []
+  },
+  "API-REL-08": {
+   "metodo": "POST",
+   "ruta": "/relationships/{relationshipId}/resume",
+   "resumen": "Reanudar un vínculo pausado (solo quien pausó). No restaura permisos: el PDP vuelve a evaluar todo.",
+   "casos": []
+  },
+  "API-REL-09": {
+   "metodo": "POST",
+   "ruta": "/relationships/{relationshipId}/finalize",
+   "resumen": "Finalizar un vínculo por alcance, con motivo. Terminal; sin lectura residual; conserva consentimientos como evidencia.",
+   "casos": []
+  },
+  "API-CON-01": {
+   "metodo": "GET",
+   "ruta": "/relationships/{relationshipId}/consent-requirements",
+   "resumen": "Texto y versión de B2 aplicables a un vínculo propio (solo el asesorado titular).",
+   "casos": []
+  },
+  "API-CON-02": {
+   "metodo": "POST",
+   "ruta": "/relationships/{relationshipId}/consents",
+   "resumen": "Otorgar B2 para la versión presentada (solo el asesorado titular). 201 al otorgar; 200 si ya estaba vigente con esa versión o al aceptar una versión nueva o reotorgar.",
+   "casos": [
+    "UC-P07"
+   ]
+  },
+  "API-CON-03": {
+   "metodo": "GET",
+   "ruta": "/me/consents",
+   "resumen": "Consentimientos B2 propios como titular, con el modo de acceso calculado por el PDP.",
+   "casos": []
+  },
+  "API-CON-04": {
+   "metodo": "POST",
+   "ruta": "/me/consents/{consentId}/revoke",
+   "resumen": "Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo.",
+   "casos": [
+    "UC-P08"
+   ]
+  },
+  "API-CON-06": {
+   "metodo": "POST",
+   "ruta": "/me/health-data-consents",
+   "resumen": "Otorgar o reotorgar A3 (un acto nuevo). No crea B2 ni habilita a ningún profesional.",
+   "casos": [
+    "UC-P25"
+   ]
+  },
+  "API-CON-07": {
+   "metodo": "GET",
+   "ruta": "/me/health-data-consents",
+   "resumen": "Historial de actos A3 del titular. No mezcla B2 ni expone IP o user-agent.",
+   "casos": []
+  },
+  "API-CON-08": {
+   "metodo": "POST",
+   "ruta": "/me/health-data-consents/{consentId}/revoke",
+   "resumen": "Revocar A3. Idempotente por semántica. El PDP bloquea de inmediato las operaciones sensibles, incluido el acceso profesional.",
+   "casos": [
+    "UC-P25"
+   ]
+  },
+  "API-EVI-01": {
+   "metodo": "GET",
+   "ruta": "/relationships/{relationshipId}/visual-evidence-requirement",
+   "resumen": "La información destacada de las fotos de comidas para un vínculo de Nutrición propio (solo el asesorado titular): el texto versionado a mostrar, si es una propuesta (`textApproval`), si la API ya exige el acto (`enforced`) y el acto vigente, si hay uno. Otro alcance, ajeno o inexistente: 404.",
+   "casos": []
+  },
+  "API-EVI-02": {
+   "metodo": "POST",
+   "ruta": "/relationships/{relationshipId}/visual-evidence-consents",
+   "resumen": "Registrar el acto EVIDENCIA_VISUAL de un vínculo de Nutrición propio, con la versión mostrada, que es la aceptada (solo el asesorado titular, con el vínculo aceptado y su B2 vigente). 201 al registrarlo; 200 si ya estaba vigente con esa versión. No es un consentimiento por foto.",
+   "casos": [
+    "UC-P07"
+   ]
+  },
+  "API-EVI-03": {
+   "metodo": "GET",
+   "ruta": "/me/visual-evidence-consents",
+   "resumen": "Los actos EVIDENCIA_VISUAL propios, vigentes y revocados, con su profesional y su versión. Sin IP ni user-agent.",
+   "casos": []
+  },
+  "API-EVI-04": {
+   "metodo": "POST",
+   "ruta": "/me/visual-evidence-consents/{consentId}/revoke",
+   "resumen": "Revocar un acto EVIDENCIA_VISUAL. Idempotente por semántica, sin Idempotency-Key. Con la exigencia activa, corta las fotos nuevas para ese profesional (API-MED-01) y su acceso a las fotos (API-MED-03) en la operación siguiente. No borra fotos ni registros, y el titular sigue viendo las suyas.",
+   "casos": [
+    "UC-P08"
+   ]
+  },
+  "API-DSH-03": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/dashboard",
+   "resumen": "Dashboard del asesorado para un profesional, evaluado por el PDP en cada alcance. Cada alcance permitido trae el resumen factual de su dominio, o `null` si todavía no tiene datos. Ningún alcance autorizado → 404 idéntico a inexistente.",
+   "casos": []
+  },
+  "API-CAR-01": {
+   "metodo": "GET",
+   "ruta": "/me/portfolio",
+   "resumen": "Pendientes de toda la cartera del profesional: por cada asesorado con vínculo vigente y cada dominio que el PDP permite, los hechos fechados que piden una acción (revisión vencida, próxima o sin fecha; plan en borrador; sin plan activo; formulario sin responder; evaluación en preparación), con la última actividad registrada como dato. Sin puntajes ni juicios; un dominio no disponible no aparece y `partialView` lo avisa una sola vez. El período acota solo la actividad.",
+   "casos": []
+  },
+  "API-NUT-01": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/nutrition/evaluations",
+   "resumen": "Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores.",
+   "casos": [
+    "UC-P09"
+   ]
+  },
+  "API-NUT-02": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/nutrition/evaluations",
+   "resumen": "Evaluaciones propias del profesional sobre el asesorado, paginadas.",
+   "casos": [
+    "UC-P09"
+   ]
+  },
+  "API-NUT-03": {
+   "metodo": "GET",
+   "ruta": "/nutrition/evaluations/{evaluationId}",
+   "resumen": "Una evaluación. Inexistente, ajena o no autorizada → el mismo 404.",
+   "casos": [
+    "UC-P09"
+   ]
+  },
+  "API-NUT-04": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/nutrition/objectives",
+   "resumen": "Emitir una nueva versión de objetivo: decisión profesional con fundamento obligatorio. BE no calcula el requerimiento. La anterior se conserva.",
+   "casos": [
+    "UC-P09"
+   ]
+  },
+  "API-NUT-05": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/nutrition/objectives",
+   "resumen": "Historia de versiones de objetivo, con la efectiva marcada por relación de sucesión.",
+   "casos": [
+    "UC-P09"
+   ]
+  },
+  "API-NUT-06": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/nutrition/objectives/effective",
+   "resumen": "Objetivo efectivo: la versión terminal de la sucesión, nunca «la última por fecha». `objective: null` si no hay.",
+   "casos": [
+    "UC-P09"
+   ]
+  },
+  "API-NUT-07": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/nutrition/plans",
+   "resumen": "Crear un borrador de plan: no vigente, no abre proceso ni ocupa capacidad. Con `basedOnPlanId`, borrador sucesor de la versión efectiva, sin tocarla (DL-047). Un solo borrador por plan.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-NUT-08": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/nutrition/plans",
+   "resumen": "Versiones del plan del profesional para el asesorado, sin la jerarquía.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-NUT-09": {
+   "metodo": "GET",
+   "ruta": "/nutrition/plans/{planId}",
+   "resumen": "Una versión de plan. Activada: se reconstruye desde la instantánea, nunca desde el catálogo vivo. El asesorado ve solo versiones activadas.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-NUT-10": {
+   "metodo": "PATCH",
+   "ruta": "/nutrition/plans/{planId}",
+   "resumen": "Guardar un borrador (reemplaza la jerarquía). Una versión activada no se edita: 422 PLAN_NOT_EDITABLE (INV-06-109).",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-NUT-11": {
+   "metodo": "POST",
+   "ruta": "/nutrition/plans/{planId}/validate",
+   "resumen": "Validar un borrador sin activarlo. Responde 200 aunque haya problemas, con cada problema anclado a su ruta.",
+   "casos": [
+    "UC-I04"
+   ]
+  },
+  "API-NUT-12": {
+   "metodo": "POST",
+   "ruta": "/nutrition/plans/{planId}/activate",
+   "resumen": "Activar: en una transacción, PDP, validación, instantánea antes de la vigencia, vigencia única y Proceso nuevo (con capacidad) o continuidad. Si algo falla, no cambia nada.",
+   "casos": [
+    "UC-P11"
+   ]
+  },
+  "API-NUT-13": {
+   "metodo": "GET",
+   "ruta": "/nutrition/catalog-items",
+   "resumen": "Catálogo nutricional BE: el sembrado (global), lo importado de Open Food Facts (de todos los profesionales, uno por producto, con su fuente; DL-141) y lo cargado a mano por el profesional. Solo profesionales de Nutrición.",
+   "casos": []
+  },
+  "API-NUT-13-BUSQUEDA": {
+   "metodo": "POST",
+   "ruta": "/nutrition/catalog-items/search",
+   "resumen": "Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027).",
+   "casos": []
+  },
+  "API-NUT-14": {
+   "metodo": "GET",
+   "ruta": "/me/nutrition/today",
+   "resumen": "«Hoy» del asesorado: la instantánea vigente y sus registros del día. Sin registros → NO_DATA, nunca 0 %. No elige un día tipo en silencio.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-NUT-15": {
+   "metodo": "POST",
+   "ruta": "/me/nutrition/executions",
+   "resumen": "Registrar una ingesta: prescripta (comida y opción de la instantánea vigente, cantidades opcionales) o fuera del plan (texto libre). No modifica el plan. Un reintento no duplica.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-NUT-16-LISTA": {
+   "metodo": "GET",
+   "ruta": "/me/nutrition/executions",
+   "resumen": "Registros propios del asesorado (B10-05 NUT-11). Exige A3 vigente.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-NUT-16": {
+   "metodo": "GET",
+   "ruta": "/nutrition/executions/{executionId}",
+   "resumen": "Una ingesta con su original, sus correcciones y la vista efectiva por relación de corrección.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-NUT-17": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/nutrition/review-context",
+   "resumen": "Contexto de revisión: objetivo, versiones del período, ingestas, contraste descriptivo, días sin dato y revisiones previas. Ver no es revisar.",
+   "casos": [
+    "UC-P13"
+   ]
+  },
+  "API-NUT-18": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/nutrition/reviews",
+   "resumen": "Registrar una revisión válida: evidencia reconstruible, interpretación, uno de los seis resultados, fundamento y próxima acción o cierre. No aplica nada.",
+   "casos": [
+    "UC-P13"
+   ]
+  },
+  "API-NUT-19": {
+   "metodo": "GET",
+   "ruta": "/nutrition/reviews/{reviewId}",
+   "resumen": "Una revisión y, si se aplicó, el evento ContinuidadOCierreAplicado.",
+   "casos": [
+    "UC-P13"
+   ]
+  },
+  "API-NUT-20": {
+   "metodo": "POST",
+   "ruta": "/nutrition/reviews/{reviewId}/apply",
+   "resumen": "Aplicar la continuidad o el cierre (UC-I06): primero la consecuencia (borrador sucesor, objetivo nuevo, próxima revisión o cierre) y después el evento. Sin consecuencia aplicada no hay evento.",
+   "casos": [
+    "UC-I06"
+   ]
+  },
+  "API-NUT-21": {
+   "metodo": "POST",
+   "ruta": "/nutrition/executions/{executionId}/corrections",
+   "resumen": "Estructurar una ingesta libre como estimación profesional: Corrección trazable, el original queda intacto y la vista efectiva se resuelve por relación.",
+   "casos": [
+    "UC-I12"
+   ]
+  },
+  "API-ANT-01": {
+   "metodo": "GET",
+   "ruta": "/anthropometry/specifications",
+   "resumen": "Especificaciones admitidas: protocolos y métodos con su versión vigente. Evita hardcodear contenido técnico en las superficies. El contenido es sintético de demostración y está rotulado como tal.",
+   "casos": [
+    "UC-P19"
+   ]
+  },
+  "API-ANT-02": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/anthropometry/evaluations",
+   "resumen": "Crear la evaluación antropométrica ya REGISTRADA, en un solo acto atómico: mediciones directas, cálculos pedidos, evento y registro en la misma transacción. Es la vía directa, distinta del borrador.",
+   "casos": [
+    "UC-P19"
+   ]
+  },
+  "API-ANT-07": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/anthropometry/evaluation-drafts",
+   "resumen": "Crear la evaluación antropométrica EN PREPARACIÓN. El borrador no es historia: no alimenta la serie ni figura como última evaluación registrada.",
+   "casos": [
+    "UC-P19"
+   ]
+  },
+  "API-ANT-08": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/anthropometry/evaluation-drafts",
+   "resumen": "Borradores retomables del profesional para ese asesorado. Un borrador de otro profesional no aparece.",
+   "casos": []
+  },
+  "API-ANT-04": {
+   "metodo": "GET",
+   "ruta": "/anthropometry/evaluations/{evaluationId}",
+   "resumen": "Consultar una evaluación REGISTRADA propia. No es una vía residual para leer un borrador: un borrador por esta ruta devuelve el mismo 404 que lo inexistente, igual que una evaluación ajena.",
+   "casos": []
+  },
+  "API-ANT-09": {
+   "metodo": "GET",
+   "ruta": "/anthropometry/evaluation-drafts/{evaluationId}",
+   "resumen": "Consultar el borrador propio, en la colección del borrador. Uno ajeno, exista o no, devuelve el mismo 404: no aparece ni como bloqueado ni como existente.",
+   "casos": []
+  },
+  "API-ANT-10": {
+   "metodo": "PUT",
+   "ruta": "/anthropometry/evaluation-drafts/{evaluationId}",
+   "resumen": "Guardar el borrador. Reemplaza el contenido declarado y avanza el token de trabajo: el contenido de preparación no adquiere autoridad histórica por persistirse.",
+   "casos": [
+    "UC-P19"
+   ]
+  },
+  "API-ANT-11": {
+   "metodo": "POST",
+   "ruta": "/anthropometry/evaluation-drafts/{evaluationId}/register",
+   "resumen": "Registrar la evaluación: el acto explícito que la vuelve historia. Exige contenido registrable. REGISTRADA es terminal: los cambios posteriores usan corrección o anulación.",
+   "casos": [
+    "UC-P19"
+   ]
+  },
+  "API-ANT-03": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/anthropometry/evaluations",
+   "resumen": "Listar las evaluaciones REGISTRADAS del asesorado. Los borradores no aparecen acá: no son historia.",
+   "casos": []
+  },
+  "API-ANT-05": {
+   "metodo": "POST",
+   "ruta": "/anthropometry/evaluations/{evaluationId}/corrections",
+   "resumen": "Corregir una medición con trazabilidad: el original y la cadena se conservan, y la vista efectiva se resuelve por relación, nunca por la fecha más reciente. Los derivados afectados se reemiten sin sobrescribir los anteriores.",
+   "casos": [
+    "UC-E03"
+   ]
+  },
+  "API-ANT-12": {
+   "metodo": "POST",
+   "ruta": "/anthropometry/measurements/{measurementId}/annulments",
+   "resumen": "Anular una medición: evento aditivo y terminal, que no borra el original. Una segunda anulación de la misma medición responde 200 con la anulación existente y alreadyAnnulled: no produce un segundo efecto ni un error nuevo. No existe reversión.",
+   "casos": [
+    "UC-E03"
+   ]
+  },
+  "API-ANT-06": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/anthropometry/progress",
+   "resumen": "Evolución antropométrica del asesorado. Un checkpoint sin medición vigente es NO_DATA y no lleva valor: no se interpola, no se imputa y no se arrastra. Un cero medido sigue siendo un punto disponible.",
+   "casos": [
+    "UC-P20"
+   ]
+  },
+  "API-ANT-06-PROPIA": {
+   "metodo": "GET",
+   "ruta": "/me/anthropometry/progress",
+   "resumen": "La misma evolución, del lado del asesorado, que RF-049 nombra como actor. La consume la APK. Exige el A3 vigente: revocado o nunca otorgado, 403 ACTION_FORBIDDEN; los datos no se borran y vuelven a leerse con un A3 nuevo (08:406; DL-115).",
+   "casos": []
+  },
+  "API-MTH-01": {
+   "metodo": "GET",
+   "ruta": "/professional-methods",
+   "resumen": "Métodos profesionales seleccionables, con su versión vigente, entradas requeridas, procedencias admisibles, unidad de salida y precisión declarada. Son metadatos: no acepta adviseeId y no implica compatibilidad con los datos de ninguna persona.",
+   "casos": [
+    "UC-I09"
+   ]
+  },
+  "API-MTH-02": {
+   "metodo": "GET",
+   "ruta": "/professional-methods/{methodId}/versions/{versionId}",
+   "resumen": "La versión exacta de un método, seleccionable o histórica. Una versión histórica se consulta —las corridas la citan y tienen que poder explicarse— pero no se presenta como seleccionable. No devuelve datos de ningún asesorado.",
+   "casos": [
+    "UC-I09"
+   ]
+  },
+  "API-CAL-01": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/calculations",
+   "resumen": "Ejecutar un método sobre entradas efectivas declaradas una por una. Disponible no es admisible: la versión declara qué entradas necesita, en qué unidades y de qué procedencias. La respuesta no afirma que se haya creado un objetivo, una prescripción ni un plan: no los crea.",
+   "casos": [
+    "UC-I09"
+   ]
+  },
+  "API-CAL-02": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/calculations",
+   "resumen": "Las corridas revelables del asesorado. Coexisten: no se promedian, no se ordenan por «mejor» y ninguna se marca ganadora. La que el profesional adoptó viene con referenceForPurpose.",
+   "casos": [
+    "UC-I09"
+   ]
+  },
+  "API-CAL-03": {
+   "metodo": "GET",
+   "ruta": "/calculations/{runId}",
+   "resumen": "Una corrida, con la versión exacta del método que se usó, la regla aplicada, la precisión declarada y la procedencia de cada entrada. Una corrida no revelable devuelve el mismo 404 que una inexistente.",
+   "casos": [
+    "UC-I09"
+   ]
+  },
+  "API-CAL-04": {
+   "metodo": "PUT",
+   "ruta": "/advisees/{adviseeId}/calculation-references/{purpose}",
+   "resumen": "Adoptar una corrida como referencia profesional para una finalidad. Es una relación, no una mutación: no modifica la corrida, no borra las otras y no crea objetivo ni prescripción. Reemplazarla crea historia; adoptar la que ya es referencia responde 200 sin crear una relación nueva.",
+   "casos": [
+    "UC-I09"
+   ]
+  },
+  "API-TRN-01": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/training/evaluations",
+   "resumen": "Registrar una evaluación de entrenamiento. Cada dato declara su fuente. Evidencia no es ejecución, y una evaluación posterior no sobrescribe la anterior.",
+   "casos": [
+    "UC-P14"
+   ]
+  },
+  "API-TRN-02": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/training/evaluations",
+   "resumen": "Evaluaciones de entrenamiento propias del profesional sobre el asesorado, paginadas.",
+   "casos": [
+    "UC-P14"
+   ]
+  },
+  "API-TRN-03": {
+   "metodo": "GET",
+   "ruta": "/training/evaluations/{evaluationId}",
+   "resumen": "Una evaluación de entrenamiento. Inexistente, ajena o no autorizada → el mismo 404.",
+   "casos": [
+    "UC-P14"
+   ]
+  },
+  "API-TRN-04": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/training/objectives",
+   "resumen": "Emitir una nueva versión de objetivo de entrenamiento: decisión profesional con fundamento. La anterior se conserva; nunca se sobrescribe.",
+   "casos": [
+    "UC-P14"
+   ]
+  },
+  "API-TRN-05": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/training/objectives",
+   "resumen": "Historia de versiones de objetivo de entrenamiento, con la efectiva marcada por relación de sucesión.",
+   "casos": [
+    "UC-P14"
+   ]
+  },
+  "API-TRN-06": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/training/objectives/effective",
+   "resumen": "Objetivo de entrenamiento efectivo: la terminal de la sucesión, nunca por timestamp. `objective: null` si no hay.",
+   "casos": [
+    "UC-P14"
+   ]
+  },
+  "API-TRN-07": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/training/plans",
+   "resumen": "Crear un borrador de plan de entrenamiento: estado DRAFT, no vigente, no abre proceso ni ocupa capacidad. El borrador es el mismo recurso del plan: no existe una colección de borradores de plan.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TRN-08": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/training/plans",
+   "resumen": "Versiones del plan de entrenamiento, sin la jerarquía. `state` filtra DRAFT o ACTIVATED.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TRN-09": {
+   "metodo": "GET",
+   "ruta": "/training/plans/{planId}",
+   "resumen": "Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06).",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TRN-10": {
+   "metodo": "PATCH",
+   "ruta": "/training/plans/{planId}",
+   "resumen": "Editar un borrador: bloque, microciclo opcional, sesión y prescripción. Valida la forma, no la calidad del programa: ni volumen, ni frecuencia, ni selección de ejercicios, ni progresión. DL-137: también la agenda (fecha de inicio, días de cada sesión y fechas movidas), que se valida contra las sesiones del plan; sin el campo se conserva, sin las sesiones que ya no están, y null la quita. La agenda se lee en API-SER-01.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TRN-11": {
+   "metodo": "POST",
+   "ruta": "/training/plans/{planId}/validate",
+   "resumen": "Validar un borrador sin activarlo. 200 aunque `valid` sea falso: los problemas vienen vinculados a bloque, sesión y ejercicio. Validar no es un estado.",
+   "casos": [
+    "UC-I04"
+   ]
+  },
+  "API-TRN-12": {
+   "metodo": "POST",
+   "ruta": "/training/plans/{planId}/activate",
+   "resumen": "Activar: en una transacción, versión esperada, PDP, capacidad, validación, instantánea inmutable, cambio de versión efectiva y apertura del Proceso si es nuevo. La anterior se conserva. Un plan con objetivos distintos por serie no se activa mientras su titular no haya usado una APK que los muestre (409 CLIENT_CAPABILITY_REQUIRED): las instaladas mostrarían los generales.",
+   "casos": [
+    "UC-P16"
+   ]
+  },
+  "API-TRN-13": {
+   "metodo": "GET",
+   "ruta": "/training/exercises",
+   "resumen": "Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.",
+   "casos": []
+  },
+  "API-TRN-13-BUSQUEDA": {
+   "metodo": "POST",
+   "ruta": "/training/exercises/search",
+   "resumen": "Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; no altera instantáneas activas.",
+   "casos": []
+  },
+  "API-TPL-01": {
+   "metodo": "POST",
+   "ruta": "/training/plan-templates",
+   "resumen": "Guardar una plantilla propia de plan de entrenamiento: nombre único por profesional y una estructura con la misma forma que API-TRN-07, validada como un plan (forma, criterios, referencias del catálogo). Sin cargas sugeridas salvo pedido explícito; nada del asesorado. Solo un profesional de Entrenamiento verificado y habilitado.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TPL-02": {
+   "metodo": "GET",
+   "ruta": "/training/plan-templates",
+   "resumen": "Mis plantillas de plan de entrenamiento (solo las propias), con su versión vigente; filtro por estado.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TPL-03": {
+   "metodo": "GET",
+   "ruta": "/training/plan-templates/{templateId}",
+   "resumen": "Una plantilla propia con su estructura vigente. Ajena o inexistente: 404, sin distinguir.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TPN-01": {
+   "metodo": "POST",
+   "ruta": "/nutrition/plan-templates",
+   "resumen": "Guardar una plantilla propia de plan de comidas: nombre único por profesional y una estructura con la misma forma que API-NUT-07, validada como un borrador (forma y elementos del catálogo disponibles). Sin cantidades salvo pedido explícito; nada del asesorado. Solo un profesional de Nutrición verificado y habilitado.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-TPN-02": {
+   "metodo": "GET",
+   "ruta": "/nutrition/plan-templates",
+   "resumen": "Mis plantillas de plan de comidas (solo las propias), con su versión vigente; filtro por estado.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-TPN-03": {
+   "metodo": "GET",
+   "ruta": "/nutrition/plan-templates/{templateId}",
+   "resumen": "Una plantilla propia de comidas con su estructura vigente y los nombres de sus elementos. Ajena o inexistente: 404.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-TPN-04": {
+   "metodo": "POST",
+   "ruta": "/nutrition/plan-templates/{templateId}/versions",
+   "resumen": "Nueva versión de una plantilla propia de comidas; exige expectedVersion; una archivada no se versiona.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-TPN-05": {
+   "metodo": "PATCH",
+   "ruta": "/nutrition/plan-templates/{templateId}",
+   "resumen": "Renombrar, describir, archivar o reactivar una plantilla propia de comidas; exige expectedVersion.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-TPL-04": {
+   "metodo": "POST",
+   "ruta": "/training/plan-templates/{templateId}/versions",
+   "resumen": "Nueva versión de una plantilla propia (la anterior es inmutable); exige expectedVersion; una archivada no se versiona.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-TPL-05": {
+   "metodo": "PATCH",
+   "ruta": "/training/plan-templates/{templateId}",
+   "resumen": "Renombrar, describir, archivar o reactivar una plantilla propia; no cambia la estructura ni crea versión. Exige expectedVersion.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-HAB-01": {
+   "metodo": "GET",
+   "ruta": "/training/favorite-exercises",
+   "resumen": "Mis ejercicios habituales: los que marqué y siguen disponibles para mí, con la misma forma que el buscador del catálogo (versión vigente); el marcado más reciente primero; hasta 200, sin paginar. Solo un profesional de Entrenamiento verificado y habilitado.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-HAB-02": {
+   "metodo": "PATCH",
+   "ruta": "/training/favorite-exercises/{exerciseId}",
+   "resumen": "Marcar o quitar un ejercicio habitual: la misma operación, idempotente por naturaleza (quitar uno no marcado responde 200 igual). Marcar uno que no está disponible para este profesional: 422.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-HAB-03": {
+   "metodo": "GET",
+   "ruta": "/training/session-presets",
+   "resumen": "Mis sesiones habituales (solo las propias, sin las quitadas), cada una con su estructura sin identificadores, lista para agregar a un borrador, y los nombres vigentes de sus ejercicios; la guardada más recientemente primero.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-HAB-04": {
+   "metodo": "POST",
+   "ruta": "/training/session-presets",
+   "resumen": "Guardar una sesión habitual: una sesión con la misma forma que las de API-TRN-07, validada como en un plan (forma, criterios de intensidad, referencias del catálogo disponibles), guardada sin identificadores de nodo y sin cargas sugeridas salvo pedido. Nombre tomado por otra activa sin `replaces` que la señale: 409; con `replaces` (propia y activa; si no, 404) reemplaza esa (nombre, estructura y cargas); el nombre de una quitada la reactiva y reemplaza.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-HAB-05": {
+   "metodo": "PATCH",
+   "ruta": "/training/session-presets/{presetId}",
+   "resumen": "Renombrar o quitar una sesión habitual propia; no cambia la estructura (para eso se vuelve a guardar desde el editor). Exige expectedVersion. Ajena o inexistente: 404, sin distinguir.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-HAN-01": {
+   "metodo": "GET",
+   "ruta": "/nutrition/favorite-items",
+   "resumen": "Mis alimentos habituales: los que marqué y siguen disponibles para mí, con la misma forma que el buscador del catálogo (versión vigente); el marcado más reciente primero; hasta 200, sin paginar. Solo un profesional de Nutrición verificado y habilitado.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-HAN-02": {
+   "metodo": "PATCH",
+   "ruta": "/nutrition/favorite-items/{catalogItemId}",
+   "resumen": "Marcar o quitar un alimento habitual: la misma operación, idempotente por naturaleza (quitar uno no marcado responde 200 igual). Marcar uno que no está disponible para este profesional: 422.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-HAN-03": {
+   "metodo": "GET",
+   "ruta": "/nutrition/meal-presets",
+   "resumen": "Mis comidas habituales (solo las propias, sin las quitadas), cada una con su estructura sin identificadores, lista para agregar a un borrador, y los nombres vigentes de sus alimentos; la guardada más recientemente primero.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-HAN-04": {
+   "metodo": "POST",
+   "ruta": "/nutrition/meal-presets",
+   "resumen": "Guardar una comida habitual: una comida con la misma forma que las de API-NUT-07, validada como en un borrador (forma y elementos del catálogo disponibles), guardada sin identificadores de nodo y sin cantidades salvo pedido. Nombre tomado por otra activa sin `replaces` que la señale: 409; con `replaces` (propia y activa; si no, 404) reemplaza esa (nombre, estructura y cantidades); el nombre de una quitada la reactiva y reemplaza.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-HAN-05": {
+   "metodo": "PATCH",
+   "ruta": "/nutrition/meal-presets/{presetId}",
+   "resumen": "Renombrar o quitar una comida habitual propia; no cambia la estructura (para eso se vuelve a guardar desde el editor). Exige expectedVersion. Ajena o inexistente: 404, sin distinguir.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-TRN-14": {
+   "metodo": "GET",
+   "ruta": "/me/training/today",
+   "resumen": "«Hoy» del asesorado: las sesiones de la instantánea vigente como ocurrencias del día, con el estado de su registro. La ausencia de registro no se convierte en NOT_COMPLETED. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin plan ni ocurrencias. Con la capacidad, queda registrada para la activación (DL-122, precierre del 2026-10-06).",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TRN-14-PERIODO": {
+   "metodo": "GET",
+   "ruta": "/me/training/occurrences",
+   "resumen": "Ocurrencias de un período pasado, para registrar en diferido. Sin esta lectura, la sesión de anteayer no se podría registrar y la ausencia de registro se volvería permanente. Hasta 31 días, nunca después de hoy. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin ocurrencias (DL-122, precierre del 2026-10-06).",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TRN-19-LISTA": {
+   "metodo": "GET",
+   "ruta": "/me/training/executions",
+   "resumen": "«Tu historial»: las sesiones registradas propias por período. Exige A3 vigente; no depende de un plan vigente ni del acceso del profesional (DL-096). Hasta 31 días, nunca después de hoy.",
+   "casos": []
+  },
+  "API-TRN-15": {
+   "metodo": "PUT",
+   "ruta": "/training/occurrences/{occurrenceId}/execution-draft",
+   "resumen": "Crear u obtener el borrador singular de una ocurrencia: 201 si lo creó, 200 si ya existía. Tocar «Comenzar» dos veces da el mismo borrador. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente, sin crear nada (DL-122, precierre del 2026-10-06).",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TRN-16": {
+   "metodo": "GET",
+   "ruta": "/training/execution-drafts/{draftId}",
+   "resumen": "Un borrador de ejecución, solo para su titular. Un borrador no es evidencia ni ejecución registrada.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TRN-17": {
+   "metodo": "PATCH",
+   "ruta": "/training/execution-drafts/{draftId}",
+   "resumen": "Guardar el borrador de forma incremental: granularidad, condición, motivo opcional, ejercicios por serie o resumidos, sustitución. No infiere lo faltante ni sintetiza series.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TRN-18": {
+   "metodo": "POST",
+   "ruta": "/training/execution-drafts/{draftId}/confirm",
+   "resumen": "Confirmar la sesión: crea la ejecución registrada, inmutable, como recurso nuevo. Una sola por ocurrencia; un reintento no duplica. No existe la vuelta a borrador.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TRN-19": {
+   "metodo": "GET",
+   "ruta": "/training/executions/{executionId}",
+   "resumen": "Una ejecución registrada: la sesión planificada de la instantánea, el registro original, la cadena de correcciones y la vista efectiva por relación.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TRN-20": {
+   "metodo": "POST",
+   "ruta": "/training/executions/{executionId}/corrections",
+   "resumen": "Corregir una ejecución registrada: el original queda intacto, la corrección conserva autor y motivo, y la prescripción no se toca.",
+   "casos": [
+    "UC-E02"
+   ]
+  },
+  "API-TRN-21": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/training/review-context",
+   "resumen": "Contexto de revisión: objetivo, versiones, ejecuciones registradas, correcciones, días sin dato y revisiones previas. No calcula volumen, marcas, mapa ni puntaje. Ver no es revisar.",
+   "casos": [
+    "UC-P18"
+   ]
+  },
+  "API-TRN-22": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/training/reviews",
+   "resumen": "Registrar una revisión de entrenamiento: uno de los seis resultados. La progresión se expresa como ADJUST o REPLACE; no existe un séptimo. No aplica nada.",
+   "casos": [
+    "UC-P18"
+   ]
+  },
+  "API-TRN-23": {
+   "metodo": "GET",
+   "ruta": "/training/reviews/{reviewId}",
+   "resumen": "Una revisión de entrenamiento y, si se aplicó, el evento ContinuidadOCierreAplicado.",
+   "casos": [
+    "UC-P18"
+   ]
+  },
+  "API-TRN-24": {
+   "metodo": "POST",
+   "ruta": "/training/reviews/{reviewId}/apply",
+   "resumen": "Aplicar la continuidad o el cierre: primero la consecuencia (borrador sucesor, objetivo nuevo, próxima revisión o cierre) y después el evento. Sin éxito completo no hay evento.",
+   "casos": [
+    "UC-I06"
+   ]
+  },
+  "API-SER-01": {
+   "metodo": "GET",
+   "ruta": "/training/plans/{planId}/detail",
+   "resumen": "La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-SER-02": {
+   "metodo": "GET",
+   "ruta": "/training/occurrences/{occurrenceId}/session",
+   "resumen": "La sesión de una ocurrencia lista para registrarla serie por serie: el objetivo efectivo de cada serie desde la instantánea y la imagen de cada ejercicio (si ya se registró, la vigente al registrar). Solo para el titular; una ocurrencia que no puede ejecutar y sin registro es 404.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TIE-01": {
+   "metodo": "POST",
+   "ruta": "/training/execution-drafts/{draftId}/timing-events",
+   "resumen": "Registrar eventos de tiempo de la sesión en curso: inicio, pausa, ejercicio activo, descansos, series cronometradas y fin, en orden de secuencia. Cada evento trae su identificador: repetirlo no suma; con otro contenido es un conflicto. Responde qué pasó con cada uno y los tiempos calculados. Sin Idempotency-Key: la identidad es la de cada evento.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TIE-02": {
+   "metodo": "GET",
+   "ruta": "/training/execution-drafts/{draftId}/timing",
+   "resumen": "Los tiempos de un borrador, con su calidad y los eventos que los sostienen. Solo para su titular: sirve para retomar desde otro dispositivo o después de reinstalar.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TIE-03": {
+   "metodo": "GET",
+   "ruta": "/training/executions/{executionId}/timing",
+   "resumen": "Los tiempos de una ejecución registrada: sesión, pausas, ejercicios, descansos con su recomendado histórico y series cronometradas, cada uno medido, estimado, incompleto o sin dato. El titular y el profesional del plan, como API-TRN-19. Sin puntajes ni evaluación.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-TIE-04": {
+   "metodo": "GET",
+   "ruta": "/me/training/session-in-progress",
+   "resumen": "La sesión en curso del titular, si hay una: de cualquier día y en cualquier dispositivo. Una sola a la vez; la de un borrador ya registrado no cuenta.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-AGE-01": {
+   "metodo": "GET",
+   "ruta": "/me/training/agenda",
+   "resumen": "La agenda del día del titular: las sesiones previstas para hoy, las de días anteriores que siguen sin registro (una semana, hasta la próxima fecha de la misma sesión) y las de los siete días que siguen. Cada fecha prevista trae su ocurrencia: registrarla «no realizada» es saltearla, sin hora. Es una operación propia porque «Hoy» (API-TRN-14) no cambia de forma. Un plan sin agenda responde con las listas vacías.",
+   "casos": [
+    "UC-P17"
+   ]
+  },
+  "API-EJE-01": {
+   "metodo": "GET",
+   "ruta": "/training/own-exercises",
+   "resumen": "Los ejercicios propios del profesional (carga manual), con su imagen vigente. Hasta 500, del más nuevo al más viejo.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-EJE-02": {
+   "metodo": "PUT",
+   "ruta": "/training/exercises/{exerciseId}/image",
+   "resumen": "Asociar o reemplazar la imagen de un ejercicio propio y de su versión, con un medio propio disponible de finalidad EXERCISE_REFERENCE y con autoría declarada. Exige licencia (sin licencia externa, con sus términos de uso, o una externa identificada), texto alternativo y estado de revisión técnica. Por identidad, nunca por nombre; la historia de imágenes queda.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-EJE-03": {
+   "metodo": "DELETE",
+   "ruta": "/training/exercises/{exerciseId}/image",
+   "resumen": "Retirar la imagen de un ejercicio propio; exige expectedImageVersion por query. El medio no se borra y la historia queda: lo ya registrado conserva su imagen histórica.",
+   "casos": [
+    "UC-P15"
+   ]
+  },
+  "API-FRM-01": {
+   "metodo": "GET",
+   "ruta": "/form-templates",
+   "resumen": "Catálogo BE de plantillas, sintético y de demostración. Metadatos: una plantilla listada no prueba que todos sus campos puedan solicitarse a un asesorado concreto.",
+   "casos": [
+    "UC-P32"
+   ]
+  },
+  "API-FRM-02": {
+   "metodo": "GET",
+   "ruta": "/form-templates/{templateId}/versions/{versionId}",
+   "resumen": "La versión exacta de una plantilla: secciones, campos, tipos/unidades, categoría de cada campo, requerido/opcional y estado. No devuelve datos personales.",
+   "casos": [
+    "UC-P32"
+   ]
+  },
+  "API-FRM-03": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/form-requests",
+   "resumen": "Crear una Solicitud de información pertinente. Una plantilla con campos más amplios no amplía B2: cada categoría/campo pedido se valida contra Vínculo+Alcance+B2 vigentes en la misma transacción.",
+   "casos": [
+    "UC-P32"
+   ]
+  },
+  "API-FRM-04": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/form-requests",
+   "resumen": "Las Solicitudes del profesional autenticado sobre este asesorado. Solo devuelve las actualmente revelables: no hay lectura residual por autoría.",
+   "casos": [
+    "UC-P32"
+   ]
+  },
+  "API-FRM-05": {
+   "metodo": "GET",
+   "ruta": "/form-requests/{formRequestId}",
+   "resumen": "Una Solicitud, en la proyección del actor que consulta: el profesional solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente), el asesorado para lo propio «conforme a 08»: con el A3 revocado o nunca otorgado, 403 ACTION_FORBIDDEN (08:406; DL-115). La respuesta nunca expone autorizaciones internas ajenas.",
+   "casos": [
+    "UC-P32"
+   ]
+  },
+  "API-FRM-06": {
+   "metodo": "GET",
+   "ruta": "/me/form-requests",
+   "resumen": "Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud.",
+   "casos": [
+    "UC-P33"
+   ]
+  },
+  "API-FRM-07": {
+   "metodo": "POST",
+   "ruta": "/me/form-requests/{formRequestId}/responses",
+   "resumen": "Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).",
+   "casos": [
+    "UC-P33"
+   ]
+  },
+  "API-FRM-08": {
+   "metodo": "POST",
+   "ruta": "/me/form-responses/{formResponseId}/rectifications",
+   "resumen": "Rectificar una respuesta propia: crea una sucesora, nunca sobrescribe la original, y mantiene SELF_REPORTED. No restaura la lectura del profesional si el PDP ya no la permite. Sobre una respuesta propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).",
+   "casos": [
+    "UC-P33"
+   ]
+  },
+  "API-REC-01": {
+   "metodo": "POST",
+   "ruta": "/nutrition/recipes",
+   "resumen": "Crear una receta propia (versión 1): ingredientes del catálogo por identidad y versión, con gramos o mililitros del estado indicado, porciones y pasos. La API calcula energía y macros con SUM_SOURCE_PER_100G_V1 y no acepta totales del cliente. Solo un profesional de Nutrición verificado y habilitado.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-REC-02": {
+   "metodo": "GET",
+   "ruta": "/nutrition/recipes",
+   "resumen": "Mis recetas (solo las propias), con su versión vigente, su cálculo y su imagen de referencia; la editada más recientemente primero.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-REC-03": {
+   "metodo": "GET",
+   "ruta": "/nutrition/recipes/{recipeId}",
+   "resumen": "Una receta propia con su versión vigente y el historial de sus versiones. Ajena o inexistente: 404.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-REC-04": {
+   "metodo": "PATCH",
+   "ruta": "/nutrition/recipes/{recipeId}",
+   "resumen": "Editar una receta propia: emite una versión nueva e inmutable, recalculada en el servidor; exige expectedVersion. Los planes ya activados conservan la versión que tenían, y ningún registro cambia.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-REC-05": {
+   "metodo": "PUT",
+   "ruta": "/nutrition/recipes/{recipeId}/image",
+   "resumen": "Asociar o reemplazar la imagen de referencia con un medio propio disponible de finalidad RECIPE_REFERENCE; exige expectedVersion. No toca ingredientes, versiones ni registros, y la historia de imágenes queda.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-REC-06": {
+   "metodo": "DELETE",
+   "ruta": "/nutrition/recipes/{recipeId}/image",
+   "resumen": "Retirar la imagen de referencia; exige expectedVersion por query. El medio no se borra y la historia queda.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-REC-07": {
+   "metodo": "POST",
+   "ruta": "/nutrition/recipe-calculations",
+   "resumen": "Calcular sin guardar, para ver el cálculo mientras se edita: total y por porción con SUM_SOURCE_PER_100G_V1, con lo que falta por nutriente. No escribe nada; al guardar, el servidor vuelve a calcular.",
+   "casos": [
+    "UC-P10"
+   ]
+  },
+  "API-MED-01": {
+   "metodo": "POST",
+   "ruta": "/me/media/upload-intents",
+   "resumen": "Intención de subida: finalidad, tipo y bytes declarados. Crea el medio pendiente y devuelve una ruta firmada de subida que vence a los ${LIMITES_DE_MEDIO.vigenciaDeSubidaSegundos / 60} minutos. RECIPE_REFERENCE: un profesional de Nutrición verificado y habilitado; EXERCISE_REFERENCE: uno de Entrenamiento verificado y habilitado, con autoría declarada; MEAL_EVIDENCE: un asesorado con A3 vigente, siempre PERSON_PROVIDED; con la exigencia de EVIDENCIA_VISUAL activa, además, con un plan de Nutrición vigente y el acto de ese vínculo vigente (si falta, 403 VISUAL_EVIDENCE_ACT_REQUIRED con el vínculo y la versión a mostrar). Crear la intención no es subir.",
+   "casos": []
+  },
+  "API-MED-02": {
+   "metodo": "PUT",
+   "ruta": "/media/uploads/{token}",
+   "resumen": "Subir los bytes a la ruta firmada, con el tipo declarado: JPEG, PNG o WebP, hasta ${LIMITES_DE_MEDIO.bytesMaximos / 1024 / 1024} MB, de ${LIMITES_DE_MEDIO.ladoMinimo} a ${LIMITES_DE_MEDIO.ladoMaximo} px por lado. El servidor decodifica, orienta y recodifica en JPEG sin metadatos (EXIF, GPS, ICC). La misma subida repetida responde el mismo medio; una ruta vencida, alterada o ajena, 404.",
+   "casos": []
+  },
+  "API-MED-03": {
+   "metodo": "GET",
+   "ruta": "/media/{mediaId}/access",
+   "resumen": "Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la de un ejercicio, su profesional y el asesorado con un plan activado de ese profesional que lo incluye, con acceso de Entrenamiento vigente; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes y, con la exigencia de EVIDENCIA_VISUAL activa, el acto de ese vínculo vigente. Cada acceso queda auditado. Lo ajeno o inexistente: 404.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-MED-04": {
+   "metodo": "GET",
+   "ruta": "/media/content/{token}",
+   "resumen": "Los bytes del medio (JPEG), sin caché. Una ruta vencida, alterada o de un medio suprimido: 404.",
+   "casos": []
+  },
+  "API-MED-05": {
+   "metodo": "DELETE",
+   "ruta": "/me/media/{mediaId}",
+   "resumen": "Supresión a pedido de una foto propia de una comida: se borran los bytes y queda el registro, con su momento. El registro de la comida no cambia y deja de mostrar esa foto. Otro medio o uno ajeno: 404.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-ING-01": {
+   "metodo": "GET",
+   "ruta": "/me/nutrition/today/options",
+   "resumen": "«Hoy» con opciones: las comidas del día tipo, cada opción con su receta, su imagen de referencia, sus ingredientes con estado y los macros de las porciones del plan, calculados por la API desde la instantánea. Más los registros de hoy que no están anulados. Sin día tipo elegido entre varios, no elige uno en silencio.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-ING-02": {
+   "metodo": "POST",
+   "ruta": "/me/nutrition/meal-records",
+   "resumen": "Registrar una comida: una opción del plan con el estado de sus cantidades (sin confirmar, porciones del plan confirmadas o informadas por ingrediente), o una comida diferente con descripción, fotos propias o ambas. Lo previsto nunca se registra como consumido. Un reintento no duplica; si ya hay un registro de esa comida ese día, uno equivalente devuelve el existente y uno distinto da 409.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-ING-03": {
+   "metodo": "GET",
+   "ruta": "/nutrition/meal-records/{recordId}",
+   "resumen": "Un registro de comida en la forma v2: estado de las cantidades, vista efectiva de su rectificación, anulación, fotos y macros consumidos cuando se pueden calcular. Lo ven su titular y el profesional del plan. Ajeno o inexistente: 404.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-ING-04": {
+   "metodo": "GET",
+   "ruta": "/me/nutrition/meal-records",
+   "resumen": "Mis registros de comidas en la forma v2, del más reciente al más viejo, con los anulados marcados como tales; por período de fechas locales. Exige A3 vigente.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-ING-05": {
+   "metodo": "POST",
+   "ruta": "/nutrition/meal-records/{recordId}/consumed-quantities",
+   "resumen": "Completar o corregir las cantidades consumidas de una opción registrada: una rectificación nueva, de solo agregar, con el estado y las cantidades; la vista efectiva es la última. Exige expectedVersion. Solo el titular; un registro anulado no se rectifica.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-ING-06": {
+   "metodo": "POST",
+   "ruta": "/nutrition/meal-records/{recordId}/annulment",
+   "resumen": "Deshacer un registro propio: una anulación auditable, sin borrar. Deja de contar en el día, el contraste, la revisión, la cartera y el tablero, y libera la comida para volver a registrarla. Exige expectedVersion; anular dos veces: 409.",
+   "casos": [
+    "UC-P12"
+   ]
+  },
+  "API-DSH-04": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/timeline",
+   "resumen": "Línea de tiempo longitudinal del asesorado, con los hechos de las áreas que el PDP autoriza a quien consulta. Ordena por la fecha del hecho (occurredAt y occurredDate); recordedAt es independiente y nunca la reemplaza. Una rectificación o una anulación es una relación de la entrada original, no una entrada nueva. Sin ningún alcance permitido: 404.",
+   "casos": []
+  },
+  "API-DSH-04-BUSQUEDA": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/timeline/search",
+   "resumen": "Búsqueda en la línea de tiempo del asesorado: la misma lectura que API-DSH-04, con el texto a buscar en el cuerpo para que nunca quede en una URL (historiales, proxies, bitácoras). Es una lectura: no crea ni cambia nada y no exige Idempotency-Key. Busca en todo el período del conjunto autorizado, con los mismos filtros, el mismo PDP y la misma paginación. Sin ningún alcance permitido: 404.",
+   "casos": []
+  },
+  "API-PRJ-01": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/projections/{projectionKey}",
+   "resumen": "Proyección profunda del asesorado (taxonomía cerrada de ocho claves). Tres tienen una derivación definida (nutrición prescripto y registrado, progresión por ejercicio y evolución antropométrica); las otras cinco responden INSUFFICIENT_INFORMATION con SPECIFICATION_PENDING. Puntos reales, sin interpolar, imputar ni arrastrar; lo desconocido es null con su motivo.",
+   "casos": []
+  },
+  "API-VAN-01": {
+   "metodo": "GET",
+   "ruta": "/me/analysis-views",
+   "resumen": "Las vistas de análisis guardadas por el profesional y su configuración de indicadores del Resumen. Son configuración: no traen datos de salud ni conceden acceso.",
+   "casos": [
+    "UC-P24"
+   ]
+  },
+  "API-VAN-02": {
+   "metodo": "POST",
+   "ruta": "/me/analysis-views",
+   "resumen": "Guardar una vista de análisis o la configuración de indicadores del Resumen (a lo sumo una por profesional). Solo identificadores de métricas, período, modo, grano y capas.",
+   "casos": [
+    "UC-P24"
+   ]
+  },
+  "API-VAN-03": {
+   "metodo": "PUT",
+   "ruta": "/me/analysis-views/{viewId}",
+   "resumen": "Reemplazar el nombre y la configuración de una vista propia, con la versión esperada. Una vista ajena o inexistente: 404.",
+   "casos": [
+    "UC-P24"
+   ]
+  },
+  "API-VAN-04": {
+   "metodo": "DELETE",
+   "ruta": "/me/analysis-views/{viewId}",
+   "resumen": "Borrar una vista propia. Borrarla no borra ni oculta ningún dato. Una vista ajena o inexistente: 404.",
+   "casos": [
+    "UC-P24"
+   ]
+  },
+  "API-NOV-01": {
+   "metodo": "GET",
+   "ruta": "/me/news",
+   "resumen": "Las novedades del actor, de la más nueva a la más vieja, con las no leídas contadas sobre todas. Contenido operativo no clínico: qué pasó y quién, nunca datos de salud (UC-P30). Funciona aunque no haya avisos push.",
+   "casos": []
+  },
+  "API-NOV-02": {
+   "metodo": "GET",
+   "ruta": "/me/news/{newsId}",
+   "resumen": "Una novedad propia, que queda leída: la primera lectura se registra (UC-P30, paso 6). Una novedad ajena o inexistente: 404.",
+   "casos": []
+  },
+  "API-NOV-03": {
+   "metodo": "PUT",
+   "ruta": "/me/push-subscriptions/{deviceId}",
+   "resumen": "Este teléfono recibe los avisos push de esta cuenta (el token de Expo es C3). Repetirlo con el mismo token no cambia nada; con otro, lo reemplaza. Si el teléfono tenía otra cuenta, esa deja de recibirlos.",
+   "casos": []
+  },
+  "API-NOV-04": {
+   "metodo": "DELETE",
+   "ruta": "/me/push-subscriptions/{deviceId}",
+   "resumen": "Este teléfono deja de recibir los avisos de esta cuenta (al cerrar la sesión o al apagarlos). Repetirlo responde igual.",
+   "casos": []
+  },
+  "API-NOV-05": {
+   "metodo": "GET",
+   "ruta": "/me/notification-preferences",
+   "resumen": "Las preferencias de los recordatorios diarios de registro (comidas y entrenamiento). Apagados mientras la persona no los encienda.",
+   "casos": []
+  },
+  "API-NOV-06": {
+   "metodo": "PUT",
+   "ruta": "/me/notification-preferences",
+   "resumen": "Reemplazar las preferencias de los recordatorios diarios. Repetirlo con los mismos valores no cambia nada.",
+   "casos": []
+  },
+  "API-INV-01": {
+   "metodo": "POST",
+   "ruta": "/relationship-invitations",
+   "resumen": "Crear una invitación de un solo uso para un alcance, que vence a los 7 días. Responde el token del enlace y el código corto, la única vez que se muestran: BE guarda solo su SHA-256. No crea ninguna solicitud ni concede nada.",
+   "casos": [
+    "UC-P04"
+   ]
+  },
+  "API-INV-02": {
+   "metodo": "GET",
+   "ruta": "/relationship-invitations",
+   "resumen": "Las invitaciones propias del profesional, de la más nueva a la más vieja, con su estado derivado. Nunca el token ni el código.",
+   "casos": []
+  },
+  "API-INV-03": {
+   "metodo": "POST",
+   "ruta": "/relationship-invitations/{invitationId}/revoke",
+   "resumen": "Anular una invitación propia que todavía no se usó ni venció. Una ajena o inexistente: el mismo 404.",
+   "casos": [
+    "UC-P04"
+   ]
+  },
+  "API-INV-04": {
+   "metodo": "POST",
+   "ruta": "/relationship-invitations/preview",
+   "resumen": "Ver una invitación con su token o su código, en el cuerpo: quién invita (nombre visible), el alcance, la finalidad, el vencimiento y el estado. No la usa ni crea nada. Una que no existe, un código mal escrito o un profesional que ya no está disponible: el mismo 404. Con límite de intentos.",
+   "casos": []
+  },
+  "API-INV-05": {
+   "metodo": "POST",
+   "ruta": "/relationship-invitations/claim",
+   "resumen": "Usar una invitación: en una transacción, crea la solicitud de vínculo del profesional dirigida a quien la usa, exactamente como REL-01 (201, o 200 con la equivalente pendiente), y la deja usada. Aceptar la solicitud (REL-03) y otorgar B2 siguen siendo actos aparte. Con límite de intentos.",
+   "casos": [
+    "UC-P04"
+   ]
+  },
+  "API-GOO-01": {
+   "metodo": "POST",
+   "ruta": null,
+   "resumen": "Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.",
+   "casos": []
+  },
+  "API-GOO-02": {
+   "metodo": "POST",
+   "ruta": null,
+   "resumen": "Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.",
+   "casos": []
+  },
+  "API-GOO-03": {
+   "metodo": "POST",
+   "ruta": null,
+   "resumen": "Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.",
+   "casos": []
+  },
+  "API-NUT-19-LISTA": {
+   "metodo": "GET",
+   "ruta": "/me/nutrition/reviews",
+   "resumen": "Las revisiones de Nutrición que los profesionales registraron sobre la persona, completas y sin notas ocultas (08 §6.2), de la más nueva a la más vieja. Siguen visibles con el vínculo en pausa o terminado; sin el A3 vigente, 403 (08:406).",
+   "casos": [
+    "UC-P13"
+   ]
+  },
+  "API-NUT-19-PROPIA": {
+   "metodo": "GET",
+   "ruta": "/me/nutrition/reviews/{reviewId}",
+   "resumen": "Una revisión de Nutrición propia, completa. Una ajena o inexistente: el mismo 404. Sin el A3 vigente, 403.",
+   "casos": [
+    "UC-P13"
+   ]
+  },
+  "API-TRN-23-LISTA": {
+   "metodo": "GET",
+   "ruta": "/me/training/reviews",
+   "resumen": "Las revisiones de Entrenamiento que los profesionales registraron sobre la persona, completas y sin notas ocultas (08 §6.2), de la más nueva a la más vieja. Siguen visibles con el vínculo en pausa o terminado; sin el A3 vigente, 403 (08:406).",
+   "casos": [
+    "UC-P18"
+   ]
+  },
+  "API-TRN-23-PROPIA": {
+   "metodo": "GET",
+   "ruta": "/me/training/reviews/{reviewId}",
+   "resumen": "Una revisión de Entrenamiento propia, completa. Una ajena o inexistente: el mismo 404. Sin el A3 vigente, 403.",
+   "casos": [
+    "UC-P18"
+   ]
+  },
+  "API-CRD-01": {
+   "metodo": "POST",
+   "ruta": "/advisees/{adviseeId}/coordination-notes",
+   "resumen": "Registrar una nota de coordinación sobre la persona, para todos los profesionales que hoy la acompañan o para uno en particular (solo los que tienen un vínculo aceptado y el B2 vigente, según el PDP). El autor escribe desde un área suya con la persona, con una finalidad de la lista cerrada, hasta 600 caracteres de texto y hasta tres referencias de su área. La nota no prescribe, no modifica planes ni objetivos, no registra revisiones, no cierra ciclos y no transfiere responsabilidad. Solo se agrega: para corregirla, otra nota que la cita. Cada destinatario recibe una novedad, sin el texto. Sin acceso del autor a la persona en esa área: el mismo 404 que una persona inexistente.",
+   "casos": [
+    "UC-E07"
+   ]
+  },
+  "API-CRD-01-LISTA": {
+   "metodo": "GET",
+   "ruta": "/advisees/{adviseeId}/coordination-notes/recipients",
+   "resumen": "A quién se le puede escribir hoy una nota sobre la persona y desde qué área: las áreas del profesional con ella que el PDP permite, y los otros profesionales que hoy la acompañan (vínculo aceptado y B2 vigente en algún alcance), con sus áreas. No trae ninguna nota: el profesional las lee en la línea de tiempo (API-DSH-04). Sin ningún alcance permitido: 404.",
+   "casos": []
+  },
+  "API-CRD-01-PROPIA": {
+   "metodo": "GET",
+   "ruta": "/me/coordination-notes",
+   "resumen": "Las notas de coordinación que los profesionales escribieron sobre la persona, todas y completas, de la más nueva a la más vieja: en BE no hay notas secretas sobre el titular (08 §9.15). Siguen visibles con el vínculo en pausa o terminado; sin el A3 vigente, 403 (08:406).",
+   "casos": [
+    "UC-E07"
+   ]
+  }
+ }
+}

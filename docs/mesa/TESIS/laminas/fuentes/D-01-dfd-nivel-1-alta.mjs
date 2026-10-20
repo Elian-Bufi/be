@@ -34,7 +34,7 @@ export function dibujar(L) {
   flujoDeDatos(L, 'goo', 'p1', ['claves', 'públicas']);
   flujoDeDatos(L, 'p1', 'd1', ['identidad', 'y sesión'], { doble: true });
   flujoDeDatos(L, 'pro', 'p2', 'invitación', { desplazamiento: 7 });
-  flujoDeDatos(L, 'p2', 'pro', ['enlace, QR', 'y código'], { desplazamiento: 7 });
+  flujoDeDatos(L, 'p2', 'pro', ['enlace', 'y código'], { desplazamiento: 7 });
   flujoDeDatos(L, 'ase', 'p2', ['aceptación y', 'consentimientos']);
   flujoDeDatos(L, 'p2', 'd3', ['vínculo, alcance', 'y consentimiento'], { doble: true });
   flujoDeDatos(L, 'p2', 'd7', 'novedad');

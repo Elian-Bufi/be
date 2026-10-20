@@ -478,5 +478,53 @@
   "conectores": 12,
   "cruces": 0,
   "hallazgos": []
+ },
+ "E-01": {
+  "titulo": "Secuencia · activar un plan (API-NUT-12)",
+  "archivoFuente": "laminas/fuentes/E-01-secuencia-activar-plan.mjs",
+  "lamina": "E-01",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 8,
+  "conectores": 17,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "E-02": {
+  "titulo": "Secuencia · recuperar la sesión del website (DL-147)",
+  "archivoFuente": "laminas/fuentes/E-02-secuencia-reanudar-sesion.mjs",
+  "lamina": "E-02",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 6,
+  "conectores": 14,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "E-03": {
+  "titulo": "Estados · solicitud y alcance del vínculo",
+  "archivoFuente": "laminas/fuentes/E-03-estados-vinculo.mjs",
+  "lamina": "E-03",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 12,
+  "conectores": 11,
+  "cruces": 0,
+  "hallazgos": []
+ },
+ "E-04": {
+  "titulo": "Estados · consentimiento, versión de plan y proceso",
+  "archivoFuente": "laminas/fuentes/E-04-estados-consentimiento-plan-proceso.mjs",
+  "lamina": "E-04",
+  "ancho": 750,
+  "alto": 456,
+  "fuenteMinima": 10,
+  "nodos": 11,
+  "conectores": 11,
+  "cruces": 0,
+  "hallazgos": []
  }
 }

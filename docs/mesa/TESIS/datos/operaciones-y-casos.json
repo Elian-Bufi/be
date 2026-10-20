@@ -1,0 +1,1093 @@
+{
+ "fuente": "apps/api/src (procedencia de cada escritura)",
+ "operaciones": {
+  "API-ACC-06": {
+   "casos": [
+    "UC-P25"
+   ],
+   "archivos": [
+    "apps/api/src/identidad/perfil-propio.service.ts"
+   ]
+  },
+  "API-ACC-06-PROPIA": {
+   "casos": [
+    "UC-P25"
+   ],
+   "archivos": [
+    "apps/api/src/identidad/perfil-propio.service.ts"
+   ]
+  },
+  "API-AGE-01": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-ANT-01": {
+   "casos": [
+    "UC-P19"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/especificaciones.service.ts"
+   ]
+  },
+  "API-ANT-02": {
+   "casos": [
+    "UC-P19"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/evaluaciones.service.ts"
+   ]
+  },
+  "API-ANT-05": {
+   "casos": [
+    "UC-E03"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/mediciones.service.ts"
+   ]
+  },
+  "API-ANT-06": {
+   "casos": [
+    "UC-P20"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/evolucion.service.ts"
+   ]
+  },
+  "API-ANT-07": {
+   "casos": [
+    "UC-P19"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/evaluaciones.service.ts"
+   ]
+  },
+  "API-ANT-10": {
+   "casos": [
+    "UC-P19"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/evaluaciones.service.ts"
+   ]
+  },
+  "API-ANT-11": {
+   "casos": [
+    "UC-P19"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/evaluaciones.service.ts"
+   ]
+  },
+  "API-ANT-12": {
+   "casos": [
+    "UC-E03"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/mediciones.service.ts"
+   ]
+  },
+  "API-CAL-01": {
+   "casos": [
+    "UC-I09"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/calculos.service.ts"
+   ]
+  },
+  "API-CAL-02": {
+   "casos": [
+    "UC-I09"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/calculos.service.ts"
+   ]
+  },
+  "API-CAL-03": {
+   "casos": [
+    "UC-I09"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/calculos.service.ts"
+   ]
+  },
+  "API-CAL-04": {
+   "casos": [
+    "UC-I09"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/calculos.service.ts"
+   ]
+  },
+  "API-CON-02": {
+   "casos": [
+    "UC-P07"
+   ],
+   "archivos": [
+    "apps/api/src/consentimiento/consentimiento-profesional.service.ts"
+   ]
+  },
+  "API-CON-04": {
+   "casos": [
+    "UC-P08"
+   ],
+   "archivos": [
+    "apps/api/src/consentimiento/consentimiento-profesional.service.ts"
+   ]
+  },
+  "API-CON-06": {
+   "casos": [
+    "UC-P25"
+   ],
+   "archivos": [
+    "apps/api/src/consentimiento/consentimiento-de-salud.service.ts"
+   ]
+  },
+  "API-CON-08": {
+   "casos": [
+    "UC-P25"
+   ],
+   "archivos": [
+    "apps/api/src/consentimiento/consentimiento-de-salud.service.ts"
+   ]
+  },
+  "API-CRD-01": {
+   "casos": [
+    "UC-E07"
+   ],
+   "archivos": [
+    "apps/api/src/coordinacion/notas.service.ts"
+   ]
+  },
+  "API-CRD-01-PROPIA": {
+   "casos": [
+    "UC-E07"
+   ],
+   "archivos": [
+    "apps/api/src/coordinacion/notas.service.ts"
+   ]
+  },
+  "API-EJE-01": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/imagenes.service.ts"
+   ]
+  },
+  "API-EJE-02": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/imagenes.service.ts"
+   ]
+  },
+  "API-EJE-03": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/imagenes.service.ts"
+   ]
+  },
+  "API-EVI-02": {
+   "casos": [
+    "UC-P07"
+   ],
+   "archivos": [
+    "apps/api/src/consentimiento/evidencia-visual.service.ts"
+   ]
+  },
+  "API-EVI-04": {
+   "casos": [
+    "UC-P08"
+   ],
+   "archivos": [
+    "apps/api/src/consentimiento/evidencia-visual.service.ts"
+   ]
+  },
+  "API-FRM-01": {
+   "casos": [
+    "UC-P32"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/plantillas.service.ts"
+   ]
+  },
+  "API-FRM-02": {
+   "casos": [
+    "UC-P32"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/plantillas.service.ts"
+   ]
+  },
+  "API-FRM-03": {
+   "casos": [
+    "UC-P32"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/solicitudes.service.ts"
+   ]
+  },
+  "API-FRM-04": {
+   "casos": [
+    "UC-P32"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/solicitudes.service.ts"
+   ]
+  },
+  "API-FRM-05": {
+   "casos": [
+    "UC-P32"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/solicitudes.service.ts"
+   ]
+  },
+  "API-FRM-06": {
+   "casos": [
+    "UC-P33"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/solicitudes.service.ts"
+   ]
+  },
+  "API-FRM-07": {
+   "casos": [
+    "UC-P33"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/respuestas.service.ts"
+   ]
+  },
+  "API-FRM-08": {
+   "casos": [
+    "UC-P33"
+   ],
+   "archivos": [
+    "apps/api/src/formularios/respuestas.service.ts"
+   ]
+  },
+  "API-HAB-01": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/habituales.service.ts"
+   ]
+  },
+  "API-HAB-02": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/habituales.service.ts"
+   ]
+  },
+  "API-HAB-03": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/habituales.service.ts"
+   ]
+  },
+  "API-HAB-04": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/habituales.service.ts"
+   ]
+  },
+  "API-HAB-05": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/habituales.service.ts"
+   ]
+  },
+  "API-HAN-01": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/habituales.service.ts"
+   ]
+  },
+  "API-HAN-02": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/habituales.service.ts"
+   ]
+  },
+  "API-HAN-03": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/habituales.service.ts"
+   ]
+  },
+  "API-HAN-04": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/habituales.service.ts"
+   ]
+  },
+  "API-HAN-05": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/habituales.service.ts"
+   ]
+  },
+  "API-ING-01": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/registro-de-comidas.service.ts"
+   ]
+  },
+  "API-ING-02": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/registro-de-comidas.service.ts"
+   ]
+  },
+  "API-ING-03": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/registro-de-comidas.service.ts"
+   ]
+  },
+  "API-ING-04": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/registro-de-comidas.service.ts"
+   ]
+  },
+  "API-ING-05": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/registro-de-comidas.service.ts"
+   ]
+  },
+  "API-ING-06": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/registro-de-comidas.service.ts"
+   ]
+  },
+  "API-INV-01": {
+   "casos": [
+    "UC-P04"
+   ],
+   "archivos": [
+    "apps/api/src/vinculo/invitaciones.service.ts"
+   ]
+  },
+  "API-INV-03": {
+   "casos": [
+    "UC-P04"
+   ],
+   "archivos": [
+    "apps/api/src/vinculo/invitaciones.service.ts"
+   ]
+  },
+  "API-INV-05": {
+   "casos": [
+    "UC-P04"
+   ],
+   "archivos": [
+    "apps/api/src/vinculo/invitaciones.service.ts"
+   ]
+  },
+  "API-MED-03": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/medios/medios.service.ts"
+   ]
+  },
+  "API-MED-05": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/medios/medios.service.ts"
+   ]
+  },
+  "API-MTH-01": {
+   "casos": [
+    "UC-I09"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/metodos.service.ts"
+   ]
+  },
+  "API-MTH-02": {
+   "casos": [
+    "UC-I09"
+   ],
+   "archivos": [
+    "apps/api/src/antropometria/metodos.service.ts"
+   ]
+  },
+  "API-NUT-01": {
+   "casos": [
+    "UC-P09"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/evaluaciones.service.ts"
+   ]
+  },
+  "API-NUT-02": {
+   "casos": [
+    "UC-P09"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/evaluaciones.service.ts"
+   ]
+  },
+  "API-NUT-03": {
+   "casos": [
+    "UC-P09"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/evaluaciones.service.ts"
+   ]
+  },
+  "API-NUT-04": {
+   "casos": [
+    "UC-P09"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/evaluaciones.service.ts"
+   ]
+  },
+  "API-NUT-05": {
+   "casos": [
+    "UC-P09"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/evaluaciones.service.ts"
+   ]
+  },
+  "API-NUT-06": {
+   "casos": [
+    "UC-P09"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/evaluaciones.service.ts"
+   ]
+  },
+  "API-NUT-07": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/planes.service.ts"
+   ]
+  },
+  "API-NUT-08": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/planes.service.ts"
+   ]
+  },
+  "API-NUT-09": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/planes.service.ts"
+   ]
+  },
+  "API-NUT-10": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/planes.service.ts"
+   ]
+  },
+  "API-NUT-11": {
+   "casos": [
+    "UC-I04"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/planes.service.ts"
+   ]
+  },
+  "API-NUT-12": {
+   "casos": [
+    "UC-P11"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/planes.service.ts"
+   ]
+  },
+  "API-NUT-14": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/ingestas.service.ts"
+   ]
+  },
+  "API-NUT-15": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/ingestas.service.ts"
+   ]
+  },
+  "API-NUT-16": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/ingestas.service.ts"
+   ]
+  },
+  "API-NUT-16-LISTA": {
+   "casos": [
+    "UC-P12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/ingestas.service.ts"
+   ]
+  },
+  "API-NUT-17": {
+   "casos": [
+    "UC-P13"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/revisiones.service.ts"
+   ]
+  },
+  "API-NUT-18": {
+   "casos": [
+    "UC-P13"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/revisiones.service.ts"
+   ]
+  },
+  "API-NUT-19": {
+   "casos": [
+    "UC-P13"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/revisiones.service.ts"
+   ]
+  },
+  "API-NUT-19-LISTA": {
+   "casos": [
+    "UC-P13"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/revisiones.service.ts"
+   ]
+  },
+  "API-NUT-19-PROPIA": {
+   "casos": [
+    "UC-P13"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/revisiones.service.ts"
+   ]
+  },
+  "API-NUT-20": {
+   "casos": [
+    "UC-I06"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/revisiones.service.ts"
+   ]
+  },
+  "API-NUT-21": {
+   "casos": [
+    "UC-I12"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/ingestas.service.ts"
+   ]
+  },
+  "API-REC-01": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/recetas.service.ts"
+   ]
+  },
+  "API-REC-02": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/recetas.service.ts"
+   ]
+  },
+  "API-REC-03": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/recetas.service.ts"
+   ]
+  },
+  "API-REC-04": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/recetas.service.ts"
+   ]
+  },
+  "API-REC-05": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/recetas.service.ts"
+   ]
+  },
+  "API-REC-06": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/recetas.service.ts"
+   ]
+  },
+  "API-REC-07": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/recetas.service.ts"
+   ]
+  },
+  "API-REL-01": {
+   "casos": [
+    "UC-P04"
+   ],
+   "archivos": [
+    "apps/api/src/vinculo/solicitudes.service.ts"
+   ]
+  },
+  "API-REL-03": {
+   "casos": [
+    "UC-P05"
+   ],
+   "archivos": [
+    "apps/api/src/vinculo/solicitudes.service.ts"
+   ]
+  },
+  "API-REL-04": {
+   "casos": [
+    "UC-P05"
+   ],
+   "archivos": [
+    "apps/api/src/vinculo/solicitudes.service.ts"
+   ]
+  },
+  "API-SER-01": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/series.service.ts"
+   ]
+  },
+  "API-SER-02": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/series.service.ts"
+   ]
+  },
+  "API-TIE-01": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/tiempos.service.ts"
+   ]
+  },
+  "API-TIE-02": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/tiempos.service.ts"
+   ]
+  },
+  "API-TIE-03": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/tiempos.service.ts"
+   ]
+  },
+  "API-TIE-04": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/tiempos.service.ts"
+   ]
+  },
+  "API-TPL-01": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/plantillas.service.ts"
+   ]
+  },
+  "API-TPL-02": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/plantillas.service.ts"
+   ]
+  },
+  "API-TPL-03": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/plantillas.service.ts"
+   ]
+  },
+  "API-TPL-04": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/plantillas.service.ts"
+   ]
+  },
+  "API-TPL-05": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/plantillas.service.ts"
+   ]
+  },
+  "API-TPN-01": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/plantillas.service.ts"
+   ]
+  },
+  "API-TPN-02": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/plantillas.service.ts"
+   ]
+  },
+  "API-TPN-03": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/plantillas.service.ts"
+   ]
+  },
+  "API-TPN-04": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/plantillas.service.ts"
+   ]
+  },
+  "API-TPN-05": {
+   "casos": [
+    "UC-P10"
+   ],
+   "archivos": [
+    "apps/api/src/nutricion/plantillas.service.ts"
+   ]
+  },
+  "API-TRN-01": {
+   "casos": [
+    "UC-P14"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/evaluaciones.service.ts"
+   ]
+  },
+  "API-TRN-02": {
+   "casos": [
+    "UC-P14"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/evaluaciones.service.ts"
+   ]
+  },
+  "API-TRN-03": {
+   "casos": [
+    "UC-P14"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/evaluaciones.service.ts"
+   ]
+  },
+  "API-TRN-04": {
+   "casos": [
+    "UC-P14"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/evaluaciones.service.ts"
+   ]
+  },
+  "API-TRN-05": {
+   "casos": [
+    "UC-P14"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/evaluaciones.service.ts"
+   ]
+  },
+  "API-TRN-06": {
+   "casos": [
+    "UC-P14"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/evaluaciones.service.ts"
+   ]
+  },
+  "API-TRN-07": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/planes.service.ts"
+   ]
+  },
+  "API-TRN-08": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/planes.service.ts"
+   ]
+  },
+  "API-TRN-09": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/planes.service.ts"
+   ]
+  },
+  "API-TRN-10": {
+   "casos": [
+    "UC-P15"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/planes.service.ts"
+   ]
+  },
+  "API-TRN-11": {
+   "casos": [
+    "UC-I04"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/planes.service.ts"
+   ]
+  },
+  "API-TRN-12": {
+   "casos": [
+    "UC-P16"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/planes.service.ts"
+   ]
+  },
+  "API-TRN-14": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-14-PERIODO": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-15": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-16": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-17": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-18": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-19": {
+   "casos": [
+    "UC-P17"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-20": {
+   "casos": [
+    "UC-E02"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/ejecuciones.service.ts"
+   ]
+  },
+  "API-TRN-21": {
+   "casos": [
+    "UC-P18"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/revisiones.service.ts"
+   ]
+  },
+  "API-TRN-22": {
+   "casos": [
+    "UC-P18"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/revisiones.service.ts"
+   ]
+  },
+  "API-TRN-23": {
+   "casos": [
+    "UC-P18"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/revisiones.service.ts"
+   ]
+  },
+  "API-TRN-23-LISTA": {
+   "casos": [
+    "UC-P18"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/revisiones.service.ts"
+   ]
+  },
+  "API-TRN-23-PROPIA": {
+   "casos": [
+    "UC-P18"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/revisiones.service.ts"
+   ]
+  },
+  "API-TRN-24": {
+   "casos": [
+    "UC-I06"
+   ],
+   "archivos": [
+    "apps/api/src/entrenamiento/revisiones.service.ts"
+   ]
+  },
+  "API-VAN-01": {
+   "casos": [
+    "UC-P24"
+   ],
+   "archivos": [
+    "apps/api/src/analisis/vistas.service.ts"
+   ]
+  },
+  "API-VAN-02": {
+   "casos": [
+    "UC-P24"
+   ],
+   "archivos": [
+    "apps/api/src/analisis/vistas.service.ts"
+   ]
+  },
+  "API-VAN-03": {
+   "casos": [
+    "UC-P24"
+   ],
+   "archivos": [
+    "apps/api/src/analisis/vistas.service.ts"
+   ]
+  },
+  "API-VAN-04": {
+   "casos": [
+    "UC-P24"
+   ],
+   "archivos": [
+    "apps/api/src/analisis/vistas.service.ts"
+   ]
+  }
+ }
+}

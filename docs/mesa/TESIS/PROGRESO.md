@@ -34,7 +34,7 @@
 | B | Inventario de fuentes y versión de referencia (`datos/version.json`: main `0fb1bff`) | **hecho** | 2026-10-20 |
 | C | Guía visual, motor de láminas y dos láminas patrón (ARQ-02, DER-03) | **hecho** (`c290925`) | 2026-10-20 |
 | D | Documento: 14 apartados | **hecho** (1 a 14; 10, 12 y 13 con sus campos diferidos al cierre) | 2026-10-20 |
-| E | Anexos: flujos, DFD, secuencias y estados, trazabilidad, glosario | pendiente | |
+| E | Anexos A a L: flujos, DFD, secuencias y estados, trazabilidad, diccionario, decisiones, glosario, referencias, discrepancias, convenciones | **hecho** (`5509615` y siguiente) | 2026-10-20 |
 | F | Tres pasadas de revisión | pendiente | |
 | G | Base de la defensa: guion, preguntas, demo, presentación | pendiente | |
 | H | Informe final | pendiente | |
@@ -52,16 +52,16 @@
 - **2026-10-20 03:10** — Etapa 5: el agente dejó #198 en borrador (CI verde, `ac1a183`): las APK 0.13.2 y
   0.17.0-candidata.3 leen 82 operaciones distintas (44 y 80); se congelaron sus esquemas y una prueba de integración
   lee respuestas reales con ellos; sin incompatibilidad nueva; DL-152 D-1 a D-5 a ratificar. No se integró.
-- **2026-10-20 03:40** — Hito C: guía visual (`estilo/tokens.json`), motor de láminas con revisión automática, ARQ-02 y
+- **2026-10-20 03:04** — Hito C: guía visual (`estilo/tokens.json`), motor de láminas con revisión automática, ARQ-02 y
   DER-03 aprobadas como patrón (revisadas sueltas y dentro del PDF), plantilla Typst con variante pública y de
   evaluación, portada y esqueleto de los 14 apartados. Commit `c290925`, rama subida.
 - Inventario técnico: `herramientas/leer-esquema.mjs` → `datos/esquema.json` (113 modelos, 78 enumeraciones, 212
   relaciones); `herramientas/evidencia-por-requisito.mjs` → `datos/evidencia-rf.json` (69 RF con su evidencia). Contra
   el inventario del 09, 104 de 122 operaciones P0 implementadas (faltan las 13 PRO, DSH-01/02/05, PRJ-02/03).
-- **2026-10-20 04:40** — Apartados 2, 3 y 4 escritos (`03e53d9`): acta con competencia y mercado con fuentes
+- **2026-10-20 03:41** — Apartados 2, 3 y 4 escritos (`03e53d9`): acta con competencia y mercado con fuentes
   fechadas; 69 requisitos por superficie con estado y evidencia; 56 casos de uso con la vista general (CU-00), ocho
   vistas por módulo (CU-01 a CU-08) y sus fichas tomadas del 05 v0.15.
-- **2026-10-20 06:00** — Apartado 5 escrito. `herramientas/casos-de-prueba.mjs` une DV-05, la conciliación del 2/10 y
+- **2026-10-20 04:03** — Apartado 5 escrito. `herramientas/casos-de-prueba.mjs` une DV-05, la conciliación del 2/10 y
   el mapeo del 16/10, y busca cada prueba citada en el repositorio: 223 citas, todas vigentes (4 con título
   actualizado). Resultado en `0fb1bff`: 42 de 59 pasan en la CI, 9 en parte, 8 no ejecutables. Seis casos
   actualizados con fuente (DL-115 corrigió H-1; la línea de tiempo existe desde el 16/10; Google tiene su variante de
@@ -71,7 +71,7 @@
 - **Hallazgos para el anexo K:** la fila de DL-115 en la tabla de `docs/DEUDA_LEGAJO.md` dice «sin integrar» (se integró
   con la 0.13.2); el mapeo del 16/10 afirma que no hay línea temporal entre dominios y que push está fuera de alcance
   (las dos cosas ya existían ese día); las pruebas del teléfono del 17/10 (Google e invitaciones) no tienen acta escrita.
-- **2026-10-20 07:45** — Apartado 6 (DER) y anexo G (diccionario). Motor: compositor de vistas del DER
+- **2026-10-20 04:37** — Apartado 6 (DER) y anexo G (diccionario). Motor: compositor de vistas del DER
   (`laminas/motor/der-vista.mjs`): grilla declarada por vista, medida con la tipografía real, todas las relaciones del
   esquema trazadas solas, carriles ordenados por fuerza bruta para minimizar cruces (y penalizar superposiciones), lazos
   por un lado libre o por arriba, ajuste automático de atributos visibles. Cabeceras de entidad en dos renglones y
@@ -81,13 +81,27 @@
   temporal (borrada): 113 tablas, 78 enumeraciones, 212 FK (todas RESTRICT), 125 índices únicos (34 parciales), 134
   CHECK, 275 disparadores (16 de restricción), 73 funciones de disparador. **Las cifras anotadas antes (262 disparadores,
   128 únicos, 36 parciales, 133 CHECK) estaban mal y no se usan.** Anexos con letras (A a L) y su propia numeración.
-- **2026-10-20 08:10** — Apartados 7 (clases: CL-01 dominio, CL-02 escritura protegida, CL-03 jerarquías), 8 (ARQ-01
+- **2026-10-20 05:10** — Apartados 7 (clases: CL-01 dominio, CL-02 escritura protegida, CL-03 jerarquías), 8 (ARQ-01
   contexto, ARQ-03 despliegue), 9 (COMP-01 sistema, COMP-02 módulos; 191 operaciones en 30 familias), 11 (guion de
   demo), 14 (las 14 cuentas sintéticas entran en test, verificado sin escribir nada; credenciales solo en
   `BE-datos-locales/tesis/privado.json`) y la ficha del apartado 1. Portada con una captura real del website en test.
   La API de test corre 0fb1bff desde las 02:33 (Render la reconstruyó).
 - **Para Dirección:** la persona de verificación del 20/10 («Verificación QA», vínculo finalizado) aparece en la cartera de
   Sofía como «Asesorado · bea2eb · Nutrición: Finalizado». Es historia (no se borra); para la demo conviene saberlo.
-- **Cómo seguir:** anexos A a F y H a L (G hecho), después las tres pasadas de revisión, la base de la defensa y el
-  informe final. Herramientas: `node herramientas/<herramienta>.mjs`; láminas: `node laminas/construir.mjs [ID]`;
+- **Nota sobre las horas:** hasta el 20/10 a las 06:20, cinco horas de esta bitácora estaban estimadas y adelantadas; se
+  corrigieron con la hora de cada commit (`git log`).
+- **2026-10-20 05:19** — Anexos A (entrega), F (trazabilidad), H (decisiones y evolución), I (glosario), J
+  (referencias), K (discrepancias K1 a K18) y L (convenciones).
+- **2026-10-20 05:58** — Láminas de los anexos B, C y D (`5509615`). El motor suma nodos de actividad, estados,
+  secuencia y DFD, y carriles; la revisión automática mira la forma real de rombos y círculos, controla los círculos de
+  proceso, los nodos que se pisan y los textos libres sobre nodos. El nivel 1 del DFD va en tres láminas (D-01 a D-03)
+  con una sola numeración, porque en una sola no se leía a tamaño real.
+- **2026-10-20 06:20** — Anexo E (secuencias E-01 activar un plan y E-02 recuperar la sesión; estados E-03 vínculo y
+  E-04 consentimiento, plan y proceso) y el texto de los anexos B a E, con «En 30 segundos» por figura. Herramientas
+  nuevas: `operaciones-y-casos.mjs` (136 operaciones con el caso de uso que dejan en su procedencia, leído del código),
+  `operaciones-detalle.mjs` (método, ruta y resumen del contrato) y `maquinas-de-estado.mjs` (las cinco tablas de
+  transición del dominio, copiadas). 44 láminas sin hallazgos automáticos; documento de 352 páginas.
+- **Cómo seguir:** las tres pasadas de revisión (cobertura académica, consistencia técnica, calidad visual y editorial
+  a tamaño real), después la base de la defensa (guion, preguntas, demo con respaldo de capturas, presentación 16:9 con
+  notas) y el informe final. Herramientas: `node herramientas/<herramienta>.mjs`; láminas: `node laminas/construir.mjs [ID]`;
   documento: `node construir-documento.mjs [--png <carpeta>] [--evaluacion]`.
