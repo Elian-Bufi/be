@@ -31,6 +31,7 @@ La severidad es la del efecto sobre la persona o sobre la evaluación: *alta* (a
   [K10], [`docs/DESPLIEGUE.md` dice que los recordatorios corren a las 15 y a las 22; `render.yaml` los programa tres veces (01, 13 y 18 UTC: 22, 10 y 15 h).], [baja], [Actualizar el texto.],
   [K11], [El 05 no declara algunos campos: el disparador de UC-P25 a UC-P33 y el actor y las postcondiciones de varios incluidos. El apartado 4 lo indica en cada ficha.], [baja], [Completar el 05 en su próxima versión (lo decide Dirección).],
   [K12], [Una fuente de la competencia cambió de dirección (Hexfit) entre la primera consulta y la del 2026-10-20.], [baja], [Ninguna: se cita la dirección vigente.],
+  [K18], [La tabla de `docs/DEUDA_LEGAJO.md` quedó atrás de lo integrado en DL-136, DL-138, DL-147, DL-148 y DL-150 (dice «falta web y APK», «sin integrar» o «once recorridos»; anexo H).], [media], [Actualizar los estados al integrar cada PR.],
 )
 
 == En la evidencia y las pruebas
