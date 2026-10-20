@@ -59,7 +59,9 @@ for (const archivo of archivos) {
         '',
       ].join('\n'),
     );
-    const base = [typst(), 'compile', '--root', tesis, '--font-path', join(tesis, 'tipografias'), '--ignore-system-fonts'];
+    // La fecha de creación de los PDF es la del commit de referencia: la misma fuente da el mismo archivo.
+    const fecha = String(Math.floor(Date.parse(version.commitFecha) / 1000));
+    const base = [typst(), 'compile', '--root', tesis, '--font-path', join(tesis, 'tipografias'), '--ignore-system-fonts', '--creation-timestamp', fecha];
     execFileSync(base[0], [...base.slice(1), temporal, join(dirs.pdf, `${meta.id}.pdf`)]);
     execFileSync(base[0], [...base.slice(1), '--format', 'png', '--ppi', '160', temporal, join(dirs.png, `${meta.id}.png`)]);
     execFileSync(base[0], [...base.slice(1), '--format', 'svg', temporal, join(dirs.svg, `${meta.id}.svg`)]);

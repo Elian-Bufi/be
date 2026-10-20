@@ -5,7 +5,7 @@
 //   node construir-documento.mjs --png [carpeta]    → además, una imagen por página para revisar (fuera del repositorio)
 // Datos privados: C:\Users\bufim\BE-datos-locales\tesis\ (o la carpeta de BE_TESIS_PRIVADO): davinci-logotipo.png y
 // privado.json. Nunca se copian al repositorio: se usan desde una carpeta ignorada y se borran al terminar.
-import { existsSync, mkdirSync, copyFileSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, copyFileSync, rmSync, readdirSync, statSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -37,7 +37,9 @@ if (evaluacion) {
 }
 mkdirSync(dirname(salida), { recursive: true });
 
-const base = ['compile', '--root', raiz, '--font-path', join(aqui, 'tipografias'), '--ignore-system-fonts', ...entradas];
+// La fecha de creación del PDF es la del commit de referencia: la misma fuente da el mismo archivo.
+const fechaDeCreacion = String(Math.floor(Date.parse(JSON.parse(readFileSync(join(aqui, 'datos/version.json'), 'utf8')).commitFecha) / 1000));
+const base = ['compile', '--root', raiz, '--font-path', join(aqui, 'tipografias'), '--ignore-system-fonts', '--creation-timestamp', fechaDeCreacion, ...entradas];
 try {
   const inicio = Date.now();
   execFileSync(typst(), [...base, join(aqui, 'documento/tesis.typ'), salida], { stdio: 'inherit' });

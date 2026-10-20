@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="C-01">
 <title>Flujo de nutrición</title>
-<desc>Del plan a la revisión: activación, registro de comidas por opción del plan o diferente, y el resultado de la revisión. · Fuente: apps/api/src/nutricion (planes, ingestas, revisiones) · apps/mobile/src/pantallas (nutricion-hoy, comida-diferente) · packages/domain/src/revision.ts · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<desc>Del plan a la revisión: activación, registro de comidas por opción del plan o diferente, y el resultado de la revisión. · Fuente: apps/api/src/nutricion (planes, registro-de-comidas, revisiones) · apps/mobile/src/pantallas (nutricion-hoy, comida-diferente) · packages/domain/src/revision.ts · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
 <rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
 <rect x="0" y="0" width="750" height="120" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
 <rect x="0" y="0" width="74" height="120" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>

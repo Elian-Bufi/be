@@ -30,13 +30,13 @@
 
 | # | Hito | Estado | Fecha |
 |---|---|---|---|
-| A | Cierre técnico autorizado (etapas 2 a 5 del encargo por etapas) | **hecho** (ver bitácora); falta el informe final | 2026-10-20 |
+| A | Cierre técnico autorizado (etapas 2 a 5 del encargo por etapas) | **hecho** (ver bitácora); informe en el documento de Claude Docs del encargo, sección «Integración por etapas del 20/10» | 2026-10-20 |
 | B | Inventario de fuentes y versión de referencia (`datos/version.json`: main `0fb1bff`) | **hecho** | 2026-10-20 |
 | C | Guía visual, motor de láminas y dos láminas patrón (ARQ-02, DER-03) | **hecho** (`c290925`) | 2026-10-20 |
 | D | Documento: 14 apartados | **hecho** (1 a 14; 10, 12 y 13 con sus campos diferidos al cierre) | 2026-10-20 |
 | E | Anexos A a L: flujos, DFD, secuencias y estados, trazabilidad, diccionario, decisiones, glosario, referencias, discrepancias, convenciones | **hecho** (`5509615` y siguiente) | 2026-10-20 |
-| F | Tres pasadas de revisión | pendiente | |
-| G | Base de la defensa: guion, preguntas, demo, presentación | pendiente | |
+| F | Tres pasadas de revisión | en curso: cobertura y consistencia hechas; la visual y editorial, con cuatro revisores | 2026-10-20 |
+| G | Base de la defensa: guion, preguntas, demo, presentación | **hecho** (`dd9c2e0`; presentación en https://claude.ai/artifact/9LiufGdUTJjAbEonGT8t2U) | 2026-10-20 |
 | H | Informe final | pendiente | |
 
 ## Bitácora
