@@ -74,6 +74,16 @@ const almacenamiento = (p) => p.evaluate(() => JSON.stringify({ local: Object.en
 
 const PARECE_UN_TOKEN = /eyJ[\w-]{8,}\.[\w-]{8,}\./;
 
+/**
+ * Evidencia visual del código probado (encargo, §8.3): una captura de la ventana tal como está, con el nombre del momento.
+ * Sin `fullPage`: esa captura achica la ventana un instante y un gráfico de recharts puede salir sin dibujar.
+ */
+async function captura(p, salida, nombre) {
+  if (!salida) return;
+  await pausa(250);
+  await p.screenshot({ path: join(salida, `${nombre}.png`) });
+}
+
 // ─── Los recorridos ──────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** DL-147: entrar, recargar, otra pestaña y salir; los tokens nunca en el almacenamiento del navegador. */
@@ -139,7 +149,7 @@ async function sesion({ contexto, p, d }) {
 }
 
 /** DL-146 y bloque 5: la pista de «Actualizar» con mouse, teclado, Escape, bordes, zoom, tacto y árbol de accesibilidad. */
-async function pistas({ contexto, p, d }) {
+async function pistas({ contexto, p, d, salida }) {
   const TEXTO = dominio.COPY_PISTAS.ficha.actualizar;
   await entrar(p, d.pro.correo);
   await abrirFicha(p, d.ase.nombre);
@@ -175,6 +185,7 @@ async function pistas({ contexto, p, d }) {
   assert.ok(await visible(), 'con el mouse encima, la pista aparece');
   assert.equal((await p.$eval(GLOBO, (g) => g.textContent)).trim(), TEXTO);
   await dentroYSinTapar('mouse');
+  await captura(p, salida, 'ficha-encabezado-con-pista-1440');
   const c = await cajas();
   await p.mouse.move(c.globo.left + c.globo.width / 2, c.globo.top + c.globo.height / 2, { steps: 4 });
   await pausa(400);
@@ -202,6 +213,22 @@ async function pistas({ contexto, p, d }) {
   assert.ok(!(await visible()), 'Escape la cierra');
   assert.ok(await p.$eval(BOTON, (b) => b === document.activeElement), 'el foco sigue en «Actualizar»');
 
+  // Tablet con teclado (1024 × 768): «Más» se abre con Enter, sus acciones se recorren con Tab y Escape lo cierra y
+  // devuelve el foco al botón.
+  await p.setViewport({ width: 1024, height: 768 });
+  await pausa(400);
+  assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'en tablet no hay desplazamiento horizontal');
+  await p.focus('.marco-de-la-ficha .menu-de-acciones__boton');
+  await p.keyboard.press('Enter');
+  await elemento(p, '.marco-de-la-ficha .menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Pedir información');
+  await p.keyboard.press('Tab');
+  assert.ok(await p.evaluate(() => document.activeElement?.closest('.menu-de-acciones__lista') !== null), 'Tab entra a las acciones del menú');
+  await captura(p, salida, 'ficha-menu-mas-abierto-1024');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('.marco-de-la-ficha .menu-de-acciones[data-abierto]'), { timeout: ESPERA });
+  assert.ok(await p.$eval('.marco-de-la-ficha .menu-de-acciones__boton', (b) => b === document.activeElement), 'Escape devuelve el foco a «Más»');
+  await captura(p, salida, 'ficha-encabezado-1024');
+
   // Zoom al 200 %: la ventana de 1440 × 900 queda en 720 × 450 píxeles de CSS. Nada se corre de costado y la pista entra.
   await p.setViewport({ width: 720, height: 450 });
   await pausa(500);
@@ -210,6 +237,7 @@ async function pistas({ contexto, p, d }) {
   await pausa(700);
   assert.ok(await visible(), 'al 200 %, la pista aparece');
   await dentroYSinTapar('zoom');
+  await captura(p, salida, 'ficha-pista-al-200');
   await p.mouse.move(5, 5);
   await pausa(300);
 
@@ -229,7 +257,7 @@ async function pistas({ contexto, p, d }) {
 }
 
 /** DL-148: un cambio en el borrador se guarda solo y sigue ahí después de recargar. */
-async function borrador({ p, d }) {
+async function borrador({ p, d, salida }) {
   await entrar(p, d.pro.correo);
   await abrirFicha(p, d.ase.nombre);
   // Bloque 5: con un borrador, la acción del encabezado es seguirlo.
@@ -237,9 +265,16 @@ async function borrador({ p, d }) {
   await esperarCamino(p, '/pro/advisees/nutrition');
   assert.equal(ruta(p).parametros.get('vista'), 'plan');
   await elemento(p, '.comida-del-editor[data-comida="1"]');
+  await clic(p, '#agregar-comida', 'Agregar comida');
+  await elemento(p, '.menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Una comida habitual');
+  // Sin comidas habituales guardadas, la opción está apagada y dice cómo se guardan.
+  assert.ok(await p.evaluate(() => [...document.querySelectorAll('.menu-de-acciones[data-abierto] .menu-de-acciones__accion')].some((b) => b.textContent.includes('Una comida habitual') && b.disabled)), '«Una comida habitual» apagada sin habituales');
+  await captura(p, salida, 'editor-agregar-comida-1440');
+  await p.keyboard.press('Escape');
   const NUEVO = 'Desayuno del recorrido';
   await renombrarComida(p, 1, NUEVO);
   await esperarGuardado(p);
+  await captura(p, salida, 'editor-guardado-1440');
   // Sin cambios pendientes, salir no pregunta (no hay diálogo de «salir sin guardar»).
   let pregunto = false;
   p.once('dialog', async (dialogo) => {
@@ -415,13 +450,14 @@ async function primeraInvitacion({ p, d }) {
 }
 
 /** Bloque 5: con vínculos en una sola de sus dos áreas, esa viene elegida, se dice que es una sugerencia y se puede cambiar. */
-async function areaSugerida({ p, d }) {
+async function areaSugerida({ p, d, salida }) {
   await entrar(p, d.pro.correo);
   const area = await abrirInvitar(p);
   await p.waitForFunction(() => document.querySelector('dialog[open] select')?.value === 'NUTRICION', { timeout: ESPERA });
   await p.waitForFunction((t) => document.querySelector('dialog[open]').innerText.includes(t), { timeout: ESPERA }, dominio.COPY_INVITACION.areaSugerida);
   const nodo = await p.accessibility.snapshot({ root: area, interestingOnly: false });
   assert.ok((nodo?.description ?? '').includes(dominio.COPY_INVITACION.areaSugerida), 'la sugerencia es parte de la descripción del campo');
+  await captura(p, salida, 'invitar-area-sugerida-1440');
   await area.select('ENTRENAMIENTO');
   await pausa(200);
   assert.ok(!(await p.evaluate((t) => document.querySelector('dialog[open]').innerText.includes(t), dominio.COPY_INVITACION.areaSugerida)), 'al elegir otra, deja de decir «sugerida»');
@@ -456,7 +492,7 @@ export async function correrRecorridos({ estado, salida, chrome, solo = null }) 
       });
       const inicio = Date.now();
       try {
-        await fn({ contexto, p, d: estado[nombre] });
+        await fn({ contexto, p, d: estado[nombre], salida });
         assert.deepEqual(errores, [], 'sin errores de JavaScript en la página');
         resultados.push({ nombre, ok: true, segundos: Math.round((Date.now() - inicio) / 100) / 10 });
         console.log(`✔ ${nombre} (${Math.round((Date.now() - inicio) / 1000)} s)`);
