@@ -234,7 +234,12 @@ export function Workspace() {
               <strong>Acceso actual</strong>
             </p>
             {encabezado.tipo === 'cargando' ? <Cargando /> : null}
-            {encabezado.tipo === 'error' ? <ErrorConReintento onReintentar={consultar} /> : null}
+            {/* Sin un «Reintentar» propio: es la misma lectura que la del cuerpo, y «Actualizar», arriba, la vuelve a pedir. */}
+            {encabezado.tipo === 'error' ? (
+              <Aviso tipo="error">
+                <p>{COPY_VINCULO.accesoNoSeLeyo}</p>
+              </Aviso>
+            ) : null}
             {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} sePuedeLeer={lecturaSegun(panel)} /> : null}
           </div>
           {/* Un aviso único, sin listar qué falta ni por qué (B10-08 §8.4; 10-B04 §41). */}

@@ -42,6 +42,8 @@ export const COPY = {
     n === 1 ? 'Revisá los campos marcados. Hay 1 dato que necesita corrección.' : `Revisá los campos marcados. Hay ${n} datos que necesitan corrección.`,
   /** 10-B10:355-378. */
   errorDeVista: 'No pudimos cargar esta vista.',
+  /** «Ver más» que falla: lo que no llegó son los siguientes, no la vista (encargo de consolidación, bloque 5). */
+  errorAlTraerMas: 'No pudimos traer más. Lo que ya se ve sigue igual.',
   reintentar: 'Reintentar',
   /** 10-B10:430-438; 10-B04:1117-1141. */
   verificando: 'Estamos verificando si la acción se completó.',

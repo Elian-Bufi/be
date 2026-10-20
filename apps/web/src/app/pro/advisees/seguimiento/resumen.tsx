@@ -79,9 +79,10 @@ export function ResumenDelSeguimiento() {
 
   if (panel.tipo === 'cargando') return <Cargando />;
   // Con su motivo, como cualquier otra lectura de la ficha: «esperá un minuto» no es lo mismo que «revisá la conexión».
+  // Es el único «Reintentar» de esta lectura: el encabezado solo dice que no pudo leer el acceso.
   if (panel.tipo === 'error') {
     return (
-      <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos cargar el resumen por área" onReintentar={recargarPanel}>
+      <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos cargar el resumen por área" onReintentar={recargarPanel} deQue="el resumen por área">
         {razonDeFalla(panel.motivo)}
       </BloqueDeEstado>
     );

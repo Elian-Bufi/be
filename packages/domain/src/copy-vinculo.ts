@@ -132,6 +132,11 @@ export const COPY_VINCULO = {
   accesoContextual: 'Activo · con acceso',
   accesoPendiente: 'Acceso pendiente de autorización',
   accesoNoDisponible: 'Acceso no disponible',
+  /**
+   * El encabezado de la ficha o de un área no pudo leer los vínculos. No lleva un «Reintentar» propio: «Actualizar», en
+   * el mismo encabezado, vuelve a pedir el acceso con todo lo demás (encargo de consolidación, bloque 5).
+   */
+  accesoNoSeLeyo: 'No pudimos leer el acceso actual: «Actualizar» lo vuelve a pedir.',
   pausadoSinAcceso: 'Pausado · sin acceso',
   vinculoActivoAccesoPendiente: 'Vínculo activo',
   accesoPendienteDelAsesorado: 'Acceso pendiente de autorización del asesorado',

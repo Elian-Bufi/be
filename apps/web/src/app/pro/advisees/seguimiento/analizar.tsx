@@ -798,7 +798,7 @@ export function Analizar() {
       {/* La pregunta se arma con lo que el resumen por área deja leer: si esa lectura falló, se dice (no es una carga que no termina). */}
       {pregunta && resolucion === null ? (
         panel.tipo === 'error' ? (
-          <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos armar la pregunta" onReintentar={recargarPanel}>
+          <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos armar la pregunta" onReintentar={recargarPanel} deQue="el resumen por área">
             {razonDeFalla(panel.motivo)} Hace falta saber qué áreas se pueden leer.
           </BloqueDeEstado>
         ) : (
