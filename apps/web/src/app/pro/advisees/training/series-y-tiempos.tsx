@@ -6,7 +6,8 @@
  *   duración de una serie es desconocida aunque la serie tenga datos.
  * - A la vista van los tres tiempos de la sesión, en un renglón. El descanso y la duración de cada serie, y el tiempo de
  *   cada ejercicio, se abren a pedido: son otra lectura de la misma sesión, no otra sesión.
- * - Una falla de esta lectura se dice, con «Reintentar»: no es «sin tiempos».
+ * - Una falla de esta lectura se dice, con «Reintentar»: no es «sin tiempos». El «Reintentar» va una vez, en los tiempos
+ *   de la sesión; el desplegable de descansos y duraciones solo dice que no se pudieron leer (bloque 5).
  * La tabla de cada serie frente a su plan, que vivía acá, es ahora la tabla del detalle (`TablaDeSeries`, en
  * `ejecuciones.tsx`), con sus reglas en el dominio.
  */
@@ -98,7 +99,8 @@ export function TiemposDeLaSesion({ tiempos }: { tiempos: Tiempos }) {
  */
 export function DescansosYDuracion({ ejecucion: x, tiempos }: { ejecucion: EjecucionDeEntrenamiento; tiempos: Tiempos }) {
   if (tiempos.tipo === 'cargando') return <Cargando />;
-  if (tiempos.tipo === 'fallo') return <FallaDeLosTiempos reintentar={tiempos.reintentar} />;
+  // Es la misma lectura que la de los tiempos de la sesión, arriba: su «Reintentar» está ahí.
+  if (tiempos.tipo === 'fallo') return <p className="nota">No pudimos leer los tiempos de esta sesión: se reintenta arriba, en «{COPY_ENTRENAMIENTO_POR_SERIE.tiemposDeLaSesion}».</p>;
   const t = tiempos.datos;
   if (t.state === 'NOT_STARTED') return <p className="nota">Esta sesión no tiene tiempos marcados en la app: no hay descansos ni duraciones que mostrar.</p>;
   const registro = x.effectiveView.kind === 'NOT_RESOLVABLE' ? null : registroVigente(x);
