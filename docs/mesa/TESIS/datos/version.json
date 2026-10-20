@@ -15,13 +15,39 @@
   "ambiente": {
     "nombre": "test",
     "proveedor": "Render, región Frankfurt",
-    "website": { "commit": "0fb1bff", "comprobado": "2026-10-20T02:24-03:00", "como": "el HTML de /login lleva el commit" },
-    "api": { "commit": "20f1bb7", "aplicacion": "0.11.1", "comprobado": "2026-10-20T02:24-03:00", "como": "/health/ready (version.commit)", "nota": "#192 no cambia la API: 20f1bb7 es el mismo estado de API que 0fb1bff" },
+    "website": {
+      "commit": "0fb1bff",
+      "comprobado": "2026-10-20T02:24-03:00",
+      "como": "el HTML de /login lleva el commit"
+    },
+    "api": {
+      "commit": "0fb1bff",
+      "aplicacion": "0.11.1",
+      "construidoEn": "2026-10-20T05:33:38Z",
+      "comprobado": "2026-10-20T04:40-03:00",
+      "como": "/health/ready (data.version.commit)",
+      "nota": "Hasta las 02:33 del 20/10 corría 20f1bb7, el mismo estado de API: #192 no cambia la API."
+    },
     "datos": "solo sintéticos"
   },
   "apk": {
-    "estable": { "version": "0.13.2", "commit": "4b49d43", "publicada": "2026-10-03", "release": "be-apk-0.13.2" },
-    "candidata": { "version": "0.17.0-candidata.3", "commit": "cf55288", "base": "main 4091d5e más la versión", "publicada": "2026-10-19", "release": "be-apk-0.17.0-candidata.3", "estado": "pendiente de las pruebas en el teléfono" }
+    "estable": {
+      "version": "0.13.2",
+      "commit": "4b49d43",
+      "publicada": "2026-10-03",
+      "release": "be-apk-0.13.2"
+    },
+    "candidata": {
+      "version": "0.17.0-candidata.3",
+      "commit": "cf55288",
+      "base": "main 4091d5e más la versión",
+      "publicada": "2026-10-19",
+      "release": "be-apk-0.17.0-candidata.3",
+      "estado": "pendiente de las pruebas en el teléfono"
+    }
   },
-  "ci": { "ejecucion": "CI de main sobre 0fb1bff", "resultado": "verde (legajo, verificar, integración, recorridos, imagen API)" }
+  "ci": {
+    "ejecucion": "CI de main sobre 0fb1bff",
+    "resultado": "verde (legajo, verificar, integración, recorridos, imagen API)"
+  }
 }

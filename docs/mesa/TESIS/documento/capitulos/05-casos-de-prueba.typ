@@ -163,12 +163,12 @@ con sus migraciones.
   columns: (20mm, 1fr, 40mm),
   table.header([Entorno], [Configuración], [Versión]),
   [CI], [GitHub Actions, Ubuntu 24.04, PostgreSQL 16 en contenedor, Chrome de la imagen para los recorridos. Datos creados por cada prueba.], [#id("0fb1bff")],
-  [Test], [Render, región Frankfurt: website estático, API en Docker, PostgreSQL 16 privado, tarea programada de recordatorios. Solo datos sintéticos.], [website #id("0fb1bff"), API #id("20f1bb7")],
+  [Test], [Render, región Frankfurt: website estático, API en Docker, PostgreSQL 16 privado, tarea programada de recordatorios. Solo datos sintéticos.], [website y API #id("0fb1bff")],
   [Teléfono], [Android de Dirección, con la APK instalada desde los prereleases de GitHub, contra la API de test.], [estable 0.13.2; probadas 0.14.0-candidata.1, 0.15.0-candidata.1 y 0.17.0-candidata.2],
 )
 
-La API de test está en #id("20f1bb7") porque el último cambio integrado (#id("0fb1bff"), PR \#192) no toca la API.
-Las verificaciones remotas de sesión y de borradores se hicieron sobre despliegues intermedios del mismo día, con el
+La API de test corrió #id("20f1bb7") hasta las 02:33 del 2026-10-20, cuando Render la reconstruyó en #id("0fb1bff"):
+es el mismo estado de API, porque el último cambio integrado (PR \#192) solo toca el website. Las verificaciones remotas de sesión y de borradores se hicieron sobre despliegues intermedios del mismo día, con el
 mismo comportamiento en esas partes; cada ficha dice exactamente sobre qué versión.
 
 == Cómo se obtuvo cada resultado
