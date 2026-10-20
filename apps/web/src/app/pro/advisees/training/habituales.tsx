@@ -78,29 +78,39 @@ export type EjerciciosHabituales = ReturnType<typeof useEjerciciosHabituales>;
 
 // ─── Sesiones habituales ───────────────────────────────────────────────────────────────────────
 
-/** Todas las sesiones habituales del profesional (hasta cuatro páginas), para el selector y para detectar el nombre repetido. */
+/**
+ * Todas las sesiones habituales del profesional (hasta cuatro páginas), para el selector y para detectar el nombre
+ * repetido. Una página que no se pudo leer deja lo que se leyó y lo dice (`lectura: 'falla'`): una lectura que falla no es
+ * «todavía no guardaste ninguna» (encargo de consolidación, bloque 5). Un 403 (un profesional sin Entrenamiento) no es
+ * una falla: no hay sesiones habituales que ofrecer.
+ */
 export function useSesionesHabituales(token: string) {
-  const [sesiones, setSesiones] = useState<readonly SesionHabitual[]>([]);
+  const [estado, setEstado] = useState<{ readonly sesiones: readonly SesionHabitual[]; readonly lectura: 'cargando' | 'lista' | 'falla' }>({ sesiones: [], lectura: 'cargando' });
   // Una respuesta vieja no pisa una recarga posterior.
   const generacion = useRef(0);
   const recargar = useCallback(async () => {
     const esta = ++generacion.current;
+    // Volver a leer después de una falla se ve como lectura en curso; después de guardar una, la lista no titila.
+    setEstado((e) => (e.lectura === 'falla' ? { sesiones: e.sesiones, lectura: 'cargando' } : e));
     const todas: SesionHabitual[] = [];
     let cursor: string | undefined;
+    let fallo = false;
     for (let pagina = 0; pagina < 4; pagina += 1) {
       const r = await api.listarSesionesHabituales(token, cursor ? { cursor } : {});
-      // Un 403 (profesional sin Entrenamiento) o un fallo deja lo que se pudo leer: el selector es una comodidad.
-      if (!r.ok) break;
+      if (!r.ok) {
+        fallo = !(r.tipo === 'API' && r.status === 403);
+        break;
+      }
       todas.push(...r.datos.data);
       if (!r.datos.page.hasMore || !r.datos.page.nextCursor) break;
       cursor = r.datos.page.nextCursor;
     }
-    if (esta === generacion.current) setSesiones(todas);
+    if (esta === generacion.current) setEstado({ sesiones: todas, lectura: fallo ? 'falla' : 'lista' });
   }, [token]);
   useEffect(() => {
     void recargar();
   }, [recargar]);
-  return { sesiones, recargar };
+  return { sesiones: estado.sesiones, lectura: estado.lectura, recargar };
 }
 
 const mismoNombre = (a: string, b: string): boolean => nombreNormalizadoDePlantilla(a) === nombreNormalizadoDePlantilla(b);
@@ -224,7 +234,8 @@ export function InsertarSesionHabitual({ id, sesiones, onInsertar }: { id: strin
   return (
     <div className="campo">
       <label htmlFor={`${id}-habitual`}>{COPY_HABITUALES.agregarSesion}</label>
-      <select id={`${id}-habitual`} value={elegida} onChange={(e) => setElegida(e.target.value)}>
+      {/* Se muestra porque la persona lo acaba de pedir («Agregar ▾ → Una sesión habitual»): el foco va a la lista. */}
+      <select id={`${id}-habitual`} value={elegida} onChange={(e) => setElegida(e.target.value)} autoFocus>
         <option value="">—</option>
         {sesiones.map((h) => (
           <option key={h.presetId} value={h.presetId}>

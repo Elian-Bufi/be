@@ -419,7 +419,8 @@ export function LineaDeTiempo() {
       {primera ? (
         <>
           {entradas.length === 0 ? (
-            hayFiltros || corte ? (
+            // Con el período vacío, lo que falta no es una coincidencia: se dice el vacío del período, no «Hay 0 hechos».
+            (hayFiltros || corte) && todoElPeriodo !== 0 ? (
               <EstadoVacio
                 titulo="Ningún hecho coincide con los filtros."
                 accion={

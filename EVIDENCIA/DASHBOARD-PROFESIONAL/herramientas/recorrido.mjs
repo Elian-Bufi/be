@@ -9832,7 +9832,9 @@ async function planesDeNutricion() {
     const conOpcionNueva = await elEditor();
     await escribirElNombre(NOMBRE_DE_LA_OPCION_NUEVA);
     const trasNombrarLaOpcionNueva = await elEditor();
-    await enElEditor('[data-agregar-comida]', 'Agregar comida');
+    // Desde el bloque 5 del encargo de consolidación, «Agregar comida» es un menú: una vacía o una habitual.
+    await abrirMenuDelEditor('.editor-del-plan__al-pie');
+    await elegirDelMenu('Una comida vacía');
     const conComidaNueva = await elEditor();
     await captura(page, v, 'editor-una-comida-recien-agregada-1440-claro');
     await escribirElNombre(NOMBRE_DE_LA_COMIDA_NUEVA);

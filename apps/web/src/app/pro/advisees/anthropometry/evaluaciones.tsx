@@ -64,11 +64,21 @@ type Lista = {
   readonly tomas: readonly ResumenDeEvaluacionApi[];
   /** Falso si la lista llegó cortada: la cantidad es «al menos». */
   readonly completa: boolean;
-  /** La toma en preparación, si hay una y se pudo leer. */
-  readonly borrador: { readonly mediciones: number } | null;
+  /**
+   * La toma en preparación, si hay una; `null` si no hay; `'sin-leer'` si su lectura falló: entonces no se sabe si hay
+   * una, y el botón no la anuncia ni dice que se prepara una nueva (bloque 5 del encargo de consolidación).
+   */
+  readonly borrador: { readonly mediciones: number } | null | 'sin-leer';
 };
 
 type Detalle = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly toma: EvaluacionAntropometricaApi } | { readonly tipo: 'no-disponible' } | { readonly tipo: 'fallo' };
+
+/** La toma en preparación según su lectura: la que hay, con sus mediciones; ninguna; o `'sin-leer'` si la lectura falló. */
+function borradorDe(r: Awaited<ReturnType<typeof api.listarBorradoresAntropometricos>>): Lista['borrador'] {
+  if (!r.ok) return 'sin-leer';
+  const b = r.datos.data[0];
+  return b ? { mediciones: b.summary.measurementCount } : null;
+}
 
 /** «24 sept 2026 · 08:40»: el día y la hora de la toma, como en la lista de la maqueta. */
 const momentoDeLaToma = (iso: string): string => `${dia(iso)} · ${horaDelDia(new Date(iso))}`;
@@ -90,16 +100,22 @@ export function VistaDeEvaluaciones() {
     ]);
     if (sesionPerdida(tomas) || sesionPerdida(borradores)) return;
     if (!tomas.ok) return setLista(tomas as Resultado<never>);
-    // La toma en preparación es un dato aparte: si su lectura falla, la lista se muestra igual y el botón no la anuncia.
-    const borrador = borradores.ok ? (borradores.datos.data[0] ?? null) : null;
+    // La toma en preparación es un dato aparte: si su lectura falla, la lista se muestra igual y se dice que no se supo.
     setLista({
       ok: true,
       datos: {
         tomas: tomasDeLaMasNueva(tomas.datos.data.filter((t) => t.state === 'REGISTERED')),
         completa: tomas.datos.completa,
-        borrador: borrador ? { mediciones: borrador.summary.measurementCount } : null,
+        borrador: borradorDe(borradores),
       },
     });
+  }, [token, asesoradoId, sesionPerdida]);
+
+  /** Vuelve a leer solo la toma en preparación: la lista de tomas ya está a la vista y no se toca. */
+  const releerElBorrador = useCallback(async () => {
+    const borradores = await api.listarBorradoresAntropometricos(token, asesoradoId);
+    if (sesionPerdida(borradores)) return;
+    setLista((l) => (l?.ok ? { ok: true, datos: { ...l.datos, borrador: borradorDe(borradores) } } : l));
   }, [token, asesoradoId, sesionPerdida]);
 
   useEffect(() => {
@@ -186,10 +202,21 @@ export function VistaDeEvaluaciones() {
         ) : null}
         {lista?.ok ? (
           <div className="tomas-del-area__preparar">
-            {lista.datos.borrador ? <p className="nota">{C.hayUnaTomaEnPreparacion(lista.datos.borrador.mediciones)}</p> : null}
+            {lista.datos.borrador === 'sin-leer' ? (
+              <p className="nota" role="alert">
+                {C.preparacionNoSeLeyo}{' '}
+                <button type="button" className="boton boton--enlace" onClick={() => void releerElBorrador()}>
+                  {COPY.reintentar}
+                  <span className="visualmente-oculto"> {C.preparacionDeQue}</span>
+                </button>
+              </p>
+            ) : lista.datos.borrador ? (
+              <p className="nota">{C.hayUnaTomaEnPreparacion(lista.datos.borrador.mediciones)}</p>
+            ) : null}
+            {/* Sin saber si hay una, el botón no dice ni «seguir» ni «preparar una nueva»: la preparación la vuelve a leer. */}
             <button type="button" className="boton boton--primario" onClick={() => irA('preparacion')}>
-              <Icono nombre={lista.datos.borrador ? 'borrador' : 'mas'} tamano={18} />
-              {lista.datos.borrador ? C.retomarBorrador : C.prepararUnaToma}
+              <Icono nombre={lista.datos.borrador && lista.datos.borrador !== 'sin-leer' ? 'borrador' : 'mas'} tamano={18} />
+              {lista.datos.borrador === 'sin-leer' ? C.prepararOSeguirUnaToma : lista.datos.borrador ? C.retomarBorrador : C.prepararUnaToma}
             </button>
           </div>
         ) : null}

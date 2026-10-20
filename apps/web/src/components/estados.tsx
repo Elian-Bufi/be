@@ -46,6 +46,8 @@ export function BloqueDeEstado({
   children,
   onReintentar = null,
   deQue,
+  textoDelBoton = COPY.reintentar,
+  rol,
 }: {
   /** Va en la clase del bloque. `cargando` se dibuja con borde punteado y se anuncia al lector de pantalla. */
   tipo: string;
@@ -55,9 +57,13 @@ export function BloqueDeEstado({
   onReintentar?: (() => void) | null;
   /** Qué se reintenta, para el lector de pantalla cuando hay varios «Reintentar» en la vista. */
   deQue?: string;
+  /** Lo que dice el botón, si no alcanza con «Reintentar»: «Reintentar lo que faltó» dice qué se vuelve a pedir. */
+  textoDelBoton?: string;
+  /** Cómo se anuncia al aparecer. Por omisión, solo `cargando` (como estado). */
+  rol?: 'alert' | 'status';
 }) {
   return (
-    <div className={`estado-de-grafico estado-de-grafico--${tipo}`} role={tipo === 'cargando' ? 'status' : undefined}>
+    <div className={`estado-de-grafico estado-de-grafico--${tipo}`} role={rol ?? (tipo === 'cargando' ? 'status' : undefined)}>
       <Icono nombre={icono} tamano={24} />
       <div className="estado-de-grafico__texto">
         {titulo ? <p className="estado-de-grafico__titulo">{titulo}</p> : null}
@@ -66,7 +72,8 @@ export function BloqueDeEstado({
       {onReintentar ? (
         <button type="button" className="boton boton--secundario boton--compacto" onClick={onReintentar}>
           <Icono nombre="actualizar" tamano={18} />
-          Reintentar{deQue ? <span className="visualmente-oculto"> {deQue}</span> : null}
+          {textoDelBoton}
+          {deQue ? <span className="visualmente-oculto"> {deQue}</span> : null}
         </button>
       ) : null}
     </div>
@@ -90,7 +97,12 @@ export function VerMas<T>({ estado, onVerMas }: { estado: EstadoDeLista<T>; onVe
   if (estado.tipo !== 'listo' || !estado.siguiente) return null;
   return (
     <div className="acciones">
-      {estado.mas === 'error' ? <p className="nota">{COPY.errorDeVista}</p> : null}
+      {/* Lo que falló es traer los siguientes, no la vista: lo que ya se ve sigue ahí. */}
+      {estado.mas === 'error' ? (
+        <p className="nota" role="alert">
+          {COPY.errorAlTraerMas}
+        </p>
+      ) : null}
       <button type="button" className="boton boton--secundario" onClick={onVerMas} disabled={estado.mas === 'cargando'} aria-busy={estado.mas === 'cargando'}>
         {estado.mas === 'cargando' ? 'Cargando…' : estado.mas === 'error' ? COPY.reintentar : 'Ver más'}
       </button>

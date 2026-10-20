@@ -251,7 +251,7 @@ function Sesiones({
   const tituloDeLaAbierta = abierta ? tituloDeLaSesion(abierta.sesion) : '';
   const contenidoDeLaAbierta =
     abierta && ejecucionAbierta ? (
-      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} onReintentarLosPlanes={onReintentarLosPlanes} />
+      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} />
     ) : null;
 
   // A Analizar va con el período que se está mirando, si es uno elegido: allá el ejercicio se elige de nuevo.
@@ -499,13 +499,16 @@ function seRegistro(x: EjecucionDeEntrenamiento): string {
   return elMismoDia ? `a las ${horaEnZona(x.recordedAt, x.timeZone)}` : `el ${fecha(x.recordedAt)}`;
 }
 
+/**
+ * El detalle de una sesión. Lo que no se pudo leer (lo indicado, los tiempos) se dice acá sin un «Reintentar» propio: la
+ * lectura de lo indicado se reintenta arriba de la lista, y la de los tiempos, en «Tiempos de la sesión» (bloque 5).
+ */
 function DetalleDeLaSesion({
   fila,
   ejecucion: x,
   identidad,
   objetivos,
   version,
-  onReintentarLosPlanes,
 }: {
   fila: FilaDeSesion;
   ejecucion: EjecucionDeEntrenamiento;
@@ -513,7 +516,6 @@ function DetalleDeLaSesion({
   objetivos: ObjetivosDeLaVersion | null;
   /** «versión 3», o «activado el 3 ago» si el número no se pudo saber. */
   version: string;
-  onReintentarLosPlanes: () => void;
 }) {
   const tiempos = useTiemposDeLaSesion(x.executionId);
   const vigente = x.effectiveView.kind === 'CORRECTED' ? (x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) ?? null) : null;
@@ -546,8 +548,8 @@ function DetalleDeLaSesion({
       {fila.fuente.tipo === 'no-resoluble' ? <p>{COPY_COMPARACION.vistaNoResoluble}</p> : null}
       {fila.clase === 'NO_REALIZADA' ? <p className="nota">{fila.series}. {fila.frente}.</p> : null}
       {!fila.seLeyoLoIndicado && fila.ejercicios.length > 0 ? (
-        <BloqueDeEstado tipo="error" icono="servicio" titulo="No pudimos leer lo indicado de esta sesión" onReintentar={onReintentarLosPlanes} deQue="la lectura de lo indicado">
-          Lo registrado está abajo. De lo indicado se ven las repeticiones; faltan la carga y el RIR de cada serie, y por eso no se compara.
+        <BloqueDeEstado tipo="error" icono="servicio" titulo="No pudimos leer lo indicado de esta sesión">
+          Lo registrado está abajo. De lo indicado se ven las repeticiones; faltan la carga y el RIR de cada serie, y por eso no se compara. Se vuelve a leer con «Reintentar», arriba de la lista de sesiones.
         </BloqueDeEstado>
       ) : null}
 
