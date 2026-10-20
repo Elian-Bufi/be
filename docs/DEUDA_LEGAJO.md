@@ -151,6 +151,7 @@
 | DL-145 | Pedido de Dirección · 2026-10-18 (análisis de UX del espacio profesional) | B10-06 · 10-B04 · DL-025 · DL-047 · DL-113 · DL-137 · DL-140 · DL-143 | El profesional no encontraba dónde crear el plan: el plan exige un objetivo y el objetivo una evaluación, y la pantalla no lo guiaba; 32 ayudas explicaban las pantallas | **IMPLEMENTADO** 2026-10-18: «Empezar el plan», los verbos de los pendientes, la Guía del espacio profesional, la limpieza de textos y la ficha según el momento; a ratificar |
 | DL-146 | Pedido de Dirección · 2026-10-19 (sobre DL-145) | DL-145 · DL-113 · DL-047 · 10-B04 §28, §41 · B10-05 CAND-NUT-D · WCAG 2.2 1.4.13 | Dirección no quiere sacar la ayuda de las pantallas, sino achicarla a los conceptos complejos, y suma las pistas al pasar el mouse; delega el resto de las correcciones del análisis | **IMPLEMENTADO** 2026-10-19: la ayuda corta en cada pantalla, las pistas, el área ya elegida al invitar, «Mis ejercicios» en grilla, la evaluación más corta y «Activo · con acceso» y «Nueva versión del plan»; a ratificar |
 | DL-147 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3) | 07:789 y §43-bis · 08 §26 · DL-012 · DL-030 · DL-138 · OWASP Session Management | Recargar el website obligaba a volver a entrar: el token vivía solo en memoria (DL-012, opción A) | **IMPLEMENTADO** 2026-10-19: reanudación con cookie HttpOnly, Partitioned y rotativa, solo para /api/v1/auth/sessions; el Bearer sigue en memoria; a ratificar y a verificar en el despliegue |
+| DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **IMPLEMENTADO** 2026-10-19 en la sesión enfocada (PR en borrador, sin APK nueva): las reglas de la 0.13.2, dichas (R-1 a R-6); falta el teléfono |
 
 ---
 
@@ -4840,3 +4841,47 @@ Las respuestas no cambian de forma, y la APK instalada no se entera.
 - Dirección ratifica D-1 a D-7;
 - la verificación en el despliegue real pasa en los tres navegadores;
 - se decide si se pide un dominio propio.
+
+---
+
+## DL-151 — La sustitución de ejercicios vuelve a la sesión enfocada de la APK
+
+**Prioridad:** alta (pedido de Dirección del 2026-10-19: la APK estable la tiene y las candidatas no).
+
+**Documentos:**
+- **09v10:1116-1121 y REG-06-130:** sustituir es legítimo y no es un error; quedan lo prescripto y lo realizado.
+- **B10-06:762-778:** buscar el ejercicio que se hizo y mostrar las dos puntas (en BE, «Planificado» y «Ejecutado», DL-085).
+- **DL-122 a DL-124:** la sesión enfocada por serie y los tiempos con certeza.
+- **DL-130 y DL-141:** la búsqueda con el texto en el cuerpo y los nombres alternativos.
+
+**Qué pasó.**
+- La 0.13.2 (`be-apk-0.13.2`, 4b49d43) ofrecía «Sustituir ejercicio» en la tarjeta de cada ejercicio: buscar en el catálogo, «Confirmar sustitución: …» y seguir registrando con el realizado.
+- Al rehacer la sesión enfocada (e6bd769, 2026-10-06) la acción se quitó sin una decisión registrada. Los textos quedaron en `copy-entrenamiento.ts`, y la API y las pantallas de lectura siguieron mostrando «Sustituido». Las candidatas 0.15 a 0.17 no la ofrecen.
+
+**Lo que se recupera** (en `wp-apk-sustitucion`, sin APK nueva):
+- «Sustituir ejercicio» sobre el ejercicio activo, en un diálogo: se busca con API-TRN-13-BUSQUEDA (la 0.13.2 usaba API-TRN-13, con el texto en la URL), se elige con «Confirmar sustitución: …» y se siguen registrando las series sobre el ejecutado. La búsqueda no ofrece el planificado en ninguna versión: sería sustituirlo por sí mismo.
+- La tarjeta del ejercicio, «Ver rutina» y el resumen antes de finalizar dicen «Ejecutado: …» con la insignia «Sustituido», debajo del planificado.
+- «Volver al planificado», que la 0.13.2 no tenía: sin él, una sustitución elegida por error, sin series, dejaba la sesión sin poder confirmarse.
+
+**Las reglas, que son las de la 0.13.2, dichas** (provisorio en código, a ratificar):
+- **R-1 · Lo planificado no se pisa.** Solo viaja `performedExerciseVersionId`. La API calcula `substituted`, y el plan no cambia.
+- **R-2 · Un ejercicio, un realizado.** El contrato no admite uno por serie. Como en la 0.13.2, las series ya registradas se conservan (mismo número, mismos datos) y pasan a contar como el ejecutado. Lo nuevo es que antes se pregunta, diciendo cuántas: no se reasignan en silencio. Cuentan también las del teléfono que todavía no se enviaron, que viajan después al ejercicio con su ejecutado.
+- **R-3 · Antes de la primera serie** se guarda el ejercicio sin series, como en la 0.13.2. API-TRN-18 no confirma un ejercicio sin series (`SET_REQUIRED`): la APK lo dice antes de finalizar, con los dos nombres y la salida (registrar una serie, o volver al planificado, que lo saca del borrador).
+- **R-4 · Los tiempos no se tocan.** Los eventos citan la prescripción. La sustitución no arma eventos y no cambia el ejercicio activo ni la fila enfocada: el temporizador, el descanso o la serie cronometrada en curso siguen igual.
+- **R-5 · Necesita conexión.** Buscar y guardar son pedidos a la API: la sustitución no queda en el teléfono para después. Se guarda después de mandar lo pendiente, con la versión vigente; un conflicto o un resultado incierto se relee y se dice en el diálogo.
+- **R-6 · Registrada por ejercicio o sesión** (la forma anterior) no se ofrece: la pantalla ya propone pasar a registrar por serie.
+
+**Lo que no se hace:** las alternativas aprobadas por el profesional (PF-03), las equivalencias de carga (el plan de cada serie sigue siendo el del planificado) y cambios en la API o el website.
+
+**Pruebas:**
+- `scripts/sustitucion-de-ejercicio.test.mjs` (14): lo que se manda, cada regla, lo que se ofrece en la búsqueda, el almacén con una corrida en curso y el resumen.
+- `test/integration/sustitucion-en-la-sesion.int-spec.ts` (3, en la CI): lo que manda la APK, contra la API real.
+  - La búsqueda del asesorado, también por un nombre alternativo.
+  - Antes y después de la primera serie, y volver al planificado.
+  - El plan y los tiempos intactos.
+  - `SET_REQUIRED`, `EXERCISE_REFERENCE_INVALID` y las dos puntas en lo confirmado, para el titular y el profesional.
+- La guardia T13 de la sesión enfocada suma el módulo nuevo.
+
+**Lo que falta:** probarlo en el teléfono con la próxima candidata. Este PR no trae APK: el diálogo con el teclado, TalkBack, sin conexión y una sustitución con un descanso en curso.
+
+**Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
