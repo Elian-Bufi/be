@@ -686,11 +686,15 @@ export async function correrRecorridos({ estado, salida, chrome, solo = null }) 
     executablePath: chrome,
     headless: true,
     args: ['--lang=es-AR', '--no-first-run', ...(process.env.CI ? ['--no-sandbox'] : [])],
+    // DIAGNÓSTICO: la salida de errores de Chrome al log, para ver si se reinicia algún proceso (el de red).
+    dumpio: true,
   });
+  console.log(`DIAGNÓSTICO: ${await navegador.version()}`);
   const resultados = [];
   try {
     for (const [nombre, fn] of Object.entries(TODOS)) {
       if (solo && !solo.includes(nombre)) continue;
+      console.log(`▶ ${nombre} ${new Date().toISOString()}`);
       const contexto = await navegador.createBrowserContext();
       const p = await contexto.newPage();
       await p.setViewport({ width: 1440, height: 900 });
