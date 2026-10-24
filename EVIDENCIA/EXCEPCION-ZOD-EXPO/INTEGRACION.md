@@ -1,7 +1,33 @@
-# Integración de #201, #202 y #206: procedimiento (preparado el 2026-10-24, no ejecutado)
+# Integración de #201, #202 y #206: procedimiento (preparado y ejecutado el 2026-10-24)
 
-**Para qué es.** Es la fase que Dirección todavía no autorizó: integrar en `main` y desplegar `test`. La ratificación de
-la excepción del zod (DL-114, 2026-10-24) no la autoriza. Nada de lo que sigue se ejecutó.
+**Para qué es.** Es el procedimiento con que se integraron #202, #201 y #206 en `main` y se desplegó `test`.
+- **Se preparó** el 2026-10-24 a la tarde. Dirección ya había ratificado la excepción del zod (DL-114), pero todavía no había autorizado integrar.
+- **Se ejecutó** esa misma noche, con su autorización.
+
+Primero va lo que pasó, y después el procedimiento tal como se preparó. Al prepararlo, este párrafo decía: «Es la fase que Dirección todavía no autorizó: integrar en `main` y desplegar `test`. La ratificación de la excepción del zod (DL-114, 2026-10-24) no la autoriza. Nada de lo que sigue se ejecutó.»
+
+## La ejecución (2026-10-24)
+
+Las horas están en UTC; en Argentina son tres horas menos.
+
+| Paso | Qué se hizo | Resultado |
+|---|---|---|
+| 1 | #202 en la rama de #201, con commit de merge | `bb54e64` (19:19), con el mismo árbol que `fc7762f`. La rama de #202 quedó en pie mientras #206 dependía de ella |
+| 2 | La CI de #201 sobre `bb54e64` ([40124761941](https://github.com/Elian-Bufi/be/actions/runs/40124761941)) | Los cuatro obligatorios en verde, y la auditoría con la procedencia del zod y el bundle de Android sin `node_modules/zod`. `recorridos` falló dos veces en `faltaUnaParte`: se frenó, como dice «El intermitente conocido» |
+| 2 bis | El diagnóstico y la corrección, #207. Dirección autorizó integrarla en la rama de #201 | La causa: interceptar la red del navegador hacía caer el proceso de red del Chrome de la CI. Con la simulación dentro de la página, 20/20 en el diagnóstico y CI completa en verde. Merge `7b43131` (20:47). La CI de #201 sobre esa cabeza ([40131390877](https://github.com/Elian-Bufi/be/actions/runs/40131390877)): los cinco trabajos en verde al primer intento |
+| 3 | #201 en `main`, con commit de merge | `361e8d1` (20:59), con el mismo árbol que `7b43131`. La CI de `main` ([40132199770](https://github.com/Elian-Bufi/be/actions/runs/40132199770)) dio verde, y Render desplegó `be-api` y `be-web` |
+| 4 | Comprobar `test` | La API y el website sirven `361e8d1`, con readiness, base y migraciones OK. Con una cuenta sintética, el inicio de sesión, la cartera y una ficha funcionan, sin errores de la API ni de consola. Un campo no declarado da 400 UNKNOWN_FIELD |
+| 5 | #206: base a `main` y al día, con el merge `6455ed2` | Su árbol es el del ensayo `327c321` más #207. CI del push ([40133235919](https://github.com/Elian-Bufi/be/actions/runs/40133235919)) y del PR ([40133240532](https://github.com/Elian-Bufi/be/actions/runs/40133240532)): verde, con API 157/157 |
+| 6 | #206 en `main` | `88129cf` (21:24). La CI de `main` ([40134088977](https://github.com/Elian-Bufi/be/actions/runs/40134088977)) dio verde, y Render desplegó solo `be-api` |
+| 7 | Comprobar `test` otra vez | La API sirve `88129cf` y el website sigue en `361e8d1`, por los filtros de despliegue. Un cuerpo de 4,9 KB con 1.600 elementos recibió un solo TOO_BIG |
+
+**Lo que cambió respecto del procedimiento:** se agregó el paso 2 bis. La regla del intermitente se aplicó como estaba escrita: un solo reintento, y frenar si volvía a fallar. Fue la evidencia nueva la que justificó la corrección.
+
+**Las ramas:** al final se borraron las de los tres PR, la de #207 y `wp-verificacion-zod-expo-2026-10-24`, porque estaban enteras en `main`. Quedan como evidencia:
+- `wp-preintegracion-seguridad-2026-10-24`, el ensayo;
+- `wp-diagnostico-falta-una-parte-actual`, `-corregido` y `-sin-fetch`, el diagnóstico de #207.
+
+**Después, ese mismo día,** se integró aparte #198 (`2811991`, DL-152). La descripción de cada PR tiene su sección «Integración».
 
 ## Antes de empezar
 
