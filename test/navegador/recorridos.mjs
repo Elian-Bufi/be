@@ -529,6 +529,50 @@ async function accesoRevocado({ p, d }) {
 }
 
 /**
+ * Hace fallar en el navegador, con un 503, las lecturas GET de `caminos`, sin tocar la API ni ningún otro pedido.
+ *
+ * Usa el dominio Fetch de CDP con un patrón por camino: el navegador detiene solo esos pedidos. Antes se usaba
+ * `setRequestInterception`, que detiene TODOS los de la página y deja seguir los demás. Esos a veces fallaban en el
+ * navegador: no llegaban a la API, perdían la respuesta o salían sin la cookie de reanudación. El recorrido fallaba sin
+ * que el website ni la API tuvieran nada que ver; fue el intermitente del 23 y el 24/10.
+ * `dejarDeFallar` saca un camino, y sin caminos el navegador deja de detener pedidos.
+ */
+async function simularFallas(p, caminos) {
+  const cdp = await p.createCDPSession();
+  const fallan = new Set(caminos);
+  const cuerpo = Buffer.from(JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } })).toString('base64');
+  cdp.on('Fetch.requestPaused', ({ requestId, request }) => {
+    const simular = request.method === 'GET' && fallan.has(new URL(request.url).pathname);
+    const respuesta = simular
+      ? cdp.send('Fetch.fulfillRequest', {
+          requestId,
+          responseCode: 503,
+          responseHeaders: [
+            { name: 'Access-Control-Allow-Origin', value: WEB },
+            { name: 'Access-Control-Expose-Headers', value: 'x-request-id' },
+            { name: 'Vary', value: 'Origin' },
+            { name: 'Content-Type', value: 'application/json; charset=utf-8' },
+          ],
+          body: cuerpo,
+        })
+      : cdp.send('Fetch.continueRequest', { requestId });
+    // Si la página ya no espera el pedido (navegó), no hay nada que responder.
+    respuesta.catch(() => {});
+  });
+  const aplicar = () =>
+    fallan.size > 0
+      ? cdp.send('Fetch.enable', { patterns: [...fallan].map((c) => ({ urlPattern: `${API}${c}*`, requestStage: 'Request' })) })
+      : cdp.send('Fetch.disable');
+  await aplicar();
+  return {
+    async dejarDeFallar(camino) {
+      fallan.delete(camino);
+      await aplicar();
+    },
+  };
+}
+
+/**
  * Bloque 5: si falla UNA lectura (simulada en el navegador, sin tocar la API), la vista muestra lo que llegó, dice qué
  * falta, no lo confunde con «no hay» y «Reintentar lo que faltó» lo completa. En el Plan falla el objetivo vigente; en el
  * Resumen, el estado del seguimiento.
@@ -536,20 +580,7 @@ async function accesoRevocado({ p, d }) {
 async function faltaUnaParte({ p, d, salida }) {
   await entrar(p, d.pro.correo);
   const base = `/api/v1/advisees/${d.ase.id}/nutrition`;
-  const fallan = new Set([`${base}/objectives/effective`, `${base}/review-context`]);
-  await p.setRequestInterception(true);
-  p.on('request', (req) => {
-    if (req.isInterceptResolutionHandled()) return;
-    if (req.method() === 'GET' && fallan.has(new URL(req.url()).pathname)) {
-      return req.respond({
-        status: 503,
-        headers: { 'Access-Control-Allow-Origin': WEB, 'Access-Control-Expose-Headers': 'x-request-id', Vary: 'Origin' },
-        contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } }),
-      });
-    }
-    return req.continue();
-  });
+  const fallas = await simularFallas(p, [`${base}/objectives/effective`, `${base}/review-context`]);
 
   // El Plan: la versión activa a la vista, el aviso de lo que falta y nada de «crear versión» ni «primero el objetivo».
   await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
@@ -559,7 +590,7 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate((t) => document.body.innerText.includes(t), dominio.COPY_DEL_PLAN.primeroElObjetivo)), 'una falla no se dice como «no hay objetivo»');
   assert.ok(!(await p.$('[data-crear-version]')), 'mientras falta el objetivo, no se ofrece crear una versión');
   await captura(p, salida, 'plan-falta-el-objetivo-1440');
-  fallan.delete(`${base}/objectives/effective`);
+  await fallas.dejarDeFallar(`${base}/objectives/effective`);
   await clic(p, 'button', 'Reintentar lo que faltó');
   await p.waitForFunction(() => !document.body.innerText.includes('Falta una parte de esta vista'), { timeout: ESPERA });
   await elemento(p, '[data-crear-version]');
@@ -571,7 +602,7 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate(() => document.body.innerText.includes('No hay una revisión pendiente.'))), 'una falla no se dice como «no hay revisión pendiente»');
   assert.ok(await p.evaluate(() => /Versión \d+ · activada el/.test(document.body.innerText)), 'el plan activo sigue a la vista');
   await captura(p, salida, 'resumen-falta-el-seguimiento-1440');
-  fallan.clear();
+  await fallas.dejarDeFallar(`${base}/review-context`);
   await clic(p, 'button', 'Reintentar lo que faltó');
   await p.waitForFunction(() => !document.body.innerText.includes('No se pudo leer.'), { timeout: ESPERA });
   // Leído el estado del seguimiento: el plan activo lo abrió, y la revisión acordada (en 3 días) todavía no está pendiente.
