@@ -100,6 +100,7 @@ Cada decisión dice cinco cosas:
 - **Prueba.**
   - Con #201 (`1d7bb08`), la CI pasa todo menos la auditoría de la APK.
   - Con #202 (`916cb05`), la auditoría aprueba en los tres espacios. Se comprobó en local, porque la CI no corre en una rama apilada sobre otra.
+  - **Corregido el 24/10.** Esa versión no miraba de dónde venía el zod vulnerable: si la APK lo empezaba a usar, lo tapaba. Ahora la excepción exige, en cada corrida, que lo use solo la CLI de Expo y que no entre al bundle de Android. La cabeza `664f713` pasó la CI completa (40094444871). El detalle está en #202 y en DL-114.
   - La prueba nueva fija que la excepción acotada no vale en la API ni en el website.
 - **Límite.** Las excepciones vigentes vencen el 31/10, igual que la propuesta. Antes hay que revisar node-forge, que sigue sin corrección.
 - **Para medir la urgencia: un aviso presente no siempre es alcanzable.** *Alcanzable* quiere decir que el código vulnerable corre en BE. En criollo: tener la pieza fallada no es lo mismo que usarla.

@@ -22,7 +22,7 @@ Fuera de la carpeta están `docs/paquetes/WP-ADMINISTRACION.md` y la nota del 20
 | PR | Rama · cabeza | Sobre | Qué trae | CI de esa cabeza (corrida) |
 |---|---|---|---|---|
 | #201 | `seguridad/avisos-2026-10-23` · `1d7bb08` | `main` | Next 15.5.28, zod 4.6.6, multer 2.5.0 y body-parser 2.4.0 | Integración 823/823 · recorridos 12/12 · la auditoría falla solo en `@be/mobile` (40054692533) |
-| #202 | `seguridad/excepcion-zod-expo-propuesta` · `916cb05` | #201 | La excepción acotada que se propone (DL-114). **No integrar sin tu decisión** | La CI no corre en una rama apilada que no empieza con `wp-`. En local: 13/13, y la auditoría aprueba en los tres espacios |
+| #202 | `seguridad/excepcion-zod-expo-propuesta` · `664f713` | #201 | La excepción que se propone (DL-114). El 24/10 se corrigió: vale solo si se demuestra su procedencia en el lockfile y en el bundle de Android. **No integrar sin tu decisión** | La misma cabeza, por `wp-verificacion-zod-expo-2026-10-24`: todo en verde, también `verificar` con la auditoría (40094444871). El 23/10, `916cb05` se había probado solo en local |
 | #195 | `wp-apk-sustitucion` · `294e1a8` | `main` | DL-151: la sustitución vuelve a la APK, con el alcance dicho antes de confirmar | Integración 826/826 · recorridos 12/12; en la otra corrida, 11/12 por el intermitente (40047108877 y 40047106407) · APK 82/82 en local |
 | #198 | `wp-compatibilidad-apk` · `0c96901` | `main` | DL-152: lo que leen la 0.13.2 y la candidata.3, congelado | Integración 842/842 · recorridos 12/12 (40047186521 y 40047190501) |
 | #200 | `wp-nutricion-cobertura` · `a81ada6` | `main` | DL-153: las comidas del plan sin registro (UX-01) | Integración 824/824 · recorridos 13/13; en la otra, 12/13 por el intermitente (40051928558 y 40051923458) · dominio 848/848 en local |
@@ -30,7 +30,7 @@ Fuera de la carpeta están `docs/paquetes/WP-ADMINISTRACION.md` y la nota del 20
 | #204 | `wp-integracion-2026-10-23` · `f64083b` | `main` | #201, #195, #198, #200 y #203, juntos (sin #202). **No se integra** | Integración 851/851, con las lecturas congeladas de las dos APK · recorridos 14/14 · imagen y legajo (40058651719) |
 | #205 | `wp-docs-consolidacion-2026-10-23` | `main` | Esta carpeta, `QUE-FALTA` y `WP-ADMINISTRACION`. Solo documentación | En `4dfa23d`, que en código es igual a `main`: integración 823/823 · recorridos 12/12; en la otra corrida, 11/12 por el intermitente (40060760127 y 40060722378) |
 
-**`verificar` falla en todas, solo en `npm audit`.** Fallan los avisos publicados después del 20/10: en #201 y #204, solo el zod de la CLI de Expo; en las demás, también Next, multer y body-parser, que vienen de `main`. Los tipos, el OpenAPI sin deriva, las pruebas unitarias y los builds pasan.
+**`verificar` falla en todas, solo en `npm audit`, salvo en la cabeza de #202, que contiene a #201 y pasa entera desde el 24/10.** Fallan los avisos publicados después del 20/10: en #201 y #204, solo el zod de la CLI de Expo; en las demás, también Next, multer y body-parser, que vienen de `main`. Los tipos, el OpenAPI sin deriva, las pruebas unitarias y los builds pasan.
 
 ## Dependencias
 
@@ -42,7 +42,7 @@ Fuera de la carpeta están `docs/paquetes/WP-ADMINISTRACION.md` y la nota del 20
 
 ## Orden de integración propuesto (no se ejecutó)
 
-1. **#201**, y **#202** si lo aprobás, con la base cambiada a `main`.
+1. **#202 en la rama de #201**, si lo aprobás. Después, **#201 en `main`**, cuando su CI dé verde. El procedimiento está en #202, actualizado el 24/10. El 23/10 decía «con la base cambiada a `main`».
 2. **#195.** En la API y el dominio solo cambia comentarios, así que no toca lo que leen las APK.
 3. **#198**: desde ahí, cada PR prueba lo que leen las APK publicadas.
 4. **#200.**
