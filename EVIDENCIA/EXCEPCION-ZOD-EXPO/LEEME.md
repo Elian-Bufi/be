@@ -1,8 +1,26 @@
-# La excepción del zod de Expo: procedencia comprobada (DL-114, propuesta sin ratificar)
+# La excepción del zod de Expo: procedencia comprobada (DL-114, ratificada por Dirección el 2026-10-24)
 
 **Qué se responde acá.** Qué copia de zod es vulnerable en la APK, quién la usa, qué zod usa el dominio, cuál viaja en el
 bundle de Android, y qué hace fallar la excepción. Todo es del 2026-10-24, sobre la rama
 `seguridad/excepcion-zod-expo-propuesta` (sobre `seguridad/avisos-2026-10-23`, sobre `main` = `0fb1bff`).
+
+## La ratificación
+
+**Dirección de BE ratificó esta excepción el 2026-10-24, hasta el 2026-10-31 inclusive.** El texto completo está en
+`docs/DEUDA_LEGAJO.md`, DL-114.
+- **Qué ratificó.** Solo GHSA-mrhx-c7xc-m3w5, en el zod 3.25.76 de `node_modules/zod`, en la auditoría de `@be/mobile`,
+  con procedencia exclusiva `@expo/cli` ← `expo` ← `@be/mobile`.
+- **Con qué condiciones.** Se comprueban en cada auditoría, y todas son obligatorias:
+  - ninguna ruta adicional de producción usa esa copia;
+  - la copia no entra al bundle de Android;
+  - fail closed: una procedencia nueva bloquea, una comprobación imposible no aprueba, y vencida, bloquea.
+- **El vencimiento.** La CI compara la fecha UTC: vale hasta el 2026-10-31 a las 23:59:59 UTC (20:59:59 de Argentina).
+  Desde el 2026-11-01 la auditoría falla en toda rama, salvo una decisión nueva.
+- **Lo que no autoriza:**
+  - integrar en `main` ni desplegar `test`;
+  - otras excepciones, ni ampliar las de node-forge y braces o cambiar su vencimiento.
+
+  El procedimiento para cuando haya esa autorización está en `INTEGRACION.md`, en esta carpeta, y no se ejecutó.
 
 ## El aviso
 
