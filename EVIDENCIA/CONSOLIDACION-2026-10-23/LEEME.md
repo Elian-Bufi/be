@@ -1,5 +1,45 @@
 # Encargo de consolidación del 2026-10-23 · nota de reanudación
 
+## Estado actual · 2026-10-24, 19:30 -03
+
+> Esta sección es la vigente. Lo que sigue debajo, y los demás documentos de esta carpeta, son el registro del 23/10 y de
+> la tarde del 24/10, y se conservan como estaban, con sus fechas.
+
+- **La seguridad está integrada y desplegada,** con la autorización de Dirección del 24/10:
+  - #202 entró en la rama de #201 (`bb54e64`);
+  - #207 entró en la rama de #201 (`7b43131`);
+  - #201 entró en `main` (`361e8d1`);
+  - #206 entró en `main` (`88129cf`).
+
+  El paso a paso, con sus CI, está en `EVIDENCIA/EXCEPCION-ZOD-EXPO/INTEGRACION.md`, en «La ejecución».
+- **El intermitente `faltaUnaParte` quedó resuelto con la evidencia disponible (#207).**
+  - **La causa:** interceptar la red del navegador hacía caer el proceso de red del Chrome de la CI.
+  - **La evidencia:** simulando las fallas dentro de la página, 20/20 en el diagnóstico y CI completa en verde. Después pasó en todas las CI.
+  - **El límite:** no es una garantía definitiva. Si vuelve a fallar, se trata como una falla nueva.
+- **#198 está integrado y desplegado** (`2811991`, DL-152).
+  - Las 44 operaciones de la 0.13.2 y las 80 de la 0.17.0-candidata.3 se leen con lo congelado, contra la API de hoy, rechazos incluidos.
+  - Los archivos congelados no se regeneraron: siguen atados a sus tags.
+- **`test` sirve la API y el website en `2811991`.**
+  - Se comprobó el 24/10 a las 19:20 -03: readiness, base y migraciones OK, y con una cuenta sintética, el inicio de sesión, la cartera y una ficha.
+  - Este documental (#205) no despliega: `main` avanza y `test` queda en `2811991`.
+- **Pendiente:**
+  - **PR funcionales, sin integrar:**
+    - #195, la sustitución en la APK (DL-151);
+    - #200, UX-01 (DL-153);
+    - #203, UX-02 (DL-154), sobre #200.
+
+    Cada uno necesita un merge de `main` y las decisiones de Dirección que tiene anotadas. #204 fue una prueba y no se integra.
+  - **Pruebas humanas, sin hacer:**
+    - el `GUION-DE-VERIFICACION.md` entero: el website y el teléfono;
+    - el teléfono necesita una candidata nueva, que requiere autorización;
+    - la prueba con profesionales (DL-150).
+  - **DL-114.** Las excepciones del zod de la CLI de Expo y de node-forge vencen el 2026-10-31 a las 21:00 -03, y renovarlas o no lo decide Dirección. El aviso de braces se retiró el 23/10.
+  - **WP-ADMINISTRACION** sigue a definir. Integrar su documento no aprueba sus decisiones ni autoriza implementarlo.
+
+## Registro del 2026-10-23, con lo agregado el 24/10 a la tarde
+
+> Desde acá hasta el final, la nota tal como quedó antes de la integración.
+
 **Dónde estamos.** Lo del encargo está en seis PR en borrador, más este documental (#205). La combinación se probó junta en #204, que no se integra. Nada se integró ni se desplegó. Antes de integrar hay que decidir la excepción de #202: la auditoría de dependencias frena la CI de toda rama.
 
 **Qué hay en esta carpeta:**

@@ -1,5 +1,27 @@
 # Matriz de estado reconciliada · 2026-10-23
 
+## Estado actual · 2026-10-24, 19:30 -03
+
+> Esta tabla es la vigente para lo que cambió desde el 23/10. La matriz de abajo es el registro del 23/10, con lo
+> agregado el 24/10 a la tarde, y se conserva como estaba.
+
+| Capacidad o pendiente | Implementación | Verificación | Referencia |
+|---|---|---|---|
+| Dependencias con avisos nuevos: Next 15.5.28, zod 4.6.6, multer 2.5.0 y body-parser 2.4.0 | **Integrado y desplegado** | Automática: la CI de `main` [40132199770](https://github.com/Elian-Bufi/be/actions/runs/40132199770). Remota: `test`, comprobado | #201 · merge `361e8d1` |
+| La excepción del zod 3 de la CLI de Expo, solo con su procedencia comprobada | **Integrada.** Ratificada el 24/10; vence el 2026-10-31 | Automática: cada corrida de la auditoría comprueba la procedencia y que el bundle de Android no tenga `node_modules/zod` | #202 · merge `bb54e64` · DL-114 |
+| La validación de cuerpos ya no junta miles de errores | **Integrado y desplegado,** solo en la API | Automática: la CI [40134088977](https://github.com/Elian-Bufi/be/actions/runs/40134088977). Remota: en `test`, un cuerpo con 1.600 elementos da un solo TOO_BIG | #206 · merge `88129cf` |
+| El recorrido `faltaUnaParte` | **Integrada la corrección.** El incidente quedó resuelto con la evidencia disponible | Automática: 20/20 en el diagnóstico y CI completa en verde. Pasó en las cinco CI de la integración y en las de #198. No es una garantía definitiva | #207 · merge `7b43131` |
+| Las APK publicadas siguen leyendo la API | **Integrado y desplegado** | Automática: las 44 operaciones de la 0.13.2 y las 80 de la candidata.3, con lo congelado, contra la API de hoy (CI [40136300963](https://github.com/Elian-Bufi/be/actions/runs/40136300963) y de `main` [40137225552](https://github.com/Elian-Bufi/be/actions/runs/40137225552)) | #198 · merge `2811991` · DL-152 |
+| El ambiente `test` | La API y el website en `2811991` | Remota, el 24/10 a las 19:20 -03: readiness, base y migraciones OK; inicio de sesión, cartera y ficha con una cuenta sintética | — |
+| La sustitución de ejercicios en la APK | Preparado en PR, **sin integrar** | La de su PR, del 23/10 | #195 · DL-151 |
+| UX-01 y UX-02 | Preparado en PR, **sin integrar** | Las de sus PR, del 23/10 | #200 y #203 · DL-153 y DL-154 |
+| Las pruebas humanas: website, teléfono y profesionales | **Sin hacer** | — | `GUION-DE-VERIFICACION.md` · DL-150 |
+| Las excepciones de DL-114: el zod de Expo y node-forge | Integradas; **vencen el 2026-10-31 a las 21:00 -03** | El aviso de braces se retiró el 23/10 | Decisión de Dirección |
+
+## Registro del 2026-10-23, con lo agregado el 24/10 a la tarde
+
+> Desde acá hasta el final, la matriz tal como quedó antes de la integración.
+
 **Base que se tomó:**
 - `main` = `0fb1bff` (2026-10-20 02:22 -03).
 - El ambiente `test` corre ese commit: la API (`/health/ready`: aplicación 0.11.1, construida el 2026-10-20 05:33 UTC) y el website (el pie dice `0fb1bff`).

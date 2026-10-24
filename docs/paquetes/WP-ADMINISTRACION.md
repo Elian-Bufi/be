@@ -2,7 +2,7 @@
 
 **Registrado el 2026-10-23**, por el encargo de consolidación de Dirección (punto 8).
 
-**Estado: a definir. No está autorizado a implementarse.** Este documento solo dice qué hay, de qué depende y qué falta decidir. Siguiendo la regla de ACTA-DIR-034, antes del primer commit hace falta una definición con sus IDs: RF, UC, API, UX, pruebas y lo que queda afuera.
+**Estado: a definir. No está autorizado a implementarse.** Integrar este documento en `main` (#205, 2026-10-24) no aprueba sus decisiones, D-1 a D-7, ni autoriza implementarlo. Este documento solo dice qué hay, de qué depende y qué falta decidir. Siguiendo la regla de ACTA-DIR-034, antes del primer commit hace falta una definición con sus IDs: RF, UC, API, UX, pruebas y lo que queda afuera.
 
 ## La intención
 

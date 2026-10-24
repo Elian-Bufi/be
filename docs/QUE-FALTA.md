@@ -1,5 +1,17 @@
 # Qué falta desarrollar en BE
 
+> **Nota del 2026-10-24, a la noche.** Desde la nota del 23/10, se integró y se desplegó en `test`, con la autorización de
+> Dirección:
+> - las dependencias con avisos nuevos (#201);
+> - la excepción del zod de la CLI de Expo, con su procedencia comprobada (#202, DL-114);
+> - la validación acotada de cuerpos (#206);
+> - la corrección del recorrido intermitente `faltaUnaParte` (#207);
+> - la compatibilidad de las APK publicadas (#198, DL-152).
+>
+> `test` sirve la API y el website en `2811991`. Siguen sin integrar #195, #200 y #203, y sin hacer las pruebas humanas.
+> Las excepciones de DL-114 vencen el 2026-10-31. El estado vigente está en
+> `EVIDENCIA/CONSOLIDACION-2026-10-23/LEEME.md`, en «Estado actual». La nota del 23/10 queda como estaba.
+>
 > **Nota del 2026-10-23 (encargo de consolidación).** El estado reconciliado, con lo integrado, lo preparado en PR y lo
 > que falta comprobar, está en `EVIDENCIA/CONSOLIDACION-2026-10-23/MATRIZ-DE-ESTADO.md`. Desde el corte de abajo:
 > - **En `main` (`0fb1bff`, desplegado en `test`):** lo integrado hasta el 20/10. Incluye:
@@ -58,7 +70,9 @@ Cada punto lleva su ID. El detalle está en el documento que se cita.
 2. **El teléfono:** Dirección probó la 0.14.0-candidata.1 (5/10) y la 0.15.0-candidata.1 (7 y 8/10); los dos defectos que encontró están corregidos en la 0.16.0-candidata.1 (#151 y #152), que falta probar. Antes: **ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica. **Al 2026-10-23:** la candidata vigente es la 0.17.0-candidata.3 (19/10); Dirección probó con la .2 el acceso con Google y la invitación (17/10), y la .3 entera **no se probó**. Además, las candidatas 0.15 a 0.17 perdieron la sustitución de ejercicios (DL-151): vuelve con #195, en una candidata nueva. La estable sigue siendo la 0.13.2, y no se promueve una candidata sin la sustitución ni la prueba completa (DL-152).
 3. **TalkBack y la letra del sistema al máximo** nunca se probaron en un Android físico (RNF-ACC-001). Faltan las capturas 16, 17, 19, 20, 21 y 22 de la guía de capturas.
 4. ~~**DL-115, de severidad alta.**~~ **Resuelto:** decidida con la opción A el 2/10 e integrada en la 0.13.2 (#133, #140). Antes: Revocado el A3, el titular sigue leyendo su evolución antropométrica y el detalle de sus formularios; nutrición y entrenamiento sí lo cortan (08:406). Espera la decisión de Dirección. La recomendación es la opción A, de tamaño S, que necesita una APK nueva.
-5. **La auditoría de dependencias frena la CI de toda rama (2026-10-23).** Después del 20/10 se publicaron avisos altos y
+5. ~~**La auditoría de dependencias frena la CI de toda rama (2026-10-23).**~~ **Resuelto el 2026-10-24:**
+   #201 y #202 integrados (`361e8d1`). Renovar o no las excepciones de DL-114 antes del 2026-10-31 es decisión de
+   Dirección; el aviso de braces se retiró el 23/10. Antes: Después del 20/10 se publicaron avisos altos y
    críticos de Next, zod, multer y body-parser. Una corrida nueva de `main` también fallaría: #198, que no toca
    dependencias, falla con los mismos avisos. #201 corrige los que tienen corrección. Queda el zod 3 que exige la CLI de
    Expo, sin versión corregida, y exceptuarlo es decisión de Dirección (#202), porque DL-114 no autoriza ampliar las

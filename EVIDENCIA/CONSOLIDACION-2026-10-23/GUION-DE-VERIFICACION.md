@@ -2,6 +2,12 @@
 
 **Nada de esto está hecho.** Es lo que falta comprobar a mano. La columna «Hecho» se completa al hacerlo, con la fecha y quién.
 
+> **Al 2026-10-24, a la noche:** sigue todo sin hacer.
+> - En `test` ya están #201, #202, #206, #207 y #198, en `2811991`.
+> - Lo que este guion prueba de #195, #200 y #203 sigue esperando que se integren.
+> - W15 se puede hacer hoy en `test`.
+> - El teléfono necesita una candidata nueva, que requiere autorización.
+
 **Dónde:**
 - **El website:** la versión integrada en `test` cuando Dirección la integre. Antes, con la API y el website locales de la rama `wp-integracion-2026-10-23`.
 - **El teléfono:** una candidata nueva construida desde esa misma rama. Hoy no existe.
