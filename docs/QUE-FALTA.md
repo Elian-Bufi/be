@@ -1,5 +1,24 @@
 # Qué falta desarrollar en BE
 
+> **Nota del 2026-10-23 (encargo de consolidación).** El estado reconciliado, con lo integrado, lo preparado en PR y lo
+> que falta comprobar, está en `EVIDENCIA/CONSOLIDACION-2026-10-23/MATRIZ-DE-ESTADO.md`. Desde el corte de abajo:
+> - **En `main` (`0fb1bff`, desplegado en `test`):** lo integrado hasta el 20/10. Incluye:
+>   - la sesión que sobrevive a una recarga (DL-147, #186);
+>   - los borradores (DL-148, #188);
+>   - el flujo profesional pulido (DL-149, #190);
+>   - los recorridos de navegador en la CI (DL-150, #191);
+>   - el catálogo base (#184, #185, #189);
+>   - la herramienta de las recetas de ejemplo (#192). Las recetas no están cargadas.
+> - **Preparado en PR, sin integrar:**
+>   - #200, el número de Nutrición dice qué falta (DL-153);
+>   - #203, la evidencia de una revisión (DL-154);
+>   - #195, la sustitución de ejercicios en la APK (DL-151);
+>   - #198, la compatibilidad de las APK publicadas (DL-152);
+>   - #201, las dependencias con avisos nuevos;
+>   - #202, la propuesta de excepción, que espera la decisión de Dirección.
+> - **La combinación se probó junta** en #204, que no se integra.
+> - **Las marcas de abajo** se corrigieron el 2026-10-23 donde estaban viejas, con la fecha. Lo histórico queda.
+>
 > **Nota del 2026-10-16.** Desde el corte se integró y se desplegó en `test`:
 > - el escritorio profesional por áreas (#153 a #159), con Pendientes, Resumen, Línea de tiempo, Analizar y Preparar revisión;
 > - la cohorte de seis personas con historia (#161);
@@ -36,23 +55,28 @@ Cada punto lleva su ID. El detalle está en el documento que se cita.
 1. ~~**La base de `test` vence cerca del 16 o 18/10.**~~ **Resuelto el 2026-10-16:** Dirección pasó la base a
    Basic-256mb y la API a Starter (#160). La base ya no vence y la API no se duerme. Ver «Planes de Render» en
    `docs/DESPLIEGUE.md`.
-2. **El teléfono:** Dirección probó la 0.14.0-candidata.1 (5/10) y la 0.15.0-candidata.1 (7 y 8/10); los dos defectos que encontró están corregidos en la 0.16.0-candidata.1 (#151 y #152), que falta probar. Antes: **ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica.
+2. **El teléfono:** Dirección probó la 0.14.0-candidata.1 (5/10) y la 0.15.0-candidata.1 (7 y 8/10); los dos defectos que encontró están corregidos en la 0.16.0-candidata.1 (#151 y #152), que falta probar. Antes: **ninguna APK desde la 0.12.0 se probó en un teléfono.** Quedan los recorridos de la 0.12.0 a la 0.13.1 (`EVIDENCIA/PUBLICACION-*/LEEME.md`). El de la 0.13.1 incluye «Mi evolución» y la figura con los puntos en su altura anatómica. **Al 2026-10-23:** la candidata vigente es la 0.17.0-candidata.3 (19/10); Dirección probó con la .2 el acceso con Google y la invitación (17/10), y la .3 entera **no se probó**. Además, las candidatas 0.15 a 0.17 perdieron la sustitución de ejercicios (DL-151): vuelve con #195, en una candidata nueva. La estable sigue siendo la 0.13.2, y no se promueve una candidata sin la sustitución ni la prueba completa (DL-152).
 3. **TalkBack y la letra del sistema al máximo** nunca se probaron en un Android físico (RNF-ACC-001). Faltan las capturas 16, 17, 19, 20, 21 y 22 de la guía de capturas.
 4. ~~**DL-115, de severidad alta.**~~ **Resuelto:** decidida con la opción A el 2/10 e integrada en la 0.13.2 (#133, #140). Antes: Revocado el A3, el titular sigue leyendo su evolución antropométrica y el detalle de sus formularios; nutrición y entrenamiento sí lo cortan (08:406). Espera la decisión de Dirección. La recomendación es la opción A, de tamaño S, que necesita una APK nueva.
+5. **La auditoría de dependencias frena la CI de toda rama (2026-10-23).** Después del 20/10 se publicaron avisos altos y
+   críticos de Next, zod, multer y body-parser. Una corrida nueva de `main` también fallaría: #198, que no toca
+   dependencias, falla con los mismos avisos. #201 corrige los que tienen corrección. Queda el zod 3 que exige la CLI de
+   Expo, sin versión corregida, y exceptuarlo es decisión de Dirección (#202), porque DL-114 no autoriza ampliar las
+   excepciones. Las excepciones vigentes vencen el **2026-10-31**: node-forge sigue sin corrección y braces ya no aparece.
 
 ## 2. Funcionalidades P0 que faltan
 
-Faltan 22 de las 122 operaciones P0 del contrato 09.
+Faltan 22 de las 122 operaciones P0 del contrato 09. **Al 2026-10-23, contadas por ID contra el inventario, faltan 18:** las 13 de verificación y administración (API-PRO-01 a 13), API-DSH-01, 02 y 05, y API-PRJ-02 y 03.
 
 | Qué | Requisitos | Estado |
 |---|---|---|
-| **Alta y verificación de profesionales, y rol administrador** (WP-09). Hoy un profesional se habilita con un servicio interno y cuentas demo. El administrador es actor en RF-011, RF-012 y RF-014, y exige MFA siempre (08 §25) | RF-007 a RF-014 · RF-067 · UC-P01 a P03 · UC-E01 · API-PRO-01 a 13 · DL-036 | Fuera del tramo. Ficha del 2/10 en `docs/propuestas/PERFIL-DEL-ASESORADO-Y-ADMINISTRACION_fichas.md`. **La mesa pide distintos roles, no un administrador** |
-| **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107), los resúmenes por dominio (DL-031) y la línea de tiempo del escritorio. **La TVCC-30 (RF-058 · UC-S01) quedó hecha el 2026-10-16** (DL-135): cálculo interno y conservado, sin HTTP, como dice el 09. **Las notas de coordinación (RF-057, P0) quedaron hechas el 2026-10-17** (DL-140; Dirección aprobó las ocho recomendadas): API-CRD-01, la lectura en la línea de tiempo y el Resumen del website, y «Notas entre tus profesionales» en la APK; sin integrar. Faltan las proyecciones |
-| **Perfil del asesorado** con nombre visible. El perfil propio existía sin contenido (RF-017 parcial desde WP-02); el nombre visible sale del 09v8 §3.2 y del B10-08 §5.4 | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | **Hecho el 2026-10-15** (decisión de Dirección; PR #159, sin integrar): el nombre visible con versiones, API-ACC-06 y su lectura, «Tu nombre» en «Cuenta», y el profesional lo ve con un vínculo vigente. Falta en la APK, que lo suma en su próxima versión; otros campos del perfil siguen en DL-023 y DL-095 |
+| **Alta y verificación de profesionales, y rol administrador** (WP-09). Hoy un profesional se habilita con un servicio interno y cuentas demo. El administrador es actor en RF-011, RF-012 y RF-014, y exige MFA siempre (08 §25) | RF-007 a RF-014 · RF-067 · UC-P01 a P03 · UC-E01 · API-PRO-01 a 13 · DL-036 | Fuera del tramo. Ficha del 2/10 en `docs/propuestas/PERFIL-DEL-ASESORADO-Y-ADMINISTRACION_fichas.md`. **La mesa pide distintos roles, no un administrador**. **Desde el 2026-10-23, el próximo paquete funcional a definir** (pedido de Dirección: habilitar por área, observar, suspender y restablecer, con auditoría y una autenticación acorde, que para el administrador el 08 §25 fija en MFA): `docs/paquetes/WP-ADMINISTRACION.md`. La exclusión del 22/9 no anula esta intención |
+| **Seguimiento profesional** (lo que queda de WP-10): cola de revisiones, línea temporal, notas de coordinación, proyecciones y TVCC-30 | RF-052 a 055, 057 y 058 · API-DSH-01, 02, 04 y 05 · API-PRJ-01 a 03 · API-CRD-01 | Hecho en parte: «Pendientes» (DL-107), los resúmenes por dominio (DL-031) y la línea de tiempo del escritorio. **La TVCC-30 (RF-058 · UC-S01) quedó hecha el 2026-10-16** (DL-135): cálculo interno y conservado, sin HTTP, como dice el 09. **Las notas de coordinación (RF-057, P0) quedaron hechas el 2026-10-17** (DL-140; Dirección aprobó las ocho recomendadas): API-CRD-01, la lectura en la línea de tiempo y el Resumen del website, y «Notas entre tus profesionales» en la APK; **integradas el 2026-10-17 (#178)**. La TVCC-30 se integró el 16/10 (#167). Faltan las proyecciones (PRJ-02 y PRJ-03) y DSH-01, 02 y 05 |
+| **Perfil del asesorado** con nombre visible. El perfil propio existía sin contenido (RF-017 parcial desde WP-02); el nombre visible sale del 09v8 §3.2 y del B10-08 §5.4 | RF-017 · UC-P25 · API-ACC-06 · DL-009 · DL-040 | **Hecho el 2026-10-15** (decisión de Dirección; **integrado el 2026-10-16, #159**): el nombre visible con versiones, API-ACC-06 y su lectura, «Tu nombre» en «Cuenta», y el profesional lo ve con un vínculo vigente. En la APK desde la 0.16.0-candidata.1; otros campos del perfil siguen en DL-023 y DL-095 |
 | **Novedades y avisos push**: el centro de novedades, los avisos por Expo y los recordatorios diarios de registro | RF-061 · RF-062 · UC-P30 · UC-E08 · API-NOV-01 a 06 · DL-133 | **Hecho el 2026-10-16** (pedido de Dirección; PR #163): website y APK. Para que un teléfono reciba avisos falta el proyecto de Firebase de Dirección (`docs/DESPLIEGUE.md`, «Avisos push») |
-| **Exportar los datos del titular** y los pasos 2 y 3 de la revocación de A3 | DL-021 · REV-A-D4 | Sin implementar |
-| **Alta por invitación** con declaración de mayoría de edad. Hoy el asesorado pasa su identificador por fuera de BE | DL-023 · DL-035 | Sin implementar |
-| **Suspender y restablecer una cuenta** desde la interfaz | DL-020 | Solo servicio interno |
+| **Exportar los datos del titular** y los pasos 2 y 3 de la revocación de A3 | DL-021 · REV-A-D4 | Sin implementar. Al 2026-10-23 hay una definición del paquete (DL-142) **solo en la rama local** `wp-exportar-mis-datos` (`aae3584`, 16/10), sin publicar |
+| **Alta por invitación** con declaración de mayoría de edad. Hoy el asesorado pasa su identificador por fuera de BE | DL-023 · DL-035 | ~~Sin implementar~~ **Hecho el 2026-10-16** (al día el 23/10): la invitación por enlace, QR o código (DL-136, #171 a #173) y la declaración de mayoría de edad en toda alta (DL-138, #176) |
+| **Suspender y restablecer una cuenta** desde la interfaz | DL-020 | Solo servicio interno. Entra en `docs/paquetes/WP-ADMINISTRACION.md` (D-4) |
 | **Configurar la capacidad** del profesional | RF-066 · DL-051 · DL-087 | `SIN_LIMITE` por defecto |
 
 ## 3. Mejoras por dominio, ya identificadas
@@ -69,6 +93,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 - La procedencia externa en el ítem del plan (DL-099).
 - Lo que queda de PF-03: descanso con semántica, tempo por fases y alternativas preaprobadas (PF03-D-2 a D-7).
 - Declarar una serie como no realizada (DL-106).
+- La sustitución de ejercicios se perdió en las candidatas 0.15 a 0.17 (DL-151): **preparada en #195** (al día con `main` el 2026-10-23), falta la APK nueva y el teléfono.
 - «Tu historial» con período elegible y más de 90 días (DL-096).
 
 **Nutrición**
@@ -76,6 +101,8 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 - PF-05: plan práctico y revisión.
 - Corregir una ingesta prescripta (DL-050).
 - Con B2 revocado, el asesorado ve la lista de ingestas pero no su detalle ni su plan (hallazgo H-1 de PF-04).
+- Un día con una comida del plan sin registrar salía «sin faltantes» (UX-01 de la auditoría): **preparado en #200** (DL-153, 2026-10-23).
+- Una revisión registrada no mostraba su evidencia, su período ni su autor (UX-02): **preparado en #203** (DL-154, 2026-10-23), también en Entrenamiento.
 
 **Formularios y asesorado**
 - Campos de selección y de fecha (DEC-04, DL-103).
@@ -86,7 +113,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 **UX** (`docs/ux/GUIA-UX-UI.md` §12)
 - En la figura del teléfono, con todos los pliegues, la guía del subescapular cruza la del antebrazo dentro de su tarjeta y pasa por detrás de su punto (`EVIDENCIA/UX-PULIDO-DL113/LEEME.md`).
 - La barra inferior de la APK a 320 dp entra achicando las etiquetas. Hay que verla en un teléfono chico.
-- Recargar el website cierra la sesión (DL-012).
+- ~~Recargar el website cierra la sesión (DL-012).~~ **Hecho el 2026-10-20** (DL-147, #186). Falta probarlo contra `test` en Chrome, Edge y Firefox; Safari, sin CHIPS, pide volver a entrar.
 
 ## 4. Decisiones que esperan a Dirección
 
@@ -95,7 +122,8 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
   - ratificar DL-113, la UX y su pulido del 2/10. Incluye:
     - la ubicación de los sitios de la figura: el bíceps y la cresta ilíaca ya están a su altura anatómica, y hay una observación sobre el supraespinal;
     - en qué zona abre la APK;
-  - ratificar DL-114, la excepción de node-forge, que vence el 31/10;
+  - ratificar DL-114, la excepción de node-forge, que vence el 31/10 (revisada el 2026-10-23: sigue sin corrección; braces ya no aparece; la propuesta del zod de la CLI de Expo, en #202);
+  - las del encargo del 2026-10-23: DL-151 (R-1 a R-6), DL-153 (D-1 a D-4) y DL-154 (D-1 a D-3), y la definición de WP-ADMINISTRACION (D-1 a D-7);
   - decidir DL-115, el A3 del titular en antropometría y formularios;
   - las decisiones D-1 a D-7 de la matriz de DV-05 y las dudas de las reconciliaciones de DV-02 y DV-06;
   - las preguntas abiertas de la ficha de métodos (§15.2).
@@ -118,6 +146,8 @@ Faltan 22 de las 122 operaciones P0 del contrato 09.
 - **Concurrencia:** hay un 503 intermitente con lecturas concurrentes (`DEFENSA/WP-06.md` §5.5).
   - El 2026-10-02 se vio que es `P2028` de Prisma: la transacción no pudo empezar a tiempo. Pasó en la máquina local, con poca memoria (`EVIDENCIA/UX-PULIDO-DL113/LEEME.md`).
   - Severidad media. Sin corregir.
+- **La auditoría de dependencias falla** con avisos publicados después del 20/10 (ver §1, punto 5): #201 y #202.
+- **El recorrido de navegador `faltaUnaParte` es intermitente** (2026-10-23): falló en una de las dos corridas de #195, que no toca el website, y de #200, con pedidos que no llegan a la API. Ver la recomendación 2 de `EVIDENCIA/CONSOLIDACION-2026-10-23/LEEME.md`.
 - **Antes de datos reales**, hay que cumplir el gate de 24 condiciones del 08 §42. Incluye:
   - MFA;
   - textos legales;
@@ -147,8 +177,8 @@ Son de orden, no de funcionalidad:
 
 No es pendiente, salvo que Dirección lo pida:
 - pagos, chat, turnos, wearables y prescripción;
-- acceso con Google y recuperación de acceso;
-- notificaciones push, modo sin conexión y temporizador de descanso;
+- ~~acceso con Google~~ (hecho el 17/10, DL-138) y recuperación de acceso;
+- ~~notificaciones push~~ (hechas el 16/10, DL-133), modo sin conexión y temporizador de descanso;
 - editor libre de plantillas;
 - protocolos y fórmulas del profesional;
 - cardio y circuitos.
