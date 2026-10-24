@@ -11,9 +11,12 @@
  * cadena declarada (DL-114: corregida y ratificada por Dirección el 2026-10-24):
  *   - npm encuentra vulnerable solo la copia declarada, y el lockfile dice que es la versión que se comprobó;
  *   - en producción, esa copia la usa solo el primer eslabón de la cadena, cada eslabón lo usa solo el siguiente, y el
- *     espacio de trabajo pide el último;
+ *     espacio de trabajo pide el último. Con `tambienPor` (2026-10-24, node-forge), la copia también la puede usar cada
+ *     paquete declarado ahí, con su versión, siempre que lo use solo el primer eslabón: son los otros caminos permitidos
+ *     dentro de él, y uno nuevo bloquea;
  *   - con `fueraDelBundle: 'android'`, el bundle de Android, construido como lo construye Gradle (`expo export:embed`), no
- *     tiene ningún módulo de esa copia ni de otra copia del paquete que el aviso abarque.
+ *     tiene ningún módulo de esa copia ni de otra copia del paquete que el aviso abarque (rangos «<X.Y.Z», con corrección,
+ *     y «<=X.Y.Z», sin ella).
  * Si aparece otra ruta, el aviso bloquea como cualquier otro (1). Si algo de eso no se puede comprobar (falta el lockfile,
  * npm no dice qué copias encontró, el bundle no se pudo construir), la auditoría no aprueba (2).
  *
@@ -38,29 +41,43 @@ const SEVERIDADES_QUE_FALLAN = new Set(['high', 'critical']);
 const SEVERIDADES = ['info', 'low', 'moderate', 'high', 'critical'];
 const CODIGO = { APRUEBA: 0, VULNERABILIDADES: 1, NO_SE_PUDO_AUDITAR: 2 };
 
-/** Las excepciones vigentes. Cada una se revisa antes de su vencimiento, o antes si sale la corrección. */
+/**
+ * Las excepciones vigentes. Cada una se revisa antes de su vencimiento, o antes si sale la corrección. Vencer no las
+ * renueva: renovarlas es una decisión de Dirección y un cambio aquí (DL-114).
+ *
+ * Retirada el 2026-10-24, por decisión de Dirección (DL-114): la de braces (GHSA-vfj7-8cjw-p6xm). GitHub retiró ese aviso
+ * el 2026-10-23 a las 12:53 UTC y npm dejó de informarlo; si volviera, bloquea como cualquier otro.
+ */
 const EXCEPCIONES = [
   {
     aviso: 'GHSA-86w9-cpqp-85rv',
     paquete: 'node-forge',
+    // Solo en la APK, y solo en la cadena de construcción: en la API y el website el aviso tiene que seguir bloqueando.
+    espacios: ['@be/mobile'],
+    // Renovada por Dirección el 2026-10-24 hasta el 2026-11-30 (DL-114), acotada a lo que se comprobó: si algo de esto
+    // cambia (otra copia u otra versión, un paquete más que lo use en producción, el bundle), deja de valer.
+    procedencia: {
+      copia: { ubicacion: 'node_modules/node-forge', version: '1.4.0' },
+      // La CLI de Expo lo usa directo y también por su paquete de firma, que usa solo ella.
+      tambienPor: [{ ubicacion: 'node_modules/@expo/code-signing-certificates', version: '0.0.6' }],
+      // De la copia hacia la APK: @be/mobile → expo → @expo/cli → node-forge.
+      cadena: [
+        { ubicacion: 'node_modules/@expo/cli', version: '57.0.25' },
+        { ubicacion: 'node_modules/expo', version: '57.0.23' },
+      ],
+      fueraDelBundle: 'android',
+    },
     motivo:
-      'Sin versión corregida: el aviso abarca hasta la 1.4.0, la última publicada (actualizado el 2026-10-01), y la última @expo/code-signing-certificates (0.0.7) sigue dependiendo de ella. node-forge entra por la CLI de Expo, que lo usa para firmar manifiestos de expo-updates y para la firma de iOS: BE no configura ninguna de las dos, y node-forge no viaja en el bundle de la APK ni está en la API ni en el website. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
-    vence: '2026-10-31',
-  },
-  {
-    aviso: 'GHSA-vfj7-8cjw-p6xm',
-    paquete: 'braces',
-    motivo:
-      'Sin versión corregida: el aviso (CVE-2026-93687, agotamiento de la pila con patrones muy anidados) abarca hasta la 3.0.3, la última publicada (actualizado el 2026-10-02). braces entra por la CLI de Expo y por metro (expo → @expo/cli → @expo/metro-file-map → micromatch → braces), que lo usan al construir para expandir los patrones de archivos de la configuración, no datos de las personas. braces no viaja en el bundle de la APK ni está en la API ni en el website. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
-    vence: '2026-10-31',
+      'Sin versión corregida: el aviso (la verificación de firmas RSA PKCS#1 v1.5 acepta elementos de más; actualizado el 2026-10-01) abarca hasta la 1.4.0, la última publicada, y @expo/code-signing-certificates 0.0.7 y las CLI de Expo 57.0.32 y 58.1.15 siguen dependiendo de ella (comprobado el 2026-10-24). node-forge entra por la CLI de Expo, que lo usa para firmar manifiestos de expo-updates y para la firma de iOS: BE no configura ninguna de las dos. Por eso la excepción exige, en cada corrida, que en producción lo usen solo la CLI y su paquete de firma, y que el bundle de Android no tenga ningún módulo suyo; en la API y el website bloquea. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
+    vence: '2026-11-30',
   },
   {
     aviso: 'GHSA-mrhx-c7xc-m3w5',
     paquete: 'zod',
     // Solo en la APK: en la API y el website, zod se corrige (4.6.6) y el aviso tiene que seguir bloqueando.
     espacios: ['@be/mobile'],
-    // Ratificada por Dirección el 2026-10-24 con estas condiciones (DL-114): es lo que se comprobó, y lo único que cubre.
-    // Si algo de esto cambia, deja de valer.
+    // Ratificada por Dirección el 2026-10-24 con estas condiciones (DL-114), y renovada el mismo día hasta el 2026-11-30
+    // con las mismas: es lo que se comprobó, y lo único que cubre. Si algo de esto cambia, deja de valer.
     procedencia: {
       copia: { ubicacion: 'node_modules/zod', version: '3.25.76' },
       // De la copia hacia la APK: @be/mobile → expo → @expo/cli → zod.
@@ -72,7 +89,7 @@ const EXCEPCIONES = [
     },
     motivo:
       'Sin versión 3.x corregida: el aviso (agotamiento de memoria al validar listas muy grandes; actualizado el 2026-10-23) abarca todo zod anterior a la 4.6.6, y la CLI de Expo (@expo/cli 57.0.25) exige zod ^3.25.76. Ese zod 3 está en la raíz (node_modules/zod): lo recibiría cualquier import de zod fuera de @be/domain. Por eso la excepción exige, en cada corrida, que en producción lo use solo la CLI de Expo y que el bundle de Android no tenga ningún módulo suyo. La CLI lo carga también al construir el bundle (export:embed, el paso de Gradle), para validar la definición de los complementos de DevTools que declaran los paquetes instalados, no datos de las personas. La APK valida con el zod 4.6.6 de @be/domain, corregido en el mismo cambio. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
-    vence: '2026-10-31',
+    vence: '2026-11-30',
   },
 ];
 
@@ -149,11 +166,12 @@ const describir = (paquetes, ubicacion) => {
  * `{ estado: 'sin-verificar', detalle }`.
  */
 function procedenciaEnElLockfile(aviso, excepcion, espacio, lockfile) {
-  const { copia, cadena } = excepcion.procedencia;
+  const { copia, cadena, tambienPor = [] } = excepcion.procedencia;
   const otraRuta = (detalle) => ({ estado: 'otra-ruta', detalle });
   const sinVerificar = (detalle) => ({ estado: 'sin-verificar', detalle });
   // Sin cadena no habría a quién exigirle que sea el único que usa la copia.
   if (!copia?.ubicacion || !copia.version || !Array.isArray(cadena) || cadena.length === 0) return sinVerificar('la excepción no declara la copia, su versión y la cadena que la usa');
+  if (!Array.isArray(tambienPor) || tambienPor.some((t) => !t?.ubicacion || !t.version)) return sinVerificar('la excepción declara otros caminos sin su ubicación y su versión');
 
   if (!Array.isArray(aviso.nodos) || aviso.nodos.length === 0) return sinVerificar('npm no dice qué copias encontró vulnerables');
   const otras = aviso.nodos.filter((n) => n !== copia.ubicacion);
@@ -165,7 +183,21 @@ function procedenciaEnElLockfile(aviso, excepcion, espacio, lockfile) {
   if (!entrada) return sinVerificar(`${copia.ubicacion} no está en package-lock.json`);
   if (entrada.version !== copia.version) return otraRuta(`${copia.ubicacion} es la ${entrada.version}, no la ${copia.version} que se comprobó`);
 
-  // Cada eslabón tiene que ser el único que, en producción, usa al anterior.
+  // Los otros caminos declarados dentro del primer eslabón: cada uno, con su versión, usa la copia, y en producción lo usa
+  // solo el primer eslabón. Si alguno ya no la usa, la declaración quedó vieja: no vale hasta revisarla.
+  const primero = cadena[0].ubicacion;
+  for (const camino of tambienPor) {
+    const e = paquetes[camino.ubicacion];
+    if (!e) return sinVerificar(`${camino.ubicacion} no está en package-lock.json`);
+    if (e.version !== camino.version) return otraRuta(`${camino.ubicacion} es la ${e.version}, no la ${camino.version} que se comprobó`);
+    if (!usuariosDe(paquetes, copia.ubicacion).produccion.includes(camino.ubicacion)) return otraRuta(`${camino.ubicacion} ya no usa ${copia.ubicacion}`);
+    const { produccion } = usuariosDe(paquetes, camino.ubicacion);
+    const ajenos = produccion.filter((u) => u !== primero);
+    if (ajenos.length > 0) return otraRuta(`${ajenos.map((u) => describir(paquetes, u)).join(', ')} también ${ajenos.length > 1 ? 'usan' : 'usa'} ${camino.ubicacion} en producción`);
+    if (!produccion.includes(primero)) return otraRuta(`${primero} ya no usa ${camino.ubicacion}`);
+  }
+
+  // Cada eslabón tiene que ser el único que, en producción, usa al anterior (a la copia, también los otros caminos).
   let anterior = copia.ubicacion;
   const desarrollo = usuariosDe(paquetes, copia.ubicacion).desarrollo;
   for (const eslabon of cadena) {
@@ -173,7 +205,8 @@ function procedenciaEnElLockfile(aviso, excepcion, espacio, lockfile) {
     if (!e) return sinVerificar(`${eslabon.ubicacion} no está en package-lock.json`);
     if (eslabon.version && e.version !== eslabon.version) return otraRuta(`${eslabon.ubicacion} es la ${e.version}, no la ${eslabon.version} que se comprobó`);
     const { produccion } = usuariosDe(paquetes, anterior);
-    const ajenos = produccion.filter((u) => u !== eslabon.ubicacion);
+    const permitidos = anterior === copia.ubicacion ? [eslabon.ubicacion, ...tambienPor.map((t) => t.ubicacion)] : [eslabon.ubicacion];
+    const ajenos = produccion.filter((u) => !permitidos.includes(u));
     if (ajenos.length > 0) return otraRuta(`${ajenos.map((u) => describir(paquetes, u)).join(', ')} también ${ajenos.length > 1 ? 'usan' : 'usa'} ${anterior} en producción`);
     if (!produccion.includes(eslabon.ubicacion)) return otraRuta(`${eslabon.ubicacion} ya no usa ${anterior}`);
     anterior = eslabon.ubicacion;
@@ -184,7 +217,8 @@ function procedenciaEnElLockfile(aviso, excepcion, espacio, lockfile) {
   if (!usuariosDe(paquetes, anterior).produccion.includes(carpeta)) return otraRuta(`${espacio} no pide ${anterior}: la cadena no es la declarada`);
 
   const eslabones = [copia.ubicacion, ...cadena.map((e) => e.ubicacion)].map((u, i) => (i === 0 ? `${u} ${paquetes[u].version}` : `${nombreDe(paquetes, u)} ${paquetes[u].version}`));
-  const detalle = [`procedencia comprobada en package-lock.json: ${[...eslabones, espacio].join(' ← ')}`];
+  const otros = tambienPor.map((t) => `; también ${copia.ubicacion} ← ${nombreDe(paquetes, t.ubicacion)} ${paquetes[t.ubicacion].version} ← ${nombreDe(paquetes, primero)}`).join('');
+  const detalle = [`procedencia comprobada en package-lock.json: ${[...eslabones, espacio].join(' ← ')}${otros}`];
   if (desarrollo.length > 0) detalle.push(`en desarrollo también la usa ${desarrollo.map((u) => describir(paquetes, u)).join(', ')} (fuera de esta auditoría de producción)`);
   return { estado: 'demostrada', detalle };
 }
@@ -216,19 +250,22 @@ function copiasEnElBundle(fuentes, paquete, raiz = null) {
   return copias;
 }
 
-/** `<4.6.6` → [4, 6, 6]. Otra forma de rango no se sabe comprobar. */
-function versionCorregida(rango) {
-  const m = /^<\s*(\d+)\.(\d+)\.(\d+)$/.exec(String(rango ?? '').trim());
-  return m ? m.slice(1).map(Number) : null;
+/**
+ * El límite del rango del aviso: `<4.6.6` → la 4.6.6 lo corrige y no está abarcada; `<=1.4.0` → no hay corrección, y la
+ * 1.4.0 está abarcada. Otra forma de rango no se sabe comprobar.
+ */
+function limiteDelRango(rango) {
+  const m = /^<(=?)\s*(\d+)\.(\d+)\.(\d+)$/.exec(String(rango ?? '').trim());
+  return m ? { version: m.slice(2).map(Number), incluida: m[1] === '=' } : null;
 }
 
-/** Si el aviso abarca la versión: anterior a la corregida (una versión previa de la corregida también). `null` si no se entiende. */
-function abarcada(version, corregida) {
+/** Si el aviso abarca la versión, según el límite de su rango (una versión previa del límite, también). `null` si no se entiende. */
+function abarcada(version, limite) {
   const m = /^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/.exec(String(version ?? ''));
   if (!m) return null;
   const v = m.slice(1, 4).map(Number);
-  for (let i = 0; i < 3; i++) if (v[i] !== corregida[i]) return v[i] < corregida[i];
-  return Boolean(m[4]);
+  for (let i = 0; i < 3; i++) if (v[i] !== limite.version[i]) return v[i] < limite.version[i];
+  return Boolean(m[4]) || limite.incluida;
 }
 
 /** La parte de la procedencia que se comprueba en el bundle de Android. Mismos estados que `procedenciaEnElLockfile`. */
@@ -237,8 +274,8 @@ function procedenciaEnElBundle(aviso, excepcion, contexto) {
   const otraRuta = (detalle) => ({ estado: 'otra-ruta', detalle });
   const sinVerificar = (detalle) => ({ estado: 'sin-verificar', detalle });
   if (fueraDelBundle !== 'android') return sinVerificar(`no se sabe comprobar el bundle «${fueraDelBundle}»`);
-  const corregida = versionCorregida(aviso.rango);
-  if (!corregida) return sinVerificar(`el rango del aviso («${aviso.rango}») no tiene la forma «<X.Y.Z»`);
+  const limite = limiteDelRango(aviso.rango);
+  if (!limite) return sinVerificar(`el rango del aviso («${aviso.rango}») no tiene la forma «<X.Y.Z» ni «<=X.Y.Z»`);
 
   let bundle;
   try {
@@ -259,7 +296,7 @@ function procedenciaEnElBundle(aviso, excepcion, contexto) {
     if (!version) return sinVerificar(`${ubicacion} está en el bundle y no en package-lock.json`);
     const instalada = contexto.versionInstalada?.(ubicacion) ?? null;
     if (instalada !== version) return sinVerificar(`${ubicacion} instalada es la ${instalada ?? '(no se pudo leer)'} y package-lock.json dice ${version}: node_modules no corresponde al lockfile`);
-    const vulnerable = abarcada(version, corregida);
+    const vulnerable = abarcada(version, limite);
     if (vulnerable === null) return sinVerificar(`no se entiende la versión ${version} de ${ubicacion}`);
     if (vulnerable) return otraRuta(`el bundle de Android incluye ${ubicacion} (${version}), que el aviso abarca`);
     enElBundle.push(`${ubicacion} ${version} (${modulos} módulos)`);
@@ -433,7 +470,8 @@ function crearContexto(raiz) {
 }
 
 function principal() {
-  // La fecha UTC del runner: una excepción que vence el 31 vale hasta las 23:59:59 UTC (20:59:59 de Argentina).
+  // La fecha UTC del runner: una excepción que vence el 2026-11-30 vale hasta las 23:59:59 UTC de ese día (20:59:59 en
+  // Argentina) y bloquea desde el 2026-12-01 a las 00:00 UTC (el 30 a las 21:00 en Argentina).
   const hoy = new Date().toISOString().slice(0, 10);
   const contexto = crearContexto(path.resolve(__dirname, '..'));
   const codigos = ESPACIOS.map((espacio) => {

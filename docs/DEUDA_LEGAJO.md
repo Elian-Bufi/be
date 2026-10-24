@@ -2672,7 +2672,7 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 
 ## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
 
-**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría); las tres vencen el 2026-10-31
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría). **Desde la decisión del 2026-10-24 a la noche**, braces está retirada (GitHub retiró el aviso), y zod y node-forge están renovadas hasta el **2026-11-30** (UTC; el 30/11 a las 20:59:59 en Argentina), las dos con procedencia comprobada y solo en la APK. Detalle al final de esta entrada
 
 **Qué pasó.**
 - El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
@@ -2859,6 +2859,68 @@ excepciones siguen siendo las de esta deuda.
   - este registro;
   - `EVIDENCIA/EXCEPCION-ZOD-EXPO/LEEME.md`;
   - el procedimiento de integración, sin ejecutar: `EVIDENCIA/EXCEPCION-ZOD-EXPO/INTEGRACION.md`.
+
+**Decisión de Dirección del 2026-10-24, a la noche: braces se retira, y zod y node-forge se renuevan hasta el 2026-11-30.**
+La tomó Dirección de BE, sobre la propuesta del mismo día, y no es una renovación automática.
+
+- **Las fuentes oficiales, consultadas otra vez antes de aplicarla** (2026-10-24, 23:15 UTC: base de avisos de GitHub,
+  `gh api advisories/<aviso>`, y registro de npm):
+  - **GHSA-vfj7-8cjw-p6xm (braces):** GitHub lo **retiró** el 2026-10-23 a las 12:53 UTC, y npm ya no lo informa.
+  - **GHSA-86w9-cpqp-85rv (node-forge, CVE-2026-85393):**
+    - afecta hasta la 1.4.0, que es la última publicada, y no hay corrección;
+    - lo siguen pidiendo `@expo/code-signing-certificates` 0.0.7 y las CLI de Expo 57.0.32 (el último parche de SDK 57)
+      y 58.1.15.
+  - **GHSA-mrhx-c7xc-m3w5 (zod, CVE-2023-54404):**
+    - se corrige solo en zod 4.6.6, y la última 3.x es la 3.25.76;
+    - las mismas CLI siguen pidiendo zod ^3.25.76.
+  - Actualizar Expo, por lo tanto, no saca ninguna de las dos.
+- **braces: retirada.**
+  - Se borró de `EXCEPCIONES`. Queda este registro y un comentario en el script.
+  - Si GitHub volviera a publicar el aviso, la auditoría bloquea como con cualquier otro, y hace falta una decisión
+    nueva.
+- **zod 3 de Expo: renovada hasta el 2026-11-30**, con exactamente las condiciones ratificadas arriba:
+  - la copia, la versión y la cadena;
+  - solo `@be/mobile`;
+  - fuera del bundle de Android;
+  - fail closed.
+- **node-forge: renovada hasta el 2026-11-30, solo en la cadena de construcción de la APK.** Antes valía en todos los
+  espacios y sin procedencia; ahora tiene la misma comprobación que zod, extendida a sus dos caminos:
+  - **Lo que cubre:**
+    - el aviso GHSA-86w9-cpqp-85rv;
+    - la copia `node_modules/node-forge` 1.4.0;
+    - solo en la auditoría de `@be/mobile`.
+  - **Los caminos permitidos, con sus versiones:**
+    - `node-forge` ← `@expo/cli` 57.0.25 ← `expo` 57.0.23 ← `@be/mobile`;
+    - `node-forge` ← `@expo/code-signing-certificates` 0.0.6 ← `@expo/cli`. Al paquete de firma lo puede usar solo la CLI.
+  - **El bundle de Android** no puede tener módulos de esa copia, ni de otra copia de node-forge que el aviso abarque. El
+    rango es «<=1.4.0»: no hay versión corregida, y la 1.4.0 está abarcada.
+  - **Una dependencia nueva que lo traiga para ejecutarse,** aunque sea de la APK, bloquea (1). También bloquean:
+    - otro paquete que use el de firma, por ejemplo `expo-updates`;
+    - un camino declarado que ya no exista;
+    - una versión distinta.
+  - **En la API y el website, el aviso bloquea.** Lo que no se puede comprobar no aprueba (2).
+- **El vencimiento, en las dos: el 2026-11-30, inclusive.**
+  - La auditoría compara la fecha UTC del runner. Valen hasta el 2026-11-30 a las 23:59:59 UTC, que son las 20:59:59 de
+    Argentina.
+  - Desde el 2026-12-01 a las 00:00 UTC, el 30/11 a las 21:00 en Argentina, la auditoría falla en toda rama, también en
+    `main`.
+  - **No hay renovación automática:** renovarlas de nuevo es otra decisión de Dirección y un cambio en el script.
+- **El riesgo que queda, bajo y acotado a la cadena de construcción, no nulo:**
+  - **El zod 3:** lo ejecuta la CLI al construir el bundle, con datos de paquetes, no de personas.
+  - **node-forge:** está instalado en la CI y en la máquina que construye la APK. La CLI lo usa para firmar actualizaciones
+    de expo-updates y para la firma de iOS, y BE no configura ninguna de las dos. El defecto (la verificación de firmas
+    RSA acepta elementos de más) importa solo al verificar firmas.
+  - **Los teléfonos,** fuera de esta excepción: siguen con el zod 4.6.5 de las APK instaladas hasta una APK nueva
+    autorizada. Validan respuestas de la API de BE.
+- **Cuándo se retiran:**
+  - **la de zod,** cuando Expo publique una CLI que no pida zod 3, salga una 3.x corregida o se retire el aviso;
+  - **la de node-forge,** cuando salga una versión fuera del rango del aviso (se aplica con `overrides`), la CLI deje de
+    usarlo o se retire el aviso.
+
+  Revisarlo antes del 2026-11-30, y en cada actualización de Expo: al cambiar las versiones de la cadena, la excepción
+  deja de valer.
+- **Dónde quedó:** este registro, `EXCEPCIONES` en `scripts/auditoria-de-dependencias.cjs`, sus pruebas y los escenarios
+  con npm de verdad.
 
 ---
 
