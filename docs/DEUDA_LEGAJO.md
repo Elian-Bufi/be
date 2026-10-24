@@ -155,6 +155,7 @@
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 | DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **IMPLEMENTADO** 2026-10-19 en la sesión enfocada (PR en borrador, sin APK nueva): las reglas de la 0.13.2, dichas (R-1 a R-6); falta el teléfono |
+| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **IMPLEMENTADA** 2026-10-20 (#198, CI en verde, sin integrar): lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
 
 ---
 
@@ -5138,3 +5139,76 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - **El alcance de R-2, dicho antes de elegir.** La ayuda del diálogo dice que la sustitución vale para todas las series del ejercicio en esa sesión, las registradas y las que faltan, y que no se puede cambiar una serie sola; con series registradas, la confirmación suma «y las que registres después también». No hay sustitución por serie: el contrato admite un realizado por ejercicio, y la prueba lo fija.
 
 **Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
+
+---
+
+## DL-152 — Lo que leen las APK instaladas: congelado por versión y leído contra la API de hoy
+
+**Prioridad:** alta (antes de pasar una candidata a estable).
+
+**Documentos:**
+- **09v7 T19:** un endpoint nuevo es compatible; cambiar la forma de uno que lee un cliente instalado, no.
+- **C01** (WP-ENTRENAMIENTO-SERIES) y **D10** (WP-NUTRICION-RECETAS): «lo nuevo va en operaciones nuevas».
+- **DL-122:** las capacidades que declara la APK (`X-BE-Capabilities`).
+- **DL-138 D-10:** una APK sin la casilla de mayoría de edad ya no crea cuentas.
+- **DL-151** (PR #195): la sustitución de ejercicios que perdieron las candidatas 0.15 a 0.17.
+
+**Qué pidió Dirección (2026-10-20):** «Ampliá las pruebas de compatibilidad para cubrir las respuestas que realmente leen la estable y la 0.17.0-candidata.3, incluyendo las lecturas actualmente fuera de las verificaciones existentes. No promociones una candidata a estable mientras siga la regresión o falten las pruebas del teléfono.»
+
+**Estado:** IMPLEMENTADA el 2026-10-20 en la rama `wp-compatibilidad-apk` (PR #198, en borrador), sin integrar. CI en verde: la integración, 837 de 837, con los 19 casos de esta prueba (8 de la 0.13.2 y 11 de la candidata.3); el dominio, 833 de 833.
+
+**Qué pasaba:**
+- Lo congelado (`packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`) eran 16 lecturas de la 0.13.2: NUT-14 a 16 y 16-LISTA; TRN-08, 09, 13 a 20, 14-PERIODO y 19-LISTA.
+- Las APK validan **toda** respuesta con el cliente compartido (`crearClienteBe`): cada 2xx con el esquema de su método, y cada rechazo con el sobre de error (si no lo reconocen, dicen «respuesta no reconocida»).
+- Relevado en el código de cada tag, la 0.13.2 (`4b49d43`) llama 44 operaciones y la 0.17.0-candidata.3 (`cf55288`), 80. Fuera de lo congelado quedaban, en las dos, ACC, CON, REL, FRM y ANT-06-PROPIA; y en la candidata, además, ING, MED, EVI, INV, GOO, NOV, CRD-01-PROPIA, SER-02, TIE, AGE-01 y REV-A (NUT-19 y TRN-23).
+
+**Lo decidido** (a ratificar):
+- **D-1 · Qué se congela.** Un archivo por APK, `packages/domain/fixtures/lecturas-de-la-apk/<versión>.json`, con:
+  - la versión, el versionCode, el tag y el commit;
+  - cómo pide: las cabeceras (`X-BE-Surface` y las capacidades), las versiones de los textos que manda como aceptadas y, por operación, si lleva la sesión y la Idempotency-Key;
+  - por operación: el verbo, la ruta, los métodos del cliente que la llaman, el esquema de la respuesta y el del pedido, en JSON Schema del lado de la entrada (lo que acepta `safeParse`);
+  - el sobre de error y los detalles que la candidata lee con su esquema (GOOGLE_LINK_REQUIRED, GOOGLE_ACCOUNT_NOT_FOUND, VISUAL_EVIDENCE_ACT_REQUIRED).
+  - *Por qué JSON Schema:* es lo que ya usaba C01, se lee con `z.fromJSONSchema` del mismo zod de las APK (4.6.5), se revisa en un diff y no trae código viejo al repo. La prueba del dominio verifica que la ida y vuelta por zod da el mismo esquema: la prueba de integración lee exactamente lo congelado.
+  - *Lo que JSON Schema no dice:* cuatro `refine` (el rango de repeticiones, la unidad de un parámetro numérico, la vigencia del objetivo de una revisión y el instante monotónico de un evento). El script los anota y la prueba de integración los revisa aparte; uno nuevo hace fallar la prueba del dominio hasta que se escriba su verificación. Tampoco dice el recorte de espacios (`trim`): un texto hecho solo de espacios pasaría la prueba y la APK lo rechazaría. La API recorta al guardar.
+  - *Alternativas descartadas:* copiar el dominio compilado de cada APK (fiel también en los `refine`, pero cientos de KB de código ilegible por versión); leer los tags con git durante la CI (necesita el historial completo y los tags en cada corrida).
+- **D-2 · Cómo se genera.** `node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-<versión>`:
+  - lee del tag las fuentes del dominio y de la APK, transpila ese dominio y lo carga con el zod del repo (se niega si la APK usaba otra versión);
+  - del cliente de ese commit saca el verbo, la ruta y el esquema de cada método; de la APK, qué métodos usa; del contrato de ese commit, la operación de cada ruta.
+  - No se edita a mano, y da siempre el mismo archivo.
+- **D-3 · La prueba.** `test/integration/lecturas-de-las-apk.int-spec.ts`, en la CI de integración (PostgreSQL real):
+  - por cada APK congelada pide cada operación que esa APK llama, **como la pide**: su ruta, sus cabeceras, la sesión y la Idempotency-Key solo donde las manda, los textos de su commit y un cuerpo que se valida antes contra su pedido congelado;
+  - lee la respuesta real con el esquema congelado de esa APK, y cada rechazo con su sobre y sus detalles;
+  - usa datos que recorren las ramas más cargadas: una opción de receta con imagen, «Piernas A» con la imagen del ejercicio, eventos de tiempo, revisiones con un objetivo nuevo y un formulario rectificado;
+  - al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada lectura suya tenga escenario.
+- **D-4 · El contrato de hoy.** La prueba del dominio (`lecturas-de-la-apk.test.ts`, en `npm test`) exige que cada operación que llama una APK vigente siga en `OPERACIONES` con su verbo y su ruta, y que no pida sesión ni Idempotency-Key donde la APK no las manda.
+- **D-5 · Lo que ya se sabe que no tiene éxito.** El alta de la 0.13.2 (API-ACC-01) responde 422 TERMS_VERSION_NOT_ACCEPTABLE por DL-138 D-10. La prueba lee ese rechazo con el sobre de la 0.13.2, que lo traduce a «Los textos cambiaron. Actualizá la app para continuar.».
+
+**Cómo se actualiza al publicar una APK:**
+1. Taggearla `be-apk-<versión>`, como cada publicación.
+2. Correr el script con ese tag y sumar la versión a `VIGENTES` en `lecturas-de-la-apk.test.ts`.
+3. La prueba de integración corre sola con el archivo nuevo. Si la APK lee algo que ningún escenario pide, falla hasta que se agregue.
+4. Cuando ya no haya teléfonos con una versión, se borra su archivo y se saca de `VIGENTES`.
+
+Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
+
+**La regla para promover.** Una candidata no pasa a estable mientras:
+- siga la regresión de la sustitución de ejercicios (DL-151, PR #195): la candidata.3 ya no llama API-TRN-13, con la que la 0.13.2 busca el ejercicio que sustituye;
+- falten las pruebas en el teléfono;
+- o esta prueba falle para la candidata o para la estable.
+
+**Lo que mostró el relevamiento:**
+- Para las 124 lecturas (44 de la estable y 80 de la candidata), el contrato de hoy declara la misma forma que congeló cada APK. La única diferencia es API-INV-05, donde el cliente lee con la unión de las dos respuestas del contrato (201 y 200).
+- En los pedidos, la única diferencia es el alta de la 0.13.2 (D-5).
+- La API no valida sus respuestas contra el contrato. Por eso la prueba lee respuestas reales: una respuesta puede traer algo que el contrato no declara.
+
+**Pruebas:**
+- **Dominio** (`lecturas-de-la-apk.test.ts`): están las dos APK vigentes con su tag y su commit; la ida y vuelta por zod; el contrato de hoy; lo que JSON Schema no representa.
+- **Integración** (`lecturas-de-las-apk.int-spec.ts`): las 44 y las 80 lecturas con datos reales, más el cierre que exige haberlas leído todas.
+
+**Lo que queda abierto:**
+- Las pruebas en el teléfono.
+- C01 y D10 siguen como estaban: comparan el contrato de hoy con la forma congelada de 16 lecturas. Esta DL las incluye; retirarlas lo decide Dirección.
+
+**Provisorio en código:** D-1 a D-5.
+
+**Condición de cierre:** la prueba en verde en la CI de main, y la regla aplicada en la próxima promoción a estable.
