@@ -155,6 +155,7 @@
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 | DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **IMPLEMENTADO** 2026-10-23 en `wp-nutricion-cobertura` (sin integrar): las comidas del plan con el criterio de Registros, el subtotal que dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; D-1 a D-4 a ratificar |
+| DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **IMPLEMENTADO** 2026-10-23 en `wp-revision-evidencia` (sobre DL-153, sin integrar): API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; la forma de la revisión, que lee la APK, no cambia; D-1 a D-3 a ratificar |
 
 ---
 
@@ -5151,3 +5152,69 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - La APK no cambia: «Tu historial» de Nutrición de la persona no usa este cálculo.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-4, la CI de la integración pasa, y la prueba con profesionales dice si el número se entiende.
+
+---
+
+## DL-154 — Una revisión registrada dice en qué evidencia se apoyó: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA
+
+**Prioridad:** alta (encargo de consolidación de Dirección del 2026-10-23, punto 4; hallazgo UX-02 de la auditoría del 2026-10-21).
+
+**Documentos:**
+- **UC-P13 y UC-P18:** sin evidencia identificable no hay revisión válida.
+- **REG-06-141:** la revisión es un acto con todos sus componentes, de solo agregar.
+- **09v9:904-910 y 09v10:1375-1381:** API-NUT-19 y API-TRN-23, la revisión y su aplicación.
+- **DL-134 (REV-A):** la persona lee la misma forma de la revisión, en la APK.
+
+**Qué pasaba.** Comprobado el 2026-10-23 contra main `0fb1bff`. El recorrido completo:
+- **Selección:** `SeleccionDeEvidencia` marca comidas o sesiones, versiones del plan y el objetivo.
+- **Pedido:** API-NUT-18 o API-TRN-22 con `evidenceReferences`, validadas en el servidor (`exigirEvidenciaReconstruible`).
+- **Persistencia:** la columna `evidencias` (JSON) de `revision_nutricional` y `revision_de_entrenamiento`, de solo agregar.
+- **Lectura:** API-NUT-17/19 y API-TRN-21/23 devuelven `evidenceReferences`, `period` y `author`.
+- **El defecto:** la lista de revisiones del website (`ItemDeRevision`, en las dos áreas) no dibujaba ni el período, ni el autor, ni la evidencia. **Se guardaba todo y no se podía consultar.**
+
+**Lo que se resolvió:**
+- **A la vista, sin otra lectura:** cada revisión dice «Nutrición · período revisado: … · registró: …» y «Evidencia seleccionada: 12 comidas · 1 versión del plan · el objetivo», contado desde las referencias guardadas. Una revisión que no guardó evidencia lo dice.
+- **«Ver la evidencia»** pide la lectura nueva de su área, que resuelve en el servidor cada referencia **guardada**, en su orden y nada más. De cada una dice qué es (la comida del plan y si fue la opción o algo diferente, la sesión, «Plan v2», el objetivo), cuándo ocurrió y **lo que cambió después de la revisión**, con su instante:
+  - la persona rectificó las cantidades;
+  - una corrección;
+  - la persona deshizo el registro;
+  - se activó otra versión del plan o se registró otro objetivo.
+- **«Abrir»** muestra la comida, la sesión o la versión del plan en el panel modal de siempre, leída por su propia operación. Retiene el foco, Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. Si el registro cambió después, el panel avisa que lo que se ve es el estado de hoy.
+- **El permiso de hoy:** la lectura nueva decide como API-NUT-19 y API-TRN-23 (el PDP y el profesional del seguimiento). Con el consentimiento revocado, otro profesional o una revisión inexistente, el mismo 404, sin ningún detalle. «Abrir» vuelve a pedir permiso.
+
+**Por qué una lectura nueva y no reusar las que hay:**
+- La línea de tiempo del período no alcanza: una versión del plan activada antes del período, que es lo más común, no aparece en ella. Tampoco aparece una referencia fuera del período.
+- Pedir cada registro por separado serían hasta 200 pedidos.
+- **No cambia la forma de la revisión.** La lee la APK candidata (REV-A, API-NUT-19-LISTA y PROPIA), y un campo nuevo la rompería (DL-152). Las dos operaciones son nuevas y solo las lee el website.
+- **No agrega tablas ni copias:** lee lo que la revisión ya guardó.
+
+**Lo que no se hace:**
+- No se reconstruye la selección con el período ni con un filtro.
+- No se completa una revisión que no guardó evidencia.
+- No se muestran las cantidades ni las cargas de cuando se revisó: se dice que cambió y desde cuándo.
+- La APK de la persona no cambia.
+
+**Decisiones, provisorio en código (a ratificar):**
+- **D-1 · Una referencia que hoy no está en el seguimiento** (no debería pasar; se valida al registrar): se lista como «Ya no está en este seguimiento», sin decir qué era.
+  - **Alternativa:** ocultarla, pero la cuenta de la revisión dejaría de coincidir.
+- **D-2 · Lo que se ve al abrir es el estado de hoy, avisado.** Reconstruir el registro como estaba al revisar (la cadena de rectificaciones se conserva) es una lectura más.
+  - **Recomendación:** hacerla solo si la prueba con profesionales la pide.
+- **D-3 · El objetivo y la evaluación no se abren en el panel**: no hay una lectura de solo lectura para ellos en esa pantalla. Se ven con su fecha y lo que cambió después.
+
+**Pruebas:**
+- **`evidencia-registrada.test.ts`** (dominio, 5): el resumen desde lo guardado, los nombres sin valores de salud, los cambios posteriores en palabras, los grupos sin agregar nada, y un contrato sin campos de cantidades.
+- **`evidencia-de-revision.int-spec.ts`** (integración, Nutrición, 4):
+  - lo seleccionado en su orden: la comida diferente del período sin marcar no aparece;
+  - persiste en otra sesión;
+  - después de la revisión, la rectificación, la anulación y la versión sucesora;
+  - una revisión sembrada sin evidencia y una referencia ajena (NOT_FOUND);
+  - el mismo 404 con el consentimiento revocado, otro profesional o una revisión inexistente, como API-NUT-19, y 400 con un parámetro de más.
+- **`entrenamiento.int-spec.ts`** (Entrenamiento, 1): la sesión, el plan y el objetivo, la corrección posterior y otro profesional.
+- **El recorrido `evidencia`** (navegador): la lista, la comida deshecha después, «Abrir» con Escape y el foco, y la recarga.
+- **La guardia de trazabilidad** acepta el sufijo `EVIDENCIA` y el OpenAPI está al día.
+
+**Lo que falta:**
+- La prueba con profesionales: si se reconstruye en qué se apoyó una revisión.
+- Un lector de pantalla real.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-3, la CI de la integración pasa y la prueba con profesionales lo confirma.

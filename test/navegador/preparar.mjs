@@ -39,6 +39,8 @@ export const RECORRIDOS = {
   faltaUnaParte: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
   // DL-153 (encargo del 2026-10-23): el número de Nutrición dice qué representa y qué falta registrar del plan.
   completitud: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan'] },
+  // DL-154: una revisión registrada dice en qué evidencia se apoyó, y lo que cambió después.
+  evidencia: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan', 'revision-con-evidencia'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
@@ -170,10 +172,34 @@ export async function datos(estado) {
         });
       const anteayer = diaMas(hoy, -2);
       const ayer = diaMas(hoy, -1);
-      await registrarComida(desayuno, anteayer, '08:30');
-      await registrarComida(almuerzo, anteayer, '13:00');
+      const desayunoAnteayer = (await registrarComida(desayuno, anteayer, '08:30')).data;
+      const almuerzoAnteayer = (await registrarComida(almuerzo, anteayer, '13:00')).data;
       await registrarComida(desayuno, ayer, '08:30');
-      e.comidas = { anteayer, ayer, faltante: almuerzo.label };
+      e.comidas = { anteayer, ayer, faltante: almuerzo.label, desayuno: desayuno.label, almuerzo: almuerzo.label, planVersionId: opciones.plan.planId, desayunoAnteayer, almuerzoAnteayer };
+    }
+    if (r.datos.includes('revision-con-evidencia')) {
+      // DL-154: el profesional revisa con las dos comidas de anteayer y la versión del plan (no con el desayuno de ayer, que
+      // está en el período). Después de la revisión, la persona deshace el almuerzo de anteayer desde la APK.
+      const { anteayer, ayer, desayunoAnteayer, almuerzoAnteayer, planVersionId } = e.comidas;
+      const revision = (
+        await pedir('POST', `/advisees/${e.ase.id}/nutrition/reviews`, {
+          token: pro,
+          cuerpo: {
+            period: { start: anteayer, end: ayer, timeZone: ZONA },
+            evidenceReferences: [
+              { type: 'EXECUTION', id: desayunoAnteayer.recordId },
+              { type: 'EXECUTION', id: almuerzoAnteayer.recordId },
+              { type: 'PLAN_VERSION', id: planVersionId },
+            ],
+            interpretation: 'Registró las dos comidas de anteayer. Interpretación sintética del recorrido.',
+            result: 'MAINTAIN',
+            rationale: 'Fundamento sintético del recorrido.',
+            nextAction: { description: 'Seguir con el plan.' },
+          },
+        })
+      ).data;
+      await pedir('POST', `/nutrition/meal-records/${almuerzoAnteayer.recordId}/annulment`, { token: ase, superficie: 'APK', cuerpo: { reason: 'Me equivoqué de día', expectedVersion: almuerzoAnteayer.version } });
+      e.revision = { reviewId: revision.reviewId };
     }
     if (r.datos.includes('tomas')) {
       const pesos = [

@@ -435,6 +435,10 @@ it('TEST-CT (WP-04): se ejercitan éxitos y errores de NUT e INT-NUT-01', async 
   const rev = await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision(evidencia, 'MAINTAIN', { nextReviewAt: '2030-01-01' })).expect(201);
   await pro.get(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}`).expect(200);
   await pro.get(`/api/v1/nutrition/reviews/${ajeno}`).expect(404);
+  // NUT-19-EVIDENCIA (DL-154): la evidencia guardada, resuelta; la ajena o inexistente, el mismo 404; un parámetro de más, 400.
+  await pro.get(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/evidence`).expect(200);
+  await pro.get(`/api/v1/nutrition/reviews/${ajeno}/evidence`).expect(404);
+  await pro.get(`/api/v1/nutrition/reviews/${rev.body.data.reviewId}/evidence?x=1`).expect(400);
   // NUT-19-LISTA y NUT-19-PROPIA (REV-A, DL-134): la persona lee sus revisiones; la ajena o inexistente, el mismo 404.
   await ase.get('/api/v1/me/nutrition/reviews?limit=5').expect(200);
   await ase.get('/api/v1/me/nutrition/reviews?x=1').expect(400); // INVALID_REQUEST
@@ -796,6 +800,10 @@ it('TEST-CT (WP-06, tramos 3 y 4): se ejercitan éxitos y errores de la ejecuci�
   const mantener = (await pro.post(revisiones).send(revision('MAINTAIN', undefined, { nextReviewAt: '2030-01-01' })).expect(201)).body.data;
   await pro.get(`/api/v1/training/reviews/${mantener.reviewId}`).expect(200);
   await pro.get(`/api/v1/training/reviews/${ajeno}`).expect(404);
+  // TRN-23-EVIDENCIA (DL-154): la evidencia guardada, resuelta; la ajena o inexistente, el mismo 404; un parámetro de más, 400.
+  await pro.get(`/api/v1/training/reviews/${mantener.reviewId}/evidence`).expect(200);
+  await pro.get(`/api/v1/training/reviews/${ajeno}/evidence`).expect(404);
+  await pro.get(`/api/v1/training/reviews/${mantener.reviewId}/evidence?x=1`).expect(400);
   // TRN-23-LISTA y TRN-23-PROPIA (REV-A, DL-134).
   await ase.get('/api/v1/me/training/reviews?limit=5').expect(200);
   await ase.get('/api/v1/me/training/reviews?x=1').expect(400); // INVALID_REQUEST
