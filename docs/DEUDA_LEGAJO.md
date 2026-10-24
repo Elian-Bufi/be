@@ -154,6 +154,7 @@
 | DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
+| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **IMPLEMENTADA** 2026-10-20 (#198, CI en verde, sin integrar): lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
 
 ---
 
@@ -2671,7 +2672,7 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 
 ## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
 
-**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03; las dos excepciones vencen el 2026-10-31
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría); las tres vencen el 2026-10-31
 
 **Qué pasó.**
 - El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
@@ -2751,6 +2752,113 @@ excepciones siguen siendo las de esta deuda.
   - si la auditoría no se puede hacer: un error de npm, una salida vacía o un informe incompleto.
 - **Antes del 2026-10-31** hay que revisar las fuentes primarias. Si apareció una corrección, se fija con `overrides` y la
   excepción se borra. Si no, Dirección decide de nuevo.
+
+**Revisión y propuesta del 2026-10-23 (sin ratificar: Dirección no autorizó ampliar las excepciones).**
+- **Las dos ratificadas.** node-forge sigue sin corrección: la 1.4.0 es la última y el aviso la abarca. braces ya no
+  aparece en la auditoría del 2026-10-23: su excepción no se usa y se puede borrar. Las dos vencen el 2026-10-31.
+- **Un aviso nuevo, sin versión corregida en la línea que usa Expo:** GHSA-mrhx-c7xc-m3w5 en zod (alto; todo zod anterior
+  a la 4.6.6), publicado después del 2026-10-20.
+  - La API, el website y la APK validan con el zod de `@be/domain`, que pasa a la 4.6.6 en `seguridad/avisos-2026-10-23`.
+  - Queda el zod 3.25.76 que exige la CLI de Expo (`@expo/cli` 57.0.25 pide `^3.25.76`). No hay un zod 3 corregido, y no
+    viaja en el bundle de la APK, pero la auditoría de `@be/mobile` falla por él y frena la CI de todo.
+- **La propuesta** (esta rama, `seguridad/excepcion-zod-expo-propuesta`): exceptuar solo GHSA-mrhx-c7xc-m3w5 en zod, solo en
+  `@be/mobile` y hasta el 2026-10-31, como las otras.
+  - Una excepción puede acotarse a espacios de trabajo (`espacios`): en la API o el website, el mismo aviso sigue
+    bloqueando. Lo prueba `auditoria-de-dependencias.test.cjs` (13 pruebas).
+  - **Alternativa:** dejar la CI en rojo hasta que Expo pase a zod 4, sin integrar nada mientras tanto. Actualizar Expo no
+    lo resuelve hoy: la última `@expo/cli` (58.1.15, revisada el 2026-10-23) también pide `^3.25.76`.
+  - **Recomendación:** la excepción acotada, con el mismo vencimiento, y revisar las tres juntas antes del 2026-10-31.
+
+**Corrección de la propuesta del 2026-10-24 (sigue sin ratificar).** Revisada a pedido de Dirección.
+- **Qué faltaba.** La propuesta exceptuaba el aviso por aviso, paquete y espacio, sin mirar de dónde venía cada copia
+  vulnerable.
+  - La copia es `node_modules/zod` (3.25.76), en la raíz del monorepo. El zod 4.6.6 vive anidado en
+    `packages/domain/node_modules`. Cualquier `import 'zod'` fuera del dominio recibe el zod 3.
+  - Si la APK empezaba a usarlo, declarándolo o importándolo sin declarar, la excepción lo tapaba.
+  - Con npm de verdad, en una copia aislada del lockfile, la propuesta anterior aprobaba con código 0 en tres casos:
+    cuando la APK declara zod 3.25.76, cuando una biblioteca de la APK pide zod ^3.25.0 y sin ninguna prueba de qué viaja
+    en el bundle.
+- **Lo que exige ahora, en cada corrida** (`procedencia` en `EXCEPCIONES`):
+  1. npm encuentra vulnerable solo `node_modules/zod`, y `package-lock.json` dice que es la 3.25.76.
+  2. En producción la usa solo `@expo/cli` 57.0.25, a la CLI la usa solo `expo` 57.0.23, y `@be/mobile` pide `expo`.
+     Las rutas de desarrollo no cuentan: Puppeteer → `chromium-bidi` → zod se informa y queda fuera, como en toda la
+     auditoría de producción.
+  3. El bundle de Android de ese commit no tiene ningún módulo de `node_modules/zod` ni de otra copia de zod que el aviso
+     abarque. Se construye como lo hace Gradle (`expo export:embed`), y `node_modules` tiene que coincidir con el lockfile.
+  - Si aparece otra ruta, el aviso bloquea (1). Si algo no se puede comprobar, la auditoría no aprueba (2). Vencida,
+    bloquea. En otro espacio, bloquea.
+  - Si cambia la versión de la copia o de un eslabón, la excepción deja de valer hasta repetir la comprobación.
+- **Por qué el bundle y no solo la dependencia.** La CLI no es solo de construcción: su sistema de módulos
+  (`@expo/cli/build/metro-require/require.js`) viaja en la APK. Ese módulo no importa nada, y el zod 3 no entra. La prueba
+  tiene que ser sobre la copia de zod, no sobre el paquete que la trae.
+- **Dónde se ejecuta el zod 3.** Al construir: durante `export:embed`, el paso de Gradle, la CLI lo carga para validar la
+  definición de los complementos de DevTools que declaran los paquetes instalados. Lo mostró un registro de carga de
+  módulos. Corre en la CI y en la máquina que construye la APK, no en el teléfono, y no recibe datos de las personas.
+- **Lo que se comprobó el 2026-10-24:**
+  - **El lockfile de la propuesta.** `node_modules/zod` la usa en producción solo `@expo/cli`; a la CLI, solo `expo`; al
+    zod 4.6.6, solo `@be/domain`.
+  - **La candidata.3 publicada.** El APK construido el 2026-10-19 tiene el mismo SHA-256 que el publicado en GitHub
+    (`d6b73842…`). Su mapa de fuentes tiene 1.124 módulos. El zod que lleva es solo el de `packages/domain/node_modules`:
+    95 módulos, con `version = 4.6.5` en el código empaquetado. No tiene ningún módulo de `node_modules/zod`.
+  - **Esta propuesta.** `npm run audit:prod` en local aprueba. El bundle de Android tiene 1.127 módulos, ninguno de
+    `node_modules/zod`, y el zod que lleva es solo `packages/domain/node_modules/zod`, la 4.6.6 (95 módulos).
+  - **Las pruebas.** `auditoria-de-dependencias.test.cjs` tiene 30 pruebas, 17 nuevas. Las 16 formas de desactivar un
+    control hacen fallar al menos una. `auditoria-de-dependencias.escenarios.cjs` corre los cinco escenarios con npm de
+    verdad, y los cinco dan lo esperado.
+  - **La negativa con el bundle real.** Con la APK importando zod sin declararlo, la auditoría bloquea: «el bundle de
+    Android incluye 10 módulos de node_modules/zod (3.25.76)».
+  - La evidencia completa y cómo repetirla están en `EVIDENCIA/EXCEPCION-ZOD-EXPO/LEEME.md`.
+- **Lo que esta excepción no cubre, y sigue abierto:**
+  - **Las APK instaladas.** La candidata.3 ejecuta zod 4.6.5, y está comprobado en su bundle. La 0.13.2 también, según el
+    lockfile del commit con que se construyó. Solo una APK nueva, construida después de integrar
+    `seguridad/avisos-2026-10-23`, lo corrige. Para aprovecharlo hace falta una respuesta maliciosa de la API.
+  - **La API de `test`.** Valida con zod 4.6.5 hasta que se integre esa rama. El límite de 16 KB por pedido acota el aviso.
+  - **Un `import 'zod'` sin declarar en la API o el website** recibiría el zod 3 de la raíz, y npm no lo vería. Ninguna
+    excepción lo tapa, pero la auditoría tampoco lo detecta.
+- **Pendiente de Dirección.** Ratificar o no esta excepción. Es una ampliación de DL-114, y Dirección no autorizó
+  ampliarla. Vence el 2026-10-31, con la de node-forge.
+
+**Ratificación de Dirección del 2026-10-24: el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5).**
+- **Quién y cuándo.** Dirección de BE, el 2026-10-24.
+  - Ratifica la propuesta de #202 en su versión corregida: la cabeza `664f713`, con la CI de verificación 40094444871.
+  - La versión del 2026-10-23 (`916cb05`) no se ratifica: exceptuaba por aviso, paquete y espacio, sin mirar de dónde
+    venía la copia.
+- **Qué se exceptúa, y nada más:**
+  - el aviso GHSA-mrhx-c7xc-m3w5;
+  - en la copia `node_modules/zod`, versión 3.25.76;
+  - solo en la auditoría de `@be/mobile`;
+  - con procedencia exclusiva `@expo/cli` 57.0.25 ← `expo` 57.0.23 ← `@be/mobile`.
+- **El riesgo aceptado.**
+  - Ese zod 3 sigue instalado en la CI y en la máquina que construye la APK.
+  - La CLI lo ejecuta al construir (`export:embed`), para validar la definición de los complementos de DevTools de los
+    paquetes instalados.
+  - No viaja en la APK y no recibe datos de las personas. El riesgo es bajo y acotado a la cadena de construcción, no
+    nulo.
+- **Las condiciones, obligatorias en cada auditoría** (`procedencia` en `scripts/auditoria-de-dependencias.cjs`):
+  1. npm encuentra vulnerable solo esa copia, en esa versión.
+  2. En producción la usa solo `@expo/cli`, a la CLI la usa solo `expo`, y `@be/mobile` pide `expo`. Ninguna ruta
+     adicional usa esa copia.
+  3. El bundle de Android de ese commit, construido como lo hace Gradle, no tiene ningún módulo de esa copia ni de otra
+     copia de zod que el aviso abarque. `node_modules` coincide con el lockfile.
+  4. Fail closed:
+     - una procedencia nueva o una versión distinta bloquean (1);
+     - una comprobación imposible (sin lockfile, sin la lista de npm, sin bundle) no aprueba (2);
+     - vencida, bloquea (1).
+- **El vencimiento.** El 2026-10-31, inclusive.
+  - La auditoría compara la fecha UTC del runner. Vale hasta el 2026-10-31 a las 23:59:59 UTC, que son las 20:59:59 de
+    Argentina.
+  - Desde el 2026-11-01 a las 00:00 UTC (el 31 a las 21:00 en Argentina), la auditoría falla en toda rama, también en
+    `main`, salvo una decisión nueva de Dirección.
+  - Que venza unas horas antes en la hora de Argentina va en el sentido seguro. Es el mismo criterio de las excepciones de
+    node-forge y braces.
+- **Lo que no autoriza:**
+  - integrar ningún PR en `main` ni desplegar `test`, que necesitan una autorización aparte;
+  - excepciones nuevas, ni ampliar las existentes;
+  - cambiar el vencimiento de node-forge o braces.
+- **Dónde quedó:**
+  - este registro;
+  - `EVIDENCIA/EXCEPCION-ZOD-EXPO/LEEME.md`;
+  - el procedimiento de integración, sin ejecutar: `EVIDENCIA/EXCEPCION-ZOD-EXPO/INTEGRACION.md`.
 
 ---
 
@@ -5088,3 +5196,76 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - la prueba con personas.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-7, los recorridos pasan en la CI de main, y la prueba con profesionales se hace y se informa.
+
+---
+
+## DL-152 — Lo que leen las APK instaladas: congelado por versión y leído contra la API de hoy
+
+**Prioridad:** alta (antes de pasar una candidata a estable).
+
+**Documentos:**
+- **09v7 T19:** un endpoint nuevo es compatible; cambiar la forma de uno que lee un cliente instalado, no.
+- **C01** (WP-ENTRENAMIENTO-SERIES) y **D10** (WP-NUTRICION-RECETAS): «lo nuevo va en operaciones nuevas».
+- **DL-122:** las capacidades que declara la APK (`X-BE-Capabilities`).
+- **DL-138 D-10:** una APK sin la casilla de mayoría de edad ya no crea cuentas.
+- **DL-151** (PR #195): la sustitución de ejercicios que perdieron las candidatas 0.15 a 0.17.
+
+**Qué pidió Dirección (2026-10-20):** «Ampliá las pruebas de compatibilidad para cubrir las respuestas que realmente leen la estable y la 0.17.0-candidata.3, incluyendo las lecturas actualmente fuera de las verificaciones existentes. No promociones una candidata a estable mientras siga la regresión o falten las pruebas del teléfono.»
+
+**Estado:** IMPLEMENTADA el 2026-10-20 en la rama `wp-compatibilidad-apk` (PR #198, en borrador), sin integrar. CI en verde: la integración, 837 de 837, con los 19 casos de esta prueba (8 de la 0.13.2 y 11 de la candidata.3); el dominio, 833 de 833.
+
+**Qué pasaba:**
+- Lo congelado (`packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`) eran 16 lecturas de la 0.13.2: NUT-14 a 16 y 16-LISTA; TRN-08, 09, 13 a 20, 14-PERIODO y 19-LISTA.
+- Las APK validan **toda** respuesta con el cliente compartido (`crearClienteBe`): cada 2xx con el esquema de su método, y cada rechazo con el sobre de error (si no lo reconocen, dicen «respuesta no reconocida»).
+- Relevado en el código de cada tag, la 0.13.2 (`4b49d43`) llama 44 operaciones y la 0.17.0-candidata.3 (`cf55288`), 80. Fuera de lo congelado quedaban, en las dos, ACC, CON, REL, FRM y ANT-06-PROPIA; y en la candidata, además, ING, MED, EVI, INV, GOO, NOV, CRD-01-PROPIA, SER-02, TIE, AGE-01 y REV-A (NUT-19 y TRN-23).
+
+**Lo decidido** (a ratificar):
+- **D-1 · Qué se congela.** Un archivo por APK, `packages/domain/fixtures/lecturas-de-la-apk/<versión>.json`, con:
+  - la versión, el versionCode, el tag y el commit;
+  - cómo pide: las cabeceras (`X-BE-Surface` y las capacidades), las versiones de los textos que manda como aceptadas y, por operación, si lleva la sesión y la Idempotency-Key;
+  - por operación: el verbo, la ruta, los métodos del cliente que la llaman, el esquema de la respuesta y el del pedido, en JSON Schema del lado de la entrada (lo que acepta `safeParse`);
+  - el sobre de error y los detalles que la candidata lee con su esquema (GOOGLE_LINK_REQUIRED, GOOGLE_ACCOUNT_NOT_FOUND, VISUAL_EVIDENCE_ACT_REQUIRED).
+  - *Por qué JSON Schema:* es lo que ya usaba C01, se lee con `z.fromJSONSchema` del mismo zod de las APK (4.6.5), se revisa en un diff y no trae código viejo al repo. La prueba del dominio verifica que la ida y vuelta por zod da el mismo esquema: la prueba de integración lee exactamente lo congelado.
+  - *Lo que JSON Schema no dice:* cuatro `refine` (el rango de repeticiones, la unidad de un parámetro numérico, la vigencia del objetivo de una revisión y el instante monotónico de un evento). El script los anota y la prueba de integración los revisa aparte; uno nuevo hace fallar la prueba del dominio hasta que se escriba su verificación. Tampoco dice el recorte de espacios (`trim`): un texto hecho solo de espacios pasaría la prueba y la APK lo rechazaría. La API recorta al guardar.
+  - *Alternativas descartadas:* copiar el dominio compilado de cada APK (fiel también en los `refine`, pero cientos de KB de código ilegible por versión); leer los tags con git durante la CI (necesita el historial completo y los tags en cada corrida).
+- **D-2 · Cómo se genera.** `node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-<versión>`:
+  - lee del tag las fuentes del dominio y de la APK, transpila ese dominio y lo carga con el zod del repo (se niega si la APK usaba otra versión);
+  - del cliente de ese commit saca el verbo, la ruta y el esquema de cada método; de la APK, qué métodos usa; del contrato de ese commit, la operación de cada ruta.
+  - No se edita a mano, y da siempre el mismo archivo.
+- **D-3 · La prueba.** `test/integration/lecturas-de-las-apk.int-spec.ts`, en la CI de integración (PostgreSQL real):
+  - por cada APK congelada pide cada operación que esa APK llama, **como la pide**: su ruta, sus cabeceras, la sesión y la Idempotency-Key solo donde las manda, los textos de su commit y un cuerpo que se valida antes contra su pedido congelado;
+  - lee la respuesta real con el esquema congelado de esa APK, y cada rechazo con su sobre y sus detalles;
+  - usa datos que recorren las ramas más cargadas: una opción de receta con imagen, «Piernas A» con la imagen del ejercicio, eventos de tiempo, revisiones con un objetivo nuevo y un formulario rectificado;
+  - al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada lectura suya tenga escenario.
+- **D-4 · El contrato de hoy.** La prueba del dominio (`lecturas-de-la-apk.test.ts`, en `npm test`) exige que cada operación que llama una APK vigente siga en `OPERACIONES` con su verbo y su ruta, y que no pida sesión ni Idempotency-Key donde la APK no las manda.
+- **D-5 · Lo que ya se sabe que no tiene éxito.** El alta de la 0.13.2 (API-ACC-01) responde 422 TERMS_VERSION_NOT_ACCEPTABLE por DL-138 D-10. La prueba lee ese rechazo con el sobre de la 0.13.2, que lo traduce a «Los textos cambiaron. Actualizá la app para continuar.».
+
+**Cómo se actualiza al publicar una APK:**
+1. Taggearla `be-apk-<versión>`, como cada publicación.
+2. Correr el script con ese tag y sumar la versión a `VIGENTES` en `lecturas-de-la-apk.test.ts`.
+3. La prueba de integración corre sola con el archivo nuevo. Si la APK lee algo que ningún escenario pide, falla hasta que se agregue.
+4. Cuando ya no haya teléfonos con una versión, se borra su archivo y se saca de `VIGENTES`.
+
+Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
+
+**La regla para promover.** Una candidata no pasa a estable mientras:
+- siga la regresión de la sustitución de ejercicios (DL-151, PR #195): la candidata.3 ya no llama API-TRN-13, con la que la 0.13.2 busca el ejercicio que sustituye;
+- falten las pruebas en el teléfono;
+- o esta prueba falle para la candidata o para la estable.
+
+**Lo que mostró el relevamiento:**
+- Para las 124 lecturas (44 de la estable y 80 de la candidata), el contrato de hoy declara la misma forma que congeló cada APK. La única diferencia es API-INV-05, donde el cliente lee con la unión de las dos respuestas del contrato (201 y 200).
+- En los pedidos, la única diferencia es el alta de la 0.13.2 (D-5).
+- La API no valida sus respuestas contra el contrato. Por eso la prueba lee respuestas reales: una respuesta puede traer algo que el contrato no declara.
+
+**Pruebas:**
+- **Dominio** (`lecturas-de-la-apk.test.ts`): están las dos APK vigentes con su tag y su commit; la ida y vuelta por zod; el contrato de hoy; lo que JSON Schema no representa.
+- **Integración** (`lecturas-de-las-apk.int-spec.ts`): las 44 y las 80 lecturas con datos reales, más el cierre que exige haberlas leído todas.
+
+**Lo que queda abierto:**
+- Las pruebas en el teléfono.
+- C01 y D10 siguen como estaban: comparan el contrato de hoy con la forma congelada de 16 lecturas. Esta DL las incluye; retirarlas lo decide Dirección.
+
+**Provisorio en código:** D-1 a D-5.
+
+**Condición de cierre:** la prueba en verde en la CI de main, y la regla aplicada en la próxima promoción a estable.
