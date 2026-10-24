@@ -14,7 +14,7 @@ import { errores } from './errores';
 /**
  * El techo, para cualquier esquema y tamaño. Ningún cuerpo válido de 16 KB (el límite de `bootstrap.ts`) llega: la cota de
  * cada esquema de entrada está probada en `validacion.spec.ts`, y la más alta, la de EditarPlanDeEntrenamientoRequestSchema,
- * es de 1.223.
+ * es de 1.024 (2026-10-24).
  */
 export const MAXIMO_DE_ELEMENTOS = 1500;
 
