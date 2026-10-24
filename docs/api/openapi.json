@@ -92838,6 +92838,70 @@
                                                             "type": "null"
                                                           }
                                                         ]
+                                                      },
+                                                      "planMeals": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "daysKnown": {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 9007199254740991
+                                                          },
+                                                          "daysUndetermined": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "reason": {
+                                                                  "type": "string",
+                                                                  "enum": [
+                                                                    "NO_ACTIVE_PLAN",
+                                                                    "DAY_TYPE_NOT_RECORDED"
+                                                                  ]
+                                                                },
+                                                                "days": {
+                                                                  "type": "integer",
+                                                                  "exclusiveMinimum": 0,
+                                                                  "maximum": 9007199254740991
+                                                                }
+                                                              },
+                                                              "required": [
+                                                                "reason",
+                                                                "days"
+                                                              ],
+                                                              "additionalProperties": false
+                                                            }
+                                                          },
+                                                          "expected": {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 9007199254740991
+                                                          },
+                                                          "withPlanOption": {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 9007199254740991
+                                                          },
+                                                          "withDifferentMeal": {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 9007199254740991
+                                                          },
+                                                          "withoutRecord": {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 9007199254740991
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "daysKnown",
+                                                          "daysUndetermined",
+                                                          "expected",
+                                                          "withPlanOption",
+                                                          "withDifferentMeal",
+                                                          "withoutRecord"
+                                                        ],
+                                                        "additionalProperties": false
                                                       }
                                                     },
                                                     "required": [
@@ -92845,7 +92909,8 @@
                                                       "recordsWithQuantities",
                                                       "recordsWithoutQuantities",
                                                       "daysWithData",
-                                                      "daysInBucket"
+                                                      "daysInBucket",
+                                                      "planMeals"
                                                     ],
                                                     "additionalProperties": false
                                                   },
@@ -93141,6 +93206,70 @@
                                           "type": "integer",
                                           "minimum": 0,
                                           "maximum": 9007199254740991
+                                        },
+                                        "planMeals": {
+                                          "type": "object",
+                                          "properties": {
+                                            "daysKnown": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "daysUndetermined": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "reason": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "NO_ACTIVE_PLAN",
+                                                      "DAY_TYPE_NOT_RECORDED"
+                                                    ]
+                                                  },
+                                                  "days": {
+                                                    "type": "integer",
+                                                    "exclusiveMinimum": 0,
+                                                    "maximum": 9007199254740991
+                                                  }
+                                                },
+                                                "required": [
+                                                  "reason",
+                                                  "days"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            },
+                                            "expected": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "withPlanOption": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "withDifferentMeal": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "withoutRecord": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            }
+                                          },
+                                          "required": [
+                                            "daysKnown",
+                                            "daysUndetermined",
+                                            "expected",
+                                            "withPlanOption",
+                                            "withDifferentMeal",
+                                            "withoutRecord"
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "required": [
@@ -93151,7 +93280,8 @@
                                         "recordsWithoutQuantities",
                                         "differentMealsWithoutQuantities",
                                         "annulledExcluded",
-                                        "rectifiedCountedOnce"
+                                        "rectifiedCountedOnce",
+                                        "planMeals"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -93580,6 +93710,70 @@
                                                                     "type": "null"
                                                                   }
                                                                 ]
+                                                              },
+                                                              "planMeals": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                  "daysKnown": {
+                                                                    "type": "integer",
+                                                                    "minimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  },
+                                                                  "daysUndetermined": {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                      "type": "object",
+                                                                      "properties": {
+                                                                        "reason": {
+                                                                          "type": "string",
+                                                                          "enum": [
+                                                                            "NO_ACTIVE_PLAN",
+                                                                            "DAY_TYPE_NOT_RECORDED"
+                                                                          ]
+                                                                        },
+                                                                        "days": {
+                                                                          "type": "integer",
+                                                                          "exclusiveMinimum": 0,
+                                                                          "maximum": 9007199254740991
+                                                                        }
+                                                                      },
+                                                                      "required": [
+                                                                        "reason",
+                                                                        "days"
+                                                                      ],
+                                                                      "additionalProperties": false
+                                                                    }
+                                                                  },
+                                                                  "expected": {
+                                                                    "type": "integer",
+                                                                    "minimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  },
+                                                                  "withPlanOption": {
+                                                                    "type": "integer",
+                                                                    "minimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  },
+                                                                  "withDifferentMeal": {
+                                                                    "type": "integer",
+                                                                    "minimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  },
+                                                                  "withoutRecord": {
+                                                                    "type": "integer",
+                                                                    "minimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  }
+                                                                },
+                                                                "required": [
+                                                                  "daysKnown",
+                                                                  "daysUndetermined",
+                                                                  "expected",
+                                                                  "withPlanOption",
+                                                                  "withDifferentMeal",
+                                                                  "withoutRecord"
+                                                                ],
+                                                                "additionalProperties": false
                                                               }
                                                             },
                                                             "required": [
@@ -93587,7 +93781,8 @@
                                                               "recordsWithQuantities",
                                                               "recordsWithoutQuantities",
                                                               "daysWithData",
-                                                              "daysInBucket"
+                                                              "daysInBucket",
+                                                              "planMeals"
                                                             ],
                                                             "additionalProperties": false
                                                           },
@@ -94149,6 +94344,70 @@
                                                               "type": "null"
                                                             }
                                                           ]
+                                                        },
+                                                        "planMeals": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "daysKnown": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "daysUndetermined": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                  "reason": {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                      "NO_ACTIVE_PLAN",
+                                                                      "DAY_TYPE_NOT_RECORDED"
+                                                                    ]
+                                                                  },
+                                                                  "days": {
+                                                                    "type": "integer",
+                                                                    "exclusiveMinimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  }
+                                                                },
+                                                                "required": [
+                                                                  "reason",
+                                                                  "days"
+                                                                ],
+                                                                "additionalProperties": false
+                                                              }
+                                                            },
+                                                            "expected": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "withPlanOption": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "withDifferentMeal": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "withoutRecord": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "daysKnown",
+                                                            "daysUndetermined",
+                                                            "expected",
+                                                            "withPlanOption",
+                                                            "withDifferentMeal",
+                                                            "withoutRecord"
+                                                          ],
+                                                          "additionalProperties": false
                                                         }
                                                       },
                                                       "required": [
@@ -94156,7 +94415,8 @@
                                                         "recordsWithQuantities",
                                                         "recordsWithoutQuantities",
                                                         "daysWithData",
-                                                        "daysInBucket"
+                                                        "daysInBucket",
+                                                        "planMeals"
                                                       ],
                                                       "additionalProperties": false
                                                     },

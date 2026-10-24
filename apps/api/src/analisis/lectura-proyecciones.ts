@@ -1,5 +1,6 @@
 import {
   coberturaNutricional,
+  comidasDelPlanDeLosDias,
   definicionAntropometrica,
   diasNutricionales,
   ejerciciosDelPeriodo,
@@ -11,6 +12,7 @@ import {
   serieDeEntrenamiento,
   serieNutricional,
   VERSION_DEL_DICCIONARIO,
+  type ContenidoDeInstantanea,
   type DefinicionDeMetrica,
   type EjecucionDeEntrenamiento,
   type InstantaneaDeEntrenamiento,
@@ -54,17 +56,42 @@ function definicionPorParametro(area: DefinicionDeMetrica['area'], parametro: st
 
 // ─── NUTRITION_PRESCRIBED_VS_RECORDED ───────────────────────────────────────────────────────────
 
+/**
+ * Las versiones que hacen falta para ubicar los registros en su plan (DL-153): las que rigieron en el período y las que
+ * referencian los registros, cada una una sola vez. Se leen sus instantáneas en una sola consulta.
+ */
+export function versionesParaLasComidas(versiones: readonly VersionActivada[], registros: readonly RegistroDeComida[], desde: string, hasta: string): string[] {
+  const vigentes = versiones.filter((v) => v.desde <= hasta && (v.hasta === null || v.hasta >= desde)).map((v) => v.id);
+  return [...new Set([...vigentes, ...registros.map((r) => r.planId)])].sort();
+}
+
 export function proyeccionNutricional(
   c: Extract<ConsultaDeProyeccion, { clave: 'NUTRITION_PRESCRIBED_VS_RECORDED' }>,
-  datos: { readonly registros: readonly RegistroDeComida[]; readonly versiones: readonly VersionActivada[]; readonly objetivos: readonly VersionDeObjetivo[]; readonly hoy: string },
+  datos: {
+    readonly registros: readonly RegistroDeComida[];
+    readonly versiones: readonly VersionActivada[];
+    readonly objetivos: readonly VersionDeObjetivo[];
+    readonly hoy: string;
+    /** Las instantáneas de `versionesParaLasComidas`: el plan con sus días tipo y comidas, tal como se activó. */
+    readonly instantaneas: ReadonlyMap<string, ContenidoDeInstantanea>;
+  },
 ): ResultadoDeProyeccionNutricional {
   const { desde, hasta } = c.periodo;
   const dias = diasNutricionales(datos.registros, desde, hasta);
   const definicion = definicionPorParametro('NUTRICION', c.metrica);
+  // DL-153: el mismo contraste que la pestaña Registros (API-NUT-17), con la vigencia de cada versión. Una versión sin
+  // instantánea legible no aporta comidas: sus días quedan sin determinar, nunca con comidas supuestas.
+  const comidasDelPlan = comidasDelPlanDeLosDias(
+    dias,
+    datos.versiones.flatMap((v) => {
+      const instantanea = datos.instantaneas.get(v.id);
+      return instantanea ? [{ planId: v.id, desde: v.desde, hasta: v.hasta, instantanea }] : [];
+    }),
+  );
   return {
     kind: 'NUTRITION_PRESCRIBED_VS_RECORDED',
     metric: c.metrica,
-    recorded: serieNutricional(dias, definicion, c.metrica, c.grano, { desde, hasta, hoy: datos.hoy }),
+    recorded: serieNutricional(dias, definicion, c.metrica, c.grano, { desde, hasta, hoy: datos.hoy, comidasDelPlan }),
     prescribed: {
       // El requerimiento energético del objetivo, como escalón por vigencia: solo para la energía.
       energyRequirement:
@@ -77,7 +104,7 @@ export function proyeccionNutricional(
           : [],
       note: NOTA_DE_LO_PREVISTO,
     },
-    coverage: coberturaNutricional(dias, desde, hasta),
+    coverage: coberturaNutricional(dias, desde, hasta, { comidasDelPlan, hoy: datos.hoy }),
     planVersions: vigenciasEnElPeriodo(datos.versiones, 'NUTRITION', desde, hasta),
   };
 }

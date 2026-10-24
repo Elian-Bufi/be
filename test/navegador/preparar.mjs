@@ -37,6 +37,8 @@ export const RECORRIDOS = {
   accesoRevocado: { habilitado: ['NUTRICION'], datos: [] },
   // Bloque 5: una lectura que falla no borra el resto de la vista.
   faltaUnaParte: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
+  // DL-153 (encargo del 2026-10-23): el número de Nutrición dice qué representa y qué falta registrar del plan.
+  completitud: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
@@ -151,6 +153,27 @@ export async function datos(estado) {
       const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro), nextReviewAt: proxima } })).data;
       await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } });
       e.plan = { planId: plan.planId, proximaRevision: proxima };
+    }
+    if (r.datos.includes('comidas-del-plan')) {
+      // Un plan activo de dos comidas (desayuno y almuerzo). La persona registra desde la APK: anteayer las dos, con las
+      // porciones del plan; ayer, solo el desayuno. Hoy, nada todavía.
+      const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
+      const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
+      await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } });
+      const opciones = (await pedir('GET', '/me/nutrition/today/options', { token: ase, superficie: 'APK' })).data;
+      const [desayuno, almuerzo] = opciones.meals;
+      const registrarComida = (comida, fecha, hora) =>
+        pedir('POST', '/me/nutrition/meal-records', {
+          token: ase,
+          superficie: 'APK',
+          cuerpo: { kind: 'PLAN_OPTION', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: comida.mealId, optionId: comida.options[0].optionId, occurredAt: instante(fecha, hora).toISOString(), consumption: { status: 'PLAN_PORTIONS' }, observation: null },
+        });
+      const anteayer = diaMas(hoy, -2);
+      const ayer = diaMas(hoy, -1);
+      await registrarComida(desayuno, anteayer, '08:30');
+      await registrarComida(almuerzo, anteayer, '13:00');
+      await registrarComida(desayuno, ayer, '08:30');
+      e.comidas = { anteayer, ayer, faltante: almuerzo.label };
     }
     if (r.datos.includes('tomas')) {
       const pesos = [
