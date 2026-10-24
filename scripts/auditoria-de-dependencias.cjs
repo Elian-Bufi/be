@@ -8,7 +8,7 @@
  * versión corregida en una herramienta de construcción bloqueaba toda integración.
  *
  * Una excepción con `procedencia` vale solo si en cada corrida se demuestra que el aviso corresponde exclusivamente a la
- * cadena declarada (propuesta del 2026-10-24 en DL-114):
+ * cadena declarada (DL-114: corregida y ratificada por Dirección el 2026-10-24):
  *   - npm encuentra vulnerable solo la copia declarada, y el lockfile dice que es la versión que se comprobó;
  *   - en producción, esa copia la usa solo el primer eslabón de la cadena, cada eslabón lo usa solo el siguiente, y el
  *     espacio de trabajo pide el último;
@@ -59,7 +59,8 @@ const EXCEPCIONES = [
     paquete: 'zod',
     // Solo en la APK: en la API y el website, zod se corrige (4.6.6) y el aviso tiene que seguir bloqueando.
     espacios: ['@be/mobile'],
-    // Lo que se comprobó el 2026-10-24, y lo único que la excepción cubre: si algo de esto cambia, deja de valer.
+    // Ratificada por Dirección el 2026-10-24 con estas condiciones (DL-114): es lo que se comprobó, y lo único que cubre.
+    // Si algo de esto cambia, deja de valer.
     procedencia: {
       copia: { ubicacion: 'node_modules/zod', version: '3.25.76' },
       // De la copia hacia la APK: @be/mobile → expo → @expo/cli → zod.
@@ -432,6 +433,7 @@ function crearContexto(raiz) {
 }
 
 function principal() {
+  // La fecha UTC del runner: una excepción que vence el 31 vale hasta las 23:59:59 UTC (20:59:59 de Argentina).
   const hoy = new Date().toISOString().slice(0, 10);
   const contexto = crearContexto(path.resolve(__dirname, '..'));
   const codigos = ESPACIOS.map((espacio) => {
