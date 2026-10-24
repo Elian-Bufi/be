@@ -2768,6 +2768,55 @@ excepciones siguen siendo las de esta deuda.
     lo resuelve hoy: la última `@expo/cli` (58.1.15, revisada el 2026-10-23) también pide `^3.25.76`.
   - **Recomendación:** la excepción acotada, con el mismo vencimiento, y revisar las tres juntas antes del 2026-10-31.
 
+**Corrección de la propuesta del 2026-10-24 (sigue sin ratificar).** Revisada a pedido de Dirección.
+- **Qué faltaba.** La propuesta exceptuaba el aviso por aviso, paquete y espacio, sin mirar de dónde venía cada copia
+  vulnerable.
+  - La copia es `node_modules/zod` (3.25.76), en la raíz del monorepo. El zod 4.6.6 vive anidado en
+    `packages/domain/node_modules`. Cualquier `import 'zod'` fuera del dominio recibe el zod 3.
+  - Si la APK empezaba a usarlo, declarándolo o importándolo sin declarar, la excepción lo tapaba.
+  - Con npm de verdad, en una copia aislada del lockfile, la propuesta anterior aprobaba con código 0 en tres casos:
+    cuando la APK declara zod 3.25.76, cuando una biblioteca de la APK pide zod ^3.25.0 y sin ninguna prueba de qué viaja
+    en el bundle.
+- **Lo que exige ahora, en cada corrida** (`procedencia` en `EXCEPCIONES`):
+  1. npm encuentra vulnerable solo `node_modules/zod`, y `package-lock.json` dice que es la 3.25.76.
+  2. En producción la usa solo `@expo/cli` 57.0.25, a la CLI la usa solo `expo` 57.0.23, y `@be/mobile` pide `expo`.
+     Las rutas de desarrollo no cuentan: Puppeteer → `chromium-bidi` → zod se informa y queda fuera, como en toda la
+     auditoría de producción.
+  3. El bundle de Android de ese commit no tiene ningún módulo de `node_modules/zod` ni de otra copia de zod que el aviso
+     abarque. Se construye como lo hace Gradle (`expo export:embed`), y `node_modules` tiene que coincidir con el lockfile.
+  - Si aparece otra ruta, el aviso bloquea (1). Si algo no se puede comprobar, la auditoría no aprueba (2). Vencida,
+    bloquea. En otro espacio, bloquea.
+  - Si cambia la versión de la copia o de un eslabón, la excepción deja de valer hasta repetir la comprobación.
+- **Por qué el bundle y no solo la dependencia.** La CLI no es solo de construcción: su sistema de módulos
+  (`@expo/cli/build/metro-require/require.js`) viaja en la APK. Ese módulo no importa nada, y el zod 3 no entra. La prueba
+  tiene que ser sobre la copia de zod, no sobre el paquete que la trae.
+- **Dónde se ejecuta el zod 3.** Al construir: durante `export:embed`, el paso de Gradle, la CLI lo carga para validar la
+  definición de los complementos de DevTools que declaran los paquetes instalados. Lo mostró un registro de carga de
+  módulos. Corre en la CI y en la máquina que construye la APK, no en el teléfono, y no recibe datos de las personas.
+- **Lo que se comprobó el 2026-10-24:**
+  - **El lockfile de la propuesta.** `node_modules/zod` la usa en producción solo `@expo/cli`; a la CLI, solo `expo`; al
+    zod 4.6.6, solo `@be/domain`.
+  - **La candidata.3 publicada.** El APK construido el 2026-10-19 tiene el mismo SHA-256 que el publicado en GitHub
+    (`d6b73842…`). Su mapa de fuentes tiene 1.124 módulos. El zod que lleva es solo el de `packages/domain/node_modules`:
+    95 módulos, con `version = 4.6.5` en el código empaquetado. No tiene ningún módulo de `node_modules/zod`.
+  - **Esta propuesta.** `npm run audit:prod` en local aprueba. El bundle de Android tiene 1.127 módulos, ninguno de
+    `node_modules/zod`, y el zod que lleva es solo `packages/domain/node_modules/zod`, la 4.6.6 (95 módulos).
+  - **Las pruebas.** `auditoria-de-dependencias.test.cjs` tiene 30 pruebas, 17 nuevas. Las 16 formas de desactivar un
+    control hacen fallar al menos una. `auditoria-de-dependencias.escenarios.cjs` corre los cinco escenarios con npm de
+    verdad, y los cinco dan lo esperado.
+  - **La negativa con el bundle real.** Con la APK importando zod sin declararlo, la auditoría bloquea: «el bundle de
+    Android incluye 10 módulos de node_modules/zod (3.25.76)».
+  - La evidencia completa y cómo repetirla están en `EVIDENCIA/EXCEPCION-ZOD-EXPO/LEEME.md`.
+- **Lo que esta excepción no cubre, y sigue abierto:**
+  - **Las APK instaladas.** La candidata.3 ejecuta zod 4.6.5, y está comprobado en su bundle. La 0.13.2 también, según el
+    lockfile del commit con que se construyó. Solo una APK nueva, construida después de integrar
+    `seguridad/avisos-2026-10-23`, lo corrige. Para aprovecharlo hace falta una respuesta maliciosa de la API.
+  - **La API de `test`.** Valida con zod 4.6.5 hasta que se integre esa rama. El límite de 16 KB por pedido acota el aviso.
+  - **Un `import 'zod'` sin declarar en la API o el website** recibiría el zod 3 de la raíz, y npm no lo vería. Ninguna
+    excepción lo tapa, pero la auditoría tampoco lo detecta.
+- **Pendiente de Dirección.** Ratificar o no esta excepción. Es una ampliación de DL-114, y Dirección no autorizó
+  ampliarla. Vence el 2026-10-31, con la de node-forge.
+
 ---
 
 ## DL-115 — Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios
