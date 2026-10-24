@@ -154,6 +154,10 @@
 | DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
+| DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **IMPLEMENTADO** 2026-10-19 en la sesión enfocada (PR en borrador, sin APK nueva): las reglas de la 0.13.2, dichas (R-1 a R-6); falta el teléfono |
+| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **IMPLEMENTADA** 2026-10-20 (#198, CI en verde, sin integrar): lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
+| DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **IMPLEMENTADO** 2026-10-23 en `wp-nutricion-cobertura` (sin integrar): las comidas del plan con el criterio de Registros, el subtotal que dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; D-1 a D-4 a ratificar |
+| DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **IMPLEMENTADO** 2026-10-23 en `wp-revision-evidencia` (sobre DL-153, sin integrar): API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; la forma de la revisión, que lee la APK, no cambia; D-1 a D-3 a ratificar |
 
 ---
 
@@ -5088,3 +5092,253 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - la prueba con personas.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-7, los recorridos pasan en la CI de main, y la prueba con profesionales se hace y se informa.
+
+---
+
+## DL-151 — La sustitución de ejercicios vuelve a la sesión enfocada de la APK
+
+**Prioridad:** alta (pedido de Dirección del 2026-10-19: la APK estable la tiene y las candidatas no).
+
+**Documentos:**
+- **09v10:1116-1121 y REG-06-130:** sustituir es legítimo y no es un error; quedan lo prescripto y lo realizado.
+- **B10-06:762-778:** buscar el ejercicio que se hizo y mostrar las dos puntas (en BE, «Planificado» y «Ejecutado», DL-085).
+- **DL-122 a DL-124:** la sesión enfocada por serie y los tiempos con certeza.
+- **DL-130 y DL-141:** la búsqueda con el texto en el cuerpo y los nombres alternativos.
+
+**Qué pasó.**
+- La 0.13.2 (`be-apk-0.13.2`, 4b49d43) ofrecía «Sustituir ejercicio» en la tarjeta de cada ejercicio: buscar en el catálogo, «Confirmar sustitución: …» y seguir registrando con el realizado.
+- Al rehacer la sesión enfocada (e6bd769, 2026-10-06) la acción se quitó sin una decisión registrada. Los textos quedaron en `copy-entrenamiento.ts`, y la API y las pantallas de lectura siguieron mostrando «Sustituido». Las candidatas 0.15 a 0.17 no la ofrecen.
+
+**Lo que se recupera** (en `wp-apk-sustitucion`, sin APK nueva):
+- «Sustituir ejercicio» sobre el ejercicio activo, en un diálogo: se busca con API-TRN-13-BUSQUEDA (la 0.13.2 usaba API-TRN-13, con el texto en la URL), se elige con «Confirmar sustitución: …» y se siguen registrando las series sobre el ejecutado. La búsqueda no ofrece el planificado en ninguna versión: sería sustituirlo por sí mismo.
+- La tarjeta del ejercicio, «Ver rutina» y el resumen antes de finalizar dicen «Ejecutado: …» con la insignia «Sustituido», debajo del planificado.
+- «Volver al planificado», que la 0.13.2 no tenía: sin él, una sustitución elegida por error, sin series, dejaba la sesión sin poder confirmarse.
+
+**Las reglas, que son las de la 0.13.2, dichas** (provisorio en código, a ratificar):
+- **R-1 · Lo planificado no se pisa.** Solo viaja `performedExerciseVersionId`. La API calcula `substituted`, y el plan no cambia.
+- **R-2 · Un ejercicio, un realizado.** El contrato no admite uno por serie. Como en la 0.13.2, las series ya registradas se conservan (mismo número, mismos datos) y pasan a contar como el ejecutado. Lo nuevo es que antes se pregunta, diciendo cuántas: no se reasignan en silencio. Cuentan también las del teléfono que todavía no se enviaron, que viajan después al ejercicio con su ejecutado.
+- **R-3 · Antes de la primera serie** se guarda el ejercicio sin series, como en la 0.13.2. API-TRN-18 no confirma un ejercicio sin series (`SET_REQUIRED`): la APK lo dice antes de finalizar, con los dos nombres y la salida (registrar una serie, o volver al planificado, que lo saca del borrador).
+- **R-4 · Los tiempos no se tocan.** Los eventos citan la prescripción. La sustitución no arma eventos y no cambia el ejercicio activo ni la fila enfocada: el temporizador, el descanso o la serie cronometrada en curso siguen igual.
+- **R-5 · Necesita conexión.** Buscar y guardar son pedidos a la API: la sustitución no queda en el teléfono para después. Se guarda después de mandar lo pendiente, con la versión vigente; un conflicto o un resultado incierto se relee y se dice en el diálogo.
+- **R-6 · Registrada por ejercicio o sesión** (la forma anterior) no se ofrece: la pantalla ya propone pasar a registrar por serie.
+
+**Lo que no se hace:** las alternativas aprobadas por el profesional (PF-03), las equivalencias de carga (el plan de cada serie sigue siendo el del planificado) y cambios en la API o el website.
+
+**Pruebas:**
+- `scripts/sustitucion-de-ejercicio.test.mjs` (14): lo que se manda, cada regla, lo que se ofrece en la búsqueda, el almacén con una corrida en curso y el resumen.
+- `test/integration/sustitucion-en-la-sesion.int-spec.ts` (3, en la CI): lo que manda la APK, contra la API real.
+  - La búsqueda del asesorado, también por un nombre alternativo.
+  - Antes y después de la primera serie, y volver al planificado.
+  - El plan y los tiempos intactos.
+  - `SET_REQUIRED`, `EXERCISE_REFERENCE_INVALID` y las dos puntas en lo confirmado, para el titular y el profesional.
+- La guardia T13 de la sesión enfocada suma el módulo nuevo.
+
+**Lo que falta:** probarlo en el teléfono con la próxima candidata. Este PR no trae APK: el diálogo con el teclado, TalkBack, sin conexión y una sustitución con un descanso en curso.
+
+**Compatibilidad, revisada el 2026-10-23 sobre main `0fb1bff`:**
+- Después de esta rama, #189 sumó `origin` a cada fila de API-TRN-13-BUSQUEDA (DL-141 D-6). La APK busca con el cliente compartido, así que una APK construida desde esta rama al día con main lo lee; una construida desde la base anterior (`ad12d54`) lo rechazaría (`RESPUESTA_NO_RECONOCIDA`). La APK de la sustitución se construye desde la rama al día.
+- Hasta hoy API-TRN-13-BUSQUEDA era solo del website. Cuando se publique una APK con esta lectura, su forma queda congelada como las demás (DL-152, #198): un campo nuevo va en otra operación.
+- **El alcance de R-2, dicho antes de elegir.** La ayuda del diálogo dice que la sustitución vale para todas las series del ejercicio en esa sesión, las registradas y las que faltan, y que no se puede cambiar una serie sola; con series registradas, la confirmación suma «y las que registres después también». No hay sustitución por serie: el contrato admite un realizado por ejercicio, y la prueba lo fija.
+
+**Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
+
+---
+
+## DL-152 — Lo que leen las APK instaladas: congelado por versión y leído contra la API de hoy
+
+**Prioridad:** alta (antes de pasar una candidata a estable).
+
+**Documentos:**
+- **09v7 T19:** un endpoint nuevo es compatible; cambiar la forma de uno que lee un cliente instalado, no.
+- **C01** (WP-ENTRENAMIENTO-SERIES) y **D10** (WP-NUTRICION-RECETAS): «lo nuevo va en operaciones nuevas».
+- **DL-122:** las capacidades que declara la APK (`X-BE-Capabilities`).
+- **DL-138 D-10:** una APK sin la casilla de mayoría de edad ya no crea cuentas.
+- **DL-151** (PR #195): la sustitución de ejercicios que perdieron las candidatas 0.15 a 0.17.
+
+**Qué pidió Dirección (2026-10-20):** «Ampliá las pruebas de compatibilidad para cubrir las respuestas que realmente leen la estable y la 0.17.0-candidata.3, incluyendo las lecturas actualmente fuera de las verificaciones existentes. No promociones una candidata a estable mientras siga la regresión o falten las pruebas del teléfono.»
+
+**Estado:** IMPLEMENTADA el 2026-10-20 en la rama `wp-compatibilidad-apk` (PR #198, en borrador), sin integrar. CI en verde: la integración, 837 de 837, con los 19 casos de esta prueba (8 de la 0.13.2 y 11 de la candidata.3); el dominio, 833 de 833.
+
+**Qué pasaba:**
+- Lo congelado (`packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`) eran 16 lecturas de la 0.13.2: NUT-14 a 16 y 16-LISTA; TRN-08, 09, 13 a 20, 14-PERIODO y 19-LISTA.
+- Las APK validan **toda** respuesta con el cliente compartido (`crearClienteBe`): cada 2xx con el esquema de su método, y cada rechazo con el sobre de error (si no lo reconocen, dicen «respuesta no reconocida»).
+- Relevado en el código de cada tag, la 0.13.2 (`4b49d43`) llama 44 operaciones y la 0.17.0-candidata.3 (`cf55288`), 80. Fuera de lo congelado quedaban, en las dos, ACC, CON, REL, FRM y ANT-06-PROPIA; y en la candidata, además, ING, MED, EVI, INV, GOO, NOV, CRD-01-PROPIA, SER-02, TIE, AGE-01 y REV-A (NUT-19 y TRN-23).
+
+**Lo decidido** (a ratificar):
+- **D-1 · Qué se congela.** Un archivo por APK, `packages/domain/fixtures/lecturas-de-la-apk/<versión>.json`, con:
+  - la versión, el versionCode, el tag y el commit;
+  - cómo pide: las cabeceras (`X-BE-Surface` y las capacidades), las versiones de los textos que manda como aceptadas y, por operación, si lleva la sesión y la Idempotency-Key;
+  - por operación: el verbo, la ruta, los métodos del cliente que la llaman, el esquema de la respuesta y el del pedido, en JSON Schema del lado de la entrada (lo que acepta `safeParse`);
+  - el sobre de error y los detalles que la candidata lee con su esquema (GOOGLE_LINK_REQUIRED, GOOGLE_ACCOUNT_NOT_FOUND, VISUAL_EVIDENCE_ACT_REQUIRED).
+  - *Por qué JSON Schema:* es lo que ya usaba C01, se lee con `z.fromJSONSchema` del mismo zod de las APK (4.6.5), se revisa en un diff y no trae código viejo al repo. La prueba del dominio verifica que la ida y vuelta por zod da el mismo esquema: la prueba de integración lee exactamente lo congelado.
+  - *Lo que JSON Schema no dice:* cuatro `refine` (el rango de repeticiones, la unidad de un parámetro numérico, la vigencia del objetivo de una revisión y el instante monotónico de un evento). El script los anota y la prueba de integración los revisa aparte; uno nuevo hace fallar la prueba del dominio hasta que se escriba su verificación. Tampoco dice el recorte de espacios (`trim`): un texto hecho solo de espacios pasaría la prueba y la APK lo rechazaría. La API recorta al guardar.
+  - *Alternativas descartadas:* copiar el dominio compilado de cada APK (fiel también en los `refine`, pero cientos de KB de código ilegible por versión); leer los tags con git durante la CI (necesita el historial completo y los tags en cada corrida).
+- **D-2 · Cómo se genera.** `node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-<versión>`:
+  - lee del tag las fuentes del dominio y de la APK, transpila ese dominio y lo carga con el zod del repo (se niega si la APK usaba otra versión);
+  - del cliente de ese commit saca el verbo, la ruta y el esquema de cada método; de la APK, qué métodos usa; del contrato de ese commit, la operación de cada ruta.
+  - No se edita a mano, y da siempre el mismo archivo.
+- **D-3 · La prueba.** `test/integration/lecturas-de-las-apk.int-spec.ts`, en la CI de integración (PostgreSQL real):
+  - por cada APK congelada pide cada operación que esa APK llama, **como la pide**: su ruta, sus cabeceras, la sesión y la Idempotency-Key solo donde las manda, los textos de su commit y un cuerpo que se valida antes contra su pedido congelado;
+  - lee la respuesta real con el esquema congelado de esa APK, y cada rechazo con su sobre y sus detalles;
+  - usa datos que recorren las ramas más cargadas: una opción de receta con imagen, «Piernas A» con la imagen del ejercicio, eventos de tiempo, revisiones con un objetivo nuevo y un formulario rectificado;
+  - al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada lectura suya tenga escenario.
+- **D-4 · El contrato de hoy.** La prueba del dominio (`lecturas-de-la-apk.test.ts`, en `npm test`) exige que cada operación que llama una APK vigente siga en `OPERACIONES` con su verbo y su ruta, y que no pida sesión ni Idempotency-Key donde la APK no las manda.
+- **D-5 · Lo que ya se sabe que no tiene éxito.** El alta de la 0.13.2 (API-ACC-01) responde 422 TERMS_VERSION_NOT_ACCEPTABLE por DL-138 D-10. La prueba lee ese rechazo con el sobre de la 0.13.2, que lo traduce a «Los textos cambiaron. Actualizá la app para continuar.».
+
+**Cómo se actualiza al publicar una APK:**
+1. Taggearla `be-apk-<versión>`, como cada publicación.
+2. Correr el script con ese tag y sumar la versión a `VIGENTES` en `lecturas-de-la-apk.test.ts`.
+3. La prueba de integración corre sola con el archivo nuevo. Si la APK lee algo que ningún escenario pide, falla hasta que se agregue.
+4. Cuando ya no haya teléfonos con una versión, se borra su archivo y se saca de `VIGENTES`.
+
+Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
+
+**La regla para promover.** Una candidata no pasa a estable mientras:
+- siga la regresión de la sustitución de ejercicios (DL-151, PR #195): la candidata.3 ya no llama API-TRN-13, con la que la 0.13.2 busca el ejercicio que sustituye;
+- falten las pruebas en el teléfono;
+- o esta prueba falle para la candidata o para la estable.
+
+**Lo que mostró el relevamiento:**
+- Para las 124 lecturas (44 de la estable y 80 de la candidata), el contrato de hoy declara la misma forma que congeló cada APK. La única diferencia es API-INV-05, donde el cliente lee con la unión de las dos respuestas del contrato (201 y 200).
+- En los pedidos, la única diferencia es el alta de la 0.13.2 (D-5).
+- La API no valida sus respuestas contra el contrato. Por eso la prueba lee respuestas reales: una respuesta puede traer algo que el contrato no declara.
+
+**Pruebas:**
+- **Dominio** (`lecturas-de-la-apk.test.ts`): están las dos APK vigentes con su tag y su commit; la ida y vuelta por zod; el contrato de hoy; lo que JSON Schema no representa.
+- **Integración** (`lecturas-de-las-apk.int-spec.ts`): las 44 y las 80 lecturas con datos reales, más el cierre que exige haberlas leído todas.
+
+**Lo que queda abierto:**
+- Las pruebas en el teléfono.
+- C01 y D10 siguen como estaban: comparan el contrato de hoy con la forma congelada de 16 lecturas. Esta DL las incluye; retirarlas lo decide Dirección.
+
+**Provisorio en código:** D-1 a D-5.
+
+**Condición de cierre:** la prueba en verde en la CI de main, y la regla aplicada en la próxima promoción a estable.
+
+---
+
+## DL-153 — Nutrición: el número dice qué representa y qué falta registrar del plan
+
+**Prioridad:** alta (encargo de consolidación de Dirección del 2026-10-23, punto 3; hallazgo UX-01 de la auditoría del 2026-10-21).
+
+**Documentos:**
+- **09 v0.11 §11 y §22, B10-08 §3:** lo desconocido no es cero, y una falta de dato no es un incumplimiento.
+- **REG-06-125 e INV-06-135:** una comida sin registro es «sin dato», nunca «0 %» ni «no cumplido».
+- **DL-121 y DL-126:** el registro v2 de comidas y las proyecciones; el día es la suma exacta de lo conocido.
+- **GUIA-UX-UI II.4:** la cobertura que hace falta para leer un número va junto al número.
+
+**Qué pasaba.** Reproducido el 2026-10-23 contra main `0fb1bff`, con un plan de cuatro comidas (desayuno, almuerzo, merienda y cena) y un día con las tres primeras registradas con cantidades:
+- **Antes:** el día salía `COMPLETE`; Analizar y la lectura decían «sin faltantes»; la exportación, «sin faltantes»; el Resumen decía «7 días: 2 con valor · 4 sin registros», sin subtotales. Nada decía que faltaba la cena.
+- **Después:** el día es un subtotal y lo dice: «Subtotal de lo registrado · Comidas del plan: 3 de 4 registradas · 1 sin registro · Sin registro: Cena · Falta: 1 comida(s) del plan sin registro». La exportación dice «subtotal» y tiene la columna «Comidas del plan». El Resumen suma «1 subtotal · 1 comida del plan sin registro».
+- **La media no cambió:** 1.975 kcal por día, de 2 días con valor, antes y después.
+
+**Las cuatro dimensiones, separadas:**
+1. **Cantidades conocidas en los registros que hay.** Es la calidad de siempre: un registro sin cantidades, o sin el dato del nutriente, hace un subtotal.
+2. **Comidas del plan, cuando el plan deja conocerlas.** Es nuevo y sale del mismo contraste que la pestaña Registros (`construirContraste`, API-NUT-17): el plan que regía, con el día tipo que usó la persona al registrar o el único del plan. Cada comida está en un solo estado: con la opción registrada, con una comida diferente registrada en ella, o sin registro.
+   - Si no había un plan vigente, o el plan tiene varios días tipo y ese día no hay registros del plan que digan cuál, **no se inventan comidas**. El día dice «sin determinar» con su motivo.
+   - Solo una comida sin ningún registro hace del día un subtotal.
+3. **Cobertura temporal del período:** días con valor, sin registros y hoy en curso. No cambia.
+4. **Lo indicado frente a lo registrado:** sigue sin adherencia ni porcentaje. Analizar muestra el objetivo al lado de lo registrado, sin restar.
+
+**Qué cambió:**
+- **Cálculo** (`nutricion-del-analisis.ts`). Antes, un día era `COMPLETE` con todos sus registros con cantidades; ahora, además, sin comidas del plan sin registro conocidas. El motivo nuevo es `COMIDA_DEL_PLAN_SIN_REGISTRO`, con cuántas.
+  - **No cambian:** el valor del día, la media de los días con valor, su denominador, el día en curso (fuera de la media), la zona ni los subtotales dentro de la media.
+  - Una comida sin registro es otra dimensión: no cambia si un día sin valor se cuenta «sin cantidades» o «sin el dato del nutriente».
+- **Contrato** (API-PRJ-01, solo lo lee el website). Se suma `planMeals` a la cobertura de cada punto y del período; el del período no cuenta hoy. Es una extensión de BE.
+  - Ninguna APK publicada lee API-PRJ-01: comprobado con lo que congeló DL-152 (#198) de la 0.13.2 y de la 0.17.0-candidata.3.
+  - La API lee las instantáneas de los planes en una sola consulta más.
+- **Presentación:**
+  - Analizar (tabla, lectura y origen del dato) y la exportación dicen la calidad con `calidadEnPalabras`. En nutrición, «completo» nunca se dice «sin faltantes»: «cada comida del plan registrada, con cantidades» o «registros con cantidades, sin saber qué comidas indicaba el plan».
+  - Los indicadores del Resumen, la tabla de etapas y «Comparar dos períodos» suman «N comidas del plan sin registro» y «N días sin saber qué comidas indicaba el plan» (`partesDeLaCobertura`, `coberturaBreve`).
+  - El Resumen del área y «La información disponible» dicen las comidas del plan sin registro del período, sin contar hoy.
+- **Lo que no se hace:** no se rellena una comida con cero ni con lo previsto, no se califica, y el conteo de registros no se vuelve un subtotal (es exacto; lo dice el detalle).
+
+**Decisiones, provisorio en código (a ratificar):**
+- **D-1 · ¿La media del Resumen incluye los subtotales?** Provisorio: **A**, sí, como antes, diciendo cuántos son y qué falta.
+  - **B:** la media principal solo con los días sin faltantes conocidos, y la de todos al lado.
+  - **C:** las dos medias, una al lado de la otra.
+  - **Recomendación:** A ahora. B o C se decide con la prueba con profesionales (tarea T4 de `docs/ux/PRUEBA-CON-PROFESIONALES.md`): con pocos días completos, B da un número con menos días detrás, y los días que la persona registra completos pueden no ser los típicos.
+- **D-2 · Una comida diferente registrada en una comida del plan.** Provisorio: tiene registro, así que no es «sin registro»; sigue sin ser la opción registrada, como en Registros. Si no tiene cantidades, el día ya es un subtotal por eso.
+  - **Alternativa:** contarla como sin registro. El mismo hecho contaría dos veces como falta.
+- **D-3 · El día tipo de un día solo con comidas diferentes.** Provisorio: como Registros, no se elige ninguno y el día queda sin determinar (09v9:680).
+  - **Alternativa:** usar el día tipo de contexto que guarda la comida diferente desde DL-121. Conocería más días, pero cambia el contraste en las dos pantallas: va como mejora aparte, si Dirección la quiere.
+- **D-4 · Hoy, en curso.** Provisorio: el punto de hoy es un subtotal si le falta una comida, pero sus comidas no cuentan en el período, porque todavía se pueden registrar.
+  - **Alternativa:** no marcar hoy hasta que termine.
+
+**Pruebas:**
+- **`completitud-nutricional.test.ts`** (15 casos, dominio): completo según el plan, una comida sin registrar (el defecto), cantidades desconocidas, día sin registros, día en curso, comida diferente en una comida y fuera de toda comida, rectificación y anulación, sin plan, dos días tipo, la semana, el conteo, el mismo criterio que Registros y el Resumen del área. Los resultados están escritos a mano.
+- **Las existentes**, ajustadas a la forma nueva sin cambiar lo que comprueban: `analisis-longitudinal`, `comprension-del-dashboard` y `exportacion-del-analisis`. La exportación ahora usa coberturas reales y fija que nada diga «sin faltantes».
+- **`analisis.int-spec.ts`** (integración, en la CI). El escenario de siempre dice que deshacer el almuerzo de hoy lo deja sin registro. Hay un caso nuevo contra la API real: anteayer una comida de dos, ayer una comida diferente en la cena, con la pestaña Registros (API-NUT-17) diciendo lo mismo.
+- **El recorrido `completitud`** (navegador, en la CI): el indicador del Resumen y la lectura de Analizar de ayer y de anteayer.
+
+**Lo que falta:**
+- La prueba con profesionales: si se entiende qué representa el número y si D-1 se queda en A.
+- La APK no cambia: «Tu historial» de Nutrición de la persona no usa este cálculo.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-4, la CI de la integración pasa, y la prueba con profesionales dice si el número se entiende.
+
+---
+
+## DL-154 — Una revisión registrada dice en qué evidencia se apoyó: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA
+
+**Prioridad:** alta (encargo de consolidación de Dirección del 2026-10-23, punto 4; hallazgo UX-02 de la auditoría del 2026-10-21).
+
+**Documentos:**
+- **UC-P13 y UC-P18:** sin evidencia identificable no hay revisión válida.
+- **REG-06-141:** la revisión es un acto con todos sus componentes, de solo agregar.
+- **09v9:904-910 y 09v10:1375-1381:** API-NUT-19 y API-TRN-23, la revisión y su aplicación.
+- **DL-134 (REV-A):** la persona lee la misma forma de la revisión, en la APK.
+
+**Qué pasaba.** Comprobado el 2026-10-23 contra main `0fb1bff`. El recorrido completo:
+- **Selección:** `SeleccionDeEvidencia` marca comidas o sesiones, versiones del plan y el objetivo.
+- **Pedido:** API-NUT-18 o API-TRN-22 con `evidenceReferences`, validadas en el servidor (`exigirEvidenciaReconstruible`).
+- **Persistencia:** la columna `evidencias` (JSON) de `revision_nutricional` y `revision_de_entrenamiento`, de solo agregar.
+- **Lectura:** API-NUT-17/19 y API-TRN-21/23 devuelven `evidenceReferences`, `period` y `author`.
+- **El defecto:** la lista de revisiones del website (`ItemDeRevision`, en las dos áreas) no dibujaba ni el período, ni el autor, ni la evidencia. **Se guardaba todo y no se podía consultar.**
+
+**Lo que se resolvió:**
+- **A la vista, sin otra lectura:** cada revisión dice «Nutrición · período revisado: … · registró: …» y «Evidencia seleccionada: 12 comidas · 1 versión del plan · el objetivo», contado desde las referencias guardadas. Una revisión que no guardó evidencia lo dice.
+- **«Ver la evidencia»** pide la lectura nueva de su área, que resuelve en el servidor cada referencia **guardada**, en su orden y nada más. De cada una dice qué es (la comida del plan y si fue la opción o algo diferente, la sesión, «Plan v2», el objetivo), cuándo ocurrió y **lo que cambió después de la revisión**, con su instante:
+  - la persona rectificó las cantidades;
+  - una corrección;
+  - la persona deshizo el registro;
+  - se activó otra versión del plan o se registró otro objetivo.
+- **«Abrir»** muestra la comida, la sesión o la versión del plan en el panel modal de siempre, leída por su propia operación. Retiene el foco, Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. Si el registro cambió después, el panel avisa que lo que se ve es el estado de hoy.
+- **El permiso de hoy:** la lectura nueva decide como API-NUT-19 y API-TRN-23 (el PDP y el profesional del seguimiento). Con el consentimiento revocado, otro profesional o una revisión inexistente, el mismo 404, sin ningún detalle. «Abrir» vuelve a pedir permiso.
+
+**Por qué una lectura nueva y no reusar las que hay:**
+- La línea de tiempo del período no alcanza: una versión del plan activada antes del período, que es lo más común, no aparece en ella. Tampoco aparece una referencia fuera del período.
+- Pedir cada registro por separado serían hasta 200 pedidos.
+- **No cambia la forma de la revisión.** La lee la APK candidata (REV-A, API-NUT-19-LISTA y PROPIA), y un campo nuevo la rompería (DL-152). Las dos operaciones son nuevas y solo las lee el website.
+- **No agrega tablas ni copias:** lee lo que la revisión ya guardó.
+
+**Lo que no se hace:**
+- No se reconstruye la selección con el período ni con un filtro.
+- No se completa una revisión que no guardó evidencia.
+- No se muestran las cantidades ni las cargas de cuando se revisó: se dice que cambió y desde cuándo.
+- La APK de la persona no cambia.
+
+**Decisiones, provisorio en código (a ratificar):**
+- **D-1 · Una referencia que hoy no está en el seguimiento** (no debería pasar; se valida al registrar): se lista como «Ya no está en este seguimiento», sin decir qué era.
+  - **Alternativa:** ocultarla, pero la cuenta de la revisión dejaría de coincidir.
+- **D-2 · Lo que se ve al abrir es el estado de hoy, avisado.** Reconstruir el registro como estaba al revisar (la cadena de rectificaciones se conserva) es una lectura más.
+  - **Recomendación:** hacerla solo si la prueba con profesionales la pide.
+- **D-3 · El objetivo y la evaluación no se abren en el panel**: no hay una lectura de solo lectura para ellos en esa pantalla. Se ven con su fecha y lo que cambió después.
+
+**Pruebas:**
+- **`evidencia-registrada.test.ts`** (dominio, 5): el resumen desde lo guardado, los nombres sin valores de salud, los cambios posteriores en palabras, los grupos sin agregar nada, y un contrato sin campos de cantidades.
+- **`evidencia-de-revision.int-spec.ts`** (integración, Nutrición, 4):
+  - lo seleccionado en su orden: la comida diferente del período sin marcar no aparece;
+  - persiste en otra sesión;
+  - después de la revisión, la rectificación, la anulación y la versión sucesora;
+  - una revisión sembrada sin evidencia y una referencia ajena (NOT_FOUND);
+  - el mismo 404 con el consentimiento revocado, otro profesional o una revisión inexistente, como API-NUT-19, y 400 con un parámetro de más.
+- **`entrenamiento.int-spec.ts`** (Entrenamiento, 1): la sesión, el plan y el objetivo, la corrección posterior y otro profesional.
+- **El recorrido `evidencia`** (navegador): la lista, la comida deshecha después, «Abrir» con Escape y el foco, y la recarga.
+- **La guardia de trazabilidad** acepta el sufijo `EVIDENCIA` y el OpenAPI está al día.
+
+**Lo que falta:**
+- La prueba con profesionales: si se reconstruye en qué se apoyó una revisión.
+- Un lector de pantalla real.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-3, la CI de la integración pasa y la prueba con profesionales lo confirma.

@@ -66,7 +66,7 @@ export function OrigenDelDato({
   indice: number;
   /** La fecha del punto, ya escrita. */
   fecha: string;
-  /** La calidad del punto en palabras («sin faltantes», «subtotal de lo registrado»…). */
+  /** La calidad del punto en palabras, las del dominio (`calidadEnPalabras`): «subtotal de lo registrado», «cada comida del plan registrada, con cantidades»… */
   calidad: string;
   /** La fuente abierta cuando se elige de a una. */
   elegido: OrigenDeDato | null;

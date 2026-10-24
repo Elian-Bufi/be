@@ -12,6 +12,7 @@ import {
   type ContenidoDeInstantanea,
   type ContextoDeRevisionResponse,
   type ResultadoDeRevisionApi,
+  type EvidenciaDeRevisionResponse,
   type Revision,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
@@ -20,6 +21,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
 import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
+import { evidenciaNutricional, referenciasGuardadas } from '../evidencia/evidencia-de-revision';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PublicadorDeNovedades } from '../novedades/publicador';
@@ -275,6 +277,41 @@ export class RevisionesService {
         await this.decidir(tx, 'API-NUT-19', actor, r.proceso.asesoradoId, recurso, ctx);
         if (r.proceso.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-19', actorId: actor.identidadId, recurso, sujetoId: r.proceso.asesoradoId }, ctx);
         return { data: revisionApi(r, r.proceso, await nombreVisibleDe(tx, actor.identidadId), r.procesoId) };
+      },
+    });
+  }
+
+
+  // ─── API-NUT-19-EVIDENCIA (DL-154) ──────────────────────────────────────────────────────────────────────
+  /**
+   * La evidencia que la revisión guardó al registrarse, resuelta con el permiso de hoy: la misma decisión que API-NUT-19
+   * (el PDP y el profesional del seguimiento; si no, el mismo 404). Cada referencia en su orden, con lo que es y lo que
+   * cambió después de la revisión. No se reconstruye nada con el período: lo que no se guardó no aparece.
+   */
+  evidencia(actor: ActorAutenticado, reviewId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<EvidenciaDeRevisionResponse> {
+    if (Object.keys(query ?? {}).length > 0) throw errores.solicitudInvalida(Object.keys(query).map((c) => ({ code: 'UNKNOWN_QUERY_PARAMETER', path: c })));
+    const recurso = { tipo: 'RevisionNutricional', id: reviewId };
+    return this.ejecutor.leer({
+      operacion: 'API-NUT-19-EVIDENCIA',
+      casoDeUso: 'UC-P13',
+      actor,
+      ctx,
+      recursoIntentado: recurso,
+      lectura: async (tx) => {
+        const r = esUuid(reviewId) ? await tx.revisionNutricional.findUnique({ where: { id: reviewId }, include: { proceso: true } }) : null;
+        if (!r) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-19-EVIDENCIA', actorId: actor.identidadId, recurso }, ctx);
+        await this.decidir(tx, 'API-NUT-19-EVIDENCIA', actor, r.proceso.asesoradoId, recurso, ctx);
+        if (r.proceso.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-19-EVIDENCIA', actorId: actor.identidadId, recurso, sujetoId: r.proceso.asesoradoId }, ctx);
+        const items = await evidenciaNutricional(tx, referenciasGuardadas(r.evidencias), { profesionalId: r.proceso.profesionalId, asesoradoId: r.proceso.asesoradoId, registradaEl: r.momentoDeRegistro });
+        return {
+          data: {
+            reviewId: r.id,
+            area: 'NUTRITION',
+            period: { start: r.periodoInicio.toISOString().slice(0, 10), end: r.periodoFin.toISOString().slice(0, 10), timeZone: r.zonaHoraria },
+            recordedAt: r.momentoDeRegistro.toISOString(),
+            items,
+          },
+        };
       },
     });
   }
