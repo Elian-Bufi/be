@@ -2764,8 +2764,8 @@ excepciones siguen siendo las de esta deuda.
   `@be/mobile` y hasta el 2026-10-31, como las otras.
   - Una excepción puede acotarse a espacios de trabajo (`espacios`): en la API o el website, el mismo aviso sigue
     bloqueando. Lo prueba `auditoria-de-dependencias.test.cjs` (13 pruebas).
-  - **Alternativas:** dejar la CI en rojo hasta que Expo pase a zod 4, sin integrar nada mientras tanto; o actualizar Expo
-    a una versión con zod 4, si la hay, que es un cambio de la APK con su propia prueba en el teléfono.
+  - **Alternativa:** dejar la CI en rojo hasta que Expo pase a zod 4, sin integrar nada mientras tanto. Actualizar Expo no
+    lo resuelve hoy: la última `@expo/cli` (58.1.15, revisada el 2026-10-23) también pide `^3.25.76`.
   - **Recomendación:** la excepción acotada, con el mismo vencimiento, y revisar las tres juntas antes del 2026-10-31.
 
 ---
