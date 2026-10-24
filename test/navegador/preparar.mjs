@@ -38,6 +38,10 @@ export const RECORRIDOS = {
   // Bloque 5: una lectura que falla no borra el resto de la vista.
   faltaUnaParte: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
 };
+// DIAGNÓSTICO DEL INTERMITENTE (rama que no se integra, 2026-10-24): veinte faltaUnaParte, cada uno con sus cuentas, en
+// lugar de los doce recorridos. Son tres inicios de sesión por cada uno, 60 en total: debajo del límite de 100 por IP.
+for (const nombre of Object.keys(RECORRIDOS)) delete RECORRIDOS[nombre];
+for (let i = 1; i <= 20; i++) RECORRIDOS[`faltaUnaParte${String(i).padStart(2, '0')}`] = { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
 export const nombreDeLaPersona = (recorrido) => `Persona ${recorrido}`;
