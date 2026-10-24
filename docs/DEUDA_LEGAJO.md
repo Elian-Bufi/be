@@ -2671,7 +2671,7 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 
 ## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
 
-**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03; las dos excepciones vencen el 2026-10-31
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría); las tres vencen el 2026-10-31
 
 **Qué pasó.**
 - El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
@@ -2816,6 +2816,48 @@ excepciones siguen siendo las de esta deuda.
     excepción lo tapa, pero la auditoría tampoco lo detecta.
 - **Pendiente de Dirección.** Ratificar o no esta excepción. Es una ampliación de DL-114, y Dirección no autorizó
   ampliarla. Vence el 2026-10-31, con la de node-forge.
+
+**Ratificación de Dirección del 2026-10-24: el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5).**
+- **Quién y cuándo.** Dirección de BE, el 2026-10-24.
+  - Ratifica la propuesta de #202 en su versión corregida: la cabeza `664f713`, con la CI de verificación 40094444871.
+  - La versión del 2026-10-23 (`916cb05`) no se ratifica: exceptuaba por aviso, paquete y espacio, sin mirar de dónde
+    venía la copia.
+- **Qué se exceptúa, y nada más:**
+  - el aviso GHSA-mrhx-c7xc-m3w5;
+  - en la copia `node_modules/zod`, versión 3.25.76;
+  - solo en la auditoría de `@be/mobile`;
+  - con procedencia exclusiva `@expo/cli` 57.0.25 ← `expo` 57.0.23 ← `@be/mobile`.
+- **El riesgo aceptado.**
+  - Ese zod 3 sigue instalado en la CI y en la máquina que construye la APK.
+  - La CLI lo ejecuta al construir (`export:embed`), para validar la definición de los complementos de DevTools de los
+    paquetes instalados.
+  - No viaja en la APK y no recibe datos de las personas. El riesgo es bajo y acotado a la cadena de construcción, no
+    nulo.
+- **Las condiciones, obligatorias en cada auditoría** (`procedencia` en `scripts/auditoria-de-dependencias.cjs`):
+  1. npm encuentra vulnerable solo esa copia, en esa versión.
+  2. En producción la usa solo `@expo/cli`, a la CLI la usa solo `expo`, y `@be/mobile` pide `expo`. Ninguna ruta
+     adicional usa esa copia.
+  3. El bundle de Android de ese commit, construido como lo hace Gradle, no tiene ningún módulo de esa copia ni de otra
+     copia de zod que el aviso abarque. `node_modules` coincide con el lockfile.
+  4. Fail closed:
+     - una procedencia nueva o una versión distinta bloquean (1);
+     - una comprobación imposible (sin lockfile, sin la lista de npm, sin bundle) no aprueba (2);
+     - vencida, bloquea (1).
+- **El vencimiento.** El 2026-10-31, inclusive.
+  - La auditoría compara la fecha UTC del runner. Vale hasta el 2026-10-31 a las 23:59:59 UTC, que son las 20:59:59 de
+    Argentina.
+  - Desde el 2026-11-01 a las 00:00 UTC (el 31 a las 21:00 en Argentina), la auditoría falla en toda rama, también en
+    `main`, salvo una decisión nueva de Dirección.
+  - Que venza unas horas antes en la hora de Argentina va en el sentido seguro. Es el mismo criterio de las excepciones de
+    node-forge y braces.
+- **Lo que no autoriza:**
+  - integrar ningún PR en `main` ni desplegar `test`, que necesitan una autorización aparte;
+  - excepciones nuevas, ni ampliar las existentes;
+  - cambiar el vencimiento de node-forge o braces.
+- **Dónde quedó:**
+  - este registro;
+  - `EVIDENCIA/EXCEPCION-ZOD-EXPO/LEEME.md`;
+  - el procedimiento de integración, sin ejecutar: `EVIDENCIA/EXCEPCION-ZOD-EXPO/INTEGRACION.md`.
 
 ---
 
