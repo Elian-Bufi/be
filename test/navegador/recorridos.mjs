@@ -529,45 +529,45 @@ async function accesoRevocado({ p, d }) {
 }
 
 /**
- * Hace fallar en el navegador, con un 503, las lecturas GET de `caminos`, sin tocar la API ni ningún otro pedido.
+ * Hace fallar con un 503, dentro de la página, las lecturas GET de `caminos`, sin tocar la API ni la red del navegador.
  *
- * Usa el dominio Fetch de CDP con un patrón por camino: el navegador detiene solo esos pedidos. Antes se usaba
- * `setRequestInterception`, que detiene TODOS los de la página y deja seguir los demás. Esos a veces fallaban en el
- * navegador: no llegaban a la API, perdían la respuesta o salían sin la cookie de reanudación. El recorrido fallaba sin
- * que el website ni la API tuvieran nada que ver; fue el intermitente del 23 y el 24/10.
- * `dejarDeFallar` saca un camino, y sin caminos el navegador deja de detener pedidos.
+ * Reemplaza `fetch` antes de que cargue cada documento (`evaluateOnNewDocument`): el cliente HTTP del website recibe el
+ * 503 como si lo hubiera mandado la API, y todos los demás pedidos salen como siempre. Antes se interceptaba en la red
+ * del navegador (el dominio Fetch de CDP, con `setRequestInterception`). Con eso, en la CI, a veces el navegador cancelaba
+ * de golpe todo lo que estaba en curso, a la API y al website, y perdía la cookie de reanudación. Fue el intermitente del
+ * 23 y el 24/10, y pasaba también interceptando solo estos dos caminos.
+ * `dejarDeFallar` saca un camino, en el documento abierto y en los que vengan.
  */
 async function simularFallas(p, caminos) {
-  const cdp = await p.createCDPSession();
   const fallan = new Set(caminos);
-  const cuerpo = Buffer.from(JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } })).toString('base64');
-  cdp.on('Fetch.requestPaused', ({ requestId, request }) => {
-    const simular = request.method === 'GET' && fallan.has(new URL(request.url).pathname);
-    const respuesta = simular
-      ? cdp.send('Fetch.fulfillRequest', {
-          requestId,
-          responseCode: 503,
-          responseHeaders: [
-            { name: 'Access-Control-Allow-Origin', value: WEB },
-            { name: 'Access-Control-Expose-Headers', value: 'x-request-id' },
-            { name: 'Vary', value: 'Origin' },
-            { name: 'Content-Type', value: 'application/json; charset=utf-8' },
-          ],
-          body: cuerpo,
-        })
-      : cdp.send('Fetch.continueRequest', { requestId });
-    // Si la página ya no espera el pedido (navegó), no hay nada que responder.
-    respuesta.catch(() => {});
-  });
-  const aplicar = () =>
-    fallan.size > 0
-      ? cdp.send('Fetch.enable', { patterns: [...fallan].map((c) => ({ urlPattern: `${API}${c}*`, requestStage: 'Request' })) })
-      : cdp.send('Fetch.disable');
-  await aplicar();
+  let guion = null;
+  const instalar = async () => {
+    if (guion) await p.removeScriptToEvaluateOnNewDocument(guion.identifier);
+    guion = await p.evaluateOnNewDocument(
+      (api, lista) => {
+        const simuladas = new Set(lista);
+        window.__beLecturasQueFallan = simuladas;
+        const original = window.fetch.bind(window);
+        window.fetch = (entrada, init) => {
+          const url = new URL(typeof entrada === 'string' ? entrada : entrada instanceof URL ? entrada.href : entrada.url, location.href);
+          const metodo = String(init?.method ?? (entrada instanceof Request ? entrada.method : 'GET')).toUpperCase();
+          if (metodo === 'GET' && url.origin === api && simuladas.has(url.pathname)) {
+            const cuerpo = JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } });
+            return Promise.resolve(new Response(cuerpo, { status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
+          }
+          return original(entrada, init);
+        };
+      },
+      API,
+      [...fallan],
+    );
+  };
+  await instalar();
   return {
     async dejarDeFallar(camino) {
       fallan.delete(camino);
-      await aplicar();
+      await instalar();
+      await p.evaluate((c) => window.__beLecturasQueFallan?.delete(c), camino);
     },
   };
 }
