@@ -102,5 +102,20 @@ test('cada excepción declarada tiene motivo y una fecha de vencimiento', () => 
     assert.match(e.aviso, /^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/);
     assert.ok(e.motivo.length > 40);
     assert.match(e.vence, /^\d{4}-\d{2}-\d{2}$/);
+    // Si se acota a espacios, son espacios que la auditoría recorre (un nombre mal escrito no exceptuaría nada, en silencio).
+    if (e.espacios) for (const espacio of e.espacios) assert.ok(['@be/api', '@be/web', '@be/mobile'].includes(espacio), espacio);
   }
+});
+
+test('una excepción acotada a un espacio no vale en otro: el zod de la CLI de Expo no tapa un zod viejo en la API', () => {
+  const zod = { aviso: 'GHSA-mrhx-c7xc-m3w5', paquete: 'zod', espacios: ['@be/mobile'], motivo: 'de prueba', vence: '2026-10-31' };
+  const informe = reporte(aviso('zod', 'GHSA-mrhx-c7xc-m3w5', 'high'));
+  assert.deepEqual(clasificarAvisos(informe, [zod], HOY, '@be/mobile').exceptuados.map((a) => a.paquete), ['zod']);
+  assert.deepEqual(clasificarAvisos(informe, [zod], HOY, '@be/api').fallan.map((a) => a.paquete), ['zod']);
+  assert.deepEqual(clasificarAvisos(informe, [zod], HOY).fallan.map((a) => a.paquete), ['zod'], 'sin espacio, una excepción acotada no se aplica');
+  // De punta a punta, por la salida de npm: en la API bloquea; en la APK, se informa exceptuado.
+  assert.equal(evaluarSalida('@be/api', salida(aviso('zod', 'GHSA-mrhx-c7xc-m3w5', 'high')), [zod], HOY).codigo, CODIGO.VULNERABILIDADES);
+  assert.equal(evaluarSalida('@be/mobile', salida(aviso('zod', 'GHSA-mrhx-c7xc-m3w5', 'high')), [zod], HOY).codigo, CODIGO.APRUEBA);
+  // Y la declarada en el repositorio es la de la APK, no la de la API ni la del website.
+  assert.deepEqual(EXCEPCIONES.find((e) => e.paquete === 'zod')?.espacios, ['@be/mobile']);
 });

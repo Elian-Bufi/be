@@ -40,6 +40,15 @@ const EXCEPCIONES = [
       'Sin versión corregida: el aviso (CVE-2026-93687, agotamiento de la pila con patrones muy anidados) abarca hasta la 3.0.3, la última publicada (actualizado el 2026-10-02). braces entra por la CLI de Expo y por metro (expo → @expo/cli → @expo/metro-file-map → micromatch → braces), que lo usan al construir para expandir los patrones de archivos de la configuración, no datos de las personas. braces no viaja en el bundle de la APK ni está en la API ni en el website. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
     vence: '2026-10-31',
   },
+  {
+    aviso: 'GHSA-mrhx-c7xc-m3w5',
+    paquete: 'zod',
+    // Solo en la APK: en la API y el website, zod se corrige (4.6.6) y el aviso tiene que seguir bloqueando.
+    espacios: ['@be/mobile'],
+    motivo:
+      'Sin versión 3.x corregida: el aviso (publicado después del 2026-10-20, agotamiento de memoria al validar colecciones muy grandes con límites) abarca todo zod anterior a la 4.6.6, y la CLI de Expo (@expo/cli 57.0.25) exige zod ^3.25.76. Ese zod 3 entra por la CLI de Expo, que lo usa al construir, no con datos de las personas. No viaja en el bundle de la APK: la APK valida con el zod 4.6.6 de @be/domain, corregido en el mismo cambio que declara esta excepción. La API y el website usan solo el zod 4.6.6. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
+    vence: '2026-10-31',
+  },
 ];
 
 /** El identificador del aviso: `GHSA-…`, tomado de su URL. */
@@ -48,8 +57,9 @@ const idDelAviso = (via) => (typeof via.url === 'string' ? via.url.split('/').po
 /**
  * Los avisos altos o críticos de un reporte de `npm audit --json`, separados en los que fallan, los exceptuados y las
  * excepciones vencidas. `hoy` es una fecha `AAAA-MM-DD`. El reporte tiene que estar validado (`validarInforme`).
+ * Una excepción con `espacios` vale solo en esos espacios de trabajo: en otro, el mismo aviso bloquea.
  */
-function clasificarAvisos(reporte, excepciones, hoy) {
+function clasificarAvisos(reporte, excepciones, hoy, espacio = null) {
   const avisos = new Map();
   for (const vulnerabilidad of Object.values(reporte.vulnerabilities)) {
     for (const via of vulnerabilidad.via ?? []) {
@@ -62,7 +72,7 @@ function clasificarAvisos(reporte, excepciones, hoy) {
   const exceptuados = [];
   const vencidas = [];
   for (const a of avisos.values()) {
-    const excepcion = excepciones.find((e) => e.aviso === a.aviso && e.paquete === a.paquete);
+    const excepcion = excepciones.find((e) => e.aviso === a.aviso && e.paquete === a.paquete && (!e.espacios || (espacio !== null && e.espacios.includes(espacio))));
     if (!excepcion) fallan.push(a);
     else if (hoy > excepcion.vence) vencidas.push({ ...a, vence: excepcion.vence });
     else exceptuados.push({ ...a, vence: excepcion.vence });
@@ -98,7 +108,7 @@ function validarInforme(salida) {
 function evaluarSalida(espacio, salida, excepciones, hoy) {
   const { informe, problema } = validarInforme(salida);
   if (problema) return { codigo: CODIGO.NO_SE_PUDO_AUDITAR, lineas: [`✗ ${espacio}: la auditoría no se pudo hacer (${problema}); no se aprueba sin un informe válido`] };
-  const { fallan, exceptuados, vencidas } = clasificarAvisos(informe, excepciones, hoy);
+  const { fallan, exceptuados, vencidas } = clasificarAvisos(informe, excepciones, hoy, espacio);
   const lineas = [
     ...fallan.map((a) => `✗ ${espacio}: ${a.severidad} · ${a.paquete} · ${a.aviso} · ${a.titulo}`),
     ...vencidas.map((a) => `✗ ${espacio}: excepción vencida el ${a.vence} · ${a.paquete} · ${a.aviso}: revisarla en DL-114`),

@@ -2752,6 +2752,22 @@ excepciones siguen siendo las de esta deuda.
 - **Antes del 2026-10-31** hay que revisar las fuentes primarias. Si apareció una corrección, se fija con `overrides` y la
   excepción se borra. Si no, Dirección decide de nuevo.
 
+**Revisión y propuesta del 2026-10-23 (sin ratificar: Dirección no autorizó ampliar las excepciones).**
+- **Las dos ratificadas.** node-forge sigue sin corrección: la 1.4.0 es la última y el aviso la abarca. braces ya no
+  aparece en la auditoría del 2026-10-23: su excepción no se usa y se puede borrar. Las dos vencen el 2026-10-31.
+- **Un aviso nuevo, sin versión corregida en la línea que usa Expo:** GHSA-mrhx-c7xc-m3w5 en zod (alto; todo zod anterior
+  a la 4.6.6), publicado después del 2026-10-20.
+  - La API, el website y la APK validan con el zod de `@be/domain`, que pasa a la 4.6.6 en `seguridad/avisos-2026-10-23`.
+  - Queda el zod 3.25.76 que exige la CLI de Expo (`@expo/cli` 57.0.25 pide `^3.25.76`). No hay un zod 3 corregido, y no
+    viaja en el bundle de la APK, pero la auditoría de `@be/mobile` falla por él y frena la CI de todo.
+- **La propuesta** (esta rama, `seguridad/excepcion-zod-expo-propuesta`): exceptuar solo GHSA-mrhx-c7xc-m3w5 en zod, solo en
+  `@be/mobile` y hasta el 2026-10-31, como las otras.
+  - Una excepción puede acotarse a espacios de trabajo (`espacios`): en la API o el website, el mismo aviso sigue
+    bloqueando. Lo prueba `auditoria-de-dependencias.test.cjs` (13 pruebas).
+  - **Alternativas:** dejar la CI en rojo hasta que Expo pase a zod 4, sin integrar nada mientras tanto; o actualizar Expo
+    a una versión con zod 4, si la hay, que es un cambio de la APK con su propia prueba en el teléfono.
+  - **Recomendación:** la excepción acotada, con el mismo vencimiento, y revisar las tres juntas antes del 2026-10-31.
+
 ---
 
 ## DL-115 — Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios
