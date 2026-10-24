@@ -23,6 +23,7 @@ import {
   compararEtapas,
   duracionDeLaEtapa,
   LENTE_DEL_AREA,
+  numero,
   periodoDeLasEtapas,
   resumenTextual,
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
@@ -35,6 +36,7 @@ import {
 import dynamic from 'next/dynamic';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
+import { BloqueDeEstado } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { diaCivil, diaDelAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { textoDeFalla, useSeguimiento } from './contexto';
@@ -102,7 +104,9 @@ export function ComparacionDeEtapas({
   const hoy = hoyEn();
   const leido = useMemo(() => periodoDeLasEtapas(a, b, hoy, 366), [a, b, hoy]);
   const periodo = useMemo(() => ({ preset: null, desde: leido.desde, hasta: leido.hasta }), [leido.desde, leido.hasta]);
-  const { series, recargar } = useSeriesDelAnalisis(metricas, 'DAY', periodo);
+  const { series, reintentarFallidas } = useSeriesDelAnalisis(metricas, 'DAY', periodo);
+  // Las que no se pudieron leer: cada fila lo dice, y se reintentan juntas, con un solo botón debajo de la tabla.
+  const fallidas = series.filter((s) => s.estado.tipo === 'error').length;
   const [plan, setPlan] = useState<{ origen: OrigenDeDato; titulo: string; numero: number } | null>(null);
   const tipoDePlan: OrigenDeDato['type'] = area === 'NUTRICION' ? 'NUTRITION_PLAN_VERSION' : 'TRAINING_PLAN_VERSION';
   const nombreDelArea = area === 'NUTRICION' ? 'Nutrición' : 'Entrenamiento';
@@ -245,14 +249,7 @@ export function ComparacionDeEtapas({
                         {s.estado.tipo === 'sin-acceso' ? 'No está disponible con tu acceso actual.' : null}
                         {s.estado.tipo === 'sin-especificacion' ? 'BE no tiene todavía una especificación para calcularla.' : null}
                         {s.estado.tipo === 'sin-datos' ? 'Sin registros en las fechas leídas: no es un cero.' : null}
-                        {s.estado.tipo === 'error' ? (
-                          <>
-                            {textoDeFalla(s.estado.motivo, nombre)}{' '}
-                            <button type="button" className="boton boton--enlace" onClick={recargar}>
-                              Reintentar
-                            </button>
-                          </>
-                        ) : null}
+                        {s.estado.tipo === 'error' ? textoDeFalla(s.estado.motivo, nombre) : null}
                       </td>
                     </tr>
                   );
@@ -285,6 +282,11 @@ export function ComparacionDeEtapas({
             </tbody>
           </table>
         </div>
+        {fallidas > 0 ? (
+          <BloqueDeEstado tipo="error" icono="aviso" onReintentar={reintentarFallidas} textoDelBoton="Reintentar las métricas que fallaron" rol="alert">
+            {fallidas === 1 ? 'Una métrica no se pudo leer: su fila lo dice.' : `${numero(fallidas)} métricas no se pudieron leer: sus filas lo dicen.`}
+          </BloqueDeEstado>
+        ) : null}
       </div>
       <div className="graficos-de-etapas">
         <div className="graficos-de-etapas__cabecera">
@@ -334,8 +336,15 @@ export function ComparacionDeEtapas({
               );
             })}
           </ul>
-        ) : cargando ? null : (
-          <p className="graficos-de-etapas__nota">Ninguna de estas métricas tiene valores en las fechas de las dos etapas: no hay nada para dibujar, y no es un cero.</p>
+        ) : cargando ? null : fallidas > 0 && fallidas === series.length ? (
+          // Una falla no es una ausencia: si ninguna se pudo leer, no se sabe si hay valores.
+          <p className="graficos-de-etapas__nota">No pudimos leer estas métricas: no hay nada para dibujar, pero no es que no tengan valores. Se reintentan debajo de la tabla.</p>
+        ) : (
+          <p className="graficos-de-etapas__nota">
+            {fallidas > 0
+              ? 'Las métricas que se pudieron leer no tienen valores en las fechas de las dos etapas, y no es un cero; las demás no se pudieron leer.'
+              : 'Ninguna de estas métricas tiene valores en las fechas de las dos etapas: no hay nada para dibujar, y no es un cero.'}
+          </p>
         )}
         {enGrande ? null : pie}
       </div>

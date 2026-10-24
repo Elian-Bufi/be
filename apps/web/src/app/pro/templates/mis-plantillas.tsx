@@ -2,16 +2,17 @@
 
 /**
  * «Mis plantillas» (PF-09; DL-108): las plantillas de plan de entrenamiento del profesional, solo las propias.
- * - Lista con estado, sesiones, cargas y fecha; filtro por estado; «Ver más» por cursor.
+ * - Lista con estado, sesiones, cargas y fecha; filtro por estado; «Ver más» por cursor. Con el filtro puesto y nada que
+ *   coincida se dice eso, con «Ver todas» (no «todavía no guardaste ninguna»); una lectura que falla se dice como falla.
  * - Detalle en solo lectura: la estructura con los nombres vigentes de los ejercicios (`exercises`); un ejercicio que
  *   ya no está disponible se dice.
  * - Renombrar y describir, archivar y reactivar, con `expectedVersion`. La estructura no se edita acá: una versión
  *   nueva se guarda desde un plan («Guardar como plantilla»), que es donde el profesional la trabaja.
  */
 import { COPY_PLANTILLAS, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
-import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
+import { Cargando, ErrorConReintento, EstadoVacio, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
 import { fecha } from '../../../lib/formato';
@@ -30,6 +31,12 @@ export function MisPlantillas() {
   const [estado, setEstado] = useState<Estado | ''>('');
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  // «Ver todas» desaparece al quitar el filtro: el foco va al filtro, que es lo que cambió.
+  const filtroDeEstado = useRef<HTMLSelectElement>(null);
+  const verTodas = () => {
+    setEstado('');
+    filtroDeEstado.current?.focus();
+  };
   const listo = yo.tipo === 'listo';
   // Un profesional sin Entrenamiento recibe 403: la sección no es para él y se omite (mostrar u ocultar no autoriza nada).
   const [sinArea, setSinArea] = useState(false);
@@ -73,7 +80,7 @@ export function MisPlantillas() {
         {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
         <div className="campo">
           <label htmlFor="plantillas-estado">Estado</label>
-          <select id="plantillas-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
+          <select ref={filtroDeEstado} id="plantillas-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
             <option value="">Todas</option>
             <option value="ACTIVE">{COPY_PLANTILLAS.activa}</option>
             <option value="ARCHIVED">{COPY_PLANTILLAS.archivada}</option>
@@ -81,10 +88,23 @@ export function MisPlantillas() {
         </div>
         )}
         {lista.estado.tipo === 'cargando' ? <Cargando /> : null}
-        {lista.estado.tipo === 'error' ? <ErrorConReintento onReintentar={lista.recargar} /> : null}
+        {lista.estado.tipo === 'error' ? <ErrorConReintento mensaje={COPY_PLANTILLAS.noSeLeyeronLasDeEntrenamiento} onReintentar={lista.recargar} /> : null}
         {lista.estado.tipo === 'listo' ? (
           lista.estado.items.length === 0 ? (
-            <p>{COPY_PLANTILLAS.sinPlantillas}</p>
+            estado === '' ? (
+              <p>{COPY_PLANTILLAS.sinPlantillas}</p>
+            ) : (
+              // Con el filtro puesto, lo que no hay es una plantilla con ese estado: el filtro sigue a la vista, arriba.
+              <EstadoVacio
+                titulo={estado === 'ACTIVE' ? COPY_PLANTILLAS.ningunaActiva : COPY_PLANTILLAS.ningunaArchivada}
+                accion={
+                  <button type="button" className="boton boton--secundario" onClick={verTodas}>
+                    {COPY_PLANTILLAS.verTodas}
+                    <span className="visualmente-oculto"> las {COPY_PLANTILLAS.plantillasDeEntrenamiento.toLowerCase()}</span>
+                  </button>
+                }
+              />
+            )
           ) : (
             <ul className="lista">
               {lista.estado.items.map((p) => (

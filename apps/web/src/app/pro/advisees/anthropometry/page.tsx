@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Encabezado } from '../../../../components/encabezado';
 import { NavegacionProfesional } from '../../../../components/navegacion';
 import { Antropometria } from './antropometria';
+import { PorAsesorado } from '../por-asesorado';
 
 export const metadata: Metadata = { title: 'Antropometría · BE' };
 
@@ -16,7 +17,9 @@ export default function PaginaDeAntropometria() {
       <Encabezado navegacion={<NavegacionProfesional />} />
       <main id="contenido" className="contenido contenido--ficha">
         <Suspense fallback={null}>
-          <Antropometria />
+          <PorAsesorado>
+            <Antropometria />
+          </PorAsesorado>
         </Suspense>
       </main>
     </>

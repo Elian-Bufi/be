@@ -19,6 +19,7 @@
  */
 import {
   COPY_ANTROPOMETRIA,
+  COPY_GUARDADO,
   ETIQUETA_DE_FAMILIA,
   ETIQUETA_DE_ORIGEN,
   leerNumero,
@@ -216,6 +217,8 @@ function Preparacion({
   const [protocolo, setProtocolo] = useState('');
   const [origen, setOrigen] = useState<'DIRECT_CAPTURE' | 'SELF_REPORTED'>('DIRECT_CAPTURE');
   const [enviando, setEnviando] = useState(false);
+  // El último intento de guardar falló: lo escrito sigue en pantalla, y la línea de estado lo dice.
+  const [falloAlGuardar, setFalloAlGuardar] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [activa, setActiva] = useState<string | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
@@ -383,9 +386,13 @@ function Preparacion({
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(res) || accesoRetirado(res)) return null;
     if (!res.ok) {
-      avisarDelRechazo(res);
+      setFalloAlGuardar(true);
+      // Otra pestaña u otro equipo guardó esta toma antes: no se pisa; «Actualizar» trae lo guardado.
+      if (res.tipo === 'API' && res.codigo === 'VERSION_CONFLICT') avisar({ tipo: 'error', texto: COPY_GUARDADO.conflicto });
+      else avisarDelRechazo(res);
       return null;
     }
+    setFalloAlGuardar(false);
     return res.datos.data as Borrador;
   }
 
@@ -466,13 +473,18 @@ function Preparacion({
     if (m) setEscritos((xs) => ({ ...xs, [clave]: { ...(xs[clave] ?? { valor: '', unidad: m.unidades[0]! }), ...cambio } }));
   };
   const ultimo = borrador ? ultimoGuardado(borrador) : null;
-  const estado = hayCambios
-    ? COPY_ANTROPOMETRIA.cambiosSinGuardar
-    : ultimo
-      ? ultimo.guardado
-        ? `${COPY_ANTROPOMETRIA.guardado} · ${fecha(ultimo.momento)}`
-        : `Abierta el ${fecha(ultimo.momento)}`
-      : 'Todavía no se guardó.';
+  // Los cuatro estados de escritura (bloque 3 del encargo): guardando, no se pudo, pendiente y guardado, con su fecha.
+  const estado = enviando
+    ? COPY_GUARDADO.guardando
+    : falloAlGuardar
+      ? COPY_GUARDADO.noSePudo
+      : hayCambios
+        ? COPY_GUARDADO.pendiente
+        : ultimo
+          ? ultimo.guardado
+            ? `${COPY_ANTROPOMETRIA.guardado} · ${fecha(ultimo.momento)}`
+            : `Abierta el ${fecha(ultimo.momento)}`
+          : 'Todavía no se guardó.';
   const cargadas = conDato.size;
   const cuenta =
     metricas.length > 0
@@ -500,7 +512,7 @@ function Preparacion({
         ) : null}
         <p className="carga-de-la-toma__cuenta">{conNumerosPegados(`${cuenta} No es historia hasta que la registres.`)}</p>
         <div className="carga-de-la-toma__acciones">
-          <p className={`carga-de-la-toma__estado${hayCambios ? ' carga-de-la-toma__estado--cambios' : ''}`} aria-live="polite">
+          <p className={`carga-de-la-toma__estado${hayCambios ? ' carga-de-la-toma__estado--cambios' : ''}${falloAlGuardar && !enviando ? ' carga-de-la-toma__estado--fallo' : ''}`} aria-live="polite">
             {estado}
           </p>
           {borrador ? (

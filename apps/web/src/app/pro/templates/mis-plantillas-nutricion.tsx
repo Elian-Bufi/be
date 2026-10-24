@@ -1,10 +1,14 @@
 'use client';
 
-/** «Mis plantillas» de comidas (PF-09; DL-108): la misma sección que la de entrenamiento, con la estructura de días tipo → comidas → opciones → alimentos. */
+/**
+ * «Mis plantillas» de comidas (PF-09; DL-108): la misma sección que la de entrenamiento, con la estructura de días tipo →
+ * comidas → opciones → alimentos. Solo un 403 (un profesional sin Nutrición) la oculta; cualquier otra falla se dice, con
+ * «Reintentar» (encargo de consolidación, bloque 5).
+ */
 import { cantidad, COPY_PLANTILLAS, ETIQUETA_DE_PREPARACION, type EstructuraDePlanEntrada, type PlantillaNutricional, type ResumenDePlantillaNutricional } from '@be/domain';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
-import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
+import { Cargando, ErrorConReintento, EstadoVacio, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
 import { fecha } from '../../../lib/formato';
@@ -17,12 +21,27 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
   const [estado, setEstado] = useState<Estado | ''>('');
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  // Un profesional sin Nutrición recibe 403: la sección no es para él y no se muestra (el enlace no autoriza nada). Solo
+  // ese código la oculta: cualquier otra falla se dice, porque esconderla hacía creer que no había plantillas.
+  const [sinArea, setSinArea] = useState(false);
   const lista = useListaPaginada(
-    useMemo(() => (cursor?: string) => api.listarPlantillasNutricionales(token, { ...(estado ? { state: estado } : {}), ...(cursor ? { cursor } : {}) }), [token, estado]),
+    useMemo(
+      () => (cursor?: string) =>
+        api.listarPlantillasNutricionales(token, { ...(estado ? { state: estado } : {}), ...(cursor ? { cursor } : {}) }).then((r) => {
+          if (!r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') setSinArea(true);
+          return r;
+        }),
+      [token, estado],
+    ),
     sesionPerdida,
   );
-  // Un profesional sin Nutrición recibe 403: la sección no es para él y no se muestra (el enlace no autoriza nada).
-  if (lista.estado.tipo === 'error') return null;
+  // «Ver todas» desaparece al quitar el filtro: el foco va al filtro, que es lo que cambió.
+  const filtroDeEstado = useRef<HTMLSelectElement>(null);
+  const verTodas = () => {
+    setEstado('');
+    filtroDeEstado.current?.focus();
+  };
+  if (sinArea) return null;
   return (
     <section className="seccion" aria-labelledby="titulo-plantillas-nutricion">
       <h2 id="titulo-plantillas-nutricion">{COPY_PLANTILLAS.plantillasDeNutricion}</h2>
@@ -40,7 +59,7 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
       {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
       <div className="campo">
         <label htmlFor="plantillas-nutricion-estado">Estado</label>
-        <select id="plantillas-nutricion-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
+        <select ref={filtroDeEstado} id="plantillas-nutricion-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
           <option value="">Todas</option>
           <option value="ACTIVE">{COPY_PLANTILLAS.activa}</option>
           <option value="ARCHIVED">{COPY_PLANTILLAS.archivada}</option>
@@ -48,9 +67,23 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
       </div>
       )}
       {lista.estado.tipo === 'cargando' ? <Cargando /> : null}
+      {lista.estado.tipo === 'error' ? <ErrorConReintento mensaje={COPY_PLANTILLAS.noSeLeyeronLasDeComidas} onReintentar={lista.recargar} /> : null}
       {lista.estado.tipo === 'listo' ? (
         lista.estado.items.length === 0 ? (
-          <p>{COPY_PLANTILLAS.sinPlantillas}</p>
+          estado === '' ? (
+            <p>{COPY_PLANTILLAS.sinPlantillas}</p>
+          ) : (
+            // Con el filtro puesto, lo que no hay es una plantilla con ese estado: el filtro sigue a la vista, arriba.
+            <EstadoVacio
+              titulo={estado === 'ACTIVE' ? COPY_PLANTILLAS.ningunaActiva : COPY_PLANTILLAS.ningunaArchivada}
+              accion={
+                <button type="button" className="boton boton--secundario" onClick={verTodas}>
+                  {COPY_PLANTILLAS.verTodas}
+                  <span className="visualmente-oculto"> las {COPY_PLANTILLAS.plantillasDeNutricion.toLowerCase()}</span>
+                </button>
+              }
+            />
+          )
         ) : (
           <ul className="lista">
             {lista.estado.items.map((p) => (

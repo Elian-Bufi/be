@@ -9,10 +9,11 @@
  * - Lo que se ve después de cargar es lo que guardó BE (recodificado, sin metadatos), leído de nuevo de la API: así se
  *   comprueba que quedó guardada y que vuelve después de recargar la página.
  */
-import { COPY_RECETAS, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, ProcedenciaDeMedioSchema, type ProcedenciaDeMedio, type Receta } from '@be/domain';
+import { COPY_RECETAS, COPY_REGISTRO_DE_COMIDAS, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, ProcedenciaDeMedioSchema, type ProcedenciaDeMedio, type Receta } from '@be/domain';
 import { useId, useRef, useState } from 'react';
 import { DialogoDeConfirmacion } from '../../../components/dialogo';
 import { Aviso, Campo } from '../../../components/formulario';
+import { Icono } from '../../../components/icono';
 import { api, type Resultado } from '../../../lib/api';
 import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
@@ -25,15 +26,35 @@ const PROBLEMA: Readonly<Record<ProblemaDeImagen, string>> = {
   ILEGIBLE: COPY_RECETAS.imagenInvalida,
 };
 
-/** La imagen guardada de una receta, o el ícono de respaldo. Compartida con la lista. */
+/**
+ * La imagen guardada de una receta, o su respaldo. Compartida con la lista (encargo del 2026-10-19, bloque 4):
+ * - mientras carga, el indicador de siempre; sin imagen, el ícono del plato; si falló, el mismo ícono y, en el detalle, el
+ *   aviso con «Reintentar» (recargar la página cerraría la sesión);
+ * - se recuerda en la pestaña: ir y volver de «Mis recetas» no la pide de nuevo;
+ * - en la tarjeta (`chica`) es decorativa: el nombre ya está en el título y en «Abrir», y el lector no lo repite.
+ */
 export function ImagenGuardada({ token, medioId, nombre, sesionPerdida, chica = false }: { token: string; medioId: string | null; nombre: string; sesionPerdida: (r: Resultado<unknown>) => boolean; chica?: boolean }) {
-  const { estado } = useImagenDeMedio(token, medioId, sesionPerdida);
+  const { estado, recargar } = useImagenDeMedio(token, medioId, sesionPerdida, { recordar: true });
   const clase = `imagen-de-receta${chica ? ' imagen-de-receta--chica' : ''}`;
-  if (estado.tipo === 'lista') return <img className={clase} src={estado.dataUrl} alt={`${COPY_RECETAS.imagenDeReferencia}: ${nombre}`} />;
-  return (
-    <div className={`${clase} imagen-de-receta--respaldo`} role="img" aria-label={estado.tipo === 'cargando' ? COPY_RECETAS.cargandoImagen : `${nombre}: sin imagen de referencia`}>
-      <span aria-hidden="true">🍽</span>
+  if (estado.tipo === 'lista') return <img className={clase} src={estado.dataUrl} alt={chica ? '' : `${COPY_RECETAS.imagenDeReferencia}: ${nombre}`} decoding="async" />;
+  const texto = estado.tipo === 'cargando' ? COPY_RECETAS.cargandoImagen : estado.tipo === 'fallo' ? `${nombre}: ${COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible}` : `${nombre}: sin imagen de referencia`;
+  const paraElLector = chica ? ({ 'aria-hidden': true } as const) : ({ role: 'img', 'aria-label': texto } as const);
+  const respaldo = (
+    <div className={`${clase} imagen-de-receta--respaldo${estado.tipo === 'cargando' ? ' imagen-de-receta--cargando' : ''}`} {...paraElLector}>
+      {estado.tipo === 'cargando' ? null : <Icono nombre="comida" tamano={24} />}
     </div>
+  );
+  if (chica || estado.tipo !== 'fallo') return respaldo;
+  return (
+    <>
+      {respaldo}
+      <p className="nota">
+        {COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible}{' '}
+        <button type="button" className="boton boton--enlace" onClick={() => void recargar()}>
+          Reintentar
+        </button>
+      </p>
+    </>
   );
 }
 
@@ -145,7 +166,7 @@ export function ImagenDeReceta({ token, receta, sesionPerdida, onCambio }: { tok
       {elegida ? (
         <div className="vista-previa">
           <p className="lista__titulo">{COPY_RECETAS.vistaPrevia}</p>
-          <img className="imagen-de-receta" src={elegida.vistaPrevia} alt={`${COPY_RECETAS.vistaPrevia}: ${elegida.archivo.name}`} />
+          <img className="imagen-de-receta" src={elegida.vistaPrevia} alt={`${COPY_RECETAS.vistaPrevia}: ${elegida.archivo.name}`} decoding="async" />
           <p className="nota">
             {elegida.archivo.name} · {elegida.ancho} × {elegida.alto} px
           </p>

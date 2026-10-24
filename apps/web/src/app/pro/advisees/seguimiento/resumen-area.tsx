@@ -73,8 +73,6 @@ export interface PropsDeLasAreas {
   readonly formato: FormatoDeLaSintesis;
   readonly macros: MacrosDelObjetivo;
   readonly onReintentarMacros: () => void;
-  /** Vuelve a leer todo lo que la síntesis no pudo completar. */
-  readonly onReintentar: () => void;
   readonly onAbrirToma: (evaluationId: string) => void;
 }
 
@@ -126,7 +124,7 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
     return fecha !== null && diasEntreFechas(hoy, fecha) <= DIAS_DE_ANTICIPACION_DE_LA_REVISION ? undefined : fecha;
   };
   const delArea = (area: AreaDelResumen) => (p.observaciones === null ? null : p.observaciones.filter((o) => o.area === area));
-  const comunes = { formato: p.formato, enlaceDe, onReintentar: p.onReintentar };
+  const comunes = { formato: p.formato, enlaceDe };
   const c = p.disponibles.coberturaNutricional;
   return (
     <>
@@ -354,7 +352,8 @@ function FilaDelPlan({ area, resumen, vigencias, href, formato }: { area: AreaCo
 /**
  * Los hechos de un área, por alcance: primero lo que no se pudo leer, después lo pendiente (hoy), lo nuevo desde la
  * última revisión y lo del período. Cada grupo dice su alcance con las palabras del dominio; lo pendiente es de hoy y lo
- * lleva escrito para el lector de pantalla.
+ * lleva escrito para el lector de pantalla. Lo que no se pudo leer no lleva un «Reintentar» propio: es la misma operación
+ * en las tres tarjetas, y se reintenta una vez, arriba de ellas («Reintentar lo que faltó», bloque 5).
  */
 function Hechos({
   area,
@@ -365,7 +364,6 @@ function Hechos({
   detallesDeLaCobertura,
   formato,
   enlaceDe,
-  onReintentar,
 }: {
   area: AreaDelResumen;
   observaciones: readonly ObservacionDelResumen[] | null;
@@ -378,7 +376,6 @@ function Hechos({
   detallesDeLaCobertura: readonly ParteDeObservacion[];
   formato: FormatoDeLaSintesis;
   enlaceDe: (a: AccionDelResumen) => { href: string; texto: string } | null;
-  onReintentar: () => void;
 }) {
   if (observaciones === null) return <Cargando />;
   const fallas = observaciones.filter((o) => o.regla === 'PARTE_NO_DISPONIBLE');
@@ -406,7 +403,7 @@ function Hechos({
       {/* Lo que falta va primero (GUIA II.7): debajo de la lista, la tarjeta parecía completa al leerla de arriba abajo. */}
       {fallas.length > 0 ? (
         <div className="observaciones__fallas" role="status">
-          <BloqueDeEstado tipo="error" icono="aviso" onReintentar={onReintentar} deQue={NOMBRE_DEL_AREA[area]}>
+          <BloqueDeEstado tipo="error" icono="aviso">
             {fallas.map((o) => (
               <span key={claveDeObservacion(o)} className="observaciones__falla" data-regla={o.regla}>
                 {textoDeObservacion(o, formato)}

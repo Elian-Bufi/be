@@ -22,7 +22,8 @@
  */
 import { COPY_PISTAS, COPY_FORMULARIOS } from '@be/domain';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { cambiarLaDireccion } from '../../../../lib/direccion';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { type Resultado } from '../../../../lib/api';
@@ -73,7 +74,6 @@ export function Formularios() {
   const vistaPedida = parametros.get('vista');
   const vista: Vista = VISTAS.some((v) => v === vistaPedida) ? (vistaPedida as Vista) : 'solicitudes';
   const ruta = usePathname();
-  const router = useRouter();
   const sesion = useEspacioProfesional(`/pro/advisees/forms?id=${id}`);
   const { token, sesionPerdida } = sesion;
 
@@ -89,10 +89,10 @@ export function Formularios() {
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
       const destino = hrefConCambios(ruta, new URLSearchParams(enLaDireccion), cambios);
-      if (opciones?.agregarAlHistorial) router.push(destino, { scroll: false });
-      else router.replace(destino, { scroll: false });
+      // Sin pedido al servidor: sin conexión, el enrutador navegaba a la página de error del navegador (bloque 3).
+      cambiarLaDireccion(destino, { agregarAlHistorial: opciones?.agregarAlHistorial });
     },
-    [router, ruta, enLaDireccion],
+    [ruta, enLaDireccion],
   );
   const [exito, setExito] = useState<string | null>(null);
   // Sube con cada solicitud enviada: «Solicitudes» se monta de nuevo y vuelve a leer la lista, que ya tiene una más.

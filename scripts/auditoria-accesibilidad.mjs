@@ -127,7 +127,13 @@ async function recorrer(ancho, alto, superficie) {
     }
     await irA('Asesorado', '/pro/advisees?id=');
   }
-  await irA('Pedir información', '/pro/advisees/forms');
+  // Desde el bloque 5 del encargo de consolidación, «Pedir información» está en el menú «Más» del encabezado de la ficha: se
+  // audita también el menú abierto.
+  await P.evaluate(() => [...document.querySelectorAll('.marco-de-la-ficha .menu-de-acciones__boton')].find((e) => e.offsetParent !== null).click());
+  await P.waitForFunction(() => [...document.querySelectorAll('.menu-de-acciones__accion')].some((e) => e.textContent.includes('Pedir información')), { timeout: 120_000 });
+  await auditar(s('Workspace del asesorado · menú «Más»'), 'revisión');
+  await P.evaluate(() => [...document.querySelectorAll('.menu-de-acciones__accion')].find((e) => e.textContent.includes('Pedir información')).click());
+  await P.waitForFunction(() => location.pathname.startsWith('/pro/advisees/forms'), { timeout: 120_000 });
   await auditar(s('Información (formularios)'), 'revisión');
 }
 

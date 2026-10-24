@@ -9832,7 +9832,9 @@ async function planesDeNutricion() {
     const conOpcionNueva = await elEditor();
     await escribirElNombre(NOMBRE_DE_LA_OPCION_NUEVA);
     const trasNombrarLaOpcionNueva = await elEditor();
-    await enElEditor('[data-agregar-comida]', 'Agregar comida');
+    // Desde el bloque 5 del encargo de consolidación, «Agregar comida» es un menú: una vacía o una habitual.
+    await abrirMenuDelEditor('.editor-del-plan__al-pie');
+    await elegirDelMenu('Una comida vacía');
     const conComidaNueva = await elEditor();
     await captura(page, v, 'editor-una-comida-recien-agregada-1440-claro');
     await escribirElNombre(NOMBRE_DE_LA_COMIDA_NUEVA);
@@ -10616,7 +10618,8 @@ async function planesDeNutricion() {
         conResultados?.estado === 'lista' &&
         igual(conResultados.columnas.slice(0, 5), ['Alimento', 'Calorías', 'Carbohidratos', 'Grasas', 'Proteínas']) &&
         igual(conResultados.filas.map((f) => [f.id, f.nombre, f.valores]), esperados.map((e) => [e.id, e.nombre, e.valores])) &&
-        conResultados.filas.every((f, i) => (esperados[i].importado ? f.detalle.startsWith(`${esperados[i].cada} · Importado de `) : f.detalle === esperados[i].cada)) &&
+        // DL-141 D-6 (encargo del 2026-10-19, bloque 4): la fila dice su origen breve («USDA», «Demostración»).
+        conResultados.filas.every((f, i) => (esperados[i].importado ? f.detalle.startsWith(`${esperados[i].cada} · `) && !f.detalle.endsWith('Demostración') : f.detalle === `${esperados[i].cada} · Demostración`)) &&
         conResultados.filas.every((f) => f.elegir === `Elegir ${f.nombre}` && f.habitual === 'false' && f.nombreDeLaChinche === `Marcar como habitual: ${f.nombre}`) &&
         conResultados.cuenta === `${esperados.length} en el catálogo` &&
         conResultados.delCatalogo === `${esperados.length} alimentos con «${BUSCADO}»` &&
