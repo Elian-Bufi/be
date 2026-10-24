@@ -580,9 +580,43 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate(() => document.body.innerText.includes('Falta una parte de esta vista'))), 'después de reintentar, no queda el aviso');
 }
 
+/**
+ * DL-153 (encargo del 2026-10-23): el número de Nutrición no da una falsa certeza. Ayer se registró el desayuno y no el
+ * almuerzo del plan: el indicador del Resumen lo cuenta como subtotal y dice la comida del plan sin registro; la lectura de
+ * Analizar de ese día dice cuál falta. Anteayer, con las dos, dice que cada comida del plan está registrada. Nunca «sin
+ * faltantes».
+ */
+async function completitud({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  const indicador = 'li.indicador[data-metrica="nutricion.energia"]';
+  await p.waitForFunction((s) => document.querySelector(s)?.innerText.includes('comida del plan sin registro'), { timeout: ESPERA, polling: 100 }, indicador);
+  const tarjeta = await p.$eval(indicador, (e) => e.innerText);
+  assert.match(tarjeta, /kcal por día/, 'el valor es una media por día, dicha');
+  assert.match(tarjeta, /Media de los días con valor/, 'con su regla');
+  assert.match(tarjeta, /1 subtotal/, 'ayer es un subtotal (antes, completo)');
+  assert.match(tarjeta, /1 comida del plan sin registro/, 'y se dice qué falta');
+  assert.ok(!(await p.evaluate(() => document.body.innerText.includes('sin faltantes'))), 'ninguna parte del Resumen dice «sin faltantes»');
+  await captura(p, salida, 'completitud-indicador-1440');
+
+  const lecturaDel = async (fecha, texto) => {
+    await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=analizar&m=nutricion.energia&f=${fecha}`, { waitUntil: 'networkidle2' });
+    await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, texto);
+    return p.$eval('.panel-de-lectura', (e) => e.innerText);
+  };
+  const ayer = await lecturaDel(d.comidas.ayer, `Sin registro: ${d.comidas.faltante}`);
+  assert.match(ayer, /Subtotal de lo registrado/);
+  assert.match(ayer, /Comidas del plan: 1 de 2 registradas · 1 sin registro/);
+  assert.ok(ayer.includes('Falta: 1 comida(s) del plan sin registro'), 'el motivo, con las palabras de la exportación');
+  await captura(p, salida, 'completitud-lectura-ayer-1440');
+  const anteayer = await lecturaDel(d.comidas.anteayer, 'Comidas del plan: 2 de 2 registradas');
+  assert.match(anteayer, /Cada comida del plan registrada, con cantidades/);
+  assert.ok(!anteayer.includes('sin faltantes'), 'completo según el plan no se dice «sin faltantes»');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

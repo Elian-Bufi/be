@@ -351,6 +351,14 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
     dato)») y hoy, en curso, aparte («fuera de la media», o lo registrado hasta ahora si es un total). Un día sin
     registros nunca sale del denominador ni se cuenta como cero: «2 de 2 días con valor» en un rango de 14 era un
     defecto;
+  - en nutrición, además, **las comidas del plan** (DL-153), que son otra dimensión que los días: «3 comidas del plan
+    sin registro» y «2 días sin saber qué comidas indicaba el plan». Salen del mismo contraste que la pestaña Registros.
+    Una comida del plan sin ningún registro hace del día un subtotal y la lectura del día dice cuál («Sin registro:
+    Cena»). Si el plan no deja saberlo (sin plan vigente, o varios días tipo sin un registro del plan que diga cuál), se
+    dice «sin determinar»: no se inventan comidas esperadas. Hoy no cuenta: todavía se puede registrar. **En nutrición,
+    «completo» nunca se dice «sin faltantes»:** lo registrado no es todo lo que se comió. Se dice «cada comida del plan
+    registrada, con cantidades» o «registros con cantidades, sin saber qué comidas indicaba el plan»
+    (`calidadEnPalabras`, del dominio, la misma en la tabla, la lectura, el origen del dato y la exportación);
   - en entrenamiento y antropometría, en sesiones o tomas («6 sesiones: 5 con valor»; «3 tomas: 2 del último tramo
     comparable»), nunca en días.
   Una cobertura no es una adherencia y no lleva porcentaje. Si el plan empezó a regir dentro del período, se dice desde
