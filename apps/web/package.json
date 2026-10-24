@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@be/domain": "0.1.0",
-    "next": "15.5.25",
+    "next": "15.5.28",
     "qrcode-generator": "2.0.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
