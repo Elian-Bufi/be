@@ -8,7 +8,7 @@
  * Un dato que no se pudo leer lo dice en su renglón («No se pudo leer»), nunca «Ninguno» ni «0»; arriba, un solo
  * «Reintentar lo que faltó» vuelve a pedir las lecturas que fallaron (encargo de consolidación, bloque 5).
  */
-import { NOMBRE_DEL_AREA, cantidad, numero, type CalidadDeEntrada, type LineaDeTiempoResponse, type TipoDeEvento } from '@be/domain';
+import { NOMBRE_DEL_AREA, cantidad, comidasDelPlanEnPalabras, numero, type CalidadDeEntrada, type LineaDeTiempoResponse, type TipoDeEvento } from '@be/domain';
 import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
@@ -104,6 +104,13 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
                   )}
                 </dd>
               </div>
+              {/* DL-153: las comidas que indicaba el plan y cuántas tienen registro, sin hoy; o por qué no se puede saber. */}
+              {c && c.records > 0 ? (
+                <div>
+                  <dt>Comidas del plan, sin contar hoy</dt>
+                  <dd>{comidasDelPlanEnPalabras(c.planMeals)}</dd>
+                </div>
+              ) : null}
               <div>
                 <dt>Último registro</dt>
                 <dd>{d.nutrition.summary?.lastIntakeAt ? fecha(d.nutrition.summary.lastIntakeAt) : 'Sin registros'}</dd>

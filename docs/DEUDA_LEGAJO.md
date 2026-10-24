@@ -156,6 +156,8 @@
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 | DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **IMPLEMENTADO** 2026-10-19 en la sesión enfocada (PR en borrador, sin APK nueva): las reglas de la 0.13.2, dichas (R-1 a R-6); falta el teléfono |
 | DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **IMPLEMENTADA** 2026-10-20 (#198, CI en verde, sin integrar): lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
+| DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **IMPLEMENTADO** 2026-10-23 en `wp-nutricion-cobertura` (sin integrar): las comidas del plan con el criterio de Registros, el subtotal que dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; D-1 a D-4 a ratificar |
+| DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **IMPLEMENTADO** 2026-10-23 en `wp-revision-evidencia` (sobre DL-153, sin integrar): API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; la forma de la revisión, que lee la APK, no cambia; D-1 a D-3 a ratificar |
 
 ---
 
@@ -5212,3 +5214,131 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 **Provisorio en código:** D-1 a D-5.
 
 **Condición de cierre:** la prueba en verde en la CI de main, y la regla aplicada en la próxima promoción a estable.
+
+---
+
+## DL-153 — Nutrición: el número dice qué representa y qué falta registrar del plan
+
+**Prioridad:** alta (encargo de consolidación de Dirección del 2026-10-23, punto 3; hallazgo UX-01 de la auditoría del 2026-10-21).
+
+**Documentos:**
+- **09 v0.11 §11 y §22, B10-08 §3:** lo desconocido no es cero, y una falta de dato no es un incumplimiento.
+- **REG-06-125 e INV-06-135:** una comida sin registro es «sin dato», nunca «0 %» ni «no cumplido».
+- **DL-121 y DL-126:** el registro v2 de comidas y las proyecciones; el día es la suma exacta de lo conocido.
+- **GUIA-UX-UI II.4:** la cobertura que hace falta para leer un número va junto al número.
+
+**Qué pasaba.** Reproducido el 2026-10-23 contra main `0fb1bff`, con un plan de cuatro comidas (desayuno, almuerzo, merienda y cena) y un día con las tres primeras registradas con cantidades:
+- **Antes:** el día salía `COMPLETE`; Analizar y la lectura decían «sin faltantes»; la exportación, «sin faltantes»; el Resumen decía «7 días: 2 con valor · 4 sin registros», sin subtotales. Nada decía que faltaba la cena.
+- **Después:** el día es un subtotal y lo dice: «Subtotal de lo registrado · Comidas del plan: 3 de 4 registradas · 1 sin registro · Sin registro: Cena · Falta: 1 comida(s) del plan sin registro». La exportación dice «subtotal» y tiene la columna «Comidas del plan». El Resumen suma «1 subtotal · 1 comida del plan sin registro».
+- **La media no cambió:** 1.975 kcal por día, de 2 días con valor, antes y después.
+
+**Las cuatro dimensiones, separadas:**
+1. **Cantidades conocidas en los registros que hay.** Es la calidad de siempre: un registro sin cantidades, o sin el dato del nutriente, hace un subtotal.
+2. **Comidas del plan, cuando el plan deja conocerlas.** Es nuevo y sale del mismo contraste que la pestaña Registros (`construirContraste`, API-NUT-17): el plan que regía, con el día tipo que usó la persona al registrar o el único del plan. Cada comida está en un solo estado: con la opción registrada, con una comida diferente registrada en ella, o sin registro.
+   - Si no había un plan vigente, o el plan tiene varios días tipo y ese día no hay registros del plan que digan cuál, **no se inventan comidas**. El día dice «sin determinar» con su motivo.
+   - Solo una comida sin ningún registro hace del día un subtotal.
+3. **Cobertura temporal del período:** días con valor, sin registros y hoy en curso. No cambia.
+4. **Lo indicado frente a lo registrado:** sigue sin adherencia ni porcentaje. Analizar muestra el objetivo al lado de lo registrado, sin restar.
+
+**Qué cambió:**
+- **Cálculo** (`nutricion-del-analisis.ts`). Antes, un día era `COMPLETE` con todos sus registros con cantidades; ahora, además, sin comidas del plan sin registro conocidas. El motivo nuevo es `COMIDA_DEL_PLAN_SIN_REGISTRO`, con cuántas.
+  - **No cambian:** el valor del día, la media de los días con valor, su denominador, el día en curso (fuera de la media), la zona ni los subtotales dentro de la media.
+  - Una comida sin registro es otra dimensión: no cambia si un día sin valor se cuenta «sin cantidades» o «sin el dato del nutriente».
+- **Contrato** (API-PRJ-01, solo lo lee el website). Se suma `planMeals` a la cobertura de cada punto y del período; el del período no cuenta hoy. Es una extensión de BE.
+  - Ninguna APK publicada lee API-PRJ-01: comprobado con lo que congeló DL-152 (#198) de la 0.13.2 y de la 0.17.0-candidata.3.
+  - La API lee las instantáneas de los planes en una sola consulta más.
+- **Presentación:**
+  - Analizar (tabla, lectura y origen del dato) y la exportación dicen la calidad con `calidadEnPalabras`. En nutrición, «completo» nunca se dice «sin faltantes»: «cada comida del plan registrada, con cantidades» o «registros con cantidades, sin saber qué comidas indicaba el plan».
+  - Los indicadores del Resumen, la tabla de etapas y «Comparar dos períodos» suman «N comidas del plan sin registro» y «N días sin saber qué comidas indicaba el plan» (`partesDeLaCobertura`, `coberturaBreve`).
+  - El Resumen del área y «La información disponible» dicen las comidas del plan sin registro del período, sin contar hoy.
+- **Lo que no se hace:** no se rellena una comida con cero ni con lo previsto, no se califica, y el conteo de registros no se vuelve un subtotal (es exacto; lo dice el detalle).
+
+**Decisiones, provisorio en código (a ratificar):**
+- **D-1 · ¿La media del Resumen incluye los subtotales?** Provisorio: **A**, sí, como antes, diciendo cuántos son y qué falta.
+  - **B:** la media principal solo con los días sin faltantes conocidos, y la de todos al lado.
+  - **C:** las dos medias, una al lado de la otra.
+  - **Recomendación:** A ahora. B o C se decide con la prueba con profesionales (tarea T4 de `docs/ux/PRUEBA-CON-PROFESIONALES.md`): con pocos días completos, B da un número con menos días detrás, y los días que la persona registra completos pueden no ser los típicos.
+- **D-2 · Una comida diferente registrada en una comida del plan.** Provisorio: tiene registro, así que no es «sin registro»; sigue sin ser la opción registrada, como en Registros. Si no tiene cantidades, el día ya es un subtotal por eso.
+  - **Alternativa:** contarla como sin registro. El mismo hecho contaría dos veces como falta.
+- **D-3 · El día tipo de un día solo con comidas diferentes.** Provisorio: como Registros, no se elige ninguno y el día queda sin determinar (09v9:680).
+  - **Alternativa:** usar el día tipo de contexto que guarda la comida diferente desde DL-121. Conocería más días, pero cambia el contraste en las dos pantallas: va como mejora aparte, si Dirección la quiere.
+- **D-4 · Hoy, en curso.** Provisorio: el punto de hoy es un subtotal si le falta una comida, pero sus comidas no cuentan en el período, porque todavía se pueden registrar.
+  - **Alternativa:** no marcar hoy hasta que termine.
+
+**Pruebas:**
+- **`completitud-nutricional.test.ts`** (15 casos, dominio): completo según el plan, una comida sin registrar (el defecto), cantidades desconocidas, día sin registros, día en curso, comida diferente en una comida y fuera de toda comida, rectificación y anulación, sin plan, dos días tipo, la semana, el conteo, el mismo criterio que Registros y el Resumen del área. Los resultados están escritos a mano.
+- **Las existentes**, ajustadas a la forma nueva sin cambiar lo que comprueban: `analisis-longitudinal`, `comprension-del-dashboard` y `exportacion-del-analisis`. La exportación ahora usa coberturas reales y fija que nada diga «sin faltantes».
+- **`analisis.int-spec.ts`** (integración, en la CI). El escenario de siempre dice que deshacer el almuerzo de hoy lo deja sin registro. Hay un caso nuevo contra la API real: anteayer una comida de dos, ayer una comida diferente en la cena, con la pestaña Registros (API-NUT-17) diciendo lo mismo.
+- **El recorrido `completitud`** (navegador, en la CI): el indicador del Resumen y la lectura de Analizar de ayer y de anteayer.
+
+**Lo que falta:**
+- La prueba con profesionales: si se entiende qué representa el número y si D-1 se queda en A.
+- La APK no cambia: «Tu historial» de Nutrición de la persona no usa este cálculo.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-4, la CI de la integración pasa, y la prueba con profesionales dice si el número se entiende.
+
+---
+
+## DL-154 — Una revisión registrada dice en qué evidencia se apoyó: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA
+
+**Prioridad:** alta (encargo de consolidación de Dirección del 2026-10-23, punto 4; hallazgo UX-02 de la auditoría del 2026-10-21).
+
+**Documentos:**
+- **UC-P13 y UC-P18:** sin evidencia identificable no hay revisión válida.
+- **REG-06-141:** la revisión es un acto con todos sus componentes, de solo agregar.
+- **09v9:904-910 y 09v10:1375-1381:** API-NUT-19 y API-TRN-23, la revisión y su aplicación.
+- **DL-134 (REV-A):** la persona lee la misma forma de la revisión, en la APK.
+
+**Qué pasaba.** Comprobado el 2026-10-23 contra main `0fb1bff`. El recorrido completo:
+- **Selección:** `SeleccionDeEvidencia` marca comidas o sesiones, versiones del plan y el objetivo.
+- **Pedido:** API-NUT-18 o API-TRN-22 con `evidenceReferences`, validadas en el servidor (`exigirEvidenciaReconstruible`).
+- **Persistencia:** la columna `evidencias` (JSON) de `revision_nutricional` y `revision_de_entrenamiento`, de solo agregar.
+- **Lectura:** API-NUT-17/19 y API-TRN-21/23 devuelven `evidenceReferences`, `period` y `author`.
+- **El defecto:** la lista de revisiones del website (`ItemDeRevision`, en las dos áreas) no dibujaba ni el período, ni el autor, ni la evidencia. **Se guardaba todo y no se podía consultar.**
+
+**Lo que se resolvió:**
+- **A la vista, sin otra lectura:** cada revisión dice «Nutrición · período revisado: … · registró: …» y «Evidencia seleccionada: 12 comidas · 1 versión del plan · el objetivo», contado desde las referencias guardadas. Una revisión que no guardó evidencia lo dice.
+- **«Ver la evidencia»** pide la lectura nueva de su área, que resuelve en el servidor cada referencia **guardada**, en su orden y nada más. De cada una dice qué es (la comida del plan y si fue la opción o algo diferente, la sesión, «Plan v2», el objetivo), cuándo ocurrió y **lo que cambió después de la revisión**, con su instante:
+  - la persona rectificó las cantidades;
+  - una corrección;
+  - la persona deshizo el registro;
+  - se activó otra versión del plan o se registró otro objetivo.
+- **«Abrir»** muestra la comida, la sesión o la versión del plan en el panel modal de siempre, leída por su propia operación. Retiene el foco, Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. Si el registro cambió después, el panel avisa que lo que se ve es el estado de hoy.
+- **El permiso de hoy:** la lectura nueva decide como API-NUT-19 y API-TRN-23 (el PDP y el profesional del seguimiento). Con el consentimiento revocado, otro profesional o una revisión inexistente, el mismo 404, sin ningún detalle. «Abrir» vuelve a pedir permiso.
+
+**Por qué una lectura nueva y no reusar las que hay:**
+- La línea de tiempo del período no alcanza: una versión del plan activada antes del período, que es lo más común, no aparece en ella. Tampoco aparece una referencia fuera del período.
+- Pedir cada registro por separado serían hasta 200 pedidos.
+- **No cambia la forma de la revisión.** La lee la APK candidata (REV-A, API-NUT-19-LISTA y PROPIA), y un campo nuevo la rompería (DL-152). Las dos operaciones son nuevas y solo las lee el website.
+- **No agrega tablas ni copias:** lee lo que la revisión ya guardó.
+
+**Lo que no se hace:**
+- No se reconstruye la selección con el período ni con un filtro.
+- No se completa una revisión que no guardó evidencia.
+- No se muestran las cantidades ni las cargas de cuando se revisó: se dice que cambió y desde cuándo.
+- La APK de la persona no cambia.
+
+**Decisiones, provisorio en código (a ratificar):**
+- **D-1 · Una referencia que hoy no está en el seguimiento** (no debería pasar; se valida al registrar): se lista como «Ya no está en este seguimiento», sin decir qué era.
+  - **Alternativa:** ocultarla, pero la cuenta de la revisión dejaría de coincidir.
+- **D-2 · Lo que se ve al abrir es el estado de hoy, avisado.** Reconstruir el registro como estaba al revisar (la cadena de rectificaciones se conserva) es una lectura más.
+  - **Recomendación:** hacerla solo si la prueba con profesionales la pide.
+- **D-3 · El objetivo y la evaluación no se abren en el panel**: no hay una lectura de solo lectura para ellos en esa pantalla. Se ven con su fecha y lo que cambió después.
+
+**Pruebas:**
+- **`evidencia-registrada.test.ts`** (dominio, 5): el resumen desde lo guardado, los nombres sin valores de salud, los cambios posteriores en palabras, los grupos sin agregar nada, y un contrato sin campos de cantidades.
+- **`evidencia-de-revision.int-spec.ts`** (integración, Nutrición, 4):
+  - lo seleccionado en su orden: la comida diferente del período sin marcar no aparece;
+  - persiste en otra sesión;
+  - después de la revisión, la rectificación, la anulación y la versión sucesora;
+  - una revisión sembrada sin evidencia y una referencia ajena (NOT_FOUND);
+  - el mismo 404 con el consentimiento revocado, otro profesional o una revisión inexistente, como API-NUT-19, y 400 con un parámetro de más.
+- **`entrenamiento.int-spec.ts`** (Entrenamiento, 1): la sesión, el plan y el objetivo, la corrección posterior y otro profesional.
+- **El recorrido `evidencia`** (navegador): la lista, la comida deshecha después, «Abrir» con Escape y el foco, y la recarga.
+- **La guardia de trazabilidad** acepta el sufijo `EVIDENCIA` y el OpenAPI está al día.
+
+**Lo que falta:**
+- La prueba con profesionales: si se reconstruye en qué se apoyó una revisión.
+- Un lector de pantalla real.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-3, la CI de la integración pasa y la prueba con profesionales lo confirma.

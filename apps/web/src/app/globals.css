@@ -1106,6 +1106,49 @@ details summary {
   font-weight: 700;
 }
 
+/* DL-154: la evidencia de una revisión registrada, debajo de su fundamento. Los colores son los tokens de los dos temas. */
+.evidencia-registrada {
+  margin: 0.5rem 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde);
+}
+
+.evidencia-registrada__grupo h4 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.evidencia-registrada__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.evidencia-registrada__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.evidencia-registrada__que {
+  flex: 1 1 16rem;
+}
+
+.evidencia-registrada__cuando {
+  color: var(--tenue);
+  margin-right: 0.5rem;
+}
+
+/* Lo que cambió después de la revisión ocupa su propio renglón, debajo del elemento. */
+.evidencia-registrada__cambio {
+  flex-basis: 100%;
+}
+
 /* Lo planificado de una prescripción, una línea por dato (PF-03, DL-105). */
 .lista-compacta {
   margin: 0.25rem 0 0.5rem;

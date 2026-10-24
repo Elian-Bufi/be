@@ -12,6 +12,7 @@ import {
   type ContextoDeRevisionDeEntrenamientoResponse,
   type CrearObjetivoDeEntrenamientoRequest,
   type ResultadoDeRevisionApi,
+  type EvidenciaDeRevisionResponse,
   type RevisionDeEntrenamiento,
 } from '@be/domain';
 import type { AplicacionDeRevisionDeEntrenamiento, Prisma, RevisionDeEntrenamiento as FilaDeRevision } from '@prisma/client';
@@ -20,6 +21,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
 import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
+import { evidenciaDeEntrenamiento, referenciasGuardadas } from '../evidencia/evidencia-de-revision';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PublicadorDeNovedades } from '../novedades/publicador';
@@ -291,6 +293,41 @@ export class RevisionesDeEntrenamientoService {
         await this.decidir(tx, 'API-TRN-23', actor, r.proceso.asesoradoId, recurso, ctx);
         if (r.proceso.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-23', actorId: actor.identidadId, recurso, sujetoId: r.proceso.asesoradoId }, ctx);
         return { data: revisionApi(r, r.proceso.asesoradoId, await nombreVisibleDe(tx, actor.identidadId)) };
+      },
+    });
+  }
+
+
+  // ─── API-TRN-23-EVIDENCIA (DL-154) ──────────────────────────────────────────────────────────────────────
+  /**
+   * La evidencia que la revisión guardó al registrarse, resuelta con el permiso de hoy: la misma decisión que API-TRN-23
+   * (el PDP y el profesional del seguimiento; si no, el mismo 404). Cada referencia en su orden, con lo que es y lo que
+   * cambió después de la revisión. No se reconstruye nada con el período: lo que no se guardó no aparece.
+   */
+  evidencia(actor: ActorAutenticado, reviewId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<EvidenciaDeRevisionResponse> {
+    if (Object.keys(query ?? {}).length > 0) throw errores.solicitudInvalida(Object.keys(query).map((c) => ({ code: 'UNKNOWN_QUERY_PARAMETER', path: c })));
+    const recurso = { tipo: 'RevisionDeEntrenamiento', id: reviewId };
+    return this.ejecutor.leer({
+      operacion: 'API-TRN-23-EVIDENCIA',
+      casoDeUso: 'UC-P18',
+      actor,
+      ctx,
+      recursoIntentado: recurso,
+      lectura: async (tx) => {
+        const r = esUuid(reviewId) ? await tx.revisionDeEntrenamiento.findUnique({ where: { id: reviewId }, include: { proceso: true } }) : null;
+        if (!r) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-23-EVIDENCIA', actorId: actor.identidadId, recurso }, ctx);
+        await this.decidir(tx, 'API-TRN-23-EVIDENCIA', actor, r.proceso.asesoradoId, recurso, ctx);
+        if (r.proceso.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-23-EVIDENCIA', actorId: actor.identidadId, recurso, sujetoId: r.proceso.asesoradoId }, ctx);
+        const items = await evidenciaDeEntrenamiento(tx, referenciasGuardadas(r.evidencias), { profesionalId: r.proceso.profesionalId, asesoradoId: r.proceso.asesoradoId, registradaEl: r.momentoDeRegistro });
+        return {
+          data: {
+            reviewId: r.id,
+            area: 'TRAINING',
+            period: { start: r.periodoInicio.toISOString().slice(0, 10), end: r.periodoFin.toISOString().slice(0, 10), timeZone: r.zonaHoraria },
+            recordedAt: r.momentoDeRegistro.toISOString(),
+            items,
+          },
+        };
       },
     });
   }

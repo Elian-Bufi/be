@@ -104,6 +104,7 @@ import {
   type CrearVistaRequest,
   type ReemplazarVistaRequest,
 } from './contratos-analisis';
+import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
 
 /**
  * Los filtros de API-DSH-04, ya como texto de la consulta (listas separadas por coma). Sin `q`: la búsqueda va en el
@@ -989,6 +990,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     consultarRevision(token: string, revisionId: string) {
       return llamar('GET', `/nutrition/reviews/${encodeURIComponent(revisionId)}`, { token, esquema: RevisionResponseSchema });
     },
+    /** API-NUT-19-EVIDENCIA (DL-154): la evidencia que guardó la revisión, resuelta con el permiso de hoy. Solo la lee el website. */
+    evidenciaDeRevision(token: string, revisionId: string) {
+      return llamar('GET', `/nutrition/reviews/${encodeURIComponent(revisionId)}/evidence`, { token, esquema: EvidenciaDeRevisionResponseSchema });
+    },
     /** API-NUT-20. Aplica la próxima acción que la revisión ya declaró. */
     aplicarRevision(token: string, revisionId: string, claveDeIdempotencia: string) {
       return llamar('POST', `/nutrition/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
@@ -1251,6 +1256,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-22. */
     registrarRevisionDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof RegistrarRevisionDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/reviews`, { token, claveDeIdempotencia, esquema: RevisionDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /** API-TRN-23-EVIDENCIA (DL-154): la evidencia que guardó la revisión de entrenamiento, resuelta con el permiso de hoy. Solo la lee el website. */
+    evidenciaDeRevisionDeEntrenamiento(token: string, revisionId: string) {
+      return llamar('GET', `/training/reviews/${encodeURIComponent(revisionId)}/evidence`, { token, esquema: EvidenciaDeRevisionResponseSchema });
     },
     /** API-TRN-24. */
     aplicarRevisionDeEntrenamiento(token: string, revisionId: string, claveDeIdempotencia: string) {

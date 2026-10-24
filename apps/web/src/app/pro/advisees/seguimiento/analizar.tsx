@@ -42,6 +42,7 @@ import {
   preguntaProfesional,
   resolverPregunta,
   type EtapaDePlanificacion,
+  calidadEnPalabras,
   csvDelAnalisis,
   agregacionPara,
   granoDeObservacion,
@@ -114,10 +115,16 @@ const MOTIVO_SIN_SUPERPOSICION: Readonly<Record<string, string>> = {
   FAMILIAS_DISTINTAS: '«Juntas» pide medidas de la misma clase: no alcanza con que compartan la unidad.',
   SIN_FAMILIA: '«Juntas» no admite alguna de estas métricas.',
 };
-const CALIDAD: Readonly<Record<PuntoAnalitico['quality'], string>> = { COMPLETE: 'sin faltantes', PARTIAL: 'subtotal de lo registrado', UNKNOWN: 'sin valor conocido' };
 /** Un balde incompleto: el día de hoy, que sigue en curso, o una semana que el período corta. */
 const textoDeIncompleto = (p: PuntoAnalitico): string => (p.dateEnd ? 'semana sin completar en el período' : 'día en curso: el valor todavía puede cambiar');
-const calidadDelPunto = (p: PuntoAnalitico): string => (p.partialBucket ? `${CALIDAD[p.quality]} · ${textoDeIncompleto(p)}` : CALIDAD[p.quality]);
+/**
+ * La calidad del punto en palabras, las del dominio (`calidadEnPalabras`, DL-153): en nutrición nunca «sin faltantes»,
+ * porque lo registrado no es todo lo que se comió. El conteo de registros es exacto aunque falte una comida.
+ */
+const calidadDelPunto = (p: PuntoAnalitico, definicion: DefinicionDeMetrica | undefined): string => {
+  const calidad = calidadEnPalabras(p, definicion?.area === 'NUTRICION' && definicion.parametro === 'RECORDS');
+  return p.partialBucket ? `${calidad} · ${textoDeIncompleto(p)}` : calidad;
+};
 const MEDIO_DIA = 43_200_000;
 /**
  * Los hitos que se dibujan como líneas verticales: los de planificación (`dia-de-la-linea.ts`, del dominio). Son los
@@ -470,7 +477,7 @@ export function Analizar() {
       indice={puntoAbierto.indice}
       conEncabezado={alCostado}
       fecha={fechaDelOrigen}
-      calidad={calidadDelPunto(puntoAbierto.punto)}
+      calidad={calidadDelPunto(puntoAbierto.punto, serieDelOrigen?.definicion)}
       elegido={puntoAbierto.origen}
       onElegir={(o: OrigenDeDato) => setPuntoAbierto({ ...puntoAbierto, origen: o })}
       onNoDisponible={() => {
@@ -1223,7 +1230,7 @@ function PanelDeLectura({
                           <>
                             <p className="dato-de-lectura__valor">{cambio ? cambio[1] : 'No se compara'}</p>
                             <p className="dato-de-lectura__nota">
-                              {cambio ? cambio[2] : relativo.replace(/^sin cambio relativo: /, '')} · valor real {valor ?? 'sin valor conocido'} · {calidadDelPunto(p)} · n = {numero(p.n)}
+                              {cambio ? cambio[2] : relativo.replace(/^sin cambio relativo: /, '')} · valor real {valor ?? 'sin valor conocido'} · {calidadDelPunto(p, s.definicion)} · n = {numero(p.n)}
                               {p.dateEnd ? ` · semana del ${diaCivil(p.date)} al ${diaCivil(p.dateEnd)}` : ''}
                               {p.corrected ? ' · con una corrección vigente' : ''}
                             </p>
@@ -1242,8 +1249,8 @@ function PanelDeLectura({
                               )}
                             </p>
                             <p className="dato-de-lectura__nota">
-                              {/* La calidad empieza el renglón: con mayúscula («Sin faltantes · n = 1»). */}
-                              {calidadDelPunto(p).replace(/^./, (c) => c.toUpperCase())} · n = {numero(p.n)}
+                              {/* La calidad empieza el renglón: con mayúscula («Subtotal de lo registrado · n = 3»). */}
+                              {calidadDelPunto(p, s.definicion).replace(/^./, (c) => c.toUpperCase())} · n = {numero(p.n)}
                               {p.dateEnd ? ` · semana del ${diaCivil(p.date)} al ${diaCivil(p.dateEnd)}` : ''}
                               {p.corrected ? ' · con una corrección vigente' : ''}
                             </p>
