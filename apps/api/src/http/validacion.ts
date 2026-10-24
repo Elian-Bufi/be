@@ -69,6 +69,17 @@ const ruta = (path: readonly PropertyKey[]): string => path.map(String).join('.'
  * Un cuerpo con más elementos de listas de los que puede tener uno válido de su tamaño (maximoDeElementos) → 400
  * INVALID_REQUEST con un solo issue TOO_BIG en `(body)`, sin validarlo elemento por elemento. Se informan hasta
  * MAXIMO_DE_ERRORES_INFORMADOS issues.
+ *
+ * Precedencia de los rechazos de forma, todos 400:
+ *   1. el body parser: JSON mal formado o más de 16 KB → INVALID_REQUEST (filtro-de-errores.ts);
+ *   2. la cota de elementos → INVALID_REQUEST con TOO_BIG;
+ *   3. la validación estricta: UNKNOWN_FIELD antes que las demás fallas de forma.
+ * Un campo no declarado nunca se acepta. Si llega junto con más elementos de los que admite un cuerpo válido, el cuerpo
+ * entero se rechaza con TOO_BIG y el campo no se nombra. El 09 lo permite:
+ *   - CAND-09-T12 pide «400 UNKNOWN_FIELD o se rechaza por schema estricto equivalente», y que no se ignore en silencio;
+ *   - el catálogo usa UNKNOWN_FIELD «cuando la validación estricta lo detecta»;
+ *   - §3.2 deja rechazar antes una falla independiente del recurso, como el JSON mal formado.
+ * Dentro de lo que admite un cuerpo válido, UNKNOWN_FIELD manda siempre: lo prueba `sin-falsos-rechazos.spec.ts`.
  */
 export function validarCuerpo<S extends EsquemaDeContrato>(schema: S, cuerpo: unknown): SalidaDe<S> {
   const valor = cuerpo ?? {};

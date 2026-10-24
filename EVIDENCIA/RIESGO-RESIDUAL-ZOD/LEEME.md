@@ -127,6 +127,102 @@ una prueba. Dos de ellas encontraron defectos de la cota antes del commit:
 - `npm run typecheck -w @be/api`, en verde;
 - `npm run test -w @be/api`: 147 de 147, en 18 suites.
 
+## Segunda revisión (2026-10-24): falsos rechazos y precedencia
+
+**1. Ningún cuerpo válido de hasta 16 KB se rechaza.** `sin-falsos-rechazos.spec.ts` genera cuerpos válidos de verdad
+para los ocho esquemas de planes y plantillas. Recorre la definición de zod con una semilla fija, así que la CI corre los
+mismos.
+- **Qué genera:**
+  - el mínimo absoluto;
+  - el más denso, siempre con el elemento más barato;
+  - el más denso **por paquetes**: cada elemento con sus listas internas llenas solo si bajan los bytes por elemento,
+    porque mirar solo el más barato llena sesiones vacías y no llega al óptimo;
+  - distintas formas de qué listas opcionales lleva cada objeto, como un bloque con `sessions` y sin `microcycles`: cada
+    lista opcional sola, todas menos una y seis combinaciones al azar;
+  - cada lista hasta su tope;
+  - densos al azar cerca del límite y variados de cualquier tamaño, con opcionales presentes y ausentes, `null`
+    explícito, textos al máximo, unicode, escapes y espacios que `.trim()` no toca.
+- **Qué exige a cada cuerpo:**
+  - que `safeParse` lo acepte;
+  - que ocupe como mucho 16.384 bytes;
+  - que `validarCuerpo` devuelva lo mismo que `safeParse`;
+  - que, con un campo no declarado, la respuesta sea UNKNOWN_FIELD.
+
+| Esquema | Cuerpos válidos | De 15 KB o más | De 16.384 bytes justos | El más denso | Cota a 16 KB |
+|---|---|---|---|---|---|
+| `CrearPlanRequestSchema` | 92 | 52 | 18 | 590 | 655 |
+| `EditarBorradorRequestSchema` | 87 | 51 | 18 | 590 | 655 |
+| `CrearPlantillaNutricionalRequestSchema` | 87 | 49 | 17 | 591 | 655 |
+| `NuevaVersionDePlantillaNutricionalRequestSchema` | 87 | 48 | 17 | 590 | 655 |
+| `CrearPlanDeEntrenamientoRequestSchema` | 106 | 58 | 18 | 724 | 784 |
+| `EditarPlanDeEntrenamientoRequestSchema` | 107 | 59 | 20 | 951 | 1.024 |
+| `CrearPlantillaDeEntrenamientoRequestSchema` | 102 | 62 | 20 | 725 | 784 |
+| `NuevaVersionDePlantillaRequestSchema` | 102 | 66 | 20 | 725 | 784 |
+
+- **Resultados.** Fueron 770 cuerpos válidos, y `validarCuerpo` no rechazó ninguno. El margen más chico entre el máximo
+  y los elementos de un cuerpo fue de 36.
+- **Por qué esos números importan.** El más denso por paquetes coincide con el óptimo calculado a mano: unos 590 en
+  Nutrición y unos 728 en Entrenamiento. La cota es una cota superior demostrada, y el más denso es una construcción
+  concreta; entre las dos queda el costo de los contenedores, que la cota no cobra.
+- **Qué no tienen los ocho:** campos con valor por defecto y formatos fuera de `z.iso.date()`. Esos casos se prueban contra
+  la cota en `validacion.spec.ts`, con máximos conocidos.
+
+**La prueba detecta una cota que cuente de menos.** Se rompió la cota de cinco maneras, una por vez:
+
+| Mutación | Esquemas que rechazan un cuerpo válido |
+|---|---|
+| Contar los campos opcionales como obligatorios | 8 de 8 |
+| Textos 5 caracteres más largos que su mínimo | 4 de 8 |
+| Los topes a la mitad | 5 de 8 |
+| No considerar `null` en un campo que lo admite | 4 de 8 |
+| Tomar el valor más largo de un enum | 0 de 8 |
+
+La última mutación baja la cota de la edición del plan de Entrenamiento a 964. El cuerpo válido más denso tiene 951, así
+que en estos esquemas no causaría rechazos falsos. Igual la detecta una prueba de máximo conocido en
+`validacion.spec.ts`.
+
+**Lo que la revisión encontró en la cota, y quedó corregido.** Hay contenido que puede traer listas en un cuerpo válido
+sin que la cota las cuente:
+- un `z.object` común, que descarta las claves de más, y un `z.looseObject` o un `.catchall()`, que las dejan pasar;
+- un campo `unknown`, `any`, `custom` o `transform`;
+- un `.catch()` o un `z.success()`, que aceptan cualquier entrada;
+- un esquema recursivo o de más de 40 niveles.
+
+Ninguno de los 79 esquemas de entrada usa estos tipos: se recorrieron todos, y todos sus objetos son estrictos. Ahora
+cuentan como una lista sin tope, así que si un contrato futuro los trae, su cota pasa el techo y la prueba de los 79
+esquemas falla en vez de dejar afuera cuerpos válidos en silencio. Lo prueba un caso sintético por cada uno, y con la cota
+anterior esa prueba falla.
+
+**Mutaciones de `validacion.spec.ts`.** Se detectan 17 de 17. Se quitó la lectura de la salida de un `pipe`: era una
+mutación equivalente, porque las listas del cuerpo las valida la entrada.
+
+**2. UNKNOWN_FIELD y TOO_BIG.** Con un campo no declarado y más elementos de los que admite un cuerpo válido, la
+respuesta es TOO_BIG y el campo no se nombra. No contradice el contrato:
+- **CAND-09-T12** (09 v0.7, §4) pide «400 UNKNOWN_FIELD **o se rechaza por schema estricto equivalente**» y que «no se
+  ignore silenciosamente». El cuerpo entero se rechaza con 400, y nada se ignora.
+- **El catálogo del 09** (§4.1) usa UNKNOWN_FIELD «cuando la validación estricta lo detecta». Con TOO_BIG, la validación
+  estricta no llega a correr.
+- **El 09 v0.16.1, §3.2,** deja rechazar antes del PDP «una falla de transporte/sintaxis completamente independiente de
+  la existencia del recurso», como el JSON mal formado. La cuenta de elementos no consulta la base ni el recurso.
+- **Ya pasaba antes:** un cuerpo de más de 16 KB con un campo no declarado recibe 400 INVALID_REQUEST del body parser, no
+  UNKNOWN_FIELD (`filtro-de-errores.ts`).
+
+La precedencia queda escrita en `validarCuerpo`:
+1. el body parser;
+2. la cota de elementos;
+3. la validación estricta, con UNKNOWN_FIELD primero.
+
+Tiene dos pruebas:
+- **`validacion.spec.ts`:** con 4.800 ítems da TOO_BIG; con los elementos que admite un cuerpo válido, nombra los dos
+  campos no declarados, el de la raíz y uno anidado.
+- **`sin-falsos-rechazos.spec.ts`:** a cada uno de los 770 cuerpos válidos se le agrega un campo no declarado, y la
+  respuesta es UNKNOWN_FIELD.
+
+**En local:**
+- `npm run typecheck -w @be/api`, en verde;
+- `npm run test -w @be/api`: 157 de 157, en 19 suites;
+- las cotas de los 79 esquemas no cambiaron, y la mayor sigue en 1.024.
+
 ## Límites de esta conclusión
 
 - **Lo que queda.** El peor cuerpo que la cota deja pasar sigue costando unos 11 ms en Nutrición, medido. En
@@ -139,6 +235,12 @@ una prueba. Dos de ellas encontraron defectos de la cota antes del commit:
   pasar esas pruebas.
 - **No se revisó** la validación de dominio que corre después de autorizar: los 422 de planes, plantillas y habituales,
   que ya trabajan sobre un cuerpo validado.
+- **Los cuerpos válidos se generaron para los ocho esquemas de planes y plantillas.** Para los otros 71, la garantía se
+  apoya en dos pruebas: la cota de cada uno, a 16 KB, queda bajo el techo, y la cota se prueba contra máximos conocidos.
+  La CI corre la integración, con los cuerpos válidos de sus pruebas.
+- **El más denso es una construcción, no una demostración del óptimo.** La demostración es la de la cota (una cota
+  superior). Si un cuerpo válido pudiera tener más elementos que los construidos, la cota igual lo cubre mientras sea
+  correcta, y las mutaciones muestran que la prueba se rompe cuando deja de serlo.
 
 ## Recomendación
 

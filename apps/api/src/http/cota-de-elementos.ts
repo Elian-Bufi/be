@@ -24,7 +24,8 @@ interface Lista {
 type Definicion = any;
 type Esquema = { _zod?: { def: Definicion; optin?: string } } | undefined;
 
-const ENVOLTORIOS = new Set(['optional', 'nullable', 'default', 'prefault', 'nonoptional', 'readonly', 'catch', 'success']);
+/** Los que validan su entrada con el esquema de adentro. `catch` y `success` no: aceptan cualquier entrada. */
+const ENVOLTORIOS = new Set(['optional', 'nullable', 'default', 'prefault', 'nonoptional', 'readonly']);
 /**
  * El largo mínimo de cada formato de texto de zod: cotas inferiores, cada una con un ejemplo válido de ese largo o más en
  * `validacion.spec.ts` (una URL puede ser `a:`). Un formato que no está acá cuenta como texto de cualquier largo.
@@ -105,15 +106,30 @@ function tope(def: { checks?: { _zod: { def: Record<string, unknown> } }[] }): n
   return topes.length ? Math.min(...topes) : Infinity;
 }
 
-/** Las listas de un esquema, de la más barata a la más cara. Un registro, un mapa o un conjunto cuentan sin tope. */
+/**
+ * Lo que puede traer contenido de cualquier forma, listas incluidas, en un cuerpo válido. Cuenta como una lista sin tope y
+ * de 0 bytes: con eso, la cota de ese esquema pasa el techo y `validacion.spec.ts` lo hace notar, en vez de dejar afuera
+ * cuerpos válidos. Ninguno de los esquemas de entrada del 2026-10-24 usa estos tipos.
+ */
+const SIN_FORMA = new Set(['record', 'map', 'set', 'unknown', 'any', 'custom', 'transform', 'catch', 'success']);
+
+/** Las listas de un esquema, de la más barata a la más cara. */
 function listasDe(schema: Esquema): Lista[] {
   const listas: Lista[] = [];
+  const sinTope = (): void => {
+    listas.push({ producto: Infinity, propio: 0 });
+  };
   const recorrer = (s: Esquema, producto: number, pila: ReadonlySet<Esquema>): void => {
-    if (!s?._zod || pila.has(s) || pila.size > 40) return;
+    if (!s?._zod) return;
+    // Un esquema recursivo, o demasiado profundo para seguirlo, puede anidar listas sin fin.
+    if (pila.has(s) || pila.size > 40) return sinTope();
     const p = new Set(pila).add(s);
     const d = s._zod.def;
-    if (d.type === 'object') for (const v of Object.values(d.shape as Record<string, Esquema>)) recorrer(v, producto, p);
-    else if (d.type === 'array') {
+    if (d.type === 'object') {
+      // Solo un objeto estricto rechaza las claves de más: z.object las descarta y z.looseObject las deja pasar, con lo que traigan.
+      if (d.catchall?._zod?.def?.type !== 'never') sinTope();
+      for (const v of Object.values(d.shape as Record<string, Esquema>)) recorrer(v, producto, p);
+    } else if (d.type === 'array') {
       const n = producto * tope(d);
       listas.push({ producto: n, propio: minimo(d.element, new Set()) });
       recorrer(d.element, n, p);
@@ -126,9 +142,12 @@ function listasDe(schema: Esquema): Lista[] {
     else if (d.type === 'intersection') {
       recorrer(d.left, producto, p);
       recorrer(d.right, producto, p);
-    } else if (d.type === 'pipe') recorrer(d.in, producto, p);
-    else if (d.type === 'lazy') recorrer(d.getter(), producto, p);
-    else if (d.type === 'record' || d.type === 'map' || d.type === 'set') listas.push({ producto: Infinity, propio: 0 });
+    } else if (d.type === 'pipe') {
+      // Las listas que trae el cuerpo las valida la entrada. Si la entrada es una transformación (un preprocess), ya cuenta
+      // sin tope; lo que arma la salida no está en el cuerpo.
+      recorrer(d.in, producto, p);
+    } else if (d.type === 'lazy') recorrer(d.getter(), producto, p);
+    else if (SIN_FORMA.has(d.type)) sinTope();
     else if (ENVOLTORIOS.has(d.type)) recorrer(d.innerType, producto, p);
   };
   recorrer(schema, 1, new Set());

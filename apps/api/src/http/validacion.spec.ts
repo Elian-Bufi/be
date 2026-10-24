@@ -101,6 +101,17 @@ describe('validarCuerpo · el riesgo residual de las listas (GHSA-mrhx-c7xc-m3w5
     expect(rechazo(() => validarCuerpo(CrearPlanRequestSchema, { objectiveVersionId: 'objetivo-1', roles: ['ADMIN'] }))).toEqual({ status: 400, code: 'UNKNOWN_FIELD', issues: [{ code: 'UNKNOWN_FIELD', path: 'roles' }] });
   });
 
+  it('precedencia: un campo no declarado con demasiados elementos recibe TOO_BIG; con los que admite un cuerpo válido, UNKNOWN_FIELD; nunca se acepta', () => {
+    // Un campo no declarado en la raíz y otro adentro, junto con los 4.800 ítems del peor plan.
+    const conDemasiados = comoJson({ ...(planNutricionalMalo(10) as object), objectiveVersionId: 'objetivo-1', campoNoDeclarado: 1 });
+    expect(rechazo(() => validarCuerpo(CrearPlanRequestSchema, conDemasiados))).toEqual({ status: 400, code: 'INVALID_REQUEST', issues: [{ code: 'TOO_BIG', path: '(body)' }] });
+    // El mismo campo, en un cuerpo con los elementos que admite uno válido: la validación estricta lo nombra, como siempre.
+    const conPocos = { objectiveVersionId: 'objetivo-1', campoNoDeclarado: 1, initialStructure: { dayTypes: [{ label: 'Lunes', meals: [], extra: [1, 2, 3] }] } };
+    const r = rechazo(() => validarCuerpo(CrearPlanRequestSchema, conPocos));
+    expect(r.code).toBe('UNKNOWN_FIELD');
+    expect(r.issues.map((i) => i.path).sort()).toEqual(['campoNoDeclarado', 'initialStructure.dayTypes.0.extra']);
+  });
+
   it('un cuerpo válido pasa igual que antes', () => {
     expect(validarCuerpo(CrearPlanRequestSchema, { objectiveVersionId: 'objetivo-1' })).toMatchObject({ objectiveVersionId: 'objetivo-1' });
   });
@@ -172,6 +183,38 @@ describe('cotaDeElementos · ningún cuerpo válido queda afuera', () => {
     expect(cotaDeElementos(z.array(z.array(z.number()).max(3)).max(5), LIMITE_DEL_CUERPO)).toBeGreaterThanOrEqual(20);
     // Un registro no tiene tope: la cota es la de un elemento por carácter.
     expect(cotaDeElementos(z.strictObject({ r: z.record(z.string(), z.number()) }), 100)).toBeGreaterThanOrEqual(100);
+    // Un enum cuenta por su valor más corto, y un número que admite null, por el número: ["a",…] y [0,…].
+    const enums = Array.from({ length: Math.floor((LIMITE_DEL_CUERPO - 1) / 4) }, () => 'a');
+    expect(z.array(z.enum(['a', 'larguisimo'])).safeParse(enums).success).toBe(true);
+    expect(cotaDeElementos(z.array(z.enum(['a', 'larguisimo'])), tamano(enums))).toBeGreaterThanOrEqual(enums.length);
+    const ceros = Array.from({ length: Math.floor((LIMITE_DEL_CUERPO - 1) / 2) }, () => 0);
+    expect(cotaDeElementos(z.array(z.number().nullable()), tamano(ceros))).toBeGreaterThanOrEqual(ceros.length);
+    // Un objeto que admite null cuenta por el null, que es más corto: [null,…].
+    const nulos = Array.from({ length: Math.floor((LIMITE_DEL_CUERPO - 1) / 5) }, () => null);
+    const objetosONull = z.array(z.strictObject({ a: z.string() }).nullable());
+    expect(objetosONull.safeParse(nulos).success).toBe(true);
+    expect(cotaDeElementos(objetosONull, tamano(nulos))).toBeGreaterThanOrEqual(nulos.length);
+  });
+
+  it('lo que puede traer listas sin forma conocida no achica la cota: objetos no estrictos, unknown, catch, preprocess, recursión', () => {
+    const muchos = Array.from({ length: 5000 }, () => 0);
+    type Esquema = { safeParse: (v: unknown) => { success: boolean } };
+    const Arbol: Esquema = z.lazy(() => z.strictObject({ hijos: z.array(Arbol).max(3) }));
+    // 200 niveles: zod se queda sin pila cerca de los 1.300. Sin contar la recursión, la cota daría 3.
+    let cadena: unknown = { hijos: [] };
+    for (let i = 0; i < 200; i++) cadena = { hijos: [cadena] };
+    const casos: [string, Esquema, unknown, number][] = [
+      ['z.object descarta las claves de más', z.object({ a: z.string() }), { a: 'x', extra: muchos }, 5000],
+      ['z.looseObject las deja pasar', z.looseObject({ a: z.string() }), { a: 'x', extra: muchos }, 5000],
+      ['un campo unknown', z.strictObject({ a: z.unknown() }), { a: muchos }, 5000],
+      ['un catch acepta cualquier entrada', z.strictObject({ a: z.array(z.string()).max(1).catch([]) }), { a: muchos }, 5000],
+      ['un preprocess', z.strictObject({ a: z.preprocess((v: unknown) => v, z.array(z.number())) }), { a: muchos }, 5000],
+      ['un esquema recursivo', Arbol, cadena, 200],
+    ];
+    for (const [nombre, schema, cuerpo, elementos] of casos) {
+      expect([nombre, schema.safeParse(cuerpo).success]).toEqual([nombre, true]);
+      expect([nombre, cotaDeElementos(schema, tamano(cuerpo)) >= elementos]).toEqual([nombre, true]);
+    }
   });
 
   it('cada largo mínimo de formato tiene un ejemplo válido que no lo baja, y la cota lo respeta', () => {
