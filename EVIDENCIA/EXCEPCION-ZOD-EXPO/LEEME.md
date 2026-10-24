@@ -6,6 +6,13 @@ bundle de Android, y qué hace fallar la excepción. Todo es del 2026-10-24, sob
 
 ## La ratificación
 
+> **Renovada el 2026-10-24, a la noche, hasta el 2026-11-30 inclusive**, con exactamente las mismas condiciones.
+> - Vale hasta las 23:59:59 UTC de ese día, que son las 20:59:59 en Argentina, y desde el 2026-12-01 a las 00:00 UTC
+>   falla.
+> - En la misma decisión, braces se retiró y node-forge se renovó solo para la APK, con su procedencia comprobada.
+>
+> El detalle está en DL-114. Lo de abajo es la ratificación como se registró, hasta el 2026-10-31.
+
 **Dirección de BE ratificó esta excepción el 2026-10-24, hasta el 2026-10-31 inclusive.** El texto completo está en
 `docs/DEUDA_LEGAJO.md`, DL-114.
 - **Qué ratificó.** Solo GHSA-mrhx-c7xc-m3w5, en el zod 3.25.76 de `node_modules/zod`, en la auditoría de `@be/mobile`,
