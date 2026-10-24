@@ -613,10 +613,72 @@ async function faltaUnaParte({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte };
+// DIAGNÓSTICO DEL INTERMITENTE (rama que no se integra, 2026-10-24): solo faltaUnaParte, veinte veces, cada una con sus
+// propias cuentas y datos (preparar.mjs).
+export const TODOS = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`faltaUnaParte${String(i + 1).padStart(2, '0')}`, faltaUnaParte]));
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
+
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+
+/**
+ * DIAGNÓSTICO: lo que el navegador dice de cada pedido a la API, por CDP y en una sesión aparte. Por qué falla un pedido
+ * (`loadingFailed`), si la cookie de reanudación viaja o se bloquea al enviar, y si la que pone la respuesta se guarda.
+ * Nunca anota valores de cookies ni tokens: solo nombres de ruta, estados, motivos y la partición.
+ */
+async function diagnosticar(p) {
+  const cdp = await p.createCDPSession();
+  await cdp.send('Network.enable');
+  const lineas = [];
+  const pedidos = new Map();
+  const t0 = Date.now();
+  const hora = () => `${((Date.now() - t0) / 1000).toFixed(2)}s`;
+  const camino = (u) => {
+    try {
+      const x = new URL(u);
+      return x.origin === API ? x.pathname.replace(UUID, ':id') : null;
+    } catch {
+      return null;
+    }
+  };
+  cdp.on('Network.requestWillBeSent', (e) => {
+    const c = camino(e.request.url);
+    if (c) pedidos.set(e.requestId, `${e.request.method} ${c}`);
+  });
+  cdp.on('Network.requestWillBeSentExtraInfo', (e) => {
+    const cookies = (e.associatedCookies ?? []).filter((a) => a.cookie?.name?.includes('reanudacion'));
+    if (cookies.length) lineas.push(`${hora()} [${e.requestId}] cookie de reanudación al enviar: ${JSON.stringify(cookies.map((a) => ({ bloqueo: a.blockedReasons, particion: a.cookie.partitionKey ?? null })))}`);
+  });
+  cdp.on('Network.responseReceivedExtraInfo', (e) => {
+    const encabezados = Object.entries(e.headers ?? {}).filter(([k]) => k.toLowerCase() === 'set-cookie').map(([, v]) => v).join('\n');
+    const bloqueadas = (e.blockedCookies ?? []).map((b) => ({ nombre: b.cookie?.name ?? String(b.cookieLine ?? '').split('=')[0], motivos: b.blockedReasons }));
+    if (encabezados.includes('reanudacion') || bloqueadas.length) {
+      lineas.push(`${hora()} [${e.requestId}] respuesta ${e.statusCode}: pone la cookie de reanudación=${encabezados.includes('reanudacion')} bloqueadas=${JSON.stringify(bloqueadas)} partición=${JSON.stringify(e.cookiePartitionKey ?? null)}`);
+    }
+  });
+  cdp.on('Network.responseReceived', (e) => {
+    const q = pedidos.get(e.requestId);
+    if (q) lineas.push(`${hora()} [${e.requestId}] ${q} → ${e.response.status}`);
+  });
+  cdp.on('Network.loadingFailed', (e) => {
+    const q = pedidos.get(e.requestId);
+    if (q) lineas.push(`${hora()} [${e.requestId}] ${q} FALLÓ EN EL NAVEGADOR: ${e.errorText}${e.canceled ? ' (cancelado)' : ''}${e.blockedReason ? ` bloqueo=${e.blockedReason}` : ''}${e.corsErrorStatus ? ` cors=${JSON.stringify(e.corsErrorStatus)}` : ''}`);
+  });
+  p.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warn') lineas.push(`${hora()} consola.${m.type()}: ${m.text().slice(0, 200).replace(UUID, ':id')}`);
+  });
+  p.on('framenavigated', (f) => {
+    if (f === p.mainFrame()) lineas.push(`${hora()} navegó a ${f.url().replace(UUID, ':id')}`);
+  });
+  return {
+    lineas,
+    async cookies() {
+      const { cookies } = await cdp.send('Network.getAllCookies');
+      return cookies.map((c) => `${c.name} ruta=${c.path} partición=${JSON.stringify(c.partitionKey ?? null)} vence=${c.expires}`);
+    },
+  };
+}
 
 export async function correrRecorridos({ estado, salida, chrome, solo = null }) {
   mkdirSync(salida, { recursive: true });
@@ -632,6 +694,7 @@ export async function correrRecorridos({ estado, salida, chrome, solo = null }) 
       const contexto = await navegador.createBrowserContext();
       const p = await contexto.newPage();
       await p.setViewport({ width: 1440, height: 900 });
+      const diagnostico = await diagnosticar(p);
       const errores = [];
       p.on('pageerror', (e) => {
         if (!IGNORABLES.some((r) => r.test(e.message))) errores.push(e.message);
@@ -649,7 +712,12 @@ export async function correrRecorridos({ estado, salida, chrome, solo = null }) 
           await pagina.screenshot({ path: join(salida, `${nombre}-${i + 1}.png`) }).catch(() => {});
           writeFileSync(join(salida, `${nombre}-${i + 1}.txt`), `${pagina.url()}\n\n${await pagina.evaluate(() => document.body.innerText).catch(() => '')}`);
         }
+        diagnostico.lineas.push('--- cookies del navegador al fallar:', ...(await diagnostico.cookies().catch((x) => [`(no se pudieron leer: ${x.message})`])));
+        const fallidos = diagnostico.lineas.filter((l) => l.includes('FALLÓ EN EL NAVEGADOR'));
+        console.log(`   diagnóstico: ${fallidos.length} pedidos a la API fallaron en el navegador; las últimas líneas:`);
+        for (const l of diagnostico.lineas.slice(-14)) console.log(`   ${l}`);
       } finally {
+        writeFileSync(join(salida, `${nombre}-diagnostico.txt`), diagnostico.lineas.join('\n'));
         await contexto.close();
       }
     }
