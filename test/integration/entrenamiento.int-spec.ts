@@ -7,7 +7,7 @@
  * ejecución, con su corrección (UC-P17, UC-E02; API-TRN-14 a 20). Tramo 4: revisión y continuidad (UC-P18; API-TRN-21 a 24).
  */
 import type { INestApplication } from '@nestjs/common';
-import { codificarOcurrencia } from '@be/domain';
+import { codificarOcurrencia, EvidenciaDeRevisionResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
@@ -886,6 +886,42 @@ describe('UC-P18 · revisión y aplicación (RF-046; API-TRN-22 a 24)', () => {
     await vinculoCompleto(app, otro, c.ase, 'ENTRENAMIENTO');
     await conSesion(app, otro.token).get(`/api/v1/training/reviews/${rev.body.data.reviewId}`).expect(404);
     await aplicar(otro.token, rev.body.data.reviewId).expect(404);
+  });
+
+  it('DL-154 · la evidencia de una revisión: la sesión, el plan y el objetivo que se marcaron, y la corrección posterior; otro profesional, 404', async () => {
+    const c = await conSesionRegistrada('evidencia');
+    const marcada = [
+      { type: 'EXECUTION', id: c.executionId },
+      { type: 'PLAN_VERSION', id: c.planId },
+      { type: 'OBJECTIVE_VERSION', id: c.objectiveVersionId },
+    ];
+    const rev = (await revisar(c, cuerpoDeRevisionDeEntrenamiento(c.fecha, marcada, 'MAINTAIN')).expect(201)).body.data;
+    const ruta = `/api/v1/training/reviews/${rev.reviewId}/evidence`;
+    const leida = EvidenciaDeRevisionResponseSchema.parse((await conSesion(app, c.pro.token).get(ruta).expect(200)).body).data;
+    expect(leida).toMatchObject({ reviewId: rev.reviewId, area: 'TRAINING', recordedAt: rev.recordedAt });
+    expect(leida.items.map((i) => i.reference)).toEqual(marcada);
+    expect(leida.items[0]).toMatchObject({ state: 'AVAILABLE', source: { type: 'TRAINING_EXECUTION', id: c.executionId }, occurredDate: c.fecha, what: { kind: 'TRAINING_SESSION' }, changesAfterReview: [] });
+    expect((leida.items[0]!.what as { session: string | null }).session).toBeTruthy();
+    expect(leida.items[1]).toMatchObject({ source: { type: 'TRAINING_PLAN_VERSION', id: c.planId }, what: { kind: 'PLAN_VERSION', number: 1 } });
+    expect(leida.items[2]).toMatchObject({ what: { kind: 'OBJECTIVE_VERSION' } });
+    // Sin series ni cargas en la respuesta: se ven al abrir la sesión.
+    expect(JSON.stringify(leida)).not.toMatch(/"(load|sets|completedRepetitions|rir)"/);
+
+    // Después de la revisión, la persona corrige la sesión: la evidencia lo dice, y la sesión sigue ahí.
+    await conSesion(app, c.ase.token)
+      .post(`/api/v1/training/executions/${c.executionId}/corrections`)
+      .send({
+        reason: 'Cargué mal la carga.',
+        correction: { granularity: 'SET', sessionCondition: 'COMPLETED', reason: null, exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 64)] }], sessionSummary: null },
+      })
+      .expect(201);
+    const despues = EvidenciaDeRevisionResponseSchema.parse((await conSesion(app, c.pro.token).get(ruta).expect(200)).body).data;
+    expect(despues.items[0]!.changesAfterReview.map((x) => x.kind)).toEqual(['CORRECTED']);
+    expect(despues.items.map((i) => i.reference)).toEqual(marcada);
+
+    const otro = await prepararProfesional(app, `evidencia-otro-${contador}`, ['ENTRENAMIENTO']);
+    await vinculoCompleto(app, otro, c.ase, 'ENTRENAMIENTO');
+    await conSesion(app, otro.token).get(ruta).expect(404);
   });
 });
 

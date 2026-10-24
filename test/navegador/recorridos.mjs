@@ -614,9 +614,55 @@ async function completitud({ p, d, salida }) {
   assert.ok(!anteayer.includes('sin faltantes'), 'completo según el plan no se dice «sin faltantes»');
 }
 
+/**
+ * DL-154 (encargo del 2026-10-23): una revisión registrada dice en qué se apoyó. En Nutrición · Revisiones, la revisión
+ * dice su período, quién la registró y la evidencia que se marcó (dos comidas y el plan; no el desayuno de ayer, que está
+ * en el período). «Ver la evidencia» la lista con el almuerzo deshecho después de la revisión, dicho. «Abrir» muestra la
+ * comida en el panel; Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. Al recargar, sigue ahí.
+ */
+async function evidencia({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  const revisiones = `${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=revisiones`;
+  await p.goto(revisiones, { waitUntil: 'networkidle2' });
+  const item = `[data-evidencia-de="${d.revision.reviewId}"]`;
+  await elemento(p, item);
+  const tarjeta = await p.$eval(item, (e) => e.closest('li').innerText);
+  assert.match(tarjeta, /período revisado:/, 'la revisión dice qué período se revisó');
+  assert.match(tarjeta, /registró: Lic\. Recorrido evidencia/, 'y quién la registró');
+  assert.match(tarjeta, /Evidencia seleccionada: 2 comidas · 1 versión del plan/, 'lo que se marcó, contado desde lo guardado');
+
+  // Ver la evidencia: lo marcado, y lo que cambió después de la revisión.
+  const boton = `${item} button[aria-controls]`;
+  await clic(p, boton, 'Ver la evidencia');
+  await p.waitForFunction((s) => document.querySelector(s)?.innerText.includes('Se deshizo después de esta revisión'), { timeout: ESPERA, polling: 100 }, item);
+  const lista = await p.$eval(item, (e) => e.innerText);
+  assert.ok(lista.includes(`${d.comidas.desayuno} · opción del plan`), 'el desayuno de anteayer');
+  assert.ok(lista.includes(`${d.comidas.almuerzo} · opción del plan`), 'el almuerzo de anteayer');
+  assert.ok(lista.includes('Plan v1'), 'la versión del plan');
+  assert.equal((lista.match(/opción del plan/g) ?? []).length, 2, 'solo las dos comidas marcadas: el desayuno de ayer está en el período y no se marcó');
+  assert.equal(await p.$eval(boton, (b) => b.getAttribute('aria-expanded')), 'true');
+  await captura(p, salida, 'evidencia-lista-1440');
+
+  // Abrir la comida: el panel modal con el registro; Escape vuelve a la lista, con el foco en «Abrir».
+  const abrir = await p.waitForFunction((s, t) => [...document.querySelectorAll(`${s} .evidencia-registrada__item`)].find((li) => li.innerText.includes(t))?.querySelector('button') ?? null, { timeout: ESPERA }, item, `${d.comidas.desayuno} · opción del plan`);
+  await abrir.asElement().click();
+  await p.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Cerrar'), { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [aria-busy="true"]') && (document.querySelector('dialog[open]')?.innerText.length ?? 0) > 40, { timeout: ESPERA, polling: 100 });
+  await captura(p, salida, 'evidencia-panel-1440');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
+  assert.match(await p.evaluate(() => document.activeElement?.textContent ?? ''), /Abrir/, 'el foco vuelve al botón que abrió el panel');
+  assert.equal(await p.$eval(boton, (b) => b.getAttribute('aria-expanded')), 'true', 'la lista sigue abierta: nada navegó');
+
+  // Al recargar (la sesión sigue), la revisión y su evidencia siguen ahí: están guardadas, no armadas en el navegador.
+  await p.reload({ waitUntil: 'networkidle2' });
+  await elemento(p, item);
+  assert.match(await p.$eval(item, (e) => e.innerText), /Evidencia seleccionada: 2 comidas · 1 versión del plan/);
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
