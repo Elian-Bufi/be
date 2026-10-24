@@ -130,7 +130,8 @@ function ListaDeEvidencia({ area, items, onAbrir, puedeAbrir }: { area: AreaDeLa
               return (
                 <li key={`${i.reference.type}|${i.reference.id}`} className="evidencia-registrada__item" data-estado={i.changesAfterReview.length > 0 ? 'cambio-despues' : i.state === 'NOT_FOUND' ? 'no-encontrada' : 'sin-cambios'}>
                   <span className="evidencia-registrada__que">
-                    {cuando ? <span className="evidencia-registrada__cuando">{cuando}</span> : null}
+                    {/* El separador va en el texto, no solo en el margen: un lector de pantalla lee «22 oct · Desayuno…». */}
+                    {cuando ? <span className="evidencia-registrada__cuando">{cuando} · </span> : null}
                     {nombre}
                   </span>
                   {puedeAbrir(i) ? (

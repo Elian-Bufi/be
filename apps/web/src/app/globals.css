@@ -1141,7 +1141,6 @@ details summary {
 
 .evidencia-registrada__cuando {
   color: var(--tenue);
-  margin-right: 0.5rem;
 }
 
 /* Lo que cambió después de la revisión ocupa su propio renglón, debajo del elemento. */

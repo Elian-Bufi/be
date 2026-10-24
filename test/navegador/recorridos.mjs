@@ -639,7 +639,11 @@ async function evidencia({ p, d, salida }) {
   assert.ok(lista.includes(`${d.comidas.desayuno} · opción del plan`), 'el desayuno de anteayer');
   assert.ok(lista.includes(`${d.comidas.almuerzo} · opción del plan`), 'el almuerzo de anteayer');
   assert.ok(lista.includes('Plan v1'), 'la versión del plan');
-  assert.equal((lista.match(/opción del plan/g) ?? []).length, 2, 'solo las dos comidas marcadas: el desayuno de ayer está en el período y no se marcó');
+  // Los elementos de la lista, no el texto del bloque: cada «Abrir» repite el nombre para el lector de pantalla.
+  const elementos = await p.$$eval(`${item} .evidencia-registrada__que`, (es) => es.map((e) => e.innerText));
+  assert.equal(elementos.filter((t) => t.includes('opción del plan')).length, 2, 'solo las dos comidas marcadas: el desayuno de ayer está en el período y no se marcó');
+  assert.equal(elementos.length, 3, 'dos comidas y la versión del plan');
+  assert.ok(elementos.every((t) => / · /.test(t)), 'la fecha y el nombre se leen separados');
   assert.equal(await p.$eval(boton, (b) => b.getAttribute('aria-expanded')), 'true');
   await captura(p, salida, 'evidencia-lista-1440');
 
