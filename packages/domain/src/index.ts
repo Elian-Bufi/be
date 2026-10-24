@@ -111,6 +111,7 @@ export * from './copy-primer-plan';
 export * from './copy-pistas';
 export * from './estado-de-guardado';
 export * from './copy-fuentes-del-catalogo';
+export * from './copy-origen-en-el-catalogo';
 export * from './conceptos-frecuentes';
 export * from './mayoria-de-edad';
 export * from './contratos-acceso-google';

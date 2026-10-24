@@ -2292,6 +2292,33 @@ html:has(.acciones--fijas) {
   color: var(--tenue);
 }
 
+/* Encargo del 2026-10-19, bloque 4: el ícono del plato, del tamaño del marco; y mientras carga, el indicador de siempre. */
+.imagen-de-receta--respaldo svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.imagen-de-receta--chica.imagen-de-receta--respaldo svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.imagen-de-receta--cargando::before {
+  content: '';
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--borde);
+  border-top-color: var(--azul);
+  animation: girar 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imagen-de-receta--cargando::before {
+    animation: none;
+  }
+}
+
 /* Objetivos por serie (DL-122): cada serie en su grupo, con sus campos alineados que bajan de fila si no entran. */
 .serie-del-editor {
   border: 1px solid var(--borde);
@@ -2523,8 +2550,10 @@ html:has(.acciones--fijas) {
     flex-direction: column;
   }
 
+  /* En una columna, la tarjeta no pasa del tamaño del detalle. */
   .imagen-de-receta--chica {
     width: 100%;
+    max-width: 28rem;
   }
 }
 
@@ -9147,6 +9176,27 @@ button.comida-del-dia__fila > .icono:last-child {
 .nombre-alternativo {
   font-weight: 400;
   color: var(--tenue);
+}
+
+/*
+ * DL-141 D-6: el origen del ítem en la fila del buscador («USDA», «wger · CC BY-SA 4.0», «Demostración»). En el tono de
+ * la nota de la fila: aclara, no compite con el nombre. El subrayado de puntos dice que hay un detalle (la pista) y un
+ * enlace a «Fuentes del catálogo»; al llegarle, el color del enlace.
+ */
+.origen-en-el-catalogo {
+  color: inherit;
+  font-weight: 400;
+}
+
+.origen-en-el-catalogo--enlace {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.origen-en-el-catalogo--enlace:hover,
+.origen-en-el-catalogo--enlace:focus-visible {
+  color: var(--enlace);
+  text-decoration-style: solid;
 }
 
 .alimentos-del-catalogo__detalle {

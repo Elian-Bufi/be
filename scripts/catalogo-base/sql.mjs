@@ -372,3 +372,163 @@ export function sqlDeAlimentos(datos) {
 
   return `${[cabecera, sqlElementos, sqlVersiones, sqlNombres].join('\n\n')}\n`;
 }
+
+// ─── Correcciones del catálogo de alimentos (DL-141; encargo de Dirección del 2026-10-19, bloque 4) ───
+
+/**
+ * Las correcciones de `correcciones.json` van en una migración propia: las de los tramos 2 y 3 ya están aplicadas y no se
+ * regeneran (Prisma guarda su suma de verificación). Solo agrega filas:
+ * - un corte con un nombre fiel a su fuente es una **versión nueva** de su alimento, sucesora de la del tramo 3, con la
+ *   misma composición, la misma disponibilidad y la misma fuente externa (se copian de la versión anterior, en la base) y,
+ *   en la procedencia, la correspondencia con la pieza de USDA (directa o aproximada) y su fundamento. La versión
+ *   anterior y las instantáneas que la citan no cambian (REG-06-101 y REG-06-112);
+ * - un nombre alternativo que nombra otro ingrediente u otra preparación se **retira** con un hecho aparte, con su motivo;
+ * - un nombre alternativo nuevo se suma como los del tramo 3.
+ */
+export const CARPETA_DE_CORRECCIONES = '20261019210000_catalogo_base_correspondencia_de_cortes';
+export const MOMENTO_DE_LA_CORRECCION = '2026-10-19T21:00:00.000Z';
+export const MARCA_DE_LA_CORRECCION = 'WP-CATALOGO-BASE · DL-141 · correspondencia de cortes';
+
+/** El identificador de un nombre alternativo de un alimento sembrado: el mismo que le dio la migración del tramo 3. */
+export const idDeNombreDeAlimento = (fdcId, n) => idDeNombre(`usda-fdc:${fdcId}`, { region: null, origen: 'SIEMBRA_DE_BE', ...n });
+/** La versión corregida de un alimento (una por corrección). */
+export const idDeVersionCorregida = (fdcId) => uuidV5(`usda-fdc:${fdcId}:version:correspondencia-de-cortes`, ESPACIO);
+
+/** Las fuentes de la corrección, como quedan en cada procedencia: la cita, la dirección y el SHA-256 del archivo leído. */
+const fuentesDeLaCorreccion = (fuentes) => Object.values(fuentes).map((f) => ({ cita: f.cita, url: f.url, sha256: f.sha256, consultadoEl: f.consultadoEl }));
+
+/**
+ * Lo que la versión corregida cambia en la procedencia de la anterior: la marca de la siembra (la escribe esta migración,
+ * no la del tramo 3), la correspondencia con la fuente (la lee el buscador del website, D-6) y el nombre que corrige. Lo
+ * demás (la fuente externa, con la descripción original de USDA, y el recurso) queda igual.
+ */
+export function agregadoALaProcedencia(c, fuentes) {
+  return {
+    siembra: MARCA_DE_LA_CORRECCION,
+    correspondencia: {
+      tipo: c.correspondencia,
+      nota: c.nota,
+      pieza: c.pieza,
+      preparacion: c.preparacion,
+      grasa: c.grasa,
+      fundamento: c.fundamento,
+      fuentes: fuentesDeLaCorreccion(fuentes),
+    },
+    correccion: { nombreAnterior: c.nombreAnterior },
+  };
+}
+
+/** Los cortes que cambian de nombre: los demás quedan revisados en la tabla, sin una versión nueva. */
+export const cortesQueCambian = (correcciones) => correcciones.cortes.filter((c) => c.nombre !== c.nombreAnterior);
+
+/** El nombre vigente de cada alimento del tramo 3, con las correcciones aplicadas. */
+export function nombresVigentes(alimentos, correcciones) {
+  const corregidos = new Map(cortesQueCambian(correcciones).map((c) => [c.fdcId, c.nombre]));
+  return new Map(alimentos.alimentos.map((a) => [a.fdcId, corregidos.get(a.fdcId) ?? a.nombre]));
+}
+
+/** Los nombres alternativos vigentes de un alimento del tramo 3: los sembrados, sin los retirados, más los nuevos. */
+export function nombresAlternativosVigentes(a, correcciones) {
+  const retirado = (n) => correcciones.nombresRetirados.some((r) => r.fdcId === a.fdcId && r.nombre === n.nombre && r.idioma === n.idioma && r.region === n.region);
+  const nuevos = correcciones.nombresNuevos.filter((n) => n.fdcId === a.fdcId).map((n) => ({ nombre: n.nombre, idioma: n.idioma, region: n.region, origen: 'SIEMBRA_DE_BE' }));
+  return [...nombresAlternativosDeAlimento(a.nombre, a.usda.descripcion, a.nombresAlternativos).filter((n) => !retirado(n)), ...nuevos];
+}
+
+export function sqlDeCorrecciones(correcciones, alimentos) {
+  const porFdc = new Map(alimentos.alimentos.map((a) => [a.fdcId, a]));
+  const deUnSembrado = (fdcId, que) => {
+    const a = porFdc.get(fdcId);
+    if (!a) throw new Error(`${que}: el FDC ${fdcId} no es un alimento del tramo 3`);
+    return a;
+  };
+  for (const c of correcciones.cortes) {
+    const a = deUnSembrado(c.fdcId, `corte ${c.nombre}`);
+    if (a.nombre !== c.nombreAnterior) throw new Error(`corte ${c.fdcId}: el nombre anterior es «${a.nombre}», no «${c.nombreAnterior}»`);
+  }
+  for (const n of correcciones.nombresRetirados) {
+    const a = deUnSembrado(n.fdcId, `nombre retirado ${n.nombre}`);
+    const sembrados = nombresAlternativosDeAlimento(a.nombre, a.usda.descripcion, a.nombresAlternativos);
+    if (!sembrados.some((s) => s.nombre === n.nombre && s.idioma === n.idioma && s.region === n.region)) throw new Error(`nombre retirado ${n.nombre} (FDC ${n.fdcId}): no lo sembró el tramo 3`);
+  }
+  for (const n of correcciones.nombresNuevos) deUnSembrado(n.fdcId, `nombre nuevo ${n.nombre}`);
+  const cambian = cortesQueCambian(correcciones);
+
+  const cabecera = [
+    `-- WP-CATALOGO-BASE (DEUDA_LEGAJO DL-141; encargo de consolidación de Dirección del 2026-10-19, bloque 4): la`,
+    `-- correspondencia del catálogo base de alimentos con su fuente. ${cambian.length} cortes vacunos con un nombre fiel a la pieza de USDA,`,
+    `-- ${correcciones.nombresRetirados.length} nombres alternativos retirados porque nombraban otro ingrediente u otra preparación, y ${correcciones.nombresNuevos.length} nombres alternativos`,
+    `-- nuevos. GENERADA por scripts/catalogo-base/generar-migracion.mjs desde prisma/datos/catalogo-base/correcciones.json: no`,
+    `-- se edita a mano (prisma/datos/catalogo-base/LEEME.md). Las migraciones de los tramos 2 y 3 ya están aplicadas: no se tocan.`,
+    `-- - Un corte que cambia de nombre es una versión nueva de su alimento, sucesora de la del tramo 3. La composición, la`,
+    `--   disponibilidad y la fuente externa (con la descripción original de USDA) se copian tal cual de la versión anterior;`,
+    `--   la procedencia lleva la marca de esta migración y suma la correspondencia con la pieza de USDA (DIRECTA o`,
+    `--   APROXIMADA), su fundamento y sus fuentes (el glosario de cortes de exportación de la SAGPyA que publica el IPCVA, y`,
+    `--   las especificaciones IMPS de USDA).`,
+    `-- - La versión anterior queda: los planes activados y las recetas que la citan conservan su instantánea (REG-06-101,`,
+    `--   REG-06-112). El buscador muestra la vigente, que es la terminal de la cadena.`,
+    `-- - Retirar un nombre es un hecho aparte, con su motivo (DL-141 D-2): el nombre queda en la historia.`,
+    `-- - Cada inserción saltea lo que ya está (UUID v5 en el espacio «be.dl-141.catalogo-base», ON CONFLICT DO NOTHING), y la`,
+    `--   versión nueva solo se agrega sobre la del tramo 3 si esa sigue siendo la vigente: correrla dos veces no agrega nada.`,
+    `-- Solo agrega filas: no toca tablas, triggers ni lo ya sembrado (REG-06-112). No es una recomendación (INV-06-143).`,
+  ].join('\n');
+
+  const sqlVersiones = [
+    `-- 1. Los cortes con un nombre fiel: una versión nueva, con la composición y la fuente externa de la anterior.`,
+    `INSERT INTO "version_de_elemento_nutricional" ("id", "elemento_id", "predecesora_id", "nombre", "composicion", "disponibilidad", "procedencia", "momento_de_registro")`,
+    `SELECT n."id"::uuid, v."elemento_id", v."id", n."nombre", v."composicion", v."disponibilidad", v."procedencia" || n."agregado"::jsonb,`,
+    `       ${texto(MOMENTO_DE_LA_CORRECCION)}::timestamptz`,
+    `  FROM (VALUES`,
+    filas(
+      cambian.map((c) => ({
+        valores: [texto(idDeVersionCorregida(c.fdcId)), texto(idDeVersionDeAlimento(c.fdcId)), texto(c.nombreAnterior), texto(c.nombre), json(agregadoALaProcedencia(c, correcciones.fuentes))],
+        nota: `FDC ${c.fdcId}, correspondencia ${c.correspondencia}`,
+      })),
+    ),
+    `  ) AS n("id", "anterior", "nombre_anterior", "nombre", "agregado")`,
+    `  JOIN "version_de_elemento_nutricional" v ON v."id" = n."anterior"::uuid AND v."nombre" = n."nombre_anterior"`,
+    ` WHERE NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")`,
+    `ON CONFLICT ("id") DO NOTHING;`,
+  ].join('\n');
+
+  const sqlRetiros = [
+    `-- 2. Los nombres alternativos que nombran otro ingrediente u otra preparación: se retiran, con su motivo.`,
+    `INSERT INTO "retiro_de_nombre_alternativo_de_alimento" ("nombre_id", "motivo", "profesional_id", "procedencia", "momento_de_registro")`,
+    `SELECT a."id", n."motivo", NULL, n."procedencia"::jsonb, ${texto(MOMENTO_DE_LA_CORRECCION)}::timestamptz`,
+    `  FROM (VALUES`,
+    filas(
+      correcciones.nombresRetirados.map((n) => ({
+        valores: [texto(idDeNombreDeAlimento(n.fdcId, n)), texto(n.motivo), json({ fuente: 'catalogo-base', siembra: MARCA_DE_LA_CORRECCION, nota: NOTA_DEL_NOMBRE })],
+        nota: `${n.nombre} (FDC ${n.fdcId})`,
+      })),
+    ),
+    `  ) AS n("nombre_id", "motivo", "procedencia")`,
+    `  JOIN "nombre_alternativo_de_alimento" a ON a."id" = n."nombre_id"::uuid`,
+    `ON CONFLICT ("nombre_id") DO NOTHING;`,
+  ].join('\n');
+
+  const sqlNombres = [
+    `-- 3. Los nombres alternativos nuevos, como los del tramo 3.`,
+    `INSERT INTO "nombre_alternativo_de_alimento" ("id", "elemento_id", "nombre", "idioma", "region", "origen", "procedencia", "momento_de_registro")`,
+    `SELECT n."id"::uuid, e."id", n."nombre", n."idioma"::"IdiomaDeNombre", n."region", 'SIEMBRA_DE_BE'::"OrigenDeNombreAlternativo", n."procedencia"::jsonb,`,
+    `       ${texto(MOMENTO_DE_LA_CORRECCION)}::timestamptz`,
+    `  FROM (VALUES`,
+    filas(
+      correcciones.nombresNuevos.map((n) => ({
+        valores: [
+          texto(idDeNombreDeAlimento(n.fdcId, n)),
+          texto(idDeAlimento(n.fdcId)),
+          texto(n.nombre),
+          texto(n.idioma),
+          texto(n.region),
+          json({ fuente: 'catalogo-base', siembra: MARCA_DE_LA_CORRECCION, nota: NOTA_DEL_NOMBRE, fundamento: n.fundamento }),
+        ],
+        nota: `${n.nombre} (FDC ${n.fdcId})`,
+      })),
+    ),
+    `  ) AS n("id", "elemento_id", "nombre", "idioma", "region", "procedencia")`,
+    `  JOIN "elemento_de_catalogo_nutricional" e ON e."id" = n."elemento_id"::uuid`,
+    `ON CONFLICT ("id") DO NOTHING;`,
+  ].join('\n');
+
+  return `${[cabecera, sqlVersiones, sqlRetiros, sqlNombres].join('\n\n')}\n`;
+}

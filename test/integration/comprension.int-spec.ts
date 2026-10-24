@@ -184,9 +184,11 @@ describe('Búsqueda en los catálogos con el texto en el cuerpo (DL-130)', () =>
     const pro = conSesion(app, c.pro.token);
     const porGet = ListaDeCatalogoResponseSchema.parse((await pro.get('/api/v1/nutrition/catalog-items?q=arroz&limit=5').expect(200)).body);
     const porPost = BusquedaEnCatalogoResponseSchema.parse((await pro.post('/api/v1/nutrition/catalog-items/search').send({ q: 'arroz', limit: 5 }).expect(200)).body);
-    // DL-141: la búsqueda del website suma el nombre alternativo que coincidió («arroz» coincide con los principales).
+    // DL-141: la búsqueda del website suma el nombre alternativo que coincidió («arroz» coincide con los principales) y
+    // el origen de cada fila (D-6): solo lo cargado a mano tiene quién lo cargó, y el arroz no es una equivalencia aproximada.
     expect(porPost.data.map((i) => i.matchedAlternativeName)).toEqual(porPost.data.map(() => null));
-    expect({ ...porPost, data: porPost.data.map(({ matchedAlternativeName: _, ...i }) => i) }).toEqual(porGet);
+    expect(porPost.data.map((i) => i.origin)).toEqual(porPost.data.map((i) => ({ loadedBy: i.provenance === 'PROFESSIONAL_MANUAL' ? 'YOU' : null, approximateCorrespondence: null })));
+    expect({ ...porPost, data: porPost.data.map(({ matchedAlternativeName: _, origin: __, ...i }) => i) }).toEqual(porGet);
 
     const TEXTO = 'Ingrediente con nombre propio';
     const lineas: string[] = [];

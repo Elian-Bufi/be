@@ -10618,7 +10618,8 @@ async function planesDeNutricion() {
         conResultados?.estado === 'lista' &&
         igual(conResultados.columnas.slice(0, 5), ['Alimento', 'Calorías', 'Carbohidratos', 'Grasas', 'Proteínas']) &&
         igual(conResultados.filas.map((f) => [f.id, f.nombre, f.valores]), esperados.map((e) => [e.id, e.nombre, e.valores])) &&
-        conResultados.filas.every((f, i) => (esperados[i].importado ? f.detalle.startsWith(`${esperados[i].cada} · Importado de `) : f.detalle === esperados[i].cada)) &&
+        // DL-141 D-6 (encargo del 2026-10-19, bloque 4): la fila dice su origen breve («USDA», «Demostración»).
+        conResultados.filas.every((f, i) => (esperados[i].importado ? f.detalle.startsWith(`${esperados[i].cada} · `) && !f.detalle.endsWith('Demostración') : f.detalle === `${esperados[i].cada} · Demostración`)) &&
         conResultados.filas.every((f) => f.elegir === `Elegir ${f.nombre}` && f.habitual === 'false' && f.nombreDeLaChinche === `Marcar como habitual: ${f.nombre}`) &&
         conResultados.cuenta === `${esperados.length} en el catálogo` &&
         conResultados.delCatalogo === `${esperados.length} alimentos con «${BUSCADO}»` &&

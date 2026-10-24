@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoEncontrado, type ElementoResuelto, type FuenteExternaDeAlimento } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda, type ConNombreAlternativo } from '../http/busqueda';
+import { buscarEnCatalogo, CORRESPONDENCIA, leerBusqueda, leerCursorDeBusqueda, origenEnElBuscador, type ConNombreAlternativo, type ConOrigenEnLaBase } from '../http/busqueda';
 import { leerConsultaDeLista } from '../http/paginacion';
 import { ALIMENTO_DE_UN_ITEM_EXTERNO } from '../integraciones/item-externo';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
@@ -47,6 +47,9 @@ const COLUMNAS = Prisma.sql`e."id"::text AS "elementoId", v."id"::text AS "versi
        e."procedencia"::text AS "procedencia", v."momento_de_registro" AS "momentoDeRegistro",
        v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`;
 
+/** Las del buscador suman lo que necesita el origen de la fila (DL-141 D-6): quién cargó el ítem y la correspondencia. */
+const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, e."creado_por_id"::text AS "creadoPorId", ${CORRESPONDENCIA}`;
+
 /**
  * Catálogo nutricional propio (RF-027; API-NUT-13 y API-INT-NUT-01).
  * - Ítem con identificador estable y versiones inmutables (REG-06-99). La vigente es la terminal de la cadena.
@@ -71,22 +74,25 @@ export class CatalogoService {
     return { data: filas.map(elementoApi), page };
   }
 
-  /** API-NUT-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2). */
+  /**
+   * API-NUT-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2) y su origen:
+   * quién lo cargó y si su correspondencia con la fuente es aproximada (D-6).
+   */
   async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: ElementoEncontrado[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);
-    return { data: filas.map((f) => ({ ...elementoApi(f), matchedAlternativeName: f.nombreAlternativo })), page };
+    return { data: filas.map((f) => ({ ...elementoApi(f), matchedAlternativeName: f.nombreAlternativo, origin: origenEnElBuscador(f, actor.identidadId) })), page };
   }
 
-  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeCatalogo & ConNombreAlternativo)[]; page: unknown }> {
+  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeCatalogo & ConOrigenEnLaBase & ConNombreAlternativo)[]; page: unknown }> {
     const q = typeof query.q === 'string' ? query.q.trim().slice(0, 80) : '';
     const { q: _q, cursor: cursorEscrito, ...resto } = query;
     const consulta = leerConsultaDeLista(resto, { type: ['FOOD'] });
     const cursor = leerCursorDeBusqueda(cursorEscrito);
     await this.exigirProfesionalDeNutricion(this.prisma, actor.identidadId);
-    return buscarEnCatalogo<FilaDeCatalogo>(
+    return buscarEnCatalogo<FilaDeCatalogo & ConOrigenEnLaBase>(
       this.prisma,
       {
-        columnas: COLUMNAS,
+        columnas: COLUMNAS_DEL_BUSCADOR,
         tablas: Prisma.sql`"version_de_elemento_nutricional" v JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'

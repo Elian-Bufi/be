@@ -1,0 +1,1191 @@
+{
+  "manifiesto": "Recetas de ejemplo de BE para la cohorte de test: las dieciséis preparaciones del encargo de Dirección del 2026-10-19 (bloque 4), con sus ingredientes resueltos a mano.",
+  "version": 1,
+  "congeladoEl": "2026-10-19",
+  "cuenta": "PRO_N: Lic. Sofía Paz, profesional de Nutrición de la cohorte de test (las credenciales viven fuera del repo)",
+  "catalogo": "Cada ingrediente es un alimento de USDA FoodData Central · SR Legacy del catálogo base (DL-141) o de DL-119, por identidad y versión. Ninguno es de demostración.",
+  "imagenes": {
+    "carpeta": "Fuera del repo; se pasa con --fotos (en esta máquina, C:/Users/bufim/BE-datos-locales/fotos-recetas).",
+    "archivo": "NN-nombre.jpg (también .png o .webp): el número de la receta con dos cifras y su nombre sin tildes. Se busca por el número.",
+    "procedencia": "AI_GENERATED",
+    "autoria": "Generada por IA para BE"
+  },
+  "recetas": [
+    {
+      "numero": 1,
+      "nombre": "Avena cocida con banana y canela",
+      "descripcion": "Desayuno o merienda.",
+      "porciones": 1,
+      "imagen": "01-avena-cocida-con-banana-y-canela.jpg",
+      "ingredientes": [
+        {
+          "buscado": "avena cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173904",
+          "nombre": "Avena arrollada, cruda",
+          "preparacionDeLaFuente": "cruda, seca",
+          "catalogItemId": "11d4284a-4e16-56c8-8778-d818fe416702",
+          "catalogItemVersionId": "cb7dabd1-e74f-58c0-9c9d-f17615c32f37",
+          "cantidad": {
+            "valor": 40,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "leche parcialmente descremada",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171267",
+          "nombre": "Leche parcialmente descremada (2 % de grasa)",
+          "preparacionDeLaFuente": "fluida",
+          "catalogItemId": "52c909f8-b32b-568e-9bd8-0b571d624cf9",
+          "catalogItemVersionId": "8d4f4e1b-d144-5f51-9f03-5d94afdef97a",
+          "cantidad": {
+            "valor": 200,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "El catálogo tiene dos parcialmente descremadas (1 y 2 % de grasa) y el borrador no dice cuál: la de 2 %. Va en gramos porque la composición es cada 100 g (no se convierten mililitros)."
+        },
+        {
+          "buscado": "banana cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173944",
+          "nombre": "Banana cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "6644e0f8-cbe7-5b2c-ac7b-e67361700779",
+          "catalogItemVersionId": "c0c0b302-f3cf-5d0b-82e3-88de1e286252",
+          "cantidad": {
+            "valor": 100,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "canela molida",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171320",
+          "nombre": "Canela molida",
+          "preparacionDeLaFuente": "molida",
+          "catalogItemId": "afda8ee6-f0fb-50c0-b0df-928808b4f76b",
+          "catalogItemVersionId": "67eecd83-6988-5cf2-93ba-5889d4531d47",
+          "cantidad": {
+            "valor": 2,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Cocinar la avena con la leche 5 minutos.",
+        "Servir con la banana en rodajas y la canela."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 2,
+      "nombre": "Tostadas integrales con palta y huevo",
+      "descripcion": "Desayuno.",
+      "porciones": 1,
+      "imagen": "02-tostadas-integrales-con-palta-y-huevo.jpg",
+      "ingredientes": [
+        {
+          "buscado": "pan de trigo integral",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "172688",
+          "nombre": "Pan integral de trigo, de molde",
+          "preparacionDeLaFuente": "listo para consumir",
+          "catalogItemId": "01c1bcd7-fef3-5f02-af20-7a894d7b2bc9",
+          "catalogItemVersionId": "6305874f-0432-51ea-824b-d4b0cac3d4cd",
+          "cantidad": {
+            "valor": 60,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        },
+        {
+          "buscado": "palta cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171705",
+          "nombre": "Palta cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "f5b984e8-1772-5aad-b513-aa2ec15fa34b",
+          "catalogItemVersionId": "af04f303-b7fd-50b8-9433-47a5941b0913",
+          "cantidad": {
+            "valor": 50,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "huevo duro",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173424",
+          "nombre": "Huevo duro",
+          "preparacionDeLaFuente": "hervido hasta que cuaja la yema",
+          "catalogItemId": "d287cf5d-9de5-546f-97b8-ccdf18758a33",
+          "catalogItemVersionId": "00ca007a-f8e1-5f18-81e2-1fc1dfadfa53",
+          "cantidad": {
+            "valor": 50,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Tostar el pan.",
+        "Untar la palta y sumar el huevo en rodajas."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 3,
+      "nombre": "Yogur natural con granola y frutillas",
+      "descripcion": "Desayuno o colación.",
+      "porciones": 1,
+      "imagen": "03-yogur-natural-con-granola-y-frutillas.jpg",
+      "ingredientes": [
+        {
+          "buscado": "yogur natural entero",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171284",
+          "nombre": "Yogur natural entero",
+          "preparacionDeLaFuente": "natural, de leche entera",
+          "catalogItemId": "eca4ad2a-c03a-5c28-b797-6185e777e0fb",
+          "catalogItemVersionId": "1fcf08be-5d2b-5925-8362-40b8a8371ce6",
+          "cantidad": {
+            "valor": 200,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        },
+        {
+          "buscado": "granola",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171646",
+          "nombre": "Granola casera",
+          "preparacionDeLaFuente": "lista para consumir",
+          "catalogItemId": "83976876-bae1-5ed0-9c2a-93eff78cd3e9",
+          "catalogItemVersionId": "847a2fa7-4a43-5e4a-9846-f99c6f007778",
+          "cantidad": {
+            "valor": 30,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        },
+        {
+          "buscado": "frutillas crudas",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "167762",
+          "nombre": "Frutillas crudas",
+          "preparacionDeLaFuente": "crudas",
+          "catalogItemId": "c364eed1-3c63-5850-9b21-c47f9b5402ed",
+          "catalogItemVersionId": "b63ce4b8-3f35-539c-8f24-2f152e34897c",
+          "cantidad": {
+            "valor": 80,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Servir el yogur con la granola y las frutillas cortadas."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 4,
+      "nombre": "Licuado de banana con leche y avena",
+      "descripcion": "Desayuno o merienda.",
+      "porciones": 1,
+      "imagen": "04-licuado-de-banana-con-leche-y-avena.jpg",
+      "ingredientes": [
+        {
+          "buscado": "leche parcialmente descremada",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171267",
+          "nombre": "Leche parcialmente descremada (2 % de grasa)",
+          "preparacionDeLaFuente": "fluida",
+          "catalogItemId": "52c909f8-b32b-568e-9bd8-0b571d624cf9",
+          "catalogItemVersionId": "8d4f4e1b-d144-5f51-9f03-5d94afdef97a",
+          "cantidad": {
+            "valor": 250,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "El catálogo tiene dos parcialmente descremadas (1 y 2 % de grasa) y el borrador no dice cuál: la de 2 %. Va en gramos porque la composición es cada 100 g (no se convierten mililitros)."
+        },
+        {
+          "buscado": "banana cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173944",
+          "nombre": "Banana cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "6644e0f8-cbe7-5b2c-ac7b-e67361700779",
+          "catalogItemVersionId": "c0c0b302-f3cf-5d0b-82e3-88de1e286252",
+          "cantidad": {
+            "valor": 120,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "avena cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173904",
+          "nombre": "Avena arrollada, cruda",
+          "preparacionDeLaFuente": "cruda, seca",
+          "catalogItemId": "11d4284a-4e16-56c8-8778-d818fe416702",
+          "catalogItemVersionId": "cb7dabd1-e74f-58c0-9c9d-f17615c32f37",
+          "cantidad": {
+            "valor": 20,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Licuar todo hasta que quede liso."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 5,
+      "nombre": "Tostadas integrales con queso crema y tomate",
+      "descripcion": "Desayuno o merienda.",
+      "porciones": 1,
+      "imagen": "05-tostadas-integrales-con-queso-crema-y-tomate.jpg",
+      "ingredientes": [
+        {
+          "buscado": "pan de trigo integral",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "172688",
+          "nombre": "Pan integral de trigo, de molde",
+          "preparacionDeLaFuente": "listo para consumir",
+          "catalogItemId": "01c1bcd7-fef3-5f02-af20-7a894d7b2bc9",
+          "catalogItemVersionId": "6305874f-0432-51ea-824b-d4b0cac3d4cd",
+          "cantidad": {
+            "valor": 60,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        },
+        {
+          "buscado": "queso blanco",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173418",
+          "nombre": "Queso crema",
+          "preparacionDeLaFuente": "listo para consumir",
+          "catalogItemId": "75419959-900e-55fa-ac80-f8f694753285",
+          "catalogItemVersionId": "689c16f7-5248-5ab4-aca4-0c52c84cad1d",
+          "cantidad": {
+            "valor": 40,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "El catálogo no tiene «queso blanco» (el untable argentino): el más cercano es el queso crema de USDA, con más grasa. La receta se llama como su ingrediente."
+        },
+        {
+          "buscado": "tomate crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170457",
+          "nombre": "Tomate rojo maduro, crudo",
+          "preparacionDeLaFuente": "crudo (promedio del año)",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53",
+          "catalogItemVersionId": "d4936913-5486-5279-933f-1066d2a6d4cd",
+          "cantidad": {
+            "valor": 80,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Tostar el pan.",
+        "Untar el queso y sumar el tomate en rodajas."
+      ],
+      "cambiosRespectoDelBorrador": [
+        "El borrador la llamaba «Tostadas con queso blanco y tomate»: el catálogo no tiene queso blanco y el ingrediente es queso crema."
+      ]
+    },
+    {
+      "numero": 6,
+      "nombre": "Milanesa de carne al horno con puré de calabaza",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "06-milanesa-de-carne-al-horno-con-pure-de-calabaza.jpg",
+      "ingredientes": [
+        {
+          "buscado": "nalga cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171757",
+          "nombre": "Nalga vacuna, magra, cruda",
+          "preparacionDeLaFuente": "cruda, magra, sin grasa externa",
+          "catalogItemId": "b06eabea-12fa-5c0f-ba84-9bbfdea3442d",
+          "catalogItemVersionId": "a5110b17-1cd9-5953-94ca-5e29ac35ec35",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "El catálogo tiene la nalga vacuna y la de ternera, crudas: la vacuna, la de una milanesa de carne."
+        },
+        {
+          "buscado": "pan rallado",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "174928",
+          "nombre": "Pan rallado común",
+          "preparacionDeLaFuente": "seco, rallado",
+          "catalogItemId": "f6d09a22-54e5-50a1-8e49-29a470955f1c",
+          "catalogItemVersionId": "aef9b3ec-0c71-57e4-87dd-54753ce795df",
+          "cantidad": {
+            "valor": 25,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        },
+        {
+          "buscado": "huevo entero crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171287",
+          "nombre": "Huevo de gallina entero, crudo",
+          "preparacionDeLaFuente": "crudo",
+          "catalogItemId": "55128a2f-ec7f-5310-8c8f-0152dd26033b",
+          "catalogItemVersionId": "df87c7ce-83cb-5d3c-a828-26896603f607",
+          "cantidad": {
+            "valor": 25,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "zapallo anco al horno",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "169296",
+          "nombre": "Zapallo anco al horno, sin sal",
+          "preparacionDeLaFuente": "al horno, sin sal",
+          "catalogItemId": "a1e8ccbd-5441-5c3f-a6f8-2984d639e1f9",
+          "catalogItemVersionId": "109264c1-fa94-5456-8f85-9e8bc89a104d",
+          "cantidad": {
+            "valor": 200,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": "La calabaza es el zapallo anco: va al horno y se pisa, así que el peso es el del zapallo ya horneado."
+        }
+      ],
+      "pasos": [
+        "Pasar la carne por huevo y pan rallado.",
+        "Hornear 20 minutos, dando vuelta a la mitad.",
+        "Servir con el zapallo hecho puré."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 7,
+      "nombre": "Bife a la plancha con papas al horno y ensalada",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "07-bife-a-la-plancha-con-papas-al-horno-y-ensalada.jpg",
+      "ingredientes": [
+        {
+          "buscado": "bife de chorizo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173116",
+          "nombre": "Bife de chorizo, magro, crudo",
+          "preparacionDeLaFuente": "crudo, magro",
+          "catalogItemId": "14b5a856-30d8-503a-b341-90e96fa8a6db",
+          "catalogItemVersionId": "48252b00-33ba-5819-ba25-c45832b4079f",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "El catálogo tiene el bife de chorizo crudo y el asado: el crudo, porque se pesa antes de ir a la plancha."
+        },
+        {
+          "buscado": "papa al horno",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170093",
+          "nombre": "Papa al horno con cáscara, sin sal",
+          "preparacionDeLaFuente": "al horno, pulpa y cáscara, sin sal",
+          "catalogItemId": "d1e11ca9-1b6b-535b-affc-c9b28948f35b",
+          "catalogItemVersionId": "8cead464-0841-59a7-8fa1-78268b543fc2",
+          "cantidad": {
+            "valor": 200,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": "Al horno con cáscara: es la única papa al horno del catálogo."
+        },
+        {
+          "buscado": "lechuga cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "169249",
+          "nombre": "Lechuga de hoja verde, cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "5c894dfd-879f-5704-b448-9cf892e38e64",
+          "catalogItemVersionId": "cba48281-15bd-5dbd-ab03-da734a64c727",
+          "cantidad": {
+            "valor": 50,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "El catálogo tiene cuatro lechugas crudas (romana, de hoja verde, mantecosa y capuchina): la de hoja verde, la de una ensalada común."
+        },
+        {
+          "buscado": "tomate crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170457",
+          "nombre": "Tomate rojo maduro, crudo",
+          "preparacionDeLaFuente": "crudo (promedio del año)",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53",
+          "catalogItemVersionId": "d4936913-5486-5279-933f-1066d2a6d4cd",
+          "cantidad": {
+            "valor": 80,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "aceite de oliva",
+          "fuente": "DL_119",
+          "fdcId": "171413",
+          "nombre": "Aceite de oliva",
+          "preparacionDeLaFuente": "listo para usar; pesado en gramos",
+          "catalogItemId": "d527cfae-c081-5e95-ad20-8a0cad9ba70c",
+          "catalogItemVersionId": "f5ee9a5e-c506-5fe1-9ec2-9a5e88468c27",
+          "cantidad": {
+            "valor": 10,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "Hay dos «Aceite de oliva»: el de demostración (valores sintéticos) y el de USDA (DL-119). El de USDA."
+        }
+      ],
+      "pasos": [
+        "Cocinar el bife a la plancha.",
+        "Servir con las papas y la ensalada condimentada con el aceite."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 8,
+      "nombre": "Merluza al horno con puré de papa y brócoli",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "08-merluza-al-horno-con-pure-de-papa-y-brocoli.jpg",
+      "ingredientes": [
+        {
+          "buscado": "merluza cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173713",
+          "nombre": "Merluza (whiting), cruda",
+          "preparacionDeLaFuente": "cruda, filete",
+          "catalogItemId": "9876b7c8-e6dc-5f3a-963d-f2d64ae2d116",
+          "catalogItemVersionId": "559aa2f5-9e2e-547c-8722-6e5af678955a",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "papa hervida",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170440",
+          "nombre": "Papa hervida sin cáscara, sin sal",
+          "preparacionDeLaFuente": "hervida sin cáscara, sin sal",
+          "catalogItemId": "96031173-3ffa-5907-b32e-cb4206d776bf",
+          "catalogItemVersionId": "ade5346c-ae9b-5609-a93e-57ccbe152ab7",
+          "cantidad": {
+            "valor": 200,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": "Para el puré, la papa hervida sin cáscara (la de DL-119 es hervida con piel)."
+        },
+        {
+          "buscado": "brócoli hervido",
+          "fuente": "DL_119",
+          "fdcId": "169967",
+          "nombre": "Brócoli hervido y escurrido, sin sal",
+          "preparacionDeLaFuente": "cocido, hervido y escurrido",
+          "catalogItemId": "ed2d76ab-1993-5258-9496-0527315cd530",
+          "catalogItemVersionId": "593b7623-921e-5004-930d-247ee5f1ff99",
+          "cantidad": {
+            "valor": 100,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Hornear la merluza 15 minutos.",
+        "Servir con el puré y el brócoli."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 9,
+      "nombre": "Fideos con salsa bolognesa",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "09-fideos-con-salsa-bolognesa.jpg",
+      "ingredientes": [
+        {
+          "buscado": "fideos de trigo hervidos",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "169737",
+          "nombre": "Fideos de trigo hervidos, sin sal",
+          "preparacionDeLaFuente": "hervidos sin sal, enriquecidos",
+          "catalogItemId": "3bb91be0-cb42-5af3-90dc-f17c575fe0d3",
+          "catalogItemVersionId": "a652c07c-2ebf-5624-99bb-f630cd312620",
+          "cantidad": {
+            "valor": 200,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": null
+        },
+        {
+          "buscado": "carne picada",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "174030",
+          "nombre": "Carne picada vacuna 90 % magra, cruda",
+          "preparacionDeLaFuente": "cruda, 90 % carne magra y 10 % grasa",
+          "catalogItemId": "abd3770e-cbcd-5774-8699-740170bf63d2",
+          "catalogItemVersionId": "2899d97a-c3a0-528b-babd-4f7b51ea125e",
+          "cantidad": {
+            "valor": 80,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "El catálogo tiene cinco picadas vacunas crudas (95, 90, 85, 80 y 70 % magra) y el borrador no dice cuál: la de 90 %, la «especial»."
+        },
+        {
+          "buscado": "puré de tomate",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170460",
+          "nombre": "Puré de tomate sin sal agregada",
+          "preparacionDeLaFuente": "envasado, sin sal agregada",
+          "catalogItemId": "d4fb465c-af93-5847-ae68-b9718cec2b0b",
+          "catalogItemVersionId": "eea87966-f73f-5af5-9512-3e6e54caf5df",
+          "cantidad": {
+            "valor": 100,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        },
+        {
+          "buscado": "cebolla cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170000",
+          "nombre": "Cebolla cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74",
+          "catalogItemVersionId": "29d7457e-ce1c-5d0c-b1a5-a92253c74d5c",
+          "cantidad": {
+            "valor": 30,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Dorar la cebolla y la carne.",
+        "Sumar el puré de tomate y cocinar 15 minutos.",
+        "Servir sobre los fideos."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 10,
+      "nombre": "Guiso de lentejas con verduras",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "10-guiso-de-lentejas-con-verduras.jpg",
+      "ingredientes": [
+        {
+          "buscado": "lentejas hervidas",
+          "fuente": "DL_119",
+          "fdcId": "172421",
+          "nombre": "Lentejas hervidas sin sal",
+          "preparacionDeLaFuente": "cocidas, parte comestible sin líquido sobrante",
+          "catalogItemId": "0a3c813e-a2f9-5a36-9155-f86166b96085",
+          "catalogItemVersionId": "0c3dfed4-03e5-5f1d-99da-7955d96bad98",
+          "cantidad": {
+            "valor": 200,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": null
+        },
+        {
+          "buscado": "zanahoria cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170393",
+          "nombre": "Zanahoria cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "eb93c9dc-12de-574b-9f3d-acb77eae8d35",
+          "catalogItemVersionId": "f808e095-0a91-5f6b-8803-50b1f09547d5",
+          "cantidad": {
+            "valor": 50,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "zapallo anco crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "169295",
+          "nombre": "Zapallo anco crudo",
+          "preparacionDeLaFuente": "crudo",
+          "catalogItemId": "7cf8538b-6048-5c07-99a3-042c61c6c5b9",
+          "catalogItemVersionId": "001ab0eb-f127-5560-8b8b-4bef9ceeb89f",
+          "cantidad": {
+            "valor": 80,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "cebolla cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170000",
+          "nombre": "Cebolla cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74",
+          "catalogItemVersionId": "29d7457e-ce1c-5d0c-b1a5-a92253c74d5c",
+          "cantidad": {
+            "valor": 30,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Cocinar la cebolla, la zanahoria y el zapallo en un poco de agua.",
+        "Sumar las lentejas y cocinar hasta que espese."
+      ],
+      "cambiosRespectoDelBorrador": [
+        "El borrador rehogaba la cebolla y sumaba caldo, que no estaban entre los ingredientes: los pasos ya no usan nada que no esté en la lista."
+      ]
+    },
+    {
+      "numero": 11,
+      "nombre": "Tarta de acelga con ensalada de tomate",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "11-tarta-de-acelga-con-ensalada-de-tomate.jpg",
+      "ingredientes": [
+        {
+          "buscado": "acelga hervida",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170401",
+          "nombre": "Acelga hervida, sin sal",
+          "preparacionDeLaFuente": "hervida y escurrida, sin sal",
+          "catalogItemId": "e9be6316-4a0b-5ae4-8383-92cabd51884d",
+          "catalogItemVersionId": "ea83e72d-10a7-5e3c-9b31-4e8155da2605",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": null
+        },
+        {
+          "buscado": "huevo entero crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171287",
+          "nombre": "Huevo de gallina entero, crudo",
+          "preparacionDeLaFuente": "crudo",
+          "catalogItemId": "55128a2f-ec7f-5310-8c8f-0152dd26033b",
+          "catalogItemVersionId": "df87c7ce-83cb-5d3c-a828-26896603f607",
+          "cantidad": {
+            "valor": 50,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "harina de trigo blanca",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "168936",
+          "nombre": "Harina de trigo blanca de uso general, enriquecida",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "1a1bb77e-14dc-5c2c-9a49-e8f8b81ba288",
+          "catalogItemVersionId": "50930cea-b31f-5a43-9530-de004df030c0",
+          "cantidad": {
+            "valor": 40,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "La de uso general (la otra es leudante)."
+        },
+        {
+          "buscado": "aceite de girasol",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171025",
+          "nombre": "Aceite de girasol",
+          "preparacionDeLaFuente": "listo para usar",
+          "catalogItemId": "ca2779dd-5361-5711-94ea-9848d5f12a35",
+          "catalogItemVersionId": "ef36e490-9532-596e-85fb-11d32772ec5e",
+          "cantidad": {
+            "valor": 10,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "El aceite de girasol común (el otro es alto oleico)."
+        },
+        {
+          "buscado": "tomate crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170457",
+          "nombre": "Tomate rojo maduro, crudo",
+          "preparacionDeLaFuente": "crudo (promedio del año)",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53",
+          "catalogItemVersionId": "d4936913-5486-5279-933f-1066d2a6d4cd",
+          "cantidad": {
+            "valor": 100,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Hacer una masa con la harina, el aceite y un poco de agua.",
+        "Mezclar la acelga con el huevo y cubrir con la masa.",
+        "Hornear 30 minutos y servir con la ensalada de tomate."
+      ],
+      "cambiosRespectoDelBorrador": [
+        "El borrador no decía con qué se hacía la masa: el primer paso lo dice."
+      ]
+    },
+    {
+      "numero": 12,
+      "nombre": "Bowl de quinoa con garbanzos, huevo y verduras",
+      "descripcion": "Almuerzo.",
+      "porciones": 1,
+      "imagen": "12-bowl-de-quinoa-con-garbanzos-huevo-y-verduras.jpg",
+      "ingredientes": [
+        {
+          "buscado": "quinoa cocida",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "168917",
+          "nombre": "Quinoa cocida",
+          "preparacionDeLaFuente": "cocida",
+          "catalogItemId": "70bb6663-6d55-531b-bb1a-fdd9b46e29a7",
+          "catalogItemVersionId": "4ae93a4a-e887-55e5-9709-15c56617cc14",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": null
+        },
+        {
+          "buscado": "garbanzos hervidos",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173757",
+          "nombre": "Garbanzos hervidos, sin sal",
+          "preparacionDeLaFuente": "hervidos sin sal",
+          "catalogItemId": "4f2eda42-fc07-5d8b-aae6-0474687f1887",
+          "catalogItemVersionId": "0c22f54b-1fd5-59eb-affe-1308dba553fc",
+          "cantidad": {
+            "valor": 100,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": "Hervidos sin sal (los otros son en lata o secos)."
+        },
+        {
+          "buscado": "huevo duro",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "173424",
+          "nombre": "Huevo duro",
+          "preparacionDeLaFuente": "hervido hasta que cuaja la yema",
+          "catalogItemId": "d287cf5d-9de5-546f-97b8-ccdf18758a33",
+          "catalogItemVersionId": "00ca007a-f8e1-5f18-81e2-1fc1dfadfa53",
+          "cantidad": {
+            "valor": 50,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": null
+        },
+        {
+          "buscado": "tomate crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170457",
+          "nombre": "Tomate rojo maduro, crudo",
+          "preparacionDeLaFuente": "crudo (promedio del año)",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53",
+          "catalogItemVersionId": "d4936913-5486-5279-933f-1066d2a6d4cd",
+          "cantidad": {
+            "valor": 60,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "zanahoria cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170393",
+          "nombre": "Zanahoria cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "eb93c9dc-12de-574b-9f3d-acb77eae8d35",
+          "catalogItemVersionId": "f808e095-0a91-5f6b-8803-50b1f09547d5",
+          "cantidad": {
+            "valor": 40,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "aceite de oliva",
+          "fuente": "DL_119",
+          "fdcId": "171413",
+          "nombre": "Aceite de oliva",
+          "preparacionDeLaFuente": "listo para usar; pesado en gramos",
+          "catalogItemId": "d527cfae-c081-5e95-ad20-8a0cad9ba70c",
+          "catalogItemVersionId": "f5ee9a5e-c506-5fe1-9ec2-9a5e88468c27",
+          "cantidad": {
+            "valor": 10,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "Hay dos «Aceite de oliva»: el de demostración (valores sintéticos) y el de USDA (DL-119). El de USDA."
+        }
+      ],
+      "pasos": [
+        "Armar el bowl con todo y condimentar con el aceite."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 13,
+      "nombre": "Wok de pollo con verduras y arroz",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "13-wok-de-pollo-con-verduras-y-arroz.jpg",
+      "ingredientes": [
+        {
+          "buscado": "pechuga de pollo cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171077",
+          "nombre": "Pechuga de pollo sin piel ni hueso, cruda",
+          "preparacionDeLaFuente": "cruda, solo carne",
+          "catalogItemId": "e3ce19ac-2beb-5e47-a99c-55f19d973de6",
+          "catalogItemVersionId": "96cc80bb-1172-5f8b-a5d3-2f56a47a5515",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "Sin piel ni hueso, como se corta para un wok."
+        },
+        {
+          "buscado": "morrón rojo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170108",
+          "nombre": "Morrón rojo crudo",
+          "preparacionDeLaFuente": "crudo",
+          "catalogItemId": "395dfa6a-c1c5-5a55-b84c-64c93500840b",
+          "catalogItemVersionId": "851a248f-7aaf-5a99-b18c-57fca6df554e",
+          "cantidad": {
+            "valor": 60,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "cebolla cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170000",
+          "nombre": "Cebolla cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74",
+          "catalogItemVersionId": "29d7457e-ce1c-5d0c-b1a5-a92253c74d5c",
+          "cantidad": {
+            "valor": 40,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "zanahoria cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170393",
+          "nombre": "Zanahoria cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "eb93c9dc-12de-574b-9f3d-acb77eae8d35",
+          "catalogItemVersionId": "f808e095-0a91-5f6b-8803-50b1f09547d5",
+          "cantidad": {
+            "valor": 40,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "arroz blanco cocido",
+          "fuente": "DL_119",
+          "fdcId": "168878",
+          "nombre": "Arroz blanco de grano largo, cocido",
+          "preparacionDeLaFuente": "cocido",
+          "catalogItemId": "65bbfed9-71d1-5d61-9a23-9c89d0b92455",
+          "catalogItemVersionId": "43a2da56-8a90-5cb5-b826-bc9cfc8aa1ae",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "COOKED",
+          "decision": "El catálogo tiene dos arroces blancos cocidos (grano largo, de DL-119, y grano medio): el de grano largo."
+        },
+        {
+          "buscado": "aceite de girasol",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171025",
+          "nombre": "Aceite de girasol",
+          "preparacionDeLaFuente": "listo para usar",
+          "catalogItemId": "ca2779dd-5361-5711-94ea-9848d5f12a35",
+          "catalogItemVersionId": "ef36e490-9532-596e-85fb-11d32772ec5e",
+          "cantidad": {
+            "valor": 10,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "El aceite de girasol común (el otro es alto oleico)."
+        }
+      ],
+      "pasos": [
+        "Saltear el pollo en tiras y después las verduras.",
+        "Servir con el arroz."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 14,
+      "nombre": "Hamburguesa casera al plato con ensalada",
+      "descripcion": "Almuerzo o cena.",
+      "porciones": 1,
+      "imagen": "14-hamburguesa-casera-al-plato-con-ensalada.jpg",
+      "ingredientes": [
+        {
+          "buscado": "carne picada",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "174030",
+          "nombre": "Carne picada vacuna 90 % magra, cruda",
+          "preparacionDeLaFuente": "cruda, 90 % carne magra y 10 % grasa",
+          "catalogItemId": "abd3770e-cbcd-5774-8699-740170bf63d2",
+          "catalogItemVersionId": "2899d97a-c3a0-528b-babd-4f7b51ea125e",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "El catálogo tiene cinco picadas vacunas crudas (95, 90, 85, 80 y 70 % magra) y el borrador no dice cuál: la de 90 %, la «especial»."
+        },
+        {
+          "buscado": "lechuga cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "169249",
+          "nombre": "Lechuga de hoja verde, cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "5c894dfd-879f-5704-b448-9cf892e38e64",
+          "catalogItemVersionId": "cba48281-15bd-5dbd-ab03-da734a64c727",
+          "cantidad": {
+            "valor": 50,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "El catálogo tiene cuatro lechugas crudas (romana, de hoja verde, mantecosa y capuchina): la de hoja verde, la de una ensalada común."
+        },
+        {
+          "buscado": "tomate crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170457",
+          "nombre": "Tomate rojo maduro, crudo",
+          "preparacionDeLaFuente": "crudo (promedio del año)",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53",
+          "catalogItemVersionId": "d4936913-5486-5279-933f-1066d2a6d4cd",
+          "cantidad": {
+            "valor": 80,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "cebolla cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170000",
+          "nombre": "Cebolla cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74",
+          "catalogItemVersionId": "29d7457e-ce1c-5d0c-b1a5-a92253c74d5c",
+          "cantidad": {
+            "valor": 20,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Formar la hamburguesa y cocinarla a la plancha.",
+        "Servir con la ensalada."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 15,
+      "nombre": "Omelette de espinaca con tostada",
+      "descripcion": "Desayuno o cena.",
+      "porciones": 1,
+      "imagen": "15-omelette-de-espinaca-con-tostada.jpg",
+      "ingredientes": [
+        {
+          "buscado": "huevo entero crudo",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171287",
+          "nombre": "Huevo de gallina entero, crudo",
+          "preparacionDeLaFuente": "crudo",
+          "catalogItemId": "55128a2f-ec7f-5310-8c8f-0152dd26033b",
+          "catalogItemVersionId": "df87c7ce-83cb-5d3c-a828-26896603f607",
+          "cantidad": {
+            "valor": 100,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "espinaca cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "168462",
+          "nombre": "Espinaca cruda",
+          "preparacionDeLaFuente": "cruda",
+          "catalogItemId": "2c625bd7-2db8-57fd-a338-a7e6c4fe38b9",
+          "catalogItemVersionId": "347f2501-aed5-50df-b16b-bb18961c221d",
+          "cantidad": {
+            "valor": 60,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": null
+        },
+        {
+          "buscado": "pan de trigo integral",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "172688",
+          "nombre": "Pan integral de trigo, de molde",
+          "preparacionDeLaFuente": "listo para consumir",
+          "catalogItemId": "01c1bcd7-fef3-5f02-af20-7a894d7b2bc9",
+          "catalogItemVersionId": "6305874f-0432-51ea-824b-d4b0cac3d4cd",
+          "cantidad": {
+            "valor": 30,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        },
+        {
+          "buscado": "aceite de oliva",
+          "fuente": "DL_119",
+          "fdcId": "171413",
+          "nombre": "Aceite de oliva",
+          "preparacionDeLaFuente": "listo para usar; pesado en gramos",
+          "catalogItemId": "d527cfae-c081-5e95-ad20-8a0cad9ba70c",
+          "catalogItemVersionId": "f5ee9a5e-c506-5fe1-9ec2-9a5e88468c27",
+          "cantidad": {
+            "valor": 5,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": "Hay dos «Aceite de oliva»: el de demostración (valores sintéticos) y el de USDA (DL-119). El de USDA."
+        }
+      ],
+      "pasos": [
+        "Batir los huevos y cocinarlos con la espinaca.",
+        "Servir con la tostada."
+      ],
+      "cambiosRespectoDelBorrador": []
+    },
+    {
+      "numero": 16,
+      "nombre": "Manzana con nueces",
+      "descripcion": "Colación.",
+      "porciones": 1,
+      "imagen": "16-manzana-con-nueces.jpg",
+      "ingredientes": [
+        {
+          "buscado": "manzana cruda",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "171688",
+          "nombre": "Manzana con cáscara, cruda",
+          "preparacionDeLaFuente": "cruda, con cáscara",
+          "catalogItemId": "7934270b-50ce-5132-9b13-3f69260ca967",
+          "catalogItemVersionId": "de4bb1a0-766b-5b9a-9382-a60673762534",
+          "cantidad": {
+            "valor": 150,
+            "unidad": "g"
+          },
+          "estado": "RAW",
+          "decision": "Con cáscara, como se corta para una colación."
+        },
+        {
+          "buscado": "nueces de nogal",
+          "fuente": "CATALOGO_BASE",
+          "fdcId": "170187",
+          "nombre": "Nueces de nogal, peladas",
+          "preparacionDeLaFuente": "crudas, peladas",
+          "catalogItemId": "52b6683a-137f-5688-a114-43ec1a8d2d17",
+          "catalogItemVersionId": "ba323473-db47-5b19-b430-00ec7c9b6e51",
+          "cantidad": {
+            "valor": 20,
+            "unidad": "g"
+          },
+          "estado": "AS_PURCHASED",
+          "decision": null
+        }
+      ],
+      "pasos": [
+        "Cortar la manzana y servir con las nueces."
+      ],
+      "cambiosRespectoDelBorrador": [
+        "El borrador la llamaba «Fruta de estación con nueces», pero la fruta es una manzana: la receta se llama como su ingrediente."
+      ]
+    }
+  ]
+}

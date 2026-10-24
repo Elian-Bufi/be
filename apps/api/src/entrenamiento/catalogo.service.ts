@@ -3,7 +3,7 @@ import { CrearEjercicioRequestSchema, type EjercicioDeCatalogo, type EjercicioEn
 import { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda, type ConNombreAlternativo } from '../http/busqueda';
+import { buscarEnCatalogo, CORRESPONDENCIA, leerBusqueda, leerCursorDeBusqueda, origenEnElBuscador, type ConNombreAlternativo, type ConOrigenEnLaBase } from '../http/busqueda';
 import { errores } from '../http/errores';
 import { leerConsultaDeLista } from '../http/paginacion';
 import { EJERCICIO_DE_UN_ITEM_EXTERNO } from '../integraciones/item-externo';
@@ -40,6 +40,9 @@ const COLUMNAS = Prisma.sql`e."id"::text AS "ejercicioId", v."id"::text AS "vers
        e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
        v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`;
 
+/** Las del buscador suman la correspondencia con la fuente, para el origen de la fila (DL-141 D-6). */
+const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, ${CORRESPONDENCIA}`;
+
 /**
  * Catálogo propio de ejercicios (RF-037; API-TRN-13 y API-INT-TRN-01).
  * - Ejercicio con identificador estable y versiones inmutables; la prescripción cita una **versión** (09v10:323,
@@ -69,23 +72,26 @@ export class CatalogoDeEjerciciosService {
     return { data: filas.map(ejercicioApi), page };
   }
 
-  /** API-TRN-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2). Solo el website. */
+  /**
+   * API-TRN-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2) y su origen:
+   * quién lo cargó y si su correspondencia con la fuente es aproximada (D-6). Solo el website.
+   */
   async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);
-    return { data: filas.map((f) => ({ ...ejercicioApi(f), matchedAlternativeName: f.nombreAlternativo })), page };
+    return { data: filas.map((f) => ({ ...ejercicioApi(f), matchedAlternativeName: f.nombreAlternativo, origin: origenEnElBuscador(f, actor.identidadId) })), page };
   }
 
-  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeEjercicio & ConNombreAlternativo)[]; page: unknown }> {
+  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeEjercicio & ConOrigenEnLaBase & ConNombreAlternativo)[]; page: unknown }> {
     const { q: crudo, cursor: cursorEscrito, ...resto } = query;
     if (crudo !== undefined && typeof crudo !== 'string') throw errores.solicitudInvalida([{ code: 'INVALID_FILTER', path: 'q' }]);
     const consulta = leerConsultaDeLista(resto, {});
     const cursor = leerCursorDeBusqueda(cursorEscrito);
     const q = (crudo ?? '').trim().slice(0, 80);
     const creadores = await this.creadoresVisibles(this.prisma, actor.identidadId, 'CUALQUIERA');
-    return buscarEnCatalogo<FilaDeEjercicio>(
+    return buscarEnCatalogo<FilaDeEjercicio & ConOrigenEnLaBase>(
       this.prisma,
       {
-        columnas: COLUMNAS,
+        columnas: COLUMNAS_DEL_BUSCADOR,
         tablas: Prisma.sql`"version_de_ejercicio" v JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'
