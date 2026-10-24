@@ -147,7 +147,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09. **Al 2026-10-23, contadas p
   - El 2026-10-02 se vio que es `P2028` de Prisma: la transacción no pudo empezar a tiempo. Pasó en la máquina local, con poca memoria (`EVIDENCIA/UX-PULIDO-DL113/LEEME.md`).
   - Severidad media. Sin corregir.
 - **La auditoría de dependencias falla** con avisos publicados después del 20/10 (ver §1, punto 5): #201 y #202.
-- **El recorrido de navegador `faltaUnaParte` es intermitente** (2026-10-23): falló en una de las dos corridas de #195, que no toca el website, y de #200, con pedidos que no llegan a la API. Ver la recomendación 2 de `EVIDENCIA/CONSOLIDACION-2026-10-23/LEEME.md`.
+- **El recorrido de navegador `faltaUnaParte` es intermitente** (2026-10-23): falló en una de las dos corridas de #195, que no toca el website, de #200 y de #205, que en código es igual a `main`, con pedidos que no llegan a la API. Ver la recomendación 2 de `EVIDENCIA/CONSOLIDACION-2026-10-23/LEEME.md`.
 - **Antes de datos reales**, hay que cumplir el gate de 24 condiciones del 08 §42. Incluye:
   - MFA;
   - textos legales;
