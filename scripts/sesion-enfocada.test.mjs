@@ -335,7 +335,8 @@ function textosDe(archivo) {
   return textos;
 }
 
-const PIEZAS_NUEVAS = ['pantallas/sesion-enfocada.tsx', 'pantallas/plan-por-serie.tsx', 'pantallas/tiempos-de-la-sesion.tsx', 'pantallas/recuperacion.tsx', 'series-de-la-sesion.ts', 'corrida-de-entrenamiento.ts', 'almacen-de-entrenamiento.ts'].map(movil);
+// DL-151 suma la sustitución del ejercicio activo, con sus textos.
+const PIEZAS_NUEVAS = ['pantallas/sesion-enfocada.tsx', 'pantallas/plan-por-serie.tsx', 'pantallas/tiempos-de-la-sesion.tsx', 'pantallas/recuperacion.tsx', 'series-de-la-sesion.ts', 'corrida-de-entrenamiento.ts', 'almacen-de-entrenamiento.ts', 'sustitucion-de-ejercicio.ts'].map(movil);
 
 test('8 · T13: el copy de las piezas nuevas no tiene puntajes, cumplimiento ni juicios, y no deriva «No realizada»', () => {
   const hallazgos = [];

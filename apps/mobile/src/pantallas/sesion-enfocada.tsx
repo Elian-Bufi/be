@@ -3,8 +3,8 @@
  * `01_series_y_descanso_actualizado.png`). Las dibuja `PantallaDeSesion` (entrenamiento.tsx), que tiene el estado.
  *
  * - **Arriba:** «Ver rutina», el nombre de la sesión y un temporizador discreto con el tiempo sin pausas.
- * - **El ejercicio activo:** su imagen de 112 dp (o la mancuerna de la app si no tiene), su nombre, «Ejercicio N de M» y
- *   «Ver técnica».
+ * - **El ejercicio activo:** su imagen de 112 dp (o la mancuerna de la app si no tiene), su nombre, «Ejercicio N de M»,
+ *   «Ver técnica» y «Sustituir ejercicio» (DL-151). Sustituido, dice también el ejecutado, con la insignia.
  * - **La tabla:** Serie, carga con su unidad, Rep. y RIR. La fila activa lleva borde y «Serie actual»; las guardadas, sus
  *   valores y «Guardada»; los campos vacíos, el objetivo de esa serie en gris (`placeholdersDeLaSerie`), que nunca se
  *   envía. Con la letra grande pasa a tarjetas apiladas.
@@ -19,12 +19,15 @@
 import {
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
+  COPY_INTEGRACIONES,
   COPY_REGISTRO_DE_COMIDAS,
   duracionParaMostrar,
   ETIQUETA_DE_CALIDAD_DE_TIEMPO,
   ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN,
+  ETIQUETA_DE_PROVEEDOR,
   ETIQUETA_DE_REVISION_TECNICA,
   etiquetaDeCondicionRegistrada,
+  nombreConAlternativo,
   numero,
   ROL_DE_LA_IMAGEN,
   textoDeDescanso,
@@ -33,11 +36,12 @@ import {
   textoDeSegundos,
   type CalculoDeTiempos,
   type DuracionApi,
+  type EjercicioEncontrado,
   type PrescripcionConObjetivos,
   type Resultado,
   type SesionConObjetivos,
 } from '@be/domain';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
@@ -58,6 +62,7 @@ import {
   type SerieLocal,
   type Unidad,
 } from '../series-de-la-sesion';
+import { sustitutosPosibles, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado, type SustitucionDelEjercicio } from '../sustitucion-de-ejercicio';
 import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo } from '../ui';
 
 /** El lado de la imagen del ejercicio activo, en dp (§7.2: de 100 a 140). */
@@ -128,7 +133,9 @@ export function EjercicioActivo({
   posicion,
   total,
   bases,
+  ejecutado = null,
   onVerTecnica,
+  onSustituir,
 }: {
   token: string;
   sesionPerdida: AlPerderLaSesion;
@@ -136,7 +143,11 @@ export function EjercicioActivo({
   posicion: number;
   total: number;
   bases: { readonly carga: string | null; readonly repeticiones: string | null };
+  /** El ejercicio que se registra en lugar del planificado (DL-151); `null` sin sustitución. El nombre grande sigue siendo el planificado. */
+  ejecutado?: string | null;
   onVerTecnica: () => void;
+  /** «Sustituir ejercicio» (DL-151). Sin ella, no se ofrece. */
+  onSustituir?: () => void;
 }) {
   const { fontScale } = useWindowDimensions();
   return (
@@ -156,6 +167,8 @@ export function EjercicioActivo({
         <Text style={estilos.nombreDelEjercicio} accessibilityRole="header">
           {p.exerciseName}
         </Text>
+        {/* Las dos puntas a la vista: el nombre grande es el planificado, y esto lo que se registra (B10-06:772-778). */}
+        {ejecutado ? <LineaDeLaSustitucion ejecutado={ejecutado} /> : null}
         <Text style={estilos.detalle}>{COPY_ENTRENAMIENTO_POR_SERIE.ejercicioDe(posicion, total)}</Text>
         {bases.carga ? <Text style={estilos.detalle}>{`Carga: ${bases.carga}`}</Text> : null}
         {bases.repeticiones ? <Text style={estilos.detalle}>{`Repeticiones: ${bases.repeticiones}`}</Text> : null}
@@ -163,7 +176,24 @@ export function EjercicioActivo({
           <Text style={estilos.textoDeEnlace}>{COPY_ENTRENAMIENTO_POR_SERIE.verTecnica}</Text>
           <Flecha color={COLOR.acento} hacia="derecha" tamano={18} />
         </Pressable>
+        {onSustituir ? (
+          <Pressable accessibilityRole="button" onPress={onSustituir} style={({ pressed }) => [estilos.enlaceConFlecha, pressed && estilos.presionado]}>
+            <Text style={estilos.textoDeEnlace}>{COPY_ENTRENAMIENTO.sustituirEjercicio}</Text>
+            <Flecha color={COLOR.acento} hacia="derecha" tamano={18} />
+          </Pressable>
+        ) : null}
       </View>
+    </View>
+  );
+}
+
+/** «Ejecutado: Press con mancuernas» con la insignia «Sustituido», leído como una sola frase. */
+function LineaDeLaSustitucion({ ejecutado }: { ejecutado: string }) {
+  const texto = `${COPY_ENTRENAMIENTO.ejecutado}: ${ejecutado}`;
+  return (
+    <View style={estilos.sustitucion} accessible accessibilityLabel={`${texto}. ${COPY_ENTRENAMIENTO.sustituido}`}>
+      <Text style={estilos.textoDeBloque}>{texto}</Text>
+      <Insignia texto={COPY_ENTRENAMIENTO.sustituido} />
     </View>
   );
 }
@@ -671,17 +701,19 @@ export function EstadoDelEnvio({
 
 // ─── La rutina y la técnica ─────────────────────────────────────────────────────────────────────
 
-function Dialogo({ visible, titulo, onCerrar, children }: { visible: boolean; titulo: string; onCerrar: () => void; children: ReactNode }) {
+/** `ocupado`: mientras se guarda algo del diálogo, no se cierra, para que su resultado no quede sin decirse. */
+function Dialogo({ visible, titulo, onCerrar, ocupado = false, children }: { visible: boolean; titulo: string; onCerrar: () => void; ocupado?: boolean; children: ReactNode }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCerrar}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={ocupado ? () => undefined : onCerrar}>
       <View style={estilos.velo}>
-        <ScrollView contentContainerStyle={estilos.centrado}>
+        {/* Como en la pantalla (App.tsx): con el teclado abierto, el primer toque en un botón ya lo acciona. */}
+        <ScrollView contentContainerStyle={estilos.centrado} keyboardShouldPersistTaps="handled">
           <View style={estilos.dialogo} accessibilityViewIsModal>
             <Text style={estilos.tituloDeDialogo} accessibilityRole="header">
               {titulo}
             </Text>
             {children}
-            <Boton texto="Volver a la sesión" tipo="secundario" onPress={onCerrar} />
+            <Boton texto="Volver a la sesión" tipo="secundario" onPress={onCerrar} deshabilitado={ocupado} />
           </View>
         </ScrollView>
       </View>
@@ -720,6 +752,7 @@ export function RutinaDeLaSesion({
         return (
           <View key={p.prescriptionId} style={[estilos.itemDeRutina, esActivo && estilos.itemActivo]}>
             <Text style={estilos.tituloDeBloque}>{`${numero(i + 1, 0)}. ${p.exerciseName}`}</Text>
+            {r?.ejecutado ? <LineaDeLaSustitucion ejecutado={r.ejecutado} /> : null}
             {r ? <Text style={estilos.detalle}>{e.seriesRegistradas(r.registradas, r.planificadas)}</Text> : null}
             {esActivo ? <Insignia texto={e.ejercicioActivo} positiva /> : null}
             <Boton texto={e.verTecnica} tipo="enlace" onPress={() => onVerTecnica(p.prescriptionId)} />
@@ -769,6 +802,91 @@ export function TecnicaDelEjercicio({ visible, prescripcion: p, token, sesionPer
   );
 }
 
+// ─── Sustituir el ejercicio (DL-151) ────────────────────────────────────────────────────────────
+
+/**
+ * «Sustituir ejercicio», como en la 0.13.2: se busca en el catálogo el ejercicio que la persona hizo en lugar del
+ * planificado y se confirma con «Confirmar sustitución: …». Es un diálogo, así que detrás la sesión sigue como estaba:
+ * el temporizador, el descanso o la serie cronometrada, y la fila enfocada. Lo que se guarda lo decide la pantalla
+ * (`onElegir`), con las reglas de `sustitucion-de-ejercicio.ts`.
+ * - Los resultados no repiten el ejercicio que ya figura ni el planificado, en ninguna versión (`sustitutosPosibles`):
+ *   volver al planificado tiene su propio botón.
+ * - Un ejercicio importado dice de dónde vino también acá, donde se lo elige (RF-060; WP-08), y uno encontrado por un
+ *   nombre alternativo lo muestra entre paréntesis (DL-141).
+ * - Un error al buscar no es un catálogo vacío (B10-10:41).
+ */
+export function SustituirEjercicio({
+  visible,
+  sustitucion,
+  buscar,
+  sesionPerdida,
+  ocupado,
+  fallo,
+  onElegir,
+  onCerrar,
+}: {
+  visible: boolean;
+  sustitucion: SustitucionDelEjercicio | null;
+  /** API-TRN-13-BUSQUEDA: el texto va en el cuerpo, nunca en una URL (DL-130). */
+  buscar: (texto: string) => Promise<Resultado<{ readonly data: readonly EjercicioEncontrado[] }>>;
+  sesionPerdida: AlPerderLaSesion;
+  ocupado: boolean;
+  /** Por qué no se pudo guardar la sustitución, dicho adentro del diálogo, al lado de lo que se tocó. */
+  fallo: string | null;
+  onElegir: (elegido: EjercicioNombrado) => void;
+  onCerrar: () => void;
+}) {
+  const t = TEXTOS_DE_LA_SUSTITUCION;
+  const [texto, setTexto] = useState('');
+  const [resultados, setResultados] = useState<readonly EjercicioEncontrado[] | null>(null);
+  const [falloDeBusqueda, setFalloDeBusqueda] = useState(false);
+  const [buscando, setBuscando] = useState(false);
+  // Cada vez que se abre, la búsqueda empieza de cero.
+  useEffect(() => {
+    if (visible) return;
+    setTexto('');
+    setResultados(null);
+    setFalloDeBusqueda(false);
+  }, [visible]);
+  if (!sustitucion) return null;
+  const { planificado, ejecutado } = sustitucion;
+
+  async function hacerLaBusqueda() {
+    if (buscando) return;
+    setBuscando(true);
+    const r = await buscar(texto.trim());
+    setBuscando(false);
+    if (sesionPerdida(r)) return;
+    setFalloDeBusqueda(!r.ok);
+    setResultados(r.ok ? r.datos.data : null);
+  }
+
+  const opciones = sustitutosPosibles(sustitucion, resultados ?? []);
+  return (
+    <Dialogo visible={visible} titulo={COPY_ENTRENAMIENTO.sustituirEjercicio} onCerrar={onCerrar} ocupado={ocupado}>
+      <Dato etiqueta={COPY_ENTRENAMIENTO.planificado} valor={planificado.nombre} />
+      {ejecutado ? <LineaDeLaSustitucion ejecutado={ejecutado.nombre} /> : null}
+      <Parrafo tenue>{t.ayuda}</Parrafo>
+      {sustitucion.registradas > 0 ? <Parrafo tenue>{t.yaRegistradas(sustitucion.registradas)}</Parrafo> : null}
+      <Campo etiqueta={t.campo} value={texto} onChangeText={setTexto} autoCorrect={false} returnKeyType="search" onSubmitEditing={() => void hacerLaBusqueda()} />
+      <Boton texto={t.buscar} tipo="secundario" onPress={() => void hacerLaBusqueda()} ocupado={buscando} deshabilitado={ocupado} />
+      {falloDeBusqueda ? <Aviso tipo="error" titulo={t.noSePudoBuscar} /> : null}
+      {resultados && opciones.length === 0 ? <Parrafo tenue>{t.sinResultados}</Parrafo> : null}
+      {opciones.map((e) => (
+        <Boton
+          key={e.versionId}
+          texto={`${COPY_ENTRENAMIENTO.confirmarSustitucion}: ${nombreConAlternativo(e.name, e.matchedAlternativeName)}${e.externalSource ? ` · ${COPY_INTEGRACIONES.importadoDe} ${ETIQUETA_DE_PROVEEDOR[e.externalSource.provider]}` : ''}`}
+          tipo="secundario"
+          onPress={() => onElegir({ versionId: e.versionId, nombre: e.name })}
+          deshabilitado={ocupado}
+        />
+      ))}
+      {ejecutado ? <Boton texto={t.volverAlPlanificado(planificado.nombre)} tipo="secundario" onPress={() => onElegir(planificado)} deshabilitado={ocupado} /> : null}
+      {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
+    </Dialogo>
+  );
+}
+
 // ─── Antes de finalizar ─────────────────────────────────────────────────────────────────────────
 
 export interface TiemposDelResumen {
@@ -794,14 +912,23 @@ export function TiemposMarcados({ tiempos }: { tiempos: TiemposDelResumen }) {
   );
 }
 
-/** Por ejercicio, «N de M series registradas» y las que quedan «Sin registrar» (DL-106: la ausencia no es «no realizada»). */
+/**
+ * Por ejercicio, «N de M series registradas», las que quedan «Sin registrar» (DL-106: la ausencia no es «no realizada»)
+ * y la sustitución, si la hay: antes de confirmar se ven el planificado y el ejecutado (B10-06:824-838; DL-151).
+ */
 export function SeriesDelResumen({ resumen }: { resumen: readonly ResumenDelEjercicio[] }) {
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
   return (
     <View>
       {resumen.map((r) => (
-        <View key={r.prescriptionId} style={estilos.itemDeRutina} accessible accessibilityLabel={`${r.nombre}: ${e.seriesRegistradas(r.registradas, r.planificadas)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}` : ''}`}>
+        <View
+          key={r.prescriptionId}
+          style={estilos.itemDeRutina}
+          accessible
+          accessibilityLabel={`${r.nombre}${r.ejecutado ? `. ${COPY_ENTRENAMIENTO.ejecutado}: ${r.ejecutado}, ${COPY_ENTRENAMIENTO.sustituido.toLowerCase()}` : ''}: ${e.seriesRegistradas(r.registradas, r.planificadas)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}` : ''}`}
+        >
           <Text style={estilos.tituloDeBloque}>{r.nombre}</Text>
+          {r.ejecutado ? <LineaDeLaSustitucion ejecutado={r.ejecutado} /> : null}
           <Text style={estilos.textoDeBloque}>{e.seriesRegistradas(r.registradas, r.planificadas)}</Text>
           {r.sinRegistrar.length > 0 ? <Text style={estilos.detalle}>{`${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}`}</Text> : null}
         </View>
@@ -834,6 +961,8 @@ const estilos = estilosPorTema((COLOR) => ({
   ejercicioApilado: { flexDirection: 'column', alignItems: 'flex-start' },
   datosDelEjercicio: { flex: 1, minWidth: 140 },
   nombreDelEjercicio: { fontSize: 19, fontWeight: '800', color: COLOR.texto },
+  // «Ejecutado: …» y la insignia «Sustituido», en un renglón que se parte si no entra.
+  sustitucion: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8 },
   detalle: { fontSize: 14, lineHeight: 20, color: COLOR.tenue },
   nota: { fontSize: 13, lineHeight: 18, color: COLOR.tenue, marginTop: 2 },
   notaCentrada: { fontSize: 14, lineHeight: 20, color: COLOR.tenue, textAlign: 'center' },
