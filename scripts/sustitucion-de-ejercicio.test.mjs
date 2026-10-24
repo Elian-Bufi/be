@@ -191,7 +191,7 @@ test('3 · antes de reasignar series se pregunta cuáles: también las del telé
   const unaGuardada = borrador('v2', { granularity: 'SET', exercises: [registrado(BANCA, PLANIFICADO, [serie(1, 60, 10)])] });
   assert.equal(
     sus.textoDeLaConfirmacion(sus.sustitucionDe(BANCA, unaGuardada, []), MANCUERNAS),
-    'La serie que ya registraste de «Press de banca» pasa a contar como «Press con mancuernas». Sus datos no cambian, y lo planificado por tu profesional tampoco.',
+    'La serie que ya registraste de «Press de banca» pasa a contar como «Press con mancuernas», y las que registres después también. Sus datos no cambian, y lo planificado por tu profesional tampoco.',
   );
   // Una pendiente en el teléfono cuenta: cuando se envíe, se suma al ejercicio con su ejecutado.
   const pendiente = { prescriptionId: 'pA', performedExerciseVersionId: BANCA.exerciseVersionId, serie: serie(2, 60, 9), enConflicto: false };
@@ -229,8 +229,22 @@ test('4 · volver al planificado con series las devuelve a él, tal cual, y ante
   });
   assert.equal(
     sus.textoDeLaConfirmacion(sus.sustitucionDe(BANCA, conSeries, []), PLANIFICADO),
-    'Las 2 series que ya registraste de «Press con mancuernas» pasan a contar como «Press de banca», el ejercicio planificado. Sus datos no cambian, y lo planificado por tu profesional tampoco.',
+    'Las 2 series que ya registraste de «Press con mancuernas» pasan a contar como «Press de banca», el ejercicio planificado, y las que registres después también. Sus datos no cambian, y lo planificado por tu profesional tampoco.',
   );
+});
+
+test('3 · el alcance se dice antes de elegir: el ejercicio entero en esta sesión, nunca una serie sola', () => {
+  // Sin series registradas no hay confirmación: lo dice la ayuda del diálogo, que se ve antes de buscar.
+  const ayuda = sus.TEXTOS_DE_LA_SUSTITUCION.ayuda;
+  assert.match(ayuda, /todas las series de este ejercicio en esta sesión/);
+  assert.match(ayuda, /las que ya registraste y las que faltan/);
+  assert.match(ayuda, /no se puede cambiar una serie sola/);
+  // Con series registradas, la confirmación también dice que las que vienen se registran como el elegido.
+  const conUna = borrador('v2', { granularity: 'SET', exercises: [registrado(BANCA, PLANIFICADO, [serie(1, 60, 10)])] });
+  assert.match(sus.textoDeLaConfirmacion(sus.sustitucionDe(BANCA, conUna, []), MANCUERNAS), /y las que registres después también/);
+  // Y lo que se manda es un realizado para el ejercicio, no uno por serie: ninguna serie lleva su propio ejercicio.
+  const cambios = sus.cambiosParaSustituir(conUna, BANCA, MANCUERNAS.versionId);
+  assert.ok(cambios.exercises.every((e) => !('sets' in e) || e.sets.every((s) => !('performedExerciseVersionId' in s) && !('exerciseVersionId' in s))));
 });
 
 // ─── 5. Los tiempos no se tocan ─────────────────────────────────────────────────────────────────

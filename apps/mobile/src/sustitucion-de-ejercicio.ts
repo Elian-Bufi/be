@@ -30,7 +30,13 @@ import { cantidadDeSeries, COPY_ENTRENAMIENTO, numero, type BorradorDeEjecucion,
 import { ejerciciosParaGuardar, filasDelEjercicio, guardadasDe, type SerieLocal } from './series-de-la-sesion';
 
 export const TEXTOS_DE_LA_SUSTITUCION = {
-  ayuda: 'Buscá el ejercicio que hiciste en lugar del planificado. Lo planificado no cambia, y el plan de cada serie sigue siendo el suyo.',
+  /**
+   * El alcance va dicho antes de elegir (encargo del 2026-10-23): la sustitución vale para el ejercicio entero en esta
+   * sesión, también para las series que faltan, y no hay sustitución de una serie sola (el contrato admite un realizado
+   * por ejercicio).
+   */
+  ayuda:
+    'Buscá el ejercicio que hiciste en lugar del planificado. Vale para todas las series de este ejercicio en esta sesión, las que ya registraste y las que faltan: no se puede cambiar una serie sola. Lo planificado no cambia, y el plan de cada serie sigue siendo el suyo.',
   campo: 'Buscar el ejercicio que hiciste',
   buscar: 'Buscar',
   noSePudoBuscar: 'No pudimos buscar en el catálogo. Probá de nuevo.',
@@ -135,8 +141,9 @@ export function sustitutosPosibles<E extends { readonly exerciseId: string; read
 }
 
 /**
- * Lo que se le pregunta antes de sustituir un ejercicio que ya tiene series: cuáles pasan a contar como el elegido. `null`
- * si no hay series registradas (no hay nada que reasignar) o si se eligió el que ya figura.
+ * Lo que se le pregunta antes de sustituir un ejercicio que ya tiene series: cuáles pasan a contar como el elegido, y que
+ * las que registre después también (un ejercicio, un realizado). `null` si no hay series registradas (no hay nada que
+ * reasignar; el alcance lo dice la ayuda del diálogo) o si se eligió el que ya figura.
  */
 export function textoDeLaConfirmacion(s: SustitucionDelEjercicio, elegido: EjercicioNombrado): string | null {
   const actual = s.ejecutado ?? s.planificado;
@@ -144,5 +151,5 @@ export function textoDeLaConfirmacion(s: SustitucionDelEjercicio, elegido: Ejerc
   const cuantas = s.registradas === 1 ? 'La serie que ya registraste' : `Las ${numero(s.registradas, 0)} series que ya registraste`;
   const pasan = s.registradas === 1 ? 'pasa' : 'pasan';
   const destino = elegido.versionId === s.planificado.versionId ? `«${elegido.nombre}», el ejercicio planificado` : `«${elegido.nombre}»`;
-  return `${cuantas} de «${actual.nombre}» ${pasan} a contar como ${destino}. Sus datos no cambian, y lo planificado por tu profesional tampoco.`;
+  return `${cuantas} de «${actual.nombre}» ${pasan} a contar como ${destino}, y las que registres después también. Sus datos no cambian, y lo planificado por tu profesional tampoco.`;
 }

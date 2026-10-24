@@ -5132,4 +5132,9 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 
 **Lo que falta:** probarlo en el teléfono con la próxima candidata. Este PR no trae APK: el diálogo con el teclado, TalkBack, sin conexión y una sustitución con un descanso en curso.
 
+**Compatibilidad, revisada el 2026-10-23 sobre main `0fb1bff`:**
+- Después de esta rama, #189 sumó `origin` a cada fila de API-TRN-13-BUSQUEDA (DL-141 D-6). La APK busca con el cliente compartido, así que una APK construida desde esta rama al día con main lo lee; una construida desde la base anterior (`ad12d54`) lo rechazaría (`RESPUESTA_NO_RECONOCIDA`). La APK de la sustitución se construye desde la rama al día.
+- Hasta hoy API-TRN-13-BUSQUEDA era solo del website. Cuando se publique una APK con esta lectura, su forma queda congelada como las demás (DL-152, #198): un campo nuevo va en otra operación.
+- **El alcance de R-2, dicho antes de elegir.** La ayuda del diálogo dice que la sustitución vale para todas las series del ejercicio en esa sesión, las registradas y las que faltan, y que no se puede cambiar una serie sola; con series registradas, la confirmación suma «y las que registres después también». No hay sustitución por serie: el contrato admite un realizado por ejercicio, y la prueba lo fija.
+
 **Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
