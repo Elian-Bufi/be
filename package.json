@@ -18,7 +18,8 @@
     "schema": "prisma/schema.prisma"
   },
   "overrides": {
-    "multer": "2.4.0",
+    "multer": "2.5.0",
+    "body-parser": "2.4.0",
     "deepmerge-ts": "8.0.2",
     "next": {
       "postcss": "8.5.28"
