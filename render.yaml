@@ -77,6 +77,14 @@ services:
       # El secreto con que la tarea programada be-recordatorios llama a la corrida interna. Lo genera Render.
       - key: BE_SECRETO_DE_TAREAS
         generateValue: true
+      # WP-ADMINISTRACION (DL-155, PR #210): la clave del servidor que protege el segundo factor de Administración. Cifra
+      # los autenticadores guardados y firma las huellas de los códigos de recuperación. No es el código de seis dígitos de
+      # la aplicación autenticadora. Render la genera una sola vez (base64 de 256 bits) y nunca se versiona ni se muestra.
+      # Va antes que el código, en un PR solo de configuración (DL-008): main todavía no la lee. Sin ella, /admin responde
+      # «no configurada» (503) y el resto de BE sigue; reemplazarla deja sin valor todos los autenticadores y los códigos de
+      # recuperación, y cada administrador vuelve a configurarlo (EVIDENCIA/ADMINISTRACION/OPERACION.md, con #210).
+      - key: BE_CLAVE_DEL_SEGUNDO_FACTOR
+        generateValue: true
 
   # DL-133 (WP-NOVEDADES-Y-AVISOS) y DL-137 (la agenda de entrenamiento): los recordatorios diarios. 07 §24: «un cron
   # administrado de la plataforma llamando un endpoint interno idempotente». Render programa en UTC: 13:00, 18:00 y 01:00
