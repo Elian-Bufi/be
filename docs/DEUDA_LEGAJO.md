@@ -5309,6 +5309,13 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - Hasta hoy API-TRN-13-BUSQUEDA era solo del website. Cuando se publique una APK con esta lectura, su forma queda congelada como las demás (DL-152, #198): un campo nuevo va en otra operación.
 - **El alcance de R-2, dicho antes de elegir.** La ayuda del diálogo dice que la sustitución vale para todas las series del ejercicio en esa sesión, las registradas y las que faltan, y que no se puede cambiar una serie sola; con series registradas, la confirmación suma «y las que registres después también». No hay sustitución por serie: el contrato admite un realizado por ejercicio, y la prueba lo fija.
 
+**Revisión del 2026-10-25 (encargo de Dirección, etapa B), sobre main `3724d3d`:**
+- **Al día con main** (merge, sin reescribir historia). Un solo conflicto, en este registro: quedan DL-151 a DL-154.
+- **Contra lo que pide la etapa B:** lo planificado y lo ejecutado separados (R-1); la sustitución vale para todas las series del ejercicio en la sesión, las registradas y las pendientes del teléfono (R-2); el alcance y cuántas series pasan se dicen antes de confirmar, nunca como «solo las próximas» (R-2); los datos de cada serie no cambian y no hay equivalencias de carga; los tiempos, el descanso y la fila enfocada no se tocan (R-4); se puede volver al planificado; el aviso de un sustituido sin series sigue (R-3); sin sustitución por serie ni alternativas aprobadas. Todo estaba; faltaba decir bien la falta de conexión.
+- **R-5, dicho con sus palabras:** buscar sin conexión dice que sustituir la necesita y que lo registrado sigue en el teléfono; guardar sin respuesta dice que no se sabe si llegó, relee el borrador y conserva lo escrito.
+- **Compatibilidad:** API-TRN-13-BUSQUEDA no la leen la 0.13.2 ni la 0.17.0-candidata.3, así que las lecturas congeladas (DL-152) no cambian. Cuando se publique una candidata con la sustitución, su lectura se congela como las demás.
+- **Comprobado en local:** las pruebas de la APK (sustitución 16, sesión enfocada, tiempos, compatibilidad, sesión en curso, reloj y copy: 71 de 71), el tipado de la APK, y la integración de la sustitución y de las lecturas de las APK contra PostgreSQL (22 de 22). El guion del teléfono está en `EVIDENCIA/SUSTITUCION-DE-EJERCICIOS/GUION-DEL-TELEFONO.md`, con el cambio después de registrar series primero.
+
 **Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
 
 ---
