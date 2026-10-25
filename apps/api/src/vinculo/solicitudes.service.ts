@@ -178,6 +178,11 @@ export class SolicitudesService {
 
     const cuentas = await this.bloquearCuentas(tx, profesionalId, asesoradoId);
     if (cuentas.get(contraparte) !== 'OPERATIVA') throw errores.recursoNoEncontrado();
+    // WP-ADMINISTRACION (DL-155): una identidad administrativa no es parte de un vínculo (identidad separada). Como contraparte
+    // es el mismo 404 que una cuenta que no opera o que no existe: no se revela que es administrativa.
+    const [administrativa] = await tx.$queryRaw<{ si: boolean }[]>`
+      SELECT EXISTS (SELECT 1 FROM "rol_administrativo" WHERE "identidad_id" = ${contraparte}::uuid AND "estado" = 'VIGENTE') AS "si"`;
+    if (administrativa?.si) throw errores.recursoNoEncontrado();
     if (cuentas.get(p.solicitanteId) !== 'OPERATIVA') throw errores.estadoNoPermite();
 
     const eleg = await this.elegibilidad(tx, profesionalId, asesoradoId, alcance);
@@ -594,10 +599,7 @@ export class SolicitudesService {
       { profesional_operativo: boolean; asesorado_operativo: boolean; perfil: boolean; verificado: boolean; habilitado: boolean }[]
     >`
       SELECT EXISTS (SELECT 1 FROM "identidad" WHERE "id" = ${profesionalId}::uuid AND "estado_operativo_de_cuenta" = 'OPERATIVA') AS "profesional_operativo",
-             -- WP-ADMINISTRACION (DL-155): una identidad administrativa no es parte de un vínculo (identidad separada): se
-             -- la trata como una contraparte que no opera, con el mismo rechazo, sin decir por qué.
-             EXISTS (SELECT 1 FROM "identidad" WHERE "id" = ${asesoradoId}::uuid AND "estado_operativo_de_cuenta" = 'OPERATIVA')
-               AND NOT EXISTS (SELECT 1 FROM "rol_administrativo" WHERE "identidad_id" = ${asesoradoId}::uuid AND "estado" = 'VIGENTE') AS "asesorado_operativo",
+             EXISTS (SELECT 1 FROM "identidad" WHERE "id" = ${asesoradoId}::uuid AND "estado_operativo_de_cuenta" = 'OPERATIVA') AS "asesorado_operativo",
              EXISTS (SELECT 1 FROM "perfil_profesional" WHERE "identidad_id" = ${profesionalId}::uuid) AS "perfil",
              EXISTS (SELECT 1 FROM "verificacion_profesional" WHERE "identidad_id" = ${profesionalId}::uuid
                         AND "alcance" = ${alcance}::"Alcance" AND "estado" = 'VERIFICADO') AS "verificado",
