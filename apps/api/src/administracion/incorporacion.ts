@@ -65,7 +65,8 @@ async function emitirCodigo(tx: Prisma.TransactionClient, identidadId: string, m
  * - Primero se toman las filas de sus autenticadores (FOR UPDATE): si una confirmación de API-ADM-08 está activando uno en
  *   ese momento, el comando la espera y después lo ve ACTIVO y lo revoca. Sin esto, la revocación podía saltear un
  *   autenticador que se activaba al mismo tiempo (revisión de seguridad del 2026-10-25). API-ADM-07 y 08 además toman la
- *   identidad en modo compartido, que choca con el modo exclusivo de `identidadDe`.
+ *   identidad en modo compartido, y API-ADM-09 (renovar los códigos) en modo exclusivo: las dos chocan con el modo
+ *   exclusivo de `identidadDe`, así que el comando invalida también un lote que se confirmó justo antes (pasada de cierre).
  * - Al final se comprueba que no quedó ninguno activo ni pendiente: si quedara, el comando falla entero, en vez de decir
  *   «Listo» con un autenticador vivo.
  */

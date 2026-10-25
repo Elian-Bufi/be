@@ -1,12 +1,22 @@
 # Evidencia · Administración (WP-ADMINISTRACION, DL-155)
 
 Qué hay acá: las capturas de la consola `/admin` tomadas por el recorrido de navegador `administracion`
-(`test/navegador/recorridos.mjs`) y el procedimiento del operador (`OPERACION.md`). La definición del paquete está en
+(`test/navegador/recorridos.mjs`), el procedimiento del operador (`OPERACION.md`) y la prueba de concurrencia de la
+renovación de códigos (`CONCURRENCIA-DE-LA-RENOVACION.md`). La definición del paquete está en
 `docs/paquetes/WP-ADMINISTRACION.md`.
 
 **Estado:** implementado y probado de forma automática (integración, contrato y navegador). **No** está integrado ni
 desplegado: vive en la rama `wp-administracion` (PR #210, borrador). Nadie lo usó todavía con un lector de pantalla ni
 con personas.
+
+**Alcance de esta entrega:**
+- **Administración gestiona perfiles profesionales que ya existen en BE**: los que creó el servicio interno (la siembra
+  de `test` o las pruebas), con sus áreas presentadas. Ahí registra observaciones, verifica o rechaza, suspende y
+  rehabilita, y concede o retira la habilitación, área por área.
+- **El alta completa de profesionales nuevos sigue pendiente**: el registro como profesional, la presentación de
+  documentos y la revisión o certificación de matrículas no están en este paquete (`WP-ADMINISTRACION.md`, §2 y §15). Una
+  persona que se registra con la intención de ser profesional no aparece en la lista hasta que exista ese circuito.
+- «Habilitado para operar en BE» no es «matrícula certificada».
 
 ## Las capturas
 
@@ -45,4 +55,6 @@ los recorridos, en el trabajo `recorridos`, y las capturas quedan en el artefact
 
 - Un lector de pantalla real (NVDA, VoiceOver): el recorrido comprueba el foco y los nombres, no cómo se usa.
 - Personas: nadie de Administración usó la consola todavía.
-- El ambiente `test`: hace falta `BE_CLAVE_DEL_SEGUNDO_FACTOR` en `be-api` (ver `OPERACION.md`, sección 1).
+- El ambiente `test`: hace falta `BE_CLAVE_DEL_SEGUNDO_FACTOR` en `be-api`, con el PR de configuración que se integra
+  antes (ver `OPERACION.md`, sección 1). Todavía no se incorporó ningún administrador en `test`.
+- Que la CI pase no es una validación de profesionales ni una garantía absoluta de seguridad.

@@ -269,6 +269,10 @@ de estas decisiones: no hay visor global de auditoría.
 - **Bloqueos, en el orden único del proyecto** (`prisma/concurrencia.ts`): la identidad del profesional, después su
   verificación y su habilitación del área. El PDP y las comprobaciones de catálogos, plantillas y recetas toman esas filas
   en modo compartido: una decisión y una operación profesional en curso quedan siempre una antes de la otra.
+- **Las credenciales del administrador, también en ese orden:** renovar los códigos de recuperación (API-ADM-09) toma la
+  identidad del administrador en modo exclusivo, como el comando del operador, y con ella tomada vuelve a leer la sesión y
+  su segundo factor. Configurar y confirmar el autenticador la toman en modo compartido. Queda como máximo un lote de
+  códigos vigente, y una renovación que quedó ordenada después de una revocación no emite códigos (pasada de cierre, §14).
 - **Efecto inmediato:** el PDP y esas comprobaciones leen el estado en cada pedido, sin caché. Una sesión abierta del
   profesional no sirve para operar el área suspendida desde el pedido siguiente; las otras áreas siguen. No se revocan
   las sesiones del profesional (DL-157).
@@ -386,7 +390,7 @@ Sigue `docs/ux/GUIA-UX-UI.md` (escritorio primero: 1440, 1280 y 1024; Claro y Az
 | 7. Autor y fundamento; reintentos y conflictos | integración `administracion-decisiones` |
 | 8. Avisos una vez y solo de decisiones confirmadas | integración `administracion-avisos`; DL-152 con los tipos nuevos |
 | 9. Reiniciar y volver a preparar no deshace decisiones | integración `administracion-siembra` |
-| 10. Configuración y recuperación de MFA sin vía sin protección | integración `administracion-acceso` (reutilización, intentos, vencimientos, reemplazo, restablecimiento) |
+| 10. Configuración y recuperación de MFA sin vía sin protección | integración `administracion-acceso` (reutilización, intentos, vencimientos, reemplazo, restablecimiento); `administracion-renovacion-de-codigos` (renovaciones simultáneas y frente al operador o al cierre de la sesión) |
 
 Pruebas del 11A que este paquete ejercita: TEST-RF-007, TEST-RF-011, TEST-RF-012, TEST-RF-014 y TEST-AUTH-010 (la
 identidad administrativa no obtiene actoría profesional). Las lecturas congeladas de DL-152 no se tocan. La automatización
@@ -406,6 +410,14 @@ clases; los cinco y uno menor quedaron corregidos, cada uno con su prueba (bloqu
 | F4 | Reemplazar el autenticador o generar códigos dejaba vivas las otras sesiones | Terminan, con su motivo; la propia sigue |
 | F5 | Los rechazos de los guards no dejaban rastro | Se auditan con la operación intentada |
 | menor | El código de incorporación se miraba al empezar la configuración, no al confirmarla | Tiene que seguir vigente al confirmar |
+
+**Pasada de cierre del 2026-10-25 (encargo de Dirección, punto 1).** La hipótesis: renovar los códigos de recuperación no
+tomaba un bloqueo común ni volvía a leer la sesión. Se comprobó con PostgreSQL real y pruebas que ordenan las operaciones
+con bloqueos, no con pausas (`administracion-renovacion-de-codigos.int-spec.ts`), y **se confirmó**. Dos renovaciones
+simultáneas dejaban dos lotes vigentes, y una renovación que ya había pasado el guard emitía códigos después de un
+restablecimiento, una retirada o el cierre de su sesión. La corrección toma la identidad en modo exclusivo y vuelve a leer
+la sesión dentro de la transacción. Las 8 pruebas fallan sin ella, y cada parte tiene una mutación que la detecta. Detalle:
+`EVIDENCIA/ADMINISTRACION/CONCURRENCIA-DE-LA-RENOVACION.md`.
 
 ## 15. Fuera del paquete
 
@@ -434,3 +446,7 @@ con un solo operador), un visor global de auditoría y la recuperación de contr
 - **2026-10-25, más tarde**: la revisión de seguridad (§14) y sus correcciones en el segundo factor: bloqueo por fallos
   seguidos, pedidos simultáneos, el comando del operador, las otras sesiones al renovar credenciales y la auditoría de los
   guards. Las migraciones del paquete, que todavía no se desplegaron en ningún ambiente, se corrigieron en el lugar.
+- **2026-10-25, pasada de cierre** (encargo de Dirección): la concurrencia al renovar los códigos de recuperación,
+  confirmada y corregida (§8 y §14). Además, el procedimiento de la clave del segundo factor y del primer administrador
+  (`EVIDENCIA/ADMINISTRACION/OPERACION.md`), con la variable en un PR de configuración que se integra antes. El alcance
+  no cambia: perfiles profesionales que ya existen; el alta completa de profesionales nuevos sigue pendiente.

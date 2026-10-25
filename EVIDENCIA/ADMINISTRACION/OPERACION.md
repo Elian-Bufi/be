@@ -9,37 +9,91 @@ autenticador, los códigos de recuperación ni contraseñas.
 
 ## 1. Antes: la clave del segundo factor en el ambiente
 
-- La API necesita `BE_CLAVE_DEL_SEGUNDO_FACTOR`: 32 bytes o más en base64 (común o url). En Render, `generateValue: true`
-  en el servicio `be-api`. Va en un PR de configuración **antes** del código (DL-008), como cualquier variable nueva.
-- Sin la clave, `/admin` dice «La administración no está configurada en este ambiente» (503) y el resto de BE sigue igual.
-- **No se rota sin un plan.** La clave cifra los autenticadores y firma las huellas de los códigos de recuperación: si
-  cambia, todos los administradores tienen que configurar su autenticador de nuevo (paso 3 de la sección 4).
+**Qué es.** `BE_CLAVE_DEL_SEGUNDO_FACTOR` es una clave **del servidor**, no de una persona. De ella la API deriva dos
+claves (HKDF): una cifra el secreto de cada autenticador guardado en la base (AES-256-GCM) y la otra firma las huellas de
+los códigos de recuperación (HMAC). **No es el código de seis dígitos** de la aplicación autenticadora: ese código cambia
+cada 30 segundos, lo escribe el administrador al entrar y no se configura en ningún lado. Nadie tiene que conocer, copiar
+ni escribir esta clave.
 
-## 2. Incorporar a un administrador
+**Cómo se configura, sin que pase por el chat, el repositorio ni los registros:**
+1. Un PR **solo de configuración** (DL-008) agrega la variable al servicio `be-api` de `render.yaml`, con
+   `generateValue: true`, como `JWT_SECRET` y `BE_SECRETO_DE_TAREAS`. Se integra **antes** que Administración: el código
+   de `main` todavía no la lee, así que agregarla no cambia nada.
+2. Al integrarlo en `main`, Render sincroniza el Blueprint. Como la variable no existe, la crea con un valor al azar
+   (base64 de 256 bits, el formato que espera la API) y vuelve a desplegar `be-api`. El valor queda solo en Render: no pasa
+   por la terminal de nadie. Las sincronizaciones siguientes no lo generan de nuevo mientras la variable exista (Render
+   conserva las variables que ya están).
+3. **Comprobar que está, sin verla:** en el panel de Render, `be-api` → Environment muestra `BE_CLAVE_DEL_SEGUNDO_FACTOR`
+   con el valor oculto. No hace falta revelarlo. Después de integrar Administración, `/admin` muestra el formulario de
+   entrada y no el aviso «La administración no está configurada en este ambiente».
+
+Un efecto lateral conocido: cada push a `main` que toca `render.yaml` vuelve a aplicar la lista de IP de la base
+(`ipAllowList: []`). Si el operador había habilitado su IP para conectarse desde afuera, queda cerrada. Para el camino
+recomendado de la sección 2 no hace falta.
+
+**Si falta.** `/admin` responde 503 «La administración no está configurada en este ambiente». El resto de BE (el website
+profesional, las APK y la API) sigue igual. El comando `incorporar` funciona, porque no usa la clave, pero nadie puede
+configurar su autenticador hasta que la clave exista.
+
+**Si está mal formada** (solo puede pasar si se carga a mano: menos de 32 bytes o algo que no es base64): la API no
+arranca y dice «Configuración inválida: BE_CLAVE_DEL_SEGUNDO_FACTOR debe ser base64…», sin el valor. El chequeo de salud
+cancela ese despliegue y sigue la versión anterior, como con `JWT_SECRET` (docs/DESPLIEGUE.md).
+
+**Si se reemplaza** (por una sospecha de filtración, o porque se borró y se volvió a crear el servicio): los autenticadores
+guardados ya no se pueden descifrar y las huellas de los códigos de recuperación no coinciden. Ningún administrador
+completa el segundo factor: sus códigos fallan como «no válidos». Las sesiones, las cuentas y los datos de profesionales y
+personas no cambian. **No se rota sin un plan:** apenas cambia, `restablecer-segundo-factor` para cada administrador
+(sección 4) y cada uno vuelve a configurar su autenticador con el código de incorporación nuevo.
+
+## 2. Incorporar al primer administrador
 
 1. **La persona crea una cuenta común** desde el alta del website, con su correo y su contraseña. Tiene que ser una cuenta
-   aparte: no la de un profesional, no una que tenga vínculos o invitaciones, y nunca una cuenta de la demostración. En
-   `test` y `development`, solo correos sintéticos (`@example.invalid`).
-2. **El operador corre el comando** desde una terminal con acceso a la base de ese ambiente (la URL externa con la IP
-   habilitada, 07 §29, o el shell del servicio `be-api`), con la API compilada:
+   aparte: no la de un profesional, no una con vínculos o invitaciones, y nunca una cuenta de la demostración. En `test`
+   y `development` el comando solo acepta correos sintéticos (`@example.invalid`), como la siembra. El correo es solo el
+   identificador de la cuenta, porque BE no le escribe. La contraseña se guarda en un gestor de contraseñas, nunca en el
+   repositorio ni en un chat.
+2. **El operador corre el comando en el Shell de `be-api`** (panel de Render → `be-api` → Shell; los servicios pagos lo
+   tienen). La API ya está compilada en la imagen (`/app`) y el servicio tiene `DATABASE_URL` (por la red privada) y
+   `APP_ENV`: no se copia nada fuera de Render ni hace falta habilitar una IP.
 
    ```bash
-   APP_ENV=test DATABASE_URL=<la del ambiente> node apps/api/dist/administracion/comando.js incorporar \
+   cd /app
+   node apps/api/dist/administracion/comando.js incorporar \
      --correo <la cuenta> --nombre "<cómo figura en el historial>" \
      --fundamento "<por qué se incorpora>" --operador "<quién corre el comando>"
    ```
 
+   - Si el Shell no viera las variables del servicio, el comando lo dice («Falta DATABASE_URL.») y no hace nada.
+   - Conviene correrlo sin un despliegue en curso: un despliegue cierra las sesiones del Shell.
    - Comprueba que la cuenta existe, está operativa, no es administradora, no es de un profesional y no tiene vínculos.
    - Cierra las sesiones comunes de esa cuenta: desde ahí solo entra a Administración.
    - Muestra **una sola vez** el código de incorporación: un solo uso, vence a las 24 horas. La base guarda su huella, no
      el código.
-3. **El código se entrega por un canal seguro**, en persona o por uno que el operador ya conozca. Nunca junto con la
-   contraseña ni en el mismo mensaje que el correo.
+
+   Otro camino, con más pasos: una terminal propia con la API compilada y la URL externa de la base, con la IP habilitada
+   (07 §29), anteponiendo `APP_ENV=test DATABASE_URL=<la del ambiente>` al mismo comando.
+3. **El código se entrega por un canal seguro**, en persona o por uno que el operador ya conozca. Nunca va junto con la
+   contraseña ni en el mismo mensaje que el correo. Si el operador y el administrador son la misma persona, no se entrega:
+   se escribe directo en `/admin` y no se copia a ningún lado.
 4. **La persona entra en `/admin`** con su correo y su contraseña, escribe el código de incorporación, carga el QR (o la
    clave a mano) en una aplicación de códigos, confirma con un código y **guarda los diez códigos de recuperación** fuera
    de esa computadora. No se vuelven a mostrar.
 5. **Bitácora del operador** (08 §28.3-bis): fecha y hora, quién corrió el comando, la cuenta, el fundamento y el
    resultado. Sin el código. El comando además deja su registro de auditoría (`CMD-ADM-INCORPORAR`).
+
+### Comprobar que no accede a datos de salud
+
+- **Automático, en cada PR:** `test/integration/administracion.int-spec.ts` prueba que la sesión administrativa no
+  autentica en ninguna operación de personas ni de profesionales, ni de salud (401 en cada una), y que la lista y la ficha
+  no traen nada de las personas.
+- **A mano, en el ambiente, sin capturas con datos ni tokens:**
+  1. En `/admin`, la ficha de un profesional muestra su perfil (nombre visible, tipo, correo de acceso, estado de la
+     cuenta), por área la verificación y la habilitación, y el historial. De las personas, solo **cuántas** recibirían un
+     aviso, sin nombres. No aparecen fichas, registros, planes, fotos ni mediciones.
+  2. Con la cuenta administradora, intentar entrar al website profesional o a una APK: responde que el correo o la
+     contraseña no son válidos. Una identidad con el rol administrativo no abre sesiones de persona ni de profesional.
+  3. En la auditoría, lo que hizo esa cuenta son solo operaciones `API-ADM-…`; los comandos del operador quedan como
+     `CMD-ADM-…`.
 
 ## 3. Lo que el administrador resuelve solo
 
