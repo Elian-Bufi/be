@@ -18,6 +18,7 @@ Bloque 6 del encargo de consolidación del espacio profesional (2026-10-19): «u
 | `accesoRevocado` | La persona retira el consentimiento desde su teléfono. Al actualizar, la ficha dice «Acceso no disponible» y no ofrece acciones; recargar recupera la sesión, no el permiso. | Bloque 3 |
 | `faltaUnaParte` | En el navegador, sin tocar la API, falla una sola lectura: el objetivo vigente en el Plan y el estado del seguimiento en el Resumen. La vista muestra lo que llegó, el aviso dice qué falta, no aparece «crear versión» ni un «no hay», y «Reintentar lo que faltó» lo completa. | Bloque 5 |
 | `areaSugerida` | Con vínculos en una sola de sus dos áreas, esa viene elegida y dice que es una sugerencia, también en la descripción accesible del campo. Se puede cambiar, y la invitación se crea con la otra área. | Bloque 5 |
+| `completitud` | Ayer la persona registró el desayuno y no el almuerzo del plan. El indicador de calorías del Resumen cuenta ese día como subtotal y dice «1 comida del plan sin registro»; la lectura de Analizar de ayer dice cuál falta, y la de anteayer, con las dos comidas, dice que cada comida del plan está registrada. Nada dice «sin faltantes». | DL-153 |
 
 ## Cómo están hechos
 

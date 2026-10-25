@@ -611,9 +611,60 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate(() => document.body.innerText.includes('Falta una parte de esta vista'))), 'después de reintentar, no queda el aviso');
 }
 
+/**
+ * DL-153 (encargo del 2026-10-23, con los criterios que Dirección ratificó el 2026-10-24): el número de Nutrición no da
+ * una falsa certeza.
+ * - Ayer se registró el desayuno y no el almuerzo del plan: el indicador del Resumen lo cuenta como subtotal y dice la
+ *   comida del plan sin registro; la lectura de Analizar de ese día dice cuál falta.
+ * - Hace tres días, el almuerzo tiene una comida diferente sin cantidades: tiene registro, sin ser la opción del plan, y
+ *   el día es un subtotal por la cantidad.
+ * - Anteayer, con las dos, dice que cada comida del plan tiene registro. Nunca «sin faltantes».
+ * Registros dice el mismo conteo que Analizar.
+ */
+async function completitud({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  const indicador = 'li.indicador[data-metrica="nutricion.energia"]';
+  await p.waitForFunction((s) => document.querySelector(s)?.innerText.includes('comida del plan sin registro'), { timeout: ESPERA, polling: 100 }, indicador);
+  const tarjeta = await p.$eval(indicador, (e) => e.innerText);
+  assert.match(tarjeta, /kcal por día/, 'el valor es una media por día, dicha');
+  assert.match(tarjeta, /Media de los días con valor/, 'con su regla');
+  assert.match(tarjeta, /3 con valor/, 'los días que sostienen la media, con hoy en curso fuera');
+  assert.match(tarjeta, /2 subtotales/, 'ayer (falta el almuerzo) y hace tres días (la comida diferente no tiene cantidades)');
+  assert.match(tarjeta, /1 comida del plan sin registro/, 'solo la de ayer: la comida diferente cuenta como registro');
+  assert.ok(!(await p.evaluate(() => document.body.innerText.includes('sin faltantes'))), 'ninguna parte del Resumen dice «sin faltantes»');
+  await captura(p, salida, 'completitud-indicador-1440');
+
+  const lecturaDel = async (fecha, texto) => {
+    await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=analizar&m=nutricion.energia&f=${fecha}`, { waitUntil: 'networkidle2' });
+    await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, texto);
+    return p.$eval('.panel-de-lectura', (e) => e.innerText);
+  };
+  const ayer = await lecturaDel(d.comidas.ayer, `Sin registro: ${d.comidas.faltante}`);
+  assert.match(ayer, /Subtotal de lo registrado/);
+  assert.match(ayer, /Comidas del plan: 1 de 2 con registro · 1 sin registro/);
+  assert.ok(ayer.includes('Falta: 1 comida(s) del plan sin registro'), 'el motivo, con las palabras de la exportación');
+  await captura(p, salida, 'completitud-lectura-ayer-1440');
+  const conDiferente = await lecturaDel(d.comidas.haceTres, 'Comidas del plan: 2 de 2 con registro · 1 con opción del plan · 1 con comida diferente');
+  assert.match(conDiferente, /Subtotal de lo registrado/, 'por la cantidad desconocida de la comida diferente');
+  assert.ok(!conDiferente.includes('Sin registro:'), 'el almuerzo tiene registro');
+  await captura(p, salida, 'completitud-lectura-comida-diferente-1440');
+  const anteayer = await lecturaDel(d.comidas.anteayer, 'Comidas del plan: 2 de 2 con registro');
+  assert.match(anteayer, /Cada comida del plan con registro, con cantidades/);
+  assert.ok(!anteayer.includes('sin faltantes'), 'completo según el plan no se dice «sin faltantes»');
+
+  // Registros cuenta igual: la comida diferente da registro al almuerzo, y se dice cuántas tienen la opción del plan.
+  await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=registros`, { waitUntil: 'networkidle2' });
+  await esperarTexto(p, '2 de 2 comidas con registro');
+  await esperarTexto(p, '1 con opción del plan');
+  await esperarTexto(p, '1 de 2 comidas con registro');
+  assert.ok(!(await p.evaluate(() => /\d+ de \d+ comidas? registradas?\b/.test(document.body.innerText))), 'ya no dice «N de M comidas registradas»');
+  await captura(p, salida, 'completitud-registros-1440');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
