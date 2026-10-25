@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { errores } from '../http/errores';
+import { puedeOperarArea } from '../profesional/area-operable';
 
 /**
  * La capacidad antropométrica verificada y habilitada. Es lo que autoriza el catálogo y los métodos, que son
@@ -11,10 +12,6 @@ import { errores } from '../http/errores';
  * Especialidad (06:2774).
  */
 export async function exigirCapacidadAntropometrica(cliente: Prisma.TransactionClient, identidadId: string): Promise<void> {
-  const [fila] = await cliente.$queryRaw<{ ok: boolean }[]>`
-    SELECT EXISTS (
-      SELECT 1 FROM "verificacion_profesional" vp
-        JOIN "habilitacion" h ON h."identidad_id" = vp."identidad_id" AND h."alcance" = vp."alcance" AND h."estado" = 'CONCEDIDA'
-       WHERE vp."identidad_id" = ${identidadId}::uuid AND vp."alcance" = 'ANTROPOMETRIA' AND vp."estado" = 'VERIFICADO') AS "ok"`;
-  if (!fila?.ok) throw errores.accionNoPermitida();
+  // WP-ADMINISTRACION: con las filas del área en modo compartido, como el PDP (profesional/area-operable.ts).
+  if (!(await puedeOperarArea(cliente, identidadId, 'ANTROPOMETRIA'))) throw errores.accionNoPermitida();
 }

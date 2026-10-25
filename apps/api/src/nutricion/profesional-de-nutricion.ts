@@ -1,16 +1,15 @@
 import type { Prisma } from '@prisma/client';
 import { errores } from '../http/errores';
+import { puedeOperarArea } from '../profesional/area-operable';
 
 type Cliente = Pick<Prisma.TransactionClient, '$queryRaw'>;
 
-/** Si la identidad tiene Nutrición verificada y habilitada (sin lanzar). */
+/**
+ * Si la identidad tiene Nutrición verificada y habilitada (sin lanzar). Toma las filas del área en modo compartido
+ * (WP-ADMINISTRACION): una suspensión simultánea queda antes o después de la operación, nunca en el medio.
+ */
 export async function esProfesionalDeNutricion(cliente: Cliente, identidadId: string): Promise<boolean> {
-  const [fila] = await cliente.$queryRaw<{ ok: boolean }[]>`
-    SELECT EXISTS (
-      SELECT 1 FROM "verificacion_profesional" vp
-        JOIN "habilitacion" h ON h."identidad_id" = vp."identidad_id" AND h."alcance" = vp."alcance" AND h."estado" = 'CONCEDIDA'
-       WHERE vp."identidad_id" = ${identidadId}::uuid AND vp."alcance" = 'NUTRICION' AND vp."estado" = 'VERIFICADO') AS "ok"`;
-  return fila?.ok === true;
+  return puedeOperarArea(cliente, identidadId, 'NUTRICION');
 }
 
 /**

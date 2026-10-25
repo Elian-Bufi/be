@@ -157,6 +157,9 @@
 | DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
 | DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-4, con criterios) e **INTEGRADA** (#200, `cddd005`), desplegada en test: las comidas del plan se cuentan por la cobertura del registro (la opción del plan o una comida diferente, con el desglose), el subtotal dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-3, con criterios) e **INTEGRADA** (#203, `8aaec16`), desplegada en test: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; al abrir, el panel avisa que es el estado de hoy o, si solo se activó otra versión, que es la misma que se revisó; la forma de la revisión, que lee la APK, no cambia; falta la prueba con profesionales y con un lector de pantalla |
+| DL-155 | Encargo de Dirección · 2026-10-25 (WP-ADMINISTRACION, D-1 a D-7) | 09v8 PRO-09 a 13 · B10-03 §14, §21 y ADV-10-PRO-11 · 08 §25, §28, §29 · DL-036 · DL-020 | La administración de profesionales por área no tenía operación viable: PRO-09 a 13 resuelven «presentaciones» que no existen sin el alta (PRO-01 a 08), y B10-03 no permitía una lista de profesionales que el 09 no expone | **EN IMPLEMENTACIÓN** 2026-10-25, en borrador: familia ADM (API-ADM-01 a 13), con TOTP, identidad administrativa separada y comando interno; la lista la pide Dirección en D-1; sin integrar |
+| DL-156 | WP-ADMINISTRACION · 2026-10-25 | 05 UC-P02 §4.6.10 · REG-06-38 · INV-06-43 | Toda resolución identifica la versión revisada de una presentación, y en esta versión no hay presentaciones | **PROVISORIO** 2026-10-25: la versión revisada es la de la trayectoria del área al decidir (`version_previa` del hecho) |
+| DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **PROVISORIO** 2026-10-25: no se revocan; el corte es por operación, desde el pedido siguiente (la sesión autentica, no autoriza) |
 
 ---
 
@@ -5504,3 +5507,55 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 - Un lector de pantalla real.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-3, la CI de la integración pasa y la prueba con profesionales lo confirma.
+
+## DL-155 — Administración de profesionales por área: la familia ADM
+
+**Prioridad:** alta · **Documento:** 09v8 PRO-09 a 13 · B10-03 §14, §15, §21 y ADV-10-PRO-11 · 08 §25, §28 y §29 · DL-036 · DL-020 · **Estado:** EN IMPLEMENTACIÓN (2026-10-25, en borrador)
+
+**Qué dice el legajo.**
+- PRO-09 a 13 son las operaciones del administrador, con `SESSION_MFA`: listar y ver «presentaciones», resolverlas, suspender y rehabilitar un «scope» (09v8:930-1104).
+- Las presentaciones nacen de PRO-01 a 08, el alta del profesional, que en BE no existe: los profesionales los crea el servicio interno de DL-036.
+- B10-03 §21: «No se inventa listado administrativo global de profesionales si el contrato no lo expone» (ADV-10-PRO-11).
+- 08 §25: MFA obligatorio para el administrador; 08 §28: sin datos de salud.
+
+**Qué decidió Dirección el 2026-10-25.** D-1 A: gestionar profesionales ya registrados, «con las lecturas, búsqueda, filtros e historial necesarios para operar». D-2 TOTP, D-3 comando interno, D-4 sin suspensión de cuenta, D-5 información mínima, D-6 Novedades, D-7 la siembra no pisa una decisión humana. Identidad administrativa separada.
+
+**Opciones.**
+- **A.** Familia propia de BE, ADM, que adapta PRO-09 a 13 a lo que existe: la lista de profesionales y su ficha (PRO-09 y 10), y una sola operación de decisión por área (PRO-11, 12 y 13, más conceder y retirar la habilitación, que el 09 no tiene).
+- **B.** Implementar antes PRO-01 a 08 para que existan presentaciones, y usar PRO-09 a 13 tal cual. Es D-1 B, que Dirección descartó.
+
+**Provisorio en código.** A. La definición está en `docs/paquetes/WP-ADMINISTRACION.md`.
+
+**Condición de cierre.** El 09 incorpora la familia, o Dirección aprueba la integración del paquete y la prueba con personas lo confirma.
+
+## DL-156 — La «versión revisada» sin presentaciones
+
+**Prioridad:** media · **Documento:** 05 UC-P02 §4.6.10 («no puede resolver sin identificar la versión revisada») · REG-06-38 · INV-06-43 · **Estado:** PROVISORIO (2026-10-25)
+
+**Qué dice el legajo.** Toda resolución identifica una única versión efectivamente revisada y un único alcance. La versión es la de la presentación del profesional (06 §6.7).
+
+**Por qué no se puede tal cual.** En esta versión no hay presentaciones ni evidencia (D-1): el área tiene una trayectoria (`VerificacionProfesional`) con su versión, que avanza en cada transición.
+
+**Opciones.**
+- **A.** La versión revisada es la de la trayectoria al decidir: el hecho guarda `version_previa`, y la decisión se confirma contra la versión que vio el administrador (`expectedVersion`).
+- **B.** No resolver verificaciones hasta que existan presentaciones (PRO-01 a 08).
+
+**Provisorio en código.** A.
+
+**Condición de cierre.** Existen las presentaciones versionadas.
+
+## DL-157 — Suspender un área no revoca las sesiones del profesional
+
+**Prioridad:** media · **Documento:** 08 §26.3 («eventos que revocan sesiones: … suspensión de cuenta o de verificación profesional») · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 · **Estado:** PROVISORIO (2026-10-25)
+
+**Qué dice el legajo.** Suspender una verificación revoca las sesiones vigentes del profesional. A la vez, el corte de un acceso no depende de la sesión: «la sesión autentica, no autoriza» (08 §26.4), y el PDP decide en cada operación.
+
+**El choque.** Las sesiones son de la cuenta, no de un área. Revocarlas cortaría también las áreas que siguen habilitadas, y Dirección pidió el 2026-10-25 que la suspensión «no afecte otras áreas» y que las nuevas peticiones queden bloqueadas «aunque su sesión estuviera abierta».
+
+**Opciones.**
+- **A.** No revocar: el PDP y las comprobaciones del área deniegan desde el pedido siguiente, con la sesión abierta. Las otras áreas siguen.
+- **B.** Revocar todas las sesiones del profesional al suspender: corta también las otras áreas hasta que vuelva a entrar.
+
+**Provisorio en código.** A, con pruebas de que la sesión abierta no opera el área suspendida y sí las otras.
+
+**Condición de cierre.** El 08 aclara si la revocación es por área o por cuenta.

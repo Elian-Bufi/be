@@ -11,6 +11,7 @@ import {
 import type { Prisma, VistaDeAnalisis as FilaDeVista } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
+import { puedeOperarArea } from '../profesional/area-operable';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
@@ -173,12 +174,8 @@ export class VistasDeAnalisisService {
 
 /** Solo un profesional verificado y habilitado en algún alcance guarda vistas. Otro actor: 403. */
 async function exigirProfesional(tx: Tx, identidadId: string): Promise<void> {
-  const [fila] = await tx.$queryRaw<{ ok: boolean }[]>`
-    SELECT EXISTS (
-      SELECT 1 FROM "verificacion_profesional" vp
-        JOIN "habilitacion" h ON h."identidad_id" = vp."identidad_id" AND h."alcance" = vp."alcance" AND h."estado" = 'CONCEDIDA'
-       WHERE vp."identidad_id" = ${identidadId}::uuid AND vp."estado" = 'VERIFICADO') AS "ok"`;
-  if (fila?.ok !== true) throw errores.accionNoPermitida();
+  // WP-ADMINISTRACION: con las filas de sus áreas en modo compartido, como el PDP (profesional/area-operable.ts).
+  if (!(await puedeOperarArea(tx, identidadId))) throw errores.accionNoPermitida();
 }
 
 /** La vista del profesional, o el 404 neutral: una ajena no se distingue de una inexistente. */

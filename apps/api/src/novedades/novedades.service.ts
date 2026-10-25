@@ -218,8 +218,15 @@ export class NovedadesService {
  * lector tiene (o tuvo) a esa persona como asesorada, por la regla de DL-040; si no, esa persona es su profesional, y
  * va el nombre de su perfil profesional.
  */
+/**
+ * WP-ADMINISTRACION (D-6): las novedades de Administración. Su autoría (el administrador) queda en la base, pero se leen como
+ * de BE (`source: null`): el profesional y las personas no reciben la identidad del administrador.
+ */
+const DE_ADMINISTRACION: ReadonlySet<string> = new Set(['DECISION_ADMINISTRATIVA', 'ACCESO_PROFESIONAL_SUSPENDIDO', 'ACCESO_PROFESIONAL_RESTABLECIDO']);
+
 async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[]): Promise<Novedad[]> {
-  const fuentes = [...new Set(filas.map((f) => f.fuenteId).filter((x): x is string => x !== null))];
+  const deAdministracion = await textosDeAdministracion(tx, lectorId, filas.filter((f) => DE_ADMINISTRACION.has(f.tipo)));
+  const fuentes = [...new Set(filas.filter((f) => !DE_ADMINISTRACION.has(f.tipo)).map((f) => f.fuenteId).filter((x): x is string => x !== null))];
   // DL-140: quien escribió una nota de coordinación es siempre un profesional, y la nota es sobre una persona que el
   // lector acompaña (o acompañaba): se nombra por la regla de DL-040, con el vínculo de hoy entre los dos.
   const deNotas = filas.filter((f) => f.tipo === 'NOTA_DE_COORDINACION_RECIBIDA' && f.referenciaId !== null);
@@ -247,6 +254,22 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
   }
   return filas.map((f) => {
     const tipo = TIPO_API[f.tipo];
+    if (DE_ADMINISTRACION.has(f.tipo)) {
+      const texto = textoDeNovedad(tipo, { alcance: f.alcance, fuente: null, ...(deAdministracion.get(f.id) ?? {}) });
+      return {
+        newsId: f.id,
+        kind: tipo,
+        scope: f.alcance,
+        source: null,
+        title: texto.title,
+        body: texto.body,
+        date: null,
+        occurredAt: f.momentoDeOcurrencia?.toISOString() ?? null,
+        recordedAt: f.momentoDeRegistro.toISOString(),
+        readAt: f.lectura?.momentoDeRegistro.toISOString() ?? null,
+        open: { view: vistaDeNovedad(tipo, f.alcance, tipo === 'ADMINISTRATIVE_DECISION'), referenceId: null },
+      };
+    }
     const esNota = f.tipo === 'NOTA_DE_COORDINACION_RECIBIDA';
     const lectorEsProfesional = esNota || (f.fuenteId !== null && asesoradosDelLector.has(f.fuenteId));
     const fuente =
@@ -276,4 +299,59 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
       open: { view: vista, referenceId: vista === 'ADVISEE' ? ficha : vista === 'NUTRITION_REVIEW' || vista === 'TRAINING_REVIEW' ? f.referenciaId : null },
     };
   });
+}
+
+/**
+ * Lo que hace falta para escribir las novedades de Administración, leído al componer (el texto no se guarda):
+ * - de una decisión, al profesional: el hecho, el texto que se le comunicó (nunca el fundamento interno) y si con esa
+ *   decisión podía operar el área, según los hechos de su verificación y de su habilitación hasta ese momento (por su
+ *   secuencia), no según el estado de hoy;
+ * - del aviso a una persona: el nombre de su profesional, por el componente de vínculo que la novedad referencia.
+ * Solo se resuelve lo del propio lector (el hecho es sobre él; el vínculo es suyo).
+ */
+async function textosDeAdministracion(
+  tx: Tx,
+  lectorId: string,
+  filas: readonly FilaDeNovedad[],
+): Promise<Map<string, { decision?: { hecho: string; mensaje: string | null; puedeOperar: boolean }; profesional?: string }>> {
+  const datos = new Map<string, { decision?: { hecho: string; mensaje: string | null; puedeOperar: boolean }; profesional?: string }>();
+  const decisiones = filas.filter((f) => f.tipo === 'DECISION_ADMINISTRATIVA' && f.referenciaId !== null);
+  if (decisiones.length > 0) {
+    const ids = decisiones.map((f) => f.referenciaId as string);
+    const hechos = await tx.$queryRaw<{ id: string; tipo: string; mensaje: string | null; verificacion: string | null; habilitacion: string | null }[]>`
+      SELECT e."id"::text AS "id", e."tipo"::text AS "tipo", e."mensaje_al_profesional" AS "mensaje",
+             (SELECT v."estado_posterior" FROM "evento_de_verificacion" v
+               WHERE v."identidad_id" = e."identidad_id" AND v."alcance" = e."alcance" AND v."secuencia" <= e."secuencia"
+                 AND v."tipo"::text NOT LIKE 'Habilitacion%' AND v."estado_posterior" IS NOT NULL
+               ORDER BY v."secuencia" DESC LIMIT 1) AS "verificacion",
+             (SELECT h."estado_posterior" FROM "evento_de_verificacion" h
+               WHERE h."identidad_id" = e."identidad_id" AND h."alcance" = e."alcance" AND h."secuencia" <= e."secuencia"
+                 AND h."tipo"::text LIKE 'Habilitacion%'
+               ORDER BY h."secuencia" DESC LIMIT 1) AS "habilitacion"
+        FROM "evento_de_verificacion" e
+       WHERE e."id" = ANY(${ids}::uuid[]) AND e."identidad_id" = ${lectorId}::uuid`;
+    const porId = new Map(hechos.map((h) => [h.id, h]));
+    for (const f of decisiones) {
+      const h = porId.get(f.referenciaId as string);
+      if (h) datos.set(f.id, { decision: { hecho: h.tipo, mensaje: h.mensaje, puedeOperar: h.verificacion === 'VERIFICADO' && h.habilitacion === 'CONCEDIDA' } });
+    }
+  }
+  const avisos = filas.filter((f) => f.tipo !== 'DECISION_ADMINISTRATIVA' && f.referenciaId !== null);
+  if (avisos.length > 0) {
+    const componentes = await tx.alcanceDeVinculo.findMany({
+      where: { id: { in: avisos.map((f) => f.referenciaId as string) }, vinculo: { asesoradoId: lectorId } },
+      select: { id: true, vinculo: { select: { profesionalId: true } } },
+    });
+    const perfiles = await tx.perfilProfesional.findMany({
+      where: { identidadId: { in: [...new Set(componentes.map((c) => c.vinculo.profesionalId))] } },
+      select: { identidadId: true, nombreVisible: true },
+    });
+    const nombres = new Map(perfiles.map((p) => [p.identidadId, nombreDeProfesional(p)]));
+    const profesionalDe = new Map(componentes.map((c) => [c.id, nombres.get(c.vinculo.profesionalId) ?? nombreDeProfesional(null)]));
+    for (const f of avisos) {
+      const nombre = profesionalDe.get(f.referenciaId as string);
+      if (nombre) datos.set(f.id, { profesional: nombre });
+    }
+  }
+  return datos;
 }

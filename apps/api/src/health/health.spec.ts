@@ -22,6 +22,8 @@ const ENTORNO = {
     consultaProtegida: { maximo: 120, ventanaMs: 60000 },
     invitacion: { maximo: 10, ventanaMs: 900000 },
     reanudacion: { maximo: 300, ventanaMs: 900000 },
+    loginAdministrativo: { maximo: 5, ventanaMs: 900000 },
+    segundoFactor: { maximo: 10, ventanaMs: 900000 },
   },
   saltosDeProxy: 1,
   caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
@@ -34,6 +36,8 @@ const ENTORNO = {
   secretoDeTareas: null,
   // DL-138: sin client IDs, la familia GOO responde 503; nunca se consulta a Google.
   google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 1000 },
+  // WP-ADMINISTRACION: sin la clave, la administración responde «no configurada».
+  claveDelSegundoFactor: null,
 };
 
 function directorioCon(migraciones: string[]): string {
