@@ -15,10 +15,11 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
 
 | Etapa | Estado | Rama · worktree | PR | Último commit |
 |---|---|---|---|---|
-| A · Administración | **preparada**: definición, base, API, website, comando, pruebas (33 + TEST-CT), recorrido con capturas, procedimiento del operador y revisión de seguridad con sus correcciones | `wp-administracion` · `C:/Users/bufim/BE-admin` (sin `node_modules`: están en BE-comparacion) | #210 (borrador) | `b6dfa09` (CI verde, push y PR) |
+| A · Administración | **preparada**: definición, base, API, website, comando, pruebas (33 + TEST-CT), recorrido con capturas, procedimiento del operador y revisión de seguridad con sus correcciones | `wp-administracion` · `C:/Users/bufim/BE-admin` (sin `node_modules`: están en BE-ensayo) | #210 (borrador) | `b6dfa09` (CI verde, push y PR); después solo esta nota |
 | B · #195 sustitución | **preparada**: al día con main, R-5 con sus palabras, guion del teléfono; sin teléfono ni APK | `wp-apk-sustitucion` · `C:/Users/bufim/BE-Best/.claude/worktrees/agent-ad05c75238781c9c6` (sin `node_modules`) | #195 (borrador) | `d7ead1e` (CI verde) |
-| C · comparación de Nutrición | **en curso**: definición (`WP-NUTRICION-COMPARACION.md`, DL-158), dominio (`indicado-del-plan.ts`, contrato aditivo de PRJ-01, copy) con 11 pruebas verdes; siguen API, website, recorrido | `wp-nutricion-comparacion` (desde `3724d3d`) · `C:/Users/bufim/BE-comparacion` (con `node_modules`, Prisma generado) | — | sin commits todavía |
-| Ensayo conjunto | sin empezar | — | — | — |
+| C · comparación de Nutrición | **preparada**: definición (DL-158), dominio (13 pruebas + 1 de la exportación), contrato aditivo de PRJ-01, API, website (rombos, leyenda de tres capas, lectura, tabla, origen, descarga), integración (3) y recorridos `comparacion` y `comparacionConOpciones` con capturas en los dos temas | `wp-nutricion-comparacion` · `C:/Users/bufim/BE-comparacion` (sin `node_modules`) | #211 (borrador) | `21ae516` (CI en curso) |
+| Guía de estudio | **preparada**: guía, guion de tareas y respuestas aparte; 32 enlaces comprobados | `wp-tanda-guia` · `C:/Users/bufim/BE-guia` | #212 (borrador) | `ccecf5f` |
+| Ensayo conjunto | **armado**: A + B + C + guía, conflictos de C con A resueltos conservando las dos partes; prueba de cruces (2/2 local); comprobaciones locales y CI en curso | `ensayo/tanda-2026-10-25-no-integrar` · `C:/Users/bufim/BE-ensayo` (con `node_modules`, Prisma generado) | #213 (borrador, NO INTEGRAR) | `ec864ce` |
 
 ## Commits de A (en orden)
 
@@ -42,6 +43,8 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
 
 ## Comprobaciones hechas
 
+- C: dominio 876/876, scripts 464/464, API unitarias 157/157, integración local (comparación 3/3; análisis, comprensión y contrato 44/44), recorridos 2/2 (una corrida anterior cayó por una transacción vencida al preparar los datos con la máquina sin memoria: evidencia guardada, un solo reintento).
+
 - Dominio 873/873 (local). API unitarias 159 + 1 nueva de la clave (local).
 - Integración local (PG embebido :55462, base `be_admin_int`): administración 27/27; contrato 21/21 con el bloque ADM; las
   suites de reanudación, sesiones, Google, concurrencia, novedades, vínculo, cierre, esquema, máquinas, PDP y lecturas de
@@ -60,10 +63,9 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
 
 ## Siguiente acción
 
-1. Etapa C, en BE-comparacion: API de PRJ-01 (`fuentes.ts`: macros del objetivo; `lectura-proyecciones.ts`:
-   `objectiveSteps` y `planned`), prueba de integración, website (series, lienzo con la tercera capa, lectura, tabla,
-   exportación, origen del dato, «Cómo se lee»), recorrido con capturas en los dos temas, DL-158, commit, PR en borrador.
-2. Ensayo conjunto en una rama NO INTEGRAR; guía de estudio y guion de tareas con las respuestas aparte; informe final.
+1. Esperar la CI de #211, #212 y #213; si algo falla, buscar la causa y corregir en el paquete que corresponde (y volver a mezclar en el ensayo).
+2. Comprobaciones locales del ensayo: tipos, dominio, scripts, unitarias, integración de los cruces y recorridos de A y C.
+3. Informe final (diez secciones) y memoria; apagar el PostgreSQL propio (:55462).
 
 ## Entorno de la máquina
 
