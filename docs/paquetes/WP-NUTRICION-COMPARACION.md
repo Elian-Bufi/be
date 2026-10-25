@@ -1,7 +1,9 @@
 # WP-NUTRICION-COMPARACION · Objetivo, indicado y registrado en un mismo gráfico
 
-**Estado:** definido e implementado el 2026-10-25 (encargo de Dirección, etapa C) en la rama
-`wp-nutricion-comparacion`, sin integrar ni desplegar. Retoma la propuesta C de `docs/propuestas/AMPLIACIONES_2026-10-19.md` (#193), solo en el
+**Estado:** INTEGRADO en `main` el 2026-10-25 (#211, merge `7079677`) y desplegado en test. Se definió e implementó
+ese mismo día (encargo de Dirección, etapa C), y Dirección lo ratificó al autorizar la integración: «La comparación
+distingue objetivo, indicado y registrado, con las reglas de DL-158. No inventa un total diario cuando hay alternativas ni
+presenta la comparación como adherencia.» Retoma la propuesta C de `docs/propuestas/AMPLIACIONES_2026-10-19.md` (#193), solo en el
 website y solo en Nutrición. DEUDA_LEGAJO DL-158.
 
 ## 0. En criollo

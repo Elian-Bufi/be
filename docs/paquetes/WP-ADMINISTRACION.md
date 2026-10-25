@@ -1,9 +1,10 @@
 # WP-ADMINISTRACION · habilitación de profesionales por área
 
-**Estado: DEFINIDO y en implementación** desde el 2026-10-25, por el encargo de Dirección de ese día, que resuelve las
-decisiones D-1 a D-7. El trabajo va en PR en borrador: **no está integrado en `main` ni desplegado**. La aprobación de la
-integración es sobre el resultado completo. Lo que este documento decía el 2026-10-23 (lo que existía y lo que faltaba
-decidir) está resumido al final, en §17.
+**Estado: INTEGRADO** en `main` el 2026-10-25 (#210, merge `ea70404`) y desplegado en test, con la clave del segundo
+factor configurada por #214. Lo definió el encargo de Dirección de ese día, que resolvió D-1 a D-7, y Dirección ratificó el
+alcance y las reglas al autorizar la integración (§17). **Todavía no hay ningún administrador:** el primero se incorpora
+con `EVIDENCIA/ADMINISTRACION/OPERACION.md` (§2). Lo que este documento decía el 2026-10-23 (lo que existía y lo que
+faltaba decidir) está resumido al final, en §17.
 
 ## 0. En criollo
 
@@ -419,6 +420,17 @@ restablecimiento, una retirada o el cierre de su sesión. La corrección toma la
 la sesión dentro de la transacción. Las 8 pruebas fallan sin ella, y cada parte tiene una mutación que la detecta. Detalle:
 `EVIDENCIA/ADMINISTRACION/CONCURRENCIA-DE-LA-RENOVACION.md`.
 
+**Pendientes registrados** (las propuestas de la pasada de cierre; Dirección las dejó como pendientes al autorizar la
+integración, sin implementarlas):
+1. **Las dos pruebas que todavía esperan con una pausa,** F2 (`pausa(500)`) y F3 (`pausa(400)`) del bloque «Revisión de
+   seguridad» de `administracion.int-spec.ts`, pasan a la barrera por bloqueos de la renovación: soltar cuando
+   `pg_stat_activity` muestra al pedido esperando. Con el mismo criterio conviene mirar el cruce de la decisión, que da la
+   espera por buena con un plazo de 800 ms.
+2. **Una prueba de carrera para dos reemplazos del autenticador al mismo tiempo,** desde dos sesiones. Hoy está revisado
+   leyendo el código: en el peor cruce, la base corta uno por interbloqueo y, al repetirse, encuentra su sesión cerrada.
+3. **Auditar también los rechazos que ocurren dentro de la transacción,** como ya se auditan los de los guards. Por
+   ejemplo, la renovación que encuentra su sesión revocada responde 401 sin dejar rastro.
+
 ## 15. Fuera del paquete
 
 El alta pública de profesionales (PRO-01 a 08), la presentación y la revisión de documentos, la certificación de
@@ -432,8 +444,8 @@ con un solo operador), un visor global de auditoría y la recuperación de contr
   no permitía inventar: la pide Dirección en D-1.
 - **DL-156** · «la versión revisada» (UC-P02, REG-06-38) es la de la trayectoria del área, no la de una presentación.
 - **DL-157** · el 08 §26.3 y PRO-12 dicen que suspender una verificación revoca las sesiones del profesional. Revocarlas
-  cortaría también las otras áreas, contra el criterio de Dirección («no afecta otras áreas»). Provisorio: no se revocan; el
-  corte es por operación (08 §26.4: «la sesión autentica, no autoriza»).
+  cortaría también las otras áreas, contra el criterio de Dirección («no afecta otras áreas»). Ratificado el 2026-10-25: no
+  se revocan; el corte es por operación (08 §26.4: «la sesión autentica, no autoriza»).
 
 ## 17. Historia de este documento
 
@@ -450,3 +462,15 @@ con un solo operador), un visor global de auditoría y la recuperación de contr
   confirmada y corregida (§8 y §14). Además, el procedimiento de la clave del segundo factor y del primer administrador
   (`EVIDENCIA/ADMINISTRACION/OPERACION.md`), con la variable en un PR de configuración que se integra antes. El alcance
   no cambia: perfiles profesionales que ya existen; el alta completa de profesionales nuevos sigue pendiente.
+- **2026-10-25, integración** (autorizada por Dirección): #214 (la clave, `20a7152`) y #210 (`ea70404`) en `main`,
+  desplegados en test y comprobados. Administración sin sesión responde 401, lo que prueba que la clave está, `/admin`
+  muestra la entrada, y una cuenta común recibe 403 en sus operaciones y el 401 neutral al intentar entrar. Dirección
+  ratificó:
+  - el alcance: los perfiles profesionales que ya existen; el alta completa sigue pendiente;
+  - la suspensión por área sin cerrar las sesiones globales, con el servidor rechazando las operaciones del área
+    suspendida (DL-157);
+  - la versión revisada de la trayectoria del área y su control de conflictos (DL-156);
+  - las reglas del segundo factor, incluida la recuperación del autenticador bloqueado.
+
+  Las tres propuestas de la pasada de cierre quedan como pendientes (§14). Todavía no hay ningún administrador:
+  incorporar al primero es el paso siguiente, y lo autoriza Dirección.

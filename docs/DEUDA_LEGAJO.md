@@ -154,14 +154,14 @@
 | DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
-| DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **IMPLEMENTADO** 2026-10-19 en la sesión enfocada (PR en borrador, sin APK nueva): las reglas de la 0.13.2, dichas (R-1 a R-6); falta el teléfono |
+| DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **RATIFICADO** por Dirección el 2026-10-25 (R-1 a R-6) e **INTEGRADO** en main (#195, `0be86b3`), sin APK nueva: la sustitución alcanza a todas las series de ese ejercicio en la sesión y no modifica el plan; la APK que la trae todavía no existe: falta la prueba en el teléfono con una candidata que autorice Dirección |
 | DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
 | DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-4, con criterios) e **INTEGRADA** (#200, `cddd005`), desplegada en test: las comidas del plan se cuentan por la cobertura del registro (la opción del plan o una comida diferente, con el desglose), el subtotal dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-3, con criterios) e **INTEGRADA** (#203, `8aaec16`), desplegada en test: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; al abrir, el panel avisa que es el estado de hoy o, si solo se activó otra versión, que es la misma que se revisó; la forma de la revisión, que lee la APK, no cambia; falta la prueba con profesionales y con un lector de pantalla |
-| DL-155 | Encargo de Dirección · 2026-10-25 (WP-ADMINISTRACION, D-1 a D-7) | 09v8 PRO-09 a 13 · B10-03 §14, §21 y ADV-10-PRO-11 · 08 §25, §28, §29 · DL-036 · DL-020 | La administración de profesionales por área no tenía operación viable: PRO-09 a 13 resuelven «presentaciones» que no existen sin el alta (PRO-01 a 08), y B10-03 no permitía una lista de profesionales que el 09 no expone | **EN IMPLEMENTACIÓN** 2026-10-25, en borrador: familia ADM (API-ADM-01 a 13), con TOTP, identidad administrativa separada y comando interno; la lista la pide Dirección en D-1; sin integrar |
-| DL-156 | WP-ADMINISTRACION · 2026-10-25 | 05 UC-P02 §4.6.10 · REG-06-38 · INV-06-43 | Toda resolución identifica la versión revisada de una presentación, y en esta versión no hay presentaciones | **PROVISORIO** 2026-10-25: la versión revisada es la de la trayectoria del área al decidir (`version_previa` del hecho) |
-| DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **PROVISORIO** 2026-10-25: no se revocan; el corte es por operación, desde el pedido siguiente (la sesión autentica, no autoriza) |
-| DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **IMPLEMENTADA** el 2026-10-25 en la rama `wp-nutricion-comparacion` (C-D1 opción A y C-D2, decididas por Dirección): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; sin integrar ni desplegar |
+| DL-155 | Encargo de Dirección · 2026-10-25 (WP-ADMINISTRACION, D-1 a D-7) | 09v8 PRO-09 a 13 · B10-03 §14, §21 y ADV-10-PRO-11 · 08 §25, §28, §29 · DL-036 · DL-020 | La administración de profesionales por área no tenía operación viable: PRO-09 a 13 resuelven «presentaciones» que no existen sin el alta (PRO-01 a 08), y B10-03 no permitía una lista de profesionales que el 09 no expone | **INTEGRADO** el 2026-10-25 (#210, `ea70404`) y desplegado en test, con el alcance que ratificó Dirección ese día: familia ADM (API-ADM-01 a 13), con TOTP, identidad administrativa separada y comando interno, sobre los perfiles profesionales que ya existen; el alta completa de profesionales nuevos sigue pendiente; falta incorporar al primer administrador y la prueba con personas |
+| DL-156 | WP-ADMINISTRACION · 2026-10-25 | 05 UC-P02 §4.6.10 · REG-06-38 · INV-06-43 | Toda resolución identifica la versión revisada de una presentación, y en esta versión no hay presentaciones | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la versión revisada es la de la trayectoria del área al decidir (`version_previa` del hecho), con el control de conflictos previsto (`expectedVersion`) |
+| DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la suspensión opera por área y no cierra las sesiones globales del profesional; el servidor rechaza las operaciones del área suspendida desde el pedido siguiente (la sesión autentica, no autoriza) |
+| DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **RATIFICADA** por Dirección el 2026-10-25 e **INTEGRADA** (#211, `7079677`), desplegada en test (C-D1 opción A y C-D2): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; con alternativas no se inventa un total diario, y la comparación no se presenta como adherencia; falta la prueba con profesionales y con un lector de pantalla |
 
 ---
 
@@ -5287,7 +5287,7 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - La tarjeta del ejercicio, «Ver rutina» y el resumen antes de finalizar dicen «Ejecutado: …» con la insignia «Sustituido», debajo del planificado.
 - «Volver al planificado», que la 0.13.2 no tenía: sin él, una sustitución elegida por error, sin series, dejaba la sesión sin poder confirmarse.
 
-**Las reglas, que son las de la 0.13.2, dichas** (provisorio en código, a ratificar):
+**Las reglas, que son las de la 0.13.2, dichas** (ratificadas por Dirección el 2026-10-25):
 - **R-1 · Lo planificado no se pisa.** Solo viaja `performedExerciseVersionId`. La API calcula `substituted`, y el plan no cambia.
 - **R-2 · Un ejercicio, un realizado.** El contrato no admite uno por serie. Como en la 0.13.2, las series ya registradas se conservan (mismo número, mismos datos) y pasan a contar como el ejecutado. Lo nuevo es que antes se pregunta, diciendo cuántas: no se reasignan en silencio. Cuentan también las del teléfono que todavía no se enviaron, que viajan después al ejercicio con su ejecutado.
 - **R-3 · Antes de la primera serie** se guarda el ejercicio sin series, como en la 0.13.2. API-TRN-18 no confirma un ejercicio sin series (`SET_REQUIRED`): la APK lo dice antes de finalizar, con los dos nombres y la salida (registrar una serie, o volver al planificado, que lo saca del borrador).
@@ -5320,7 +5320,12 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - **Compatibilidad:** API-TRN-13-BUSQUEDA no la leen la 0.13.2 ni la 0.17.0-candidata.3, así que las lecturas congeladas (DL-152) no cambian. Cuando se publique una candidata con la sustitución, su lectura se congela como las demás.
 - **Comprobado en local:** las pruebas de la APK (sustitución 16, sesión enfocada, tiempos, compatibilidad, sesión en curso, reloj y copy: 71 de 71), el tipado de la APK, y la integración de la sustitución y de las lecturas de las APK contra PostgreSQL (22 de 22). El guion del teléfono está en `EVIDENCIA/SUSTITUCION-DE-EJERCICIOS/GUION-DEL-TELEFONO.md`, con el cambio después de registrar series primero.
 
-**Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
+**Integración del 2026-10-25:**
+- **Ratificación.** Al autorizar la integración de la tanda, Dirección ratificó: «La sustitución mantiene las reglas de DL-151: alcanza a todas las series de ese ejercicio en la sesión y no modifica el plan.»
+- **En main** con #195 (`0be86b3`), con el cruce con Administración como prueba permanente: con Entrenamiento suspendido, guardar una sustitución da el 404 que la APK trata como acceso retirado, y al rehabilitar se guarda.
+- **Lo que falta.** La API y el website se redesplegaron, aunque solo cambian comentarios. La APK con la sustitución todavía no existe, así que falta la prueba en el teléfono con una candidata que autorice Dirección.
+
+**Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa. La ratificación está (2026-10-25); falta el teléfono.
 
 ---
 
@@ -5568,7 +5573,7 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 
 ## DL-155 — Administración de profesionales por área: la familia ADM
 
-**Prioridad:** alta · **Documento:** 09v8 PRO-09 a 13 · B10-03 §14, §15, §21 y ADV-10-PRO-11 · 08 §25, §28 y §29 · DL-036 · DL-020 · **Estado:** EN IMPLEMENTACIÓN (2026-10-25, en borrador)
+**Prioridad:** alta · **Documento:** 09v8 PRO-09 a 13 · B10-03 §14, §15, §21 y ADV-10-PRO-11 · 08 §25, §28 y §29 · DL-036 · DL-020 · **Estado:** INTEGRADO (2026-10-25, #210, `ea70404`) y desplegado en test
 
 **Qué dice el legajo.**
 - PRO-09 a 13 son las operaciones del administrador, con `SESSION_MFA`: listar y ver «presentaciones», resolverlas, suspender y rehabilitar un «scope» (09v8:930-1104).
@@ -5582,13 +5587,17 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 - **A.** Familia propia de BE, ADM, que adapta PRO-09 a 13 a lo que existe: la lista de profesionales y su ficha (PRO-09 y 10), y una sola operación de decisión por área (PRO-11, 12 y 13, más conceder y retirar la habilitación, que el 09 no tiene).
 - **B.** Implementar antes PRO-01 a 08 para que existan presentaciones, y usar PRO-09 a 13 tal cual. Es D-1 B, que Dirección descartó.
 
-**Provisorio en código.** A. La definición está en `docs/paquetes/WP-ADMINISTRACION.md`.
+**Ratificado.** A, por Dirección el 2026-10-25, al autorizar la integración:
+- el alcance: «Administración gestiona perfiles profesionales existentes. El alta completa de nuevos profesionales sigue pendiente.»;
+- el segundo factor: «Se mantienen las reglas documentadas del segundo factor, incluida la recuperación del autenticador bloqueado.»
 
-**Condición de cierre.** El 09 incorpora la familia, o Dirección aprueba la integración del paquete y la prueba con personas lo confirma.
+La definición está en `docs/paquetes/WP-ADMINISTRACION.md`.
+
+**Condición de cierre.** El 09 incorpora la familia, o Dirección aprueba la integración del paquete y la prueba con personas lo confirma. Dirección aprobó la integración el 2026-10-25; falta la prueba con personas, que empieza con el primer administrador.
 
 ## DL-156 — La «versión revisada» sin presentaciones
 
-**Prioridad:** media · **Documento:** 05 UC-P02 §4.6.10 («no puede resolver sin identificar la versión revisada») · REG-06-38 · INV-06-43 · **Estado:** PROVISORIO (2026-10-25)
+**Prioridad:** media · **Documento:** 05 UC-P02 §4.6.10 («no puede resolver sin identificar la versión revisada») · REG-06-38 · INV-06-43 · **Estado:** RATIFICADO (2026-10-25)
 
 **Qué dice el legajo.** Toda resolución identifica una única versión efectivamente revisada y un único alcance. La versión es la de la presentación del profesional (06 §6.7).
 
@@ -5598,13 +5607,13 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 - **A.** La versión revisada es la de la trayectoria al decidir: el hecho guarda `version_previa`, y la decisión se confirma contra la versión que vio el administrador (`expectedVersion`).
 - **B.** No resolver verificaciones hasta que existan presentaciones (PRO-01 a 08).
 
-**Provisorio en código.** A.
+**Ratificado.** A, por Dirección el 2026-10-25: «Se conserva la versión revisada de la trayectoria del área y el control de conflictos previsto.» Integrado con #210.
 
 **Condición de cierre.** Existen las presentaciones versionadas.
 
 ## DL-157 — Suspender un área no revoca las sesiones del profesional
 
-**Prioridad:** media · **Documento:** 08 §26.3 («eventos que revocan sesiones: … suspensión de cuenta o de verificación profesional») · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 · **Estado:** PROVISORIO (2026-10-25)
+**Prioridad:** media · **Documento:** 08 §26.3 («eventos que revocan sesiones: … suspensión de cuenta o de verificación profesional») · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 · **Estado:** RATIFICADO (2026-10-25)
 
 **Qué dice el legajo.** Suspender una verificación revoca las sesiones vigentes del profesional. A la vez, el corte de un acceso no depende de la sesión: «la sesión autentica, no autoriza» (08 §26.4), y el PDP decide en cada operación.
 
@@ -5614,7 +5623,7 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 - **A.** No revocar: el PDP y las comprobaciones del área deniegan desde el pedido siguiente, con la sesión abierta. Las otras áreas siguen.
 - **B.** Revocar todas las sesiones del profesional al suspender: corta también las otras áreas hasta que vuelva a entrar.
 
-**Provisorio en código.** A, con pruebas de que la sesión abierta no opera el área suspendida y sí las otras.
+**Ratificado.** A, por Dirección el 2026-10-25: «La suspensión opera por área y no cierra las sesiones globales del profesional; el servidor debe seguir rechazando las operaciones del área suspendida.» Integrado con #210, con pruebas de que la sesión abierta no opera el área suspendida y sí las otras.
 
 **Condición de cierre.** El 08 aclara si la revocación es por área o por cuenta.
 
@@ -5654,7 +5663,7 @@ calorías, el requerimiento energético del objetivo. Los macros del objetivo no
   fila para cada día sin registros que tiene rombo; «Ver origen», lo indicado de cada comida y del día; «Cómo se lee» y
   «Cómo se calcula», las tres capas y la regla. Por semana no se dibuja lo indicado, y se dice.
 
-**Decisiones de implementación (a ratificar):**
+**Decisiones de implementación** (ratificadas con las reglas de DL-158 el 2026-10-25):
 - **I-1 · Redondeo:** lo indicado se muestra con el redondeo de lo registrado (kcal enteras, gramos con un decimal,
   HALF_UP); el objetivo, como lo escribió el profesional (como la tira del objetivo).
 - **I-2 · El día del cierre del seguimiento** (sin sucesora) toma la regla del contraste: sin registros, «no regía ningún
@@ -5670,7 +5679,13 @@ calorías, el requerimiento energético del objetivo. Los macros del objetivo no
   el día del cambio sin indicado del día. Las suites de análisis, comprensión y contrato (TEST-CT) pasan.
 - **Navegador:** `comparacion` y `comparacionConOpciones`, con capturas en Claro y Azul noche.
 
+**Integración del 2026-10-25:**
+- **Ratificación.** Dirección ratificó: «La comparación distingue objetivo, indicado y registrado, con las reglas de DL-158. No inventa un total diario cuando hay alternativas ni presenta la comparación como adherencia.»
+- **En main** con #211 (`7079677`) y desplegada en test.
+- **Comprobada en test** con los datos de la cohorte, sin escribir. Todos sus planes tienen alternativas o varios días tipo, así que se vio el caso sin indicado del día: la nota debajo del gráfico, la lectura con el motivo y «Ver origen» con lo indicado de cada comida. Los rombos los prueba la CI (`comparacion`).
+
 **Lo que falta:** la prueba con profesionales (si se entiende la diferencia entre objetivo e indicado) y un lector de
 pantalla real.
 
-**Condición de cierre:** Dirección revisa el resultado, la CI pasa y la prueba con profesionales lo confirma.
+**Condición de cierre:** Dirección revisa el resultado, la CI pasa y la prueba con profesionales lo confirma. La revisión y
+la CI están (2026-10-25); falta la prueba con profesionales.
