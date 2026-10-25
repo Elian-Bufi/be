@@ -154,6 +154,7 @@
 | DL-148 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 3, borradores) | B10-06:1145-1148 · DL-047 · DL-147 · `expectedVersion` (09) | Los editores no decían de forma inequívoca si lo escrito estaba guardado, y un 409 de otra pestaña se leía como un error cualquiera | **IMPLEMENTADO** 2026-10-19: cuatro estados de escritura, autoguardado de los planes en preparación, conflicto explícito, aviso al salir con algo sin guardar; inventario en docs/ux/BORRADORES.md; a ratificar |
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
+| DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **IMPLEMENTADO** 2026-10-19 en la sesión enfocada (PR en borrador, sin APK nueva): las reglas de la 0.13.2, dichas (R-1 a R-6); falta el teléfono |
 | DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
 | DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-4, con criterios) e **INTEGRADA** (#200, `cddd005`), desplegada en test: las comidas del plan se cuentan por la cobertura del registro (la opción del plan o una comida diferente, con el desglose), el subtotal dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-3, con criterios) e **INTEGRADA** (#203, `8aaec16`), desplegada en test: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; al abrir, el panel avisa que es el estado de hoy o, si solo se activó otra versión, que es la misma que se revisó; la forma de la revisión, que lee la APK, no cambia; falta la prueba con profesionales y con un lector de pantalla |
@@ -5263,6 +5264,62 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - la prueba con personas.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-7, los recorridos pasan en la CI de main, y la prueba con profesionales se hace y se informa.
+
+---
+
+## DL-151 — La sustitución de ejercicios vuelve a la sesión enfocada de la APK
+
+**Prioridad:** alta (pedido de Dirección del 2026-10-19: la APK estable la tiene y las candidatas no).
+
+**Documentos:**
+- **09v10:1116-1121 y REG-06-130:** sustituir es legítimo y no es un error; quedan lo prescripto y lo realizado.
+- **B10-06:762-778:** buscar el ejercicio que se hizo y mostrar las dos puntas (en BE, «Planificado» y «Ejecutado», DL-085).
+- **DL-122 a DL-124:** la sesión enfocada por serie y los tiempos con certeza.
+- **DL-130 y DL-141:** la búsqueda con el texto en el cuerpo y los nombres alternativos.
+
+**Qué pasó.**
+- La 0.13.2 (`be-apk-0.13.2`, 4b49d43) ofrecía «Sustituir ejercicio» en la tarjeta de cada ejercicio: buscar en el catálogo, «Confirmar sustitución: …» y seguir registrando con el realizado.
+- Al rehacer la sesión enfocada (e6bd769, 2026-10-06) la acción se quitó sin una decisión registrada. Los textos quedaron en `copy-entrenamiento.ts`, y la API y las pantallas de lectura siguieron mostrando «Sustituido». Las candidatas 0.15 a 0.17 no la ofrecen.
+
+**Lo que se recupera** (en `wp-apk-sustitucion`, sin APK nueva):
+- «Sustituir ejercicio» sobre el ejercicio activo, en un diálogo: se busca con API-TRN-13-BUSQUEDA (la 0.13.2 usaba API-TRN-13, con el texto en la URL), se elige con «Confirmar sustitución: …» y se siguen registrando las series sobre el ejecutado. La búsqueda no ofrece el planificado en ninguna versión: sería sustituirlo por sí mismo.
+- La tarjeta del ejercicio, «Ver rutina» y el resumen antes de finalizar dicen «Ejecutado: …» con la insignia «Sustituido», debajo del planificado.
+- «Volver al planificado», que la 0.13.2 no tenía: sin él, una sustitución elegida por error, sin series, dejaba la sesión sin poder confirmarse.
+
+**Las reglas, que son las de la 0.13.2, dichas** (provisorio en código, a ratificar):
+- **R-1 · Lo planificado no se pisa.** Solo viaja `performedExerciseVersionId`. La API calcula `substituted`, y el plan no cambia.
+- **R-2 · Un ejercicio, un realizado.** El contrato no admite uno por serie. Como en la 0.13.2, las series ya registradas se conservan (mismo número, mismos datos) y pasan a contar como el ejecutado. Lo nuevo es que antes se pregunta, diciendo cuántas: no se reasignan en silencio. Cuentan también las del teléfono que todavía no se enviaron, que viajan después al ejercicio con su ejecutado.
+- **R-3 · Antes de la primera serie** se guarda el ejercicio sin series, como en la 0.13.2. API-TRN-18 no confirma un ejercicio sin series (`SET_REQUIRED`): la APK lo dice antes de finalizar, con los dos nombres y la salida (registrar una serie, o volver al planificado, que lo saca del borrador).
+- **R-4 · Los tiempos no se tocan.** Los eventos citan la prescripción. La sustitución no arma eventos y no cambia el ejercicio activo ni la fila enfocada: el temporizador, el descanso o la serie cronometrada en curso siguen igual.
+- **R-5 · Necesita conexión.** Buscar y guardar son pedidos a la API: la sustitución no queda en el teléfono para después. Se guarda después de mandar lo pendiente, con la versión vigente; un conflicto o un resultado incierto se relee y se dice en el diálogo.
+- **R-6 · Registrada por ejercicio o sesión** (la forma anterior) no se ofrece: la pantalla ya propone pasar a registrar por serie.
+
+**Lo que no se hace:** las alternativas aprobadas por el profesional (PF-03), las equivalencias de carga (el plan de cada serie sigue siendo el del planificado) y cambios en la API o el website.
+
+**Pruebas:**
+- `scripts/sustitucion-de-ejercicio.test.mjs` (14): lo que se manda, cada regla, lo que se ofrece en la búsqueda, el almacén con una corrida en curso y el resumen.
+- `test/integration/sustitucion-en-la-sesion.int-spec.ts` (3, en la CI): lo que manda la APK, contra la API real.
+  - La búsqueda del asesorado, también por un nombre alternativo.
+  - Antes y después de la primera serie, y volver al planificado.
+  - El plan y los tiempos intactos.
+  - `SET_REQUIRED`, `EXERCISE_REFERENCE_INVALID` y las dos puntas en lo confirmado, para el titular y el profesional.
+- La guardia T13 de la sesión enfocada suma el módulo nuevo.
+
+**Lo que falta:** probarlo en el teléfono con la próxima candidata. Este PR no trae APK: el diálogo con el teclado, TalkBack, sin conexión y una sustitución con un descanso en curso.
+
+**Compatibilidad, revisada el 2026-10-23 sobre main `0fb1bff`:**
+- Después de esta rama, #189 sumó `origin` a cada fila de API-TRN-13-BUSQUEDA (DL-141 D-6). La APK busca con el cliente compartido, así que una APK construida desde esta rama al día con main lo lee; una construida desde la base anterior (`ad12d54`) lo rechazaría (`RESPUESTA_NO_RECONOCIDA`). La APK de la sustitución se construye desde la rama al día.
+- Hasta hoy API-TRN-13-BUSQUEDA era solo del website. Cuando se publique una APK con esta lectura, su forma queda congelada como las demás (DL-152, #198): un campo nuevo va en otra operación.
+- **El alcance de R-2, dicho antes de elegir.** La ayuda del diálogo dice que la sustitución vale para todas las series del ejercicio en esa sesión, las registradas y las que faltan, y que no se puede cambiar una serie sola; con series registradas, la confirmación suma «y las que registres después también». No hay sustitución por serie: el contrato admite un realizado por ejercicio, y la prueba lo fija.
+
+**Revisión del 2026-10-25 (encargo de Dirección, etapa B), sobre main `3724d3d`:**
+- **Al día con main** (merge, sin reescribir historia). Un solo conflicto, en este registro: quedan DL-151 a DL-154.
+- **Contra lo que pide la etapa B:** lo planificado y lo ejecutado separados (R-1); la sustitución vale para todas las series del ejercicio en la sesión, las registradas y las pendientes del teléfono (R-2); el alcance y cuántas series pasan se dicen antes de confirmar, nunca como «solo las próximas» (R-2); los datos de cada serie no cambian y no hay equivalencias de carga; los tiempos, el descanso y la fila enfocada no se tocan (R-4); se puede volver al planificado; el aviso de un sustituido sin series sigue (R-3); sin sustitución por serie ni alternativas aprobadas. Todo estaba; faltaba decir bien la falta de conexión.
+- **R-5, dicho con sus palabras:** buscar sin conexión dice que sustituir la necesita y que lo registrado sigue en el teléfono; guardar sin respuesta dice que no se sabe si llegó, relee el borrador y conserva lo escrito.
+- **Compatibilidad:** API-TRN-13-BUSQUEDA no la leen la 0.13.2 ni la 0.17.0-candidata.3, así que las lecturas congeladas (DL-152) no cambian. Cuando se publique una candidata con la sustitución, su lectura se congela como las demás.
+- **Comprobado en local:** las pruebas de la APK (sustitución 16, sesión enfocada, tiempos, compatibilidad, sesión en curso, reloj y copy: 71 de 71), el tipado de la APK, y la integración de la sustitución y de las lecturas de las APK contra PostgreSQL (22 de 22). El guion del teléfono está en `EVIDENCIA/SUSTITUCION-DE-EJERCICIOS/GUION-DEL-TELEFONO.md`, con el cambio después de registrar series primero.
+
+**Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
 
 ---
 
