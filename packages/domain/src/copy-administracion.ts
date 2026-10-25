@@ -24,8 +24,23 @@ export const COPY_ADMINISTRACION = {
     plazoVencido: 'Pasaron 10 minutos desde que escribiste la contraseña. Por seguridad, volvé a empezar.',
     sesionVencida: 'Tu sesión de Administración venció. Volvé a entrar.',
     sesionCerrada: 'Cerraste la sesión de Administración.',
+    cerradaPorIntentos: 'Hubo cinco códigos que no valen seguidos: por seguridad, se cerró esta sesión. Volvé a entrar.',
+    sinConexion: 'No pudimos preguntarle a BE por tu sesión: no hay conexión, o BE no respondió. Revisá la conexión y volvé a entrar.',
     noConfigurada: 'La administración no está configurada en este ambiente.',
     otroAmbito: 'Esta sesión no es de Administración. Entrá con tu cuenta administrativa.',
+    faltaCorreo: 'Escribí el correo de tu cuenta administrativa.',
+    faltaContrasena: 'Escribí tu contraseña.',
+  },
+
+  /** El marco de la consola: la barra y su menú. */
+  consola: {
+    nombre: 'Administración',
+    profesionales: 'Profesionales',
+    seguridad: 'Seguridad',
+    navegacion: 'Secciones de Administración',
+    menu: 'Administración',
+    opcionSeguridad: 'Seguridad de tu acceso',
+    opcionSeguridadNota: 'Autenticador y códigos de recuperación',
   },
 
   segundoFactor: {
@@ -42,6 +57,7 @@ export const COPY_ADMINISTRACION = {
     porInactividad: 'Pasaron 15 minutos sin actividad: por seguridad, escribí un código nuevo del autenticador.',
     plazo: (hora: string): string => `Tenés hasta las ${hora} para completar este paso.`,
     demasiadosIntentos: 'Hubo demasiados intentos seguidos. Esperá unos minutos y volvé a entrar.',
+    intentosRestantes: (n: number): string => (n === 1 ? 'Te queda 1 intento.' : `Te quedan ${n} intentos.`),
   },
 
   recuperacion: {
@@ -51,6 +67,8 @@ export const COPY_ADMINISTRACION = {
     formaInvalida: 'Un código de recuperación tiene 12 caracteres, en tres grupos de cuatro.',
     quedan: (n: number): string => (n === 1 ? 'Te queda 1 código de recuperación.' : `Te quedan ${n} códigos de recuperación.`),
     pocos: 'Te quedan pocos códigos de recuperación: generá unos nuevos desde «Seguridad».',
+    despues: (n: number): string =>
+      `Entraste con un código de recuperación, que ya no vale. ${n === 1 ? 'Te queda 1 código' : `Te quedan ${n} códigos`}. Si perdiste el autenticador, reemplazalo desde «Seguridad».`,
   },
 
   configuracion: {
@@ -66,6 +84,10 @@ export const COPY_ADMINISTRACION = {
     datosDeLaClave: 'Tipo: basada en el tiempo · 6 dígitos · cada 30 segundos.',
     paso3: 'Escribí el código que muestra la aplicación para confirmar.',
     vence: (hora: string): string => `Esta configuración vence a las ${hora}. Si vence, empezá de nuevo.`,
+    vencida: 'La configuración venció o ya no está pendiente. Empezá de nuevo.',
+    cuenta: (cuenta: string, emisor: string): string => `Cuenta: ${cuenta} · Emisor: ${emisor}`,
+    continuar: 'Continuar',
+    cancelar: 'Cancelar',
     reemplazar: 'Reemplazar el autenticador',
     reemplazarAyuda: 'El autenticador actual sigue valiendo hasta que confirmes el nuevo. Para empezar, escribí tu contraseña.',
     reemplazado: 'Autenticador reemplazado. Los códigos de recuperación anteriores dejaron de valer.',
@@ -84,6 +106,13 @@ export const COPY_ADMINISTRACION = {
     restantes: (n: number): string => (n === 1 ? 'Queda 1 código de recuperación sin usar.' : `Quedan ${n} códigos de recuperación sin usar.`),
     vigencia: 'El segundo factor vence después de 15 minutos sin actividad; la sesión, a las 8 horas.',
     perdiste: 'Si perdés el autenticador y los códigos, el operador de BE puede restablecer tu segundo factor: vas a tener que configurarlo de nuevo con un código de incorporación.',
+    sesionVence: (dia: string, hora: string): string => `Esta sesión vence el ${dia} a las ${hora}.`,
+    contrasenaIncorrecta: 'La contraseña no es correcta.',
+    faltaContrasena: 'Escribí tu contraseña.',
+    codigosVigentes: 'Códigos de recuperación',
+    autenticador: 'Autenticador',
+    autenticadorAyuda: 'Para cambiar de teléfono o de aplicación de códigos. El actual sigue valiendo hasta que confirmes el nuevo.',
+    noLeida: 'el estado de tu acceso',
   },
 
   sesion: {
@@ -109,9 +138,18 @@ export const COPY_ADMINISTRACION = {
     vacioSinFiltrosAyuda: 'En esta versión, los profesionales los registra el servicio interno de BE: no hay alta pública.',
     anterior: 'Anterior',
     siguiente: 'Siguiente',
+    pagina: (n: number): string => `Página ${n}`,
+    paginacion: 'Páginas de la lista',
     abrir: 'Abrir la ficha',
+    abrirLaFichaDe: (nombre: string): string => `Abrir la ficha de ${nombre}`,
+    profesional: 'Profesional',
+    quitarFiltros: 'Ver todos los profesionales',
+    sinCorreo: 'Sin correo de acceso',
     noLeida: 'la lista de profesionales',
   },
+
+  /** El estado de la cuenta del profesional (no lo decide Administración: D-4). Se dice solo si no está en uso. */
+  cuentaEnPalabras: { OPERATIVA: 'Cuenta en uso', SUSPENDIDA: 'Cuenta suspendida', CERRADA: 'Cuenta cerrada' } as const,
 
   ficha: {
     volver: 'Volver a la lista',
@@ -139,9 +177,17 @@ export const COPY_ADMINISTRACION = {
     historial: 'Historial',
     historialAyuda: 'Las decisiones de Administración y los hechos automáticos, del más nuevo al más viejo. El fundamento interno lo ve solo Administración.',
     historialVacio: 'Todavía no hay hechos registrados.',
+    historialVacioDelArea: 'Todavía no hay hechos registrados en esta área.',
+    historialDelArea: 'Área del historial',
     masHistorial: 'Ver más del historial',
     noLeida: 'la ficha del profesional',
+    historialNoLeido: 'el historial',
     noDisponible: 'No encontramos a este profesional. Puede que el enlace sea viejo.',
+    actualizar: 'Actualizar',
+    consultadaA: (hora: string): string => `Consultada a las ${hora}`,
+    perfil: 'Perfil',
+    transicion: (antes: string | null, despues: string): string => (antes ? `De «${antes}» a «${despues}».` : `Queda «${despues}».`),
+    sinCambioDeEstado: (estado: string): string => `Sigue «${estado}».`,
   },
 
   decision: {
@@ -156,9 +202,19 @@ export const COPY_ADMINISTRACION = {
     cancelar: 'Cancelar',
     registrando: 'Registrando…',
     registrada: (que: string): string => `${que}: decisión registrada.`,
+    avisados: (profesional: boolean, personas: number): string => {
+      const a = [profesional ? 'al profesional' : null, personas > 0 ? (personas === 1 ? 'a 1 persona vinculada' : `a ${personas} personas vinculadas`) : null].filter(Boolean);
+      return a.length === 0 ? '' : `Se avisó ${a.join(' y ')}.`;
+    },
     conflicto: 'La situación de esta área cambió desde que la abriste. Revisá cómo está ahora; lo que escribiste sigue acá.',
     conflictoTitulo: 'La situación cambió',
     noPermitida: 'Esta decisión ya no corresponde al estado del área. Revisá cómo está ahora.',
+    ahora: (situacion: string): string => `Cómo está ahora: ${situacion}.`,
+    sigueDisponible: 'La decisión sigue disponible con la situación de ahora: si corresponde, confirmala de nuevo.',
+    sinReleer: 'No pudimos volver a leer cómo está el área. Cerrá este diálogo y actualizá la ficha; lo que escribiste no se registró.',
+    reverificar: 'Pasaron 15 minutos sin actividad: para registrar la decisión, escribí un código nuevo del autenticador. Lo que escribiste sigue acá.',
+    codigoConfirmado: 'Código confirmado. Revisá la decisión y confirmala.',
+    cerrar: 'Cerrar',
     queCambia: 'Qué cambia',
     queSigueIgual: 'Qué sigue igual',
     aQuienSeAvisa: 'A quién se avisa',
@@ -312,28 +368,5 @@ export function efectoDeLaDecision(p: {
   return { titulo: `${nombre} · ${area} de ${p.profesional}`, confirmar: `${nombre} ${area}`, cambia, sigueIgual, avisos, personasAvisadas: personas, mensajeObligatorio: p.mensajeObligatorio };
 }
 
-/**
- * B10-03 §20 («Evitar»): lo que la administración nunca dice. También en negación: un «no es una sanción» igual instala la
- * idea. Lo revisan la prueba del dominio y `scripts/copy-pantallas.test.cjs` sobre las pantallas de `/admin`.
- */
-export const TERMINOS_PROHIBIDOS_DE_ADMINISTRACION: readonly string[] = [
-  'certificado por be',
-  'certificada por be',
-  'certificación oficial',
-  'aprobado globalmente',
-  'profesional aprobado',
-  'especialidad antropometría',
-  'especialidad de antropometría',
-  'cuenta castigada',
-  'castigo',
-  'sanción',
-  'admin médico',
-  'modo profesional',
-  'ver como profesional',
-  'actuar como profesional',
-];
-
-export function terminosProhibidosDeAdministracionEn(texto: string): string[] {
-  const t = texto.toLowerCase();
-  return TERMINOS_PROHIBIDOS_DE_ADMINISTRACION.filter((p) => t.includes(p));
-}
+// La lista de lo que Administración nunca dice vive en `terminos-de-administracion.ts`: si estuviera acá, la prueba que
+// recorre este archivo la encontraría a ella misma.

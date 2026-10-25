@@ -125,3 +125,4 @@ export * from './administracion';
 export * from './contratos-administracion';
 export * from './copy-administracion';
 export * from './cliente-administrativo';
+export * from './terminos-de-administracion';

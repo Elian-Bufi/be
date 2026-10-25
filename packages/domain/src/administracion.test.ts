@@ -27,7 +27,8 @@ import {
 import { ALCANCES } from './alcance';
 import { DecidirSobreAreaRequestSchema, FichaDeProfesionalResponseSchema, EstadoDelSegundoFactorSchema } from './contratos-administracion';
 import { NovedadSchema, TIPOS_DE_NOVEDAD, VISTAS_DE_NOVEDAD } from './contratos-novedades';
-import { COPY_ADMINISTRACION, efectoDeLaDecision, operacionEnPalabras, terminosProhibidosDeAdministracionEn } from './copy-administracion';
+import { COPY_ADMINISTRACION, efectoDeLaDecision, operacionEnPalabras } from './copy-administracion';
+import { terminosProhibidosDeAdministracionEn } from './terminos-de-administracion';
 import { terminosProhibidosDeAntropometriaEn } from './copy-antropometria';
 import { terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
 import { textoDeNovedad, vistaDeNovedad } from './copy-novedades';

@@ -30,6 +30,12 @@ export function baseDeclarada() {
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * La clave del segundo factor de Administración (WP-ADMINISTRACION, DL-155): una por corrida, la misma en los dos arranques
+ * de la API, sin imprimirse. Cifra los autenticadores de las cuentas administrativas sintéticas de esta corrida.
+ */
+const CLAVE_DEL_SEGUNDO_FACTOR = randomBytes(32).toString('base64url');
+
+/**
  * Arranca la API compilada (apps/api/dist). El secreto de firma se genera por corrida y no se imprime. Los límites de
  * frecuencia son los de siempre salvo el de altas: cada recorrido registra sus propias cuentas sintéticas, y el
  * limitador se prueba en las pruebas de integración, no acá.
@@ -45,6 +51,7 @@ export async function arrancarApi({ demoProfesionales = '', salida }) {
     TRUST_PROXY_HOPS: '0',
     CORS_ALLOWED_ORIGINS: WEB,
     BE_DEMO_PROFESIONALES: demoProfesionales,
+    BE_CLAVE_DEL_SEGUNDO_FACTOR: CLAVE_DEL_SEGUNDO_FACTOR,
     RATE_LIMIT_REGISTRO_MAX: '200',
   };
   const proceso = spawn(process.execPath, [join(REPO, 'apps/api/dist/main.js')], { cwd: REPO, env, stdio: ['ignore', 'pipe', 'pipe'] });
