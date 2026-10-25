@@ -268,6 +268,19 @@ export interface DiasDelResumen {
   readonly sinDatoDelNutriente: number;
   /** Hoy cae en el rango y todavía no terminó, con o sin registros: la media lo deja fuera; el total, no. */
   readonly hoyEnCurso: boolean;
+  /**
+   * DL-153: las comidas del plan de los días terminados con registros. Son otra dimensión que los días de arriba: un día
+   * con valor puede tener una comida del plan sin registro (entonces es un subtotal) o no dejar saber qué comidas
+   * indicaba el plan. `null` si la serie no lo dice (una serie armada sin esa cuenta).
+   */
+  readonly comidasDelPlan: {
+    /** Comidas del plan sin ningún registro, en los días en que se conocen. */
+    readonly sinRegistro: number;
+    /** Días con alguna comida del plan sin registro. */
+    readonly diasConComidasSinRegistro: number;
+    /** Días con registros en los que no se puede saber qué comidas indicaba el plan. */
+    readonly diasSinDeterminar: number;
+  } | null;
 }
 
 export interface ResumenDeUnPeriodo {
@@ -303,22 +316,37 @@ export interface ResumenDeUnPeriodo {
 
 /** Los motivos de un día sin valor que son falta de cantidades (y no un nutriente sin dato en lo registrado). */
 const MOTIVOS_SIN_CANTIDADES: ReadonlySet<string> = new Set(['SIN_CANTIDADES', 'COMIDA_DIFERENTE_SIN_CANTIDADES']);
+/**
+ * DL-153: una comida del plan sin registro es otra dimensión (qué falta registrar), no un motivo de los registros que hay:
+ * no cambia si un día sin valor se cuenta «sin cantidades» o «sin el dato del nutriente».
+ */
+const COMIDA_DEL_PLAN_SIN_REGISTRO = 'COMIDA_DEL_PLAN_SIN_REGISTRO';
 
 /**
  * Los días del rango por categoría, desde los puntos del rango: un día sin punto no tiene registros (es un hueco); un
  * punto sin valor tiene registros sin cantidades o sin el nutriente. Hoy lo dice la serie (un punto incompleto) o quien
- * la lee, aunque todavía no tenga registros: así no se cuenta como un día sin registros.
+ * la lee, aunque todavía no tenga registros: así no se cuenta como un día sin registros. Las comidas del plan se cuentan
+ * aparte, en los mismos días terminados.
  */
 function diasDelResumen(delRango: readonly PuntoAnalitico[], desde: string, hasta: string, hoy: string | undefined): DiasDelResumen {
   const hoyEnCurso = (hoy !== undefined && desde <= hoy && hoy <= hasta) || delRango.some((p) => p.partialBucket);
   const terminados = delRango.filter((p) => !p.partialBucket && p.date !== hoy);
   const sinValor = terminados.filter((p) => p.value === null);
-  const sinCantidades = sinValor.filter((p) => p.missing.every((m) => MOTIVOS_SIN_CANTIDADES.has(m.reason))).length;
+  const sinCantidades = sinValor.filter((p) => p.missing.filter((m) => m.reason !== COMIDA_DEL_PLAN_SIN_REGISTRO).every((m) => MOTIVOS_SIN_CANTIDADES.has(m.reason))).length;
+  const conComidas = terminados.flatMap((p) => (p.coverage ? [p.coverage.planMeals] : []));
   return {
     sinRegistros: diasEntreFechas(desde, hasta) + 1 - new Set(terminados.map((p) => p.date)).size - (hoyEnCurso ? 1 : 0),
     sinCantidades,
     sinDatoDelNutriente: sinValor.length - sinCantidades,
     hoyEnCurso,
+    comidasDelPlan:
+      conComidas.length === 0
+        ? null
+        : {
+            sinRegistro: conComidas.reduce((s, c) => s + c.withoutRecord, 0),
+            diasConComidasSinRegistro: conComidas.filter((c) => c.withoutRecord > 0).length,
+            diasSinDeterminar: conComidas.reduce((s, c) => s + c.daysUndetermined.reduce((t, d) => t + d.days, 0), 0),
+          },
   };
 }
 
@@ -415,9 +443,11 @@ export function partesDeLaCobertura(r: ResumenDeUnPeriodo): string[] {
     return [
       `${contar(r.duracionDias, 'día', 'días')}: ${numero(r.n)} ${total ? 'con registros' : 'con valor'}`,
       ...(r.parciales > 0 ? [`de ellos, ${r.parciales === 1 ? '1 es un subtotal' : `${numero(r.parciales)} son subtotales`} (falta algún dato)`] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinRegistro'),
       ...(d.sinRegistros > 0 ? [`${numero(d.sinRegistros)} sin registros`] : []),
       ...(d.sinCantidades > 0 ? [`${numero(d.sinCantidades)} con registros sin cantidades`] : []),
       ...(d.sinDatoDelNutriente > 0 ? [`${numero(d.sinDatoDelNutriente)} con registros sin dato de este nutriente`] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinDeterminar'),
       ...(d.hoyEnCurso ? [total ? 'hoy, en curso: el total incluye lo registrado hasta ahora' : 'hoy, en curso: fuera de la media'] : []),
     ];
   }
@@ -451,11 +481,26 @@ export function coberturaBreve(r: ResumenDeUnPeriodo): { readonly principal: rea
     principal: [`${contar(r.duracionDias, 'día', 'días')}: ${numero(r.n)} ${total ? 'con registros' : 'con valor'}`, ...(d.sinRegistros > 0 ? [`${numero(d.sinRegistros)} sin registros`] : [])],
     detalle: [
       ...(r.parciales > 0 ? [contar(r.parciales, 'subtotal', 'subtotales')] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinRegistro'),
       ...(d.sinCantidades > 0 ? [`${numero(d.sinCantidades)} sin cantidades`] : []),
       ...(d.sinDatoDelNutriente > 0 ? [`${numero(d.sinDatoDelNutriente)} sin dato del nutriente`] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinDeterminar'),
       ...(d.hoyEnCurso ? [total ? 'hoy, en curso: el total incluye lo registrado hasta ahora' : 'hoy, en curso: fuera de la media'] : []),
     ],
   };
+}
+
+/**
+ * DL-153: las dos partes de las comidas del plan, con las mismas palabras en la tabla de etapas, «Comparar dos períodos»
+ * y los indicadores: las comidas del plan sin registro (lo que hizo de esos días un subtotal) y los días en que no se
+ * puede saber qué comidas indicaba el plan (sin plan vigente, o sin un registro del plan que diga el día tipo).
+ */
+function partesDeLasComidasDelPlan(d: DiasDelResumen, cual: 'sinRegistro' | 'sinDeterminar'): string[] {
+  const c = d.comidasDelPlan;
+  // Un resumen armado sin esa cuenta (una prueba de pantalla, un cliente viejo) no dice nada de las comidas del plan.
+  if (c === null || c === undefined) return [];
+  if (cual === 'sinRegistro') return c.sinRegistro > 0 ? [contar(c.sinRegistro, 'comida del plan sin registro', 'comidas del plan sin registro')] : [];
+  return c.diasSinDeterminar > 0 ? [`${contar(c.diasSinDeterminar, 'día', 'días')} sin saber qué comidas indicaba el plan`] : [];
 }
 
 // ─── Resumen textual (alternativa al gráfico) ───────────────────────────────────────────────────
@@ -523,6 +568,9 @@ export function partesDelResumenTextual(serie: SerieAnalitica, definicion: Defin
   if (calculados.length > 0) partes.push(`${numero(calculados.length)} ${calculados.length === 1 ? 'es un valor calculado por un método' : 'son valores calculados por un método'}${naturalezaEnElResumen(calculados)}`);
   const parciales = conValor.filter((p) => p.quality === 'PARTIAL').length;
   if (parciales > 0) partes.push(`${numero(parciales)} ${parciales === 1 ? 'es un subtotal' : 'son subtotales'} de lo registrado`);
+  // DL-153: lo que hizo de un día un subtotal también puede ser lo que no se registró: se dice para quien no ve el gráfico.
+  const comidasSinRegistro = delRango.filter((p) => !p.partialBucket).reduce((s, p) => s + (p.coverage?.planMeals.withoutRecord ?? 0), 0);
+  if (comidasSinRegistro > 0) partes.push(`${numero(comidasSinRegistro)} ${comidasSinRegistro === 1 ? 'comida del plan' : 'comidas del plan'} sin registro`);
   const incompletos = conValor.filter((p) => p.partialBucket).length;
   if (incompletos > 0) partes.push(`${numero(incompletos)} ${incompletos === 1 ? 'es de un día o una semana sin completar' : 'son de días o semanas sin completar'} (el día en curso, o una semana que el período corta)`);
   const sinValor = delRango.length - conValor.length;

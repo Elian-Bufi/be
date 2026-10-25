@@ -240,6 +240,7 @@ import {
   ReemplazarVistaRequestSchema,
   VistaDeAnalisisResponseSchema,
 } from './contratos-analisis';
+import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -2098,6 +2099,18 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: '09v10:1375-1381',
   },
   {
+    id: 'API-TRN-23-EVIDENCIA',
+    metodo: 'get',
+    ruta: '/training/reviews/{reviewId}/evidence',
+    resumen:
+      'La evidencia que la revisión de entrenamiento guardó al registrarse, resuelta con el permiso de hoy: cada referencia en su orden, qué es (la sesión, la versión del plan, el objetivo, la evaluación) y lo que cambió después de la revisión (corrección o versión sucesora). No reconstruye nada con el período, no trae series ni cargas y una revisión sin evidencia devuelve la lista vacía. Solo el profesional del seguimiento; ajena, inexistente o sin acceso: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EvidenciaDeRevisionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante de API-TRN-23 (09v10:1375-1381) · UC-P18 · REG-06-141 · ID propio de BE (sufijo EVIDENCIA) · DEUDA_LEGAJO DL-154',
+  },
+  {
     id: 'API-TRN-24',
     metodo: 'post',
     ruta: '/training/reviews/{reviewId}/apply',
@@ -2980,6 +2993,18 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'variante del titular de API-NUT-19 (09v9:904) · ID propio de BE (sufijo PROPIA) · docs/propuestas/REV-A · DEUDA_LEGAJO DL-134',
   },
   {
+    id: 'API-NUT-19-EVIDENCIA',
+    metodo: 'get',
+    ruta: '/nutrition/reviews/{reviewId}/evidence',
+    resumen:
+      'La evidencia que la revisión guardó al registrarse, resuelta con el permiso de hoy: cada referencia en su orden, qué es (la comida y su clase, la versión del plan, el objetivo) y lo que cambió después de la revisión (rectificación, corrección, anulación o versión sucesora). No reconstruye nada con el período, no trae cantidades y una revisión sin evidencia devuelve la lista vacía. Solo el profesional del seguimiento; ajena, inexistente o sin acceso: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EvidenciaDeRevisionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante de API-NUT-19 (09v9:904-910) · UC-P13 (evidencia identificable) · REG-06-141 · ID propio de BE (sufijo EVIDENCIA) · DEUDA_LEGAJO DL-154',
+  },
+  {
     id: 'API-TRN-23-LISTA',
     metodo: 'get',
     ruta: '/me/training/reviews',
@@ -3104,8 +3129,10 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-NOV-02',
   'API-NUT-19-LISTA',
   'API-NUT-19-PROPIA',
+  'API-NUT-19-EVIDENCIA',
   'API-TRN-23-LISTA',
   'API-TRN-23-PROPIA',
+  'API-TRN-23-EVIDENCIA',
   'API-CRD-01-LISTA',
   'API-CRD-01-PROPIA',
 ]);

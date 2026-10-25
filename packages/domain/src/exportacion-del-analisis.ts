@@ -14,7 +14,7 @@
 import { redondeoDePresentacion } from './calculo-nutricional';
 import type { MetricaNutricional, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
 import { VERSION_DEL_DICCIONARIO, type DefinicionDeMetrica } from './metricas-del-analisis';
-import { NUTRIENTE_DE_LA_METRICA } from './nutricion-del-analisis';
+import { calidadEnPalabras, comidasDelPlanEnPalabras, NUTRIENTE_DE_LA_METRICA } from './nutricion-del-analisis';
 import { claseEnPalabras } from './antropometria-del-analisis';
 
 /** Cómo se agrupó cada métrica: un punto por día, por semana o por observación (toma o sesión). */
@@ -46,10 +46,13 @@ export function textoDeFaltante(motivo: string): string {
   if (motivo === 'SIN_CANTIDADES') return 'registro(s) sin cantidades';
   if (motivo === 'COMIDA_DIFERENTE_SIN_CANTIDADES') return 'comida(s) diferente(s) sin cantidades';
   if (motivo === 'SIN_DATO_DEL_NUTRIENTE') return 'registro(s) sin el dato del nutriente';
+  if (motivo === 'COMIDA_DEL_PLAN_SIN_REGISTRO') return 'comida(s) del plan sin registro';
   return motivo.toLowerCase().replace(/_/g, ' ');
 }
 
-const CALIDAD: Readonly<Record<PuntoAnalitico['quality'], string>> = { COMPLETE: 'sin faltantes', PARTIAL: 'subtotal', UNKNOWN: 'sin valor conocido' };
+/** La calidad en el archivo: las palabras de la pantalla (`calidadEnPalabras`), con el subtotal en una palabra. */
+const calidadDeLaFila = (p: PuntoAnalitico, definicion: DefinicionDeMetrica): string =>
+  p.quality === 'PARTIAL' ? 'subtotal' : calidadEnPalabras(p, definicion.area === 'NUTRICION' && definicion.parametro === 'RECORDS');
 
 const METODO: Readonly<Record<SerieAnalitica['aggregation'], string>> = {
   NONE: 'cada observación, sin agregar',
@@ -100,6 +103,7 @@ export const COLUMNAS_DE_LA_EXPORTACION = [
   'Registros',
   'Con cantidades',
   'Sin cantidades',
+  'Comidas del plan',
   'Falta',
   'Clase de dato',
 ] as const;
@@ -120,7 +124,7 @@ export function csvDelAnalisis(p: PedidoDeExportacion): string {
     fila([
       'Cómo leer',
       celdaDeTexto(
-        'Valor vacío: sin valor conocido (nunca es 0). 0: cero registrado. Subtotal: falta algún dato de ese día o semana. Sin completar: el día en curso o una semana que el período corta. Coincidencia temporal: no indica causa.',
+        'Valor vacío: sin valor conocido (nunca es 0). 0: cero registrado. Es lo registrado, no prueba lo que se comió. Subtotal: falta algún dato de ese día o semana (una comida del plan sin registro, cantidades o el dato del nutriente). Comidas del plan: cuántas de las que indicaba el plan tienen registro; «sin determinar» si no había plan vigente o no se sabe el día tipo. Sin completar: el día en curso o una semana que el período corta. Coincidencia temporal: no indica causa.',
       ),
     ]),
     fila(['Agrupación', celdaDeTexto(p.series.map((s) => `${s.nombre}: ${AGRUPACION[s.serie.grain]}`).join(' · '))]),
@@ -141,7 +145,7 @@ export function csvDelAnalisis(p: PedidoDeExportacion): string {
           pt.dateEnd ?? '',
           pt.at ? horaEn(pt.at, p.zona) : '',
           pt.value === null ? '' : numeroParaExportar(pt.value, s.definicion),
-          CALIDAD[pt.quality],
+          celdaDeTexto(calidadDeLaFila(pt, s.definicion)),
           pt.partialBucket ? 'sí' : 'no',
           String(pt.n),
           celdaDeTexto(pt.segment),
@@ -149,6 +153,7 @@ export function csvDelAnalisis(p: PedidoDeExportacion): string {
           pt.coverage ? String(pt.coverage.records) : '',
           pt.coverage ? String(pt.coverage.recordsWithQuantities) : '',
           pt.coverage ? String(pt.coverage.recordsWithoutQuantities) : '',
+          pt.coverage ? celdaDeTexto(comidasDelPlanEnPalabras(pt.coverage.planMeals)) : '',
           celdaDeTexto(pt.missing.map((m) => `${m.count} ${textoDeFaltante(m.reason)}`).join(', ')),
           pt.dataClass ? celdaDeTexto(`${claseEnPalabras(pt.dataClass, pt.method)}${pt.method?.name ? ` (${pt.method.name})` : ''}`) : '',
         ]),

@@ -17,7 +17,7 @@
  * - **Un área no autorizada no aporta nada**, ni un conteo: la síntesis recibe solo lo que el PDP dejó leer.
  * - **Una lectura que falló** se dice («No pudimos completar esta parte»), nunca se completa con supuestos.
  */
-import type { DominioDeAnalisis, NovedadesDesde, OrigenDeDato, ResultadoDeProyeccionNutricional, VigenciaDePlan } from './contratos-analisis';
+import type { ComidasDelPlan, DominioDeAnalisis, NovedadesDesde, OrigenDeDato, ResultadoDeProyeccionNutricional, VigenciaDePlan } from './contratos-analisis';
 import type { ResumenDeAntropometria, ResumenDeEntrenamiento, ResumenDeNutricion } from './contratos-vinculo';
 import { diasEntreFechas, fechaCivil } from './fechas-civiles';
 import { numero } from './formato-numeros';
@@ -419,7 +419,9 @@ export function textoDeObservacion(o: ObservacionDelResumen, f: FormatoDeLaSinte
       const c = o.args;
       const plan = c.primerPlanDesde ? ` ${textoDelPrimerPlan(c.primerPlanDesde, f)}` : '';
       if (c.records === 0) return `Sin registros de comida en el período (${cuenta(c.daysInPeriod, ['día', 'días'])}).${plan}`;
-      return `${numero(c.daysWithRecords)} de ${cuenta(c.daysInPeriod, ['día', 'días'])} con algún registro; ${cuenta(c.records, ['registro', 'registros'])}: ${numero(c.recordsWithQuantities)} con cantidades y ${numero(c.recordsWithoutQuantities)} sin cantidades.${plan}`;
+      // DL-153: lo que no se registró de lo que indicaba el plan, con las palabras de `partesDeObservacion`.
+      const comidas = comidasDeLaCobertura(c.planMeals).map((p) => `${p.cifra} ${p.texto}`);
+      return `${numero(c.daysWithRecords)} de ${cuenta(c.daysInPeriod, ['día', 'días'])} con algún registro; ${cuenta(c.records, ['registro', 'registros'])}: ${numero(c.recordsWithQuantities)} con cantidades y ${numero(c.recordsWithoutQuantities)} sin cantidades${comidas.length > 0 ? `; ${comidas.join('; ')}` : ''}.${plan}`;
     }
     case 'COBERTURA_DE_ENTRENAMIENTO': {
       const c = o.args;
@@ -450,6 +452,18 @@ const frase = (texto: string): ParteDeObservacion => ({ cifra: null, texto });
 const parteDeCuenta = (n: number, [uno, varios]: readonly [string, string]): ParteDeObservacion => ({ cifra: numero(n), texto: n === 1 ? uno : varios });
 
 /**
+ * DL-153: las comidas del plan de la cobertura del período (sin hoy, que sigue en curso), en cuentas: las que no tienen
+ * ningún registro y los días en que no se sabe qué comidas indicaba el plan. Nada si no hay ni lo uno ni lo otro.
+ */
+function comidasDeLaCobertura(c: ComidasDelPlan): ParteDeObservacion[] {
+  const sinDeterminar = c.daysUndetermined.reduce((s, d) => s + d.days, 0);
+  return [
+    ...(c.withoutRecord > 0 ? [parteDeCuenta(c.withoutRecord, ['comida del plan sin registro', 'comidas del plan sin registro'])] : []),
+    ...(sinDeterminar > 0 ? [parteDeCuenta(sinDeterminar, ['día sin saber qué comidas indicaba el plan', 'días sin saber qué comidas indicaba el plan'])] : []),
+  ];
+}
+
+/**
  * La misma observación en partes (WP-ESCRITORIO-AMABLE, parte 3), para escribirla en renglones con la cifra adelante en
  * lugar de una frase con comas. **Las palabras son las de `textoDeObservacion`:** cada cuenta («44 comidas registradas»)
  * y cada frase están tal cual en el texto completo, y una prueba lo comprueba regla por regla. Una observación que no
@@ -474,6 +488,7 @@ export function partesDeObservacion(o: ObservacionDelResumen, f: FormatoDeLaSint
       return [
         { cifra: numero(c.daysWithRecords), texto: `de ${cuenta(c.daysInPeriod, ['día', 'días'])} con algún registro` },
         { cifra: numero(c.records), texto: `${c.records === 1 ? 'registro' : 'registros'}: ${numero(c.recordsWithQuantities)} con cantidades y ${numero(c.recordsWithoutQuantities)} sin cantidades` },
+        ...comidasDeLaCobertura(c.planMeals),
         ...plan,
       ];
     }

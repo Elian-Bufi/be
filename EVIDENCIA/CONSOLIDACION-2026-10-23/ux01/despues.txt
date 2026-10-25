@@ -1,0 +1,7 @@
+2026-10-20: 2350 kcal · calidad COMPLETE · falta [] · detalle Registros=4, Con cantidades=4, Comidas del plan=4 de 4 registradas
+2026-10-21: 1600 kcal · calidad PARTIAL · falta [{"reason":"COMIDA_DEL_PLAN_SIN_REGISTRO","count":1}] · detalle Registros=3, Con cantidades=3, Comidas del plan=3 de 4 registradas · 1 sin registro, Sin registro=cena
+Exportación (filas de datos):
+  Calorías registradas;kcal;suma de lo conocido del día;2026-10-20;;;2350;cada comida del plan registrada, con cantidades;no;4;t1;no;4;4;0;4 de 4 registradas;;
+  Calorías registradas;kcal;suma de lo conocido del día;2026-10-21;;;1600;subtotal;no;3;t1;no;3;3;0;3 de 4 registradas · 1 sin registro;1 comida(s) del plan sin registro;
+Resumen: valor 1975 · n 2 · subtotales 1
+Cobertura breve: {"principal":["7 días: 2 con valor","4 sin registros"],"detalle":["1 subtotal","1 comida del plan sin registro","hoy, en curso: fuera de la media"]}

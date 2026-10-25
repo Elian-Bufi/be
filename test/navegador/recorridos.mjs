@@ -529,6 +529,50 @@ async function accesoRevocado({ p, d }) {
 }
 
 /**
+ * Hace fallar con un 503, dentro de la página, las lecturas GET de `caminos`, sin tocar la API ni la red del navegador.
+ *
+ * Reemplaza `fetch` antes de que cargue cada documento (`evaluateOnNewDocument`): el cliente HTTP del website recibe el
+ * 503 como si lo hubiera mandado la API, y todos los demás pedidos salen como siempre. Antes se interceptaba en la red
+ * del navegador (el dominio Fetch de CDP, con `setRequestInterception`). Con eso, en la CI, a veces el navegador cancelaba
+ * de golpe todo lo que estaba en curso, a la API y al website, y perdía la cookie de reanudación. Fue el intermitente del
+ * 23 y el 24/10, y pasaba también interceptando solo estos dos caminos.
+ * `dejarDeFallar` saca un camino, en el documento abierto y en los que vengan.
+ */
+async function simularFallas(p, caminos) {
+  const fallan = new Set(caminos);
+  let guion = null;
+  const instalar = async () => {
+    if (guion) await p.removeScriptToEvaluateOnNewDocument(guion.identifier);
+    guion = await p.evaluateOnNewDocument(
+      (api, lista) => {
+        const simuladas = new Set(lista);
+        window.__beLecturasQueFallan = simuladas;
+        const original = window.fetch.bind(window);
+        window.fetch = (entrada, init) => {
+          const url = new URL(typeof entrada === 'string' ? entrada : entrada instanceof URL ? entrada.href : entrada.url, location.href);
+          const metodo = String(init?.method ?? (entrada instanceof Request ? entrada.method : 'GET')).toUpperCase();
+          if (metodo === 'GET' && url.origin === api && simuladas.has(url.pathname)) {
+            const cuerpo = JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } });
+            return Promise.resolve(new Response(cuerpo, { status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
+          }
+          return original(entrada, init);
+        };
+      },
+      API,
+      [...fallan],
+    );
+  };
+  await instalar();
+  return {
+    async dejarDeFallar(camino) {
+      fallan.delete(camino);
+      await instalar();
+      await p.evaluate((c) => window.__beLecturasQueFallan?.delete(c), camino);
+    },
+  };
+}
+
+/**
  * Bloque 5: si falla UNA lectura (simulada en el navegador, sin tocar la API), la vista muestra lo que llegó, dice qué
  * falta, no lo confunde con «no hay» y «Reintentar lo que faltó» lo completa. En el Plan falla el objetivo vigente; en el
  * Resumen, el estado del seguimiento.
@@ -536,20 +580,7 @@ async function accesoRevocado({ p, d }) {
 async function faltaUnaParte({ p, d, salida }) {
   await entrar(p, d.pro.correo);
   const base = `/api/v1/advisees/${d.ase.id}/nutrition`;
-  const fallan = new Set([`${base}/objectives/effective`, `${base}/review-context`]);
-  await p.setRequestInterception(true);
-  p.on('request', (req) => {
-    if (req.isInterceptResolutionHandled()) return;
-    if (req.method() === 'GET' && fallan.has(new URL(req.url()).pathname)) {
-      return req.respond({
-        status: 503,
-        headers: { 'Access-Control-Allow-Origin': WEB, 'Access-Control-Expose-Headers': 'x-request-id', Vary: 'Origin' },
-        contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } }),
-      });
-    }
-    return req.continue();
-  });
+  const fallas = await simularFallas(p, [`${base}/objectives/effective`, `${base}/review-context`]);
 
   // El Plan: la versión activa a la vista, el aviso de lo que falta y nada de «crear versión» ni «primero el objetivo».
   await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
@@ -559,7 +590,7 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate((t) => document.body.innerText.includes(t), dominio.COPY_DEL_PLAN.primeroElObjetivo)), 'una falla no se dice como «no hay objetivo»');
   assert.ok(!(await p.$('[data-crear-version]')), 'mientras falta el objetivo, no se ofrece crear una versión');
   await captura(p, salida, 'plan-falta-el-objetivo-1440');
-  fallan.delete(`${base}/objectives/effective`);
+  await fallas.dejarDeFallar(`${base}/objectives/effective`);
   await clic(p, 'button', 'Reintentar lo que faltó');
   await p.waitForFunction(() => !document.body.innerText.includes('Falta una parte de esta vista'), { timeout: ESPERA });
   await elemento(p, '[data-crear-version]');
@@ -571,7 +602,7 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate(() => document.body.innerText.includes('No hay una revisión pendiente.'))), 'una falla no se dice como «no hay revisión pendiente»');
   assert.ok(await p.evaluate(() => /Versión \d+ · activada el/.test(document.body.innerText)), 'el plan activo sigue a la vista');
   await captura(p, salida, 'resumen-falta-el-seguimiento-1440');
-  fallan.clear();
+  await fallas.dejarDeFallar(`${base}/review-context`);
   await clic(p, 'button', 'Reintentar lo que faltó');
   await p.waitForFunction(() => !document.body.innerText.includes('No se pudo leer.'), { timeout: ESPERA });
   // Leído el estado del seguimiento: el plan activo lo abrió, y la revisión acordada (en 3 días) todavía no está pendiente.
@@ -580,9 +611,141 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate(() => document.body.innerText.includes('Falta una parte de esta vista'))), 'después de reintentar, no queda el aviso');
 }
 
+/**
+ * DL-153 (encargo del 2026-10-23, con los criterios que Dirección ratificó el 2026-10-24): el número de Nutrición no da
+ * una falsa certeza.
+ * - Ayer se registró el desayuno y no el almuerzo del plan: el indicador del Resumen lo cuenta como subtotal y dice la
+ *   comida del plan sin registro; la lectura de Analizar de ese día dice cuál falta.
+ * - Hace tres días, el almuerzo tiene una comida diferente sin cantidades: tiene registro, sin ser la opción del plan, y
+ *   el día es un subtotal por la cantidad.
+ * - Anteayer, con las dos, dice que cada comida del plan tiene registro. Nunca «sin faltantes».
+ * Registros dice el mismo conteo que Analizar.
+ */
+async function completitud({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  const indicador = 'li.indicador[data-metrica="nutricion.energia"]';
+  await p.waitForFunction((s) => document.querySelector(s)?.innerText.includes('comida del plan sin registro'), { timeout: ESPERA, polling: 100 }, indicador);
+  const tarjeta = await p.$eval(indicador, (e) => e.innerText);
+  assert.match(tarjeta, /kcal por día/, 'el valor es una media por día, dicha');
+  assert.match(tarjeta, /Media de los días con valor/, 'con su regla');
+  assert.match(tarjeta, /3 con valor/, 'los días que sostienen la media, con hoy en curso fuera');
+  assert.match(tarjeta, /2 subtotales/, 'ayer (falta el almuerzo) y hace tres días (la comida diferente no tiene cantidades)');
+  assert.match(tarjeta, /1 comida del plan sin registro/, 'solo la de ayer: la comida diferente cuenta como registro');
+  assert.ok(!(await p.evaluate(() => document.body.innerText.includes('sin faltantes'))), 'ninguna parte del Resumen dice «sin faltantes»');
+  await captura(p, salida, 'completitud-indicador-1440');
+
+  const lecturaDel = async (fecha, texto) => {
+    await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=analizar&m=nutricion.energia&f=${fecha}`, { waitUntil: 'networkidle2' });
+    await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, texto);
+    return p.$eval('.panel-de-lectura', (e) => e.innerText);
+  };
+  const ayer = await lecturaDel(d.comidas.ayer, `Sin registro: ${d.comidas.faltante}`);
+  assert.match(ayer, /Subtotal de lo registrado/);
+  assert.match(ayer, /Comidas del plan: 1 de 2 con registro · 1 sin registro/);
+  assert.ok(ayer.includes('Falta: 1 comida(s) del plan sin registro'), 'el motivo, con las palabras de la exportación');
+  await captura(p, salida, 'completitud-lectura-ayer-1440');
+  const conDiferente = await lecturaDel(d.comidas.haceTres, 'Comidas del plan: 2 de 2 con registro · 1 con opción del plan · 1 con comida diferente');
+  assert.match(conDiferente, /Subtotal de lo registrado/, 'por la cantidad desconocida de la comida diferente');
+  assert.ok(!conDiferente.includes('Sin registro:'), 'el almuerzo tiene registro');
+  await captura(p, salida, 'completitud-lectura-comida-diferente-1440');
+  const anteayer = await lecturaDel(d.comidas.anteayer, 'Comidas del plan: 2 de 2 con registro');
+  assert.match(anteayer, /Cada comida del plan con registro, con cantidades/);
+  assert.ok(!anteayer.includes('sin faltantes'), 'completo según el plan no se dice «sin faltantes»');
+
+  // Registros cuenta igual: la comida diferente da registro al almuerzo, y se dice cuántas tienen la opción del plan.
+  await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=registros`, { waitUntil: 'networkidle2' });
+  await esperarTexto(p, '2 de 2 comidas con registro');
+  await esperarTexto(p, '1 con opción del plan');
+  await esperarTexto(p, '1 de 2 comidas con registro');
+  assert.ok(!(await p.evaluate(() => /\d+ de \d+ comidas? registradas?\b/.test(document.body.innerText))), 'ya no dice «N de M comidas registradas»');
+  await captura(p, salida, 'completitud-registros-1440');
+}
+
+/**
+ * DL-154 (encargo del 2026-10-23): una revisión registrada dice en qué se apoyó. En Nutrición · Revisiones, la revisión
+ * dice su período, quién la registró y la evidencia que se marcó (dos comidas y el plan; no el desayuno de ayer, que está
+ * en el período). «Ver la evidencia» la lista con el almuerzo deshecho después de la revisión, dicho. «Abrir» muestra la
+ * comida en el panel; Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. El almuerzo deshecho abre con
+ * el aviso del estado de hoy; la versión del plan, reemplazada después, abre diciendo que es la misma que se revisó y que
+ * ya no es la vigente (D-2). Al recargar, sigue ahí.
+ */
+async function evidencia({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  const revisiones = `${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=revisiones`;
+  await p.goto(revisiones, { waitUntil: 'networkidle2' });
+  const item = `[data-evidencia-de="${d.revision.reviewId}"]`;
+  await elemento(p, item);
+  const tarjeta = await p.$eval(item, (e) => e.closest('li').innerText);
+  assert.match(tarjeta, /período revisado:/, 'la revisión dice qué período se revisó');
+  assert.match(tarjeta, /registró: Lic\. Recorrido evidencia/, 'y quién la registró');
+  assert.match(tarjeta, /Evidencia seleccionada: 2 comidas · 1 versión del plan/, 'lo que se marcó, contado desde lo guardado');
+
+  // Ver la evidencia: lo marcado, y lo que cambió después de la revisión.
+  const boton = `${item} button[aria-controls]`;
+  await clic(p, boton, 'Ver la evidencia');
+  await p.waitForFunction((s) => document.querySelector(s)?.innerText.includes('Se deshizo después de esta revisión'), { timeout: ESPERA, polling: 100 }, item);
+  const lista = await p.$eval(item, (e) => e.innerText);
+  assert.ok(lista.includes(`${d.comidas.desayuno} · opción del plan`), 'el desayuno de anteayer');
+  assert.ok(lista.includes(`${d.comidas.almuerzo} · opción del plan`), 'el almuerzo de anteayer');
+  assert.ok(lista.includes('Plan v1'), 'la versión del plan');
+  assert.ok(lista.includes('Después se activó otra versión del plan'), 'y que después se activó otra');
+  // Los elementos de la lista, no el texto del bloque: cada «Abrir» repite el nombre para el lector de pantalla.
+  const elementos = await p.$$eval(`${item} .evidencia-registrada__que`, (es) => es.map((e) => e.innerText));
+  assert.equal(elementos.filter((t) => t.includes('opción del plan')).length, 2, 'solo las dos comidas marcadas: el desayuno de ayer está en el período y no se marcó');
+  assert.equal(elementos.length, 3, 'dos comidas y la versión del plan');
+  assert.ok(elementos.every((t) => / · /.test(t)), 'la fecha y el nombre se leen separados');
+  assert.equal(await p.$eval(boton, (b) => b.getAttribute('aria-expanded')), 'true');
+  await captura(p, salida, 'evidencia-lista-1440');
+
+  // Abrir la comida: el panel modal con el registro; Escape vuelve a la lista, con el foco en «Abrir».
+  const abrir = await p.waitForFunction((s, t) => [...document.querySelectorAll(`${s} .evidencia-registrada__item`)].find((li) => li.innerText.includes(t))?.querySelector('button') ?? null, { timeout: ESPERA }, item, `${d.comidas.desayuno} · opción del plan`);
+  await abrir.asElement().click();
+  await p.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Cerrar'), { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [aria-busy="true"]') && (document.querySelector('dialog[open]')?.innerText.length ?? 0) > 40, { timeout: ESPERA, polling: 100 });
+  assert.ok(!(await p.$('dialog[open] .aviso')), 'el desayuno no cambió después de la revisión: no hay aviso');
+  await captura(p, salida, 'evidencia-panel-1440');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
+  assert.match(await p.evaluate(() => document.activeElement?.textContent ?? ''), /Abrir/, 'el foco vuelve al botón que abrió el panel');
+  assert.equal(await p.$eval(boton, (b) => b.getAttribute('aria-expanded')), 'true', 'la lista sigue abierta: nada navegó');
+
+  // D-2 (criterios de Dirección del 2026-10-24): el almuerzo se deshizo después de la revisión. Al abrirlo, el panel dice
+  // antes del contenido que es el estado de hoy, no lo que se vio al revisar, y qué cambió.
+  const abrirAlmuerzo = await p.waitForFunction((s, t) => [...document.querySelectorAll(`${s} .evidencia-registrada__item`)].find((li) => li.innerText.includes(t))?.querySelector('button') ?? null, { timeout: ESPERA }, item, `${d.comidas.almuerzo} · opción del plan`);
+  await abrirAlmuerzo.asElement().click();
+  await p.waitForFunction(() => document.querySelector('dialog[open] .aviso')?.innerText.includes('no como estaba cuando se revisó'), { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [aria-busy="true"]'), { timeout: ESPERA, polling: 100 });
+  const aviso = await p.$eval('dialog[open] .aviso', (e) => e.innerText);
+  assert.match(aviso, /Lo que ves es como está hoy, no como estaba cuando se revisó/);
+  assert.match(aviso, /Se deshizo después de esta revisión/, 'con qué cambió');
+  await captura(p, salida, 'evidencia-panel-con-cambio-1440');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
+
+  // D-2: después de la revisión se activó otra versión del plan. La revisada no cambió (se abre desde su instantánea):
+  // el panel dice que es la misma y que ya no es la vigente, y no que está «como hoy».
+  const abrirPlan = await p.waitForFunction((s) => [...document.querySelectorAll(`${s} .evidencia-registrada__item`)].find((li) => li.innerText.includes('Plan v1'))?.querySelector('button') ?? null, { timeout: ESPERA }, item);
+  await abrirPlan.asElement().click();
+  await p.waitForFunction(() => document.querySelector('dialog[open] .aviso')?.innerText.includes('Es la misma versión que se revisó'), { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [aria-busy="true"]'), { timeout: ESPERA, polling: 100 });
+  const avisoDelPlan = await p.$eval('dialog[open] .aviso', (e) => e.innerText);
+  assert.match(avisoDelPlan, /Es la misma versión que se revisó; ya no es la vigente/);
+  assert.match(avisoDelPlan, /Después se activó otra versión del plan/, 'con qué cambió y cuándo');
+  assert.ok(!(await p.$eval('dialog[open]', (d) => d.innerText.includes('Lo que ves es como está hoy'))), 'no dice que la versión cambió');
+  await captura(p, salida, 'evidencia-panel-version-reemplazada-1440');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
+
+  // Al recargar (la sesión sigue), la revisión y su evidencia siguen ahí: están guardadas, no armadas en el navegador.
+  await p.reload({ waitUntil: 'networkidle2' });
+  await elemento(p, item);
+  assert.match(await p.$eval(item, (e) => e.innerText), /Evidencia seleccionada: 2 comidas · 1 versión del plan/);
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

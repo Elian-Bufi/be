@@ -256,7 +256,7 @@ export function diasSinComidasDelPlan(dias: readonly DiaDeRegistros[]): { readon
 // ─── El día en un renglón ───────────────────────────────────────────────────────────────────────────────────
 
 export interface ResumenDeUnDia {
-  /** «3 de 4 comidas registradas», «Sin registro», o por qué el día no tiene comidas del plan. */
+  /** «3 de 4 comidas con registro», «Sin registro», o por qué el día no tiene comidas del plan. */
   readonly principal: string;
   /** Lo que el día tiene de distinto, con el rasgo que lo dibuja; `rasgo: null` es texto llano. */
   readonly notas: readonly { readonly rasgo: RasgoDeUnHecho | null; readonly texto: string }[];
@@ -265,23 +265,30 @@ export interface ResumenDeUnDia {
 const comidas = (n: number): string => (n === 1 ? 'comida' : 'comidas');
 
 /**
- * El día dicho en un renglón. «N de M comidas registradas» cuenta solo las comidas del plan con una opción registrada;
- * un día sin ningún registro dice «Sin registro», nunca «0 de M».
+ * El día dicho en un renglón, con el mismo conteo que Analizar y la exportación (DL-153, criterios de Dirección del
+ * 2026-10-24). «N de M comidas con registro» cuenta las comidas del plan que tienen registro, sea la opción del plan o una
+ * comida diferente registrada en ella. Cada comida está en un solo estado, y una comida diferente registrada fuera de las
+ * comidas del plan no cubre ninguna. Si alguna tiene una comida diferente, una nota dice cuántas tienen la opción del
+ * plan: tener registro no es cumplir el plan. Un día sin ningún registro dice «Sin registro», nunca «0 de M».
  */
 export function resumenDeUnDia(d: DiaDeRegistros, conLaLinea: boolean): ResumenDeUnDia {
   const delPlan = d.filas.filter((f) => f.comida !== null);
   const registradas = delPlan.filter((f) => f.estado === 'REGISTRADA');
+  const conComidaDiferente = delPlan.filter((f) => f.estado === 'COMIDA_DIFERENTE').length;
   const sinRegistro = delPlan.filter((f) => f.estado === 'SIN_REGISTRO').length;
   const diferentes = d.filas.filter((f) => filaEnLaVista(f, 'COMIDA_DIFERENTE')).length;
-  const notas: { rasgo: RasgoDeUnHecho | null; texto: string }[] = [];
-  if (diferentes > 0) notas.push({ rasgo: 'COMIDA_DIFERENTE', texto: rasgoDeVariasComidas('COMIDA_DIFERENTE', diferentes) });
+  const notaDeDiferentes = diferentes > 0 ? [{ rasgo: 'COMIDA_DIFERENTE' as const, texto: rasgoDeVariasComidas('COMIDA_DIFERENTE', diferentes) }] : [];
   if (d.sinComidasDelPlan !== null) {
     return {
       principal: d.sinComidasDelPlan === 'SIN_PLAN' ? 'Ese día no había un plan vigente.' : 'El plan tiene más de un día tipo y ese día no hay registros que indiquen cuál correspondía.',
-      notas,
+      notas: notaDeDiferentes,
     };
   }
   if (d.sinRegistros) return { principal: 'Sin registro', notas: [{ rasgo: null, texto: `${delPlan.length} ${comidas(delPlan.length)} en el plan` }] };
+  const notas: { rasgo: RasgoDeUnHecho | null; texto: string }[] = [];
+  // El desglose, cuando no todas las que tienen registro son la opción del plan.
+  if (conComidaDiferente > 0) notas.push({ rasgo: null, texto: `${registradas.length === 0 ? 'ninguna' : registradas.length} con opción del plan` });
+  notas.push(...notaDeDiferentes);
   if (conLaLinea) {
     const distintas = d.filas.filter((f) => filaEnLaVista(f, 'DISTINTAS')).length;
     const sinConfirmar = d.filas.filter((f) => filaEnLaVista(f, 'SIN_CONFIRMAR')).length;
@@ -293,8 +300,9 @@ export function resumenDeUnDia(d: DiaDeRegistros, conLaLinea: boolean): ResumenD
   if (conLaLinea && notas.length === 0 && registradas.length === delPlan.length && registradas.every((f) => registroDeLaOpcion(f)?.entrada?.quality.includes('QUANTITIES_FROM_PLAN'))) {
     notas.push({ rasgo: null, texto: registradas.length === 1 ? 'con las porciones del plan' : 'todas con las porciones del plan' });
   }
+  const conRegistro = registradas.length + conComidaDiferente;
   return {
-    principal: registradas.length === 0 ? COPY_REGISTRO_PARA_EL_PROFESIONAL.sinOpcionDelPlan : `${registradas.length} de ${delPlan.length} ${comidas(delPlan.length)} ${delPlan.length === 1 ? 'registrada' : 'registradas'}`,
+    principal: conRegistro === 0 ? COPY_REGISTRO_PARA_EL_PROFESIONAL.ningunaComidaDelPlanConRegistro : `${conRegistro} de ${delPlan.length} ${comidas(delPlan.length)} con registro`,
     notas,
   };
 }

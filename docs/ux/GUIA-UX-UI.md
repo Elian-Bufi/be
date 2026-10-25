@@ -351,6 +351,20 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
     dato)») y hoy, en curso, aparte («fuera de la media», o lo registrado hasta ahora si es un total). Un día sin
     registros nunca sale del denominador ni se cuenta como cero: «2 de 2 días con valor» en un rango de 14 era un
     defecto;
+  - en nutrición, además, **las comidas del plan** (DL-153), que son otra dimensión que los días: «3 comidas del plan
+    sin registro» y «2 días sin saber qué comidas indicaba el plan». Salen del mismo contraste que la pestaña Registros.
+    Una comida del plan sin ningún registro hace del día un subtotal y la lectura del día dice cuál («Sin registro:
+    Cena»). Si el plan no deja saberlo (sin plan vigente, o varios días tipo sin un registro del plan que diga cuál), se
+    dice «sin determinar»: no se inventan comidas esperadas. Hoy no cuenta: todavía se puede registrar. **En nutrición,
+    «completo» nunca se dice «sin faltantes»:** lo registrado no es todo lo que se comió. Se dice «cada comida del plan
+    con registro, con cantidades» o «registros con cantidades, sin saber qué comidas indicaba el plan»
+    (`calidadEnPalabras`, del dominio, la misma en la tabla, la lectura, el origen del dato y la exportación). **La
+    cuenta de las comidas del plan** (criterios de Dirección del 2026-10-24) es de cobertura del registro, la misma en
+    Analizar, la exportación y Registros: «4 de 4 con registro · 3 con opción del plan · 1 con comida diferente», o «3 de
+    4 con registro · 1 sin registro». Una comida diferente registrada en una comida del plan le da registro, sin ser la
+    opción del plan ni contarse como si lo fuera; una registrada fuera de las comidas del plan no cubre ninguna. Los
+    textos de Nutrición siguen sin el vocabulario de B05 («cumplimiento», «adherencia» y los demás de
+    `TERMINOS_PROHIBIDOS_DE_NUTRICION`), tampoco en negación;
   - en entrenamiento y antropometría, en sesiones o tomas («6 sesiones: 5 con valor»; «3 tomas: 2 del último tramo
     comparable»), nunca en días.
   Una cobertura no es una adherencia y no lleva porcentaje. Si el plan empezó a regir dentro del período, se dice desde
@@ -390,6 +404,15 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   período se quita solo lo que quedó afuera, y se dice. Marcar no es haber examinado: la casilla es la declaración del profesional,
   el texto le pide dejar marcado solo lo que miró y ningún rótulo dice «examinado». Viajan las referencias individuales
   de siempre.
+- **Una revisión registrada dice en qué se apoyó** (DL-154, `evidencia-registrada.tsx`), en Nutrición y en
+  Entrenamiento:
+  - a la vista, el área, el período revisado, quién la registró y «Evidencia seleccionada: 12 comidas · 1 versión del
+    plan · el objetivo», contado de lo que guardó; si no guardó nada, lo dice, y nunca se completa con el período;
+  - «Ver la evidencia» lista lo marcado por grupo (los registros por fecha, la planificación), sin valores de salud, y lo
+    que cambió después de la revisión («Se deshizo después de esta revisión (16/10 09:00): quedó fuera de los totales»).
+    Lo que solo se ve en el período, sin haberse marcado, no aparece;
+  - «Abrir» muestra el origen en el panel modal, leído con el permiso de hoy; Escape vuelve el foco a «Abrir» y la lista
+    sigue abierta. Sin acceso, «No disponible con tu acceso actual», sin detalles.
 - **Después de una acción:** el aviso de éxito ofrece volver a la ficha, y la ficha vuelve a leer lo afectado. Una
   escritura usa su clave de intento (idempotencia) y su versión esperada (conflicto).
 

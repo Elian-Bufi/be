@@ -295,6 +295,13 @@ export class EntrenamientoController {
     return this.revisiones.consultar(actorDe(req), reviewId, query, contextoDe(req));
   }
 
+  /** API-TRN-23-EVIDENCIA (DL-154): la evidencia que guardó la revisión, resuelta con el permiso de hoy. */
+  @Get('training/reviews/:reviewId/evidence')
+  evidenciaDeRevision(@Param('reviewId') reviewId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.evidencia(actorDe(req), reviewId, query, contextoDe(req));
+  }
+
   /** API-TRN-23-LISTA (REV-A, DL-134): las revisiones de Entrenamiento propias, completas. */
   @Get('me/training/reviews')
   misRevisiones(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {

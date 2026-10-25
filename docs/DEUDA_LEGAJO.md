@@ -118,7 +118,7 @@
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
-| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RATIFICADA** por Dirección el 2026-10-03, hasta el 2026-10-31 · solo GHSA-86w9-cpqp-85rv en node-forge y GHSA-vfj7-8cjw-p6xm en braces, por aviso y paquete |
+| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vence el 2026-12-01 00:00 UTC (21:00 ART del 30/11), sin renovación automática |
 | DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios`, sin integrar: va con la candidata 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación sin integrar |
@@ -155,6 +155,9 @@
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 | DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **IMPLEMENTADO** 2026-10-19 en la sesión enfocada (PR en borrador, sin APK nueva): las reglas de la 0.13.2, dichas (R-1 a R-6); falta el teléfono |
+| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
+| DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-4, con criterios) e **INTEGRADA** (#200, `cddd005`), desplegada en test: las comidas del plan se cuentan por la cobertura del registro (la opción del plan o una comida diferente, con el desglose), el subtotal dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; falta la prueba con profesionales y con un lector de pantalla |
+| DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-3, con criterios) e **INTEGRADA** (#203, `8aaec16`), desplegada en test: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; al abrir, el panel avisa que es el estado de hoy o, si solo se activó otra versión, que es la misma que se revisó; la forma de la revisión, que lee la APK, no cambia; falta la prueba con profesionales y con un lector de pantalla |
 
 ---
 
@@ -2672,7 +2675,7 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 
 ## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
 
-**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03; las dos excepciones vencen el 2026-10-31
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría). **Desde la decisión del 2026-10-24 a la noche**, braces está retirada (GitHub retiró el aviso), y zod y node-forge están renovadas hasta el **2026-11-30** (UTC; el 30/11 a las 20:59:59 en Argentina), las dos con procedencia comprobada y solo en la APK. Detalle al final de esta entrada
 
 **Qué pasó.**
 - El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
@@ -2752,6 +2755,175 @@ excepciones siguen siendo las de esta deuda.
   - si la auditoría no se puede hacer: un error de npm, una salida vacía o un informe incompleto.
 - **Antes del 2026-10-31** hay que revisar las fuentes primarias. Si apareció una corrección, se fija con `overrides` y la
   excepción se borra. Si no, Dirección decide de nuevo.
+
+**Revisión y propuesta del 2026-10-23 (sin ratificar: Dirección no autorizó ampliar las excepciones).**
+- **Las dos ratificadas.** node-forge sigue sin corrección: la 1.4.0 es la última y el aviso la abarca. braces ya no
+  aparece en la auditoría del 2026-10-23: su excepción no se usa y se puede borrar. Las dos vencen el 2026-10-31.
+- **Un aviso nuevo, sin versión corregida en la línea que usa Expo:** GHSA-mrhx-c7xc-m3w5 en zod (alto; todo zod anterior
+  a la 4.6.6), publicado después del 2026-10-20.
+  - La API, el website y la APK validan con el zod de `@be/domain`, que pasa a la 4.6.6 en `seguridad/avisos-2026-10-23`.
+  - Queda el zod 3.25.76 que exige la CLI de Expo (`@expo/cli` 57.0.25 pide `^3.25.76`). No hay un zod 3 corregido, y no
+    viaja en el bundle de la APK, pero la auditoría de `@be/mobile` falla por él y frena la CI de todo.
+- **La propuesta** (esta rama, `seguridad/excepcion-zod-expo-propuesta`): exceptuar solo GHSA-mrhx-c7xc-m3w5 en zod, solo en
+  `@be/mobile` y hasta el 2026-10-31, como las otras.
+  - Una excepción puede acotarse a espacios de trabajo (`espacios`): en la API o el website, el mismo aviso sigue
+    bloqueando. Lo prueba `auditoria-de-dependencias.test.cjs` (13 pruebas).
+  - **Alternativa:** dejar la CI en rojo hasta que Expo pase a zod 4, sin integrar nada mientras tanto. Actualizar Expo no
+    lo resuelve hoy: la última `@expo/cli` (58.1.15, revisada el 2026-10-23) también pide `^3.25.76`.
+  - **Recomendación:** la excepción acotada, con el mismo vencimiento, y revisar las tres juntas antes del 2026-10-31.
+
+**Corrección de la propuesta del 2026-10-24 (sigue sin ratificar).** Revisada a pedido de Dirección.
+- **Qué faltaba.** La propuesta exceptuaba el aviso por aviso, paquete y espacio, sin mirar de dónde venía cada copia
+  vulnerable.
+  - La copia es `node_modules/zod` (3.25.76), en la raíz del monorepo. El zod 4.6.6 vive anidado en
+    `packages/domain/node_modules`. Cualquier `import 'zod'` fuera del dominio recibe el zod 3.
+  - Si la APK empezaba a usarlo, declarándolo o importándolo sin declarar, la excepción lo tapaba.
+  - Con npm de verdad, en una copia aislada del lockfile, la propuesta anterior aprobaba con código 0 en tres casos:
+    cuando la APK declara zod 3.25.76, cuando una biblioteca de la APK pide zod ^3.25.0 y sin ninguna prueba de qué viaja
+    en el bundle.
+- **Lo que exige ahora, en cada corrida** (`procedencia` en `EXCEPCIONES`):
+  1. npm encuentra vulnerable solo `node_modules/zod`, y `package-lock.json` dice que es la 3.25.76.
+  2. En producción la usa solo `@expo/cli` 57.0.25, a la CLI la usa solo `expo` 57.0.23, y `@be/mobile` pide `expo`.
+     Las rutas de desarrollo no cuentan: Puppeteer → `chromium-bidi` → zod se informa y queda fuera, como en toda la
+     auditoría de producción.
+  3. El bundle de Android de ese commit no tiene ningún módulo de `node_modules/zod` ni de otra copia de zod que el aviso
+     abarque. Se construye como lo hace Gradle (`expo export:embed`), y `node_modules` tiene que coincidir con el lockfile.
+  - Si aparece otra ruta, el aviso bloquea (1). Si algo no se puede comprobar, la auditoría no aprueba (2). Vencida,
+    bloquea. En otro espacio, bloquea.
+  - Si cambia la versión de la copia o de un eslabón, la excepción deja de valer hasta repetir la comprobación.
+- **Por qué el bundle y no solo la dependencia.** La CLI no es solo de construcción: su sistema de módulos
+  (`@expo/cli/build/metro-require/require.js`) viaja en la APK. Ese módulo no importa nada, y el zod 3 no entra. La prueba
+  tiene que ser sobre la copia de zod, no sobre el paquete que la trae.
+- **Dónde se ejecuta el zod 3.** Al construir: durante `export:embed`, el paso de Gradle, la CLI lo carga para validar la
+  definición de los complementos de DevTools que declaran los paquetes instalados. Lo mostró un registro de carga de
+  módulos. Corre en la CI y en la máquina que construye la APK, no en el teléfono, y no recibe datos de las personas.
+- **Lo que se comprobó el 2026-10-24:**
+  - **El lockfile de la propuesta.** `node_modules/zod` la usa en producción solo `@expo/cli`; a la CLI, solo `expo`; al
+    zod 4.6.6, solo `@be/domain`.
+  - **La candidata.3 publicada.** El APK construido el 2026-10-19 tiene el mismo SHA-256 que el publicado en GitHub
+    (`d6b73842…`). Su mapa de fuentes tiene 1.124 módulos. El zod que lleva es solo el de `packages/domain/node_modules`:
+    95 módulos, con `version = 4.6.5` en el código empaquetado. No tiene ningún módulo de `node_modules/zod`.
+  - **Esta propuesta.** `npm run audit:prod` en local aprueba. El bundle de Android tiene 1.127 módulos, ninguno de
+    `node_modules/zod`, y el zod que lleva es solo `packages/domain/node_modules/zod`, la 4.6.6 (95 módulos).
+  - **Las pruebas.** `auditoria-de-dependencias.test.cjs` tiene 30 pruebas, 17 nuevas. Las 16 formas de desactivar un
+    control hacen fallar al menos una. `auditoria-de-dependencias.escenarios.cjs` corre los cinco escenarios con npm de
+    verdad, y los cinco dan lo esperado.
+  - **La negativa con el bundle real.** Con la APK importando zod sin declararlo, la auditoría bloquea: «el bundle de
+    Android incluye 10 módulos de node_modules/zod (3.25.76)».
+  - La evidencia completa y cómo repetirla están en `EVIDENCIA/EXCEPCION-ZOD-EXPO/LEEME.md`.
+- **Lo que esta excepción no cubre, y sigue abierto:**
+  - **Las APK instaladas.** La candidata.3 ejecuta zod 4.6.5, y está comprobado en su bundle. La 0.13.2 también, según el
+    lockfile del commit con que se construyó. Solo una APK nueva, construida después de integrar
+    `seguridad/avisos-2026-10-23`, lo corrige. Para aprovecharlo hace falta una respuesta maliciosa de la API.
+  - **La API de `test`.** Valida con zod 4.6.5 hasta que se integre esa rama. El límite de 16 KB por pedido acota el aviso.
+  - **Un `import 'zod'` sin declarar en la API o el website** recibiría el zod 3 de la raíz, y npm no lo vería. Ninguna
+    excepción lo tapa, pero la auditoría tampoco lo detecta.
+- **Pendiente de Dirección.** Ratificar o no esta excepción. Es una ampliación de DL-114, y Dirección no autorizó
+  ampliarla. Vence el 2026-10-31, con la de node-forge.
+
+**Ratificación de Dirección del 2026-10-24: el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5).**
+- **Quién y cuándo.** Dirección de BE, el 2026-10-24.
+  - Ratifica la propuesta de #202 en su versión corregida: la cabeza `664f713`, con la CI de verificación 40094444871.
+  - La versión del 2026-10-23 (`916cb05`) no se ratifica: exceptuaba por aviso, paquete y espacio, sin mirar de dónde
+    venía la copia.
+- **Qué se exceptúa, y nada más:**
+  - el aviso GHSA-mrhx-c7xc-m3w5;
+  - en la copia `node_modules/zod`, versión 3.25.76;
+  - solo en la auditoría de `@be/mobile`;
+  - con procedencia exclusiva `@expo/cli` 57.0.25 ← `expo` 57.0.23 ← `@be/mobile`.
+- **El riesgo aceptado.**
+  - Ese zod 3 sigue instalado en la CI y en la máquina que construye la APK.
+  - La CLI lo ejecuta al construir (`export:embed`), para validar la definición de los complementos de DevTools de los
+    paquetes instalados.
+  - No viaja en la APK y no recibe datos de las personas. El riesgo es bajo y acotado a la cadena de construcción, no
+    nulo.
+- **Las condiciones, obligatorias en cada auditoría** (`procedencia` en `scripts/auditoria-de-dependencias.cjs`):
+  1. npm encuentra vulnerable solo esa copia, en esa versión.
+  2. En producción la usa solo `@expo/cli`, a la CLI la usa solo `expo`, y `@be/mobile` pide `expo`. Ninguna ruta
+     adicional usa esa copia.
+  3. El bundle de Android de ese commit, construido como lo hace Gradle, no tiene ningún módulo de esa copia ni de otra
+     copia de zod que el aviso abarque. `node_modules` coincide con el lockfile.
+  4. Fail closed:
+     - una procedencia nueva o una versión distinta bloquean (1);
+     - una comprobación imposible (sin lockfile, sin la lista de npm, sin bundle) no aprueba (2);
+     - vencida, bloquea (1).
+- **El vencimiento.** El 2026-10-31, inclusive.
+  - La auditoría compara la fecha UTC del runner. Vale hasta el 2026-10-31 a las 23:59:59 UTC, que son las 20:59:59 de
+    Argentina.
+  - Desde el 2026-11-01 a las 00:00 UTC (el 31 a las 21:00 en Argentina), la auditoría falla en toda rama, también en
+    `main`, salvo una decisión nueva de Dirección.
+  - Que venza unas horas antes en la hora de Argentina va en el sentido seguro. Es el mismo criterio de las excepciones de
+    node-forge y braces.
+- **Lo que no autoriza:**
+  - integrar ningún PR en `main` ni desplegar `test`, que necesitan una autorización aparte;
+  - excepciones nuevas, ni ampliar las existentes;
+  - cambiar el vencimiento de node-forge o braces.
+- **Dónde quedó:**
+  - este registro;
+  - `EVIDENCIA/EXCEPCION-ZOD-EXPO/LEEME.md`;
+  - el procedimiento de integración, sin ejecutar: `EVIDENCIA/EXCEPCION-ZOD-EXPO/INTEGRACION.md`.
+
+**Decisión de Dirección del 2026-10-24, a la noche: braces se retira, y zod y node-forge se renuevan hasta el 2026-11-30.**
+La tomó Dirección de BE, sobre la propuesta del mismo día, y no es una renovación automática.
+
+- **Las fuentes oficiales, consultadas otra vez antes de aplicarla** (2026-10-24, 23:15 UTC: base de avisos de GitHub,
+  `gh api advisories/<aviso>`, y registro de npm):
+  - **GHSA-vfj7-8cjw-p6xm (braces):** GitHub lo **retiró** el 2026-10-23 a las 12:53 UTC, y npm ya no lo informa.
+  - **GHSA-86w9-cpqp-85rv (node-forge, CVE-2026-85393):**
+    - afecta hasta la 1.4.0, que es la última publicada, y no hay corrección;
+    - lo siguen pidiendo `@expo/code-signing-certificates` 0.0.7 y las CLI de Expo 57.0.32 (el último parche de SDK 57)
+      y 58.1.15.
+  - **GHSA-mrhx-c7xc-m3w5 (zod, CVE-2023-54404):**
+    - se corrige solo en zod 4.6.6, y la última 3.x es la 3.25.76;
+    - las mismas CLI siguen pidiendo zod ^3.25.76.
+  - Actualizar Expo, por lo tanto, no saca ninguna de las dos.
+- **braces: retirada.**
+  - Se borró de `EXCEPCIONES`. Queda este registro y un comentario en el script.
+  - Si GitHub volviera a publicar el aviso, la auditoría bloquea como con cualquier otro, y hace falta una decisión
+    nueva.
+- **zod 3 de Expo: renovada hasta el 2026-11-30**, con exactamente las condiciones ratificadas arriba:
+  - la copia, la versión y la cadena;
+  - solo `@be/mobile`;
+  - fuera del bundle de Android;
+  - fail closed.
+- **node-forge: renovada hasta el 2026-11-30, solo en la cadena de construcción de la APK.** Antes valía en todos los
+  espacios y sin procedencia; ahora tiene la misma comprobación que zod, extendida a sus dos caminos:
+  - **Lo que cubre:**
+    - el aviso GHSA-86w9-cpqp-85rv;
+    - la copia `node_modules/node-forge` 1.4.0;
+    - solo en la auditoría de `@be/mobile`.
+  - **Los caminos permitidos, con sus versiones:**
+    - `node-forge` ← `@expo/cli` 57.0.25 ← `expo` 57.0.23 ← `@be/mobile`;
+    - `node-forge` ← `@expo/code-signing-certificates` 0.0.6 ← `@expo/cli`. Al paquete de firma lo puede usar solo la CLI.
+  - **El bundle de Android** no puede tener módulos de esa copia, ni de otra copia de node-forge que el aviso abarque. El
+    rango es «<=1.4.0»: no hay versión corregida, y la 1.4.0 está abarcada.
+  - **Una dependencia nueva que lo traiga para ejecutarse,** aunque sea de la APK, bloquea (1). También bloquean:
+    - otro paquete que use el de firma, por ejemplo `expo-updates`;
+    - un camino declarado que ya no exista;
+    - una versión distinta.
+  - **En la API y el website, el aviso bloquea.** Lo que no se puede comprobar no aprueba (2).
+- **El vencimiento, en las dos: el 2026-11-30, inclusive.**
+  - La auditoría compara la fecha UTC del runner. Valen hasta el 2026-11-30 a las 23:59:59 UTC, que son las 20:59:59 de
+    Argentina.
+  - Desde el 2026-12-01 a las 00:00 UTC, el 30/11 a las 21:00 en Argentina, la auditoría falla en toda rama, también en
+    `main`.
+  - **No hay renovación automática:** renovarlas de nuevo es otra decisión de Dirección y un cambio en el script.
+- **El riesgo que queda, bajo y acotado a la cadena de construcción, no nulo:**
+  - **El zod 3:** lo ejecuta la CLI al construir el bundle, con datos de paquetes, no de personas.
+  - **node-forge:** está instalado en la CI y en la máquina que construye la APK. La CLI lo usa para firmar actualizaciones
+    de expo-updates y para la firma de iOS, y BE no configura ninguna de las dos. El defecto (la verificación de firmas
+    RSA acepta elementos de más) importa solo al verificar firmas.
+  - **Los teléfonos,** fuera de esta excepción: siguen con el zod 4.6.5 de las APK instaladas hasta una APK nueva
+    autorizada. Validan respuestas de la API de BE.
+- **Cuándo se retiran:**
+  - **la de zod,** cuando Expo publique una CLI que no pida zod 3, salga una 3.x corregida o se retire el aviso;
+  - **la de node-forge,** cuando salga una versión fuera del rango del aviso (se aplica con `overrides`), la CLI deje de
+    usarlo o se retire el aviso.
+
+  Revisarlo antes del 2026-11-30, y en cada actualización de Expo: al cambiar las versiones de la cadena, la excepción
+  deja de valer.
+- **Dónde quedó:** este registro, `EXCEPCIONES` en `scripts/auditoria-de-dependencias.cjs`, sus pruebas y los escenarios
+  con npm de verdad.
 
 ---
 
@@ -5138,3 +5310,247 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 - **El alcance de R-2, dicho antes de elegir.** La ayuda del diálogo dice que la sustitución vale para todas las series del ejercicio en esa sesión, las registradas y las que faltan, y que no se puede cambiar una serie sola; con series registradas, la confirmación suma «y las que registres después también». No hay sustitución por serie: el contrato admite un realizado por ejercicio, y la prueba lo fija.
 
 **Condición de cierre:** Dirección ratifica R-1 a R-6 (sobre todo R-2: todas las series del ejercicio pasan al ejecutado), y la prueba en el teléfono pasa.
+
+---
+
+## DL-152 — Lo que leen las APK instaladas: congelado por versión y leído contra la API de hoy
+
+**Prioridad:** alta (antes de pasar una candidata a estable).
+
+**Documentos:**
+- **09v7 T19:** un endpoint nuevo es compatible; cambiar la forma de uno que lee un cliente instalado, no.
+- **C01** (WP-ENTRENAMIENTO-SERIES) y **D10** (WP-NUTRICION-RECETAS): «lo nuevo va en operaciones nuevas».
+- **DL-122:** las capacidades que declara la APK (`X-BE-Capabilities`).
+- **DL-138 D-10:** una APK sin la casilla de mayoría de edad ya no crea cuentas.
+- **DL-151** (PR #195): la sustitución de ejercicios que perdieron las candidatas 0.15 a 0.17.
+
+**Qué pidió Dirección (2026-10-20):** «Ampliá las pruebas de compatibilidad para cubrir las respuestas que realmente leen la estable y la 0.17.0-candidata.3, incluyendo las lecturas actualmente fuera de las verificaciones existentes. No promociones una candidata a estable mientras siga la regresión o falten las pruebas del teléfono.»
+
+**Estado:** IMPLEMENTADA el 2026-10-20 en la rama `wp-compatibilidad-apk` (PR #198, en borrador), sin integrar. CI en verde: la integración, 837 de 837, con los 19 casos de esta prueba (8 de la 0.13.2 y 11 de la candidata.3); el dominio, 833 de 833.
+
+**Qué pasaba:**
+- Lo congelado (`packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`) eran 16 lecturas de la 0.13.2: NUT-14 a 16 y 16-LISTA; TRN-08, 09, 13 a 20, 14-PERIODO y 19-LISTA.
+- Las APK validan **toda** respuesta con el cliente compartido (`crearClienteBe`): cada 2xx con el esquema de su método, y cada rechazo con el sobre de error (si no lo reconocen, dicen «respuesta no reconocida»).
+- Relevado en el código de cada tag, la 0.13.2 (`4b49d43`) llama 44 operaciones y la 0.17.0-candidata.3 (`cf55288`), 80. Fuera de lo congelado quedaban, en las dos, ACC, CON, REL, FRM y ANT-06-PROPIA; y en la candidata, además, ING, MED, EVI, INV, GOO, NOV, CRD-01-PROPIA, SER-02, TIE, AGE-01 y REV-A (NUT-19 y TRN-23).
+
+**Lo decidido** (a ratificar):
+- **D-1 · Qué se congela.** Un archivo por APK, `packages/domain/fixtures/lecturas-de-la-apk/<versión>.json`, con:
+  - la versión, el versionCode, el tag y el commit;
+  - cómo pide: las cabeceras (`X-BE-Surface` y las capacidades), las versiones de los textos que manda como aceptadas y, por operación, si lleva la sesión y la Idempotency-Key;
+  - por operación: el verbo, la ruta, los métodos del cliente que la llaman, el esquema de la respuesta y el del pedido, en JSON Schema del lado de la entrada (lo que acepta `safeParse`);
+  - el sobre de error y los detalles que la candidata lee con su esquema (GOOGLE_LINK_REQUIRED, GOOGLE_ACCOUNT_NOT_FOUND, VISUAL_EVIDENCE_ACT_REQUIRED).
+  - *Por qué JSON Schema:* es lo que ya usaba C01, se lee con `z.fromJSONSchema` del mismo zod de las APK (4.6.5), se revisa en un diff y no trae código viejo al repo. La prueba del dominio verifica que la ida y vuelta por zod da el mismo esquema: la prueba de integración lee exactamente lo congelado.
+  - *Lo que JSON Schema no dice:* cuatro `refine` (el rango de repeticiones, la unidad de un parámetro numérico, la vigencia del objetivo de una revisión y el instante monotónico de un evento). El script los anota y la prueba de integración los revisa aparte; uno nuevo hace fallar la prueba del dominio hasta que se escriba su verificación. Tampoco dice el recorte de espacios (`trim`): un texto hecho solo de espacios pasaría la prueba y la APK lo rechazaría. La API recorta al guardar.
+  - *Alternativas descartadas:* copiar el dominio compilado de cada APK (fiel también en los `refine`, pero cientos de KB de código ilegible por versión); leer los tags con git durante la CI (necesita el historial completo y los tags en cada corrida).
+- **D-2 · Cómo se genera.** `node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-<versión>`:
+  - lee del tag las fuentes del dominio y de la APK, transpila ese dominio y lo carga con el zod del repo (se niega si la APK usaba otra versión);
+  - del cliente de ese commit saca el verbo, la ruta y el esquema de cada método; de la APK, qué métodos usa; del contrato de ese commit, la operación de cada ruta.
+  - No se edita a mano, y da siempre el mismo archivo.
+- **D-3 · La prueba.** `test/integration/lecturas-de-las-apk.int-spec.ts`, en la CI de integración (PostgreSQL real):
+  - por cada APK congelada pide cada operación que esa APK llama, **como la pide**: su ruta, sus cabeceras, la sesión y la Idempotency-Key solo donde las manda, los textos de su commit y un cuerpo que se valida antes contra su pedido congelado;
+  - lee la respuesta real con el esquema congelado de esa APK, y cada rechazo con su sobre y sus detalles;
+  - usa datos que recorren las ramas más cargadas: una opción de receta con imagen, «Piernas A» con la imagen del ejercicio, eventos de tiempo, revisiones con un objetivo nuevo y un formulario rectificado;
+  - al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada lectura suya tenga escenario.
+- **D-4 · El contrato de hoy.** La prueba del dominio (`lecturas-de-la-apk.test.ts`, en `npm test`) exige que cada operación que llama una APK vigente siga en `OPERACIONES` con su verbo y su ruta, y que no pida sesión ni Idempotency-Key donde la APK no las manda.
+- **D-5 · Lo que ya se sabe que no tiene éxito.** El alta de la 0.13.2 (API-ACC-01) responde 422 TERMS_VERSION_NOT_ACCEPTABLE por DL-138 D-10. La prueba lee ese rechazo con el sobre de la 0.13.2, que lo traduce a «Los textos cambiaron. Actualizá la app para continuar.».
+
+**Cómo se actualiza al publicar una APK:**
+1. Taggearla `be-apk-<versión>`, como cada publicación.
+2. Correr el script con ese tag y sumar la versión a `VIGENTES` en `lecturas-de-la-apk.test.ts`.
+3. La prueba de integración corre sola con el archivo nuevo. Si la APK lee algo que ningún escenario pide, falla hasta que se agregue.
+4. Cuando ya no haya teléfonos con una versión, se borra su archivo y se saca de `VIGENTES`.
+
+Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
+
+**La regla para promover.** Una candidata no pasa a estable mientras:
+- siga la regresión de la sustitución de ejercicios (DL-151, PR #195): la candidata.3 ya no llama API-TRN-13, con la que la 0.13.2 busca el ejercicio que sustituye;
+- falten las pruebas en el teléfono;
+- o esta prueba falle para la candidata o para la estable.
+
+**Lo que mostró el relevamiento:**
+- Para las 124 lecturas (44 de la estable y 80 de la candidata), el contrato de hoy declara la misma forma que congeló cada APK. La única diferencia es API-INV-05, donde el cliente lee con la unión de las dos respuestas del contrato (201 y 200).
+- En los pedidos, la única diferencia es el alta de la 0.13.2 (D-5).
+- La API no valida sus respuestas contra el contrato. Por eso la prueba lee respuestas reales: una respuesta puede traer algo que el contrato no declara.
+
+**Pruebas:**
+- **Dominio** (`lecturas-de-la-apk.test.ts`): están las dos APK vigentes con su tag y su commit; la ida y vuelta por zod; el contrato de hoy; lo que JSON Schema no representa.
+- **Integración** (`lecturas-de-las-apk.int-spec.ts`): las 44 y las 80 lecturas con datos reales, más el cierre que exige haberlas leído todas.
+
+**Lo que queda abierto:**
+- Las pruebas en el teléfono.
+- C01 y D10 siguen como estaban: comparan el contrato de hoy con la forma congelada de 16 lecturas. Esta DL las incluye; retirarlas lo decide Dirección.
+
+**Provisorio en código:** D-1 a D-5.
+
+**Condición de cierre:** la prueba en verde en la CI de main, y la regla aplicada en la próxima promoción a estable.
+
+---
+
+## DL-153 — Nutrición: el número dice qué representa y qué falta registrar del plan
+
+**Prioridad:** alta (encargo de consolidación de Dirección del 2026-10-23, punto 3; hallazgo UX-01 de la auditoría del 2026-10-21).
+
+**Documentos:**
+- **09 v0.11 §11 y §22, B10-08 §3:** lo desconocido no es cero, y una falta de dato no es un incumplimiento.
+- **REG-06-125 e INV-06-135:** una comida sin registro es «sin dato», nunca «0 %» ni «no cumplido».
+- **DL-121 y DL-126:** el registro v2 de comidas y las proyecciones; el día es la suma exacta de lo conocido.
+- **GUIA-UX-UI II.4:** la cobertura que hace falta para leer un número va junto al número.
+
+**Qué pasaba.** Reproducido el 2026-10-23 contra main `0fb1bff`, con un plan de cuatro comidas (desayuno, almuerzo, merienda y cena) y un día con las tres primeras registradas con cantidades:
+- **Antes:** el día salía `COMPLETE`; Analizar y la lectura decían «sin faltantes»; la exportación, «sin faltantes»; el Resumen decía «7 días: 2 con valor · 4 sin registros», sin subtotales. Nada decía que faltaba la cena.
+- **Después:** el día es un subtotal y lo dice: «Subtotal de lo registrado · Comidas del plan: 3 de 4 registradas · 1 sin registro · Sin registro: Cena · Falta: 1 comida(s) del plan sin registro». La exportación dice «subtotal» y tiene la columna «Comidas del plan». El Resumen suma «1 subtotal · 1 comida del plan sin registro».
+- **La media no cambió:** 1.975 kcal por día, de 2 días con valor, antes y después.
+
+**Las cuatro dimensiones, separadas:**
+1. **Cantidades conocidas en los registros que hay.** Es la calidad de siempre: un registro sin cantidades, o sin el dato del nutriente, hace un subtotal.
+2. **Comidas del plan, cuando el plan deja conocerlas.** Es nuevo y sale del mismo contraste que la pestaña Registros (`construirContraste`, API-NUT-17): el plan que regía, con el día tipo que usó la persona al registrar o el único del plan. Cada comida está en un solo estado: con la opción registrada, con una comida diferente registrada en ella, o sin registro.
+   - Si no había un plan vigente, o el plan tiene varios días tipo y ese día no hay registros del plan que digan cuál, **no se inventan comidas**. El día dice «sin determinar» con su motivo.
+   - Solo una comida sin ningún registro hace del día un subtotal.
+3. **Cobertura temporal del período:** días con valor, sin registros y hoy en curso. No cambia.
+4. **Lo indicado frente a lo registrado:** sigue sin adherencia ni porcentaje. Analizar muestra el objetivo al lado de lo registrado, sin restar.
+
+**Qué cambió:**
+- **Cálculo** (`nutricion-del-analisis.ts`). Antes, un día era `COMPLETE` con todos sus registros con cantidades; ahora, además, sin comidas del plan sin registro conocidas. El motivo nuevo es `COMIDA_DEL_PLAN_SIN_REGISTRO`, con cuántas.
+  - **No cambian:** el valor del día, la media de los días con valor, su denominador, el día en curso (fuera de la media), la zona ni los subtotales dentro de la media.
+  - Una comida sin registro es otra dimensión: no cambia si un día sin valor se cuenta «sin cantidades» o «sin el dato del nutriente».
+- **Contrato** (API-PRJ-01, solo lo lee el website). Se suma `planMeals` a la cobertura de cada punto y del período; el del período no cuenta hoy. Es una extensión de BE.
+  - Ninguna APK publicada lee API-PRJ-01: comprobado con lo que congeló DL-152 (#198) de la 0.13.2 y de la 0.17.0-candidata.3.
+  - La API lee las instantáneas de los planes en una sola consulta más.
+- **Presentación:**
+  - Analizar (tabla, lectura y origen del dato) y la exportación dicen la calidad con `calidadEnPalabras`. En nutrición, «completo» nunca se dice «sin faltantes»: «cada comida del plan registrada, con cantidades» o «registros con cantidades, sin saber qué comidas indicaba el plan».
+  - Los indicadores del Resumen, la tabla de etapas y «Comparar dos períodos» suman «N comidas del plan sin registro» y «N días sin saber qué comidas indicaba el plan» (`partesDeLaCobertura`, `coberturaBreve`).
+  - El Resumen del área y «La información disponible» dicen las comidas del plan sin registro del período, sin contar hoy.
+- **Lo que no se hace:** no se rellena una comida con cero ni con lo previsto, no se califica, y el conteo de registros no se vuelve un subtotal (es exacto; lo dice el detalle).
+
+**Decisiones, provisorio en código (a ratificar):**
+- **D-1 · ¿La media del Resumen incluye los subtotales?** Provisorio: **A**, sí, como antes, diciendo cuántos son y qué falta.
+  - **B:** la media principal solo con los días sin faltantes conocidos, y la de todos al lado.
+  - **C:** las dos medias, una al lado de la otra.
+  - **Recomendación:** A ahora. B o C se decide con la prueba con profesionales (tarea T4 de `docs/ux/PRUEBA-CON-PROFESIONALES.md`): con pocos días completos, B da un número con menos días detrás, y los días que la persona registra completos pueden no ser los típicos.
+- **D-2 · Una comida diferente registrada en una comida del plan.** Provisorio: tiene registro, así que no es «sin registro»; sigue sin ser la opción registrada, como en Registros. Si no tiene cantidades, el día ya es un subtotal por eso.
+  - **Alternativa:** contarla como sin registro. El mismo hecho contaría dos veces como falta.
+- **D-3 · El día tipo de un día solo con comidas diferentes.** Provisorio: como Registros, no se elige ninguno y el día queda sin determinar (09v9:680).
+  - **Alternativa:** usar el día tipo de contexto que guarda la comida diferente desde DL-121. Conocería más días, pero cambia el contraste en las dos pantallas: va como mejora aparte, si Dirección la quiere.
+- **D-4 · Hoy, en curso.** Provisorio: el punto de hoy es un subtotal si le falta una comida, pero sus comidas no cuentan en el período, porque todavía se pueden registrar.
+  - **Alternativa:** no marcar hoy hasta que termine.
+
+**Decisión de Dirección del 2026-10-24: D-1 a D-4, ratificadas con estos criterios.**
+- **D-1.** La media sigue incluyendo los subtotales: es el promedio de la energía registrada en los días con valor.
+  - **Lo que tiene que verse:** los días usados, cuántos son subtotales y la cobertura del período. El indicador lo muestra: «N días: X con valor · Y sin registros», y debajo los subtotales, las comidas del plan sin registro y «hoy, en curso: fuera de la media».
+  - **Cómo no tiene que leerse:** ni como ingesta real ni como cumplimiento del objetivo.
+    - Lo dice el límite de las métricas registradas, que se ve en Analizar: «No es la ingesta real ni una comparación con el objetivo».
+    - También «Cómo se lee» del Resumen: «En Nutrición, el número es lo registrado: no es la ingesta real», seguido de «No hay verde ni rojo, ni distancia a un objetivo».
+    - Los textos evitan la palabra «cumplimiento», también en negación: B05 la prohíbe en todo texto de Nutrición, y lo comprueba T13 (`scripts/copy-pantallas.test.cjs`).
+- **D-2.** Una comida diferente registrada en una comida del plan cuenta como registrada, sin ser automáticamente cumplimiento del plan, y las cantidades o los nutrientes desconocidos siguen siendo desconocidos.
+  - **La presentación se corrigió.** El numerador era solo de las opciones del plan («3 de 4 registradas · 1 con una comida diferente»). Ahora es la cobertura del registro, opciones más comidas diferentes, sin contar dos veces una comida, y el desglose va cuando hay comidas diferentes:
+    - «4 de 4 con registro · 3 con opción del plan · 1 con comida diferente»;
+    - «3 de 4 con registro · 1 sin registro · 2 con opción del plan · 1 con comida diferente»;
+    - una comida diferente registrada fuera de las comidas del plan no cubre ninguna: «3 de 4 con registro · 1 sin registro».
+  - **El mismo conteo en todas las superficies:** Analizar (detalle, lectura y origen del dato), la exportación, «La información disponible» y el renglón del día de Registros («3 de 4 comidas con registro», con «2 con opción del plan» en sus notas). La ayuda de Registros lo explica.
+  - **También cambian dos textos:** la calidad completa pasa a decir «cada comida del plan con registro, con cantidades», y un día con registros pero ninguno en una comida del plan dice «ninguna de 4 con registro», nunca «0 de 4».
+  - **No cambian** cantidades, macros ni criterios de comparación.
+- **D-3.** Si el día tipo no se puede determinar con la regla vigente, sigue «sin determinar», con su motivo. No se elige uno por suposición.
+- **D-4.** Hoy se muestra como día en curso, con sus datos parciales («día en curso: el valor todavía puede cambiar»), y queda fuera de las medias y de los faltantes del período cerrado.
+- **Un día sin registros sigue siendo falta de datos, nunca cero.**
+- **Queda pendiente:** la prueba con profesionales y la del lector de pantalla. Las pruebas automáticas no las reemplazan.
+
+**Pruebas:**
+- **`completitud-nutricional.test.ts`** (15 casos, dominio): completo según el plan, una comida sin registrar (el defecto), cantidades desconocidas, día sin registros, día en curso, comida diferente en una comida y fuera de toda comida, rectificación y anulación, sin plan, dos días tipo, la semana, el conteo, el mismo criterio que Registros y el Resumen del área. Los resultados están escritos a mano.
+- **Las existentes**, ajustadas a la forma nueva sin cambiar lo que comprueban: `analisis-longitudinal`, `comprension-del-dashboard` y `exportacion-del-analisis`. La exportación ahora usa coberturas reales y fija que nada diga «sin faltantes».
+- **`analisis.int-spec.ts`** (integración, en la CI). El escenario de siempre dice que deshacer el almuerzo de hoy lo deja sin registro. Hay un caso nuevo contra la API real: anteayer una comida de dos, ayer una comida diferente en la cena, con la pestaña Registros (API-NUT-17) diciendo lo mismo.
+- **El recorrido `completitud`** (navegador, en la CI): el indicador del Resumen y la lectura de Analizar de ayer y de anteayer.
+- **Con los criterios del 2026-10-24:**
+  - en el dominio, los dos ejemplos de D-2, la comida diferente fuera del plan, la comida con su opción y además una diferente (cuenta una vez) y el día sin ninguna comida del plan con registro, en Analizar y en Registros;
+  - en la integración, la lectura de la API real del día con una comida diferente en la cena;
+  - en el recorrido, un tercer día con una comida diferente en el almuerzo, el indicador («2 subtotales · 1 comida del plan sin registro»), su lectura y la pestaña Registros.
+
+**Lo que falta:**
+- La prueba con profesionales: si se entiende qué representa el número y si D-1 se queda en A. También, la prueba con lector de pantalla.
+- La APK no cambia: «Tu historial» de Nutrición de la persona no usa este cálculo.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-4, la CI de la integración pasa, y la prueba con profesionales dice si el número se entiende.
+
+---
+
+## DL-154 — Una revisión registrada dice en qué evidencia se apoyó: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA
+
+**Prioridad:** alta (encargo de consolidación de Dirección del 2026-10-23, punto 4; hallazgo UX-02 de la auditoría del 2026-10-21).
+
+**Documentos:**
+- **UC-P13 y UC-P18:** sin evidencia identificable no hay revisión válida.
+- **REG-06-141:** la revisión es un acto con todos sus componentes, de solo agregar.
+- **09v9:904-910 y 09v10:1375-1381:** API-NUT-19 y API-TRN-23, la revisión y su aplicación.
+- **DL-134 (REV-A):** la persona lee la misma forma de la revisión, en la APK.
+
+**Qué pasaba.** Comprobado el 2026-10-23 contra main `0fb1bff`. El recorrido completo:
+- **Selección:** `SeleccionDeEvidencia` marca comidas o sesiones, versiones del plan y el objetivo.
+- **Pedido:** API-NUT-18 o API-TRN-22 con `evidenceReferences`, validadas en el servidor (`exigirEvidenciaReconstruible`).
+- **Persistencia:** la columna `evidencias` (JSON) de `revision_nutricional` y `revision_de_entrenamiento`, de solo agregar.
+- **Lectura:** API-NUT-17/19 y API-TRN-21/23 devuelven `evidenceReferences`, `period` y `author`.
+- **El defecto:** la lista de revisiones del website (`ItemDeRevision`, en las dos áreas) no dibujaba ni el período, ni el autor, ni la evidencia. **Se guardaba todo y no se podía consultar.**
+
+**Lo que se resolvió:**
+- **A la vista, sin otra lectura:** cada revisión dice «Nutrición · período revisado: … · registró: …» y «Evidencia seleccionada: 12 comidas · 1 versión del plan · el objetivo», contado desde las referencias guardadas. Una revisión que no guardó evidencia lo dice.
+- **«Ver la evidencia»** pide la lectura nueva de su área, que resuelve en el servidor cada referencia **guardada**, en su orden y nada más. De cada una dice qué es (la comida del plan y si fue la opción o algo diferente, la sesión, «Plan v2», el objetivo), cuándo ocurrió y **lo que cambió después de la revisión**, con su instante:
+  - la persona rectificó las cantidades;
+  - una corrección;
+  - la persona deshizo el registro;
+  - se activó otra versión del plan o se registró otro objetivo.
+- **«Abrir»** muestra en el panel modal de siempre, leído por su propia operación, en Nutrición la comida o la versión del plan, y en Entrenamiento la sesión. Retiene el foco, Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. Si el registro cambió después, el panel avisa que lo que se ve es el estado de hoy; si solo se activó otra versión del plan, que es la misma que se revisó y ya no es la vigente.
+- **El permiso de hoy:** la lectura nueva decide como API-NUT-19 y API-TRN-23 (el PDP y el profesional del seguimiento). Con el consentimiento revocado, otro profesional o una revisión inexistente, el mismo 404, sin ningún detalle. «Abrir» vuelve a pedir permiso.
+
+**Por qué una lectura nueva y no reusar las que hay:**
+- La línea de tiempo del período no alcanza: una versión del plan activada antes del período, que es lo más común, no aparece en ella. Tampoco aparece una referencia fuera del período.
+- Pedir cada registro por separado serían hasta 200 pedidos.
+- **No cambia la forma de la revisión.** La lee la APK candidata (REV-A, API-NUT-19-LISTA y PROPIA), y un campo nuevo la rompería (DL-152). Las dos operaciones son nuevas y solo las lee el website.
+- **No agrega tablas ni copias:** lee lo que la revisión ya guardó.
+
+**Lo que no se hace:**
+- No se reconstruye la selección con el período ni con un filtro.
+- No se completa una revisión que no guardó evidencia.
+- No se muestran las cantidades ni las cargas de cuando se revisó: se dice que cambió y desde cuándo.
+- La APK de la persona no cambia.
+
+**Decisiones, provisorio en código (a ratificar):**
+- **D-1 · Una referencia que hoy no está en el seguimiento** (no debería pasar; se valida al registrar): se lista como «Ya no está en este seguimiento», sin decir qué era.
+  - **Alternativa:** ocultarla, pero la cuenta de la revisión dejaría de coincidir.
+- **D-2 · Lo que se ve al abrir es el estado de hoy, avisado.** Reconstruir el registro como estaba al revisar (la cadena de rectificaciones se conserva) es una lectura más.
+  - **Recomendación:** hacerla solo si la prueba con profesionales la pide.
+- **D-3 · El objetivo y la evaluación no se abren en el panel**: no hay una lectura de solo lectura para ellos en esa pantalla. Se ven con su fecha y lo que cambió después.
+
+**Decisión de Dirección del 2026-10-24: D-1 a D-3, ratificadas con estos criterios.**
+- **D-1.** Una referencia que ya no está disponible se muestra sin revelar detalles no autorizados: «Ya no está en este seguimiento», sin decir qué era. Las comprobaciones de permisos no cambian: el mismo 404 para lo ajeno, lo revocado y lo inexistente, y «Abrir» vuelve a pedir permiso.
+- **D-2.** Se acepta abrir el estado actual del registro, avisando claramente cuando cambió después de la revisión.
+  - **El aviso** pasa de la nota tenue a un aviso (`.aviso`, `role="note"`), antes del contenido del panel: «Lo que ves es como está hoy, no como estaba cuando se revisó: cambió después de la revisión», y debajo, qué cambió y cuándo («Se deshizo después de esta revisión, el …»).
+  - **Antes decía** «Al abrirlo ves cómo está hoy: la revisión se registró antes de ese cambio».
+  - **Sin cambios posteriores, no hay aviso:** lo que se ve es lo mismo que estaba al revisar.
+  - **Una versión reemplazada no cambió** (corregido el 2026-10-24 a la noche, al comprobar test con la cohorte).
+    - Una versión del plan se abre desde su instantánea, tal como se revisó (REG-06-112). Si lo único posterior es que se activó otra (`SUCCEEDED`), decir «Lo que ves es como está hoy, no como estaba» sería falso.
+    - En ese caso el aviso dice «Es la misma versión que se revisó; ya no es la vigente», y debajo, cuándo se activó la otra.
+    - «Como está hoy» queda para la rectificación, la corrección y la anulación. Lo decide `avisoAlAbrir`, en el dominio.
+  - **La fecha, el autor, la conclusión y la selección de evidencia** de la revisión no cambian: la revisión es de solo agregar (REG-06-141).
+  - **Los valores actuales nunca se presentan** como los que el profesional vio entonces.
+- **D-3.** El objetivo y la evaluación siguen sin «Abrir» en el panel. Muestran lo que el diseño ya contempla: qué son, su fecha y lo que cambió después. Sin controles que aparenten una acción que no existe; lo comprueba el código, que dibuja «Abrir» solo para lo que se puede abrir (`abrible`). En Entrenamiento, la versión del plan tampoco se abre en el panel (se abren las sesiones): se ve igual, con su fecha y lo que cambió después.
+- **Mejora futura de trazabilidad, no implementada en este paquete:** consultar un registro de la evidencia como estaba al revisar. La cadena de rectificaciones se conserva, así que es una lectura más (por ejemplo, el estado vigente en el instante de la revisión). Se decide con la prueba con profesionales. Registrada también en `docs/QUE-FALTA.md`.
+- **Queda pendiente:** la prueba con profesionales y la del lector de pantalla. Las pruebas automáticas no las reemplazan.
+
+**Pruebas:**
+- **`evidencia-registrada.test.ts`** (dominio, 6): el resumen desde lo guardado, los nombres sin valores de salud, los cambios posteriores en palabras, el aviso al abrir según lo que cambió, los grupos sin agregar nada, y un contrato sin campos de cantidades.
+- **`evidencia-de-revision.int-spec.ts`** (integración, Nutrición, 4):
+  - lo seleccionado en su orden: la comida diferente del período sin marcar no aparece;
+  - persiste en otra sesión;
+  - después de la revisión, la rectificación, la anulación y la versión sucesora;
+  - una revisión sembrada sin evidencia y una referencia ajena (NOT_FOUND);
+  - el mismo 404 con el consentimiento revocado, otro profesional o una revisión inexistente, como API-NUT-19, y 400 con un parámetro de más.
+- **`entrenamiento.int-spec.ts`** (Entrenamiento, 1): la sesión, el plan y el objetivo, la corrección posterior y otro profesional.
+- **El recorrido `evidencia`** (navegador): la lista, la comida deshecha después, «Abrir» con Escape y el foco, y la recarga. Con los criterios del 2026-10-24, además:
+  - el desayuno, que no cambió, abre sin aviso;
+  - el almuerzo deshecho abre con el aviso de D-2 y con qué cambió, con su captura;
+  - la versión del plan, reemplazada después de la revisión, abre con «Es la misma versión que se revisó; ya no es la vigente» y sin «como está hoy», con su captura.
+- **La guardia de trazabilidad** acepta el sufijo `EVIDENCIA` y el OpenAPI está al día.
+
+**Lo que falta:**
+- La prueba con profesionales: si se reconstruye en qué se apoyó una revisión.
+- Un lector de pantalla real.
+
+**Condición de cierre:** Dirección ratifica D-1 a D-3, la CI de la integración pasa y la prueba con profesionales lo confirma.

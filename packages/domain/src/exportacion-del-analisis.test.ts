@@ -58,6 +58,16 @@ const filasDeDatos = (csv: string): string[][] => {
   return lineas.slice(i + 1).map((l) => l.split(';'));
 };
 
+/** La cobertura de un día de nutrición, con sus comidas del plan (DL-153): como la arma `serieNutricional`. */
+const cobertura = (registros: number, conCantidades: number, comidas: Partial<NonNullable<PuntoAnalitico['coverage']>['planMeals']> = {}): NonNullable<PuntoAnalitico['coverage']> => ({
+  records: registros,
+  recordsWithQuantities: conCantidades,
+  recordsWithoutQuantities: registros - conCantidades,
+  daysWithData: null,
+  daysInBucket: null,
+  planMeals: { daysKnown: 1, daysUndetermined: [], expected: 0, withPlanOption: 0, withDifferentMeal: 0, withoutRecord: 0, ...comidas },
+});
+
 test('desconocido vacío, cero como 0, subtotal y día sin completar en sus columnas; redondeo de la pantalla (PRO-10)', () => {
   const energia = def('nutricion.energia');
   const csv = csvDelAnalisis({
@@ -72,11 +82,20 @@ test('desconocido vacío, cero como 0, subtotal y día sin completar en sus colu
         definicion: energia,
         serie: serie(energia, [
           punto('2026-09-30', 1999), // fuera del rango: no se exporta
-          punto('2026-10-01', 1341.5, { coverage: { records: 4, recordsWithQuantities: 4, recordsWithoutQuantities: 0, daysWithData: null, daysInBucket: null } }),
-          punto('2026-10-02', 0),
-          punto('2026-10-03', null, { missing: [{ reason: 'SIN_CANTIDADES', count: 2 }] }),
-          punto('2026-10-04', 900, { quality: 'PARTIAL', missing: [{ reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 }] }),
-          punto('2026-10-08', 227, { partialBucket: true, corrected: true }),
+          punto('2026-10-01', 1341.5, { coverage: cobertura(4, 4, { expected: 4, withPlanOption: 4 }) }),
+          // Un cero registrado un día sin plan vigente: es 0, y no se dice que el día esté completo.
+          punto('2026-10-02', 0, { coverage: cobertura(1, 1, { daysKnown: 0, daysUndetermined: [{ reason: 'NO_ACTIVE_PLAN', days: 1 }] }) }),
+          punto('2026-10-03', null, { missing: [{ reason: 'SIN_CANTIDADES', count: 2 }], coverage: cobertura(2, 0, { expected: 2, withPlanOption: 2 }) }),
+          punto('2026-10-04', 900, {
+            quality: 'PARTIAL',
+            missing: [
+              { reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 },
+              { reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 1 },
+            ],
+            coverage: cobertura(3, 2, { expected: 4, withPlanOption: 2, withDifferentMeal: 1, withoutRecord: 1 }),
+          }),
+          // Hoy, con una comida de cuatro: subtotal, y sin completar.
+          punto('2026-10-08', 227, { quality: 'PARTIAL', partialBucket: true, corrected: true, missing: [{ reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 3 }], coverage: cobertura(1, 1, { expected: 4, withPlanOption: 1, withoutRecord: 3 }) }),
         ]),
       },
     ],
@@ -85,22 +104,29 @@ test('desconocido vacío, cero como 0, subtotal y día sin completar en sus colu
   assert.deepEqual(
     filas.map((f) => [f[3], f[6], f[7], f[8], f[11]]),
     [
-      ['2026-10-01', '1342', 'sin faltantes', 'no', 'no'],
-      ['2026-10-02', '0', 'sin faltantes', 'no', 'no'],
+      ['2026-10-01', '1342', 'cada comida del plan con registro, con cantidades', 'no', 'no'],
+      ['2026-10-02', '0', 'registros con cantidades, sin saber qué comidas indicaba el plan', 'no', 'no'],
       ['2026-10-03', '', 'sin valor conocido', 'no', 'no'],
       ['2026-10-04', '900', 'subtotal', 'no', 'no'],
-      ['2026-10-08', '227', 'sin faltantes', 'sí', 'sí'],
+      ['2026-10-08', '227', 'subtotal', 'sí', 'sí'],
     ],
   );
+  // DL-153: en nutrición la calidad nunca dice «sin faltantes»: lo registrado no es todo lo que se comió.
+  assert.doesNotMatch(csv, /sin faltantes/);
   assert.deepEqual(filas[0]!.slice(12, 15), ['4', '4', '0'], 'la cobertura del punto');
-  assert.equal(filas[2]![15], '2 registro(s) sin cantidades');
-  assert.equal(filas[3]![15], '1 comida(s) diferente(s) sin cantidades');
+  assert.deepEqual(
+    filas.map((f) => f[15]),
+    ['4 de 4 con registro', 'sin determinar: no había un plan vigente', '2 de 2 con registro', '3 de 4 con registro · 1 sin registro · 2 con opción del plan · 1 con comida diferente', '1 de 4 con registro · 3 sin registro'],
+    'las comidas del plan de cada día: el mismo conteo que la pantalla y la pestaña Registros (DL-153, criterios del 2026-10-24)',
+  );
+  assert.equal(filas[2]![16], '2 registro(s) sin cantidades');
+  assert.equal(filas[3]![16], '1 comida(s) diferente(s) sin cantidades, 1 comida(s) del plan sin registro');
   assert.match(csv, new RegExp(`Diccionario de métricas;${VERSION_DEL_DICCIONARIO}`));
   assert.match(csv, /Zona horaria;America\/Argentina\/Buenos_Aires/);
   assert.match(csv, /Generado;2026-10-08T18:00:00.000Z/);
   assert.match(csv, /Valor vacío: sin valor conocido \(nunca es 0\)/);
   assert.match(csv, /Agrupación;Energía: por día/);
-  assert.ok(filas.every((f) => f[16] === ''), 'en nutrición la clase de dato no aplica: la columna queda vacía');
+  assert.ok(filas.every((f) => f[17] === ''), 'en nutrición la clase de dato no aplica: la columna queda vacía');
 });
 
 test('la clase del dato antropométrico se exporta: medido, reportado por la persona o calculado por un método (PRO-10)', () => {
@@ -125,7 +151,7 @@ test('la clase del dato antropométrico se exporta: medido, reportado por la per
     ],
   });
   assert.deepEqual(
-    filasDeDatos(csv).map((f) => [f[3], f[6], f[16]]),
+    filasDeDatos(csv).map((f) => [f[3], f[6], f[17]]),
     [
       ['2026-09-01', '80,0', 'Medido'],
       ['2026-09-10', '79,0', 'Reportado por la persona, no medido'],
@@ -159,7 +185,7 @@ test('calculado no es siempre estimado: la exportación dice la naturaleza del m
     ],
   });
   assert.deepEqual(
-    filasDeDatos(csv).map((f) => f[16]),
+    filasDeDatos(csv).map((f) => f[17]),
     ['Calculado: un índice calculado sobre medidas, no una estimación (Índice de masa corporal (IMC))', 'Calculado: una estimación con una ecuación de predicción (Durnin y Womersley, hombres · Siri)'],
   );
 });

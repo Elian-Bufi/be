@@ -300,7 +300,7 @@ test('cobertura con huecos: 14 días con dos valores son «14 días: 2 con valor
   const r = resumirPeriodo(s, energia, '2026-09-01', '2026-09-14');
   assert.equal(r.valor, 1500, 'la media de los valores disponibles: los días sin registros no se completan con cero');
   assert.deepEqual([r.n, r.observaciones, r.duracionDias], [2, 2, 14]);
-  assert.deepEqual(r.dias, { sinRegistros: 12, sinCantidades: 0, sinDatoDelNutriente: 0, hoyEnCurso: false });
+  assert.deepEqual(r.dias, { sinRegistros: 12, sinCantidades: 0, sinDatoDelNutriente: 0, hoyEnCurso: false, comidasDelPlan: null }, "puntos sin cobertura: la serie no dice las comidas del plan (DL-153)");
   assert.equal(r.dias?.sinRegistros, diasDeLosHuecos(s), 'los días sin registros son los huecos que declara la serie');
   assert.deepEqual(partesDeLaCobertura(r), ['14 días: 2 con valor', '12 sin registros']);
 
@@ -317,7 +317,7 @@ test('cobertura con huecos: 14 días con dos valores son «14 días: 2 con valor
   assert.equal(enLaTabla, '14 días: 2 con valor · 12 sin registros');
   assert.doesNotMatch(enLaTabla, /\b(\d+) de \1 días/, 'el denominador no son los días con registros');
   // La etapa abierta termina hoy: hoy no es un día sin registros, y la media no lo toma.
-  assert.deepEqual(c.b.resumen?.dias, { sinRegistros: 24, sinCantidades: 0, sinDatoDelNutriente: 0, hoyEnCurso: true });
+  assert.deepEqual(c.b.resumen?.dias, { sinRegistros: 24, sinCantidades: 0, sinDatoDelNutriente: 0, hoyEnCurso: true, comidasDelPlan: null }, "sin puntos terminados con cobertura: nada que decir de las comidas del plan (DL-153)");
   assert.deepEqual(partesDeLaCobertura(c.b.resumen!), ['25 días: 0 con valor', '24 sin registros', 'hoy, en curso: fuera de la media']);
   assert.equal(c.motivoSinDiferencia, 'SIN_VALOR_EN_ALGUNO');
 });
@@ -336,7 +336,7 @@ test('cada día del rango cuenta una vez: con valor (y cuántos son subtotales),
   const r = resumirPeriodo(s, energia, '2026-10-02', HOY, HOY);
   assert.equal(r.valor, (2000 + 1500 + 1800) / 3, 'ni los días sin valor ni hoy entran en la media');
   assert.deepEqual([r.n, r.parciales, r.incompletos, r.sinValor], [3, 1, 1, 2]);
-  assert.deepEqual(r.dias, { sinRegistros: 2, sinCantidades: 1, sinDatoDelNutriente: 1, hoyEnCurso: true });
+  assert.deepEqual(r.dias, { sinRegistros: 2, sinCantidades: 1, sinDatoDelNutriente: 1, hoyEnCurso: true, comidasDelPlan: null }, "puntos sin cobertura: la serie no dice las comidas del plan (DL-153)");
   const d = r.dias!;
   assert.equal(r.n + d.sinRegistros + d.sinCantidades + d.sinDatoDelNutriente + (d.hoyEnCurso ? 1 : 0), r.duracionDias, 'cada día del rango está en una sola categoría');
   assert.deepEqual(partesDeLaCobertura(r), [
@@ -556,6 +556,9 @@ const antropometria: ResumenDeAntropometria = { lastEvaluation: { evaluationId: 
 
 const novedades = (counts: NovedadesDesde['counts']) => ({ estado: 'LISTA' as const, valor: { conteos: { since: CORTE, counts }, leidoDesde: '2025-10-09' } });
 
+/** DL-153: ninguna comida del plan sin registro ni días sin determinar; esas cuentas las prueba completitud-nutricional.test.ts. */
+const SIN_COMIDAS_QUE_DECIR = { daysKnown: 0, daysUndetermined: [], expected: 0, withPlanOption: 0, withDifferentMeal: 0, withoutRecord: 0 };
+
 const DATOS: DatosDeLaSintesis = {
   hoy: HOY,
   zonaHoraria: ZONA,
@@ -571,7 +574,7 @@ const DATOS: DatosDeLaSintesis = {
     ]),
     cobertura: {
       estado: 'LISTA',
-      valor: { daysInPeriod: 90, daysWithRecords: 52, records: 280, recordsWithQuantities: 272, recordsWithoutQuantities: 8, differentMealsWithoutQuantities: 4, annulledExcluded: 2, rectifiedCountedOnce: 2 },
+      valor: { daysInPeriod: 90, daysWithRecords: 52, records: 280, recordsWithQuantities: 272, recordsWithoutQuantities: 8, differentMealsWithoutQuantities: 4, annulledExcluded: 2, rectifiedCountedOnce: 2, planMeals: SIN_COMIDAS_QUE_DECIR },
     },
   },
   entrenamiento: { resumen: entrenamiento(), novedades: { estado: 'NO_APLICA' }, cobertura: { estado: 'LISTA', valor: { sesiones: 23, conCambios: 1, noRealizadas: 1, resumidas: 1 } } },
@@ -664,7 +667,7 @@ test('la cobertura dice desde cuándo rige el plan si empezó dentro del períod
     nutricion: {
       ...DATOS.nutricion!,
       vigencias: [vigencia(HOY, null)],
-      cobertura: { estado: 'LISTA', valor: { daysInPeriod: 90, daysWithRecords: 1, records: 2, recordsWithQuantities: 1, recordsWithoutQuantities: 1, differentMealsWithoutQuantities: 0, annulledExcluded: 0, rectifiedCountedOnce: 0 } },
+      cobertura: { estado: 'LISTA', valor: { daysInPeriod: 90, daysWithRecords: 1, records: 2, recordsWithQuantities: 1, recordsWithoutQuantities: 1, differentMealsWithoutQuantities: 0, annulledExcluded: 0, rectifiedCountedOnce: 0, planMeals: SIN_COMIDAS_QUE_DECIR } },
     },
   });
   const cobertura = conPlanDeHoy.find((o) => o.regla === 'COBERTURA_NUTRICIONAL')!;
@@ -740,7 +743,7 @@ test('las partes de una observación dicen las mismas palabras que su frase, con
 
   // La garantía: cada parte está, palabra por palabra, en la frase completa. Vale para todas las variantes, incluidas
   // las que no tienen nada que contar, las que aclaran desde cuándo rige el plan y las que dicen qué no se pudo leer.
-  const sinNada = { daysInPeriod: 90, daysWithRecords: 0, records: 0, recordsWithQuantities: 0, recordsWithoutQuantities: 0, differentMealsWithoutQuantities: 0, annulledExcluded: 0, rectifiedCountedOnce: 0 };
+  const sinNada = { daysInPeriod: 90, daysWithRecords: 0, records: 0, recordsWithQuantities: 0, recordsWithoutQuantities: 0, differentMealsWithoutQuantities: 0, annulledExcluded: 0, rectifiedCountedOnce: 0, planMeals: SIN_COMIDAS_QUE_DECIR };
   // Un plan que empezó a regir hoy, adentro del período: la cobertura lo aclara.
   const desdeHoy = (domain: 'NUTRITION' | 'TRAINING') => ({ domain, planVersionId: V3, label: 'v1', activatedAt: `${HOY}T06:01:00.000Z`, from: HOY, to: null, endedAt: null, endReason: null });
   const variantes: DatosDeLaSintesis[] = [
