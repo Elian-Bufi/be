@@ -4,6 +4,13 @@ import {
   definicionAntropometrica,
   diasNutricionales,
   ejerciciosDelPeriodo,
+  escalonDelObjetivoApi,
+  escalonesDelObjetivo,
+  fechasDelRango,
+  indicadoDeLaComidaApi,
+  indicadoDeLasComidas,
+  indicadoDeLosDias,
+  indicadoDelDiaApi,
   METRICAS_DEL_DICCIONARIO,
   nombreDeMetrica,
   NOTA_DE_LO_PREVISTO,
@@ -16,6 +23,7 @@ import {
   type DefinicionDeMetrica,
   type EjecucionDeEntrenamiento,
   type InstantaneaDeEntrenamiento,
+  type ObjetivoParaComparar,
   type ObjetivosDeLaVersion,
   type ProyeccionResponse,
   type RegistroDeComida,
@@ -34,7 +42,8 @@ type Tx = Prisma.TransactionClient;
 /**
  * Las tres proyecciones con derivación definida de API-PRJ-01 (DL-126). Cada una es una **vista** del cálculo canónico
  * que ya existe en el dominio (encargo §10 y §16): no hay fórmulas nuevas para obtener una curva.
- * - Nutrición: `calcularNutrientes` de cada registro efectivo (ya resuelto en `consumed`), sumado de forma exacta.
+ * - Nutrición: `calcularNutrientes` de cada registro efectivo (ya resuelto en `consumed`), sumado de forma exacta; y, al
+ *   lado (DL-158), el objetivo del profesional y lo indicado en el plan, de las instantáneas, con la misma cuenta.
  * - Entrenamiento: la serie del mismo número entre sesiones (`evolucion`), con el objetivo histórico de cada serie.
  * - Antropometría: la serie de API-ANT-06 (`seriesDeEvolucion`), con sus grupos de comparabilidad.
  */
@@ -81,13 +90,22 @@ export function proyeccionNutricional(
   const definicion = definicionPorParametro('NUTRICION', c.metrica);
   // DL-153: el mismo contraste que la pestaña Registros (API-NUT-17), con la vigencia de cada versión. Una versión sin
   // instantánea legible no aporta comidas: sus días quedan sin determinar, nunca con comidas supuestas.
-  const comidasDelPlan = comidasDelPlanDeLosDias(
-    dias,
-    datos.versiones.flatMap((v) => {
-      const instantanea = datos.instantaneas.get(v.id);
-      return instantanea ? [{ planId: v.id, desde: v.desde, hasta: v.hasta, instantanea }] : [];
-    }),
-  );
+  const versionesConPlan = datos.versiones.flatMap((v) => {
+    const instantanea = datos.instantaneas.get(v.id);
+    return instantanea ? [{ planId: v.id, desde: v.desde, hasta: v.hasta, instantanea }] : [];
+  });
+  const comidasDelPlan = comidasDelPlanDeLosDias(dias, versionesConPlan);
+  // DL-158: lo indicado por día llega hasta hoy (el día en curso incluido): un día futuro todavía no tiene la versión que
+  // va a regir. Los anulados no dicen el día tipo ni tienen indicado.
+  const efectivos = datos.registros.filter((r) => !r.annulment);
+  const hastaHoy = hasta < datos.hoy ? hasta : datos.hoy;
+  const objetivos: ObjetivoParaComparar[] = datos.objetivos.map((o) => ({
+    id: o.id,
+    desde: fechaLocalEn(o.vigenteDesde, ZONA),
+    hasta: o.vigenteHasta ? fechaLocalEn(o.vigenteHasta, ZONA) : null,
+    requerimientoKcal: o.requerimientoKcal,
+    macros: o.macros,
+  }));
   return {
     kind: 'NUTRITION_PRESCRIBED_VS_RECORDED',
     metric: c.metrica,
@@ -103,6 +121,11 @@ export function proyeccionNutricional(
               .map((o) => ({ objectiveVersionId: o.id, from: o.from, to: o.to, value: o.requerimientoKcal as number, unit: 'kcal/day' as const }))
           : [],
       note: NOTA_DE_LO_PREVISTO,
+      objectiveSteps: escalonesDelObjetivo(objetivos, c.metrica, desde, hasta).map(escalonDelObjetivoApi),
+      planned: {
+        days: indicadoDeLosDias({ fechas: desde <= hastaHoy ? fechasDelRango(desde, hastaHoy) : [], versiones: versionesConPlan, registros: efectivos, metrica: c.metrica }).map(indicadoDelDiaApi),
+        meals: indicadoDeLasComidas({ registros: efectivos, instantaneas: datos.instantaneas, metrica: c.metrica }).map(indicadoDeLaComidaApi),
+      },
     },
     coverage: coberturaNutricional(dias, desde, hasta, { comidasDelPlan, hoy: datos.hoy }),
     planVersions: vigenciasEnElPeriodo(datos.versiones, 'NUTRITION', desde, hasta),

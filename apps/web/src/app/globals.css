@@ -12699,3 +12699,62 @@ details[open] > summary:not([class])::before {
 .seguridad-administrativa .seccion + .seccion {
   margin-top: 1.25rem;
 }
+
+/* ─── WP-NUTRICION-COMPARACION (DL-158): las tres capas de Nutrición en «Analizar» ───────────────────────────────── */
+
+/* La lectura: el objetivo y lo indicado de la fecha, cada uno con su muestra. Misma letra que el resto de la lectura. */
+.capas-de-la-lectura {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--borde);
+}
+
+.capas-de-la-lectura > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.capas-de-la-lectura dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--tenue);
+}
+
+.capas-de-la-lectura dd {
+  margin: 0 0 0 calc(14px * 2.2 + 0.4rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.capas-de-la-lectura__regla {
+  margin-top: 0.6rem;
+}
+
+/* El origen del dato: lo indicado de la opción, debajo de la comida, en su propio renglón. */
+.fuente__indicado {
+  flex-basis: 100%;
+  color: var(--tenue);
+}
+
+.fuentes-del-dato__indicado {
+  padding-top: 0.25rem;
+  color: var(--tenue);
+  font-weight: 400;
+}
+
+.fuentes-del-dato__indicado strong {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.fuentes-del-dato__motivo {
+  max-width: 60%;
+  text-align: right;
+}
+
+/* Debajo del gráfico: por qué no hay rombos, cuando ningún día tiene un indicado del día. */
+.grafico__nota-del-indicado {
+  margin: 0.25rem 0 0;
+}

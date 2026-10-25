@@ -258,6 +258,46 @@ export const EscalonDeRequerimientoSchema = z.strictObject({
   unit: z.literal('kcal/day'),
 });
 
+/**
+ * WP-NUTRICION-COMPARACION (DL-158): el **objetivo del profesional** para la métrica, un escalón por versión. `amount` es lo
+ * que se dibuja (kcal o g por día); un macro que el objetivo expresa como proporción de las calorías trae `energyShare`
+ * y `amount: null`: BE no lo convierte a gramos.
+ */
+export const EscalonDelObjetivoSchema = z.strictObject({
+  objectiveVersionId: IdOpaco,
+  from: FechaLocalSchema,
+  to: FechaLocalSchema.nullable(),
+  amount: z.strictObject({ value: z.number().nonnegative().finite(), unit: z.enum(['kcal/day', 'g/day']) }).nullable(),
+  energyShare: z.number().nonnegative().finite().nullable(),
+});
+export type EscalonDelObjetivoApi = z.infer<typeof EscalonDelObjetivoSchema>;
+
+/** Por qué un día no tiene «Indicado en el plan» (el dominio: `MotivoSinIndicadoDelDia`). */
+export const MotivoSinIndicadoDelDiaSchema = z.enum(['NO_ACTIVE_PLAN', 'PLAN_VERSION_CHANGED', 'DAY_TYPE_UNKNOWN', 'NO_MEALS', 'SEVERAL_OPTIONS', 'EXCHANGE_PORTIONS', 'NUTRIENT_DATA_MISSING']);
+
+/**
+ * DL-158: lo **indicado en el plan** de un día, en la unidad de la métrica, solo si el plan no deja elegir (una versión, el
+ * día tipo conocido y una sola opción por comida). Si no, el motivo; con `SEVERAL_OPTIONS`, qué comidas y cuántas opciones.
+ */
+export const IndicadoDelDiaSchema = z.discriminatedUnion('state', [
+  z.strictObject({ date: FechaLocalSchema, state: z.literal('DETERMINED'), value: z.number().nonnegative().finite(), planVersionId: IdOpaco, dayTypeId: IdOpaco, dayType: z.string() }),
+  z.strictObject({
+    date: FechaLocalSchema,
+    state: z.literal('UNDETERMINED'),
+    reason: MotivoSinIndicadoDelDiaSchema,
+    planVersionId: IdOpaco.nullable(),
+    mealsWithSeveralOptions: z.array(z.strictObject({ meal: z.string(), options: z.number().int().nonnegative() })),
+  }),
+]);
+export type IndicadoDelDiaApi = z.infer<typeof IndicadoDelDiaSchema>;
+
+/** DL-158: lo indicado de la opción registrada en una comida, con la versión que cita el registro, o por qué no hay. */
+export const IndicadoDeLaComidaSchema = z.discriminatedUnion('state', [
+  z.strictObject({ recordId: IdOpaco, state: z.literal('DETERMINED'), value: z.number().nonnegative().finite(), planVersionId: IdOpaco }),
+  z.strictObject({ recordId: IdOpaco, state: z.literal('UNDETERMINED'), reason: z.enum(['DIFFERENT_MEAL', 'OPTION_NOT_FOUND', 'NUTRIENT_DATA_MISSING']), planVersionId: IdOpaco }),
+]);
+export type IndicadoDeLaComidaApi = z.infer<typeof IndicadoDeLaComidaSchema>;
+
 export const ResultadoDeProyeccionNutricionalSchema = z.strictObject({
   kind: z.literal('NUTRITION_PRESCRIBED_VS_RECORDED'),
   metric: MetricaNutricionalSchema,
@@ -268,6 +308,10 @@ export const ResultadoDeProyeccionNutricionalSchema = z.strictObject({
     energyRequirement: z.array(EscalonDeRequerimientoSchema),
     /** Por qué lo previsto de las opciones no se suma como un objetivo diario (alternativas por comida). */
     note: z.string(),
+    /** DL-158: el objetivo del profesional para esta métrica (también los macros), un escalón por versión. */
+    objectiveSteps: z.array(EscalonDelObjetivoSchema),
+    /** DL-158: lo indicado en el plan, por día (cada día del período) y por comida registrada (cada registro efectivo). */
+    planned: z.strictObject({ days: z.array(IndicadoDelDiaSchema), meals: z.array(IndicadoDeLaComidaSchema) }),
   }),
   coverage: z.strictObject({
     daysInPeriod: z.number().int().positive(),

@@ -16,7 +16,10 @@ import {
   type DefinicionDeMetrica,
   type DominioDeAnalisis,
   type EjercicioDelPeriodo,
+  type EscalonDelObjetivoApi,
   type FiltroDeProyeccion,
+  type IndicadoDeLaComidaApi,
+  type IndicadoDelDiaApi,
   type ProyeccionResponse,
   type ReferenciaDeMetrica,
   type ResultadoDeProyeccionNutricional,
@@ -38,11 +41,17 @@ export type EstadoDeSerie =
       readonly observaciones: SerieAnalitica;
       readonly bandas: readonly VigenciaDePlan[];
       /**
-       * Lo planificado que llega con la serie, en su misma unidad: los escalones del requerimiento energético (uno por
-       * versión del objetivo vigente en el período). Solo las calorías lo traen; el resto, vacío (WP-ESCRITORIO-AMABLE,
-       * C-17: el objetivo de los macronutrientes no viaja en esta lectura).
+       * Lo que se dibuja del objetivo del profesional, en la unidad de la serie: un escalón por versión del objetivo
+       * vigente en el período, con cantidad (las calorías y, desde DL-158, los macros en gramos). Vacío si no hay.
        */
       readonly objetivo: readonly { readonly desde: string; readonly hasta: string | null; readonly valor: number }[];
+      /** DL-158: los escalones del objetivo tal como llegan, también los que son una proporción de las calorías (no se dibujan). */
+      readonly escalones: readonly EscalonDelObjetivoApi[];
+      /**
+       * DL-158: lo indicado en el plan, por día (cada día del período hasta hoy) y por comida registrada. `null` si la
+       * métrica no lo tiene (Entrenamiento, Antropometría y la cuenta de registros).
+       */
+      readonly indicado: { readonly dias: readonly IndicadoDelDiaApi[]; readonly comidas: readonly IndicadoDeLaComidaApi[] } | null;
       readonly parcial: boolean;
       readonly generada: string;
       readonly zona: string;
@@ -118,9 +127,13 @@ function estadoDe(r: Respuesta, deObservaciones: Respuesta | null): EstadoDeSeri
   const d = r.datos.data;
   const res = d.result;
   const bandas = !res || res.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? [] : res.planVersions;
-  // El requerimiento está en kcal por día: acompaña solo a la serie de calorías (la API ya lo manda vacío en las demás).
-  const objetivo = res?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' && res.metric === 'ENERGY' ? res.prescribed.energyRequirement.map((e) => ({ desde: e.from, hasta: e.to, valor: e.value })) : [];
-  return { tipo: 'lista', serie, observaciones, bandas, objetivo, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
+  // DL-158: el objetivo de la métrica (las calorías o un macro en gramos) y lo indicado en el plan. Lo indicado es por
+  // día: con la vista por semana se lee igual (la API lo arma por día en las dos lecturas) y la pantalla no lo dibuja.
+  const prescripto = res?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' ? res.prescribed : null;
+  const escalones = prescripto?.objectiveSteps ?? [];
+  const objetivo = escalones.flatMap((e) => (e.amount ? [{ desde: e.from, hasta: e.to, valor: e.amount.value }] : []));
+  const indicado = prescripto && res?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' && res.metric !== 'RECORDS' ? { dias: prescripto.planned.days, comidas: prescripto.planned.meals } : null;
+  return { tipo: 'lista', serie, observaciones, bandas, objetivo, escalones, indicado, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
 }
 
 export interface SeriePedida {

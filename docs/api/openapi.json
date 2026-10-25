@@ -93583,11 +93583,277 @@
                                         },
                                         "note": {
                                           "type": "string"
+                                        },
+                                        "objectiveSteps": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "objectiveVersionId": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "from": {
+                                                "type": "string",
+                                                "format": "date",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                              },
+                                              "to": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "amount": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "value": {
+                                                        "type": "number",
+                                                        "minimum": 0
+                                                      },
+                                                      "unit": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "kcal/day",
+                                                          "g/day"
+                                                        ]
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "value",
+                                                      "unit"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "energyShare": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "number",
+                                                    "minimum": 0
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "objectiveVersionId",
+                                              "from",
+                                              "to",
+                                              "amount",
+                                              "energyShare"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "planned": {
+                                          "type": "object",
+                                          "properties": {
+                                            "days": {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "state": {
+                                                        "type": "string",
+                                                        "const": "DETERMINED"
+                                                      },
+                                                      "value": {
+                                                        "type": "number",
+                                                        "minimum": 0
+                                                      },
+                                                      "planVersionId": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      },
+                                                      "dayTypeId": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      },
+                                                      "dayType": {
+                                                        "type": "string"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "date",
+                                                      "state",
+                                                      "value",
+                                                      "planVersionId",
+                                                      "dayTypeId",
+                                                      "dayType"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "state": {
+                                                        "type": "string",
+                                                        "const": "UNDETERMINED"
+                                                      },
+                                                      "reason": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "NO_ACTIVE_PLAN",
+                                                          "PLAN_VERSION_CHANGED",
+                                                          "DAY_TYPE_UNKNOWN",
+                                                          "NO_MEALS",
+                                                          "SEVERAL_OPTIONS",
+                                                          "EXCHANGE_PORTIONS",
+                                                          "NUTRIENT_DATA_MISSING"
+                                                        ]
+                                                      },
+                                                      "planVersionId": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "mealsWithSeveralOptions": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "meal": {
+                                                              "type": "string"
+                                                            },
+                                                            "options": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "meal",
+                                                            "options"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        }
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "date",
+                                                      "state",
+                                                      "reason",
+                                                      "planVersionId",
+                                                      "mealsWithSeveralOptions"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "meals": {
+                                              "type": "array",
+                                              "items": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "recordId": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      },
+                                                      "state": {
+                                                        "type": "string",
+                                                        "const": "DETERMINED"
+                                                      },
+                                                      "value": {
+                                                        "type": "number",
+                                                        "minimum": 0
+                                                      },
+                                                      "planVersionId": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "recordId",
+                                                      "state",
+                                                      "value",
+                                                      "planVersionId"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "recordId": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      },
+                                                      "state": {
+                                                        "type": "string",
+                                                        "const": "UNDETERMINED"
+                                                      },
+                                                      "reason": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "DIFFERENT_MEAL",
+                                                          "OPTION_NOT_FOUND",
+                                                          "NUTRIENT_DATA_MISSING"
+                                                        ]
+                                                      },
+                                                      "planVersionId": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "recordId",
+                                                      "state",
+                                                      "reason",
+                                                      "planVersionId"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "required": [
+                                            "days",
+                                            "meals"
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "required": [
                                         "energyRequirement",
-                                        "note"
+                                        "note",
+                                        "objectiveSteps",
+                                        "planned"
                                       ],
                                       "additionalProperties": false
                                     },
