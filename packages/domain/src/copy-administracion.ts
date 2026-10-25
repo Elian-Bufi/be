@@ -58,6 +58,8 @@ export const COPY_ADMINISTRACION = {
     plazo: (hora: string): string => `Tenés hasta las ${hora} para completar este paso.`,
     demasiadosIntentos: 'Hubo demasiados intentos seguidos. Esperá unos minutos y volvé a entrar.',
     intentosRestantes: (n: number): string => (n === 1 ? 'Te queda 1 intento.' : `Te quedan ${n} intentos.`),
+    bloqueado:
+      'Hubo demasiados códigos del autenticador que no valen, seguidos: por seguridad, el autenticador quedó bloqueado. Entrá con un código de recuperación (eso lo desbloquea) o pedile al operador de BE que restablezca tu segundo factor.',
   },
 
   recuperacion: {

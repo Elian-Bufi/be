@@ -45,16 +45,19 @@ autenticador, los códigos de recuperación ni contraseñas.
 
 | Situación | Qué hace | Dónde |
 |---|---|---|
-| Cambió de teléfono o de aplicación | «Reemplazar el autenticador», con la contraseña. El anterior vale hasta confirmar el nuevo, y salen diez códigos nuevos | `/admin/security` |
+| Cambió de teléfono o de aplicación | «Reemplazar el autenticador», con la contraseña. El anterior vale hasta confirmar el nuevo, salen diez códigos nuevos y sus otras sesiones de Administración terminan | `/admin/security` |
 | Perdió el autenticador pero tiene códigos | Entra con «Usar un código de recuperación» (cada uno sirve una vez) y después reemplaza el autenticador | Entrada y `/admin/security` |
-| Le quedan pocos códigos | «Generar códigos nuevos», con la contraseña. Los anteriores dejan de valer | `/admin/security` |
+| «El autenticador quedó bloqueado» | Hubo diez códigos que no valen, seguidos. Entra con un código de recuperación, que lo desbloquea; si fueron intentos ajenos, reemplaza el autenticador y genera códigos nuevos | Entrada y `/admin/security` |
+| Le quedan pocos códigos | «Generar códigos nuevos», con la contraseña. Los anteriores dejan de valer y sus otras sesiones terminan | `/admin/security` |
 
-Recuperar no desactiva el segundo factor: un código de recuperación solo completa el paso de esa sesión.
+Recuperar no desactiva el segundo factor: un código de recuperación solo completa el paso de esa sesión (y desbloquea el
+autenticador si estaba bloqueado).
 
 ## 4. Lo que necesita al operador
 
-1. **Perdió el autenticador y los códigos.** Antes de hacer nada, el operador confirma que es la persona por un canal que
-   ya conoce (no por el que llega el pedido). Después:
+1. **Perdió el autenticador y los códigos** (o el autenticador quedó bloqueado y no le quedan códigos). Antes de hacer
+   nada, el operador confirma que es la persona por un canal que ya conoce (no por el que llega el pedido). Un bloqueo
+   que la persona no causó es una señal: alguien tiene su contraseña. Después:
 
    ```bash
    … comando.js restablecer-segundo-factor --correo <la cuenta> --fundamento "<por qué>" --operador "<quién>"
@@ -80,6 +83,10 @@ Cada comando escribe su bitácora (como en el paso 5) y su registro de auditorí
 - La sesión dura 8 horas. El segundo factor vence después de 15 minutos sin actividad: se pide otro código, sin la
   contraseña.
 - Después de la contraseña hay 10 minutos para el código; si no, se vuelve a empezar.
-- Cinco códigos que no valen cierran la sesión. Además, diez intentos por cuenta cada 15 minutos, y cinco entradas por red
+- Cinco códigos que no valen cierran la sesión. Diez seguidos, en cualquier sesión, bloquean el autenticador hasta un
+  código de recuperación o un restablecimiento. Además, diez intentos por cuenta cada 15 minutos, y cinco entradas por red
   y cuenta cada 15 minutos.
 - Un código del autenticador no vale dos veces, ni dentro de sus 30 segundos.
+- Los rechazos quedan en la auditoría, con la operación intentada: códigos que no valen, bloqueos, una sesión común que
+  probó una ruta de Administración y una lectura sin el segundo factor. Para revisarlos, el operador consulta
+  `registro_de_auditoria` por `operacion` (`API-ADM-…`) y `motivo`.

@@ -182,6 +182,12 @@ export const errores = {
   /** Un código que no vale: incorrecto, ya usado o fuera de tiempo. Cuántos intentos le quedan a la sesión. */
   codigoDeSegundoFactorInvalido: (restantes: number, motivo: string) =>
     new ErrorDeApi(422, CodigoDeError.SECOND_FACTOR_INVALID, 'El código no es válido o ya se usó.', { attemptsRemaining: restantes }, motivo),
+  /**
+   * El autenticador está bloqueado: demasiados códigos que no valen, seguidos, en cualquier sesión de la identidad. No se
+   * evalúa el código. Lo desbloquea un código de recuperación, o el operador restableciendo el segundo factor.
+   */
+  autenticadorBloqueado: () =>
+    new ErrorDeApi(422, CodigoDeError.SECOND_FACTOR_LOCKED, 'El autenticador quedó bloqueado. Entrá con un código de recuperación.', undefined, 'AUTENTICADOR_BLOQUEADO'),
   /** El código de incorporación no vale (incorrecto, vencido, usado o anulado): el mismo rechazo para todos. */
   codigoDeIncorporacionInvalido: (restantes: number, motivo: string) =>
     new ErrorDeApi(422, CodigoDeError.INCORPORATION_CODE_INVALID, 'El código de incorporación no es válido, venció o ya se usó.', { attemptsRemaining: restantes }, motivo),

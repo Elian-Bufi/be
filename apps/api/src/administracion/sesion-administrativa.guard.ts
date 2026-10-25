@@ -1,11 +1,50 @@
-import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Inject, Injectable, SetMetadata } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { cuentaPermiteOperar, estadoDelSegundoFactor, type EstadoDelSegundoFactor, type EstadoOperativoDeCuenta, type MetodoDelSegundoFactor } from '@be/domain';
 import type { Request } from 'express';
 import type { Entorno } from '../config/entorno';
 import { ENTORNO } from '../config/tokens';
-import { errores } from '../http/errores';
+import { contextoDe, type SolicitudConContexto } from '../http/contexto';
+import { errores, type ErrorDeApi } from '../http/errores';
+import { AuditoriaService } from '../plataforma/auditoria.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { extraerBearer, TokensService } from '../sesion/tokens.service';
+
+const METADATO_DE_OPERACION = 'be:operacion-administrativa';
+
+/**
+ * La operación de Administración de una ruta (API-ADM-04 a 13). Los guards la usan para auditar sus rechazos: una sesión
+ * que no es administrativa, una que ya no vale y una sin el segundo factor vigente quedan registradas con la operación que
+ * intentaron (revisión de seguridad del 2026-10-25: antes, esos rechazos no dejaban rastro).
+ */
+export const OperacionAdministrativa = (operacion: string) => SetMetadata(METADATO_DE_OPERACION, operacion);
+
+/** Un rechazo de un guard, auditado (sin el token ni nada del cuerpo) y después lanzado. */
+async function rechazar(
+  auditoria: AuditoriaService,
+  reflector: Reflector,
+  contexto: ExecutionContext,
+  error: ErrorDeApi,
+  motivo: string,
+  identidadId: string,
+  sesionId: string,
+): Promise<never> {
+  const req = contexto.switchToHttp().getRequest<SolicitudConContexto>();
+  const ctx = contextoDe(req);
+  await auditoria.registrar({
+    operacion: reflector.get<string | undefined>(METADATO_DE_OPERACION, contexto.getHandler()) ?? 'API-ADM',
+    resultado: 'RECHAZO',
+    motivo,
+    actorId: identidadId,
+    sujetoId: identidadId,
+    recursoTipo: 'Sesion',
+    recursoId: sesionId,
+    superficie: ctx.superficie,
+    requestId: ctx.requestId,
+    momentoDeOcurrencia: ctx.momentoDeRecepcion,
+  });
+  throw error;
+}
 
 /** El administrador autenticado. Sale del token verificado y de la base en cada pedido, nunca del cliente. */
 export interface ActorAdministrativo {
@@ -44,6 +83,8 @@ export class SesionAdministrativaGuard implements CanActivate {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokens: TokensService,
+    private readonly auditoria: AuditoriaService,
+    private readonly reflector: Reflector,
     @Inject(ENTORNO) private readonly entorno: Entorno,
   ) {}
 
@@ -74,15 +115,19 @@ export class SesionAdministrativaGuard implements CanActivate {
       },
     });
     if (!sesion || sesion.identidadId !== reclamos.sub) throw errores.sesionInvalida();
-    if (sesion.estado !== 'ACTIVA') throw errores.sesionRevocada();
-    if (sesion.expiraEn.getTime() <= Date.now()) throw errores.sesionExpirada();
+    // Un token bien firmado de una sesión que existe: los rechazos que siguen se auditan, con la identidad y la sesión.
+    const rechazo = (error: ErrorDeApi, motivo: string) => rechazar(this.auditoria, this.reflector, contexto, error, motivo, sesion.identidadId, reclamos.sid);
+    // Una sesión común (de un profesional o de una persona) nunca obtiene nada de Administración, ni siquiera el estado de
+    // su propia sesión: se dice y queda auditado.
+    if (sesion.clase !== 'ADMINISTRATIVA') return rechazo(errores.noEsAdministrativa(), 'SESION_NO_ADMINISTRATIVA');
+    if (sesion.estado !== 'ACTIVA') return rechazo(errores.sesionRevocada(), `SESION_${sesion.estado}`);
+    if (sesion.expiraEn.getTime() <= Date.now()) return rechazo(errores.sesionExpirada(), 'SESION_VENCIDA');
     const versionVigente = sesion.identidad.controlDeSesion?.version;
-    if (versionVigente !== reclamos.tv || sesion.versionDeControl !== reclamos.tv) throw errores.sesionRevocada();
-    if (!cuentaPermiteOperar(sesion.identidad.estadoOperativoDeCuenta as EstadoOperativoDeCuenta)) throw errores.sesionRevocada();
-    if (sesion.clase !== 'ADMINISTRATIVA') throw errores.noEsAdministrativa();
+    if (versionVigente !== reclamos.tv || sesion.versionDeControl !== reclamos.tv) return rechazo(errores.sesionRevocada(), 'VERSION_DE_CONTROL');
+    if (!cuentaPermiteOperar(sesion.identidad.estadoOperativoDeCuenta as EstadoOperativoDeCuenta)) return rechazo(errores.sesionRevocada(), 'CUENTA_NO_OPERATIVA');
     const rol = sesion.identidad.rolesAdministrativos[0];
     // Sin el rol vigente (lo retiró el operador), la sesión ya no es de nadie que administre.
-    if (!rol) throw errores.sesionRevocada();
+    if (!rol) return rechazo(errores.sesionRevocada(), 'SIN_ROL_ADMINISTRATIVO');
     const factor = sesion.segundoFactor;
     req.actorAdministrativo = {
       identidadId: sesion.identidadId,
@@ -105,20 +150,27 @@ export class SesionAdministrativaGuard implements CanActivate {
 
 /**
  * `SESSION_MFA` (09v7 T14): el segundo factor de la sesión, vigente. Va después de `SesionAdministrativaGuard`.
- * - Sin vigencia, 403 MFA_REQUIRED, con el motivo en la auditoría del filtro: falta, venció por inactividad o falta
- *   configurarlo. La consola pide el código; la contraseña, no.
+ * - Sin vigencia, 403 MFA_REQUIRED, con el motivo en la auditoría: falta, venció por inactividad o falta configurarlo. La
+ *   consola pide el código; la contraseña, no.
  * - Vigente, anota la actividad (a lo sumo una vez por minuto): 15 minutos sin actividad lo vencen.
  * Ninguna lectura ni decisión administrativa corre sin esto.
  */
 @Injectable()
 export class SegundoFactorGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditoria: AuditoriaService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(contexto: ExecutionContext): Promise<boolean> {
     const req = contexto.switchToHttp().getRequest<SolicitudAdministrativa>();
     const actor = req.actorAdministrativo;
     if (!actor) throw errores.autenticacionRequerida();
-    if (actor.segundoFactor.estado !== 'VERIFICADO') throw errores.segundoFactorRequerido(`SEGUNDO_FACTOR_${actor.segundoFactor.estado}`);
+    if (actor.segundoFactor.estado !== 'VERIFICADO') {
+      const motivo = `SEGUNDO_FACTOR_${actor.segundoFactor.estado}`;
+      return rechazar(this.auditoria, this.reflector, contexto, errores.segundoFactorRequerido(motivo), `MFA_REQUERIDO:${motivo}`, actor.identidadId, actor.sesionId);
+    }
     const ahora = new Date();
     await this.prisma.segundoFactorDeSesion.updateMany({
       where: { sesionId: actor.sesionId, OR: [{ ultimaActividad: null }, { ultimaActividad: { lt: new Date(ahora.getTime() - ANOTAR_ACTIVIDAD_CADA_MS) } }] },

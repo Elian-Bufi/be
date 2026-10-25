@@ -62,6 +62,8 @@ enum MotivoDeRevocacionDeSesion {
   SEGUNDO_FACTOR_RESTABLECIDO
   /// WP-ADMINISTRACION: el operador retiró el rol administrativo.
   ROL_ADMINISTRATIVO_RETIRADO
+  /// WP-ADMINISTRACION: el administrador reemplazó su autenticador o generó códigos nuevos; sus otras sesiones terminan.
+  CREDENCIALES_ADMINISTRATIVAS_RENOVADAS
 }
 
 /// WP-ADMINISTRACION (DL-155): de qué clase es una sesión. Una ADMINISTRATIVA solo sirve en la consola de Administración
@@ -3528,6 +3530,8 @@ model FactorTotp {
   estado                  EstadoDeFactorTotp @default(PENDIENTE)
   secretoCifrado          String             @map("secreto_cifrado")
   ultimoPaso              BigInt?            @map("ultimo_paso")
+  /// Códigos que no valen, seguidos, en cualquier sesión: con 10 queda bloqueado hasta un código de recuperación.
+  fallosSeguidos          Int                @default(0) @map("fallos_seguidos")
   /// La sesión que empezó la configuración: solo ella la confirma.
   sesionDeConfiguracionId String?            @map("sesion_de_configuracion_id") @db.Uuid
   /// Hasta cuándo se puede confirmar, mientras está PENDIENTE.

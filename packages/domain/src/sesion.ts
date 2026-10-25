@@ -35,6 +35,11 @@ export const MotivoDeRevocacionDeSesion = {
   SEGUNDO_FACTOR_RESTABLECIDO: 'SEGUNDO_FACTOR_RESTABLECIDO',
   /** WP-ADMINISTRACION: el operador retiró el rol administrativo. */
   ROL_ADMINISTRATIVO_RETIRADO: 'ROL_ADMINISTRATIVO_RETIRADO',
+  /**
+   * WP-ADMINISTRACION (revisión de seguridad del 2026-10-25): el administrador reemplazó su autenticador o generó códigos
+   * de recuperación nuevos; sus otras sesiones administrativas dejan de valer.
+   */
+  CREDENCIALES_ADMINISTRATIVAS_RENOVADAS: 'CREDENCIALES_ADMINISTRATIVAS_RENOVADAS',
 } as const;
 export type MotivoDeRevocacionDeSesion = (typeof MotivoDeRevocacionDeSesion)[keyof typeof MotivoDeRevocacionDeSesion];
 

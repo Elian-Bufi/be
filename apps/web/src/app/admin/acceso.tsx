@@ -148,7 +148,10 @@ function useRespuestaDeUnPaso() {
   }
 
   /** `pasoNoPermitido`: lo que se dice si el paso ya no corresponde al estado de la sesión (después de volver a leerlo). */
-  async function tratar(r: ResultadoAdministrativo<unknown>, pasoNoPermitido: string = COPY.noDisponible): Promise<{ readonly campo?: string; readonly aviso?: string } | null> {
+  async function tratar(
+    r: ResultadoAdministrativo<unknown>,
+    pasoNoPermitido: string = COPY.noDisponible,
+  ): Promise<{ readonly campo?: string; readonly aviso?: string; readonly bloqueado?: boolean } | null> {
     if (r.ok) return null;
     if (r.tipo === 'RED') {
       // Sin respuesta: el código pudo haberse aceptado. Antes de pedir otro, se pregunta.
@@ -160,6 +163,9 @@ function useRespuestaDeUnPaso() {
       const n = r.intentosRestantes ?? 0;
       return { campo: r.codigo === 'INCORPORATION_CODE_INVALID' ? `${A.configuracion.incorporacionInvalida}${n > 0 ? ` ${A.segundoFactor.intentosRestantes(n)}` : ''}` : A.segundoFactor.invalido(n) };
     }
+    // Demasiados códigos que no valen, seguidos (en cualquier sesión): el autenticador quedó bloqueado. Entra un código de
+    // recuperación, que lo desbloquea.
+    if (r.codigo === 'SECOND_FACTOR_LOCKED') return { aviso: A.segundoFactor.bloqueado, bloqueado: true };
     if (r.codigo === 'SESSION_REVOKED') {
       olvidar(restantes.current === 1 ? 'intentos' : null);
       return null;
@@ -265,6 +271,12 @@ export function PasoDelSegundoFactor() {
     const t = await tratar(r);
     setEnviando(false);
     if (!t) return;
+    if (t.bloqueado) {
+      // Bloqueado: el camino que queda es un código de recuperación. El aviso dice por qué, y el operador si no hay.
+      setCodigo('');
+      setErrorDelCampo(null);
+      setModo('recuperacion');
+    }
     if (t.campo) {
       setCodigo('');
       setErrorDelCampo(t.campo);

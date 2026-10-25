@@ -221,6 +221,7 @@ CREATE TABLE "factor_totp" (
     "estado" "EstadoDeFactorTotp" NOT NULL DEFAULT 'PENDIENTE',
     "secreto_cifrado" TEXT NOT NULL,
     "ultimo_paso" BIGINT,
+    "fallos_seguidos" INTEGER NOT NULL DEFAULT 0,
     "sesion_de_configuracion_id" UUID,
     "vence_en" TIMESTAMPTZ(3),
     "momento_de_activacion" TIMESTAMPTZ(3),
@@ -242,11 +243,14 @@ ALTER TABLE "factor_totp" ADD CONSTRAINT "factor_totp_estado_coherente" CHECK (
   OR ("estado" IN ('REEMPLAZADO', 'REVOCADO') AND "momento_de_activacion" IS NOT NULL AND "momento_de_baja" IS NOT NULL)
   OR ("estado" = 'DESCARTADO' AND "momento_de_activacion" IS NULL AND "momento_de_baja" IS NOT NULL));
 ALTER TABLE "factor_totp" ADD CONSTRAINT "factor_totp_procedencia_es_objeto" CHECK (jsonb_typeof("procedencia") = 'object');
+-- Los códigos que no valen, seguidos, en cualquier sesión: con 10, el autenticador queda bloqueado (se vuelve a 0 con un
+-- código que vale, o con uno de recuperación).
+ALTER TABLE "factor_totp" ADD CONSTRAINT "factor_totp_fallos_seguidos" CHECK ("fallos_seguidos" >= 0);
 CREATE FUNCTION "be_factor_totp_guardar"() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    IF NEW."estado" <> 'PENDIENTE' OR NEW."ultimo_paso" IS NOT NULL THEN
-      RAISE EXCEPTION 'BE: un autenticador nace PENDIENTE y sin pasos usados' USING ERRCODE = 'check_violation';
+    IF NEW."estado" <> 'PENDIENTE' OR NEW."ultimo_paso" IS NOT NULL OR NEW."fallos_seguidos" <> 0 THEN
+      RAISE EXCEPTION 'BE: un autenticador nace PENDIENTE, sin pasos usados ni fallos' USING ERRCODE = 'check_violation';
     END IF;
     RETURN NEW;
   END IF;

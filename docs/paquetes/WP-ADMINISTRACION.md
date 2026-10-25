@@ -186,14 +186,24 @@ volver a empezar.
 - **El secreto TOTP** se guarda cifrado con AES-256-GCM, con una clave derivada (HKDF) de `BE_CLAVE_DEL_SEGUNDO_FACTOR`,
   un secreto del ambiente que nunca se imprime. Sin esa clave, la administración responde «no configurada» (503) y el
   resto de BE sigue igual.
-- **Intentos:** cinco códigos fallidos en una sesión la revocan; además, diez por identidad cada 15 minutos (429).
-- **Configurar** (primera vez o después de un restablecimiento) exige el código de incorporación. La configuración
-  pendiente vence a los 10 minutos.
+- **Intentos:** cinco códigos fallidos en una sesión la revocan. **Diez códigos del autenticador que no valen, seguidos,
+  en cualquier sesión de la identidad, lo bloquean** (se cuentan en la base, en el autenticador, y no se vacían al abrir
+  otra sesión ni al reiniciar la API): bloqueado, ni un código correcto se evalúa (`SECOND_FACTOR_LOCKED`). Lo desbloquea
+  un código de recuperación, o el operador restableciendo el segundo factor. Además, diez intentos por identidad cada 15
+  minutos (429, en memoria). Revisión de seguridad del 2026-10-25: sin el bloqueo, el cupo por sesión permitía unos 960
+  intentos por día abriendo sesiones nuevas.
+- **Pedidos simultáneos:** cada intento toma la fila del segundo factor de su sesión y, con ella tomada, vuelve a leer la
+  sesión: un pedido que esperaba detrás del quinto fallido ya no se evalúa.
+- **Configurar** (primera vez o después de un restablecimiento) exige el código de incorporación, **vigente también al
+  confirmar**. La configuración pendiente vence a los 10 minutos.
 - **Reemplazar el autenticador** (el anterior se perdió o se cambia de teléfono) exige una sesión con el segundo factor
   vigente **y la contraseña otra vez** (08 §25). El autenticador anterior sigue valiendo hasta que el nuevo se confirma:
   nunca queda la cuenta sin segundo factor. Al confirmar, salen diez códigos de recuperación nuevos y los anteriores dejan
-  de valer.
-- **Regenerar los códigos de recuperación**: segundo factor vigente y contraseña.
+  de valer, y **las otras sesiones administrativas de la identidad terminan** (`CREDENCIALES_ADMINISTRATIVAS_RENOVADAS`).
+- **Regenerar los códigos de recuperación**: segundo factor vigente y contraseña; también terminan las otras sesiones.
+- **El operador y una confirmación al mismo tiempo:** configurar y confirmar toman la identidad en modo compartido y el
+  comando, en modo exclusivo; el comando además toma los autenticadores antes de revocarlos y falla entero si quedara
+  uno activo. Un restablecimiento nunca dice «Listo» con un autenticador vivo.
 
 ### 6.4 Vigencia, reanudación y reautenticación (en el servidor)
 
@@ -209,14 +219,19 @@ volver a empezar.
 ### 6.5 Lo que se audita
 
 `RegistroDeAuditoria`, en la misma transacción: el comando (incorporar, restablecer, retirar), cada primer factor (éxito
-o rechazo con su motivo), cada intento de segundo factor, la configuración y el reemplazo del autenticador, el uso de un
-código de recuperación, la regeneración de códigos, cada lectura administrativa y cada decisión. Nunca un secreto, un
-código ni el QR: ni en la auditoría, ni en los logs, ni en las capturas.
+o rechazo con su motivo), cada intento de segundo factor (también el bloqueo y el desbloqueo del autenticador, un paso
+que no corresponde, un plazo vencido y el cupo de 429), la configuración y el reemplazo del autenticador, el uso de un
+código de recuperación, la regeneración de códigos, cada lectura administrativa y cada decisión. **Los rechazos de los
+guards también:** una sesión común en una ruta de Administración (`SESION_NO_ADMINISTRATIVA`), una sesión administrativa
+que ya no vale (revocada, vencida, sin rol) y una lectura o decisión sin el segundo factor (`MFA_REQUERIDO:…`), con la
+operación que se intentó. Nunca un secreto, un código, un token ni el QR: ni en la auditoría, ni en los logs, ni en las
+capturas.
 
 ### 6.6 Si el administrador pierde el autenticador
 
 1. **Con un código de recuperación:** entra con la contraseña y un código de recuperación, y reemplaza el autenticador
-   (§6.3). El código usado no vuelve a valer.
+   (§6.3). El código usado no vuelve a valer. Es también la salida si el autenticador quedó bloqueado por códigos que no
+   valen: el código de recuperación lo desbloquea.
 2. **Sin autenticador ni códigos:** el operador corre
    `node apps/api/dist/administracion/comando.js restablecer-segundo-factor --correo … --fundamento … --operador …`. En una
    transacción, revoca el autenticador y los códigos, revoca las sesiones administrativas y emite un código de
@@ -377,6 +392,21 @@ Pruebas del 11A que este paquete ejercita: TEST-RF-007, TEST-RF-011, TEST-RF-012
 identidad administrativa no obtiene actoría profesional). Las lecturas congeladas de DL-152 no se tocan. La automatización
 no reemplaza la prueba con personas ni con un lector de pantalla.
 
+**Revisión de seguridad del 2026-10-25.** Una revisión de solo lectura del código (otra instancia del mismo modelo, no una
+persona) buscó saltear el segundo factor, lecturas indebidas, decisiones duplicadas, conflictos silenciosos y
+automatismos que pisen una decisión humana. Encontró cinco puntos, todos del segundo factor, y ninguno de las otras cuatro
+clases; los cinco y uno menor quedaron corregidos, cada uno con su prueba (bloque «Revisión de seguridad» de
+`administracion.int-spec.ts`), y cada prueba se comprobó contra su mutación (sin la corrección, falla):
+
+| # | Qué pasaba | Corrección |
+|---|---|---|
+| F1 | El cupo de cinco era por sesión y cada entrada abría otra: unos 960 intentos por día | Diez fallidos seguidos bloquean el autenticador, en la base, hasta un código de recuperación o el operador |
+| F2 | Un pedido que esperaba detrás del quinto fallido se evaluaba sobre la sesión ya revocada | Con la fila tomada, se vuelve a leer la sesión y sus intentos |
+| F3 | Un restablecimiento simultáneo a una confirmación podía dejar vivo el autenticador nuevo | El comando toma los autenticadores y la identidad; configurar y confirmar la toman en modo compartido; si quedara uno activo, el comando falla entero |
+| F4 | Reemplazar el autenticador o generar códigos dejaba vivas las otras sesiones | Terminan, con su motivo; la propia sigue |
+| F5 | Los rechazos de los guards no dejaban rastro | Se auditan con la operación intentada |
+| menor | El código de incorporación se miraba al empezar la configuración, no al confirmarla | Tiene que seguir vigente al confirmar |
+
 ## 15. Fuera del paquete
 
 El alta pública de profesionales (PRO-01 a 08), la presentación y la revisión de documentos, la certificación de
@@ -401,3 +431,6 @@ con un solo operador), un visor global de auditoría y la recuperación de contr
   Integrado en `main` con #205, sin aprobar decisiones.
 - **2026-10-25**: Dirección resolvió D-1 a D-7 y autorizó definir, implementar y probar el paquete, sin integrar ni
   desplegar. Este documento pasa a ser la definición.
+- **2026-10-25, más tarde**: la revisión de seguridad (§14) y sus correcciones en el segundo factor: bloqueo por fallos
+  seguidos, pedidos simultáneos, el comando del operador, las otras sesiones al renovar credenciales y la auditoría de los
+  guards. Las migraciones del paquete, que todavía no se desplegaron en ningún ambiente, se corrigieron en el lugar.

@@ -23,8 +23,8 @@ import type { ContextoDeSolicitud } from '../../apps/api/src/http/contexto';
 import { puedeOperarArea } from '../../apps/api/src/profesional/area-operable';
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
-import { appDePrueba, claveDeIdempotencia, conSesion, correoSintetico, login, registrarOk, tokenDe } from './soporte-api';
-import { adm, administradorListo, codigoTotp, decidirSobre, otraSesion, primerFactor, profesionalPendiente, type Administrador } from './soporte-administracion';
+import { appDePrueba, claveDeIdempotencia, conSesion, CREDENCIAL_SINTETICA, correoSintetico, login, registrarOk, tokenDe } from './soporte-api';
+import { adm, administradorListo, codigoQueNoVale, codigoTotp, decidirSobre, otraSesion, primerFactor, profesionalPendiente, type Administrador } from './soporte-administracion';
 import { LaApk } from './soporte-lecturas-de-la-apk';
 import { circuitoConPlanActivo, registrarComida } from './soporte-nutricion';
 import { finalizar, prepararAsesorado, prepararProfesional, revocarB2, solicitar, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
@@ -117,7 +117,16 @@ describe('Acceso administrativo (criterios 1 y 10)', () => {
     expect(sesion).toMatchObject({ estado: 'REVOCADA', motivoDeRevocacion: 'SEGUNDO_FACTOR_FALLIDO' });
     await adm(app, t).post('/admin/auth/sessions/current/second-factor').send({ code: codigoTotp(a.secreto, 30_000) }).expect(401);
     const auditoria = await prisma.registroDeAuditoria.findMany({ where: { recursoId: s.body.data.session.id, operacion: 'API-ADM-05' } });
-    expect(auditoria.length).toBe(5);
+    // Los cinco códigos que no valen y, desde la revisión de seguridad del 2026-10-25, el sexto pedido: el guard lo rechaza
+    // por la sesión revocada y también lo audita.
+    expect(auditoria.map((f) => `${f.resultado} ${f.motivo}`).sort()).toEqual([
+      'RECHAZO FORMA_INVALIDA',
+      'RECHAZO FORMA_INVALIDA',
+      'RECHAZO FORMA_INVALIDA',
+      'RECHAZO FORMA_INVALIDA',
+      'RECHAZO FORMA_INVALIDA:INTENTOS_AGOTADOS',
+      'RECHAZO SESION_REVOCADA',
+    ]);
     expect(JSON.stringify(auditoria)).not.toContain('12345');
   });
 
@@ -648,5 +657,137 @@ describe('Convivencia con la preparación de la demostración (criterio 9; D-7)'
     } finally {
       await conSiembra.close();
     }
+  });
+});
+
+// ─── Revisión de seguridad del 2026-10-25 · el segundo factor ───────────────────────────────────
+
+/** La sesión de un token (su `sid`), para mirarla en la base. */
+const sesionDelToken = (token: string): string => JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString('utf8')).sid as string;
+const pausa = (ms: number) => new Promise((listo) => setTimeout(listo, ms));
+
+describe('Revisión de seguridad del 2026-10-25 (el segundo factor)', () => {
+  it('F1 · diez códigos que no valen seguidos, en varias sesiones, bloquean el autenticador; un código de recuperación lo desbloquea', async () => {
+    const a = await administradorListo(app, prisma, etiqueta('bloqueo'));
+    // Dos sesiones con cinco códigos que no valen cada una: la quinta de cada una revoca su sesión.
+    for (let s = 0; s < 2; s++) {
+      const t = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+      for (let i = 0; i < 4; i++) await adm(app, t).post('/admin/auth/sessions/current/second-factor').send({ code: codigoQueNoVale(a.secreto) }).expect(422);
+      await adm(app, t).post('/admin/auth/sessions/current/second-factor').send({ code: codigoQueNoVale(a.secreto) }).expect(401);
+    }
+    // En una tercera sesión, ni el código correcto se evalúa: el autenticador está bloqueado.
+    const t3 = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+    const bloqueado = await adm(app, t3).post('/admin/auth/sessions/current/second-factor').send({ code: codigoTotp(a.secreto, 30_000) }).expect(422);
+    expect(bloqueado.body.error.code).toBe('SECOND_FACTOR_LOCKED');
+    await adm(app, t3).get(`/admin/professionals/${randomUUID()}`).expect(403); // MFA_REQUIRED: bloqueado no es verificado
+    // Un código de recuperación entra y lo desbloquea; desde ahí, el autenticador vuelve a valer.
+    await adm(app, t3).post('/admin/auth/sessions/current/recovery-code').send({ recoveryCode: a.codigosDeRecuperacion[0] }).expect(200);
+    const t4 = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+    await adm(app, t4).post('/admin/auth/sessions/current/second-factor').send({ code: codigoTotp(a.secreto, 30_000) }).expect(200);
+    const motivos = await prisma.registroDeAuditoria.findMany({
+      where: { sujetoId: a.id, operacion: { in: ['API-ADM-05', 'API-ADM-06'] }, motivo: { startsWith: 'AUTENTICADOR_' } },
+      select: { motivo: true },
+    });
+    expect(motivos.map((m) => m.motivo).sort()).toEqual(['AUTENTICADOR_BLOQUEADO', 'AUTENTICADOR_BLOQUEADO_AHORA', 'AUTENTICADOR_DESBLOQUEADO']);
+    expect((await prisma.factorTotp.findFirst({ where: { identidadId: a.id, estado: 'ACTIVO' }, select: { fallosSeguidos: true } }))?.fallosSeguidos).toBe(0);
+  });
+
+  it('F2 · un código que esperaba detrás del quinto fallido no se evalúa: la sesión ya se revocó (la carrera, a mano)', async () => {
+    const a = await administradorListo(app, prisma, etiqueta('paralelo'));
+    const t = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+    const sid = sesionDelToken(t);
+    // El quinto código que no vale, a mano: tiene tomada la fila del segundo factor de la sesión mientras llega otro pedido.
+    let avisar: () => void = () => undefined;
+    const tomado = new Promise<void>((listo) => (avisar = listo));
+    let soltar: () => void = () => undefined;
+    const suelto = new Promise<void>((listo) => (soltar = listo));
+    const quinto = prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM "segundo_factor_de_sesion" WHERE "sesion_id" = ${sid}::uuid FOR UPDATE`;
+        avisar();
+        await suelto;
+        await tx.segundoFactorDeSesion.update({ where: { sesionId: sid }, data: { intentosFallidos: 5 } });
+        await tx.$executeRaw`UPDATE "sesion" SET "estado" = 'REVOCADA', "motivo_de_revocacion" = 'SEGUNDO_FACTOR_FALLIDO', "momento_de_finalizacion" = GREATEST(now(), "momento_de_ocurrencia") WHERE "id" = ${sid}::uuid`;
+      },
+      { timeout: 20_000 },
+    );
+    await tomado;
+    // Un código bueno: pasa el guard con la sesión todavía activa y espera la fila.
+    const pedido = adm(app, t).post('/admin/auth/sessions/current/second-factor').send({ code: codigoTotp(a.secreto, 30_000) }).then((r) => r);
+    await pausa(500);
+    soltar();
+    await quinto;
+    const r = await pedido;
+    expect(r.status).toBe(401);
+    expect(r.body.error.code).toBe('SESSION_REVOKED');
+    const s = await prisma.segundoFactorDeSesion.findUnique({ where: { sesionId: sid }, select: { verificadoEn: true } });
+    expect(s?.verificadoEn ?? null).toBeNull();
+  });
+
+  it('F3 · el restablecimiento del operador no deja vivo un autenticador que se activa al mismo tiempo', async () => {
+    const correo = correoSintetico(`adm-${etiqueta('carrera')}`);
+    const id = await registrarOk(app, correo, 'WEB');
+    const { codigo } = await incorporarAdministrador(prisma, { correo, nombre: 'Admin carrera', fundamento: 'Prueba de la carrera', operador: 'Prueba de integración', appEnv: 'test' });
+    const t = (await primerFactor(app, correo).expect(201)).body.data.session.accessToken as string;
+    await adm(app, t).post('/admin/auth/second-factor/enrollment').send({ incorporationCode: codigo }).expect(200);
+    const pendiente = await prisma.factorTotp.findFirstOrThrow({ where: { identidadId: id, estado: 'PENDIENTE' }, select: { id: true } });
+    // Una confirmación que tiene el autenticador tomado y lo activa mientras el operador corre el comando.
+    let avisar: () => void = () => undefined;
+    const tomado = new Promise<void>((listo) => (avisar = listo));
+    const confirmacion = prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM "factor_totp" WHERE "id" = ${pendiente.id}::uuid FOR UPDATE`;
+        avisar();
+        await pausa(400);
+        await tx.factorTotp.update({ where: { id: pendiente.id }, data: { estado: 'ACTIVO', momentoDeActivacion: new Date(), ultimoPaso: 1n } });
+      },
+      { timeout: 20_000 },
+    );
+    await tomado;
+    const comando = restablecerSegundoFactor(prisma, { correo, fundamento: 'Perdió el autenticador (sintético)', operador: 'Prueba de integración' });
+    await confirmacion;
+    await comando;
+    expect(await prisma.factorTotp.count({ where: { identidadId: id, estado: { in: ['ACTIVO', 'PENDIENTE'] } } })).toBe(0);
+  });
+
+  it('F4 · generar códigos nuevos o reemplazar el autenticador termina las otras sesiones administrativas; la propia sigue', async () => {
+    const a = await administradorListo(app, prisma, etiqueta('renovar'));
+    const otra = await otraSesion(app, a);
+    const nuevos = (await adm(app, a.token).post('/admin/auth/recovery-codes').send({ credential: CREDENCIAL_SINTETICA }).expect(200)).body.data.recoveryCodes as string[];
+    await adm(app, otra).get('/admin/auth/sessions/current').expect(401);
+    await adm(app, a.token).get('/admin/auth/sessions/current').expect(200);
+    expect((await prisma.sesion.findUnique({ where: { id: sesionDelToken(otra) }, select: { motivoDeRevocacion: true } }))?.motivoDeRevocacion).toBe('CREDENCIALES_ADMINISTRATIVAS_RENOVADAS');
+    // Una tercera sesión, con un código de recuperación nuevo; después, el reemplazo del autenticador desde la primera.
+    const tercera = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+    await adm(app, tercera).post('/admin/auth/sessions/current/recovery-code').send({ recoveryCode: nuevos[0] }).expect(200);
+    const secreto = (await adm(app, a.token).post('/admin/auth/second-factor/enrollment').send({ credential: CREDENCIAL_SINTETICA }).expect(200)).body.data.secret as string;
+    await adm(app, a.token).post('/admin/auth/second-factor/enrollment/confirm').send({ code: codigoTotp(secreto) }).expect(200);
+    await adm(app, tercera).get('/admin/auth/sessions/current').expect(401);
+    await adm(app, a.token).get('/admin/auth/sessions/current').expect(200);
+  });
+
+  it('F5 · los rechazos de los guards quedan auditados: una sesión común en Administración y una lectura sin el segundo factor', async () => {
+    const pro = await prepararProfesional(app, etiqueta('f5'), ['NUTRICION']);
+    await adm(app, pro.token).post('/admin/professionals/query').send({}).expect(403);
+    expect(await prisma.registroDeAuditoria.count({ where: { actorId: pro.id, operacion: 'API-ADM-10', resultado: 'RECHAZO', motivo: 'SESION_NO_ADMINISTRATIVA' } })).toBe(1);
+    const a = await administradorListo(app, prisma, etiqueta('f5-adm'));
+    const solo = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+    await adm(app, solo).get(`/admin/professionals/${pro.id}`).expect(403);
+    expect(await prisma.registroDeAuditoria.count({ where: { actorId: a.id, operacion: 'API-ADM-11', resultado: 'RECHAZO', motivo: { startsWith: 'MFA_REQUERIDO:' } } })).toBe(1);
+    // Ningún registro guarda el token.
+    const filas = await prisma.registroDeAuditoria.findMany({ where: { actorId: { in: [pro.id, a.id] } } });
+    expect(JSON.stringify(filas)).not.toContain(solo);
+  });
+
+  it('el código de incorporación tiene que seguir vigente al confirmar: uno anulado mientras tanto no completa la incorporación', async () => {
+    const correo = correoSintetico(`adm-${etiqueta('vigencia')}`);
+    const id = await registrarOk(app, correo, 'WEB');
+    const { codigo } = await incorporarAdministrador(prisma, { correo, nombre: 'Admin vigencia', fundamento: 'Prueba de vigencia', operador: 'Prueba de integración', appEnv: 'test' });
+    const t = (await primerFactor(app, correo).expect(201)).body.data.session.accessToken as string;
+    const secreto = (await adm(app, t).post('/admin/auth/second-factor/enrollment').send({ incorporationCode: codigo }).expect(200)).body.data.secret as string;
+    await prisma.codigoDeIncorporacion.updateMany({ where: { identidadId: id, momentoDeUso: null, momentoDeAnulacion: null }, data: { momentoDeAnulacion: new Date() } });
+    const r = await adm(app, t).post('/admin/auth/second-factor/enrollment/confirm').send({ code: codigoTotp(secreto) }).expect(422);
+    expect(r.body.error.code).toBe('INVALID_STATE_TRANSITION');
+    expect(await prisma.factorTotp.count({ where: { identidadId: id, estado: 'ACTIVO' } })).toBe(0);
   });
 });

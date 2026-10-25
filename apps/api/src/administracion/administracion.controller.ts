@@ -17,7 +17,7 @@ import { sinParametrosDeQuery } from '../http/validacion';
 import { borrarCookieDeReanudacion, PERFIL_ADMINISTRATIVO } from '../sesion/reanudacion.service';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
 import { AdministracionService } from './administracion.service';
-import { actorAdministrativoDe, SegundoFactorGuard, SesionAdministrativaGuard, type SolicitudAdministrativa } from './sesion-administrativa.guard';
+import { actorAdministrativoDe, OperacionAdministrativa, SegundoFactorGuard, SesionAdministrativaGuard, type SolicitudAdministrativa } from './sesion-administrativa.guard';
 
 type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
 
@@ -63,6 +63,7 @@ export class AdministracionController {
 
   /** API-ADM-04 — primer factor. */
   @Get('auth/sessions/current')
+  @OperacionAdministrativa('API-ADM-04')
   @UseGuards(SesionAdministrativaGuard)
   estado(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<EstadoDeSesionAdministrativaResponse> {
     sinParametrosDeQuery(query);
@@ -72,6 +73,7 @@ export class AdministracionController {
   /** API-ADM-05 — primer factor. */
   @Post('auth/sessions/current/second-factor')
   @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-05')
   @UseGuards(SesionAdministrativaGuard)
   verificarCodigo(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<SegundoFactorVerificadoResponse> {
     sinParametrosDeQuery(query);
@@ -81,6 +83,7 @@ export class AdministracionController {
   /** API-ADM-06 — primer factor. */
   @Post('auth/sessions/current/recovery-code')
   @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-06')
   @UseGuards(SesionAdministrativaGuard)
   usarCodigoDeRecuperacion(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<SegundoFactorVerificadoResponse> {
     sinParametrosDeQuery(query);
@@ -90,6 +93,7 @@ export class AdministracionController {
   /** API-ADM-07 — primer factor (más el código de incorporación, o el segundo factor y la contraseña para reemplazar). */
   @Post('auth/second-factor/enrollment')
   @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-07')
   @UseGuards(SesionAdministrativaGuard)
   iniciarConfiguracion(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ConfiguracionDelAutenticadorResponse> {
     sinParametrosDeQuery(query);
@@ -99,6 +103,7 @@ export class AdministracionController {
   /** API-ADM-08 — primer factor. */
   @Post('auth/second-factor/enrollment/confirm')
   @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-08')
   @UseGuards(SesionAdministrativaGuard)
   confirmarConfiguracion(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ConfiguracionConfirmadaResponse> {
     sinParametrosDeQuery(query);
@@ -108,6 +113,7 @@ export class AdministracionController {
   /** API-ADM-09 — SESSION_MFA más la contraseña. */
   @Post('auth/recovery-codes')
   @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-09')
   @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
   regenerarCodigos(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<CodigosDeRecuperacionResponse> {
     sinParametrosDeQuery(query);
@@ -117,6 +123,7 @@ export class AdministracionController {
   /** API-ADM-10 — SESSION_MFA. La búsqueda va en el cuerpo, no en la URL. */
   @Post('professionals/query')
   @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-10')
   @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
   consultar(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ListaDeProfesionalesResponse> {
     sinParametrosDeQuery(query);
@@ -125,6 +132,7 @@ export class AdministracionController {
 
   /** API-ADM-11 — SESSION_MFA. */
   @Get('professionals/:professionalId')
+  @OperacionAdministrativa('API-ADM-11')
   @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
   ficha(@Param('professionalId') profesionalId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<FichaDeProfesionalResponse> {
     sinParametrosDeQuery(query);
@@ -133,6 +141,7 @@ export class AdministracionController {
 
   /** API-ADM-12 — SESSION_MFA. */
   @Get('professionals/:professionalId/history')
+  @OperacionAdministrativa('API-ADM-12')
   @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
   historial(@Param('professionalId') profesionalId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<HistorialAdministrativoResponse> {
     return this.administracion.historial(actorAdministrativoDe(req), profesionalId, query, contextoDe(req));
@@ -140,6 +149,7 @@ export class AdministracionController {
 
   /** API-ADM-13 — SESSION_MFA, Idempotency-Key requerida. */
   @Post('professionals/:professionalId/scopes/:scope/decisions')
+  @OperacionAdministrativa('API-ADM-13')
   @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
   async decidir(
     @Param('professionalId') profesionalId: string,

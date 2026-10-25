@@ -105637,7 +105637,7 @@
     "/admin/auth/sessions/current/second-factor": {
       "post": {
         "operationId": "API-ADM-05",
-        "summary": "Segundo factor con el código del autenticador (TOTP, RFC 6238: 6 dígitos, 30 s, el paso actual y uno de cada lado). Un código ya usado no vale otra vez. Cinco códigos fallidos en la sesión la revocan; además, diez por identidad cada 15 minutos (429). Con éxito, el segundo factor queda vigente mientras haya actividad (15 minutos sin actividad lo vencen).",
+        "summary": "Segundo factor con el código del autenticador (TOTP, RFC 6238: 6 dígitos, 30 s, el paso actual y uno de cada lado). Un código ya usado no vale otra vez. Cinco códigos fallidos en la sesión la revocan; diez seguidos en cualquier sesión de la identidad bloquean el autenticador (SECOND_FACTOR_LOCKED) hasta que entra un código de recuperación o el operador lo restablece; además, diez intentos por identidad cada 15 minutos (429). Con éxito, el segundo factor queda vigente mientras haya actividad (15 minutos sin actividad lo vencen).",
         "description": "Fuente: 08 §25 (TOTP como línea base) · 09v7 T14 (SESSION_MFA) · ID propio de BE (familia ADM) · DL-155. AuthN: ADMIN_FIRST_FACTOR.",
         "security": [
           {
@@ -105841,7 +105841,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: SECOND_FACTOR_INVALID | INVALID_STATE_TRANSITION. SECOND_FACTOR_INVALID: details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.",
+            "description": "ErrorEnvelope: SECOND_FACTOR_INVALID | SECOND_FACTOR_LOCKED | INVALID_STATE_TRANSITION. SECOND_FACTOR_INVALID: details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.",
             "content": {
               "application/json": {
                 "schema": {
@@ -105915,7 +105915,7 @@
     "/admin/auth/sessions/current/recovery-code": {
       "post": {
         "operationId": "API-ADM-06",
-        "summary": "Segundo factor con un código de recuperación de un solo uso: usarlo lo marca usado en la misma transacción. No desactiva el autenticador: después se lo reemplaza desde una sesión vigente (API-ADM-07 con la contraseña). Mismos límites de intentos que API-ADM-05.",
+        "summary": "Segundo factor con un código de recuperación de un solo uso: usarlo lo marca usado en la misma transacción. No desactiva el autenticador (si estaba bloqueado por códigos que no valen, lo desbloquea): después se lo reemplaza desde una sesión vigente (API-ADM-07 con la contraseña). Mismos límites de intentos por sesión que API-ADM-05.",
         "description": "Fuente: 08 §25 (códigos de recuperación de un solo uso) · ID propio de BE (familia ADM) · DL-155. AuthN: ADMIN_FIRST_FACTOR.",
         "security": [
           {
@@ -106401,7 +106401,7 @@
     "/admin/auth/second-factor/enrollment/confirm": {
       "post": {
         "operationId": "API-ADM-08",
-        "summary": "Confirmar la configuración con un código del autenticador nuevo: queda activo (el anterior, si había, reemplazado), consume el código de incorporación y devuelve, una sola vez, diez códigos de recuperación nuevos; los anteriores dejan de valer. La sesión queda con el segundo factor vigente.",
+        "summary": "Confirmar la configuración con un código del autenticador nuevo: queda activo (el anterior, si había, reemplazado), consume el código de incorporación (que tiene que seguir vigente) y devuelve, una sola vez, diez códigos de recuperación nuevos; los anteriores dejan de valer. La sesión queda con el segundo factor vigente; en un reemplazo, las otras sesiones administrativas de la identidad terminan.",
         "description": "Fuente: 08 §25 · ID propio de BE (familia ADM) · DL-155. AuthN: ADMIN_FIRST_FACTOR.",
         "security": [
           {
@@ -106683,7 +106683,7 @@
     "/admin/auth/recovery-codes": {
       "post": {
         "operationId": "API-ADM-09",
-        "summary": "Generar diez códigos de recuperación nuevos, con el segundo factor vigente y la contraseña otra vez. Los anteriores dejan de valer. Se muestran una sola vez.",
+        "summary": "Generar diez códigos de recuperación nuevos, con el segundo factor vigente y la contraseña otra vez. Los anteriores dejan de valer y las otras sesiones administrativas de la identidad terminan. Se muestran una sola vez.",
         "description": "Fuente: 08 §25 · ID propio de BE (familia ADM) · DL-155. AuthN: SESSION_MFA.",
         "security": [
           {

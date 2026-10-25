@@ -180,6 +180,11 @@ export const CodigoDeError = {
   RATIONALE_REQUIRED: 'RATIONALE_REQUIRED',
   /** El código del autenticador o de recuperación no vale: incorrecto, vencido o ya usado. `details.attemptsRemaining`. */
   SECOND_FACTOR_INVALID: 'SECOND_FACTOR_INVALID',
+  /**
+   * El autenticador quedó bloqueado por demasiados códigos que no valen seguidos (en cualquier sesión). Se entra con un
+   * código de recuperación, que lo desbloquea, o el operador restablece el segundo factor.
+   */
+  SECOND_FACTOR_LOCKED: 'SECOND_FACTOR_LOCKED',
   /** El código de incorporación no vale: incorrecto, vencido, usado o anulado. */
   INCORPORATION_CODE_INVALID: 'INCORPORATION_CODE_INVALID',
   /** La administración no está configurada en este ambiente (falta la clave del segundo factor). */

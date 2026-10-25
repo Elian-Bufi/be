@@ -3152,12 +3152,12 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/admin/auth/sessions/current/second-factor',
     resumen:
-      'Segundo factor con el código del autenticador (TOTP, RFC 6238: 6 dígitos, 30 s, el paso actual y uno de cada lado). Un código ya usado no vale otra vez. Cinco códigos fallidos en la sesión la revocan; además, diez por identidad cada 15 minutos (429). Con éxito, el segundo factor queda vigente mientras haya actividad (15 minutos sin actividad lo vencen).',
+      'Segundo factor con el código del autenticador (TOTP, RFC 6238: 6 dígitos, 30 s, el paso actual y uno de cada lado). Un código ya usado no vale otra vez. Cinco códigos fallidos en la sesión la revocan; diez seguidos en cualquier sesión de la identidad bloquean el autenticador (SECOND_FACTOR_LOCKED) hasta que entra un código de recuperación o el operador lo restablece; además, diez intentos por identidad cada 15 minutos (429). Con éxito, el segundo factor queda vigente mientras haya actividad (15 minutos sin actividad lo vencen).',
     autenticacion: 'ADMIN_FIRST_FACTOR',
     idempotencia: false,
     request: VerificarSegundoFactorRequestSchema,
     exitos: [{ status: 200, schema: SegundoFactorVerificadoResponseSchema }],
-    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'] },
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'SECOND_FACTOR_LOCKED', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'] },
     detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
     fuente: '08 §25 (TOTP como línea base) · 09v7 T14 (SESSION_MFA) · ID propio de BE (familia ADM) · DL-155',
   },
@@ -3166,7 +3166,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/admin/auth/sessions/current/recovery-code',
     resumen:
-      'Segundo factor con un código de recuperación de un solo uso: usarlo lo marca usado en la misma transacción. No desactiva el autenticador: después se lo reemplaza desde una sesión vigente (API-ADM-07 con la contraseña). Mismos límites de intentos que API-ADM-05.',
+      'Segundo factor con un código de recuperación de un solo uso: usarlo lo marca usado en la misma transacción. No desactiva el autenticador (si estaba bloqueado por códigos que no valen, lo desbloquea): después se lo reemplaza desde una sesión vigente (API-ADM-07 con la contraseña). Mismos límites de intentos por sesión que API-ADM-05.',
     autenticacion: 'ADMIN_FIRST_FACTOR',
     idempotencia: false,
     request: UsarCodigoDeRecuperacionRequestSchema,
@@ -3193,7 +3193,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/admin/auth/second-factor/enrollment/confirm',
     resumen:
-      'Confirmar la configuración con un código del autenticador nuevo: queda activo (el anterior, si había, reemplazado), consume el código de incorporación y devuelve, una sola vez, diez códigos de recuperación nuevos; los anteriores dejan de valer. La sesión queda con el segundo factor vigente.',
+      'Confirmar la configuración con un código del autenticador nuevo: queda activo (el anterior, si había, reemplazado), consume el código de incorporación (que tiene que seguir vigente) y devuelve, una sola vez, diez códigos de recuperación nuevos; los anteriores dejan de valer. La sesión queda con el segundo factor vigente; en un reemplazo, las otras sesiones administrativas de la identidad terminan.',
     autenticacion: 'ADMIN_FIRST_FACTOR',
     idempotencia: false,
     request: ConfirmarConfiguracionRequestSchema,
@@ -3206,7 +3206,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-ADM-09',
     metodo: 'post',
     ruta: '/admin/auth/recovery-codes',
-    resumen: 'Generar diez códigos de recuperación nuevos, con el segundo factor vigente y la contraseña otra vez. Los anteriores dejan de valer. Se muestran una sola vez.',
+    resumen:
+      'Generar diez códigos de recuperación nuevos, con el segundo factor vigente y la contraseña otra vez. Los anteriores dejan de valer y las otras sesiones administrativas de la identidad terminan. Se muestran una sola vez.',
     autenticacion: 'SESSION_MFA',
     idempotencia: false,
     request: RegenerarCodigosDeRecuperacionRequestSchema,

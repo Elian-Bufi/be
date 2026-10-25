@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   CANTIDAD_DE_CODIGOS_DE_RECUPERACION,
+  FALLOS_SEGUIDOS_PARA_BLOQUEAR_EL_AUTENTICADOR,
   ConfirmarConfiguracionRequestSchema,
   IniciarConfiguracionRequestSchema,
   IniciarSesionAdministrativaRequestSchema,
@@ -63,6 +64,8 @@ type Intento =
   | { readonly tipo: 'ok' }
   | { readonly tipo: 'invalido'; readonly restantes: number; readonly incorporacion: boolean }
   | { readonly tipo: 'agotado' }
+  /** El autenticador está bloqueado por códigos que no valen, seguidos: el código ni se evalúa. */
+  | { readonly tipo: 'bloqueado' }
   | { readonly tipo: 'plazo' }
   | { readonly tipo: 'paso'; readonly motivo: string };
 
@@ -86,7 +89,9 @@ export function segundoFactorApi(e: EstadoDelSegundoFactor): EstadoDelSegundoFac
  * - **Primer factor** (API-ADM-01): la contraseña, con la misma neutralidad y los mismos cupos que el inicio de sesión
  *   común. Abre una sesión ADMINISTRATIVA que, sola, no lee ni decide nada.
  * - **Segundo factor** (API-ADM-05 y 06): un código del autenticador (TOTP) o uno de recuperación, de un solo uso. Cinco
- *   fallidos revocan la sesión; diez por identidad cada 15 minutos dan 429.
+ *   fallidos revocan la sesión; diez seguidos en cualquier sesión bloquean el autenticador, en la base, hasta que entra un
+ *   código de recuperación o el operador lo restablece (el cupo por sesión solo no alcanzaba: cada entrada abre otra
+ *   sesión); y diez intentos por identidad cada 15 minutos dan 429.
  * - **Configurar o reemplazar el autenticador** (API-ADM-07 y 08): la primera vez, con el código de incorporación que emitió
  *   el comando interno; para reemplazarlo, con el segundo factor vigente y la contraseña. Nunca queda la cuenta sin un
  *   autenticador activo: el anterior vale hasta que el nuevo se confirma.
@@ -243,26 +248,40 @@ export class AccesoAdministrativoService {
   async verificarCodigo(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<SegundoFactorVerificadoResponse> {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(VerificarSegundoFactorRequestSchema, cuerpo);
-    this.limitador.consumir('segundoFactor', null, actor.identidadId);
+    await this.consumirIntento(actor, 'API-ADM-05', ctx);
     const intento = await conReintento(() =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado === 'PLAZO_VENCIDO') return { tipo: 'plazo' };
         if (estado.estado === 'CONFIGURACION_REQUERIDA') return { tipo: 'paso', motivo: 'SIN_AUTENTICADOR_ACTIVO' };
-        const [factor] = await tx.$queryRaw<{ id: string; secreto: string; ultimoPaso: bigint | null }[]>`
-          SELECT "id"::text AS "id", "secreto_cifrado" AS "secreto", "ultimo_paso" AS "ultimoPaso" FROM "factor_totp"
+        const [factor] = await tx.$queryRaw<{ id: string; secreto: string; ultimoPaso: bigint | null; fallos: number }[]>`
+          SELECT "id"::text AS "id", "secreto_cifrado" AS "secreto", "ultimo_paso" AS "ultimoPaso", "fallos_seguidos" AS "fallos" FROM "factor_totp"
            WHERE "identidad_id" = ${actor.identidadId}::uuid AND "estado" = 'ACTIVO' FOR UPDATE`;
+        // Bloqueado por códigos que no valen, seguidos, en cualquier sesión: el código ni se evalúa (un acierto no se
+        // distingue de un error). Lo desbloquea un código de recuperación, o el operador.
+        if (factor && factor.fallos >= FALLOS_SEGUIDOS_PARA_BLOQUEAR_EL_AUTENTICADOR) {
+          await this.auditar(tx, 'API-ADM-05', 'RECHAZO', 'AUTENTICADOR_BLOQUEADO', actor.identidadId, actor.sesionId, ctx);
+          return { tipo: 'bloqueado' };
+        }
         const codigo = normalizarCodigoDelAutenticador(pedido.code);
         const secreto = factor ? descifrarSecreto(claves, factor.secreto, actor.identidadId) : null;
         const valido = codigo && secreto ? validarCodigoTotp(secreto, codigo, Date.now(), factor!.ultimoPaso) : null;
-        if (!factor || !valido) return this.fallido(tx, actor, ctx, 'API-ADM-05', !codigo ? 'FORMA_INVALIDA' : !secreto ? 'SECRETO_ILEGIBLE' : 'CODIGO_INVALIDO_O_USADO');
-        await tx.factorTotp.update({ where: { id: factor.id }, data: { ultimoPaso: valido.paso } });
+        if (!factor || !valido) {
+          // Un código con forma que no vale suma a los fallos seguidos de la identidad, que no se vacían al abrir otra sesión.
+          if (factor && codigo) {
+            const fallos = factor.fallos + 1;
+            await tx.factorTotp.update({ where: { id: factor.id }, data: { fallosSeguidos: fallos } });
+            if (fallos === FALLOS_SEGUIDOS_PARA_BLOQUEAR_EL_AUTENTICADOR) await this.auditar(tx, 'API-ADM-05', 'RECHAZO', 'AUTENTICADOR_BLOQUEADO_AHORA', actor.identidadId, actor.sesionId, ctx);
+          }
+          return this.fallido(tx, actor, ctx, 'API-ADM-05', !codigo ? 'FORMA_INVALIDA' : !secreto ? 'SECRETO_ILEGIBLE' : 'CODIGO_INVALIDO_O_USADO');
+        }
+        await tx.factorTotp.update({ where: { id: factor.id }, data: { ultimoPaso: valido.paso, fallosSeguidos: 0 } });
         await this.marcarVerificado(tx, actor, 'TOTP');
         await this.auditar(tx, 'API-ADM-05', 'EXITO', null, actor.identidadId, actor.sesionId, ctx);
         return { tipo: 'ok' };
       }),
     );
-    return this.resolverIntento(intento, actor);
+    return this.resolverIntento(intento, actor, 'API-ADM-05', ctx);
   }
 
   // ─── API-ADM-06 ──────────────────────────────────────────────────────────────────────────────
@@ -270,7 +289,7 @@ export class AccesoAdministrativoService {
   async usarCodigoDeRecuperacion(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<SegundoFactorVerificadoResponse> {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(UsarCodigoDeRecuperacionRequestSchema, cuerpo);
-    this.limitador.consumir('segundoFactor', null, actor.identidadId);
+    await this.consumirIntento(actor, 'API-ADM-06', ctx);
     const intento = await conReintento(() =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
         const estado = await this.estadoBloqueado(tx, actor);
@@ -284,12 +303,18 @@ export class AccesoAdministrativoService {
             })
           : { count: 0 };
         if (usados.count !== 1) return this.fallido(tx, actor, ctx, 'API-ADM-06', !codigo ? 'FORMA_INVALIDA' : 'CODIGO_INVALIDO_O_USADO');
+        // Un código de recuperación que vale desbloquea el autenticador, si los códigos que no valen lo habían bloqueado.
+        const [factor] = await tx.$queryRaw<{ id: string; fallos: number }[]>`
+          SELECT "id"::text AS "id", "fallos_seguidos" AS "fallos" FROM "factor_totp"
+           WHERE "identidad_id" = ${actor.identidadId}::uuid AND "estado" = 'ACTIVO' FOR UPDATE`;
+        if (factor && factor.fallos > 0) await tx.factorTotp.update({ where: { id: factor.id }, data: { fallosSeguidos: 0 } });
         await this.marcarVerificado(tx, actor, 'CODIGO_DE_RECUPERACION');
-        await this.auditar(tx, 'API-ADM-06', 'EXITO', null, actor.identidadId, actor.sesionId, ctx);
+        const desbloqueo = factor && factor.fallos >= FALLOS_SEGUIDOS_PARA_BLOQUEAR_EL_AUTENTICADOR ? 'AUTENTICADOR_DESBLOQUEADO' : null;
+        await this.auditar(tx, 'API-ADM-06', 'EXITO', desbloqueo, actor.identidadId, actor.sesionId, ctx);
         return { tipo: 'ok' };
       }),
     );
-    return this.resolverIntento(intento, actor);
+    return this.resolverIntento(intento, actor, 'API-ADM-06', ctx);
   }
 
   // ─── API-ADM-07 ──────────────────────────────────────────────────────────────────────────────
@@ -304,12 +329,13 @@ export class AccesoAdministrativoService {
   async iniciarConfiguracion(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<ConfiguracionDelAutenticadorResponse> {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(IniciarConfiguracionRequestSchema, cuerpo);
-    this.limitador.consumir('segundoFactor', null, actor.identidadId);
+    await this.consumirIntento(actor, 'API-ADM-07', ctx);
     const correo = await this.correoDe(actor.identidadId);
     const credencialCorrecta = pedido.credential !== undefined ? await this.contrasenaCorrecta(actor.identidadId, pedido.credential) : false;
     const nuevo = totpNuevo(correo);
     const resultado = await conReintento(() =>
       this.prisma.$transaction(async (tx): Promise<Intento | { tipo: 'configurando'; venceEn: Date }> => {
+        await this.tomarLaIdentidad(tx, actor);
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado === 'PLAZO_VENCIDO') return { tipo: 'plazo' };
         const activo = await tx.factorTotp.findFirst({ where: { identidadId: actor.identidadId, estado: 'ACTIVO' }, select: { id: true } });
@@ -352,7 +378,7 @@ export class AccesoAdministrativoService {
       await this.auditar(this.prisma, 'API-ADM-07', 'RECHAZO', resultado.motivo, actor.identidadId, actor.sesionId, ctx);
       throw errores.credencialesInvalidas();
     }
-    return this.resolverIntento(resultado, actor) as never;
+    return this.resolverIntento(resultado, actor, 'API-ADM-07', ctx) as never;
   }
 
   // ─── API-ADM-08 ──────────────────────────────────────────────────────────────────────────────
@@ -364,10 +390,11 @@ export class AccesoAdministrativoService {
   async confirmarConfiguracion(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<ConfiguracionConfirmadaResponse> {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(ConfirmarConfiguracionRequestSchema, cuerpo);
-    this.limitador.consumir('segundoFactor', null, actor.identidadId);
+    await this.consumirIntento(actor, 'API-ADM-08', ctx);
     const nuevos = codigosDeRecuperacionNuevos(CANTIDAD_DE_CODIGOS_DE_RECUPERACION);
     const resultado = await conReintento(() =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
+        await this.tomarLaIdentidad(tx, actor);
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado === 'PLAZO_VENCIDO') return { tipo: 'plazo' };
         const [pendiente] = await tx.$queryRaw<{ id: string; secreto: string }[]>`
@@ -383,10 +410,19 @@ export class AccesoAdministrativoService {
         const valido = codigo && secreto ? validarCodigoTotp(secreto, codigo, Date.now(), null) : null;
         if (!valido) return this.fallido(tx, actor, ctx, 'API-ADM-08', !codigo ? 'FORMA_INVALIDA' : 'CODIGO_INVALIDO');
         const ahora = new Date();
-        if (activo) await tx.factorTotp.update({ where: { id: activo.id }, data: { estado: 'REEMPLAZADO', momentoDeBaja: ahora } });
-        else {
-          // La incorporación termina acá: el código vigente de la identidad queda usado.
-          await tx.codigoDeIncorporacion.updateMany({ where: { identidadId: actor.identidadId, momentoDeUso: null, momentoDeAnulacion: null }, data: { momentoDeUso: ahora } });
+        if (activo) {
+          await tx.factorTotp.update({ where: { id: activo.id }, data: { estado: 'REEMPLAZADO', momentoDeBaja: ahora } });
+          // Un reemplazo renueva las credenciales: las otras sesiones administrativas (un teléfono perdido, un acceso que
+          // se filtró) dejan de valer. Esta sigue.
+          await this.cerrarOtrasSesiones(tx, actor, ahora);
+        } else {
+          // La incorporación termina acá, con el código todavía vigente: uno que venció o se anuló mientras tanto no la
+          // completa, aunque la configuración se haya empezado con él.
+          const consumidos = await tx.codigoDeIncorporacion.updateMany({
+            where: { identidadId: actor.identidadId, momentoDeUso: null, momentoDeAnulacion: null, venceEn: { gt: ahora } },
+            data: { momentoDeUso: ahora },
+          });
+          if (consumidos.count === 0) return { tipo: 'paso', motivo: 'CODIGO_DE_INCORPORACION_NO_VIGENTE' };
         }
         await tx.factorTotp.update({ where: { id: pendiente.id }, data: { estado: 'ACTIVO', momentoDeActivacion: ahora, ultimoPaso: valido.paso } });
         await this.reemplazarCodigosDeRecuperacion(tx, claves, actor.identidadId, nuevos.map((c) => c.normalizado), ahora);
@@ -395,7 +431,7 @@ export class AccesoAdministrativoService {
         return { tipo: 'ok' };
       }),
     );
-    if (resultado.tipo !== 'ok') return this.resolverIntento(resultado, actor) as never;
+    if (resultado.tipo !== 'ok') return this.resolverIntento(resultado, actor, 'API-ADM-08', ctx) as never;
     const estado = await this.estadoActual(actor);
     return { data: { recoveryCodes: nuevos.map((c) => c.visible), secondFactor: segundoFactorApi(estado) } };
   }
@@ -405,7 +441,7 @@ export class AccesoAdministrativoService {
   async regenerarCodigos(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<CodigosDeRecuperacionResponse> {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(RegenerarCodigosDeRecuperacionRequestSchema, cuerpo);
-    this.limitador.consumir('segundoFactor', null, actor.identidadId);
+    await this.consumirIntento(actor, 'API-ADM-09', ctx);
     if (!(await this.contrasenaCorrecta(actor.identidadId, pedido.credential))) {
       await this.auditar(this.prisma, 'API-ADM-09', 'RECHAZO', 'CONTRASENA_INCORRECTA', actor.identidadId, actor.sesionId, ctx);
       throw errores.credencialesInvalidas();
@@ -413,7 +449,10 @@ export class AccesoAdministrativoService {
     const nuevos = codigosDeRecuperacionNuevos(CANTIDAD_DE_CODIGOS_DE_RECUPERACION);
     await conReintento(() =>
       this.prisma.$transaction(async (tx) => {
-        await this.reemplazarCodigosDeRecuperacion(tx, claves, actor.identidadId, nuevos.map((c) => c.normalizado), new Date());
+        const ahora = new Date();
+        await this.reemplazarCodigosDeRecuperacion(tx, claves, actor.identidadId, nuevos.map((c) => c.normalizado), ahora);
+        // Como al reemplazar el autenticador: las otras sesiones administrativas dejan de valer; esta sigue.
+        await this.cerrarOtrasSesiones(tx, actor, ahora);
         await this.auditar(tx, 'API-ADM-09', 'EXITO', null, actor.identidadId, actor.sesionId, ctx);
       }),
     );
@@ -422,14 +461,51 @@ export class AccesoAdministrativoService {
 
   // ─── Piezas comunes ──────────────────────────────────────────────────────────────────────────
 
-  /** El estado del segundo factor con su fila tomada: dos pedidos de la misma sesión no cuentan intentos en paralelo. */
+  /**
+   * El estado del segundo factor con su fila tomada: dos pedidos de la misma sesión no cuentan intentos en paralelo. Con la
+   * fila tomada se vuelve a leer la sesión: un pedido que pasó el guard con la sesión activa y esperó detrás de otros no
+   * sigue si, mientras tanto, se revocó o se agotaron sus intentos (revisión de seguridad del 2026-10-25). Sin eso, el
+   * sexto de varios pedidos simultáneos podía evaluar un código sobre una sesión ya revocada.
+   */
   private async estadoBloqueado(tx: Tx, actor: ActorAdministrativo): Promise<EstadoDelSegundoFactor> {
-    const [fila] = await tx.$queryRaw<{ verificadoEn: Date | null; metodo: MetodoDeSegundoFactor | null; ultimaActividad: Date | null }[]>`
-      SELECT "verificado_en" AS "verificadoEn", "metodo"::text AS "metodo", "ultima_actividad" AS "ultimaActividad"
+    const [fila] = await tx.$queryRaw<{ verificadoEn: Date | null; metodo: MetodoDeSegundoFactor | null; ultimaActividad: Date | null; intentosFallidos: number }[]>`
+      SELECT "verificado_en" AS "verificadoEn", "metodo"::text AS "metodo", "ultima_actividad" AS "ultimaActividad", "intentos_fallidos" AS "intentosFallidos"
         FROM "segundo_factor_de_sesion" WHERE "sesion_id" = ${actor.sesionId}::uuid FOR UPDATE`;
     if (!fila) throw errores.sesionInvalida();
+    const [sesion] = await tx.$queryRaw<{ estado: string }[]>`SELECT "estado"::text AS "estado" FROM "sesion" WHERE "id" = ${actor.sesionId}::uuid FOR SHARE`;
+    if (!sesion || sesion.estado !== 'ACTIVA' || fila.intentosFallidos >= INTENTOS_DE_SEGUNDO_FACTOR_POR_SESION) throw errores.sesionRevocada();
     const activo = await tx.factorTotp.count({ where: { identidadId: actor.identidadId, estado: 'ACTIVO' } });
     return this.estadoDe(actor.inicioDeLaSesion, fila, activo > 0);
+  }
+
+  /**
+   * La identidad, en modo compartido, antes de tocar sus autenticadores (API-ADM-07 y 08). El comando del operador la toma en
+   * modo exclusivo para restablecer o retirar: así uno de los dos termina antes de que el otro empiece, y un restablecimiento
+   * no deja vivo un autenticador que se confirmó al mismo tiempo (revisión de seguridad del 2026-10-25).
+   */
+  private async tomarLaIdentidad(tx: Tx, actor: ActorAdministrativo): Promise<void> {
+    await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR SHARE`;
+  }
+
+  /**
+   * Las otras sesiones administrativas de la identidad terminan (no esta): al reemplazar el autenticador o al generar
+   * códigos nuevos, lo que pudo haberse filtrado deja de abrir algo. No toca la versión de control: esta sesión sigue.
+   */
+  private cerrarOtrasSesiones(tx: Tx, actor: ActorAdministrativo, ahora: Date): Promise<number> {
+    return tx.$executeRaw`
+      UPDATE "sesion" SET "estado" = 'REVOCADA', "motivo_de_revocacion" = 'CREDENCIALES_ADMINISTRATIVAS_RENOVADAS',
+             "momento_de_finalizacion" = GREATEST(${ahora}::timestamptz, "momento_de_ocurrencia")
+       WHERE "identidad_id" = ${actor.identidadId}::uuid AND "clase" = 'ADMINISTRATIVA' AND "estado" = 'ACTIVA' AND "id" <> ${actor.sesionId}::uuid`;
+  }
+
+  /** El cupo de intentos por identidad (429). El rechazo también queda en la auditoría, sin el código. */
+  private async consumirIntento(actor: ActorAdministrativo, operacion: string, ctx: ContextoDeSolicitud): Promise<void> {
+    try {
+      this.limitador.consumir('segundoFactor', null, actor.identidadId);
+    } catch (e) {
+      await this.auditar(this.prisma, operacion, 'RECHAZO', 'LIMITE_DE_INTENTOS', actor.identidadId, actor.sesionId, ctx);
+      throw e;
+    }
   }
 
   private async estadoActual(actor: ActorAdministrativo): Promise<EstadoDelSegundoFactor> {
@@ -451,8 +527,11 @@ export class AccesoAdministrativoService {
     return { tipo: 'invalido', restantes: INTENTOS_DE_SEGUNDO_FACTOR_POR_SESION - fila.intentosFallidos, incorporacion: clase === 'incorporacion' };
   }
 
-  /** Después de confirmar la transacción: la respuesta de un intento, o su error. */
-  private async resolverIntento(intento: Intento, actor: ActorAdministrativo): Promise<SegundoFactorVerificadoResponse> {
+  /**
+   * Después de confirmar la transacción: la respuesta de un intento, o su error. Un paso que no corresponde y un plazo
+   * vencido quedan en la auditoría (los códigos que no valen ya quedaron, en la transacción).
+   */
+  private async resolverIntento(intento: Intento, actor: ActorAdministrativo, operacion: string, ctx: ContextoDeSolicitud): Promise<SegundoFactorVerificadoResponse> {
     switch (intento.tipo) {
       case 'ok': {
         const estado = await this.estadoActual(actor);
@@ -462,9 +541,13 @@ export class AccesoAdministrativoService {
         throw intento.incorporacion ? errores.codigoDeIncorporacionInvalido(intento.restantes, 'CODIGO_DE_INCORPORACION_INVALIDO') : errores.codigoDeSegundoFactorInvalido(intento.restantes, 'CODIGO_INVALIDO');
       case 'agotado':
         throw errores.sesionRevocada();
+      case 'bloqueado':
+        throw errores.autenticadorBloqueado();
       case 'plazo':
+        await this.auditar(this.prisma, operacion, 'RECHAZO', 'PLAZO_VENCIDO', actor.identidadId, actor.sesionId, ctx);
         throw errores.sesionExpirada();
       case 'paso':
+        await this.auditar(this.prisma, operacion, 'RECHAZO', `PASO_NO_PERMITIDO:${intento.motivo}`, actor.identidadId, actor.sesionId, ctx);
         throw errores.pasoDeAccesoNoPermitido(intento.motivo);
     }
   }

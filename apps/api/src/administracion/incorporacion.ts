@@ -60,11 +60,22 @@ async function emitirCodigo(tx: Prisma.TransactionClient, identidadId: string, m
   return { identidadId, codigo: codigoEnGrupos(normalizado), venceEn };
 }
 
-/** Todo lo del segundo factor de la identidad deja de valer: el autenticador, uno pendiente y los códigos sin usar. */
+/**
+ * Todo lo del segundo factor de la identidad deja de valer: el autenticador, uno pendiente y los códigos sin usar.
+ * - Primero se toman las filas de sus autenticadores (FOR UPDATE): si una confirmación de API-ADM-08 está activando uno en
+ *   ese momento, el comando la espera y después lo ve ACTIVO y lo revoca. Sin esto, la revocación podía saltear un
+ *   autenticador que se activaba al mismo tiempo (revisión de seguridad del 2026-10-25). API-ADM-07 y 08 además toman la
+ *   identidad en modo compartido, que choca con el modo exclusivo de `identidadDe`.
+ * - Al final se comprueba que no quedó ninguno activo ni pendiente: si quedara, el comando falla entero, en vez de decir
+ *   «Listo» con un autenticador vivo.
+ */
 async function revocarSegundoFactor(tx: Prisma.TransactionClient, identidadId: string, ahora: Date): Promise<void> {
+  await tx.$queryRaw`SELECT "id" FROM "factor_totp" WHERE "identidad_id" = ${identidadId}::uuid FOR UPDATE`;
   await tx.factorTotp.updateMany({ where: { identidadId, estado: 'ACTIVO' }, data: { estado: 'REVOCADO', momentoDeBaja: ahora } });
   await tx.factorTotp.updateMany({ where: { identidadId, estado: 'PENDIENTE' }, data: { estado: 'DESCARTADO', momentoDeBaja: ahora } });
   await tx.codigoDeRecuperacion.updateMany({ where: { identidadId, momentoDeUso: null, momentoDeInvalidacion: null }, data: { momentoDeInvalidacion: ahora } });
+  const quedan = await tx.factorTotp.count({ where: { identidadId, estado: { in: ['ACTIVO', 'PENDIENTE'] } } });
+  if (quedan > 0) throw new ErrorDeComando('El segundo factor cambió mientras se revocaba. No se hizo nada: volvé a correr el comando.');
 }
 
 async function auditar(tx: Prisma.TransactionClient, operacion: string, identidadId: string, recursoTipo: string, recursoId: string, ahora: Date): Promise<void> {
@@ -103,6 +114,8 @@ export async function incorporarAdministrador(prisma: PrismaClient, d: DatosDelO
     });
     // Desde ahora no opera como persona: sus sesiones comunes dejan de valer.
     await revocarSesiones(tx, identidadId, 'INCORPORACION_ADMINISTRATIVA', ahora);
+    // Una incorporación empieza sin segundo factor: si quedara algo de una incorporación anterior (retirada), no se hereda.
+    await revocarSegundoFactor(tx, identidadId, ahora);
     const emitido = await emitirCodigo(tx, identidadId, 'INCORPORACION', fundamento, operador, 'CMD-ADM-INCORPORAR', ahora);
     await auditar(tx, 'CMD-ADM-INCORPORAR', identidadId, 'RolAdministrativo', rol.id, ahora);
     return emitido;

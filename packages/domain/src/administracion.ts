@@ -157,6 +157,12 @@ export const VIGENCIA_DE_LA_CONFIGURACION_MS = 10 * 60 * 1000;
 export const VIGENCIA_DEL_CODIGO_DE_INCORPORACION_MS = 24 * 60 * 60 * 1000;
 /** Cinco códigos fallidos en una sesión la revocan. */
 export const INTENTOS_DE_SEGUNDO_FACTOR_POR_SESION = 5;
+/**
+ * Códigos del autenticador que no valen, seguidos, en cualquier sesión de la identidad: con tantos, el autenticador queda
+ * bloqueado hasta que entra un código de recuperación (que lo desbloquea) o el operador restablece el segundo factor. El
+ * cupo por sesión solo no alcanza: cada entrada abre una sesión nueva (revisión de seguridad del 2026-10-25).
+ */
+export const FALLOS_SEGUIDOS_PARA_BLOQUEAR_EL_AUTENTICADOR = 10;
 /** Diez códigos de recuperación por lote. */
 export const CANTIDAD_DE_CODIGOS_DE_RECUPERACION = 10;
 
