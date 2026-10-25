@@ -839,14 +839,15 @@ export function SustituirEjercicio({
   const t = TEXTOS_DE_LA_SUSTITUCION;
   const [texto, setTexto] = useState('');
   const [resultados, setResultados] = useState<readonly EjercicioEncontrado[] | null>(null);
-  const [falloDeBusqueda, setFalloDeBusqueda] = useState(false);
+  // Sin conexión se dice que sustituir la necesita (R-5); otro fallo, que no se pudo buscar. Ninguno es un catálogo vacío.
+  const [falloDeBusqueda, setFalloDeBusqueda] = useState<'sin-conexion' | 'otro' | null>(null);
   const [buscando, setBuscando] = useState(false);
-  // Cada vez que se abre, la búsqueda empieza de cero.
+  // Cada vez que se abre, la búsqueda empieza de cero. Mientras está abierto, un fallo no borra lo escrito.
   useEffect(() => {
     if (visible) return;
     setTexto('');
     setResultados(null);
-    setFalloDeBusqueda(false);
+    setFalloDeBusqueda(null);
   }, [visible]);
   if (!sustitucion) return null;
   const { planificado, ejecutado } = sustitucion;
@@ -857,7 +858,7 @@ export function SustituirEjercicio({
     const r = await buscar(texto.trim());
     setBuscando(false);
     if (sesionPerdida(r)) return;
-    setFalloDeBusqueda(!r.ok);
+    setFalloDeBusqueda(r.ok ? null : r.tipo === 'RED' ? 'sin-conexion' : 'otro');
     setResultados(r.ok ? r.datos.data : null);
   }
 
@@ -870,7 +871,7 @@ export function SustituirEjercicio({
       {sustitucion.registradas > 0 ? <Parrafo tenue>{t.yaRegistradas(sustitucion.registradas)}</Parrafo> : null}
       <Campo etiqueta={t.campo} value={texto} onChangeText={setTexto} autoCorrect={false} returnKeyType="search" onSubmitEditing={() => void hacerLaBusqueda()} />
       <Boton texto={t.buscar} tipo="secundario" onPress={() => void hacerLaBusqueda()} ocupado={buscando} deshabilitado={ocupado} />
-      {falloDeBusqueda ? <Aviso tipo="error" titulo={t.noSePudoBuscar} /> : null}
+      {falloDeBusqueda ? <Aviso tipo="error" titulo={falloDeBusqueda === 'sin-conexion' ? t.sinConexionAlBuscar : t.noSePudoBuscar} /> : null}
       {resultados && opciones.length === 0 ? <Parrafo tenue>{t.sinResultados}</Parrafo> : null}
       {opciones.map((e) => (
         <Boton

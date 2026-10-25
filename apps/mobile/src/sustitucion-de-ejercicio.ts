@@ -40,6 +40,14 @@ export const TEXTOS_DE_LA_SUSTITUCION = {
   campo: 'Buscar el ejercicio que hiciste',
   buscar: 'Buscar',
   noSePudoBuscar: 'No pudimos buscar en el catálogo. Probá de nuevo.',
+  /**
+   * R-5: sustituir necesita conexión (buscar y guardar son pedidos a la API). Sin conexión se dice eso, no «probá de nuevo»
+   * a secas, y que lo registrado no se pierde (encargo del 2026-10-25, etapa B).
+   */
+  sinConexionAlBuscar: 'Sustituir un ejercicio necesita conexión, y ahora no hay. Lo que ya registraste sigue guardado en el teléfono.',
+  /** Sin respuesta al guardar: no se sabe si llegó. La tarjeta, que se relee, dice lo que quedó guardado. */
+  sinRespuestaAlGuardar:
+    'No sabemos si la sustitución llegó: no hubo respuesta de BE. La tarjeta dice lo que quedó guardado; si sigue igual, probá de nuevo con conexión. Lo que registraste no se pierde.',
   sinResultados: 'No encontramos ejercicios con ese nombre.',
   /** Un ejercicio que el catálogo muestra pero que no se puede citar en el registro de este plan (`EXERCISE_REFERENCE_INVALID`). */
   noSePuedeRegistrar: 'Ese ejercicio no se puede registrar en esta sesión. Elegí otro.',

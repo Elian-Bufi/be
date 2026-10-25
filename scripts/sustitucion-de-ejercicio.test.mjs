@@ -298,6 +298,24 @@ test('5 · la pantalla no marca tiempos al sustituir: `sustituir` no arma evento
   assert.doesNotMatch(cuerpo, /\bhacer\(|\.accion\(|enfocar\(/);
 });
 
+test('R-5 · sin conexión se dice que sustituir la necesita, y que lo registrado no se pierde; sin respuesta al guardar, que no se sabe si llegó', () => {
+  const t = sus.TEXTOS_DE_LA_SUSTITUCION;
+  assert.match(t.sinConexionAlBuscar, /necesita conexión/);
+  assert.match(t.sinConexionAlBuscar, /sigue guardado/);
+  assert.match(t.sinRespuestaAlGuardar, /No sabemos si la sustitución llegó/);
+  assert.match(t.sinRespuestaAlGuardar, /no se pierde/);
+  // La pantalla los usa donde corresponden: la búsqueda sin conexión (RED) y el guardado sin respuesta (incierto), que
+  // además relee el borrador para que la tarjeta diga lo que quedó guardado.
+  const dialogo = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/sesion-enfocada.tsx'), 'utf8');
+  assert.match(dialogo, /r\.tipo === 'RED' \? 'sin-conexion'/);
+  assert.match(dialogo, /falloDeBusqueda === 'sin-conexion' \? t\.sinConexionAlBuscar/);
+  const pantalla = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), 'utf8');
+  const inicio = pantalla.indexOf('async function sustituir(');
+  const cuerpo = pantalla.slice(inicio, pantalla.indexOf('\n  }\n', inicio));
+  assert.match(cuerpo, /actualizarBorrador\(draftId\)/);
+  assert.match(cuerpo, /f\.tipo === 'incierto' \? TEXTOS_DE_LA_SUSTITUCION\.sinRespuestaAlGuardar/);
+});
+
 // ─── 6. Antes de finalizar ──────────────────────────────────────────────────────────────────────
 
 test('6 · un ejercicio sustituido sin series se dice antes de finalizar (API-TRN-18 lo rechaza con SET_REQUIRED)', () => {

@@ -1152,7 +1152,8 @@ export function PantallaDeSesion({
         const f = falloDe(r, { EXERCISE_REFERENCE_INVALID: { mensaje: TEXTOS_DE_LA_SUSTITUCION.noSePuedeRegistrar, tipo: 'otro' } });
         // Otro dispositivo cambió el borrador, o no se sabe si llegó: se relee, y la tarjeta dice lo que quedó guardado.
         if (f.tipo === 'actualizar' || f.tipo === 'incierto') void entrenamientoLocal.actualizarBorrador(draftId);
-        return setFalloDeSustitucion(f.mensaje);
+        // Sin respuesta (R-5): no se sabe si llegó; se dice eso, con lo que hacer, y que lo registrado no se pierde.
+        return setFalloDeSustitucion(f.tipo === 'incierto' ? TEXTOS_DE_LA_SUSTITUCION.sinRespuestaAlGuardar : f.mensaje);
       }
       entrenamientoLocal.fijarBorrador(draftId, r.datos.data);
       setDialogo(null);
