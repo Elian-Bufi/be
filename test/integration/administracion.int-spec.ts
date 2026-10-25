@@ -567,7 +567,10 @@ describe('Avisos (criterio 8)', () => {
     const a = await administradorListo(app, prisma, etiqueta('aviso-adm'));
     const r = await decidirSobre(app, a.token, pro.id, 'NUTRICION', 'SUSPEND', { rationale: 'Motivo interno reservado', messageToProfessional: 'Revisá la documentación con Administración.' }).expect(200);
     expect(r.body.data.notified).toEqual({ professional: true, linkedPeople: 2 });
-    const tipos = async (id: string) => (await prisma.novedad.findMany({ where: { destinatarioId: id } })).map((n) => n.tipo).filter((t) => t.startsWith('ACCESO') || t === 'DECISION_ADMINISTRATIVA');
+    // En el orden en que se registraron: sin `orderBy`, PostgreSQL no garantiza el de inserción (en la CI del 2026-10-25 los
+    // dos avisos de la persona salieron invertidos una vez). Las dos decisiones son pedidos sucesivos, con instantes distintos.
+    const tipos = async (id: string) =>
+      (await prisma.novedad.findMany({ where: { destinatarioId: id }, orderBy: { momentoDeRegistro: 'asc' } })).map((n) => n.tipo).filter((t) => t.startsWith('ACCESO') || t === 'DECISION_ADMINISTRATIVA');
     expect(await tipos(pro.id)).toEqual(['DECISION_ADMINISTRATIVA']);
     expect(await tipos(activa.id)).toEqual(['ACCESO_PROFESIONAL_SUSPENDIDO']);
     expect(await tipos(enPausa.id)).toEqual(['ACCESO_PROFESIONAL_SUSPENDIDO']);
