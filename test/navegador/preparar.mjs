@@ -5,8 +5,12 @@
 //   vez, ANTES de cualquier recorrido. No es un reinicio para esconder una falla ni para vaciar un límite.
 // - `datos`: con la API ya habilitando a esos profesionales, los vínculos con su consentimiento y lo que cada recorrido
 //   necesita encontrar hecho (un borrador, un plan con revisión acordada, tres tomas de peso).
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { dominio, pedir, ponerNombre, registrar, sesion, vincular } from './api.mjs';
+import { join } from 'node:path';
+import * as OTPAuth from 'otpauth';
+import { CREDENCIAL, dominio, pedir, ponerNombre, registrar, sesion, vincular } from './api.mjs';
+import { baseDeclarada, REPO } from './entorno.mjs';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
 export const hoyCivil = () => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -41,6 +45,10 @@ export const RECORRIDOS = {
   completitud: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan'] },
   // DL-154: una revisión registrada dice en qué evidencia se apoyó, y lo que cambió después.
   evidencia: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan', 'revision-con-evidencia'] },
+  // WP-ADMINISTRACION (DL-155): la consola de Administración. El profesional del recorrido opera Nutrición y Entrenamiento
+  // con la persona; además hay un profesional con las dos áreas pendientes de revisión y dos cuentas administrativas: una
+  // entra por el navegador y la otra decide por la API (para el conflicto).
+  administracion: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], datos: ['administracion'] },
   // DL-158: el objetivo del profesional, lo indicado en el plan y lo registrado en el mismo gráfico; con un plan de una
   // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
   comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
@@ -50,6 +58,15 @@ const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
 export const nombreDeLaPersona = (recorrido) => `Persona ${recorrido}`;
 export const nombreDelProfesional = (recorrido) => `Lic. Recorrido ${recorrido}`;
+export const NOMBRE_DEL_PENDIENTE = 'Lic. Pendiente Recorrido';
+export const NOMBRE_DEL_ADMINISTRADOR = 'Admin Recorrido';
+export const NOMBRE_DEL_OTRO_ADMINISTRADOR = 'Otra Admin Recorrido';
+
+/**
+ * Lo que da acceso a Administración en esta corrida: el código de incorporación de la cuenta que entra por el navegador y
+ * la clave del autenticador de la otra. Vive solo en memoria: no va a `estado.json` ni a ningún registro.
+ */
+export const SECRETOS = new Map();
 
 export async function cuentas(corrida) {
   const estado = {};
@@ -60,10 +77,45 @@ export async function cuentas(corrida) {
     ase.id = await registrar(ase.correo);
     estado[recorrido] = { pro, ase };
   }
-  const demo = Object.entries(RECORRIDOS)
-    .flatMap(([recorrido, r]) => r.habilitado.map((alcance) => `${estado[recorrido].pro.id}|${alcance}|SANITARIO|${nombreDelProfesional(recorrido)}`))
-    .join(';');
+  // Administración: las dos cuentas administrativas se registran por el alta común y las incorpora el comando del operador
+  // (en `datos`); el profesional pendiente lo declara BE_DEMO_PROFESIONALES con el quinto campo PENDIENTE.
+  const a = estado.administracion;
+  for (const clave of ['admin', 'otroAdmin', 'pendiente']) {
+    a[clave] = { correo: `rec-${corrida}-administracion-${clave.toLowerCase()}@example.invalid` };
+    a[clave].id = await registrar(a[clave].correo);
+  }
+  const demo = [
+    ...Object.entries(RECORRIDOS).flatMap(([recorrido, r]) => r.habilitado.map((alcance) => `${estado[recorrido].pro.id}|${alcance}|SANITARIO|${nombreDelProfesional(recorrido)}`)),
+    ...['NUTRICION', 'ENTRENAMIENTO'].map((alcance) => `${a.pendiente.id}|${alcance}|SANITARIO|${NOMBRE_DEL_PENDIENTE}|PENDIENTE`),
+  ].join(';');
   return { estado, demo };
+}
+
+/** El comando interno del operador (D-3): incorpora una cuenta como administradora. El código vuelve en memoria. */
+function incorporar(correo, nombre) {
+  const salida = execFileSync(
+    process.execPath,
+    [join(REPO, 'apps/api/dist/administracion/comando.js'), 'incorporar', '--correo', correo, '--nombre', nombre, '--fundamento', 'Recorrido de navegador sintético', '--operador', 'Recorridos de la CI', '--salida', 'json'],
+    { cwd: REPO, env: { ...process.env, DATABASE_URL: baseDeclarada(), APP_ENV: 'test' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  return JSON.parse(salida).codigoDeIncorporacion;
+}
+
+/** El código del autenticador para un momento (por omisión, ahora). */
+export const codigoTotp = (secreto, desfaseMs = 0) =>
+  new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(secreto), algorithm: 'SHA1', digits: 6, period: 30 }).generate({ timestamp: Date.now() + desfaseMs });
+
+/**
+ * Una sesión administrativa con el segundo factor vigente, por la API: la contraseña y un código del autenticador. Si el
+ * código de este paso ya se usó (no se acepta dos veces), el del paso siguiente.
+ */
+export async function sesionAdministrativa(correo, secreto) {
+  const token = (await pedir('POST', '/admin/auth/sessions', { cuerpo: { identifier: correo, credential: CREDENCIAL }, clave: false })).data.session.accessToken;
+  for (const desfase of [0, 30_000]) {
+    const r = await pedir('POST', '/admin/auth/sessions/current/second-factor', { token, cuerpo: { code: codigoTotp(secreto, desfase) }, clave: false, esperado: [200, 422] });
+    if (r?.data) return token;
+  }
+  throw new Error('no se pudo completar el segundo factor de la cuenta administrativa por la API');
 }
 
 const evaluacionNutricional = (ocurrio) => ({
@@ -240,6 +292,16 @@ export async function datos(estado) {
       const sucesora = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
       await pedir('POST', `/nutrition/plans/${sucesora.planId}/activate`, { token: pro, cuerpo: { expectedVersion: sucesora.version } });
       e.revision = { reviewId: revision.reviewId };
+    }
+    if (r.datos.includes('administracion')) {
+      // La cuenta del navegador queda incorporada, con su código para configurar el autenticador en la consola. La otra
+      // configura el suyo por la API, como lo haría desde su propia consola.
+      const codigo = incorporar(e.admin.correo, NOMBRE_DEL_ADMINISTRADOR);
+      const codigoDelOtro = incorporar(e.otroAdmin.correo, NOMBRE_DEL_OTRO_ADMINISTRADOR);
+      const token = (await pedir('POST', '/admin/auth/sessions', { cuerpo: { identifier: e.otroAdmin.correo, credential: CREDENCIAL }, clave: false })).data.session.accessToken;
+      const configuracion = (await pedir('POST', '/admin/auth/second-factor/enrollment', { token, cuerpo: { incorporationCode: codigoDelOtro }, clave: false })).data;
+      await pedir('POST', '/admin/auth/second-factor/enrollment/confirm', { token, cuerpo: { code: codigoTotp(configuracion.secret) }, clave: false });
+      SECRETOS.set('administracion', { codigoDeIncorporacion: codigo, secretoDelOtro: configuracion.secret });
     }
     if (r.datos.includes('comparacion') || r.datos.includes('comparacion-con-opciones')) {
       // DL-158 (WP-NUTRICION-COMPARACION): dos versiones del objetivo —la segunda, desde anteayer, con otras calorías y

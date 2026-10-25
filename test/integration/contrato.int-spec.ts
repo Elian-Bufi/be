@@ -14,6 +14,7 @@
  * - WP-INVITACION: la familia INV (DL-136), con la invitación vencida escrita directo en la base.
  * - WP-ACCESO-GOOGLE: la familia GOO (DL-138) contra un Google falso local, y el 503 en una segunda app sin client IDs.
  * - WP-NOTAS-DE-COORDINACION: API-CRD-01 (09 §11.6) y sus dos variantes, CRD-01-LISTA y CRD-01-PROPIA (DL-140).
+ * - WP-ADMINISTRACION: la familia ADM (DL-155), con un administrador incorporado por el comando interno y su autenticador.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -24,7 +25,9 @@ import { PrismaClient } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { erroresDeclarados, OPERACIONES, operacionDe } from '../../packages/domain/src/openapi';
+import { incorporarAdministrador } from '../../apps/api/src/administracion/incorporacion';
 import { TokensService } from '../../apps/api/src/sesion/tokens.service';
+import { adm, codigoQueNoVale, codigoTotp, primerFactor, profesionalPendiente } from './soporte-administracion';
 import {
   appDePrueba,
   claveDeIdempotencia,
@@ -1760,6 +1763,107 @@ it('TEST-CT (WP-NOTAS-DE-COORDINACION): CRD-01, CRD-01-LISTA y CRD-01-PROPIA, co
   await a.get('/api/v1/me/coordination-notes?cursor=basura').expect(400); // INVALID_CURSOR
   await p.get('/api/v1/me/coordination-notes').expect(403); // ACTION_FORBIDDEN: sin A3 propio
   await request(servidor).get('/api/v1/me/coordination-notes').expect(401);
+});
+
+it('TEST-CT (WP-ADMINISTRACION): ADM-01 a 13, con éxitos y errores declarados (DL-155)', async () => {
+  const correo = correoSintetico('ct-adm');
+  await registrarOk(app, correo, 'WEB');
+  const { codigo } = await incorporarAdministrador(prisma, { correo, nombre: 'Admin del contrato', fundamento: 'Prueba de contrato', operador: 'Prueba de contrato', appEnv: 'test' });
+  const persona = correoSintetico('ct-adm-persona');
+  await registrarOk(app, persona, 'WEB');
+  const personal = await tokenDe(app, persona, 'WEB');
+
+  // ADM-01
+  const entrada = await primerFactor(app, correo).expect(201);
+  const cookie = ([] as string[]).concat(entrada.headers['set-cookie'] ?? []).find((c) => c.startsWith('__Secure-be-admin-reanudacion='))?.split(';')[0] ?? '';
+  await primerFactor(app, correo, OTRA_CREDENCIAL_SINTETICA).expect(401); // INVALID_CREDENTIALS
+  await adm(app).post('/admin/auth/sessions').send({ identifier: correo, credential: CREDENCIAL_SINTETICA, rol: 'ADMIN' }).expect(400); // UNKNOWN_FIELD
+  await adm(app).post('/admin/auth/sessions?x=1').send({ identifier: correo, credential: CREDENCIAL_SINTETICA }).expect(400); // INVALID_REQUEST
+
+  // ADM-02: la sesión se reanuda con su cookie; desde acá se usa el token reanudado.
+  const t = (await adm(app).post('/admin/auth/sessions/resume').set('Cookie', cookie).expect(200)).body.data.session.accessToken as string;
+  await adm(app).post('/admin/auth/sessions/resume?x=1').set('Cookie', cookie).expect(400);
+  await adm(app).post('/admin/auth/sessions/resume').expect(401); // AUTHENTICATION_REQUIRED
+
+  // ADM-04: el estado de la sesión se lee con el primer factor; una sesión personal no es administrativa.
+  await adm(app, t).get('/admin/auth/sessions/current').expect(200);
+  await adm(app, t).get('/admin/auth/sessions/current?x=1').expect(400);
+  await adm(app).get('/admin/auth/sessions/current').expect(401);
+  await adm(app, personal).get('/admin/auth/sessions/current').expect(403); // ACTION_FORBIDDEN
+
+  // Con solo el primer factor, nada que lea o decida: MFA_REQUIRED.
+  await adm(app, t).post('/admin/professionals/query').send({}).expect(403);
+  await adm(app, t).post('/admin/auth/recovery-codes').send({ credential: CREDENCIAL_SINTETICA }).expect(403);
+
+  // ADM-07
+  await adm(app, t).post('/admin/auth/second-factor/enrollment').send({ incorporationCode: 'AAAAA-AAAAA-AAAAA-AAAAA' }).expect(422); // INCORPORATION_CODE_INVALID
+  await adm(app, t).post('/admin/auth/second-factor/enrollment').send({ incorporationCode: codigo, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const secreto = (await adm(app, t).post('/admin/auth/second-factor/enrollment').send({ incorporationCode: codigo }).expect(200)).body.data.secret as string;
+
+  // ADM-08
+  await adm(app, t).post('/admin/auth/second-factor/enrollment/confirm').send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
+  await adm(app, t).post('/admin/auth/second-factor/enrollment/confirm').send({ code: codigoTotp(secreto), extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const anteriores = (await adm(app, t).post('/admin/auth/second-factor/enrollment/confirm').send({ code: codigoTotp(secreto) }).expect(200)).body.data.recoveryCodes as string[];
+
+  // ADM-09
+  await adm(app, t).post('/admin/auth/recovery-codes').send({ credential: OTRA_CREDENCIAL_SINTETICA }).expect(401); // INVALID_CREDENTIALS
+  await adm(app, t).post('/admin/auth/recovery-codes').send({ credential: CREDENCIAL_SINTETICA, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const nuevos = (await adm(app, t).post('/admin/auth/recovery-codes').send({ credential: CREDENCIAL_SINTETICA }).expect(200)).body.data.recoveryCodes as string[];
+
+  // ADM-05, en otra sesión: el código de este paso ya se usó al confirmar; vale el del siguiente.
+  const otra = (await primerFactor(app, correo).expect(201)).body.data.session.accessToken as string;
+  await adm(app, otra).post('/admin/auth/sessions/current/second-factor').send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
+  await adm(app, otra).post('/admin/auth/sessions/current/second-factor').send({ code: '123456', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, otra).post('/admin/auth/sessions/current/second-factor').send({ code: codigoTotp(secreto, 30_000) }).expect(200);
+
+  // ADM-06, en una tercera: un código del lote anterior ya no vale; uno del nuevo, sí.
+  const tercera = (await primerFactor(app, correo).expect(201)).body.data.session.accessToken as string;
+  await adm(app, tercera).post('/admin/auth/sessions/current/recovery-code').send({ recoveryCode: anteriores[0] }).expect(422); // SECOND_FACTOR_INVALID
+  await adm(app, tercera).post('/admin/auth/sessions/current/recovery-code').send({ recoveryCode: nuevos[0], extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, tercera).post('/admin/auth/sessions/current/recovery-code').send({ recoveryCode: nuevos[0] }).expect(200);
+
+  // ADM-10
+  const pendiente = await profesionalPendiente(app, 'ct-adm');
+  await adm(app, t).post('/admin/professionals/query').send({ text: 'Pendiente ct-adm', scope: 'NUTRICION', situation: 'PENDING_REVIEW', limit: 5 }).expect(200);
+  await adm(app, t).post('/admin/professionals/query').send({ campo: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, t).post('/admin/professionals/query').send({ cursor: 'basura' }).expect(400); // INVALID_CURSOR
+  await adm(app, t).post('/admin/professionals/query?x=1').send({}).expect(400); // INVALID_REQUEST
+  await adm(app).post('/admin/professionals/query').send({}).expect(401);
+  await adm(app, personal).post('/admin/professionals/query').send({}).expect(403); // ACTION_FORBIDDEN
+
+  // ADM-11
+  await adm(app, t).get(`/admin/professionals/${pendiente.id}`).expect(200);
+  await adm(app, t).get(`/admin/professionals/${pendiente.id}?x=1`).expect(400);
+  await adm(app, t).get(`/admin/professionals/${randomUUID()}`).expect(404);
+
+  // ADM-12
+  await adm(app, t).get(`/admin/professionals/${pendiente.id}/history?limit=5&scope=NUTRICION`).expect(200);
+  await adm(app, t).get(`/admin/professionals/${pendiente.id}/history?cursor=basura`).expect(400); // INVALID_CURSOR
+  await adm(app, t).get(`/admin/professionals/${pendiente.id}/history?x=1`).expect(400); // INVALID_REQUEST
+  await adm(app, t).get(`/admin/professionals/${randomUUID()}/history`).expect(404);
+
+  // ADM-13
+  const versionDe = async () =>
+    ((await adm(app, t).get(`/admin/professionals/${pendiente.id}`).expect(200)).body.data.scopes as { scope: string; version: string }[]).find((s) => s.scope === 'NUTRICION')!.version;
+  const verificar = { expectedVersion: await versionDe(), decision: 'VERIFY', rationale: 'Fundamento del contrato.' };
+  const clave = claveDeIdempotencia();
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', verificar, clave).expect(200);
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', verificar, clave).expect(200); // la misma clave: el resultado original
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', { ...verificar, rationale: 'Otro' }, clave).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', verificar).expect(409); // VERSION_CONFLICT: la versión que se vio ya no es la del área
+  const ahora = await versionDe();
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', { expectedVersion: ahora, decision: 'REINSTATE', rationale: 'x' }).expect(422); // INVALID_STATE_TRANSITION
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', { expectedVersion: ahora, decision: 'SUSPEND', rationale: '' }).expect(422); // RATIONALE_REQUIRED
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', { expectedVersion: ahora, decision: 'SUSPEND', rationale: 'x' }).expect(422); // VALIDATION_FAILED: falta el texto
+  await adm(app, t).decidir(pendiente.id, 'NUTRICION', { ...verificar, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, t).post(`/admin/professionals/${pendiente.id}/scopes/NUTRICION/decisions`).send(verificar).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await adm(app, t).decidir(randomUUID(), 'NUTRICION', verificar).expect(404);
+
+  // ADM-03: cerrar es idempotente.
+  await adm(app, tercera).delete('/admin/auth/sessions/current').expect(204);
+  await adm(app, tercera).delete('/admin/auth/sessions/current').expect(204);
+  await adm(app, tercera).delete('/admin/auth/sessions/current?x=1').expect(400);
+  await adm(app).delete('/admin/auth/sessions/current').expect(401); // AUTHENTICATION_REQUIRED
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

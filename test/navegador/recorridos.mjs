@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { CREDENCIAL, dominio, pedir, sesion as sesionPorApi } from './api.mjs';
 import { API, WEB } from './entorno.mjs';
+import { NOMBRE_DEL_ADMINISTRADOR, NOMBRE_DEL_OTRO_ADMINISTRADOR, NOMBRE_DEL_PENDIENTE, SECRETOS, codigoTotp, nombreDelProfesional, sesionAdministrativa } from './preparar.mjs';
 
 const pausa = (ms) => new Promise((r) => setTimeout(r, ms));
 const ESPERA = 30_000;
@@ -743,6 +744,279 @@ async function evidencia({ p, d, salida }) {
   assert.match(await p.$eval(item, (e) => e.innerText), /Evidencia seleccionada: 2 comidas · 1 versión del plan/);
 }
 
+// ─── Administración (WP-ADMINISTRACION, DL-155) ──────────────────────────────────────────────────────────────────────
+
+/** Escribe en un campo reemplazando lo que tenga (seleccionar todo y borrar, como lo haría una persona). */
+async function escribir(p, selector, texto) {
+  await hidratado(p, selector);
+  await p.click(selector, { clickCount: 3 });
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  await p.type(selector, texto);
+}
+
+/** Una captura en cada apariencia. El tema se cambia como lo cambia el menú (el atributo de la página), sin recargar. */
+async function capturaEnLosDosTemas(p, salida, nombre) {
+  for (const tema of ['azul-noche', 'claro']) {
+    await p.evaluate((t) => {
+      document.documentElement.dataset.tema = t;
+    }, tema);
+    await captura(p, salida, `${nombre}-${tema}`);
+  }
+  await p.evaluate(() => {
+    document.documentElement.dataset.tema = 'azul-noche';
+  });
+}
+
+const dialogoAbierto = (p, titulo) => p.waitForFunction((t) => document.querySelector('dialog[open] h2')?.textContent.includes(t), { timeout: ESPERA, polling: 100 }, titulo);
+const dialogoCerrado = (p) => p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
+const AREA = (alcance) => `.area-de-la-ficha[data-area="${alcance}"]`;
+
+/** Una decisión desde la ficha: el botón del área, el fundamento (y el texto para el profesional), y confirmar. */
+async function decidir(p, alcance, boton, titulo, { fundamento, mensaje = null, confirmar }) {
+  await clic(p, `${AREA(alcance)} .area-de-la-ficha__acciones button`, boton);
+  await dialogoAbierto(p, titulo);
+  await p.type('dialog[open] textarea[id$="-fundamento"]', fundamento);
+  if (mensaje) await p.type('dialog[open] textarea[id$="-mensaje"]', mensaje);
+  await clic(p, 'dialog[open] .acciones button:not(.boton--secundario)', confirmar);
+  await dialogoCerrado(p);
+}
+
+const textoDelArea = (p, alcance) => p.$eval(AREA(alcance), (e) => e.innerText);
+const esperarSituacion = (p, alcance, situacion) =>
+  p.waitForFunction((s, t) => document.querySelector(s)?.querySelector('.situacion')?.textContent.includes(t), { timeout: ESPERA, polling: 100 }, AREA(alcance), situacion);
+
+/**
+ * La consola de Administración de punta a punta, con las cuentas y los datos de esta corrida:
+ * 1. un profesional con su sesión no obtiene nada de Administración (ni con su contraseña ni con su token);
+ * 2. la cuenta administrativa configura su autenticador con el código de incorporación y ve sus códigos una vez;
+ * 3. la lista: pendientes primero, búsqueda que no va a la dirección y filtro por situación;
+ * 4. la ficha y las decisiones: verificar (el fundamento es obligatorio), conceder, y un conflicto con otra consola que
+ *    conserva lo escrito y no pisa nada;
+ * 5. suspender corta Nutrición desde el próximo pedido (con la sesión abierta) y no Entrenamiento; avisa al profesional y a
+ *    la persona, sin el fundamento; rehabilitar vuelve a dejar operar;
+ * 6. recargar reanuda sin inventar el segundo factor, y cerrar la sesión no toca la sesión común del profesional.
+ * Las capturas son de la lista, la ficha, la confirmación, el conflicto y el historial: nunca del QR, de la clave ni de los
+ * códigos de recuperación.
+ */
+async function administracion({ contexto, p, d, salida }) {
+  const { codigoDeIncorporacion, secretoDelOtro } = SECRETOS.get('administracion');
+  const tokens = [];
+  p.on('response', async (r) => {
+    if (r.request().method() !== 'POST' || !/\/api\/v1\/admin\/auth\/sessions(\/resume)?$/.test(new URL(r.url()).pathname)) return;
+    const cuerpo = await r.json().catch(() => null);
+    if (cuerpo?.data?.session?.accessToken) tokens.push(cuerpo.data.session.accessToken);
+  });
+
+  // 1. El profesional, con su sesión común abierta: /admin le pide entrar, su contraseña no abre Administración (el mismo
+  //    rechazo neutral que una contraseña equivocada) y su token no sirve en la API de Administración.
+  await entrar(p, d.pro.correo);
+  await p.goto(`${WEB}/admin`, { waitUntil: 'networkidle2' });
+  await hidratado(p, '#adm-correo');
+  assert.match(await p.$eval('main', (m) => m.innerText), /Entrar a Administración/);
+  await escribir(p, '#adm-correo', d.pro.correo);
+  await escribir(p, '#adm-contrasena', CREDENCIAL);
+  await clic(p, 'form button[type="submit"]', 'Continuar');
+  await esperarTexto(p, 'No pudimos verificar los datos de acceso');
+  const tokenDelProfesional = await sesionPorApi(d.pro.correo);
+  await pedir('GET', `/admin/professionals/${d.pendiente.id}`, { token: tokenDelProfesional, esperado: 403 });
+  await pedir('POST', '/admin/professionals/query', { token: tokenDelProfesional, cuerpo: {}, clave: false, esperado: 403 });
+
+  // 2. La cuenta administrativa: contraseña, código de incorporación, QR (o la clave a mano) y un código del autenticador.
+  await escribir(p, '#adm-correo', d.admin.correo);
+  await escribir(p, '#adm-contrasena', CREDENCIAL);
+  await clic(p, 'form button[type="submit"]', 'Continuar');
+  await esperarTexto(p, 'Configurar el autenticador');
+  await escribir(p, '#adm-incorporacion', codigoDeIncorporacion);
+  await clic(p, 'form button[type="submit"]', 'Continuar');
+  await elemento(p, 'svg.codigo-qr');
+  await clic(p, 'details.ayuda summary', 'Clave para cargar a mano');
+  const secreto = (await p.$eval('.clave-del-autenticador code', (c) => c.textContent)).replace(/\s/g, '');
+  await escribir(p, '#adm-codigo-nuevo', codigoTotp(secreto));
+  await clic(p, 'form button[type="submit"]', 'Confirmar');
+  await esperarTexto(p, 'Tus códigos de recuperación');
+  assert.equal(await p.$$eval('.codigos-de-recuperacion li', (l) => l.length), 10, 'diez códigos de recuperación, que se muestran una vez');
+  await clic(p, 'button', 'Ya los guardé');
+  await elemento(p, '.pendientes-de-administracion');
+
+  // La consola tiene su propia cookie (HttpOnly, solo para sus rutas de sesión) y no guarda tokens ni la clave.
+  const cookies = await contexto.cookies();
+  const reanudacion = cookies.find((c) => c.name === '__Secure-be-admin-reanudacion');
+  assert.ok(reanudacion, 'la consola tiene su propia cookie de reanudación');
+  assert.equal(reanudacion.httpOnly, true, 'HttpOnly');
+  assert.equal(reanudacion.secure, true, 'Secure');
+  assert.equal(reanudacion.path, '/api/v1/admin/auth/sessions', 'solo para las rutas de sesión de Administración');
+  const guardado = await almacenamiento(p);
+  assert.ok(tokens.length >= 1, 'se vio el token de la entrada');
+  for (const t of tokens) assert.ok(!guardado.includes(t), 'ningún token en localStorage ni sessionStorage');
+  assert.ok(!PARECE_UN_TOKEN.test(guardado), 'nada con forma de token en el almacenamiento');
+  assert.ok(!guardado.includes(secreto), 'la clave del autenticador no queda en el navegador');
+
+  // 3. La lista: buscar por el correo de esta corrida (la búsqueda no va a la dirección), con el pendiente primero.
+  const prefijo = d.pro.correo.replace(/-pro@.*$/, '');
+  await escribir(p, 'form[role="search"] input[type="search"]', prefijo);
+  await clic(p, 'form[role="search"] button[type="submit"]', 'Buscar');
+  await p.waitForFunction(() => document.querySelector('.lista-administrativa .metadatos')?.textContent.startsWith('2 profesionales'), { timeout: ESPERA, polling: 100 });
+  assert.ok(!decodeURIComponent(p.url()).includes(prefijo), 'la búsqueda no va en la dirección');
+  const filas = await p.$$eval('.tabla--profesionales tbody tr', (trs) => trs.map((t) => t.innerText));
+  assert.match(filas[0], new RegExp(NOMBRE_DEL_PENDIENTE), 'el profesional con áreas pendientes va primero');
+  assert.match(filas[0], /Pendiente de revisión/);
+  assert.match(filas[1], /Puede operar/);
+  assert.match(await p.$eval('.pendientes-de-administracion', (e) => e.innerText), /\d+ áreas? pendientes? de revisión/);
+  await capturaEnLosDosTemas(p, salida, 'administracion-lista');
+  await p.select('select[id$="-situacion"]', 'PENDING_REVIEW');
+  await p.waitForFunction(() => document.querySelector('.lista-administrativa .metadatos')?.textContent.startsWith('1 profesional'), { timeout: ESPERA, polling: 100 });
+  await p.select('select[id$="-situacion"]', '');
+  await p.waitForFunction(() => document.querySelector('.lista-administrativa .metadatos')?.textContent.startsWith('2 profesionales'), { timeout: ESPERA, polling: 100 });
+
+  // 4. La ficha del pendiente: tres áreas, con las decisiones que su estado admite.
+  await clic(p, '.tabla--profesionales a', `de ${NOMBRE_DEL_PENDIENTE}`);
+  await esperarCamino(p, '/admin/professional');
+  await p.waitForFunction((n) => document.querySelector('.ficha-administrativa h1')?.textContent === n, { timeout: ESPERA, polling: 100 }, NOMBRE_DEL_PENDIENTE);
+  assert.equal(await p.$$eval('.area-de-la-ficha', (a) => a.length), 3, 'las tres áreas');
+  assert.match(await textoDelArea(p, 'NUTRICION'), /Pendiente de revisión/);
+  const botones = await p.$$eval(`${AREA('NUTRICION')} .area-de-la-ficha__acciones button`, (b) => b.map((x) => x.textContent.replace(/\s*Nutrición$/, '').trim()));
+  assert.deepEqual(botones, ['Registrar observación', 'Verificar', 'Rechazar', 'Conceder habilitación'], 'las decisiones del estado pendiente');
+  assert.match(await textoDelArea(p, 'ANTROPOMETRIA'), /El área no se presentó/, 'un área sin presentar no ofrece decisiones');
+  assert.match(await p.$eval('.ficha-administrativa', (e) => e.innerText), /no es certificar una matrícula/);
+  await capturaEnLosDosTemas(p, salida, 'administracion-ficha');
+
+  // Verificar: la confirmación dice profesional, área y efecto; sin fundamento no se registra nada.
+  await clic(p, `${AREA('NUTRICION')} .area-de-la-ficha__acciones button`, 'Verificar');
+  await dialogoAbierto(p, `Verificar · Nutrición de ${NOMBRE_DEL_PENDIENTE}`);
+  const confirmacion = await p.$eval('dialog[open]', (e) => e.innerText);
+  assert.match(confirmacion, /La verificación de Nutrición pasa a verificada/);
+  assert.match(confirmacion, /Todavía no puede operar Nutrición: falta conceder la habilitación/);
+  assert.match(confirmacion, /no certifica una matrícula/);
+  assert.equal(await p.evaluate(() => document.activeElement?.tagName), 'TEXTAREA', 'el foco empieza en el fundamento, no en la acción');
+  await capturaEnLosDosTemas(p, salida, 'administracion-confirmacion');
+  await clic(p, 'dialog[open] .acciones button:not(.boton--secundario)', 'Verificar Nutrición');
+  await p.waitForFunction(() => document.querySelector('dialog[open] .campo__error')?.textContent.includes('Escribí el fundamento interno'), { timeout: ESPERA, polling: 100 });
+  await p.type('dialog[open] textarea[id$="-fundamento"]', 'Documentación revisada (sintético).');
+  await clic(p, 'dialog[open] .acciones button:not(.boton--secundario)', 'Verificar Nutrición');
+  await dialogoCerrado(p);
+  await esperarTexto(p, 'Verificar: decisión registrada. Se avisó al profesional.');
+  await esperarSituacion(p, 'NUTRICION', 'Verificada, sin habilitación');
+  await p.waitForFunction(() => document.querySelector('.historial-administrativo li')?.innerText.includes('Área verificada'), { timeout: ESPERA, polling: 100 });
+  const verificado = await p.$eval('.historial-administrativo li', (l) => l.innerText);
+  assert.match(verificado, new RegExp(`${NOMBRE_DEL_ADMINISTRADOR} · Administración`), 'el hecho dice quién decidió');
+  assert.match(verificado, /Documentación revisada \(sintético\)/, 'y su fundamento');
+
+  // Conceder la habilitación: recién ahí puede operar.
+  await decidir(p, 'NUTRICION', 'Conceder habilitación', 'Conceder habilitación · Nutrición', { fundamento: 'Habilitación para operar (sintético).', confirmar: 'Conceder habilitación Nutrición' });
+  await esperarSituacion(p, 'NUTRICION', 'Puede operar');
+
+  // Conflicto: mientras el diálogo está abierto, otra consola suspende el área. Al confirmar, nada se pisa: el diálogo dice
+  // cómo está ahora, conserva lo escrito y no deja confirmar sobre la situación nueva.
+  await clic(p, `${AREA('NUTRICION')} .area-de-la-ficha__acciones button`, 'Suspender');
+  await dialogoAbierto(p, `Suspender · Nutrición de ${NOMBRE_DEL_PENDIENTE}`);
+  const escrito = 'Suspensión desde esta consola (sintético).';
+  await p.type('dialog[open] textarea[id$="-fundamento"]', escrito);
+  await p.type('dialog[open] textarea[id$="-mensaje"]', 'Tu acceso a Nutrición queda suspendido (sintético).');
+  const otro = await sesionAdministrativa(d.otroAdmin.correo, secretoDelOtro);
+  const area = (await pedir('GET', `/admin/professionals/${d.pendiente.id}`, { token: otro })).data.scopes.find((s) => s.scope === 'NUTRICION');
+  await pedir('POST', `/admin/professionals/${d.pendiente.id}/scopes/NUTRICION/decisions`, {
+    token: otro,
+    cuerpo: { expectedVersion: area.version, decision: 'SUSPEND', rationale: 'Suspensión desde otra consola (sintético).', messageToProfessional: 'Tu acceso a Nutrición queda suspendido mientras revisamos (sintético).' },
+  });
+  await clic(p, 'dialog[open] .acciones button:not(.boton--secundario)', 'Suspender Nutrición');
+  await p.waitForFunction(() => document.querySelector('dialog[open] .aviso')?.innerText.includes('La situación cambió'), { timeout: ESPERA, polling: 100 });
+  const textoDelConflicto = await p.$eval('dialog[open]', (e) => e.innerText);
+  assert.match(textoDelConflicto, /Cómo está ahora: Suspendida/);
+  assert.match(textoDelConflicto, /Esta decisión ya no corresponde al estado del área/);
+  assert.equal(await p.$eval('dialog[open] textarea[id$="-fundamento"]', (t) => t.value), escrito, 'lo escrito sigue ahí');
+  assert.equal(await p.$eval('dialog[open] .acciones button:not(.boton--secundario)', (b) => b.disabled), true, 'no se confirma sobre la situación nueva');
+  await captura(p, salida, 'administracion-conflicto-azul-noche');
+  await clic(p, 'dialog[open] .acciones button.boton--secundario', 'Cerrar');
+  await dialogoCerrado(p);
+  await esperarSituacion(p, 'NUTRICION', 'Suspendida');
+  await p.waitForFunction((n) => document.querySelector('.historial-administrativo li')?.innerText.includes(`${n} · Administración`), { timeout: ESPERA, polling: 100 }, NOMBRE_DEL_OTRO_ADMINISTRADOR);
+  const suspendidas = await p.$$eval('.historial-administrativo li', (l) => l.filter((x) => x.innerText.includes('Área suspendida')).length);
+  assert.equal(suspendidas, 1, 'una sola suspensión registrada: la de la otra consola');
+  await p.$eval('.historial-administrativo', (e) => e.closest('section')?.scrollIntoView({ block: 'start' }));
+  await capturaEnLosDosTemas(p, salida, 'administracion-historial');
+
+  // 5. Volver a la lista la deja como estaba; la ficha del profesional que opera con la persona.
+  await clic(p, '.volver-a-la-lista a', 'Volver a la lista');
+  await esperarCamino(p, '/admin');
+  await p.waitForFunction(() => document.querySelector('.lista-administrativa .metadatos')?.textContent.startsWith('2 profesionales'), { timeout: ESPERA, polling: 100 });
+  assert.equal(await p.$eval('form[role="search"] input[type="search"]', (i) => i.value), prefijo, 'la lista vuelve con la búsqueda');
+  const nombre = nombreDelProfesional('administracion');
+  await clic(p, '.tabla--profesionales a', `de ${nombre}`);
+  await p.waitForFunction((n) => document.querySelector('.ficha-administrativa h1')?.textContent === n, { timeout: ESPERA, polling: 100 }, nombre);
+
+  // Suspender Nutrición con la sesión del profesional abierta: su próximo pedido de Nutrición ya no pasa; Entrenamiento sí.
+  await pedir('GET', `/advisees/${d.ase.id}/nutrition/evaluations`, { token: tokenDelProfesional });
+  const fundamento = 'Fundamento interno de la suspensión (sintético).';
+  const mensaje = 'Suspendimos tu acceso a Nutrición mientras revisamos tu documentación (sintético).';
+  await clic(p, `${AREA('NUTRICION')} .area-de-la-ficha__acciones button`, 'Suspender');
+  await dialogoAbierto(p, `Suspender · Nutrición de ${nombre}`);
+  assert.match(await p.$eval('dialog[open]', (e) => e.innerText), /La persona vinculada en Nutrición recibe un aviso con el efecto, sin los motivos/);
+  await p.type('dialog[open] textarea[id$="-fundamento"]', fundamento);
+  await p.type('dialog[open] textarea[id$="-mensaje"]', mensaje);
+  await clic(p, 'dialog[open] .acciones button:not(.boton--secundario)', 'Suspender Nutrición');
+  await dialogoCerrado(p);
+  await esperarTexto(p, 'Suspender: decisión registrada. Se avisó al profesional y a 1 persona vinculada.');
+  await pedir('GET', `/advisees/${d.ase.id}/nutrition/evaluations`, { token: tokenDelProfesional, esperado: 404 });
+  await pedir('GET', `/advisees/${d.ase.id}/training/evaluations`, { token: tokenDelProfesional });
+  const tokenDeLaPersona = await sesionPorApi(d.ase.correo, 'APK');
+  const avisoALaPersona = (await pedir('GET', '/me/news', { token: tokenDeLaPersona, superficie: 'APK' })).data.find((n) => n.kind === 'PROFESSIONAL_ACCESS_SUSPENDED');
+  assert.ok(avisoALaPersona, 'la persona recibe el aviso de la suspensión');
+  assert.match(avisoALaPersona.body, /tiene suspendido el acceso a Nutrición en BE/);
+  assert.ok(!avisoALaPersona.body.includes(fundamento) && !avisoALaPersona.body.includes(mensaje), 'sin los motivos');
+  const avisoAlProfesional = (await pedir('GET', '/me/news', { token: tokenDelProfesional })).data.find((n) => n.kind === 'ADMINISTRATIVE_DECISION');
+  assert.ok(avisoAlProfesional?.body.includes(mensaje), 'el profesional recibe el texto que se le comunica');
+  assert.ok(!avisoAlProfesional.body.includes(fundamento), 'el fundamento interno no viaja');
+
+  // Rehabilitar: vuelve a poder operar Nutrición, y la persona se entera de que depende de su vínculo y su autorización.
+  await decidir(p, 'NUTRICION', 'Rehabilitar', `Rehabilitar · Nutrición de ${nombre}`, { fundamento: 'Documentación en regla (sintético).', confirmar: 'Rehabilitar Nutrición' });
+  await esperarSituacion(p, 'NUTRICION', 'Puede operar');
+  await pedir('GET', `/advisees/${d.ase.id}/nutrition/evaluations`, { token: tokenDelProfesional });
+  const restablecido = (await pedir('GET', '/me/news', { token: tokenDeLaPersona, superficie: 'APK' })).data.find((n) => n.kind === 'PROFESSIONAL_ACCESS_RESTORED');
+  assert.match(restablecido?.body ?? '', /solo si su vínculo con vos y tu autorización siguen vigentes/);
+
+  // 6. Recargar reanuda la sesión: dentro de los 15 minutos, la ficha vuelve sin pedir el código (lo dice la API).
+  await p.reload({ waitUntil: 'networkidle2' });
+  await p.waitForFunction((n) => document.querySelector('.ficha-administrativa h1')?.textContent === n, { timeout: ESPERA, polling: 100 }, nombre);
+
+  // La seguridad del acceso: cuántos códigos quedan y cómo reemplazar el autenticador (sin mostrar ningún secreto).
+  await clic(p, '.encabezado .navegacion a', 'Seguridad');
+  await esperarCamino(p, '/admin/security');
+  await esperarTexto(p, 'Quedan 10 códigos de recuperación sin usar.');
+  await capturaEnLosDosTemas(p, salida, 'administracion-seguridad');
+
+  // Cerrar la sesión: la entrada lo dice, la cookie de Administración se borra y la sesión común del profesional sigue.
+  await clic(p, '.menu-de-cuenta__boton');
+  await clic(p, '.menu-de-cuenta__opcion', 'Cerrar sesión');
+  await esperarTexto(p, 'Cerraste la sesión de Administración.');
+  await esperarCamino(p, '/admin');
+  const alSalir = await contexto.cookies();
+  assert.ok(!alSalir.some((c) => c.name === '__Secure-be-admin-reanudacion'), 'la cookie de Administración se borró');
+  assert.ok(alSalir.some((c) => c.name === '__Secure-be-reanudacion'), 'la sesión común del profesional no se toca: son independientes');
+  await capturaEnLosDosTemas(p, salida, 'administracion-entrada');
+
+  // Volver a entrar: con el autenticador ya configurado, la contraseña lleva al código (con su plazo de 10 minutos). Un
+  // código equivocado descuenta un intento; el código de este paso pudo usarse al configurar, así que va el del paso
+  // siguiente, que el servidor acepta una sola vez.
+  await escribir(p, '#adm-correo', d.admin.correo);
+  await escribir(p, '#adm-contrasena', CREDENCIAL);
+  await clic(p, 'form button[type="submit"]', 'Continuar');
+  await esperarTexto(p, 'Código del autenticador');
+  await esperarTexto(p, 'para completar este paso');
+  await capturaEnLosDosTemas(p, salida, 'administracion-segundo-factor');
+  await escribir(p, '#adm-codigo', '000000');
+  await clic(p, 'form button[type="submit"]', 'Confirmar');
+  await esperarTexto(p, 'El código no es válido o ya se usó. Te quedan 4 intentos.');
+  await escribir(p, '#adm-codigo', codigoTotp(secreto, 30_000));
+  await clic(p, 'form button[type="submit"]', 'Confirmar');
+  await elemento(p, '.pendientes-de-administracion');
+  await clic(p, '.menu-de-cuenta__boton');
+  await clic(p, '.menu-de-cuenta__opcion', 'Cerrar sesión');
+  await esperarTexto(p, 'Cerraste la sesión de Administración.');
+}
+
 /** Una captura en Claro y otra en Azul noche: el tema se cambia como lo cambia el menú (el atributo de la página). */
 async function enLosDosTemas(p, salida, nombre) {
   const original = await p.evaluate(() => document.documentElement.dataset.tema);
@@ -930,7 +1204,7 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

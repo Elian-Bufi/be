@@ -54,6 +54,23 @@ enum MotivoDeRevocacionDeSesion {
   SUSPENSION_DE_CUENTA
   /// DL-147: una reanudación del website ya reemplazada volvió a presentarse fuera del margen de gracia.
   REANUDACION_REUTILIZADA
+  /// WP-ADMINISTRACION (DL-155): cinco códigos fallidos del segundo factor en una sesión administrativa.
+  SEGUNDO_FACTOR_FALLIDO
+  /// WP-ADMINISTRACION: al incorporarse como administradora, una identidad pierde sus sesiones comunes.
+  INCORPORACION_ADMINISTRATIVA
+  /// WP-ADMINISTRACION: el operador restableció el segundo factor; las sesiones administrativas dejan de valer.
+  SEGUNDO_FACTOR_RESTABLECIDO
+  /// WP-ADMINISTRACION: el operador retiró el rol administrativo.
+  ROL_ADMINISTRATIVO_RETIRADO
+  /// WP-ADMINISTRACION: el administrador reemplazó su autenticador o generó códigos nuevos; sus otras sesiones terminan.
+  CREDENCIALES_ADMINISTRATIVAS_RENOVADAS
+}
+
+/// WP-ADMINISTRACION (DL-155): de qué clase es una sesión. Una ADMINISTRATIVA solo sirve en la consola de Administración
+/// (SESSION_MFA); una PERSONAL, en todo lo demás. La decide el servidor al abrirla y no cambia (trigger).
+enum ClaseDeSesion {
+  PERSONAL
+  ADMINISTRATIVA
 }
 
 /// 08 §12.2 «canal/superficie», declarado por el cliente (DEUDA_LEGAJO DL-022).
@@ -228,6 +245,13 @@ model Identidad {
   retirosDeNombresAlternativosDeEjercicio RetiroDeNombreAlternativoDeEjercicio[] @relation("RetiroDeNombreAlternativoDeEjercicioDelProfesional")
   retirosDeNombresAlternativosDeAlimento  RetiroDeNombreAlternativoDeAlimento[]  @relation("RetiroDeNombreAlternativoDeAlimentoDelProfesional")
 
+  // WP-ADMINISTRACION (DL-155)
+  rolesAdministrativos        RolAdministrativo[]     @relation("RolAdministrativoDeLaIdentidad")
+  codigosDeIncorporacion      CodigoDeIncorporacion[] @relation("CodigoDeIncorporacionDeLaIdentidad")
+  factoresTotp                FactorTotp[]            @relation("FactorTotpDeLaIdentidad")
+  codigosDeRecuperacion       CodigoDeRecuperacion[]  @relation("CodigoDeRecuperacionDeLaIdentidad")
+  decisionesComoAdministrador EventoDeVerificacion[]  @relation("EventoDeVerificacionDelAdministrador")
+
   @@map("identidad")
 }
 
@@ -323,10 +347,14 @@ model Sesion {
   versionDeControl      Int                         @map("version_de_control")
   momentoDeFinalizacion DateTime?                   @map("momento_de_finalizacion") @db.Timestamptz(3)
   motivoDeRevocacion    MotivoDeRevocacionDeSesion? @map("motivo_de_revocacion")
+  /// WP-ADMINISTRACION (DL-155): PERSONAL o ADMINISTRATIVA, inmutable. Las filas anteriores son PERSONAL.
+  clase                 ClaseDeSesion               @default(PERSONAL)
 
-  identidad     Identidad             @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  identidad     Identidad              @relation(fields: [identidadId], references: [id], onDelete: Restrict)
   /// DL-147: las reanudaciones de una sesión del website, de la más vieja a la vigente.
   reanudaciones ReanudacionDeSesion[]
+  /// WP-ADMINISTRACION: el estado del segundo factor de una sesión administrativa.
+  segundoFactor SegundoFactorDeSesion?
 
   @@index([identidadId, estado])
   @@map("sesion")
@@ -537,6 +565,13 @@ enum TipoDeEventoDeVerificacion {
   HabilitacionRetirada
 }
 
+/// WP-ADMINISTRACION (DL-155): quién hizo un hecho de M-02. El servicio interno de DL-036 (todas las filas anteriores a este
+/// paquete y lo que hace la siembra) o un administrador humano, con su identidad.
+enum TipoDeActorDeVerificacion {
+  SERVICIO_INTERNO
+  ADMINISTRADOR
+}
+
 /// 08 §29 — resultado de una decisión de acceso del PDP.
 enum ResultadoDeDecision {
   PERMITIDA
@@ -610,25 +645,37 @@ model Habilitacion {
   @@map("habilitacion")
 }
 
-/// T-06-N08 — hechos de M-02 mínimo. Append-only. El actor es siempre el servicio interno (DL-036).
+/// T-06-N08 — hechos de M-02 mínimo. Append-only. Hasta WP-ADMINISTRACION el actor era siempre el servicio interno (DL-036);
+/// desde ahí puede ser un administrador (`tipo_de_actor`, CHECK con el actor que corresponde).
 model EventoDeVerificacion {
-  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                   String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Orden total de los hechos (ver EventoDeVinculo).
-  secuencia           BigInt                     @unique @default(autoincrement())
-  tipo                TipoDeEventoDeVerificacion
-  identidadId         String                     @map("identidad_id") @db.Uuid
-  alcance             Alcance?
-  estadoPrevio        String?                    @map("estado_previo")
-  estadoPosterior     String?                    @map("estado_posterior")
-  fundamento          String?
-  actorServicio       String                     @map("actor_servicio")
-  procedencia         Json
-  momentoDeOcurrencia DateTime?                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
-  momentoDeRegistro   DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  secuencia            BigInt                     @unique @default(autoincrement())
+  tipo                 TipoDeEventoDeVerificacion
+  identidadId          String                     @map("identidad_id") @db.Uuid
+  alcance              Alcance?
+  estadoPrevio         String?                    @map("estado_previo")
+  estadoPosterior      String?                    @map("estado_posterior")
+  fundamento           String?
+  /// El servicio interno, solo con `tipoDeActor = SERVICIO_INTERNO` (CHECK).
+  actorServicio        String?                    @map("actor_servicio")
+  /// WP-ADMINISTRACION: quién lo hizo. Sin default en la base: cada hecho nuevo lo declara.
+  tipoDeActor          TipoDeActorDeVerificacion  @map("tipo_de_actor")
+  /// La identidad del administrador, solo con `tipoDeActor = ADMINISTRADOR` (CHECK), con su rol vigente al decidir (trigger).
+  administradorId      String?                    @map("administrador_id") @db.Uuid
+  /// Lo que se le comunicó al profesional, separado del fundamento interno. Solo en las decisiones de un administrador.
+  mensajeAlProfesional String?                    @map("mensaje_al_profesional")
+  /// La versión de la trayectoria al decidir: la «versión revisada» (DL-156). NULL en los hechos anteriores.
+  versionPrevia        Int?                       @map("version_previa")
+  procedencia          Json
+  momentoDeOcurrencia  DateTime?                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro    DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  identidad     Identidad  @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  administrador Identidad? @relation("EventoDeVerificacionDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([identidadId, alcance])
+  @@index([administradorId])
   @@map("evento_de_verificacion")
 }
 
@@ -3055,6 +3102,13 @@ enum TipoDeNovedad {
   RECORDATORIO_DE_SESION_PENDIENTE
   /// DL-140 (CRD-D6): a cada profesional que recibe una nota de coordinación. La referencia es la nota.
   NOTA_DE_COORDINACION_RECIBIDA
+  /// WP-ADMINISTRACION (D-6): al profesional, una decisión de Administración sobre un área suya. La referencia es el hecho.
+  DECISION_ADMINISTRATIVA
+  /// WP-ADMINISTRACION (D-6): a una persona vinculada, cuando el profesional deja de poder operar el área. La referencia
+  /// es su componente de vínculo.
+  ACCESO_PROFESIONAL_SUSPENDIDO
+  /// WP-ADMINISTRACION (D-6): a una persona vinculada, cuando el profesional vuelve a poder operar el área.
+  ACCESO_PROFESIONAL_RESTABLECIDO
 }
 
 enum PlataformaDeAviso {
@@ -3395,4 +3449,141 @@ model ReferenciaDeNota {
   @@id([notaId, orden])
   @@unique([notaId, tipo, recursoId])
   @@map("referencia_de_nota")
+}
+
+// ─── WP-ADMINISTRACION (DL-155): rol administrativo y segundo factor (08 §25) ─────────────────────────────────────────
+// docs/paquetes/WP-ADMINISTRACION.md. Lo que Prisma no modela (un rol vigente por identidad, un factor activo y uno pendiente,
+// las transiciones, lo inmutable, la identidad separada) está en la migración 20261025120000_administracion.
+
+enum EstadoDeRolAdministrativo {
+  VIGENTE
+  RETIRADO
+}
+
+/// El rol administrativo de una identidad (D-3): lo asigna solo el comando interno, nunca una operación HTTP ni la propia
+/// identidad. Una identidad con rol vigente no es profesional ni parte de un vínculo (trigger), y no abre sesiones comunes.
+model RolAdministrativo {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String                    @map("identidad_id") @db.Uuid
+  estado              EstadoDeRolAdministrativo @default(VIGENTE)
+  /// El nombre con que figura como autor en el historial administrativo.
+  nombreVisible       String                    @map("nombre_visible")
+  fundamento          String
+  /// Quién corrió el comando, tal como lo declaró (el comando no tiene sesión).
+  operador            String
+  procedencia         Json
+  momentoDeOcurrencia DateTime                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeRetiro     DateTime?                 @map("momento_de_retiro") @db.Timestamptz(3)
+  fundamentoDelRetiro String?                   @map("fundamento_del_retiro")
+  /// Quién lo retiró, tal como lo declaró al correr el comando.
+  operadorDelRetiro   String?                   @map("operador_del_retiro")
+
+  identidad Identidad @relation("RolAdministrativoDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@map("rol_administrativo")
+}
+
+enum MotivoDeCodigoDeIncorporacion {
+  INCORPORACION
+  RESTABLECIMIENTO
+}
+
+/// El código de un solo uso con que una identidad administrativa configura su autenticador la primera vez o después de un
+/// restablecimiento. Se guarda solo su huella SHA-256; vence a las 24 h.
+model CodigoDeIncorporacion {
+  id                 String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId        String                        @map("identidad_id") @db.Uuid
+  huella             String                        @unique
+  motivo             MotivoDeCodigoDeIncorporacion
+  /// Por qué se emitió (la incorporación o el restablecimiento del segundo factor).
+  fundamento         String
+  operador           String
+  venceEn            DateTime                      @map("vence_en") @db.Timestamptz(3)
+  momentoDeUso       DateTime?                     @map("momento_de_uso") @db.Timestamptz(3)
+  momentoDeAnulacion DateTime?                     @map("momento_de_anulacion") @db.Timestamptz(3)
+  procedencia        Json
+  momentoDeRegistro  DateTime                      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation("CodigoDeIncorporacionDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@map("codigo_de_incorporacion")
+}
+
+/// PENDIENTE → ACTIVO | DESCARTADO; ACTIVO → REEMPLAZADO | REVOCADO (trigger).
+enum EstadoDeFactorTotp {
+  PENDIENTE
+  ACTIVO
+  REEMPLAZADO
+  REVOCADO
+  DESCARTADO
+}
+
+/// El autenticador TOTP de una identidad administrativa. El secreto va cifrado (AES-256-GCM con una clave derivada de
+/// BE_CLAVE_DEL_SEGUNDO_FACTOR) y no cambia; `ultimoPaso` es el último paso de 30 s aceptado: un código ya usado no vale
+/// otra vez. Como máximo uno ACTIVO y uno PENDIENTE por identidad.
+model FactorTotp {
+  id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId             String             @map("identidad_id") @db.Uuid
+  estado                  EstadoDeFactorTotp @default(PENDIENTE)
+  secretoCifrado          String             @map("secreto_cifrado")
+  ultimoPaso              BigInt?            @map("ultimo_paso")
+  /// Códigos que no valen, seguidos, en cualquier sesión: con 10 queda bloqueado hasta un código de recuperación.
+  fallosSeguidos          Int                @default(0) @map("fallos_seguidos")
+  /// La sesión que empezó la configuración: solo ella la confirma.
+  sesionDeConfiguracionId String?            @map("sesion_de_configuracion_id") @db.Uuid
+  /// Hasta cuándo se puede confirmar, mientras está PENDIENTE.
+  venceEn                 DateTime?          @map("vence_en") @db.Timestamptz(3)
+  momentoDeActivacion     DateTime?          @map("momento_de_activacion") @db.Timestamptz(3)
+  momentoDeBaja           DateTime?          @map("momento_de_baja") @db.Timestamptz(3)
+  procedencia             Json
+  momentoDeRegistro       DateTime           @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation("FactorTotpDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId, estado])
+  @@map("factor_totp")
+}
+
+/// Un código de recuperación de un solo uso (08 §25), guardado como HMAC-SHA-256 con una clave del servidor. Cada lote
+/// (`loteId`) reemplaza al anterior: los que quedan sin usar se invalidan.
+model CodigoDeRecuperacion {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId           String    @map("identidad_id") @db.Uuid
+  loteId                String    @map("lote_id") @db.Uuid
+  huella                String    @unique
+  momentoDeUso          DateTime? @map("momento_de_uso") @db.Timestamptz(3)
+  sesionDeUsoId         String?   @map("sesion_de_uso_id") @db.Uuid
+  momentoDeInvalidacion DateTime? @map("momento_de_invalidacion") @db.Timestamptz(3)
+  momentoDeRegistro     DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation("CodigoDeRecuperacionDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId, loteId])
+  @@map("codigo_de_recuperacion")
+}
+
+enum MetodoDeSegundoFactor {
+  TOTP
+  CODIGO_DE_RECUPERACION
+  CONFIGURACION
+}
+
+/// El segundo factor de una sesión administrativa, en la base: cuándo se verificó, con qué, la última actividad y los
+/// intentos fallidos. La vigencia la decide el servidor con esto (`estadoDelSegundoFactor` de @be/domain), nunca el token.
+model SegundoFactorDeSesion {
+  sesionId          String                 @id @map("sesion_id") @db.Uuid
+  identidadId       String                 @map("identidad_id") @db.Uuid
+  verificadoEn      DateTime?              @map("verificado_en") @db.Timestamptz(3)
+  metodo            MetodoDeSegundoFactor?
+  ultimaActividad   DateTime?              @map("ultima_actividad") @db.Timestamptz(3)
+  intentosFallidos  Int                    @default(0) @map("intentos_fallidos")
+  momentoDeRegistro DateTime               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  sesion Sesion @relation(fields: [sesionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@map("segundo_factor_de_sesion")
 }

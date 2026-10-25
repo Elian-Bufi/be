@@ -14,10 +14,18 @@
  *   la olvidan; al entrar en una con otra cuenta, las que mostraban otra cuenta se recargan, para no enseñar sus datos.
  * - **Al vencer** (12 h desde el inicio, sin renovación: DL-012), el token se descarta y la página lo dice al pedir que
  *   se entre de nuevo.
+ * - **En la consola de Administración** (`/admin`, WP-ADMINISTRACION) esta sesión no se reanuda ni escucha a las otras
+ *   pestañas: la consola tiene su propia sesión (`sesion-administrativa.tsx`). Así una pestaña de Administración no carga
+ *   la sesión de un profesional ni se recarga cuando alguien entra con otra cuenta en otra pestaña. Al salir de `/admin`,
+ *   se reanuda como en cualquier carga.
  */
 import type { IniciarSesionResponse } from '@be/domain';
+import { usePathname } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from './api';
+
+/** Si la ruta es de la consola de Administración, que no usa esta sesión. */
+export const esDeAdministracion = (ruta: string | null): boolean => ruta === '/admin' || (ruta?.startsWith('/admin/') ?? false);
 
 interface Sesion {
   readonly token: string;
@@ -28,7 +36,8 @@ interface Sesion {
 /** `sinConexion`: no se pudo preguntar por la sesión (sin conexión con BE, o BE no respondió). No es que haya vencido. */
 type Estado =
   | { readonly tipo: 'restaurando' }
-  | { readonly tipo: 'sin-sesion'; readonly vencida: boolean; readonly sinConexion?: boolean }
+  /** `omitida`: la página es de la consola de Administración, que no usa esta sesión; al salir de ella se reanuda. */
+  | { readonly tipo: 'sin-sesion'; readonly vencida: boolean; readonly sinConexion?: boolean; readonly omitida?: boolean }
   | ({ readonly tipo: 'con-sesion' } & Sesion);
 
 interface ContextoDeSesion {
@@ -62,9 +71,12 @@ const sesionDe = (r: IniciarSesionResponse): Sesion => ({
 });
 
 export function ProveedorDeSesion({ children }: { children: ReactNode }) {
-  const [estado, setEstado] = useState<Estado>({ tipo: 'restaurando' });
+  const enAdministracion = esDeAdministracion(usePathname());
+  const [estado, setEstado] = useState<Estado>(() => (enAdministracion ? { tipo: 'sin-sesion', vencida: false, omitida: true } : { tipo: 'restaurando' }));
   const actual = useRef<Estado>(estado);
   actual.current = estado;
+  const enLaConsola = useRef(enAdministracion);
+  enLaConsola.current = enAdministracion;
   const canal = useRef<BroadcastChannel | null>(null);
 
   const avisar = useCallback((m: Mensaje) => {
@@ -95,9 +107,16 @@ export function ProveedorDeSesion({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Al cargar fuera de la consola, o al salir de ella, se reanuda; dentro de la consola, no.
   useEffect(() => {
-    void reanudar();
-  }, [reanudar]);
+    if (enAdministracion) return;
+    const e = actual.current;
+    if (e.tipo === 'restaurando') void reanudar();
+    else if (e.tipo === 'sin-sesion' && e.omitida) {
+      setEstado({ tipo: 'restaurando' });
+      void reanudar();
+    }
+  }, [enAdministracion, reanudar]);
 
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
@@ -106,6 +125,7 @@ export function ProveedorDeSesion({ children }: { children: ReactNode }) {
     c.onmessage = (evento: MessageEvent<Mensaje>) => {
       const m = evento.data;
       const e = actual.current;
+      if (enLaConsola.current) return;
       if (m?.tipo === 'cerrada') setEstado({ tipo: 'sin-sesion', vencida: false });
       else if (m?.tipo === 'iniciada' && e.tipo === 'con-sesion' && e.identidadId !== m.identidadId) window.location.reload();
       else if (m?.tipo === 'iniciada' && e.tipo === 'sin-sesion') {
@@ -123,7 +143,7 @@ export function ProveedorDeSesion({ children }: { children: ReactNode }) {
   useEffect(() => {
     const alVolver = () => {
       const e = actual.current;
-      if (e.tipo !== 'sin-sesion' || !e.sinConexion) return;
+      if (enLaConsola.current || e.tipo !== 'sin-sesion' || !e.sinConexion) return;
       setEstado({ tipo: 'restaurando' });
       void reanudar();
     };
