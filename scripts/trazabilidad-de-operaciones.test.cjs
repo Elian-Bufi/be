@@ -6,7 +6,7 @@
  * Esta guardia lee el 09 (solo lectura: el legajo está en el manifiesto y no se toca) y exige:
  * 1. una operación con un ID del inventario P0 del 09 tiene el método y la ruta que el 09 le da;
  * 2. una operación con un ID que no está en el inventario es una extensión declarada de BE, con una familia propia
- *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO) o con un ID P1 que el 09
+ *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO) o con un ID P1 que el 09
  *    nombra, y cita su fuente;
  * 3. ningún ID se repite.
  * Requiere `npm run build:domain` antes.
@@ -27,7 +27,7 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
  * GOO (DL-138): el 09 solo bosqueja el acceso con Google («Google federated authorize/complete — P1», 09 §12 y 09v12 §11)
  * sin IDs; BE verifica el ID token que el cliente obtuvo de Google, y lo declara como familia propia.
  */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155' };
 /**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta

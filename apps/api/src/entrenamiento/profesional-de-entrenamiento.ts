@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { errores } from '../http/errores';
+import { puedeOperarArea } from '../profesional/area-operable';
 
 type Cliente = Pick<Prisma.TransactionClient, '$queryRaw'>;
 
@@ -9,12 +10,8 @@ type Cliente = Pick<Prisma.TransactionClient, '$queryRaw'>;
  * subida de una imagen de ejercicio (API-MED-01 con EXERCISE_REFERENCE), que vive en el módulo de medios.
  */
 export async function esProfesionalDeEntrenamiento(cliente: Cliente, identidadId: string): Promise<boolean> {
-  const [fila] = await cliente.$queryRaw<{ ok: boolean }[]>`
-    SELECT EXISTS (
-      SELECT 1 FROM "verificacion_profesional" vp
-        JOIN "habilitacion" h ON h."identidad_id" = vp."identidad_id" AND h."alcance" = vp."alcance" AND h."estado" = 'CONCEDIDA'
-       WHERE vp."identidad_id" = ${identidadId}::uuid AND vp."alcance" = 'ENTRENAMIENTO' AND vp."estado" = 'VERIFICADO') AS "ok"`;
-  return fila?.ok === true;
+  // WP-ADMINISTRACION: con las filas del área en modo compartido, como el PDP (profesional/area-operable.ts).
+  return puedeOperarArea(cliente, identidadId, 'ENTRENAMIENTO');
 }
 
 /** Solo un profesional de Entrenamiento verificado y habilitado. Otro actor: 403 (ya es participante: no filtra nada). */

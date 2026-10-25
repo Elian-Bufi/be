@@ -35,6 +35,8 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
       consultaProtegida: { maximo: 10_000, ventanaMs: 60_000 },
       invitacion: { maximo: 10_000, ventanaMs: 60_000 },
       reanudacion: { maximo: 10_000, ventanaMs: 60_000 },
+      loginAdministrativo: { maximo: 10_000, ventanaMs: 60_000 },
+      segundoFactor: { maximo: 10_000, ventanaMs: 60_000 },
     },
     saltosDeProxy: 0,
     caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
@@ -52,6 +54,8 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     // DL-138: sin client IDs, la familia GOO responde 503. La prueba de Google levanta su propia app con claves locales;
     // ninguna prueba consulta a Google.
     google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 2000 },
+    // WP-ADMINISTRACION (DL-155): una clave sintética del segundo factor; la prueba de «no configurada» levanta su app sin ella.
+    claveDelSegundoFactor: Buffer.alloc(32, 9),
     ...cambios,
   };
 }

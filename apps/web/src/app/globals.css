@@ -12294,3 +12294,408 @@ details[open] > summary:not([class])::before {
   margin: 0 0 0.5rem;
   font-size: 1.1rem;
 }
+
+/* ─── Administración (WP-ADMINISTRACION, DL-155) ──────────────────────── */
+/* La consola usa la barra, las secciones y los botones del website. Lo propio: la palabra «Administración» junto a la
+   marca, la entrada angosta con el segundo factor, la lista, la ficha con sus tres áreas y el historial. Solo tokens: los
+   mismos colores en Claro y en Azul noche que el resto del website. */
+.encabezado__ambito {
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--encabezado-tenue);
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.menu-de-cuenta__quien {
+  margin: 0;
+  padding: 0.35rem 0.6rem 0.55rem;
+  border-bottom: 1px solid var(--borde);
+  font-weight: 700;
+}
+
+.menu-de-cuenta__quien .nota {
+  display: block;
+  font-weight: 400;
+}
+
+/* La entrada, el segundo factor, la configuración y los códigos: una columna angosta, como el ingreso común. */
+.acceso-administrativo {
+  max-width: 34rem;
+}
+
+.acceso-administrativo > h1:focus,
+.ficha-administrativa h1:focus,
+.lista-administrativa .metadatos:focus {
+  outline: none;
+}
+
+.acceso-administrativo .formulario {
+  margin-top: 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.acceso-administrativo .formulario .acciones {
+  margin: 0;
+}
+
+/* Un código se lee y se compara de a grupos: cifras de igual ancho y un poco de aire entre letras. */
+.campo-de-codigo {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+}
+
+.pasos-de-configuracion {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.configuracion-del-autenticador {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.clave-del-autenticador code {
+  display: inline-block;
+  padding: 0.3rem 0.5rem;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  word-break: break-all;
+}
+
+.codigos-de-recuperacion {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem 1.5rem;
+  margin: 1rem 0;
+  padding: 1rem 1rem 1rem 2.25rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.codigos-de-recuperacion code {
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  background: none;
+}
+
+/* La lista de profesionales. */
+.lista-administrativa .encabezado-de-bloque h1 {
+  margin: 0;
+}
+
+.nota--con-icono {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.nota--con-icono .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.pendientes-de-administracion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 1rem 0 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.pendientes-de-administracion p {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.filtros-de-administracion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.25rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.filtros-de-administracion .campo {
+  flex: 0 1 15rem;
+  margin: 0;
+}
+
+.buscador-administrativo {
+  display: flex;
+  flex: 1 1 26rem;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.buscador-administrativo label {
+  font-weight: 600;
+}
+
+.buscador-administrativo__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.buscador-administrativo__fila input {
+  flex: 1 1 14rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.tabla--profesionales th,
+.tabla--profesionales td {
+  vertical-align: middle;
+}
+
+.tabla--profesionales td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* La celda del nombre sigue siendo una celda de tabla (con flex dejaba de alinear su borde): cada dato, en su renglón. */
+.profesional-de-la-lista {
+  font-weight: 400;
+}
+
+.profesional-de-la-lista > span {
+  display: block;
+}
+
+.profesional-de-la-lista__nombre {
+  font-weight: 700;
+}
+
+.profesional-de-la-lista .nota {
+  font-size: 0.92rem;
+}
+
+/* La situación de un área: el ícono y su palabra. Lo pendiente va en peso alto (es lo que espera una decisión); lo que
+   no se presentó, en el tono secundario. Ningún color dice si algo está bien o mal. */
+.situacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.situacion .icono {
+  flex: none;
+}
+
+.situacion--pendiente {
+  font-weight: 700;
+}
+
+.situacion--sin-presentacion {
+  color: var(--tenue);
+}
+
+.paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+/* La ficha. */
+.volver-a-la-lista {
+  margin: 0 0 0.75rem;
+}
+
+.volver-a-la-lista a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+.ficha-administrativa__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+
+.ficha-administrativa__cabecera h1 {
+  margin: 0 0 0.25rem;
+}
+
+.ficha-administrativa__actualizar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.ficha-administrativa > .seccion {
+  margin-top: 1.25rem;
+}
+
+.ficha-administrativa > .seccion + .seccion {
+  margin-top: 1.25rem;
+}
+
+/* Las tres áreas lado a lado desde 1024 px; debajo, una por renglón. */
+.areas-de-la-ficha {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 64rem) {
+  .areas-de-la-ficha {
+    grid-template-columns: 1fr;
+  }
+}
+
+.area-de-la-ficha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo-suave);
+}
+
+.area-de-la-ficha > * {
+  margin: 0;
+}
+
+.area-de-la-ficha__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.area-de-la-ficha__situacion {
+  font-size: 1.05rem;
+}
+
+.datos--del-area {
+  margin: 0.25rem 0;
+}
+
+.datos--del-area div {
+  flex-direction: column;
+  gap: 0;
+}
+
+.datos--del-area dt {
+  min-width: 0;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.area-de-la-ficha__observacion {
+  margin: 0.25rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--superficie);
+}
+
+.area-de-la-ficha__observacion p {
+  margin: 0;
+}
+
+.area-de-la-ficha__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+/* El efecto de una decisión, en el diálogo: tres listas cortas antes de los campos. */
+.efecto-de-la-decision {
+  margin-bottom: 1.25rem;
+}
+
+.efecto-de-la-decision h3 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.efecto-de-la-decision ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.dialogo .campo textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.campo__largo {
+  margin: 0;
+  text-align: right;
+}
+
+/* El historial: un hecho por renglón, con su momento, su área y quién lo hizo. */
+.historial-administrativo {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hecho-administrativo {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.hecho-administrativo > p {
+  margin: 0.15rem 0;
+}
+
+.hecho-administrativo__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.4rem;
+}
+
+.hecho-administrativo__rotulo {
+  font-weight: 600;
+}
+
+.campo--en-linea {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+.campo--en-linea select {
+  width: auto;
+  min-width: 12rem;
+}
+
+.seguridad-administrativa .seccion + .seccion {
+  margin-top: 1.25rem;
+}

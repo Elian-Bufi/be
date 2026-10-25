@@ -2,6 +2,7 @@ import { DynamicModule, Global, Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import type { Entorno } from './config/entorno';
 import { AccesoGoogleModule } from './acceso-google/acceso-google.module';
+import { AdministracionModule } from './administracion/administracion.module';
 import { ENTORNO, VERSION } from './config/tokens';
 import type { VersionDesplegada } from './config/version';
 import { AutorizacionModule } from './autorizacion/autorizacion.module';
@@ -87,6 +88,8 @@ export class AppModule {
         NovedadesModule,
         // DL-140: las notas de coordinación entre los profesionales de una persona.
         CoordinacionModule,
+        // WP-ADMINISTRACION (DL-155): la administración de profesionales por área, con segundo factor.
+        AdministracionModule,
       ],
       // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
       providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],

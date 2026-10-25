@@ -14,7 +14,14 @@ const { readdirSync, readFileSync } = require('node:fs');
 const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
-const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn, terminosProhibidosDeFormulariosEn } = require('../packages/domain/dist/index.js');
+const {
+  terminosProhibidosEn,
+  terminosProhibidosDeAdministracionEn,
+  terminosProhibidosDeAntropometriaEn,
+  terminosProhibidosDeCarteraEn,
+  terminosProhibidosDeEntrenamientoEn,
+  terminosProhibidosDeFormulariosEn,
+} = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
 /** Los textos también viven en módulos sin JSX (`.ts`): se leen como TypeScript, no como TSX. */
@@ -126,6 +133,20 @@ const DOMINIOS = [
     archivos: [join(RAIZ, 'apps/web/src/components/origen-en-el-catalogo.tsx'), join(RAIZ, 'packages/domain/src/copy-origen-en-el-catalogo.ts')],
     prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
     minimo: 2,
+  },
+  {
+    // WP-ADMINISTRACION (DL-155): la consola de Administración y su copy. B10-03 §20: se dice verificación, habilitación,
+    // observación, suspensión y rehabilitación, por área; nunca «certificado por BE», «profesional aprobado» ni una
+    // sanción, tampoco negados. Pasa además por la lista de nutrición y por la de la cartera: la consola no califica a nadie.
+    nombre: 'la administración',
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin')),
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin/professional')),
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin/security')),
+      join(RAIZ, 'packages/domain/src/copy-administracion.ts'),
+    ],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosDeAdministracionEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeCarteraEn(texto)])],
+    minimo: 14,
   },
 ];
 
