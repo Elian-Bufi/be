@@ -1,4 +1,4 @@
-import type { EjecucionDeEntrenamiento, RegistroDeComida, VigenciaDePlan } from '@be/domain';
+import { DistribucionDeMacronutrientesSchema, type EjecucionDeEntrenamiento, type ObjetivoParaComparar, type RegistroDeComida, type VigenciaDePlan } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import type { EjecucionesDeEntrenamientoService } from '../entrenamiento/ejecuciones.service';
 import { INCLUIR_REGISTRO, registrosApi } from '../nutricion/lectura-registro';
@@ -125,6 +125,11 @@ export interface VersionDeObjetivo {
   readonly registradaEl: Date;
   /** Nutrición: el requerimiento energético estimado; entrenamiento: el enunciado. */
   readonly requerimientoKcal: number | null;
+  /**
+   * Nutrición: los macros del objetivo tal como los declaró el profesional (g por día o proporción de las calorías), para
+   * dibujarlos junto a lo registrado (DL-158). `null` en entrenamiento o si la fila no se puede leer: nunca un cero.
+   */
+  readonly macros: ObjetivoParaComparar['macros'];
   readonly enunciado: string | null;
 }
 
@@ -154,6 +159,7 @@ async function leerVersionesDeObjetivo(tx: Tx, alcance: AlcanceDelAnalisis, prof
         autorId: v.autorId,
         registradaEl: v.momentoDeRegistro,
         requerimientoKcal: typeof req?.value === 'number' && req.value > 0 ? req.value : null,
+        macros: macrosDe(v.distribucionDeMacronutrientes),
         enunciado: null,
       };
     });
@@ -169,7 +175,14 @@ async function leerVersionesDeObjetivo(tx: Tx, alcance: AlcanceDelAnalisis, prof
       autorId: v.autorId,
       registradaEl: v.momentoDeRegistro,
       requerimientoKcal: null,
+      macros: null,
       enunciado: typeof s === 'string' && s.trim() ? s.trim() : null,
     };
   });
+}
+
+/** Los macros guardados en el objetivo, con la forma del contrato (API-NUT-04); si no la tienen, `null`. */
+function macrosDe(guardado: Prisma.JsonValue): ObjetivoParaComparar['macros'] {
+  const leido = DistribucionDeMacronutrientesSchema.safeParse(guardado);
+  return leido.success ? leido.data : null;
 }
