@@ -26,6 +26,27 @@ import {
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
+  CodigosDeRecuperacionResponseSchema,
+  ConfiguracionConfirmadaResponseSchema,
+  ConfiguracionDelAutenticadorResponseSchema,
+  ConfirmarConfiguracionRequestSchema,
+  ConsultarProfesionalesRequestSchema,
+  DecidirSobreAreaRequestSchema,
+  DecisionRegistradaResponseSchema,
+  DetalleDeCodigoInvalidoSchema,
+  EstadoDeSesionAdministrativaResponseSchema,
+  FichaDeProfesionalResponseSchema,
+  HistorialAdministrativoResponseSchema,
+  IniciarConfiguracionRequestSchema,
+  IniciarSesionAdministrativaRequestSchema,
+  ListaDeProfesionalesResponseSchema,
+  RegenerarCodigosDeRecuperacionRequestSchema,
+  SegundoFactorVerificadoResponseSchema,
+  SesionAdministrativaResponseSchema,
+  UsarCodigoDeRecuperacionRequestSchema,
+  VerificarSegundoFactorRequestSchema,
+} from './contratos-administracion';
+import {
   DetalleDeCuentaDeGoogleSchema,
   IniciarSesionConGoogleRequestSchema,
   RegistrarConGoogleRequestSchema,
@@ -285,7 +306,11 @@ export interface Operacion {
   readonly ruta: string;
   readonly resumen: string;
   /** `SIGNED_URL`: sin sesión; la autoriza la ruta firmada que emitió otra operación con sesión (DL-120). */
-  readonly autenticacion: 'PUBLIC' | 'SESSION' | 'SESSION_STEP_UP' | 'SIGNED_URL';
+  /**
+   * `SESSION_MFA` (09v7 T14): sesión administrativa con el segundo factor vigente (WP-ADMINISTRACION, 08 §25).
+   * `ADMIN_FIRST_FACTOR`: sesión administrativa que solo completó la contraseña; sirve únicamente para el segundo factor.
+   */
+  readonly autenticacion: 'PUBLIC' | 'SESSION' | 'SESSION_STEP_UP' | 'SESSION_MFA' | 'ADMIN_FIRST_FACTOR' | 'SIGNED_URL';
   readonly idempotencia: boolean;
   readonly request?: z.ZodType;
   /** Un cuerpo que el servidor también acepta ausente (API-TRN-15: el 09 no le declara cuerpo). */
@@ -3074,6 +3099,173 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
     fuente: 'variante del titular de API-CRD-01 (09 §11.6) · 08 §9.15 y 08:495 · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-140 (CRD-D2)',
   },
+  // ─── WP-ADMINISTRACION (DL-155): familia ADM, que adapta PRO-09 a 13 (09v8:930-1104) y suma el acceso con MFA (08 §25) ───
+  {
+    id: 'API-ADM-01',
+    metodo: 'post',
+    ruta: '/admin/auth/sessions',
+    resumen:
+      'Primer factor de Administración: correo y contraseña de una identidad con el rol administrativo vigente. Todo fallo (correo inexistente, contraseña incorrecta, cuenta no operativa, identidad sin rol) responde el mismo 401 neutral. Abre una sesión administrativa de 8 h que, con solo este factor, no lee ni decide nada: dice qué falta (el código del autenticador o su configuración) y da 10 minutos para completarlo. En el website emite la cookie de reanudación de Administración.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: IniciarSesionAdministrativaRequestSchema,
+    exitos: [{ status: 201, schema: SesionAdministrativaResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 401: ['INVALID_CREDENTIALS'], 429: ['RATE_LIMITED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] },
+    fuente: '08 §25 (MFA obligatorio para el administrador) y §26.2 (sesión administrativa más corta) · como API-ACC-02 (09v8:311-393) · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-155',
+  },
+  {
+    id: 'API-ADM-02',
+    metodo: 'post',
+    ruta: '/admin/auth/sessions/resume',
+    resumen:
+      'Reanudar la sesión de Administración después de recargar, con su cookie propia (HttpOnly, Secure, SameSite=None, Partitioned, solo para /api/v1/admin/auth/sessions): un token nuevo de la MISMA sesión y el estado de su segundo factor, que decide el servidor. Reanudar nunca valida un segundo factor.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: SesionAdministrativaResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST'], 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED'], 429: ['RATE_LIMITED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] },
+    fuente: 'DEUDA_LEGAJO DL-147 (el mecanismo de reanudación), aplicado a la sesión administrativa · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-03',
+    metodo: 'delete',
+    ruta: '/admin/auth/sessions/current',
+    resumen: 'Cerrar la sesión de Administración: queda finalizada en la base y se borra su cookie. Idempotente: repetir responde 204.',
+    autenticacion: 'ADMIN_FIRST_FACTOR',
+    idempotencia: false,
+    exitos: [{ status: 204 }],
+    errores: { 400: ['INVALID_REQUEST'], 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID'] },
+    fuente: 'como API-ACC-03 (09v8:397-427) · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-04',
+    metodo: 'get',
+    ruta: '/admin/auth/sessions/current',
+    resumen: 'El estado de la propia sesión de Administración: vencimiento, segundo factor (vigente, pendiente o por configurar) y cuántos códigos de recuperación quedan (solo con el segundo factor vigente).',
+    autenticacion: 'ADMIN_FIRST_FACTOR',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EstadoDeSesionAdministrativaResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST'] },
+    fuente: 'como API-ACC-05 (09v8:461-505) · 08 §25 · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-05',
+    metodo: 'post',
+    ruta: '/admin/auth/sessions/current/second-factor',
+    resumen:
+      'Segundo factor con el código del autenticador (TOTP, RFC 6238: 6 dígitos, 30 s, el paso actual y uno de cada lado). Un código ya usado no vale otra vez. Cinco códigos fallidos en la sesión la revocan; diez seguidos en cualquier sesión de la identidad bloquean el autenticador (SECOND_FACTOR_LOCKED) hasta que entra un código de recuperación o el operador lo restablece; además, diez intentos por identidad cada 15 minutos (429). Con éxito, el segundo factor queda vigente mientras haya actividad (15 minutos sin actividad lo vencen).',
+    autenticacion: 'ADMIN_FIRST_FACTOR',
+    idempotencia: false,
+    request: VerificarSegundoFactorRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorVerificadoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'SECOND_FACTOR_LOCKED', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 (TOTP como línea base) · 09v7 T14 (SESSION_MFA) · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-06',
+    metodo: 'post',
+    ruta: '/admin/auth/sessions/current/recovery-code',
+    resumen:
+      'Segundo factor con un código de recuperación de un solo uso: usarlo lo marca usado en la misma transacción. No desactiva el autenticador (si estaba bloqueado por códigos que no valen, lo desbloquea): después se lo reemplaza desde una sesión vigente (API-ADM-07 con la contraseña). Mismos límites de intentos por sesión que API-ADM-05.',
+    autenticacion: 'ADMIN_FIRST_FACTOR',
+    idempotencia: false,
+    request: UsarCodigoDeRecuperacionRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorVerificadoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 (códigos de recuperación de un solo uso) · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-07',
+    metodo: 'post',
+    ruta: '/admin/auth/second-factor/enrollment',
+    resumen:
+      'Empezar a configurar el autenticador: sin uno activo, con el código de incorporación que emitió el comando interno; para reemplazarlo, con el segundo factor vigente y la contraseña otra vez (08 §25). Devuelve, una sola vez, la clave y su URI otpauth (lo que lleva el QR); vence a los 10 minutos. El autenticador anterior sigue valiendo hasta confirmar el nuevo.',
+    autenticacion: 'ADMIN_FIRST_FACTOR',
+    idempotencia: false,
+    request: IniciarConfiguracionRequestSchema,
+    exitos: [{ status: 200, schema: ConfiguracionDelAutenticadorResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED', 'INVALID_CREDENTIALS'], 422: ['INCORPORATION_CODE_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'] },
+    fuente: '08 §25 (enrolar y des-enrolar son eventos auditables; des-enrolar exige re-autenticación) · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-08',
+    metodo: 'post',
+    ruta: '/admin/auth/second-factor/enrollment/confirm',
+    resumen:
+      'Confirmar la configuración con un código del autenticador nuevo: queda activo (el anterior, si había, reemplazado), consume el código de incorporación (que tiene que seguir vigente) y devuelve, una sola vez, diez códigos de recuperación nuevos; los anteriores dejan de valer. La sesión queda con el segundo factor vigente; en un reemplazo, las otras sesiones administrativas de la identidad terminan.',
+    autenticacion: 'ADMIN_FIRST_FACTOR',
+    idempotencia: false,
+    request: ConfirmarConfiguracionRequestSchema,
+    exitos: [{ status: 200, schema: ConfiguracionConfirmadaResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-09',
+    metodo: 'post',
+    ruta: '/admin/auth/recovery-codes',
+    resumen:
+      'Generar diez códigos de recuperación nuevos, con el segundo factor vigente y la contraseña otra vez. Los anteriores dejan de valer y las otras sesiones administrativas de la identidad terminan. Se muestran una sola vez.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: RegenerarCodigosDeRecuperacionRequestSchema,
+    exitos: [{ status: 200, schema: CodigosDeRecuperacionResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED', 'INVALID_CREDENTIALS'], 429: ['RATE_LIMITED'] },
+    fuente: '08 §25 · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-10',
+    metodo: 'post',
+    ruta: '/admin/professionals/query',
+    resumen:
+      'Los profesionales registrados (identidades con perfil profesional), con la situación de cada área, para Administración. El texto busca en el nombre visible y el correo, sin tildes ni mayúsculas, y va en el cuerpo, no en la URL. Filtros por área y situación; los que tienen un área pendiente de revisión van primero. Nunca datos de salud ni de las personas. Lectura auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarProfesionalesRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeProfesionalesResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD', 'INVALID_CURSOR'] },
+    fuente: 'adapta API-PRO-09 (09v8:930-950) sin presentaciones (D-1) · B10-03 §14 · búsqueda en el cuerpo como DL-127 · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-11',
+    metodo: 'get',
+    ruta: '/admin/professionals/{professionalId}',
+    resumen:
+      'La ficha administrativa de un profesional: identidad profesional y, por área, verificación, habilitación, si puede operar, su versión, las decisiones que admite hoy, la última observación y cuántas personas vinculadas recibirían un aviso (nunca quiénes). Un identificador inexistente o sin perfil profesional: el mismo 404. Lectura auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: FichaDeProfesionalResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'adapta API-PRO-10 (09v8:954-976) · B10-03 §15 · D-5 · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-12',
+    metodo: 'get',
+    ruta: '/admin/professionals/{professionalId}/history',
+    resumen:
+      'El historial administrativo de un profesional, del más nuevo al más viejo: cada hecho de su verificación y su habilitación, con el administrador o el servicio interno que lo hizo, estado anterior y posterior, fundamento interno, texto comunicado y momento. No es un visor de auditoría: no trae accesos ni datos de nadie más. Lectura auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, ALCANCE],
+    exitos: [{ status: 200, schema: HistorialAdministrativoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'adapta API-PRO-10 («historia de resoluciones aplicable», B10-03 §15) · 08 §29 · ID propio de BE (familia ADM) · DL-155',
+  },
+  {
+    id: 'API-ADM-13',
+    metodo: 'post',
+    ruta: '/admin/professionals/{professionalId}/scopes/{scope}/decisions',
+    resumen:
+      'Una decisión de Administración sobre un área de un profesional: OBSERVE, VERIFY o REJECT sobre un área PENDIENTE; SUSPEND sobre una VERIFICADO; REINSTATE sobre una SUSPENDIDO; GRANT_ENABLEMENT o WITHDRAW_ENABLEMENT sobre la habilitación. Cada una es una transición del 06, con fundamento interno y el texto para el profesional; contra la versión del área que vio el administrador (si cambió, 409 VERSION_CONFLICT). En la misma transacción: el hecho con el administrador como actor, la novedad al profesional y, si cambia que pueda operar el área, el aviso a cada persona vinculada. No revoca sesiones (DL-157), no toca vínculos ni consentimientos, y no borra nada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: DecidirSobreAreaRequestSchema,
+    exitos: [{ status: 200, schema: DecisionRegistradaResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['INVALID_STATE_TRANSITION', 'RATIONALE_REQUIRED', 'VALIDATION_FAILED'] },
+    fuente: 'adapta API-PRO-11, 12 y 13 (09v8:980-1104) · UC-P02 y UC-P03 · habilitación: REG-06-79 y 06 §8.6.6 (UC-ADM-04) · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-155, DL-156 y DL-157',
+  },
 ];
 
 /**
@@ -3083,6 +3275,9 @@ const DEFINIDAS: readonly Operacion[] = [
  * - las lecturas de un recurso protegido comparten un límite por actor: 429 RATE_LIMITED.
  */
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
+  'API-ADM-10',
+  'API-ADM-11',
+  'API-ADM-12',
   'API-DSH-03',
   'API-DSH-04',
   'API-DSH-04-BUSQUEDA',
@@ -3139,7 +3334,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
 // API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

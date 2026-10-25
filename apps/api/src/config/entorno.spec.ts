@@ -24,6 +24,8 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
         consultaProtegida: { maximo: 120, ventanaMs: 60000 },
         invitacion: { maximo: 10, ventanaMs: 900000 },
         reanudacion: { maximo: 300, ventanaMs: 900000 },
+        loginAdministrativo: { maximo: 5, ventanaMs: 900000 },
+        segundoFactor: { maximo: 10, ventanaMs: 900000 },
       },
       saltosDeProxy: 1,
       caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
@@ -34,6 +36,7 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       avisos: { canal: 'desactivado', expoUrl: 'https://exp.host', expoToken: null, presupuestoMs: 5000 },
       secretoDeTareas: null,
       google: { clientIds: [], jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs', presupuestoMs: 5000 },
+      claveDelSegundoFactor: null,
     });
   });
 
@@ -139,8 +142,8 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
     const pt = '3113dacf-e61b-45a0-9106-596bdbc21444';
     const valor = `${pn}|NUTRICION|SANITARIO|Lic. Demo;${pt}|ENTRENAMIENTO|NO_SANITARIO|Prof. Demo`;
     expect(leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: valor }).demoProfesionales).toEqual([
-      { identidadId: pn.toLowerCase(), alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Demo' },
-      { identidadId: pt, alcance: 'ENTRENAMIENTO', tipo: 'NO_SANITARIO', nombreVisible: 'Prof. Demo' },
+      { identidadId: pn.toLowerCase(), alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Demo', estadoInicial: 'VERIFICADO' },
+      { identidadId: pt, alcance: 'ENTRENAMIENTO', tipo: 'NO_SANITARIO', nombreVisible: 'Prof. Demo', estadoInicial: 'VERIFICADO' },
     ]);
     expect(() => leerEntorno({ ...BASE, APP_ENV: 'production', BE_DEMO_PROFESIONALES: valor })).toThrow(/BE_DEMO_PROFESIONALES/);
     // WP-05: la capacidad antropométrica es transversal y «nunca tercera Especialidad» (06:2774). Una misma identidad
@@ -150,6 +153,38 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
     // Un correo ya no identifica: cualquiera podría registrarlo primero.
     for (const malo of ['demo.pn@example.invalid|NUTRICION|SANITARIO|X', `${pt}|PSICOLOGIA|SANITARIO|X`, `${pt}|NUTRICION|OTRO|X`, `${pt}|NUTRICION|SANITARIO|`]) {
       expect(() => leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: malo })).toThrow(/BE_DEMO_PROFESIONALES/);
+    }
+  });
+
+  it('WP-ADMINISTRACION · un quinto campo PENDIENTE deja el área para revisar; otro valor o un campo de más no arrancan', () => {
+    const pt = '3113dacf-e61b-45a0-9106-596bdbc21444';
+    expect(leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: `${pt}|NUTRICION|SANITARIO|Lic. Demo|PENDIENTE` }).demoProfesionales).toEqual([
+      { identidadId: pt, alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Demo', estadoInicial: 'PENDIENTE' },
+    ]);
+    for (const malo of [`${pt}|NUTRICION|SANITARIO|X|VERIFICADO`, `${pt}|NUTRICION|SANITARIO|X|PENDIENTE|otro`]) {
+      expect(() => leerEntorno({ ...BASE, BE_DEMO_PROFESIONALES: malo })).toThrow(/BE_DEMO_PROFESIONALES/);
+    }
+  });
+
+  it('WP-ADMINISTRACION · la clave del segundo factor: base64 (común o url) de 32 bytes o más; sin ella, null; el mensaje no repite el valor', () => {
+    const clave = Buffer.alloc(32, 7).toString('base64url');
+    expect(leerEntorno({ ...BASE, BE_CLAVE_DEL_SEGUNDO_FACTOR: clave }).claveDelSegundoFactor?.length).toBe(32);
+    expect(leerEntorno(BASE).claveDelSegundoFactor).toBeNull();
+    // Render (`generateValue`) la da en base64 común: con «+», «/» y relleno. Vale igual, con los mismos bytes.
+    const bytes = Buffer.from(Array.from({ length: 32 }, (_, i) => (i * 37 + 251) % 256));
+    const comun = bytes.toString('base64');
+    expect(comun).toMatch(/[+/]/);
+    expect(leerEntorno({ ...BASE, BE_CLAVE_DEL_SEGUNDO_FACTOR: comun }).claveDelSegundoFactor?.equals(bytes)).toBe(true);
+    expect(leerEntorno({ ...BASE, BE_CLAVE_DEL_SEGUNDO_FACTOR: bytes.toString('base64url') }).claveDelSegundoFactor?.equals(bytes)).toBe(true);
+    for (const mala of [Buffer.alloc(16, 7).toString('base64url'), 'esto no es base64url!']) {
+      let mensaje = '';
+      try {
+        leerEntorno({ ...BASE, BE_CLAVE_DEL_SEGUNDO_FACTOR: mala });
+      } catch (e) {
+        mensaje = (e as Error).message;
+      }
+      expect(mensaje).toMatch(/BE_CLAVE_DEL_SEGUNDO_FACTOR/);
+      expect(mensaje).not.toContain(mala);
     }
   });
 
