@@ -15,6 +15,9 @@
  * - un ejercicio sustituido sin series no se confirma (SET_REQUIRED), que la APK dice antes de finalizar; un realizado
  *   fuera del catálogo de ese plan es EXERCISE_REFERENCE_INVALID, que la APK dice en el diálogo;
  * - lo confirmado muestra las dos puntas al titular y al profesional del plan.
+ * Y el cruce con Administración (#210, del que depende este PR): con Entrenamiento suspendido, guardar una sustitución
+ * es el 404 que la APK trata como acceso retirado (`accesoRetirado` en `sustituir`); al rehabilitar, se guarda (pasada de
+ * cierre del 2026-10-25, punto 2).
  */
 import type { INestApplication } from '@nestjs/common';
 import {
@@ -26,11 +29,14 @@ import {
   TiemposDeSesionResponseSchema,
   type BorradorDeEjecucion,
 } from '@be/domain';
+import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { administradorListo, decidirSobre } from './soporte-administracion';
 import { CATALOGO_DE_EJERCICIOS } from './soporte-entrenamiento';
 import { abrirBorrador, activar, borradorDeLaDemo, conLaApk, corrida, mandarEventos, ocurrenciaDeHoy, prescripcionIdDe, SESION_DEMO, type EjercicioDeLaDemo, type Paso, type PlanDeLaDemo } from './soporte-por-serie';
 
+const prisma = new PrismaClient();
 let app: INestApplication;
 let contador = 0;
 
@@ -39,6 +45,7 @@ beforeAll(async () => {
 }, 120_000);
 afterAll(async () => {
   await app?.close();
+  await prisma.$disconnect();
 });
 
 const [EJ_A, EJ_B] = SESION_DEMO.exercises as [EjercicioDeLaDemo, EjercicioDeLaDemo];
@@ -189,5 +196,31 @@ describe('DL-151 · sustituir un ejercicio desde la sesión enfocada de la APK',
         [B, planificadoDe(plan, EJ_B), 'Sentadilla', true, [hecha(1, 30, 8)]],
       ]);
     }
+  });
+});
+
+// ─── El cruce con Administración (#210) ─────────────────────────────────────────────────────────
+
+describe('Con Administración: suspender y rehabilitar Entrenamiento (pasada de cierre del 2026-10-25)', () => {
+  it('con Entrenamiento suspendido, guardar una sustitución desde la APK es el 404 de acceso retirado; al rehabilitar, se guarda', async () => {
+    const plan = await planActivado('cruce-adm');
+    const apk = conLaApk(app, plan.ase.token);
+    const { draftId, version } = await abrirBorrador(app, plan.ase, await ocurrenciaDeHoy(app, plan.ase));
+    const sustituto = BusquedaDeEjerciciosResponseSchema.parse((await apk.post('/api/v1/training/exercises/search').send({ q: 'press con mancuernas', limit: 20 }).expect(200)).body).data.find(
+      (e) => e.name === 'Press con mancuernas',
+    );
+    if (!sustituto) throw new Error('sin el sustituto en el catálogo');
+    const cambios = { granularity: 'SET', exercises: [{ prescriptionId: A, performedExerciseVersionId: sustituto.versionId, sets: [] }] };
+    const a = await administradorListo(app, prisma, `cruce-adm-${++contador}-${randomUUID().slice(0, 4)}`);
+
+    await decidirSobre(app, a.token, plan.pro.id, 'ENTRENAMIENTO', 'SUSPEND').expect(200);
+    const rechazada = await apk.patch(`/api/v1/training/execution-drafts/${draftId}`).send({ expectedVersion: version, changes: cambios });
+    // El 404 no revelador: el mismo que `sustituir` (la APK) convierte en «acceso retirado» y que las demás pantallas ya
+    // manejan; otro error dejaría el diálogo con un mensaje que no corresponde.
+    expect({ status: rechazada.status, code: rechazada.body.error?.code }).toEqual({ status: 404, code: 'RESOURCE_NOT_FOUND' });
+
+    await decidirSobre(app, a.token, plan.pro.id, 'ENTRENAMIENTO', 'REINSTATE', { messageToProfessional: undefined }).expect(200);
+    const guardado = await guardar(plan, draftId, version, cambios);
+    expect(guardado.exercises[0]).toMatchObject({ prescriptionId: A, performedExerciseVersionId: sustituto.versionId, substituted: true, sets: [] });
   });
 });
