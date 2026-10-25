@@ -66,7 +66,7 @@ const GRANO_NUTRICIONAL = [
   { grano: 'WEEK', agregacion: 'MEAN_OF_DAYS_WITH_DATA' },
 ] as const;
 
-const LIMITE_REGISTRADO = 'Es lo registrado: si una comida no se registró, o se registró sin cantidades, no está en el número. No es la ingesta real ni el cumplimiento del objetivo.';
+const LIMITE_REGISTRADO = 'Es lo registrado: si una comida no se registró, o se registró sin cantidades, no está en el número. No es la ingesta real ni una comparación con el objetivo.';
 
 function nutricional(id: string, nombre: string, nombreCorto: string, parametro: MetricaNutricional, unidad: string, decimales: number, familia: string): DefinicionDeMetrica {
   return {

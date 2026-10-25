@@ -5386,7 +5386,10 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 **Decisión de Dirección del 2026-10-24: D-1 a D-4, ratificadas con estos criterios.**
 - **D-1.** La media sigue incluyendo los subtotales: es el promedio de la energía registrada en los días con valor.
   - **Lo que tiene que verse:** los días usados, cuántos son subtotales y la cobertura del período. El indicador lo muestra: «N días: X con valor · Y sin registros», y debajo los subtotales, las comidas del plan sin registro y «hoy, en curso: fuera de la media».
-  - **Cómo no tiene que leerse:** ni como ingesta real ni como cumplimiento del objetivo. Lo dicen el límite de las métricas registradas («No es la ingesta real ni el cumplimiento del objetivo»), que se ve en Analizar, y «Cómo se lee» del Resumen.
+  - **Cómo no tiene que leerse:** ni como ingesta real ni como cumplimiento del objetivo.
+    - Lo dice el límite de las métricas registradas, que se ve en Analizar: «No es la ingesta real ni una comparación con el objetivo».
+    - También «Cómo se lee» del Resumen: «En Nutrición, el número es lo registrado: no es la ingesta real», seguido de «No hay verde ni rojo, ni distancia a un objetivo».
+    - Los textos evitan la palabra «cumplimiento», también en negación: B05 la prohíbe en todo texto de Nutrición, y lo comprueba T13 (`scripts/copy-pantallas.test.cjs`).
 - **D-2.** Una comida diferente registrada en una comida del plan cuenta como registrada, sin ser automáticamente cumplimiento del plan, y las cantidades o los nutrientes desconocidos siguen siendo desconocidos.
   - **La presentación se corrigió.** El numerador era solo de las opciones del plan («3 de 4 registradas · 1 con una comida diferente»). Ahora es la cobertura del registro, opciones más comidas diferentes, sin contar dos veces una comida, y el desglose va cuando hay comidas diferentes:
     - «4 de 4 con registro · 3 con opción del plan · 1 con comida diferente»;

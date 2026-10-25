@@ -116,8 +116,8 @@ function DeResumen() {
         </Renglon>
         <Renglon esencial muestra={<Icono nombre="analizar" tamano={20} />}>
           <strong>Un indicador</strong> es un número del período con su regla: la media de los días con valor, la mediana de las sesiones o la última toma del tramo comparable. Debajo, cuántos días, sesiones o tomas lo
-          sostienen y lo que cambia cómo se lee: cuántos de esos días son subtotales (falta algún dato) y que hoy, en curso, no entra en la media. En Nutrición, el número es lo registrado: no es la ingesta real ni el
-          cumplimiento del objetivo. La cobertura entera de cada uno está en «Analizar». No hay verde ni rojo,
+          sostienen y lo que cambia cómo se lee: cuántos de esos días son subtotales (falta algún dato) y que hoy, en curso, no entra en la media. En Nutrición, el número es lo registrado: no es la ingesta real. La
+          cobertura entera de cada uno está en «Analizar». No hay verde ni rojo,
           ni distancia a un objetivo.
         </Renglon>
         <Renglon muestra={<Marca indice={0} />}>

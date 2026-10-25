@@ -362,7 +362,9 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
     cuenta de las comidas del plan** (criterios de Dirección del 2026-10-24) es de cobertura del registro, la misma en
     Analizar, la exportación y Registros: «4 de 4 con registro · 3 con opción del plan · 1 con comida diferente», o «3 de
     4 con registro · 1 sin registro». Una comida diferente registrada en una comida del plan le da registro, sin ser la
-    opción del plan ni cumplirlo; una registrada fuera de las comidas del plan no cubre ninguna;
+    opción del plan ni contarse como si lo fuera; una registrada fuera de las comidas del plan no cubre ninguna. Los
+    textos de Nutrición siguen sin el vocabulario de B05 («cumplimiento», «adherencia» y los demás de
+    `TERMINOS_PROHIBIDOS_DE_NUTRICION`), tampoco en negación;
   - en entrenamiento y antropometría, en sesiones o tomas («6 sesiones: 5 con valor»; «3 tomas: 2 del último tramo
     comparable»), nunca en días.
   Una cobertura no es una adherencia y no lleva porcentaje. Si el plan empezó a regir dentro del período, se dice desde
