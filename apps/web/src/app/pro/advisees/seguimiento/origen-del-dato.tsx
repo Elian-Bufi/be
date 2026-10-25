@@ -13,8 +13,15 @@
  *   una angosta, encima, en el panel de siempre (`PanelDeRegistro`). El contenido es este mismo componente.
  * Si el PDP ya no deja leer un registro se dice en su lugar, y se avisa a quien abrió (`onNoDisponible`): lo que hay en
  * pantalla puede ser viejo y se vuelve a pedir.
+ *
+ * WP-NUTRICION-COMPARACION (DL-158, C-D1 opción A): cada comida dice también lo indicado en el plan para la opción que se
+ * registró (con la versión que cita el registro), o por qué no tiene: una comida diferente no es una opción del plan. El
+ * día dice su indicado del día, si el plan no dejaba elegir. Lo indicado no se resta de lo registrado.
  */
 import {
+  CAPAS_DE_LA_COMPARACION,
+  indicadoDeLaComidaEnPalabras,
+  indicadoDelDiaEnCelda,
   COPY_REGISTRO_DE_COMIDAS,
   COPY_REGISTRO_PARA_EL_PROFESIONAL,
   NUTRIENTE_DE_LA_METRICA,
@@ -187,6 +194,14 @@ function ComidasDelPunto({ punto, serie, total, onNoDisponible }: { punto: Punto
 
   const parametro = serie.definicion.parametro as MetricaNutricional;
   const nutriente = parametro === 'RECORDS' ? null : NUTRIENTE_DE_LA_METRICA[parametro];
+  // DL-158: lo indicado de cada comida registrada y el del día, de la misma lectura de la serie.
+  const indicado = serie.estado.tipo === 'lista' ? serie.estado.indicado : null;
+  const indicadoDeLaComida = (recordId: string): string | null => {
+    if (!indicado || parametro === 'RECORDS') return null;
+    const c = indicado.comidas.find((x) => x.recordId === recordId);
+    return c ? indicadoDeLaComidaEnPalabras(c, parametro) : null;
+  };
+  const indicadoDelDia = indicado && parametro !== 'RECORDS' && !punto.dateEnd ? (indicado.dias.find((d) => d.date === punto.date) ?? null) : null;
   /** Lo que el registro aporta a la métrica, como lo escribe la pantalla del registro; sin cantidades, se dice. */
   const aporteDe = (r: RegistroDeComida): string | null => {
     if (nutriente === null) return null;
@@ -216,6 +231,7 @@ function ComidasDelPunto({ punto, serie, total, onNoDisponible }: { punto: Punto
           const r = l.registro;
           const estaAbierta = abierta === o.id;
           const aporte = aporteDe(r);
+          const delPlan = indicadoDeLaComida(o.id);
           return (
             <li key={o.id} className="fuente" data-registro={o.id}>
               <button type="button" className="fuente__fila" aria-expanded={estaAbierta} aria-controls={estaAbierta ? `${id}-${o.id}` : undefined} onClick={() => setAbierta(estaAbierta ? null : o.id)}>
@@ -223,6 +239,7 @@ function ComidasDelPunto({ punto, serie, total, onNoDisponible }: { punto: Punto
                 <span className="fuente__que">
                   {r.meal ? <strong>{r.meal.label}</strong> : null}
                   <span>{r.kind === 'PLAN_OPTION' && r.option ? r.option.label : `${COPY_REGISTRO_PARA_EL_PROFESIONAL.algoDiferente}${r.description ? `: «${r.description}»` : ''}`}</span>
+                  {delPlan ? <span className="fuente__indicado">{delPlan}</span> : null}
                 </span>
                 {aporte !== null ? <span className="fuente__aporte">{aporte}</span> : null}
                 <Icono nombre={estaAbierta ? 'arriba' : 'abajo'} tamano={18} />
@@ -248,6 +265,14 @@ function ComidasDelPunto({ punto, serie, total, onNoDisponible }: { punto: Punto
         <p className="fuentes-del-dato__total">
           <span>{punto.dateEnd ? 'Valor del punto' : 'Total del día'}</span>
           <strong>{total ?? 'Sin valor conocido'}</strong>
+        </p>
+      ) : null}
+      {/* Lo indicado del día, al lado del total: otra capa, no una meta que se resta. Sin indicado, el motivo va en letra
+          normal: la negrita es para los números. */}
+      {indicadoDelDia && parametro !== 'RECORDS' ? (
+        <p className="fuentes-del-dato__total fuentes-del-dato__indicado">
+          <span>{CAPAS_DE_LA_COMPARACION.indicado} para el día</span>
+          {indicadoDelDia.state === 'DETERMINED' ? <strong>{indicadoDelDiaEnCelda(indicadoDelDia, parametro)}</strong> : <span className="fuentes-del-dato__motivo">{indicadoDelDiaEnCelda(indicadoDelDia, parametro)}</span>}
         </p>
       ) : null}
     </div>

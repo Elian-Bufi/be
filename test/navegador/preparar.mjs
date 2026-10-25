@@ -41,6 +41,10 @@ export const RECORRIDOS = {
   completitud: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan'] },
   // DL-154: una revisión registrada dice en qué evidencia se apoyó, y lo que cambió después.
   evidencia: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan', 'revision-con-evidencia'] },
+  // DL-158: el objetivo del profesional, lo indicado en el plan y lo registrado en el mismo gráfico; con un plan de una
+  // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
+  comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
+  comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
@@ -98,6 +102,29 @@ async function estructura(pro) {
         meals: [
           { label: 'Desayuno', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Avena', items: [{ catalogItemId: avena, quantity: { value: 50, unit: 'g' }, preparationState: 'RAW' }] }] },
           { label: 'Almuerzo', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Arroz', items: [{ catalogItemId: arroz, quantity: { value: 150, unit: 'g' }, preparationState: 'COOKED' }] }] },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * El plan de la comparación (DL-158): las dos comidas de siempre, con porciones de un día de verdad (avena 80 g y arroz
+ * 300 g), para que lo indicado y el objetivo tengan magnitudes parecidas y el gráfico no quede aplastado contra el eje.
+ * Con alternativas, el almuerzo tiene además una opción con pollo.
+ */
+async function estructuraDeLaComparacion(pro, conOpciones) {
+  const avena = await alimento(pro, 'avena');
+  const arroz = await alimento(pro, 'arroz');
+  const item = (catalogItemId, gramos, preparationState) => ({ catalogItemId, quantity: { value: gramos, unit: 'g' }, preparationState });
+  const opcionesDelAlmuerzo = [{ label: 'Arroz', items: [item(arroz, 300, 'COOKED')] }, ...(conOpciones ? [{ label: 'Pollo', items: [item(await alimento(pro, 'pollo'), 200, 'COOKED')] }] : [])];
+  return {
+    dayTypes: [
+      {
+        label: 'Día habitual',
+        meals: [
+          { label: 'Desayuno', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Avena', items: [item(avena, 80, 'RAW')] }] },
+          { label: 'Almuerzo', prescriptionMode: 'DISH_OPTIONS', options: opcionesDelAlmuerzo },
         ],
       },
     ],
@@ -213,6 +240,50 @@ export async function datos(estado) {
       const sucesora = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
       await pedir('POST', `/nutrition/plans/${sucesora.planId}/activate`, { token: pro, cuerpo: { expectedVersion: sucesora.version } });
       e.revision = { reviewId: revision.reviewId };
+    }
+    if (r.datos.includes('comparacion') || r.datos.includes('comparacion-con-opciones')) {
+      // DL-158 (WP-NUTRICION-COMPARACION): dos versiones del objetivo —la segunda, desde anteayer, con otras calorías y
+      // otras proteínas— y un plan de dos comidas. Sin alternativas, cada comida tiene una opción y el día tiene indicado;
+      // con alternativas, el almuerzo tiene dos y el día no. Registros desde la APK: hace seis días, las dos comidas; hace
+      // cinco, nada (un hueco); hace cuatro, solo el desayuno; hace tres, el desayuno y algo diferente en el almuerzo;
+      // ayer, las dos (con alternativas, la segunda opción del almuerzo). Hoy, nada todavía.
+      const conOpciones = r.datos.includes('comparacion-con-opciones');
+      const dia = (n) => diaMas(hoy, -n);
+      const evaluacion = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/evaluations`, { token: pro, cuerpo: evaluacionNutricional(instante(dia(9), '10:00')) })).data.evaluationId;
+      const objetivo = (desde, kcal, proteinas) => ({
+        ...objetivoNutricional(evaluacion, desde),
+        estimatedEnergyRequirement: { value: kcal, unit: 'kcal/day' },
+        macronutrientDistribution: { protein: { value: proteinas, unit: 'g/day' }, carbohydrate: { value: 220, unit: 'g/day' }, fat: { value: 65, unit: 'g/day' } },
+      });
+      // Un objetivo sintético cerca de lo que indica el plan (los dos números son del recorrido, no una recomendación).
+      await pedir('POST', `/advisees/${e.ase.id}/nutrition/objectives`, { token: pro, cuerpo: objetivo(instante(dia(8), '09:00'), 750, 26) });
+      const vigente = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/objectives`, { token: pro, cuerpo: objetivo(instante(dia(2), '09:00'), 700, 24) })).data.versionId;
+      const initialStructure = await estructuraDeLaComparacion(pro, conOpciones);
+      const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: vigente, initialStructure } })).data;
+      await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } });
+      const opciones = (await pedir('GET', '/me/nutrition/today/options', { token: ase, superficie: 'APK' })).data;
+      const [desayuno, almuerzo] = opciones.meals;
+      const delAlmuerzo = almuerzo.options[almuerzo.options.length - 1];
+      const registrar = (comida, opcion, fecha, hora) =>
+        pedir('POST', '/me/nutrition/meal-records', {
+          token: ase,
+          superficie: 'APK',
+          cuerpo: { kind: 'PLAN_OPTION', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: comida.mealId, optionId: opcion.optionId, occurredAt: instante(fecha, hora).toISOString(), consumption: { status: 'PLAN_PORTIONS' }, observation: null },
+        });
+      await registrar(desayuno, desayuno.options[0], dia(6), '08:30');
+      await registrar(almuerzo, delAlmuerzo, dia(6), '13:00');
+      await registrar(desayuno, desayuno.options[0], dia(4), '08:30');
+      await registrar(desayuno, desayuno.options[0], dia(3), '08:30');
+      await pedir('POST', '/me/nutrition/meal-records', {
+        token: ase,
+        superficie: 'APK',
+        cuerpo: { kind: 'DIFFERENT', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: almuerzo.mealId, occurredAt: instante(dia(3), '13:00').toISOString(), description: 'Una pizza con amigos', approximateQuantity: null, mediaIds: [] },
+      });
+      await registrar(desayuno, desayuno.options[0], dia(1), '08:30');
+      await registrar(almuerzo, delAlmuerzo, dia(1), '13:00');
+      // Lo que dice la API, para comparar con la pantalla: el gráfico, la lectura, la tabla y el origen dicen lo mismo.
+      const leer = async (metrica) => (await pedir('GET', `/advisees/${e.ase.id}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=${metrica}&periodStart=${dia(7)}&periodEnd=${hoy}`, { token: pro })).data.result;
+      e.comparacion = { hoy, desde: dia(7), ayer: dia(1), anteayer: dia(2), haceTres: dia(3), haceSeis: dia(6), almuerzo: almuerzo.label, energia: await leer('ENERGY'), proteinas: await leer('PROTEIN') };
     }
     if (r.datos.includes('tomas')) {
       const pesos = [

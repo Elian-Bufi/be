@@ -157,6 +157,7 @@
 | DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
 | DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-4, con criterios) e **INTEGRADA** (#200, `cddd005`), desplegada en test: las comidas del plan se cuentan por la cobertura del registro (la opción del plan o una comida diferente, con el desglose), el subtotal dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-3, con criterios) e **INTEGRADA** (#203, `8aaec16`), desplegada en test: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; al abrir, el panel avisa que es el estado de hoy o, si solo se activó otra versión, que es la misma que se revisó; la forma de la revisión, que lee la APK, no cambia; falta la prueba con profesionales y con un lector de pantalla |
+| DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **IMPLEMENTADA** el 2026-10-25 en la rama `wp-nutricion-comparacion` (C-D1 opción A y C-D2, decididas por Dirección): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; sin integrar ni desplegar |
 
 ---
 
@@ -5504,3 +5505,60 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 - Un lector de pantalla real.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-3, la CI de la integración pasa y la prueba con profesionales lo confirma.
+
+## DL-158 — Nutrición: objetivo del profesional, indicado en el plan y registrado, en el mismo gráfico
+
+**Prioridad:** media (ampliación del encargo de Dirección del 2026-10-25, etapa C; propuesta C de
+`docs/propuestas/AMPLIACIONES_2026-10-19.md`, #193). Definición: `docs/paquetes/WP-NUTRICION-COMPARACION.md`.
+
+**Documentos:**
+- **REG-06-105:** lo indicado sale de la instantánea de la versión; si el plan cambia, lo de ayer no cambia.
+- **REG-06-125 e INV-06-135:** se describe, no se califica: sin puntaje, porcentaje ni adherencia.
+- **NOTA_DE_LO_PREVISTO:** las alternativas de una comida no se suman como un objetivo del día.
+- **DL-126 y DL-153:** la proyección de API-PRJ-01 y las comidas del plan de cada día, con sus reglas.
+
+**Qué pasaba.** En «Analizar», la proyección `NUTRITION_PRESCRIBED_VS_RECORDED` traía lo registrado y, solo para las
+calorías, el requerimiento energético del objetivo. Los macros del objetivo no viajaban, y lo que indicaba el plan
+(las porciones de cada opción) no se veía junto a lo registrado.
+
+**Decisiones de Dirección (2026-10-25):**
+- **C-D1 · opción A:** lo indicado por comida registrada y, por día, solo cuando la regla lo determina.
+- **C-D2:** «Indicado en el plan» se llama distinto de «Objetivo del profesional».
+
+**Lo que se hizo:**
+- **Dominio** (`indicado-del-plan.ts`): lo indicado de cada opción con `calcularNutrientes` sobre la instantánea; el día,
+  la suma exacta de sus opciones solo si rige una versión, se sabe el día tipo y cada comida tiene una sola opción. Si no,
+  el motivo (sin plan, cambio de versión, día tipo sin determinar, varias opciones con cuál y cuántas, porciones de
+  intercambio, falta el dato del nutriente). Por comida, lo de la opción registrada con la versión que cita; la comida
+  diferente no tiene. Los escalones del objetivo: calorías y macros en gramos; una proporción de las calorías se dice y
+  no se convierte.
+- **Contrato** (API-PRJ-01, aditivo): `prescribed.objectiveSteps` y `prescribed.planned.days` / `meals`. Ninguna APK
+  lee PRJ-01 (DL-152 no cambia). `energyRequirement` sigue igual.
+- **API** (`lectura-proyecciones.ts`, `fuentes.ts`): los macros del objetivo se leen de la versión; lo indicado por día
+  llega hasta hoy (el día en curso incluido; un día futuro no tiene versión decidida).
+- **Website** («Analizar», Nutrición): rombos huecos por día para lo indicado, la línea discontinua para el objetivo (ahora
+  también en gramos) y la leyenda de cada panel con las tres capas. La lectura dice el objetivo con desde cuándo rige y
+  lo indicado con la versión y el día tipo, o por qué no hay; la tabla y la descarga, las mismas dos columnas, con una
+  fila para cada día sin registros que tiene rombo; «Ver origen», lo indicado de cada comida y del día; «Cómo se lee» y
+  «Cómo se calcula», las tres capas y la regla. Por semana no se dibuja lo indicado, y se dice.
+
+**Decisiones de implementación (a ratificar):**
+- **I-1 · Redondeo:** lo indicado se muestra con el redondeo de lo registrado (kcal enteras, gramos con un decimal,
+  HALF_UP); el objetivo, como lo escribió el profesional (como la tira del objetivo).
+- **I-2 · El día del cierre del seguimiento** (sin sucesora) toma la regla del contraste: sin registros, «no regía ningún
+  plan» al terminar el día. Con registros, el de la versión que citan.
+- **I-3 · Un plan con alternativas en casi todas las comidas** casi nunca tiene un indicado del día: es la regla de C-D1.
+  Debajo del gráfico se dice por qué no hay rombos y que lo de cada comida está en «Ver origen».
+
+**Pruebas:**
+- **Dominio:** `indicado-del-plan.test.ts` (13) con los casos de la definición y valores calculados a mano;
+  `exportacion-del-analisis.test.ts` (1 nueva): las dos columnas y la fila del día sin registros.
+- **Integración:** `comparacion-nutricional.int-spec.ts` (3): el día y cada comida contra la instantánea calculada a
+  mano, varias opciones sin sumar, la proporción sin convertir, y lo de ayer igual después de activar otra versión, con
+  el día del cambio sin indicado del día. Las suites de análisis, comprensión y contrato (TEST-CT) pasan.
+- **Navegador:** `comparacion` y `comparacionConOpciones`, con capturas en Claro y Azul noche.
+
+**Lo que falta:** la prueba con profesionales (si se entiende la diferencia entre objetivo e indicado) y un lector de
+pantalla real.
+
+**Condición de cierre:** Dirección revisa el resultado, la CI pasa y la prueba con profesionales lo confirma.

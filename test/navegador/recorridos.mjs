@@ -743,9 +743,194 @@ async function evidencia({ p, d, salida }) {
   assert.match(await p.$eval(item, (e) => e.innerText), /Evidencia seleccionada: 2 comidas · 1 versión del plan/);
 }
 
+/** Una captura en Claro y otra en Azul noche: el tema se cambia como lo cambia el menú (el atributo de la página). */
+async function enLosDosTemas(p, salida, nombre) {
+  const original = await p.evaluate(() => document.documentElement.dataset.tema);
+  for (const tema of ['claro', 'azul-noche']) {
+    await p.evaluate((t) => {
+      document.documentElement.dataset.tema = t;
+    }, tema);
+    await captura(p, salida, `${nombre}-${tema}`);
+  }
+  await p.evaluate((t) => {
+    document.documentElement.dataset.tema = t;
+  }, original);
+}
+
+/** «Analizar» de la persona, en el período de la comparación, con la fecha elegida. */
+const analizarLaComparacion = (d, metricas, fecha) =>
+  `${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=analizar&m=${metricas}&desde=${d.comparacion.desde}&hasta=${d.comparacion.hoy}&f=${fecha}`;
+
+/** Abre «Ver origen» de la primera métrica de la lectura y espera que se lean las comidas del día. */
+async function verOrigen(p, comidas) {
+  await clic(p, '.panel-de-lectura button.boton--enlace', 'Ver origen');
+  await p.waitForFunction((n) => document.querySelectorAll('.fuentes-del-dato__lista .fuente:not(.fuente--sin-leer)').length === n, { timeout: ESPERA, polling: 100 }, comidas);
+  return p.$eval('.origen-del-dato__cuerpo', (e) => e.innerText);
+}
+
+/**
+ * DL-158 (WP-NUTRICION-COMPARACION): las calorías y las proteínas de una semana, cada panel con sus tres capas: lo
+ * registrado (la línea se corta en los días sin registros), el objetivo del profesional en dos escalones (cambió
+ * anteayer) y lo indicado en el plan (un rombo por día que lo tiene: los días con registros y hoy; los días sin registros
+ * de antes de activar el plan, no). Los rombos están a la altura del valor de la API, leída con las marcas del eje. La
+ * lectura de ayer, la de anteayer y la de hoy, la tabla y «Ver origen» dicen lo mismo que la API. En Claro y Azul noche.
+ */
+async function comparacion({ p, d, salida }) {
+  const c = d.comparacion;
+  const C = dominio.CAPAS_DE_LA_COMPARACION;
+  const determinados = (r) => r.prescribed.planned.days.filter((x) => x.state === 'DETERMINED' && x.date >= c.desde && x.date <= c.hoy);
+  const delDia = (r, fecha) => r.prescribed.planned.days.find((x) => x.date === fecha);
+  assert.ok(determinados(c.energia).length >= 4, 'la API tiene días con indicado: los cuatro con registros y hoy');
+  await entrar(p, d.pro.correo);
+  await p.goto(analizarLaComparacion(d, 'nutricion.energia,nutricion.proteinas', c.ayer), { waitUntil: 'networkidle2' });
+
+  // Dos paneles, cada uno con sus rombos: uno por día con indicado, ni uno más.
+  const esperados = [determinados(c.energia).length, determinados(c.proteinas).length];
+  await p
+    .waitForFunction(
+      (n) => {
+        const paneles = [...document.querySelectorAll('.paneles-sincronizados figure.grafico')];
+        // Los rombos de cada panel y las marcas del eje vertical (se dibujan después de medir: se esperan también).
+        const conMarcas = (f) => [...f.querySelectorAll('svg text')].filter((t) => /^[\d.,]+$/.test(t.textContent.trim())).length >= 2;
+        return paneles.length === 2 && paneles.every((f, i) => f.querySelectorAll('.grafico__indicado path').length === n[i] && conMarcas(f));
+      },
+      { timeout: ESPERA, polling: 100 },
+      esperados,
+    )
+    .catch(async (e) => {
+      // Si no llega, el error dice qué había: los rombos de cada panel y los textos del dibujo.
+      const visto = await p.evaluate(() => [...document.querySelectorAll('.paneles-sincronizados figure.grafico')].map((f) => ({ rombos: f.querySelectorAll('.grafico__indicado path').length, textos: [...f.querySelectorAll('svg text')].map((t) => t.textContent).slice(0, 16) })));
+      throw new Error(`${e.message}; se esperaban ${JSON.stringify(esperados)} rombos; se vio ${JSON.stringify(visto)}`);
+    });
+  const dibujo = await p.evaluate(() => {
+    const centro = (e) => {
+      const r = e.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    };
+    const [calorias] = document.querySelectorAll('.paneles-sincronizados figure.grafico');
+    const marcas = [...calorias.querySelectorAll('svg text')]
+      .filter((t) => /^[\d.,]+$/.test(t.textContent.trim()))
+      .map((t) => ({ valor: Number(t.textContent.replace(/\./g, '').replace(',', '.')), y: centro(t).y }))
+      .filter((m) => Number.isFinite(m.valor));
+    return {
+      leyendas: [...document.querySelectorAll('.paneles-sincronizados figure.grafico figcaption')].map((f) => f.innerText),
+      rombos: [...calorias.querySelectorAll('.grafico__indicado path')].map(centro),
+      // Los puntos registrados que se pueden elegir, con su centro (el círculo de cada uno).
+      puntos: [...calorias.querySelectorAll('g.grafico__elegible circle:first-child')].map(centro),
+      lineas: calorias.querySelectorAll('.recharts-line').length,
+      marcas,
+      textos: [...calorias.querySelectorAll('svg text')].map((t) => t.textContent).slice(0, 16),
+    };
+  });
+  for (const leyenda of dibujo.leyendas) for (const capa of ['Registrado', C.objetivo, C.indicado]) assert.ok(leyenda.includes(capa), `la leyenda del panel nombra «${capa}»: ${leyenda}`);
+  // Los rombos: todos a una misma altura (el plan indica lo mismo cada día) y, el día en que se registraron las dos
+  // comidas con las porciones del plan, a la altura del punto registrado (los dos valen lo mismo en la API).
+  const ys = dibujo.rombos.map((r) => r.y);
+  assert.ok(Math.max(...ys) - Math.min(...ys) < 1, `los rombos están a la misma altura (${ys.map((y) => y.toFixed(1)).join(', ')})`);
+  const completo = c.energia.recorded.points.find((pt) => pt.date === c.haceSeis);
+  assert.equal(completo.value, delDia(c.energia, c.haceSeis).value, 'hace seis días, lo registrado y lo indicado valen lo mismo en la API');
+  const xDelDia = dibujo.rombos.map((r) => r.x).sort((x, y) => x - y)[0];
+  const punto = dibujo.puntos.reduce((mejor, pt) => (Math.abs(pt.x - xDelDia) < Math.abs(mejor.x - xDelDia) ? pt : mejor));
+  assert.ok(Math.abs(punto.x - xDelDia) < 1 && Math.abs(punto.y - ys[0]) < 1.5, `el primer rombo rodea al punto registrado de ese día (rombo ${xDelDia.toFixed(1)}, ${ys[0].toFixed(1)}; punto ${punto.x.toFixed(1)}, ${punto.y.toFixed(1)})`);
+  // Y su valor, leído con las marcas del eje vertical.
+  assert.ok(dibujo.marcas.length >= 2, `el eje vertical tiene al menos dos marcas con valor; textos del dibujo: ${JSON.stringify(dibujo.textos)}`);
+  const [a, b] = [dibujo.marcas[0], dibujo.marcas[dibujo.marcas.length - 1]];
+  const valorEn = (y) => a.valor + ((y - a.y) * (b.valor - a.valor)) / (b.y - a.y);
+  const tolerancia = Math.abs(b.valor - a.valor) * 0.02;
+  const valores = determinados(c.energia).map((x) => x.value);
+  for (const r of dibujo.rombos) assert.ok(valores.some((v) => Math.abs(valorEn(r.y) - v) <= tolerancia), `el rombo está a la altura de lo indicado (leído ${valorEn(r.y).toFixed(1)}; API ${valores.join(', ')})`);
+  // La línea de lo registrado se corta en los días sin registros: un tramo por cada racha de días con valor.
+  const tramos = new Set(c.energia.recorded.points.filter((pt) => pt.value !== null && !pt.partialBucket).map((pt) => pt.segment)).size;
+  assert.ok(tramos >= 2, 'los datos tienen huecos');
+  assert.equal(dibujo.lineas, tramos, 'una línea por tramo: el hueco no se une');
+
+  // La lectura de ayer: el objetivo que regía (la versión de anteayer), lo indicado con su versión y su día tipo, y la regla.
+  const indicadoDeAyer = dominio.indicadoDelDiaEnPalabras(delDia(c.energia, c.ayer), 'ENERGY', () => 'versión 1 del plan');
+  await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, indicadoDeAyer);
+  const ayer = await p.$eval('.panel-de-lectura', (e) => e.innerText);
+  assert.ok(ayer.includes('700 kcal por día · rige desde el'), 'el objetivo de calorías de ayer es el de la versión de anteayer');
+  assert.ok(ayer.includes('24 g por día · rige desde el'), 'y el de las proteínas, en gramos');
+  assert.ok(ayer.includes(dominio.indicadoDelDiaEnPalabras(delDia(c.proteinas, c.ayer), 'PROTEIN', () => 'versión 1 del plan')), 'lo indicado de las proteínas');
+  assert.ok(ayer.includes(C.regla), 'con la regla del indicado');
+  await enLosDosTemas(p, salida, 'comparacion-lectura-ayer-1440');
+
+  // Anteayer: sin registros y antes de activar el plan: ni registrado ni indicado, y se dice por qué.
+  await p.goto(analizarLaComparacion(d, 'nutricion.energia,nutricion.proteinas', c.anteayer), { waitUntil: 'networkidle2' });
+  await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, 'Sin indicado del día: no regía ningún plan.');
+  assert.ok((await p.$eval('.panel-de-lectura', (e) => e.innerText)).includes('Sin registros en esta fecha.'), 'un día sin registros no es un cero');
+
+  // Hoy: en curso y sin registros, con el indicado del plan que rige.
+  await p.goto(analizarLaComparacion(d, 'nutricion.energia,nutricion.proteinas', c.hoy), { waitUntil: 'networkidle2' });
+  await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, dominio.indicadoDelDiaEnPalabras(delDia(c.energia, c.hoy), 'ENERGY', () => 'versión 1 del plan'));
+
+  // La tabla: las columnas de las dos capas y una fila por fecha con algo dibujado, también hoy, que no tiene registros.
+  await clic(p, 'button.boton--enlace', 'Tabla de datos');
+  await elemento(p, '.tabla-de-datos table');
+  const tabla = await p.$eval('.tabla-de-datos table', (t) => ({ encabezados: [...t.querySelectorAll('thead th')].map((x) => x.innerText.trim()), filas: [...t.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((x) => x.innerText.trim())) }));
+  for (const columna of [`${C.objetivo} (por día)`, `${C.indicado} (kcal)`, `${C.indicado} (g)`]) assert.ok(tabla.encabezados.includes(columna), `la tabla tiene la columna «${columna}»: ${tabla.encabezados.join(' | ')}`);
+  const conAlgo = new Set([...c.energia.recorded.points.filter((pt) => pt.date >= c.desde).map((pt) => pt.date), ...determinados(c.energia).map((x) => x.date)]);
+  assert.equal(tabla.filas.length, conAlgo.size, 'una fila por fecha con un punto o un rombo');
+  const [deHoy] = tabla.filas;
+  assert.deepEqual(deHoy.slice(1), ['Sin registros', '700 kcal', dominio.indicadoDelDiaEnCelda(delDia(c.energia, c.hoy), 'ENERGY'), 'Sin registros', '24 g', dominio.indicadoDelDiaEnCelda(delDia(c.proteinas, c.hoy), 'PROTEIN')], 'hoy: sin registros, con el objetivo y lo indicado');
+  assert.ok(tabla.filas.some((f) => f.includes(dominio.indicadoDelDiaEnCelda(delDia(c.energia, c.ayer), 'ENERGY'))), 'ayer, el mismo indicado que la lectura');
+  // La captura muestra la tabla: queda debajo de los gráficos.
+  await p.$eval('.tabla-de-datos', (e) => e.scrollIntoView({ block: 'start' }));
+  await enLosDosTemas(p, salida, 'comparacion-tabla-1440');
+
+  // «Ver origen» de ayer: cada comida con lo indicado de su opción, y el día con el suyo.
+  await p.goto(analizarLaComparacion(d, 'nutricion.energia,nutricion.proteinas', c.ayer), { waitUntil: 'networkidle2' });
+  const fuentes = (fecha) => c.energia.recorded.points.find((pt) => pt.date === fecha).sources.map((s) => s.id);
+  const origen = await verOrigen(p, fuentes(c.ayer).length);
+  for (const id of fuentes(c.ayer)) {
+    const comida = c.energia.prescribed.planned.meals.find((m) => m.recordId === id);
+    assert.ok(origen.includes(dominio.indicadoDeLaComidaEnPalabras(comida, 'ENERGY')), 'cada comida dice lo indicado de su opción');
+  }
+  assert.ok(origen.includes(`${C.indicado} para el día`) && origen.includes(dominio.indicadoDelDiaEnCelda(delDia(c.energia, c.ayer), 'ENERGY')), 'y el día, el suyo');
+  await enLosDosTemas(p, salida, 'comparacion-origen-ayer-1440');
+
+  // Hace tres días: la comida diferente no es una opción del plan y no tiene indicado.
+  await p.goto(analizarLaComparacion(d, 'nutricion.energia,nutricion.proteinas', c.haceTres), { waitUntil: 'networkidle2' });
+  const conDiferente = await verOrigen(p, fuentes(c.haceTres).length);
+  assert.ok(conDiferente.includes('Comida diferente: no es una opción del plan y no tiene indicado.'), 'la comida diferente lo dice');
+}
+
+/**
+ * DL-158: con un plan que deja elegir el almuerzo, ningún día tiene un indicado del día: no hay rombos, y debajo del
+ * gráfico se dice por qué y dónde está lo de cada comida. La lectura de ayer dice qué comida tiene opciones y que BE no
+ * elige ni suma; «Ver origen» dice lo indicado de la opción que se registró. En Claro y Azul noche.
+ */
+async function comparacionConOpciones({ p, d, salida }) {
+  const c = d.comparacion;
+  const C = dominio.CAPAS_DE_LA_COMPARACION;
+  const dias = c.energia.prescribed.planned.days.filter((x) => x.date >= c.desde && x.date <= c.hoy);
+  assert.ok(dias.every((x) => x.state === 'UNDETERMINED'), 'con alternativas, la API no da un indicado del día');
+  await entrar(p, d.pro.correo);
+  await p.goto(analizarLaComparacion(d, 'nutricion.energia', c.ayer), { waitUntil: 'networkidle2' });
+  await elemento(p, '.grafico__lienzo');
+  const nota = dominio.sinIndicadoParaDibujar(dias);
+  await p.waitForFunction((t) => document.querySelector('.grafico__nota-del-indicado')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, nota);
+  assert.equal(await p.$$eval('.grafico__indicado path', (es) => es.length), 0, 'ningún rombo: no se elige ni se suma una opción');
+  const leyenda = await p.$eval('.paneles-sincronizados figure.grafico figcaption', (f) => f.innerText);
+  assert.ok(leyenda.includes(C.objetivo) && !leyenda.includes(C.indicado), 'la leyenda nombra lo que se dibuja');
+  const ayer = dias.find((x) => x.date === c.ayer);
+  await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, dominio.motivoSinIndicadoDelDia(ayer));
+  assert.ok(dominio.motivoSinIndicadoDelDia(ayer).includes(`${c.almuerzo} tiene 2 opciones`), 'dice qué comida y cuántas opciones');
+  await enLosDosTemas(p, salida, 'comparacion-con-opciones-lectura-1440');
+  const fuentes = c.energia.recorded.points.find((pt) => pt.date === c.ayer).sources.map((s) => s.id);
+  const origen = await verOrigen(p, fuentes.length);
+  for (const id of fuentes) {
+    const comida = c.energia.prescribed.planned.meals.find((m) => m.recordId === id);
+    assert.equal(comida.state, 'DETERMINED', 'la opción registrada tiene lo suyo');
+    assert.ok(origen.includes(dominio.indicadoDeLaComidaEnPalabras(comida, 'ENERGY')), 'y el origen lo dice');
+  }
+  // El día no tiene un indicado: el origen lo dice con su motivo, sin un número.
+  assert.ok(origen.includes(`${C.indicado} para el día`) && origen.includes(dominio.motivoCortoSinIndicadoDelDia(ayer)), 'el día dice por qué no tiene un indicado');
+  await enLosDosTemas(p, salida, 'comparacion-con-opciones-origen-1440');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia };
+export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

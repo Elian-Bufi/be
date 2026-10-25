@@ -84,6 +84,8 @@ export * from './evidencia-registrada';
 export * from './metricas-del-analisis';
 export * from './series-del-analisis';
 export * from './nutricion-del-analisis';
+export * from './indicado-del-plan';
+export * from './copy-comparacion-nutricional';
 export * from './entrenamiento-del-analisis';
 export * from './antropometria-del-analisis';
 export * from './linea-de-tiempo';

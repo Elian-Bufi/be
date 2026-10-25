@@ -14,18 +14,33 @@ export type ClaseDibujada = 'REPORTED' | 'DERIVED';
 
 /**
  * La muestra de una métrica, para un encabezado, una leyenda o la lectura: una línea de su color con un punto. Con
- * `plan`, la de lo planificado: la misma línea, discontinua y sin punto.
+ * `plan`, la del objetivo del profesional: la misma línea, discontinua y sin punto. Con `indicado`, la de lo indicado
+ * en el plan: un rombo hueco, sin línea (WP-NUTRICION-COMPARACION). Las tres se distinguen por la forma, no solo por el color.
  */
-export function Marca({ indice, hueco = false, tamano = 14, clase = null, plan = false }: { indice: number; hueco?: boolean; tamano?: number; clase?: ClaseDibujada | null; plan?: boolean }) {
+export function Marca({ indice, hueco = false, tamano = 14, clase = null, plan = false, indicado = false }: { indice: number; hueco?: boolean; tamano?: number; clase?: ClaseDibujada | null; plan?: boolean; indicado?: boolean }) {
   const e = ESTILOS[indice] ?? ESTILOS[0];
   const c = tamano / 2;
   const ancho = tamano * 2.2;
   return (
     <svg width={ancho} height={tamano} viewBox={`0 0 ${ancho} ${tamano}`} aria-hidden="true" className="marca-de-metrica">
-      <line x1={1} y1={c} x2={ancho - 1} y2={c} stroke={e.color} strokeWidth={2} strokeDasharray={plan ? '5 4' : undefined} />
-      {plan ? null : <Punto cx={ancho / 2} cy={c} r={tamano * (clase ? 0.42 : 0.34)} color={e.color} hueco={hueco} clase={clase} />}
+      {indicado ? (
+        <Rombo cx={ancho / 2} cy={c} r={c - 1.5} color={e.color} />
+      ) : (
+        <>
+          <line x1={1} y1={c} x2={ancho - 1} y2={c} stroke={e.color} strokeWidth={2} strokeDasharray={plan ? '5 4' : undefined} />
+          {plan ? null : <Punto cx={ancho / 2} cy={c} r={tamano * (clase ? 0.42 : 0.34)} color={e.color} hueco={hueco} clase={clase} />}
+        </>
+      )}
     </svg>
   );
+}
+
+/**
+ * Lo indicado en el plan para un día: un rombo hueco del color de la métrica, suelto (no se une con nada). Sin relleno:
+ * un punto registrado del mismo día se sigue viendo adentro, dibuje la biblioteca una capa u otra arriba.
+ */
+export function Rombo({ cx, cy, r, color, trazo = 2 }: { cx: number; cy: number; r: number; color: string; trazo?: number }) {
+  return <path d={`M ${cx} ${cy - r} L ${cx + r} ${cy} L ${cx} ${cy + r} L ${cx - r} ${cy} Z`} fill="none" stroke={color} strokeWidth={trazo} strokeLinejoin="round" />;
 }
 
 /** Un punto: lleno (medido y completo), hueco (subtotal o sin completar), de contorno cortado (reportado) o con un punto adentro (calculado). */
