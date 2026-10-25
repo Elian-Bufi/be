@@ -74,7 +74,9 @@ export class CatalogoDeEjerciciosService {
 
   /**
    * API-TRN-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2) y su origen:
-   * quién lo cargó y si su correspondencia con la fuente es aproximada (D-6). Solo el website.
+   * quién lo cargó y si su correspondencia con la fuente es aproximada (D-6). La lee el website y, desde DL-151, la
+   * sustitución de la APK: cuando se publique una APK con esa lectura, su forma queda congelada (DL-152) y un campo nuevo
+   * va en otra operación.
    */
   async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);

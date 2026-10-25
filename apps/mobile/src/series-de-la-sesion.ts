@@ -15,6 +15,7 @@
  * Es lógica pura, sin React.
  */
 import {
+  COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
   ETIQUETA_DE_BASE_DE_CARGA,
   ETIQUETA_DE_BASE_DE_REPETICIONES,
@@ -337,20 +338,25 @@ export function conciliarSeries(locales: readonly SerieLocal[], borrador: Pick<B
 
 export interface ResumenDelEjercicio {
   readonly prescriptionId: string;
+  /** El ejercicio planificado. */
   readonly nombre: string;
+  /** El que se registra en su lugar, si se sustituyó (DL-151); `null` si no. Las dos puntas se muestran. */
+  readonly ejecutado: string | null;
   readonly registradas: number;
   readonly planificadas: number;
   /** Las series planificadas que no tienen registro. La ausencia no es «no realizada» (DL-106). */
   readonly sinRegistrar: readonly number[];
 }
 
-/** Por ejercicio, «N de M series registradas» y las que quedan «Sin registrar». */
+/** Por ejercicio, «N de M series registradas», las que quedan «Sin registrar» y la sustitución, si la hay. */
 export function resumenDelRegistro(sesion: SesionConObjetivos, borrador: Pick<BorradorDeEjecucion, 'exercises'> | null, locales: readonly SerieLocal[]): ResumenDelEjercicio[] {
   return sesion.prescriptions.map((p) => {
     const filas = filasDelEjercicio(p, guardadasDe(borrador, p.prescriptionId), locales);
+    const registrado = borrador?.exercises.find((e) => e.prescriptionId === p.prescriptionId);
     return {
       prescriptionId: p.prescriptionId,
       nombre: p.exerciseName,
+      ejecutado: registrado?.substituted ? registrado.performedExerciseName : null,
       registradas: filas.filter((f) => f.estado !== 'sin-registrar').length,
       planificadas: p.sets.length,
       sinRegistrar: filas.filter((f) => f.planificada && f.estado === 'sin-registrar').map((f) => f.setIndex),
@@ -370,6 +376,14 @@ export function problemaParaConfirmar(b: Pick<BorradorDeEjecucion, 'sessionCondi
   const resumenes = b.exercises.filter((e) => e.executionSummary).length + (b.sessionSummary ? 1 : 0);
   if (series.length === 0 && resumenes === 0) return 'Registrá al menos una serie antes de finalizar.';
   if (series.some((s) => s.load === null && s.completedRepetitions === null)) return 'Hay una serie sin carga ni repeticiones.';
+  // Un ejercicio por serie sin ninguna serie (SET_REQUIRED). Desde la sesión enfocada solo lo deja una sustitución hecha
+  // antes de la primera serie (DL-151): se dice cuál, y cómo se resuelve.
+  const vacio = b.exercises.find((e) => e.sets !== null && e.sets.length === 0);
+  if (vacio) {
+    return vacio.substituted
+      ? `Sustituiste «${vacio.prescribedExerciseName}» por «${vacio.performedExerciseName}», pero no registraste ninguna serie de ese ejercicio. Registrá una, o pasá a ese ejercicio y volvé al planificado desde «${COPY_ENTRENAMIENTO.sustituirEjercicio}».`
+      : `«${vacio.performedExerciseName}» no tiene series registradas. Registrá una antes de finalizar.`;
+  }
   return null;
 }
 
