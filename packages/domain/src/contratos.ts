@@ -172,6 +172,18 @@ export const CodigoDeError = {
    * o no está registrado), o la nota que dice corregir no es una nota suya sobre esta persona. `details.issues` dice cuál.
    */
   COORDINATION_REFERENCE_INVALID: 'COORDINATION_REFERENCE_INVALID',
+  // ADM (familia propia de BE; WP-ADMINISTRACION, DL-155). El 09 ya registra MFA_REQUIRED (09v7 §4.3) y RATIONALE_REQUIRED
+  // (09v8 PRO-11); los demás son del acceso administrativo con segundo factor (08 §25).
+  /** La sesión administrativa no tiene el segundo factor vigente: falta, venció por inactividad o falta configurarlo. */
+  MFA_REQUIRED: 'MFA_REQUIRED',
+  /** Una decisión administrativa sin fundamento (09v8 PRO-11). */
+  RATIONALE_REQUIRED: 'RATIONALE_REQUIRED',
+  /** El código del autenticador o de recuperación no vale: incorrecto, vencido o ya usado. `details.attemptsRemaining`. */
+  SECOND_FACTOR_INVALID: 'SECOND_FACTOR_INVALID',
+  /** El código de incorporación no vale: incorrecto, vencido, usado o anulado. */
+  INCORPORATION_CODE_INVALID: 'INCORPORATION_CODE_INVALID',
+  /** La administración no está configurada en este ambiente (falta la clave del segundo factor). */
+  ADMINISTRATION_NOT_AVAILABLE: 'ADMINISTRATION_NOT_AVAILABLE',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

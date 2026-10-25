@@ -43,6 +43,10 @@ export interface Entorno {
     readonly consultaProtegida: Limite;
     readonly invitacion: Limite;
     readonly reanudacion: Limite;
+    /** WP-ADMINISTRACION (DL-155): el primer factor de Administración, 5 / 15 min por red + correo (como el login). */
+    readonly loginAdministrativo: Limite;
+    /** WP-ADMINISTRACION: los códigos del segundo factor, 10 / 15 min por identidad, desde cualquier red. */
+    readonly segundoFactor: Limite;
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
@@ -93,6 +97,13 @@ export interface Entorno {
    *   Configurable para que las pruebas firmen con claves propias y nunca dependan de la red (como WP-08 D-H).
    */
   readonly google: { readonly clientIds: readonly string[]; readonly jwksUrl: string; readonly presupuestoMs: number };
+  /**
+   * WP-ADMINISTRACION (DL-155) · la clave del segundo factor (`BE_CLAVE_DEL_SEGUNDO_FACTOR`, 32 bytes o más en base64url;
+   * la genera Render). De ella se derivan (HKDF) la clave que cifra los secretos TOTP y la que firma las huellas de los
+   * códigos de recuperación. Es un secreto: nunca se imprime. Sin valor, la administración responde «no configurada» (503)
+   * y el resto de BE sigue igual.
+   */
+  readonly claveDelSegundoFactor: Buffer | null;
 }
 
 /** Dónde publica Google las claves con que firma los ID tokens (OpenID Connect, `jwks_uri` de accounts.google.com). */
@@ -121,6 +132,11 @@ export interface ProfesionalDeDemostracion {
   readonly alcance: Alcance;
   readonly tipo: TipoDePerfilProfesional;
   readonly nombreVisible: string;
+  /**
+   * WP-ADMINISTRACION: `VERIFICADO` (por omisión) deja el área verificada y habilitada; `PENDIENTE` la presenta y la deja
+   * pendiente de revisión, para que la resuelva Administración. Ninguno pisa una decisión administrativa (D-7).
+   */
+  readonly estadoInicial: 'VERIFICADO' | 'PENDIENTE';
 }
 
 const COSTO_BCRYPT_MINIMO = 10;
@@ -177,6 +193,8 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     ),
     invitacion: limite(env.RATE_LIMIT_INVITACION_MAX, env.RATE_LIMIT_INVITACION_WINDOW_MS, 10, 15 * 60 * 1000, 'RATE_LIMIT_INVITACION', errores),
     reanudacion: limite(env.RATE_LIMIT_REANUDACION_MAX, env.RATE_LIMIT_REANUDACION_WINDOW_MS, 300, 15 * 60 * 1000, 'RATE_LIMIT_REANUDACION', errores),
+    loginAdministrativo: limite(env.RATE_LIMIT_LOGIN_ADMIN_MAX, env.RATE_LIMIT_LOGIN_ADMIN_WINDOW_MS, 5, 15 * 60 * 1000, 'RATE_LIMIT_LOGIN_ADMIN', errores),
+    segundoFactor: limite(env.RATE_LIMIT_SEGUNDO_FACTOR_MAX, env.RATE_LIMIT_SEGUNDO_FACTOR_WINDOW_MS, 10, 15 * 60 * 1000, 'RATE_LIMIT_SEGUNDO_FACTOR', errores),
   };
 
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);
@@ -233,6 +251,16 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
   const jwksLocal = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/\S*$/.test(jwksUrl);
   if (!/^https:\/\/[a-z0-9.-]+(:\d+)?\/\S*$/i.test(jwksUrl) && !(jwksLocal && appEnv !== 'production')) errores.push('GOOGLE_JWKS_URL debe ser una URL https');
 
+  // WP-ADMINISTRACION: la clave del segundo factor, en base64url, de 32 bytes como mínimo. El mensaje nombra la variable,
+  // nunca el valor.
+  const claveCruda = (env.BE_CLAVE_DEL_SEGUNDO_FACTOR ?? '').trim();
+  let claveDelSegundoFactor: Buffer | null = null;
+  if (claveCruda !== '') {
+    const decodificada = /^[A-Za-z0-9_-]+={0,2}$/.test(claveCruda) ? Buffer.from(claveCruda, 'base64url') : Buffer.alloc(0);
+    if (decodificada.length < 32) errores.push('BE_CLAVE_DEL_SEGUNDO_FACTOR debe ser base64url de 32 bytes o más');
+    else claveDelSegundoFactor = decodificada;
+  }
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -254,11 +282,13 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     avisos: { canal: canal as CanalDeAvisos, expoUrl, expoToken, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS },
     secretoDeTareas,
     google: { clientIds: [...new Set(clientIds)], jwksUrl, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS },
+    claveDelSegundoFactor,
   };
 }
 
 /**
- * `BE_DEMO_PROFESIONALES` = entradas separadas por «;», cada una `identidadId|ALCANCE|TIPO|Nombre visible`.
+ * `BE_DEMO_PROFESIONALES` = entradas separadas por «;», cada una `identidadId|ALCANCE|TIPO|Nombre visible` y, opcional, un
+ * quinto campo `PENDIENTE` (WP-ADMINISTRACION): el área se presenta y queda pendiente de revisión por Administración.
  * Ejemplo: `2f8fa677-663e-43bb-b043-19a1057d8873|NUTRICION|SANITARIO|Lic. Demo Nutrición`. No es un secreto.
  * Por identidad y no por correo: la cuenta se registra primero y después se declara, así que nadie puede anticiparse
  * registrando el correo publicado. La siembra además exige que la cuenta sea sintética (correo @example.invalid).
@@ -272,14 +302,15 @@ function leerDemoProfesionales(valor: string | undefined, appEnv: string | undef
   }
   const lista: ProfesionalDeDemostracion[] = [];
   for (const entrada of valor.split(';').map((e) => e.trim()).filter((e) => e.length > 0)) {
-    const [identidadId, alcance, tipo, nombreVisible] = entrada.split('|').map((p) => p.trim());
+    const [identidadId, alcance, tipo, nombreVisible, estado, ...sobra] = entrada.split('|').map((p) => p.trim());
     const identidadValida = typeof identidadId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identidadId);
     const tipoValido = tipo === TipoDePerfilProfesional.SANITARIO || tipo === TipoDePerfilProfesional.NO_SANITARIO;
-    if (!identidadValida || !esAlcance(alcance) || !tipoValido || !nombreVisible) {
-      errores.push('BE_DEMO_PROFESIONALES tiene una entrada inválida (identidadId|ALCANCE|TIPO|Nombre)');
+    const estadoValido = estado === undefined || estado === 'PENDIENTE';
+    if (!identidadValida || !esAlcance(alcance) || !tipoValido || !nombreVisible || !estadoValido || sobra.length > 0) {
+      errores.push('BE_DEMO_PROFESIONALES tiene una entrada inválida (identidadId|ALCANCE|TIPO|Nombre[|PENDIENTE])');
       return [];
     }
-    lista.push({ identidadId: identidadId.toLowerCase(), alcance, tipo, nombreVisible });
+    lista.push({ identidadId: identidadId.toLowerCase(), alcance, tipo, nombreVisible, estadoInicial: estado === 'PENDIENTE' ? 'PENDIENTE' : 'VERIFICADO' });
   }
   return lista;
 }

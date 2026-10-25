@@ -594,7 +594,10 @@ export class SolicitudesService {
       { profesional_operativo: boolean; asesorado_operativo: boolean; perfil: boolean; verificado: boolean; habilitado: boolean }[]
     >`
       SELECT EXISTS (SELECT 1 FROM "identidad" WHERE "id" = ${profesionalId}::uuid AND "estado_operativo_de_cuenta" = 'OPERATIVA') AS "profesional_operativo",
-             EXISTS (SELECT 1 FROM "identidad" WHERE "id" = ${asesoradoId}::uuid AND "estado_operativo_de_cuenta" = 'OPERATIVA') AS "asesorado_operativo",
+             -- WP-ADMINISTRACION (DL-155): una identidad administrativa no es parte de un vínculo (identidad separada): se
+             -- la trata como una contraparte que no opera, con el mismo rechazo, sin decir por qué.
+             EXISTS (SELECT 1 FROM "identidad" WHERE "id" = ${asesoradoId}::uuid AND "estado_operativo_de_cuenta" = 'OPERATIVA')
+               AND NOT EXISTS (SELECT 1 FROM "rol_administrativo" WHERE "identidad_id" = ${asesoradoId}::uuid AND "estado" = 'VIGENTE') AS "asesorado_operativo",
              EXISTS (SELECT 1 FROM "perfil_profesional" WHERE "identidad_id" = ${profesionalId}::uuid) AS "perfil",
              EXISTS (SELECT 1 FROM "verificacion_profesional" WHERE "identidad_id" = ${profesionalId}::uuid
                         AND "alcance" = ${alcance}::"Alcance" AND "estado" = 'VERIFICADO') AS "verificado",

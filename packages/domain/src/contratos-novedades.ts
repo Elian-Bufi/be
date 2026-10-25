@@ -52,6 +52,17 @@ export const TIPOS_DE_NOVEDAD = [
    * texto de la nota: se lee en la línea de tiempo de la ficha, que vuelve a autorizar.
    */
   'COORDINATION_NOTE_RECEIVED',
+  /**
+   * WP-ADMINISTRACION (D-6; DL-155): al profesional, cada decisión de Administración sobre un área suya, con el texto que le
+   * comunicó y lo que significa; nunca el fundamento interno. La emite BE (`source: null`).
+   */
+  'ADMINISTRATIVE_DECISION',
+  /**
+   * WP-ADMINISTRACION (D-6): a cada persona con un vínculo vigente o en pausa en esa área, cuando el profesional deja de poder
+   * operarla (suspensión o habilitación retirada) o vuelve a poder (rehabilitación o concesión). Solo el efecto, sin motivos.
+   */
+  'PROFESSIONAL_ACCESS_SUSPENDED',
+  'PROFESSIONAL_ACCESS_RESTORED',
 ] as const;
 export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
 

@@ -159,10 +159,13 @@ export class CierreService {
         expiraEn: true,
         momentoDeOcurrencia: true,
         versionDeControl: true,
+        clase: true,
         identidad: { select: { estadoOperativoDeCuenta: true, controlDeSesion: { select: { version: true } } } },
       },
     });
     if (!sesion || sesion.identidadId !== reclamos.sub) throw errores.sesionInvalida();
+    // WP-ADMINISTRACION (DL-155): como en SesionGuard, una sesión administrativa no sirve fuera de la consola.
+    if (sesion.clase !== 'PERSONAL') throw errores.sesionInvalida();
 
     if (sesion.estado === 'REVOCADA' && sesion.motivoDeRevocacion === 'CIERRE_DE_CUENTA') {
       const previo = await this.prisma.registroDeIdempotencia.findUnique({

@@ -121,3 +121,7 @@ export * from './copy-acceso-google';
 export * from './pasos-de-acceso-google';
 export * from './contratos-notas-de-coordinacion';
 export * from './copy-notas-de-coordinacion';
+export * from './administracion';
+export * from './contratos-administracion';
+export * from './copy-administracion';
+export * from './cliente-administrativo';

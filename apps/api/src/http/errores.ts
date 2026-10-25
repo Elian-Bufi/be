@@ -173,6 +173,28 @@ export const errores = {
   /** CRD-D5 y CRD-D7: algo citado no se puede citar, o la nota que dice corregir no es una suya sobre esta persona. */
   referenciaDeNotaInvalida: (issues: ValidationIssue[]) =>
     new ErrorDeApi(422, CodigoDeError.COORDINATION_REFERENCE_INVALID, 'Algo de lo que cita la nota no se puede citar.', { issues }),
+  // ─── WP-ADMINISTRACION (DL-155) ───────────────────────────────────────────────────────────────────────────────────
+  /** La sesión administrativa no tiene el segundo factor vigente (09v7 §4.3): la consola pide el código. */
+  segundoFactorRequerido: (motivo: string) =>
+    new ErrorDeApi(403, CodigoDeError.MFA_REQUIRED, 'Para continuar, confirmá tu acceso con el código del autenticador.', undefined, motivo),
+  /** Una sesión que no es administrativa en una operación de Administración: la prohibición se puede decir. */
+  noEsAdministrativa: () => new ErrorDeApi(403, CodigoDeError.ACTION_FORBIDDEN, 'Esta acción es de Administración de BE.', undefined, 'SESION_NO_ADMINISTRATIVA'),
+  /** Un código que no vale: incorrecto, ya usado o fuera de tiempo. Cuántos intentos le quedan a la sesión. */
+  codigoDeSegundoFactorInvalido: (restantes: number, motivo: string) =>
+    new ErrorDeApi(422, CodigoDeError.SECOND_FACTOR_INVALID, 'El código no es válido o ya se usó.', { attemptsRemaining: restantes }, motivo),
+  /** El código de incorporación no vale (incorrecto, vencido, usado o anulado): el mismo rechazo para todos. */
+  codigoDeIncorporacionInvalido: (restantes: number, motivo: string) =>
+    new ErrorDeApi(422, CodigoDeError.INCORPORATION_CODE_INVALID, 'El código de incorporación no es válido, venció o ya se usó.', { attemptsRemaining: restantes }, motivo),
+  /** Falta `BE_CLAVE_DEL_SEGUNDO_FACTOR`: sin ella no se protege ningún secreto, y la administración no abre. */
+  administracionNoDisponible: () => new ErrorDeApi(503, CodigoDeError.ADMINISTRATION_NOT_AVAILABLE, 'La administración no está configurada en este ambiente.'),
+  /** 09v8 PRO-11: una decisión administrativa sin fundamento. */
+  fundamentoRequerido: () => new ErrorDeApi(422, CodigoDeError.RATIONALE_REQUIRED, 'Falta el fundamento de la decisión.'),
+  /** La decisión exige el texto para el profesional (observación, rechazo, suspensión, retiro). */
+  mensajeAlProfesionalRequerido: () =>
+    new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Falta el texto para el profesional.', { issues: [{ code: 'MESSAGE_TO_PROFESSIONAL_REQUIRED', path: 'messageToProfessional' }] }),
+  /** Un paso del acceso administrativo que no corresponde al estado de la sesión (configurar con uno activo, por ejemplo). */
+  pasoDeAccesoNoPermitido: (motivo: string) =>
+    new ErrorDeApi(422, CodigoDeError.INVALID_STATE_TRANSITION, 'Ese paso no corresponde al estado de tu acceso.', undefined, motivo),
   /** 09v7:185 — falla no clasificada (DEUDA_LEGAJO DL-005). */
   interno: () => new ErrorDeApi(500, CodigoDeError.INTERNAL_ERROR, 'Ocurrió un error inesperado.'),
 };
