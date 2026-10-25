@@ -666,7 +666,9 @@ async function completitud({ p, d, salida }) {
  * DL-154 (encargo del 2026-10-23): una revisión registrada dice en qué se apoyó. En Nutrición · Revisiones, la revisión
  * dice su período, quién la registró y la evidencia que se marcó (dos comidas y el plan; no el desayuno de ayer, que está
  * en el período). «Ver la evidencia» la lista con el almuerzo deshecho después de la revisión, dicho. «Abrir» muestra la
- * comida en el panel; Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. Al recargar, sigue ahí.
+ * comida en el panel; Escape lo cierra, el foco vuelve a «Abrir» y la lista sigue abierta. El almuerzo deshecho abre con
+ * el aviso del estado de hoy; la versión del plan, reemplazada después, abre diciendo que es la misma que se revisó y que
+ * ya no es la vigente (D-2). Al recargar, sigue ahí.
  */
 async function evidencia({ p, d, salida }) {
   await entrar(p, d.pro.correo);
@@ -687,6 +689,7 @@ async function evidencia({ p, d, salida }) {
   assert.ok(lista.includes(`${d.comidas.desayuno} · opción del plan`), 'el desayuno de anteayer');
   assert.ok(lista.includes(`${d.comidas.almuerzo} · opción del plan`), 'el almuerzo de anteayer');
   assert.ok(lista.includes('Plan v1'), 'la versión del plan');
+  assert.ok(lista.includes('Después se activó otra versión del plan'), 'y que después se activó otra');
   // Los elementos de la lista, no el texto del bloque: cada «Abrir» repite el nombre para el lector de pantalla.
   const elementos = await p.$$eval(`${item} .evidencia-registrada__que`, (es) => es.map((e) => e.innerText));
   assert.equal(elementos.filter((t) => t.includes('opción del plan')).length, 2, 'solo las dos comidas marcadas: el desayuno de ayer está en el período y no se marcó');
@@ -717,6 +720,20 @@ async function evidencia({ p, d, salida }) {
   assert.match(aviso, /Lo que ves es como está hoy, no como estaba cuando se revisó/);
   assert.match(aviso, /Se deshizo después de esta revisión/, 'con qué cambió');
   await captura(p, salida, 'evidencia-panel-con-cambio-1440');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
+
+  // D-2: después de la revisión se activó otra versión del plan. La revisada no cambió (se abre desde su instantánea):
+  // el panel dice que es la misma y que ya no es la vigente, y no que está «como hoy».
+  const abrirPlan = await p.waitForFunction((s) => [...document.querySelectorAll(`${s} .evidencia-registrada__item`)].find((li) => li.innerText.includes('Plan v1'))?.querySelector('button') ?? null, { timeout: ESPERA }, item);
+  await abrirPlan.asElement().click();
+  await p.waitForFunction(() => document.querySelector('dialog[open] .aviso')?.innerText.includes('Es la misma versión que se revisó'), { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [aria-busy="true"]'), { timeout: ESPERA, polling: 100 });
+  const avisoDelPlan = await p.$eval('dialog[open] .aviso', (e) => e.innerText);
+  assert.match(avisoDelPlan, /Es la misma versión que se revisó; ya no es la vigente/);
+  assert.match(avisoDelPlan, /Después se activó otra versión del plan/, 'con qué cambió y cuándo');
+  assert.ok(!(await p.$eval('dialog[open]', (d) => d.innerText.includes('Lo que ves es como está hoy'))), 'no dice que la versión cambió');
+  await captura(p, salida, 'evidencia-panel-version-reemplazada-1440');
   await p.keyboard.press('Escape');
   await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
 

@@ -13,6 +13,7 @@
  *   foco vuelve al botón que lo abrió. La lista sigue abierta donde estaba: nada navegó. El origen vuelve a pedir permiso.
  */
 import {
+  avisoAlAbrir,
   cambioEnPalabras,
   COPY_EVIDENCIA_REGISTRADA,
   cuandoDeLaEvidencia,
@@ -77,6 +78,7 @@ export function EvidenciaRegistrada({
   const sinAcceso = lectura !== null && !lectura.ok && lectura.tipo === 'API' && (lectura.codigo === 'RESOURCE_NOT_FOUND' || lectura.status === 403);
   // Si el origen ya no se puede leer con el permiso de hoy, el panel lo dice y la evidencia se vuelve a pedir.
   const contenido = abierto?.source && abrible(abierto.source, abierto) ? contenidoDelOrigen(abierto.source, abierto, () => void cargar()) : null;
+  const aviso = abierto ? avisoAlAbrir(abierto) : null;
 
   return (
     <div className="evidencia-registrada" data-evidencia-de={revision.reviewId}>
@@ -108,10 +110,11 @@ export function EvidenciaRegistrada({
         ) : null}
       </div>
       <Panel abierto={abierto !== null && contenido !== null} titulo={abierto ? nombreDeLaEvidencia(abierto) : ''} onCerrar={() => setAbierto(null)}>
-        {/* DL-154, D-2: si cambió después de la revisión, se dice antes del contenido, con qué cambió y cuándo. */}
-        {abierto && abierto.changesAfterReview.length > 0 ? (
+        {/* DL-154, D-2: si cambió después de la revisión, se dice antes del contenido, con qué cambió y cuándo. Una versión
+            reemplazada no cambió: el aviso dice que es la misma y que ya no es la vigente, no que está «como hoy». */}
+        {abierto && aviso ? (
           <div className="aviso" role="note">
-            <p>{COPY_EVIDENCIA_REGISTRADA.loDeHoy}</p>
+            <p>{aviso}</p>
             {abierto.changesAfterReview.map((c) => (
               <p key={`${c.kind}|${c.at}`}>{cambioEnPalabras(c, abierto, FORMATO)}</p>
             ))}
