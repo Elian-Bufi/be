@@ -11,6 +11,8 @@
  *   imagen y su técnica, la tabla compacta con lo planificado en gris, la banda del plan, el descanso y la serie
  *   cronometrada. Sin barra inferior. Lo que se registra se guarda primero en el teléfono, por cuenta
  *   (`entrenamiento-en-curso.ts`), y viaja después: API-TRN-17 para las series y API-TIE-01 para los tiempos.
+ *   «Sustituir ejercicio» registra otro ejercicio en lugar del planificado, como en la 0.13.2 (DL-151; las reglas, en
+ *   `sustitucion-de-ejercicio.ts`): necesita conexión y no toca los tiempos.
  * - **Finalizar** muestra antes un resumen, manda el fin de la sesión (SESSION_FINISHED) y confirma el borrador
  *   (API-TRN-18). Confirmar es definitivo, y después se corrige sin borrar (B10-06:820-898).
  * - Un resultado incierto ofrece reintentar con la misma Idempotency-Key: no duplica.
@@ -86,6 +88,7 @@ import {
   type SerieLocal,
   type Unidad,
 } from '../series-de-la-sesion';
+import { cambiosParaSustituir, ejercicioRealizadoDe, sePuedeSustituir, sustitucionDe, textoDeLaConfirmacion, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado } from '../sustitucion-de-ejercicio';
 import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { ContenidoDelHistorial } from './historial';
 import { PlanPorSerie } from './plan-por-serie';
@@ -103,6 +106,7 @@ import {
   ExplicacionDeLosTiempos,
   RutinaDeLaSesion,
   SeriesDelResumen,
+  SustituirEjercicio,
   TablaDeSeries,
   TecnicaDelEjercicio,
   textoDeLaCondicion,
@@ -129,16 +133,17 @@ export function textoDePrescripcion(p: Prescripcion): string {
 
 /**
  * Antes de una acción sensible se pregunta (B10-10:337: no se ejecuta de un toque, y menos al lado de una frecuente). El
- * diálogo del sistema es accesible y dice qué pasa.
+ * diálogo del sistema es accesible y dice qué pasa. Lo que descarta algo es `destructive`; lo que cambia sin borrar (una
+ * sustitución con series ya registradas), `default`.
  */
-function preguntar(titulo: string, detalle: string, accion: string): Promise<boolean> {
+function preguntar(titulo: string, detalle: string, accion: string, estilo: 'destructive' | 'default' = 'destructive'): Promise<boolean> {
   return new Promise((resolver) =>
     Alert.alert(
       titulo,
       detalle,
       [
         { text: 'Cancelar', style: 'cancel', onPress: () => resolver(false) },
-        { text: accion, style: 'destructive', onPress: () => resolver(true) },
+        { text: accion, style: estilo, onPress: () => resolver(true) },
       ],
       { cancelable: true, onDismiss: () => resolver(false) },
     ),
@@ -848,7 +853,7 @@ function TarjetaDeOcurrencia({
 
 // ─── La sesión enfocada ─────────────────────────────────────────────────────────────────────────
 
-type Dialogo = null | { readonly tipo: 'rutina' } | { readonly tipo: 'tecnica'; readonly prescriptionId: string };
+type Dialogo = null | { readonly tipo: 'rutina' } | { readonly tipo: 'tecnica' | 'sustituir'; readonly prescriptionId: string };
 
 /** Lo que se declara para no perderlo al salir: la serie a medio escribir de un ejercicio. */
 const loEscritoEn = (p: PrescripcionConObjetivos | undefined): string | null => (p ? `lo que cargaste en «${p.exerciseName}»` : null);
@@ -898,6 +903,8 @@ export function PantallaDeSesion({
   const [motivo, setMotivo] = useState('');
   const [hora, setHora] = useState('');
   const [aviso, setAviso] = useState<{ tipo: 'error' | 'info' | 'exito'; texto: string } | null>(null);
+  /** Por qué no se pudo guardar una sustitución: se dice en su diálogo, no arriba de la pantalla, que queda detrás. */
+  const [falloDeSustitucion, setFalloDeSustitucion] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [, setPulso] = useState(0);
   // Un doble toque es una sola operación: el segundo toque llega antes de que la pantalla se vuelva a dibujar.
@@ -1026,9 +1033,8 @@ export function PantallaDeSesion({
       const lectura = leerFila(escrita, filaActiva.setIndex, unidad);
       if (!lectura.ok) return setErrores(lectura.errores);
       setErrores({});
-      // Se registra con el ejercicio que figura en el borrador (una sustitución hecha antes se respeta).
-      const realizado = borrador?.exercises.find((e) => e.prescriptionId === p.prescriptionId)?.performedExerciseVersionId ?? p.exerciseVersionId;
-      const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: realizado, serie: lectura.serie });
+      // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
+      const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie });
       if (resultado !== 'registrada') return;
       setEscritas((actuales) => {
         const { [claveDeFila]: _registrada, ...resto } = actuales;
@@ -1114,6 +1120,48 @@ export function PantallaDeSesion({
     }
     entrenamientoLocal.fijarBorrador(draftId, r.datos.data);
     return true;
+  }
+
+  /**
+   * «Confirmar sustitución» (DL-151): el ejercicio realizado de la prescripción, con API-TRN-17. Como
+   * `guardarEnElBorrador`, primero manda lo pendiente y guarda con la versión vigente; pero los cambios se arman sobre ese
+   * borrador vigente (`cambiosParaSustituir`), y el fallo se dice en el diálogo. Con series ya registradas, antes
+   * pregunta: pasan a contar como el elegido. No arma eventos ni cambia la fila enfocada: los tiempos siguen como estaban.
+   */
+  async function sustituir(prescripcion: PrescripcionConObjetivos, elegido: EjercicioNombrado) {
+    if (enCurso.current) return;
+    enCurso.current = true;
+    setFalloDeSustitucion(null);
+    try {
+      const enElTelefono = entrenamientoLocal.sesion(draftId);
+      const antes = sustitucionDe(prescripcion, enElTelefono?.borrador ?? null, enElTelefono?.series ?? []);
+      const confirmacion = textoDeLaConfirmacion(antes, elegido);
+      if (confirmacion && !(await preguntar(COPY_ENTRENAMIENTO.sustituirEjercicio, confirmacion, COPY_ENTRENAMIENTO.confirmarSustitucion, 'default'))) return;
+      setOcupado(true);
+      const previo = await entrenamientoLocal.sincronizarYEsperar(draftId);
+      if (previo && sesionPerdida(previo)) return;
+      const vigente = entrenamientoLocal.sesion(draftId)?.borrador ?? null;
+      if (!vigente) return setFalloDeSustitucion(COPY.resultadoIncierto);
+      if (!sePuedeSustituir(vigente)) return setFalloDeSustitucion(TEXTOS_DE_LA_SUSTITUCION.cambioLaSesion);
+      const cambios = cambiosParaSustituir(vigente, prescripcion, elegido.versionId);
+      if (!cambios) return setDialogo(null);
+      const r = await api.guardarBorradorDeEjecucion(token, draftId, { expectedVersion: vigente.version, changes: cambios });
+      if (sesionPerdida(r)) return;
+      if (!r.ok) {
+        if (accesoRetirado(r)) return;
+        const f = falloDe(r, { EXERCISE_REFERENCE_INVALID: { mensaje: TEXTOS_DE_LA_SUSTITUCION.noSePuedeRegistrar, tipo: 'otro' } });
+        // Otro dispositivo cambió el borrador, o no se sabe si llegó: se relee, y la tarjeta dice lo que quedó guardado.
+        if (f.tipo === 'actualizar' || f.tipo === 'incierto') void entrenamientoLocal.actualizarBorrador(draftId);
+        // Sin respuesta (R-5): no se sabe si llegó; se dice eso, con lo que hacer, y que lo registrado no se pierde.
+        return setFalloDeSustitucion(f.tipo === 'incierto' ? TEXTOS_DE_LA_SUSTITUCION.sinRespuestaAlGuardar : f.mensaje);
+      }
+      entrenamientoLocal.fijarBorrador(draftId, r.datos.data);
+      setDialogo(null);
+      AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SUSTITUCION.anuncio(elegido.nombre, elegido.versionId === antes.planificado.versionId));
+    } finally {
+      enCurso.current = false;
+      setOcupado(false);
+    }
   }
 
   async function cambiarAPorSerie() {
@@ -1368,6 +1416,9 @@ export function PantallaDeSesion({
   const hayRegistro = local.series.length > 0 || (borrador?.exercises.some((x) => (x.sets ?? []).length > 0) ?? false);
   const mostrarEnvio = hayRegistro || envio !== 'sincronizado';
   const elegidaEnTecnica = dialogo?.tipo === 'tecnica' ? (s.prescriptions.find((x) => x.prescriptionId === dialogo.prescriptionId) ?? null) : null;
+  // La sustitución del ejercicio activo (DL-151): lo planificado y lo ejecutado según el borrador, y si se ofrece.
+  const sustitucion = sustitucionDe(p, borrador, local.series);
+  const aSustituir = dialogo?.tipo === 'sustituir' ? (s.prescriptions.find((x) => x.prescriptionId === dialogo.prescriptionId) ?? null) : null;
 
   return (
     <View>
@@ -1395,7 +1446,24 @@ export function PantallaDeSesion({
           <Boton texto={e.reanudarSesion} onPress={() => void hacer({ tipo: 'reanudar' }, 'Sesión reanudada')} />
         </Aviso>
       ) : null}
-      <EjercicioActivo token={token} sesionPerdida={sesionPerdida} prescripcion={p} posicion={indice + 1} total={s.prescriptions.length} bases={bases} onVerTecnica={() => setDialogo({ tipo: 'tecnica', prescriptionId: p.prescriptionId })} />
+      <EjercicioActivo
+        token={token}
+        sesionPerdida={sesionPerdida}
+        prescripcion={p}
+        posicion={indice + 1}
+        total={s.prescriptions.length}
+        bases={bases}
+        ejecutado={sustitucion.ejecutado?.nombre ?? null}
+        onVerTecnica={() => setDialogo({ tipo: 'tecnica', prescriptionId: p.prescriptionId })}
+        onSustituir={
+          sePuedeSustituir(borrador)
+            ? () => {
+                setFalloDeSustitucion(null);
+                setDialogo({ tipo: 'sustituir', prescriptionId: p.prescriptionId });
+              }
+            : undefined
+        }
+      />
       {tituloDeLaSerie ? (
         <Text style={estilos.tituloDeLaSerie} accessibilityRole="header">
           {tituloDeLaSerie}
@@ -1457,6 +1525,18 @@ export function PantallaDeSesion({
         onCerrar={() => setDialogo(null)}
       />
       <TecnicaDelEjercicio visible={elegidaEnTecnica !== null} prescripcion={elegidaEnTecnica} token={token} sesionPerdida={sesionPerdida} onCerrar={() => setDialogo(null)} />
+      <SustituirEjercicio
+        visible={aSustituir !== null}
+        sustitucion={aSustituir ? sustitucionDe(aSustituir, borrador, local.series) : null}
+        buscar={(texto) => api.buscarEjercicios(token, texto)}
+        sesionPerdida={sesionPerdida}
+        ocupado={ocupado}
+        fallo={falloDeSustitucion}
+        onElegir={(elegido) => {
+          if (aSustituir) void sustituir(aSustituir, elegido);
+        }}
+        onCerrar={() => setDialogo(null)}
+      />
     </View>
   );
 }

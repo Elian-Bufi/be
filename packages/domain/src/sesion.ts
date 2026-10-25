@@ -27,6 +27,19 @@ export const MotivoDeRevocacionDeSesion = {
   REVOCACION_POR_TITULAR: 'REVOCACION_POR_TITULAR',
   CIERRE_DE_CUENTA: 'CIERRE_DE_CUENTA',
   SUSPENSION_DE_CUENTA: 'SUSPENSION_DE_CUENTA',
+  /** WP-ADMINISTRACION (DL-155): cinco códigos fallidos del segundo factor en una sesión administrativa. */
+  SEGUNDO_FACTOR_FALLIDO: 'SEGUNDO_FACTOR_FALLIDO',
+  /** WP-ADMINISTRACION: al incorporarse como administradora, una identidad pierde sus sesiones comunes. */
+  INCORPORACION_ADMINISTRATIVA: 'INCORPORACION_ADMINISTRATIVA',
+  /** WP-ADMINISTRACION: el operador restableció el segundo factor. */
+  SEGUNDO_FACTOR_RESTABLECIDO: 'SEGUNDO_FACTOR_RESTABLECIDO',
+  /** WP-ADMINISTRACION: el operador retiró el rol administrativo. */
+  ROL_ADMINISTRATIVO_RETIRADO: 'ROL_ADMINISTRATIVO_RETIRADO',
+  /**
+   * WP-ADMINISTRACION (revisión de seguridad del 2026-10-25): el administrador reemplazó su autenticador o generó códigos
+   * de recuperación nuevos; sus otras sesiones administrativas dejan de valer.
+   */
+  CREDENCIALES_ADMINISTRATIVAS_RENOVADAS: 'CREDENCIALES_ADMINISTRATIVAS_RENOVADAS',
 } as const;
 export type MotivoDeRevocacionDeSesion = (typeof MotivoDeRevocacionDeSesion)[keyof typeof MotivoDeRevocacionDeSesion];
 

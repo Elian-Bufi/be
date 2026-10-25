@@ -29,8 +29,23 @@
  * clic: «Más acciones» (vistas guardadas, descarga, capas, intervalo con fechas, comparar dos períodos) y el pie de los
  * gráficos (tabla de datos, resumen en texto, hitos, etapas y «Cómo se calcula»), que abre una cosa a la vez debajo.
  * No se quitó ninguna función ni cambió ningún parámetro de la URL.
+ *
+ * WP-NUTRICION-COMPARACION (DL-158): en Nutrición, cada panel lleva tres capas con su nombre y su forma: lo registrado
+ * (línea continua con puntos), el objetivo del profesional (línea discontinua, también para los macros en gramos) y lo
+ * indicado en el plan (rombos huecos, por día, solo cuando el plan no deja elegir). La lectura, la tabla, el resumen en
+ * texto y la descarga dicen lo mismo que el dibujo; sin restas, porcentajes ni juicios.
  */
 import {
+  CAPAS_DE_LA_COMPARACION,
+  escalonesDelRango,
+  indicadoDelDiaEnCelda,
+  indicadoDelDiaEnPalabras,
+  indicadoDelPeriodoEnTexto,
+  objetivoEnCelda,
+  objetivoEnPalabras,
+  sinIndicadoParaDibujar,
+  type IndicadoDelDiaApi,
+  type MetricaNutricional,
   cambioRelativo,
   claseEnPalabras,
   compararPeriodos,
@@ -76,7 +91,7 @@ import { diaCivil, rangoCivil } from '../../../../lib/formato';
 import { useDetalleAlCostado } from './al-costado';
 import { razonDeFalla, useLectura, useSeguimiento } from './contexto';
 import { codificarReferencia, hoyEn, leerAnalisis, leerPregunta, parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, type EstadoDeAnalisis, type GranoElegido, type Modo } from './estado';
-import { diaAnterior, diasSinRegistros, mediodia, xDe } from './geometria';
+import { diasSinRegistros, mediodia, xDe } from './geometria';
 import { ICONO_DE_CLASE, ICONO_DE_FALLA } from './iconos-de-metrica';
 import type { BandaDePlan, SerieParaDibujar } from './lienzo';
 import { Marca } from './marca';
@@ -281,8 +296,10 @@ export function Analizar() {
       serie: s.estado.serie,
       valor: (p) => (relativos ? (relativos.get(p.pointId) ?? null) : p.value),
       decimales: s.definicion.decimales,
-      // Lo planificado que llega en la misma unidad: el objetivo de calorías, un escalón por versión.
-      plan: s.estado.objetivo.length > 0 ? { nombre: 'Objetivo', escalones: s.estado.objetivo } : null,
+      // DL-158: el objetivo del profesional en la misma unidad (las calorías o un macro en gramos), un escalón por
+      // versión, y lo indicado en el plan, un rombo por día que lo tiene. Lo indicado es por día: por semana no va.
+      plan: s.estado.objetivo.length > 0 ? { nombre: CAPAS_DE_LA_COMPARACION.objetivo, escalones: s.estado.objetivo } : null,
+      indicado: s.estado.indicado && s.estado.serie.grain === 'DAY' ? indicadoParaDibujar(s.estado.indicado.dias, desde, hasta) : null,
       sinRegistros: s.estado.serie.grain === 'DAY' ? diasSinRegistros(s.estado.serie.gaps, hoy) : [],
       bandas: deSuPanel,
       rotularBandas,
@@ -313,9 +330,9 @@ export function Analizar() {
   );
   const hitos = estado.eventos && hitosLeidos.tipo === 'listo' ? hitosLeidos.datos.data.entries.map((e) => ({ fecha: e.occurredDate, texto: e.title })) : [];
 
-  // Lo que el gráfico dibuja se puede leer sin verlo: el objetivo de calorías va también en la descripción, en el resumen
-  // en texto y en la tabla de datos.
-  const descripcion = listas.map((s) => [resumenTextual(s.estado.serie, s.definicion, desde, hasta), objetivoEnTexto(s.estado.objetivo, desde, hasta)].filter(Boolean).join(' ')).join(' ');
+  // Lo que el gráfico dibuja se puede leer sin verlo: el objetivo y lo indicado van también en la descripción, en el
+  // resumen en texto y en la tabla de datos.
+  const descripcion = listas.map((s) => [resumenTextual(s.estado.serie, s.definicion, desde, hasta), comparacionEnTexto(s, desde, hasta)].filter(Boolean).join(' ')).join(' ');
   const marcas = estado.metricas.map((_, i) => <Marca key={i} indice={i} />);
   // Con la pregunta de etapas, lo principal es la tabla A/B: la comparación a mano pasa a ser una opción secundaria
   // (plegada, debajo de la tabla), el resumen en texto se pliega como la tabla de datos y no se repiten las acciones de
@@ -347,7 +364,7 @@ export function Analizar() {
             ))}
           </ul>
         ) : null}
-        {objetivoEnTexto(s.estado.objetivo, desde, hasta) ? <p>{objetivoEnTexto(s.estado.objetivo, desde, hasta)}</p> : null}
+        {comparacionEnTexto(s, desde, hasta) ? <p>{comparacionEnTexto(s, desde, hasta)}</p> : null}
       </div>
     );
   });
@@ -424,7 +441,7 @@ export function Analizar() {
           return visibles.length > 1 ? visibles.map((c, i) => ({ ...c, numero: i + 1 })) : [];
         })
       : [];
-  const fechasDeLaTabla = new Set(listas.flatMap((s) => s.estado.serie.points.filter((p) => p.date >= desde && p.date <= hasta).map((p) => p.date))).size;
+  const fechasDeLaTabla = fechasDeLaTablaDe(listas, desde, hasta).length;
   // «Más acciones» va debajo de su botón. Las capas y el intervalo son de los gráficos grandes: con la comparación de
   // etapas y los grandes cerrados no se ofrecen (no se vería qué cambian); al abrirlos, están.
   const panelDeMasAcciones = (
@@ -1223,7 +1240,6 @@ function PanelDeLectura({
                     const corte = valor ? valor.lastIndexOf(' ') : -1;
                     const clase = p.detail.find((d) => d.label === 'Clase de dato');
                     const otros = p.detail.filter((d) => d !== clase && !repetidos.has(d.label));
-                    const objetivos = valor !== null ? objetivosVigentes(s.estado.objetivo, p.date, p.dateEnd ?? p.date) : [];
                     return (
                       <div key={p.pointId} className="dato-de-lectura__punto">
                         {relativo ? (
@@ -1256,8 +1272,6 @@ function PanelDeLectura({
                             </p>
                           </>
                         )}
-                        {/* Lo planificado en la misma unidad: el objetivo que regía ese día (o esa semana). Sin restas ni porcentajes. */}
-                        {objetivos.length > 0 ? <p className="dato-de-lectura__nota">Objetivo: {objetivos.map((o) => numero(o)).join(' y ')} kcal por día</p> : null}
                         {otros.length > 0 ? <p className="dato-de-lectura__nota">{otros.map((d) => `${d.label}: ${d.value}`).join(' · ')}</p> : null}
                         {p.missing.length > 0 ? <p className="dato-de-lectura__nota">Falta: {p.missing.map((m) => `${numero(m.count)} ${textoDeFaltante(m.reason)}`).join(', ')}</p> : null}
                         <p className="dato-de-lectura__pie">
@@ -1281,18 +1295,21 @@ function PanelDeLectura({
                   })
                 ) : (
                   <p className="dato-de-lectura__nota">
-                    Sin dato en esta fecha.
+                    {s.definicion.area === 'NUTRICION' ? 'Sin registros en esta fecha.' : 'Sin dato en esta fecha.'}
                     {l.masCercano
                       ? ` El más cercano: ${diaCivil(l.masCercano.punto.date)}, a ${numero(l.masCercano.distanciaDias)} ${l.masCercano.distanciaDias === 1 ? 'día' : 'días'}: ${valorParaMostrar(l.masCercano.punto.value as number, s.definicion, s.estado.serie.unit)}. No es simultáneo.`
                       : ''}
                   </p>
                 )}
+                {/* DL-158: el objetivo y lo indicado de esa fecha (o de esa semana), al lado de lo registrado. Sin restas. */}
+                <CapasDeLaLectura s={s} indice={indice} fecha={fecha} semana={l.tipo === 'valores' ? (l.puntos.find((x) => x.dateEnd) ?? null) : null} />
               </div>
             );
           })
         ) : (
           <p className="dato-de-lectura__nota">Cuando un gráfico tenga datos, elegí una fecha y sus valores se leen acá.</p>
         )}
+        {fecha && series.some((s) => s.estado.indicado) ? <p className="dato-de-lectura__nota capas-de-la-lectura__regla">{CAPAS_DE_LA_COMPARACION.regla}</p> : null}
       </div>
     </section>
   );
@@ -1319,11 +1336,23 @@ function ComoSeCalcula({ series, nombres, todas }: { series: readonly Lista[]; n
               usan {s.definicion.area === 'NUTRICION' ? 'los días' : 'las sesiones'} del rango exacto, no las semanas: agrupar el dibujo no cambia lo que significan.
             </p>
           ) : null}
-          {s.estado.objetivo.length > 0 ? (
-            <p>
-              La línea discontinua es el objetivo de calorías por día (el requerimiento energético estimado): un escalón por cada versión del objetivo. Lo gris son los días sin registros: la línea se corta, no
-              es un cero.
-            </p>
+          {s.estado.escalones.length > 0 || s.estado.indicado ? (
+            <>
+              {s.estado.escalones.length > 0 ? (
+                <p>
+                  La línea discontinua es el objetivo del profesional por día{s.definicion.parametro === 'ENERGY' ? ' (el requerimiento energético estimado)' : ''}: un escalón por cada versión del objetivo. Un
+                  objetivo escrito como proporción de las calorías se dice en la lectura y en la tabla, y no se dibuja ni se convierte a gramos.
+                </p>
+              ) : null}
+              {s.estado.indicado ? (
+                <p>
+                  Los rombos huecos son lo indicado en el plan para cada día, con las porciones de la versión que regía. {CAPAS_DE_LA_COMPARACION.regla} {CAPAS_DE_LA_COMPARACION.porSemana}
+                </p>
+              ) : null}
+              <p>
+                {CAPAS_DE_LA_COMPARACION.queEs} {CAPAS_DE_LA_COMPARACION.noEsCausa} Lo gris son los días sin registros: la línea se corta, no es un cero.
+              </p>
+            </>
           ) : null}
           <p className="nota">{s.definicion.ausencias}</p>
           <ul>
@@ -1341,12 +1370,14 @@ function ComoSeCalcula({ series, nombres, todas }: { series: readonly Lista[]; n
 }
 
 function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readonly Lista[]; nombres: readonly string[]; todas: readonly SerieDelAnalisis[]; desde: string; hasta: string }) {
-  const fechas = [...new Set(series.flatMap((s) => s.estado.serie.points.filter((p) => p.date >= desde && p.date <= hasta).map((p) => p.date)))].sort().reverse();
+  const fechas = fechasDeLaTablaDe(series, desde, hasta);
+  const porSemana = series.some((s) => s.estado.indicado && s.estado.serie.grain !== 'DAY');
   return (
     <section className="tabla-de-datos" aria-label="Tabla de datos">
       <h3>
         Tabla de datos ({numero(fechas.length)} {fechas.length === 1 ? 'fecha' : 'fechas'})
       </h3>
+      {porSemana ? <p className="nota">{CAPAS_DE_LA_COMPARACION.porSemana}</p> : null}
       <div className="desplazable-x">
         <table className="tabla tabla--numeros">
           <caption className="visualmente-oculto">Valores por fecha de las métricas elegidas</caption>
@@ -1357,11 +1388,18 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
                 <th key={s.clave} scope="col">
                   {nombres[todas.indexOf(s)]} ({s.estado.serie.unit})
                 </th>,
-                // Lo planificado que el gráfico dibuja junto a esta métrica: su columna, al lado.
-                ...(s.estado.objetivo.length > 0
+                // El objetivo y lo indicado que el gráfico dibuja junto a esta métrica: sus columnas, al lado.
+                ...(s.estado.escalones.length > 0
                   ? [
                       <th key={`${s.clave}-objetivo`} scope="col">
-                        Objetivo de calorías (kcal por día)
+                        {CAPAS_DE_LA_COMPARACION.objetivo} (por día)
+                      </th>,
+                    ]
+                  : []),
+                ...(conIndicadoPorDia(s)
+                  ? [
+                      <th key={`${s.clave}-indicado`} scope="col">
+                        {CAPAS_DE_LA_COMPARACION.indicado} ({s.estado.serie.unit})
                       </th>,
                     ]
                   : []),
@@ -1375,11 +1413,15 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
                 {series.flatMap((s) => {
                   const del = s.estado.serie.points.filter((p) => p.date === f);
                   // El objetivo de la fila: el del día, o los de la semana si cambió dentro de ella.
-                  const vigentes = s.estado.objetivo.length > 0 ? objetivosVigentes(s.estado.objetivo, f, del.find((p) => p.dateEnd)?.dateEnd ?? f) : null;
+                  const m = metricaNutricionalDe(s);
+                  const objetivo = m && s.estado.escalones.length > 0 ? (objetivoEnCelda(s.estado.escalones, m, f, del.find((p) => p.dateEnd)?.dateEnd ?? f) ?? 'Sin objetivo') : null;
+                  const indicado = m && conIndicadoPorDia(s) ? (s.estado.indicado?.dias.find((d) => d.date === f) ?? null) : undefined;
                   return [
                     <td key={s.clave}>
                       {del.length === 0
-                        ? 'Sin dato'
+                        ? s.definicion.area === 'NUTRICION'
+                          ? 'Sin registros'
+                          : 'Sin dato'
                         : del
                             .map((p) =>
                               p.value === null
@@ -1390,7 +1432,8 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
                             )
                             .join(' · ')}
                     </td>,
-                    ...(vigentes !== null ? [<td key={`${s.clave}-objetivo`}>{vigentes.length === 0 ? 'Sin objetivo' : vigentes.map((v) => numero(v)).join(' y ')}</td>] : []),
+                    ...(objetivo !== null ? [<td key={`${s.clave}-objetivo`}>{objetivo}</td>] : []),
+                    ...(indicado !== undefined && m ? [<td key={`${s.clave}-indicado`}>{indicado ? indicadoDelDiaEnCelda(indicado, m) : 'Sin dato'}</td>] : []),
                   ];
                 })}
               </tr>
@@ -1444,7 +1487,8 @@ function ExportarCsv({
     if (leidas.some((l) => l.respuestas.some((r) => sesionPerdida(r)))) return;
     const incluidas = series.flatMap((s, i) => {
       const e = leidas[i]?.estado;
-      return e?.tipo === 'lista' ? [{ s, serie: e.serie, zona: e.zona }] : [];
+      // DL-158: el objetivo y lo indicado de la misma lectura, como la tabla.
+      return e?.tipo === 'lista' ? [{ s, serie: e.serie, zona: e.zona, comparacion: e.indicado || e.escalones.length > 0 ? { objetivo: e.escalones, indicado: e.indicado?.dias ?? null } : undefined }] : [];
     });
     const afuera = series.flatMap((s, i) => {
       const e = leidas[i]?.estado;
@@ -1461,7 +1505,7 @@ function ExportarCsv({
       hasta,
       zona: incluidas[0]?.zona ?? 'America/Argentina/Buenos_Aires',
       generadoEl: new Date().toISOString(),
-      series: incluidas.map(({ s, serie }) => ({ nombre: nombreDe(s), definicion: s.definicion, serie })),
+      series: incluidas.map(({ s, serie, comparacion }) => ({ nombre: nombreDe(s), definicion: s.definicion, serie, ...(comparacion ? { comparacion } : {}) })),
     });
     // Con BOM, para que una planilla lea los acentos como UTF-8.
     const url = URL.createObjectURL(new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8' }));
@@ -1668,28 +1712,91 @@ function tituloConjunto(nombres: readonly string[]): string {
   return enLista(nombres);
 }
 
-type EscalonDelObjetivo = { readonly desde: string; readonly hasta: string | null; readonly valor: number };
-
-/** Los escalones del objetivo que tocan un rango, en orden; cada uno rige hasta que empieza el siguiente. */
-function escalonesEn(escalones: readonly EscalonDelObjetivo[], desde: string, hasta: string): { desde: string; valor: number }[] {
-  const ordenados = [...escalones].sort((a, b) => a.desde.localeCompare(b.desde));
-  return ordenados.flatMap((e, i) => {
-    const siguiente = ordenados[i + 1];
-    // El día en que empieza el siguiente ya vale el nuevo: este termina el día anterior.
-    const fin = siguiente ? diaAnterior(siguiente.desde) : (e.hasta ?? hasta);
-    const inicio = e.desde < desde ? desde : e.desde;
-    return inicio <= hasta && fin >= desde && inicio <= fin ? [{ desde: inicio, valor: e.valor }] : [];
-  });
+/** La métrica de Nutrición de una serie con objetivo e indicado (no la cuenta de registros); `null` en las demás. */
+function metricaNutricionalDe(s: Lista): Exclude<MetricaNutricional, 'RECORDS'> | null {
+  return s.definicion.area === 'NUTRICION' && s.definicion.parametro !== 'RECORDS' ? (s.definicion.parametro as Exclude<MetricaNutricional, 'RECORDS'>) : null;
 }
 
-/** Los valores del objetivo que rigen en un rango (uno, o más si cambió adentro), sin repetir. */
-const objetivosVigentes = (escalones: readonly EscalonDelObjetivo[], desde: string, hasta: string): number[] => [...new Set(escalonesEn(escalones, desde, hasta).map((e) => e.valor))];
+/**
+ * Las fechas de la tabla de datos, de la más nueva a la más vieja: las que tienen algo dibujado, un punto registrado o,
+ * por día, un rombo de lo indicado (DL-158: lo que el gráfico dibuja está en la tabla, y viceversa).
+ */
+function fechasDeLaTablaDe(series: readonly Lista[], desde: string, hasta: string): string[] {
+  return [
+    ...new Set(
+      series.flatMap((s) => [
+        ...s.estado.serie.points.filter((p) => p.date >= desde && p.date <= hasta).map((p) => p.date),
+        ...(conIndicadoPorDia(s) ? (s.estado.indicado?.dias ?? []).filter((d) => d.state === 'DETERMINED' && d.date >= desde && d.date <= hasta).map((d) => d.date) : []),
+      ]),
+    ),
+  ]
+    .sort()
+    .reverse();
+}
 
-/** El objetivo de calorías del rango, en una frase: lo que el gráfico dibuja con la línea discontinua. Vacío si no hay. */
-function objetivoEnTexto(escalones: readonly EscalonDelObjetivo[], desde: string, hasta: string): string {
-  const tramos = escalonesEn(escalones, desde, hasta);
-  if (tramos.length === 0) return '';
-  return `Objetivo de calorías (requerimiento energético estimado): ${tramos.map((e) => `${numero(e.valor)} kcal por día desde el ${diaCivil(e.desde)}`).join('; ')}.`;
+/** Si la serie lleva lo indicado por día: es de Nutrición y se ve por día (por semana no se dibuja). */
+const conIndicadoPorDia = (s: Lista): boolean => s.estado.indicado !== null && s.estado.serie.grain === 'DAY';
+
+/** Lo indicado que se dibuja: un rombo por día que lo tiene, en el rango; y, si no hay ninguno, por qué (debajo del gráfico). */
+function indicadoParaDibujar(dias: readonly IndicadoDelDiaApi[], desde: string, hasta: string): NonNullable<SerieParaDibujar['indicado']> {
+  const enElRango = dias.filter((d) => d.date >= desde && d.date <= hasta);
+  return {
+    nombre: CAPAS_DE_LA_COMPARACION.indicado,
+    dias: enElRango.flatMap((d) => (d.state === 'DETERMINED' ? [{ fecha: d.date, valor: d.value }] : [])),
+    nota: sinIndicadoParaDibujar(enElRango),
+  };
+}
+
+/**
+ * El objetivo y lo indicado del rango, en frases: lo que el gráfico dibuja con la línea discontinua y los rombos, para
+ * quien no ve el gráfico. Vacío si la métrica no los tiene.
+ */
+function comparacionEnTexto(s: Lista, desde: string, hasta: string): string {
+  const m = metricaNutricionalDe(s);
+  if (!m) return '';
+  const tramos = escalonesDelRango(s.estado.escalones, desde, hasta);
+  const deEnergia = m === 'ENERGY' ? ' (el requerimiento energético estimado)' : '';
+  const objetivo = tramos.length > 0 ? `${CAPAS_DE_LA_COMPARACION.objetivo}${deEnergia}: ${tramos.map((t) => `${objetivoEnPalabras(t.escalon, m)} desde el ${diaCivil(t.desde)}`).join('; ')}.` : '';
+  const indicado = !s.estado.indicado ? '' : s.estado.serie.grain === 'DAY' ? indicadoDelPeriodoEnTexto(s.estado.indicado.dias.filter((d) => d.date >= desde && d.date <= hasta)) : CAPAS_DE_LA_COMPARACION.porSemana;
+  return [objetivo, indicado].filter(Boolean).join(' ');
+}
+
+/**
+ * El objetivo del profesional y lo indicado en el plan de la fecha elegida (o de la semana del punto), en la lectura:
+ * cada capa con su muestra, su valor y su versión, o por qué no hay. No se resta ni se compara: se ubica.
+ */
+function CapasDeLaLectura({ s, indice, fecha, semana }: { s: Lista; indice: number; fecha: string; semana: PuntoAnalitico | null }) {
+  const m = metricaNutricionalDe(s);
+  if (!m || (s.estado.escalones.length === 0 && !s.estado.indicado)) return null;
+  const desde = semana?.date ?? fecha;
+  const hasta = semana?.dateEnd ?? fecha;
+  const tramos = escalonesDelRango(s.estado.escalones, desde, hasta);
+  const versionDelPlan = (planVersionId: string): string | null => {
+    const banda = s.estado.bandas.find((b) => b.planVersionId === planVersionId);
+    return banda ? `versión ${banda.label.replace(/^v/, '')} del plan` : null;
+  };
+  const dia = s.estado.indicado?.dias.find((d) => d.date === fecha) ?? null;
+  const indicado = !s.estado.indicado ? null : s.estado.serie.grain !== 'DAY' ? CAPAS_DE_LA_COMPARACION.porSemana : dia ? indicadoDelDiaEnPalabras(dia, m, versionDelPlan) : fecha > hoyEn() ? 'Todavía no: lo indicado se lee hasta hoy.' : 'Sin dato para esta fecha.';
+  return (
+    <dl className="capas-de-la-lectura">
+      {s.estado.escalones.length > 0 ? (
+        <div>
+          <dt>
+            <Marca indice={indice} plan /> {CAPAS_DE_LA_COMPARACION.objetivo}
+          </dt>
+          <dd>{tramos.length === 0 ? 'Sin objetivo en esta fecha.' : tramos.map((t) => `${objetivoEnPalabras(t.escalon, m)} · rige desde el ${diaCivil(t.escalon.from)}`).join('; ')}</dd>
+        </div>
+      ) : null}
+      {indicado !== null ? (
+        <div>
+          <dt>
+            <Marca indice={indice} indicado /> {CAPAS_DE_LA_COMPARACION.indicado}
+          </dt>
+          <dd>{indicado}</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
 }
 
 /** Los datos de una pregunta resuelta, en una línea: «Nutrición · versión 3 (desde el 4 sept 2026)», «Sentadilla · serie 1 · kg». */

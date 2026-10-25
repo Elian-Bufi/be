@@ -454,7 +454,9 @@ export const ListaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(Ej
 /**
  * DL-141 D-2: un ejercicio que encontró el buscador del website (API-TRN-13-BUSQUEDA), con el nombre alternativo que
  * coincidió con lo buscado y (D-6) lo que hace falta para decir su origen en la fila. API-TRN-13, la que lee la APK
- * instalada con su esquema congelado, responde sin estos campos.
+ * instalada con su esquema congelado, responde sin estos campos. Desde DL-151 también busca con esta operación la
+ * sustitución de la APK: una APK construida sobre una base anterior a D-6 rechazaría `origin`, y cuando se publique una
+ * APK con esta lectura su forma queda congelada (DL-152).
  */
 export const EjercicioEncontradoSchema = EjercicioDeCatalogoSchema.extend({
   /** El nombre alternativo que coincidió («Bench press» al buscar «bench press»), tal como está guardado; `null` si coincidió el principal, o sin texto. */

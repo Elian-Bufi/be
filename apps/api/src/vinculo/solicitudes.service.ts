@@ -178,6 +178,11 @@ export class SolicitudesService {
 
     const cuentas = await this.bloquearCuentas(tx, profesionalId, asesoradoId);
     if (cuentas.get(contraparte) !== 'OPERATIVA') throw errores.recursoNoEncontrado();
+    // WP-ADMINISTRACION (DL-155): una identidad administrativa no es parte de un vínculo (identidad separada). Como contraparte
+    // es el mismo 404 que una cuenta que no opera o que no existe: no se revela que es administrativa.
+    const [administrativa] = await tx.$queryRaw<{ si: boolean }[]>`
+      SELECT EXISTS (SELECT 1 FROM "rol_administrativo" WHERE "identidad_id" = ${contraparte}::uuid AND "estado" = 'VIGENTE') AS "si"`;
+    if (administrativa?.si) throw errores.recursoNoEncontrado();
     if (cuentas.get(p.solicitanteId) !== 'OPERATIVA') throw errores.estadoNoPermite();
 
     const eleg = await this.elegibilidad(tx, profesionalId, asesoradoId, alcance);

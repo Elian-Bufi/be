@@ -314,7 +314,7 @@ export function ComparacionDeEtapas({
                     </span>
                     {conObjetivo ? (
                       <span className="grafico-chico__muestra">
-                        <Marca indice={indice} plan /> Objetivo
+                        <Marca indice={indice} plan /> Objetivo del profesional
                       </span>
                     ) : null}
                   </p>

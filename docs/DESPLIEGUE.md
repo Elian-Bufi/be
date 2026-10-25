@@ -121,6 +121,18 @@ La API verifica el ID token de Google con las claves públicas de Google: no hay
 - la APK dice «Ahora no podemos usar Google» justo después de elegir la cuenta: casi siempre es el `DEVELOPER_ERROR` de Google, el client ID Android no coincide con el paquete o con la huella de la firma, o está en otro proyecto que el client ID web;
 - las dos dicen «Ahora no podemos usar Google» después de elegir la cuenta, y la API registra `GOOGLE_NO_CONFIGURADO`: falta `GOOGLE_CLIENT_IDS` en be-api.
 
+### Administración: la clave del segundo factor (DL-155, WP-ADMINISTRACION)
+
+| Variable | Origen | Nota |
+|---|---|---|
+| `BE_CLAVE_DEL_SEGUNDO_FACTOR` | `render.yaml` → `generateValue: true` | La clave **del servidor** con que la API protege el segundo factor de Administración: cifra los autenticadores guardados y firma las huellas de los códigos de recuperación. No es el código de seis dígitos de la aplicación autenticadora. **Nunca se versiona ni se muestra** |
+
+- **Se integra antes que Administración (#210)**, en un PR solo de configuración (DL-008). Al integrarlo, Render sincroniza el Blueprint, crea la variable con un valor al azar (base64 de 256 bits) y vuelve a desplegar be-api. El código de `main` todavía no la lee, así que no cambia nada. Las sincronizaciones siguientes la conservan.
+- **Comprobar, sin verla:** be-api → Environment la muestra con el valor oculto. Con Administración integrada, `/admin` muestra la entrada y no «La administración no está configurada en este ambiente».
+- **Sin ella**, `/admin` responde 503 y el resto de BE sigue. **Mal formada** (solo puede pasar si se carga a mano), la API no arranca y el readiness gate cancela el deploy, como con `JWT_SECRET`. **Reemplazarla** deja sin valor todos los autenticadores y los códigos de recuperación: el operador restablece el segundo factor de cada administrador.
+- El procedimiento del operador, el primer administrador y cómo comprobar que no lee datos de salud están en `EVIDENCIA/ADMINISTRACION/OPERACION.md` (llega con #210).
+- Como todo push a `main` que toca `render.yaml`, vuelve a aplicar `ipAllowList: []` de la base: una IP del operador habilitada a mano queda cerrada.
+
 ### APK
 
 `apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:
