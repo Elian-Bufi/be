@@ -115,8 +115,9 @@ Faltan 22 de las 122 operaciones P0 del contrato 09. **Al 2026-10-23, contadas p
 - PF-05: plan práctico y revisión.
 - Corregir una ingesta prescripta (DL-050).
 - Con B2 revocado, el asesorado ve la lista de ingestas pero no su detalle ni su plan (hallazgo H-1 de PF-04).
-- Un día con una comida del plan sin registrar salía «sin faltantes» (UX-01 de la auditoría): **preparado en #200** (DL-153, 2026-10-23).
-- Una revisión registrada no mostraba su evidencia, su período ni su autor (UX-02): **preparado en #203** (DL-154, 2026-10-23), también en Entrenamiento.
+- Un día con una comida del plan sin registrar salía «sin faltantes» (UX-01 de la auditoría): **preparado en #200** (DL-153, 2026-10-23); **integrado el 2026-10-24**, con los criterios de Dirección (la cuenta de las comidas del plan es cobertura del registro). Falta la prueba con profesionales.
+- Una revisión registrada no mostraba su evidencia, su período ni su autor (UX-02): **preparado en #203** (DL-154, 2026-10-23), también en Entrenamiento; **integrado el 2026-10-24**, con los criterios de Dirección. Falta la prueba con profesionales.
+- **Mejora futura de trazabilidad** (DL-154, D-2, 2026-10-24): consultar un registro de la evidencia de una revisión como estaba al revisar. Hoy se abre el estado actual, con un aviso si cambió después. No está implementada; se decide con la prueba con profesionales.
 
 **Formularios y asesorado**
 - Campos de selección y de fecha (DEC-04, DL-103).

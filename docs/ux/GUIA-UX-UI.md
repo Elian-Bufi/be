@@ -404,6 +404,15 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   período se quita solo lo que quedó afuera, y se dice. Marcar no es haber examinado: la casilla es la declaración del profesional,
   el texto le pide dejar marcado solo lo que miró y ningún rótulo dice «examinado». Viajan las referencias individuales
   de siempre.
+- **Una revisión registrada dice en qué se apoyó** (DL-154, `evidencia-registrada.tsx`), en Nutrición y en
+  Entrenamiento:
+  - a la vista, el área, el período revisado, quién la registró y «Evidencia seleccionada: 12 comidas · 1 versión del
+    plan · el objetivo», contado de lo que guardó; si no guardó nada, lo dice, y nunca se completa con el período;
+  - «Ver la evidencia» lista lo marcado por grupo (los registros por fecha, la planificación), sin valores de salud, y lo
+    que cambió después de la revisión («Se deshizo después de esta revisión (16/10 09:00): quedó fuera de los totales»).
+    Lo que solo se ve en el período, sin haberse marcado, no aparece;
+  - «Abrir» muestra el origen en el panel modal, leído con el permiso de hoy; Escape vuelve el foco a «Abrir» y la lista
+    sigue abierta. Sin acceso, «No disponible con tu acceso actual», sin detalles.
 - **Después de una acción:** el aviso de éxito ofrece volver a la ficha, y la ficha vuelve a leer lo afectado. Una
   escritura usa su clave de intento (idempotencia) y su versión esperada (conflicto).
 

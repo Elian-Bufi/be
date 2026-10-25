@@ -79,6 +79,8 @@ export * from './contratos-entrenamiento-por-serie';
 export * from './sesion-de-entrenamiento';
 export * from './copy-entrenamiento-por-serie';
 export * from './contratos-analisis';
+export * from './contratos-evidencia-de-revision';
+export * from './evidencia-registrada';
 export * from './metricas-del-analisis';
 export * from './series-del-analisis';
 export * from './nutricion-del-analisis';
