@@ -15,8 +15,8 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
 
 | Etapa | Estado | Rama · worktree | PR | Último commit |
 |---|---|---|---|---|
-| A · Administración | **en curso**: dominio, base, API, website, pruebas y recorrido hechos; faltan evidencia, guía, guion y revisión de seguridad | `wp-administracion` · `C:/Users/bufim/BE-admin` | #210 (borrador) | `8b2dc99` |
-| B · #195 sustitución | sin empezar | `wp-apk-sustitucion` | #195 | — |
+| A · Administración | **preparada**: definición, base, API, website, comando, pruebas (33 + TEST-CT), recorrido con capturas, procedimiento del operador y revisión de seguridad con sus correcciones; falta la CI de `b6dfa09` | `wp-administracion` · `C:/Users/bufim/BE-admin` | #210 (borrador) | `b6dfa09` |
+| B · #195 sustitución | **preparada**: al día con main, R-5 con sus palabras, guion del teléfono; sin teléfono ni APK | `wp-apk-sustitucion` · `C:/Users/bufim/BE-Best/.claude/worktrees/agent-ad05c75238781c9c6` (sin `node_modules`: se mueven desde BE-admin) | #195 (borrador) | `d7ead1e` (CI verde) |
 | C · comparación de Nutrición | sin empezar | — | — | — |
 | Ensayo conjunto | sin empezar | — | — | — |
 
@@ -27,6 +27,18 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
 3. `87d0d3f` — 27 pruebas de integración de los diez criterios; corrección de neutralidad en solicitudes de vínculo.
 4. `a8360c4` — consola `/admin` del website y recorrido de navegador `administracion`.
 5. `8b2dc99` — TEST-CT de la familia ADM (la CI fallaba solo ahí) y la clave del segundo factor en base64 común.
+6. `df2e341` — evidencia (capturas revisadas, `OPERACION.md`) y esta nota.
+7. `65be9b3` — revisión de seguridad: F1 bloqueo por fallos seguidos, F2 pedidos simultáneos, F3 el comando y una
+   confirmación al mismo tiempo, F4 otras sesiones al renovar, F5 auditoría de los guards, y el código de incorporación
+   vigente al confirmar. Seis pruebas, cada una contra su mutación. Migraciones corregidas en el lugar (sin desplegar).
+8. `b6dfa09` — la prueba de avisos lee en el orden de registro (en la CI de `8b2dc99`-push salieron invertidos una vez:
+   `findMany` sin `orderBy`).
+
+## Commits de B (en orden, sobre `294e1a8`)
+
+1. `19a223d` — merge de main `3724d3d` (conflicto solo en DEUDA_LEGAJO).
+2. `33b70b3` — R-5: sin conexión al buscar y sin respuesta al guardar, dichos con sus palabras; prueba nueva.
+3. `d7ead1e` — guion del teléfono y revisión de DL-151.
 
 ## Comprobaciones hechas
 
@@ -39,14 +51,19 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
   (lista, ficha, confirmación, conflicto, historial, seguridad, entrada y segundo factor). Sin QR, clave ni códigos.
 - Mutaciones (antes de la consola): 6 de 6 detectadas.
 
+- Revisión de seguridad (otra instancia del modelo, de solo lectura): clases 2 a 5 sin hallazgos; cinco del segundo factor
+  corregidos. Integración local después de las correcciones: Administración 33/33; contrato, sesiones, reanudación,
+  esquema, máquinas, cierre, novedades, lecturas de las APK y despliegue 177/177; mutaciones 6/6; migrate diff vacío.
+- B: pruebas de la APK 71/71, tipado de la APK, integración de la sustitución y lecturas de las APK 22/22 (con una
+  configuración de Jest en el scratchpad: el patrón del repo no entra en la carpeta `.claude`). CI de `d7ead1e` verde.
+
 ## Siguiente acción
 
-1. Mirar la CI de `8b2dc99`.
-2. `EVIDENCIA/ADMINISTRACION/`: capturas, `OPERACION.md` (primer administrador, recuperación, bitácora), guía breve de
-   estudio y guion de revisión con las respuestas aparte.
-3. Revisión de seguridad (saltear el MFA, lectura indebida, decisión duplicada, conflicto silencioso, automatización que
-   pisa una decisión humana) y cierre de A en la nota.
-4. Etapa B (#195).
+1. Mirar la CI de `b6dfa09` (A).
+2. Etapa C: leer la propuesta C de #193 (`origin/wp-consolidacion-propuestas`, `docs/propuestas/AMPLIACIONES_2026-10-19.md`),
+   mirar lo que ya hay en main (Analizar: `lienzo.tsx`, `analizar.tsx`; PRJ-01: `lectura-proyecciones.ts`; dominio:
+   `nutricion-del-analisis.ts`) y definir el paquete antes de programar.
+3. Ensayo conjunto en una rama NO INTEGRAR; guía de estudio y guion de tareas con las respuestas aparte; informe final.
 
 ## Entorno de la máquina
 
