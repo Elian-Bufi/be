@@ -5468,6 +5468,18 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
   - **Recomendación:** hacerla solo si la prueba con profesionales la pide.
 - **D-3 · El objetivo y la evaluación no se abren en el panel**: no hay una lectura de solo lectura para ellos en esa pantalla. Se ven con su fecha y lo que cambió después.
 
+**Decisión de Dirección del 2026-10-24: D-1 a D-3, ratificadas con estos criterios.**
+- **D-1.** Una referencia que ya no está disponible se muestra sin revelar detalles no autorizados: «Ya no está en este seguimiento», sin decir qué era. Las comprobaciones de permisos no cambian: el mismo 404 para lo ajeno, lo revocado y lo inexistente, y «Abrir» vuelve a pedir permiso.
+- **D-2.** Se acepta abrir el estado actual del registro, avisando claramente cuando cambió después de la revisión.
+  - **El aviso** pasa de la nota tenue a un aviso (`.aviso`, `role="note"`), antes del contenido del panel: «Lo que ves es como está hoy, no como estaba cuando se revisó: cambió después de la revisión», y debajo, qué cambió y cuándo («Se deshizo después de esta revisión, el …»).
+  - **Antes decía** «Al abrirlo ves cómo está hoy: la revisión se registró antes de ese cambio».
+  - **Sin cambios posteriores, no hay aviso:** lo que se ve es lo mismo que estaba al revisar.
+  - **La fecha, el autor, la conclusión y la selección de evidencia** de la revisión no cambian: la revisión es de solo agregar (REG-06-141).
+  - **Los valores actuales nunca se presentan** como los que el profesional vio entonces.
+- **D-3.** El objetivo y la evaluación siguen sin «Abrir» en el panel. Muestran lo que el diseño ya contempla: qué son, su fecha y lo que cambió después. Sin controles que aparenten una acción que no existe; lo comprueba el código, que dibuja «Abrir» solo para lo que se puede abrir (`abrible`).
+- **Mejora futura de trazabilidad, no implementada en este paquete:** consultar un registro de la evidencia como estaba al revisar. La cadena de rectificaciones se conserva, así que es una lectura más (por ejemplo, el estado vigente en el instante de la revisión). Se decide con la prueba con profesionales. Registrada también en `docs/QUE-FALTA.md`.
+- **Queda pendiente:** la prueba con profesionales y la del lector de pantalla. Las pruebas automáticas no las reemplazan.
+
 **Pruebas:**
 - **`evidencia-registrada.test.ts`** (dominio, 5): el resumen desde lo guardado, los nombres sin valores de salud, los cambios posteriores en palabras, los grupos sin agregar nada, y un contrato sin campos de cantidades.
 - **`evidencia-de-revision.int-spec.ts`** (integración, Nutrición, 4):
@@ -5477,7 +5489,9 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
   - una revisión sembrada sin evidencia y una referencia ajena (NOT_FOUND);
   - el mismo 404 con el consentimiento revocado, otro profesional o una revisión inexistente, como API-NUT-19, y 400 con un parámetro de más.
 - **`entrenamiento.int-spec.ts`** (Entrenamiento, 1): la sesión, el plan y el objetivo, la corrección posterior y otro profesional.
-- **El recorrido `evidencia`** (navegador): la lista, la comida deshecha después, «Abrir» con Escape y el foco, y la recarga.
+- **El recorrido `evidencia`** (navegador): la lista, la comida deshecha después, «Abrir» con Escape y el foco, y la recarga. Con los criterios del 2026-10-24, además:
+  - el desayuno, que no cambió, abre sin aviso;
+  - el almuerzo deshecho abre con el aviso de D-2 y con qué cambió, con su captura.
 - **La guardia de trazabilidad** acepta el sufijo `EVIDENCIA` y el OpenAPI está al día.
 
 **Lo que falta:**

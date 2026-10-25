@@ -700,11 +700,25 @@ async function evidencia({ p, d, salida }) {
   await abrir.asElement().click();
   await p.waitForFunction(() => document.querySelector('dialog[open]')?.innerText.includes('Cerrar'), { timeout: ESPERA, polling: 100 });
   await p.waitForFunction(() => !document.querySelector('dialog[open] [aria-busy="true"]') && (document.querySelector('dialog[open]')?.innerText.length ?? 0) > 40, { timeout: ESPERA, polling: 100 });
+  assert.ok(!(await p.$('dialog[open] .aviso')), 'el desayuno no cambió después de la revisión: no hay aviso');
   await captura(p, salida, 'evidencia-panel-1440');
   await p.keyboard.press('Escape');
   await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
   assert.match(await p.evaluate(() => document.activeElement?.textContent ?? ''), /Abrir/, 'el foco vuelve al botón que abrió el panel');
   assert.equal(await p.$eval(boton, (b) => b.getAttribute('aria-expanded')), 'true', 'la lista sigue abierta: nada navegó');
+
+  // D-2 (criterios de Dirección del 2026-10-24): el almuerzo se deshizo después de la revisión. Al abrirlo, el panel dice
+  // antes del contenido que es el estado de hoy, no lo que se vio al revisar, y qué cambió.
+  const abrirAlmuerzo = await p.waitForFunction((s, t) => [...document.querySelectorAll(`${s} .evidencia-registrada__item`)].find((li) => li.innerText.includes(t))?.querySelector('button') ?? null, { timeout: ESPERA }, item, `${d.comidas.almuerzo} · opción del plan`);
+  await abrirAlmuerzo.asElement().click();
+  await p.waitForFunction(() => document.querySelector('dialog[open] .aviso')?.innerText.includes('no como estaba cuando se revisó'), { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [aria-busy="true"]'), { timeout: ESPERA, polling: 100 });
+  const aviso = await p.$eval('dialog[open] .aviso', (e) => e.innerText);
+  assert.match(aviso, /Lo que ves es como está hoy, no como estaba cuando se revisó/);
+  assert.match(aviso, /Se deshizo después de esta revisión/, 'con qué cambió');
+  await captura(p, salida, 'evidencia-panel-con-cambio-1440');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open]'), { timeout: ESPERA, polling: 100 });
 
   // Al recargar (la sesión sigue), la revisión y su evidencia siguen ahí: están guardadas, no armadas en el navegador.
   await p.reload({ waitUntil: 'networkidle2' });

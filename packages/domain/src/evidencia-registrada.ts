@@ -30,7 +30,8 @@ export const COPY_EVIDENCIA_REGISTRADA = {
   noDisponible: 'No disponible con tu acceso actual: la evidencia de una revisión vuelve a pedir permiso cada vez que se abre.',
   noSePudoLeer: 'No pudimos leer la evidencia de esta revisión.',
   noEncontrada: 'Un elemento que la revisión guardó y hoy no está en este seguimiento.',
-  loDeHoy: 'Al abrirlo ves cómo está hoy: la revisión se registró antes de ese cambio.',
+  /** DL-154, D-2 (criterios de Dirección del 2026-10-24): lo que se abre es el estado de hoy, nunca lo que se vio al revisar. */
+  loDeHoy: 'Lo que ves es como está hoy, no como estaba cuando se revisó: cambió después de la revisión.',
   registros: { NUTRITION: 'Comidas', TRAINING: 'Sesiones' },
   planificacion: 'Planificación',
   evaluaciones: 'Evaluaciones',

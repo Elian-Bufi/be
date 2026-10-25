@@ -108,7 +108,15 @@ export function EvidenciaRegistrada({
         ) : null}
       </div>
       <Panel abierto={abierto !== null && contenido !== null} titulo={abierto ? nombreDeLaEvidencia(abierto) : ''} onCerrar={() => setAbierto(null)}>
-        {abierto && abierto.changesAfterReview.length > 0 ? <p className="nota">{COPY_EVIDENCIA_REGISTRADA.loDeHoy}</p> : null}
+        {/* DL-154, D-2: si cambió después de la revisión, se dice antes del contenido, con qué cambió y cuándo. */}
+        {abierto && abierto.changesAfterReview.length > 0 ? (
+          <div className="aviso" role="note">
+            <p>{COPY_EVIDENCIA_REGISTRADA.loDeHoy}</p>
+            {abierto.changesAfterReview.map((c) => (
+              <p key={`${c.kind}|${c.at}`}>{cambioEnPalabras(c, abierto, FORMATO)}</p>
+            ))}
+          </div>
+        ) : null}
         {contenido}
       </Panel>
     </div>
