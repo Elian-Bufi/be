@@ -18,10 +18,14 @@ Cinco puntos, sin merge, despliegue, administradores en `test`, APK ni releases,
 | Punto | Estado | Dónde |
 |---|---|---|
 | 1 · Concurrencia al renovar códigos | **Confirmada y corregida.** 8 pruebas con bloqueos (sin pausas): 8/8 fallan sin la corrección, 8/8 pasan con ella; mutaciones M1 y M2 detectadas (5/8 cada una); Administración 41/41 local | A: `administracion-renovacion-de-codigos.int-spec.ts`, `EVIDENCIA/ADMINISTRACION/CONCURRENCIA-DE-LA-RENOVACION.md` |
-| 2 · Cruces como regresiones permanentes | En curso: C y B se apilan sobre A (sus dependencias reales: C choca con A en 4 archivos y la prueba de Nutrición necesita A; la de la sustitución, también). Rehabilitar sin resucitar consentimientos ni vínculos ya estaba en A | C (#211) y B (#195) |
-| 3 · Operación de Administración | Procedimiento escrito (`OPERACION.md` §1 y §2); falta el PR de configuración (`render.yaml`) | A y un PR nuevo desde `main` |
-| 4 · Alcance explícito | A hecho (`EVIDENCIA/ADMINISTRACION/LEEME.md`); falta C | A y C |
-| 5 · Verificación y cierre | Pendiente: CI de cada cabeza, ensayo actualizado, informe breve | — |
+| 2 · Cruces como regresiones permanentes | **Hecho.** C y B se apilan sobre A, sus dependencias reales: C choca con A en 4 archivos y su prueba de Nutrición necesita A, y la de la sustitución también. Merges `be25290` (C) y `3eae2de` (B); pruebas en `comparacion-nutricional.int-spec.ts` (4/4 local) y `sustitucion-en-la-sesion.int-spec.ts` (4/4 local). Rehabilitar sin resucitar consentimientos ni vínculos: la prueba de A mira ahora también la base (`e39f93b`) | #211 y #195, con base `wp-administracion` |
+| 3 · Operación de Administración | **Hecho.** `OPERACION.md` §1 y §2 (la clave, si falta, mal formada o reemplazada; el primer administrador desde el Shell de `be-api`; cómo comprobar que no lee salud) y **#214** (`config/clave-del-segundo-factor`, `0ff474f`: `render.yaml` con `generateValue` y `docs/DESPLIEGUE.md`) | A y #214 |
+| 4 · Alcance explícito | **Hecho** en las evidencias, las definiciones y los PR de A y C | A y C |
+| 5 · Verificación y cierre | **Hecho.** Guía al día (`78dedfe`, 33 enlaces); ensayo con las cabezas nuevas y sin su prueba de diagnóstico (`99bb408`). La CI de cada cabeza está en su PR y en el informe de la tanda (sección «Pasada de cierre») | — |
+
+**Orden de integración:** #214 → #210 → #211 → #195 → #212. Después de integrar #210, cambiar la base de #211 y #195 a
+`main` (o borrar la rama `wp-administracion`), ponerlos al día y recién ahí integrarlos. Los PR apilados no corren la CI de
+`pull_request` (solo con base `main`): corren la de `push` (`wp-*`).
 
 ## Estado por etapa
 
@@ -75,23 +79,25 @@ Cinco puntos, sin merge, despliegue, administradores en `test`, APK ni releases,
 
 ## Siguiente acción
 
-1. Esperar la CI de #211, #212 y #213; si algo falla, buscar la causa y corregir en el paquete que corresponde (y volver a mezclar en el ensayo).
-2. Comprobaciones locales del ensayo: tipos, dominio, scripts, unitarias, integración de los cruces y recorridos de A y C.
-3. Informe final (diez secciones) y memoria; apagar el PostgreSQL propio (:55462).
+Nada pendiente de este encargo. Lo que sigue lo decide Dirección: integrar en el orden de arriba, empezando por #214, que
+aplica configuración remota. También decide si autoriza incorporar al primer administrador en `test` y construir una
+candidata de la APK para el teléfono. Si un PR cambia, volver a mezclarlo en los que se apoyan en él y en el ensayo.
 
 ## Entorno de la máquina
 
 - Node 22 con fnm; `gh` en `/c/Program Files/GitHub CLI`. Una tarea pesada por vez (RAM 5,9 GB, ~1 GB libre).
-- `node_modules` viaja entre worktrees (se mueve, no se copia): en la pasada de cierre pasó de BE-ensayo a BE-admin, con
-  las uniones de `@be/*` rehechas con PowerShell (`New-Item -ItemType Junction`; en Bash se pierden las barras) y
-  `npx prisma generate`. En Bash, el `node` por omisión es el 20: anteponer el de fnm (22) al `PATH`.
+- `node_modules` viaja entre worktrees (se mueve, no se copia): en la pasada de cierre pasó de BE-ensayo a BE-admin, a
+  BE-comparacion y al worktree de #195, donde quedó. Las uniones de `@be/*` se rehacen con PowerShell
+  (`New-Item -ItemType Junction`; en Bash se pierden las barras) y después `npx prisma generate`. En Bash, el `node` por
+  omisión es el 20: anteponer el de fnm (22) al `PATH`.
 - Integración local de la pasada de cierre: base nueva `be_cierre_admin` (la vieja `be_admin_int` tenía la migración de A
   de antes de la revisión de seguridad: P2022), con una configuración de Jest que solo transpila (scratchpad); los tipos
   los comprueba la CI.
 - En el worktree nuevo: `node_modules` movido desde `BE-200` (rama ya integrada), uniones de `@be/*` rehechas y
   `npx prisma generate` corrido (cliente real, 12,7 MB). Dependencia nueva: `otpauth` 9.5.2 en `@be/api`.
 - PostgreSQL embebido propio en :55462 (clúster en el scratchpad de la sesión, `pg-admin`), bases `be_admin_shadow`,
-  `be_admin_int`, `be_admin_diff` y `be_recorridos_admin`. Se apaga al terminar con `node parar.mjs` y el mismo entorno
+  `be_admin_int`, `be_admin_diff`, `be_recorridos_admin` y, de la pasada de cierre, `be_cierre_admin`, `be_cierre_cmp` y
+  `be_cierre_sus`. Apagado al cerrar la pasada. Se apaga con `node parar.mjs` y el mismo entorno
   (`BE_PG_DATOS`, `BE_PG_PUERTO=55462`) desde `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/postgres-local` de
   `BE-Best-entrenamiento`. No tocar :55432 ni :55442.
 - Recorrido local: `npm run build -w @be/api`; `BE_API_BASE_URL=http://localhost:3101 npm run build -w @be/web`;
