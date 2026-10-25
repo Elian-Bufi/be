@@ -185,12 +185,13 @@ export async function datos(estado) {
         superficie: 'APK',
         cuerpo: { kind: 'DIFFERENT', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: almuerzo.mealId, occurredAt: instante(haceTres, '13:00').toISOString(), description: 'Una pizza con amigos', approximateQuantity: null, mediaIds: [] },
       });
-      e.comidas = { anteayer, ayer, haceTres, faltante: almuerzo.label, desayuno: desayuno.label, almuerzo: almuerzo.label, planVersionId: opciones.plan.planId, desayunoAnteayer, almuerzoAnteayer };
+      e.comidas = { anteayer, ayer, haceTres, faltante: almuerzo.label, desayuno: desayuno.label, almuerzo: almuerzo.label, planVersionId: opciones.plan.planId, objetivo, desayunoAnteayer, almuerzoAnteayer };
     }
     if (r.datos.includes('revision-con-evidencia')) {
       // DL-154: el profesional revisa con las dos comidas de anteayer y la versión del plan (no con el desayuno de ayer, que
-      // está en el período). Después de la revisión, la persona deshace el almuerzo de anteayer desde la APK.
-      const { anteayer, ayer, desayunoAnteayer, almuerzoAnteayer, planVersionId } = e.comidas;
+      // está en el período). Después de la revisión, la persona deshace el almuerzo de anteayer desde la APK, y el
+      // profesional activa otra versión del plan: la revisada no cambia, deja de ser la vigente (D-2).
+      const { anteayer, ayer, desayunoAnteayer, almuerzoAnteayer, planVersionId, objetivo } = e.comidas;
       const revision = (
         await pedir('POST', `/advisees/${e.ase.id}/nutrition/reviews`, {
           token: pro,
@@ -209,6 +210,8 @@ export async function datos(estado) {
         })
       ).data;
       await pedir('POST', `/nutrition/meal-records/${almuerzoAnteayer.recordId}/annulment`, { token: ase, superficie: 'APK', cuerpo: { reason: 'Me equivoqué de día', expectedVersion: almuerzoAnteayer.version } });
+      const sucesora = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
+      await pedir('POST', `/nutrition/plans/${sucesora.planId}/activate`, { token: pro, cuerpo: { expectedVersion: sucesora.version } });
       e.revision = { reviewId: revision.reviewId };
     }
     if (r.datos.includes('tomas')) {

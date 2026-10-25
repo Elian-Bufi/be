@@ -6,8 +6,9 @@
  *   guardada lo dice; no se completa con el período.
  * - **El resumen sale de las referencias guardadas** (`evidenceReferences`, que ya llegan con la revisión), sin otra
  *   lectura: cuántas comidas o sesiones, cuántas versiones del plan, el objetivo.
- * - **Lo de después se dice:** una rectificación, una corrección, una anulación o una versión sucesora posterior a la
- *   revisión cambia lo que se ve al abrir el registro, y la revisión se registró antes de ese cambio.
+ * - **Lo de después se dice:** una rectificación, una corrección o una anulación posterior a la revisión cambia lo que se
+ *   ve al abrir el registro, y la revisión se registró antes de ese cambio. Una versión sucesora no cambia la versión que
+ *   se revisó (se abre desde su instantánea): deja de ser la vigente, y eso es lo que se dice.
  * - Sin valores de salud: la comida, la sesión, la versión, y cuándo.
  */
 import type { CambioPosterior, EvidenciaResuelta } from './contratos-evidencia-de-revision';
@@ -30,8 +31,16 @@ export const COPY_EVIDENCIA_REGISTRADA = {
   noDisponible: 'No disponible con tu acceso actual: la evidencia de una revisión vuelve a pedir permiso cada vez que se abre.',
   noSePudoLeer: 'No pudimos leer la evidencia de esta revisión.',
   noEncontrada: 'Un elemento que la revisión guardó y hoy no está en este seguimiento.',
-  /** DL-154, D-2 (criterios de Dirección del 2026-10-24): lo que se abre es el estado de hoy, nunca lo que se vio al revisar. */
+  /**
+   * DL-154, D-2 (criterios de Dirección del 2026-10-24): si el registro cambió después de la revisión (una rectificación,
+   * una corrección o una anulación), lo que se abre es el estado de hoy, nunca lo que se vio al revisar.
+   */
   loDeHoy: 'Lo que ves es como está hoy, no como estaba cuando se revisó: cambió después de la revisión.',
+  /**
+   * DL-154, D-2: una versión del plan o del objetivo que después fue reemplazada no cambió. Se abre desde su instantánea,
+   * tal como se revisó (REG-06-112), así que decir «como está hoy» sería falso: lo que cambió es que ya no es la vigente.
+   */
+  mismaVersion: 'Es la misma versión que se revisó; ya no es la vigente.',
   registros: { NUTRITION: 'Comidas', TRAINING: 'Sesiones' },
   planificacion: 'Planificación',
   evaluaciones: 'Evaluaciones',
@@ -90,6 +99,18 @@ export function cambioEnPalabras(c: CambioPosterior, item: EvidenciaResuelta, f:
     case 'SUCCEEDED':
       return item.what?.kind === 'OBJECTIVE_VERSION' ? `Después se registró otro objetivo (${cuando}).` : `Después se activó otra versión del plan (${cuando}).`;
   }
+}
+
+/**
+ * El aviso del panel al abrir un elemento de la evidencia (DL-154, D-2), o `null` si no cambió después de la revisión.
+ * - Si cambió el registro (una rectificación, una corrección o una anulación), lo que se abre es como está hoy.
+ * - Si solo se activó otra versión (`SUCCEEDED`), lo que se abre es la misma versión, desde su instantánea: no cambió, y
+ *   el aviso dice que ya no es la vigente.
+ * Debajo van los cambios, uno por renglón (`cambioEnPalabras`).
+ */
+export function avisoAlAbrir(item: EvidenciaResuelta): string | null {
+  if (item.changesAfterReview.length === 0) return null;
+  return item.changesAfterReview.some((c) => c.kind !== 'SUCCEEDED') ? COPY_EVIDENCIA_REGISTRADA.loDeHoy : COPY_EVIDENCIA_REGISTRADA.mismaVersion;
 }
 
 /** Cuándo, en un renglón: el día del hecho (y para la planificación, desde cuándo). */

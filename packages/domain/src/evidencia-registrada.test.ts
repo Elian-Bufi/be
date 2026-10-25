@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { z } from 'zod';
 import { EvidenciaDeRevisionResponseSchema, type EvidenciaResuelta } from './contratos-evidencia-de-revision';
-import { cambioEnPalabras, COPY_EVIDENCIA_REGISTRADA, cuandoDeLaEvidencia, gruposDeLaEvidencia, nombreDeLaEvidencia, resumenDeLaEvidencia } from './evidencia-registrada';
+import { avisoAlAbrir, cambioEnPalabras, COPY_EVIDENCIA_REGISTRADA, cuandoDeLaEvidencia, gruposDeLaEvidencia, nombreDeLaEvidencia, resumenDeLaEvidencia } from './evidencia-registrada';
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const F = { dia: (f: string) => `${Number(f.slice(8, 10))}/${Number(f.slice(5, 7))}`, momento: (i: string) => `${i.slice(8, 10)}/${i.slice(5, 7)} ${i.slice(11, 16)}` };
@@ -55,6 +55,26 @@ test('lo que cambió después de la revisión se dice con su momento: lo que se 
   assert.equal(cuandoDeLaEvidencia(plan, F), 'activada el 1/10');
   const objetivo: EvidenciaResuelta = { ...comida(4, '2026-10-02', '10:00'), what: { kind: 'OBJECTIVE_VERSION' }, changesAfterReview: [{ kind: 'SUCCEEDED', at: '2026-10-21T12:00:00.000Z' }] };
   assert.equal(cambioEnPalabras(objetivo.changesAfterReview[0]!, objetivo, F), 'Después se registró otro objetivo (21/10 12:00).');
+});
+
+test('D-2: al abrir, «como está hoy» solo si cambió el registro; una versión reemplazada es la misma que se revisó', () => {
+  assert.equal(avisoAlAbrir(comida(1, '2026-10-13', '11:30')), null, 'sin cambios posteriores, sin aviso');
+  for (const kind of ['RECTIFIED', 'CORRECTED', 'ANNULLED'] as const) {
+    const cambiada = comida(2, '2026-10-13', '11:30', { changesAfterReview: [{ kind, at: '2026-10-15T13:20:00.000Z' }] });
+    assert.equal(avisoAlAbrir(cambiada), COPY_EVIDENCIA_REGISTRADA.loDeHoy, `${kind}: lo que se abre es como está hoy`);
+  }
+  const plan: EvidenciaResuelta = {
+    ...comida(3, '2026-10-01', '10:00'),
+    source: { type: 'NUTRITION_PLAN_VERSION', id: id(3) },
+    what: { kind: 'PLAN_VERSION', number: 1 },
+    changesAfterReview: [{ kind: 'SUCCEEDED', at: '2026-10-20T12:00:00.000Z' }],
+  };
+  assert.equal(avisoAlAbrir(plan), 'Es la misma versión que se revisó; ya no es la vigente.', 'la versión no cambió: no se dice «como está hoy»');
+  const objetivo: EvidenciaResuelta = { ...plan, source: null, what: { kind: 'OBJECTIVE_VERSION' } };
+  assert.equal(avisoAlAbrir(objetivo), COPY_EVIDENCIA_REGISTRADA.mismaVersion, 'lo mismo con otro objetivo');
+  // Si además cambió el registro, el aviso dice lo que cambia lo que se ve.
+  const ambos: EvidenciaResuelta = { ...plan, changesAfterReview: [...plan.changesAfterReview, { kind: 'CORRECTED', at: '2026-10-21T12:00:00.000Z' }] };
+  assert.equal(avisoAlAbrir(ambos), COPY_EVIDENCIA_REGISTRADA.loDeHoy);
 });
 
 test('los grupos: registros por fecha y hora, después la planificación, y al final lo que ya no está; no se agrega nada', () => {
