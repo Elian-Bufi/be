@@ -498,7 +498,10 @@ describe('Efectos sobre el acceso (criterios 5 y 6; TEST-RF-014)', () => {
     await conSesion(app, pro.token).get(`/api/v1/advisees/${sigue.id}/nutrition/evaluations`).expect(200);
     await conSesion(app, pro.token).get(`/api/v1/advisees/${revoca.id}/nutrition/evaluations`).expect(404);
     await conSesion(app, pro.token).get(`/api/v1/advisees/${finaliza.id}/nutrition/evaluations`).expect(404);
+    // En la base también: rehabilitar no toca lo que se cortó durante la suspensión (pasada de cierre del 2026-10-25).
     expect(await prisma.consentimiento.findUnique({ where: { id: vR.consentId as string } })).toMatchObject({ situacion: 'REVOCADO' });
+    // `relationshipId` es el vínculo en esa área (AlcanceDeVinculo).
+    expect(await prisma.alcanceDeVinculo.findUnique({ where: { id: vF.vinculoId }, select: { estado: true } })).toEqual({ estado: 'FINALIZADO' });
   });
 
   it('el cruce: una operación profesional en curso termina antes de la decisión; la siguiente ya no pasa', async () => {

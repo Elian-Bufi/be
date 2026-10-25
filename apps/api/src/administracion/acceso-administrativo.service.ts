@@ -437,7 +437,17 @@ export class AccesoAdministrativoService {
   }
 
   // ─── API-ADM-09 ──────────────────────────────────────────────────────────────────────────────
-  /** Códigos de recuperación nuevos, con el segundo factor vigente (lo exige el guard) y la contraseña otra vez. */
+  /**
+   * Códigos de recuperación nuevos, con el segundo factor vigente (lo exige el guard) y la contraseña otra vez.
+   *
+   * En la transacción, primero la identidad en modo exclusivo y, con ella tomada, otra vez la sesión y su segundo factor
+   * (pasada de cierre del 2026-10-25). Así dos renovaciones, una renovación y un restablecimiento o una retirada del
+   * operador, o una renovación y la configuración del autenticador quedan una después de la otra, y la que sigue decide
+   * con lo que dejó la anterior: una sesión revocada o cerrada mientras esperaba no emite códigos (401), y un
+   * restablecimiento posterior invalida también el lote nuevo. Sin esto, dos renovaciones simultáneas dejaban dos lotes
+   * vigentes, y una que ya había pasado el guard emitía códigos después de la revocación
+   * (test/integration/administracion-renovacion-de-codigos.int-spec.ts).
+   */
   async regenerarCodigos(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<CodigosDeRecuperacionResponse> {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(RegenerarCodigosDeRecuperacionRequestSchema, cuerpo);
@@ -447,15 +457,25 @@ export class AccesoAdministrativoService {
       throw errores.credencialesInvalidas();
     }
     const nuevos = codigosDeRecuperacionNuevos(CANTIDAD_DE_CODIGOS_DE_RECUPERACION);
-    await conReintento(() =>
-      this.prisma.$transaction(async (tx) => {
+    const sinSegundoFactor = await conReintento(() =>
+      this.prisma.$transaction(async (tx): Promise<string | null> => {
+        await this.tomarLaIdentidadEnExclusiva(tx, actor);
+        // Con la identidad tomada: una sesión revocada o cerrada mientras tanto responde 401 acá, sin escribir nada.
+        const estado = await this.estadoBloqueado(tx, actor);
+        if (estado.estado !== 'VERIFICADO') return `SEGUNDO_FACTOR_${estado.estado}`;
         const ahora = new Date();
         await this.reemplazarCodigosDeRecuperacion(tx, claves, actor.identidadId, nuevos.map((c) => c.normalizado), ahora);
         // Como al reemplazar el autenticador: las otras sesiones administrativas dejan de valer; esta sigue.
         await this.cerrarOtrasSesiones(tx, actor, ahora);
         await this.auditar(tx, 'API-ADM-09', 'EXITO', null, actor.identidadId, actor.sesionId, ctx);
+        return null;
       }),
     );
+    if (sinSegundoFactor !== null) {
+      // Como el guard: el segundo factor dejó de estar vigente mientras esperaba; la consola pide el código otra vez.
+      await this.auditar(this.prisma, 'API-ADM-09', 'RECHAZO', `MFA_REQUERIDO:${sinSegundoFactor}`, actor.identidadId, actor.sesionId, ctx);
+      throw errores.segundoFactorRequerido(sinSegundoFactor);
+    }
     return { data: { recoveryCodes: nuevos.map((c) => c.visible) } };
   }
 
@@ -485,6 +505,16 @@ export class AccesoAdministrativoService {
    */
   private async tomarLaIdentidad(tx: Tx, actor: ActorAdministrativo): Promise<void> {
     await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR SHARE`;
+  }
+
+  /**
+   * La identidad en modo exclusivo, antes de renovar los códigos (API-ADM-09): choca con otra renovación, con el comando
+   * del operador (que también la toma así) y con el modo compartido de API-ADM-07 y 08. `FOR NO KEY UPDATE`, como el resto
+   * del proyecto (prisma/concurrencia.ts): no frena las claves foráneas que la nombran. Va primero, antes que las filas
+   * de la sesión: el orden único de bloqueos empieza por la identidad.
+   */
+  private async tomarLaIdentidadEnExclusiva(tx: Tx, actor: ActorAdministrativo): Promise<void> {
+    await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR NO KEY UPDATE`;
   }
 
   /**
@@ -557,7 +587,11 @@ export class AccesoAdministrativoService {
     await tx.segundoFactorDeSesion.update({ where: { sesionId: actor.sesionId }, data: { verificadoEn: ahora, metodo, ultimaActividad: ahora, intentosFallidos: 0 } });
   }
 
-  /** Los códigos sin usar del lote anterior dejan de valer; el lote nuevo los reemplaza. */
+  /**
+   * Los códigos sin usar del lote anterior dejan de valer; el lote nuevo los reemplaza. Quien llama tiene tomada la
+   * identidad (API-ADM-09 en modo exclusivo; API-ADM-08 en modo compartido, con el autenticador pendiente de su sesión) y
+   * volvió a leer su sesión: con eso queda, como máximo, un lote vigente.
+   */
   private async reemplazarCodigosDeRecuperacion(tx: Tx, claves: ClavesDelSegundoFactor, identidadId: string, codigos: readonly string[], ahora: Date): Promise<void> {
     await tx.codigoDeRecuperacion.updateMany({ where: { identidadId, momentoDeUso: null, momentoDeInvalidacion: null }, data: { momentoDeInvalidacion: ahora } });
     const loteId = randomUUID();
