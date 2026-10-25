@@ -7,14 +7,17 @@
  * - con varias opciones en una comida, el día no tiene indicado: se dice cuál comida y cuántas, sin sumar nada;
  * - lo indicado de ayer no cambia al activar otra versión (la instantánea), y el día del cambio no tiene indicado del día;
  * - el objetivo: las calorías y los macros en gramos son escalones; una proporción de las calorías no se convierte.
+ * Y el cruce con Administración (#210, del que depende este PR): suspender Nutrición oculta lo registrado, el objetivo y
+ * lo indicado; rehabilitar lo devuelve igual, sin tocar lo guardado (pasada de cierre del 2026-10-25, punto 2).
  */
 import type { INestApplication } from '@nestjs/common';
 import { ProyeccionResponseSchema, type ResultadoDeProyeccionNutricional } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
-import { activar, circuitoConPlanActivo, circuitoListoParaPlanificar, clavesProhibidas, crearBorrador, patchConSesion } from './soporte-nutricion';
-import type { Parte } from './soporte-vinculo';
+import { administradorListo, decidirSobre } from './soporte-administracion';
+import { activar, circuitoConPlanActivo, circuitoListoParaPlanificar, clavesProhibidas, crearBorrador, patchConSesion, registrarComida } from './soporte-nutricion';
+import { prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -208,5 +211,46 @@ describe('API-PRJ-01 · objetivo del profesional e indicado en el plan (DL-158)'
     if (cena?.state !== 'DETERMINED') throw new Error('la cena sin indicado');
     expect(cena.planVersionId).toBe(reescrita.planId);
     expect(cena.value).toBeCloseTo(aMano(polloSolo, 'energyKcal'), 6);
+  });
+});
+
+// ─── El cruce con Administración (#210) ─────────────────────────────────────────────────────────
+
+describe('Con Administración: suspender y rehabilitar Nutrición (pasada de cierre del 2026-10-25)', () => {
+  it('con Nutrición suspendida, Analizar no muestra lo registrado, el objetivo ni lo indicado; al rehabilitar vuelve igual y lo guardado no cambió', async () => {
+    const e = `cruce-${++contador}-${randomUUID().slice(0, 4)}`;
+    const pro = await prepararProfesional(app, `${e}-pro`, ['NUTRICION', 'ENTRENAMIENTO']);
+    const c = await circuitoConPlanActivo(app, `${e}-n`, pro);
+    // El profesional sigue viendo a la persona por Entrenamiento: la lectura de Nutrición responde, pero sin datos.
+    await vinculoCompleto(app, pro, c.ase, 'ENTRENAMIENTO');
+    await registrarComida(app, c.ase, c.planId, c.dia).expect(201);
+    const a = await administradorListo(app, prisma, `${e}-adm`);
+    const proyeccion = async () =>
+      ProyeccionResponseSchema.parse((await conSesion(app, pro.token).get(`/api/v1/advisees/${c.ase.id}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=ENERGY`).expect(200)).body).data;
+    /** Lo guardado de esa persona en Nutrición, tal como está en la base: sus registros y las versiones de su objetivo. */
+    const guardado = async () => ({
+      registros: await prisma.ingestaNutricional.findMany({ where: { asesoradoId: c.ase.id }, orderBy: { id: 'asc' } }),
+      objetivos: await prisma.versionDeObjetivoNutricional.findMany({ where: { objetivo: { asesoradoId: c.ase.id } }, orderBy: { id: 'asc' } }),
+    });
+
+    const antes = await proyeccion();
+    const guardadoAntes = await guardado();
+    expect(antes.dataState).toBe('AVAILABLE');
+    if (antes.result?.kind !== 'NUTRITION_PRESCRIBED_VS_RECORDED') throw new Error('sin la proyección');
+    // Están las tres capas: lo registrado, el objetivo del profesional y lo indicado en el plan.
+    expect(antes.result.coverage.records).toBeGreaterThan(0);
+    expect(antes.result.prescribed.objectiveSteps.length).toBeGreaterThan(0);
+    expect(antes.result.prescribed.planned.days.some((d) => d.state === 'DETERMINED')).toBe(true);
+    expect(antes.result.prescribed.planned.meals.length).toBeGreaterThan(0);
+
+    await decidirSobre(app, a.token, pro.id, 'NUTRICION', 'SUSPEND').expect(200);
+    // Nada de Nutrición: ni el resultado ni sus dominios de origen.
+    expect(await proyeccion()).toMatchObject({ dataState: 'NOT_AVAILABLE_TO_VIEW', result: null, sourceDomains: [] });
+
+    await decidirSobre(app, a.token, pro.id, 'NUTRICION', 'REINSTATE', { messageToProfessional: undefined }).expect(200);
+    const despues = await proyeccion();
+    expect(despues.dataState).toBe('AVAILABLE');
+    expect(despues.result).toEqual(antes.result);
+    expect(await guardado()).toEqual(guardadoAntes);
   });
 });

@@ -5,8 +5,21 @@ en el plan—, tomadas por los recorridos de navegador `comparacion` y `comparac
 (`test/navegador/recorridos.mjs`). La definición está en `docs/paquetes/WP-NUTRICION-COMPARACION.md`.
 
 **Estado:** implementado y probado de forma automática (dominio, integración y navegador). **No** está integrado ni
-desplegado: vive en la rama `wp-nutricion-comparacion` (PR en borrador). Nadie lo usó todavía con un lector de pantalla
-ni con profesionales.
+desplegado: vive en la rama `wp-nutricion-comparacion` (PR #211, borrador, sobre #210). Nadie lo usó todavía con un lector
+de pantalla ni con profesionales.
+
+**Alcance de esta entrega:**
+- **No prueba consumo ni adherencia.** Pone tres capas una al lado de la otra: lo que la persona registró, el objetivo que
+  fijó el profesional y lo indicado en el plan. Lo registrado no es lo consumido: falta lo que no se registró, y un
+  registro sin cantidades no da números. Que dos capas se acerquen no dice que la persona cumplió ni que una cosa causó
+  la otra. No hay porcentajes, puntajes ni promedios.
+- **Con alternativas no hay un único total diario indicado, y la pantalla dice por qué.** Si una comida del plan deja
+  elegir entre opciones, BE no elige una ni las suma: ese día no tiene rombo, y la lectura nombra la comida y cuántas
+  opciones tiene. Lo que sí existe se consulta en «Ver origen»: lo indicado de la opción que se registró en cada comida,
+  al lado de lo registrado.
+- La regla de los planes con alternativas es la decidida (C-D1) y no cambia en esta entrega.
+- Con Nutrición suspendida por Administración, «Analizar» no muestra ninguna de las tres capas; al rehabilitar vuelven
+  iguales (prueba permanente en `test/integration/comparacion-nutricional.int-spec.ts`).
 
 ## Los datos de los recorridos
 

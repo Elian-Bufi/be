@@ -16,7 +16,9 @@ cosas distintas, con su nombre y una forma propia cada una:
   Por comida registrada, la lectura dice lo indicado de la opción que se eligió, al lado de lo registrado.
 
 No es un puntaje ni una adherencia, no hay porcentajes ni colores de «bien» o «mal», y que dos líneas se acerquen no
-dice que una cause la otra.
+dice que una cause la otra. **No prueba consumo**: lo registrado es lo que se registró, no lo que se comió. Con
+alternativas en el plan no existe un único total diario indicado: la pantalla dice por qué y el detalle disponible (lo
+indicado de la opción registrada en cada comida) se consulta en «Ver origen».
 
 ## 1. Decisiones (ratificadas por Dirección el 2026-10-25)
 
@@ -101,7 +103,9 @@ reconocida» hasta recargar. `RECORDS` no tiene objetivo ni indicado.
 - **Dominio:** cada caso de §3, que nada suma alternativas, el registro sin cantidades sin número, la comida diferente
   sin indicado y el valor exacto (comprobado a mano, independiente del código).
 - **Integración (PRJ-01):** los escalones de los macros con sus fechas; lo indicado igual después de cambiar el plan; la
-  forma del contrato (TEST-CT).
+  forma del contrato (TEST-CT). Y el cruce con Administración (#210, del que depende este paquete desde la pasada de
+  cierre del 2026-10-25): con Nutrición suspendida no hay ninguna de las tres capas; al rehabilitar vuelven iguales y lo
+  guardado no cambia.
 - **Navegador:** las tres capas, un hueco que no se une, la lectura y la tabla con los mismos valores, en Claro y Azul
   noche, con capturas.
 
