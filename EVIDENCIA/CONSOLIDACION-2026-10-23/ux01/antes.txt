@@ -1,0 +1,7 @@
+2026-10-20: 2350 kcal · calidad COMPLETE · falta [] · detalle Registros=4, Con cantidades=4
+2026-10-21: 1600 kcal · calidad COMPLETE · falta [] · detalle Registros=3, Con cantidades=3
+Exportación (filas de datos):
+  Calorías registradas;kcal;suma de lo conocido del día;2026-10-20;;;2350;sin faltantes;no;4;t1;no;4;4;0;;
+  Calorías registradas;kcal;suma de lo conocido del día;2026-10-21;;;1600;sin faltantes;no;3;t1;no;3;3;0;;
+Resumen: valor 1975 · n 2 · subtotales 0
+Cobertura breve: {"principal":["7 días: 2 con valor","4 sin registros"],"detalle":["hoy, en curso: fuera de la media"]}

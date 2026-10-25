@@ -339,13 +339,15 @@ describe('API-PRJ-01 · las comidas del plan sin registro (DL-153)', () => {
     expect(anteayer.coverage?.planMeals).toEqual({ daysKnown: 1, daysUndetermined: [], expected: 2, withPlanOption: 1, withDifferentMeal: 0, withoutRecord: 1 });
     expect(anteayer.detail).toEqual(
       expect.arrayContaining([
-        { label: 'Comidas del plan', value: '1 de 2 registradas · 1 sin registro' },
+        { label: 'Comidas del plan', value: '1 de 2 con registro · 1 sin registro' },
         { label: 'Sin registro', value: cena!.label },
       ]),
     );
     const ayer = r.recorded.points.find((p) => p.date === fechaCivil(haceDias(1)))!;
     expect(ayer).toMatchObject({ quality: 'PARTIAL', missing: [{ reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 }] });
     expect(ayer.coverage?.planMeals).toEqual({ daysKnown: 1, daysUndetermined: [], expected: 2, withPlanOption: 1, withDifferentMeal: 1, withoutRecord: 0 });
+    // D-2 (criterios del 2026-10-24): la cena con algo diferente tiene registro, sin ser la opción del plan; su cantidad sigue desconocida.
+    expect(ayer.detail).toEqual(expect.arrayContaining([{ label: 'Comidas del plan', value: '2 de 2 con registro · 1 con opción del plan · 1 con comida diferente' }]));
     expect(r.coverage.planMeals).toEqual({ daysKnown: 2, daysUndetermined: [], expected: 4, withPlanOption: 2, withDifferentMeal: 1, withoutRecord: 1 });
 
     // El mismo criterio que la pestaña Registros (API-NUT-17, el período por defecto, que termina hoy).

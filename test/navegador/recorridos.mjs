@@ -529,6 +529,50 @@ async function accesoRevocado({ p, d }) {
 }
 
 /**
+ * Hace fallar con un 503, dentro de la página, las lecturas GET de `caminos`, sin tocar la API ni la red del navegador.
+ *
+ * Reemplaza `fetch` antes de que cargue cada documento (`evaluateOnNewDocument`): el cliente HTTP del website recibe el
+ * 503 como si lo hubiera mandado la API, y todos los demás pedidos salen como siempre. Antes se interceptaba en la red
+ * del navegador (el dominio Fetch de CDP, con `setRequestInterception`). Con eso, en la CI, a veces el navegador cancelaba
+ * de golpe todo lo que estaba en curso, a la API y al website, y perdía la cookie de reanudación. Fue el intermitente del
+ * 23 y el 24/10, y pasaba también interceptando solo estos dos caminos.
+ * `dejarDeFallar` saca un camino, en el documento abierto y en los que vengan.
+ */
+async function simularFallas(p, caminos) {
+  const fallan = new Set(caminos);
+  let guion = null;
+  const instalar = async () => {
+    if (guion) await p.removeScriptToEvaluateOnNewDocument(guion.identifier);
+    guion = await p.evaluateOnNewDocument(
+      (api, lista) => {
+        const simuladas = new Set(lista);
+        window.__beLecturasQueFallan = simuladas;
+        const original = window.fetch.bind(window);
+        window.fetch = (entrada, init) => {
+          const url = new URL(typeof entrada === 'string' ? entrada : entrada instanceof URL ? entrada.href : entrada.url, location.href);
+          const metodo = String(init?.method ?? (entrada instanceof Request ? entrada.method : 'GET')).toUpperCase();
+          if (metodo === 'GET' && url.origin === api && simuladas.has(url.pathname)) {
+            const cuerpo = JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } });
+            return Promise.resolve(new Response(cuerpo, { status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
+          }
+          return original(entrada, init);
+        };
+      },
+      API,
+      [...fallan],
+    );
+  };
+  await instalar();
+  return {
+    async dejarDeFallar(camino) {
+      fallan.delete(camino);
+      await instalar();
+      await p.evaluate((c) => window.__beLecturasQueFallan?.delete(c), camino);
+    },
+  };
+}
+
+/**
  * Bloque 5: si falla UNA lectura (simulada en el navegador, sin tocar la API), la vista muestra lo que llegó, dice qué
  * falta, no lo confunde con «no hay» y «Reintentar lo que faltó» lo completa. En el Plan falla el objetivo vigente; en el
  * Resumen, el estado del seguimiento.
@@ -536,20 +580,7 @@ async function accesoRevocado({ p, d }) {
 async function faltaUnaParte({ p, d, salida }) {
   await entrar(p, d.pro.correo);
   const base = `/api/v1/advisees/${d.ase.id}/nutrition`;
-  const fallan = new Set([`${base}/objectives/effective`, `${base}/review-context`]);
-  await p.setRequestInterception(true);
-  p.on('request', (req) => {
-    if (req.isInterceptResolutionHandled()) return;
-    if (req.method() === 'GET' && fallan.has(new URL(req.url()).pathname)) {
-      return req.respond({
-        status: 503,
-        headers: { 'Access-Control-Allow-Origin': WEB, 'Access-Control-Expose-Headers': 'x-request-id', Vary: 'Origin' },
-        contentType: 'application/json; charset=utf-8',
-        body: JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } }),
-      });
-    }
-    return req.continue();
-  });
+  const fallas = await simularFallas(p, [`${base}/objectives/effective`, `${base}/review-context`]);
 
   // El Plan: la versión activa a la vista, el aviso de lo que falta y nada de «crear versión» ni «primero el objetivo».
   await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
@@ -559,7 +590,7 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate((t) => document.body.innerText.includes(t), dominio.COPY_DEL_PLAN.primeroElObjetivo)), 'una falla no se dice como «no hay objetivo»');
   assert.ok(!(await p.$('[data-crear-version]')), 'mientras falta el objetivo, no se ofrece crear una versión');
   await captura(p, salida, 'plan-falta-el-objetivo-1440');
-  fallan.delete(`${base}/objectives/effective`);
+  await fallas.dejarDeFallar(`${base}/objectives/effective`);
   await clic(p, 'button', 'Reintentar lo que faltó');
   await p.waitForFunction(() => !document.body.innerText.includes('Falta una parte de esta vista'), { timeout: ESPERA });
   await elemento(p, '[data-crear-version]');
@@ -571,7 +602,7 @@ async function faltaUnaParte({ p, d, salida }) {
   assert.ok(!(await p.evaluate(() => document.body.innerText.includes('No hay una revisión pendiente.'))), 'una falla no se dice como «no hay revisión pendiente»');
   assert.ok(await p.evaluate(() => /Versión \d+ · activada el/.test(document.body.innerText)), 'el plan activo sigue a la vista');
   await captura(p, salida, 'resumen-falta-el-seguimiento-1440');
-  fallan.clear();
+  await fallas.dejarDeFallar(`${base}/review-context`);
   await clic(p, 'button', 'Reintentar lo que faltó');
   await p.waitForFunction(() => !document.body.innerText.includes('No se pudo leer.'), { timeout: ESPERA });
   // Leído el estado del seguimiento: el plan activo lo abrió, y la revisión acordada (en 3 días) todavía no está pendiente.
@@ -581,10 +612,14 @@ async function faltaUnaParte({ p, d, salida }) {
 }
 
 /**
- * DL-153 (encargo del 2026-10-23): el número de Nutrición no da una falsa certeza. Ayer se registró el desayuno y no el
- * almuerzo del plan: el indicador del Resumen lo cuenta como subtotal y dice la comida del plan sin registro; la lectura de
- * Analizar de ese día dice cuál falta. Anteayer, con las dos, dice que cada comida del plan está registrada. Nunca «sin
- * faltantes».
+ * DL-153 (encargo del 2026-10-23, con los criterios que Dirección ratificó el 2026-10-24): el número de Nutrición no da
+ * una falsa certeza.
+ * - Ayer se registró el desayuno y no el almuerzo del plan: el indicador del Resumen lo cuenta como subtotal y dice la
+ *   comida del plan sin registro; la lectura de Analizar de ese día dice cuál falta.
+ * - Hace tres días, el almuerzo tiene una comida diferente sin cantidades: tiene registro, sin ser la opción del plan, y
+ *   el día es un subtotal por la cantidad.
+ * - Anteayer, con las dos, dice que cada comida del plan tiene registro. Nunca «sin faltantes».
+ * Registros dice el mismo conteo que Analizar.
  */
 async function completitud({ p, d, salida }) {
   await entrar(p, d.pro.correo);
@@ -594,8 +629,9 @@ async function completitud({ p, d, salida }) {
   const tarjeta = await p.$eval(indicador, (e) => e.innerText);
   assert.match(tarjeta, /kcal por día/, 'el valor es una media por día, dicha');
   assert.match(tarjeta, /Media de los días con valor/, 'con su regla');
-  assert.match(tarjeta, /1 subtotal/, 'ayer es un subtotal (antes, completo)');
-  assert.match(tarjeta, /1 comida del plan sin registro/, 'y se dice qué falta');
+  assert.match(tarjeta, /3 con valor/, 'los días que sostienen la media, con hoy en curso fuera');
+  assert.match(tarjeta, /2 subtotales/, 'ayer (falta el almuerzo) y hace tres días (la comida diferente no tiene cantidades)');
+  assert.match(tarjeta, /1 comida del plan sin registro/, 'solo la de ayer: la comida diferente cuenta como registro');
   assert.ok(!(await p.evaluate(() => document.body.innerText.includes('sin faltantes'))), 'ninguna parte del Resumen dice «sin faltantes»');
   await captura(p, salida, 'completitud-indicador-1440');
 
@@ -606,12 +642,24 @@ async function completitud({ p, d, salida }) {
   };
   const ayer = await lecturaDel(d.comidas.ayer, `Sin registro: ${d.comidas.faltante}`);
   assert.match(ayer, /Subtotal de lo registrado/);
-  assert.match(ayer, /Comidas del plan: 1 de 2 registradas · 1 sin registro/);
+  assert.match(ayer, /Comidas del plan: 1 de 2 con registro · 1 sin registro/);
   assert.ok(ayer.includes('Falta: 1 comida(s) del plan sin registro'), 'el motivo, con las palabras de la exportación');
   await captura(p, salida, 'completitud-lectura-ayer-1440');
-  const anteayer = await lecturaDel(d.comidas.anteayer, 'Comidas del plan: 2 de 2 registradas');
-  assert.match(anteayer, /Cada comida del plan registrada, con cantidades/);
+  const conDiferente = await lecturaDel(d.comidas.haceTres, 'Comidas del plan: 2 de 2 con registro · 1 con opción del plan · 1 con comida diferente');
+  assert.match(conDiferente, /Subtotal de lo registrado/, 'por la cantidad desconocida de la comida diferente');
+  assert.ok(!conDiferente.includes('Sin registro:'), 'el almuerzo tiene registro');
+  await captura(p, salida, 'completitud-lectura-comida-diferente-1440');
+  const anteayer = await lecturaDel(d.comidas.anteayer, 'Comidas del plan: 2 de 2 con registro');
+  assert.match(anteayer, /Cada comida del plan con registro, con cantidades/);
   assert.ok(!anteayer.includes('sin faltantes'), 'completo según el plan no se dice «sin faltantes»');
+
+  // Registros cuenta igual: la comida diferente da registro al almuerzo, y se dice cuántas tienen la opción del plan.
+  await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=registros`, { waitUntil: 'networkidle2' });
+  await esperarTexto(p, '2 de 2 comidas con registro');
+  await esperarTexto(p, '1 con opción del plan');
+  await esperarTexto(p, '1 de 2 comidas con registro');
+  assert.ok(!(await p.evaluate(() => /\d+ de \d+ comidas? registradas?\b/.test(document.body.innerText))), 'ya no dice «N de M comidas registradas»');
+  await captura(p, salida, 'completitud-registros-1440');
 }
 
 /**
