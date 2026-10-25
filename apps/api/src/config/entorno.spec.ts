@@ -166,10 +166,16 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
     }
   });
 
-  it('WP-ADMINISTRACION · la clave del segundo factor: base64url de 32 bytes o más; sin ella, null; el mensaje no repite el valor', () => {
+  it('WP-ADMINISTRACION · la clave del segundo factor: base64 (común o url) de 32 bytes o más; sin ella, null; el mensaje no repite el valor', () => {
     const clave = Buffer.alloc(32, 7).toString('base64url');
     expect(leerEntorno({ ...BASE, BE_CLAVE_DEL_SEGUNDO_FACTOR: clave }).claveDelSegundoFactor?.length).toBe(32);
     expect(leerEntorno(BASE).claveDelSegundoFactor).toBeNull();
+    // Render (`generateValue`) la da en base64 común: con «+», «/» y relleno. Vale igual, con los mismos bytes.
+    const bytes = Buffer.from(Array.from({ length: 32 }, (_, i) => (i * 37 + 251) % 256));
+    const comun = bytes.toString('base64');
+    expect(comun).toMatch(/[+/]/);
+    expect(leerEntorno({ ...BASE, BE_CLAVE_DEL_SEGUNDO_FACTOR: comun }).claveDelSegundoFactor?.equals(bytes)).toBe(true);
+    expect(leerEntorno({ ...BASE, BE_CLAVE_DEL_SEGUNDO_FACTOR: bytes.toString('base64url') }).claveDelSegundoFactor?.equals(bytes)).toBe(true);
     for (const mala of [Buffer.alloc(16, 7).toString('base64url'), 'esto no es base64url!']) {
       let mensaje = '';
       try {

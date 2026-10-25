@@ -8,7 +8,28 @@ import type { PrismaClient } from '@prisma/client';
 import * as OTPAuth from 'otpauth';
 import request from 'supertest';
 import { incorporarAdministrador } from '../../apps/api/src/administracion/incorporacion';
-import { CREDENCIAL_SINTETICA, claveDeIdempotencia, correoSintetico, registrarOk } from './soporte-api';
+import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
+import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
+import { CREDENCIAL_SINTETICA, claveDeIdempotencia, correoSintetico, registrarOk, tokenDe } from './soporte-api';
+import type { Parte } from './soporte-vinculo';
+
+/** Un profesional con un área presentada y pendiente de revisión (el quinto campo PENDIENTE de la siembra). */
+export async function profesionalPendiente(app: INestApplication, e: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA' = 'NUTRICION'): Promise<Parte> {
+  const correo = correoSintetico(`pend-${e}`);
+  const id = await registrarOk(app, correo, 'WEB');
+  const verificacion = app.get(VerificacionService);
+  await app.get(PrismaService).$transaction((tx) => verificacion.prepararProfesional(tx, id, { alcance, tipo: 'SANITARIO', nombreVisible: `Lic. Pendiente ${e}`, estadoInicial: 'PENDIENTE' }, new Date()));
+  return { correo, id, token: await tokenDe(app, correo, 'WEB') };
+}
+
+/** Un código de seis dígitos que no vale ahora (ni en el paso anterior ni en el siguiente). */
+export function codigoQueNoVale(secreto: string): string {
+  const validos = new Set([-30_000, 0, 30_000].map((d) => codigoTotp(secreto, d)));
+  for (let n = Number(codigoTotp(secreto)) + 1; ; n++) {
+    const candidato = String(n % 1_000_000).padStart(6, '0');
+    if (!validos.has(candidato)) return candidato;
+  }
+}
 
 export interface Administrador {
   readonly correo: string;

@@ -98,10 +98,10 @@ export interface Entorno {
    */
   readonly google: { readonly clientIds: readonly string[]; readonly jwksUrl: string; readonly presupuestoMs: number };
   /**
-   * WP-ADMINISTRACION (DL-155) · la clave del segundo factor (`BE_CLAVE_DEL_SEGUNDO_FACTOR`, 32 bytes o más en base64url;
-   * la genera Render). De ella se derivan (HKDF) la clave que cifra los secretos TOTP y la que firma las huellas de los
-   * códigos de recuperación. Es un secreto: nunca se imprime. Sin valor, la administración responde «no configurada» (503)
-   * y el resto de BE sigue igual.
+   * WP-ADMINISTRACION (DL-155) · la clave del segundo factor (`BE_CLAVE_DEL_SEGUNDO_FACTOR`, 32 bytes o más en base64, común
+   * o url: `generateValue` de Render la da en base64 común, con «+» y «/»). De ella se derivan (HKDF) la clave que cifra los
+   * secretos TOTP y la que firma las huellas de los códigos de recuperación. Es un secreto: nunca se imprime. Sin valor, la
+   * administración responde «no configurada» (503) y el resto de BE sigue igual.
    */
   readonly claveDelSegundoFactor: Buffer | null;
 }
@@ -256,8 +256,10 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
   const claveCruda = (env.BE_CLAVE_DEL_SEGUNDO_FACTOR ?? '').trim();
   let claveDelSegundoFactor: Buffer | null = null;
   if (claveCruda !== '') {
-    const decodificada = /^[A-Za-z0-9_-]+={0,2}$/.test(claveCruda) ? Buffer.from(claveCruda, 'base64url') : Buffer.alloc(0);
-    if (decodificada.length < 32) errores.push('BE_CLAVE_DEL_SEGUNDO_FACTOR debe ser base64url de 32 bytes o más');
+    // El decodificador base64 de Node acepta los dos alfabetos (común y url); la forma se comprueba antes, para que un texto
+    // que no es base64 no se decodifique a medias.
+    const decodificada = /^[A-Za-z0-9+/_-]+={0,2}$/.test(claveCruda) ? Buffer.from(claveCruda, 'base64') : Buffer.alloc(0);
+    if (decodificada.length < 32) errores.push('BE_CLAVE_DEL_SEGUNDO_FACTOR debe ser base64 (común o url) de 32 bytes o más');
     else claveDelSegundoFactor = decodificada;
   }
 

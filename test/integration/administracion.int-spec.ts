@@ -24,7 +24,7 @@ import { puedeOperarArea } from '../../apps/api/src/profesional/area-operable';
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { appDePrueba, claveDeIdempotencia, conSesion, correoSintetico, login, registrarOk, tokenDe } from './soporte-api';
-import { adm, administradorListo, codigoTotp, decidirSobre, otraSesion, primerFactor, type Administrador } from './soporte-administracion';
+import { adm, administradorListo, codigoTotp, decidirSobre, otraSesion, primerFactor, profesionalPendiente, type Administrador } from './soporte-administracion';
 import { LaApk } from './soporte-lecturas-de-la-apk';
 import { circuitoConPlanActivo, registrarComida } from './soporte-nutricion';
 import { finalizar, prepararAsesorado, prepararProfesional, revocarB2, solicitar, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
@@ -43,15 +43,6 @@ afterAll(async () => {
 });
 
 const ctx = (): ContextoDeSolicitud => ({ requestId: null, momentoDeRecepcion: new Date(), superficie: null, direccionIp: null, agenteDeUsuario: null, capacidades: new Set() });
-
-/** Un profesional con un área presentada y pendiente de revisión (el quinto campo PENDIENTE de la siembra). */
-async function profesionalPendiente(app: INestApplication, e: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA' = 'NUTRICION'): Promise<Parte> {
-  const correo = correoSintetico(`pend-${e}`);
-  const id = await registrarOk(app, correo, 'WEB');
-  const verificacion = app.get(VerificacionService);
-  await app.get(PrismaService).$transaction((tx) => verificacion.prepararProfesional(tx, id, { alcance, tipo: 'SANITARIO', nombreVisible: `Lic. Pendiente ${e}`, estadoInicial: 'PENDIENTE' }, new Date()));
-  return { correo, id, token: await tokenDe(app, correo, 'WEB') };
-}
 
 const area = async (a: Administrador, profesionalId: string, alcance: string) =>
   ((await adm(app, a.token).get(`/admin/professionals/${profesionalId}`).expect(200)).body.data.scopes as { scope: string; [k: string]: unknown }[]).find((x) => x.scope === alcance)!;
