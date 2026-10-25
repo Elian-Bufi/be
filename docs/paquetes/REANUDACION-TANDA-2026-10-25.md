@@ -15,9 +15,9 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
 
 | Etapa | Estado | Rama · worktree | PR | Último commit |
 |---|---|---|---|---|
-| A · Administración | **preparada**: definición, base, API, website, comando, pruebas (33 + TEST-CT), recorrido con capturas, procedimiento del operador y revisión de seguridad con sus correcciones; falta la CI de `b6dfa09` | `wp-administracion` · `C:/Users/bufim/BE-admin` | #210 (borrador) | `b6dfa09` |
-| B · #195 sustitución | **preparada**: al día con main, R-5 con sus palabras, guion del teléfono; sin teléfono ni APK | `wp-apk-sustitucion` · `C:/Users/bufim/BE-Best/.claude/worktrees/agent-ad05c75238781c9c6` (sin `node_modules`: se mueven desde BE-admin) | #195 (borrador) | `d7ead1e` (CI verde) |
-| C · comparación de Nutrición | sin empezar | — | — | — |
+| A · Administración | **preparada**: definición, base, API, website, comando, pruebas (33 + TEST-CT), recorrido con capturas, procedimiento del operador y revisión de seguridad con sus correcciones | `wp-administracion` · `C:/Users/bufim/BE-admin` (sin `node_modules`: están en BE-comparacion) | #210 (borrador) | `b6dfa09` (CI verde, push y PR) |
+| B · #195 sustitución | **preparada**: al día con main, R-5 con sus palabras, guion del teléfono; sin teléfono ni APK | `wp-apk-sustitucion` · `C:/Users/bufim/BE-Best/.claude/worktrees/agent-ad05c75238781c9c6` (sin `node_modules`) | #195 (borrador) | `d7ead1e` (CI verde) |
+| C · comparación de Nutrición | **en curso**: definición (`WP-NUTRICION-COMPARACION.md`, DL-158), dominio (`indicado-del-plan.ts`, contrato aditivo de PRJ-01, copy) con 11 pruebas verdes; siguen API, website, recorrido | `wp-nutricion-comparacion` (desde `3724d3d`) · `C:/Users/bufim/BE-comparacion` (con `node_modules`, Prisma generado) | — | sin commits todavía |
 | Ensayo conjunto | sin empezar | — | — | — |
 
 ## Commits de A (en orden)
@@ -54,20 +54,22 @@ ejercicios, APK), #193 (propuestas, docs), #199 (tesis), #204 (ensayo viejo, no 
 - Revisión de seguridad (otra instancia del modelo, de solo lectura): clases 2 a 5 sin hallazgos; cinco del segundo factor
   corregidos. Integración local después de las correcciones: Administración 33/33; contrato, sesiones, reanudación,
   esquema, máquinas, cierre, novedades, lecturas de las APK y despliegue 177/177; mutaciones 6/6; migrate diff vacío.
+- CI de `b6dfa09` (A): las seis comprobaciones verdes en las dos corridas (push 40170723335 y PR 40170726171).
 - B: pruebas de la APK 71/71, tipado de la APK, integración de la sustitución y lecturas de las APK 22/22 (con una
   configuración de Jest en el scratchpad: el patrón del repo no entra en la carpeta `.claude`). CI de `d7ead1e` verde.
 
 ## Siguiente acción
 
-1. Mirar la CI de `b6dfa09` (A).
-2. Etapa C: leer la propuesta C de #193 (`origin/wp-consolidacion-propuestas`, `docs/propuestas/AMPLIACIONES_2026-10-19.md`),
-   mirar lo que ya hay en main (Analizar: `lienzo.tsx`, `analizar.tsx`; PRJ-01: `lectura-proyecciones.ts`; dominio:
-   `nutricion-del-analisis.ts`) y definir el paquete antes de programar.
-3. Ensayo conjunto en una rama NO INTEGRAR; guía de estudio y guion de tareas con las respuestas aparte; informe final.
+1. Etapa C, en BE-comparacion: API de PRJ-01 (`fuentes.ts`: macros del objetivo; `lectura-proyecciones.ts`:
+   `objectiveSteps` y `planned`), prueba de integración, website (series, lienzo con la tercera capa, lectura, tabla,
+   exportación, origen del dato, «Cómo se lee»), recorrido con capturas en los dos temas, DL-158, commit, PR en borrador.
+2. Ensayo conjunto en una rama NO INTEGRAR; guía de estudio y guion de tareas con las respuestas aparte; informe final.
 
 ## Entorno de la máquina
 
 - Node 22 con fnm; `gh` en `/c/Program Files/GitHub CLI`. Una tarea pesada por vez (RAM 5,9 GB, ~1 GB libre).
+- `node_modules` está ahora en `BE-comparacion` (movido desde BE-admin, uniones de `@be/*` rehechas, Prisma generado,
+  dominio construido). Para volver a trabajar en A o B, moverlo de nuevo y rehacer las uniones.
 - En el worktree nuevo: `node_modules` movido desde `BE-200` (rama ya integrada), uniones de `@be/*` rehechas y
   `npx prisma generate` corrido (cliente real, 12,7 MB). Dependencia nueva: `otpauth` 9.5.2 en `@be/api`.
 - PostgreSQL embebido propio en :55462 (clúster en el scratchpad de la sesión, `pg-admin`), bases `be_admin_shadow`,
