@@ -173,7 +173,17 @@ export async function datos(estado) {
       await registrarComida(desayuno, anteayer, '08:30');
       await registrarComida(almuerzo, anteayer, '13:00');
       await registrarComida(desayuno, ayer, '08:30');
-      e.comidas = { anteayer, ayer, faltante: almuerzo.label };
+      // DL-153, D-2 (criterios de Dirección del 2026-10-24): hace tres días, el desayuno con la opción del plan y, en el
+      // almuerzo, una comida diferente sin cantidades. El almuerzo tiene registro sin ser la opción del plan; el día es un
+      // subtotal por la cantidad, no por una comida sin registro.
+      const haceTres = diaMas(hoy, -3);
+      await registrarComida(desayuno, haceTres, '08:30');
+      await pedir('POST', '/me/nutrition/meal-records', {
+        token: ase,
+        superficie: 'APK',
+        cuerpo: { kind: 'DIFFERENT', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: almuerzo.mealId, occurredAt: instante(haceTres, '13:00').toISOString(), description: 'Una pizza con amigos', approximateQuantity: null, mediaIds: [] },
+      });
+      e.comidas = { anteayer, ayer, haceTres, faltante: almuerzo.label };
     }
     if (r.datos.includes('tomas')) {
       const pesos = [

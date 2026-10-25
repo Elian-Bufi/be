@@ -138,20 +138,28 @@ const SIN_INFORMACION_DEL_PLAN: ComidasDelPlanDelDia = { estado: 'SIN_DETERMINAR
 
 const contar = (n: number, uno: string, varios: string): string => `${numero(n)} ${n === 1 ? uno : varios}`;
 
+/** Un conteo que puede ser cero, sin decir «0 de 4»: «ninguna de 4». */
+const cuantas = (n: number): string => (n === 0 ? 'ninguna' : numero(n));
+
 /**
- * Las comidas del plan en un renglón, con las palabras de la pestaña Registros: «3 de 4 registradas · 1 sin registro»,
- * «2 de 4 registradas · 1 con una comida diferente · 1 sin registro», o por qué no se pueden conocer. En una semana o un
- * período, con sus días.
+ * Las comidas del plan en un renglón (DL-153, con los criterios que ratificó Dirección el 2026-10-24). Primero, la
+ * cobertura del registro: cuántas comidas del plan tienen registro, sea la opción del plan o una comida diferente, y
+ * cuántas no («4 de 4 con registro», «3 de 4 con registro · 1 sin registro»). Si alguna tiene una comida diferente, el
+ * desglose: «· 3 con opción del plan · 1 con comida diferente». Con registro no es cumplimiento del plan.
+ * - Cada comida del plan está en un solo estado, así que ninguna se cuenta dos veces.
+ * - Una comida diferente registrada fuera de las comidas del plan no cubre ninguna.
+ * Es el mismo conteo que el renglón del día de Registros. En una semana o un período, con sus días, o por qué no se
+ * pueden conocer.
  */
 export function comidasDelPlanEnPalabras(c: ComidasDelPlan): string {
   const sinDeterminar = c.daysUndetermined.reduce((s, d) => s + d.days, 0);
   const motivos = c.daysUndetermined.map((d) => (d.reason === 'NO_ACTIVE_PLAN' ? 'no había un plan vigente' : 'el plan tiene más de un día tipo y no hay registros del plan que digan cuál'));
   if (c.daysKnown === 0) return sinDeterminar === 0 ? 'sin días con registros' : `sin determinar: ${motivos.join(' y ')}`;
   const partes = [
-    // Como el renglón del día de Registros: «registrada» va con el total (1 de 1 registrada, 1 de 4 registradas).
-    `${numero(c.withPlanOption)} de ${numero(c.expected)} ${c.expected === 1 ? 'registrada' : 'registradas'}`,
-    ...(c.withDifferentMeal > 0 ? [contar(c.withDifferentMeal, 'con una comida diferente', 'con una comida diferente')] : []),
+    `${cuantas(c.withPlanOption + c.withDifferentMeal)} de ${numero(c.expected)} con registro`,
     ...(c.withoutRecord > 0 ? [`${numero(c.withoutRecord)} sin registro`] : []),
+    // El desglose, cuando no todas las que tienen registro son la opción del plan.
+    ...(c.withDifferentMeal > 0 ? [`${cuantas(c.withPlanOption)} con opción del plan`, `${numero(c.withDifferentMeal)} con comida diferente`] : []),
   ];
   const dias = c.daysKnown + sinDeterminar > 1 ? ` en ${contar(c.daysKnown, 'día', 'días')}` : '';
   const resto = sinDeterminar > 0 ? ` · ${contar(sinDeterminar, 'día', 'días')} sin determinar (${motivos.join(' y ')})` : '';
@@ -428,7 +436,8 @@ export function coberturaNutricional(
 /**
  * La calidad de un punto en palabras, la misma en la tabla, la lectura, el origen del dato y la exportación (DL-153).
  * - En nutrición, «completo» nunca se dice «sin faltantes»: es lo registrado con sus cantidades y, si el plan deja
- *   saberlo, con cada comida del plan registrada. Sigue sin probar que sea todo lo que comió ni en esas cantidades.
+ *   saberlo, con registro en cada comida del plan (la opción del plan o una comida diferente). Sigue sin probar que sea
+ *   todo lo que comió, ni en esas cantidades, ni que cumpla el plan.
  * - Un conteo de registros (`esConteo`) es exacto aunque falte registrar una comida: lo dice el detalle, no la calidad.
  * - En entrenamiento y antropometría cada punto es una observación con su valor: no hay nada que falte adentro.
  */
@@ -439,7 +448,7 @@ export function calidadEnPalabras(p: Pick<PuntoAnalitico, 'quality' | 'coverage'
   if (esConteo) return 'cuenta de los registros';
   const c = p.coverage.planMeals;
   const sinDeterminar = c.daysUndetermined.reduce((s, d) => s + d.days, 0);
-  if (c.daysKnown > 0 && sinDeterminar === 0) return c.daysKnown === 1 ? 'cada comida del plan registrada, con cantidades' : 'cada comida del plan registrada, con cantidades, en sus días';
+  if (c.daysKnown > 0 && sinDeterminar === 0) return c.daysKnown === 1 ? 'cada comida del plan con registro, con cantidades' : 'cada comida del plan con registro, con cantidades, en sus días';
   return c.daysKnown === 0 ? 'registros con cantidades, sin saber qué comidas indicaba el plan' : 'registros con cantidades, sin saber en algún día qué comidas indicaba el plan';
 }
 

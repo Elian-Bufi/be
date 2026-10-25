@@ -357,8 +357,12 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
     Cena»). Si el plan no deja saberlo (sin plan vigente, o varios días tipo sin un registro del plan que diga cuál), se
     dice «sin determinar»: no se inventan comidas esperadas. Hoy no cuenta: todavía se puede registrar. **En nutrición,
     «completo» nunca se dice «sin faltantes»:** lo registrado no es todo lo que se comió. Se dice «cada comida del plan
-    registrada, con cantidades» o «registros con cantidades, sin saber qué comidas indicaba el plan»
-    (`calidadEnPalabras`, del dominio, la misma en la tabla, la lectura, el origen del dato y la exportación);
+    con registro, con cantidades» o «registros con cantidades, sin saber qué comidas indicaba el plan»
+    (`calidadEnPalabras`, del dominio, la misma en la tabla, la lectura, el origen del dato y la exportación). **La
+    cuenta de las comidas del plan** (criterios de Dirección del 2026-10-24) es de cobertura del registro, la misma en
+    Analizar, la exportación y Registros: «4 de 4 con registro · 3 con opción del plan · 1 con comida diferente», o «3 de
+    4 con registro · 1 sin registro». Una comida diferente registrada en una comida del plan le da registro, sin ser la
+    opción del plan ni cumplirlo; una registrada fuera de las comidas del plan no cubre ninguna;
   - en entrenamiento y antropometría, en sesiones o tomas («6 sesiones: 5 con valor»; «3 tomas: 2 del último tramo
     comparable»), nunca en días.
   Una cobertura no es una adherencia y no lleva porcentaje. Si el plan empezó a regir dentro del período, se dice desde

@@ -5383,14 +5383,35 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 - **D-4 · Hoy, en curso.** Provisorio: el punto de hoy es un subtotal si le falta una comida, pero sus comidas no cuentan en el período, porque todavía se pueden registrar.
   - **Alternativa:** no marcar hoy hasta que termine.
 
+**Decisión de Dirección del 2026-10-24: D-1 a D-4, ratificadas con estos criterios.**
+- **D-1.** La media sigue incluyendo los subtotales: es el promedio de la energía registrada en los días con valor.
+  - **Lo que tiene que verse:** los días usados, cuántos son subtotales y la cobertura del período. El indicador lo muestra: «N días: X con valor · Y sin registros», y debajo los subtotales, las comidas del plan sin registro y «hoy, en curso: fuera de la media».
+  - **Cómo no tiene que leerse:** ni como ingesta real ni como cumplimiento del objetivo. Lo dicen el límite de las métricas registradas («No es la ingesta real ni el cumplimiento del objetivo»), que se ve en Analizar, y «Cómo se lee» del Resumen.
+- **D-2.** Una comida diferente registrada en una comida del plan cuenta como registrada, sin ser automáticamente cumplimiento del plan, y las cantidades o los nutrientes desconocidos siguen siendo desconocidos.
+  - **La presentación se corrigió.** El numerador era solo de las opciones del plan («3 de 4 registradas · 1 con una comida diferente»). Ahora es la cobertura del registro, opciones más comidas diferentes, sin contar dos veces una comida, y el desglose va cuando hay comidas diferentes:
+    - «4 de 4 con registro · 3 con opción del plan · 1 con comida diferente»;
+    - «3 de 4 con registro · 1 sin registro · 2 con opción del plan · 1 con comida diferente»;
+    - una comida diferente registrada fuera de las comidas del plan no cubre ninguna: «3 de 4 con registro · 1 sin registro».
+  - **El mismo conteo en todas las superficies:** Analizar (detalle, lectura y origen del dato), la exportación, «La información disponible» y el renglón del día de Registros («3 de 4 comidas con registro», con «2 con opción del plan» en sus notas). La ayuda de Registros lo explica.
+  - **También cambian dos textos:** la calidad completa pasa a decir «cada comida del plan con registro, con cantidades», y un día con registros pero ninguno en una comida del plan dice «ninguna de 4 con registro», nunca «0 de 4».
+  - **No cambian** cantidades, macros ni criterios de comparación.
+- **D-3.** Si el día tipo no se puede determinar con la regla vigente, sigue «sin determinar», con su motivo. No se elige uno por suposición.
+- **D-4.** Hoy se muestra como día en curso, con sus datos parciales («día en curso: el valor todavía puede cambiar»), y queda fuera de las medias y de los faltantes del período cerrado.
+- **Un día sin registros sigue siendo falta de datos, nunca cero.**
+- **Queda pendiente:** la prueba con profesionales y la del lector de pantalla. Las pruebas automáticas no las reemplazan.
+
 **Pruebas:**
 - **`completitud-nutricional.test.ts`** (15 casos, dominio): completo según el plan, una comida sin registrar (el defecto), cantidades desconocidas, día sin registros, día en curso, comida diferente en una comida y fuera de toda comida, rectificación y anulación, sin plan, dos días tipo, la semana, el conteo, el mismo criterio que Registros y el Resumen del área. Los resultados están escritos a mano.
 - **Las existentes**, ajustadas a la forma nueva sin cambiar lo que comprueban: `analisis-longitudinal`, `comprension-del-dashboard` y `exportacion-del-analisis`. La exportación ahora usa coberturas reales y fija que nada diga «sin faltantes».
 - **`analisis.int-spec.ts`** (integración, en la CI). El escenario de siempre dice que deshacer el almuerzo de hoy lo deja sin registro. Hay un caso nuevo contra la API real: anteayer una comida de dos, ayer una comida diferente en la cena, con la pestaña Registros (API-NUT-17) diciendo lo mismo.
 - **El recorrido `completitud`** (navegador, en la CI): el indicador del Resumen y la lectura de Analizar de ayer y de anteayer.
+- **Con los criterios del 2026-10-24:**
+  - en el dominio, los dos ejemplos de D-2, la comida diferente fuera del plan, la comida con su opción y además una diferente (cuenta una vez) y el día sin ninguna comida del plan con registro, en Analizar y en Registros;
+  - en la integración, la lectura de la API real del día con una comida diferente en la cena;
+  - en el recorrido, un tercer día con una comida diferente en el almuerzo, el indicador («2 subtotales · 1 comida del plan sin registro»), su lectura y la pestaña Registros.
 
 **Lo que falta:**
-- La prueba con profesionales: si se entiende qué representa el número y si D-1 se queda en A.
+- La prueba con profesionales: si se entiende qué representa el número y si D-1 se queda en A. También, la prueba con lector de pantalla.
 - La APK no cambia: «Tu historial» de Nutrición de la persona no usa este cálculo.
 
 **Condición de cierre:** Dirección ratifica D-1 a D-4, la CI de la integración pasa, y la prueba con profesionales dice si el número se entiende.

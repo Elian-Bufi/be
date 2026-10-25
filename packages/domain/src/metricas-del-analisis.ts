@@ -66,7 +66,7 @@ const GRANO_NUTRICIONAL = [
   { grano: 'WEEK', agregacion: 'MEAN_OF_DAYS_WITH_DATA' },
 ] as const;
 
-const LIMITE_REGISTRADO = 'Es lo registrado: si una comida no se registró, o se registró sin cantidades, no está en el número. No es la ingesta total.';
+const LIMITE_REGISTRADO = 'Es lo registrado: si una comida no se registró, o se registró sin cantidades, no está en el número. No es la ingesta real ni el cumplimiento del objetivo.';
 
 function nutricional(id: string, nombre: string, nombreCorto: string, parametro: MetricaNutricional, unidad: string, decimales: number, familia: string): DefinicionDeMetrica {
   return {
@@ -130,7 +130,7 @@ const DE_NUTRICION: readonly DefinicionDeMetrica[] = [
     explicacion: 'Cuántos registros de comida efectivos hay por día, con y sin cantidades.',
     comoSeCalcula: 'Se cuentan los registros de comida efectivos del día (del plan o diferentes). Los anulados no cuentan; una rectificación no suma un registro.',
     ausencias: 'Un día sin registros no es un punto en cero: es un hueco.',
-    limites: ['Es cobertura del registro, no adherencia: 3 de 4 comidas registradas no dice que se registró todo lo que se comió.'],
+    limites: ['Es cobertura del registro, no adherencia: 3 de 4 comidas con registro no dice que se registró todo lo que se comió.'],
   },
   {
     id: 'nutricion.energia-prevista-del-dia',

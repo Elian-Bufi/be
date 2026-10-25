@@ -116,8 +116,8 @@ test('1 · las cuatro comidas del plan registradas con cantidades: completo seg�
   assert.equal(p.quality, 'COMPLETE');
   assert.deepEqual(p.missing, []);
   assert.deepEqual(p.coverage?.planMeals, { daysKnown: 1, daysUndetermined: [], expected: 4, withPlanOption: 4, withDifferentMeal: 0, withoutRecord: 0 });
-  assert.equal(detalle(p, 'Comidas del plan'), '4 de 4 registradas');
-  assert.equal(calidadEnPalabras(p), 'cada comida del plan registrada, con cantidades');
+  assert.equal(detalle(p, 'Comidas del plan'), '4 de 4 con registro');
+  assert.equal(calidadEnPalabras(p), 'cada comida del plan con registro, con cantidades');
   assert.doesNotMatch(calidadEnPalabras(p), /sin faltantes|complet/);
 });
 
@@ -129,7 +129,7 @@ test('2 · el defecto: 3 de 4 comidas del plan con cantidades es un subtotal que
   assert.equal(p.value, 1500, 'el valor del día no cambia: es la suma de lo registrado');
   assert.equal(p.quality, 'PARTIAL', 'antes salía COMPLETE');
   assert.deepEqual(p.missing, [{ reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 1 }]);
-  assert.equal(detalle(p, 'Comidas del plan'), '3 de 4 registradas · 1 sin registro');
+  assert.equal(detalle(p, 'Comidas del plan'), '3 de 4 con registro · 1 sin registro');
   assert.equal(detalle(p, 'Sin registro'), 'Cena', 'se dice qué falta, con el nombre del plan');
   assert.equal(calidadEnPalabras(p), 'subtotal de lo registrado');
   // La media y su denominador no cambian: los dos días tienen valor; cambia cuántos son subtotales y qué se dice.
@@ -153,8 +153,8 @@ test('2 · la exportación dice lo mismo que la pantalla: subtotal, las comidas 
   assert.deepEqual(
     filas.map((f) => [f[col('Fecha')], f[col('Valor')], f[col('Calidad')], f[col('Comidas del plan')], f[col('Falta')]]),
     [
-      ['2026-10-20', '2000', 'cada comida del plan registrada, con cantidades', '4 de 4 registradas', ''],
-      ['2026-10-21', '1500', 'subtotal', '3 de 4 registradas · 1 sin registro', '1 comida(s) del plan sin registro'],
+      ['2026-10-20', '2000', 'cada comida del plan con registro, con cantidades', '4 de 4 con registro', ''],
+      ['2026-10-21', '1500', 'subtotal', '3 de 4 con registro · 1 sin registro', '1 comida(s) del plan sin registro'],
     ],
   );
   assert.doesNotMatch(csv, /sin faltantes/);
@@ -220,14 +220,35 @@ test('5 · hoy, con una comida de cuatro: subtotal y en curso, fuera de la media
 
 // ─── 6. Comida diferente al plan ────────────────────────────────────────────────────────────────
 
-test('6 · una comida diferente en la cena tiene registro (no es «sin registro») pero no es la opción del plan, y no tiene cantidades', () => {
+test('6 · D-2, ejemplo 1: tres opciones del plan y una comida diferente en la cena, de cuatro: «4 de 4 con registro · 3 con opción del plan · 1 con comida diferente»', () => {
   const s = serieDe([...dia('2026-10-20', ['Desayuno', 'Almuerzo', 'Merienda']), registro('2026-10-20', null, { diferente: true, enLaComida: 'Cena' })], UN_DIA_TIPO);
   const p = punto(s, '2026-10-20');
-  assert.equal(p.value, 1500);
+  assert.equal(p.value, 1500, 'las cantidades no cambian');
   assert.equal(p.quality, 'PARTIAL');
-  assert.deepEqual(p.missing, [{ reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 }]);
+  assert.deepEqual(p.missing, [{ reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 }], 'la cena tiene registro: lo que falta es la cantidad, que sigue desconocida');
   assert.deepEqual(p.coverage?.planMeals, { daysKnown: 1, daysUndetermined: [], expected: 4, withPlanOption: 3, withDifferentMeal: 1, withoutRecord: 0 });
-  assert.equal(detalle(p, 'Comidas del plan'), '3 de 4 registradas · 1 con una comida diferente');
+  assert.equal(detalle(p, 'Comidas del plan'), '4 de 4 con registro · 3 con opción del plan · 1 con comida diferente');
+  assert.equal(detalle(p, 'Sin registro'), null);
+});
+
+test('6 · D-2, ejemplo 2: dos opciones, una comida diferente y una sin registro: «3 de 4 con registro · 1 sin registro», con el desglose', () => {
+  const registros = [...dia('2026-10-20', ['Desayuno', 'Almuerzo']), registro('2026-10-20', null, { diferente: true, enLaComida: 'Merienda' })];
+  const p = punto(serieDe(registros, UN_DIA_TIPO), '2026-10-20');
+  assert.deepEqual(p.coverage?.planMeals, { daysKnown: 1, daysUndetermined: [], expected: 4, withPlanOption: 2, withDifferentMeal: 1, withoutRecord: 1 });
+  assert.equal(detalle(p, 'Comidas del plan'), '3 de 4 con registro · 1 sin registro · 2 con opción del plan · 1 con comida diferente');
+  assert.equal(detalle(p, 'Sin registro'), 'Cena');
+  assert.deepEqual(p.missing, [
+    { reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 },
+    { reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 1 },
+  ]);
+  // Registros dice el mismo conteo, con el desglose en sus notas.
+  const contraste = construirContraste(['2026-10-20'], versiones(UN_DIA_TIPO), registros.map(ingestaDelContraste));
+  const enRegistros = resumenDeUnDia(componerLosRegistros(contraste, null)[0]!, false);
+  assert.equal(enRegistros.principal, '3 de 4 comidas con registro');
+  assert.deepEqual(
+    enRegistros.notas.map((n) => n.texto),
+    ['2 con opción del plan', '1 comida diferente', '1 sin registro'],
+  );
 });
 
 test('6 · una comida diferente fuera de toda comida del plan no ocupa ninguna: la cena sigue sin registro', () => {
@@ -238,6 +259,19 @@ test('6 · una comida diferente fuera de toda comida del plan no ocupa ninguna: 
     { reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 1 },
   ]);
   assert.equal(detalle(p, 'Sin registro'), 'Cena');
+  // D-2, ejemplo 3: no cubre ninguna comida del plan, ni se suma al conteo.
+  assert.equal(detalle(p, 'Comidas del plan'), '3 de 4 con registro · 1 sin registro');
+});
+
+test('6 · una comida con su opción del plan y además una comida diferente cuenta una vez, como opción del plan', () => {
+  const p = punto(serieDe([...dia('2026-10-20', COMIDAS), registro('2026-10-20', null, { diferente: true, enLaComida: 'Cena' })], UN_DIA_TIPO), '2026-10-20');
+  assert.deepEqual(p.coverage?.planMeals, { daysKnown: 1, daysUndetermined: [], expected: 4, withPlanOption: 4, withDifferentMeal: 0, withoutRecord: 0 });
+  assert.equal(detalle(p, 'Comidas del plan'), '4 de 4 con registro', 'no «5 de 4», ni el desglose: todas tienen la opción del plan');
+});
+
+test('6 · un día con registros pero ninguno en una comida del plan no dice «0 de 4»', () => {
+  const p = punto(serieDe([registro('2026-10-20', null, { diferente: true, enLaComida: null })], UN_DIA_TIPO), '2026-10-20');
+  assert.equal(detalle(p, 'Comidas del plan'), 'ninguna de 4 con registro · 4 sin registro');
 });
 
 // ─── 7. Rectificación y anulación ───────────────────────────────────────────────────────────────
@@ -288,13 +322,13 @@ test('dos días tipo: con opciones del plan registradas, el día tipo es el que 
 
 // ─── El mismo criterio que la pestaña Registros ─────────────────────────────────────────────────
 
-test('Analizar y Registros cuentan igual el mismo día: «3 de 4 comidas registradas» y «3 de 4 registradas · 1 sin registro»', () => {
+test('Analizar y Registros cuentan igual el mismo día: «3 de 4 comidas con registro» y «3 de 4 con registro · 1 sin registro»', () => {
   const registros = [...dia('2026-10-21', ['Desayuno', 'Almuerzo', 'Merienda'])];
   const contraste = construirContraste(['2026-10-21'], versiones(UN_DIA_TIPO), registros.map(ingestaDelContraste));
   const enRegistros = resumenDeUnDia(componerLosRegistros(contraste, null)[0]!, false);
-  assert.equal(enRegistros.principal, '3 de 4 comidas registradas');
+  assert.equal(enRegistros.principal, '3 de 4 comidas con registro');
   assert.ok(enRegistros.notas.some((n) => n.texto === '1 sin registro'));
-  assert.equal(detalle(punto(serieDe(registros, UN_DIA_TIPO), '2026-10-21'), 'Comidas del plan'), '3 de 4 registradas · 1 sin registro');
+  assert.equal(detalle(punto(serieDe(registros, UN_DIA_TIPO), '2026-10-21'), 'Comidas del plan'), '3 de 4 con registro · 1 sin registro');
 });
 
 // ─── La semana, el conteo y el Resumen del área ─────────────────────────────────────────────────
@@ -306,7 +340,7 @@ test('la semana suma las comidas del plan de sus días y es un subtotal si a alg
   assert.equal(semana.quality, 'PARTIAL');
   assert.deepEqual(semana.missing, [{ reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 2 }]);
   assert.deepEqual(semana.coverage?.planMeals, { daysKnown: 2, daysUndetermined: [], expected: 8, withPlanOption: 6, withDifferentMeal: 0, withoutRecord: 2 });
-  assert.equal(semana.detail.find((d) => d.label === 'Comidas del plan')?.value, '6 de 8 registradas · 2 sin registro en 2 días');
+  assert.equal(semana.detail.find((d) => d.label === 'Comidas del plan')?.value, '6 de 8 con registro · 2 sin registro en 2 días');
 });
 
 test('el conteo de registros es exacto aunque falte una comida: no se vuelve un subtotal, pero dice las comidas del plan', () => {
@@ -315,7 +349,7 @@ test('el conteo de registros es exacto aunque falte una comida: no se vuelve un 
   assert.equal(p.value, 3);
   assert.equal(p.quality, 'COMPLETE');
   assert.equal(calidadEnPalabras(p, true), 'cuenta de los registros');
-  assert.equal(detalle(p, 'Comidas del plan'), '3 de 4 registradas · 1 sin registro');
+  assert.equal(detalle(p, 'Comidas del plan'), '3 de 4 con registro · 1 sin registro');
 });
 
 test('el Resumen del área dice las comidas del plan sin registro del período, sin contar hoy, en el texto y en sus partes', () => {

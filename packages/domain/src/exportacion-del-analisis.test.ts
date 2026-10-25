@@ -104,7 +104,7 @@ test('desconocido vacío, cero como 0, subtotal y día sin completar en sus colu
   assert.deepEqual(
     filas.map((f) => [f[3], f[6], f[7], f[8], f[11]]),
     [
-      ['2026-10-01', '1342', 'cada comida del plan registrada, con cantidades', 'no', 'no'],
+      ['2026-10-01', '1342', 'cada comida del plan con registro, con cantidades', 'no', 'no'],
       ['2026-10-02', '0', 'registros con cantidades, sin saber qué comidas indicaba el plan', 'no', 'no'],
       ['2026-10-03', '', 'sin valor conocido', 'no', 'no'],
       ['2026-10-04', '900', 'subtotal', 'no', 'no'],
@@ -116,8 +116,8 @@ test('desconocido vacío, cero como 0, subtotal y día sin completar en sus colu
   assert.deepEqual(filas[0]!.slice(12, 15), ['4', '4', '0'], 'la cobertura del punto');
   assert.deepEqual(
     filas.map((f) => f[15]),
-    ['4 de 4 registradas', 'sin determinar: no había un plan vigente', '2 de 2 registradas', '2 de 4 registradas · 1 con una comida diferente · 1 sin registro', '1 de 4 registradas · 3 sin registro'],
-    'las comidas del plan de cada día, con las palabras de la pestaña Registros',
+    ['4 de 4 con registro', 'sin determinar: no había un plan vigente', '2 de 2 con registro', '3 de 4 con registro · 1 sin registro · 2 con opción del plan · 1 con comida diferente', '1 de 4 con registro · 3 sin registro'],
+    'las comidas del plan de cada día: el mismo conteo que la pantalla y la pestaña Registros (DL-153, criterios del 2026-10-24)',
   );
   assert.equal(filas[2]![16], '2 registro(s) sin cantidades');
   assert.equal(filas[3]![16], '1 comida(s) diferente(s) sin cantidades, 1 comida(s) del plan sin registro');
