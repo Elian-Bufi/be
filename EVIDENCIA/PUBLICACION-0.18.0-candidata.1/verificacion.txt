@@ -1,0 +1,33 @@
+== paquete y versión
+package: name='com.elianbufi.be' versionCode='30' versionName='0.18.0-candidata.1'
+== firma válida y el mismo certificado que la candidata.3
+firma: válida
+Verified using v1 scheme (JAR signing): false Verified using v2 scheme (APK Signature Scheme v2): true Verified using v3 scheme (APK Signature Scheme v3): false Verified using v4 scheme (APK Signature Scheme v4): false Number of signers: 1 
+certificado idéntico: 61569691…893e06
+== permisos
+mismos permisos que la candidata.3 (10 declarados)
+== el enlace de la invitación (App Link)
+A: http://schemas.android.com/apk/res/android:autoVerify(0x010104ee)=true A: http://schemas.android.com/apk/res/android:host(0x01010028)="be-web-1ngj.onrender.com" A: http://schemas.android.com/apk/res/android:pathPrefix(0x0101002b)="/invitacion" A: http://schemas.android.com/apk/res/android:scheme(0x01010027)="be" A: http://schemas.android.com/apk/res/android:scheme(0x01010027)="https" 
+== la configuración embebida (assets/app.config), sin credenciales
+"apiBaseUrl":"https://be-api-hndp.onrender.com" "appEnv":"test" "commit":"b64d0c446568f14947f22fae11adc98c226d45c5" "version":"0.18.0-candidata.1" 
+commit embebido: el esperado
+googleWebClientId: presente
+  «password» en app.config: 0
+  «keystore» en app.config: 0
+  «secret» en app.config: 0
+  «privateKey» en app.config: 0
+  «BE_FIRMA» en app.config: 0
+  «DATABASE_URL» en app.config: 0
+  «JWT_SECRET» en app.config: 0
+  «BE_CLAVE» en app.config: 0
+== Firebase (avisos push)
+string/gcm_defaultSenderId string/google_api_key string/google_app_id string/project_id 
+== archivos que no deben viajar
+  archivos sospechosos: 0
+== el árbol construido no cambió
+HEAD b64d0c446568f14947f22fae11adc98c226d45c5 (esperado b64d0c446568f14947f22fae11adc98c226d45c5) · archivos versionados modificados: 0
+== tamaño y SHA-256
+84012692 bytes
+e9686aeeb014c53ed686872f917b6760ffca06cc15e52240aae011affaac2ce5
+entradas revisadas: 1265 · cosas buscadas: 45
+ninguna credencial dentro del APK
