@@ -5376,8 +5376,8 @@ También encontraron la barra que no entraba a 1.024 px. Las demás fallas eran 
 3. La prueba de integración corre sola con el archivo nuevo. Si la APK lee algo que ningún escenario pide, falla hasta que se agregue.
 4. Cuando ya no haya teléfonos con una versión, se borra su archivo y se saca de `VIGENTES`.
 
-**2026-10-26 · la 0.18.0-candidata.1** (`b64d0c4`, la sustitución de DL-151), congelada con estos pasos en un PR en
-borrador.
+**2026-10-26 · la 0.18.0-candidata.1** (`b64d0c4`, la sustitución de DL-151), congelada con estos pasos e integrada el
+mismo día (#216), por autorización de Dirección.
 - Lee 81 operaciones: las 80 de la candidata.3, todas con la misma forma, más API-TRN-13-BUSQUEDA, la búsqueda de la
   sustitución, que ahora tiene su escenario en la prueba de integración.
 - Las cabeceras y las versiones de los textos son las mismas.

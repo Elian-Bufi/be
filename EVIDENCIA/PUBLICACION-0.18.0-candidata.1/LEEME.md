@@ -71,10 +71,14 @@ Se instala encima de la 0.13.2 o de cualquier candidata anterior: el paquete y e
 versionCode es mayor. Desinstalar borraría la sesión guardada. La pantalla de bienvenida dice
 «app 0.18.0-candidata.1 · test · commit b64d0c4».
 
+## Las lecturas congeladas (DL-152)
+
+`packages/domain/fixtures/lecturas-de-la-apk/0.18.0-candidata.1.json`, con su escenario en la prueba de integración. Se
+integraron con este registro el 2026-10-26 (#216), por autorización de Dirección.
+
 ## Qué falta
 
-- **La prueba breve** (`EVIDENCIA/PRUEBA-BREVE-2026-10-26/GUION.md`, parte C), con la cuenta «Prueba Uno».
+- **La prueba breve** (`EVIDENCIA/PRUEBA-BREVE-2026-10-26/GUION.md`, en el PR #217, parte C), con la cuenta «Prueba Uno».
 - **El guion completo del teléfono** (`EVIDENCIA/SUSTITUCION-DE-EJERCICIOS/GUION-DEL-TELEFONO.md`, T1 a T14 y R1 a R3),
   con TalkBack en T13.
-- **Las lecturas congeladas de esta APK (DL-152)**, en su PR, con su CI.
 - **No pasa a estable** sin esas pruebas, por la regla de DL-152. Promoverla lo decide Dirección.
