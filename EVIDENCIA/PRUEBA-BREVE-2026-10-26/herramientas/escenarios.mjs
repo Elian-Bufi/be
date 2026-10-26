@@ -16,8 +16,12 @@
 //                  como la cohorte: el vínculo, el objetivo y la activación del plan por SQL con su fecha; la evaluación y
 //                  el borrador del plan por la API; y las comidas de los últimos días por SQL, con un hueco y un registro
 //                  sin cantidades.
-//   verificar      lee por la API lo preparado (solo lectura) y lo compara con lo esperado, calculado aparte
-//                  (esperado.mjs, sin las funciones del producto).
+//   verificar      solo lectura y estricta: lee por la API cada escenario obligatorio y lo compara con lo esperado,
+//                  calculado aparte (esperado.mjs, sin las funciones del producto). Las comprobaciones están en
+//                  comprobaciones.mjs (y sus pruebas, en comprobaciones.test.mjs). Dice qué escenarios comprobó y cuáles
+//                  faltan. Termina con 0 solo si los seis quedaron comprobados y sin diferencias («SIN DIFERENCIAS»); con
+//                  1 si hay diferencias; y con 2, «PREPARACIÓN INCOMPLETA», si falta una fase o la API no dejó concluir
+//                  (una sesión que no sirve, el límite de pedidos, un 5xx o una falla de red no prueban un rechazo).
 //
 // Credenciales: se generan al azar y quedan solo en cuentas.env de la carpeta privada (fuera del repo). Nunca se imprimen.
 // Uso: BE_REPO=<un árbol con packages/domain/dist y node_modules> node escenarios.mjs <fase>
@@ -29,7 +33,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ALIMENTOS, EJERCICIOS_BASE } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/catalogo.mjs';
 import { ZONA, diaMenos, instante, masMinutos } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/herramientas.mjs';
 import * as esperado from './esperado.mjs';
-import { COMIDAS_DOS, COMIDAS_TRES, DIA_TIPO, FECHAS, HORA_DE_LA_COMIDA, OBJETIVO_DOS, OBJETIVO_TRES, PLAN_DOS, PLAN_TRES, SESION_UNO } from './datos.mjs';
+import { COMIDAS_DOS, COMIDAS_TRES, DIA_TIPO, FECHAS, HORA_DE_LA_COMIDA, HUECO_DOS, OBJETIVO_DOS, OBJETIVO_TRES, PLAN_DOS, PLAN_TRES, SESION_UNO } from './datos.mjs';
+import { COMPROBADO, busquedaPrevista, comprobado, conDiferencias, controlDeSesion, falta, lecturaPrevista, noComprobado, nutricionPrevista, rechazoPrevisto, sesionPrevista, veredicto, vinculoPrevisto } from './comprobaciones.mjs';
 
 const AQUI = fileURLToPath(new URL('.', import.meta.url));
 const REPO = (process.env.BE_REPO ?? join(AQUI, '..', '..', '..')).split('\\').join('/');
@@ -451,7 +456,7 @@ async function comidasEnElPasado({ hoy, versionId, instantanea, proId, aseId, di
 }
 
 const ESCENARIOS_DE_NUTRICION = [
-  { prefijo: 'ASE_DOS', plan: PLAN_DOS, objetivo: OBJETIVO_DOS, comidas: COMIDAS_DOS, contexto: 'Primera consulta. Trabaja en una oficina y quiere ordenar sus comidas (persona sintética de la prueba breve).' },
+  { prefijo: 'ASE_DOS', plan: PLAN_DOS, objetivo: OBJETIVO_DOS, comidas: COMIDAS_DOS, hueco: HUECO_DOS, contexto: 'Primera consulta. Trabaja en una oficina y quiere ordenar sus comidas (persona sintética de la prueba breve).' },
   { prefijo: 'ASE_TRES', plan: PLAN_TRES, objetivo: OBJETIVO_TRES, comidas: COMIDAS_TRES, contexto: 'Primera consulta. Prefiere tener opciones para elegir según el día (persona sintética de la prueba breve).' },
 ];
 
@@ -515,106 +520,151 @@ async function pasado() {
   }
 }
 
-// ─── Fase «verificar»: solo lectura ────────────────────────────────────────────────────────────────────────────
+// ─── Fase «verificar»: solo lectura y estricta ─────────────────────────────────────────────────────────────────
 
-const NUTRIENTE = { ENERGY: ['energyKcal', 0], PROTEIN: ['proteinG', 1] };
-const iguales = (a, b) => Math.abs(a - b) < 1e-9;
+const PASOS_DEL_PASADO = ['vinculo-en-el-pasado', 'evaluacion', 'objetivo-en-el-pasado', 'borrador-del-plan', 'activacion-en-el-pasado', 'comidas-en-el-pasado'];
 
-/** Compara la proyección de la API con lo calculado aparte. Devuelve las diferencias (vacío si coincide todo). */
-function compararNutricion(x, hoy, composicion, r, metrica) {
-  const [nutriente, decimales] = NUTRIENTE[metrica];
-  const dif = [];
-  const filas = [];
-  const desde = diaMenos(hoy, FECHAS.activacion.hace);
-  // El objetivo: un escalón desde el día del objetivo, con la cantidad que fijó el profesional.
-  const esperadoDelObjetivo = metrica === 'ENERGY' ? x.objetivo.kcal : x.objetivo.proteina;
-  const escalones = r.prescribed.objectiveSteps;
-  if (escalones.length !== 1 || escalones[0].amount?.value !== esperadoDelObjetivo || escalones[0].from !== diaMenos(hoy, FECHAS.objetivo.hace)) dif.push(`objetivo: se esperaba un escalón de ${esperadoDelObjetivo} desde ${diaMenos(hoy, FECHAS.objetivo.hace)} y llegó ${JSON.stringify(escalones)}`);
-  // Lo indicado de cada día, desde la activación hasta hoy.
-  const delDiaEsperado = esperado.delDia(x.plan, composicion, nutriente);
-  for (let k = FECHAS.activacion.hace; k >= 0; k--) {
-    const fecha = diaMenos(hoy, k);
-    const d = r.prescribed.planned.days.find((y) => y.date === fecha);
-    if (!d) {
-      dif.push(`${fecha}: falta el indicado del día`);
-      continue;
-    }
-    if (delDiaEsperado.state !== d.state) dif.push(`${fecha}: indicado ${d.state}, se esperaba ${delDiaEsperado.state}`);
-    else if (d.state === 'DETERMINED' && !iguales(d.value, Number(esperado.exacto(delDiaEsperado.value)))) dif.push(`${fecha}: indicado ${d.value}, se esperaba ${esperado.exacto(delDiaEsperado.value)}`);
-    else if (d.state === 'UNDETERMINED' && (d.reason !== delDiaEsperado.reason || JSON.stringify(d.mealsWithSeveralOptions) !== JSON.stringify(delDiaEsperado.mealsWithSeveralOptions))) dif.push(`${fecha}: motivo ${d.reason} ${JSON.stringify(d.mealsWithSeveralOptions)}, se esperaba ${delDiaEsperado.reason} ${JSON.stringify(delDiaEsperado.mealsWithSeveralOptions)}`);
-    // Lo registrado del día.
-    const dia = x.comidas.find((y) => y.hace === k);
-    const punto = r.recorded.points.find((p) => p.date === fecha);
-    let registrado = 'hueco';
-    if (dia) {
-      const e = esperado.registradoDelDia(x.plan, dia, composicion, nutriente);
-      registrado = `${esperado.paraMostrar(e.total, decimales)}${e.completo ? '' : ' (subtotal)'}`;
-      if (!punto) dif.push(`${fecha}: falta el punto registrado`);
-      else {
-        if (!iguales(punto.value, Number(esperado.exacto(e.total)))) dif.push(`${fecha}: registrado ${punto.value}, se esperaba ${esperado.exacto(e.total)}`);
-        const calidad = e.completo ? 'COMPLETE' : 'PARTIAL';
-        if (punto.quality !== calidad) dif.push(`${fecha}: calidad ${punto.quality}, se esperaba ${calidad}`);
-      }
-    } else if (punto && punto.n > 0) dif.push(`${fecha}: se esperaba un hueco y hay un punto con ${punto.n} registros`);
-    filas.push(`    ${fecha} · indicado ${d.state === 'DETERMINED' ? `${esperado.paraMostrar(delDiaEsperado.value, decimales)} (API ${d.value})` : `sin indicado (${d.reason})`} · registrado ${registrado}${punto ? ` (API ${punto.value ?? '—'} ${punto.quality})` : ''}`);
-  }
-  // Lo indicado de cada comida registrada: el mismo conjunto de valores, y las comidas diferentes sin indicado.
-  const deLasComidas = x.comidas.flatMap((dia) => Object.entries(dia.comidas).map(([comida, reg]) => esperado.indicadoDeLaComida(x.plan, comida, reg, composicion, nutriente)));
-  const esperados = deLasComidas.filter((v) => v !== null).map((v) => Number(esperado.exacto(v))).sort((a, b) => a - b);
-  const llegaron = r.prescribed.planned.meals.filter((m) => m.state === 'DETERMINED').map((m) => m.value).sort((a, b) => a - b);
-  if (esperados.length !== llegaron.length || esperados.some((v, i) => !iguales(v, llegaron[i]))) dif.push(`indicado por comida: se esperaban ${JSON.stringify(esperados)} y llegaron ${JSON.stringify(llegaron)}`);
-  const diferentes = deLasComidas.filter((v) => v === null).length;
-  const sinIndicado = r.prescribed.planned.meals.filter((m) => m.state === 'UNDETERMINED');
-  if (sinIndicado.length !== diferentes || sinIndicado.some((m) => m.reason !== 'DIFFERENT_MEAL')) dif.push(`comidas sin indicado: se esperaban ${diferentes} comidas diferentes y llegaron ${JSON.stringify(sinIndicado.map((m) => m.reason))}`);
-  console.log(`  ${x.prefijo} · ${metrica} desde ${desde}:\n${filas.join('\n')}`);
-  return dif;
+/** Los escenarios obligatorios y los pasos de estado.json que los preparan: sin esos pasos, el escenario falta. */
+export const OBLIGATORIOS = [
+  { clave: 'PRO', nombre: 'Lic. Prueba Dos Áreas opera Nutrición y Entrenamiento', fase: 'cuentas', pasos: [] },
+  { clave: 'ASE_UNO', nombre: 'Prueba Uno: la sesión para sustituir un ejercicio', fase: 'api', pasos: ['vinculo-entrenamiento', 'plan-de-entrenamiento'] },
+  { clave: 'ASE_DOS', nombre: 'Prueba Dos: objetivo, indicado del día y registrado, con un hueco y un subtotal', fase: 'pasado', pasos: PASOS_DEL_PASADO },
+  { clave: 'ASE_TRES', nombre: 'Prueba Tres: alternativas, sin indicado del día', fase: 'pasado', pasos: PASOS_DEL_PASADO },
+  { clave: 'ASE_CUATRO', nombre: 'Prueba Cuatro: la autorización revocada', fase: 'api', pasos: ['vinculo-nutricion', 'revocacion'] },
+  { clave: 'ASE_CINCO', nombre: 'Prueba Cinco: el vínculo finalizado', fase: 'api', pasos: ['vinculo-nutricion', 'finalizacion'] },
+];
+
+/** Lo que falta de un escenario según estado.json, o `null`. */
+function faltante(e, o) {
+  if (o.clave === 'PRO') return idDe('PRO') ? null : 'falta la fase «cuentas»';
+  const hechos = e.personas?.[o.clave]?.hecho ?? [];
+  const faltan = o.pasos.filter((p) => !hechos.includes(p));
+  if (o.fase === 'pasado' && !faltan.length && !e.personas[o.clave].composicion) faltan.push('la composición de la instantánea');
+  if (!faltan.length) return null;
+  return faltan.length === o.pasos.length ? `falta la fase «${o.fase}»` : `falta parte de la fase «${o.fase}» (${faltan.join(', ')})`;
 }
+
+/** Los vínculos del profesional, vigentes y finalizados, todas las páginas (API-REL-05). */
+async function vinculosDelProfesional(token) {
+  const lista = [];
+  for (const state of ['ACEPTADO', 'FINALIZADO']) {
+    for (let cursor; ; ) {
+      const r = exigir(await web.consultarVinculos(token, { state, ...(cursor ? { cursor } : {}) }), `los vínculos ${state} del profesional`);
+      lista.push(...r.data);
+      if (!r.page.hasMore) break;
+      cursor = r.page.nextCursor;
+    }
+  }
+  return lista;
+}
+
+/** Cuatro y Cinco: cómo queda el vínculo y el rechazo que prevé el contrato cuando el profesional pide su Nutrición. */
+const RETIRADOS = [
+  { prefijo: 'ASE_CUATRO', vinculo: { relationshipState: 'ACEPTADO', consentState: 'REVOKED', accessMode: 'BLOCKED' } },
+  { prefijo: 'ASE_CINCO', vinculo: { relationshipState: 'FINALIZADO', accessMode: 'BLOCKED' } },
+];
+const VIGENTE = { relationshipState: 'ACEPTADO', consentState: 'ACTIVE', accessMode: 'CONTEXTUAL' };
 
 async function verificar() {
   const e = leerEstado();
   const hoy = hoyCivil();
-  const pro = await sesionDe('PRO');
-  const informe = { fecha: new Date().toISOString(), hoy, diferencias: [] };
-  // La cartera del profesional: quién está y con qué.
-  const cartera = exigir(await web.consultarCartera(pro), 'cartera del profesional').data;
-  informe.cartera = cartera;
-  console.log(`cartera: ${JSON.stringify(cartera).length} caracteres (en informe.json)`);
-  // Nutrición: Dos y Tres, si ya se cargó la historia.
-  if (e.hoy && e.hoy !== hoy) console.log(`  (la historia es del ${e.hoy}: los días relativos se cuentan desde ahí)`);
   const base = e.hoy ?? hoy;
+  if (e.hoy && e.hoy !== hoy) console.log(`(la historia es del ${e.hoy}: los días relativos se cuentan desde ahí)`);
+  const informe = { fecha: new Date().toISOString(), hoy, historiaDel: e.hoy ?? null };
+  const escenarios = OBLIGATORIOS.map((o) => ({ clave: o.clave, nombre: o.nombre, partes: [] }));
+  const partesDe = (clave) => escenarios.find((x) => x.clave === clave).partes;
+  const faltan = Object.fromEntries(OBLIGATORIOS.map((o) => [o.clave, faltante(e, o)]));
+  for (const o of OBLIGATORIOS) if (faltan[o.clave]) partesDe(o.clave).push(falta(faltan[o.clave]));
+
+  // La sesión del profesional y sus vínculos. Si no se pueden leer, nada de lo que depende de ellos queda comprobado.
+  let pro = null;
+  let vinculos = null;
+  if (!faltan.PRO) {
+    try {
+      pro = await sesionDe('PRO');
+      vinculos = await vinculosDelProfesional(pro);
+    } catch (error) {
+      for (const x of escenarios) if (!faltan[x.clave] && x.clave !== 'ASE_UNO') x.partes.push(noComprobado(`sin la sesión o los vínculos del profesional: ${error.message}`));
+      if (!faltan.ASE_UNO) partesDe('ASE_UNO').push(noComprobado(`el vínculo, sin la sesión o los vínculos del profesional: ${error.message}`));
+    }
+  }
+  const conProfesional = (clave) => !faltan[clave] && vinculos !== null;
+
+  // Dos y Tres: el vínculo y la comparación, en kcal y en proteína, contra lo calculado aparte.
+  const comparaciones = {};
   for (const x of ESCENARIOS_DE_NUTRICION) {
-    const p = e.personas?.[x.prefijo];
-    if (!p?.composicion) {
-      console.log(`  ${x.prefijo}: sin la historia de Nutrición todavía`);
-      continue;
-    }
+    if (!conProfesional(x.prefijo)) continue;
+    const partes = partesDe(x.prefijo);
+    partes.push(vinculoPrevisto(vinculos, idDe(x.prefijo), 'NUTRICION', VIGENTE));
     for (const metrica of ['ENERGY', 'PROTEIN']) {
-      const r = exigir(await web.proyeccion(pro, idDe(x.prefijo), 'NUTRITION_PRESCRIBED_VS_RECORDED', { metric: metrica, periodStart: diaMenos(base, FECHAS.activacion.hace), periodEnd: hoy, grain: 'DAY' }), `comparación de ${x.prefijo}`).data.result;
-      const dif = compararNutricion(x, base, p.composicion, r, metrica);
-      informe.diferencias.push(...dif.map((d) => `${x.prefijo} ${metrica}: ${d}`));
+      const r = await web.proyeccion(pro, idDe(x.prefijo), 'NUTRITION_PRESCRIBED_VS_RECORDED', { metric: metrica, periodStart: diaMenos(base, FECHAS.activacion.hace), periodEnd: hoy, grain: 'DAY' });
+      if (metrica === 'ENERGY') comparaciones[x.prefijo] = r;
+      const { parte, filas } = nutricionPrevista(x, base, e.personas[x.prefijo].composicion, r, metrica);
+      partes.push(parte);
+      if (filas.length) console.log(`${x.prefijo}${filas.join('\n')}`);
     }
   }
-  // Entrenamiento: lo que ve Uno en el teléfono y la búsqueda de la sustitución.
-  if (e.personas?.ASE_UNO?.planDeEntrenamiento) {
-    const uno = await sesionDe('ASE_UNO');
-    const hoyTrn = exigir(await apk.hoyDeEntrenamiento(uno), 'hoy de Entrenamiento de Uno').data;
-    informe.entrenamientoDeHoy = hoyTrn;
-    const busqueda = exigir(await apk.buscarEjercicios(uno, 'press'), 'búsqueda de Uno').data;
-    informe.busqueda = busqueda;
-    console.log(`  ASE_UNO · hoy: ${JSON.stringify(hoyTrn).slice(0, 300)}`);
-    console.log(`  ASE_UNO · «press»: ${busqueda.length} resultados: ${busqueda.map((b) => b.name ?? b.exercise?.name ?? JSON.stringify(b).slice(0, 40)).join(' · ')}`);
+
+  // Uno: el vínculo, lo que ve hoy en el teléfono y la búsqueda de la sustitución.
+  if (!faltan.ASE_UNO) {
+    const partes = partesDe('ASE_UNO');
+    if (vinculos) partes.push(vinculoPrevisto(vinculos, idDe('ASE_UNO'), 'ENTRENAMIENTO', VIGENTE));
+    let uno = null;
+    try {
+      uno = await sesionDe('ASE_UNO');
+    } catch (error) {
+      partes.push(noComprobado(`sin la sesión de Prueba Uno: ${error.message}`));
+    }
+    if (uno) {
+      const deHoy = await apk.hoyDeEntrenamiento(uno);
+      const lectura = lecturaPrevista(deHoy, 'lo que ve Uno hoy');
+      if (lectura.estado !== COMPROBADO) partes.push(lectura);
+      else {
+        informe.entrenamientoDeHoy = deHoy.datos.data;
+        partes.push(sesionPrevista(deHoy.datos.data, SESION_UNO));
+      }
+      const busqueda = await apk.buscarEjercicios(uno, 'press');
+      const deLaBusqueda = lecturaPrevista(busqueda, 'la búsqueda de la sustitución');
+      if (deLaBusqueda.estado !== COMPROBADO) partes.push(deLaBusqueda);
+      else {
+        informe.busqueda = busqueda.datos.data;
+        partes.push(busquedaPrevista(busqueda.datos.data, SESION_UNO, 'press'));
+      }
+    }
   }
-  // Cuatro y Cinco: el profesional no tiene acceso a su Nutrición.
-  for (const prefijo of ['ASE_CUATRO', 'ASE_CINCO']) {
-    if (!e.personas?.[prefijo]?.hecho?.some((h) => h === 'revocacion' || h === 'finalizacion')) continue;
-    const r = await web.proyeccion(pro, idDe(prefijo), 'NUTRITION_PRESCRIBED_VS_RECORDED', { metric: 'ENERGY', periodStart: diaMenos(hoy, 7), periodEnd: hoy, grain: 'DAY' });
-    const que = r.ok ? 'CON ACCESO (no debería)' : `${r.status} ${r.codigo}`;
-    console.log(`  ${prefijo} · comparación pedida por el profesional: ${que}`);
-    if (r.ok) informe.diferencias.push(`${prefijo}: el profesional lee su Nutrición`);
-    informe[prefijo] = que;
+
+  // El profesional opera las dos áreas: lee el Entrenamiento de Uno y la Nutrición de Dos, las dos lecturas por el PDP.
+  if (conProfesional('PRO')) {
+    const partes = partesDe('PRO');
+    if (faltan.ASE_UNO) partes.push(falta(`Entrenamiento: se lee con Prueba Uno (${faltan.ASE_UNO})`));
+    else {
+      const r = await web.listarPlanesDeEntrenamiento(pro, idDe('ASE_UNO'), { state: 'ACTIVATED' });
+      const lectura = lecturaPrevista(r, 'Entrenamiento: los planes de Prueba Uno');
+      if (lectura.estado !== COMPROBADO) partes.push(lectura);
+      else {
+        const plan = r.datos.data.find((y) => y.planId === e.personas.ASE_UNO.planDeEntrenamiento);
+        partes.push(plan?.isEffective ? comprobado('Entrenamiento: lee el plan vigente de Prueba Uno') : conDiferencias(`Entrenamiento: el plan de Prueba Uno ${plan ? 'no es el vigente' : 'no aparece'}`));
+      }
+    }
+    if (faltan.ASE_DOS) partes.push(falta(`Nutrición: se lee con Prueba Dos (${faltan.ASE_DOS})`));
+    else if (comparaciones.ASE_DOS) partes.push(lecturaPrevista(comparaciones.ASE_DOS, 'Nutrición: la comparación de Prueba Dos'));
+    else partes.push(noComprobado('Nutrición: no se llegó a leer la comparación de Prueba Dos'));
   }
+
+  // Cuatro y Cinco: el vínculo como lo ve el profesional y el rechazo exacto del contrato, con el control de la sesión.
+  for (const x of RETIRADOS) {
+    if (!conProfesional(x.prefijo)) continue;
+    const partes = partesDe(x.prefijo);
+    partes.push(vinculoPrevisto(vinculos, idDe(x.prefijo), 'NUTRICION', x.vinculo));
+    const r = await web.proyeccion(pro, idDe(x.prefijo), 'NUTRITION_PRESCRIBED_VS_RECORDED', { metric: 'ENERGY', periodStart: diaMenos(hoy, 7), periodEnd: hoy, grain: 'DAY' });
+    const rechazo = rechazoPrevisto(r);
+    partes.push(rechazo);
+    if (rechazo.estado === COMPROBADO) partes.push(controlDeSesion(await web.consultarVinculos(pro, { state: 'ACEPTADO' })));
+    informe[x.prefijo] = r.ok ? 'CON ACCESO' : r.tipo === 'API' ? `${r.status} ${r.codigo}` : 'SIN RESPUESTA';
+  }
+
   // Lo que la comprobación en pantalla espera leer (los números, con el redondeo de la pantalla y calculados aparte).
-  if (e.personas?.ASE_DOS?.composicion && e.personas?.ASE_TRES?.composicion) {
+  if (!faltan.ASE_DOS && !faltan.ASE_TRES) {
     const [dos, tres] = ESCENARIOS_DE_NUTRICION;
     const kcal = (v) => `${esperado.paraMostrar(v, 0)} kcal`;
     const indicadoDe = (x, comp, hace) =>
@@ -649,8 +699,17 @@ async function verificar() {
     };
     fs.writeFileSync(join(CARPETA, 'esperado-en-pantalla.json'), JSON.stringify(enPantalla, null, 2));
   }
+
+  // El veredicto: «SIN DIFERENCIAS» solo con los seis escenarios comprobados enteros.
+  const v = veredicto(escenarios, OBLIGATORIOS);
+  for (const x of v.escenarios) {
+    console.log(`${x.clave} · ${x.nombre}`);
+    for (const p of x.partes) console.log(`  ${p.estado.padEnd(15)} ${p.detalle}`);
+  }
+  Object.assign(informe, { veredicto: v.lineas.at(-1), codigo: v.codigo, comprobados: v.comprobados, pendientes: v.pendientes, conDiferencias: v.conDiferencias, escenarios: v.escenarios });
   fs.writeFileSync(join(CARPETA, 'informe.json'), JSON.stringify(informe, null, 2));
-  console.log(informe.diferencias.length === 0 ? 'SIN DIFERENCIAS con lo esperado' : `DIFERENCIAS (${informe.diferencias.length}):\n${informe.diferencias.map((d) => `  - ${d}`).join('\n')}`);
+  console.log(v.lineas.join('\n'));
+  process.exitCode = v.codigo;
 }
 
 const FASES = { cuentas, api, pasado, verificar };
