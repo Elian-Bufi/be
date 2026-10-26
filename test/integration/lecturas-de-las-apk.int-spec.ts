@@ -4,9 +4,9 @@
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
  * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2 y la 0.17.0-candidata.3), como la pide esa APK, y lee la respuesta real con el esquema de esa APK
- * (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada
- * lectura suya tenga escenario.
+ * (hoy la estable 0.13.2, la 0.17.0-candidata.3 y la 0.18.0-candidata.1), como la pide esa APK, y lee la respuesta real
+ * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
+ * no pasa hasta que cada lectura suya tenga escenario.
  *
  * Lo que se arma alrededor (los profesionales, los vínculos, los planes, las revisiones) va por la API de hoy, como en el
  * resto de las pruebas: lo que se prueba es lo que pide y lee la APK. Las respuestas se leen con datos de verdad, también
@@ -328,6 +328,13 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       // La búsqueda de ejercicios con la que esta APK sustituye uno (la que las candidatas perdieron: PR #195).
       await apk.pide('API-TRN-13', { token, consulta: { q: 'press', limit: '20' } });
       await apk.pide('API-TRN-13', { token, consulta: { q: 'sentadila', limit: '20' } });
+    }
+    if (apk.lee('API-TRN-13-BUSQUEDA')) {
+      // La búsqueda con la que la 0.18.0-candidata.1 vuelve a sustituir un ejercicio (DL-151, #195): el texto viaja en el
+      // cuerpo (DL-127). Con resultados y con un texto que no coincide exacto.
+      const conResultados = await apk.pide('API-TRN-13-BUSQUEDA', { token, cuerpo: { q: 'press', limit: 20 } });
+      expect(conResultados.body.data.length).toBeGreaterThan(0);
+      await apk.pide('API-TRN-13-BUSQUEDA', { token, cuerpo: { q: 'sentadila', limit: 20 } });
     }
 
     const ocurrencia = (hoy.occurrences as { occurrenceId: string; plannedSession: { sessionId: string } }[]).find((o) => o.plannedSession.sessionId === 'ses-a')!.occurrenceId;

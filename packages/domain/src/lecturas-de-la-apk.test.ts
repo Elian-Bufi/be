@@ -44,10 +44,12 @@ const APK = readdirSync(CARPETA)
   .map((archivo) => ({ archivo, ...(JSON.parse(readFileSync(join(CARPETA, archivo), 'utf8')) as Congelado) }));
 
 /**
- * Las APK que importan hoy (DL-152): la estable instalada y la candidata vigente. Cambiar esta lista es una decisión: al
- * publicar una candidata nueva se congela y se suma; al dejar de haber teléfonos con una versión, se saca.
+ * Las APK que importan hoy (DL-152): la estable instalada y las candidatas que puede haber en un teléfono. Cambiar esta
+ * lista es una decisión: al publicar una candidata nueva se congela y se suma; al dejar de haber teléfonos con una
+ * versión, se saca. La 0.18.0-candidata.1 (2026-10-26) se sumó sin sacar la candidata.3, que sigue instalada hasta que se
+ * actualice el teléfono.
  */
-const VIGENTES = ['0.13.2', '0.17.0-candidata.3'];
+const VIGENTES = ['0.13.2', '0.17.0-candidata.3', '0.18.0-candidata.1'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en
