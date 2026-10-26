@@ -22,6 +22,8 @@
 //                  faltan. Termina con 0 solo si los seis quedaron comprobados y sin diferencias («SIN DIFERENCIAS»); con
 //                  1 si hay diferencias; y con 2, «PREPARACIÓN INCOMPLETA», si falta una fase o la API no dejó concluir
 //                  (una sesión que no sirve, el límite de pedidos, un 5xx o una falla de red no prueban un rechazo).
+//   pantalla       sin la API: escribe lo que espera leer la comprobación en pantalla (ver-en-pantalla.mjs), con los
+//                  números calculados aparte. «verificar» también lo escribe.
 //
 // Credenciales: se generan al azar y quedan solo en cuentas.env de la carpeta privada (fuera del repo). Nunca se imprimen.
 // Uso: BE_REPO=<un árbol con packages/domain/dist y node_modules> node escenarios.mjs <fase>
@@ -565,6 +567,74 @@ const RETIRADOS = [
 ];
 const VIGENTE = { relationshipState: 'ACEPTADO', consentState: 'ACTIVE', accessMode: 'CONTEXTUAL' };
 
+/**
+ * Lo que la comprobación en pantalla (ver-en-pantalla.mjs) espera leer, en esperado-en-pantalla.json:
+ * - los números con el redondeo y el formato de la pantalla (kcal enteras, punto de miles), calculados aparte;
+ * - la regla o el motivo, y la calidad del día como la escribe la pantalla («Subtotal de lo registrado»);
+ * - el hueco;
+ * - en «Ver origen», lo elegido en cada comida.
+ * Los textos se citan tal cual, del diseño de DL-158; los números no salen de ninguna función del producto.
+ */
+function escribirLoEsperadoEnPantalla(e, base, hoy) {
+  const [dos, tres] = ESCENARIOS_DE_NUTRICION;
+  const compDos = e.personas.ASE_DOS.composicion;
+  const compTres = e.personas.ASE_TRES.composicion;
+  const kcal = (v) => `${Number(esperado.paraMostrar(v, 0)).toLocaleString('es-AR')} kcal`;
+  const objetivoDe = (x) => `${x.objetivo.kcal.toLocaleString('es-AR')} kcal`;
+  const delDia = (x, hace) => x.comidas.find((d) => d.hace === hace);
+  const indicadoDe = (x, comp, hace) =>
+    Object.entries(delDia(x, hace).comidas)
+      .map(([comida, reg]) => esperado.indicadoDeLaComida(x.plan, comida, reg, comp, 'energyKcal'))
+      .filter((v) => v !== null)
+      .map((v) => `Indicado en el plan: ${kcal(v)}`);
+  // Lo que se eligió en cada comida: el nombre de la opción, o lo que describió la persona si comió algo diferente.
+  const elegidoDe = (x, hace) => Object.entries(delDia(x, hace).comidas).map(([comida, reg]) => reg.diferente ?? x.plan.find(([c]) => c === comida)[1][reg.opcion][0]);
+  const registradoDe = (x, comp, hace) => {
+    const r = esperado.registradoDelDia(x.plan, delDia(x, hace), comp, 'energyKcal');
+    return [kcal(r.total), ...(r.completo ? [] : ['Subtotal de lo registrado'])];
+  };
+  const enPantalla = {
+    desde: diaMenos(base, FECHAS.activacion.hace),
+    hasta: hoy,
+    casos: [
+      {
+        prefijo: dos.prefijo,
+        persona: 'Prueba Dos',
+        dia: diaMenos(base, 2),
+        rombos: (Date.parse(`${hoy}T12:00:00Z`) - Date.parse(`${diaMenos(base, FECHAS.activacion.hace)}T12:00:00Z`)) / 86_400_000 + 1,
+        enLaLectura: 'Hay indicado del día solo si el plan no deja elegir: una sola opción en cada comida. BE no elige entre alternativas, no las suma ni las promedia.',
+        // Las tres capas del día incompleto: lo registrado (un subtotal), lo indicado del día y el objetivo.
+        enLaLecturaTambien: [...registradoDe(dos, compDos, 2), kcal(esperado.delDia(dos.plan, compDos, 'energyKcal').value), objetivoDe(dos)],
+        hueco: { dia: diaMenos(base, dos.hueco), texto: 'Sin registros en esta fecha.' },
+        comidas: Object.keys(delDia(dos, 2).comidas).length,
+        enElOrigen: [...new Set([...indicadoDe(dos, compDos, 2), ...elegidoDe(dos, 2)])],
+      },
+      {
+        prefijo: tres.prefijo,
+        persona: 'Prueba Tres',
+        dia: diaMenos(base, 3),
+        rombos: 0,
+        // Debajo del gráfico, el motivo más frecuente y dónde está lo de cada comida; las comidas, en la lectura del día.
+        nota: 'Indicado en el plan: ningún día de estas fechas tiene un indicado del día (comidas con varias opciones). Lo indicado de cada comida registrada está en «Ver origen».',
+        enLaLectura: 'Sin indicado del día: Desayuno tiene 2 opciones; Almuerzo tiene 3 opciones; Cena tiene 2 opciones. BE no elige entre ellas ni las suma.',
+        enLaLecturaTambien: [...registradoDe(tres, compTres, 3), objetivoDe(tres)],
+        comidas: Object.keys(delDia(tres, 3).comidas).length,
+        enElOrigen: [...new Set([...indicadoDe(tres, compTres, 3), ...elegidoDe(tres, 3), 'Comida diferente: no es una opción del plan y no tiene indicado.'])],
+      },
+    ],
+  };
+  fs.writeFileSync(join(CARPETA, 'esperado-en-pantalla.json'), JSON.stringify(enPantalla, null, 2));
+}
+
+/** La fase «pantalla»: escribe lo que espera la comprobación en pantalla, sin la API (con la historia ya cargada). */
+function pantalla() {
+  const e = leerEstado();
+  const falta = ['ASE_DOS', 'ASE_TRES'].map((p) => faltante(e, OBLIGATORIOS.find((o) => o.clave === p))).find(Boolean);
+  if (falta) throw new Error(`no se puede: ${falta}`);
+  escribirLoEsperadoEnPantalla(e, e.hoy ?? hoyCivil(), hoyCivil());
+  console.log('esperado-en-pantalla.json, al día');
+}
+
 async function verificar() {
   const e = leerEstado();
   const hoy = hoyCivil();
@@ -663,42 +733,8 @@ async function verificar() {
     informe[x.prefijo] = r.ok ? 'CON ACCESO' : r.tipo === 'API' ? `${r.status} ${r.codigo}` : 'SIN RESPUESTA';
   }
 
-  // Lo que la comprobación en pantalla espera leer (los números, con el redondeo de la pantalla y calculados aparte).
-  if (!faltan.ASE_DOS && !faltan.ASE_TRES) {
-    const [dos, tres] = ESCENARIOS_DE_NUTRICION;
-    const kcal = (v) => `${esperado.paraMostrar(v, 0)} kcal`;
-    const indicadoDe = (x, comp, hace) =>
-      Object.entries(x.comidas.find((d) => d.hace === hace).comidas)
-        .map(([comida, reg]) => esperado.indicadoDeLaComida(x.plan, comida, reg, comp, 'energyKcal'))
-        .filter((v) => v !== null)
-        .map((v) => `Indicado en el plan: ${kcal(v)}`);
-    const enPantalla = {
-      desde: diaMenos(base, FECHAS.activacion.hace),
-      hasta: hoy,
-      casos: [
-        {
-          prefijo: dos.prefijo,
-          persona: 'Prueba Dos',
-          dia: diaMenos(base, 2),
-          rombos: (Date.parse(`${hoy}T12:00:00Z`) - Date.parse(`${diaMenos(base, FECHAS.activacion.hace)}T12:00:00Z`)) / 86_400_000 + 1,
-          enLaLectura: 'Hay indicado del día solo si el plan no deja elegir: una sola opción en cada comida. BE no elige entre alternativas, no las suma ni las promedia.',
-          comidas: Object.keys(dos.comidas.find((d) => d.hace === 2).comidas).length,
-          enElOrigen: [...new Set(indicadoDe(dos, e.personas.ASE_DOS.composicion, 2))],
-        },
-        {
-          prefijo: tres.prefijo,
-          persona: 'Prueba Tres',
-          dia: diaMenos(base, 3),
-          rombos: 0,
-          nota: 'Sin indicado del día: Desayuno tiene 2 opciones; Almuerzo tiene 3 opciones; Cena tiene 2 opciones. BE no elige entre ellas ni las suma.',
-          enLaLectura: 'Sin indicado del día: Desayuno tiene 2 opciones; Almuerzo tiene 3 opciones; Cena tiene 2 opciones. BE no elige entre ellas ni las suma.',
-          comidas: Object.keys(tres.comidas.find((d) => d.hace === 3).comidas).length,
-          enElOrigen: [...new Set(indicadoDe(tres, e.personas.ASE_TRES.composicion, 3)), 'Comida diferente: no es una opción del plan y no tiene indicado.'],
-        },
-      ],
-    };
-    fs.writeFileSync(join(CARPETA, 'esperado-en-pantalla.json'), JSON.stringify(enPantalla, null, 2));
-  }
+  // Lo que la comprobación en pantalla espera leer (la fase «pantalla» lo escribe sin la API).
+  if (!faltan.ASE_DOS && !faltan.ASE_TRES) escribirLoEsperadoEnPantalla(e, base, hoy);
 
   // El veredicto: «SIN DIFERENCIAS» solo con los seis escenarios comprobados enteros.
   const v = veredicto(escenarios, OBLIGATORIOS);
@@ -712,7 +748,7 @@ async function verificar() {
   process.exitCode = v.codigo;
 }
 
-const FASES = { cuentas, api, pasado, verificar };
+const FASES = { cuentas, api, pasado, verificar, pantalla };
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const fase = process.argv[2];
   if (!FASES[fase]) throw new Error(`Fase desconocida «${fase}». Fases: ${Object.keys(FASES).join(', ')}.`);

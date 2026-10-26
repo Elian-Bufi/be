@@ -1,0 +1,52 @@
+# Comprobación en pantalla, el 2026-10-26 de 20:30 a 20:31 UTC (salida de ver-en-pantalla.mjs; salida 0)
+
+OK    entra al website profesional como «Lic. Prueba Dos Áreas»
+OK    la cartera muestra a Uno, Dos, Tres y Cuatro por su nombre (Cinco finalizó: sin su nombre) · Prueba Uno, Prueba Dos, Prueba Tres, Prueba Cuatro
+OK    Prueba Dos: la leyenda nombra Registrado, Objetivo del profesional, Indicado en el plan · Calorías registradas por día · kcal Registrado Objetivo del profesional Indicado en el plan 9 días: 6 con valor · 2 sin registros
+OK    Prueba Dos: un rombo por día con indicado (9) · 9 rombos
+OK    Prueba Dos: la lectura del 2026-10-24 dice Hay indicado del día solo si el plan no deja elegir: una sol… · Lectura del 24 oct 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Calorías 1.032 kcal Subtotal de lo registrado · n = 4 Registros: 4 · Con cantidades: 3 · Sin cantidades: 1 · Comidas del plan: 4 de 4 con registro Falta: 1 registro(s) sin cantidades Ver origen de Calorías Objetivo del profesional
+OK    Prueba Dos: la lectura del 2026-10-24 incluye «1.032 kcal»
+OK    Prueba Dos: la lectura del 2026-10-24 incluye «Subtotal de lo registrado»
+OK    Prueba Dos: la lectura del 2026-10-24 incluye «1.572 kcal»
+OK    Prueba Dos: la lectura del 2026-10-24 incluye «1.800 kcal»
+OK    Prueba Dos: el gráfico sombrea los días sin registros · 2 zonas en gris
+OK    Prueba Dos: la lectura del 2026-10-22 dice «Sin registros en esta fecha.» · Lectura del 22 oct 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Calorías Sin registros en esta fecha. El más cercano: 21 oct 2026, a 1 día: 1.745 kcal. No es simultáneo. Obje
+OK    Prueba Dos: «Ver origen» trae las 4 comidas del 2026-10-24 · 4 leídas
+OK    Prueba Dos: «Ver origen» dice «Indicado en el plan: 363 kcal»
+OK    Prueba Dos: «Ver origen» dice «Indicado en el plan: 558 kcal»
+OK    Prueba Dos: «Ver origen» dice «Indicado en el plan: 176 kcal»
+OK    Prueba Dos: «Ver origen» dice «Indicado en el plan: 475 kcal»
+OK    Prueba Dos: «Ver origen» dice «Yogur con avena y banana»
+OK    Prueba Dos: «Ver origen» dice «Pollo con arroz y ensalada»
+OK    Prueba Dos: «Ver origen» dice «Fruta y nueces»
+OK    Prueba Dos: «Ver origen» dice «Merluza con papa y brócoli»
+OK    Prueba Dos: sin «cumplimiento», «adherencia» ni porcentajes (B05)
+OK    Prueba Dos: la captura de «Ver origen» muestra las 4 comidas leídas · 4 leídas
+OK    Prueba Dos: la API respondió sin errores
+OK    Prueba Tres: la leyenda nombra Registrado, Objetivo del profesional · Calorías registradas por día · kcal Registrado Objetivo del profesional 9 días: 6 con valor · 2 sin registros
+OK    Prueba Tres: sin rombos, y debajo del gráfico se dice por qué · Indicado en el plan: ningún día de estas fechas tiene un indicado del día (comidas con varias opciones). Lo indicado de cada comida registrada está en «Ver origen».
+OK    Prueba Tres: la lectura del 2026-10-23 dice Sin indicado del día: Desayuno tiene 2 opciones; Almuerzo ti… · Lectura del 23 oct 2026 Fecha anterior con datos Fecha siguiente con datos Ir a una fecha Calorías 1.097 kcal Subtotal de lo registrado · n = 4 Registros: 4 · Con cantidades: 3 · Sin cantidades: 1 · Comidas del plan: 4 de 4 con registro · 3 con opción del plan · 1 con comida diferente Falta: 1 comida(s) diferente(s) si
+OK    Prueba Tres: la lectura del 2026-10-23 incluye «1.097 kcal»
+OK    Prueba Tres: la lectura del 2026-10-23 incluye «Subtotal de lo registrado»
+OK    Prueba Tres: la lectura del 2026-10-23 incluye «1.900 kcal»
+OK    Prueba Tres: «Ver origen» trae las 4 comidas del 2026-10-23 · 4 leídas
+OK    Prueba Tres: «Ver origen» dice «Indicado en el plan: 298 kcal»
+OK    Prueba Tres: «Ver origen» dice «Indicado en el plan: 558 kcal»
+OK    Prueba Tres: «Ver origen» dice «Indicado en el plan: 176 kcal»
+OK    Prueba Tres: «Ver origen» dice «Tostadas con queso y naranja»
+OK    Prueba Tres: «Ver origen» dice «Pollo con arroz y ensalada»
+OK    Prueba Tres: «Ver origen» dice «Fruta y nueces»
+OK    Prueba Tres: «Ver origen» dice «Pizza con amigos, dos porciones»
+OK    Prueba Tres: «Ver origen» dice «Comida diferente: no es una opción del plan y no tiene indicado.»
+OK    Prueba Tres: sin «cumplimiento», «adherencia» ni porcentajes (B05)
+OK    Prueba Tres: la captura de «Ver origen» muestra las 4 comidas leídas · 4 leídas
+OK    Prueba Tres: la API respondió sin errores
+OK    Prueba Cuatro: la ficha no muestra su información · Prueba Cuatro Asesorado · b30946 Actualizar Consultado a las 17:31 Acceso actual Nutrición: Consentimiento revocado Acceso no disponible Por ahora no tenés acceso a la información de esta persona. Si se vinculó hace poco, puede que todavía 
+OK    Prueba Cinco: la ficha no muestra su información · Asesorado · 85e65d Actualizar Consultado a las 17:31 Acceso actual Nutrición: Finalizado No encontramos un recurso disponible para esta acción. Volver
+OK    ninguna respuesta de la API con error (fuera de los 404 de lo que no se puede leer)
+OK    ninguna escritura bloqueada (mirar no escribe)
+OK    sin errores de JavaScript
+OK    sin errores de consola (CSP incluida)
+OK    cierre de la sesión: 204 · status=204
+
+Todo en orden.

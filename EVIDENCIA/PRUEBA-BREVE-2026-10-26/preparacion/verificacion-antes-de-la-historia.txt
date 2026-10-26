@@ -1,0 +1,30 @@
+# Fase «verificar», el 2026-10-26 entre las 19:25 y las 19:30 UTC (sin la hora exacta): ANTES de cargar la historia de Nutrición (fase «pasado»).
+# El caso negativo en vivo: tiene que decir «PREPARACIÓN INCOMPLETA» y salir con 2, sin «SIN DIFERENCIAS».
+# Transcripto de la consola, tal cual. Después se acortó la redacción de lo que falta («falta la fase «pasado»»).
+
+PRO · Lic. Prueba Dos Áreas opera Nutrición y Entrenamiento
+  COMPROBADO      Entrenamiento: lee el plan vigente de Prueba Uno
+  FALTA           Nutrición: se lee con Prueba Dos (falta la fase «pasado» (vinculo-en-el-pasado, evaluacion, objetivo-en-el-pasado, borrador-del-plan, activacion-en-el-pasado, comidas-en-el-pasado))
+ASE_UNO · Prueba Uno: la sesión para sustituir un ejercicio
+  COMPROBADO      vínculo de ENTRENAMIENTO: ACEPTADO / ACTIVE / CONTEXTUAL
+  COMPROBADO      la sesión de hoy, sin empezar: Press de banca 3×10 con 40 kg y Sentadilla 3×8 con 50 kg
+  COMPROBADO      la búsqueda «press» trae 19 ejercicios disponibles para sustituir (entre ellos Press de pecho en el piso con mancuernas, Press de pecho en máquina, Press de banca con agarre cerrado)
+ASE_DOS · Prueba Dos: objetivo, indicado del día y registrado, con un hueco y un subtotal
+  FALTA           falta la fase «pasado» (vinculo-en-el-pasado, evaluacion, objetivo-en-el-pasado, borrador-del-plan, activacion-en-el-pasado, comidas-en-el-pasado)
+ASE_TRES · Prueba Tres: alternativas, sin indicado del día
+  FALTA           falta la fase «pasado» (vinculo-en-el-pasado, evaluacion, objetivo-en-el-pasado, borrador-del-plan, activacion-en-el-pasado, comidas-en-el-pasado)
+ASE_CUATRO · Prueba Cuatro: la autorización revocada
+  COMPROBADO      vínculo de NUTRICION: ACEPTADO / REVOKED / BLOCKED
+  COMPROBADO      404 RESOURCE_NOT_FOUND, el rechazo que prevé el contrato
+  COMPROBADO      control: la misma sesión lee sus vínculos en el mismo momento
+ASE_CINCO · Prueba Cinco: el vínculo finalizado
+  COMPROBADO      vínculo de NUTRICION: FINALIZADO / BLOCKED
+  COMPROBADO      404 RESOURCE_NOT_FOUND, el rechazo que prevé el contrato
+  COMPROBADO      control: la misma sesión lee sus vínculos en el mismo momento
+Escenarios comprobados: 3 de 6 (Prueba Uno: la sesión para sustituir un ejercicio; Prueba Cuatro: la autorización revocada; Prueba Cinco: el vínculo finalizado).
+Faltan o no se pudieron comprobar (3):
+  - Lic. Prueba Dos Áreas opera Nutrición y Entrenamiento: falta: Nutrición: se lee con Prueba Dos (falta la fase «pasado» (vinculo-en-el-pasado, evaluacion, objetivo-en-el-pasado, borrador-del-plan, activacion-en-el-pasado, comidas-en-el-pasado))
+  - Prueba Dos: objetivo, indicado del día y registrado, con un hueco y un subtotal: falta: falta la fase «pasado» (vinculo-en-el-pasado, evaluacion, objetivo-en-el-pasado, borrador-del-plan, activacion-en-el-pasado, comidas-en-el-pasado)
+  - Prueba Tres: alternativas, sin indicado del día: falta: falta la fase «pasado» (vinculo-en-el-pasado, evaluacion, objetivo-en-el-pasado, borrador-del-plan, activacion-en-el-pasado, comidas-en-el-pasado)
+PREPARACIÓN INCOMPLETA: 3 de 6 escenarios sin comprobar.
+salida: 2

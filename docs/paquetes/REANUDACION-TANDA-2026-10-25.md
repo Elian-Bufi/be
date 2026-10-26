@@ -3,14 +3,19 @@
 Nota única de la tanda. Se actualiza en cada hito, no en cada espera. Si el trabajo se corta, se retoma desde «Siguiente
 acción».
 
-**Estado al 2026-10-26: validación de uso en preparación.** La tanda se integró el 2026-10-25 y está desplegada en test
-(abajo). El 2026-10-26, con autorización de Dirección:
+**Estado al 2026-10-26, 20:35 UTC: el entorno de la validación de uso está listo. La prueba con personas no se hizo.**
+La tanda se integró el 2026-10-25. El 2026-10-26, con dos autorizaciones de Dirección:
 - se publicó la candidata `0.18.0-candidata.1` como prerelease;
-- se preparó la prueba breve;
-- se crearon las cuentas descartables.
+- se integraron #215 (el profesional descartable) y #216 (las lecturas congeladas de la candidata), y test sirve `e4512cb`;
+- se cargaron y verificaron los escenarios descartables, y la base volvió a quedar cerrada al exterior;
+- se preparó la prueba breve.
 
-Falta lo que hace Dirección: su acceso administrativo, integrar el PR de configuración #215 y la prueba con personas
-(«Validación de uso», más abajo).
+Falta lo que hace Dirección:
+- su acceso administrativo;
+- la prueba breve;
+- el guion completo del teléfono.
+
+Está en «Siguiente acción», más abajo.
 
 **Integración (2026-10-25, entre las 19:12 y las 20:15 UTC).** Test sirve `0be86b3` (#195) en la API y en el website.
 #212, la guía y esta nota, es solo documentación: no entra en ningún filtro de Render y no redespliega nada.
@@ -19,26 +24,39 @@ ninguna APK ni se crearon releases, etiquetas o administradores.
 
 ## Validación de uso (2026-10-26)
 
-**Autorización de Dirección:** «Autorizo construir y publicar la APK "0.18.0-candidata.1" como prerelease, y preparar datos
-sintéticos descartables en test para comprobar Administración, la comparación y la sustitución. La estable no cambia.»
-No incluye merges de producto.
+**Autorizaciones de Dirección del 2026-10-26:**
+- **a la mañana:** «Autorizo construir y publicar la APK "0.18.0-candidata.1" como prerelease, y preparar datos sintéticos
+  descartables en test para comprobar Administración, la comparación y la sustitución. La estable no cambia.» No incluía
+  merges de producto.
+- **a la tarde:** «Autorizo integrar #215 y después #216 en main, incluidos los despliegues automáticos que correspondan».
+  Autorizó también el acceso temporal a be-db-test, solo desde la IP de esta máquina, para cargar la historia
+  sintética, y completar los datos de las seis cuentas «Prueba». La candidata sigue como prerelease.
 
 | Qué | Estado |
 |---|---|
 | **La candidata** | **Publicada** el 2026-10-26 a las 09:51 (hora de Buenos Aires): `be-apk-0.18.0-candidata.1`, `be-0.18.0-candidata.1-b64d0c4.apk`, SHA-256 `e9686aee…2ce5`, versionCode 30. Commit `b64d0c4` = `main` en `2c4d445` más la versión (rama `apk/candidata-0.18.0-1`). Gradle, 39 min 54 s. Controles, publicación y descarga: `EVIDENCIA/PUBLICACION-0.18.0-candidata.1/` (en #216). La estable sigue siendo la 0.13.2 |
-| **Las lecturas congeladas (DL-152)** | **#216, en borrador**, con la CI en verde (909 de 909; las tres APK leídas contra la API de hoy). La nueva lee 81 operaciones: las 80 de la candidata.3, con la misma forma, más API-TRN-13-BUSQUEDA |
-| **El profesional descartable** | **#215**, solo configuración: suma a «Lic. Prueba Dos Áreas» a `BE_DEMO_PROFESIONALES`, sin cambiar las ocho entradas anteriores. CI en verde (40318120859). **El merge lo hace Dirección:** el control de permisos de la sesión frenó el mío porque despliega |
-| **Los datos descartables** | Hecha la fase `cuentas` (las seis altas, A3 y los nombres). Lo demás espera a que el profesional exista, o sea a #215. Cuentas, escenarios y cómo se cargaron: `EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md` |
-| **La prueba breve** | Preparada: `GUION.md` (quien prueba) y `OBSERVADOR.md` (las respuestas esperadas, calculadas aparte). **No se hizo todavía:** no hay validación de uso con personas |
-
-**Lo que hace Dirección, en orden:**
-1. **Su acceso administrativo:** «Siguiente acción», punto 1.
-2. **Integrar #215** y esperar que `be-api` diga *Live*.
-3. **Habilitar `181.171.85.152/32` en be-db-test → Networking** mientras se carga la historia de Nutrición (unos 10
-   minutos), y quitarla después.
-4. **La prueba breve.**
+| **Las lecturas congeladas (DL-152)** | **Integradas** (#216, `e4512cb`). La nueva lee 81 operaciones: las 80 de la candidata.3, con la misma forma, más API-TRN-13-BUSQUEDA. CI de la cabeza: 909 de 909, con las tres APK leídas contra la API de hoy |
+| **El profesional descartable** | **Integrado** (#215, `b40421d`): «Lic. Prueba Dos Áreas» en `BE_DEMO_PROFESIONALES`, a continuación de las ocho entradas anteriores, sin cambiarlas. Opera Nutrición y Entrenamiento |
+| **Los datos descartables** | **Cargados y verificados.** Uno, Cuatro y Cinco, por la API. La historia de Nutrición de Dos y Tres, por SQL, con la IP de esta máquina habilitada de 19:57 a 20:26 UTC. La fase `verificar`, ahora estricta, comprobó los 6 escenarios sin diferencias; en pantalla, 48 de 48 controles. Detalle: `EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md` y su carpeta `preparacion/` |
+| **La prueba breve** | Preparada: `GUION.md` para quien prueba y `OBSERVADOR.md` para quien observa, con los valores confirmados y lo que queda para las personas. **No se hizo todavía:** no hay validación de uso con personas |
 
 Las credenciales de las cuentas «Prueba» viven solo en `C:\Users\bufim\BE-datos-locales\prueba-test\cuentas.env`.
+
+## Integración del 2026-10-26
+
+| Paso | PR | Cabeza integrada (al día con `main`) | CI de la cabeza (los cinco trabajos) | Merge | CI de `main` | Despliegue en test |
+|---|---|---|---|---|---|---|
+| 1 | #215 · el profesional descartable | `ae3a7b8` | PR 40318120859 | `b40421d` (19:11 UTC) | 40384466745 | be-api, por la sincronización del Blueprint: sirve `b40421d` desde las 19:12:50 UTC. El website siguió en `0be86b3` |
+| 2 | #216 · las lecturas de la candidata | `1a17538` | push 40385187377 · PR 40385194871 (integración 909/909) | `e4512cb` (19:30 UTC) | 40387350649 | API y website: sirven `e4512cb` desde las 19:43 UTC. No cambia el comportamiento |
+
+- **#215:** antes del merge se comprobó que las ocho entradas anteriores siguen iguales y en su lugar, y que se agregan
+  solo las dos del profesional descartable.
+- **#216:** se puso al día con `main` después de #215. Corrigió dos frases que dejaban de ser ciertas, como «en un PR en
+  borrador». Los congelados de la 0.13.2 y de la candidata.3 no cambiaron.
+- **Después de los dos:**
+  - readiness, base y migraciones en OK;
+  - el profesional de prueba opera las dos áreas;
+  - la cohorte sigue funcionando: solo lectura, una entrada por profesional y sin Diego Sosa.
 
 ## Integración
 
@@ -101,6 +119,15 @@ entrada por etapa. Bloquea en el navegador toda escritura que no sea abrir o cer
   muestra con el valor oculto. Reemplazarla obliga a restablecer el segundo factor de cada administrador
   (`EVIDENCIA/ADMINISTRACION/OPERACION.md` §1).
 - El push de #214 tocó `render.yaml`, así que una IP del operador habilitada a mano en be-db-test quedó cerrada.
+- El push de #215 sincronizó el Blueprint: be-api se redesplegó con la entrada nueva, y la lista de IP de be-db-test
+  quedó vacía (`ipAllowList: []`).
+- **El acceso temporal del 2026-10-26** (`186.123.136.127/32`, para cargar la historia) se abrió y se cerró a mano en
+  be-db-test → Networking → *PostgreSQL Inbound IP Rules*.
+  - **Para vaciar la lista, Render pide dos pasos:** «Save», y después escribir «block all internet traffic to
+    PostgreSQL». Sin el segundo, la entrada sigue vigente.
+  - La regla del workspace («0.0.0.0/0 · everywhere») es aparte y no se toca. Con la lista de la base vacía, la base no
+    se alcanza desde internet.
+  - Cerrado y comprobado a las 20:26:48 UTC, con una conexión nueva que se rechaza. La API siguió conectada.
 
 ## Siguiente acción
 
@@ -134,25 +161,23 @@ por quien te acompaña. El procedimiento es `EVIDENCIA/ADMINISTRACION/OPERACION.
    sobre los profesionales de la demostración ni de la cohorte:** el único que se puede suspender es «Lic. Prueba Dos
    Áreas».
 
-### 2. Los datos de la prueba (después de #215)
+### 2. La prueba breve (los datos ya están cargados)
 
-Con #215 integrado y la IP habilitada:
-- `escenarios.mjs api`, `pasado` y `verificar`, con `BE_REPO` en el worktree que tiene `node_modules` (el de #195), desde
-  `EVIDENCIA/PRUEBA-BREVE-2026-10-26/herramientas`;
-- la comprobación en pantalla (`ver-prueba.mjs`, fuera del repo);
-- `llenar-guion.mjs`, que completa `OBSERVADOR.md` con los valores confirmados.
+`EVIDENCIA/PRUEBA-BREVE-2026-10-26/GUION.md`, de 25 a 30 minutos, con `OBSERVADOR.md` para quien observa:
+- Administración: suspender y rehabilitar Nutrición de «Lic. Prueba Dos Áreas» (necesita el punto 1);
+- Nutrición: Prueba Dos y Prueba Tres en «Analizar», con la cuenta del profesional descartable;
+- el teléfono: actualizar a la candidata y sustituir un ejercicio con Prueba Uno.
 
-Cada fase retoma lo hecho, sin repetirlo.
+Si se hace otro día:
+- el período de «Analizar» va del 18/10 al día de la prueba;
+- Uno tiene la sesión disponible ese día, sin empezar;
+- antes, `escenarios.mjs verificar` (solo lectura) dice si todo sigue como se preparó.
 
-### 3. La prueba breve y el teléfono
+### 3. Después de la prueba breve
 
-- **La prueba breve** (`EVIDENCIA/PRUEBA-BREVE-2026-10-26/GUION.md`, 25 a 30 minutos):
-  - Administración: suspender y rehabilitar Nutrición de «Lic. Prueba Dos Áreas»;
-  - Nutrición: Prueba Dos y Prueba Tres en «Analizar»;
-  - el teléfono: actualizar a la candidata y sustituir un ejercicio con Prueba Uno.
-- **Después**, el guion completo del teléfono (`EVIDENCIA/SUSTITUCION-DE-EJERCICIOS/GUION-DEL-TELEFONO.md`, T1 a T14 y
-  R1 a R3) con TalkBack, y la decisión de promover la candidata. Por DL-152 no pasa a estable sin esas pruebas y con #216
-  integrado.
+- El guion completo del teléfono (`EVIDENCIA/SUSTITUCION-DE-EJERCICIOS/GUION-DEL-TELEFONO.md`, T1 a T14 y R1 a R3), con
+  TalkBack en T13. La prueba breve no lo reemplaza.
+- La decisión de promover la candidata. Por DL-152 no pasa a estable sin esas pruebas. #216 ya está integrado.
 
 ## Pendientes registrados
 
@@ -161,16 +186,23 @@ Cada fase retoma lo hecho, sin repetirlo.
   - una prueba de carrera para dos reemplazos del autenticador;
   - auditar los rechazos que ocurren dentro de la transacción.
 - **Las pruebas humanas:**
-  - la prueba breve (preparada el 2026-10-26, sin hacer);
+  - la prueba breve (preparada y con los datos cargados el 2026-10-26, sin hacer);
   - el teléfono, con la candidata `0.18.0-candidata.1` (publicada);
   - un lector de pantalla y profesionales (DL-153, DL-154 y DL-158);
   - personas con Administración, empezando por el primer administrador.
+- **A observar en la prueba breve, sin cambio de producto:** en la leyenda de «Analizar», «Hueco» nombra el punto vacío
+  de un subtotal, y no el día sin registros, que se ve en gris. Está en `OBSERVADOR.md`, fila B3.
 - **DL-114** vence el 2026-12-01 00:00 UTC (21:00 ART del 30/11): revisar antes y llevarlo a Dirección, sin prorrogarlo.
 
 ## Ramas y evidencia
 
 - **Ramas integradas**, que quedan en el remoto porque no se borran solas: `config/clave-del-segundo-factor`,
-  `wp-administracion`, `wp-nutricion-comparacion`, `wp-apk-sustitucion` y `wp-tanda-guia`.
+  `wp-administracion`, `wp-nutricion-comparacion`, `wp-apk-sustitucion` y `wp-tanda-guia`; y, el 2026-10-26,
+  `config/profesional-de-prueba` (#215) y `wp-lecturas-apk-0.18.0-candidata.1` (#216).
+- **#217** (la prueba breve, esta nota y la evidencia de la preparación) sigue **en borrador**: es documentación y
+  herramientas, y lo integra Dirección cuando quiera.
+- La candidata se construyó desde la rama `apk/candidata-0.18.0-1` (`b64d0c4`), que queda en el remoto como la de las
+  candidatas anteriores.
 - **#213** (ensayo conjunto) se cierra sin integrar. La rama `ensayo/tanda-2026-10-25-no-integrar` queda como evidencia,
   con su CI de 898/898 sobre el mismo código. Su prueba de diagnóstico ya no está: sus cruces viven en #211 y #195.
 - **Evidencia de la tanda:**
@@ -191,8 +223,16 @@ Cada fase retoma lo hecho, sin repetirlo.
    - el alcance escrito.
 3. **Integración** (mismo día, a la noche): Dirección ratificó el alcance y las reglas (DL-151, DL-155 a DL-158 y el
    segundo factor; ver DEUDA_LEGAJO) y autorizó integrar en el orden de arriba y desplegar en test.
-4. **Validación de uso** (2026-10-26): Dirección autorizó la candidata y los datos descartables. Se publicó la candidata,
-   se congelaron sus lecturas (#216, en borrador), se preparó la prueba breve y se pidió el PR de configuración #215.
+4. **Validación de uso** (2026-10-26, a la mañana): Dirección autorizó la candidata y los datos descartables.
+   - Se publicó la candidata y se congelaron sus lecturas (#216).
+   - Se preparó la prueba breve.
+   - Se pidió el PR de configuración #215.
+5. **Preparación del entorno** (mismo día, a la tarde): Dirección autorizó integrar #215 y #216 y el acceso temporal a
+   la base.
+   - Se integraron los dos, y test sirve `e4512cb`.
+   - El verificador pasó a ser estricto.
+   - Se cargaron y verificaron los escenarios.
+   - La base volvió a quedar cerrada al exterior.
 
 ## Entorno de la máquina
 
@@ -201,5 +241,10 @@ Cada fase retoma lo hecho, sin repetirlo.
   en primer plano.
 - El PostgreSQL local de la tanda (:55462) está apagado: la integración no lo usó.
 - `node_modules` está en el worktree de #195 (`.claude/worktrees/agent-ad05c75238781c9c6`), que ahora tiene la rama de
-  #216 (`wp-lecturas-apk-0.18.0-candidata.1`). La candidata se construyó en `C:\b11`, con su propio `node_modules`.
+  #216 (`wp-lecturas-apk-0.18.0-candidata.1`, integrada). Es el `BE_REPO` de las herramientas de la prueba breve. La
+  candidata se construyó en `C:\b11`, con su propio `node_modules`.
 - Los daemons de Gradle se apagaron al terminar la construcción.
+- **La IP pública de esta máquina cambia:** el 2026-10-26 era `186.123.136.127`, y antes había sido `181.171.85.152`.
+  Hay que comprobarla con dos servicios antes de pedir el acceso a la base.
+- Con poca memoria, Claude Code cortó el vigilante que esperaba la IP. Las esperas que dependen de Dirección se resuelven
+  con su aviso («IP lista», «guardado»).

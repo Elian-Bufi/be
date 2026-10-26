@@ -14,6 +14,9 @@ ella elija, con `GUION.md` (quien prueba) y `OBSERVADOR.md` (quien observa, con 
 | `herramientas/escenarios.mjs` | Cómo se prepararon las cuentas y los datos (fases `cuentas`, `api`, `pasado` y `verificar`) |
 | `herramientas/datos.mjs` | Los planes, los objetivos y las comidas, sin lógica: lo que se cargó |
 | `herramientas/esperado.mjs` | Lo esperado de la comparación, con aritmética propia y **sin las funciones del producto** |
+| `herramientas/comprobaciones.mjs` | Lo que exige la fase `verificar` a cada escenario, sin red; sus pruebas, en `comprobaciones.test.mjs` (`node --test`) |
+| `herramientas/ver-en-pantalla.mjs` | La comprobación en el website, de solo lectura, con la cuenta del profesional descartable |
+| `preparacion/` | Lo que dieron la verificación y la comprobación en pantalla, con sus capturas |
 
 ## Las cuentas (sintéticas, de test, con «Prueba» en el nombre)
 
@@ -57,7 +60,20 @@ cohorte), sin cambiarlas.
    - lo escrito por SQL sigue las reglas de la base: los disparadores quedan activos, cada estado nace como en la API y
      cada transición deja su hecho en la misma transacción. La instantánea del plan se arma con la misma función del
      dominio que usa la API. La procedencia es `DATOS-SINTETICOS` / `SIEMBRA-PRUEBA-BREVE`.
-4. **`verificar`**, solo lectura: lee por la API lo preparado y lo compara con `esperado.mjs`.
+4. **`verificar`**, solo lectura y estricta: lee por la API los seis escenarios obligatorios y los compara con
+   `esperado.mjs`.
+   - Dice cuáles comprobó y cuáles faltan.
+   - Termina con 0 y «SIN DIFERENCIAS» solo si están los seis, sin diferencias. Con diferencias, termina con 1.
+   - Si falta una fase, o la API no deja concluir, dice «PREPARACIÓN INCOMPLETA» y termina con 2. No dejan concluir una
+     sesión que no sirve, el límite de pedidos, un 5xx o una falla de red.
+   - Para Cuatro y Cinco exige el rechazo exacto del contrato, `404 RESOURCE_NOT_FOUND`. Exige también el vínculo como lo
+     ve el profesional y que la misma sesión lea otra cosa en el mismo momento.
+5. **La comprobación en pantalla** (`ver-en-pantalla.mjs`): entra una vez como el profesional y bloquea toda escritura.
+   Mira:
+   - las tres capas de Dos, con sus números, el hueco y el subtotal;
+   - el motivo de Tres;
+   - «Ver origen» de las dos;
+   - las fichas de Cuatro y Cinco.
 
 **Lo que no es real.** Las cuentas se crearon hoy y su historia de Nutrición empieza días antes. Los borradores de los
 planes de Dos y Tres se crearon hoy y figuran activados en el pasado. Es lo mismo que pasa con la cohorte: una historia
@@ -86,13 +102,59 @@ cada comida registrada. El objetivo es de 1900 kcal.
 - y, en Tres, una comida diferente.
 
 Están en `herramientas/datos.mjs`, y los valores esperados en `OBSERVADOR.md`. Lo que se buscó mostrar:
-- **un hueco**: el 22/10, Dos no registró nada. No es cero, y la línea no lo une;
+- **un hueco**: el 22/10, Dos no registró nada. No es cero, y la línea no lo une. En pantalla es un día «sin
+  registros», en gris (en la leyenda, «Hueco» nombra otra cosa: el punto vacío de un subtotal);
 - **un registro incompleto**: el 24/10, el almuerzo de Dos se registró sin cantidades. Ese día es un subtotal, y la
   comida tiene indicado pero no tiene número registrado.
 
 ## Lo comprobado automáticamente
 
-_Se completa al terminar la preparación._
+Preparación del 2026-10-26, en test. Las salidas completas están en `preparacion/`.
+
+- **Integración.** #215 entró en `b40421d` (19:11 UTC) y #216 en `e4512cb` (19:30 UTC).
+  - Cada uno estaba al día con `main` y tenía la CI de su cabeza en verde. La CI de `main` también dio verde.
+  - La API y el website sirven `e4512cb` desde las 19:43 UTC, con readiness, base y migraciones en OK.
+- **El profesional descartable opera las dos áreas.** La siembra lo preparó al arrancar la API con #215. Con su sesión,
+  pidió el vínculo de Entrenamiento de Uno y los de Nutrición de Cuatro y Cinco. Ahora lee el plan de Uno y la comparación
+  de Dos.
+- **La cohorte sigue funcionando.** La comprobación es de solo lectura, con una entrada por profesional y sin Diego Sosa:
+  - Sofía Paz lee Nutrición y Antropometría;
+  - Martín Acosta lee Entrenamiento;
+  - Lucía Benítez lee Antropometría.
+- **La historia de Nutrición de Dos y Tres** se cargó por SQL el 2026-10-26, de 19:57:29 a 19:58:04 UTC.
+  - Se usó la IP de esta máquina, habilitada en be-db-test (`186.123.136.127/32`). La primera conexión entró a las
+    19:57:14 UTC.
+  - Hubo una lectura de control en la misma ventana. Todo lo escrito con la procedencia `SIEMBRA-PRUEBA-BREVE` es de las
+    cuentas «Prueba»: 0 filas ajenas.
+  - Siguen activos los 47 disparadores de esas tablas.
+  - Cada plan tiene su instantánea y figura activado el 18/10 a las 10:00.
+- **El acceso temporal se cerró.**
+  - A las 20:26:48 UTC, una conexión nueva desde esta máquina se rechaza («Server has closed the connection»), como antes
+    de abrirlo.
+  - La regla del workspace («0.0.0.0/0 · everywhere») no se tocó. Con la lista de la base vacía, la base no se alcanza
+    desde internet, como declara `render.yaml`.
+  - Quedó abierto hasta las 20:26 porque Render pide dos pasos para vaciar la lista: «Save» y, después, escribir «block
+    all internet traffic to PostgreSQL». Sin el segundo, el cambio no se aplica: la última conexión que entró fue a las
+    20:24:42 UTC.
+  - La API siguió conectada: readiness en OK, y la verificación de abajo se repitió a las 20:27 UTC sin diferencias.
+- **La verificación estricta** (`escenarios.mjs verificar`, solo lectura):
+  - los 6 escenarios obligatorios, comprobados;
+  - «SIN DIFERENCIAS», salida 0;
+  - sus casos negativos, en `comprobaciones.test.mjs`: 20 de 20;
+  - antes de cargar la historia, la misma herramienta dio «PREPARACIÓN INCOMPLETA» y salida 2, con Dos, Tres y la
+    Nutrición del profesional como faltantes.
+- **En pantalla** (`ver-en-pantalla.mjs`): una entrada como el profesional, solo lectura y con toda escritura bloqueada.
+  - 48 de 48 controles, el 2026-10-26 a las 20:31 UTC, con la base ya cerrada al exterior.
+  - Hubo dos intentos antes, y ninguna falla fue del producto:
+    - el primero dio 43 de 46: tres textos esperados mal escritos (la calidad con mayúscula y la nota de debajo del
+      gráfico de Tres);
+    - el segundo dio 46 de 46, pero las capturas de «Ver origen» salieron con las comidas recargándose. La captura de
+      página completa cambia el tamaño de la ventana y el panel vuelve a cargar los registros.
+  - La herramienta ahora agranda la ventana, espera las comidas leídas y lo controla antes de capturar.
+- **El APK** de la candidata: los controles de la publicación, en `EVIDENCIA/PUBLICACION-0.18.0-candidata.1/`.
+
+**No es una validación con personas.** Esto prueba que los escenarios están cargados y que la API y la pantalla dicen lo
+calculado aparte. No prueba que alguien lo entienda sin ayuda: eso es la prueba breve.
 
 ## Lo que queda para las personas
 
