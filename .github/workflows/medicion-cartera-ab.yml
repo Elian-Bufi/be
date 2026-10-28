@@ -1,0 +1,119 @@
+# Medición ANTES/DESPUÉS de la cartera (API-CAR-01): la lectura persona por persona de main e4512cb contra la lectura por
+# conjuntos (WP-CARTERA-LECTURA-POR-CONJUNTOS, 2026-10-28). Solo vive en la rama descartable medicion/cartera-ab-*: NO SE
+# INTEGRA. Primero el humo (el arnés entero en miniatura, en otra máquina); si pasa, la medición completa, con las dos
+# versiones alternadas en la misma máquina. Ver EVIDENCIA/RENDIMIENTO-CARTERA/LECTURA-POR-CONJUNTOS.md.
+# No toca test ni Render: PostgreSQL 16 nace vacío en el runner y solo recibe datos sintéticos.
+name: medición antes/después de la cartera
+on:
+  push:
+    branches: ["medicion/cartera-ab-*"]
+permissions:
+  contents: read
+concurrency:
+  group: medicion-cartera-ab
+  cancel-in-progress: false
+env:
+  # Credenciales sintéticas de un PostgreSQL efímero del runner (las mismas que usa ci.yml).
+  BE_PG_URL: postgresql://be_test:be_test_sintetico@localhost:55432/be_test
+
+jobs:
+  humo:
+    name: humo · el arnés A/B entero en miniatura
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build:domain
+      - name: La copia congelada de la lectura anterior es la de main e4512cb (solo cambian el encabezado, los import y el alias)
+        run: |
+          git fetch --no-tags --depth=1 origin e4512cb6
+          diff <(git show e4512cb6:apps/api/src/cartera/lectura-cartera.ts) test/integration/soporte-cartera-anterior.ts > diff-del-oraculo.txt || true
+          cat diff-del-oraculo.txt
+          # Solo pueden diferir: líneas agregadas del encabezado y del alias, y las siete líneas de import (una quitada y una agregada cada una).
+          if grep -E '^<' diff-del-oraculo.txt | grep -vE "^< import (type )?\{" ; then echo "La copia congelada difiere del original en algo más que los import"; exit 1; fi
+      - name: PostgreSQL 16 con pg_stat_statements precargado
+        run: |
+          docker run -d --name be-pg -p 55432:5432 \
+            -e POSTGRES_USER=be_test -e POSTGRES_PASSWORD=be_test_sintetico -e POSTGRES_DB=be_test \
+            postgres:16-alpine -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.max=10000
+          for i in $(seq 1 60); do docker exec be-pg pg_isready -U be_test -d be_test && break; sleep 1; done
+          echo "BE_CLK_TCK=$(getconf CLK_TCK)" >> "$GITHUB_ENV"
+      - name: Humo
+        env:
+          BE_MEDIR_AB: "1"
+          BE_CONCURRENCIA_PERFIL: humo
+          TEST_DATABASE_URL: ${{ env.BE_PG_URL }}
+          BE_CONCURRENCIA_SALIDA: ${{ github.workspace }}/resultados/humo
+        run: npx jest --config test/rendimiento/jest.rendimiento.config.js --runInBand --forceExit 'test/rendimiento/cartera-ab\.rendimiento\.ts$'
+      - name: Análisis del humo
+        if: always()
+        run: node test/rendimiento/analizar-ab.mjs resultados/humo && cat resultados/humo/resumen-ab.md
+      - name: Registro de PostgreSQL
+        if: always()
+        run: docker logs be-pg 2>&1 | tail -n 300 > resultados/humo/postgres.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: humo-ab
+          path: resultados
+          if-no-files-found: warn
+
+  medir:
+    name: medición · las dos versiones alternadas en la misma máquina
+    needs: humo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build:domain
+      - name: La máquina
+        run: |
+          mkdir -p resultados
+          {
+            echo "## nproc"; nproc
+            echo "## lscpu"; lscpu
+            echo "## free -m"; free -m
+            echo "## node"; node --version
+            echo "## docker"; docker --version
+            echo "## uname"; uname -a
+            echo "## CLK_TCK"; getconf CLK_TCK
+            echo "## disco"; df -h .
+          } | tee resultados/maquina.txt
+          echo "BE_CLK_TCK=$(getconf CLK_TCK)" >> "$GITHUB_ENV"
+      - name: PostgreSQL 16 con pg_stat_statements precargado (la misma imagen de las mediciones anteriores)
+        run: |
+          docker run -d --name be-pg -p 55432:5432 \
+            -e POSTGRES_USER=be_test -e POSTGRES_PASSWORD=be_test_sintetico -e POSTGRES_DB=be_test \
+            postgres:16-alpine -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.max=10000
+          for i in $(seq 1 60); do docker exec be-pg pg_isready -U be_test -d be_test && break; sleep 1; done
+          echo "BE_IMAGEN_PG=$(docker inspect --format '{{index .RepoDigests 0}}' postgres:16-alpine)" >> "$GITHUB_ENV"
+      - name: Medir
+        env:
+          BE_MEDIR_AB: "1"
+          TEST_DATABASE_URL: ${{ env.BE_PG_URL }}
+          BE_CONCURRENCIA_SALIDA: ${{ github.workspace }}/resultados/ab
+        run: npx jest --config test/rendimiento/jest.rendimiento.config.js --runInBand --forceExit 'test/rendimiento/cartera-ab\.rendimiento\.ts$'
+      - name: Analizar
+        if: always()
+        run: node test/rendimiento/analizar-ab.mjs resultados/ab && cat resultados/ab/resumen-ab.md
+      - name: Registro de PostgreSQL
+        if: always()
+        run: docker logs be-pg 2>&1 | tail -n 300 > resultados/ab/postgres.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-cartera-ab
+          path: resultados
+          if-no-files-found: warn
