@@ -20,8 +20,8 @@ Qué falta, según para qué:
    - #219, la guía, el cuaderno, este documento y el material visual.
    - #217, la prueba breve.
 
-   Hay otros dos apilados sobre #219, que se integran después de él: #220, con las 50 recetas nuevas, y la medición de la
-   cartera con concurrencia.
+   Hay otros dos apilados sobre #219, que se integran después de él: #220, con las 50 recetas nuevas, y #221, con la
+   medición de la cartera con concurrencia.
 3. Decidir las cuatro observaciones de la parte A (O-1 a O-4, abajo).
 4. Decidir las excepciones de seguridad de DL-114. Vencen el 30/11 a las 21:00, hora de Argentina (el 1/12 a las 00:00
    UTC). No se prorrogan solas.
@@ -70,8 +70,8 @@ Una propuesta no es una funcionalidad aprobada. Un verde de la CI no es una vali
 - **PR abiertos, todos en borrador:**
   - #219 (esta rama, `wp-nocturno-2026-10-27`): la guía, el cuaderno, el plan de estudio, el material visual, la medición
     de la cartera y este documento;
-  - apilados sobre #219, del encargo del 2026-10-28: #220 (las 50 recetas nuevas, sin fotos) y la medición de la cartera
-    con concurrencia (rama `wp-cartera-concurrencia-2026-10-28`);
+  - apilados sobre #219, del encargo del 2026-10-28: #220 (las 50 recetas nuevas, sin fotos) y #221 (la medición de la
+    cartera con concurrencia);
   - #218 (Administración) y #217 (la prueba breve);
   - #204 (prueba de integración del 23/10, para cerrar sin integrar);
   - #199 (tesis v1) y #193 (ampliaciones A a F), documentales.
@@ -126,7 +126,7 @@ Las observaciones de la parte A, a decidir:
 | Recetas de ejemplo en `test` (las 16 originales) | Integrada la herramienta; **no consta que se hayan cargado** (al 23/10, sin cargar) | #192 | Autorizar la carga | Sí |
 | Ampliación: 50 recetas nuevas (66 en total) | Implementado; verificado automáticamente (prueba de contenido; la carga, con cortes y reanudación, en una base efímera de la CI); **sin fotos** (bloqueado por herramienta); no desplegado: no está en `test` | #220 (borrador) | Integrar; generar y revisar las fotos; autorizar la carga | Sí |
 | Exportar los datos de la persona | Propuesto: la definición está solo en la rama local `wp-exportar-mis-datos` | DL-021, DL-142 | Publicarla como borrador o descartarla | Sí |
-| Rendimiento de la cartera con 50, 100 y 200 personas | Verificado automáticamente **fuera de Render** (runner de GitHub, 28/10): 312, 617 y 1.233 ms de mediana; 3 filas nuevas en `decision_de_acceso` por persona en cada lectura. La medición con concurrencia e historia más representativa va en su propio PR, apilado sobre #219 | `EVIDENCIA/RENDIMIENTO-CARTERA` · corrida 40641148313 | Decidir si 1,2 s con 200 personas y 600 filas por lectura son aceptables; fijar un criterio de aceptación antes de un piloto y medir en su ambiente | Sí: decidir |
+| Rendimiento de la cartera con 50, 100 y 200 personas | Verificado automáticamente **fuera de Render**, en runners de GitHub el 28/10, con dos mediciones. **Primera** (corrida 40641148313): 312, 617 y 1.233 ms de mediana. **Segunda, en #221** (corrida 40660575008, otra máquina; solo se compara dentro de la misma corrida): unos 2 s por página con 200 personas (2,3 s con historia) y unos 8 s para abrir el espacio profesional, que lee 4 páginas. Con 5 profesionales a la vez, 4,2 s por página y 1,16 páginas por segundo, con 0 errores; la máquina se aplana sin agotar la CPU. Solo un 10 % del tiempo es SQL. Siempre 3 filas nuevas en `decision_de_acceso` por persona en cada pedido | `EVIDENCIA/RENDIMIENTO-CARTERA` (`CONCURRENCIA.md` en #221) | Decidir la propuesta priorizada de #221: leer los pendientes por conjuntos es técnica; decidir en una transacción toca el PDP; no repetir la cartera en cada página y cuánto se registra tocan el contrato o el legajo. Fijar un criterio de aceptación antes de un piloto y medir en su ambiente | Sí: decidir |
 
 ### Lo académico y lo documental
 
@@ -169,7 +169,7 @@ No está autorizado ni es parte de la entrega. Antes de un piloto hace falta, co
 |---|---|---|
 | El gate de 24 condiciones del 08 §42 (textos legales, backups con restauración probada, producción separada, DPA, canal de derechos, entre otras) | Cada condición tiene su evidencia. | Sí |
 | Exportar los datos de la persona (DL-021) | Está implementado, verificado y validado. | Sí |
-| Rendimiento con la escala del piloto | La medición aislada se corrió y una prueba en el ambiente del piloto la confirma. Un resultado local no dice nada de Render. | Sí |
+| Rendimiento con la escala del piloto | Primero se fija el criterio de aceptación (cuántos profesionales a la vez, con cuántas personas, y qué tiempo es aceptable). Después, una prueba en el ambiente del piloto lo confirma. Las mediciones aisladas del 28/10 no dicen nada de Render. | Sí |
 | Una decisión explícita de hacer un piloto | Dirección la escribe, con su alcance. | Sí |
 
 ### 4. Evolución: lo que sigue después
