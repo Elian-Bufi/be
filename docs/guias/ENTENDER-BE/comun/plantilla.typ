@@ -91,7 +91,7 @@
   )
   set text(font: "Inter", size: 10.5pt, fill: tinta, lang: "es", region: "AR", hyphenate: false)
   set par(leading: 0.62em, spacing: 0.9em, justify: false)
-  show raw: set text(font: "JetBrains Mono", size: 9pt)
+  show raw: set text(font: "JetBrains Mono", size: 9pt, ligatures: false, features: (calt: 0))
   show raw.where(block: true): it => block(fill: fondo, stroke: 0.6pt + borde, inset: 7pt, radius: 3pt, width: 100%, it)
   show heading.where(level: 1): it => none
   show heading.where(level: 2): it => text(size: 18pt, weight: 700, fill: tinta, it.body)

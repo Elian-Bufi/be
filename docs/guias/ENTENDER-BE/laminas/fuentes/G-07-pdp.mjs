@@ -9,7 +9,7 @@ export const meta = {
   fuente: 'apps/api/src/autorizacion · packages/domain/src/autorizacion.ts',
   estado: 'implementado',
   ancho: 750,
-  alto: 316,
+  alto: 294,
 };
 
 export function dibujar(L) {
@@ -24,7 +24,7 @@ export function dibujar(L) {
   L.conector({ de: 'guard', lado: 'e', a: 'bloqueo', ladoA: 'o' });
   L.conector({ de: 'bloqueo', lado: 'e', a: 'lee', ladoA: 'o' });
 
-  L.marco({ id: 'evaluar', x: 4, y: 100, w: 742, h: 122, titulo: 'evaluarAutorizacion', subtitulo: 'dominio, función pura: recibe esos hechos y evalúa las siete; ninguna sola autoriza' });
+  L.marco({ id: 'evaluar', x: 4, y: 92, w: 742, h: 118, titulo: 'evaluarAutorizacion', subtitulo: 'dominio, función pura: recibe esos hechos y evalúa las siete; ninguna sola autoriza' });
   const dims = [
     ['Rol', 'Profesional, y sobre otra persona.'],
     ['Especialidad', 'Verificado en esa área.'],
@@ -36,12 +36,12 @@ export function dibujar(L) {
   ];
   const w = 98;
   const g = (742 - 16 - 7 * w) / 6;
-  dims.forEach(([t, d], i) => L.redondeado({ id: `d${i}`, x: 12 + i * (w + g), y: 126, w, h: 88, titulo: t, detalle: d, radio: 6 }));
+  dims.forEach(([t, d], i) => L.redondeado({ id: `d${i}`, x: 12 + i * (w + g), y: 114, w, h: 88, titulo: t, detalle: d, radio: 6 }));
 
-  L.decision({ id: 'decide', cx: 375, cy: 250, w: 30, h: 30 });
+  L.decision({ id: 'decide', cx: 375, cy: 236, w: 30, h: 30 });
   L.conector({ de: 'd3', lado: 's', a: 'decide', ladoA: 'n' });
-  L.redondeado({ id: 'si', x: 4, y: 230, w: 300, h: 80, titulo: 'Permitida: las siete favorables', detalle: 'La decisión se guarda en la misma transacción, con la autorización y su versión, y la operación sigue.', tipo: 'persona' });
-  L.redondeado({ id: 'no', x: 446, y: 230, w: 300, h: 80, titulo: 'Denegada: alguna desfavorable', detalle: 'La decisión se guarda aparte, con las dimensiones que fallaron; la operación se revierte y responde 404 RESOURCE_NOT_FOUND.', tipo: 'pendiente' });
+  L.redondeado({ id: 'si', x: 4, y: 214, w: 300, h: 76, titulo: 'Permitida: las siete favorables', detalle: 'La decisión se guarda en la misma transacción, con la autorización y su versión, y la operación sigue.', tipo: 'persona' });
+  L.redondeado({ id: 'no', x: 446, y: 214, w: 300, h: 76, titulo: 'Denegada: alguna desfavorable', detalle: 'La decisión se guarda aparte, con las dimensiones que fallaron; la operación se revierte y responde 404 RESOURCE_NOT_FOUND.', tipo: 'pendiente' });
   L.conector({ de: 'decide', lado: 'o', a: 'si', ladoA: 'e' });
   L.conector({ de: 'decide', lado: 'e', a: 'no', ladoA: 'o' });
 }
