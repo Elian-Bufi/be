@@ -6,7 +6,13 @@
  *
  *   node scripts/aab/construir-aab.mjs [--ambiente test] [--salida C:/Users/bufim/BE-artefactos/aab]
  *        [--respaldo C:/Users/bufim/be-firma-respaldo] [--datos C:/Users/bufim/BE-datos-locales] [--sin-prebuild]
+ *        [--permitir-sucio] [--sin-google] [--sin-firebase]
  *
+ * - Se niega a construir con cambios sin confirmar en apps/mobile o packages/domain (el commit no describiría lo
+ *   construido) salvo `--permitir-sucio`, y deja `arbolLimpio` en esperado.json: el verificador lo exige en true.
+ * - Se niega a construir sin google-services.json o sin el client ID web salvo `--sin-firebase` / `--sin-google`, y deja
+ *   `sinFirebaseAProposito` / `sinGoogleAProposito` en esperado.json: una app sin avisos o sin «Continuar con Google»
+ *   por un archivo que faltó no puede pasar por una construida así a propósito.
  * - El ambiente sale del perfil de `apps/mobile/eas.json` (por omisión `test`: la API y el website de test, como todas las
  *   APK publicadas). `EAS_BUILD_GIT_COMMIT_HASH` es el commit construido y `NODE_ENV=production`, como hace EAS.
  * - Firebase (`google-services.json`) y el client ID web de Google salen de la carpeta de datos locales, fuera del repo.
@@ -36,6 +42,9 @@ const opciones = leerOpciones(process.argv.slice(2), {
   respaldo: 'C:/Users/bufim/be-firma-respaldo',
   datos: 'C:/Users/bufim/BE-datos-locales',
   'sin-prebuild': false,
+  'permitir-sucio': false,
+  'sin-google': false,
+  'sin-firebase': false,
   // Lo que el verificador va a exigir del artefacto. Mientras no exista una clave de subida aparte, el AAB se firma con
   // la keystore de EAS y las dos huellas son la misma; con la clave de subida, --cert-subida pasa a ser la suya.
   'cert-subida': CERTIFICADO_DE_EAS,
@@ -58,7 +67,9 @@ const avisar = (t) => process.stdout.write(`[aab] ${new Date().toISOString().sli
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: RAIZ, encoding: 'utf8' }).trim();
 const rama = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: RAIZ, encoding: 'utf8' }).trim();
 const sucio = execFileSync('git', ['status', '--porcelain', '--', 'apps/mobile', 'packages/domain'], { cwd: RAIZ, encoding: 'utf8' }).trim();
-if (sucio) avisar(`ATENCIÓN: hay cambios sin confirmar en apps/mobile o packages/domain; el commit de origen no describe exactamente lo construido:\n${sucio}`);
+if (sucio && !opciones['permitir-sucio']) throw new Error(`hay cambios sin confirmar en apps/mobile o packages/domain y el commit no describiría lo construido (confirmalos, o --permitir-sucio para una prueba que no se sube):\n${sucio}`);
+if (sucio) avisar(`ATENCIÓN (--permitir-sucio): hay cambios sin confirmar; esperado.json llevará arbolLimpio: false y el verificador no dará «todo bien»:\n${sucio}`);
+const arbolLimpio = !sucio;
 const configuracion = readFileSync(join(MOVIL, 'app.config.ts'), 'utf8');
 const version = /const VERSION = '([^']+)'/.exec(configuracion)?.[1];
 const versionCode = Number(/versionCode: (\d+)/.exec(configuracion)?.[1]);
@@ -81,8 +92,13 @@ const entornoDeLaApp = {
   ...(existsSync(clientIds) ? { GOOGLE_WEB_CLIENT_ID: valorDe(clientIds, 'GOOGLE_WEB_CLIENT_ID') } : {}),
 };
 const firebaseProjectId = entornoDeLaApp.GOOGLE_SERVICES_JSON ? (JSON.parse(readFileSync(googleServices, 'utf8')).project_info?.project_id ?? null) : null;
-if (!entornoDeLaApp.GOOGLE_SERVICES_JSON) avisar('sin google-services.json: la app se construye sin avisos push');
-if (!entornoDeLaApp.GOOGLE_WEB_CLIENT_ID) avisar('sin GOOGLE_WEB_CLIENT_ID: la app se construye sin «Continuar con Google»');
+if (!entornoDeLaApp.GOOGLE_SERVICES_JSON && !opciones['sin-firebase']) throw new Error(`falta ${googleServices}: la app quedaría sin avisos push. Si es a propósito, --sin-firebase`);
+if (!entornoDeLaApp.GOOGLE_WEB_CLIENT_ID && !opciones['sin-google']) throw new Error(`falta GOOGLE_WEB_CLIENT_ID en ${clientIds}: la app quedaría sin «Continuar con Google». Si es a propósito, --sin-google`);
+if (entornoDeLaApp.GOOGLE_SERVICES_JSON && !firebaseProjectId) throw new Error('google-services.json no tiene project_info.project_id');
+if (opciones['sin-firebase'] && entornoDeLaApp.GOOGLE_SERVICES_JSON) throw new Error('--sin-firebase, pero google-services.json está: sacá una de las dos cosas');
+if (opciones['sin-google'] && entornoDeLaApp.GOOGLE_WEB_CLIENT_ID) throw new Error('--sin-google, pero GOOGLE_WEB_CLIENT_ID está: sacá una de las dos cosas');
+if (opciones['sin-firebase']) avisar('--sin-firebase: la app se construye sin avisos push, a propósito');
+if (opciones['sin-google']) avisar('--sin-google: la app se construye sin «Continuar con Google», a propósito');
 const libreMb = Math.round(freemem() / 1024 ** 2);
 avisar(`memoria libre ${libreMb} MB de ${Math.round(totalmem() / 1024 ** 2)} MB`);
 if (libreMb < 700) avisar('ATENCIÓN: menos de 700 MB libres; Gradle puede fallar por memoria (pasó en la 0.11.3)');
@@ -162,11 +178,14 @@ const esperado = {
   version,
   versionCode,
   commit,
+  arbolLimpio,
   appEnv: perfil.env.APP_ENV,
   apiBaseUrl: perfil.env.API_BASE_URL,
   webBaseUrl: perfil.env.WEB_BASE_URL,
   googleWebClientId: entornoDeLaApp.GOOGLE_WEB_CLIENT_ID ?? null,
+  sinGoogleAProposito: opciones['sin-google'],
   firebaseProjectId,
+  sinFirebaseAProposito: opciones['sin-firebase'],
   certSubidaSha256: opciones['cert-subida'],
   certFirmaAppSha256: opciones['cert-firma-app'],
 };
