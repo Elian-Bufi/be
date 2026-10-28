@@ -32,8 +32,8 @@ jobs:
       - run: npm run build:domain
       - name: La copia congelada de la lectura anterior es la de main e4512cb (solo cambian el encabezado, los import y el alias)
         run: |
-          git fetch --no-tags --depth=1 origin e4512cb6
-          diff <(git show e4512cb6:apps/api/src/cartera/lectura-cartera.ts) test/integration/soporte-cartera-anterior.ts > diff-del-oraculo.txt || true
+          git fetch --no-tags --depth=1 origin e4512cb2ca19a22895f93fd2e29237ef516e0692
+          diff <(git show e4512cb2ca19a22895f93fd2e29237ef516e0692:apps/api/src/cartera/lectura-cartera.ts) test/integration/soporte-cartera-anterior.ts > diff-del-oraculo.txt || true
           cat diff-del-oraculo.txt
           # Solo pueden diferir: líneas agregadas del encabezado y del alias, y las siete líneas de import (una quitada y una agregada cada una).
           if grep -E '^<' diff-del-oraculo.txt | grep -vE "^< import (type )?\{" ; then echo "La copia congelada difiere del original en algo más que los import"; exit 1; fi
