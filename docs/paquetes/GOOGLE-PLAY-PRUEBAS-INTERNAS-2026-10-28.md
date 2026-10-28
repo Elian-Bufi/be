@@ -181,9 +181,17 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
   intentó. Detalle y comandos exactos en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`. Por eso, lo «comprobado automáticamente»
   sobre el artefacto está pendiente; lo comprobado es la ruta, el código y la herramienta de verificación (con sus
   pruebas).
-- **Para retomar:** con la PC libre, en `C:\Users\bufim\BE-aab`: `npm ci` (Node 22) y `node scripts/aab/construir-aab.mjs`;
-  después `node scripts/aab/verificar-aab.mjs …` y copiar `verificacion.md` y `construccion.json` a
-  `EVIDENCIA/GOOGLE-PLAY/`. La APK vigente (0.18.0-candidata.1) no se toca.
+- **Para retomar: el lanzador** `scripts/aab/lanzar-aab.ps1` (28/10 noche), con Claude y Chrome cerrados, desde
+  PowerShell: `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\bufim\BE-aab\scripts\aab\lanzar-aab.ps1`
+  y, para ver el resultado, lo mismo con `-Consultar`. Comprueba (Node 22, rama, commit igual al publicado, árbol
+  limpio, herramientas, datos y respaldo por existencia, memoria y disco), corre `npm ci`, la construcción y la
+  verificación contra el `esperado.json` de esa construcción, se detiene en el primer fallo sin reintentos ni
+  artefactos anteriores, y deja un registro sin credenciales en `C:\Users\bufim\BE-artefactos\aab\registros\` con una
+  línea final TERMINADO / FALLÓ en <paso> / BLOQUEADO por <motivo>. Probado en sus comprobaciones y bloqueos (no
+  en una construcción: 461 MB libres con la sesión abierta). Si esta PC no alcanza ni con todo cerrado, las
+  alternativas (otra PC propia; GitHub Actions sin la keystore y firma local; EAS Build, donde la keystore ya está),
+  con requisitos y costos, están en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`; ninguna se activó. La APK vigente
+  (0.18.0-candidata.1) no se toca.
 
 ## Fuentes oficiales leídas (las principales)
 
