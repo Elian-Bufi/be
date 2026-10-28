@@ -1,6 +1,8 @@
 /**
- * Medición de la cartera del profesional (API-CAR-01) con 50, 100 y 200 personas sintéticas. Preparada el 2026-10-28,
- * sin correr todavía: ver EVIDENCIA/RENDIMIENTO-CARTERA/LEEME.md.
+ * Medición de la cartera del profesional (API-CAR-01) con 50, 100 y 200 personas sintéticas. Preparada el 2026-10-28 y
+ * corrida ese mismo día en un runner de GitHub (corrida 40641148313): ver EVIDENCIA/RENDIMIENTO-CARTERA/LEEME.md. Su
+ * comportamiento no cambió después: es la referencia de la medición con historia y concurrencia
+ * (cartera-concurrencia.rendimiento.ts), que la vuelve a correr, tal cual, como control en la misma máquina.
  *
  * Qué mide, para cada tamaño:
  * - la latencia de `GET /api/v1/me/portfolio` (mínimo, mediana, p95 y máximo de R lecturas, después de 3 de calentamiento);

@@ -85,7 +85,11 @@ const NOMBRES = [
   [/^\s*BEGIN/i, 'BEGIN'],
   [/^\s*COMMIT/i, 'COMMIT'],
   [/^\s*ROLLBACK/i, 'ROLLBACK'],
-  [/FROM "public"\."sesion"/i, 'Sesión (guard)'],
+  [/FROM "public"\."sesion"/i, 'Sesión (guard) · la sesión'],
+  [/FROM "public"\."identidad"/i, 'Sesión (guard) · estado de la cuenta'],
+  [/FROM "public"\."control_de_sesion"/i, 'Sesión (guard) · control de sesión'],
+  [/FROM "public"\."vinculo"/i, 'Paso 1 · vínculos de esos alcances'],
+  [/^\s*SELECT \$1\s*$/i, 'Prisma · comprobación de conexión'],
   [/nombre_visible/, 'Lectura · nombres de las personas'],
   [/FROM "public"\."ingesta_nutricional"/i, 'Lectura · actividad nutricional (conteo y última)'],
   [/FROM "public"\."ejecucion_de_entrenamiento"/i, 'Lectura · actividad de entrenamiento (conteo y última)'],
@@ -103,7 +107,11 @@ const NOMBRES = [
 function nombreDe(clave) {
   const texto = consultas[clave] ?? '';
   const interna = clave.endsWith('|0');
-  if (interna) return /FOR (SHARE|KEY SHARE|NO KEY UPDATE|UPDATE)/i.test(texto) ? 'Interna · bloqueos dentro de la función' : `Interna · ${texto.replace(/\s+/g, ' ').slice(0, 50) || 'sin texto'}`;
+  if (interna) {
+    if (/FOR (SHARE|KEY SHARE|NO KEY UPDATE|UPDATE)/i.test(texto)) return 'Interna · bloqueos dentro de be_bloquear_lo_que_corta';
+    if (/"Finalidad"/.test(texto)) return 'Interna · be_finalidad_de_alcance (control de cada fila de decisión)';
+    return `Interna · ${texto.replace(/\s+/g, ' ').slice(0, 50) || 'sin texto'}`;
+  }
   for (const [patron, nombre] of NOMBRES) if (patron.test(texto)) return nombre;
   return texto ? `Otra · ${texto.replace(/\s+/g, ' ').slice(0, 60)}` : `Otra · ${clave}`;
 }
@@ -385,21 +393,110 @@ const totales = poblacion.totalesDeLaBaseAlEmpezarLaMedicion ?? {};
 const totalesFin = poblacion.totalesDeLaBaseAlTerminar ?? {};
 L.push('', `Toda la base al empezar a medir: ${f(totales.identidad)} identidades, ${f(totales.decision_de_acceso)} decisiones de acceso (${f((totales['decision_de_acceso.bytes'] ?? 0) / 1024 ** 2, 1)} MB), ${f(totales.ingesta_nutricional)} comidas registradas. Al terminar: ${f(totalesFin.decision_de_acceso)} decisiones (${f((totalesFin['decision_de_acceso.bytes'] ?? 0) / 1024 ** 2, 1)} MB).`, '');
 
+// La tabla principal: cada escenario con sus repeticiones juntas, y la mediana de cada repetición al lado.
+function porEscenario(escenario) {
+  const ms = muestras.filter((m) => m.escenario === escenario && !m.calentamiento);
+  const buenas = ms.filter(ok);
+  const lat = ms.map((m) => m.latenciaMs);
+  const ls = resumenes.filter((x) => x.escenario === escenario);
+  const enLaBase = buenas.filter((m) => Array.isArray(m.sentencias)).map((m) => suma([...porNombre(m.sentencias).values()].filter((x) => !x.interna).map((x) => x.ms)));
+  const sentencias = buenas.filter((m) => Array.isArray(m.sentencias)).map((m) => suma([...porNombre(m.sentencias).values()].filter((x) => !x.interna).map((x) => x.llamadas)));
+  return {
+    escenario,
+    modo: ls[0]?.modo ?? null,
+    personas: ls[0]?.personas ?? null,
+    clientes: ls[0]?.clientes ?? null,
+    instrumentada: ls[0]?.instrumentada ?? null,
+    repeticiones: ls.map((x) => x.latencia.p50),
+    n: ms.length,
+    conError: ms.length - buenas.length,
+    p50: r(percentil(lat, 50)),
+    p95: r(percentil(lat, 95)),
+    max: lat.length ? r(Math.max(...lat)) : null,
+    pdp: r(percentil(buenas.map((m) => m.servidor?.pdpTramoMs ?? null), 50)),
+    lectura: r(percentil(buenas.map((m) => m.servidor?.lecturaMs ?? null), 50)),
+    enLaBase: r(percentil(enLaBase, 50)),
+    sentencias: sentencias.length ? `${f(Math.min(...sentencias))}–${f(Math.max(...sentencias))}` : '—',
+    filas: distribucion(ms.map((m) => m.filasDeDecision)),
+    pedidosPorSegundo: ls[0]?.modo === 'concurrente' ? r(media(ls.map((x) => x.pedidosPorSegundo)), 2) : null,
+  };
+}
+const principales = escenarios.map(porEscenario);
+resumen.escenarios = principales;
+writeFileSync(join(carpeta, 'resumen.json'), `${JSON.stringify(resumen, null, 2)}\n`);
+
+L.push('## Tabla principal: cada escenario, con sus repeticiones', '');
+L.push('Latencia del cliente en ms, con todas las repeticiones juntas (y la mediana de cada una). «PDP», «Lectura» y «En la base» son medianas por pedido del servidor: el bloque de decisiones, la transacción de lectura de pendientes y el tiempo de ejecución de SQL en PostgreSQL (pg_stat_statements, solo en los lotes secuenciales instrumentados).', '');
+tabla(
+  ['Escenario', 'Personas', 'Clientes', 'n', 'Con error', 'p50', 'p95', 'Máximo', 'p50 de cada repetición', 'PDP', 'Lectura', 'En la base', 'Sentencias por pedido', 'Filas de decisión por pedido (pedidos)', 'Pedidos/s'],
+  principales.map((x) => [
+    `${x.escenario}${x.instrumentada === false ? ' (sin instrumentar)' : ''}`,
+    f(x.personas),
+    f(x.clientes),
+    f(x.n),
+    x.conError ? `**${f(x.conError)}**` : '0',
+    f(x.p50),
+    f(x.p95),
+    f(x.max),
+    x.repeticiones.map((v) => f(v)).join(' · '),
+    f(x.pdp),
+    f(x.lectura),
+    f(x.enLaBase, 1),
+    x.sentencias,
+    x.filas,
+    f(x.pedidosPorSegundo, 2),
+  ]),
+);
+
 L.push('## Latencia por lote', '');
 L.push('Latencia medida en el cliente (mismo proceso que la API), en ms. Cada lote, después de su calentamiento. Los pedidos con error **están** en la latencia y se cuentan aparte.', '');
 tabla(
   ['Lote', 'Modo', 'Personas', 'Clientes', 'n', 'Con error', 'p50', 'p95', 'p99', 'Máximo', 'Pedidos/s', 'Concurrencia efectiva'],
-  resumenes.map((x) => [x.lote, x.modo + (x.instrumentada ? '' : ' · sin instrumentar'), f(x.personas), f(x.clientes), f(x.n), x.conError ? `**${f(x.conError)}** ${JSON.stringify(x.errores)}` : '0', f(x.latencia.p50), f(x.latencia.p95), f(x.latencia.p99), f(x.latencia.max), f(x.pedidosPorSegundo, 2), f(x.concurrenciaEfectiva, 2)]),
+  resumenes.map((x) => [
+    x.lote,
+    x.modo + (x.instrumentada ? '' : ' · sin instrumentar'),
+    f(x.personas),
+    f(x.clientes),
+    f(x.n),
+    x.conError ? `**${f(x.conError)}** ${JSON.stringify(x.errores).replace(/\|/g, '/')}` : '0',
+    f(x.latencia.p50),
+    f(x.latencia.p95),
+    f(x.latencia.p99),
+    f(x.latencia.max),
+    x.modo === 'concurrente' ? f(x.pedidosPorSegundo, 2) : '—',
+    x.modo === 'concurrente' ? f(x.concurrenciaEfectiva, 2) : '—',
+  ]),
 );
+L.push('«Pedidos/s» y «concurrencia efectiva» (suma de las latencias sobre la duración del lote) solo en los lotes concurrentes: en los secuenciales hay una pausa fija y lecturas del arnés entre pedido y pedido.', '');
 
 L.push('## Dónde se va el tiempo del servidor', '');
 L.push('Medianas por pedido, en ms, de la instrumentación del arnés. «Antes del PDP»: sesión, límite y la consulta de vínculos. «PDP»: de la primera decisión a la última. «Lectura»: la transacción de pendientes. «Después»: orden, paginación y respuesta.', '');
 tabla(
-  ['Lote', 'Total', 'Antes del PDP', 'PDP', 'ms por decisión', 'Lectura', 'Después', 'PDP / total', 'Lectura / total', 'Reintentos del PDP', 'GC p50 · máx.'],
+  ['Lote', 'Total', 'Antes del PDP', 'PDP', 'ms por decisión', 'Lectura', 'Después', 'PDP / total', 'Lectura / total', 'SQL en la base (p50)', 'SQL / total', 'ms del servidor por sentencia', 'Reintentos del PDP', 'GC p50 · máx.'],
   resumenes
     .filter((x) => x.servidor)
-    .map((x) => [x.lote, f(x.servidor.total.p50), f(x.servidor.antesDelPdp.p50, 1), f(x.servidor.pdpTramo.p50), f(x.servidor.pdpPorDecision.media, 2), f(x.servidor.lectura.p50), f(x.servidor.despuesDeLectura.p50, 1), pct(x.servidor.parteDelPdp), pct(x.servidor.parteDeLaLectura), f(x.servidor.pdpReintentos), `${f(x.gc.p50, 1)} · ${f(x.gc.max, 1)}`]),
+    .map((x) => {
+      const sql = x.sentenciasPorPedido?.msEnLaBase?.p50 ?? null;
+      const sentencias = x.sentenciasPorPedido ? (x.sentenciasPorPedido.sentencias.min + x.sentenciasPorPedido.sentencias.max) / 2 : null;
+      return [
+        x.lote,
+        f(x.servidor.total.p50),
+        f(x.servidor.antesDelPdp.p50, 1),
+        f(x.servidor.pdpTramo.p50),
+        f(x.servidor.pdpPorDecision.media, 2),
+        f(x.servidor.lectura.p50),
+        f(x.servidor.despuesDeLectura.p50, 1),
+        pct(x.servidor.parteDelPdp),
+        pct(x.servidor.parteDeLaLectura),
+        f(sql, 1),
+        sql !== null && x.servidor.total.p50 ? pct(sql / x.servidor.total.p50) : '—',
+        sentencias ? f(x.servidor.total.p50 / sentencias, 2) : '—',
+        f(x.servidor.pdpReintentos),
+        `${f(x.gc.p50, 1)} · ${f(x.gc.max, 1)}`,
+      ];
+    }),
 );
+L.push('«SQL en la base»: la suma del tiempo de ejecución de las sentencias de primer nivel de ese pedido en PostgreSQL. No incluye la espera del disco al confirmar (eso ocurre después de la sentencia COMMIT y se ve en «ms sincronizando WAL», más abajo) ni la ida y vuelta entre la API y la base.', '');
 
 L.push('## La base por pedido', '');
 L.push('Promedios del lote entero (contadores de PostgreSQL de la base medida; el arnés lee desde otra base). «En transacción esperando a la API»: tiempo con una transacción abierta y la conexión ociosa, esperando la sentencia siguiente.', '');
