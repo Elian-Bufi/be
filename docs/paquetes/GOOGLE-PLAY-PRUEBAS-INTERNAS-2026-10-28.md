@@ -191,8 +191,11 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
   limpio, herramientas, datos y respaldo por existencia, memoria y disco), corre `npm ci`, la construcción y la
   verificación contra el `esperado.json` de esa construcción, se detiene en el primer fallo sin reintentos ni
   artefactos anteriores, y deja un registro sin credenciales en `C:\Users\bufim\BE-artefactos\aab\registros\` con una
-  línea final TERMINADO / FALLÓ en <paso> / BLOQUEADO por <motivo>. Probado en sus comprobaciones y bloqueos (no
-  en una construcción: 461 MB libres con la sesión abierta). Si esta PC no alcanza ni con todo cerrado, las
+  línea final TERMINADO / FALLÓ en <paso> / BLOQUEADO por <motivo>. TERMINADO exige la verificación del AAB en «todo
+  bien» y la revisión del registro limpia (la revisión corre siempre al cerrar; hallazgos o error del revisor son
+  FALLÓ en «revision-del-registro»), y `-Consultar` solo muestra el registro si quedó revisado y limpio. Probado en
+  sus comprobaciones y bloqueos y, con `-Simular`, en los cuatro veredictos (no en una construcción: 461 a 504 MB
+  libres con la sesión abierta). Si esta PC no alcanza ni con todo cerrado, las
   alternativas (otra PC propia; GitHub Actions sin la keystore y firma local; EAS Build, donde la keystore ya está),
   con requisitos y costos, están en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`; ninguna se activó. La APK vigente
   (0.18.0-candidata.1) no se toca.
