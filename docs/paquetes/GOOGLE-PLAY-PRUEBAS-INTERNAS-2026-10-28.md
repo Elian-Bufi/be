@@ -131,14 +131,19 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 7. **Copiar el enlace** de Testers y seguir el guion de `EVIDENCIA/GOOGLE-PLAY/LEEME.md` (instalación, actualización
    sobre la APK, Google, invitaciones, avisos).
 
-## Lo que sigue (preparación técnica autorizada)
+## Estado al cierre (2026-10-28, 16:50 UTC) y punto de reanudación
 
-- Plugin de firma, scripts de construcción y verificación, documentación, PR en borrador.
-- Con la RAM medida: construir el AAB candidato (`0.18.0-candidata.2`, versionCode 31, ambiente test), validarlo con
-  bundletool y apksigner, registrar su commit de origen y sus huellas en `EVIDENCIA/GOOGLE-PLAY/`, y dejar el archivo
-  fuera del repositorio. La APK vigente no se toca.
-- Guion de prueba en el teléfono y en Play Console: instalación, actualización sobre la APK anterior, inicio de sesión,
-  invitaciones y notificaciones, separando lo comprobado automáticamente de lo pendiente.
+- **Hecho:** plugin de firma (`apps/mobile/plugins/firma-de-subida.js`, con su prueba en `npm test`), scripts
+  `scripts/aab/construir-aab.mjs` y `verificar-aab.mjs`, `docs/DESPLIEGUE.md` («Google Play · pruebas internas»), el
+  guion de prueba en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`, la rama de versión `aab/candidata-0.18.0-2` (`b2fc0e6`,
+  versionCode 31) publicada, bundletool 1.18.3 descargado, PR #223 en borrador.
+- **No hecho:** el AAB candidato **no se construyó**: el primer intento (árbol espejado) no era fiel al lockfile y el
+  segundo (`npm ci` en el árbol) lo cortó la poca memoria de la PC; la construcción de Gradle (~2,5 GB, ~40 min) no se
+  lanzó. Detalle y comandos exactos en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`. Por eso, lo «comprobado automáticamente»
+  sobre el artefacto está pendiente; lo comprobado es la ruta, el código y la herramienta de verificación.
+- **Para retomar:** con la PC libre, en `C:\Users\bufim\BE-aab`: `npm ci` (Node 22) y `node scripts/aab/construir-aab.mjs`;
+  después `node scripts/aab/verificar-aab.mjs …` y copiar `verificacion.md` y `construccion.json` a
+  `EVIDENCIA/GOOGLE-PLAY/`. La APK vigente (0.18.0-candidata.1) no se toca.
 
 ## Fuentes oficiales leídas (las principales)
 

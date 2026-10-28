@@ -12,11 +12,27 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
 | Pendiente en el teléfono | solo se puede comprobar instalando en un teléfono real |
 | Pendiente en Play Console | necesita la cuenta y la consola de Dirección |
 
-## El AAB candidato
+## El AAB candidato: preparado, **no construido** en esta sesión
 
-Se completa con `verificacion.md` (lo escribe `scripts/aab/verificar-aab.mjs`) y `construccion.json` (lo escribe
-`scripts/aab/construir-aab.mjs`), copiados a esta carpeta sin ningún secreto. El artefacto mismo queda fuera del
-repositorio, en `C:\Users\bufim\BE-artefactos\aab\<versión>\`.
+- **Qué está listo:** la rama de versión `aab/candidata-0.18.0-2` (commit `b2fc0e6` = esta rama en `3c091e8` + un commit
+  con `VERSION = '0.18.0-candidata.2'` y `versionCode: 31`), el árbol `C:\Users\bufim\BE-aab`, el plugin de firma, los
+  scripts, bundletool 1.18.3 en `C:\Users\bufim\BE-herramientas\bundletool\` y la carpeta de salida
+  `C:\Users\bufim\BE-artefactos\aab\`.
+- **Qué pasó:** el 2026-10-28 se intentó dos veces. La primera, con un árbol espejado por junctions, falló al compilar
+  el dominio (faltaba el `node_modules` anidado con zod 4.6.x: un artefacto construido así no sería fiel al lockfile).
+  La segunda, con `npm ci` en el árbol (el procedimiento documentado), la cortó la poca memoria de la PC: el guardián de
+  memoria de la sesión detuvo el proceso y `npm ci` terminó con `0xC0000142` en el preinstall de Prisma, con ~700 MB
+  libres. La construcción de Gradle (~2,5 GB, 40 min) no se lanzó: no era viable en esas condiciones.
+- **Cómo construirlo (punto de reanudación):** con la PC lo más libre posible (sin Chrome; medir la RAM primero), en
+  `C:\Users\bufim\BE-aab`, con Node 22 (`C:\Users\bufim\AppData\Roaming\fnm\node-versions\v22.23.2\installation`):
+  `npm ci`, y después `node scripts/aab/construir-aab.mjs` (prebuild + `:app:bundleRelease`, firma desde el respaldo
+  por el entorno, un worker, sin demonio). Deja `C:\Users\bufim\BE-artefactos\aab\0.18.0-candidata.2\be-0.18.0-candidata.2-b2fc0e6.aab`,
+  su `.sha256` y `construccion.json`.
+- **Cómo verificarlo:** `node scripts/aab/verificar-aab.mjs <ruta.aab> --esperado-sha256-cert 61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06`;
+  copiar `verificacion.md` y `construccion.json` a esta carpeta (no tienen secretos).
+- **Lo que debería dar** (predicción, no resultado): paquete `com.elianbufi.be`, versionCode 31, targetSdk 36, las
+  cuatro arquitecturas, 16 KB en verde, App Link `https://be-web-1ngj.onrender.com/invitacion`, ambiente `test` y
+  commit `b2fc0e6…`, certificado SHA-256 `61569691…893e06`.
 
 ## Guion de prueba
 
