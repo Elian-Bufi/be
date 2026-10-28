@@ -1,0 +1,37 @@
+# Medición de la cartera (API-CAR-01) con 50, 100 y 200 personas, en un runner de GitHub y un PostgreSQL 16 que nace
+# vacío (Testcontainers). Solo vive en la rama descartable medicion/cartera-2026-10-28: no se integra. Ver
+# EVIDENCIA/RENDIMIENTO-CARTERA/LEEME.md. No toca test ni Render.
+name: medición de la cartera
+on:
+  push:
+    branches: ["medicion/**"]
+permissions:
+  contents: read
+jobs:
+  medir:
+    name: medición · cartera con 50, 100 y 200 personas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build:domain
+      - name: La máquina
+        run: nproc && free -m && node --version
+      - name: Medir
+        env:
+          BE_MEDIR_RENDIMIENTO: "1"
+          BE_RENDIMIENTO_SALIDA: ${{ github.workspace }}/resultados-rendimiento
+        run: npx jest --config test/rendimiento/jest.rendimiento.config.js --runInBand
+      - name: Resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-rendimiento-cartera
+          path: resultados-rendimiento
+          if-no-files-found: warn
