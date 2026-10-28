@@ -31,6 +31,8 @@ segundo ángulo.
 | `herramientas/generar.mjs` | Arma las fichas y el inventario desde el manifiesto congelado, la selección, los prompts del paquete y los bytes de las imágenes reales |
 | `herramientas/verificar.mjs` | El verificador. Comprueba que el inventario corresponde al manifiesto y a la selección, que no hay repetidos, que nada sin archivo se presenta como imagen, y que los archivos reales existen y miden lo dicho. Con `--fotos <carpeta>`, revisa las fotos de recetas con los mismos criterios que `recetas.mjs revisar` |
 | `herramientas/imagenes/` | Lo que trabaja sobre los archivos: medir, aplanar como BE, medir el halo del contorno, componer las vistas de recortes, sondear wger y rasterizar un SVG. Usan `sharp` de un árbol con `node_modules` (se pasa como argumento) |
+| `seleccion/BE-material-visual-seleccion.pdf` | **La selección en PDF, 6 páginas:** el resumen, las tres imágenes reales en grande con sus recortes, la maqueta (marcada como maqueta) y la lista de las 44 fichas. Fuente: `seleccion/seleccion.typ` |
+| `galeria/` | **La galería para el teléfono:** `plantilla.html` y `armar-galeria.mjs`, que la arma desde el inventario. La publicada el 2026-10-28 es una página privada de claude.ai: <https://claude.ai/artifact/QajQNjTs1oT5asD1RbbAq7> |
 
 **Fuera del repositorio** (`C:\Users\bufim\BE-material-visual\`, persistente):
 - `ejercicios/existentes/originales/`: copia de las tres PNG del paquete;
@@ -97,6 +99,14 @@ node EVIDENCIA/MATERIAL-VISUAL/herramientas/imagenes/procesar-ejercicios.mjs <ca
 node EVIDENCIA/MATERIAL-VISUAL/herramientas/imagenes/halo-sobre-blanco.mjs <carpeta de PNG> <árbol>
 node EVIDENCIA/MATERIAL-VISUAL/herramientas/imagenes/vistas-de-ejercicios.mjs <como-las-guarda-be> <salida> <árbol>
 node EVIDENCIA/MATERIAL-VISUAL/herramientas/imagenes/probar-verificador.mjs <raíz del repositorio>   # el caso negativo
+```
+
+La selección en PDF y la galería, también desde la raíz:
+
+```bash
+typst compile --root . --font-path docs/guias/ENTENDER-BE/tipografias --ignore-system-fonts \
+  EVIDENCIA/MATERIAL-VISUAL/seleccion/seleccion.typ EVIDENCIA/MATERIAL-VISUAL/seleccion/BE-material-visual-seleccion.pdf
+node EVIDENCIA/MATERIAL-VISUAL/galeria/armar-galeria.mjs <salida>   # galeria.html e img/, desde BE-material-visual
 ```
 
 **Resultados del 2026-10-28:**

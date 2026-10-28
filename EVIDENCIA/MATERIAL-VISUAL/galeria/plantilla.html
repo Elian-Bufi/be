@@ -1,0 +1,309 @@
+<title>Material visual de BE</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Una sola columna en el teléfono: primero lo que existe (tres imágenes), después la maqueta y al final las 44 fichas
+     sin imagen. Los colores son los dos temas de BE: Claro y Azul noche. */
+  :root {
+    --fondo: #f2f6fc;
+    --superficie: #ffffff;
+    --texto: #0a1f44;
+    --tenue: #566881;
+    --borde: #dce6f4;
+    --enlace: #135ddf;
+    --real: #0f7a5c;
+    --real-fondo: #e3f5ee;
+    --ficha: #8a5a00;
+    --ficha-fondo: #fdf3dd;
+    --maqueta: #6b3fc4;
+    --maqueta-fondo: #f1ebfd;
+    --aviso-fondo: #fff7e6;
+    --aviso-borde: #e8b04a;
+    --codigo-fondo: #eef3fa;
+    --sans: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fondo: #011325; --superficie: #052238; --texto: #ffffff; --tenue: #a3b1c2; --borde: #173d5b; --enlace: #46e2f3;
+      --real: #5fe0b4; --real-fondo: #0b3a33; --ficha: #f5c76a; --ficha-fondo: #3a2c0c; --maqueta: #c4a8ff; --maqueta-fondo: #2a1d4d;
+      --aviso-fondo: #2b230f; --aviso-borde: #b98a2e; --codigo-fondo: #0a2b45; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fondo: #011325; --superficie: #052238; --texto: #ffffff; --tenue: #a3b1c2; --borde: #173d5b; --enlace: #46e2f3;
+    --real: #5fe0b4; --real-fondo: #0b3a33; --ficha: #f5c76a; --ficha-fondo: #3a2c0c; --maqueta: #c4a8ff; --maqueta-fondo: #2a1d4d;
+    --aviso-fondo: #2b230f; --aviso-borde: #b98a2e; --codigo-fondo: #0a2b45; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--fondo); color: var(--texto); font-family: var(--sans); font-size: 15px; line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 48px;
+  }
+  .hoja { max-width: 980px; margin: 0 auto; display: grid; gap: 28px; }
+  h1, h2, h3 { text-wrap: balance; line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem); }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.05rem; }
+  p { margin: 0; }
+  .tenue { color: var(--tenue); }
+  .chico { font-size: 0.86rem; }
+  .cifras { font-variant-numeric: tabular-nums; }
+
+  header { display: grid; gap: 10px; }
+  .eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tenue); font-weight: 600; }
+  .resumen { display: flex; flex-wrap: wrap; gap: 8px; }
+  .aviso { background: var(--aviso-fondo); border: 1px solid var(--aviso-borde); border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; }
+  .aviso strong { font-weight: 600; }
+
+  .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+  .chip.real { background: var(--real-fondo); color: var(--real); }
+  .chip.ficha { background: var(--ficha-fondo); color: var(--ficha); }
+  .chip.maqueta { background: var(--maqueta-fondo); color: var(--maqueta); }
+  .chip.neutro { background: var(--codigo-fondo); color: var(--texto); font-weight: 500; }
+
+  nav.filtros {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--fondo);
+    padding-block: 8px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--fondo); }
+  nav.filtros button {
+    font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--texto); background: var(--superficie);
+    border: 1px solid var(--borde); border-radius: 999px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
+  }
+  nav.filtros button[aria-pressed="true"] { background: var(--texto); color: var(--fondo); border-color: var(--texto); }
+  button:focus-visible, summary:focus-visible { outline: 2px solid var(--enlace); outline-offset: 2px; }
+
+  section { display: grid; gap: 14px; }
+  .titulo-seccion { display: grid; gap: 4px; }
+
+  .reales { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); }
+  .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+  .lienzo-blanco { background: #ffffff; border-radius: 6px; aspect-ratio: 5 / 6; display: grid; place-items: center; overflow: hidden; max-width: 100%; }
+  .lienzo-blanco img { width: 100%; height: 100%; object-fit: contain; }
+  dl.datos { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: 0.86rem; }
+  dl.datos dt { color: var(--tenue); }
+  dl.datos dd { margin: 0; min-width: 0; }
+  ul.obs { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.88rem; }
+
+  details { border-top: 1px solid var(--borde); padding-top: 8px; }
+  summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--enlace); list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "＋ "; }
+  details[open] > summary::before { content: "－ "; }
+  .vistas { display: grid; gap: 10px; margin-top: 8px; }
+  .vistas figure { margin: 0; display: grid; gap: 4px; }
+  .vistas img { border-radius: 6px; border: 1px solid var(--borde); }
+
+  .maqueta { background: var(--superficie); border: 2px dashed var(--maqueta); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+  .maqueta img { border-radius: 6px; background: #ffffff; }
+
+  .grupo { display: grid; gap: 10px; }
+  .fichas { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .ficha-item { background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid var(--ficha); border-radius: 8px; padding: 12px 12px 10px; display: grid; gap: 6px; min-width: 0; }
+  .ficha-cabecera { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+  .codigo { font-family: var(--mono); font-size: 0.78rem; color: var(--tenue); overflow-wrap: anywhere; }
+  .prompt { font-family: var(--mono); font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--codigo-fondo); border-radius: 6px; padding: 10px; margin: 8px 0 0; }
+  .copiar { font: inherit; font-size: 0.82rem; font-weight: 600; margin-top: 6px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .bloque-detalle { display: grid; gap: 6px; margin-top: 6px; font-size: 0.88rem; }
+
+  .decisiones { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 14px 16px; }
+  .decisiones ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+  footer { font-size: 0.82rem; color: var(--tenue); display: grid; gap: 4px; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--codigo-fondo); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="hoja">
+  <header>
+    <span class="eyebrow">BE · encargo del 27/10 · revisión en el teléfono</span>
+    <h1>Material visual de BE</h1>
+    <p class="tenue">Recetas, alimentos del catálogo y ejercicios. Cada contenido dice si tiene una imagen real o solo su
+      ficha con el prompt, y cómo se recortaría en el website y en la APK.</p>
+    <div class="resumen cifras">
+      <span class="chip neutro">47 contenidos</span>
+      <span class="chip real">3 imágenes reales</span>
+      <span class="chip ficha">44 fichas sin imagen</span>
+      <span class="chip maqueta">1 maqueta</span>
+    </div>
+    <div class="aviso">
+      <strong>No hay imágenes nuevas.</strong>
+      <p class="chico">Esta sesión no tenía una herramienta para generar imágenes, y el encargo no autoriza contratar una. Las tres
+        imágenes reales son las del paquete de Dirección del 6/10. Todo lo demás es una ficha con su prompt: no es una
+        imagen.</p>
+    </div>
+  </header>
+
+  <nav class="filtros" aria-label="Filtrar el material">
+    <button type="button" id="filtro-todo" data-filtro="todo" aria-pressed="true">Todo · 47</button>
+    <button type="button" id="filtro-real" data-filtro="real" aria-pressed="false">Con imagen · 3</button>
+    <button type="button" id="filtro-ejercicio" data-filtro="ejercicio" aria-pressed="false">Ejercicios · 15</button>
+    <button type="button" id="filtro-receta" data-filtro="receta" aria-pressed="false">Recetas · 16</button>
+    <button type="button" id="filtro-alimento" data-filtro="alimento" aria-pressed="false">Alimentos · 16</button>
+  </nav>
+
+  <section id="reales" data-seccion="real ejercicio">
+    <div class="titulo-seccion">
+      <h2>Las tres imágenes que existen</h2>
+      <p class="tenue chico">Como las guarda BE: JPEG sobre blanco. Se generaron con IA para el paquete del 6/10; la
+        revisión profesional de la técnica está pendiente.</p>
+    </div>
+    <div class="reales" id="lista-reales"></div>
+  </section>
+
+  <section id="maqueta" data-seccion="receta">
+    <div class="titulo-seccion">
+      <h2>El encuadre de las fotos de recetas</h2>
+      <p class="tenue chico">Dónde tiene que quedar el plato para que se vea entero en el website (4:3) y en la APK (16:10).</p>
+    </div>
+    <figure class="maqueta" style="margin:0">
+      <span class="chip maqueta" style="justify-self:start">Maqueta · no es una foto</span>
+      <img src="img/encuadre-de-recetas.png" alt="Maqueta del encuadre: un rectángulo de 1600 por 1200 píxeles con dos franjas marcadas arriba y abajo que la APK recorta, y un plato ovalado centrado en la zona segura." loading="lazy">
+      <figcaption class="tenue chico">El criterio que ya existía: horizontal, de 1,25 a 1,40, al menos 1600 px en el lado
+        mayor y hasta 10 MB. El servidor guarda JPEG de hasta 1600 px y no agranda.</figcaption>
+    </figure>
+  </section>
+
+  <section id="fichas">
+    <div class="titulo-seccion">
+      <h2>Las fichas sin imagen</h2>
+      <p class="tenue chico">Cada una tiene el prompt listo para generar. Tocá «Ver ficha y prompt» para leerlo o copiarlo.</p>
+    </div>
+    <div id="grupos" class="grupo"></div>
+  </section>
+
+  <section class="decisiones" id="decisiones" data-seccion="todo">
+    <h2>Lo que hace falta decidir</h2>
+    <ol class="chico">
+      <li>Con qué herramienta se generan las 44 imágenes, y quién las genera. Los prompts están listos.</li>
+      <li>El tamaño de las fotos de recetas: muchas herramientas entregan 1536 × 1024; el criterio pide 4:3 y 1600 px.
+        Se puede reescalar antes de subir, o revisar el criterio.</li>
+      <li>Los doce ejercicios del catálogo de WP-06 no pueden tener imagen hoy: solo los ejercicios propios de un
+        profesional pueden.</li>
+      <li>Tres implementos inferidos, porque el nombre no los dice: la «Sentadilla» con barra, el «Press con mancuernas»
+        en banco plano y la «Extensión de tríceps» sobre la cabeza con una mancuerna.</li>
+      <li>Los alimentos no tienen dónde mostrarse en BE. Si se quieren, es una decisión de producto para más adelante.</li>
+      <li>Las imágenes de wger son CC BY-SA: usarlas obliga a atribuir y a compartir igual.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>Fuente: <code>EVIDENCIA/MATERIAL-VISUAL</code> en la rama <code>wp-nocturno-2026-10-27</code> (commit de referencia
+      <code>e4512cb</code>). El inventario completo, con SHA-256 y procedencia, está en <code>inventario.json</code>.</p>
+    <p>Solo datos sintéticos. Ninguna imagen muestra a una persona real.</p>
+  </footer>
+</div>
+
+<script type="application/json" id="inventario">/*INVENTARIO*/</script>
+<script>
+(function () {
+  var datos = JSON.parse(document.getElementById('inventario').textContent);
+  var ESTADOS = { RAW: 'Crudo', COOKED: 'Cocido', AS_PURCHASED: 'Tal como se adquiere' };
+  var TIPOS = { ejercicio: 'Ejercicios', receta: 'Recetas', alimento: 'Alimentos' };
+  var VISTAS = { 'ejercicio-E01': 'sentadilla_goblet', 'ejercicio-E02': 'peso_muerto_rumano_mancuernas', 'ejercicio-E03': 'zancada_estatica' };
+
+  function el(etiqueta, atributos, hijos) {
+    var n = document.createElement(etiqueta);
+    if (atributos) for (var k in atributos) { if (k === 'texto') n.textContent = atributos[k]; else n.setAttribute(k, atributos[k]); }
+    (hijos || []).forEach(function (h) { if (h) n.appendChild(h); });
+    return n;
+  }
+  function kb(bytes) { return Math.round(bytes / 1024).toLocaleString('es-AR') + ' KB'; }
+  function codigoDe(x) { return x.archivo.replace(/\.(jpg|png)$/, ''); }
+  function lista(items) { return el('ul', { class: 'obs' }, items.map(function (t) { return el('li', { texto: t }); })); }
+  function botonCopiar(texto) {
+    var b = el('button', { type: 'button', class: 'copiar', texto: 'Copiar el prompt' });
+    b.addEventListener('click', function () {
+      var hecho = function () { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar el prompt'; }, 1600); };
+      try {
+        navigator.clipboard.writeText(texto).then(hecho, function () { seleccionar(b); });
+      } catch (e) { seleccionar(b); }
+    });
+    return b;
+  }
+  function seleccionar(b) {
+    var pre = b.previousElementSibling;
+    if (!pre) return;
+    var r = document.createRange(); r.selectNodeContents(pre);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    b.textContent = 'Seleccionado: copialo';
+  }
+
+  // Las tres imágenes reales.
+  var reales = document.getElementById('lista-reales');
+  datos.filter(function (x) { return x.real; }).forEach(function (x) {
+    var base = VISTAS[x.id];
+    var tarjeta = el('article', { class: 'tarjeta', 'data-tipo': x.tipo, 'data-real': 'si' }, [
+      el('div', { class: 'lienzo-blanco' }, [el('img', { src: 'img/' + base + '.jpg', alt: x.nombre + ': ilustración del ejercicio, cuerpo entero, sobre fondo blanco.', loading: 'lazy' })]),
+      el('div', { class: 'ficha-cabecera' }, [el('h3', { texto: x.nombre }), el('span', { class: 'chip real', texto: 'Imagen real' })]),
+      el('dl', { class: 'datos cifras' }, [
+        el('dt', { texto: 'Original' }), el('dd', { texto: 'PNG ' + x.real.ancho + ' × ' + x.real.alto + ', ' + kb(x.real.bytes) }),
+        el('dt', { texto: 'En BE' }), el('dd', { texto: 'JPEG sobre blanco, mismo tamaño' }),
+        el('dt', { texto: 'Origen' }), el('dd', { texto: 'Paquete de Dirección del 6/10, generada con IA' }),
+        el('dt', { texto: 'Revisión' }), el('dd', { texto: 'Técnica: pendiente de un profesional' })
+      ]),
+      lista(x.obs),
+      el('details', null, [
+        el('summary', { texto: 'Ver los recortes reales, en los dos temas' }),
+        el('div', { class: 'vistas' }, [
+          el('figure', null, [el('img', { src: 'img/' + base + '-claro.png', alt: 'Recortes de ' + x.nombre + ' en el tema Claro: 112 dp, 64 dp, 1:1 y 5:6.', loading: 'lazy' }), el('figcaption', { class: 'tenue chico', texto: 'Tema Claro' })]),
+          el('figure', null, [el('img', { src: 'img/' + base + '-azul-noche.png', alt: 'Recortes de ' + x.nombre + ' en el tema Azul noche.', loading: 'lazy' }), el('figcaption', { class: 'tenue chico', texto: 'Tema Azul noche' })])
+        ])
+      ])
+    ]);
+    reales.appendChild(tarjeta);
+  });
+
+  // Las fichas sin imagen, por tipo.
+  var grupos = document.getElementById('grupos');
+  ['ejercicio', 'receta', 'alimento'].forEach(function (tipo) {
+    var items = datos.filter(function (x) { return x.tipo === tipo && !x.real; });
+    var contenedor = el('div', { class: 'fichas' });
+    items.forEach(function (x) {
+      var pre = el('pre', { class: 'prompt', texto: x.prompt || '' });
+      var detalle = el('details', null, [
+        el('summary', { texto: 'Ver ficha y prompt' }),
+        el('div', { class: 'bloque-detalle' }, [
+          el('p', null, [el('strong', { texto: 'Formato. ' }), document.createTextNode(x.formato || '')]),
+          el('p', null, [el('strong', { texto: 'Dónde se mostraría. ' }), document.createTextNode(x.donde || '')]),
+          el('p', null, [el('strong', { texto: 'Procedencia. ' }), document.createTextNode(x.procedencia || '')]),
+          x.obs.length ? lista(x.obs) : null,
+          pre,
+          botonCopiar(x.prompt || '')
+        ])
+      ]);
+      var etiquetas = [el('span', { class: 'chip ficha', texto: 'Sin imagen' })];
+      if (x.estado) etiquetas.unshift(el('span', { class: 'chip neutro', texto: ESTADOS[x.estado] || x.estado }));
+      contenedor.appendChild(el('article', { class: 'ficha-item', 'data-tipo': tipo, 'data-real': 'no' }, [
+        el('div', { class: 'ficha-cabecera' }, [el('h3', { texto: x.nombre }), el('span', { style: 'display:flex;gap:6px;flex-wrap:wrap' }, etiquetas)]),
+        el('span', { class: 'codigo', texto: codigoDe(x) }),
+        detalle
+      ]));
+    });
+    grupos.appendChild(el('div', { class: 'grupo', 'data-tipo': tipo }, [el('h3', { class: 'tenue', texto: TIPOS[tipo] + ' · ' + items.length + ' sin imagen' }), contenedor]));
+  });
+
+  // Filtros: muestran u ocultan tarjetas y secciones enteras.
+  var botones = Array.prototype.slice.call(document.querySelectorAll('nav.filtros button'));
+  function aplicar(filtro) {
+    botones.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-filtro') === filtro)); });
+    document.querySelectorAll('[data-tipo]').forEach(function (n) {
+      var ok = filtro === 'todo' || (filtro === 'real' ? n.getAttribute('data-real') === 'si' || n.classList.contains('grupo') && false : n.getAttribute('data-tipo') === filtro);
+      if (n.classList.contains('grupo')) ok = filtro === 'todo' || n.getAttribute('data-tipo') === filtro;
+      n.hidden = !ok;
+    });
+    document.getElementById('reales').hidden = !(filtro === 'todo' || filtro === 'real' || filtro === 'ejercicio');
+    document.getElementById('maqueta').hidden = !(filtro === 'todo' || filtro === 'receta');
+    document.getElementById('fichas').hidden = filtro === 'real';
+    try { localStorage.setItem('be-galeria-filtro', filtro); } catch (e) {}
+  }
+  botones.forEach(function (b) { b.addEventListener('click', function () { aplicar(b.getAttribute('data-filtro')); }); });
+  var inicial = 'todo';
+  try { inicial = localStorage.getItem('be-galeria-filtro') || 'todo'; } catch (e) {}
+  aplicar(botones.some(function (b) { return b.getAttribute('data-filtro') === inicial; }) ? inicial : 'todo');
+})();
+</script>
