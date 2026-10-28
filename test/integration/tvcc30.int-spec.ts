@@ -117,7 +117,32 @@ describe('TEST-RF-058 · UC-S01 · la TVCC-30 con los hechos de la base', () => 
     expect(tercero.huella).not.toBe(primero.huella);
     const fila = await prisma.resultadoTvcc30.findUniqueOrThrow({ where: { id: primero.id } });
     expect(fila).toMatchObject({ especificacion: 'SPEC-TVCC30-v1', huella: primero.huella, ejecutor: 'prueba de integración', universo: r1.conteos.universo });
-    expect(fila.resultado).toEqual(JSON.parse(JSON.stringify(r1)));
+    // Un cociente recuperado de la base puede diferir del calculado en el 17.º dígito (2/11 = 0,18181818181818182 vuelve
+    // como 0,1818181818181818). La reproducción de abajo mostró dónde: al ESCRIBIR a través de Prisma, lo que llega a
+    // PostgreSQL ya tiene 16 dígitos; el jsonb conserva el texto tal cual y la lectura es exacta. Lo destapó una suite
+    // con más Procesos en la ventana (d = 11); se compara con 15 dígitos significativos.
+    const con15Digitos = (v: unknown): unknown => JSON.parse(JSON.stringify(v, (_clave, x: unknown) => (typeof x === 'number' && !Number.isInteger(x) ? Number(x.toPrecision(15)) : x)));
+    expect(con15Digitos(fila.resultado)).toEqual(con15Digitos(r1));
+    // Reproducción acotada (observación de Dirección del 2026-10-28): ¿la huella calculada antes de guardar coincide con
+    // la recalculada desde el resultado recuperado? ¿Y en qué capa se pierde el dígito? La salida de la prueba deja
+    // constancia (en la CI del 28/10: no coinciden; la tasa calculada 0,16666666666666666 quedó guardada como
+    // 0,1666666666666667; un literal de 17 dígitos puesto por SQL se conserva y se lee exacto). Se comprueba solo lo que
+    // no depende del defecto: PostgreSQL conserva el texto en jsonb, la lectura es exacta, y lo guardado difiere del
+    // calculado en no más de una unidad del último dígito. No se cambian la canonicalización ni las huellas existentes.
+    const recalculada = huellaTvcc30(fila.resultado as unknown as ResultadoTvcc30);
+    const [literal] = await prisma.$queryRaw<{ texto: string; leido: number }[]>`
+      SELECT ('{"x":0.18181818181818182}'::jsonb)->>'x' AS "texto", ('{"x":0.18181818181818182}'::jsonb)->'x' AS "leido"`;
+    const [guardado] = await prisma.$queryRaw<{ tasa: string | null }[]>`
+      SELECT ("resultado"->'valor'->>'tasa') AS "tasa" FROM "resultado_tvcc30" WHERE "id" = ${primero.id}::uuid`;
+    const tasaCalculada = (r1 as unknown as { valor?: { tasa?: number } }).valor?.tasa;
+    console.info(
+      `[tvcc30] huella guardada ${primero.huella} · recalculada desde la fila ${recalculada} · coinciden: ${primero.huella === recalculada} · ` +
+        `tasa calculada ${String(tasaCalculada)} · texto guardado en jsonb ${String(guardado?.tasa)} · ` +
+        `literal 0.18181818181818182: texto en jsonb ${literal?.texto} · leído por Prisma ${String(literal?.leido)}`,
+    );
+    expect(literal?.texto).toBe('0.18181818181818182');
+    expect(Math.abs((literal?.leido ?? 0) - 0.18181818181818182)).toBeLessThan(1e-15);
+    if (tasaCalculada !== undefined && guardado?.tasa) expect(Number(guardado.tasa)).toBeCloseTo(tasaCalculada, 15);
 
     // REG-06-198: no se modifica ni se borra.
     await expect(prisma.$executeRawUnsafe(`UPDATE resultado_tvcc30 SET ejecutor = 'otro' WHERE id = '${primero.id}'`)).rejects.toThrow(/append-only/);

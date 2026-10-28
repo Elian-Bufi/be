@@ -1,5 +1,5 @@
-import type { Alcance, Prisma } from '@prisma/client';
-import { CLAVE_DE_DOMINIO, clasificarRevision, diaSiguiente, fechaCivil, inicioDelDia, ordenarPendientes, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
+import { Prisma, type Alcance } from '@prisma/client';
+import { ALCANCES, CLAVE_DE_DOMINIO, clasificarRevision, diaSiguiente, fechaCivil, inicioDelDia, ordenarPendientes, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
 import type { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
@@ -22,6 +22,10 @@ type Tx = Prisma.TransactionClient;
  *   formulario sin respuesta y la evaluación antropométrica en preparación. La actividad registrada en el período es
  *   un dato del ítem, nunca un ítem (D-3 de la ficha).
  * - «Hoy» es la fecha civil en la zona por defecto de BE (la misma que usan las lecturas nutricionales); se informa.
+ * - Los hechos se leen **por conjuntos** (WP-CARTERA-LECTURA-POR-CONJUNTOS, 2026-10-28): una consulta por tipo de hecho
+ *   para toda la cartera, cada una acotada a los pares (profesional, asesorado) que el PDP permitió en ese alcance, en
+ *   lugar de cinco a siete consultas por persona y área. El resultado por par es el mismo; lo fija
+ *   `test/integration/cartera-por-conjuntos.int-spec.ts` contra la copia congelada de la lectura anterior.
  */
 /** Período de actividad en fechas civiles (inclusive), `null` = sin cota de ese lado. Se recorta en la zona por defecto. */
 export interface PeriodoCivil {
@@ -63,6 +67,12 @@ interface Actividad {
   readonly activityCount: number;
 }
 
+/** Un par autorizado por el PDP en un alcance: lo único que las lecturas de hechos reciben. */
+interface ParAutorizado {
+  readonly asesoradoId: string;
+  readonly alcance: Alcance;
+}
+
 export async function leerCartera(prisma: PrismaService, pdp: PdpService, procesos: ProcesoService, actorId: string, ctx: ContextoDeSolicitud, consulta: ConsultaDeCartera): Promise<CarteraResponse> {
   const hoy = fechaCivil(new Date().toISOString(), ZONA_POR_DEFECTO);
 
@@ -90,15 +100,19 @@ export async function leerCartera(prisma: PrismaService, pdp: PdpService, proces
     }
   }
 
-  // 3. Una foto: todos los hechos en una transacción de lectura.
+  // 3. Una foto: todos los hechos en una transacción de lectura, por conjuntos.
   const items = await prisma.$transaction(async (tx) => {
     // Cada asesorado con su nombre si el vínculo está vigente; si no, la referencia neutral (DL-040).
     const nombres = await nombresDeAsesoradosPorPar(tx, permitidos.map((p) => ({ profesionalId: actorId, asesoradoId: p.asesoradoId })));
+    // Solo los pares del dominio pedido aportan, y solo de ellos se leen hechos (como en la lectura persona por persona).
+    const pares = consulta.domain ? permitidos.filter((p) => CLAVE_DE_DOMINIO[p.alcance] === consulta.domain) : permitidos;
+    const hechosDe = await leerHechosPorConjuntos(tx, procesos, actorId, pares, hoy, consulta.periodo);
     const filas: PendienteDeCartera[] = [];
-    for (const p of permitidos) {
+    // El orden de los pares es el de los vínculos (paso 1): el orden final lo da `ordenarPendientes`, y ante un empate
+    // total (mismo tipo, fecha, atraso y asesorado en dos dominios) conserva este, por ser estable.
+    for (const p of pares) {
       const domain = CLAVE_DE_DOMINIO[p.alcance];
-      if (consulta.domain && domain !== consulta.domain) continue;
-      const [hechos, actividad] = p.alcance === 'ANTROPOMETRIA' ? await deAntropometria(tx, actorId, p.asesoradoId, hoy, consulta.periodo) : await dePlanificacion(tx, procesos, actorId, p.asesoradoId, p.alcance, hoy, consulta.periodo);
+      const [hechos, actividad] = hechosDe(p);
       for (const h of hechos) {
         if (consulta.kind && h.kind !== consulta.kind) continue;
         filas.push({
@@ -126,67 +140,171 @@ export async function leerCartera(prisma: PrismaService, pdp: PdpService, proces
   };
 }
 
-/** Nutrición y entrenamiento comparten la forma: plan con versión efectiva, Proceso con expectativa, borradores y solicitudes. */
-async function dePlanificacion(tx: Tx, procesos: ProcesoService, profesionalId: string, asesoradoId: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO', hoy: string, periodo: PeriodoCivil): Promise<[Hecho[], Actividad]> {
-  const hechos: Hecho[] = [];
-  const par = { profesionalId_asesoradoId: { profesionalId, asesoradoId } };
-  const plan =
-    alcance === 'NUTRICION'
-      ? await tx.planNutricional.findUnique({ where: par, select: { id: true, versionEfectiva: { select: { momentoDeActivacion: true } } } })
-      : await tx.planDeEntrenamiento.findUnique({ where: par, select: { id: true, versionEfectiva: { select: { momentoDeActivacion: true } } } });
-  const activadaEn = plan?.versionEfectiva?.momentoDeActivacion ?? null;
-  // Un borrador posterior a la última activación (o sin ninguna): trabajo empezado y no activado.
-  const dondeBorrador = { estado: 'BORRADOR' as const, ...(activadaEn ? { momentoDeRegistro: { gt: activadaEn } } : {}) };
-  const borrador = plan
-    ? alcance === 'NUTRICION'
-      ? await tx.versionDePlanNutricional.findFirst({ where: { planId: plan.id, ...dondeBorrador }, orderBy: { momentoDeRegistro: 'asc' }, select: { momentoDeRegistro: true } })
-      : await tx.versionDePlanDeEntrenamiento.findFirst({ where: { planId: plan.id, ...dondeBorrador }, orderBy: { momentoDeRegistro: 'asc' }, select: { momentoDeRegistro: true } })
-    : null;
+// ─── Los hechos, por conjuntos ────────────────────────────────────────────────────────────────
 
-  const proceso = await tx.procesoOperativo.findFirst({ where: { profesionalId, asesoradoId, alcance, estado: 'ABIERTO' }, select: { id: true } });
-  if (proceso) {
-    const expectativa = await procesos.proximaRevisionVigente(tx, proceso.id);
-    if (expectativa) {
-      const fechaObjetivo = expectativa.fechaObjetivo ? expectativa.fechaObjetivo.toISOString().slice(0, 10) : null;
-      const c = clasificarRevision(fechaObjetivo, hoy);
-      if (c.kind === 'REVIEW_OVERDUE') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: c.dias, daysUntil: null });
-      else if (c.kind === 'REVIEW_DUE_SOON') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: null, daysUntil: c.dias });
-      else if (c.kind === 'REVIEW_UNDATED') hechos.push({ kind: c.kind, since: civil(expectativa.momentoDeRegistro), daysOverdue: null, daysUntil: null });
-    }
+type Planificacion = 'NUTRICION' | 'ENTRENAMIENTO';
+const PLANIFICACION: readonly Planificacion[] = ['NUTRICION', 'ENTRENAMIENTO'];
+
+/** Las tablas del plan y de sus versiones por alcance de planificación: identificadores fijos, nunca datos del pedido. */
+const TABLAS_DE_PLAN: Readonly<Record<Planificacion, { readonly plan: Prisma.Sql; readonly version: Prisma.Sql }>> = {
+  NUTRICION: { plan: Prisma.raw('"plan_nutricional"'), version: Prisma.raw('"version_de_plan_nutricional"') },
+  ENTRENAMIENTO: { plan: Prisma.raw('"plan_de_entrenamiento"'), version: Prisma.raw('"version_de_plan_de_entrenamiento"') },
+};
+
+const clavePar = (asesoradoId: string, alcance: Alcance): string => `${alcance}|${asesoradoId}`;
+const SIN_ACTIVIDAD: Actividad = { lastActivityAt: null, activityCount: 0 };
+
+/** Un grupo de `groupBy` por asesorado: cuántos registros y el último, en el período. */
+interface GrupoDeActividad {
+  readonly asesoradoId: string;
+  readonly _count: { readonly _all: number };
+  readonly _max: { readonly momentoDeOcurrencia: Date | null };
+}
+
+/**
+ * Lee los hechos de todos los pares autorizados con una consulta por tipo de hecho, y devuelve cómo armar los de cada
+ * par. Cada consulta recibe, por alcance, exactamente los asesorados que el PDP permitió en ese alcance: lo que no fue
+ * permitido no se lee (ni se filtra después). Las consultas:
+ * - el borrador pendiente de cada plan (el más antiguo posterior a la activación vigente), una por alcance de
+ *   planificación, con `DISTINCT ON`: una fila por par, cualquiera sea la cantidad de borradores;
+ * - el Proceso abierto de cada par (único por el índice parcial `proceso_operativo_uno_abierto`) y, en otra sentencia, la
+ *   expectativa vigente de cada uno (`ProcesoService.proximasRevisionesVigentes`, la misma regla de la cadena);
+ * - la solicitud de formulario sin respuesta más antigua de cada par y alcance (`DISTINCT ON`, una fila por par);
+ * - la evaluación antropométrica en preparación más antigua de cada par (`DISTINCT ON`, una fila por par);
+ * - la actividad del período agrupada por asesorado, una por alcance (comidas sin anular, sesiones, tomas registradas).
+ * Todo lo que vuelve es del orden de los pares (hasta 200 personas por tres alcances): la base elige la fila que importa
+ * de cada par; nada se trae entero para reducirlo en memoria.
+ */
+async function leerHechosPorConjuntos(tx: Tx, procesos: ProcesoService, profesionalId: string, pares: readonly ParAutorizado[], hoy: string, periodo: PeriodoCivil): Promise<(par: ParAutorizado) => [Hecho[], Actividad]> {
+  const porAlcance: Record<Alcance, Set<string>> = { NUTRICION: new Set(), ENTRENAMIENTO: new Set(), ANTROPOMETRIA: new Set() };
+  for (const p of pares) porAlcance[p.alcance].add(p.asesoradoId);
+  const ids: Record<Alcance, string[]> = { NUTRICION: [...porAlcance.NUTRICION], ENTRENAMIENTO: [...porAlcance.ENTRENAMIENTO], ANTROPOMETRIA: [...porAlcance.ANTROPOMETRIA] };
+  const conPares = <A extends Alcance>(alcances: readonly A[]): A[] => alcances.filter((a) => ids[a].length > 0);
+  /** La condición «este alcance, y solo sus asesorados permitidos», una rama por alcance con pares. */
+  const soloLosPermitidos = (alcances: readonly Alcance[]): { alcance: Alcance; asesoradoId: { in: string[] } }[] => alcances.map((alcance) => ({ alcance, asesoradoId: { in: ids[alcance] } }));
+  const planificacion = conPares(PLANIFICACION);
+
+  // a) El borrador pendiente de cada plan: el más antiguo posterior a la activación vigente (o cualquiera, sin activación).
+  const borradores = new Map<string, Date>();
+  for (const alcance of planificacion) {
+    const t = TABLAS_DE_PLAN[alcance];
+    const filas = await tx.$queryRaw<{ asesoradoId: string; momentoDeRegistro: Date }[]>`
+      SELECT DISTINCT ON (p."asesorado_id") p."asesorado_id"::text AS "asesoradoId", v."momento_de_registro" AS "momentoDeRegistro"
+        FROM ${t.version} v
+        JOIN ${t.plan} p ON p."id" = v."plan_id"
+        LEFT JOIN ${t.version} e ON e."id" = p."version_efectiva_id"
+       WHERE p."profesional_id" = ${profesionalId}::uuid
+         AND p."asesorado_id" = ANY(${ids[alcance]}::uuid[])
+         AND v."estado" = 'BORRADOR'
+         AND (e."momento_de_activacion" IS NULL OR v."momento_de_registro" > e."momento_de_activacion")
+       ORDER BY p."asesorado_id", v."momento_de_registro" ASC, v."id" ASC`;
+    for (const f of filas) borradores.set(clavePar(f.asesoradoId, alcance), f.momentoDeRegistro);
   }
-  if (borrador) hechos.push({ kind: 'PLAN_DRAFT_PENDING', since: civil(borrador.momentoDeRegistro), daysOverdue: null, daysUntil: null });
-  else if (!proceso) hechos.push({ kind: 'NO_ACTIVE_PLAN', since: null, daysOverdue: null, daysUntil: null });
-  const solicitud = await solicitudAbierta(tx, profesionalId, asesoradoId, alcance);
-  if (solicitud) hechos.push(solicitud);
 
-  const donde = { asesoradoId, versionDePlan: { plan: { profesionalId } }, ...(enElPeriodo(periodo) ? { momentoDeOcurrencia: enElPeriodo(periodo) } : {}) };
-  const registros =
-    alcance === 'NUTRICION'
-      ? // DL-121: una ingesta anulada por su titular no es actividad.
-        await tx.ingestaNutricional.aggregate({ where: { ...donde, anulacion: { is: null } }, _count: { _all: true }, _max: { momentoDeOcurrencia: true } })
-      : await tx.ejecucionDeEntrenamiento.aggregate({ where: donde, _count: { _all: true }, _max: { momentoDeOcurrencia: true } });
-  return [hechos, { lastActivityAt: registros._max.momentoDeOcurrencia?.toISOString() ?? null, activityCount: registros._count._all }];
-}
+  // b) El Proceso abierto de cada par y la expectativa de revisión vigente de cada Proceso (terminal de la cadena).
+  const abiertos =
+    planificacion.length === 0
+      ? []
+      : await tx.procesoOperativo.findMany({
+          where: { profesionalId, estado: 'ABIERTO', OR: soloLosPermitidos(planificacion) },
+          select: { id: true, asesoradoId: true, alcance: true },
+        });
+  const procesoDe = new Map(abiertos.map((p) => [clavePar(p.asesoradoId, p.alcance), p.id]));
+  const expectativas = await procesos.proximasRevisionesVigentes(tx, abiertos.map((p) => p.id));
 
-async function deAntropometria(tx: Tx, profesionalId: string, asesoradoId: string, _hoy: string, periodo: PeriodoCivil): Promise<[Hecho[], Actividad]> {
-  const hechos: Hecho[] = [];
-  const enPreparacion = await tx.evaluacionAntropometrica.findFirst({ where: { profesionalId, asesoradoId, estado: 'EN_PREPARACION' }, orderBy: { momentoDeRegistro: 'asc' }, select: { momentoDeRegistro: true } });
-  if (enPreparacion) hechos.push({ kind: 'ANTHRO_DRAFT_PENDING', since: civil(enPreparacion.momentoDeRegistro), daysOverdue: null, daysUntil: null });
-  const solicitud = await solicitudAbierta(tx, profesionalId, asesoradoId, 'ANTROPOMETRIA');
-  if (solicitud) hechos.push(solicitud);
-  // Solo las REGISTRADAS son un dato (REG-06-214 inciso 4), como en API-DSH-03.
-  const registradas = await tx.evaluacionAntropometrica.aggregate({
-    where: { profesionalId, asesoradoId, estado: 'REGISTRADA', ...(enElPeriodo(periodo) ? { momentoDeOcurrencia: enElPeriodo(periodo) } : {}) },
-    _count: { _all: true },
-    _max: { momentoDeOcurrencia: true },
-  });
-  return [hechos, { lastActivityAt: registradas._max.momentoDeOcurrencia?.toISOString() ?? null, activityCount: registradas._count._all }];
-}
+  // c) La solicitud de formulario sin respuesta más antigua de cada par, en los tres alcances: la base elige la más
+  //    antigua (DISTINCT ON), una fila por par; cada rama del OR es un alcance con sus asesorados permitidos.
+  const primeraSolicitud = new Map<string, Date>();
+  const conSolicitudes = conPares(ALCANCES);
+  if (conSolicitudes.length > 0) {
+    const ramas = conSolicitudes.map((alcance) => Prisma.sql`(s."alcance" = ${alcance}::"Alcance" AND s."asesorado_id" = ANY(${ids[alcance]}::uuid[]))`);
+    const filas = await tx.$queryRaw<{ asesoradoId: string; alcance: Alcance; momentoDeRegistro: Date }[]>`
+      SELECT DISTINCT ON (s."asesorado_id", s."alcance") s."asesorado_id"::text AS "asesoradoId", s."alcance"::text AS "alcance", s."momento_de_registro" AS "momentoDeRegistro"
+        FROM "solicitud_de_formulario" s
+        LEFT JOIN "respuesta_de_formulario" r ON r."solicitud_id" = s."id"
+       WHERE s."profesional_id" = ${profesionalId}::uuid
+         AND r."id" IS NULL
+         AND (${Prisma.join(ramas, ' OR ')})
+       ORDER BY s."asesorado_id", s."alcance", s."momento_de_registro" ASC, s."id" ASC`;
+    for (const f of filas) primeraSolicitud.set(clavePar(f.asesoradoId, f.alcance), f.momentoDeRegistro);
+  }
 
-/** La solicitud de formulario más antigua de este profesional a este asesorado, en este alcance, sin respuesta. */
-async function solicitudAbierta(tx: Tx, profesionalId: string, asesoradoId: string, alcance: Alcance): Promise<Hecho | null> {
-  const s = await tx.solicitudDeFormulario.findFirst({ where: { profesionalId, asesoradoId, alcance, respuesta: null }, orderBy: { momentoDeRegistro: 'asc' }, select: { momentoDeRegistro: true } });
-  return s ? { kind: 'FORM_REQUEST_OPEN', since: civil(s.momentoDeRegistro), daysOverdue: null, daysUntil: null } : null;
+  // d) La evaluación antropométrica en preparación más antigua de cada par, también elegida en la base.
+  const enPreparacion = new Map<string, Date>();
+  if (ids.ANTROPOMETRIA.length > 0) {
+    const filas = await tx.$queryRaw<{ asesoradoId: string; momentoDeRegistro: Date }[]>`
+      SELECT DISTINCT ON (e."asesorado_id") e."asesorado_id"::text AS "asesoradoId", e."momento_de_registro" AS "momentoDeRegistro"
+        FROM "evaluacion_antropometrica" e
+       WHERE e."profesional_id" = ${profesionalId}::uuid
+         AND e."asesorado_id" = ANY(${ids.ANTROPOMETRIA}::uuid[])
+         AND e."estado" = 'EN_PREPARACION'
+       ORDER BY e."asesorado_id", e."momento_de_registro" ASC, e."id" ASC`;
+    for (const f of filas) enPreparacion.set(f.asesoradoId, f.momentoDeRegistro);
+  }
+
+  // e) La actividad del período, por asesorado y alcance. Un asesorado sin registros no tiene grupo: cero y sin último.
+  const lapso = enElPeriodo(periodo);
+  const enElLapso = lapso ? { momentoDeOcurrencia: lapso } : {};
+  const actividad = new Map<string, Actividad>();
+  const anotar = (alcance: Alcance, grupos: readonly GrupoDeActividad[]): void => {
+    for (const g of grupos) actividad.set(clavePar(g.asesoradoId, alcance), { lastActivityAt: g._max.momentoDeOcurrencia?.toISOString() ?? null, activityCount: g._count._all });
+  };
+  if (ids.NUTRICION.length > 0) {
+    // DL-121: una ingesta anulada por su titular no es actividad.
+    const comidas = await tx.ingestaNutricional.groupBy({
+      by: ['asesoradoId'],
+      where: { asesoradoId: { in: ids.NUTRICION }, versionDePlan: { plan: { profesionalId } }, anulacion: { is: null }, ...enElLapso },
+      _count: { _all: true },
+      _max: { momentoDeOcurrencia: true },
+    });
+    anotar('NUTRICION', comidas);
+  }
+  if (ids.ENTRENAMIENTO.length > 0) {
+    const sesiones = await tx.ejecucionDeEntrenamiento.groupBy({
+      by: ['asesoradoId'],
+      where: { asesoradoId: { in: ids.ENTRENAMIENTO }, versionDePlan: { plan: { profesionalId } }, ...enElLapso },
+      _count: { _all: true },
+      _max: { momentoDeOcurrencia: true },
+    });
+    anotar('ENTRENAMIENTO', sesiones);
+  }
+  if (ids.ANTROPOMETRIA.length > 0) {
+    // Solo las REGISTRADAS son un dato (REG-06-214 inciso 4), como en API-DSH-03.
+    const tomas = await tx.evaluacionAntropometrica.groupBy({
+      by: ['asesoradoId'],
+      where: { profesionalId, asesoradoId: { in: ids.ANTROPOMETRIA }, estado: 'REGISTRADA', ...enElLapso },
+      _count: { _all: true },
+      _max: { momentoDeOcurrencia: true },
+    });
+    anotar('ANTROPOMETRIA', tomas);
+  }
+
+  // Los hechos de un par, en el mismo orden de siempre: revisión, borrador o sin plan, solicitud (antropometría: en
+  // preparación, solicitud). El orden importa solo para los empates totales del orden final.
+  return (par) => {
+    const k = clavePar(par.asesoradoId, par.alcance);
+    const hechos: Hecho[] = [];
+    if (par.alcance === 'ANTROPOMETRIA') {
+      const preparacion = enPreparacion.get(par.asesoradoId);
+      if (preparacion) hechos.push({ kind: 'ANTHRO_DRAFT_PENDING', since: civil(preparacion), daysOverdue: null, daysUntil: null });
+    } else {
+      const procesoId = procesoDe.get(k);
+      const expectativa = procesoId ? expectativas.get(procesoId) : undefined;
+      if (expectativa) {
+        const fechaObjetivo = expectativa.fechaObjetivo ? expectativa.fechaObjetivo.toISOString().slice(0, 10) : null;
+        const c = clasificarRevision(fechaObjetivo, hoy);
+        if (c.kind === 'REVIEW_OVERDUE') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: c.dias, daysUntil: null });
+        else if (c.kind === 'REVIEW_DUE_SOON') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: null, daysUntil: c.dias });
+        else if (c.kind === 'REVIEW_UNDATED') hechos.push({ kind: c.kind, since: civil(expectativa.momentoDeRegistro), daysOverdue: null, daysUntil: null });
+      }
+      const borrador = borradores.get(k);
+      if (borrador) hechos.push({ kind: 'PLAN_DRAFT_PENDING', since: civil(borrador), daysOverdue: null, daysUntil: null });
+      else if (!procesoId) hechos.push({ kind: 'NO_ACTIVE_PLAN', since: null, daysOverdue: null, daysUntil: null });
+    }
+    const solicitud = primeraSolicitud.get(k);
+    if (solicitud) hechos.push({ kind: 'FORM_REQUEST_OPEN', since: civil(solicitud), daysOverdue: null, daysUntil: null });
+    return [hechos, actividad.get(k) ?? SIN_ACTIVIDAD];
+  };
 }
 
 const civil = (momento: Date): string => fechaCivil(momento.toISOString(), ZONA_POR_DEFECTO);
