@@ -210,7 +210,7 @@
     [Un profesional lee bien «Analizar» (tres capas)], estado("pendiente"), [Parte B de la prueba breve y la prueba con profesionales (DL-153, DL-154 y DL-158).],
     [Una persona registra sin ayuda en el teléfono], estado("pendiente"), [Parte C y el guion completo del teléfono, con TalkBack.],
     [BE ahorra tiempo o mejora decisiones], estado("propuesto", texto: "Hipótesis"), [No se midió. La auditoría del 2026-10-21 lo marca (VAL-01): los objetivos de la tesis son propiedades del sistema, no beneficios medidos (ACA-01).],
-    [BE soporta muchas personas por profesional], estado("propuesto", texto: "Sin medir"), [La medición de la cartera está preparada, en un entorno aislado; no dice nada de Render.],
+    [La cartera de un profesional responde con 200 personas], estado("verificado", texto: "Medido fuera de Render"), [En un runner de GitHub (28/10): 1,2 s con 200 personas, unos 6 ms por persona, en línea. No dice nada de Render ni de varios profesionales a la vez.],
   )
   #v(4pt)
   #ojo("Para defenderlo frente a un profesor")[Separar las dos cosas da fuerza, no la quita: «el sistema garantiza estas

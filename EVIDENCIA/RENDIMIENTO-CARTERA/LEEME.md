@@ -75,4 +75,38 @@ contenedor con Testcontainers.
 
 ## Resultados
 
-Ver `resultados/`. Cada corrida deja un JSON y una tabla con la máquina donde corrió.
+Cada corrida deja un JSON y una tabla con la máquina donde corrió, en `resultados/`.
+
+### 2026-10-28, en un runner de GitHub
+
+**Dónde:** un runner `ubuntu-24.04` de GitHub (4 CPU, 15,6 GB, Node 22.23.2), con PostgreSQL 16 en un contenedor de
+la misma máquina. Corrida 40641148313, desde la rama descartable `medicion/cartera-2026-10-28` (que solo agrega el
+flujo `medicion-cartera.yml`; no se integra). El repositorio es público: la corrida no tuvo costo. **Ni esta PC ni
+Render.**
+
+| Personas | Mediana (ms) | p95 (ms) | Máximo (ms) | Filas nuevas en `decision_de_acceso` por lectura | Transacciones por lectura (aprox.) |
+|---|---|---|---|---|---|
+| 50 | 312 | 336 | 344 | 150 | 62 |
+| 100 | 617 | 870 | 978 | 300 | 117 |
+| 200 | 1.233 | 1.495 | 1.580 | 600 | 200 |
+
+20 lecturas por tamaño, después de 3 de calentamiento. Las tres devolvieron la primera página de 50 ítems.
+
+**Qué dice, en esta máquina:**
+
+- **H1, en línea: se cumple.** La mediana crece unos 6,2 ms por persona (312 ms con 50, 617 con 100, 1.233 con 200).
+  Duplicar las personas duplica el tiempo.
+- **H3, las filas: se cumple exactamente.** Cada lectura agrega 3 filas por persona a `decision_de_acceso`: una por
+  área, también en las áreas sin vínculo. Con 200 personas, 600 filas cada vez que se abre la cartera. Si ese
+  profesional la abre 20 veces en un día, son 12.000 filas de historia por día, que no se borran.
+- **Las transacciones** son una por persona, más unas pocas fijas (aproximado): el PDP abre una por cada una.
+- **H2, el peso del PDP: no se midió directamente.** La medición no separa el paso 2 del 3. Que el tiempo y las
+  transacciones crezcan juntos, de a una por persona, es compatible con H2, pero no la prueba.
+
+**Qué no dice:** cuánto tarda en Render (otra CPU, la base en otra máquina y la red en el medio), ni con varios
+profesionales a la vez. El tope de 200 personas por lectura (`MAXIMO_DE_ASESORADOS`) hace que 200 sea el peor caso de
+una sola cartera.
+
+**Para decidir, no para implementar acá:** si 1,2 s con 200 personas es aceptable, y si cada apertura de la cartera
+tiene que dejar 3 filas por persona en la historia de decisiones. Cualquier cambio (decidir en lote, paginar por
+personas, registrar distinto) toca una regla del legajo y la arquitectura del PDP.

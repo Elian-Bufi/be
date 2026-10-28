@@ -95,7 +95,7 @@ Las observaciones de la parte A, a decidir:
 | Escenarios «Prueba» en `test` | Desplegado (cargados el 26/10); verificado (6 de 6; pantalla 48 de 48) | #217 (borrador) | Decidir si se integra la herramienta y el guion | Sí |
 | Recetas de ejemplo en `test` | Integrada la herramienta; **no consta que se hayan cargado** (al 23/10, sin cargar) | #192 | Autorizar la carga | Sí |
 | Exportar los datos de la persona | Propuesto: la definición está solo en la rama local `wp-exportar-mis-datos` | DL-021, DL-142 | Publicarla como borrador o descartarla | Sí |
-| Rendimiento de la cartera con 50, 100 y 200 personas | Propuesto: medición preparada, sin correr | `docs/guias/ENTENDER-BE` y la nota de reanudación | Correrla en un entorno aislado con memoria suficiente | No |
+| Rendimiento de la cartera con 50, 100 y 200 personas | Verificado automáticamente **fuera de Render** (runner de GitHub, 28/10): 312, 617 y 1.233 ms de mediana; 3 filas nuevas en `decision_de_acceso` por persona en cada lectura | `EVIDENCIA/RENDIMIENTO-CARTERA` · corrida 40641148313 | Decidir si 1,2 s con 200 personas y 600 filas por lectura son aceptables; medir en el ambiente real si hay piloto | Sí: decidir |
 
 ### Lo académico y lo documental
 
