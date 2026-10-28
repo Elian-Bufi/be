@@ -270,6 +270,24 @@ export class ProcesoService {
     return fila ?? null;
   }
 
+  /**
+   * La expectativa vigente de cada uno de varios Procesos, en una sentencia: la misma regla (la terminal de la cadena,
+   * REG-06-146), para la cartera, que la pide para todos sus Procesos abiertos de una vez (WP-CARTERA-LECTURA-POR-CONJUNTOS).
+   * Un Proceso sin expectativa no está en el resultado.
+   */
+  async proximasRevisionesVigentes(cliente: Tx, procesoIds: readonly string[]): Promise<Map<string, { id: string; fechaObjetivo: Date | null; momentoDeRegistro: Date }>> {
+    const vigentes = new Map<string, { id: string; fechaObjetivo: Date | null; momentoDeRegistro: Date }>();
+    if (procesoIds.length === 0) return vigentes;
+    const filas = await cliente.$queryRaw<{ procesoId: string; id: string; fechaObjetivo: Date | null; momentoDeRegistro: Date }[]>`
+      SELECT pr."proceso_id"::text AS "procesoId", pr."id"::text AS "id", pr."fecha_objetivo" AS "fechaObjetivo", pr."momento_de_registro" AS "momentoDeRegistro"
+        FROM "proxima_revision" pr
+       WHERE pr."proceso_id" = ANY(${[...procesoIds]}::uuid[])
+         AND NOT EXISTS (SELECT 1 FROM "proxima_revision" s WHERE s."predecesora_id" = pr."id")
+       ORDER BY pr."proceso_id", pr."momento_de_registro" ASC, pr."id" ASC`;
+    for (const f of filas) if (!vigentes.has(f.procesoId)) vigentes.set(f.procesoId, { id: f.id, fechaObjetivo: f.fechaObjetivo, momentoDeRegistro: f.momentoDeRegistro });
+    return vigentes;
+  }
+
   // ─── Capacidad (B-05) ──────────────────────────────────────────────────────────────────────
 
   /** Terminal de la cadena de capacidad; sin versión, SIN_LIMITE (REG-06-82). */

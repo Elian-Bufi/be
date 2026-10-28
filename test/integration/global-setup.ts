@@ -27,6 +27,9 @@ export default async function globalSetup(): Promise<void> {
     .withDatabase('be_test')
     .withUsername('be_test')
     .withPassword('be_test_sintetico')
+    // `pg_stat_statements` precargado (la misma imagen y el mismo arranque que la medición de la cartera): una prueba
+    // puede contar las sentencias que la API manda por pedido (cartera-por-conjuntos.int-spec.ts). No cambia nada más.
+    .withCommand(['postgres', '-c', 'shared_preload_libraries=pg_stat_statements'])
     .start();
 
   const url = contenedor.getConnectionUri();
