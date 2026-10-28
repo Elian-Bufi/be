@@ -25,9 +25,11 @@ oficiales citadas) terminó y acá queda reconciliada. Es un avance, no una prom
 
 ## La ruta recomendada (y por qué)
 
-1. **Pista de pruebas internas** de Play Console (hasta 100 probadores por lista de correos, sin revisión previa,
-   disponible en minutos, se puede empezar antes de completar la ficha). **No** el «uso compartido interno de apps»:
-   vuelve a firmar con una clave de prueba y rompería la actualización, Google y los App Links.
+1. **Pista de pruebas internas** de Play Console (hasta 100 probadores por lista de correos; Play dice que estas
+   pruebas *pueden* no pasar por la revisión estándar y que una versión *suele* estar disponible en minutos, con el
+   primer enlace demorado horas: no es una garantía de ausencia de revisión ni de disponibilidad inmediata; se puede
+   empezar antes de completar la ficha). **No** el «uso compartido interno de apps»: vuelve a firmar con una clave de
+   prueba y rompería la actualización, Google y los App Links.
 2. **Play App Signing con nuestra clave:** al crear la primera versión, en *App integrity* elegir **«Provide a copy of
    your app signing key»** y subir la keystore de EAS cifrada con la herramienta PEPK. Play acepta RSA 2048 como clave
    propia. Así la clave de firma de la app (*app signing key*, la que firma lo que llega a los teléfonos) sigue siendo
@@ -36,10 +38,12 @@ oficiales citadas) terminó y acá queda reconciliada. Es un avance, no una prom
    la que recomienda la guía manual de Expo son **incorrectas para BE**: obligarían a desinstalar (se pierden la sesión
    y el entrenamiento en curso), romperían Google hasta registrar tres SHA-1 nuevas y los App Links hasta sumar tres
    SHA-256 a `assetlinks.json` y redesplegar el website.
-3. **Clave de subida (*upload key*):** la que firma el AAB antes de subirlo. Google recomienda que sea distinta de la de
-   firma y se puede resetear si se pierde. Para la primera subida se puede usar la misma keystore de EAS (está
-   permitido) y pedir después una clave de subida aparte; o generar la clave de subida nueva antes de la primera
-   subida. **Lo decide Dirección** (ver «Decisiones»); ninguna clave existente se genera ni se reemplaza acá.
+3. **Clave de subida (*upload key*):** la que firma el AAB antes de subirlo; la guarda Dirección y se puede resetear si
+   se pierde. **Recomendación (ratificada por Dirección el 28/10): conservar nuestra clave de aplicación y usar una
+   clave de subida separada.** Todavía no se genera ni se reemplaza ninguna clave: cuando Dirección la genere, se
+   registra su certificado en Play y el AAB se firma con ella (las mismas variables `BE_FIRMA_*` apuntan a esa
+   keystore). Hasta entonces, el AAB candidato se firma con la keystore de EAS para verificar toda la cadena, y se
+   vuelve a firmar con la clave de subida antes de subirlo (`jarsigner`: quitar `META-INF/` y firmar de nuevo).
 4. **El artefacto:** un Android App Bundle (obligatorio para apps nuevas desde agosto de 2021), construido con el mismo
    procedimiento local de las APK cambiando `assembleRelease` por `:app:bundleRelease`, con un *config plugin* que
    inyecte la firma (para que `prebuild --clean` no la borre), ambiente **test** (`be-api-hndp` / `be-web-1ngj`, como
@@ -55,13 +59,16 @@ oficiales citadas) terminó y acá queda reconciliada. Es un avance, no una prom
 
 1. Crear la **cuenta de Play Console** (US$ 25 por única vez, DNI, tarjeta, OTP de correo y teléfono; si es personal,
    verificar un teléfono Android con la app Play Console).
-2. Elegir el **tipo de cuenta**: Play exige cuenta de **organización** (D-U-N-S) para «Health apps, such as Medical
-   apps…» y no aclara si Activity & Fitness o Nutrition entran. BE se presenta como «plataforma integrada de
-   inteligencia en salud». Va **antes de pagar**; no encontré si una cuenta personal se puede convertir.
+2. Elegir el **tipo de cuenta**: Play exige cuenta de **organización** (D-U-N-S) para las apps de salud, y para
+   Google «salud» incluye las categorías de actividad física y de nutrición (la declaración de apps de salud las
+   lista: *Activity and Fitness*, *Nutrition and Weight Management*). BE registra entrenamiento, nutrición y
+   antropometría y se presenta como «plataforma integrada de inteligencia en salud»: **hay que asumir la cuenta de
+   organización.** Va **antes de pagar**; no encontré si una cuenta personal se puede convertir.
 3. Crear la app `com.elianbufi.be` (el nombre de paquete es permanente) y aceptar las condiciones de Play App Signing.
 4. En la primera versión, elegir **«Provide a copy of your app signing key»** y correr PEPK sobre
    `be-firma-respaldo/credentials/android/keystore.jks` (alias y contraseña en su `credentials.json`): solo Dirección.
-5. Decidir la clave de subida (misma keystore o una nueva) y, si es nueva, generarla y guardarla.
+5. Generar y guardar la clave de subida separada (cuando lo decidas; no se genera en esta tanda) y registrar su
+   certificado en Play; hasta entonces, el candidato se firma con la keystore de EAS.
 6. Cargar la lista de probadores y sumarlos como usuarios de prueba de OAuth en Google Cloud (`be-app-c4623`).
 7. Revisar en Google Cloud si la API key de Firebase está restringida por app Android (si Play firmara con otra clave,
    los avisos dejarían de llegar; con nuestra clave no cambia nada).
@@ -79,7 +86,7 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 | El AAB se construye con el perfil `production` tal como está | la app queda sin API y sin App Link | construir con el env de `test` hasta que exista un ambiente de producción |
 | Uso compartido interno de apps | Play vuelve a firmar con una clave de prueba | usar la pista de pruebas internas |
 | Memoria de la PC durante el build (~40 min; falló por memoria en la 0.11.3) | build cortado | medir la RAM antes, un worker, sin Chrome |
-| Política: cuenta personal con una app de salud; privacidad de demostración sin contacto (DL-028); «Cerrar mi cuenta» conserva los datos (DL-019; Play dice que desactivar no es borrar) | no bloquean la pista interna; bloquean pruebas cerradas, abiertas y producción (Data safety, declaración de apps de salud, borrado de cuenta) | decidirlo antes de pasar de la pista interna |
+| Política: BE es una app de salud para Play (actividad física y nutrición entran en «salud»): cuenta de organización, declaración de apps de salud; privacidad de demostración sin contacto (DL-028); «Cerrar mi cuenta» conserva los datos (DL-019; Play dice que desactivar no es borrar) | la cuenta de organización va antes de crear la app; lo demás no bloquea la pista interna y sí las pruebas cerradas, abiertas y producción (Data safety, declaración de apps de salud, borrado de cuenta) | decidir el tipo de cuenta antes de pagar; lo demás, antes de pasar de la pista interna |
 | Cuenta personal y producción | 12 probadores 14 días seguidos en una prueba cerrada | solo si se apunta a producción |
 | 16 KB verificado solo en la APK 0.16.0 | Play bloquea actualizaciones sin 16 KB desde el 01/02/2027 | verificar el AAB con `zipalign -P 16` |
 
@@ -99,24 +106,59 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 
 ## Decisiones de Dirección (con recomendación)
 
-1. **Clave de firma de la app en Play:** nuestra clave de EAS (recomendado; conserva actualización, Google y App
-   Links) o claves de Google (obliga a desinstalar y a registrar huellas nuevas en Google Cloud y `assetlinks.json`).
-2. **Clave de subida:** la misma keystore de EAS para la primera subida (más simple; Google lo permite y lo recomienda
-   en contra) o una clave de subida nueva desde el inicio (recomendación de Google; una clave más que guardar). Si se
-   elige nueva después de construir el AAB candidato, el AAB se vuelve a firmar con ella (es un paso corto).
-3. **Tipo de cuenta:** personal u organización (D-U-N-S) según cómo se clasifique BE como app de salud.
+1. **Clave de firma de la app en Play:** nuestra clave de EAS (ratificado el 28/10; conserva actualización, Google y
+   App Links). La alternativa, claves de Google, obliga a desinstalar y a registrar huellas nuevas en Google Cloud y
+   `assetlinks.json`.
+2. **Clave de subida:** separada de la de firma (ratificado el 28/10). Queda pendiente generarla y registrar su
+   certificado; mientras tanto, nada se genera ni se reemplaza, y el AAB candidato se firma con la keystore de EAS
+   para verificar la cadena (se vuelve a firmar con la clave de subida antes de subirlo).
+3. **Tipo de cuenta:** organización (D-U-N-S), porque para Play la actividad física y la nutrición son salud. Decidir
+   el nombre de la organización y tramitar el D-U-N-S antes de pagar.
 4. **Ambiente y versión del AAB:** test (`be-api-hndp`), `0.18.0-candidata.2` / versionCode 31 desde `main` `e4512cb`
    (lo que test sirve hoy) más esta rama. Alternativa: el mismo `b64d0c4` de la candidata.1 con versionCode 31.
 5. **El canal en el website y DV-08:** cuándo cambiar «Se instala fuera de Google Play» y los enlaces a GitHub.
 
-## Lo que sigue (preparación técnica autorizada)
+## Guía breve de lo que hacés vos (en orden)
 
-- Plugin de firma, scripts de construcción y verificación, documentación, PR en borrador.
-- Con la RAM medida: construir el AAB candidato (`0.18.0-candidata.2`, versionCode 31, ambiente test), validarlo con
-  bundletool y apksigner, registrar su commit de origen y sus huellas en `EVIDENCIA/GOOGLE-PLAY/`, y dejar el archivo
-  fuera del repositorio. La APK vigente no se toca.
-- Guion de prueba en el teléfono y en Play Console: instalación, actualización sobre la APK anterior, inicio de sesión,
-  invitaciones y notificaciones, separando lo comprobado automáticamente de lo pendiente.
+1. **Decidir** (antes de pagar): la organización y su D-U-N-S (para Play, BE es una app de salud); nuestra clave como
+   clave de firma y una clave de subida separada quedaron ratificadas el 28/10; la clave de subida se genera cuando lo
+   digas, no antes.
+2. **Cuenta:** https://play.google.com/console → alta de desarrollador (US$ 25, DNI, tarjeta, OTP; si es personal,
+   verificar tu teléfono con la app Play Console).
+3. **App:** «Crear app» → nombre BE, español, app, gratis, correo de contacto, declaraciones, aceptar Play App Signing.
+   Paquete: `com.elianbufi.be` (es permanente).
+4. **Probadores:** Testing → Internal testing → Testers → «Create email list» con las cuentas de Google de los
+   evaluadores. Los mismos correos, como usuarios de prueba en la pantalla de consentimiento de OAuth
+   (https://console.cloud.google.com, proyecto be-app-c4623), si van a entrar con Google.
+5. **Primera versión:** Internal testing → «Create new release» → App integrity → **«Provide a copy of your app
+   signing key»** → descargar PEPK y correr, en tu PC, con la keystore del respaldo (el alias y la contraseña están en
+   su `credentials.json`; no los pegues en ningún chat):
+   `java -jar pepk.jar --keystore=C:\Users\bufim\be-firma-respaldo\credentials\android\keystore.jks --alias=<alias> --output=C:\Users\bufim\be-firma-respaldo\pepk-salida.zip --encryptionkey=<la clave de cifrado que muestra Play>`
+   y subir ese zip. Después, subir el `.aab` candidato, revisar que el versionCode sea 31, «Save and publish».
+6. **Comprobar antes de que nadie instale:** Release → Setup → App integrity → App signing key certificate: SHA-256
+   `61:56:96:91:BD:47:30:0F:C1:8F:32:C3:7A:84:80:FF:A5:1E:C5:4E:96:47:B6:12:5A:F4:40:53:5C:89:3E:06`. Si es otra, no
+   publiques: la versión de Play no actualizaría la APK.
+7. **Copiar el enlace** de Testers y seguir el guion de `EVIDENCIA/GOOGLE-PLAY/LEEME.md` (instalación, actualización
+   sobre la APK, Google, invitaciones, avisos).
+
+## Estado al cierre (2026-10-28, 16:50 UTC) y punto de reanudación
+
+- **Hecho:** plugin de firma (`apps/mobile/plugins/firma-de-subida.js`, con su prueba en `npm test`), scripts
+  `scripts/aab/construir-aab.mjs` (escribe también `esperado.json` desde las fuentes de la construcción) y
+  `verificar-aab.mjs` (corregido el 28/10 a la tarde: exige paquete, versión, versionCode, commit, ambiente, Google,
+  Firebase, invitaciones y los dos certificados; «todo bien» solo si cada comprobación obligatoria corrió y dio bien;
+  busca credenciales en todo el bundle descomprimido, con una prueba que mete secretos sintéticos en un zip y comprueba
+  que los detecta sin devolverlos; y completa 16 KB con la configuración del bundle y la alineación ELF de cada
+  biblioteca de 64 bits, dejando dicho que la ejecución en un dispositivo de 16 KB es una prueba aparte),
+  `docs/DESPLIEGUE.md` («Google Play · pruebas internas»), el guion de prueba en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`, la
+  rama de versión `aab/candidata-0.18.0-2` publicada, bundletool 1.18.3 descargado, PR #223 en borrador.
+- **No hecho:** el AAB candidato **no se construyó**: el primer intento (árbol espejado) no era fiel al lockfile y el
+  segundo (`npm ci` en el árbol) lo cortó la poca memoria de la PC; la construcción de Gradle (~2,5 GB, ~40 min) no se
+  lanzó. Detalle y comandos exactos en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`. Por eso, lo «comprobado automáticamente»
+  sobre el artefacto está pendiente; lo comprobado es la ruta, el código y la herramienta de verificación.
+- **Para retomar:** con la PC libre, en `C:\Users\bufim\BE-aab`: `npm ci` (Node 22) y `node scripts/aab/construir-aab.mjs`;
+  después `node scripts/aab/verificar-aab.mjs …` y copiar `verificacion.md` y `construccion.json` a
+  `EVIDENCIA/GOOGLE-PLAY/`. La APK vigente (0.18.0-candidata.1) no se toca.
 
 ## Fuentes oficiales leídas (las principales)
 
