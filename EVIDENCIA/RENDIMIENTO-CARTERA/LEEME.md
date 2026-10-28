@@ -8,12 +8,13 @@ Encargo nocturno del 2026-10-27, §10. Commit de referencia: `e4512cb`. Segunda 
 Una medición reproducible de la cartera del profesional, en un entorno aislado (un PostgreSQL 16 que nace vacío), con
 50, 100 y 200 personas sintéticas. **Un resultado de acá describe la máquina donde corrió: no dice nada de Render.**
 
-Hay dos mediciones, y la primera queda como referencia, sin tocar:
+Hay tres mediciones, y las dos primeras quedan como referencia, sin tocar:
 
 | | Corrida | Qué mide | Dónde está |
 |---|---|---|---|
 | Primera (2026-10-28, madrugada) | 40641148313 | Una cartera que crece de 50 a 200 personas, 20 lecturas por tamaño | Abajo, en «Resultados», y `resultados/cartera-2026-10-28-06-04-41.*` |
 | Segunda (2026-10-28, mañana) | 40660575008 | Además: una cartera con historia en las tres áreas, 1, 3 y 5 profesionales a la vez, la apertura completa con el cursor, 50 observaciones con repetición, y dónde se va el tiempo de cada pedido | [CONCURRENCIA.md](CONCURRENCIA.md) y `resultados/concurrencia-2026-10-28/` |
+| Tercera (2026-10-28, mediodía): antes/después | 40692787787 | Los mismos escenarios, con la lectura anterior y la lectura por conjuntos (WP-CARTERA-LECTURA-POR-CONJUNTOS) alternadas en la misma máquina | [LECTURA-POR-CONJUNTOS.md](LECTURA-POR-CONJUNTOS.md), `resultados/ab-2026-10-28/` y el PDF didáctico en `didactico/` |
 
 ## Qué hace la cartera, leído en el código
 

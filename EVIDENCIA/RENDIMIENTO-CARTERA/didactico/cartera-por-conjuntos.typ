@@ -92,10 +92,14 @@
       #if medido {
         let s = fila-de("S-B200")
         let h = fila-de("S-H200")
-        [*Lo que midió* (misma máquina, mismo proceso, las dos versiones alternadas): con 200 personas, la mediana de una
-        página pasó de #num(s.p50.base) a #num(s.p50.propuesta) ms (#pc(s.p50.delta)); con historia, de #num(h.p50.base) a
-        #num(h.p50.propuesta) ms (#pc(h.p50.delta)). #if D.erroresTotales == 0 [Cero errores.] else [*#D.erroresTotales pedidos con error.*]
-        El detalle, con sus condiciones y límites, en la lámina 6.]
+        if s != none and h != none [
+          *Lo que midió* (misma máquina, mismo proceso, las dos versiones alternadas): con 200 personas, la mediana de una
+          página pasó de #num(s.p50.base) a #num(s.p50.propuesta) ms (#pc(s.p50.delta)); con historia, de #num(h.p50.base) a
+          #num(h.p50.propuesta) ms (#pc(h.p50.delta)). #if D.erroresTotales == 0 [Cero errores.] else [*#D.erroresTotales pedidos con error.*]
+          El detalle, con sus condiciones y límites, en la lámina 5.
+        ] else [
+          *Lo que midió:* esta corrida no tiene los escenarios de 200 personas; la tabla de la lámina 5 trae los que sí corrieron.
+        ]
       } else {
         [*La medición todavía no corrió:* la lámina 6 se completa con sus resultados.]
       }
@@ -141,7 +145,7 @@
   #v(2pt)
   #set text(size: 9.5pt)
   - *Personas y pendientes no son lo mismo.* Una persona con Nutrición y Entrenamiento puede aportar cuatro pendientes; otra, ninguno. Por eso la paginación corta la lista de pendientes ya ordenada, no la lista de personas: paginar personas antes de calcular cambiaría el orden por urgencia y la cobertura de cada página.
-  - *Cada página repite todo.* La segunda página, pedida con el cursor, vuelve a decidir con el PDP por cada persona y a leer todos los hechos: cuesta lo mismo que la primera y deja las mismas filas de decisión. No lo cambia esta propuesta (ver lámina 7).
+  - *Cada página repite todo.* La segunda página, pedida con el cursor, vuelve a decidir con el PDP por cada persona y a leer todos los hechos: cuesta lo mismo que la primera y deja las mismas filas de decisión. No lo cambia esta propuesta (ver lámina 6).
   #referencias("apps/web/src/app/pro/espacio-profesional.tsx", "apps/api/src/cartera/cartera.controller.ts", "apps/api/src/cartera/lectura-cartera.ts")
 ]
 
@@ -211,17 +215,19 @@
   pregunta: "5 · ¿Qué demostraron las mediciones y qué sigue sin saberse?",
   bajada: if medido [Las dos versiones corrieron alternadas en la misma máquina de GitHub (#D.maquina), el mismo proceso y las mismas carteras, en la corrida #raw(str(D.corrida)). #if D.versionesOk [Cada lote comprobó qué versión tenía puesta.] else [*Algún lote no tenía la versión esperada.*]] else [La medición todavía no corrió.],
   lateral: [
-    #concepto("p50 y p95", criollo: [La mediana (la mitad de los pedidos tardó menos) y el percentil 95 (el 95 % tardó menos): el caso típico y la cola.], en-be: [La cola sale del PDP, que no cambia: por eso el p95 baja menos que el p50.])
+    #concepto("p50 y p95", criollo: [La mediana (la mitad de los pedidos tardó menos) y el percentil 95 (el 95 % tardó menos): el caso típico y la cola.], en-be: [La hipótesis decía que la cola (el PDP) bajaría menos que la mediana. No fue así: bajó igual, porque la cola de la lectura también pesaba.])
     #concepto("Bucle cerrado", criollo: [Cada cliente pide la página siguiente apenas recibe la anterior, sin pausa. Mide cómo se reparte la máquina, no cuántas personas reales aguanta.], en-be: [C1, C3 y C5: uno, tres y cinco profesionales, cada uno con su cartera de 200.])
     #concepto("Variación entre repeticiones", criollo: [Cuánto difiere la misma versión consigo misma en dos corridas: el piso de ruido. Una mejora menor que ese piso no es una mejora.], en-be: [Cada escenario corrió dos veces por versión; la columna «ruido» es la diferencia de la base entre sus dos repeticiones.])
   ],
 )[
   #set text(size: 9.5pt)
   #if medido [
+    #set text(size: 8.8pt)
     #table(
-      columns: (auto, auto, auto, auto, auto, auto, auto, auto, auto),
-      align: (left, right, right, right, right, right, right, right, right),
-      [Escenario (200 personas salvo aclaración)], [Pedidos por versión], [p50 base (ms)], [p50 propuesta (ms)], [Δ p50], [Δ p50 r1 · r2], [Ruido de la base], [p95 base → propuesta], [Páginas/s base → propuesta],
+      columns: (auto, auto, auto, auto, auto, auto, auto, auto, auto, auto),
+      align: (left, right, right, right, right, right, right, right, right, right),
+      inset: (x: 4.5pt, y: 3.5pt),
+      [Escenario (200 personas salvo aclaración)], [Pedidos], [p50 base], [p50 prop.], [Δ p50], [p95 base], [p95 prop.], [Δ p95], [Ruido base], [Pág./s base → prop.],
       ..for f in D.filas {
         (
           [#f.que],
@@ -229,13 +235,16 @@
           [#num(f.p50.base)],
           [#num(f.p50.propuesta)],
           [*#pc(f.p50.delta)*],
-          [#pc(f.p50.r1) · #pc(f.p50.r2)],
+          [#num(f.p95.base)],
+          [#num(f.p95.propuesta)],
+          [#pc(f.p95.delta)],
           [#pc(f.variacionDeLaBase)],
-          [#num(f.p95.base) → #num(f.p95.propuesta) (#pc(f.p95.delta))],
           if f.paginasPorSegundo.base == none [—] else [#str(f.paginasPorSegundo.base) → #str(f.paginasPorSegundo.propuesta)],
         )
       }
     )
+    #set text(size: 9.5pt)
+    Latencias en ms, medidas en el cliente, las dos repeticiones juntas. «Ruido»: cuánto difirió la base entre sus dos repeticiones (p50). Los Δ por repetición están en `LECTURA-POR-CONJUNTOS.md`.
     #v(3pt)
     #let s = fila-de("S-B200")
     #let h = fila-de("S-H200")
@@ -243,7 +252,9 @@
       columns: (1fr, 1fr),
       column-gutter: 8mm,
       [
-        *Dónde cambió el tiempo (200 personas, medianas por pedido).* Bloque de lectura: #num(s.lectura.base.at(0)) → #num(s.lectura.propuesta.at(0)) ms (perfil base), #num(h.lectura.base.at(0)) → #num(h.lectura.propuesta.at(0)) ms (con historia). Bloque del PDP: #num(s.pdp.base.at(0)) → #num(s.pdp.propuesta.at(0)) ms (no cambia por diseño). Sentencias por pedido: #num(s.sentencias.base) → #num(s.sentencias.propuesta) (base), #num(h.sentencias.base) → #num(h.sentencias.propuesta) (historia). COMMIT por pedido: #num(s.commits.base) → #num(s.commits.propuesta). Filas de decisión por pedido: #if s.filasDeDecision.base != none [#s.filasDeDecision.base.min a #s.filasDeDecision.base.max → #s.filasDeDecision.propuesta.min a #s.filasDeDecision.propuesta.max] else [—].
+        #if s != none and h != none [
+          *Dónde cambió el tiempo (200 personas, medianas por pedido).* Bloque de lectura: #num(s.lectura.base.at(0)) → #num(s.lectura.propuesta.at(0)) ms (perfil base), #num(h.lectura.base.at(0)) → #num(h.lectura.propuesta.at(0)) ms (con historia). Bloque del PDP: #num(s.pdp.base.at(0)) → #num(s.pdp.propuesta.at(0)) ms (no cambia por diseño). Sentencias por pedido: #num(s.sentencias.base) → #num(s.sentencias.propuesta) (base), #num(h.sentencias.base) → #num(h.sentencias.propuesta) (historia). COMMIT por pedido: #num(s.commits.base) → #num(s.commits.propuesta). Filas de decisión por pedido: #if s.filasDeDecision.base != none [#s.filasDeDecision.base.min a #s.filasDeDecision.base.max → #s.filasDeDecision.propuesta.min a #s.filasDeDecision.propuesta.max] else [—].
+        ]
         #if D.aperturas.len() > 0 {
           let a = D.aperturas.at(0)
           [*Lo que lee el website al abrir* (las primeras cuatro páginas, #a.escenario): #num(a.base.primerasCuatroP50) → #num(a.propuesta.primerasCuatroP50) ms (#pc(a.deltaPrimerasCuatro)). No es el tiempo de pantalla: el navegador no se midió.]
@@ -251,7 +262,7 @@
         Errores en toda la corrida: #D.erroresTotales. Inventario de pendientes de las #D.carteras carteras, con las dos versiones: #if D.coinciden [idéntico] else [*distinto*].
       ],
       [
-        *Lo que sigue sin saberse.* Nada de Render (otra CPU, la base en otra máquina y la red en el medio). Cuántos profesionales reales aguanta: los clientes de C3 y C5 piden sin pausa. Qué pasa con más de cinco a la vez, con escrituras simultáneas o con meses de historia. El tiempo en el navegador. Y el paso 2 sigue costando lo mismo: con 200 personas, cada página sigue dejando 600 filas de decisión y 200 confirmaciones al disco.
+        *Lo que sigue sin saberse.* Nada de Render (otra CPU, la base en otra máquina y la red en el medio). Cuántos profesionales reales aguanta: los clientes de C3 y C5 piden sin pausa. Más de cinco a la vez, escrituras simultáneas, meses de historia, el tiempo en el navegador. Y el paso 2 cuesta lo mismo: cada página con 200 personas sigue dejando 600 filas de decisión y 200 confirmaciones al disco.
       ],
     )
   ] else [

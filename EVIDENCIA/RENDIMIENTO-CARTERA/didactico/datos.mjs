@@ -14,13 +14,13 @@ const r1 = (n) => (n === null || n === undefined ? null : Math.round(n * 10) / 1
 const pct = (a, b) => (a && b !== null && b !== undefined ? r1(((b - a) / a) * 100) : null);
 
 const ESCENARIOS = [
-  ['S-B50', '1 profesional, 50 personas, perfil base'],
-  ['S-B100', '1 profesional, 100 personas'],
-  ['S-B200', '1 profesional, 200 personas'],
-  ['S-H200', '1 profesional, 200 personas con historia'],
-  ['C1', '1 profesional en bucle cerrado, 200 personas'],
-  ['C3', '3 profesionales a la vez, 200 personas cada uno'],
-  ['C5', '5 profesionales a la vez, 200 personas cada uno'],
+  ['S-B50', '50 personas'],
+  ['S-B100', '100 personas'],
+  ['S-B200', '200 personas'],
+  ['S-H200', '200 con historia'],
+  ['C1', '1 a la vez, sin pausa'],
+  ['C3', '3 a la vez, sin pausa'],
+  ['C5', '5 a la vez, sin pausa'],
 ];
 const filas = [];
 for (const [id, que] of ESCENARIOS) {
