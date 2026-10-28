@@ -60,11 +60,17 @@ function herramienta(argumentos: string[]): Promise<{ codigo: number | null; sal
 const cargar = (...extra: string[]) =>
   herramienta(['cargar', '--origen', origen, '--cuentas', cuentas, '--cuenta', 'PRO_N', '--fotos', fotos, '--estado', estado, '--confirmo-escritura', ...extra]);
 
-async function recetasDeLaCuenta(): Promise<{ recipeId: string; name: string; image: { mediaId: string } | null }[]> {
-  const todas: { recipeId: string; name: string; image: { mediaId: string } | null }[] = [];
+interface RecetaDeLaCuenta {
+  recipeId: string;
+  name: string;
+  image: { mediaId: string } | null;
+}
+async function recetasDeLaCuenta(): Promise<RecetaDeLaCuenta[]> {
+  const todas: RecetaDeLaCuenta[] = [];
   let cursor: string | null = null;
   do {
-    const r = await conSesion(app, pro.token).get(`/api/v1/nutrition/recipes?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`).expect(200);
+    const ruta: string = `/api/v1/nutrition/recipes?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+    const r: { body: { data: RecetaDeLaCuenta[]; page?: { nextCursor?: string | null } } } = await conSesion(app, pro.token).get(ruta).expect(200);
     todas.push(...r.body.data);
     cursor = r.body.page?.nextCursor ?? null;
   } while (cursor);
