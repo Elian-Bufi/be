@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="368pt" height="280pt" viewBox="0 0 368 280" data-lamina="D-04">
+<title>Muchos a muchos que solo relaciona: los destinatarios de una nota</title>
+<desc>La clave primaria es el par (nota, destinatario): no hay nada más que decir de esa unión. · Fuente: prisma/schema.prisma · sección WP-NOTAS-DE-COORDINACION · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="368" height="280" fill="#FFFFFF"/>
+<path d="M 132 71.25 L 171 71.25 Q 176 71.25 176 76.25 L 176 164.5 Q 176 169.5 181 169.5 L 220 169.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 215 175 L 215 164" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 210.5 175 L 210.5 164" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 132 65.25 L 142 71.25 L 132 77.25 M 132 71.25 L 142 71.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="147" cy="71.25" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 132 86.75 L 149 86.75 Q 154 86.75 154 91.75 L 154 185.25 Q 154 190.25 159 190.25 L 220 190.25" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 215 195.75 L 215 184.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 210.5 195.75 L 210.5 184.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 132 80.75 L 142 86.75 L 132 92.75 M 132 86.75 L 142 86.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="147" cy="86.75" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 83.36 24 L 83.36 15 Q 83.36 10 88.36 10 L 118.36 10 Q 123.36 10 123.36 15 L 123.36 24" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 117.86 19 L 128.86 19" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="123.36" cy="11.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 77.36 24 L 83.36 14 L 89.36 24 M 83.36 24 L 83.36 14" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="83.36" cy="9" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 220 55.75 L 132 55.75" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 137 50.25 L 137 61.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 141.5 50.25 L 141.5 61.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 220 61.75 L 210 55.75 L 220 49.75 M 220 55.75 L 210 55.75" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="205" cy="55.75" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 292 97.5 L 292 158.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 286.5 153.5 L 297.5 153.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 286.5 149 L 297.5 149" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 298 97.5 L 292 107.5 L 286 97.5 M 292 97.5 L 292 107.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="292" cy="112.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<rect x="4" y="24" width="128" height="104.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 4.6 46 L 4.6 27 Q 4.6 24.6 7 24.6 L 129 24.6 Q 131.4 24.6 131.4 27 L 131.4 46 Z" fill="#DCE8FC"/>
+<line x1="4" y1="46" x2="132" y2="46" stroke="#1453C9" stroke-width="0.8"/>
+<text x="12" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">NotaDeCoordinacion</text>
+<text x="11" y="59.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="29" y="59.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="41" y="59.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="11" y="75.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="29" y="75.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="41" y="75.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">autorId</text>
+<text x="11" y="90.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="29" y="90.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="41" y="90.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesoradoId</text>
+<text x="11" y="106.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="29" y="106.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="41" y="106.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">corrigeAId</text>
+<text x="41" y="121.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 7 atributos más</text>
+<rect x="220" y="24" width="144" height="73.5" rx="3" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
+<path d="M 220.6 46 L 220.6 27 Q 220.6 24.6 223 24.6 L 361 24.6 Q 363.4 24.6 363.4 27 L 363.4 46 Z" fill="#DCE8FC"/>
+<line x1="220" y1="46" x2="364" y2="46" stroke="#0A1F44" stroke-width="0.8"/>
+<text x="228" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DestinatarioDeNota</text>
+<text x="227" y="59.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK·FK</text>
+<text x="263" y="59.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="275" y="59.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">notaId</text>
+<text x="227" y="75.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK·FK</text>
+<text x="263" y="75.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="275" y="75.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">destinatarioId</text>
+<text x="275" y="90.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 1 atributo más</text>
+<rect x="220" y="158.5" width="144" height="58" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 220.6 180.5 L 220.6 161.5 Q 220.6 159.1 223 159.1 L 361 159.1 Q 363.4 159.1 363.4 161.5 L 363.4 180.5 Z" fill="#DCE8FC"/>
+<line x1="220" y1="180.5" x2="364" y2="180.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="228" y="173.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Identidad</text>
+<text x="227" y="194.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="245" y="194.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="257" y="194.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="257" y="209.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 5 atributos más</text>
+</svg>

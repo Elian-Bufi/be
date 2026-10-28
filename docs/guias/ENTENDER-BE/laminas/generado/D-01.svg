@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500pt" height="344pt" viewBox="0 0 500 344" data-lamina="D-01">
+<title>Motor, base, esquema, tabla, columna y fila</title>
+<desc>Cómo se anidan las piezas de una base relacional, con los nombres reales de BE en el ambiente test. · Fuente: prisma/schema.prisma · render.yaml · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="500" height="344" fill="#FFFFFF"/>
+<rect x="2" y="2" width="496" height="340" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="12" y="18" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Motor: PostgreSQL 16</text>
+<text x="128.61" y="18" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[servidor be-db-test, en Render]</text>
+<rect x="16" y="30" width="468" height="300" rx="8" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<text x="26" y="46" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Base de datos: be_test</text>
+<text x="146.5" y="46" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[una por ambiente]</text>
+<rect x="30" y="58" width="440" height="258" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="40" y="74" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Esquema: public</text>
+<text x="129.94" y="74" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[el único que usa BE]</text>
+<rect x="44" y="86" width="196" height="151" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 44.6 108 L 44.6 89 Q 44.6 86.6 47 86.6 L 237 86.6 Q 239.4 86.6 239.4 89 L 239.4 108 Z" fill="#DCE8FC"/>
+<line x1="44" y1="108" x2="240" y2="108" stroke="#1453C9" stroke-width="0.8"/>
+<text x="52" y="101.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">ingesta_nutricional</text>
+<text x="232" y="101.2" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">tabla</text>
+<text x="51" y="121.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="69" y="121.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="121.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="51" y="137.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="69" y="137.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="137.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">version_de_plan_id</text>
+<text x="51" y="152.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="69" y="152.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="152.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asesorado_id</text>
+<text x="69" y="168.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="168.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">fecha_local</text>
+<text x="69" y="183.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="183.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">origen</text>
+<text x="69" y="199.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="199.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cantidades_consumidas</text>
+<text x="69" y="214.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="214.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">momento_de_registro</text>
+<text x="81" y="230.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 13 atributos más</text>
+<path d="M 258 86 L 447 86 L 456 95 L 456 164 L 258 164 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 447 86 L 447 95 L 456 95" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="267" y="102.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Columna</text>
+<text x="267" y="115.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Un dato con nombre y tipo, igual para</text>
+<text x="267" y="128.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">todas las filas: fecha_local es una</text>
+<text x="267" y="141.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">fecha; cantidades_consumidas, un</text>
+<text x="267" y="153.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">JSON.</text>
+<path d="M 258 180 L 447 180 L 456 189 L 456 258 L 258 258 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 447 180 L 447 189 L 456 189" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="267" y="196.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Fila</text>
+<text x="267" y="209.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Un hecho concreto: «Prueba Dos</text>
+<text x="267" y="222.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">registró su almuerzo el 24/10». Su</text>
+<text x="267" y="235.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">clave primaria (id) la distingue de</text>
+<text x="267" y="247.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">todas las demás.</text>
+<path d="M 44 262 L 447 262 L 456 271 L 456 314.4 L 44 314.4 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 447 262 L 447 271 L 456 271" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="53" y="278.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">118 tablas en el mismo esquema</text>
+<text x="53" y="291.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Los «módulos» (Nutrición, Entrenamiento…) son agrupaciones lógicas, no</text>
+<text x="53" y="304.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">esquemas aparte.</text>
+</svg>

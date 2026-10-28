@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 700" width="930" height="700" font-family="Inter, Segoe UI, Arial, sans-serif">
+  <title>Maqueta: encuadre de las fotos de recetas en BE (no es una foto)</title>
+  <desc>Una foto 4:3 de 1600 por 1200 px. El website la muestra entera en 4:3. La APK la recorta al centro en 16:10: pierde 100 px arriba y 100 px abajo. El plato tiene que quedar dentro de la franja central para verse entero en las dos.</desc>
+  <rect x="0" y="0" width="930" height="700" fill="#ffffff"/>
+  <text x="40" y="44" font-size="20" font-weight="700" fill="#0a1f44">Maqueta · encuadre de las fotos de recetas</text>
+  <text x="40" y="70" font-size="13" fill="#4a5a72">No es una foto. Escala: 1600 × 1200 px dibujados a 640 × 480 (1 : 2,5).</text>
+
+  <!-- La foto 4:3 entera: lo que muestra el website. -->
+  <rect x="40" y="100" width="640" height="480" fill="#f1ede6" stroke="#0a1f44" stroke-width="2"/>
+  <!-- Las dos franjas que recorta la APK (16:10 al centro): 100 px de 1200 arriba y abajo = 40 px dibujados. -->
+  <rect x="40" y="100" width="640" height="40" fill="#d6455d" fill-opacity="0.18"/>
+  <rect x="40" y="540" width="640" height="40" fill="#d6455d" fill-opacity="0.18"/>
+  <line x1="40" y1="140" x2="680" y2="140" stroke="#d6455d" stroke-width="2" stroke-dasharray="8 6"/>
+  <line x1="40" y1="540" x2="680" y2="540" stroke="#d6455d" stroke-width="2" stroke-dasharray="8 6"/>
+  <!-- El plato: 70 % del ancho, visto a 45 grados (una elipse), dentro de la franja con aire. -->
+  <ellipse cx="360" cy="340" rx="224" ry="158" fill="#ffffff" stroke="#8a95a8" stroke-width="2"/>
+  <ellipse cx="360" cy="340" rx="168" ry="118" fill="none" stroke="#c9ced8" stroke-width="1.5"/>
+  <text x="360" y="345" font-size="14" fill="#4a5a72" text-anchor="middle">el plato entero, centrado</text>
+
+  <!-- Rótulos de la derecha. -->
+  <g font-size="13" fill="#0a1f44">
+    <rect x="704" y="100" width="14" height="14" fill="#f1ede6" stroke="#0a1f44" stroke-width="2"/>
+    <text x="726" y="112" font-weight="700">Website · 4:3</text>
+    <text x="726" y="130" fill="#4a5a72">se ve la foto entera</text>
+    <text x="726" y="146" fill="#4a5a72">(globals.css:2312-2320)</text>
+
+    <rect x="704" y="176" width="14" height="14" fill="#d6455d" fill-opacity="0.18" stroke="#d6455d" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="726" y="188" font-weight="700">APK · 16:10</text>
+    <text x="726" y="206" fill="#4a5a72">recorta estas dos franjas:</text>
+    <text x="726" y="222" fill="#4a5a72">100 px arriba y abajo</text>
+    <text x="726" y="238" fill="#4a5a72">(imagen-de-medio.tsx:52)</text>
+
+    <ellipse cx="711" cy="270" rx="8" ry="6" fill="#ffffff" stroke="#8a95a8" stroke-width="2"/>
+    <text x="726" y="274" font-weight="700">Zona segura</text>
+    <text x="726" y="292" fill="#4a5a72">todo el plato entre</text>
+    <text x="726" y="308" fill="#4a5a72">las líneas punteadas</text>
+  </g>
+
+  <!-- Cotas. -->
+  <g font-size="12" fill="#4a5a72">
+    <text x="360" y="600" text-anchor="middle">1600 px</text>
+    <line x1="40" y1="590" x2="680" y2="590" stroke="#4a5a72" stroke-width="1"/>
+    <text x="20" y="345" text-anchor="middle" transform="rotate(-90 20 345)">1200 px (4:3)</text>
+    <text x="700" y="345" text-anchor="start" transform="rotate(90 700 345)">1000 px (16:10)</text>
+  </g>
+
+  <text x="40" y="640" font-size="13" fill="#0a1f44">El criterio que ya existía (manifiesto.mjs, FOTO_ESPERADA): horizontal, de 1,25 a 1,40, al menos 1600 px en el lado mayor y hasta 10 MB.</text>
+  <text x="40" y="662" font-size="13" fill="#0a1f44">El servidor la guarda en JPEG de hasta 1600 px y no la agranda: una foto más chica se ve igual de chica en todos lados.</text>
+</svg>

@@ -1,0 +1,1734 @@
+{
+  "inventario": "Material visual de BE: 16 recetas, 16 alimentos y 15 ejercicios (encargo nocturno de Dirección del 2026-10-27, §2 a §4)",
+  "commitDeReferencia": "e4512cb",
+  "generadoPor": "EVIDENCIA/MATERIAL-VISUAL/herramientas/generar.mjs",
+  "generacionDeImagenes": "No disponible en la sesión que preparó el material: no se generó ninguna imagen ni se contrató ningún servicio. Lo que no tiene archivoReal es una ficha con su prompt, no una imagen.",
+  "estados": {
+    "PENDIENTE_DE_GENERACION": "Ficha y prompt listos; sin imagen",
+    "ARCHIVO_REAL_PENDIENTE_DE_REVISION_HUMANA": "Hay un archivo real; falta la revisión humana"
+  },
+  "resumen": {
+    "recetas": 16,
+    "alimentos": 16,
+    "ejercicios": 15,
+    "conArchivoReal": 3,
+    "pendientesDeGeneracion": 44
+  },
+  "contenidos": [
+    {
+      "id": "receta-01",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 1
+      },
+      "nombre": "Avena cocida con banana y canela",
+      "archivo": "01-avena-cocida-con-banana-y-canela.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Avena cocida con banana y canela», 1 porción. Ingredientes, en estas cantidades: Avena arrollada, cruda: 40 g; Leche parcialmente descremada (2 % de grasa): 200 g; Banana cruda: 100 g; Canela molida: 2 g.\nPreparación: Cocinar la avena con la leche 5 minutos. Servir con la banana en rodajas y la canela.\nPresentación: Avena cocida en leche, cremosa, en el cuenco; encima, rodajas de banana y una línea fina de canela molida. Una cuchara a la derecha.\nNo debe aparecer: miel, frutos secos, frutos rojos, hojas de menta, leche aparte.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Avena arrollada, cruda",
+          "cantidad": "40 g",
+          "estado": "RAW",
+          "catalogItemId": "11d4284a-4e16-56c8-8778-d818fe416702"
+        },
+        {
+          "nombre": "Leche parcialmente descremada (2 % de grasa)",
+          "cantidad": "200 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "52c909f8-b32b-568e-9bd8-0b571d624cf9"
+        },
+        {
+          "nombre": "Banana cruda",
+          "cantidad": "100 g",
+          "estado": "RAW",
+          "catalogItemId": "6644e0f8-cbe7-5b2c-ac7b-e67361700779"
+        },
+        {
+          "nombre": "Canela molida",
+          "cantidad": "2 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "afda8ee6-f0fb-50c0-b0df-928808b4f76b"
+        }
+      ],
+      "pasos": [
+        "Cocinar la avena con la leche 5 minutos.",
+        "Servir con la banana en rodajas y la canela."
+      ],
+      "presentacion": "Avena cocida en leche, cremosa, en el cuenco; encima, rodajas de banana y una línea fina de canela molida. Una cuchara a la derecha.",
+      "noDebe": [
+        "miel",
+        "frutos secos",
+        "frutos rojos",
+        "hojas de menta",
+        "leche aparte"
+      ]
+    },
+    {
+      "id": "receta-02",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 2
+      },
+      "nombre": "Tostadas integrales con palta y huevo",
+      "archivo": "02-tostadas-integrales-con-palta-y-huevo.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tostadas integrales con palta y huevo», 1 porción. Ingredientes, en estas cantidades: Pan integral de trigo, de molde: 60 g; Palta cruda: 50 g; Huevo duro: 50 g.\nPreparación: Tostar el pan. Untar la palta y sumar el huevo en rodajas.\nPresentación: Dos rebanadas de pan integral de molde tostadas, con la palta untada y el huevo duro en rodajas encima.\nNo debe aparecer: semillas, sal en escamas, pimienta, brotes, tomate, limón.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Pan integral de trigo, de molde",
+          "cantidad": "60 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "01c1bcd7-fef3-5f02-af20-7a894d7b2bc9"
+        },
+        {
+          "nombre": "Palta cruda",
+          "cantidad": "50 g",
+          "estado": "RAW",
+          "catalogItemId": "f5b984e8-1772-5aad-b513-aa2ec15fa34b"
+        },
+        {
+          "nombre": "Huevo duro",
+          "cantidad": "50 g",
+          "estado": "COOKED",
+          "catalogItemId": "d287cf5d-9de5-546f-97b8-ccdf18758a33"
+        }
+      ],
+      "pasos": [
+        "Tostar el pan.",
+        "Untar la palta y sumar el huevo en rodajas."
+      ],
+      "presentacion": "Dos rebanadas de pan integral de molde tostadas, con la palta untada y el huevo duro en rodajas encima.",
+      "noDebe": [
+        "semillas",
+        "sal en escamas",
+        "pimienta",
+        "brotes",
+        "tomate",
+        "limón"
+      ]
+    },
+    {
+      "id": "receta-03",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 3
+      },
+      "nombre": "Yogur natural con granola y frutillas",
+      "archivo": "03-yogur-natural-con-granola-y-frutillas.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Yogur natural con granola y frutillas», 1 porción. Ingredientes, en estas cantidades: Yogur natural entero: 200 g; Granola casera: 30 g; Frutillas crudas: 80 g.\nPreparación: Servir el yogur con la granola y las frutillas cortadas.\nPresentación: Yogur natural blanco en el cuenco, con la granola encima y las frutillas cortadas al medio. Una cuchara a la derecha.\nNo debe aparecer: miel, otras frutas, hojas de menta, chocolate.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Yogur natural entero",
+          "cantidad": "200 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "eca4ad2a-c03a-5c28-b797-6185e777e0fb"
+        },
+        {
+          "nombre": "Granola casera",
+          "cantidad": "30 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "83976876-bae1-5ed0-9c2a-93eff78cd3e9"
+        },
+        {
+          "nombre": "Frutillas crudas",
+          "cantidad": "80 g",
+          "estado": "RAW",
+          "catalogItemId": "c364eed1-3c63-5850-9b21-c47f9b5402ed"
+        }
+      ],
+      "pasos": [
+        "Servir el yogur con la granola y las frutillas cortadas."
+      ],
+      "presentacion": "Yogur natural blanco en el cuenco, con la granola encima y las frutillas cortadas al medio. Una cuchara a la derecha.",
+      "noDebe": [
+        "miel",
+        "otras frutas",
+        "hojas de menta",
+        "chocolate"
+      ]
+    },
+    {
+      "id": "receta-04",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 4
+      },
+      "nombre": "Licuado de banana con leche y avena",
+      "archivo": "04-licuado-de-banana-con-leche-y-avena.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: vaso de vidrio liso de 300 ml.\nReceta: «Licuado de banana con leche y avena», 1 porción. Ingredientes, en estas cantidades: Leche parcialmente descremada (2 % de grasa): 250 g; Banana cruda: 120 g; Avena arrollada, cruda: 20 g.\nPreparación: Licuar todo hasta que quede liso.\nPresentación: Licuado liso, color crema claro, en el vaso, sin espuma exagerada. Nada apoyado en el borde.\nNo debe aparecer: rodajas de banana de adorno, canela, avena espolvoreada, crema, pajita de colores.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Leche parcialmente descremada (2 % de grasa)",
+          "cantidad": "250 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "52c909f8-b32b-568e-9bd8-0b571d624cf9"
+        },
+        {
+          "nombre": "Banana cruda",
+          "cantidad": "120 g",
+          "estado": "RAW",
+          "catalogItemId": "6644e0f8-cbe7-5b2c-ac7b-e67361700779"
+        },
+        {
+          "nombre": "Avena arrollada, cruda",
+          "cantidad": "20 g",
+          "estado": "RAW",
+          "catalogItemId": "11d4284a-4e16-56c8-8778-d818fe416702"
+        }
+      ],
+      "pasos": [
+        "Licuar todo hasta que quede liso."
+      ],
+      "presentacion": "Licuado liso, color crema claro, en el vaso, sin espuma exagerada. Nada apoyado en el borde.",
+      "noDebe": [
+        "rodajas de banana de adorno",
+        "canela",
+        "avena espolvoreada",
+        "crema",
+        "pajita de colores"
+      ]
+    },
+    {
+      "id": "receta-05",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 5
+      },
+      "nombre": "Tostadas integrales con queso crema y tomate",
+      "archivo": "05-tostadas-integrales-con-queso-crema-y-tomate.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tostadas integrales con queso crema y tomate», 1 porción. Ingredientes, en estas cantidades: Pan integral de trigo, de molde: 60 g; Queso crema: 40 g; Tomate rojo maduro, crudo: 80 g.\nPreparación: Tostar el pan. Untar el queso y sumar el tomate en rodajas.\nPresentación: Dos rebanadas de pan integral de molde tostadas, con el queso crema untado y rodajas de tomate encima.\nNo debe aparecer: albahaca, orégano, aceite, sal o pimienta visibles, jamón.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Pan integral de trigo, de molde",
+          "cantidad": "60 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "01c1bcd7-fef3-5f02-af20-7a894d7b2bc9"
+        },
+        {
+          "nombre": "Queso crema",
+          "cantidad": "40 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "75419959-900e-55fa-ac80-f8f694753285"
+        },
+        {
+          "nombre": "Tomate rojo maduro, crudo",
+          "cantidad": "80 g",
+          "estado": "RAW",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53"
+        }
+      ],
+      "pasos": [
+        "Tostar el pan.",
+        "Untar el queso y sumar el tomate en rodajas."
+      ],
+      "presentacion": "Dos rebanadas de pan integral de molde tostadas, con el queso crema untado y rodajas de tomate encima.",
+      "noDebe": [
+        "albahaca",
+        "orégano",
+        "aceite",
+        "sal o pimienta visibles",
+        "jamón"
+      ]
+    },
+    {
+      "id": "receta-06",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 6
+      },
+      "nombre": "Milanesa de carne al horno con puré de calabaza",
+      "archivo": "06-milanesa-de-carne-al-horno-con-pure-de-calabaza.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Milanesa de carne al horno con puré de calabaza», 1 porción. Ingredientes, en estas cantidades: Nalga vacuna, magra, cruda: 150 g; Pan rallado común: 25 g; Huevo de gallina entero, crudo: 25 g; Zapallo anco al horno, sin sal: 200 g.\nPreparación: Pasar la carne por huevo y pan rallado. Hornear 20 minutos, dando vuelta a la mitad. Servir con el zapallo hecho puré.\nPresentación: Una milanesa de carne horneada, dorada y crocante, con el puré de zapallo anco al lado, liso y naranja.\nNo debe aparecer: limón, perejil, papas fritas, ensalada, huevo frito.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Nalga vacuna, magra, cruda",
+          "cantidad": "150 g",
+          "estado": "RAW",
+          "catalogItemId": "b06eabea-12fa-5c0f-ba84-9bbfdea3442d"
+        },
+        {
+          "nombre": "Pan rallado común",
+          "cantidad": "25 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "f6d09a22-54e5-50a1-8e49-29a470955f1c"
+        },
+        {
+          "nombre": "Huevo de gallina entero, crudo",
+          "cantidad": "25 g",
+          "estado": "RAW",
+          "catalogItemId": "55128a2f-ec7f-5310-8c8f-0152dd26033b"
+        },
+        {
+          "nombre": "Zapallo anco al horno, sin sal",
+          "cantidad": "200 g",
+          "estado": "COOKED",
+          "catalogItemId": "a1e8ccbd-5441-5c3f-a6f8-2984d639e1f9"
+        }
+      ],
+      "pasos": [
+        "Pasar la carne por huevo y pan rallado.",
+        "Hornear 20 minutos, dando vuelta a la mitad.",
+        "Servir con el zapallo hecho puré."
+      ],
+      "presentacion": "Una milanesa de carne horneada, dorada y crocante, con el puré de zapallo anco al lado, liso y naranja.",
+      "noDebe": [
+        "limón",
+        "perejil",
+        "papas fritas",
+        "ensalada",
+        "huevo frito"
+      ]
+    },
+    {
+      "id": "receta-07",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 7
+      },
+      "nombre": "Bife a la plancha con papas al horno y ensalada",
+      "archivo": "07-bife-a-la-plancha-con-papas-al-horno-y-ensalada.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Bife a la plancha con papas al horno y ensalada», 1 porción. Ingredientes, en estas cantidades: Bife de chorizo, magro, crudo: 150 g; Papa al horno con cáscara, sin sal: 200 g; Lechuga de hoja verde, cruda: 50 g; Tomate rojo maduro, crudo: 80 g; Aceite de oliva: 10 g.\nPreparación: Cocinar el bife a la plancha. Servir con las papas y la ensalada condimentada con el aceite.\nPresentación: Un bife a la plancha, con las marcas de la plancha; papas al horno con cáscara, cortadas, y una ensalada de lechuga y tomate apenas brillante por el aceite de oliva.\nNo debe aparecer: chimichurri, sal gruesa visible, cebolla, huevo frito, limón.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Bife de chorizo, magro, crudo",
+          "cantidad": "150 g",
+          "estado": "RAW",
+          "catalogItemId": "14b5a856-30d8-503a-b341-90e96fa8a6db"
+        },
+        {
+          "nombre": "Papa al horno con cáscara, sin sal",
+          "cantidad": "200 g",
+          "estado": "COOKED",
+          "catalogItemId": "d1e11ca9-1b6b-535b-affc-c9b28948f35b"
+        },
+        {
+          "nombre": "Lechuga de hoja verde, cruda",
+          "cantidad": "50 g",
+          "estado": "RAW",
+          "catalogItemId": "5c894dfd-879f-5704-b448-9cf892e38e64"
+        },
+        {
+          "nombre": "Tomate rojo maduro, crudo",
+          "cantidad": "80 g",
+          "estado": "RAW",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53"
+        },
+        {
+          "nombre": "Aceite de oliva",
+          "cantidad": "10 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "d527cfae-c081-5e95-ad20-8a0cad9ba70c"
+        }
+      ],
+      "pasos": [
+        "Cocinar el bife a la plancha.",
+        "Servir con las papas y la ensalada condimentada con el aceite."
+      ],
+      "presentacion": "Un bife a la plancha, con las marcas de la plancha; papas al horno con cáscara, cortadas, y una ensalada de lechuga y tomate apenas brillante por el aceite de oliva.",
+      "noDebe": [
+        "chimichurri",
+        "sal gruesa visible",
+        "cebolla",
+        "huevo frito",
+        "limón"
+      ]
+    },
+    {
+      "id": "receta-08",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 8
+      },
+      "nombre": "Merluza al horno con puré de papa y brócoli",
+      "archivo": "08-merluza-al-horno-con-pure-de-papa-y-brocoli.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Merluza al horno con puré de papa y brócoli», 1 porción. Ingredientes, en estas cantidades: Merluza (whiting), cruda: 150 g; Papa hervida sin cáscara, sin sal: 200 g; Brócoli hervido y escurrido, sin sal: 100 g.\nPreparación: Hornear la merluza 15 minutos. Servir con el puré y el brócoli.\nPresentación: Un filete de merluza al horno, blanco y apenas dorado; puré de papa liso y ramilletes de brócoli hervido, verde intenso.\nNo debe aparecer: limón, perejil, manteca visible, salsa.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Merluza (whiting), cruda",
+          "cantidad": "150 g",
+          "estado": "RAW",
+          "catalogItemId": "9876b7c8-e6dc-5f3a-963d-f2d64ae2d116"
+        },
+        {
+          "nombre": "Papa hervida sin cáscara, sin sal",
+          "cantidad": "200 g",
+          "estado": "COOKED",
+          "catalogItemId": "96031173-3ffa-5907-b32e-cb4206d776bf"
+        },
+        {
+          "nombre": "Brócoli hervido y escurrido, sin sal",
+          "cantidad": "100 g",
+          "estado": "COOKED",
+          "catalogItemId": "ed2d76ab-1993-5258-9496-0527315cd530"
+        }
+      ],
+      "pasos": [
+        "Hornear la merluza 15 minutos.",
+        "Servir con el puré y el brócoli."
+      ],
+      "presentacion": "Un filete de merluza al horno, blanco y apenas dorado; puré de papa liso y ramilletes de brócoli hervido, verde intenso.",
+      "noDebe": [
+        "limón",
+        "perejil",
+        "manteca visible",
+        "salsa"
+      ]
+    },
+    {
+      "id": "receta-09",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 9
+      },
+      "nombre": "Fideos con salsa bolognesa",
+      "archivo": "09-fideos-con-salsa-bolognesa.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Fideos con salsa bolognesa», 1 porción. Ingredientes, en estas cantidades: Fideos de trigo hervidos, sin sal: 200 g; Carne picada vacuna 90 % magra, cruda: 80 g; Puré de tomate sin sal agregada: 100 g; Cebolla cruda: 30 g.\nPreparación: Dorar la cebolla y la carne. Sumar el puré de tomate y cocinar 15 minutos. Servir sobre los fideos.\nPresentación: Fideos largos tipo spaghetti con la salsa bolognesa encima: carne picada y tomate, roja.\nNo debe aparecer: queso rallado, albahaca, perejil, pan.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Fideos de trigo hervidos, sin sal",
+          "cantidad": "200 g",
+          "estado": "COOKED",
+          "catalogItemId": "3bb91be0-cb42-5af3-90dc-f17c575fe0d3"
+        },
+        {
+          "nombre": "Carne picada vacuna 90 % magra, cruda",
+          "cantidad": "80 g",
+          "estado": "RAW",
+          "catalogItemId": "abd3770e-cbcd-5774-8699-740170bf63d2"
+        },
+        {
+          "nombre": "Puré de tomate sin sal agregada",
+          "cantidad": "100 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "d4fb465c-af93-5847-ae68-b9718cec2b0b"
+        },
+        {
+          "nombre": "Cebolla cruda",
+          "cantidad": "30 g",
+          "estado": "RAW",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74"
+        }
+      ],
+      "pasos": [
+        "Dorar la cebolla y la carne.",
+        "Sumar el puré de tomate y cocinar 15 minutos.",
+        "Servir sobre los fideos."
+      ],
+      "presentacion": "Fideos largos tipo spaghetti con la salsa bolognesa encima: carne picada y tomate, roja.",
+      "noDebe": [
+        "queso rallado",
+        "albahaca",
+        "perejil",
+        "pan"
+      ]
+    },
+    {
+      "id": "receta-10",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 10
+      },
+      "nombre": "Guiso de lentejas con verduras",
+      "archivo": "10-guiso-de-lentejas-con-verduras.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Guiso de lentejas con verduras», 1 porción. Ingredientes, en estas cantidades: Lentejas hervidas sin sal: 200 g; Zanahoria cruda: 50 g; Zapallo anco crudo: 80 g; Cebolla cruda: 30 g.\nPreparación: Cocinar la cebolla, la zanahoria y el zapallo en un poco de agua. Sumar las lentejas y cocinar hasta que espese.\nPresentación: Guiso espeso de lentejas con cubos de zanahoria y de zapallo, y cebolla, en el cuenco. Una cuchara a la derecha.\nNo debe aparecer: chorizo, panceta, perejil, pan, huevo.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Lentejas hervidas sin sal",
+          "cantidad": "200 g",
+          "estado": "COOKED",
+          "catalogItemId": "0a3c813e-a2f9-5a36-9155-f86166b96085"
+        },
+        {
+          "nombre": "Zanahoria cruda",
+          "cantidad": "50 g",
+          "estado": "RAW",
+          "catalogItemId": "eb93c9dc-12de-574b-9f3d-acb77eae8d35"
+        },
+        {
+          "nombre": "Zapallo anco crudo",
+          "cantidad": "80 g",
+          "estado": "RAW",
+          "catalogItemId": "7cf8538b-6048-5c07-99a3-042c61c6c5b9"
+        },
+        {
+          "nombre": "Cebolla cruda",
+          "cantidad": "30 g",
+          "estado": "RAW",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74"
+        }
+      ],
+      "pasos": [
+        "Cocinar la cebolla, la zanahoria y el zapallo en un poco de agua.",
+        "Sumar las lentejas y cocinar hasta que espese."
+      ],
+      "presentacion": "Guiso espeso de lentejas con cubos de zanahoria y de zapallo, y cebolla, en el cuenco. Una cuchara a la derecha.",
+      "noDebe": [
+        "chorizo",
+        "panceta",
+        "perejil",
+        "pan",
+        "huevo"
+      ]
+    },
+    {
+      "id": "receta-11",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 11
+      },
+      "nombre": "Tarta de acelga con ensalada de tomate",
+      "archivo": "11-tarta-de-acelga-con-ensalada-de-tomate.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tarta de acelga con ensalada de tomate», 1 porción. Ingredientes, en estas cantidades: Acelga hervida, sin sal: 150 g; Huevo de gallina entero, crudo: 50 g; Harina de trigo blanca de uso general, enriquecida: 40 g; Aceite de girasol: 10 g; Tomate rojo maduro, crudo: 100 g.\nPreparación: Hacer una masa con la harina, el aceite y un poco de agua. Mezclar la acelga con el huevo y cubrir con la masa. Hornear 30 minutos y servir con la ensalada de tomate.\nPresentación: Una porción de tarta de acelga: masa casera dorada y relleno verde de acelga con huevo; al lado, rodajas de tomate solas.\nNo debe aparecer: queso, huevo duro, cebolla, orégano, aceite sobre el tomate.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Acelga hervida, sin sal",
+          "cantidad": "150 g",
+          "estado": "COOKED",
+          "catalogItemId": "e9be6316-4a0b-5ae4-8383-92cabd51884d"
+        },
+        {
+          "nombre": "Huevo de gallina entero, crudo",
+          "cantidad": "50 g",
+          "estado": "RAW",
+          "catalogItemId": "55128a2f-ec7f-5310-8c8f-0152dd26033b"
+        },
+        {
+          "nombre": "Harina de trigo blanca de uso general, enriquecida",
+          "cantidad": "40 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "1a1bb77e-14dc-5c2c-9a49-e8f8b81ba288"
+        },
+        {
+          "nombre": "Aceite de girasol",
+          "cantidad": "10 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "ca2779dd-5361-5711-94ea-9848d5f12a35"
+        },
+        {
+          "nombre": "Tomate rojo maduro, crudo",
+          "cantidad": "100 g",
+          "estado": "RAW",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53"
+        }
+      ],
+      "pasos": [
+        "Hacer una masa con la harina, el aceite y un poco de agua.",
+        "Mezclar la acelga con el huevo y cubrir con la masa.",
+        "Hornear 30 minutos y servir con la ensalada de tomate."
+      ],
+      "presentacion": "Una porción de tarta de acelga: masa casera dorada y relleno verde de acelga con huevo; al lado, rodajas de tomate solas.",
+      "noDebe": [
+        "queso",
+        "huevo duro",
+        "cebolla",
+        "orégano",
+        "aceite sobre el tomate"
+      ]
+    },
+    {
+      "id": "receta-12",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 12
+      },
+      "nombre": "Bowl de quinoa con garbanzos, huevo y verduras",
+      "archivo": "12-bowl-de-quinoa-con-garbanzos-huevo-y-verduras.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Bowl de quinoa con garbanzos, huevo y verduras», 1 porción. Ingredientes, en estas cantidades: Quinoa cocida: 150 g; Garbanzos hervidos, sin sal: 100 g; Huevo duro: 50 g; Tomate rojo maduro, crudo: 60 g; Zanahoria cruda: 40 g; Aceite de oliva: 10 g.\nPreparación: Armar el bowl con todo y condimentar con el aceite.\nPresentación: Bowl armado por sectores: quinoa, garbanzos, un huevo duro en mitades, tomate en cubos y zanahoria rallada, con un brillo de aceite de oliva.\nNo debe aparecer: palta, semillas, hojas verdes, limón, salsas.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Quinoa cocida",
+          "cantidad": "150 g",
+          "estado": "COOKED",
+          "catalogItemId": "70bb6663-6d55-531b-bb1a-fdd9b46e29a7"
+        },
+        {
+          "nombre": "Garbanzos hervidos, sin sal",
+          "cantidad": "100 g",
+          "estado": "COOKED",
+          "catalogItemId": "4f2eda42-fc07-5d8b-aae6-0474687f1887"
+        },
+        {
+          "nombre": "Huevo duro",
+          "cantidad": "50 g",
+          "estado": "COOKED",
+          "catalogItemId": "d287cf5d-9de5-546f-97b8-ccdf18758a33"
+        },
+        {
+          "nombre": "Tomate rojo maduro, crudo",
+          "cantidad": "60 g",
+          "estado": "RAW",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53"
+        },
+        {
+          "nombre": "Zanahoria cruda",
+          "cantidad": "40 g",
+          "estado": "RAW",
+          "catalogItemId": "eb93c9dc-12de-574b-9f3d-acb77eae8d35"
+        },
+        {
+          "nombre": "Aceite de oliva",
+          "cantidad": "10 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "d527cfae-c081-5e95-ad20-8a0cad9ba70c"
+        }
+      ],
+      "pasos": [
+        "Armar el bowl con todo y condimentar con el aceite."
+      ],
+      "presentacion": "Bowl armado por sectores: quinoa, garbanzos, un huevo duro en mitades, tomate en cubos y zanahoria rallada, con un brillo de aceite de oliva.",
+      "noDebe": [
+        "palta",
+        "semillas",
+        "hojas verdes",
+        "limón",
+        "salsas"
+      ]
+    },
+    {
+      "id": "receta-13",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 13
+      },
+      "nombre": "Wok de pollo con verduras y arroz",
+      "archivo": "13-wok-de-pollo-con-verduras-y-arroz.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Wok de pollo con verduras y arroz», 1 porción. Ingredientes, en estas cantidades: Pechuga de pollo sin piel ni hueso, cruda: 150 g; Morrón rojo crudo: 60 g; Cebolla cruda: 40 g; Zanahoria cruda: 40 g; Arroz blanco de grano largo, cocido: 150 g; Aceite de girasol: 10 g.\nPreparación: Saltear el pollo en tiras y después las verduras. Servir con el arroz.\nPresentación: Tiras de pollo salteadas con morrón rojo, cebolla y zanahoria en tiras; al lado, arroz blanco de grano largo.\nNo debe aparecer: salsa de soja, sésamo, cebolla de verdeo, maní, palitos.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Pechuga de pollo sin piel ni hueso, cruda",
+          "cantidad": "150 g",
+          "estado": "RAW",
+          "catalogItemId": "e3ce19ac-2beb-5e47-a99c-55f19d973de6"
+        },
+        {
+          "nombre": "Morrón rojo crudo",
+          "cantidad": "60 g",
+          "estado": "RAW",
+          "catalogItemId": "395dfa6a-c1c5-5a55-b84c-64c93500840b"
+        },
+        {
+          "nombre": "Cebolla cruda",
+          "cantidad": "40 g",
+          "estado": "RAW",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74"
+        },
+        {
+          "nombre": "Zanahoria cruda",
+          "cantidad": "40 g",
+          "estado": "RAW",
+          "catalogItemId": "eb93c9dc-12de-574b-9f3d-acb77eae8d35"
+        },
+        {
+          "nombre": "Arroz blanco de grano largo, cocido",
+          "cantidad": "150 g",
+          "estado": "COOKED",
+          "catalogItemId": "65bbfed9-71d1-5d61-9a23-9c89d0b92455"
+        },
+        {
+          "nombre": "Aceite de girasol",
+          "cantidad": "10 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "ca2779dd-5361-5711-94ea-9848d5f12a35"
+        }
+      ],
+      "pasos": [
+        "Saltear el pollo en tiras y después las verduras.",
+        "Servir con el arroz."
+      ],
+      "presentacion": "Tiras de pollo salteadas con morrón rojo, cebolla y zanahoria en tiras; al lado, arroz blanco de grano largo.",
+      "noDebe": [
+        "salsa de soja",
+        "sésamo",
+        "cebolla de verdeo",
+        "maní",
+        "palitos"
+      ]
+    },
+    {
+      "id": "receta-14",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 14
+      },
+      "nombre": "Hamburguesa casera al plato con ensalada",
+      "archivo": "14-hamburguesa-casera-al-plato-con-ensalada.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Hamburguesa casera al plato con ensalada», 1 porción. Ingredientes, en estas cantidades: Carne picada vacuna 90 % magra, cruda: 150 g; Lechuga de hoja verde, cruda: 50 g; Tomate rojo maduro, crudo: 80 g; Cebolla cruda: 20 g.\nPreparación: Formar la hamburguesa y cocinarla a la plancha. Servir con la ensalada.\nPresentación: Un medallón de carne casero a la plancha, al plato y sin pan, con una ensalada de lechuga, tomate y cebolla al lado.\nNo debe aparecer: pan de hamburguesa, queso, papas fritas, kétchup, mostaza o mayonesa, huevo.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Carne picada vacuna 90 % magra, cruda",
+          "cantidad": "150 g",
+          "estado": "RAW",
+          "catalogItemId": "abd3770e-cbcd-5774-8699-740170bf63d2"
+        },
+        {
+          "nombre": "Lechuga de hoja verde, cruda",
+          "cantidad": "50 g",
+          "estado": "RAW",
+          "catalogItemId": "5c894dfd-879f-5704-b448-9cf892e38e64"
+        },
+        {
+          "nombre": "Tomate rojo maduro, crudo",
+          "cantidad": "80 g",
+          "estado": "RAW",
+          "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53"
+        },
+        {
+          "nombre": "Cebolla cruda",
+          "cantidad": "20 g",
+          "estado": "RAW",
+          "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74"
+        }
+      ],
+      "pasos": [
+        "Formar la hamburguesa y cocinarla a la plancha.",
+        "Servir con la ensalada."
+      ],
+      "presentacion": "Un medallón de carne casero a la plancha, al plato y sin pan, con una ensalada de lechuga, tomate y cebolla al lado.",
+      "noDebe": [
+        "pan de hamburguesa",
+        "queso",
+        "papas fritas",
+        "kétchup, mostaza o mayonesa",
+        "huevo"
+      ]
+    },
+    {
+      "id": "receta-15",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 15
+      },
+      "nombre": "Omelette de espinaca con tostada",
+      "archivo": "15-omelette-de-espinaca-con-tostada.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Omelette de espinaca con tostada», 1 porción. Ingredientes, en estas cantidades: Huevo de gallina entero, crudo: 100 g; Espinaca cruda: 60 g; Pan integral de trigo, de molde: 30 g; Aceite de oliva: 5 g.\nPreparación: Batir los huevos y cocinarlos con la espinaca. Servir con la tostada.\nPresentación: Un omelette doblado con espinaca, y una tostada de pan integral de molde al lado.\nNo debe aparecer: queso, jamón, tomate, hierbas, manteca.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Huevo de gallina entero, crudo",
+          "cantidad": "100 g",
+          "estado": "RAW",
+          "catalogItemId": "55128a2f-ec7f-5310-8c8f-0152dd26033b"
+        },
+        {
+          "nombre": "Espinaca cruda",
+          "cantidad": "60 g",
+          "estado": "RAW",
+          "catalogItemId": "2c625bd7-2db8-57fd-a338-a7e6c4fe38b9"
+        },
+        {
+          "nombre": "Pan integral de trigo, de molde",
+          "cantidad": "30 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "01c1bcd7-fef3-5f02-af20-7a894d7b2bc9"
+        },
+        {
+          "nombre": "Aceite de oliva",
+          "cantidad": "5 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "d527cfae-c081-5e95-ad20-8a0cad9ba70c"
+        }
+      ],
+      "pasos": [
+        "Batir los huevos y cocinarlos con la espinaca.",
+        "Servir con la tostada."
+      ],
+      "presentacion": "Un omelette doblado con espinaca, y una tostada de pan integral de molde al lado.",
+      "noDebe": [
+        "queso",
+        "jamón",
+        "tomate",
+        "hierbas",
+        "manteca"
+      ]
+    },
+    {
+      "id": "receta-16",
+      "tipo": "receta",
+      "identificador": {
+        "manifiesto": "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json",
+        "numero": 16
+      },
+      "nombre": "Manzana con nueces",
+      "archivo": "16-manzana-con-nueces.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Website: 4:3, recorte al centro (object-fit: cover), hasta 28rem de ancho; la miniatura, 6,5rem de ancho (apps/web/src/app/globals.css:2312-2327). APK: 16:10 por omisión, recorte al centro (resizeMode cover): la opción del día, el carrusel y la ficha de la opción (apps/mobile/src/imagen-de-medio.tsx:52 y :97; pantallas/nutricion-hoy.tsx:604, nutricion.tsx:365, opcion-de-comida.tsx:213).",
+      "formato": "Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10",
+      "procedencia": "A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)",
+      "prompt": "Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.\nVajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Manzana con nueces», 1 porción. Ingredientes, en estas cantidades: Manzana con cáscara, cruda: 150 g; Nueces de nogal, peladas: 20 g.\nPreparación: Cortar la manzana y servir con las nueces.\nPresentación: Una manzana roja con cáscara, cortada en gajos, y nueces peladas en mitades al lado.\nNo debe aparecer: miel, canela, yogur, otras frutas.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen."
+      ],
+      "ingredientes": [
+        {
+          "nombre": "Manzana con cáscara, cruda",
+          "cantidad": "150 g",
+          "estado": "RAW",
+          "catalogItemId": "7934270b-50ce-5132-9b13-3f69260ca967"
+        },
+        {
+          "nombre": "Nueces de nogal, peladas",
+          "cantidad": "20 g",
+          "estado": "AS_PURCHASED",
+          "catalogItemId": "52b6683a-137f-5688-a114-43ec1a8d2d17"
+        }
+      ],
+      "pasos": [
+        "Cortar la manzana y servir con las nueces."
+      ],
+      "presentacion": "Una manzana roja con cáscara, cortada en gajos, y nueces peladas en mitades al lado.",
+      "noDebe": [
+        "miel",
+        "canela",
+        "yogur",
+        "otras frutas"
+      ]
+    },
+    {
+      "id": "alimento-A01",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "12ba4bb9-9d3f-560e-8151-28caab4e7d53",
+        "catalogItemVersionId": "d4936913-5486-5279-933f-1066d2a6d4cd",
+        "fdcId": "170457",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Tomate rojo maduro, crudo",
+      "estado": "RAW",
+      "archivo": "A01-tomate-rojo-maduro-crudo.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Tomate rojo maduro, crudo», crudo.\nMostrar: Un tomate redondo rojo maduro entero y otro cortado al medio, crudos, con la pulpa y las semillas a la vista.\nNo debe aparecer: tomate cocido o en salsa, aceite, sal, albahaca.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 5, 7, 11, 12 y 14; 9 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «tomate» (97b275d1-6517-4dcf-825b-a348063a9144), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A02",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "01c1bcd7-fef3-5f02-af20-7a894d7b2bc9",
+        "catalogItemVersionId": "6305874f-0432-51ea-824b-d4b0cac3d4cd",
+        "fdcId": "172688",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Pan integral de trigo, de molde",
+      "estado": "AS_PURCHASED",
+      "archivo": "A02-pan-integral-de-trigo-de-molde.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Pan integral de trigo, de molde», listo para consumir.\nMostrar: Dos rebanadas de pan integral de molde, SIN tostar, apoyadas una sobre otra, con la miga integral a la vista.\nNo debe aparecer: pan tostado, manteca, untables, envase con marca.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 2, 5 y 15; 8 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «panIntegral» (14a1912d-d5e1-42b7-87e2-a1508aa947bf), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A03",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "eca4ad2a-c03a-5c28-b797-6185e777e0fb",
+        "catalogItemVersionId": "1fcf08be-5d2b-5925-8362-40b8a8371ce6",
+        "fdcId": "171284",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Yogur natural entero",
+      "estado": "AS_PURCHASED",
+      "archivo": "A03-yogur-natural-entero.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Yogur natural entero», listo para consumir.\nMostrar: Yogur natural blanco, cremoso, en un cuenco blanco liso, con una superficie lisa.\nNo debe aparecer: frutas, granola, miel, envase con marca.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: receta 3; 7 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «yogur» (121f8f5f-4aa2-4ab9-8f7e-327f85ce5cf1), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A04",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "d287cf5d-9de5-546f-97b8-ccdf18758a33",
+        "catalogItemVersionId": "00ca007a-f8e1-5f18-81e2-1fc1dfadfa53",
+        "fdcId": "173424",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Huevo duro",
+      "estado": "COOKED",
+      "archivo": "A04-huevo-duro.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Huevo duro», cocido.\nMostrar: Un huevo duro pelado entero y otro cortado al medio, con la yema firme y amarilla.\nNo debe aparecer: huevo crudo, huevo frito, sal, pimienta, cáscara rota alrededor.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 2 y 12; 7 veces en la cohorte («huevo», cocido en la prueba breve).",
+        "Equivalente del catálogo sintético de WP-04: «huevo» (77026f96-bd1d-440c-8158-e28e6df3d67a), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A05",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "52c909f8-b32b-568e-9bd8-0b571d624cf9",
+        "catalogItemVersionId": "8d4f4e1b-d144-5f51-9f03-5d94afdef97a",
+        "fdcId": "171267",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Leche parcialmente descremada (2 % de grasa)",
+      "estado": "AS_PURCHASED",
+      "archivo": "A05-leche-parcialmente-descremada-2-de-grasa.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Leche parcialmente descremada (2 % de grasa)», listo para consumir.\nMostrar: Un vaso de vidrio liso con leche blanca, lleno hasta tres cuartos.\nNo debe aparecer: espuma de café, cereales, envase con marca.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 1 y 4; 7 veces en la cohorte.",
+        "La imagen no muestra el porcentaje de grasa: lo dice el nombre.",
+        "Equivalente del catálogo sintético de WP-04: «leche» (77ace701-cd14-49c6-877c-1a858da71bcd), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A06",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "11d4284a-4e16-56c8-8778-d818fe416702",
+        "catalogItemVersionId": "cb7dabd1-e74f-58c0-9c9d-f17615c32f37",
+        "fdcId": "173904",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Avena arrollada, cruda",
+      "estado": "RAW",
+      "archivo": "A06-avena-arrollada-cruda.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Avena arrollada, cruda», crudo.\nMostrar: Copos de avena arrollada secos, crudos, en un cuenco blanco liso y unos pocos sueltos al lado.\nNo debe aparecer: avena cocida o en papilla, leche, frutas.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 1 y 4; 5 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «avena» (1d73a14d-1fa1-4a10-84c2-3b7537c5b520), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A07",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "6644e0f8-cbe7-5b2c-ac7b-e67361700779",
+        "catalogItemVersionId": "c0c0b302-f3cf-5d0b-82e3-88de1e286252",
+        "fdcId": "173944",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Banana cruda",
+      "estado": "RAW",
+      "archivo": "A07-banana-cruda.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Banana cruda», crudo.\nMostrar: Una banana amarilla madura, entera y con cáscara, sin manchas marrones grandes.\nNo debe aparecer: banana pelada en rodajas, racimo grande, otras frutas.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 1 y 4; 5 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «banana» (c6113e6e-e6c2-4f79-8a98-5f9d836b8018), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A08",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "5c894dfd-879f-5704-b448-9cf892e38e64",
+        "catalogItemVersionId": "cba48281-15bd-5dbd-ab03-da734a64c727",
+        "fdcId": "169249",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Lechuga de hoja verde, cruda",
+      "estado": "RAW",
+      "archivo": "A08-lechuga-de-hoja-verde-cruda.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Lechuga de hoja verde, cruda», crudo.\nMostrar: Hojas sueltas de lechuga de hoja verde, crudas y frescas, de borde ondulado.\nNo debe aparecer: lechuga repollada (criolla redonda), aceite, tomate, ensalada armada.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 7 y 14; 5 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «lechuga» (fe14b950-2fe4-47f1-84c9-cd842c31ff6d), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A09",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "65bbfed9-71d1-5d61-9a23-9c89d0b92455",
+        "catalogItemVersionId": "43a2da56-8a90-5cb5-b826-bc9cfc8aa1ae",
+        "fdcId": "168878",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Arroz blanco de grano largo, cocido",
+      "estado": "COOKED",
+      "archivo": "A09-arroz-blanco-de-grano-largo-cocido.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Arroz blanco de grano largo, cocido», cocido.\nMostrar: Arroz blanco de grano largo, cocido, con los granos sueltos, en un cuenco blanco liso.\nNo debe aparecer: arroz crudo, verduras, manteca, perejil.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: receta 13; 4 veces en la cohorte; prueba breve (cocido).",
+        "Equivalente del catálogo sintético de WP-04: «arroz» (c76065f4-cfaf-4e86-8cf5-297a557a18f5), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A10",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "aec6c34e-2b7b-5e2d-97ec-132dc720b83e",
+        "catalogItemVersionId": "aa7c87c9-deb0-5924-abc6-852afc206715",
+        "fdcId": null,
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Pechuga de pollo sin piel, a la parrilla",
+      "estado": "COOKED",
+      "archivo": "A10-pechuga-de-pollo-sin-piel-a-la-parrilla.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Pechuga de pollo sin piel, a la parrilla», cocido.\nMostrar: Una pechuga de pollo sin piel, a la parrilla, con las marcas de la parrilla, entera y con un corte que muestra la carne blanca cocida.\nNo debe aparecer: pollo crudo, piel, salsas, limón, guarnición.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: 7 veces en la cohorte («pollo»; cocido en la prueba breve); la receta 13 usa la pechuga cruda.",
+        "No está en el manifiesto: sus identificadores salen de la migración 20261019120100_catalogo_base_de_alimentos (versión sembrada); confirmar que sigue vigente antes de usarla.",
+        "Equivalente del catálogo sintético de WP-04: «pollo» (fdac8b88-6dbe-4406-86b0-bf0c155ce0e2), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A11",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "96031173-3ffa-5907-b32e-cb4206d776bf",
+        "catalogItemVersionId": "ade5346c-ae9b-5609-a93e-57ccbe152ab7",
+        "fdcId": "170440",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Papa hervida sin cáscara, sin sal",
+      "estado": "COOKED",
+      "archivo": "A11-papa-hervida-sin-cascara-sin-sal.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Papa hervida sin cáscara, sin sal», cocido.\nMostrar: Papas peladas y hervidas, enteras y una cortada al medio, de pulpa clara y mate.\nNo debe aparecer: papa con cáscara, papas fritas, puré, manteca, perejil.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: receta 8; 7 veces en la cohorte; prueba breve (cocida).",
+        "Equivalente del catálogo sintético de WP-04: «papa» (c03d2e0a-1915-4202-8d48-ecd4ce4dac56), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A12",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "eb93c9dc-12de-574b-9f3d-acb77eae8d35",
+        "catalogItemVersionId": "f808e095-0a91-5f6b-8803-50b1f09547d5",
+        "fdcId": "170393",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Zanahoria cruda",
+      "estado": "RAW",
+      "archivo": "A12-zanahoria-cruda.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Zanahoria cruda», crudo.\nMostrar: Dos zanahorias crudas enteras, peladas o lavadas, sin hojas, y una cortada en rodajas.\nNo debe aparecer: zanahoria cocida, zanahoria rallada con aceite, hojas grandes.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 10, 12 y 13; 3 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «zanahoria» (1b1539fc-63cd-4c1d-896d-a382e226cccc), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A13",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "1e31d1a2-3618-5495-84ad-97626fbcac74",
+        "catalogItemVersionId": "29d7457e-ce1c-5d0c-b1a5-a92253c74d5c",
+        "fdcId": "170000",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Cebolla cruda",
+      "estado": "RAW",
+      "archivo": "A13-cebolla-cruda.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Cebolla cruda», crudo.\nMostrar: Una cebolla blanca entera con su piel y otra cortada al medio, cruda, con los anillos a la vista.\nNo debe aparecer: cebolla dorada o cocida, cebolla de verdeo, aceite.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: recetas 9, 10, 13 y 14; 3 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «cebolla» (72b8f490-c8d1-4eab-8562-f0be2ee21476), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A14",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "7934270b-50ce-5132-9b13-3f69260ca967",
+        "catalogItemVersionId": "de4bb1a0-766b-5b9a-9382-a60673762534",
+        "fdcId": "171688",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Manzana con cáscara, cruda",
+      "estado": "RAW",
+      "archivo": "A14-manzana-con-cascara-cruda.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Manzana con cáscara, cruda», crudo.\nMostrar: Una manzana roja entera con cáscara y dos gajos con cáscara, crudos.\nNo debe aparecer: manzana pelada, manzana asada, canela, miel.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: receta 16; 2 veces en la cohorte; prueba breve.",
+        "Equivalente del catálogo sintético de WP-04: «manzana» (eaf534d4-f839-4acc-8a6d-53d8dc359e29), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A15",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "0a3c813e-a2f9-5a36-9155-f86166b96085",
+        "catalogItemVersionId": "0c3dfed4-03e5-5f1d-99da-7955d96bad98",
+        "fdcId": "172421",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Lentejas hervidas sin sal",
+      "estado": "COOKED",
+      "archivo": "A15-lentejas-hervidas-sin-sal.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Lentejas hervidas sin sal», cocido.\nMostrar: Lentejas hervidas, escurridas y sin caldo, en un cuenco blanco liso.\nNo debe aparecer: lentejas secas crudas, guiso, verduras, chorizo.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: receta 10; 2 veces en la cohorte; prueba breve (cocidas).",
+        "Equivalente del catálogo sintético de WP-04: «lentejas» (41c1705e-aad6-4d57-8ab4-fef172f538ae), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "alimento-A16",
+      "tipo": "alimento",
+      "identificador": {
+        "catalogItemId": "ed2d76ab-1993-5258-9496-0527315cd530",
+        "catalogItemVersionId": "593b7623-921e-5004-930d-247ee5f1ff99",
+        "fdcId": "169967",
+        "catalogo": "Catálogo base de BE (USDA FoodData Central · SR Legacy, DL-141)"
+      },
+      "nombre": "Brócoli hervido y escurrido, sin sal",
+      "estado": "COOKED",
+      "archivo": "A16-brocoli-hervido-y-escurrido-sin-sal.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "el catálogo nutricional no tiene ningún campo de imagen (prisma/schema.prisma:1218-1251: ElementoDeCatalogoNutricional y VersionDeElementoNutricional): las imágenes de alimentos quedan como material preparado, sin campos, contratos ni pantallas nuevas",
+      "formato": "Cuadrado 1:1, 1200 × 1200 px (propuesto: no hay un recorte real porque hoy no se muestra en ningún lado)",
+      "procedencia": "A generar con IA para BE (material preparado)",
+      "prompt": "Fotografía realista de un alimento solo, para un catálogo de nutrición. Sin plato de comida armada: el alimento tal como lo identifica su ficha.\nFondo blanco cálido liso (#F7F5F0), luz natural suave desde la izquierda, sombra leve debajo. Misma escala relativa y misma cámara (a unos 30 grados) en toda la serie.\nFormato cuadrado, 1200 × 1200 px, con el alimento centrado y un margen de un 12 % alrededor.\nSin texto, marcas de agua, logos, envases con marca ni personas. Nada que no sea el alimento y, si hace falta, un recipiente blanco liso.\nAlimento: «Brócoli hervido y escurrido, sin sal», cocido.\nMostrar: Ramilletes de brócoli hervidos, verde intenso, tiernos y escurridos.\nNo debe aparecer: brócoli crudo, manteca, queso, ajo.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso en BE: receta 8; 3 veces en la cohorte; prueba breve (cocido).",
+        "Equivalente del catálogo sintético de WP-04: «brocoli» (513510d2-911c-4042-8e58-0a58e712a4d3), cuyo nombre no dice el estado."
+      ]
+    },
+    {
+      "id": "ejercicio-E01",
+      "tipo": "ejercicio",
+      "identificador": {
+        "paquete": "docs/fuente_entrenamiento/BE_Entrenamiento_Autonomo_2026-10-06/ejercicios/CATALOGO.json · sentadilla_goblet",
+        "catalogo": "Ejercicio PROPIO: lo crea el profesional por el flujo real en cada ambiente (sin identificador fijo en el repositorio). En el catálogo base (DL-141) existe «Sentadilla goblet con mancuerna» (ejercicio e675532c-b308-5c88-b606-7c3dd22ecd81, versión 64251f7e-6c22-5ff9-9655-3819e3b7d187), que no puede llevar imagen hoy"
+      },
+      "nombre": "Sentadilla goblet",
+      "archivo": "sentadilla_goblet.png",
+      "archivoReal": {
+        "ruta": "docs/fuente_entrenamiento/BE_Entrenamiento_Autonomo_2026-10-06/ejercicios/sentadilla_goblet.png",
+        "tipo": "image/png",
+        "ancho": 1222,
+        "alto": 1287,
+        "bytes": 989077,
+        "sha256": "33fd02f76b26709c8db2421c62fe5a8899e3f6cc99aab613e3d8d6747f9e1331"
+      },
+      "dondeSeMuestra": "Website: vertical 5:6, entera (object-fit: contain), hasta 18rem; en la grilla de «Mis ejercicios», cuadrada (apps/web/src/app/globals.css:2424-2429 y :2497-2500; apps/web/src/app/pro/exercises/imagen-de-ejercicio.tsx:48). APK: entera (resizeMode contain) sobre blanco #FFFFFF en los dos temas: cuadrado de 112 dp en la sesión enfocada, 64 dp en el plan y 1:1 en «Ver técnica» (apps/mobile/src/imagen-de-medio.tsx:13-15, :97 y :128-129; pantallas/sesion-enfocada.tsx:69, :155-165 y :782; pantallas/plan-por-serie.tsx:68; tema.ts:73 y :125). solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla.",
+      "formato": "PNG con transparencia, vertical; BE la guarda como JPEG sobre blanco",
+      "procedencia": "Generada por IA para este encargo BE (2026-10-06); no muestra una persona real; sin licencia de terceros (externalLicenseIdentifier: null)",
+      "prompt": "Use case: stylized-concept. One standalone premium realistic 3D exercise catalog illustration for BE fitness application, no interface, no text, no labels, no brand. A single adult male with average athletic physique, short dark hair, wearing fitted matte midnight-navy T-shirt, slate training shorts and neutral gray sports shoes with thin cyan accents. Full body head to shoes, generous 10% safety margin, isolated on genuinely transparent background. Three-quarter side view shows recognizable goblet squat at middle-to-low position: hips lowered, knees track toward toes, both heels flat, neutral trunk, one compact dark dumbbell held vertically securely by BOTH hands at upper chest, elbows pointing downward between knees. Show exactly two arms, two hands correctly gripping the upper dumbbell head, two legs, balanced natural anatomy. Normal proportions no exaggerated muscles, no cutaway muscles. Soft studio lighting, crisp premium 3D materials, highly readable as a small thumbnail in either light or dark UI. The body and equipment should occupy approximately 78% of image. No ground plane, no glow, no arrows, no ghosted limbs, no extra weights, no watermark. Recognition image, one pose only.",
+      "herramienta": "image_gen integrado",
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "ARCHIVO_REAL_PENDIENTE_DE_REVISION_HUMANA",
+      "observaciones": [
+        "Implemento: Una mancuerna, sostenida vertical frente al pecho. Uso: la demostración de Entrenamiento por serie (paquete del 2026-10-06).",
+        "Revisión técnica del paquete: PENDIENTE_REVISION_PROFESIONAL. Ilustra para reconocer el ejercicio; no certifica la técnica.",
+        "Revisado a ojo el 2026-10-28 (no es la revisión profesional): equipo y agarre correctos, dos brazos, dos manos y dos piernas, apoyos plausibles, cuerpo entero con margen.",
+        "Contorno: un halo rojizo en los píxeles semitransparentes. Sobre blanco (como la guarda y la muestra BE) queda en un 0,1 % de la imagen, con un tinte máximo de 35 a 41 niveles: no se nota a 112 dp; se notaría solo con transparencia sobre un fondo oscuro, que BE no usa.",
+        "El prompt original está en inglés: es el del paquete de Dirección, tal cual."
+      ]
+    },
+    {
+      "id": "ejercicio-E02",
+      "tipo": "ejercicio",
+      "identificador": {
+        "paquete": "docs/fuente_entrenamiento/BE_Entrenamiento_Autonomo_2026-10-06/ejercicios/CATALOGO.json · peso_muerto_rumano_mancuernas",
+        "catalogo": "Ejercicio PROPIO, creado por el flujo real en cada ambiente. En el catálogo base (DL-141) hay uno con el mismo nombre (ejercicio 3f625674-cabf-5f13-8507-5ac18998944c, versión 2b862b5d-1dbc-584a-a6de-210abfa3472f), que no puede llevar imagen hoy"
+      },
+      "nombre": "Peso muerto rumano con mancuernas",
+      "archivo": "peso_muerto_rumano_mancuernas.png",
+      "archivoReal": {
+        "ruta": "docs/fuente_entrenamiento/BE_Entrenamiento_Autonomo_2026-10-06/ejercicios/peso_muerto_rumano_mancuernas.png",
+        "tipo": "image/png",
+        "ancho": 1145,
+        "alto": 1374,
+        "bytes": 768221,
+        "sha256": "fb071e2bf64800727eec286c0d967899631dfb3fc39dc78ecae9c558e1264644"
+      },
+      "dondeSeMuestra": "Website: vertical 5:6, entera (object-fit: contain), hasta 18rem; en la grilla de «Mis ejercicios», cuadrada (apps/web/src/app/globals.css:2424-2429 y :2497-2500; apps/web/src/app/pro/exercises/imagen-de-ejercicio.tsx:48). APK: entera (resizeMode contain) sobre blanco #FFFFFF en los dos temas: cuadrado de 112 dp en la sesión enfocada, 64 dp en el plan y 1:1 en «Ver técnica» (apps/mobile/src/imagen-de-medio.tsx:13-15, :97 y :128-129; pantallas/sesion-enfocada.tsx:69, :155-165 y :782; pantallas/plan-por-serie.tsx:68; tema.ts:73 y :125). solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla.",
+      "formato": "PNG con transparencia, vertical; BE la guarda como JPEG sobre blanco",
+      "procedencia": "Generada por IA para este encargo BE (2026-10-06); no muestra una persona real; sin licencia de terceros (externalLicenseIdentifier: null)",
+      "prompt": "Use case: stylized-concept. One standalone premium realistic 3D exercise catalog illustration for BE fitness application, no interface, no text, no labels, no brand. A single adult male with average athletic physique, short dark hair, wearing fitted matte midnight-navy T-shirt, slate training shorts and neutral gray sports shoes with thin cyan accents. Full body head to shoes, generous 10% safety margin, isolated on genuinely transparent background. Clear SIDE three-quarter view of a dumbbell Romanian deadlift at the bottom of a comfortable hip hinge: hips pushed back, knees slightly flexed, neutral straight spine from head to pelvis, torso inclined forward, both feet flat, arms straight vertically beneath shoulders. ONE dark dumbbell in EACH hand, both dumbbells close to the outer shins below knees, not touching floor. Exactly two arms two hands two legs two dumbbells, correct grip, naturally balanced anatomy. Not a squat, not rounded back, not straight locked knees. Normal proportions no exaggerated muscles. Soft studio lighting, crisp premium 3D materials, highly readable as small thumbnail in either light or dark UI. Subject approx78% of image. No ground plane, no glow, no arrows, no ghosted limbs, no watermark. Recognition image, one pose only.",
+      "herramienta": "image_gen integrado",
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "ARCHIVO_REAL_PENDIENTE_DE_REVISION_HUMANA",
+      "observaciones": [
+        "Implemento: Una mancuerna en cada mano. Uso: la demostración de Entrenamiento por serie.",
+        "Revisión técnica del paquete: PENDIENTE_REVISION_PROFESIONAL. Ilustra para reconocer el ejercicio; no certifica la técnica.",
+        "Revisado a ojo el 2026-10-28 (no es la revisión profesional): equipo y agarre correctos, dos brazos, dos manos y dos piernas, apoyos plausibles, cuerpo entero con margen.",
+        "Contorno: un halo rojizo en los píxeles semitransparentes. Sobre blanco (como la guarda y la muestra BE) queda en un 0,1 % de la imagen, con un tinte máximo de 35 a 41 niveles: no se nota a 112 dp; se notaría solo con transparencia sobre un fondo oscuro, que BE no usa.",
+        "El prompt original está en inglés: es el del paquete de Dirección, tal cual."
+      ]
+    },
+    {
+      "id": "ejercicio-E03",
+      "tipo": "ejercicio",
+      "identificador": {
+        "paquete": "docs/fuente_entrenamiento/BE_Entrenamiento_Autonomo_2026-10-06/ejercicios/CATALOGO.json · zancada_estatica",
+        "catalogo": "Ejercicio PROPIO, creado por el flujo real en cada ambiente. El catálogo base (DL-141) no tiene una zancada estática"
+      },
+      "nombre": "Zancada estática",
+      "archivo": "zancada_estatica.png",
+      "archivoReal": {
+        "ruta": "docs/fuente_entrenamiento/BE_Entrenamiento_Autonomo_2026-10-06/ejercicios/zancada_estatica.png",
+        "tipo": "image/png",
+        "ancho": 1145,
+        "alto": 1374,
+        "bytes": 896208,
+        "sha256": "cb638a9ae82d34661a06fcc8f62ebd5406ca04294e9d7dc5a85509eb02bb33de"
+      },
+      "dondeSeMuestra": "Website: vertical 5:6, entera (object-fit: contain), hasta 18rem; en la grilla de «Mis ejercicios», cuadrada (apps/web/src/app/globals.css:2424-2429 y :2497-2500; apps/web/src/app/pro/exercises/imagen-de-ejercicio.tsx:48). APK: entera (resizeMode contain) sobre blanco #FFFFFF en los dos temas: cuadrado de 112 dp en la sesión enfocada, 64 dp en el plan y 1:1 en «Ver técnica» (apps/mobile/src/imagen-de-medio.tsx:13-15, :97 y :128-129; pantallas/sesion-enfocada.tsx:69, :155-165 y :782; pantallas/plan-por-serie.tsx:68; tema.ts:73 y :125). solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla.",
+      "formato": "PNG con transparencia, vertical; BE la guarda como JPEG sobre blanco",
+      "procedencia": "Generada por IA para este encargo BE (2026-10-06); no muestra una persona real; sin licencia de terceros (externalLicenseIdentifier: null)",
+      "prompt": "Use case: stylized-concept. One standalone premium realistic 3D exercise catalog illustration for BE fitness application, no interface, no text, no labels, no brand. A single adult male with average athletic physique, short dark hair, wearing fitted matte midnight-navy T-shirt, slate training shorts and neutral gray sports shoes with thin cyan accents. Full body head to shoes, generous 10% safety margin, isolated on genuinely transparent background. Three-quarter SIDE view of a stationary split squat / static lunge, bodyweight with both hands resting naturally on hips. Feet on two parallel hip-width tracks, one leg forward with foot fully flat and knee roughly90degrees, other leg back with heel raised and knee lowered near but not touching floor. Torso upright, hips lowered between feet, neutral head and spine. Exactly two arms two hands two legs, natural balanced anatomy and no extra equipment. Normal proportions no exaggerated muscles. Soft studio lighting, crisp premium 3D materials, highly readable as small thumbnail in either light or dark UI. Subject approx78% of image. No ground plane, no glow, no arrows, no ghosted limbs, no watermark. Recognition image, one pose only.",
+      "herramienta": "image_gen integrado",
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "ARCHIVO_REAL_PENDIENTE_DE_REVISION_HUMANA",
+      "observaciones": [
+        "Implemento: Sin carga externa, manos en la cintura. Uso: la demostración de Entrenamiento por serie.",
+        "Revisión técnica del paquete: PENDIENTE_REVISION_PROFESIONAL. Ilustra para reconocer el ejercicio; no certifica la técnica.",
+        "Revisado a ojo el 2026-10-28 (no es la revisión profesional): equipo y agarre correctos, dos brazos, dos manos y dos piernas, apoyos plausibles, cuerpo entero con margen.",
+        "Contorno: un halo rojizo en los píxeles semitransparentes. Sobre blanco (como la guarda y la muestra BE) queda en un 0,1 % de la imagen, con un tinte máximo de 35 a 41 niveles: no se nota a 112 dp; se notaría solo con transparencia sobre un fondo oscuro, que BE no usa.",
+        "El prompt original está en inglés: es el del paquete de Dirección, tal cual."
+      ]
+    },
+    {
+      "id": "ejercicio-E04",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e01",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e01",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Sentadilla",
+      "archivo": "E04-sentadilla.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Sentadilla». Implemento: Una barra con discos sobre la parte alta de la espalda.\nPostura: Sentadilla trasera con barra a media altura: la barra apoyada sobre los trapecios, las manos tomando la barra por fuera de los hombros, cadera atrás y abajo hasta muslos casi paralelos al piso, talones apoyados, rodillas en la dirección de los pies, tronco firme y espalda neutra.\nNo debe aparecer: mancuerna al pecho, máquina Smith, rack.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 22 veces en la cohorte; prueba breve («Sesión de prueba»).",
+        "De la sentadilla goblet (E01): barra en la espalda, no mancuerna al pecho.",
+        "El nombre no dice el implemento: se propone barra por la carga de la cohorte.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E05",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e02",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e02",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Press de banca",
+      "archivo": "E05-press-de-banca.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Press de banca». Implemento: Una barra con discos y un banco plano.\nPostura: Acostado boca arriba en un banco plano, pies apoyados en el piso, la barra arriba del pecho con los brazos extendidos, agarre algo más ancho que los hombros.\nNo debe aparecer: mancuernas, banco inclinado, compañero que asiste.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 13 veces en la cohorte; prueba breve («Sesión de prueba»).",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E06",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e03",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e03",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Press con mancuernas",
+      "archivo": "E06-press-con-mancuernas.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Press con mancuernas». Implemento: Una mancuerna en cada mano y un banco plano.\nPostura: Acostado boca arriba en un banco plano, pies apoyados, una mancuerna en cada mano arriba del pecho, brazos extendidos y palmas hacia los pies.\nNo debe aparecer: barra, press sobre la cabeza de pie.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 14 veces en la cohorte.",
+        "Del press de banca (E05): dos mancuernas, no barra.",
+        "El nombre no dice el banco: se propone banco plano (el press militar ya cubre el empuje sobre la cabeza).",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E07",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e04",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e04",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Peso muerto",
+      "archivo": "E07-peso-muerto.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Peso muerto». Implemento: Una barra con discos.\nPostura: Peso muerto convencional a mitad del recorrido: la barra con discos apenas debajo de las rodillas y pegada a las piernas, cadera flexionada, espalda neutra, brazos extendidos, agarre prono a la altura de los hombros, pies apoyados.\nNo debe aparecer: mancuernas, espalda redondeada, piernas totalmente rectas.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 19 veces en la cohorte.",
+        "Del peso muerto rumano con mancuernas (E02): barra con discos.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E08",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e05",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e05",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Remo con barra",
+      "archivo": "E08-remo-con-barra.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Remo con barra». Implemento: Una barra con discos.\nPostura: De pie, tronco inclinado unos 45 grados con la espalda neutra, rodillas apenas flexionadas, la barra llevada hacia el abdomen con agarre prono y los codos hacia atrás.\nNo debe aparecer: mancuernas, polea, banco.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 21 veces en la cohorte.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E09",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e06",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e06",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Dominadas",
+      "archivo": "E09-dominadas.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Dominadas». Implemento: Una barra fija, con el peso del cuerpo.\nPostura: Colgado de una barra fija con agarre prono algo más ancho que los hombros, en la parte alta: el mentón a la altura de la barra, piernas extendidas y juntas.\nNo debe aparecer: banda elástica, máquina asistida, cinturón con peso.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 14 veces en la cohorte.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E10",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e07",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e07",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Press militar",
+      "archivo": "E10-press-militar.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Press militar». Implemento: Una barra con discos, de pie.\nPostura: De pie, pies al ancho de la cadera, la barra arriba de la cabeza con los brazos extendidos, tronco firme y sin arquear la espalda.\nNo debe aparecer: sentado, mancuernas, máquina.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 12 veces en la cohorte.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E11",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e08",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e08",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Zancadas",
+      "archivo": "E11-zancadas.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Zancadas». Implemento: Una mancuerna en cada mano.\nPostura: Zancada con una mancuerna colgando a cada lado del cuerpo: pierna adelante con el pie apoyado y la rodilla a unos 90 grados, rodilla de atrás cerca del piso y talón de atrás levantado, tronco erguido.\nNo debe aparecer: manos en la cintura sin peso, barra, flechas de movimiento.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 17 veces en la cohorte.",
+        "De la zancada estática (E03): con dos mancuernas, no manos en la cintura. Una sola postura no muestra si avanza: no se inventa el movimiento.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E12",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e09",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e09",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Curl de bíceps",
+      "archivo": "E12-curl-de-biceps.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Curl de bíceps». Implemento: Una mancuerna en cada mano.\nPostura: De pie, codos pegados al cuerpo, una mancuerna en cada mano con las palmas hacia arriba, antebrazos flexionados a unos 90 grados.\nNo debe aparecer: barra, polea, banco Scott.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 8 veces en la cohorte.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E13",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e10",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e10",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Extensión de tríceps",
+      "archivo": "E13-extension-de-triceps.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Extensión de tríceps». Implemento: Una mancuerna sostenida con las dos manos y un banco con respaldo.\nPostura: Sentado en un banco con respaldo, una mancuerna sostenida con las dos manos detrás de la cabeza, codos apuntando hacia arriba y cerca de la cabeza, antebrazos bajados.\nNo debe aparecer: polea, barra, acostado.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 2 veces en la cohorte.",
+        "El nombre no dice la postura ni el implemento exacto: se propone sobre la cabeza con una mancuerna.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E14",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e11",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e11",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Plancha",
+      "archivo": "E14-plancha.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Plancha». Implemento: Sin material.\nPostura: Plancha sobre antebrazos, vista de lado: codos debajo de los hombros, cuerpo recto de la cabeza a los talones, apoyado en las puntas de los pies, sin colchoneta.\nNo debe aparecer: plancha con brazos extendidos, plancha lateral, colchoneta con marca.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 9 veces en la cohorte.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    },
+    {
+      "id": "ejercicio-E15",
+      "tipo": "ejercicio",
+      "identificador": {
+        "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e12",
+        "versionId": "4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e12",
+        "catalogo": "Catálogo sintético de WP-06 (prisma/migrations/20260921100000_circuito_de_entrenamiento)"
+      },
+      "nombre": "Hip thrust",
+      "archivo": "E15-hip-thrust.jpg",
+      "archivoReal": null,
+      "dondeSeMuestra": "Hoy en ningún lado: solo un ejercicio PROPIO de un profesional (cargado a mano) puede tener imagen: lo exige la base (prisma/migrations/20261006100100_imagen_y_tiempos_de_entrenamiento/migration.sql:98-120) y el servicio (apps/api/src/entrenamiento/imagenes.service.ts:23 y :85). Un ejercicio del catálogo sembrado no tiene dónde mostrarla. Si se cargara como ejercicio propio, se vería como las del paquete (website 5:6 y 1:1; APK 112 dp, 64 dp y 1:1, enteras sobre blanco).",
+      "formato": "Vertical 5:6, al menos 1000 × 1200 px, sobre blanco #FFFFFF",
+      "procedencia": "A generar con IA para BE, en el estilo de las tres del paquete",
+      "prompt": "Ilustración 3D realista de catálogo de ejercicios para la app BE, sin interfaz, sin texto y sin marcas.\nEl mismo modelo de las tres imágenes del paquete: un hombre adulto de físico atlético promedio, pelo corto oscuro, remera azul marino mate entallada, short gris pizarra y zapatillas grises con detalles cian.\nCuerpo entero, de la cabeza a los pies, con un margen del 10 % alrededor. Vista lateral de tres cuartos. El cuerpo y el material ocupan cerca del 78 % de la imagen.\nFondo blanco puro (#FFFFFF), sin transparencia: BE aplana la transparencia sobre blanco y muestra la ilustración sobre blanco en los dos temas, así que generarla sobre blanco evita halos en el contorno.\nFormato vertical 5:6, al menos 1000 × 1200 px.\nExactamente dos brazos, dos manos y dos piernas, con anatomía natural y agarre correcto. Proporciones normales, sin músculos exagerados ni cortes anatómicos. Luz de estudio suave. Legible como miniatura de 112 dp.\nSin piso marcado, sin brillos, sin flechas, sin miembros fantasma, sin marca de agua. Una sola postura: es una imagen de reconocimiento, no una secuencia.\nEjercicio: «Hip thrust». Implemento: Una barra con discos sobre la cadera y un banco plano.\nPostura: La parte alta de la espalda apoyada en el borde de un banco, la barra con discos sobre la cadera, pies apoyados, rodillas a unos 90 grados y cadera extendida arriba, tronco paralelo al piso.\nNo debe aparecer: puente en el piso sin banco, máquina, mancuernas.",
+      "herramienta": null,
+      "fuenteYAtribucion": null,
+      "estadoDeRevision": "PENDIENTE_DE_GENERACION",
+      "observaciones": [
+        "Uso: 17 veces en la cohorte.",
+        "Cuando exista, queda pendiente de revisión humana (técnica y anatomía) antes de usarla como demostración."
+      ]
+    }
+  ]
+}

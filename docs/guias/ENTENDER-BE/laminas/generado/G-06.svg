@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500pt" height="440pt" viewBox="0 0 500 440" data-lamina="G-06">
+<title>Las capas que revisan una escritura</title>
+<desc>Registrar una comida (API-ING-02): de arriba hacia abajo, en el orden en que corren. · Fuente: apps/api/src/sesion · http · plataforma · autorizacion · nutricion · prisma/concurrencia.ts · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="500" height="440" fill="#FFFFFF"/>
+<rect x="6" y="154" width="304" height="282" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="16" y="170" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Una sola transacción</text>
+<rect x="330" y="388" width="166" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 340 400.5 L 369 400.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 363 403.86 L 370 400.5 L 363 397.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="378" y="404.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">abajo: pasa y sigue</text>
+<path d="M 340 419.5 L 369 419.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 363 422.86 L 370 419.5 L 363 416.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="378" y="423.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">derecha: responde así</text>
+<path d="M 158 46 L 158 56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 154.64 49 L 158 56 L 161.36 49" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 158 98 L 158 108" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 154.64 101 L 158 108 L 161.36 101" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 158 150 L 158 174" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 154.64 167 L 158 174 L 161.36 167" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 158 216 L 158 226" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 154.64 219 L 158 226 L 161.36 219" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 158 268 L 158 278" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 154.64 271 L 158 278 L 161.36 271" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 158 320 L 158 330" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 154.64 323 L 158 330 L 161.36 323" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 158 372 L 158 386" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 154.64 379 L 158 386 L 161.36 379" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300 77 L 330 77" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 323 80.36 L 330 77 L 323 73.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300 129 L 330 129" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 323 132.36 L 330 129 L 323 125.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300 195 L 330 195" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 323 198.36 L 330 195 L 323 191.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300 247 L 330 247" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 323 250.36 L 330 247 L 323 243.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300 299 L 330 299" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 323 302.36 L 330 299 L 323 295.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 300 351 L 330 351" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 323 354.36 L 330 351 L 323 347.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="16" y="4" width="284" height="42" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="158" y="21.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Pantalla · APK o website</text>
+<text x="158" y="36.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Ayuda: avisa, deshabilita y completa.</text>
+<rect x="16" y="56" width="284" height="42" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="158" y="73.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Sesión · SesionGuard</text>
+<text x="158" y="88.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Token firmado y sesión ACTIVA en la base.</text>
+<rect x="16" y="108" width="284" height="42" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="158" y="125.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Forma · validarCuerpo (zod)</text>
+<text x="158" y="140.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Campos, tipos y largos; uno de más, no.</text>
+<rect x="16" y="174" width="284" height="42" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="158" y="191.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Clave · IdempotenciaService</text>
+<text x="158" y="206.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN y bloqueo: ¿ya se hizo este pedido?</text>
+<rect x="16" y="226" width="284" height="42" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="158" y="243.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Permiso · PdpService</text>
+<text x="158" y="258.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Las siete dimensiones; la decisión se guarda.</text>
+<rect x="16" y="278" width="284" height="42" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="158" y="295.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Reglas · servicio y dominio</text>
+<text x="158" y="310.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Plan vigente, no futura, opción del plan.</text>
+<rect x="16" y="330" width="284" height="42" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="158" y="347.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Base · disparadores e índices</text>
+<text x="158" y="362.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Solo agregar, transiciones, unicidad.</text>
+<rect x="16" y="386" width="284" height="42" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="158" y="403.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">COMMIT · 201</text>
+<text x="158" y="418.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Todo queda guardado junto.</text>
+<path d="M 330 4 L 487 4 L 496 13 L 496 43.6 L 330 43.6 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 487 4 L 487 13 L 496 13" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="339" y="20.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">No decide: la API no confía en</text>
+<text x="339" y="33.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">ella.</text>
+<rect x="330" y="56" width="166" height="42" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="413" y="73.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">401</text>
+<text x="413" y="88.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Sin sesión válida.</text>
+<rect x="330" y="108" width="166" height="42" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="413" y="125.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">400</text>
+<text x="413" y="140.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Forma inválida.</text>
+<rect x="330" y="174" width="166" height="42" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="413" y="191.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Respuesta guardada</text>
+<text x="413" y="206.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Reintento: misma respuesta.</text>
+<rect x="330" y="226" width="166" height="42" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="413" y="243.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">404</text>
+<text x="413" y="258.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Ni dice si existe.</text>
+<rect x="330" y="278" width="166" height="42" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="413" y="295.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">422 o 409</text>
+<text x="413" y="310.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Una regla no se cumple.</text>
+<rect x="330" y="330" width="166" height="42" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="413" y="347.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Se revierte todo</text>
+<text x="413" y="362.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">409 previsto; 500, defecto.</text>
+</svg>

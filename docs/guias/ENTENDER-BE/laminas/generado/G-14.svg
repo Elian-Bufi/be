@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="336pt" viewBox="0 0 750 336" data-lamina="G-14">
+<title>De una rama a test: la CI decide, Render despliega solo lo que cambió</title>
+<desc>La API y el website se despliegan solos después de la CI de main; la APK se arma y se publica aparte. · Fuente: .github/workflows/ci.yml · render.yaml · apps/api/scripts/iniciar.sh · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="336" fill="#FFFFFF"/>
+<rect x="4" y="4" width="742" height="104" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="4" y="4" width="96" height="104" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="52" y="52.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">GitHub</text>
+<text x="52" y="67.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">código y CI</text>
+<rect x="4" y="114" width="742" height="104" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="4" y="114" width="96" height="104" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="52" y="162.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Render</text>
+<text x="52" y="177.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">API y website</text>
+<rect x="4" y="224" width="742" height="104" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="4" y="224" width="96" height="104" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="52" y="272.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">APK</text>
+<text x="52" y="287.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">aparte</text>
+<path d="M 252 56 L 272.67 56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 265.67 59.36 L 272.67 56 L 265.67 52.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 412.67 56 L 433.33 56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 426.33 59.36 L 433.33 56 L 426.33 52.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 573.33 56 L 594 56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 587 59.36 L 594 56 L 587 52.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 252 166 L 272.67 166" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 265.67 169.36 L 272.67 166 L 265.67 162.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 412.67 166 L 433.33 166" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 426.33 169.36 L 433.33 166 L 426.33 162.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 573.33 166 L 594 166" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 587 169.36 L 594 166 L 587 162.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 664 96 L 664 106 Q 664 111 659 111 L 187 111 Q 182 111 182 116 L 182 126" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 178.64 119 L 182 126 L 185.36 119" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 252 276 L 353 276" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 346 279.36 L 353 276 L 346 272.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 493 276 L 594 276" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 587 279.36 L 594 276 L 587 272.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="112" y="16" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="182" y="45.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Rama y PR</text>
+<text x="182" y="60.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">En borrador hasta que se</text>
+<text x="182" y="73.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">revisa.</text>
+<rect x="272.67" y="16" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="342.67" y="39.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">CI del PR</text>
+<text x="342.67" y="54.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Cinco trabajos: legajo,</text>
+<text x="342.67" y="67.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">verificar, integración,</text>
+<text x="342.67" y="79.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">recorridos, imagen.</text>
+<rect x="433.33" y="16" width="140" height="80" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="503.33" y="39.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Merge a main</text>
+<text x="503.33" y="54.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Solo en verde y con la</text>
+<text x="503.33" y="67.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">autorización de</text>
+<text x="503.33" y="79.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Dirección.</text>
+<rect x="594" y="16" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="664" y="45.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">CI de main</text>
+<text x="664" y="60.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Los mismos cinco, sobre</text>
+<text x="664" y="73.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">lo integrado.</text>
+<rect x="112" y="126" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="182" y="149.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">¿Cambió lo suyo?</text>
+<text x="182" y="164.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">buildFilter: be-api mira</text>
+<text x="182" y="177.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">apps/api, el dominio y</text>
+<text x="182" y="189.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">prisma.</text>
+<rect x="272.67" y="126" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="342.67" y="155.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Contenedor nuevo</text>
+<text x="342.67" y="170.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Al arrancar: prisma</text>
+<text x="342.67" y="183.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">migrate deploy.</text>
+<rect x="433.33" y="126" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="503.33" y="155.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">/health/ready</text>
+<text x="503.33" y="170.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Base y migraciones OK, y</text>
+<text x="503.33" y="183.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">el commit.</text>
+<rect x="594" y="126" width="140" height="80" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="664" y="155.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Sirve test</text>
+<text x="664" y="170.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Si no pasa, sigue la</text>
+<text x="664" y="183.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">versión anterior.</text>
+<rect x="112" y="236" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="182" y="265.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Build local</text>
+<text x="182" y="280.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Gradle en esta PC, con la</text>
+<text x="182" y="293.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">firma guardada aparte.</text>
+<rect x="353" y="236" width="140" height="80" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="423" y="259.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Release en GitHub</text>
+<text x="423" y="274.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Prerelease para una</text>
+<text x="423" y="287.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">candidata; estable</text>
+<text x="423" y="299.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">cuando Dirección lo dice.</text>
+<rect x="594" y="236" width="140" height="80" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="664" y="265.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Teléfono</text>
+<text x="664" y="280.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">La instala una persona:</text>
+<text x="664" y="293.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">nadie la actualiza sola.</text>
+</svg>

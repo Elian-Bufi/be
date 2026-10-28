@@ -2,6 +2,9 @@
 
 Trabajo final · Analista de Sistemas · Elián Bufi · entrega 2026-10-20. Dirección la pasó del 2026-10-01 al 2026-10-10 el 2026-09-27, y del 2026-10-10 al 2026-10-20 el 2026-10-05.
 
+**Estado al 2026-10-28:** qué está integrado, desplegado, verificado y validado, y qué falta para cerrar, en
+[`docs/ESTADO-Y-RUTA-DE-CIERRE.md`](docs/ESTADO-Y-RUTA-DE-CIERRE.md).
+
 BE se especificó por completo antes de escribir código. **La fuente de verdad es el legajo en [`docs/legajo`](docs/legajo)**. El código implementa lo que el legajo dice, y cada cambio lo demuestra con un bloque `TRACE` y pruebas.
 
 | Ruta | Contenido |
@@ -24,6 +27,9 @@ BE se especificó por completo antes de escribir código. **La fuente de verdad 
 |---|---|
 | Website, en el ambiente `test` | `https://be-web-1ngj.onrender.com` |
 | APK vigente (0.13.2) | `https://github.com/Elian-Bufi/be/releases/latest`, que siempre apunta a la última. Cada versión tiene su release permanente `be-apk-x.y.z`; la vigente y sus controles están en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) |
+| APK candidata en prueba | `be-apk-0.18.0-candidata.1`, prerelease del 2026-10-26 |
+| Estado actual y ruta de cierre | [`docs/ESTADO-Y-RUTA-DE-CIERRE.md`](docs/ESTADO-Y-RUTA-DE-CIERRE.md) |
+| Para entender BE: guía central, cuaderno de datos y plan de estudio | [`docs/guias/ENTENDER-BE/LEEME.md`](docs/guias/ENTENDER-BE/LEEME.md) |
 | La demo, paso a paso | [`EVIDENCIA/ENTREGA/GUIA-DEMO.md`](EVIDENCIA/ENTREGA/GUIA-DEMO.md) |
 | Qué demuestra cada paquete | `DEFENSA/` (la lectura razonada) y `EVIDENCIA/` (pruebas, capturas y resultados de la CI) |
 | Qué quedó afuera y por qué | [`docs/DEUDA_LEGAJO.md`](docs/DEUDA_LEGAJO.md) |
