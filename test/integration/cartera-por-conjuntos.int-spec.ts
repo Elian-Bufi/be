@@ -116,12 +116,13 @@ async function recorrer(actorId: string, limit: number, c: Partial<ConsultaDeCar
   return items;
 }
 
-/** La lista entera, de a `limit`, es la misma que de una vez: sin omisiones ni repetidos, en el mismo orden. */
-async function paginacionCompleta(actorId: string, limit: number): Promise<void> {
-  const todo = await igualQueAntes(actorId);
+/** La lista entera, de a `limit`, es la misma que de a 50 (o más páginas): sin omisiones ni repetidos, en el mismo orden. */
+async function paginacionCompleta(actorId: string, limit: number): Promise<number> {
+  const deACincuenta = await recorrer(actorId, 50);
   const recorrido = await recorrer(actorId, limit);
-  expect(recorrido).toStrictEqual(todo.data.items);
+  expect(recorrido).toStrictEqual(deACincuenta);
   expect(new Set(recorrido.map(claveDeItem)).size).toBe(recorrido.length);
+  return recorrido.length;
 }
 
 async function porHttp(pro: Parte, query = ''): Promise<{ r: CarteraResponse; requestId: string }> {
@@ -182,7 +183,8 @@ async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 
     await activar(app, pro, b.planId, b.version).expect(200);
     if (opciones.comidas?.length) {
       const dia = await diaDeHoy(c.ase);
-      for (const diasAtras of opciones.comidas) await registrarComida(app, c.ase, b.planId, dia, { ocurrencia: new Date(`${hace(diasAtras)}T12:30:00-03:00`) }).expect(201);
+      // La de «hoy» es de hace un minuto (una ocurrencia futura se rechaza); las demás, al mediodía de ese día.
+      for (const diasAtras of opciones.comidas) await registrarComida(app, c.ase, b.planId, dia, { ocurrencia: diasAtras === 0 ? new Date(Date.now() - 60_000) : new Date(`${hace(diasAtras)}T12:30:00-03:00`) }).expect(201);
     }
     if (opciones.borradorPosterior) await conSesion(app, pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: b.planId }).expect(201);
   }
@@ -346,19 +348,30 @@ describe('API-CAR-01 por conjuntos · equivalencia con la lectura persona por pe
       if (k % 2 === 1) await entrenamiento(pro, p.ase, { plan: 'ninguno' });
     }
     const r = await igualEnTodasLasConsultas(pro.id);
-    expect(r.data.items.length).toBeGreaterThan(50);
+    expect(r.data.items).toHaveLength(50);
     expect(r.page.hasMore).toBe(true);
-    await paginacionCompleta(pro.id, 7);
+    expect(await paginacionCompleta(pro.id, 7)).toBeGreaterThan(50);
     await auditoriaDelPedido(pro.id, await httpIgualQueAntes(pro));
   }, 600_000);
 });
 
 describe('API-CAR-01 por conjuntos · lo que crece con las personas es solo el PDP', () => {
+  // La extensión vive en su propio esquema mientras dura esta prueba, y se quita al final: el esquema de la aplicación
+  // queda como estaba (schema.int-spec.ts comprueba, por ejemplo, que no haya columnas boolean en `public`).
+  afterAll(async () => {
+    try {
+      await prisma.$executeRawUnsafe('DROP EXTENSION IF EXISTS pg_stat_statements');
+      await prisma.$executeRawUnsafe('DROP SCHEMA IF EXISTS estadisticas_de_la_prueba');
+    } catch {
+      // sin permisos: no se creó
+    }
+  });
+
   /** Sentencias de nivel superior que la API mandó a esta base, acumuladas (pg_stat_statements). `null` si no está disponible. */
   async function sentencias(): Promise<number | null> {
     try {
       const [f] = await prisma.$queryRaw<{ n: string }[]>`
-        SELECT coalesce(sum(calls), 0)::text AS n FROM pg_stat_statements
+        SELECT coalesce(sum(calls), 0)::text AS n FROM estadisticas_de_la_prueba.pg_stat_statements
          WHERE toplevel AND dbid = (SELECT oid FROM pg_database WHERE datname = current_database())`;
       return Number(f?.n ?? 0);
     } catch {
@@ -389,7 +402,8 @@ describe('API-CAR-01 por conjuntos · lo que crece con las personas es solo el P
 
   it('seis personas y doce: la diferencia es exactamente el PDP, y lo fijo cabe en una treintena de sentencias', async () => {
     try {
-      await prisma.$executeRawUnsafe('CREATE EXTENSION IF NOT EXISTS pg_stat_statements');
+      await prisma.$executeRawUnsafe('CREATE SCHEMA IF NOT EXISTS estadisticas_de_la_prueba');
+      await prisma.$executeRawUnsafe('CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA estadisticas_de_la_prueba');
     } catch {
       // sin permisos: se decide abajo
     }
