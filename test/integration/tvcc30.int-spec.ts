@@ -117,7 +117,11 @@ describe('TEST-RF-058 · UC-S01 · la TVCC-30 con los hechos de la base', () => 
     expect(tercero.huella).not.toBe(primero.huella);
     const fila = await prisma.resultadoTvcc30.findUniqueOrThrow({ where: { id: primero.id } });
     expect(fila).toMatchObject({ especificacion: 'SPEC-TVCC30-v1', huella: primero.huella, ejecutor: 'prueba de integración', universo: r1.conteos.universo });
-    expect(fila.resultado).toEqual(JSON.parse(JSON.stringify(r1)));
+    // Un cociente leído de la base puede diferir del calculado en el 17.º dígito (2/11 = 0,18181818181818182 vuelve como
+    // 0,1818181818181818: la lectura de JSON del cliente de Prisma no garantiza la ida y vuelta exacta de un double de
+    // 17 dígitos). Lo destapó una suite con más Procesos en la ventana (d = 11); se compara con 15 dígitos significativos.
+    const con15Digitos = (v: unknown): unknown => JSON.parse(JSON.stringify(v, (_clave, x: unknown) => (typeof x === 'number' && !Number.isInteger(x) ? Number(x.toPrecision(15)) : x)));
+    expect(con15Digitos(fila.resultado)).toEqual(con15Digitos(r1));
 
     // REG-06-198: no se modifica ni se borra.
     await expect(prisma.$executeRawUnsafe(`UPDATE resultado_tvcc30 SET ejecutor = 'otro' WHERE id = '${primero.id}'`)).rejects.toThrow(/append-only/);
