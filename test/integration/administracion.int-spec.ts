@@ -26,6 +26,7 @@ import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { appDePrueba, claveDeIdempotencia, conSesion, CREDENCIAL_SINTETICA, correoSintetico, login, registrarOk, tokenDe } from './soporte-api';
 import { adm, administradorListo, codigoQueNoVale, codigoTotp, decidirSobre, otraSesion, primerFactor, profesionalPendiente, type Administrador } from './soporte-administracion';
 import { LaApk } from './soporte-lecturas-de-la-apk';
+import { esperarQueEsperen, pidDeLaTransaccion } from './soporte-concurrencia';
 import { circuitoConPlanActivo, registrarComida } from './soporte-nutricion';
 import { finalizar, prepararAsesorado, prepararProfesional, revocarB2, solicitar, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
 
@@ -512,30 +513,36 @@ describe('Efectos sobre el acceso (criterios 5 y 6; TEST-RF-014)', () => {
     /**
      * Abre una transacción que hace lo que hace una operación del profesional (decidir con el PDP, o la comprobación de un
      * catálogo) y la deja abierta; mientras tanto, pide la decisión. La decisión espera hasta que la operación confirma.
+     * Que espera lo dice la base (la barrera por bloqueos de `soporte-concurrencia.ts`): antes era un plazo de 800 ms, que
+     * daba la espera por buena si la decisión todavía no había terminado, aunque no hubiera llegado a esperar nada.
      */
     const cruzar = async (enCurso: (tx: Parameters<Parameters<typeof base.$transaction>[0]>[0]) => Promise<void>, decision: string) => {
       const version = (await area(a, c.pro.id, 'NUTRICION')).version as string;
       let soltar!: () => void;
       const espera = new Promise<void>((r) => (soltar = r));
-      let tomado!: () => void;
-      const conBloqueo = new Promise<void>((r) => (tomado = r));
+      let tomado!: (pid: number) => void;
+      const conBloqueo = new Promise<number>((r) => (tomado = r));
       const transaccion = base.$transaction(
         async (tx) => {
           await enCurso(tx);
-          tomado();
+          tomado(await pidDeLaTransaccion(tx));
           await espera;
         },
         { timeout: 30_000, maxWait: 10_000 },
       );
-      await conBloqueo;
+      const operacionEnCurso = await conBloqueo;
+      let termino = false;
       const pedida = adm(app, a.token)
         .decidir(c.pro.id, 'NUTRICION', { expectedVersion: version, decision, rationale: 'cruce', messageToProfessional: 'cruce' })
-        .then((r) => r.status);
-      const carrera = await Promise.race([pedida.then(() => 'termino'), new Promise((r) => setTimeout(() => r('esperando'), 800))]);
-      expect(carrera).toBe('esperando');
+        .then((r) => {
+          termino = true;
+          return r.status;
+        });
+      await esperarQueEsperen(prisma, 1, { bloqueadoPor: operacionEnCurso, yaPaso: () => termino, que: `la decisión ${decision}, esperando lo que tomó la operación profesional en curso` });
+      const terminoSinEsperar = termino;
       soltar();
       await transaccion;
-      expect(await pedida).toBe(200);
+      expect({ decisionEspero: !terminoSinEsperar, status: await pedida }).toEqual({ decisionEspero: true, status: 200 });
     };
     // 1. Una lectura de salud en curso (el PDP con sus bloqueos compartidos) y la suspensión.
     await cruzar(async (tx) => {
@@ -670,7 +677,6 @@ describe('Convivencia con la preparación de la demostración (criterio 9; D-7)'
 
 /** La sesión de un token (su `sid`), para mirarla en la base. */
 const sesionDelToken = (token: string): string => JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString('utf8')).sid as string;
-const pausa = (ms: number) => new Promise((listo) => setTimeout(listo, ms));
 
 describe('Revisión de seguridad del 2026-10-25 (el segundo factor)', () => {
   it('F1 · diez códigos que no valen seguidos, en varias sesiones, bloquean el autenticador; un código de recuperación lo desbloquea', async () => {
@@ -698,36 +704,42 @@ describe('Revisión de seguridad del 2026-10-25 (el segundo factor)', () => {
     expect((await prisma.factorTotp.findFirst({ where: { identidadId: a.id, estado: 'ACTIVO' }, select: { fallosSeguidos: true } }))?.fallosSeguidos).toBe(0);
   });
 
-  it('F2 · un código que esperaba detrás del quinto fallido no se evalúa: la sesión ya se revocó (la carrera, a mano)', async () => {
+  it('F2 · un código que esperaba detrás del quinto fallido no se evalúa: la sesión ya se revocó (la carrera, con una barrera)', async () => {
     const a = await administradorListo(app, prisma, etiqueta('paralelo'));
     const t = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
     const sid = sesionDelToken(t);
-    // El quinto código que no vale, a mano: tiene tomada la fila del segundo factor de la sesión mientras llega otro pedido.
-    let avisar: () => void = () => undefined;
-    const tomado = new Promise<void>((listo) => (avisar = listo));
-    let soltar: () => void = () => undefined;
-    const suelto = new Promise<void>((listo) => (soltar = listo));
-    const quinto = prisma.$transaction(
+    // El quinto código que no vale, a mano: tiene tomada la fila del segundo factor de la sesión mientras llega otro pedido,
+    // con un código bueno. Ese pedido pasa el guard con la sesión todavía activa y queda esperando la fila. La prueba
+    // revoca la sesión recién cuando la base dice que el pedido espera esa fila (antes, una pausa de 500 ms).
+    let termino = false;
+    let pedido!: Promise<request.Response>;
+    await prisma.$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT 1 FROM "segundo_factor_de_sesion" WHERE "sesion_id" = ${sid}::uuid FOR UPDATE`;
-        avisar();
-        await suelto;
+        const quinto = await pidDeLaTransaccion(tx);
+        pedido = adm(app, t)
+          .post('/admin/auth/sessions/current/second-factor')
+          .send({ code: codigoTotp(a.secreto, 30_000) })
+          .then((r) => {
+            termino = true;
+            return r;
+          });
+        await esperarQueEsperen(prisma, 1, { bloqueadoPor: quinto, yaPaso: () => termino, que: 'el código bueno, esperando la fila del segundo factor de su sesión' });
+        if (termino) throw new Error('El código bueno terminó sin esperar la fila: la carrera no se reprodujo.');
         await tx.segundoFactorDeSesion.update({ where: { sesionId: sid }, data: { intentosFallidos: 5 } });
         await tx.$executeRaw`UPDATE "sesion" SET "estado" = 'REVOCADA', "motivo_de_revocacion" = 'SEGUNDO_FACTOR_FALLIDO', "momento_de_finalizacion" = GREATEST(now(), "momento_de_ocurrencia") WHERE "id" = ${sid}::uuid`;
       },
-      { timeout: 20_000 },
+      { timeout: 30_000 },
     );
-    await tomado;
-    // Un código bueno: pasa el guard con la sesión todavía activa y espera la fila.
-    const pedido = adm(app, t).post('/admin/auth/sessions/current/second-factor').send({ code: codigoTotp(a.secreto, 30_000) }).then((r) => r);
-    await pausa(500);
-    soltar();
-    await quinto;
     const r = await pedido;
     expect(r.status).toBe(401);
     expect(r.body.error.code).toBe('SESSION_REVOKED');
     const s = await prisma.segundoFactorDeSesion.findUnique({ where: { sesionId: sid }, select: { verificadoEn: true } });
     expect(s?.verificadoEn ?? null).toBeNull();
+    // El 401 salió de adentro de la transacción del pedido, que se revirtió: el rechazo queda en la auditoría igual, con el
+    // motivo del guard y sin un éxito (pendiente 3 del §14).
+    const auditoria = await prisma.registroDeAuditoria.findMany({ where: { recursoId: sid, operacion: 'API-ADM-05' }, select: { resultado: true, motivo: true } });
+    expect(auditoria).toEqual([{ resultado: 'RECHAZO', motivo: 'SESION_REVOCADA' }]);
   });
 
   it('F3 · el restablecimiento del operador no deja vivo un autenticador que se activa al mismo tiempo', async () => {
@@ -737,22 +749,29 @@ describe('Revisión de seguridad del 2026-10-25 (el segundo factor)', () => {
     const t = (await primerFactor(app, correo).expect(201)).body.data.session.accessToken as string;
     await adm(app, t).post('/admin/auth/second-factor/enrollment').send({ incorporationCode: codigo }).expect(200);
     const pendiente = await prisma.factorTotp.findFirstOrThrow({ where: { identidadId: id, estado: 'PENDIENTE' }, select: { id: true } });
-    // Una confirmación que tiene el autenticador tomado y lo activa mientras el operador corre el comando.
-    let avisar: () => void = () => undefined;
-    const tomado = new Promise<void>((listo) => (avisar = listo));
-    const confirmacion = prisma.$transaction(
+    // Una confirmación que tiene el autenticador tomado y lo activa mientras el operador corre el comando. Lo activa recién
+    // cuando la base dice que el comando quedó esperando esa fila (antes, una pausa de 400 ms).
+    let comandoTermino = false;
+    let comando!: Promise<string>;
+    await prisma.$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT 1 FROM "factor_totp" WHERE "id" = ${pendiente.id}::uuid FOR UPDATE`;
-        avisar();
-        await pausa(400);
+        const confirmacion = await pidDeLaTransaccion(tx);
+        comando = restablecerSegundoFactor(prisma, { correo, fundamento: 'Perdió el autenticador (sintético)', operador: 'Prueba de integración' })
+          .then(
+            () => 'listo',
+            (e: unknown) => (e instanceof Error ? e.message : String(e)),
+          )
+          .finally(() => {
+            comandoTermino = true;
+          });
+        await esperarQueEsperen(prisma, 1, { bloqueadoPor: confirmacion, yaPaso: () => comandoTermino, que: 'el comando del operador, esperando el autenticador que se está activando' });
+        if (comandoTermino) throw new Error('El comando terminó sin esperar el autenticador: la carrera no se reprodujo.');
         await tx.factorTotp.update({ where: { id: pendiente.id }, data: { estado: 'ACTIVO', momentoDeActivacion: new Date(), ultimoPaso: 1n } });
       },
-      { timeout: 20_000 },
+      { timeout: 30_000 },
     );
-    await tomado;
-    const comando = restablecerSegundoFactor(prisma, { correo, fundamento: 'Perdió el autenticador (sintético)', operador: 'Prueba de integración' });
-    await confirmacion;
-    await comando;
+    expect(await comando).toBe('listo');
     expect(await prisma.factorTotp.count({ where: { identidadId: id, estado: { in: ['ACTIVO', 'PENDIENTE'] } } })).toBe(0);
   });
 
