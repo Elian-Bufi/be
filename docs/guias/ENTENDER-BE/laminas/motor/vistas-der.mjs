@@ -1,4 +1,4 @@
-// Las vistas del DER: cada uno de los 113 modelos de prisma/schema.prisma está en una sola vista. La agrupación sigue
+// Las vistas del DER: cada uno de los 118 modelos (113 de la tesis y los 5 de Administración, que se suman en DER-15) de prisma/schema.prisma está en una sola vista. La agrupación sigue
 // los dominios del 06 (M-01 identidad, M-02 profesional, M-03 vínculo, B-04 proceso, B-07 nutrición, B-08 entrenamiento,
 // B-10 antropometría, CAP-DAT información) y las extensiones de cada paquete. La vista general (DER-00) dibuja estas
 // mismas vistas como paquetes, con las relaciones que cruzan de una a otra.
@@ -86,6 +86,12 @@ export const VISTAS_DER = [
     titulo: 'Plataforma · historia, auditoría y medios',
     corto: 'Historia, auditoría y medios',
     modelos: ['EventoDeDominio', 'RegistroDeAuditoria', 'RegistroDeIdempotencia', 'Medio', 'ContenidoDeMedio', 'CapacidadDeClienteDeclarada'],
+  },
+  {
+    id: 'DER-15',
+    titulo: 'Administración y segundo factor',
+    corto: 'Administración',
+    modelos: ['RolAdministrativo', 'CodigoDeIncorporacion', 'FactorTotp', 'CodigoDeRecuperacion', 'SegundoFactorDeSesion'],
   },
 ];
 

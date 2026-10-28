@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="316pt" viewBox="0 0 750 316" data-lamina="G-07">
+<title>El PDP: siete dimensiones, una decisión guardada</title>
+<desc>Cada operación sobre datos de una persona pasa por el mismo punto de decisión, que no confía en nada que diga el cliente. · Fuente: apps/api/src/autorizacion · packages/domain/src/autorizacion.ts · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="316" fill="#FFFFFF"/>
+<rect x="4" y="100" width="742" height="122" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="14" y="116" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">evaluarAutorizacion</text>
+<text x="122.51" y="116" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[dominio, función pura: recibe esos hechos y evalúa las siete; ninguna sola autoriza]</text>
+<path d="M 154 41 L 182 41" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 175 44.36 L 182 41 L 175 37.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 332 41 L 360 41" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 353 44.36 L 360 41 L 353 37.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 546 41 L 574 41" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 567 44.36 L 574 41 L 567 37.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 375 214 L 375 235" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 371.64 228 L 375 235 L 378.36 228" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 360 250 L 337 250 Q 332 250 332 255 L 332 265 Q 332 270 327 270 L 304 270" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 311 266.64 L 304 270 L 311 273.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 390 250 L 413 250 Q 418 250 418 255 L 418 265 Q 418 270 423 270 L 446 270" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 439 273.36 L 446 270 L 439 266.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="4" y="4" width="150" height="74" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="79" y="24.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Un pedido protegido</text>
+<text x="79" y="39.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Por ejemplo, API-PRJ-01</text>
+<text x="79" y="52.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">con la sesión del</text>
+<text x="79" y="64.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">profesional.</text>
+<rect x="182" y="4" width="150" height="74" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="257" y="30.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PdpGuard</text>
+<text x="257" y="45.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Antes del controlador: pide</text>
+<text x="257" y="58.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la decisión al PDP.</text>
+<rect x="360" y="4" width="186" height="74" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="453" y="30.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Bloquea lo que corta</text>
+<text x="453" y="45.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Toma, en modo compartido, las</text>
+<text x="453" y="58.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">filas que podrían cortar el acceso.</text>
+<rect x="574" y="4" width="172" height="74" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="660" y="24.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Lee los hechos</text>
+<text x="660" y="39.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Una sola consulta y sin caché:</text>
+<text x="660" y="52.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">cuentas, verificación, vínculo,</text>
+<text x="660" y="64.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">autorización.</text>
+<rect x="12" y="126" width="98" height="88" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="61" y="153.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Rol</text>
+<text x="61" y="168.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Profesional, y</text>
+<text x="61" y="181.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">sobre otra</text>
+<text x="61" y="193.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">persona.</text>
+<rect x="116.67" y="126" width="98" height="88" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="165.67" y="159.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Especialidad</text>
+<text x="165.67" y="174.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Verificado en</text>
+<text x="165.67" y="187.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">esa área.</text>
+<rect x="221.33" y="126" width="98" height="88" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="270.33" y="140.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Situación</text>
+<text x="270.33" y="155.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Cuentas</text>
+<text x="270.33" y="168.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">operativas, no</text>
+<text x="270.33" y="181.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">suspendido,</text>
+<text x="270.33" y="193.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">habilitado, A3</text>
+<text x="270.33" y="206.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">vigente.</text>
+<rect x="326" y="126" width="98" height="88" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="140.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Vínculo</text>
+<text x="375" y="155.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Alcance</text>
+<text x="375" y="168.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">ACEPTADO:</text>
+<text x="375" y="181.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">pausado o</text>
+<text x="375" y="193.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">finalizado</text>
+<text x="375" y="206.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">cortan.</text>
+<rect x="430.67" y="126" width="98" height="88" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="479.67" y="153.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Consentimiento</text>
+<text x="479.67" y="168.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Autorización</text>
+<text x="479.67" y="181.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">VIGENTE, con</text>
+<text x="479.67" y="193.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">versión.</text>
+<rect x="535.33" y="126" width="98" height="88" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="584.33" y="146.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Finalidad</text>
+<text x="584.33" y="161.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">La misma en la</text>
+<text x="584.33" y="174.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">operación, el</text>
+<text x="584.33" y="187.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">vínculo y la</text>
+<text x="584.33" y="200.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">autorización.</text>
+<rect x="640" y="126" width="98" height="88" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="689" y="159.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Alcance</text>
+<text x="689" y="174.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">El área pedida es</text>
+<text x="689" y="187.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la del vínculo.</text>
+<path d="M 375 235 L 390 250 L 375 265 L 360 250 Z" fill="#FFFFFF" stroke="#0A1F44" stroke-width="1.3"/>
+<rect x="4" y="230" width="300" height="80" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="154" y="259.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Permitida: las siete favorables</text>
+<text x="154" y="274.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">La decisión se guarda en la misma transacción, con la</text>
+<text x="154" y="287.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">autorización y su versión, y la operación sigue.</text>
+<rect x="446" y="230" width="300" height="80" rx="10" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="596" y="253.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Denegada: alguna desfavorable</text>
+<text x="596" y="268.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">La decisión se guarda aparte, con las dimensiones que</text>
+<text x="596" y="281.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">fallaron; la operación se revierte y responde 404</text>
+<text x="596" y="293.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">RESOURCE_NOT_FOUND.</text>
+</svg>
