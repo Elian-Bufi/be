@@ -150,7 +150,8 @@ profesional suspendida, el PDP niega también los registros propios contra ese p
     obligatoria la columna. Si no lo dice, la migración falla en una base con datos (y pasa en una vacía).
 27. **Lo aplicado no se edita.** En tu máquina, con una base nueva, corre la versión editada. Test ya tiene la vieja
     anotada como aplicada y no la vuelve a correr: queda con la estructura vieja, y el código espera la nueva. Prisma
-    además guarda una suma de control y detecta el archivo modificado.
+    guarda una suma de control de cada archivo, y en desarrollo (`migrate dev`) avisa que una aplicada cambió; el
+    despliegue (`migrate deploy`) solo aplica las pendientes, así que no te frena.
 28. **Compatibilidad hacia atrás.** Porque la APK valida las respuestas con esquemas estrictos: un campo que no conoce
     hace fallar la lectura entera («respuesta no reconocida»), aunque no lo fuera a mostrar.
 29. **Contrato congelado.** La API. El contrato congelado es lo que hace una APK que ya está instalada en teléfonos y que
