@@ -47,19 +47,31 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
   `verificar-aab.mjs` contra el `esperado.json` de esa construcción, y revisa el registro con el detector de
   credenciales. Se detiene en el primer fallo, sin reintentos y sin verificar un artefacto anterior (si hay uno del
   mismo commit, lo aparta en `previos\`). Termina con una sola línea: **TERMINADO**, **FALLÓ en <paso>** o
-  **BLOQUEADO por <motivo>**, y deja `C:\Users\bufim\BE-artefactos\aab\registros\<fecha-hora>\` con `lanzador.log`,
+  **BLOQUEADO por <motivo>**. **TERMINADO exige las dos cosas:** la verificación del AAB en «todo bien» **y** la
+  revisión del registro limpia; la revisión corre siempre al cerrar (también en los bloqueos y en los fallos
+  tempranos) y distingue «limpio», «con hallazgos» (el detector marcó algo) y «error» (el revisor no pudo correr):
+  ni los hallazgos ni el error permiten el éxito (FALLÓ en «revision-del-registro»). `-Consultar` muestra las
+  últimas líneas del registro **solo** si quedó revisado y limpio; si está marcado, sin revisar (en curso o
+  interrumpido) o la revisión falló, no lo imprime y dice por qué. Deja
+  `C:\Users\bufim\BE-artefactos\aab\registros\<fecha-hora>\` con `lanzador.log`,
   `estado.json` y, si llegó, `verificacion.md`, `verificacion.json`, `construccion.json` y `esperado.json`. El
   artefacto queda en `C:\Users\bufim\BE-artefactos\aab\0.18.0-candidata.2\be-0.18.0-candidata.2-<commit>.aab`. Con
   `-SoloComprobar` hace solo las comprobaciones. El umbral de memoria es del lanzador (2.500 MB libres; `-MinimoMb`
   lo cambia bajo tu responsabilidad): no garantiza que Gradle llegue, solo evita arrancar en las condiciones en que ya
   falló. Cuando termine, copiá `verificacion.md`, `construccion.json` y `esperado.json` del registro a esta carpeta.
-- **Lo probado del lanzador (28/10, sin construir):** los caminos de bloqueo (rama equivocada, árbol sucio, memoria
-  insuficiente), `-Consultar` sin lanzamientos y después de cada uno, y las comprobaciones completas hasta el final
-  con un umbral bajo (`-SoloComprobar -MinimoMb 100`: Node 22, rama `aab/candidata-0.18.0-2` igual a `origin`, árbol
-  limpio, versión 0.18.0-candidata.2 / 31, herramientas, datos y respaldo presentes). Lo que NO se probó: `npm ci`,
-  la construcción y la verificación sobre un AAB real, porque la PC tenía 461 MB libres con esta sesión abierta
-  (14 procesos de Claude, ~1 GB). El revisor del registro se probó con un registro limpio (0 hallazgos) y con un
-  secreto sintético (1 hallazgo, sin mostrarlo).
+- **Lo probado del lanzador (28 y 29/10, sin construir):** los caminos de bloqueo (rama equivocada, árbol sucio,
+  memoria insuficiente), `-Consultar` sin lanzamientos y después de cada uno, y las comprobaciones completas hasta el
+  final con un umbral bajo (`-SoloComprobar -MinimoMb 100`: Node 22, rama `aab/candidata-0.18.0-2` igual a `origin`,
+  árbol limpio, versión 0.18.0-candidata.2 / 31, herramientas, datos y respaldo presentes). Y, con `-Simular`
+  (npm ci y construcción omitidos, verificador fingido, revisión real sobre el registro), los cuatro resultados del
+  veredicto: verificación 0 + registro limpio → TERMINADO (0) y `-Consultar` muestra el registro; verificación 0 +
+  un secreto sintético en el registro → FALLÓ en «revision-del-registro» (1), `-Consultar` dice «con hallazgos» y no
+  muestra el registro; verificación 0 + revisor que no puede correr → FALLÓ en «revision-del-registro» (1),
+  `-Consultar` dice «error del revisor» y no lo muestra; verificación 1 + registro limpio → FALLÓ en «verificacion»
+  (1) y el registro, revisado y limpio, sí se muestra. Además, un bloqueo deja el registro revisado, y un registro
+  interrumpido (estado «en curso» con el proceso muerto) se informa como INTERRUMPIDO sin mostrar el registro. Lo
+  que NO se probó: `npm ci`, la construcción y la verificación sobre un AAB real, porque la PC tenía entre 460 y
+  500 MB libres con esta sesión abierta (14 procesos de Claude, ~1 GB).
 - **Si el primer artefacto falla:** el registro dice en qué paso. `npm ci` o Gradle que se cortan son la construcción
   (memoria, red, SDK); un `verificar-aab.mjs` con código 2 es una herramienta o el `esperado.json`; un código 1 con
   `verificacion.md` es el artefacto o la configuración (la tabla dice qué comprobación falló y qué valor leyó contra
