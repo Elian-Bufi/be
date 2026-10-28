@@ -26,7 +26,7 @@ import { borradorSembrado, medicionSembrada, registrarBorrador, sembrarEspecific
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { leerCarteraAnterior } from './soporte-cartera-anterior';
 import { activarPlanDeEntrenamiento, borradorDeEjecucion, crearBorradorDeEntrenamiento, cuerpoDeEvaluacionDeEntrenamiento, cuerpoDeObjetivoDeEntrenamiento, ejecucion, type CircuitoParaPlanificar } from './soporte-entrenamiento';
-import { activar, circuitoListoParaPlanificar, crearBorrador, registrarComida } from './soporte-nutricion';
+import { activar, circuitoListoParaPlanificar, crearBorrador, cuerpoDeRevision, registrarComida } from './soporte-nutricion';
 import { finalizar, pausar, prepararAsesorado, prepararProfesional, reanudar, revocarB2, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -171,7 +171,7 @@ interface PersonaDeNutricion {
  * Una persona con vínculo de Nutrición: sin plan, con solo un borrador, o con un plan activado (con o sin fecha de
  * revisión, con comidas en los días indicados hacia atrás y, si se pide, un borrador posterior a la activación).
  */
-async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 'activado'; nextReviewAt?: string; comidas?: readonly number[]; borradorPosterior?: boolean }): Promise<PersonaDeNutricion> {
+async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 'activado'; nextReviewAt?: string; comidas?: readonly number[]; borradorPosterior?: boolean; revisionSinFecha?: boolean }): Promise<PersonaDeNutricion> {
   if (opciones.plan === 'ninguno') {
     const ase = await prepararAsesorado(app, etiqueta(), { a3: true });
     const v = await vinculoCompleto(app, pro, ase, 'NUTRICION');
@@ -184,7 +184,16 @@ async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 
     if (opciones.comidas?.length) {
       const dia = await diaDeHoy(c.ase);
       // La de «hoy» es de hace un minuto (una ocurrencia futura se rechaza); las demás, al mediodía de ese día.
-      for (const diasAtras of opciones.comidas) await registrarComida(app, c.ase, b.planId, dia, { ocurrencia: diasAtras === 0 ? new Date(Date.now() - 60_000) : new Date(`${hace(diasAtras)}T12:30:00-03:00`) }).expect(201);
+      let ultimaComida: string | null = null;
+      for (const diasAtras of opciones.comidas) {
+        const r = await registrarComida(app, c.ase, b.planId, dia, { ocurrencia: diasAtras === 0 ? new Date(Date.now() - 60_000) : new Date(`${hace(diasAtras)}T12:30:00-03:00`) }).expect(201);
+        ultimaComida = r.body.data.executionId as string;
+      }
+      // Una revisión MANTENER aplicada sin fecha deja la expectativa vigente del Proceso sin fecha: REVIEW_UNDATED.
+      if (opciones.revisionSinFecha && ultimaComida) {
+        const rev = await conSesion(app, pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision([{ type: 'EXECUTION', id: ultimaComida }], 'MAINTAIN')).expect(201);
+        await conSesion(app, pro.token).post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId as string}/apply`).send({ expectedVersion: 'v1' }).expect(200);
+      }
     }
     if (opciones.borradorPosterior) await conSesion(app, pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: b.planId }).expect(201);
   }
@@ -255,8 +264,9 @@ async function carteraMixta() {
   // E: sin plan en las dos áreas (empate total en dos dominios).
   const e = await nutricion(pro, { plan: 'ninguno' });
   await entrenamiento(pro, e.ase, { plan: 'ninguno' });
-  // F: activado sin fecha de revisión (sin fecha) y una comida; después se finaliza el vínculo.
-  const f = await nutricion(pro, { plan: 'activado', comidas: [5] });
+  // F: activado, con una revisión MANTENER aplicada sin fecha (la expectativa queda sin fecha) y una comida; después se
+  //    finaliza el vínculo.
+  const f = await nutricion(pro, { plan: 'activado', comidas: [5], revisionSinFecha: true });
   // G: solo antropometría, con una evaluación en preparación y dos registradas.
   const g = await prepararAsesorado(app, etiqueta(), { a3: true });
   await antropometria(pro, g, { enPreparacion: true, registradas: 2 });
@@ -285,7 +295,7 @@ describe('API-CAR-01 por conjuntos · equivalencia con la lectura persona por pe
     const r = await igualEnTodasLasConsultas(m.pro.id);
     // Lo que tiene que haber, para que la equivalencia no sea entre dos listas pobres.
     const tipos = new Set(r.data.items.map((i) => i.kind));
-    for (const t of TIPOS) expect(tipos.has(t)).toBe(true);
+    expect(TIPOS.filter((t) => !tipos.has(t))).toEqual([]);
     expect(new Set(r.data.items.map((i) => i.domain))).toEqual(new Set(['nutrition', 'training', 'anthropometry']));
     const deA = r.data.items.filter((i) => i.advisee.identityId === m.a.ase.id);
     expect(deA.map((i) => [i.domain, i.kind])).toEqual([
