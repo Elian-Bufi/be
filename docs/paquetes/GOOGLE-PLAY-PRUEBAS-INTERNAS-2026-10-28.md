@@ -109,6 +109,28 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
    (lo que test sirve hoy) más esta rama. Alternativa: el mismo `b64d0c4` de la candidata.1 con versionCode 31.
 5. **El canal en el website y DV-08:** cuándo cambiar «Se instala fuera de Google Play» y los enlaces a GitHub.
 
+## Guía breve de lo que hacés vos (en orden)
+
+1. **Decidir** (antes de pagar): tipo de cuenta (personal u organización), nuestra clave como clave de firma (recomendado)
+   y si querés una clave de subida aparte.
+2. **Cuenta:** https://play.google.com/console → alta de desarrollador (US$ 25, DNI, tarjeta, OTP; si es personal,
+   verificar tu teléfono con la app Play Console).
+3. **App:** «Crear app» → nombre BE, español, app, gratis, correo de contacto, declaraciones, aceptar Play App Signing.
+   Paquete: `com.elianbufi.be` (es permanente).
+4. **Probadores:** Testing → Internal testing → Testers → «Create email list» con las cuentas de Google de los
+   evaluadores. Los mismos correos, como usuarios de prueba en la pantalla de consentimiento de OAuth
+   (https://console.cloud.google.com, proyecto be-app-c4623), si van a entrar con Google.
+5. **Primera versión:** Internal testing → «Create new release» → App integrity → **«Provide a copy of your app
+   signing key»** → descargar PEPK y correr, en tu PC, con la keystore del respaldo (el alias y la contraseña están en
+   su `credentials.json`; no los pegues en ningún chat):
+   `java -jar pepk.jar --keystore=C:\Users\bufim\be-firma-respaldo\credentials\android\keystore.jks --alias=<alias> --output=C:\Users\bufim\be-firma-respaldo\pepk-salida.zip --encryptionkey=<la clave de cifrado que muestra Play>`
+   y subir ese zip. Después, subir el `.aab` candidato, revisar que el versionCode sea 31, «Save and publish».
+6. **Comprobar antes de que nadie instale:** Release → Setup → App integrity → App signing key certificate: SHA-256
+   `61:56:96:91:BD:47:30:0F:C1:8F:32:C3:7A:84:80:FF:A5:1E:C5:4E:96:47:B6:12:5A:F4:40:53:5C:89:3E:06`. Si es otra, no
+   publiques: la versión de Play no actualizaría la APK.
+7. **Copiar el enlace** de Testers y seguir el guion de `EVIDENCIA/GOOGLE-PLAY/LEEME.md` (instalación, actualización
+   sobre la APK, Google, invitaciones, avisos).
+
 ## Lo que sigue (preparación técnica autorizada)
 
 - Plugin de firma, scripts de construcción y verificación, documentación, PR en borrador.
