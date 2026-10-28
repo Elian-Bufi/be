@@ -68,8 +68,9 @@ borrador, con comparación antes/después reproducible y una explicación visual
 
 1. **Solicitudes sin respuesta y evaluaciones en preparación:** se traían completas y se reducían en memoria. Ahora la
    base elige la más antigua por persona y área con `DISTINCT ON`, con el mismo alcance de permisos y el mismo
-   resultado (lo fija la prueba de equivalencia). Mismas dos sentencias, menos filas. La medición no se repitió (pedido
-   de Dirección): lo medido es una cota conservadora. Detalle: LECTURA-POR-CONJUNTOS.md §8.
+   resultado (lo fija la prueba de equivalencia). Mismas dos sentencias, menos filas. **Sin medir:** la corrida
+   40692787787 midió la lectura de `bf50122` (las consultas anteriores); los resultados informados son de ese commit.
+   Lo esperable es que esta variante no empeore, pero no es una cifra ni una cota. Detalle: LECTURA-POR-CONJUNTOS.md §8.
 2. **El caso decimal de la TVCC-30:** reproducido en `tvcc30.int-spec.ts` (CI 40712848030): la huella recalculada
    desde la fila **no coincide** con la guardada; la tasa 0,16666666666666666 quedó guardada como 0,1666666666666667.
    El dígito se pierde **al escribir a través de Prisma** (PostgreSQL conserva el texto y la lectura es exacta; mi

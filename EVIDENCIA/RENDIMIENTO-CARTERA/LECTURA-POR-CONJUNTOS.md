@@ -97,6 +97,11 @@ precargado. 85 minutos; siembra de 1.350 personas en 261 s, sin errores. **Ni es
 [`resultados/ab-2026-10-28/`](resultados/ab-2026-10-28/) (`muestras.jsonl`, `lotes.jsonl`, `resumen-ab.md`), generado por
 `test/rendimiento/analizar-ab.mjs`; las tablas de acá se copiaron de ese resumen.
 
+**El código medido:** la lectura por conjuntos tal como quedó en `bf50122` (el primer commit de la rama; la corrida salió
+de la rama descartable en `038555a` = `fa235a2` + el flujo, cuyo `lectura-cartera.ts` es el de `bf50122`), contra la
+copia congelada de `e4512cb`. La variante posterior de §8 (`7f813af`: `DISTINCT ON` en solicitudes y evaluaciones en
+preparación) **no se midió**; los números de esta sección no la describen.
+
 **Las condiciones:** 36 lotes (18 escenarios × 2 versiones), cada uno con su calentamiento (3 pedidos por cartera) y
 11,5 s de asentamiento antes y después; 50 observaciones por cliente y por lote (15 aperturas de 6 páginas en los lotes de
 apertura); las dos versiones alternadas (base, propuesta, …; la segunda repetición al revés); versión puesta como se
@@ -255,9 +260,10 @@ alcance)` y `DISTINCT ON (asesorado)`, una fila por par, con el mismo alcance de
 con sus asesorados permitidos; la evaluación, solo los permitidos en Antropometría) y el mismo criterio (la más antigua
 por `momento_de_registro`, con `id` como desempate, que no cambia el valor elegido). El resultado lo fija la misma prueba
 de equivalencia contra la copia congelada. Son las mismas dos sentencias: no cambia la cantidad de idas y vueltas, cambia
-cuántas filas viajan. **No se volvió a correr la medición** (Dirección pidió no reiniciarla ni duplicarla): la corrida
-40692787787 midió la versión anterior de estas dos consultas; esta no puede sumar idas y vueltas ni filas, así que el
-resultado medido es una cota conservadora.
+cuántas filas viajan. **Esta variante no está medida:** la corrida 40692787787 midió la lectura de `bf50122`, con las
+dos consultas anteriores (todas las filas de los pares permitidos, reducidas en memoria). Lo esperable es que no
+empeore (mismas sentencias, menos filas por la red), pero es una expectativa, no una cifra: si Dirección quiere el
+número, se repiten los lotes S-B200 y S-H200 con esta versión (no hace falta la medición grande entera).
 
 **Observación 2 · el caso decimal de la TVCC-30.** La forma canónica de la huella (`canonicoTvcc30`, @be/domain) es el
 JSON del resultado con las claves ordenadas e incluye los cocientes (`tasa`, `porcentaje`) como doubles. Un cociente de 17

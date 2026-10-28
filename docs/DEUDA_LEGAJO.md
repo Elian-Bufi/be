@@ -5697,3 +5697,22 @@ pantalla real.
 
 **Condición de cierre:** Dirección revisa el resultado, la CI pasa y la prueba con profesionales lo confirma. La revisión y
 la CI están (2026-10-25); falta la prueba con profesionales.
+
+## DL-159 — La huella de la TVCC-30 no se puede recalcular desde el resultado conservado
+
+**Prioridad:** media · **Documento:** 12 §22 (el resultado conservado se verifica con su huella) · REG-06-196 (conservación del resultado) · REG-06-198 (cadena de corridas) · **Estado:** PENDIENTE DE CORRECCIÓN (diagnóstico confirmado el 2026-10-28; garantía todavía no reparada)
+
+**Qué dice el legajo.** Cada corrida de la TVCC-30 se conserva con la huella (SHA-256) de su forma canónica: mismas fuentes, misma especificación y mismo corte, misma huella; el resultado conservado se puede verificar con ella.
+
+**El defecto.** La forma canónica (`canonicoTvcc30`, @be/domain) es el JSON del resultado con las claves ordenadas e incluye los cocientes derivados (`tasa`, `porcentaje`) como doubles. Un cociente de 17 dígitos significativos (2/11, 1/6) queda guardado en `resultado_tvcc30.resultado` con 16 dígitos: **se pierde al escribir a través de Prisma** (lo que llega a PostgreSQL ya tiene 16; el `jsonb` conserva el texto tal cual y la lectura es exacta). Por eso la huella recalculada desde la fila recuperada no coincide con la guardada cuando el resultado contiene un cociente así. Reproducido en la CI del PR #222 (`test/integration/tvcc30.int-spec.ts`, corrida 40712848030: huella guardada `9d6bb495…`, recalculada `a4574858…`; tasa calculada 0,16666666666666666, guardada 0,1666666666666667). Es un problema previo a la cartera por conjuntos, que no toca la TVCC-30; lo destapó esa suite porque dejó más Procesos en la ventana y el cociente dejó de ser exacto.
+
+**Qué se cumple y qué no.** La huella guardada junto con el resultado se calcula en memoria antes de guardar y no cambia: sirve para encadenar corridas y comparar dos cálculos (REG-06-198). **No** sirve para verificar la fila conservada recalculando desde lo que se lee: ahí la garantía del 12 §22 está sin reparar.
+
+**Opciones.**
+- **A.** Que la forma canónica no incluya los cocientes derivados (`n` y `d`, enteros, los determinan).
+- **B.** Redondear los cocientes a una precisión declarada antes de calcular la huella y de guardar, para que lo guardado y lo hasheado coincidan.
+- **C.** Conservar también el texto canónico junto con la fila (y verificar sobre ese texto).
+
+**Lo que no se hace mientras tanto.** No se cambia la canonicalización ni se recalcula ninguna huella existente: las corridas conservadas valen con la huella que tienen. La comparación de la prueba pasó a 15 dígitos significativos (`876bff1`) para que la CI describa el estado real sin ocultarlo; la reproducción queda en la salida de la prueba.
+
+**Condición de cierre.** Dirección elige A, B o C; se implementa con una prueba que recalcule la huella desde la fila recuperada y la compare con la guardada, y se declara qué pasa con las huellas anteriores.

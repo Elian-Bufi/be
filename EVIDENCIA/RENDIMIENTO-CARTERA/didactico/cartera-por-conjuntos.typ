@@ -213,7 +213,7 @@
 // ─── 5. Las mediciones ───────────────────────────────────────────────────────────────────────────────────────
 #lamina(
   pregunta: "5 · ¿Qué demostraron las mediciones y qué sigue sin saberse?",
-  bajada: if medido [Las dos versiones corrieron alternadas en la misma máquina de GitHub (#D.maquina), el mismo proceso y las mismas carteras, en la corrida #raw(str(D.corrida)). #if D.versionesOk [Cada lote comprobó qué versión tenía puesta.] else [*Algún lote no tenía la versión esperada.*]] else [La medición todavía no corrió.],
+  bajada: if medido [Las dos versiones corrieron alternadas en la misma máquina de GitHub (#D.maquina), el mismo proceso y las mismas carteras, en la corrida #raw(str(D.corrida)). #if D.versionesOk [Cada lote comprobó qué versión tenía puesta.] else [*Algún lote no tenía la versión esperada.*] Código medido: la lectura por conjuntos de #raw("bf50122"); la variante posterior con `DISTINCT ON` en solicitudes y evaluaciones (#raw("7f813af")) no se midió.] else [La medición todavía no corrió.],
   lateral: [
     #concepto("p50 y p95", criollo: [La mediana (la mitad de los pedidos tardó menos) y el percentil 95 (el 95 % tardó menos): el caso típico y la cola.], en-be: [La hipótesis decía que la cola (el PDP) bajaría menos que la mediana. No fue así: bajó igual, porque la cola de la lectura también pesaba.])
     #concepto("Bucle cerrado", criollo: [Cada cliente pide la página siguiente apenas recibe la anterior, sin pausa. Mide cómo se reparte la máquina, no cuántas personas reales aguanta.], en-be: [C1, C3 y C5: uno, tres y cinco profesionales, cada uno con su cartera de 200.])
