@@ -49,8 +49,8 @@ oficiales citadas) terminó y acá queda reconciliada. Es un avance, no una prom
    inyecte la firma (para que `prebuild --clean` no la borre), ambiente **test** (`be-api-hndp` / `be-web-1ngj`, como
    todas las APK; el perfil `production` de `eas.json` no tiene `API_BASE_URL` ni `WEB_BASE_URL`), **versionCode 31**
    (mayor que el 30 instalado; desde ahí GitHub y Play comparten una sola secuencia) y, siguiendo la convención de las
-   candidatas, una rama `aab/candidata-0.18.0-2` = esta rama + un commit de versión. Validación local con `bundletool`
-   y `apksigner`; el artefacto queda fuera del repositorio.
+   candidatas, una rama `aab/candidata-0.18.0-2` = esta rama + un commit de versión. Validación local con `bundletool`,
+   `keytool`, `jarsigner` y `zipalign` contra los valores esperados; el artefacto queda fuera del repositorio.
 5. **Los evaluadores:** en la lista de correos de la pista interna (cuentas de Google), cargados también como usuarios
    de prueba de la pantalla de consentimiento de OAuth (sigue en modo prueba); abren el enlace de participación,
    instalan desde Play Store con Play Protect activo, y las actualizaciones llegan solas.
@@ -96,7 +96,7 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 |---|---|---|
 | `apps/mobile/plugins/firma-de-subida.js` (nuevo) | config plugin que agrega `signingConfigs.release` leyendo `BE_FIRMA_*` del entorno; sin las variables, no toca nada | que `prebuild --clean` no borre la firma; sirve para la APK y para el AAB |
 | `apps/mobile/app.config.ts` | sumar el plugin a `plugins`; **no** cambiar `android.package` (91); VERSION (8) y versionCode (92) cambian solo en la rama de versión `aab/candidata-*` | convención de las candidatas |
-| `scripts/aab/` (nuevos) | `construir-aab.mjs` (prebuild + `:app:bundleRelease`, un worker, env de test desde `BE-datos-locales`, firma desde `credentials.json` sin imprimir nada) y `verificar-aab.mjs` (bundletool validate, APK universal, `apksigner --print-certs`, paquete, versionCode, targetSdk, 16 KB, SHA-256) | reproducible y verificable |
+| `scripts/aab/` (nuevos) | `construir-aab.mjs` (prebuild + `:app:bundleRelease`, un worker, env de test desde `BE-datos-locales`, firma desde `credentials.json` sin imprimir nada) y `verificar-aab.mjs` (exige cada valor esperado: paquete, versión, versionCode, commit, árbol limpio, ambiente, Google, Firebase, invitaciones y los dos certificados; bundletool validate, manifiesto, `keytool`/`jarsigner`, config del bundle y alineación ELF para 16 KB, `zipalign -P 16` sobre la APK universal, credenciales en todo el bundle descomprimido; «todo bien» solo si todo corrió y dio bien) | reproducible y verificable |
 | `docs/DESPLIEGUE.md` | sección «Google Play · pruebas internas»: clave de subida y de firma, PEPK, versionCode compartido, recorrido del evaluador | documentación operativa |
 | `EVIDENCIA/GOOGLE-PLAY/` (nuevo) | verificaciones del AAB candidato (sin secretos) | comprobado automáticamente / pendiente |
 | `apps/web/public/.well-known/assetlinks.json` | **no cambia** si Play firma con nuestra clave | — |
@@ -152,10 +152,35 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
   biblioteca de 64 bits, dejando dicho que la ejecución en un dispositivo de 16 KB es una prueba aparte),
   `docs/DESPLIEGUE.md` («Google Play · pruebas internas»), el guion de prueba en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`, la
   rama de versión `aab/candidata-0.18.0-2` publicada, bundletool 1.18.3 descargado, PR #223 en borrador.
+- **Revisión adversaria del verificador (28/10, un agente de solo lectura) y lo corregido:** (1) la heurística de
+  PKCS#12 marcaba cualquier PKCS#7 SignedData, o sea el bloque de firma JAR `META-INF/*.RSA` de todo AAB firmado:
+  «todo bien» era inalcanzable; ahora se exige la forma PFX (`INTEGER 3` + OID pkcs7-data) y la prueba incluye un
+  SignedData que NO debe marcarse y un PFX que sí. (2) El esperado se comprobaba por presencia de claves: un `null` o
+  un `""` pasaba por `null === null`; ahora `scripts/aab/esperado.mjs` exige cada campo con su forma (commit de 40 hex,
+  URL https, client ID `…apps.googleusercontent.com`, huellas de 64 hex) y ningún valor leído del artefacto puede ser
+  `null` para dar bien. (3) Sin `google-services.json` o sin el client ID, la construcción seguía y el verificador no
+  distinguía «falta» de «a propósito»; ahora `construir-aab.mjs` corta salvo `--sin-firebase` / `--sin-google`, y lo
+  declara en el esperado. (4) 16 KB: se lee también `uncompressNativeLibraries.alignment` (`PAGE_ALIGNMENT_16K`), el
+  RELRO de cada ELF, y `zipalign` tiene que informar todas las bibliotecas de la APK sin comprimir y alineadas.
+  (5) `credenciales.mjs` usaba `require` en un módulo ESM para los archivos grandes (fallaba por encima de 64 MB);
+  ahora los recorre enteros por bloques con solapamiento, busca también nombres de variables sin valor, PEM en base64
+  y en UTF-16, contenedores anidados y, con `--respaldo`, los valores literales de las contraseñas (sin escribirlos).
+  (6) Árbol sucio: antes avisaba y seguía; ahora corta salvo `--permitir-sucio`, y `arbolLimpio` va en el esperado.
+  (7) `jarsigner -verify -strict`, `assetlinks.json` con `handle_all_urls` y `new URL(…)`, bundletool con `-Xmx768m`,
+  SHA-256 por flujo. Lo que la revisión pidió y no se hizo: `build-apks --device-spec` para un arm64 con SDK 35
+  (redundante con la APK universal y `zipalign`) y buscar secretos del respaldo por omisión (queda detrás de
+  `--respaldo`, para que el verificador no lea la keystore sin pedirlo). La CI de `fca2452` falló en Ubuntu porque la
+  prueba usaba `tar.exe` de Windows; ahora la prueba escribe y lee el zip con Node, sin herramientas externas.
 - **No hecho:** el AAB candidato **no se construyó**: el primer intento (árbol espejado) no era fiel al lockfile y el
   segundo (`npm ci` en el árbol) lo cortó la poca memoria de la PC; la construcción de Gradle (~2,5 GB, ~40 min) no se
-  lanzó. Detalle y comandos exactos en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`. Por eso, lo «comprobado automáticamente»
-  sobre el artefacto está pendiente; lo comprobado es la ruta, el código y la herramienta de verificación.
+  lanzó. **Tercera medición, después de las correcciones y con la rama de versión actualizada (`b6ea7c3`, a las 17:55
+  UTC): 733 MB libres de 6.030, sin Chrome, Java ni Node corriendo. No hay margen para `npm ci` más Gradle (el intento
+  anterior se cortó con ~700 MB) y, por pedido de Dirección, no se repite: el bloqueo concreto es la memoria libre de
+  la PC.** Cuarta medición, después de las correcciones de la revisión (18:40 UTC): 685 MB libres; los procesos más
+  grandes son los de la sesión de Claude (515 + 155 + 150 MB) y el antivirus (229 MB): tampoco hay margen, y no se
+  intentó. Detalle y comandos exactos en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`. Por eso, lo «comprobado automáticamente»
+  sobre el artefacto está pendiente; lo comprobado es la ruta, el código y la herramienta de verificación (con sus
+  pruebas).
 - **Para retomar:** con la PC libre, en `C:\Users\bufim\BE-aab`: `npm ci` (Node 22) y `node scripts/aab/construir-aab.mjs`;
   después `node scripts/aab/verificar-aab.mjs …` y copiar `verificacion.md` y `construccion.json` a
   `EVIDENCIA/GOOGLE-PLAY/`. La APK vigente (0.18.0-candidata.1) no se toca.

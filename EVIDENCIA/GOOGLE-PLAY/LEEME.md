@@ -14,20 +14,26 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
 
 ## El AAB candidato: preparado, **no construido** en esta sesión
 
-- **Qué está listo:** la rama de versión `aab/candidata-0.18.0-2` (commit `b2fc0e6` = esta rama en `3c091e8` + un commit
-  con `VERSION = '0.18.0-candidata.2'` y `versionCode: 31`), el árbol `C:\Users\bufim\BE-aab`, el plugin de firma, los
-  scripts, bundletool 1.18.3 en `C:\Users\bufim\BE-herramientas\bundletool\` y la carpeta de salida
-  `C:\Users\bufim\BE-artefactos\aab\`.
+- **Qué está listo:** la rama de versión `aab/candidata-0.18.0-2` (`VERSION = '0.18.0-candidata.2'` y
+  `versionCode: 31` sobre esta rama, que se vuelve a mezclar en ella con cada corrección; el commit de origen del
+  artefacto será la cabeza de esa rama al construir, y va en el nombre del archivo y en `esperado.json`), el árbol
+  `C:\Users\bufim\BE-aab` (sin `node_modules`: hay que correr `npm ci`), el plugin de firma, los scripts, bundletool
+  1.18.3 en `C:\Users\bufim\BE-herramientas\bundletool\` y la carpeta de salida `C:\Users\bufim\BE-artefactos\aab\`.
 - **Qué pasó:** el 2026-10-28 se intentó dos veces. La primera, con un árbol espejado por junctions, falló al compilar
   el dominio (faltaba el `node_modules` anidado con zod 4.6.x: un artefacto construido así no sería fiel al lockfile).
   La segunda, con `npm ci` en el árbol (el procedimiento documentado), la cortó la poca memoria de la PC: el guardián de
   memoria de la sesión detuvo el proceso y `npm ci` terminó con `0xC0000142` en el preinstall de Prisma, con ~700 MB
-  libres. La construcción de Gradle (~2,5 GB, 40 min) no se lanzó: no era viable en esas condiciones.
+  libres. La construcción de Gradle (~2,5 GB, 40 min) no se lanzó: no era viable en esas condiciones. Después de las
+  correcciones del verificador, con la rama de versión actualizada (`b6ea7c3`), se midió de nuevo: 733 MB libres de
+  6.030, sin Chrome, Java ni Node. Y después de las correcciones de la revisión adversaria (18:40 UTC): 685 MB libres,
+  con la sesión de Claude (unos 820 MB entre tres procesos) y el antivirus (229 MB) como procesos más grandes. Sin
+  margen, y sin repetir intentos (pedido de Dirección): el bloqueo es la memoria libre de la PC.
 - **Cómo construirlo (punto de reanudación):** con la PC lo más libre posible (sin Chrome; medir la RAM primero), en
   `C:\Users\bufim\BE-aab`, con Node 22 (`C:\Users\bufim\AppData\Roaming\fnm\node-versions\v22.23.2\installation`):
   `npm ci`, y después `node scripts/aab/construir-aab.mjs` (prebuild + `:app:bundleRelease`, firma desde el respaldo
-  por el entorno, un worker, sin demonio). Deja `C:\Users\bufim\BE-artefactos\aab\0.18.0-candidata.2\be-0.18.0-candidata.2-b2fc0e6.aab`,
-  su `.sha256` y `construccion.json`.
+  por el entorno, un worker, sin demonio; se niega si hay cambios sin confirmar o faltan Google o Firebase, salvo que
+  se declare a propósito). Deja `C:\Users\bufim\BE-artefactos\aab\0.18.0-candidata.2\be-0.18.0-candidata.2-<commit>.aab`,
+  su `.sha256`, `construccion.json` y `esperado.json`.
 - **Cómo verificarlo:** `node scripts/aab/verificar-aab.mjs <ruta.aab> --esperado <carpeta>/esperado.json` (el
   `esperado.json` lo deja `construir-aab.mjs` a partir de las fuentes de la construcción); copiar `verificacion.md`,
   `construccion.json` y `esperado.json` a esta carpeta (no tienen secretos). El verificador exige cada valor esperado
@@ -85,12 +91,18 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
 
 ### F. Lo comprobado automáticamente (sin teléfono ni Play Console)
 
-Está en `verificacion.md`, contra los valores esperados: bundle válido, paquete, versión y versionCode, commit,
-ambiente (`test`, `be-api-hndp`), el client ID web de Google, los recursos de Firebase, targetSdk 36, 64 bits, el App
-Link de la invitación y el `assetlinks.json` publicado con la clave de firma de la app, 16 KB **en el artefacto**
-(bibliotecas nativas sin comprimir, alineación ELF a 16384 de cada biblioteca de 64 bits y `zipalign -P 16` sobre la
-APK universal), el certificado del AAB y la ausencia de credenciales en todo el bundle descomprimido. Y en la CI del
-PR: el plugin de firma (3 pruebas) y el verificador (credenciales sintéticas en un zip y ELF sintéticos: 2 pruebas).
+Está en `verificacion.md`, contra los valores esperados: bundle válido, paquete, versión y versionCode, commit y
+árbol limpio al construir, ambiente (`test`, `be-api-hndp`), el client ID web de Google, los recursos de Firebase,
+targetSdk 36, 64 bits, el App Link de la invitación y el `assetlinks.json` publicado con la clave de firma de la app,
+16 KB **en el artefacto** (la configuración del bundle: bibliotecas nativas sin comprimir y `PAGE_ALIGNMENT_16K`; la
+alineación ELF de cada biblioteca de 64 bits: PT_LOAD a 16384 y fin del RELRO alineado; y `zipalign -c -P 16` sobre la
+APK universal con todas las bibliotecas sin comprimir), el certificado del AAB con `keytool` y `jarsigner -strict`, y la
+ausencia de credenciales en todo el bundle descomprimido (por nombre, por contenido y, con `--respaldo`, los valores
+literales de las contraseñas del respaldo, que se leen y nunca se escriben). «Todo bien» solo si cada comprobación
+obligatoria corrió y dio true; una pendiente o un valor que no se pudo leer lo impiden. Y en la CI del PR: el plugin de
+firma (3 pruebas) y el verificador (`scripts/aab/verificar-aab.test.cjs`: secretos sintéticos dentro de un zip, el
+bloque de firma JAR que NO es un secreto, un PKCS#12 sintético, un zip anidado, archivos grandes por bloques, ELF
+sintéticos de 64 y 32 bits con y sin RELRO, y el esperado incompleto o vacío que nunca da «todo bien»).
 
 ### G. Lo que 16 KB deja para un dispositivo (pendiente en el teléfono)
 
