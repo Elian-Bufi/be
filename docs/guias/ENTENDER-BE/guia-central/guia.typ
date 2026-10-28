@@ -72,7 +72,8 @@
     column-gutter: 8mm,
     [
       *Los estados de una afirmación.* Cada vez que la guía dice que algo existe, dice también en qué estado está.
-      Son estados distintos y se prueban de forma distinta (nivel 5):
+      Los cinco primeros se prueban por separado y se combinan (nivel 5); «propuesto» y «fuera de alcance» no son un paso
+      más: clasifican lo que no tiene código o no se va a hacer.
 
       #estado("implementado") #estado("verificado") #estado("integrado") #estado("desplegado") #estado("validado") #estado("propuesto") #estado("fuera")
     ],
@@ -812,7 +813,7 @@
 #lamina(
   nivel: "Nivel 5 · Cambiar el sistema sin perder el control",
   pregunta: "¿Por qué «integrado», «desplegado» y «validado» no son lo mismo?",
-  bajada: [Un cambio pasa por cinco estados. Cada uno responde una pregunta distinta y tiene su propia prueba.],
+  bajada: [Un cambio tiene cinco dimensiones que se prueban por separado y se combinan: ninguna es un peldaño de otra.],
 )[
   #diagrama("G-15")
   #v(2pt)

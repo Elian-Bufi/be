@@ -4,31 +4,56 @@
 
 Lo funcional de esta versión está integrado en `main` (`e4512cb`), desplegado en `test` y en una APK candidata
 publicada. Lo que falta para cerrar es, sobre todo, validación con personas (las partes B y C de la prueba breve, el
-teléfono y los profesionales) y decisiones tuyas. No hay trabajo técnico bloqueante: lo técnico pendiente está en dos PR
-en borrador.
+teléfono y los profesionales) y decisiones tuyas.
+
+Qué falta, según para qué:
+- **Defensa y demostración:** no hace falta más código. Lo técnico abierto está en PR en borrador que esperan tu
+  decisión (abajo).
+- **Piloto con personas reales:** sí falta trabajo técnico y legal, en la ruta 3. Por ejemplo, el gate del 08 §42 y
+  exportar los datos de la persona.
 
 **Lo que necesito de vos, en corto:**
 
-1. Terminar la prueba breve: partes B y C (#217 tiene el guion y los resultados de la parte A).
-2. Decidir si se integran #218 (los pendientes técnicos de Administración) y #217 (la prueba breve).
+1. Terminar la prueba breve: partes B y C. #217 tiene el guion y los resultados de la parte A.
+2. Decidir si se integran:
+   - #218, los pendientes técnicos de Administración. Corrige un 500 real.
+   - #219, la guía, el cuaderno, este documento y el material visual.
+   - #217, la prueba breve.
+
+   Hay otros dos apilados sobre #219, que se integran después de él: #220, con las 50 recetas nuevas, y la medición de la
+   cartera con concurrencia.
 3. Decidir las cuatro observaciones de la parte A (O-1 a O-4, abajo).
-4. Antes del 30/11 a las 21:00, decidir las excepciones de seguridad de DL-114, que vencen ese día.
-5. Elegir la herramienta y quién genera las imágenes del material visual (`EVIDENCIA/MATERIAL-VISUAL/LEEME.md`).
+4. Decidir las excepciones de seguridad de DL-114. Vencen el 30/11 a las 21:00, hora de Argentina (el 1/12 a las 00:00
+   UTC). No se prorrogan solas.
+5. Generar las fotos de las 66 recetas en tu sesión de ChatGPT, con el paquete de #220
+   (`EVIDENCIA/RECETAS-AMPLIACION/PAQUETE-DE-GENERACION.md`), y revisarlas. Esta sesión no tenía con qué generarlas.
+6. Leer la guía y el cuaderno: su revisión humana sigue pendiente, igual que la de los ejercicios del material visual.
 
 Este documento reemplaza como vigentes a la matriz del 23/10 (`EVIDENCIA/CONSOLIDACION-2026-10-23/MATRIZ-DE-ESTADO.md`)
 y a las notas de `docs/QUE-FALTA.md`. Las dos quedan como historia.
 
 ## Cómo se leen los estados
 
-Cada capacidad tiene el estado **más alto que alcanzó**, en este orden. Cada estado se prueba de una forma distinta.
+Cada capacidad se describe en **cinco dimensiones** que se prueban por separado. Se combinan y **no son peldaños de una
+escala**: decir solo «el estado más alto» escondería información. Por eso la columna «Estado» las nombra a todas.
 
-| Estado | Quiere decir | Se prueba con |
+| Dimensión | Quiere decir | Se prueba con |
 |---|---|---|
-| **Implementado** | El código existe en una rama. | El PR y su CI. |
+| **Implementado** | El código existe en una rama. | El PR. |
 | **Integrado** | Está en `main`. | El merge. |
 | **Desplegado o distribuido** | Corre en `test`, o la APK está publicada. | `/health/ready` con el commit, o la release. |
-| **Verificado automáticamente** | Lo comprueba la CI o un script contra `test`. | La corrida, con su número. |
+| **Verificado automáticamente** | Lo comprueba la CI o un script, en una rama, en `main` o contra `test`. | La corrida, con su número. |
 | **Validado por una persona** | Alguien lo usó en una tarea real y se observó. | El registro de la prueba. |
+
+Ejemplos de combinaciones que existen hoy:
+- #218 está implementado y verificado, sin integrar.
+- La APK 0.18.0-candidata.1 está distribuida desde su propia rama de versión.
+- La Administración está desplegada y validada solo en parte (parte A).
+
+Aparte de las cinco dimensiones hay dos clasificaciones, para lo que no es un cambio en curso:
+
+| Clasificación | Quiere decir | Se prueba con |
+|---|---|---|
 | **Propuesto** | Escrito, sin código o sin decisión. | Nada: es una idea. |
 | **Fuera de alcance** | Declarado así. No es pendiente. | El documento que lo declara. |
 
@@ -42,9 +67,14 @@ Una propuesta no es una funcionalidad aprobada. Un verde de la CI no es una vali
   responde.
 - **APK:** estable `0.13.2` (`be-apk-0.13.2`). Candidata `0.18.0-candidata.1` (prerelease del 26/10, `b64d0c4`, código 30):
   es el `main` del 25/10 con su número de versión.
-- **PR abiertos:** #218 y #217 (borradores de este período); #204 (prueba de integración del 23/10, para cerrar sin
-  integrar); #199 (tesis v1) y #193 (ampliaciones A a F), documentales.
-- **Esta rama** (`wp-nocturno-2026-10-27`): la guía, el cuaderno, el plan de estudio, el material visual y este documento.
+- **PR abiertos, todos en borrador:**
+  - #219 (esta rama, `wp-nocturno-2026-10-27`): la guía, el cuaderno, el plan de estudio, el material visual, la medición
+    de la cartera y este documento;
+  - apilados sobre #219, del encargo del 2026-10-28: #220 (las 50 recetas nuevas, sin fotos) y la medición de la cartera
+    con concurrencia (rama `wp-cartera-concurrencia-2026-10-28`);
+  - #218 (Administración) y #217 (la prueba breve);
+  - #204 (prueba de integración del 23/10, para cerrar sin integrar);
+  - #199 (tesis v1) y #193 (ampliaciones A a F), documentales.
 
 ## Estado por capacidad
 
@@ -93,9 +123,10 @@ Las observaciones de la parte A, a decidir:
 | Las APK publicadas siguen leyendo la API de hoy | Integrado; verificado (lo que leen la 0.13.2, la 0.17.0-candidata.3 y la 0.18.0-candidata.1) | #198, #216 · DL-152 | — | — |
 | Excepciones de la auditoría de dependencias (el zod 3 de Expo y node-forge) | Integrado; **vencen el 2026-12-01 a las 00:00 UTC** (21:00 del 30/11) | #208 · DL-114 | Revisar las fuentes y decidir antes del vencimiento; no se prorroga sola | Sí |
 | Escenarios «Prueba» en `test` | Desplegado (cargados el 26/10); verificado (6 de 6; pantalla 48 de 48) | #217 (borrador) | Decidir si se integra la herramienta y el guion | Sí |
-| Recetas de ejemplo en `test` | Integrada la herramienta; **no consta que se hayan cargado** (al 23/10, sin cargar) | #192 | Autorizar la carga | Sí |
+| Recetas de ejemplo en `test` (las 16 originales) | Integrada la herramienta; **no consta que se hayan cargado** (al 23/10, sin cargar) | #192 | Autorizar la carga | Sí |
+| Ampliación: 50 recetas nuevas (66 en total) | Implementado; verificado automáticamente (prueba de contenido; la carga, con cortes y reanudación, en una base efímera de la CI); **sin fotos** (bloqueado por herramienta); no desplegado: no está en `test` | #220 (borrador) | Integrar; generar y revisar las fotos; autorizar la carga | Sí |
 | Exportar los datos de la persona | Propuesto: la definición está solo en la rama local `wp-exportar-mis-datos` | DL-021, DL-142 | Publicarla como borrador o descartarla | Sí |
-| Rendimiento de la cartera con 50, 100 y 200 personas | Verificado automáticamente **fuera de Render** (runner de GitHub, 28/10): 312, 617 y 1.233 ms de mediana; 3 filas nuevas en `decision_de_acceso` por persona en cada lectura | `EVIDENCIA/RENDIMIENTO-CARTERA` · corrida 40641148313 | Decidir si 1,2 s con 200 personas y 600 filas por lectura son aceptables; medir en el ambiente real si hay piloto | Sí: decidir |
+| Rendimiento de la cartera con 50, 100 y 200 personas | Verificado automáticamente **fuera de Render** (runner de GitHub, 28/10): 312, 617 y 1.233 ms de mediana; 3 filas nuevas en `decision_de_acceso` por persona en cada lectura. La medición con concurrencia e historia más representativa va en su propio PR, apilado sobre #219 | `EVIDENCIA/RENDIMIENTO-CARTERA` · corrida 40641148313 | Decidir si 1,2 s con 200 personas y 600 filas por lectura son aceptables; fijar un criterio de aceptación antes de un piloto y medir en su ambiente | Sí: decidir |
 
 ### Lo académico y lo documental
 
@@ -103,8 +134,8 @@ Las observaciones de la parte A, a decidir:
 |---|---|---|---|---|
 | Documentación de tesis v1 | Propuesto (documental, en borrador) | #199 · `INFORME.md` | Lo que completa Dirección | Sí |
 | Auditoría crítica del 21/10 | Propuesto, sin publicar (rama local `mesa/auditoria-v1`) | — | Decidir si se publica | Sí |
-| Guía central (24 páginas) y cuaderno de datos (19) | Implementado en esta rama | `docs/guias/ENTENDER-BE` | Leerlos, corregir lo que no se entienda e integrarlos | Sí |
-| Material visual (32 de Nutrición y 15 ejercicios) | Propuesto: fichas, prompts y tres imágenes existentes; no hay herramienta de generación en esta sesión | `EVIDENCIA/MATERIAL-VISUAL` | Elegir la herramienta y generar en tandas | Sí |
+| Guía central (24 páginas) y cuaderno de datos (19) | Implementado en esta rama; los diagramas pasan su revisión automática. **La revisión humana está pendiente** | `docs/guias/ENTENDER-BE` | Leerlos, corregir lo que no se entienda e integrarlos | Sí |
+| Material visual: 66 recetas, 16 alimentos y 15 ejercicios | Implementado en #219 (las 16 recetas originales, los alimentos y los ejercicios) y en #220 (las 66 recetas). Hay 3 imágenes reales, las de ejercicios, con su revisión humana pendiente. **Fotos de recetas: 0 de 66**, porque ninguna de las dos sesiones tenía con qué generarlas | `EVIDENCIA/MATERIAL-VISUAL` · `EVIDENCIA/RECETAS-AMPLIACION` (#220) · galería privada | Generar las fotos con el paquete de #220 y revisarlas | Sí |
 | Ampliaciones A a F | Propuesto | #193 | Decidir cuando toque | Sí |
 | #204, integración de prueba del 23/10 | Todo lo que probaba ya está en `main` | — | Cerrarlo sin integrar | Sí: autorizar |
 
