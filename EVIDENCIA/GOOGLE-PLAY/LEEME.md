@@ -160,7 +160,8 @@ literales de las contraseñas del respaldo, que se leen y nunca se escriben). «
 obligatoria corrió y dio true; una pendiente o un valor que no se pudo leer lo impiden. Y en la CI del PR: el plugin de
 firma (3 pruebas) y el verificador (`scripts/aab/verificar-aab.test.cjs`: secretos sintéticos dentro de un zip, el
 bloque de firma JAR que NO es un secreto, un PKCS#12 sintético, un zip anidado, archivos grandes por bloques, ELF
-sintéticos de 64 y 32 bits con y sin RELRO, y el esperado incompleto o vacío que nunca da «todo bien»).
+sintéticos de 64 y 32 bits con y sin RELRO, y el esperado incompleto o vacío que nunca da «todo bien»). CI verde en
+`6690af0` (corrida 40730842576) y en `7475ea1` (corridas 40734129288 y 40734140772).
 
 ### G. Lo que 16 KB deja para un dispositivo (pendiente en el teléfono)
 

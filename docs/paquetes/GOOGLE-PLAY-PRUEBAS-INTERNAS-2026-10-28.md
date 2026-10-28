@@ -171,6 +171,10 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
   (redundante con la APK universal y `zipalign`) y buscar secretos del respaldo por omisión (queda detrás de
   `--respaldo`, para que el verificador no lea la keystore sin pedirlo). La CI de `fca2452` falló en Ubuntu porque la
   prueba usaba `tar.exe` de Windows; ahora la prueba escribe y lee el zip con Node, sin herramientas externas.
+- **CI de la rama (cinco trabajos: legajo, verificar, integración, recorridos, imagen):** verde en `6690af0` (corrida
+  40730842576, las correcciones de la revisión) y verde en `7475ea1` (corridas 40734129288 y 40734140772, el lanzador
+  y su documentación); las de `9ba8526` quedaron canceladas por superadas. La rama de versión `aab/candidata-0.18.0-2`
+  (`e4e1caa`) es esta rama más el commit de versión; la CI no corre sobre `aab/*`.
 - **No hecho:** el AAB candidato **no se construyó**: el primer intento (árbol espejado) no era fiel al lockfile y el
   segundo (`npm ci` en el árbol) lo cortó la poca memoria de la PC; la construcción de Gradle (~2,5 GB, ~40 min) no se
   lanzó. **Tercera medición, después de las correcciones y con la rama de versión actualizada (`b6ea7c3`, a las 17:55
