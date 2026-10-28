@@ -169,11 +169,11 @@ interface GrupoDeActividad {
  *   planificación, con `DISTINCT ON`: una fila por par, cualquiera sea la cantidad de borradores;
  * - el Proceso abierto de cada par (único por el índice parcial `proceso_operativo_uno_abierto`) y, en otra sentencia, la
  *   expectativa vigente de cada uno (`ProcesoService.proximasRevisionesVigentes`, la misma regla de la cadena);
- * - las solicitudes de formulario sin respuesta de los pares, en orden de registro: la más antigua por par y alcance;
- * - las evaluaciones antropométricas en preparación de los pares, en orden de registro: la más antigua por par;
+ * - la solicitud de formulario sin respuesta más antigua de cada par y alcance (`DISTINCT ON`, una fila por par);
+ * - la evaluación antropométrica en preparación más antigua de cada par (`DISTINCT ON`, una fila por par);
  * - la actividad del período agrupada por asesorado, una por alcance (comidas sin anular, sesiones, tomas registradas).
- * Lo que vuelve es del orden de los pares (hasta 200 personas por tres alcances), salvo las solicitudes sin respuesta y
- * las evaluaciones en preparación, que son el trabajo pendiente de la cartera y, por eso, pocas.
+ * Todo lo que vuelve es del orden de los pares (hasta 200 personas por tres alcances): la base elige la fila que importa
+ * de cada par; nada se trae entero para reducirlo en memoria.
  */
 async function leerHechosPorConjuntos(tx: Tx, procesos: ProcesoService, profesionalId: string, pares: readonly ParAutorizado[], hoy: string, periodo: PeriodoCivil): Promise<(par: ParAutorizado) => [Hecho[], Actividad]> {
   const porAlcance: Record<Alcance, Set<string>> = { NUTRICION: new Set(), ENTRENAMIENTO: new Set(), ANTROPOMETRIA: new Set() };
@@ -212,31 +212,34 @@ async function leerHechosPorConjuntos(tx: Tx, procesos: ProcesoService, profesio
   const procesoDe = new Map(abiertos.map((p) => [clavePar(p.asesoradoId, p.alcance), p.id]));
   const expectativas = await procesos.proximasRevisionesVigentes(tx, abiertos.map((p) => p.id));
 
-  // c) La solicitud de formulario sin respuesta más antigua de cada par, en los tres alcances.
-  const conSolicitudes = conPares(ALCANCES);
-  const solicitudes =
-    conSolicitudes.length === 0
-      ? []
-      : await tx.solicitudDeFormulario.findMany({
-          where: { profesionalId, respuesta: null, OR: soloLosPermitidos(conSolicitudes) },
-          orderBy: [{ momentoDeRegistro: 'asc' }, { id: 'asc' }],
-          select: { asesoradoId: true, alcance: true, momentoDeRegistro: true },
-        });
+  // c) La solicitud de formulario sin respuesta más antigua de cada par, en los tres alcances: la base elige la más
+  //    antigua (DISTINCT ON), una fila por par; cada rama del OR es un alcance con sus asesorados permitidos.
   const primeraSolicitud = new Map<string, Date>();
-  for (const s of solicitudes) {
-    const k = clavePar(s.asesoradoId, s.alcance);
-    if (!primeraSolicitud.has(k)) primeraSolicitud.set(k, s.momentoDeRegistro);
+  const conSolicitudes = conPares(ALCANCES);
+  if (conSolicitudes.length > 0) {
+    const ramas = conSolicitudes.map((alcance) => Prisma.sql`(s."alcance" = ${alcance}::"Alcance" AND s."asesorado_id" = ANY(${ids[alcance]}::uuid[]))`);
+    const filas = await tx.$queryRaw<{ asesoradoId: string; alcance: Alcance; momentoDeRegistro: Date }[]>`
+      SELECT DISTINCT ON (s."asesorado_id", s."alcance") s."asesorado_id"::text AS "asesoradoId", s."alcance"::text AS "alcance", s."momento_de_registro" AS "momentoDeRegistro"
+        FROM "solicitud_de_formulario" s
+        LEFT JOIN "respuesta_de_formulario" r ON r."solicitud_id" = s."id"
+       WHERE s."profesional_id" = ${profesionalId}::uuid
+         AND r."id" IS NULL
+         AND (${Prisma.join(ramas, ' OR ')})
+       ORDER BY s."asesorado_id", s."alcance", s."momento_de_registro" ASC, s."id" ASC`;
+    for (const f of filas) primeraSolicitud.set(clavePar(f.asesoradoId, f.alcance), f.momentoDeRegistro);
   }
 
-  // d) La evaluación antropométrica en preparación más antigua de cada par.
+  // d) La evaluación antropométrica en preparación más antigua de cada par, también elegida en la base.
   const enPreparacion = new Map<string, Date>();
   if (ids.ANTROPOMETRIA.length > 0) {
-    const filas = await tx.evaluacionAntropometrica.findMany({
-      where: { profesionalId, asesoradoId: { in: ids.ANTROPOMETRIA }, estado: 'EN_PREPARACION' },
-      orderBy: [{ momentoDeRegistro: 'asc' }, { id: 'asc' }],
-      select: { asesoradoId: true, momentoDeRegistro: true },
-    });
-    for (const f of filas) if (!enPreparacion.has(f.asesoradoId)) enPreparacion.set(f.asesoradoId, f.momentoDeRegistro);
+    const filas = await tx.$queryRaw<{ asesoradoId: string; momentoDeRegistro: Date }[]>`
+      SELECT DISTINCT ON (e."asesorado_id") e."asesorado_id"::text AS "asesoradoId", e."momento_de_registro" AS "momentoDeRegistro"
+        FROM "evaluacion_antropometrica" e
+       WHERE e."profesional_id" = ${profesionalId}::uuid
+         AND e."asesorado_id" = ANY(${ids.ANTROPOMETRIA}::uuid[])
+         AND e."estado" = 'EN_PREPARACION'
+       ORDER BY e."asesorado_id", e."momento_de_registro" ASC, e."id" ASC`;
+    for (const f of filas) enPreparacion.set(f.asesoradoId, f.momentoDeRegistro);
   }
 
   // e) La actividad del período, por asesorado y alcance. Un asesorado sin registros no tiene grupo: cero y sin último.
