@@ -26,7 +26,7 @@ import { borradorSembrado, medicionSembrada, registrarBorrador, sembrarEspecific
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { leerCarteraAnterior } from './soporte-cartera-anterior';
 import { activarPlanDeEntrenamiento, borradorDeEjecucion, crearBorradorDeEntrenamiento, cuerpoDeEvaluacionDeEntrenamiento, cuerpoDeObjetivoDeEntrenamiento, ejecucion, type CircuitoParaPlanificar } from './soporte-entrenamiento';
-import { activar, circuitoListoParaPlanificar, crearBorrador, cuerpoDeRevision, registrarComida } from './soporte-nutricion';
+import { activar, circuitoListoParaPlanificar, crearBorrador, registrarComida } from './soporte-nutricion';
 import { finalizar, pausar, prepararAsesorado, prepararProfesional, reanudar, revocarB2, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -171,7 +171,7 @@ interface PersonaDeNutricion {
  * Una persona con vínculo de Nutrición: sin plan, con solo un borrador, o con un plan activado (con o sin fecha de
  * revisión, con comidas en los días indicados hacia atrás y, si se pide, un borrador posterior a la activación).
  */
-async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 'activado'; nextReviewAt?: string; comidas?: readonly number[]; borradorPosterior?: boolean; revisionSinFecha?: boolean }): Promise<PersonaDeNutricion> {
+async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 'activado'; nextReviewAt?: string; comidas?: readonly number[]; borradorPosterior?: boolean; expectativaSinFecha?: boolean }): Promise<PersonaDeNutricion> {
   if (opciones.plan === 'ninguno') {
     const ase = await prepararAsesorado(app, etiqueta(), { a3: true });
     const v = await vinculoCompleto(app, pro, ase, 'NUTRICION');
@@ -184,16 +184,18 @@ async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 
     if (opciones.comidas?.length) {
       const dia = await diaDeHoy(c.ase);
       // La de «hoy» es de hace un minuto (una ocurrencia futura se rechaza); las demás, al mediodía de ese día.
-      let ultimaComida: string | null = null;
-      for (const diasAtras of opciones.comidas) {
-        const r = await registrarComida(app, c.ase, b.planId, dia, { ocurrencia: diasAtras === 0 ? new Date(Date.now() - 60_000) : new Date(`${hace(diasAtras)}T12:30:00-03:00`) }).expect(201);
-        ultimaComida = r.body.data.executionId as string;
-      }
-      // Una revisión MANTENER aplicada sin fecha deja la expectativa vigente del Proceso sin fecha: REVIEW_UNDATED.
-      if (opciones.revisionSinFecha && ultimaComida) {
-        const rev = await conSesion(app, pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/reviews`).send(cuerpoDeRevision([{ type: 'EXECUTION', id: ultimaComida }], 'MAINTAIN')).expect(201);
-        await conSesion(app, pro.token).post(`/api/v1/nutrition/reviews/${rev.body.data.reviewId as string}/apply`).send({ expectedVersion: 'v1' }).expect(200);
-      }
+      for (const diasAtras of opciones.comidas) await registrarComida(app, c.ase, b.planId, dia, { ocurrencia: diasAtras === 0 ? new Date(Date.now() - 60_000) : new Date(`${hace(diasAtras)}T12:30:00-03:00`) }).expect(201);
+    }
+    // Una expectativa de revisión sin fecha (REG-06-150) es un hecho que la API de hoy no produce (activar y revisar
+    // solo fijan una con fecha): se siembra por SQL como sucesora de la vigente, con los mismos disparadores de la base.
+    if (opciones.expectativaSinFecha) {
+      await prisma.$executeRaw`
+        INSERT INTO "proxima_revision" ("proceso_id", "predecesora_id", "fecha_objetivo", "fuente", "version_de_plan_id", "actor_id", "procedencia", "momento_de_ocurrencia")
+        SELECT p."id",
+               (SELECT pr."id" FROM "proxima_revision" pr WHERE pr."proceso_id" = p."id" AND NOT EXISTS (SELECT 1 FROM "proxima_revision" s WHERE s."predecesora_id" = pr."id")),
+               NULL, 'VERSION_DE_PLAN', p."version_de_apertura_id", ${pro.id}::uuid, '{"prueba":"cartera-por-conjuntos"}'::jsonb, now()
+          FROM "proceso_operativo" p
+         WHERE p."profesional_id" = ${pro.id}::uuid AND p."asesorado_id" = ${c.ase.id}::uuid AND p."alcance" = 'NUTRICION' AND p."estado" = 'ABIERTO'`;
     }
     if (opciones.borradorPosterior) await conSesion(app, pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: b.planId }).expect(201);
   }
@@ -264,9 +266,9 @@ async function carteraMixta() {
   // E: sin plan en las dos áreas (empate total en dos dominios).
   const e = await nutricion(pro, { plan: 'ninguno' });
   await entrenamiento(pro, e.ase, { plan: 'ninguno' });
-  // F: activado, con una revisión MANTENER aplicada sin fecha (la expectativa queda sin fecha) y una comida; después se
-  //    finaliza el vínculo.
-  const f = await nutricion(pro, { plan: 'activado', comidas: [5], revisionSinFecha: true });
+  // F: activado con fecha de revisión y, después, una expectativa sin fecha como sucesora (REVIEW_UNDATED); una comida;
+  //    al final se finaliza el vínculo.
+  const f = await nutricion(pro, { plan: 'activado', nextReviewAt: enDias(20), comidas: [5], expectativaSinFecha: true });
   // G: solo antropometría, con una evaluación en preparación y dos registradas.
   const g = await prepararAsesorado(app, etiqueta(), { a3: true });
   await antropometria(pro, g, { enPreparacion: true, registradas: 2 });
