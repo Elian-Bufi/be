@@ -22,14 +22,19 @@ export const COMO_SE_MUESTRA = {
   },
 };
 
-/** El estilo común de las fotos de recetas (se antepone a lo propio de cada una). */
+/**
+ * El estilo común de las fotos de recetas (se antepone a lo propio de cada una). El encargo del 2026-10-28 (§11) suma a
+ * la serie las 50 recetas nuevas: el mismo estilo para las 66, con la vajilla de las nuevas (plato hondo y plato de
+ * postre), qué hacer si la herramienta solo da 3:2 y la plausibilidad de la cocción.
+ */
 export const ESTILO_DE_RECETAS = [
-  'Fotografía gastronómica realista, para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.',
-  'Luz natural suave desde la izquierda, sombras leves. Fondo neutro liso, gris claro cálido o beige, sin textura llamativa. Superficie mate.',
-  'Vajilla coherente para toda la serie: plato playo blanco liso de 26 cm, o cuenco blanco liso de 15 cm, o vaso de vidrio liso de 300 ml, según la receta. Cubiertos solo si se indican.',
-  'Cámara a unos 45 grados, centrada, misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho.',
-  'Formato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app).',
-  'Sin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la lista de ingredientes: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.',
+  'Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.',
+  'Luz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.',
+  'Vajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.',
+  'Cámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.',
+  'Formato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.',
+  'Cocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.',
+  'Sin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.',
 ];
 
 /** Lo propio de cada receta, por número del manifiesto: cómo se presenta y lo que no debe aparecer. */
