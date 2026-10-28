@@ -422,4 +422,4 @@ No debe aparecer: puente en el piso sin banco, máquina, mancuernas.
 
 
 ---
-Generado por `herramientas/generar.mjs` desde el manifiesto congelado y `herramientas/seleccion.mjs` (commit de referencia `e4512cb`). No editar a mano: cambiar la selección y volver a generar.
+Generado por `herramientas/generar.mjs` desde el manifiesto congelado, el de la ampliación del 2026-10-28 y `herramientas/seleccion.mjs` (commit de referencia `e4512cb`). No editar a mano: cambiar la selección y volver a generar.

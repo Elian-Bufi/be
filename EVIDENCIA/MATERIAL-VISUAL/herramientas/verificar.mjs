@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { archivoEsperado, ESTADOS, fotoDe, leerManifiesto, medidasDeImagen, problemasDeLaFoto, sinTildes } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.mjs';
+import { fotoDe as fotoDeLaAmpliacion, leerAmpliacion } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/recetas/ampliacion-2026-10-28/ampliacion.mjs';
 import { ALIMENTOS, EJERCICIOS, RECETAS } from './seleccion.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
@@ -27,15 +28,18 @@ const mal = (texto) => problemas.push(texto);
 
 const inventario = JSON.parse(fs.readFileSync(join(CARPETA, 'inventario.json'), 'utf8'));
 const manifiesto = leerManifiesto();
+const ampliacion = leerAmpliacion();
 const porTipo = (t) => inventario.contenidos.filter((c) => c.tipo === t);
 const recetas = porTipo('receta');
 const alimentos = porTipo('alimento');
 const ejercicios = porTipo('ejercicio');
 
-// Cantidades del encargo.
-if (recetas.length !== manifiesto.recetas.length) mal(`recetas: ${recetas.length} en el inventario y ${manifiesto.recetas.length} en el manifiesto`);
+// Cantidades de los encargos: las 16 recetas originales más las 50 de la ampliación del 2026-10-28 (66), hasta 16
+// alimentos y 15 ejercicios. El tope de 32 contenidos de Nutrición era del encargo del 2026-10-27; el del 2026-10-28
+// amplía las recetas a 66 y deja los alimentos como estaban.
+const esperadas = manifiesto.recetas.length + ampliacion.recetas.length;
+if (recetas.length !== esperadas) mal(`recetas: ${recetas.length} en el inventario y ${esperadas} en los dos manifiestos`);
 if (alimentos.length > 16) mal(`alimentos: ${alimentos.length} (hasta 16)`);
-if (recetas.length + alimentos.length > 32) mal(`Nutrición: ${recetas.length + alimentos.length} contenidos (hasta 32)`);
 if (ejercicios.length !== 15) mal(`ejercicios: ${ejercicios.length} (se esperan 15)`);
 
 // Identificadores y archivos únicos.
@@ -67,6 +71,24 @@ for (const r of manifiesto.recetas) {
   if (ingredientes !== delInventario) mal(`receta ${r.numero}: los ingredientes del inventario no son los del manifiesto`);
   for (const i of r.ingredientes) if (!c.prompt.includes(i.nombre)) mal(`receta ${r.numero}: el prompt no nombra «${i.nombre}»`);
 }
+
+// Recetas nuevas: cada una de la ampliación, con su código, su archivo esperado, sus ingredientes tal cual y su presentación.
+for (const r of ampliacion.recetas) {
+  const c = recetas.find((x) => x.identificador.codigo === r.codigo);
+  if (!c) {
+    mal(`receta ${r.codigo}: falta en el inventario`);
+    continue;
+  }
+  if (c.id !== `receta-${r.codigo}` || c.codigo !== r.codigo || c.origen !== 'NUEVA') mal(`receta ${r.codigo}: el identificador, el código o el origen`);
+  if (c.nombre !== r.nombre) mal(`receta ${r.codigo}: el nombre es «${c.nombre}» y el manifiesto dice «${r.nombre}»`);
+  if (c.archivo !== r.foto.archivo) mal(`receta ${r.codigo}: el archivo es «${c.archivo}» y se espera «${r.foto.archivo}»`);
+  const ingredientes = r.ingredientes.map((i) => `${i.nombre}|${i.cantidad.valor} ${i.cantidad.unidad}|${i.estado}`).join(';');
+  const delInventario = c.ingredientes.map((i) => `${i.nombre}|${i.cantidad}|${i.estado}`).join(';');
+  if (ingredientes !== delInventario) mal(`receta ${r.codigo}: los ingredientes del inventario no son los del manifiesto`);
+  if (!c.prompt.includes(`«${r.nombre}»`) || !c.prompt.includes(r.foto.presentacion)) mal(`receta ${r.codigo}: el prompt no nombra la receta o no lleva su presentación`);
+}
+const codigos = recetas.map((x) => x.codigo);
+if (new Set(codigos).size !== codigos.length || codigos.some((x) => !/^R\d{3}$/.test(x ?? ''))) mal('recetas: los códigos R001 a R066 no son únicos o no tienen la forma R000');
 
 // Alimentos: identificadores del catálogo, estado válido y nombre de archivo estable.
 for (const a of alimentos) {
@@ -122,7 +144,13 @@ if (fotos) {
     conFoto++;
     for (const p of problemasDeLaFoto(fs.readFileSync(join(fotos, f)), f)) mal(`foto de la receta ${r.numero}: ${p}`);
   }
-  avisos.push(`fotos de recetas en ${fotos}: ${conFoto} de ${manifiesto.recetas.length}`);
+  for (const r of ampliacion.recetas) {
+    const f = fotoDeLaAmpliacion(r, archivos);
+    if (!f) continue;
+    conFoto++;
+    for (const p of problemasDeLaFoto(fs.readFileSync(join(fotos, f)), f)) mal(`foto de la receta ${r.codigo}: ${p}`);
+  }
+  avisos.push(`fotos de recetas en ${fotos}: ${conFoto} de ${esperadas}`);
 }
 // Con --imagenes: los archivos de alimentos y ejercicios generados, por su nombre estable.
 const imagenes = arg('--imagenes');
