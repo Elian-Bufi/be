@@ -103,4 +103,28 @@ F2 suma la de su código bueno. Las de B, la de la configuración que encontró 
 
 ## Comprobación
 
-_Se completa con la CI del PR y la corrida de las mutaciones._
+**CI del PR #218** (cabeza `7255e16`: push 40635166931 y PR 40635215900). Los cinco trabajos en verde. Integración: 912 de
+912 en 68 suites (en `main`, 909 en 67): la suite nueva suma las tres pruebas de B, y las demás cambiaron por dentro.
+
+**Mutaciones** (rama `wp-mutacion-administracion-pendientes-no-integrar`, `239b5aa`, **NO SE INTEGRA**; corrida
+40635408481). Juntas, M-C (sin la auditoría del rechazo dentro de la transacción) y M-B (la identidad en modo compartido al
+empezar la configuración). Fallan 8 de 912, exactamente las previstas:
+
+| Prueba | Falla por | Qué dijo |
+|---|---|---|
+| F2 | M-C | La auditoría del código bueno quedó vacía |
+| Renovación: dos sesiones; el restablecimiento primero; la retirada primero; el cierre de la sesión primero | M-C | Sin el rechazo auditado (`SESION_REVOCADA` o `SESION_FINALIZADA`) |
+| B, la confirmación primero | M-C | La configuración que encontró su sesión cerrada no quedó auditada |
+| B, dos configuraciones a la vez | M-B | **«segunda: 500»**: el defecto, reproducido. Falla siempre, no por tiempo |
+| B, la otra configuración primero | M-B | Con la identidad compartida, el orden que pide la prueba no se sostiene: decide un interbloqueo (1,6 s) y gana la confirmación |
+
+Siguen en verde F3, el cruce y todas las demás: no dependen de C ni de B.
+
+**Las barreras (A).** F2, F3 y el cruce comprueban por construcción que el pedido llegó a esperar. Si termina sin esperar,
+fallan con «la carrera no se reprodujo». Si no llega al punto de espera, fallan con el diagnóstico de la barrera. No se
+mutaron las correcciones de F2 y F3: son de la revisión del 2026-10-25 y ya se comprobaron entonces. Acá cambió solo
+cómo se ordenan sus pruebas.
+
+**Lo que no se comprobó localmente:** la máquina tenía la memoria al límite, así que no se corrieron jest de integración,
+PostgreSQL ni el typecheck en local. Antes de subir, cada archivo pasó un control de sintaxis de TypeScript, sin tipos. Lo
+demás lo comprobó la CI.
