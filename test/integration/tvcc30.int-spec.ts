@@ -122,6 +122,25 @@ describe('TEST-RF-058 · UC-S01 · la TVCC-30 con los hechos de la base', () => 
     // 17 dígitos). Lo destapó una suite con más Procesos en la ventana (d = 11); se compara con 15 dígitos significativos.
     const con15Digitos = (v: unknown): unknown => JSON.parse(JSON.stringify(v, (_clave, x: unknown) => (typeof x === 'number' && !Number.isInteger(x) ? Number(x.toPrecision(15)) : x)));
     expect(con15Digitos(fila.resultado)).toEqual(con15Digitos(r1));
+    // Reproducción acotada (observación de Dirección del 2026-10-28): ¿la huella calculada antes de guardar coincide con
+    // la recalculada desde el resultado recuperado? ¿Y en qué capa se pierde el dígito? Se deja constancia en la salida
+    // de la prueba y se comprueba solo lo que no depende del defecto: PostgreSQL conserva el texto del número en jsonb
+    // (también el que escribió Prisma), y lo leído por Prisma difiere del original en no más de una unidad del último
+    // dígito. No se cambian la canonicalización ni las huellas existentes.
+    const recalculada = huellaTvcc30(fila.resultado as unknown as ResultadoTvcc30);
+    const [literal] = await prisma.$queryRaw<{ texto: string; leido: number }[]>`
+      SELECT ('{"x":0.18181818181818182}'::jsonb)->>'x' AS "texto", ('{"x":0.18181818181818182}'::jsonb)->'x' AS "leido"`;
+    const [guardado] = await prisma.$queryRaw<{ tasa: string | null }[]>`
+      SELECT ("resultado"->'valor'->>'tasa') AS "tasa" FROM "resultado_tvcc30" WHERE "id" = ${primero.id}::uuid`;
+    const tasaCalculada = (r1 as unknown as { valor?: { tasa?: number } }).valor?.tasa;
+    console.info(
+      `[tvcc30] huella guardada ${primero.huella} · recalculada desde la fila ${recalculada} · coinciden: ${primero.huella === recalculada} · ` +
+        `tasa calculada ${String(tasaCalculada)} · texto guardado en jsonb ${String(guardado?.tasa)} · ` +
+        `literal 0.18181818181818182: texto en jsonb ${literal?.texto} · leído por Prisma ${String(literal?.leido)}`,
+    );
+    expect(literal?.texto).toBe('0.18181818181818182');
+    expect(Math.abs((literal?.leido ?? 0) - 0.18181818181818182)).toBeLessThan(1e-15);
+    if (tasaCalculada !== undefined && guardado?.tasa) expect(Number(guardado.tasa)).toBeCloseTo(tasaCalculada, 15);
 
     // REG-06-198: no se modifica ni se borra.
     await expect(prisma.$executeRawUnsafe(`UPDATE resultado_tvcc30 SET ejecutor = 'otro' WHERE id = '${primero.id}'`)).rejects.toThrow(/append-only/);

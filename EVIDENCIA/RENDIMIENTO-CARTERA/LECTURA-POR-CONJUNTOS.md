@@ -214,7 +214,7 @@ importa: esta corrida fue en un AMD EPYC 7763 y la segunda medición en un 9V74 
 | Pregunta | Respuesta, con lo que la sostiene |
 |---|---|
 | ¿La mejora depende de un caso favorable? | Se midió con 50, 100 y 200 personas, con y sin historia, en secuencial y con 1, 3 y 5 profesionales a la vez, y la apertura completa. Lo que la propuesta ahorra son las idas y vueltas del paso 3, que crecen con los pares: cuanto más chica la cartera, menos ahorra en valor absoluto (y nada en una cartera vacía, que no hace ninguna consulta de hechos en las dos versiones). |
-| ¿Puede crecer mucho la memoria al agrupar lecturas? | Cada consulta devuelve del orden de los pares (hasta 200 personas × 3 alcances = 600 filas chicas): los borradores con `DISTINCT ON` (una fila por par), los Procesos (uno por par, índice parcial), las expectativas (una por Proceso), la actividad agrupada (una fila por persona). Las dos que no están acotadas por construcción —solicitudes sin respuesta y evaluaciones en preparación— son el trabajo pendiente de la cartera: pocas por naturaleza, y solo de los pares permitidos. No hay lectura de contenidos (planes, comidas, sesiones): solo fechas y cantidades. |
+| ¿Puede crecer mucho la memoria al agrupar lecturas? | Cada consulta devuelve del orden de los pares (hasta 200 personas × 3 alcances = 600 filas chicas): los borradores con `DISTINCT ON` (una fila por par), los Procesos (uno por par, índice parcial), las expectativas (una por Proceso), la actividad agrupada (una fila por persona) y, desde la observación de Dirección del 28/10 (§8), también las solicitudes sin respuesta y las evaluaciones en preparación con `DISTINCT ON`: la base elige la más antigua de cada par; antes se traían todas y se reducían en memoria. No hay lectura de contenidos (planes, comidas, sesiones): solo fechas y cantidades. |
 | ¿Una cartera grande perjudica a las pequeñas? | Cada pedido lee su propia cartera; las consultas usan los índices existentes (`plan_*(profesional_id, asesorado_id)` único, `proceso_operativo(profesional_id, asesorado_id, alcance)`, `solicitud_de_formulario(asesorado_id, profesional_id, momento_de_registro)`, `evaluacion_antropometrica(asesorado_id, profesional_id, estado)`, `proxima_revision(proceso_id)`, `version_de_plan_*(plan_id)`) con listas de hasta 200 ids. Lo que una cartera grande sigue costando a las demás es el paso 2 (200 confirmaciones al disco), igual que antes. |
 | ¿Se amplió alguna ventana de acceso después de una revocación? | No. El paso 2 no cambia: cada persona se decide en su transacción, con los mismos bloqueos, antes de leer. La lectura solo recibe pares ya permitidos y es más corta que antes: la distancia entre la decisión y el dato que se devuelve se achica, no se agranda. Lo prueban las pruebas de revocación, pausa y finalización (respuesta idéntica a la anterior) y el inventario de pendientes de la medición con las dos versiones. |
 | ¿Cambió el resultado entre páginas? | No: cada página recalcula igual que antes (los mismos cuatro pasos) y el cursor es el mismo. La prueba recorre la lista de a 1, 2, 5 y 7 y la compara con la lectura de una vez y con el oráculo. |
@@ -247,7 +247,34 @@ Con el paso 3 por conjuntos, cada página cuesta mucho menos y la urgencia de es
 No se recomienda tocarlo para ganar velocidad: el legajo exige registrar cada decisión (08:634) y las alternativas 1 y 2
 no lo necesitan. Si Dirección quisiera revisarlo, es una decisión del legajo (retención de auditoría, 08 §16).
 
-## 8. Cómo reproducir la medición
+## 8. Observaciones de Dirección (2026-10-28, tarde), para cerrar antes de proponer la integración
+
+**Observación 1 · solicitudes sin respuesta y evaluaciones en preparación.** Se recuperaban completas (todas las de los
+pares permitidos) y se reducían en memoria a la más antigua por par. Ahora las elige la base con `DISTINCT ON (asesorado,
+alcance)` y `DISTINCT ON (asesorado)`, una fila por par, con el mismo alcance de permisos (cada rama del `OR` es un alcance
+con sus asesorados permitidos; la evaluación, solo los permitidos en Antropometría) y el mismo criterio (la más antigua
+por `momento_de_registro`, con `id` como desempate, que no cambia el valor elegido). El resultado lo fija la misma prueba
+de equivalencia contra la copia congelada. Son las mismas dos sentencias: no cambia la cantidad de idas y vueltas, cambia
+cuántas filas viajan. **No se volvió a correr la medición** (Dirección pidió no reiniciarla ni duplicarla): la corrida
+40692787787 midió la versión anterior de estas dos consultas; esta no puede sumar idas y vueltas ni filas, así que el
+resultado medido es una cota conservadora.
+
+**Observación 2 · el caso decimal de la TVCC-30.** La forma canónica de la huella (`canonicoTvcc30`, @be/domain) es el
+JSON del resultado con las claves ordenadas e incluye los cocientes (`tasa`, `porcentaje`) como doubles. Un cociente de 17
+dígitos (2/11 = 0,18181818181818182) vuelve de la base como 0,1818181818181818: por eso la huella **recalculada desde la
+fila recuperada no coincide** con la calculada antes de guardar cuando el resultado contiene un cociente así. La prueba
+`tvcc30.int-spec.ts` ahora deja constancia en su salida (huella guardada, recalculada, coinciden sí/no, el texto que
+guardó PostgreSQL y lo que lee Prisma) y comprueba lo que no depende del defecto: PostgreSQL conserva el texto exacto en
+`jsonb` y la diferencia de lectura es de una unidad del último dígito. **Es un problema previo, no una regresión:** la
+cartera por conjuntos no toca la TVCC-30 ni la serialización; lo destapó la suite nueva porque dejó más Procesos en la
+ventana de la prueba (d = 11) y el cociente dejó de ser exacto. La garantía afectada es «el resultado conservado se puede
+verificar con su huella» (12 §22, REG-06-196): hoy se cumple para la huella guardada junto con el resultado (se calcula
+en memoria antes de guardar y no cambia), pero no para una verificación hecha recalculando desde la fila cuando hay un
+cociente de 17 dígitos. Qué habría que decidir (no se cambia nada acá): que la forma canónica no incluya los cocientes
+derivados (`n` y `d` bastan) o los fije con una precisión declarada, o que la verificación se haga sobre el texto `jsonb`
+y no sobre el objeto leído. Cualquiera de las tres cambia qué huellas son válidas: lo decide Dirección.
+
+## 9. Cómo reproducir la medición
 
 **El arnés** es `test/rendimiento/cartera-ab.rendimiento.ts`: el de la segunda medición (`cartera-concurrencia.rendimiento.ts`)
 con cada escenario corrido con las dos versiones, alternadas (base y después propuesta en la primera repetición; al revés en

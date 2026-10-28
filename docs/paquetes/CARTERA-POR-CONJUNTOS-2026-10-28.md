@@ -63,6 +63,19 @@ borrador, con comparación antes/después reproducible y una explicación visual
   trae (`revisiones.service.ts`). La prueba de equivalencia lo siembra por SQL. Severidad: baja (rama sin uso); decidir
   si una revisión «sin fecha» debe poder registrarse como tal o si el tipo se retira del contrato.
 
+## Observaciones de Dirección (28/10 a la tarde), para cerrar antes de proponer la integración
+
+1. **Solicitudes sin respuesta y evaluaciones en preparación:** se traían completas y se reducían en memoria. Ahora la
+   base elige la más antigua por persona y área con `DISTINCT ON`, con el mismo alcance de permisos y el mismo
+   resultado (lo fija la prueba de equivalencia). Mismas dos sentencias, menos filas. La medición no se repitió (pedido
+   de Dirección): lo medido es una cota conservadora. Detalle: LECTURA-POR-CONJUNTOS.md §8.
+2. **El caso decimal de la TVCC-30:** reproducido en `tvcc30.int-spec.ts` (la salida de la prueba dice si la huella
+   recalculada desde la fila coincide con la guardada, qué texto guardó PostgreSQL y qué lee Prisma). Es un problema
+   previo, no una regresión: la forma canónica incluye los cocientes como doubles y la lectura de JSON de Prisma pierde
+   el 17.º dígito. La garantía afectada (12 §22, REG-06-196: el resultado conservado se verifica con su huella) se
+   cumple con la huella guardada y no con una recalculada desde la fila. No se cambió la canonicalización ni ninguna
+   huella: las opciones están en LECTURA-POR-CONJUNTOS.md §8 y las decide Dirección.
+
 ## Próximos pasos
 
 1. Dirección decide si integra #222 (después de #219 y #221, su base). Comprobación mínima posterior: abrir el espacio
@@ -78,6 +91,6 @@ borrador, con comparación antes/después reproducible y una explicación visual
   espejado con junctions a `BE-Best`, salvo `@be/*`, que apuntan al árbol).
 - Pruebas: `npm run test:integration` (CI) o `npx jest --config apps/api/jest.integration.config.js --runInBand
   cartera-por-conjuntos` con un PostgreSQL local (`TEST_DATABASE_URL`).
-- Medición: el flujo de la rama descartable, o localmente con `BE_MEDIR_AB=1` (ver LECTURA-POR-CONJUNTOS.md §8).
+- Medición: el flujo de la rama descartable, o localmente con `BE_MEDIR_AB=1` (ver LECTURA-POR-CONJUNTOS.md §9).
 - PDF: desde `EVIDENCIA/RENDIMIENTO-CARTERA/didactico`, `node datos.mjs <carpeta-de-resultados>` y `node construir.mjs`
   (Typst 0.15.1).
