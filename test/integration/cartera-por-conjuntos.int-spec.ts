@@ -300,14 +300,15 @@ describe('API-CAR-01 por conjuntos · equivalencia con la lectura persona por pe
     expect(TIPOS.filter((t) => !tipos.has(t))).toEqual([]);
     expect(new Set(r.data.items.map((i) => i.domain))).toEqual(new Set(['nutrition', 'training', 'anthropometry']));
     const deA = r.data.items.filter((i) => i.advisee.identityId === m.a.ase.id);
+    // Por urgencia, no por dominio: la revisión próxima de Entrenamiento va antes que el borrador de Nutrición.
     expect(deA.map((i) => [i.domain, i.kind])).toEqual([
       ['nutrition', 'REVIEW_OVERDUE'],
-      ['nutrition', 'PLAN_DRAFT_PENDING'],
       ['training', 'REVIEW_DUE_SOON'],
+      ['nutrition', 'PLAN_DRAFT_PENDING'],
       ['training', 'FORM_REQUEST_OPEN'],
     ]);
     expect(deA[0]).toMatchObject({ activityCount: 2 });
-    expect(deA[2]).toMatchObject({ activityCount: 2 });
+    expect(deA[1]).toMatchObject({ activityCount: 2 });
     expect(r.data.items.filter((i) => i.advisee.identityId === m.g.id).map((i) => [i.kind, i.activityCount])).toEqual([['ANTHRO_DRAFT_PENDING', 2]]);
     // Los empates totales (misma persona, dos dominios) y entre personas, con el período que cambia la actividad.
     expect(r.data.items.filter((i) => i.advisee.identityId === m.e.ase.id).map((i) => i.domain)).toEqual(['nutrition', 'training']);
