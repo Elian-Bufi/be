@@ -28,12 +28,70 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
   6.030, sin Chrome, Java ni Node. Y después de las correcciones de la revisión adversaria (18:40 UTC): 685 MB libres,
   con la sesión de Claude (unos 820 MB entre tres procesos) y el antivirus (229 MB) como procesos más grandes. Sin
   margen, y sin repetir intentos (pedido de Dirección): el bloqueo es la memoria libre de la PC.
-- **Cómo construirlo (punto de reanudación):** con la PC lo más libre posible (sin Chrome; medir la RAM primero), en
-  `C:\Users\bufim\BE-aab`, con Node 22 (`C:\Users\bufim\AppData\Roaming\fnm\node-versions\v22.23.2\installation`):
-  `npm ci`, y después `node scripts/aab/construir-aab.mjs` (prebuild + `:app:bundleRelease`, firma desde el respaldo
-  por el entorno, un worker, sin demonio; se niega si hay cambios sin confirmar o faltan Google o Firebase, salvo que
-  se declare a propósito). Deja `C:\Users\bufim\BE-artefactos\aab\0.18.0-candidata.2\be-0.18.0-candidata.2-<commit>.aab`,
-  su `.sha256`, `construccion.json` y `esperado.json`.
+- **Cómo construirlo (punto de reanudación): el lanzador `scripts/aab/lanzar-aab.ps1`**, con Claude y Chrome
+  cerrados (mejor después de reiniciar la PC), desde una ventana de PowerShell:
+
+  ```
+  powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\bufim\BE-aab\scripts\aab\lanzar-aab.ps1
+  ```
+
+  y para consultar el resultado (desde cualquier ventana, también mientras corre):
+
+  ```
+  powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\bufim\BE-aab\scripts\aab\lanzar-aab.ps1 -Consultar
+  ```
+
+  El lanzador comprueba (Node 22 de fnm, npm, git; rama `aab/candidata-0.18.0-2`, commit igual al publicado, árbol
+  limpio; JDK de Android Studio, build-tools 36, NDK, bundletool, tar, curl; los archivos de datos y del respaldo,
+  solo que existan; memoria y disco libres), y después corre en orden `npm ci`, `construir-aab.mjs` y
+  `verificar-aab.mjs` contra el `esperado.json` de esa construcción, y revisa el registro con el detector de
+  credenciales. Se detiene en el primer fallo, sin reintentos y sin verificar un artefacto anterior (si hay uno del
+  mismo commit, lo aparta en `previos\`). Termina con una sola línea: **TERMINADO**, **FALLÓ en <paso>** o
+  **BLOQUEADO por <motivo>**, y deja `C:\Users\bufim\BE-artefactos\aab\registros\<fecha-hora>\` con `lanzador.log`,
+  `estado.json` y, si llegó, `verificacion.md`, `verificacion.json`, `construccion.json` y `esperado.json`. El
+  artefacto queda en `C:\Users\bufim\BE-artefactos\aab\0.18.0-candidata.2\be-0.18.0-candidata.2-<commit>.aab`. Con
+  `-SoloComprobar` hace solo las comprobaciones. El umbral de memoria es del lanzador (2.500 MB libres; `-MinimoMb`
+  lo cambia bajo tu responsabilidad): no garantiza que Gradle llegue, solo evita arrancar en las condiciones en que ya
+  falló. Cuando termine, copiá `verificacion.md`, `construccion.json` y `esperado.json` del registro a esta carpeta.
+- **Lo probado del lanzador (28/10, sin construir):** los caminos de bloqueo (rama equivocada, árbol sucio, memoria
+  insuficiente), `-Consultar` sin lanzamientos y después de cada uno, y las comprobaciones completas hasta el final
+  con un umbral bajo (`-SoloComprobar -MinimoMb 100`: Node 22, rama `aab/candidata-0.18.0-2` igual a `origin`, árbol
+  limpio, versión 0.18.0-candidata.2 / 31, herramientas, datos y respaldo presentes). Lo que NO se probó: `npm ci`,
+  la construcción y la verificación sobre un AAB real, porque la PC tenía 461 MB libres con esta sesión abierta
+  (14 procesos de Claude, ~1 GB). El revisor del registro se probó con un registro limpio (0 hallazgos) y con un
+  secreto sintético (1 hallazgo, sin mostrarlo).
+- **Si el primer artefacto falla:** el registro dice en qué paso. `npm ci` o Gradle que se cortan son la construcción
+  (memoria, red, SDK); un `verificar-aab.mjs` con código 2 es una herramienta o el `esperado.json`; un código 1 con
+  `verificacion.md` es el artefacto o la configuración (la tabla dice qué comprobación falló y qué valor leyó contra
+  cuál esperaba); y si el valor leído es correcto y la comprobación igual da mal, es el verificador. No atribuirlo
+  al script de antemano: mirar primero el valor leído.
+
+## Si esta PC no alcanza: alternativas (nada activado, ningún secreto movido)
+
+0. **Antes de cambiar de máquina:** reiniciar la PC y lanzar sin abrir nada más. Las APK anteriores (0.13.2 a
+   0.18.0-candidata.1) se construyeron en esta misma PC con todo cerrado; lo que hoy no deja margen es la sesión de
+   Claude (~1 GB), Chrome y los agentes de Dell (~260 MB entre SupportAssist y TechHub, que se pueden detener).
+1. **Otra PC propia** (Windows, la del lanzador; Linux o macOS con ajuste): 8 GB de RAM (16 mejor), 20 GB libres,
+   git, Node 22.23.2, JDK 17 (el de Android Studio o Temurin), Android SDK con platform 36, build-tools 36.0.0 y
+   NDK 27.1.12297006, bundletool. Clonar el repo en la rama de versión y copiar `BE-datos-locales` (firebase y
+   google) y el respaldo de la keystore **solo si la PC es tuya**: los secretos no viajan a una máquina de terceros.
+   En Windows, el lanzador con `-Node22`, `-JavaHome`, `-AndroidHome`, `-Bundletool`, `-Datos` y `-Respaldo`. En
+   Linux o macOS, `construir-aab.mjs` llama a `gradlew.bat`: habría que ajustarlo a `gradlew` (no está hecho).
+   Costo: ninguno.
+2. **GitHub Actions, sin la keystore:** un workflow manual en un runner Linux de GitHub construye el AAB **sin
+   firma de release** (sin las variables de firma, el plugin deja la de debug) y lo sube como artefacto del workflow;
+   después, en tu PC, se firma con `jarsigner` y la keystore del respaldo (un AAB es un jar; Play acepta esa firma).
+   Así la clave nunca sale de tu PC. Lo que sí habría que cargar como secretos del repositorio: `google-services.json`
+   y el client ID web (datos privados, no credenciales; el `google-services.json` termina embebido en toda APK). Costo:
+   gratis en un repositorio público; en uno privado, el plan Free de GitHub incluye 2.000 minutos por mes y después
+   un runner Linux cuesta alrededor de USD 0,008 por minuto (una construcción de 30 a 40 minutos, unos USD 0,30).
+   Memoria del runner: 7 GB garantizados (más en repositorios públicos). No se creó ningún workflow.
+3. **EAS Build (Expo):** la keystore **ya está** en EAS (es la que generó), así que no hay que mover ningún secreto, y
+   EAS firma con ella, que es exactamente la clave de firma de la app que Play va a recibir. Hace falta un perfil de
+   `eas.json` con `buildType: app-bundle` (el perfil `test` hoy produce APK) y una sesión de Expo con permiso sobre
+   el proyecto. Costo: el plan gratuito tiene un cupo mensual de construcciones con cola de menor prioridad; los
+   planes pagos arrancan en unas decenas de dólares por mes (ver expo.dev/pricing antes de decidir). Tarda 15 a 25
+   minutos. No se lanzó ninguna construcción ni se cambió el perfil.
 - **Cómo verificarlo:** `node scripts/aab/verificar-aab.mjs <ruta.aab> --esperado <carpeta>/esperado.json` (el
   `esperado.json` lo deja `construir-aab.mjs` a partir de las fuentes de la construcción); copiar `verificacion.md`,
   `construccion.json` y `esperado.json` a esta carpeta (no tienen secretos). El verificador exige cada valor esperado

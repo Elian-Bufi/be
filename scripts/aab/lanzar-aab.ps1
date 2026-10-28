@@ -33,7 +33,7 @@ param(
   [switch]$Consultar,
   [switch]$SoloComprobar,
   [string]$Rama = 'aab/candidata-0.18.0-2',
-  [int]$MinimoMb = 3000,
+  [int]$MinimoMb = 2500,
   [int]$MinimoDiscoGb = 10,
   [string]$Salida = 'C:\Users\bufim\BE-artefactos\aab',
   [string]$Respaldo = 'C:\Users\bufim\be-firma-respaldo',
@@ -237,8 +237,8 @@ try {
   $claude = @(Get-Process -Name 'claude' -ErrorAction SilentlyContinue)
   if ($claude.Count -gt 0) { Anotar "ATENCIÓN: hay $($claude.Count) proceso(s) de Claude abiertos (unos $([math]::Round(($claude | Measure-Object WorkingSet64 -Sum).Sum / 1MB)) MB): conviene cerrarlos antes." }
   if ($disco -lt $MinimoDiscoGb) { Bloqueado "disco libre $disco GB, menos que los $MinimoDiscoGb GB mínimos (node_modules y el proyecto Android pesan varios GB)" }
-  if ($libre -lt $MinimoMb) { Bloqueado "memoria libre $libre MB, menos que los $MinimoMb MB mínimos del lanzador (Gradle usa hasta 2,5 GB más Kotlin y Metro; con ~700 MB el npm ci ya se cortó). Cerrá Claude, Chrome y lo demás, y volvé a lanzar; o -MinimoMb para cambiar el umbral bajo tu responsabilidad" }
-  if ($libre -lt 4000) { Anotar "aviso: $libre MB libres alcanza el mínimo del lanzador, pero es justo; si Gradle se cae por memoria, el registro lo va a decir" }
+  if ($libre -lt $MinimoMb) { Bloqueado "memoria libre $libre MB, menos que los $MinimoMb MB mínimos del lanzador (Gradle tiene un tope de 2,5 GB de heap y además corren Kotlin y Metro; con ~700 MB el npm ci ya se cortó). Reiniciá la PC o cerrá Claude, Chrome y lo demás, y volvé a lanzar; o -MinimoMb para cambiar el umbral bajo tu responsabilidad" }
+  if ($libre -lt 3500) { Anotar "aviso: $libre MB libres alcanza el mínimo del lanzador, pero es justo (las APK anteriores se construyeron en esta PC con todo cerrado); si Gradle se cae por memoria, el registro lo va a decir" }
 
   # Nunca se verifica un artefacto anterior: si ya hay uno para esta versión y commit, se aparta antes de construir.
   $carpetaVersion = Join-Path $Salida $version
