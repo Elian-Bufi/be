@@ -98,6 +98,8 @@ test('«preparar» deja las entregas de 1600 × 1200, no toca los originales, in
     assert.equal(registro.fotos.R001.entrega.archivo, '01-avena-cocida-con-banana-y-canela.jpg');
     assert.equal(registro.fotos.R017.entrega.archivo, 'R017-tarta-de-pollo-y-puerro.jpg');
     assert.equal(registro.fotos.R017.agrandada, true);
+    // Cada foto guarda el prompt con que se pidió, del paquete de generación.
+    assert.match(registro.fotos.R017.prompt, /«Tarta de pollo y puerro»/);
     assert.equal(registro.fotos.R018.agrandada, false);
     assert.deepEqual(registro.fotos.R018.transformaciones, ['recodificado en JPEG de calidad 90, sin metadatos']);
     assert.match(registro.fotos.R019.transformaciones.join(' · '), /recorte al centro de 1024 × 1024 a 1024 × 768 .* reescalado ×1,563/);

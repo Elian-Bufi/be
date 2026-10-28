@@ -148,6 +148,9 @@ export async function preparar({ originales, entrega, vistas = null, herramienta
   const ampliacion = leerAmpliacion();
   const porCodigo = new Map(vista.recetas.map((r) => [r.codigo, r]));
   const huellaDe = new Map(ampliacion.recetas.map((r) => [r.codigo, r.huella]));
+  // El prompt con que se pidió cada foto, del paquete de generación: queda en el registro junto a la imagen.
+  const rutaDelPaquete = join(RAIZ, 'EVIDENCIA', 'RECETAS-AMPLIACION', 'paquete-de-generacion.json');
+  const promptDe = new Map(fs.existsSync(rutaDelPaquete) ? JSON.parse(fs.readFileSync(rutaDelPaquete, 'utf8')).recetas.map((r) => [r.codigo, r.prompt]) : []);
   fs.mkdirSync(entrega, { recursive: true });
   if (vistas) fs.mkdirSync(vistas, { recursive: true });
   const fotos = {};
@@ -186,6 +189,7 @@ export async function preparar({ originales, entrega, vistas = null, herramienta
       transformaciones: plan.transformaciones,
       agrandada: plan.agrandado,
       herramienta,
+      prompt: promptDe.get(codigo) ?? null,
       revision: {
         tecnica: problemas.length === 0 ? 'VERIFICADA' : `CON_PROBLEMAS: ${problemas.join('; ')}`,
         visualDelAgente: null,
