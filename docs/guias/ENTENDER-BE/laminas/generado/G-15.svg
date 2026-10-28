@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="318pt" viewBox="0 0 750 318" data-lamina="G-15">
+<title>Cinco estados de un mismo cambio</title>
+<desc>Implementado, verificado, integrado, desplegado y validado no son lo mismo: cada uno tiene su prueba y su lugar. · Fuente: docs/paquetes/REANUDACION-TANDA-2026-10-25.md · EVIDENCIA/PRUEBA-BREVE-2026-10-26 · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="318" fill="#FFFFFF"/>
+<path d="M 140 51 L 155.5 51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 148.5 54.36 L 155.5 51 L 148.5 47.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 291.5 51 L 307 51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 300 54.36 L 307 51 L 300 47.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 443 51 L 458.5 51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 451.5 54.36 L 458.5 51 L 451.5 47.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 594.5 51 L 610 51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 603 54.36 L 610 51 L 603 47.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 72 94 L 72 128" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="1.4 2.4" stroke-linejoin="round"/>
+<path d="M 223.5 94 L 223.5 128" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="1.4 2.4" stroke-linejoin="round"/>
+<path d="M 375 94 L 375 128" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="1.4 2.4" stroke-linejoin="round"/>
+<path d="M 526.5 94 L 526.5 128" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="1.4 2.4" stroke-linejoin="round"/>
+<path d="M 678 94 L 678 128" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="1.4 2.4" stroke-linejoin="round"/>
+<rect x="4" y="8" width="136" height="86" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="72" y="34.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Implementado</text>
+<text x="72" y="49.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">El código existe en una</text>
+<text x="72" y="62.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">rama, con su PR en</text>
+<text x="72" y="74.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">borrador.</text>
+<rect x="155.5" y="8" width="136" height="86" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="223.5" y="34.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Verificado</text>
+<text x="223.5" y="49.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">La CI del PR pasó: tipos,</text>
+<text x="223.5" y="62.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">unidades, integración y</text>
+<text x="223.5" y="74.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">recorridos.</text>
+<rect x="307" y="8" width="136" height="86" rx="10" fill="#DCE8FC" stroke="#0A1F44" stroke-width="2"/>
+<text x="375" y="40.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Integrado</text>
+<text x="375" y="55.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">El merge lo llevó a main:</text>
+<text x="375" y="68.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">es parte del producto.</text>
+<rect x="458.5" y="8" width="136" height="86" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="526.5" y="40.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Desplegado</text>
+<text x="526.5" y="55.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Test sirve ese commit, o</text>
+<text x="526.5" y="68.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la APK está publicada.</text>
+<rect x="610" y="8" width="136" height="86" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="678" y="40.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Validado</text>
+<text x="678" y="55.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Una persona lo usó y se</text>
+<text x="678" y="68.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">entendió sin ayuda.</text>
+<rect x="4" y="128" width="136" height="74.48" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="72" y="147.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">En #211 · hecho</text>
+<text x="72" y="164.77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Rama</text>
+<text x="72" y="177.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">wp-nutricion-comparacion,</text>
+<text x="72" y="190.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">PR #211 en borrador</text>
+<rect x="155.5" y="128" width="136" height="74.48" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="223.5" y="147.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">En #211 · hecho</text>
+<text x="223.5" y="164.77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">CI de la cabeza</text>
+<text x="223.5" y="177.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">91ec9d8: integración</text>
+<text x="223.5" y="190.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">894 de 894</text>
+<rect x="307" y="128" width="136" height="61.68" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="375" y="147.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">En #211 · hecho</text>
+<text x="375" y="164.77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">main 7079677, el</text>
+<text x="375" y="177.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">2026-10-25</text>
+<rect x="458.5" y="128" width="136" height="74.48" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="526.5" y="147.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">En #211 · hecho</text>
+<text x="526.5" y="164.77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">La API y el website de</text>
+<text x="526.5" y="177.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">test lo sirven desde las</text>
+<text x="526.5" y="190.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">19:54 UTC</text>
+<rect x="610" y="128" width="136" height="74.48" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="678" y="147.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">En #211 · pendiente</text>
+<text x="678" y="164.77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Prueba breve: la parte</text>
+<text x="678" y="177.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">de Nutrición, todavía</text>
+<text x="678" y="190.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">pendiente</text>
+<path d="M 4 244 L 737 244 L 746 253 L 746 296.4 L 4 296.4 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 737 244 L 737 253 L 746 253" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="13" y="260.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Por qué separarlos</text>
+<text x="13" y="273.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Cada estado responde una pregunta distinta. «¿Está hecho?», «¿pasa las pruebas?», «¿es parte del producto?», «¿se puede usar en test?» y «¿lo</text>
+<text x="13" y="286.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">entiende una persona?». Que uno esté hecho no adelanta el siguiente.</text>
+</svg>

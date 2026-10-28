@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="300pt" viewBox="0 0 750 300" data-lamina="G-02">
+<title>El ciclo de trabajo que BE ordena</title>
+<desc>Evaluar, fijar un objetivo, indicar un plan, registrar, analizar y revisar: quién hace cada paso y con qué superficie. · Fuente: legajo 06 §8 y §10 · apps/web/src/app/pro · apps/mobile/src · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="300" fill="#FFFFFF"/>
+<path d="M 204 49 L 280 49" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 273 52.36 L 280 49 L 273 45.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 470 49 L 546 49" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 539 52.36 L 546 49 L 539 45.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 641 90 L 641 196" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 637.64 189 L 641 196 L 644.36 189" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 546 237 L 470 237" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 477 233.64 L 470 237 L 477 240.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 280 237 L 204 237" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 211 233.64 L 204 237 L 211 240.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 109 196 L 109 90" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 112.36 97 L 109 90 L 105.64 97" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="14" y="8" width="190" height="82" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="109" y="38.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">1 · Evaluar</text>
+<text x="109" y="53.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">El profesional registra cómo está la</text>
+<text x="109" y="66.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">persona hoy (website).</text>
+<rect x="280" y="8" width="190" height="82" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="38.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">2 · Fijar un objetivo</text>
+<text x="375" y="53.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Hacia dónde, con números por día:</text>
+<text x="375" y="66.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">kcal, macros o cargas.</text>
+<rect x="546" y="8" width="190" height="82" rx="10" fill="#DCE8FC" stroke="#0A1F44" stroke-width="2"/>
+<text x="641" y="38.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">3 · Indicar un plan</text>
+<text x="641" y="53.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Qué comer o entrenar. Al activarlo</text>
+<text x="641" y="66.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">queda como versión.</text>
+<rect x="546" y="196" width="190" height="82" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="641" y="226.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">4 · Registrar</text>
+<text x="641" y="241.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">La persona anota lo que hizo en la</text>
+<text x="641" y="254.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">APK; lo que falta queda declarado.</text>
+<rect x="280" y="196" width="190" height="82" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="226.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">5 · Analizar</text>
+<text x="375" y="241.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Objetivo, indicado y registrado, lado</text>
+<text x="375" y="254.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">a lado y sin calificar.</text>
+<rect x="14" y="196" width="190" height="82" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="109" y="226.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">6 · Revisar</text>
+<text x="109" y="241.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">El profesional decide: seguir,</text>
+<text x="109" y="254.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">ajustar o una nueva versión.</text>
+<path d="M 258 106 L 483 106 L 492 115 L 492 171.2 L 258 171.2 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 483 106 L 483 115 L 492 115" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="267" y="122.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Lo que habilita el ciclo</text>
+<text x="267" y="135.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">La persona decide quién accede: un vínculo</text>
+<text x="267" y="148.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">por área y su autorización. Sin eso, el</text>
+<text x="267" y="161.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">profesional no ve nada.</text>
+<rect x="646" y="135.6" width="69.29" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="648" y="146.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">el plan del día</text>
+<rect x="114" y="129.2" width="45.45" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="116" y="139.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">vuelve a</text>
+<text x="116" y="152.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">empezar</text>
+</svg>
