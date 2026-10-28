@@ -5,7 +5,7 @@
 import { componerVistaDer } from '../motor/der-vista.mjs';
 
 // Alto de cada vista (pt): el de la grilla más la leyenda. Las vistas con entidades cortas usan menos.
-const ALTOS = { 'D-10': 300, 'D-16': 326 };
+const ALTOS = { 'D-10': 300, 'D-11': 340, 'D-12': 336, 'D-14': 336, 'D-15': 340, 'D-16': 326 };
 const altoDe = (id) => ALTOS[id] ?? 372;
 
 export function metaVista(id, titulo, alcance, fuente) {

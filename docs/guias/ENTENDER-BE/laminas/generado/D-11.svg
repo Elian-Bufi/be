@@ -1,18 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="372pt" viewBox="0 0 750 372" data-lamina="D-11">
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="340pt" viewBox="0 0 750 340" data-lamina="D-11">
 <title>Vínculos, consentimientos y decisiones de acceso</title>
 <desc>Un vínculo entre dos identidades se abre por área (alcance); cada alcance tiene su autorización, versionada; el PDP guarda cada decisión. · Fuente: prisma/schema.prisma · sección WP-03 (M-03 y PDP) · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
-<rect x="0" y="0" width="750" height="372" fill="#FFFFFF"/>
-<rect x="4" y="342" width="742" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
-<path d="M 14 354.5 L 44 354.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 39 360 L 39 349" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 34.5 360 L 34.5 349" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
-<text x="52" y="358.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">uno y solo uno</text>
-<path d="M 139.09 354.5 L 169.09 354.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 164.09 360 L 164.09 349" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="156.59" cy="354.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
-<text x="177.09" y="358.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o uno</text>
-<path d="M 245.53 354.5 L 275.53 354.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 275.53 360.5 L 265.53 354.5 L 275.53 348.5 M 275.53 354.5 L 265.53 354.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="260.53" cy="354.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
-<text x="283.53" y="358.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o muchos</text>
-<text x="371.73" y="358.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK FK</text>
-<text x="409.73" y="358.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">claves · * obligatorio · o opcional</text>
-<text x="581.91" y="358.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">↗</text>
-<text x="619.91" y="358.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clave hacia otra área</text>
+<rect x="0" y="0" width="750" height="340" fill="#FFFFFF"/>
+<rect x="4" y="310" width="742" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 14 322.5 L 44 322.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 39 328 L 39 317" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 34.5 328 L 34.5 317" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<text x="52" y="326.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">uno y solo uno</text>
+<path d="M 139.09 322.5 L 169.09 322.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 164.09 328 L 164.09 317" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="156.59" cy="322.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="177.09" y="326.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o uno</text>
+<path d="M 245.53 322.5 L 275.53 322.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 275.53 328.5 L 265.53 322.5 L 275.53 316.5 M 275.53 322.5 L 265.53 322.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="260.53" cy="322.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="283.53" y="326.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o muchos</text>
+<text x="371.73" y="326.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK FK</text>
+<text x="409.73" y="326.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">claves · * obligatorio · o opcional</text>
+<text x="581.91" y="326.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">↗</text>
+<text x="619.91" y="326.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clave hacia otra área</text>
 <path d="M 26 221.25 L 19 221.25 Q 14 221.25 14 216.25 L 14 179.75 Q 14 174.75 19 174.75 L 26 174.75" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
 <path d="M 21 180.25 L 21 169.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="13.5" cy="174.75" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
 <path d="M 26 227.25 L 16 221.25 L 26 215.25 M 26 221.25 L 16 221.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="11" cy="221.25" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
