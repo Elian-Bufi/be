@@ -17,7 +17,7 @@ export function dibujar(L) {
     ['apk', 'APK', 'persona', 'registro de comidas'],
     ['ctl', 'RegistroDeComidasController'],
     ['srv', 'RegistroDeComidasService'],
-    ['ide', 'IdempotenciaService'],
+    ['ide', 'IdempotenciaService', 'sistema', 'vía el ejecutor'],
     ['pdp', 'PdpService'],
     ['bd', 'PostgreSQL'],
   ];

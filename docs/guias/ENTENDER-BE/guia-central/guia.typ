@@ -563,9 +563,9 @@
     table.header([Respuesta], [Cuándo], [Qué queda guardado]),
     [401], [La sesión no existe, venció o fue revocada.], [Nada.],
     [400], [El cuerpo no cumple el contrato, o falta la clave de idempotencia.], [Nada.],
-    [404], [El plan no es suyo, o el PDP la deniega (por ejemplo, el área del profesional está suspendida).], [La decisión denegada, aparte.],
-    [422], [El plan ya no es el vigente, la comida es futura o la opción no es del plan.], [Nada de la comida.],
-    [409], [Ya hay otra comida registrada en esa comida y ese día, o la clave se usó con otro pedido.], [Nada nuevo.],
+    [404], [El plan no es suyo, o el PDP la deniega (por ejemplo, el área del profesional está suspendida).], [La decisión denegada y el rechazo en la auditoría, aparte.],
+    [422], [El plan ya no es el vigente, la comida es futura o la opción no es del plan.], [Nada de la comida; el rechazo queda en la auditoría.],
+    [409], [Ya hay otra comida registrada en esa comida y ese día, o la clave se usó con otro pedido.], [Nada nuevo; el rechazo queda en la auditoría.],
     [200], [Es exactamente la misma comida que ya estaba.], [Nada nuevo: devuelve la que estaba.],
   )
 ]
