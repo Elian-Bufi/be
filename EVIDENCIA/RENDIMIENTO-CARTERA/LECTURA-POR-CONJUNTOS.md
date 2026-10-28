@@ -261,18 +261,20 @@ resultado medido es una cota conservadora.
 
 **Observación 2 · el caso decimal de la TVCC-30.** La forma canónica de la huella (`canonicoTvcc30`, @be/domain) es el
 JSON del resultado con las claves ordenadas e incluye los cocientes (`tasa`, `porcentaje`) como doubles. Un cociente de 17
-dígitos (2/11 = 0,18181818181818182) vuelve de la base como 0,1818181818181818: por eso la huella **recalculada desde la
-fila recuperada no coincide** con la calculada antes de guardar cuando el resultado contiene un cociente así. La prueba
-`tvcc30.int-spec.ts` ahora deja constancia en su salida (huella guardada, recalculada, coinciden sí/no, el texto que
-guardó PostgreSQL y lo que lee Prisma) y comprueba lo que no depende del defecto: PostgreSQL conserva el texto exacto en
-`jsonb` y la diferencia de lectura es de una unidad del último dígito. **Es un problema previo, no una regresión:** la
-cartera por conjuntos no toca la TVCC-30 ni la serialización; lo destapó la suite nueva porque dejó más Procesos en la
-ventana de la prueba (d = 11) y el cociente dejó de ser exacto. La garantía afectada es «el resultado conservado se puede
-verificar con su huella» (12 §22, REG-06-196): hoy se cumple para la huella guardada junto con el resultado (se calcula
-en memoria antes de guardar y no cambia), pero no para una verificación hecha recalculando desde la fila cuando hay un
-cociente de 17 dígitos. Qué habría que decidir (no se cambia nada acá): que la forma canónica no incluya los cocientes
-derivados (`n` y `d` bastan) o los fije con una precisión declarada, o que la verificación se haga sobre el texto `jsonb`
-y no sobre el objeto leído. Cualquiera de las tres cambia qué huellas son válidas: lo decide Dirección.
+dígitos (2/11 = 0,18181818181818182) vuelve de la base como 0,1818181818181818. **Reproducido en la CI del 28/10**
+(corrida 40712848030, `tvcc30.int-spec.ts`): la huella guardada (`9d6bb495…`) **no coincide** con la recalculada desde
+la fila recuperada (`a4574858…`); la tasa calculada 0,16666666666666666 quedó guardada en `jsonb` como
+0,1666666666666667 (16 dígitos); un literal de 17 dígitos escrito por SQL se conserva y Prisma lo lee exacto. O sea: **el
+dígito se pierde al escribir a través de Prisma**, no al leer ni en PostgreSQL (la primera atribución, «la lectura de
+JSON de Prisma», era errónea; la reproducción la corrigió). **Es un problema previo, no una regresión:** la cartera por
+conjuntos no toca la TVCC-30 ni la serialización; lo destapó la suite nueva porque dejó más Procesos en la ventana de la
+prueba (d = 11) y el cociente dejó de ser exacto. La garantía afectada es «el resultado conservado se puede verificar con
+su huella» (12 §22, REG-06-196): hoy se cumple para la huella guardada junto con el resultado (se calcula en memoria
+antes de guardar y no cambia), pero no para una verificación hecha recalculando desde la fila cuando hay un cociente de
+17 dígitos: la fila guardada no es byte a byte el resultado calculado. Qué habría que decidir (no se cambia nada acá):
+que la forma canónica no incluya los cocientes derivados (`n` y `d` bastan y son enteros), o que los cocientes se
+redondeen a una precisión declarada antes de calcular la huella y de guardar (así lo guardado y lo hashado coinciden), o
+que se conserve también el texto canónico. Cualquiera cambia qué huellas son válidas: lo decide Dirección.
 
 ## 9. Cómo reproducir la medición
 

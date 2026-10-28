@@ -53,10 +53,11 @@ borrador, con comparación antes/después reproducible y una explicación visual
 ## Hallazgos fuera del paquete
 
 - `test/integration/tvcc30.int-spec.ts` comparaba byte a byte el resultado conservado con el calculado; un cociente de
-  17 dígitos (2/11) vuelve de la base con 16 (la lectura de JSON del cliente de Prisma no garantiza la ida y vuelta
-  exacta). Lo destapó la suite nueva, que deja más Procesos en la ventana. La comparación pasó a 15 dígitos
-  significativos (commit `876bff1`); si la huella conservada tiene que poder recalcularse desde la fila, es una
-  pregunta para Dirección (RF-058, REG-06-196). Severidad: baja (presentación de un decimal); no toca el producto.
+  17 dígitos (2/11) queda guardado con 16 (se pierde al escribir a través de Prisma; ver las observaciones de abajo). Lo
+  destapó la suite nueva, que deja más Procesos en la ventana. La comparación pasó a 15 dígitos significativos (commit
+  `876bff1`); si la huella conservada tiene que poder recalcularse desde la fila, es una pregunta para Dirección
+  (RF-058, REG-06-196). Severidad: baja mientras la verificación use la huella guardada; media si se quiere recalcular
+  desde la fila. No toca el producto.
 - El pendiente `REVIEW_UNDATED` (una expectativa de revisión sin fecha, REG-06-150) existe en el contrato y en el código
   de la cartera, pero ninguna operación de la API lo produce hoy: activar fija una expectativa solo si la versión trae
   fecha (`nutricion/planes.service.ts`, `entrenamiento/planes.service.ts`) y aplicar una revisión solo si la revisión la
@@ -69,12 +70,13 @@ borrador, con comparación antes/después reproducible y una explicación visual
    base elige la más antigua por persona y área con `DISTINCT ON`, con el mismo alcance de permisos y el mismo
    resultado (lo fija la prueba de equivalencia). Mismas dos sentencias, menos filas. La medición no se repitió (pedido
    de Dirección): lo medido es una cota conservadora. Detalle: LECTURA-POR-CONJUNTOS.md §8.
-2. **El caso decimal de la TVCC-30:** reproducido en `tvcc30.int-spec.ts` (la salida de la prueba dice si la huella
-   recalculada desde la fila coincide con la guardada, qué texto guardó PostgreSQL y qué lee Prisma). Es un problema
-   previo, no una regresión: la forma canónica incluye los cocientes como doubles y la lectura de JSON de Prisma pierde
-   el 17.º dígito. La garantía afectada (12 §22, REG-06-196: el resultado conservado se verifica con su huella) se
-   cumple con la huella guardada y no con una recalculada desde la fila. No se cambió la canonicalización ni ninguna
-   huella: las opciones están en LECTURA-POR-CONJUNTOS.md §8 y las decide Dirección.
+2. **El caso decimal de la TVCC-30:** reproducido en `tvcc30.int-spec.ts` (CI 40712848030): la huella recalculada
+   desde la fila **no coincide** con la guardada; la tasa 0,16666666666666666 quedó guardada como 0,1666666666666667.
+   El dígito se pierde **al escribir a través de Prisma** (PostgreSQL conserva el texto y la lectura es exacta; mi
+   primera atribución a la lectura era errónea). Es un problema previo, no una regresión. La garantía afectada (12 §22,
+   REG-06-196: el resultado conservado se verifica con su huella) se cumple con la huella guardada y no con una
+   recalculada desde la fila. No se cambió la canonicalización ni ninguna huella: las opciones están en
+   LECTURA-POR-CONJUNTOS.md §8 y las decide Dirección.
 
 ## Próximos pasos
 
