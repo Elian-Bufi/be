@@ -28,11 +28,16 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
   `npm ci`, y después `node scripts/aab/construir-aab.mjs` (prebuild + `:app:bundleRelease`, firma desde el respaldo
   por el entorno, un worker, sin demonio). Deja `C:\Users\bufim\BE-artefactos\aab\0.18.0-candidata.2\be-0.18.0-candidata.2-b2fc0e6.aab`,
   su `.sha256` y `construccion.json`.
-- **Cómo verificarlo:** `node scripts/aab/verificar-aab.mjs <ruta.aab> --esperado-sha256-cert 61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06`;
-  copiar `verificacion.md` y `construccion.json` a esta carpeta (no tienen secretos).
+- **Cómo verificarlo:** `node scripts/aab/verificar-aab.mjs <ruta.aab> --esperado <carpeta>/esperado.json` (el
+  `esperado.json` lo deja `construir-aab.mjs` a partir de las fuentes de la construcción); copiar `verificacion.md`,
+  `construccion.json` y `esperado.json` a esta carpeta (no tienen secretos). El verificador exige cada valor esperado
+  (paquete, versión, versionCode, commit, ambiente, Google, Firebase, invitaciones, los dos certificados) y «todo
+  bien» solo si cada comprobación obligatoria corrió y dio bien; si no hay red para leer el `assetlinks.json`
+  publicado, esa comprobación queda pendiente y no hay «todo bien».
 - **Lo que debería dar** (predicción, no resultado): paquete `com.elianbufi.be`, versionCode 31, targetSdk 36, las
-  cuatro arquitecturas, 16 KB en verde, App Link `https://be-web-1ngj.onrender.com/invitacion`, ambiente `test` y
-  commit `b2fc0e6…`, certificado SHA-256 `61569691…893e06`.
+  cuatro arquitecturas, 16 KB en verde en el artefacto, App Link `https://be-web-1ngj.onrender.com/invitacion`,
+  ambiente `test` y el commit de la rama de versión, certificado SHA-256 `61569691…893e06` (la keystore de EAS,
+  hasta que exista la clave de subida separada).
 
 ## Guion de prueba
 
@@ -80,6 +85,15 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
 
 ### F. Lo comprobado automáticamente (sin teléfono ni Play Console)
 
-Está en `verificacion.md`: bundle válido, paquete, versión y versionCode, targetSdk 36, 64 bits, páginas de 16 KB,
-App Link de la invitación, ambiente embebido (`test`, `be-api-hndp`, commit), certificado del AAB y ausencia de
-credenciales adentro. Y en la CI del PR: el plugin de firma (3 pruebas) y lo de siempre.
+Está en `verificacion.md`, contra los valores esperados: bundle válido, paquete, versión y versionCode, commit,
+ambiente (`test`, `be-api-hndp`), el client ID web de Google, los recursos de Firebase, targetSdk 36, 64 bits, el App
+Link de la invitación y el `assetlinks.json` publicado con la clave de firma de la app, 16 KB **en el artefacto**
+(bibliotecas nativas sin comprimir, alineación ELF a 16384 de cada biblioteca de 64 bits y `zipalign -P 16` sobre la
+APK universal), el certificado del AAB y la ausencia de credenciales en todo el bundle descomprimido. Y en la CI del
+PR: el plugin de firma (3 pruebas) y el verificador (credenciales sintéticas en un zip y ELF sintéticos: 2 pruebas).
+
+### G. Lo que 16 KB deja para un dispositivo (pendiente en el teléfono)
+
+La alineación comprobada en F es la del artefacto. Que la app arranque y funcione con páginas de 16 KB se prueba en
+un dispositivo o emulador con esa configuración (Android 15 o posterior, imagen de 16 KB): abrir la app, entrar,
+registrar una comida con foto y recibir un aviso. No se hizo.

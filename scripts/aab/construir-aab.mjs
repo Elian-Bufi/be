@@ -27,12 +27,19 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const MOVIL = join(RAIZ, 'apps', 'mobile');
 const ANDROID = join(MOVIL, 'android');
 
+/** La huella SHA-256 del certificado de la keystore de EAS, la que firma todas las APK publicadas (EVIDENCIA/PUBLICACION-*). */
+const CERTIFICADO_DE_EAS = '61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06';
+
 const opciones = leerOpciones(process.argv.slice(2), {
   ambiente: 'test',
   salida: 'C:/Users/bufim/BE-artefactos/aab',
   respaldo: 'C:/Users/bufim/be-firma-respaldo',
   datos: 'C:/Users/bufim/BE-datos-locales',
   'sin-prebuild': false,
+  // Lo que el verificador va a exigir del artefacto. Mientras no exista una clave de subida aparte, el AAB se firma con
+  // la keystore de EAS y las dos huellas son la misma; con la clave de subida, --cert-subida pasa a ser la suya.
+  'cert-subida': CERTIFICADO_DE_EAS,
+  'cert-firma-app': CERTIFICADO_DE_EAS,
 });
 
 const JAVA_HOME = process.env.JAVA_HOME || 'C:/Program Files/Android/Android Studio/jbr';
@@ -55,7 +62,8 @@ if (sucio) avisar(`ATENCIÓN: hay cambios sin confirmar en apps/mobile o package
 const configuracion = readFileSync(join(MOVIL, 'app.config.ts'), 'utf8');
 const version = /const VERSION = '([^']+)'/.exec(configuracion)?.[1];
 const versionCode = Number(/versionCode: (\d+)/.exec(configuracion)?.[1]);
-if (!version || !Number.isInteger(versionCode)) throw new Error('no pude leer VERSION y versionCode de apps/mobile/app.config.ts');
+const paquete = /package: '([^']+)'/.exec(configuracion)?.[1];
+if (!version || !Number.isInteger(versionCode) || !paquete) throw new Error('no pude leer VERSION, versionCode y package de apps/mobile/app.config.ts');
 avisar(`commit ${commit.slice(0, 7)} (${rama}) · versión ${version} · versionCode ${versionCode} · ambiente ${opciones.ambiente}`);
 
 // 2. El entorno del perfil (eas.json), Firebase y Google, y la memoria disponible.
@@ -72,6 +80,7 @@ const entornoDeLaApp = {
   ...(existsSync(googleServices) ? { GOOGLE_SERVICES_JSON: googleServices } : {}),
   ...(existsSync(clientIds) ? { GOOGLE_WEB_CLIENT_ID: valorDe(clientIds, 'GOOGLE_WEB_CLIENT_ID') } : {}),
 };
+const firebaseProjectId = entornoDeLaApp.GOOGLE_SERVICES_JSON ? (JSON.parse(readFileSync(googleServices, 'utf8')).project_info?.project_id ?? null) : null;
 if (!entornoDeLaApp.GOOGLE_SERVICES_JSON) avisar('sin google-services.json: la app se construye sin avisos push');
 if (!entornoDeLaApp.GOOGLE_WEB_CLIENT_ID) avisar('sin GOOGLE_WEB_CLIENT_ID: la app se construye sin «Continuar con Google»');
 const libreMb = Math.round(freemem() / 1024 ** 2);
@@ -147,7 +156,23 @@ const registro = {
   minutos: Math.round((Date.now() - comienzo) / 60_000),
 };
 writeFileSync(join(carpeta, 'construccion.json'), `${JSON.stringify(registro, null, 2)}\n`);
+// Lo esperado del artefacto, a partir de las FUENTES de esta construcción (no del artefacto): lo exige verificar-aab.mjs.
+const esperado = {
+  paquete,
+  version,
+  versionCode,
+  commit,
+  appEnv: perfil.env.APP_ENV,
+  apiBaseUrl: perfil.env.API_BASE_URL,
+  webBaseUrl: perfil.env.WEB_BASE_URL,
+  googleWebClientId: entornoDeLaApp.GOOGLE_WEB_CLIENT_ID ?? null,
+  firebaseProjectId,
+  certSubidaSha256: opciones['cert-subida'],
+  certFirmaAppSha256: opciones['cert-firma-app'],
+};
+writeFileSync(join(carpeta, 'esperado.json'), `${JSON.stringify(esperado, null, 2)}\n`);
 avisar(`listo: ${destino} (${registro.bytes} bytes, sha256 ${sha256.slice(0, 16)}…) en ${registro.minutos} min`);
+avisar(`verificar: node scripts/aab/verificar-aab.mjs "${destino}" --esperado "${join(carpeta, 'esperado.json')}"`);
 
 // ─── ayudas ──────────────────────────────────────────────────────────────────────────────────
 
