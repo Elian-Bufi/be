@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="300pt" viewBox="0 0 750 300" data-lamina="CA-04">
+<title>Los permisos no cambian: la decisión sigue siendo por persona, antes de leer</title>
+<desc>Una revocación que llega en el medio espera a la decisión en curso, y la siguiente ya la ve. Igual que antes. · Fuente: apps/api/src/autorizacion/pdp.service.ts · prisma/concurrencia.ts · apps/api/src/cartera/lectura-cartera.ts · Versión: x · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="300" fill="#FFFFFF"/>
+<rect x="4" y="4" width="742" height="96" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="4" y="4" width="70" height="96" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="39" y="48.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Antes</text>
+<text x="39" y="63.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">e4512cb</text>
+<rect x="4" y="112" width="742" height="96" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="4" y="112" width="70" height="96" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="39" y="156.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Después</text>
+<text x="39" y="171.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">propuesta</text>
+<path d="M 184 52 L 192 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 185 55.36 L 192 52 L 185 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 292 52 L 300 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 293 55.36 L 300 52 L 293 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 400 52 L 408 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 401 55.36 L 408 52 L 401 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 508 52 L 524 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 517 55.36 L 524 52 L 517 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 184 160 L 192 160" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 185 163.36 L 192 160 L 185 156.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 292 160 L 300 160" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 293 163.36 L 300 160 L 293 156.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 400 160 L 408 160" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 401 163.36 L 408 160 L 401 156.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 508 160 L 524 160" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 517 163.36 L 524 160 L 517 156.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="84" y="18" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="134" y="28.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · Ana</text>
+<text x="134" y="43.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="134" y="56.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="134" y="69.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="134" y="82.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="192" y="18" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="242" y="28.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · Bruno</text>
+<text x="242" y="43.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="242" y="56.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="242" y="69.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="242" y="82.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="300" y="18" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="350" y="28.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · …</text>
+<text x="350" y="43.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="350" y="56.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="350" y="69.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="350" y="82.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="408" y="18" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="458" y="28.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · Zoe</text>
+<text x="458" y="43.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="458" y="56.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="458" y="69.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="458" y="82.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="524" y="18" width="222" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="635" y="41.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Lectura</text>
+<text x="635" y="56.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">una transacción: ~1.320 sentencias con</text>
+<text x="635" y="69.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">200 personas, 880 ms</text>
+<rect x="84" y="126" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="134" y="136.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · Ana</text>
+<text x="134" y="151.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="134" y="164.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="134" y="177.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="134" y="190.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="192" y="126" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="242" y="136.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · Bruno</text>
+<text x="242" y="151.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="242" y="164.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="242" y="177.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="242" y="190.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="300" y="126" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="350" y="136.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · …</text>
+<text x="350" y="151.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="350" y="164.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="350" y="177.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="350" y="190.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="408" y="126" width="100" height="68" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="458" y="136.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PDP · Zoe</text>
+<text x="458" y="151.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BEGIN · bloqueo</text>
+<text x="458" y="164.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">compartido ·</text>
+<text x="458" y="177.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hechos · 3 filas ·</text>
+<text x="458" y="190.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">COMMIT</text>
+<rect x="524" y="126" width="222" height="68" rx="6" fill="#DCE8FC" stroke="#0A1F44" stroke-width="2"/>
+<text x="635" y="149.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Lectura</text>
+<text x="635" y="164.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la misma transacción: ~11 sentencias,</text>
+<text x="635" y="177.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">cualquiera sea la cantidad de personas</text>
+<path d="M 4 222 L 357 222 L 366 231 L 366 287.2 L 4 287.2 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 357 222 L 357 231 L 366 231" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="13" y="238.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Un corte en el medio (revocar, pausar, suspender)</text>
+<text x="13" y="251.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Toma en modo exclusivo las mismas filas que la decisión toma en modo</text>
+<text x="13" y="264.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">compartido: espera a que termine la decisión en curso, y la decisión</text>
+<text x="13" y="277.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">siguiente ya lo ve. Eso es el paso 2, que no cambia.</text>
+<path d="M 384 222 L 737 222 L 746 231 L 746 287.2 L 384 287.2 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 737 222 L 737 231 L 746 231" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="393" y="238.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">La lectura nunca decide</text>
+<text x="393" y="251.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Lee solo los pares ya permitidos. Si un corte llega durante la lectura, esa</text>
+<text x="393" y="264.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">página ya estaba decidida (antes y después); la próxima página vuelve a</text>
+<text x="393" y="277.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">decidir. Lo único que cambia es que la lectura dura menos.</text>
+</svg>
