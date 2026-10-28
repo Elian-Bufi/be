@@ -355,7 +355,8 @@ export class AccesoAdministrativoService {
         // dos sesiones, quedan una después de la otra, y la segunda descarta el pendiente de la primera. Con el modo
         // compartido, las dos descartaban antes de que la otra creara el suyo, y la segunda chocaba con el índice único de
         // un pendiente por identidad: respondía 500.
-        await this.tomarLaIdentidadEnExclusiva(tx, actor);
+        // MUTACIÓN M-B: la identidad en modo compartido, como antes.
+        await this.tomarLaIdentidad(tx, actor);
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado === 'PLAZO_VENCIDO') return { tipo: 'plazo' };
         const activo = await tx.factorTotp.findFirst({ where: { identidadId: actor.identidadId, estado: 'ACTIVO' }, select: { id: true } });
@@ -532,7 +533,7 @@ export class AccesoAdministrativoService {
     try {
       return await conReintento(transaccion);
     } catch (e) {
-      if (e instanceof SesionQueDejoDeValer) await this.auditar(this.prisma, operacion, 'RECHAZO', e.motivoDeAuditoria ?? 'SESION_NO_VIGENTE', actor.identidadId, actor.sesionId, ctx);
+      // MUTACIÓN M-C: el rechazo dentro de la transacción no se audita.
       throw e;
     }
   }
