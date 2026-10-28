@@ -2,10 +2,11 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
-  /* Una sola columna en el teléfono: primero lo que existe (tres imágenes), después la maqueta y al final las 44 fichas
-     sin imagen. Los colores son los dos temas de BE: Claro y Azul noche. */
+  /* Una columna en el teléfono, dos en una pantalla ancha. Pestañas arriba (recetas, alimentos, ejercicios y
+     decisiones); en recetas, primero los filtros y después la lista, con la ficha completa plegada en cada una.
+     Los colores son los dos temas de BE: Claro y Azul noche. */
   :root {
     --fondo: #f2f6fc;
     --superficie: #ffffff;
@@ -19,6 +20,8 @@
     --ficha-fondo: #fdf3dd;
     --maqueta: #6b3fc4;
     --maqueta-fondo: #f1ebfd;
+    --nueva: #135ddf;
+    --nueva-fondo: #e7effd;
     --aviso-fondo: #fff7e6;
     --aviso-borde: #e8b04a;
     --codigo-fondo: #eef3fa;
@@ -29,12 +32,14 @@
     :root:not([data-theme="light"]) {
       --fondo: #011325; --superficie: #052238; --texto: #ffffff; --tenue: #a3b1c2; --borde: #173d5b; --enlace: #46e2f3;
       --real: #5fe0b4; --real-fondo: #0b3a33; --ficha: #f5c76a; --ficha-fondo: #3a2c0c; --maqueta: #c4a8ff; --maqueta-fondo: #2a1d4d;
+      --nueva: #8fc7ff; --nueva-fondo: #0d2f52;
       --aviso-fondo: #2b230f; --aviso-borde: #b98a2e; --codigo-fondo: #0a2b45; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --fondo: #011325; --superficie: #052238; --texto: #ffffff; --tenue: #a3b1c2; --borde: #173d5b; --enlace: #46e2f3;
     --real: #5fe0b4; --real-fondo: #0b3a33; --ficha: #f5c76a; --ficha-fondo: #3a2c0c; --maqueta: #c4a8ff; --maqueta-fondo: #2a1d4d;
+    --nueva: #8fc7ff; --nueva-fondo: #0d2f52;
     --aviso-fondo: #2b230f; --aviso-borde: #b98a2e; --codigo-fondo: #0a2b45; color-scheme: dark;
   }
 
@@ -44,11 +49,11 @@
     padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
     padding-block: 20px 48px;
   }
-  .hoja { max-width: 980px; margin: 0 auto; display: grid; gap: 28px; }
+  .hoja { max-width: 1040px; margin: 0 auto; display: grid; gap: 22px; }
   h1, h2, h3 { text-wrap: balance; line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
   h1 { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem); }
-  h2 { font-size: 1.25rem; }
-  h3 { font-size: 1.05rem; }
+  h2 { font-size: 1.2rem; }
+  h3 { font-size: 1.02rem; }
   p { margin: 0; }
   .tenue { color: var(--tenue); }
   .chico { font-size: 0.86rem; }
@@ -58,142 +63,204 @@
   .eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tenue); font-weight: 600; }
   .resumen { display: flex; flex-wrap: wrap; gap: 8px; }
   .aviso { background: var(--aviso-fondo); border: 1px solid var(--aviso-borde); border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; }
-  .aviso strong { font-weight: 600; }
 
-  .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 9px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
   .chip.real { background: var(--real-fondo); color: var(--real); }
   .chip.ficha { background: var(--ficha-fondo); color: var(--ficha); }
   .chip.maqueta { background: var(--maqueta-fondo); color: var(--maqueta); }
+  .chip.nueva { background: var(--nueva-fondo); color: var(--nueva); }
   .chip.neutro { background: var(--codigo-fondo); color: var(--texto); font-weight: 500; }
 
-  nav.filtros {
+  nav.pestanas {
     position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--fondo);
-    padding-block: 8px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    padding-block: 8px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--borde);
   }
   body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--fondo); }
-  nav.filtros button {
+  nav.pestanas button, .segmentos button {
     font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--texto); background: var(--superficie);
     border: 1px solid var(--borde); border-radius: 999px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
   }
-  nav.filtros button[aria-pressed="true"] { background: var(--texto); color: var(--fondo); border-color: var(--texto); }
-  button:focus-visible, summary:focus-visible { outline: 2px solid var(--enlace); outline-offset: 2px; }
+  nav.pestanas button[aria-pressed="true"], .segmentos button[aria-pressed="true"] { background: var(--texto); color: var(--fondo); border-color: var(--texto); }
+  button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--enlace); outline-offset: 2px; }
 
   section { display: grid; gap: 14px; }
   .titulo-seccion { display: grid; gap: 4px; }
 
-  .reales { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); }
-  .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
-  .lienzo-blanco { background: #ffffff; border-radius: 6px; aspect-ratio: 5 / 6; display: grid; place-items: center; overflow: hidden; max-width: 100%; }
-  .lienzo-blanco img { width: 100%; height: 100%; object-fit: contain; }
-  dl.datos { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: 0.86rem; }
-  dl.datos dt { color: var(--tenue); }
-  dl.datos dd { margin: 0; min-width: 0; }
-  ul.obs { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.88rem; }
+  .controles { display: grid; gap: 10px; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 12px; }
+  .fila-controles { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .controles label { font-size: 0.8rem; font-weight: 600; color: var(--tenue); }
+  .campo { display: grid; gap: 4px; min-width: 0; flex: 1 1 220px; }
+  .controles input[type="search"], .controles select {
+    font: inherit; font-size: 0.95rem; color: var(--texto); background: var(--fondo); border: 1px solid var(--borde);
+    border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0;
+  }
+  .segmentos { display: flex; flex-wrap: wrap; gap: 6px; }
+  .segmentos button { font-size: 0.82rem; padding: 4px 10px; }
+  .cuenta { font-size: 0.86rem; color: var(--tenue); }
+
+  .lista-recetas { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); align-items: start; }
+  .receta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 12px; display: grid; gap: 8px; min-width: 0; }
+  .receta-cabecera { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+  .miniatura { width: 88px; aspect-ratio: 4 / 3; max-width: 100%; border-radius: 6px; overflow: hidden; background: var(--codigo-fondo); display: grid; place-items: center; border: 1px dashed var(--borde); }
+  .miniatura img { width: 100%; height: 100%; object-fit: cover; }
+  .miniatura span { font-size: 0.68rem; color: var(--tenue); text-align: center; padding: 4px; line-height: 1.25; }
+  .receta-titulo { display: grid; gap: 3px; min-width: 0; }
+  .codigo-receta { font-family: var(--mono); font-size: 0.78rem; font-weight: 700; color: var(--tenue); }
+  .etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
+  .valores { font-size: 0.84rem; color: var(--tenue); }
+  .valores strong { color: var(--texto); font-weight: 600; }
 
   details { border-top: 1px solid var(--borde); padding-top: 8px; }
   summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--enlace); list-style: none; }
   summary::-webkit-details-marker { display: none; }
   summary::before { content: "＋ "; }
   details[open] > summary::before { content: "－ "; }
+  .ficha-completa { display: grid; gap: 12px; margin-top: 10px; font-size: 0.9rem; min-width: 0; }
+  .ficha-completa h4 { margin: 0; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tenue); }
+  .tabla-envoltorio { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--borde); vertical-align: top; }
+  td.cantidad { text-align: right; white-space: nowrap; }
+  td.estado { color: var(--tenue); white-space: nowrap; font-size: 0.8rem; }
+  tr.parte td { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--real); border-bottom: none; padding-top: 10px; }
+  ol.pasos { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  .composicion { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; }
+  .composicion div { background: var(--codigo-fondo); border-radius: 8px; padding: 8px; display: grid; gap: 2px; }
+  .composicion span { font-size: 0.74rem; color: var(--tenue); }
+  .composicion strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
+  dl.datos { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: 0.86rem; }
+  dl.datos dt { color: var(--tenue); }
+  dl.datos dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  ul.obs { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 0.88rem; }
+  .prompt { font-family: var(--mono); font-size: 0.78rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--codigo-fondo); border-radius: 6px; padding: 10px; margin: 0; }
+  .copiar { font: inherit; font-size: 0.82rem; font-weight: 600; justify-self: start; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); cursor: pointer; }
+
+  .reales { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); }
+  .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+  .lienzo-blanco { background: #ffffff; border-radius: 6px; aspect-ratio: 5 / 6; display: grid; place-items: center; overflow: hidden; max-width: 100%; }
+  .lienzo-blanco img { width: 100%; height: 100%; object-fit: contain; }
   .vistas { display: grid; gap: 10px; margin-top: 8px; }
   .vistas figure { margin: 0; display: grid; gap: 4px; }
   .vistas img { border-radius: 6px; border: 1px solid var(--borde); }
-
-  .maqueta { background: var(--superficie); border: 2px dashed var(--maqueta); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+  .maqueta { background: var(--superficie); border: 2px dashed var(--maqueta); border-radius: 10px; padding: 14px; display: grid; gap: 10px; margin: 0; }
   .maqueta img { border-radius: 6px; background: #ffffff; }
-
-  .grupo { display: grid; gap: 10px; }
-  .fichas { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
-  .ficha-item { background: var(--superficie); border: 1px solid var(--borde); border-left: 4px solid var(--ficha); border-radius: 8px; padding: 12px 12px 10px; display: grid; gap: 6px; min-width: 0; }
+  .fichas { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; }
+  .ficha-item { background: var(--superficie); border: 1px solid var(--borde); border-radius: 8px; padding: 12px 12px 10px; display: grid; gap: 6px; min-width: 0; }
   .ficha-cabecera { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
   .codigo { font-family: var(--mono); font-size: 0.78rem; color: var(--tenue); overflow-wrap: anywhere; }
-  .prompt { font-family: var(--mono); font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--codigo-fondo); border-radius: 6px; padding: 10px; margin: 8px 0 0; }
-  .copiar { font: inherit; font-size: 0.82rem; font-weight: 600; margin-top: 6px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--borde); background: var(--superficie); color: var(--texto); cursor: pointer; }
   .bloque-detalle { display: grid; gap: 6px; margin-top: 6px; font-size: 0.88rem; }
 
   .decisiones { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 14px 16px; }
-  .decisiones ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+  .decisiones ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 8px; }
   footer { font-size: 0.82rem; color: var(--tenue); display: grid; gap: 4px; }
   code { font-family: var(--mono); font-size: 0.85em; background: var(--codigo-fondo); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  .vacio { padding: 18px; text-align: center; color: var(--tenue); background: var(--superficie); border: 1px dashed var(--borde); border-radius: 10px; }
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
 <div class="hoja">
   <header>
-    <span class="eyebrow">BE · encargo del 27/10 · revisión en el teléfono</span>
+    <span class="eyebrow">BE · encargos del 27/10 y del 28/10 · revisión en el teléfono</span>
     <h1>Material visual de BE</h1>
-    <p class="tenue">Recetas, alimentos del catálogo y ejercicios. Cada contenido dice si tiene una imagen real o solo su
-      ficha con el prompt, y cómo se recortaría en el website y en la APK.</p>
-    <div class="resumen cifras">
-      <span class="chip neutro">47 contenidos</span>
-      <span class="chip real">3 imágenes reales</span>
-      <span class="chip ficha">44 fichas sin imagen</span>
-      <span class="chip maqueta">1 maqueta</span>
-    </div>
+    <p class="tenue">Las 66 recetas de ejemplo (16 originales y 50 nuevas), con su ficha completa y el estado de su foto;
+      los alimentos del catálogo y los ejercicios. Cada contenido dice si tiene una imagen real o solo su prompt.</p>
+    <div class="resumen cifras" id="resumen"></div>
     <div class="aviso">
-      <strong>No hay imágenes nuevas.</strong>
-      <p class="chico">Esta sesión no tenía una herramienta para generar imágenes, y el encargo no autoriza contratar una. Las tres
-        imágenes reales son las del paquete de Dirección del 6/10. Todo lo demás es una ficha con su prompt: no es una
-        imagen.</p>
+      <strong>No hay fotos de recetas todavía.</strong>
+      <p class="chico">Las sesiones que prepararon este material no tenían una herramienta para generar imágenes. Cada receta
+        tiene su prompt y el nombre con que hay que guardar su foto, en el paquete de generación
+        (<code>EVIDENCIA/RECETAS-AMPLIACION/PAQUETE-DE-GENERACION.md</code>). Un prompt no es una foto. Las tres imágenes
+        reales son las de ejercicios del paquete de Dirección del 6/10.</p>
     </div>
   </header>
 
-  <nav class="filtros" aria-label="Filtrar el material">
-    <button type="button" id="filtro-todo" data-filtro="todo" aria-pressed="true">Todo · 47</button>
-    <button type="button" id="filtro-real" data-filtro="real" aria-pressed="false">Con imagen · 3</button>
-    <button type="button" id="filtro-ejercicio" data-filtro="ejercicio" aria-pressed="false">Ejercicios · 15</button>
-    <button type="button" id="filtro-receta" data-filtro="receta" aria-pressed="false">Recetas · 16</button>
-    <button type="button" id="filtro-alimento" data-filtro="alimento" aria-pressed="false">Alimentos · 16</button>
+  <nav class="pestanas" aria-label="Elegir qué ver">
+    <button type="button" id="pestana-recetas" data-pestana="recetas" aria-pressed="true">Recetas · 66</button>
+    <button type="button" id="pestana-alimentos" data-pestana="alimentos" aria-pressed="false">Alimentos · 16</button>
+    <button type="button" id="pestana-ejercicios" data-pestana="ejercicios" aria-pressed="false">Ejercicios · 15</button>
+    <button type="button" id="pestana-decisiones" data-pestana="decisiones" aria-pressed="false">Decisiones</button>
   </nav>
 
-  <section id="reales" data-seccion="real ejercicio">
+  <section id="recetas" data-pestana="recetas">
     <div class="titulo-seccion">
-      <h2>Las tres imágenes que existen</h2>
-      <p class="tenue chico">Como las guarda BE: JPEG sobre blanco. Se generaron con IA para el paquete del 6/10; la
-        revisión profesional de la técnica está pendiente.</p>
+      <h2>Las 66 recetas</h2>
+      <p class="tenue chico">La composición sale del catálogo de BE (USDA FoodData Central · SR Legacy). Es una estimación: el
+        cálculo de BE da lo mismo, pero ninguna receta se cocinó ni se pesó, y ninguna está validada por una persona. No es
+        una prescripción.</p>
     </div>
-    <div class="reales" id="lista-reales"></div>
-  </section>
-
-  <section id="maqueta" data-seccion="receta">
-    <div class="titulo-seccion">
-      <h2>El encuadre de las fotos de recetas</h2>
-      <p class="tenue chico">Dónde tiene que quedar el plato para que se vea entero en el website (4:3) y en la APK (16:10).</p>
+    <div class="controles">
+      <div class="fila-controles">
+        <div class="campo">
+          <label for="buscar">Buscar por nombre o código</label>
+          <input type="search" id="buscar" placeholder="Por ejemplo: empanadas, R040, lentejas" autocomplete="off">
+        </div>
+        <div class="campo">
+          <label for="familia">Familia</label>
+          <select id="familia"><option value="">Todas las familias</option></select>
+        </div>
+      </div>
+      <div class="fila-controles">
+        <div class="segmentos" role="group" aria-label="Origen">
+          <button type="button" id="origen-todas" data-origen="" aria-pressed="true">Todas</button>
+          <button type="button" id="origen-originales" data-origen="ORIGINAL" aria-pressed="false">Originales · 16</button>
+          <button type="button" id="origen-nuevas" data-origen="NUEVA" aria-pressed="false">Nuevas · 50</button>
+        </div>
+        <div class="segmentos" role="group" aria-label="Foto">
+          <button type="button" id="foto-todas" data-foto="" aria-pressed="true">Con y sin foto</button>
+          <button type="button" id="foto-con" data-foto="con" aria-pressed="false">Con foto</button>
+          <button type="button" id="foto-sin" data-foto="sin" aria-pressed="false">Sin foto</button>
+        </div>
+      </div>
+      <p class="cuenta" id="cuenta" aria-live="polite"></p>
     </div>
-    <figure class="maqueta" style="margin:0">
+    <div class="lista-recetas" id="lista-recetas"></div>
+    <figure class="maqueta">
       <span class="chip maqueta" style="justify-self:start">Maqueta · no es una foto</span>
       <img src="img/encuadre-de-recetas.png" alt="Maqueta del encuadre: un rectángulo de 1600 por 1200 píxeles con dos franjas marcadas arriba y abajo que la APK recorta, y un plato ovalado centrado en la zona segura." loading="lazy">
-      <figcaption class="tenue chico">El criterio que ya existía: horizontal, de 1,25 a 1,40, al menos 1600 px en el lado
-        mayor y hasta 10 MB. El servidor guarda JPEG de hasta 1600 px y no agranda.</figcaption>
+      <figcaption class="tenue chico">Dónde tiene que quedar el plato para verse entero en el website (4:3) y en la APK
+        (16:10). Cada foto se entrega en 1600 × 1200; un recorte o un reescalado queda escrito.</figcaption>
     </figure>
   </section>
 
-  <section id="fichas">
+  <section id="alimentos" data-pestana="alimentos" hidden>
     <div class="titulo-seccion">
-      <h2>Las fichas sin imagen</h2>
-      <p class="tenue chico">Cada una tiene el prompt listo para generar. Tocá «Ver ficha y prompt» para leerlo o copiarlo.</p>
+      <h2>Los 16 alimentos</h2>
+      <p class="tenue chico">Del catálogo base, cada uno en el estado que dice su nombre. Hoy el catálogo no muestra imágenes:
+        estas fichas son material preparado.</p>
     </div>
-    <div id="grupos" class="grupo"></div>
+    <div class="fichas" id="lista-alimentos"></div>
   </section>
 
-  <section class="decisiones" id="decisiones" data-seccion="todo">
+  <section id="ejercicios" data-pestana="ejercicios" hidden>
+    <div class="titulo-seccion">
+      <h2>Los 15 ejercicios</h2>
+      <p class="tenue chico">Tres tienen imagen real, como las guarda BE (JPEG sobre blanco), con la revisión profesional
+        pendiente. Doce son fichas con su prompt.</p>
+    </div>
+    <div class="reales" id="lista-reales"></div>
+    <div class="fichas" id="lista-ejercicios"></div>
+  </section>
+
+  <section class="decisiones" id="decisiones" data-pestana="decisiones" hidden>
     <h2>Lo que hace falta decidir</h2>
     <ol class="chico">
-      <li>Con qué herramienta se generan las 44 imágenes, y quién las genera. Los prompts están listos.</li>
-      <li>El tamaño de las fotos de recetas: muchas herramientas entregan 1536 × 1024; el criterio pide 4:3 y 1600 px.
-        Se puede reescalar antes de subir, o revisar el criterio.</li>
+      <li>Generar las 66 fotos de recetas en la sesión de ChatGPT, con el paquete de generación, empezando por el primer
+        lote variado (R017, R029, R037 y R052) para ajustar el estilo. Después, revisarlas y registrarlas.</li>
+      <li>El tamaño: si la herramienta entrega 1536 × 1024, la herramienta de fotos recorta a 4:3 y reescala a 1600 × 1200, y
+        lo dice. El detalle reescalado no es nativo. ¿Alcanza, o se pide otra salida?</li>
+      <li>El locro (R054) se reemplazó por bifes a la criolla: el catálogo no tiene maíz blanco pisado. Sumarlo es incorporar
+        ese alimento al catálogo.</li>
+      <li>Cargar las 50 recetas nuevas en la cuenta de Lic. Sofía Paz en test: necesita una autorización aparte.</li>
       <li>Los doce ejercicios del catálogo de WP-06 no pueden tener imagen hoy: solo los ejercicios propios de un
         profesional pueden.</li>
-      <li>Tres implementos inferidos, porque el nombre no los dice: la «Sentadilla» con barra, el «Press con mancuernas»
-        en banco plano y la «Extensión de tríceps» sobre la cabeza con una mancuerna.</li>
       <li>Los alimentos no tienen dónde mostrarse en BE. Si se quieren, es una decisión de producto para más adelante.</li>
-      <li>Las imágenes de wger son CC BY-SA: usarlas obliga a atribuir y a compartir igual.</li>
     </ol>
   </section>
 
   <footer>
-    <p>Fuente: <code>EVIDENCIA/MATERIAL-VISUAL</code> en la rama <code>wp-nocturno-2026-10-27</code> (commit de referencia
-      <code>e4512cb</code>). El inventario completo, con SHA-256 y procedencia, está en <code>inventario.json</code>.</p>
+    <p>Fuente: <code>EVIDENCIA/MATERIAL-VISUAL</code> y <code>EVIDENCIA/RECETAS-AMPLIACION</code> en la rama
+      <code>wp-recetas-ampliacion-2026-10-28</code> (commit de referencia <code>e4512cb</code>). El inventario completo,
+      con SHA-256 y procedencia, está en <code>inventario.json</code>.</p>
     <p>Solo datos sintéticos. Ninguna imagen muestra a una persona real.</p>
   </footer>
 </div>
@@ -202,51 +269,197 @@
 <script>
 (function () {
   var datos = JSON.parse(document.getElementById('inventario').textContent);
-  var ESTADOS = { RAW: 'Crudo', COOKED: 'Cocido', AS_PURCHASED: 'Tal como se adquiere' };
-  var TIPOS = { ejercicio: 'Ejercicios', receta: 'Recetas', alimento: 'Alimentos' };
+  var ESTADOS = { RAW: 'Crudo', COOKED: 'Cocido', AS_PURCHASED: 'Como se compra' };
   var VISTAS = { 'ejercicio-E01': 'sentadilla_goblet', 'ejercicio-E02': 'peso_muerto_rumano_mancuernas', 'ejercicio-E03': 'zancada_estatica' };
+  var recetas = datos.contenidos.filter(function (x) { return x.tipo === 'receta'; });
+  var alimentos = datos.contenidos.filter(function (x) { return x.tipo === 'alimento'; });
+  var ejercicios = datos.contenidos.filter(function (x) { return x.tipo === 'ejercicio'; });
 
   function el(etiqueta, atributos, hijos) {
     var n = document.createElement(etiqueta);
     if (atributos) for (var k in atributos) { if (k === 'texto') n.textContent = atributos[k]; else n.setAttribute(k, atributos[k]); }
-    (hijos || []).forEach(function (h) { if (h) n.appendChild(h); });
+    (hijos || []).forEach(function (h) { if (h) n.appendChild(typeof h === 'string' ? document.createTextNode(h) : h); });
     return n;
   }
+  function numero(x, d) { return x === null || x === undefined ? 's/d' : Number(x).toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d }); }
   function kb(bytes) { return Math.round(bytes / 1024).toLocaleString('es-AR') + ' KB'; }
-  function codigoDe(x) { return x.archivo.replace(/\.(jpg|png)$/, ''); }
+  function sinTildes(t) { return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
   function lista(items) { return el('ul', { class: 'obs' }, items.map(function (t) { return el('li', { texto: t }); })); }
-  function botonCopiar(texto) {
+  function botonCopiar(pre, texto) {
     var b = el('button', { type: 'button', class: 'copiar', texto: 'Copiar el prompt' });
     b.addEventListener('click', function () {
       var hecho = function () { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar el prompt'; }, 1600); };
-      try {
-        navigator.clipboard.writeText(texto).then(hecho, function () { seleccionar(b); });
-      } catch (e) { seleccionar(b); }
+      var seleccionar = function () {
+        var r = document.createRange(); r.selectNodeContents(pre);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        b.textContent = 'Seleccionado: copialo';
+      };
+      try { navigator.clipboard.writeText(texto).then(hecho, seleccionar); } catch (e) { seleccionar(); }
     });
     return b;
   }
-  function seleccionar(b) {
-    var pre = b.previousElementSibling;
-    if (!pre) return;
-    var r = document.createRange(); r.selectNodeContents(pre);
-    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
-    b.textContent = 'Seleccionado: copialo';
+  function estadoDeFoto(x) {
+    if (!x.archivoReal) return { texto: 'Falta la foto', clase: 'ficha' };
+    var r = x.revisionDeLaFoto || {};
+    if (r.direccion) return { texto: 'Foto aprobada por Dirección', clase: 'real' };
+    if (r.visualDelAgente) return { texto: 'Foto revisada por el agente', clase: 'real' };
+    return { texto: 'Foto pendiente de revisión', clase: 'real' };
   }
 
-  // Las tres imágenes reales.
+  // ─── El resumen ─────────────────────────────────────────────────────────────────────────────
+  var conFoto = recetas.filter(function (x) { return x.archivoReal; }).length;
+  var resumen = document.getElementById('resumen');
+  [
+    ['neutro', recetas.length + ' recetas'],
+    ['nueva', recetas.filter(function (x) { return x.origen === 'NUEVA'; }).length + ' nuevas'],
+    [conFoto ? 'real' : 'ficha', conFoto + ' de ' + recetas.length + ' con foto'],
+    ['neutro', alimentos.length + ' alimentos'],
+    ['real', ejercicios.filter(function (x) { return x.archivoReal; }).length + ' ejercicios con imagen real'],
+    ['maqueta', '1 maqueta']
+  ].forEach(function (c) { resumen.appendChild(el('span', { class: 'chip ' + c[0], texto: c[1] })); });
+
+  // ─── Las recetas ────────────────────────────────────────────────────────────────────────────
+  var selectorDeFamilia = document.getElementById('familia');
+  var familias = {};
+  recetas.forEach(function (x) { familias[x.familia] = x.familiaNombre; });
+  Object.keys(familias).sort(function (a, b) { return familias[a].localeCompare(familias[b], 'es'); }).forEach(function (k) {
+    var n = recetas.filter(function (x) { return x.familia === k; }).length;
+    selectorDeFamilia.appendChild(el('option', { value: k, texto: familias[k] + ' · ' + n }));
+  });
+
+  function fichaDeReceta(x) {
+    var partes = [];
+    var anterior = '§';
+    var filas = [];
+    x.ingredientes.forEach(function (i) {
+      if (i.parte !== anterior && i.parte) filas.push(el('tr', { class: 'parte' }, [el('td', { colspan: '3', texto: i.parte })]));
+      anterior = i.parte;
+      filas.push(el('tr', null, [el('td', { class: 'cantidad', texto: i.cantidad.replace('.', ',') }), el('td', { texto: i.nombre }), el('td', { class: 'estado', texto: ESTADOS[i.estado] || i.estado })]));
+    });
+    var c = x.composicionPorPorcion;
+    var pre = el('pre', { class: 'prompt', texto: x.prompt });
+    partes.push(el('div', { class: 'tabla-envoltorio' }, [el('table', null, [
+      el('thead', null, [el('tr', null, [el('th', { texto: 'Cantidad' }), el('th', { texto: 'Ingrediente del catálogo' }), el('th', { texto: 'Estado' })])]),
+      el('tbody', null, filas)
+    ])]));
+    partes.push(el('h4', { texto: 'Preparación' }));
+    partes.push(el('ol', { class: 'pasos' }, x.pasos.map(function (p) { return el('li', { texto: p }); })));
+    partes.push(el('h4', { texto: x.porciones > 1 ? 'Por porción (1 de ' + x.porciones + ')' : 'La receta (una porción)' }));
+    partes.push(el('div', { class: 'composicion cifras' }, [
+      ['Energía', numero(c.energyKcal, 0) + ' kcal'], ['Proteínas', numero(c.proteinG, 1) + ' g'], ['Carbohidratos', numero(c.carbohydrateG, 1) + ' g'], ['Grasas', numero(c.fatG, 1) + ' g'], ['Fibra', numero(c.fiberG, 1) + ' g']
+    ].map(function (v) { return el('div', null, [el('span', { texto: v[0] }), el('strong', { texto: v[1] })]); })));
+    partes.push(el('h4', { texto: 'La foto' }));
+    var datosDeFoto = [el('dt', { texto: 'Archivo' }), el('dd', null, [el('code', { texto: x.archivo })]), el('dt', { texto: 'Estado' }), el('dd', { texto: estadoDeFoto(x).texto })];
+    if (x.archivoReal) datosDeFoto.push(el('dt', { texto: 'Entrega' }), el('dd', { texto: x.archivoReal.ancho + ' × ' + x.archivoReal.alto + ', ' + kb(x.archivoReal.bytes) }));
+    if (x.transformaciones && x.transformaciones.length) datosDeFoto.push(el('dt', { texto: 'Se le hizo' }), el('dd', { texto: x.transformaciones.join(' · ') }));
+    partes.push(el('dl', { class: 'datos cifras' }, datosDeFoto));
+    partes.push(el('p', null, [el('strong', { texto: 'Presentación. ' }), x.presentacion]));
+    partes.push(el('p', null, [el('strong', { texto: 'No debe aparecer: ' }), x.noDebe.join(', ') + '.']));
+    partes.push(pre);
+    partes.push(botonCopiar(pre, x.prompt));
+    return el('div', { class: 'ficha-completa' }, partes);
+  }
+
+  var tarjetas = recetas.map(function (x) {
+    var foto = estadoDeFoto(x);
+    var c = x.composicionPorPorcion;
+    var miniatura = x.archivoReal
+      ? el('div', { class: 'miniatura' }, [el('img', { src: 'img/recetas/' + x.codigo + '.jpg', alt: 'Foto de referencia de ' + x.nombre + ', generada por IA.', loading: 'lazy' })])
+      : el('div', { class: 'miniatura', 'aria-hidden': 'true' }, [el('span', { texto: 'Falta la foto' })]);
+    var detalle = el('details', null, [el('summary', { texto: 'Ver la receta, la composición y el prompt' })]);
+    detalle.addEventListener('toggle', function () { if (detalle.open && detalle.children.length === 1) detalle.appendChild(fichaDeReceta(x)); });
+    var tarjeta = el('article', { class: 'receta', id: 'receta-' + x.codigo }, [
+      el('div', { class: 'receta-cabecera' }, [
+        miniatura,
+        el('div', { class: 'receta-titulo' }, [
+          el('span', { class: 'codigo-receta', texto: x.codigo }),
+          el('h3', { texto: x.nombre }),
+          el('span', { class: 'tenue chico', texto: x.familiaNombre + (x.momento ? ' · ' + x.momento : '') }),
+          el('div', { class: 'etiquetas' }, [
+            el('span', { class: 'chip ' + (x.origen === 'NUEVA' ? 'nueva' : 'neutro'), texto: x.origen === 'NUEVA' ? 'Nueva' : 'Original' }),
+            el('span', { class: 'chip ' + foto.clase, texto: foto.texto })
+          ])
+        ])
+      ]),
+      el('p', { class: 'valores cifras' }, [
+        (x.porciones > 1 ? x.porciones + ' porciones' : '1 porción') + (x.porcion && x.porciones > 1 ? ' (' + x.porcion.replace(/\.$/, '').toLowerCase() + ')' : '') + ' · por porción: ',
+        el('strong', { texto: numero(c.energyKcal, 0) + ' kcal' }), ' · ', el('strong', { texto: numero(c.proteinG, 1) + ' g' }), ' de proteínas'
+      ]),
+      detalle
+    ]);
+    return { x: x, nodo: tarjeta, busqueda: sinTildes(x.codigo + ' ' + x.nombre + ' ' + x.familiaNombre) };
+  });
+  var listaDeRecetas = document.getElementById('lista-recetas');
+  tarjetas.forEach(function (t) { listaDeRecetas.appendChild(t.nodo); });
+  var vacio = el('p', { class: 'vacio', texto: 'Ninguna receta coincide con la búsqueda y los filtros.' });
+  vacio.hidden = true;
+  listaDeRecetas.appendChild(vacio);
+
+  var estado = { texto: '', familia: '', origen: '', foto: '' };
+  try {
+    var guardado = JSON.parse(localStorage.getItem('be-galeria-recetas') || '{}');
+    ['familia', 'origen', 'foto'].forEach(function (k) { if (typeof guardado[k] === 'string') estado[k] = guardado[k]; });
+  } catch (e) {}
+  function filtrar() {
+    var q = sinTildes(estado.texto.trim());
+    var n = 0;
+    tarjetas.forEach(function (t) {
+      var ok = (!q || t.busqueda.indexOf(q) >= 0) && (!estado.familia || t.x.familia === estado.familia) && (!estado.origen || t.x.origen === estado.origen) &&
+        (!estado.foto || (estado.foto === 'con') === Boolean(t.x.archivoReal));
+      t.nodo.hidden = !ok;
+      if (ok) n++;
+    });
+    vacio.hidden = n > 0;
+    document.getElementById('cuenta').textContent = 'Mostrando ' + n + ' de ' + recetas.length + ' recetas';
+    document.querySelectorAll('[data-origen]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-origen') === estado.origen)); });
+    document.querySelectorAll('[data-foto]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-foto') === estado.foto)); });
+    selectorDeFamilia.value = estado.familia;
+    try { localStorage.setItem('be-galeria-recetas', JSON.stringify({ familia: estado.familia, origen: estado.origen, foto: estado.foto })); } catch (e) {}
+  }
+  document.getElementById('buscar').addEventListener('input', function (e) { estado.texto = e.target.value; filtrar(); });
+  selectorDeFamilia.addEventListener('change', function (e) { estado.familia = e.target.value; filtrar(); });
+  document.querySelectorAll('[data-origen]').forEach(function (b) { b.addEventListener('click', function () { estado.origen = b.getAttribute('data-origen'); filtrar(); }); });
+  document.querySelectorAll('[data-foto]').forEach(function (b) { b.addEventListener('click', function () { estado.foto = b.getAttribute('data-foto'); filtrar(); }); });
+  filtrar();
+
+  // ─── Los alimentos y los ejercicios ─────────────────────────────────────────────────────────
+  function fichaSimple(x, contenedor) {
+    var pre = el('pre', { class: 'prompt', texto: x.prompt || '' });
+    var etiquetas = [el('span', { class: 'chip ficha', texto: 'Sin imagen' })];
+    if (x.estado) etiquetas.unshift(el('span', { class: 'chip neutro', texto: ESTADOS[x.estado] || x.estado }));
+    contenedor.appendChild(el('article', { class: 'ficha-item' }, [
+      el('div', { class: 'ficha-cabecera' }, [el('h3', { texto: x.nombre }), el('span', { class: 'etiquetas' }, etiquetas)]),
+      el('span', { class: 'codigo', texto: x.archivo.replace(/\.(jpg|png)$/, '') }),
+      el('details', null, [
+        el('summary', { texto: 'Ver ficha y prompt' }),
+        el('div', { class: 'bloque-detalle' }, [
+          el('p', null, [el('strong', { texto: 'Formato. ' }), x.formato || '']),
+          el('p', null, [el('strong', { texto: 'Dónde se mostraría. ' }), x.dondeSeMuestra || '']),
+          el('p', null, [el('strong', { texto: 'Procedencia. ' }), x.procedencia || '']),
+          x.observaciones && x.observaciones.length ? lista(x.observaciones) : null,
+          pre,
+          botonCopiar(pre, x.prompt || '')
+        ])
+      ])
+    ]));
+  }
+  var listaDeAlimentos = document.getElementById('lista-alimentos');
+  alimentos.forEach(function (x) { fichaSimple(x, listaDeAlimentos); });
+  var listaDeEjercicios = document.getElementById('lista-ejercicios');
+  ejercicios.filter(function (x) { return !x.archivoReal; }).forEach(function (x) { fichaSimple(x, listaDeEjercicios); });
   var reales = document.getElementById('lista-reales');
-  datos.filter(function (x) { return x.real; }).forEach(function (x) {
+  ejercicios.filter(function (x) { return x.archivoReal; }).forEach(function (x) {
     var base = VISTAS[x.id];
-    var tarjeta = el('article', { class: 'tarjeta', 'data-tipo': x.tipo, 'data-real': 'si' }, [
+    reales.appendChild(el('article', { class: 'tarjeta' }, [
       el('div', { class: 'lienzo-blanco' }, [el('img', { src: 'img/' + base + '.jpg', alt: x.nombre + ': ilustración del ejercicio, cuerpo entero, sobre fondo blanco.', loading: 'lazy' })]),
       el('div', { class: 'ficha-cabecera' }, [el('h3', { texto: x.nombre }), el('span', { class: 'chip real', texto: 'Imagen real' })]),
       el('dl', { class: 'datos cifras' }, [
-        el('dt', { texto: 'Original' }), el('dd', { texto: 'PNG ' + x.real.ancho + ' × ' + x.real.alto + ', ' + kb(x.real.bytes) }),
+        el('dt', { texto: 'Original' }), el('dd', { texto: 'PNG ' + x.archivoReal.ancho + ' × ' + x.archivoReal.alto + ', ' + kb(x.archivoReal.bytes) }),
         el('dt', { texto: 'En BE' }), el('dd', { texto: 'JPEG sobre blanco, mismo tamaño' }),
         el('dt', { texto: 'Origen' }), el('dd', { texto: 'Paquete de Dirección del 6/10, generada con IA' }),
         el('dt', { texto: 'Revisión' }), el('dd', { texto: 'Técnica: pendiente de un profesional' })
       ]),
-      lista(x.obs),
+      lista(x.observaciones),
       el('details', null, [
         el('summary', { texto: 'Ver los recortes reales, en los dos temas' }),
         el('div', { class: 'vistas' }, [
@@ -254,56 +467,21 @@
           el('figure', null, [el('img', { src: 'img/' + base + '-azul-noche.png', alt: 'Recortes de ' + x.nombre + ' en el tema Azul noche.', loading: 'lazy' }), el('figcaption', { class: 'tenue chico', texto: 'Tema Azul noche' })])
         ])
       ])
-    ]);
-    reales.appendChild(tarjeta);
+    ]));
   });
 
-  // Las fichas sin imagen, por tipo.
-  var grupos = document.getElementById('grupos');
-  ['ejercicio', 'receta', 'alimento'].forEach(function (tipo) {
-    var items = datos.filter(function (x) { return x.tipo === tipo && !x.real; });
-    var contenedor = el('div', { class: 'fichas' });
-    items.forEach(function (x) {
-      var pre = el('pre', { class: 'prompt', texto: x.prompt || '' });
-      var detalle = el('details', null, [
-        el('summary', { texto: 'Ver ficha y prompt' }),
-        el('div', { class: 'bloque-detalle' }, [
-          el('p', null, [el('strong', { texto: 'Formato. ' }), document.createTextNode(x.formato || '')]),
-          el('p', null, [el('strong', { texto: 'Dónde se mostraría. ' }), document.createTextNode(x.donde || '')]),
-          el('p', null, [el('strong', { texto: 'Procedencia. ' }), document.createTextNode(x.procedencia || '')]),
-          x.obs.length ? lista(x.obs) : null,
-          pre,
-          botonCopiar(x.prompt || '')
-        ])
-      ]);
-      var etiquetas = [el('span', { class: 'chip ficha', texto: 'Sin imagen' })];
-      if (x.estado) etiquetas.unshift(el('span', { class: 'chip neutro', texto: ESTADOS[x.estado] || x.estado }));
-      contenedor.appendChild(el('article', { class: 'ficha-item', 'data-tipo': tipo, 'data-real': 'no' }, [
-        el('div', { class: 'ficha-cabecera' }, [el('h3', { texto: x.nombre }), el('span', { style: 'display:flex;gap:6px;flex-wrap:wrap' }, etiquetas)]),
-        el('span', { class: 'codigo', texto: codigoDe(x) }),
-        detalle
-      ]));
-    });
-    grupos.appendChild(el('div', { class: 'grupo', 'data-tipo': tipo }, [el('h3', { class: 'tenue', texto: TIPOS[tipo] + ' · ' + items.length + ' sin imagen' }), contenedor]));
-  });
-
-  // Filtros: muestran u ocultan tarjetas y secciones enteras.
-  var botones = Array.prototype.slice.call(document.querySelectorAll('nav.filtros button'));
-  function aplicar(filtro) {
-    botones.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-filtro') === filtro)); });
-    document.querySelectorAll('[data-tipo]').forEach(function (n) {
-      var ok = filtro === 'todo' || (filtro === 'real' ? n.getAttribute('data-real') === 'si' || n.classList.contains('grupo') && false : n.getAttribute('data-tipo') === filtro);
-      if (n.classList.contains('grupo')) ok = filtro === 'todo' || n.getAttribute('data-tipo') === filtro;
-      n.hidden = !ok;
-    });
-    document.getElementById('reales').hidden = !(filtro === 'todo' || filtro === 'real' || filtro === 'ejercicio');
-    document.getElementById('maqueta').hidden = !(filtro === 'todo' || filtro === 'receta');
-    document.getElementById('fichas').hidden = filtro === 'real';
-    try { localStorage.setItem('be-galeria-filtro', filtro); } catch (e) {}
+  // ─── Las pestañas (con su ancla: #recetas, #alimentos, #ejercicios o #decisiones) ───────────
+  var botones = Array.prototype.slice.call(document.querySelectorAll('nav.pestanas button'));
+  var secciones = Array.prototype.slice.call(document.querySelectorAll('section[data-pestana]'));
+  function abrir(pestana) {
+    botones.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-pestana') === pestana)); });
+    secciones.forEach(function (s) { s.hidden = s.getAttribute('data-pestana') !== pestana; });
+    try { localStorage.setItem('be-galeria-pestana', pestana); } catch (e) {}
   }
-  botones.forEach(function (b) { b.addEventListener('click', function () { aplicar(b.getAttribute('data-filtro')); }); });
-  var inicial = 'todo';
-  try { inicial = localStorage.getItem('be-galeria-filtro') || 'todo'; } catch (e) {}
-  aplicar(botones.some(function (b) { return b.getAttribute('data-filtro') === inicial; }) ? inicial : 'todo');
+  botones.forEach(function (b) { b.addEventListener('click', function () { abrir(b.getAttribute('data-pestana')); }); });
+  var validas = botones.map(function (b) { return b.getAttribute('data-pestana'); });
+  var inicial = (location.hash || '').replace('#', '');
+  if (validas.indexOf(inicial) < 0) { try { inicial = localStorage.getItem('be-galeria-pestana') || 'recetas'; } catch (e) { inicial = 'recetas'; } }
+  abrir(validas.indexOf(inicial) >= 0 ? inicial : 'recetas');
 })();
 </script>
