@@ -80,10 +80,11 @@ function erroresDeJarsigner(texto) {
 /**
  * Lee `jarsigner -verify -strict` (en inglés). Las claves de firma de Android son autofirmadas (Android no usa cadenas
  * de certificación), así que con -strict jarsigner informa la cadena «inválida» (PKIX) y sale con el bit 4. El bit 4
- * junta varias causas (también certificado vencido o algoritmo deshabilitado), por eso se mira el texto: se acepta la
- * cadena no validada y nada más, y solo si el certificado es autofirmado. Entradas sin firmar (bit 16), uso de clave
- * (8), alias (32) o cualquier otro aviso grave rechazan. Corrección del 2026-10-29, con el primer AAB firmado: antes
- * se exigía código 0, imposible con una clave de Android.
+ * junta varias causas (también certificado vencido o algoritmo deshabilitado), por eso se mira el texto: se aceptan
+ * las dos líneas con que jarsigner describe un certificado autofirmado (la cadena PKIX inválida y «signer certificate
+ * is self-signed») y nada más, y solo si keytool confirma que el certificado es autofirmado. Entradas sin firmar
+ * (bit 16), uso de clave (8), alias (32) o cualquier otro aviso grave rechazan. Corrección del 2026-10-29, con el
+ * primer AAB firmado: antes se exigía código 0, imposible con una clave de Android.
  */
 export function evaluarVerificacionJar({ codigo, salida, autofirmado }) {
   const texto = String(salida ?? '');
@@ -93,7 +94,8 @@ export function evaluarVerificacionJar({ codigo, salida, autofirmado }) {
   if (codigo !== 4) return { ok: false, motivo: `jarsigner -strict salió con ${codigo}` };
   const errores = erroresDeJarsigner(texto);
   if (!errores.length) return { ok: false, motivo: 'jarsigner -strict salió con 4 sin informar el motivo' };
-  const ajenos = errores.filter((l) => !/^This jar contains entries whose certificate chain is invalid\. Reason: PKIX path building failed/i.test(l));
+  const deUnAutofirmado = [/^This jar contains entries whose certificate chain is invalid\. Reason: PKIX path building failed/i, /^This jar contains entries whose signer certificate is self-signed\.$/i];
+  const ajenos = errores.filter((l) => !deUnAutofirmado.some((p) => p.test(l)));
   if (ajenos.length) return { ok: false, motivo: `avisos graves de jarsigner: ${ajenos.join(' / ')}` };
   if (autofirmado !== true) return { ok: false, motivo: 'la cadena no se valida y el certificado no es autofirmado' };
   return { ok: true, motivo: 'verificado; el único aviso es la cadena de un certificado autofirmado, lo normal en Android' };

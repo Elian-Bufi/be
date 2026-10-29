@@ -370,8 +370,9 @@ test('el veredicto: «todo bien» solo si hay comprobaciones y cada una dio true
 
 // ─── jarsigner -verify -strict con una clave de Android (autofirmada) ─────────────────────────────────────────
 
-/** Lo que imprimió jarsigner -strict el 2026-10-29 sobre el primer AAB firmado (salió con 4). */
+/** Las dos líneas que imprimió jarsigner -strict el 2026-10-29 bajo «Error:» sobre el primer AAB firmado (salió con 4). */
 const CADENA_PKIX = 'This jar contains entries whose certificate chain is invalid. Reason: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target';
+const AUTOFIRMADO = 'This jar contains entries whose signer certificate is self-signed.';
 const salidaStrict = (errores, avisos = ['This jar contains signatures that do not include a timestamp. Without a timestamp, users may not be able to validate this jar after any of the signer certificates expire (as early as 2053-01-01).']) =>
   ['jar verified, with signer errors.', '', 'Error:', ...errores, '', 'Warning:', ...avisos, '', 'Re-run with the -verbose and -certs options for more details.'].join('\n');
 /** keytool -printcert -jarfile, con nombres sintéticos. */
@@ -389,9 +390,12 @@ test('el certificado autofirmado: un firmante, un certificado, Owner igual a Iss
 test('jarsigner -strict: se acepta la cadena de un certificado autofirmado, y ningún otro aviso grave', async () => {
   const [, , { evaluarVerificacionJar }] = await cargar();
   const ok = (codigo, salida, autofirmado = true) => evaluarVerificacionJar({ codigo, salida, autofirmado }).ok;
-  assert.equal(ok(4, salidaStrict([CADENA_PKIX])), true, 'lo real del 29/10: código 4, solo la cadena PKIX, autofirmado');
+  assert.equal(ok(4, salidaStrict([CADENA_PKIX, AUTOFIRMADO])), true, 'lo real del 29/10: código 4, la cadena PKIX y «self-signed», autofirmado');
+  assert.equal(ok(4, salidaStrict([CADENA_PKIX])), true, 'solo la cadena PKIX');
   assert.equal(ok(0, 'jar verified.'), true, 'sin avisos graves');
+  assert.equal(ok(4, salidaStrict([CADENA_PKIX, AUTOFIRMADO]), false), false, 'jarsigner dice autofirmado pero keytool no lo confirma');
   assert.equal(ok(4, salidaStrict([CADENA_PKIX]), false), false, 'la cadena no valida y el certificado no es autofirmado');
+  assert.equal(ok(4, salidaStrict([`${AUTOFIRMADO} Y algo más.`])), false, 'una línea que solo empieza igual no pasa');
   assert.equal(ok(20, salidaStrict([CADENA_PKIX, 'This jar contains unsigned entries which have not been integrity-checked.'])), false, 'entradas sin firmar (bit 16)');
   assert.equal(ok(4, salidaStrict([CADENA_PKIX, 'This jar contains entries whose signer certificate has expired.'])), false, 'el bit 4 también es «vencido»: se mira el texto');
   assert.equal(ok(4, salidaStrict([CADENA_PKIX, 'This jar contains entries signed with SHA1withRSA, which is considered a security risk and is disabled.'])), false, 'el bit 4 también es «algoritmo deshabilitado»');
