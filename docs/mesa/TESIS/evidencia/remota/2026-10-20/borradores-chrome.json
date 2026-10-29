@@ -1,0 +1,61 @@
+{
+  "fecha": "2026-10-20T04:57:01.517Z",
+  "navegador": "Chrome/155.0.8059.80",
+  "resultados": [
+    {
+      "id": "el editor del borrador abre en test",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "id": "recién escrito, dice «Pendiente de guardar» (no «Guardado»)",
+      "ok": true,
+      "detalle": "Pendiente de guardar"
+    },
+    {
+      "id": "a los segundos, «Guardado a las…» (respuesta del servidor)",
+      "ok": true,
+      "detalle": "Guardado a las 01:56"
+    },
+    {
+      "id": "lo guardado sigue al recargar",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "id": "con un cambio pendiente, recargar pregunta antes de irse",
+      "ok": true,
+      "detalle": "aviso beforeunload del navegador"
+    },
+    {
+      "id": "lo que solo estaba en memoria no reaparece (nada se prometió)",
+      "ok": true,
+      "detalle": "Almuerzo1 opciónSubirMás: más acciones de AlmuerzoOpción de "
+    },
+    {
+      "id": "la segunda pestaña dice el conflicto y no pisa",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "id": "«Cargar la versión guardada» trae lo de la otra pestaña",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "id": "sin conexión, abrir otra comida no lleva a la página de error",
+      "ok": true,
+      "detalle": "https://be-web-1ngj.onrender.com/pro/advisees/nutrition?id=56017c63-86"
+    },
+    {
+      "id": "sin conexión, el estado dice que no se pudo guardar",
+      "ok": true,
+      "detalle": "No se pudo guardar: se reintenta al seguir editando o con «Guardar cambios»"
+    },
+    {
+      "id": "al volver la conexión, se guarda solo",
+      "ok": true,
+      "detalle": ""
+    }
+  ]
+}

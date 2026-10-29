@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="DER-00">
+<title>DER · Vista general por dominios</title>
+<desc>Los 113 modelos de la base en catorce vistas y las claves foráneas que unen una vista con otra. · Fuente: prisma/schema.prisma (113 modelos, 212 relaciones) · datos/esquema.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<path d="M 581 217 L 581 203 Q 581 200 584 200 L 633.04 200 Q 636.04 200 636.04 203 L 636.04 217" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="581" y="217" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="590" y="213" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-01</text>
+<path d="M 199 121 L 199 107 Q 199 104 202 104 L 253.14 104 Q 256.14 104 256.14 107 L 256.14 121" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="199" y="121" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="208" y="117" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-02</text>
+<path d="M 199 25 L 199 11 Q 199 8 202 8 L 253.28 8 Q 256.28 8 256.28 11 L 256.28 25" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="199" y="25" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="208" y="21" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-03</text>
+<path d="M 8 25 L 8 11 Q 8 8 11 8 L 62.6 8 Q 65.6 8 65.6 11 L 65.6 25" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="8" y="25" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="17" y="21" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-04</text>
+<path d="M 8 313 L 8 299 Q 8 296 11 296 L 62.03 296 Q 65.03 296 65.03 299 L 65.03 313" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="8" y="313" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="17" y="309" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-05</text>
+<path d="M 8 121 L 8 107 Q 8 104 11 104 L 62.32 104 Q 65.32 104 65.32 107 L 65.32 121" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="8" y="121" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="17" y="117" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-06</text>
+<path d="M 8 217 L 8 203 Q 8 200 11 200 L 61.65 200 Q 64.65 200 64.65 203 L 64.65 217" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="8" y="217" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="17" y="213" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-07</text>
+<path d="M 199 313 L 199 299 Q 199 296 202 296 L 253.32 296 Q 256.32 296 256.32 299 L 256.32 313" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="199" y="313" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="208" y="309" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-08</text>
+<path d="M 390 121 L 390 107 Q 390 104 393 104 L 444.32 104 Q 447.32 104 447.32 107 L 447.32 121" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="390" y="121" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="399" y="117" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-09</text>
+<path d="M 390 217 L 390 203 Q 390 200 393 200 L 442.04 200 Q 445.04 200 445.04 203 L 445.04 217" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="390" y="217" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="399" y="213" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-10</text>
+<path d="M 581 121 L 581 107 Q 581 104 584 104 L 630.56 104 Q 633.56 104 633.56 107 L 633.56 121" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="581" y="121" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="590" y="117" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-11</text>
+<path d="M 390 25 L 390 11 Q 390 8 393 8 L 441.66 8 Q 444.66 8 444.66 11 L 444.66 25" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="390" y="25" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="399" y="21" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-12</text>
+<path d="M 581 25 L 581 11 Q 581 8 584 8 L 632.8 8 Q 635.8 8 635.8 11 L 635.8 25" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="581" y="25" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="590" y="21" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-13</text>
+<path d="M 199 217 L 199 203 Q 199 200 202 200 L 251.11 200 Q 254.11 200 254.11 203 L 254.11 217" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="199" y="217" width="160" height="55" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="208" y="213" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DER-14</text>
+<path d="M 199 52.5 L 168 52.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 199 148.5 L 168 148.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 359 148.5 L 390 148.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 224.29 176 L 142.71 217" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 319 176 L 319 183 Q 319 188 324 188 L 370 188 Q 375 188 375 193 L 375 239.5 Q 375 244.5 380 244.5 L 390 244.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 88 176 L 88 217" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 88 313 L 88 272" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 470 121 L 470 80" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 470 176 L 470 217" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 359 52.5 L 390 52.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 168 340.5 L 199 340.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 142.71 313 L 224.29 272" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 168 244.5 L 199 244.5" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 279 313 L 279 272" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 581 244.5 L 571 244.5 Q 566 244.5 566 249.5 L 566 381 Q 566 386 561 386 L 8 386 Q 3 386 3 381 L 3 55 Q 3 52.5 5.5 52.5 L 8 52.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 581 296 L 732 296 L 741 305 L 741 412.4 L 581 412.4 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 732 296 L 732 305 L 741 305" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="590" y="312.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Cómo leer esta vista</text>
+<text x="590" y="325.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Cada paquete es una vista</text>
+<text x="590" y="338.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">del DER. Una línea une dos</text>
+<text x="590" y="351.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">vistas con claves foráneas</text>
+<text x="590" y="363.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">entre sí; el número dice</text>
+<text x="590" y="376.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">cuántas. Las 71 claves hacia</text>
+<text x="590" y="389.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Identidad no se dibujan: cada</text>
+<text x="590" y="402.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">paquete dice cuántas tiene.</text>
+<text x="590" y="234" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Identidad y sesión</text>
+<text x="590" y="263" font-family="Inter" font-size="10" font-weight="500" fill="#566881">10 entidades · base de todas</text>
+<text x="208" y="138" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Profesional y proceso</text>
+<text x="208" y="167" font-family="Inter" font-size="10" font-weight="500" fill="#566881">8 entidades · 7 FK a Identidad</text>
+<text x="208" y="42" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Vínculo e invitación</text>
+<text x="208" y="71" font-family="Inter" font-size="10" font-weight="500" fill="#566881">5 entidades · 6 FK a Identidad</text>
+<text x="17" y="42" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Consentimiento y</text>
+<text x="17" y="56" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">autorización</text>
+<text x="17" y="71" font-family="Inter" font-size="10" font-weight="500" fill="#566881">6 entidades · 5 FK a Identidad</text>
+<text x="17" y="330" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Catálogo nutricional y</text>
+<text x="17" y="344" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">recetas</text>
+<text x="17" y="359" font-family="Inter" font-size="10" font-weight="500" fill="#566881">12 entidades · 7 FK a Identidad</text>
+<text x="17" y="138" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Plan nutricional</text>
+<text x="17" y="167" font-family="Inter" font-size="10" font-weight="500" fill="#566881">8 entidades · 8 FK a Identidad</text>
+<text x="17" y="234" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Registro nutricional</text>
+<text x="17" y="263" font-family="Inter" font-size="10" font-weight="500" fill="#566881">8 entidades · 1 FK a Identidad</text>
+<text x="208" y="330" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Catálogo de ejercicios</text>
+<text x="208" y="359" font-family="Inter" font-size="10" font-weight="500" fill="#566881">9 entidades · 7 FK a Identidad</text>
+<text x="399" y="138" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Plan de entrenamiento</text>
+<text x="399" y="167" font-family="Inter" font-size="10" font-weight="500" fill="#566881">7 entidades · 6 FK a Identidad</text>
+<text x="399" y="234" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Ejecución de</text>
+<text x="399" y="248" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">entrenamiento</text>
+<text x="399" y="263" font-family="Inter" font-size="10" font-weight="500" fill="#566881">7 entidades · 3 FK a Identidad</text>
+<text x="590" y="138" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Antropometría</text>
+<text x="590" y="167" font-family="Inter" font-size="10" font-weight="500" fill="#566881">11 entidades · 7 FK a Identidad</text>
+<text x="399" y="42" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Información pertinente</text>
+<text x="399" y="71" font-family="Inter" font-size="10" font-weight="500" fill="#566881">6 entidades · 3 FK a Identidad</text>
+<text x="590" y="42" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Seguimiento y avisos</text>
+<text x="590" y="71" font-family="Inter" font-size="10" font-weight="500" fill="#566881">10 entidades · 8 FK a Identidad</text>
+<text x="208" y="234" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">Historia, auditoría y</text>
+<text x="208" y="248" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44">medios</text>
+<text x="208" y="263" font-family="Inter" font-size="10" font-weight="500" fill="#566881">6 entidades · 3 FK a Identidad</text>
+<rect x="168.77" y="44.45" width="29.46" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="183.5" y="56.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">5 FK</text>
+<rect x="168.7" y="140.45" width="29.6" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="183.5" y="152.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">2 FK</text>
+<rect x="359.7" y="140.45" width="29.6" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="374.5" y="152.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">2 FK</text>
+<rect x="168.5" y="188.45" width="30" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="183.5" y="200.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">4 FK</text>
+<rect x="332" y="179.95" width="30" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="347" y="191.64" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">4 FK</text>
+<rect x="73.15" y="188.45" width="29.7" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="88" y="200.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">3 FK</text>
+<rect x="74.21" y="284.45" width="27.58" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="88" y="296.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">1 FK</text>
+<rect x="455.2" y="92.45" width="29.6" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="470" y="104.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">2 FK</text>
+<rect x="455" y="188.45" width="30" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="470" y="200.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">4 FK</text>
+<rect x="360.71" y="44.45" width="27.58" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="374.5" y="56.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">1 FK</text>
+<rect x="168.7" y="332.45" width="29.6" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="183.5" y="344.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">2 FK</text>
+<rect x="169.71" y="284.45" width="27.58" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="183.5" y="296.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">1 FK</text>
+<rect x="169.71" y="236.45" width="27.58" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="183.5" y="248.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">1 FK</text>
+<rect x="265.21" y="284.45" width="27.58" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="279" y="296.14" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">1 FK</text>
+<rect x="286.21" y="377.95" width="27.58" height="16.1" rx="8.05" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="0.8"/>
+<text x="300" y="389.64" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44" text-anchor="middle">1 FK</text>
+</svg>
