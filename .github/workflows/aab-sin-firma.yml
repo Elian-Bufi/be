@@ -1,0 +1,68 @@
+# AAB sin firma — en cada push a una rama de versión `aab/*` (WP-GOOGLE-PLAY-PRUEBAS-INTERNAS, 2026-10-29).
+# Construye el Android App Bundle SIN firma: esta máquina no tiene ni debe tener la keystore. Se firma después en la
+# máquina de Dirección con scripts/aab/firmar-aab.mjs y se verifica ahí con verificar-aab.mjs (docs/DESPLIEGUE.md →
+# Google Play). Por qué acá: construir pide varios GB de memoria y la PC de Dirección no los tiene; firmar es liviano.
+# google-services.json y los client IDs salen de dos secretos del repositorio (BE_GOOGLE_SERVICES_JSON y
+# BE_GOOGLE_CLIENT_IDS). No son credenciales (van dentro de cada APK publicada), pero el repo es público y no se suben.
+# El artefacto dura 1 día y se borra apenas se descarga. No es parte de `ci`: no toca main ni el despliegue de Render.
+name: aab sin firma
+
+on:
+  push:
+    branches: ["aab/**"]
+    # Un push que solo trae documentación o evidencia no cambia el artefacto: no se vuelve a construir.
+    paths-ignore: ["docs/**", "EVIDENCIA/**", "**/*.md"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  construir:
+    name: construir el AAB sin firma
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: JDK 17 y SDK de Android (platform 36, build-tools 36.0.0, NDK 27.1.12297006, como en la PC de Dirección)
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" "ndk;27.1.12297006" > /dev/null
+          ls "$ANDROID_HOME/ndk" "$ANDROID_HOME/build-tools"
+      - run: npm ci
+      - name: Firebase y Google, desde los secretos (no se imprimen)
+        env:
+          GOOGLE_SERVICES: ${{ secrets.BE_GOOGLE_SERVICES_JSON }}
+          CLIENT_IDS: ${{ secrets.BE_GOOGLE_CLIENT_IDS }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES" ] || [ -z "$CLIENT_IDS" ]; then
+            echo "::error::faltan los secretos BE_GOOGLE_SERVICES_JSON o BE_GOOGLE_CLIENT_IDS: sin ellos la app saldría sin avisos o sin Google"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/datos/firebase" "$RUNNER_TEMP/datos/google"
+          printf '%s' "$GOOGLE_SERVICES" > "$RUNNER_TEMP/datos/firebase/google-services.json"
+          printf '%s\n' "$CLIENT_IDS" > "$RUNNER_TEMP/datos/google/client-ids.env"
+      - name: Construir el AAB sin firma
+        run: node scripts/aab/construir-aab.mjs --sin-firma --salida "$RUNNER_TEMP/aab" --datos "$RUNNER_TEMP/datos"
+      - name: Borrar los datos de Firebase y Google
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/datos"
+      - name: Huella del artefacto (para compararla al descargarlo)
+        run: find "$RUNNER_TEMP/aab" -name '*.aab' -exec sha256sum {} \;
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aab-sin-firma-${{ github.sha }}
+          path: ${{ runner.temp }}/aab/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
