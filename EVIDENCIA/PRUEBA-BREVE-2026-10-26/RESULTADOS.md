@@ -60,6 +60,26 @@ coincidía. Las horas son las del teléfono. Las capturas están en `capturas-pa
   mismo avisar si quedo alguna sin cargar antes de pasar al próximo ejercicio o omitir»
 - «Puse finalizar entrenamiento directamente, lo siento, no pase a los otros ejercicios directamente»
 
+**Observaciones de diseño de Dirección (20:11, después de C3), tal cual.** Abrió la corrección de la sesión registrada
+(`c3-6-correccion.jpg`); no se sabe si guardó una corrección.
+- «Creo que lo ideal seria que haya un flujo mas entendible o que se vaya mostrando informacion una vez vez por pantalla y
+  haya o varias pantallas o cuadros de continuar y una parte superior que te diga en que parte del recorrido va tambien
+  no?»
+- «el scrolleo aveces marea, por ejemplo donde decia cargar serie se veía ocultado o mucho mas abajo de la explicacion
+  del rir y de lo esperado. Hay pequeños detalles que ajustar, mismo podria estar en el mismo recuadro el botón de
+  iniciar serie, finalizar serie, y en finalizar serie se da por entendido de que queda registrado.»
+- «tal vez hay gente que solo entre y tilde que hizo la rutina o que cumplió con los ejercicios y no quiera explayar cada
+  serie... debemos darle la opción pero no obligarlos, si invitarlos a hacerlo, pero no obligarlos... como en las
+  comidas, que hacemos que elija cual comio y en todo caso puede entrar a modificar el alimento»
+- «ya deberíamos cargar las fotos de los ejercicios y tambien podriamos hacer una camada de iconos de ejercicios o partes
+  corporales para embeceller la vista y la lectura asi como lo hicimos en la web, pero en la app»
+- «los cuadros de correccion […] es muy soso, mas comparado con los cuadros con los que los cargamos, parece un
+  formulario de un estudiante de 1ero de programación»
+- Sobre TalkBack: «no lo veo necesario. A menos que tengas una explicación no lo veo tan necesario.»
+
+Son observaciones de diseño, no defectos. El análisis de las pantallas que quedaron como formulario se le pasó a
+Dirección aparte, para decidir. No se cambió nada.
+
 ### Defecto D-C1 (severidad alta): lo escrito y no registrado no se ve, y se pierde sin aviso
 
 **Qué pasa:** en la tabla de series, lo que se escribe en una serie y no se registra queda guardado en la memoria de la
