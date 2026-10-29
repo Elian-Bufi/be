@@ -10,6 +10,8 @@ name: aab sin firma
 on:
   push:
     branches: ["aab/**"]
+    # Un push que solo trae documentación o evidencia no cambia el artefacto: no se vuelve a construir.
+    paths-ignore: ["docs/**", "EVIDENCIA/**", "**/*.md"]
 
 permissions:
   contents: read

@@ -18,14 +18,16 @@
  *   webBaseUrl, el esquema `be`); `dump config` (bibliotecas nativas sin comprimir y alineación de 16 KB pedida por el
  *   bundle); `dump resources` (los recursos de Firebase).
  * - `keytool -printcert -jarfile` y `jarsigner -verify -strict`: el certificado del AAB es certSubidaSha256 y no hay
- *   entradas sin firmar.
+ *   entradas sin firmar. -strict siempre marca la cadena de un certificado autofirmado (toda clave de Android lo es): se
+ *   acepta ese aviso y ningún otro (`evaluarVerificacionJar`, corrección del 2026-10-29 con el primer AAB firmado).
  * - La configuración embebida (`base/assets/app.config`): ambiente, API, commit, versión y el client ID web de Google
  *   (el website se comprueba por el host del App Link, porque app.config no lo embebe).
  * - Invitaciones: el `assetlinks.json` publicado en webBaseUrl declara el paquete, con la relación
  *   `delegate_permission/common.handle_all_urls` y la huella certFirmaAppSha256 (con `--sin-red`, queda PENDIENTE y no
  *   hay «todo bien»).
  * - 16 KB en el artefacto: config con bibliotecas sin comprimir y `PAGE_ALIGNMENT_16K` (o 64K), la alineación ELF de
- *   cada biblioteca de 64 bits (PT_LOAD y RELRO) y `zipalign -c -P 16` sobre la APK universal de inspección, con todas
+ *   cada biblioteca de 64 bits (scripts/aab/elf.mjs: PT_LOAD a 16384, cada segmento en sus páginas y, en las páginas
+ *   del RELRO, nada de código ni datos ajenos) y `zipalign -c -P 16` sobre la APK universal de inspección, con todas
  *   las bibliotecas sin comprimir. Lo que no se puede comprobar acá: que la app corra en un dispositivo con páginas de
  *   16 KB (pendiente en un dispositivo).
  * - Credenciales: el bundle entero descomprimido, por nombre y por contenido (scripts/aab/credenciales.mjs) y, con
@@ -39,7 +41,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { buscarCredenciales } from './credenciales.mjs';
 import { alineadaA16Kb, PAGINA_DE_16_KB } from './elf.mjs';
-import { normalizarHuella, resumirVeredicto, validarEsperado } from './esperado.mjs';
+import { esAutofirmado, evaluarVerificacionJar, normalizarHuella, resumirVeredicto, validarEsperado } from './esperado.mjs';
 
 const [ruta, ...resto] = process.argv.slice(2);
 if (!ruta) salir('Uso: node scripts/aab/verificar-aab.mjs <ruta.aab> --esperado <esperado.json> [--salida <carpeta>] [--sin-red] [--respaldo <carpeta>]');
@@ -135,17 +137,22 @@ try {
   V.esquemaBe = m.esquemas.includes('be');
 
   // 3. El certificado del AAB (la clave de subida) y que no haya entradas sin firmar.
-  const cert = correr(keytool, ['-printcert', '-jarfile', aab]);
+  // En inglés, para leer los mensajes siempre igual. La clave de Android es autofirmada: -strict siempre marca su
+  // cadena y eso se acepta (evaluarVerificacionJar), pero ningún otro aviso grave (corrección del 2026-10-29).
+  const cert = correr(keytool, ['-J-Duser.language=en', '-printcert', '-jarfile', aab]);
   const huellasSha256 = [...cert.salida.matchAll(/SHA256:\s*([0-9A-F:]+)/gi)].map((x) => normalizarHuella(x[1]));
   const sha1Cert = normalizarHuella(/SHA1:\s*([0-9A-F:]+)/i.exec(cert.salida)?.[1] ?? null);
-  const verificacionJar = correr(jarsigner, ['-verify', '-strict', aab]);
+  const autofirmado = esAutofirmado(cert.salida);
+  const verificacionJar = correr(jarsigner, ['-J-Duser.language=en', '-verify', '-strict', aab]);
+  const lecturaJar = evaluarVerificacionJar({ codigo: verificacionJar.status, salida: verificacionJar.salida, autofirmado });
   C.firmaDelAab = {
     firmado: cert.status === 0 && huellasSha256.length > 0,
     firmantes: huellasSha256.length,
     sha256: huellasSha256,
     sha1: sha1Cert,
     algoritmo: /Signature algorithm name:\s*(.+)/i.exec(cert.salida)?.[1]?.trim() ?? null,
-    jarsigner: { ok: verificacionJar.status === 0 && !/unsigned/i.test(verificacionJar.salida) && /jar verified/i.test(verificacionJar.salida), resumen: primerasLineas(verificacionJar.salida, 6) },
+    autofirmado,
+    jarsigner: { ok: lecturaJar.ok, codigo: verificacionJar.status, lectura: lecturaJar.motivo, resumen: primerasLineas(verificacionJar.salida, 6) },
   };
   V.certificadoDeSubida = C.firmaDelAab.firmado && huellasSha256.every((h) => h === E.certSubidaSha256) && C.firmaDelAab.jarsigner.ok;
   resultado.informativo.claveDeSubidaSeparada = E.certSubidaSha256 !== E.certFirmaAppSha256;
@@ -219,8 +226,8 @@ try {
   if (extraccionLib.status === 0 && existsSync(carpetaLib)) {
     for (const abi of readdirSync(carpetaLib)) {
       for (const nombre of readdirSync(join(carpetaLib, abi)).filter((n) => n.endsWith('.so'))) {
-        const { elf, alineada, cargasAlineadas, relroAlineado } = alineadaA16Kb(readFileSync(join(carpetaLib, abi, nombre)));
-        bibliotecas.push({ abi, nombre, bits: elf?.bits ?? null, alineaciones: elf?.alineaciones ?? [], relro: elf?.relro ?? null, cargasAlineadas, relroAlineado, alineadaA16Kb: alineada });
+        const { elf, alineada, cargasAlineadas, paginasPropias, relroSeguro } = alineadaA16Kb(readFileSync(join(carpetaLib, abi, nombre)));
+        bibliotecas.push({ abi, nombre, bits: elf?.bits ?? null, alineaciones: elf?.alineaciones ?? [], relro: elf?.relro ?? null, cargasAlineadas, paginasPropias, relroSeguro, alineadaA16Kb: alineada });
       }
     }
   }
@@ -241,7 +248,7 @@ try {
     alineacionPedidaPorElBundle: alineacionDelBundle,
     bibliotecas: bibliotecas.length,
     de64Bits: de64.length,
-    de64BitsNoAlineadas: de64.filter((b) => !b.alineadaA16Kb).map((b) => `${b.abi}/${b.nombre} (cargas ${b.alineaciones.join(',')}; relro ${b.relroAlineado === null ? 'sin' : b.relroAlineado ? 'bien' : 'MAL'})`),
+    de64BitsNoAlineadas: de64.filter((b) => !b.alineadaA16Kb).map((b) => `${b.abi}/${b.nombre} (cargas ${b.alineaciones.join(',')}${b.cargasAlineadas ? '' : ' MAL'}; páginas propias ${b.paginasPropias ? 'sí' : 'NO'}; relro ${b.relroSeguro === null ? 'sin' : b.relroSeguro ? 'bien' : 'MAL'})`),
     de32Bits: bibliotecas.length - de64.length,
     zipalignUniversal: { ok: alineacion.status === 0 && /Verification succes/i.test(alineacion.salida), bibliotecasEnLaApk: soEnLaApk, informadas: lineasSo.length, sinComprimirYAlineadas: soBien, comprimidasOMal: lineasSo.length - soBien },
     pagina: PAGINA_DE_16_KB,
@@ -330,14 +337,14 @@ function informe(r) {
   L.push(`| Google (client ID web) | ${si(v.google)} | presente: ${c.configuracionEmbebida.googleWebClientIdPresente ? 'sí' : 'no'}; esperado: ${r.esperado.sinGoogleAProposito ? 'sin Google, a propósito' : 'el client ID web registrado'} |`);
   L.push(`| Firebase (recursos de FCM) | ${si(v.firebase)} | comprobado: ${c.firebase.comprobado ? 'sí' : 'no'}; project_id \`${c.firebase.project_id}\` (esperado ${r.esperado.sinFirebaseAProposito ? 'ninguno, a propósito' : `\`${r.esperado.firebaseProjectId}\``}); google_app_id ${c.firebase.google_app_id ? 'sí' : 'no'}; gcm_defaultSenderId ${c.firebase.gcm_defaultSenderId ? 'sí' : 'no'}; google_api_key ${c.firebase.google_api_key ? 'sí' : 'no'} |`);
   L.push(`| targetSdk ≥ 36 | ${si(v.targetSdkApi36)} | minSdk ${c.manifiesto.minSdk} · targetSdk ${c.manifiesto.targetSdk} |`);
-  L.push(`| Certificado del AAB (clave de subida) y sin entradas sin firmar | ${si(v.certificadoDeSubida)} | ${c.firmaDelAab.firmantes} firmante(s) · SHA-256 \`${c.firmaDelAab.sha256.join(', ') || '—'}\` · SHA-1 \`${c.firmaDelAab.sha1 ?? '—'}\` · ${c.firmaDelAab.algoritmo ?? '—'} (esperado \`${r.esperado.certSubidaSha256}\`) · jarsigner: ${c.firmaDelAab.jarsigner.ok ? 'verificado' : 'NO'} |`);
+  L.push(`| Certificado del AAB (clave de subida) y sin entradas sin firmar | ${si(v.certificadoDeSubida)} | ${c.firmaDelAab.firmantes} firmante(s) · SHA-256 \`${c.firmaDelAab.sha256.join(', ') || '—'}\` · SHA-1 \`${c.firmaDelAab.sha1 ?? '—'}\` · ${c.firmaDelAab.algoritmo ?? '—'} (esperado \`${r.esperado.certSubidaSha256}\`) · autofirmado: ${c.firmaDelAab.autofirmado ? 'sí' : 'no'} · jarsigner -strict (código ${c.firmaDelAab.jarsigner.codigo}): ${c.firmaDelAab.jarsigner.ok ? '' : '**NO** · '}${c.firmaDelAab.jarsigner.lectura} |`);
   L.push(`| App Link de la invitación | ${si(v.appLinkDeInvitacion)} | ${c.manifiesto.appLink ? `https://${c.manifiesto.appLink.host}${c.manifiesto.appLink.pathPrefix}` : '—'} (esperado el host de \`${r.esperado.webBaseUrl}\`) |`);
   L.push(`| Esquema \`be\` | ${si(v.esquemaBe)} | esquemas ${c.manifiesto.esquemas.join(', ')} |`);
   L.push(`| assetlinks.json publicado con la clave de firma de la app | ${si(v.assetlinksPublicado)} | ${c.assetlinks.comprobado ? `HTTP ${c.assetlinks.http}, ${c.assetlinks.contentType}, ${c.assetlinks.declaracionesDelPaquete} declaración(es) del paquete con handle_all_urls, ${c.assetlinks.huellasDelPaquete} huella(s), incluye la esperada: ${c.assetlinks.incluyeLaClaveDeFirmaDeLaApp ? 'sí' : 'no'}` : `no comprobado (${c.assetlinks.motivo})`} |`);
   L.push(`| 64 bits | ${si(v.sesentaYCuatroBits)} | ${c.apkUniversal.arquitecturas.join(', ')} |`);
   L.push(`| 16 KB · bibliotecas nativas sin comprimir (config del bundle) | ${si(v.nativasSinComprimir)} | uncompressNativeLibraries \`${String(c.paginasDe16Kb.bibliotecasNativasSinComprimir)}\` · extractNativeLibs en el manifiesto \`${c.paginasDe16Kb.extractNativeLibs}\` (informativo) |`);
   L.push(`| 16 KB · alineación pedida por el bundle | ${si(v.alineacionDelBundle16Kb)} | \`${String(c.paginasDe16Kb.alineacionPedidaPorElBundle)}\` (se exige PAGE_ALIGNMENT_16K o 64K) |`);
-  L.push(`| 16 KB · ELF de 64 bits (PT_LOAD a 16384 y fin del RELRO alineado) | ${si(v.elfDe64BitsAlineadosA16Kb)} | ${c.paginasDe16Kb.de64Bits} de 64 bits (${c.paginasDe16Kb.de32Bits} de 32, informativas)${c.paginasDe16Kb.de64BitsNoAlineadas.length ? ` · no alineadas: ${c.paginasDe16Kb.de64BitsNoAlineadas.join('; ')}` : ''} |`);
+  L.push(`| 16 KB · ELF de 64 bits (PT_LOAD a 16384, cada segmento en sus páginas, RELRO sin código ni datos ajenos en sus páginas) | ${si(v.elfDe64BitsAlineadosA16Kb)} | ${c.paginasDe16Kb.de64Bits} de 64 bits (${c.paginasDe16Kb.de32Bits} de 32, informativas)${c.paginasDe16Kb.de64BitsNoAlineadas.length ? ` · no alineadas: ${c.paginasDe16Kb.de64BitsNoAlineadas.join('; ')}` : ''} |`);
   L.push(`| 16 KB · \`zipalign -c -P 16\` sobre la APK universal, todas las bibliotecas sin comprimir y alineadas | ${si(v.zipalign16KbUniversal)} | ${c.paginasDe16Kb.zipalignUniversal.bibliotecasEnLaApk} en la APK, ${c.paginasDe16Kb.zipalignUniversal.sinComprimirYAlineadas} bien, ${c.paginasDe16Kb.zipalignUniversal.comprimidasOMal} comprimidas o mal |`);
   L.push(`| Sin credenciales adentro (todo el bundle descomprimido) | ${si(v.sinCredenciales)} | ${c.credenciales.archivosRevisados} archivos revisados de ${c.credenciales.entradasDelZip} entradas, ${c.credenciales.bytes} bytes; valores del respaldo buscados: ${c.credenciales.valoresDelRespaldoBuscados ? 'sí' : 'no'}; hallazgos: ${c.credenciales.hallazgos.length}${c.credenciales.hallazgos.length ? ` (${c.credenciales.hallazgos.map((h) => `${h.archivo}: ${h.marcador}`).join('; ')})` : ''} |`);
   L.push('', `Informativo: clave de subida separada de la clave de firma de la app: ${r.informativo.claveDeSubidaSeparada ? 'sí' : 'no (la misma keystore; la recomendación ratificada es separarlas cuando Dirección genere la clave de subida)'}. Permisos (${c.manifiesto.permisos.length}): ${c.manifiesto.permisos.map((p) => p.replace('android.permission.', '')).join(', ')}.`, '');
