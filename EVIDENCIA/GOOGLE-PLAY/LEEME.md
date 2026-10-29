@@ -12,7 +12,45 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
 | Pendiente en el teléfono | solo se puede comprobar instalando en un teléfono real |
 | Pendiente en Play Console | necesita la cuenta y la consola de Dirección |
 
-## El AAB candidato: preparado, **no construido** en esta sesión
+## El AAB candidato: construido, firmado y verificado (29/10)
+
+- **Qué es:** `be-0.18.0-candidata.2-527474f.aab` (57.879.156 bytes, SHA-256 `d2ba02d5…7020f76d`): versión
+  0.18.0-candidata.2, versionCode 31, ambiente test, construido del commit `527474f`, la cabeza de la rama de versión
+  `aab/candidata-0.18.0-2`. Está en la PC de Dirección, fuera del repo, en
+  `C:\Users\bufim\BE-artefactos\aab\actions-40872124576\0.18.0-candidata.2\`. **No se subió a ningún lado.**
+- **Cómo se hizo:**
+  1. GitHub Actions (`.github/workflows/aab-sin-firma.yml`, corrida 40872124576) lo construyó **sin firma** en 13
+     minutos, con Firebase y Google desde dos secretos del repositorio. La SHA-256 del AAB sin firma
+     (`00e0e01e…760e6c`) quedó en el registro de la corrida.
+  2. Se descargó, la huella coincidió y el artefacto se borró de GitHub (quedan 0).
+  3. Se firmó en la PC de Dirección con `firmar-aab.mjs` (herramientas de #223 en `ef4d9fc`): las 1.303 entradas
+     quedaron iguales y la firma agregó solo `META-INF/MANIFEST.MF`, `BE.SF` y `BE.RSA`. Certificado
+     `61569691…893e06` (SHA-1 `b108ec55…36e6`), el de todas las APK publicadas.
+  4. `verificar-aab.mjs --respaldo` (también `ef4d9fc`): **todo bien**, las 19 comprobaciones obligatorias. La primera
+     corrida, en segundo plano, la cortó Claude Code por memoria; se repitió en primer plano (5 minutos).
+- **Evidencia en `0.18.0-candidata.2/`:** `verificacion.md` y `.json`, `construccion.json`, `esperado.json`,
+  `firma.json` y las dos huellas. El client ID web va tapado en esta copia (el repo es público; está en
+  `client-ids.env` de Dirección), así que este `esperado.json` no sirve como entrada del verificador: el original está
+  junto al artefacto. Revisada con `revisar-registro.mjs --respaldo`: 0 hallazgos.
+- **Lo que el primer AAB real encontró en las herramientas (no en la app):**
+  1. **16 KB:** la regla del RELRO pedía que su final cayera en un múltiplo de 16384, y con el AAB de `581c27d` dio
+     «MAL» en las 34 bibliotecas de 64 bits. `llvm-readelf` del NDK mostró que lld termina el RELRO a 4 KB y pone el
+     segmento siguiente en otra página de 16 KB: el redondeo con que Android protege el RELRO no toca nada ajeno. La
+     regla era más estricta que Android. Ahora exige lo que importa (PT_LOAD a 16 KB y congruentes, cada segmento en
+     sus páginas, nada de código ni datos ajenos en las páginas del RELRO); contrastada con `llvm-readelf` en las 34:
+     mismo resultado, todas cumplen.
+  2. **`jarsigner -verify -strict`** sale con 4 con toda clave de Android, porque es autofirmada. Se acepta solo ese
+     aviso, y solo si keytool confirma que el certificado es autofirmado.
+  3. **El alias:** jarsigner nombraba los archivos de firma con los primeros 8 caracteres del alias. Esa primera firma se
+     borró sin salir de la PC, y ahora se firma con `-sigfile BE`.
+- **La rama de versión** queda en `527474f`, el commit del AAB. #223 siguió con correcciones de las herramientas de
+  firma y verificación, que no cambian la app; si se vuelven a mezclar en la rama, Actions construye un AAB nuevo (un
+  push de solo documentación no construye).
+- **Lo que sigue (Dirección):** subirlo a la pista interna en Play Console con Play App Signing y la keystore de EAS
+  (PEPK); en *App integrity*, revisar que la SHA-256 sea `61569691…893e06` **antes** de que nadie instale; y el guion
+  de prueba de abajo, en el teléfono. La clave de subida separada sigue sin generar.
+
+## Antes (28/10): preparado, no construido en la PC de Dirección
 
 - **Qué está listo:** la rama de versión `aab/candidata-0.18.0-2` (`VERSION = '0.18.0-candidata.2'` y
   `versionCode: 31` sobre esta rama, que se vuelve a mezclar en ella con cada corrección; el commit de origen del
@@ -78,7 +116,7 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
   cuál esperaba); y si el valor leído es correcto y la comprobación igual da mal, es el verificador. No atribuirlo
   al script de antemano: mirar primero el valor leído.
 
-## Si esta PC no alcanza: alternativas (nada activado, ningún secreto movido)
+## Si esta PC no alcanza: alternativas (la 2 es la que se usó el 29/10)
 
 0. **Antes de cambiar de máquina:** reiniciar la PC y lanzar sin abrir nada más. Las APK anteriores (0.13.2 a
    0.18.0-candidata.1) se construyeron en esta misma PC con todo cerrado; lo que hoy no deja margen es la sesión de
@@ -90,7 +128,9 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
    En Windows, el lanzador con `-Node22`, `-JavaHome`, `-AndroidHome`, `-Bundletool`, `-Datos` y `-Respaldo`. En
    Linux o macOS, `construir-aab.mjs` llama a `gradlew.bat`: habría que ajustarlo a `gradlew` (no está hecho).
    Costo: ninguno.
-2. **GitHub Actions, sin la keystore:** un workflow manual en un runner Linux de GitHub construye el AAB **sin
+2. **GitHub Actions, sin la keystore** (**la que se usó el 29/10**, con dos cambios respecto de lo escrito acá: se
+   dispara con cada push a `aab/*` y el AAB sale sin ninguna firma, por `BE_SIN_FIRMA=1`, no con la de debug; el
+   runner de un repo público tiene 16 GB). Lo escrito el 28/10: un workflow manual en un runner Linux de GitHub construye el AAB **sin
    firma de release** (sin las variables de firma, el plugin deja la de debug) y lo sube como artefacto del workflow;
    después, en tu PC, se firma con `jarsigner` y la keystore del respaldo (un AAB es un jar; Play acepta esa firma).
    Así la clave nunca sale de tu PC. Lo que sí habría que cargar como secretos del repositorio: `google-services.json`
@@ -110,7 +150,8 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
   (paquete, versión, versionCode, commit, ambiente, Google, Firebase, invitaciones, los dos certificados) y «todo
   bien» solo si cada comprobación obligatoria corrió y dio bien; si no hay red para leer el `assetlinks.json`
   publicado, esa comprobación queda pendiente y no hay «todo bien».
-- **Lo que debería dar** (predicción, no resultado): paquete `com.elianbufi.be`, versionCode 31, targetSdk 36, las
+- **Lo que debería dar** (predicción del 28/10; **el 29/10 se cumplió todo**, la tabla está en
+  `0.18.0-candidata.2/verificacion.md`): paquete `com.elianbufi.be`, versionCode 31, targetSdk 36, las
   cuatro arquitecturas, 16 KB en verde en el artefacto, App Link `https://be-web-1ngj.onrender.com/invitacion`,
   ambiente `test` y el commit de la rama de versión, certificado SHA-256 `61569691…893e06` (la keystore de EAS,
   hasta que exista la clave de subida separada).
@@ -161,19 +202,24 @@ internas»). **Nada se publicó en Google Play ni en GitHub Releases; la APK vig
 
 ### F. Lo comprobado automáticamente (sin teléfono ni Play Console)
 
-Está en `verificacion.md`, contra los valores esperados: bundle válido, paquete, versión y versionCode, commit y
+**Hecho el 29/10 sobre el AAB de `527474f`: todo bien** (`0.18.0-candidata.2/verificacion.md`). Está en
+`verificacion.md`, contra los valores esperados: bundle válido, paquete, versión y versionCode, commit y
 árbol limpio al construir, ambiente (`test`, `be-api-hndp`), el client ID web de Google, los recursos de Firebase,
 targetSdk 36, 64 bits, el App Link de la invitación y el `assetlinks.json` publicado con la clave de firma de la app,
 16 KB **en el artefacto** (la configuración del bundle: bibliotecas nativas sin comprimir y `PAGE_ALIGNMENT_16K`; la
-alineación ELF de cada biblioteca de 64 bits: PT_LOAD a 16384 y fin del RELRO alineado; y `zipalign -c -P 16` sobre la
-APK universal con todas las bibliotecas sin comprimir), el certificado del AAB con `keytool` y `jarsigner -strict`, y la
+alineación ELF de cada biblioteca de 64 bits: PT_LOAD a 16384 y congruentes, cada segmento en sus páginas y nada de
+código ni datos ajenos en las páginas del RELRO; y `zipalign -c -P 16` sobre la APK universal con todas las
+bibliotecas sin comprimir), el certificado del AAB con `keytool` y `jarsigner -strict` (de sus avisos graves se acepta
+solo el de un certificado autofirmado), y la
 ausencia de credenciales en todo el bundle descomprimido (por nombre, por contenido y, con `--respaldo`, los valores
 literales de las contraseñas del respaldo, que se leen y nunca se escriben). «Todo bien» solo si cada comprobación
 obligatoria corrió y dio true; una pendiente o un valor que no se pudo leer lo impiden. Y en la CI del PR: el plugin de
 firma (3 pruebas) y el verificador (`scripts/aab/verificar-aab.test.cjs`: secretos sintéticos dentro de un zip, el
 bloque de firma JAR que NO es un secreto, un PKCS#12 sintético, un zip anidado, archivos grandes por bloques, ELF
-sintéticos de 64 y 32 bits con y sin RELRO, y el esperado incompleto o vacío que nunca da «todo bien»). CI verde en
-`6690af0` (corrida 40730842576) y en `7475ea1` (corridas 40734129288 y 40734140772).
+sintéticos de 64 y 32 bits con y sin RELRO —entre ellos la forma real de `libc++_shared.so` y un RELRO al estilo de
+GNU ld que sí rompe—, la salida real de `jarsigner -strict` con los avisos que tiene que rechazar, y el esperado
+incompleto o vacío que nunca da «todo bien»). CI verde en `6690af0` (corrida 40730842576) y en `7475ea1` (corridas
+40734129288 y 40734140772); las de los commits del 29/10 están en la descripción del PR.
 
 ### G. Lo que 16 KB deja para un dispositivo (pendiente en el teléfono)
 

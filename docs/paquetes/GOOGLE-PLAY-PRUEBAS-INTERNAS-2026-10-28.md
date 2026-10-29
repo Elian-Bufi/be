@@ -200,6 +200,27 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
   con requisitos y costos, están en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`; ninguna se activó. La APK vigente
   (0.18.0-candidata.1) no se toca.
 
+## Avance del 2026-10-29: el AAB está construido, firmado y verificado
+
+- **Decisión de Dirección (29/10):** la PC de Dirección no tiene memoria para Gradle (8 GB, 2 reservados al video) y la
+  PC de escritorio familiar no se puede usar sin acceso físico (la keystore no viaja por red). Se eligió la alternativa
+  2: construir en GitHub Actions **sin la keystore** y firmar en la PC de Dirección. Dirección cargó los dos secretos
+  (`BE_GOOGLE_SERVICES_JSON`, `BE_GOOGLE_CLIENT_IDS`) con `gh secret set`, sin que Claude viera su contenido. El repo
+  sigue público por decisión de Dirección (la descarga de la APK del website depende de las releases públicas).
+- **Resultado:** `be-0.18.0-candidata.2-527474f.aab`, SHA-256 `d2ba02d5…7020f76d`, construido en la corrida
+  40872124576 (13 min), firmado con la keystore de EAS en la PC de Dirección y verificado: **todo bien**, las 19
+  comprobaciones. Detalle, evidencia y lo que encontró en las herramientas, en `EVIDENCIA/GOOGLE-PLAY/LEEME.md`.
+- **Correcciones de las herramientas** que el primer AAB real hizo aparecer, ninguna en la app: la regla del RELRO de
+  16 KB era más estricta que Android; `jarsigner -strict` marca toda clave de Android por autofirmada; y la firma
+  llevaba los primeros 8 caracteres del alias en los nombres de `META-INF` (ahora `-sigfile BE`). Commits `2aa8526`,
+  `31117ec` y `ef4d9fc`.
+- **Archivos nuevos o cambiados:** `.github/workflows/aab-sin-firma.yml`, `scripts/aab/firmar-aab.mjs`,
+  `construir-aab.mjs --sin-firma`, `plugins/firma-de-subida.js` (`BE_SIN_FIRMA`), `elf.mjs`, `esperado.mjs`,
+  `verificar-aab.mjs`, `revisar-registro.mjs --respaldo` y sus pruebas.
+- **Pendiente de Dirección:** cuenta de organización y D-U-N-S; en Play Console, la app, la pista interna, Play App
+  Signing con la keystore de EAS por PEPK y la comprobación de la SHA-256 en *App integrity* antes de que nadie
+  instale; la clave de subida separada; el guion de prueba en el teléfono. Nada se publicó ni se subió a Play.
+
 ## Fuentes oficiales leídas (las principales)
 
 - Play App Signing: https://support.google.com/googleplay/android-developer/answer/9842756 y
