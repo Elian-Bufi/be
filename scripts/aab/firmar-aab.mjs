@@ -15,7 +15,9 @@
  * - Comprueba que la firma no cambió el contenido: cada entrada del AAB sin firma está en el firmado con el mismo CRC-32
  *   y el mismo tamaño, y lo único agregado son los archivos de firma de META-INF. Así, lo que se comprobó sobre el
  *   artefacto sin firma sigue valiendo, y verificar-aab.mjs se corre igual sobre el firmado.
- * - Comprueba el certificado (`keytool -printcert -jarfile`) contra el esperado y `jarsigner -verify -strict`.
+ * - Comprueba el certificado (`keytool -printcert -jarfile`) contra el esperado y `jarsigner -verify -strict`, leído con
+ *   `evaluarVerificacionJar` (scripts/aab/esperado.mjs): la clave de Android es autofirmada y -strict siempre marca su
+ *   cadena; eso se acepta, y ningún otro aviso grave. keytool y jarsigner corren en inglés, para leerlos igual siempre.
  * - Nunca pisa un archivo existente. Escribe el AAB firmado (sin `-sin-firma` en el nombre), su `.sha256` y `firma.json`
  *   (sin secretos). Sale con 0 solo si todo dio bien.
  */
@@ -23,6 +25,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
+import { esAutofirmado, evaluarVerificacionJar } from './esperado.mjs';
 
 /** La huella del certificado de la keystore de EAS, la que firma todas las APK publicadas. */
 const CERTIFICADO_DE_EAS = '61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06';
@@ -59,11 +62,13 @@ for (const [n, p] of [
   if (!existsSync(p)) salir(`falta ${n}: ${p}`);
 }
 const avisar = (t) => process.stdout.write(`[firma] ${t}\n`);
+/** keytool y jarsigner en inglés: sus mensajes se leen con expresiones regulares. */
+const EN_INGLES = '-J-Duser.language=en';
 
 // 1. La entrada no está firmada.
 const entradasDelOrigen = leerDirectorioCentral(origen);
 const firmasPrevias = entradasDelOrigen.filter((e) => /^META-INF\/[^/]+\.(SF|RSA|DSA|EC)$/i.test(e.nombre)).map((e) => e.nombre);
-const verificacionPrevia = correr(jarsigner, ['-verify', origen]);
+const verificacionPrevia = correr(jarsigner, [EN_INGLES, '-verify', origen]);
 if (firmasPrevias.length || !/unsigned/i.test(verificacionPrevia.salida)) salir(`la entrada ya trae firma (${firmasPrevias.join(', ') || 'jarsigner no la informa «unsigned»'}): no la firmo encima`);
 const sha256Origen = sha256(origen);
 avisar(`entrada sin firma: ${basename(origen)} · ${entradasDelOrigen.length} entradas · sha256 ${sha256Origen.slice(0, 16)}…`);
@@ -78,7 +83,7 @@ const temporal = `${destino}.firmando`;
 rmSync(temporal, { force: true });
 const firma = correr(
   jarsigner,
-  ['-keystore', keystore, '-storepass:env', 'BE_FIRMA_STOREPASS', '-keypass:env', 'BE_FIRMA_KEYPASS', '-sigalg', 'SHA256withRSA', '-digestalg', 'SHA-256', '-signedjar', temporal, origen, credenciales.keyAlias],
+  [EN_INGLES, '-keystore', keystore, '-storepass:env', 'BE_FIRMA_STOREPASS', '-keypass:env', 'BE_FIRMA_KEYPASS', '-sigalg', 'SHA256withRSA', '-digestalg', 'SHA-256', '-signedjar', temporal, origen, credenciales.keyAlias],
   { ...process.env, BE_FIRMA_STOREPASS: credenciales.keystorePassword, BE_FIRMA_KEYPASS: credenciales.keyPassword },
 );
 const salidaDeLaFirma = tapar(firma.salida).trim();
@@ -104,10 +109,12 @@ const agregadasRaras = agregadas.filter((n) => !ES_DE_FIRMA(n));
 const comparadas = entradasDelOrigen.filter((e) => !e.nombre.endsWith('/') && !ES_DE_FIRMA(e.nombre)).length;
 
 // 4. El certificado y la verificación estricta.
-const cert = correr(keytool, ['-printcert', '-jarfile', temporal]);
+const cert = correr(keytool, [EN_INGLES, '-printcert', '-jarfile', temporal]);
 const huellas = [...cert.salida.matchAll(/SHA256:\s*([0-9A-F:]+)/gi)].map((x) => x[1].replace(/:/g, '').toLowerCase());
-const verificacion = correr(jarsigner, ['-verify', '-strict', temporal]);
-const verificado = verificacion.status === 0 && /jar verified/i.test(verificacion.salida) && !/unsigned entries/i.test(verificacion.salida);
+const autofirmado = esAutofirmado(cert.salida);
+const verificacion = correr(jarsigner, [EN_INGLES, '-verify', '-strict', temporal]);
+const lectura = evaluarVerificacionJar({ codigo: verificacion.status, salida: verificacion.salida, autofirmado });
+const verificado = lectura.ok;
 
 const bien = distintas.length === 0 && agregadasRaras.length === 0 && huellas.length > 0 && huellas.every((h) => h === certEsperado) && verificado;
 if (!bien) {
@@ -119,7 +126,7 @@ if (!bien) {
       agregadasRaras.length ? `- entradas agregadas que no son de firma: ${agregadasRaras.join(', ')}` : null,
       !huellas.length ? '- keytool no informa ningún certificado' : null,
       huellas.length && !huellas.every((h) => h === certEsperado) ? `- certificado ${huellas.join(', ')} (esperado ${certEsperado})` : null,
-      !verificado ? `- jarsigner -verify -strict: ${tapar(verificacion.salida).trim().split('\n').slice(0, 4).join(' / ')}` : null,
+      !verificado ? `- jarsigner -verify -strict (código ${verificacion.status}): ${tapar(lectura.motivo)} · ${tapar(verificacion.salida).trim().split('\n').filter((l) => l.trim()).slice(0, 4).join(' / ')}` : null,
     ]
       .filter(Boolean)
       .join('\n'),
@@ -137,7 +144,8 @@ const registro = {
   certificadoEsperado: certEsperado,
   entradasComparadas: comparadas,
   entradasAgregadasPorLaFirma: agregadas,
-  jarsignerVerifyStrict: true,
+  certificadoAutofirmado: autofirmado,
+  jarsignerVerifyStrict: { codigo: verificacion.status, lectura: lectura.motivo },
   keystore: basename(keystore),
   nota: 'alias y contraseñas solo en el proceso de jarsigner (entorno y argumento), nunca impresos ni escritos',
   firmadoEn: new Date().toISOString(),
@@ -145,6 +153,7 @@ const registro = {
 writeFileSync(join(carpeta, 'firma.json'), `${JSON.stringify(registro, null, 2)}\n`);
 avisar(`firmado: ${destino} · sha256 ${sha256Destino.slice(0, 16)}… · certificado ${huellas[0].slice(0, 16)}… (el esperado)`);
 avisar(`${comparadas} entradas iguales al AAB sin firma; agregadas por la firma: ${agregadas.join(', ')}`);
+avisar(`jarsigner -verify -strict (código ${verificacion.status}): ${lectura.motivo}`);
 avisar(`verificar: node scripts/aab/verificar-aab.mjs "${destino}" --esperado <esperado.json> --respaldo <carpeta del respaldo>`);
 
 // ─── ayudas ──────────────────────────────────────────────────────────────────────────────────

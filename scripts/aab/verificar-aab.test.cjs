@@ -220,7 +220,7 @@ test('un PKCS#7 SignedData (la firma JAR) no se confunde con un PKCS#12', async 
 
 // ─── ELF sintéticos ───────────────────────────────────────────────────────────────────────────────────────────
 
-/** Un ELF sintético: cabecera y segmentos; `segmentos` = [{ tipo, align, vaddr, memsz }]. */
+/** Un ELF sintético: cabecera y segmentos; `segmentos` = [{ tipo, align, vaddr, memsz, flags, offset }] (offset = vaddr por omisión). */
 function elfSintetico({ bits = 64, le = true, segmentos = [], phnum, phoff }) {
   const phentsize = bits === 64 ? 56 : 32;
   const ehsize = bits === 64 ? 64 : 52;
@@ -241,40 +241,73 @@ function elfSintetico({ bits = 64, le = true, segmentos = [], phnum, phoff }) {
     w16(phentsize, 42);
     w16(phnum ?? segmentos.length, 44);
   }
-  segmentos.forEach(({ tipo = 1, align = 0, vaddr = 0, memsz = 0 }, i) => {
+  segmentos.forEach(({ tipo = 1, align = 0, vaddr = 0, memsz = 0, flags = R, offset = vaddr }, i) => {
     const o = ehsize + i * phentsize;
     w32(tipo, o);
     if (bits === 64) {
+      w32(flags, o + 4);
+      w64(offset, o + 8);
       w64(vaddr, o + 16);
       w64(memsz, o + 40);
       w64(align, o + 48);
     } else {
+      w32(offset, o + 4);
       w32(vaddr, o + 8);
       w32(memsz, o + 20);
+      w32(flags, o + 24);
       w32(align, o + 28);
     }
   });
   return buf;
 }
 const PT_GNU_RELRO = 0x6474e552;
+const [X, W, R] = [1, 2, 4];
+const K16 = 16384;
 
-test('la alineación ELF de 16 KB: PT_LOAD y fin del RELRO, en 64 y 32 bits, little y big endian', async () => {
+test('la alineación ELF de 16 KB: PT_LOAD, segmentos en páginas propias y RELRO, en 64 y 32 bits, little y big endian', async () => {
   const [, { cargasDeElf, alineadaA16Kb, PAGINA_DE_16_KB }] = await cargar();
   assert.equal(PAGINA_DE_16_KB, 16384);
-  const bien = elfSintetico({ segmentos: [{ align: 16384 }, { align: 16384 }, { tipo: PT_GNU_RELRO, vaddr: 0x20000, memsz: 0x4000 }] });
-  assert.deepEqual(cargasDeElf(bien), { bits: 64, alineaciones: [16384, 16384], relro: { vaddr: 0x20000, memsz: 0x4000 } });
+  const bien = elfSintetico({ segmentos: [{ align: K16, vaddr: 0, memsz: 0x4000 }, { align: K16, vaddr: 0x20000, memsz: 0x4000, flags: R | W }, { tipo: PT_GNU_RELRO, vaddr: 0x20000, memsz: 0x4000 }] });
+  const leido = cargasDeElf(bien);
+  assert.deepEqual([leido.bits, leido.alineaciones, leido.relro], [64, [K16, K16], { vaddr: 0x20000, memsz: 0x4000 }]);
+  assert.deepEqual(leido.cargas[1], { flags: R | W, offset: 0x20000, vaddr: 0x20000, memsz: 0x4000, align: K16 });
   assert.equal(alineadaA16Kb(bien).alineada, true);
-  assert.equal(alineadaA16Kb(elfSintetico({ segmentos: [{ align: 16384 }, { align: 4096 }] })).alineada, false, 'un segmento a 4 KB alcanza para no cumplir');
+  assert.equal(alineadaA16Kb(elfSintetico({ segmentos: [{ align: K16 }, { align: 4096, vaddr: 0x8000 }] })).alineada, false, 'un segmento a 4 KB alcanza para no cumplir');
   assert.equal(alineadaA16Kb(elfSintetico({ segmentos: [{ align: 65536 }] })).alineada, true, 'múltiplos de 16 KB cumplen');
-  const relroMal = alineadaA16Kb(elfSintetico({ segmentos: [{ align: 16384 }, { tipo: PT_GNU_RELRO, vaddr: 0x20000, memsz: 0x1000 }] }));
-  assert.equal(relroMal.cargasAlineadas, true);
-  assert.equal(relroMal.relroAlineado, false);
-  assert.equal(relroMal.alineada, false, 'cargas bien pero el RELRO termina a 4 KB: no cumple');
-  const sinRelro = alineadaA16Kb(elfSintetico({ segmentos: [{ align: 16384 }] }));
-  assert.equal(sinRelro.relroAlineado, null);
+  assert.equal(alineadaA16Kb(elfSintetico({ segmentos: [{ align: K16, vaddr: 0x24000, offset: 0x21000, memsz: 0x100 }] })).cargasAlineadas, false, 'dirección y desplazamiento distintos módulo 16 KB: no se puede mapear');
+
+  // La forma real de arm64-v8a/libc++_shared.so del primer AAB (llvm-readelf, 29/10): lld termina el RELRO a 4 KB
+  // (0x143000) y pone los datos siguientes en otra página de 16 KB (0x146e40). Cumple; la regla vieja decía «MAL».
+  const libcxx = elfSintetico({
+    segmentos: [
+      { align: K16, offset: 0, vaddr: 0, memsz: 0x9aca8, flags: R },
+      { align: K16, offset: 0x9acb0, vaddr: 0x9ecb0, memsz: 0x96640, flags: R | X },
+      { align: K16, offset: 0x1312f0, vaddr: 0x1392f0, memsz: 0x9d10, flags: R | W },
+      { align: K16, offset: 0x13ae40, vaddr: 0x146e40, memsz: 0x7d10, flags: R | W },
+      { tipo: PT_GNU_RELRO, vaddr: 0x1392f0, memsz: 0x9d10 },
+    ],
+  });
+  const real = alineadaA16Kb(libcxx);
+  assert.notEqual((0x1392f0 + 0x9d10) % K16, 0, 'el final del RELRO no es múltiplo de 16 KB');
+  assert.deepEqual([real.cargasAlineadas, real.paginasPropias, real.relroSeguro, real.alineada], [true, true, true, true], 'y cumple');
+
+  // Al estilo de GNU ld: un solo segmento escribible con el RELRO al principio y .data a continuación en la misma
+  // página de 16 KB. Android volvería .data de solo lectura: no cumple.
+  const relroMal = alineadaA16Kb(elfSintetico({ segmentos: [{ align: K16, vaddr: 0, memsz: 0x4000, flags: R | X }, { align: K16, vaddr: 0x20000, memsz: 0x6000, flags: R | W }, { tipo: PT_GNU_RELRO, vaddr: 0x20000, memsz: 0x1000 }] }));
+  assert.deepEqual([relroMal.cargasAlineadas, relroMal.paginasPropias, relroMal.relroSeguro, relroMal.alineada], [true, true, false, false], 'datos escribibles en una página del RELRO');
+  // El mismo RELRO a 4 KB, pero sin datos después en esa página: cumple.
+  assert.equal(alineadaA16Kb(elfSintetico({ segmentos: [{ align: K16, vaddr: 0x20000, memsz: 0x1000, flags: R | W }, { tipo: PT_GNU_RELRO, vaddr: 0x20000, memsz: 0x1000 }] })).relroSeguro, true);
+  // Dos segmentos que comparten una página de 16 KB (enlazado para 4 KB): no cumple aunque declare 16 KB.
+  const compartida = alineadaA16Kb(elfSintetico({ segmentos: [{ align: K16, vaddr: 0, memsz: 0x5000, flags: R }, { align: K16, vaddr: 0x6000, memsz: 0x1000, flags: R | X }] }));
+  assert.deepEqual([compartida.cargasAlineadas, compartida.paginasPropias, compartida.alineada], [true, false, false]);
+
+  const sinRelro = alineadaA16Kb(elfSintetico({ segmentos: [{ align: K16 }] }));
+  assert.equal(sinRelro.relroSeguro, null);
   assert.equal(sinRelro.alineada, true, 'sin RELRO, deciden las cargas');
-  assert.deepEqual(cargasDeElf(elfSintetico({ bits: 32, segmentos: [{ align: 4096 }] })), { bits: 32, alineaciones: [4096], relro: null });
-  assert.deepEqual(cargasDeElf(elfSintetico({ bits: 64, le: false, segmentos: [{ align: 16384 }, { tipo: PT_GNU_RELRO, vaddr: 0x4000, memsz: 0x4000 }] })), { bits: 64, alineaciones: [16384], relro: { vaddr: 0x4000, memsz: 0x4000 } }, 'big endian');
+  const de32 = cargasDeElf(elfSintetico({ bits: 32, segmentos: [{ align: 4096, vaddr: 0x1000, offset: 0x1000, memsz: 0x10, flags: R | W }] }));
+  assert.deepEqual([de32.bits, de32.alineaciones, de32.relro, de32.cargas[0]], [32, [4096], null, { flags: R | W, offset: 0x1000, vaddr: 0x1000, memsz: 0x10, align: 4096 }], '32 bits, con su orden de campos');
+  const be = cargasDeElf(elfSintetico({ bits: 64, le: false, segmentos: [{ align: K16, flags: R | X }, { tipo: PT_GNU_RELRO, vaddr: 0x4000, memsz: 0x4000 }] }));
+  assert.deepEqual([be.alineaciones, be.relro, be.cargas[0].flags], [[K16], { vaddr: 0x4000, memsz: 0x4000 }, R | X], 'big endian');
   assert.equal(alineadaA16Kb(elfSintetico({ segmentos: [] })).alineada, false, 'sin segmentos de carga no se afirma nada');
   assert.equal(cargasDeElf(elfSintetico({ segmentos: [{ align: 16384 }], phnum: 0xffff })), null, 'PN_XNUM no se lee: no se afirma nada');
   assert.equal(cargasDeElf(elfSintetico({ segmentos: [{ align: 16384 }], phoff: 4096 })), null, 'tabla de programa fuera del archivo');
@@ -333,4 +366,37 @@ test('el veredicto: «todo bien» solo si hay comprobaciones y cada una dio true
   assert.deepEqual(resumirVeredicto({ a: true, b: true }), { todoBien: true, pendientes: [], fallidos: [] });
   assert.deepEqual(resumirVeredicto({ a: true, b: 'pendiente' }), { todoBien: false, pendientes: ['b'], fallidos: [] }, 'una pendiente impide «todo bien»');
   assert.deepEqual(resumirVeredicto({ a: true, b: false, c: null, d: undefined }), { todoBien: false, pendientes: [], fallidos: ['b', 'c', 'd'] }, 'false, null y undefined son fallos');
+});
+
+// ─── jarsigner -verify -strict con una clave de Android (autofirmada) ─────────────────────────────────────────
+
+/** Lo que imprimió jarsigner -strict el 2026-10-29 sobre el primer AAB firmado (salió con 4). */
+const CADENA_PKIX = 'This jar contains entries whose certificate chain is invalid. Reason: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target';
+const salidaStrict = (errores, avisos = ['This jar contains signatures that do not include a timestamp. Without a timestamp, users may not be able to validate this jar after any of the signer certificates expire (as early as 2053-01-01).']) =>
+  ['jar verified, with signer errors.', '', 'Error:', ...errores, '', 'Warning:', ...avisos, '', 'Re-run with the -verbose and -certs options for more details.'].join('\n');
+/** keytool -printcert -jarfile, con nombres sintéticos. */
+const keytoolCon = ({ owner = 'CN=Prueba, O=BE, C=AR', issuer = owner, certificados = 1 } = {}) =>
+  ['Signer #1:', '', ...Array.from({ length: certificados }, (_, i) => [`Certificate #${i + 1}:`, `Owner: ${owner}`, `Issuer: ${issuer}`, 'Serial number: 1', 'Certificate fingerprints:', '\t SHA256: AA:BB', '']).flat()].join('\n');
+
+test('el certificado autofirmado: un firmante, un certificado, Owner igual a Issuer', async () => {
+  const [, , { esAutofirmado }] = await cargar();
+  assert.equal(esAutofirmado(keytoolCon()), true);
+  assert.equal(esAutofirmado(keytoolCon({ issuer: 'CN=Una autoridad, O=Otra, C=US' })), false, 'emitido por otro');
+  assert.equal(esAutofirmado(keytoolCon({ certificados: 2 })), false, 'una cadena de dos');
+  assert.equal(esAutofirmado(''), false, 'sin salida no se afirma');
+});
+
+test('jarsigner -strict: se acepta la cadena de un certificado autofirmado, y ningún otro aviso grave', async () => {
+  const [, , { evaluarVerificacionJar }] = await cargar();
+  const ok = (codigo, salida, autofirmado = true) => evaluarVerificacionJar({ codigo, salida, autofirmado }).ok;
+  assert.equal(ok(4, salidaStrict([CADENA_PKIX])), true, 'lo real del 29/10: código 4, solo la cadena PKIX, autofirmado');
+  assert.equal(ok(0, 'jar verified.'), true, 'sin avisos graves');
+  assert.equal(ok(4, salidaStrict([CADENA_PKIX]), false), false, 'la cadena no valida y el certificado no es autofirmado');
+  assert.equal(ok(20, salidaStrict([CADENA_PKIX, 'This jar contains unsigned entries which have not been integrity-checked.'])), false, 'entradas sin firmar (bit 16)');
+  assert.equal(ok(4, salidaStrict([CADENA_PKIX, 'This jar contains entries whose signer certificate has expired.'])), false, 'el bit 4 también es «vencido»: se mira el texto');
+  assert.equal(ok(4, salidaStrict([CADENA_PKIX, 'This jar contains entries signed with SHA1withRSA, which is considered a security risk and is disabled.'])), false, 'el bit 4 también es «algoritmo deshabilitado»');
+  assert.equal(ok(4, 'jar verified, with signer errors.'), false, 'código 4 sin decir por qué');
+  assert.equal(ok(8, salidaStrict(['This jar contains entries whose signer certificate KeyUsage extension does not allow code signing.'])), false, 'uso de clave (bit 8)');
+  assert.equal(ok(0, 'jar is unsigned.'), false, 'sin firma');
+  assert.equal(ok(1, 'jarsigner: java.lang.SecurityException: SHA-256 digest error for base/dex/classes.dex'), false, 'un resumen que no coincide');
 });
