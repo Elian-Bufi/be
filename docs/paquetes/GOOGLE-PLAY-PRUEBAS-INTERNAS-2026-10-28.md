@@ -59,11 +59,11 @@ oficiales citadas) terminó y acá queda reconciliada. Es un avance, no una prom
 
 1. Crear la **cuenta de Play Console** (US$ 25 por única vez, DNI, tarjeta, OTP de correo y teléfono; si es personal,
    verificar un teléfono Android con la app Play Console).
-2. Elegir el **tipo de cuenta**: Play exige cuenta de **organización** (D-U-N-S) para las apps de salud, y para
-   Google «salud» incluye las categorías de actividad física y de nutrición (la declaración de apps de salud las
-   lista: *Activity and Fitness*, *Nutrition and Weight Management*). BE registra entrenamiento, nutrición y
-   antropometría y se presenta como «plataforma integrada de inteligencia en salud»: **hay que asumir la cuenta de
-   organización.** Va **antes de pagar**; no encontré si una cuenta personal se puede convertir.
+2. Elegir el **tipo de cuenta** (corregido el 29/10; ver «Tipo de cuenta: lo que dice Google»): la regla de Play pide
+   cuenta de **organización** (D-U-N-S) para «Health apps, such as Medical apps and Human Subjects Research apps». BE
+   no es ninguna de las dos, pero Google también llama «apps de salud» a las de fitness y nutrición, y no aclara si la
+   regla las alcanza. **Recomendación: cuenta personal y solo la pista interna.** Si hiciera falta, una cuenta
+   personal se puede convertir en organización desde Play Console. Va **antes de pagar**.
 3. Crear la app `com.elianbufi.be` (el nombre de paquete es permanente) y aceptar las condiciones de Play App Signing.
 4. En la primera versión, elegir **«Provide a copy of your app signing key»** y correr PEPK sobre
    `be-firma-respaldo/credentials/android/keystore.jks` (alias y contraseña en su `credentials.json`): solo Dirección.
@@ -86,7 +86,7 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 | El AAB se construye con el perfil `production` tal como está | la app queda sin API y sin App Link | construir con el env de `test` hasta que exista un ambiente de producción |
 | Uso compartido interno de apps | Play vuelve a firmar con una clave de prueba | usar la pista de pruebas internas |
 | Memoria de la PC durante el build (~40 min; falló por memoria en la 0.11.3) | build cortado | medir la RAM antes, un worker, sin Chrome |
-| Política: BE es una app de salud para Play (actividad física y nutrición entran en «salud»): cuenta de organización, declaración de apps de salud; privacidad de demostración sin contacto (DL-028); «Cerrar mi cuenta» conserva los datos (DL-019; Play dice que desactivar no es borrar) | la cuenta de organización va antes de crear la app; lo demás no bloquea la pista interna y sí las pruebas cerradas, abiertas y producción (Data safety, declaración de apps de salud, borrado de cuenta) | decidir el tipo de cuenta antes de pagar; lo demás, antes de pasar de la pista interna |
+| Política: para Play, BE es una app de salud en sentido amplio (actividad física y nutrición); si eso le exige cuenta de organización, Google no lo aclara (ver «Tipo de cuenta: lo que dice Google»); declaración de apps de salud; privacidad de demostración sin contacto (DL-028); «Cerrar mi cuenta» conserva los datos (DL-019; Play dice que desactivar no es borrar) | si Google entendiera que BE necesita organización, habría que convertir la cuenta (empresa, D-U-N-S y sitio web verificado); lo demás no bloquea la pista interna y sí las pruebas cerradas, abiertas y producción (Data safety, declaración de apps de salud, borrado de cuenta) | cuenta personal para la pista interna; antes de pasar de la pista interna, resolver el tipo de cuenta y lo demás |
 | Cuenta personal y producción | 12 probadores 14 días seguidos en una prueba cerrada | solo si se apunta a producción |
 | 16 KB verificado solo en la APK 0.16.0 | Play bloquea actualizaciones sin 16 KB desde el 01/02/2027 | verificar el AAB con `zipalign -P 16` |
 
@@ -112,17 +112,20 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 2. **Clave de subida:** separada de la de firma (ratificado el 28/10). Queda pendiente generarla y registrar su
    certificado; mientras tanto, nada se genera ni se reemplaza, y el AAB candidato se firma con la keystore de EAS
    para verificar la cadena (se vuelve a firmar con la clave de subida antes de subirlo).
-3. **Tipo de cuenta:** organización (D-U-N-S), porque para Play la actividad física y la nutrición son salud. Decidir
-   el nombre de la organización y tramitar el D-U-N-S antes de pagar.
+3. **Tipo de cuenta** (corregido el 29/10). **Recomendación: personal, para la pista interna.** La exigencia de
+   organización nombra solo las apps médicas y las de investigación con personas, y Google no aclara si alcanza a
+   fitness y nutrición. La pista interna no tiene requisitos de acceso, y una cuenta personal se puede convertir en
+   organización (empresa, D-U-N-S y sitio web verificado) si Google o Dirección lo deciden. Alternativa: organización
+   desde el principio.
 4. **Ambiente y versión del AAB:** test (`be-api-hndp`), `0.18.0-candidata.2` / versionCode 31 desde `main` `e4512cb`
    (lo que test sirve hoy) más esta rama. Alternativa: el mismo `b64d0c4` de la candidata.1 con versionCode 31.
 5. **El canal en el website y DV-08:** cuándo cambiar «Se instala fuera de Google Play» y los enlaces a GitHub.
 
 ## Guía breve de lo que hacés vos (en orden)
 
-1. **Decidir** (antes de pagar): la organización y su D-U-N-S (para Play, BE es una app de salud); nuestra clave como
-   clave de firma y una clave de subida separada quedaron ratificadas el 28/10; la clave de subida se genera cuando lo
-   digas, no antes.
+1. **Decidir** (antes de pagar): el tipo de cuenta (recomendación: personal, ver la decisión 3). Nuestra clave como
+   clave de firma y una clave de subida separada quedaron ratificadas el 28/10. La clave de subida se genera cuando lo
+   digas, no antes; conviene que sea antes de la primera versión, para registrarla en la misma pantalla de PEPK.
 2. **Cuenta:** https://play.google.com/console → alta de desarrollador (US$ 25, DNI, tarjeta, OTP; si es personal,
    verificar tu teléfono con la app Play Console).
 3. **App:** «Crear app» → nombre BE, español, app, gratis, correo de contacto, declaraciones, aceptar Play App Signing.
@@ -217,9 +220,37 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 - **Archivos nuevos o cambiados:** `.github/workflows/aab-sin-firma.yml`, `scripts/aab/firmar-aab.mjs`,
   `construir-aab.mjs --sin-firma`, `plugins/firma-de-subida.js` (`BE_SIN_FIRMA`), `elf.mjs`, `esperado.mjs`,
   `verificar-aab.mjs`, `revisar-registro.mjs --respaldo` y sus pruebas.
-- **Pendiente de Dirección:** cuenta de organización y D-U-N-S; en Play Console, la app, la pista interna, Play App
-  Signing con la keystore de EAS por PEPK y la comprobación de la SHA-256 en *App integrity* antes de que nadie
-  instale; la clave de subida separada; el guion de prueba en el teléfono. Nada se publicó ni se subió a Play.
+- **Pendiente de Dirección:** la cuenta de Play Console (personal recomendada desde el 29/10; ver «Tipo de cuenta: lo
+  que dice Google»); en Play Console, la app, la pista interna, Play App Signing con la keystore de EAS por PEPK y la
+  comprobación de la SHA-256 en *App integrity* antes de que nadie instale; la clave de subida separada; el guion de
+  prueba en el teléfono. Nada se publicó ni se subió a Play.
+
+## Tipo de cuenta: lo que dice Google (29/10)
+
+Corrige lo que esta nota y `docs/DESPLIEGUE.md` decían el 28/10 («hay que asumir la cuenta de organización»). Leído el
+29/10 en Play Console Help (ninguna página muestra fecha de actualización):
+
+- **La regla** (…/answer/10788890, mismo texto en …/answer/17125096): «When creating your Play Console account,
+  developers providing the following services must register as an Organization: […] Health apps, such as Medical apps
+  and Human Subjects Research apps». No da fecha de vigencia ni dice qué pasa con las cuentas o apps que ya existen.
+- **Qué es una app de salud** (…/answer/13996367): «Medical apps, health and fitness apps, and health research apps
+  are examples of health apps», con «fitness trackers, nutrition trackers» entre los ejemplos de *health and fitness*.
+  La declaración (…/answer/14738291) pone «measuring body composition and weight» dentro de *Activity and Fitness*.
+- **La ambigüedad:** la regla nombra dos de los tres tipos (médicas e investigación) y no dice si «such as» introduce
+  ejemplos o la lista completa. BE es fitness, nutrición y medidas corporales con seguimiento profesional: no es un
+  dispositivo médico ni investigación. Ojo con la categoría médica *Healthcare Services and Management* («apps
+  connecting patients with healthcare providers»): BE no se describe así, pero vincula personas con nutricionistas.
+- **La pista interna** (…/answer/14151465): «Requirements to access track: None». Los 12 probadores durante 14 días se
+  piden para producción. La declaración de apps de salud se exige en las pistas cerrada, abierta y de producción.
+- **Convertir la cuenta** (…/answer/16260648): «To convert your individual developer account to an organization
+  account, the account owner must set up an organizational payments profile and provide extra account details in the
+  Play Console». Pide la cuenta personal verificada, un sitio web de la organización verificado y el D-U-N-S (gratis;
+  «This process can take up to 30 days», …/answer/13628312). De organización a personal no se puede.
+- **Blogs** que dicen que fitness y nutrición exigen organización (webtoapp.design, myappmonitor.com): no citan texto
+  de Google y no se toman como fuente.
+
+Recomendación: cuenta personal para la pista interna. Antes de las pruebas cerradas o de producción, resolver el tipo
+de cuenta (preguntarle a Google o convertirla).
 
 ## Fuentes oficiales leídas (las principales)
 
@@ -228,7 +259,8 @@ Nada de esto frena la preparación local: el AAB se puede construir y validar si
 - Actualizaciones y certificados: https://developer.android.com/google/play/app-updates
 - Pruebas internas: https://support.google.com/googleplay/android-developer/answer/9845334
 - Cuenta y verificación: https://support.google.com/googleplay/android-developer/answer/6112435,
-  …/answer/13634885, …/answer/14986433, …/answer/10841920, …/answer/14151465
+  …/answer/13634885, …/answer/14986433, …/answer/10841920, …/answer/14151465; tipo de cuenta (29/10): …/answer/10788890,
+  …/answer/17125096, …/answer/13996367, …/answer/16260648, …/answer/13628312
 - App Bundle: https://developer.android.com/guide/app-bundle; API objetivo:
   https://developer.android.com/google/play/requirements/target-sdk; 16 KB:
   https://developer.android.com/guide/practices/page-sizes
