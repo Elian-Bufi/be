@@ -9,6 +9,10 @@
  * Sin `BE_FIRMA_KEYSTORE`, el release queda como en la plantilla de Expo: firmado con la clave de debug (que Google Play
  * rechaza), así que no hay forma de firmar «sin querer» con una clave que no se eligió.
  *
+ * Con `BE_SIN_FIRMA=1` (y sin `BE_FIRMA_KEYSTORE`), el release queda SIN firma: así lo construye GitHub Actions, que no
+ * tiene ni debe tener la keystore, y se firma después en la máquina de Dirección con scripts/aab/firmar-aab.mjs
+ * (2026-10-29). Un AAB sin firma no se puede instalar ni subir: no hay forma de que salga así por error.
+ *
  * Qué clave va en esas variables lo decide quien construye: la keystore de EAS (la que firma todas las APK publicadas;
  * respaldo en la máquina de Dirección) o, para subir a Google Play con una clave de subida aparte, esa clave de subida.
  * Ver docs/paquetes/GOOGLE-PLAY-PRUEBAS-INTERNAS-2026-10-28.md.
@@ -29,7 +33,7 @@ const BLOQUE_DE_FIRMA = `        // BE: la firma del release sale del entorno (p
         }
 `;
 
-const USO_EN_RELEASE = `signingConfig System.getenv("${MARCA}") ? signingConfigs.release : signingConfigs.debug`;
+const USO_EN_RELEASE = `signingConfig System.getenv("${MARCA}") ? signingConfigs.release : (System.getenv("BE_SIN_FIRMA") ? null : signingConfigs.debug)`;
 
 /**
  * Aplica la firma al texto de `app/build.gradle` de la plantilla de Expo. Es una función pura, para poder probarla.

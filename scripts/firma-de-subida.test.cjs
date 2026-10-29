@@ -50,8 +50,8 @@ test('agrega la firma desde el entorno y la usa en release solo si BE_FIRMA_KEYS
   assert.match(salida, /signingConfigs \{\n\s+\/\/ BE: la firma del release sale del entorno/);
   assert.match(salida, /if \(System\.getenv\("BE_FIRMA_KEYSTORE"\)\) \{\n\s+release \{\n\s+storeFile file\(System\.getenv\("BE_FIRMA_KEYSTORE"\)\)/);
   assert.match(salida, /keyPassword System\.getenv\("BE_FIRMA_KEY_PASSWORD"\)/);
-  // El release usa la firma del entorno si está, y si no la de debug; el debug no cambia.
-  assert.match(salida, /release \{\n(?:.*\n)*?\s+signingConfig System\.getenv\("BE_FIRMA_KEYSTORE"\) \? signingConfigs\.release : signingConfigs\.debug/);
+  // El release usa la firma del entorno si está; si no, ninguna con BE_SIN_FIRMA (Actions) o la de debug; el debug no cambia.
+  assert.match(salida, /release \{\n(?:.*\n)*?\s+signingConfig System\.getenv\("BE_FIRMA_KEYSTORE"\) \? signingConfigs\.release : \(System\.getenv\("BE_SIN_FIRMA"\) \? null : signingConfigs\.debug\)/);
   assert.equal((salida.match(/signingConfig signingConfigs\.debug/g) ?? []).length, 1, 'queda solo el del buildType debug');
   // Todo lo demás de la plantilla sigue ahí.
   assert.ok(salida.includes("storeFile file('debug.keystore')"));
