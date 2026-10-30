@@ -1,0 +1,30 @@
+# Lectura de control de la carga «pasado», el 2026-10-26 a las 19:58:57 UTC, con la ventana abierta (solo lectura).
+# Por tabla: las filas con la procedencia SIEMBRA-PRUEBA-BREVE («n») y cuántas de ellas NO son de las cuentas «Prueba»
+# («ajenas»); las comidas por cuenta; los planes con su activación (hora de Buenos Aires) y su instantánea; y los
+# disparadores de esas tablas. La consulta (fuera del repositorio) no imprime la URL ni el host.
+# Transcripto de la consola, tal cual.
+
+{
+ "solicitud_de_vinculo": { "n": 2, "ajenas": 0 },
+ "evento_de_vinculo": { "n": 8, "ajenas": 0 },
+ "version_de_objetivo_nutricional": { "n": 2, "ajenas": 0 },
+ "evento_de_nutricion": { "n": 52, "ajenas": 0 },
+ "proceso_operativo": { "n": 2, "ajenas": 0 },
+ "ingesta_nutricional": { "n": 48, "ajenas": 0 },
+ "alcance_de_vinculo": { "n": 2, "ajenas": 0 },
+ "version_de_consentimiento": { "n": 2, "ajenas": 0 },
+ "evento_de_proceso": { "n": 2, "ajenas": 0 },
+ "comidas": [
+  { "cuenta": "ASE_TRES", "comidas": 24, "dias": 6, "desde": "2026-10-20", "hasta": "2026-10-25" },
+  { "cuenta": "ASE_DOS", "comidas": 24, "dias": 6, "desde": "2026-10-19", "hasta": "2026-10-25" }
+ ],
+ "planes": [
+  { "estado": "ACTIVADA", "activada": "2026-10-18 10:00", "instantaneas": 1, "cuenta": "ASE_DOS" },
+  { "estado": "ACTIVADA", "activada": "2026-10-18 10:00", "instantaneas": 1, "cuenta": "ASE_TRES" }
+ ],
+ "disparadores": { "total": 47, "desactivados": 0 }
+}
+CARGA LIMITADA A LAS CUENTAS «PRUEBA» · DISPARADORES ACTIVOS
+
+# Los 52 hechos de Nutrición: 48 IngestaRegistrada, 2 VersionDeObjetivoEmitida y 2 VersionDePlanActivada.
+# Dos tiene 24 comidas en 6 días, del 19/10 al 25/10, sin el 22/10 (el día sin registros).
