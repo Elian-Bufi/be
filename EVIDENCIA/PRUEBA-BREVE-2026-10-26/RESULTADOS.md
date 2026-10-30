@@ -6,6 +6,8 @@
 - **Parte C (Teléfono):** empezó el 2026-10-29 a la tarde. Se hicieron C2 y C3, y apareció un defecto (**D-C1**). La
   sesión quedó registrada sin el primer ejercicio, así que C4 a C8 pasan a otro día.
 - **Pendientes:** la **Parte B (Nutrición)** y la pasada con **TalkBack**.
+- **2026-10-30:** al revisar todas las pantallas aparecieron, en el código, un agravante de D-C1, una limitación de la
+  corrección y tres defectos más (**D-C2** a **D-C4**). Están al final de la Parte C funcional.
 
 Esto no es todavía la validación de uso. Es el registro de lo que se vio hasta ahora, comparado con `OBSERVADOR.md`.
 
@@ -128,6 +130,44 @@ textos), no la API:
 **Descartado por ahora:** «registrar todas juntas». Cambia el modelo por serie: el descanso y los tiempos de cada serie.
 
 **Para verla en el teléfono** hace falta una candidata nueva, y eso necesita la autorización de Dirección.
+
+### Encontrados al revisar todas las pantallas (2026-10-30)
+
+Salieron del relevamiento de las 60 pantallas de la APK que pidió Dirección el 2026-10-30. **Están comprobados en el
+código, no en el teléfono.** El código revisado es el de main (`e4512cb`); en la APK solo difiere de la candidata
+(`b64d0c4`) en el número de versión. Ninguna corrección está aplicada.
+
+**Agravante de D-C1.** Lo escrito y no registrado vive solo en la memoria de la pantalla (`entrenamiento.tsx:897`): si
+Android cierra la app, también se pierde. La fila enfocada sí se guarda en el teléfono (`entrenamiento.tsx:1003-1005`).
+- *Corrección acotada:* guardar lo escrito junto con la fila enfocada, en el mismo almacén local.
+
+**Limitación ligada a D-C1: la corrección no deja sumar lo que faltó.** El formulario de corrección arma los ejercicios
+solo con lo que ya estaba registrado (`entrenamiento.tsx:1738-1757`). Por eso Press de banca de Prueba Uno no se puede
+recuperar con una corrección. La API sí lo acepta: solo exige que cada ejercicio sea de la sesión
+(`apps/api/src/entrenamiento/ejecuciones.service.ts:870-873`).
+- *Corrección acotada:* ofrecer en la corrección los ejercicios planificados que faltan y «Agregar una serie». Solo APK.
+
+**D-C2 (severidad media): el historial muestra la condición original, no la corregida.** La lista de «Tu historial»
+arma la insignia con `e.original` (`historial.tsx:101`). El dominio pide lo contrario: `registroVigente`
+(`packages/domain/src/copy-entrenamiento.ts:21-25`) existe para que ninguna lista muestre lo que se corrigió. Una sesión
+corregida de «Realizada» a «No realizada» se lista como «Realizada · Corregida».
+- *Corrección acotada:* usar `registroVigente(e)` en esa línea. Solo APK.
+
+**D-C3 (severidad media): Información, al enviar.**
+- Si no se respondió nada, el aviso dice «Falta responder un campo marcado como requerido» aunque la solicitud no tenga
+  ningún campo requerido. Las dos condiciones comparten el mismo mensaje (`formularios.tsx:233-234`).
+- El aviso «Respuesta enviada.» no tiene título, y `Aviso` solo anuncia el título (`ui.tsx:303-305`): el lector de
+  pantalla no dice que se envió.
+- *Corrección acotada:* un mensaje propio para «no respondiste nada» y un aviso de envío con título. El texto vive en el
+  dominio y lo comparte el website: pasa por la prueba de términos prohibidos.
+
+**D-C4 (severidad baja): un dato con nombre largo se desacomoda.** `Dato` usa `flexWrap` con `space-between`
+(`ui.tsx:489`): con una etiqueta larga, el valor baja de renglón y queda alineado a la izquierda. Se ve en el detalle de
+un registro de comida (captura `EVIDENCIA/NUTRICION-RECETAS/capturas-apk/29-registro-detalle.png`, render del 6/10).
+- *Corrección acotada:* sin `flexWrap`; la etiqueta se achica y el valor queda a la derecha. Solo APK.
+
+El análisis completo, con las propuestas de diseño, está en la página privada «Pantallas de la app BE». No forma parte
+de esta prueba.
 
 ## Parte C · TalkBack
 
