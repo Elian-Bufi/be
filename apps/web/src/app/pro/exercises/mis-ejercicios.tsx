@@ -196,7 +196,7 @@ function ZonasDeLaTarjeta({ exerciseId, fichas }: { exerciseId: string; fichas: 
   return (
     <p className="nota ejercicio-propio__zonas" data-zonas-del-ejercicio>
       <span className="visualmente-oculto">{COPY_FIGURA_DE_ZONAS.titulo}: </span>
-      <Icono nombre="entrenamiento" tamano={16} />
+      <Icono nombre="entrenamiento" tamano={15} />
       {renglon}
     </p>
   );
