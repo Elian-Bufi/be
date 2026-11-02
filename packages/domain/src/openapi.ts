@@ -251,6 +251,8 @@ import {
   SesionParaRegistrarResponseSchema,
   TiemposDeSesionResponseSchema,
 } from './contratos-entrenamiento-por-serie';
+import { CambiarZonasDeEjercicioRequestSchema, FichaVisualDeEjercicioResponseSchema, FichasVisualesRequestSchema, FichasVisualesResponseSchema } from './contratos-catalogo-visual';
+import { ListaDeZonasMuscularesResponseSchema } from './zonas-musculares';
 import { HEADER_DE_CAPACIDADES } from './compatibilidad-de-clientes';
 import {
   BusquedaEnLineaDeTiempoRequestSchema,
@@ -1629,7 +1631,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/training/exercises',
     resumen:
-      'Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.',
+      'Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. muscleZones trae las zonas vigentes del ejercicio (por identificador, con su rol; DL-081) y didacticResources su imagen vigente, si tiene (resourceId es el mediaId que se pide con API-MED-03; DL-162). Ninguna zona sale de wger ni del nombre.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -1662,7 +1664,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-INT-TRN-01',
     metodo: 'post',
     ruta: '/training/exercises',
-    resumen: 'Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; no altera instantáneas activas.',
+    resumen:
+      'Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; cada zona es una de las 17 de API-ZON-01, sin repetirse, con su rol (una desconocida o repetida es 422). El material didáctico se asocia después (API-EJE-02). No altera instantáneas activas.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearEjercicioRequestSchema,
@@ -2279,6 +2282,52 @@ const DEFINIDAS: readonly Operacion[] = [
     // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
     fuente: 'DEUDA_LEGAJO DL-123',
+  },
+  // ─── WP-CATALOGO-VISUAL · zonas musculares e imagen del catálogo (DL-081, DL-162) ─────────────
+  {
+    id: 'API-ZON-01',
+    metodo: 'get',
+    ruta: '/training/muscle-zones',
+    resumen:
+      'El catálogo de las 17 zonas musculares (9 de frente, 10 de espalda, antebrazo y deltoides en las dos), con su identificador estable, su nombre visible, sus vistas y la versión del catálogo. La zona es dominio, no un archivo gráfico: cada máscara cita su identificador. No hay un catálogo por sexo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeZonasMuscularesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '09v10 §8 · REG-06-137, 138 · DEUDA_LEGAJO DL-081',
+  },
+  {
+    id: 'API-EJE-04',
+    metodo: 'put',
+    ruta: '/training/exercises/{exerciseId}/muscle-zones',
+    resumen:
+      'Reemplazar las zonas de un ejercicio propio (carga manual) para una versión suya: la lista completa, sin repetidas, cada zona con su rol PRIMARY o SECONDARY y sin porcentajes. Vacía quita todas. Exige expectedZonesVersion (0 si nunca tuvo). Cada cambio es una asignación nueva: la historia queda. Las zonas del catálogo de todos las cura BE, no esta operación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CambiarZonasDeEjercicioRequestSchema,
+    exitos: [{ status: 200, schema: FichaVisualDeEjercicioResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['VALIDATION_FAILED', 'EXERCISE_REFERENCE_INVALID'],
+    },
+    fuente: 'REG-06-139 · 09v10 §7.1 · B10-06 §20 a 22 · DEUDA_LEGAJO DL-081',
+  },
+  {
+    id: 'API-EJE-05',
+    metodo: 'post',
+    ruta: '/training/exercises/visual-sheets',
+    resumen:
+      'La ficha visual de 1 a 50 ejercicios, por identidad: las zonas vigentes y la imagen vigente, con su procedencia (AI_GENERATED o PERSON_PROVIDED), autoría, licencia, texto alternativo y revisión técnica. Es una lectura: responde 200 y no exige Idempotency-Key. Responde los que quien consulta ve en el catálogo, en el orden pedido; los demás no existen para él.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: FichasVisualesRequestSchema,
+    exitos: [{ status: 200, schema: FichasVisualesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'REG-06-134, 135, 139 · 09v10 §7 y §9 · B10-06 §20, 21 y 59 · DEUDA_LEGAJO DL-081, DL-162',
   },
   // ─── WP-07 · FRM (09v16.1 §22). Información profesional pertinente (RF-071) ─────────────────────
   {
