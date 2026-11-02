@@ -328,7 +328,8 @@ export function pasosDelRecorrido(ctx: Contexto, r: Respuestas): Paso[] {
   if (r.eleccion === 'todo') return ['como', ...(r.pidioNota || diaFijo(ctx) ? (['cuando'] as const) : []), 'revisar', 'listo'];
   const pasos: Paso[] = ['como', 'ejercicios'];
   if (ejerciciosConDetalle(ctx, r).length > 0) pasos.push('detalle');
-  if ((r.eleccion !== null && r.eleccion !== 'todo') || r.pidioNota || diaFijo(ctx)) pasos.push('cuando');
+  // Con «una parte» o «algo distinto», la nota y el horario son un paso.
+  if (r.eleccion !== null || r.pidioNota || diaFijo(ctx)) pasos.push('cuando');
   pasos.push('listo');
   return pasos;
 }
