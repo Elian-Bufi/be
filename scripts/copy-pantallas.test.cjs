@@ -374,7 +374,9 @@ test('PA-06 · la APK no escribe glifos como íconos ni dibuja íconos con SvgXm
   for (const a of archivos) {
     const contenido = readFileSync(a, 'utf8');
     for (const { texto, linea } of textosDe(a, contenido)) if (GLIFOS.test(texto)) hallazgos.push(`${a.slice(RAIZ.length + 1)}:${linea} escribe ${JSON.stringify(texto)}`);
-    if (/\bSvgXml\b/.test(contenido)) hallazgos.push(`${a.slice(RAIZ.length + 1)} usa SvgXml`);
+    // Los comentarios no cuentan: el de icono.tsx explica por qué no se usa.
+    const codigo = contenido.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    if (/\bSvgXml\b/.test(codigo)) hallazgos.push(`${a.slice(RAIZ.length + 1)} usa SvgXml`);
   }
   assert.deepEqual(hallazgos, []);
   assert.ok(GLIFOS.test('✓ Guardado') && GLIFOS.test('‹ Anterior') && !GLIFOS.test('Anterior'), 'la guardia reconoce los glifos');
