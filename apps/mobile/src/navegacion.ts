@@ -132,12 +132,12 @@ export function esRaiz(ruta: Ruta): boolean {
 }
 
 /**
- * Las pantallas que no muestran la barra inferior (WP-ENTRENAMIENTO-SERIES §7.2): la sesión enfocada, para que la tabla,
- * el descanso y sus acciones tengan la pantalla entera. Se sale con «Volver» de la cabecera o con el botón atrás, que
- * conservan el estado: el entrenamiento sigue guardado en el teléfono.
+ * Las pantallas que no muestran la barra inferior. Ninguna desde PA-02 (Dirección del 2026-11-02): la sesión de
+ * entrenamiento ya no la oculta (WP-ENTRENAMIENTO-SERIES §7.2 decía «sin barra inferior»). Salir es seguro: lo escrito y
+ * lo registrado quedan guardados en el teléfono (PA-01), y la pestaña Entrenamiento marca la sesión en curso.
  */
-export function sinBarraInferior(ruta: Ruta): boolean {
-  return ruta.nombre === 'sesion-de-entrenamiento';
+export function sinBarraInferior(_ruta: Ruta): boolean {
+  return false;
 }
 
 /** Si una raíz trae un pedido de una sola vez (una acción, una vista, una medida): abre arriba, no donde se la dejó. */

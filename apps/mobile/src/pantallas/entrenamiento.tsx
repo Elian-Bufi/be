@@ -7,9 +7,11 @@
  *   abre la sesión sin cronómetros: el pasado no se cronometra.
  * - El estado de cada sesión sale **solo** de `vistaDeOcurrencia`: sin registro es «No iniciada» o «Sin registro», nunca
  *   «No realizada» (H-09-TRN-01; B10-06:626-640). Si hay varias, la persona elige cuál hace: BE no decide (DL-077).
- * - **La sesión enfocada** (`PantallaDeSesion`, con las piezas de `sesion-enfocada.tsx`): un ejercicio a la vez, su
- *   imagen y su técnica, la tabla compacta con lo planificado en gris, la banda del plan, el descanso y la serie
- *   cronometrada. Sin barra inferior. Lo que se registra se guarda primero en el teléfono, por cuenta
+ * - **La sesión guiada** (`PantallaDeSesion`, con las piezas de `sesion-enfocada.tsx`; PA-01 y PA-02, Dirección del
+ *   2026-11-02): la franja de progreso arriba, un ejercicio a la vez con su imagen y su técnica, y la tabla con lo
+ *   planificado en gris, la columna Tiempo y una casilla por serie: tildar registra lo escrito y, en lo vacío, lo
+ *   planificado (`recordedAs`), y destildar deshace. Lo escrito se guarda en el teléfono aunque no se registre, así que la
+ *   barra inferior queda visible y salir no pregunta. Lo registrado se guarda primero en el teléfono, por cuenta
  *   (`entrenamiento-en-curso.ts`), y viaja después: API-TRN-17 para las series y API-TIE-01 para los tiempos.
  *   «Sustituir ejercicio» registra otro ejercicio en lugar del planificado, como en la 0.13.2 (DL-151; las reglas, en
  *   `sustitucion-de-ejercicio.ts`): necesita conexión y no toca los tiempos.
@@ -36,7 +38,6 @@ import {
   lineasDePrescripcion,
   numero,
   registroVigente,
-  textoDeDuracion,
   vistaDeOcurrencia,
   type AgendaDeHoyResponse,
   type BorradorDeEjecucion,
@@ -64,27 +65,37 @@ import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import { enCursoDeLaApi, enCursoEnElTelefono, otraSesionEnCurso, sesionEnCursoParaMostrar, type EnCurso } from '../sesion-en-curso';
+import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
   bandaDeLaSerie,
   basesDeLaPrescripcion,
+  claveDeFila,
   disposicionDeLaTabla,
   ejerciciosYSeries,
+  escritaDeLaSerie,
+  escritasDelEjercicio,
   FILA_VACIA,
   filasDelEjercicio,
   focoTrasElDescanso,
-  guardadasDe,
+  focoTrasTildar,
+  guardadasVigentes,
   hayAlgoEscrito,
-  leerFila,
   MAXIMO_DE_SERIES,
+  motivoDeLaLectura,
+  pendientesDeRegistrar,
   primeraSinRegistrar,
   problemaParaConfirmar,
-  puedeRegistrar,
   resumenDelRegistro,
+  serieAlTildar,
+  serieQueOriginaElDescanso,
   sesionDesdeLaOcurrencia,
   AVISO_SIN_PLAN_POR_SERIE,
+  textoDeTiempo,
   unidadDelEjercicio,
   type ErroresDeFila,
+  type FilaDeLaTabla,
   type FilaEscrita,
+  type FilaEscritaGuardada,
   type SerieLocal,
   type Unidad,
 } from '../series-de-la-sesion';
@@ -94,16 +105,15 @@ import { ContenidoDelHistorial } from './historial';
 import { PlanPorSerie } from './plan-por-serie';
 import {
   AvisoDeMedicionAbierta,
-  AyudaDelRir,
+  AyudaDeLaTabla,
   BandaDelPlan,
-  BarraDeLaSesion,
   BloqueDeDescanso,
-  CronometrarSerie,
   duracionParaLeer,
   EjercicioActivo,
   ErroresDeLaFila,
   EstadoDelEnvio,
   ExplicacionDeLosTiempos,
+  FranjaDeLaSesion,
   RutinaDeLaSesion,
   SeriesDelResumen,
   SustituirEjercicio,
@@ -111,10 +121,11 @@ import {
   TecnicaDelEjercicio,
   textoDeLaCondicion,
   TiemposMarcados,
-  type CronometroDeSerie,
   type EstadoDelDescanso,
+  type RelojDeLaTabla,
   type Temporizador,
 } from './sesion-enfocada';
+import { TEXTOS_DE_LA_SESION } from '../textos-de-la-sesion';
 import { TiemposDeLaEjecucion } from './tiempos-de-la-sesion';
 
 type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
@@ -855,7 +866,7 @@ function TarjetaDeOcurrencia({
 
 type Dialogo = null | { readonly tipo: 'rutina' } | { readonly tipo: 'tecnica' | 'sustituir'; readonly prescriptionId: string };
 
-/** Lo que se declara para no perderlo al salir: la serie a medio escribir de un ejercicio. */
+/** Lo que se declara para no perderlo al salir, si el guardado en el teléfono falló: lo escrito en un ejercicio. */
 const loEscritoEn = (p: PrescripcionConObjetivos | undefined): string | null => (p ? `lo que cargaste en «${p.exerciseName}»` : null);
 
 /** La descripción de una medición abierta: «Descanso · Serie 1 · Sentadilla goblet, desde las 10:42». */
@@ -894,10 +905,10 @@ export function PantallaDeSesion({
   const hoy = useDiaDeLaApi();
   const modo = local?.modo ?? modoDeLaRuta ?? (fechaDeLaSesion === hoy ? 'en-vivo' : 'otro-dia');
   const [carga, setCarga] = useState<'leyendo' | 'lista' | 'error'>('leyendo');
-  const [escritas, setEscritas] = useState<Readonly<Record<string, FilaEscrita>>>({});
-  const [errores, setErrores] = useState<ErroresDeFila>({});
-  const [unidades, setUnidades] = useState<Readonly<Record<string, Unidad>>>({});
-  const [extras, setExtras] = useState<Readonly<Record<string, number>>>({});
+  // Lo escrito vive en el almacén del teléfono (PA-01): acá quedan solo los errores de la última fila que se quiso tildar.
+  const [errores, setErrores] = useState<{ readonly setIndex: number; readonly errores: ErroresDeFila } | null>(null);
+  /** La fila en la que se escribe el tiempo sin medirlo (se mantuvo apretado su reloj). */
+  const [escribiendoTiempo, setEscribiendoTiempo] = useState<number | null>(null);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
   const [finalizando, setFinalizando] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -961,6 +972,14 @@ export function PantallaDeSesion({
     void leer();
   }, [leer]);
 
+  // Al salir de la sesión (por la barra, la cabecera o atrás), lo escrito que esperaba su demora se guarda ya (PA-01).
+  useEffect(
+    () => () => {
+      void entrenamientoLocal.guardarYa();
+    },
+    [],
+  );
+
   // ─── Lo que se deriva ───
   const estado = local ? estadoLocal(local.corrida) : null;
   const corre = !!estado && estado.runId !== null && estado.cierre === null && (!estado.pausada || estado.medicionAbierta !== null);
@@ -978,23 +997,30 @@ export function PantallaDeSesion({
   const conCorrida = modo === 'en-vivo' && estado !== null && estado.runId !== null && estado.cierre === null;
   const activoDeLaCorrida = conCorrida ? estado.ejercicioActivo : null;
   const p = prescripciones.find((x) => x.prescriptionId === (activoDeLaCorrida ?? local?.foco?.prescriptionId)) ?? prescripciones[0] ?? null;
-  const unidad: Unidad = p ? (unidades[p.prescriptionId] ?? unidadDelEjercicio(p)) : 'kg';
+  const borrador = local?.borrador ?? null;
+  const quitadas = local?.quitadas ?? [];
+  const escritasDeLaSesion = local?.escritas ?? {};
+  const unidadDe = (x: PrescripcionConObjetivos): Unidad => local?.unidades[x.prescriptionId] ?? unidadDelEjercicio(x);
+  const unidad: Unidad = p ? unidadDe(p) : 'kg';
   const proteccion = (l: SerieLocal) => almacen.proteccionDeSerie(draftId, l);
-  const filas = p ? filasDelEjercicio(p, guardadasDe(local?.borrador ?? null, p.prescriptionId), local?.series ?? [], extras[p.prescriptionId] ?? 0, proteccion) : [];
+  /** Las filas de un ejercicio: lo del servidor sin lo destildado, lo del teléfono, las filas de más y las escritas. */
+  const filasDe = (x: PrescripcionConObjetivos) => filasDelEjercicio(x, guardadasVigentes(borrador, x.prescriptionId, quitadas), local?.series ?? [], local?.filasDeMas[x.prescriptionId] ?? 0, proteccion, escritasDelEjercicio(escritasDeLaSesion, x.prescriptionId).keys());
+  const escritasDelActivo = p ? escritasDelEjercicio(escritasDeLaSesion, p.prescriptionId) : new Map<number, FilaEscritaGuardada>();
+  const filas = p ? filasDe(p) : [];
   const focoGuardado = local?.foco && p && local.foco.prescriptionId === p.prescriptionId ? local.foco.setIndex : null;
   const filaActiva = filas.find((f) => f.setIndex === focoGuardado) ?? primeraSinRegistrar(filas) ?? filas[filas.length - 1] ?? null;
-  const claveDeFila = p && filaActiva ? `${p.prescriptionId}:${filaActiva.setIndex}` : '';
-  const escrita = escritas[claveDeFila] ?? FILA_VACIA;
   const vivo = local ? enVivoDeLaCorrida(local.corrida, almacen.reloj) : null;
   const calculo = local ? calcularTiempos(eventosDeLaCorrida(local.corrida), recomendadoDe) : null;
   const abierta = estado?.medicionAbierta ?? null;
   const deOtroProceso = local && modo === 'en-vivo' ? almacen.medicionDeOtroProceso(draftId) : null;
   const envio = local ? estadoDeSincronizacion(local, almacen.enviando(draftId)) : 'sincronizado';
 
-  // Sin pérdidas silenciosas: una serie escrita y sin registrar, o el motivo y la hora del resumen, preguntan al salir.
-  const conEscritura = prescripciones.find((x) => Object.entries(escritas).some(([clave, f]) => clave.startsWith(`${x.prescriptionId}:`) && hayAlgoEscrito(f)));
+  // Lo escrito queda guardado en el teléfono (PA-01): salir ya no pregunta por eso, salvo que el guardado haya fallado o
+  // que no se haya podido leer lo guardado. El motivo y la hora del resumen siguen preguntando: viven en la pantalla.
+  const guardado = almacen.estadoDelGuardado();
+  const sinProteger = guardado === 'fallo-al-guardar' || guardado === 'sin-leer';
+  const conEscritura = sinProteger ? prescripciones.find((x) => Object.entries(escritasDeLaSesion).some(([clave, f]) => clave.startsWith(`${x.prescriptionId}:`) && hayAlgoEscrito(f))) : undefined;
   useCambiosSinGuardar(loEscritoEn(conEscritura));
-  const borrador = local?.borrador ?? null;
   useCambiosSinGuardar(borrador !== null && (motivo.trim() !== (borrador.reason ?? '').trim() || (finalizando && hora.trim() !== '')) ? 'lo que escribiste en esta sesión' : null);
 
   // La fila enfocada se guarda en el teléfono: al volver, la misma fila del mismo ejercicio.
@@ -1026,38 +1052,110 @@ export function PantallaDeSesion({
     return true;
   }
 
-  function registrar() {
-    if (!p || !filaActiva || enCurso.current) return;
+  function enfocar(setIndex: number) {
+    if (!p) return;
+    setErrores(null);
+    setEscribiendoTiempo((x) => (x === setIndex ? x : null));
+    entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex });
+  }
+
+  /** Lo escrito en una fila va al almacén del teléfono con la unidad del ejercicio; una fila que queda vacía se olvida. */
+  function escribir(setIndex: number, campo: keyof FilaEscrita, texto: string) {
+    if (!p) return;
+    const previa = escritasDelActivo.get(setIndex);
+    const fila: FilaEscritaGuardada = { ...FILA_VACIA, tiempo: '', ...previa, [campo]: texto, unidad };
+    entrenamientoLocal.escribirEnFila(draftId, claveDeFila(p.prescriptionId, setIndex), hayAlgoEscrito(fila) ? fila : null);
+    if (errores?.setIndex === setIndex && (errores.errores[campo] || errores.errores.fila)) setErrores({ setIndex, errores: { ...errores.errores, [campo]: undefined, fila: undefined } });
+  }
+
+  /**
+   * Cierra la serie cronometrada que está abierta y anota lo medido en el tiempo de su fila, si todavía no está
+   * registrada (DL-161: medido, nunca inferido). Devuelve los segundos medidos, o `null`.
+   */
+  function pararElReloj(medida: { readonly prescriptionId: string; readonly setIndex: number }, accion: AccionDeTiempo = { tipo: 'finalizar-serie' }, anuncio = TEXTOS_DE_LA_SESION.serieMedida(medida.setIndex)): number | null {
+    if (!hacer(accion, anuncio)) return null;
+    const s = entrenamientoLocal.sesion(draftId);
+    if (!s) return null;
+    const segundos = segundosMedidosDeLaFila(s.corrida, medida.prescriptionId, medida.setIndex);
+    if (segundos === null) return null;
+    const presc = prescripciones.find((x) => x.prescriptionId === medida.prescriptionId);
+    const yaRegistrada = !!presc && filasDe(presc).some((f) => f.setIndex === medida.setIndex && f.estado !== 'sin-registrar');
+    if (presc && !yaRegistrada) {
+      const clave = claveDeFila(medida.prescriptionId, medida.setIndex);
+      const previa = s.escritas[clave];
+      entrenamientoLocal.escribirEnFila(draftId, clave, { ...FILA_VACIA, ...previa, tiempo: textoDeTiempo(segundos), unidad: previa?.unidad ?? unidadDe(presc) });
+    }
+    return segundos;
+  }
+
+  /** El reloj de la fila: lo para si es el de esa serie; si no, para el que corría (si había uno) y arranca el de esta. */
+  function relojDeLaFila(setIndex: number) {
+    if (!p || enCurso.current) return;
+    if (abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId && abierta.setIndex === setIndex) {
+      pararElReloj(abierta);
+      return;
+    }
+    if (abierta?.kind === 'SET') {
+      pararElReloj(abierta);
+      const ahora = entrenamientoLocal.sesion(draftId);
+      if (ahora && estadoLocal(ahora.corrida).medicionAbierta?.kind === 'SET') return;
+    }
+    // Con un descanso en curso, la acción compuesta lo finaliza y arranca la serie en el mismo instante.
+    if (!hacer({ tipo: 'cronometrar-serie', prescriptionId: p.prescriptionId, setIndex }, COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(setIndex))) return;
+    enfocar(setIndex);
+  }
+
+  function escribirTiempo(setIndex: number) {
+    enfocar(setIndex);
+    setEscribiendoTiempo(setIndex);
+  }
+
+  /**
+   * La casilla de la fila (PA-02). Tildar registra la serie con lo escrito y, en lo vacío, lo planificado que se veía, y
+   * para su reloj si corría; el foco pasa a la próxima sin registrar del mismo ejercicio. Destildar deshace el registro
+   * mientras la sesión no se confirmó: lo escrito vuelve a la fila.
+   */
+  function tildar(f: FilaDeLaTabla) {
+    if (!p || enCurso.current) return;
     enCurso.current = true;
     try {
-      const lectura = leerFila(escrita, filaActiva.setIndex, unidad);
-      if (!lectura.ok) return setErrores(lectura.errores);
-      setErrores({});
-      // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
-      const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie });
-      if (resultado !== 'registrada') return;
-      setEscritas((actuales) => {
-        const { [claveDeFila]: _registrada, ...resto } = actuales;
-        return resto;
-      });
-      if (!filaActiva.planificada) setExtras((x) => ({ ...x, [p.prescriptionId]: 0 }));
-      AccessibilityInfo.announceForAccessibility(COPY_ENTRENAMIENTO_POR_SERIE.serieGuardada(filaActiva.setIndex));
+      if (f.estado === 'sin-registrar') {
+        let escrita: FilaEscrita = escritasDelActivo.get(f.setIndex) ?? FILA_VACIA;
+        if (abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId && abierta.setIndex === f.setIndex) {
+          const medidos = pararElReloj(abierta);
+          if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
+        }
+        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, escritasDelActivo.get(f.setIndex)?.unidad ?? unidad);
+        if (!lectura.ok) {
+          enfocar(f.setIndex);
+          setErrores({ setIndex: f.setIndex, errores: lectura.errores });
+          return;
+        }
+        setErrores(null);
+        // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
+        const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie }, { olvidarFilasDeMas: !f.planificada });
+        if (resultado !== 'registrada') return;
+        setEscribiendoTiempo(null);
+        AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieRegistradaAnuncio(f.setIndex));
+        const tildadas = filas.map((x): FilaDeLaTabla => (x.setIndex === f.setIndex ? { ...x, estado: 'pendiente-de-enviar' } : x));
+        const siguiente = focoTrasTildar(tildadas, f.setIndex, filaActiva?.setIndex ?? f.setIndex);
+        entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex: siguiente });
+        void sincronizar();
+        return;
+      }
+      if (f.estado === 'en-conflicto' || !f.registrada) return;
+      const restaurar = escritaDeLaSerie(f.registrada, unidad);
+      const conAlgo = hayAlgoEscrito(restaurar);
+      // Una carga registrada en otra unidad vuelve con su unidad: la columna del ejercicio pasa a esa.
+      if (conAlgo && restaurar.carga !== '' && restaurar.unidad !== unidad) entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, restaurar.unidad);
+      if (entrenamientoLocal.quitarSerie(draftId, p.prescriptionId, f.setIndex, conAlgo ? restaurar : null) !== 'quitada') return;
+      setErrores(null);
+      AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieDestildada(f.setIndex));
+      entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex: f.setIndex });
       void sincronizar();
     } finally {
       enCurso.current = false;
     }
-  }
-
-  function enfocar(setIndex: number) {
-    if (!p) return;
-    setErrores({});
-    entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex });
-  }
-
-  function escribir(campo: keyof FilaEscrita, texto: string) {
-    if (!claveDeFila) return;
-    setEscritas((actuales) => ({ ...actuales, [claveDeFila]: { ...(actuales[claveDeFila] ?? FILA_VACIA), [campo]: texto } }));
-    if (errores[campo] || errores.fila) setErrores((x) => ({ ...x, [campo]: undefined, fila: undefined }));
   }
 
   function pasarA(prescriptionId: string) {
@@ -1065,9 +1163,10 @@ export function PantallaDeSesion({
     if (!destino) return;
     // Pasar a otro ejercicio es explícito: con la corrida, marca el ejercicio activo. Ver su técnica no.
     if (conCorrida && estado?.ejercicioActivo !== prescriptionId && !hacer({ tipo: 'activar-ejercicio', prescriptionId })) return;
-    const filasDestino = filasDelEjercicio(destino, guardadasDe(borrador, prescriptionId), local?.series ?? [], extras[prescriptionId] ?? 0, proteccion);
+    const filasDestino = filasDe(destino);
     entrenamientoLocal.enfocar(draftId, { prescriptionId, setIndex: (primeraSinRegistrar(filasDestino) ?? filasDestino[0])?.setIndex ?? 1 });
-    setErrores({});
+    setErrores(null);
+    setEscribiendoTiempo(null);
     setDialogo(null);
   }
 
@@ -1077,13 +1176,10 @@ export function PantallaDeSesion({
     if (p && filaActiva && abierta.prescriptionId === p.prescriptionId) enfocar(focoTrasElDescanso(filas, abierta.setIndex, filaActiva.setIndex));
   }
 
-  /** La serie que se cronometra: la enfocada; con un descanso en curso, la que sigue a la del descanso. */
-  const serieParaCronometrar = !p || !filaActiva ? null : abierta?.kind === 'REST' && abierta.prescriptionId === p.prescriptionId ? (primeraSinRegistrar(filas, abierta.setIndex)?.setIndex ?? null) : filaActiva.setIndex;
-
-  function cronometrar() {
-    if (!p || serieParaCronometrar === null) return;
-    if (!hacer({ tipo: 'cronometrar-serie', prescriptionId: p.prescriptionId, setIndex: serieParaCronometrar }, COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(serieParaCronometrar))) return;
-    enfocar(serieParaCronometrar);
+  /** «Pausar sesión»: en pausa no se mide nada; si una serie se estaba midiendo, lo medido queda en su fila. */
+  function pausar() {
+    if (abierta?.kind === 'SET') pararElReloj(abierta, { tipo: 'pausar' }, COPY_ENTRENAMIENTO_POR_SERIE.sesionEnPausa);
+    else hacer({ tipo: 'pausar' }, COPY_ENTRENAMIENTO_POR_SERIE.sesionEnPausa);
   }
 
   async function iniciarEntrenamiento() {
@@ -1181,9 +1277,51 @@ export function PantallaDeSesion({
     await guardarEnElBorrador({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivo.trim() || null });
   }
 
+  /** Lo escrito sin registrar de toda la sesión, en el teléfono ahora (PA-01). */
+  function pendientesAhora() {
+    const s = entrenamientoLocal.sesion(draftId);
+    return s?.sesion ? pendientesDeRegistrar(s.sesion, s.borrador, s.series, s.quitadas, s.escritas) : [];
+  }
+
+  /**
+   * «Registrarlas», en «Antes de finalizar» (PA-01): registra de una lo escrito sin registrar, como si se tildara cada
+   * fila. Las que no se pueden registrar quedan escritas, y se dice por qué.
+   */
+  function registrarPendientes() {
+    if (enCurso.current) return;
+    enCurso.current = true;
+    try {
+      let registradas = 0;
+      const fallas: string[] = [];
+      for (const x of pendientesAhora()) {
+        if (!x.lectura.ok) {
+          fallas.push(TEXTOS_DE_LA_SESION.noSePudoRegistrar(x.nombre, x.setIndex, motivoDeLaLectura(x.lectura)));
+          continue;
+        }
+        const presc = prescripciones.find((q) => q.prescriptionId === x.prescriptionId);
+        if (!presc) continue;
+        const r = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: x.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(entrenamientoLocal.sesion(draftId)?.borrador ?? null, presc), serie: x.lectura.serie }, { olvidarFilasDeMas: !x.planificada });
+        if (r === 'registrada') registradas++;
+      }
+      const hechas = registradas > 0 ? TEXTOS_DE_LA_SESION.registradasDeUna(registradas) : null;
+      if (fallas.length > 0) setAviso({ tipo: 'error', texto: [hechas, ...fallas].filter((x): x is string => x !== null).join(' ') });
+      else if (hechas) setAviso({ tipo: 'info', texto: hechas });
+      if (hechas) AccessibilityInfo.announceForAccessibility(hechas);
+      void sincronizar();
+    } finally {
+      enCurso.current = false;
+    }
+  }
+
+  async function descartarEscritas() {
+    if (!(await preguntar(TEXTOS_DE_LA_SESION.descartarLoEscrito, TEXTOS_DE_LA_SESION.descartarDetalle, TEXTOS_DE_LA_SESION.descartar))) return;
+    entrenamientoLocal.olvidarEscritas(draftId, pendientesAhora().map((x) => claveDeFila(x.prescriptionId, x.setIndex)));
+  }
+
   /**
    * Finalizar: lo abierto ya se resolvió; se mandan las series, se cierra la corrida (SESSION_FINISHED) y se mandan los
-   * tiempos; después se confirma el borrador (API-TRN-18) con su clave de idempotencia. Nada se confirma a medias.
+   * tiempos; después se confirma el borrador (API-TRN-18) con su clave de idempotencia. Nada se confirma a medias. Lo
+   * escrito sin registrar no se pierde en silencio: primero se registra o se descarta (PA-01).
    */
   async function finalizar() {
     if (enCurso.current) return;
@@ -1194,6 +1332,7 @@ export function PantallaDeSesion({
       let s = entrenamientoLocal.sesion(draftId);
       if (!s?.borrador) return setAviso({ tipo: 'error', texto: COPY.resultadoIncierto });
       if (modo === 'en-vivo' && estadoLocal(s.corrida).medicionAbierta) return setAviso({ tipo: 'error', texto: 'Hay una medición abierta: resolvela antes de finalizar.' });
+      if (pendientesAhora().length > 0) return setAviso({ tipo: 'error', texto: TEXTOS_DE_LA_SESION.quedanEscritas });
       if (!s.borrador.sessionCondition) return setAviso({ tipo: 'error', texto: 'Falta indicar cómo resultó la sesión.' });
       if (motivo.trim() !== (s.borrador.reason ?? '').trim() && !(await guardarEnElBorrador({ reason: motivo.trim() || null }))) return;
       s = entrenamientoLocal.sesion(draftId);
@@ -1208,7 +1347,7 @@ export function PantallaDeSesion({
       if (series && sesionPerdida(series)) return;
       s = entrenamientoLocal.sesion(draftId);
       if (!s) return;
-      if (s.series.length > 0) return setAviso({ tipo: 'error', texto: 'Hay series guardadas en el teléfono que todavía no se enviaron. Revisá el estado del envío y reintentá.' });
+      if (s.series.length > 0 || s.quitadas.length > 0) return setAviso({ tipo: 'error', texto: 'Hay series guardadas en el teléfono que todavía no se enviaron. Revisá el estado del envío y reintentá.' });
       const falta = problemaParaConfirmar(s.borrador);
       if (falta) return setAviso({ tipo: 'error', texto: falta });
       if (modo === 'en-vivo' && corridaAbierta(s.corrida)) {
@@ -1266,9 +1405,10 @@ export function PantallaDeSesion({
   const indice = s.prescriptions.findIndex((x) => x.prescriptionId === p.prescriptionId);
   const siguiente = s.prescriptions[indice + 1] ?? null;
   const pausada = conCorrida && estado.pausada;
-  const resumen = resumenDelRegistro(s, borrador, local.series);
+  const resumen = resumenDelRegistro(s, borrador, local.series, quitadas, escritasDeLaSesion);
   const conflictos = local.series.filter((l) => l.enConflicto).map((l) => ({ ...l, nombre: nombreDe(l.prescriptionId) }));
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
+  const t = TEXTOS_DE_LA_SESION;
 
   const sesionSinPausas = estado?.cierre === null ? (vivo?.sesionSinPausas ?? null) : (calculo?.session.withoutPauses ?? null);
   const temporizador: Temporizador | null =
@@ -1278,6 +1418,12 @@ export function PantallaDeSesion({
           calidad: sesionSinPausas.quality === 'MEASURED' ? null : ETIQUETA_DE_CALIDAD_DE_TIEMPO[sesionSinPausas.quality],
           etiqueta: `${pausada ? e.sesionEnPausa : e.sesion}, sin pausas: ${duracionParaLeer(sesionSinPausas.ms)}`,
         }
+      : null;
+  // El tiempo en el ejercicio actual, con la corrida abierta: sus tramos activos, sin las pausas (PA-02).
+  const enElEjercicio = conCorrida ? tiempoDelEjercicioEnVivo(local.corrida, almacen.reloj.ahora(), p.prescriptionId) : null;
+  const temporizadorDelEjercicio: Temporizador | null =
+    enElEjercicio && enElEjercicio.ms !== null
+      ? { texto: `${t.esteEjercicio} ${duracionParaMostrar(enElEjercicio.ms) ?? '—'}`, calidad: null, etiqueta: `${t.esteEjercicio}: ${duracionParaLeer(enElEjercicio.ms)}` }
       : null;
 
   const dialogoDeMedicion = (titulo: string, m: NonNullable<typeof abierta>) => (
@@ -1293,7 +1439,7 @@ export function PantallaDeSesion({
   const estadoDelEnvioSinBloqueo = (
     <EstadoDelEnvio
       estado={envio}
-      guardado={almacen.estadoDelGuardado()}
+      guardado={guardado}
       problema={local.problema}
       conflictos={conflictos}
       onReintentar={() => void entrenamientoLocal.reintentar(draftId)}
@@ -1323,14 +1469,31 @@ export function PantallaDeSesion({
 
   if (finalizando) {
     const deHoy = borrador ? borrador.date === hoyEn(borrador.timeZone) : true;
+    const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion);
+    const porEjercicio = s.prescriptions.flatMap((x) => {
+      const series = pendientes.filter((q) => q.prescriptionId === x.prescriptionId).map((q) => q.setIndex);
+      return series.length > 0 ? [{ prescriptionId: x.prescriptionId, nombre: x.exerciseName, series }] : [];
+    });
     return (
       <View>
         <Titulo>{e.resumenAntesDeFinalizar}</Titulo>
         <Parrafo tenue>{`${s.label} · ${fechaCivil(local.fecha)}`}</Parrafo>
         {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
         {modo === 'en-vivo' && abierta ? dialogoDeMedicion(deOtroProceso ? e.laSesionQuedoAbierta : e.medicionAbierta, abierta) : null}
+        {/* Lo escrito sin registrar, antes que todo: se registra de una o se descarta, nunca se pierde en silencio (PA-01). */}
+        {porEjercicio.length > 0 ? (
+          <Seccion titulo={t.escritasTitulo}>
+            {porEjercicio.map((x) => (
+              <Parrafo key={x.prescriptionId}>{t.escritasDe(x.nombre, x.series)}</Parrafo>
+            ))}
+            <Parrafo tenue>{t.escritasPregunta}</Parrafo>
+            <Boton texto={t.registrarlas} onPress={registrarPendientes} deshabilitado={ocupado} />
+            <Boton texto={t.descartarLoEscrito} tipo="peligroSecundario" onPress={() => void descartarEscritas()} deshabilitado={ocupado} />
+          </Seccion>
+        ) : null}
         <Seccion titulo={COPY_ENTRENAMIENTO.series}>
           <SeriesDelResumen resumen={resumen} />
+          <Parrafo tenue>{t.sinTildarNoCuentan}</Parrafo>
         </Seccion>
         {modo === 'en-vivo' ? (
           <Seccion titulo={e.tiemposDeLaSesion}>
@@ -1373,19 +1536,12 @@ export function PantallaDeSesion({
 
   const bases = basesDeLaPrescripcion(p);
   const banda = filaActiva ? bandaDeLaSerie(filaActiva.setIndex, filaActiva.objetivo) : null;
-  const registrable = filaActiva !== null && filaActiva.estado === 'sin-registrar';
-  const siguienteFila = filaActiva ? primeraSinRegistrar(filas, filaActiva.setIndex) : null;
-  const tituloDeLaSerie = !filaActiva
-    ? null
-    : filaActiva.estado !== 'sin-registrar'
-      ? e.serieGuardada(filaActiva.setIndex)
-      : filaActiva.planificada
-        ? e.serieDe(filaActiva.setIndex, p.sets.length)
-        : `${COPY_ENTRENAMIENTO.serie} ${numero(filaActiva.setIndex, 0)} · sin planificar`;
+  // La serie que origina un descanso que se inicia ahora: la que se hizo, no la que viene (al tildar, el foco avanza).
+  const serieDelDescanso = filaActiva ? serieQueOriginaElDescanso(filas, filaActiva.setIndex) : null;
   // Al terminar el descanso: la fila que quedará enfocada, si no es la misma del descanso.
   const trasElDescanso = abierta?.kind === 'REST' && filaActiva && abierta.prescriptionId === p.prescriptionId ? focoTrasElDescanso(filas, abierta.setIndex, filaActiva.setIndex) : null;
   const descanso: EstadoDelDescanso | null =
-    !conCorrida || !filaActiva
+    !conCorrida || !filaActiva || serieDelDescanso === null
       ? null
       : abierta?.kind === 'REST'
         ? {
@@ -1398,20 +1554,18 @@ export function PantallaDeSesion({
           }
         : pausada || abierta?.kind === 'SET'
           ? null
-          : { tipo: 'disponible', serie: filaActiva.setIndex, recomendado: filaActiva.objetivo?.restSeconds ?? null };
-  const cronometro: CronometroDeSerie | null =
-    !conCorrida || pausada
-      ? null
-      : abierta?.kind === 'SET'
-        ? { tipo: 'en-curso', serie: abierta.setIndex, duracion: vivo?.medicionAbierta ?? null }
-        : serieParaCronometrar === null
-          ? null
-          : abierta?.kind === 'REST'
-            ? { tipo: 'tras-descanso', serie: serieParaCronometrar }
-            : { tipo: 'disponible', serie: serieParaCronometrar };
-  const medida = filaActiva ? (calculo?.timedSets.filter((t) => t.prescriptionId === p.prescriptionId && t.setIndex === filaActiva.setIndex && t.finishedAt !== null).pop() ?? null) : null;
+          : { tipo: 'disponible', serie: serieDelDescanso, recomendado: recomendadoDe(p.prescriptionId, serieDelDescanso) };
+  // El reloj de las filas: solo en vivo, con la corrida abierta y sin pausa. Otro día el tiempo se escribe.
+  const relojDeLaTabla: RelojDeLaTabla = {
+    disponible: conCorrida && !pausada,
+    enCurso:
+      abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId
+        ? { setIndex: abierta.setIndex, texto: duracionParaMostrar(vivo?.medicionAbierta?.ms ?? null) ?? '—', minutos: duracionParaLeer(vivo?.medicionAbierta?.ms ?? null) }
+        : null,
+  };
   // Una serie de más es legítima: se ofrece cuando las planificadas ya tienen registro y no hay otra vacía esperando.
   const sePuedeAgregar = filas.length > 0 && Math.max(...filas.map((f) => f.setIndex)) < MAXIMO_DE_SERIES && filas.every((f) => f.estado !== 'sin-registrar');
+  const hayParaEscribir = filas.some((f) => f.estado === 'sin-registrar');
   // El estado del envío se dice cuando hay algo registrado o pendiente: antes de registrar nada, no hay qué decir.
   const hayRegistro = local.series.length > 0 || (borrador?.exercises.some((x) => (x.sets ?? []).length > 0) ?? false);
   const mostrarEnvio = hayRegistro || envio !== 'sincronizado';
@@ -1422,7 +1576,16 @@ export function PantallaDeSesion({
 
   return (
     <View>
-      <BarraDeLaSesion nombre={s.label} temporizador={temporizador} onVerRutina={() => setDialogo({ tipo: 'rutina' })} />
+      <FranjaDeLaSesion
+        sesion={s.label}
+        ejercicio={p.exerciseName}
+        posicion={posicionEnLaSesion(indice + 1, s.prescriptions.length, filaActiva, p.sets.length)}
+        tramos={tramosDelRecorrido(resumen, p.prescriptionId)}
+        cuenta={cuentaDelRecorrido(resumen)}
+        tiempoDeLaSesion={temporizador}
+        tiempoDelEjercicio={temporizadorDelEjercicio}
+        onVerRutina={() => setDialogo({ tipo: 'rutina' })}
+      />
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
       {local.objetivosGenerales ? (
         <Aviso tipo="info" titulo={AVISO_SIN_PLAN_POR_SERIE}>
@@ -1454,6 +1617,7 @@ export function PantallaDeSesion({
         total={s.prescriptions.length}
         bases={bases}
         ejecutado={sustitucion.ejecutado?.nombre ?? null}
+        conNombre={false}
         onVerTecnica={() => setDialogo({ tipo: 'tecnica', prescriptionId: p.prescriptionId })}
         onSustituir={
           sePuedeSustituir(borrador)
@@ -1464,43 +1628,43 @@ export function PantallaDeSesion({
             : undefined
         }
       />
-      {tituloDeLaSerie ? (
-        <Text style={estilos.tituloDeLaSerie} accessibilityRole="header">
-          {tituloDeLaSerie}
-        </Text>
-      ) : null}
-      <TablaDeSeries filas={filas} activa={filaActiva?.setIndex ?? 0} unidad={unidad} escrita={escrita} errores={errores} disposicion={disposicionDeLaTabla(width - 40, fontScale)} onEnfocar={enfocar} onEscribir={escribir} />
+      {/* La ayuda por defecto, plegada junto al encabezado de la tabla, con el ícono de ayuda (PA-02). */}
+      <AyudaDeLaTabla />
+      <TablaDeSeries
+        filas={filas}
+        activa={filaActiva?.setIndex ?? 0}
+        unidad={unidad}
+        escritas={escritasDelActivo}
+        errores={errores}
+        // El ancho de la fila: la pantalla menos los 20 dp de relleno de cada lado y los 6 del borde y el relleno de la fila.
+        disposicion={disposicionDeLaTabla(width - 52, fontScale)}
+        reloj={relojDeLaTabla}
+        escribiendoTiempo={escribiendoTiempo}
+        ocupado={ocupado}
+        acciones={{ onEnfocar: enfocar, onEscribir: escribir, onTildar: tildar, onReloj: relojDeLaFila, onEscribirTiempo: escribirTiempo }}
+      />
       <ErroresDeLaFila errores={errores} />
       <View style={estilos.accionesDeLaTabla}>
-        {registrable ? <Boton texto={`Cambiar a ${unidad === 'kg' ? 'lb' : 'kg'}`} tipo="enlace" onPress={() => setUnidades((u) => ({ ...u, [p.prescriptionId]: unidad === 'kg' ? 'lb' : 'kg' }))} /> : null}
+        {hayParaEscribir ? <Boton texto={t.cambiarUnidad(unidad === 'kg' ? 'lb' : 'kg')} tipo="enlace" onPress={() => entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, unidad === 'kg' ? 'lb' : 'kg')} /> : null}
         {sePuedeAgregar ? (
           <Boton
-            texto="Agregar una serie"
+            texto={t.agregarUnaSerie}
             tipo="enlace"
             onPress={() => {
               const nueva = Math.max(...filas.map((f) => f.setIndex)) + 1;
-              setExtras((x) => ({ ...x, [p.prescriptionId]: (x[p.prescriptionId] ?? 0) + 1 }));
+              entrenamientoLocal.fijarFilasDeMas(draftId, p.prescriptionId, (local.filasDeMas[p.prescriptionId] ?? 0) + 1);
               enfocar(nueva);
             }}
           />
         ) : null}
       </View>
       {banda ? <BandaDelPlan banda={banda} /> : null}
-      {registrable ? <AyudaDelRir /> : null}
-      <CronometrarSerie estado={cronometro} medida={medida ? `${e.duracionMedida}: ${textoDeDuracion(medida.duration)}` : null} onCronometrar={cronometrar} onFinalizar={() => void hacer({ tipo: 'finalizar-serie' }, 'Serie finalizada')} deshabilitado={ocupado} />
-      {registrable && filaActiva ? (
-        <>
-          <Boton texto={e.registrarSerie(filaActiva.setIndex)} onPress={registrar} deshabilitado={!puedeRegistrar(escrita)} />
-          {puedeRegistrar(escrita) ? null : <Text style={estilos.ayudaDelBoton}>{e.faltaUnDato}</Text>}
-        </>
-      ) : null}
-      {!registrable && siguienteFila && abierta?.kind !== 'REST' ? <Boton texto={`Pasar a la serie ${numero(siguienteFila.setIndex, 0)}`} tipo="enlace" onPress={() => enfocar(siguienteFila.setIndex)} /> : null}
       {mostrarEnvio ? estadoDelEnvio : null}
       <BloqueDeDescanso
         estado={descanso}
         onIniciar={() => {
-          // El descanso queda ligado a la serie enfocada, la que lo origina. Guardar una serie no lo inicia.
-          if (filaActiva) hacer({ tipo: 'iniciar-descanso', prescriptionId: p.prescriptionId, setIndex: filaActiva.setIndex }, 'Descanso iniciado');
+          // El descanso queda ligado a la serie que lo origina, la última hecha. Tildar una serie no lo inicia.
+          if (serieDelDescanso !== null) hacer({ tipo: 'iniciar-descanso', prescriptionId: p.prescriptionId, setIndex: serieDelDescanso }, 'Descanso iniciado');
         }}
         onFinalizar={finalizarDescanso}
         deshabilitado={ocupado}
@@ -1511,7 +1675,7 @@ export function PantallaDeSesion({
           {pausada ? <Text style={estilos.ayudaDelBoton}>Reanudá la sesión para cambiar de ejercicio.</Text> : null}
         </>
       ) : null}
-      {conCorrida && !pausada ? <Boton texto={e.pausarSesion} tipo="secundario" onPress={() => void hacer({ tipo: 'pausar' }, e.sesionEnPausa)} /> : null}
+      {conCorrida && !pausada ? <Boton texto={e.pausarSesion} tipo="secundario" onPress={pausar} /> : null}
       <Boton texto={e.finalizarEntrenamiento} tipo="secundario" onPress={() => setFinalizando(true)} />
       <RutinaDeLaSesion
         visible={dialogo?.tipo === 'rutina'}

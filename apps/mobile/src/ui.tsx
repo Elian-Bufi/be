@@ -350,9 +350,10 @@ export function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
  * Las explicaciones largas, plegadas (Dirección, 2026-10-01: que la pantalla se lea de un vistazo). Un encabezado
  * tocable, «Cómo se lee», que despliega el texto; empieza cerrado. El texto no se borra: se pliega, y el lector de
  * pantalla dice si está abierto. No va acá lo que la persona tiene que leer antes de aceptar algo (consentimientos,
- * privacidad, consecuencias de un acto): eso queda siempre a la vista.
+ * privacidad, consecuencias de un acto): eso queda siempre a la vista. El ícono es la «i» de información; con
+ * `icono="pregunta"` es el (?), para la ayuda de cómo se hace algo (la tabla de la sesión guiada, PA-02).
  */
-export function Ayuda({ titulo = 'Cómo se lee', children }: { titulo?: string; children: ReactNode }) {
+export function Ayuda({ titulo = 'Cómo se lee', icono = 'informacion', children }: { titulo?: string; icono?: 'informacion' | 'pregunta'; children: ReactNode }) {
   const [abierta, setAbierta] = useState(false);
   return (
     <View style={estilos.ayuda}>
@@ -364,8 +365,17 @@ export function Ayuda({ titulo = 'Cómo se lee', children }: { titulo?: string; 
       >
         <Svg width={20} height={20} viewBox="0 0 24 24" accessible={false}>
           <Circle cx={12} cy={12} r={9} stroke={COLOR.acento} strokeWidth={2} fill="none" />
-          <Path d="M12 11v6" stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" />
-          <Circle cx={12} cy={7.6} r={1.3} fill={COLOR.acento} />
+          {icono === 'pregunta' ? (
+            <>
+              <Path d="M9.4 9.4a2.7 2.7 0 1 1 3.8 2.5c-.8.4-1.2 1-1.2 1.8v.5" stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" fill="none" />
+              <Circle cx={12} cy={17} r={1.3} fill={COLOR.acento} />
+            </>
+          ) : (
+            <>
+              <Path d="M12 11v6" stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" />
+              <Circle cx={12} cy={7.6} r={1.3} fill={COLOR.acento} />
+            </>
+          )}
         </Svg>
         <Text style={estilos.tituloDeAyuda}>{titulo}</Text>
         <Chevron abierto={abierta} />

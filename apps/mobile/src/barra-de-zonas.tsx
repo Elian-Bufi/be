@@ -21,6 +21,9 @@
  *   ya no compiten con los destinos, y el último contenido, al final del desplazamiento, queda entero por encima.
  * - Se oculta mientras el teclado está abierto, para no tapar el campo que se escribe.
  * - Tocar un destino abre su raíz, también desde un detalle de ese mismo destino.
+ * - **Una sesión de entrenamiento en curso** (PA-02, 2026-11-02): la barra ya no se oculta en la sesión, y Entrenamiento
+ *   lleva una marca chica junto al ícono mientras hay una corrida abierta en el teléfono. El lector de pantalla lo dice
+ *   en el nombre del destino: la marca no es la única señal.
  */
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
@@ -29,6 +32,7 @@ import Svg, { Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } 
 import { useApariencia } from './apariencia';
 import { disposicionDeLaBarra } from './disposicion-de-la-barra';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
+import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
 import { COLOR, estilosPorTema } from './tema';
 
 /** Lo que la cápsula flota por encima del área segura de abajo, en dp. */
@@ -50,7 +54,20 @@ export function useTecladoAbierto(): boolean {
   return abierto;
 }
 
-export function BarraDeZonas({ actual, ir, alMedir, oculta = false }: { actual: Zona | null; ir: (r: Ruta) => void; alMedir: (alto: number) => void; oculta?: boolean }) {
+export function BarraDeZonas({
+  actual,
+  ir,
+  alMedir,
+  oculta = false,
+  entrenamientoEnCurso = false,
+}: {
+  actual: Zona | null;
+  ir: (r: Ruta) => void;
+  alMedir: (alto: number) => void;
+  oculta?: boolean;
+  /** Si hay una sesión de entrenamiento en curso en el teléfono: Entrenamiento lo marca. */
+  entrenamientoEnCurso?: boolean;
+}) {
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const tecladoAbierto = useTecladoAbierto();
@@ -73,18 +90,20 @@ export function BarraDeZonas({ actual, ir, alMedir, oculta = false }: { actual: 
         <View key={fila.join('-')} style={estilos.fila}>
           {ZONAS.filter((z) => fila.includes(z.zona)).map((z) => {
             const elegida = z.zona === actual;
+            const enCurso = entrenamientoEnCurso && z.zona === 'entrenamiento';
             return (
               <Pressable
                 key={z.zona}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: elegida }}
-                accessibilityLabel={z.texto}
+                accessibilityLabel={enCurso ? `${z.texto}, ${TEXTOS_DE_LA_SESION.conSesionEnCurso}` : z.texto}
                 onPress={() => ir(z.ruta)}
                 style={({ pressed }) => [estilos.destino, pressed && estilos.presionado]}
               >
                 <View style={estilos.lugarDelIcono}>
                   {elegida ? <Brillo zona={z.zona} /> : null}
                   <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
+                  {enCurso ? <View style={estilos.marcaEnCurso} /> : null}
                 </View>
                 {/* Sin tope: crece con la letra. Achicarse es el último recurso, para no cortarse. */}
                 <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
@@ -209,6 +228,8 @@ const estilos = estilosPorTema((COLOR) => ({
   presionado: { opacity: 0.7 },
   // El lugar del ícono es más angosto que el destino más chico (48): el brillo lo desborda apenas, ya transparente.
   lugarDelIcono: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center' },
+  // La marca de la sesión en curso: un punto del color de lo elegido, arriba a la derecha del ícono.
+  marcaEnCurso: { position: 'absolute', top: 1, right: 4, width: 8, height: 8, borderRadius: 4, backgroundColor: COLOR.barraElegido },
   brillo: { position: 'absolute', left: -8, top: -6 },
   // Medio y negrita (500 y 700): la diferencia se ve, y las cinco etiquetas ocupan menos que con 600 y 800.
   texto: { fontSize: 12, lineHeight: 16, marginTop: 1, fontWeight: '500', color: COLOR.barraTexto, textAlign: 'center' },

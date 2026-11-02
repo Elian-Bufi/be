@@ -4,6 +4,9 @@
  * **Qué se guarda.** Por cada sesión que se está registrando: el borrador (draftId), la ocurrencia, la corrida con sus
  * eventos registrados y pendientes, la sesión de API-SER-02 (para verla sin red), el último borrador leído, las series
  * pendientes de enviar y la fila o el ejercicio activo. Además, si la cuenta ya vio la explicación de los tiempos.
+ * Desde PA-01 y PA-02 (2026-11-02), también lo escrito en cada fila sin registrar, con su unidad; la unidad elegida y las
+ * filas de más de cada ejercicio; y las series destildadas que todavía hay que sacar del borrador del servidor. Lo
+ * escrito se guarda con una demora corta (`DEMORA_DE_LO_ESCRITO_MS`) y al instante con `guardarYa`.
  *
  * **Aislado por cuenta.** Todo va en una clave con la identidad de la sesión (`claveDeLaCuenta`), y la identidad va
  * también adentro: lo de otra cuenta no se lee ni se sincroniza, aunque alguien lo copie a esta clave. Cambiar de cuenta
@@ -52,7 +55,23 @@ import {
 } from '@be/domain';
 import { aplicarResultadosDelLote, armarAccion, CORRIDA_VACIA, corridaAbierta, estadoLocal, loteSiguiente, type AccionDeTiempo, type Corrida, type ResultadoDeAccion } from './corrida-de-entrenamiento';
 import type { RelojDeSesion } from './reloj-de-sesion';
-import { conciliarSeries, ejerciciosParaGuardar, mismosDatos, type ProteccionDeSerie, type SerieLocal } from './series-de-la-sesion';
+import {
+  claveDeFila,
+  conciliarSeries,
+  ejerciciosParaGuardar,
+  escritasConUnidad,
+  esQuitada,
+  guardadasDe,
+  guardadasVigentes,
+  MAXIMO_DE_SERIES,
+  mismosDatos,
+  type EscritasDeLaSesion,
+  type FilaEscritaGuardada,
+  type FilaQuitada,
+  type ProteccionDeSerie,
+  type SerieLocal,
+  type Unidad,
+} from './series-de-la-sesion';
 
 /** En vivo, con los cronómetros; otro día, sin ellos: el pasado no se cronometra. */
 export type ModoDeLaSesion = 'en-vivo' | 'otro-dia';
@@ -90,6 +109,17 @@ export interface SesionLocal {
   /** La fila activa: el ejercicio y la serie que se están registrando. */
   readonly foco: Foco | null;
   readonly problema: ProblemaDeSincronizacion | null;
+  /**
+   * Lo escrito en cada fila y todavía sin registrar, con su unidad (PA-01): se ve en su fila aunque no esté activa y
+   * vuelve igual al reabrir la app. Se guarda con una demora corta (`escribirEnFila`) y al instante al pasar a segundo plano.
+   */
+  readonly escritas: EscritasDeLaSesion;
+  /** La unidad elegida para la carga de cada ejercicio, si la persona la cambió («Cambiar a lb»). */
+  readonly unidades: Readonly<Record<string, Unidad>>;
+  /** Las filas de más que la persona sumó a cada ejercicio con «Agregar una serie» y todavía no registró. */
+  readonly filasDeMas: Readonly<Record<string, number>>;
+  /** Las series destildadas que el servidor puede tener: la próxima API-TRN-17 las saca del borrador (PA-02). */
+  readonly quitadas: readonly FilaQuitada[];
 }
 
 /** Lo mínimo que se le pide a un almacenamiento plano (AsyncStorage en el teléfono). */
@@ -148,7 +178,15 @@ export interface DependenciasDelAlmacen {
   readonly nuevoId: (prefijo: string) => string;
   /** Espera entre los reintentos de una lectura que falló. Las pruebas pasan una que no espera. */
   readonly esperar?: (ms: number) => Promise<void>;
+  /**
+   * Programa la escritura demorada de lo escrito y devuelve cómo cancelarla. Por omisión, `setTimeout`; las pruebas pasan
+   * una que corre a pedido, para probar la demora sin esperar.
+   */
+  readonly programar?: (hacer: () => void, ms: number) => () => void;
 }
+
+/** La demora con la que se guarda lo escrito en el teléfono: no se escribe en cada tecla (encargo del 2026-10-06, :106). */
+export const DEMORA_DE_LO_ESCRITO_MS = 400;
 
 /**
  * Dónde está lo de la cuenta, además de la memoria de la app:
@@ -241,7 +279,49 @@ function leerSesion(v: unknown): SesionLocal | null {
     series,
     foco,
     problema: leerProblema(x.problema),
+    // Lo de PA-01 y PA-02 se lee tolerante: un campo que falta (lo guardó una versión anterior) o una entrada con otra
+    // forma se descarta sola, sin anular la sesión ni apartarla.
+    escritas: leerEscritas(x.escritas),
+    unidades: leerPorEjercicio(x.unidades, (v): v is Unidad => v === 'kg' || v === 'lb'),
+    filasDeMas: leerPorEjercicio(x.filasDeMas, (v): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= MAXIMO_DE_SERIES),
+    quitadas: leerQuitadas(x.quitadas),
   };
+}
+
+/** El largo máximo de un texto escrito en una celda: los campos de la tabla cortan antes (`maxLength`). */
+const LARGO_MAXIMO_DE_LO_ESCRITO = 40;
+
+const esObjeto = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const indiceDeSerie = (v: unknown): v is number => Number.isInteger(v) && (v as number) > 0 && (v as number) <= MAXIMO_DE_SERIES;
+
+/** Lo escrito guardado: cada fila se valida sola; la que no tiene la forma esperada se descarta. */
+function leerEscritas(v: unknown): EscritasDeLaSesion {
+  if (!esObjeto(v)) return {};
+  const leidas: Record<string, FilaEscritaGuardada> = {};
+  const campo = (c: unknown): string | null => (typeof c === 'string' && c.length <= LARGO_MAXIMO_DE_LO_ESCRITO ? c : null);
+  for (const [clave, fila] of Object.entries(v)) {
+    const separador = clave.lastIndexOf(':');
+    if (separador <= 0 || !indiceDeSerie(Number(clave.slice(separador + 1))) || !esObjeto(fila)) continue;
+    const carga = campo(fila.carga);
+    const repeticiones = campo(fila.repeticiones);
+    const rir = campo(fila.rir);
+    const tiempo = fila.tiempo === undefined ? '' : campo(fila.tiempo);
+    const unidad: Unidad | null = fila.unidad === 'kg' ? 'kg' : fila.unidad === 'lb' ? 'lb' : null;
+    if (carga === null || repeticiones === null || rir === null || tiempo === null || unidad === null) continue;
+    leidas[clave] = { carga, repeticiones, rir, tiempo, unidad };
+  }
+  return leidas;
+}
+
+/** Un valor por ejercicio (la unidad, las filas de más): lo que no tiene la forma esperada se descarta. */
+function leerPorEjercicio<T>(v: unknown, valido: (x: unknown) => x is T): Readonly<Record<string, T>> {
+  if (!esObjeto(v)) return {};
+  return Object.fromEntries(Object.entries(v).filter((par): par is [string, T] => par[0].length > 0 && valido(par[1])));
+}
+
+function leerQuitadas(v: unknown): FilaQuitada[] {
+  if (!Array.isArray(v)) return [];
+  return v.flatMap((q): FilaQuitada[] => (esObjeto(q) && texto(q.prescriptionId) && indiceDeSerie(q.setIndex) ? [{ prescriptionId: q.prescriptionId, setIndex: q.setIndex }] : []));
 }
 
 /**
@@ -269,18 +349,33 @@ export function leerCuenta(guardado: string | null, cuenta: string): DatosDeLaCu
 /** El estado que se le muestra a la persona. Un conflicto se muestra antes que cualquier otra cosa. */
 export function estadoDeSincronizacion(s: SesionLocal, enviando: boolean): EstadoDeSincronizacion {
   if (s.problema?.tipo === 'conflicto' || s.series.some((l) => l.enConflicto)) return 'conflicto';
-  if (s.series.length === 0 && s.corrida.pendientes.length === 0) return 'sincronizado';
+  if (s.series.length === 0 && s.corrida.pendientes.length === 0 && (s.quitadas?.length ?? 0) === 0) return 'sincronizado';
   if (enviando) return 'enviando';
   return s.problema?.tipo === 'error' ? 'error' : 'pendiente';
 }
 
 const porSecuencia = (a: EventoDeTiempo, b: EventoDeTiempo) => a.sequence - b.sequence;
 const mismaFila = (a: SerieLocal, b: SerieLocal) => a.prescriptionId === b.prescriptionId && a.serie.setIndex === b.serie.setIndex;
+const mismaQuitada = (a: FilaQuitada, b: FilaQuitada) => a.prescriptionId === b.prescriptionId && a.setIndex === b.setIndex;
 /** Una serie del teléfono con sus datos: si cambia lo registrado, ya no es la que se guardó. */
 const huellaDeSerie = (l: SerieLocal): string => JSON.stringify([l.prescriptionId, l.performedExerciseVersionId, l.serie]);
 /** Las series del teléfono de cada sesión, como quedaron en una escritura. */
 const huellasDe = (sesiones: readonly SesionLocal[]): ReadonlyMap<string, ReadonlySet<string>> => new Map(sesiones.map((s) => [s.draftId, new Set(s.series.map(huellaDeSerie))] as const));
 const esperarDeVerdad = (ms: number) => new Promise<void>((resolver) => setTimeout(resolver, ms));
+
+/** Lo escrito sin las filas que el servidor ya tiene registradas (salvo las destildadas, que vuelven a escribirse). */
+function sinLasRegistradas(escritas: EscritasDeLaSesion, borrador: Pick<BorradorDeEjecucion, 'exercises'>, quitadas: readonly FilaQuitada[]): EscritasDeLaSesion {
+  const registradas = new Set(borrador.exercises.flatMap((e) => guardadasVigentes(borrador, e.prescriptionId, quitadas).map((s) => claveDeFila(e.prescriptionId, s.setIndex))));
+  if (!Object.keys(escritas).some((clave) => registradas.has(clave))) return escritas;
+  return Object.fromEntries(Object.entries(escritas).filter(([clave]) => !registradas.has(clave)));
+}
+
+/** Un registro por clave (lo escrito por fila, las filas de más por ejercicio) sin esa clave. */
+function sinLaClave<T>(registro: Readonly<Record<string, T>>, clave: string): Readonly<Record<string, T>> {
+  if (!(clave in registro)) return registro;
+  const { [clave]: _quitada, ...resto } = registro;
+  return resto;
+}
 
 type Falla = Extract<Resultado<unknown>, { readonly ok: false }>;
 
@@ -296,6 +391,14 @@ function problemaDe(r: Falla, de: 'borrador' | 'tiempos'): ProblemaDeSincronizac
 export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
   const almacen: AlmacenDeLaCuenta = 'apartar' in deps.almacen ? deps.almacen : almacenEnClaro(deps.almacen);
   const esperar = deps.esperar ?? esperarDeVerdad;
+  const programar =
+    deps.programar ??
+    ((hacer: () => void, ms: number) => {
+      const t = setTimeout(hacer, ms);
+      return () => clearTimeout(t);
+    });
+  /** La escritura demorada de lo escrito, si hay una esperando: cómo cancelarla. */
+  let demorada: (() => void) | null = null;
   let cuenta: string | null = null;
   let token: string | null = null;
   let lista = false;
@@ -343,6 +446,8 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
    */
   function persistir(): void {
     if (!cuenta || !lista) return;
+    // Esta escritura lleva todo lo de la cuenta, también lo escrito que esperaba su demora.
+    cancelarLaDemora();
     cambios++;
     if (sinLeer) return;
     const clave = claveDeLaCuenta(cuenta);
@@ -370,10 +475,40 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
       );
   }
 
+  function cancelarLaDemora(): void {
+    if (!demorada) return;
+    demorada();
+    demorada = null;
+  }
+
+  /**
+   * Lo escrito se guarda con una demora corta (PA-01): una escritura por pausa al escribir, no una por tecla. Mientras
+   * espera, el guardado dice «guardando»: todavía no está en el teléfono.
+   */
+  function persistirConDemora(): void {
+    if (!cuenta || !lista) return;
+    cancelarLaDemora();
+    demorada = programar(() => {
+      demorada = null;
+      persistir();
+      avisar();
+    }, DEMORA_DE_LO_ESCRITO_MS);
+  }
+
+  /** Escribe ya lo que esperaba su demora: al pasar a segundo plano, al salir de la sesión o al cambiar de cuenta. */
+  function guardarYa(): Promise<unknown> {
+    if (demorada) {
+      persistir();
+      avisar();
+    }
+    return escritura;
+  }
+
   function estadoDelGuardado(): EstadoDelGuardado {
     if (!cuenta || !lista) return 'leyendo';
     if (sinLeer) return 'sin-leer';
     if (confirmado < cambios) return falloAlGuardar ? 'fallo-al-guardar' : 'guardando';
+    if (demorada) return 'guardando';
     return 'en-el-telefono';
   }
 
@@ -427,12 +562,13 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     hayQueReescribir = enLaApp || hayQueApartar || (leido.tipo === 'texto' && leido.enClaro);
   }
 
-  function cambiar(draftId: string, cambio: (s: SesionLocal) => SesionLocal): SesionLocal | null {
+  function cambiar(draftId: string, cambio: (s: SesionLocal) => SesionLocal, conDemora = false): SesionLocal | null {
     const s = sesiones.get(draftId);
     if (!s) return null;
     const nueva = cambio(s);
     sesiones.set(draftId, nueva);
-    persistir();
+    if (conDemora) persistirConDemora();
+    else persistir();
     avisar();
     return nueva;
   }
@@ -447,6 +583,7 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
 
   /** Lo de la cuenta en memoria, en blanco: al abrir otra cuenta o al cerrar la sesión. */
   function enBlanco(): void {
+    cancelarLaDemora();
     lista = false;
     explicacionVista = false;
     sesiones = new Map();
@@ -465,6 +602,8 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
       token = nuevoToken;
       return lectura;
     }
+    // Lo escrito de la cuenta anterior que esperaba su demora va a su clave antes de cambiar.
+    void guardarYa();
     const gen = ++generacion;
     cuenta = identidadId;
     token = nuevoToken;
@@ -508,6 +647,7 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
 
   /** Al cerrar la sesión o cambiar de cuenta: se deja de mostrar y de sincronizar. Lo guardado queda en su clave. */
   function cerrarCuenta(): void {
+    void guardarYa();
     generacion++;
     cuenta = null;
     token = null;
@@ -519,7 +659,7 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     // 1. Las series pendientes, con API-TRN-17 y la versión que se vio.
     let s = sesiones.get(draftId);
     if (!s) return null;
-    if (s.series.some((l) => !l.enConflicto)) {
+    if (s.series.some((l) => !l.enConflicto) || s.quitadas.length > 0) {
       let borrador = s.borrador;
       if (!borrador) {
         const r = await deps.api.consultarBorradorDeEjecucion(t, draftId);
@@ -530,11 +670,11 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
         }
         const leido = r.datos.data;
         borrador = leido;
-        const conciliada = cambiar(draftId, (x) => ({ ...x, borrador: leido, series: conciliarSeries(x.series, leido) }));
+        const conciliada = cambiar(draftId, (x) => ({ ...x, borrador: leido, series: conciliarSeries(x.series, leido, x.quitadas) }));
         if (!conciliada) return null;
         s = conciliada;
       }
-      const armado = ejerciciosParaGuardar(borrador, s.series);
+      const armado = ejerciciosParaGuardar(borrador, s.series, s.quitadas);
       if (armado.ocupadas.length > 0) {
         cambiar(draftId, (x) => ({
           ...x,
@@ -542,7 +682,9 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
           problema: { tipo: 'conflicto', de: 'borrador', motivo: 'SET_ALREADY_REGISTERED' },
         }));
       }
-      if (armado.incluidas.length > 0) {
+      // Una destildada que el servidor no tiene (nunca llegó) ya está deshecha: no hace falta mandar nada por ella.
+      if (armado.quitadasSinEfecto.length > 0) cambiar(draftId, (x) => ({ ...x, quitadas: x.quitadas.filter((q) => !armado.quitadasSinEfecto.some((o) => mismaQuitada(o, q))) }));
+      if (armado.incluidas.length > 0 || armado.quitadasAplicadas.length > 0) {
         const r = await deps.api.guardarBorradorDeEjecucion(t, draftId, {
           expectedVersion: borrador.version,
           changes: { ...(borrador.granularity === 'SET' ? {} : { granularity: 'SET' }), exercises: armado.exercises },
@@ -553,8 +695,13 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
           return r;
         }
         const guardado = r.datos.data;
-        // Salen las que viajaron, tal como viajaron; lo que se registró mientras tanto sigue pendiente.
-        cambiar(draftId, (x) => ({ ...x, borrador: guardado, series: x.series.filter((l) => !armado.incluidas.some((i) => mismaFila(i, l) && mismosDatos(i.serie, l.serie))) }));
+        // Salen las que viajaron, tal como viajaron; lo que se registró o se destildó mientras tanto sigue pendiente.
+        cambiar(draftId, (x) => ({
+          ...x,
+          borrador: guardado,
+          series: x.series.filter((l) => !armado.incluidas.some((i) => mismaFila(i, l) && mismosDatos(i.serie, l.serie))),
+          quitadas: x.quitadas.filter((q) => !armado.quitadasAplicadas.some((o) => mismaQuitada(o, q))),
+        }));
       }
     }
     // 2. Los eventos, en lotes de hasta 30 y en orden. Con un conflicto de tiempos sin resolver, no se manda nada más.
@@ -699,6 +846,10 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
         series: [],
         foco: null,
         problema: null,
+        escritas: {},
+        unidades: {},
+        filasDeMas: {},
+        quitadas: [],
       };
       sesiones.set(datos.draftId, nueva);
       persistir();
@@ -709,9 +860,12 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     fijarSesionDelPlan(draftId: string, sesion: SesionConObjetivos, objetivosGenerales: boolean): void {
       cambiar(draftId, (x) => (objetivosGenerales && x.sesion && !x.objetivosGenerales ? x : { ...x, sesion, objetivosGenerales }));
     },
-    /** El borrador recién leído o guardado: las series del teléfono se concilian con él. */
+    /**
+     * El borrador recién leído o guardado: las series del teléfono se concilian con él, y lo escrito en una fila que llegó
+     * registrada desde el servidor (otro dispositivo) se poda: no se muestra encima de lo registrado.
+     */
     fijarBorrador(draftId: string, borrador: BorradorDeEjecucion): void {
-      cambiar(draftId, (x) => ({ ...x, borrador, series: conciliarSeries(x.series, borrador) }));
+      cambiar(draftId, (x) => ({ ...x, borrador, series: conciliarSeries(x.series, borrador, x.quitadas), escritas: sinLasRegistradas(x.escritas, borrador, x.quitadas) }));
     },
     /**
      * Los eventos que la API tiene de este borrador (API-TIE-02), al abrir la sesión. Los pendientes que ya llegaron
@@ -757,15 +911,68 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
      * Registra una serie en el teléfono. Si esa fila ya tiene una serie (pendiente o en el servidor), no hace nada: un
      * doble toque es una sola operación.
      */
-    registrarSerie(draftId: string, serie: Omit<SerieLocal, 'enConflicto'>): 'registrada' | 'repetida' | 'sin-sesion' {
+    registrarSerie(draftId: string, serie: Omit<SerieLocal, 'enConflicto'>, opciones: { readonly olvidarFilasDeMas?: boolean } = {}): 'registrada' | 'repetida' | 'sin-sesion' {
       const s = sesiones.get(draftId);
       if (!s) return 'sin-sesion';
       const local: SerieLocal = { ...serie, enConflicto: false };
-      const delServidor = s.borrador?.exercises.find((e) => e.prescriptionId === serie.prescriptionId)?.sets ?? [];
-      if (s.series.some((l) => mismaFila(l, local)) || delServidor.some((x) => x.setIndex === serie.serie.setIndex)) return 'repetida';
-      cambiar(draftId, (x) => ({ ...x, series: [...x.series, local] }));
+      const { prescriptionId } = serie;
+      const { setIndex } = serie.serie;
+      const vigentes = guardadasVigentes(s.borrador, prescriptionId, s.quitadas);
+      if (s.series.some((l) => mismaFila(l, local)) || vigentes.some((x) => x.setIndex === setIndex)) return 'repetida';
+      // Lo escrito en esa fila se borra en el mismo cambio: sin una escritura entre medio que lo deje duplicado.
+      const clave = claveDeFila(prescriptionId, setIndex);
+      const filasDeMas = opciones.olvidarFilasDeMas ? sinLaClave(s.filasDeMas, prescriptionId) : s.filasDeMas;
+      // Destildada y vuelta a tildar con los mismos datos que el servidor ya tiene: alcanza con no sacarla del borrador.
+      const delServidor = guardadasDe(s.borrador, prescriptionId).find((x) => x.setIndex === setIndex);
+      if (delServidor && esQuitada(s.quitadas, prescriptionId, setIndex) && mismosDatos(delServidor, local.serie)) {
+        cambiar(draftId, (x) => ({ ...x, quitadas: x.quitadas.filter((q) => !(q.prescriptionId === prescriptionId && q.setIndex === setIndex)), escritas: sinLaClave(x.escritas, clave), filasDeMas }));
+        return 'registrada';
+      }
+      cambiar(draftId, (x) => ({ ...x, series: [...x.series, local], escritas: sinLaClave(x.escritas, clave), filasDeMas }));
       return 'registrada';
     },
+    /**
+     * Destilda una serie (PA-02): deshace su registro mientras la sesión no se confirmó. La del teléfono sale; si el
+     * servidor puede tenerla (está en el borrador o hay un envío en vuelo), queda para sacarla en la próxima API-TRN-17.
+     * `restaurar` es lo que vuelve a la fila: lo que se había escrito.
+     */
+    quitarSerie(draftId: string, prescriptionId: string, setIndex: number, restaurar: FilaEscritaGuardada | null): 'quitada' | 'sin-serie' | 'sin-sesion' {
+      const s = sesiones.get(draftId);
+      if (!s) return 'sin-sesion';
+      const local = s.series.find((l) => l.prescriptionId === prescriptionId && l.serie.setIndex === setIndex);
+      const enElServidor = guardadasVigentes(s.borrador, prescriptionId, s.quitadas).some((x) => x.setIndex === setIndex);
+      if (!local && !enElServidor) return 'sin-serie';
+      const hayQueSacarla = enElServidor || enVuelo.has(draftId);
+      const clave = claveDeFila(prescriptionId, setIndex);
+      cambiar(draftId, (x) => ({
+        ...x,
+        series: x.series.filter((l) => !(l.prescriptionId === prescriptionId && l.serie.setIndex === setIndex)),
+        quitadas: hayQueSacarla && !esQuitada(x.quitadas, prescriptionId, setIndex) ? [...x.quitadas, { prescriptionId, setIndex }] : x.quitadas,
+        escritas: restaurar ? { ...x.escritas, [clave]: restaurar } : x.escritas,
+      }));
+      return 'quitada';
+    },
+    /**
+     * Lo escrito en una fila (PA-01): cambia en la app al instante y se guarda en el teléfono con una demora corta.
+     * `null` borra lo escrito de esa fila.
+     */
+    escribirEnFila(draftId: string, clave: string, fila: FilaEscritaGuardada | null): void {
+      cambiar(draftId, (x) => ({ ...x, escritas: fila ? { ...x.escritas, [clave]: fila } : sinLaClave(x.escritas, clave) }), true);
+    },
+    /** Olvida lo escrito sin registrar: todo, o solo esas filas («Descartar lo escrito»). */
+    olvidarEscritas(draftId: string, claves?: readonly string[]): void {
+      cambiar(draftId, (x) => ({ ...x, escritas: claves ? Object.fromEntries(Object.entries(x.escritas).filter(([c]) => !claves.includes(c))) : {} }));
+    },
+    /** «Cambiar a lb»: la unidad de la carga de un ejercicio, también la de lo que ya estaba escrito en sus filas. */
+    fijarUnidad(draftId: string, prescriptionId: string, unidad: Unidad): void {
+      cambiar(draftId, (x) => ({ ...x, unidades: { ...x.unidades, [prescriptionId]: unidad }, escritas: escritasConUnidad(x.escritas, prescriptionId, unidad) }));
+    },
+    /** Las filas de más de un ejercicio («Agregar una serie»). */
+    fijarFilasDeMas(draftId: string, prescriptionId: string, cantidad: number): void {
+      const n = Math.max(0, Math.min(MAXIMO_DE_SERIES, Math.round(cantidad)));
+      cambiar(draftId, (x) => ({ ...x, filasDeMas: n === 0 ? sinLaClave(x.filasDeMas, prescriptionId) : { ...x.filasDeMas, [prescriptionId]: n } }));
+    },
+    guardarYa,
     /** Descarta una serie del teléfono que quedó en conflicto con la del servidor. */
     descartarSerie(draftId: string, prescriptionId: string, setIndex: number): void {
       cambiar(draftId, (x) => {
@@ -776,7 +983,8 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
     },
     /** «No pude realizarla», confirmado por la persona: las series del teléfono se descartan junto con las del borrador. */
     descartarSeries(draftId: string): void {
-      cambiar(draftId, (x) => ({ ...x, series: [], problema: x.problema?.tipo === 'conflicto' && x.problema.de === 'borrador' ? null : x.problema }));
+      // Lo escrito sin registrar y lo destildado también: el borrador queda sin series (`exercises: []`).
+      cambiar(draftId, (x) => ({ ...x, series: [], escritas: {}, quitadas: [], filasDeMas: {}, problema: x.problema?.tipo === 'conflicto' && x.problema.de === 'borrador' ? null : x.problema }));
     },
     /** «Reintentar»: se olvida el error (o el conflicto de tiempos, si la persona lo resolvió) y se vuelve a mandar. */
     reintentar(draftId: string): Promise<Resultado<unknown> | null> {
@@ -792,7 +1000,7 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
       if (!r.ok) return r;
       const leido = r.datos.data;
       cambiar(draftId, (x) => {
-        const series = conciliarSeries(x.series, leido);
+        const series = conciliarSeries(x.series, leido, x.quitadas);
         const sigueTiempos = x.problema?.tipo === 'conflicto' && x.problema.de === 'tiempos';
         return { ...x, borrador: leido, series, problema: series.some((l) => l.enConflicto) ? { tipo: 'conflicto', de: 'borrador', motivo: 'SET_ALREADY_REGISTERED' } : sigueTiempos ? x.problema : null };
       });
