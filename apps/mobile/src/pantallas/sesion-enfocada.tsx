@@ -45,7 +45,7 @@ import {
   type SesionConObjetivos,
 } from '@be/domain';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type DimensionValue, type KeyboardTypeOptions } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
 import { useMovimientoReducido } from '../estados';
@@ -176,7 +176,9 @@ export function FranjaDeLaSesion({
       <View style={estilos.tramos} accessible accessibilityLabel={TEXTOS_DE_LA_SESION.tramos(cuenta.registradas, cuenta.planificadas)}>
         {tramos.map((t) => (
           <View key={t.prescriptionId} style={[estilos.tramo, t.actual && estilos.tramoActual]}>
-            <View style={[estilos.rellenoDelTramo, { width: `${Math.round(t.fraccion * 100)}%` as DimensionValue }]} />
+            {/* El relleno y el resto se reparten el tramo con flex: sin literales de porcentaje, que T13 lee como puntaje. */}
+            <View style={[estilos.rellenoDelTramo, { flex: t.fraccion }]} />
+            <View style={{ flex: 1 - t.fraccion }} />
           </View>
         ))}
       </View>
@@ -706,7 +708,7 @@ export function BandaDelPlan({ banda }: { banda: ReturnType<typeof bandaDeLaSeri
 }
 
 /**
- * La ayuda de la tabla, plegada junto a su encabezado con el ícono de ayuda de `Ayuda` (ui.tsx): que tildar sin escribir
+ * La ayuda de la tabla, plegada junto a su encabezado con el (?) de `Ayuda` (ui.tsx): que tildar sin escribir
  * guarda lo planificado, cómo se deshace, que el tiempo es opcional y la ayuda del RIR con su ejemplo, literales del
  * encargo, sin abreviar.
  */
@@ -715,7 +717,7 @@ export function AyudaDeLaTabla() {
   const t = TEXTOS_DE_LA_SESION;
   const faltaUnDato = `${e.faltaUnDato.charAt(0).toLowerCase()}${e.faltaUnDato.slice(1)}`;
   return (
-    <Ayuda titulo={t.ayudaTitulo}>
+    <Ayuda titulo={t.ayudaTitulo} icono="pregunta">
       <Parrafo>{t.ayudaTildar}</Parrafo>
       <Parrafo>{`${t.ayudaRango} Si la serie no tiene nada planificado en la carga ni en las repeticiones, ${faltaUnDato}`}</Parrafo>
       <Parrafo>{t.ayudaDestildar}</Parrafo>
@@ -1225,9 +1227,10 @@ const estilos = estilosPorTema((COLOR) => ({
   franja: { gap: 2 },
   cabezaDeLaFranja: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   tramos: { flexDirection: 'row', gap: 4, marginTop: 8, marginBottom: 4 },
-  tramo: { flex: 1, height: 8, borderRadius: 4, backgroundColor: COLOR.borde, overflow: 'hidden' },
+  tramo: { flex: 1, flexDirection: 'row', height: 8, borderRadius: 4, backgroundColor: COLOR.borde, overflow: 'hidden' },
   tramoActual: { borderWidth: 1, borderColor: COLOR.acento },
-  rellenoDelTramo: { height: '100%', backgroundColor: COLOR.acento },
+  // El alto lo da el estiramiento de la fila (alignItems: 'stretch' por omisión).
+  rellenoDelTramo: { backgroundColor: COLOR.acento },
   tiemposDeLaFranja: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28 },
   enlaceConFlecha: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 48, alignSelf: 'flex-start' },
   // Superficies mates con su borde, sin brillo interno (§7.7).

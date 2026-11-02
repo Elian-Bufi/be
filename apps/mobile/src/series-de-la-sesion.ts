@@ -6,7 +6,7 @@
  *   nunca entran a lo que se guarda. `leerFila` solo lee lo escrito.
  * - **Lo escrito** se lee con `leerNumero` (coma o punto). El cero es un valor: 0 kg y RIR 0 se guardan como 0. Vacío
  *   es `null`: no informado. El RIR admite decimales, de 0 a 20; las repeticiones, enteros.
- * - **«Registrar serie N»** se habilita con carga o repeticiones escritas (`puedeRegistrar`): el dominio exige una de
+ * - **Leer lo escrito** (`leerFila`) pide carga o repeticiones escritas (`puedeRegistrar`): el dominio exige una de
  *   las dos para confirmar (`SET_WITHOUT_DATA`), y no se ofrece «Realizada sin detalle». Nunca se fabrica una serie.
  * - **La casilla de la fila** (PA-02, 2026-11-02; DL-161) registra con `serieAlTildar`: lo escrito y, en lo vacío, lo
  *   planificado que se veía en gris, con `recordedAs` (`TYPED` o `AS_PLANNED`) y el tiempo en `durationSeconds`. Un rango
@@ -209,7 +209,7 @@ export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetiv
 
 // ─── Lo escrito ─────────────────────────────────────────────────────────────────────────────────
 
-/** «Registrar serie N» se habilita con la carga o las repeticiones escritas. Los placeholders no cuentan: no son texto. */
+/** Si lo escrito alcanza para leer la fila: la carga o las repeticiones. Los placeholders no cuentan: no son texto. */
 export const puedeRegistrar = (f: FilaEscrita): boolean => f.carga.trim() !== '' || f.repeticiones.trim() !== '';
 
 /** Si la persona escribió algún valor de la serie (carga, repeticiones o RIR). El tiempo no es un valor del plan. */
