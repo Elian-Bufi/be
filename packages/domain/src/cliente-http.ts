@@ -286,6 +286,8 @@ import {
   type AsociarImagenDeEjercicioRequest,
   type RegistrarEventosDeTiempoRequest,
 } from './contratos-entrenamiento-por-serie';
+import { FichaVisualDeEjercicioResponseSchema, FichasVisualesResponseSchema, type CambiarZonasDeEjercicioRequest } from './contratos-catalogo-visual';
+import { ListaDeZonasMuscularesResponseSchema } from './zonas-musculares';
 import {
   CrearSolicitudDeFormularioRequestSchema,
   DetalleDeSolicitudResponseSchema,
@@ -1428,6 +1430,20 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-EJE-03: retira la imagen; el medio no se borra y la historia queda. */
     retirarImagenDeEjercicio(token: string, exerciseId: string, expectedImageVersion: number, claveDeIdempotencia: string) {
       return llamar('DELETE', `/training/exercises/${encodeURIComponent(exerciseId)}/image${query({ expectedImageVersion: String(expectedImageVersion) })}`, { token, claveDeIdempotencia, esquema: EjercicioPropioResponseSchema });
+    },
+
+    // ─── ZON y EJE · zonas musculares e imagen del catálogo (DL-081, DL-162) ──────────────────────
+    /** API-ZON-01: las 17 zonas, en el orden del catálogo (de la cabeza a los pies). */
+    zonasMusculares(token: string) {
+      return llamar('GET', '/training/muscle-zones', { token, esquema: ListaDeZonasMuscularesResponseSchema });
+    },
+    /** API-EJE-04: reemplaza las zonas de un ejercicio propio (la lista completa; vacía quita todas). */
+    cambiarZonasDeEjercicio(token: string, exerciseId: string, cuerpo: CambiarZonasDeEjercicioRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/training/exercises/${encodeURIComponent(exerciseId)}/muscle-zones`, { token, claveDeIdempotencia, esquema: FichaVisualDeEjercicioResponseSchema, cuerpo });
+    },
+    /** API-EJE-05: la ficha visual (zonas e imagen) de 1 a 50 ejercicios, en el orden pedido. */
+    fichasVisualesDeEjercicios(token: string, exerciseIds: readonly string[]) {
+      return llamar('POST', '/training/exercises/visual-sheets', { token, esquema: FichasVisualesResponseSchema, cuerpo: { exerciseIds: [...exerciseIds] } });
     },
 
     // ─── FRM · información profesional pertinente (WP-07; 09v16.1 §22) ───────────────────────

@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="452pt" viewBox="0 0 750 452" data-lamina="G-03">
+<title>Las piezas de BE (contenedores, C4 nivel 2)</title>
+<desc>Aplicaciones, API, base de datos, tarea programada y servicios externos que la API invoca, en el commit de referencia. · Fuente: render.yaml · apps/api/src · apps/api/Dockerfile · prisma/schema.prisma · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="452" fill="#FFFFFF"/>
+<rect x="182" y="6" width="366" height="440" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="192" y="22" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">BE</text>
+<text x="211.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[Sistema de software]</text>
+<path d="M 112 77.24 L 198 77.24" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 191 80.6 L 198 77.24 L 191 73.88" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 112 206 L 198 206" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 191 209.36 L 198 206 L 191 202.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 112 355.52 L 145 355.52 Q 150 355.52 150 350.52 L 150 254.28 Q 150 249.28 155 249.28 L 198 249.28" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 191 252.64 L 198 249.28 L 191 245.92" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 326 96.48 L 404 96.48" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 397 99.84 L 404 96.48 L 397 93.12" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 326 210 L 404 210" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 397 213.36 L 404 210 L 397 206.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 326 369.79 L 361 369.79 Q 366 369.79 366 364.79 L 366 277 Q 366 272 371 272 L 404 272" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 397 275.36 L 404 272 L 397 268.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 442.4 288 L 442.4 330" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 439.04 323 L 442.4 330 L 445.76 323" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 532 86 L 610 86" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 603 89.36 L 610 86 L 603 82.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 532 170 L 610 170" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 603 173.36 L 610 170 L 603 166.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 532 252 L 610 252" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 603 255.36 L 610 252 L 603 248.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 610 403.64 L 576 403.64 Q 571 403.64 571 398.64 L 571 389.86 Q 571 384.86 566 384.86 L 532 384.86" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 539 381.5 L 532 384.86 L 539 388.22" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="4" y="47" width="108" height="91.28" rx="16" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<circle cx="58" cy="39" r="13" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="58" y="72.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Asesorado</text>
+<text x="58" y="85.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Persona]</text>
+<text x="58" y="102.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Persona con</text>
+<text x="58" y="115.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">seguimiento</text>
+<text x="58" y="128.17" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">profesional.</text>
+<rect x="4" y="193" width="108" height="91.28" rx="16" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<circle cx="58" cy="185" r="13" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="58" y="218.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Profesional</text>
+<text x="58" y="231.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Persona]</text>
+<text x="58" y="248.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Nutrición,</text>
+<text x="58" y="261.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">entrenamiento o</text>
+<text x="58" y="274.17" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">antropometría.</text>
+<rect x="4" y="339" width="108" height="104.08" rx="16" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<circle cx="58" cy="331" r="13" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="58" y="364.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Administración</text>
+<text x="58" y="377.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Persona]</text>
+<text x="58" y="394.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Verifica y</text>
+<text x="58" y="407.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">suspende por</text>
+<text x="58" y="420.17" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">área, con segundo</text>
+<text x="58" y="432.97" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">factor.</text>
+<rect x="198" y="40" width="128" height="74.48" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="262" y="59.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">APK</text>
+<text x="262" y="72.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Android · Expo 57]</text>
+<text x="262" y="89.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Plan del día, registro y</text>
+<text x="262" y="102.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">evolución.</text>
+<rect x="198" y="176" width="128" height="87.28" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="262" y="195.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Website</text>
+<text x="262" y="208.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Next.js 15 · estático]</text>
+<text x="262" y="225.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">/pro para</text>
+<text x="262" y="238.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">profesionales y /admin</text>
+<text x="262" y="251.17" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">para Administración.</text>
+<rect x="198" y="340" width="128" height="74.48" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="262" y="359.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Recordatorios</text>
+<text x="262" y="372.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Tarea programada]</text>
+<text x="262" y="389.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">A las 10, 15 y 22 h</text>
+<text x="262" y="402.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">(Argentina).</text>
+<rect x="404" y="52" width="128" height="236" rx="6" fill="#DCE8FC" stroke="#0A1F44" stroke-width="2"/>
+<text x="468" y="126.82" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">API de BE</text>
+<text x="468" y="139.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[NestJS 11 · Node 22]</text>
+<text x="468" y="156.73" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Monolito modular</text>
+<text x="468" y="169.53" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">REST /api/v1: valida,</text>
+<text x="468" y="182.33" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">decide el acceso</text>
+<text x="468" y="195.13" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">(PDP), aplica las</text>
+<text x="468" y="207.93" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">reglas, audita y evita</text>
+<text x="468" y="220.73" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">duplicados.</text>
+<path d="M 404 337 L 404 411.48 A 64 7 0 0 0 532 411.48 L 532 337" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<ellipse cx="468" cy="337" rx="64" ry="7" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="468" y="363.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Base de datos</text>
+<text x="468" y="376.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[PostgreSQL 16]</text>
+<text x="468" y="393.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">118 tablas con historia;</text>
+<text x="468" y="406.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">también las fotos.</text>
+<rect x="610" y="48.76" width="136" height="74.48" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="678" y="68.42" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Expo Push</text>
+<text x="678" y="81.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Servicio externo]</text>
+<text x="678" y="98.33" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Avisos al teléfono, por</text>
+<text x="678" y="111.13" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">FCM.</text>
+<rect x="610" y="132.76" width="136" height="74.48" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="678" y="152.42" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Google</text>
+<text x="678" y="165.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Servicio externo]</text>
+<text x="678" y="182.33" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Claves para verificar el</text>
+<text x="678" y="195.13" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">inicio con Google.</text>
+<rect x="610" y="208.36" width="136" height="87.28" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="678" y="228.02" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Catálogos</text>
+<text x="678" y="241.13" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Open Food Facts ·</text>
+<text x="678" y="253.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">wger]</text>
+<text x="678" y="270.73" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Importación a pedido de</text>
+<text x="678" y="283.53" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">un profesional.</text>
+<rect x="610" y="360" width="136" height="87.28" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="678" y="379.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Shell de be-api</text>
+<text x="678" y="392.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Render]</text>
+<text x="678" y="409.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">El operador incorpora</text>
+<text x="678" y="422.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">administradores por</text>
+<text x="678" y="435.17" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">comando.</text>
+<rect x="126.07" y="45.64" width="49.27" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="150.7" y="56.33" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Registra</text>
+<text x="150.7" y="69.13" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[Android]</text>
+<rect x="119.37" y="161.6" width="62.65" height="40.4" fill="#FFFFFF" opacity="0.94"/>
+<text x="150.7" y="172.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Evalúa y</text>
+<text x="150.7" y="185.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">planifica</text>
+<text x="150.7" y="197.89" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[navegador]</text>
+<rect x="342.62" y="64.88" width="44.75" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="365" y="75.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">JSON</text>
+<text x="365" y="88.37" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[HTTPS]</text>
+<rect x="324.47" y="178.4" width="81.06" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="365" y="189.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">JSON</text>
+<text x="365" y="201.89" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[HTTPS · CORS]</text>
+<rect x="313.41" y="295.81" width="47.59" height="40.4" fill="#FFFFFF" opacity="0.94"/>
+<text x="359" y="306.49" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="end">Pide la</text>
+<text x="359" y="319.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="end">corrida</text>
+<text x="359" y="332.09" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">[secreto]</text>
+<rect x="447.4" y="295.2" width="44.12" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="449.4" y="305.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">SQL</text>
+<text x="449.4" y="318.69" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[Prisma]</text>
+<rect x="548.62" y="54.4" width="44.75" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="571" y="65.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Avisos</text>
+<text x="571" y="77.89" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[HTTPS]</text>
+<rect x="550.76" y="138.4" width="40.49" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="571" y="149.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Claves</text>
+<text x="571" y="161.89" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[JWKS]</text>
+<rect x="548.62" y="220.4" width="44.75" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="571" y="231.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Importa</text>
+<text x="571" y="243.89" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[HTTPS]</text>
+</svg>

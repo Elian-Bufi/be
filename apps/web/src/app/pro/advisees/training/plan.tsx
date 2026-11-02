@@ -17,6 +17,8 @@
  * - Una versión en preparación se edita con la misma composición (parte 8; `editor.tsx`): una sesión por vez, con los
  *   ejercicios plegados. Lo que se mira usa los mismos nombres en la dirección, por posición: al pasar de una versión a
  *   la otra se sigue en el mismo lugar.
+ * - **Las zonas musculares de la sesión** (WP-CATALOGO-VISUAL, etapa 2; `zonas-de-la-sesion.tsx`): al costado de los
+ *   ejercicios, arriba del historial; en la ficha, debajo de los ejercicios.
  */
 import {
   COPY_PISTAS,
@@ -58,6 +60,7 @@ import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
 import { DialogoGuardarPlantilla } from './plantillas';
+import { ZonasDeLaSesion } from './zonas-de-la-sesion';
 import { Pista } from '../../../../components/pista';
 
 /**
@@ -456,7 +459,11 @@ function SesionQueSeMira({
       </div>
       <div className="plan__cuerpo">
         {mira.sesion ? <EjerciciosDeLaSesion sesion={mira.sesion} pedido={pedido.ejercicios} onPedir={(ejercicios) => alPedir({ ejercicios })} acceso={acceso} nivel={nivel} /> : <div />}
-        {alCostado}
+        {/* WP-CATALOGO-VISUAL (etapa 2): las zonas de la sesión, y en la sección «Plan» el historial debajo. */}
+        <div className="plan__al-costado">
+          {mira.sesion ? <ZonasDeLaSesion sesion={mira.sesion} acceso={acceso} nivel={nivel} /> : null}
+          {alCostado}
+        </div>
       </div>
     </>
   );

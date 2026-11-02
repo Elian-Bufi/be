@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="214pt" viewBox="0 0 750 214" data-lamina="G-01">
+<title>La guía, de lo macro a lo micro</title>
+<desc>Los cinco niveles de la guía central, en orden de lectura, y dónde se profundiza cada uno. · Fuente: esta guía · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="214" fill="#FFFFFF"/>
+<path d="M 140 52 L 155.5 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 148.5 55.36 L 155.5 52 L 148.5 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 291.5 52 L 307 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 300 55.36 L 307 52 L 300 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 443 52 L 458.5 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 451.5 55.36 L 458.5 52 L 451.5 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 594.5 52 L 610 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 603 55.36 L 610 52 L 603 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 375 96 L 375 132" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 371.64 125 L 375 132 L 378.36 125" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 678 96 L 678 132" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 674.64 125 L 678 132 L 681.36 125" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="4" y="8" width="136" height="88" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="72" y="35.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Nivel 1 · El sentido</text>
+<text x="72" y="50.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">¿Qué problema resuelve</text>
+<text x="72" y="63.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">BE y qué valor está</text>
+<text x="72" y="75.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">demostrado?</text>
+<rect x="155.5" y="8" width="136" height="88" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="223.5" y="28.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Nivel 2 · Las piezas</text>
+<text x="223.5" y="43.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">APK, website, API,</text>
+<text x="223.5" y="56.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">dominio compartido y</text>
+<text x="223.5" y="69.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">base: qué hace cada</text>
+<text x="223.5" y="82.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">una.</text>
+<rect x="307" y="8" width="136" height="88" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="35.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Nivel 3 · Las reglas</text>
+<text x="375" y="50.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Dónde se valida, dónde</text>
+<text x="375" y="63.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">se decide el acceso y</text>
+<text x="375" y="75.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">qué garantiza la base.</text>
+<rect x="458.5" y="8" width="136" height="88" rx="10" fill="#DCE8FC" stroke="#0A1F44" stroke-width="2"/>
+<text x="526.5" y="35.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Nivel 4 · Dos recorridos</text>
+<text x="526.5" y="50.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Una comida y una</text>
+<text x="526.5" y="63.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">suspensión, de la</text>
+<text x="526.5" y="75.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">pantalla a los datos.</text>
+<rect x="610" y="8" width="136" height="88" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="678" y="35.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Nivel 5 · El cambio</text>
+<text x="678" y="50.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Migraciones, versiones,</text>
+<text x="678" y="63.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">pruebas, CI y</text>
+<text x="678" y="75.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">despliegue.</text>
+<rect x="287" y="132" width="176" height="74.48" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="151.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Cuaderno de datos</text>
+<text x="375" y="164.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[PDF aparte]</text>
+<text x="375" y="181.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">La base de datos por áreas, de</text>
+<text x="375" y="194.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">macro a micro.</text>
+<rect x="610" y="132" width="136" height="74.48" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="678" y="151.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Plan de estudio</text>
+<text x="678" y="164.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[cuatro sesiones]</text>
+<text x="678" y="181.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Ejercicios, con las</text>
+<text x="678" y="194.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">respuestas aparte.</text>
+<path d="M 4 132 L 265 132 L 274 141 L 274 210 L 4 210 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 265 132 L 265 141 L 274 141" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="13" y="148.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Cómo leerla</text>
+<text x="13" y="161.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Cada lámina responde una pregunta. Las tarjetas de</text>
+<text x="13" y="174.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">concepto dan el término técnico, la explicación en</text>
+<text x="13" y="187.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">criollo, un ejemplo de BE y una pregunta para</text>
+<text x="13" y="199.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">comprobar.</text>
+<rect x="380" y="106.6" width="55.09" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="382" y="117.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">profundiza</text>
+<rect x="683" y="106.6" width="42.24" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="685" y="117.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">practica</text>
+</svg>

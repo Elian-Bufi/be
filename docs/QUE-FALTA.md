@@ -1,5 +1,17 @@
 # Qué falta desarrollar en BE
 
+> **Nota del 2026-10-28.** El estado vigente y la ruta de cierre están en `docs/ESTADO-Y-RUTA-DE-CIERRE.md`. Desde la
+> nota del 24/10:
+> - se integraron y se desplegaron en `test` la sustitución de ejercicios (#195), UX-01 y UX-02 (#200, #203, #209),
+>   WP-ADMINISTRACION (#210, #214), la comparación de Nutrición (#211), la guía de la tanda (#212) y lo que lee la
+>   candidata nueva (#215, #216). `test` sirve `e4512cb`;
+> - se publicó la APK `0.18.0-candidata.1` (26/10), se cargaron los escenarios «Prueba» y Dirección hizo la parte A de
+>   la prueba breve (27/10). Faltan las partes B y C;
+> - **corrección:** las excepciones de DL-114 se renovaron hasta el **2026-11-30** (#208). Donde abajo dice que vencen
+>   el 31/10, quedó viejo.
+>
+> Las notas de abajo quedan como historia.
+>
 > **Nota del 2026-10-24, a la noche.** Desde la nota del 23/10, se integró y se desplegó en `test`, con la autorización de
 > Dirección:
 > - las dependencias con avisos nuevos (#201);
@@ -102,7 +114,7 @@ Faltan 22 de las 122 operaciones P0 del contrato 09. **Al 2026-10-23, contadas p
 - Pedir datos al asesorado desde antropometría no tiene ficha (PF-06, F-ANT-01).
 
 **Entrenamiento**
-- Las 17 zonas musculares y el material didáctico (DL-081).
+- Más material didáctico que una imagen por ejercicio (las 17 zonas musculares y la imagen curada del catálogo llegan con WP-CATALOGO-VISUAL, sin integrar: DL-081 y DL-162; falta que el website las muestre).
 - La búsqueda por texto en wger y Open Food Facts (DL-098).
 - La procedencia externa en el ítem del plan (DL-099).
 - Lo que queda de PF-03: descanso con semántica, tempo por fases y alternativas preaprobadas (PF03-D-2 a D-7).

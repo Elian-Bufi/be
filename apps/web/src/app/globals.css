@@ -2509,6 +2509,24 @@ html:has(.acciones--fijas) {
   justify-items: stretch;
 }
 
+/* WP-CATALOGO-VISUAL (etapa 2): las zonas de la tarjeta, en un renglón, y sus dos acciones, que bajan si no entran. */
+.ejercicio-propio__zonas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ejercicio-propio__zonas .icono {
+  flex: none;
+}
+
+.ejercicio-propio__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
 .ejercicio-propio__encabezado {
   display: flex;
   flex-wrap: wrap;
@@ -8693,14 +8711,29 @@ button.comida-del-dia__fila > .icono:last-child {
 
 @media (min-width: 75rem) {
   /* Dos columnas solo si hay historial: en el detalle de la ficha la pieza va sola, en su columna. */
-  .plan__cuerpo:has(> .historial-del-plan) {
+  .plan__cuerpo:has(> .historial-del-plan),
+  .plan__cuerpo:has(> .plan__al-costado > .historial-del-plan) {
     grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 21.25rem);
   }
 
-  /* El historial arranca a la altura de la primera comida: baja lo que ocupa el renglón de «N comidas». */
-  .plan__cuerpo > .historial-del-plan {
+  /* El historial arranca a la altura de la primera comida: baja lo que ocupa el renglón de «N comidas». En
+     Entrenamiento, la columna del costado (las zonas de la sesión y el historial) arranca a la misma altura. */
+  .plan__cuerpo > .historial-del-plan,
+  .plan__cuerpo > .plan__al-costado:has(> .historial-del-plan) {
     margin-top: 2.35rem;
   }
+}
+
+/* WP-CATALOGO-VISUAL (etapa 2): la columna del costado del plan de entrenamiento, con las zonas de la sesión arriba. */
+.plan__al-costado {
+  display: grid;
+  align-content: start;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.plan__al-costado:empty {
+  display: none;
 }
 
 /* Los segmentos con nombres que escribe la persona (hasta siete días tipo): bajan de renglón antes que salirse. Cada
@@ -12784,4 +12817,176 @@ details[open] > summary:not([class])::before {
 /* Debajo del gráfico: por qué no hay rombos, cuando ningún día tiene un indicado del día. */
 .grafico__nota-del-indicado {
   margin: 0.25rem 0 0;
+}
+
+/* ─── WP-CATALOGO-VISUAL (etapa 2; DL-081 y DL-162): la figura de las zonas musculares ──────────────────────────────────
+   El cuerpo de frente y de espalda sobre la escena de la figura de antropometría (`--escena`), y cada zona como una capa
+   del set de Dirección pintada con `mask-image` y el color del tema: la principal llena, la secundaria rayada. Al lado
+   (o debajo, si no entra) va la lista de zonas, que hace de leyenda. La figura y la lista se acomodan al ancho de su caja,
+   no al de la ventana: la misma pieza va en el detalle de un ejercicio, en una fila del catálogo y en la columna del plan. */
+.figura-de-zonas {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1.25rem;
+}
+
+.figura-de-zonas__vistas {
+  flex: none;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem 0.5rem;
+  border-radius: 12px;
+  background: var(--escena);
+}
+
+.figura-de-zonas__vista {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  width: 7.5rem;
+}
+
+.figura-de-zonas--chica .figura-de-zonas__vista {
+  width: 6.25rem;
+}
+
+/* La grilla del set recortada a los dos cuerpos: 320 × 944. Cuerpo y capas ocupan el mismo lienzo. */
+.figura-de-zonas__lienzo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 320 / 944;
+}
+
+.figura-de-zonas__cuerpo,
+.figura-de-zonas__zona {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.figura-de-zonas__cuerpo {
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.figura-de-zonas__zona {
+  -webkit-mask: var(--mascara) center / 100% 100% no-repeat;
+  mask: var(--mascara) center / 100% 100% no-repeat;
+}
+
+.figura-de-zonas__zona--principal {
+  background: var(--zona-principal);
+}
+
+.figura-de-zonas__zona--secundaria {
+  background: repeating-linear-gradient(135deg, var(--zona-secundaria) 0 2.5px, transparent 2.5px 5.5px);
+}
+
+.figura-de-zonas__rotulo {
+  font-size: 0.8rem;
+  color: var(--tenue);
+}
+
+.figura-de-zonas__texto {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.figura-de-zonas__lista {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.figura-de-zonas__lista dt {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.figura-de-zonas__lista dd {
+  margin: 0.1rem 0 0;
+}
+
+.figura-de-zonas__texto > .nota {
+  margin: 0.6rem 0 0;
+}
+
+.figura-de-zonas__vacia {
+  margin: 0;
+}
+
+.muestra--zona-principal {
+  width: 1rem;
+  height: 1rem;
+  background: var(--zona-principal);
+}
+
+.muestra--zona-secundaria {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--zona-secundaria);
+  background: repeating-linear-gradient(135deg, var(--zona-secundaria) 0 2px, transparent 2px 4.5px);
+}
+
+/* El detalle de un ejercicio: la imagen y las zonas, lado a lado si entran. */
+.detalle-visual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem 1.75rem;
+}
+
+.detalle-visual__imagen {
+  flex: 0 1 16rem;
+  margin: 0;
+}
+
+.detalle-visual__imagen .imagen-de-ejercicio {
+  width: 100%;
+}
+
+.detalle-visual__imagen figcaption {
+  margin-top: 0.35rem;
+}
+
+.detalle-visual__zonas {
+  flex: 1 1 26rem;
+  min-width: 0;
+}
+
+.detalle-visual__titulo {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+/* En una fila del catálogo: las zonas en su renglón, y el detalle debajo, a todo el ancho de la tabla. */
+.ejercicios-del-catalogo__ver {
+  min-width: 44px;
+  padding: 0.3rem;
+  justify-content: center;
+}
+
+.ejercicios-del-catalogo__ver[aria-expanded='true'] {
+  border-color: var(--azul);
+}
+
+.ejercicios-del-catalogo__detalle > td {
+  padding-top: 0.25rem;
+  padding-bottom: 1rem;
+}
+
+/* Las zonas de la sesión, en la columna del plan. */
+.zonas-de-la-sesion {
+  min-width: 0;
+}
+
+.zonas-de-la-sesion__titulo {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
 }

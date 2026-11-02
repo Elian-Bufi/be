@@ -124,6 +124,15 @@ const PARES_FIGURA = [
   ['figura-posterior', 'escena', NO_TEXTO, 'guía de un pliegue de la cara de atrás sobre la escena'],
   ['figura-guia', 'escena', NO_TEXTO, 'guía de un campo a su sitio, sobre la escena'],
   ['figura-guia', 'figura-cuerpo', NO_TEXTO, 'guía de un campo a su sitio, sobre el maniquí'],
+  // WP-CATALOGO-VISUAL (etapa 2): las zonas musculares sobre el maniquí, su muestra en la lista de zonas y el rótulo de
+  // cada vista, sobre la escena.
+  ['zona-principal', 'figura-cuerpo', NO_TEXTO, 'zona principal (llena) sobre el maniquí'],
+  ['zona-secundaria', 'figura-cuerpo', NO_TEXTO, 'raya de una zona secundaria sobre el maniquí'],
+  ['zona-principal', 'superficie', NO_TEXTO, 'muestra de la zona principal en la lista de zonas'],
+  ['zona-secundaria', 'superficie', NO_TEXTO, 'muestra rayada de la zona secundaria en la lista de zonas'],
+  ['zona-principal', 'fondo-suave', NO_TEXTO, 'muestra de la zona principal sobre una tarjeta'],
+  ['zona-secundaria', 'fondo-suave', NO_TEXTO, 'muestra rayada de la zona secundaria sobre una tarjeta'],
+  ['tenue', 'escena', TEXTO, 'rótulo de cada vista de la figura de zonas («De frente», «De espalda»)'],
 ];
 
 const PARES_APK = [

@@ -91,6 +91,13 @@ export class EntrenamientoPorSerieController {
     return responder(res, await this.imagenes.retirar(actorDe(req), exerciseId, query, cuerpo, clave, contextoDe(req)));
   }
 
+  /** API-EJE-04 (DL-081): las zonas musculares de un ejercicio propio. */
+  @Put('training/exercises/:exerciseId/muscle-zones')
+  async cambiarZonas(@Param('exerciseId') exerciseId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.imagenes.cambiarZonas(actorDe(req), exerciseId, cuerpo, clave, contextoDe(req)));
+  }
+
   /** Límite de consultas protegidas por actor, desde cualquier red (como API-DSH-03). */
   private limitar(req: Solicitud): void {
     this.limitador.consumir('consultaProtegida', null, actorDe(req).identidadId);

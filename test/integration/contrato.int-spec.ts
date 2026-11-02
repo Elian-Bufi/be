@@ -1420,6 +1420,41 @@ it('TEST-CT (WP-ENTRENAMIENTO-SERIES): las 9 operaciones SER, TIE y EJE, y MED c
   await mandarEventos(app, plan.ase, borrador.draftId, cierre).expect(404);
 });
 
+it('TEST-CT (WP-CATALOGO-VISUAL): ZON-01, EJE-04 y EJE-05, con éxitos y errores declarados', async () => {
+  const proParte = await prepararProfesional(app, 'contrato-zonas', ['ENTRENAMIENTO']);
+  const pro = conSesion(app, proParte.token);
+  const ase = conSesion(app, (await prepararAsesorado(app, 'contrato-zonas', { a3: true })).token);
+  const otro = conSesion(app, (await prepararProfesional(app, 'contrato-zonas-otro', ['ENTRENAMIENTO'])).token);
+  const servidor = app.getHttpServer();
+  // ZON-01
+  await pro.get('/api/v1/training/muscle-zones').expect(200);
+  await pro.get('/api/v1/training/muscle-zones?vista=ANTERIOR').expect(400); // INVALID_REQUEST
+  await request(servidor).get('/api/v1/training/muscle-zones').expect(401);
+  // EJE-04
+  const creado = (await pro.post('/api/v1/training/exercises').send({ name: 'Ejercicio con zonas del contrato', muscleZones: [{ zoneId: 'pectoral', role: 'PRIMARY' }], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } }).expect(201)).body.data;
+  const ruta = `/api/v1/training/exercises/${creado.exerciseId}/muscle-zones`;
+  const cuerpo = { exerciseVersionId: creado.versionId, expectedZonesVersion: 1, muscleZones: [{ zoneId: 'pectoral', role: 'PRIMARY' }, { zoneId: 'triceps', role: 'SECONDARY' }] };
+  const clave = claveDeIdempotencia();
+  await pro.put(ruta, clave).send(cuerpo).expect(200);
+  await pro.put(ruta, clave).send(cuerpo).expect(200); // reintento
+  await pro.put(ruta, clave).send({ ...cuerpo, muscleZones: [] }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.put(ruta).send(cuerpo).expect(409); // VERSION_CONFLICT
+  await pro.put(ruta).send({ ...cuerpo, expectedZonesVersion: 2, exerciseVersionId: randomUUID() }).expect(422); // EXERCISE_REFERENCE_INVALID
+  await pro.put(ruta).send({ ...cuerpo, expectedZonesVersion: 2, muscleZones: [{ zoneId: 'pecho', role: 'PRIMARY' }] }).expect(422); // VALIDATION_FAILED
+  await pro.put(ruta).send({ ...cuerpo, expectedZonesVersion: 2, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await pro.put(`${ruta}?x=1`).send({ ...cuerpo, expectedZonesVersion: 2 }).expect(400); // INVALID_REQUEST
+  await otro.put(ruta).send({ ...cuerpo, expectedZonesVersion: 2 }).expect(404);
+  await ase.put(ruta).send({ ...cuerpo, expectedZonesVersion: 2 }).expect(403);
+  await request(servidor).put(ruta).set('Authorization', `Bearer ${proParte.token}`).send(cuerpo).expect(400); // sin clave
+  await request(servidor).put(ruta).send(cuerpo).expect(401);
+  // EJE-05
+  await pro.post('/api/v1/training/exercises/visual-sheets').send({ exerciseIds: [creado.exerciseId, '4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e01'] }).expect(200);
+  await pro.post('/api/v1/training/exercises/visual-sheets').send({ exerciseIds: [] }).expect(400); // INVALID_REQUEST
+  await pro.post('/api/v1/training/exercises/visual-sheets').send({ exerciseIds: [creado.exerciseId], extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await ase.post('/api/v1/training/exercises/visual-sheets').send({ exerciseIds: [creado.exerciseId] }).expect(403);
+  await request(servidor).post('/api/v1/training/exercises/visual-sheets').send({ exerciseIds: [creado.exerciseId] }).expect(401);
+});
+
 it('TEST-CT (DL-125): EVIDENCIA_VISUAL — EVI-01 a 04, y MED-01 con la exigencia activa', async () => {
   const c = await circuitoListoParaPlanificar(app, 'contrato-ev');
   const ase = conSesion(app, c.ase.token);

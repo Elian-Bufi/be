@@ -252,6 +252,9 @@ model Identidad {
   codigosDeRecuperacion       CodigoDeRecuperacion[]  @relation("CodigoDeRecuperacionDeLaIdentidad")
   decisionesComoAdministrador EventoDeVerificacion[]  @relation("EventoDeVerificacionDelAdministrador")
 
+  // WP-CATALOGO-VISUAL (DL-081)
+  asignacionesDeZonas AsignacionDeZonasDeEjercicio[] @relation("AsignacionDeZonasDelAutor")
+
   @@map("identidad")
 }
 
@@ -1869,12 +1872,14 @@ model EjercicioDeCatalogo {
   versiones           VersionDeEjercicio[]
   importadoPor        ResolucionDeCandidato[]         @relation("EjercicioImportado")
   habitualesDe        EjercicioHabitual[]             @relation("EjercicioHabitualDelCatalogo")
-  /// DL-123: la historia de su imagen (solo los cargados a mano por un profesional la tienen).
+  /// DL-123: la historia de su imagen. DL-162: lo sembrado y lo importado también, curada por BE.
   imagenes            AsociacionDeImagenDeEjercicio[]
   /// DL-141 D-1: el ítem externo que representa, si lo importó un profesional (uno solo por ítem externo).
   itemExterno         ItemExternoDeCatalogo?
   /// DL-141 D-2: los otros nombres con los que se lo encuentra.
   nombresAlternativos NombreAlternativoDeEjercicio[]
+  /// DL-081: la historia de sus zonas musculares.
+  asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -1893,6 +1898,8 @@ model VersionDeEjercicio {
   sucesora    VersionDeEjercicio?             @relation("CadenaDeEjercicio")
   /// DL-123: las imágenes asociadas a esta versión (REG-06-134: la versión a la que resulta aplicable).
   imagenes    AsociacionDeImagenDeEjercicio[]
+  /// DL-081: las zonas declaradas para esta versión (REG-06-139).
+  asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
 
   @@index([ejercicioId])
   @@map("version_de_ejercicio")
@@ -2992,6 +2999,75 @@ model AsociacionDeImagenDeEjercicio {
   @@index([medioId])
   @@index([versionDeEjercicioId])
   @@map("asociacion_de_imagen_de_ejercicio")
+}
+
+// ─── WP-CATALOGO-VISUAL (DL-081, DL-162) ─────────────────────────────────────────────────────────────────────────────
+// Las zonas musculares de un ejercicio, con su rol (REG-06-137 a 139). La imagen del catálogo de todos usa la misma
+// historia de DL-123 (`asociacion_de_imagen_de_ejercicio`), curada por BE. Las garantías que Prisma no modela están en
+// la migración 20261102120000.
+
+/// DL-081: el rol de una zona en un ejercicio (REG-06-139). En la API, PRIMARY y SECONDARY (09v10 §7.1). Sin porcentajes.
+enum RolDeZonaMuscular {
+  PRINCIPAL
+  SECUNDARIO
+}
+
+/// DL-081: la vista anatómica en la que se representa una zona (09v10:458-463), la misma de `VistaAnatomicaSchema`.
+enum VistaAnatomica {
+  ANTERIOR
+  POSTERIOR
+}
+
+/// DL-081 — El catálogo de las 17 zonas musculares (REG-06-137), igual al de `ZONAS_MUSCULARES` del dominio y sembrado
+/// por la migración. Una zona es dominio, no un archivo gráfico (REG-06-138): las máscaras citan su `id`. Append-only.
+model ZonaMuscular {
+  id                 String   @id
+  nombre             String
+  /// Las vistas en las que se representa: anterior, posterior o las dos, sin booleanos (CHECK: una o dos, sin repetir).
+  vistasAnatomicas   VistaAnatomica[] @map("vistas_anatomicas")
+  versionDelCatalogo String           @map("version_del_catalogo")
+  momentoDeRegistro  DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  enEjercicios ZonaDeEjercicio[]
+
+  @@map("zona_muscular")
+}
+
+/// DL-081 — Cada cambio de las zonas de un ejercicio es una asignación nueva, con número correlativo por ejercicio; la
+/// vigente es la de mayor `numero`, y puede no tener ninguna zona (quitar todas). Se declara para una versión del
+/// ejercicio (REG-06-139). Lo cargado a mano lo asigna su profesional (`autor_id`); lo sembrado y lo importado lo cura BE
+/// con el comando del operador (`autor_id` nulo, procedencia CURADURIA_BE). Nunca sale de wger ni del nombre. Append-only.
+model AsignacionDeZonasDeEjercicio {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId          String   @map("ejercicio_id") @db.Uuid
+  versionDeEjercicioId String   @map("version_de_ejercicio_id") @db.Uuid
+  numero               Int
+  autorId              String?  @map("autor_id") @db.Uuid
+  procedencia          Json
+  momentoDeRegistro    DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejercicio          EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeEjercicio VersionDeEjercicio  @relation(fields: [versionDeEjercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor              Identidad?          @relation("AsignacionDeZonasDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  zonas              ZonaDeEjercicio[]
+
+  @@unique([ejercicioId, numero])
+  @@index([versionDeEjercicioId])
+  @@map("asignacion_de_zonas_de_ejercicio")
+}
+
+/// DL-081 — Una zona de una asignación, con su rol. Una zona aparece una sola vez por asignación. Append-only.
+model ZonaDeEjercicio {
+  asignacionId String            @map("asignacion_id") @db.Uuid
+  zonaId       String            @map("zona_id")
+  rol          RolDeZonaMuscular
+
+  asignacion AsignacionDeZonasDeEjercicio @relation(fields: [asignacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  zona       ZonaMuscular                 @relation(fields: [zonaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([asignacionId, zonaId])
+  @@index([zonaId])
+  @@map("zona_de_ejercicio")
 }
 
 /// DL-124 — Un evento de tiempo de la sesión en curso, colgado del borrador de ejecución. `contenido` es el evento tal
