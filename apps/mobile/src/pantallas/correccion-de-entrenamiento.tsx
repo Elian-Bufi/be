@@ -492,8 +492,9 @@ const estilos = estilosPorTema((COLOR) => ({
   // La fila tildada va en el azul elevado, como la registrada en la sesión; la cambiada o sumada lleva además el borde del
   // acento.
   fila: { borderRadius: 12, borderWidth: 2, borderColor: 'transparent', padding: 4, marginVertical: 2 },
-  filaTildada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.borde },
-  filaCambiada: { borderColor: COLOR.acento },
+  // Tildada: borde fino del acento, como en la sesión (Dirección, 2026-11-02); cambiada o sumada: el mismo borde, grueso.
+  filaTildada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.acento, borderWidth: 1, padding: 5 },
+  filaCambiada: { borderColor: COLOR.acento, borderWidth: 2, padding: 4 },
   filaConError: { borderColor: COLOR.error },
   celdas: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   celdaSerie: { width: 44, alignItems: 'center', justifyContent: 'center', gap: 2 },

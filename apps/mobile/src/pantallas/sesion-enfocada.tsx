@@ -678,7 +678,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
     return campo === 'tiempo' ? '—' : p[campo];
   };
   return (
-    <View style={[estilos.tarjetaDeSerie, activa && estilos.tarjetaActiva, (f.estado === 'guardada' || f.estado === 'pendiente-de-enviar') && estilos.filaRegistrada]}>
+    <View style={[estilos.tarjetaDeSerie, (f.estado === 'guardada' || f.estado === 'pendiente-de-enviar') && estilos.tarjetaRegistrada, activa && estilos.tarjetaActiva]}>
       <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita)} onPress={() => acciones.onEnfocar(f.setIndex)} style={({ pressed }) => [pressed && estilos.presionado]}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
         {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
@@ -1266,10 +1266,12 @@ const estilos = estilosPorTema((COLOR) => ({
   filaQuieta: { borderRadius: 12, borderWidth: 2, borderColor: 'transparent', padding: 4, marginVertical: 2 },
   filaActiva: { borderRadius: 12, borderWidth: 2, borderColor: COLOR.acento, padding: 4, marginVertical: 2, backgroundColor: COLOR.superficie },
   serieActual: { fontSize: 13, fontWeight: '800', color: COLOR.acento, marginLeft: 4, marginBottom: 2 },
-  // La fila registrada va en el azul elevado del tema, con el filo de las fichas (Dirección, 2026-11-02): no en el verde
-  // del éxito, porque la tilde de la casilla ya dice que quedó. El texto, el tenue y el acento se miden sobre ese azul.
-  filaRegistrada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.borde },
-  filaRegistradaActiva: { borderColor: COLOR.acento },
+  // La fila registrada va en el azul elevado del tema, con un borde fino del acento (Dirección, 2026-11-02): no en el
+  // verde del éxito, porque la tilde de la casilla ya dice que quedó, y con el borde para que en Claro se separe del
+  // fondo. Fino (1) para no confundirse con la activa (2); el padding compensa para que la fila no cambie de tamaño.
+  // El texto, el tenue y el acento se miden sobre ese azul.
+  filaRegistrada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.acento, borderWidth: 1, padding: 5 },
+  filaRegistradaActiva: { borderColor: COLOR.acento, borderWidth: 2, padding: 4 },
   filaEnConflicto: { borderColor: COLOR.error },
   celdaSerie: { width: ANCHO_DE_LA_COLUMNA_SERIE, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 2 },
   datosDeLaFila: { flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: SEPARACION_DE_CELDAS },
@@ -1298,6 +1300,8 @@ const estilos = estilosPorTema((COLOR) => ({
   estadoRegistrada: { color: COLOR.texto },
   tarjetaDeSerie: { borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, padding: 12, marginVertical: 4 },
   tarjetaActiva: { borderWidth: 2, borderColor: COLOR.acento },
+  // La tarjeta registrada, como la fila: azul elevado y borde fino del acento, sin tocar su padding.
+  tarjetaRegistrada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.acento },
   tituloDeTarjeta: { fontSize: 16, fontWeight: '800', color: COLOR.texto, marginBottom: 4 },
   parDeTarjeta: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 12, marginVertical: 2 },
   etiquetaDeTarjeta: { fontSize: 15, fontWeight: '600', color: COLOR.texto },
