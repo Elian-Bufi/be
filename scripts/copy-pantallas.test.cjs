@@ -84,8 +84,18 @@ const DOMINIOS = [
   },
   {
     nombre: 'entrenamiento',
-    // PA-04: la corrección dejó entrenamiento.tsx y vive en su pantalla y su módulo; siguen bajo la misma guardia.
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), ...CORRECCION_EN_LA_APK, inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_Y_NOVEDADES],
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')),
+      join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'),
+      // PA-04: la corrección dejó entrenamiento.tsx y vive en su pantalla y su módulo; siguen bajo la misma guardia.
+      ...CORRECCION_EN_LA_APK,
+      inicio('inicio-entrenamiento.tsx'),
+      movil('lecturas-de-inicio.ts'),
+      // PA-03: el registro rápido («Ya la hice»), su pantalla y sus textos.
+      inicio('registro-rapido.tsx'),
+      movil('registro-rapido.ts'),
+      ...INICIO_Y_NOVEDADES,
+    ],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },

@@ -198,6 +198,8 @@ const RUTAS = [
   { nombre: 'sesion-de-entrenamiento', draftId: 'd1', sesion: {}, fecha: '2026-10-01' },
   { nombre: 'ejecucion-de-entrenamiento', id: 'e1' },
   { nombre: 'corregir-ejecucion', id: 'e1' },
+  // PA-03: el registro rápido de una sesión del plan.
+  { nombre: 'registro-rapido', occurrenceId: 'o1', fecha: '2026-11-02', etiqueta: 'Piernas A', sessionId: 's1', planId: 'p1' },
 ];
 const RAICES = ['inicio', 'hoy', 'entrenamiento', 'mi-evolucion', 'mis-solicitudes'].map((nombre) => ({ nombre }));
 const conSesion = RUTAS.filter(nav.requiereSesion);
