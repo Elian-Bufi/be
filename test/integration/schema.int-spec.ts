@@ -284,6 +284,10 @@ describe('08 §29 — historia por adición', () => {
     'retiro_de_nombre_alternativo_de_alimento',
     // DL-147 (2026-10-19): las reanudaciones de las sesiones del website
     'reanudacion_de_sesion',
+    // DL-081 (2026-11-02): el catálogo de zonas y las zonas de cada ejercicio
+    'zona_muscular',
+    'asignacion_de_zonas_de_ejercicio',
+    'zona_de_ejercicio',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {
