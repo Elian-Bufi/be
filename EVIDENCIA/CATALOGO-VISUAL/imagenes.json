@@ -1,0 +1,33 @@
+{
+  "estado": "SIN_IMAGENES",
+  "nota": "Las imágenes las genera Dirección con los prompts de MATERIAL-VISUAL (E04 a E15, PR #219) y de prompts-fotos-E16-E23.md, en la carpeta de abajo y con estos nombres. Los textos alternativos de E04 a E15 se copian de su ficha en MATERIAL-VISUAL/EJERCICIOS.md; los de E16 a E23 son los propuestos en sus prompts. Ninguna imagen sale de wger.",
+  "carpeta": "C:/Users/bufim/BE-material-visual/ejercicios/nuevas/originales",
+  "comunes": {
+    "provenance": "AI_GENERATED",
+    "authorship": "Generada por IA para BE (sin una persona real)",
+    "license": { "kind": "NO_EXTERNAL_LICENSE", "usage": "Contenido original generado para BE: ilustra el ejercicio para reconocerlo; no certifica la técnica." },
+    "technicalReview": "PENDING_PROFESSIONAL_REVIEW"
+  },
+  "imagenes": [
+    { "clave": "sentadilla", "archivo": "E04-sentadilla.png", "altText": null },
+    { "clave": "banca", "archivo": "E05-press-de-banca.png", "altText": null },
+    { "clave": "pressMancuernas", "archivo": "E06-press-con-mancuernas.png", "altText": null },
+    { "clave": "pesoMuerto", "archivo": "E07-peso-muerto.png", "altText": null },
+    { "clave": "remo", "archivo": "E08-remo-con-barra.png", "altText": null },
+    { "clave": "dominadas", "archivo": "E09-dominadas.png", "altText": null },
+    { "clave": "pressMilitar", "archivo": "E10-press-militar.png", "altText": null },
+    { "clave": "zancadas", "archivo": "E11-zancadas.png", "altText": null },
+    { "clave": "curl", "archivo": "E12-curl-de-biceps.png", "altText": null },
+    { "clave": "triceps", "archivo": "E13-extension-de-triceps.png", "altText": null, "opcional": true },
+    { "clave": "plancha", "archivo": "E14-plancha.png", "altText": null },
+    { "clave": "hipThrust", "archivo": "E15-hip-thrust.png", "altText": null },
+    { "clave": "sentadillaACajon", "archivo": "E16-sentadilla-a-cajon.png", "altText": "Persona en el punto bajo de una sentadilla: la cola roza un cajón de madera que tiene detrás, los pies apoyados y una mancuerna sostenida con las dos manos frente al pecho." },
+    { "clave": "prensa", "archivo": "E17-prensa-de-piernas.png", "altText": "Persona recostada en una prensa de piernas inclinada, con la espalda apoyada, los pies en la plataforma y las rodillas flexionadas a mitad del recorrido." },
+    { "clave": "remoEnPolea", "archivo": "E18-remo-en-polea-baja.png", "altText": "Persona sentada frente a una polea baja que lleva un agarre en V hasta el abdomen, con el tronco erguido y los codos hacia atrás." },
+    { "clave": "talones", "archivo": "E19-elevacion-de-talones.png", "altText": "Persona de pie que se eleva sobre la parte delantera de los pies, con los dos talones levantados y una mano apoyada en una baranda para el equilibrio." },
+    { "clave": "equilibrio", "archivo": "E20-equilibrio-en-un-pie.png", "altText": "Persona de pie sobre una sola pierna, con la otra rodilla flexionada y el pie levantado del piso, el tronco erguido y las manos en la cintura." },
+    { "clave": "caminata", "archivo": "E21-caminata-en-cinta.png", "altText": "Persona caminando a paso tranquilo sobre una cinta de gimnasio, con el tronco erguido, la mirada al frente y los brazos sueltos." },
+    { "clave": "cargada", "archivo": "E22-cargada-de-potencia.png", "altText": "Persona que recibe una barra con discos sobre la parte delantera de los hombros, con los codos altos, en un cuarto de sentadilla y con el tronco erguido." },
+    { "clave": "sentadillaFrontal", "archivo": "E23-sentadilla-frontal.png", "altText": "Persona en el punto bajo de una sentadilla, con una barra con discos apoyada al frente de los hombros, los codos altos y los muslos paralelos al piso.", "opcional": true }
+  ]
+}
