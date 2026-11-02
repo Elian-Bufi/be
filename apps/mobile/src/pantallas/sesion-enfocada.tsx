@@ -2,13 +2,16 @@
  * APK · Las piezas de la sesión enfocada de entrenamiento (WP-ENTRENAMIENTO-SERIES §7.2 a §7.5; referencia
  * `01_series_y_descanso_actualizado.png`). Las dibuja `PantallaDeSesion` (entrenamiento.tsx), que tiene el estado.
  *
- * - **Arriba:** «Ver rutina», el nombre de la sesión y un temporizador discreto con el tiempo sin pausas.
- * - **El ejercicio activo:** su imagen de 112 dp (o la mancuerna de la app si no tiene), su nombre, «Ejercicio N de M»,
- *   «Ver técnica» y «Sustituir ejercicio» (DL-151). Sustituido, dice también el ejecutado, con la insignia.
- * - **La tabla:** Serie, carga con su unidad, Rep. y RIR. La fila activa lleva borde y «Serie actual»; las guardadas, sus
- *   valores y «Guardada»; los campos vacíos, el objetivo de esa serie en gris (`placeholdersDeLaSerie`), que nunca se
- *   envía. Con la letra grande pasa a tarjetas apiladas.
- * - **La banda «Plan de la serie N»**, que sigue a la vista aunque se escriba encima del placeholder, y la ayuda del RIR.
+ * - **Arriba** (PA-02, Dirección del 2026-11-02): la franja con la sesión y «Ver rutina», el ejercicio, «Ejercicio 2 de 5 ·
+ *   Serie 3 de 4», una línea de tramos (uno por ejercicio) y los tiempos de la sesión y del ejercicio.
+ * - **El ejercicio activo:** su imagen de 112 dp (o la mancuerna de la app si no tiene), «Ver técnica» y «Sustituir
+ *   ejercicio» (DL-151). Sustituido, dice también el ejecutado, con la insignia.
+ * - **La tabla:** Serie, carga con su unidad, Rep., RIR, Tiempo y una casilla al final de cada fila. Los campos vacíos
+ *   muestran el objetivo de esa serie en gris (`placeholdersDeLaSerie`); lo escrito se ve en su fila aunque no esté
+ *   activa (PA-01). Tildar registra la fila con lo escrito y, en lo vacío, lo planificado; la fila registrada toma el color de
+ *   «registrada»; destildar la deshace. El reloj de la fila mide la serie. La ayuda va plegada junto a la tabla. Con la
+ *   letra grande pasa a tarjetas apiladas.
+ * - **La banda «Plan de la serie N»**, que sigue a la vista aunque se escriba encima del placeholder.
  * - **El descanso:** «Iniciar descanso» y «Finalizar descanso», con el recomendado de esa serie y el conteo ascendente.
  *   El aro es apoyo visual: no termina el descanso. Sin +15 s ni cierre automático. Con movimiento reducido, quieto.
  * - **Lectores de pantalla:** el conteo no se anuncia cada segundo. Lo que cambia cada segundo no se lee; el nombre
@@ -42,18 +45,23 @@ import {
   type SesionConObjetivos,
 } from '@be/domain';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type DimensionValue, type KeyboardTypeOptions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
 import { useMovimientoReducido } from '../estados';
 import { IconoDeCronometro, IconoDeEjercicio, IconoDeNube, IconoDePlan, IconoDeRutina } from '../iconos-de-entrenamiento';
-import { Flecha, IconoDeInformacion, IconoDeRegistrado } from '../iconos-de-nutricion';
+import { Flecha, IconoDeRegistrado } from '../iconos-de-nutricion';
 import { ImagenDeMedio, type RespaldoDeImagen } from '../imagen-de-medio';
+import type { TramoDelRecorrido } from '../franja-de-la-sesion';
+import { TEXTOS_DE_LA_SESION } from '../textos-de-la-sesion';
 import { avisoDelGuardado as avisoDelGuardadoDe, lineaDelEnvio, TEXTOS_DEL_GUARDADO, textoDeEstadoDeFila } from '../textos-del-guardado';
 import {
+  ANCHO_DE_LA_CASILLA,
   ANCHO_DE_LA_COLUMNA_SERIE,
+  hayAlgoEscrito,
   placeholdersDeLaSerie,
   SEPARACION_DE_CELDAS,
+  textoDeTiempo,
   type bandaDeLaSerie,
   type ErroresDeFila,
   type FilaDeLaTabla,
@@ -63,7 +71,7 @@ import {
   type Unidad,
 } from '../series-de-la-sesion';
 import { sustitutosPosibles, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado, type SustitucionDelEjercicio } from '../sustitucion-de-ejercicio';
-import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo } from '../ui';
+import { Aviso, Ayuda, Boton, Campo, Casilla, COLOR, Dato, Desplegable, estilos as estilosDeUi, estilosPorTema, Insignia, Parrafo } from '../ui';
 
 /** El lado de la imagen del ejercicio activo, en dp (§7.2: de 100 a 140). */
 export const TAMANO_DE_LA_IMAGEN = 112;
@@ -124,6 +132,67 @@ export function BarraDeLaSesion({ nombre, temporizador, onVerRutina }: { nombre:
   );
 }
 
+/**
+ * La franja de arriba de la sesión guiada (PA-02, Dirección del 2026-11-02): el nombre de la sesión con «Ver rutina», el
+ * ejercicio, «Ejercicio 2 de 5 · Serie 3 de 4», la línea de tramos (uno por ejercicio: lo registrado de cada uno, y el
+ * actual marcado aparte) y los dos tiempos, el de la sesión y el del ejercicio. Los tiempos no se leen cada segundo: el
+ * lector de pantalla dice los minutos.
+ */
+export function FranjaDeLaSesion({
+  sesion,
+  ejercicio,
+  posicion,
+  tramos,
+  cuenta,
+  tiempoDeLaSesion,
+  tiempoDelEjercicio,
+  onVerRutina,
+}: {
+  sesion: string;
+  ejercicio: string;
+  posicion: string;
+  tramos: readonly TramoDelRecorrido[];
+  cuenta: { readonly registradas: number; readonly planificadas: number };
+  tiempoDeLaSesion: Temporizador | null;
+  tiempoDelEjercicio: Temporizador | null;
+  onVerRutina: () => void;
+}) {
+  const tiempos = [tiempoDeLaSesion, tiempoDelEjercicio].filter((t): t is Temporizador => t !== null);
+  return (
+    <View style={[estilos.tarjeta, estilos.franja]}>
+      <View style={estilos.cabezaDeLaFranja}>
+        <Text style={[estilos.detalle, estilos.textos]} numberOfLines={2}>
+          {sesion}
+        </Text>
+        <Pressable accessibilityRole="button" onPress={onVerRutina} hitSlop={4} style={({ pressed }) => [estilos.verRutina, pressed && estilos.presionado]}>
+          <IconoDeRutina color={COLOR.acento} />
+          <Text style={estilos.textoDeEnlace}>{COPY_ENTRENAMIENTO_POR_SERIE.verRutina}</Text>
+        </Pressable>
+      </View>
+      <Text style={estilos.nombreDelEjercicio} accessibilityRole="header">
+        {ejercicio}
+      </Text>
+      <Text style={estilos.textoDeBloque}>{posicion}</Text>
+      <View style={estilos.tramos} accessible accessibilityLabel={TEXTOS_DE_LA_SESION.tramos(cuenta.registradas, cuenta.planificadas)}>
+        {tramos.map((t) => (
+          <View key={t.prescriptionId} style={[estilos.tramo, t.actual && estilos.tramoActual]}>
+            <View style={[estilos.rellenoDelTramo, { width: `${Math.round(t.fraccion * 100)}%` as DimensionValue }]} />
+          </View>
+        ))}
+      </View>
+      {tiempos.length > 0 ? (
+        <View style={estilos.tiemposDeLaFranja} accessible accessibilityLabel={tiempos.map((t) => t.etiqueta).join('. ')}>
+          <IconoDeCronometro color={COLOR.tenue} tamano={18} />
+          <Text style={estilos.textoDelTemporizador} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            {tiempos.map((t) => t.texto).join(' · ')}
+            {tiempos.some((t) => t.calidad) ? <Text style={estilos.calidad}>{` · ${tiempos.find((t) => t.calidad)?.calidad ?? ''}`}</Text> : null}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 // ─── El ejercicio activo ────────────────────────────────────────────────────────────────────────
 
 export function EjercicioActivo({
@@ -134,6 +203,7 @@ export function EjercicioActivo({
   total,
   bases,
   ejecutado = null,
+  conNombre = true,
   onVerTecnica,
   onSustituir,
 }: {
@@ -145,6 +215,8 @@ export function EjercicioActivo({
   bases: { readonly carga: string | null; readonly repeticiones: string | null };
   /** El ejercicio que se registra en lugar del planificado (DL-151); `null` sin sustitución. El nombre grande sigue siendo el planificado. */
   ejecutado?: string | null;
+  /** Sin el nombre ni «Ejercicio N de M»: en la sesión guiada los dice la franja de arriba (PA-02). */
+  conNombre?: boolean;
   onVerTecnica: () => void;
   /** «Sustituir ejercicio» (DL-151). Sin ella, no se ofrece. */
   onSustituir?: () => void;
@@ -164,12 +236,14 @@ export function EjercicioActivo({
         ajuste="contener"
       />
       <View style={estilos.datosDelEjercicio}>
-        <Text style={estilos.nombreDelEjercicio} accessibilityRole="header">
-          {p.exerciseName}
-        </Text>
+        {conNombre ? (
+          <Text style={estilos.nombreDelEjercicio} accessibilityRole="header">
+            {p.exerciseName}
+          </Text>
+        ) : null}
         {/* Las dos puntas a la vista: el nombre grande es el planificado, y esto lo que se registra (B10-06:772-778). */}
         {ejecutado ? <LineaDeLaSustitucion ejecutado={ejecutado} /> : null}
-        <Text style={estilos.detalle}>{COPY_ENTRENAMIENTO_POR_SERIE.ejercicioDe(posicion, total)}</Text>
+        {conNombre ? <Text style={estilos.detalle}>{COPY_ENTRENAMIENTO_POR_SERIE.ejercicioDe(posicion, total)}</Text> : null}
         {bases.carga ? <Text style={estilos.detalle}>{`Carga: ${bases.carga}`}</Text> : null}
         {bases.repeticiones ? <Text style={estilos.detalle}>{`Repeticiones: ${bases.repeticiones}`}</Text> : null}
         <Pressable accessibilityRole="button" onPress={onVerTecnica} style={({ pressed }) => [estilos.enlaceConFlecha, pressed && estilos.presionado]}>
@@ -200,48 +274,96 @@ function LineaDeLaSustitucion({ ejecutado }: { ejecutado: string }) {
 
 // ─── La tabla de series ─────────────────────────────────────────────────────────────────────────
 
-
 /** Lo registrado en cada celda: el valor, o «—» si no se informó (no es cero). */
-function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: string; rir: string } {
+function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: string; rir: string; tiempo: string } {
   const carga = f.registrada?.load ?? null;
   const repeticiones = f.registrada?.completedRepetitions ?? null;
   const rir = f.registrada?.rir ?? null;
+  const segundos = f.registrada?.durationSeconds ?? null;
   return {
     carga: carga === null ? '—' : numero(carga.value),
     repeticiones: repeticiones === null ? '—' : numero(repeticiones, 0),
     rir: rir === null ? '—' : numero(rir),
+    tiempo: segundos === null ? '—' : textoDeTiempo(segundos),
   };
 }
 
-function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean): string {
-  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : (textoDeEstadoDeFila(f) ?? 'Sin registrar');
+/** Cómo se cargó una serie registrada, dicho para el lector de pantalla (DL-161). */
+const comoSeCargo = (f: FilaDeLaTabla): string => (f.registrada?.recordedAs === 'AS_PLANNED' ? 'tildada con lo planificado' : 'escrita');
+
+/** La frase de una fila para el lector de pantalla: su estado, lo registrado o lo escrito, y el plan. */
+function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrita: FilaEscrita | undefined): string {
   if (f.registrada) {
     const r = f.registrada;
-    const partes = [r.load ? `${numero(r.load.value)} ${r.load.unit}` : 'carga no informada', r.completedRepetitions === null ? 'repeticiones no informadas' : `${numero(r.completedRepetitions, 0)} repeticiones`, r.rir === null ? 'RIR no informado' : `RIR ${numero(r.rir)}`];
-    return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}, ${estado}: ${partes.join(', ')}`;
+    const estado = textoDeEstadoDeFila(f) ?? 'Registrada';
+    const partes = [
+      r.load ? `${numero(r.load.value)} ${r.load.unit}` : 'carga no informada',
+      r.completedRepetitions === null ? 'repeticiones no informadas' : `${numero(r.completedRepetitions, 0)} repeticiones`,
+      r.rir === null ? 'RIR no informado' : `RIR ${numero(r.rir)}`,
+      ...(r.durationSeconds === null || r.durationSeconds === undefined ? [] : [`tiempo ${textoDeTiempo(r.durationSeconds)}`]),
+    ];
+    return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}${activa ? `, ${COPY_ENTRENAMIENTO_POR_SERIE.serieActual}` : ''}, ${estado}, ${comoSeCargo(f)}: ${partes.join(', ')}`;
   }
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
-  return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}, ${estado}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, RIR ${p.rir}`;
+  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar;
+  const escrito =
+    escrita && hayAlgoEscrito(escrita)
+      ? `. Escrito: ${[escrita.carga.trim() ? `carga ${escrita.carga} ${unidad}` : null, escrita.repeticiones.trim() ? `${escrita.repeticiones} repeticiones` : null, escrita.rir.trim() ? `RIR ${escrita.rir}` : null, (escrita.tiempo ?? '').trim() ? `tiempo ${escrita.tiempo}` : null].filter((x): x is string => x !== null).join(', ')}`
+      : '';
+  return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}, ${estado}${escrito}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, RIR ${p.rir}`;
 }
 
+/** El reloj de las filas: el de la serie que corre, si hay una, y si se puede medir (en vivo, con la corrida y sin pausa). */
+export interface RelojDeLaTabla {
+  readonly disponible: boolean;
+  readonly enCurso: { readonly setIndex: number; readonly texto: string; readonly minutos: string } | null;
+}
+
+export interface AccionesDeLaTabla {
+  readonly onEnfocar: (setIndex: number) => void;
+  readonly onEscribir: (setIndex: number, campo: keyof FilaEscrita, texto: string) => void;
+  /** La casilla: tilda (registra) o destilda (deshace) la serie. */
+  readonly onTildar: (fila: FilaDeLaTabla) => void;
+  /** El reloj de la fila: arranca o para el de esa serie. */
+  readonly onReloj: (setIndex: number) => void;
+  /** Mantener apretado el reloj: escribir el tiempo sin medirlo. */
+  readonly onEscribirTiempo: (setIndex: number) => void;
+}
+
+/**
+ * La tabla de series de la sesión guiada (PA-02): Serie · kg · Rep. · RIR · Tiempo y una casilla al final de cada fila.
+ * - En los campos vacíos se ve en gris lo planificado de esa serie. Lo escrito se ve en su fila aunque no esté activa
+ *   (PA-01), con «Escrita, sin registrar».
+ * - **Tildar registra la fila**: lo escrito y, en lo vacío, lo planificado que se veía. La fila registrada toma el color
+ *   de «registrada» del tema; destildarla la deshace mientras no se finalice.
+ * - **El reloj de la fila** arranca y para el de esa serie; tildar también lo para. El tiempo también se escribe.
+ * - Con la letra grande pasa a tarjetas apiladas, con los mismos campos, la misma casilla y el mismo reloj.
+ */
 export function TablaDeSeries({
   filas,
   activa,
   unidad,
-  escrita,
+  escritas,
   errores,
   disposicion,
-  onEnfocar,
-  onEscribir,
+  reloj,
+  escribiendoTiempo,
+  ocupado,
+  acciones,
 }: {
   filas: readonly FilaDeLaTabla[];
   activa: number;
   unidad: Unidad;
-  escrita: FilaEscrita;
-  errores: ErroresDeFila;
+  /** Lo escrito en cada fila de este ejercicio, por número de serie. */
+  escritas: ReadonlyMap<number, FilaEscrita>;
+  /** Los errores de la última fila que se quiso tildar. */
+  errores: { readonly setIndex: number; readonly errores: ErroresDeFila } | null;
   disposicion: 'tabla' | 'tarjetas';
-  onEnfocar: (setIndex: number) => void;
-  onEscribir: (campo: keyof FilaEscrita, texto: string) => void;
+  reloj: RelojDeLaTabla;
+  /** La fila en la que se está escribiendo el tiempo sin medirlo, si hay una. */
+  escribiendoTiempo: number | null;
+  ocupado: boolean;
+  acciones: AccionesDeLaTabla;
 }) {
   return (
     <View>
@@ -251,15 +373,27 @@ export function TablaDeSeries({
           <Text style={[estilos.columna, estilos.columnaDato]}>{unidad}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</Text>
+          <Text style={[estilos.columna, estilos.columnaDato]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+            {TEXTOS_DE_LA_SESION.columnaTiempo}
+          </Text>
+          <View style={estilos.columnaCasilla} />
         </View>
       ) : null}
-      {filas.map((f) =>
-        disposicion === 'tabla' ? (
-          <FilaDeTabla key={f.setIndex} fila={f} activa={f.setIndex === activa} unidad={unidad} escrita={escrita} errores={errores} onEnfocar={onEnfocar} onEscribir={onEscribir} />
-        ) : (
-          <TarjetaDeSerie key={f.setIndex} fila={f} activa={f.setIndex === activa} unidad={unidad} escrita={escrita} errores={errores} onEnfocar={onEnfocar} onEscribir={onEscribir} />
-        ),
-      )}
+      {filas.map((f) => {
+        const props: PropsDeFila = {
+          fila: f,
+          activa: f.setIndex === activa,
+          unidad,
+          escrita: escritas.get(f.setIndex),
+          errores: errores?.setIndex === f.setIndex ? errores.errores : {},
+          relojEnCurso: reloj.enCurso?.setIndex === f.setIndex ? reloj.enCurso : null,
+          relojDisponible: reloj.disponible,
+          escribiendoTiempo: escribiendoTiempo === f.setIndex,
+          ocupado,
+          acciones,
+        };
+        return disposicion === 'tabla' ? <FilaDeTabla key={f.setIndex} {...props} /> : <TarjetaDeSerie key={f.setIndex} {...props} />;
+      })}
       <Text style={estilos.nota}>{COPY_ENTRENAMIENTO_POR_SERIE.enGris}</Text>
     </View>
   );
@@ -269,66 +403,175 @@ interface PropsDeFila {
   fila: FilaDeLaTabla;
   activa: boolean;
   unidad: Unidad;
-  escrita: FilaEscrita;
+  escrita: FilaEscrita | undefined;
   errores: ErroresDeFila;
-  onEnfocar: (setIndex: number) => void;
-  onEscribir: (campo: keyof FilaEscrita, texto: string) => void;
+  relojEnCurso: RelojDeLaTabla['enCurso'];
+  relojDisponible: boolean;
+  escribiendoTiempo: boolean;
+  ocupado: boolean;
+  acciones: AccionesDeLaTabla;
 }
 
-const CAMPOS: readonly { readonly campo: keyof FilaEscrita; readonly teclado: KeyboardTypeOptions }[] = [
+const CAMPOS: readonly { readonly campo: 'carga' | 'repeticiones' | 'rir'; readonly teclado: KeyboardTypeOptions }[] = [
   // Decimal para la carga y el RIR; entero para las repeticiones.
   { campo: 'carga', teclado: 'decimal-pad' },
   { campo: 'repeticiones', teclado: 'number-pad' },
   { campo: 'rir', teclado: 'decimal-pad' },
 ];
 
+/** El largo máximo de lo que se escribe en una celda: el almacén descarta lo que pase de 40. */
+const LARGO_DE_UNA_CELDA = 12;
+
 /** El nombre accesible de un campo de la fila activa: qué es, de qué serie, el plan de esa serie y el error si lo hay. */
 function etiquetaDelCampo(campo: keyof FilaEscrita, setIndex: number, unidad: Unidad, placeholder: string, error: string | undefined): string {
-  const que = campo === 'carga' ? `Carga en ${unidad} de la serie ${setIndex}` : campo === 'repeticiones' ? `Repeticiones de la serie ${setIndex}` : `RIR de la serie ${setIndex}, opcional`;
-  const plan = placeholder === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo : `Plan: ${placeholder}`;
-  return `${que}. ${plan}${error ? `. Revisá este campo: ${error}` : ''}`;
+  const que =
+    campo === 'carga' ? `Carga en ${unidad} de la serie ${setIndex}` : campo === 'repeticiones' ? `Repeticiones de la serie ${setIndex}` : campo === 'rir' ? `RIR de la serie ${setIndex}, opcional` : TEXTOS_DE_LA_SESION.tiempoDeLaSerie(setIndex);
+  const plan = campo === 'tiempo' ? '' : placeholder === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? `. ${COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}` : `. Plan: ${placeholder}`;
+  return `${que}${plan}${error ? `. Revisá este campo: ${error}` : ''}`;
 }
 
-function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, onEnfocar, onEscribir }: PropsDeFila) {
+/** El color de una fila según su estado: la registrada, con el de «registrada» del tema; la activa, con su borde. */
+function estiloDeLaFila(f: FilaDeLaTabla, activa: boolean) {
+  const registrada = f.estado === 'guardada' || f.estado === 'pendiente-de-enviar';
+  return [activa ? estilos.filaActiva : estilos.filaQuieta, registrada && estilos.filaRegistrada, registrada && activa && estilos.filaRegistradaActiva, f.estado === 'en-conflicto' && estilos.filaEnConflicto];
+}
+
+function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, escribiendoTiempo, ocupado, acciones }: PropsDeFila) {
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
-  const estado = textoDeEstadoDeFila(f);
-  if (activa && f.estado === 'sin-registrar') {
+  const estado = f.estado === 'guardada' ? null : f.estado === 'sin-registrar' ? (!activa && escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
+  const editable = activa && f.estado === 'sin-registrar';
+  const r = textoRegistrado(f);
+  return (
+    <View style={estiloDeLaFila(f, activa)}>
+      {activa ? <Text style={estilos.serieActual}>{COPY_ENTRENAMIENTO_POR_SERIE.serieActual}</Text> : null}
+      <View style={estilos.fila}>
+        {/* El número de la serie lleva la frase entera de la fila para el lector de pantalla, y la enfoca. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: activa }}
+          accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita)}
+          accessibilityHint={activa ? undefined : 'Enfoca esta serie'}
+          onPress={() => acciones.onEnfocar(f.setIndex)}
+          style={({ pressed }) => [estilos.celdaSerie, pressed && estilos.presionado]}
+        >
+          <Text style={estilos.numeroDeSerie}>{numero(f.setIndex, 0)}</Text>
+        </Pressable>
+        {editable ? (
+          CAMPOS.map(({ campo, teclado }) => (
+            <CeldaEditable key={campo} valor={escrita?.[campo] ?? ''} placeholder={p[campo]} teclado={teclado} error={errores[campo]} etiqueta={etiquetaDelCampo(campo, f.setIndex, unidad, p[campo], errores[campo])} onCambiar={(t) => acciones.onEscribir(f.setIndex, campo, t)} />
+          ))
+        ) : (
+          // Tocar los datos de una fila la enfoca. El lector de pantalla ya los oye en el número de la serie.
+          <Pressable accessible={false} importantForAccessibility="no-hide-descendants" onPress={() => acciones.onEnfocar(f.setIndex)} style={estilos.datosDeLaFila}>
+            {CAMPOS.map(({ campo }) => (
+              <View key={campo} style={[estilos.celda, f.registrada ? estilos.celdaRegistrada : estilos.celdaQuieta]}>
+                {f.registrada ? (
+                  <Text style={estilos.valorRegistrado}>{r[campo]}</Text>
+                ) : escrita && escrita[campo].trim() !== '' ? (
+                  <Text style={estilos.valorRegistrado} numberOfLines={1}>
+                    {escrita[campo]}
+                  </Text>
+                ) : (
+                  <Text style={[estilos.placeholder, p[campo] === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo && estilos.placeholderSinObjetivo]} numberOfLines={2}>
+                    {p[campo]}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </Pressable>
+        )}
+        <CeldaDeTiempo fila={f} activa={activa} escrita={escrita} error={errores.tiempo} relojEnCurso={relojEnCurso} relojDisponible={relojDisponible} escribiendoTiempo={escribiendoTiempo} ocupado={ocupado} acciones={acciones} />
+        <CasillaDeLaFila fila={f} ocupado={ocupado} onTildar={() => acciones.onTildar(f)} />
+      </View>
+      {estado ? <Text style={[estilos.estadoDeFila, (f.estado === 'en-conflicto' || f.proteccion === 'solo-en-la-app') && estilos.estadoEnConflicto, f.estado === 'pendiente-de-enviar' && f.proteccion !== 'solo-en-la-app' && estilos.estadoRegistrada]}>{estado}</Text> : null}
+    </View>
+  );
+}
+
+/**
+ * La celda del tiempo (DL-161): lo registrado; el reloj de la serie que corre, que se toca para pararlo; lo escrito o lo
+ * medido, que se corrige escribiendo; o el reloj para medir, que se mantiene apretado para escribir el tiempo sin medir.
+ * Sin cronómetro (otro día, en pausa o sin iniciar la sesión), se escribe directo en la fila activa.
+ */
+function CeldaDeTiempo({ fila: f, activa, escrita, error, relojEnCurso, relojDisponible, escribiendoTiempo, ocupado, acciones }: Pick<PropsDeFila, 'fila' | 'activa' | 'escrita' | 'relojEnCurso' | 'relojDisponible' | 'escribiendoTiempo' | 'ocupado' | 'acciones'> & { error: string | undefined }) {
+  const t = TEXTOS_DE_LA_SESION;
+  if (f.registrada) {
     return (
-      <View style={estilos.filaActiva}>
-        <Text style={estilos.serieActual}>{COPY_ENTRENAMIENTO_POR_SERIE.serieActual}</Text>
-        <View style={estilos.fila}>
-          <View style={estilos.celdaSerie}>
-            <Text style={estilos.numeroDeSerie}>{numero(f.setIndex, 0)}</Text>
-          </View>
-          {CAMPOS.map(({ campo, teclado }) => (
-            <CeldaEditable key={campo} valor={escrita[campo]} placeholder={p[campo]} teclado={teclado} error={errores[campo]} etiqueta={etiquetaDelCampo(campo, f.setIndex, unidad, p[campo], errores[campo])} onCambiar={(t) => onEscribir(campo, t)} />
-          ))}
-        </View>
+      <View style={[estilos.celda, estilos.celdaRegistrada]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Text style={estilos.valorDeTiempo}>{textoRegistrado(f).tiempo}</Text>
       </View>
     );
   }
-  const r = textoRegistrado(f);
+  if (relojEnCurso) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${t.pararElReloj(f.setIndex)}. ${t.relojEnCurso(f.setIndex, relojEnCurso.minutos)}`}
+        accessibilityState={{ disabled: ocupado, busy: true }}
+        disabled={ocupado}
+        onPress={() => acciones.onReloj(f.setIndex)}
+        style={({ pressed }) => [estilos.celda, estilos.celdaEnCurso, pressed && estilos.presionado]}
+      >
+        <Text style={estilos.relojDeLaFila} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+          {relojEnCurso.texto}
+        </Text>
+      </Pressable>
+    );
+  }
+  const tiempo = escrita?.tiempo ?? '';
+  // Se escribe en la fila activa cuando hay un tiempo para corregir, cuando se pidió escribirlo o cuando no hay reloj.
+  if (activa && (tiempo !== '' || escribiendoTiempo || !relojDisponible)) {
+    return <CeldaEditable valor={tiempo} placeholder="" teclado="numbers-and-punctuation" error={error} etiqueta={etiquetaDelCampo('tiempo', f.setIndex, 'kg', '', error)} enfocarAlMostrar={escribiendoTiempo} onCambiar={(texto) => acciones.onEscribir(f.setIndex, 'tiempo', texto)} />;
+  }
+  if (tiempo !== '' || !relojDisponible) {
+    return (
+      <Pressable accessible={false} importantForAccessibility="no-hide-descendants" onPress={() => acciones.onEnfocar(f.setIndex)} style={[estilos.celda, estilos.celdaQuieta]}>
+        <Text style={tiempo !== '' ? estilos.valorDeTiempo : estilos.placeholder} numberOfLines={1}>
+          {tiempo !== '' ? tiempo : '—'}
+        </Text>
+      </Pressable>
+    );
+  }
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa)} accessibilityHint={activa ? undefined : 'Enfoca esta serie'} onPress={() => onEnfocar(f.setIndex)} style={({ pressed }) => [activa ? estilos.filaActiva : estilos.filaQuieta, pressed && estilos.presionado]}>
-      {activa ? <Text style={estilos.serieActual}>{COPY_ENTRENAMIENTO_POR_SERIE.serieActual}</Text> : null}
-      <View style={estilos.fila}>
-        <View style={estilos.celdaSerie}>
-          {f.estado === 'guardada' ? <IconoDeRegistrado color={COLOR.botonTexto} fondo={COLOR.acento} tamano={18} /> : f.estado === 'pendiente-de-enviar' ? <IconoDeNube color={COLOR.tenue} tamano={18} /> : null}
-          <Text style={estilos.numeroDeSerie}>{numero(f.setIndex, 0)}</Text>
-        </View>
-        {CAMPOS.map(({ campo }) => (
-          <View key={campo} style={[estilos.celda, estilos.celdaQuieta]}>
-            {f.registrada ? (
-              <Text style={estilos.valorRegistrado}>{r[campo]}</Text>
-            ) : (
-              <Text style={[estilos.placeholder, p[campo] === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo && estilos.placeholderSinObjetivo]} numberOfLines={2}>
-                {p[campo]}
-              </Text>
-            )}
-          </View>
-        ))}
-      </View>
-      {estado ? <Text style={[estilos.estadoDeFila, (f.estado === 'en-conflicto' || f.proteccion === 'solo-en-la-app') && estilos.estadoEnConflicto]}>{estado}</Text> : null}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t.medirLaSerie(f.setIndex)}
+      accessibilityHint={t.mantenerParaEscribir}
+      accessibilityState={{ disabled: ocupado }}
+      accessibilityActions={[{ name: 'longpress', label: t.escribirElTiempo }]}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'longpress') acciones.onEscribirTiempo(f.setIndex);
+      }}
+      disabled={ocupado}
+      onPress={() => acciones.onReloj(f.setIndex)}
+      onLongPress={() => acciones.onEscribirTiempo(f.setIndex)}
+      style={({ pressed }) => [estilos.celda, estilos.celdaEditable, pressed && estilos.presionado]}
+    >
+      <IconoDeCronometro color={COLOR.acento} tamano={22} />
+    </Pressable>
+  );
+}
+
+/**
+ * La casilla de la fila (PA-02): la pieza `Casilla` de ui.tsx en su forma compacta, con su caja, su marca y sus colores, y
+ * un área de toque de 44 dp. Marcada es «registrada»: un estado, no una aprobación. Una serie en conflicto no se tilda ni
+ * se destilda acá: se resuelve en el aviso del conflicto.
+ */
+function CasillaDeLaFila({ fila: f, ocupado, onTildar }: { fila: FilaDeLaTabla; ocupado: boolean; onTildar: () => void }) {
+  const t = TEXTOS_DE_LA_SESION;
+  const marcada = f.estado !== 'sin-registrar';
+  const enConflicto = f.estado === 'en-conflicto';
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: marcada, disabled: ocupado || enConflicto }}
+      accessibilityLabel={t.serieRegistrada(f.setIndex)}
+      accessibilityHint={enConflicto ? t.enConflictoSinTilde : marcada ? t.pistaParaDestildar : t.pistaParaTildar}
+      disabled={ocupado || enConflicto}
+      onPress={onTildar}
+      style={({ pressed }) => [estilos.celdaCasilla, (ocupado || enConflicto) && estilos.deshabilitado, pressed && estilos.presionado]}
+    >
+      <View style={[estilosDeUi.casilla, estilos.cajaDeLaCasilla, marcada && estilosDeUi.casillaMarcada]}>{marcada ? <Text style={estilosDeUi.tilde}>✓</Text> : null}</View>
     </Pressable>
   );
 }
@@ -338,71 +581,116 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, onEnfocar, onE
  * toques ni entra en lo que se guarda. Se usa en lugar del placeholder del campo para que «Sin objetivo» pueda partirse en
  * dos líneas en una celda angosta.
  */
-function CeldaEditable({ valor, placeholder, teclado, error, etiqueta, onCambiar }: { valor: string; placeholder: string; teclado: KeyboardTypeOptions; error: string | undefined; etiqueta: string; onCambiar: (texto: string) => void }) {
+function CeldaEditable({
+  valor,
+  placeholder,
+  teclado,
+  error,
+  etiqueta,
+  enfocarAlMostrar = false,
+  onCambiar,
+}: {
+  valor: string;
+  placeholder: string;
+  teclado: KeyboardTypeOptions;
+  error: string | undefined;
+  etiqueta: string;
+  enfocarAlMostrar?: boolean;
+  onCambiar: (texto: string) => void;
+}) {
   return (
     <View style={[estilos.celda, estilos.celdaEditable, error ? estilos.celdaConError : null]}>
-      {valor === '' ? (
+      {valor === '' && placeholder !== '' ? (
         <View style={estilos.capaDelPlaceholder} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <Text style={[estilos.placeholder, placeholder === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo && estilos.placeholderSinObjetivo]} numberOfLines={2}>
             {placeholder}
           </Text>
         </View>
       ) : null}
-      <TextInput value={valor} onChangeText={onCambiar} keyboardType={teclado} accessibilityLabel={etiqueta} style={estilos.entradaDeCelda} selectTextOnFocus />
+      <TextInput value={valor} onChangeText={onCambiar} keyboardType={teclado} accessibilityLabel={etiqueta} style={estilos.entradaDeCelda} maxLength={LARGO_DE_UNA_CELDA} autoFocus={enfocarAlMostrar} selectTextOnFocus />
     </View>
   );
 }
 
-/** Con la letra grande: cada serie en su tarjeta, con sus tres campos y sus etiquetas. */
-function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, onEnfocar, onEscribir }: PropsDeFila) {
+/** Con la letra grande: cada serie en su tarjeta, con sus cuatro campos, el reloj y la casilla de ui.tsx. */
+function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, ocupado, acciones }: PropsDeFila) {
+  const t = TEXTOS_DE_LA_SESION;
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
-  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : textoDeEstadoDeFila(f);
+  const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : f.estado === 'sin-registrar' ? (escrita && hayAlgoEscrito(escrita) ? t.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   const titulo = `${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}${estado ? ` · ${estado}` : ''}`;
+  const etiquetaDe = (campo: keyof FilaEscrita) =>
+    campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : campo === 'rir' ? COPY_ENTRENAMIENTO_POR_SERIE.rirTitulo : `${t.columnaTiempo} (opcional)`;
+  const casilla = (
+    <Casilla
+      marcada={f.estado !== 'sin-registrar'}
+      onCambio={() => {
+        if (!ocupado && f.estado !== 'en-conflicto') acciones.onTildar(f);
+      }}
+      titulo={t.serieRegistrada(f.setIndex)}
+      texto={f.estado === 'en-conflicto' ? t.enConflictoSinTilde : f.estado === 'sin-registrar' ? t.pistaParaTildar : t.pistaParaDestildar}
+    />
+  );
+  const botonDelReloj = relojEnCurso ? (
+    <Boton texto={`${t.pararElReloj(f.setIndex)} · ${relojEnCurso.texto}`} tipo="secundario" onPress={() => acciones.onReloj(f.setIndex)} deshabilitado={ocupado} />
+  ) : relojDisponible && f.estado === 'sin-registrar' && (escrita?.tiempo ?? '') === '' ? (
+    <Boton texto={t.medirLaSerie(f.setIndex)} tipo="secundario" onPress={() => acciones.onReloj(f.setIndex)} deshabilitado={ocupado} />
+  ) : null;
   if (activa && f.estado === 'sin-registrar') {
     return (
       <View style={[estilos.tarjetaDeSerie, estilos.tarjetaActiva]}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
-        {CAMPOS.map(({ campo, teclado }) => (
+        {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
           <Campo
             key={campo}
-            etiqueta={campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : COPY_ENTRENAMIENTO_POR_SERIE.rirTitulo}
-            value={escrita[campo]}
-            placeholder={p[campo]}
-            keyboardType={teclado}
+            etiqueta={etiquetaDe(campo)}
+            value={escrita?.[campo] ?? ''}
+            placeholder={campo === 'tiempo' ? '' : p[campo]}
+            keyboardType={campo === 'repeticiones' ? 'number-pad' : campo === 'tiempo' ? 'numbers-and-punctuation' : 'decimal-pad'}
+            maxLength={LARGO_DE_UNA_CELDA}
             error={errores[campo] ?? null}
-            onChangeText={(t) => onEscribir(campo, t)}
+            onChangeText={(texto) => acciones.onEscribir(f.setIndex, campo, texto)}
           />
         ))}
+        {botonDelReloj}
+        {casilla}
       </View>
     );
   }
   const r = textoRegistrado(f);
-  const filas: readonly [string, string][] = [
-    [`${COPY_ENTRENAMIENTO.carga} (${unidad})`, f.registrada ? r.carga : p.carga],
-    [COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones, f.registrada ? r.repeticiones : p.repeticiones],
-    [COPY_ENTRENAMIENTO_POR_SERIE.columnaRir, f.registrada ? r.rir : p.rir],
-  ];
+  const valor = (campo: 'carga' | 'repeticiones' | 'rir' | 'tiempo'): string => {
+    if (f.registrada) return r[campo];
+    const escrito = escrita?.[campo] ?? '';
+    if (escrito.trim() !== '') return escrito;
+    return campo === 'tiempo' ? '—' : p[campo];
+  };
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa)} onPress={() => onEnfocar(f.setIndex)} style={({ pressed }) => [estilos.tarjetaDeSerie, activa && estilos.tarjetaActiva, pressed && estilos.presionado]}>
-      <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
-      {filas.map(([etiqueta, valor]) => (
-        <View key={etiqueta} style={estilos.parDeTarjeta}>
-          <Text style={estilos.etiquetaDeTarjeta}>{etiqueta}</Text>
-          <Text style={f.registrada ? estilos.valorRegistrado : estilos.placeholder}>{valor}</Text>
-        </View>
-      ))}
-    </Pressable>
+    <View style={[estilos.tarjetaDeSerie, activa && estilos.tarjetaActiva, (f.estado === 'guardada' || f.estado === 'pendiente-de-enviar') && estilos.filaRegistrada]}>
+      <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita)} onPress={() => acciones.onEnfocar(f.setIndex)} style={({ pressed }) => [pressed && estilos.presionado]}>
+        <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
+        {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
+          <View key={campo} style={estilos.parDeTarjeta} importantForAccessibility="no-hide-descendants">
+            <Text style={estilos.etiquetaDeTarjeta}>{etiquetaDe(campo)}</Text>
+            <Text style={f.registrada || (escrita?.[campo] ?? '').trim() !== '' ? estilos.valorRegistrado : estilos.placeholder}>{valor(campo)}</Text>
+          </View>
+        ))}
+      </Pressable>
+      {botonDelReloj}
+      {casilla}
+    </View>
   );
 }
 
-/** Los errores de la fila activa, con texto, debajo de la tabla. El de cada campo también va en su nombre accesible. */
-export function ErroresDeLaFila({ errores }: { errores: ErroresDeFila }) {
-  const lista = (['carga', 'repeticiones', 'rir'] as const).filter((c) => errores[c]).map((c) => `${c === 'carga' ? COPY_ENTRENAMIENTO.carga : c === 'repeticiones' ? 'Repeticiones' : 'RIR'}: ${errores[c]}`);
+/** Los errores de la fila que se quiso tildar, con texto, debajo de la tabla. El de cada campo también va en su nombre accesible. */
+export function ErroresDeLaFila({ errores }: { errores: { readonly setIndex: number; readonly errores: ErroresDeFila } | null }) {
+  if (!errores) return null;
+  const e = errores.errores;
+  const nombres = { carga: COPY_ENTRENAMIENTO.carga, repeticiones: 'Repeticiones', rir: 'RIR', tiempo: TEXTOS_DE_LA_SESION.columnaTiempo } as const;
+  const lista = [...(e.fila ? [e.fila] : []), ...(['carga', 'repeticiones', 'rir', 'tiempo'] as const).filter((c) => e[c]).map((c) => `${nombres[c]}: ${e[c]}`)];
   if (lista.length === 0) return null;
-  return <Aviso tipo="error" titulo={lista.join(' ')} />;
+  return <Aviso tipo="error" titulo={`${COPY_ENTRENAMIENTO.serie} ${numero(errores.setIndex, 0)}. ${lista.join(' ')}`} />;
 }
 
-// ─── La banda y la ayuda del RIR ────────────────────────────────────────────────────────────────
+// ─── La banda y la ayuda de la tabla ────────────────────────────────────────────────────────────
 
 export function BandaDelPlan({ banda }: { banda: ReturnType<typeof bandaDeLaSerie> }) {
   return (
@@ -417,52 +705,24 @@ export function BandaDelPlan({ banda }: { banda: ReturnType<typeof bandaDeLaSeri
   );
 }
 
-/** La ayuda y el ejemplo del RIR, literales del encargo: no se abrevian. */
-export function AyudaDelRir() {
+/**
+ * La ayuda de la tabla, plegada junto a su encabezado con el ícono de ayuda de `Ayuda` (ui.tsx): que tildar sin escribir
+ * guarda lo planificado, cómo se deshace, que el tiempo es opcional y la ayuda del RIR con su ejemplo, literales del
+ * encargo, sin abreviar.
+ */
+export function AyudaDeLaTabla() {
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
+  const t = TEXTOS_DE_LA_SESION;
+  const faltaUnDato = `${e.faltaUnDato.charAt(0).toLowerCase()}${e.faltaUnDato.slice(1)}`;
   return (
-    <View style={[estilos.tarjeta, estilos.conIcono]} accessible accessibilityLabel={`${e.rirTitulo}. ${e.rirAyuda}. ${e.rirEjemplo}`}>
-      <IconoDeInformacion color={COLOR.acento} />
-      <View style={estilos.textos}>
-        <Text style={estilos.tituloDeBloque}>{e.rirTitulo}</Text>
-        <Text style={estilos.textoDeBloque}>{e.rirAyuda}</Text>
-        <Text style={estilos.detalle}>{e.rirEjemplo}</Text>
-      </View>
-    </View>
-  );
-}
-
-// ─── Cronometrar una serie ──────────────────────────────────────────────────────────────────────
-
-export type CronometroDeSerie =
-  | { readonly tipo: 'disponible'; readonly serie: number }
-  /** Con un descanso en curso: la acción compuesta «Finalizar descanso e iniciar la serie N». */
-  | { readonly tipo: 'tras-descanso'; readonly serie: number }
-  | { readonly tipo: 'en-curso'; readonly serie: number; readonly duracion: DuracionApi | null };
-
-export function CronometrarSerie({ estado, medida, onCronometrar, onFinalizar, deshabilitado }: { estado: CronometroDeSerie | null; medida: string | null; onCronometrar: () => void; onFinalizar: () => void; deshabilitado: boolean }) {
-  return (
-    <View>
-      {medida ? <Text style={estilos.detalle}>{medida}</Text> : null}
-      {estado?.tipo === 'en-curso' ? (
-        <View style={[estilos.tarjeta, estilos.medicion]} accessible={false}>
-          <View style={estilos.conIcono} accessible accessibilityLabel={COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(estado.serie)}>
-            <IconoDeCronometro color={COLOR.acento} />
-            <Text style={estilos.tituloDeBloque}>{COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(estado.serie)}</Text>
-          </View>
-          <Text style={estilos.relojMediano} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-            {reloj(estado.duracion)}
-          </Text>
-          <Boton texto={COPY_ENTRENAMIENTO_POR_SERIE.finalizarSerie} onPress={onFinalizar} deshabilitado={deshabilitado} />
-        </View>
-      ) : estado ? (
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled: deshabilitado }} disabled={deshabilitado} onPress={onCronometrar} style={({ pressed }) => [estilos.tarjeta, estilos.filaDeAccion, deshabilitado && estilos.deshabilitado, pressed && estilos.presionado]}>
-          <IconoDeCronometro color={COLOR.acento} />
-          <Text style={[estilos.textoDeEnlace, estilos.textos]}>{estado.tipo === 'tras-descanso' ? COPY_ENTRENAMIENTO_POR_SERIE.finalizarDescansoEIniciarSerie(estado.serie) : COPY_ENTRENAMIENTO_POR_SERIE.cronometrarSerie}</Text>
-          <Flecha color={COLOR.acento} hacia="derecha" tamano={20} />
-        </Pressable>
-      ) : null}
-    </View>
+    <Ayuda titulo={t.ayudaTitulo}>
+      <Parrafo>{t.ayudaTildar}</Parrafo>
+      <Parrafo>{`${t.ayudaRango} Si la serie no tiene nada planificado en la carga ni en las repeticiones, ${faltaUnDato}`}</Parrafo>
+      <Parrafo>{t.ayudaDestildar}</Parrafo>
+      <Parrafo>{t.ayudaTiempo}</Parrafo>
+      <Parrafo>{`${e.rirTitulo}: ${e.rirAyuda}. ${e.rirEjemplo}.`}</Parrafo>
+      <Parrafo tenue>{t.ayudaGuardado}</Parrafo>
+    </Ayuda>
   );
 }
 
@@ -555,7 +815,7 @@ export function ExplicacionDeLosTiempos({ onEntendido }: { onEntendido: () => vo
       </View>
       <Desplegable titulo="Qué se mide y quién lo ve">
         <Parrafo>
-          Se guardan los momentos en que tocás Iniciar entrenamiento, Pausar sesión, Reanudar sesión, Iniciar y Finalizar descanso, Cronometrar serie y Finalizar entrenamiento. Abrir la técnica, la rutina, el plan o el historial no se guarda.
+          Se guardan los momentos en que tocás Iniciar entrenamiento, Pausar sesión, Reanudar sesión, Iniciar y Finalizar descanso, el reloj de una serie y Finalizar entrenamiento. Abrir la técnica, la rutina, el plan o el historial no se guarda.
         </Parrafo>
         <Parrafo>Los ven vos y el profesional de tu plan. No usamos ubicación, micrófono, cámara ni sensores.</Parrafo>
         <Parrafo tenue>{COPY_ENTRENAMIENTO_POR_SERIE.noSonMinutosDeEsfuerzo}</Parrafo>
@@ -753,7 +1013,7 @@ export function RutinaDeLaSesion({
           <View key={p.prescriptionId} style={[estilos.itemDeRutina, esActivo && estilos.itemActivo]}>
             <Text style={estilos.tituloDeBloque}>{`${numero(i + 1, 0)}. ${p.exerciseName}`}</Text>
             {r?.ejecutado ? <LineaDeLaSustitucion ejecutado={r.ejecutado} /> : null}
-            {r ? <Text style={estilos.detalle}>{e.seriesRegistradas(r.registradas, r.planificadas)}</Text> : null}
+            {r ? <Text style={estilos.detalle}>{seriesYEscritas(r)}</Text> : null}
             {esActivo ? <Insignia texto={e.ejercicioActivo} positiva /> : null}
             <Boton texto={e.verTecnica} tipo="enlace" onPress={() => onVerTecnica(p.prescriptionId)} />
             {esActivo ? null : <Boton texto={e.pasarAEsteEjercicio} tipo="secundario" onPress={() => onPasarA(p.prescriptionId)} deshabilitado={!puedeCambiar} />}
@@ -913,6 +1173,12 @@ export function TiemposMarcados({ tiempos }: { tiempos: TiemposDelResumen }) {
   );
 }
 
+/** «1 de 3 series registradas · 2 escritas sin registrar» (PA-01). */
+export function seriesYEscritas(r: Pick<ResumenDelEjercicio, 'registradas' | 'planificadas' | 'escritas'>): string {
+  const registradas = COPY_ENTRENAMIENTO_POR_SERIE.seriesRegistradas(r.registradas, r.planificadas);
+  return r.escritas.length > 0 ? `${registradas} · ${TEXTOS_DE_LA_SESION.escritasEnElResumen(r.escritas.length)}` : registradas;
+}
+
 /**
  * Por ejercicio, «N de M series registradas», las que quedan «Sin registrar» (DL-106: la ausencia no es «no realizada»)
  * y la sustitución, si la hay: antes de confirmar se ven el planificado y el ejecutado (B10-06:824-838; DL-151).
@@ -926,11 +1192,11 @@ export function SeriesDelResumen({ resumen }: { resumen: readonly ResumenDelEjer
           key={r.prescriptionId}
           style={estilos.itemDeRutina}
           accessible
-          accessibilityLabel={`${r.nombre}${r.ejecutado ? `. ${COPY_ENTRENAMIENTO.ejecutado}: ${r.ejecutado}, ${COPY_ENTRENAMIENTO.sustituido.toLowerCase()}` : ''}: ${e.seriesRegistradas(r.registradas, r.planificadas)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}` : ''}`}
+          accessibilityLabel={`${r.nombre}${r.ejecutado ? `. ${COPY_ENTRENAMIENTO.ejecutado}: ${r.ejecutado}, ${COPY_ENTRENAMIENTO.sustituido.toLowerCase()}` : ''}: ${seriesYEscritas(r)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}` : ''}`}
         >
           <Text style={estilos.tituloDeBloque}>{r.nombre}</Text>
           {r.ejecutado ? <LineaDeLaSustitucion ejecutado={r.ejecutado} /> : null}
-          <Text style={estilos.textoDeBloque}>{e.seriesRegistradas(r.registradas, r.planificadas)}</Text>
+          <Text style={estilos.textoDeBloque}>{seriesYEscritas(r)}</Text>
           {r.sinRegistrar.length > 0 ? <Text style={estilos.detalle}>{`${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}`}</Text> : null}
         </View>
       ))}
@@ -955,6 +1221,14 @@ const estilos = estilosPorTema((COLOR) => ({
   textoDelTemporizador: { fontSize: 15, fontWeight: '600', color: COLOR.tenue, fontVariant: ['tabular-nums'] },
   calidad: { fontSize: 13, fontWeight: '600', color: COLOR.tenue },
   textoDeEnlace: { fontSize: 16, fontWeight: '700', color: COLOR.acento },
+  // La franja de arriba (PA-02): los tramos son una cuenta de series registradas, no un puntaje.
+  franja: { gap: 2 },
+  cabezaDeLaFranja: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  tramos: { flexDirection: 'row', gap: 4, marginTop: 8, marginBottom: 4 },
+  tramo: { flex: 1, height: 8, borderRadius: 4, backgroundColor: COLOR.borde, overflow: 'hidden' },
+  tramoActual: { borderWidth: 1, borderColor: COLOR.acento },
+  rellenoDelTramo: { height: '100%', backgroundColor: COLOR.acento },
+  tiemposDeLaFranja: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28 },
   enlaceConFlecha: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 48, alignSelf: 'flex-start' },
   // Superficies mates con su borde, sin brillo interno (§7.7).
   tarjeta: { borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, padding: 12, marginVertical: 6 },
@@ -972,23 +1246,37 @@ const estilos = estilosPorTema((COLOR) => ({
   columna: { fontSize: 14, fontWeight: '700', color: COLOR.tenue, textAlign: 'center' },
   columnaSerie: { width: ANCHO_DE_LA_COLUMNA_SERIE },
   columnaDato: { flex: 1 },
+  columnaCasilla: { width: ANCHO_DE_LA_CASILLA },
   fila: { flexDirection: 'row', alignItems: 'stretch', gap: SEPARACION_DE_CELDAS },
   filaQuieta: { borderRadius: 12, borderWidth: 2, borderColor: 'transparent', padding: 4, marginVertical: 2 },
   filaActiva: { borderRadius: 12, borderWidth: 2, borderColor: COLOR.acento, padding: 4, marginVertical: 2, backgroundColor: COLOR.superficie },
   serieActual: { fontSize: 13, fontWeight: '800', color: COLOR.acento, marginLeft: 4, marginBottom: 2 },
-  celdaSerie: { width: ANCHO_DE_LA_COLUMNA_SERIE, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  // La fila registrada toma el color de «registrada» del tema (PA-02): el del aviso de éxito, medido con el texto encima.
+  filaRegistrada: { backgroundColor: COLOR.exitoFondo, borderColor: COLOR.exito },
+  filaRegistradaActiva: { borderColor: COLOR.acento },
+  filaEnConflicto: { borderColor: COLOR.error },
+  celdaSerie: { width: ANCHO_DE_LA_COLUMNA_SERIE, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  datosDeLaFila: { flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: SEPARACION_DE_CELDAS },
   numeroDeSerie: { fontSize: 18, fontWeight: '800', color: COLOR.texto },
-  celda: { flex: 1, minHeight: 48, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  celda: { flex: 1, minHeight: 48, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
   celdaQuieta: { borderColor: COLOR.borde, backgroundColor: COLOR.fondo },
   celdaEditable: { borderColor: COLOR.bordeControl, backgroundColor: COLOR.fondo },
   celdaConError: { borderColor: COLOR.error, borderWidth: 2 },
+  celdaRegistrada: { borderColor: COLOR.exito, backgroundColor: COLOR.exitoFondo },
+  celdaEnCurso: { borderColor: COLOR.acento, borderWidth: 2, backgroundColor: COLOR.fondo },
+  relojDeLaFila: { fontSize: 15, fontWeight: '800', color: COLOR.acento, fontVariant: ['tabular-nums'] },
+  valorDeTiempo: { fontSize: 15, fontWeight: '800', color: COLOR.texto, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  // La casilla: 44 dp de toque, con la caja de la pieza Casilla de ui.tsx.
+  celdaCasilla: { width: ANCHO_DE_LA_CASILLA, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  cajaDeLaCasilla: { marginRight: 0, marginTop: 0 },
   capaDelPlaceholder: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   entradaDeCelda: { alignSelf: 'stretch', minHeight: 46, fontSize: 18, fontWeight: '800', color: COLOR.texto, textAlign: 'center', paddingHorizontal: 2, paddingVertical: 0 },
   placeholder: { fontSize: 16, color: COLOR.tenue, textAlign: 'center' },
-  placeholderSinObjetivo: { fontSize: 12, lineHeight: 15 },
+  placeholderSinObjetivo: { fontSize: 11, lineHeight: 14 },
   valorRegistrado: { fontSize: 18, fontWeight: '800', color: COLOR.texto, textAlign: 'center' },
   estadoDeFila: { fontSize: 13, fontWeight: '600', color: COLOR.tenue, marginLeft: ANCHO_DE_LA_COLUMNA_SERIE + SEPARACION_DE_CELDAS, marginTop: 2 },
   estadoEnConflicto: { color: COLOR.error },
+  estadoRegistrada: { color: COLOR.texto },
   tarjetaDeSerie: { borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, padding: 12, marginVertical: 4 },
   tarjetaActiva: { borderWidth: 2, borderColor: COLOR.acento },
   tituloDeTarjeta: { fontSize: 16, fontWeight: '800', color: COLOR.texto, marginBottom: 4 },
@@ -999,9 +1287,6 @@ const estilos = estilosPorTema((COLOR) => ({
   textos: { flex: 1 },
   tituloDeBloque: { fontSize: 16, fontWeight: '800', color: COLOR.texto },
   textoDeBloque: { fontSize: 15, lineHeight: 21, color: COLOR.texto },
-  filaDeAccion: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56 },
-  medicion: { borderColor: COLOR.acento },
-  relojMediano: { fontSize: 30, fontWeight: '800', color: COLOR.texto, fontVariant: ['tabular-nums'], marginVertical: 4 },
   // El descanso
   descansoAlPie: { gap: 4 },
   descansoEnCurso: { borderColor: COLOR.acento, borderWidth: 2 },

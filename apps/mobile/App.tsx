@@ -53,7 +53,7 @@ import { avisoQueAbrioLaApp, dependenciasDeAvisos, escucharAvisosRecibidos, escu
 import { Cabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
 import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambios';
-import { useCuentaDelEntrenamiento } from './src/entrenamiento-en-curso';
+import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/entrenamiento-en-curso';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { MenuAuxiliar } from './src/menu-auxiliar';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
@@ -448,8 +448,9 @@ function Contenido() {
   // Con sesión verificada: la barra, el avatar y el menú. Mientras se verifica una sesión guardada, nada de la cuenta.
   const conSesion = sesion !== null && recuperacion === null && requiereSesion(ruta);
   const raiz = esRaiz(ruta);
-  // La sesión enfocada de entrenamiento va sin la barra (WP-ENTRENAMIENTO-SERIES §7.2); se sale con Volver o con atrás.
+  // Desde PA-02, también la sesión de entrenamiento lleva la barra: lo escrito queda guardado en el teléfono.
   const conBarra = conSesion && !sinBarraInferior(ruta);
+  const entrenamientoEnCurso = useHayEntrenamientoEnCurso();
   // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación.
   const espacioDeLaBarra = conBarra && altoDeLaBarra > 0 ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
   const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
@@ -616,7 +617,7 @@ function Contenido() {
       {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
           que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
       {conBarra && altoDeLaBarra > 0 ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
-      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} /> : null}
+      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} /> : null}
       <MenuAuxiliar
         visible={menuAbierto && conSesion && raiz}
         cerrar={() => setMenuAbierto(false)}
