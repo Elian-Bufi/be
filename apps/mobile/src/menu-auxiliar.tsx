@@ -11,9 +11,9 @@
  */
 import Constants from 'expo-constants';
 import { Modal, Pressable, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Icono } from './icono';
 import type { Ruta } from './navegacion';
-import { COLOR, estilosPorTema } from './tema';
+import { estilosPorTema } from './tema';
 
 /** Las opciones del menú, en orden. Exportadas para la prueba: ninguna repite un destino de la barra. */
 export const OPCIONES_DEL_MENU: readonly { readonly texto: string; readonly detalle: string; readonly ruta: Ruta }[] = [
@@ -32,9 +32,7 @@ export function MenuAuxiliar({ visible, cerrar, elegir }: { visible: boolean; ce
               Menú
             </Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Cerrar el menú" onPress={cerrar} style={({ pressed }) => [estilos.cerrar, pressed && estilos.presionado]}>
-              <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M6 6l12 12M18 6L6 18" stroke={COLOR.texto} strokeWidth={2} strokeLinecap="round" fill="none" />
-              </Svg>
+              <Icono nombre="cerrar" tamano={24} tono="texto" />
             </Pressable>
           </View>
           {OPCIONES_DEL_MENU.map((o) => (
@@ -49,9 +47,7 @@ export function MenuAuxiliar({ visible, cerrar, elegir }: { visible: boolean; ce
                 <Text style={estilos.textoOpcion}>{o.texto}</Text>
                 <Text style={estilos.detalle}>{o.detalle}</Text>
               </View>
-              <Svg width={18} height={18} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M9 5l7 7-7 7" stroke={COLOR.tenue} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </Svg>
+              <Icono nombre="derecha" tamano={18} tono="tenue" />
             </Pressable>
           ))}
         </View>

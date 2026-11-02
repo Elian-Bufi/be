@@ -22,7 +22,7 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
@@ -168,7 +168,11 @@ export function PantallaDeConsentimiento({
       <Subtitulo>Qué información</Subtitulo>
       {req.pertinentCategories.length === 0 ? <Parrafo>{COPY_VINCULO.sinCategoriasTodavia}</Parrafo> : null}
       {req.pertinentCategories.map((c) => (
-        <Parrafo key={c.code}>✓ {c.label}</Parrafo>
+        // Una lista con su punto, sin tilde: una tilde al lado de cada categoría se leería como «aprobado» (PA-06).
+        <View key={c.code} style={estilos.categoria}>
+          <View style={estilos.puntoDeLaCategoria} />
+          <Text style={estilos.textoDeLaCategoria}>{c.label}</Text>
+        </View>
       ))}
 
       <Aviso tipo="info" titulo={COPY_VINCULO.aclaracionDeConsentimiento} />
@@ -209,4 +213,7 @@ export function PantallaDeConsentimiento({
 const estilos = estilosPorTema((COLOR) => ({
   resumen: { fontSize: 17, color: COLOR.texto, lineHeight: 24, marginTop: 4 },
   destacado: { fontSize: 19, fontWeight: '700', color: COLOR.texto, marginBottom: 8 },
+  categoria: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginVertical: 4 },
+  puntoDeLaCategoria: { width: 6, height: 6, borderRadius: 3, marginTop: 9, backgroundColor: COLOR.acento },
+  textoDeLaCategoria: { flex: 1, fontSize: 16, lineHeight: 23, color: COLOR.texto },
 }));

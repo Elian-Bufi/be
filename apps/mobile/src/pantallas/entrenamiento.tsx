@@ -1707,8 +1707,6 @@ export function PantallaDeSesion({
 
 // ─── La ejecución registrada, con su corrección ─────────────────────────────────────────────
 
-type UnidadDeCarga = 'kg' | 'lb';
-
 /** «60 kg × 8 reps · RIR 2 · esfuerzo 7». Una carga que no se registró se dice así: no es «sin carga» (06:5675). */
 function textoDeSerie(s: { load: { value: number; unit: string } | null; completedRepetitions: number | null; rir: number | null; perceivedExertion: number | null }): string {
   const reps = s.completedRepetitions === null ? '—' : numero(s.completedRepetitions);
@@ -1719,7 +1717,7 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
   return (
     <View>
       <Dato etiqueta={COPY_ENTRENAMIENTO.condicionDeLaSesion} valor={etiquetaDeCondicionRegistrada(registro)} />
-      {registro.reason ? <Dato etiqueta="Motivo" valor={registro.reason} /> : null}
+      {registro.reason ? <Dato etiqueta="Motivo" valor={registro.reason} apilado /> : null}
       {registro.exercises.map((e) => (
         <View key={e.prescriptionId}>
           <Dato
@@ -1739,12 +1737,11 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
   );
 }
 
-export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, salir }: { token: string; id: string; avisoInicial?: string; salir: (m: Salida) => void }) {
+export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, salir, ir }: { token: string; id: string; avisoInicial?: string; salir: (m: Salida) => void; ir: Ir }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const { retirado, accesoRetirado } = useAccesoRetirado();
   const [r, setR] = useState<Resultado<{ data: EjecucionDeEntrenamiento }> | null>(null);
-  const [corrigiendo, setCorrigiendo] = useState(false);
-  const [aviso, setAviso] = useState<string | null>(avisoInicial ?? null);
+  // El aviso llega con la ruta: «Corrección registrada», al volver de la corrección (PA-04).
+  const aviso = avisoInicial ?? null;
 
   const cargar = useCallback(async () => {
     setR(null);
@@ -1757,8 +1754,7 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
     void cargar();
   }, [cargar]);
 
-  // Corregir es una escritura: denegada con el 404 no revelador, el registro se retira de la pantalla.
-  if (retirado) return <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible} />;
+  // Esta pantalla solo lee: la corrección, que escribe, retira el contenido en la suya si el acceso ya no está.
   if (!r) return <Cargando />;
   if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
   const x = r.datos.data;
@@ -1793,214 +1789,9 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
           ))}
         </Seccion>
       ) : null}
-      {corrigiendo ? (
-        <FormularioDeCorreccion
-          token={token}
-          ejecucion={x}
-          sesionPerdida={sesionPerdida}
-          accesoRetirado={accesoRetirado}
-          onCorregida={() => {
-            setCorrigiendo(false);
-            setAviso('Corrección registrada. El registro original se conserva.');
-            void cargar();
-          }}
-          onCancelar={() => setCorrigiendo(false)}
-        />
-      ) : (
-        <Boton texto={COPY_ENTRENAMIENTO.corregirRegistro} tipo="secundario" onPress={() => setCorrigiendo(true)} />
-      )}
+      {/* PA-04: la corrección tiene su pantalla, con las tarjetas y las filas del registro. Al registrarla se vuelve acá. */}
+      <Boton texto={COPY_ENTRENAMIENTO.corregirRegistro} tipo="secundario" icono="corregido" onPress={() => ir({ nombre: 'corregir-ejecucion', id: x.executionId })} />
     </View>
-  );
-}
-
-/**
- * Lo que la persona escribió y no se puede leer como número. `leerNumero` de `@be/domain` devuelve `null` tanto para el
- * campo vacío como para lo que no es un número, así que la diferencia la hace el texto: vacío es «no cargó nada»
- * —legítimo, el RIR es opcional—; escrito y sin leer es un error que hay que decir.
- */
-const sinLeer = (t: string): boolean => t.trim() !== '' && leerNumero(t) === null;
-
-/**
- * Un número ya guardado, escrito dentro de un campo editable: solo cambia el punto decimal por la coma. Acá no va
- * `numero`, que es para **mostrar**: separa los miles con punto, y cambiaría el valor que la persona no tocó. Lo que se
- * precarga tiene que volver de `leerNumero` idéntico a como salió.
- */
-const paraEditar = (v: number): string => String(v).replace('.', ',');
-
-type Condicion = 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED';
-interface SerieEnCorreccion {
-  readonly carga: string;
-  readonly unidad: UnidadDeCarga;
-  readonly reps: string;
-  readonly rir: string;
-}
-interface EstadoDeCorreccion {
-  readonly condicion: Condicion;
-  readonly motivoDeCondicion: string;
-  readonly series: readonly (readonly SerieEnCorreccion[])[];
-  readonly resumenes: readonly string[];
-  readonly resumenDeSesion: string;
-}
-
-/**
- * «Corregir registro» (B10-06:868-886): exige motivo **y un cambio**. Se corrigen la condición y su motivo, la carga
- * (con su unidad), las repeticiones y el RIR de cada serie, y los resúmenes; la corrección lleva el registro completo y
- * el original no se toca (REG-06-116).
- * - Corregir a «No pude realizarla» deja la corrección sin series: el original las conserva.
- * - Corregir un «No pude realizarla» a realizada pide contar cómo fue la sesión: no se inventan series que no se
- *   registraron (09v10:1099-1101).
- */
-function FormularioDeCorreccion({
-  token,
-  ejecucion: x,
-  sesionPerdida,
-  accesoRetirado,
-  onCorregida,
-  onCancelar,
-}: {
-  token: string;
-  ejecucion: EjecucionDeEntrenamiento;
-  sesionPerdida: (r: Resultado<unknown>) => boolean;
-  accesoRetirado: (r: Resultado<unknown>) => boolean;
-  onCorregida: () => void;
-  onCancelar: () => void;
-}) {
-  const base = registroVigente(x);
-  const inicial: EstadoDeCorreccion = {
-    condicion: base.sessionCondition,
-    motivoDeCondicion: base.reason ?? '',
-    series: base.exercises.map((e) =>
-      (e.sets ?? []).map((s) => ({
-        carga: s.load ? paraEditar(s.load.value) : '',
-        unidad: (s.load?.unit ?? 'kg') as UnidadDeCarga,
-        reps: s.completedRepetitions === null ? '' : paraEditar(s.completedRepetitions),
-        rir: s.rir === null ? '' : paraEditar(s.rir),
-      })),
-    ),
-    resumenes: base.exercises.map((e) => e.executionSummary?.description ?? ''),
-    resumenDeSesion: base.sessionSummary?.description ?? '',
-  };
-  const [estado, setEstado] = useState<EstadoDeCorreccion>(inicial);
-  const [motivo, setMotivo] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [fallo, setFallo] = useState<string | null>(null);
-  const intento = useClaveDeIntento();
-  useCambiosSinGuardar(motivo.trim() !== '' || JSON.stringify(estado) !== JSON.stringify(inicial) ? 'la corrección del registro' : null);
-  const sinDatosOriginales = base.sessionCondition === 'NOT_COMPLETED';
-
-  /** El registro corregido que describe un estado del formulario. El inicial describe lo que hoy rige. */
-  function construir(e: EstadoDeCorreccion) {
-    const reason = e.motivoDeCondicion.trim() || null;
-    if (e.condicion === 'NOT_COMPLETED') return { granularity: null, sessionCondition: e.condicion, reason, exercises: [], sessionSummary: null };
-    if (sinDatosOriginales) {
-      return { granularity: 'EXERCISE_OR_SESSION' as const, sessionCondition: e.condicion, reason, exercises: [], sessionSummary: e.resumenDeSesion.trim() ? { description: e.resumenDeSesion.trim() } : null };
-    }
-    return {
-      granularity: base.granularity,
-      sessionCondition: e.condicion,
-      reason,
-      exercises: base.exercises.map((ej, i) =>
-        ej.sets
-          ? {
-              prescriptionId: ej.prescriptionId,
-              performedExerciseVersionId: ej.performedExerciseVersionId,
-              sets: ej.sets.map((s, j) => {
-                const v = e.series[i]?.[j];
-                const carga = v ? leerNumero(v.carga) : null;
-                const reps = v ? leerNumero(v.reps) : null;
-                return {
-                  setIndex: s.setIndex,
-                  load: carga === null ? null : { value: carga, unit: v?.unidad ?? 'kg' },
-                  completedRepetitions: reps === null ? null : Math.round(reps),
-                  rir: v ? leerNumero(v.rir) : null,
-                  perceivedExertion: s.perceivedExertion,
-                };
-              }),
-            }
-          : { prescriptionId: ej.prescriptionId, performedExerciseVersionId: ej.performedExerciseVersionId, executionSummary: { description: (e.resumenes[i] ?? '').trim() } },
-      ),
-      sessionSummary: base.granularity === 'EXERCISE_OR_SESSION' && e.resumenDeSesion.trim() ? { description: e.resumenDeSesion.trim() } : null,
-    };
-  }
-
-  const cambiarSerie = (i: number, j: number, cambio: Partial<SerieEnCorreccion>) =>
-    setEstado((s) => ({ ...s, series: s.series.map((fila, a) => (a === i ? fila.map((c, k) => (k === j ? { ...c, ...cambio } : c)) : fila)) }));
-
-  async function enviar() {
-    if (!motivo.trim()) return setFallo('Contá por qué corregís el registro.');
-    if (!estado.series.every((fila) => fila.every((v) => ![v.carga, v.reps, v.rir].some(sinLeer)))) return setFallo('Revisá los números de las series.');
-    const correccion = construir(estado);
-    // Corregir exige un cambio: una corrección igual a lo que rige no rectifica nada (B10-06:879-884).
-    if (JSON.stringify(correccion) === JSON.stringify(construir(inicial))) return setFallo('La corrección no cambia nada del registro.');
-    if (sinDatosOriginales && estado.condicion !== 'NOT_COMPLETED' && !estado.resumenDeSesion.trim()) return setFallo('Contá cómo fue la sesión.');
-    setEnviando(true);
-    setFallo(null);
-    const r = await api.corregirEjecucion(token, x.executionId, { reason: motivo.trim(), correction: correccion }, intento.actual());
-    intento.registrar(r);
-    setEnviando(false);
-    if (sesionPerdida(r)) return;
-    if (accesoRetirado(r)) return;
-    if (!r.ok) return setFallo(r.tipo === 'API' && r.issues.some((i) => i.code === 'CORRECTION_WITHOUT_CHANGES') ? 'La corrección no cambia nada del registro.' : r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato de la corrección que no se puede guardar.' : falloDe(r).mensaje);
-    onCorregida();
-  }
-
-  const CONDICIONES: readonly { valor: Condicion; texto: string }[] = [
-    { valor: 'COMPLETED', texto: 'Realizada' },
-    { valor: 'COMPLETED_WITH_DEVIATION', texto: 'Realizada con desvío' },
-    { valor: 'NOT_COMPLETED', texto: COPY_ENTRENAMIENTO.noPudeRealizarla },
-  ];
-
-  return (
-    <Seccion titulo={COPY_ENTRENAMIENTO.corregirRegistro}>
-      <Campo etiqueta={COPY_ENTRENAMIENTO.motivoDeLaCorreccion} value={motivo} onChangeText={setMotivo} />
-      <Subtitulo>{COPY_ENTRENAMIENTO.condicionDeLaSesion}</Subtitulo>
-      {CONDICIONES.map((c) => (
-        <Boton key={c.valor} texto={c.texto} tipo={estado.condicion === c.valor ? 'primario' : 'secundario'} seleccionado={estado.condicion === c.valor} onPress={() => setEstado((s) => ({ ...s, condicion: c.valor }))} />
-      ))}
-      <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} value={estado.motivoDeCondicion} onChangeText={(v) => setEstado((s) => ({ ...s, motivoDeCondicion: v }))} />
-      {estado.condicion === 'NOT_COMPLETED' ? (
-        <Parrafo tenue>La corrección queda sin series. El registro original se conserva tal como está.</Parrafo>
-      ) : sinDatosOriginales ? (
-        <Campo etiqueta={`${COPY_ENTRENAMIENTO.resumenDeLaSesion}: contá cómo fue`} value={estado.resumenDeSesion} onChangeText={(v) => setEstado((s) => ({ ...s, resumenDeSesion: v }))} multiline />
-      ) : (
-        <>
-          {base.exercises.map((e, i) => (
-            <View key={e.prescriptionId}>
-              <Subtitulo>{e.performedExerciseName}</Subtitulo>
-              {(e.sets ?? []).map((s, j) => {
-                const v = estado.series[i]?.[j];
-                return (
-                  <View key={s.setIndex}>
-                    <Parrafo>
-                      {COPY_ENTRENAMIENTO.serie} {s.setIndex}
-                    </Parrafo>
-                    <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${v?.unidad ?? 'kg'})`} value={v?.carga ?? ''} onChangeText={(t) => cambiarSerie(i, j, { carga: t })} keyboardType="decimal-pad" />
-                    <Boton texto={`Cambiar a ${v?.unidad === 'lb' ? 'kg' : 'lb'}`} tipo="enlace" onPress={() => cambiarSerie(i, j, { unidad: v?.unidad === 'lb' ? 'kg' : 'lb' })} />
-                    <Campo etiqueta={COPY_ENTRENAMIENTO.reps} value={v?.reps ?? ''} onChangeText={(t) => cambiarSerie(i, j, { reps: t })} keyboardType="number-pad" />
-                    {/* El RIR admite decimales (de 0 a 20): teclado decimal. */}
-                    <Campo etiqueta={`${COPY_ENTRENAMIENTO.rir} (opcional)`} value={v?.rir ?? ''} onChangeText={(t) => cambiarSerie(i, j, { rir: t })} keyboardType="decimal-pad" />
-                  </View>
-                );
-              })}
-              {e.executionSummary ? (
-                <Campo
-                  etiqueta={COPY_ENTRENAMIENTO.resumenDelEjercicio}
-                  value={estado.resumenes[i] ?? ''}
-                  onChangeText={(t) => setEstado((s) => ({ ...s, resumenes: s.resumenes.map((r0, k) => (k === i ? t : r0)) }))}
-                  multiline
-                />
-              ) : null}
-            </View>
-          ))}
-          {base.granularity === 'EXERCISE_OR_SESSION' ? (
-            <Campo etiqueta={`${COPY_ENTRENAMIENTO.resumenDeLaSesion} (opcional)`} value={estado.resumenDeSesion} onChangeText={(v) => setEstado((s) => ({ ...s, resumenDeSesion: v }))} multiline />
-          ) : null}
-        </>
-      )}
-      {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
-      <Boton texto="Registrar corrección" onPress={() => void enviar()} ocupado={enviando} />
-      <Boton texto="Cancelar" tipo="enlace" onPress={onCancelar} deshabilitado={enviando} />
-    </Seccion>
   );
 }
 

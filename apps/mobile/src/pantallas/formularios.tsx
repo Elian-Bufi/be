@@ -231,7 +231,9 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver, ir }: { token:
       return [{ fieldCode: c.fieldCode, value: crudo }];
     });
     const faltaRequerido = request.requiredFieldCodes.some((codigo) => !answers.some((a) => a.fieldCode === codigo));
-    if (faltaRequerido || answers.length === 0) return despachar({ tipo: 'problema-local', titulo: COPY_FORMULARIOS.faltaRequerido });
+    if (faltaRequerido) return despachar({ tipo: 'problema-local', titulo: COPY_FORMULARIOS.faltaRequerido });
+    // La API pide al menos una respuesta (min(1)); el mensaje dice eso, no que falta un requerido (D-C3).
+    if (answers.length === 0) return despachar({ tipo: 'problema-local', titulo: COPY_FORMULARIOS.sinNingunaRespuesta });
 
     despachar({ tipo: 'enviando' });
     setEnviando(true);
@@ -273,11 +275,8 @@ export function PantallaDeMiSolicitud({ token, id, salir, volver, ir }: { token:
       <Parrafo tenue>
         {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName} · {request.purpose}
       </Parrafo>
-      {estado.aviso ? (
-        <Aviso tipo={estado.aviso.tipo}>
-          <Parrafo>{estado.aviso.texto}</Parrafo>
-        </Aviso>
-      ) : null}
+      {/* El texto va como título del aviso: así se anuncia al lector de pantalla y se lee en negrita, como todos (D-C3). */}
+      {estado.aviso ? <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} /> : null}
 
       {response ? (
         <Seccion titulo={COPY_FORMULARIOS.respuestaOriginal}>

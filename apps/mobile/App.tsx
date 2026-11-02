@@ -62,6 +62,7 @@ import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeComidaDiferente } from './src/pantallas/comida-diferente';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
 import { PantallaDeCuenta } from './src/pantallas/cuenta';
+import { PantallaDeCorreccion } from './src/pantallas/correccion-de-entrenamiento';
 import { PantallaDeEjecucionDeEntrenamiento, PantallaDeEntrenamiento, PantallaDeSesion } from './src/pantallas/entrenamiento';
 import { PantallaDeFormularios, PantallaDeMiSolicitud } from './src/pantallas/formularios';
 import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantallas/historial';
@@ -597,7 +598,8 @@ function Contenido() {
                   subir={subir}
                 />
               ) : null}
-              {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} salir={salir} /> : null}
+              {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'corregir-ejecucion' ? <PantallaDeCorreccion key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
               {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} salir={salir} ir={ir} /> : null}
