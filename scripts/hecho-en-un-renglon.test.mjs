@@ -87,6 +87,11 @@ test('una sesión: su nombre en el plan (que puede traer un punto medio) y cuán
   assert.deepEqual(renglonDelHecho(e), { icono: 'entrenamiento', nombre: 'Sesión A · Tren inferior', dato: '7 series con datos', modo: null });
   assert.equal(tituloDelHecho(e), 'Sesión A · Tren inferior', 'la cuenta de series no es parte del nombre');
   assert.equal(renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · B', [['Series con datos', '1']])).dato, '1 serie con datos');
+  // DL-161: cómo se cargaron las series, como lo dice la API, después de la cuenta.
+  const conComoSeCargo = (valor) => renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · B', [['Series con datos', '6'], ['Cómo se cargó', valor]])).dato;
+  assert.equal(conComoSeCargo('Cargada como el plan'), '6 series con datos · cargada como el plan');
+  assert.equal(conComoSeCargo('Parte como el plan'), '6 series con datos · parte como el plan');
+  assert.equal(conComoSeCargo('Con detalle'), '6 series con datos · con detalle');
   // El nombre lo escribe el profesional: si ya empieza con «Sesión», no se le antepone otra.
   assert.equal(renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · Sesión de fuerza')).nombre, 'Sesión de fuerza');
   assert.equal(renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · sesion 3')).nombre, 'sesion 3');

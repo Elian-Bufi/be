@@ -6544,6 +6544,13 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
+/* DL-161: cómo se cargaron las series, en su renglón debajo de la cuenta: discreto, como lo tenue. */
+.sesion-registrada__nivel {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
 .sesiones__sin-sesion {
   margin: 0;
 }
