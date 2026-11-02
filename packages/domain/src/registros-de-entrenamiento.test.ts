@@ -417,3 +417,56 @@ test('ningún texto de estas filas usa una palabra que BE no dice de un entrenam
   for (const t of textos) assert.deepEqual(terminosProhibidosDeEntrenamientoEn(t), [], t);
   for (const t of textos) assert.doesNotMatch(t, /%|—/);
 });
+
+// ─── Registro por niveles (DL-161) ──────────────────────────────────────────────────────────────────────────
+
+test('DL-161 · cada serie dice si se cargó como el plan y cuánto duró; la sesión, su nivel de detalle', () => {
+  const plan = (s: SerieEjecutadaApi): SerieEjecutadaApi => ({ ...s, recordedAs: 'AS_PLANNED' });
+  const x = ejecucion({
+    fecha: '2026-11-02',
+    prescripciones: SESION_B,
+    registrado: [
+      // Banca: las dos primeras con un toque, la primera cronometrada; las otras dos, escritas.
+      { prescriptionId: 'rx-banca', sets: [{ ...plan(BANCA_DENTRO[0]!), durationSeconds: 45 }, plan(BANCA_DENTRO[1]!), BANCA_DENTRO[2]!, { ...BANCA_DENTRO[3]!, durationSeconds: 38 }] },
+      { prescriptionId: 'rx-remo', sets: REMO_DENTRO.map(plan) },
+      { prescriptionId: 'rx-dominadas', sets: DOMINADAS_DENTRO.map(plan) },
+    ],
+  });
+  const f = filaDeLaSesion(x, OBJETIVOS);
+  assert.deepEqual([f.nivelDeDetalle, f.detalle], ['PARTE_COMO_EL_PLAN', 'Parte como el plan']);
+  const deBanca = f.ejercicios.find((e) => e.prescriptionId === 'rx-banca')!;
+  assert.deepEqual(
+    deBanca.series.map((s) => [s.numero, s.comoElPlan ?? false, s.duracion ?? null]),
+    [
+      [1, true, '00:45'],
+      [2, true, null],
+      [3, false, null],
+      [4, false, '00:38'],
+    ],
+  );
+  // Lo registrado y cómo quedó frente a lo indicado se leen igual: la marca no cambia los datos.
+  assert.deepEqual(deBanca.series.map((s) => s.registrado), ['62,5 kg · 8 rep. · RIR 2', '62,5 kg · 7 rep. · RIR 2', '62,5 kg · 6 rep. · RIR 1', '60 kg · 6 rep. · RIR 1']);
+  assert.equal(f.frente, filaDeLaSesion(ejecucion({ fecha: '2026-11-02', prescripciones: SESION_B, registrado: TODO_DENTRO }), OBJETIVOS).frente);
+  // Toda la sesión con un toque.
+  const todaComoElPlan = filaDeLaSesion(ejecucion({ fecha: '2026-11-03', prescripciones: SESION_B, registrado: TODO_DENTRO.map((e) => ({ ...e, sets: e.sets!.map(plan) })) }), OBJETIVOS);
+  assert.deepEqual([todaComoElPlan.nivelDeDetalle, todaComoElPlan.detalle], ['COMO_EL_PLAN', 'Cargada como el plan']);
+});
+
+test('DL-161 · lo registrado antes queda igual: con detalle, y sus series sin marca ni duración', () => {
+  assert.deepEqual([fila24.nivelDeDetalle, fila24.detalle], ['CON_DETALLE', 'Con detalle']);
+  for (const s of fila24.ejercicios.flatMap((e) => e.series)) {
+    assert.equal('comoElPlan' in s, false);
+    assert.equal('duracion' in s, false);
+  }
+  const noRealizada = filaDeLaSesion(ejecucion({ fecha: '2026-09-20', condicion: 'NOT_COMPLETED', prescripciones: SESION_B, registrado: [] }), OBJETIVOS);
+  const resumida = filaDeLaSesion(ejecucion({ fecha: '2026-09-21', prescripciones: SESION_B, registrado: [{ prescriptionId: 'rx-banca', resumen: 'Hice las cuatro series, sin anotar' }] }), OBJETIVOS);
+  const sinResolver = filaDeLaSesion(ejecucion({ fecha: '2026-09-22', prescripciones: SESION_B, registrado: TODO_DENTRO, noResoluble: true }), OBJETIVOS);
+  assert.deepEqual(
+    [noRealizada, resumida, sinResolver].map((g) => [g.nivelDeDetalle, g.detalle]),
+    [
+      ['NO_REALIZADA', 'No realizada'],
+      ['RESUMIDA', 'Resumida, sin series'],
+      [null, null],
+    ],
+  );
+});

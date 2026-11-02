@@ -1,0 +1,50 @@
+{
+  "cuando": "2026-10-28T06:04:41.973Z",
+  "maquina": {
+    "cpus": 4,
+    "memoriaGb": 15.6,
+    "node": "v22.23.2"
+  },
+  "lecturasPorTamanio": 20,
+  "resultados": [
+    {
+      "personas": 50,
+      "lecturas": 20,
+      "ms": {
+        "minimo": 295,
+        "mediana": 311.8,
+        "p95": 335.6,
+        "maximo": 343.7
+      },
+      "filasDeDecisionPorLectura": 150,
+      "transaccionesPorLecturaAprox": 61.7,
+      "items": 50
+    },
+    {
+      "personas": 100,
+      "lecturas": 20,
+      "ms": {
+        "minimo": 596,
+        "mediana": 616.7,
+        "p95": 869.6,
+        "maximo": 978.3
+      },
+      "filasDeDecisionPorLectura": 300,
+      "transaccionesPorLecturaAprox": 116.8,
+      "items": 50
+    },
+    {
+      "personas": 200,
+      "lecturas": 20,
+      "ms": {
+        "minimo": 1193,
+        "mediana": 1233.4,
+        "p95": 1495.4,
+        "maximo": 1580.3
+      },
+      "filasDeDecisionPorLectura": 600,
+      "transaccionesPorLecturaAprox": 199.6,
+      "items": 50
+    }
+  ]
+}

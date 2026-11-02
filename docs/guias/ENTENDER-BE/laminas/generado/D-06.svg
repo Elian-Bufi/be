@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="286pt" viewBox="0 0 750 286" data-lamina="D-06">
+<title>Dos transacciones a la vez: una espera a la otra</title>
+<desc>La suspensión no corta un pedido a la mitad: espera que termine, y el siguiente ya ve el cambio. · Fuente: migración 20261003000000_pdp_bloqueos_en_una_llamada · administracion.service.ts · administracion.int-spec.ts · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="286" fill="#FFFFFF"/>
+<path d="M 80 50 L 80 252" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 300 50 L 300 252" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 520 50 L 520 252" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 680 50 L 680 252" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<rect x="76" y="64" width="8" height="86" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="516" y="92" width="8" height="102" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="676" y="214" width="8" height="30" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="0" y="262" width="750" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 10 274.5 L 39 274.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 40 274.5 L 32 278.1 L 32 270.9 Z" fill="#33475F"/>
+<text x="48" y="278.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pedido a la base</text>
+<path d="M 215.04 274.5 L 244.04 274.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 238.04 277.86 L 245.04 274.5 L 238.04 271.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="253.04" y="278.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">respuesta de la base</text>
+<rect x="444.7" y="268" width="22" height="8" rx="2" fill="#EEF4FE" stroke="#1453C9" stroke-width="1"/><path d="M 455.7 276 L 455.7 283" stroke="#566881" stroke-dasharray="4.5 3"/>
+<text x="478.7" y="278.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">transacción (la barra: mientras dura)</text>
+<path d="M 84 74 L 290 74" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 296 74 L 288 77.6 L 288 70.4 Z" fill="#33475F"/>
+<path d="M 516 100 L 310 100" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 304 100 L 312 96.4 L 312 103.6 Z" fill="#33475F"/>
+<path d="M 524 106 L 550 106 L 550 120 L 533 120" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 527 120 L 535 116.4 L 535 123.6 Z" fill="#33475F"/>
+<path d="M 84 128 L 290 128" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 296 128 L 288 131.6 L 288 124.4 Z" fill="#33475F"/>
+<path d="M 84 150 L 290 150" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 296 150 L 288 153.6 L 288 146.4 Z" fill="#33475F"/>
+<path d="M 304 172 L 516 172" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 509 175.36 L 516 172 L 509 168.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 516 194 L 310 194" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 304 194 L 312 190.4 L 312 197.6 Z" fill="#33475F"/>
+<path d="M 676 222 L 310 222" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 304 222 L 312 218.4 L 312 225.6 Z" fill="#33475F"/>
+<path d="M 304 244 L 676 244" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 669 247.36 L 676 244 L 669 240.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="20" y="4" width="120" height="46" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="80" y="24.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Pedido 1</text>
+<text x="80" y="37.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">del profesional</text>
+<rect x="240" y="4" width="120" height="46" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="300" y="24.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PostgreSQL</text>
+<text x="300" y="37.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">fila de verificación</text>
+<rect x="460" y="4" width="120" height="46" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="520" y="24.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Suspensión</text>
+<text x="520" y="37.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">de Administración</text>
+<rect x="620" y="4" width="120" height="46" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="680" y="24.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Pedido 2</text>
+<text x="680" y="37.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">del profesional</text>
+<rect x="100.97" y="59" width="178.07" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="190" y="69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">BEGIN · la toma en modo compartido</text>
+<rect x="327.1" y="85" width="165.79" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="410" y="95" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">BEGIN · la pide en modo exclusivo</text>
+<rect x="554" y="107" width="39.32" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="556" y="117" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">espera:</text>
+<rect x="554" y="120.5" width="62.19" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="556" y="130.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">está tomada</text>
+<rect x="128.96" y="113" width="122.07" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="190" y="123" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">lee los hechos: permitida</text>
+<rect x="144.48" y="135" width="91.03" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="190" y="145" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">COMMIT: la suelta</text>
+<rect x="374.97" y="157" width="70.06" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="410" y="167" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">ahora es suya</text>
+<rect x="350.18" y="179" width="119.63" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="410" y="189" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">SUSPENDIDO · COMMIT</text>
+<rect x="400.97" y="207" width="178.07" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="490" y="217" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">BEGIN · la toma en modo compartido</text>
+<rect x="408.11" y="229" width="163.78" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="490" y="239" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">SUSPENDIDO: el PDP niega (404)</text>
+</svg>

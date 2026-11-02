@@ -38126,7 +38126,7 @@
     "/training/exercises": {
       "get": {
         "operationId": "API-TRN-13",
-        "summary": "Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.",
+        "summary": "Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. muscleZones trae las zonas vigentes del ejercicio (por identificador, con su rol; DL-081) y didacticResources su imagen vigente, si tiene (resourceId es el mediaId que se pide con API-MED-03; DL-162). Ninguna zona sale de wger ni del nombre.",
         "description": "Fuente: 09v10:838-854 · RF-037 · INV-06-143 · DEUDA_LEGAJO DL-139, DL-141. AuthN: SESSION.",
         "security": [
           {
@@ -38474,7 +38474,7 @@
       },
       "post": {
         "operationId": "API-INT-TRN-01",
-        "summary": "Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; no altera instantáneas activas.",
+        "summary": "Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; cada zona es una de las 17 de API-ZON-01, sin repetirse, con su rol (una desconocida o repetida es 422). El material didáctico se asocia después (API-EJE-02). No altera instantáneas activas.",
         "description": "Fuente: 09v12:308-340 · RF-037 · REG-06-139 · docs/paquetes/WP-06.md §9.8. AuthN: SESSION.",
         "security": [
           {
@@ -54645,6 +54645,25 @@
                                                         "type": "null"
                                                       }
                                                     ]
+                                                  },
+                                                  "recordedAs": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "TYPED",
+                                                      "AS_PLANNED"
+                                                    ]
+                                                  },
+                                                  "durationSeconds": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 36000
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
@@ -54878,6 +54897,25 @@
                                                               "type": "number",
                                                               "minimum": 0,
                                                               "maximum": 10
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "recordedAs": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "TYPED",
+                                                            "AS_PLANNED"
+                                                          ]
+                                                        },
+                                                        "durationSeconds": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 36000
                                                             },
                                                             {
                                                               "type": "null"
@@ -55395,6 +55433,25 @@
                                               "type": "null"
                                             }
                                           ]
+                                        },
+                                        "recordedAs": {
+                                          "type": "string",
+                                          "enum": [
+                                            "TYPED",
+                                            "AS_PLANNED"
+                                          ]
+                                        },
+                                        "durationSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 36000
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -55710,6 +55767,25 @@
                                               "type": "number",
                                               "minimum": 0,
                                               "maximum": 10
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "recordedAs": {
+                                          "type": "string",
+                                          "enum": [
+                                            "TYPED",
+                                            "AS_PLANNED"
+                                          ]
+                                        },
+                                        "durationSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 36000
                                             },
                                             {
                                               "type": "null"
@@ -56152,6 +56228,25 @@
                                               "type": "null"
                                             }
                                           ]
+                                        },
+                                        "recordedAs": {
+                                          "type": "string",
+                                          "enum": [
+                                            "TYPED",
+                                            "AS_PLANNED"
+                                          ]
+                                        },
+                                        "durationSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 36000
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -56521,6 +56616,25 @@
                                             "type": "null"
                                           }
                                         ]
+                                      },
+                                      "recordedAs": {
+                                        "type": "string",
+                                        "enum": [
+                                          "TYPED",
+                                          "AS_PLANNED"
+                                        ]
+                                      },
+                                      "durationSeconds": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 36000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
                                       }
                                     },
                                     "required": [
@@ -56802,6 +56916,25 @@
                                               "type": "number",
                                               "minimum": 0,
                                               "maximum": 10
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "recordedAs": {
+                                          "type": "string",
+                                          "enum": [
+                                            "TYPED",
+                                            "AS_PLANNED"
+                                          ]
+                                        },
+                                        "durationSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 36000
                                             },
                                             {
                                               "type": "null"
@@ -57732,6 +57865,25 @@
                                                   "type": "null"
                                                 }
                                               ]
+                                            },
+                                            "recordedAs": {
+                                              "type": "string",
+                                              "enum": [
+                                                "TYPED",
+                                                "AS_PLANNED"
+                                              ]
+                                            },
+                                            "durationSeconds": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "integer",
+                                                  "minimum": 0,
+                                                  "maximum": 36000
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -57965,6 +58117,25 @@
                                                         "type": "number",
                                                         "minimum": 0,
                                                         "maximum": 10
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "recordedAs": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "TYPED",
+                                                      "AS_PLANNED"
+                                                    ]
+                                                  },
+                                                  "durationSeconds": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 36000
                                                       },
                                                       {
                                                         "type": "null"
@@ -58433,6 +58604,25 @@
                                             "type": "number",
                                             "minimum": 0,
                                             "maximum": 10
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "recordedAs": {
+                                        "type": "string",
+                                        "enum": [
+                                          "TYPED",
+                                          "AS_PLANNED"
+                                        ]
+                                      },
+                                      "durationSeconds": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 36000
                                           },
                                           {
                                             "type": "null"
@@ -59013,6 +59203,25 @@
                                                   "type": "null"
                                                 }
                                               ]
+                                            },
+                                            "recordedAs": {
+                                              "type": "string",
+                                              "enum": [
+                                                "TYPED",
+                                                "AS_PLANNED"
+                                              ]
+                                            },
+                                            "durationSeconds": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "integer",
+                                                  "minimum": 0,
+                                                  "maximum": 36000
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -59246,6 +59455,25 @@
                                                         "type": "number",
                                                         "minimum": 0,
                                                         "maximum": 10
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "recordedAs": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "TYPED",
+                                                      "AS_PLANNED"
+                                                    ]
+                                                  },
+                                                  "durationSeconds": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 36000
                                                       },
                                                       {
                                                         "type": "null"
@@ -60366,6 +60594,25 @@
                                                         "type": "null"
                                                       }
                                                     ]
+                                                  },
+                                                  "recordedAs": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "TYPED",
+                                                      "AS_PLANNED"
+                                                    ]
+                                                  },
+                                                  "durationSeconds": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 36000
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
@@ -60599,6 +60846,25 @@
                                                               "type": "number",
                                                               "minimum": 0,
                                                               "maximum": 10
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "recordedAs": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "TYPED",
+                                                            "AS_PLANNED"
+                                                          ]
+                                                        },
+                                                        "durationSeconds": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 36000
                                                             },
                                                             {
                                                               "type": "null"
@@ -60957,6 +61223,25 @@
                                                         "type": "number",
                                                         "minimum": 0,
                                                         "maximum": 10
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "recordedAs": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "TYPED",
+                                                      "AS_PLANNED"
+                                                    ]
+                                                  },
+                                                  "durationSeconds": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 36000
                                                       },
                                                       {
                                                         "type": "null"
@@ -73283,6 +73568,889 @@
           },
           "409": {
             "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/muscle-zones": {
+      "get": {
+        "operationId": "API-ZON-01",
+        "summary": "El catálogo de las 17 zonas musculares (9 de frente, 10 de espalda, antebrazo y deltoides en las dos), con su identificador estable, su nombre visible, sus vistas y la versión del catálogo. La zona es dominio, no un archivo gráfico: cada máscara cita su identificador. No hay un catálogo por sexo.",
+        "description": "Fuente: 09v10 §8 · REG-06-137, 138 · DEUDA_LEGAJO DL-081. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "zoneId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "anatomicalViews": {
+                            "minItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "ANTERIOR",
+                                "POSTERIOR"
+                              ]
+                            }
+                          },
+                          "version": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "zoneId",
+                          "name",
+                          "anatomicalViews",
+                          "version"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/exercises/{exerciseId}/muscle-zones": {
+      "put": {
+        "operationId": "API-EJE-04",
+        "summary": "Reemplazar las zonas de un ejercicio propio (carga manual) para una versión suya: la lista completa, sin repetidas, cada zona con su rol PRIMARY o SECONDARY y sin porcentajes. Vacía quita todas. Exige expectedZonesVersion (0 si nunca tuvo). Cada cambio es una asignación nueva: la historia queda. Las zonas del catálogo de todos las cura BE, no esta operación.",
+        "description": "Fuente: REG-06-139 · 09v10 §7.1 · B10-06 §20 a 22 · DEUDA_LEGAJO DL-081. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "exerciseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "exerciseVersionId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expectedZonesVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "muscleZones": {
+                    "maxItems": 17,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "zoneId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "PRIMARY",
+                            "SECONDARY"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "zoneId",
+                        "role"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "exerciseVersionId",
+                  "expectedZonesVersion",
+                  "muscleZones"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "exerciseId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "provenance": {
+                          "type": "string",
+                          "enum": [
+                            "BE_SYNTHETIC_SEED",
+                            "PROFESSIONAL_MANUAL",
+                            "CONTROLLED_IMPORT"
+                          ]
+                        },
+                        "muscleZones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "zoneId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "PRIMARY",
+                                  "SECONDARY"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "zoneId",
+                              "role"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "zonesVersion": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "zonesExerciseVersionId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "imageVersion": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "image": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "mediaId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "imageVersion": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "exerciseVersionId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "provenance": {
+                                  "type": "string",
+                                  "enum": [
+                                    "AI_GENERATED",
+                                    "PERSON_PROVIDED"
+                                  ]
+                                },
+                                "authorship": {
+                                  "type": "string"
+                                },
+                                "license": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "NO_EXTERNAL_LICENSE"
+                                        },
+                                        "usage": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 300
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "usage"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "EXTERNAL"
+                                        },
+                                        "id": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 80
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        },
+                                        "url": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "maxLength": 500,
+                                              "format": "uri"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "id",
+                                        "label",
+                                        "url"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ]
+                                },
+                                "technicalReview": {
+                                  "type": "string",
+                                  "enum": [
+                                    "PENDING_PROFESSIONAL_REVIEW",
+                                    "REVIEWED_BY_PROFESSIONAL"
+                                  ]
+                                },
+                                "altText": {
+                                  "type": "string"
+                                },
+                                "associatedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "mediaId",
+                                "imageVersion",
+                                "exerciseVersionId",
+                                "provenance",
+                                "authorship",
+                                "license",
+                                "technicalReview",
+                                "altText",
+                                "associatedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "exerciseId",
+                        "versionId",
+                        "name",
+                        "provenance",
+                        "muscleZones",
+                        "zonesVersion",
+                        "zonesExerciseVersionId",
+                        "imageVersion",
+                        "image"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED | EXERCISE_REFERENCE_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/exercises/visual-sheets": {
+      "post": {
+        "operationId": "API-EJE-05",
+        "summary": "La ficha visual de 1 a 50 ejercicios, por identidad: las zonas vigentes y la imagen vigente, con su procedencia (AI_GENERATED o PERSON_PROVIDED), autoría, licencia, texto alternativo y revisión técnica. Es una lectura: responde 200 y no exige Idempotency-Key. Responde los que quien consulta ve en el catálogo, en el orden pedido; los demás no existen para él.",
+        "description": "Fuente: REG-06-134, 135, 139 · 09v10 §7 y §9 · B10-06 §20, 21 y 59 · DEUDA_LEGAJO DL-081, DL-162. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "exerciseIds": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "exerciseIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "exerciseId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "provenance": {
+                            "type": "string",
+                            "enum": [
+                              "BE_SYNTHETIC_SEED",
+                              "PROFESSIONAL_MANUAL",
+                              "CONTROLLED_IMPORT"
+                            ]
+                          },
+                          "muscleZones": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "zoneId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "role": {
+                                  "type": "string",
+                                  "enum": [
+                                    "PRIMARY",
+                                    "SECONDARY"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "zoneId",
+                                "role"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "zonesVersion": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "zonesExerciseVersionId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "imageVersion": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "image": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "mediaId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "imageVersion": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "exerciseVersionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "provenance": {
+                                    "type": "string",
+                                    "enum": [
+                                      "AI_GENERATED",
+                                      "PERSON_PROVIDED"
+                                    ]
+                                  },
+                                  "authorship": {
+                                    "type": "string"
+                                  },
+                                  "license": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "NO_EXTERNAL_LICENSE"
+                                          },
+                                          "usage": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 300
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "usage"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "EXTERNAL"
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 80
+                                          },
+                                          "label": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 200
+                                          },
+                                          "url": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 500,
+                                                "format": "uri"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "id",
+                                          "label",
+                                          "url"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  },
+                                  "technicalReview": {
+                                    "type": "string",
+                                    "enum": [
+                                      "PENDING_PROFESSIONAL_REVIEW",
+                                      "REVIEWED_BY_PROFESSIONAL"
+                                    ]
+                                  },
+                                  "altText": {
+                                    "type": "string"
+                                  },
+                                  "associatedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  }
+                                },
+                                "required": [
+                                  "mediaId",
+                                  "imageVersion",
+                                  "exerciseVersionId",
+                                  "provenance",
+                                  "authorship",
+                                  "license",
+                                  "technicalReview",
+                                  "altText",
+                                  "associatedAt"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "exerciseId",
+                          "versionId",
+                          "name",
+                          "provenance",
+                          "muscleZones",
+                          "zonesVersion",
+                          "zonesExerciseVersionId",
+                          "imageVersion",
+                          "image"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {

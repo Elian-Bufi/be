@@ -1,0 +1,25 @@
+{
+  "descripcion": "Los ejercicios que usan las cuentas de la demostración, por identidad. CATALOGO: los 12 de WP-06, sembrados por la migración 20260921100000 con el mismo identificador en todos los ambientes (los curan zonas y fotos con el comando de BE). PROPIO: los de la cuenta PRO_T (Prof. Martín Acosta) que crea la carga de la cohorte; se cruzan por la versión guardada en estado.json (ejercicios.<clave>), nunca por el nombre.",
+  "ejercicios": [
+    { "clave": "sentadilla", "nombre": "Sentadilla", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e01", "codigoDeImagen": "E04" },
+    { "clave": "banca", "nombre": "Press de banca", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e02", "codigoDeImagen": "E05" },
+    { "clave": "pressMancuernas", "nombre": "Press con mancuernas", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e03", "codigoDeImagen": "E06" },
+    { "clave": "pesoMuerto", "nombre": "Peso muerto", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e04", "codigoDeImagen": "E07" },
+    { "clave": "remo", "nombre": "Remo con barra", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e05", "codigoDeImagen": "E08" },
+    { "clave": "dominadas", "nombre": "Dominadas", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e06", "codigoDeImagen": "E09" },
+    { "clave": "pressMilitar", "nombre": "Press militar", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e07", "codigoDeImagen": "E10" },
+    { "clave": "zancadas", "nombre": "Zancadas", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e08", "codigoDeImagen": "E11" },
+    { "clave": "curl", "nombre": "Curl de bíceps", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e09", "codigoDeImagen": "E12" },
+    { "clave": "triceps", "nombre": "Extensión de tríceps", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e10", "codigoDeImagen": "E13" },
+    { "clave": "plancha", "nombre": "Plancha", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e11", "codigoDeImagen": "E14" },
+    { "clave": "hipThrust", "nombre": "Hip thrust", "ambito": "CATALOGO", "exerciseId": "4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e12", "codigoDeImagen": "E15" },
+    { "clave": "sentadillaACajon", "nombre": "Sentadilla a cajón", "ambito": "PROPIO", "codigoDeImagen": "E16" },
+    { "clave": "prensa", "nombre": "Prensa de piernas", "ambito": "PROPIO", "codigoDeImagen": "E17" },
+    { "clave": "remoEnPolea", "nombre": "Remo en polea baja", "ambito": "PROPIO", "codigoDeImagen": "E18" },
+    { "clave": "talones", "nombre": "Elevación de talones", "ambito": "PROPIO", "codigoDeImagen": "E19" },
+    { "clave": "equilibrio", "nombre": "Equilibrio en un pie", "ambito": "PROPIO", "codigoDeImagen": "E20" },
+    { "clave": "caminata", "nombre": "Caminata en cinta", "ambito": "PROPIO", "codigoDeImagen": "E21" },
+    { "clave": "cargada", "nombre": "Cargada de potencia", "ambito": "PROPIO", "codigoDeImagen": "E22" },
+    { "clave": "sentadillaFrontal", "nombre": "Sentadilla frontal", "ambito": "PROPIO", "codigoDeImagen": "E23" }
+  ]
+}

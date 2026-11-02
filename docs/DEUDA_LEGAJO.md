@@ -85,7 +85,7 @@
 | DL-078 | WP-06 · 2026-09-21 | 09v10:924 · 09v10:886 · 09v10:188-189, 915 | No hay operación para llegar a una ocurrencia que no sea la de hoy | **DECIDIDA** 2026-09-21 · opción A · se suma la operación |
 | DL-079 | WP-06 · 2026-09-21 | 09v10:1053, 1089 · 09v10:888 | `prescriptionId` es obligatorio al registrar ejecución y no se puede descubrir | ABIERTA |
 | DL-080 | WP-06 · 2026-09-21 | 09v10:549, 612, 328, 330, 1092, 1095, 1244, 1323, 406 | Once objetos `{}` en requests de escritura de entrenamiento | ABIERTA |
-| DL-081 | WP-06 · 2026-09-21 | 06:5614-5632 · 06:80, 4103 · 09v12:326-332 | Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio | ABIERTA |
+| DL-081 | WP-06 · 2026-09-21 | 06:5614-5632 · 06:80, 4103 · 09v12:326-332 | Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio | **CERRADA** 2026-11-02 por pedido de Dirección · las 17 zonas con los nombres e identificadores del set de capas de Dirección, API-ZON-01 y las zonas de cada ejercicio con su rol (WP-CATALOGO-VISUAL, rama `wp-catalogo-visual`, sin integrar); DEC-047 sigue fuera del repositorio |
 | DL-082 | WP-06 · 2026-09-21 | 06:4651-4663 · 06:4958-4965 · 06:226 | No existe una regla equivalente a REG-06-125 para entrenamiento | ABIERTA |
 | DL-083 | WP-06 · 2026-09-21 | 08:238-246 · 08:304 · 08:291-293 | La matriz de pertinencia del 08 §11-bis no está instanciada para ENTRENAMIENTO | ABIERTA |
 | DL-084 | WP-06 · 2026-09-21 | DV-05:1128-1129 · DL-042 | Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron | **RESUELTA** 2026-09-21 con el provisorio (opción A) · las variantes de entrenamiento del 7 y del 8 pasan en CI y en vivo contra `test` (API 0.6.0, `c50fdd9`; evidencia en #56) |
@@ -162,6 +162,9 @@
 | DL-156 | WP-ADMINISTRACION · 2026-10-25 | 05 UC-P02 §4.6.10 · REG-06-38 · INV-06-43 | Toda resolución identifica la versión revisada de una presentación, y en esta versión no hay presentaciones | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la versión revisada es la de la trayectoria del área al decidir (`version_previa` del hecho), con el control de conflictos previsto (`expectedVersion`) |
 | DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la suspensión opera por área y no cierra las sesiones globales del profesional; el servidor rechaza las operaciones del área suspendida desde el pedido siguiente (la sesión autentica, no autoriza) |
 | DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **RATIFICADA** por Dirección el 2026-10-25 e **INTEGRADA** (#211, `7079677`), desplegada en test (C-D1 opción A y C-D2): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; con alternativas no se inventa un total diario, y la comparación no se presenta como adherencia; falta la prueba con profesionales y con un lector de pantalla |
+| DL-160 | Decisión de Dirección · 2026-11-02 (registro rápido y «Ya la hice») | B10-06 §57 · B10-06 §29 · DL-137 · DL-161 | La regla «el día de hoy se entrena con los cronómetros» no está en el legajo: es un comentario de la APK, y B10-06 §57 dice que el temporizador no es requisito P0 | **DECIDIDA** por Dirección el 2026-11-02: el registro rápido y «Ya la hice» valen también el mismo día; los cronómetros quedan como ayuda opcional. La API ya lo admite (confirmar la sesión de hoy no pide eventos de tiempo); la APK lo toma en su rama; falta el teléfono |
+| DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` (PR en borrador), sin integrar: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, en su rama; queda documentado el caso de una ejecución nueva leída por una APK anterior; decisiones I-1 a I-6 a ratificar |
+| DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar · D-1 a D-5 a ratificar: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
 
 ---
 
@@ -1874,7 +1877,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-081 — Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio
 
-**Prioridad:** media · **Documento:** 06:5614-5632 · 06:80, 4103 · 09v12:326-332 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06:5614-5632 · 06:80, 4103 · 09v12:326-332 · **Estado:** **CERRADA** 2026-11-02 (ver «Cierre», al final)
 
 **Qué dice el legajo.** REG-06-137 fija **17 zonas** con identificador estable y la cardinalidad «9 anterior + 10 posterior − 2 ambas» (06:5614), nombra solo antebrazo y deltoides, y remite las otras quince a `DEC-047`: «B-08 no fija en esta revisión la lista concreta de las otras quince denominaciones» (06:5632). **`DEC-047` no está en el repositorio**: solo se lo referencia por hash (06:80, 06:4103). Y `API-INT-TRN-01` exige `muscleZones[].zoneId` en el request (09v12:326-332) sin que **ninguna de las 27 rutas** liste las zonas.
 
@@ -1885,6 +1888,62 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Pedir DEC-047 a Dirección antes de empezar WP-07.
 
 **Provisorio en código.** A. La estructura es lo que el paquete garantiza; los nombres son contenido, y rotular el catálogo como sintético ya es el precedente de REG-06-157 en WP-05. **Conecta con DL-073**: REG-06-138 declara que la Zona es entidad de dominio y **no un archivo gráfico**, y que el conjunto femenino reutiliza los mismos 17 identificadores (06:5636) — o sea que la silueta que Dirección pidió para antropometría tiene un uso declarado también acá, sin que una silueta obligue a migrar datos.
+
+**Cierre (2026-11-02, pedido de Dirección: «zonas musculares en el escritorio del profesional esta semana, con sus imágenes»).**
+- **De dónde salen los nombres.** Del set de capas que entregó Dirección («BE-TRAIN · set de capas musculares», modelo
+  masculino, vistas frontal y posterior, versión 1.0 del 2026-08-13): 9 máscaras de frente y 10 de espalda, con su
+  `registro-m-front.json` y `registro-m-back.json`. Es lo que reemplaza a DEC-047, que sigue fuera del repositorio.
+- **Las 17 zonas.** El identificador es el nombre del grupo en el archivo de la máscara (`be-mask-{sexo}-{vista}-{zona}.png`),
+  sin sexo ni vista, y el nombre visible es el de la columna derecha:
+
+  | Identificador | Nombre visible | Frente | Espalda |
+  |---|---|---|---|
+  | `trapecio` | Trapecio | | ✓ |
+  | `deltoides` | Deltoides | ✓ | ✓ |
+  | `pectoral` | Pectoral | ✓ | |
+  | `romboides` | Romboides | | ✓ |
+  | `dorsal` | Dorsal ancho | | ✓ |
+  | `biceps` | Bíceps | ✓ | |
+  | `triceps` | Tríceps | | ✓ |
+  | `antebrazo` | Antebrazo | ✓ | ✓ |
+  | `recto-abdominal` | Recto abdominal | ✓ | |
+  | `oblicuos` | Oblicuos | ✓ | |
+  | `erectores` | Erectores espinales | | ✓ |
+  | `gluteos` | Glúteos | | ✓ |
+  | `cuadriceps` | Cuádriceps | ✓ | |
+  | `aductores` | Aductores | ✓ | |
+  | `isquios` | Isquiotibiales | | ✓ |
+  | `tibial` | Tibial anterior | ✓ | |
+  | `gemelos` | Gemelos | | ✓ |
+- **Dónde viven.** En el dominio (`packages/domain/src/zonas-musculares.ts`, con su versión `zonas-be-2026-11-02`), en la
+  base (`zona_muscular`, sembrada por la migración `20261102120000_catalogo_visual`, con las vistas como lista de la
+  enumeración `VistaAnatomica` y sin booleanos, y una prueba de integración compara las dos listas) y en la operación de
+  descubrimiento que faltaba, **API-ZON-01** (`GET /training/muscle-zones`, familia propia ZON en la guardia de DL-116).
+- **Las zonas de un ejercicio** (REG-06-139). Una asignación por cambio, numerada y para una versión del ejercicio, con su
+  procedencia; cada zona con su rol PRIMARY o SECONDARY (PRINCIPAL y SECUNDARIO en la base) y sin porcentajes. Lo cargado a
+  mano lo asigna su profesional al cargarlo (API-INT-TRN-01) o después (**API-EJE-04**); lo sembrado y lo importado de wger lo
+  cura BE con el comando del operador (DL-162). Viajan en `muscleZones` de API-TRN-13 y su búsqueda, con la forma que leen las
+  APK instaladas (DL-152), y en la ficha visual (**API-EJE-05**).
+
+**Contraste con 09v10 §8 y B10-06 §21, §22 y §59.**
+- **Coincide:** 17 zonas, 9 de frente y 10 de espalda, antebrazo y deltoides en las dos (09v10:468-484); la zona no es un
+  archivo y las máscaras citan su identificador, sin un catálogo por sexo (09v10:486-494; REG-06-138); el color de la figura
+  no es un peso (B10-06 §21: el LEEME del set dice lo mismo del área de cada máscara); nada se deduce de la imagen ni se
+  calcula (B10-06 §59; REG-06-139).
+- **No coincide del todo, y lo decidí así (a corregir si Dirección prefiere otra cosa):**
+  - El identificador. 09v10:458 da `zone_...` de ejemplo y 09v10:482-483 nombra «forearm / antebrazo» y «deltoid /
+    deltoides». El legajo no fija el formato (REG-06-137 pide «identificador estable»): usé el nombre del grupo del set, que es
+    lo que cita cada máscara. Ni `zone_…` ni el inglés.
+  - Los nombres cortos del set. «isquios», «erectores», «dorsal» y «tibial» se muestran como «Isquiotibiales», «Erectores
+    espinales», «Dorsal ancho» y «Tibial anterior», que es lo que dice el LEEME de cada vista. El identificador no cambia.
+  - B10-06 §22 pone «mapear/corregir zonas» dentro de la importación de wger, a cargo del profesional. Desde DL-141 D-1 lo
+    importado es de todos, así que ese mapeo fijaría contenido para todos los profesionales: lo cura BE (DL-162), y la
+    importación sigue sin zonas. Las de wger nunca se copian (09v12:397-401).
+  - El LEEME pide la nota «capa profunda» para romboides y erectores. El legajo no la menciona: queda como texto de la
+    pantalla, no del dominio.
+- **Lo que falta:** el set femenino (pendiente en el propio LEEME; usa los mismos 17 identificadores), la carga de las zonas
+  de la demostración (`EVIDENCIA/CATALOGO-VISUAL`, después de que Dirección revise la propuesta) y que el website las muestre
+  (etapa 2). Si DEC-047 aparece y nombra distinto alguna zona, manda DEC-047 y se corrige el nombre visible.
 
 ## DL-082 — No existe una regla equivalente a REG-06-125 para entrenamiento
 
@@ -2928,6 +2987,18 @@ La tomó Dirección de BE, sobre la propuesta del mismo día, y no es una renova
   deja de valer.
 - **Dónde quedó:** este registro, `EXCEPCIONES` en `scripts/auditoria-de-dependencias.cjs`, sus pruebas y los escenarios
   con npm de verdad.
+
+**Avisos nuevos del 2026-10-30: corregidos, no exceptuados (2026-11-02).** El 30/10 GitHub publicó cinco avisos altos
+de node-forge (GHSA-7wch-p9px-956x, GHSA-jc66-7q78-782g, GHSA-8hrf-8g6f-7xwp, GHSA-hqq3-7jhf-c5jx y
+GHSA-5x38-2vff-x55p), todos para `<= 1.4.0` y corregidos en la 1.4.1. La auditoría los marcó en `@be/mobile` y frenó la
+CI de todas las ramas.
+- **Lo que se hizo:** el lockfile pasa node-forge de la 1.4.0 a la 1.4.2 (publicada el 2026-10-27), que cumple el
+  `^1.3.3` que piden `@expo/cli` y `@expo/code-signing-certificates`. No se tocó Expo ni ninguna otra versión.
+- **Efecto en la excepción:** la 1.4.2 queda fuera del rango del aviso exceptuado (GHSA-86w9-cpqp-85rv, `<= 1.4.0`), así
+  que la excepción de node-forge deja de usarse. No se borra en este cambio: se revisa con la de zod antes del
+  2026-11-30, con Dirección, como dice esta entrada.
+- **Decisión:** Dirección autorizó el 2026-11-02 seguir las recomendaciones salvo una decisión crítica; esto corrige y no
+  amplía nada.
 
 ---
 
@@ -5697,3 +5768,217 @@ pantalla real.
 
 **Condición de cierre:** Dirección revisa el resultado, la CI pasa y la prueba con profesionales lo confirma. La revisión y
 la CI están (2026-10-25); falta la prueba con profesionales.
+
+---
+
+## DL-160 — «Hoy se entrena con los cronómetros» no es una regla del legajo
+
+**Prioridad:** alta (registro rápido de la semana del 2026-11-02; demostración del 2026-11-06).
+
+**Documentos:**
+- **B10-06 §57** (`docs/legajo/10_UX/BE_LEG_10_v0.6_B10_06_ENTRENAMIENTO_UX_P0_TOBE_2026-08-31(1).md:1259-1267`): «Un
+  temporizador de descanso puede ser útil, pero: NO requisito P0 contractual. Puede diseñarse como mejora futura sin
+  afectar la captura núcleo.»
+- **B10-06 §29:** registrar «sin obligar a todos a registrar serie por serie».
+- **DL-137:** la agenda de entrenamiento, con «registrar otro día» y «saltear».
+- **DL-161:** la duración que mida un cronómetro va en la serie (`durationSeconds`).
+
+**Qué pasaba.** La APK trata distinto el día de hoy: abrir la sesión de hoy arranca la corrida con los cronómetros
+(`useAbrirOcurrencia`), y «otro día» registra lo hecho, sin cronómetros. La regla está escrita solo como comentario del
+código de la APK —«Hoy se entrena con los cronómetros; otro día se registra lo hecho, sin cronómetros»
+(`apps/mobile/src/pantallas/entrenamiento.tsx`, `almacen-de-entrenamiento.ts`, `navegacion.ts`)—. No está en el legajo,
+y B10-06 §57 dice lo contrario: el temporizador no es requisito P0.
+
+**Decisión de Dirección (2026-11-02):** desde ahora, el registro rápido y «Ya la hice» valen también el mismo día. Los
+cronómetros quedan como una ayuda que la persona elige.
+
+**Qué cambia:**
+- **API: nada.** Confirmar la sesión de hoy no exige eventos de tiempo (API-TIE) ni una corrida: si no se declara la
+  hora, se usa el comienzo del borrador, que es de ese mismo día (API-TRN-18). Lo confirman, sin eventos, las pruebas
+  de integración de siempre (`series-pendientes.int-spec.ts`) y `registro-por-niveles.int-spec.ts`.
+- **APK (su rama):** deja de arrancar los cronómetros solos al abrir la sesión de hoy, y ofrece el registro rápido y
+  «Ya la hice» también hoy. «Ya la hice» usa el registro resumido (`EXERCISE_OR_SESSION`), que exige un texto de
+  resumen: lo resuelve la APK, sin cambiar el contrato.
+- **Lo registrado antes** no cambia.
+
+**Lo que queda:** la APK en su rama y la prueba en el teléfono.
+
+**Condición de cierre:** la APK nueva lo cumple y se prueba en el teléfono.
+
+---
+
+## DL-161 — Registro por niveles: la serie dice cómo se cargó y cuánto duró
+
+**Prioridad:** alta (decisión de Dirección del 2026-11-02; demostración del 2026-11-06).
+
+**Documentos:**
+- **B10-06 §56** (`…B10_06…md:1242-1255`): «Se puede facilitar: copiar carga anterior, repetir objetivo, como ayuda de
+  interacción. Pero el usuario confirma/edita el valor real. No autocompletar sin visibilidad.»
+- **09v10:1099-1101:** «El schema específico del resumen admite solo datos realmente capturados. BE no transforma ese
+  resumen en series ficticias.»
+- **INV-06-152** (citado en `SerieEjecutadaSchema`): las repeticiones, el RIR y el esfuerzo nunca se infieren.
+- **DL-152 y C01:** lo que leen las APK instaladas no cambia de forma; lo nuevo va en operaciones nuevas, o lo decide
+  Dirección.
+
+**Qué decidió Dirección (2026-11-02):** registro por niveles. La persona carga desde un toque hasta todo el detalle, y el
+profesional ve cómo lo cargó, con una marca por serie. En la sesión, una serie sin datos escritos se registra con lo
+planificado.
+
+**Cómo se lee con el legajo:**
+- **`AS_PLANNED` son valores del plan que la persona vio y confirmó.** Es la ayuda «repetir objetivo» de B10-06 §56, con
+  el valor a la vista y la confirmación de la persona (la casilla). Quedan marcados: el profesional no los lee como
+  escritos.
+- **No se sintetizan series** (09v10:1099-1101). Una serie `AS_PLANNED` existe porque la persona la tildó. Si no trae ni
+  la carga ni las repeticiones, no hay nada confirmado: se rechaza con `SET_WITHOUT_DATA`, el mismo código de una serie
+  escrita vacía.
+- **La duración se mide o se escribe; nunca se infiere.** No sale de los eventos de tiempo (API-TIE) ni de un promedio.
+
+**El contrato** (`423db61`, `SerieEjecutadaSchema`):
+- `recordedAs`: `TYPED` (la persona escribió algún valor) o `AS_PLANNED`. Ausente se lee `TYPED`: así quedó todo lo
+  registrado antes.
+- `durationSeconds`: entero de 0 a 36.000, o `null`; opcional.
+- Los dos son opcionales en los pedidos y en las respuestas de API-TRN-15 a 20 y 19-LISTA. `docs/api/openapi.json` los
+  suma en las 15 apariciones de la serie ejecutada.
+
+**Lo que se hizo:**
+- **Dominio** (`registro-por-niveles.ts`):
+  - `serieEnSuForma`: la serie campo por campo, la misma para guardar y para devolver.
+  - `nivelDeDetalle` y `nivelDeDetalleDelRegistro`: el nivel de lo que rige —la corrección vigente o el original—.
+  - Los textos, en `copy-entrenamiento.ts` (`ETIQUETA_DE_NIVEL_DE_DETALLE`, `COPY_REGISTRO_POR_NIVELES`): «Con detalle»,
+    «Cargada como el plan», «Parte como el plan», «Resumida, sin series» y, de la condición registrada, «No realizada».
+  - `problemasDeCoherencia` rechaza la serie `AS_PLANNED` sin carga ni repeticiones al guardar.
+  - La comparación del original con la corrección cuenta la duración.
+  - `filaDeLaSesion` suma el nivel a la sesión, y la marca y la duración a cada serie (solo si están).
+- **API:**
+  - API-TRN-17 y API-TRN-20 guardan cada serie en su forma.
+  - Toda lectura de series ejecutadas pasa por `serieEnSuForma` (`ejerciciosRegistradosApi`): el borrador (TRN-15 a
+    17), la ejecución (TRN-19 y 19-LISTA), la corrección (TRN-20), y lo que leen del mismo modelo el entorno
+    profesional, la revisión y el análisis.
+  - API-DSH-04 suma el detalle «Cómo se cargó» a una sesión registrada por serie.
+- **Website del profesional:**
+  - Registros: la fila dice el nivel debajo de la cuenta de series; el detalle lo dice en el encabezado.
+  - Cada serie «como el plan» lleva esa marca, discreta, debajo de lo registrado, y la duración si existe. Debajo de la
+    tabla, qué quiere decir la marca.
+  - El registro original y las correcciones dicen lo mismo en su renglón.
+  - La línea de tiempo: «6 series con datos · cargada como el plan» en el renglón, y «Cómo se cargó» en los datos del
+    hecho.
+
+**Decisiones de implementación** (a ratificar):
+- **I-1 · Lo que no existe no se guarda.** `TYPED` y una duración `null` dicen lo mismo que la ausencia: la API no los
+  guarda ni los devuelve.
+  - *Por qué:* lo registrado antes queda idéntico; una corrección «sin cambios» se reconoce; y una ejecución cargada
+    toda a mano y sin cronómetro, aunque venga de la APK nueva, la sigue leyendo una APK anterior.
+  - *Alternativa descartada:* guardar `TYPED` tal cual llega. Distinguiría «APK nueva, escrita» de «antes de DL-161»,
+    pero ninguna APK anterior podría leer lo que registre la nueva.
+- **I-2 · La serie `AS_PLANNED` sin carga ni repeticiones se rechaza al guardar**, no recién al confirmar. La duración
+  sola no registra una serie: al confirmar sigue siendo `SET_WITHOUT_DATA`, como antes.
+  - *Alternativa:* aceptar la duración como dato de la serie (un ejercicio isométrico). Queda para cuando el plan tenga
+    objetivos por tiempo.
+- **I-3 · La API no recalcula los valores del plan para verificar la marca.** El plan puede indicar un rango de
+  repeticiones (que no se completa con un número), y la carga puede ir en otra unidad. La marca la pone el cliente que
+  mostró el plan; la API exige que traiga un valor. *Riesgo:* un cliente con un error podría marcar valores que no son
+  los del plan. Lo cubre la prueba de la APK.
+- **I-4 · Cambiar solo la marca no es una corrección** (`CORRECTION_WITHOUT_CHANGES`), y la tabla no la muestra como
+  «Corregida»: la marca dice cómo se cargó, no lo que se hizo. La duración sí cuenta. En una corrección, la marca la
+  manda el cliente: si se cambian los valores de una serie, la APK le saca la marca (a cargo de su rama).
+- **I-5 · Dónde se ve el nivel.** En el encabezado del detalle, siempre. En la fila de Registros y en el renglón de la
+  línea de tiempo, solo los tres niveles por serie: «resumida» y «no realizada» ya los dicen la forma de registro y la
+  condición. Lo registrado antes de DL-161 se lee «Con detalle»: esa APK pedía escribir cada serie.
+- **I-6 · C01** (`entrenamiento-por-serie.test.ts`) compara el contrato de hoy con lo congelado de la 0.13.2 sacando solo
+  los dos campos opcionales de la serie ejecutada, y verifica en qué operaciones aparecen. Cualquier otra diferencia
+  sigue fallando. Lo congelado no se tocó.
+
+**Compatibilidad con las APK instaladas (DL-152):**
+- **Lo que llega hoy no cambia** cuando los campos no existen: la serie se arma campo por campo y lo ausente no viaja. Las
+  pruebas congeladas (`lecturas-de-las-apk.int-spec.ts`, `compatibilidad-de-clientes.int-spec.ts`) siguen iguales, y
+  `registro-por-niveles.int-spec.ts` lo comprueba leyendo con lo congelado de la 0.18.0-candidata.1.
+- **Los pedidos de las APK instaladas siguen valiendo:** los dos campos son opcionales.
+- **El caso que queda: una ejecución cargada con la APK nueva, leída por una APK anterior.**
+  - *Qué pasa:* si una serie trae la marca o la duración, la APK anterior rechaza la respuesta por un campo que no
+    conoce (valida con esquemas estrictos) y dice «respuesta no reconocida». Le pasa al detalle de esa sesión
+    (API-TRN-19), a «Tu historial» del período que la incluye (19-LISTA, la lista entera) y al borrador a medio cargar
+    (TRN-15 a 17).
+  - *Cuándo:* solo si la misma persona vuelve a una versión anterior o usa dos teléfonos con versiones distintas. El
+    profesional no lo ve: el website es siempre el de hoy.
+  - *Lo prueba* `registro-por-niveles.int-spec.ts`: la 0.18.0-candidata.1 lee una ejecución sin los campos, y no lee
+    una con la marca o con la duración.
+  - *Alternativa que lo cierra (no hecha; decide Dirección):* una capacidad nueva en `X-BE-Capabilities`, como DL-122.
+    La API devuelve los dos campos solo a quien la declara, y a los demás la serie sin ellos. *Costo:* la APK nueva la
+    tiene que declarar (una línea en `apps/mobile/src/api.ts`), y una corrección hecha desde una APK anterior perdería
+    las marcas sin aviso. *Recomiendo no hacerla ahora:* el caso es raro, y pasar a estable ya pide actualizar.
+- **Al publicar la APK nueva:** congelarla como dice DL-152 (paso 2). Sus esquemas ya traen los dos campos.
+
+**Pruebas:**
+- **Dominio:** `registro-por-niveles.test.ts` (10), `registros-de-entrenamiento.test.ts` (2 nuevas) y C01.
+- **Website:** `scripts/hecho-en-un-renglon.test.mjs` (el renglón con «Cómo se cargó»).
+- **Integración:** `registro-por-niveles.int-spec.ts` (6): el borrador, la base, la confirmación, «Tu historial», la
+  corrección, la línea de tiempo y la lectura con la APK congelada.
+
+**Lo que queda:**
+- La APK, en su rama.
+- Ver el website en el navegador, con capturas en los dos temas. No se corrió en esta PC: no alcanza la memoria para
+  construirlo; lo construye la CI.
+- Un filtro por nivel en la línea de tiempo (sería una calidad nueva en API-DSH-04). Queda para después de la
+  demostración.
+- La prueba en el teléfono, con profesionales y, al final, con TalkBack.
+
+**Condición de cierre:** Dirección ratifica I-1 a I-6, la CI pasa, y la APK nueva se prueba en el teléfono.
+
+---
+
+## DL-162 — La imagen de un ejercicio del catálogo de todos
+
+**Prioridad:** alta (demostración del 2026-11-06) · **Documento:** REG-06-134 · REG-06-135 inciso 1 (06:4823-4832) · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 · **Estado:** IMPLEMENTADA 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar
+
+**Qué dice el legajo.** REG-06-134: un recurso didáctico es versionado, con autoría, licencia obligatoria y procedencia.
+REG-06-135, inciso 1: cada elemento del catálogo global admite «a lo sumo un recurso visual curado vigente», y el catálogo
+no es un repositorio libre; inciso 2: lo propio de un profesional, en su ámbito. 09v10 §9 da la forma del recurso, con
+`authorship`, `provenance` y `license`.
+
+**Qué pasaba.** DL-123 implementó solo el inciso 2: la imagen de un ejercicio cargado a mano, por su profesional. Tres
+cierres dejaban afuera al catálogo de todos (los 12 de WP-06 y los 186 importados de wger): el trigger de
+`asociacion_de_imagen_de_ejercicio` (solo `PROFESSIONAL_MANUAL` de quien asocia), el 404 de API-EJE-02 para lo que no es
+propio y la regla de acceso de API-MED-03, que une el medio con el creador del ejercicio (nulo en lo sembrado). Por eso
+Diego, Camila, Agustina y Prueba Uno veían la mancuerna de respaldo en vez de la foto (relevamiento del 2026-11-02, r8).
+
+**Lo decidido** (a ratificar):
+- **D-1 · Quién cura.** BE, con el comando interno del operador (`apps/api/src/entrenamiento/curaduria-comando.ts`), como
+  la incorporación de un administrador (08 §28.3-bis): lo corre quien tiene la base del ambiente, con su nombre y su
+  fundamento en la procedencia de cada cambio (`carga: CURADURIA_BE`). El medio es de una cuenta administradora de BE con el
+  rol vigente, que la base vuelve a exigir al asociar. El mismo comando cura las zonas del catálogo de todos (DL-081).
+  - *Descartado:* que un profesional asocie imágenes a lo sembrado (choca con REG-06-135 y fijaría contenido de todos).
+  - *Diferido:* una pantalla de Administración para curar. Necesita la consola, el segundo factor en una herramienta y su
+    propio paquete; el comando alcanza para la demostración.
+- **D-2 · Quién la ve.** Su curadora; cualquier profesional de Entrenamiento verificado y habilitado (el catálogo es de
+  todos y el website lo muestra), y el asesorado con un plan activado de cualquier profesional cuya instantánea cita el
+  ejercicio, con el PDP de ese profesional. Lo demás, el mismo 404 que lo inexistente.
+- **D-3 · Por dónde viaja.**
+  - En el plan (API-SER-01) y la sesión (API-SER-02), como la de un ejercicio propio: `image` con `mediaId`, procedencia
+    (AI_GENERATED o PERSON_PROVIDED), autoría, licencia, texto alternativo y revisión técnica. La lectura ya era por
+    identidad del ejercicio, así que **la APK 0.18.0-candidata.1 la muestra sin cambios**.
+  - En API-TRN-13 y su búsqueda, como `didacticResources` con la forma congelada que leen las APK instaladas (DL-152):
+    `resourceId` es el medio, `resourceVersionId` la asociación vigente y la licencia, `{ id, label }`. Esa forma no tiene un
+    campo para la procedencia (09v10 §9 sí lo tiene): si la imagen se generó con IA y la autoría no lo dice, la autoría suma
+    «(generada con IA)». Agregar el campo rompería la lectura de las APK instaladas.
+  - En la ficha visual del website (**API-EJE-05**), con la forma completa.
+- **D-4 · Una sola historia.** La imagen curada usa la misma historia de solo agregar de DL-123: la vigente es la de
+  mayor número, así que hay a lo sumo una por ejercicio. Reemplazarla es asociar otra; lo registrado conserva la de entonces.
+- **D-5 · Cómo se carga.** `EVIDENCIA/CATALOGO-VISUAL/herramientas/fotos.mjs`: por omisión solo revisa (archivo, tipo,
+  peso, medidas, formato, texto alternativo, autoría y licencia) y dice qué ejercicio ya tiene imagen; con
+  `--confirmo-escritura`, los propios van por la API como PRO_T y los del catálogo por el comando. Repetir la misma imagen
+  no suma nada.
+
+**Pruebas.** `test/integration/catalogo-visual.int-spec.ts` (sobre «Pullover con mancuerna», del catálogo base, que
+ninguna otra prueba lee): una cuenta común no cura; sin confirmar no escribe; la imagen curada viaja en el plan y en la
+sesión, la leen el asesorado, otro profesional de Entrenamiento y no uno de Nutrición; la búsqueda la trae con la forma
+congelada y la ficha visual con la procedencia; la base rechaza la imagen de lo de todos sin la marca de curaduría o de una
+cuenta que no es administradora. `contrato.int-spec.ts` cubre API-ZON-01, API-EJE-04 y API-EJE-05.
+
+**Lo que queda abierto:**
+- Generar las imágenes (E04 a E23; `EVIDENCIA/CATALOGO-VISUAL/imagenes.json`) y completar los textos alternativos de E04 a E15.
+- Integrar, desplegar test y correr la carga con la autorización de Dirección (escribe en test).
+- Verlo en el teléfono con la 0.18.0-candidata.1 y en el website (etapa 2 de WP-CATALOGO-VISUAL, programada el 2026-11-02:
+  la imagen y la figura de las zonas en el detalle de cada ejercicio y las zonas de cada sesión del plan).
+
+**Condición de cierre:** Dirección ratifica D-1 a D-5, la CI pasa en main y la demostración muestra la foto de un ejercicio
+del catálogo en la sesión de Diego.

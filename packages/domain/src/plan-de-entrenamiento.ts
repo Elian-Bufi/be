@@ -388,6 +388,9 @@ export function problemasDeCoherencia(r: RegistroEnBorrador): { readonly granula
       e.sets.forEach((s, j) => {
         if (indices.has(s.setIndex)) valores.push({ code: R.DUPLICATE_SET_INDEX, path: `${ruta}.sets[${j}].setIndex` });
         indices.add(s.setIndex);
+        // DL-161: «como el plan» son los valores del plan que la persona confirmó. Sin carga ni repeticiones no hay
+        // nada confirmado, y una serie realizada sin datos no existe: se rechaza ya al guardar, no recién al confirmar.
+        if (s.recordedAs === 'AS_PLANNED' && s.load === null && s.completedRepetitions === null) valores.push({ code: R.SET_WITHOUT_DATA, path: `${ruta}.sets[${j}]` });
       });
     }
   });
@@ -416,7 +419,8 @@ export function problemasParaConfirmar(r: RegistroEnBorrador): ValidationIssue[]
       if (!('sets' in e)) return;
       if (e.sets.length === 0) issues.push({ code: R.SET_REQUIRED, path: `exercises[${i}].sets` });
       e.sets.forEach((s, j) => {
-        if (s.load === null && s.completedRepetitions === null) issues.push({ code: R.SET_WITHOUT_DATA, path: `exercises[${i}].sets[${j}]` });
+        // La de «como el plan» ya la dijo la coherencia (DL-161): no se repite.
+        if (s.load === null && s.completedRepetitions === null && s.recordedAs !== 'AS_PLANNED') issues.push({ code: R.SET_WITHOUT_DATA, path: `exercises[${i}].sets[${j}]` });
       });
     });
   } else if (r.ejercicios.length === 0 && r.resumenDeSesion === null) {

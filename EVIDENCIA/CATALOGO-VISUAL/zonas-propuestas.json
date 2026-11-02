@@ -1,0 +1,27 @@
+{
+  "estado": "PROPUESTA",
+  "revision": { "por": null, "fecha": null, "nota": "Para cargar, Dirección revisa cada fila, corrige lo que haga falta y cambia «estado» a «REVISADA» con su nombre y la fecha. Mientras diga PROPUESTA, la herramienta no escribe." },
+  "fuente": "Propuesta de Claude del 2026-11-02 para la demostración, por la técnica de cada ejercicio. No sale de wger ni del nombre (B10-06 §22): es contenido profesional a revisar (REG-06-139). Los identificadores de zona son los de API-ZON-01.",
+  "ejercicios": [
+    { "clave": "sentadilla", "principales": ["cuadriceps", "gluteos"], "secundarias": ["aductores", "isquios", "erectores"], "nota": null },
+    { "clave": "banca", "principales": ["pectoral"], "secundarias": ["deltoides", "triceps"], "nota": null },
+    { "clave": "pressMancuernas", "principales": ["pectoral"], "secundarias": ["deltoides", "triceps"], "nota": "Supone el press en banco. Si en la demostración es el press de hombros con mancuernas, la principal pasa a ser deltoides." },
+    { "clave": "pesoMuerto", "principales": ["gluteos", "isquios", "erectores"], "secundarias": ["cuadriceps", "trapecio", "dorsal", "antebrazo"], "nota": null },
+    { "clave": "remo", "principales": ["dorsal", "romboides"], "secundarias": ["trapecio", "deltoides", "biceps", "antebrazo", "erectores"], "nota": "El deltoides que trabaja es el posterior: la vista de espalda lo muestra." },
+    { "clave": "dominadas", "principales": ["dorsal"], "secundarias": ["biceps", "romboides", "trapecio", "antebrazo"], "nota": null },
+    { "clave": "pressMilitar", "principales": ["deltoides"], "secundarias": ["triceps", "trapecio"], "nota": null },
+    { "clave": "zancadas", "principales": ["cuadriceps", "gluteos"], "secundarias": ["aductores", "isquios", "gemelos"], "nota": null },
+    { "clave": "curl", "principales": ["biceps"], "secundarias": ["antebrazo"], "nota": null },
+    { "clave": "triceps", "principales": ["triceps"], "secundarias": [], "nota": null },
+    { "clave": "plancha", "principales": ["recto-abdominal"], "secundarias": ["oblicuos", "deltoides"], "nota": "Se podrían sumar glúteos y erectores como secundarias; quedan afuera para no recargar la figura." },
+    { "clave": "hipThrust", "principales": ["gluteos"], "secundarias": ["isquios", "cuadriceps"], "nota": null },
+    { "clave": "sentadillaACajon", "principales": ["cuadriceps", "gluteos"], "secundarias": ["aductores", "isquios"], "nota": null },
+    { "clave": "prensa", "principales": ["cuadriceps", "gluteos"], "secundarias": ["aductores", "isquios"], "nota": null },
+    { "clave": "remoEnPolea", "principales": ["dorsal", "romboides"], "secundarias": ["trapecio", "biceps", "deltoides"], "nota": null },
+    { "clave": "talones", "principales": ["gemelos"], "secundarias": [], "nota": null },
+    { "clave": "equilibrio", "principales": [], "secundarias": ["gluteos", "tibial", "gemelos"], "nota": "Es un ejercicio de equilibrio: no tiene una zona principal. Si Dirección prefiere, va sin zonas." },
+    { "clave": "caminata", "principales": [], "secundarias": [], "nota": "Trabajo aeróbico: queda sin zonas. Alternativa: cuádriceps, isquiotibiales y gemelos como secundarias." },
+    { "clave": "cargada", "principales": ["cuadriceps", "gluteos", "isquios", "trapecio"], "secundarias": ["erectores", "deltoides", "gemelos", "antebrazo"], "nota": "Es un movimiento de todo el cuerpo: la figura se va a ver muy cargada." },
+    { "clave": "sentadillaFrontal", "principales": ["cuadriceps"], "secundarias": ["gluteos", "aductores", "erectores", "recto-abdominal"], "nota": null }
+  ]
+}

@@ -1,0 +1,115 @@
+BE · Encargo nocturno del 2026-10-28 · respuesta para Dirección
+=================================================================
+
+Dónde estamos: las 50 recetas nuevas están formuladas, verificadas y cargadas con éxito solo en una base de prueba que
+se descarta (66 en total con las originales). No hay ninguna foto nueva: esta sesión no tenía con qué generarlas, y quedó
+todo listo para generarlas en tu ChatGPT. La medición de la cartera con varios profesionales a la vez está terminada.
+Todo quedó en PR en borrador: nada se integró, se desplegó ni se cargó en test.
+
+La nota para retomar es una sola: docs/paquetes/NOCTURNO-2026-10-28.md (rama de #220).
+
+1. QUÉ TERMINÓ, QUÉ QUEDÓ PARCIAL Y QUÉ ESTÁ BLOQUEADO
+   - Terminado:
+     · las 50 recetas: selección, formulación, nutrición y mapeo al catálogo;
+     · la preparación de la carga, probada en una base efímera con cortes y reanudación;
+     · la galería, el recetario y la hoja de contacto;
+     · la medición de la cartera con concurrencia (#221);
+     · la reconciliación de la documentación (#219, y las descripciones de #217, #219 y #220).
+   - Bloqueado por herramienta: las fotografías, 0 de 66. Quedan el paquete de generación para ChatGPT y la herramienta
+     que prepara y registra las fotos cuando existan.
+   - No ejecutado: la revisión visual de las fotos, porque no hay fotos.
+
+2. LAS IMÁGENES
+   - Existentes (reales): 3. Son las ilustraciones de ejercicios del paquete del 6/10: sentadilla goblet, peso muerto
+     rumano con mancuernas y zancada estática. Sin cambios, con su revisión profesional pendiente.
+   - Nuevas producidas: 0. Ni de recetas, ni de alimentos, ni de ejercicios. Las figuras de colores de las pruebas
+     automáticas no son contenido y no se entregan.
+   - Solo ficha y prompt: 94. Son las 66 recetas (16 originales y 50 nuevas), los 16 alimentos y 12 de los 15 ejercicios.
+   - Reutilizadas: 0, porque no había ninguna foto de receta anterior. Rechazadas: 0.
+   - Una maqueta del encuadre de las fotos de recetas (no es una imagen de contenido).
+
+3. QUÉ ENTRA CON LAS FUNCIONES ACTUALES Y QUÉ NECESITA UN CAMBIO DE PRODUCTO
+   - Fotos de las 66 recetas: entran hoy. La receta tiene imagen propia y se ve en el website (4:3) y en la APK (16:10).
+     Entran con fotos.mjs y las herramientas de carga, con tu autorización para test.
+   - Las 3 ilustraciones de ejercicios: entran hoy, como ejercicios propios del profesional (ya se usaron así).
+   - Los 12 ejercicios del catálogo de WP-06 (y los de wger): necesitan un cambio de producto. Solo un ejercicio propio
+     puede llevar imagen, por la base y por el servicio. Sin ese cambio, habría que cargarlos de nuevo como propios.
+   - Los 16 alimentos: necesitan un cambio de producto. El catálogo nutricional no tiene campo de imagen.
+
+4. LA CARTERA, EN CRIOLLO (#221; corrida 40660575008, una sola máquina de GitHub, no Render)
+   - Un profesional con 200 personas: cada página de pendientes tarda unos 2 s (2,3 s con historia). El website lee hasta
+     4 páginas al abrir el espacio profesional, y cada una vuelve a procesar la cartera entera. Abrirlo lleva unos 8 s
+     (9 s con historia).
+   - Solo un 10 % de ese tiempo es la base calculando. El resto es:
+     · esperar que el disco confirme una transacción de permisos por persona;
+     · unas 2.300 idas y vueltas entre la API y la base.
+   - Varios a la vez:
+     · con 3 profesionales pidiendo sin pausa, cada página tarda 1,5 veces más;
+     · con 5, 2,1 veces más (unos 4,2 s).
+     · 0 errores.
+   - El límite que se vio: con 5 a la vez, la máquina atiende como máximo unas 1,16 páginas por segundo, sin agotar la
+     CPU. Usa sus 5 conexiones a la base, y lo que más se espera es la escritura del registro de transacciones.
+   - Cada página deja 3 filas por persona en la historia de decisiones (600 con 200 personas); se contó pedido por pedido.
+   - Lo que no se puede concluir todavía:
+     · nada sobre Render;
+     · cuántos profesionales reales aguanta;
+     · qué pasa con más de 5, con escrituras al mismo tiempo o con meses de historia;
+     · si alguna mejora sirve: ninguna se probó.
+   - Esta corrida fue en otra máquina que la del 27/10: solo se comparan resultados de una misma corrida.
+   - Resultados completos y condiciones (muestras, lotes, entorno, población, consultas y control), en #221:
+     EVIDENCIA/RENDIMIENTO-CARTERA/CONCURRENCIA.md y resultados/concurrencia-2026-10-28/. Las tablas, también en la nota.
+
+5. DÓNDE ABRIR
+   - Guía central: https://github.com/Elian-Bufi/be/blob/e4cc5007bdabc0f9cc99b0c11c6598ea8e2838eb/docs/guias/ENTENDER-BE/salida/BE-guia-central.pdf
+   - Cuaderno de datos: https://github.com/Elian-Bufi/be/blob/e4cc5007bdabc0f9cc99b0c11c6598ea8e2838eb/docs/guias/ENTENDER-BE/salida/BE-cuaderno-de-datos.pdf
+   - Paquete de generación de imágenes: https://github.com/Elian-Bufi/be/blob/wp-recetas-ampliacion-2026-10-28/EVIDENCIA/RECETAS-AMPLIACION/PAQUETE-DE-GENERACION.md
+   - Recetario y hoja de contacto: EVIDENCIA/RECETAS-AMPLIACION/salida/ (rama de #220)
+   - Galería en el teléfono, privada, versión 2: https://claude.ai/artifact/QajQNjTs1oT5asD1RbbAq7
+
+6. PR, RAMAS Y CI (todos en borrador; main sigue en e4512cb)
+   - #220, las recetas: rama wp-recetas-ampliacion-2026-10-28, sobre #219. Su CI con la carga en la base efímera
+     (ef09e12, corrida 40662713201) dio integración 912 de 912. La CI de la cabeza final está en la descripción del PR.
+   - #221, la cartera: rama wp-cartera-concurrencia-2026-10-28, sobre #219, cabeza d2f83d9. CI 40675627657, en verde.
+   - #219, las guías y el estado: cabeza e4cc500. Su CI está en la descripción del PR (la de 5c0cea6, en verde).
+   - #218 (5adbcd5) y #217 (9258ace): sin cambios de código esta noche; CI en verde. A #217 solo se le actualizó la
+     descripción.
+   - Ramas descartables, que no se integran: medicion/cartera-2026-10-28 y medicion/cartera-concurrencia-2026-10-28.
+
+7. VERIFICACIONES
+   - En esta PC, sin base de datos:
+     · pruebas de contenido 17 de 17, originales 10 de 10 y fotos 4 de 4;
+     · los armadores con --verificar;
+     · el verificador del material visual, «SIN PROBLEMAS».
+   - En la CI (base efímera):
+     · integración 912 de 912;
+     · la carga real de las 50, con tres cortes de golpe y la reanudación;
+     · al final, 50 recetas, 50 medios y 50 asociaciones, y cada foto la de su receta, por el SHA-256;
+     · otra corrida no cambió nada.
+   - Omitido: revisar fotos (no hay), cocinar y pesar las recetas, y la validación por una persona.
+
+8. APLICACIONES, RECURSOS Y AMBIENTES
+   - Memoria: al empezar, 257 MB disponibles de 5,9 GB.
+   - Chrome estaba ocioso; el sistema de permisos bloqueó su cierre y no se cerró ninguna aplicación.
+   - Lo pesado corrió en GitHub Actions, sin costo. No queda ningún proceso de esta sesión corriendo.
+   - Escrituras:
+     · solo la base efímera de la CI;
+     · test: ninguna;
+     · Render: no se tocó;
+     · GitHub: ramas, PR en borrador y descripciones;
+     · la galería privada: versión 2, en el mismo enlace y con el mismo acceso.
+
+9. LA PRUEBA BREVE
+   - Parte A: realizada por vos el 27/10, con las siete filas coincidentes y las observaciones O-1 a O-4.
+   - Partes B y C: pendientes; las hacés vos. Nada de esta tanda las tocó.
+
+10. DECISIONES QUE QUEDAN
+   - Generar las 66 fotos en tu ChatGPT con el paquete, empezando por R017, R029, R037 y R052, y revisarlas.
+   - Integrar #219 y después #220 y #221; además, #218 y #217.
+   - Autorizar la carga de las 50 en la cuenta de Lic. Sofía Paz en test.
+   - La cartera: decidir la propuesta de #221 y fijar un criterio de aceptación antes de un piloto.
+   - El locro: si se quiere, incorporar el maíz blanco pisado al catálogo.
+   - DL-114: vence el 30/11 a las 21:00, hora de Argentina (el 1/12 a las 00:00 UTC).
+
+11. EL SIGUIENTE PASO PARA RETOMAR
+   Leer docs/paquetes/NOCTURNO-2026-10-28.md. Con fotos generadas, seguir PAQUETE-DE-GENERACION.md: preparar, revisar,
+   registrar y regenerar.

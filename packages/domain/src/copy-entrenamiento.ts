@@ -53,6 +53,29 @@ export const ETIQUETA_DE_GRANULARIDAD: Readonly<Record<'SET' | 'EXERCISE_OR_SESS
   EXERCISE_OR_SESSION: 'Por ejercicio o sesión',
 };
 
+/**
+ * DL-161: el nivel de detalle de una sesión registrada, como lo lee el profesional (`registro-por-niveles.ts`). Dice cómo
+ * se cargó, no si estuvo bien. «No realizada» no está acá: sale de la condición registrada (`etiquetaDeCondicionRegistrada`).
+ */
+export const ETIQUETA_DE_NIVEL_DE_DETALLE: Readonly<Record<'CON_DETALLE' | 'COMO_EL_PLAN' | 'PARTE_COMO_EL_PLAN' | 'RESUMIDA', string>> = {
+  CON_DETALLE: 'Con detalle',
+  COMO_EL_PLAN: 'Cargada como el plan',
+  PARTE_COMO_EL_PLAN: 'Parte como el plan',
+  RESUMIDA: 'Resumida, sin series',
+};
+
+/** DL-161: la marca de una serie y su duración, en el website del profesional. Discretas: describen, no califican. */
+export const COPY_REGISTRO_POR_NIVELES = {
+  /** El rótulo del nivel en la línea de tiempo y en el detalle de la sesión. */
+  comoSeCargo: 'Cómo se cargó',
+  /** La marca de una serie `AS_PLANNED`, al lado de lo registrado. */
+  comoElPlan: 'como el plan',
+  /** Qué quiere decir la marca, para quien la lee por primera vez (y para el lector de pantalla). */
+  queEsComoElPlan: 'La persona registró esta serie con un toque, sin escribir: los valores son los del plan, que tenía a la vista.',
+  /** «Duró 00:45»: la duración que midió el cronómetro o que escribió la persona. */
+  duro: (tiempo: string) => `Duró ${tiempo}`,
+} as const;
+
 /** Qué pasa al aplicar cada resultado, en lenguaje llano, para un plan de entrenamiento (REG-06-117, 147). */
 export const EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO: Readonly<Record<'MAINTAIN' | 'ADJUST' | 'REPLACE' | 'RESCHEDULE_REVIEW' | 'CHANGE_OBJECTIVE' | 'FINALIZE', string>> = {
   MAINTAIN: 'El plan sigue igual. Se registra la próxima acción.',
