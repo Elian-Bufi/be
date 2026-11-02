@@ -423,4 +423,11 @@ test('9 · la pantalla no arranca la corrida, usa las piezas de ui.tsx, y confir
   const lugares = pasos.map((p) => PANTALLA.indexOf(p));
   assert.ok(lugares.every((l, i) => l > 0 && (i === 0 || l > lugares[i - 1])), `PUT, PATCH y POST, en orden: ${lugares}`);
   assert.match(PANTALLA, /borradorConDatos\(borrador, nuestro\.current\)/, 'antes del PATCH se mira lo que el borrador ya tiene');
+  // Las entradas: al lado de «Iniciar entrenamiento» en Hoy y en Inicio, y «La hice ese día» en las pendientes.
+  const ENTRENAMIENTO = fuente('apps/mobile/src/pantallas/entrenamiento.tsx');
+  const INICIO = fuente('apps/mobile/src/pantallas/inicio-entrenamiento.tsx');
+  assert.match(ENTRENAMIENTO, /TEXTOS_DEL_REGISTRO_RAPIDO\.yaLaHice\} tipo="secundario" onPress=\{\(\) => ir\(aRegistroRapido\(o\)\)\}/);
+  assert.match(ENTRENAMIENTO, /TEXTOS_DEL_REGISTRO_RAPIDO\.laHiceEseDia/);
+  assert.match(ENTRENAMIENTO, /aRegistroRapido\(ocurrenciaDeHoy, \{ occurrenceId, fecha: prevista \}\)/);
+  assert.match(INICIO, /TEXTOS_DEL_REGISTRO_RAPIDO\.yaLaHice\} tipo="secundario" onPress=\{\(\) => ir\(aRegistroRapido\(o\)\)\}/);
 });

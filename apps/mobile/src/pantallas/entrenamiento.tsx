@@ -88,10 +88,12 @@ import {
   type SerieLocal,
   type Unidad,
 } from '../series-de-la-sesion';
+import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { cambiosParaSustituir, ejercicioRealizadoDe, sePuedeSustituir, sustitucionDe, textoDeLaConfirmacion, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado } from '../sustitucion-de-ejercicio';
 import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { ContenidoDelHistorial } from './historial';
 import { PlanPorSerie } from './plan-por-serie';
+import { AlLado, aRegistroRapido } from './registro-rapido';
 import {
   AvisoDeMedicionAbierta,
   AyudaDelRir,
@@ -510,6 +512,9 @@ function TarjetaDePendiente({
   const intento = useClaveDeIntento();
   const [salteando, setSalteando] = useState(false);
   const [problema, setProblema] = useState<string | null>(null);
+  // PA-03: «La hice ese día» registra la de esa fecha, sin cronómetros; si esa fecha corre en el teléfono, se continúa ahí.
+  const local = useEntrenamientoLocal();
+  const laHiceEseDia = !local.sesiones().some((s) => s.occurrenceId === occurrenceId);
 
   async function saltear() {
     if (!(await preguntar(AG.saltearTitulo, AG.saltearDetalle(etiqueta, prevista), AG.saltearla))) return;
@@ -530,7 +535,17 @@ function TarjetaDePendiente({
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
-      <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />
+      <AlLado>
+        <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />
+        {laHiceEseDia ? (
+          <Boton
+            texto={TEXTOS_DEL_REGISTRO_RAPIDO.laHiceEseDia}
+            tipo="secundario"
+            onPress={() => ir(aRegistroRapido(ocurrenciaDeHoy, { occurrenceId, fecha: prevista }))}
+            deshabilitado={abriendo || salteando}
+          />
+        ) : null}
+      </AlLado>
       <Boton texto={AG.saltearla} tipo="secundario" onPress={() => void saltear()} ocupado={salteando} deshabilitado={abriendo} />
     </Tarjeta>
   );
@@ -790,6 +805,9 @@ function TarjetaDeOcurrencia({
   const vista = vistaDeOcurrencia(o, hoy);
   const deHoy = o.date === hoy;
   const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS';
+  // PA-03 (DL-160): «Ya la hice» registra la sesión por pasos, sin cronómetros, también hoy. Solo sin borrador.
+  const local = useEntrenamientoLocal();
+  const yaLaHice = sePuedeOfrecer(o, enCurso, local.sesiones());
 
   /**
    * Empezar una sesión con otra pendiente: la persona decide si la saltea o la deja pendiente (Dirección, 2026-10-16).
@@ -839,7 +857,10 @@ function TarjetaDeOcurrencia({
       {o.execution.state === 'REGISTERED' && o.execution.executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: o.execution.executionId! })} />
       ) : (
-        <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
+        <AlLado>
+          <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
+          {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} /> : null}
+        </AlLado>
       )}
       {o.plannedSession.prescriptions.map((p) => (
         <Text key={p.prescriptionId} style={estilos.ejercicioDeLaSesion}>
