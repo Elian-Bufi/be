@@ -1,24 +1,27 @@
 # Material visual de BE · recetas, alimentos y ejercicios
 
-Encargo nocturno de Dirección del 2026-10-27, §2 a §4. Commit de referencia: `main` en `e4512cb`. Preparado el
-2026-10-28.
+Encargos nocturnos de Dirección del 2026-10-27 (§2 a §4) y del 2026-10-28 (§11 y §12, que suma las 50 recetas nuevas).
+Commit de referencia: `main` en `e4512cb`. Preparado el 2026-10-28.
 
 ## En una línea
 
-**De 47 contenidos, 3 tienen imagen real y 44 tienen ficha y prompt, sin imagen.** Las 3 son las ilustraciones de
-ejercicios del paquete de Dirección del 2026-10-06, generadas por IA y pendientes de revisión humana. Esta sesión **no
-tenía una herramienta que genere imágenes**, y el encargo no autoriza contratar una. Por eso no hay ninguna imagen nueva.
-Un prompt no es una imagen: el inventario lo distingue en cada contenido.
+**De 97 contenidos, 3 tienen imagen real y 94 tienen ficha y prompt, sin imagen.**
+- Las 3 son las ilustraciones de ejercicios del paquete de Dirección del 2026-10-06, generadas por IA y pendientes de
+  revisión humana.
+- **Ninguna de las dos sesiones tenía una herramienta que genere imágenes**, y los encargos no autorizan contratar una.
+  Por eso no hay ninguna imagen nueva: **0 de 66 recetas con foto**.
+- Un prompt no es una imagen: el inventario lo distingue en cada contenido.
 
 | | Contenidos | Con imagen real | Ficha y prompt |
 |---|---|---|---|
-| Recetas (las 16 del manifiesto) | 16 | 0 | 16 |
+| Recetas: 16 originales y 50 nuevas | 66 | 0 | 66 |
 | Alimentos (del catálogo base) | 16 | 0 | 16 |
 | Ejercicios | 15 | 3 | 12 |
-| **Total** | **47** | **3** | **44** |
+| **Total** | **97** | **3** | **94** |
 
-Nutrición suma 32 contenidos distintos, el máximo del encargo. Ninguno repite un alimento en otro estado ni cuenta un
-segundo ángulo.
+Las fotos de las 66 recetas se generan afuera, con el paquete de `EVIDENCIA/RECETAS-AMPLIACION/PAQUETE-DE-GENERACION.md`.
+Se preparan y se registran con la herramienta de fotos de esa carpeta; el inventario las toma de su registro (`fotos.json`).
+Los alimentos siguen siendo 16 distintos: ninguno repite un alimento en otro estado ni cuenta un segundo ángulo.
 
 ## Qué hay en esta carpeta
 
@@ -31,8 +34,8 @@ segundo ángulo.
 | `herramientas/generar.mjs` | Arma las fichas y el inventario desde el manifiesto congelado, la selección, los prompts del paquete y los bytes de las imágenes reales |
 | `herramientas/verificar.mjs` | El verificador. Comprueba que el inventario corresponde al manifiesto y a la selección, que no hay repetidos, que nada sin archivo se presenta como imagen, y que los archivos reales existen y miden lo dicho. Con `--fotos <carpeta>`, revisa las fotos de recetas con los mismos criterios que `recetas.mjs revisar` |
 | `herramientas/imagenes/` | Lo que trabaja sobre los archivos: medir, aplanar como BE, medir el halo del contorno, componer las vistas de recortes, sondear wger y rasterizar un SVG. Usan `sharp` de un árbol con `node_modules` (se pasa como argumento) |
-| `seleccion/BE-material-visual-seleccion.pdf` | **La selección en PDF, 6 páginas:** el resumen, las tres imágenes reales en grande con sus recortes, la maqueta (marcada como maqueta) y la lista de las 44 fichas. Fuente: `seleccion/seleccion.typ` |
-| `galeria/` | **La galería para el teléfono:** `plantilla.html` y `armar-galeria.mjs`, que la arma desde el inventario. La publicada el 2026-10-28 es una página privada de claude.ai: <https://claude.ai/artifact/QajQNjTs1oT5asD1RbbAq7> |
+| `seleccion/BE-material-visual-seleccion.pdf` | **La selección en PDF, 6 páginas:** el resumen, las tres imágenes reales en grande con sus recortes, la maqueta (marcada como maqueta) y las 94 fichas sin imagen (las recetas, por familia). Los números salen del inventario. Fuente: `seleccion/seleccion.typ` |
+| `galeria/` | **La galería para el teléfono:** `plantilla.html` y `armar-galeria.mjs`, que la arma desde el inventario: las 66 recetas con búsqueda, filtros por familia, origen y foto, y su ficha completa; los alimentos y los ejercicios. Es una página privada de claude.ai: <https://claude.ai/artifact/QajQNjTs1oT5asD1RbbAq7>, versión 2 del 2026-10-28 |
 
 **Fuera del repositorio** (`C:\Users\bufim\BE-material-visual\`, persistente):
 - `ejercicios/existentes/originales/`: copia de las tres PNG del paquete;
@@ -106,29 +109,45 @@ La selección en PDF y la galería, también desde la raíz:
 ```bash
 typst compile --root . --font-path docs/guias/ENTENDER-BE/tipografias --ignore-system-fonts \
   EVIDENCIA/MATERIAL-VISUAL/seleccion/seleccion.typ EVIDENCIA/MATERIAL-VISUAL/seleccion/BE-material-visual-seleccion.pdf
-node EVIDENCIA/MATERIAL-VISUAL/galeria/armar-galeria.mjs <salida>   # galeria.html e img/, desde BE-material-visual
+node EVIDENCIA/MATERIAL-VISUAL/galeria/armar-galeria.mjs <salida> <carpeta del material>   # galeria.html e img/
 ```
 
-**Resultados del 2026-10-28:**
-- el verificador dio «SIN PROBLEMAS», con un aviso: la versión del pollo a la parrilla sale de la migración y no del
-  manifiesto;
-- con el inventario dañado a propósito, falló con salida 1 y los dos problemas esperados;
-- con `--fotos`, 0 de 16 fotos, porque la carpeta no existe.
+La galería sale entera en `<salida>`, con rutas relativas: se abre desde cualquier lugar. La carpeta del material, en la
+máquina donde se preparó, es `C:\Users\bufim\BE-material-visual`. Una copia armada el 2026-10-28 está en su subcarpeta
+`galeria-2026-10-28`.
+
+**Resultados:**
+- **2026-10-27, con 47 contenidos:**
+  - el verificador dio «SIN PROBLEMAS», con un aviso: la versión del pollo a la parrilla sale de la migración y no del
+    manifiesto;
+  - con el inventario dañado a propósito, falló con salida 1 y los dos problemas esperados;
+  - con `--fotos`, 0 de 16 fotos, porque la carpeta no existía.
+- **2026-10-28, con 97:** el verificador da «SIN PROBLEMAS», con el mismo aviso. Ahora también comprueba las 50 nuevas
+  contra el manifiesto de la ampliación (código, nombre, archivo, ingredientes y prompt). El tope de 32 contenidos de
+  Nutrición era del encargo del 27/10: el del 28/10 amplía las recetas a 66.
 
 **Cuando haya imágenes:**
-- las fotos de recetas van con su nombre (`NN-nombre.jpg`) a la carpeta de `--fotos`;
-- las de alimentos y ejercicios van con su archivo estable (`A01-…`, `E04-…`) a la carpeta de `--imagenes`;
-- en `herramientas/seleccion.mjs`, a la receta, al alimento o al ejercicio se le agrega `archivoReal` con su ruta (del
-  repositorio o absoluta) y se vuelve a correr `generar.mjs`, que lo mide, guarda su SHA-256 y le pone el estado
-  `ARCHIVO_REAL_PENDIENTE_DE_REVISION_HUMANA`. El inventario no se edita a mano.
-- Nada se sube a test sin una autorización. La carga de recetas es `recetas.mjs cargar`, con `--confirmo-escritura`.
+- **Las fotos de recetas** siguen el paquete de generación de `EVIDENCIA/RECETAS-AMPLIACION`:
+  - se guardan con su código (`R017-…png`; también `R001-…` para las originales);
+  - se preparan con `EVIDENCIA/RECETAS-AMPLIACION/herramientas/fotos.mjs preparar`, que hace la entrega de 1600 × 1200
+    con el nombre que espera cada herramienta de carga, con las transformaciones escritas y las hojas de revisión;
+  - se registran con `fotos.mjs registrar`;
+  - `generar.mjs` las toma del registro.
+- **Las de alimentos y ejercicios** van con su archivo estable (`A01-…`, `E04-…`) a la carpeta de `--imagenes`. En
+  `herramientas/seleccion.mjs` se les agrega `archivoReal` con su ruta (del repositorio o absoluta) y se vuelve a correr
+  `generar.mjs`, que la mide, guarda su SHA-256 y le pone el estado `ARCHIVO_REAL_PENDIENTE_DE_REVISION_HUMANA`.
+- El inventario no se edita a mano.
+- Nada se sube a test sin una autorización. La carga de las 16 originales es `recetas.mjs cargar` y la de las 50 nuevas,
+  `ampliacion-2026-10-28/cargar.mjs cargar`. Las dos exigen `--confirmo-escritura`.
 
 ## Lo que necesita una decisión de Dirección
 
-1. **Con qué se generan las 44 imágenes, y quién las genera.** Las tres del paquete salieron de una herramienta de
-   Dirección («image_gen integrado»). Los prompts están listos.
-2. **El tamaño de las fotos de recetas.** Muchas herramientas entregan 1536 × 1024 o 1024 × 1024, y el criterio pide 4:3
-   y 1600 px. Se puede reescalar antes de subir, o revisar `FOTO_ESPERADA`.
+1. **Generar las imágenes.** Las 66 fotos de recetas, con el paquete de generación, en la sesión de ChatGPT de
+   Dirección. Las de alimentos y ejercicios, con sus fichas. Las tres del paquete de ejercicios salieron de una
+   herramienta de Dirección («image_gen integrado»).
+2. **El tamaño de las fotos de recetas.** Si la herramienta entrega 1536 × 1024, `fotos.mjs` recorta a 4:3 y reescala a
+   1600 × 1200, y lo dice: el detalle no es nativo. `FOTO_ESPERADA` no se relajó. Si no alcanza, hay que pedir otra
+   salida.
 3. **Los doce ejercicios del catálogo de WP-06 no pueden tener imagen hoy.** Solo los ejercicios propios pueden. Usarlas
    en la demo exige cargarlas como ejercicios propios, o un cambio de producto, que esta noche no se hace.
 4. **Tres implementos inferidos,** porque el nombre no los dice: la «Sentadilla» con barra, el «Press con mancuernas» en
