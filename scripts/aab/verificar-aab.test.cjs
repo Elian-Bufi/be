@@ -12,7 +12,10 @@
  *   comprobación obligatoria haya dado true (una pendiente o un false lo impiden);
  * - los permisos del manifiesto con `android:maxSdkVersion` antes de `android:name` (corrección del 2026-11-02) y los
  *   lectores que usa apk-desde-aab.mjs (scripts/aab/lectores.mjs y scripts/aab/zip.mjs), con salidas con la forma de
- *   las reales de aapt2 y apksigner y valores inventados.
+ *   las reales de aapt2 y apksigner y valores inventados;
+ * - los frenos de la entrada de apk-desde-aab.mjs, que actúan antes de java: el ensayo con la clave de debug nunca va
+ *   en la carpeta del AAB ni dentro de ella, y ningún archivo que ya esté (la APK, su .sha256, el registro, un
+ *   .firmando de una corrida cortada) se pisa.
  *
  * **Lo que esto no prueba:** un AAB ni una APK reales, bundletool, keytool, jarsigner, apksigner, aapt2, zipalign ni Play.
  * Uso: node --test scripts/aab/verificar-aab.test.cjs
@@ -625,5 +628,62 @@ test('extraer el zip: los nombres que solo difieren en mayúsculas no se pisan (
     }
   } finally {
     fs.rmSync(carpeta, { recursive: true, force: true });
+  }
+});
+
+// ─── apk-desde-aab.mjs: los frenos de la entrada (actúan antes de java: no se corre ninguna herramienta) ──────────
+
+test('apk-desde-aab: el ensayo nunca va junto a los artefactos y no se pisa ningún archivo', () => {
+  const { spawnSync } = require('node:child_process');
+  const script = path.join(__dirname, 'apk-desde-aab.mjs');
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'be-apk-entrada-'));
+  try {
+    const delAab = path.join(raiz, 'artefactos');
+    fs.mkdirSync(delAab);
+    const aab = path.join(delAab, 'be-0.18.0-candidata.2-b6ea7c3.aab');
+    const sinFirma = path.join(delAab, 'be-0.18.0-candidata.2-b6ea7c3-sin-firma.aab');
+    const verificacion = path.join(raiz, 'verificacion.json');
+    const referencia = path.join(raiz, 'referencia.apk');
+    for (const p of [aab, sinFirma, verificacion, referencia]) fs.writeFileSync(p, '{}');
+    fs.writeFileSync(path.join(delAab, 'esperado.json'), JSON.stringify(ESPERADO_VALIDO));
+    const base = ['--verificacion', verificacion, '--referencia', referencia];
+    // El código 2 solo no alcanza (también sale con 2 si falta java): se mira el motivo.
+    const frena = (motivo, args, patron) => {
+      const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', timeout: 30_000 });
+      const salida = `${r.stdout ?? ''}${r.stderr ?? ''}`;
+      assert.equal(r.status, 2, `${motivo}: ${salida}`);
+      assert.match(salida, patron, motivo);
+    };
+    const ensayo = path.join(raiz, 'ensayo');
+    frena('el AAB sin firma', [sinFirma, ...base, '--clave-de-prueba', '--salida', ensayo], /AAB FIRMADO/);
+    frena('el ensayo con el respaldo', [aab, ...base, '--clave-de-prueba', '--respaldo', raiz], /no van juntos/);
+    frena('el ensayo sin --salida', [aab, ...base, '--clave-de-prueba'], /--salida es obligatoria/);
+    frena('el ensayo en la carpeta del AAB', [aab, ...base, '--clave-de-prueba', '--salida', delAab], /no puede ser la carpeta del AAB/);
+    frena('el ensayo dentro de la carpeta del AAB', [aab, ...base, '--clave-de-prueba', '--salida', path.join(delAab, 'ensayo')], /no puede ser la carpeta del AAB/);
+    if (process.platform === 'win32') frena('la carpeta del AAB con otras mayúsculas', [aab, ...base, '--clave-de-prueba', '--salida', delAab.toUpperCase()], /no puede ser la carpeta del AAB/);
+
+    const real = path.join(raiz, 'real');
+    const conFirma = ['--respaldo', raiz, '--salida', real];
+    const deEnsayo = ['--clave-de-prueba', '--salida', ensayo];
+    const apk = 'be-0.18.0-candidata.2-b6ea7c3.apk';
+    const casos = [
+      [real, apk, conFirma],
+      [real, `${apk}.sha256`, conFirma],
+      [real, 'apk.json', conFirma],
+      [real, `${apk}.firmando`, conFirma],
+      [real, `${apk}.firmando.idsig`, conFirma],
+      [ensayo, 'be-0.18.0-candidata.2-b6ea7c3-prueba-debug.apk', deEnsayo],
+      [ensayo, 'apk-prueba-debug.json', deEnsayo],
+    ];
+    for (const [carpeta, nombre, extra] of casos) {
+      fs.mkdirSync(carpeta, { recursive: true });
+      const p = path.join(carpeta, nombre);
+      fs.writeFileSync(p, 'de otra corrida');
+      frena(`ya está ${nombre}`, [aab, ...base, ...extra], /ya existe .*no lo piso/);
+      assert.equal(fs.readFileSync(p, 'utf8'), 'de otra corrida', `${nombre} quedó como estaba`);
+      fs.rmSync(p);
+    }
+  } finally {
+    fs.rmSync(raiz, { recursive: true, force: true });
   }
 });
