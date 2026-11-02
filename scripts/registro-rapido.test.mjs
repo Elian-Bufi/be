@@ -382,6 +382,20 @@ test('8 · otro día, la ocurrencia de la misma sesión y de la misma versión d
 
 // ─── 9. Navegación, textos y lo que usa la pantalla ─────────────────────────────────────────────
 
+test('9 · el registro rápido es de Entrenamiento y deja la barra a la vista; registrado, «Atrás» vuelve adonde se abrió', () => {
+  const ruta = { nombre: 'registro-rapido', occurrenceId: 'o1', fecha: HOY, etiqueta: 'Piernas A', sessionId: 's1', planId: 'p1' };
+  assert.equal(nav.moduloDe(ruta), 'entrenamiento');
+  assert.equal(nav.sinBarraInferior(ruta), false, 'no es la sesión enfocada');
+  assert.deepEqual(nav.anterior(ruta), { nombre: 'entrenamiento' });
+  for (const origen of [{ nombre: 'inicio' }, { nombre: 'entrenamiento' }]) {
+    const abierto = nav.navegar(origen, ruta);
+    assert.deepEqual(nav.anterior(abierto), origen);
+    const registrada = nav.navegar(abierto, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' }, 'reemplazar');
+    assert.deepEqual(nav.anterior(registrada), origen, 'el registro reemplaza al recorrido');
+  }
+  assert.equal(nav.mismaPantalla(ruta, { ...ruta, occurrenceId: 'o2' }), false);
+});
+
 test('9 · los textos no califican: sin puntajes, sin «cumplimiento», sin «bien», «mal» ni «excelente», y sin tildes de aprobado', () => {
   const T = rr.TEXTOS_DEL_REGISTRO_RAPIDO;
   const textos = [
@@ -397,4 +411,16 @@ test('9 · los textos no califican: sin puntajes, sin «cumplimiento», sin «bi
   assert.doesNotMatch(todo, /\b(bien|mal|excelente|felicitaciones|genial)\b/i);
   assert.doesNotMatch(todo, /[✓✔☑]/u);
   assert.doesNotMatch(todo, /no realizad/i, '«Ya la hice» nunca registra «No realizada»');
+});
+
+const fuente = (ruta) => readFileSync(resolve(RAIZ, ruta), 'utf8');
+
+test('9 · la pantalla no arranca la corrida, usa las piezas de ui.tsx, y confirma con la clave del intento', () => {
+  const PANTALLA = fuente('apps/mobile/src/pantallas/registro-rapido.tsx');
+  assert.doesNotMatch(PANTALLA, /useAbrirOcurrencia\(|entrenamientoLocal\.(preparar|accion)\(/, 'sin corrida ni cronómetros');
+  assert.doesNotMatch(PANTALLA, /\b(Pressable|TouchableOpacity|TouchableHighlight)\b/, 'ninguna forma de botón propia');
+  const pasos = ['api.abrirBorradorDeEjecucion(token, ocurrencia)', 'api.guardarBorradorDeEjecucion(token, borrador.draftId', 'api.confirmarEjecucion(token, borrador.draftId, version, intento.actual())', 'intento.registrar(c);'];
+  const lugares = pasos.map((p) => PANTALLA.indexOf(p));
+  assert.ok(lugares.every((l, i) => l > 0 && (i === 0 || l > lugares[i - 1])), `PUT, PATCH y POST, en orden: ${lugares}`);
+  assert.match(PANTALLA, /borradorConDatos\(borrador, nuestro\.current\)/, 'antes del PATCH se mira lo que el borrador ya tiene');
 });

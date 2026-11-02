@@ -73,6 +73,7 @@ import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
+import { PantallaDeRegistroRapido } from './src/pantallas/registro-rapido';
 import { PantallaDeRevision, PantallaDeRevisiones } from './src/pantallas/revisiones';
 import { PantallaDeNotasDeCoordinacion } from './src/pantallas/notas-de-coordinacion';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
@@ -597,6 +598,21 @@ function Contenido() {
                 />
               ) : null}
               {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} salir={salir} /> : null}
+              {ruta.nombre === 'registro-rapido' ? (
+                <PantallaDeRegistroRapido
+                  key={ruta.occurrenceId}
+                  token={sesion.token}
+                  occurrenceId={ruta.occurrenceId}
+                  fecha={ruta.fecha}
+                  etiqueta={ruta.etiqueta}
+                  sessionId={ruta.sessionId}
+                  planId={ruta.planId}
+                  salir={salir}
+                  ir={ir}
+                  volver={volver}
+                  subir={subir}
+                />
+              ) : null}
               {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
               {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} salir={salir} ir={ir} /> : null}

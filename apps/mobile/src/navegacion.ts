@@ -82,7 +82,18 @@ export type Ruta =
       readonly etiqueta?: string;
       readonly desde?: Ruta;
     }
-  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta };
+  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta }
+  // PA-03 (DL-160, DL-161): «Ya la hice», el registro rápido de una sesión del plan, por pasos y sin cronómetros. Con la
+  // barra inferior a la vista: no es la sesión enfocada.
+  | {
+      readonly nombre: 'registro-rapido';
+      readonly occurrenceId: string;
+      readonly fecha: string;
+      readonly etiqueta: string;
+      readonly sessionId: string;
+      readonly planId: string;
+      readonly desde?: Ruta;
+    };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
 export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'sesion-vencida' | 'reautenticar' | 'cierre-registrado';
@@ -162,6 +173,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'plan-de-entrenamiento':
     case 'sesion-de-entrenamiento':
     case 'ejecucion-de-entrenamiento':
+    case 'registro-rapido':
       return 'entrenamiento';
     case 'mi-evolucion':
       return 'evolucion';
@@ -249,6 +261,7 @@ function madre(ruta: Ruta): Ruta | null {
       return { nombre: 'mis-solicitudes' };
     case 'sesion-de-entrenamiento':
     case 'ejecucion-de-entrenamiento':
+    case 'registro-rapido':
       return { nombre: 'entrenamiento' };
     case 'plan-actual':
     case 'registros-nutricionales':
@@ -290,6 +303,7 @@ function identificador(ruta: Ruta): string | null {
   if ('vinculoId' in ruta) return ruta.vinculoId;
   if ('draftId' in ruta) return ruta.draftId;
   if (ruta.nombre === 'comida-diferente') return ruta.comidaId;
+  if (ruta.nombre === 'registro-rapido') return ruta.occurrenceId;
   // REV-A: las revisiones de Nutrición y las de Entrenamiento son dos pantallas distintas.
   if (ruta.nombre === 'revisiones') return ruta.area;
   return null;

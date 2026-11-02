@@ -82,7 +82,16 @@ const DOMINIOS = [
   },
   {
     nombre: 'entrenamiento',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_Y_NOVEDADES],
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')),
+      join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'),
+      inicio('inicio-entrenamiento.tsx'),
+      movil('lecturas-de-inicio.ts'),
+      // PA-03: el registro rápido («Ya la hice»), su pantalla y sus textos.
+      inicio('registro-rapido.tsx'),
+      movil('registro-rapido.ts'),
+      ...INICIO_Y_NOVEDADES,
+    ],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },
