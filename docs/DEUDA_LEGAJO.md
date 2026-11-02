@@ -2985,6 +2985,18 @@ La tomó Dirección de BE, sobre la propuesta del mismo día, y no es una renova
 - **Dónde quedó:** este registro, `EXCEPCIONES` en `scripts/auditoria-de-dependencias.cjs`, sus pruebas y los escenarios
   con npm de verdad.
 
+**Avisos nuevos del 2026-10-30: corregidos, no exceptuados (2026-11-02).** El 30/10 GitHub publicó cinco avisos altos
+de node-forge (GHSA-7wch-p9px-956x, GHSA-jc66-7q78-782g, GHSA-8hrf-8g6f-7xwp, GHSA-hqq3-7jhf-c5jx y
+GHSA-5x38-2vff-x55p), todos para `<= 1.4.0` y corregidos en la 1.4.1. La auditoría los marcó en `@be/mobile` y frenó la
+CI de todas las ramas.
+- **Lo que se hizo:** el lockfile pasa node-forge de la 1.4.0 a la 1.4.2 (publicada el 2026-10-27), que cumple el
+  `^1.3.3` que piden `@expo/cli` y `@expo/code-signing-certificates`. No se tocó Expo ni ninguna otra versión.
+- **Efecto en la excepción:** la 1.4.2 queda fuera del rango del aviso exceptuado (GHSA-86w9-cpqp-85rv, `<= 1.4.0`), así
+  que la excepción de node-forge deja de usarse. No se borra en este cambio: se revisa con la de zod antes del
+  2026-11-30, con Dirección, como dice esta entrada.
+- **Decisión:** Dirección autorizó el 2026-11-02 seguir las recomendaciones salvo una decisión crítica; esto corrige y no
+  amplía nada.
+
 ---
 
 ## DL-115 — Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios
