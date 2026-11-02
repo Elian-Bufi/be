@@ -1,6 +1,6 @@
 {
-  "estado": "PROPUESTA",
-  "revision": { "por": null, "fecha": null, "nota": "Para cargar, Dirección revisa cada fila, corrige lo que haga falta y cambia «estado» a «REVISADA» con su nombre y la fecha. Mientras diga PROPUESTA, la herramienta no escribe." },
+  "estado": "REVISADA",
+  "revision": { "por": "Elián Bufi (Dirección), por delegación expresa en Claude", "fecha": "2026-11-02", "nota": "Dirección delegó la decisión el 2026-11-02 («confío en tu inteligencia, sé que tomarás la mejor solución»). Queda la propuesta tal cual salvo la caminata en cinta, que pasa a llevar cuádriceps, isquiotibiales y gemelos como secundarias: el mismo criterio que el equilibrio en un pie (solo secundarias en lo que no es de fuerza) y la figura no queda vacía. El press con mancuernas se toma como press en banco, como el «Dumbbell press» del catálogo. Dirección puede corregir cualquier fila y volver a cargar." },
   "fuente": "Propuesta de Claude del 2026-11-02 para la demostración, por la técnica de cada ejercicio. No sale de wger ni del nombre (B10-06 §22): es contenido profesional a revisar (REG-06-139). Los identificadores de zona son los de API-ZON-01.",
   "ejercicios": [
     { "clave": "sentadilla", "principales": ["cuadriceps", "gluteos"], "secundarias": ["aductores", "isquios", "erectores"], "nota": null },
@@ -20,7 +20,7 @@
     { "clave": "remoEnPolea", "principales": ["dorsal", "romboides"], "secundarias": ["trapecio", "biceps", "deltoides"], "nota": null },
     { "clave": "talones", "principales": ["gemelos"], "secundarias": [], "nota": null },
     { "clave": "equilibrio", "principales": [], "secundarias": ["gluteos", "tibial", "gemelos"], "nota": "Es un ejercicio de equilibrio: no tiene una zona principal. Si Dirección prefiere, va sin zonas." },
-    { "clave": "caminata", "principales": [], "secundarias": [], "nota": "Trabajo aeróbico: queda sin zonas. Alternativa: cuádriceps, isquiotibiales y gemelos como secundarias." },
+    { "clave": "caminata", "principales": [], "secundarias": ["cuadriceps", "isquios", "gemelos"], "nota": "Trabajo aeróbico: sin zona principal; las piernas como secundarias." },
     { "clave": "cargada", "principales": ["cuadriceps", "gluteos", "isquios", "trapecio"], "secundarias": ["erectores", "deltoides", "gemelos", "antebrazo"], "nota": "Es un movimiento de todo el cuerpo: la figura se va a ver muy cargada." },
     { "clave": "sentadillaFrontal", "principales": ["cuadriceps"], "secundarias": ["gluteos", "aductores", "erectores", "recto-abdominal"], "nota": null }
   ]
