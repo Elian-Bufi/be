@@ -1,6 +1,10 @@
 import {
+  COPY_REGISTRO_POR_NIVELES,
   comidaFrenteALoIndicado,
   ejerciciosComparables,
+  esNivelPorSerie,
+  nivelDeDetalleDelRegistro,
+  textoDelNivelDeDetalle,
   frenteALoIndicadoEnPalabras,
   observacionesDelEjercicio,
   paraQuienEs,
@@ -240,6 +244,8 @@ export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamient
     const series = vigente?.exercises.flatMap((e) => e.sets ?? []) ?? [];
     const conDato = series.filter((s) => s.load !== null || s.completedRepetitions !== null || s.rir !== null).length;
     const ejercicios = [...new Set(vigente?.exercises.map((e) => e.performedExerciseName) ?? [])];
+    // DL-161: cómo se cargaron las series. Resumida y no realizada ya lo dicen «Registro» y «Condición».
+    const nivel = vigente ? nivelDeDetalleDelRegistro(vigente) : null;
     const version = numero.get(x.planId);
     const correccion = x.effectiveView.kind === 'CORRECTED' ? x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) : undefined;
     return {
@@ -253,6 +259,7 @@ export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamient
       details: [
         ...(vigente ? [{ label: 'Condición', value: CONDICION[vigente.sessionCondition] }] : [{ label: 'Registro vigente', value: 'no se puede resolver la corrección' }]),
         ...(vigente?.granularity === 'SET' ? [{ label: 'Series con datos', value: String(conDato) }] : []),
+        ...(esNivelPorSerie(nivel) ? [{ label: COPY_REGISTRO_POR_NIVELES.comoSeCargo, value: textoDelNivelDeDetalle(nivel) }] : []),
         ...(vigente?.granularity === 'EXERCISE_OR_SESSION' ? [{ label: 'Registro', value: 'resumido, sin series' }] : []),
         ...(ejercicios.length > 0 ? [{ label: 'Ejercicios', value: ejercicios.length > 4 ? `${ejercicios.slice(0, 4).join(', ')} y ${ejercicios.length - 4} más` : ejercicios.join(', ') }] : []),
         ...(vigente?.reason ? [{ label: 'Motivo', value: vigente.reason }] : []),
