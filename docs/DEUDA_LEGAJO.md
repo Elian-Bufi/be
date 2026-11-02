@@ -163,7 +163,7 @@
 | DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la suspensión opera por área y no cierra las sesiones globales del profesional; el servidor rechaza las operaciones del área suspendida desde el pedido siguiente (la sesión autentica, no autoriza) |
 | DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **RATIFICADA** por Dirección el 2026-10-25 e **INTEGRADA** (#211, `7079677`), desplegada en test (C-D1 opción A y C-D2): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; con alternativas no se inventa un total diario, y la comparación no se presenta como adherencia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-160 | Decisión de Dirección · 2026-11-02 (registro rápido y «Ya la hice») | B10-06 §57 · B10-06 §29 · DL-137 · DL-161 | La regla «el día de hoy se entrena con los cronómetros» no está en el legajo: es un comentario de la APK, y B10-06 §57 dice que el temporizador no es requisito P0 | **DECIDIDA** por Dirección el 2026-11-02: el registro rápido y «Ya la hice» valen también el mismo día; los cronómetros quedan como ayuda opcional. La API ya lo admite (confirmar la sesión de hoy no pide eventos de tiempo); la APK lo toma en su rama; falta el teléfono |
-| DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` (PR en borrador), sin integrar: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, en su rama; queda documentado el caso de una ejecución nueva leída por una APK anterior; decisiones I-1 a I-6 a ratificar |
+| DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` (PR en borrador), sin integrar: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, en su rama; queda documentado el caso de una ejecución nueva leída por una APK anterior; el mismo día Dirección decidió cómo se lee en el escritorio (lo tildado sin escribir no se compara y va hueco en los gráficos; la carga completa se destaca), hecho en la rama `wp-escritorio-niveles`; decisiones I-1 a I-10 a ratificar |
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar · D-1 a D-5 a ratificar: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
 
 ---
@@ -5922,7 +5922,63 @@ planificado.
   demostración.
 - La prueba en el teléfono, con profesionales y, al final, con TalkBack.
 
-**Condición de cierre:** Dirección ratifica I-1 a I-6, la CI pasa, y la APK nueva se prueba en el teléfono.
+**Decisión de Dirección del 2026-11-02 sobre los gráficos y la comparación** (rama `wp-escritorio-niveles`, PR en
+borrador contra `wp-registro-por-niveles`, sin integrar):
+- **Lo que dijo Dirección:** que la carga rápida es la opción recomendada solo si la persona no cambia ni ejercicios ni
+  series; que puede haber cumplido el plan tal cual, así que «lo ideal en realidad sería que no afecte a los gráficos
+  pero sí avise que ese entrenamiento fue en carga rápida, o que destaque a los entrenamientos que tuvieron carga
+  completa»; y que se diferencien «si hay modificación en series o datos».
+- **Cómo se lee:** una serie `AS_PLANNED` trae los valores del plan; compararla con lo indicado es comparar el plan
+  consigo mismo, y meterla en una mediana o en un cambio relativo mezcla lo que nadie escribió con lo que se midió. Lo
+  que la persona escribió o cambió es un dato, y se compara como siempre. La cantidad de series, en cambio, es lo que
+  hizo: se cuenta siempre.
+- **Los nombres** reemplazan a los de «Lo que se hizo»: «Carga completa» (`CON_DETALLE`), «Carga rápida»
+  (`COMO_EL_PLAN`), «Carga rápida con cambios» (`PARTE_COMO_EL_PLAN`) y «Resumida, sin series»; «No realizada» sigue
+  igual. La marca de cada serie sigue diciendo «como el plan».
+- **La comparación con lo indicado** (Registros, detalle de una sesión):
+  - una serie `AS_PLANNED` dice «No se compara: tildada sin escribir» en la columna de la comparación; no es una
+    diferencia ni entra en la vista «Con diferencias»;
+  - la fila de la sesión suma, al final, «N series tildadas sin escribir: no se comparan»;
+  - la cuenta de cada ejercicio va siempre («3 de 4 series registradas»): una serie menos se ve aunque nada se haya
+    escrito.
+- **Los gráficos:** en «Analizar», en el minigráfico del Resumen y en «Planificado y registrado» (por serie y evolución
+  de un ejercicio), el punto o la barra de una serie `AS_PLANNED` va hueco, con la leyenda «carga rápida»; no tiene
+  diferencia con lo planificado y su rótulo dice «carga rápida». Lo escrito, lleno. El punto sigue unido a su línea.
+- **La tendencia:** la media y la mediana de un período, la comparación de dos períodos y de dos etapas, la referencia y
+  el cambio relativo dejan fuera la carga rápida y dicen cuántas quedaron fuera. Si en el rango de referencia solo hay
+  carga rápida, no hay referencia (`SOLO_CARGA_RAPIDA`) y la pantalla lo dice. Las series registradas se cuentan con
+  las tildadas. El resumen en texto, la lectura de la fecha y la exportación (en la calidad de la fila) lo dicen.
+- **Destacar la carga completa:** en la lista de sesiones, en el detalle de la sesión y en el renglón de la línea de
+  tiempo, «Carga completa» va como etiqueta del acento del tema. Las demás dicen su nivel, sin destacar.
+- **Cómo viaja en la API:** API-PRJ-01 pone la marca en el detalle del punto (`DETALLE_DE_CARGA_RAPIDA`: «Cómo se
+  cargó: Carga rápida, tildada sin escribir») y una nota en `notes`. El contrato y `docs/api/openapi.json` no cambian.
+
+**Decisiones de implementación de los gráficos** (a ratificar):
+- **I-7 · La marca del punto va en el detalle, no en un campo nuevo del contrato.** El detalle ya es factual y la
+  lectura lo muestra. *Alternativa descartada:* un campo propio en `PuntoAnaliticoSchema`, más explícito, pero cambia el
+  contrato y el OpenAPI la semana de la demostración. *Riesgo:* si alguien cambia el rótulo o el valor, el website deja
+  de reconocerlo. Lo cubren las pruebas: el dominio y el website comparan con la misma constante.
+- **I-8 · El punto de carga rápida sigue unido a su línea.** Es algo que la persona hizo y confirmó; cortarla partiría
+  tramos sin motivo. *Alternativa:* suelto, como el día en curso.
+- **I-9 · El motivo de no comparar es «tildada sin escribir»,** aunque el ejercicio sea otro o lo indicado no se haya
+  podido leer: va antes que esos motivos. Solo «Adicional: no se compara» va antes.
+- **I-10 · «Carga rápida con cambios» sale solo de la marca de cada serie.** Una sesión con una serie menos, sin nada
+  escrito, sigue siendo «Carga rápida», con «3 de 4 series registradas» a la vista. *Alternativa:* llamarla «con
+  cambios» también; la decide Dirección si la prefiere.
+
+**Pruebas de los gráficos:**
+- **Dominio:** `carga-rapida-en-el-escritorio.test.ts` (nueva: la serie de «Analizar», el resumen, la comparación de
+  períodos, la referencia, el cambio relativo, el resumen en texto, la exportación y «Planificado y registrado»),
+  `registros-de-entrenamiento.test.ts` (la comparación de una sesión, una serie menos, una tildada fuera de rango) y
+  `registro-por-niveles.test.ts` (los nombres y los textos nuevos).
+- **Website:** `scripts/hecho-en-un-renglon.test.mjs` (la carga completa destacada) y
+  `scripts/geometria-del-minigrafico.test.mjs` (el punto hueco).
+- **Integración:** `registro-por-niveles.int-spec.ts`: los nombres nuevos en API-DSH-04, y en API-PRJ-01 la marca del
+  punto, la nota y la cuenta de series.
+
+**Lo que queda de los gráficos:** verlos en el navegador, en los dos temas, con una sesión en carga rápida.
+
+**Condición de cierre:** Dirección ratifica I-1 a I-10, la CI pasa, y la APK nueva se prueba en el teléfono.
 
 ---
 

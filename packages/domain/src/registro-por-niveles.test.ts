@@ -13,6 +13,7 @@ import { problemasDeCoherencia, problemasParaConfirmar } from './plan-de-entrena
 import {
   ejerciciosEnSuForma,
   ejerciciosSinLaMarca,
+  esCargaCompleta,
   esNivelPorSerie,
   nivelDeDetalle,
   nivelDeDetalleDelRegistro,
@@ -139,17 +140,29 @@ test('el nivel de una ejecución es el de lo que rige: la corrección vigente; c
 
 const NIVELES: readonly NivelDeDetalle[] = ['CON_DETALLE', 'COMO_EL_PLAN', 'PARTE_COMO_EL_PLAN', 'RESUMIDA', 'NO_REALIZADA'];
 
-test('cada nivel en palabras, y «No realizada» sale de la condición que registró la persona', () => {
+test('cada nivel en palabras (los nombres de Dirección del 2026-11-02), y «No realizada» sale de la condición que registró la persona', () => {
   assert.deepEqual(
     NIVELES.map((n) => textoDelNivelDeDetalle(n)),
-    ['Con detalle', 'Cargada como el plan', 'Parte como el plan', 'Resumida, sin series', 'No realizada'],
+    ['Carga completa', 'Carga rápida', 'Carga rápida con cambios', 'Resumida, sin series', 'No realizada'],
   );
   assert.deepEqual(
     NIVELES.filter((n) => esNivelPorSerie(n)),
     ['CON_DETALLE', 'COMO_EL_PLAN', 'PARTE_COMO_EL_PLAN'],
   );
   assert.equal(esNivelPorSerie(null), false);
+  // Solo la carga completa se destaca; las demás dicen su nivel sin destacar.
+  assert.deepEqual(
+    NIVELES.filter((n) => esCargaCompleta(n)),
+    ['CON_DETALLE'],
+  );
+  assert.equal(esCargaCompleta(null), false);
   assert.equal(COPY_REGISTRO_POR_NIVELES.duro('00:45'), 'Duró 00:45');
+  // La marca de cada serie no cambió de nombre: sigue diciendo «como el plan».
+  assert.equal(COPY_REGISTRO_POR_NIVELES.comoElPlan, 'como el plan');
+  // Lo que no se compara se dice, con la concordancia resuelta.
+  assert.equal(COPY_REGISTRO_POR_NIVELES.noSeComparaTildada, 'No se compara: tildada sin escribir');
+  assert.equal(COPY_REGISTRO_POR_NIVELES.tildadasSinComparar(1), '1 serie tildada sin escribir: no se compara');
+  assert.equal(COPY_REGISTRO_POR_NIVELES.tildadasSinComparar(4), '4 series tildadas sin escribir: no se comparan');
 });
 
 test('los textos describen cómo se cargó: sin puntajes, sin cumplimiento, sin «bien» ni «mal» y sin tildes de aprobado', () => {
@@ -160,6 +173,12 @@ test('los textos describen cómo se cargó: sin puntajes, sin cumplimiento, sin 
     COPY_REGISTRO_POR_NIVELES.comoElPlan,
     COPY_REGISTRO_POR_NIVELES.queEsComoElPlan,
     COPY_REGISTRO_POR_NIVELES.duro('01:30'),
+    COPY_REGISTRO_POR_NIVELES.noSeComparaTildada,
+    COPY_REGISTRO_POR_NIVELES.porQueNoSeCompara,
+    COPY_REGISTRO_POR_NIVELES.tildadasSinComparar(1),
+    COPY_REGISTRO_POR_NIVELES.tildadasSinComparar(3),
+    COPY_REGISTRO_POR_NIVELES.cargaRapida,
+    COPY_REGISTRO_POR_NIVELES.leyendaCargaRapida,
   ];
   for (const t of textos) {
     assert.deepEqual(terminosProhibidosDeEntrenamientoEn(t), [], t);

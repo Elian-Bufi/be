@@ -13,11 +13,29 @@
  *   referencia: la referencia es un rango de fechas, no lo que se ve.
  * - **Comparar dos períodos** usa la misma regla de resumen en los dos, dice la duración, n y la cobertura de cada uno, y
  *   no compara totales de períodos de distinta duración como si fueran equivalentes (encargo §13).
+ * - **Una serie de carga rápida** (DL-161; Dirección, 2026-11-02), tildada sin escribir con los valores del plan, es un
+ *   punto hueco: se ve, pero no entra en la media ni en la mediana de un resumen, ni en la referencia ni en el cambio
+ *   relativo. Lo que la persona escribió o cambió, sí. El resumen dice cuántas quedaron fuera.
  */
 import type { NaturalezaDelMetodo, PuntoAnalitico, ReferenciaDelCambio, SerieAnalitica } from './contratos-analisis';
+import { COPY_REGISTRO_POR_NIVELES } from './copy-entrenamiento';
 import { granoDeObservacion, type DefinicionDeMetrica, type ResumenDePeriodo } from './metricas-del-analisis';
 import { diaSiguiente, diasEntreFechas } from './fechas-civiles';
 import { numero } from './formato-numeros';
+
+// ─── Carga rápida (DL-161) ──────────────────────────────────────────────────────────────────────
+
+/**
+ * El detalle que marca un punto de carga rápida: la serie se tildó sin escribir, con los valores del plan a la vista. Lo
+ * pone `serieDeEntrenamiento` en el detalle del punto (`detail`), que ya es factual y se muestra en la lectura: así la
+ * marca viaja en la respuesta de API-PRJ-01 sin cambiar su contrato. Se reconoce por el rótulo y el valor, no por un
+ * texto suelto.
+ */
+export const DETALLE_DE_CARGA_RAPIDA = { label: COPY_REGISTRO_POR_NIVELES.comoSeCargo, value: 'Carga rápida, tildada sin escribir' } as const;
+
+/** Un punto de carga rápida: se dibuja hueco y no entra en los resúmenes, en la referencia ni en el cambio relativo. */
+export const esPuntoDeCargaRapida = (p: Pick<PuntoAnalitico, 'detail'>): boolean =>
+  (p.detail ?? []).some((d) => d.label === DETALLE_DE_CARGA_RAPIDA.label && d.value === DETALLE_DE_CARGA_RAPIDA.value);
 
 /**
  * Los resúmenes, la comparación y la referencia se calculan sobre las observaciones de la métrica (el día, la sesión o la
@@ -121,6 +139,8 @@ export type MotivoSinReferencia =
   | 'ESCALA_NO_ADMITE'
   /** No hay observaciones con valor en el rango de referencia. */
   | 'SIN_OBSERVACIONES'
+  /** DL-161: en el rango de referencia solo hay series de carga rápida, que no se usan de referencia. */
+  | 'SOLO_CARGA_RAPIDA'
   /** La referencia es cero o negativa: el cambio relativo no se puede calcular. */
   | 'NO_POSITIVA'
   /** El rango de referencia elegido no cae entero dentro del período leído: no hay con qué calcularlo. */
@@ -142,6 +162,8 @@ export type Referencia =
       readonly parciales: number;
       /** Cuántos baldes incompletos del rango quedaron fuera (el día en curso, o una semana que el período corta). */
       readonly incompletos: number;
+      /** DL-161: cuántas series de carga rápida del rango quedaron fuera. Solo está si alguna quedó. */
+      readonly deCargaRapida?: number;
     }
   | { readonly tipo: 'invalida'; readonly motivo: MotivoSinReferencia; readonly desde: string; readonly hasta: string };
 
@@ -159,15 +181,18 @@ const media = (valores: readonly number[]): number => valores.reduce((s, v) => s
  * - entrenamiento: la mediana de las sesiones con valor;
  * - antropometría: la primera observación del rango, y solo se comparan contra ella los puntos de su mismo tramo.
  * Un balde incompleto (el día en curso, o una semana que el período corta) no entra en la media ni en la mediana: su
- * valor todavía no es el de un día o una semana completos. La referencia dice cuántos quedaron fuera.
+ * valor todavía no es el de un día o una semana completos. La referencia dice cuántos quedaron fuera. Una serie de carga
+ * rápida tampoco entra (DL-161): sus valores son los del plan, no algo que la persona escribió.
  */
 export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): Referencia {
   exigirObservaciones(serie, definicion, 'referenciaDeLaSerie');
   if (!definicion.cambioRelativo || serie.scale !== 'RATIO') return { tipo: 'invalida', motivo: 'ESCALA_NO_ADMITE', desde, hasta };
-  const conValor = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
+  const delRango = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
+  const conValor = delRango.filter((p) => !esPuntoDeCargaRapida(p));
+  const deCargaRapida = delRango.length - conValor.length;
   const enRango = conValor.filter((p) => !p.partialBucket);
   const incompletos = conValor.length - enRango.length;
-  if (enRango.length === 0) return { tipo: 'invalida', motivo: 'SIN_OBSERVACIONES', desde, hasta };
+  if (enRango.length === 0) return { tipo: 'invalida', motivo: deCargaRapida > 0 && conValor.length === 0 ? 'SOLO_CARGA_RAPIDA' : 'SIN_OBSERVACIONES', desde, hasta };
   let valor: number;
   let usados: readonly PuntoAnalitico[] = enRango;
   let regla: 'MEDIA' | 'MEDIANA' | 'PRIMERA';
@@ -186,7 +211,19 @@ export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: Definicio
     regla = 'MEDIA';
   }
   if (!(valor > 0)) return { tipo: 'invalida', motivo: 'NO_POSITIVA', desde, hasta };
-  return { tipo: 'valida', valor, n: usados.length, desde, hasta, fechas: usados.map((p) => p.date), regla, tramo, parciales: usados.filter((p) => p.quality === 'PARTIAL').length, incompletos };
+  return {
+    tipo: 'valida',
+    valor,
+    n: usados.length,
+    desde,
+    hasta,
+    fechas: usados.map((p) => p.date),
+    regla,
+    tramo,
+    parciales: usados.filter((p) => p.quality === 'PARTIAL').length,
+    incompletos,
+    ...(deCargaRapida > 0 ? { deCargaRapida } : {}),
+  };
 }
 
 /**
@@ -223,13 +260,15 @@ export const cambioRelativo = (valor: number, referencia: number): number => (10
 export type PuntoRelativo = PuntoAnalitico & {
   /** El cambio relativo, en %; `null` si no se puede calcular para este punto (y `motivoSinRelativo` dice por qué). */
   readonly relativo: number | null;
-  readonly motivoSinRelativo: 'SIN_VALOR' | 'OTRO_TRAMO' | null;
+  /** `CARGA_RAPIDA`: la serie se tildó sin escribir (DL-161); su valor es el del plan y no se compara. */
+  readonly motivoSinRelativo: 'SIN_VALOR' | 'OTRO_TRAMO' | 'CARGA_RAPIDA' | null;
 };
 
 /** Los puntos con su cambio relativo contra la referencia. Conservan su valor original, su unidad y su fecha. */
 export function puntosRelativos(serie: SerieAnalitica, referencia: Extract<Referencia, { tipo: 'valida' }>): PuntoRelativo[] {
   return serie.points.map((p) => {
     if (p.value === null) return { ...p, relativo: null, motivoSinRelativo: 'SIN_VALOR' };
+    if (esPuntoDeCargaRapida(p)) return { ...p, relativo: null, motivoSinRelativo: 'CARGA_RAPIDA' };
     if (referencia.tramo !== null && p.segment !== referencia.tramo) return { ...p, relativo: null, motivoSinRelativo: 'OTRO_TRAMO' };
     return { ...p, relativo: cambioRelativo(p.value, referencia.valor), motivoSinRelativo: null };
   });
@@ -312,6 +351,11 @@ export interface ResumenDeUnPeriodo {
   readonly primero: PuntoAnalitico | null;
   readonly ultimo: PuntoAnalitico | null;
   readonly tramo: string | null;
+  /**
+   * DL-161: sesiones del rango con la serie de carga rápida (tildada sin escribir, con los valores del plan). Son
+   * observaciones, pero no entran en el valor ni en `n`, y tampoco son «sin valor». Solo está si hay alguna.
+   */
+  readonly deCargaRapida?: number;
 }
 
 /** Los motivos de un día sin valor que son falta de cantidades (y no un nutriente sin dato en lo registrado). */
@@ -360,7 +404,9 @@ function diasDelResumen(delRango: readonly PuntoAnalitico[], desde: string, hast
 export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string, hoy?: string): ResumenDeUnPeriodo {
   exigirObservaciones(serie, definicion, 'resumirPeriodo');
   const delRango = serie.points.filter((p) => p.date >= desde && p.date <= hasta);
-  const conValor = delRango.filter((p) => p.value !== null);
+  // DL-161: una serie de carga rápida vale lo que decía el plan. Es una sesión del rango, pero no entra en el resumen.
+  const deCargaRapida = delRango.filter((p) => p.value !== null && esPuntoDeCargaRapida(p)).length;
+  const conValor = delRango.filter((p) => p.value !== null && !esPuntoDeCargaRapida(p));
   // La media y la mediana son de días, sesiones o semanas completos: un balde incompleto queda fuera, y se cuenta.
   const completos = conValor.filter((p) => !p.partialBucket);
   const base = {
@@ -369,10 +415,11 @@ export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMe
     duracionDias: diasEntreFechas(desde, hasta) + 1,
     regla: definicion.resumenDePeriodo,
     observaciones: delRango.length,
-    sinValor: delRango.length - conValor.length,
+    sinValor: delRango.length - conValor.length - deCargaRapida,
     // Solo nutrición se resume por días (`exigirObservaciones` ya pidió su grano); sesiones y tomas no tienen días.
     dias: serie.grain === 'DAY' ? diasDelResumen(delRango, desde, hasta, hoy) : null,
     incompletos: conValor.length - completos.length,
+    ...(deCargaRapida > 0 ? { deCargaRapida } : {}),
   };
   const vacio = { valor: null, n: 0, parciales: 0, primero: null, ultimo: null, tramo: null };
   if (conValor.length === 0) return { ...base, ...vacio };
@@ -461,6 +508,8 @@ export function partesDeLaCobertura(r: ResumenDeUnPeriodo): string[] {
   return [
     total ? contar(r.observaciones, 'sesión', 'sesiones') : `${contar(r.observaciones, 'sesión', 'sesiones')}: ${numero(r.n)} con valor`,
     ...(r.sinValor > 0 && total ? [`${numero(r.sinValor)} sin valor registrado`] : []),
+    // DL-161: las sesiones con la serie tildada sin escribir se ven en el gráfico (huecas) y no entran en el resumen.
+    ...(r.deCargaRapida ? [`${numero(r.deCargaRapida)} de ${COPY_REGISTRO_POR_NIVELES.cargaRapida}, fuera del resumen`] : []),
   ];
 }
 
@@ -573,6 +622,12 @@ export function partesDelResumenTextual(serie: SerieAnalitica, definicion: Defin
   if (comidasSinRegistro > 0) partes.push(`${numero(comidasSinRegistro)} ${comidasSinRegistro === 1 ? 'comida del plan' : 'comidas del plan'} sin registro`);
   const incompletos = conValor.filter((p) => p.partialBucket).length;
   if (incompletos > 0) partes.push(`${numero(incompletos)} ${incompletos === 1 ? 'es de un día o una semana sin completar' : 'son de días o semanas sin completar'} (el día en curso, o una semana que el período corta)`);
+  // DL-161: quien no ve el gráfico tampoco ve los puntos huecos: se dice cuántos son de carga rápida y qué quiere decir.
+  const deCargaRapida = conValor.filter(esPuntoDeCargaRapida).length;
+  if (deCargaRapida > 0)
+    partes.push(
+      `${numero(deCargaRapida)} ${deCargaRapida === 1 ? 'es de carga rápida (tildada sin escribir, con los valores del plan): no se compara ni entra en los resúmenes' : 'son de carga rápida (tildadas sin escribir, con los valores del plan): no se comparan ni entran en los resúmenes'}`,
+    );
   const sinValor = delRango.length - conValor.length;
   if (sinValor > 0) partes.push(`${numero(sinValor)} sin valor conocido`);
   const tramos = new Set(conValor.map((p) => p.segment)).size;

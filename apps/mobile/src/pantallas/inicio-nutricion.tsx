@@ -34,7 +34,7 @@ export function NutricionDeHoy({ token, dia, sesionPerdida, ir }: { token: strin
     <TarjetaDeInicio zona="nutricion" titulo="Nutrición de hoy">
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-      <Boton texto="Ir a Nutrición" tipo="enlace" onPress={() => ir({ nombre: 'hoy' })} />
+      <Boton texto="Ir a Nutrición" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'hoy' })} />
     </TarjetaDeInicio>
   );
 }
@@ -60,7 +60,7 @@ function ContenidoDeNutricion({
   const acciones = plan ? (
     <Acciones>
       <Accion>
-        <Boton texto="Registrar" onPress={() => ir({ nombre: 'hoy', accion: 'registrar' })} />
+        <Boton texto="Registrar" icono="mas" onPress={() => ir({ nombre: 'hoy', accion: 'registrar' })} />
       </Accion>
       <Accion>
         <Boton texto="Ver el plan" tipo="secundario" onPress={() => ir({ nombre: 'plan-actual' })} />
@@ -108,7 +108,7 @@ function ContenidoDeNutricion({
         <>
           <Parrafo>{textoDeRegistrosDeHoy(registros)}</Parrafo>
           {acciones}
-          {ultimoDeHoy ? <Boton texto="Ver el último registro" tipo="secundario" onPress={() => ir({ nombre: 'registro-nutricional', id: ultimoDeHoy.executionId })} /> : null}
+          {ultimoDeHoy ? <Boton texto="Ver el último registro" tipo="secundario" icono="lista" onPress={() => ir({ nombre: 'registro-nutricional', id: ultimoDeHoy.executionId })} /> : null}
         </>
       )}
     </>

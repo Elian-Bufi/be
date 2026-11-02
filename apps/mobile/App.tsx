@@ -53,7 +53,7 @@ import { avisoQueAbrioLaApp, dependenciasDeAvisos, escucharAvisosRecibidos, escu
 import { Cabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
 import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambios';
-import { useCuentaDelEntrenamiento } from './src/entrenamiento-en-curso';
+import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/entrenamiento-en-curso';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { MenuAuxiliar } from './src/menu-auxiliar';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
@@ -62,6 +62,7 @@ import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeComidaDiferente } from './src/pantallas/comida-diferente';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
 import { PantallaDeCuenta } from './src/pantallas/cuenta';
+import { PantallaDeCorreccion } from './src/pantallas/correccion-de-entrenamiento';
 import { PantallaDeEjecucionDeEntrenamiento, PantallaDeEntrenamiento, PantallaDeSesion } from './src/pantallas/entrenamiento';
 import { PantallaDeFormularios, PantallaDeMiSolicitud } from './src/pantallas/formularios';
 import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantallas/historial';
@@ -73,6 +74,7 @@ import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
+import { PantallaDeRegistroRapido } from './src/pantallas/registro-rapido';
 import { PantallaDeRevision, PantallaDeRevisiones } from './src/pantallas/revisiones';
 import { PantallaDeNotasDeCoordinacion } from './src/pantallas/notas-de-coordinacion';
 import { PantallaDeVinculo } from './src/pantallas/vinculo';
@@ -81,6 +83,7 @@ import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
 import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
+import { Icono, type NombreDeIcono } from './src/icono';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
 const AVISOS: Record<Salida, string> = {
@@ -448,8 +451,9 @@ function Contenido() {
   // Con sesión verificada: la barra, el avatar y el menú. Mientras se verifica una sesión guardada, nada de la cuenta.
   const conSesion = sesion !== null && recuperacion === null && requiereSesion(ruta);
   const raiz = esRaiz(ruta);
-  // La sesión enfocada de entrenamiento va sin la barra (WP-ENTRENAMIENTO-SERIES §7.2); se sale con Volver o con atrás.
+  // Desde PA-02, también la sesión de entrenamiento lleva la barra: lo escrito queda guardado en el teléfono.
   const conBarra = conSesion && !sinBarraInferior(ruta);
+  const entrenamientoEnCurso = useHayEntrenamientoEnCurso();
   // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación.
   const espacioDeLaBarra = conBarra && altoDeLaBarra > 0 ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
   const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
@@ -516,10 +520,21 @@ function Contenido() {
               <Text style={estilos.tituloBienvenida} accessibilityRole="header">
                 Plataforma integrada de inteligencia en salud
               </Text>
+              {/* Las tres áreas, con los íconos de la barra: lo que hay adentro, antes de entrar. */}
+              <View style={estilos.areasDeBienvenida} accessible accessibilityLabel={AREAS_DE_LA_BIENVENIDA.map((a) => a.texto).join(', ')}>
+                {AREAS_DE_LA_BIENVENIDA.map((a) => (
+                  <View key={a.icono} style={estilos.areaDeBienvenida}>
+                    <Icono nombre={a.icono} tamano={24} tono="acento" />
+                    <Text style={estilos.textoDeArea}>{a.texto}</Text>
+                  </View>
+                ))}
+              </View>
               {ruta.aviso ? <Aviso tipo="info" titulo={ruta.aviso} /> : null}
               <Boton texto="Crear cuenta" onPress={() => ir({ nombre: 'registro' })} />
               <Boton texto="Iniciar sesión" tipo="secundario" onPress={() => ir({ nombre: 'login' })} />
-              <Parrafo tenue>Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.</Parrafo>
+              <Parrafo tenue icono="info">
+                Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.
+              </Parrafo>
               <Text style={estilos.identidad}>
                 app {version} · {extra.appEnv ?? 'ambiente no declarado'} · commit {commit}
               </Text>
@@ -596,7 +611,23 @@ function Contenido() {
                   subir={subir}
                 />
               ) : null}
-              {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} salir={salir} /> : null}
+              {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'corregir-ejecucion' ? <PantallaDeCorreccion key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'registro-rapido' ? (
+                <PantallaDeRegistroRapido
+                  key={ruta.occurrenceId}
+                  token={sesion.token}
+                  occurrenceId={ruta.occurrenceId}
+                  fecha={ruta.fecha}
+                  etiqueta={ruta.etiqueta}
+                  sessionId={ruta.sessionId}
+                  planId={ruta.planId}
+                  salir={salir}
+                  ir={ir}
+                  volver={volver}
+                  subir={subir}
+                />
+              ) : null}
               {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
               {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} salir={salir} ir={ir} /> : null}
@@ -616,7 +647,7 @@ function Contenido() {
       {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
           que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
       {conBarra && altoDeLaBarra > 0 ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
-      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} /> : null}
+      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} /> : null}
       <MenuAuxiliar
         visible={menuAbierto && conSesion && raiz}
         cerrar={() => setMenuAbierto(false)}
@@ -634,6 +665,13 @@ function Contenido() {
 
 const ISOTIPO = require('./assets/isotipo.png');
 
+/** Las áreas de BE en la bienvenida, con el ícono y el nombre de la barra. */
+const AREAS_DE_LA_BIENVENIDA: readonly { readonly icono: NombreDeIcono; readonly texto: string }[] = [
+  { icono: 'nutricion', texto: 'Nutrición' },
+  { icono: 'entrenamiento', texto: 'Entrenamiento' },
+  { icono: 'antropometria', texto: 'Evolución' },
+];
+
 const estilos = estilosPorTema((COLOR) => ({
   raiz: { flex: 1, backgroundColor: COLOR.fondo },
   // El margen inferior se completa en el contentContainerStyle con el alto de la barra y el inset real del sistema
@@ -642,6 +680,9 @@ const estilos = estilosPorTema((COLOR) => ({
   contenido: { padding: 20 },
   isotipoGrande: { width: 180, height: 180, alignSelf: 'center', marginTop: 16 },
   lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },
+  areasDeBienvenida: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 20, rowGap: 8, marginBottom: 12 },
+  areaDeBienvenida: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  textoDeArea: { fontSize: 15, fontWeight: '600', color: COLOR.texto },
   tituloBienvenida: { fontSize: 26, fontWeight: '700', color: COLOR.texto, marginVertical: 12, textAlign: 'center' },
   identidad: { fontSize: 12, color: COLOR.tenue, marginTop: 32 },
 }));

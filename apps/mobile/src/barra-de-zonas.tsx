@@ -21,14 +21,19 @@
  *   ya no compiten con los destinos, y el último contenido, al final del desplazamiento, queda entero por encima.
  * - Se oculta mientras el teclado está abierto, para no tapar el campo que se escribe.
  * - Tocar un destino abre su raíz, también desde un detalle de ese mismo destino.
+ * - **Una sesión de entrenamiento en curso** (PA-02, 2026-11-02): la barra ya no se oculta en la sesión, y Entrenamiento
+ *   lleva una marca chica junto al ícono mientras hay una corrida abierta en el teléfono. El lector de pantalla lo dice
+ *   en el nombre del destino: la marca no es la única señal.
  */
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
+import { DibujoDeIcono, type NombreDeIcono } from './icono';
 import { disposicionDeLaBarra } from './disposicion-de-la-barra';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
+import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
 import { COLOR, estilosPorTema } from './tema';
 
 /** Lo que la cápsula flota por encima del área segura de abajo, en dp. */
@@ -50,7 +55,20 @@ export function useTecladoAbierto(): boolean {
   return abierto;
 }
 
-export function BarraDeZonas({ actual, ir, alMedir, oculta = false }: { actual: Zona | null; ir: (r: Ruta) => void; alMedir: (alto: number) => void; oculta?: boolean }) {
+export function BarraDeZonas({
+  actual,
+  ir,
+  alMedir,
+  oculta = false,
+  entrenamientoEnCurso = false,
+}: {
+  actual: Zona | null;
+  ir: (r: Ruta) => void;
+  alMedir: (alto: number) => void;
+  oculta?: boolean;
+  /** Si hay una sesión de entrenamiento en curso en el teléfono: Entrenamiento lo marca. */
+  entrenamientoEnCurso?: boolean;
+}) {
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const tecladoAbierto = useTecladoAbierto();
@@ -73,18 +91,20 @@ export function BarraDeZonas({ actual, ir, alMedir, oculta = false }: { actual: 
         <View key={fila.join('-')} style={estilos.fila}>
           {ZONAS.filter((z) => fila.includes(z.zona)).map((z) => {
             const elegida = z.zona === actual;
+            const enCurso = entrenamientoEnCurso && z.zona === 'entrenamiento';
             return (
               <Pressable
                 key={z.zona}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: elegida }}
-                accessibilityLabel={z.texto}
+                accessibilityLabel={enCurso ? `${z.texto}, ${TEXTOS_DE_LA_SESION.conSesionEnCurso}` : z.texto}
                 onPress={() => ir(z.ruta)}
                 style={({ pressed }) => [estilos.destino, pressed && estilos.presionado]}
               >
                 <View style={estilos.lugarDelIcono}>
                   {elegida ? <Brillo zona={z.zona} /> : null}
-                  <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
+                  <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} marcado={elegida} />
+                  {enCurso ? <View style={estilos.marcaEnCurso} /> : null}
                 </View>
                 {/* Sin tope: crece con la letra. Achicarse es el último recurso, para no cortarse. */}
                 <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
@@ -139,51 +159,22 @@ function Brillo({ zona }: { zona: Zona }) {
   );
 }
 
+/** El ícono de la familia de cada destino: la casa, la manzana, la mancuerna, la cinta métrica y el formulario. */
+const ICONO_DE_LA_ZONA: Readonly<Record<Zona, NombreDeIcono>> = {
+  inicio: 'inicio',
+  nutricion: 'nutricion',
+  entrenamiento: 'entrenamiento',
+  evolucion: 'antropometria',
+  informacion: 'informacion',
+};
+
 /**
- * Íconos de trazo, en una grilla de 24: solo acompañan al texto, y el lector de pantalla no los recorre. Inicio los usa
- * también en el encabezado de cada tarjeta, para que el módulo se reconozca igual que en la barra.
+ * El ícono de un destino, de la familia de BE (PA-06): solo acompaña al texto, y el lector de pantalla no lo recorre.
+ * Inicio lo usa también en el encabezado de cada tarjeta, para que el módulo se reconozca igual que en la barra.
+ * `marcado` engrosa el trazo del destino elegido: es la señal que no depende del color.
  */
-export function IconoDeZona({ zona, color, grosor }: { zona: Zona; color: string; grosor: number }) {
-  const trazo = { stroke: color, strokeWidth: grosor, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' } as const;
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-      {zona === 'inicio' ? (
-        // Una casa: el techo y el cuerpo con su puerta.
-        <>
-          <Path d="M3.5 11.2 12 4l8.5 7.2" {...trazo} />
-          <Path d="M5.8 9.6V20h12.4V9.6" {...trazo} />
-          <Path d="M10 20v-5.2h4V20" {...trazo} />
-        </>
-      ) : zona === 'nutricion' ? (
-        // Una manzana: el cuerpo, el cabo y la hoja.
-        <>
-          <Path d="M12 8.2c-1.6-1.4-4.4-1.6-6 .2-2 2.2-1.5 6.4.6 9.4 1.5 2.1 3.3 3.1 5.4 2.1 2.1 1 3.9 0 5.4-2.1 2.1-3 2.6-7.2.6-9.4-1.6-1.8-4.4-1.6-6-.2Z" {...trazo} />
-          <Path d="M12 8.2c0-2 .6-3.6 1.8-4.7" {...trazo} />
-          <Path d="M13.4 5.6c1.6-.9 3.4-.8 4.4.2-1.2 1.2-3 1.4-4.4.6" {...trazo} />
-        </>
-      ) : zona === 'entrenamiento' ? (
-        // Una mancuerna: la barra y dos discos de cada lado.
-        <>
-          <Path d="M8 12h8" {...trazo} />
-          <Path d="M6.5 7.5v9M17.5 7.5v9" {...trazo} />
-          <Path d="M3.5 9.5v5M20.5 9.5v5" {...trazo} />
-        </>
-      ) : zona === 'evolucion' ? (
-        // Una cinta métrica: la regla con sus marcas.
-        <>
-          <Path d="M3 8.5h18v7H3Z" {...trazo} />
-          <Path d="M7 8.5v3M11 8.5v4M15 8.5v3M19 8.5v2" {...trazo} />
-        </>
-      ) : (
-        // Un formulario sobre su tabla.
-        <>
-          <Path d="M7.5 4.5h9a1.5 1.5 0 0 1 1.5 1.5v13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5V6a1.5 1.5 0 0 1 1.5-1.5Z" {...trazo} />
-          <Path d="M9.5 3h5v3h-5Z" {...trazo} />
-          <Path d="M9 11h6M9 14.5h6M9 18h3.5" {...trazo} />
-        </>
-      )}
-    </Svg>
-  );
+export function IconoDeZona({ zona, color, marcado = false }: { zona: Zona; color: string; marcado?: boolean }) {
+  return <DibujoDeIcono nombre={ICONO_DE_LA_ZONA[zona]} color={color} tamano={24} marcado={marcado} />;
 }
 
 const estilos = estilosPorTema((COLOR) => ({
@@ -209,6 +200,8 @@ const estilos = estilosPorTema((COLOR) => ({
   presionado: { opacity: 0.7 },
   // El lugar del ícono es más angosto que el destino más chico (48): el brillo lo desborda apenas, ya transparente.
   lugarDelIcono: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center' },
+  // La marca de la sesión en curso: un punto del color de lo elegido, arriba a la derecha del ícono.
+  marcaEnCurso: { position: 'absolute', top: 1, right: 4, width: 8, height: 8, borderRadius: 4, backgroundColor: COLOR.barraElegido },
   brillo: { position: 'absolute', left: -8, top: -6 },
   // Medio y negrita (500 y 700): la diferencia se ve, y las cinco etiquetas ocupan menos que con 600 y 800.
   texto: { fontSize: 12, lineHeight: 16, marginTop: 1, fontWeight: '500', color: COLOR.barraTexto, textAlign: 'center' },

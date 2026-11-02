@@ -82,7 +82,20 @@ export type Ruta =
       readonly etiqueta?: string;
       readonly desde?: Ruta;
     }
-  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta };
+  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta }
+  // PA-04: la corrección de una sesión registrada, en su pantalla. Se abre desde el detalle y vuelve a él.
+  | { readonly nombre: 'corregir-ejecucion'; readonly id: string; readonly desde?: Ruta }
+  // PA-03 (DL-160, DL-161): «Ya la hice», el registro rápido de una sesión del plan, por pasos y sin cronómetros. Con la
+  // barra inferior a la vista: no es la sesión enfocada.
+  | {
+      readonly nombre: 'registro-rapido';
+      readonly occurrenceId: string;
+      readonly fecha: string;
+      readonly etiqueta: string;
+      readonly sessionId: string;
+      readonly planId: string;
+      readonly desde?: Ruta;
+    };
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
 export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'sesion-vencida' | 'reautenticar' | 'cierre-registrado';
@@ -132,12 +145,12 @@ export function esRaiz(ruta: Ruta): boolean {
 }
 
 /**
- * Las pantallas que no muestran la barra inferior (WP-ENTRENAMIENTO-SERIES §7.2): la sesión enfocada, para que la tabla,
- * el descanso y sus acciones tengan la pantalla entera. Se sale con «Volver» de la cabecera o con el botón atrás, que
- * conservan el estado: el entrenamiento sigue guardado en el teléfono.
+ * Las pantallas que no muestran la barra inferior. Ninguna desde PA-02 (Dirección del 2026-11-02): la sesión de
+ * entrenamiento ya no la oculta (WP-ENTRENAMIENTO-SERIES §7.2 decía «sin barra inferior»). Salir es seguro: lo escrito y
+ * lo registrado quedan guardados en el teléfono (PA-01), y la pestaña Entrenamiento marca la sesión en curso.
  */
-export function sinBarraInferior(ruta: Ruta): boolean {
-  return ruta.nombre === 'sesion-de-entrenamiento';
+export function sinBarraInferior(_ruta: Ruta): boolean {
+  return false;
 }
 
 /** Si una raíz trae un pedido de una sola vez (una acción, una vista, una medida): abre arriba, no donde se la dejó. */
@@ -162,6 +175,8 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'plan-de-entrenamiento':
     case 'sesion-de-entrenamiento':
     case 'ejecucion-de-entrenamiento':
+    case 'corregir-ejecucion':
+    case 'registro-rapido':
       return 'entrenamiento';
     case 'mi-evolucion':
       return 'evolucion';
@@ -249,7 +264,10 @@ function madre(ruta: Ruta): Ruta | null {
       return { nombre: 'mis-solicitudes' };
     case 'sesion-de-entrenamiento':
     case 'ejecucion-de-entrenamiento':
+    case 'registro-rapido':
       return { nombre: 'entrenamiento' };
+    case 'corregir-ejecucion':
+      return { nombre: 'ejecucion-de-entrenamiento', id: ruta.id };
     case 'plan-actual':
     case 'registros-nutricionales':
     case 'opcion-de-comida':
@@ -290,6 +308,7 @@ function identificador(ruta: Ruta): string | null {
   if ('vinculoId' in ruta) return ruta.vinculoId;
   if ('draftId' in ruta) return ruta.draftId;
   if (ruta.nombre === 'comida-diferente') return ruta.comidaId;
+  if (ruta.nombre === 'registro-rapido') return ruta.occurrenceId;
   // REV-A: las revisiones de Nutrición y las de Entrenamiento son dos pantallas distintas.
   if (ruta.nombre === 'revisiones') return ruta.area;
   return null;
@@ -317,6 +336,16 @@ function paraVolver(ruta: Ruta): Ruta {
   return ruta;
 }
 
+/**
+ * La pantalla de la cadena a la que se vuelve, con lo de una sola vez que trae el destino: el aviso de lo que se acaba de
+ * registrar. Al registrar una corrección se vuelve al detalle de la ejecución, que ya estaba en la cadena, y el aviso
+ * «Corrección registrada» tiene que llegar igual (PA-04).
+ */
+function conLoDeUnaVez(r: Ruta, destino: Ruta): Ruta {
+  if (r.nombre === 'ejecucion-de-entrenamiento' && destino.nombre === 'ejecucion-de-entrenamiento' && destino.aviso !== undefined) return { ...r, aviso: destino.aviso };
+  return r;
+}
+
 /** La ruta con su cadena de origen recortada al tope. */
 function recortar(ruta: Ruta, nivel = 0): Ruta {
   const desde = desdeDe(ruta);
@@ -339,7 +368,7 @@ export function navegar(actual: Ruta, destino: Ruta, modo: ModoDeNavegacion = 'i
   if (!requiereSesion(destino) || esRaiz(destino)) return sinOrigen(destino);
   // Si la pantalla ya está en la cadena (o es la actual), se vuelve a ella, con su propio origen, sin duplicarla.
   const base = modo === 'reemplazar' ? desdeDe(actual) : actual;
-  for (let r = base, i = 0; r && i <= TOPE_DEL_ORIGEN + 1; r = desdeDe(r), i++) if (mismaPantalla(r, destino)) return r;
+  for (let r = base, i = 0; r && i <= TOPE_DEL_ORIGEN + 1; r = desdeDe(r), i++) if (mismaPantalla(r, destino)) return conLoDeUnaVez(r, destino);
   // Un origen pedido explícitamente se respeta. Si no: reemplazar hereda el de la actual, e ir recuerda la actual.
   const explicito = desdeDe(destino);
   if (explicito !== undefined) return conOrigen(destino, explicito);
@@ -380,6 +409,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Información';
     case 'historial-de-entrenamiento':
       return 'Volver a Tu historial';
+    case 'ejecucion-de-entrenamiento':
+      return 'Volver a la sesión registrada';
     default:
       return 'Volver';
   }

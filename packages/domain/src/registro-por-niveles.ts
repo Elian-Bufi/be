@@ -58,10 +58,11 @@ export function ejerciciosSinLaMarca(ejercicios: readonly EjercicioRegistradoEnt
 // ─── El nivel de detalle de una ejecución ───────────────────────────────────────────────────────────────────
 
 /**
- * Cómo quedó cargada una sesión registrada:
- * - `CON_DETALLE`: por serie, y la persona escribió cada una;
- * - `COMO_EL_PLAN`: por serie, y todas se tildaron con lo planificado;
- * - `PARTE_COMO_EL_PLAN`: por serie, algunas escritas y otras tildadas con lo planificado;
+ * Cómo quedó cargada una sesión registrada (entre comillas, los nombres visibles que eligió Dirección el 2026-11-02):
+ * - `CON_DETALLE`: por serie, y la persona escribió cada una («Carga completa»);
+ * - `COMO_EL_PLAN`: por serie, y todas se tildaron con lo planificado («Carga rápida»);
+ * - `PARTE_COMO_EL_PLAN`: por serie, algunas escritas o cambiadas y otras tildadas con lo planificado («Carga rápida con
+ *   cambios»);
  * - `RESUMIDA`: por ejercicio o sesión, sin series;
  * - `NO_REALIZADA`: la persona la registró como no realizada.
  */
@@ -95,7 +96,7 @@ export function nivelDeDetalle(x: Pick<EjecucionDeEntrenamiento, 'original' | 'c
   return nivelDeDetalleDelRegistro(registroVigente(x));
 }
 
-/** El nivel en palabras: «Con detalle», «Cargada como el plan»… «No realizada» es la condición que la persona registró. */
+/** El nivel en palabras: «Carga completa», «Carga rápida»… «No realizada» es la condición que la persona registró. */
 export function textoDelNivelDeDetalle(n: NivelDeDetalle): string {
   return n === 'NO_REALIZADA' ? etiquetaDeCondicionRegistrada({ sessionCondition: 'NOT_COMPLETED' }) : ETIQUETA_DE_NIVEL_DE_DETALLE[n];
 }
@@ -103,3 +104,9 @@ export function textoDelNivelDeDetalle(n: NivelDeDetalle): string {
 /** Los niveles que se cuentan serie por serie: los que dicen algo que la condición y la forma de registro no dicen. */
 export const esNivelPorSerie = (n: NivelDeDetalle | null): n is 'CON_DETALLE' | 'COMO_EL_PLAN' | 'PARTE_COMO_EL_PLAN' =>
   n === 'CON_DETALLE' || n === 'COMO_EL_PLAN' || n === 'PARTE_COMO_EL_PLAN';
+
+/**
+ * La sesión se cargó completa: la persona escribió cada serie. Dirección (2026-11-02) pide destacarla en las listas de
+ * sesiones y en la línea de tiempo del profesional; las demás dicen su nivel sin destacar.
+ */
+export const esCargaCompleta = (n: NivelDeDetalle | null): n is 'CON_DETALLE' => n === 'CON_DETALLE';

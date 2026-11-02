@@ -50,7 +50,7 @@ function DetalleDeLaSesion({ ocurrencia, token, sesionPerdida }: { ocurrencia: O
           <Boton texto={COPY_ENTRENAMIENTO_POR_SERIE.reintentar} tipo="secundario" onPress={() => void cargar()} />
         </Aviso>
       )}
-      {sesion.instructions ? <Dato etiqueta={COPY_ENTRENAMIENTO.indicacionesDeLaSesion} valor={sesion.instructions} /> : null}
+      {sesion.instructions ? <Dato etiqueta={COPY_ENTRENAMIENTO.indicacionesDeLaSesion} valor={sesion.instructions} apilado /> : null}
       {sesion.prescriptions.map((p) => (
         <PrescripcionDelPlan key={p.prescriptionId} prescripcion={p} token={token} sesionPerdida={sesionPerdida} onVerTecnica={() => setTecnica(p.prescriptionId)} />
       ))}
