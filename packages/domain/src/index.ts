@@ -97,6 +97,7 @@ export * from './sintesis-del-resumen';
 export * from './contraste-de-comida';
 export * from './registros-de-nutricion';
 export * from './registros-de-entrenamiento';
+export * from './registro-por-niveles';
 export * from './tomas-de-antropometria';
 export * from './solicitudes-de-informacion';
 export * from './versiones-de-plan';

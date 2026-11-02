@@ -34,9 +34,10 @@ import {
 import type { EjecucionDeEntrenamiento, SerieEjecutadaApi } from './contratos-entrenamiento';
 import type { ObjetivoDeSerie } from './contratos-entrenamiento-por-serie';
 import { cantidadDeSeries, ETIQUETA_DE_GRANULARIDAD, etiquetaDeCondicionRegistrada, registroVigente } from './copy-entrenamiento';
-import { COPY_ENTRENAMIENTO_POR_SERIE, ETIQUETA_DE_RELACION, textoDelPlanDeLaSerie, textoDeRepeticiones } from './copy-entrenamiento-por-serie';
+import { COPY_ENTRENAMIENTO_POR_SERIE, ETIQUETA_DE_RELACION, textoDelPlanDeLaSerie, textoDeRepeticiones, textoDeSegundos } from './copy-entrenamiento-por-serie';
 import { cantidad, numero } from './formato-numeros';
 import type { NombreDeIcono } from './iconos';
+import { nivelDeDetalleDelRegistro, seCargoComoElPlan, textoDelNivelDeDetalle, type NivelDeDetalle } from './registro-por-niveles';
 import { relacionDeCarga, relacionDeRepeticiones, relacionDeRir, type RelacionConElObjetivo } from './relacion-con-el-objetivo';
 
 // ─── Una serie ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -120,6 +121,13 @@ export interface SerieDeSesion {
   readonly comparada: boolean;
   /** La corrección vigente cambió esta serie respecto del registro original. */
   readonly corregida: boolean;
+  /**
+   * DL-161: la persona la registró con un toque, con los valores del plan a la vista. Solo está si es así: una serie
+   * escrita (o registrada antes de DL-161) no trae el campo.
+   */
+  readonly comoElPlan?: true;
+  /** DL-161: «00:45», la duración que midió el cronómetro o escribió la persona. Solo está si se registró. */
+  readonly duracion?: string;
 }
 
 export interface EjercicioDeSesion {
@@ -159,7 +167,16 @@ function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndica
   const serie = f.registrada.tipo === 'registrada' ? f.registrada.serie : null;
   const resumida = f.registrada.tipo === 'sin-dato' && f.registrada.motivo === 'registro-resumido';
   const estado: EstadoDeSerieDeSesion = serie ? (planificada ? 'REGISTRADA' : 'ADICIONAL') : resumida ? 'RESUMIDA' : 'SIN_REGISTRAR';
-  const base = { numero: f.numero, estado, nota: planificada?.nota ?? null, corregida: f.corregida };
+  const duracion = serie && typeof serie.durationSeconds === 'number' ? textoDeSegundos(serie.durationSeconds) : null;
+  const base = {
+    numero: f.numero,
+    estado,
+    nota: planificada?.nota ?? null,
+    corregida: f.corregida,
+    // Lo de DL-161 va solo si está: una serie escrita, sin duración, queda igual que antes.
+    ...(serie && seCargoComoElPlan(serie) ? { comoElPlan: true as const } : {}),
+    ...(duracion ? { duracion } : {}),
+  };
 
   let indicado: string;
   if (!planificada) indicado = 'Adicional: no estaba indicada';
@@ -229,6 +246,10 @@ export interface FilaDeSesion {
   readonly comoSeRegistro: string | null;
   /** Lo que la persona escribió de la sesión entera, si la registró con un resumen. */
   readonly resumenDeLaSesion: string | null;
+  /** DL-161: cómo quedó cargado lo que rige (con detalle, como el plan, resumida…); `null` si no se puede decir. */
+  readonly nivelDeDetalle: NivelDeDetalle | null;
+  /** El nivel en palabras: «Cargada como el plan», «Con detalle», «Parte como el plan»… `null` si no se puede decir. */
+  readonly detalle: string | null;
   /** De dónde sale lo que rige: el registro original, una corrección (con quién, cuándo y por qué) o no se puede saber. */
   readonly fuente: FuenteDelRegistro;
   /** Los objetivos de cada serie, en la versión del plan de ese día, se pudieron leer. */
@@ -256,6 +277,7 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
   const rige = fuente.tipo === 'no-resoluble' ? null : registroVigente(x);
   const clase: ClaseDeSesion = !rige ? 'SIN_REGISTRO_VIGENTE' : rige.sessionCondition === 'NOT_COMPLETED' ? 'NO_REALIZADA' : rige.granularity === 'SET' ? 'POR_SERIE' : 'RESUMIDA';
   const seLeyoLoIndicado = objetivos !== null;
+  const nivel = rige ? nivelDeDetalleDelRegistro(rige) : null;
   const base = {
     id: x.executionId,
     fecha: x.date,
@@ -269,6 +291,8 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
     motivo: rige?.reason ?? null,
     comoSeRegistro: rige?.granularity ? ETIQUETA_DE_GRANULARIDAD[rige.granularity] : null,
     resumenDeLaSesion: rige?.sessionSummary?.description ?? null,
+    nivelDeDetalle: nivel,
+    detalle: nivel ? textoDelNivelDeDetalle(nivel) : null,
     fuente,
     seLeyoLoIndicado,
   };

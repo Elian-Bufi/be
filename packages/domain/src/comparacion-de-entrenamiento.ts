@@ -178,6 +178,10 @@ function fuenteDe(x: EjecucionDeEntrenamiento): FuenteDelRegistro {
   return { tipo: 'correccion', correctionId: c.correctionId, autor: c.author.displayName, rolDelAutor: c.authorRole, registradaEl: c.recordedAt, motivo: c.reason };
 }
 
+/**
+ * Si una corrección dejó la serie igual: los mismos datos, y la misma duración (DL-161; ausente y `null` son lo mismo).
+ * La marca «como el plan» no cuenta: dice cómo se cargó, no lo que se hizo, y la API tampoco la cuenta como un cambio.
+ */
 const mismaSerie = (a: SerieEjecutadaApi | null | undefined, b: SerieEjecutadaApi | null | undefined): boolean =>
   (a ?? null) === (b ?? null) ||
   (!!a &&
@@ -186,7 +190,8 @@ const mismaSerie = (a: SerieEjecutadaApi | null | undefined, b: SerieEjecutadaAp
     a.rir === b.rir &&
     a.perceivedExertion === b.perceivedExertion &&
     (a.load?.value ?? null) === (b.load?.value ?? null) &&
-    (a.load?.unit ?? null) === (b.load?.unit ?? null));
+    (a.load?.unit ?? null) === (b.load?.unit ?? null) &&
+    (a.durationSeconds ?? null) === (b.durationSeconds ?? null));
 
 function registradaDe(
   condicion: Condicion | null,
