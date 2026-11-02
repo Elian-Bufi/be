@@ -6,7 +6,8 @@
  *  1. lo planificado en una línea («3 × 10 · RIR 2 · 16 kg»), con la carga solo si el plan la trae;
  *  2. una serie «con lo planificado» lleva los valores del plan y `AS_PLANNED`; un rango no es un número, y sin carga
  *     ni repeticiones no hay serie: nunca se fabrica;
- *  3. los pasos se saltan cuando no hacen falta: con «todo», hoy, 1 → 2 → Listo;
+ *  3. los pasos se saltan cuando no hacen falta: con «todo» se va del primer cuadro al último («Listo para registrar»),
+ *     con la línea del plan a la vista y «Cambiar» por ejercicio para quitar una serie o escribir una distinta;
  *  4. lo que se manda a API-TRN-17 cumple el contrato estricto y los mínimos de API-TRN-18, con la condición correcta;
  *  5. lo escrito va `TYPED` y solo con lo escrito; una serie sin tildar no se manda; un ejercicio sin tildar tampoco;
  *  6. «Hice algo distinto» sin nada tildado es una sesión resumida, con la frase y la nota;
@@ -134,31 +135,80 @@ test('2 · una serie con lo planificado lleva los valores del plan y AS_PLANNED,
 
 // ─── 3. Los pasos ───────────────────────────────────────────────────────────────────────────────
 
-test('3 · con «todo», hoy, el recorrido es 1 → 2 → Listo; la nota, el detalle y otro día suman su paso', () => {
+test('3 · con «todo», hoy, el recorrido va del primer cuadro al último: 1 → Listo para registrar → Listo; la nota y otro día suman su paso antes del final', () => {
   const ctx = ctxDe(SIMPLE);
   const inicial = rr.respuestasIniciales(ctx);
   // Antes de elegir se cuenta el camino más corto: la franja nunca anuncia un paso que después se saltea.
   assert.deepEqual(rr.pasosDelRecorrido(ctx, inicial), ['como', 'ejercicios', 'listo']);
   const todo = conTodo(ctx);
-  assert.deepEqual(rr.pasosDelRecorrido(ctx, todo), ['como', 'ejercicios', 'listo']);
-  assert.equal(rr.esElUltimoPaso(ctx, todo, 'ejercicios'), true, '«Registrar sesión» va en el paso 2');
-  assert.deepEqual(rr.pasosDelRecorrido(ctx, { ...todo, pidioNota: true }), ['como', 'ejercicios', 'cuando', 'listo']);
-  const cambio = rr.marcarCambio(todo, 'pGoblet', true);
-  assert.deepEqual(rr.pasosDelRecorrido(ctx, cambio), ['como', 'ejercicios', 'detalle', 'listo']);
+  // Dirección, 2026-11-02: «Hice lo planificado» va directo al último cuadro, sin el de los ejercicios.
+  assert.deepEqual(rr.pasosDelRecorrido(ctx, todo), ['como', 'revisar', 'listo']);
+  assert.equal(rr.pasoSiguiente(ctx, todo, 'como'), 'revisar');
+  assert.equal(rr.esElUltimoPaso(ctx, todo, 'revisar'), true, '«Registrar sesión» va en el paso 2');
+  assert.deepEqual(rr.pasosDelRecorrido(ctx, { ...todo, pidioNota: true }), ['como', 'cuando', 'revisar', 'listo'], 'la nota va antes del final, y «Seguir» vuelve al final');
+  assert.equal(rr.pasoSiguiente(ctx, { ...todo, pidioNota: true }, 'cuando'), 'revisar');
+  // Cambiar un ejercicio desde el final no suma un paso: se abre y se vuelve en el mismo.
+  assert.deepEqual(rr.pasosDelRecorrido(ctx, rr.marcarSerie(todo, 'pGoblet', 3, false)), ['como', 'revisar', 'listo']);
   assert.deepEqual(rr.pasosDelRecorrido(ctx, rr.elegir(ctx, todo, 'parte')), ['como', 'ejercicios', 'cuando', 'listo'], 'con «una parte», la nota es un paso');
+  const parte = rr.marcarCambio(rr.elegir(ctx, todo, 'parte'), 'pGoblet', true);
+  assert.deepEqual(rr.pasosDelRecorrido(ctx, parte), ['como', 'ejercicios', 'detalle', 'cuando', 'listo']);
   // Desde una pendiente (otro día) la hora es obligatoria: el paso está aunque sea «todo».
   const pendiente = ctxDe(SIMPLE, '2026-10-30');
-  assert.deepEqual(rr.pasosDelRecorrido(pendiente, conTodo(pendiente)), ['como', 'ejercicios', 'cuando', 'listo']);
-  // Un ejercicio que el plan no deja tildar sin escribir lleva al detalle sin «Cambié algo».
+  assert.deepEqual(rr.pasosDelRecorrido(pendiente, conTodo(pendiente)), ['como', 'cuando', 'revisar', 'listo']);
+  // Un ejercicio que el plan no deja tildar sin escribir: con «todo» se anota desde el final; con «una parte», en el detalle.
   const completa = ctxDe(COMPLETA);
-  assert.deepEqual(rr.pasosDelRecorrido(completa, conTodo(completa)), ['como', 'ejercicios', 'detalle', 'listo']);
-  assert.deepEqual(rr.ejerciciosConDetalle(completa, conTodo(completa)).map((p) => p.prescriptionId), ['pZancada', 'pPlancha']);
+  assert.deepEqual(rr.pasosDelRecorrido(completa, conTodo(completa)), ['como', 'revisar', 'listo']);
+  const parteCompleta = rr.marcarEjercicio(rr.elegir(completa, conTodo(completa), 'parte'), 'pZancada', true);
+  assert.deepEqual(rr.ejerciciosConDetalle(completa, parteCompleta).map((p) => p.prescriptionId), ['pZancada']);
   // Nunca menos de dos pasos ni más de cinco.
   const largo = { ...rr.elegir(completa, conTodo(completa), 'parte'), pidioNota: true };
   assert.equal(rr.pasosDelRecorrido(completa, rr.marcarCambio(largo, 'pGoblet', true)).length, 5);
-  assert.equal(rr.pasoSiguiente(ctx, todo, 'como'), 'ejercicios');
-  assert.equal(rr.pasoAnterior(ctx, cambio, 'detalle'), 'ejercicios');
+  assert.equal(rr.pasoAnterior(ctx, parte, 'detalle'), 'ejercicios');
+  assert.equal(rr.pasoAnterior(ctx, todo, 'revisar'), 'como');
   assert.equal(rr.pasoAnterior(ctx, todo, 'como'), 'como');
+});
+
+test('3 · el último cuadro de «todo»: la línea del plan a la vista y cómo queda cada ejercicio; «Cambiar» quita series o cambia una, y vuelve', () => {
+  const ctx = ctxDe(SIMPLE);
+  const todo = conTodo(ctx);
+  const estado = (r, p) => rr.estadoEnElFinal(p, r.ejercicios[p.prescriptionId]);
+  assert.deepEqual(estado(todo, GOBLET), { estado: 'como-el-plan', texto: 'Como el plan' });
+  // Una serie menos: se destilda la última.
+  const menos = rr.marcarSerie(todo, 'pGoblet', 3, false);
+  assert.deepEqual(estado(menos, GOBLET), { estado: 'cambiado', texto: '2 de 3 series' });
+  // Una serie distinta: se escribe lo que hizo.
+  const distinta = rr.escribir(menos, 'pGoblet', 1, 'repeticiones', '7');
+  assert.deepEqual(estado(distinta, GOBLET), { estado: 'cambiado', texto: '2 de 3 series · 1 cambiada' });
+  assert.deepEqual(estado(rr.escribir(todo, 'pRumano', 2, 'carga', '30'), RUMANO), { estado: 'cambiado', texto: '3 series · 1 cambiada' });
+  // Sin ninguna serie, el ejercicio queda sin registrar; tildar una lo vuelve a sumar.
+  let ninguna = todo;
+  for (const n of [1, 2, 3]) ninguna = rr.marcarSerie(ninguna, 'pRumano', n, false);
+  assert.deepEqual(estado(ninguna, RUMANO), { estado: 'sin-registrar', texto: 'Sin registrar' });
+  assert.equal(estado(rr.marcarSerie(ninguna, 'pRumano', 2, true), RUMANO).texto, '1 de 3 series');
+  // Lo que se manda: lo que no se tocó va AS_PLANNED, lo escrito TYPED, lo destildado no va; y queda «con desvío».
+  const armado = rr.armarRegistro(ctx, distinta, AHORA);
+  assert.equal(armado.ok, true);
+  assert.deepEqual(
+    armado.changes.exercises.map((e) => [e.prescriptionId, e.sets.map((s) => `${s.setIndex}:${s.completedRepetitions}:${s.recordedAs}`).join(' ')]),
+    [
+      ['pGoblet', '1:7:TYPED 2:10:AS_PLANNED'],
+      ['pRumano', '1:10:AS_PLANNED 2:8:AS_PLANNED 3:6:AS_PLANNED'],
+    ],
+  );
+  assert.equal(armado.changes.sessionCondition, 'COMPLETED_WITH_DEVIATION');
+  assert.equal(armado.resumen.nivel, 'PARTE_COMO_EL_PLAN');
+  cumpleElContrato(armado.changes);
+  // Una serie escrita sin quitar ninguna no es un desvío: la sesión sigue «Realizada».
+  assert.equal(rr.armarRegistro(ctx, rr.escribir(todo, 'pGoblet', 2, 'carga', '18'), AHORA).changes.sessionCondition, 'COMPLETED');
+  // «Dejarlo como el plan» deshace el cambio de ese ejercicio, y solo de ese.
+  const deshecho = rr.dejarComoElPlan(ctx, rr.escribir(distinta, 'pRumano', 1, 'carga', '30'), 'pGoblet');
+  assert.deepEqual(estado(deshecho, GOBLET), { estado: 'como-el-plan', texto: 'Como el plan' });
+  assert.equal(estado(deshecho, RUMANO).estado, 'cambiado');
+  // Sin ninguna serie en ningún ejercicio, no se registra una sesión vacía: el aviso queda en el final.
+  let vacia = ninguna;
+  for (const n of [1, 2, 3]) vacia = rr.marcarSerie(vacia, 'pGoblet', n, false);
+  const sinNada = rr.armarRegistro(ctx, vacia, AHORA);
+  assert.deepEqual([sinNada.ok, sinNada.paso, sinNada.motivo, sinNada.ejercicio], [false, 'revisar', rr.TEXTOS_DEL_REGISTRO_RAPIDO.faltaUnaSerie, undefined]);
 });
 
 test('3 · elegir arma los ejercicios: con «todo» llegan tildados; «Cambié algo» y escribir tildan lo que tocan', () => {
@@ -253,7 +303,10 @@ test('5 · un plan sin número para registrar pide anotarlo: nunca se fabrica un
   const ctx = ctxDe(COMPLETA);
   const sinEscribir = rr.armarRegistro(ctx, conTodo(ctx), AHORA);
   assert.equal(sinEscribir.ok, false);
-  assert.equal(sinEscribir.paso, 'detalle');
+  // Con «todo» no hay cuadro de series: el final abre el cambio de ese ejercicio, con el error en su serie.
+  assert.equal(sinEscribir.paso, 'revisar');
+  assert.equal(sinEscribir.ejercicio, 'pZancada');
+  assert.equal(rr.estadoEnElFinal(ZANCADA, conTodo(ctx).ejercicios.pZancada).estado, 'falta-anotar');
   assert.equal(sinEscribir.motivo, 'Zancada, serie 1: anotá la carga o las repeticiones que hiciste.');
   assert.ok(sinEscribir.errores[rr.claveDeSerie('pZancada', 1)].fila);
   assert.ok(sinEscribir.errores[rr.claveDeSerie('pPlancha', 2)].fila);
@@ -278,10 +331,14 @@ test('5 · un plan sin número para registrar pide anotarlo: nunca se fabrica un
   );
   cumpleElContrato(armado.changes);
   assert.equal(rr.textoDelResumen(armado.resumen), 'Registraste 4 de 4 ejercicios · 9 series.');
-  // Un valor que no se puede leer queda en su campo, y el recorrido vuelve al detalle.
+  // Un valor que no se puede leer queda en su campo, y el recorrido vuelve a ese ejercicio: con «todo», su cambio desde
+  // el final; con «una parte», el cuadro de series.
   const ilegible = rr.armarRegistro(ctx, rr.escribir(r, 'pZancada', 1, 'repeticiones', '11,5'), AHORA);
-  assert.deepEqual([ilegible.ok, ilegible.paso, ilegible.motivo], [false, 'detalle', 'Zancada, serie 1: revisá lo que escribiste.']);
+  assert.deepEqual([ilegible.ok, ilegible.paso, ilegible.motivo, ilegible.ejercicio], [false, 'revisar', 'Zancada, serie 1: revisá lo que escribiste.', 'pZancada']);
   assert.ok(ilegible.errores[rr.claveDeSerie('pZancada', 1)].repeticiones);
+  const parte = rr.escribir(rr.marcarEjercicio(rr.elegir(ctx, r, 'parte'), 'pZancada', true), 'pZancada', 1, 'repeticiones', '11,5');
+  const enLaParte = rr.armarRegistro(ctx, parte, AHORA);
+  assert.deepEqual([enLaParte.ok, enLaParte.paso, enLaParte.ejercicio], [false, 'detalle', undefined]);
 });
 
 // ─── 6. Una sesión distinta ─────────────────────────────────────────────────────────────────────

@@ -48,8 +48,21 @@ export function Cifra({ valor, unidad, tamano = 18 }: { valor: string; unidad?: 
   );
 }
 
-export function Parrafo({ children, tenue = false }: { children: ReactNode; tenue?: boolean }) {
-  return <Text style={[estilos.parrafo, tenue && estilos.tenue]}>{children}</Text>;
+/**
+ * Un párrafo. Con `icono`, el ícono de la familia va antes del texto, en su mismo tono, y solo acompaña: la fecha con
+ * el calendario, un aviso de ambiente con la «i». El lector lee el texto, no el ícono.
+ */
+export function Parrafo({ children, tenue = false, icono }: { children: ReactNode; tenue?: boolean; icono?: NombreDeIcono }) {
+  const texto = <Text style={[estilos.parrafo, tenue && estilos.tenue, icono ? estilos.textoConIconoAlLado : null]}>{children}</Text>;
+  if (!icono) return texto;
+  return (
+    <View style={estilos.parrafoConIcono}>
+      <View style={estilos.iconoDelParrafo}>
+        <Icono nombre={icono} tamano={18} tono={tenue ? 'tenue' : 'acento'} />
+      </View>
+      {texto}
+    </View>
+  );
 }
 
 type TipoDeBoton = 'primario' | 'secundario' | 'peligro' | 'peligroSecundario' | 'enlace';
@@ -76,6 +89,7 @@ export function Boton({
   seleccionado,
   icono,
   iconoAlFinal = false,
+  etiqueta,
 }: {
   texto: string;
   onPress: () => void;
@@ -86,12 +100,15 @@ export function Boton({
   seleccionado?: boolean;
   icono?: NombreDeIcono;
   iconoAlFinal?: boolean;
+  /** El nombre para el lector cuando el texto solo no alcanza: «Cambiar» se lee «Cambiar Sentadilla goblet». */
+  etiqueta?: string;
 }) {
   const textoDelBoton = <Text style={[estilos.textoBoton, estilos[`textoBoton_${tipo}`], icono ? estilos.textoConIcono : null]}>{texto}</Text>;
   const dibujo = icono ? <Icono nombre={icono} tamano={20} tono={TONO_DEL_BOTON[tipo]} /> : null;
   return (
     <Pressable
       accessibilityRole={tipo === 'enlace' ? 'link' : 'button'}
+      accessibilityLabel={etiqueta}
       accessibilityState={{ disabled: deshabilitado || ocupado, busy: ocupado, ...(seleccionado === undefined ? {} : { selected: seleccionado }) }}
       disabled={deshabilitado || ocupado}
       onPress={onPress}
@@ -638,6 +655,10 @@ export const estilos = estilosPorTema((COLOR) => ({
   unidadDeCifra: { fontWeight: '600', color: COLOR.tenue },
   parrafo: { fontSize: 16, color: COLOR.texto, lineHeight: 23, marginVertical: 4 },
   tenue: { color: COLOR.tenue, fontSize: 14 },
+  // Un párrafo con ícono: el ícono arriba, alineado con el primer renglón; el texto ocupa el resto y se parte.
+  parrafoConIcono: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginVertical: 4 },
+  iconoDelParrafo: { paddingTop: 2 },
+  textoConIconoAlLado: { flex: 1, marginVertical: 0 },
   negrita: { fontWeight: '700', color: COLOR.texto },
   boton: { minHeight: 48, paddingHorizontal: 18, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
   boton_primario: { backgroundColor: COLOR.botonFondo, borderColor: COLOR.botonFondo },

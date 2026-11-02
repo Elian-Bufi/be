@@ -9,7 +9,8 @@
  * coloquen los íconos pantalla por pantalla, y la nube con el aviso de la recuperación, que es una ilustración de 96 dp.
  */
 import Svg, { Circle, Path } from 'react-native-svg';
-import { DibujoDeIcono } from './icono';
+import type { Ocurrencia } from '@be/domain';
+import { DibujoDeIcono, type NombreDeIcono } from './icono';
 
 interface PropsDeIcono {
   readonly color: string;
@@ -63,4 +64,16 @@ export function IconoDeNubeConAviso({ color, aviso, textoDelAviso, tamano = 96 }
       <Circle cx={35} cy={38} r={1.4} fill={textoDelAviso} />
     </Svg>
   );
+}
+
+/**
+ * El ícono de la insignia de estado de una sesión del plan (PA-06), el mismo en Inicio y en Entrenamiento: acompaña al
+ * texto de `vistaDeOcurrencia`, que es el que dice el estado. Sin registro, la marca vacía; en curso, el reloj; con
+ * desvío, el desvío; no realizada, la salteada; registrada, el guardado. Nunca una tilde: la insignia no aprueba nada.
+ */
+export function iconoDelEstado(execution: Pick<Ocurrencia['execution'], 'state' | 'sessionCondition'>): NombreDeIcono {
+  if (execution.state === 'DRAFT_IN_PROGRESS') return 'reloj';
+  if (execution.state !== 'REGISTERED' || !execution.sessionCondition) return 'sin-registro';
+  if (execution.sessionCondition === 'NOT_COMPLETED') return 'salteada';
+  return execution.sessionCondition === 'COMPLETED_WITH_DEVIATION' ? 'desvio' : 'guardar';
 }

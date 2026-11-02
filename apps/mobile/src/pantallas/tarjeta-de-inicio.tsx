@@ -88,7 +88,9 @@ export function Accion({ children }: { children: ReactNode }) {
 }
 
 export const estilos = estilosPorTema((COLOR) => ({
-  fechaDeHoy: { fontSize: 16, color: COLOR.tenue, marginTop: -6, marginBottom: 8 },
+  // La fecha de hoy, con el ícono de «hoy» al lado (PA-06).
+  filaDeLaFecha: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -6, marginBottom: 8 },
+  fechaDeHoy: { fontSize: 16, color: COLOR.tenue, flexShrink: 1 },
   // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde.
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },

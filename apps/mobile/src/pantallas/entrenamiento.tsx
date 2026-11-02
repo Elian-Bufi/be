@@ -29,6 +29,7 @@ import {
   COPY_AGENDA_DE_ENTRENAMIENTO as AG,
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
+  COPY_REGISTRO_POR_NIVELES,
   COPY_REVISIONES_PROPIAS,
   duracionParaMostrar,
   ETIQUETA_DE_CALIDAD_DE_TIEMPO,
@@ -36,8 +37,11 @@ import {
   etiquetaDeCondicionRegistrada,
   leerNumero,
   lineasDePrescripcion,
+  nivelDeDetalleDelRegistro,
   numero,
   registroVigente,
+  seCargoComoElPlan,
+  textoDelNivelDeDetalle,
   vistaDeOcurrencia,
   type AgendaDeHoyResponse,
   type BorradorDeEjecucion,
@@ -60,7 +64,8 @@ import { useDiaDeLaApi } from '../dia-de-la-api';
 import { entrenamientoLocal, useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha, fechaCivil, fechaLarga, hora as horaDe } from '../formato';
-import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
+import { Icono } from '../icono';
+import { IconoDeEjercicio, iconoDelEstado } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
@@ -333,9 +338,12 @@ function HoyDeEntrenamiento({
 
   return (
     <View>
-      <Text style={estilos.fechaDeHoy} accessibilityRole="header">
-        {fechaLarga(hoy.date)}
-      </Text>
+      <View style={estilos.filaDeLaFecha}>
+        <Icono nombre="calendario" tamano={20} tono="acento" />
+        <Text style={estilos.fechaDeHoy} accessibilityRole="header">
+          {fechaLarga(hoy.date)}
+        </Text>
+      </View>
       {deOtroDia ? (
         <AvisoDeEntrenamientoEnCurso
           enCurso={deOtroDia}
@@ -358,7 +366,7 @@ function HoyDeEntrenamiento({
       )}
       {hoy.planState === 'AVAILABLE' ? (
         // Plegado: es para lo que quedó sin registrar; lo de hoy va primero.
-        <Desplegable titulo={COPY_ENTRENAMIENTO.registrarOtroDia} abiertoAlInicio={delDia !== null || aviso !== null}>
+        <Desplegable titulo={COPY_ENTRENAMIENTO.registrarOtroDia} icono="cargado-otro-dia" abiertoAlInicio={delDia !== null || aviso !== null}>
           <Parrafo tenue>Si hiciste una sesión otro día y no la registraste, podés registrarla ahora. El pasado no se cronometra: se registran las series.</Parrafo>
           <Campo
             etiqueta="Fecha (AAAA-MM-DD)"
@@ -554,10 +562,11 @@ function TarjetaDePendiente({
             tipo="secundario"
             onPress={() => ir(aRegistroRapido(ocurrenciaDeHoy, { occurrenceId, fecha: prevista }))}
             deshabilitado={abriendo || salteando}
+            icono="ya-la-hice"
           />
         ) : null}
       </AlLado>
-      <Boton texto={AG.saltearla} tipo="secundario" onPress={() => void saltear()} ocupado={salteando} deshabilitado={abriendo} />
+      <Boton texto={AG.saltearla} tipo="secundario" icono="salteada" onPress={() => void saltear()} ocupado={salteando} deshabilitado={abriendo} />
     </Tarjeta>
   );
 }
@@ -859,7 +868,7 @@ function TarjetaDeOcurrencia({
           <Parrafo tenue>{`${ejerciciosYSeries(o.plannedSession.prescriptions)}${deHoy ? '' : ` · ${fechaCivil(o.date)}`}`}</Parrafo>
         </View>
       </View>
-      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
+      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
       {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
@@ -870,7 +879,7 @@ function TarjetaDeOcurrencia({
       ) : (
         <AlLado>
           <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
-          {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} /> : null}
+          {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
         </AlLado>
       )}
       {o.plannedSession.prescriptions.map((p) => (
@@ -1503,7 +1512,7 @@ export function PantallaDeSesion({
         {modo === 'en-vivo' && abierta ? dialogoDeMedicion(deOtroProceso ? e.laSesionQuedoAbierta : e.medicionAbierta, abierta) : null}
         {/* Lo escrito sin registrar, antes que todo: se registra de una o se descarta, nunca se pierde en silencio (PA-01). */}
         {porEjercicio.length > 0 ? (
-          <Seccion titulo={t.escritasTitulo}>
+          <Seccion titulo={t.escritasTitulo} icono="borrador">
             {porEjercicio.map((x) => (
               <Parrafo key={x.prescriptionId}>{t.escritasDe(x.nombre, x.series)}</Parrafo>
             ))}
@@ -1512,16 +1521,16 @@ export function PantallaDeSesion({
             <Boton texto={t.descartarLoEscrito} tipo="peligroSecundario" onPress={() => void descartarEscritas()} deshabilitado={ocupado} />
           </Seccion>
         ) : null}
-        <Seccion titulo={COPY_ENTRENAMIENTO.series}>
+        <Seccion titulo={COPY_ENTRENAMIENTO.series} icono="series">
           <SeriesDelResumen resumen={resumen} />
           <Parrafo tenue>{t.sinTildarNoCuentan}</Parrafo>
         </Seccion>
         {modo === 'en-vivo' ? (
-          <Seccion titulo={e.tiemposDeLaSesion}>
+          <Seccion titulo={e.tiemposDeLaSesion} icono="reloj">
             <TiemposMarcados tiempos={{ sesion: sesionSinPausas, calculo, nombreDe }} />
           </Seccion>
         ) : null}
-        <Seccion titulo={COPY_ENTRENAMIENTO.condicionDeLaSesion}>
+        <Seccion titulo={COPY_ENTRENAMIENTO.condicionDeLaSesion} icono="desvio">
           {/* El motivo va antes que los botones: lo escrito viaja con la condición. */}
           <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} ayuda={COPY_ENTRENAMIENTO.ayudaDelMotivo} value={motivo} onChangeText={setMotivo} />
           <Parrafo>{textoDeLaCondicion(borrador?.sessionCondition ?? null)}</Parrafo>
@@ -1548,7 +1557,7 @@ export function PantallaDeSesion({
         <Boton texto={e.finalizarEntrenamiento} onPress={() => void finalizar()} ocupado={ocupado} />
         <Boton texto="Volver a la sesión" tipo="secundario" onPress={() => setFinalizando(false)} deshabilitado={ocupado} />
         {/* Lejos de «Finalizar» y de los botones frecuentes, y con confirmación si hay algo cargado (B10-10:337). */}
-        <Seccion titulo="¿No pudiste entrenar?">
+        <Seccion titulo="¿No pudiste entrenar?" icono="salteada">
           <Boton texto={COPY_ENTRENAMIENTO.noPudeRealizarla} tipo="secundario" seleccionado={borrador?.sessionCondition === 'NOT_COMPLETED'} onPress={() => void noPude()} deshabilitado={ocupado} />
         </Seccion>
       </View>
@@ -1734,10 +1743,22 @@ function textoDeSerie(s: { load: { value: number; unit: string } | null; complet
   return `${s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} × ${reps} ${COPY_ENTRENAMIENTO.reps.toLowerCase()}${s.rir !== null ? ` · RIR ${numero(s.rir)}` : ''}${s.perceivedExertion !== null ? ` · esfuerzo ${numero(s.perceivedExertion)}` : ''}`;
 }
 
+/**
+ * El nivel de detalle de un registro, con el mismo rótulo que lee el profesional (DL-161, `textoDelNivelDeDetalle`):
+ * «Cargada como el plan», «Parte como el plan», «Con detalle» o «Resumida, sin series». `null` para una sesión no
+ * realizada, que ya lo dice su condición, o si no se puede decir.
+ */
+export function textoDelNivelDelRegistro(registro: Pick<RegistroDeEjecucion, 'sessionCondition' | 'granularity' | 'exercises'>): string | null {
+  const nivel = nivelDeDetalleDelRegistro(registro);
+  return nivel === null || nivel === 'NO_REALIZADA' ? null : textoDelNivelDeDetalle(nivel);
+}
+
 function Registro({ registro }: { registro: RegistroDeEjecucion }) {
+  const nivel = textoDelNivelDelRegistro(registro);
   return (
     <View>
       <Dato etiqueta={COPY_ENTRENAMIENTO.condicionDeLaSesion} valor={etiquetaDeCondicionRegistrada(registro)} />
+      {nivel ? <Dato etiqueta={COPY_REGISTRO_POR_NIVELES.comoSeCargo} valor={nivel} /> : null}
       {registro.reason ? <Dato etiqueta="Motivo" valor={registro.reason} apilado /> : null}
       {registro.exercises.map((e) => (
         <View key={e.prescriptionId}>
@@ -1745,9 +1766,11 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
             etiqueta={e.substituted ? `${COPY_ENTRENAMIENTO.planificado}: ${e.prescribedExerciseName}` : e.performedExerciseName}
             valor={e.substituted ? `${COPY_ENTRENAMIENTO.ejecutado}: ${e.performedExerciseName}` : ''}
           />
+          {/* La serie tildada sin escribir dice «como el plan», como en el website: sus valores son los del plan. */}
           {(e.sets ?? []).map((s) => (
             <Parrafo key={s.setIndex}>
               {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)}
+              {seCargoComoElPlan(s) ? ` · ${COPY_REGISTRO_POR_NIVELES.comoElPlan}` : ''}
             </Parrafo>
           ))}
           {e.executionSummary ? <Parrafo>{e.executionSummary.description}</Parrafo> : null}
@@ -1788,21 +1811,21 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
       <Parrafo tenue>{fechaCivil(x.date)}</Parrafo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
       {vigente ? (
-        <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente}>
+        <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente} icono="corregido">
           <Parrafo tenue>
             {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : COPY_ENTRENAMIENTO.corregidoPorVos} · {fecha(vigente.recordedAt)} · {vigente.reason}
           </Parrafo>
           <Registro registro={vigente.correction} />
         </Seccion>
       ) : null}
-      <Seccion titulo={COPY_ENTRENAMIENTO.registroOriginal}>
+      <Seccion titulo={COPY_ENTRENAMIENTO.registroOriginal} icono="texto">
         <Parrafo tenue>Registrado el {fecha(x.recordedAt)}</Parrafo>
         <Registro registro={x.original} />
       </Seccion>
       {/* Los tiempos marcados, cada uno con su calidad (API-TIE-03). Una sesión registrada sin tiempos sigue sin tiempos. */}
       <TiemposDeLaEjecucion token={token} executionId={x.executionId} nombreDe={nombreDe} sesionPerdida={sesionPerdida} />
       {x.corrections.length > 1 ? (
-        <Seccion titulo={COPY_ENTRENAMIENTO.historialDeCorrecciones}>
+        <Seccion titulo={COPY_ENTRENAMIENTO.historialDeCorrecciones} icono="linea-de-tiempo">
           {x.corrections.map((c) => (
             <Parrafo key={c.correctionId}>
               {fecha(c.recordedAt)} · {c.author.displayName} · {c.reason}
@@ -1817,7 +1840,9 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  fechaDeHoy: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginTop: 10, marginBottom: 4 },
+  // La fecha con el calendario al lado (PA-06): el margen va en la fila.
+  filaDeLaFecha: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 4 },
+  fechaDeHoy: { flexShrink: 1, fontSize: 19, fontWeight: '800', color: COLOR.texto },
   cabezaDeSesion: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconoDeSesion: { width: 52, height: 52, borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficieElevada, alignItems: 'center', justifyContent: 'center' },
   textosDeSesion: { flex: 1 },

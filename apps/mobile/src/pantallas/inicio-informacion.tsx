@@ -51,7 +51,7 @@ export function Pendientes({ token, sesionPerdida, ir }: { token: string; sesion
     <TarjetaDeInicio zona="informacion" titulo="Para responder">
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-      <Boton texto="Ir a Información" tipo="enlace" onPress={() => ir({ nombre: 'mis-solicitudes' })} />
+      <Boton texto="Ir a Información" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'mis-solicitudes' })} />
     </TarjetaDeInicio>
   );
 }

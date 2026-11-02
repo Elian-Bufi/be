@@ -50,6 +50,7 @@ import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, Vie
 import Svg, { Circle } from 'react-native-svg';
 import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
 import { useMovimientoReducido } from '../estados';
+import { Icono } from '../icono';
 import { IconoDeCronometro, IconoDeEjercicio, IconoDeNube, IconoDePlan, IconoDeRutina } from '../iconos-de-entrenamiento';
 import { Flecha, IconoDeRegistrado } from '../iconos-de-nutricion';
 import { ImagenDeMedio, type RespaldoDeImagen } from '../imagen-de-medio';
@@ -121,7 +122,7 @@ export function BarraDeLaSesion({ nombre, temporizador, onVerRutina }: { nombre:
         </Text>
         {temporizador ? (
           <View style={estilos.temporizador} accessible accessibilityLabel={temporizador.etiqueta}>
-            <IconoDeCronometro color={COLOR.tenue} tamano={18} />
+            <Icono nombre="reloj" tamano={18} tono="tenue" />
             <Text style={estilos.textoDelTemporizador} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
               {temporizador.texto}
               {temporizador.calidad ? <Text style={estilos.calidad}>{` · ${temporizador.calidad}`}</Text> : null}
@@ -185,7 +186,7 @@ export function FranjaDeLaSesion({
       </View>
       {tiempos.length > 0 ? (
         <View style={estilos.tiemposDeLaFranja} accessible accessibilityLabel={tiempos.map((t) => t.etiqueta).join('. ')}>
-          <IconoDeCronometro color={COLOR.tenue} tamano={18} />
+          <Icono nombre="reloj" tamano={18} tono="tenue" />
           <Text style={estilos.textoDelTemporizador} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
             {tiempos.map((t) => t.texto).join(' · ')}
             {tiempos.some((t) => t.calidad) ? <Text style={estilos.calidad}>{` · ${tiempos.find((t) => t.calidad)?.calidad ?? ''}`}</Text> : null}
@@ -781,7 +782,7 @@ export function BloqueDeDescanso({ estado, onIniciar, onFinalizar, deshabilitado
     return (
       <View style={[estilos.tarjeta, estilos.descansoAlPie]}>
         <View style={estilos.conIcono} accessible accessibilityLabel={`${COPY_ENTRENAMIENTO.descanso}. ${recomendado}`}>
-          <IconoDeCronometro color={COLOR.acento} />
+          <Icono nombre="descanso" tamano={24} tono="acento" />
           <View style={estilos.textos}>
             <Text style={estilos.tituloDeBloque}>{COPY_ENTRENAMIENTO.descanso}</Text>
             <Text style={estilos.detalle}>{recomendado}</Text>
@@ -823,7 +824,7 @@ export function ExplicacionDeLosTiempos({ onEntendido }: { onEntendido: () => vo
   return (
     <View style={[estilos.tarjeta, estilos.explicacion]} accessibilityRole="summary">
       <View style={estilos.conIcono}>
-        <IconoDeCronometro color={COLOR.acento} />
+        <Icono nombre="reloj" tamano={24} tono="acento" />
         <Text style={[estilos.tituloDeBloque, estilos.textos]}>{COPY_ENTRENAMIENTO_POR_SERIE.explicacionDeTiempos}</Text>
       </View>
       <Desplegable titulo="Qué se mide y quién lo ve">
@@ -920,7 +921,7 @@ export function EstadoDelEnvio({
       <>
         {avisoDelGuardado}
         <View style={estilos.estadoDelEnvio} accessible accessibilityLabel={linea}>
-          <IconoDeRegistrado color={COLOR.botonTexto} fondo={COLOR.exito} tamano={18} />
+          <IconoDeRegistrado color={COLOR.botonTexto} fondo={COLOR.acento} tamano={18} />
           <Text style={estilos.detalle}>{linea}</Text>
         </View>
       </>

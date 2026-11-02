@@ -72,7 +72,7 @@ export function VerMas<T>({ estado, onVerMas }: { estado: EstadoDeLista<T>; onVe
 export function SinActualizar({ visible, onReintentar }: { visible: boolean; onReintentar: () => void }) {
   if (!visible) return null;
   return (
-    <Aviso tipo="info" titulo="No pudimos actualizar">
+    <Aviso tipo="info" titulo="No pudimos actualizar" icono="actualizar">
       <Parrafo tenue>Ves lo último que leímos en esta sesión.</Parrafo>
       <Boton texto={COPY.reintentar} tipo="secundario" onPress={onReintentar} />
     </Aviso>

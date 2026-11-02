@@ -15,8 +15,11 @@
  */
 import {
   COPY_ENTRENAMIENTO,
+  COPY_REGISTRO_POR_NIVELES,
   etiquetaDeCondicionRegistrada,
+  nivelDeDetalle,
   registroVigente,
+  textoDelNivelDeDetalle,
   type HistorialDeEntrenamientoResponse,
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDePlanDeEntrenamiento,
@@ -31,6 +34,15 @@ import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Tit
 import { textoDePrescripcion } from './entrenamiento';
 
 type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
+
+/**
+ * El nivel de detalle de lo que rige de una sesión, en las palabras del dominio (DL-161). Nada para una no realizada,
+ * que ya lo dice su condición, ni si no se puede saber qué rige.
+ */
+function nivelDe(e: Ejecucion): string | null {
+  const nivel = nivelDeDetalle(e);
+  return nivel === null || nivel === 'NO_REALIZADA' ? null : textoDelNivelDeDetalle(nivel);
+}
 
 /** Estado de una lectura: cargando, permitida con datos, sin A3 (403), o error de red/servidor. */
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'sinA3' } | { tipo: 'error'; sinConexion: boolean };
@@ -101,6 +113,8 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
                     <Parrafo tenue>{fechaCivil(e.date)}</Parrafo>
                     {/* Lo que hoy rige: una sesión corregida dice la condición corregida, no la que se corrigió (REG-06-16). */}
                     <Insignia texto={etiquetaDeCondicionRegistrada(registroVigente(e))} />
+                    {/* Cómo se cargó lo que rige, con el rótulo que lee el profesional (DL-161): «Cargada como el plan»… */}
+                    {nivelDe(e) ? <Insignia texto={nivelDe(e)!} etiqueta={COPY_REGISTRO_POR_NIVELES.comoSeCargo} /> : null}
                     {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
                     <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
                   </Tarjeta>

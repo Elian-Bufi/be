@@ -57,7 +57,7 @@ export function Mediciones({ token, sesionPerdida, ir }: { token: string; sesion
           </Accion>
           {destacada ? (
             <Accion>
-              <Boton texto="Ver su evolución" tipo="secundario" onPress={() => ir({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada.metrica })} />
+              <Boton texto="Ver su evolución" tipo="secundario" icono="analizar" onPress={() => ir({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada.metrica })} />
             </Accion>
           ) : null}
         </Acciones>

@@ -15,7 +15,7 @@
  *   y no lo toca (el PATCH reemplaza `exercises` entero).
  * - **La barra inferior queda a la vista**: no es la sesión enfocada. Salir con algo elegido pregunta antes.
  */
-import { COPY, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, type Ocurrencia, type Resultado, type SesionParaRegistrar } from '@be/domain';
+import { COPY, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, type Ocurrencia, type PrescripcionConObjetivos, type Resultado, type SesionParaRegistrar } from '@be/domain';
 import { Children, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Text, View } from 'react-native';
 import { api } from '../api';
@@ -30,12 +30,14 @@ import {
   armarRegistro,
   borradorConDatos,
   claveDeSerie,
+  dejarComoElPlan,
   diasParaElegir,
   ejerciciosConDetalle,
   elegir,
   ELECCIONES,
   escribir,
   esElUltimoPaso,
+  estadoEnElFinal,
   diaFijo,
   franjaDe,
   franjasDisponibles,
@@ -53,12 +55,15 @@ import {
   pasosDelRecorrido,
   pasoSiguiente,
   respuestasIniciales,
+  serieDelPlan,
   seRegistraConElPlan,
   textoAntesDeRegistrar,
   textoDeHora,
   textoDelResumen,
   TEXTOS_DEL_REGISTRO_RAPIDO as T,
+  tieneAlgoEscrito,
   type Contexto,
+  type EjercicioRapido,
   type Franja,
   type LoQueMandamos,
   type Paso,
@@ -66,7 +71,7 @@ import {
   type Respuestas,
 } from '../registro-rapido';
 import { placeholdersDeLaSerie, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita } from '../series-de-la-sesion';
-import { Aviso, Ayuda, Boton, Campo, Casilla, estilosPorTema, Parrafo, Seccion, Segmentos, Subtitulo, Titulo } from '../ui';
+import { Aviso, Ayuda, Boton, Campo, Casilla, Dato, estilosPorTema, Parrafo, Seccion, Segmentos, Subtitulo, Titulo } from '../ui';
 
 /** Adónde lleva «Ya la hice» (o «La hice ese día») desde una tarjeta: la ocurrencia de esa fecha, de esa sesión. */
 export function aRegistroRapido(o: Pick<Ocurrencia, 'occurrenceId' | 'date' | 'planId' | 'plannedSession'>, ocurrencia: { readonly occurrenceId: string; readonly fecha: string } = { occurrenceId: o.occurrenceId, fecha: o.date }): Ruta {
@@ -162,6 +167,10 @@ export function PantallaDeRegistroRapido({
   const [registrada, setRegistrada] = useState<string | null>(null);
   // El borrador tiene datos que este recorrido no pisa: se ofrece ir a Entrenamiento, donde se continúa.
   const [conDatos, setConDatos] = useState(false);
+  // En el último cuadro de «Hice todo lo planificado»: el ejercicio cuyo cambio está abierto, y las series que se
+  // abrieron para escribirlas. Es estado de la pantalla: no cambia lo que se registra.
+  const [cambiando, setCambiando] = useState<string | null>(null);
+  const [abiertas, setAbiertas] = useState<ReadonlySet<string>>(() => new Set());
   const intento = useClaveDeIntento();
   const nuestro = useRef<LoQueMandamos | null>(null);
   const enCurso = useRef(false);
@@ -192,6 +201,7 @@ export function PantallaDeRegistroRapido({
       if (!ctx) return;
       const pasos = pasosDelRecorrido(ctx, con);
       setPaso(destino);
+      setCambiando(null);
       subir();
       AccessibilityInfo.announceForAccessibility(`Paso ${pasos.indexOf(destino) + 1} de ${pasos.length}: ${NOMBRE_DEL_PASO[destino]}`);
     },
@@ -232,8 +242,10 @@ export function PantallaDeRegistroRapido({
     const armado = armarRegistro(ctx, r, new Date());
     if (!armado.ok) {
       setErrores(armado.errores ?? {});
+      // Con «todo», lo que falta en un ejercicio se resuelve en su cambio, que se abre con el aviso a la vista.
+      if (armado.ejercicio) abrirCambio(armado.ejercicio);
+      else if (armado.paso !== paso) irAPaso(armado.paso, r);
       setAviso({ tipo: 'error', texto: armado.motivo });
-      if (armado.paso !== paso) irAPaso(armado.paso, r);
       return;
     }
     enCurso.current = true;
@@ -315,6 +327,34 @@ export function PantallaDeRegistroRapido({
     }
   }
 
+  /** «Cambiar» un ejercicio desde el último cuadro: sus series, solas, en el mismo paso. */
+  function abrirCambio(id: string) {
+    const p = ctx?.sesion.prescriptions.find((x) => x.prescriptionId === id);
+    if (!p) return;
+    setAviso(null);
+    setCambiando(id);
+    subir();
+    AccessibilityInfo.announceForAccessibility(T.queCambioEn(p.exerciseName));
+  }
+
+  /**
+   * «Volver al final»: lo escrito en este ejercicio se revisa acá, con el error en su serie. Lo que falte en otro
+   * ejercicio, o la hora, se ve al registrar.
+   */
+  function volverAlFinal(p: PrescripcionConObjetivos) {
+    if (!ctx || !r) return;
+    const soloEste = armarRegistro({ ...ctx, sesion: { prescriptions: [p] } }, r, new Date());
+    if (!soloEste.ok && soloEste.ejercicio === p.prescriptionId) {
+      setErrores(soloEste.errores ?? {});
+      return setAviso({ tipo: 'error', texto: soloEste.motivo });
+    }
+    setErrores({});
+    setAviso(null);
+    setCambiando(null);
+    subir();
+    AccessibilityInfo.announceForAccessibility(`${T.listoParaRegistrar}. ${p.exerciseName}: ${estadoEnElFinal(p, r.ejercicios[p.prescriptionId]).texto}`);
+  }
+
   function terminar(executionId: string, resumen: ResumenDelRegistroRapido) {
     setListo({ executionId, resumen });
     setPaso('listo');
@@ -349,9 +389,10 @@ export function PantallaDeRegistroRapido({
           texto={T.agregarNota}
           tipo="secundario"
           onPress={() => {
+            // La nota y el horario van antes del final: «Seguir» desde ahí vuelve a «Listo para registrar».
             const nuevas = { ...r, pidioNota: true };
             cambiar(nuevas);
-            seguir(nuevas);
+            irAPaso('cuando', nuevas);
           }}
           deshabilitado={ocupado}
         />
@@ -360,10 +401,123 @@ export function PantallaDeRegistroRapido({
     </>
   );
 
+  /**
+   * Las series de un ejercicio, cada una con su casilla: destildarla es «esa no la hice». Con `plegadas` (el cambio de un
+   * ejercicio desde el último cuadro) cada serie muestra su plan y «Cambiar la serie N», que abre sus campos; queda
+   * abierta la que tiene algo escrito, un error, o un plan sin número para registrar.
+   */
+  const filasDeSeries = (p: PrescripcionConObjetivos, e: EjercicioRapido, plegadas: boolean) => {
+    const unidad = unidadDelEjercicio(p);
+    return p.sets.map((s) => {
+      const serie = e.series[s.setIndex];
+      if (!serie) return null;
+      const clave = claveDeSerie(p.prescriptionId, s.setIndex);
+      const error = errores[clave];
+      const gris = placeholdersDeLaSerie(s.target, unidad);
+      const abierta = !plegadas || abiertas.has(clave) || tieneAlgoEscrito(serie.escrita) || error !== undefined || serieDelPlan(s) === null;
+      // El rótulo visible es corto, como las columnas de la sesión; el lector de pantalla dice el campo entero.
+      const campo = (que: keyof FilaEscrita, visible: string, accesible: string, teclado: 'decimal-pad' | 'number-pad', enGris: string) => {
+        const mensaje = error?.[que];
+        return (
+          <View style={estilos.celda}>
+            <Campo
+              etiqueta={visible}
+              value={serie.escrita[que]}
+              placeholder={enGris}
+              error={mensaje}
+              keyboardType={teclado}
+              maxLength={20}
+              accessibilityLabel={mensaje ? `${accesible}. Revisá este campo: ${mensaje}` : accesible}
+              onChangeText={(v) => cambiar(escribir(r, p.prescriptionId, s.setIndex, que, v))}
+            />
+          </View>
+        );
+      };
+      return (
+        <Casilla
+          key={s.setIndex}
+          marcada={serie.hecha}
+          onCambio={(v) => cambiar(marcarSerie(r, p.prescriptionId, s.setIndex, v))}
+          titulo={T.serie(s.setIndex)}
+          texto={lineaDeLaSerie(s)}
+          error={error?.fila}
+        >
+          {serie.hecha && abierta ? (
+            <View style={estilos.celdas}>
+              {campo('carga', unidad, `Carga en ${unidad} de la serie ${s.setIndex}`, 'decimal-pad', gris.carga)}
+              {campo('repeticiones', COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones, `Repeticiones de la serie ${s.setIndex}`, 'number-pad', gris.repeticiones)}
+              {campo('rir', COPY_ENTRENAMIENTO_POR_SERIE.columnaRir, `RIR de la serie ${s.setIndex}, opcional`, 'decimal-pad', gris.rir)}
+            </View>
+          ) : null}
+          {serie.hecha && !abierta ? <Boton texto={T.cambiarLaSerie(s.setIndex)} tipo="enlace" onPress={() => setAbiertas((a) => new Set(a).add(clave))} /> : null}
+        </Casilla>
+      );
+    });
+  };
+
   let contenido: ReactNode;
-  if (paso === 'listo' && listo) {
+  if (paso === 'revisar' && cambiando) {
+    // «Cambiar» un ejercicio desde el final: solo sus series, y «Volver al final».
+    const p = ctx.sesion.prescriptions.find((x) => x.prescriptionId === cambiando);
+    const e = p ? r.ejercicios[p.prescriptionId] : undefined;
+    contenido =
+      p && e ? (
+        <>
+          <Seccion titulo={T.queCambioEn(p.exerciseName)} icono="corregido">
+            <Parrafo tenue>{T.ayudaDelCambio}</Parrafo>
+            {filasDeSeries(p, e, true)}
+          </Seccion>
+          {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
+          <Boton texto={T.volverAlFinal} onPress={() => volverAlFinal(p)} />
+          <Boton
+            texto={T.dejarComoElPlan}
+            tipo="enlace"
+            icono="deshacer"
+            onPress={() => {
+              cambiar(dejarComoElPlan(ctx, r, p.prescriptionId));
+              setErrores({});
+              setAbiertas(new Set());
+            }}
+          />
+        </>
+      ) : null;
+  } else if (paso === 'revisar') {
+    // El último cuadro de «Hice todo lo planificado»: la línea planificada de cada ejercicio, a la vista antes de
+    // confirmar (B10-06 §56), cómo queda, y «Cambiar».
     contenido = (
-      <Seccion titulo={COPY_ENTRENAMIENTO.sesionRegistrada}>
+      <>
+        <Seccion titulo={T.listoParaRegistrar} icono="lista">
+          <Parrafo tenue>{T.ayudaDelFinal}</Parrafo>
+          {ctx.sesion.prescriptions.map((p) => {
+            const { estado, texto } = estadoEnElFinal(p, r.ejercicios[p.prescriptionId]);
+            const anotar = estado === 'falta-anotar';
+            const plan = lineaDelPlan(p);
+            return (
+              <View key={p.prescriptionId} style={estilos.filaDelFinal}>
+                <View style={estilos.textosDelFinal} accessible accessibilityLabel={`${p.exerciseName}. ${plan}. ${texto}`}>
+                  <Text style={estilos.lineaDelFinal}>
+                    <Text style={estilos.nombreDelFinal}>{p.exerciseName}</Text>
+                    {` · ${plan}`}
+                  </Text>
+                  <Text style={[estilos.estadoDelFinal, estado !== 'como-el-plan' && estilos.estadoCambiado]}>{texto}</Text>
+                </View>
+                <Boton
+                  texto={anotar ? T.anotar : T.cambiar}
+                  tipo="enlace"
+                  etiqueta={anotar ? T.anotarEjercicio(p.exerciseName) : T.cambiarEjercicio(p.exerciseName)}
+                  onPress={() => abrirCambio(p.prescriptionId)}
+                />
+              </View>
+            );
+          })}
+          {r.nota.trim() ? <Dato etiqueta={T.notaDelFinal} valor={r.nota.trim()} apilado /> : null}
+        </Seccion>
+        {acciones()}
+      </>
+    );
+  } else if (paso === 'listo' && listo) {
+    contenido = (
+      <Seccion titulo={COPY_ENTRENAMIENTO.sesionRegistrada} icono="guardar">
         <Parrafo>{textoDelResumen(listo.resumen)}</Parrafo>
         <Parrafo tenue>{loQueVeTuProfesional(listo.resumen)}</Parrafo>
         <Boton texto={T.verElRegistro} onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: listo.executionId }, 'reemplazar')} />
@@ -393,7 +547,7 @@ export function PantallaDeRegistroRapido({
     const ayuda = r.eleccion === 'todo' ? T.ayudaDeEjerciciosTodo : r.eleccion === 'parte' ? T.ayudaDeEjerciciosParte : T.ayudaDeEjerciciosDistinto;
     contenido = (
       <>
-        <Seccion titulo={T.queEjercicios}>
+        <Seccion titulo={T.queEjercicios} icono="entrenamiento">
           <Parrafo tenue>{ayuda}</Parrafo>
           {ctx.sesion.prescriptions.map((p) => {
             const e = r.ejercicios[p.prescriptionId];
@@ -417,63 +571,18 @@ export function PantallaDeRegistroRapido({
   } else if (paso === 'detalle') {
     contenido = (
       <>
-        <Seccion titulo={T.queCambio}>
+        <Seccion titulo={T.queCambio} icono="corregido">
           <Parrafo tenue>{T.ayudaDelDetalle}</Parrafo>
           <Ayuda titulo={T.comoSeRegistra}>
             <Parrafo>{T.explicacionDelDetalle}</Parrafo>
           </Ayuda>
-          {ejerciciosConDetalle(ctx, r).map((p) => {
-            const e = r.ejercicios[p.prescriptionId]!;
-            const unidad = unidadDelEjercicio(p);
-            return (
-              <View key={p.prescriptionId}>
-                <Subtitulo>{p.exerciseName}</Subtitulo>
-                {!seRegistraConElPlan(p) ? <Parrafo tenue>{COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato}</Parrafo> : null}
-                {p.sets.map((s) => {
-                  const serie = e.series[s.setIndex];
-                  if (!serie) return null;
-                  const error = errores[claveDeSerie(p.prescriptionId, s.setIndex)];
-                  const gris = placeholdersDeLaSerie(s.target, unidad);
-                  // El rótulo visible es corto, como las columnas de la sesión; el lector de pantalla dice el campo entero.
-                  const campo = (que: keyof FilaEscrita, visible: string, accesible: string, teclado: 'decimal-pad' | 'number-pad', enGris: string) => {
-                    const mensaje = error?.[que];
-                    return (
-                      <View style={estilos.celda}>
-                        <Campo
-                          etiqueta={visible}
-                          value={serie.escrita[que]}
-                          placeholder={enGris}
-                          error={mensaje}
-                          keyboardType={teclado}
-                          maxLength={20}
-                          accessibilityLabel={mensaje ? `${accesible}. Revisá este campo: ${mensaje}` : accesible}
-                          onChangeText={(v) => cambiar(escribir(r, p.prescriptionId, s.setIndex, que, v))}
-                        />
-                      </View>
-                    );
-                  };
-                  return (
-                    <Casilla
-                      key={s.setIndex}
-                      marcada={serie.hecha}
-                      onCambio={(v) => cambiar(marcarSerie(r, p.prescriptionId, s.setIndex, v))}
-                      titulo={T.serie(s.setIndex)}
-                      texto={lineaDeLaSerie(s)}
-                      error={error?.fila}
-                    >
-                      {serie.hecha ? (
-                        <View style={estilos.celdas}>
-                          {campo('carga', unidad, `Carga en ${unidad} de la serie ${s.setIndex}`, 'decimal-pad', gris.carga)}
-                          {campo('repeticiones', COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones, `Repeticiones de la serie ${s.setIndex}`, 'number-pad', gris.repeticiones)}
-                          {campo('rir', COPY_ENTRENAMIENTO_POR_SERIE.columnaRir, `RIR de la serie ${s.setIndex}, opcional`, 'decimal-pad', gris.rir)}
-                        </View>
-                      ) : null}
-                    </Casilla>
-                  );
-                })}
-              </View>
-            );
-          })}
+          {ejerciciosConDetalle(ctx, r).map((p) => (
+            <View key={p.prescriptionId}>
+              <Subtitulo>{p.exerciseName}</Subtitulo>
+              {!seRegistraConElPlan(p) ? <Parrafo tenue>{COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato}</Parrafo> : null}
+              {filasDeSeries(p, r.ejercicios[p.prescriptionId]!, false)}
+            </View>
+          ))}
         </Seccion>
         {acciones()}
       </>
@@ -491,7 +600,7 @@ export function PantallaDeRegistroRapido({
     contenido = (
       <>
         {/* Con el día fijo (una pendiente, otro día), la hora es obligatoria y va primero; hoy, primero la nota. */}
-        <Seccion titulo={fijo ? T.cuando : T.algoMas}>
+        <Seccion titulo={fijo ? T.cuando : T.algoMas} icono={fijo ? 'calendario' : 'texto'}>
           {fijo ? null : nota}
           {fijo ? <Parrafo>{fechaLarga(diaElegido)}</Parrafo> : <Subtitulo>{T.cuando}</Subtitulo>}
           {dias.length > 0 ? (
@@ -542,7 +651,9 @@ export function PantallaDeRegistroRapido({
   return (
     <View>
       <Titulo>{etiqueta}</Titulo>
-      <Parrafo tenue>{diaElegido === hoy ? `${T.hoy} · ${fechaLarga(diaElegido)}` : fechaLarga(diaElegido)}</Parrafo>
+      <Parrafo tenue>
+        {`${diaElegido === hoy ? `${T.hoy} · ${fechaLarga(diaElegido)}` : fechaLarga(diaElegido)}${r.hora === null ? '' : ` · ${textoDeHora(r.hora)}`}`}
+      </Parrafo>
       <FranjaDePasos actual={numeroDelPaso} total={pasos.length} nombre={NOMBRE_DEL_PASO[paso]} />
       {paso === 'como' && aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
       {contenido}
@@ -560,6 +671,13 @@ const estilos = estilosPorTema((COLOR) => ({
   tramo: { flex: 1, height: 6, borderRadius: 3, backgroundColor: COLOR.bordeControl },
   tramoHecho: { backgroundColor: COLOR.acento },
   celdas: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  // Una fila por ejercicio en «Listo para registrar»: el nombre y su plan a la izquierda, «Cambiar» a la derecha.
+  filaDelFinal: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: COLOR.borde },
+  textosDelFinal: { flex: 1 },
+  lineaDelFinal: { fontSize: 16, lineHeight: 23, color: COLOR.texto },
+  nombreDelFinal: { fontWeight: '700' },
+  estadoDelFinal: { fontSize: 14, lineHeight: 20, color: COLOR.tenue, marginTop: 2 },
+  estadoCambiado: { color: COLOR.acento, fontWeight: '700' },
   celda: { flex: 1 },
   etiqueta: { fontSize: 16, fontWeight: '600', color: COLOR.texto, marginTop: 8 },
 }));

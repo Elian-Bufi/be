@@ -83,6 +83,7 @@ import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
 import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
+import { Icono, type NombreDeIcono } from './src/icono';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
 const AVISOS: Record<Salida, string> = {
@@ -519,10 +520,21 @@ function Contenido() {
               <Text style={estilos.tituloBienvenida} accessibilityRole="header">
                 Plataforma integrada de inteligencia en salud
               </Text>
+              {/* Las tres áreas, con los íconos de la barra: lo que hay adentro, antes de entrar. */}
+              <View style={estilos.areasDeBienvenida} accessible accessibilityLabel={AREAS_DE_LA_BIENVENIDA.map((a) => a.texto).join(', ')}>
+                {AREAS_DE_LA_BIENVENIDA.map((a) => (
+                  <View key={a.icono} style={estilos.areaDeBienvenida}>
+                    <Icono nombre={a.icono} tamano={24} tono="acento" />
+                    <Text style={estilos.textoDeArea}>{a.texto}</Text>
+                  </View>
+                ))}
+              </View>
               {ruta.aviso ? <Aviso tipo="info" titulo={ruta.aviso} /> : null}
               <Boton texto="Crear cuenta" onPress={() => ir({ nombre: 'registro' })} />
               <Boton texto="Iniciar sesión" tipo="secundario" onPress={() => ir({ nombre: 'login' })} />
-              <Parrafo tenue>Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.</Parrafo>
+              <Parrafo tenue icono="info">
+                Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.
+              </Parrafo>
               <Text style={estilos.identidad}>
                 app {version} · {extra.appEnv ?? 'ambiente no declarado'} · commit {commit}
               </Text>
@@ -653,6 +665,13 @@ function Contenido() {
 
 const ISOTIPO = require('./assets/isotipo.png');
 
+/** Las áreas de BE en la bienvenida, con el ícono y el nombre de la barra. */
+const AREAS_DE_LA_BIENVENIDA: readonly { readonly icono: NombreDeIcono; readonly texto: string }[] = [
+  { icono: 'nutricion', texto: 'Nutrición' },
+  { icono: 'entrenamiento', texto: 'Entrenamiento' },
+  { icono: 'antropometria', texto: 'Evolución' },
+];
+
 const estilos = estilosPorTema((COLOR) => ({
   raiz: { flex: 1, backgroundColor: COLOR.fondo },
   // El margen inferior se completa en el contentContainerStyle con el alto de la barra y el inset real del sistema
@@ -661,6 +680,9 @@ const estilos = estilosPorTema((COLOR) => ({
   contenido: { padding: 20 },
   isotipoGrande: { width: 180, height: 180, alignSelf: 'center', marginTop: 16 },
   lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },
+  areasDeBienvenida: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 20, rowGap: 8, marginBottom: 12 },
+  areaDeBienvenida: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  textoDeArea: { fontSize: 15, fontWeight: '600', color: COLOR.texto },
   tituloBienvenida: { fontSize: 26, fontWeight: '700', color: COLOR.texto, marginVertical: 12, textAlign: 'center' },
   identidad: { fontSize: 12, color: COLOR.tenue, marginTop: 32 },
 }));

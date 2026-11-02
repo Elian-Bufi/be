@@ -39,7 +39,7 @@ export function TiemposDeLaEjecucion({ token, executionId, nombreDe, sesionPerdi
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
   if (!r) {
     return (
-      <Seccion titulo={e.tiemposDeLaSesion}>
+      <Seccion titulo={e.tiemposDeLaSesion} icono="medido">
         <Cargando />
       </Seccion>
     );
@@ -48,13 +48,13 @@ export function TiemposDeLaEjecucion({ token, executionId, nombreDe, sesionPerdi
     // Sin tiempos (una sesión registrada antes de los tiempos, o sin marcar): se dice, no se calcula ninguno.
     if (r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') {
       return (
-        <Seccion titulo={e.tiemposDeLaSesion}>
+        <Seccion titulo={e.tiemposDeLaSesion} icono="medido">
           <Parrafo tenue>Esta sesión no tiene tiempos marcados.</Parrafo>
         </Seccion>
       );
     }
     return (
-      <Seccion titulo={e.tiemposDeLaSesion}>
+      <Seccion titulo={e.tiemposDeLaSesion} icono="medido">
         <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={() => void cargar()} />
       </Seccion>
     );
@@ -62,13 +62,13 @@ export function TiemposDeLaEjecucion({ token, executionId, nombreDe, sesionPerdi
   const t = r.datos.data;
   if (t.state === 'NOT_STARTED') {
     return (
-      <Seccion titulo={e.tiemposDeLaSesion}>
+      <Seccion titulo={e.tiemposDeLaSesion} icono="medido">
         <Parrafo tenue>Esta sesión no tiene tiempos marcados.</Parrafo>
       </Seccion>
     );
   }
   return (
-    <Seccion titulo={e.tiemposDeLaSesion}>
+    <Seccion titulo={e.tiemposDeLaSesion} icono="medido">
       {t.state === 'LEFT_INCOMPLETE' ? <Parrafo tenue>Se dejó incompleta: no se afirma cuándo terminó.</Parrafo> : null}
       <Dato etiqueta={e.transcurrido} valor={textoDeDuracion(t.session.elapsed)} />
       <Dato etiqueta={e.pausas} valor={textoDeDuracion(t.session.pauses)} />

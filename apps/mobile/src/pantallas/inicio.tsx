@@ -21,6 +21,7 @@
 import { Text, View } from 'react-native';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { fechaLarga } from '../formato';
+import { Icono } from '../icono';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { Titulo } from '../ui';
 import { AccesoIncompleto } from './inicio-acceso';
@@ -36,7 +37,10 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
   return (
     <View>
       <Titulo>Hola</Titulo>
-      <Text style={estilos.fechaDeHoy}>{fechaLarga(hoy)}</Text>
+      <View style={estilos.filaDeLaFecha}>
+        <Icono nombre="hoy" tamano={18} tono="tenue" />
+        <Text style={estilos.fechaDeHoy}>{fechaLarga(hoy)}</Text>
+      </View>
       <AccesoIncompleto token={token} sesionPerdida={sesionPerdida} ir={ir} />
       <EntrenamientoDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
       <NutricionDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />

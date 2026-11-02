@@ -206,7 +206,7 @@ function FormularioDeLaCorreccion({
         </Aviso>
       ) : null}
 
-      <Seccion titulo={T.comoResulto}>
+      <Seccion titulo={T.comoResulto} icono="desvio">
         <Segmentos etiqueta={T.comoResulto} opciones={CONDICIONES} valor={estado.condicion} alElegir={(condicion) => despachar({ tipo: 'condicion', condicion })} />
         <Desplegable titulo={T.comentario} abiertoAlInicio={estado.comentario !== ''}>
           <Campo etiqueta={T.comentario} value={estado.comentario} onChangeText={(texto) => despachar({ tipo: 'comentario', texto })} multiline />
@@ -253,7 +253,7 @@ function FormularioDeLaCorreccion({
         )}
       </Seccion>
 
-      <Seccion titulo={T.porQue}>
+      <Seccion titulo={T.porQue} icono="texto">
         <Segmentos<MotivoDeCorreccion | ''> etiqueta={T.porQue} opciones={opcionesDeMotivo} valor={estado.motivo ?? ''} alElegir={(motivo) => (motivo ? despachar({ tipo: 'motivo', motivo }) : undefined)} />
         {estado.motivo === 'otro' ? <Campo etiqueta={T.otroMotivo} value={estado.otroMotivo} onChangeText={(texto) => despachar({ tipo: 'otro-motivo', texto })} /> : null}
         <Parrafo tenue>{T.nota}</Parrafo>

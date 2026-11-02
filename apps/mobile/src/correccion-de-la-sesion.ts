@@ -26,6 +26,7 @@
 import {
   cantidad,
   COPY_ENTRENAMIENTO,
+  COPY_REGISTRO_POR_NIVELES,
   numero,
   registroVigente,
   type EjecucionDeEntrenamiento,
@@ -109,7 +110,7 @@ export const TEXTOS_DE_LA_CORRECCION = {
   deshacer: 'Deshacer',
   nueva: 'Nueva',
   /** La serie tildada sin escribir nada, como en la sesión (DL-161). */
-  comoElPlan: 'como el plan',
+  comoElPlan: COPY_REGISTRO_POR_NIVELES.comoElPlan,
   // La casilla de cada serie: su nombre, y la pista según lo que hace tocarla.
   casillaDeLaSerie: (n: number, ejercicio: string) => `Serie ${n} de ${ejercicio}`,
   pistaParaQuitar: 'Destildala para quitarla de la corrección.',

@@ -3,8 +3,11 @@
  * hizo sin hacerlo en vivo, desde un toque hasta el detalle que quiera, en un recorrido de dos a cinco pasos cortos.
  *
  * - **Los pasos** (`pasosDelRecorrido`): «¿Cómo fue?», «¿Qué ejercicios hiciste?», las series de los ejercicios con
- *   «Cambié algo», la nota y el horario, y «Listo». Se saltan los que no hacen falta: con «Hice todo lo planificado»,
- *   hoy, el recorrido es 1 → 2 → Listo; la nota y el horario quedan a un toque.
+ *   «Cambié algo», la nota y el horario, y «Listo». Se saltan los que no hacen falta.
+ * - **«Hice todo lo planificado» va directo al último cuadro** (Dirección, 2026-11-02): «Listo para registrar», con la
+ *   línea planificada de cada ejercicio a la vista («Sentadilla goblet · 3 × 8 · 20 kg») y un «Cambiar» por ejercicio
+ *   que abre sus series, para destildar las que no hizo o escribir una distinta, y vuelve al final. Hoy son dos cuadros
+ *   y «Listo»; la nota y el horario quedan a un toque. Así el valor se ve antes de confirmar (B10-06 §56).
  * - **Por serie** (`granularity: 'SET'`). Un ejercicio tildado sin cambios manda sus series con los valores del plan y
  *   `recordedAs: 'AS_PLANNED'`: la persona los tuvo a la vista y los confirmó (B10-06 §56). Lo escrito va `TYPED`, solo
  *   con lo escrito: un campo vacío no se completa con el plan. Una serie sin tildar no se manda: no la hizo.
@@ -93,6 +96,25 @@ export const TEXTOS_DEL_REGISTRO_RAPIDO = {
   loVeTuProfesional: 'Tu profesional ve qué series tildaste con lo planificado y cuáles escribiste.',
   /** Con el mismo rótulo que lee el profesional (DL-161, `textoDelNivelDeDetalle`). */
   comoLaVeTuProfesional: (nivel: string) => `Tu profesional ve cómo la cargaste: «${nivel}».`,
+  // El último cuadro de «Hice todo lo planificado» y el cambio de un ejercicio, desde ahí.
+  listoParaRegistrar: 'Listo para registrar',
+  ayudaDelFinal: 'Así queda, con lo planificado. Si algo fue distinto, tocá «Cambiar».',
+  cambiar: 'Cambiar',
+  anotar: 'Anotar',
+  cambiarEjercicio: (ejercicio: string) => `Cambiar ${ejercicio}`,
+  anotarEjercicio: (ejercicio: string) => `Anotar lo que hiciste en ${ejercicio}`,
+  comoElPlan: 'Como el plan',
+  sinRegistrar: 'Sin registrar',
+  faltaAnotar: 'El plan no trae un número: anotá lo que hiciste.',
+  seriesDe: (hechas: number, total: number) => `${hechas} de ${total} series`,
+  cambiadas: (n: number) => `${n} ${n === 1 ? 'cambiada' : 'cambiadas'}`,
+  queCambioEn: (ejercicio: string) => `¿Qué cambió en ${ejercicio}?`,
+  ayudaDelCambio: 'Destildá las series que no hiciste. Si una fue distinta, tocá «Cambiar la serie» y escribí lo que hiciste; en gris, lo planificado.',
+  cambiarLaSerie: (n: number) => `Cambiar la serie ${n}`,
+  volverAlFinal: 'Volver al final',
+  dejarComoElPlan: 'Dejarlo como el plan',
+  notaDelFinal: 'Nota',
+  faltaUnaSerie: 'No queda ninguna serie para registrar. Sumá alguna con «Cambiar», o volvé al primer paso y elegí otra respuesta.',
   faltaElegir: 'Elegí cómo fue la sesión.',
   faltaTildar: 'Tildá al menos un ejercicio que hiciste.',
   faltaLaHora: 'Para una sesión de otro día, elegí a qué hora la hiciste.',
@@ -228,10 +250,14 @@ export const marcarEjercicio = (r: Respuestas, id: string, hecho: boolean): Resp
 /** «Cambié algo» tilda también el ejercicio: si cambió algo, lo hizo. */
 export const marcarCambio = (r: Respuestas, id: string, cambio: boolean): Respuestas => cambiarEjercicio(r, id, (e) => ({ ...e, cambio, hecho: e.hecho || cambio }));
 
+/**
+ * Tocar una serie es un cambio del ejercicio: con eso se registra serie por serie lo que quedó (`armarRegistro`), y no
+ * todo con lo planificado. Por eso marcar o escribir una serie también marca `cambio`.
+ */
 export function marcarSerie(r: Respuestas, id: string, setIndex: number, hecha: boolean): Respuestas {
   return cambiarEjercicio(r, id, (e) => {
     const s = e.series[setIndex];
-    return s ? { ...e, series: { ...e.series, [setIndex]: { ...s, hecha } } } : e;
+    return s ? { ...e, hecho: e.hecho || hecha, cambio: true, series: { ...e.series, [setIndex]: { ...s, hecha } } } : e;
   });
 }
 
@@ -239,16 +265,50 @@ export function escribir(r: Respuestas, id: string, setIndex: number, campo: key
   return cambiarEjercicio(r, id, (e) => {
     const s = e.series[setIndex];
     // Escribir en una serie la tilda: si anotó lo que hizo, la hizo.
-    return s ? { ...e, series: { ...e.series, [setIndex]: { hecha: true, escrita: { ...s.escrita, [campo]: texto } } } } : e;
+    return s ? { ...e, cambio: true, series: { ...e.series, [setIndex]: { hecha: true, escrita: { ...s.escrita, [campo]: texto } } } } : e;
   });
+}
+
+/** Las series de un ejercicio tal como llegan: todas tildadas y sin nada escrito. */
+const seriesComoElPlan = (p: Pick<PrescripcionConObjetivos, 'sets'>): Record<number, SerieRapida> => Object.fromEntries(p.sets.map((s) => [s.setIndex, { hecha: true, escrita: FILA_VACIA }]));
+
+/** «Dejarlo como el plan», en el cambio de un ejercicio: vuelve a tener todas sus series con lo planificado. */
+export function dejarComoElPlan(ctx: Contexto, r: Respuestas, id: string): Respuestas {
+  const p = ctx.sesion.prescriptions.find((x) => x.prescriptionId === id);
+  return p ? cambiarEjercicio(r, id, () => ({ hecho: true, cambio: false, series: seriesComoElPlan(p) })) : r;
+}
+
+// ─── El último cuadro de «Hice todo lo planificado» ─────────────────────────────────────────────
+
+/** Cómo queda cada ejercicio en «Listo para registrar». */
+export type EstadoEnElFinal = 'como-el-plan' | 'cambiado' | 'sin-registrar' | 'falta-anotar';
+
+export const tieneAlgoEscrito = (f: FilaEscrita): boolean => f.carga.trim() !== '' || f.repeticiones.trim() !== '' || f.rir.trim() !== '';
+
+/**
+ * Lo que dice la fila de un ejercicio en el último cuadro, debajo de su línea planificada: «Como el plan»; «2 de 3 series
+ * · 1 cambiada»; «Sin registrar», si se destildaron todas; o que falta anotar, si el plan de una serie tildada no trae un
+ * número y no se escribió nada (nunca se fabrica una serie).
+ */
+export function estadoEnElFinal(p: PrescripcionConObjetivos, e: EjercicioRapido | undefined): { readonly estado: EstadoEnElFinal; readonly texto: string } {
+  if (!e?.hecho) return { estado: 'sin-registrar', texto: T.sinRegistrar };
+  const series = e.cambio ? e.series : seriesComoElPlan(p);
+  const hechas = p.sets.filter((s) => series[s.setIndex]?.hecha);
+  if (hechas.length === 0) return { estado: 'sin-registrar', texto: T.sinRegistrar };
+  if (hechas.some((s) => !tieneAlgoEscrito(series[s.setIndex]!.escrita) && serieDelPlan(s) === null)) return { estado: 'falta-anotar', texto: T.faltaAnotar };
+  const escritas = hechas.filter((s) => tieneAlgoEscrito(series[s.setIndex]!.escrita)).length;
+  if (hechas.length === p.sets.length && escritas === 0) return { estado: 'como-el-plan', texto: T.comoElPlan };
+  const partes = [hechas.length < p.sets.length ? T.seriesDe(hechas.length, p.sets.length) : seriesEnTexto(p.sets.length), escritas > 0 ? T.cambiadas(escritas) : null];
+  return { estado: 'cambiado', texto: partes.filter((x): x is string => x !== null).join(' · ') };
 }
 
 // ─── Los pasos ──────────────────────────────────────────────────────────────────────────────────
 
-export type Paso = 'como' | 'ejercicios' | 'detalle' | 'cuando' | 'listo';
+/** `revisar` es el último cuadro de «Hice todo lo planificado»: lo que se va a registrar, con «Cambiar» por ejercicio. */
+export type Paso = 'como' | 'ejercicios' | 'detalle' | 'cuando' | 'revisar' | 'listo';
 
 /** El nombre de cada paso, en la franja «Paso 2 de 4 · Ejercicios». */
-export const NOMBRE_DEL_PASO: Readonly<Record<Paso, string>> = { como: 'Cómo fue', ejercicios: 'Ejercicios', detalle: 'Series', cuando: 'Nota y horario', listo: 'Listo' };
+export const NOMBRE_DEL_PASO: Readonly<Record<Paso, string>> = { como: 'Cómo fue', ejercicios: 'Ejercicios', detalle: 'Series', cuando: 'Nota y horario', revisar: 'Revisar', listo: 'Listo' };
 
 /** Los ejercicios cuyas series se revisan: los tildados con «Cambié algo», y los que el plan no deja tildar sin escribir. */
 export function ejerciciosConDetalle(ctx: Contexto, r: Respuestas): PrescripcionConObjetivos[] {
@@ -263,6 +323,9 @@ export function ejerciciosConDetalle(ctx: Contexto, r: Respuestas): Prescripcion
  * crece cuando hace falta un paso más, nunca anuncia uno que después se saltea.
  */
 export function pasosDelRecorrido(ctx: Contexto, r: Respuestas): Paso[] {
+  // «Hice todo lo planificado»: del primer cuadro al último. Los cambios de un ejercicio se abren desde ahí y vuelven ahí,
+  // sin sumar un paso; la nota y el horario, si se piden (u otro día, donde la hora es obligatoria), van antes del final.
+  if (r.eleccion === 'todo') return ['como', ...(r.pidioNota || diaFijo(ctx) ? (['cuando'] as const) : []), 'revisar', 'listo'];
   const pasos: Paso[] = ['como', 'ejercicios'];
   if (ejerciciosConDetalle(ctx, r).length > 0) pasos.push('detalle');
   if ((r.eleccion !== null && r.eleccion !== 'todo') || r.pidioNota || diaFijo(ctx)) pasos.push('cuando');
@@ -366,13 +429,20 @@ export interface ResumenDelRegistroRapido {
 
 export type RegistroArmado =
   | { readonly ok: true; readonly changes: Cambios; readonly resumen: ResumenDelRegistroRapido }
-  | { readonly ok: false; readonly paso: Paso; readonly motivo: string; readonly errores?: Readonly<Record<string, ErroresDeFila>> };
+  | {
+      readonly ok: false;
+      readonly paso: Paso;
+      readonly motivo: string;
+      readonly errores?: Readonly<Record<string, ErroresDeFila>>;
+      /** Con «Hice todo lo planificado», el ejercicio cuyo cambio hay que abrir para resolverlo. */
+      readonly ejercicio?: string;
+    };
 
 /** La clave de una serie en los errores del detalle. */
 export const claveDeSerie = (prescriptionId: string, setIndex: number): string => `${prescriptionId}:${setIndex}`;
 
 /** Las series de un ejercicio revisado en el detalle: lo escrito va `TYPED`; lo tildado sin escribir, con el plan. */
-function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, errores: Record<string, ErroresDeFila>, primerProblema: { motivo: string | null }): SerieEjecutadaApi[] {
+function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, errores: Record<string, ErroresDeFila>, primerProblema: { motivo: string | null; ejercicio: string | null }): SerieEjecutadaApi[] {
   const unidad = unidadDelEjercicio(p);
   const series: SerieEjecutadaApi[] = [];
   for (const s of p.sets) {
@@ -386,6 +456,7 @@ function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, error
       else {
         errores[claveDeSerie(p.prescriptionId, s.setIndex)] = { fila: COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato };
         primerProblema.motivo ??= T.faltaUnDato(p.exerciseName, s.setIndex);
+        primerProblema.ejercicio ??= p.prescriptionId;
       }
       continue;
     }
@@ -393,6 +464,7 @@ function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, error
     if (!leida.ok) {
       errores[claveDeSerie(p.prescriptionId, s.setIndex)] = leida.errores;
       primerProblema.motivo ??= leida.errores.fila ? T.faltaUnDato(p.exerciseName, s.setIndex) : T.revisaUnValor(p.exerciseName, s.setIndex);
+      primerProblema.ejercicio ??= p.prescriptionId;
       continue;
     }
     series.push({ ...leida.serie, recordedAs: 'TYPED' });
@@ -409,7 +481,9 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
   if (r.eleccion === null) return { ok: false, paso: 'como', motivo: T.faltaElegir };
   const prescripciones = ctx.sesion.prescriptions;
   const errores: Record<string, ErroresDeFila> = {};
-  const primerProblema: { motivo: string | null } = { motivo: null };
+  const primerProblema: { motivo: string | null; ejercicio: string | null } = { motivo: null, ejercicio: null };
+  // Con «todo» no hay cuadro de ejercicios ni de series: lo que falta se resuelve desde el final, en el cambio del ejercicio.
+  const todo = r.eleccion === 'todo';
   const exercises: { prescriptionId: string; performedExerciseVersionId: string; sets: SerieEjecutadaApi[] }[] = [];
   let todoCompleto = true;
   for (const p of prescripciones) {
@@ -429,7 +503,7 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
     const sets = seriesDelDetalle(p, e, errores, primerProblema);
     if (sets.length > 0) exercises.push({ prescriptionId: p.prescriptionId, performedExerciseVersionId: p.exerciseVersionId, sets });
   }
-  if (primerProblema.motivo) return { ok: false, paso: 'detalle', motivo: primerProblema.motivo, errores };
+  if (primerProblema.motivo) return { ok: false, paso: todo ? 'revisar' : 'detalle', motivo: primerProblema.motivo, errores, ...(todo && primerProblema.ejercicio ? { ejercicio: primerProblema.ejercicio } : {}) };
 
   const nota = r.nota.trim();
   let occurredAt: string | null = null;
@@ -441,6 +515,7 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
 
   if (exercises.length === 0) {
     // Solo «Hice algo distinto» se registra sin series: con «todo» o «una parte», algo de lo planificado se hizo.
+    if (todo) return { ok: false, paso: 'revisar', motivo: T.faltaUnaSerie };
     if (r.eleccion !== 'distinto') return { ok: false, paso: 'ejercicios', motivo: T.faltaTildar };
     const description = nota ? `${fraseDe(r.eleccion)}: ${nota}` : `${fraseDe(r.eleccion)}.`;
     return {
