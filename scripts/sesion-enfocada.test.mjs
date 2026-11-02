@@ -281,7 +281,7 @@ test('6 · la banda «Plan de la serie N» y las bases declaradas, sin suponer l
 });
 
 test('6 · con la letra grande, la tabla pasa a tarjetas apiladas', () => {
-  // El ancho disponible: la pantalla menos los 20 dp de relleno de cada lado.
+  // El ancho de la fila. Desde PA-02 la fila lleva cuatro celdas (kg, Rep., RIR y Tiempo) y la casilla de 44 dp.
   assert.equal(series.disposicionDeLaTabla(320, 1), 'tabla');
   assert.equal(series.disposicionDeLaTabla(372, 1.3), 'tabla');
   assert.equal(series.disposicionDeLaTabla(320, 1.3), 'tarjetas');
@@ -336,7 +336,8 @@ function textosDe(archivo) {
 }
 
 // DL-151 suma la sustitución del ejercicio activo, con sus textos.
-const PIEZAS_NUEVAS = ['pantallas/sesion-enfocada.tsx', 'pantallas/plan-por-serie.tsx', 'pantallas/tiempos-de-la-sesion.tsx', 'pantallas/recuperacion.tsx', 'series-de-la-sesion.ts', 'corrida-de-entrenamiento.ts', 'almacen-de-entrenamiento.ts', 'sustitucion-de-ejercicio.ts'].map(movil);
+// PA-01 y PA-02 (2026-11-02) suman los textos de la sesión guiada y la franja de arriba.
+const PIEZAS_NUEVAS = ['pantallas/sesion-enfocada.tsx', 'pantallas/plan-por-serie.tsx', 'pantallas/tiempos-de-la-sesion.tsx', 'pantallas/recuperacion.tsx', 'series-de-la-sesion.ts', 'corrida-de-entrenamiento.ts', 'almacen-de-entrenamiento.ts', 'sustitucion-de-ejercicio.ts', 'textos-de-la-sesion.ts', 'franja-de-la-sesion.ts'].map(movil);
 
 test('8 · T13: el copy de las piezas nuevas no tiene puntajes, cumplimiento ni juicios, y no deriva «No realizada»', () => {
   const hallazgos = [];
