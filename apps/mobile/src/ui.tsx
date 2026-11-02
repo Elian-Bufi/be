@@ -1,10 +1,15 @@
 /**
  * Piezas de interfaz del APK (10-B10 §7, §9): label persistente, error con texto (no solo color), targets táctiles de
  * 48 dp, roles y estados accesibles, sin gestos exclusivos. Botón destructivo distinguible por texto y jerarquía.
+ *
+ * Desde PA-06 (2026-11-02) las piezas aceptan un ícono de la familia (`icono`, de `icono.tsx`): acompaña al texto, que
+ * sigue diciendo todo, y el lector de pantalla no lo recorre. Los glifos de texto (la tilde, el aviso, las flechas)
+ * pasaron a ser íconos.
  */
-import { useEffect, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
+import { BotonDeIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
+import { useMovimientoReducido } from './movimiento-reducido';
 import { COLOR, estilosPorTema } from './tema';
 
 // Los colores viven en tema.ts, donde los verifica la prueba de contraste; se reexportan para las pantallas.
@@ -49,6 +54,19 @@ export function Parrafo({ children, tenue = false }: { children: ReactNode; tenu
 
 type TipoDeBoton = 'primario' | 'secundario' | 'peligro' | 'peligroSecundario' | 'enlace';
 
+/** El tono del ícono de cada tipo de botón: el mismo del texto (`textoBoton_*`), que ya mide la prueba de contraste. */
+const TONO_DEL_BOTON: Readonly<Record<TipoDeBoton, TonoDeIcono>> = {
+  primario: 'botonTexto',
+  secundario: 'acento',
+  peligro: 'peligroTexto',
+  peligroSecundario: 'error',
+  enlace: 'acento',
+};
+
+/**
+ * Un botón con su texto y, si hace falta, un ícono de la familia antes del texto (o después, con `iconoAlFinal`: la
+ * flecha de «Siguiente»). Nunca una tilde de aprobado: un botón hace algo, no califica.
+ */
 export function Boton({
   texto,
   onPress,
@@ -56,6 +74,8 @@ export function Boton({
   deshabilitado = false,
   ocupado = false,
   seleccionado,
+  icono,
+  iconoAlFinal = false,
 }: {
   texto: string;
   onPress: () => void;
@@ -64,7 +84,11 @@ export function Boton({
   ocupado?: boolean;
   /** Para una opción de un grupo: el lector de pantalla dice si está elegida, no solo el color (B10-10:36). */
   seleccionado?: boolean;
+  icono?: NombreDeIcono;
+  iconoAlFinal?: boolean;
 }) {
+  const textoDelBoton = <Text style={[estilos.textoBoton, estilos[`textoBoton_${tipo}`], icono ? estilos.textoConIcono : null]}>{texto}</Text>;
+  const dibujo = icono ? <Icono nombre={icono} tamano={20} tono={TONO_DEL_BOTON[tipo]} /> : null;
   return (
     <Pressable
       accessibilityRole={tipo === 'enlace' ? 'link' : 'button'}
@@ -73,8 +97,28 @@ export function Boton({
       onPress={onPress}
       style={({ pressed }) => [estilos.boton, estilos[`boton_${tipo}`], (deshabilitado || ocupado) && estilos.deshabilitado, pressed && estilos.presionado]}
     >
-      <Text style={[estilos.textoBoton, estilos[`textoBoton_${tipo}`]]}>{texto}</Text>
+      {dibujo ? (
+        <View style={estilos.contenidoDeBoton}>
+          {iconoAlFinal ? null : dibujo}
+          {textoDelBoton}
+          {iconoAlFinal ? dibujo : null}
+        </View>
+      ) : (
+        textoDelBoton
+      )}
     </Pressable>
+  );
+}
+
+/** Un error dicho con texto y el ícono de aviso, que solo acompaña: el color nunca es la única señal. */
+function TextoDeError({ texto, paraElLector = true }: { texto: string; paraElLector?: boolean }) {
+  return (
+    <View style={estilos.lineaDeError} {...(paraElLector ? {} : { importantForAccessibility: 'no-hide-descendants' as const, accessibilityElementsHidden: true })}>
+      <View style={estilos.iconoDeError}>
+        <Icono nombre="aviso" tamano={18} tono="error" />
+      </View>
+      <Text style={[estilos.error, estilos.textoDeError]}>{texto}</Text>
+    </View>
   );
 }
 
@@ -84,24 +128,39 @@ export function Boton({
  * website sí—, así que la asociación se hace con lo que el lector de pantalla del APK sí lee: el error entra en el
  * `accessibilityLabel` del propio campo, una sola vez (el texto visible no se repite en voz). El borde rojo solo acompaña.
  */
-export function Campo({ etiqueta, ayuda, error, ...resto }: TextInputProps & { etiqueta: string; ayuda?: string; error?: string | null }) {
+export function Campo({ etiqueta, ayuda, error, icono, ...resto }: TextInputProps & { etiqueta: string; ayuda?: string; error?: string | null; icono?: NombreDeIcono }) {
+  // Una contraseña se puede mostrar con el ojo, para revisarla antes de entrar (PA-06): empieza oculta.
+  const esSecreto = resto.secureTextEntry === true;
+  const [visible, setVisible] = useState(false);
+  const compuesto = icono !== undefined || esSecreto;
+  const entrada = (
+    <TextInput
+      accessibilityLabel={error ? `${etiqueta}. Revisá este campo: ${error}` : etiqueta}
+      accessibilityHint={ayuda || undefined}
+      style={compuesto ? estilos.entradaInterna : [estilos.entrada, error ? estilos.entradaConError : null]}
+      placeholderTextColor={COLOR.tenue}
+      {...resto}
+      secureTextEntry={esSecreto ? !visible : resto.secureTextEntry}
+    />
+  );
   return (
     <View style={estilos.campo}>
       <Text style={estilos.etiqueta}>{etiqueta}</Text>
       {ayuda ? <Text style={estilos.tenue}>{ayuda}</Text> : null}
-      <TextInput
-        accessibilityLabel={error ? `${etiqueta}. Revisá este campo: ${error}` : etiqueta}
-        accessibilityHint={ayuda || undefined}
-        style={[estilos.entrada, error ? estilos.entradaConError : null]}
-        placeholderTextColor={COLOR.tenue}
-        {...resto}
-      />
+      {compuesto ? (
+        // El borde pasa al contenedor: el ícono y el ojo quedan dentro del campo, y el texto ocupa el resto.
+        <View style={[estilos.entrada, estilos.entradaCompuesta, error ? estilos.entradaConError : null]}>
+          {icono ? <Icono nombre={icono} tamano={20} tono="tenue" /> : null}
+          {entrada}
+          {esSecreto ? (
+            <BotonDeIcono nombre={visible ? 'oculto' : 'ver'} etiqueta={visible ? 'Ocultar la contraseña' : 'Mostrar la contraseña'} onPress={() => setVisible((v) => !v)} tono="tenue" />
+          ) : null}
+        </View>
+      ) : (
+        entrada
+      )}
       {/* El lector ya lo dijo en el nombre del campo: el texto visible no se repite en voz. */}
-      {error ? (
-        <Text style={estilos.error} importantForAccessibility="no" accessibilityElementsHidden>
-          ⚠ {error}
-        </Text>
-      ) : null}
+      {error ? <TextoDeError texto={error} paraElLector={false} /> : null}
     </View>
   );
 }
@@ -177,7 +236,7 @@ export function Segmentos<T extends string>({
 }: {
   /** El nombre del grupo para el lector de pantalla. */
   etiqueta: string;
-  opciones: readonly { readonly valor: T; readonly texto: string }[];
+  opciones: readonly { readonly valor: T; readonly texto: string; readonly icono?: NombreDeIcono }[];
   valor: T;
   alElegir: (valor: T) => void;
   compactos?: boolean;
@@ -196,7 +255,14 @@ export function Segmentos<T extends string>({
             hitSlop={compactos ? { top: 4, bottom: 4 } : undefined}
             style={({ pressed }) => [estilos.segmento, compactos && estilos.segmentoCompacto, elegida && estilos.segmentoElegido, pressed && estilos.presionado]}
           >
-            <Text style={[estilos.textoDeSegmento, compactos && estilos.textoDeSegmentoCompacto, elegida && estilos.textoDeSegmentoElegido]}>{o.texto}</Text>
+            {o.icono ? (
+              <View style={estilos.contenidoDeOpcion}>
+                <Icono nombre={o.icono} tamano={18} tono={elegida ? 'botonTexto' : 'texto'} />
+                <Text style={[estilos.textoDeSegmento, compactos && estilos.textoDeSegmentoCompacto, elegida && estilos.textoDeSegmentoElegido, estilos.textoConIcono]}>{o.texto}</Text>
+              </View>
+            ) : (
+              <Text style={[estilos.textoDeSegmento, compactos && estilos.textoDeSegmentoCompacto, elegida && estilos.textoDeSegmentoElegido]}>{o.texto}</Text>
+            )}
           </Pressable>
         );
       })}
@@ -220,12 +286,12 @@ export function Pestanas<T extends string>({
   alElegir,
 }: {
   etiqueta: string;
-  opciones: readonly { readonly valor: T; readonly texto: string }[];
+  opciones: readonly { readonly valor: T; readonly texto: string; readonly icono?: NombreDeIcono }[];
   valor: T;
   alElegir: (valor: T) => void;
 }) {
   const { width, fontScale } = useWindowDimensions();
-  const unaFila = entranEnUnaFila(opciones.map((o) => o.texto), width - 2 * RELLENO_DE_LAS_PESTANAS, Math.max(1, fontScale));
+  const unaFila = entranEnUnaFila(opciones, width - 2 * RELLENO_DE_LAS_PESTANAS, Math.max(1, fontScale));
   return (
     <View style={[estilos.pestanas, { flexWrap: unaFila ? 'nowrap' : 'wrap' }]} accessibilityRole="tablist" accessibilityLabel={etiqueta}>
       {opciones.map((o) => {
@@ -239,9 +305,18 @@ export function Pestanas<T extends string>({
             onPress={() => alElegir(o.valor)}
             style={({ pressed }) => [estilos.pestana, { flexShrink: o.texto.includes(' ') ? 1 : 0 }, pressed && estilos.presionado]}
           >
-            <Text style={[estilos.textoDePestana, elegida && estilos.textoDePestanaElegida]} numberOfLines={2}>
-              {o.texto}
-            </Text>
+            {o.icono ? (
+              <View style={estilos.contenidoDeOpcion}>
+                <Icono nombre={o.icono} tamano={18} tono={elegida ? 'texto' : 'tenue'} />
+                <Text style={[estilos.textoDePestana, elegida && estilos.textoDePestanaElegida, estilos.textoConIcono]} numberOfLines={2}>
+                  {o.texto}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[estilos.textoDePestana, elegida && estilos.textoDePestanaElegida]} numberOfLines={2}>
+                {o.texto}
+              </Text>
+            )}
             <View style={[estilos.rayaDePestana, elegida && estilos.rayaDePestanaElegida]} />
           </Pressable>
         );
@@ -255,19 +330,101 @@ const RELLENO_DE_LAS_PESTANAS = 8;
 /** El tamaño del texto de una pestaña, en sp. */
 const LETRA_DE_LA_PESTANA = 14;
 
-/** Si las pestañas entran en una fila: la palabra más larga de cada una, estimada holgada en negrita, más su relleno. */
-function entranEnUnaFila(textos: readonly string[], ancho: number, escala: number): boolean {
-  const total = textos.reduce((suma, texto) => suma + Math.max(...texto.split(' ').map((p) => p.length)) * LETRA_DE_LA_PESTANA * escala * 0.6 + 8, 0);
+/** Lo que suma el ícono de una pestaña: su lado y la separación con el texto. */
+const ANCHO_DEL_ICONO_DE_PESTANA = 18 + 6;
+
+/**
+ * Si las pestañas entran en una fila: la palabra más larga de cada una, estimada holgada en negrita, más su relleno y,
+ * si lo tiene, su ícono. Sin contar el ícono, la cuenta diría «una fila» cuando ya no entra.
+ */
+function entranEnUnaFila(opciones: readonly { readonly texto: string; readonly icono?: NombreDeIcono }[], ancho: number, escala: number): boolean {
+  const total = opciones.reduce((suma, o) => suma + Math.max(...o.texto.split(' ').map((p) => p.length)) * LETRA_DE_LA_PESTANA * escala * 0.6 + 8 + (o.icono ? ANCHO_DEL_ICONO_DE_PESTANA : 0), 0);
   return total <= ancho;
 }
 
-/** Casilla accesible (rol checkbox con estado). Nunca premarcada: el estado lo decide quien la usa. */
+/** El lado de la caja de una casilla, en dp, y el área de toque mínima de la casilla sola (la guía pide 44 o más). */
+export const LADO_DE_LA_CASILLA = 26;
+export const TOQUE_DE_LA_CASILLA = 44;
+
+/**
+ * La caja de una casilla (Dirección, 2026-11-02: «tiene que ser una casilla linda»): cuadrada de 26 dp, con esquinas de 7
+ * y un borde de 2 dp del acento. Marcada, se llena del acento con la tilde de la familia en el color de contraste del
+ * botón (`botonTexto`, medido sobre el acento). Al tocarla se aclara; al marcarse crece apenas y vuelve, en unos 150 ms,
+ * y con «reducir movimiento» cambia sin moverse. La tilde va solo acá adentro: dice «marcada», no aprueba nada.
+ *
+ * Solo dibuja: el toque, el rol y el nombre los pone quien la usa (`Casilla`, `CasillaSola` o una casilla propia).
+ */
+export function CajaDeCasilla({ marcada, presionada = false, deshabilitada = false }: { marcada: boolean; presionada?: boolean; deshabilitada?: boolean }) {
+  const reducido = useMovimientoReducido();
+  const escala = useRef(new Animated.Value(1)).current;
+  const anterior = useRef(marcada);
+  useEffect(() => {
+    if (anterior.current === marcada) return;
+    anterior.current = marcada;
+    if (!marcada || reducido) {
+      escala.setValue(1);
+      return;
+    }
+    // Un pulso corto al marcarse: arranca un poco más chica y vuelve a su tamaño con un rebote leve.
+    escala.setValue(0.8);
+    const pulso = Animated.spring(escala, { toValue: 1, speed: 28, bounciness: 10, useNativeDriver: true });
+    pulso.start();
+    return () => pulso.stop();
+  }, [marcada, reducido, escala]);
+  return (
+    <Animated.View
+      style={[estilos.cajaDeCasilla, marcada && estilos.cajaMarcada, presionada && (marcada ? estilos.cajaMarcadaPresionada : estilos.cajaPresionada), deshabilitada && estilos.deshabilitado, { transform: [{ scale: escala }] }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+    >
+      {marcada ? <Icono nombre="tilde" tamano={20} tono="botonTexto" marcado /> : null}
+    </Animated.View>
+  );
+}
+
+/**
+ * La casilla sola, sin texto al lado: la de cada serie, al final de la fila (la sesión, la corrección). Su nombre dice lo
+ * que hace («Registrar la serie 2») y el lector agrega si está marcada. El área de toque es de 44 dp o más aunque la caja
+ * mida 26. Nunca premarcada: el estado lo decide quien la usa.
+ */
+export function CasillaSola({
+  marcada,
+  onCambio,
+  etiqueta,
+  pista,
+  deshabilitada = false,
+}: {
+  marcada: boolean;
+  onCambio: (v: boolean) => void;
+  etiqueta: string;
+  pista?: string;
+  deshabilitada?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: marcada, disabled: deshabilitada }}
+      accessibilityLabel={etiqueta}
+      accessibilityHint={pista}
+      disabled={deshabilitada}
+      onPress={() => onCambio(!marcada)}
+      hitSlop={4}
+      style={estilos.casillaSola}
+    >
+      {({ pressed }) => <CajaDeCasilla marcada={marcada} presionada={pressed} deshabilitada={deshabilitada} />}
+    </Pressable>
+  );
+}
+
+/** Casilla accesible con su texto (rol checkbox con estado). Nunca premarcada: el estado lo decide quien la usa. */
 export function Casilla({
   marcada,
   onCambio,
   titulo,
   texto,
   error,
+  deshabilitada = false,
   children,
 }: {
   marcada: boolean;
@@ -275,48 +432,85 @@ export function Casilla({
   titulo: string;
   texto: string;
   error?: string | null;
+  deshabilitada?: boolean;
   children?: ReactNode;
 }) {
   return (
     <View style={[estilos.acto, error ? estilos.actoConError : null]}>
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: marcada }}
+        accessibilityState={{ checked: marcada, disabled: deshabilitada }}
         accessibilityLabel={`${titulo}. ${texto}`}
         accessibilityHint={error ?? undefined}
+        disabled={deshabilitada}
         onPress={() => onCambio(!marcada)}
         style={estilos.filaDeCasilla}
       >
-        <View style={[estilos.casilla, marcada && estilos.casillaMarcada]}>{marcada ? <Text style={estilos.tilde}>✓</Text> : null}</View>
-        <Text style={estilos.textoDeCasilla}>
-          <Text style={estilos.negrita}>{titulo}</Text> — {texto}
-        </Text>
+        {({ pressed }) => (
+          <>
+            <View style={estilos.lugarDeLaCaja}>
+              <CajaDeCasilla marcada={marcada} presionada={pressed} deshabilitada={deshabilitada} />
+            </View>
+            <Text style={estilos.textoDeCasilla}>
+              <Text style={estilos.negrita}>{titulo}</Text> — {texto}
+            </Text>
+          </>
+        )}
       </Pressable>
       {children}
-      {error ? <Text style={estilos.error}>⚠ {error}</Text> : null}
+      {error ? <TextoDeError texto={error} /> : null}
     </View>
   );
 }
 
-/** Aviso con rol de alerta; se anuncia al lector de pantalla al aparecer (10-B10:160-174). */
-export function Aviso({ tipo, titulo, children }: { tipo: 'error' | 'info' | 'exito'; titulo?: string; children?: ReactNode }) {
+type TipoDeAviso = 'error' | 'info' | 'exito';
+
+/**
+ * El ícono de cada tipo de aviso. El de éxito va sin ícono: una tilde se leería como «aprobado», y lo que se guardó ya
+ * lo dice el texto.
+ */
+const ICONO_DEL_AVISO: Readonly<Record<TipoDeAviso, NombreDeIcono | null>> = { error: 'aviso', info: 'info', exito: null };
+
+/**
+ * Aviso con rol de alerta; se anuncia al lector de pantalla al aparecer (10-B10:160-174). Lleva el ícono de su tipo
+ * (`icono` lo cambia, y `null` lo saca), que solo acompaña al texto.
+ */
+export function Aviso({ tipo, titulo, icono, children }: { tipo: TipoDeAviso; titulo?: string; icono?: NombreDeIcono | null; children?: ReactNode }) {
   useEffect(() => {
     if (titulo) AccessibilityInfo.announceForAccessibility(titulo);
   }, [titulo]);
+  const dibujo = icono === undefined ? ICONO_DEL_AVISO[tipo] : icono;
   return (
-    <View accessibilityRole={tipo === 'error' ? 'alert' : 'summary'} style={[estilos.aviso, estilos[`aviso_${tipo}`]]}>
-      {titulo ? <Text style={estilos.negrita}>{titulo}</Text> : null}
-      {children}
+    <View accessibilityRole={tipo === 'error' ? 'alert' : 'summary'} style={[estilos.aviso, estilos[`aviso_${tipo}`], dibujo ? estilos.avisoConIcono : null]}>
+      {dibujo ? (
+        <View style={estilos.iconoDeAviso}>
+          <Icono nombre={dibujo} tamano={20} tono={tipo === 'error' ? 'error' : tipo === 'exito' ? 'exito' : 'acento'} />
+        </View>
+      ) : null}
+      <View style={dibujo ? estilos.cuerpoDeAviso : null}>
+        {titulo ? <Text style={estilos.negrita}>{titulo}</Text> : null}
+        {children}
+      </View>
     </View>
   );
 }
 
-export function Seccion({ titulo, children, peligro = false }: { titulo: string; children: ReactNode; peligro?: boolean }) {
+export function Seccion({ titulo, children, peligro = false, icono }: { titulo: string; children: ReactNode; peligro?: boolean; icono?: NombreDeIcono }) {
+  const encabezado = (
+    <Text style={[estilos.tituloDeSeccion, icono ? estilos.tituloConIcono : null]} accessibilityRole="header">
+      {titulo}
+    </Text>
+  );
   return (
     <View style={[estilos.seccion, peligro && estilos.seccionPeligro]}>
-      <Text style={estilos.tituloDeSeccion} accessibilityRole="header">
-        {titulo}
-      </Text>
+      {icono ? (
+        <View style={estilos.cabezaConIcono}>
+          <Icono nombre={icono} tamano={20} tono={peligro ? 'error' : 'acento'} />
+          {encabezado}
+        </View>
+      ) : (
+        encabezado
+      )}
       {children}
     </View>
   );
@@ -336,12 +530,20 @@ export function Tarjeta({ children }: { children: ReactNode }) {
   return <View style={estilos.tarjeta}>{children}</View>;
 }
 
-/** Par etiqueta/valor, leído como una sola frase por el lector de pantalla. */
-export function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+/**
+ * Par etiqueta/valor, leído como una sola frase por el lector de pantalla (D-C4, 2026-11-02).
+ * - **En fila**, la etiqueta ocupa lo que sobra y se parte en renglones si es larga; el valor va a la derecha, con un
+ *   tope del 55 % del ancho, y se parte dentro de su lugar. Antes, una etiqueta larga mandaba el valor al renglón de
+ *   abajo y a la izquierda, y parecía otra etiqueta.
+ * - **Apilado** (`apilado`), el valor va debajo de la etiqueta, a todo el ancho: para un texto libre o largo (un motivo,
+ *   una observación, un identificador). Se elige en cada uso, no por la cantidad de letras, para que se vea siempre igual.
+ * - Las dos piezas van con la misma altura de renglón, para que queden alineadas. Sin valor, queda solo la etiqueta.
+ */
+export function Dato({ etiqueta, valor, apilado = false }: { etiqueta: string; valor: string; apilado?: boolean }) {
   return (
-    <View style={estilos.dato} accessible accessibilityLabel={`${etiqueta}: ${valor}`}>
-      <Text style={estilos.negrita}>{etiqueta}</Text>
-      <Text style={estilos.parrafo}>{valor}</Text>
+    <View style={apilado ? estilos.datoApilado : estilos.dato} accessible accessibilityLabel={valor ? `${etiqueta}: ${valor}` : etiqueta}>
+      <Text style={[estilos.etiquetaDeDato, !apilado && estilos.etiquetaEnFila]}>{etiqueta}</Text>
+      {valor ? <Text style={[estilos.valorDeDato, !apilado && estilos.valorEnFila]}>{valor}</Text> : null}
     </View>
   );
 }
@@ -350,9 +552,10 @@ export function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
  * Las explicaciones largas, plegadas (Dirección, 2026-10-01: que la pantalla se lea de un vistazo). Un encabezado
  * tocable, «Cómo se lee», que despliega el texto; empieza cerrado. El texto no se borra: se pliega, y el lector de
  * pantalla dice si está abierto. No va acá lo que la persona tiene que leer antes de aceptar algo (consentimientos,
- * privacidad, consecuencias de un acto): eso queda siempre a la vista.
+ * privacidad, consecuencias de un acto): eso queda siempre a la vista. El ícono es el (?) de la familia (Dirección,
+ * 2026-11-02: la ayuda se reconoce por el (?)); `icono="informacion"` deja la «i» para una nota que no es ayuda.
  */
-export function Ayuda({ titulo = 'Cómo se lee', children }: { titulo?: string; children: ReactNode }) {
+export function Ayuda({ titulo = 'Cómo se lee', icono = 'pregunta', children }: { titulo?: string; icono?: 'informacion' | 'pregunta'; children: ReactNode }) {
   const [abierta, setAbierta] = useState(false);
   return (
     <View style={estilos.ayuda}>
@@ -362,11 +565,8 @@ export function Ayuda({ titulo = 'Cómo se lee', children }: { titulo?: string; 
         onPress={() => setAbierta((a) => !a)}
         style={({ pressed }) => [estilos.cabezaDeAyuda, pressed && estilos.presionado]}
       >
-        <Svg width={20} height={20} viewBox="0 0 24 24" accessible={false}>
-          <Circle cx={12} cy={12} r={9} stroke={COLOR.acento} strokeWidth={2} fill="none" />
-          <Path d="M12 11v6" stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" />
-          <Circle cx={12} cy={7.6} r={1.3} fill={COLOR.acento} />
-        </Svg>
+        {/* La ayuda se reconoce por el (?) (Dirección, 2026-11-02); «informacion» queda para una nota que no es ayuda. */}
+        <Icono nombre={icono === 'informacion' ? 'info' : 'pregunta'} tamano={20} tono="acento" />
         <Text style={estilos.tituloDeAyuda}>{titulo}</Text>
         <Chevron abierto={abierta} />
       </Pressable>
@@ -379,7 +579,19 @@ export function Ayuda({ titulo = 'Cómo se lee', children }: { titulo?: string; 
  * Contenido plegado detrás de un encabezado tocable con su título y, si hace falta, un detalle («22 medidas»): para lo
  * que no hace falta ver de entrada y no tiene que empujar hacia abajo lo principal de la pantalla.
  */
-export function Desplegable({ titulo, detalle, abiertoAlInicio = false, children }: { titulo: string; detalle?: string; abiertoAlInicio?: boolean; children: ReactNode }) {
+export function Desplegable({
+  titulo,
+  detalle,
+  abiertoAlInicio = false,
+  icono,
+  children,
+}: {
+  titulo: string;
+  detalle?: string;
+  abiertoAlInicio?: boolean;
+  icono?: NombreDeIcono;
+  children: ReactNode;
+}) {
   const [abierto, setAbierto] = useState(abiertoAlInicio);
   return (
     <View style={estilos.desplegable}>
@@ -390,6 +602,7 @@ export function Desplegable({ titulo, detalle, abiertoAlInicio = false, children
         onPress={() => setAbierto((a) => !a)}
         style={({ pressed }) => [estilos.cabezaDeDesplegable, pressed && estilos.presionado]}
       >
+        {icono ? <Icono nombre={icono} tamano={20} tono="acento" /> : null}
         <View style={estilos.textoDeDesplegable}>
           <Text style={estilos.tituloDeDesplegable}>{titulo}</Text>
           {detalle ? <Text style={estilos.tenue}>{detalle}</Text> : null}
@@ -403,17 +616,14 @@ export function Desplegable({ titulo, detalle, abiertoAlInicio = false, children
 
 /** La flecha de lo que se pliega: hacia abajo cerrado, hacia arriba abierto. Solo acompaña al estado que dice el lector. */
 function Chevron({ abierto }: { abierto: boolean }) {
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false}>
-      <Path d={abierto ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </Svg>
-  );
+  return <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={24} tono="acento" />;
 }
 
-/** Estado en forma de insignia: el texto dice el estado; el color solo acompaña (10-B10 §7). */
-export function Insignia({ texto, positiva = false, etiqueta }: { texto: string; positiva?: boolean; etiqueta?: string }) {
+/** Estado en forma de insignia: el texto dice el estado; el color y el ícono solo acompañan (10-B10 §7). */
+export function Insignia({ texto, positiva = false, etiqueta, icono }: { texto: string; positiva?: boolean; etiqueta?: string; icono?: NombreDeIcono }) {
   return (
-    <View style={[estilos.insignia, positiva && estilos.insigniaPositiva]} accessible accessibilityLabel={etiqueta ? `${etiqueta}: ${texto}` : texto}>
+    <View style={[estilos.insignia, positiva && estilos.insigniaPositiva, icono ? estilos.insigniaConIcono : null]} accessible accessibilityLabel={etiqueta ? `${etiqueta}: ${texto}` : texto}>
+      {icono ? <Icono nombre={icono} tamano={15} tono={positiva ? 'exito' : 'tenue'} /> : null}
       <Text style={[estilos.textoInsignia, positiva && estilos.textoInsigniaPositiva]}>{texto}</Text>
     </View>
   );
@@ -443,6 +653,10 @@ export const estilos = estilosPorTema((COLOR) => ({
   textoBoton_peligro: { color: COLOR.peligroTexto },
   textoBoton_peligroSecundario: { color: COLOR.error },
   textoBoton_enlace: { color: COLOR.acento, textDecorationLine: 'underline' },
+  // Con ícono: el ícono y el texto en una línea, centrados; el texto se parte si no entra.
+  contenidoDeBoton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, maxWidth: '100%' },
+  textoConIcono: { flexShrink: 1 },
+  contenidoDeOpcion: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, maxWidth: '100%' },
   deshabilitado: { opacity: 0.6 },
   presionado: { opacity: 0.8 },
   campo: { marginVertical: 8 },
@@ -469,28 +683,51 @@ export const estilos = estilosPorTema((COLOR) => ({
   etiqueta: { fontSize: 16, fontWeight: '600', color: COLOR.texto, marginBottom: 4 },
   entrada: { minHeight: 48, borderWidth: 1, borderColor: COLOR.bordeControl, borderRadius: 8, paddingHorizontal: 12, fontSize: 16, color: COLOR.texto, backgroundColor: COLOR.superficie },
   entradaConError: { borderColor: COLOR.error, borderWidth: 2 },
+  // Con ícono o con el ojo: el borde es del contenedor, y el texto ocupa lo que queda.
+  entradaCompuesta: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 0 },
+  entradaInterna: { flex: 1, minHeight: 46, fontSize: 16, color: COLOR.texto, paddingVertical: 0 },
   error: { color: COLOR.error, fontWeight: '600', marginTop: 4, fontSize: 15 },
+  lineaDeError: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
+  iconoDeError: { paddingTop: 1 },
+  textoDeError: { flex: 1, marginTop: 0 },
   acto: { borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, borderRadius: 8, padding: 12, marginVertical: 6 },
   actoConError: { borderColor: COLOR.error, borderWidth: 2 },
   filaDeCasilla: { flexDirection: 'row', alignItems: 'flex-start', minHeight: 48 },
-  casilla: { width: 28, height: 28, borderWidth: 2, borderColor: COLOR.acento, borderRadius: 4, marginRight: 12, marginTop: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
-  casillaMarcada: { backgroundColor: COLOR.acento },
-  tilde: { color: COLOR.botonTexto, fontWeight: '800', fontSize: 18 },
+  // La casilla (2026-11-02): 26 dp, esquinas de 7 y borde de 2 dp del acento; marcada, llena del acento.
+  cajaDeCasilla: { width: LADO_DE_LA_CASILLA, height: LADO_DE_LA_CASILLA, borderWidth: 2, borderColor: COLOR.acento, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
+  cajaMarcada: { backgroundColor: COLOR.acento },
+  // Al tocarla: la vacía toma el escalón elevado; la marcada se aclara apenas.
+  cajaPresionada: { backgroundColor: COLOR.superficieElevada },
+  cajaMarcadaPresionada: { opacity: 0.8 },
+  // La caja junto a su texto: alineada con la primera línea, con aire hasta el texto.
+  lugarDeLaCaja: { marginRight: 12, marginTop: 1 },
+  casillaSola: { minWidth: TOQUE_DE_LA_CASILLA, minHeight: TOQUE_DE_LA_CASILLA, alignItems: 'center', justifyContent: 'center' },
   textoDeCasilla: { flex: 1, fontSize: 16, color: COLOR.texto, lineHeight: 22 },
   aviso: { borderLeftWidth: 6, borderRadius: 8, padding: 12, marginVertical: 8 },
   aviso_error: { borderLeftColor: COLOR.error, backgroundColor: COLOR.errorFondo },
   aviso_info: { borderLeftColor: COLOR.azul, backgroundColor: COLOR.superficie },
   aviso_exito: { borderLeftColor: COLOR.exito, backgroundColor: COLOR.exitoFondo },
+  avisoConIcono: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  iconoDeAviso: { paddingTop: 1 },
+  cuerpoDeAviso: { flex: 1 },
   seccion: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
   seccionPeligro: { borderColor: COLOR.error },
   tituloDeSeccion: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginBottom: 6 },
+  cabezaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  tituloConIcono: { flexShrink: 1, marginBottom: 0 },
   subtitulo: { fontSize: 17, fontWeight: '700', color: COLOR.texto, marginTop: 12, marginBottom: 4 },
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
-  dato: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginVertical: 4 },
+  dato: { flexDirection: 'row', alignItems: 'flex-start', columnGap: 12, marginVertical: 6 },
+  datoApilado: { marginVertical: 6, rowGap: 2 },
+  etiquetaDeDato: { fontSize: 15, lineHeight: 22, fontWeight: '700', color: COLOR.texto },
+  etiquetaEnFila: { flex: 1 },
+  valorDeDato: { fontSize: 16, lineHeight: 22, color: COLOR.texto },
+  valorEnFila: { flexShrink: 0, maxWidth: '55%', textAlign: 'right' },
   insignia: { alignSelf: 'flex-start', borderWidth: 2, borderColor: COLOR.tenue, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
   insigniaPositiva: { borderColor: COLOR.exito },
   textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
   textoInsigniaPositiva: { color: COLOR.exito },
+  insigniaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ayuda: { marginTop: 4 },
   cabezaDeAyuda: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8 },
   tituloDeAyuda: { flex: 1, fontSize: 15, fontWeight: '700', color: COLOR.acento },

@@ -13,8 +13,9 @@
  */
 import Constants from 'expo-constants';
 import { Image, Pressable, Text, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
+import { Icono } from './icono';
 import { LineaDeActualizacion } from './estados';
 import { textoDeVolverA, type Ruta } from './navegacion';
 import { COLOR, estilosPorTema } from './tema';
@@ -56,18 +57,14 @@ export function Cabecera({
               hitSlop={4}
               style={({ pressed }) => [estilos.volver, pressed && estilos.presionado]}
             >
-              <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M15 5l-7 7 7 7" stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </Svg>
+              <Icono nombre="izquierda" tamano={24} tono="acento" />
               <Text style={estilos.textoVolver} numberOfLines={1} maxFontSizeMultiplier={1.15}>
                 Volver
               </Text>
             </Pressable>
           ) : conMenu ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Abrir el menú" onPress={abrirMenu} style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}>
-              <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M4 7h16M4 12h16M4 17h16" stroke={COLOR.texto} strokeWidth={2} strokeLinecap="round" fill="none" />
-              </Svg>
+              <Icono nombre="menu-de-la-app" tamano={24} tono="texto" />
             </Pressable>
           ) : null}
         </View>
@@ -80,10 +77,7 @@ export function Cabecera({
               onPress={abrirNovedades}
               style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}
             >
-              <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M6.5 16.5v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z" stroke={COLOR.texto} strokeWidth={1.8} strokeLinejoin="round" fill="none" />
-                <Path d="M10 20.5a2 2 0 0 0 4 0M12 3.5V6" stroke={COLOR.texto} strokeWidth={1.8} strokeLinecap="round" fill="none" />
-              </Svg>
+              <Icono nombre="novedades" tamano={24} tono="texto" />
               {sinLeer ? (
                 <View style={estilos.cuenta} accessible={false} importantForAccessibility="no-hide-descendants">
                   <Text style={estilos.textoCuenta} maxFontSizeMultiplier={1.15}>
@@ -96,10 +90,7 @@ export function Cabecera({
           {conAvatar ? (
             <Pressable accessibilityRole="button" accessibilityLabel="Cuenta" onPress={abrirCuenta} style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}>
               <View style={estilos.avatar}>
-                <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                  <Circle cx={12} cy={8.5} r={3.8} stroke={COLOR.texto} strokeWidth={1.8} fill="none" />
-                  <Path d="M4.8 20c0-3.9 3.2-6.6 7.2-6.6s7.2 2.7 7.2 6.6" stroke={COLOR.texto} strokeWidth={1.8} strokeLinecap="round" fill="none" />
-                </Svg>
+                <Icono nombre="persona" tamano={20} tono="texto" />
               </View>
             </Pressable>
           ) : null}

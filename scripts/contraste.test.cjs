@@ -147,6 +147,8 @@ const PARES_APK = [
   ['bordeControl', 'fondo', NO_TEXTO, 'borde de campos y casillas (1.4.11)'],
   ['bordeControl', 'superficie', NO_TEXTO, 'borde de campos dentro de tarjetas'],
   ['acento', 'fondo', NO_TEXTO, 'borde de casillas y opciones elegidas'],
+  // La casilla de 2026-11-02: la tilde, en el color de contraste del botón, sobre la caja llena del acento.
+  ['botonTexto', 'acento', NO_TEXTO, 'la tilde dentro de la casilla marcada (1.4.11)'],
   ['laminaNombre', 'laminaTarjeta', TEXTO, 'rótulo de un sitio en la lámina de la toma'],
   ['laminaValor', 'laminaTarjeta', TEXTO, 'valor de un sitio en la lámina de la toma'],
   ['laminaDetalle', 'laminaTarjeta', TEXTO, 'diferencia con la toma anterior en la lámina'],
