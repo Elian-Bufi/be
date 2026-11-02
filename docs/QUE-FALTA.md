@@ -1,5 +1,17 @@
 # Qué falta desarrollar en BE
 
+> **Nota del 2026-10-28.** El estado vigente y la ruta de cierre están en `docs/ESTADO-Y-RUTA-DE-CIERRE.md`. Desde la
+> nota del 24/10:
+> - se integraron y se desplegaron en `test` la sustitución de ejercicios (#195), UX-01 y UX-02 (#200, #203, #209),
+>   WP-ADMINISTRACION (#210, #214), la comparación de Nutrición (#211), la guía de la tanda (#212) y lo que lee la
+>   candidata nueva (#215, #216). `test` sirve `e4512cb`;
+> - se publicó la APK `0.18.0-candidata.1` (26/10), se cargaron los escenarios «Prueba» y Dirección hizo la parte A de
+>   la prueba breve (27/10). Faltan las partes B y C;
+> - **corrección:** las excepciones de DL-114 se renovaron hasta el **2026-11-30** (#208). Donde abajo dice que vencen
+>   el 31/10, quedó viejo.
+>
+> Las notas de abajo quedan como historia.
+>
 > **Nota del 2026-10-24, a la noche.** Desde la nota del 23/10, se integró y se desplegó en `test`, con la autorización de
 > Dirección:
 > - las dependencias con avisos nuevos (#201);
