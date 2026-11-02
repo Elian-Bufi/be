@@ -2,11 +2,15 @@
  * APK · Corregir una sesión registrada (PA-04, decisión de Dirección del 2026-11-02), en su propia pantalla y en un paso.
  *
  * - **Con el lenguaje del registro:** una tarjeta por ejercicio, con su imagen y su estado («2 de 3 series registradas»),
- *   y una fila por serie, con la carga, las repeticiones y el RIR. Lo registrado viene escrito y con su marca; lo
+ *   y una fila por serie, con la carga, las repeticiones y el RIR. Lo registrado viene escrito y tildado; lo
  *   planificado que no se registró, vacío y con el plan en gris, para cargarlo: así se suma lo que faltó. Un ejercicio
  *   planificado que no se registró aparece entero.
- * - **Quitar una serie** la deja tachada con «Deshacer» hasta registrar la corrección. «Agregar una serie» suma una más.
- * - **Qué cambia** se ve antes de registrar, en frases (UC-E02, paso 6), y el motivo se elige de un toque.
+ * - **La casilla al final de cada serie**, la misma de la sesión (Dirección, 2026-11-02). Quitar una serie es destildarla:
+ *   queda tachada, con «Deshacer», hasta registrar la corrección. Tildar una sin registro la suma con lo planificado
+ *   («como el plan»); escribir en ella también la tilda. «Agregar una serie» suma una más.
+ * - **La fila registrada** va en el azul elevado del tema, como en la sesión: la tilde de la casilla ya dice que quedó.
+ * - **Qué cambia** se ve antes de registrar, en frases (UC-E02, paso 6), también lo que se quita («Se quita la serie 3 de
+ *   Sentadilla»), y el motivo se elige de un toque.
  * - **El registro original no se toca** (REG-06-116): la corrección se suma a la cadena.
  * - Antes de enviar se vuelve a leer la ejecución: si lo que rige cambió mientras se corregía (por ejemplo, la corrigió el
  *   profesional), no se registra sobre lo viejo (UC-E02, E04).
@@ -27,6 +31,8 @@ import { Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } 
 import { api } from '../api';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import {
+  alTocarLaCasilla,
+  ANCHO_DE_LA_CASILLA_EN_LA_CORRECCION,
   cambioLoQueRige,
   cambiosDelEstado,
   claveDeFila,
@@ -36,9 +42,12 @@ import {
   estadoDeLaFila,
   estadoDelEjercicio,
   estadoInicial,
+  filaComoElPlan,
+  filaTildada,
   hayAlgoSinGuardar,
   MOTIVOS,
   pedidoDeCorreccion,
+  pistaDeLaCasilla,
   sePuedeAgregar,
   TEXTOS_DE_LA_CORRECCION as T,
   textoCortoDeSerie,
@@ -51,13 +60,11 @@ import {
 } from '../correccion-de-la-sesion';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fechaCivil } from '../formato';
-import { BotonDeIcono } from '../icono';
-import { IconoDeRegistrado } from '../iconos-de-nutricion';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { falloDe, useClaveDeIntento } from '../intento';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { AVISO_SIN_PLAN_POR_SERIE, placeholdersDeLaSerie, sesionDesdeLaOcurrencia, type ErroresDeFila, type FilaEscrita, type Unidad } from '../series-de-la-sesion';
-import { Aviso, Boton, Campo, COLOR, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Segmentos, Titulo } from '../ui';
+import { Aviso, Boton, Campo, CasillaSola, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Segmentos, Titulo } from '../ui';
 import { RESPALDO_DE_EJERCICIO } from './sesion-enfocada';
 
 type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
@@ -149,6 +156,11 @@ function FormularioDeLaCorreccion({
     setErrores(new Map());
     hacer(a);
   };
+  // Tildar una serie sin plan que se pueda registrar tal cual no suma nada: se dice en su fila, al momento.
+  const noSePudoTildar = (prescriptionId: string, setIndex: number, e: ErroresDeFila) => {
+    setFallo(null);
+    setErrores(new Map([[claveDeFila(prescriptionId, setIndex), e]]));
+  };
 
   async function registrar() {
     const pedido = pedidoDeCorreccion(estado, base);
@@ -207,7 +219,7 @@ function FormularioDeLaCorreccion({
         <>
           {!conPlan ? <Aviso tipo="info" titulo={AVISO_SIN_PLAN_POR_SERIE} /> : null}
           {estado.ejercicios.map((ej) => (
-            <TarjetaDelEjercicio key={ej.prescriptionId} ej={ej} prescripcion={prescripcion(ej.prescriptionId)} token={token} sesionPerdida={sesionPerdida} errores={errores} disposicion={disposicion} hacer={despachar} />
+            <TarjetaDelEjercicio key={ej.prescriptionId} ej={ej} prescripcion={prescripcion(ej.prescriptionId)} token={token} sesionPerdida={sesionPerdida} errores={errores} disposicion={disposicion} hacer={despachar} noSePudoTildar={noSePudoTildar} />
           ))}
           {estado.sinDatosAntes ? (
             <Desplegable titulo={T.prefieroContarlo} abiertoAlInicio={estado.resumenDeSesion !== ''}>
@@ -287,6 +299,7 @@ function TarjetaDelEjercicio({
   errores,
   disposicion,
   hacer,
+  noSePudoTildar,
 }: {
   ej: EjercicioEnCorreccion;
   prescripcion: PrescripcionConObjetivos | null;
@@ -295,6 +308,7 @@ function TarjetaDelEjercicio({
   errores: ReadonlyMap<string, ErroresDeFila>;
   disposicion: 'tabla' | 'tarjetas';
   hacer: (a: AccionDeCorreccion) => void;
+  noSePudoTildar: (prescriptionId: string, setIndex: number, errores: ErroresDeFila) => void;
 }) {
   const unidad = unidadDelEjercicioEnCorreccion(ej);
   return (
@@ -316,11 +330,19 @@ function TarjetaDelEjercicio({
           <Text style={[estilos.columna, estilos.columnaDato]}>{unidad ?? COPY_ENTRENAMIENTO.carga}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</Text>
-          <View style={estilos.columnaQuitar} />
+          <View style={estilos.columnaCasilla} />
         </View>
       ) : null}
       {ej.filas.map((f) => (
-        <FilaDeLaCorreccion key={f.setIndex} fila={f} ejercicio={ej.nombre} errores={textoDeLosErrores(errores.get(claveDeFila(ej.prescriptionId, f.setIndex)))} disposicion={disposicion} hacer={(a) => hacer({ ...a, prescriptionId: ej.prescriptionId, setIndex: f.setIndex } as AccionDeCorreccion)} />
+        <FilaDeLaCorreccion
+          key={f.setIndex}
+          fila={f}
+          ejercicio={ej.nombre}
+          errores={textoDeLosErrores(errores.get(claveDeFila(ej.prescriptionId, f.setIndex)))}
+          disposicion={disposicion}
+          hacer={(a) => hacer({ ...a, prescriptionId: ej.prescriptionId, setIndex: f.setIndex } as AccionDeCorreccion)}
+          noSePudoTildar={(e) => noSePudoTildar(ej.prescriptionId, f.setIndex, e)}
+        />
       ))}
       {ej.filas.some((f) => f.origen !== 'registrada') ? <Text style={estilos.nota}>{T.enGris}</Text> : null}
       {sePuedeAgregar(ej) ? <Boton texto={T.agregarSerie} tipo="enlace" icono="mas" onPress={() => hacer({ tipo: 'agregar', prescriptionId: ej.prescriptionId })} /> : null}
@@ -328,7 +350,10 @@ function TarjetaDelEjercicio({
   );
 }
 
-const CAMPOS: readonly { readonly campo: keyof FilaEscrita; readonly teclado: KeyboardTypeOptions }[] = [
+/** Los campos que se corrigen. El tiempo de la serie (DL-161) no se corrige acá: una serie reescrita conserva el suyo. */
+type CampoDeLaCorreccion = 'carga' | 'repeticiones' | 'rir';
+
+const CAMPOS: readonly { readonly campo: CampoDeLaCorreccion; readonly teclado: KeyboardTypeOptions }[] = [
   // Decimal para la carga y el RIR; entero para las repeticiones.
   { campo: 'carga', teclado: 'decimal-pad' },
   { campo: 'repeticiones', teclado: 'number-pad' },
@@ -336,42 +361,68 @@ const CAMPOS: readonly { readonly campo: keyof FilaEscrita; readonly teclado: Ke
 ];
 
 /** Lo que es un campo, de qué serie, y el plan de esa serie: el nombre accesible de la celda. */
-function nombreDelCampo(campo: keyof FilaEscrita, f: FilaEnCorreccion, ejercicio: string, plan: string): string {
+function nombreDelCampo(campo: CampoDeLaCorreccion, f: FilaEnCorreccion, ejercicio: string, plan: string): string {
   const que = campo === 'carga' ? `Carga en ${f.unidad}` : campo === 'repeticiones' ? 'Repeticiones' : 'RIR, opcional';
   const delPlan = plan === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? plan : `Plan: ${plan}`;
   return `${que} de la serie ${f.setIndex} de ${ejercicio}. ${delPlan}`;
 }
 
 /** La acción de una fila, sin el ejercicio ni la serie, que los pone la tarjeta. */
-type AccionDeFila = { readonly tipo: 'escribir'; readonly campo: keyof FilaEscrita; readonly texto: string } | { readonly tipo: 'quitar' | 'deshacer' };
+type AccionDeFila = { readonly tipo: 'escribir'; readonly campo: keyof FilaEscrita; readonly texto: string } | { readonly tipo: 'quitar' | 'deshacer' | 'tildar' };
 
 /**
- * Una serie. Registrada, lleva la marca y el color de lo registrado; cambiada, el borde del acento y lo que decía antes;
- * sumada, «Nueva»; quitada, queda en una línea con «Deshacer». Las vacías muestran el plan en gris.
+ * Una serie, con su casilla al final (Dirección, 2026-11-02). Tildada, va en el azul elevado del tema, y con «como el plan»
+ * si va así; cambiada, con el borde del acento y lo que decía antes; sumada, «Nueva». Destildada, una registrada queda
+ * tachada con «Deshacer» hasta registrar la corrección. Las vacías muestran el plan en gris.
  */
-function FilaDeLaCorreccion({ fila: f, ejercicio, errores, disposicion, hacer }: { fila: FilaEnCorreccion; ejercicio: string; errores: string | null; disposicion: 'tabla' | 'tarjetas'; hacer: (a: AccionDeFila) => void }) {
+function FilaDeLaCorreccion({
+  fila: f,
+  ejercicio,
+  errores,
+  disposicion,
+  hacer,
+  noSePudoTildar,
+}: {
+  fila: FilaEnCorreccion;
+  ejercicio: string;
+  errores: string | null;
+  disposicion: 'tabla' | 'tarjetas';
+  hacer: (a: AccionDeFila) => void;
+  noSePudoTildar: (errores: ErroresDeFila) => void;
+}) {
   const estado = estadoDeLaFila(f);
+  const tocarLaCasilla = () => {
+    const r = alTocarLaCasilla(f);
+    if ('errores' in r) noSePudoTildar(r.errores);
+    else hacer({ tipo: r.accion });
+  };
+  const casilla = (
+    <View style={estilos.columnaCasilla}>
+      <CasillaSola marcada={filaTildada(f)} onCambio={tocarLaCasilla} etiqueta={T.casillaDeLaSerie(f.setIndex, ejercicio)} pista={pistaDeLaCasilla(f)} />
+    </View>
+  );
   if (estado === 'quitada') {
     return (
       <View style={estilos.filaQuitada}>
-        <Text style={estilos.textoQuitada}>{`${T.quitada(f.setIndex)}${f.antes ? ` (${textoCortoDeSerie(f.antes)})` : ''}`}</Text>
-        <Boton texto={T.deshacer} tipo="enlace" icono="deshacer" onPress={() => hacer({ tipo: 'deshacer' })} />
+        <View style={estilos.textosDeLaQuitada}>
+          <Text style={estilos.textoQuitada}>{T.seQuita(f.setIndex)}</Text>
+          {f.antes ? <Text style={estilos.valoresQuitados}>{textoCortoDeSerie(f.antes)}</Text> : null}
+          <Boton texto={T.deshacer} tipo="enlace" icono="deshacer" onPress={() => hacer({ tipo: 'deshacer' })} />
+        </View>
+        {casilla}
       </View>
     );
   }
   const plan = placeholdersDeLaSerie(f.objetivo, f.unidad);
-  const sePuedeQuitar = f.origen === 'registrada' || estado === 'sumada';
-  const quitar = sePuedeQuitar ? <BotonDeIcono nombre="cerrar" etiqueta={T.quitarSerie(f.setIndex)} onPress={() => hacer({ tipo: 'quitar' })} tono="tenue" /> : <View style={estilos.columnaQuitar} />;
-  const marca = estado === 'cambiada' && f.antes ? T.antes(textoCortoDeSerie(f.antes)) : estado === 'sumada' ? T.nueva : null;
-  const estiloDeFila = [estilos.fila, f.origen === 'registrada' && estilos.filaRegistrada, (estado === 'cambiada' || estado === 'sumada') && estilos.filaCambiada, errores ? estilos.filaConError : null];
+  const marca = [estado === 'cambiada' && f.antes ? T.antes(textoCortoDeSerie(f.antes)) : null, estado === 'sumada' ? T.nueva : null, filaComoElPlan(f) ? T.comoElPlan : null].filter((x): x is string => x !== null).join(' · ');
+  const estiloDeFila = [estilos.fila, filaTildada(f) && estilos.filaTildada, (estado === 'cambiada' || estado === 'sumada') && estilos.filaCambiada, errores ? estilos.filaConError : null];
   if (disposicion === 'tarjetas') {
     return (
       <View style={estiloDeFila}>
         <View style={estilos.tituloDeLaTarjeta}>
-          {f.origen === 'registrada' ? <IconoDeRegistrado color={COLOR.botonTexto} fondo={COLOR.acento} tamano={18} /> : null}
           <Text style={estilos.numeroEnTarjeta}>{`${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}`}</Text>
           <View style={estilos.espacio} />
-          {sePuedeQuitar ? quitar : null}
+          {casilla}
         </View>
         {CAMPOS.map(({ campo, teclado }) => (
           <Campo
@@ -392,13 +443,12 @@ function FilaDeLaCorreccion({ fila: f, ejercicio, errores, disposicion, hacer }:
     <View style={estiloDeFila}>
       <View style={estilos.celdas}>
         <View style={estilos.celdaSerie}>
-          {f.origen === 'registrada' ? <IconoDeRegistrado color={COLOR.botonTexto} fondo={COLOR.acento} tamano={18} /> : null}
           <Text style={estilos.numeroDeSerie}>{numero(f.setIndex, 0)}</Text>
         </View>
         {CAMPOS.map(({ campo, teclado }) => (
           <Celda key={campo} valor={f.escrita[campo]} plan={plan[campo]} teclado={teclado} etiqueta={`${nombreDelCampo(campo, f, ejercicio, plan[campo])}${errores ? `. Revisá: ${errores}` : ''}`} conError={errores !== null} onCambiar={(texto) => hacer({ tipo: 'escribir', campo, texto })} />
         ))}
-        {quitar}
+        {casilla}
       </View>
       {marca ? <Text style={estilos.marca}>{marca}</Text> : null}
       {errores ? <Aviso tipo="error" titulo={errores} /> : null}
@@ -437,10 +487,12 @@ const estilos = estilosPorTema((COLOR) => ({
   columna: { fontSize: 14, fontWeight: '700', color: COLOR.tenue, textAlign: 'center' },
   columnaSerie: { width: 44 },
   columnaDato: { flex: 1 },
-  columnaQuitar: { width: 36 },
-  // La fila de lo registrado toma color, como en la sesión; la cambiada o sumada lleva además el borde del acento.
+  // La casilla al final de la fila, con sus 44 dp de toque (la misma columna que en la sesión).
+  columnaCasilla: { width: ANCHO_DE_LA_CASILLA_EN_LA_CORRECCION, alignItems: 'center', justifyContent: 'center' },
+  // La fila tildada va en el azul elevado, como la registrada en la sesión; la cambiada o sumada lleva además el borde del
+  // acento.
   fila: { borderRadius: 12, borderWidth: 2, borderColor: 'transparent', padding: 4, marginVertical: 2 },
-  filaRegistrada: { backgroundColor: COLOR.superficieElevada },
+  filaTildada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.borde },
   filaCambiada: { borderColor: COLOR.acento },
   filaConError: { borderColor: COLOR.error },
   celdas: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -453,8 +505,11 @@ const estilos = estilosPorTema((COLOR) => ({
   planSinObjetivo: { fontSize: 12, lineHeight: 15 },
   entrada: { alignSelf: 'stretch', minHeight: 46, fontSize: 18, fontWeight: '800', color: COLOR.texto, textAlign: 'center', paddingHorizontal: 2, paddingVertical: 0 },
   marca: { fontSize: 13, fontWeight: '700', color: COLOR.tenue, marginLeft: 50, marginTop: 2 },
-  filaQuitada: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, paddingHorizontal: 8, marginVertical: 2, borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, borderStyle: 'dashed' },
-  textoQuitada: { flexShrink: 1, fontSize: 15, color: COLOR.tenue, textDecorationLine: 'line-through' },
+  // La destildada: una línea punteada, con lo que se quita tachado, «Deshacer» y la casilla vacía al final.
+  filaQuitada: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 8, paddingRight: 4, marginVertical: 2, borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, borderStyle: 'dashed' },
+  textosDeLaQuitada: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 10 },
+  textoQuitada: { fontSize: 15, fontWeight: '700', color: COLOR.texto },
+  valoresQuitados: { flexShrink: 1, fontSize: 15, color: COLOR.tenue, textDecorationLine: 'line-through' },
   tituloDeLaTarjeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   numeroEnTarjeta: { fontSize: 16, fontWeight: '800', color: COLOR.texto },
   espacio: { flex: 1 },

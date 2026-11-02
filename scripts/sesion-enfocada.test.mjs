@@ -383,6 +383,10 @@ test('8 · contraste medido en lo que dibuja la sesión enfocada: el objetivo en
     ['tenue', 'superficie', 4.5, 'los detalles dentro de las tarjetas'],
     ['botonTexto', 'botonFondo', 4.5, '«Registrar serie N» y «Finalizar descanso»'],
     ['botonTexto', 'acento', 3, 'el tilde de una serie guardada'],
+    // La fila registrada va en el azul elevado (Dirección, 2026-11-02): lo registrado, «como el plan» y la casilla, encima.
+    ['texto', 'superficieElevada', 4.5, 'lo registrado en una fila registrada'],
+    ['tenue', 'superficieElevada', 4.5, '«como el plan» y el estado debajo de una fila registrada'],
+    ['acento', 'superficieElevada', 3, 'el borde de la casilla sobre una fila registrada'],
     ['error', 'superficie', 4.5, 'una serie en conflicto'],
     ['peligroTexto', 'peligroFondo', 3, 'el signo del aviso en la recuperación'],
   ];
@@ -402,6 +406,10 @@ test('8 · contraste medido en lo que dibuja la sesión enfocada: el objetivo en
   assert.match(pieza, /celdaQuieta: \{[^}]*backgroundColor: COLOR\.fondo/);
   assert.match(pieza, /filaActiva: \{[^}]*borderColor: COLOR\.acento/);
   assert.match(pieza, /serieActual: \{[^}]*color: COLOR\.acento/);
+  // La fila registrada, en el azul elevado y no en el verde del éxito; «como el plan», en el tenue.
+  assert.match(pieza, /filaRegistrada: \{[^}]*backgroundColor: COLOR\.superficieElevada/);
+  assert.doesNotMatch(pieza, /filaRegistrada: \{[^}]*COLOR\.exito/);
+  assert.match(pieza, /comoElPlan: \{[^}]*color: COLOR\.tenue/);
   // Ningún brillo interno: la superficie es mate (WP-ENTRENAMIENTO-SERIES §7.7).
   assert.doesNotMatch(readFileSync(movil('vidrio.tsx'), 'utf8'), /LinearGradient|BrilloDeVidrio\(/);
   for (const archivo of ['pantallas/progreso.tsx', 'pantallas/indicadores.tsx', 'pantallas/figura-de-la-toma.tsx', 'pantallas/sesion-enfocada.tsx']) assert.doesNotMatch(readFileSync(movil(archivo), 'utf8'), /BrilloDeVidrio/, archivo);

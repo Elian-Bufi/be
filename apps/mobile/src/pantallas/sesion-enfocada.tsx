@@ -8,8 +8,9 @@
  *   ejercicio» (DL-151). Sustituido, dice también el ejecutado, con la insignia.
  * - **La tabla:** Serie, carga con su unidad, Rep., RIR, Tiempo y una casilla al final de cada fila. Los campos vacíos
  *   muestran el objetivo de esa serie en gris (`placeholdersDeLaSerie`); lo escrito se ve en su fila aunque no esté
- *   activa (PA-01). Tildar registra la fila con lo escrito y, en lo vacío, lo planificado; la fila registrada toma el color de
- *   «registrada»; destildar la deshace. El reloj de la fila mide la serie. La ayuda va plegada junto a la tabla. Con la
+ *   activa (PA-01). Tildar registra la fila con lo escrito y, en lo vacío, lo planificado; la fila registrada va en el
+ *   azul elevado del tema (Dirección, 2026-11-02: no en verde, la tilde de la casilla ya dice que quedó) y, si se tildó
+ *   sin escribir nada, con el rótulo «como el plan»; destildar la deshace. El reloj de la fila mide la serie. La ayuda va plegada junto a la tabla. Con la
  *   letra grande pasa a tarjetas apiladas.
  * - **La banda «Plan de la serie N»**, que sigue a la vista aunque se escriba encima del placeholder.
  * - **El descanso:** «Iniciar descanso» y «Finalizar descanso», con el recomendado de esa serie y el conteo ascendente.
@@ -71,7 +72,7 @@ import {
   type Unidad,
 } from '../series-de-la-sesion';
 import { sustitutosPosibles, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado, type SustitucionDelEjercicio } from '../sustitucion-de-ejercicio';
-import { Aviso, Ayuda, Boton, Campo, Casilla, COLOR, Dato, Desplegable, estilos as estilosDeUi, estilosPorTema, Insignia, Parrafo } from '../ui';
+import { Aviso, Ayuda, Boton, Campo, Casilla, CasillaSola, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo } from '../ui';
 
 /** El lado de la imagen del ejercicio activo, en dp (§7.2: de 100 a 140). */
 export const TAMANO_DE_LA_IMAGEN = 112;
@@ -291,7 +292,7 @@ function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: strin
 }
 
 /** Cómo se cargó una serie registrada, dicho para el lector de pantalla (DL-161). */
-const comoSeCargo = (f: FilaDeLaTabla): string => (f.registrada?.recordedAs === 'AS_PLANNED' ? 'tildada con lo planificado' : 'escrita');
+const comoSeCargo = (f: FilaDeLaTabla): string => (f.registrada?.recordedAs === 'AS_PLANNED' ? TEXTOS_DE_LA_SESION.comoElPlan : 'escrita');
 
 /** La frase de una fila para el lector de pantalla: su estado, lo registrado o lo escrito, y el plan. */
 function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrita: FilaEscrita | undefined): string {
@@ -336,8 +337,9 @@ export interface AccionesDeLaTabla {
  * La tabla de series de la sesión guiada (PA-02): Serie · kg · Rep. · RIR · Tiempo y una casilla al final de cada fila.
  * - En los campos vacíos se ve en gris lo planificado de esa serie. Lo escrito se ve en su fila aunque no esté activa
  *   (PA-01), con «Escrita, sin registrar».
- * - **Tildar registra la fila**: lo escrito y, en lo vacío, lo planificado que se veía. La fila registrada toma el color
- *   de «registrada» del tema; destildarla la deshace mientras no se finalice.
+ * - **Tildar registra la fila**: lo escrito y, en lo vacío, lo planificado que se veía. La fila registrada va en el azul
+ *   elevado del tema; la tildada sin escribir nada lleva además «como el plan». Destildarla la deshace mientras no se
+ *   finalice.
  * - **El reloj de la fila** arranca y para el de esa serie; tildar también lo para. El tiempo también se escribe.
  * - Con la letra grande pasa a tarjetas apiladas, con los mismos campos, la misma casilla y el mismo reloj.
  */
@@ -432,7 +434,7 @@ function etiquetaDelCampo(campo: keyof FilaEscrita, setIndex: number, unidad: Un
   return `${que}${plan}${error ? `. Revisá este campo: ${error}` : ''}`;
 }
 
-/** El color de una fila según su estado: la registrada, con el de «registrada» del tema; la activa, con su borde. */
+/** El color de una fila según su estado: la registrada, en el azul elevado del tema; la activa, con su borde. */
 function estiloDeLaFila(f: FilaDeLaTabla, activa: boolean) {
   const registrada = f.estado === 'guardada' || f.estado === 'pendiente-de-enviar';
   return [activa ? estilos.filaActiva : estilos.filaQuieta, registrada && estilos.filaRegistrada, registrada && activa && estilos.filaRegistradaActiva, f.estado === 'en-conflicto' && estilos.filaEnConflicto];
@@ -443,6 +445,7 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
   const estado = f.estado === 'guardada' ? null : f.estado === 'sin-registrar' ? (!activa && escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   const editable = activa && f.estado === 'sin-registrar';
   const r = textoRegistrado(f);
+  const comoElPlan = f.registrada?.recordedAs === 'AS_PLANNED';
   return (
     <View style={estiloDeLaFila(f, activa)}>
       {activa ? <Text style={estilos.serieActual}>{COPY_ENTRENAMIENTO_POR_SERIE.serieActual}</Text> : null}
@@ -485,7 +488,13 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
         <CeldaDeTiempo fila={f} activa={activa} escrita={escrita} error={errores.tiempo} relojEnCurso={relojEnCurso} relojDisponible={relojDisponible} escribiendoTiempo={escribiendoTiempo} ocupado={ocupado} acciones={acciones} />
         <CasillaDeLaFila fila={f} ocupado={ocupado} onTildar={() => acciones.onTildar(f)} />
       </View>
-      {estado ? <Text style={[estilos.estadoDeFila, (f.estado === 'en-conflicto' || f.proteccion === 'solo-en-la-app') && estilos.estadoEnConflicto, f.estado === 'pendiente-de-enviar' && f.proteccion !== 'solo-en-la-app' && estilos.estadoRegistrada]}>{estado}</Text> : null}
+      {estado || comoElPlan ? (
+        // El estado de la fila y, si se tildó sin escribir nada, «como el plan».
+        <View style={estilos.pieDeLaFila}>
+          {estado ? <Text style={[estilos.estadoDeFila, (f.estado === 'en-conflicto' || f.proteccion === 'solo-en-la-app') && estilos.estadoEnConflicto, f.estado === 'pendiente-de-enviar' && f.proteccion !== 'solo-en-la-app' && estilos.estadoRegistrada]}>{estado}</Text> : null}
+          {comoElPlan ? <Text style={estilos.comoElPlan}>{TEXTOS_DE_LA_SESION.comoElPlan}</Text> : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -555,26 +564,25 @@ function CeldaDeTiempo({ fila: f, activa, escrita, error, relojEnCurso, relojDis
 }
 
 /**
- * La casilla de la fila (PA-02): la pieza `Casilla` de ui.tsx en su forma compacta, con su caja, su marca y sus colores, y
- * un área de toque de 44 dp. Marcada es «registrada»: un estado, no una aprobación. Una serie en conflicto no se tilda ni
- * se destilda acá: se resuelve en el aviso del conflicto.
+ * La casilla de la fila (PA-02), al final: la `CasillaSola` de ui.tsx, la misma caja de todas las casillas de la APK, con
+ * un área de toque de 44 dp. Su nombre dice lo que hace («Registrar la serie 2») y el lector agrega si está marcada.
+ * Marcada es «registrada»: un estado, no una aprobación. Una serie en conflicto no se tilda ni se destilda acá: se
+ * resuelve en el aviso del conflicto.
  */
 function CasillaDeLaFila({ fila: f, ocupado, onTildar }: { fila: FilaDeLaTabla; ocupado: boolean; onTildar: () => void }) {
   const t = TEXTOS_DE_LA_SESION;
   const marcada = f.estado !== 'sin-registrar';
   const enConflicto = f.estado === 'en-conflicto';
   return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: marcada, disabled: ocupado || enConflicto }}
-      accessibilityLabel={t.serieRegistrada(f.setIndex)}
-      accessibilityHint={enConflicto ? t.enConflictoSinTilde : marcada ? t.pistaParaDestildar : t.pistaParaTildar}
-      disabled={ocupado || enConflicto}
-      onPress={onTildar}
-      style={({ pressed }) => [estilos.celdaCasilla, (ocupado || enConflicto) && estilos.deshabilitado, pressed && estilos.presionado]}
-    >
-      <View style={[estilosDeUi.casilla, estilos.cajaDeLaCasilla, marcada && estilosDeUi.casillaMarcada]}>{marcada ? <Text style={estilosDeUi.tilde}>✓</Text> : null}</View>
-    </Pressable>
+    <View style={estilos.celdaCasilla}>
+      <CasillaSola
+        marcada={marcada}
+        onCambio={onTildar}
+        etiqueta={t.registrarLaSerie(f.setIndex)}
+        pista={enConflicto ? t.enConflictoSinTilde : marcada ? t.pistaParaDestildar : t.pistaParaTildar}
+        deshabilitada={ocupado || enConflicto}
+      />
+    </View>
   );
 }
 
@@ -619,7 +627,9 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
   const t = TEXTOS_DE_LA_SESION;
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : f.estado === 'sin-registrar' ? (escrita && hayAlgoEscrito(escrita) ? t.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
-  const titulo = `${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}${estado ? ` · ${estado}` : ''}`;
+  // La tildada sin escribir nada lleva «como el plan» en su título; la escrita, nada más (DL-161).
+  const comoElPlan = f.registrada?.recordedAs === 'AS_PLANNED' ? t.comoElPlan : null;
+  const titulo = [`${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}`, estado, comoElPlan].filter((x): x is string => x !== null).join(' · ');
   const etiquetaDe = (campo: keyof FilaEscrita) =>
     campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : campo === 'rir' ? COPY_ENTRENAMIENTO_POR_SERIE.rirTitulo : `${t.columnaTiempo} (opcional)`;
   const casilla = (
@@ -628,8 +638,9 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
       onCambio={() => {
         if (!ocupado && f.estado !== 'en-conflicto') acciones.onTildar(f);
       }}
-      titulo={t.serieRegistrada(f.setIndex)}
+      titulo={t.registrarLaSerie(f.setIndex)}
       texto={f.estado === 'en-conflicto' ? t.enConflictoSinTilde : f.estado === 'sin-registrar' ? t.pistaParaTildar : t.pistaParaDestildar}
+      deshabilitada={ocupado || f.estado === 'en-conflicto'}
     />
   );
   const botonDelReloj = relojEnCurso ? (
@@ -1254,8 +1265,9 @@ const estilos = estilosPorTema((COLOR) => ({
   filaQuieta: { borderRadius: 12, borderWidth: 2, borderColor: 'transparent', padding: 4, marginVertical: 2 },
   filaActiva: { borderRadius: 12, borderWidth: 2, borderColor: COLOR.acento, padding: 4, marginVertical: 2, backgroundColor: COLOR.superficie },
   serieActual: { fontSize: 13, fontWeight: '800', color: COLOR.acento, marginLeft: 4, marginBottom: 2 },
-  // La fila registrada toma el color de «registrada» del tema (PA-02): el del aviso de éxito, medido con el texto encima.
-  filaRegistrada: { backgroundColor: COLOR.exitoFondo, borderColor: COLOR.exito },
+  // La fila registrada va en el azul elevado del tema, con el filo de las fichas (Dirección, 2026-11-02): no en el verde
+  // del éxito, porque la tilde de la casilla ya dice que quedó. El texto, el tenue y el acento se miden sobre ese azul.
+  filaRegistrada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.borde },
   filaRegistradaActiva: { borderColor: COLOR.acento },
   filaEnConflicto: { borderColor: COLOR.error },
   celdaSerie: { width: ANCHO_DE_LA_COLUMNA_SERIE, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 2 },
@@ -1265,19 +1277,22 @@ const estilos = estilosPorTema((COLOR) => ({
   celdaQuieta: { borderColor: COLOR.borde, backgroundColor: COLOR.fondo },
   celdaEditable: { borderColor: COLOR.bordeControl, backgroundColor: COLOR.fondo },
   celdaConError: { borderColor: COLOR.error, borderWidth: 2 },
-  celdaRegistrada: { borderColor: COLOR.exito, backgroundColor: COLOR.exitoFondo },
+  // Las celdas de una fila registrada no llevan caja: el valor va directo sobre el azul elevado de la fila.
+  celdaRegistrada: { borderColor: 'transparent', backgroundColor: 'transparent' },
   celdaEnCurso: { borderColor: COLOR.acento, borderWidth: 2, backgroundColor: COLOR.fondo },
   relojDeLaFila: { fontSize: 15, fontWeight: '800', color: COLOR.acento, fontVariant: ['tabular-nums'] },
   valorDeTiempo: { fontSize: 15, fontWeight: '800', color: COLOR.texto, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  // La casilla: 44 dp de toque, con la caja de la pieza Casilla de ui.tsx.
+  // La casilla: 44 dp de toque, con la caja de ui.tsx (CasillaSola).
   celdaCasilla: { width: ANCHO_DE_LA_CASILLA, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-  cajaDeLaCasilla: { marginRight: 0, marginTop: 0 },
   capaDelPlaceholder: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   entradaDeCelda: { alignSelf: 'stretch', minHeight: 46, fontSize: 18, fontWeight: '800', color: COLOR.texto, textAlign: 'center', paddingHorizontal: 2, paddingVertical: 0 },
   placeholder: { fontSize: 16, color: COLOR.tenue, textAlign: 'center' },
   placeholderSinObjetivo: { fontSize: 11, lineHeight: 14 },
   valorRegistrado: { fontSize: 18, fontWeight: '800', color: COLOR.texto, textAlign: 'center' },
-  estadoDeFila: { fontSize: 13, fontWeight: '600', color: COLOR.tenue, marginLeft: ANCHO_DE_LA_COLUMNA_SERIE + SEPARACION_DE_CELDAS, marginTop: 2 },
+  // Debajo de la fila: el estado y «como el plan», desde la columna de los datos.
+  pieDeLaFila: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, marginLeft: ANCHO_DE_LA_COLUMNA_SERIE + SEPARACION_DE_CELDAS, marginTop: 2 },
+  estadoDeFila: { fontSize: 13, fontWeight: '600', color: COLOR.tenue },
+  comoElPlan: { fontSize: 12, fontWeight: '700', color: COLOR.tenue },
   estadoEnConflicto: { color: COLOR.error },
   estadoRegistrada: { color: COLOR.texto },
   tarjetaDeSerie: { borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, padding: 12, marginVertical: 4 },

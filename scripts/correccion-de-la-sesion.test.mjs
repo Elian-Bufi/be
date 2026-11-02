@@ -14,7 +14,10 @@
  *  8. el orden: lo que rige y después lo sumado;
  *  9. el motivo de un toque, u otro escrito, y sin motivo no se registra;
  * 10. los cambios se dicen en frases; todo lo construido pasa el contrato de API-TRN-20 y sus mínimos;
- * 11. los textos pasan la guardia de entrenamiento (T13).
+ * 11. los textos pasan la guardia de entrenamiento (T13);
+ * 12. lo que dibuja cada fila;
+ * 13. la casilla de cada serie (Dirección, 2026-11-02): destildar quita y se deshace hasta registrar, «Qué cambia» dice
+ *     lo que se quita y lo que se suma, y tildar una sin registro la suma como el plan (AS_PLANNED), sin fabricar nada.
  *
  * **Lo que esto no prueba:** el dibujo, el teclado ni TalkBack. Eso queda para el teléfono.
  * Uso: node --test scripts/correccion-de-la-sesion.test.mjs (después de construir @be/domain).
@@ -166,7 +169,7 @@ test('4 · lo que no se toca conserva cómo se cargó, el esfuerzo y la duració
 test('5 · quitar una serie no renumera las demás, «Deshacer» la devuelve, y un ejercicio sin series no viaja', () => {
   const quitada = hacer(inicial(), { tipo: 'quitar', prescriptionId: 'sentadilla', setIndex: 1 });
   assert.deepEqual(c.construirCorreccion(quitada).correction.exercises[0].sets.map((s) => s.setIndex), [2]);
-  assert.deepEqual(c.cambiosDelEstado(quitada, ORIGINAL, nombreDe), ['Sentadilla · serie 1: se quita (58 kg · 8 reps)']);
+  assert.deepEqual(c.cambiosDelEstado(quitada, ORIGINAL, nombreDe), ['Se quita la serie 1 de Sentadilla (58 kg · 8 reps)']);
   const devuelta = c.corregir(quitada, { tipo: 'deshacer', prescriptionId: 'sentadilla', setIndex: 1 });
   assert.equal(c.canonico(c.construirCorreccion(devuelta).correction), c.canonico(c.registroComoEntrada(ORIGINAL)));
   // Sin ninguna serie de Sentadilla y con una de Press, Sentadilla no viaja.
@@ -177,13 +180,13 @@ test('5 · quitar una serie no renumera las demás, «Deshacer» la devuelve, y 
   assert.deepEqual([c.construirCorreccion(vacia).ok, c.construirCorreccion(vacia).mensaje], [false, c.TEXTOS_DE_LA_CORRECCION.sinNingunaSerie]);
   // «Agregar una serie» suma la siguiente, nueva y sin objetivo.
   const conOtra = c.corregir(inicial(), { tipo: 'agregar', prescriptionId: 'sentadilla' });
-  assert.deepEqual(conOtra.ejercicios[0].filas.at(-1), { setIndex: 4, origen: 'nueva', escrita: { carga: '', repeticiones: '', rir: '' }, unidad: 'kg', quitada: false, antes: null, objetivo: null });
+  assert.deepEqual(conOtra.ejercicios[0].filas.at(-1), { setIndex: 4, origen: 'nueva', escrita: { carga: '', repeticiones: '', rir: '' }, unidad: 'kg', quitada: false, tildada: false, antes: null, objetivo: null });
 });
 
 test('6 · una registrada vaciada es un error en su fila; los números se leen con las reglas del registro', () => {
   const vaciada = c.construirCorreccion(hacer(inicial(), escribir('sentadilla', 2, 'carga', ''), escribir('sentadilla', 2, 'repeticiones', '')));
   assert.equal(vaciada.ok, false);
-  assert.deepEqual(vaciada.errores.get(c.claveDeFila('sentadilla', 2)), { fila: 'Anotá la carga o las repeticiones de la serie 2, o quitala.' });
+  assert.deepEqual(vaciada.errores.get(c.claveDeFila('sentadilla', 2)), { fila: 'Anotá la carga o las repeticiones de la serie 2, o destildala para quitarla.' });
   const decimales = c.construirCorreccion(hacer(inicial(), escribir('press', 1, 'repeticiones', '8,5')));
   assert.deepEqual(decimales.errores.get(c.claveDeFila('press', 1)), { repeticiones: 'Las repeticiones van sin decimales.' });
   const negativa = c.construirCorreccion(hacer(inicial(), escribir('press', 1, 'carga', '-5')));
@@ -247,8 +250,8 @@ test('10 · los cambios se dicen en frases, y el resumen de un ejercicio se corr
   assert.deepEqual(c.cambiosDelEstado(e, ORIGINAL, nombreDe), [
     'Cómo resultó: Realizada → Realizada con desvío',
     'Comentario de la sesión: «Cambié el orden»',
-    'Sentadilla · serie 1: 58 kg · 8 reps → 60 kg · 8 reps',
-    'Press de banca · serie 2: se suma (45 kg · 9 reps)',
+    'Cambia la serie 1 de Sentadilla: 58 kg · 8 reps → 60 kg · 8 reps',
+    'Se suma la serie 2 de Press de banca (45 kg · 9 reps)',
   ]);
   assert.equal(c.TEXTOS_DE_LA_CORRECCION.cambios(4), '4 cambios');
   // Un registro por resumen: se corrige el resumen; vaciarlo lo quita, y sin nada no se registra.
@@ -292,4 +295,48 @@ test('12 · lo que dibuja cada fila: igual, cambiada, quitada, sumada o vacía; 
   assert.equal(c.disposicionDeLaCorreccion(294, 1), 'tabla');
   assert.equal(c.disposicionDeLaCorreccion(294, 1.3), 'tarjetas');
   assert.equal(c.disposicionDeLaCorreccion(400, 1.7), 'tarjetas');
+});
+
+// ─── 13 ──────────────────────────────────────────────────────────────────────────────────────────
+
+test('13 · la casilla de la serie: destildar quita y se deshace; tildar una sin registro la suma como el plan; sin plan, dice qué falta', () => {
+  const T = c.TEXTOS_DE_LA_CORRECCION;
+  const fila = (e, id, n) => e.ejercicios.find((ej) => ej.prescriptionId === id).filas.find((f) => f.setIndex === n);
+  const e0 = inicial();
+  // Lo registrado empieza tildado; lo planificado sin registro, sin tildar.
+  assert.deepEqual(e0.ejercicios[0].filas.map(c.filaTildada), [true, true, false]);
+  // La 2 de Sentadilla se registró como el plan y lleva el rótulo; la 1, escrita, no.
+  assert.deepEqual(e0.ejercicios[0].filas.map(c.filaComoElPlan), [false, true, false]);
+  // Destildar una registrada la quita; tocarla otra vez la deja como estaba.
+  assert.deepEqual(c.alTocarLaCasilla(fila(e0, 'sentadilla', 1)), { accion: 'quitar' });
+  assert.equal(c.pistaDeLaCasilla(fila(e0, 'sentadilla', 1)), T.pistaParaQuitar);
+  const quitada = c.corregir(e0, { tipo: 'quitar', prescriptionId: 'sentadilla', setIndex: 1 });
+  assert.equal(c.filaTildada(fila(quitada, 'sentadilla', 1)), false);
+  assert.deepEqual(c.alTocarLaCasilla(fila(quitada, 'sentadilla', 1)), { accion: 'deshacer' });
+  assert.equal(c.pistaDeLaCasilla(fila(quitada, 'sentadilla', 1)), T.pistaParaDejar);
+  // Tildar la 3 de Sentadilla sin escribir nada: se suma con su plan, «como el plan».
+  assert.deepEqual(c.alTocarLaCasilla(fila(e0, 'sentadilla', 3)), { accion: 'tildar' });
+  assert.equal(c.pistaDeLaCasilla(fila(e0, 'sentadilla', 3)), T.pistaParaSumar);
+  const tildada = conMotivo(c.corregir(e0, { tipo: 'tildar', prescriptionId: 'sentadilla', setIndex: 3 }));
+  assert.equal(c.filaTildada(fila(tildada, 'sentadilla', 3)), true);
+  assert.equal(c.filaComoElPlan(fila(tildada, 'sentadilla', 3)), true);
+  assert.equal(c.pistaDeLaCasilla(fila(tildada, 'sentadilla', 3)), T.pistaParaNoSumar);
+  const pedido = c.pedidoDeCorreccion(tildada, ORIGINAL);
+  assert.equal(pedido.ok, true, pedido.mensaje);
+  assert.deepEqual(pedido.correction.exercises[0].sets.at(-1), { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null, recordedAs: 'AS_PLANNED' });
+  assert.deepEqual(pasaElContrato(pedido), []);
+  assert.deepEqual(c.cambiosDelEstado(tildada, ORIGINAL, nombreDe), ['Se suma la serie 3 de Sentadilla, como el plan (60 kg · 8 reps · RIR 2)']);
+  // Destildarla la saca otra vez: no viaja.
+  const otraVez = c.corregir(tildada, { tipo: 'quitar', prescriptionId: 'sentadilla', setIndex: 3 });
+  assert.equal(c.estadoDeLaFila(fila(otraVez, 'sentadilla', 3)), 'vacia');
+  assert.deepEqual(c.construirCorreccion(otraVez).correction.exercises[0].sets.map((s) => s.setIndex), [1, 2]);
+  // Escribir en una sin registro la tilda, y lo escrito va tal cual (TYPED): no se completa con el plan.
+  const escrita = c.corregir(otraVez, escribir('sentadilla', 3, 'repeticiones', '7'));
+  assert.equal(c.filaTildada(fila(escrita, 'sentadilla', 3)), true);
+  assert.equal(c.filaComoElPlan(fila(escrita, 'sentadilla', 3)), false);
+  assert.deepEqual(c.construirCorreccion(escrita).correction.exercises[0].sets.at(-1), { setIndex: 3, load: null, completedRepetitions: 7, rir: null, perceivedExertion: null, recordedAs: 'TYPED' });
+  // Una serie agregada no tiene plan: tildarla sin escribir no fabrica nada y dice qué falta.
+  const conOtra = c.corregir(e0, { tipo: 'agregar', prescriptionId: 'sentadilla' });
+  const respuesta = c.alTocarLaCasilla(fila(conOtra, 'sentadilla', 4));
+  assert.ok('errores' in respuesta && typeof respuesta.errores.fila === 'string', JSON.stringify(respuesta));
 });

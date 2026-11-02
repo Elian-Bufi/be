@@ -9,10 +9,16 @@
  * - **Se lee con las reglas del registro** (`leerFila`): los mismos números, los mismos límites y los mismos textos.
  *   Nunca se fabrica una serie: una fila vacía no viaja. Lo gris es presentación y nunca se envía.
  * - **Lo que no se toca queda igual**, con su forma de carga (`recordedAs`), su esfuerzo percibido y su duración
- *   (DL-161). Lo que se escribe o se suma va como `TYPED`: lo escribió la persona. La duración no se inventa: una serie
- *   que se suma va sin ella, y una que se reescribe conserva la que tenía.
- * - **Quitar una serie** la marca, con «Deshacer» hasta registrar la corrección. Las demás conservan su número (la API
- *   admite huecos; solo prohíbe duplicados). El registro original no se toca nunca (REG-06-116).
+ *   (DL-161). Lo que se escribe va como `TYPED`: lo escribió la persona. La duración no se inventa: una serie que se
+ *   suma va sin ella, y una que se reescribe conserva la que tenía.
+ * - **La casilla de cada serie** (Dirección, 2026-11-02), al final de la fila, como en la sesión. **Quitar una serie es
+ *   destildarla**: queda tachada, con «Deshacer» (o se vuelve a tildar) hasta registrar la corrección, y «Qué cambia» lo
+ *   dice («Se quita la serie 3 de Sentadilla»). Las demás conservan su número (la API admite huecos; solo prohíbe
+ *   duplicados). El registro original no se toca nunca (REG-06-116).
+ * - **Sumar lo que faltó:** lo que se escribe en una serie sin registro la tilda y viaja tal cual se escribió (`TYPED`);
+ *   tildarla sin escribir nada la suma con lo planificado de esa serie (`AS_PLANNED`, «como el plan»), con las mismas
+ *   reglas que la casilla de la sesión (`serieAlTildar`): un rango de repeticiones no se convierte en un número, y sin
+ *   plan no se fabrica nada.
  * - **El orden** es el de lo que rige y después lo sumado, en el orden de la sesión: la API compara en orden para
  *   decir «la corrección no cambia nada», y sin esto una corrección sin cambios parecería un cambio.
  * - **El motivo** se elige de un toque, o se escribe (B10-06:868-886: «Requiere: motivo, cambio»).
@@ -29,7 +35,7 @@ import {
   type SerieEjecutadaApi,
   type SesionConObjetivos,
 } from '@be/domain';
-import { FILA_VACIA, hayAlgoEscrito, leerFila, MAXIMO_DE_SERIES, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita, type Unidad } from './series-de-la-sesion';
+import { ANCHO_DE_LA_CASILLA, FILA_VACIA, hayAlgoEscrito, leerFila, MAXIMO_DE_SERIES, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita, type Unidad } from './series-de-la-sesion';
 
 export type Condicion = 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED';
 
@@ -41,8 +47,10 @@ export interface FilaEnCorreccion {
   readonly origen: OrigenDeFila;
   readonly escrita: FilaEscrita;
   readonly unidad: Unidad;
-  /** Quitada hasta registrar la corrección; «Deshacer» la devuelve. No viaja. */
+  /** Destildada: una registrada se quita hasta registrar la corrección, y «Deshacer» la devuelve. No viaja. */
   readonly quitada: boolean;
+  /** Una serie sin registro, tildada sin escribir nada: se suma con lo planificado (`AS_PLANNED`). */
+  readonly tildada: boolean;
   /** Lo registrado que rige, en una fila `registrada`; `null` en las demás. */
   readonly antes: SerieEjecutadaApi | null;
   /** El objetivo de esa serie, que se muestra en gris; `null` en una serie de más o sin plan por serie. */
@@ -91,15 +99,23 @@ export const TEXTOS_DE_LA_CORRECCION = {
   conDesvio: 'Realizada con desvío',
   comentario: 'Comentario sobre la sesión (opcional)',
   sinSeries: 'Con «No pude realizarla», la corrección queda sin series. Lo que registraste sigue en el registro original.',
-  enGris: 'En gris: lo planificado. Escribí encima para sumar lo que hiciste.',
+  enGris: 'En gris: lo planificado. Tildá una serie para sumarla así, o escribí encima lo que hiciste.',
   sinRegistrar: 'Sin registrar',
   conResumen: 'Registrado con un resumen',
   registradas: (n: number, de: number) => `${numero(n, 0)} de ${numero(de, 0)} ${de === 1 ? 'serie registrada' : 'series registradas'}`,
   agregarSerie: 'Agregar una serie',
-  quitarSerie: (n: number) => `Quitar la serie ${n}`,
-  quitada: (n: number) => `Serie ${n} quitada`,
+  /** La fila tachada de una serie destildada: se quita al registrar la corrección. */
+  seQuita: (n: number) => `Se quita la serie ${n}`,
   deshacer: 'Deshacer',
   nueva: 'Nueva',
+  /** La serie tildada sin escribir nada, como en la sesión (DL-161). */
+  comoElPlan: 'como el plan',
+  // La casilla de cada serie: su nombre, y la pista según lo que hace tocarla.
+  casillaDeLaSerie: (n: number, ejercicio: string) => `Serie ${n} de ${ejercicio}`,
+  pistaParaQuitar: 'Destildala para quitarla de la corrección.',
+  pistaParaDejar: 'Tildala para dejarla como estaba.',
+  pistaParaSumar: 'Tildala para sumarla con lo planificado, o escribí lo que hiciste.',
+  pistaParaNoSumar: 'Destildala para no sumarla.',
   antes: (texto: string) => `Antes: ${texto}`,
   unidad: 'Unidad de la carga',
   resumenDelEjercicio: COPY_ENTRENAMIENTO.resumenDelEjercicio,
@@ -124,7 +140,7 @@ export const TEXTOS_DE_LA_CORRECCION = {
   // Los errores: cada uno dice qué hacer.
   faltaElMotivo: 'Contá por qué corregís el registro.',
   sinCambios: 'La corrección no cambia nada del registro.',
-  vaciada: (n: number) => `Anotá la carga o las repeticiones de la serie ${n}, o quitala.`,
+  vaciada: (n: number) => `Anotá la carga o las repeticiones de la serie ${n}, o destildala para quitarla.`,
   sinNingunaSerie: 'Para una sesión realizada, dejá al menos una serie.',
   sinNada: 'Contá cómo fue la sesión.',
   revisaLasSeries: 'Revisá las series marcadas.',
@@ -219,11 +235,11 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
     const filas: FilaEnCorreccion[] = [];
     if (forma === 'SET') {
       for (const s of e.sets ?? []) {
-        filas.push({ setIndex: s.setIndex, origen: 'registrada', escrita: filaDeLaSerie(s), unidad: unidadDe(s.load?.unit, porDefecto), quitada: false, antes: s, objetivo: p?.sets.find((x) => x.setIndex === s.setIndex)?.target ?? null });
+        filas.push({ setIndex: s.setIndex, origen: 'registrada', escrita: filaDeLaSerie(s), unidad: unidadDe(s.load?.unit, porDefecto), quitada: false, tildada: false, antes: s, objetivo: p?.sets.find((x) => x.setIndex === s.setIndex)?.target ?? null });
       }
       for (const ps of p?.sets ?? []) {
         if (filas.some((f) => f.setIndex === ps.setIndex)) continue;
-        filas.push({ setIndex: ps.setIndex, origen: 'planificada', escrita: FILA_VACIA, unidad: porDefecto, quitada: false, antes: null, objetivo: ps.target });
+        filas.push({ setIndex: ps.setIndex, origen: 'planificada', escrita: FILA_VACIA, unidad: porDefecto, quitada: false, tildada: false, antes: null, objetivo: ps.target });
       }
       filas.sort((a, b) => a.setIndex - b.setIndex);
     }
@@ -247,7 +263,7 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
       ejecutado: null,
       performedExerciseVersionId: p.exerciseVersionId,
       estaba: false,
-      filas: forma === 'SET' ? p.sets.map((s) => ({ setIndex: s.setIndex, origen: 'planificada' as const, escrita: FILA_VACIA, unidad, quitada: false, antes: null, objetivo: s.target })) : [],
+      filas: forma === 'SET' ? p.sets.map((s) => ({ setIndex: s.setIndex, origen: 'planificada' as const, escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: s.target })) : [],
       resumen: forma === 'EXERCISE_OR_SESSION' ? '' : null,
     });
   }
@@ -270,7 +286,8 @@ export type AccionDeCorreccion =
   | { readonly tipo: 'comentario'; readonly texto: string }
   | { readonly tipo: 'escribir'; readonly prescriptionId: string; readonly setIndex: number; readonly campo: keyof FilaEscrita; readonly texto: string }
   | { readonly tipo: 'unidad'; readonly prescriptionId: string; readonly unidad: Unidad }
-  | { readonly tipo: 'quitar' | 'deshacer'; readonly prescriptionId: string; readonly setIndex: number }
+  // La casilla de la serie: destildar es «quitar»; volver a tildar una destildada, «deshacer»; tildar una sin registro, «tildar».
+  | { readonly tipo: 'quitar' | 'deshacer' | 'tildar'; readonly prescriptionId: string; readonly setIndex: number }
   | { readonly tipo: 'agregar'; readonly prescriptionId: string }
   | { readonly tipo: 'resumen'; readonly prescriptionId: string; readonly texto: string }
   | { readonly tipo: 'resumen-de-sesion'; readonly texto: string }
@@ -293,7 +310,11 @@ export function corregir(e: EstadoDeCorreccion, a: AccionDeCorreccion): EstadoDe
     case 'comentario':
       return { ...e, comentario: a.texto };
     case 'escribir':
-      return cambiarFila(e, a.prescriptionId, a.setIndex, (f) => ({ ...f, escrita: { ...f.escrita, [a.campo]: a.texto } }));
+      // Escribir en una serie sin registro la tilda: lo escrito es para sumarlo.
+      return cambiarFila(e, a.prescriptionId, a.setIndex, (f) => {
+        const escrita = { ...f.escrita, [a.campo]: a.texto };
+        return { ...f, escrita, quitada: f.origen !== 'registrada' && hayAlgoEscrito(escrita) ? false : f.quitada };
+      });
     case 'unidad':
       // La unidad es del ejercicio: pasa a todas sus filas, también a las registradas (una carga anotada en otra unidad).
       return cambiarEjercicio(e, a.prescriptionId, (ej) => ({ ...ej, filas: ej.filas.map((f) => ({ ...f, unidad: a.unidad })) }));
@@ -301,12 +322,14 @@ export function corregir(e: EstadoDeCorreccion, a: AccionDeCorreccion): EstadoDe
       return cambiarFila(e, a.prescriptionId, a.setIndex, (f) => ({ ...f, quitada: true }));
     case 'deshacer':
       return cambiarFila(e, a.prescriptionId, a.setIndex, (f) => ({ ...f, quitada: false }));
+    case 'tildar':
+      return cambiarFila(e, a.prescriptionId, a.setIndex, (f) => ({ ...f, quitada: false, tildada: f.origen !== 'registrada' }));
     case 'agregar':
       return cambiarEjercicio(e, a.prescriptionId, (ej) => {
         const siguiente = Math.max(0, ...ej.filas.map((f) => f.setIndex)) + 1;
         if (siguiente > MAXIMO_DE_SERIES) return ej;
         const unidad = unidadDelEjercicioEnCorreccion(ej) ?? ej.filas[0]?.unidad ?? 'kg';
-        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, antes: null, objetivo: null }] };
+        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: null }] };
       });
     case 'resumen':
       return cambiarEjercicio(e, a.prescriptionId, (ej) => ({ ...ej, resumen: a.texto }));
@@ -350,12 +373,17 @@ const mismaCarga = (a: SerieEjecutadaApi['load'], b: SerieEjecutadaApi['load']):
 const mismosValores = (a: SerieEjecutadaApi, b: SerieEjecutadaApi): boolean => mismaCarga(a.load, b.load) && a.completedRepetitions === b.completedRepetitions && a.rir === b.rir;
 
 /**
- * La serie que se registra con una fila, o sus errores; `null` si la fila no viaja (quitada, o vacía y sin registro).
- * Una registrada que no cambió vuelve tal cual: conserva su forma de carga, su esfuerzo y su duración.
+ * La serie que se registra con una fila, o sus errores; `null` si la fila no viaja (destildada, o vacía y sin tildar).
+ * Una registrada que no cambió vuelve tal cual: conserva su forma de carga, su esfuerzo y su duración. Una sin registro
+ * tildada sin escribir nada va con lo planificado de esa serie, como la casilla de la sesión.
  */
 function serieDeLaFila(f: FilaEnCorreccion): { readonly serie: SerieEjecutadaApi | null; readonly errores: ErroresDeFila | null } {
   if (f.quitada) return { serie: null, errores: null };
-  if (f.origen !== 'registrada' && !hayAlgoEscrito(f.escrita)) return { serie: null, errores: null };
+  if (f.origen !== 'registrada' && !hayAlgoEscrito(f.escrita)) {
+    if (!f.tildada) return { serie: null, errores: null };
+    const comoElPlan = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad);
+    return comoElPlan.ok ? { serie: comoElPlan.serie, errores: null } : { serie: null, errores: comoElPlan.errores };
+  }
   const lectura = leerFila(f.escrita, f.setIndex, f.unidad);
   if (!lectura.ok) {
     // Una registrada vaciada no se borra en silencio: se quita, o se le anota un dato.
@@ -435,9 +463,10 @@ export function textoCortoDeSerie(s: Pick<SerieEjecutadaApi, 'load' | 'completed
 }
 
 /**
- * Lo que cambia entre lo que rige y la corrección, en frases: «Sentadilla · serie 1: 58 kg · 8 reps → 60 kg · 8 reps»,
- * «Press de banca · serie 2: se suma (45 kg · 9 reps)», «Cómo resultó: Realizada → Realizada con desvío». Con esto se
- * cuenta cuántos cambios hay y se muestran antes de registrar.
+ * Lo que cambia entre lo que rige y la corrección, en frases: «Cambia la serie 1 de Sentadilla: 58 kg · 8 reps → 60 kg ·
+ * 8 reps», «Se suma la serie 2 de Press de banca (45 kg · 9 reps)», «Se quita la serie 3 de Sentadilla (55 kg · 3
+ * reps)», «Cómo resultó: Realizada → Realizada con desvío». Con esto se cuenta cuántos cambios hay y se muestran antes de
+ * registrar; lo que se quita se puede deshacer hasta entonces.
  */
 export function cambiosEntre(antes: RegistroCorregido, despues: RegistroCorregido, nombreDe: (prescriptionId: string) => string): string[] {
   const cambios: string[] = [];
@@ -462,9 +491,9 @@ export function cambiosEntre(antes: RegistroCorregido, despues: RegistroCorregid
     const indices = [...new Set([...a, ...d].map((s) => s.setIndex))].sort((x, y) => x - y);
     for (const i of indices) {
       const [sa, sd] = [a.find((s) => s.setIndex === i), d.find((s) => s.setIndex === i)];
-      if (sa && !sd) cambios.push(`${nombre} · serie ${i}: se quita (${textoCortoDeSerie(sa)})`);
-      else if (!sa && sd) cambios.push(`${nombre} · serie ${i}: se suma (${textoCortoDeSerie(sd)})`);
-      else if (sa && sd && !mismosValores(sa, sd)) cambios.push(`${nombre} · serie ${i}: ${textoCortoDeSerie(sa)} → ${textoCortoDeSerie(sd)}`);
+      if (sa && !sd) cambios.push(`Se quita la serie ${i} de ${nombre} (${textoCortoDeSerie(sa)})`);
+      else if (!sa && sd) cambios.push(`Se suma la serie ${i} de ${nombre}${sd.recordedAs === 'AS_PLANNED' ? `, ${T.comoElPlan}` : ''} (${textoCortoDeSerie(sd)})`);
+      else if (sa && sd && !mismosValores(sa, sd)) cambios.push(`Cambia la serie ${i} de ${nombre}: ${textoCortoDeSerie(sa)} → ${textoCortoDeSerie(sd)}`);
     }
     const [ra, rd] = [resumen(antes, id), resumen(despues, id)];
     if (ra !== rd) cambios.push(ra === null ? `${nombre}: se suma un resumen` : rd === null ? `${nombre}: se quita el resumen` : `${nombre}: cambia el resumen`);
@@ -492,14 +521,51 @@ export function cambioLoQueRige(antes: Pick<EjecucionDeEntrenamiento, 'effective
 
 // ─── Para dibujar ───────────────────────────────────────────────────────────────────────────────
 
-/** Cómo está una fila frente a lo que rige: igual, cambiada, quitada, sumada (algo escrito en una sin registro) o vacía. */
+/**
+ * Cómo está una fila frente a lo que rige: igual, cambiada, quitada (una registrada destildada), sumada (una sin registro
+ * con algo escrito o tildada) o vacía (una sin registro que no se suma: sin tildar, o destildada).
+ */
 export type EstadoDeLaFila = 'igual' | 'cambiada' | 'quitada' | 'sumada' | 'vacia';
 
 export function estadoDeLaFila(f: FilaEnCorreccion): EstadoDeLaFila {
+  if (f.origen !== 'registrada') return !f.quitada && (f.tildada || hayAlgoEscrito(f.escrita)) ? 'sumada' : 'vacia';
   if (f.quitada) return 'quitada';
-  if (f.origen !== 'registrada') return hayAlgoEscrito(f.escrita) ? 'sumada' : 'vacia';
   const lectura = leerFila(f.escrita, f.setIndex, f.unidad);
   return lectura.ok && f.antes && mismosValores(lectura.serie, f.antes) ? 'igual' : 'cambiada';
+}
+
+/** Si la casilla de la fila va tildada: lo que viaja en la corrección (lo registrado que queda y lo que se suma). */
+export const filaTildada = (f: FilaEnCorreccion): boolean => {
+  const estado = estadoDeLaFila(f);
+  return estado !== 'quitada' && estado !== 'vacia';
+};
+
+/**
+ * Si la fila va «como el plan»: una registrada así que no se tocó, o una sin registro tildada sin escribir nada. Las
+ * escritas no llevan rótulo.
+ */
+export function filaComoElPlan(f: FilaEnCorreccion): boolean {
+  const estado = estadoDeLaFila(f);
+  if (f.origen === 'registrada') return estado === 'igual' && f.antes?.recordedAs === 'AS_PLANNED';
+  return estado === 'sumada' && !hayAlgoEscrito(f.escrita);
+}
+
+/**
+ * Lo que hace tocar la casilla de la fila, o los errores si tildarla no puede sumar nada: una serie sin registro, sin
+ * nada escrito y sin un plan que se pueda registrar tal cual (sin objetivo, o con un rango de repeticiones y sin carga).
+ */
+export function alTocarLaCasilla(f: FilaEnCorreccion): { readonly accion: 'quitar' | 'deshacer' | 'tildar' } | { readonly errores: ErroresDeFila } {
+  if (filaTildada(f)) return { accion: 'quitar' };
+  if (f.origen === 'registrada') return { accion: 'deshacer' };
+  if (hayAlgoEscrito(f.escrita)) return { accion: 'deshacer' };
+  const comoElPlan = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad);
+  return comoElPlan.ok ? { accion: 'tildar' } : { errores: comoElPlan.errores };
+}
+
+/** La pista de la casilla para el lector de pantalla, según lo que hace tocarla. */
+export function pistaDeLaCasilla(f: FilaEnCorreccion): string {
+  if (f.origen === 'registrada') return filaTildada(f) ? T.pistaParaQuitar : T.pistaParaDejar;
+  return filaTildada(f) ? T.pistaParaNoSumar : T.pistaParaSumar;
 }
 
 /** Los errores de una fila en una frase, con el nombre de cada campo: van debajo de la fila y en su nombre accesible. */
@@ -511,19 +577,19 @@ export function textoDeLosErrores(errores: ErroresDeFila | undefined): string | 
   return texto || null;
 }
 
-/** El ancho del botón de quitar al final de cada fila, en dp (con su área de toque, que llega a 48). */
-export const ANCHO_DEL_QUITAR = 36;
+/** El ancho de la casilla al final de cada fila, en dp: el mismo de la sesión, con su área de toque de 44. */
+export const ANCHO_DE_LA_CASILLA_EN_LA_CORRECCION = ANCHO_DE_LA_CASILLA;
 const COLUMNA_SERIE = 44;
 const SEPARACION = 6;
 const CELDA_MINIMA = 56;
 
 /**
- * Tabla o tarjetas, como en la sesión: con la letra grande, o si tres celdas no entran junto al número y al botón de
- * quitar, cada serie pasa a una tarjeta con sus tres campos. Las celdas de la corrección llevan solo números.
+ * Tabla o tarjetas, como en la sesión: con la letra grande, o si tres celdas no entran junto al número y a la casilla,
+ * cada serie pasa a una tarjeta con sus tres campos. Las celdas de la corrección llevan solo números.
  */
 export function disposicionDeLaCorreccion(ancho: number, escalaDeLetra: number): 'tabla' | 'tarjetas' {
   const escala = Math.max(1, escalaDeLetra);
   if (escala >= 1.6) return 'tarjetas';
-  const celda = (ancho - COLUMNA_SERIE * escala - ANCHO_DEL_QUITAR - 4 * SEPARACION) / 3;
+  const celda = (ancho - COLUMNA_SERIE * escala - ANCHO_DE_LA_CASILLA_EN_LA_CORRECCION - 4 * SEPARACION) / 3;
   return celda >= CELDA_MINIMA * escala ? 'tabla' : 'tarjetas';
 }

@@ -6,9 +6,10 @@
  * sigue diciendo todo, y el lector de pantalla no lo recorre. Los glifos de texto (la tilde, el aviso, las flechas)
  * pasaron a ser íconos.
  */
-import { useEffect, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
 import { BotonDeIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
+import { useMovimientoReducido } from './movimiento-reducido';
 import { COLOR, estilosPorTema } from './tema';
 
 // Los colores viven en tema.ts, donde los verifica la prueba de contraste; se reexportan para las pantallas.
@@ -341,13 +342,89 @@ function entranEnUnaFila(opciones: readonly { readonly texto: string; readonly i
   return total <= ancho;
 }
 
-/** Casilla accesible (rol checkbox con estado). Nunca premarcada: el estado lo decide quien la usa. */
+/** El lado de la caja de una casilla, en dp, y el área de toque mínima de la casilla sola (la guía pide 44 o más). */
+export const LADO_DE_LA_CASILLA = 26;
+export const TOQUE_DE_LA_CASILLA = 44;
+
+/**
+ * La caja de una casilla (Dirección, 2026-11-02: «tiene que ser una casilla linda»): cuadrada de 26 dp, con esquinas de 7
+ * y un borde de 2 dp del acento. Marcada, se llena del acento con la tilde de la familia en el color de contraste del
+ * botón (`botonTexto`, medido sobre el acento). Al tocarla se aclara; al marcarse crece apenas y vuelve, en unos 150 ms,
+ * y con «reducir movimiento» cambia sin moverse. La tilde va solo acá adentro: dice «marcada», no aprueba nada.
+ *
+ * Solo dibuja: el toque, el rol y el nombre los pone quien la usa (`Casilla`, `CasillaSola` o una casilla propia).
+ */
+export function CajaDeCasilla({ marcada, presionada = false, deshabilitada = false }: { marcada: boolean; presionada?: boolean; deshabilitada?: boolean }) {
+  const reducido = useMovimientoReducido();
+  const escala = useRef(new Animated.Value(1)).current;
+  const anterior = useRef(marcada);
+  useEffect(() => {
+    if (anterior.current === marcada) return;
+    anterior.current = marcada;
+    if (!marcada || reducido) {
+      escala.setValue(1);
+      return;
+    }
+    // Un pulso corto al marcarse: arranca un poco más chica y vuelve a su tamaño con un rebote leve.
+    escala.setValue(0.8);
+    const pulso = Animated.spring(escala, { toValue: 1, speed: 28, bounciness: 10, useNativeDriver: true });
+    pulso.start();
+    return () => pulso.stop();
+  }, [marcada, reducido, escala]);
+  return (
+    <Animated.View
+      style={[estilos.cajaDeCasilla, marcada && estilos.cajaMarcada, presionada && (marcada ? estilos.cajaMarcadaPresionada : estilos.cajaPresionada), deshabilitada && estilos.deshabilitado, { transform: [{ scale: escala }] }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+    >
+      {marcada ? <Icono nombre="tilde" tamano={20} tono="botonTexto" marcado /> : null}
+    </Animated.View>
+  );
+}
+
+/**
+ * La casilla sola, sin texto al lado: la de cada serie, al final de la fila (la sesión, la corrección). Su nombre dice lo
+ * que hace («Registrar la serie 2») y el lector agrega si está marcada. El área de toque es de 44 dp o más aunque la caja
+ * mida 26. Nunca premarcada: el estado lo decide quien la usa.
+ */
+export function CasillaSola({
+  marcada,
+  onCambio,
+  etiqueta,
+  pista,
+  deshabilitada = false,
+}: {
+  marcada: boolean;
+  onCambio: (v: boolean) => void;
+  etiqueta: string;
+  pista?: string;
+  deshabilitada?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: marcada, disabled: deshabilitada }}
+      accessibilityLabel={etiqueta}
+      accessibilityHint={pista}
+      disabled={deshabilitada}
+      onPress={() => onCambio(!marcada)}
+      hitSlop={4}
+      style={estilos.casillaSola}
+    >
+      {({ pressed }) => <CajaDeCasilla marcada={marcada} presionada={pressed} deshabilitada={deshabilitada} />}
+    </Pressable>
+  );
+}
+
+/** Casilla accesible con su texto (rol checkbox con estado). Nunca premarcada: el estado lo decide quien la usa. */
 export function Casilla({
   marcada,
   onCambio,
   titulo,
   texto,
   error,
+  deshabilitada = false,
   children,
 }: {
   marcada: boolean;
@@ -355,23 +432,30 @@ export function Casilla({
   titulo: string;
   texto: string;
   error?: string | null;
+  deshabilitada?: boolean;
   children?: ReactNode;
 }) {
   return (
     <View style={[estilos.acto, error ? estilos.actoConError : null]}>
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: marcada }}
+        accessibilityState={{ checked: marcada, disabled: deshabilitada }}
         accessibilityLabel={`${titulo}. ${texto}`}
         accessibilityHint={error ?? undefined}
+        disabled={deshabilitada}
         onPress={() => onCambio(!marcada)}
         style={estilos.filaDeCasilla}
       >
-        {/* La tilde va solo dentro de la casilla: dice «marcada», no aprueba nada. */}
-        <View style={[estilos.casilla, marcada && estilos.casillaMarcada]}>{marcada ? <Icono nombre="tilde" tamano={20} tono="botonTexto" /> : null}</View>
-        <Text style={estilos.textoDeCasilla}>
-          <Text style={estilos.negrita}>{titulo}</Text> — {texto}
-        </Text>
+        {({ pressed }) => (
+          <>
+            <View style={estilos.lugarDeLaCaja}>
+              <CajaDeCasilla marcada={marcada} presionada={pressed} deshabilitada={deshabilitada} />
+            </View>
+            <Text style={estilos.textoDeCasilla}>
+              <Text style={estilos.negrita}>{titulo}</Text> — {texto}
+            </Text>
+          </>
+        )}
       </Pressable>
       {children}
       {error ? <TextoDeError texto={error} /> : null}
@@ -609,8 +693,15 @@ export const estilos = estilosPorTema((COLOR) => ({
   acto: { borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, borderRadius: 8, padding: 12, marginVertical: 6 },
   actoConError: { borderColor: COLOR.error, borderWidth: 2 },
   filaDeCasilla: { flexDirection: 'row', alignItems: 'flex-start', minHeight: 48 },
-  casilla: { width: 28, height: 28, borderWidth: 2, borderColor: COLOR.acento, borderRadius: 4, marginRight: 12, marginTop: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
-  casillaMarcada: { backgroundColor: COLOR.acento },
+  // La casilla (2026-11-02): 26 dp, esquinas de 7 y borde de 2 dp del acento; marcada, llena del acento.
+  cajaDeCasilla: { width: LADO_DE_LA_CASILLA, height: LADO_DE_LA_CASILLA, borderWidth: 2, borderColor: COLOR.acento, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
+  cajaMarcada: { backgroundColor: COLOR.acento },
+  // Al tocarla: la vacía toma el escalón elevado; la marcada se aclara apenas.
+  cajaPresionada: { backgroundColor: COLOR.superficieElevada },
+  cajaMarcadaPresionada: { opacity: 0.8 },
+  // La caja junto a su texto: alineada con la primera línea, con aire hasta el texto.
+  lugarDeLaCaja: { marginRight: 12, marginTop: 1 },
+  casillaSola: { minWidth: TOQUE_DE_LA_CASILLA, minHeight: TOQUE_DE_LA_CASILLA, alignItems: 'center', justifyContent: 'center' },
   textoDeCasilla: { flex: 1, fontSize: 16, color: COLOR.texto, lineHeight: 22 },
   aviso: { borderLeftWidth: 6, borderRadius: 8, padding: 12, marginVertical: 8 },
   aviso_error: { borderLeftColor: COLOR.error, backgroundColor: COLOR.errorFondo },

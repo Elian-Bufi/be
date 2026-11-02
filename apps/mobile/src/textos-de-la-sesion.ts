@@ -29,6 +29,10 @@ export const TEXTOS_DE_LA_SESION = {
   // La tabla
   columnaTiempo: 'Tiempo',
   serieRegistrada: (n: number) => `Serie ${numero(n, 0)} registrada`,
+  /** El nombre de la casilla de la fila: lo que hace. El lector agrega si está marcada. */
+  registrarLaSerie: (n: number) => `Registrar la serie ${numero(n, 0)}`,
+  /** El rótulo chico de una serie tildada sin escribir nada (DL-161, `AS_PLANNED`). Las escritas no llevan rótulo. */
+  comoElPlan: 'como el plan',
   pistaParaTildar: 'Tildala al terminarla. Sin nada escrito, queda lo planificado que ves en gris.',
   pistaParaDestildar: 'Destildala para deshacer el registro mientras no finalices.',
   enConflictoSinTilde: 'Resolvé el conflicto de esta serie más abajo.',
