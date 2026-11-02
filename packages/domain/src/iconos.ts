@@ -6,7 +6,11 @@
  * Se escribió el 2026-10-10 desde el taller de diseño, que comprobó cada dibujo punto por punto contra su original
  * (WP-ESCRITORIO-AMABLE, E-04). Desde entonces **este archivo es la fuente:** un dibujo se cambia acá, y
  * `iconos.test.ts` cuida las reglas de la familia (un solo trazo, lo único lleno son puntos, nada que califique).
- * La APK todavía dibuja los suyos: unificarla es otro paquete.
+ * Desde el 2026-11-02 (PA-06) la APK también los dibuja de acá (`apps/mobile/src/icono.tsx`), y la familia suma nueve:
+ * cuatro de la propuesta de la APK del 2026-10-30 (`sube`, `baja`, `deshacer` y `ya-la-hice`, este sin la tilde: un botón
+ * no lleva tilde de aprobado) y cinco que la APK ya dibujaba por su cuenta y no tenían par (`inicio`, `camara`,
+ * `sin-enviar`, `sin-registro` y `menu-de-la-app`). La marca «Registrado» de la APK (un círculo lleno con la tilde
+ * calada) queda fuera: es una marca de estado, no un ícono de la familia.
  */
 
 /** El lado del lienzo y el grosor del trazo de toda la familia. */
@@ -32,7 +36,7 @@ export interface DefinicionDeIcono {
   readonly formas: readonly FormaDeIcono[];
 }
 
-/** Los 105 nombres, en el orden del catálogo. */
+/** Los 115 nombres: los 106 del catálogo, en su orden, y los nueve que sumó la APK (PA-06), al final. */
 export const NOMBRES_DE_ICONO = [
   // Áreas
   'nutricion', 'entrenamiento', 'antropometria', 'informacion',
@@ -64,6 +68,8 @@ export const NOMBRES_DE_ICONO = [
   'persona', 'asesorados', 'solicitud', 'pendientes',
   // Biblioteca
   'plantillas', 'habitual', 'receta', 'imagen',
+  // La APK (PA-06, 2026-11-02): el cambio de una medida, deshacer, «Ya la hice» y los cinco propios que no tenían par
+  'sube', 'baja', 'deshacer', 'ya-la-hice', 'inicio', 'camara', 'sin-enviar', 'sin-registro', 'menu-de-la-app',
 ] as const;
 export type NombreDeIcono = (typeof NOMBRES_DE_ICONO)[number];
 
@@ -175,4 +181,23 @@ export const ICONOS: Readonly<Record<NombreDeIcono, DefinicionDeIcono>> = {
   habitual: { grupo: 'Biblioteca', formas: [{ forma: 'trazo', d: 'M8.5 3.5h7M9.7 3.5L9 9.8 6 13h12l-3-3.2-.7-6.3M12 13v7.5' }] },
   receta: { grupo: 'Biblioteca', formas: [{ forma: 'trazo', d: 'M5 11h14v5.5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z' }, { forma: 'trazo', d: 'M3 11h18M9.5 7.5c0-1.5 1.5-1.5 1.5-3M14 7.5c0-1.5 1.5-1.5 1.5-3' }] },
   imagen: { grupo: 'Biblioteca', formas: [{ forma: 'rectangulo', x: 3.5, y: 5, ancho: 17, alto: 14, radio: 2.5 }, { forma: 'circulo', cx: 8.5, cy: 10, r: 1.6 }, { forma: 'trazo', d: 'M4 17.5l5-5 4 4 3-3 4.5 4.5' }] },
+  // ── Los que sumó la APK (PA-06, 2026-11-02) ──
+  // De la propuesta del 2026-10-30 (`BE-maquetas/iconos/propuesta-app/nuevos.js`). `sube` y `baja` van siempre junto al
+  // número con su signo y en un color neutro: dicen para dónde, no si es bueno o malo.
+  sube: { grupo: 'Datos', formas: [{ forma: 'trazo', d: 'M12 19.5V5M6.5 10.5L12 5l5.5 5.5' }] },
+  baja: { grupo: 'Datos', formas: [{ forma: 'trazo', d: 'M12 4.5V19M6.5 13.5L12 19l5.5-5.5' }] },
+  // Deshacer un registro o un cambio todavía sin guardar; distinto de `volver`, que es navegar.
+  deshacer: { grupo: 'Acciones', formas: [{ forma: 'trazo', d: 'M8.5 13.5L4 9l4.5-4.5' }, { forma: 'trazo', d: 'M4 9h10.5a5.5 5.5 0 0 1 0 11H11' }] },
+  // «Ya la hice»: la sesión contada en pocas líneas, sin el detalle de cada serie. Es la lista con el último renglón
+  // corto, y **sin la tilde** de la propuesta: va en un botón, y un botón no lleva tilde de aprobado.
+  'ya-la-hice': { grupo: 'Entrenamiento', formas: [{ forma: 'trazo', d: 'M9 6.5h11M9 12h11M9 17.5h5.5' }, { forma: 'circulo', cx: 4.75, cy: 6.5, r: 1.2, lleno: true }, { forma: 'circulo', cx: 4.75, cy: 12, r: 1.2, lleno: true }, { forma: 'circulo', cx: 4.75, cy: 17.5, r: 1.2, lleno: true }] },
+  // Los cinco que la APK dibujaba por su cuenta, con el mismo trazo (`barra-de-zonas.tsx`, `iconos-de-*.tsx`, `cabecera.tsx`).
+  inicio: { grupo: 'Navegación', formas: [{ forma: 'trazo', d: 'M3.5 11.2L12 4l8.5 7.2' }, { forma: 'trazo', d: 'M5.8 9.6V20h12.4V9.6' }, { forma: 'trazo', d: 'M10 20v-5.2h4V20' }] },
+  camara: { grupo: 'Biblioteca', formas: [{ forma: 'trazo', d: 'M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.3-2h6l1.3 2h2.2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z' }, { forma: 'circulo', cx: 12, cy: 12.8, r: 3.3 }] },
+  // Lo registrado en el teléfono que todavía no viajó; pareja de `sin-conexion`.
+  'sin-enviar': { grupo: 'Sistema', formas: [{ forma: 'trazo', d: 'M7.2 18.5h10a4 4 0 0 0 .6-7.95A5.6 5.6 0 0 0 7 9.3a4.6 4.6 0 0 0 .2 9.2z' }] },
+  // Lo que todavía no tiene registro: un círculo vacío. No es «no realizada»: la ausencia no se califica.
+  'sin-registro': { grupo: 'Estados', formas: [{ forma: 'circulo', cx: 12, cy: 12, r: 9 }] },
+  // El menú de la app (la hamburguesa). No es `menu`, que en la familia son tres puntos y quiere decir «Más acciones».
+  'menu-de-la-app': { grupo: 'Navegación', formas: [{ forma: 'trazo', d: 'M4 7h16M4 12h16M4 17h16' }] },
 };

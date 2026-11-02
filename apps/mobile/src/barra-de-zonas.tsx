@@ -25,8 +25,9 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
+import { DibujoDeIcono, type NombreDeIcono } from './icono';
 import { disposicionDeLaBarra } from './disposicion-de-la-barra';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
 import { COLOR, estilosPorTema } from './tema';
@@ -84,7 +85,7 @@ export function BarraDeZonas({ actual, ir, alMedir, oculta = false }: { actual: 
               >
                 <View style={estilos.lugarDelIcono}>
                   {elegida ? <Brillo zona={z.zona} /> : null}
-                  <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} grosor={elegida ? 2.1 : 1.8} />
+                  <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} marcado={elegida} />
                 </View>
                 {/* Sin tope: crece con la letra. Achicarse es el último recurso, para no cortarse. */}
                 <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
@@ -139,51 +140,22 @@ function Brillo({ zona }: { zona: Zona }) {
   );
 }
 
+/** El ícono de la familia de cada destino: la casa, la manzana, la mancuerna, la cinta métrica y el formulario. */
+const ICONO_DE_LA_ZONA: Readonly<Record<Zona, NombreDeIcono>> = {
+  inicio: 'inicio',
+  nutricion: 'nutricion',
+  entrenamiento: 'entrenamiento',
+  evolucion: 'antropometria',
+  informacion: 'informacion',
+};
+
 /**
- * Íconos de trazo, en una grilla de 24: solo acompañan al texto, y el lector de pantalla no los recorre. Inicio los usa
- * también en el encabezado de cada tarjeta, para que el módulo se reconozca igual que en la barra.
+ * El ícono de un destino, de la familia de BE (PA-06): solo acompaña al texto, y el lector de pantalla no lo recorre.
+ * Inicio lo usa también en el encabezado de cada tarjeta, para que el módulo se reconozca igual que en la barra.
+ * `marcado` engrosa el trazo del destino elegido: es la señal que no depende del color.
  */
-export function IconoDeZona({ zona, color, grosor }: { zona: Zona; color: string; grosor: number }) {
-  const trazo = { stroke: color, strokeWidth: grosor, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' } as const;
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-      {zona === 'inicio' ? (
-        // Una casa: el techo y el cuerpo con su puerta.
-        <>
-          <Path d="M3.5 11.2 12 4l8.5 7.2" {...trazo} />
-          <Path d="M5.8 9.6V20h12.4V9.6" {...trazo} />
-          <Path d="M10 20v-5.2h4V20" {...trazo} />
-        </>
-      ) : zona === 'nutricion' ? (
-        // Una manzana: el cuerpo, el cabo y la hoja.
-        <>
-          <Path d="M12 8.2c-1.6-1.4-4.4-1.6-6 .2-2 2.2-1.5 6.4.6 9.4 1.5 2.1 3.3 3.1 5.4 2.1 2.1 1 3.9 0 5.4-2.1 2.1-3 2.6-7.2.6-9.4-1.6-1.8-4.4-1.6-6-.2Z" {...trazo} />
-          <Path d="M12 8.2c0-2 .6-3.6 1.8-4.7" {...trazo} />
-          <Path d="M13.4 5.6c1.6-.9 3.4-.8 4.4.2-1.2 1.2-3 1.4-4.4.6" {...trazo} />
-        </>
-      ) : zona === 'entrenamiento' ? (
-        // Una mancuerna: la barra y dos discos de cada lado.
-        <>
-          <Path d="M8 12h8" {...trazo} />
-          <Path d="M6.5 7.5v9M17.5 7.5v9" {...trazo} />
-          <Path d="M3.5 9.5v5M20.5 9.5v5" {...trazo} />
-        </>
-      ) : zona === 'evolucion' ? (
-        // Una cinta métrica: la regla con sus marcas.
-        <>
-          <Path d="M3 8.5h18v7H3Z" {...trazo} />
-          <Path d="M7 8.5v3M11 8.5v4M15 8.5v3M19 8.5v2" {...trazo} />
-        </>
-      ) : (
-        // Un formulario sobre su tabla.
-        <>
-          <Path d="M7.5 4.5h9a1.5 1.5 0 0 1 1.5 1.5v13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5V6a1.5 1.5 0 0 1 1.5-1.5Z" {...trazo} />
-          <Path d="M9.5 3h5v3h-5Z" {...trazo} />
-          <Path d="M9 11h6M9 14.5h6M9 18h3.5" {...trazo} />
-        </>
-      )}
-    </Svg>
-  );
+export function IconoDeZona({ zona, color, marcado = false }: { zona: Zona; color: string; marcado?: boolean }) {
+  return <DibujoDeIcono nombre={ICONO_DE_LA_ZONA[zona]} color={color} tamano={24} marcado={marcado} />;
 }
 
 const estilos = estilosPorTema((COLOR) => ({

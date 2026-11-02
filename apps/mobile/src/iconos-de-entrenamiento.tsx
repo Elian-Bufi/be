@@ -1,33 +1,31 @@
 /**
- * Los íconos de la sesión de entrenamiento (WP-ENTRENAMIENTO-SERIES §7), dibujados con trazos como los de la barra y la
- * cabecera. La mancuerna es la misma del destino Entrenamiento de la barra (`IconoDeZona`): son los íconos de la app, no
- * los de las láminas de referencia. Acompañan a un texto que dice lo mismo: el lector de pantalla no los recorre.
+ * Los íconos de la sesión de entrenamiento (WP-ENTRENAMIENTO-SERIES §7). Acompañan a un texto que dice lo mismo: el lector
+ * de pantalla no los recorre.
+ *
+ * Desde PA-06 (2026-11-02) los que tienen par en la familia de BE se dibujan de ahí (`icono.tsx`), con el mismo nombre y
+ * la misma firma, así cada pantalla los sigue usando igual: la mancuerna es `entrenamiento`, la lista de la rutina es
+ * `lista`, la hoja del plan es `plan` y la nube de lo que falta enviar es `sin-enviar`. Quedan propios el cronómetro, que
+ * en cada lugar de la sesión pasa a un ícono distinto de la familia (el reloj, el descanso, empezar y terminar) cuando se
+ * coloquen los íconos pantalla por pantalla, y la nube con el aviso de la recuperación, que es una ilustración de 96 dp.
  */
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { DibujoDeIcono } from './icono';
 
 interface PropsDeIcono {
   readonly color: string;
   readonly tamano?: number;
-  readonly grosor?: number;
 }
 
 const sinLector = { accessible: false, importantForAccessibility: 'no-hide-descendants' } as const;
 const trazo = (color: string, grosor: number) => ({ stroke: color, strokeWidth: grosor, strokeLinecap: 'round', strokeLinejoin: 'round', fill: 'none' }) as const;
 
 /** La mancuerna del destino Entrenamiento: el respaldo de un ejercicio sin imagen. */
-export function IconoDeEjercicio({ color, tamano = 40, grosor = 1.6 }: PropsDeIcono) {
-  const t = trazo(color, grosor);
-  return (
-    <Svg width={tamano} height={tamano} viewBox="0 0 24 24" {...sinLector}>
-      <Path d="M8 12h8" {...t} />
-      <Path d="M6.5 7.5v9M17.5 7.5v9" {...t} />
-      <Path d="M3.5 9.5v5M20.5 9.5v5" {...t} />
-    </Svg>
-  );
+export function IconoDeEjercicio({ color, tamano = 40 }: PropsDeIcono) {
+  return <DibujoDeIcono nombre="entrenamiento" color={color} tamano={tamano} />;
 }
 
 /** Un cronómetro: el temporizador de la sesión, el descanso y «Cronometrar serie». */
-export function IconoDeCronometro({ color, tamano = 22, grosor = 1.8 }: PropsDeIcono) {
+export function IconoDeCronometro({ color, tamano = 22, grosor = 1.8 }: PropsDeIcono & { readonly grosor?: number }) {
   const t = trazo(color, grosor);
   return (
     <Svg width={tamano} height={tamano} viewBox="0 0 24 24" {...sinLector}>
@@ -38,36 +36,18 @@ export function IconoDeCronometro({ color, tamano = 22, grosor = 1.8 }: PropsDeI
 }
 
 /** Una lista: «Ver rutina». */
-export function IconoDeRutina({ color, tamano = 22, grosor = 1.8 }: PropsDeIcono) {
-  const t = trazo(color, grosor);
-  return (
-    <Svg width={tamano} height={tamano} viewBox="0 0 24 24" {...sinLector}>
-      <Path d="M9 6.5h11M9 12h11M9 17.5h11" {...t} />
-      <Circle cx={4.6} cy={6.5} r={1.1} fill={color} />
-      <Circle cx={4.6} cy={12} r={1.1} fill={color} />
-      <Circle cx={4.6} cy={17.5} r={1.1} fill={color} />
-    </Svg>
-  );
+export function IconoDeRutina({ color, tamano = 22 }: PropsDeIcono) {
+  return <DibujoDeIcono nombre="lista" color={color} tamano={tamano} />;
 }
 
 /** Una hoja con renglones: la banda «Plan de la serie N». */
-export function IconoDePlan({ color, tamano = 24, grosor = 1.7 }: PropsDeIcono) {
-  const t = trazo(color, grosor);
-  return (
-    <Svg width={tamano} height={tamano} viewBox="0 0 24 24" {...sinLector}>
-      <Rect x={5} y={3.5} width={14} height={17} rx={2} {...t} />
-      <Path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4.5" {...t} />
-    </Svg>
-  );
+export function IconoDePlan({ color, tamano = 24 }: PropsDeIcono) {
+  return <DibujoDeIcono nombre="plan" color={color} tamano={tamano} />;
 }
 
 /** Una nube: lo que está guardado en el teléfono y todavía falta enviar. */
-export function IconoDeNube({ color, tamano = 20, grosor = 1.7 }: PropsDeIcono) {
-  return (
-    <Svg width={tamano} height={tamano} viewBox="0 0 24 24" {...sinLector}>
-      <Path d="M7.2 18.5h10a4 4 0 0 0 .6-7.95A5.6 5.6 0 0 0 7 9.3a4.6 4.6 0 0 0 .2 9.2Z" {...trazo(color, grosor)} />
-    </Svg>
-  );
+export function IconoDeNube({ color, tamano = 20 }: PropsDeIcono) {
+  return <DibujoDeIcono nombre="sin-enviar" color={color} tamano={tamano} />;
 }
 
 /**

@@ -346,3 +346,33 @@ test('D-C2 · la guardia detecta la condición leída del original', () => {
   assert.match('etiquetaDeCondicionRegistrada( x.ejecucion.original )', CONDICION_DEL_ORIGINAL);
   assert.doesNotMatch('etiquetaDeCondicionRegistrada(registroVigente(e))', CONDICION_DEL_ORIGINAL);
 });
+
+/**
+ * PA-06 (2026-11-02): los íconos de la APK son los de la familia de BE (`apps/mobile/src/icono.tsx`), dibujados con
+ * elementos y no con `SvgXml`, y ningún texto hace de ícono. La tilde, el aviso y las flechas escritos como letras se
+ * leían en voz alta («marca de verificación»), no cambiaban con el tema como el resto, y la tilde suelta se leía como
+ * «aprobado». La tilde de la familia va solo dentro de una casilla.
+ */
+const GLIFOS = /[✓✔⚠↑↓‹›]/;
+
+test('PA-06 · la APK no escribe glifos como íconos ni dibuja íconos con SvgXml', () => {
+  const archivos = [];
+  const recorrer = (dir) => {
+    for (const nombre of readdirSync(dir, { withFileTypes: true })) {
+      const ruta = join(dir, nombre.name);
+      if (nombre.isDirectory()) recorrer(ruta);
+      else if (/\.tsx?$/.test(nombre.name)) archivos.push(ruta);
+    }
+  };
+  recorrer(join(RAIZ, 'apps/mobile/src'));
+  archivos.push(join(RAIZ, 'apps/mobile/App.tsx'));
+  assert.ok(archivos.length >= 60, `se esperaban los archivos de la APK, hay ${archivos.length}`);
+  const hallazgos = [];
+  for (const a of archivos) {
+    const contenido = readFileSync(a, 'utf8');
+    for (const { texto, linea } of textosDe(a, contenido)) if (GLIFOS.test(texto)) hallazgos.push(`${a.slice(RAIZ.length + 1)}:${linea} escribe ${JSON.stringify(texto)}`);
+    if (/\bSvgXml\b/.test(contenido)) hallazgos.push(`${a.slice(RAIZ.length + 1)} usa SvgXml`);
+  }
+  assert.deepEqual(hallazgos, []);
+  assert.ok(GLIFOS.test('✓ Guardado') && GLIFOS.test('‹ Anterior') && !GLIFOS.test('Anterior'), 'la guardia reconoce los glifos');
+});

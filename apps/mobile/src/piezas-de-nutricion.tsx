@@ -7,6 +7,7 @@ import type { Nutrientes } from '@be/domain';
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { celdaDeMacro, celdasDeLaFranja, columnasDeLaFranja, LETRA_DE_LA_ETIQUETA, LETRA_DEL_VALOR, type CeldaDeMacro } from './franja-de-macros';
+import { Icono } from './icono';
 import { Flecha, IconoDeInformacion } from './iconos-de-nutricion';
 import { COLOR, estilosPorTema } from './tema';
 import { Cifra } from './ui';
@@ -142,7 +143,7 @@ export function CasillaSimple({
       onPress={() => onCambio(!marcada)}
       style={({ pressed }) => [estilos.filaDeCasilla, pressed && estilos.presionada, deshabilitada && estilos.deshabilitada]}
     >
-      <View style={[estilos.casilla, marcada && estilos.casillaMarcada]}>{marcada ? <Text style={estilos.tilde}>✓</Text> : null}</View>
+      <View style={[estilos.casilla, marcada && estilos.casillaMarcada]}>{marcada ? <Icono nombre="tilde" tamano={20} tono="botonTexto" /> : null}</View>
       <Text style={estilos.textoDeCasilla}>{texto}</Text>
     </Pressable>
   );
@@ -194,7 +195,6 @@ const estilos = estilosPorTema((COLOR) => ({
   filaDeCasilla: { flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: 12, paddingVertical: 4 },
   casilla: { width: 28, height: 28, borderWidth: 2, borderColor: COLOR.acento, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
   casillaMarcada: { backgroundColor: COLOR.acento },
-  tilde: { color: COLOR.botonTexto, fontWeight: '800', fontSize: 18 },
   textoDeCasilla: { flex: 1, fontSize: 16, lineHeight: 22, color: COLOR.texto },
   desplegador: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 48, borderTopWidth: 1, borderTopColor: COLOR.borde, paddingVertical: 8, marginTop: 4 },
   desplegadorAbierto: { borderBottomWidth: 0 },
