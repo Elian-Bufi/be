@@ -499,14 +499,17 @@ export function PantallaDeRegistroRapido({
                     <Text style={estilos.nombreDelFinal}>{p.exerciseName}</Text>
                     {` · ${plan}`}
                   </Text>
-                  <Text style={[estilos.estadoDelFinal, estado !== 'como-el-plan' && estilos.estadoCambiado]}>{texto}</Text>
+                  <Text style={[estilos.estadoDelFinal, estado !== 'como-el-plan' && estado !== 'sin-series' && estilos.estadoCambiado]}>{texto}</Text>
                 </View>
-                <Boton
-                  texto={anotar ? T.anotar : T.cambiar}
-                  tipo="enlace"
-                  etiqueta={anotar ? T.anotarEjercicio(p.exerciseName) : T.cambiarEjercicio(p.exerciseName)}
-                  onPress={() => abrirCambio(p.prescriptionId)}
-                />
+                {/* Sin series en el plan no hay qué cambiar: se cuenta en la nota. */}
+                {estado === 'sin-series' ? null : (
+                  <Boton
+                    texto={anotar ? T.anotar : T.cambiar}
+                    tipo="enlace"
+                    etiqueta={anotar ? T.anotarEjercicio(p.exerciseName) : T.cambiarEjercicio(p.exerciseName)}
+                    onPress={() => abrirCambio(p.prescriptionId)}
+                  />
+                )}
               </View>
             );
           })}
@@ -555,7 +558,9 @@ export function PantallaDeRegistroRapido({
             return (
               <Casilla key={p.prescriptionId} marcada={e.hecho} onCambio={(v) => cambiar(marcarEjercicio(r, p.prescriptionId, v))} titulo={p.exerciseName} texto={lineaDelPlan(p)}>
                 {e.hecho ? (
-                  seRegistraConElPlan(p) ? (
+                  p.sets.length === 0 ? (
+                    <Parrafo tenue>{T.contaloEnLaNota}</Parrafo>
+                  ) : seRegistraConElPlan(p) ? (
                     <Casilla marcada={e.cambio} onCambio={(v) => cambiar(marcarCambio(r, p.prescriptionId, v))} titulo={T.cambieAlgo} texto={T.cambieAlgoDetalle} />
                   ) : (
                     <Parrafo tenue>{T.anotarEnElPasoSiguiente}</Parrafo>

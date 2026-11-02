@@ -9,7 +9,8 @@
  *  3. los pasos se saltan cuando no hacen falta: con «todo» se va del primer cuadro al último («Listo para registrar»),
  *     con la línea del plan a la vista y «Cambiar» por ejercicio para quitar una serie o escribir una distinta;
  *  4. lo que se manda a API-TRN-17 cumple el contrato estricto y los mínimos de API-TRN-18, con la condición correcta;
- *  5. lo escrito va `TYPED` y solo con lo escrito; una serie sin tildar no se manda; un ejercicio sin tildar tampoco;
+ *  5. lo escrito va `TYPED` y, en lo vacío, con lo planificado que se veía en gris (como la casilla de la sesión); una
+ *     serie sin tildar no se manda; un ejercicio sin tildar tampoco, ni uno sin series en el plan;
  *  6. «Hice algo distinto» sin nada tildado es una sesión resumida, con la frase y la nota;
  *  7. la hora: opcional hoy, obligatoria otro día, nunca futura, y se elige tocando;
  *  8. cuándo se ofrece, qué borrador no se pisa y qué ocurrencia vale otro día;
@@ -271,7 +272,7 @@ test('4 · un ejercicio sin tildar no se manda y la sesión queda «Realizada co
 
 // ─── 5. Lo escrito ──────────────────────────────────────────────────────────────────────────────
 
-test('5 · «Cambié algo»: lo escrito va TYPED y solo con lo escrito; lo tildado sin escribir, con el plan; lo destildado no va', () => {
+test('5 · «Cambié algo»: lo escrito va TYPED y, en lo vacío, lo planificado que se veía; lo tildado sin escribir, con el plan; lo destildado no va', () => {
   const ctx = ctxDe(SIMPLE);
   let r = rr.marcarCambio(conTodo(ctx), 'pGoblet', true);
   r = rr.escribir(r, 'pGoblet', 1, 'carga', '18,5');
@@ -281,8 +282,8 @@ test('5 · «Cambié algo»: lo escrito va TYPED y solo con lo escrito; lo tilda
   assert.equal(armado.ok, true);
   const goblet = armado.changes.exercises.find((e) => e.prescriptionId === 'pGoblet');
   assert.deepEqual(goblet.sets, [
-    // El RIR no se escribió: queda sin informar, no se copia el del plan.
-    { setIndex: 1, load: { value: 18.5, unit: 'kg' }, completedRepetitions: 9, rir: null, perceivedExertion: null, recordedAs: 'TYPED' },
+    // El RIR no se escribió: va el del plan, que se veía en gris, como en la casilla de la sesión.
+    { setIndex: 1, load: { value: 18.5, unit: 'kg' }, completedRepetitions: 9, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' },
     { setIndex: 2, load: { value: 16, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'AS_PLANNED' },
   ]);
   assert.equal(armado.changes.sessionCondition, 'COMPLETED_WITH_DEVIATION', 'una serie que no hizo es un desvío');
@@ -297,6 +298,51 @@ test('5 · «Cambié algo»: lo escrito va TYPED y solo con lo escrito; lo tilda
   const sinRumano = rr.armarRegistro(ctx, vacio, AHORA);
   assert.deepEqual(sinRumano.changes.exercises.map((e) => e.prescriptionId), ['pGoblet']);
   assert.equal(sinRumano.changes.sessionCondition, 'COMPLETED_WITH_DEVIATION');
+});
+
+test('5 · «Cambiar la serie N» desde el final: lo que queda vacío va con lo planificado que se veía en gris, no sin valor', () => {
+  // El caso de la revisión: en la serie 3 de Sentadilla goblet se escribe solo «6» en Repeticiones; la carga y el RIR
+  // siguen en gris con lo planificado, y eso es lo que se registra.
+  const ctx = ctxDe(SIMPLE);
+  const r = rr.escribir(conTodo(ctx), 'pGoblet', 3, 'repeticiones', '6');
+  assert.deepEqual(rr.estadoEnElFinal(GOBLET, r.ejercicios.pGoblet), { estado: 'cambiado', texto: '3 series · 1 cambiada' });
+  const armado = rr.armarRegistro(ctx, r, AHORA);
+  assert.equal(armado.ok, true);
+  assert.deepEqual(armado.changes.exercises[0].sets[2], { setIndex: 3, load: { value: 16, unit: 'kg' }, completedRepetitions: 6, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' });
+  cumpleElContrato(armado.changes);
+  // Solo el RIR también alcanza: ya no frena «Volver al final» pidiendo la carga o las repeticiones.
+  const soloElRir = rr.armarRegistro({ ...ctx, sesion: { prescriptions: [GOBLET] } }, rr.escribir(conTodo(ctx), 'pGoblet', 2, 'rir', '0'), AHORA);
+  assert.equal(soloElRir.ok, true, soloElRir.motivo);
+  assert.deepEqual(soloElRir.changes.exercises[0].sets[1], { setIndex: 2, load: { value: 16, unit: 'kg' }, completedRepetitions: 10, rir: 0, perceivedExertion: null, recordedAs: 'TYPED' });
+  // Un rango no se completa con un número: con «10–12» y sin carga, escribir solo el RIR sigue pidiendo un dato.
+  const enRango = rr.armarRegistro(ctxDe(sesion(ZANCADA)), rr.escribir(conTodo(ctxDe(sesion(ZANCADA))), 'pZancada', 1, 'rir', '2'), AHORA);
+  assert.equal(enRango.ok, false);
+  assert.ok(enRango.errores[rr.claveDeSerie('pZancada', 1)].fila);
+  // La ayuda del cambio y la del detalle dicen lo mismo que hace.
+  assert.match(rr.TEXTOS_DEL_REGISTRO_RAPIDO.ayudaDelCambio, /lo que dejes vacío queda con lo planificado/);
+  assert.match(rr.TEXTOS_DEL_REGISTRO_RAPIDO.explicacionDelDetalle, /en lo que quedó vacío, lo planificado/);
+});
+
+test('5 · un ejercicio sin series en el plan: no se manda, no cambia la condición, y el final dice que se cuenta en la nota', () => {
+  // El website deja guardar un ejercicio sin series («Sin series»); la confirmación rechaza uno sin series (SET_REQUIRED).
+  const MOVILIDAD = prescripcion('pMovilidad', 3, 'Movilidad', []);
+  const ctx = ctxDe(sesion(GOBLET, RUMANO, MOVILIDAD));
+  assert.equal(rr.seRegistraConElPlan(MOVILIDAD), false);
+  assert.equal(rr.lineaDelPlan(MOVILIDAD), rr.TEXTOS_DEL_REGISTRO_RAPIDO.sinSeriesEnElPlan);
+  const todo = conTodo(ctx);
+  assert.deepEqual(rr.estadoEnElFinal(MOVILIDAD, todo.ejercicios.pMovilidad), { estado: 'sin-series', texto: rr.TEXTOS_DEL_REGISTRO_RAPIDO.contaloEnLaNota });
+  assert.deepEqual(rr.pasosDelRecorrido(ctx, todo), ['como', 'revisar', 'listo'], 'no suma un paso');
+  const armado = rr.armarRegistro(ctx, todo, AHORA);
+  assert.equal(armado.ok, true, armado.motivo);
+  assert.deepEqual(armado.changes.exercises.map((e) => e.prescriptionId), ['pGoblet', 'pRumano']);
+  assert.equal(armado.changes.sessionCondition, 'COMPLETED', 'no es un desvío: no había qué registrar');
+  cumpleElContrato(armado.changes);
+  // Con «una parte», tildarlo no abre el paso de las series ni manda nada.
+  const parte = rr.marcarEjercicio(rr.marcarEjercicio(rr.elegir(ctx, todo, 'parte'), 'pMovilidad', true), 'pGoblet', true);
+  assert.deepEqual(rr.ejerciciosConDetalle(ctx, parte), []);
+  assert.deepEqual(rr.armarRegistro(ctx, parte, AHORA).changes.exercises.map((e) => e.prescriptionId), ['pGoblet']);
+  // En la pantalla, el final no le ofrece «Cambiar»: no hay series que abrir.
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/registro-rapido.tsx'), 'utf8'), /estado === 'sin-series' \? null : \(/);
 });
 
 test('5 · un plan sin número para registrar pide anotarlo: nunca se fabrica una serie, y un valor ilegible se señala en su campo', () => {

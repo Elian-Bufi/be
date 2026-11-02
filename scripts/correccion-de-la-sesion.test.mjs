@@ -6,7 +6,8 @@
  * planificado y sin registrar.
  *  1. lo planificado sin registrar aparece para cargarlo, en gris, y un ejercicio que no se registró aparece entero;
  *  2. el estado inicial arma lo mismo que rige: sin tocar nada, la corrección «no cambia nada»;
- *  3. lo que se suma viaja como TYPED y con la versión planificada; las filas vacías no viajan;
+ *  3. lo que se suma viaja como TYPED, con lo planificado en lo que quedó vacío y con la versión planificada; las filas
+ *     vacías no viajan;
  *  4. lo que no se toca conserva su forma de carga, su esfuerzo y su duración; lo reescrito va TYPED y conserva la duración;
  *  5. quitar una serie no renumera las demás, «Deshacer» la devuelve, y un ejercicio sin series no viaja;
  *  6. una registrada vaciada es un error en esa fila; «8,5» repeticiones también, y «52,5» kg vuelve como 52,5;
@@ -131,7 +132,7 @@ test('2 · sin tocar nada, la corrección arma lo mismo que rige, y registrarla 
 
 // ─── 3 y 4 ───────────────────────────────────────────────────────────────────────────────────────
 
-test('3 · sumar lo que faltó: viaja como TYPED, con la versión planificada, y las filas vacías no viajan', () => {
+test('3 · sumar lo que faltó: viaja como TYPED, con lo planificado en lo vacío y la versión planificada; las filas vacías no viajan', () => {
   const e = conMotivo(hacer(inicial(), escribir('press', 1, 'carga', '45'), escribir('press', 1, 'repeticiones', '9'), escribir('press', 1, 'rir', '3'), escribir('press', 2, 'repeticiones', '10')));
   const pedido = c.pedidoDeCorreccion(e, ORIGINAL);
   assert.equal(pedido.ok, true, pedido.mensaje);
@@ -139,7 +140,8 @@ test('3 · sumar lo que faltó: viaja como TYPED, con la versión planificada, y
   assert.equal(press.performedExerciseVersionId, 'ev-press');
   assert.deepEqual(press.sets, [
     { setIndex: 1, load: { value: 45, unit: 'kg' }, completedRepetitions: 9, rir: 3, perceivedExertion: null, recordedAs: 'TYPED' },
-    { setIndex: 2, load: null, completedRepetitions: 10, rir: null, perceivedExertion: null, recordedAs: 'TYPED' },
+    // Solo se escribieron las repeticiones: la carga y el RIR son los que se veían en gris, como en la casilla de la sesión.
+    { setIndex: 2, load: { value: 45, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' },
   ]);
   // La serie 3 de Press y la 3 de Sentadilla quedaron vacías: no se fabrican.
   assert.deepEqual(pedido.correction.exercises.find((x) => x.prescriptionId === 'sentadilla').sets.map((s) => s.setIndex), [1, 2]);
@@ -251,7 +253,7 @@ test('10 · los cambios se dicen en frases, y el resumen de un ejercicio se corr
     'Cómo resultó: Realizada → Realizada con desvío',
     'Comentario de la sesión: «Cambié el orden»',
     'Cambia la serie 1 de Sentadilla: 58 kg · 8 reps → 60 kg · 8 reps',
-    'Se suma la serie 2 de Press de banca (45 kg · 9 reps)',
+    'Se suma la serie 2 de Press de banca (45 kg · 9 reps · RIR 2)',
   ]);
   assert.equal(c.TEXTOS_DE_LA_CORRECCION.cambios(4), '4 cambios');
   // Un registro por resumen: se corrige el resumen; vaciarlo lo quita, y sin nada no se registra.
@@ -330,11 +332,14 @@ test('13 · la casilla de la serie: destildar quita y se deshace; tildar una sin
   const otraVez = c.corregir(tildada, { tipo: 'quitar', prescriptionId: 'sentadilla', setIndex: 3 });
   assert.equal(c.estadoDeLaFila(fila(otraVez, 'sentadilla', 3)), 'vacia');
   assert.deepEqual(c.construirCorreccion(otraVez).correction.exercises[0].sets.map((s) => s.setIndex), [1, 2]);
-  // Escribir en una sin registro la tilda, y lo escrito va tal cual (TYPED): no se completa con el plan.
+  // Escribir en una sin registro la tilda: lo escrito va TYPED y lo que quedó vacío, con lo planificado que se veía en gris.
   const escrita = c.corregir(otraVez, escribir('sentadilla', 3, 'repeticiones', '7'));
   assert.equal(c.filaTildada(fila(escrita, 'sentadilla', 3)), true);
   assert.equal(c.filaComoElPlan(fila(escrita, 'sentadilla', 3)), false);
-  assert.deepEqual(c.construirCorreccion(escrita).correction.exercises[0].sets.at(-1), { setIndex: 3, load: null, completedRepetitions: 7, rir: null, perceivedExertion: null, recordedAs: 'TYPED' });
+  assert.deepEqual(c.construirCorreccion(escrita).correction.exercises[0].sets.at(-1), { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 7, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' });
+  // Solo el RIR también alcanza: la carga y las repeticiones son las del plan.
+  const soloElRir = c.corregir(otraVez, escribir('sentadilla', 3, 'rir', '0'));
+  assert.deepEqual(c.construirCorreccion(soloElRir).correction.exercises[0].sets.at(-1), { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 0, perceivedExertion: null, recordedAs: 'TYPED' });
   // Una serie agregada no tiene plan: tildarla sin escribir no fabrica nada y dice qué falta.
   const conOtra = c.corregir(e0, { tipo: 'agregar', prescriptionId: 'sentadilla' });
   const respuesta = c.alTocarLaCasilla(fila(conOtra, 'sentadilla', 4));

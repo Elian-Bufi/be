@@ -9,8 +9,10 @@
  *   que abre sus series, para destildar las que no hizo o escribir una distinta, y vuelve al final. Hoy son dos cuadros
  *   y «Listo»; la nota y el horario quedan a un toque. Así el valor se ve antes de confirmar (B10-06 §56).
  * - **Por serie** (`granularity: 'SET'`). Un ejercicio tildado sin cambios manda sus series con los valores del plan y
- *   `recordedAs: 'AS_PLANNED'`: la persona los tuvo a la vista y los confirmó (B10-06 §56). Lo escrito va `TYPED`, solo
- *   con lo escrito: un campo vacío no se completa con el plan. Una serie sin tildar no se manda: no la hizo.
+ *   `recordedAs: 'AS_PLANNED'`: la persona los tuvo a la vista y los confirmó (B10-06 §56). Lo escrito va `TYPED` y, en
+ *   lo que quedó vacío, con lo planificado que se veía en gris: la misma regla que la casilla de la sesión
+ *   (`serieAlTildar`). Una serie sin tildar no se manda: no la hizo. Un ejercicio sin series en el plan tampoco: no hay
+ *   qué registrar por serie, y el último cuadro lo dice.
  * - **Nunca se fabrica una serie** (SET_WITHOUT_DATA): si el plan de una serie no trae ni carga ni un número de
  *   repeticiones (por ejemplo, «10–12 rep.»), tildarla sin escribir no alcanza, y el recorrido pide anotarlo.
  * - **Un ejercicio sin tildar no se manda**: queda como no hecho. Con «Hice algo distinto» y nada tildado, la sesión se
@@ -40,7 +42,7 @@ import {
   type SesionConObjetivos,
 } from '@be/domain';
 import { fechaCorta } from './formato';
-import { FILA_VACIA, leerFila, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita } from './series-de-la-sesion';
+import { FILA_VACIA, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita } from './series-de-la-sesion';
 
 // ─── Los textos ─────────────────────────────────────────────────────────────────────────────────
 
@@ -71,7 +73,7 @@ export const TEXTOS_DEL_REGISTRO_RAPIDO = {
   ayudaDelDetalle: 'Destildá las series que no hiciste.',
   comoSeRegistra: 'Cómo se registra',
   explicacionDelDetalle:
-    'Una serie tildada sin escribir queda con lo planificado. Si escribís algo, se registra solo lo que escribiste. Una serie sin tildar no se registra.',
+    'Una serie tildada sin escribir queda con lo planificado. Si escribís algo, se registra lo que escribiste y, en lo que quedó vacío, lo planificado. Una serie sin tildar no se registra.',
   serie: (n: number) => `Serie ${n}`,
   carga: (unidad: string) => `Carga (${unidad})`,
   repeticiones: 'Repeticiones',
@@ -109,7 +111,10 @@ export const TEXTOS_DEL_REGISTRO_RAPIDO = {
   seriesDe: (hechas: number, total: number) => `${hechas} de ${total} series`,
   cambiadas: (n: number) => `${n} ${n === 1 ? 'cambiada' : 'cambiadas'}`,
   queCambioEn: (ejercicio: string) => `¿Qué cambió en ${ejercicio}?`,
-  ayudaDelCambio: 'Destildá las series que no hiciste. Si una fue distinta, tocá «Cambiar la serie» y escribí lo que hiciste; en gris, lo planificado.',
+  ayudaDelCambio: 'Destildá las series que no hiciste. Si una fue distinta, tocá «Cambiar la serie» y escribí solo lo que cambió: lo que dejes vacío queda con lo planificado, que ves en gris.',
+  /** Un ejercicio que el plan trae sin series (el website lo permite): no hay qué registrar por serie. */
+  sinSeriesEnElPlan: 'Sin series en el plan',
+  contaloEnLaNota: 'Si lo hiciste, contalo en la nota.',
   cambiarLaSerie: (n: number) => `Cambiar la serie ${n}`,
   volverAlFinal: 'Volver al final',
   dejarComoElPlan: 'Dejarlo como el plan',
@@ -153,6 +158,7 @@ const repeticionesDe = (s: SerieConObjetivo): string | null => {
  */
 export function lineaDelPlan(p: Pick<PrescripcionConObjetivos, 'sets'>): string {
   const n = p.sets.length;
+  if (n === 0) return T.sinSeriesEnElPlan;
   const reps = porSerie(p.sets.map(repeticionesDe));
   const rir = porSerie(p.sets.map((s) => (s.target.rir === null ? null : numero(s.target.rir))));
   const cargas = p.sets.map((s) => s.target.suggestedLoad);
@@ -180,8 +186,8 @@ export function serieDelPlan(s: SerieConObjetivo): SerieEjecutadaApi | null {
   return { setIndex: s.setIndex, load: carga, completedRepetitions: repeticiones, rir, perceivedExertion: null, recordedAs: 'AS_PLANNED' };
 }
 
-/** Si todas las series del ejercicio se pueden registrar con lo planificado, sin escribir nada. */
-export const seRegistraConElPlan = (p: Pick<PrescripcionConObjetivos, 'sets'>): boolean => p.sets.every((s) => serieDelPlan(s) !== null);
+/** Si el ejercicio tiene series y todas se pueden registrar con lo planificado, sin escribir nada. */
+export const seRegistraConElPlan = (p: Pick<PrescripcionConObjetivos, 'sets'>): boolean => p.sets.length > 0 && p.sets.every((s) => serieDelPlan(s) !== null);
 
 // ─── Las respuestas ─────────────────────────────────────────────────────────────────────────────
 
@@ -281,16 +287,18 @@ export function dejarComoElPlan(ctx: Contexto, r: Respuestas, id: string): Respu
 // ─── El último cuadro de «Hice todo lo planificado» ─────────────────────────────────────────────
 
 /** Cómo queda cada ejercicio en «Listo para registrar». */
-export type EstadoEnElFinal = 'como-el-plan' | 'cambiado' | 'sin-registrar' | 'falta-anotar';
+export type EstadoEnElFinal = 'como-el-plan' | 'cambiado' | 'sin-registrar' | 'falta-anotar' | 'sin-series';
 
 export const tieneAlgoEscrito = (f: FilaEscrita): boolean => f.carga.trim() !== '' || f.repeticiones.trim() !== '' || f.rir.trim() !== '';
 
 /**
  * Lo que dice la fila de un ejercicio en el último cuadro, debajo de su línea planificada: «Como el plan»; «2 de 3 series
  * · 1 cambiada»; «Sin registrar», si se destildaron todas; o que falta anotar, si el plan de una serie tildada no trae un
- * número y no se escribió nada (nunca se fabrica una serie).
+ * número y no se escribió nada (nunca se fabrica una serie). Un ejercicio sin series en el plan no se registra por
+ * serie: no lleva «Cambiar», y se cuenta en la nota.
  */
 export function estadoEnElFinal(p: PrescripcionConObjetivos, e: EjercicioRapido | undefined): { readonly estado: EstadoEnElFinal; readonly texto: string } {
+  if (p.sets.length === 0) return { estado: 'sin-series', texto: T.contaloEnLaNota };
   if (!e?.hecho) return { estado: 'sin-registrar', texto: T.sinRegistrar };
   const series = e.cambio ? e.series : seriesComoElPlan(p);
   const hechas = p.sets.filter((s) => series[s.setIndex]?.hecha);
@@ -310,11 +318,14 @@ export type Paso = 'como' | 'ejercicios' | 'detalle' | 'cuando' | 'revisar' | 'l
 /** El nombre de cada paso, en la franja «Paso 2 de 4 · Ejercicios». */
 export const NOMBRE_DEL_PASO: Readonly<Record<Paso, string>> = { como: 'Cómo fue', ejercicios: 'Ejercicios', detalle: 'Series', cuando: 'Nota y horario', revisar: 'Revisar', listo: 'Listo' };
 
-/** Los ejercicios cuyas series se revisan: los tildados con «Cambié algo», y los que el plan no deja tildar sin escribir. */
+/**
+ * Los ejercicios cuyas series se revisan: los tildados con «Cambié algo», y los que el plan no deja tildar sin escribir.
+ * Uno sin series en el plan no tiene qué revisar.
+ */
 export function ejerciciosConDetalle(ctx: Contexto, r: Respuestas): PrescripcionConObjetivos[] {
   return ctx.sesion.prescriptions.filter((p) => {
     const e = r.ejercicios[p.prescriptionId];
-    return e?.hecho === true && (e.cambio || !seRegistraConElPlan(p));
+    return p.sets.length > 0 && e?.hecho === true && (e.cambio || !seRegistraConElPlan(p));
   });
 }
 
@@ -442,7 +453,11 @@ export type RegistroArmado =
 /** La clave de una serie en los errores del detalle. */
 export const claveDeSerie = (prescriptionId: string, setIndex: number): string => `${prescriptionId}:${setIndex}`;
 
-/** Las series de un ejercicio revisado en el detalle: lo escrito va `TYPED`; lo tildado sin escribir, con el plan. */
+/**
+ * Las series de un ejercicio revisado en el detalle o en «Cambiar la serie N»: lo tildado sin escribir, con el plan
+ * (`AS_PLANNED`); lo escrito, `TYPED`, con lo planificado en lo que quedó vacío (`serieAlTildar`). Lo que se ve es lo
+ * que viaja: escribir solo las repeticiones no borra la carga ni el RIR que se veían en gris.
+ */
 function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, errores: Record<string, ErroresDeFila>, primerProblema: { motivo: string | null; ejercicio: string | null }): SerieEjecutadaApi[] {
   const unidad = unidadDelEjercicio(p);
   const series: SerieEjecutadaApi[] = [];
@@ -461,14 +476,15 @@ function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, error
       }
       continue;
     }
-    const leida = leerFila(escrita, s.setIndex, unidad);
+    // Lo escrito y, en lo que quedó vacío, lo planificado que se veía en gris: la regla de la casilla de la sesión.
+    const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad);
     if (!leida.ok) {
       errores[claveDeSerie(p.prescriptionId, s.setIndex)] = leida.errores;
       primerProblema.motivo ??= leida.errores.fila ? T.faltaUnDato(p.exerciseName, s.setIndex) : T.revisaUnValor(p.exerciseName, s.setIndex);
       primerProblema.ejercicio ??= p.prescriptionId;
       continue;
     }
-    series.push({ ...leida.serie, recordedAs: 'TYPED' });
+    series.push(leida.serie);
   }
   return series;
 }
@@ -488,6 +504,9 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
   const exercises: { prescriptionId: string; performedExerciseVersionId: string; sets: SerieEjecutadaApi[] }[] = [];
   let todoCompleto = true;
   for (const p of prescripciones) {
+    // Un ejercicio sin series en el plan (el website lo permite) no tiene qué registrar por serie: no se manda, porque
+    // sin series la confirmación lo rechaza (SET_REQUIRED), y no cambia la condición.
+    if (p.sets.length === 0) continue;
     const e = r.ejercicios[p.prescriptionId];
     if (!e?.hecho) {
       todoCompleto = false;

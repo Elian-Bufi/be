@@ -6,7 +6,8 @@
  *  1. tildar una fila registra lo escrito y, en lo vacío, lo planificado que se veía; `recordedAs` dice cómo se cargó, y
  *     un rango de repeticiones no se convierte en un número;
  *  2. el tiempo de la serie: se escribe en minutos y segundos o en segundos, es opcional y va en `durationSeconds`;
- *  3. destildar: lo escrito vuelve a la fila, y la próxima API-TRN-17 saca la serie del borrador del servidor;
+ *  3. destildar: lo escrito vuelve a la fila, y la próxima API-TRN-17 saca la serie del borrador del servidor; volver a
+ *     tildarla mientras viaja un envío no la pierde (§4, con la respuesta retenida);
  *  4. lo escrito se guarda en el teléfono con una demora corta y al instante con `guardarYa`, con su unidad, y vuelve
  *     igual en un proceso nuevo; lo guardado con otra forma no anula la sesión;
  *  5. «Antes de finalizar» lista lo escrito sin registrar y lo registra de una;
@@ -353,6 +354,89 @@ test('4 · destildar una serie que solo está en el teléfono no manda nada al s
   await almacen.sincronizar('borrador-1');
   assert.equal(api.pedidos.length, 0);
   assert.equal(almacen.quitarSerie('borrador-1', 'pB', 2, null), 'sin-serie');
+});
+
+/**
+ * Retiene la respuesta del próximo API-TRN-17: el servidor ya lo aplicó, pero el teléfono no se entera hasta `soltar()`.
+ * Así se toca la casilla mientras el envío está en vuelo, como un toque sin querer en el teléfono.
+ */
+function retenerLaProximaRespuesta(api) {
+  const original = api.guardarBorradorDeEjecucion;
+  let soltar = null;
+  let avisar = null;
+  const llego = new Promise((r) => (avisar = r));
+  api.guardarBorradorDeEjecucion = async (...args) => {
+    api.guardarBorradorDeEjecucion = original;
+    const respuesta = await original(...args);
+    const suelta = new Promise((r) => (soltar = r));
+    avisar();
+    await suelta;
+    return respuesta;
+  };
+  return { llego, soltar: () => soltar() };
+}
+
+const filaDe = (almacen, n) => {
+  const s = almacen.sesion('borrador-1');
+  return series.filasDelEjercicio(GOBLET, series.guardadasVigentes(s.borrador, 'pA', s.quitadas), s.series).find((f) => f.setIndex === n);
+};
+
+test('4 · destildar y volver a tildar mientras viaja el envío que la saca: la serie no se pierde ni se destilda sola', async () => {
+  const api = apiDePrueba();
+  const { almacen } = await almacenListo({ api });
+  almacen.fijarBorrador('borrador-1', api.borrador);
+  const serie = { setIndex: 2, load: { value: 16, unit: 'kg' }, completedRepetitions: 14, rir: 3, perceivedExertion: null, recordedAs: 'TYPED' };
+  const laSerie = { prescriptionId: 'pA', performedExerciseVersionId: 'ev-pA', serie };
+  almacen.registrarSerie('borrador-1', laSerie);
+  await almacen.sincronizar('borrador-1');
+  assert.deepEqual(series.guardadasDe(api.borrador, 'pA'), [serie], 'la serie 2 está guardada en el servidor');
+  // Un toque sin querer: se destilda y sale el pedido que la saca del borrador.
+  const retenido = retenerLaProximaRespuesta(api);
+  almacen.quitarSerie('borrador-1', 'pA', 2, series.escritaDeLaSerie(serie, 'kg'));
+  const envio = almacen.sincronizar('borrador-1');
+  await retenido.llego;
+  assert.deepEqual(api.pedidos.at(-1).changes.exercises, [], 'el pedido en vuelo la saca');
+  // Antes de la respuesta, la vuelve a tildar: queda tildada, pendiente de enviar, y la quitada sigue.
+  assert.equal(almacen.registrarSerie('borrador-1', laSerie), 'registrada');
+  assert.equal(filaDe(almacen, 2).estado, 'pendiente-de-enviar');
+  assert.deepEqual(almacen.sesion('borrador-1').quitadas, [{ prescriptionId: 'pA', setIndex: 2 }]);
+  retenido.soltar();
+  await envio;
+  // Volvió el borrador sin la serie 2: la del teléfono sigue pendiente, y la fila sigue tildada.
+  assert.deepEqual(series.guardadasDe(almacen.sesion('borrador-1').borrador, 'pA'), []);
+  assert.equal(filaDe(almacen, 2).estado, 'pendiente-de-enviar');
+  await almacen.sincronizar('borrador-1');
+  assert.deepEqual(series.guardadasDe(api.borrador, 'pA'), [serie], 'la vuelta siguiente la vuelve a guardar, igual');
+  assert.deepEqual([almacen.sesion('borrador-1').series, almacen.sesion('borrador-1').quitadas], [[], []]);
+  assert.equal(filaDe(almacen, 2).estado, 'guardada');
+});
+
+test('4 · tildar, destildar y volver a tildar antes de que vuelva el envío: la quitada de después no borra la serie', async () => {
+  const api = apiDePrueba();
+  const { almacen } = await almacenListo({ api });
+  almacen.fijarBorrador('borrador-1', api.borrador);
+  const serie = { setIndex: 1, load: { value: 16, unit: 'kg' }, completedRepetitions: null, rir: 3, perceivedExertion: null, recordedAs: 'AS_PLANNED' };
+  const laSerie = { prescriptionId: 'pA', performedExerciseVersionId: 'ev-pA', serie };
+  const retenido = retenerLaProximaRespuesta(api);
+  almacen.registrarSerie('borrador-1', laSerie);
+  const envio = almacen.sincronizar('borrador-1');
+  await retenido.llego;
+  // El envío en vuelo la puede guardar: destildarla deja una quitada; volver a tildarla, otra serie igual en el teléfono.
+  assert.equal(almacen.quitarSerie('borrador-1', 'pA', 1, null), 'quitada');
+  assert.deepEqual(almacen.sesion('borrador-1').quitadas, [{ prescriptionId: 'pA', setIndex: 1 }]);
+  assert.equal(almacen.registrarSerie('borrador-1', laSerie), 'registrada');
+  retenido.soltar();
+  await envio;
+  // Volvió el borrador con la serie 1. La del teléfono no se da por enviada: su fila tiene una quitada que ese pedido no
+  // llevaba, y la vuelta siguiente la aplica.
+  assert.deepEqual(series.guardadasDe(almacen.sesion('borrador-1').borrador, 'pA'), [serie]);
+  assert.equal(almacen.sesion('borrador-1').series.length, 1);
+  assert.equal(filaDe(almacen, 1).estado, 'pendiente-de-enviar');
+  await almacen.sincronizar('borrador-1');
+  assert.deepEqual(series.guardadasDe(api.borrador, 'pA'), [serie], 'la serie 1 sigue en el servidor');
+  assert.deepEqual([almacen.sesion('borrador-1').series, almacen.sesion('borrador-1').quitadas], [[], []]);
+  assert.equal(filaDe(almacen, 1).estado, 'guardada');
+  assert.equal(api.pedidos.length, 2);
 });
 
 // ─── 5. Antes de finalizar ──────────────────────────────────────────────────────────────────────

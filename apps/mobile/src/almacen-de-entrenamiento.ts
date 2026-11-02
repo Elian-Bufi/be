@@ -695,13 +695,18 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
           return r;
         }
         const guardado = r.datos.data;
-        // Salen las que viajaron, tal como viajaron; lo que se registró o se destildó mientras tanto sigue pendiente.
-        cambiar(draftId, (x) => ({
-          ...x,
-          borrador: guardado,
-          series: x.series.filter((l) => !armado.incluidas.some((i) => mismaFila(i, l) && mismosDatos(i.serie, l.serie))),
-          quitadas: x.quitadas.filter((q) => !armado.quitadasAplicadas.some((o) => mismaQuitada(o, q))),
-        }));
+        // Salen las que viajaron, tal como viajaron; lo que se registró o se destildó mientras tanto sigue pendiente. Una
+        // que viajó, se destildó y se volvió a tildar con los mismos datos antes de la respuesta tiene una quitada que este
+        // pedido no llevaba: sigue pendiente, porque la vuelta siguiente aplica esa quitada y la serie tiene que ir con ella.
+        cambiar(draftId, (x) => {
+          const destildadaDespues = (l: SerieLocal) => esQuitada(x.quitadas, l.prescriptionId, l.serie.setIndex) && !esQuitada(armado.quitadasAplicadas, l.prescriptionId, l.serie.setIndex);
+          return {
+            ...x,
+            borrador: guardado,
+            series: x.series.filter((l) => destildadaDespues(l) || !armado.incluidas.some((i) => mismaFila(i, l) && mismosDatos(i.serie, l.serie))),
+            quitadas: x.quitadas.filter((q) => !armado.quitadasAplicadas.some((o) => mismaQuitada(o, q))),
+          };
+        });
       }
     }
     // 2. Los eventos, en lotes de hasta 30 y en orden. Con un conflicto de tiempos sin resolver, no se manda nada más.
@@ -923,8 +928,10 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
       const clave = claveDeFila(prescriptionId, setIndex);
       const filasDeMas = opciones.olvidarFilasDeMas ? sinLaClave(s.filasDeMas, prescriptionId) : s.filasDeMas;
       // Destildada y vuelta a tildar con los mismos datos que el servidor ya tiene: alcanza con no sacarla del borrador.
+      // Con un envío en vuelo, no: ese envío puede llevar la quitada, y su respuesta llegaría sin la serie. Entonces la
+      // serie queda pendiente y la quitada sigue, y la vuelta siguiente reemplaza la del servidor por esta, que es igual.
       const delServidor = guardadasDe(s.borrador, prescriptionId).find((x) => x.setIndex === setIndex);
-      if (delServidor && esQuitada(s.quitadas, prescriptionId, setIndex) && mismosDatos(delServidor, local.serie)) {
+      if (!enVuelo.has(draftId) && delServidor && esQuitada(s.quitadas, prescriptionId, setIndex) && mismosDatos(delServidor, local.serie)) {
         cambiar(draftId, (x) => ({ ...x, quitadas: x.quitadas.filter((q) => !(q.prescriptionId === prescriptionId && q.setIndex === setIndex)), escritas: sinLaClave(x.escritas, clave), filasDeMas }));
         return 'registrada';
       }

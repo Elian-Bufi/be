@@ -6,8 +6,9 @@
  *   fila, como en la sesión. Las series registradas vienen escritas; las planificadas que no se registraron aparecen
  *   vacías, con el plan en gris, para cargarlas: así se suma lo que faltó. Un ejercicio planificado que no se registró
  *   aparece entero, con todas sus series en gris.
- * - **Se lee con las reglas del registro** (`leerFila`): los mismos números, los mismos límites y los mismos textos.
- *   Nunca se fabrica una serie: una fila vacía no viaja. Lo gris es presentación y nunca se envía.
+ * - **Se lee con las reglas del registro** (`leerFila`, y `serieAlTildar` en una serie sin registro): los mismos números,
+ *   los mismos límites y los mismos textos. Nunca se fabrica una serie: una fila vacía sin tildar no viaja. En una serie
+ *   registrada, lo gris es referencia y no se envía.
  * - **Lo que no se toca queda igual**, con su forma de carga (`recordedAs`), su esfuerzo percibido y su duración
  *   (DL-161). Lo que se escribe va como `TYPED`: lo escribió la persona. La duración no se inventa: una serie que se
  *   suma va sin ella, y una que se reescribe conserva la que tenía.
@@ -15,10 +16,10 @@
  *   destildarla**: queda tachada, con «Deshacer» (o se vuelve a tildar) hasta registrar la corrección, y «Qué cambia» lo
  *   dice («Se quita la serie 3 de Sentadilla»). Las demás conservan su número (la API admite huecos; solo prohíbe
  *   duplicados). El registro original no se toca nunca (REG-06-116).
- * - **Sumar lo que faltó:** lo que se escribe en una serie sin registro la tilda y viaja tal cual se escribió (`TYPED`);
- *   tildarla sin escribir nada la suma con lo planificado de esa serie (`AS_PLANNED`, «como el plan»), con las mismas
- *   reglas que la casilla de la sesión (`serieAlTildar`): un rango de repeticiones no se convierte en un número, y sin
- *   plan no se fabrica nada.
+ * - **Sumar lo que faltó**, con las mismas reglas que la casilla de la sesión (`serieAlTildar`): lo que se escribe en una
+ *   serie sin registro la tilda y viaja como `TYPED`, con lo planificado que se veía en gris en lo que quedó vacío;
+ *   tildarla sin escribir nada la suma con lo planificado de esa serie (`AS_PLANNED`, «como el plan»). Un rango de
+ *   repeticiones no se convierte en un número, y sin plan (una serie agregada) va solo lo escrito: nada se fabrica.
  * - **El orden** es el de lo que rige y después lo sumado, en el orden de la sesión: la API compara en orden para
  *   decir «la corrección no cambia nada», y sin esto una corrección sin cambios parecería un cambio.
  * - **El motivo** se elige de un toque, o se escribe (B10-06:868-886: «Requiere: motivo, cambio»).
@@ -100,7 +101,7 @@ export const TEXTOS_DE_LA_CORRECCION = {
   conDesvio: 'Realizada con desvío',
   comentario: 'Comentario sobre la sesión (opcional)',
   sinSeries: 'Con «No pude realizarla», la corrección queda sin series. Lo que registraste sigue en el registro original.',
-  enGris: 'En gris: lo planificado. Tildá una serie para sumarla así, o escribí encima lo que hiciste.',
+  enGris: 'En gris: lo planificado. Para sumar una serie sin registro, tildala así, o escribí solo lo que fue distinto: lo que dejes vacío queda con lo planificado.',
   sinRegistrar: 'Sin registrar',
   conResumen: 'Registrado con un resumen',
   registradas: (n: number, de: number) => `${numero(n, 0)} de ${numero(de, 0)} ${de === 1 ? 'serie registrada' : 'series registradas'}`,
@@ -376,19 +377,20 @@ const mismosValores = (a: SerieEjecutadaApi, b: SerieEjecutadaApi): boolean => m
 /**
  * La serie que se registra con una fila, o sus errores; `null` si la fila no viaja (destildada, o vacía y sin tildar).
  * Una registrada que no cambió vuelve tal cual: conserva su forma de carga, su esfuerzo y su duración. Una sin registro
- * tildada sin escribir nada va con lo planificado de esa serie, como la casilla de la sesión.
+ * se lee como la casilla de la sesión: tildada sin escribir nada, con lo planificado de esa serie; con algo escrito, lo
+ * escrito y, en lo que quedó vacío, lo planificado que se veía en gris (lo que se ve es lo que viaja).
  */
 function serieDeLaFila(f: FilaEnCorreccion): { readonly serie: SerieEjecutadaApi | null; readonly errores: ErroresDeFila | null } {
   if (f.quitada) return { serie: null, errores: null };
-  if (f.origen !== 'registrada' && !hayAlgoEscrito(f.escrita)) {
-    if (!f.tildada) return { serie: null, errores: null };
-    const comoElPlan = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad);
-    return comoElPlan.ok ? { serie: comoElPlan.serie, errores: null } : { serie: null, errores: comoElPlan.errores };
+  if (f.origen !== 'registrada') {
+    if (!hayAlgoEscrito(f.escrita) && !f.tildada) return { serie: null, errores: null };
+    const alTildar = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad);
+    return alTildar.ok ? { serie: alTildar.serie, errores: null } : { serie: null, errores: alTildar.errores };
   }
   const lectura = leerFila(f.escrita, f.setIndex, f.unidad);
   if (!lectura.ok) {
     // Una registrada vaciada no se borra en silencio: se quita, o se le anota un dato.
-    const vaciada = f.origen === 'registrada' && !hayAlgoEscrito(f.escrita);
+    const vaciada = !hayAlgoEscrito(f.escrita);
     return { serie: null, errores: vaciada ? { fila: T.vaciada(f.setIndex) } : lectura.errores };
   }
   if (f.antes && mismosValores(lectura.serie, f.antes)) return { serie: f.antes, errores: null };
