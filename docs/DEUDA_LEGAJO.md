@@ -85,7 +85,7 @@
 | DL-078 | WP-06 · 2026-09-21 | 09v10:924 · 09v10:886 · 09v10:188-189, 915 | No hay operación para llegar a una ocurrencia que no sea la de hoy | **DECIDIDA** 2026-09-21 · opción A · se suma la operación |
 | DL-079 | WP-06 · 2026-09-21 | 09v10:1053, 1089 · 09v10:888 | `prescriptionId` es obligatorio al registrar ejecución y no se puede descubrir | ABIERTA |
 | DL-080 | WP-06 · 2026-09-21 | 09v10:549, 612, 328, 330, 1092, 1095, 1244, 1323, 406 | Once objetos `{}` en requests de escritura de entrenamiento | ABIERTA |
-| DL-081 | WP-06 · 2026-09-21 | 06:5614-5632 · 06:80, 4103 · 09v12:326-332 | Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio | ABIERTA |
+| DL-081 | WP-06 · 2026-09-21 | 06:5614-5632 · 06:80, 4103 · 09v12:326-332 | Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio | **CERRADA** 2026-11-02 por pedido de Dirección · las 17 zonas con los nombres e identificadores del set de capas de Dirección, API-ZON-01 y las zonas de cada ejercicio con su rol (WP-CATALOGO-VISUAL, rama `wp-catalogo-visual`, sin integrar); DEC-047 sigue fuera del repositorio |
 | DL-082 | WP-06 · 2026-09-21 | 06:4651-4663 · 06:4958-4965 · 06:226 | No existe una regla equivalente a REG-06-125 para entrenamiento | ABIERTA |
 | DL-083 | WP-06 · 2026-09-21 | 08:238-246 · 08:304 · 08:291-293 | La matriz de pertinencia del 08 §11-bis no está instanciada para ENTRENAMIENTO | ABIERTA |
 | DL-084 | WP-06 · 2026-09-21 | DV-05:1128-1129 · DL-042 | Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron | **RESUELTA** 2026-09-21 con el provisorio (opción A) · las variantes de entrenamiento del 7 y del 8 pasan en CI y en vivo contra `test` (API 0.6.0, `c50fdd9`; evidencia en #56) |
@@ -162,6 +162,7 @@
 | DL-156 | WP-ADMINISTRACION · 2026-10-25 | 05 UC-P02 §4.6.10 · REG-06-38 · INV-06-43 | Toda resolución identifica la versión revisada de una presentación, y en esta versión no hay presentaciones | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la versión revisada es la de la trayectoria del área al decidir (`version_previa` del hecho), con el control de conflictos previsto (`expectedVersion`) |
 | DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la suspensión opera por área y no cierra las sesiones globales del profesional; el servidor rechaza las operaciones del área suspendida desde el pedido siguiente (la sesión autentica, no autoriza) |
 | DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **RATIFICADA** por Dirección el 2026-10-25 e **INTEGRADA** (#211, `7079677`), desplegada en test (C-D1 opción A y C-D2): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; con alternativas no se inventa un total diario, y la comparación no se presenta como adherencia; falta la prueba con profesionales y con un lector de pantalla |
+| DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar · D-1 a D-5 a ratificar: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
 
 ---
 
@@ -1874,7 +1875,7 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 
 ## DL-081 — Las 17 zonas musculares no tienen operación de descubrimiento, y DEC-047 no está en el repositorio
 
-**Prioridad:** media · **Documento:** 06:5614-5632 · 06:80, 4103 · 09v12:326-332 · **Estado:** ABIERTA
+**Prioridad:** media · **Documento:** 06:5614-5632 · 06:80, 4103 · 09v12:326-332 · **Estado:** **CERRADA** 2026-11-02 (ver «Cierre», al final)
 
 **Qué dice el legajo.** REG-06-137 fija **17 zonas** con identificador estable y la cardinalidad «9 anterior + 10 posterior − 2 ambas» (06:5614), nombra solo antebrazo y deltoides, y remite las otras quince a `DEC-047`: «B-08 no fija en esta revisión la lista concreta de las otras quince denominaciones» (06:5632). **`DEC-047` no está en el repositorio**: solo se lo referencia por hash (06:80, 06:4103). Y `API-INT-TRN-01` exige `muscleZones[].zoneId` en el request (09v12:326-332) sin que **ninguna de las 27 rutas** liste las zonas.
 
@@ -1885,6 +1886,61 @@ El OpenAPI generado publica todo y el contract test lo verifica.
 - **B.** Pedir DEC-047 a Dirección antes de empezar WP-07.
 
 **Provisorio en código.** A. La estructura es lo que el paquete garantiza; los nombres son contenido, y rotular el catálogo como sintético ya es el precedente de REG-06-157 en WP-05. **Conecta con DL-073**: REG-06-138 declara que la Zona es entidad de dominio y **no un archivo gráfico**, y que el conjunto femenino reutiliza los mismos 17 identificadores (06:5636) — o sea que la silueta que Dirección pidió para antropometría tiene un uso declarado también acá, sin que una silueta obligue a migrar datos.
+
+**Cierre (2026-11-02, pedido de Dirección: «zonas musculares en el escritorio del profesional esta semana, con sus imágenes»).**
+- **De dónde salen los nombres.** Del set de capas que entregó Dirección («BE-TRAIN · set de capas musculares», modelo
+  masculino, vistas frontal y posterior, versión 1.0 del 2026-08-13): 9 máscaras de frente y 10 de espalda, con su
+  `registro-m-front.json` y `registro-m-back.json`. Es lo que reemplaza a DEC-047, que sigue fuera del repositorio.
+- **Las 17 zonas.** El identificador es el nombre del grupo en el archivo de la máscara (`be-mask-{sexo}-{vista}-{zona}.png`),
+  sin sexo ni vista, y el nombre visible es el de la columna derecha:
+
+  | Identificador | Nombre visible | Frente | Espalda |
+  |---|---|---|---|
+  | `trapecio` | Trapecio | | ✓ |
+  | `deltoides` | Deltoides | ✓ | ✓ |
+  | `pectoral` | Pectoral | ✓ | |
+  | `romboides` | Romboides | | ✓ |
+  | `dorsal` | Dorsal ancho | | ✓ |
+  | `biceps` | Bíceps | ✓ | |
+  | `triceps` | Tríceps | | ✓ |
+  | `antebrazo` | Antebrazo | ✓ | ✓ |
+  | `recto-abdominal` | Recto abdominal | ✓ | |
+  | `oblicuos` | Oblicuos | ✓ | |
+  | `erectores` | Erectores espinales | | ✓ |
+  | `gluteos` | Glúteos | | ✓ |
+  | `cuadriceps` | Cuádriceps | ✓ | |
+  | `aductores` | Aductores | ✓ | |
+  | `isquios` | Isquiotibiales | | ✓ |
+  | `tibial` | Tibial anterior | ✓ | |
+  | `gemelos` | Gemelos | | ✓ |
+- **Dónde viven.** En el dominio (`packages/domain/src/zonas-musculares.ts`, con su versión `zonas-be-2026-11-02`), en la
+  base (`zona_muscular`, sembrada por la migración `20261102120000_catalogo_visual`, y una prueba de integración compara las
+  dos listas) y en la operación de descubrimiento que faltaba, **API-ZON-01** (`GET /training/muscle-zones`).
+- **Las zonas de un ejercicio** (REG-06-139). Una asignación por cambio, numerada y para una versión del ejercicio, con su
+  procedencia; cada zona con su rol PRIMARY o SECONDARY (PRINCIPAL y SECUNDARIO en la base) y sin porcentajes. Lo cargado a
+  mano lo asigna su profesional al cargarlo (API-INT-TRN-01) o después (**API-EJE-04**); lo sembrado y lo importado de wger lo
+  cura BE con el comando del operador (DL-162). Viajan en `muscleZones` de API-TRN-13 y su búsqueda, con la forma que leen las
+  APK instaladas (DL-152), y en la ficha visual (**API-EJE-05**).
+
+**Contraste con 09v10 §8 y B10-06 §21, §22 y §59.**
+- **Coincide:** 17 zonas, 9 de frente y 10 de espalda, antebrazo y deltoides en las dos (09v10:468-484); la zona no es un
+  archivo y las máscaras citan su identificador, sin un catálogo por sexo (09v10:486-494; REG-06-138); el color de la figura
+  no es un peso (B10-06 §21: el LEEME del set dice lo mismo del área de cada máscara); nada se deduce de la imagen ni se
+  calcula (B10-06 §59; REG-06-139).
+- **No coincide del todo, y lo decidí así (a corregir si Dirección prefiere otra cosa):**
+  - El identificador. 09v10:458 da `zone_...` de ejemplo y 09v10:482-483 nombra «forearm / antebrazo» y «deltoid /
+    deltoides». El legajo no fija el formato (REG-06-137 pide «identificador estable»): usé el nombre del grupo del set, que es
+    lo que cita cada máscara. Ni `zone_…` ni el inglés.
+  - Los nombres cortos del set. «isquios», «erectores», «dorsal» y «tibial» se muestran como «Isquiotibiales», «Erectores
+    espinales», «Dorsal ancho» y «Tibial anterior», que es lo que dice el LEEME de cada vista. El identificador no cambia.
+  - B10-06 §22 pone «mapear/corregir zonas» dentro de la importación de wger, a cargo del profesional. Desde DL-141 D-1 lo
+    importado es de todos, así que ese mapeo fijaría contenido para todos los profesionales: lo cura BE (DL-162), y la
+    importación sigue sin zonas. Las de wger nunca se copian (09v12:397-401).
+  - El LEEME pide la nota «capa profunda» para romboides y erectores. El legajo no la menciona: queda como texto de la
+    pantalla, no del dominio.
+- **Lo que falta:** el set femenino (pendiente en el propio LEEME; usa los mismos 17 identificadores), la carga de las zonas
+  de la demostración (`EVIDENCIA/CATALOGO-VISUAL`, después de que Dirección revise la propuesta) y que el website las muestre
+  (etapa 2). Si DEC-047 aparece y nombra distinto alguna zona, manda DEC-047 y se corrige el nombre visible.
 
 ## DL-082 — No existe una regla equivalente a REG-06-125 para entrenamiento
 
@@ -5697,3 +5753,61 @@ pantalla real.
 
 **Condición de cierre:** Dirección revisa el resultado, la CI pasa y la prueba con profesionales lo confirma. La revisión y
 la CI están (2026-10-25); falta la prueba con profesionales.
+
+---
+
+## DL-162 — La imagen de un ejercicio del catálogo de todos
+
+**Prioridad:** alta (demostración del 2026-11-06) · **Documento:** REG-06-134 · REG-06-135 inciso 1 (06:4823-4832) · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 · **Estado:** IMPLEMENTADA 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar
+
+**Qué dice el legajo.** REG-06-134: un recurso didáctico es versionado, con autoría, licencia obligatoria y procedencia.
+REG-06-135, inciso 1: cada elemento del catálogo global admite «a lo sumo un recurso visual curado vigente», y el catálogo
+no es un repositorio libre; inciso 2: lo propio de un profesional, en su ámbito. 09v10 §9 da la forma del recurso, con
+`authorship`, `provenance` y `license`.
+
+**Qué pasaba.** DL-123 implementó solo el inciso 2: la imagen de un ejercicio cargado a mano, por su profesional. Tres
+cierres dejaban afuera al catálogo de todos (los 12 de WP-06 y los 186 importados de wger): el trigger de
+`asociacion_de_imagen_de_ejercicio` (solo `PROFESSIONAL_MANUAL` de quien asocia), el 404 de API-EJE-02 para lo que no es
+propio y la regla de acceso de API-MED-03, que une el medio con el creador del ejercicio (nulo en lo sembrado). Por eso
+Diego, Camila, Agustina y Prueba Uno veían la mancuerna de respaldo en vez de la foto (relevamiento del 2026-11-02, r8).
+
+**Lo decidido** (a ratificar):
+- **D-1 · Quién cura.** BE, con el comando interno del operador (`apps/api/src/entrenamiento/curaduria-comando.ts`), como
+  la incorporación de un administrador (08 §28.3-bis): lo corre quien tiene la base del ambiente, con su nombre y su
+  fundamento en la procedencia de cada cambio (`carga: CURADURIA_BE`). El medio es de una cuenta administradora de BE con el
+  rol vigente, que la base vuelve a exigir al asociar. El mismo comando cura las zonas del catálogo de todos (DL-081).
+  - *Descartado:* que un profesional asocie imágenes a lo sembrado (choca con REG-06-135 y fijaría contenido de todos).
+  - *Diferido:* una pantalla de Administración para curar. Necesita la consola, el segundo factor en una herramienta y su
+    propio paquete; el comando alcanza para la demostración.
+- **D-2 · Quién la ve.** Su curadora; cualquier profesional de Entrenamiento verificado y habilitado (el catálogo es de
+  todos y el website lo muestra), y el asesorado con un plan activado de cualquier profesional cuya instantánea cita el
+  ejercicio, con el PDP de ese profesional. Lo demás, el mismo 404 que lo inexistente.
+- **D-3 · Por dónde viaja.**
+  - En el plan (API-SER-01) y la sesión (API-SER-02), como la de un ejercicio propio: `image` con `mediaId`, procedencia
+    (AI_GENERATED o PERSON_PROVIDED), autoría, licencia, texto alternativo y revisión técnica. La lectura ya era por
+    identidad del ejercicio, así que **la APK 0.18.0-candidata.1 la muestra sin cambios**.
+  - En API-TRN-13 y su búsqueda, como `didacticResources` con la forma congelada que leen las APK instaladas (DL-152):
+    `resourceId` es el medio, `resourceVersionId` la asociación vigente y la licencia, `{ id, label }`. Esa forma no tiene un
+    campo para la procedencia (09v10 §9 sí lo tiene): si la imagen se generó con IA y la autoría no lo dice, la autoría suma
+    «(generada con IA)». Agregar el campo rompería la lectura de las APK instaladas.
+  - En la ficha visual del website (**API-EJE-05**), con la forma completa.
+- **D-4 · Una sola historia.** La imagen curada usa la misma historia de solo agregar de DL-123: la vigente es la de
+  mayor número, así que hay a lo sumo una por ejercicio. Reemplazarla es asociar otra; lo registrado conserva la de entonces.
+- **D-5 · Cómo se carga.** `EVIDENCIA/CATALOGO-VISUAL/herramientas/fotos.mjs`: por omisión solo revisa (archivo, tipo,
+  peso, medidas, formato, texto alternativo, autoría y licencia) y dice qué ejercicio ya tiene imagen; con
+  `--confirmo-escritura`, los propios van por la API como PRO_T y los del catálogo por el comando. Repetir la misma imagen
+  no suma nada.
+
+**Pruebas.** `test/integration/catalogo-visual.int-spec.ts` (sobre «Pullover con mancuerna», del catálogo base, que
+ninguna otra prueba lee): una cuenta común no cura; sin confirmar no escribe; la imagen curada viaja en el plan y en la
+sesión, la leen el asesorado, otro profesional de Entrenamiento y no uno de Nutrición; la búsqueda la trae con la forma
+congelada y la ficha visual con la procedencia; la base rechaza la imagen de lo de todos sin la marca de curaduría o de una
+cuenta que no es administradora. `contrato.int-spec.ts` cubre API-ZON-01, API-EJE-04 y API-EJE-05.
+
+**Lo que queda abierto:**
+- Generar las imágenes (E04 a E23; `EVIDENCIA/CATALOGO-VISUAL/imagenes.json`) y completar los textos alternativos de E04 a E15.
+- Integrar, desplegar test y correr la carga con la autorización de Dirección (escribe en test).
+- Verlo en el teléfono con la 0.18.0-candidata.1 y en el website (etapa 2 de WP-CATALOGO-VISUAL).
+
+**Condición de cierre:** Dirección ratifica D-1 a D-5, la CI pasa en main y la demostración muestra la foto de un ejercicio
+del catálogo en la sesión de Diego.
