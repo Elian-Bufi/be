@@ -6,7 +6,7 @@
  *
  * Son funciones puras: no leen la pantalla ni la hora. Tienen su prueba en `scripts/geometria-del-minigrafico.test.mjs`.
  */
-import { numeroConPrecision, type PuntoAnalitico } from '@be/domain';
+import { esPuntoDeCargaRapida, numeroConPrecision, type PuntoAnalitico } from '@be/domain';
 
 export const DIA = 86_400_000;
 export const mediodia = (fecha: string): number => Date.parse(`${fecha}T12:00:00Z`);
@@ -69,7 +69,7 @@ export interface PuntoDelMinigrafico {
   readonly x: number;
   readonly y: number;
   readonly r: number;
-  /** Un subtotal, o un día o una semana sin completar: se dibuja hueco. */
+  /** Un subtotal, un día o una semana sin completar, o una serie de carga rápida (DL-161): se dibuja hueco. */
   readonly hueco: boolean;
   /** Reportado por la persona o calculado por un método: se dibuja distinto (lo medido, no). */
   readonly clase: 'REPORTED' | 'DERIVED' | null;
@@ -172,7 +172,8 @@ export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelM
   const porDia = anchoUtil / Math.max(1, Math.round((x1 - x0) / DIA));
   const radio = porDia >= 9 ? 3 : porDia >= 5 ? 2.5 : porDia >= 2.5 ? 2 : 1.6;
   const puntos = dibujados.map(({ p, x, v }) => {
-    const hueco = p.quality === 'PARTIAL' || p.partialBucket;
+    // DL-161: una serie de carga rápida (tildada sin escribir) es hueca, como en «Analizar».
+    const hueco = p.quality === 'PARTIAL' || p.partialBucket || esPuntoDeCargaRapida(p);
     const clase = p.dataClass === 'REPORTED' || p.dataClass === 'DERIVED' ? p.dataClass : null;
     // Una marca hueca, cortada o con un punto adentro necesita un mínimo para verse como tal.
     return { clave: p.pointId, x: xEn(x), y: yEn(v), r: hueco || clase ? Math.max(radio + 0.8, clase ? 3.6 : 2.6) : radio, hueco, clase };

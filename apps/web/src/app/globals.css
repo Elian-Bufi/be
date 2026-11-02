@@ -6551,6 +6551,26 @@ button.comida-del-dia__fila > .icono:last-child {
   font-size: 0.92rem;
 }
 
+.sesion-registrada__nivel .etiqueta-de-dato {
+  margin-top: 0.2rem;
+}
+
+/* DL-161 (Dirección, 2026-11-02): «Carga completa» se destaca con el acento del tema, en la lista de sesiones, en su
+   detalle y en la línea de tiempo. Describe cómo se cargó: no es un tilde de aprobado ni un color de juicio. Dos clases,
+   para ganarle al peso y al tamaño de la etiqueta que fija la crítica de diseño más abajo. */
+.etiqueta-de-dato.etiqueta-de-dato--acento {
+  border-color: var(--azul);
+  background: color-mix(in srgb, var(--azul) 12%, var(--superficie));
+  color: var(--enlace);
+  font-weight: 600;
+}
+
+/* DL-161: la muestra de lo registrado en la leyenda de «Planificado y registrado» (llena, o hueca si es carga rápida). */
+.muestra-de-registrado {
+  flex: none;
+  vertical-align: -0.15em;
+}
+
 .sesiones__sin-sesion {
   margin: 0;
 }
