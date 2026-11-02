@@ -29,6 +29,8 @@ const tipoDeArchivo = (archivo) => (archivo.endsWith('.ts') ? ts.ScriptKind.TS :
 /** Las frases de Inicio y de los gráficos chicos que se arman fuera de las pantallas, en módulos puros. */
 const movil = (archivo) => join(RAIZ, 'apps/mobile/src', archivo);
 const tsx = (dir) => readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) => join(dir, f));
+/** La corrección de una sesión registrada en la APK (PA-04): su pantalla y su lógica. */
+const CORRECCION_EN_LA_APK = [join(RAIZ, 'apps/mobile/src/pantallas/correccion-de-entrenamiento.tsx'), movil('correccion-de-la-sesion.ts')];
 
 /**
  * Inicio (DL-117): cada tarjeta vive en el archivo de su módulo y se revisa con la lista de su dominio. Las piezas comunes
@@ -82,7 +84,8 @@ const DOMINIOS = [
   },
   {
     nombre: 'entrenamiento',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_Y_NOVEDADES],
+    // PA-04: la corrección dejó entrenamiento.tsx y vive en su pantalla y su módulo; siguen bajo la misma guardia.
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), ...CORRECCION_EN_LA_APK, inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_Y_NOVEDADES],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },
@@ -304,7 +307,7 @@ test('T13 · el titular de la medición muestra el valor vigente, no el original
  * - ninguna pantalla lee `execution.sessionCondition` directamente, que es la puerta para saltearse esa función.
  */
 test('WP-06 §9.2 · ninguna pantalla de entrenamiento deriva «No realizada» de la ausencia de registro', () => {
-  const archivos = [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx')];
+  const archivos = [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), ...CORRECCION_EN_LA_APK];
   assert.ok(archivos.length >= 7, `se esperaban las pantallas de entrenamiento, hay ${archivos.length}`);
   const hallazgos = [];
   for (const a of archivos) {
