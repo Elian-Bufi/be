@@ -22,10 +22,13 @@
 import {
   COPY_ENTRENAMIENTO_POR_SERIE,
   etiquetaDeCondicionRegistrada,
+  nivelDeDetalleDelRegistro,
   numero,
   textoDeCarga,
+  textoDelNivelDeDetalle,
   textoDeRir,
   type BorradorDeEjecucion,
+  type NivelDeDetalle,
   type EditarBorradorDeEjecucionRequest,
   type Ocurrencia,
   type PrescripcionConObjetivos,
@@ -87,8 +90,9 @@ export const TEXTOS_DEL_REGISTRO_RAPIDO = {
   registrando: 'Registrando…',
   verElRegistro: 'Ver el registro',
   volver: 'Volver',
-  loVeTuProfesional: 'Tu profesional ve que la registraste rápido: qué series tildaste con lo planificado y cuáles escribiste.',
-  loVeTuProfesionalResumida: 'Tu profesional ve la sesión resumida, sin series, con lo que contaste.',
+  loVeTuProfesional: 'Tu profesional ve qué series tildaste con lo planificado y cuáles escribiste.',
+  /** Con el mismo rótulo que lee el profesional (DL-161, `textoDelNivelDeDetalle`). */
+  comoLaVeTuProfesional: (nivel: string) => `Tu profesional ve cómo la cargaste: «${nivel}».`,
   faltaElegir: 'Elegí cómo fue la sesión.',
   faltaTildar: 'Tildá al menos un ejercicio que hiciste.',
   faltaLaHora: 'Para una sesión de otro día, elegí a qué hora la hiciste.',
@@ -356,6 +360,8 @@ export interface ResumenDelRegistroRapido {
   readonly deEjercicios: number;
   readonly series: number;
   readonly condicion: 'COMPLETED' | 'COMPLETED_WITH_DEVIATION';
+  /** El nivel de detalle con el que la ve el profesional (DL-161): «Cargada como el plan», «Parte como el plan»… */
+  readonly nivel: NivelDeDetalle | null;
 }
 
 export type RegistroArmado =
@@ -440,14 +446,21 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
     return {
       ok: true,
       changes: { granularity: 'EXERCISE_OR_SESSION', sessionCondition: 'COMPLETED_WITH_DEVIATION', exercises: [], sessionSummary: { description }, reason: null, occurredAt },
-      resumen: { forma: 'resumen', ejercicios: 0, deEjercicios: prescripciones.length, series: 0, condicion: 'COMPLETED_WITH_DEVIATION' },
+      resumen: { forma: 'resumen', ejercicios: 0, deEjercicios: prescripciones.length, series: 0, condicion: 'COMPLETED_WITH_DEVIATION', nivel: 'RESUMIDA' },
     };
   }
   const condicion = r.eleccion === 'todo' && todoCompleto ? 'COMPLETED' : 'COMPLETED_WITH_DEVIATION';
   return {
     ok: true,
     changes: { granularity: 'SET', sessionCondition: condicion, exercises, sessionSummary: null, reason: nota || null, occurredAt },
-    resumen: { forma: 'series', ejercicios: exercises.length, deEjercicios: prescripciones.length, series: exercises.reduce((n, x) => n + x.sets.length, 0), condicion },
+    resumen: {
+      forma: 'series',
+      ejercicios: exercises.length,
+      deEjercicios: prescripciones.length,
+      series: exercises.reduce((n, x) => n + x.sets.length, 0),
+      condicion,
+      nivel: nivelDeDetalleDelRegistro({ sessionCondition: condicion, granularity: 'SET', exercises }),
+    },
   };
 }
 
@@ -466,8 +479,8 @@ export const textoAntesDeRegistrar = (r: ResumenDelRegistroRapido): string =>
 /** En «Listo»: «Registraste 4 de 5 ejercicios · 11 series.» */
 export const textoDelResumen = (r: ResumenDelRegistroRapido): string => `Registraste ${loRegistrado(r)}.`;
 
-/** Lo que dice «Listo» sobre lo que ve el profesional. */
-export const loQueVeTuProfesional = (r: ResumenDelRegistroRapido): string => (r.forma === 'resumen' ? T.loVeTuProfesionalResumida : T.loVeTuProfesional);
+/** Lo que dice «Listo» sobre lo que ve el profesional: el mismo rótulo de nivel que lee en el website. */
+export const loQueVeTuProfesional = (r: Pick<ResumenDelRegistroRapido, 'nivel'>): string => (r.nivel ? T.comoLaVeTuProfesional(textoDelNivelDeDetalle(r.nivel)) : T.loVeTuProfesional);
 
 /** Lo planificado de una serie, en el mismo orden que la línea del ejercicio: «10 rep. · RIR 2 · 16 kg». */
 export function lineaDeLaSerie(s: SerieConObjetivo): string {

@@ -195,8 +195,10 @@ test('4 · «todo», de un toque: por serie, «Realizada», cada serie con lo pl
     ],
   );
   cumpleElContrato(changes);
-  assert.deepEqual(resumen, { forma: 'series', ejercicios: 2, deEjercicios: 2, series: 6, condicion: 'COMPLETED' });
+  assert.deepEqual(resumen, { forma: 'series', ejercicios: 2, deEjercicios: 2, series: 6, condicion: 'COMPLETED', nivel: 'COMO_EL_PLAN' });
   assert.equal(rr.textoDelResumen(resumen), 'Registraste 2 de 2 ejercicios · 6 series.');
+  // «Listo» dice el mismo rótulo que lee el profesional en el website (DL-161).
+  assert.equal(rr.loQueVeTuProfesional(resumen), 'Tu profesional ve cómo la cargaste: «Cargada como el plan».');
   assert.equal(rr.textoAntesDeRegistrar(resumen), 'Vas a registrar 2 de 2 ejercicios · 6 series. Queda como «Realizada».');
 });
 
@@ -234,6 +236,7 @@ test('5 · «Cambié algo»: lo escrito va TYPED y solo con lo escrito; lo tilda
     { setIndex: 2, load: { value: 16, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'AS_PLANNED' },
   ]);
   assert.equal(armado.changes.sessionCondition, 'COMPLETED_WITH_DEVIATION', 'una serie que no hizo es un desvío');
+  assert.equal(armado.resumen.nivel, 'PARTE_COMO_EL_PLAN');
   cumpleElContrato(armado.changes);
   // Escribir valores con todas las series hechas no es un desvío por sí solo.
   const sinDesvio = rr.armarRegistro(ctx, rr.escribir(rr.marcarCambio(conTodo(ctx), 'pGoblet', true), 'pGoblet', 2, 'repeticiones', '11'), AHORA);
@@ -300,7 +303,7 @@ test('6 · «Hice algo distinto» sin nada tildado se registra resumida: la fras
   const conNota = rr.armarRegistro(ctx, { ...distinto, nota: '  Salí a correr 40 minutos.  ' }, AHORA);
   assert.equal(conNota.changes.sessionSummary.description, 'Hice algo distinto: Salí a correr 40 minutos.');
   assert.equal(rr.textoDelResumen(conNota.resumen), 'Registraste la sesión resumida, sin series.');
-  assert.equal(rr.loQueVeTuProfesional(conNota.resumen), rr.TEXTOS_DEL_REGISTRO_RAPIDO.loVeTuProfesionalResumida);
+  assert.equal(rr.loQueVeTuProfesional(conNota.resumen), 'Tu profesional ve cómo la cargaste: «Resumida, sin series».');
   // Con algo tildado, va por serie, y la nota viaja como motivo.
   const conUno = rr.armarRegistro(ctx, { ...rr.marcarEjercicio(distinto, 'pGoblet', true), nota: 'Cambié el orden.' }, AHORA);
   assert.equal(conUno.changes.granularity, 'SET');
@@ -405,6 +408,7 @@ test('9 · los textos no califican: sin puntajes, sin «cumplimiento», sin «bi
     ...rr.FRANJAS.map((f) => f.texto),
     rr.textoAntesDeRegistrar({ forma: 'series', ejercicios: 1, deEjercicios: 2, series: 3, condicion: 'COMPLETED_WITH_DEVIATION' }),
     rr.textoDelResumen({ forma: 'resumen', ejercicios: 0, deEjercicios: 2, series: 0, condicion: 'COMPLETED_WITH_DEVIATION' }),
+    ...['CON_DETALLE', 'COMO_EL_PLAN', 'PARTE_COMO_EL_PLAN', 'RESUMIDA', null].map((nivel) => rr.loQueVeTuProfesional({ nivel })),
   ];
   const todo = textos.join(' | ');
   assert.deepEqual(terminosProhibidosDeEntrenamientoEn(todo), []);
