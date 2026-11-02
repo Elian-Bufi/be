@@ -7,7 +7,7 @@
  * API («Opción», «Series con datos»…) y los rasgos. Nada se calcula ni se completa. Si la API cambia un título o el
  * rótulo de un detalle, el renglón no inventa: cae en el título entero y en el primer detalle.
  */
-import { MODO_EN_UN_RENGLON, modoDeUnaComida, NOMBRE_DEL_RASGO, normalizarTexto, opcionDeUnaComida, rasgosDeUnHecho, type EntradaDeLineaDeTiempo, type NombreDeIcono, type RasgoDeUnHecho } from '@be/domain';
+import { COPY_REGISTRO_POR_NIVELES, MODO_EN_UN_RENGLON, modoDeUnaComida, NOMBRE_DEL_RASGO, normalizarTexto, opcionDeUnaComida, rasgosDeUnHecho, type EntradaDeLineaDeTiempo, type NombreDeIcono, type RasgoDeUnHecho } from '@be/domain';
 
 export interface RenglonDelHecho {
   readonly icono: NombreDeIcono;
@@ -48,7 +48,11 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
       const etiqueta = corte < 0 ? null : e.title.slice(corte + 3);
       const nombre = etiqueta === null ? e.title : /^sesi[oó]n\b/i.test(etiqueta) ? etiqueta : `Sesión ${etiqueta}`;
       // Son las series que tienen algún dato (carga, repeticiones o esfuerzo), no todas las de la sesión.
-      return { icono: 'entrenamiento', nombre, dato: contar(detalle(e, 'Series con datos'), 'serie con datos', 'series con datos'), modo: null };
+      const series = contar(detalle(e, 'Series con datos'), 'serie con datos', 'series con datos');
+      // DL-161: cómo se cargaron («Cargada como el plan», «Con detalle»…), tal como lo dice la API. Después de la cuenta, en minúscula.
+      const comoSeCargo = detalle(e, COPY_REGISTRO_POR_NIVELES.comoSeCargo);
+      const dato = series && comoSeCargo ? `${series} · ${comoSeCargo.charAt(0).toLowerCase()}${comoSeCargo.slice(1)}` : (series ?? comoSeCargo);
+      return { icono: 'entrenamiento', nombre, dato, modo: null };
     }
     case 'ANTHROPOMETRIC_EVALUATION_RECORDED':
       return { icono: 'antropometria', nombre: sinRegistrada(e.title), dato: contar(detalle(e, 'Mediciones vigentes'), 'medición', 'mediciones') ?? primerDetalle(e), modo: null };
