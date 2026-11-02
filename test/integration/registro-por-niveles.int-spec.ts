@@ -7,12 +7,16 @@
  *   serie escrita llega con los cinco campos de siempre;
  * - una serie «como el plan» sin carga ni repeticiones se rechaza: no existe la serie realizada sin datos;
  * - una corrección que solo cambia la marca no corrige nada; una que cambia la duración, sí;
- * - la línea de tiempo del profesional (API-DSH-04) dice cómo se cargaron las series;
+ * - la línea de tiempo del profesional (API-DSH-04) dice cómo se cargaron las series, con los nombres de Dirección del
+ *   2026-11-02 («Carga completa», «Carga rápida», «Carga rápida con cambios»);
+ * - el análisis del profesional (API-PRJ-01) marca el punto de una serie de carga rápida en su detalle y lo explica en
+ *   la nota de la serie: el website lo dibuja hueco y lo deja fuera de los resúmenes y del cambio relativo; la cantidad
+ *   de series registradas cuenta también las tildadas;
  * - la APK 0.18.0-candidata.1 (lo que congeló DL-152) lee igual lo registrado sin los campos nuevos, y no puede leer una
  *   ejecución que los trae: es el caso que queda documentado en DL-161.
  */
 import type { INestApplication } from '@nestjs/common';
-import { HoyDeEntrenamientoResponseSchema, LineaDeTiempoResponseSchema } from '@be/domain';
+import { HoyDeEntrenamientoResponseSchema, LineaDeTiempoResponseSchema, ProyeccionResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { appDePrueba, conSesion } from './soporte-api';
 import { CATALOGO_DE_EJERCICIOS, circuitoConPlanDeEntrenamientoActivo } from './soporte-entrenamiento';
@@ -135,16 +139,43 @@ describe('Registro por niveles (DL-161) · la serie dice cómo se cargó y cuán
     const parte = await registrada([comoElPlan(1), comoElPlan(2), escrita(3, 6)]);
     const lectura = LineaDeTiempoResponseSchema.parse((await conSesion(app, parte.c.pro.token).get(`/api/v1/advisees/${parte.c.ase.id}/timeline`).expect(200)).body);
     const sesion = lectura.data.entries.find((e) => e.timelineEntryId === `tses:${parte.executionId}`)!;
-    expect(sesion.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Parte como el plan');
+    expect(sesion.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Carga rápida con cambios');
     expect(sesion.details.find((d) => d.label === 'Series con datos')?.value).toBe('3');
 
     const toda = await registrada([comoElPlan(1), comoElPlan(2), comoElPlan(3)]);
     const deToda = LineaDeTiempoResponseSchema.parse((await conSesion(app, toda.c.pro.token).get(`/api/v1/advisees/${toda.c.ase.id}/timeline`).expect(200)).body);
-    expect(deToda.data.entries.find((e) => e.timelineEntryId === `tses:${toda.executionId}`)!.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Cargada como el plan');
+    expect(deToda.data.entries.find((e) => e.timelineEntryId === `tses:${toda.executionId}`)!.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Carga rápida');
 
     const escritas = await registrada([escrita(1), escrita(2)]);
     const deEscritas = LineaDeTiempoResponseSchema.parse((await conSesion(app, escritas.c.pro.token).get(`/api/v1/advisees/${escritas.c.ase.id}/timeline`).expect(200)).body);
-    expect(deEscritas.data.entries.find((e) => e.timelineEntryId === `tses:${escritas.executionId}`)!.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Con detalle');
+    expect(deEscritas.data.entries.find((e) => e.timelineEntryId === `tses:${escritas.executionId}`)!.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Carga completa');
+  });
+
+  it('el análisis del profesional marca el punto de la serie de carga rápida y lo explica; la cantidad de series cuenta las dos', async () => {
+    const x = await registrada([comoElPlan(1), escrita(2, 7)]);
+    const pro = conSesion(app, x.c.pro.token);
+    const base = `/api/v1/advisees/${x.c.ase.id}/projections/TRAINING_PROGRESSION_BY_EXERCISE`;
+    const lista = ProyeccionResponseSchema.parse((await pro.get(base).expect(200)).body).data.result!;
+    if (lista.kind !== 'TRAINING_PROGRESSION_BY_EXERCISE') throw new Error('otra clave');
+    const banca = lista.exercises.find((e) => /banca/i.test(e.name));
+    expect(banca).toBeDefined();
+    const serieDe = async (query: string) => {
+      const r = ProyeccionResponseSchema.parse((await pro.get(`${base}?exerciseId=${banca!.exerciseKey}&${query}`).expect(200)).body).data.result!;
+      if (r.kind !== 'TRAINING_PROGRESSION_BY_EXERCISE') throw new Error('otra clave');
+      return r.progression!.series;
+    };
+    // La serie 1 se tildó sin escribir: su punto está (con los valores del plan) y lleva la marca en el detalle.
+    const tildada = await serieDe('metric=LOAD&setIndex=1');
+    expect(tildada.points.map((p) => p.value)).toEqual([60]);
+    expect(tildada.points[0]!.detail).toContainEqual({ label: 'Cómo se cargó', value: 'Carga rápida, tildada sin escribir' });
+    expect(tildada.notes.join(' ')).toMatch(/carga rápida \(tildada sin escribir, con los valores del plan\): es un punto hueco/);
+    // La serie 2 se escribió: punto lleno, sin marca ni nota.
+    const escritaLeida = await serieDe('metric=REPETITIONS&setIndex=2');
+    expect(escritaLeida.points.map((p) => p.value)).toEqual([7]);
+    expect(escritaLeida.points[0]!.detail.some((d) => d.label === 'Cómo se cargó')).toBe(false);
+    expect(escritaLeida.notes.join(' ')).not.toMatch(/carga rápida/);
+    // La cantidad de series registradas se cuenta siempre, también la tildada.
+    expect((await serieDe('metric=SETS_RECORDED')).points.map((p) => p.value)).toEqual([2]);
   });
 
   it('la APK 0.18.0-candidata.1 lee igual lo registrado sin los campos nuevos; una ejecución que los trae no la puede leer', async () => {

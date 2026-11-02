@@ -433,7 +433,7 @@ test('DL-161 · cada serie dice si se cargó como el plan y cuánto duró; la se
     ],
   });
   const f = filaDeLaSesion(x, OBJETIVOS);
-  assert.deepEqual([f.nivelDeDetalle, f.detalle], ['PARTE_COMO_EL_PLAN', 'Parte como el plan']);
+  assert.deepEqual([f.nivelDeDetalle, f.detalle], ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
   const deBanca = f.ejercicios.find((e) => e.prescriptionId === 'rx-banca')!;
   assert.deepEqual(
     deBanca.series.map((s) => [s.numero, s.comoElPlan ?? false, s.duracion ?? null]),
@@ -444,16 +444,81 @@ test('DL-161 · cada serie dice si se cargó como el plan y cuánto duró; la se
       [4, false, '00:38'],
     ],
   );
-  // Lo registrado y cómo quedó frente a lo indicado se leen igual: la marca no cambia los datos.
+  // Lo registrado se lee igual: la marca no cambia los datos.
   assert.deepEqual(deBanca.series.map((s) => s.registrado), ['62,5 kg · 8 rep. · RIR 2', '62,5 kg · 7 rep. · RIR 2', '62,5 kg · 6 rep. · RIR 1', '60 kg · 6 rep. · RIR 1']);
-  assert.equal(f.frente, filaDeLaSesion(ejecucion({ fecha: '2026-11-02', prescripciones: SESION_B, registrado: TODO_DENTRO }), OBJETIVOS).frente);
-  // Toda la sesión con un toque.
+  // Dirección, 2026-11-02: lo tildado sin escribir no se compara con lo indicado; lo escrito, sí. Las cuatro cuentan.
+  assert.deepEqual(
+    deBanca.series.map((s) => [s.estado, s.frente, s.comparada, s.conDiferencia, s.frenteDeLaCarga]),
+    [
+      ['REGISTRADA', 'No se compara: tildada sin escribir', false, false, null],
+      ['REGISTRADA', 'No se compara: tildada sin escribir', false, false, null],
+      ['REGISTRADA', 'Dentro de lo indicado', true, false, null],
+      ['REGISTRADA', 'Dentro de lo indicado', true, false, null],
+    ],
+  );
+  assert.equal(deBanca.cuenta, '4 de 4 series registradas');
+  assert.equal(f.series, '12 de 12 registradas');
+  assert.equal(f.frente, 'Dentro de lo indicado · 10 series tildadas sin escribir: no se comparan');
+  // Toda la sesión con un toque: nada se compara, y la sesión no dice «Sin objetivos que comparar».
   const todaComoElPlan = filaDeLaSesion(ejecucion({ fecha: '2026-11-03', prescripciones: SESION_B, registrado: TODO_DENTRO.map((e) => ({ ...e, sets: e.sets!.map(plan) })) }), OBJETIVOS);
-  assert.deepEqual([todaComoElPlan.nivelDeDetalle, todaComoElPlan.detalle], ['COMO_EL_PLAN', 'Cargada como el plan']);
+  assert.deepEqual([todaComoElPlan.nivelDeDetalle, todaComoElPlan.detalle], ['COMO_EL_PLAN', 'Carga rápida']);
+  assert.deepEqual([todaComoElPlan.series, todaComoElPlan.frente, todaComoElPlan.conDiferencias], ['12 de 12 registradas', '12 series tildadas sin escribir: no se comparan', 0]);
 });
 
-test('DL-161 · lo registrado antes queda igual: con detalle, y sus series sin marca ni duración', () => {
-  assert.deepEqual([fila24.nivelDeDetalle, fila24.detalle], ['CON_DETALLE', 'Con detalle']);
+test('DL-161 · una serie menos en la carga rápida se cuenta siempre; una tildada nunca es una diferencia', () => {
+  const plan = (s: SerieEjecutadaApi): SerieEjecutadaApi => ({ ...s, recordedAs: 'AS_PLANNED' });
+  // «Hice lo planificado», con una serie menos de banca: la cantidad se compara aunque nada se haya escrito.
+  const unaMenos = filaDeLaSesion(
+    ejecucion({
+      fecha: '2026-11-04',
+      prescripciones: SESION_B,
+      registrado: [
+        { prescriptionId: 'rx-banca', sets: BANCA_DENTRO.slice(0, 3).map(plan) },
+        { prescriptionId: 'rx-remo', sets: REMO_DENTRO.map(plan) },
+        { prescriptionId: 'rx-dominadas', sets: DOMINADAS_DENTRO.map(plan) },
+      ],
+    }),
+    OBJETIVOS,
+  );
+  assert.deepEqual([unaMenos.nivelDeDetalle, unaMenos.detalle], ['COMO_EL_PLAN', 'Carga rápida']);
+  assert.equal(unaMenos.ejercicios.find((e) => e.prescriptionId === 'rx-banca')!.cuenta, '3 de 4 series registradas');
+  assert.deepEqual([unaMenos.series, unaMenos.frente, unaMenos.sinRegistrar], ['11 de 12 registradas', '1 serie sin registrar · 11 series tildadas sin escribir: no se comparan', 1]);
+  assert.equal(sesionEnLaVista(unaMenos, 'SIN_REGISTRAR'), true);
+  // Aunque los valores de una tildada quedaran fuera de lo indicado, no es una diferencia: no los escribió la persona.
+  // La escrita, con el mismo valor, sí.
+  const conUnaEscrita = filaDeLaSesion(
+    ejecucion({
+      fecha: '2026-11-05',
+      prescripciones: SESION_B,
+      registrado: [
+        { prescriptionId: 'rx-banca', sets: [plan(serie(1, kg(62.5), 5, 2)), serie(2, kg(62.5), 5, 2), ...BANCA_DENTRO.slice(2).map(plan)] },
+        { prescriptionId: 'rx-remo', sets: REMO_DENTRO.map(plan) },
+        { prescriptionId: 'rx-dominadas', sets: DOMINADAS_DENTRO.map(plan) },
+      ],
+    }),
+    OBJETIVOS,
+  );
+  assert.deepEqual([conUnaEscrita.nivelDeDetalle, conUnaEscrita.detalle], ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
+  assert.equal(conUnaEscrita.conDiferencias, 1);
+  assert.equal(conUnaEscrita.frente, '1 serie con diferencias · 11 series tildadas sin escribir: no se comparan');
+  assert.equal(sesionEnLaVista(conUnaEscrita, 'CON_DIFERENCIAS'), true);
+  const deBanca = conUnaEscrita.ejercicios.find((e) => e.prescriptionId === 'rx-banca')!;
+  assert.deepEqual(
+    deBanca.series.slice(0, 2).map((s) => [s.frente, s.conDiferencia]),
+    [
+      ['No se compara: tildada sin escribir', false],
+      ['Rep.: por debajo', true],
+    ],
+  );
+  // Los textos nuevos tampoco dicen palabras que BE no dice de un entrenamiento.
+  for (const t of [unaMenos.frente, conUnaEscrita.frente, ...deBanca.series.map((s) => s.frente)]) {
+    assert.deepEqual(terminosProhibidosDeEntrenamientoEn(t), [], t);
+    assert.doesNotMatch(t, /%|—/);
+  }
+});
+
+test('DL-161 · lo registrado antes queda igual: carga completa, y sus series sin marca ni duración', () => {
+  assert.deepEqual([fila24.nivelDeDetalle, fila24.detalle], ['CON_DETALLE', 'Carga completa']);
   for (const s of fila24.ejercicios.flatMap((e) => e.series)) {
     assert.equal('comoElPlan' in s, false);
     assert.equal('duracion' in s, false);

@@ -34,7 +34,7 @@
  * mismo ejercicio. Cuando no se sabe, se dice, sin afirmar que es el mismo ni que es otro.
  */
 import type { EjecucionDeEntrenamiento, EjercicioRegistrado, Prescripcion, SerieEjecutadaApi } from './contratos-entrenamiento';
-import { registroVigente } from './copy-entrenamiento';
+import { COPY_REGISTRO_POR_NIVELES, registroVigente } from './copy-entrenamiento';
 import { cantidad, numero } from './formato-numeros';
 
 type Carga = { readonly value: number; readonly unit: 'kg' | 'lb' };
@@ -377,19 +377,35 @@ export interface SerieParaGraficar {
   readonly diferencia: Diferencia | null;
   /** Qué se sabe de lo registrado: con otro ejercicio o una identidad desconocida, el rótulo dice por qué no se compara. */
   readonly identidad: IdentidadDelRegistro;
+  /**
+   * DL-161: la serie se tildó sin escribir, con los valores del plan a la vista («carga rápida»). Se dibuja hueca y no
+   * tiene diferencia: compararla sería comparar el plan consigo mismo. Solo está si es así.
+   */
+  readonly cargaRapida?: true;
+}
+
+/**
+ * DL-161 (Dirección, 2026-11-02): la serie registrada de una fila se tildó sin escribir. La marca se lee acá, sin pasar
+ * por `registro-por-niveles.ts`, para que la comparación no dependa del módulo que la usa.
+ */
+function fueCargaRapida(fila: Pick<FilaDeSerie, 'registrada'> | null): boolean {
+  const r = fila ? fila.registrada : null;
+  return r !== null && r.tipo === 'registrada' && r.serie.recordedAs === 'AS_PLANNED';
 }
 
 /**
  * Las series de una prescripción para una medida: lo que dibuja el gráfico de barras agrupadas y lo que lista la tabla.
  * La diferencia se calcula solo si se sabe que lo registrado es el mismo ejercicio (`identidad`), con el mismo criterio
- * que la evolución: otra versión del mismo ejercicio se compara; otro ejercicio o una identidad desconocida, no.
+ * que la evolución: otra versión del mismo ejercicio se compara; otro ejercicio o una identidad desconocida, no. Una serie
+ * de carga rápida (tildada sin escribir) tampoco: no tiene diferencia y lo dice (DL-161).
  */
 export function seriesParaGraficar(c: ComparacionDeEjercicio, medida: Medida): SerieParaGraficar[] {
   return c.filas.map((fila) => {
     const planificado = valorPlanificado(c, fila, medida);
     const registrado = valorRegistrado(fila, medida);
-    const comparable = c.identidad === 'sin-registro' || esElMismoEjercicio(c.identidad);
-    return { numero: fila.numero, fila, planificado, registrado, diferencia: comparable ? diferencia(planificado, registrado) : null, identidad: c.identidad };
+    const rapida = fueCargaRapida(fila);
+    const comparable = !rapida && (c.identidad === 'sin-registro' || esElMismoEjercicio(c.identidad));
+    return { numero: fila.numero, fila, planificado, registrado, diferencia: comparable ? diferencia(planificado, registrado) : null, identidad: c.identidad, ...(rapida ? { cargaRapida: true as const } : {}) };
   });
 }
 
@@ -571,11 +587,17 @@ export interface PuntoDeEvolucion {
    */
   readonly tramoPlanificado: number | null;
   readonly tramoRegistrado: number | null;
+  /**
+   * DL-161: lo registrado de este punto se tildó sin escribir («carga rápida»). Es un punto hueco, sin diferencia con lo
+   * planificado, y queda fuera de los resúmenes y del cambio relativo. Solo está si hay un valor registrado y es así.
+   */
+  readonly cargaRapida?: true;
 }
 
 /**
  * La evolución de una serie elegida (por su número) para una medida. Nunca se promedian, suman ni eligen máximos entre
- * series: cada punto es la serie de ese número en una observación.
+ * series: cada punto es la serie de ese número en una observación. Un punto de carga rápida (tildado sin escribir) se
+ * dibuja y no se compara (DL-161; Dirección, 2026-11-02).
  */
 export function evolucion(observaciones: readonly ObservacionDeEvolucion[], medida: Medida, numeroDeSerie: number): PuntoDeEvolucion[] {
   const puntos: PuntoDeEvolucion[] = [];
@@ -618,15 +640,17 @@ export function evolucion(observaciones: readonly ObservacionDeEvolucion[], medi
       anterior.planificado.tipo === 'valor' &&
       anterior.planificado.origen === planificado.origen;
     const tramoPlanificado = planificado.tipo !== 'valor' ? null : continuaPlan ? (anterior!.tramoPlanificado as number) : ++tramo;
+    const rapida = registrado.tipo === 'valor' && fueCargaRapida(fila);
     puntos.push({
       indice,
       observacion: o,
       fila,
       planificado,
       registrado,
-      diferencia: o.rol === 'planificado-y-registrado' ? diferencia(planificado, registrado) : null,
+      diferencia: o.rol === 'planificado-y-registrado' && !rapida ? diferencia(planificado, registrado) : null,
       tramoPlanificado,
       tramoRegistrado,
+      ...(rapida ? { cargaRapida: true as const } : {}),
     });
   }
   return puntos;
@@ -794,7 +818,7 @@ export function textoDeDiferencia(d: Diferencia, m: Medida): string {
  * estado se lee en el gráfico sin depender del color ni del puntero.
  */
 export function rotuloCorto(
-  p: { readonly planificado: ValorPlanificado; readonly registrado: ValorRegistrado; readonly diferencia: Diferencia | null; readonly identidad?: IdentidadDelRegistro },
+  p: { readonly planificado: ValorPlanificado; readonly registrado: ValorRegistrado; readonly diferencia: Diferencia | null; readonly identidad?: IdentidadDelRegistro; readonly cargaRapida?: true },
   m: Medida,
 ): string {
   const d = p.diferencia;
@@ -804,6 +828,8 @@ export function rotuloCorto(
     if (d.tipo === 'dentro-del-rango') return 'en rango';
     return `${conSigno(d.delta, m)} ${d.tipo === 'bajo-el-rango' ? 'mín.' : 'máx.'}`;
   }
+  // DL-161: tildada sin escribir. No tiene diferencia, y el rótulo dice por qué.
+  if (p.cargaRapida && p.registrado.tipo === 'valor') return COPY_REGISTRO_POR_NIVELES.cargaRapida;
   if (p.planificado.tipo === 'sin-serie') return 'sin serie';
   if (p.planificado.tipo === 'identidad-desconocida') return 'sin identificar';
   if (p.planificado.tipo === 'otro-ejercicio') return 'por sustitución';

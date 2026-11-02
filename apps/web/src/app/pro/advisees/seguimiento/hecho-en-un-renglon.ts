@@ -7,7 +7,19 @@
  * API («Opción», «Series con datos»…) y los rasgos. Nada se calcula ni se completa. Si la API cambia un título o el
  * rótulo de un detalle, el renglón no inventa: cae en el título entero y en el primer detalle.
  */
-import { COPY_REGISTRO_POR_NIVELES, MODO_EN_UN_RENGLON, modoDeUnaComida, NOMBRE_DEL_RASGO, normalizarTexto, opcionDeUnaComida, rasgosDeUnHecho, type EntradaDeLineaDeTiempo, type NombreDeIcono, type RasgoDeUnHecho } from '@be/domain';
+import {
+  COPY_REGISTRO_POR_NIVELES,
+  ETIQUETA_DE_NIVEL_DE_DETALLE,
+  MODO_EN_UN_RENGLON,
+  modoDeUnaComida,
+  NOMBRE_DEL_RASGO,
+  normalizarTexto,
+  opcionDeUnaComida,
+  rasgosDeUnHecho,
+  type EntradaDeLineaDeTiempo,
+  type NombreDeIcono,
+  type RasgoDeUnHecho,
+} from '@be/domain';
 
 export interface RenglonDelHecho {
   readonly icono: NombreDeIcono;
@@ -17,6 +29,11 @@ export interface RenglonDelHecho {
   readonly dato: string | null;
   /** El modo de registro de las cantidades, si es de los de siempre (los otros son rasgos y van como etiqueta). */
   readonly modo: { readonly icono: NombreDeIcono; readonly texto: string } | null;
+  /**
+   * DL-161 (Dirección, 2026-11-02): «Carga completa», que el renglón muestra como una etiqueta del acento, al lado del
+   * dato. Solo está en una sesión cargada completa; las demás dicen su nivel dentro del dato.
+   */
+  readonly destacado?: string;
 }
 
 const detalle = (e: EntradaDeLineaDeTiempo, rotulo: string): string | null => e.details.find((d) => d.label === rotulo)?.value ?? null;
@@ -49,8 +66,10 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
       const nombre = etiqueta === null ? e.title : /^sesi[oó]n\b/i.test(etiqueta) ? etiqueta : `Sesión ${etiqueta}`;
       // Son las series que tienen algún dato (carga, repeticiones o esfuerzo), no todas las de la sesión.
       const series = contar(detalle(e, 'Series con datos'), 'serie con datos', 'series con datos');
-      // DL-161: cómo se cargaron («Cargada como el plan», «Con detalle»…), tal como lo dice la API. Después de la cuenta, en minúscula.
+      // DL-161: cómo se cargaron («Carga rápida», «Carga rápida con cambios»…), tal como lo dice la API. Después de la
+      // cuenta, en minúscula. «Carga completa» no va en el dato: es la etiqueta destacada del renglón.
       const comoSeCargo = detalle(e, COPY_REGISTRO_POR_NIVELES.comoSeCargo);
+      if (comoSeCargo === ETIQUETA_DE_NIVEL_DE_DETALLE.CON_DETALLE) return { icono: 'entrenamiento', nombre, dato: series, modo: null, destacado: comoSeCargo };
       const dato = series && comoSeCargo ? `${series} · ${comoSeCargo.charAt(0).toLowerCase()}${comoSeCargo.slice(1)}` : (series ?? comoSeCargo);
       return { icono: 'entrenamiento', nombre, dato, modo: null };
     }

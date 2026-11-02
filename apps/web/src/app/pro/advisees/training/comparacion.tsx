@@ -50,10 +50,11 @@ import {
   type ValorRegistrado,
   COPY_ENTRENAMIENTO_POR_SERIE,
   textoDelPlanDeLaSerie,
+  COPY_REGISTRO_POR_NIVELES,
   type ObjetivosDeLaVersion,
 } from '@be/domain';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Ayuda } from '../../../../components/ayuda';
 import { Aviso } from '../../../../components/formulario';
 import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
@@ -236,7 +237,27 @@ function serieCompleta(s: SerieEjecutadaApi): string {
     s.rir === null ? 'RIR no registrado' : `${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}`,
   ];
   if (s.perceivedExertion !== null) partes.push(`esfuerzo percibido ${numero(s.perceivedExertion)}`);
+  // DL-161: la marca de la serie, como en la tabla de la sesión.
+  if (s.recordedAs === 'AS_PLANNED') partes.push(COPY_REGISTRO_POR_NIVELES.comoElPlan);
   return partes.join(' · ');
+}
+
+/**
+ * La diferencia en palabras, o por qué no hay: una serie de carga rápida (tildada sin escribir, DL-161) lo dice; las
+ * demás, con `sinDiferencia`.
+ */
+function textoDeLaDiferencia(p: { readonly diferencia: Diferencia | null; readonly cargaRapida?: true }, medida: Medida, sinDiferencia: string): string {
+  if (p.diferencia) return diferenciaEnPalabras(p.diferencia, medida);
+  return p.cargaRapida ? COPY_REGISTRO_POR_NIVELES.noSeComparaTildada : sinDiferencia;
+}
+
+/** La marca de lo registrado en la leyenda: un punto lleno, o hueco si es de carga rápida (DL-161). */
+function MuestraDeRegistrado({ hueca = false }: { hueca?: boolean }) {
+  return (
+    <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true" className="muestra-de-registrado">
+      <circle cx={7} cy={7} r={5} fill={hueca ? 'var(--superficie)' : 'var(--grafico-registrado)'} stroke="var(--grafico-registrado)" strokeWidth={2} />
+    </svg>
+  );
 }
 
 function textoDeLaFuente(c: ComparacionDeEjercicio): string {
@@ -273,6 +294,7 @@ function DetalleDeValores({
   planificado,
   registrado,
   diferencia,
+  cargaRapida,
   medida,
   rol = 'planificado-y-registrado',
   children,
@@ -283,6 +305,8 @@ function DetalleDeValores({
   planificado: ValorPlanificado;
   registrado: ValorRegistrado;
   diferencia: Diferencia | null;
+  /** DL-161: lo registrado se tildó sin escribir; la diferencia dice por qué no se compara. */
+  cargaRapida?: true;
   medida: Medida;
   rol?: RolDeLaObservacion;
   children?: ReactNode;
@@ -315,7 +339,7 @@ function DetalleDeValores({
         <dt>{COPY_COMPARACION.capaRegistrado} · {etiquetaDeMedida(medida)}</dt>
         <dd>{textoRegistrado(registrado, medida)}</dd>
         <dt>{COPY_COMPARACION.diferencia}</dt>
-        <dd>{diferencia ? diferenciaEnPalabras(diferencia, medida) : 'No hay dos valores comparables'}</dd>
+        <dd>{textoDeLaDiferencia({ diferencia, cargaRapida }, medida, 'No hay dos valores comparables')}</dd>
         <dt>{COPY_COMPARACION.valoresExactos}</dt>
         <dd>{serieRegistrada ? serieCompleta(serieRegistrada) : '—'}</dd>
         <dt>Prescripción</dt>
@@ -456,6 +480,7 @@ export function ComparacionPorSerie({
                 planificado={s.planificado}
                 registrado={s.registrado}
                 diferencia={s.diferencia}
+                cargaRapida={s.cargaRapida}
                 medida={medida}
               />
             ) : null}
@@ -544,12 +569,26 @@ function GraficoPorSerie({
     datos.flatMap((d) => [d.etiquetaPlan, d.etiquetaReg]),
   );
   const unidad = unidadDeMedida(medida);
-  const resumen = series.map((s) => `${COPY_ENTRENAMIENTO.serie} ${numero(s.numero)}: ${COPY_COMPARACION.capaPlanificado.toLowerCase()} ${textoPlanificado(s.planificado, medida)}, ${COPY_COMPARACION.capaRegistrado.toLowerCase()} ${textoRegistrado(s.registrado, medida)}`).join('. ');
+  const resumen = series
+    .map(
+      (s) =>
+        `${COPY_ENTRENAMIENTO.serie} ${numero(s.numero)}: ${COPY_COMPARACION.capaPlanificado.toLowerCase()} ${textoPlanificado(s.planificado, medida)}, ${COPY_COMPARACION.capaRegistrado.toLowerCase()} ${textoRegistrado(s.registrado, medida)}${s.cargaRapida ? ` (${COPY_REGISTRO_POR_NIVELES.cargaRapida})` : ''}`,
+    )
+    .join('. ');
+  // DL-161: la barra de lo registrado va hueca si la serie se tildó sin escribir; la leyenda lo dice solo si hay alguna.
+  const hayCargaRapida = series.some((s) => s.cargaRapida && s.registrado.tipo === 'valor');
   return (
     <figure className="grafico__figura" aria-labelledby={`${id}-titulo`}>
       <figcaption id={`${id}-titulo`} className="nota">
         {titulo}. Eje vertical: {ejeVertical(medida)}. Eje horizontal: número real de la serie.
       </figcaption>
+      {hayCargaRapida && capas.registrado ? (
+        <ul className="leyenda" aria-label="Leyenda">
+          <li>
+            <MuestraDeRegistrado hueca /> {COPY_REGISTRO_POR_NIVELES.leyendaCargaRapida}
+          </li>
+        </ul>
+      ) : null}
       {!capas.planificado && !capas.registrado ? <p>{COPY_COMPARACION.capaOculta}</p> : null}
       <div className="grafico__desplazable" ref={marco}>
         <div
@@ -604,6 +643,10 @@ function GraficoPorSerie({
               ) : null}
               {capas.registrado ? (
                 <Bar dataKey="reg" name={COPY_COMPARACION.capaRegistrado} fill="var(--grafico-registrado)" maxBarSize={48} isAnimationActive={false} className="grafico__elegible" onClick={(_dato: unknown, i: number) => onElegir(i)}>
+                  {/* DL-161: hueca la de carga rápida (tildada sin escribir), con el contorno del color de lo registrado. */}
+                  {series.map((s) =>
+                    s.cargaRapida ? <Cell key={`reg-${s.numero}`} fill="var(--superficie)" stroke="var(--grafico-registrado)" strokeWidth={2} /> : <Cell key={`reg-${s.numero}`} fill="var(--grafico-registrado)" />,
+                  )}
                   <LabelList dataKey="etiquetaReg" position="top" className="grafico__valor" />
                 </Bar>
               ) : null}
@@ -631,7 +674,7 @@ function TooltipDeSerie({ serie, medida }: { serie: SerieParaGraficar | undefine
       <p>
         {COPY_COMPARACION.capaRegistrado}: {textoRegistrado(serie.registrado, medida)}
       </p>
-      {serie.diferencia ? <p>{diferenciaEnPalabras(serie.diferencia, medida)}</p> : null}
+      {serie.diferencia || serie.cargaRapida ? <p>{textoDeLaDiferencia(serie, medida, '')}</p> : null}
     </div>
   );
 }
@@ -671,7 +714,7 @@ function TablaPorSerie({ c, series, medida }: { c: ComparacionDeEjercicio; serie
                   </>
                 ) : null}
               </td>
-              <td data-etiqueta={COPY_COMPARACION.diferencia}>{s.diferencia ? diferenciaEnPalabras(s.diferencia, medida) : '—'}</td>
+              <td data-etiqueta={COPY_COMPARACION.diferencia}>{textoDeLaDiferencia(s, medida, '—')}</td>
               <td data-etiqueta={COPY_COMPARACION.valoresExactos}>
                 {s.fila.registrada.tipo === 'registrada' ? serieCompleta(s.fila.registrada.serie) : '—'}
                 {s.fila.corregida ? ` (${COPY_COMPARACION.enElOriginal.toLowerCase()}: ${s.fila.enElOriginal ? serieCompleta(s.fila.enElOriginal) : 'no estaba'})` : ''}
@@ -777,6 +820,12 @@ export function EvolucionDelEjercicio({
           <span className="muestra muestra--hueco" aria-hidden="true" /> Franja gris rayada: sesión sin valor registrado de esta serie (el motivo está en la tabla)
         </li>
         <li>Línea vertical discontinua: empieza otra versión del plan</li>
+        {/* DL-161: solo si hay alguna: lo tildado sin escribir va hueco y no se compara; lo escrito, lleno. */}
+        {puntos.some((x) => x.cargaRapida) ? (
+          <li data-leyenda="carga-rapida">
+            <MuestraDeRegistrado hueca /> {COPY_REGISTRO_POR_NIVELES.leyendaCargaRapida}
+          </li>
+        ) : null}
       </ul>
       {observaciones.length === 1 ? <p className="nota">Hay una sola sesión con este ejercicio en el período: todavía no hay evolución que mirar. Podés ampliar el período (hasta 92 días).</p> : null}
       {!conValor ? <p>No hay valores de {etiquetaDeMedida(medida).toLowerCase()} para esta serie en el período. La tabla dice por qué en cada sesión.</p> : null}
@@ -790,6 +839,7 @@ export function EvolucionDelEjercicio({
             planificado={p.planificado}
             registrado={p.registrado}
             diferencia={p.diferencia}
+            cargaRapida={p.cargaRapida}
             medida={medida}
             rol={p.observacion.rol}
           >
@@ -848,7 +898,10 @@ function GraficoDeEvolucion({
   // Dónde empieza otra versión del plan: la prescripción de cada punto es la de su versión.
   const cambiosDeVersion = puntos.filter((p, i) => i > 0 && puntos[i - 1]!.observacion.comparacion.planId !== p.observacion.comparacion.planId).map((p) => p.indice);
   const resumen = puntos
-    .map((p) => `${rotuloDeObservacion(p.observacion)}: ${COPY_COMPARACION.capaPlanificado.toLowerCase()} ${textoPlanificado(p.planificado, medida)}, ${COPY_COMPARACION.capaRegistrado.toLowerCase()} ${textoRegistrado(p.registrado, medida)}`)
+    .map(
+      (p) =>
+        `${rotuloDeObservacion(p.observacion)}: ${COPY_COMPARACION.capaPlanificado.toLowerCase()} ${textoPlanificado(p.planificado, medida)}, ${COPY_COMPARACION.capaRegistrado.toLowerCase()} ${textoRegistrado(p.registrado, medida)}${p.cargaRapida ? ` (${COPY_REGISTRO_POR_NIVELES.cargaRapida})` : ''}`,
+    )
     .join('. ');
   return (
     <figure className="grafico__figura" aria-labelledby={`${id}-titulo`}>
@@ -956,7 +1009,14 @@ function GraficoDeEvolucion({
                       isAnimationActive={false}
                       activeDot={false}
                       dot={({ cx, cy, index }: { cx?: number; cy?: number; index?: number }) =>
-                        cx === undefined || cy === undefined ? <g key={`rd${t}-${index}`} /> : <circle key={`rd${t}-${index}`} cx={cx} cy={cy} r={5} fill="var(--grafico-registrado)" stroke="var(--superficie)" strokeWidth={1.5} className="grafico__elegible" onClick={() => index !== undefined && onElegir(index)} />
+                        cx === undefined || cy === undefined ? (
+                          <g key={`rd${t}-${index}`} />
+                        ) : index !== undefined && puntos[index]?.cargaRapida ? (
+                          // DL-161: carga rápida, tildada sin escribir: un punto hueco del color de lo registrado.
+                          <circle key={`rd${t}-${index}`} cx={cx} cy={cy} r={5} fill="var(--superficie)" stroke="var(--grafico-registrado)" strokeWidth={2} data-carga-rapida="si" className="grafico__elegible" onClick={() => onElegir(index ?? null)} />
+                        ) : (
+                          <circle key={`rd${t}-${index}`} cx={cx} cy={cy} r={5} fill="var(--grafico-registrado)" stroke="var(--superficie)" strokeWidth={1.5} className="grafico__elegible" onClick={() => index !== undefined && onElegir(index)} />
+                        )
                       }
                     />
                   ))
@@ -983,7 +1043,7 @@ function TooltipDePunto({ punto, medida }: { punto: PuntoDeEvolucion | undefined
       <p>
         {COPY_COMPARACION.capaRegistrado}: {textoRegistrado(punto.registrado, medida)}
       </p>
-      {punto.diferencia ? <p>{diferenciaEnPalabras(punto.diferencia, medida)}</p> : null}
+      {punto.diferencia || punto.cargaRapida ? <p>{textoDeLaDiferencia(punto, medida, '')}</p> : null}
       <p className="nota">Clic o toque para ver el detalle</p>
     </div>
   );
@@ -1038,7 +1098,7 @@ function TablaDeEvolucion({
                     </>
                   ) : null}
                 </td>
-                <td data-etiqueta={COPY_COMPARACION.diferencia}>{p.diferencia ? diferenciaEnPalabras(p.diferencia, medida) : '—'}</td>
+                <td data-etiqueta={COPY_COMPARACION.diferencia}>{textoDeLaDiferencia(p, medida, '—')}</td>
                 <td data-etiqueta="Registro">{c.fuente.tipo === 'correccion' ? COPY_COMPARACION.correccionVigente : c.fuente.tipo === 'original' ? COPY_COMPARACION.registroOriginal : COPY_COMPARACION.sinDato}</td>
                 <td data-etiqueta="Acciones">
                   <button type="button" className="boton boton--enlace" onClick={() => onElegir(p.indice)} aria-label={`Ver los valores de ${rotuloDeObservacion(p.observacion)}`}>

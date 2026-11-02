@@ -248,8 +248,8 @@ test('4 · «todo», de un toque: por serie, «Realizada», cada serie con lo pl
   cumpleElContrato(changes);
   assert.deepEqual(resumen, { forma: 'series', ejercicios: 2, deEjercicios: 2, series: 6, condicion: 'COMPLETED', nivel: 'COMO_EL_PLAN' });
   assert.equal(rr.textoDelResumen(resumen), 'Registraste 2 de 2 ejercicios · 6 series.');
-  // «Listo» dice el mismo rótulo que lee el profesional en el website (DL-161).
-  assert.equal(rr.loQueVeTuProfesional(resumen), 'Tu profesional ve cómo la cargaste: «Cargada como el plan».');
+  // «Listo» dice el mismo rótulo que lee el profesional en el website (DL-161; los nombres de Dirección del 2026-11-02).
+  assert.equal(rr.loQueVeTuProfesional(resumen), 'Tu profesional ve cómo la cargaste: «Carga rápida».');
   assert.equal(rr.textoAntesDeRegistrar(resumen), 'Vas a registrar 2 de 2 ejercicios · 6 series. Queda como «Realizada».');
 });
 

@@ -435,7 +435,7 @@ export interface ResumenDelRegistroRapido {
   readonly deEjercicios: number;
   readonly series: number;
   readonly condicion: 'COMPLETED' | 'COMPLETED_WITH_DEVIATION';
-  /** El nivel de detalle con el que la ve el profesional (DL-161): «Cargada como el plan», «Parte como el plan»… */
+  /** El nivel de detalle con el que la ve el profesional (DL-161): «Carga rápida», «Carga rápida con cambios»… */
   readonly nivel: NivelDeDetalle | null;
 }
 
