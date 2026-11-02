@@ -39,7 +39,7 @@ test('REG-06-138 · cada máscara del set cita una zona, con su vista; ninguna z
   assert.deepEqual(ZONAS_MUSCULARES.filter((z) => (z.anatomicalViews as readonly string[]).includes('POSTERIOR')).map((z) => z.zoneId).sort(), [...CAPAS_DE_ESPALDA].sort());
   for (const z of ZONAS_MUSCULARES) {
     assert.match(z.zoneId, /^[a-z]+(-[a-z]+)*$/, 'el identificador es el nombre del grupo en el archivo: minúsculas, sin tildes');
-    assert.ok(z.name.trim().length > 0 && z.name !== z.zoneId, `${z.zoneId} tiene un nombre visible propio`);
+    assert.ok(z.name.trim().length > 0 && (z.name as string) !== z.zoneId, `${z.zoneId} tiene un nombre visible propio`);
   }
 });
 

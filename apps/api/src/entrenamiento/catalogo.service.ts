@@ -79,7 +79,7 @@ export class CatalogoDeEjerciciosService {
    */
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioDeCatalogo[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);
-    const visual = await visualDeEjercicios(this.prisma, filas.map((f) => f.ejercicioId));
+    const visual = await visualDeEjercicios(this.lector(), filas.map((f) => f.ejercicioId));
     return { data: filas.map((f) => ejercicioApi(f, visual(f.ejercicioId))), page };
   }
 
@@ -91,7 +91,7 @@ export class CatalogoDeEjerciciosService {
    */
   async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);
-    const visual = await visualDeEjercicios(this.prisma, filas.map((f) => f.ejercicioId));
+    const visual = await visualDeEjercicios(this.lector(), filas.map((f) => f.ejercicioId));
     return { data: filas.map((f) => ({ ...ejercicioApi(f, visual(f.ejercicioId)), matchedAlternativeName: f.nombreAlternativo, origin: origenEnElBuscador(f, actor.identidadId) })), page };
   }
 
@@ -112,7 +112,7 @@ export class CatalogoDeEjerciciosService {
          AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
          AND ${ejercicioVisible(creadores)}`;
     const porId = new Map(filas.map((f) => [f.ejercicioId, f]));
-    return { data: await fichasVisuales(this.prisma, ids.flatMap((id) => porId.get(id) ?? [])) };
+    return { data: await fichasVisuales(this.lector(), ids.flatMap((id) => porId.get(id) ?? [])) };
   }
 
   private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeEjercicio & ConOrigenEnLaBase & ConNombreAlternativo)[]; page: unknown }> {
@@ -234,7 +234,7 @@ export class CatalogoDeEjerciciosService {
        WHERE e."id" = ${ejercicioId}::uuid
          AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")`;
     if (!fila) return null;
-    const visual = await visualDeEjercicios(cliente, [fila.ejercicioId]);
+    const visual = await visualDeEjercicios(cliente as Prisma.TransactionClient, [fila.ejercicioId]);
     return ejercicioApi(fila, visual(fila.ejercicioId));
   }
 
@@ -244,6 +244,11 @@ export class CatalogoDeEjerciciosService {
    */
   esProfesionalDeEntrenamiento(cliente: Cliente, identidadId: string): Promise<boolean> {
     return esProfesionalDeEntrenamiento(cliente, identidadId);
+  }
+
+  /** El cliente de la base fuera de una transacción, para las lecturas de lo visual (zonas e imagen), que piden uno. */
+  private lector(): Prisma.TransactionClient {
+    return this.prisma as unknown as Prisma.TransactionClient;
   }
 
   /**
