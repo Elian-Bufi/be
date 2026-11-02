@@ -1555,7 +1555,7 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
   return (
     <View>
       <Dato etiqueta={COPY_ENTRENAMIENTO.condicionDeLaSesion} valor={etiquetaDeCondicionRegistrada(registro)} />
-      {registro.reason ? <Dato etiqueta="Motivo" valor={registro.reason} /> : null}
+      {registro.reason ? <Dato etiqueta="Motivo" valor={registro.reason} apilado /> : null}
       {registro.exercises.map((e) => (
         <View key={e.prescriptionId}>
           <Dato

@@ -323,3 +323,26 @@ test('WP-06 §9.2 · la guardia detecta una pantalla que escribe «No realizada�
   assert.ok(textos.some((t) => /no realizad/i.test(t)));
   assert.match(contenido, /execution\.sessionCondition/);
 });
+
+/**
+ * D-C2 (prueba breve del 2026-10-29): la lista de «Tu historial» mostraba la condición del registro original aunque la
+ * sesión estuviera corregida. Lo que rige sale de `registroVigente` (REG-06-16): ninguna pantalla de la APK ni del
+ * entrenamiento del website escribe la condición leyendo `.original` directo. El original se muestra solo donde se
+ * rotula como tal («Registro original»), y ahí no pasa por esta función.
+ */
+const CONDICION_DEL_ORIGINAL = /etiquetaDeCondicionRegistrada\(\s*[\w.]*\.original\s*\)/;
+
+test('D-C2 · ninguna pantalla muestra la condición del original como si fuera la que rige', () => {
+  const archivos = [...tsx(join(RAIZ, 'apps/mobile/src/pantallas')), ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training'))];
+  assert.ok(archivos.length >= 30, `se esperaban las pantallas de la APK y del entrenamiento del website, hay ${archivos.length}`);
+  const hallazgos = archivos.filter((a) => CONDICION_DEL_ORIGINAL.test(readFileSync(a, 'utf8'))).map((a) => a.slice(RAIZ.length + 1));
+  assert.deepEqual(hallazgos, []);
+  // El historial de la APK, que es donde estaba el defecto, lee lo vigente.
+  assert.match(readFileSync(join(RAIZ, 'apps/mobile/src/pantallas/historial.tsx'), 'utf8'), /etiquetaDeCondicionRegistrada\(registroVigente\(e\)\)/);
+});
+
+test('D-C2 · la guardia detecta la condición leída del original', () => {
+  assert.match('<Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />', CONDICION_DEL_ORIGINAL);
+  assert.match('etiquetaDeCondicionRegistrada( x.ejecucion.original )', CONDICION_DEL_ORIGINAL);
+  assert.doesNotMatch('etiquetaDeCondicionRegistrada(registroVigente(e))', CONDICION_DEL_ORIGINAL);
+});

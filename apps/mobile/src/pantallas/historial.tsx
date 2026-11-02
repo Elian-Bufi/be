@@ -16,6 +16,7 @@
 import {
   COPY_ENTRENAMIENTO,
   etiquetaDeCondicionRegistrada,
+  registroVigente,
   type HistorialDeEntrenamientoResponse,
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDePlanDeEntrenamiento,
@@ -98,7 +99,8 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
                     <Parrafo>{e.plannedSession.label}</Parrafo>
                     {/* La fecha civil de la sesión, sin desplazarla por la zona del dispositivo (misma función que el detalle). */}
                     <Parrafo tenue>{fechaCivil(e.date)}</Parrafo>
-                    <Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />
+                    {/* Lo que hoy rige: una sesión corregida dice la condición corregida, no la que se corrigió (REG-06-16). */}
+                    <Insignia texto={etiquetaDeCondicionRegistrada(registroVigente(e))} />
                     {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
                     <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
                   </Tarjeta>
@@ -167,7 +169,7 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
           {s.instructions ? <Parrafo tenue>{s.instructions}</Parrafo> : null}
           {s.prescriptions.length === 0 ? <Parrafo tenue>{COPY_ENTRENAMIENTO.sinPrescripciones}</Parrafo> : null}
           {s.prescriptions.map((p) => (
-            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} />
+            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} apilado />
           ))}
         </Seccion>
       ))}

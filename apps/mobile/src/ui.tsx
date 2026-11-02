@@ -336,12 +336,20 @@ export function Tarjeta({ children }: { children: ReactNode }) {
   return <View style={estilos.tarjeta}>{children}</View>;
 }
 
-/** Par etiqueta/valor, leído como una sola frase por el lector de pantalla. */
-export function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+/**
+ * Par etiqueta/valor, leído como una sola frase por el lector de pantalla (D-C4, 2026-11-02).
+ * - **En fila**, la etiqueta ocupa lo que sobra y se parte en renglones si es larga; el valor va a la derecha, con un
+ *   tope del 55 % del ancho, y se parte dentro de su lugar. Antes, una etiqueta larga mandaba el valor al renglón de
+ *   abajo y a la izquierda, y parecía otra etiqueta.
+ * - **Apilado** (`apilado`), el valor va debajo de la etiqueta, a todo el ancho: para un texto libre o largo (un motivo,
+ *   una observación, un identificador). Se elige en cada uso, no por la cantidad de letras, para que se vea siempre igual.
+ * - Las dos piezas van con la misma altura de renglón, para que queden alineadas. Sin valor, queda solo la etiqueta.
+ */
+export function Dato({ etiqueta, valor, apilado = false }: { etiqueta: string; valor: string; apilado?: boolean }) {
   return (
-    <View style={estilos.dato} accessible accessibilityLabel={`${etiqueta}: ${valor}`}>
-      <Text style={estilos.negrita}>{etiqueta}</Text>
-      <Text style={estilos.parrafo}>{valor}</Text>
+    <View style={apilado ? estilos.datoApilado : estilos.dato} accessible accessibilityLabel={valor ? `${etiqueta}: ${valor}` : etiqueta}>
+      <Text style={[estilos.etiquetaDeDato, !apilado && estilos.etiquetaEnFila]}>{etiqueta}</Text>
+      {valor ? <Text style={[estilos.valorDeDato, !apilado && estilos.valorEnFila]}>{valor}</Text> : null}
     </View>
   );
 }
@@ -486,7 +494,12 @@ export const estilos = estilosPorTema((COLOR) => ({
   tituloDeSeccion: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginBottom: 6 },
   subtitulo: { fontSize: 17, fontWeight: '700', color: COLOR.texto, marginTop: 12, marginBottom: 4 },
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
-  dato: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginVertical: 4 },
+  dato: { flexDirection: 'row', alignItems: 'flex-start', columnGap: 12, marginVertical: 6 },
+  datoApilado: { marginVertical: 6, rowGap: 2 },
+  etiquetaDeDato: { fontSize: 15, lineHeight: 22, fontWeight: '700', color: COLOR.texto },
+  etiquetaEnFila: { flex: 1 },
+  valorDeDato: { fontSize: 16, lineHeight: 22, color: COLOR.texto },
+  valorEnFila: { flexShrink: 0, maxWidth: '55%', textAlign: 'right' },
   insignia: { alignSelf: 'flex-start', borderWidth: 2, borderColor: COLOR.tenue, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
   insigniaPositiva: { borderColor: COLOR.exito },
   textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
