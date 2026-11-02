@@ -1,4 +1,4 @@
-import { CONDICION_DE_SESION_API, GRANULARIDAD_API, sesionesDelPlan, type FuenteExterna } from '@be/domain';
+import { CONDICION_DE_SESION_API, GRANULARIDAD_API, serieEnSuForma, sesionesDelPlan, type FuenteExterna } from '@be/domain';
 import type {
   Bloque,
   CondicionDeSesion,
@@ -281,7 +281,8 @@ export function ejerciciosRegistradosApi(
       performedExerciseVersionId: e.performedExerciseVersionId,
       performedExerciseName: nombres.get(e.performedExerciseVersionId) ?? 'Ejercicio no disponible',
       substituted: e.performedExerciseVersionId !== prescribedExerciseVersionId,
-      sets: 'sets' in e ? e.sets.map((s) => ({ ...s })) : null,
+      // Campo por campo (DL-161): lo de la serie que no existe no se devuelve, y lo registrado antes llega idéntico.
+      sets: 'sets' in e ? e.sets.map(serieEnSuForma) : null,
       executionSummary: 'executionSummary' in e ? { description: e.executionSummary.description } : null,
     };
   });
