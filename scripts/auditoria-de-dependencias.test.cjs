@@ -498,11 +498,15 @@ test('braces ya no está exceptuado: si GitHub volviera a publicar el aviso, blo
   assert.match(texto(r), /✗ @be\/mobile: high · braces · GHSA-vfj7-8cjw-p6xm/);
 });
 
-test('con el package-lock.json del repositorio, la procedencia declarada de node-forge es la que hay', () => {
+test('con el package-lock.json del repositorio, node-forge ya está corregido y la excepción de la 1.4.0 no lo cubre (DL-114, 2026-11-02)', () => {
   const lock = require('../package-lock.json');
+  // El aviso exceptuado y los cinco del 2026-10-30 abarcan hasta la 1.4.0: la copia del lockfile tiene que quedar afuera.
+  const instalada = lock.packages['node_modules/node-forge'].version;
+  const [mayor, menor, parche] = instalada.split('.').map(Number);
+  assert.ok(mayor > 1 || (mayor === 1 && (menor > 4 || (menor === 4 && parche > 0))), `node-forge ${instalada} sigue dentro de <=1.4.0`);
+  // La excepción declara la 1.4.0. Con otra versión instalada no se demuestra: si el aviso volviera, bloquea.
   const r = procedenciaEnElLockfile({ paquete: 'node-forge', rango: '<=1.4.0', nodos: ['node_modules/node-forge'] }, FORGE, '@be/mobile', lock);
-  assert.equal(r.estado, 'demostrada', JSON.stringify(r.detalle));
-  assert.match(r.detalle[0], /node_modules\/node-forge 1\.4\.0 ← @expo\/cli 57\.0\.25 ← expo 57\.0\.23 ← @be\/mobile; también node_modules\/node-forge ← @expo\/code-signing-certificates 0\.0\.6 ← @expo\/cli/);
+  assert.notEqual(r.estado, 'demostrada', JSON.stringify(r.detalle));
   assert.deepEqual(usuariosDe(lock.packages, 'node_modules/node-forge').produccion.sort(), ['node_modules/@expo/cli', 'node_modules/@expo/code-signing-certificates']);
   assert.deepEqual(usuariosDe(lock.packages, 'node_modules/@expo/code-signing-certificates').produccion, ['node_modules/@expo/cli']);
 });
