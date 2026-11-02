@@ -1,44 +1,74 @@
-# Guion de la defensa
+# Guion de la presentación
 
-Una exposición de unos 20 minutos, demo incluida, y después las preguntas. El texto de cada diapositiva está en sus
-notas del orador; acá va el orden, el tiempo, qué mostrar y de dónde sale cada afirmación. La versión que se presenta es
-`main` `0fb1bff` (2026-10-20).
+**Dónde estamos.** El viernes 6/11 se presenta BE al tutor en unos 11 minutos, demo incluida, y después vienen las
+preguntas. El mazo pasó de 16 diapositivas a 13 para exponer, más la de preguntas y 4 de respaldo; lo que depende de la
+integración del miércoles y de la APK nueva quedó marcado «[se completa el jueves: …]».
 
-- **Presentación:** el mazo «BE · Defensa de tesis» (16 diapositivas 16:9, con notas del orador), en
-  https://claude.ai/artifact/9LiufGdUTJjAbEonGT8t2U. Es privado hasta que Dirección lo comparta, y se descarga como
-  PowerPoint o PDF. El contenido, diapositiva por diapositiva, también está en `DIAPOSITIVAS.md`.
-- **Demo:** `DEMO.md`, con su plan B.
+- **Presentación:** el mazo «BE · Defensa de tesis», en https://claude.ai/artifact/9LiufGdUTJjAbEonGT8t2U. Es privado
+  hasta que Dirección lo comparta desde su menú, se presenta desde ahí (con las notas del orador) y se descarga como
+  PowerPoint o PDF. No se compila: la fuente es `presentacion/project/` (el índice `deck.json` y una sección HTML por
+  diapositiva) y `DIAPOSITIVAS.md` es su texto, generado con `node herramientas/esquema-de-diapositivas.mjs`.
+- **Demo:** `DEMO.md`, con su plan B y la lista de capturas del jueves.
 - **Preguntas probables:** `PREGUNTAS.md`.
 - **A mano:** la versión de evaluación de la tesis (con las credenciales del apartado 14), nunca en pantalla compartida.
+- **Versiones:** el documento de la tesis es de `0fb1bff` (20/10); las cifras del mazo son de `main` `e4512cb` (26/10)
+  hasta que el jueves se completen con la versión integrada.
 
 ## Tiempos
 
-| Desde | Diapositiva | Qué mostrar | Respaldo |
+Las notas del orador suman unas 1.470 palabras: a 140 palabras por minuto, unos 10,5 minutos de habla, más los clics de
+la demo.
+
+| Desde | Diapositiva | Qué decir | Respaldo |
 |---|---|---|---|
-| 0:00 | 1 · Portada | La ficha real de Diego Sosa | Apartado 1 |
-| 0:45 | 2 · El problema | Tres frases; decir que es una hipótesis | Apartado 2 |
-| 2:00 | 3 · La propuesta | Website, APK y el núcleo que protege | Apartado 2 |
-| 2:45 | 4 · Qué hace y qué no | Las cuatro decisiones y los cuatro límites | Apartado 2 (límites) |
-| 3:45 | 5 · Con quién habla BE | Personas a la izquierda, sistemas externos a la derecha | Apartado 8, ARQ-01 |
-| 4:30 | 6 · El circuito | Los seis pasos y cómo se vuelve | Anexo B, B-01 |
-| 5:45 | 7 · Demo | Siete minutos, según `DEMO.md` | Apartado 11 |
-| 12:45 | 8 · Por dentro | Cinco piezas y una sola base | Apartado 8, ARQ-02 |
-| 13:45 | 9 · Una operación protegida | Los seis pasos de activar un plan | Anexo E, E-01 |
-| 15:00 | 10 · Los datos | Las cifras de la base | Apartado 6 |
-| 15:45 | 11 · Estados | Proceso y consentimiento | Anexo E, E-04 |
-| 16:30 | 12 · Cómo se sabe que funciona | Casos, CI y verificaciones en test | Apartado 5, anexo F |
-| 17:30 | 13 · Lo que falta | Dicho antes de que lo pregunten | Anexo K |
-| 18:30 | 14 · Cómo se trabajó | Legajo, paquetes, CI, decisiones; IA declarada | Apartado 2 (roles) |
-| 19:15 | 15 · Lo que sigue | Cuatro pasos | Anexo K, apartado 2 |
-| 19:45 | 16 · Preguntas | — | `PREGUNTAS.md` |
+| 0:00 | 1 · Portada | Quién soy, qué es BE; Diego es sintético | Apartado 1 |
+| 0:30 | 2 · El problema | El seguimiento repartido; es una hipótesis | Apartado 2 |
+| 1:05 | 3 · La propuesta | Website, APK y el núcleo que protege | Apartado 2 |
+| 1:40 | 4 · Qué hace y qué no | No diagnostica, no califica, sin datos reales | Apartado 2 (límites) |
+| 2:20 | 5 · El circuito | Los seis pasos y cómo se vuelve | Anexo B, B-01 |
+| 3:05 | 6 · Qué cambió desde el 20/10 | Las cuatro tarjetas, una frase cada una | DL-151 a DL-158 |
+| 4:00 | 7 · Demo | 2:30, según `DEMO.md` | Apartado 11 |
+| 6:30 | 8 · Lo que mostró la prueba | Qué falló, cómo se vio y qué aprendí | `EVIDENCIA/PRUEBA-BREVE-2026-10-26/RESULTADOS.md` (#217) |
+| 7:25 | 9 · Registrar, fácil | Antes y después; detallar es una invitación | DL-160, DL-161 (#224, #226 a #228) |
+| 8:20 | 10 · Por dentro | Cinco piezas, una base, nada se borra | Apartado 8, ARQ-02 |
+| 9:05 | 11 · Cómo se sabe que funciona | La CI, lo probado en test y lo que falta con personas | Apartado 5, anexo F |
+| 9:50 | 12 · Cómo se trabajó | Legajo, paquetes, decisiones; la IA declarada | Apartado 2 (roles) |
+| 10:35 | 13 · Lo que falta y lo que sigue | Dicho antes de que lo pregunten | Anexo K |
+| 11:25 | 14 · Preguntas | — | `PREGUNTAS.md` |
 
-Si la demo se alarga, recortar en 10 y 11, que también están en la tesis.
+**Respaldo, después de «Preguntas»** (no se exponen; se abren si preguntan):
 
-## Antes de la mesa
+| Diapositiva | Para qué pregunta | Respaldo |
+|---|---|---|
+| 15 · Con quién habla BE | Quiénes usan BE y con qué servicios externos habla | Apartado 8, ARQ-01. La lámina del documento es del 20/10 y muestra a Administración punteada, como prevista: desde el 25/10 existe, y hay que decirlo |
+| 16 · Una operación protegida | Transacciones, idempotencia, autorización | Anexo E, E-01 |
+| 17 · Los datos | Cuántas tablas, qué garantiza la base | Apartado 6, anexo G |
+| 18 · Estados | Cómo se cierra un proceso, qué pasa al revocar | Anexo E, E-04 |
 
-- Completar en la portada del mazo y de la tesis la nómina del grupo, los correos institucionales y el mes y año.
-- Ensayar el guion completo con un reloj, una vez con la demo en vivo y otra con el plan B.
-- Revisar `DEMO.md`, sección «Antes de entrar a la mesa».
+Si la demo se alarga, recortar en la 10 y la 12: están en la tesis.
+
+## El jueves: lo que se completa
+
+Buscar «[se completa el jueves» en el mazo y en estos archivos. Son estos lugares:
+
+| Dónde | Qué va | De dónde sale |
+|---|---|---|
+| Diapositiva 1 (portada) | Integrantes, correos y tutor o tutora | Dirección (`privado.json` queda fuera del repo y no lo lee ningún agente) |
+| Diapositiva 7 (demo) | La captura nativa de la sesión guiada y, al pie, el commit y la APK | `respaldo-demo/2026-11-05/apk/07-sesion-guiada.png`; `/health/ready` y la release |
+| Diapositiva 8 (prueba) | La versión de la APK nueva | La release del miércoles |
+| Diapositiva 9 (registro) | La captura de «Hice todo lo planificado»; en las notas, decir «en curso» de lo que no esté instalado | `apk/04-hice-lo-planificado.png` |
+| Diapositiva 10 (por dentro) | Las tablas de la versión integrada (el catálogo visual, #225, suma tres) | `prisma/schema.prisma` de esa versión |
+| Diapositiva 11 (funciona) | La corrida de la CI de la versión integrada y, en las notas, el recuento de los 59 casos | `gh run view <id> --log` y `herramientas/casos-de-prueba.mjs` |
+| Diapositiva 13 (falta) | TalkBack: probado o límite declarado, con su motivo | Decisión de Dirección (RNF-ACC-001 es P0 en el legajo) |
+| Diapositiva 17 (datos, respaldo) | Las seis cifras de la base | El catálogo de PostgreSQL con la versión integrada |
+| `DEMO.md` | Commit, versión de la APK y su SHA-256 | La release y `/health/ready` |
+
+Además, si hay tiempo: cambiar la imagen de la portada por `web/02-ficha-resumen.png` y la del website de la demo por
+`web/01-espacio-profesional.png`, y recontar el método (commits, pull requests integrados y coautoría) con
+`git rev-list --count main` y `gh pr list --state merged`. Las imágenes del mazo se suben al propio mazo: lo más simple
+es pasarle las capturas a Claude con la diapositiva en la que van.
+
+**Ensayo:** una vez en vivo y otra con el plan B, con reloj, el mismo teléfono y la misma red.
 
 ## Cada lámina en 30 a 60 segundos
 

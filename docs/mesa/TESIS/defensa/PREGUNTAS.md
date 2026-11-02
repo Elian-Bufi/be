@@ -1,8 +1,9 @@
 # Preguntas probables de la mesa, con su respaldo
 
 Cada respuesta es corta y dice dónde está la prueba: el apartado o anexo de la tesis, el archivo del código o la decisión
-registrada (DL) que la sostiene. Cuando algo no está hecho o no está probado, la respuesta lo dice primero. Versión de
-referencia: `main` `0fb1bff`.
+registrada (DL) que la sostiene. Cuando algo no está hecho o no está probado, la respuesta lo dice primero. El
+documento de la tesis es de `main` `0fb1bff` (20/10); las cifras actualizadas son de `main` `e4512cb` (26/10), hasta que
+el jueves 5/11 se completen con la versión integrada. Las preguntas 23 a 25 son sobre lo posterior al documento.
 
 ## Producto y alcance
 
@@ -20,11 +21,12 @@ decisiones son del profesional; BE las registra y las hace cumplir.
 **3. ¿Qué quedó fuera de esta entrega?**
 Fuera de alcance, por decisión de Dirección: la verificación de profesionales y de su capacidad (RF-008 a RF-014 y
 RF-067; los profesionales de la demo se habilitan con un servicio interno, DL-036) y la recuperación del acceso
-(RF-005). Aprobados y sin construir: las incidencias administrativas (RF-068), que dependen del administrador previsto
-por el legajo, y la publicación de servicios antropométricos (RF-051). En parte: vincular métodos de acceso (RF-004:
-solo Google a una cuenta con contraseña), el perfil propio (RF-017: un solo campo aprobado), la sustitución de
-ejercicios en la candidata (RF-043, DL-151) y la capacidad del profesional, que existe pero no se configura desde una
-pantalla (RF-066). Del contrato P0 faltan cinco operaciones: DSH-01, 02 y 05 (cubiertas en parte por la cartera, la
+(RF-005). Desde el 25/10 existe Administración (DL-155), pero gestiona solo perfiles profesionales que ya existen: el
+alta pública de profesionales (PRO-01 a 08) sigue pendiente. Aprobados y sin construir: las incidencias administrativas
+(RF-068) y la publicación de servicios antropométricos (RF-051). En parte: vincular métodos de acceso (RF-004: solo
+Google a una cuenta con contraseña), el perfil propio (RF-017: un solo campo aprobado) y la capacidad del profesional,
+que existe pero no se configura desde una pantalla (RF-066). La sustitución de ejercicios en la sesión volvió con la
+0.18.0-candidata.1 (RF-043, DL-151). Del contrato P0 faltan cinco operaciones: DSH-01, 02 y 05 (cubiertas en parte por la cartera, la
 ficha y «Mi evolución») y PRJ-02 y 03.
 *Respaldo:* apartado 3 (brechas); anexo K (K1 y K4).
 
@@ -103,27 +105,31 @@ Por decisión de diseño para esta etapa: se distribuye directamente, como relea
 
 **16. ¿Por qué nada se borra?**
 Porque es información de salud y de un seguimiento profesional: hay que poder reconstruir qué se sabía y qué se decidió
-en cada momento. Corregir y anular agregan registros; las 212 claves foráneas son RESTRICT y los disparadores impiden
-modificar lo emitido.
+en cada momento. Corregir y anular agregan registros; las claves foráneas (218 al 26/10) son RESTRICT y los
+disparadores impiden modificar lo emitido.
 *Respaldo:* anexo H (ADR-03); apartado 6 (lo que garantiza la base).
 
 **17. ¿Cuántas tablas tiene la base y cómo se organizan?**
-113 tablas en 14 vistas por dominio, con 78 enumeraciones, 212 claves foráneas, 125 índices únicos (34 parciales), 134
-restricciones CHECK y 275 disparadores. Las cifras salen del catálogo de PostgreSQL con las 51 migraciones aplicadas.
+Al 26/10, 118 tablas y 218 claves foráneas, todas RESTRICT, con 53 migraciones; las cinco tablas nuevas son de
+Administración. El documento (20/10) muestra 113 tablas en 14 vistas por dominio, con 78 enumeraciones, 212 claves
+foráneas, 125 índices únicos (34 parciales), 134 restricciones CHECK y 275 disparadores, leídos del catálogo de
+PostgreSQL con 51 migraciones. [se completa el jueves: las cifras del catálogo con la versión integrada.]
 *Respaldo:* apartado 6 (DER-00 a DER-14); anexo G (diccionario).
 
 ## Calidad y pruebas
 
 **18. ¿Cómo saben que funciona?**
-De los 59 casos de prueba diseñados, 42 pasan en la CI, 9 pasan en parte y 8 no son ejecutables con lo que se entrega.
-La CI de la versión de referencia corre 832 pruebas de dominio, 823 de integración contra PostgreSQL y 12 recorridos
-de navegador, todo en verde. Además, se verificaron en test la sesión, los borradores y las recetas el 2026-10-20.
+De los 59 casos de prueba diseñados, al 20/10 42 pasaban en la CI, 9 en parte y 8 no eran ejecutables con lo que se
+entrega. La CI de `main` `e4512cb` (26/10, corrida 40387350649) corre 887 pruebas de dominio, 909 de integración contra
+PostgreSQL, 159 de la API, 481 de scripts y 17 recorridos de navegador, todo en verde. En test se verificaron la sesión,
+los borradores y las recetas (20/10), los escenarios de la prueba breve (6 de 6, 26/10) y Administración (7 de 7, 27/10).
+Con profesionales reales, todavía no. [se completa el jueves: la corrida de la versión integrada.]
 *Respaldo:* apartado 5; anexo F (trazabilidad).
 
 **19. ¿Qué falta probar?**
-La candidata 0.17.0 entera en el teléfono, un aviso push recibido en un teléfono real, TalkBack, Safari y Firefox. Y
-hay una regresión conocida: la candidata no ofrece sustituir un ejercicio durante la sesión (la 0.13.2 sí); el
-arreglo está en un PR en borrador. Por eso la candidata no se promovió a estable.
+La prueba con profesionales reales, un aviso push recibido en un teléfono real, Safari, Firefox y TalkBack
+[se completa el jueves: TalkBack probado o límite declarado]. La APK nueva se prueba de punta a punta el miércoles 4/11
+[se completa el jueves: resultado]; hasta pasarla a estable, la estable sigue siendo la 0.13.2.
 *Respaldo:* apartado 5 (lo que queda por probar); anexo K (K1, K14, K15).
 
 **20. ¿Qué es la TVCC-30?**
@@ -142,6 +148,31 @@ documentación técnica se hicieron con asistentes de IA bajo esa dirección, y 
 *Respaldo:* apartado 2 (roles); `docs/DEUDA_LEGAJO.md`.
 
 **22. ¿Qué cambiarían si empezaran de nuevo?**
-Probar en el teléfono antes y más seguido (la regresión de la sustitución se habría visto antes), y llevar el registro
-de decisiones al día con cada integración (anexo K, K5 y K18).
-*Respaldo:* anexo K.
+Probar en el teléfono antes y más seguido: la regresión de la sustitución y el defecto D-C1 (las series escritas que se
+perdían) se habrían visto antes. Y llevar el registro de decisiones al día con cada integración (anexo K, K5 y K18).
+*Respaldo:* anexo K; `EVIDENCIA/PRUEBA-BREVE-2026-10-26/RESULTADOS.md` (PR #217).
+
+## Lo posterior al documento
+
+**23. ¿Qué cambió desde la versión del documento?**
+Administración por área con segundo factor (DL-155, DL-157), la sustitución de ejercicios de vuelta en la sesión
+(DL-151), «Analizar» de Nutrición con lo registrado, el objetivo y lo indicado en un mismo gráfico (DL-158, DL-153), la
+evidencia de cada revisión (DL-154) y la lectura congelada de las APK instaladas (DL-152). Después, el registro por
+niveles del entrenamiento (DL-160, DL-161).
+*Respaldo:* `docs/DEUDA_LEGAJO.md`; diapositiva 6 del mazo.
+
+**24. ¿Qué pasó en la prueba en el teléfono?**
+El 29/10, con la 0.18.0-candidata.1 y la cuenta descartable Prueba Uno: dos series de Press de banca escritas sin tocar
+«Registrar serie» no se veían al cambiar de serie y se perdieron sin aviso, y la sesión quedó registrada sin ese
+ejercicio (D-C1, severidad alta). La API funcionó como debía: el problema era el recorrido de la pantalla. La APK nueva
+guarda lo escrito en el teléfono, lo muestra en su fila y avisa antes de finalizar.
+*Respaldo:* `EVIDENCIA/PRUEBA-BREVE-2026-10-26/RESULTADOS.md` y `capturas-parte-c/` (PR #217); PR #226.
+
+**25. Si la persona registra «como el plan», ¿el profesional no recibe datos falsos?**
+No se inventa nada: cada serie dice cómo se cargó (`recordedAs`: escrita o como el plan). En el escritorio, lo cargado
+como el plan se muestra como «carga rápida», con su propia marca, y no se compara con lo indicado, porque repetiría el
+plan; lo que la persona escribió o cambió, como una serie menos o una carga distinta, sí se compara. Una serie «como el
+plan» que quedaría sin carga ni repeticiones se rechaza al guardar (`SET_WITHOUT_DATA`).
+La marca por serie está en el PR #224; la «carga rápida» en los gráficos y no compararla la decidió Dirección el 2/11
+[se completa el jueves: integrado o «en curso»].
+*Respaldo:* DL-160 y DL-161 (PR #224); `packages/domain/src/registro-por-niveles.ts`.

@@ -11,10 +11,13 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Trabajo final · Analista de Sistemas Escuela Da Vinci
 - Plataforma integrada de inteligencia en salud
 - Elián Bufi
-- [Integrantes, correos, mes y año: a confirmar]
+- [se completa el jueves: integrantes]
+- [se completa el jueves: correos]
+- [se completa el jueves: tutor o tutora]
+- Noviembre de 2026
 - *Imagen:* La ficha de Diego Sosa en el website profesional de BE, vista Resumen, en el ambiente de prueba
 
-> **Notas del orador.** Buenas tardes. Soy Elián Bufi y les presento BE, una plataforma para el seguimiento profesional en nutrición, entrenamiento y antropometría. La imagen es la ficha real de una persona sintética, Diego Sosa, en el ambiente de prueba: tres años de historia en una sola pantalla. En los próximos veinte minutos les muestro qué problema aborda, cómo funciona de punta a punta, una demostración de las dos plataformas, cómo está construido por dentro y qué falta. [Antes de la mesa: completar la nómina del grupo, los correos y el mes y año en esta portada.]
+> **Notas del orador.** Buenas tardes. Soy Elián Bufi y les presento BE, una plataforma para el seguimiento profesional en nutrición, entrenamiento y antropometría. La imagen es la ficha de Diego Sosa en el ambiente de prueba: una persona sintética con tres años de historia. En unos once minutos les cuento qué problema aborda, cómo funciona, qué cambió desde el 20 de octubre, una demo corta de las dos plataformas, lo que aprendí probándola en el teléfono y qué falta.
 
 ### 2 · Nadie ve el seguimiento completo
 
@@ -38,7 +41,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Un núcleo que protege
 - Vínculo por área, consentimiento y un único punto que autoriza.
 
-> **Notas del orador.** BE junta las dos puntas sobre una misma historia. El profesional trabaja en el website: evalúa, arma el plan, revisa lo registrado y decide cómo seguir. El asesorado usa la APK: ve lo que tiene para hoy y registra lo que hizo. En el medio hay un núcleo que hace cumplir las reglas: cada profesional trabaja en su área, solo con el permiso que la persona dio para esa finalidad, y un único punto decide cada acceso.
+> **Notas del orador.** BE junta las dos puntas sobre una misma historia. El profesional trabaja en el website: evalúa, arma el plan, revisa lo registrado y decide cómo seguir. El asesorado usa la APK: ve lo que tiene para hoy y registra lo que hizo. En el medio hay un núcleo que hace cumplir las reglas: cada profesional trabaja solo en el área en la que Administración lo habilitó, solo con el permiso que la persona dio para esa finalidad, y un único punto decide cada acceso.
 
 ### 4 · Qué hace BE y qué no hace
 
@@ -55,28 +58,9 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 
 > **Notas del orador.** Cuatro decisiones de diseño, cada una implementada: cada profesional en su área y la persona decide; lo indicado queda escrito y no cambia, porque activar un plan es crear una versión; lo que pasó se registra aparte, así el profesional compara; y nada se borra, cosa que la base de datos exige con disparadores. Y cuatro límites, que son decisiones y no olvidos: no diagnostica ni puntúa, no decide el requerimiento por el profesional, no comparte sin consentimiento y no procesa datos reales: el ambiente es de prueba, con personas sintéticas.
 
-## Cómo funciona, de punta a punta.
+## Cómo funciona y qué cambió desde el 20 de octubre.
 
-### 5 · Con quién habla BE
-
-- Asesorado
-- APK: registra y consulta
-- BE
-- Seguimiento profesional con los datos de salud protegidos
-- Google
-- verifica la identidad
-- Profesional
-- website: evalúa y revisa
-- Expo Push
-- avisos sin datos de salud
-- Validación
-- mide la TVCC-30
-- Catálogos abiertos
-- Open Food Facts y wger
-
-> **Notas del orador.** Este es el contexto, en el modelo C4. A la izquierda, las personas: el asesorado usa la APK; el profesional, el website; y el responsable de validación mide la métrica de la tesis con un comando interno. A la derecha, con borde discontinuo, los tres servicios externos: Google para entrar con una cuenta de Google, Expo Push para que el aviso llegue al teléfono, sin datos de salud, y dos catálogos abiertos de donde el profesional importa alimentos y ejercicios. La lámina completa, con cada relación rotulada, es ARQ-01 en el apartado 8.
-
-### 6 · El circuito, de punta a punta
+### 5 · El circuito, de punta a punta
 
 - 1 · Invitar
 - Profesional: elige el área; BE crea enlace y código
@@ -92,40 +76,164 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - BE aplica el resultado de la revisión
 - AJUSTAR o SUSTITUIR vuelve al paso 3 · MANTENER sigue en el 4 · FINALIZAR cierra el proceso
 
-> **Notas del orador.** Este es el recorrido completo. Uno: el profesional invita y elige el área; BE crea un enlace y un código de un solo uso, y el website dibuja el QR. Dos: el asesorado acepta el vínculo y autoriza el acceso; sin eso, el profesional no ve nada. Tres: el profesional evalúa, fija el objetivo y activa el plan; activar crea una versión que ya no cambia. Cuatro: se registra. Cinco: el profesional revisa. Seis: BE aplica el resultado; según cuál sea, se vuelve a planificar, se sigue igual o se cierra. La versión completa, con carriles, es la lámina B-01 del anexo B.
+> **Notas del orador.** Este es el recorrido completo. Antes de empezar, Administración habilita al profesional en su área. Uno: el profesional invita; BE crea un enlace y un código de un solo uso, y el website dibuja el QR. Dos: el asesorado acepta el vínculo y autoriza el acceso; sin eso, el profesional no ve nada. Tres: el profesional evalúa, fija el objetivo y activa el plan; activar crea una versión que ya no cambia. Cuatro: se registra. Cinco: el profesional revisa. Seis: BE aplica el resultado: se vuelve a planificar, se sigue igual o se cierra. La versión con carriles es la lámina B-01 del anexo B.
 
-## La demo, en vivo o con su plan B.
+### 6 · Qué cambió desde el 20 de octubre
 
-### 7 · Demo: el mismo Diego en las dos plataformas
+- Administración
+- Habilita y suspende a cada profesional por área, con segundo factor. Suspender un área no toca las otras.
+- Nutrición
+- Un mismo gráfico con lo registrado, el objetivo y lo indicado en el plan. Cada revisión dice en qué se apoyó.
+- Entrenamiento
+- Se puede volver a sustituir un ejercicio durante la sesión, como en la versión estable.
+- Compatibilidad
+- Las APK ya instaladas siguen leyendo la API de hoy: lo que lee cada versión quedó congelado y se prueba.
 
-- Website · el espacio profesional, en test
-- APK · vista en el navegador, no es una captura nativa
-- Plan B: capturas del 20 de octubre, misma versión (0fb1bff)
+> **Notas del orador.** Desde la versión del documento, el 20 de octubre, pasaron cuatro cosas que importan. Primero, Administración: una persona con segundo factor habilita o suspende a cada profesional por área, y suspender Nutrición no corta Entrenamiento; lo probé el 27 de octubre, siete de siete pasos. Segundo, en Nutrición, «Analizar» junta en un solo gráfico lo que la persona registró, el objetivo que fijó el profesional y lo indicado en el plan, y cada revisión muestra la evidencia que tuvo a la vista. Tercero, volvió la sustitución de un ejercicio durante la sesión. Y cuarto, las APK que ya están instaladas siguen andando contra la API nueva: lo que lee cada versión quedó congelado y se prueba en cada cambio. Son las decisiones DL-151 a DL-158.
+
+## La demo, lo que mostró la prueba en el teléfono y el registro más simple.
+
+### 7 · Demo: el profesional y la persona, en vivo
+
+- Website · Sofía Paz con Diego: la ficha, «Analizar» y una revisión
+- [se completa el jueves: captura nativa de la sesión guiada]
+- APK · Prueba Uno: «Ya la hice» y la sesión guiada
+- Plan B: capturas del jueves [se completa el jueves: commit y APK]
 - *Imagen:* El espacio profesional de Sofía Paz en el website: pendientes y cartera de asesorados
-- *Imagen:* La pantalla de Nutrición de la APK: el almuerzo con tres opciones del plan, en una vista del cliente real dibujada en el navegador
 
-> **Notas del orador.** La demo dura siete minutos y sigue a la misma persona, Diego Sosa, en las dos plataformas. En el website, con Sofía Paz: el espacio profesional, la ficha de Diego con su resumen, la línea de tiempo y el análisis del último año; el plan de nutrición con sus cinco versiones; la antropometría. Con Martín Acosta, el entrenamiento. En la APK: el plan del día, registrar una comida y la sesión serie por serie. Si la red o Render fallan, sigo con las capturas de esta mañana, tomadas contra la misma versión. Las de la APK son renders del cliente real en el navegador y lo digo al mostrarlas. Guion y respaldo: defensa/DEMO.md.
+> **Notas del orador.** La demo dura dos minutos y medio. En el website entro como Sofía Paz, nutricionista, y abro la ficha de Diego: el resumen por área dice qué hay y qué falta registrar. En «Analizar» veo, en un mismo gráfico, lo que Diego registró, el objetivo que fijé y lo indicado en el plan. Abro su última revisión: queda escrito en qué evidencia me apoyé para decidir. Diego es solo para mirar: no escribo nada sobre él. Paso al teléfono con Prueba Uno, una cuenta descartable. En una sesión pendiente toco «Ya la hice» y «Hice todo lo planificado»: veo los valores del plan y confirmo; si una serie fue distinta, la cambio ahí mismo. Después inicio la sesión de hoy: arriba dice en qué ejercicio y serie voy; tildo la casilla y la serie queda registrada con lo planificado, o escribo lo que hice. Si la red o Render fallan, sigo con las capturas del jueves, tomadas contra la misma versión. Guion y plan B: defensa/DEMO.md.
 
-## Por dentro: arquitectura, una operación protegida, los datos y los estados.
+### 8 · Lo que mostró la prueba en el teléfono
 
-### 8 · Por dentro: cinco piezas y una sola base
+- Prueba breve · 26 al 29 de octubre · APK 0.18.0-candidata.1
+- Un defecto de severidad alta
+- Lo escrito sin tocar «Registrar serie» no se veía al cambiar de serie y se perdía sin aviso: la sesión quedó sin Press de banca.
+- Lo que observé al usarla
+- El botón quedaba abajo, después de la ayuda del RIR
+- Mejor una cosa por vez, con el recorrido a la vista arriba
+- Registrar tiene que ser fácil; detallar, una invitación
+- En la APK nueva, lo escrito queda a la vista y guardado. [se completa el jueves: versión]
+- *Imagen:* Captura nativa del 29 de octubre: en Sentadilla, la serie 1 muestra el plan en gris y el botón «Registrar serie 3» queda abajo, después de la ayuda del RIR y de «Cronometrar serie»
+
+> **Notas del orador.** El 26 de octubre armé una prueba breve con cuentas descartables, y el 29 la hice en el teléfono con la candidata 0.18.0. Apareció un defecto de severidad alta: escribí dos series de Press de banca sin tocar «Registrar serie»; al pasar a otra serie, la fila volvía a mostrar el plan en gris, y al finalizar, la sesión quedó registrada sin ese ejercicio y sin ningún aviso. En la captura se ve por qué: el botón quedaba abajo de todo, después del cambio de unidad, del plan de la serie, de la ayuda del RIR y del cronómetro. Lo que aprendí: el error no estaba en la API sino en el recorrido, y eso solo se ve con la app en la mano. Por eso la APK nueva cambió la forma de registrar.
+
+### 9 · Registrar, fácil; detallar, opcional
+
+- Antes
+- [se completa el jueves: «Ya la hice» en la APK nueva]
+- Después
+- Un toque: «Ya la hice»
+- Lo planificado a la vista; se cambia lo distinto.
+- La sesión guiada
+- El recorrido arriba; una casilla por serie.
+- Corregir sin formularios
+- Suma lo que faltó; quita una serie destildándola.
+- En el escritorio, lo cargado como el plan se ve como «carga rápida» y no se compara.
+- *Imagen:* Antes: la corrección de una sesión en la candidata 0.18.0, un formulario con un campo por dato y por serie
+
+> **Notas del orador.** La prueba mostró algo de fondo: no todos quieren cargar serie por serie. Así que el registro de entrenamiento pasó a tener niveles, como las comidas. Con un toque, «Ya la hice», queda registrado lo planificado, y si un ejercicio tuvo una serie menos, se cambia ahí mismo. El que quiere detalle usa la sesión guiada: arriba ve en qué ejercicio y serie va, y cada serie tiene su casilla. Y la corrección dejó de ser un formulario: suma lo que faltó y quita una serie destildándola. Para el profesional, lo importante es que cada serie dice cómo se cargó: lo cargado como el plan se ve como «carga rápida» y no se compara con lo indicado; lo que la persona escribió o cambió, sí. Detallar es una invitación, no una obligación. [se completa el jueves: decir «en curso» de lo que no esté instalado.]
+
+## Por dentro, cómo se sabe que funciona, el método y lo que falta.
+
+### 10 · Por dentro: cinco piezas y una sola base
 
 - APK
 - Expo y React Native
 - API
-- NestJS: un monolito modular de 22 módulos
+- NestJS: un monolito modular de 23 módulos
 - Autoriza cada operación y la audita en la misma transacción
 - PostgreSQL 16
-- 113 tablas; también las fotos
+- 118 tablas; también las fotos
+- [se completa el jueves: tablas de la versión integrada]
 - Website
 - Next.js, estático
 - Recordatorios
 - tarea programada, tres veces por día
 - Todo en Render, en Frankfurt, con Docker y PostgreSQL estándar: se puede llevar a otro proveedor.
 
-> **Notas del orador.** Por dentro son cinco piezas: la APK, el website, la API, la base de datos y una tarea programada que pide los recordatorios tres veces por día. Las aplicaciones nunca hablan con la base: todo pasa por la API. La API es un monolito modular, un solo proceso con veintidós módulos por dominio, y eso es una decisión: una operación de salud tiene que ser completa o no ocurrir, y con una sola base alcanza una transacción local. Todo corre en Render, en Frankfurt, pero con Docker y PostgreSQL estándar; hasta las fotos van en la base. Láminas ARQ-02 y ARQ-03 en el apartado 8; la decisión es el ADR-01 del anexo H.
+> **Notas del orador.** Por dentro son cinco piezas: la APK, el website, la API, la base de datos y una tarea programada que pide los recordatorios tres veces por día. Las aplicaciones nunca hablan con la base: todo pasa por la API. La API es un monolito modular, un solo proceso con veintitrés módulos; el último que entró es Administración. Es una decisión: una operación de salud tiene que ser completa o no ocurrir, y con una sola base alcanza una transacción local. Todo corre en Render, pero con Docker y PostgreSQL estándar; hasta las fotos van en la base. Láminas ARQ-02 y ARQ-03, apartado 8.
 
-### 9 · Una operación protegida: activar un plan
+### 11 · Cómo se sabe que funciona
+
+- 59 casos de prueba diseñados · recuento del 20/10
+- 42 pasan en la CI
+- 9 pasan en parte
+- 8 no ejecutables con lo entregado
+- CI en verde · main del 26/10
+- 887 pruebas de dominio, 909 de integración con PostgreSQL, 159 de la API y 17 recorridos de navegador
+- [se completa el jueves: corrida de la versión integrada]
+- Probado en test
+- Administración: 7 de 7 (27/10). Escenarios de prueba: 6 de 6, y 48 de 48 pantallas (26/10).
+- Con profesionales reales: todavía no.
+
+> **Notas del orador.** ¿Cómo sé que funciona? De los cincuenta y nueve casos de prueba del legajo, al 20 de octubre cuarenta y dos pasaban en la integración continua, nueve en parte y ocho no se podían ejecutar con lo entregado; cada uno tiene su motivo en el apartado 5. La CI de la versión del 26 de octubre corre ochocientas ochenta y siete pruebas de dominio, novecientas nueve de integración contra PostgreSQL, ciento cincuenta y nueve de la API y diecisiete recorridos de navegador, todo en verde. En test probé Administración, siete de siete pasos. Lo que todavía no hay es una prueba con profesionales reales, y lo digo así. [se completa el jueves: cifras de la versión integrada y recuento de los 59 casos.]
+
+### 12 · Cómo se trabajó
+
+- Legajo
+- la fuente de verdad
+- Paquete
+- un objetivo corto
+- Pull request
+- con la CI en verde
+- Decisión
+- registrada, con opciones
+- 943 commits
+- y 208 pull requests integrados, del 16/9 al 26/10
+- IA, declarada
+- bajo dirección humana: 730 commits con coautoría
+
+> **Notas del orador.** El método fue simple y estricto. El legajo es la fuente de verdad. Cada avance es un paquete de trabajo corto, que termina en un pull request con la integración continua en verde. Y cada vez que lo que dice el legajo no se podía o no convenía hacer tal cual, quedó una decisión registrada, con las opciones y lo que se eligió. En números: novecientos cuarenta y tres commits y doscientos ocho pull requests integrados entre el 16 de septiembre y el 26 de octubre. La implementación se hizo con asistentes de IA bajo mi dirección, y está declarado: setecientos treinta commits llevan su coautoría.
+
+### 13 · Lo que falta y lo que sigue
+
+- Falta probar
+- Con profesionales reales
+- Un aviso push recibido en un teléfono real
+- Safari, Firefox y TalkBack
+- [se completa el jueves: TalkBack probado o límite declarado]
+- Lo que sigue
+- Pasar la APK nueva a estable
+- Google Play, en pruebas internas
+- El alta pública de profesionales
+- Para datos reales: segundo factor del profesional, respaldo probado y producción separada
+- Hasta terminar la prueba de punta a punta, la estable sigue siendo la 0.13.2.
+
+> **Notas del orador.** Prefiero decir lo que falta antes de que me lo pregunten. Falta la prueba con profesionales reales, un aviso push recibido en un teléfono real y la accesibilidad: Safari, Firefox y el lector de pantalla TalkBack. [se completa el jueves: si TalkBack se probó o queda como límite declarado, con su motivo.] Lo que sigue, en orden: pasar la APK nueva a estable cuando termine la prueba de punta a punta; publicarla en Google Play en pruebas internas; y el alta pública de profesionales, porque hoy Administración habilita a los que ya tienen cuenta. Y antes de tratar datos reales, las condiciones del documento 08: segundo factor también para profesionales, textos legales, respaldo con restauración probada y un ambiente de producción separado. Todo está en el anexo K, con su severidad.
+
+## Preguntas.
+
+### 14 · Preguntas
+
+- Gracias
+- Cada respuesta tiene su respaldo en la tesis: los apartados 1 a 14 y los anexos A a L.
+
+> **Notas del orador.** Gracias por su atención. Quedo a disposición para las preguntas. Para cada una tengo el respaldo en la tesis, y después de esta diapositiva hay cuatro de respaldo: con quién habla BE, una operación protegida, los datos y los estados. Las preguntas más probables están en defensa/PREGUNTAS.md.
+
+## Respaldo para las preguntas: con quién habla BE, una operación protegida, los datos y los estados.
+
+### 15 · Con quién habla BE
+
+- Asesorado
+- APK: registra y consulta
+- BE
+- Seguimiento profesional con los datos de salud protegidos
+- Google
+- verifica la identidad
+- Profesional
+- website: evalúa y revisa
+- Expo Push
+- avisos sin datos de salud
+- Validación
+- mide la TVCC-30
+- Catálogos abiertos
+- Open Food Facts y wger
+- Administración
+- habilita por área
+
+> **Notas del orador.** Este es el contexto, en el modelo C4. A la izquierda, las personas: el asesorado usa la APK; el profesional, el website; el responsable de validación mide la métrica de la tesis con un comando interno; y, desde el 25 de octubre, Administración entra al website con segundo factor y habilita o suspende a cada profesional por área, sin ver datos de salud. A la derecha, con borde discontinuo, los servicios externos: Google para entrar, Expo Push para los avisos, sin datos de salud, y dos catálogos abiertos. La lámina ARQ-01 del documento es del 20 de octubre y todavía muestra a Administración punteada, como prevista.
+
+### 16 · Una operación protegida: activar un plan
 
 - 1 · El website pide activar, con una clave de idempotencia
 - 2 · La API abre una transacción y bloquea esa clave
@@ -141,25 +249,25 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 
 > **Notas del orador.** Así es una escritura protegida, con nombres reales de clases en la lámina E-01 del anexo E. El website pide activar un plan con una clave de idempotencia. La API abre una sola transacción y bloquea esa clave. Dentro de la transacción, el punto de autorización decide con el vínculo y el consentimiento del momento, y registra su decisión. Recién ahí se escribe: la versión activada, el proceso y la novedad para el asesorado. Se audita, se guarda la respuesta y se confirma todo junto. El aviso push sale después, fuera de la transacción. Resultado: si algo falla no cambia nada, un reintento no duplica y una revocación que llegó antes se respeta.
 
-### 10 · Los datos: la base cuida la historia
+### 17 · Los datos: la base cuida la historia
 
-- 113
-- tablas, en 14 vistas por dominio
-- 212
+- 118
+- tablas (el documento, del 20/10, muestra 113)
+- 218
 - claves foráneas, todas RESTRICT
-- 34
-- índices únicos parciales
-- 275
-- disparadores
-- 134
-- restricciones CHECK
-- 51
+- 53
 - migraciones aplicadas
+- 34
+- índices únicos parciales, al 20/10
+- 275
+- disparadores, al 20/10
+- 134
+- restricciones CHECK, al 20/10
 - Lo emitido no se modifica: corregir o anular agrega un registro.
 
-> **Notas del orador.** La base no es un depósito pasivo: cuida la historia por su cuenta. Son ciento trece tablas en catorce vistas por dominio. Las doscientas doce claves foráneas son RESTRICT, así no hay borrados en cascada; treinta y cuatro índices únicos parciales garantizan, por ejemplo, un solo proceso abierto por profesional, persona y área; y los disparadores impiden modificar lo emitido. Corregir o anular agrega un registro que cita al original. La excepción es la foto que el asesorado pide suprimir: se borran los bytes y queda la constancia. Cifras leídas del catálogo de PostgreSQL con las cincuenta y una migraciones aplicadas; apartado 6 y anexo G.
+> **Notas del orador.** La base no es un depósito pasivo: cuida la historia por su cuenta. Al 26 de octubre son ciento dieciocho tablas, con cincuenta y tres migraciones; las cinco tablas nuevas son de Administración. Las doscientas dieciocho claves foráneas son RESTRICT, así no hay borrados en cascada; los índices únicos parciales garantizan, por ejemplo, un solo proceso abierto por profesional, persona y área; y los disparadores impiden modificar lo emitido. Corregir o anular agrega un registro que cita al original. La excepción es la foto que el asesorado pide suprimir: se borran los bytes y queda la constancia. Las tres cifras en gris son del catálogo del 20 de octubre. [se completa el jueves: recontar las seis cifras en el catálogo de la versión integrada.]
 
-### 11 · Estados con reglas, no con banderas
+### 18 · Estados con reglas, no con banderas
 
 - El proceso operativo
 - ABIERTO
@@ -173,71 +281,3 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Revocar corta hacia adelante; puede volver a otorgarlo.
 
 > **Notas del orador.** Las piezas importantes tienen máquinas de estados, y las transiciones están en tablas del dominio que el servicio consulta antes de escribir y la base refuerza. Dos ejemplos. El proceso operativo se abre al activar un plan; cada revisión que no finaliza lo deja abierto, y lo cierran una revisión que finaliza, el fin del vínculo o el cierre de la cuenta; cerrado, no se reabre. El consentimiento lo decide siempre el asesorado: lo otorga, lo revoca y lo puede volver a otorgar, y la revocación corta hacia adelante. Las cinco máquinas reales, con sus tablas, están en el anexo E.
-
-## Cómo se sabe que funciona y qué falta.
-
-### 12 · Cómo se sabe que funciona
-
-- 59 casos de prueba diseñados
-- 42 pasan en la CI
-- 9 pasan en parte
-- 8 no ejecutables con lo entregado
-- CI en verde, versión 0fb1bff
-- 832 pruebas de dominio, 823 de integración con PostgreSQL y 12 recorridos de navegador
-- Verificado en test el 20/10
-- Sesión: Chrome 15 de 15 y Edge 13 de 13. Borradores 11 de 11. Recetas 16 de 16.
-
-> **Notas del orador.** ¿Cómo sé que funciona? De los cincuenta y nueve casos de prueba diseñados en el legajo, cuarenta y dos pasan en la integración continua, nueve pasan en parte y ocho no se pueden ejecutar con lo que se entrega, y cada uno tiene su motivo en el apartado 5. La CI de la versión que presento corre ochocientas treinta y dos pruebas de dominio, ochocientas veintitrés de integración contra PostgreSQL y doce recorridos de navegador, todo en verde. Y además verifiqué en el ambiente de prueba, el 20 de octubre, la sesión que sobrevive a la recarga, los borradores y las recetas. La trazabilidad de requisito a prueba es el anexo F.
-
-### 13 · Lo que falta, dicho sin vueltas
-
-- Falta probar
-- La candidata 0.17.0 entera, en el teléfono
-- Un aviso push recibido en un teléfono real
-- TalkBack, Safari y Firefox
-- Pendiente o fuera de alcance
-- Sustituir un ejercicio en la sesión: regresión de la candidata; el arreglo está en borrador
-- Verificar profesionales y el administrador: fuera de esta entrega
-- Datos reales: después de las condiciones del legajo
-- Por eso la candidata todavía no pasó a estable: la estable es la 0.13.2.
-
-> **Notas del orador.** Prefiero decir lo que falta antes de que me lo pregunten. Falta probar la candidata entera en el teléfono, un aviso push recibido en un teléfono real, y la accesibilidad con TalkBack y los navegadores Safari y Firefox. Hay una regresión conocida: la candidata no ofrece sustituir un ejercicio durante la sesión, que la 0.13.2 sí ofrecía; el arreglo está en un pull request en borrador. La verificación de profesionales y el administrador quedaron fuera de esta entrega por decisión de Dirección, y BE no procesa datos reales hasta cumplir las condiciones del documento 08. Todo esto está en el anexo K con su severidad.
-
-## Método, lo que sigue y preguntas.
-
-### 14 · Cómo se trabajó
-
-- Legajo
-- la fuente de verdad
-- Paquete
-- un objetivo corto
-- Pull request
-- con la CI en verde
-- Decisión
-- registrada, con opciones
-- 852 commits
-- y 191 pull requests, del 16/9 al 20/10
-- IA, declarada
-- bajo dirección humana: 639 commits con coautoría
-
-> **Notas del orador.** El método fue simple y estricto. El legajo es la fuente de verdad. Cada avance es un paquete de trabajo corto, que termina en un pull request con la integración continua en verde. Y cada vez que lo que dice el legajo no se podía o no convenía hacer tal cual, quedó una decisión registrada, con las opciones y lo que se eligió. En números: ochocientos cincuenta y dos commits y ciento noventa y un pull requests entre el 16 de septiembre y el 20 de octubre. La implementación se hizo con asistentes de IA bajo mi dirección, y está declarado: seiscientos treinta y nueve commits llevan su coautoría. Roles en el apartado 2.
-
-### 15 · Lo que sigue
-
-- 1
-- Probar la candidata en el teléfono y pasarla a estable
-- 2
-- Recuperar la sustitución de ejercicios en la sesión
-- 3
-- Verificación de profesionales y el rol de administración
-- 4
-- Las condiciones para datos reales: doble factor, respaldo probado, producción separada
-
-> **Notas del orador.** Lo que sigue, en orden. Primero, probar la candidata entera en el teléfono, con un aviso push real, y recién ahí pasarla a estable. Segundo, integrar la recuperación de la sustitución de ejercicios, que ya está en un pull request en borrador. Tercero, la verificación de profesionales y el rol de administración que prevé el legajo. Y cuarto, las condiciones que el documento 08 pone antes de tratar datos reales: doble factor, textos legales, respaldo con restauración probada y un ambiente de producción separado, entre otras.
-
-### 16 · Preguntas
-
-- Gracias
-- Cada respuesta tiene su respaldo en la tesis: los apartados 1 a 14 y los anexos A a L.
-
-> **Notas del orador.** Gracias por su atención. Quedo a disposición para las preguntas. Para cada una tengo el respaldo en la tesis: la sección, el archivo de código o la decisión registrada que la sostiene; las preguntas más probables y sus respuestas están en defensa/PREGUNTAS.md.

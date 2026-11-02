@@ -1,77 +1,102 @@
-# Demo de la defensa: website y APK, con su plan B
+# Demo de la presentación del viernes 6/11: website y APK, con su plan B
 
-La demostración de la defensa es una versión corta (7 minutos) del guion del apartado 11 de la tesis. Muestra las dos
-plataformas sobre la misma persona sintética, **Diego Sosa**, que tiene tres años de historia. Cada paso tiene su
-respaldo: una captura verificada para mostrar si fallan la red, Render o el teléfono.
+**Dónde estamos.** La demo baja de 7 minutos a unos 2:30 y muestra dos cosas: el profesional leyendo a Diego en el
+website y la persona registrando en la APK nueva con Prueba Uno. El plan B son capturas que se toman el jueves contra la
+misma versión; la lista está abajo, con el nombre de cada archivo.
 
-- **Versión de referencia:** `main` `0fb1bff` (2026-10-20). La API de test responde ese commit desde las 02:33.
-- **Respaldo del website:** `respaldo-demo/`, doce capturas tomadas en test el 2026-10-20 entre las 06:30 y las 06:32,
-  con la API en `0fb1bff`. Solo se navegó: no se escribió nada. El detalle está en `respaldo-demo/registro.json`.
-- **Respaldo de la APK:** no hay capturas nativas de la candidata 0.17.0 (anexo K, K17). Se usan dos fuentes, siempre con
-  su rótulo:
-  - capturas nativas del teléfono de Dirección con la APK **0.9.1** (2026-09-25): `EVIDENCIA/ENTREGA/capturas-apk/`;
-  - vistas del cliente real de la APK dibujadas en el navegador, contra la API real, del 2026-10-06 (llevan una franja roja que
-    dice que no son la APK): `EVIDENCIA/NUTRICION-RECETAS/capturas-apk-api-real/` y
-    `EVIDENCIA/ENTRENAMIENTO-SERIES/capturas-apk-api-real/`.
+- **Versión:** `main` después de la integración del miércoles, `[se completa el jueves: commit]`. La API de test tiene
+  que responder ese commit en `GET https://be-api-hndp.onrender.com/health/ready` (`data.version.commit`).
+- **APK:** la de prueba que se arma el miércoles, `[se completa el jueves: versión, código de versión y SHA-256]`,
+  instalada en el teléfono de la demo.
+- **Cuentas** (las credenciales están en la versión de evaluación de la tesis, apartado 14, y en `cuentas.env`; nunca en
+  pantalla compartida):
+  - **Sofía Paz**, nutricionista (`PRO_N`): solo mira a **Diego Sosa**. Sobre Diego no se escribe nada.
+  - **Prueba Uno**, asesorado descartable: tiene Entrenamiento con «Sesión de prueba», dos ejercicios de tres series,
+    con **Lic. Prueba Dos Áreas** como profesional. Todo lo que se registra en vivo va acá.
+  - **Lic. Prueba Dos Áreas** (opcional): para ver en el website cómo quedó lo que registró Prueba Uno.
 
-## Antes de entrar a la mesa
+## Antes de entrar
 
 | Control | Cómo | Si falla |
 |---|---|---|
-| La API responde con la versión que se presenta | `GET https://be-api-hndp.onrender.com/health/ready`: 200 y `data.version.commit` | Plan B entero con capturas |
-| El website abre | `https://be-web-1ngj.onrender.com` | Plan B del website |
-| La APK elegida está instalada y entra | Dirección elige la versión (la estable 0.13.2 o la candidata 0.17.0-candidata.3) y la prueba en el teléfono de la demo | Plan B de la APK |
-| Las credenciales a mano | Versión de evaluación de la tesis, apartado 14 (nunca en pantalla compartida) | — |
-| Un ensayo completo | Con el mismo teléfono y la misma red, el día anterior | — |
+| La API responde con la versión de la demo | `GET /health/ready`: 200 y el commit de arriba | Plan B entero |
+| El website abre y la sesión de Sofía ya está iniciada | Entrar antes de empezar, en una pestaña aparte; la sesión sobrevive a la recarga (DL-147) | Plan B del website |
+| La APK instalada es la de la demo y Prueba Uno ya entró | Cuenta → versión | Plan B de la APK |
+| Prueba Uno tiene la sesión de hoy **sin iniciar** y al menos **una pendiente** de otro día | Entrenamiento · Hoy y las pendientes, el mismo viernes a la mañana | Hacer solo la sesión guiada y mostrar «Ya la hice» con capturas |
+| El teléfono se ve en la pantalla | Espejado o cámara, probado el jueves con la misma red | Mostrar el teléfono en la mano y seguir con capturas |
+| Un ensayo completo con reloj | El jueves, una vez en vivo y otra con el plan B | — |
 
-## Los siete minutos
+## Los dos minutos y medio
 
-| Min. | Quién y dónde | Qué se muestra | Qué demuestra | Plan B |
+| Desde | Quién y dónde | Qué se hace | Qué se dice | Plan B |
 |---|---|---|---|---|
-| 0:00 | Sofía Paz · website | El espacio profesional: los pendientes como hechos con fecha y la cartera. Recargar la página: la sesión sigue. | El trabajo del día; la sesión que sobrevive a la recarga (DL-147) | `respaldo-demo/01-espacio-profesional.png` |
-| 0:45 | Sofía · ficha de Diego | Resumen por área, línea de tiempo con comidas, tomas y hechos distintos de lo indicado, y «Analizar» del último año | La historia por adición, leída como hechos | `02-ficha-resumen.png`, `03-ficha-linea-de-tiempo.png`, `04-ficha-analizar.png` |
-| 2:00 | Sofía · Nutrición | El plan activo en solo lectura y su historial de cinco versiones; los registros, con la comida diferente | Activar es versionar; nada se pisa | `05-nutricion-plan.png`, `06-nutricion-registros.png`, `07-nutricion-revisiones.png` |
-| 3:00 | Sofía · Antropometría | Las tomas y la evolución del peso, con «cómo se obtuvo» cada valor | Tomas inmutables; evolución sin interpolar | `08-antropometria-tomas.png`, `09-antropometria-evolucion.png` |
-| 3:45 | Martín Acosta · Entrenamiento | El estado del seguimiento: plan activo, última sesión y revisión pendiente | Lo mismo en otra área, con otro profesional | `10-entrenamiento.png` |
-| 4:30 | Diego · APK | El plan del día con el carrusel de opciones, «Comí esta opción» y «Comí algo diferente» | El circuito del asesorado | `EVIDENCIA/NUTRICION-RECETAS/capturas-apk-api-real/40` a `44` (vistas rotuladas) |
-| 5:30 | Diego · APK | La sesión por serie: carga, repeticiones y RIR, con el descanso | El registro serie por serie | `EVIDENCIA/ENTRENAMIENTO-SERIES/capturas-apk-api-real/apk-04` a `apk-07` (vistas rotuladas) |
-| 6:15 | Diego · website | Sus vínculos, cada uno con sus áreas y cada área con su consentimiento; sus novedades | Consentir es por área y se puede revocar | `12-asesorado-vinculos.png`, `13-asesorado-novedades.png` |
+| 0:00 | Sofía · website | Espacio profesional → la ficha de Diego, vista Resumen | «El resumen por área dice qué hay y qué falta registrar.» | `web/01-espacio-profesional.png`, `web/02-ficha-resumen.png` |
+| 0:20 | Sofía · ficha de Diego | «Analizar» con Nutrición: lo registrado, el objetivo del profesional y lo indicado en el plan; abrir «Ver origen» de un día | «En un mismo gráfico, lo que Diego registró, el objetivo que fijé y lo indicado en el plan. Coincidir en el tiempo no dice causa.» | `web/03-analizar-nutricion.png`, `web/04-analizar-origen.png` |
+| 0:55 | Sofía · Nutrición → Revisiones | Abrir la última revisión registrada y su evidencia | «Queda escrito en qué evidencia me apoyé para decidir.» | `web/05-revision-con-evidencia.png` |
+| 1:30 | Prueba Uno · APK | En una pendiente, «La hice ese día» (o «Ya la hice»), «Hice todo lo planificado»: el último cuadro con los valores del plan; mostrar la opción rápida para decir que un ejercicio tuvo una serie menos, sin usarla; «Listo» | «Un toque. Si una serie fue distinta, se cambia acá mismo.» | `apk/03` a `apk/06` |
+| 2:00 | Prueba Uno · APK | «Iniciar entrenamiento» en la sesión de hoy: la franja de arriba; tildar la casilla de la serie 1 (queda en el azul del tema); escribir otra carga en la serie 2 y tildarla | «Arriba, en qué ejercicio y serie voy. Tildo y queda con lo planificado; si escribo, manda lo escrito.» | `apk/07`, `apk/08` |
+| 2:30 | — | Volver al mazo, diapositiva 8 | — | — |
 
-Si sobra tiempo, el paso 8 del apartado 11 (revocar el consentimiento de un área y ver que el profesional pierde el
-acceso) es el más fuerte para la pregunta sobre privacidad. Se hace con Federico, nunca con Diego, y después hay que
-volver a autorizar el área.
+**Si sobran 30 segundos** (y está integrado el jueves): entrar como Lic. Prueba Dos Áreas a Entrenamiento de Prueba Uno
+y mostrar la sesión recién cargada: lo cargado como el plan figura como «carga rápida» y no se compara con lo indicado;
+la serie escrita sí. Plan B: `web/06-carga-rapida.png`.
+
+**La sesión guiada no hace falta finalizarla en vivo:** el borrador queda guardado en el servidor y en el teléfono.
+Después de la presentación se finaliza o se deja; Prueba Uno es descartable.
 
 ## Cuidados
 
-- **No escribir sobre Diego.** Diego es el ejemplo de los gráficos y su historia es la de la portada. Para registrar o
-  revisar en vivo, usar a Federico o a Norma, que tienen revisiones pendientes. Todo lo que se registra queda: no se
+- **No escribir sobre Diego.** Es el ejemplo de los gráficos y de la portada. Todo lo que se registra queda: no se
   borra.
-- **La cartera de Sofía muestra seis personas.** La sexta es «Asesorado · bea2eb», la persona de la verificación del
-  2026-10-20, con su vínculo de Nutrición finalizado (anexo K, K16). Si alguien pregunta: es historia, y BE no la borra.
-- **Los pendientes cambian con el calendario.** «Revisión vencida hace 8 días» depende del día en que se muestra.
-- **«Demasiados intentos» al entrar:** esperar; el límite es por red y por cuenta.
-- **Las capturas de la APK no son nativas** (salvo las de la 0.9.1): decirlo al mostrarlas. Si antes de la mesa hay
-  capturas nativas de la candidata, reemplazarlas (anexo K, K17).
-- **La TVCC-30 no se corre en la mesa:** necesita la consola del servidor. Si la preguntan, mostrar el resultado del
-  2026-10-16 (`EVIDENCIA/TVCC-30/LEEME.md`): 5 de 7 ciclos, 71,4 %, sobre la cohorte sintética local, y aclarar que es
-  una demostración del cálculo, no una medición del servicio.
+- **Nada que califique a la persona.** Al hablar, «lo registrado» y «lo indicado», nunca «cumplió» ni «bien» o «mal».
+- **«Demasiados intentos» al entrar:** esperar; el límite es por red y por cuenta. Por eso se entra antes de empezar.
+- **Los pendientes del espacio profesional cambian con el calendario:** «revisión vencida hace N días» depende del día.
+- **Si la APK nueva no llegó a instalarse:** la demo de la APK se hace con capturas y se dice en una frase; no se muestra
+  como hecho lo que no está instalado.
+- **La TVCC-30 no se corre en vivo:** necesita la consola del servidor. Si la preguntan, el resultado del 2026-10-16
+  (`EVIDENCIA/TVCC-30/LEEME.md`): 5 de 7 ciclos, 71,4 %, sobre la cohorte sintética local; es una demostración del
+  cálculo, no una medición del servicio.
 
 ## Si algo falla en vivo
 
-1. Decirlo en una frase («Render no responde; sigo con las capturas de esta mañana, tomadas contra la misma versión»).
-2. Abrir `respaldo-demo/` en el visor de imágenes, en el orden de la tabla.
-3. Para la APK, abrir las vistas rotuladas o las capturas nativas de la 0.9.1, y decir cuál es cuál.
-4. Al terminar, si la red volvió, ofrecer mostrar en vivo un solo paso.
+1. Decirlo en una frase: «Render no responde; sigo con las capturas de ayer, tomadas contra la misma versión».
+2. Abrir la carpeta del plan B en el visor de imágenes, en el orden de la tabla.
+3. Si la red vuelve, ofrecer un solo paso en vivo al terminar.
 
-## Cómo regenerar el respaldo del website
+## Plan B: las capturas que se toman el jueves
 
-Con Node 22, desde `docs/mesa/TESIS`:
+Van en `respaldo-demo/2026-11-05/`, en dos carpetas. Las del 20/10 (`respaldo-demo/*.png`) quedan como historia: son de
+`0fb1bff` y no muestran lo de DL-153, DL-154 ni DL-158.
 
-```text
-BE_CUENTAS_COHORTE=<cuentas.env de la cohorte> PUPPETEER_DESDE=<package.json con puppeteer-core> \
-CHROME=<chrome.exe> SALIDA=<carpeta> node herramientas/capturar-respaldo-demo.mjs
-```
+**Del website** (`web/`), en test, a 1920 × 1080, con el tema claro:
 
-Solo navega: entra con las cuentas sintéticas, recorre las pantallas, cierra cada sesión y escribe `registro.json`. Las
-credenciales se leen del archivo local y no se imprimen. La página de la cuenta del asesorado no se captura porque
-muestra el identificador completo de la cuenta.
+| Archivo | Cuenta | Pantalla | Qué tiene que verse | Va también en el mazo |
+|---|---|---|---|---|
+| `01-espacio-profesional.png` | Sofía | `/pro` | Pendientes y cartera | Demo (reemplaza la del 20/10) |
+| `02-ficha-resumen.png` | Sofía | Ficha de Diego, Resumen | El resumen por área, con «subtotal · comida del plan sin registro» si aparece | Portada (reemplaza la del 20/10) |
+| `03-analizar-nutricion.png` | Sofía | Ficha de Diego, «Analizar», Nutrición, último mes | Las tres capas en el mismo gráfico y su leyenda | — |
+| `04-analizar-origen.png` | Sofía | El mismo, con «Ver origen» abierto en un día con comidas | Lo que aporta cada comida y lo indicado | — |
+| `05-revision-con-evidencia.png` | Sofía | Nutrición → Revisiones, la última abierta | El resultado y la evidencia en la que se apoyó | — |
+| `06-carga-rapida.png` | Lic. Prueba Dos Áreas | Entrenamiento de Prueba Uno, después del ensayo | Una sesión con «carga rápida» y otra con series escritas | — |
+
+Las de Sofía y Diego se pueden sacar con `herramientas/capturar-respaldo-demo.mjs` (solo navega) si se le suman esas
+pantallas; si no, a mano, sin capturas de pantalla completa en «Ver origen» (la ventana cambia de tamaño y el panel
+recarga). La página de la cuenta no se captura: muestra el identificador completo.
+
+**De la APK nueva** (`apk/`), nativas, en el teléfono de la demo, con Prueba Uno:
+
+| Archivo | Pantalla | Qué tiene que verse | Va también en el mazo |
+|---|---|---|---|
+| `01-version.png` | Cuenta → versión | La versión instalada | — |
+| `02-entrenamiento-hoy.png` | Entrenamiento · Hoy | «Iniciar entrenamiento» y «Ya la hice» uno al lado del otro | — |
+| `03-ya-la-hice-como-fue.png` | «Ya la hice» → «¿Cómo fue?» | Las tres opciones y la franja de pasos | — |
+| `04-hice-lo-planificado.png` | «Hice todo lo planificado» | El último cuadro con los valores del plan a la vista | Diapositiva 9, «Después» |
+| `05-una-serie-menos.png` | La opción rápida | Decir que un ejercicio tuvo una serie menos o cambiar una serie | — |
+| `06-listo.png` | «Listo» | El resumen y cómo lo va a ver su profesional | — |
+| `07-sesion-guiada.png` | Sesión de hoy, en curso | La franja de arriba, una fila tildada en el azul del tema y la casilla al final | Diapositiva 7, la demo |
+| `08-serie-escrita.png` | La misma, serie 2 | Lo escrito en la fila y su casilla tildada | — |
+| `09-correccion.png` | Corregir la sesión registrada | Lo planificado en gris para sumar y una serie destildada | — |
+| `10-sustituir.png` | Durante la sesión | Sustituir un ejercicio (DL-151) | — |
+
+Las capturas de la APK tienen la barra de estado del teléfono: antes de copiarlas, mirar que no haya notificaciones
+personales a la vista.
