@@ -65,6 +65,12 @@
   --figura-posterior: #64748b;
   --figura-guia: #3f78cc;
   --figura-punto-relleno: #ffffff;
+  /* Las zonas musculares (WP-CATALOGO-VISUAL, etapa 2): van sobre el maniquí de la figura, el mismo en los dos temas, y su
+     muestra en la lista de zonas va sobre la superficie: llegan a 3:1 contra los dos. La principal va llena y la
+     secundaria rayada: además del color, las distingue la forma. Un azul, ni rojo, ni verde, ni ámbar: el color no es
+     un juicio ni un peso (B10-06 §21). */
+  --zona-principal: #1e6bf2;
+  --zona-secundaria: #1453c9;
   /* Planificado y registrado (gráficos del espacio profesional): además del color, lo planificado va rayado o con
      línea discontinua y cuadrados, y lo registrado lleno o con línea continua y círculos (B10-10 §11). */
   --grafico-planificado: #1f5bc4;
@@ -130,6 +136,9 @@
   --escena: #0a2c47;
   --figura-sitio: #2a74ee;
   --figura-guia: #3b7ddd;
+  /* Las zonas sobre el maniquí claro y su muestra sobre la superficie navy: azules que llegan a 3:1 contra los dos. */
+  --zona-principal: #2a74ee;
+  --zona-secundaria: #3b7ddd;
   /* Gráficos: planificado en cian, registrado en naranja claro, hueco en gris azulado; rayado y forma siguen igual. */
   --grafico-planificado: #27d5f9;
   --grafico-registrado: #ff9b5c;
