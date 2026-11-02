@@ -79,9 +79,7 @@ describe('DL-081 · el catálogo de las 17 zonas', () => {
   it('REG-06-137 · la base tiene las mismas 17 zonas del dominio, con sus vistas y sus nombres', async () => {
     const filas = await prisma.zonaMuscular.findMany({ orderBy: { id: 'asc' } });
     const esperado = [...ZONAS_MUSCULARES].sort((a, b) => a.zoneId.localeCompare(b.zoneId));
-    expect(filas.map((f) => [f.id, f.nombre, f.vistaAnterior, f.vistaPosterior])).toEqual(
-      esperado.map((z) => [z.zoneId, z.name, (z.anatomicalViews as readonly string[]).includes('ANTERIOR'), (z.anatomicalViews as readonly string[]).includes('POSTERIOR')]),
-    );
+    expect(filas.map((f) => [f.id, f.nombre, [...f.vistasAnatomicas].sort()])).toEqual(esperado.map((z) => [z.zoneId, z.name, [...(z.anatomicalViews as readonly string[])].sort()]));
     await expect(prisma.$executeRawUnsafe(`UPDATE "zona_muscular" SET "nombre" = 'Otro' WHERE "id" = 'pectoral'`)).rejects.toThrow(/append-only/);
   });
 

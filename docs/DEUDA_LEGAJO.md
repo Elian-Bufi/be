@@ -1914,8 +1914,9 @@ El OpenAPI generado publica todo y el contract test lo verifica.
   | `tibial` | Tibial anterior | ✓ | |
   | `gemelos` | Gemelos | | ✓ |
 - **Dónde viven.** En el dominio (`packages/domain/src/zonas-musculares.ts`, con su versión `zonas-be-2026-11-02`), en la
-  base (`zona_muscular`, sembrada por la migración `20261102120000_catalogo_visual`, y una prueba de integración compara las
-  dos listas) y en la operación de descubrimiento que faltaba, **API-ZON-01** (`GET /training/muscle-zones`).
+  base (`zona_muscular`, sembrada por la migración `20261102120000_catalogo_visual`, con las vistas como lista de la
+  enumeración `VistaAnatomica` y sin booleanos, y una prueba de integración compara las dos listas) y en la operación de
+  descubrimiento que faltaba, **API-ZON-01** (`GET /training/muscle-zones`, familia propia ZON en la guardia de DL-116).
 - **Las zonas de un ejercicio** (REG-06-139). Una asignación por cambio, numerada y para una versión del ejercicio, con su
   procedencia; cada zona con su rol PRIMARY o SECONDARY (PRINCIPAL y SECUNDARIO en la base) y sin porcentajes. Lo cargado a
   mano lo asigna su profesional al cargarlo (API-INT-TRN-01) o después (**API-EJE-04**); lo sembrado y lo importado de wger lo

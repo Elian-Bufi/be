@@ -3012,16 +3012,21 @@ enum RolDeZonaMuscular {
   SECUNDARIO
 }
 
+/// DL-081: la vista anatómica en la que se representa una zona (09v10:458-463), la misma de `VistaAnatomicaSchema`.
+enum VistaAnatomica {
+  ANTERIOR
+  POSTERIOR
+}
+
 /// DL-081 — El catálogo de las 17 zonas musculares (REG-06-137), igual al de `ZONAS_MUSCULARES` del dominio y sembrado
 /// por la migración. Una zona es dominio, no un archivo gráfico (REG-06-138): las máscaras citan su `id`. Append-only.
 model ZonaMuscular {
   id                 String   @id
   nombre             String
-  /// Las vistas en las que se representa: anterior, posterior o las dos (CHECK: al menos una).
-  vistaAnterior      Boolean  @map("vista_anterior")
-  vistaPosterior     Boolean  @map("vista_posterior")
-  versionDelCatalogo String   @map("version_del_catalogo")
-  momentoDeRegistro  DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  /// Las vistas en las que se representa: anterior, posterior o las dos, sin booleanos (CHECK: una o dos, sin repetir).
+  vistasAnatomicas   VistaAnatomica[] @map("vistas_anatomicas")
+  versionDelCatalogo String           @map("version_del_catalogo")
+  momentoDeRegistro  DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   enEjercicios ZonaDeEjercicio[]
 

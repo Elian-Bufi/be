@@ -11,12 +11,14 @@
 -- CreateEnum
 CREATE TYPE "RolDeZonaMuscular" AS ENUM ('PRINCIPAL', 'SECUNDARIO');
 
+-- CreateEnum
+CREATE TYPE "VistaAnatomica" AS ENUM ('ANTERIOR', 'POSTERIOR');
+
 -- CreateTable
 CREATE TABLE "zona_muscular" (
     "id" TEXT NOT NULL,
     "nombre" TEXT NOT NULL,
-    "vista_anterior" BOOLEAN NOT NULL,
-    "vista_posterior" BOOLEAN NOT NULL,
+    "vistas_anatomicas" "VistaAnatomica"[],
     "version_del_catalogo" TEXT NOT NULL,
     "momento_de_registro" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -72,27 +74,31 @@ ALTER TABLE "zona_de_ejercicio" ADD CONSTRAINT "zona_de_ejercicio_zona_id_fkey" 
 
 -- ─── El catálogo de las 17 zonas (REG-06-137; 09v10 §8) ─────────────────────────────────────────────────────────────
 -- 9 de frente, 10 de espalda, antebrazo y deltoides en las dos. Una zona es dominio, no un archivo (REG-06-138).
-ALTER TABLE "zona_muscular" ADD CONSTRAINT "zona_muscular_con_vista" CHECK ("vista_anterior" OR "vista_posterior");
+-- Las vistas son una lista de la enumeración, sin booleanos (en BE los estados son enumeraciones; lo prueba
+-- schema.int-spec.ts): una o las dos, sin repetir.
+ALTER TABLE "zona_muscular" ADD CONSTRAINT "zona_muscular_con_vista" CHECK (
+  "vistas_anatomicas" IS NOT NULL AND cardinality("vistas_anatomicas") BETWEEN 1 AND 2
+  AND "vistas_anatomicas"[1] IS DISTINCT FROM "vistas_anatomicas"[2]);
 ALTER TABLE "zona_muscular" ADD CONSTRAINT "zona_muscular_identificador" CHECK ("id" ~ '^[a-z]+(-[a-z]+)*$' AND btrim("nombre") <> '');
 
-INSERT INTO "zona_muscular" ("id", "nombre", "vista_anterior", "vista_posterior", "version_del_catalogo", "momento_de_registro") VALUES
-  ('trapecio', 'Trapecio', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('deltoides', 'Deltoides', true, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('pectoral', 'Pectoral', true, false, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('romboides', 'Romboides', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('dorsal', 'Dorsal ancho', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('biceps', 'Bíceps', true, false, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('triceps', 'Tríceps', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('antebrazo', 'Antebrazo', true, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('recto-abdominal', 'Recto abdominal', true, false, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('oblicuos', 'Oblicuos', true, false, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('erectores', 'Erectores espinales', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('gluteos', 'Glúteos', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('cuadriceps', 'Cuádriceps', true, false, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('aductores', 'Aductores', true, false, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('isquios', 'Isquiotibiales', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('tibial', 'Tibial anterior', true, false, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
-  ('gemelos', 'Gemelos', false, true, 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z');
+INSERT INTO "zona_muscular" ("id", "nombre", "vistas_anatomicas", "version_del_catalogo", "momento_de_registro") VALUES
+  ('trapecio', 'Trapecio', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('deltoides', 'Deltoides', ARRAY['ANTERIOR', 'POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('pectoral', 'Pectoral', ARRAY['ANTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('romboides', 'Romboides', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('dorsal', 'Dorsal ancho', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('biceps', 'Bíceps', ARRAY['ANTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('triceps', 'Tríceps', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('antebrazo', 'Antebrazo', ARRAY['ANTERIOR', 'POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('recto-abdominal', 'Recto abdominal', ARRAY['ANTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('oblicuos', 'Oblicuos', ARRAY['ANTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('erectores', 'Erectores espinales', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('gluteos', 'Glúteos', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('cuadriceps', 'Cuádriceps', ARRAY['ANTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('aductores', 'Aductores', ARRAY['ANTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('isquios', 'Isquiotibiales', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('tibial', 'Tibial anterior', ARRAY['ANTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z'),
+  ('gemelos', 'Gemelos', ARRAY['POSTERIOR']::"VistaAnatomica"[], 'zonas-be-2026-11-02', '2026-11-02T00:00:00.000Z');
 
 -- ─── Las zonas de un ejercicio: cada asignación sigue a la anterior, por quien corresponde (DL-081; REG-06-139) ──────
 -- Lo cargado a mano lo asigna quien lo cargó; lo sembrado y lo importado de wger (de todos, DL-141 D-1), solo la
