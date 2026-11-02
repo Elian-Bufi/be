@@ -2,7 +2,8 @@
 
 > **En dos frases.** El servidor ya sabe qué zonas trabaja cada ejercicio (las 17 del set de capas de Dirección, con su rol
 > principal o secundario) y un ejercicio del catálogo de todos ya puede tener foto, que la APK instalada muestra sin cambios.
-> Falta que el website lo muestre (etapa 2), cargar los datos de la demostración y desplegar.
+> El website ya lo muestra (etapa 2): la figura de frente y de espalda en el detalle de cada ejercicio y en cada sesión del
+> plan. Falta cargar los datos de la demostración y desplegar.
 
 **Encargo.** Dirección, 2026-11-02 (frente C): «zonas musculares en el escritorio del profesional esta semana, con sus
 imágenes» y las fotos de los ejercicios del catálogo para la demostración del 2026-11-06.
@@ -54,6 +55,25 @@ Migración `20261102120000_catalogo_visual`. Nada de lo que leen las APK instala
 las vistas que declara; deltoides y antebrazo, en las dos. Principal y secundaria se distinguen por color (B10-06 §21: el
 color no es un peso). Romboides y erectores llevan la nota «capa profunda». La lista de zonas en texto acompaña siempre a
 la figura (accesibilidad). El set femenino usa los mismos identificadores cuando llegue.
+
+### Lo que hace el website (etapa 2, hecha el 2026-11-02)
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Las capas | `apps/web/public/zonas/` | El set de Dirección recortado a los dos cuerpos y llevado a 320 × 944: cuerpos en WebP (el de frente, de 2,1 MB a ~65 KB) y 19 máscaras en PNG con paleta (~5 KB cada una), blancas con su alfa. Las arma `EVIDENCIA/CATALOGO-VISUAL/herramientas/figura-del-website.cjs`, con el `sharp` que ya trae el árbol de dependencias. `scripts/figura-de-zonas.test.cjs` exige una máscara por zona y vista declarada, ni una más, y cuida el peso. |
+| La figura | `apps/web/src/components/figura-de-zonas.tsx` | Frente y espalda lado a lado sobre la escena de la figura de antropometría; cada zona, una capa pintada con `mask-image` y el color del tema (`--zona-principal`, `--zona-secundaria`, medidos en Claro y en Azul noche contra el maniquí y la superficie). La principal va llena y la secundaria rayada: además del color, las distingue la forma. Al lado, la lista de zonas en texto, que hace de leyenda y es lo que lee el lector de pantalla (el dibujo va con `aria-hidden`). Romboides y erectores dicen «capa profunda». |
+| Las reglas | `packages/domain/src/zonas-musculares.ts` | `zonasJuntas` (las de una sesión: cada zona una vez, principal si lo es en alguno de sus ejercicios, sin contar nada), `zonasEnTexto`, `zonasEnUnRenglon`, `vistasDeZona` y los textos (`COPY_FIGURA_DE_ZONAS`), con sus pruebas. |
+| La lectura | `apps/web/src/lib/fichas-visuales.ts` | La ficha visual (API-EJE-05) de a 50 por pedido. Una falla se dice con su motivo y un reintento; sin el área de Entrenamiento no se muestra nada. |
+| Mis ejercicios | `apps/web/src/app/pro/exercises/` | Cada tarjeta dice sus zonas en un renglón; «Ver detalle» la abre a todo el ancho con la imagen (y si se generó con IA) y la figura. |
+| El catálogo | `training/agregar-ejercicio.tsx` | Cada fila del buscador dice sus zonas en un renglón; el botón del ojo abre debajo el detalle (imagen y figura). Una búsqueda nueva lo cierra. |
+| El plan por sesión | `training/zonas-de-la-sesion.tsx`, en `plan.tsx` | «Zonas de la sesión»: las de sus ejercicios juntas, al costado de los ejercicios y arriba del historial (desde 1200 px de ancho; más angosto, debajo). Si algún ejercicio no tiene zonas, se dice cuántos. En el detalle de una etapa de la ficha va debajo de los ejercicios. |
+
+**Lo que no hace.** No edita zonas desde el website (API-EJE-04 está lista, la pantalla no); no muestra zonas en el editor de
+una versión en preparación (sus ejercicios se leen por versión, no por identidad); no hay figura femenina hasta que llegue
+su set. Nada se calcula con la figura: el área pintada no mide nada (REG-06-139).
+
+**Verificación.** La CI (typecheck, build del website, contraste y las pruebas nuevas). No se vio en un navegador: esta PC no
+tiene memoria para levantar el website; queda para la demostración en test.
 
 ## Lo que necesita Dirección
 

@@ -9,14 +9,22 @@ import { z } from 'zod';
 import { CambiarZonasDeEjercicioRequestSchema, FichasVisualesRequestSchema } from './contratos-catalogo-visual';
 import { EjercicioDeCatalogoSchema, RecursoDidacticoSchema, RelacionConZonaSchema } from './contratos-entrenamiento';
 import { OPERACIONES } from './openapi';
+import { terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
 import {
+  COPY_FIGURA_DE_ZONAS,
+  enumerarZonas,
   esZonaMuscular,
   ListaDeZonasMuscularesResponseSchema,
   nombreDeZona,
   ordenarZonasDeEjercicio,
   problemasDeZonas,
   VERSION_DEL_CATALOGO_DE_ZONAS,
+  vistasDeZona,
+  ZONAS_DE_CAPA_PROFUNDA,
   ZONAS_MUSCULARES,
+  zonasEnTexto,
+  zonasEnUnRenglon,
+  zonasJuntas,
   zonasMuscularesApi,
 } from './zonas-musculares';
 
@@ -102,4 +110,69 @@ test('las operaciones nuevas: ZON-01 y EJE-05 leen sin clave, EJE-04 escribe con
   assert.ok(op('API-ZON-01').fuente.includes('DL-081'));
   assert.ok(op('API-EJE-04').fuente.includes('DL-081'));
   assert.ok(op('API-EJE-05').fuente.includes('DL-162'));
+});
+
+// ─── La figura del website (etapa 2) ──────────────────────────────────────────────────────────────────────────────────
+
+test('la sesión junta las zonas de sus ejercicios: cada una una vez, principal si lo es en alguno, sin contar nada', () => {
+  const juntas = zonasJuntas([
+    [
+      { zoneId: 'cuadriceps', role: 'PRIMARY' },
+      { zoneId: 'gluteos', role: 'SECONDARY' },
+    ],
+    [
+      { zoneId: 'gluteos', role: 'PRIMARY' },
+      { zoneId: 'isquios', role: 'SECONDARY' },
+    ],
+    [
+      { zoneId: 'isquios', role: 'SECONDARY' },
+      { zoneId: 'pecho', role: 'PRIMARY' },
+    ],
+    [],
+  ]);
+  assert.deepEqual(juntas, [
+    { zoneId: 'gluteos', role: 'PRIMARY' },
+    { zoneId: 'cuadriceps', role: 'PRIMARY' },
+    { zoneId: 'isquios', role: 'SECONDARY' },
+  ]);
+  // El orden de los ejercicios no cambia el resultado, y nada dice cuántas veces aparece una zona.
+  assert.deepEqual(zonasJuntas([[{ zoneId: 'gluteos', role: 'PRIMARY' }], [{ zoneId: 'gluteos', role: 'SECONDARY' }]]), [{ zoneId: 'gluteos', role: 'PRIMARY' }]);
+  assert.deepEqual(Object.keys(juntas[0]!).sort(), ['role', 'zoneId']);
+  assert.deepEqual(zonasJuntas([]), []);
+});
+
+test('la lista en texto nombra las principales y las secundarias en el orden de lectura, con la capa profunda aclarada', () => {
+  const texto = zonasEnTexto([
+    { zoneId: 'erectores', role: 'SECONDARY' },
+    { zoneId: 'dorsal', role: 'PRIMARY' },
+    { zoneId: 'biceps', role: 'SECONDARY' },
+    { zoneId: 'zone_back', role: 'PRIMARY' },
+  ]);
+  assert.deepEqual(texto, { principales: ['Dorsal ancho'], secundarias: ['Bíceps', 'Erectores espinales (capa profunda)'] });
+  assert.deepEqual([...ZONAS_DE_CAPA_PROFUNDA].sort(), ['erectores', 'romboides']);
+  assert.equal(enumerarZonas([]), '');
+  assert.equal(enumerarZonas(['Pectoral']), 'Pectoral');
+  assert.equal(enumerarZonas(['Pectoral', 'Tríceps']), 'Pectoral y Tríceps');
+  assert.equal(enumerarZonas(['Pectoral', 'Deltoides', 'Tríceps']), 'Pectoral, Deltoides y Tríceps');
+});
+
+test('las zonas en un renglón: las principales primero y las secundarias rotuladas; sin zonas, nada', () => {
+  assert.equal(zonasEnUnRenglon([]), null);
+  assert.equal(zonasEnUnRenglon([{ zoneId: 'pecho', role: 'PRIMARY' }]), null);
+  assert.equal(zonasEnUnRenglon([{ zoneId: 'triceps', role: 'PRIMARY' }, { zoneId: 'pectoral', role: 'PRIMARY' }]), 'Pectoral y Tríceps');
+  assert.equal(zonasEnUnRenglon([{ zoneId: 'deltoides', role: 'SECONDARY' }, { zoneId: 'pectoral', role: 'PRIMARY' }]), 'Pectoral · secundaria: Deltoides');
+  assert.equal(zonasEnUnRenglon([{ zoneId: 'triceps', role: 'SECONDARY' }, { zoneId: 'deltoides', role: 'SECONDARY' }]), 'Secundarias: Deltoides y Tríceps');
+});
+
+test('cada zona se dibuja en las vistas que declara: deltoides y antebrazo en las dos; lo desconocido, en ninguna', () => {
+  assert.deepEqual(vistasDeZona('deltoides'), ['ANTERIOR', 'POSTERIOR']);
+  assert.deepEqual(vistasDeZona('gemelos'), ['POSTERIOR']);
+  assert.deepEqual(vistasDeZona('pecho'), []);
+});
+
+test('los textos de la figura no califican ni miden (TEST-PRJ-009)', () => {
+  for (const [clave, valor] of Object.entries(COPY_FIGURA_DE_ZONAS)) {
+    const texto = typeof valor === 'function' ? `${valor(1)} ${valor(3)}` : valor;
+    assert.deepEqual(terminosProhibidosDeEntrenamientoEn(texto), [], clave);
+  }
 });

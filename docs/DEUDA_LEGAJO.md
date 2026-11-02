@@ -5820,7 +5820,8 @@ cuenta que no es administradora. `contrato.int-spec.ts` cubre API-ZON-01, API-EJ
 **Lo que queda abierto:**
 - Generar las imágenes (E04 a E23; `EVIDENCIA/CATALOGO-VISUAL/imagenes.json`) y completar los textos alternativos de E04 a E15.
 - Integrar, desplegar test y correr la carga con la autorización de Dirección (escribe en test).
-- Verlo en el teléfono con la 0.18.0-candidata.1 y en el website (etapa 2 de WP-CATALOGO-VISUAL).
+- Verlo en el teléfono con la 0.18.0-candidata.1 y en el website (etapa 2 de WP-CATALOGO-VISUAL, programada el 2026-11-02:
+  la imagen y la figura de las zonas en el detalle de cada ejercicio y las zonas de cada sesión del plan).
 
 **Condición de cierre:** Dirección ratifica D-1 a D-5, la CI pasa en main y la demostración muestra la foto de un ejercicio
 del catálogo en la sesión de Diego.

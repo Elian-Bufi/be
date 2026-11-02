@@ -14,6 +14,7 @@
 | `imagenes.json` | El manifiesto de las fotos E04 a E23: archivo, texto alternativo, autoría, licencia y revisión técnica. |
 | `herramientas/zonas.mjs` | Carga las zonas: las propias por la API (API-EJE-04), las del catálogo con el comando de curaduría de BE. |
 | `herramientas/fotos.mjs` | Carga las fotos: las propias por la API (API-MED-01, 02 y API-EJE-02), las del catálogo con el comando. |
+| `herramientas/figura-del-website.cjs` | Achica el set de capas de Dirección a `apps/web/public/zonas/` (la figura del website). No escribe en ninguna base. |
 
 ## Cómo se usa
 

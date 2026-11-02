@@ -97,3 +97,89 @@ export function problemasDeZonas(zonas: readonly { zoneId: string }[], prefijo =
 export function ordenarZonasDeEjercicio<T extends { zoneId: string; role: 'PRIMARY' | 'SECONDARY' }>(zonas: readonly T[]): T[] {
   return [...zonas].sort((a, b) => (a.role === b.role ? ordenDeZona(a.zoneId) - ordenDeZona(b.zoneId) : a.role === 'PRIMARY' ? -1 : 1));
 }
+
+// ─── La figura de zonas del website (WP-CATALOGO-VISUAL, etapa 2) ─────────────────────────────────────────────────────
+
+/** Romboides y erectores van debajo de otras capas: la figura los pinta igual, y la lista lo aclara. */
+export const ZONAS_DE_CAPA_PROFUNDA: readonly IdDeZonaMuscular[] = ['romboides', 'erectores'];
+
+type RolDeZona = 'PRIMARY' | 'SECONDARY';
+
+/** Las vistas en las que se dibuja una zona; ninguna si no es de las 17. */
+export function vistasDeZona(id: string): readonly VistaAnatomica[] {
+  return POR_ID.get(id)?.anatomicalViews ?? [];
+}
+
+/**
+ * Las zonas de varios ejercicios juntas, como las de una sesión del plan: cada zona una sola vez, principal si lo es en
+ * alguno de los ejercicios y, si no, secundaria. Lo que no es una de las 17 se deja afuera. **No cuenta ni suma nada por
+ * zona** (REG-06-139; B10-06 §59): cuántos ejercicios la nombran no es un dato de la figura.
+ */
+export function zonasJuntas(listas: readonly (readonly { zoneId: string; role: RolDeZona }[])[]): { zoneId: IdDeZonaMuscular; role: RolDeZona }[] {
+  const roles = new Map<IdDeZonaMuscular, RolDeZona>();
+  for (const lista of listas) {
+    for (const { zoneId, role } of lista) {
+      if (!esZonaMuscular(zoneId)) continue;
+      roles.set(zoneId, role === 'PRIMARY' || roles.get(zoneId) === 'PRIMARY' ? 'PRIMARY' : 'SECONDARY');
+    }
+  }
+  return ordenarZonasDeEjercicio([...roles].map(([zoneId, role]) => ({ zoneId, role })));
+}
+
+/**
+ * Lo que dice la lista en texto que acompaña siempre a la figura (accesibilidad): los nombres de las principales y de las
+ * secundarias, en el orden de lectura, con «(capa profunda)» donde corresponde. Lo que no es una de las 17 no se nombra.
+ */
+export function zonasEnTexto(zonas: readonly { zoneId: string; role: RolDeZona }[]): { principales: string[]; secundarias: string[] } {
+  const nombre = (id: string) => `${nombreDeZona(id)}${(ZONAS_DE_CAPA_PROFUNDA as readonly string[]).includes(id) ? ` (${COPY_FIGURA_DE_ZONAS.capaProfunda})` : ''}`;
+  const conocidas = ordenarZonasDeEjercicio(zonas.filter((z) => esZonaMuscular(z.zoneId)));
+  return {
+    principales: conocidas.filter((z) => z.role === 'PRIMARY').map((z) => nombre(z.zoneId)),
+    secundarias: conocidas.filter((z) => z.role === 'SECONDARY').map((z) => nombre(z.zoneId)),
+  };
+}
+
+/** «Pectoral», «Pectoral y Tríceps», «Pectoral, Deltoides y Tríceps». */
+export function enumerarZonas(nombres: readonly string[]): string {
+  if (nombres.length <= 1) return nombres.join('');
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+}
+
+/**
+ * Las zonas en un renglón, para la fila de un ejercicio: «Pectoral y Tríceps», «Pectoral · secundaria: Deltoides»,
+ * «Secundarias: Tríceps y Deltoides». Sin zonas, `null`: la fila no dice nada.
+ */
+export function zonasEnUnRenglon(zonas: readonly { zoneId: string; role: RolDeZona }[]): string | null {
+  const { principales, secundarias } = zonasEnTexto(zonas);
+  if (principales.length === 0 && secundarias.length === 0) return null;
+  const rotulo = secundarias.length === 1 ? COPY_FIGURA_DE_ZONAS.secundaria : COPY_FIGURA_DE_ZONAS.secundarias;
+  if (principales.length === 0) return `${rotulo}: ${enumerarZonas(secundarias)}`;
+  if (secundarias.length === 0) return enumerarZonas(principales);
+  return `${enumerarZonas(principales)} · ${rotulo.toLowerCase()}: ${enumerarZonas(secundarias)}`;
+}
+
+/**
+ * Los textos de la figura. Dicen qué zonas nombra el ejercicio, nunca cuánto: ni un puntaje, ni una carga, ni un juicio
+ * (TEST-PRJ-009). El color no es un peso (B10-06 §21): lo principal va lleno y lo secundario rayado, y la lista lo dice.
+ */
+export const COPY_FIGURA_DE_ZONAS = {
+  titulo: 'Zonas musculares',
+  deFrente: 'De frente',
+  deEspalda: 'De espalda',
+  principal: 'Principal',
+  secundaria: 'Secundaria',
+  principales: 'Principales',
+  secundarias: 'Secundarias',
+  capaProfunda: 'capa profunda',
+  queMuestra: 'Lleno, las principales; rayado, las secundarias. La figura dice qué zonas nombra cada ejercicio, no cuánto.',
+  sinZonasPropio: 'Este ejercicio todavía no tiene zonas musculares cargadas.',
+  sinZonasDelCatalogo: 'BE todavía no cargó las zonas musculares de este ejercicio.',
+  tituloDeLaSesion: 'Zonas de la sesión',
+  deLaSesion: 'Las de sus ejercicios, juntas: una zona es principal si lo es en alguno.',
+  sinZonasEnLaSesion: 'Los ejercicios de esta sesión todavía no tienen zonas musculares cargadas.',
+  ejerciciosSinZonas: (n: number) => (n === 1 ? 'Un ejercicio de la sesión todavía no tiene zonas cargadas.' : `${n} ejercicios de la sesión todavía no tienen zonas cargadas.`),
+  noSePudieronLeer: 'No pudimos leer las zonas musculares.',
+  verDetalle: 'Ver detalle',
+  cerrarDetalle: 'Cerrar detalle',
+  generadaConIa: 'Imagen generada con IA',
+} as const;
