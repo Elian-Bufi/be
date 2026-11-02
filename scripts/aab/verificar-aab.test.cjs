@@ -9,9 +9,12 @@
  * - la alineación ELF de 16 KB (scripts/aab/elf.mjs): PT_LOAD y fin del RELRO, en 64 y 32 bits, little y big endian,
  *   y los ELF que no se pueden leer no se afirman;
  * - el esperado (scripts/aab/esperado.mjs): ningún campo puede faltar ni estar vacío, y «todo bien» exige que cada
- *   comprobación obligatoria haya dado true (una pendiente o un false lo impiden).
+ *   comprobación obligatoria haya dado true (una pendiente o un false lo impiden);
+ * - los permisos del manifiesto con `android:maxSdkVersion` antes de `android:name` (corrección del 2026-11-02) y los
+ *   lectores que usa apk-desde-aab.mjs (scripts/aab/lectores.mjs y scripts/aab/zip.mjs), con salidas con la forma de
+ *   las reales de aapt2 y apksigner y valores inventados.
  *
- * **Lo que esto no prueba:** un AAB real, bundletool, keytool, jarsigner, zipalign ni Play.
+ * **Lo que esto no prueba:** un AAB ni una APK reales, bundletool, keytool, jarsigner, apksigner, aapt2, zipalign ni Play.
  * Uso: node --test scripts/aab/verificar-aab.test.cjs
  */
 const assert = require('node:assert/strict');
@@ -403,4 +406,224 @@ test('jarsigner -strict: se acepta la cadena de un certificado autofirmado, y ni
   assert.equal(ok(8, salidaStrict(['This jar contains entries whose signer certificate KeyUsage extension does not allow code signing.'])), false, 'uso de clave (bit 8)');
   assert.equal(ok(0, 'jar is unsigned.'), false, 'sin firma');
   assert.equal(ok(1, 'jarsigner: java.lang.SecurityException: SHA-256 digest error for base/dex/classes.dex'), false, 'un resumen que no coincide');
+});
+
+// ─── los lectores de bundletool, aapt2 y apksigner (scripts/aab/lectores.mjs) y del zip (scripts/aab/zip.mjs) ──────
+
+const lectores = () => import('./lectores.mjs');
+
+test('los permisos del manifiesto: también los que traen android:maxSdkVersion antes de android:name', async () => {
+  const { permisosDelManifiesto } = await lectores();
+  // Como lo imprime `bundletool dump manifest`: los atributos en orden alfabético (corrección del 2026-11-02).
+  const xml = [
+    '<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="31" package="com.ejemplo.app">',
+    '  <uses-permission android:name="android.permission.INTERNET"/>',
+    '  <uses-permission android:maxSdkVersion="32" android:name="android.permission.READ_EXTERNAL_STORAGE"/>',
+    '  <uses-permission android:name="android.permission.VIBRATE"/>',
+    '  <uses-permission',
+    '      android:maxSdkVersion="32"',
+    '      android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>',
+    '  <uses-permission-sdk-23 android:name="android.permission.ACCESS_NETWORK_STATE"/>',
+    '  <permission android:name="com.ejemplo.app.PROPIO" android:protectionLevel="signature"/>',
+    '  <uses-feature android:name="android.hardware.camera"/>',
+    '</manifest>',
+  ].join('\r\n');
+  assert.deepEqual(permisosDelManifiesto(xml), ['android.permission.ACCESS_NETWORK_STATE', 'android.permission.INTERNET', 'android.permission.READ_EXTERNAL_STORAGE', 'android.permission.VIBRATE', 'android.permission.WRITE_EXTERNAL_STORAGE']);
+  assert.equal([...xml.matchAll(/<uses-permission android:name="([^"]+)"/g)].length, 2, 'la expresión vieja perdía los de maxSdkVersion (y los -sdk-23)');
+  assert.deepEqual(permisosDelManifiesto(''), []);
+});
+
+test('aapt2 y apksigner: badging, manifiesto, recursos y firma, con salidas con la forma de las reales', async () => {
+  const { enlacesDelManifiesto, leerBadging, leerRecursoDeTexto, leerVerificacionApksigner } = await lectores();
+
+  const badging = leerBadging(
+    [
+      "package: name='com.ejemplo.app' versionCode='32' versionName='0.19.0-candidata.1' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'",
+      "minSdkVersion:'24'",
+      "targetSdkVersion:'36'",
+      "uses-permission: name='android.permission.INTERNET'",
+      "uses-permission: name='android.permission.READ_EXTERNAL_STORAGE' maxSdkVersion='32'",
+      "uses-permission: name='android.permission.CAMERA'",
+      "  uses-implied-feature: name='android.hardware.camera' reason='requested android.permission.CAMERA permission'",
+      "uses-implied-permission: name='android.permission.READ_PHONE_STATE' reason='implícito, no se cuenta'",
+      "native-code: 'x86_64' 'arm64-v8a' 'armeabi-v7a' 'x86'",
+    ].join('\r\n'),
+  );
+  assert.deepEqual(badging, {
+    paquete: 'com.ejemplo.app',
+    versionCode: 32,
+    versionName: '0.19.0-candidata.1',
+    minSdk: 24,
+    targetSdk: 36,
+    permisos: ['android.permission.CAMERA', 'android.permission.INTERNET', 'android.permission.READ_EXTERNAL_STORAGE'],
+    abis: ['arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'],
+  });
+  assert.equal(leerBadging('').versionCode, null, 'sin salida no se afirma nada');
+
+  const A = 'http://schemas.android.com/apk/res/android';
+  const manifiesto = enlacesDelManifiesto(
+    [
+      `N: android=${A} (line=2)`,
+      '  E: manifest (line=2)',
+      `    A: ${A}:versionCode(0x0101021b)=32`,
+      '    A: package="com.ejemplo.app" (Raw: "com.ejemplo.app")',
+      '      E: queries (line=20)',
+      '          E: intent (line=21)',
+      '              E: data (line=26)',
+      `                A: ${A}:scheme(0x01010027)="mailto" (Raw: "mailto")`,
+      '      E: application (line=90)',
+      '          E: activity (line=100)',
+      `            A: ${A}:name(0x01010003)="com.ejemplo.app.MainActivity" (Raw: "com.ejemplo.app.MainActivity")`,
+      '              E: intent-filter (line=114)',
+      '                  E: data (line=120)',
+      `                    A: ${A}:scheme(0x01010027)="be" (Raw: "be")`,
+      '              E: intent-filter (line=122)',
+      `                A: ${A}:autoVerify(0x010104ee)=true`,
+      '                A: data-generated=true',
+      '                  E: data (line=127)',
+      `                    A: ${A}:scheme(0x01010027)="https" (Raw: "https")`,
+      `                    A: ${A}:host(0x01010028)="web.ejemplo.com" (Raw: "web.ejemplo.com")`,
+      '                  E: data (line=128)',
+      `                    A: ${A}:pathPrefix(0x0101002b)="/invitacion" (Raw: "/invitacion")`,
+      '              E: intent-filter (line=130)',
+      `                A: ${A}:autoVerify(0x010104ee)=(type 0x12)0x0`,
+      '                  E: data (line=131)',
+      `                    A: ${A}:scheme(0x01010027)="https" (Raw: "https")`,
+      `                    A: ${A}:host(0x01010028)="otro.ejemplo.com" (Raw: "otro.ejemplo.com")`,
+      '          E: meta-data (line=137)',
+      `            A: ${A}:name(0x01010003)="com.facebook.soloader.enabled" (Raw: "com.facebook.soloader.enabled")`,
+      `            A: ${A}:value(0x01010024)=true`,
+      '          E: meta-data (line=140)',
+      `            A: ${A}:name(0x01010003)="com.android.dynamic.apk.fused.modules" (Raw: "com.android.dynamic.apk.fused.modules")`,
+    ].join('\n'),
+  );
+  assert.deepEqual(manifiesto.filtros, [
+    { autoVerify: false, esquemas: ['be'], hosts: [], prefijos: [] },
+    { autoVerify: true, esquemas: ['https'], hosts: ['web.ejemplo.com'], prefijos: ['/invitacion'] },
+    { autoVerify: false, esquemas: ['https'], hosts: ['otro.ejemplo.com'], prefijos: [] },
+  ], 'los data de un filtro se juntan, como en Android; autoVerify en false no se toma como true');
+  assert.deepEqual(manifiesto.esquemas, ['be', 'https'], 'los esquemas de queries (mailto) no son de la app');
+  assert.deepEqual(manifiesto.metaDatos, ['com.android.dynamic.apk.fused.modules', 'com.facebook.soloader.enabled']);
+
+  const volcado = [
+    'Binary APK',
+    'Package name=com.ejemplo.app id=7f',
+    '  type string id=12 entryCount=300',
+    '    resource 0x7f120103 string/project_id',
+    '      () "proyecto-de-prueba"',
+    '    resource 0x7f120104 string/project_id_extra',
+    '      () "otro"',
+    '    resource 0x7f120105 string/con_idiomas',
+    '      (es) "hola"',
+    '      () "hello"',
+    '    resource 0x7f120106 string/sin_valor_por_omision',
+    '      (es) "solo"',
+    '    resource 0x7f120107 string/siguiente',
+    '      () "x"',
+  ].join('\r\n');
+  assert.equal(leerRecursoDeTexto(volcado, 'project_id'), 'proyecto-de-prueba', 'no se confunde con project_id_extra');
+  assert.equal(leerRecursoDeTexto(volcado, 'con_idiomas'), 'hello', 'el valor por omisión, no el de un idioma');
+  assert.equal(leerRecursoDeTexto(volcado, 'sin_valor_por_omision'), null, 'no toma el valor del recurso siguiente');
+  assert.equal(leerRecursoDeTexto(volcado, 'no_existe'), null);
+  assert.throws(() => leerRecursoDeTexto(volcado, 'a/b'), /nombre de recurso inválido/);
+
+  const h = (c, n) => c.repeat(n);
+  const soloV2 = [
+    'Verifies',
+    'Verified using v1 scheme (JAR signing): false',
+    'Verified using v2 scheme (APK Signature Scheme v2): true',
+    'Verified using v3 scheme (APK Signature Scheme v3): false',
+    'Verified using v3.1 scheme (APK Signature Scheme v3.1): false',
+    'Verified using v4 scheme (APK Signature Scheme v4): false',
+    'Verified for SourceStamp: false',
+    'Number of signers: 1',
+    'Signer #1 certificate DN: CN=Prueba, O=BE, C=AR',
+    `Signer #1 certificate SHA-256 digest: ${h('a', 64)}`,
+    `Signer #1 certificate SHA-1 digest: ${h('b', 40)}`,
+    `Signer #1 certificate MD5 digest: ${h('c', 32)}`,
+    'Signer #1 key algorithm: RSA',
+    'Signer #1 key size (bits): 2048',
+    `Signer #1 public key SHA-256 digest: ${h('d', 64)}`,
+    `Signer #1 public key SHA-1 digest: ${h('e', 40)}`,
+  ].join('\r\n');
+  assert.deepEqual(leerVerificacionApksigner(soloV2, 0), { verifica: true, esquemas: { v1: false, v2: true, v3: false, 'v3.1': false, v4: false }, firmantes: 1, sha256: [h('a', 64)], sha1: [h('b', 40)], avisos: 0 }, 'la huella de la clave pública no se confunde con la del certificado');
+  assert.equal(leerVerificacionApksigner(soloV2, 1).verifica, false, 'con código distinto de 0 no verifica');
+  const dos = leerVerificacionApksigner(
+    ['Verifies', 'Verified using v1 scheme (JAR signing): true', 'Verified using v2 scheme (APK Signature Scheme v2): true', 'Number of signers: 2', `Signer #1 certificate SHA-256 digest: ${h('a', 64)}`, `Signer #2 certificate SHA-256 digest: ${h('f', 64)}`, 'WARNING: META-INF/x not protected by signature.'].join('\n'),
+    0,
+  );
+  assert.deepEqual([dos.esquemas.v1, dos.esquemas.v3, dos.firmantes, dos.sha256.length, dos.avisos], [true, null, 2, 2, 1], 'v1 prendido, v3 sin informar (null) y dos firmantes');
+  assert.equal(leerVerificacionApksigner('DOES NOT VERIFY\nERROR: Missing META-INF/MANIFEST.MF', 1).verifica, false);
+});
+
+test('el zip: entradas con su CRC, el bloque de firma de APK y los archivos de una firma JAR', async () => {
+  const { esArchivoDeFirmaJar, esBloqueDeFirmaJar, leerZip } = await import('./zip.mjs');
+  const entradas = [
+    { nombre: 'AndroidManifest.xml', datos: Buffer.from('manifiesto') },
+    { nombre: 'lib/arm64-v8a/libx.so', datos: Buffer.alloc(100, 1) },
+  ];
+  const zip = escribirZip(entradas);
+  const carpeta = fs.mkdtempSync(path.join(os.tmpdir(), 'be-zip-'));
+  try {
+    const sinFirma = path.join(carpeta, 'sin-firma.apk');
+    fs.writeFileSync(sinFirma, zip);
+    const leido = leerZip(sinFirma);
+    assert.deepEqual(leido.entradas.map((e) => [e.nombre, e.crc, e.tamano, e.metodo]), entradas.map((e) => [e.nombre, crc32(e.datos), e.datos.length, 8]));
+    assert.equal(leido.conBloqueDeFirmaApk, false);
+
+    // El bloque de firma de APK va entre las entradas y el directorio central, y termina con la magia.
+    const desde = zip.readUInt32LE(zip.length - 22 + 16);
+    const bloque = Buffer.concat([Buffer.alloc(16, 0), Buffer.from('APK Sig Block 42', 'latin1')]);
+    const firmado = Buffer.concat([zip.subarray(0, desde), bloque, zip.subarray(desde)]);
+    firmado.writeUInt32LE(desde + bloque.length, firmado.length - 22 + 16);
+    const conFirma = path.join(carpeta, 'con-firma.apk');
+    fs.writeFileSync(conFirma, firmado);
+    const leidoFirmado = leerZip(conFirma);
+    assert.equal(leidoFirmado.conBloqueDeFirmaApk, true);
+    assert.deepEqual(leidoFirmado.entradas.map((e) => e.crc), leido.entradas.map((e) => e.crc), 'el bloque no cambia las entradas');
+    fs.writeFileSync(path.join(carpeta, 'roto.apk'), Buffer.from('no es un zip'));
+    assert.throws(() => leerZip(path.join(carpeta, 'roto.apk')), /no es un zip/);
+  } finally {
+    fs.rmSync(carpeta, { recursive: true, force: true });
+  }
+  for (const n of ['META-INF/MANIFEST.MF', 'META-INF/BE.SF', 'META-INF/ANDROIDD.RSA', 'META-INF/CERT.EC', 'META-INF/SIG-BE']) assert.equal(esArchivoDeFirmaJar(n), true, n);
+  assert.equal(esBloqueDeFirmaJar('META-INF/MANIFEST.MF'), false, 'el manifiesto solo no es una firma');
+  for (const n of ['META-INF/androidx.core_core.version', 'META-INF/services/x.SF', 'assets/BE.RSA']) assert.equal(esArchivoDeFirmaJar(n), false, n);
+});
+
+test('extraer el zip: los nombres que solo difieren en mayúsculas no se pisan (en Windows, tar sí los pisa)', async () => {
+  const { extraerZip } = await import('./zip.mjs');
+  const carpeta = fs.mkdtempSync(path.join(os.tmpdir(), 'be-extraer-'));
+  try {
+    const zip = path.join(carpeta, 'recursos.apk');
+    // Como los recursos acortados de una APK: res/BW.xml, res/bW.xml…; y un archivo «a» contra una carpeta «A/».
+    fs.writeFileSync(
+      zip,
+      escribirZip([
+        { nombre: 'res/BW.xml', datos: Buffer.from('uno') },
+        { nombre: 'res/bW.xml', datos: Buffer.from('dos') },
+        { nombre: 'res/Bw.xml', datos: Buffer.from('tres') },
+        { nombre: 'assets/app.config', datos: Buffer.from('{"version":"x"}') },
+        { nombre: 'a', datos: Buffer.from('archivo') },
+        { nombre: 'A/x.txt', datos: Buffer.from('en una carpeta') },
+      ]),
+    );
+    const destino = path.join(carpeta, 'fuera');
+    assert.deepEqual(extraerZip(zip, destino), { archivos: 6, choques: 3, raices: 3 });
+    const leer = (...p) => fs.readFileSync(path.join(destino, ...p), 'utf8');
+    assert.deepEqual([leer('0', 'res', 'BW.xml'), leer('1', 'res', 'bW.xml'), leer('2', 'res', 'Bw.xml')], ['uno', 'dos', 'tres']);
+    assert.equal(leer('0', 'assets', 'app.config'), '{"version":"x"}');
+    assert.deepEqual([leer('0', 'a'), leer('1', 'A', 'x.txt')], ['archivo', 'en una carpeta']);
+    // Tampoco escribe encima de lo que ya estaba en la carpeta: corta, y lo de antes queda igual.
+    fs.writeFileSync(path.join(destino, '0', 'res', 'BW.xml'), 'de antes');
+    assert.throws(() => extraerZip(zip, destino), /EEXIST/);
+    assert.equal(leer('0', 'res', 'BW.xml'), 'de antes');
+    for (const malo of ['../fuera.txt', 'res/../../x', 'C:/x', 'res\\x', 'res/a.xml:flujo', '/absoluto']) {
+      const z = path.join(carpeta, 'malo.zip');
+      fs.writeFileSync(z, escribirZip([{ nombre: malo, datos: Buffer.from('x') }]));
+      assert.throws(() => extraerZip(z, path.join(carpeta, 'malo')), /no seguro/, malo);
+    }
+  } finally {
+    fs.rmSync(carpeta, { recursive: true, force: true });
+  }
 });

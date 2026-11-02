@@ -42,6 +42,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { buscarCredenciales } from './credenciales.mjs';
 import { alineadaA16Kb, PAGINA_DE_16_KB } from './elf.mjs';
 import { esAutofirmado, evaluarVerificacionJar, normalizarHuella, resumirVeredicto, validarEsperado } from './esperado.mjs';
+import { permisosDelManifiesto } from './lectores.mjs';
 
 const [ruta, ...resto] = process.argv.slice(2);
 if (!ruta) salir('Uso: node scripts/aab/verificar-aab.mjs <ruta.aab> --esperado <esperado.json> [--salida <carpeta>] [--sin-red] [--respaldo <carpeta>]');
@@ -124,7 +125,8 @@ try {
     minSdk: /<uses-sdk[^>]*android:minSdkVersion="(\d+)"/.exec(xml)?.[1] ?? null,
     targetSdk: targetSdkLeido === null ? null : Number(targetSdkLeido),
     extractNativeLibs: /<application[^>]*android:extractNativeLibs="([^"]+)"/.exec(xml)?.[1] ?? null,
-    permisos: [...xml.matchAll(/<uses-permission android:name="([^"]+)"/g)].map((m) => m[1]).sort(),
+    // Con android:name en cualquier lugar del elemento (corrección del 2026-11-02: contaba 8 de 10, ver lectores.mjs).
+    permisos: permisosDelManifiesto(xml),
     appLink: filtroVerificado ? { autoVerify: true, host: /android:host="([^"]+)"/.exec(filtroVerificado)?.[1] ?? null, pathPrefix: /android:pathPrefix="([^"]+)"/.exec(filtroVerificado)?.[1] ?? null } : null,
     esquemas: [...new Set([...xml.matchAll(/android:scheme="([^"]+)"/g)].map((m) => m[1]))].sort(),
   };
