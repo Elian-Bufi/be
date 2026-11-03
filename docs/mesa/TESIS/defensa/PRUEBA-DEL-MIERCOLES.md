@@ -24,7 +24,9 @@ el nombre del paso (`c5-…`, `d3-…`). Al terminar se pasa a `OBSERVADOR.md` (
 - [ ] **Cuidar el viernes:** nada sobre Diego; y Prueba Uno tiene que llegar con la sesión de ese día sin iniciar y una
       pendiente de otro día (`DEMO.md`).
 
-## Parte B · Nutrición en el website (10 min) — Prueba Dos y Prueba Tres, Calorías, del 18/10 al 26/10
+## Parte B · Nutrición en el website (10 min) — Prueba Dos y Prueba Tres, Calorías, del 18/10 al 4/11
+
+El período va del 18/10 al día de la prueba (`OBSERVADOR.md`, «Fechas»), no hasta el 26/10.
 
 - [ ] **B1-B2** «Analizar» de Prueba Dos, sin abrir «Cómo se lee»: ¿qué representa cada línea o forma?
 - [ ] **B3** Un día sin registros y un día incompleto: ¿qué dice la pantalla de cada uno?

@@ -30,8 +30,8 @@ la `0.19.0-candidata.1` (3/11). La estable sigue siendo la 0.13.2. Sale de `git 
   cada serie, si se escribió o se tildó como el plan. Lo tildado sin escribir va con punto hueco y no se compara con lo
   indicado (DL-161, integrada el 2/11 en #224 con #230; las decisiones I-1 a I-10, **a ratificar**).
 - **Catálogo visual:** las 17 zonas musculares en el escritorio (DL-081, cerrada el 2/11) y las fotos de los ejercicios
-  del catálogo de todos, que cura BE (DL-162, D-1 a D-5 **a ratificar**; #225). En test, los 20 ejercicios de la demo ya
-  tienen sus zonas (3/11; #231).
+  del catálogo de todos, que cura BE (DL-162, D-1 a D-5 **a ratificar**; #225, dentro de #229). En test, los 20
+  ejercicios de la demo ya tienen sus zonas (3/11; #231).
 - **Recetas:** 50 nuevas, 66 en total, cargadas en test en la cuenta de Sofía Paz, sin foto (#220, dentro de #229).
 
 ## Administración
@@ -48,8 +48,9 @@ la `0.19.0-candidata.1` (3/11). La estable sigue siendo la 0.13.2. Sale de `git 
 - **CI de `b62ce90`** (corrida 41515338177): 922 pruebas de dominio, 934 de integración con PostgreSQL, 159 de la API,
   561 de scripts y 17 de 17 recorridos de navegador, en verde. Al 26/10 eran 887, 909, 159, 481 y 17.
 - **Seguridad:** Next 15.5.28, zod 4.6.6, multer 2.5.0 y body-parser 2.4.0 (#201); la validación de cuerpos ya no junta
-  miles de errores (#206); node-forge pasa a 1.4.2. La excepción de auditoría DL-114 (el zod 3 de Expo, solo en la APK)
-  **vence el 30/11 a las 21:00** y no se renueva sola: va a Dirección antes.
+  miles de errores (#206); node-forge pasa a 1.4.2. La excepción de auditoría DL-114 sigue declarada para el zod 3 de la
+  CLI de Expo y para node-forge, los dos solo en la cadena de la APK; con la 1.4.2, la de node-forge ya no cubre la copia
+  instalada (si el aviso vuelve, bloquea). **Vence el 30/11 a las 21:00** y no se renueva sola: va a Dirección antes.
 - **Con personas:** la prueba breve hizo la parte A (27/10) y C2 y C3 en el teléfono (29/10). Faltan la parte B, C4 a C9
   y la APK nueva de punta a punta (miércoles 4/11), TalkBack, un aviso push en un teléfono real y la prueba con
   profesionales reales.
