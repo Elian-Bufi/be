@@ -2,8 +2,9 @@
 
 Cada respuesta es corta y dice dónde está la prueba: el apartado o anexo de la tesis, el archivo del código o la decisión
 registrada (DL) que la sostiene. Cuando algo no está hecho o no está probado, la respuesta lo dice primero. El
-documento de la tesis es de `main` `0fb1bff` (20/10); las cifras actualizadas son de `main` `e4512cb` (26/10), hasta que
-el jueves 5/11 se completen con la versión integrada. Las preguntas 23 a 25 son sobre lo posterior al documento.
+documento de la tesis es de `main` `0fb1bff` (20/10); las cifras actualizadas son de `main` `b62ce90` (2/11), la versión
+que sirve test, y se completaron el 3/11. Lo que depende de la prueba del miércoles 4/11 sigue marcado «[se completa el
+jueves: …]». Las preguntas 23 a 25 son sobre lo posterior al documento.
 
 ## Producto y alcance
 
@@ -110,26 +111,31 @@ disparadores impiden modificar lo emitido.
 *Respaldo:* anexo H (ADR-03); apartado 6 (lo que garantiza la base).
 
 **17. ¿Cuántas tablas tiene la base y cómo se organizan?**
-Al 26/10, 118 tablas y 218 claves foráneas, todas RESTRICT, con 53 migraciones; las cinco tablas nuevas son de
-Administración. El documento (20/10) muestra 113 tablas en 14 vistas por dominio, con 78 enumeraciones, 212 claves
-foráneas, 125 índices únicos (34 parciales), 134 restricciones CHECK y 275 disparadores, leídos del catálogo de
-PostgreSQL con 51 migraciones. [se completa el jueves: las cifras del catálogo con la versión integrada.]
+Al 2/11 (`b62ce90`), 121 tablas y 54 migraciones, contadas en el esquema y en la carpeta de migraciones: cinco tablas
+nuevas son de Administración (25/10) y tres del catálogo visual, las zonas musculares (2/11). Al 26/10 eran 118 tablas y
+218 claves foráneas, todas RESTRICT; la migración del catálogo visual suma cinco claves foráneas, también RESTRICT. El
+documento (20/10) muestra 113 tablas en 14 vistas por dominio, con 78 enumeraciones, 212 claves foráneas, 125 índices
+únicos (34 parciales), 134 restricciones CHECK y 275 disparadores, leídos del catálogo de PostgreSQL con 51 migraciones.
+[se completa el jueves: claves foráneas, índices únicos parciales, CHECK y disparadores, recontados en el catálogo de
+PostgreSQL con la versión integrada.]
 *Respaldo:* apartado 6 (DER-00 a DER-14); anexo G (diccionario).
 
 ## Calidad y pruebas
 
 **18. ¿Cómo saben que funciona?**
 De los 59 casos de prueba diseñados, al 20/10 42 pasaban en la CI, 9 en parte y 8 no eran ejecutables con lo que se
-entrega. La CI de `main` `e4512cb` (26/10, corrida 40387350649) corre 887 pruebas de dominio, 909 de integración contra
-PostgreSQL, 159 de la API, 481 de scripts y 17 recorridos de navegador, todo en verde. En test se verificaron la sesión,
-los borradores y las recetas (20/10), los escenarios de la prueba breve (6 de 6, 26/10) y Administración (7 de 7, 27/10).
-Con profesionales reales, todavía no. [se completa el jueves: la corrida de la versión integrada.]
+entrega. La CI de `main` `b62ce90` (2/11, corrida 41515338177; la versión que sirve test) corre 922 pruebas de dominio,
+934 de integración contra PostgreSQL, 159 de la API, 561 de scripts y 17 recorridos de navegador, todo en verde; la del
+26/10 (`e4512cb`, corrida 40387350649) corría 887, 909, 159, 481 y 17. En test se verificaron la sesión, los borradores
+y las recetas (20/10), los escenarios de la prueba breve (6 de 6, 26/10) y Administración (7 de 7, 27/10). Con
+profesionales reales, todavía no. [se completa el jueves: el recuento de los 59 casos con la versión integrada.]
 *Respaldo:* apartado 5; anexo F (trazabilidad).
 
 **19. ¿Qué falta probar?**
 La prueba con profesionales reales, un aviso push recibido en un teléfono real, Safari, Firefox y TalkBack
-[se completa el jueves: TalkBack probado o límite declarado]. La APK nueva se prueba de punta a punta el miércoles 4/11
-[se completa el jueves: resultado]; hasta pasarla a estable, la estable sigue siendo la 0.13.2.
+[se completa el jueves: TalkBack probado o límite declarado]. La APK nueva, la 0.19.0-candidata.1 (código de versión 32,
+publicada el 3/11 como prerelease), se prueba de punta a punta el miércoles 4/11 [se completa el jueves: resultado];
+hasta pasarla a estable, la estable sigue siendo la 0.13.2.
 *Respaldo:* apartado 5 (lo que queda por probar); anexo K (K1, K14, K15).
 
 **20. ¿Qué es la TVCC-30?**
@@ -158,8 +164,9 @@ perdían) se habrían visto antes. Y llevar el registro de decisiones al día co
 Administración por área con segundo factor (DL-155, DL-157), la sustitución de ejercicios de vuelta en la sesión
 (DL-151), «Analizar» de Nutrición con lo registrado, el objetivo y lo indicado en un mismo gráfico (DL-158, DL-153), la
 evidencia de cada revisión (DL-154) y la lectura congelada de las APK instaladas (DL-152). Después, el registro por
-niveles del entrenamiento (DL-160, DL-161).
-*Respaldo:* `docs/DEUDA_LEGAJO.md`; diapositiva 6 del mazo.
+niveles del entrenamiento (DL-160, DL-161) y el catálogo visual con las zonas musculares (DL-081, DL-162), integrados el
+2/11.
+*Respaldo:* `docs/DEUDA_LEGAJO.md`; diapositiva 6 del mazo; `defensa/NOTA-DE-CAMBIOS.md`.
 
 **24. ¿Qué pasó en la prueba en el teléfono?**
 El 29/10, con la 0.18.0-candidata.1 y la cuenta descartable Prueba Uno: dos series de Press de banca escritas sin tocar
@@ -174,5 +181,6 @@ como el plan se muestra como «carga rápida», con su propia marca, y no se com
 plan; lo que la persona escribió o cambió, como una serie menos o una carga distinta, sí se compara. Una serie «como el
 plan» que quedaría sin carga ni repeticiones se rechaza al guardar (`SET_WITHOUT_DATA`).
 La marca por serie está en el PR #224; la «carga rápida» en los gráficos y no compararla la decidió Dirección el 2/11
-[se completa el jueves: integrado o «en curso»].
+(#230, que entró en #224). Las dos están integradas en `main` desde el 2/11 (`b62ce90`) y las sirve test; las decisiones
+I-1 a I-10 de DL-161 siguen a ratificar.
 *Respaldo:* DL-160 y DL-161 (PR #224); `packages/domain/src/registro-por-niveles.ts`.

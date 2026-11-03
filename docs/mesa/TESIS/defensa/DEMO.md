@@ -4,10 +4,17 @@
 website y la persona registrando en la APK nueva con Prueba Uno. El plan B son capturas que se toman el jueves contra la
 misma versión; la lista está abajo, con el nombre de cada archivo.
 
-- **Versión:** `main` después de la integración del miércoles, `[se completa el jueves: commit]`. La API de test tiene
-  que responder ese commit en `GET https://be-api-hndp.onrender.com/health/ready` (`data.version.commit`).
-- **APK:** la de prueba que se arma el miércoles, `[se completa el jueves: versión, código de versión y SHA-256]`,
-  instalada en el teléfono de la demo.
+- **Versión:** la integración de la semana se adelantó al lunes 2/11. La API de test sirve `b62ce90` (#224, la segunda
+  integración de la semana) y tiene que responder ese commit en `GET https://be-api-hndp.onrender.com/health/ready`
+  (`data.version.commit`; comprobado el 3/11). `main` está en `8883e88` (#231), que solo cambia `EVIDENCIA/` y no
+  redespliega la API. Si la prueba del miércoles obliga a integrar un arreglo, el commit cambia y se corrige acá.
+- **APK:** `0.19.0-candidata.1`, código de versión 32, publicada el 3/11 como prerelease (no es la estable, que sigue
+  siendo la 0.13.2): https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.19.0-candidata.1. Se armó desde `42dd257`
+  (`b62ce90` más las herramientas del AAB y la versión), y la bienvenida tiene que decir ese commit. SHA-256 del archivo
+  `be-0.19.0-candidata.1-42dd257.apk`: `13549f7323950fb85d5d1c2d73cb9989c33bab6e637d23f50c6618f67261282a`. Va instalada
+  encima de la anterior, sin desinstalar, en el teléfono de la demo.
+- **Datos de test que usa la demo** (cargados el 2 y el 3/11): 66 recetas en la cuenta de Sofía Paz (16 de ejemplo y 50
+  nuevas, sin foto) y las zonas musculares de los 20 ejercicios de la demo (DL-081).
 - **Cuentas** (las credenciales están en la versión de evaluación de la tesis, apartado 14, y en `cuentas.env`; nunca en
   pantalla compartida):
   - **Sofía Paz**, nutricionista (`PRO_N`): solo mira a **Diego Sosa**. Sobre Diego no se escribe nada.
@@ -37,7 +44,7 @@ misma versión; la lista está abajo, con el nombre de cada archivo.
 | 2:00 | Prueba Uno · APK | «Iniciar entrenamiento» en la sesión de hoy: la franja de arriba; tildar la casilla de la serie 1 (queda en el azul del tema); escribir otra carga en la serie 2 y tildarla | «Arriba, en qué ejercicio y serie voy. Tildo y queda con lo planificado; si escribo, manda lo escrito.» | `apk/07`, `apk/08` |
 | 2:30 | — | Volver al mazo, diapositiva 8 | — | — |
 
-**Si sobran 30 segundos** (y está integrado el jueves): entrar como Lic. Prueba Dos Áreas a Entrenamiento de Prueba Uno
+**Si sobran 30 segundos** (la «carga rápida» del escritorio está integrada desde el 2/11, #224 con #230): entrar como Lic. Prueba Dos Áreas a Entrenamiento de Prueba Uno
 y mostrar la sesión recién cargada: lo cargado como el plan figura como «carga rápida» y no se compara con lo indicado;
 la serie escrita sí. Plan B: `web/06-carga-rapida.png`.
 

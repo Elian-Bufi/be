@@ -1,18 +1,22 @@
 # Guion de la presentación
 
 **Dónde estamos.** El viernes 6/11 se presenta BE al tutor en unos 11 minutos, demo incluida, y después vienen las
-preguntas. El mazo pasó de 16 diapositivas a 13 para exponer, más la de preguntas y 4 de respaldo; lo que depende de la
-integración del miércoles y de la APK nueva quedó marcado «[se completa el jueves: …]».
+preguntas. El mazo pasó de 16 diapositivas a 13 para exponer, más la de preguntas y 4 de respaldo. La integración se
+adelantó al lunes 2/11 y la APK nueva salió el 3/11, así que ese día se completó lo que ya se sabía; lo que depende de la
+prueba del miércoles 4/11 sigue marcado «[se completa el jueves: …]».
 
 - **Presentación:** el mazo «BE · Defensa de tesis», en https://claude.ai/artifact/9LiufGdUTJjAbEonGT8t2U. Es privado
   hasta que Dirección lo comparta desde su menú, se presenta desde ahí (con las notas del orador) y se descarga como
   PowerPoint o PDF. No se compila: la fuente es `presentacion/project/` (el índice `deck.json` y una sección HTML por
   diapositiva) y `DIAPOSITIVAS.md` es su texto, generado con `node herramientas/esquema-de-diapositivas.mjs`.
-- **Demo:** `DEMO.md`, con su plan B y la lista de capturas del jueves.
+- **Demo:** `DEMO.md`, con su plan B y la lista de capturas del jueves; el día, `DIA-DE-LA-DEMO.md`.
+- **Prueba del miércoles:** `PRUEBA-DEL-MIERCOLES.md`.
+- **Qué cambió desde el 20/10 y cuánto se corrió el plan:** `NOTA-DE-CAMBIOS.md` y `GANTT.md`.
 - **Preguntas probables:** `PREGUNTAS.md`.
 - **A mano:** la versión de evaluación de la tesis (con las credenciales del apartado 14), nunca en pantalla compartida.
-- **Versiones:** el documento de la tesis es de `0fb1bff` (20/10); las cifras del mazo son de `main` `e4512cb` (26/10)
-  hasta que el jueves se completen con la versión integrada.
+- **Versiones:** el documento de la tesis es de `0fb1bff` (20/10); las cifras del mazo son de `main` `b62ce90` (2/11),
+  la versión que sirve test, salvo las del catálogo de la base, que siguen marcadas. La APK de la demo es la
+  `0.19.0-candidata.1` (código de versión 32, del 3/11).
 
 ## Tiempos
 
@@ -49,24 +53,30 @@ Si la demo se alarga, recortar en la 10 y la 12: están en la tesis.
 
 ## El jueves: lo que se completa
 
-Buscar «[se completa el jueves» en el mazo y en estos archivos. Son estos lugares:
+Buscar «[se completa el jueves» en el mazo y en estos archivos. El 3/11 se completó lo que ya se sabía; quedan los
+lugares que dependen de la prueba del miércoles, de las capturas o de una decisión de Dirección.
 
-| Dónde | Qué va | De dónde sale |
-|---|---|---|
-| Diapositiva 1 (portada) | Hecho el 3/11: trabajo individual; el correo y el tutor solo en el mazo publicado | Dirección (en el repositorio público no van correos) |
-| Diapositiva 7 (demo) | La captura nativa de la sesión guiada y, al pie, el commit y la APK | `respaldo-demo/2026-11-05/apk/07-sesion-guiada.png`; `/health/ready` y la release |
-| Diapositiva 8 (prueba) | La versión de la APK nueva | La release del miércoles |
-| Diapositiva 9 (registro) | La captura de «Hice todo lo planificado»; en las notas, decir «en curso» de lo que no esté instalado | `apk/04-hice-lo-planificado.png` |
-| Diapositiva 10 (por dentro) | Las tablas de la versión integrada (el catálogo visual, #225, suma tres) | `prisma/schema.prisma` de esa versión |
-| Diapositiva 11 (funciona) | La corrida de la CI de la versión integrada y, en las notas, el recuento de los 59 casos | `gh run view <id> --log` y `herramientas/casos-de-prueba.mjs` |
-| Diapositiva 13 (falta) | TalkBack: probado o límite declarado, con su motivo | Decisión de Dirección (RNF-ACC-001 es P0 en el legajo) |
-| Diapositiva 17 (datos, respaldo) | Las seis cifras de la base | El catálogo de PostgreSQL con la versión integrada |
-| `DEMO.md` | Commit, versión de la APK y su SHA-256 | La release y `/health/ready` |
+| Dónde | Qué va | De dónde sale | Estado |
+|---|---|---|---|
+| Diapositiva 1 (portada) | Trabajo individual; el correo y el tutor solo en el mazo publicado | Dirección (en el repositorio público no van correos) | Hecho el 3/11 |
+| Diapositiva 7 (demo) | Al pie, la versión del plan B | `/health/ready` y la release | Hecho el 3/11: API `b62ce90`, APK 0.19.0-candidata.1 |
+| Diapositiva 7 (demo) | La captura nativa de la sesión guiada | `respaldo-demo/2026-11-05/apk/07-sesion-guiada.png` | Falta (jueves) |
+| Diapositiva 8 (prueba) | La versión de la APK nueva | La release del 3/11 | Hecho el 3/11 |
+| Diapositiva 9 (registro) | La captura de «Hice todo lo planificado»; en las notas, lo que mostró la prueba del miércoles | `apk/04-hice-lo-planificado.png` y `PRUEBA-DEL-MIERCOLES.md` | Falta (jueves); las notas ya dicen que las tres formas están en la candidata |
+| Diapositiva 10 (por dentro) | Las tablas de la versión integrada | `prisma/schema.prisma` de `b62ce90`: 121 modelos | Hecho el 3/11 |
+| Diapositiva 11 (funciona) | La corrida de la CI de la versión integrada | Corrida 41515338177 de `b62ce90`: 922 de dominio, 934 de integración, 159 de la API, 561 de scripts y 17 de 17 recorridos | Hecho el 3/11 |
+| Diapositiva 11 (funciona, notas) | El recuento de los 59 casos y la prueba del miércoles en una frase | `herramientas/casos-de-prueba.mjs` sobre `b62ce90` | Falta (jueves) |
+| Diapositiva 12 (método) | Commits, pull requests integrados y coautoría | `git rev-list --count`, `gh pr list --state merged` | Hecho el 3/11: 1.033, 218 y 819, al `8883e88` |
+| Diapositiva 13 (falta) | TalkBack: probado o límite declarado, con su motivo | Decisión de Dirección (RNF-ACC-001 es P0 en el legajo) | Falta |
+| Diapositiva 17 (datos, respaldo) | Tablas y migraciones | El esquema y la carpeta de migraciones de `b62ce90` | Hecho el 3/11: 121 y 54 |
+| Diapositiva 17 (datos, respaldo) | Claves foráneas, únicos parciales, disparadores y CHECK | El catálogo de PostgreSQL con la versión integrada (`herramientas/restricciones-en-base.cjs`, con una base temporal) | Falta |
+| `DEMO.md` | Commit, versión de la APK y su SHA-256 | La release y `/health/ready` | Hecho el 3/11 |
+| `PREGUNTAS.md` 17 a 19 | Las cifras del catálogo, el recuento de los 59 casos, TalkBack y el resultado del miércoles | Lo mismo que arriba | En parte: la CI, la APK y las tablas, hechas |
 
 Además, si hay tiempo: cambiar la imagen de la portada por `web/02-ficha-resumen.png` y la del website de la demo por
-`web/01-espacio-profesional.png`, y recontar el método (commits, pull requests integrados y coautoría) con
-`git rev-list --count main` y `gh pr list --state merged`. Las imágenes del mazo se suben al propio mazo: lo más simple
-es pasarle las capturas a Claude con la diapositiva en la que van.
+`web/01-espacio-profesional.png`. Las imágenes del mazo se suben al propio mazo: lo más simple es pasarle las capturas a
+Claude con la diapositiva en la que van. Si después del miércoles se integra un arreglo, cambian el commit de la API, la
+corrida de la CI y el recuento del método: se rehacen con los mismos comandos.
 
 **Ensayo:** una vez en vivo y otra con el plan B, con reloj, el mismo teléfono y la misma red.
 

@@ -95,7 +95,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Website · Sofía Paz con Diego: la ficha, «Analizar» y una revisión
 - [se completa el jueves: captura nativa de la sesión guiada]
 - APK · Prueba Uno: «Ya la hice» y la sesión guiada
-- Plan B: capturas del jueves [se completa el jueves: commit y APK]
+- Plan B: capturas del jueves · API b62ce90 · APK 0.19.0-candidata.1
 - *Imagen:* El espacio profesional de Sofía Paz en el website: pendientes y cartera de asesorados
 
 > **Notas del orador.** La demo dura dos minutos y medio. En el website entro como Sofía Paz, nutricionista, y abro la ficha de Diego: el resumen por área dice qué hay y qué falta registrar. En «Analizar» veo, en un mismo gráfico, lo que Diego registró, el objetivo que fijé y lo indicado en el plan. Abro su última revisión: queda escrito en qué evidencia me apoyé para decidir. Diego es solo para mirar: no escribo nada sobre él. Paso al teléfono con Prueba Uno, una cuenta descartable. En una sesión pendiente toco «Ya la hice» y «Hice todo lo planificado»: veo los valores del plan y confirmo; si una serie fue distinta, la cambio ahí mismo. Después inicio la sesión de hoy: arriba dice en qué ejercicio y serie voy; tildo la casilla y la serie queda registrada con lo planificado, o escribo lo que hice. Si la red o Render fallan, sigo con las capturas del jueves, tomadas contra la misma versión. Guion y plan B: defensa/DEMO.md.
@@ -109,7 +109,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - El botón quedaba abajo, después de la ayuda del RIR
 - Mejor una cosa por vez, con el recorrido a la vista arriba
 - Registrar tiene que ser fácil; detallar, una invitación
-- En la APK nueva, lo escrito queda a la vista y guardado. [se completa el jueves: versión]
+- En la APK nueva, la 0.19.0-candidata.1, lo escrito queda a la vista y guardado.
 - *Imagen:* Captura nativa del 29 de octubre: en Sentadilla, la serie 1 muestra el plan en gris y el botón «Registrar serie 3» queda abajo, después de la ayuda del RIR y de «Cronometrar serie»
 
 > **Notas del orador.** El 26 de octubre armé una prueba breve con cuentas descartables, y el 29 la hice en el teléfono con la candidata 0.18.0. Apareció un defecto de severidad alta: escribí dos series de Press de banca sin tocar «Registrar serie»; al pasar a otra serie, la fila volvía a mostrar el plan en gris, y al finalizar, la sesión quedó registrada sin ese ejercicio y sin ningún aviso. En la captura se ve por qué: el botón quedaba abajo de todo, después del cambio de unidad, del plan de la serie, de la ayuda del RIR y del cronómetro. Lo que aprendí: el error no estaba en la API sino en el recorrido, y eso solo se ve con la app en la mano. Por eso la APK nueva cambió la forma de registrar.
@@ -128,7 +128,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - En el escritorio, lo cargado como el plan se ve como «carga rápida» y no se compara.
 - *Imagen:* Antes: la corrección de una sesión en la candidata 0.18.0, un formulario con un campo por dato y por serie
 
-> **Notas del orador.** La prueba mostró algo de fondo: no todos quieren cargar serie por serie. Así que el registro de entrenamiento pasó a tener niveles, como las comidas. Con un toque, «Ya la hice», queda registrado lo planificado, y si un ejercicio tuvo una serie menos, se cambia ahí mismo. El que quiere detalle usa la sesión guiada: arriba ve en qué ejercicio y serie va, y cada serie tiene su casilla. Y la corrección dejó de ser un formulario: suma lo que faltó y quita una serie destildándola. Para el profesional, lo importante es que cada serie dice cómo se cargó: lo cargado como el plan se ve como «carga rápida» y no se compara con lo indicado; lo que la persona escribió o cambió, sí. Detallar es una invitación, no una obligación. [se completa el jueves: decir «en curso» de lo que no esté instalado.]
+> **Notas del orador.** La prueba mostró algo de fondo: no todos quieren cargar serie por serie. Así que el registro de entrenamiento pasó a tener niveles, como las comidas. Con un toque, «Ya la hice», queda registrado lo planificado, y si un ejercicio tuvo una serie menos, se cambia ahí mismo. El que quiere detalle usa la sesión guiada: arriba ve en qué ejercicio y serie va, y cada serie tiene su casilla. Y la corrección dejó de ser un formulario: suma lo que faltó y quita una serie destildándola. Para el profesional, lo importante es que cada serie dice cómo se cargó: lo cargado como el plan se ve como «carga rápida» y no se compara con lo indicado; lo que la persona escribió o cambió, sí. Detallar es una invitación, no una obligación. Las tres formas están en la candidata cero diecinueve, publicada el 3 de noviembre, y el escritorio que las lee está integrado desde el 2. [se completa el jueves: lo que mostró la prueba del miércoles en el teléfono, en una frase, y «en curso» de lo que no haya pasado.]
 
 ## Por dentro, cómo se sabe que funciona, el método y lo que falta.
 
@@ -140,15 +140,14 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - NestJS: un monolito modular de 23 módulos
 - Autoriza cada operación y la audita en la misma transacción
 - PostgreSQL 16
-- 118 tablas; también las fotos
-- [se completa el jueves: tablas de la versión integrada]
+- 121 tablas; también las fotos
 - Website
 - Next.js, estático
 - Recordatorios
 - tarea programada, tres veces por día
 - Todo en Render, en Frankfurt, con Docker y PostgreSQL estándar: se puede llevar a otro proveedor.
 
-> **Notas del orador.** Por dentro son cinco piezas: la APK, el website, la API, la base de datos y una tarea programada que pide los recordatorios tres veces por día. Las aplicaciones nunca hablan con la base: todo pasa por la API. La API es un monolito modular, un solo proceso con veintitrés módulos; el último que entró es Administración. Es una decisión: una operación de salud tiene que ser completa o no ocurrir, y con una sola base alcanza una transacción local. Todo corre en Render, pero con Docker y PostgreSQL estándar; hasta las fotos van en la base. Láminas ARQ-02 y ARQ-03, apartado 8.
+> **Notas del orador.** Por dentro son cinco piezas: la APK, el website, la API, la base de datos y una tarea programada que pide los recordatorios tres veces por día. Las aplicaciones nunca hablan con la base: todo pasa por la API. La API es un monolito modular, un solo proceso con veintitrés módulos; el último que entró es Administración, y la base suma tres tablas del catálogo visual, las zonas musculares. Es una decisión: una operación de salud tiene que ser completa o no ocurrir, y con una sola base alcanza una transacción local. Todo corre en Render, pero con Docker y PostgreSQL estándar; hasta las fotos van en la base. Láminas ARQ-02 y ARQ-03, apartado 8.
 
 ### 11 · Cómo se sabe que funciona
 
@@ -156,14 +155,14 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - 42 pasan en la CI
 - 9 pasan en parte
 - 8 no ejecutables con lo entregado
-- CI en verde · main del 26/10
-- 887 pruebas de dominio, 909 de integración con PostgreSQL, 159 de la API y 17 recorridos de navegador
-- [se completa el jueves: corrida de la versión integrada]
+- CI en verde · main del 2/11
+- 922 pruebas de dominio, 934 de integración con PostgreSQL, 159 de la API y 17 recorridos de navegador
+- Corrida 41515338177, de b62ce90: la versión que sirve test
 - Probado en test
 - Administración: 7 de 7 (27/10). Escenarios de prueba: 6 de 6, y 48 de 48 pantallas (26/10).
 - Con profesionales reales: todavía no.
 
-> **Notas del orador.** ¿Cómo sé que funciona? De los cincuenta y nueve casos de prueba del legajo, al 20 de octubre cuarenta y dos pasaban en la integración continua, nueve en parte y ocho no se podían ejecutar con lo entregado; cada uno tiene su motivo en el apartado 5. La CI de la versión del 26 de octubre corre ochocientas ochenta y siete pruebas de dominio, novecientas nueve de integración contra PostgreSQL, ciento cincuenta y nueve de la API y diecisiete recorridos de navegador, todo en verde. En test probé Administración, siete de siete pasos. Lo que todavía no hay es una prueba con profesionales reales, y lo digo así. [se completa el jueves: cifras de la versión integrada y recuento de los 59 casos.]
+> **Notas del orador.** ¿Cómo sé que funciona? De los cincuenta y nueve casos de prueba del legajo, al 20 de octubre cuarenta y dos pasaban en la integración continua, nueve en parte y ocho no se podían ejecutar con lo entregado; cada uno tiene su motivo en el apartado 5. La CI de la versión del 2 de noviembre, la que sirve test, corre novecientas veintidós pruebas de dominio, novecientas treinta y cuatro de integración contra PostgreSQL, ciento cincuenta y nueve de la API y diecisiete recorridos de navegador, todo en verde. En test probé Administración, siete de siete pasos. Lo que todavía no hay es una prueba con profesionales reales, y lo digo así. [se completa el jueves: el recuento de los 59 casos con la versión integrada y, en una frase, la prueba del miércoles en el teléfono.]
 
 ### 12 · Cómo se trabajó
 
@@ -175,12 +174,12 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - con la CI en verde
 - Decisión
 - registrada, con opciones
-- 943 commits
-- y 208 pull requests integrados, del 16/9 al 26/10
+- 1.033 commits
+- y 218 pull requests integrados, del 16/9 al 3/11
 - IA, declarada
-- bajo dirección humana: 730 commits con coautoría
+- bajo dirección humana: 819 commits con coautoría
 
-> **Notas del orador.** El método fue simple y estricto. El legajo es la fuente de verdad. Cada avance es un paquete de trabajo corto, que termina en un pull request con la integración continua en verde. Y cada vez que lo que dice el legajo no se podía o no convenía hacer tal cual, quedó una decisión registrada, con las opciones y lo que se eligió. En números: novecientos cuarenta y tres commits y doscientos ocho pull requests integrados entre el 16 de septiembre y el 26 de octubre. La implementación se hizo con asistentes de IA bajo mi dirección, y está declarado: setecientos treinta commits llevan su coautoría.
+> **Notas del orador.** El método fue simple y estricto. El legajo es la fuente de verdad. Cada avance es un paquete de trabajo corto, que termina en un pull request con la integración continua en verde. Y cada vez que lo que dice el legajo no se podía o no convenía hacer tal cual, quedó una decisión registrada, con las opciones y lo que se eligió. En números: mil treinta y tres commits y doscientos dieciocho pull requests integrados entre el 16 de septiembre y el 3 de noviembre. La implementación se hizo con asistentes de IA bajo mi dirección, y está declarado: ochocientos diecinueve commits llevan su coautoría.
 
 ### 13 · Lo que falta y lo que sigue
 
@@ -248,11 +247,11 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 
 ### 17 · Los datos: la base cuida la historia
 
-- 118
+- 121
 - tablas (el documento, del 20/10, muestra 113)
 - 218
-- claves foráneas, todas RESTRICT
-- 53
+- claves foráneas, todas RESTRICT, al 26/10
+- 54
 - migraciones aplicadas
 - 34
 - índices únicos parciales, al 20/10
@@ -262,7 +261,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - restricciones CHECK, al 20/10
 - Lo emitido no se modifica: corregir o anular agrega un registro.
 
-> **Notas del orador.** La base no es un depósito pasivo: cuida la historia por su cuenta. Al 26 de octubre son ciento dieciocho tablas, con cincuenta y tres migraciones; las cinco tablas nuevas son de Administración. Las doscientas dieciocho claves foráneas son RESTRICT, así no hay borrados en cascada; los índices únicos parciales garantizan, por ejemplo, un solo proceso abierto por profesional, persona y área; y los disparadores impiden modificar lo emitido. Corregir o anular agrega un registro que cita al original. La excepción es la foto que el asesorado pide suprimir: se borran los bytes y queda la constancia. Las tres cifras en gris son del catálogo del 20 de octubre. [se completa el jueves: recontar las seis cifras en el catálogo de la versión integrada.]
+> **Notas del orador.** La base no es un depósito pasivo: cuida la historia por su cuenta. Al 2 de noviembre son ciento veintiuna tablas, con cincuenta y cuatro migraciones: cinco tablas nuevas son de Administración y tres, del catálogo visual. Las claves foráneas son todas RESTRICT, así no hay borrados en cascada; los índices únicos parciales garantizan, por ejemplo, un solo proceso abierto por profesional, persona y área; y los disparadores impiden modificar lo emitido. Corregir o anular agrega un registro que cita al original. La excepción es la foto que el asesorado pide suprimir: se borran los bytes y queda la constancia. Las cifras en gris son de antes del catálogo visual: las claves foráneas, del 26 de octubre, y las otras tres, del catálogo del 20. [se completa el jueves: recontar en el catálogo de PostgreSQL de la versión integrada las claves foráneas, los índices únicos parciales, los disparadores y los CHECK; la migración del catálogo visual suma cinco claves foráneas, ocho disparadores y al menos dos CHECK, y ningún índice parcial.]
 
 ### 18 · Estados con reglas, no con banderas
 
