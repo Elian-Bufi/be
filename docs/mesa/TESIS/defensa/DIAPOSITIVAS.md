@@ -206,7 +206,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 
 > **Notas del orador.** Gracias por su atención. Quedo a disposición para las preguntas. Para cada una tengo el respaldo en la tesis, y después de esta diapositiva hay cuatro de respaldo: con quién habla BE, una operación protegida, los datos y los estados. Las preguntas más probables están en defensa/PREGUNTAS.md.
 
-## Respaldo para las preguntas: con quién habla BE, una operación protegida, los datos y los estados.
+## Respaldo para las preguntas: con quién habla BE, una operación protegida, los datos, los estados y los tiempos.
 
 ### 15 · Con quién habla BE
 
@@ -277,3 +277,35 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Revocar corta hacia adelante; puede volver a otorgarlo.
 
 > **Notas del orador.** Las piezas importantes tienen máquinas de estados, y las transiciones están en tablas del dominio que el servicio consulta antes de escribir y la base refuerza. Dos ejemplos. El proceso operativo se abre al activar un plan; cada revisión que no finaliza lo deja abierto, y lo cierran una revisión que finaliza, el fin del vínculo o el cierre de la cuenta; cerrado, no se reabre. El consentimiento lo decide siempre el asesorado: lo otorga, lo revoca y lo puede volver a otorgar, y la revocación corta hacia adelante. Las cinco máquinas reales, con sus tablas, están en el anexo E.
+
+### 19 · Los tiempos: lo planificado y lo real
+
+- 1/10
+- 10/10
+- 20/10
+- 6/11
+- plan
+- real
+- entrega prevista
+- presentación
+- Roadmap G0 a G6
+- plan: hasta el 27/8, reserva al 31/8
+- Legajo 00 a 12
+- cerró el 9/9; ACTA-DIR-034, 18/9
+- WP-01 a WP-07
+- del 16 al 22/9: siete días
+- Paquetes por encargo
+- WP-08, escritorio, Google, TVCC-30
+- Tesis y prueba breve
+- con la auditoría crítica
+- Administración
+- y el registro por niveles
+- Prueba y ensayo
+- plan: de punta a punta, 4 y 5/11
+- jul
+- ago
+- sep
+- oct
+- nov
+
+> **Notas del orador.** Lo claro, con borde punteado, es el plan; lo azul lleno, lo que pasó; las líneas punteadas son las fechas de entrega previstas y la continua, esta presentación. El roadmap del legajo apuntaba a terminar todo, de G0 a G6, el 27 de agosto, con reserva hasta el 31; era una fecha interna, no institucional; el legajo cerró recién el 9 de septiembre y el acta de implementación, ACTA-DIR-034, se firmó el 18. La entrega estaba prevista para el 1 de octubre y se corrió tres veces, al 10 y al 20 de octubre y a esta presentación del 6 de noviembre: treinta y seis días en total, y cada vez se reabrió el alcance por un encargo registrado en su paquete: WP-08, la TVCC-30 y Administración, que el 22 de septiembre habían quedado fuera, y el escritorio profesional. WP-01 a WP-07 tomaron siete días porque el legajo ya estaba cerrado y la implementación fue asistida por IA, y eso está declarado. Lo del 4 y el 5 de noviembre todavía es plan: la prueba de punta a punta y el ensayo.

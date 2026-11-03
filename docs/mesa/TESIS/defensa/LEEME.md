@@ -14,16 +14,16 @@ del miércoles 4/11 sigue marcado «[se completa el jueves: …]».
 | `NOTA-DE-CAMBIOS.md` | Qué cambió desde el corte de la tesis (20/10), para la persona, el profesional, Administración y la calidad |
 | `GANTT.md` | Lo planificado y lo real, con la entrega corrida del 1/10 al 6/11 |
 | `PREGUNTAS.md` | 25 preguntas probables, cada una con su respuesta y su respaldo |
-| `DIAPOSITIVAS.md` | El texto de las 18 diapositivas y sus notas del orador (generado desde la fuente) |
+| `DIAPOSITIVAS.md` | El texto de las 19 diapositivas y sus notas del orador (generado desde la fuente) |
 | `presentacion/project/` | La fuente editable de la presentación: el índice y una sección HTML por diapositiva |
 | `respaldo-demo/` | 12 capturas del website en test del 20/10 (API `0fb1bff`) y su `registro.json`; las del jueves van en `respaldo-demo/2026-11-05/` |
 | `explicaciones.json` | El resultado de la prueba de explicación: palabras y segundos de cada lámina |
 
 **La presentación** está en https://claude.ai/artifact/9LiufGdUTJjAbEonGT8t2U: 13 diapositivas 16:9 para exponer, la de
-preguntas y 4 de respaldo (con quién habla BE, una operación protegida, los datos y los estados), con notas del orador y
-letra de 18 pt como mínimo en proyección (36 px en un lienzo de 1920 × 1080). No se compila: se abre en ese enlace, se
-presenta desde ahí y se descarga como PowerPoint o PDF desde el menú del mazo. Es privada hasta que Dirección la
-comparta. La fuente de este repositorio y el mazo publicado son iguales, salvo la portada: la publicada suma el correo
+preguntas y 5 de respaldo (con quién habla BE, una operación protegida, los datos, los estados y los tiempos), con
+notas del orador y letra de 18 pt como mínimo en proyección (36 px en un lienzo de 1920 × 1080). No se compila: se abre
+en ese enlace, se presenta desde ahí y se descarga como PowerPoint o PDF desde el menú del mazo. Es privada hasta que
+Dirección la comparta. La fuente de este repositorio y el mazo publicado son iguales, salvo la portada: la publicada suma el correo
 de Elián y el nombre y el correo del tutor, que no van en este repositorio porque es público. Si se cambia uno, se
 publica o se copia el otro, sin pisar esa portada.
 

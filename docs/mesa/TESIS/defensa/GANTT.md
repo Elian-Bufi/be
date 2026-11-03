@@ -70,7 +70,9 @@ semana (el legajo ya estaba cerrado y la implementación fue asistida por IA, de
 un día (el escritorio se construyó del 8 al 15/10 en ramas encadenadas); `main` quieto del 26/10 al 2/11, mientras corría
 la prueba breve.
 
-**En el mazo** no hay una diapositiva ni una marca para el Gantt. Encaja de dos maneras, sin alargar los 11 minutos:
-como diapositiva de respaldo (la 19, después de «Estados»), para abrir solo si preguntan por los tiempos o por WP-01 a
-WP-07 en siete días; y como una frase en la 12, «Cómo se trabajó»: «la entrega se corrió tres veces, y cada vez se
-reabrió el alcance por un encargo registrado». En la tesis es la fuente del apartado 10, que sigue pendiente de cierre.
+**En el mazo** el Gantt es la diapositiva de respaldo 19, «Los tiempos: lo planificado y lo real», después de
+«Estados» (`presentacion/project/slides/gantt.html`): siete filas sobre una escala de julio a noviembre, el plan claro y
+lo real en azul, y las fechas de entrega marcadas. Se abre solo si preguntan por los tiempos o por WP-01 a WP-07 en siete
+días, así que no alarga los 11 minutos. Queda sugerida una frase para la 12, «Cómo se trabajó»: «la entrega se corrió
+tres veces, y cada vez se reabrió el alcance por un encargo registrado». En la tesis es la fuente del apartado 10, que
+sigue pendiente de cierre.

@@ -1,7 +1,7 @@
 # Guion de la presentación
 
 **Dónde estamos.** El viernes 6/11 se presenta BE al tutor en unos 11 minutos, demo incluida, y después vienen las
-preguntas. El mazo pasó de 16 diapositivas a 13 para exponer, más la de preguntas y 4 de respaldo. La integración se
+preguntas. El mazo pasó de 16 diapositivas a 13 para exponer, más la de preguntas y 5 de respaldo. La integración se
 adelantó al lunes 2/11 y la APK nueva salió el 3/11, así que ese día se completó lo que ya se sabía; lo que depende de la
 prueba del miércoles 4/11 sigue marcado «[se completa el jueves: …]».
 
@@ -48,6 +48,7 @@ la demo.
 | 16 · Una operación protegida | Transacciones, idempotencia, autorización | Anexo E, E-01 |
 | 17 · Los datos | Cuántas tablas, qué garantiza la base | Apartado 6, anexo G |
 | 18 · Estados | Cómo se cierra un proceso, qué pasa al revocar | Anexo E, E-04 |
+| 19 · Los tiempos | Por qué se corrió la entrega y cómo salieron WP-01 a WP-07 en siete días | `GANTT.md` (el diagrama y la tabla de lo planificado y lo real) |
 
 Si la demo se alarga, recortar en la 10 y la 12: están en la tesis.
 
