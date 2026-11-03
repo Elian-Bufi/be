@@ -1,10 +1,11 @@
 # Propuesta de zonas musculares por ejercicio
 
-> **PROPUESTA, sin revisar.** La armó Claude el 2026-11-02 por la técnica de cada ejercicio, para la demostración. No sale
-> de wger ni del nombre (B10-06 §22): es contenido profesional que revisa Dirección (REG-06-139). Se genera con
-> `node herramientas/zonas.mjs tabla` desde `zonas-propuestas.json`; para corregir, se edita el JSON y se vuelve a generar.
+> **REVISADA el 2026-11-02, por delegación expresa de Dirección.** La armó Claude el 2026-11-02 por la técnica de cada
+> ejercicio, para la demostración. No sale de wger ni del nombre (B10-06 §22): es contenido profesional (REG-06-139). Se
+> genera con `node herramientas/zonas.mjs tabla` desde `zonas-propuestas.json`; para corregir, se edita el JSON y se vuelve
+> a generar.
 
-**Estado: PROPUESTA.** Sin revisar: la herramienta no la carga hasta que Dirección la marque como REVISADA.
+**Estado: REVISADA.** Revisada por Elián Bufi (Dirección), por delegación expresa en Claude el 2026-11-02.
 
 | Ejercicio | De dónde es | Zonas principales | Zonas secundarias | Nota |
 |---|---|---|---|---|
@@ -25,6 +26,6 @@
 | Remo en polea baja | propio de Martín Acosta | Dorsal ancho, Romboides | Trapecio, Bíceps, Deltoides |  |
 | Elevación de talones | propio de Martín Acosta | Gemelos | — |  |
 | Equilibrio en un pie | propio de Martín Acosta | — | Glúteos, Tibial anterior, Gemelos | Es un ejercicio de equilibrio: no tiene una zona principal. Si Dirección prefiere, va sin zonas. |
-| Caminata en cinta | propio de Martín Acosta | — | — | Trabajo aeróbico: queda sin zonas. Alternativa: cuádriceps, isquiotibiales y gemelos como secundarias. |
+| Caminata en cinta | propio de Martín Acosta | — | Cuádriceps, Isquiotibiales, Gemelos | Trabajo aeróbico: sin zona principal; las piernas como secundarias. |
 | Cargada de potencia | propio de Martín Acosta | Cuádriceps, Glúteos, Isquiotibiales, Trapecio | Erectores espinales, Deltoides, Gemelos, Antebrazo | Es un movimiento de todo el cuerpo: la figura se va a ver muy cargada. |
 | Sentadilla frontal | propio de Martín Acosta | Cuádriceps | Glúteos, Aductores, Erectores espinales, Recto abdominal |  |

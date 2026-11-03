@@ -9,7 +9,7 @@
 | Archivo | Qué es |
 |---|---|
 | `ejercicios-de-la-demo.json` | Los 20 ejercicios por identidad: los 12 de WP-06 por su `exerciseId` (igual en todos los ambientes) y los 8 propios de la cuenta PRO_T (Prof. Martín Acosta), por la versión que guardó la carga de la cohorte en `estado.json`. Nunca por el nombre. |
-| `zonas-propuestas.json` | La propuesta de zonas, con su estado (`PROPUESTA` hasta que Dirección la revise). |
+| `zonas-propuestas.json` | La propuesta de zonas, con su estado (`REVISADA` desde el 2026-11-02; antes, `PROPUESTA`). |
 | `PROPUESTA-DE-ZONAS.md` | La misma propuesta como tabla, para revisarla (`node herramientas/zonas.mjs tabla`). |
 | `imagenes.json` | El manifiesto de las fotos E04 a E23: archivo, texto alternativo, autoría, licencia y revisión técnica. |
 | `herramientas/zonas.mjs` | Carga las zonas: las propias por la API (API-EJE-04), las del catálogo con el comando de curaduría de BE. |
