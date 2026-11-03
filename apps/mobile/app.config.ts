@@ -120,6 +120,9 @@ const config: ExpoConfig = {
   plugins: [
     ['expo-secure-store', { configureAndroidBackup: false, faceIDPermission: false }],
     './plugins/respaldo-de-android',
+    // WP-GOOGLE-PLAY-PRUEBAS-INTERNAS (2026-10-28): la firma del release sale del entorno (BE_FIRMA_*) en cada prebuild,
+    // para la APK y para el App Bundle; sin las variables, queda la de debug. Ninguna credencial en el repositorio.
+    './plugins/firma-de-subida',
     [
       'expo-image-picker',
       {
