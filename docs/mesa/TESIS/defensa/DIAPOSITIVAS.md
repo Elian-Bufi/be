@@ -204,7 +204,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - Gracias
 - Cada respuesta tiene su respaldo en la tesis: los apartados 1 a 14 y los anexos A a L.
 
-> **Notas del orador.** Gracias por su atención. Quedo a disposición para las preguntas. Para cada una tengo el respaldo en la tesis, y después de esta diapositiva hay cuatro de respaldo: con quién habla BE, una operación protegida, los datos y los estados. Las preguntas más probables están en defensa/PREGUNTAS.md.
+> **Notas del orador.** Gracias por su atención. Quedo a disposición para las preguntas. Para cada una tengo el respaldo en la tesis, y después de esta diapositiva hay cinco de respaldo: con quién habla BE, una operación protegida, los datos, los estados y los tiempos. Las preguntas más probables están en defensa/PREGUNTAS.md.
 
 ## Respaldo para las preguntas: con quién habla BE, una operación protegida, los datos, los estados y los tiempos.
 
