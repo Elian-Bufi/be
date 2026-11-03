@@ -53,7 +53,7 @@ Buscar «[se completa el jueves» en el mazo y en estos archivos. Son estos luga
 
 | Dónde | Qué va | De dónde sale |
 |---|---|---|
-| Diapositiva 1 (portada) | Integrantes, correos y tutor o tutora | Dirección (`privado.json` queda fuera del repo y no lo lee ningún agente) |
+| Diapositiva 1 (portada) | Hecho el 3/11: trabajo individual; el correo y el tutor solo en el mazo publicado | Dirección (en el repositorio público no van correos) |
 | Diapositiva 7 (demo) | La captura nativa de la sesión guiada y, al pie, el commit y la APK | `respaldo-demo/2026-11-05/apk/07-sesion-guiada.png`; `/health/ready` y la release |
 | Diapositiva 8 (prueba) | La versión de la APK nueva | La release del miércoles |
 | Diapositiva 9 (registro) | La captura de «Hice todo lo planificado»; en las notas, decir «en curso» de lo que no esté instalado | `apk/04-hice-lo-planificado.png` |

@@ -10,11 +10,8 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 
 - Trabajo final · Analista de Sistemas Escuela Da Vinci
 - Plataforma integrada de inteligencia en salud
-- Elián Bufi
-- [se completa el jueves: integrantes]
-- [se completa el jueves: correos]
-- [se completa el jueves: tutor o tutora]
-- Noviembre de 2026
+- Elián Gastón Bufi
+- Trabajo individual · Noviembre de 2026
 - *Imagen:* La ficha de Diego Sosa en el website profesional de BE, vista Resumen, en el ambiente de prueba
 
 > **Notas del orador.** Buenas tardes. Soy Elián Bufi y les presento BE, una plataforma para el seguimiento profesional en nutrición, entrenamiento y antropometría. La imagen es la ficha de Diego Sosa en el ambiente de prueba: una persona sintética con tres años de historia. En unos once minutos les cuento qué problema aborda, cómo funciona, qué cambió desde el 20 de octubre, una demo corta de las dos plataformas, lo que aprendí probándola en el teléfono y qué falta.

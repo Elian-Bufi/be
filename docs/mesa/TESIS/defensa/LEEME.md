@@ -18,13 +18,13 @@ guion y la demo se actualizaron el 2026-11-02 para la presentación del viernes 
 preguntas y 4 de respaldo (con quién habla BE, una operación protegida, los datos y los estados), con notas del orador y
 letra de 18 pt como mínimo en proyección (36 px en un lienzo de 1920 × 1080). No se compila: se abre en ese enlace, se
 presenta desde ahí y se descarga como PowerPoint o PDF desde el menú del mazo. Es privada hasta que Dirección la
-comparta. La fuente de este repositorio y el mazo publicado son iguales; si se cambia uno, se publica o se copia el
-otro.
+comparta. La fuente de este repositorio y el mazo publicado son iguales, salvo la portada: la publicada suma el correo
+de Elián y el nombre y el correo del tutor, que no van en este repositorio porque es público. Si se cambia uno, se
+publica o se copia el otro, sin pisar esa portada.
 
 **Regenerar:** `node herramientas/prueba-de-explicacion.mjs` (la prueba de explicación),
 `node herramientas/esquema-de-diapositivas.mjs` (`DIAPOSITIVAS.md`, si cambia la fuente del mazo) y
 `node herramientas/capturar-respaldo-demo.mjs` (las capturas del website; ver `DEMO.md`).
 
-**Antes del viernes, a cargo de Dirección:** los integrantes, los correos y el tutor o la tutora en la portada; la
-decisión sobre TalkBack (probarlo o declararlo como límite); las capturas nativas de la APK nueva; y un ensayo completo
+**Antes del viernes, a cargo de Dirección:** la decisión sobre TalkBack (probarlo o declararlo como límite); las capturas nativas de la APK nueva; y un ensayo completo
 con el mismo teléfono y la misma red. El resto de lo que se completa el jueves está en `GUION.md`.
