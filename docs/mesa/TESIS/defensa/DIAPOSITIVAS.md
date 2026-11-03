@@ -103,8 +103,8 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 ### 8 · Lo que mostró la prueba en el teléfono
 
 - Prueba breve · 26 al 29 de octubre · APK 0.18.0-candidata.1
-- Un defecto de severidad alta
-- Lo escrito sin tocar «Registrar serie» no se veía al cambiar de serie y se perdía sin aviso: la sesión quedó sin Press de banca.
+- Un defecto de experiencia, de severidad alta
+- BE guardó bien lo registrado, pero el Press de banca parecía cargado y no lo estaba: el botón quedaba lejos y, al cambiar de serie, los campos volvían al gris del plan.
 - Lo que observé al usarla
 - El botón quedaba abajo, después de la ayuda del RIR
 - Mejor una cosa por vez, con el recorrido a la vista arriba
@@ -112,7 +112,7 @@ comparta; se descarga como PowerPoint o PDF). Las imágenes son recursos del maz
 - En la APK nueva, la 0.19.0-candidata.1, lo escrito queda a la vista y guardado.
 - *Imagen:* Captura nativa del 29 de octubre: en Sentadilla, la serie 1 muestra el plan en gris y el botón «Registrar serie 3» queda abajo, después de la ayuda del RIR y de «Cronometrar serie»
 
-> **Notas del orador.** El 26 de octubre armé una prueba breve con cuentas descartables, y el 29 la hice en el teléfono con la candidata 0.18.0. Apareció un defecto de severidad alta: escribí dos series de Press de banca sin tocar «Registrar serie»; al pasar a otra serie, la fila volvía a mostrar el plan en gris, y al finalizar, la sesión quedó registrada sin ese ejercicio y sin ningún aviso. En la captura se ve por qué: el botón quedaba abajo de todo, después del cambio de unidad, del plan de la serie, de la ayuda del RIR y del cronómetro. Lo que aprendí: el error no estaba en la API sino en el recorrido, y eso solo se ve con la app en la mano. Por eso la APK nueva cambió la forma de registrar.
+> **Notas del orador.** El 26 de octubre armé una prueba breve con cuentas descartables, y el 29 la hice en el teléfono con la candidata 0.18.0. Apareció un defecto de experiencia, de severidad alta: escribí dos series de Press de banca sin tocar «Registrar serie»; al pasar a otra serie, la fila volvía a mostrar el plan en gris, y al finalizar, la sesión quedó con lo único que había registrado, la sentadilla, sin ningún aviso. No se perdió nada de lo registrado: parecía cargado y no lo estaba. En la captura se ve por qué: el botón quedaba abajo de todo, después del cambio de unidad, del plan de la serie, de la ayuda del RIR y del cronómetro. Lo que aprendí: el error no estaba en la API sino en el recorrido, y eso solo se ve con la app en la mano. Por eso la APK nueva cambió la forma de registrar.
 
 ### 9 · Registrar, fácil; detallar, opcional
 

@@ -170,8 +170,9 @@ niveles del entrenamiento (DL-160, DL-161) y el catálogo visual con las zonas m
 
 **24. ¿Qué pasó en la prueba en el teléfono?**
 El 29/10, con la 0.18.0-candidata.1 y la cuenta descartable Prueba Uno: dos series de Press de banca escritas sin tocar
-«Registrar serie» no se veían al cambiar de serie y se perdieron sin aviso, y la sesión quedó registrada sin ese
-ejercicio (D-C1, severidad alta). La API funcionó como debía: el problema era el recorrido de la pantalla. La APK nueva
+«Registrar serie» no quedaron registradas: al cambiar de serie, los campos volvían al gris del plan, y la sesión se
+guardó solo con lo registrado (la sentadilla), sin aviso. No fue una pérdida de datos sino un defecto de experiencia
+(D-C1, severidad alta): el botón quedaba lejos y parecía cargado lo que no lo estaba. La API funcionó como debía: el problema era el recorrido de la pantalla. La APK nueva
 guarda lo escrito en el teléfono, lo muestra en su fila y avisa antes de finalizar.
 *Respaldo:* `EVIDENCIA/PRUEBA-BREVE-2026-10-26/RESULTADOS.md` y `capturas-parte-c/` (PR #217); PR #226.
 
