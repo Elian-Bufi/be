@@ -3232,7 +3232,9 @@ diseño reversibles, tomadas con ese documento y los patrones de BE.
 - **Implementado** en `3c6ac7c`, rama `apk/navegacion`, PR #146 ~~en borrador~~, integrado en `main` el 2026-10-06 (`d727226`).
 - ~~**Sin integrar ni desplegar**, y **sin probar en el teléfono**: la APK que lo incluya se construye después de que
   Dirección revise las capturas.~~ Lo trae la prerelease `be-apk-0.14.0-candidata.2` (2026-10-05) y las candidatas
-  siguientes; validado en parte en el teléfono con la 0.14 y la 0.15 (`docs/ESTADO-Y-RUTA-DE-CIERRE.md`).
+  siguientes. No hay un registro propio de la prueba de las tres vistas en el teléfono: `docs/ESTADO-Y-RUTA-DE-CIERRE.md`
+  da «validado en parte (0.14 y 0.15)» para la toma antropométrica y la evolución juntas, con DL-111 a DL-113 como
+  referencia, y no nombra esta decisión.
 - **Evidencia:** renders de los componentes en el navegador, no capturas de Android, en
   `EVIDENCIA/MI-EVOLUCION-TRES-VISTAS`.
 
