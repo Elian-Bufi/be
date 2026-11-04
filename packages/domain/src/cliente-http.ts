@@ -301,6 +301,17 @@ import {
   SolicitudDeFormularioCreadaResponseSchema,
   VersionDePlantillaResponseSchema,
 } from './contratos-formularios';
+import {
+  DetalleDeSolicitudV2ResponseSchema,
+  ListaDeSolicitudesPropiasV2ResponseSchema,
+  PropuestaCargadaResponseSchema,
+  PropuestaResueltaResponseSchema,
+  VersionDePlantillaV2ResponseSchema,
+  type CargarPropuestaRequest,
+  type EnviarRespuestaV2Request,
+  type RectificarRespuestaV2Request,
+  type ResolverPropuestaRequest,
+} from './contratos-formularios-v2';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -1478,6 +1489,41 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-FRM-08: rectificar crea una sucesora; la original queda intacta (09:1618). */
     rectificarRespuestaDeFormulario(token: string, respuestaId: string, cuerpo: z.input<typeof RectificarRespuestaRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/me/form-responses/${encodeURIComponent(respuestaId)}/rectifications`, { token, claveDeIdempotencia, esquema: RectificacionCreadaResponseSchema, cuerpo });
+    },
+
+    // ─── FRI · formularios de inicio (WP-FORMULARIOS-DE-INICIO, DL-164) ───────────────────────
+    // Sirven para cualquier Solicitud (de P0 o con tipos nuevos). Las de FRM quedan para las APK instaladas.
+    /** API-FRI-01: la estructura de cualquier versión, en formato V2. */
+    consultarDefinicionDePlantilla(token: string, plantillaId: string, versionId: string) {
+      return llamar('GET', `/form-templates/${encodeURIComponent(plantillaId)}/versions/${encodeURIComponent(versionId)}/definition`, { token, esquema: VersionDePlantillaV2ResponseSchema });
+    },
+    /** API-FRI-02: la bandeja de la persona: todas sus solicitudes, con la propuesta que espera confirmación. */
+    miBandejaDeFormularios(token: string, filtro: { status?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/form-inbox${query(filtro)}`, { token, esquema: ListaDeSolicitudesPropiasV2ResponseSchema });
+    },
+    /** API-FRI-03: el detalle V2, para los dos actores, con la propuesta y la transcripción. */
+    consultarVistaDeSolicitud(token: string, solicitudId: string) {
+      return llamar('GET', `/form-requests/${encodeURIComponent(solicitudId)}/view`, { token, esquema: DetalleDeSolicitudV2ResponseSchema });
+    },
+    /** API-FRI-04: responder (la persona), sola o confirmando lo que cargó el profesional. */
+    responderSolicitudV2(token: string, solicitudId: string, cuerpo: EnviarRespuestaV2Request, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/answers`, { token, claveDeIdempotencia, esquema: RespuestaCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-05: rectificar una respuesta propia; la original queda intacta. */
+    corregirRespuestaV2(token: string, respuestaId: string, cuerpo: RectificarRespuestaV2Request, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-responses/${encodeURIComponent(respuestaId)}/corrections`, { token, claveDeIdempotencia, esquema: RectificacionCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-06: el profesional carga (o reemplaza) lo que la persona le contó, para que ella lo confirme. */
+    cargarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: CargarPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/form-requests/${encodeURIComponent(solicitudId)}/proposal`, { token, claveDeIdempotencia, esquema: PropuestaCargadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-07: el profesional retira lo cargado; se borra. */
+    retirarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: ResolverPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/form-requests/${encodeURIComponent(solicitudId)}/proposal/withdrawal`, { token, claveDeIdempotencia, esquema: PropuestaResueltaResponseSchema, cuerpo });
+    },
+    /** API-FRI-08: la persona dice «No es correcto»; lo cargado se borra y la Solicitud sigue pendiente. */
+    rechazarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: ResolverPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/proposal/rejection`, { token, claveDeIdempotencia, esquema: PropuestaResueltaResponseSchema, cuerpo });
     },
   };
 }
