@@ -332,3 +332,57 @@ export function campoV1AV2(campo: CampoDePlantilla, limites?: LimitesNumericos):
   if (campo.dataType === 'BOOLEAN') return { ...base, dataType: 'BOOLEAN' };
   return { ...base, dataType: 'TEXT', multiline: true, maxLength: 2000 };
 }
+
+// ─── Lectura de una respuesta, en palabras (website, APK y citas) ───────────────────────────────
+
+const etiquetaDe = (opciones: readonly { code: string; label: string }[], codigo: string) => opciones.find((o) => o.code === codigo)?.label ?? codigo;
+const numeroEnPalabras = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+
+/**
+ * Una respuesta V2 en una línea legible, con las etiquetas de la plantilla y nunca los códigos: «Desayuno · Café con
+ * leche · Todos los días; Almuerzo · Milanesa con puré», «Sentadilla: Con ayuda», «Leche (Me cae mal)». La usan la ficha,
+ * la APK y el contexto citable de la evaluación de entrenamiento. Si la plantilla ya no tiene una opción, muestra el
+ * código: nunca la inventa.
+ */
+export function resumenDeValor(campo: CampoDePlantillaV2 | undefined, valor: ValorDeRespuestaV2): string {
+  switch (valor.type) {
+    case 'TEXT': return valor.text.trim();
+    case 'NUMBER': return valor.unit ? `${numeroEnPalabras(valor.number)} ${valor.unit}` : numeroEnPalabras(valor.number);
+    case 'BOOLEAN': return valor.yes ? 'Sí' : 'No';
+    case 'CHOICE': {
+      const etiqueta = campo?.dataType === 'CHOICE' ? etiquetaDe(campo.options, valor.option) : valor.option;
+      return valor.otherText ? `${etiqueta}: ${valor.otherText.trim()}` : etiqueta;
+    }
+    case 'MULTI_CHOICE': {
+      const opciones = campo?.dataType === 'MULTI_CHOICE' ? campo.options : [];
+      const etiquetas = valor.options.map((o) => (opciones.length ? etiquetaDe(opciones, o) : o));
+      return valor.otherText ? `${etiquetas.join(', ')} (${valor.otherText.trim()})` : etiquetas.join(', ');
+    }
+    case 'LIST': {
+      const subs = campo?.dataType === 'LIST' ? campo.itemFields : [];
+      return valor.items.map((renglon) => (subs.length ? subs : Object.keys(renglon).map((code) => ({ code, dataType: 'TEXT' as const, options: [] as { code: string; label: string }[] })))
+        .filter((s) => s.code in renglon)
+        .map((s) => {
+          const v = renglon[s.code]!;
+          if (s.dataType === 'CHOICE' && typeof v === 'string' && 'options' in s) return etiquetaDe(s.options, v);
+          if (typeof v === 'boolean') return v ? 'Sí' : 'No';
+          if (typeof v === 'number') return numeroEnPalabras(v);
+          return String(v).trim();
+        })
+        .join(' · ')).join('; ');
+    }
+    case 'MATRIX': {
+      const filas = campo?.dataType === 'MATRIX' ? campo.rows : [];
+      const columnas = campo?.dataType === 'MATRIX' ? campo.columns : [];
+      return valor.cells.map((c) => `${filas.length ? etiquetaDe(filas, c.row) : c.row}: ${columnas.length ? etiquetaDe(columnas, c.column) : c.column}`).join('; ');
+    }
+    case 'FOODS': {
+      const motivos = campo?.dataType === 'FOODS' ? campo.reasons : [];
+      return valor.foods.map((a) => (a.reason ? `${a.name.trim()} (${motivos.length ? etiquetaDe(motivos, a.reason) : a.reason})` : a.name.trim())).join(', ');
+    }
+    case 'TIMES': {
+      const partes = campo?.dataType === 'TIMES' ? campo.parts : [];
+      return valor.times.map((t) => `${partes.length ? etiquetaDe(partes, t.part) : t.part}: ${t.time}`).join(' · ');
+    }
+  }
+}

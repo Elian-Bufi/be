@@ -22,6 +22,7 @@ import {
   campoV1AV2,
   normalizarValor,
   obligatoriosSinResponder,
+  resumenDeValor,
   sinRespuestasOcultas,
   usaTiposNuevos,
   validarRespuestasV2,
@@ -197,4 +198,16 @@ test('P0 en formato V2: texto de varias líneas, número con sus límites, sí o
   assert.ok(numero.dataType === 'NUMBER' && numero.limits?.maximum === 7);
   assert.equal(usaTiposNuevos([{ sectionCode: 's', title: 's', intro: null, fields: [texto, numero] }]), false, 'una plantilla de P0 la abre la APK instalada');
   assert.equal(usaTiposNuevos(SECCIONES), true);
+});
+
+test('cada respuesta se lee en palabras, con las etiquetas de la plantilla', () => {
+  const campos = new Map(SECCIONES.flatMap((s) => s.fields).map((c) => [c.fieldCode, c] as const));
+  const leer = (codigo: string) => resumenDeValor(campos.get(codigo), COMPLETAS.find((x) => x.fieldCode === codigo)!.answer);
+  assert.equal(leer('nut_horarios'), 'semana_levanto: 07:00 · semana_acuesto: 23:30');
+  assert.equal(leer('nut_jornada'), 'otro: Trabajo desde casa');
+  assert.equal(leer('nut_comidas'), 'desayuno · Café con leche y tostadas · 7; almuerzo · Milanesa con puré');
+  assert.equal(leer('nut_alergias'), 'Sí');
+  assert.equal(leer('nut_alimentos_no'), 'Leche (cae_mal), Berenjena (no_gusta)');
+  assert.equal(leer('trn_tecnica'), 'sentadilla: ayuda');
+  assert.equal(leer('trn_dias'), '3 días');
 });
