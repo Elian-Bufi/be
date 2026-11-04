@@ -32,6 +32,10 @@ export function rutaDeNovedad(n: Pick<Novedad, 'open'>): Ruta | null {
       return n.open.referenceId ? { nombre: 'revision', area: 'NUTRICION', id: n.open.referenceId } : { nombre: 'revisiones', area: 'NUTRICION' };
     case 'TRAINING_REVIEW':
       return n.open.referenceId ? { nombre: 'revision', area: 'ENTRENAMIENTO', id: n.open.referenceId } : { nombre: 'revisiones', area: 'ENTRENAMIENTO' };
+    // DL-164: el profesional cargó algo para que la persona lo confirme (`FORM_PROPOSAL_LOADED`). Abre la bandeja de
+    // formularios, donde lo que espera está primero, en «Para confirmar»; la solicitud se abre desde ahí, con su sesión.
+    case 'FORMS':
+      return { nombre: 'mis-solicitudes' };
     default:
       return null;
   }
