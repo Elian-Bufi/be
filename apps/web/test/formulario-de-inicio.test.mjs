@@ -262,3 +262,54 @@ test('en renglones · una lista da un renglón por ítem, una tabla uno por fila
   assert.deepEqual(m.lineasDeValor(porCampo.get('nut_alimentos_no'), { type: 'FOODS', foods: [{ name: 'Leche', reason: 'cae_mal' }, { name: 'Cerdo', reason: null }] }), ['Leche (Me cae mal), Cerdo']);
   assert.deepEqual(m.lineasDeValor(porCampo.get('nut_agua'), { type: 'NUMBER', number: 2.5, unit: 'vasos' }), ['2,5 vasos']);
 });
+
+test('DL-165 D-6 · un renglón con solo sus días elegidos (formato 3) está respondido; con la lista de días vacía, no; y se lee con las etiquetas', () => {
+  const dias = [op('lun', 'Lunes'), op('jue', 'Jueves')];
+  const otraActividad = { ...base, fieldCode: 'trn_otros_deportes', label: 'Contame cuáles', dataType: 'LIST', itemLabel: 'actividad', minItems: 1, maxItems: 4, itemFields: [{ code: 'cual', label: 'Cuál', required: true, dataType: 'TEXT', maxLength: 80 }, { code: 'que_dias', label: 'Qué días', required: true, dataType: 'MULTI_CHOICE', options: dias }] };
+  const conDias = r('trn_otros_deportes', { type: 'LIST', items: [{ que_dias: ['lun'] }, { que_dias: [] }] });
+  assert.deepEqual(m.sinRenglonesVacios([conDias]), [r('trn_otros_deportes', { type: 'LIST', items: [{ que_dias: ['lun'] }] })]);
+  assert.deepEqual(m.lineasDeValor(otraActividad, { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] }), ['Fútbol · Lunes, Jueves']);
+  // El cuerpo que se manda deja los días en el orden de la pregunta, una vez cada uno.
+  const secciones = [{ sectionCode: 'semana', title: 'Tu semana', intro: null, fields: [otraActividad] }];
+  assert.deepEqual(m.respuestasParaEnviar(secciones, [r('trn_otros_deportes', { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['jue', 'lun', 'jue'] }] })]), [r('trn_otros_deportes', { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] })]);
+});
+
+test('DL-165 D-5 · al cargar con la persona, pasar de los días marcados frena el envío en ese número', () => {
+  const secciones = [
+    {
+      sectionCode: 'semana',
+      title: 'Tu semana',
+      intro: null,
+      fields: [
+        { ...base, fieldCode: 'dias', label: '¿Qué días podés?', dataType: 'MATRIX', rows: [op('lun', 'Lunes'), op('mar', 'Martes')], columns: [op('manana', 'Mañana'), op('no_puedo', 'No puedo')] },
+        { ...base, fieldCode: 'por_semana', label: '¿Cuántos días?', dataType: 'NUMBER', unit: 'días', limits: { minimum: 1, maximum: 7, integer: true }, maxFromMatrix: { fieldCode: 'dias', exceptColumns: ['no_puedo'] } },
+      ],
+    },
+  ];
+  const solicitud = { requestedFieldCodes: ['dias', 'por_semana'], requiredFieldCodes: ['dias', 'por_semana'] };
+  const respuestas = [r('dias', { type: 'MATRIX', cells: [{ row: 'lun', column: 'manana' }, { row: 'mar', column: 'no_puedo' }] }), r('por_semana', { type: 'NUMBER', number: 2, unit: 'días' })];
+  const revision = m.revisarAntesDeEnviar(secciones, solicitud, respuestas);
+  assert.deepEqual(revision.bloqueantes.map((p) => [p.code, p.fieldCode]), [[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED, 'por_semana']]);
+  assert.deepEqual([...m.mensajesPorCampo(revision.bloqueantes).get('por_semana')], [MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]]);
+});
+
+test('DL-165 D-4 · al pedir, la pregunta que la plantilla no trae pedida (el embarazo) viene sin marcar y tampoco obligatoria; las demás, como siempre', () => {
+  const secciones = [
+    {
+      sectionCode: 'salud',
+      title: 'Tu salud',
+      intro: null,
+      fields: [
+        { ...base, fieldCode: 'trn_salud_corazon', label: '¿Corazón?', dataType: 'BOOLEAN', requiredByDefault: true },
+        { ...base, fieldCode: 'trn_embarazo', label: '¿Embarazo?', dataType: 'CHOICE', options: [op('no'), op('si')], otherOptionCode: null, requiredByDefault: false, requestedByDefault: false },
+        { ...base, fieldCode: 'fuma', label: '¿Fumás?', dataType: 'BOOLEAN' },
+      ],
+    },
+  ];
+  assert.deepEqual(m.marcadoPorOmision(secciones), { pedidas: ['trn_salud_corazon', 'fuma'], requeridas: ['trn_salud_corazon'] });
+  assert.equal(m.noVienePedida(secciones[0].fields[1]), true);
+  assert.equal(m.noVienePedida(secciones[0].fields[2]), false, 'sin la propiedad (formato 2), viene pedida');
+  // Aunque la plantilla la sugiriera obligatoria, sin pedirla no puede ser obligatoria (REG-06-212).
+  const raro = [{ ...secciones[0], fields: [{ ...secciones[0].fields[1], requiredByDefault: true }] }];
+  assert.deepEqual(m.marcadoPorOmision(raro), { pedidas: [], requeridas: [] });
+});

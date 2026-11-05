@@ -3,21 +3,31 @@
  * cada condición apunta a una pregunta anterior con valores que existen, la v2 de entrenamiento conserva los seis
  * códigos de la v1 (DL-100), cada pregunta dice para qué se usa y ningún texto califica. Y una respuesta completa y
  * sintética se valida sin problemas: si una plantilla no se pudiera responder, se sabe acá y no en la APK.
+ *
+ * WP-FORMULARIOS-RONDA-2 (DL-165, FR-06) suma las sucesoras de formato 3, FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO v3,
+ * con lo que decidió Dirección: el embarazo sin pedir (D-4), la tabla de días con su tope (D-5), otra actividad con sus
+ * días (D-6) y los ejemplos como texto de muestra (D-2). Las de formato 2 no cambian: la APK 0.20 las sigue leyendo.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CampoDePlantillaV2Schema, SeccionDePlantillaV2Schema, type CampoDePlantillaV2, type RespuestaDeCampoV2Entrada, type ValorDeRespuestaV2 } from './contratos-formularios-v2';
-import { camposEnOrden, camposVisibles, obligatoriosSinResponder, problemasDeValor, sinRespuestasOcultas, usaTiposNuevos, validarRespuestasV2 } from './formularios-v2';
+import { camposEnOrden, camposVisibles, CODIGO_DE_PROBLEMA_V2, loQueUsaDelFormato3, obligatoriosSinResponder, problemasDeValor, sinRespuestasOcultas, usaTiposNuevos, validarRespuestasV2 } from './formularios-v2';
 import { CONTEXTO_DE_ENTRENAMIENTO, CONTEXTO_DE_NUTRICION, propositoSugerido } from './formularios';
 import { COPY_FORMULARIOS, terminosProhibidosDeFormulariosEn } from './copy-formularios';
 import {
   PLANTILLAS_DE_INICIO,
+  PLANTILLAS_VIGENTES_DE_INICIO,
   PLANTILLA_ENTRENAMIENTO_V2,
+  PLANTILLA_ENTRENAMIENTO_V3,
   PLANTILLA_NUTRICION_INICIO,
+  PLANTILLA_NUTRICION_INICIO_V2,
+  SECCION_DE_HABITOS,
   SUGERENCIAS_DE_ALIMENTOS,
   contenidoDePlantillaDeInicio,
   type PlantillaDeInicio,
 } from './plantillas-de-inicio';
+import { CAMPOS_DE_HABITOS } from './habitos-de-la-persona';
+import { partesDelFormulario } from './partes-de-formulario';
 
 const campos = (p: PlantillaDeInicio) => camposEnOrden(p.sections);
 const CODIGOS_REUTILIZADOS = ['condiciones_declaradas', 'dolor_o_lesiones', 'medicacion_relevante', 'horas_de_sueno', 'nivel_de_actividad', 'fuma'];
@@ -41,7 +51,7 @@ function textosDeOpciones(c: CampoDePlantillaV2): string[] {
     case 'MATRIX': return [...c.rows, ...c.columns].map((o) => o.label);
     case 'TIMES': return c.parts.map((o) => o.label);
     case 'FOODS': return [...c.reasons.map((o) => o.label), ...c.suggestions];
-    case 'LIST': return c.itemFields.flatMap((s) => [s.label, ...(s.dataType === 'CHOICE' ? s.options.map((o) => o.label) : [])]);
+    case 'LIST': return c.itemFields.flatMap((s) => [s.label, ...(s.dataType === 'CHOICE' || s.dataType === 'MULTI_CHOICE' ? s.options.map((o) => o.label) : []), ...(s.dataType === 'TEXT' && s.helpText ? [s.helpText] : [])]);
     default: return [];
   }
 }
@@ -66,7 +76,7 @@ function valorSintetico(c: CampoDePlantillaV2, abre: readonly (string | boolean)
     case 'LIST': {
       const renglon = Object.fromEntries(c.itemFields.filter((s) => s.required).map((s) => [
         s.code,
-        s.dataType === 'TEXT' ? 'Renglón de prueba' : s.dataType === 'NUMBER' ? (s.limits?.minimum ?? 1) : s.dataType === 'CHOICE' ? s.options[0]!.code : true,
+        s.dataType === 'TEXT' ? 'Renglón de prueba' : s.dataType === 'NUMBER' ? (s.limits?.minimum ?? 1) : s.dataType === 'CHOICE' ? s.options[0]!.code : s.dataType === 'MULTI_CHOICE' ? [s.options[0]!.code] : true,
       ]));
       return { type: 'LIST', items: Array.from({ length: Math.max(c.minItems, 1) }, () => ({ ...renglon })) };
     }
@@ -97,17 +107,29 @@ function cadenaQueAbre(p: PlantillaDeInicio, objetivo: CampoDePlantillaV2): Resp
   return respuestas;
 }
 
-test('las dos plantillas son las pedidas: clave, versión, nombre, dominio y minutos', () => {
-  assert.deepEqual(PLANTILLAS_DE_INICIO.map((p) => [p.clave, p.version, p.nombre, p.dominio]), [
-    ['FRM-NUTRICION-INICIO', '1', 'Cómo comés hoy', 'NUTRICION'],
-    ['FRM-ENTRENAMIENTO', '2', 'Antes de entrenar', 'ENTRENAMIENTO'],
+test('las cuatro versiones son las pedidas: clave, versión, nombre, dominio, formato y minutos; las vigentes son las de formato 3', () => {
+  assert.deepEqual(PLANTILLAS_DE_INICIO.map((p) => [p.clave, p.version, p.nombre, p.dominio, p.formato]), [
+    ['FRM-NUTRICION-INICIO', '1', 'Cómo comés hoy', 'NUTRICION', 2],
+    ['FRM-ENTRENAMIENTO', '2', 'Antes de entrenar', 'ENTRENAMIENTO', 2],
+    ['FRM-NUTRICION-INICIO', '2', 'Cómo comés hoy', 'NUTRICION', 3],
+    ['FRM-ENTRENAMIENTO', '3', 'Antes de entrenar', 'ENTRENAMIENTO', 3],
   ]);
-  assert.equal(PLANTILLA_ENTRENAMIENTO_V2.clave, CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
-  assert.equal(PLANTILLA_NUTRICION_INICIO.clave, CONTEXTO_DE_NUTRICION.clavePlantilla);
+  assert.deepEqual(PLANTILLAS_VIGENTES_DE_INICIO, [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3]);
+  assert.equal(PLANTILLA_ENTRENAMIENTO_V3.clave, CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
+  assert.equal(PLANTILLA_NUTRICION_INICIO_V2.clave, CONTEXTO_DE_NUTRICION.clavePlantilla);
   for (const p of PLANTILLAS_DE_INICIO) {
-    assert.ok(p.estimatedMinutes >= 10 && p.estimatedMinutes <= 15, `${p.clave}: de 10 a 15 minutos`);
     assert.ok(p.proposito.trim().length > 0 && p.sections.length > 0, p.clave);
-    assert.deepEqual(contenidoDePlantillaDeInicio(p), { format: 2, estimatedMinutes: p.estimatedMinutes, sections: p.sections });
+    if (p.formato === 2) {
+      // Las de DL-164, como se sembraron: con sus minutos y sin nada del formato 3.
+      assert.ok(p.estimatedMinutes !== null && p.estimatedMinutes >= 10 && p.estimatedMinutes <= 15, `${p.clave}: de 10 a 15 minutos`);
+      assert.deepEqual(contenidoDePlantillaDeInicio(p), { format: 2, estimatedMinutes: p.estimatedMinutes, sections: p.sections });
+      assert.deepEqual(loQueUsaDelFormato3(p.sections), [], `${p.clave} v${p.version}`);
+    } else {
+      // DL-165 D-3: sin minutos. D-10: usan algo del formato 3, y por eso la APK 0.20 no las recibe.
+      assert.equal(p.estimatedMinutes, null);
+      assert.deepEqual(contenidoDePlantillaDeInicio(p), { format: 3, sections: p.sections });
+      assert.ok(loQueUsaDelFormato3(p.sections).length > 0, `${p.clave} v${p.version}`);
+    }
   }
 });
 
@@ -157,7 +179,7 @@ test('los códigos no se repiten: de campo en la plantilla; de opción, fila, co
           break;
         case 'LIST':
           sinRepetidos(c.itemFields.map((s) => s.code), `${donde} (subcampos)`);
-          for (const sub of c.itemFields) if (sub.dataType === 'CHOICE') sinRepetidos(sub.options.map((o) => o.code), `${donde} · ${sub.code}`);
+          for (const sub of c.itemFields) if (sub.dataType === 'CHOICE' || sub.dataType === 'MULTI_CHOICE') sinRepetidos(sub.options.map((o) => o.code), `${donde} · ${sub.code}`);
           assert.ok(c.minItems <= c.maxItems, donde);
           break;
         default: break;
@@ -191,17 +213,19 @@ test('cada condición apunta a una pregunta anterior, de Sí o no o de opciones,
   }
 });
 
-test('«Antes de entrenar» v2 conserva los seis códigos de la v1 y «días por semana» sigue siendo un entero de 1 a 7 (DL-100, DL-101)', () => {
-  const porCodigo = new Map(campos(PLANTILLA_ENTRENAMIENTO_V2).map((c) => [c.fieldCode, c] as const));
-  for (const codigo of CONTEXTO_DE_ENTRENAMIENTO.campos) assert.ok(porCodigo.has(codigo), `falta ${codigo}`);
-  const dias = porCodigo.get('trn_dias_por_semana');
-  assert.ok(dias && dias.dataType === 'NUMBER', 'días por semana es un número');
-  assert.deepEqual(dias.limits, { minimum: 1, maximum: 7, integer: true });
-  const minutos = porCodigo.get('trn_minutos_por_sesion');
-  assert.ok(minutos && minutos.dataType === 'NUMBER' && minutos.limits?.integer === true, 'minutos por sesión es un entero');
+test('«Antes de entrenar» v2 y v3 conservan los seis códigos de la v1 y «días por semana» sigue siendo un entero de 1 a 7 (DL-100, DL-101)', () => {
+  for (const p of [PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_ENTRENAMIENTO_V3]) {
+    const porCodigo = new Map(campos(p).map((c) => [c.fieldCode, c] as const));
+    for (const codigo of CONTEXTO_DE_ENTRENAMIENTO.campos) assert.ok(porCodigo.has(codigo), `v${p.version}: falta ${codigo}`);
+    const dias = porCodigo.get('trn_dias_por_semana');
+    assert.ok(dias && dias.dataType === 'NUMBER', 'días por semana es un número');
+    assert.deepEqual(dias.limits, { minimum: 1, maximum: 7, integer: true });
+    const minutos = porCodigo.get('trn_minutos_por_sesion');
+    assert.ok(minutos && minutos.dataType === 'NUMBER' && minutos.limits?.integer === true, 'minutos por sesión es un entero');
+  }
 });
 
-test('las dos usan tipos nuevos, tienen como mucho 80 campos y entran enteras en una Solicitud', () => {
+test('todas usan tipos nuevos, tienen como mucho 80 campos y entran enteras en una Solicitud', () => {
   for (const p of PLANTILLAS_DE_INICIO) {
     assert.equal(usaTiposNuevos(p.sections), true, p.clave);
     const n = campos(p).length;
@@ -232,16 +256,21 @@ test('cada pregunta dice para qué se usa y ningún texto califica ni usa los t�
   }
 });
 
-test('los códigos llevan el prefijo del formulario, salvo los que reutilizan FRM-SALUD, FRM-HABITOS y la v1', () => {
+test('los códigos llevan el prefijo del formulario, salvo los que reutilizan FRM-SALUD, FRM-HABITOS y la v1, y los de la parte común', () => {
   for (const p of PLANTILLAS_DE_INICIO) {
     for (const c of campos(p)) {
-      assert.ok(c.fieldCode.startsWith(PREFIJO[p.clave]!) || CODIGOS_REUTILIZADOS.includes(c.fieldCode), `${p.clave} · ${c.fieldCode}`);
+      // DL-165 D-9: la parte «Tus hábitos» es de las dos áreas, con códigos neutros (`habitos_`) o reutilizados.
+      const deLaParteComun = p.formato === 3 && CAMPOS_DE_HABITOS.includes(c.fieldCode);
+      assert.ok(c.fieldCode.startsWith(PREFIJO[p.clave]!) || CODIGOS_REUTILIZADOS.includes(c.fieldCode) || deLaParteComun, `${p.clave} · ${c.fieldCode}`);
     }
   }
-  const nut = new Set(campos(PLANTILLA_NUTRICION_INICIO).map((c) => c.fieldCode));
-  const trn = new Set(campos(PLANTILLA_ENTRENAMIENTO_V2).map((c) => c.fieldCode));
-  for (const codigo of ['condiciones_declaradas', 'medicacion_relevante', 'nivel_de_actividad']) assert.ok(nut.has(codigo), `Nutrición reutiliza ${codigo}`);
-  for (const codigo of ['dolor_o_lesiones', 'medicacion_relevante', 'horas_de_sueno', 'nivel_de_actividad', 'fuma']) assert.ok(trn.has(codigo), `Entrenamiento reutiliza ${codigo}`);
+  for (const codigo of CAMPOS_DE_HABITOS) assert.ok(codigo.startsWith('habitos_') || CODIGOS_REUTILIZADOS.includes(codigo), codigo);
+  for (const [nutricion, entrenamiento] of [[PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2], [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3]] as const) {
+    const nut = new Set(campos(nutricion).map((c) => c.fieldCode));
+    const trn = new Set(campos(entrenamiento).map((c) => c.fieldCode));
+    for (const codigo of ['condiciones_declaradas', 'medicacion_relevante', 'nivel_de_actividad']) assert.ok(nut.has(codigo), `Nutrición reutiliza ${codigo}`);
+    for (const codigo of ['dolor_o_lesiones', 'medicacion_relevante', 'horas_de_sueno', 'nivel_de_actividad', 'fuma']) assert.ok(trn.has(codigo), `Entrenamiento reutiliza ${codigo}`);
+  }
 });
 
 test('lo que no puede faltar: las comidas de la semana (con los subcampos que lee el escritorio), los alimentos que sí y que no, y el otro deporte', () => {
@@ -282,4 +311,122 @@ test('una respuesta completa y sintética no tiene problemas, cada pregunta cond
   const sinAlergias: RespuestaDeCampoV2Entrada[] = [{ fieldCode: 'nut_alergias', answer: { type: 'BOOLEAN', yes: false } }];
   assert.deepEqual(obligatoriosSinResponder(PLANTILLA_NUTRICION_INICIO.sections, solicitud, sinAlergias), []);
   assert.deepEqual(validarRespuestasV2(PLANTILLA_NUTRICION_INICIO.sections, solicitud, sinAlergias), []);
+});
+
+// ─── WP-FORMULARIOS-RONDA-2 (DL-165, FR-06) ─────────────────────────────────────────────────────
+
+const campoDeLa = (p: PlantillaDeInicio, codigo: string): CampoDePlantillaV2 => {
+  const c = campos(p).find((x) => x.fieldCode === codigo);
+  assert.ok(c, `${p.clave} v${p.version}: falta ${codigo}`);
+  return c;
+};
+
+test('DL-165 D-4 · el embarazo no viene pedido ni es obligatorio en las dos versiones nuevas; en las de DL-164 sigue como estaba', () => {
+  for (const [p, codigo] of [[PLANTILLA_NUTRICION_INICIO_V2, 'nut_embarazo'], [PLANTILLA_ENTRENAMIENTO_V3, 'trn_embarazo']] as const) {
+    assert.deepEqual([campoDeLa(p, codigo).requestedByDefault, campoDeLa(p, codigo).requiredByDefault], [false, false], `${p.clave} v${p.version}`);
+  }
+  assert.equal(campoDeLa(PLANTILLA_ENTRENAMIENTO_V2, 'trn_embarazo').requiredByDefault, true);
+  assert.equal('requestedByDefault' in campoDeLa(PLANTILLA_ENTRENAMIENTO_V2, 'trn_embarazo'), false);
+  // Es la única que no viene pedida: las demás, como siempre.
+  for (const p of PLANTILLAS_VIGENTES_DE_INICIO) assert.deepEqual(campos(p).filter((c) => c.requestedByDefault === false).map((c) => c.fieldCode), [p === PLANTILLA_NUTRICION_INICIO_V2 ? 'nut_embarazo' : 'trn_embarazo']);
+  // La pregunta de las indicaciones médicas suma el ejemplo.
+  assert.equal(campoDeLa(PLANTILLA_ENTRENAMIENTO_V3, 'trn_salud_supervision').helpText, 'Por ejemplo, por un embarazo o un parto reciente.');
+});
+
+test('DL-165 D-7 · «Cómo comés hoy» v2 sigue con las obligatorias de la v1 (más las de la parte común), y los ejemplos de las comidas van como texto de muestra del renglón', () => {
+  const obligatorias = (p: PlantillaDeInicio) => campos(p).filter((c) => c.requiredByDefault).map((c) => c.fieldCode);
+  // Las «20» de la prueba de Dirección son 22 en la plantilla: 21, y la de las alergias, que se ve solo si hay alergia.
+  assert.equal(obligatorias(PLANTILLA_NUTRICION_INICIO).length, 22);
+  // D-15: las que pasan a la parte común siguen obligatorias ahí; la parte suma las horas de sueño y la lista del deporte
+  // (esta, solo con «Sí»). Quedan 24: 22 a la vista, y las alergias y el deporte, detrás de su condición.
+  const MOVIDAS = ['nut_horarios', 'nivel_de_actividad', 'nut_actividad_semanal'];
+  const deLaParte = SECCION_DE_HABITOS.fields.filter((c) => c.requiredByDefault).map((c) => c.fieldCode);
+  assert.deepEqual(new Set(obligatorias(PLANTILLA_NUTRICION_INICIO_V2)), new Set([...obligatorias(PLANTILLA_NUTRICION_INICIO).filter((c) => !MOVIDAS.includes(c)), ...deLaParte]));
+  assert.equal(obligatorias(PLANTILLA_NUTRICION_INICIO_V2).length, 24);
+  assert.equal(campos(PLANTILLA_NUTRICION_INICIO_V2).filter((c) => c.requiredByDefault && c.showIf === null).length, 22);
+  const comidas = campoDeLa(PLANTILLA_NUTRICION_INICIO_V2, 'nut_comidas_habituales');
+  assert.ok(comidas.dataType === 'LIST');
+  assert.deepEqual(comidas.itemFields.map((s) => s.code), ['momento', 'que', 'veces', 'porcion', 'preparacion', 'donde', 'bebida', 'gusto']);
+  const ejemplos = Object.fromEntries(comidas.itemFields.flatMap((s) => (s.dataType === 'TEXT' && s.helpText ? [[s.code, s.helpText]] : [])));
+  assert.deepEqual(ejemplos, { que: 'Milanesa de carne al horno con puré de papa', porcion: '1 plato playo, 2 unidades, 1 taza, 3 cucharadas…' });
+  // Lo demás de la v1 no cambia: la parte común primero y, después, las mismas preguntas de la v1, en el mismo orden,
+  // sin las tres que pasaron a la parte.
+  assert.deepEqual(campos(PLANTILLA_NUTRICION_INICIO_V2).map((c) => c.fieldCode), [...CAMPOS_DE_HABITOS, ...campos(PLANTILLA_NUTRICION_INICIO).map((c) => c.fieldCode).filter((c) => !MOVIDAS.includes(c))]);
+});
+
+test('DL-165 D-9 · la parte «Tus hábitos» va primera en «Cómo comés hoy» y antes de «Tu semana para entrenar» en «Antes de entrenar»: siete partes en cada una (D-15)', () => {
+  assert.deepEqual(PLANTILLA_NUTRICION_INICIO_V2.sections.map((s) => s.sectionCode), ['tus_habitos', 'tu_dia', 'tu_semana', 'si_y_no', 'lo_que_tomas', 'salud', 'lo_que_buscas']);
+  assert.deepEqual(PLANTILLA_ENTRENAMIENTO_V3.sections.map((s) => s.sectionCode), ['salud', 'dolor', 'experiencia', 'lo_que_buscas', 'tus_habitos', 'tu_semana', 'preferencias']);
+  for (const p of PLANTILLAS_VIGENTES_DE_INICIO) {
+    assert.deepEqual(p.sections.find((s) => s.sectionCode === 'tus_habitos'), SECCION_DE_HABITOS, p.clave);
+    // Pidiéndolo entero, «Parte N de 7»; las de DL-164 siguen con seis.
+    const todo = { requestedFieldCodes: campos(p).map((c) => c.fieldCode) };
+    assert.equal(partesDelFormulario(p.sections, todo).length, 7, p.clave);
+  }
+  for (const p of [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2]) assert.equal(partesDelFormulario(p.sections, { requestedFieldCodes: campos(p).map((c) => c.fieldCode) }).length, 6, p.clave);
+  // «¿En qué momento del día solés entrenar?» es de Nutrición y se abre con el deporte de la parte común.
+  assert.deepEqual(campoDeLa(PLANTILLA_NUTRICION_INICIO_V2, 'nut_hora_de_entrenamiento').showIf, { fieldCode: 'habitos_hace_deporte', anyOf: [true] });
+  for (const codigo of ['nut_horarios', 'nut_actividad_semanal']) assert.ok(!campos(PLANTILLA_NUTRICION_INICIO_V2).some((c) => c.fieldCode === codigo), codigo);
+  for (const codigo of ['trn_otro_deporte', 'trn_otros_deportes', 'trn_estres']) assert.ok(!campos(PLANTILLA_ENTRENAMIENTO_V3).some((c) => c.fieldCode === codigo), codigo);
+  // «Descanso y preferencias» se quedó con las preferencias: el sueño y el estrés están en la parte común.
+  const preferencias = PLANTILLA_ENTRENAMIENTO_V3.sections.find((s) => s.sectionCode === 'preferencias')!;
+  assert.deepEqual([preferencias.title, preferencias.fields.map((c) => c.fieldCode)], ['Tus preferencias', ['trn_preferencias', 'trn_aerobico', 'trn_no_quiero', 'trn_algo_mas']]);
+  // La salud sigue en cada área (D-9).
+  for (const codigo of ['medicacion_relevante', 'condiciones_declaradas', 'nut_embarazo']) assert.ok(campos(PLANTILLA_NUTRICION_INICIO_V2).some((c) => c.fieldCode === codigo), codigo);
+  for (const codigo of ['medicacion_relevante', 'trn_embarazo', 'fuma']) assert.ok(campos(PLANTILLA_ENTRENAMIENTO_V3).some((c) => c.fieldCode === codigo), codigo);
+});
+
+test('DL-165 D-5 · «Antes de entrenar» v3 pregunta los días y el momento en una tabla, y los días por semana no pasan de los marcados', () => {
+  const codigos = campos(PLANTILLA_ENTRENAMIENTO_V3).map((c) => c.fieldCode);
+  assert.ok(!codigos.includes('trn_dias_posibles') && !codigos.includes('trn_franja'), 'la tabla reemplaza a las dos preguntas');
+  const tabla = campoDeLa(PLANTILLA_ENTRENAMIENTO_V3, 'trn_dias_y_horario');
+  assert.ok(tabla.dataType === 'MATRIX');
+  assert.deepEqual(tabla.rows.map((o) => o.label), ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']);
+  assert.deepEqual(tabla.columns.map((o) => o.label), ['Temprano', 'Mañana', 'Mediodía', 'Tarde', 'Noche', 'Varía', 'No puedo']);
+  assert.equal(tabla.requiredByDefault, true);
+  const dias = campoDeLa(PLANTILLA_ENTRENAMIENTO_V3, 'trn_dias_por_semana');
+  assert.ok(dias.dataType === 'NUMBER');
+  assert.deepEqual(dias.maxFromMatrix, { fieldCode: 'trn_dias_y_horario', exceptColumns: ['no_puedo'] });
+  // La tabla va antes que el número, en la misma parte.
+  assert.equal(codigos.indexOf('trn_dias_y_horario') + 1, codigos.indexOf('trn_dias_por_semana'));
+  const enLaSemana = PLANTILLA_ENTRENAMIENTO_V3.sections.find((s) => s.sectionCode === 'tu_semana')!.fields.map((c) => c.fieldCode);
+  assert.ok(enLaSemana.includes('trn_dias_y_horario') && enLaSemana.includes('trn_dias_por_semana'));
+  // Tres días posibles (y un «No puedo»): cuatro días por semana no pasa; tres, sí.
+  const solicitud = { requestedFieldCodes: ['trn_dias_y_horario', 'trn_dias_por_semana'], requiredFieldCodes: [] };
+  const tres = { fieldCode: 'trn_dias_y_horario', answer: { type: 'MATRIX' as const, cells: [{ row: 'lun', column: 'manana' }, { row: 'mie', column: 'noche' }, { row: 'vie', column: 'varia' }, { row: 'dom', column: 'no_puedo' }] } };
+  const cuantos = (n: number) => ({ fieldCode: 'trn_dias_por_semana', answer: { type: 'NUMBER' as const, number: n, unit: 'días por semana' } });
+  assert.deepEqual(validarRespuestasV2(PLANTILLA_ENTRENAMIENTO_V3.sections, solicitud, [tres, cuantos(3)]), []);
+  assert.deepEqual(validarRespuestasV2(PLANTILLA_ENTRENAMIENTO_V3.sections, solicitud, [tres, cuantos(4)]).map((p) => p.code), [CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]);
+});
+
+test('DL-165 D-6 · cada otra actividad dice qué días (varios) y en qué momento; «Qué días» reemplaza a «Días por semana» (en la parte común, D-9)', () => {
+  const otros = campoDeLa(PLANTILLA_ENTRENAMIENTO_V3, 'habitos_deportes');
+  assert.ok(otros.dataType === 'LIST' && otros.showIf?.fieldCode === 'habitos_hace_deporte');
+  assert.deepEqual(otros.itemFields.map((s) => [s.code, s.dataType, s.required]), [
+    ['cual', 'TEXT', true],
+    ['que_dias', 'MULTI_CHOICE', true],
+    ['momento', 'CHOICE', true],
+    ['minutos', 'NUMBER', true],
+    ['exigencia', 'CHOICE', true],
+  ]);
+  const momento = otros.itemFields.find((s) => s.code === 'momento');
+  assert.ok(momento?.dataType === 'CHOICE');
+  assert.deepEqual(momento.options.map((o) => o.label), ['Temprano', 'Mañana', 'Mediodía', 'Tarde', 'Noche', 'Varía']);
+  const cual = otros.itemFields.find((s) => s.code === 'cual');
+  assert.equal(cual?.dataType === 'TEXT' ? cual.helpText : null, 'Fútbol, natación, baile…');
+  // Lo de formato 3 de la v3: el ejemplo, el renglón con varias opciones, el tope y lo que no viene pedido.
+  assert.deepEqual(loQueUsaDelFormato3(PLANTILLA_ENTRENAMIENTO_V3.sections).sort(), [
+    'habitos_deportes.cual: el ejemplo del renglón',
+    'habitos_deportes.que_dias: varias opciones en el renglón',
+    'trn_dias_por_semana: el tope desde la tabla trn_dias_y_horario',
+    'trn_embarazo: si viene pedida por defecto',
+  ]);
+  // Y la de «Cómo comés hoy» v2: la misma lista de la parte común, los ejemplos de las comidas y el embarazo sin pedir.
+  assert.deepEqual(loQueUsaDelFormato3(PLANTILLA_NUTRICION_INICIO_V2.sections).sort(), [
+    'habitos_deportes.cual: el ejemplo del renglón',
+    'habitos_deportes.que_dias: varias opciones en el renglón',
+    'nut_comidas_habituales.porcion: el ejemplo del renglón',
+    'nut_comidas_habituales.que: el ejemplo del renglón',
+    'nut_embarazo: si viene pedida por defecto',
+  ]);
 });

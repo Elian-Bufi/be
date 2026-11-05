@@ -4,17 +4,22 @@
  * pregunta por fila, los alimentos como chips más los escritos, y los horarios como un campo por parte.
  *
  * Reglas comunes (10-B10 §7, §9):
- * - **nada viene elegido** y tocar de nuevo lo elegido lo suelta: no responder es legítimo y tiene su estado;
+ * - **nada viene elegido**: no responder es legítimo y tiene su estado. Una pregunta opcional con algo elegido se suelta
+ *   con «Quitar respuesta» (DL-165 D-2), que reemplaza al «tocá de nuevo la opción elegida»: en una opción única, tocar
+ *   la elegida no hace nada, como en cualquier botón de opción. Las casillas, los chips de una tabla y los de un renglón
+ *   se siguen soltando con un toque, porque son casillas;
+ * - **las ayudas, plegadas** (D-2): el «para qué» de cada pregunta se abre con «¿Para qué?», al pie de la pregunta, y el
+ *   lector de pantalla lo anuncia como un botón que se despliega; la ayuda de una respuesta de texto es su texto de muestra;
  * - **roles y estados para el lector de pantalla:** `radiogroup`/`radio` con `checked`, `checkbox`, y cada opción de una
  *   tabla se lee con su fila («Sentadilla: Con ayuda»); el error de la pregunta se anuncia cuando aparece (la línea de
  *   error es una región viva) y entra en el nombre del primer control del grupo, como en `Campo` entra en el del campo;
  * - **objetivos de toque de 44 dp o más**, texto además de color, y solo colores de `tema.ts`.
- * Los textos de P0 (`Campo`, `CampoSiONo`) siguen en `ui.tsx`; acá están los seis tipos nuevos y lo que los compone.
+ * Los textos de P0 (`Campo`, `CampoSiONo`) siguen en `ui.tsx`; acá están los tipos del formulario y lo que los compone.
  */
 import { COPY_FORMULARIOS, COPY_FORMULARIOS_V2, LARGO_MAXIMO_DE_ALIMENTO, LARGO_MAXIMO_DE_OTRO, type CampoDePlantillaV2, type OpcionDeCampo, type SubcampoDeLista } from '@be/domain';
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { claveDeParte, claveDeSubcampo, TEXTOS_DE_FORMULARIO_V2 as T, type AlimentoDeBorrador, type EleccionSiONo, type RenglonDeBorrador } from './formulario-v2';
+import { alternarEnElSubvalor, claveDeParte, claveDeSubcampo, codigosDelSubvalor, TEXTOS_DE_FORMULARIO_V2 as T, type AlimentoDeBorrador, type EleccionSiONo, type RenglonDeBorrador } from './formulario-v2';
 import { Icono } from './icono';
 import { Boton, CajaDeCasilla, Campo, CampoSiONo, Subtitulo, Tarjeta, estilos as ui, estilosPorTema } from './ui';
 
@@ -31,12 +36,17 @@ export const OPCIONES_SI_O_NO: readonly { readonly valor: EleccionSiONo; readonl
   { valor: 'NO', texto: COPY_FORMULARIOS.no },
 ];
 
-/** Lo que encabeza cada pregunta: su rótulo, su ayuda y para qué se usa el dato (minimización: cada pregunta lo dice). */
+/**
+ * Lo que encabeza cada pregunta: su rótulo y su ayuda; al pie, para qué se usa el dato (minimización: cada pregunta lo
+ * dice, plegado) y, si se ofrece, «Quitar respuesta» (`seOfreceQuitarRespuesta`, del dominio).
+ */
 export interface CabeceraDePregunta {
   readonly etiqueta: string;
   readonly ayuda?: string | null;
   readonly paraQue?: string | null;
   readonly error?: string | null;
+  /** Suelta la respuesta de una pregunta opcional con algo elegido; `null` o ausente: no se ofrece. */
+  readonly quitar?: (() => void) | null;
 }
 
 /** El nombre de un control con el error de su pregunta, con las mismas palabras que usa `Campo` para su campo. */
@@ -51,13 +61,53 @@ const nombreConErrorDelGrupo = (etiqueta: string, propio: string | null, delGrup
   delGrupo ? { accessibilityLabel: nombreParaElLector(etiqueta, [propio, delGrupo].filter((e): e is string => !!e).join(' ')) } : {};
 const conMayuscula = (s: string): string => s.charAt(0).toLocaleUpperCase('es-AR') + s.slice(1);
 
-function Cabecera({ etiqueta, ayuda, paraQue }: CabeceraDePregunta) {
+function Cabecera({ etiqueta, ayuda }: CabeceraDePregunta) {
   return (
     <>
       <Text style={ui.etiqueta}>{etiqueta}</Text>
       {ayuda ? <Text style={ui.tenue}>{ayuda}</Text> : null}
-      {paraQue ? <Text style={ui.tenue}>{`${COPY_FORMULARIOS_V2.paraQue}: ${paraQue}`}</Text> : null}
     </>
+  );
+}
+
+/**
+ * El pie de una pregunta (DL-165 D-2): «¿Para qué?», que despliega para qué se usa el dato, y «Quitar respuesta», cuando
+ * se ofrece. Los dos dicen de qué pregunta son, para el lector de pantalla; «¿Para qué?» dice si está desplegado.
+ */
+export function PieDePregunta({ etiqueta, paraQue, quitar }: Pick<CabeceraDePregunta, 'etiqueta' | 'paraQue' | 'quitar'>) {
+  const [abierto, setAbierto] = useState(false);
+  if (!paraQue && !quitar) return null;
+  return (
+    <View>
+      <View style={estilos.pie}>
+        {paraQue ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY_FORMULARIOS_V2.paraQueDe(etiqueta)}
+            accessibilityState={{ expanded: abierto }}
+            onPress={() => setAbierto((a) => !a)}
+            hitSlop={8}
+            style={({ pressed }) => [estilos.botonDelPie, pressed && ui.presionado]}
+          >
+            <Icono nombre="pregunta" tamano={18} tono="acento" />
+            <Text style={estilos.textoDelPie}>{COPY_FORMULARIOS_V2.paraQueBoton}</Text>
+          </Pressable>
+        ) : null}
+        {quitar ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY_FORMULARIOS_V2.quitarRespuestaDe(etiqueta)}
+            onPress={quitar}
+            hitSlop={8}
+            style={({ pressed }) => [estilos.botonDelPie, pressed && ui.presionado]}
+          >
+            <Icono nombre="cerrar" tamano={18} tono="acento" />
+            <Text style={estilos.textoDelPie}>{COPY_FORMULARIOS_V2.quitarRespuesta}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      {abierto && paraQue ? <Text style={[ui.tenue, estilos.paraQue]}>{paraQue}</Text> : null}
+    </View>
   );
 }
 
@@ -90,6 +140,7 @@ function Pregunta({ cabecera, rol, hijos, pie }: { cabecera: CabeceraDePregunta;
       </View>
       {pie}
       {cabecera.error ? <LineaDeError texto={cabecera.error} /> : null}
+      <PieDePregunta etiqueta={cabecera.etiqueta} paraQue={cabecera.paraQue} quitar={cabecera.quitar} />
     </View>
   );
 }
@@ -134,12 +185,29 @@ export function OpcionUnica({
 }) {
   return (
     <Pregunta
-      cabecera={{ ...cabecera, ayuda: cabecera.ayuda ?? T.elegiUna }}
+      cabecera={cabecera}
       rol="radiogroup"
+      // DL-165 D-2: tocar la elegida no la suelta (como cualquier botón de opción); una opcional se suelta con «Quitar respuesta».
       hijos={campo.options.map((o, i) => (
-        <RenglonDeOpcion key={o.code} texto={o.label} etiqueta={nombreDelPrimero(o.label, i === 0, cabecera.error)} elegida={valor === o.code} onPress={() => onCambio(valor === o.code ? null : o.code)} />
+        <RenglonDeOpcion key={o.code} texto={o.label} etiqueta={nombreDelPrimero(o.label, i === 0, cabecera.error)} elegida={valor === o.code} onPress={() => onCambio(o.code)} />
       ))}
       pie={campo.otherOptionCode !== null && valor === campo.otherOptionCode ? <CampoDeOtro texto={otro} onCambio={onOtro} /> : null}
+    />
+  );
+}
+
+/**
+ * Un Sí o no del formulario, con el mismo marco que las demás preguntas: los dos renglones, el pie con «¿Para qué?» y,
+ * si es opcional y hay algo elegido, «Quitar respuesta». Nada viene elegido: «sin elegir» es el tercer estado (09:1586).
+ */
+export function PreguntaSiONo({ cabecera, valor, onCambio }: { cabecera: CabeceraDePregunta; valor: EleccionSiONo; onCambio: (v: EleccionSiONo) => void }) {
+  return (
+    <Pregunta
+      cabecera={cabecera}
+      rol="radiogroup"
+      hijos={OPCIONES_SI_O_NO.map((o, i) => (
+        <RenglonDeOpcion key={o.valor} texto={o.texto} etiqueta={nombreDelPrimero(o.texto, i === 0, cabecera.error)} elegida={valor === o.valor} onPress={() => onCambio(o.valor)} />
+      ))}
     />
   );
 }
@@ -250,7 +318,41 @@ function Subcampo({ sub, valor, error, onCambio, errorDelGrupo }: { sub: Subcamp
   const rotulo = sub.required ? sub.label : `${sub.label} (${COPY_FORMULARIOS_V2.opcional})`;
   switch (sub.dataType) {
     case 'TEXT':
-      return <Campo etiqueta={rotulo} value={valor} onChangeText={onCambio} maxLength={sub.maxLength} error={error} {...nombreConErrorDelGrupo(rotulo, error, errorDelGrupo)} />;
+      // Formato 3 (DL-165 D-2): el ejemplo del renglón es su texto de muestra, y el lector lo dice.
+      return (
+        <Campo
+          etiqueta={rotulo}
+          value={valor}
+          onChangeText={onCambio}
+          maxLength={sub.maxLength}
+          error={error}
+          placeholder={sub.helpText}
+          accessibilityHint={sub.helpText}
+          {...nombreConErrorDelGrupo(rotulo, error, errorDelGrupo)}
+        />
+      );
+    case 'MULTI_CHOICE': {
+      // Formato 3 (DL-165 D-6): varias opciones dentro del renglón («Qué días»), como casillas en chips.
+      const elegidos = new Set(codigosDelSubvalor(valor));
+      return (
+        <View style={ui.campo}>
+          <Text style={ui.etiqueta}>{rotulo}</Text>
+          <View style={estilos.chips} accessibilityLabel={rotulo}>
+            {sub.options.map((o, i) => (
+              <Chip
+                key={o.code}
+                texto={o.label}
+                etiqueta={nombreDelPrimero(`${sub.label}: ${o.label}`, i === 0, errorDelGrupo)}
+                elegido={elegidos.has(o.code)}
+                rol="checkbox"
+                onPress={() => onCambio(alternarEnElSubvalor(valor, o.code, sub.options))}
+              />
+            ))}
+          </View>
+          {error ? <LineaDeError texto={error} /> : null}
+        </View>
+      );
+    }
     case 'NUMBER': {
       const etiqueta = sub.unit ? `${rotulo} (${sub.unit})` : rotulo;
       return <Campo etiqueta={etiqueta} value={valor} onChangeText={onCambio} keyboardType="decimal-pad" error={error} {...nombreConErrorDelGrupo(etiqueta, error, errorDelGrupo)} />;
@@ -481,6 +583,11 @@ export function CampoDeHorarios({
 
 const estilos = estilosPorTema((COLOR) => ({
   preguntaConError: { borderLeftWidth: 3, borderLeftColor: COLOR.error, paddingLeft: 10 },
+  // El pie de una pregunta: «¿Para qué?» y «Quitar respuesta», en una fila que se parte con letra grande; 44 dp de toque.
+  pie: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 20, rowGap: 4, marginTop: 4 },
+  botonDelPie: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingVertical: 8 },
+  textoDelPie: { fontSize: 15, fontWeight: '600', color: COLOR.acento, textDecorationLine: 'underline' },
+  paraQue: { marginBottom: 4 },
   // Un renglón de opción: 48 dp, el borde de control y, elegido, el acento y el escalón elevado (como el motivo de un diálogo).
   renglon: { flexDirection: 'row', alignItems: 'center', minHeight: 48, borderWidth: 1, borderColor: COLOR.bordeControl, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginVertical: 4, backgroundColor: COLOR.superficie },
   renglonElegido: { borderColor: COLOR.acento, borderWidth: 2, backgroundColor: COLOR.superficieElevada },

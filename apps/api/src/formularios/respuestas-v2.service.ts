@@ -13,7 +13,8 @@ import { tomarLaSolicitud } from './cerrojo-de-solicitud';
 import { decideBlando } from './decision-blanda';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
-import { camposV2PorCodigo, contenidoDeRespuestasV2, definicionV2, exigirRespuestasValidas, respuestasDePropuesta, solicitudAValidar, type TranscripcionAlmacenada } from './lectura-formularios-v2';
+import { registrarHabitosDeUnFormulario } from './habitos-de-la-persona';
+import { camposV2PorCodigo, contenidoDeRespuestasV2, definicionV2, exigirRespuestasValidas, formatoRetenido, respuestasDePropuesta, seRetieneElFormato, solicitudAValidar, type TranscripcionAlmacenada } from './lectura-formularios-v2';
 
 const yaRespondida = () => new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya tiene una respuesta registrada.');
 
@@ -24,7 +25,10 @@ const yaRespondida = () => new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RE
  * - se guarda en el formato de la versión (V2, o la forma V1 de siempre si la versión es de P0);
  * - **confirmar es responder** (D-4): con `fromProposal`, la Respuesta nace SELF_REPORTED con la transcripción (quién
  *   cargó, cuándo, cuándo confirmó y qué corrigió), la propuesta pasa a CONFIRMADA sin sus respuestas (ya viven en la
- *   Respuesta) y el profesional recibe la novedad; todo en la misma transacción.
+ *   Respuesta) y el profesional recibe la novedad; todo en la misma transacción;
+ * - DL-165 D-9 (FR-10): si la versión trae la parte «Tus hábitos», lo respondido ahí agrega, en la misma transacción, una
+ *   versión de los hábitos de la persona (`habitos_de_la_persona`). Rectificar (FRI-05) no los cambia: lo vigente puede
+ *   ser más nuevo que ese formulario, y los hábitos se corrigen en «Mis hábitos» (D-16).
  */
 @Injectable()
 export class RespuestasV2Service {
@@ -56,6 +60,8 @@ export class RespuestasV2Service {
           : null;
         // Propio y revelable; ajeno o inexistente, el mismo 404 (09:1599).
         if (!s || s.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRI-04', actorId: actor.identidadId, recurso }, ctx);
+        // DL-165 · una versión de formato 3 no existe para la APK que no la lee: el mismo 404, antes que cualquier otra regla.
+        if (seRetieneElFormato(ctx, s.templateVersion.contenido)) throw formatoRetenido();
         // Sobre lo propio, el A3 va antes que cualquier otra regla (09 §36; 08:406; DL-115).
         await exigirA3Vigente(tx, actor.identidadId);
         if (s.respuesta) throw yaRespondida();
@@ -151,6 +157,18 @@ export class RespuestasV2Service {
             procedencia,
           );
         }
+        // DL-165 D-9 (FR-10; §4.2): la parte «Tus hábitos» también queda en los hábitos de la persona, en esta transacción y
+        // con su cerrojo, al final (después del PDP y de la Respuesta). Lo que el formulario preguntó de la parte reemplaza lo
+        // vigente; lo que no preguntó queda como estaba (D-16). La Respuesta guarda sus respuestas como siempre.
+        await registrarHabitosDeUnFormulario(tx, {
+          personaId: actor.identidadId,
+          secciones: definicion.sections,
+          pedidos: solicitudAValidar(s).requestedFieldCodes,
+          respuestas: pedido.answers,
+          respuestaDeFormularioId: respuesta.id,
+          procedencia,
+          momento,
+        });
         return {
           estadoHttp: 201,
           cuerpo: { data: { formResponseId: respuesta.id, version: `v${respuesta.version}`, submittedAt: respuesta.momentoDeRegistro.toISOString() } },
@@ -182,6 +200,7 @@ export class RespuestasV2Service {
             })
           : null;
         if (!r || r.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRI-05', actorId: actor.identidadId, recurso }, ctx);
+        if (seRetieneElFormato(ctx, r.templateVersion.contenido)) throw formatoRetenido();
         // Como FRM-08: rectificar no pasa por el PDP (09:1633); el A3, con el acto bloqueado (08:406; DL-115).
         await exigirA3Vigente(tx, actor.identidadId, { bloquear: true });
 

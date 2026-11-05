@@ -19,6 +19,10 @@
  * la dirección como estaba: la persona queda en Información, y el marco le ofrece la vuelta a donde vino. Lo que
  * «Solicitudes» elige —la vista y la solicitud abierta— también vive en la dirección (`ver=`, `solicitud=`), y
  * «Actualizar» lo conserva.
+ *
+ * WP-FORMULARIOS-RONDA-2 (FR-10; DL-165 D-9): arriba de «Solicitudes», la tarjeta «Sus hábitos»
+ * (`tarjeta-de-sus-habitos.tsx`) con lo que la persona le comparte a este profesional (API-HBT-05). Si no se los comparte,
+ * la tarjeta no existe.
  */
 import { COPY_PISTAS, COPY_FORMULARIOS } from '@be/domain';
 import Link from 'next/link';
@@ -36,6 +40,7 @@ import { CargaConLaPersona } from './cargar';
 import { origenDelPedido, vueltaDelOrigen } from './formulario-de-inicio';
 import { PedidoDeInformacion } from './pedir';
 import { VistaDeSolicitudes } from './solicitudes';
+import { SusHabitos } from './tarjeta-de-sus-habitos';
 
 /** La sección que se ve en el marco: una sola. */
 export const SECCIONES = [{ clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes, icono: 'informacion', pista: COPY_PISTAS.secciones.solicitudes }] as const;
@@ -136,7 +141,15 @@ export function Formularios() {
           ) : null}
           {/* «Cargar con la persona» ocupa el lugar de la lista mientras se completa; al enviar, vuelve la lista con la
               solicitud abierta y lo cargado «Esperando que lo confirme». */}
-          {vista === 'cargar' ? <CargaConLaPersona /> : <VistaDeSolicitudes key={tanda} />}
+          {vista === 'cargar' ? (
+            <CargaConLaPersona />
+          ) : (
+            <>
+              {/* FR-10 (DL-165 D-9): los hábitos que la persona le comparte a este profesional. Sin autorización, nada. */}
+              <SusHabitos />
+              <VistaDeSolicitudes key={tanda} />
+            </>
+          )}
           {/* El cajón está siempre montado: cerrarlo no descarta un pedido a medio armar. */}
           <PedidoDeInformacion
             abierto={vista === 'pedir'}

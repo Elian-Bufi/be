@@ -253,6 +253,15 @@ import {
   VersionDePlantillaV2ResponseSchema,
 } from './contratos-formularios-v2';
 import {
+  CompartirHabitosRequestSchema,
+  DejarDeCompartirHabitosRequestSchema,
+  HabitosCompartidosEstadoResponseSchema,
+  HabitosCompartidosResponseSchema,
+  HabitosRegistradosResponseSchema,
+  MisHabitosResponseSchema,
+  RegistrarHabitosRequestSchema,
+} from './contratos-habitos-de-la-persona';
+import {
   AsociarImagenDeEjercicioRequestSchema,
   EjercicioPropioResponseSchema,
   ListaDeEjerciciosPropiosResponseSchema,
@@ -375,7 +384,7 @@ const DETALLE_DE_RESPUESTAS_V2: NonNullable<Operacion['detalleDe422']> = {
   codigo: 'FORM_RESPONSE_INVALID',
   schema: z.object({ issues: z.array(z.object({ code: z.string(), path: z.string(), fieldCode: z.string() })).min(1) }),
   descripcion:
-    'details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM o FORM_ANSWER_TOO_LONG), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).',
+    'details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM, FORM_ANSWER_TOO_LONG o, en el formato 3, FORM_ANSWER_MORE_THAN_MARKED: el número pasa de lo marcado en la tabla de la que toma su tope, DL-165 D-5), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).',
 };
 
 const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de página (1 a 50; 20 por defecto).', schema: { type: 'integer', minimum: 1, maximum: 50 } };
@@ -2479,19 +2488,19 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/form-templates/{templateId}/versions/{versionId}/definition',
     resumen:
-      'La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales.',
+      'La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales. DL-165: una versión de formato 3 (el renglón con varias opciones y lo demás de la ronda 2) solo se le entrega a un pedido que declara la capacidad forms-format-3 (X-BE-Capabilities); a los demás, 404 como lo inexistente. Lo mismo hacen FRI-03 a 08 con sus Solicitudes y respuestas, y FRI-02 no las lista.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: VersionDePlantillaV2ResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
-    fuente: 'DL-164 · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209',
+    fuente: 'DL-164 · DL-165 (FR-08) · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209',
   },
   {
     id: 'API-FRI-02',
     metodo: 'get',
     ruta: '/me/form-inbox',
     resumen:
-      'La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una.',
+      'La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una. Las de una versión de formato 3 se listan solo a un pedido con la capacidad forms-format-3 (DL-165).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
@@ -2586,6 +2595,78 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PropuestaResueltaResponseSchema }],
     errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
     fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-06; TEST-FRI-005)',
+  },
+  // ─── WP-FORMULARIOS-RONDA-2 · HBT: los hábitos de la persona (DL-165 D-9, FR-10). Familia propia de BE: API-HAB ya es
+  // «Mis habituales» (DL-109; D-14). Ninguna APK publicada las lee (DL-152). ──────────────────────────────────────────
+  {
+    id: 'API-HBT-01',
+    metodo: 'get',
+    ruta: '/me/habits',
+    resumen:
+      'Los hábitos de la persona: la parte «Tus hábitos» (para dibujarla y validarla), la versión vigente, sus versiones anteriores (de la más nueva a la más vieja), el estado de la autorización «Compartir mis hábitos con mis profesionales», sus profesionales con un vínculo sin terminar y lo que la autorización dice de cada uno (RECEIVES, DOES_NOT_RECEIVE o NOT_ASKED: empezó a acompañarla después y la app le pregunta), y el texto del acto con su aprobación (PENDING_APPROVAL: una propuesta). Sin el A3 vigente, 403 (08:406).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MisHabitosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.2 y §4.3 (FR-10) · 08 C-11, C-12 · RNF-PRI-002 · 08:406',
+  },
+  {
+    id: 'API-HBT-02',
+    metodo: 'post',
+    ruta: '/me/habits',
+    resumen:
+      'Una versión nueva de los hábitos desde «Mis hábitos», con la vigente que se vio (`expectedVersion`; si entró otra en el medio, 409 VERSION_CONFLICT). Se valida como un formulario que pide toda la parte y no exige ninguna pregunta (422 FORM_RESPONSE_INVALID, un issue por problema); se guarda SELF_REPORTED en su forma canónica y la anterior queda en la historia. Sin el A3 vigente, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarHabitosRequestSchema,
+    exitos: [{ status: 201, schema: HabitosRegistradosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['FORM_RESPONSE_INVALID'] },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.2 (FR-10) · 09v16.1 §22.7 · REG-06-209',
+  },
+  {
+    id: 'API-HBT-03',
+    metodo: 'put',
+    ruta: '/me/habits/sharing',
+    resumen:
+      'Compartir los hábitos con una lista explícita de profesionales, o cambiar con quiénes (08 C-12: ampliar es una aceptación nueva). Cada cambio es una versión nueva de la autorización, con la última que se vio (`expectedVersion`; si no es la última, 409 VERSION_CONFLICT) y la versión del texto mostrada, que tiene que ser la vigente (si no, 409 CONSENT_VERSION_STALE, como CON-02). `professionalIds` es la lista completa de quiénes los reciben; `declinedProfessionalIds`, a quiénes se les preguntó en este acto y la persona dijo que no. Un profesional que nadie nombró y empezó a acompañarla después sigue sin recibirlos (NOT_ASKED). Cada nombrado tiene que acompañarla hoy, una vez y en una sola lista (si no, 422 HABITS_RECIPIENT_NOT_AVAILABLE con un issue por cada uno). Sin el A3 vigente, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CompartirHabitosRequestSchema,
+    exitos: [{ status: 200, schema: HabitosCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['HABITS_RECIPIENT_NOT_AVAILABLE'] },
+    detalleDe422: {
+      codigo: 'HABITS_RECIPIENT_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.enum(['HABITS_RECIPIENT_NOT_AVAILABLE', 'HABITS_RECIPIENT_REPEATED']), path: z.string() })).min(1) }),
+      descripcion:
+        'details.issues trae un issue por profesional que no se puede nombrar: HABITS_RECIPIENT_NOT_AVAILABLE (no la acompaña hoy: sin vínculo o con el vínculo terminado) o HABITS_RECIPIENT_REPEATED (repetido o en las dos listas), con path (professionalIds[i] o declinedProfessionalIds[i]).',
+    },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.3 (FR-10) · 08 §12.2, C-11, C-12 · RNF-SEC-006',
+  },
+  {
+    id: 'API-HBT-04',
+    metodo: 'post',
+    ruta: '/me/habits/sharing/withdrawal',
+    resumen:
+      'Dejar de compartir los hábitos, para todos a la vez y desde ese momento (RNF-PRI-002): una versión nueva RETIRADA, con la última que se vio (si no es la activa, 409 VERSION_CONFLICT). No borra nada: los hábitos siguen siendo de la persona, y lo que cada profesional tiene de su formulario sigue siendo suyo. No exige el A3: retirar siempre se puede. Cerrar la cuenta también la retira.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: DejarDeCompartirHabitosRequestSchema,
+    exitos: [{ status: 200, schema: HabitosCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.5 (FR-10) · RNF-PRI-002 · 08 §13',
+  },
+  {
+    id: 'API-HBT-05',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/habits',
+    resumen:
+      'Los hábitos vigentes de la persona, para el profesional que los recibe: la autorización tiene que estar activa y nombrarlo con un componente de vínculo que el PDP permite hoy (aceptado, ni en pausa ni terminado, con su B2, la cuenta y el A3 de la persona). Si no, el 404 de lo inexistente: no se entera de que hay hábitos. Devuelve la parte, desde cuándo los recibe y la versión vigente, «Declarado por la persona», con su fecha y de dónde salió dicho como «en un formulario» o «en Mis hábitos»: sin de qué formulario ni el área de otro profesional, y sin la historia. No depende del Alcance: cada decisión del PDP queda registrada.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: HabitosCompartidosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.3 y §4.4 (FR-10) · RNF-SEC-006 · 08 §11, §14.1, C-11 · 08 §19.7',
   },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
@@ -3510,6 +3591,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-FRM-06',
   'API-FRI-02',
   'API-FRI-03',
+  'API-HBT-01',
+  'API-HBT-05',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',

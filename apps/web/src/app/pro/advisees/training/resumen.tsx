@@ -53,6 +53,7 @@ import {
   type FuenteDeContexto,
 } from './contexto-citable';
 import { useEntrenamiento } from './entrenamiento';
+import { pedidoDesde } from '../forms/formulario-de-inicio';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
 
@@ -244,8 +245,8 @@ export function VistaDeResumen() {
                 <button type="button" className="boton boton--secundario" onClick={() => setFormulario('evaluacion')}>
                   {COPY_ENTRENAMIENTO.nuevaEvaluacion}
                 </button>
-                {/* PF-02 (CA-FOR-06): pedir contexto desde acá y volver acá al enviarlo. */}
-                <Link className="boton boton--secundario" href={`/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento`}>
+                {/* PF-02 (CA-FOR-06): pedir contexto desde acá y volver acá al enviarlo. La misma dirección que en Nutrición (DL-165 D-8). */}
+                <Link className="boton boton--secundario" href={pedidoDesde('entrenamiento', asesoradoId)}>
                   {COPY_ENTRENAMIENTO.solicitarContexto}
                 </Link>
               </div>

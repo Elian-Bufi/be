@@ -5,12 +5,27 @@
  * Uso: cd apps/mobile && npx jest src/formulario-v2.test.ts --runInBand (después de construir @be/domain).
  */
 import { describe, expect, test } from '@jest/globals';
-import { CODIGO_DE_PROBLEMA_V2, COPY, COPY_FORMULARIOS, MENSAJE_DE_PROBLEMA_V2, type RespuestaDeCampoV2Entrada, type Resultado, type SeccionDePlantillaV2, type SolicitudPropiaV2 } from '@be/domain';
 import {
+  CODIGO_DE_PROBLEMA_V2,
+  COPY,
+  COPY_FORMULARIOS,
+  MENSAJE_DE_PROBLEMA_V2,
+  obligatoriasSinResponderDeLaParte,
+  partesDelFormulario,
+  primeraParteCon,
+  type RespuestaDeCampoV2Entrada,
+  type Resultado,
+  type SeccionDePlantillaV2,
+  type SolicitudPropiaV2,
+} from '@be/domain';
+import {
+  alternarEnElSubvalor,
   armarRespuestas,
   BORRADOR_VACIO,
   borradorDeRespuestas,
+  camposDeLosErrores,
   camposQueSeVen,
+  codigosDelSubvalor,
   claveDeParte,
   claveDeSubcampo,
   cuantasCorrigio,
@@ -187,6 +202,79 @@ describe('el borrador guarda lo tocado tal cual, y nada viene elegido', () => {
     expect(valorComo(tope, 'no_come', 'FOODS').alimentos).toHaveLength(2);
   });
 
+  test('DL-165 D-6 · varias opciones en un renglón: van en el borrador como códigos, se mandan en el orden de la pregunta y vuelven igual', () => {
+    const dias = [op('lun', 'Lunes'), op('mar', 'Martes'), op('jue', 'Jueves')];
+    const secciones: SeccionDePlantillaV2[] = [
+      {
+        sectionCode: 'semana',
+        title: 'Tu semana',
+        intro: null,
+        fields: [
+          {
+            ...base,
+            fieldCode: 'deportes',
+            label: 'Otras actividades',
+            dataType: 'LIST',
+            itemLabel: 'actividad',
+            minItems: 1,
+            maxItems: 3,
+            itemFields: [
+              { code: 'cual', label: 'Cuál', required: true, dataType: 'TEXT', maxLength: 80, helpText: 'Fútbol, natación…' },
+              { code: 'que_dias', label: 'Qué días', required: true, dataType: 'MULTI_CHOICE', options: dias },
+            ],
+          },
+        ],
+      },
+    ];
+    // Tocar suma o saca, y el texto queda en el orden de las opciones.
+    expect(alternarEnElSubvalor('', 'jue', dias)).toBe('jue');
+    expect(alternarEnElSubvalor('jue', 'lun', dias)).toBe('lun,jue');
+    expect(alternarEnElSubvalor('lun,jue', 'jue', dias)).toBe('lun');
+    expect(codigosDelSubvalor(' lun, ,jue ')).toEqual(['lun', 'jue']);
+    const borrador: Borrador = { deportes: { tipo: 'LIST', renglones: [{ id: 1, valores: { cual: 'Fútbol', que_dias: 'jue,lun' } }, { id: 2, valores: { cual: 'Natación', que_dias: '' } }] } };
+    const armadas = armarRespuestas(secciones, { requestedFieldCodes: ['deportes'], requiredFieldCodes: ['deportes'] }, borrador);
+    expect(armadas.respuestas).toEqual([{ fieldCode: 'deportes', answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }, { cual: 'Natación' }] } }]);
+    // Sin días en el segundo renglón, falta un dato obligatorio de ese renglón: se marca en él.
+    const antes = problemasAntesDeEnviar(secciones, { requestedFieldCodes: ['deportes'], requiredFieldCodes: ['deportes'] }, armadas);
+    expect(antes?.errores[claveDeSubcampo('deportes', 2, 'que_dias')]).toBe(MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_REQUIRED]);
+    // Lo guardado vuelve al borrador como códigos separados por coma.
+    expect(borradorDeRespuestas(secciones, [{ fieldCode: 'deportes', answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] } }])).toEqual({
+      deportes: { tipo: 'LIST', renglones: [{ id: 1, valores: { cual: 'Fútbol', que_dias: 'lun,jue' } }] },
+    });
+  });
+
+  test('DL-165 D-5 · antes de enviar, la app avisa en el número si pasa de los días marcados en la tabla', () => {
+    const secciones: SeccionDePlantillaV2[] = [
+      {
+        sectionCode: 'semana',
+        title: 'Tu semana',
+        intro: null,
+        fields: [
+          { ...base, fieldCode: 'dias', label: '¿Qué días podés?', dataType: 'MATRIX', rows: [op('lun', 'Lunes'), op('mar', 'Martes'), op('mie', 'Miércoles')], columns: [op('manana', 'Mañana'), op('no_puedo', 'No puedo')] },
+          { ...base, fieldCode: 'por_semana', label: '¿Cuántos días?', dataType: 'NUMBER', unit: 'días', limits: { minimum: 1, maximum: 7, integer: true }, maxFromMatrix: { fieldCode: 'dias', exceptColumns: ['no_puedo'] } },
+        ],
+      },
+    ];
+    const solicitud = { requestedFieldCodes: ['dias', 'por_semana'], requiredFieldCodes: [] };
+    const borrador: Borrador = { dias: { tipo: 'MATRIX', celdas: { lun: 'manana', mar: 'no_puedo' } }, por_semana: { tipo: 'NUMBER', texto: '2' } };
+    const antes = problemasAntesDeEnviar(secciones, solicitud, armarRespuestas(secciones, solicitud, borrador));
+    expect(antes?.errores.por_semana).toBe(MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]);
+    // Con uno, pasa.
+    expect(problemasAntesDeEnviar(secciones, solicitud, armarRespuestas(secciones, solicitud, { ...borrador, por_semana: { tipo: 'NUMBER', texto: '1' } }))).toBeNull();
+  });
+
+  test('DL-165 D-2 · «Quitar respuesta» deja la pregunta sin responder y no toca las demás; lo que no estaba, no cambia', () => {
+    const cargado = reducir([{ tipo: 'cargar', valores: COMPLETO }]);
+    const sinDonde = reducir([{ tipo: 'quitar', fieldCode: 'donde' }], cargado);
+    expect('donde' in sinDonde).toBe(false);
+    expect(valorComo(sinDonde, 'donde', 'CHOICE')).toEqual({ tipo: 'CHOICE', opcion: null, otro: '' });
+    expect(sinDonde.evita).toEqual(COMPLETO.evita);
+    // Al enviar, la pregunta quitada no viaja (09:1586-1587).
+    expect(armarRespuestas(SECCIONES, SOLICITUD, sinDonde).respuestas.map((r) => r.fieldCode)).not.toContain('donde');
+    // Quitar lo que no tiene respuesta devuelve el mismo borrador: no hay nada «sin guardar».
+    expect(reducir([{ tipo: 'quitar', fieldCode: 'veces_fuera' }], BORRADOR_VACIO)).toBe(BORRADOR_VACIO);
+  });
+
   test('cargar reemplaza todo y limpiar deja el borrador vacío; dos borradores iguales no son «algo sin guardar»', () => {
     const cargado = reducir([{ tipo: 'cargar', valores: COMPLETO }]);
     expect(cargado).toBe(COMPLETO);
@@ -289,6 +377,21 @@ describe('la validación del dominio, antes de enviar y al volver de la API', ()
     expect(Object.keys(antes?.errores ?? {}).sort()).toEqual(['come_fuera', 'comidas', 'comidas_por_dia']);
     expect(antes?.errores.comidas).toBe(MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.REQUIRED]);
     expect(antes?.lineas).toContain(`Las comidas de tu semana: ${MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.REQUIRED]}`);
+  });
+
+  test('DL-165 D-1 · lo que falta en cada parte sale de lo que se mandaría, y un problema lleva a la parte de la primera pregunta marcada', () => {
+    const partes = partesDelFormulario(SECCIONES, SOLICITUD);
+    expect(partes.map((p) => p.titulo)).toEqual(['Hábitos', 'Tus comidas']);
+    const armadas = armarRespuestas(SECCIONES, SOLICITUD, { notas: { tipo: 'TEXT', texto: 'hola' } });
+    // En «Hábitos» faltan dos obligatorias que se ven («donde» depende de «come_fuera»: oculta, no falta); en «Tus comidas», una.
+    expect(obligatoriasSinResponderDeLaParte(partes[0]!, SECCIONES, SOLICITUD, armadas.respuestas)).toEqual(['comidas_por_dia', 'come_fuera']);
+    expect(obligatoriasSinResponderDeLaParte(partes[1]!, SECCIONES, SOLICITUD, armadas.respuestas)).toEqual(['comidas']);
+    // Los avisos se juntan por pregunta, también los de un renglón o de una parte de un horario.
+    const marcados = { [claveDeSubcampo('comidas', 3, 'veces')]: 'x', [claveDeParte('horarios', 'levanta')]: 'y', comidas: 'z' };
+    expect(camposDeLosErrores(marcados).sort()).toEqual(['comidas', 'horarios']);
+    expect(primeraParteCon(partes, camposDeLosErrores(marcados))).toBe(1);
+    const antes = problemasAntesDeEnviar(SECCIONES, SOLICITUD, armadas);
+    expect(primeraParteCon(partes, camposDeLosErrores(antes?.errores ?? {}))).toBe(0);
   });
 
   test('con un valor fuera de lo que admite, el resumen cuenta los campos y cada uno dice lo suyo', () => {

@@ -312,6 +312,15 @@ import {
   type RectificarRespuestaV2Request,
   type ResolverPropuestaRequest,
 } from './contratos-formularios-v2';
+import {
+  HabitosCompartidosEstadoResponseSchema,
+  HabitosCompartidosResponseSchema,
+  HabitosRegistradosResponseSchema,
+  MisHabitosResponseSchema,
+  type CompartirHabitosRequest,
+  type DejarDeCompartirHabitosRequest,
+  type RegistrarHabitosRequest,
+} from './contratos-habitos-de-la-persona';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -1524,6 +1533,29 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-FRI-08: la persona dice «No es correcto»; lo cargado se borra y la Solicitud sigue pendiente. */
     rechazarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: ResolverPropuestaRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/proposal/rejection`, { token, claveDeIdempotencia, esquema: PropuestaResueltaResponseSchema, cuerpo });
+    },
+
+    // ─── HBT · los hábitos de la persona (WP-FORMULARIOS-RONDA-2, FR-10; DL-165 D-9) ─────────────
+    // Familia propia de BE: API-HAB ya es «Mis habituales» (DL-109). Ninguna APK publicada las lee.
+    /** API-HBT-01: mis hábitos (lo vigente y la historia), la autorización y mis profesionales. */
+    misHabitos(token: string) {
+      return llamar('GET', '/me/habits', { token, esquema: MisHabitosResponseSchema });
+    },
+    /** API-HBT-02: una versión nueva de mis hábitos, desde «Mis hábitos». */
+    registrarMisHabitos(token: string, cuerpo: RegistrarHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/habits', { token, claveDeIdempotencia, esquema: HabitosRegistradosResponseSchema, cuerpo });
+    },
+    /** API-HBT-03: compartirlos, o cambiar con quiénes, con el texto que se acepta. */
+    compartirMisHabitos(token: string, cuerpo: CompartirHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', '/me/habits/sharing', { token, claveDeIdempotencia, esquema: HabitosCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-04: dejar de compartirlos, para todos a la vez. */
+    dejarDeCompartirMisHabitos(token: string, cuerpo: DejarDeCompartirHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/habits/sharing/withdrawal', { token, claveDeIdempotencia, esquema: HabitosCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-05: los hábitos que la persona le comparte a este profesional. Si no se los comparte, el 404 de lo inexistente. */
+    habitosDeLaPersona(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits`, { token, esquema: HabitosCompartidosResponseSchema });
     },
   };
 }

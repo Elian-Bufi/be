@@ -8371,6 +8371,11 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
+/* DL-165 D-7 · «Obligatoria», debajo de la pregunta pedida que lo es: en la prueba, la casilla sola no se notaba. */
+.preguntas-del-pedido__obligatoria {
+  margin: -0.4rem 0 0.5rem;
+}
+
 /* La aclaración que la persona lee debajo de la pregunta: se abre para todas a la vez, con el botón de arriba de la tabla. */
 .preguntas-del-pedido__ayuda {
   display: block;
@@ -13065,15 +13070,16 @@ details[open] > summary:not([class])::before {
   font-weight: 400;
 }
 
+/* DL-165 D-2: «¿Para qué?», plegado al pie de la pregunta; desplegado, el texto va debajo del botón. */
 .pregunta-de-inicio__para-que {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
-.pregunta-de-inicio__para-que .icono {
-  flex: none;
-  margin-top: 0.15rem;
+.pregunta-de-inicio__para-que .nota[hidden] {
+  display: none;
 }
 
 .pregunta-de-inicio .campo,
@@ -13110,6 +13116,59 @@ details[open] > summary:not([class])::before {
 
 .campo-de-inicio__sin-responder {
   align-self: flex-start;
+}
+
+/* DL-165 D-1 · el índice de las partes de «Cargar con la persona»: cada parte con lo que le falta (D-7), y el repaso. */
+.partes-del-formulario ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.partes-del-formulario__parte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.partes-del-formulario__parte[aria-current='step'] {
+  border: 2px solid var(--texto);
+  font-weight: 600;
+}
+
+.partes-del-formulario__parte:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.partes-del-formulario__faltan {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.formulario-de-inicio__paso {
+  margin: 0.75rem 0 0;
+  color: var(--tenue);
+  font-weight: 600;
+}
+
+/* DL-165 D-7 · una obligatoria se distingue por la forma de su etiqueta, además de por la palabra. */
+.etiqueta-de-dato[data-obligatoria] {
+  border-color: var(--texto);
+  font-weight: 600;
 }
 
 /* Las opciones: botones de opción y casillas nativos, cada uno en su pastilla; la elegida se reconoce por el control y
@@ -13187,6 +13246,20 @@ details[open] > summary:not([class])::before {
 
 .lista-que-se-repite__campos .campo {
   margin: 0;
+}
+
+/* DL-165 D-6 · varias opciones dentro del renglón («Qué días»): ocupan todo el ancho del renglón. */
+.lista-que-se-repite__varias {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lista-que-se-repite__varias legend {
+  padding: 0;
+  font-weight: 600;
 }
 
 .lista-que-se-repite__quitar {
@@ -13336,6 +13409,27 @@ details[open] > summary:not([class])::before {
   margin: 0.4rem 0 0.1rem;
   font-size: 0.95rem;
   font-weight: 600;
+}
+
+/* FR-10 (DL-165 D-9) · «Sus hábitos», arriba de «Solicitudes»: lo que la persona le comparte a este profesional. La
+   procedencia se dice una vez, en un renglón, y las respuestas van como en «Lo que declaró». */
+.sus-habitos {
+  margin-bottom: 1.75rem;
+  padding: 1rem 1.2rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.sus-habitos__procedencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+}
+
+.sus-habitos__procedencia .nota {
+  margin: 0;
 }
 
 /* Una confirmación dentro de la página, en el lugar de la acción: la pregunta, el error si lo hubo y los dos botones. */

@@ -38,6 +38,7 @@ import {
   type SolicitudAValidar,
   type SolicitudPropiaV2,
   type ValorDeRespuestaV2,
+  type ValorDeSubcampo,
 } from '@be/domain';
 
 /** Textos propios de la APK para los formularios V2; los compartidos con el website están en `COPY_FORMULARIOS_V2`. */
@@ -47,9 +48,9 @@ export const TEXTOS_DE_FORMULARIO_V2 = {
   sinElegir: 'Sin elegir',
   renglones: (n: number, maximo: number) => `${n} de hasta ${maximo}`,
   hastaOpciones: (n: number) => (n === 1 ? 'Podés elegir 1.' : `Podés elegir hasta ${n}.`),
-  elegiUna: 'Elegí una opción. Tocá de nuevo la elegida para dejarla sin responder.',
   elegiVarias: 'Podés elegir varias.',
-  unaPorFila: 'Elegí una opción por fila. Tocá de nuevo la elegida para soltarla.',
+  // DL-165 D-2: el «tocá de nuevo para soltarla» se fue; una pregunta opcional se suelta con «Quitar respuesta».
+  unaPorFila: 'Elegí una opción por fila.',
   tocaLosQueApliquen: 'Tocá los que apliquen y sumá los que falten.',
   sumar: 'Sumar',
   quitar: 'Quitar',
@@ -90,10 +91,32 @@ export const TEXTOS_DE_FORMULARIO_V2 = {
 
 export type EleccionSiONo = '' | 'SI' | 'NO';
 
-/** Un renglón de una lista: un id local para dibujarlo y lo escrito o elegido en cada subcampo, como texto. */
+/**
+ * Un renglón de una lista: un id local para dibujarlo y lo escrito o elegido en cada subcampo, como texto. Las varias
+ * opciones de un subcampo (formato 3, DL-165 D-6) van como sus códigos separados por coma («lun,jue»): así el borrador
+ * guardado en el teléfono (FR-01) sigue siendo de textos.
+ */
 export interface RenglonDeBorrador {
   readonly id: number;
   readonly valores: Readonly<Record<string, string>>;
+}
+
+/** Los códigos elegidos en un subcampo de varias opciones, desde su texto en el borrador. */
+export const codigosDelSubvalor = (texto: string): string[] =>
+  texto
+    .split(',')
+    .map((c) => c.trim())
+    .filter((c) => c !== '');
+
+/** Suma o saca una opción de un subcampo de varias opciones, en el orden de sus opciones. */
+export function alternarEnElSubvalor(texto: string, codigo: string, opciones: readonly { readonly code: string }[]): string {
+  const elegidos = new Set(codigosDelSubvalor(texto));
+  if (elegidos.has(codigo)) elegidos.delete(codigo);
+  else elegidos.add(codigo);
+  return opciones
+    .map((o) => o.code)
+    .filter((c) => elegidos.has(c))
+    .join(',');
 }
 
 export interface AlimentoDeBorrador {
@@ -196,6 +219,8 @@ export type EventoDeBorrador =
   | { readonly tipo: 'quitar-alimento'; readonly fieldCode: string; readonly nombre: string }
   | { readonly tipo: 'motivo-de-alimento'; readonly fieldCode: string; readonly nombre: string; readonly motivo: string | null }
   | { readonly tipo: 'escribir-hora'; readonly fieldCode: string; readonly parte: string; readonly texto: string }
+  /** DL-165 D-2 · «Quitar respuesta»: la pregunta vuelve a estar sin responder, como si no se hubiera tocado. */
+  | { readonly tipo: 'quitar'; readonly fieldCode: string }
   /** Reemplaza todo el borrador: lo que cargó el profesional, o la respuesta vigente para corregirla. */
   | { readonly tipo: 'cargar'; readonly valores: Borrador }
   | { readonly tipo: 'limpiar' };
@@ -278,6 +303,11 @@ export function reducirBorrador(b: Borrador, ev: EventoDeBorrador): Borrador {
       const v = actual(b, ev.fieldCode, 'TIMES');
       return con(b, ev.fieldCode, { tipo: 'TIMES', horas: { ...v.horas, [ev.parte]: ev.texto } });
     }
+    case 'quitar': {
+      if (!(ev.fieldCode in b)) return b;
+      const { [ev.fieldCode]: _, ...resto } = b;
+      return resto;
+    }
     case 'cargar':
       return ev.valores;
     case 'limpiar':
@@ -290,7 +320,7 @@ export function reducirBorrador(b: Borrador, ev: EventoDeBorrador): Borrador {
 /** Un número como texto para el campo: con coma decimal y sin punto de miles, que `leerNumero` rechaza como ambiguo. */
 export const textoDeNumero = (n: number): string => String(n).replace('.', ',');
 
-const textoDeSubvalor = (v: string | number | boolean): string => (typeof v === 'boolean' ? (v ? 'SI' : 'NO') : typeof v === 'number' ? textoDeNumero(v) : v);
+const textoDeSubvalor = (v: ValorDeSubcampo): string => (typeof v === 'boolean' ? (v ? 'SI' : 'NO') : typeof v === 'number' ? textoDeNumero(v) : Array.isArray(v) ? v.join(',') : v);
 
 export function valorDeBorradorDe(valor: ValorDeRespuestaV2): ValorDeBorrador {
   switch (valor.type) {
@@ -347,6 +377,9 @@ export const claveDeSubcampo = (fieldCode: string, id: number, code: string): st
 export const claveDeParte = (fieldCode: string, parte: string): string => `${fieldCode}/${parte}`;
 const campoDeLaClave = (clave: string): string => clave.split('/')[0]!;
 
+/** Las preguntas que tienen un aviso, sin repetir: de un campo, de un renglón o de una parte de un horario (DL-165 D-1). */
+export const camposDeLosErrores = (errores: Readonly<Record<string, string>>): string[] => [...new Set(Object.keys(errores).map(campoDeLaClave))];
+
 /**
  * Una hora escrita como la escribe la gente («7:30», «07.30», «0730», «7h30») en `HH:MM`, o `null` si no es una hora.
  */
@@ -402,14 +435,19 @@ function valorDeRespuesta(campo: CampoDePlantillaV2, v: ValorDeBorrador, errores
     }
     case 'LIST': {
       const l = v as Extract<ValorDeBorrador, { tipo: 'LIST' }>;
-      const items: Record<string, string | number | boolean>[] = [];
+      const items: Record<string, ValorDeSubcampo>[] = [];
       const idsEnviados: number[] = [];
       for (const renglon of l.renglones) {
-        const item: Record<string, string | number | boolean> = {};
+        const item: Record<string, ValorDeSubcampo> = {};
         for (const sub of campo.itemFields) {
           const crudo = (renglon.valores[sub.code] ?? '').trim();
           if (crudo === '') continue;
-          if (sub.dataType === 'NUMBER') {
+          if (sub.dataType === 'MULTI_CHOICE') {
+            // Formato 3 (DL-165 D-6): las opciones elegidas, en el orden de la pregunta.
+            const elegidos = new Set(codigosDelSubvalor(crudo));
+            const codigos = sub.options.map((o) => o.code).filter((c) => elegidos.has(c));
+            if (codigos.length > 0) item[sub.code] = codigos;
+          } else if (sub.dataType === 'NUMBER') {
             const n = leerNumero(crudo);
             if (n === null) errores[claveDeSubcampo(campo.fieldCode, renglon.id, sub.code)] = motivoDeNumeroIlegible(crudo);
             else item[sub.code] = n;

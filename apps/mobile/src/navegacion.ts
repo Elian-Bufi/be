@@ -70,6 +70,8 @@ export type Ruta =
   | { readonly nombre: 'historial-de-entrenamiento'; readonly desde?: Ruta }
   | { readonly nombre: 'plan-de-entrenamiento'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'mi-solicitud'; readonly id: string; readonly desde?: Ruta }
+  // WP-FORMULARIOS-RONDA-2 (FR-10; DL-165 D-9): «Mis hábitos», desde Información y desde la tarjeta de Inicio.
+  | { readonly nombre: 'mis-habitos'; readonly desde?: Ruta }
   // WP-ENTRENAMIENTO-SERIES: la sesión enfocada. `sesion` es la de «Hoy» (API-TRN-14), que se muestra mientras llega
   // API-SER-02; `modo` dice si lleva cronómetros (hoy) o no (otro día: el pasado no se cronometra).
   | {
@@ -185,6 +187,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
       return ruta.area === 'NUTRICION' ? 'nutricion' : 'entrenamiento';
     case 'mis-solicitudes':
     case 'mi-solicitud':
+    case 'mis-habitos':
       return 'informacion';
     case 'cuenta':
     case 'novedades':
@@ -261,6 +264,7 @@ function madre(ruta: Ruta): Ruta | null {
     case 'plan-de-entrenamiento':
       return { nombre: 'historial-de-entrenamiento' };
     case 'mi-solicitud':
+    case 'mis-habitos':
       return { nombre: 'mis-solicitudes' };
     case 'sesion-de-entrenamiento':
     case 'ejecucion-de-entrenamiento':
@@ -407,6 +411,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Mi evolución';
     case 'mis-solicitudes':
       return 'Volver a Información';
+    case 'mis-habitos':
+      return 'Volver a Mis hábitos';
     case 'historial-de-entrenamiento':
       return 'Volver a Tu historial';
     case 'ejecucion-de-entrenamiento':

@@ -12,6 +12,7 @@
  *   no es una Respuesta y no lleva procedencia por campo.
  */
 import {
+  CAPACIDAD_FORMULARIOS_FORMATO_3,
   camposEnOrden,
   campoV1AV2,
   CodigoDeError,
@@ -40,6 +41,7 @@ import type {
   SolicitudDeFormulario as FilaDeSolicitud,
   VersionDePlantillaDeFormulario as FilaDeVersionDePlantilla,
 } from '@prisma/client';
+import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi } from '../http/errores';
 import { solicitudApi, terminalVersion, type ContenidoDePlantilla } from './lectura-formularios';
 
@@ -47,19 +49,44 @@ const token = (n: number): string => `v${n}`;
 
 // ─── La versión y su definición ─────────────────────────────────────────────────────────────────
 
-/** Lo que siembra la migración para una versión V2: el formato, los minutos estimados y las secciones del contrato V2. */
+/**
+ * Lo que siembra la migración para una versión V2: el formato, los minutos estimados y las secciones del contrato V2. El
+ * formato 3 (DL-165) suma lo de la ronda 2 y no trae minutos (D-3).
+ */
 interface ContenidoV2 {
-  format: 2;
+  format: 2 | 3;
   estimatedMinutes?: number | null;
   sections: SeccionDePlantillaV2[];
 }
 
-/** Una versión es V2 si su contenido declara `format: 2`; las de P0 no lo tienen (DL-164 D-5). */
-export function esVersionV2(contenido: unknown): boolean {
-  return (contenido as { format?: unknown } | null)?.format === 2;
+/** El formato que declara el contenido de una versión: 2 o 3; `null` en las de P0, que no lo tienen. */
+function formatoDe(contenido: unknown): 2 | 3 | null {
+  const f = (contenido as { format?: unknown } | null)?.format;
+  return f === 2 || f === 3 ? f : null;
 }
 
+/**
+ * Una versión es V2 si su contenido declara `format: 2` o, desde DL-165, `format: 3`; las de P0 no lo tienen (DL-164
+ * D-5). Con ese solo dato FRM-02 no la sirve, FRM-06 no lista sus Solicitudes y FRM-05/07/08 responden el 404.
+ */
+export function esVersionV2(contenido: unknown): boolean {
+  return formatoDe(contenido) !== null;
+}
+
+/** DL-165 · una versión de formato 3: solo se le entrega a un cliente que declara `forms-format-3`. */
+export const esFormato3 = (contenido: unknown): boolean => formatoDe(contenido) === 3;
+
+/**
+ * Si a este pedido se le retiene una versión: es de formato 3 y el cliente no declara que la lee (la APK 0.20 y las
+ * anteriores). El website y la APK nueva la declaran. Como DL-122: no se infiere ni se finge.
+ */
+export const seRetieneElFormato = (ctx: Pick<ContextoDeSolicitud, 'capacidades'>, contenido: unknown): boolean => esFormato3(contenido) && !ctx.capacidades.has(CAPACIDAD_FORMULARIOS_FORMATO_3);
+
+/** El 404 de lo inexistente (09:226), idéntico: el motivo real queda solo en la auditoría. */
+export const formatoRetenido = (): ErrorDeApi => new ErrorDeApi(404, CodigoDeError.RESOURCE_NOT_FOUND, 'Recurso no encontrado.', undefined, CodigoDeError.CLIENT_CAPABILITY_REQUIRED);
+
 export interface DefinicionV2 {
+  readonly format: 2 | 3;
   readonly usesNewTypes: boolean;
   readonly estimatedMinutes: number | null;
   readonly sections: SeccionDePlantillaV2[];
@@ -67,13 +94,15 @@ export interface DefinicionV2 {
 
 /** La definición de cualquier versión en formato V2. La de P0 se traduce campo por campo, con sus límites (DL-101). */
 export function definicionV2(contenido: unknown): DefinicionV2 {
-  if (esVersionV2(contenido)) {
+  const formato = formatoDe(contenido);
+  if (formato !== null) {
     const c = contenido as ContenidoV2;
     const minutos = c.estimatedMinutes;
-    return { usesNewTypes: true, estimatedMinutes: typeof minutos === 'number' && Number.isInteger(minutos) && minutos > 0 ? minutos : null, sections: c.sections };
+    return { format: formato, usesNewTypes: true, estimatedMinutes: typeof minutos === 'number' && Number.isInteger(minutos) && minutos > 0 ? minutos : null, sections: c.sections };
   }
   const c = contenido as ContenidoDePlantilla;
   return {
+    format: 2,
     usesNewTypes: false,
     estimatedMinutes: null,
     sections: (c.sections ?? []).map((s) => ({
@@ -96,7 +125,13 @@ export function camposV2PorCodigo(secciones: readonly SeccionDePlantillaV2[]): M
  * a las versiones de P0 que no tienen la clave.
  */
 export async function versionesV2(tx: Prisma.TransactionClient): Promise<string[]> {
-  const filas = await tx.$queryRaw<{ id: string }[]>`SELECT "id"::text AS "id" FROM "version_de_plantilla_de_formulario" WHERE "contenido" ->> 'format' = '2'`;
+  const filas = await tx.$queryRaw<{ id: string }[]>`SELECT "id"::text AS "id" FROM "version_de_plantilla_de_formulario" WHERE "contenido" ->> 'format' IN ('2', '3')`;
+  return filas.map((f) => f.id);
+}
+
+/** DL-165 · las versiones de formato 3, por id: FRI-02 no lista sus Solicitudes a un cliente que no las lee. */
+export async function versionesDeFormato3(tx: Prisma.TransactionClient): Promise<string[]> {
+  const filas = await tx.$queryRaw<{ id: string }[]>`SELECT "id"::text AS "id" FROM "version_de_plantilla_de_formulario" WHERE "contenido" ->> 'format' = '3'`;
   return filas.map((f) => f.id);
 }
 
@@ -120,7 +155,7 @@ export function versionDePlantillaV2Api(v: VersionConPlantilla): VersionDePlanti
     domain: v.dominio,
     version: v.version,
     status: v.sucesora ? 'HISTORICAL_NOT_SELECTABLE' : 'SELECTABLE',
-    format: 2,
+    format: d.format,
     usesNewTypes: d.usesNewTypes,
     estimatedMinutes: d.estimatedMinutes,
     sections: d.sections,

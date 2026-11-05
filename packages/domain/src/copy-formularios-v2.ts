@@ -36,14 +36,18 @@ export const MENSAJE_DE_PROBLEMA_V2: Readonly<Record<CodigoDeProblemaV2, string>
   [CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_REQUIRED]: 'Falta completar un dato de este renglón.',
   [CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_UNKNOWN]: 'Este renglón tiene un dato que la pregunta no pide.',
   [CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_INVALID]: 'Revisá un dato de este renglón.',
+  [CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]: 'Es más de lo que marcaste en la tabla.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.NOT_INTEGER]: 'Va un número entero.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.BELOW_MINIMUM]: 'El número es más chico de lo que admite la pregunta.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.ABOVE_MAXIMUM]: 'El número es más grande de lo que admite la pregunta.',
   [CODIGO_DE_TEXTO_DEMASIADO_LARGO]: 'El texto es más largo de lo que admite la pregunta.',
 };
 
+/**
+ * DL-165 D-3: ningún texto dice cuántos minutos lleva un formulario (un tiempo estimado se lee como una promesa); lo que
+ * falta lo dice «Parte 1 de 6». `estimatedMinutes` sigue en el contrato porque la APK 0.20 lo lee (DL-152).
+ */
 export const COPY_FORMULARIOS_V2 = {
-  minutos: (n: number) => `Te lleva unos ${n} minutos.`,
   obligatoria: 'Obligatoria',
   opcional: 'Opcional',
   otro: 'Otro',
@@ -54,6 +58,35 @@ export const COPY_FORMULARIOS_V2 = {
   motivo: 'Por qué',
   sinResponder: 'Sin responder',
   paraQue: 'Para qué se usa',
+  // DL-165 D-2 · las ayudas, plegadas: el «para qué» se abre con un botón, y una pregunta opcional se suelta con otro.
+  paraQueBoton: '¿Para qué?',
+  /** El nombre del botón para el lector de pantalla: dice de qué pregunta es. */
+  paraQueDe: (pregunta: string) => `¿Para qué? ${pregunta}`,
+  quitarRespuesta: 'Quitar respuesta',
+  quitarRespuestaDe: (pregunta: string) => `Quitar respuesta: ${pregunta}`,
+
+  // DL-165 D-1 · una parte por pantalla, en la app y en «Cargar con la persona» (`partes-de-formulario.ts`).
+  parte: (n: number, total: number) => `Parte ${n} de ${total}`,
+  /** Lo que anuncia el lector de pantalla al cambiar de parte. */
+  parteConTitulo: (n: number, total: number, titulo: string) => `Parte ${n} de ${total}: ${titulo}`,
+  anterior: 'Anterior',
+  siguiente: 'Siguiente',
+  repasar: 'Repasar',
+  repaso: 'Repasá antes de enviar',
+  repasoBajada: 'Así queda lo que respondiste. Podés cambiar cualquier parte antes de enviar.',
+  cambiarParte: 'Cambiar',
+  cambiarParteDe: (titulo: string) => `Cambiar «${titulo}»`,
+  volverALaParte: (titulo: string) => `Volver a «${titulo}»`,
+  quedaronSinResponder: (n: number, titulo: string) =>
+    n === 1 ? `En «${titulo}» quedó 1 pregunta obligatoria sin responder. Podés volver cuando quieras.` : `En «${titulo}» quedaron ${n} preguntas obligatorias sin responder. Podés volver cuando quieras.`,
+  faltanPorResponder: (n: number) => (n === 1 ? 'Falta 1 pregunta obligatoria por responder.' : `Faltan ${n} preguntas obligatorias por responder.`),
+  parteSinPreguntas: 'Con lo que respondiste antes, esta parte no tiene preguntas. Seguí con la próxima.',
+  obligatoriaSinResponder: 'Sin responder · obligatoria',
+  /** DL-165 D-5 · junto a un número con su tope en una tabla: cuánto admite con lo marcado. */
+  hastaLoMarcado: (n: number, tabla: string) => (n === 0 ? `En «${tabla}» todavía no marcaste ninguno.` : `Hasta ${n}, por lo que marcaste en «${tabla}».`),
+  /** En el índice de las partes de «Cargar con la persona» (DL-165 D-7: las obligatorias, a la vista). */
+  obligatoriasPorResponder: (n: number) => (n === 1 ? '1 obligatoria por responder' : `${n} obligatorias por responder`),
+  partesDelFormulario: 'Partes del formulario',
 
   /** En la APK. */
   apk: {
@@ -92,5 +125,8 @@ export const COPY_FORMULARIOS_V2 = {
       `Cargado por ${profesional} el ${cargado} · confirmado por la persona el ${confirmado}`,
     corregidas: (n: number) => (n === 0 ? 'Lo confirmó tal cual.' : n === 1 ? 'Corrigió 1 respuesta antes de confirmar.' : `Corrigió ${n} respuestas antes de confirmar.`),
     appNueva: 'Este formulario se responde con la app nueva. Si la persona tiene una versión anterior, no lo va a ver hasta actualizarla; mientras tanto, podés cargarlo con ella desde acá.',
+    // DL-165 D-1 · el repaso de lo cargado, antes de enviarlo para que la persona lo confirme.
+    repasoBajada: 'Así queda lo que cargaste. Podés cambiar cualquier parte antes de enviar: después, la persona lo revisa en su app.',
+    sinCargar: 'Sin cargar',
   },
 } as const;

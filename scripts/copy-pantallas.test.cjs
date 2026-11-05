@@ -117,6 +117,22 @@ const DOMINIOS = [
     minimo: 4,
   },
   {
+    // WP-FORMULARIOS-RONDA-2, FR-10 (DL-165 D-9): los hábitos de la persona, en la APK («Mis hábitos», compartirlos, la
+    // pregunta por un profesional nuevo y «¿Sigue igual?») y en el website («Sus hábitos»), con su copy. Hablan de las dos
+    // áreas: pasan por la lista de los formularios, la de nutrición y la de entrenamiento.
+    nombre: 'los hábitos de la persona',
+    archivos: [
+      inicio('mis-habitos.tsx'),
+      movil('habitos-en-el-telefono.ts'),
+      movil('pregunta-v2.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/sus-habitos.ts'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/tarjeta-de-sus-habitos.tsx'),
+      join(RAIZ, 'packages/domain/src/copy-habitos-de-la-persona.ts'),
+    ],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 6,
+  },
+  {
     // WP-NOTAS-DE-COORDINACION (DL-140): el diálogo y el Resumen del website, la pantalla de la APK y su copy. Una nota habla
     // de cualquier área: pasa por la lista de nutrición y por la de la cartera, que ya reúne las de entrenamiento,
     // antropometría e información.

@@ -459,8 +459,21 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
   const claves = [...PANTALLA.matchAll(/useLecturaRecordada\(token, (`[^`]+`|'[^']+')/g)].map((m) => m[1]);
   assert.deepEqual(
     claves.sort(),
-    ['`entrenamiento-hoy:${dia}`', '`entrenamiento-agenda:${dia}`', "'entrenamiento-en-curso'", '`hoy-nutricional:${dia}:${diaTipo ?? \'\'}`', "'inicio-ultimo-registro'", '`inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`', "'inicio-pendientes'", "'mi-evolucion:ultimos-90'"].sort(),
+    [
+      '`entrenamiento-hoy:${dia}`',
+      '`entrenamiento-agenda:${dia}`',
+      "'entrenamiento-en-curso'",
+      '`hoy-nutricional:${dia}:${diaTipo ?? \'\'}`',
+      "'inicio-ultimo-registro'",
+      '`inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`',
+      "'inicio-pendientes'",
+      "'mi-evolucion:ultimos-90'",
+      // DL-165 D-9 (FR-10): la pregunta por un profesional nuevo, solo cuando hay algo que preguntar.
+      "'mis-habitos'",
+    ].sort(),
   );
+  // «Tus hábitos» en Inicio es la misma lectura que «Mis hábitos» (API-HBT-01): la misma clave.
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/mis-habitos.tsx'), 'utf8'), /useLecturaRecordada\(token, 'mis-habitos', pedir, sesionPerdida\)/);
   // Las cinco tarjetas están en la pantalla, cada una con su lectura.
   const PRINCIPAL = fuente('inicio.tsx');
   for (const tarjeta of ['EntrenamientoDeHoy', 'NutricionDeHoy', 'Pendientes', 'ActividadDeEntrenamiento', 'Mediciones']) assert.match(PRINCIPAL, new RegExp(`<${tarjeta} `));

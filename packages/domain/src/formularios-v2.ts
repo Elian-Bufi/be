@@ -5,7 +5,7 @@
  */
 import type { CampoDePlantilla } from './contratos-formularios';
 import { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_TEXTO_DEMASIADO_LARGO, largoDeTexto } from './contratos-formularios';
-import type { CampoDePlantillaV2, RespuestaDeCampoV2Entrada, SeccionDePlantillaV2, SubcampoDeLista, TipoDeCampoV2, ValorDeRespuestaV2 } from './contratos-formularios-v2';
+import type { CampoDePlantillaV2, RespuestaDeCampoV2Entrada, SeccionDePlantillaV2, SubcampoDeLista, TipoDeCampoV2, ValorDeRespuestaV2, ValorDeSubcampo } from './contratos-formularios-v2';
 import { limiteVulnerado, type LimitesNumericos } from './formularios';
 
 /** Los seis tipos que la APK instalada no conoce (DL-164 D-1). Con uno solo, la versión «usa tipos nuevos». */
@@ -33,6 +33,8 @@ export const CODIGO_DE_PROBLEMA_V2 = {
   ITEM_FIELD_REQUIRED: 'FORM_ANSWER_ITEM_FIELD_REQUIRED',
   ITEM_FIELD_UNKNOWN: 'FORM_ANSWER_ITEM_FIELD_UNKNOWN',
   ITEM_FIELD_INVALID: 'FORM_ANSWER_ITEM_FIELD_INVALID',
+  /** DL-165 D-5 (formato 3): el número pasa de lo marcado en la tabla de la que toma su tope (`maxFromMatrix`). */
+  MORE_THAN_MARKED: 'FORM_ANSWER_MORE_THAN_MARKED',
 } as const;
 export type CodigoDeProblemaV2 =
   | (typeof CODIGO_DE_PROBLEMA_V2)[keyof typeof CODIGO_DE_PROBLEMA_V2]
@@ -108,14 +110,44 @@ function problemaDeNumero(valor: number, limites: LimitesNumericos | null | unde
   return vulnerado ? CODIGO_DE_NUMERO_FUERA_DE_LIMITES[vulnerado] : null;
 }
 
-function problemaDeSubcampo(sub: SubcampoDeLista, valor: string | number | boolean): boolean {
+function problemaDeSubcampo(sub: SubcampoDeLista, valor: ValorDeSubcampo): boolean {
   switch (sub.dataType) {
     case 'TEXT': return typeof valor !== 'string' || vacio(valor) || largoDeTexto(valor) > sub.maxLength;
     case 'NUMBER': return typeof valor !== 'number' || problemaDeNumero(valor, sub.limits) !== null;
     case 'CHOICE': return typeof valor !== 'string' || !sub.options.some((o) => o.code === valor);
     case 'BOOLEAN': return typeof valor !== 'boolean';
+    // Formato 3 (DL-165 D-6): al menos una opción, todas de la pregunta y sin repetir.
+    case 'MULTI_CHOICE': {
+      if (!Array.isArray(valor) || valor.length === 0) return true;
+      const codigos = new Set(sub.options.map((o) => o.code));
+      return valor.some((c) => !codigos.has(c)) || new Set(valor).size !== valor.length;
+    }
   }
 }
+
+// ─── El formato 3 (DL-165) ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Lo que una versión usa del formato 3 (DL-165): el subcampo de varias opciones, el ejemplo de un subcampo de texto, el
+ * tope de un número desde una tabla (`maxFromMatrix`) y si una pregunta viene pedida por defecto (`requestedByDefault`). Una
+ * versión que usa algo de esto **tiene que** declarar `format: 3`, y una de formato 2 no puede usarlo: si no, la APK
+ * 0.20 recibiría una forma que no lee (DL-152). Lo verifican las pruebas de las plantillas y el generador de la migración.
+ */
+export function loQueUsaDelFormato3(secciones: readonly SeccionDePlantillaV2[]): string[] {
+  const usos: string[] = [];
+  for (const campo of camposEnOrden(secciones)) {
+    if (campo.requestedByDefault !== undefined) usos.push(`${campo.fieldCode}: si viene pedida por defecto`);
+    if (campo.dataType === 'NUMBER' && campo.maxFromMatrix !== undefined) usos.push(`${campo.fieldCode}: el tope desde la tabla ${campo.maxFromMatrix.fieldCode}`);
+    if (campo.dataType !== 'LIST') continue;
+    for (const sub of campo.itemFields) {
+      if (sub.dataType === 'MULTI_CHOICE') usos.push(`${campo.fieldCode}.${sub.code}: varias opciones en el renglón`);
+      if (sub.dataType === 'TEXT' && sub.helpText !== undefined) usos.push(`${campo.fieldCode}.${sub.code}: el ejemplo del renglón`);
+    }
+  }
+  return usos;
+}
+
+export const usaLoDelFormato3 = (secciones: readonly SeccionDePlantillaV2[]): boolean => loQueUsaDelFormato3(secciones).length > 0;
 
 /** Los problemas de un valor contra su campo, sin mirar si se pidió o si se ve (eso lo hace `validarRespuestasV2`). */
 export function problemasDeValor(campo: CampoDePlantillaV2, valor: ValorDeRespuestaV2, path: string): ProblemaDeRespuestaV2[] {
@@ -219,7 +251,8 @@ export interface SolicitudAValidar {
  * Todos los problemas de un conjunto de respuestas, a la vez (como DL-104). Un campo:
  * - tiene que existir en la versión y estar pedido en la Solicitud (minimización, 09:1528);
  * - no puede repetirse ni estar oculto por su condición (no se guarda lo que no se preguntó);
- * - si es obligatorio y se ve, tiene que estar.
+ * - si es obligatorio y se ve, tiene que estar;
+ * - un número con su tope en una tabla (formato 3, DL-165 D-5) no pasa de lo marcado en ella.
  */
 export function validarRespuestasV2(
   secciones: readonly SeccionDePlantillaV2[],
@@ -247,7 +280,38 @@ export function validarRespuestasV2(
       problemas.push({ code: CODIGO_DE_PROBLEMA_V2.REQUIRED, path: 'answers', fieldCode: codigo });
     }
   }
+  // DL-165 D-5 (formato 3): un número con su tope en una tabla no pasa de lo marcado en ella. Solo si el número no tenía
+  // ya otro problema (un número fuera de sus límites se corrige primero) y si la tabla se respondió.
+  const conProblema = new Set(problemas.map((p) => p.fieldCode));
+  respuestas.forEach((r, i) => {
+    const campo = campos.get(r.fieldCode);
+    if (campo?.dataType !== 'NUMBER' || r.answer.type !== 'NUMBER' || conProblema.has(r.fieldCode) || !visibles.has(r.fieldCode)) return;
+    const tope = topeDesdeLaTabla(campo, secciones, respuestas);
+    if (tope !== null && r.answer.number > tope.tope) problemas.push({ code: CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED, path: `answers[${i}].answer`, fieldCode: r.fieldCode });
+  });
   return problemas;
+}
+
+/**
+ * DL-165 D-5 · el tope que una tabla anterior le pone a un número (`maxFromMatrix`): cuántas filas de la tabla tienen una
+ * columna elegida que no es de las que no cuentan («No puedo»). `null` si el número no tiene ese tope, si la tabla no está
+ * en el formulario o no se respondió: sin tabla respondida no hay tope. Lo usan la validación y el texto que dice
+ * «Hasta 4, por lo que marcaste en…» junto al número, en la APK y en la web.
+ */
+export function topeDesdeLaTabla(
+  campo: CampoDePlantillaV2,
+  secciones: readonly SeccionDePlantillaV2[],
+  respuestas: readonly RespuestaDeCampoV2Entrada[],
+): { readonly tope: number; readonly tabla: string } | null {
+  if (campo.dataType !== 'NUMBER' || !campo.maxFromMatrix) return null;
+  const { fieldCode, exceptColumns } = campo.maxFromMatrix;
+  const tabla = camposEnOrden(secciones).find((c) => c.fieldCode === fieldCode);
+  const valor = respuestas.find((r) => r.fieldCode === fieldCode)?.answer;
+  if (tabla?.dataType !== 'MATRIX' || valor?.type !== 'MATRIX') return null;
+  // Las filas que existen, una vez cada una (la validación de la tabla ya rechaza lo repetido o lo que no existe).
+  const filas = new Set(tabla.rows.map((f) => f.code));
+  const marcadas = new Set(valor.cells.filter((c) => filas.has(c.row) && !exceptColumns.includes(c.column)).map((c) => c.row));
+  return { tope: marcadas.size, tabla: tabla.label };
 }
 
 /** Los obligatorios pedidos que se ven y todavía no tienen respuesta: lo que la pantalla marca antes de enviar. */
@@ -260,6 +324,29 @@ export function obligatoriosSinResponder(
   const respondidos = new Set(respuestas.map((r) => r.fieldCode));
   const pedidos = new Set(solicitud.requestedFieldCodes);
   return solicitud.requiredFieldCodes.filter((c) => pedidos.has(c) && visibles.has(c) && !respondidos.has(c));
+}
+
+// ─── Las ayudas de una pregunta (DL-165 D-2) ────────────────────────────────────────────────────
+
+/**
+ * Dónde va la ayuda de una pregunta. En una respuesta de texto es su **texto de muestra**: el ejemplo se lee donde se
+ * escribe y se va al escribir. En las demás, una línea corta debajo de la pregunta (el rango de un número, «Elegí hasta
+ * dos»). El «para qué» no va acá: va plegado, detrás de «¿Para qué?».
+ */
+export function ayudaDeLaPregunta(campo: Pick<CampoDePlantillaV2, 'dataType' | 'helpText'>): { readonly aLaVista: string | null; readonly deMuestra: string | null } {
+  const ayuda = campo.helpText?.trim() || null;
+  return campo.dataType === 'TEXT' ? { aLaVista: null, deMuestra: ayuda } : { aLaVista: ayuda, deMuestra: null };
+}
+
+/** Las preguntas en las que se «elige» algo: ahí va «Quitar respuesta». En las demás se borra lo escrito o se quita el renglón. */
+export const TIPOS_CON_QUITAR_RESPUESTA: readonly TipoDeCampoV2[] = ['BOOLEAN', 'CHOICE', 'MULTI_CHOICE', 'MATRIX'];
+
+/**
+ * DL-165 D-2 · «Quitar respuesta» reemplaza a «tocá de nuevo la opción elegida»: aparece solo cuando hay algo elegido en
+ * una pregunta opcional. En una obligatoria no se ofrece: se cambia de opción.
+ */
+export function seOfreceQuitarRespuesta(campo: Pick<CampoDePlantillaV2, 'dataType' | 'fieldCode'>, solicitud: Pick<SolicitudAValidar, 'requiredFieldCodes'>, hayAlgoElegido: boolean): boolean {
+  return hayAlgoElegido && TIPOS_CON_QUITAR_RESPUESTA.includes(campo.dataType) && !solicitud.requiredFieldCodes.includes(campo.fieldCode);
 }
 
 // ─── Normalización y correcciones (DL-164 D-4) ──────────────────────────────────────────────────
@@ -280,7 +367,15 @@ export function normalizarValor(campo: CampoDePlantillaV2 | undefined, valor: Va
       const opciones = campo?.dataType === 'MULTI_CHOICE' ? campo.options : undefined;
       return { type: 'MULTI_CHOICE', options: [...new Set(valor.options)].sort(orden(opciones)), otherText: valor.otherText === null ? null : valor.otherText.trim() };
     }
-    case 'LIST': return { type: 'LIST', items: valor.items.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]))) };
+    case 'LIST': {
+      // Las varias opciones de un renglón (formato 3), sin repetir y en el orden de su subcampo.
+      const subs = new Map((campo?.dataType === 'LIST' ? campo.itemFields : []).map((s) => [s.code, s] as const));
+      const enOrden = (codigo: string, v: readonly string[]) => {
+        const sub = subs.get(codigo);
+        return [...new Set(v)].sort(orden(sub?.dataType === 'MULTI_CHOICE' ? sub.options : undefined));
+      };
+      return { type: 'LIST', items: valor.items.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : Array.isArray(v) ? enOrden(k, v) : v]))) };
+    }
     case 'MATRIX': {
       const filas = campo?.dataType === 'MATRIX' ? campo.rows : undefined;
       const o = orden(filas);
@@ -391,6 +486,8 @@ export function resumenDeValor(campo: CampoDePlantillaV2 | undefined, valor: Val
         .map((s) => {
           const v = renglon[s.code]!;
           if (s.dataType === 'CHOICE' && typeof v === 'string' && 'options' in s) return etiquetaDe(s.options, v);
+          // Formato 3: las varias opciones del renglón, con sus etiquetas («Lunes, Jueves»).
+          if (Array.isArray(v)) return v.map((c) => ('options' in s ? etiquetaDe(s.options, c) : c)).join(', ');
           if (typeof v === 'boolean') return v ? 'Sí' : 'No';
           // El número de un renglón no lleva unidad propia: la de su subcampo, si la tiene.
           if (typeof v === 'number') return s.dataType === 'NUMBER' && s.unit ? `${numeroEnPalabras(v)} ${s.unit}` : numeroEnPalabras(v);

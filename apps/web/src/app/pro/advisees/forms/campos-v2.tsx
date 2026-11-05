@@ -4,14 +4,17 @@
  * Los nueve tipos de respuesta de un formulario V2 (DL-164 D-1), dibujados para el escritorio del profesional: los usa
  * «Cargar con la persona» (`cargar.tsx`). Cada pieza recibe el campo de la plantilla y el valor actual (o nada) y avisa
  * el valor nuevo, o `null` para dejar la pregunta sin responder: el estado vive en quien las dibuja.
- * - **Nada viene elegido, y lo elegido se puede deselegir.** Una pregunta sin responder se omite, nunca viaja vacía
- *   (09:1586-1587): por eso el Sí o no, la opción única y cada fila de la tabla tienen «Dejar sin responder».
+ * - **Nada viene elegido, y lo elegido se puede soltar.** Una pregunta sin responder se omite, nunca viaja vacía
+ *   (09:1586-1587): por eso el Sí o no, la opción única y las varias opciones tienen «Quitar respuesta», y cada fila de
+ *   la tabla, «Quitar» (DL-165 D-2: el mismo nombre que en la app). Acá se ofrece también en una obligatoria: lo que
+ *   carga el profesional no exige las obligatorias, la persona las completa al confirmar.
+ * - **El ejemplo de una respuesta de texto es su texto de muestra** (D-2, `ayudaDeLaPregunta`).
  * - **Un número se escribe con coma** (como en el editor de comidas). Lo que no se entiende se dice junto al campo y no
  *   se manda como cero: queda como un valor sin forma, que la revisión frena antes de enviar.
  * - Casillas y botones de opción nativos (foco visible, teclado, lector de pantalla); los alimentos sugeridos son chips
  *   con `aria-pressed`. Cada control lleva un nombre que dice la fila y la columna («Sentadilla: Con ayuda»).
  */
-import { COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, LARGO_MAXIMO_DE_ALIMENTO, LARGO_MAXIMO_DE_OTRO, leerNumero, motivoDeNumeroIlegible, type CampoDePlantillaV2, type LimitesNumericos, type SubcampoDeLista, type ValorDeRespuestaV2 } from '@be/domain';
+import { ayudaDeLaPregunta, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, LARGO_MAXIMO_DE_ALIMENTO, LARGO_MAXIMO_DE_OTRO, leerNumero, motivoDeNumeroIlegible, type CampoDePlantillaV2, type LimitesNumericos, type SubcampoDeLista, type ValorDeRespuestaV2, type ValorDeSubcampo } from '@be/domain';
 import { useEffect, useRef, useState } from 'react';
 import { Campo } from '../../../../components/formulario';
 import { numeroEnCampo } from '../../../../lib/formato';
@@ -33,9 +36,26 @@ export interface PropsDeCampoV2<C extends CampoDePlantillaV2 = CampoDePlantillaV
   readonly describedBy?: string;
 }
 
-const DEJAR_SIN_RESPONDER = 'Dejar sin responder';
 const QUITAR = 'Quitar';
 const SUMAR = 'Sumar';
+
+/**
+ * «¿Para qué?» (DL-165 D-2): para qué se usa el dato, plegado debajo de la pregunta. El botón dice si está desplegado y
+ * de qué pregunta es; el texto desplegado describe la pregunta para el lector de pantalla (`idDelTexto`).
+ */
+export function ParaQueDeLaPregunta({ idDelTexto, pregunta, texto }: { idDelTexto: string; pregunta: string; texto: string }) {
+  const [abierto, setAbierto] = useState(false);
+  return (
+    <div className="pregunta-de-inicio__para-que">
+      <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={idDelTexto} aria-label={V.paraQueDe(pregunta)} onClick={() => setAbierto(!abierto)}>
+        {V.paraQueBoton}
+      </button>
+      <p id={idDelTexto} className="nota" hidden={!abierto}>
+        {texto}
+      </p>
+    </div>
+  );
+}
 
 /** Una pregunta, según su tipo. */
 export function CampoV2(p: PropsDeCampoV2) {
@@ -61,10 +81,11 @@ export function CampoV2(p: PropsDeCampoV2) {
   }
 }
 
-function DejarSinResponder({ onClick, deshabilitado, de }: { onClick: () => void; deshabilitado: boolean; de?: string }) {
+/** «Quitar respuesta» (DL-165 D-2): la pregunta vuelve a quedar sin responder. En una fila de la tabla dice «Quitar», con la fila para el lector. */
+function QuitarRespuesta({ onClick, deshabilitado, de, corto = false }: { onClick: () => void; deshabilitado: boolean; de?: string; corto?: boolean }) {
   return (
-    <button type="button" className="boton boton--enlace campo-de-inicio__sin-responder" onClick={onClick} disabled={deshabilitado} aria-label={de ? `${DEJAR_SIN_RESPONDER}: ${de}` : undefined}>
-      {DEJAR_SIN_RESPONDER}
+    <button type="button" className="boton boton--enlace campo-de-inicio__sin-responder" onClick={onClick} disabled={deshabilitado} aria-label={de ? V.quitarRespuestaDe(de) : undefined}>
+      {corto ? QUITAR : V.quitarRespuesta}
     </button>
   );
 }
@@ -74,7 +95,9 @@ function DejarSinResponder({ onClick, deshabilitado, de }: { onClick: () => void
 function CampoTexto({ id, campo, valor, onCambiar, deshabilitado, labelledBy, describedBy }: PropsDeCampoV2<CampoDe<'TEXT'>>) {
   const texto = valor?.type === 'TEXT' ? valor.text : '';
   const cambiar = (t: string) => onCambiar(t === '' ? null : { type: 'TEXT', text: t });
-  const comun = { id, value: texto, maxLength: campo.maxLength, disabled: deshabilitado, 'aria-labelledby': labelledBy, 'aria-describedby': describedBy, autoComplete: 'off' as const };
+  // DL-165 D-2: el ejemplo es el texto de muestra; para el lector de pantalla lo describe la pregunta (`describedBy`).
+  const muestra = ayudaDeLaPregunta(campo).deMuestra ?? undefined;
+  const comun = { id, value: texto, maxLength: campo.maxLength, disabled: deshabilitado, placeholder: muestra, 'aria-labelledby': labelledBy, 'aria-describedby': describedBy, autoComplete: 'off' as const };
   return <div className="campo campo-de-inicio__control">{campo.multiline ? <textarea {...comun} rows={3} onChange={(e) => cambiar(e.target.value)} /> : <input {...comun} type="text" onChange={(e) => cambiar(e.target.value)} />}</div>;
 }
 
@@ -192,7 +215,7 @@ function CampoSiONo({ id, valor, onCambiar, deshabilitado, labelledBy, described
           </label>
         ))}
       </div>
-      {elegido !== null ? <DejarSinResponder onClick={() => onCambiar(null)} deshabilitado={deshabilitado} /> : null}
+      {elegido !== null ? <QuitarRespuesta onClick={() => onCambiar(null)} deshabilitado={deshabilitado} /> : null}
     </>
   );
 }
@@ -213,7 +236,7 @@ function CampoUnaOpcion({ id, campo, valor, onCambiar, deshabilitado, labelledBy
         ))}
       </div>
       {esOtro ? <Campo id={`${id}-otro`} etiqueta={V.cualOtro} value={otro} maxLength={LARGO_MAXIMO_DE_OTRO} autoComplete="off" disabled={deshabilitado} onChange={(e) => elegir(elegida, e.target.value)} /> : null}
-      {elegida !== null ? <DejarSinResponder onClick={() => onCambiar(null)} deshabilitado={deshabilitado} /> : null}
+      {elegida !== null ? <QuitarRespuesta onClick={() => onCambiar(null)} deshabilitado={deshabilitado} /> : null}
     </>
   );
 }
@@ -246,19 +269,54 @@ function CampoVariasOpciones({ id, campo, valor, onCambiar, deshabilitado, label
         })}
       </div>
       {esOtro ? <Campo id={`${id}-otro`} etiqueta={V.cualOtro} value={otro} maxLength={LARGO_MAXIMO_DE_OTRO} autoComplete="off" disabled={deshabilitado} onChange={(e) => emitir(elegidas, e.target.value)} /> : null}
+      {elegidas.length > 0 ? <QuitarRespuesta onClick={() => onCambiar(null)} deshabilitado={deshabilitado} /> : null}
     </>
   );
 }
 
 // ─── Lista que se repite ────────────────────────────────────────────────────────────────────────
 
-type Renglon = Readonly<Record<string, string | number | boolean>>;
+type Renglon = Readonly<Record<string, ValorDeSubcampo>>;
 
-function Subcampo({ id, sub, valor, onCambiar, deshabilitado }: { id: string; sub: SubcampoDeLista; valor: string | number | boolean | undefined; onCambiar: (v: string | number | boolean | null) => void; deshabilitado: boolean }) {
+function Subcampo({ id, sub, valor, onCambiar, deshabilitado }: { id: string; sub: SubcampoDeLista; valor: ValorDeSubcampo | undefined; onCambiar: (v: ValorDeSubcampo | null) => void; deshabilitado: boolean }) {
   const etiqueta = sub.required ? sub.label : `${sub.label} (${V.opcional.toLowerCase()})`;
   switch (sub.dataType) {
     case 'TEXT':
-      return <Campo id={id} etiqueta={etiqueta} value={typeof valor === 'string' ? valor : ''} maxLength={sub.maxLength} autoComplete="off" disabled={deshabilitado} onChange={(e) => onCambiar(e.target.value === '' ? null : e.target.value)} />;
+      // Formato 3 (DL-165 D-2): el ejemplo del renglón es su texto de muestra.
+      return (
+        <Campo
+          id={id}
+          etiqueta={etiqueta}
+          value={typeof valor === 'string' ? valor : ''}
+          maxLength={sub.maxLength}
+          autoComplete="off"
+          placeholder={sub.helpText}
+          disabled={deshabilitado}
+          onChange={(e) => onCambiar(e.target.value === '' ? null : e.target.value)}
+        />
+      );
+    case 'MULTI_CHOICE': {
+      // Formato 3 (DL-165 D-6): varias opciones dentro del renglón («Qué días»), en el orden de la pregunta.
+      const elegidos = Array.isArray(valor) ? valor : [];
+      const alternar = (codigo: string) => {
+        const nuevos = elegidos.includes(codigo) ? elegidos.filter((c) => c !== codigo) : [...elegidos, codigo];
+        const enOrden = sub.options.map((o) => o.code).filter((c) => nuevos.includes(c));
+        onCambiar(enOrden.length === 0 ? null : enOrden);
+      };
+      return (
+        <fieldset className="lista-que-se-repite__varias" id={id}>
+          <legend>{etiqueta}</legend>
+          <div className="opciones-de-inicio">
+            {sub.options.map((o) => (
+              <label key={o.code} className="opcion-de-inicio">
+                <input type="checkbox" checked={elegidos.includes(o.code)} onChange={() => alternar(o.code)} disabled={deshabilitado} />
+                {o.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      );
+    }
     case 'NUMBER':
       return <EntradaNumerica id={id} etiqueta={etiqueta} numero={typeof valor === 'number' ? valor : null} unidad={sub.unit} limites={sub.limits} onCambiar={onCambiar} deshabilitado={deshabilitado} />;
     case 'CHOICE':
@@ -297,11 +355,11 @@ function CampoLista({ id, campo, valor, onCambiar, deshabilitado, labelledBy, de
   while (claves.current.length < renglones.length) claves.current.push(proxima.current++);
   if (claves.current.length > renglones.length) claves.current.length = renglones.length;
   const emitir = (items: readonly Renglon[]) => onCambiar(items.length === 0 ? null : { type: 'LIST', items: items.map((r) => ({ ...r })) });
-  const cambiar = (i: number, codigo: string, v: string | number | boolean | null) =>
+  const cambiar = (i: number, codigo: string, v: ValorDeSubcampo | null) =>
     emitir(
       renglones.map((r, j) => {
         if (j !== i) return r;
-        const resto: Record<string, string | number | boolean> = { ...r };
+        const resto: Record<string, ValorDeSubcampo> = { ...r };
         delete resto[codigo];
         return v === null ? resto : { ...resto, [codigo]: v };
       }),
@@ -359,7 +417,7 @@ function CampoTabla({ id, campo, valor, onCambiar, deshabilitado, labelledBy, de
             </th>
           ))}
           <th scope="col">
-            <span className="visualmente-oculto">{DEJAR_SIN_RESPONDER}</span>
+            <span className="visualmente-oculto">{V.quitarRespuesta}</span>
           </th>
         </tr>
       </thead>
@@ -374,7 +432,7 @@ function CampoTabla({ id, campo, valor, onCambiar, deshabilitado, labelledBy, de
                 </label>
               </td>
             ))}
-            <td className="tabla-de-opciones__sin-responder">{columnaDe(fila.code) !== null ? <DejarSinResponder onClick={() => elegir(fila.code, null)} deshabilitado={deshabilitado} de={fila.label} /> : null}</td>
+            <td className="tabla-de-opciones__sin-responder">{columnaDe(fila.code) !== null ? <QuitarRespuesta onClick={() => elegir(fila.code, null)} deshabilitado={deshabilitado} de={fila.label} corto /> : null}</td>
           </tr>
         ))}
       </tbody>

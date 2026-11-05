@@ -4,7 +4,8 @@
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
  * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2, la 0.17.0-candidata.3, la 0.18.0-candidata.1 y la 0.20.0-candidata.1), como la pide esa APK, y lee la respuesta real
+ * (hoy la estable 0.13.2 y la 0.20.0-candidata.1; la 0.17.0-candidata.3 y la 0.18.0-candidata.1 salieron el 2026-11-05),
+ * como la pide esa APK, y lee la respuesta real
  * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
  * no pasa hasta que cada lectura suya tenga escenario.
  *
@@ -38,7 +39,7 @@ import {
   subirImagenDeEjercicio,
 } from './soporte-por-serie';
 import { alimentosUsda, crearReceta, cuerpoDeReceta, estructuraConRecetas, FOTOS, RECETAS, subirImagen } from './soporte-recetas';
-import { CAMPOS_V2, conAgua, fri, pedirV2, RESPUESTAS_V2, sembrarPlantillaV2 } from './soporte-formularios-v2';
+import { CAMPOS_V2, CAMPOS_V3, CON_FORMATO_3, conAgua, fri, pedirV2, RESPUESTAS_V2, RESPUESTAS_V3, sembrarPlantillaV2, sembrarPlantillaV3 } from './soporte-formularios-v2';
 import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 import { prepararAsesorado, prepararProfesional, solicitar, vinculoCompleto } from './soporte-vinculo';
 
@@ -438,7 +439,8 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
 
   // ─── Formularios y antropometría ───────────────────────────────────────────────────────────────
 
-  // Las APK hasta la 0.18.0-candidata.1 leen FRM; desde la 0.20.0-candidata.1 (DL-164), FRI, en el bloque que sigue.
+  // Las APK hasta la 0.18.0-candidata.1 (de las vigentes, la 0.13.2) leen FRM; desde la 0.20.0-candidata.1 (DL-164), FRI,
+  // en el bloque que sigue.
   siLee('API-FRM-06', 'los formularios: las solicitudes propias, el detalle, la plantilla, responder y rectificar (FRM-02, 05 a 08)', async () => {
     const e = etiqueta(`${corta}-frm`);
     const pro = await prepararProfesional(app, e, ['ENTRENAMIENTO']);
@@ -453,12 +455,18 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     // FRM-02 responden el 404 que la APK reconoce. La responde la app nueva, por FRI.
     const v2 = await sembrarPlantillaV2(prisma, e, null);
     const inicio = await pedir({ templateVersionId: v2.versionId, purpose: 'Para empezar', scope: 'ENTRENAMIENTO', requestedFieldCodes: [...CAMPOS_V2], requiredFieldCodes: [] });
+    // DL-165 (FR-08): una de formato 3, tampoco.
+    const v3 = await sembrarPlantillaV3(prisma, e, null);
+    const ronda2 = await pedir({ templateVersionId: v3.versionId, purpose: 'Para empezar', scope: 'ENTRENAMIENTO', requestedFieldCodes: [...CAMPOS_V3], requiredFieldCodes: [] });
     const token = ase.token;
 
     const propias = await apk.pide('API-FRM-06', { token });
     expect((propias.body.data as { formRequestId: string }[]).map((s) => s.formRequestId)).not.toContain(inicio);
+    expect((propias.body.data as { formRequestId: string }[]).map((s) => s.formRequestId)).not.toContain(ronda2);
     await apk.pide('API-FRM-05', { token, params: { formRequestId: inicio }, status: 404 });
+    await apk.pide('API-FRM-05', { token, params: { formRequestId: ronda2 }, status: 404 });
     await apk.pide('API-FRM-02', { token, params: { templateId: v2.plantillaId, versionId: v2.versionId }, status: 404 });
+    await apk.pide('API-FRM-02', { token, params: { templateId: v3.plantillaId, versionId: v3.versionId }, status: 404 });
     await apk.pide('API-FRM-06', { token, consulta: { status: 'PENDING', limit: '50' } });
     for (const id of [salud, antecedentes]) {
       const detalle = (await apk.pide('API-FRM-05', { token, params: { formRequestId: id } })).body.data.request;
@@ -549,6 +557,19 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     // Lo que queda a la vista: la respuesta rectificada, la confirmada con su transcripción y la descartada, pendiente.
     for (const id of [sola, confirmada, descartada, salud]) await apk.pide('API-FRI-03', { token, params: { formRequestId: id } });
     await apk.pide('API-FRI-02', { token });
+
+    // DL-165 (FR-08): una Solicitud de formato 3 (el renglón con varias opciones) no existe para esta APK, que no declara
+    // `forms-format-3`: la bandeja no la trae, y la estructura y el detalle son el 404 que la APK reconoce. Ni siquiera
+    // con algo cargado por el profesional (desde el website, que sí la declara).
+    const v3 = await sembrarPlantillaV3(prisma, e, null);
+    const ronda2 = await pedirV2(app, pro, ase.id, v3.versionId, 'ENTRENAMIENTO', CAMPOS_V3, []);
+    await fri(app, pro.token, CON_FORMATO_3).cargar(ronda2, { expectedVersion: null, answers: RESPUESTAS_V3 }).expect(201);
+    for (const consulta of [{ status: 'PENDING', limit: '3' }, undefined]) {
+      const conLaRonda2 = (await apk.pide('API-FRI-02', { token, ...(consulta ? { consulta } : {}) })).body.data as { formRequestId: string }[];
+      expect(conLaRonda2.map((s) => s.formRequestId)).not.toContain(ronda2);
+    }
+    await apk.pide('API-FRI-03', { token, params: { formRequestId: ronda2 }, status: 404 });
+    await apk.pide('API-FRI-01', { token, params: { templateId: v3.plantillaId, versionId: v3.versionId }, status: 404 });
     expect(apk.rechazos()).toEqual([]);
   });
 
