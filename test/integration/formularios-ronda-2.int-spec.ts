@@ -88,8 +88,10 @@ describe('FR-08 · el formato 3, solo para quien lo declara (DL-165 D-6; DL-152)
     const conUnDiaQueNoExiste = RESPUESTAS_V3.map((r) => (r.fieldCode === 'ini_deportes' ? { fieldCode: r.fieldCode, answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'feriado'] }] } } : r));
     const invalida = await apkNueva.responder(c.formRequestId, { answers: conUnDiaQueNoExiste, fromProposal: null }).expect(422);
     expect(invalida.body.error.details.issues).toEqual([expect.objectContaining({ code: 'FORM_ANSWER_ITEM_FIELD_INVALID', fieldCode: 'ini_deportes', path: expect.stringContaining('.items[0].que_dias') })]);
-    // Los días se mandan desordenados y repetidos: se guardan en el orden de la pregunta, una vez cada uno.
-    const desordenados = RESPUESTAS_V3.map((r) => (r.fieldCode === 'ini_deportes' ? { fieldCode: r.fieldCode, answer: { type: 'LIST', items: [{ cual: ' Fútbol ', que_dias: ['jue', 'lun', 'jue'] }] } } : r));
+    // Un día repetido no pasa (como en una pregunta de varias opciones); desordenados, se guardan en el orden de la pregunta.
+    const repetido = RESPUESTAS_V3.map((r) => (r.fieldCode === 'ini_deportes' ? { fieldCode: r.fieldCode, answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'lun'] }] } } : r));
+    expect((await apkNueva.responder(c.formRequestId, { answers: repetido, fromProposal: null }).expect(422)).body.error.details.issues).toEqual([expect.objectContaining({ code: 'FORM_ANSWER_ITEM_FIELD_INVALID', fieldCode: 'ini_deportes' })]);
+    const desordenados = RESPUESTAS_V3.map((r) => (r.fieldCode === 'ini_deportes' ? { fieldCode: r.fieldCode, answer: { type: 'LIST', items: [{ cual: ' Fútbol ', que_dias: ['jue', 'lun'] }] } } : r));
     const respondida = await apkNueva.responder(c.formRequestId, { answers: desordenados, fromProposal: null }).expect(201);
     const vista = DetalleDeSolicitudV2ResponseSchema.parse((await apkNueva.vista(c.formRequestId).expect(200)).body).data;
     expect(vista.response?.original.answers.find((a) => a.fieldCode === 'ini_deportes')?.answer).toEqual({ type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] });
