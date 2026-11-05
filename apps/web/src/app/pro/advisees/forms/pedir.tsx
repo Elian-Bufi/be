@@ -55,7 +55,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dejarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
-import { condicionEnPalabras, marcadoPorOmision, origenDelPedido, PRECARGA_DEL_ORIGEN, precargaDeEntrenamiento, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
+import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, precargaDeEntrenamiento, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
 
 /** Los rechazos de FRM-03 que dependen de lo elegido: se dicen, en vez de «el servicio no está disponible». */
@@ -422,7 +422,10 @@ export function PedidoDeInformacion({
                       const obligatoria = pedida && requeridas.includes(c.fieldCode);
                       // DL-164 D-2: una pregunta condicional aparece solo cuando se cumple su condición; se dice con palabras.
                       const condicion = condicionEnPalabras(c, preguntas);
-                      const descripcion = [c.helpText && conAclaraciones ? `${id}-ayuda-${c.fieldCode}` : null, condicion ? `${id}-condicion-${c.fieldCode}` : null].filter(Boolean).join(' ') || undefined;
+                      const descripcion =
+                        [c.helpText && conAclaraciones ? `${id}-ayuda-${c.fieldCode}` : null, condicion ? `${id}-condicion-${c.fieldCode}` : null, noVienePedida(c) && !pedida ? `${id}-sin-pedir-${c.fieldCode}` : null]
+                          .filter(Boolean)
+                          .join(' ') || undefined;
                       return (
                         <tr key={c.fieldCode} data-pregunta={c.fieldCode} data-pedida={pedida ? 'si' : undefined} data-obligatoria={obligatoria ? 'si' : undefined} data-condicional={condicion ? 'si' : undefined}>
                           <td className="preguntas-del-pedido__casilla">
@@ -442,6 +445,12 @@ export function PedidoDeInformacion({
                             {obligatoria ? (
                               <span className="etiqueta-de-dato preguntas-del-pedido__obligatoria" data-obligatoria="si" aria-hidden="true">
                                 {V.obligatoria}
+                              </span>
+                            ) : null}
+                            {/* DL-165 D-4: la que la plantilla no trae pedida (el embarazo) dice que se suma cuando corresponde. */}
+                            {noVienePedida(c) && !pedida ? (
+                              <span className="preguntas-del-pedido__condicion" id={`${id}-sin-pedir-${c.fieldCode}`} data-sin-pedir>
+                                {C.noVienePedida}
                               </span>
                             ) : null}
                             {condicion ? (

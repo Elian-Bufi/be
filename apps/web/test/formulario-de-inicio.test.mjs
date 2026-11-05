@@ -292,3 +292,24 @@ test('DL-165 D-5 · al cargar con la persona, pasar de los días marcados frena 
   assert.deepEqual(revision.bloqueantes.map((p) => [p.code, p.fieldCode]), [[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED, 'por_semana']]);
   assert.deepEqual([...m.mensajesPorCampo(revision.bloqueantes).get('por_semana')], [MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]]);
 });
+
+test('DL-165 D-4 · al pedir, la pregunta que la plantilla no trae pedida (el embarazo) viene sin marcar y tampoco obligatoria; las demás, como siempre', () => {
+  const secciones = [
+    {
+      sectionCode: 'salud',
+      title: 'Tu salud',
+      intro: null,
+      fields: [
+        { ...base, fieldCode: 'trn_salud_corazon', label: '¿Corazón?', dataType: 'BOOLEAN', requiredByDefault: true },
+        { ...base, fieldCode: 'trn_embarazo', label: '¿Embarazo?', dataType: 'CHOICE', options: [op('no'), op('si')], otherOptionCode: null, requiredByDefault: false, requestedByDefault: false },
+        { ...base, fieldCode: 'fuma', label: '¿Fumás?', dataType: 'BOOLEAN' },
+      ],
+    },
+  ];
+  assert.deepEqual(m.marcadoPorOmision(secciones), { pedidas: ['trn_salud_corazon', 'fuma'], requeridas: ['trn_salud_corazon'] });
+  assert.equal(m.noVienePedida(secciones[0].fields[1]), true);
+  assert.equal(m.noVienePedida(secciones[0].fields[2]), false, 'sin la propiedad (formato 2), viene pedida');
+  // Aunque la plantilla la sugiriera obligatoria, sin pedirla no puede ser obligatoria (REG-06-212).
+  const raro = [{ ...secciones[0], fields: [{ ...secciones[0].fields[1], requiredByDefault: true }] }];
+  assert.deepEqual(m.marcadoPorOmision(raro), { pedidas: [], requeridas: [] });
+});

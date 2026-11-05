@@ -55,6 +55,11 @@ const base = {
   showIf: CondicionDeVisibilidadSchema.nullable(),
   /** Lo que la plantilla sugiere como obligatorio al pedirla; el profesional lo puede cambiar (la minimización es suya, 09:1528). */
   requiredByDefault: z.boolean(),
+  /**
+   * Formato 3 (DL-165 D-4): `false` si la pregunta **no** viene pedida al elegir el formulario (el embarazo); el profesional
+   * la suma cuando corresponde. Sin la propiedad viene pedida, como en el formato 2, donde no existe.
+   */
+  requestedByDefault: z.boolean().optional(),
 };
 
 /**

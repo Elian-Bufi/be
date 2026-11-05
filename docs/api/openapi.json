@@ -77254,6 +77254,9 @@
                                         "requiredByDefault": {
                                           "type": "boolean"
                                         },
+                                        "requestedByDefault": {
+                                          "type": "boolean"
+                                        },
                                         "dataType": {
                                           "type": "string",
                                           "const": "TEXT"
@@ -77352,6 +77355,9 @@
                                           ]
                                         },
                                         "requiredByDefault": {
+                                          "type": "boolean"
+                                        },
+                                        "requestedByDefault": {
                                           "type": "boolean"
                                         },
                                         "dataType": {
@@ -77496,6 +77502,9 @@
                                         "requiredByDefault": {
                                           "type": "boolean"
                                         },
+                                        "requestedByDefault": {
+                                          "type": "boolean"
+                                        },
                                         "dataType": {
                                           "type": "string",
                                           "const": "BOOLEAN"
@@ -77584,6 +77593,9 @@
                                           ]
                                         },
                                         "requiredByDefault": {
+                                          "type": "boolean"
+                                        },
+                                        "requestedByDefault": {
                                           "type": "boolean"
                                         },
                                         "dataType": {
@@ -77711,6 +77723,9 @@
                                           ]
                                         },
                                         "requiredByDefault": {
+                                          "type": "boolean"
+                                        },
+                                        "requestedByDefault": {
                                           "type": "boolean"
                                         },
                                         "dataType": {
@@ -77859,6 +77874,9 @@
                                           ]
                                         },
                                         "requiredByDefault": {
+                                          "type": "boolean"
+                                        },
+                                        "requestedByDefault": {
                                           "type": "boolean"
                                         },
                                         "dataType": {
@@ -78210,6 +78228,9 @@
                                         "requiredByDefault": {
                                           "type": "boolean"
                                         },
+                                        "requestedByDefault": {
+                                          "type": "boolean"
+                                        },
                                         "dataType": {
                                           "type": "string",
                                           "const": "MATRIX"
@@ -78350,6 +78371,9 @@
                                         "requiredByDefault": {
                                           "type": "boolean"
                                         },
+                                        "requestedByDefault": {
+                                          "type": "boolean"
+                                        },
                                         "dataType": {
                                           "type": "string",
                                           "const": "FOODS"
@@ -78478,6 +78502,9 @@
                                           ]
                                         },
                                         "requiredByDefault": {
+                                          "type": "boolean"
+                                        },
+                                        "requestedByDefault": {
                                           "type": "boolean"
                                         },
                                         "dataType": {

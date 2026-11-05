@@ -37,14 +37,20 @@ export async function catalogoDePlantillas(app: INestApplication, token: string,
 export const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';
 /** «Antecedentes para entrenamiento» (P0, seis campos con límites NUMBER): histórica desde FI-02. */
 export const VERSION_ENTRENAMIENTO_V1 = '0fba80db-0a80-47a7-b183-130232ab7a9c';
-/** «Antes de entrenar» (format 2): la vigente, sucesora de la v1. */
+/** «Antes de entrenar» (format 2): sucesora de la v1; desde DL-165 FR-06, histórica (la vigente es la v3). */
 export const VERSION_ENTRENAMIENTO_V2 = '0e34057f-8304-46bd-ac80-475c7093671f';
+/** «Antes de entrenar» v3 (format 3, migración 20261105120000, DL-165 FR-06): la vigente, sucesora de la v2. */
+export const VERSION_ENTRENAMIENTO_V3 = '3bb9b4c2-efd8-4d80-9c0c-2a4769819478';
 /** FRM-NUTRICION-INICIO (migración 20261104130000, DL-164 FI-02). */
 export const PLANTILLA_NUTRICION_INICIO = '6da670ad-a767-4177-8c34-cdaab80e0806';
-/** «Cómo comés hoy» (format 2): su única versión. */
+/** «Cómo comés hoy» v1 (format 2); desde DL-165 FR-06, histórica (la vigente es la v2). */
 export const VERSION_NUTRICION_INICIO = 'e1ad1e6a-bf90-46b0-923d-f27dafb67041';
+/** «Cómo comés hoy» v2 (format 3, migración 20261105120000, DL-165 FR-06): la vigente, sucesora de la v1. */
+export const VERSION_NUTRICION_INICIO_V2 = '98fb045a-af5d-4122-98c4-71240587adc9';
 /** El día en que Dirección ratificó el paquete: `momento_de_registro` de las dos versiones sembradas. */
 export const MOMENTO_DE_LA_SIEMBRA = '2026-11-04T00:00:00.000Z';
+/** El día en que Dirección ratificó la ronda 2: `momento_de_registro` de las dos sucesoras de formato 3. */
+export const MOMENTO_DE_LA_RONDA_2 = '2026-11-05T00:00:00.000Z';
 
 /**
  * Una plantilla de prueba con el contenido exacto de «Antecedentes para entrenamiento» v1 (P0, dominio ENTRENAMIENTO),

@@ -13,7 +13,7 @@
  * - los códigos que ya existen en FRM-SALUD, FRM-HABITOS y FRM-ENTRENAMIENTO v1 se conservan cuando la pregunta es la
  *   misma; la v2 de entrenamiento mantiene los seis de la v1 porque `CONTEXTO_DE_ENTRENAMIENTO` los precarga (DL-100).
  */
-import type { CampoDePlantillaV2, CondicionDeVisibilidad, OpcionDeCampo, SeccionDePlantillaV2, SubcampoDeLista } from './contratos-formularios-v2';
+import type { CampoDePlantillaV2, CondicionDeVisibilidad, OpcionDeCampo, SeccionDePlantillaV2, SubcampoDeLista, TopeDesdeTabla } from './contratos-formularios-v2';
 import type { Alcance } from './alcance';
 import { CategoriaDeDato } from './formularios';
 
@@ -23,14 +23,24 @@ export interface PlantillaDeInicio {
   readonly nombre: string;
   readonly proposito: string;
   readonly dominio: Alcance;
-  /** Lo que tarda una persona en responderla, para decírselo antes de empezar. */
-  readonly estimatedMinutes: number;
+  /**
+   * El formato del contenido: 2 en las de DL-164; 3 en las de la ronda 2 (DL-165), que usan lo que la APK 0.20 no lee
+   * (`loQueUsaDelFormato3`) y solo se le entregan a un cliente que declara `forms-format-3`.
+   */
+  readonly formato: 2 | 3;
+  /** Lo que tarda una persona en responderla. Desde DL-165 D-3 ya no se dice: las de formato 3 no lo traen (`null`). */
+  readonly estimatedMinutes: number | null;
   readonly sections: SeccionDePlantillaV2[];
 }
 
-/** El `contenido` de la versión en la base: formato 2, con los minutos y las secciones (WP §5). */
-export function contenidoDePlantillaDeInicio(plantilla: PlantillaDeInicio): { format: 2; estimatedMinutes: number; sections: SeccionDePlantillaV2[] } {
-  return { format: 2, estimatedMinutes: plantilla.estimatedMinutes, sections: plantilla.sections };
+/**
+ * El `contenido` de la versión en la base (WP §5): formato 2, con los minutos y las secciones; formato 3, sin los minutos
+ * (DL-165 D-3). El JSON de las de formato 2 es el mismo que sembró la migración de DL-164, clave por clave.
+ */
+export function contenidoDePlantillaDeInicio(
+  plantilla: PlantillaDeInicio,
+): { format: 2; estimatedMinutes: number | null; sections: SeccionDePlantillaV2[] } | { format: 3; sections: SeccionDePlantillaV2[] } {
+  return plantilla.formato === 3 ? { format: 3, sections: plantilla.sections } : { format: 2, estimatedMinutes: plantilla.estimatedMinutes, sections: plantilla.sections };
 }
 
 // ─── Constructores: dejan el contenido legible y tipado ───────────────────────────────────────────
@@ -48,11 +58,14 @@ interface Comun {
   readonly ayuda?: string;
   readonly si?: CondicionDeVisibilidad;
   readonly requerida?: boolean;
+  /** Formato 3 (DL-165 D-4): `false` si no viene pedida al elegir el formulario. Sin esto, viene pedida. */
+  readonly pedida?: boolean;
 }
 
 const op = (code: string, label: string): OpcionDeCampo => ({ code, label });
 const si = (fieldCode: string, ...anyOf: (string | boolean)[]): CondicionDeVisibilidad => ({ fieldCode, anyOf });
 
+// `requestedByDefault` va solo cuando es `false`: así el JSON de las versiones de formato 2 queda igual que el sembrado.
 const base = (c: Comun) => ({
   fieldCode: c.codigo,
   label: c.etiqueta,
@@ -61,9 +74,11 @@ const base = (c: Comun) => ({
   purpose: c.paraQue,
   showIf: c.si ?? null,
   requiredByDefault: c.requerida ?? false,
+  ...(c.pedida === false ? { requestedByDefault: false } : {}),
 });
 const texto = (c: Comun, maxLength = 300, multiline = false): CampoDePlantillaV2 => ({ ...base(c), dataType: 'TEXT', multiline, maxLength });
-const numero = (c: Comun, unit: string | null, limits: Limites): CampoDePlantillaV2 => ({ ...base(c), dataType: 'NUMBER', unit, limits });
+const numero = (c: Comun, unit: string | null, limits: Limites, maxFromMatrix?: TopeDesdeTabla): CampoDePlantillaV2 =>
+  ({ ...base(c), dataType: 'NUMBER', unit, limits, ...(maxFromMatrix ? { maxFromMatrix } : {}) });
 const siONo = (c: Comun): CampoDePlantillaV2 => ({ ...base(c), dataType: 'BOOLEAN' });
 const unaOpcion = (c: Comun, options: OpcionDeCampo[], otherOptionCode: string | null = null): CampoDePlantillaV2 =>
   ({ ...base(c), dataType: 'CHOICE', options, otherOptionCode });
@@ -76,9 +91,13 @@ const alimentos = (c: Comun, reasons: OpcionDeCampo[], maxItems: number): CampoD
   ({ ...base(c), dataType: 'FOODS', suggestions: [...SUGERENCIAS_DE_ALIMENTOS], reasons, maxItems });
 const horarios = (c: Comun, parts: OpcionDeCampo[]): CampoDePlantillaV2 => ({ ...base(c), dataType: 'TIMES', parts });
 
-const subTexto = (code: string, label: string, required: boolean, maxLength: number): SubcampoDeLista => ({ code, label, required, dataType: 'TEXT', maxLength });
+/** Un subcampo de texto; con `ejemplo` (formato 3, DL-165 D-2), su texto de muestra. */
+const subTexto = (code: string, label: string, required: boolean, maxLength: number, ejemplo?: string): SubcampoDeLista =>
+  ({ code, label, required, dataType: 'TEXT', maxLength, ...(ejemplo ? { helpText: ejemplo } : {}) });
 const subNumero = (code: string, label: string, required: boolean, unit: string | null, limits: Limites): SubcampoDeLista => ({ code, label, required, dataType: 'NUMBER', unit, limits });
 const subOpcion = (code: string, label: string, required: boolean, options: OpcionDeCampo[]): SubcampoDeLista => ({ code, label, required, dataType: 'CHOICE', options });
+/** Formato 3 (DL-165 D-6): varias opciones dentro del renglón. */
+const subVarias = (code: string, label: string, required: boolean, options: OpcionDeCampo[]): SubcampoDeLista => ({ code, label, required, dataType: 'MULTI_CHOICE', options });
 
 // ─── Opciones compartidas ─────────────────────────────────────────────────────────────────────────
 
@@ -117,6 +136,7 @@ export const PLANTILLA_NUTRICION_INICIO: PlantillaDeInicio = {
   nombre: 'Cómo comés hoy',
   proposito: 'Cómo come hoy la persona, para armar el primer plan de alimentación: su día, las comidas de su semana, lo que sí y lo que no, lo que toma, lo que su salud pide tener en cuenta y lo que busca',
   dominio: 'NUTRICION',
+  formato: 2,
   estimatedMinutes: 15,
   sections: [
     {
@@ -496,6 +516,7 @@ export const PLANTILLA_ENTRENAMIENTO_V2: PlantillaDeInicio = {
   nombre: 'Antes de entrenar',
   proposito: 'Lo que la persona cuenta antes de entrenar, para armar el primer plan: su salud, dolor y lesiones, su experiencia, lo que busca, su semana y sus preferencias. Sucede a la v1 y conserva sus seis códigos (DL-100)',
   dominio: 'ENTRENAMIENTO',
+  formato: 2,
   estimatedMinutes: 12,
   sections: [
     {
@@ -732,5 +753,130 @@ export const PLANTILLA_ENTRENAMIENTO_V2: PlantillaDeInicio = {
   ],
 };
 
-/** Las dos, en el orden en que se siembran. */
-export const PLANTILLAS_DE_INICIO: readonly PlantillaDeInicio[] = [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2];
+// ─── La ronda 2 (DL-165): FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO v3, de formato 3 ─────────────────
+
+/**
+ * Una versión sucesora: las mismas secciones y preguntas, con las que cambian reemplazadas por código. Un reemplazo puede
+ * ser una pregunta, varias (la tabla de los días va donde estaban sus dos preguntas) o ninguna (`[]`, la pregunta sale). Lo
+ * que no se nombra queda igual, campo por campo: así se lee qué cambió de una versión a la otra.
+ */
+function conCambios(secciones: readonly SeccionDePlantillaV2[], cambios: Readonly<Record<string, readonly CampoDePlantillaV2[]>>): SeccionDePlantillaV2[] {
+  const usados = new Set<string>();
+  const nuevas = secciones.map((s) => ({
+    ...s,
+    fields: s.fields.flatMap((c) => {
+      const reemplazo = cambios[c.fieldCode];
+      if (!reemplazo) return [c];
+      usados.add(c.fieldCode);
+      return [...reemplazo];
+    }),
+  }));
+  const sinUsar = Object.keys(cambios).filter((codigo) => !usados.has(codigo));
+  if (sinUsar.length > 0) throw new Error(`plantillas-de-inicio: los cambios nombran preguntas que no están: ${sinUsar.join(', ')}`);
+  return nuevas;
+}
+
+/** El campo de una plantilla por su código: la base de cada cambio. */
+function campoDe(plantilla: PlantillaDeInicio, codigo: string): CampoDePlantillaV2 {
+  const campo = plantilla.sections.flatMap((s) => s.fields).find((c) => c.fieldCode === codigo);
+  if (!campo) throw new Error(`plantillas-de-inicio: ${plantilla.clave} no tiene ${codigo}`);
+  return campo;
+}
+
+/** Una lista que se repite de una plantilla, por su código. */
+function listaDe(plantilla: PlantillaDeInicio, codigo: string): Extract<CampoDePlantillaV2, { dataType: 'LIST' }> {
+  const campo = campoDe(plantilla, codigo);
+  if (campo.dataType !== 'LIST') throw new Error(`plantillas-de-inicio: ${plantilla.clave} · ${codigo} no es una lista`);
+  return campo;
+}
+
+/** DL-165 D-4: la pregunta del embarazo no viene pedida ni es obligatoria; el profesional la suma cuando corresponde. */
+const sinPedirNiExigir = (c: CampoDePlantillaV2): CampoDePlantillaV2 => ({ ...c, requiredByDefault: false, requestedByDefault: false });
+
+const comidasHabituales = listaDe(PLANTILLA_NUTRICION_INICIO, 'nut_comidas_habituales');
+
+/**
+ * «Cómo comés hoy» v2 (DL-165): la v1 con lo que decidió Dirección.
+ * - D-4 · el embarazo, sin pedir por defecto (ya no era obligatoria).
+ * - D-2 · los ejemplos de las comidas pasan a su texto de muestra, en el renglón: «Qué comés» y «Cuánto».
+ * - D-3 · sin los minutos. D-7 · quedan las 20 obligatorias.
+ */
+export const PLANTILLA_NUTRICION_INICIO_V2: PlantillaDeInicio = {
+  ...PLANTILLA_NUTRICION_INICIO,
+  version: '2',
+  proposito: `${PLANTILLA_NUTRICION_INICIO.proposito}. Sucede a la v1 (DL-165): el embarazo no viene pedido y los ejemplos de las comidas van como texto de muestra`,
+  formato: 3,
+  estimatedMinutes: null,
+  sections: conCambios(PLANTILLA_NUTRICION_INICIO.sections, {
+    nut_embarazo: [sinPedirNiExigir(campoDe(PLANTILLA_NUTRICION_INICIO, 'nut_embarazo'))],
+    nut_comidas_habituales: [
+      {
+        ...comidasHabituales,
+        helpText: 'Con detalle y con las medidas de tu casa. Sumá al menos tres.',
+        itemFields: comidasHabituales.itemFields.map((sub) =>
+          sub.code === 'que'
+            ? subTexto('que', 'Qué comés', true, 160, 'Milanesa de carne al horno con puré de papa')
+            : sub.code === 'porcion'
+              ? subTexto('porcion', 'Cuánto, con medidas de tu casa', true, 120, '1 plato playo, 2 unidades, 1 taza, 3 cucharadas…')
+              : sub,
+        ),
+      },
+    ],
+  }),
+};
+
+const DIAS_DE_LA_SEMANA = [op('lun', 'Lunes'), op('mar', 'Martes'), op('mie', 'Miércoles'), op('jue', 'Jueves'), op('vie', 'Viernes'), op('sab', 'Sábado'), op('dom', 'Domingo')];
+/** D-5: una opción por día. «Varía» y «No puedo» también son respuestas: «No puedo» no cuenta como día marcado. */
+const MOMENTOS_PARA_ENTRENAR = [op('temprano', 'Temprano'), op('manana', 'Mañana'), op('mediodia', 'Mediodía'), op('tarde', 'Tarde'), op('noche', 'Noche'), op('varia', 'Varía'), op('no_puedo', 'No puedo')];
+const otrosDeportes = listaDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_otros_deportes');
+
+/**
+ * «Antes de entrenar» v3 (DL-165): la v2 con lo que decidió Dirección. Conserva los seis códigos de la v1 (DL-100).
+ * - D-4 · el embarazo, sin pedir por defecto y no obligatorio; la pregunta de las indicaciones médicas suma el ejemplo.
+ * - D-5 · los días y el horario, en una tabla (reemplaza a `trn_dias_posibles` y `trn_franja`), y los días por semana no
+ *   pasan de los marcados (`maxFromMatrix`).
+ * - D-6 · cada otra actividad dice qué días (varios) y en qué momento; «Qué días» reemplaza a «Días por semana».
+ * - D-2 · el ejemplo de «Cuál» va como texto de muestra. D-3 · sin los minutos.
+ */
+export const PLANTILLA_ENTRENAMIENTO_V3: PlantillaDeInicio = {
+  ...PLANTILLA_ENTRENAMIENTO_V2,
+  version: '3',
+  proposito:
+    'Lo que la persona cuenta antes de entrenar, para armar el primer plan: su salud, dolor y lesiones, su experiencia, lo que busca, su semana y sus preferencias. Sucede a la v2 (DL-165): los días y el momento en una tabla, otra actividad con sus días y el embarazo sin pedir por defecto. Conserva los seis códigos de la v1 (DL-100)',
+  formato: 3,
+  estimatedMinutes: null,
+  sections: conCambios(PLANTILLA_ENTRENAMIENTO_V2.sections, {
+    trn_embarazo: [sinPedirNiExigir(campoDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_embarazo'))],
+    trn_salud_supervision: [{ ...campoDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_salud_supervision'), helpText: 'Por ejemplo, por un embarazo o un parto reciente.' }],
+    // La tabla va primero y el número después: se cuentan los días marcados antes de decir cuántos se pueden reservar.
+    trn_dias_por_semana: [
+      tabla({ codigo: 'trn_dias_y_horario', etiqueta: '¿Qué días y en qué momento podés?', cat: HABITOS, requerida: true,
+        ayuda: 'Una opción por día. Si un día no podés, marcá «No puedo».',
+        paraQue: 'Ubicar cada sesión en un día y en un momento que te queden bien.' }, DIAS_DE_LA_SEMANA, MOMENTOS_PARA_ENTRENAR),
+      numero({ codigo: 'trn_dias_por_semana', etiqueta: '¿Cuántos días por semana podrías reservar de manera realista?', cat: HABITOS, requerida: true,
+        ayuda: 'Un número entero entre 1 y 7.',
+        paraQue: 'Armar un plan que entre en tu semana.' }, 'días por semana', { minimum: 1, maximum: 7, integer: true }, { fieldCode: 'trn_dias_y_horario', exceptColumns: ['no_puedo'] }),
+    ],
+    trn_dias_posibles: [],
+    trn_franja: [],
+    trn_otros_deportes: [
+      {
+        ...otrosDeportes,
+        itemFields: [
+          subTexto('cual', 'Cuál', true, 80, 'Fútbol, natación, baile…'),
+          subVarias('que_dias', 'Qué días', true, DIAS_DE_LA_SEMANA),
+          subOpcion('momento', 'En qué momento', true, MOMENTOS_PARA_ENTRENAR.filter((m) => m.code !== 'no_puedo')),
+          subNumero('minutos', 'Minutos por vez, más o menos', true, 'min', { minimum: 10, maximum: 300, integer: true }),
+          ...otrosDeportes.itemFields.filter((sub) => sub.code === 'exigencia'),
+        ],
+      },
+    ],
+  }),
+};
+
+/** Todas las versiones de inicio, en el orden en que se siembran: las de DL-164 (formato 2) y las de DL-165 (formato 3). */
+export const PLANTILLAS_DE_INICIO: readonly PlantillaDeInicio[] = [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3];
+
+/** Las vigentes: las que se piden hoy (las anteriores quedan históricas, REG-06-209). */
+export const PLANTILLAS_VIGENTES_DE_INICIO: readonly PlantillaDeInicio[] = [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3];
+

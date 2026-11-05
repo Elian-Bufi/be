@@ -35,11 +35,18 @@ import {
 
 // ─── «Pedir información» ────────────────────────────────────────────────────────────────────────
 
-/** Lo que viene marcado al elegir una versión (F-05): todas las preguntas pedidas y, requeridas, las que la plantilla sugiere. */
+/**
+ * Lo que viene marcado al elegir una versión (F-05): las preguntas pedidas y, requeridas, las que la plantilla sugiere.
+ * Desde DL-165 D-4 (formato 3), una pregunta puede no venir pedida (`requestedByDefault: false`, el embarazo): queda sin
+ * marcar, y tampoco requerida (requerida ⊆ pedida, REG-06-212). Sin la propiedad, viene pedida, como hasta ahora.
+ */
 export function marcadoPorOmision(secciones: readonly SeccionDePlantillaV2[]): { readonly pedidas: readonly string[]; readonly requeridas: readonly string[] } {
-  const campos = camposEnOrden(secciones);
+  const campos = camposEnOrden(secciones).filter((c) => c.requestedByDefault !== false);
   return { pedidas: campos.map((c) => c.fieldCode), requeridas: campos.filter((c) => c.requiredByDefault).map((c) => c.fieldCode) };
 }
+
+/** DL-165 D-4 · la pregunta que la plantilla no trae pedida: en su fila se dice que se puede sumar. */
+export const noVienePedida = (campo: Pick<CampoDePlantillaV2, 'requestedByDefault'>): boolean => campo.requestedByDefault === false;
 
 /** PF-02 (DL-100): la precarga desde la evaluación de entrenamiento, solo con lo que la versión elegida realmente tiene. */
 export function precargaDeEntrenamiento(codigosDeLaVersion: readonly string[]): { readonly pedidas: readonly string[]; readonly requeridas: readonly string[] } {

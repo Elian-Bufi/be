@@ -237,6 +237,8 @@ export const COPY_SOLICITUDES = {
   /** DL-165 D-7 · las obligatorias, contadas junto a las elegidas: en la prueba no se notaban. */
   obligatoriasElegidas: (n: number): string => (n === 1 ? '1 obligatoria.' : `${numero(n)} obligatorias.`),
   obligatoriasDelFormulario: 'Vienen marcadas como obligatorias las que sugiere el formulario: podés cambiarlas.',
+  /** DL-165 D-4 · la pregunta que la plantilla no trae pedida (el embarazo). */
+  noVienePedida: 'No viene marcada: sumala si corresponde.',
   vienenTodasElegidas: 'Vienen todas elegidas: desmarcá las que no necesites.',
   preguntasAlElegir: 'Al elegir un formulario vas a ver acá sus preguntas.',
   leyendoLasPreguntas: 'Leyendo las preguntas…',

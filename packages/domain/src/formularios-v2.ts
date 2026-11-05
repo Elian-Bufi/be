@@ -128,14 +128,15 @@ function problemaDeSubcampo(sub: SubcampoDeLista, valor: ValorDeSubcampo): boole
 // ─── El formato 3 (DL-165) ──────────────────────────────────────────────────────────────────────
 
 /**
- * Lo que una versión usa del formato 3 (DL-165): el subcampo de varias opciones, el ejemplo de un subcampo de texto y el
- * tope de un número desde una tabla (`maxFromMatrix`). Una
+ * Lo que una versión usa del formato 3 (DL-165): el subcampo de varias opciones, el ejemplo de un subcampo de texto, el
+ * tope de un número desde una tabla (`maxFromMatrix`) y si una pregunta viene pedida por defecto (`requestedByDefault`). Una
  * versión que usa algo de esto **tiene que** declarar `format: 3`, y una de formato 2 no puede usarlo: si no, la APK
  * 0.20 recibiría una forma que no lee (DL-152). Lo verifican las pruebas de las plantillas y el generador de la migración.
  */
 export function loQueUsaDelFormato3(secciones: readonly SeccionDePlantillaV2[]): string[] {
   const usos: string[] = [];
   for (const campo of camposEnOrden(secciones)) {
+    if (campo.requestedByDefault !== undefined) usos.push(`${campo.fieldCode}: si viene pedida por defecto`);
     if (campo.dataType === 'NUMBER' && campo.maxFromMatrix !== undefined) usos.push(`${campo.fieldCode}: el tope desde la tabla ${campo.maxFromMatrix.fieldCode}`);
     if (campo.dataType !== 'LIST') continue;
     for (const sub of campo.itemFields) {

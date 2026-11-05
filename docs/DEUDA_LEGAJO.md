@@ -6239,6 +6239,18 @@ las respuestas a mano en el escritorio y en la Línea de tiempo.
   tope, y un número fuera de sus límites dice solo eso.
   - *Descartado:* escribir la regla para `trn_dias_por_semana` en el código (otra plantilla no la podría usar, y la
     plantilla no diría que la tiene).
+- **D-12 · Las versiones nuevas, y cómo se leyó cada decisión en ellas** (FR-06). FRM-NUTRICION-INICIO v2 y
+  FRM-ENTRENAMIENTO v3, de formato 3, por la migración `20261105120000_formularios_ronda_2_plantillas`, que solo agrega;
+  las de DL-164 quedan históricas y su migración no cambia. Lo que se interpretó:
+  - «pedida por defecto» es `requestedByDefault`, que va solo cuando es `false`: sin la propiedad, la pregunta viene pedida;
+  - la pregunta de las indicaciones médicas es `trn_salud_supervision` («¿Algún médico te dijo que solo hagas actividad
+    física con supervisión médica?»), que suma «Por ejemplo, por un embarazo o un parto reciente.»;
+  - en el renglón de otra actividad, «Qué días» reemplaza a «Días por semana» (eran el mismo dato) y «En qué momento» tiene
+    las opciones de la tabla salvo «No puedo»;
+  - D-2 en la plantilla: en «Cómo comés hoy» v2, los ejemplos de las comidas pasan de la ayuda de la pregunta al texto de
+    muestra de «Qué comés» y «Cuánto»;
+  - las «20 obligatorias» de D-7 son 22 en la plantilla (21, y la de las alergias, que aparece solo si hay alergia), y
+    quedan todas.
 
 **Pruebas** (las suma cada parte): la lógica de las partes y las reglas nuevas en el dominio; la APK y la web en sus
 pruebas de lógica pura; la API en `formularios-ronda-2.int-spec.ts`, `formularios-de-inicio.int-spec.ts` y

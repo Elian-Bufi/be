@@ -58,7 +58,8 @@
 6. **D-6 · Otra actividad, con sus días.** En «Contame cuáles» (`trn_otros_deportes`), cada renglón suma «Qué días»
    (varios) y «En qué momento». Hace falta un subtipo nuevo de varias opciones dentro del renglón.
 7. **D-7 (eligió distinto de la propuesta) · Quedan las 20 obligatorias de «Cómo comés hoy».** Al pedir, en la web, se
-   tienen que ver más claras. En «Cargar con la persona», más visibles también.
+   tienen que ver más claras. En «Cargar con la persona», más visibles también. (En la plantilla son 22: 21, y la de las
+   alergias, que se ve solo si hay alergia.)
 8. **D-8 · Las solicitudes, a la vista en el escritorio.**
    - En la solicitud, «Cargar con la persona» va arriba, junto al estado, y no debajo de todas las preguntas.
    - «Pedir información» va en el Resumen de cada área con formulario. Nutrición ya lo tiene desde FR-02; Entrenamiento

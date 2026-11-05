@@ -12,11 +12,11 @@ import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
-import { VERSION_ENTRENAMIENTO_V2 } from './soporte-plantillas-de-inicio';
+import { VERSION_ENTRENAMIENTO_V3 } from './soporte-plantillas-de-inicio';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
-/** La vigente de FRM-ENTRENAMIENTO (v2, con tipos nuevos; DL-164 FI-02): FRM-03 no cambia con el formato de la versión. */
-const VERSION_ENTRENAMIENTO = VERSION_ENTRENAMIENTO_V2;
+/** La vigente de FRM-ENTRENAMIENTO (v3, de formato 3; DL-165 FR-06): FRM-03 no cambia con el formato de la versión. */
+const VERSION_ENTRENAMIENTO = VERSION_ENTRENAMIENTO_V3;
 const VERSION_HABITOS ='4879e539-235f-4f91-83fc-2e113c404393';
 const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
 
