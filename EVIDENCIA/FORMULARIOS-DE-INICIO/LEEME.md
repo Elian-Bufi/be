@@ -89,6 +89,10 @@ son las de la prueba breve (`EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md`). Sus c
 `BE-datos-locales\prueba-test\cuentas.env`, en la PC de Dirección. «Lic. Prueba Dos Áreas» tiene Nutrición y
 Entrenamiento, y su Nutrición quedó rehabilitada después de la parte A.
 
+En ese archivo las cuentas no tienen nombre: cada una es un par `<prefijo>_CORREO` y `<prefijo>_CLAVE`
+(`escenarios.mjs` de la prueba breve). `PRO_` es «Lic. Prueba Dos Áreas»; `ASE_UNO_`, «Prueba Uno»; `ASE_DOS_`, «Prueba
+Dos»; y `ASE_TRES_`, «Prueba Tres». Las de `ASE_CUATRO_` y `ASE_CINCO_` no se usan en esta prueba.
+
 **Parte 1 · Instalar** (teléfono)
 1. Abrir https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.20.0-candidata.1 y descargar
    `be-0.20.0-candidata.1-40b12e9.apk`.
