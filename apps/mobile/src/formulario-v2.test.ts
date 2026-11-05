@@ -187,6 +187,18 @@ describe('el borrador guarda lo tocado tal cual, y nada viene elegido', () => {
     expect(valorComo(tope, 'no_come', 'FOODS').alimentos).toHaveLength(2);
   });
 
+  test('DL-165 D-2 · «Quitar respuesta» deja la pregunta sin responder y no toca las demás; lo que no estaba, no cambia', () => {
+    const cargado = reducir([{ tipo: 'cargar', valores: COMPLETO }]);
+    const sinDonde = reducir([{ tipo: 'quitar', fieldCode: 'donde' }], cargado);
+    expect('donde' in sinDonde).toBe(false);
+    expect(valorComo(sinDonde, 'donde', 'CHOICE')).toEqual({ tipo: 'CHOICE', opcion: null, otro: '' });
+    expect(sinDonde.evita).toEqual(COMPLETO.evita);
+    // Al enviar, la pregunta quitada no viaja (09:1586-1587).
+    expect(armarRespuestas(SECCIONES, SOLICITUD, sinDonde).respuestas.map((r) => r.fieldCode)).not.toContain('donde');
+    // Quitar lo que no tiene respuesta devuelve el mismo borrador: no hay nada «sin guardar».
+    expect(reducir([{ tipo: 'quitar', fieldCode: 'veces_fuera' }], BORRADOR_VACIO)).toBe(BORRADOR_VACIO);
+  });
+
   test('cargar reemplaza todo y limpiar deja el borrador vacío; dos borradores iguales no son «algo sin guardar»', () => {
     const cargado = reducir([{ tipo: 'cargar', valores: COMPLETO }]);
     expect(cargado).toBe(COMPLETO);

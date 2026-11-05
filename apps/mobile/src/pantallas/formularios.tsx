@@ -18,6 +18,7 @@
  * se revocó, la solicitud sigue estando —es de la persona— pero ya no se puede responder.
  */
 import {
+  ayudaDeLaPregunta,
   camposEnOrden,
   COPY,
   COPY_FORMULARIOS,
@@ -27,6 +28,7 @@ import {
   habilitacion,
   LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION,
   reducirFormulario,
+  seOfreceQuitarRespuesta,
   sePuedeEnviar,
   valoresAdmitidos,
   type Accion,
@@ -43,7 +45,7 @@ import { AppState, View } from 'react-native';
 import { api } from '../api';
 import { baseDelBorrador, hayQueGuardar, restauracionDe, type LecturaDelBorrador } from '../borrador-de-formulario';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
-import { CampoDeAlimentos, CampoDeHorarios, ListaQueSeRepite, OPCIONES_SI_O_NO, OpcionUnica, OpcionesMultiples, TablaDeOpciones } from '../campos-de-formulario';
+import { CampoDeAlimentos, CampoDeHorarios, ListaQueSeRepite, OpcionUnica, OpcionesMultiples, PieDePregunta, PreguntaSiONo, TablaDeOpciones } from '../campos-de-formulario';
 import { DialogoDeConfirmacion, useAccionConfirmada } from '../dialogo';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha } from '../formato';
@@ -64,16 +66,17 @@ import {
   rotuloDe,
   seccionesEnPalabras,
   TEXTOS_DE_FORMULARIO_V2 as T,
+  tieneAlgo,
   valorComo,
+  valorDe,
   type Borrador,
-  type EleccionSiONo,
   type RespuestasArmadas,
 } from '../formulario-v2';
 import { falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada } from '../lecturas';
 import { leerLista } from '../lecturas-de-las-zonas';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Ayuda, Boton, Campo, CampoSiONo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
+import { Aviso, Ayuda, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropiaV2[] } | { tipo: 'error'; sinConexion: boolean };
 
@@ -92,7 +95,7 @@ function TarjetaDeSolicitud({ s, ir }: { s: SolicitudPropiaV2; ir: (r: Ruta) => 
       </Parrafo>
       <Parrafo tenue>{s.purpose}</Parrafo>
       {propuesta ? <Parrafo tenue>{T.cargadoPorEl(propuesta.professional.displayName, fecha(propuesta.loadedAt))}</Parrafo> : null}
-      {s.status === 'PENDING' && s.estimatedMinutes !== null && !propuesta ? <Parrafo tenue icono="reloj">{COPY_FORMULARIOS_V2.minutos(s.estimatedMinutes)}</Parrafo> : null}
+      {/* DL-165 D-3: no se dice cuánto lleva; lo dice «Parte 1 de 6» al abrirla. */}
       {s.respondable ? (
         <Boton texto={propuesta ? T.revisar : COPY_FORMULARIOS.completar} onPress={abrir} />
       ) : s.status === 'RESPONDED' ? (
@@ -164,12 +167,6 @@ export function PantallaDeFormularios({ token, identidadId, salir, ir }: { token
 interface Datos {
   readonly detalle: DetalleDeSolicitudV2;
   readonly plantilla: VersionDePlantillaV2;
-}
-
-/** La ayuda de una pregunta: su texto de ayuda (o uno por defecto) y para qué se usa el dato. */
-function ayudaDe(c: CampoDePlantillaV2, porDefecto?: string): string | undefined {
-  const partes = [c.helpText ?? porDefecto, c.purpose ? `${COPY_FORMULARIOS_V2.paraQue}: ${c.purpose}` : null].filter((p): p is string => !!p);
-  return partes.length ? partes.join(' ') : undefined;
 }
 
 /** Las respuestas en palabras, por sección, con las etiquetas de la plantilla: lo guardado y lo cargado se leen igual. */
@@ -589,56 +586,68 @@ export function PantallaDeMiSolicitud({
   const dibujarCampo = (c: CampoDePlantillaV2) => {
     const etiqueta = rotuloDe(c, request);
     const error = errores[c.fieldCode] ?? null;
-    const cabecera = { etiqueta, ayuda: c.helpText, paraQue: c.purpose, error };
+    // DL-165 D-2: la ayuda a la vista es corta (en un texto, es su texto de muestra), el «para qué» va plegado al pie y
+    // una pregunta opcional con algo elegido se suelta con «Quitar respuesta».
+    const ayuda = ayudaDeLaPregunta(c);
+    const quitar = seOfreceQuitarRespuesta(c, request, tieneAlgo(valorDe(borrador, c)))
+      ? () => {
+          editar({ tipo: 'quitar', fieldCode: c.fieldCode });
+          limpiarError(c.fieldCode);
+        }
+      : null;
+    const cabecera = { etiqueta, ayuda: ayuda.aLaVista, paraQue: c.purpose, error, quitar };
     const tocar = (fieldCode: string) => limpiarError(fieldCode);
     switch (c.dataType) {
       case 'TEXT':
         return (
-          <Campo
-            key={c.fieldCode}
-            etiqueta={etiqueta}
-            ayuda={ayudaDe(c, COPY_FORMULARIOS.omitirCampo)}
-            value={valorComo(borrador, c.fieldCode, 'TEXT').texto}
-            error={error}
-            onChangeText={(t) => {
-              editar({ tipo: 'escribir', fieldCode: c.fieldCode, como: 'TEXT', texto: t });
-              tocar(c.fieldCode);
-            }}
-            maxLength={c.maxLength}
-            {...(c.multiline ? { multiline: true, style: [ui.entrada, estilos.textoLargo, error ? ui.entradaConError : null] } : {})}
-          />
+          <View key={c.fieldCode}>
+            <Campo
+              etiqueta={etiqueta}
+              // El ejemplo es el texto de muestra: se lee donde se escribe y se va al escribir. El lector lo dice igual.
+              placeholder={ayuda.deMuestra ?? undefined}
+              accessibilityHint={ayuda.deMuestra ?? undefined}
+              value={valorComo(borrador, c.fieldCode, 'TEXT').texto}
+              error={error}
+              onChangeText={(t) => {
+                editar({ tipo: 'escribir', fieldCode: c.fieldCode, como: 'TEXT', texto: t });
+                tocar(c.fieldCode);
+              }}
+              maxLength={c.maxLength}
+              {...(c.multiline ? { multiline: true, style: [ui.entrada, estilos.textoLargo, error ? ui.entradaConError : null] } : {})}
+            />
+            <PieDePregunta etiqueta={etiqueta} paraQue={c.purpose} />
+          </View>
         );
       case 'NUMBER':
         return (
-          <Campo
-            key={c.fieldCode}
-            etiqueta={c.unit ? `${etiqueta} (${c.unit})` : etiqueta}
-            ayuda={ayudaDe(c, c.limits ? valoresAdmitidos(c.limits, c.unit) : COPY_FORMULARIOS.omitirCampo)}
-            value={valorComo(borrador, c.fieldCode, 'NUMBER').texto}
-            error={error}
-            onChangeText={(t) => {
-              editar({ tipo: 'escribir', fieldCode: c.fieldCode, como: 'NUMBER', texto: t });
-              tocar(c.fieldCode);
-            }}
-            // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero` al enviar.
-            keyboardType="decimal-pad"
-          />
+          <View key={c.fieldCode}>
+            <Campo
+              etiqueta={c.unit ? `${etiqueta} (${c.unit})` : etiqueta}
+              ayuda={ayuda.aLaVista ?? (c.limits ? valoresAdmitidos(c.limits, c.unit) : undefined)}
+              value={valorComo(borrador, c.fieldCode, 'NUMBER').texto}
+              error={error}
+              onChangeText={(t) => {
+                editar({ tipo: 'escribir', fieldCode: c.fieldCode, como: 'NUMBER', texto: t });
+                tocar(c.fieldCode);
+              }}
+              // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero` al enviar.
+              keyboardType="decimal-pad"
+            />
+            <PieDePregunta etiqueta={etiqueta} paraQue={c.purpose} />
+          </View>
         );
       case 'BOOLEAN':
         // Sí/No se elige entre dos opciones: escribirlo obligaría a interpretar el texto, y lo mal interpretado
         // quedaría guardado como declarado por la persona (09 §22.7).
         return (
-          <CampoSiONo
+          <PreguntaSiONo
             key={c.fieldCode}
-            etiqueta={etiqueta}
-            ayuda={ayudaDe(c, COPY_FORMULARIOS.elegiSiONo)}
-            opciones={OPCIONES_SI_O_NO}
+            cabecera={cabecera}
             valor={valorComo(borrador, c.fieldCode, 'BOOLEAN').eleccion}
             onCambio={(v) => {
-              editar({ tipo: 'elegir-si-o-no', fieldCode: c.fieldCode, eleccion: v as EleccionSiONo });
+              editar({ tipo: 'elegir-si-o-no', fieldCode: c.fieldCode, eleccion: v });
               tocar(c.fieldCode);
             }}
-            pista={COPY_FORMULARIOS.volverASinResponder}
           />
         );
       case 'CHOICE': {
@@ -754,7 +763,6 @@ export function PantallaDeMiSolicitud({
       <Parrafo tenue>
         {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName} · {request.purpose}
       </Parrafo>
-      {!esCorreccion && !desdePropuesta && datos.plantilla.estimatedMinutes !== null ? <Parrafo tenue icono="reloj">{COPY_FORMULARIOS_V2.minutos(datos.plantilla.estimatedMinutes)}</Parrafo> : null}
       {/* El texto va como título del aviso: así se anuncia al lector de pantalla y se lee en negrita, como todos (D-C3). */}
       {estado.aviso ? <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} /> : recuperado && hayAlgoPropio ? <Aviso tipo="info" titulo={T.recuperamosLoEscrito} /> : null}
       {/* FR-01 · si lo escrito no quedó en el teléfono, se dice: un cierre de la app lo perdería. */}

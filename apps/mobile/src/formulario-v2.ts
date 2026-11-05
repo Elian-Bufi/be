@@ -47,9 +47,9 @@ export const TEXTOS_DE_FORMULARIO_V2 = {
   sinElegir: 'Sin elegir',
   renglones: (n: number, maximo: number) => `${n} de hasta ${maximo}`,
   hastaOpciones: (n: number) => (n === 1 ? 'Podés elegir 1.' : `Podés elegir hasta ${n}.`),
-  elegiUna: 'Elegí una opción. Tocá de nuevo la elegida para dejarla sin responder.',
   elegiVarias: 'Podés elegir varias.',
-  unaPorFila: 'Elegí una opción por fila. Tocá de nuevo la elegida para soltarla.',
+  // DL-165 D-2: el «tocá de nuevo para soltarla» se fue; una pregunta opcional se suelta con «Quitar respuesta».
+  unaPorFila: 'Elegí una opción por fila.',
   tocaLosQueApliquen: 'Tocá los que apliquen y sumá los que falten.',
   sumar: 'Sumar',
   quitar: 'Quitar',
@@ -196,6 +196,8 @@ export type EventoDeBorrador =
   | { readonly tipo: 'quitar-alimento'; readonly fieldCode: string; readonly nombre: string }
   | { readonly tipo: 'motivo-de-alimento'; readonly fieldCode: string; readonly nombre: string; readonly motivo: string | null }
   | { readonly tipo: 'escribir-hora'; readonly fieldCode: string; readonly parte: string; readonly texto: string }
+  /** DL-165 D-2 · «Quitar respuesta»: la pregunta vuelve a estar sin responder, como si no se hubiera tocado. */
+  | { readonly tipo: 'quitar'; readonly fieldCode: string }
   /** Reemplaza todo el borrador: lo que cargó el profesional, o la respuesta vigente para corregirla. */
   | { readonly tipo: 'cargar'; readonly valores: Borrador }
   | { readonly tipo: 'limpiar' };
@@ -277,6 +279,11 @@ export function reducirBorrador(b: Borrador, ev: EventoDeBorrador): Borrador {
     case 'escribir-hora': {
       const v = actual(b, ev.fieldCode, 'TIMES');
       return con(b, ev.fieldCode, { tipo: 'TIMES', horas: { ...v.horas, [ev.parte]: ev.texto } });
+    }
+    case 'quitar': {
+      if (!(ev.fieldCode in b)) return b;
+      const { [ev.fieldCode]: _, ...resto } = b;
+      return resto;
     }
     case 'cargar':
       return ev.valores;

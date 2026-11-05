@@ -262,6 +262,29 @@ export function obligatoriosSinResponder(
   return solicitud.requiredFieldCodes.filter((c) => pedidos.has(c) && visibles.has(c) && !respondidos.has(c));
 }
 
+// ─── Las ayudas de una pregunta (DL-165 D-2) ────────────────────────────────────────────────────
+
+/**
+ * Dónde va la ayuda de una pregunta. En una respuesta de texto es su **texto de muestra**: el ejemplo se lee donde se
+ * escribe y se va al escribir. En las demás, una línea corta debajo de la pregunta (el rango de un número, «Elegí hasta
+ * dos»). El «para qué» no va acá: va plegado, detrás de «¿Para qué?».
+ */
+export function ayudaDeLaPregunta(campo: Pick<CampoDePlantillaV2, 'dataType' | 'helpText'>): { readonly aLaVista: string | null; readonly deMuestra: string | null } {
+  const ayuda = campo.helpText?.trim() || null;
+  return campo.dataType === 'TEXT' ? { aLaVista: null, deMuestra: ayuda } : { aLaVista: ayuda, deMuestra: null };
+}
+
+/** Las preguntas en las que se «elige» algo: ahí va «Quitar respuesta». En las demás se borra lo escrito o se quita el renglón. */
+export const TIPOS_CON_QUITAR_RESPUESTA: readonly TipoDeCampoV2[] = ['BOOLEAN', 'CHOICE', 'MULTI_CHOICE', 'MATRIX'];
+
+/**
+ * DL-165 D-2 · «Quitar respuesta» reemplaza a «tocá de nuevo la opción elegida»: aparece solo cuando hay algo elegido en
+ * una pregunta opcional. En una obligatoria no se ofrece: se cambia de opción.
+ */
+export function seOfreceQuitarRespuesta(campo: Pick<CampoDePlantillaV2, 'dataType' | 'fieldCode'>, solicitud: Pick<SolicitudAValidar, 'requiredFieldCodes'>, hayAlgoElegido: boolean): boolean {
+  return hayAlgoElegido && TIPOS_CON_QUITAR_RESPUESTA.includes(campo.dataType) && !solicitud.requiredFieldCodes.includes(campo.fieldCode);
+}
+
 // ─── Normalización y correcciones (DL-164 D-4) ──────────────────────────────────────────────────
 
 /**

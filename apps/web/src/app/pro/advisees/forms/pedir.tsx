@@ -338,8 +338,8 @@ export function PedidoDeInformacion({
                       {/* La descripción, solo en el elegido: elegir no envía nada, y la lista se recorre de un vistazo. */}
                       {es ? (
                         <p className="formulario-del-pedido__descripcion" id={`${id}-descripcion`}>
+                          {/* DL-165 D-3: no se dice cuánto le lleva a la persona; ella ve «Parte 1 de 6». */}
                           {p.purpose}
-                          {version?.estimatedMinutes ? ` A la persona le lleva unos ${version.estimatedMinutes} minutos.` : ''}
                         </p>
                       ) : null}
                     </div>

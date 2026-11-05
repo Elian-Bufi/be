@@ -21,6 +21,7 @@
  *   (`useCambiosSinGuardar`).
  */
 import {
+  ayudaDeLaPregunta,
   camposVisibles,
   CODIGO_DE_PROBLEMA_V2,
   COPY,
@@ -44,7 +45,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
-import { CampoV2 } from './campos-v2';
+import { CampoV2, ParaQueDeLaPregunta } from './campos-v2';
 import { conRespuesta, mensajesPorCampo, problemasDeLaApi, respuestaDe, respuestasParaEnviar, revisarAntesDeEnviar, sinRenglonesVacios } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
 
@@ -312,27 +313,27 @@ export function CargaConLaPersona() {
                         const id = idDe(c.fieldCode);
                         const deEsta = mensajes.get(c.fieldCode) ?? [];
                         const falta = intentos > 0 && sinResponder.includes(c.fieldCode);
-                        const descripcion = [c.helpText ? `${id}-ayuda` : null, c.purpose ? `${id}-para-que` : null, ...deEsta.map((_, i) => `${id}-problema-${i}`), falta ? `${id}-falta` : null].filter(Boolean).join(' ') || undefined;
+                        // DL-165 D-2: la ayuda a la vista es corta; en un texto, es su texto de muestra (y la lee el lector).
+                        const ayuda = ayudaDeLaPregunta(c);
+                        const conAyuda = ayuda.aLaVista !== null || ayuda.deMuestra !== null;
+                        const descripcion = [conAyuda ? `${id}-ayuda` : null, c.purpose ? `${id}-para-que` : null, ...deEsta.map((_, i) => `${id}-problema-${i}`), falta ? `${id}-falta` : null].filter(Boolean).join(' ') || undefined;
                         return (
                           <fieldset key={c.fieldCode} id={id} className="pregunta-de-inicio" data-pregunta={c.fieldCode} data-con-problema={deEsta.length > 0 ? 'si' : undefined} tabIndex={-1}>
                             <legend className="pregunta-de-inicio__pregunta">
                               <span id={`${id}-texto`}>{c.label}</span>{' '}
                               <span className="etiqueta-de-dato">{solicitud.requiredFieldCodes.includes(c.fieldCode) ? V.obligatoria : V.opcional}</span>
                             </legend>
-                            {c.helpText ? (
+                            {ayuda.aLaVista ? (
                               <p id={`${id}-ayuda`} className="campo__ayuda">
-                                {c.helpText}
+                                {ayuda.aLaVista}
                               </p>
-                            ) : null}
-                            {c.purpose ? (
-                              <p id={`${id}-para-que`} className="nota pregunta-de-inicio__para-que">
-                                <Icono nombre="info" tamano={15} />
-                                <span>
-                                  {V.paraQue}: {c.purpose}
-                                </span>
-                              </p>
+                            ) : ayuda.deMuestra ? (
+                              <span id={`${id}-ayuda`} className="visualmente-oculto">
+                                {ayuda.deMuestra}
+                              </span>
                             ) : null}
                             <CampoV2 id={`${id}-control`} campo={c} valor={respuestaDe(respuestas, c.fieldCode)} onCambiar={(v) => cambiar(c.fieldCode, v)} deshabilitado={enviando} labelledBy={`${id}-texto`} describedBy={descripcion} />
+                            {c.purpose ? <ParaQueDeLaPregunta idDelTexto={`${id}-para-que`} pregunta={c.label} texto={c.purpose} /> : null}
                             {deEsta.map((m, i) => (
                               <p key={m} id={`${id}-problema-${i}`} className="campo__error">
                                 <span aria-hidden="true">⚠ </span>

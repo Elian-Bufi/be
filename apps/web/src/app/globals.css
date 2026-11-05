@@ -13065,15 +13065,16 @@ details[open] > summary:not([class])::before {
   font-weight: 400;
 }
 
+/* DL-165 D-2: «¿Para qué?», plegado al pie de la pregunta; desplegado, el texto va debajo del botón. */
 .pregunta-de-inicio__para-que {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
-.pregunta-de-inicio__para-que .icono {
-  flex: none;
-  margin-top: 0.15rem;
+.pregunta-de-inicio__para-que .nota[hidden] {
+  display: none;
 }
 
 .pregunta-de-inicio .campo,

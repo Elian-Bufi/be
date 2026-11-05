@@ -42,8 +42,11 @@ export const MENSAJE_DE_PROBLEMA_V2: Readonly<Record<CodigoDeProblemaV2, string>
   [CODIGO_DE_TEXTO_DEMASIADO_LARGO]: 'El texto es más largo de lo que admite la pregunta.',
 };
 
+/**
+ * DL-165 D-3: ningún texto dice cuántos minutos lleva un formulario (un tiempo estimado se lee como una promesa); lo que
+ * falta lo dice «Parte 1 de 6». `estimatedMinutes` sigue en el contrato porque la APK 0.20 lo lee (DL-152).
+ */
 export const COPY_FORMULARIOS_V2 = {
-  minutos: (n: number) => `Te lleva unos ${n} minutos.`,
   obligatoria: 'Obligatoria',
   opcional: 'Opcional',
   otro: 'Otro',
@@ -54,6 +57,12 @@ export const COPY_FORMULARIOS_V2 = {
   motivo: 'Por qué',
   sinResponder: 'Sin responder',
   paraQue: 'Para qué se usa',
+  // DL-165 D-2 · las ayudas, plegadas: el «para qué» se abre con un botón, y una pregunta opcional se suelta con otro.
+  paraQueBoton: '¿Para qué?',
+  /** El nombre del botón para el lector de pantalla: dice de qué pregunta es. */
+  paraQueDe: (pregunta: string) => `¿Para qué? ${pregunta}`,
+  quitarRespuesta: 'Quitar respuesta',
+  quitarRespuestaDe: (pregunta: string) => `Quitar respuesta: ${pregunta}`,
 
   /** En la APK. */
   apk: {
