@@ -358,7 +358,8 @@ export function PedidoDeInformacion({
             {version ? (
               <p className="nota">
                 <span data-elegidas aria-live="polite">
-                  {C.elegidas(elegidas.length, preguntas.length)}
+                  {C.elegidas(elegidas.length, preguntas.length)} {/* DL-165 D-7: las obligatorias, contadas a la vista. */}
+                  <strong data-obligatorias>{C.obligatoriasElegidas(elegidas.filter((c) => requeridas.includes(c)).length)}</strong>
                 </span>
                 {/* Desde Entrenamiento vienen solo las seis de DL-100; desde Nutrición, todas, como en «Más». */}
                 {conPrecarga && desdeEntrenamiento ? null : ` ${C.vienenTodasElegidas}`}
@@ -382,7 +383,10 @@ export function PedidoDeInformacion({
                   {V.web.appNueva}
                 </p>
               ) : null}
-              <p className="nota">{F.ayudaRequerido}</p>
+              <p className="nota">
+                {preguntas.some((c) => c.requiredByDefault) ? `${C.obligatoriasDelFormulario} ` : ''}
+                {F.ayudaRequerido}
+              </p>
               {/* Solo si alguna pregunta tiene aclaración. Va arriba de la tabla: no se mueve de lugar al abrirlas. */}
               {preguntas.some((c) => c.helpText) ? (
                 <p className="nota preguntas-del-pedido__aclaraciones">
@@ -415,11 +419,12 @@ export function PedidoDeInformacion({
                     ) : null}
                     {s.fields.map((c) => {
                       const pedida = pedidas.includes(c.fieldCode);
+                      const obligatoria = pedida && requeridas.includes(c.fieldCode);
                       // DL-164 D-2: una pregunta condicional aparece solo cuando se cumple su condición; se dice con palabras.
                       const condicion = condicionEnPalabras(c, preguntas);
                       const descripcion = [c.helpText && conAclaraciones ? `${id}-ayuda-${c.fieldCode}` : null, condicion ? `${id}-condicion-${c.fieldCode}` : null].filter(Boolean).join(' ') || undefined;
                       return (
-                        <tr key={c.fieldCode} data-pregunta={c.fieldCode} data-pedida={pedida ? 'si' : undefined} data-condicional={condicion ? 'si' : undefined}>
+                        <tr key={c.fieldCode} data-pregunta={c.fieldCode} data-pedida={pedida ? 'si' : undefined} data-obligatoria={obligatoria ? 'si' : undefined} data-condicional={condicion ? 'si' : undefined}>
                           <td className="preguntas-del-pedido__casilla">
                             <input
                               type="checkbox"
@@ -433,6 +438,12 @@ export function PedidoDeInformacion({
                           </td>
                           <th scope="row">
                             <label htmlFor={`${id}-pedir-${c.fieldCode}`}>{c.label}</label>
+                            {/* DL-165 D-7: la obligatoria se lee en la fila, además de en su casilla. */}
+                            {obligatoria ? (
+                              <span className="etiqueta-de-dato preguntas-del-pedido__obligatoria" data-obligatoria="si" aria-hidden="true">
+                                {V.obligatoria}
+                              </span>
+                            ) : null}
                             {condicion ? (
                               <span className="preguntas-del-pedido__condicion" id={`${id}-condicion-${c.fieldCode}`}>
                                 {condicion}

@@ -209,7 +209,7 @@ export const COPY_SOLICITUDES = {
   noEsMedicionNiDiagnostico: 'No es una medición ni un diagnóstico.',
   pregunta: 'Pregunta',
   respuestaQueRige: 'Respuesta que rige',
-  requerida: 'Requerida',
+  requerida: 'Obligatoria',
   corregida: 'Corregida',
   antes: 'Antes',
   antesSinResponder: 'sin responder',
@@ -230,10 +230,13 @@ export const COPY_SOLICITUDES = {
   leyendoLaRespuesta: 'Leyendo la respuesta…',
   // El pedido: un cajón con tres pasos a la vista.
   paso: { formulario: 'Qué formulario', preguntas: 'Qué preguntas', paraQue: 'Para qué y en qué área' },
-  /** Lo que marcar «Requerida» quiere decir, y lo que no: la solicitud entera puede quedar sin responder. */
-  siRespondeLasRequeridas: 'Si responde, las requeridas no pueden quedar vacías.',
+  /** Lo que marcar «Obligatoria» quiere decir, y lo que no: la solicitud entera puede quedar sin responder. */
+  siRespondeLasRequeridas: 'Si responde, las obligatorias no pueden quedar vacías.',
   /** Al elegir un formulario vienen todas sus preguntas marcadas (decisión de Dirección del 2026-10-12, F-05). */
   elegidas: (elegidas: number, total: number): string => `${numero(elegidas)} de ${numero(total)} elegidas.`,
+  /** DL-165 D-7 · las obligatorias, contadas junto a las elegidas: en la prueba no se notaban. */
+  obligatoriasElegidas: (n: number): string => (n === 1 ? '1 obligatoria.' : `${numero(n)} obligatorias.`),
+  obligatoriasDelFormulario: 'Vienen marcadas como obligatorias las que sugiere el formulario: podés cambiarlas.',
   vienenTodasElegidas: 'Vienen todas elegidas: desmarcá las que no necesites.',
   preguntasAlElegir: 'Al elegir un formulario vas a ver acá sus preguntas.',
   leyendoLasPreguntas: 'Leyendo las preguntas…',

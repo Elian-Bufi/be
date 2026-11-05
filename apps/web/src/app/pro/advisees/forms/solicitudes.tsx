@@ -500,6 +500,15 @@ function DetalleDeSolicitud({
 
   return (
     <div className="solicitud-abierta" data-solicitud={solicitud.formRequestId}>
+      {/* DL-165 D-8: «Cargar con la persona» va arriba, junto al estado, y no debajo de todas las preguntas pedidas. */}
+      {declarado?.estado === 'SIN_RESPONDER' && !propuesta && esMia ? (
+        <div className="acciones solicitud-abierta__acciones">
+          <button type="button" className="boton boton--primario" onClick={() => ir({ vista: 'cargar' }, { agregarAlHistorial: true })} data-cargar>
+            <Icono nombre="persona" tamano={18} />
+            {V.web.cargar}
+          </button>
+        </div>
+      ) : null}
       <dl className="solicitud-abierta__datos">
         <div>
           <dt>{C.loPediste}</dt>
@@ -642,14 +651,6 @@ function DetalleDeSolicitud({
             <p className="nota" data-desenlace={desenlace.outcome}>
               {desenlace.outcome === 'REJECTED' ? V.web.noConfirmado(diaSinElAnioEnCurso(desenlace.resolvedAt)) : V.web.retirado(diaSinElAnioEnCurso(desenlace.resolvedAt))}
             </p>
-          ) : null}
-          {esMia ? (
-            <div className="acciones">
-              <button type="button" className="boton boton--secundario" onClick={() => ir({ vista: 'cargar' }, { agregarAlHistorial: true })} data-cargar>
-                <Icono nombre="persona" tamano={18} />
-                {V.web.cargar}
-              </button>
-            </div>
           ) : null}
         </section>
       ) : null}

@@ -81,6 +81,9 @@ export const COPY_FORMULARIOS_V2 = {
   faltanPorResponder: (n: number) => (n === 1 ? 'Falta 1 pregunta obligatoria por responder.' : `Faltan ${n} preguntas obligatorias por responder.`),
   parteSinPreguntas: 'Con lo que respondiste antes, esta parte no tiene preguntas. Seguí con la próxima.',
   obligatoriaSinResponder: 'Sin responder · obligatoria',
+  /** En el índice de las partes de «Cargar con la persona» (DL-165 D-7: las obligatorias, a la vista). */
+  obligatoriasPorResponder: (n: number) => (n === 1 ? '1 obligatoria por responder' : `${n} obligatorias por responder`),
+  partesDelFormulario: 'Partes del formulario',
 
   /** En la APK. */
   apk: {
@@ -119,5 +122,8 @@ export const COPY_FORMULARIOS_V2 = {
       `Cargado por ${profesional} el ${cargado} · confirmado por la persona el ${confirmado}`,
     corregidas: (n: number) => (n === 0 ? 'Lo confirmó tal cual.' : n === 1 ? 'Corrigió 1 respuesta antes de confirmar.' : `Corrigió ${n} respuestas antes de confirmar.`),
     appNueva: 'Este formulario se responde con la app nueva. Si la persona tiene una versión anterior, no lo va a ver hasta actualizarla; mientras tanto, podés cargarlo con ella desde acá.',
+    // DL-165 D-1 · el repaso de lo cargado, antes de enviarlo para que la persona lo confirme.
+    repasoBajada: 'Así queda lo que cargaste. Podés cambiar cualquier parte antes de enviar: después, la persona lo revisa en su app.',
+    sinCargar: 'Sin cargar',
   },
 } as const;
