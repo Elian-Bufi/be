@@ -209,7 +209,9 @@ entrenar» v3, con 23. El profesional las puede cambiar al pedir, como siempre.
 ### 4.6 Compatibilidad y legal
 
 - La APK 0.20 no llama API-HBT y no ve las versiones que traigan la parte «Tus hábitos» (formato 3, FR-08): nada cambia
-  para ella. Una prueba del dominio lo fija: ningún congelado de `VIGENTES` lee una operación HBT.
+  para ella. Una prueba del dominio lo fija: ningún congelado de `VIGENTES` lee una operación HBT. *(2026-11-05: la
+  0.21.0-candidata.1 lee las de la persona, 01 a 04, con su forma congelada. Desde ahí la prueba fija que hasta la 0.20 no
+  se lee ninguna, y desde la 0.21, solo esas cuatro; DL-152.)*
 - Lo legal va al legajo legal, fuera del repo público: el texto del acto; su base (el consentimiento expreso del titular
   para una categoría sensible hacia perfiles no sanitarios, VJR-1 y VJR-4 del 08, y el paso de información entre sus
   profesionales, VJR-5); la revocación y lo que se informa. En `test`, con datos sintéticos; con personas reales, después
@@ -232,7 +234,8 @@ entrenar» v3, con 23. El profesional las puede cambiar al pedir, como siempre.
 - **Las lecturas congeladas** (`lecturas-de-las-apk.int-spec.ts`, `lecturas-de-la-apk.test.ts`) suman el caso: la 0.20 no
   ve una solicitud de formato 3.
 - **`VIGENTES` queda con la 0.13.2 y la 0.20.0-candidata.1:** ningún teléfono tiene la 0.17.0-candidata.3 ni la
-  0.18.0-candidata.1 (Dirección ya actualizó a la 0.20; nota en DL-152).
+  0.18.0-candidata.1 (Dirección ya actualizó a la 0.20; nota en DL-152). *(2026-11-05: se suma la 0.21.0-candidata.1, sin
+  sacar la 0.20.)*
 
 ## 6. Fuera de esta ronda
 

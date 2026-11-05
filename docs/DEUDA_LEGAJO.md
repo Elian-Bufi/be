@@ -5481,6 +5481,45 @@ DL-165). Ya no hay teléfonos con ellas: quedan vigentes la estable 0.13.2 y la 
 - La regla de la sustitución de ejercicios (DL-151) queda como estaba para la próxima promoción: la 0.20.0-candidata.1
   vuelve a sustituir con API-TRN-13-BUSQUEDA.
 
+**2026-11-05 · la 0.21.0-candidata.1** (`b5bc929`, la ronda 2 de los formularios de DL-165), congelada con estos pasos en
+un PR en borrador. Se sumó a `VIGENTES` sin sacar la 0.20.0-candidata.1, que Dirección tiene instalada hasta que
+actualice.
+- Lee 86 operaciones: las 82 de la 0.20 y API-HBT-01 a 04, las de la persona («Mis hábitos», compartirlos y dejar de
+  compartirlos). API-HBT-05 es del profesional y la llama el website.
+- Declara `forms-format-3` además de `training-set-targets-1` (`X-BE-Capabilities: training-set-targets-1,forms-format-3`):
+  con eso, la API le entrega las versiones de formato 3.
+- Cambian de forma cuatro lecturas de FRI, todas por el formato 3:
+  - FRI-01 lee el formato 2 o el 3, «pedida por defecto» en cada pregunta (`requestedByDefault`), el tope de un número en
+    una tabla (`maxFromMatrix`) y el subcampo de varias opciones en un renglón;
+  - FRI-03 lee ese renglón en la respuesta, en las rectificaciones y en lo cargado;
+  - FRI-04 y 05 lo mandan en el pedido.
+- Suma un texto, `HABITOS_COMPARTIDOS` (`habitos-compartidos-2026-11-propuesta`, el del acto de compartir). El sobre de
+  error y los detalles de rechazo que lee son los mismos, y no suma reglas que JSON Schema no represente.
+- **El script tenía una falla, corregida en este PR.**
+  - Leía las capacidades solo escritas en el lugar (`capacidades: [A]`), y la 0.21 las declara en una constante
+    (`capacidades: CAPACIDADES`).
+  - Con eso congelaba las cabeceras sin `X-BE-Capabilities`, y sin avisar: la prueba habría pedido como una APK que no
+    declara el formato 3.
+  - Ahora lee las dos formas. Se niega si no sabe leer una declaración, si los clientes de la APK declaran cosas distintas
+    o si alguno no declara nada cuando otro sí.
+  - La 0.20 sale idéntica byte a byte. La 0.13.2 no declara capacidades, así que el cambio no la toca; tampoco se puede
+    regenerar con el zod de hoy (4.6.6 contra 4.6.5), porque el script se niega a propósito.
+- La prueba de integración suma dos escenarios:
+  - **el formato 3:** la bandeja, las dos versiones del catálogo, el tope de días (el 422 al responder y al rectificar), el
+    renglón con varias opciones, lo cargado confirmado con otros días, «No es correcto», rectificar y la parte «Tus
+    hábitos», que agrega una versión de los hábitos;
+  - **«Mis hábitos»:**
+    - leerlos vacíos;
+    - contarlos y cambiarlos, con el 409 de una versión vieja y el 422 de lo que no tiene la forma de la parte;
+    - compartirlos con una profesional y decirle que no a otro, con el 409 de una versión vieja;
+    - una profesional que llega después (`NOT_ASKED`), otro con el vínculo en pausa, sumarla y dejar de compartir.
+
+  El bloque que prueba que una solicitud de formato 3 no existe queda para las APK que no declaran la capacidad.
+- La prueba del dominio que decía «ninguna APK congelada lee API-HBT» ahora dice lo que pasa: hasta la 0.20 no lee
+  ninguna, y desde la 0.21 lee solo 01 a 04.
+- Tres comentarios del dominio decían que ninguna APK lee API-HBT: los del contrato, del cliente y de `openapi.ts`. Ahora
+  dicen que su forma quedó congelada y que lo que la cambie va en una operación nueva.
+
 Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
 
 **La regla para promover.** Una candidata no pasa a estable mientras:
