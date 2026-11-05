@@ -5471,6 +5471,16 @@ un PR en borrador.
 - La 0.19.0-candidata.1 (`42dd257`) no se congeló. Según Dirección, el único teléfono que la tiene es el suyo, y lo pasa a
   esta. Sacar de `VIGENTES` la candidata.3 y la 0.18.0-candidata.1 lo decide Dirección.
 
+**2026-11-05 · salen la 0.17.0-candidata.3 y la 0.18.0-candidata.1** (Dirección, en el encargo de WP-FORMULARIOS-RONDA-2,
+DL-165). Ya no hay teléfonos con ellas: quedan vigentes la estable 0.13.2 y la 0.20.0-candidata.1.
+- Se borran sus dos congelados de `packages/domain/fixtures/lecturas-de-la-apk/`. Quedan en la historia de git y se
+  vuelven a generar desde sus tags con `node scripts/congelar-lo-que-lee-la-apk.mjs`.
+- Las dos pruebas que las usaban por nombre pasan a una vigente que dice lo mismo: el aviso de una decisión
+  administrativa lo lee la 0.20.0-candidata.1 (`administracion.int-spec.ts`), y lo registrado por niveles sin los campos
+  nuevos, y el rechazo cuando los trae, la 0.13.2, que tampoco los conoce (`registro-por-niveles.int-spec.ts`).
+- La regla de la sustitución de ejercicios (DL-151) queda como estaba para la próxima promoción: la 0.20.0-candidata.1
+  vuelve a sustituir con API-TRN-13-BUSQUEDA.
+
 Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
 
 **La regla para promover.** Una candidata no pasa a estable mientras:

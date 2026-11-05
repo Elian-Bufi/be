@@ -4,7 +4,8 @@
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
  * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2, la 0.17.0-candidata.3, la 0.18.0-candidata.1 y la 0.20.0-candidata.1), como la pide esa APK, y lee la respuesta real
+ * (hoy la estable 0.13.2 y la 0.20.0-candidata.1; la 0.17.0-candidata.3 y la 0.18.0-candidata.1 salieron el 2026-11-05),
+ * como la pide esa APK, y lee la respuesta real
  * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
  * no pasa hasta que cada lectura suya tenga escenario.
  *
@@ -438,7 +439,8 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
 
   // ─── Formularios y antropometría ───────────────────────────────────────────────────────────────
 
-  // Las APK hasta la 0.18.0-candidata.1 leen FRM; desde la 0.20.0-candidata.1 (DL-164), FRI, en el bloque que sigue.
+  // Las APK hasta la 0.18.0-candidata.1 (de las vigentes, la 0.13.2) leen FRM; desde la 0.20.0-candidata.1 (DL-164), FRI,
+  // en el bloque que sigue.
   siLee('API-FRM-06', 'los formularios: las solicitudes propias, el detalle, la plantilla, responder y rectificar (FRM-02, 05 a 08)', async () => {
     const e = etiqueta(`${corta}-frm`);
     const pro = await prepararProfesional(app, e, ['ENTRENAMIENTO']);
