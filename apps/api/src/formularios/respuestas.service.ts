@@ -23,6 +23,7 @@ import { ErrorDeApi, errores } from '../http/errores';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { tomarLaSolicitud } from './cerrojo-de-solicitud';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
 import { camposPorCodigo, limitesDeCampo, tipoDeValorCorrecto } from './lectura-formularios';
@@ -66,6 +67,9 @@ export class RespuestasService {
       cuerpo,
       huellaExtra: { formRequestId },
       efecto: async (tx, pedido, procedencia) => {
+        // La fila de la Solicitud, primero (`cerrojo-de-solicitud.ts`, DL-164): una propuesta que el profesional carga a
+        // la vez (FRI-06) se ve en la relectura y esta operación la respeta (422), en vez de dejarla pendiente para siempre.
+        await tomarLaSolicitud(tx, formRequestId, { asesoradoId: actor.identidadId });
         const s = esUuid(formRequestId)
           ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId }, include: { respuesta: { select: { id: true } }, templateVersion: { select: { contenido: true } } } })
           : null;

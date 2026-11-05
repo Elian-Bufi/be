@@ -75,7 +75,7 @@ import {
 } from './soporte-entrenamiento';
 import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
 import { circuitoV2, conAgua, fri, RESPUESTAS_V2 } from './soporte-formularios-v2';
-import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
+import { catalogoDePlantillas, sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 import { googleDePrueba, idTokenDeGoogle, levantarGoogleFalso, reclamosDeGoogle, subSintetico, type GoogleFalso } from './soporte-google';
 import { alimentosUsda, cuerpoDeReceta, estructuraConRecetas, FOTOS, leerContenido, RECETAS, subirBytes, subirImagen } from './soporte-recetas';
 import {
@@ -1188,14 +1188,15 @@ it('TEST-CT (DL-164): FRI-01 a 08 — la definición V2, la bandeja, la vista, r
   await otro.corregir(formResponseIdV2, { expectedVersion: 'v2', reason: 'x', answers: RESPUESTAS_V2 }).expect(404);
   await ase.corregir(formResponseIdV2, { expectedVersion: 'v2', reason: 'x', answers: RESPUESTAS_V2, extra: 1 }).expect(400);
 
-  // Sin el A3 vigente: 403 en la vista, al responder, al corregir y al rechazar (otro circuito, que respondió antes).
+  // Sin el A3 vigente: 403 en la vista, al responder y al corregir (otro circuito, que respondió antes). Rechazar no exige
+  // el A3: descarta un dato no confirmado, y sin una pendiente es 409.
   const c2 = await circuitoV2(app, prisma, 'ct-fri-a3');
   const respondida = await fri(app, c2.ase.token).responder(c2.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201);
   await conSesion(app, c2.ase.token).post(`/api/v1/me/health-data-consents/${await a3Vigente(app, c2.ase.token)}/revoke`).send({}).expect(200);
   await fri(app, c2.ase.token).vista(c2.formRequestId).expect(403);
   await fri(app, c2.ase.token).responder(c2.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(403);
   await fri(app, c2.ase.token).corregir(respondida.body.data.formResponseId as string, { expectedVersion: 'v1', reason: 'x', answers: RESPUESTAS_V2 }).expect(403);
-  await fri(app, c2.ase.token).rechazar(c2.formRequestId, { expectedVersion: 'v1' }).expect(403);
+  await fri(app, c2.ase.token).rechazar(c2.formRequestId, { expectedVersion: 'v1' }).expect(409);
 });
 
 it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — FRM-02 sin propiedades nuevas, límites NUMBER en el servidor y la cita de una versión vieja es 409', async () => {
@@ -1212,10 +1213,10 @@ it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — F
   const ase = conSesion(app, aseParte.token);
   await vinculoCompleto(app, proParte, aseParte, 'ENTRENAMIENTO');
 
-  // FRM-01: aparece al filtrar por ENTRENAMIENTO. FRM-02: los seis campos, y **ninguna propiedad fuera del contrato**
-  // (la prueba de éxitos valida el cuerpo contra el esquema estricto que usa la APK 0.11.x).
-  const deEntrenamiento = await pro.get('/api/v1/form-templates?domain=ENTRENAMIENTO').expect(200);
-  expect((deEntrenamiento.body.data as { key: string }[]).map((p) => p.key)).toContain('FRM-ENTRENAMIENTO');
+  // FRM-01: aparece al filtrar por ENTRENAMIENTO (el catálogo entero, por cursor: las pruebas siembran plantillas más
+  // nuevas y una sola página puede no llegar). FRM-02: los seis campos, y **ninguna propiedad fuera del contrato** (la
+  // prueba de éxitos valida el cuerpo contra el esquema estricto que usa la APK 0.11.x).
+  expect((await catalogoDePlantillas(app, proParte.token, '&domain=ENTRENAMIENTO')).has('FRM-ENTRENAMIENTO')).toBe(true);
   const version = await pro.get(`/api/v1/form-templates/${PLANTILLA_ENTRENAMIENTO}/versions/${VERSION_ENTRENAMIENTO}`).expect(200);
   const campos = (version.body.data.sections as { fields: Record<string, unknown>[] }[]).flatMap((s) => s.fields);
   expect(campos.map((c) => c.fieldCode)).toEqual(SEIS);

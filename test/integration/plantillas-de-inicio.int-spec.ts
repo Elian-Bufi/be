@@ -24,6 +24,7 @@ import { randomUUID } from 'node:crypto';
 import { appDePrueba, conSesion } from './soporte-api';
 import { fri } from './soporte-formularios-v2';
 import {
+  catalogoDePlantillas,
   MOMENTO_DE_LA_SIEMBRA,
   PLANTILLA_ENTRENAMIENTO,
   PLANTILLA_NUTRICION_INICIO,
@@ -59,18 +60,7 @@ const enJson = <T>(valor: T): T => JSON.parse(JSON.stringify(valor)) as T;
 const cantidadDeCampos = (p: PlantillaDeInicio): number => p.sections.reduce((n, s) => n + s.fields.length, 0);
 
 /** FRM-01 entero, página por página: otras pruebas siembran plantillas y el catálogo puede pasar de una página. */
-async function catalogo(token: string, filtro = ''): Promise<Map<string, Record<string, unknown>>> {
-  const porClave = new Map<string, Record<string, unknown>>();
-  let cursor: string | null = null;
-  do {
-    const r = await conSesion(app, token)
-      .get(`/api/v1/form-templates?limit=50${filtro}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
-      .expect(200);
-    for (const p of r.body.data as { key: string }[]) porClave.set(p.key, p);
-    cursor = r.body.page.nextCursor as string | null;
-  } while (cursor);
-  return porClave;
-}
+const catalogo = (token: string, filtro = '') => catalogoDePlantillas(app, token, filtro);
 
 describe('DL-164 FI-02 · las dos plantillas de inicio en el catálogo', () => {
   it('cada versión sembrada es la del dominio: la fila de la base y lo que sirve API-FRI-01, con sus metadatos', async () => {

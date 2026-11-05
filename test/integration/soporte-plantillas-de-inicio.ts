@@ -10,8 +10,28 @@
  * `sembrarAntecedentesDeP0` copia el contenido de la v1 en una plantilla de prueba, como `sembrarPlantillaV2` hace con
  * una V2. Lo que esas pruebas protegen no cambia: es el mismo contenido, con los mismos límites.
  */
+import type { INestApplication } from '@nestjs/common';
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { conSesion } from './soporte-api';
+
+/**
+ * FRM-01 entero, página por página (`limit=50` y el cursor): las pruebas siembran decenas de plantillas más nuevas que
+ * las del catálogo, y FRM-01 ordena por registro y pagina antes de filtrar por dominio, así que una sola página puede
+ * dejar afuera a FRM-ENTRENAMIENTO o FRM-NUTRICION-INICIO según qué archivos corrieron antes. `filtro` empieza con `&`.
+ */
+export async function catalogoDePlantillas(app: INestApplication, token: string, filtro = ''): Promise<Map<string, Record<string, unknown>>> {
+  const porClave = new Map<string, Record<string, unknown>>();
+  let cursor: string | null = null;
+  do {
+    const r = await conSesion(app, token)
+      .get(`/api/v1/form-templates?limit=50${filtro}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
+      .expect(200);
+    for (const p of r.body.data as { key: string }[]) porClave.set(p.key, p);
+    cursor = r.body.page.nextCursor as string | null;
+  } while (cursor);
+  return porClave;
+}
 
 /** FRM-ENTRENAMIENTO (migración 20260928000000, DL-100). */
 export const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';

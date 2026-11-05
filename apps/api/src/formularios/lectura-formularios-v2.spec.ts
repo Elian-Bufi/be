@@ -55,18 +55,33 @@ describe('DL-164 · el formato de una versión', () => {
 
 describe('DL-164 · de lo guardado al contrato V2, y del contrato a lo que se guarda', () => {
   it('lo guardado en V1 se lee en V2 por el tipo del valor, siempre SELF_REPORTED', () => {
+    const camposP0 = camposV2PorCodigo(definicionV2(P0).sections);
     const v1 = { answers: [
       { fieldCode: 'trn_objetivo_declarado', value: 'Ganar fuerza', unit: null, profileSourceRef: null, provenance: 'SELF_REPORTED' },
       { fieldCode: 'trn_dias_por_semana', value: 3, unit: 'días por semana', profileSourceRef: null, provenance: 'SELF_REPORTED' },
       { fieldCode: 'fuma', value: false, unit: null, profileSourceRef: null, provenance: 'SELF_REPORTED' },
     ] };
-    expect(respuestasV2De(v1)).toEqual([
+    expect(respuestasV2De(v1, camposP0)).toEqual([
       { fieldCode: 'trn_objetivo_declarado', answer: { type: 'TEXT', text: 'Ganar fuerza' }, provenance: 'SELF_REPORTED' },
       { fieldCode: 'trn_dias_por_semana', answer: { type: 'NUMBER', number: 3, unit: 'días por semana' }, provenance: 'SELF_REPORTED' },
       { fieldCode: 'fuma', answer: { type: 'BOOLEAN', yes: false }, provenance: 'SELF_REPORTED' },
     ]);
     const v2 = { format: 2, answers: [{ fieldCode: 'nut_jornada', answer: { type: 'CHOICE', option: 'turnos', otherText: null }, provenance: 'SELF_REPORTED' }] };
-    expect(respuestasV2De(v2)).toEqual([{ fieldCode: 'nut_jornada', answer: { type: 'CHOICE', option: 'turnos', otherText: null }, provenance: 'SELF_REPORTED' }]);
+    expect(respuestasV2De(v2, camposV2PorCodigo(SECCIONES_V2))).toEqual([{ fieldCode: 'nut_jornada', answer: { type: 'CHOICE', option: 'turnos', otherText: null }, provenance: 'SELF_REPORTED' }]);
+  });
+
+  it('un número que la APK instalada guardó sin `unit` (FRM-07) recupera la unidad de su campo; la guardada manda; sin campo, null', () => {
+    const camposP0 = camposV2PorCodigo(definicionV2(P0).sections);
+    const sinUnidad = { answers: [{ fieldCode: 'trn_dias_por_semana', value: 4, profileSourceRef: null, provenance: 'SELF_REPORTED' }] };
+    expect(respuestasV2De(sinUnidad, camposP0)[0]?.answer).toEqual({ type: 'NUMBER', number: 4, unit: 'días por semana' });
+    const conNull = { answers: [{ fieldCode: 'trn_dias_por_semana', value: 4, unit: null, profileSourceRef: null, provenance: 'SELF_REPORTED' }] };
+    expect(respuestasV2De(conNull, camposP0)[0]?.answer).toEqual({ type: 'NUMBER', number: 4, unit: 'días por semana' });
+    const conOtra = { answers: [{ fieldCode: 'trn_dias_por_semana', value: 4, unit: 'd', profileSourceRef: null, provenance: 'SELF_REPORTED' }] };
+    expect(respuestasV2De(conOtra, camposP0)[0]?.answer).toEqual({ type: 'NUMBER', number: 4, unit: 'd' });
+    expect(respuestasV2De(sinUnidad, new Map())[0]?.answer).toEqual({ type: 'NUMBER', number: 4, unit: null });
+    // Un campo de un tipo sin unidad no aporta ninguna.
+    const texto = { answers: [{ fieldCode: 'trn_objetivo_declarado', value: 5, profileSourceRef: null, provenance: 'SELF_REPORTED' }] };
+    expect(respuestasV2De(texto, camposP0)[0]?.answer).toEqual({ type: 'NUMBER', number: 5, unit: null });
   });
 
   it('para una versión de P0 se guarda la forma V1 de siempre; para una V2, el formato 2 con la procedencia por campo', () => {

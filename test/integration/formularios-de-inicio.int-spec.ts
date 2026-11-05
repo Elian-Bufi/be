@@ -5,13 +5,19 @@
  *   lo inexistente; FRI-01 y FRI-02 sí la sirven, y FRI-01 traduce una versión de P0;
  * - 002 · lo oculto no se guarda: FORM_ANSWER_NOT_VISIBLE; el obligatorio oculto no se exige; una versión de P0
  *   respondida por FRI-04 se guarda en la forma V1 y FRM-05 la sigue leyendo; con una propuesta esperando sobre una
- *   versión de P0, FRM-06 la lista como no respondable y FRM-07 no la pisa (422);
+ *   versión de P0, FRM-06 la lista como no respondable y FRM-07 no la pisa (422); un número que la APK instalada guardó
+ *   sin unidad (FRM-07) sale por FRI-03 con la de su campo;
  * - 003 · la propuesta no es del perfil: otro profesional con acceso no la ve; la persona la ve solo en su bandeja y en su
  *   vista; nada en sus respuestas; una sola pendiente, también entre dos cargas simultáneas;
  * - 004 · confirmar es responder: RESPONDED, SELF_REPORTED, la transcripción con quién cargó y qué corrigió; rectificar en V2;
- * - 005 · rechazar y retirar borran: ninguna respuesta propuesta queda en la base; la Solicitud sigue pendiente;
+ * - 005 · rechazar y retirar borran: ninguna respuesta propuesta queda en la base; la Solicitud sigue pendiente; al revocar
+ *   el A3 las pendientes se retiran solas; rechazar no exige el A3; la novedad del rechazo solo si el profesional sigue
+ *   autorizado;
  * - 006 · solo el profesional de la Solicitud carga: otro, uno con el vínculo en pausa o con el B2 revocado reciben el
- *   mismo 404; con la versión vieja, 409.
+ *   mismo 404; con la versión vieja, 409;
+ * - y la carrera entre cargar la propuesta (FRI-06) y responder (FRI-04, FRM-07), ordenada por el cerrojo de la Solicitud
+ *   (`cerrojo-de-solicitud.ts`): nunca quedan juntas una Respuesta y una propuesta pendiente. Sin pausas: la prueba retiene
+ *   la fila y suelta cuando la base dice que los dos pedidos esperan (`soporte-concurrencia.ts`).
  */
 import type { INestApplication } from '@nestjs/common';
 import {
@@ -26,9 +32,11 @@ import {
 } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, conSesion, resumenDeRespuestas, simultaneos } from './soporte-api';
-import { CAMPOS_V2, circuitoV2, conAgua, fri, pedirV2, RESPUESTAS_V2 } from './soporte-formularios-v2';
-import { pausar, prepararAsesorado, prepararProfesional, revocarB2, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
+import type request from 'supertest';
+import { appDePrueba, conSesion, cuerpoDeCierre, resumenDeRespuestas, simultaneos } from './soporte-api';
+import { conLaFilaRetenida, esperarQueEsperen } from './soporte-concurrencia';
+import { CAMPOS_V2, circuitoV2, conAgua, fri, pedirV2, RESPUESTAS_V2, type CircuitoV2 } from './soporte-formularios-v2';
+import { a3Vigente, otorgarA3, pausar, prepararAsesorado, prepararProfesional, revocarB2, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 
 const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';
 /** «Antecedentes para entrenamiento» (P0): histórica desde FI-02 (la v2 es la vigente). FRI-01 sirve cualquier versión. */
@@ -52,6 +60,15 @@ type Novedad = { kind: string; body: string; source: { identityId: string } | nu
 const novedadesDe = async (token: string): Promise<Novedad[]> => (await conSesion(app, token).get('/api/v1/me/news').expect(200)).body.data as Novedad[];
 const vistaDe = async (token: string, formRequestId: string) => DetalleDeSolicitudV2ResponseSchema.parse((await fri(app, token).vista(formRequestId).expect(200)).body).data;
 const bandejaDe = async (token: string) => ListaDeSolicitudesPropiasV2ResponseSchema.parse((await fri(app, token).bandeja().expect(200)).body).data;
+const revocarA3 = async (token: string) => conSesion(app, token).post(`/api/v1/me/health-data-consents/${await a3Vigente(app, token)}/revoke`).send({}).expect(200);
+/** Una Solicitud de FRM-HABITOS (P0): la APK instalada la responde por FRM-07 y FRM-06 la lista. */
+async function pedirHabitos(c: CircuitoV2): Promise<string> {
+  const r = await conSesion(app, c.pro.token)
+    .post(`/api/v1/advisees/${c.ase.id}/form-requests`)
+    .send({ templateVersionId: VERSION_HABITOS, purpose: 'Hábitos', scope: 'NUTRICION', requestedFieldCodes: ['horas_de_sueno', 'fuma'], requiredFieldCodes: ['horas_de_sueno'] })
+    .expect(201);
+  return r.body.data.formRequestId as string;
+}
 
 /** D-6: después de rechazar o retirar, ninguna propuesta de la Solicitud conserva respuestas. */
 async function sinRespuestasPropuestas(formRequestId: string): Promise<void> {
@@ -129,12 +146,7 @@ describe('TEST-FRI-002 · lo oculto no se guarda (D-2)', () => {
 
   it('una versión de P0 respondida por FRI-04 se guarda en la forma V1: FRM-05 (la APK instalada) la sigue leyendo, y FRI-03 la lee en V2; con una propuesta esperando, FRM-06 no la da por respondable y FRM-07 no la pisa', async () => {
     const c = await circuitoV2(app, prisma, `t2b-${++contador}`);
-    const habitos = (
-      await conSesion(app, c.pro.token)
-        .post(`/api/v1/advisees/${c.ase.id}/form-requests`)
-        .send({ templateVersionId: VERSION_HABITOS, purpose: 'Hábitos', scope: 'NUTRICION', requestedFieldCodes: ['horas_de_sueno', 'fuma'], requiredFieldCodes: ['horas_de_sueno'] })
-        .expect(201)
-    ).body.data.formRequestId as string;
+    const habitos = await pedirHabitos(c);
     const f = fri(app, c.ase.token);
     // Un tipo nuevo contra una versión de P0: la forma no coincide con el campo.
     const mal = await f.responder(habitos, { answers: [{ fieldCode: 'horas_de_sueno', answer: { type: 'CHOICE', option: 'ocho', otherText: null } }], fromProposal: null }).expect(422);
@@ -167,6 +179,22 @@ describe('TEST-FRI-002 · lo oculto no se guarda (D-2)', () => {
     ]);
     expect(v2.response?.transcription).toMatchObject({ professional: { identityId: c.pro.id }, loadedAt: p.loadedAt, correctedFieldCodes: ['fuma'] });
     expect(v2.proposal).toBeNull();
+  });
+
+  it('un número que la APK instalada respondió sin `unit` (FRM-07) se guarda así en V1 y sale por FRI-03 con la unidad de su campo', async () => {
+    const c = await circuitoV2(app, prisma, `t2c-${++contador}`);
+    const habitos = await pedirHabitos(c);
+    const instalada = conSesion(app, c.ase.token);
+    await instalada.post(`/api/v1/me/form-requests/${habitos}/responses`).send({ answers: [{ fieldCode: 'horas_de_sueno', value: 8 }, { fieldCode: 'fuma', value: true }] }).expect(201);
+    // Lo guardado y lo que lee la APK instalada no cambian: la unidad quedó en null.
+    expect((await instalada.get(`/api/v1/form-requests/${habitos}`).expect(200)).body.data.response.original.answers[0]).toEqual({ fieldCode: 'horas_de_sueno', value: 8, unit: null, profileSourceRef: null, provenance: 'SELF_REPORTED' });
+    // FRI-03 la traduce con la unidad de la plantilla (horas de sueño en «h»), como hace la cita de la API.
+    for (const token of [c.ase.token, c.pro.token]) {
+      expect((await vistaDe(token, habitos)).response?.original.answers).toEqual([
+        { fieldCode: 'horas_de_sueno', answer: { type: 'NUMBER', number: 8, unit: 'h' }, provenance: 'SELF_REPORTED' },
+        { fieldCode: 'fuma', answer: { type: 'BOOLEAN', yes: true }, provenance: 'SELF_REPORTED' },
+      ]);
+    }
   });
 });
 
@@ -315,6 +343,132 @@ describe('TEST-FRI-005 · rechazar y retirar borran (D-6)', () => {
     const respuesta = await prisma.respuestaDeFormulario.findUniqueOrThrow({ where: { solicitudId: c.formRequestId } });
     expect(respuesta.transcripcion).toBeNull();
     expect((await vistaDe(c.pro.token, c.formRequestId)).response?.transcription).toBeNull();
+  });
+
+  it('revocar el A3 retira las pendientes de la persona en la misma transacción, con el evento a su nombre; rechazar no exige el A3 y sin autorización el profesional no recibe la novedad', async () => {
+    const c = await circuitoV2(app, prisma, `t5c-${++contador}`);
+    const pro = fri(app, c.pro.token);
+    const ase = fri(app, c.ase.token);
+    const p = PropuestaCargadaResponseSchema.parse((await pro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body).data;
+    // La persona revoca su A3: la propuesta queda RETIRADA y sin respuestas, con el retiro a nombre de ella y por API-CON-08.
+    const revocacion = await revocarA3(c.ase.token);
+    await sinRespuestasPropuestas(c.formRequestId);
+    const retirada = await prisma.propuestaDeRespuestaDeFormulario.findUniqueOrThrow({ where: { id: p.proposalId } });
+    expect(retirada).toMatchObject({ estado: 'RETIRADA', contenido: null, version: 1 });
+    expect(retirada.resueltaEn?.toISOString()).toBe(revocacion.body.data.revokedAt);
+    const hechos = await prisma.eventoDeFormulario.findMany({ where: { recursoId: p.proposalId }, orderBy: { secuencia: 'asc' } });
+    expect(hechos.map((e) => [e.tipo, e.actorId, (e.procedencia as { operacion: string }).operacion])).toEqual([
+      ['PropuestaDeRespuestaCargada', c.pro.id, 'API-FRI-06'],
+      ['PropuestaDeRespuestaRetirada', c.ase.id, 'API-CON-08'],
+    ]);
+    // Nadie recibe una novedad por el retiro; sin el A3, el profesional tampoco lee la Solicitud (404) ni carga otra.
+    expect((await novedadesDe(c.pro.token)).filter((n) => n.kind.startsWith('FORM_PROPOSAL_'))).toEqual([]);
+    const inexistente = await pro.vista(randomUUID()).expect(404);
+    expect((await pro.vista(c.formRequestId).expect(404)).body).toEqual(inexistente.body);
+    expect((await pro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(404)).body).toEqual(inexistente.body);
+    // Rechazar sin A3: no es 403; sin una pendiente, 409. Y si igual quedara una pendiente (escrita directo en la base), la
+    // persona la descarta sin A3, sin novedad para el profesional, que hoy no está autorizado.
+    expect((await ase.rechazar(c.formRequestId, { expectedVersion: 'v1' }).expect(409)).body.error.code).toBe('VERSION_CONFLICT');
+    const directa = await prisma.propuestaDeRespuestaDeFormulario.create({
+      data: { solicitudId: c.formRequestId, profesionalId: c.pro.id, contenido: { format: 2, answers: [{ fieldCode: 'ini_agua', answer: { type: 'NUMBER', number: 2, unit: 'vasos' } }] }, procedencia: { fuente: 'PRUEBA' } },
+    });
+    const r = PropuestaResueltaResponseSchema.parse((await ase.rechazar(c.formRequestId, { expectedVersion: 'v1' }).expect(200)).body).data;
+    expect(r).toMatchObject({ proposalId: directa.id, outcome: 'REJECTED' });
+    await sinRespuestasPropuestas(c.formRequestId);
+    expect(await prisma.propuestaDeRespuestaDeFormulario.findUniqueOrThrow({ where: { id: directa.id } })).toMatchObject({ estado: 'RECHAZADA', contenido: null });
+    expect((await novedadesDe(c.pro.token)).filter((n) => n.kind === 'FORM_PROPOSAL_REJECTED')).toEqual([]);
+    // Con un A3 nuevo, el profesional vuelve a leer: el desenlace de su última propuesta es el rechazo; la Solicitud sigue pendiente.
+    await otorgarA3(app, c.ase.token).expect(201);
+    expect(await vistaDe(c.pro.token, c.formRequestId)).toMatchObject({ request: { status: 'PENDING' }, proposal: null, lastProposalOutcome: { outcome: 'REJECTED', resolvedAt: r.resolvedAt } });
+    expect(await vistaDe(c.ase.token, c.formRequestId)).toMatchObject({ request: { status: 'PENDING' }, respondable: true, proposal: null });
+  });
+
+  it('la novedad del rechazo llega solo si el profesional sigue autorizado sobre el Alcance: con el vínculo en pausa no se le avisa, y el rechazo y el borrado son iguales', async () => {
+    const c = await circuitoV2(app, prisma, `t5d-${++contador}`);
+    const p = PropuestaCargadaResponseSchema.parse((await fri(app, c.pro.token).cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body).data;
+    await pausar(app, c.ase.token, c.vinculoId, await versionDeVinculo(app, c.ase.token, c.vinculoId)).expect(200);
+    const r = PropuestaResueltaResponseSchema.parse((await fri(app, c.ase.token).rechazar(c.formRequestId, { expectedVersion: 'v1' }).expect(200)).body).data;
+    expect(r).toMatchObject({ proposalId: p.proposalId, outcome: 'REJECTED' });
+    await sinRespuestasPropuestas(c.formRequestId);
+    expect((await novedadesDe(c.pro.token)).filter((n) => n.kind === 'FORM_PROPOSAL_REJECTED')).toEqual([]);
+    expect(await prisma.eventoDeFormulario.count({ where: { recursoId: p.proposalId, tipo: 'PropuestaDeRespuestaRechazada', actorId: c.ase.id } })).toBe(1);
+  });
+
+  it('cerrar la cuenta retira las pendientes de la persona en la misma transacción: sin respuestas propuestas, con el retiro a su nombre y por el cierre', async () => {
+    const c = await circuitoV2(app, prisma, `t5e-${++contador}`);
+    const p = PropuestaCargadaResponseSchema.parse((await fri(app, c.pro.token).cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body).data;
+    await conSesion(app, c.ase.token).post('/api/v1/me/account-closure-requests').send(cuerpoDeCierre()).expect(201);
+    await sinRespuestasPropuestas(c.formRequestId);
+    expect(await prisma.propuestaDeRespuestaDeFormulario.findUniqueOrThrow({ where: { id: p.proposalId } })).toMatchObject({ estado: 'RETIRADA', contenido: null });
+    const hechos = await prisma.eventoDeFormulario.findMany({ where: { recursoId: p.proposalId }, orderBy: { secuencia: 'asc' } });
+    expect(hechos.map((e) => [e.tipo, e.actorId, (e.procedencia as { operacion: string }).operacion])).toEqual([
+      ['PropuestaDeRespuestaCargada', c.pro.id, 'API-FRI-06'],
+      ['PropuestaDeRespuestaRetirada', c.ase.id, 'API-ACC-P1-03'],
+    ]);
+    expect(await prisma.respuestaDeFormulario.count({ where: { solicitudId: c.formRequestId } })).toBe(0);
+  });
+});
+
+describe('La carrera entre cargar la propuesta (FRI-06) y responder (FRI-04, FRM-07): el cerrojo de la Solicitud las pone en fila', () => {
+  /** Dispara el pedido ya (supertest es perezoso) y devuelve su promesa. */
+  const disparar = (t: request.Test): Promise<request.Response> => t.then((r) => r);
+  const estadoDe = (r: request.Response): string => (r.status >= 400 ? `${r.status} ${r.body?.error?.code ?? ''}` : String(r.status));
+  /** Lo que quedó en la base: cuántas Respuestas y cuántas propuestas, por estado. */
+  async function enLaBase(formRequestId: string): Promise<{ respuestas: number; propuestas: string[] }> {
+    return {
+      respuestas: await prisma.respuestaDeFormulario.count({ where: { solicitudId: formRequestId } }),
+      propuestas: (await prisma.propuestaDeRespuestaDeFormulario.findMany({ where: { solicitudId: formRequestId }, select: { estado: true } })).map((p) => p.estado).sort(),
+    };
+  }
+  /**
+   * Con la fila de la Solicitud retenida por la prueba, llegan los dos pedidos y quedan esperando en orden; al soltar, el
+   * primero sigue primero y el segundo relee lo que el primero dejó.
+   */
+  async function enFila(formRequestId: string, primero: () => request.Test, segundo: () => request.Test): Promise<[string, string]> {
+    const [p1, p2] = await conLaFilaRetenida(prisma, { solicitudDeFormulario: formRequestId }, async () => {
+      const p1 = disparar(primero());
+      await esperarQueEsperen(prisma, 1, { que: 'el primer pedido, esperando la Solicitud' });
+      const p2 = disparar(segundo());
+      await esperarQueEsperen(prisma, 2, { que: 'los dos pedidos esperando la Solicitud' });
+      return [p1, p2] as const;
+    });
+    const [r1, r2] = await Promise.all([p1, p2]);
+    return [estadoDe(r1), estadoDe(r2)];
+  }
+
+  it('cargar primero: la propuesta entra y responder sin `fromProposal` es 409 (hay una pendiente que no se vio)', async () => {
+    const c = await circuitoV2(app, prisma, `carrera-a-${++contador}`);
+    const resultado = await enFila(
+      c.formRequestId,
+      () => fri(app, c.pro.token).cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }),
+      () => fri(app, c.ase.token).responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }),
+    );
+    expect(resultado).toEqual(['201', '409 VERSION_CONFLICT']);
+    expect(await enLaBase(c.formRequestId)).toEqual({ respuestas: 0, propuestas: ['PENDIENTE'] });
+  });
+
+  it('responder primero: la Respuesta entra y cargar es 422 (respondida: no hay nada que confirmar)', async () => {
+    const c = await circuitoV2(app, prisma, `carrera-b-${++contador}`);
+    const resultado = await enFila(
+      c.formRequestId,
+      () => fri(app, c.ase.token).responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }),
+      () => fri(app, c.pro.token).cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }),
+    );
+    expect(resultado).toEqual(['201', '422 FORM_REQUEST_NOT_RESPONDABLE']);
+    expect(await enLaBase(c.formRequestId)).toEqual({ respuestas: 1, propuestas: [] });
+  });
+
+  it('sobre una versión de P0, con la APK instalada (FRM-07): cargar primero deja la Solicitud no respondable para ella (422); responder primero deja a cargar en 422', async () => {
+    const c = await circuitoV2(app, prisma, `carrera-c-${++contador}`);
+    const instalada = conSesion(app, c.ase.token);
+    const horas = { fieldCode: 'horas_de_sueno', answer: { type: 'NUMBER' as const, number: 7, unit: 'h' } };
+    const porFrm07 = (formRequestId: string) => instalada.post(`/api/v1/me/form-requests/${formRequestId}/responses`).send({ answers: [{ fieldCode: 'horas_de_sueno', value: 8 }] });
+    const habitos = await pedirHabitos(c);
+    expect(await enFila(habitos, () => fri(app, c.pro.token).cargar(habitos, { expectedVersion: null, answers: [horas] }), () => porFrm07(habitos))).toEqual(['201', '422 FORM_REQUEST_NOT_RESPONDABLE']);
+    expect(await enLaBase(habitos)).toEqual({ respuestas: 0, propuestas: ['PENDIENTE'] });
+    const otra = await pedirHabitos(c);
+    expect(await enFila(otra, () => porFrm07(otra), () => fri(app, c.pro.token).cargar(otra, { expectedVersion: null, answers: [horas] }))).toEqual(['201', '422 FORM_REQUEST_NOT_RESPONDABLE']);
+    expect(await enLaBase(otra)).toEqual({ respuestas: 1, propuestas: [] });
   });
 });
 

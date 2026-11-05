@@ -106,8 +106,11 @@ idéntico para lo ajeno.
   FRM-02, 05 y 07 responden 404 idéntico al de lo inexistente.
 - **TEST-FRI-002 · Lo oculto no se guarda.** Una respuesta a una pregunta condicional cerrada da `422 FORM_RESPONSE_INVALID`
   con `FORM_ANSWER_NOT_VISIBLE`; el obligatorio oculto no se exige.
-- **TEST-FRI-003 · La propuesta no es del perfil.** Mientras espera, otro profesional con acceso no la ve (FRI-03 sin
-  `proposal`), y nada de ella aparece en las lecturas de la persona salvo en su bandeja.
+- **TEST-FRI-003 · La propuesta no es del perfil.** Mientras espera, otro profesional con acceso no la ve: FRI-03 y FRI-06
+  le responden el mismo 404 que a lo inexistente (FRI-03 es solo para los dos actores de la Solicitud, como FRM-05), y
+  sobre su propia Solicitud a la misma persona `proposal` y `lastProposalOutcome` van en `null`. Nada de ella aparece en
+  las lecturas de la persona salvo en su bandeja. *(Corregido el 2026-11-05: la versión ratificada decía «FRI-03 sin
+  `proposal`» para el otro profesional; la API y la prueba responden 404, que es lo que pide el COMPORTAMIENTO.)*
 - **TEST-FRI-004 · Confirmar es responder.** La persona confirma con una corrección: la Solicitud pasa a `RESPONDED`, la
   respuesta es `SELF_REPORTED`, la transcripción dice quién cargó y el campo corregido.
 - **TEST-FRI-005 · Rechazar y retirar borran.** Después de rechazar o retirar no queda ninguna respuesta propuesta en la base;

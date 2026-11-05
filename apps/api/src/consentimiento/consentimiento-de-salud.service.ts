@@ -8,6 +8,7 @@ import {
   type HistorialDeConsentimientoDeSaludResponse,
 } from '@be/domain';
 import { Prisma } from '@prisma/client';
+import { retirarPropuestasPendientesDelTitular } from '../formularios/propuestas-del-titular';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
@@ -28,6 +29,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * - revocar suspende de inmediato toda operación sensible del titular, incluido el acceso profesional: el PDP lo lee en
  *   la dimensión SITUACIÓN (08:406; 09:2603). Los B2 no se revocan: quedan sin capacidad efectiva mientras A3 no esté
  *   vigente. Los pasos 2 y 3 del flujo único de revocación quedan pendientes (DL-021).
+ * - revocar retira, en la misma transacción, las propuestas de respuesta de formulario que esperaban la confirmación del
+ *   titular (DL-164 D-6: lo no confirmado se borra; sin A3 no podría confirmarlas ni verlas).
  * - A3 no crea B2 ni habilita a ningún profesional (09:2503-2508).
  */
 @Injectable()
@@ -159,6 +162,8 @@ export class ConsentimientoDeSaludService {
             datos: { actoId: acto.id, tipo: 'DATOS_SALUD_BE', fundamento: '08 §12.4: DATOS_SALUD_BE revocable por el titular' },
           },
         });
+        // Con el acto ya tomado: lo que esperaba su confirmación se retira, con su contenido borrado (DL-164 D-6).
+        await retirarPropuestasPendientesDelTitular(tx, { titularId: actor.identidadId, actorId: actor.identidadId, procedencia, momento: ahora });
         await this.auditar(tx, operacion, actor.identidadId, acto.id, ctx);
         return { data: { consentId: acto.id, state: 'REVOKED', revokedAt: ahora.toISOString() } };
       }));

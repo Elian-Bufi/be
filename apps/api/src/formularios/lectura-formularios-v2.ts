@@ -163,19 +163,25 @@ interface RespuestaV2Almacenada {
   answer: ValorDeRespuestaV2;
 }
 
-function valorV1AV2(a: RespuestaV1Almacenada): ValorDeRespuestaV2 {
-  if (typeof a.value === 'number') return { type: 'NUMBER', number: a.value, unit: a.unit ?? null };
+/**
+ * Un número guardado en V1 puede venir sin `unit`: las APK instaladas responden por FRM-07 con `{ fieldCode, value }` y la
+ * unidad era la de la plantilla, que las pantallas de P0 mostraban desde el campo. Al traducir se completa desde el campo,
+ * como hace `valorCitado` (entrenamiento/citas-de-respuestas.ts): el dato no cambia, solo recupera su unidad.
+ */
+function valorV1AV2(a: RespuestaV1Almacenada, campo: CampoDePlantillaV2 | undefined): ValorDeRespuestaV2 {
+  if (typeof a.value === 'number') return { type: 'NUMBER', number: a.value, unit: a.unit ?? (campo?.dataType === 'NUMBER' ? campo.unit : null) ?? null };
   if (typeof a.value === 'boolean') return { type: 'BOOLEAN', yes: a.value };
   return { type: 'TEXT', text: a.value };
 }
 
 /**
  * Las respuestas de un contenido guardado, en formato V2. Las de V1 se traducen por el tipo del valor: la plantilla ya
- * exigió al guardarlas que coincida con el del campo (TEXT, NUMBER con su unidad, BOOLEAN).
+ * exigió al guardarlas que coincida con el del campo (TEXT, NUMBER con su unidad, BOOLEAN). `campos` son los de la versión
+ * de la Respuesta (`camposV2PorCodigo`): de ahí sale la unidad de un número que se guardó sin ella.
  */
-export function respuestasV2De(contenido: unknown): RespuestaDeCampoV2[] {
+export function respuestasV2De(contenido: unknown, campos: ReadonlyMap<string, CampoDePlantillaV2>): RespuestaDeCampoV2[] {
   const c = contenido as { answers?: (RespuestaV1Almacenada | RespuestaV2Almacenada)[] } | null;
-  return (c?.answers ?? []).map((a) => ({ fieldCode: a.fieldCode, answer: 'answer' in a ? a.answer : valorV1AV2(a), provenance: 'SELF_REPORTED' as const }));
+  return (c?.answers ?? []).map((a) => ({ fieldCode: a.fieldCode, answer: 'answer' in a ? a.answer : valorV1AV2(a, campos.get(a.fieldCode)), provenance: 'SELF_REPORTED' as const }));
 }
 
 /** Las respuestas que una propuesta guarda mientras espera (vacío si ya se resolvió: se borraron, D-6). */
@@ -256,8 +262,11 @@ export function transcripcionApi(t: TranscripcionAlmacenada, nombreProfesional: 
 
 type RespuestaConRectificaciones = FilaDeRespuesta & { rectificaciones: FilaDeRectificacion[] };
 
-/** La Respuesta en V2, con la misma vista efectiva de B-06 que FRM-05 y la transcripción si nació de una propuesta. */
-export function respuestaV2Api(r: RespuestaConRectificaciones, transcription: Transcripcion | null): RespuestaDeFormularioV2 {
+/**
+ * La Respuesta en V2, con la misma vista efectiva de B-06 que FRM-05 y la transcripción si nació de una propuesta.
+ * `campos` son los de su versión: completan la unidad de un número que una APK instalada guardó sin ella.
+ */
+export function respuestaV2Api(r: RespuestaConRectificaciones, transcription: Transcripcion | null, campos: ReadonlyMap<string, CampoDePlantillaV2>): RespuestaDeFormularioV2 {
   const relaciones: RelacionDeCorreccion[] = r.rectificaciones.map((c) => ({ id: c.id, originalId: r.id, correccionPreviaId: c.correccionPreviaId }));
   const vista = resolverVistaEfectiva(r.id, relaciones);
   const effectiveView =
@@ -267,12 +276,12 @@ export function respuestaV2Api(r: RespuestaConRectificaciones, transcription: Tr
     formRequestId: r.solicitudId,
     adviseeId: r.asesoradoId,
     templateVersionId: r.templateVersionId,
-    original: { answers: respuestasV2De(r.contenido) },
+    original: { answers: respuestasV2De(r.contenido, campos) },
     rectifications: r.rectificaciones.map((c) => ({
       rectificationId: c.id,
       previousRectificationId: c.correccionPreviaId,
       reason: c.motivo,
-      answers: respuestasV2De(c.contenido),
+      answers: respuestasV2De(c.contenido, campos),
       version: token(c.version),
       recordedAt: c.momentoDeRegistro.toISOString(),
     })),

@@ -9,6 +9,7 @@ import { PublicadorDeNovedades } from '../novedades/publicador';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { tomarLaSolicitud } from './cerrojo-de-solicitud';
 import { decideBlando } from './decision-blanda';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
@@ -47,6 +48,9 @@ export class RespuestasV2Service {
       cuerpo,
       huellaExtra: { formRequestId },
       efecto: async (tx, pedido, procedencia) => {
+        // La fila de la Solicitud, primero (`cerrojo-de-solicitud.ts`): la propuesta que FRI-06 carga a la vez, o la
+        // Respuesta que entra por FRM-07, se ven en la relectura; nunca quedan juntas una Respuesta y una pendiente.
+        await tomarLaSolicitud(tx, formRequestId, { asesoradoId: actor.identidadId });
         const s = esUuid(formRequestId)
           ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId }, include: { respuesta: { select: { id: true } }, templateVersion: { select: { contenido: true } } } })
           : null;

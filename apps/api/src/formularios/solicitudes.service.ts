@@ -199,15 +199,16 @@ export class SolicitudesService {
       lectura: async (tx) => {
         const s = esUuid(formRequestId) ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId }, include: INCLUIR_SOLICITUD }) : null;
         if (!s) throw this.ejecutor.noRevelable({ operacion: 'API-FRM-05', actorId: actor.identidadId, recurso }, ctx);
-        // DL-164 D-5: la Solicitud de una versión con tipos nuevos no entra en el contrato V1 (la APK instalada no podría
-        // abrirla): para esta operación no existe, con el mismo 404 que lo inexistente. FRI-03 la sirve.
-        if (esVersionV2(s.templateVersion.contenido)) throw noServidaEnV1();
 
         const esAsesorado = s.asesoradoId === actor.identidadId;
         const esProfesional = s.profesionalId === actor.identidadId;
         if (!esAsesorado && !esProfesional) {
           throw this.ejecutor.noRevelable({ operacion: 'API-FRM-05', actorId: actor.identidadId, recurso, sujetoId: s.asesoradoId, alcance: s.alcance as Alcance }, ctx);
         }
+        // DL-164 D-5: la Solicitud de una versión con tipos nuevos no entra en el contrato V1 (la APK instalada no podría
+        // abrirla): para esta operación no existe, con el mismo 404 que lo inexistente. FRI-03 la sirve. Va después de la
+        // pertenencia, como en FRM-07/08: un tercero deja su decisión denegada con el titular (08:491), no este motivo.
+        if (esVersionV2(s.templateVersion.contenido)) throw noServidaEnV1();
         // El asesorado consulta lo propio aunque el profesional ya no conserve lectura (REG-06-213), «conforme a 08»
         // (09 §22.5): con el A3 revocado o nunca otorgado, 403 (08:406; DL-115). Lo ajeno y lo inexistente ya dieron 404.
         if (esAsesorado) await exigirA3Vigente(tx, actor.identidadId);

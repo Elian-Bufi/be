@@ -2428,7 +2428,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-06',
     metodo: 'get',
     ruta: '/me/form-requests',
-    resumen: 'Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud.',
+    resumen:
+      'Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud. Con una propuesta del profesional esperando confirmación (DL-164 D-3), la Solicitud sale `respondable: false`: se resuelve desde la app actualizada (API-FRI-04 y API-FRI-08). Las Solicitudes de versiones con tipos nuevos no se listan (D-5).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
@@ -2440,7 +2441,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-07',
     metodo: 'post',
     ruta: '/me/form-requests/{formRequestId}/responses',
-    resumen: 'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).',
+    resumen:
+      'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115). Con una propuesta del profesional esperando confirmación (DL-164 D-3), 422 FORM_REQUEST_NOT_RESPONDABLE: la persona la confirma, corrige o rechaza por API-FRI-04 y API-FRI-08 desde la app actualizada. Una Solicitud de una versión con tipos nuevos no existe para esta operación (404, D-5).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: EnviarRespuestaRequestSchema,
@@ -2577,13 +2579,13 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/me/form-requests/{formRequestId}/proposal/rejection',
     resumen:
-      'La persona dice «No es correcto» a la propuesta pendiente de su Solicitud, con la versión que vio: sus respuestas se borran y la Solicitud sigue pendiente (D-6). Publica la novedad al profesional que la cargó. Sin el A3 vigente, 403; lo ajeno y lo inexistente, 404; sin una pendiente con esa versión, 409 VERSION_CONFLICT.',
+      'La persona dice «No es correcto» a la propuesta pendiente de su Solicitud, con la versión que vio: sus respuestas se borran y la Solicitud sigue pendiente (D-6). Descarta un dato que ella no confirmó, no lo lee ni lo escribe: por eso no exige el A3 vigente ni pasa por el PDP, y con el A3 revocado se puede descartar igual (al revocarlo, además, las pendientes se retiran solas). Publica la novedad al profesional que la cargó solo si hoy sigue autorizado sobre el Alcance de la Solicitud; el rechazo y el borrado no dependen de eso. Lo ajeno y lo inexistente, 404; sin una pendiente con esa versión, 409 VERSION_CONFLICT.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: ResolverPropuestaRequestSchema,
     exitos: [{ status: 200, schema: PropuestaResueltaResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
-    fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-06; TEST-FRI-005) · 09v16.1 §36 · DL-115',
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-06; TEST-FRI-005)',
   },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {

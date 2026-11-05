@@ -10,7 +10,18 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { nombreDeAsesoradoPara } from '../vinculo/lectura';
 import { decideBlando } from './decision-blanda';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
-import { desenlaceApi, propuestaApi, respuestaV2Api, resumenDePropuestaApi, solicitudV2Api, transcripcionApi, versionDePlantillaV2Api, type TranscripcionAlmacenada } from './lectura-formularios-v2';
+import {
+  camposV2PorCodigo,
+  definicionV2,
+  desenlaceApi,
+  propuestaApi,
+  respuestaV2Api,
+  resumenDePropuestaApi,
+  solicitudV2Api,
+  transcripcionApi,
+  versionDePlantillaV2Api,
+  type TranscripcionAlmacenada,
+} from './lectura-formularios-v2';
 
 type Tx = Prisma.TransactionClient;
 
@@ -138,6 +149,8 @@ export class VistasV2Service {
         const respuesta = await tx.respuestaDeFormulario.findUnique({ where: { solicitudId: s.id }, include: { rectificaciones: { orderBy: { momentoDeRegistro: 'asc' } } } });
         const nombreProfesional = await this.nombreProfesional(tx, s.profesionalId);
         const transcripcion = respuesta?.transcripcion ? (respuesta.transcripcion as unknown as TranscripcionAlmacenada) : null;
+        // Los campos de la versión fijada en la Solicitud: un número que la APK instalada guardó sin unidad la toma de acá.
+        const campos = camposV2PorCodigo(definicionV2(s.templateVersion.contenido).sections);
         const pendiente = s.propuestas[0] ?? null;
         // La última propuesta de quien consulta sobre esta Solicitud: si no se confirmó, se le dice cómo terminó (D-6).
         const ultima = esProfesional
@@ -147,7 +160,7 @@ export class VistasV2Service {
           data: {
             request: solicitudV2Api(s, nombreProfesional, await nombreDeAsesoradoPara(tx, s.profesionalId, s.asesoradoId), respuesta !== null),
             respondable,
-            response: respuesta ? respuestaV2Api(respuesta, transcripcion ? transcripcionApi(transcripcion, await this.nombreProfesional(tx, transcripcion.professionalId)) : null) : null,
+            response: respuesta ? respuestaV2Api(respuesta, transcripcion ? transcripcionApi(transcripcion, await this.nombreProfesional(tx, transcripcion.professionalId)) : null, campos) : null,
             proposal: pendiente && (esAsesorado || pendiente.profesionalId === actor.identidadId) ? propuestaApi(pendiente, nombreProfesional) : null,
             lastProposalOutcome: ultima ? desenlaceApi(ultima) : null,
           },

@@ -2,18 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { CargarPropuestaRequestSchema, CodigoDeError, ResolverPropuestaRequestSchema, type Alcance } from '@be/domain';
 import { Prisma, type TipoDeEventoDeFormulario } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
-import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { PublicadorDeNovedades } from '../novedades/publicador';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
-import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
+import { momentoDeLaBase, sinDuplicar, sinViolarRegla } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { tomarLaSolicitud } from './cerrojo-de-solicitud';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
 import { camposV2PorCodigo, contenidoDePropuesta, definicionV2, exigirRespuestasValidas, solicitudAValidar } from './lectura-formularios-v2';
 
 const RECURSO = 'PropuestaDeRespuestaDeFormulario';
+const yaRespondida = () => new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya tiene una respuesta registrada: no hay nada que confirmar.');
+/** El trigger de insertar propuestas (migración 20261104120200), cuando la Respuesta entró entre la lectura y la escritura. */
+const REGLA_DE_SOLICITUD_RESPONDIDA = /una Solicitud respondida no admite propuestas/;
 
 /**
  * API-FRI-06, 07 y 08 — la propuesta del profesional (DL-164 D-3): lo que cargó desde el escritorio con lo que la persona
@@ -21,10 +24,15 @@ const RECURSO = 'PropuestaDeRespuestaDeFormulario';
  * - Una sola pendiente por Solicitud, con su versión como token (`expectedVersion`); la base lo sostiene (índice parcial).
  * - Cargar y retirar son del profesional de la Solicitud, con el mismo PDP que FRM-03 y FRM-05: sin autorización actual,
  *   o sobre una Solicitud ajena o inexistente, el mismo 404 (TEST-FRI-006).
- * - Rechazar es de la persona, sobre lo propio: A3 (403) y nada más, como FRM-08 (09:1633).
+ * - Rechazar es de la persona, sobre lo propio: la pertenencia (404 idéntico a lo inexistente) y el token de versión, y
+ *   nada más. Descarta un dato que ella no confirmó: no lo lee ni lo escribe, así que no exige el A3 ni pasa por el PDP
+ *   (si lo exigiera, con el A3 revocado la propuesta quedaría imposible de descartar). Al revocar el A3, además, las
+ *   pendientes se retiran solas (`propuestas-del-titular.ts`).
  * - Rechazar y retirar **borran** las respuestas propuestas (D-6): queda solo cómo y cuándo terminó.
- * - La novedad: a la persona cuando se carga o se reemplaza; al profesional cuando ella rechaza (y cuando confirma, en
- *   FRI-04). Nunca el contenido.
+ * - La novedad: a la persona cuando se carga o se reemplaza; al profesional cuando ella rechaza, solo si sigue autorizado
+ *   sobre el Alcance de la Solicitud (y cuando confirma, en FRI-04). Nunca el contenido.
+ * - Cargar toma la fila de la Solicitud al empezar (`cerrojo-de-solicitud.ts`), como responder: así no quedan juntas una
+ *   Respuesta y una propuesta pendiente. Si igual la Respuesta entró antes, el trigger de la base lo dice y acá es 422.
  */
 @Injectable()
 export class PropuestasService {
@@ -48,6 +56,8 @@ export class PropuestasService {
       cuerpo,
       huellaExtra: { formRequestId },
       efecto: async (tx, pedido, procedencia) => {
+        // La fila de la Solicitud, primero: responder (FRM-07, FRI-04) la toma igual, y quien espera relee después.
+        await tomarLaSolicitud(tx, formRequestId, { profesionalId: actor.identidadId });
         const s = await this.solicitudDelProfesional(tx, 'API-FRI-06', actor, formRequestId, ctx);
         // Mismo PDP que FRM-03: lo que se carga es dato de salud de la persona, para su Alcance; denegado, 404 idéntico.
         await this.pdp.decidirEnTransaccion(
@@ -55,7 +65,7 @@ export class PropuestasService {
           { operacion: 'API-FRI-06', actorDeLaDecision: actor.identidadId, profesionalId: actor.identidadId, titularId: s.asesoradoId, alcance: s.alcance as Alcance, recurso },
           ctx,
         );
-        if (s.respuesta) throw new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya tiene una respuesta registrada: no hay nada que confirmar.');
+        if (s.respuesta) throw yaRespondida();
 
         const definicion = definicionV2(s.templateVersion.contenido);
         const campos = camposV2PorCodigo(definicion.sections);
@@ -70,12 +80,17 @@ export class PropuestasService {
         let hecho: { tipo: TipoDeEventoDeFormulario; previo: string | null; posterior: string };
         if (pedido.expectedVersion === null) {
           // Crear: con una pendiente (o si otra carga simultánea gana en la base), la pantalla tiene que verla primero.
+          // Y si la Respuesta entró igual antes que esta escritura, la regla de la base es el mismo 422 de «respondida».
           if (pendiente) throw errores.conflictoDeVersion();
-          propuesta = await sinDuplicar(
-            tx.propuestaDeRespuestaDeFormulario.create({
-              data: { solicitudId: s.id, profesionalId: actor.identidadId, contenido, procedencia: procedencia as unknown as Prisma.InputJsonValue, cargadaEn: momento },
-            }),
-            errores.conflictoDeVersion,
+          propuesta = await sinViolarRegla(
+            sinDuplicar(
+              tx.propuestaDeRespuestaDeFormulario.create({
+                data: { solicitudId: s.id, profesionalId: actor.identidadId, contenido, procedencia: procedencia as unknown as Prisma.InputJsonValue, cargadaEn: momento },
+              }),
+              errores.conflictoDeVersion,
+            ),
+            REGLA_DE_SOLICITUD_RESPONDIDA,
+            yaRespondida,
           );
           estadoHttp = 201;
           hecho = { tipo: 'PropuestaDeRespuestaCargada', previo: null, posterior: 'PENDIENTE' };
@@ -190,8 +205,8 @@ export class PropuestasService {
       efecto: async (tx, pedido, procedencia) => {
         const s = esUuid(formRequestId) ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId } }) : null;
         if (!s || s.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRI-08', actorId: actor.identidadId, recurso }, ctx);
-        // Sobre lo propio, el A3 con el acto bloqueado (como FRM-08); no pasa por el PDP: descarta un dato, no lo lee ni lo escribe.
-        await exigirA3Vigente(tx, actor.identidadId, { bloquear: true });
+        // Sobre lo propio, nada más que el token: descartar un dato que no se confirmó no lee ni escribe datos de salud,
+        // así que no exige el A3 (con el A3 revocado tiene que poder descartarla igual) ni pasa por el PDP.
         const pendiente = await tx.propuestaDeRespuestaDeFormulario.findFirst({ where: { solicitudId: s.id, estado: 'PENDIENTE' } });
         if (!pendiente || `v${pendiente.version}` !== pedido.expectedVersion) throw errores.conflictoDeVersion();
         const momento = await momentoDeLaBase(tx);
@@ -207,21 +222,27 @@ export class PropuestasService {
           procedencia,
           momento,
         });
-        await this.publicador.publicar(
-          tx,
-          [
-            {
-              tipo: 'PROPUESTA_DE_FORMULARIO_RECHAZADA',
-              destinatarioId: pendiente.profesionalId,
-              alcance: s.alcance as Alcance,
-              fuenteId: actor.identidadId,
-              referencia: { tipo: 'SolicitudDeFormulario', id: s.id },
-              identidadDelHecho: pendiente.id,
-              momentoDeOcurrencia: momento,
-            },
-          ],
-          procedencia,
-        );
+        // La novedad al profesional, solo si hoy sigue autorizado sobre el Alcance de la Solicitud (la misma evaluación que
+        // muestran las listas, sin registrar una decisión: no es un acceso suyo). Con el vínculo en pausa, el B2 revocado o
+        // el A3 revocado no se le avisa nada; el rechazo y el borrado son iguales.
+        const autorizado = (await this.pdp.evaluarSinRegistrar(tx, pendiente.profesionalId, actor.identidadId, s.alcance as Alcance)).permitida;
+        if (autorizado) {
+          await this.publicador.publicar(
+            tx,
+            [
+              {
+                tipo: 'PROPUESTA_DE_FORMULARIO_RECHAZADA',
+                destinatarioId: pendiente.profesionalId,
+                alcance: s.alcance as Alcance,
+                fuenteId: actor.identidadId,
+                referencia: { tipo: 'SolicitudDeFormulario', id: s.id },
+                identidadDelHecho: pendiente.id,
+                momentoDeOcurrencia: momento,
+              },
+            ],
+            procedencia,
+          );
+        }
         return {
           estadoHttp: 200,
           cuerpo: { data: { proposalId: pendiente.id, outcome: 'REJECTED', resolvedAt: momento.toISOString() } },

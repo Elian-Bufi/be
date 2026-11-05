@@ -15,9 +15,9 @@ import {
   Finalidad,
   SituacionDeConsentimiento,
 } from '@be/domain';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { PREFIJO_DEL_CERROJO_DE_CORREO } from '../../apps/api/src/identidad/correo-de-acceso';
 import { RAIZ } from './soporte';
@@ -296,6 +296,163 @@ describe('08 §29 — historia por adición', () => {
       await expect(prisma.$executeRawUnsafe(`TRUNCATE ${tabla} CASCADE`)).rejects.toThrow(/append-only/);
     },
   );
+});
+
+describe('DL-164 — la propuesta del profesional: lo que la base garantiza aunque el código se equivoque (migración 20261104120200)', () => {
+  /**
+   * Lo mínimo para una Solicitud de formulario, directo en la base: dos identidades, su vínculo, una plantilla con una
+   * versión de P0 y la Solicitud. Todo dentro de la transacción de cada oráculo, que termina rechazada: nada persiste
+   * (INV-06-22 es un constraint trigger diferido: sin confirmar, no se evalúa).
+   */
+  async function solicitudSintetica(tx: Tx, pro?: { id: string }, ase?: { id: string }) {
+    const AUTORIA = '00000000-0000-4000-8000-000000000000';
+    pro ??= await tx.identidad.create({ data: { autoriaDeCreacionId: AUTORIA, procedencia: PROCEDENCIA } });
+    ase ??= await tx.identidad.create({ data: { autoriaDeCreacionId: AUTORIA, procedencia: PROCEDENCIA } });
+    const vinculo =
+      (await tx.vinculo.findUnique({ where: { profesionalId_asesoradoId: { profesionalId: pro.id, asesoradoId: ase.id } } })) ??
+      (await tx.vinculo.create({ data: { profesionalId: pro.id, asesoradoId: ase.id } }));
+    const plantilla = await tx.plantillaDeFormulario.create({
+      data: {
+        clave: `FRM-SCHEMA-${randomUUID().slice(0, 8)}`,
+        versiones: {
+          create: {
+            version: '1',
+            nombre: 'Prueba del schema',
+            proposito: 'Oráculo de la base (DL-164)',
+            contenido: { sections: [{ sectionCode: 's', title: 'S', fields: [{ fieldCode: 'x', label: 'X', dataType: 'NUMBER', unit: null, category: 'HABITOS_Y_CONTEXTO', helpText: null }] }] },
+            procedencia: { rotulo: 'Sintético de prueba.' },
+          },
+        },
+      },
+      include: { versiones: true },
+    });
+    const version = plantilla.versiones[0]!;
+    const solicitud = await tx.solicitudDeFormulario.create({
+      data: { profesionalId: pro.id, asesoradoId: ase.id, vinculoId: vinculo.id, templateVersionId: version.id, proposito: 'Prueba', alcance: 'NUTRICION', camposSolicitados: ['x'], camposRequeridos: [] },
+    });
+    return { pro, ase, version, solicitud };
+  }
+  const CONTENIDO = { format: 2, answers: [{ fieldCode: 'x', answer: { type: 'NUMBER', number: 1, unit: null } }] };
+  const CONTENIDO_SQL = JSON.stringify(CONTENIDO);
+  async function propuestaSintetica(tx: Tx) {
+    const s = await solicitudSintetica(tx);
+    const propuesta = await tx.propuestaDeRespuestaDeFormulario.create({ data: { solicitudId: s.solicitud.id, profesionalId: s.pro.id, contenido: CONTENIDO, procedencia: PROCEDENCIA } });
+    return { ...s, propuesta };
+  }
+  /** Resolver como lo hace la API: estado final, respuestas borradas y cuándo (D-6). */
+  const resolver = (tx: Tx, id: string) => tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET estado = 'RETIRADA', contenido = NULL, resuelta_en = now() WHERE id = ${id}::uuid`;
+  /** La transacción entera queda rechazada por la regla: nada persiste. */
+  const rechaza = (fn: (tx: Tx) => Promise<unknown>, regla: RegExp) => expect(prisma.$transaction(fn)).rejects.toThrow(regla);
+
+  it('una propuesta no se borra (append-only, 08 §29); resolverla sí es un UPDATE que la base admite', async () => {
+    await rechaza(async (tx) => {
+      const { propuesta } = await propuestaSintetica(tx);
+      await tx.$executeRaw`DELETE FROM propuesta_de_respuesta_de_formulario WHERE id = ${propuesta.id}::uuid`;
+    }, /append-only/);
+    await sinPersistir(async (tx) => {
+      const { propuesta } = await propuestaSintetica(tx);
+      await resolver(tx, propuesta.id);
+      expect(await tx.propuestaDeRespuestaDeFormulario.findUniqueOrThrow({ where: { id: propuesta.id } })).toMatchObject({ estado: 'RETIRADA', contenido: null, version: 1 });
+    });
+  });
+
+  it('una resuelta no cambia más: ni vuelve a PENDIENTE ni recupera respuestas (D-6)', async () => {
+    await rechaza(async (tx) => {
+      const { propuesta } = await propuestaSintetica(tx);
+      await resolver(tx, propuesta.id);
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET estado = 'PENDIENTE', contenido = ${CONTENIDO_SQL}::jsonb, resuelta_en = NULL WHERE id = ${propuesta.id}::uuid`;
+    }, /una propuesta resuelta \(RETIRADA\) no cambia más/);
+    await rechaza(async (tx) => {
+      const { propuesta } = await propuestaSintetica(tx);
+      await resolver(tx, propuesta.id);
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET resuelta_en = now() WHERE id = ${propuesta.id}::uuid`;
+    }, /una propuesta resuelta \(RETIRADA\) no cambia más/);
+  });
+
+  it('reemplazar avanza la versión de a uno (es el token de `expectedVersion`); resolver no la cambia', async () => {
+    await rechaza(async (tx) => {
+      const { propuesta } = await propuestaSintetica(tx);
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET version = version + 2, cargada_en = now() WHERE id = ${propuesta.id}::uuid`;
+    }, /reemplazar la propuesta avanza su versión de a uno/);
+    await rechaza(async (tx) => {
+      const { propuesta } = await propuestaSintetica(tx);
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET contenido = ${CONTENIDO_SQL}::jsonb WHERE id = ${propuesta.id}::uuid`;
+    }, /reemplazar la propuesta avanza su versión de a uno/);
+    await rechaza(async (tx) => {
+      const { propuesta } = await propuestaSintetica(tx);
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET estado = 'RECHAZADA', contenido = NULL, resuelta_en = now(), version = version + 1 WHERE id = ${propuesta.id}::uuid`;
+    }, /resolver la propuesta no cambia su versión/);
+  });
+
+  it('una propuesta no cambia de Solicitud ni de profesional', async () => {
+    await rechaza(async (tx) => {
+      const { propuesta, pro, ase } = await propuestaSintetica(tx);
+      const otra = await solicitudSintetica(tx, pro, ase);
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET solicitud_id = ${otra.solicitud.id}::uuid, version = version + 1 WHERE id = ${propuesta.id}::uuid`;
+    }, /una propuesta no cambia de Solicitud ni de profesional/);
+    await rechaza(async (tx) => {
+      const { propuesta, ase } = await propuestaSintetica(tx);
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET profesional_id = ${ase.id}::uuid, version = version + 1 WHERE id = ${propuesta.id}::uuid`;
+    }, /una propuesta no cambia de Solicitud ni de profesional/);
+  });
+
+  it('nace PENDIENTE, la carga el profesional de la Solicitud, una sola pendiente por Solicitud y ninguna sobre una respondida (D-3; REG-06-210)', async () => {
+    await rechaza(async (tx) => {
+      const s = await solicitudSintetica(tx);
+      await tx.propuestaDeRespuestaDeFormulario.create({ data: { solicitudId: s.solicitud.id, profesionalId: s.pro.id, contenido: Prisma.DbNull, estado: 'RETIRADA', resueltaEn: new Date(), procedencia: PROCEDENCIA } });
+    }, /una propuesta de respuesta nace PENDIENTE/);
+    await rechaza(async (tx) => {
+      const s = await solicitudSintetica(tx);
+      await tx.propuestaDeRespuestaDeFormulario.create({ data: { solicitudId: s.solicitud.id, profesionalId: s.ase.id, contenido: CONTENIDO, procedencia: PROCEDENCIA } });
+    }, /la propuesta la carga el profesional de la Solicitud/);
+    await rechaza(async (tx) => {
+      const { solicitud, pro } = await propuestaSintetica(tx);
+      await tx.$executeRaw`INSERT INTO propuesta_de_respuesta_de_formulario (solicitud_id, profesional_id, contenido, procedencia)
+        VALUES (${solicitud.id}::uuid, ${pro.id}::uuid, ${CONTENIDO_SQL}::jsonb, '{}'::jsonb)`;
+    }, /propuesta_de_respuesta_de_formulario_una_pendiente/);
+    await rechaza(async (tx) => {
+      const s = await solicitudSintetica(tx);
+      await tx.respuestaDeFormulario.create({
+        data: { solicitudId: s.solicitud.id, asesoradoId: s.ase.id, templateVersionId: s.version.id, contenido: { answers: [{ fieldCode: 'x', value: 1, unit: null, profileSourceRef: null, provenance: 'SELF_REPORTED' }] }, procedencia: PROCEDENCIA },
+      });
+      await tx.propuestaDeRespuestaDeFormulario.create({ data: { solicitudId: s.solicitud.id, profesionalId: s.pro.id, contenido: CONTENIDO, procedencia: PROCEDENCIA } });
+    }, /una Solicitud respondida no admite propuestas/);
+  });
+
+  it('la transcripción de una Respuesta nombra una propuesta de esa Solicitud y de ese profesional (D-4)', async () => {
+    const transcripcion = (proposalId: string, professionalId: string): Prisma.InputJsonObject => ({ professionalId, proposalId, loadedAt: '2026-11-04T10:00:00.000Z', confirmedAt: '2026-11-05T10:00:00.000Z', correctedFieldCodes: [] });
+    const respuesta = (s: { solicitud: { id: string }; ase: { id: string }; version: { id: string } }, t: Prisma.InputJsonObject) => ({
+      solicitudId: s.solicitud.id,
+      asesoradoId: s.ase.id,
+      templateVersionId: s.version.id,
+      contenido: { answers: [{ fieldCode: 'x', value: 1, unit: null, profileSourceRef: null, provenance: 'SELF_REPORTED' }] },
+      procedencia: PROCEDENCIA,
+      transcripcion: t,
+    });
+    // La propuesta de otra Solicitud del mismo profesional y la misma persona: ajena igual.
+    await rechaza(async (tx) => {
+      const conPropuesta = await propuestaSintetica(tx);
+      const otra = await solicitudSintetica(tx, conPropuesta.pro, conPropuesta.ase);
+      await tx.respuestaDeFormulario.create({ data: respuesta(otra, transcripcion(conPropuesta.propuesta.id, conPropuesta.pro.id)) });
+    }, /la transcripción nombra una propuesta de esta Solicitud y de ese profesional/);
+    // La propuesta correcta, pero a nombre de otro profesional.
+    await rechaza(async (tx) => {
+      const s = await propuestaSintetica(tx);
+      await tx.respuestaDeFormulario.create({ data: respuesta(s, transcripcion(s.propuesta.id, s.ase.id)) });
+    }, /la transcripción nombra una propuesta de esta Solicitud y de ese profesional/);
+    // Incompleta (sin `confirmedAt`): el CHECK de la forma.
+    await rechaza(async (tx) => {
+      const s = await propuestaSintetica(tx);
+      const { confirmedAt: _omitida, ...incompleta } = transcripcion(s.propuesta.id, s.pro.id);
+      await tx.respuestaDeFormulario.create({ data: respuesta(s, incompleta) });
+    }, /respuesta_de_formulario_transcripcion_completa/);
+    // La correcta pasa, y la Respuesta nombra a su propuesta.
+    await sinPersistir(async (tx) => {
+      const s = await propuestaSintetica(tx);
+      const r = await tx.respuestaDeFormulario.create({ data: respuesta(s, transcripcion(s.propuesta.id, s.pro.id)) });
+      expect(r.transcripcion).toMatchObject({ proposalId: s.propuesta.id, professionalId: s.pro.id });
+    });
+  });
 });
 
 describe('T-06-24 — una sesión no termina antes de empezar', () => {

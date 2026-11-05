@@ -6094,6 +6094,22 @@ esquemas estrictos (DL-152). Y una carga del profesional como respuesta suya cho
 la traducción de P0); en la API, los oráculos TEST-FRI-001 a 006 del paquete; `lecturas-de-las-apk.int-spec.ts` y
 `contrato.int-spec.ts` siguen verdes.
 
+**Decisiones de la implementación** (2026-11-05, a ratificar por Dirección):
+- **D-10 · La APK instalada no deja una propuesta colgada.** Con una propuesta pendiente sobre una versión de P0, FRM-07
+  responde `422 FORM_REQUEST_NOT_RESPONDABLE` (código ya declarado) y FRM-06 la da con `respondable: false`, sin cambio de
+  forma; la persona la resuelve con la app nueva (FRI-04 o FRI-08).
+- **D-11 · Descartar no es tratar.** API-FRI-08 (rechazar) exige la pertenencia y la versión, no el A3 ni el PDP. La
+  novedad del rechazo al profesional sale solo si sigue autorizado sobre el Alcance.
+- **D-12 · Lo no confirmado se borra también cuando la persona corta.** Revocar el A3 (API-CON-08) y cerrar la cuenta
+  (API-ACC-P1-03) retiran en la misma transacción las propuestas pendientes de la persona: contenido en NULL y el retiro a
+  su nombre, por esa operación.
+- **D-13 · Cargar y responder van en fila.** FRI-06, FRI-04 y FRM-07 toman la fila de la Solicitud antes del PDP; una carga
+  sobre una Solicitud recién respondida da `422 FORM_REQUEST_NOT_RESPONDABLE` en lugar de un 500.
+- **D-14 · La cota de elementos sube de 1 500 a 6 000:** el contrato V2 admite cuerpos válidos de hasta 5 461 elementos
+  (80 respuestas × 40 códigos de opción). Riesgo residual acotado a FRI-04, 05 y 06.
+- **D-15 · Lo corregido no depende de cómo lo guarda la base:** la comparación de la transcripción ordena las claves de
+  cada objeto (jsonb las reordena) y conserva el orden de los renglones, que es de la persona.
+
 **Lo que queda abierto:** que el abogado revise el legajo legal (la confirmación de lo que carga un tercero, los datos de
 salud y las incumbencias) antes de usar los formularios con personas reales.
 

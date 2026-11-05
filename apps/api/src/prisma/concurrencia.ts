@@ -10,6 +10,10 @@ import { errores } from '../http/errores';
  *   → cerrojo de capacidad → Proceso → objetivo → ingesta.
  * La importación controlada no toma ninguno de esos: toma su candidato y, después, el cerrojo de su ítem externo
  * (DL-141, `integraciones/item-externo.ts`). Ninguna otra transacción toma ese cerrojo.
+ * La Solicitud de formulario (DL-164, `formularios/cerrojo-de-solicitud.ts`) se toma **antes** de todos los anteriores,
+ * al empezar el efecto de responderla o de cargarle una propuesta: ningún corte la toma, así que no invierte el orden
+ * con nadie. La revocación del A3 resuelve las propuestas pendientes del titular con el acto ya tomado: el mismo orden
+ * «acto A3 → propuesta» con que confirmar, retirar o reemplazar las escriben después de pasar por el PDP.
  * Y con `FOR NO KEY UPDATE`, no `FOR UPDATE`: ninguna transacción cambia claves, y así no choca con el `FOR KEY SHARE`
  * que toman las claves foráneas al insertar hechos y decisiones. El PDP toma `FOR SHARE` en el mismo orden
  * (pdp.service.ts), lo que da un orden total entre cada decisión y cada corte (revocar, pausar, finalizar, cerrar).
@@ -54,6 +58,41 @@ export async function sinDuplicar<T>(escritura: PromiseLike<T>, conflicto: () =>
     return await escritura;
   } catch (e) {
     if (esViolacionDeUnicidad(e)) throw conflicto();
+    throw e;
+  }
+}
+
+/**
+ * Una regla de la base rechazó la escritura (`check_violation`, SQLSTATE 23514): un CHECK o un trigger con
+ * `RAISE EXCEPTION ... USING ERRCODE = 'check_violation'`. Prisma la trae como P2010 (consulta cruda, con el código en
+ * `meta`) o como error desconocido con el código y el mensaje en el texto (una operación del cliente). `regla` acota a
+ * la que se espera: cualquier otra sigue siendo un defecto.
+ */
+export function esViolacionDeRegla(e: unknown, regla?: RegExp): boolean {
+  let texto: string;
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    const meta = e.meta as { code?: unknown; message?: unknown } | undefined;
+    if (e.code !== 'P2010' || meta?.code !== '23514') return false;
+    texto = `${String(meta?.message ?? '')} ${e.message}`;
+  } else if (e instanceof Prisma.PrismaClientUnknownRequestError && /\b23514\b|check_violation/.test(e.message)) {
+    texto = e.message;
+  } else {
+    return false;
+  }
+  return regla ? regla.test(texto) : true;
+}
+
+/**
+ * Una escritura que un trigger de la base puede rechazar bajo concurrencia aunque el servicio ya haya mirado lo mismo
+ * (p. ej. «una Solicitud respondida no admite propuestas» cuando la Respuesta entró entre la lectura y la escritura):
+ * esa regla sale como el error preciso de la operación, no como un 500. Cualquier otra regla sigue saliendo como 500:
+ * es un defecto, no un caso. La transacción queda abortada, así que el error sale enseguida.
+ */
+export async function sinViolarRegla<T>(escritura: PromiseLike<T>, regla: RegExp, rechazo: () => Error): Promise<T> {
+  try {
+    return await escritura;
+  } catch (e) {
+    if (esViolacionDeRegla(e, regla)) throw rechazo();
     throw e;
   }
 }
