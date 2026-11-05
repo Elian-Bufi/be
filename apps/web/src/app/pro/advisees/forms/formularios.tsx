@@ -11,7 +11,7 @@
  *
  * WP-ESCRITORIO-AREAS (parte 0): el encabezado es el marco del área, común a las cuatro (`MarcoDelArea`). Como
  * Información es de las tres áreas, el acceso actual las nombra a las tres. Si se llegó desde Entrenamiento
- * (`volver=entrenamiento`), el camino de vuelta lleva a Entrenamiento y lo dice.
+ * (`volver=entrenamiento`) o desde Nutrición (`volver=nutricion`, FR-02), el camino de vuelta lleva a esa área y lo dice.
  *
  * Parte 4: **«Pedir información» dejó de ser una sección.** El marco tiene una sola, «Solicitudes» (`solicitudes.tsx`),
  * y el pedido es un cajón que se abre sobre ella (`pedir.tsx`). `vista=pedir` sigue abriéndolo: la usan el marco de la
@@ -33,6 +33,7 @@ import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
 import { AyudaDeSolicitudes } from './ayuda-de-solicitudes';
 import { CargaConLaPersona } from './cargar';
+import { origenDelPedido, vueltaDelOrigen } from './formulario-de-inicio';
 import { PedidoDeInformacion } from './pedir';
 import { VistaDeSolicitudes } from './solicitudes';
 
@@ -85,12 +86,10 @@ export function Formularios() {
 
   const retorno = useRetornoALaFicha(id);
   // Desde Entrenamiento se llega con `volver=entrenamiento` (la evaluación, en Resumen) o `volver=entrenamiento-plan`
-  // («Empezar el plan», DL-145): no son direcciones de la ficha, y la vuelta es a esa sección de Entrenamiento.
-  const volver = parametros.get('volver');
-  const vuelta =
-    volver === 'entrenamiento' || volver === 'entrenamiento-plan'
-      ? { href: `/pro/advisees/training?id=${encodeURIComponent(id)}&vista=${volver === 'entrenamiento-plan' ? 'plan' : 'resumen'}`, texto: 'Volver a Entrenamiento' }
-      : null;
+  // («Empezar el plan», DL-145), y desde Nutrición con `volver=nutricion` (su Resumen, FR-02): no son direcciones de la
+  // ficha, y la vuelta es a esa sección del área.
+  const origen = origenDelPedido(parametros.get('volver'));
+  const vuelta = origen ? vueltaDelOrigen(origen, id) : null;
   const enLaDireccion = parametros.toString();
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {

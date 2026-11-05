@@ -2,7 +2,8 @@
  * La lógica pura de los formularios V2 en el website (WP-FORMULARIOS-DE-INICIO, DL-164), sin React ni Next, para
  * probarla sola (`apps/web/test/formulario-de-inicio.test.mjs`):
  * - **«Pedir información»**: qué viene marcado al elegir una versión (todas pedidas; requeridas las que la plantilla
- *   sugiere), la precarga desde la evaluación de entrenamiento (DL-100) y cómo se dice cada tipo con sus opciones.
+ *   sugiere), la precarga desde la evaluación de entrenamiento (DL-100), el área de donde se llegó y adónde se vuelve
+ *   (FR-02), el «para qué» que sugiere cada formulario y cómo se dice cada tipo con sus opciones.
  * - **«Cargar con la persona»** (FI-05): el estado del formulario es la lista de respuestas, en el orden del formulario y
  *   sin las de los campos que una condición ocultó; qué bloquea el envío (todo problema del dominio salvo un
  *   obligatorio sin responder, que la persona completa al confirmar) y qué se le dice al profesional junto a cada campo.
@@ -12,13 +13,17 @@ import {
   camposEnOrden,
   CODIGO_DE_PROBLEMA_V2,
   CONTEXTO_DE_ENTRENAMIENTO,
+  CONTEXTO_DE_NUTRICION,
+  COPY_FORMULARIOS,
   MENSAJE_DE_PROBLEMA_V2,
   NOMBRE_DE_TIPO_V2,
   normalizarValor,
   obligatoriosSinResponder,
+  propositoSugerido,
   resumenDeValor,
   sinRespuestasOcultas,
   validarRespuestasV2,
+  type Alcance,
   type CampoDePlantillaV2,
   type ProblemaDeRespuestaV2,
   type RespuestaDeCampoV2Entrada,
@@ -41,6 +46,51 @@ export function precargaDeEntrenamiento(codigosDeLaVersion: readonly string[]): 
     pedidas: CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => codigosDeLaVersion.includes(c)),
     requeridas: CONTEXTO_DE_ENTRENAMIENTO.requeridos.filter((c) => codigosDeLaVersion.includes(c)),
   };
+}
+
+/**
+ * PF-02 · de qué área se llegó a «Pedir información» (`volver=` en la dirección): el Resumen o el Plan de Entrenamiento
+ * (DL-100, DL-145) o el Resumen de Nutrición (WP-FORMULARIOS-RONDA-2, FR-02). Otro valor no es un origen.
+ */
+export type OrigenDelPedido = 'entrenamiento' | 'entrenamiento-plan' | 'nutricion';
+
+export function origenDelPedido(volver: string | null): OrigenDelPedido | null {
+  return volver === 'entrenamiento' || volver === 'entrenamiento-plan' || volver === 'nutricion' ? volver : null;
+}
+
+/** El formulario que precarga cada origen, si la dirección lo pide (`plantilla=`), y el área del pedido. */
+export const PRECARGA_DEL_ORIGEN: Readonly<Record<OrigenDelPedido, { readonly plantilla: string; readonly area: Alcance }>> = {
+  entrenamiento: { plantilla: CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla, area: 'ENTRENAMIENTO' },
+  'entrenamiento-plan': { plantilla: CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla, area: 'ENTRENAMIENTO' },
+  nutricion: { plantilla: CONTEXTO_DE_NUTRICION.clavePlantilla, area: 'NUTRICION' },
+};
+
+/** La dirección de «Pedir información» desde un área: el cajón abierto, con el formulario del área y la vuelta a ella. */
+export function pedidoDesde(origen: OrigenDelPedido, asesoradoId: string): string {
+  return `/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir&plantilla=${encodeURIComponent(PRECARGA_DEL_ORIGEN[origen].plantilla)}&volver=${origen}`;
+}
+
+/**
+ * Adónde se vuelve al enviar, o con el enlace de vuelta: la sección del área de donde salió el pedido. `ruta` es la
+ * página sin parámetros, la que toma el aviso «Solicitud enviada.» al llegar (`lib/aviso-al-llegar.ts`).
+ */
+export function vueltaDelOrigen(origen: OrigenDelPedido, asesoradoId: string): { readonly ruta: string; readonly href: string; readonly texto: string } {
+  const id = encodeURIComponent(asesoradoId);
+  if (origen === 'nutricion') return { ruta: '/pro/advisees/nutrition', href: `/pro/advisees/nutrition?id=${id}&vista=resumen`, texto: COPY_FORMULARIOS.volverANutricion };
+  return { ruta: '/pro/advisees/training', href: `/pro/advisees/training?id=${id}&vista=${origen === 'entrenamiento-plan' ? 'plan' : 'resumen'}`, texto: COPY_FORMULARIOS.volverAEntrenamiento };
+}
+
+/**
+ * FR-02 · el «para qué» al elegir un formulario. Si el profesional no lo escribió —está vacío, o todavía es la
+ * sugerencia del formulario que había elegido antes—, va el que sugiere el elegido, o vacío si no sugiere ninguno. Lo que
+ * escribió él no se pisa. Sirve igual llegando desde el área que desde «Más». `sugerido` es la sugerencia que quedó
+ * puesta, para la próxima elección.
+ */
+export function propositoAlElegir(actual: string, sugeridoAntes: string | null, clavePlantilla: string): { readonly proposito: string; readonly sugerido: string | null } {
+  const sinEscribir = actual.trim() === '' || (sugeridoAntes !== null && actual === sugeridoAntes);
+  if (!sinEscribir) return { proposito: actual, sugerido: sugeridoAntes };
+  const sugerido = propositoSugerido(clavePlantilla);
+  return { proposito: sugerido ?? '', sugerido };
 }
 
 /** Cuántas opciones se nombran antes de resumir con «… (n opciones)». */

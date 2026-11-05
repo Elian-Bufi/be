@@ -37,8 +37,13 @@
  * `volver=entrenamiento`), el cajón precarga el formulario ratificado, sus preguntas, las requeridas y el área, y al enviar
  * vuelve a Entrenamiento. Es una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de
  * enviar.
+ *
+ * WP-FORMULARIOS-RONDA-2 (FR-02): lo mismo desde el Resumen de Nutrición (`plantilla=FRM-NUTRICION-INICIO` y
+ * `volver=nutricion`), con las preguntas como al elegirlo en «Más», y al enviar se vuelve a Nutrición. Y al elegir un
+ * formulario de inicio, venga de donde venga, se sugiere su «para qué» si el profesional no escribió uno
+ * (`propositoAlElegir`): lo que escribió no se pisa.
  */
-import { ALCANCES, CONTEXTO_DE_ENTRENAMIENTO, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
+import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -50,11 +55,8 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dejarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
-import { condicionEnPalabras, marcadoPorOmision, precargaDeEntrenamiento, respondeConV2 } from './formulario-de-inicio';
+import { condicionEnPalabras, marcadoPorOmision, origenDelPedido, PRECARGA_DEL_ORIGEN, precargaDeEntrenamiento, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
-
-/** A dónde se vuelve cuando el pedido salió de la evaluación de entrenamiento. Ahí lo espera `training/resumen.tsx`. */
-const RUTA_DE_ENTRENAMIENTO = '/pro/advisees/training';
 
 /** Los rechazos de FRM-03 que dependen de lo elegido: se dicen, en vez de «el servicio no está disponible». */
 const RECHAZO_DE_SOLICITUD: Readonly<Record<string, string>> = {
@@ -93,9 +95,13 @@ export function PedidoDeInformacion({
   const [lectura, setLectura] = useState<Lectura | null>(null);
   const [pedidas, setPedidas] = useState<readonly string[]>([]);
   const [requeridas, setRequeridas] = useState<readonly string[]>([]);
-  /** Lo elegido vino de la precarga ratificada de Entrenamiento (DL-100), no de «todas marcadas». */
+  /** Lo elegido vino de la precarga del área de donde se llegó (DL-100; FR-02), no de una elección en el cajón. */
   const [conPrecarga, setConPrecarga] = useState(false);
   const [proposito, setProposito] = useState('');
+  /** FR-02 · el «para qué» que quedó sugerido por el formulario elegido: mientras siga igual, no lo escribió el profesional. */
+  const sugerencia = useRef<string | null>(null);
+  const propositoActual = useRef(proposito);
+  propositoActual.current = proposito;
   /** El área que eligió el profesional, para un formulario sin área propia. */
   const [area, setArea] = useState<Alcance | ''>('');
   /** Lo que la persona lee debajo de cada pregunta, a la vista. Queda a un clic: con seis preguntas, la tabla no entraba. */
@@ -110,11 +116,13 @@ export function PedidoDeInformacion({
   const [tocado, setTocado] = useState(false);
   useCambiosSinGuardar(tocado, 'el pedido de información');
 
-  // `entrenamiento-plan`: el pedido sale de «Empezar el plan» (DL-145) y vuelve al Plan, con lo mismo precargado.
-  const volver = parametros.get('volver');
-  const desdeEntrenamiento = volver === 'entrenamiento' || volver === 'entrenamiento-plan';
-  const precargar = desdeEntrenamiento && parametros.get('plantilla') === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla;
-  const rutaDeEntrenamiento = `${RUTA_DE_ENTRENAMIENTO}?id=${encodeURIComponent(asesoradoId)}${volver === 'entrenamiento-plan' ? '&vista=plan' : ''}`;
+  // De qué área se llegó: el Resumen de Entrenamiento, su Plan («Empezar el plan», DL-145) o el Resumen de Nutrición
+  // (FR-02). Al enviar se vuelve ahí, y si la dirección pide el formulario del área, viene precargado.
+  const origen = origenDelPedido(parametros.get('volver'));
+  const desdeEntrenamiento = origen === 'entrenamiento' || origen === 'entrenamiento-plan';
+  const precargaDelOrigen = origen ? PRECARGA_DEL_ORIGEN[origen] : null;
+  const precargar = precargaDelOrigen !== null && parametros.get('plantilla') === precargaDelOrigen.plantilla;
+  const vuelta = origen ? vueltaDelOrigen(origen, asesoradoId) : null;
   const cuerpo = useRef<HTMLDivElement>(null);
   const estaAbierto = useRef(abierto);
   estaAbierto.current = abierto;
@@ -143,7 +151,11 @@ export function PedidoDeInformacion({
       setElegido(p);
       setLectura({ tipo: 'cargando' });
       setConPrecarga(precarga);
-      setFaltas((f) => ({ ...f, formulario: undefined, preguntas: undefined, area: undefined }));
+      // FR-02 · el «para qué» que sugiere el formulario, si el profesional no escribió uno: no es algo que él escribió.
+      const paraQue = propositoAlElegir(propositoActual.current, sugerencia.current, p.key);
+      sugerencia.current = paraQue.sugerido;
+      setProposito(paraQue.proposito);
+      setFaltas((f) => ({ ...f, formulario: undefined, preguntas: undefined, area: undefined, proposito: paraQue.proposito.trim() ? undefined : f.proposito }));
       // API-FRI-01 sirve cualquier versión en formato V2; FRM-02 responde 404 para las que usan tipos nuevos (DL-164 D-5).
       const v = await api.consultarDefinicionDePlantilla(token, p.templateId, p.latestVersionId);
       if (esta !== lecturaEnCurso.current || sesionPerdida(v)) return;
@@ -152,26 +164,24 @@ export function PedidoDeInformacion({
       setLectura({ tipo: 'lista', version: v.datos.data });
       // F-05: vienen todas marcadas y, requeridas, las que la plantilla sugiere. El profesional cambia lo que necesita.
       // DL-100: desde Entrenamiento, solo lo que la versión elegida realmente tiene; si el catálogo cambiara, no se pide
-      // una pregunta inexistente.
-      const marcado = precarga ? precargaDeEntrenamiento(preguntas) : marcadoPorOmision(v.datos.data.sections);
+      // una pregunta inexistente. Desde Nutrición (FR-02), como al elegirlo en «Más».
+      const marcado = precarga && desdeEntrenamiento ? precargaDeEntrenamiento(preguntas) : marcadoPorOmision(v.datos.data.sections);
       setPedidas(marcado.pedidas);
       setRequeridas(marcado.requeridas);
-      if (!precarga) return;
-      setProposito(F.propositoDeContextoDeEntrenamiento);
-      setArea('ENTRENAMIENTO');
+      if (precarga && precargaDelOrigen) setArea(precargaDelOrigen.area);
     },
-    [token, sesionPerdida, intento],
+    [token, sesionPerdida, intento, desdeEntrenamiento, precargaDelOrigen],
   );
 
-  // Al llegar desde Entrenamiento, abrir una sola vez el formulario ratificado con su precarga.
+  // Al llegar desde un área, abrir una sola vez su formulario con la precarga.
   const precargado = useRef(false);
   useEffect(() => {
-    if (!abierto || !precargar || precargado.current || !catalogo?.ok) return;
-    const plantilla = catalogo.datos.find((p) => p.key === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
+    if (!abierto || !precargar || !precargaDelOrigen || precargado.current || !catalogo?.ok) return;
+    const plantilla = catalogo.datos.find((p) => p.key === precargaDelOrigen.plantilla);
     if (!plantilla) return;
     precargado.current = true;
     void elegir(plantilla, true);
-  }, [abierto, precargar, catalogo, elegir]);
+  }, [abierto, precargar, precargaDelOrigen, catalogo, elegir]);
 
   // Al tocar «Enviar» con algo sin completar, el foco va a lo primero que falta, en el orden de los pasos.
   useEffect(() => {
@@ -239,15 +249,17 @@ export function PedidoDeInformacion({
     setRequeridas([]);
     setConPrecarga(false);
     setProposito('');
+    sugerencia.current = null;
     setArea('');
     setFaltas({});
     setTocado(false);
     setEnvio({ tipo: 'editando' });
-    // CA-FOR-06: si el pedido salió de la evaluación, se vuelve a ella para seguir trabajando. El éxito lo dice
-    // Entrenamiento al llegar: esta página se abandona, y un aviso suyo no lo leería nadie.
-    if (desdeEntrenamiento) {
-      dejarAvisoPara(RUTA_DE_ENTRENAMIENTO, F.solicitudEnviada);
-      return router.push(rutaDeEntrenamiento);
+    // CA-FOR-06: si el pedido salió de un área (la evaluación de Entrenamiento, su Plan o el Resumen de Nutrición), se
+    // vuelve ahí para seguir trabajando. El éxito lo dice esa página al llegar: esta se abandona, y un aviso suyo no lo
+    // leería nadie.
+    if (vuelta) {
+      dejarAvisoPara(vuelta.ruta, F.solicitudEnviada);
+      return router.push(vuelta.href);
     }
     // DL-113: el éxito lo dice la página, no el cajón, que se cierra: un aviso adentro de un diálogo cerrado no lo lee nadie.
     avisar(F.solicitudEnviada);
@@ -283,11 +295,11 @@ export function PedidoDeInformacion({
           {F.solicitarNoEsAcceder}
         </p>
         {/* Solo si de verdad hay algo precargado: con `volver=entrenamiento` y sin formulario, no hay nada elegido. */}
-        {conPrecarga ? (
-          <p className="pedido__aviso" data-desde-entrenamiento>
-            <Icono nombre="entrenamiento" tamano={18} />
+        {conPrecarga && vuelta ? (
+          <p className="pedido__aviso" data-desde={origen}>
+            <Icono nombre={desdeEntrenamiento ? 'entrenamiento' : 'nutricion'} tamano={18} />
             <span>
-              {F.pedidoDesdeEntrenamiento} <Link href={rutaDeEntrenamiento}>{F.volverAEntrenamiento}</Link>
+              {desdeEntrenamiento ? F.pedidoDesdeEntrenamiento : F.pedidoDesdeNutricion} <Link href={vuelta.href}>{vuelta.texto}</Link>
             </span>
           </p>
         ) : null}
@@ -348,7 +360,8 @@ export function PedidoDeInformacion({
                 <span data-elegidas aria-live="polite">
                   {C.elegidas(elegidas.length, preguntas.length)}
                 </span>
-                {conPrecarga ? null : ` ${C.vienenTodasElegidas}`}
+                {/* Desde Entrenamiento vienen solo las seis de DL-100; desde Nutrición, todas, como en «Más». */}
+                {conPrecarga && desdeEntrenamiento ? null : ` ${C.vienenTodasElegidas}`}
               </p>
             ) : null}
           </div>
