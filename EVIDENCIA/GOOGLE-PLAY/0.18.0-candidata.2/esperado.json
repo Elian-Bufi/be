@@ -1,0 +1,17 @@
+{
+  "paquete": "com.elianbufi.be",
+  "version": "0.18.0-candidata.2",
+  "versionCode": 31,
+  "commit": "527474ffba9cf75c782da5cd6f0e9319c103a8c9",
+  "arbolLimpio": true,
+  "appEnv": "test",
+  "apiBaseUrl": "https://be-api-hndp.onrender.com",
+  "webBaseUrl": "https://be-web-1ngj.onrender.com",
+  "googleWebClientId": "(tapado en esta copia: el client ID web está en client-ids.env de Dirección)",
+  "sinGoogleAProposito": false,
+  "firebaseProjectId": "be-app-c4623",
+  "sinFirebaseAProposito": false,
+  "certSubidaSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+  "certFirmaAppSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+  "firmadoAlConstruir": false
+}
