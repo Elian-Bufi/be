@@ -5456,6 +5456,20 @@ mismo día (#216), por autorización de Dirección.
 - Las lecturas de la 0.13.2 y de la candidata.3 no cambiaron, y la candidata.3 sigue en `VIGENTES` hasta que no haya
   teléfonos con ella.
 
+**2026-11-05 · la 0.20.0-candidata.1** (`40b12e9`, los formularios de inicio de DL-164), congelada con estos pasos en
+un PR en borrador.
+- Lee 82 operaciones. Deja FRM-02 y FRM-05 a 08 y lee en su lugar la familia FRI: 01 a 05 y 08, las de la persona. FRI-06
+  y 07 son del profesional y las llama el website.
+- API-TRN-15, 16, 17, 19, 19-LISTA y 20 tienen otra forma que en la 0.18.0-candidata.1: es la del registro por niveles de
+  DL-161, que llegó con la 0.19.0-candidata.1.
+- Las cabeceras, las versiones de los textos y los detalles de rechazo que lee son los mismos. No suma reglas que JSON Schema
+  no represente.
+- La prueba de integración tiene su escenario: la bandeja, la estructura y el detalle de una solicitud de P0 y de una con
+  tipos nuevos, responder sola, confirmar lo cargado corrigiendo un dato, «No es correcto», rectificar y el 422 de
+  responder lo ya respondido. El de FRM queda solo para las APK que lo leen.
+- La 0.19.0-candidata.1 (`42dd257`) no se congeló. Según Dirección, el único teléfono que la tiene es el suyo, y lo pasa a
+  esta. Sacar de `VIGENTES` la candidata.3 y la 0.18.0-candidata.1 lo decide Dirección.
+
 Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
 
 **La regla para promover.** Una candidata no pasa a estable mientras:

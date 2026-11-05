@@ -47,9 +47,10 @@ const APK = readdirSync(CARPETA)
  * Las APK que importan hoy (DL-152): la estable instalada y las candidatas que puede haber en un teléfono. Cambiar esta
  * lista es una decisión: al publicar una candidata nueva se congela y se suma; al dejar de haber teléfonos con una
  * versión, se saca. La 0.18.0-candidata.1 (2026-10-26) se sumó sin sacar la candidata.3, que sigue instalada hasta que se
- * actualice el teléfono.
+ * actualice el teléfono. La 0.20.0-candidata.1 (2026-11-05, los formularios de inicio de DL-164) se sumó igual: lee la
+ * familia FRI (01 a 05 y 08) en lugar de FRM-02 y 05 a 08. Sacar las candidatas anteriores lo decide Dirección.
  */
-const VIGENTES = ['0.13.2', '0.17.0-candidata.3', '0.18.0-candidata.1'];
+const VIGENTES = ['0.13.2', '0.17.0-candidata.3', '0.18.0-candidata.1', '0.20.0-candidata.1'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en
