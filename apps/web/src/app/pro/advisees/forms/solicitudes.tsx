@@ -20,7 +20,9 @@
  *   corrigió antes de confirmar lo dice. La original se conserva: está en la historia, con lo que respondió en cada
  *   versión a un clic.
  * - **Mientras lo cargado espera** (D-3), la solicitud sigue pendiente: el profesional que lo cargó lo ve, lo puede
- *   editar o retirar (con confirmación en la página), y nadie más lo ve hasta que la persona confirme.
+ *   editar o retirar (con confirmación en la página), y nadie más lo ve hasta que la persona confirme. Si al retirar la
+ *   API dice que eso ya cambió (409: la persona confirmó o rechazó en el medio), se dice y se vuelve a leer la solicitud
+ *   y la lista: lo que queda en pantalla es lo que hay, no lo que había.
  * - El texto de cada pregunta sale de la versión del formulario de la solicitud (API-FRI-01, una vez por versión). La
  *   pantalla nunca muestra el código de una pregunta: si esa lectura falla, lo dice.
  * - FI-07: en la respuesta de «Cómo comés hoy», las comidas que contó la persona van en una tabla para decidir con ella.
@@ -55,7 +57,7 @@ import { Panel } from '../../../../components/panel';
 import { BotonDeVista } from '../../../../components/vista-con-nombre';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
-import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso } from '../marco-del-area';
 import { useDetalleAlCostado } from '../seguimiento/al-costado';
 import { campoDeComidas, CLAVE_DE_NUTRICION_INICIO, comidasDeclaradas } from './comidas-declaradas';
@@ -81,6 +83,8 @@ const T = {
   retirando: 'Retirando…',
   volver: 'Volver',
   corregidaAntesDeConfirmar: 'Corregida antes de confirmar',
+  cambioMientrasRetirabas: 'Lo cargado cambió desde que abriste esta solicitud: la persona pudo confirmarlo o decir que no es correcto, o se editó desde otro lugar. Volvimos a leer la solicitud: lo que ves ahora es lo que hay.',
+  volvimosALeer: 'Volvimos a leer la solicitud.',
 } as const;
 
 type Lista = { readonly solicitudes: readonly SolicitudDeFormulario[]; readonly completa: boolean };
@@ -102,12 +106,17 @@ export function VistaDeSolicitudes() {
   const detallesPedidos = useRef(new Set<string>());
   const formulariosPedidos = useRef(new Set<string>());
 
-  const cargar = useCallback(async () => {
-    setLista(null);
-    const r = await todasLasPaginas((f) => api.listarSolicitudesDeFormulario(token, asesoradoId, f));
-    if (sesionPerdida(r)) return;
-    setLista(r.ok ? { ok: true, datos: { solicitudes: r.datos.data, completa: r.datos.completa } } : (r as Resultado<never>));
-  }, [token, asesoradoId, sesionPerdida]);
+  /** Lee la lista. En silencio (tras un cambio que pudo mover el estado de una solicitud), la que había sigue a la vista y, si la relectura falla, se queda. */
+  const cargar = useCallback(
+    async (silencioso = false) => {
+      if (!silencioso) setLista(null);
+      const r = await todasLasPaginas((f) => api.listarSolicitudesDeFormulario(token, asesoradoId, f));
+      if (sesionPerdida(r)) return;
+      if (!r.ok && silencioso) return;
+      setLista(r.ok ? { ok: true, datos: { solicitudes: r.datos.data, completa: r.datos.completa } } : (r as Resultado<never>));
+    },
+    [token, asesoradoId, sesionPerdida],
+  );
 
   useEffect(() => {
     void cargar();
@@ -222,7 +231,11 @@ export function VistaDeSolicitudes() {
       solicitud={abierta}
       detalle={detalles.get(abierta.formRequestId)}
       formulario={formularios.get(abierta.templateVersionId)}
-      onReleerElDetalle={() => void leerDetalle(abierta.formRequestId)}
+      onReleerElDetalle={(opciones) => {
+        void leerDetalle(abierta.formRequestId);
+        // Si la persona confirmó en el medio, la solicitud dejó de estar pendiente: el estado y las cuentas salen de la lista.
+        if (opciones?.conLaLista) void cargar(true);
+      }}
       onReintentarElFormulario={() => void leerFormulario(abierta)}
     />
   ) : null;
@@ -386,8 +399,8 @@ function DetalleDeSolicitud({
   solicitud: SolicitudDeFormulario;
   detalle: Detalle | undefined;
   formulario: Formulario | undefined;
-  /** Vuelve a leer el detalle: después de una falla, y después de retirar lo cargado. */
-  onReleerElDetalle: () => void;
+  /** Vuelve a leer el detalle: después de una falla, y después de retirar lo cargado. Con `conLaLista`, también la lista (el estado de la solicitud pudo cambiar). */
+  onReleerElDetalle: (opciones?: { readonly conLaLista?: boolean }) => void;
   onReintentarElFormulario: () => void;
 }) {
   const { token, asesoradoId, sesionPerdida, avisar, ir, yoId } = useFormularios();
@@ -447,6 +460,8 @@ function DetalleDeSolicitud({
   const propuesta = vista?.proposal ?? null;
   const desenlace = vista?.lastProposalOutcome ?? null;
   const [retiro, setRetiro] = useState<Retiro>({ tipo: 'no' });
+  /** Un retiro que no pudo ser porque lo que se veía ya era viejo: se dice afuera del bloque, que la relectura va a cambiar. */
+  const [avisoDelRetiro, setAvisoDelRetiro] = useState<{ readonly tipo: 'info' | 'error'; readonly texto: string } | null>(null);
   const preguntaDeRetiro = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
     if (retiro.tipo === 'confirmando') preguntaDeRetiro.current?.focus();
@@ -459,9 +474,19 @@ function DetalleDeSolicitud({
     if (sesionPerdida(r)) return setRetiro({ tipo: 'confirmando', error: null });
     if (!r.ok) {
       if (r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') avisarSinAcceso();
-      return setRetiro({ tipo: 'confirmando', error: mensajeDeFallo(r, COPY_VINCULO.recursoNoDisponible) });
+      // Un resultado incierto se reintenta desde acá, con la misma clave: lo que se ve sigue valiendo.
+      if (esIncierto(r)) return setRetiro({ tipo: 'confirmando', error: mensajeDeFallo(r, COPY_VINCULO.recursoNoDisponible) });
+      // Un rechazo cierto —el 409 porque la persona confirmó o rechazó en el medio, o lo cargado se editó desde otro
+      // lugar— deja viejo el bloque «Lo que cargaste»: se cierra la confirmación, se dice qué pasó y se vuelve a leer la
+      // solicitud (la lista también: pudo dejar de estar pendiente). Con el detalle releído, el bloque pasa solo a «Lo que
+      // declaró» o a las preguntas pedidas con el desenlace.
+      const conflicto = r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT';
+      setRetiro({ tipo: 'no' });
+      setAvisoDelRetiro(conflicto ? { tipo: 'info', texto: T.cambioMientrasRetirabas } : { tipo: 'error', texto: `${mensajeDeFallo(r, COPY_VINCULO.recursoNoDisponible)} ${T.volvimosALeer}` });
+      return onReleerElDetalle({ conLaLista: true });
     }
     setRetiro({ tipo: 'no' });
+    setAvisoDelRetiro(null);
     avisar(V.web.retirado(diaSinElAnioEnCurso(r.datos.data.resolvedAt)));
     onReleerElDetalle();
   }
@@ -512,7 +537,7 @@ function DetalleDeSolicitud({
         <Aviso tipo="error">
           <p>
             {C.detalleNoCargo}{' '}
-            <button type="button" className="boton boton--enlace" onClick={onReleerElDetalle}>
+            <button type="button" className="boton boton--enlace" onClick={() => onReleerElDetalle()}>
               {COPY.reintentar}
             </button>
           </p>
@@ -526,6 +551,11 @@ function DetalleDeSolicitud({
               {COPY.reintentar}
             </button>
           </p>
+        </Aviso>
+      ) : null}
+      {avisoDelRetiro ? (
+        <Aviso tipo={avisoDelRetiro.tipo} enfocar>
+          <p data-retiro-no-hecho>{avisoDelRetiro.texto}</p>
         </Aviso>
       ) : null}
 
@@ -564,7 +594,14 @@ function DetalleDeSolicitud({
                 <Icono nombre="borrador" tamano={18} />
                 {T.editarLoCargado}
               </button>
-              <button type="button" className="boton boton--peligro-secundario" onClick={() => setRetiro({ tipo: 'confirmando', error: null })}>
+              <button
+                type="button"
+                className="boton boton--peligro-secundario"
+                onClick={() => {
+                  setAvisoDelRetiro(null);
+                  setRetiro({ tipo: 'confirmando', error: null });
+                }}
+              >
                 <Icono nombre="deshacer" tamano={18} />
                 {V.web.retirar}
               </button>

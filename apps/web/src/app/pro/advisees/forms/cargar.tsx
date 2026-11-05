@@ -14,8 +14,9 @@
  *   rechazaría se dice junto a cada campo y frena el envío. Un obligatorio sin responder se marca pero no frena: la
  *   persona lo completa al confirmar (API-FRI-06 tampoco lo exige).
  * - Un número que no se entiende, un «Otro» sin texto o una lista con un renglón incompleto no se mandan como cero ni
- *   vacíos: se dicen. Un rechazo de la API por los datos (`422`) vuelve a marcar los campos; un «no disponible» avisa al
- *   marco. Cambiar algo después de un resultado incierto es otro intento.
+ *   vacíos: se dicen. Un renglón sumado y dejado sin nada no es un problema: no viaja (`sinRenglonesVacios`, igual que
+ *   la APK). Un rechazo de la API por los datos (`422`) vuelve a marcar los campos; un «no disponible» avisa al marco.
+ *   Cambiar algo después de un resultado incierto es otro intento.
  * - Lo escrito se pierde al salir sin enviar: «Volver» pregunta antes, en la página; «Actualizar» y el navegador avisan
  *   (`useCambiosSinGuardar`).
  */
@@ -44,7 +45,7 @@ import { dia, diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { CampoV2 } from './campos-v2';
-import { conRespuesta, mensajesPorCampo, problemasDeLaApi, respuestaDe, respuestasParaEnviar, revisarAntesDeEnviar } from './formulario-de-inicio';
+import { conRespuesta, mensajesPorCampo, problemasDeLaApi, respuestaDe, respuestasParaEnviar, revisarAntesDeEnviar, sinRenglonesVacios } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
 
 /** Los textos propios de esta pantalla (los que comparte con la APK están en `COPY_FORMULARIOS_V2`). */
@@ -151,13 +152,17 @@ export function CargaConLaPersona() {
 
   async function enviar() {
     if (!listo || !solicitud || !solicitudId || enviando) return;
-    const revision = revisarAntesDeEnviar(secciones, solicitud, respuestas);
+    // Un renglón de lista sumado y dejado vacío no viaja ni frena (igual que la APK): sale del estado antes de revisar,
+    // así cada «Renglón n» de los mensajes es el que se ve en la pantalla.
+    const limpias = sinRenglonesVacios(respuestas);
+    if (limpias !== respuestas) setRespuestas(limpias);
+    const revision = revisarAntesDeEnviar(secciones, solicitud, limpias);
     setBloqueantes(revision.bloqueantes);
     setIntentos((n) => n + 1);
     if (revision.bloqueantes.length > 0) return;
-    if (respuestas.length === 0) return setEnvio({ tipo: 'error', texto: T.sinNada, incierto: false, conflicto: false });
+    if (limpias.length === 0) return setEnvio({ tipo: 'error', texto: T.sinNada, incierto: false, conflicto: false });
     setEnvio({ tipo: 'enviando' });
-    const enviadas = respuestasParaEnviar(secciones, respuestas);
+    const enviadas = respuestasParaEnviar(secciones, limpias);
     const r = await api.cargarPropuestaDeRespuesta(token, solicitudId, { expectedVersion, answers: enviadas }, intento.actual());
     intento.registrar(r);
     if (sesionPerdida(r)) return setEnvio({ tipo: 'editando' });

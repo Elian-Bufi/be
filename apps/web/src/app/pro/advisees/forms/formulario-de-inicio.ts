@@ -150,10 +150,30 @@ export function mensajesPorCampo(problemas: readonly ProblemaDeRespuestaV2[]): R
   return porCampo;
 }
 
-/** El cuerpo que se envía: cada valor en su forma canónica (textos sin bordes, opciones en el orden del campo). */
+/** Un subcampo de un renglón cuenta como respondido si tiene algo: un número, un sí o no, o un texto con letras. */
+const subcampoRespondido = (v: string | number | boolean): boolean => typeof v !== 'string' || v.trim() !== '';
+
+/**
+ * Las listas sin sus renglones vacíos: un renglón sumado y dejado sin nada no viaja —sumarlo y no completarlo es como
+ * no haberlo sumado, igual que en la APK— y una lista que queda sin renglones se retira. Lo demás queda tal cual; si
+ * no había nada que sacar, devuelve el mismo arreglo.
+ */
+export function sinRenglonesVacios(respuestas: readonly RespuestaDeCampoV2Entrada[]): readonly RespuestaDeCampoV2Entrada[] {
+  let cambio = false;
+  const limpias = respuestas.flatMap((r): RespuestaDeCampoV2Entrada[] => {
+    if (r.answer.type !== 'LIST') return [r];
+    const items = r.answer.items.filter((renglon) => Object.values(renglon).some(subcampoRespondido));
+    if (items.length === r.answer.items.length) return [r];
+    cambio = true;
+    return items.length === 0 ? [] : [{ fieldCode: r.fieldCode, answer: { type: 'LIST', items } }];
+  });
+  return cambio ? limpias : respuestas;
+}
+
+/** El cuerpo que se envía: sin renglones vacíos, y cada valor en su forma canónica (textos sin bordes, opciones en el orden del campo). */
 export function respuestasParaEnviar(secciones: readonly SeccionDePlantillaV2[], respuestas: readonly RespuestaDeCampoV2Entrada[]): RespuestaDeCampoV2Entrada[] {
   const campos = new Map(camposEnOrden(secciones).map((c) => [c.fieldCode, c] as const));
-  return respuestas.map((r) => ({ fieldCode: r.fieldCode, answer: normalizarValor(campos.get(r.fieldCode), r.answer) }));
+  return sinRenglonesVacios(respuestas).map((r) => ({ fieldCode: r.fieldCode, answer: normalizarValor(campos.get(r.fieldCode), r.answer) }));
 }
 
 /**

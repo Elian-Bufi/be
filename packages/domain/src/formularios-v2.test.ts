@@ -184,6 +184,45 @@ test('la transcripción registra solo lo que la persona cambió, sumó o quitó'
   assert.deepEqual(camposCorregidos(SECCIONES, COMPLETAS, corregidas.filter((x, i, a) => a.findIndex((y) => y.fieldCode === x.fieldCode) === i)), ['trn_tecnica', 'trn_dias']);
 });
 
+/**
+ * Como vuelve un valor de Postgres (`jsonb`): las claves de cada objeto, primero por largo y después alfabéticas; los
+ * arreglos en su orden. Reproduce el caso de la CI (TEST-FRI-002 y TEST-FRI-004): la propuesta leída de la base contra
+ * la confirmación tal como la mandó la app.
+ */
+function comoJsonb<T>(valor: T): T {
+  if (Array.isArray(valor)) return valor.map(comoJsonb) as unknown as T;
+  if (valor !== null && typeof valor === 'object') {
+    const o = valor as Record<string, unknown>;
+    const claves = Object.keys(o).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0));
+    return Object.fromEntries(claves.map((k) => [k, comoJsonb(o[k])])) as T;
+  }
+  return valor;
+}
+
+test('la transcripción no depende del orden de las claves con que Postgres devuelve la propuesta (jsonb)', () => {
+  const propuestaLeida = comoJsonb(COMPLETAS);
+  // jsonb de verdad reordena: NUMBER, BOOLEAN y TEXT cambian de orden de claves; los renglones de la lista también.
+  assert.deepEqual(Object.keys(propuestaLeida.find((x) => x.fieldCode === 'trn_dias')!.answer), ['type', 'unit', 'number']);
+  assert.deepEqual(Object.keys(propuestaLeida.find((x) => x.fieldCode === 'nut_alergias')!.answer), ['yes', 'type']);
+  assert.deepEqual(Object.keys(propuestaLeida.find((x) => x.fieldCode === 'nut_alergias_cuales')!.answer), ['text', 'type']);
+  const renglon = (propuestaLeida.find((x) => x.fieldCode === 'nut_comidas')!.answer as Extract<RespuestaDeCampoV2Entrada['answer'], { type: 'LIST' }>).items[0]!;
+  assert.deepEqual(Object.keys(renglon), ['que', 'veces', 'momento']);
+  assert.notEqual(JSON.stringify(propuestaLeida), JSON.stringify(COMPLETAS), 'la reproducción cambia los bytes de verdad');
+  const celdasAlReves = COMPLETAS.map((x) => (x.fieldCode === 'trn_tecnica' ? r('trn_tecnica', { type: 'MATRIX', cells: [{ column: 'ayuda', row: 'sentadilla' }] }) : x));
+
+  assert.deepEqual(camposCorregidos(SECCIONES, propuestaLeida, COMPLETAS), [], 'confirmar tal cual lo cargado no corrige nada');
+  assert.deepEqual(camposCorregidos(SECCIONES, COMPLETAS, propuestaLeida), [], 'en el otro sentido tampoco');
+  assert.deepEqual(camposCorregidos(SECCIONES, celdasAlReves, COMPLETAS), [], 'las celdas de la tabla con las claves al revés son las mismas celdas');
+
+  // Un cambio real sigue viéndose, aunque la propuesta venga reordenada.
+  const confirmadas = COMPLETAS.map((x) => (x.fieldCode === 'trn_dias' ? r('trn_dias', { type: 'NUMBER', number: 4, unit: 'días' }) : x))
+    .map((x) => (x.fieldCode === 'nut_alergias' ? r('nut_alergias', { type: 'BOOLEAN', yes: false }) : x))
+    .map((x) => (x.fieldCode === 'nut_comidas' ? r('nut_comidas', { type: 'LIST', items: [{ momento: 'desayuno', que: 'Café con leche y tostadas', veces: 7 }, { momento: 'almuerzo', que: 'Pollo con arroz' }] }) : x));
+  assert.deepEqual(camposCorregidos(SECCIONES, propuestaLeida, confirmadas), ['nut_comidas', 'nut_alergias', 'trn_dias']);
+  const otroOrdenDeRenglones = COMPLETAS.map((x) => (x.fieldCode === 'nut_comidas' ? r('nut_comidas', { type: 'LIST', items: [{ momento: 'almuerzo', que: 'Milanesa con puré' }, { momento: 'desayuno', que: 'Café con leche y tostadas', veces: 7 }] }) : x));
+  assert.deepEqual(camposCorregidos(SECCIONES, propuestaLeida, otroOrdenDeRenglones), ['nut_comidas'], 'el orden de los renglones sí es de la persona: cambiarlo cuenta');
+});
+
 test('normalizar no cambia lo dicho, solo su forma', () => {
   const campo = SECCIONES[1]!.fields[2]!;
   assert.deepEqual(normalizarValor(campo, { type: 'MULTI_CHOICE', options: ['otra', 'diabetes', 'diabetes'], otherText: ' celiaquía ' }),
@@ -210,4 +249,19 @@ test('cada respuesta se lee en palabras, con las etiquetas de la plantilla', () 
   assert.equal(leer('nut_alimentos_no'), 'Leche (cae_mal), Berenjena (no_gusta)');
   assert.equal(leer('trn_tecnica'), 'sentadilla: ayuda');
   assert.equal(leer('trn_dias'), '3 días');
+});
+
+test('un número sin unidad en la respuesta toma la unidad de la pregunta (las APK instaladas mandan P0 sin `unit`)', () => {
+  const dias = SECCIONES.flatMap((s) => s.fields).find((c) => c.fieldCode === 'trn_dias');
+  assert.equal(resumenDeValor(dias, { type: 'NUMBER', number: 7, unit: null }), '7 días', 'la unidad de la plantilla aparece');
+  assert.equal(resumenDeValor(dias, { type: 'NUMBER', number: 7, unit: 'h' }), '7 h', 'la unidad que vino con la respuesta manda');
+  assert.equal(resumenDeValor(undefined, { type: 'NUMBER', number: 7, unit: null }), '7', 'sin la pregunta no se inventa una unidad');
+  const comidas: SeccionDePlantillaV2['fields'][number] = {
+    ...base, fieldCode: 'nut_comidas_con_unidad', label: 'Tus comidas', dataType: 'LIST', itemLabel: 'comida', minItems: 1, maxItems: 5,
+    itemFields: [
+      { code: 'que', label: 'Qué comés', required: true, dataType: 'TEXT', maxLength: 120 },
+      { code: 'porcion', label: 'Porción', required: false, dataType: 'NUMBER', unit: 'g', limits: null },
+    ],
+  };
+  assert.equal(resumenDeValor(comidas, { type: 'LIST', items: [{ que: 'Arroz', porcion: 150 }] }), 'Arroz · 150 g', 'el número de un renglón lleva la unidad de su subcampo');
 });

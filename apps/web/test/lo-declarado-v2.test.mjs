@@ -102,6 +102,14 @@ test('sin resolver · la API señala una corrección que no entrega: ninguna ver
   assert.equal(d.queRige, null);
 });
 
+test('número sin unidad · la APK instalada manda el número solo: «Lo que declaró» le pone la unidad de la pregunta, una sola vez', () => {
+  const sinUnidad = { ...respuesta(), original: { answers: ORIGINAL.map((x) => (x.fieldCode === 'nut_agua' ? a('nut_agua', { type: 'NUMBER', number: 6, unit: null }) : x)) } };
+  const d = m.loDeclaradoV2(SOLICITUD, sinUnidad, VERSION);
+  assert.equal(d.filas.find((f) => f.codigo === 'nut_agua').valor, '6 vasos');
+  assert.equal(d.historia[0].respuestas.find((r) => r.codigo === 'nut_agua').valor, '6 vasos', 'en la historia también, y sin repetir la unidad');
+  assert.equal(m.loDeclaradoV2(SOLICITUD, sinUnidad, null).filas[1].valor, '6', 'sin el formulario no hay unidad que poner');
+});
+
 test('sin el formulario · las filas no tienen texto de pregunta y el valor de una opción muestra el código, nunca lo inventa', () => {
   const d = m.loDeclaradoV2(SOLICITUD, respuesta(), null);
   assert.deepEqual(d.filas.map((f) => f.pregunta), [null, null, null]);

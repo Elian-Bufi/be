@@ -296,8 +296,30 @@ export function normalizarValor(campo: CampoDePlantillaV2 | undefined, valor: Va
   }
 }
 
+/**
+ * La forma canónica de un valor para compararlo: las claves de cada objeto ordenadas, los arreglos en su orden (ese ya
+ * lo canoniza `normalizarValor`). La propuesta vuelve de Postgres como `jsonb`, que reordena las claves de cada objeto
+ * (primero por largo, después alfabético): `{type, number, unit}` vuelve `{type, unit, number}`, `{type, yes}` vuelve
+ * `{yes, type}`, `{type, text}` vuelve `{text, type}`; un `JSON.stringify` a secas los daba por distintos y la
+ * transcripción marcaba como corregidas preguntas que la persona no tocó. No lanza (a diferencia de
+ * `serializacionCanonica`, pensada para huellas): acá se compara dentro de la confirmación, y un valor raro no la corta.
+ */
+function formaCanonica(valor: unknown): string {
+  if (Array.isArray(valor)) return `[${valor.map(formaCanonica).join(',')}]`;
+  if (valor !== null && typeof valor === 'object') {
+    const o = valor as Record<string, unknown>;
+    return `{${Object.keys(o)
+      .filter((k) => o[k] !== undefined)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${formaCanonica(o[k])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(valor) ?? 'null';
+}
+
+/** Iguales sin importar el orden de las claves de los objetos (sí importa el de los arreglos). */
 function igualesProfundo(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return formaCanonica(a) === formaCanonica(b);
 }
 
 /**
@@ -347,7 +369,11 @@ const numeroEnPalabras = (n: number) => n.toLocaleString('es-AR', { maximumFract
 export function resumenDeValor(campo: CampoDePlantillaV2 | undefined, valor: ValorDeRespuestaV2): string {
   switch (valor.type) {
     case 'TEXT': return valor.text.trim();
-    case 'NUMBER': return valor.unit ? `${numeroEnPalabras(valor.number)} ${valor.unit}` : numeroEnPalabras(valor.number);
+    case 'NUMBER': {
+      // Las APK instaladas mandan el número sin `unit` (P0 traducido a V2): la unidad es la de la pregunta, nunca se pierde.
+      const unidad = valor.unit || (campo?.dataType === 'NUMBER' ? campo.unit : null);
+      return unidad ? `${numeroEnPalabras(valor.number)} ${unidad}` : numeroEnPalabras(valor.number);
+    }
     case 'BOOLEAN': return valor.yes ? 'Sí' : 'No';
     case 'CHOICE': {
       const etiqueta = campo?.dataType === 'CHOICE' ? etiquetaDe(campo.options, valor.option) : valor.option;
@@ -366,7 +392,8 @@ export function resumenDeValor(campo: CampoDePlantillaV2 | undefined, valor: Val
           const v = renglon[s.code]!;
           if (s.dataType === 'CHOICE' && typeof v === 'string' && 'options' in s) return etiquetaDe(s.options, v);
           if (typeof v === 'boolean') return v ? 'Sí' : 'No';
-          if (typeof v === 'number') return numeroEnPalabras(v);
+          // El número de un renglón no lleva unidad propia: la de su subcampo, si la tiene.
+          if (typeof v === 'number') return s.dataType === 'NUMBER' && s.unit ? `${numeroEnPalabras(v)} ${s.unit}` : numeroEnPalabras(v);
           return String(v).trim();
         })
         .join(' · ')).join('; ');

@@ -174,6 +174,20 @@ test('cuerpo · lo que se envía va en su forma canónica: textos sin bordes y o
   ]);
 });
 
+test('cuerpo · un renglón sumado y dejado vacío no viaja (igual que la APK); una lista que queda sin renglones se retira', () => {
+  const comida = { momento: 'almuerzo', que: 'Milanesa' };
+  const respuestas = [
+    r('nut_jornada', { type: 'CHOICE', option: 'en_casa', otherText: null }),
+    r('nut_comidas_habituales', { type: 'LIST', items: [{}, comida, { que: '   ' }] }),
+  ];
+  assert.deepEqual(m.sinRenglonesVacios(respuestas), [respuestas[0], r('nut_comidas_habituales', { type: 'LIST', items: [comida] })], 'un renglón sin claves y uno con solo espacios se descartan');
+  assert.deepEqual(m.respuestasParaEnviar(SECCIONES, respuestas), [respuestas[0], r('nut_comidas_habituales', { type: 'LIST', items: [comida] })]);
+  assert.deepEqual(m.respuestasParaEnviar(SECCIONES, [r('nut_comidas_habituales', { type: 'LIST', items: [{}] })]), [], 'sin ningún renglón con algo, la lista no se envía');
+  const sinCambios = [respuestas[0], r('nut_comidas_habituales', { type: 'LIST', items: [comida] })];
+  assert.equal(m.sinRenglonesVacios(sinCambios), sinCambios, 'si no hay nada que sacar, es el mismo arreglo');
+  assert.equal(m.revisarAntesDeEnviar(SECCIONES, SOLICITUD, m.sinRenglonesVacios(respuestas)).bloqueantes.length, 0, 'sin el renglón vacío, la revisión no frena');
+});
+
 test('problemas de la API · con fieldCode se toma; sin él, se deduce del índice del path; lo que no se ubica se descarta', () => {
   const enviadas = [r('nut_jornada', { type: 'CHOICE', option: 'en_casa', otherText: null }), r('nut_agua', { type: 'NUMBER', number: 99, unit: 'vasos' })];
   const problemas = m.problemasDeLaApi(

@@ -23,7 +23,9 @@ export function loDeclaradoV2(
   formulario: { readonly sections: readonly SeccionDePlantillaV2[] } | null,
 ): LoDeclaradoV2 {
   const campos = new Map(camposEnOrden(formulario?.sections ?? []).map((c) => [c.fieldCode, c] as const));
-  // En la forma V1, cada valor ya es su texto: `loDeclarado` lo muestra tal cual y compara versiones por ese texto.
+  // En la forma V1, cada valor ya es su texto: `loDeclarado` lo muestra tal cual y compara versiones por ese texto. La
+  // unidad de un número va dentro de ese texto (`resumenDeValor` toma la de la pregunta si la respuesta no la trae), por
+  // eso acá y en el formulario `unit` es `null`: `loDeclarado` no la suma dos veces.
   const enTexto = (answers: readonly RespuestaDeCampoV2[]): RespuestaDeFormulario['original']['answers'] =>
     answers.map((a) => ({ fieldCode: a.fieldCode, value: resumenDeValor(campos.get(a.fieldCode), a.answer), unit: null, profileSourceRef: null, provenance: a.provenance }));
   const formularioEnTexto: Pick<VersionDePlantilla, 'sections'> | null = formulario
