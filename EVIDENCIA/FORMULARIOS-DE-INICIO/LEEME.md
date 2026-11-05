@@ -158,5 +158,16 @@ hay que esperar 15 minutos.
 - **Sacar de `VIGENTES` las candidatas anteriores**, si Dirección lo decide: según Dirección, el único teléfono con una
   candidata es el suyo. La 0.19.0-candidata.1 nunca se congeló.
 - **Las herramientas del AAB en `main`:** se integran con #223, que sigue en borrador.
+- **Dos herramientas de la evidencia del escritorio leen la versión vigente de FRM-ENTRENAMIENTO por FRM-02**, que con
+  la v2 responde 404 (D-5). Esto es fuera del paquete y de severidad baja: no corren en la CI ni en `test`, y solo fallan
+  si se vuelven a correr. Son:
+  - `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/generar.mjs` (`descartableSolicitudes`, :832-847), que además
+    responde por FRM-07;
+  - `recorrido.mjs` (:8374-8381), que compara el cajón «Pedir información» con esa lectura.
+
+  El arreglo: leer la definición por FRI-01 y responder por FRI-04 con la forma V2. Los seis campos de
+  `CONTEXTO_DE_ENTRENAMIENTO` siguen en la v2, pero `trn_lugar_y_equipamiento` ahora es una opción y los números llevan
+  unidad. No se hizo acá porque hay que verificarlo con la API y PostgreSQL locales, y eso no entra con la memoria de
+  hoy.
 - **El legajo legal para el abogado** (D-8), fuera del repo público. Con personas reales, solo en producción y después de
   esa revisión.
