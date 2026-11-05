@@ -790,88 +790,170 @@ function listaDe(plantilla: PlantillaDeInicio, codigo: string): Extract<CampoDeP
   return campo;
 }
 
+/**
+ * Las secciones con una parte nueva antes de la sección `antesDe` (o al principio, con `null`). Si `antesDe` no está, es
+ * un error de la plantilla: nunca se agrega al final en silencio.
+ */
+function conParteAntesDe(secciones: readonly SeccionDePlantillaV2[], antesDe: string | null, parte: SeccionDePlantillaV2): SeccionDePlantillaV2[] {
+  if (antesDe === null) return [parte, ...secciones];
+  const i = secciones.findIndex((s) => s.sectionCode === antesDe);
+  if (i < 0) throw new Error(`plantillas-de-inicio: no hay una sección ${antesDe} antes de la cual poner ${parte.sectionCode}`);
+  return [...secciones.slice(0, i), parte, ...secciones.slice(i)];
+}
+
+/** Una sección con otro código, título o introducción (sus preguntas no cambian). */
+function seccionCambiada(secciones: readonly SeccionDePlantillaV2[], codigo: string, cambios: Partial<Omit<SeccionDePlantillaV2, 'fields'>>): SeccionDePlantillaV2[] {
+  if (!secciones.some((s) => s.sectionCode === codigo)) throw new Error(`plantillas-de-inicio: no hay una sección ${codigo}`);
+  return secciones.map((s) => (s.sectionCode === codigo ? { ...s, ...cambios } : s));
+}
+
 /** DL-165 D-4: la pregunta del embarazo no viene pedida ni es obligatoria; el profesional la suma cuando corresponde. */
 const sinPedirNiExigir = (c: CampoDePlantillaV2): CampoDePlantillaV2 => ({ ...c, requiredByDefault: false, requestedByDefault: false });
-
-const comidasHabituales = listaDe(PLANTILLA_NUTRICION_INICIO, 'nut_comidas_habituales');
-
-/**
- * «Cómo comés hoy» v2 (DL-165): la v1 con lo que decidió Dirección.
- * - D-4 · el embarazo, sin pedir por defecto (ya no era obligatoria).
- * - D-2 · los ejemplos de las comidas pasan a su texto de muestra, en el renglón: «Qué comés» y «Cuánto».
- * - D-3 · sin los minutos. D-7 · quedan las 20 obligatorias.
- */
-export const PLANTILLA_NUTRICION_INICIO_V2: PlantillaDeInicio = {
-  ...PLANTILLA_NUTRICION_INICIO,
-  version: '2',
-  proposito: `${PLANTILLA_NUTRICION_INICIO.proposito}. Sucede a la v1 (DL-165): el embarazo no viene pedido y los ejemplos de las comidas van como texto de muestra`,
-  formato: 3,
-  estimatedMinutes: null,
-  sections: conCambios(PLANTILLA_NUTRICION_INICIO.sections, {
-    nut_embarazo: [sinPedirNiExigir(campoDe(PLANTILLA_NUTRICION_INICIO, 'nut_embarazo'))],
-    nut_comidas_habituales: [
-      {
-        ...comidasHabituales,
-        helpText: 'Con detalle y con las medidas de tu casa. Sumá al menos tres.',
-        itemFields: comidasHabituales.itemFields.map((sub) =>
-          sub.code === 'que'
-            ? subTexto('que', 'Qué comés', true, 160, 'Milanesa de carne al horno con puré de papa')
-            : sub.code === 'porcion'
-              ? subTexto('porcion', 'Cuánto, con medidas de tu casa', true, 120, '1 plato playo, 2 unidades, 1 taza, 3 cucharadas…')
-              : sub,
-        ),
-      },
-    ],
-  }),
-};
 
 const DIAS_DE_LA_SEMANA = [op('lun', 'Lunes'), op('mar', 'Martes'), op('mie', 'Miércoles'), op('jue', 'Jueves'), op('vie', 'Viernes'), op('sab', 'Sábado'), op('dom', 'Domingo')];
 /** D-5: una opción por día. «Varía» y «No puedo» también son respuestas: «No puedo» no cuenta como día marcado. */
 const MOMENTOS_PARA_ENTRENAR = [op('temprano', 'Temprano'), op('manana', 'Mañana'), op('mediodia', 'Mediodía'), op('tarde', 'Tarde'), op('noche', 'Noche'), op('varia', 'Varía'), op('no_puedo', 'No puedo')];
 const otrosDeportes = listaDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_otros_deportes');
 
+// ─── DL-165 D-9 (FR-10) · la parte común «Tus hábitos» ────────────────────────────────────────────
+
+/**
+ * La parte «Tus hábitos» (WP-FORMULARIOS-RONDA-2 §4.1), **igual en los dos formularios** de formato 3. Entran solo
+ * hábitos: el sueño y los horarios, la actividad del día, el deporte en la semana y el estrés. La salud (medicación,
+ * condiciones, embarazo) queda en cada área, y sumar una pregunta acá es una decisión de Dirección.
+ * - Reutiliza los códigos que ya existían cuando la pregunta es la misma (`horas_de_sueno`, `nivel_de_actividad`), y los
+ *   que llevaban el prefijo de un área pasan a `habitos_` (`nut_horarios`, `trn_otro_deporte` y `nut_actividad_semanal`,
+ *   `trn_otros_deportes` de la v3, `trn_estres`).
+ * - Lo que se responde acá también queda en «Mis hábitos», la historia de la persona (`habitos_de_la_persona`, API-FRI-04):
+ *   lo dice la introducción, y cada «para qué» habla de las dos áreas, porque la persona puede compartir sus hábitos con
+ *   todos sus profesionales (API-HBT-03).
+ * - «Contame cuáles» es la otra actividad de la v3 (D-6): qué, qué días, en qué momento, minutos y qué tan exigente.
+ */
+export const SECCION_DE_HABITOS: SeccionDePlantillaV2 = {
+  sectionCode: 'tus_habitos',
+  title: 'Tus hábitos',
+  intro: 'Tu sueño, tu día y tu semana. Quedan también en «Mis hábitos», así no te los preguntamos de nuevo.',
+  fields: [
+    horarios({ codigo: 'habitos_horarios', etiqueta: '¿A qué hora te levantás y te acostás?', cat: HABITOS, requerida: true,
+      ayuda: 'Si un día cambia mucho, poné el más común.',
+      paraQue: 'Ubicar tus comidas y tus entrenamientos en tu día real.' }, [
+      op('semana_me_levanto', 'Entre semana · me levanto'),
+      op('semana_me_acuesto', 'Entre semana · me acuesto'),
+      op('finde_me_levanto', 'Fin de semana · me levanto'),
+      op('finde_me_acuesto', 'Fin de semana · me acuesto'),
+    ]),
+    numero({ codigo: 'horas_de_sueno', etiqueta: '¿Cuántas horas dormís habitualmente?', cat: HABITOS, requerida: true, ayuda: 'Entre 3 y 14; vale con decimales (7,5).',
+      paraQue: 'El descanso cambia tu energía en el día y cuánto podés entrenar.' }, 'h', { minimum: 3, maximum: 14 }),
+    unaOpcion({ codigo: 'nivel_de_actividad', etiqueta: '¿Cómo es tu día, en movimiento?', cat: HABITOS, requerida: true,
+      paraQue: 'Saber cuánto te movés en un día común: cambia la energía que gastás y cómo arranca tu plan.' }, NIVEL_DE_ACTIVIDAD),
+    siONo({ codigo: 'habitos_hace_deporte', etiqueta: '¿Hacés ejercicio, deporte u otra actividad en la semana?', cat: HABITOS, requerida: true,
+      paraQue: 'Contar esa actividad en tu semana: en lo que gastás y en cómo se arma tu plan.' }),
+    lista({ codigo: 'habitos_deportes', etiqueta: 'Contame cuáles', cat: HABITOS, requerida: true, si: si('habitos_hace_deporte', true),
+      paraQue: 'Que tus comidas y tus sesiones acompañen esos días, en vez de sumarse encima.' }, 'actividad', [
+      subTexto('cual', 'Cuál', true, 80, 'Fútbol, natación, baile…'),
+      subVarias('que_dias', 'Qué días', true, DIAS_DE_LA_SEMANA),
+      subOpcion('momento', 'En qué momento', true, MOMENTOS_PARA_ENTRENAR.filter((m) => m.code !== 'no_puedo')),
+      subNumero('minutos', 'Minutos por vez, más o menos', true, 'min', { minimum: 10, maximum: 300, integer: true }),
+      ...otrosDeportes.itemFields.filter((sub) => sub.code === 'exigencia'),
+    ], 1, 6),
+    unaOpcion({ codigo: 'habitos_estres', etiqueta: '¿Cómo viene tu semana, en estrés?', cat: HABITOS,
+      paraQue: 'En semanas cargadas, el plan se adapta.' }, [
+      op('tranquila', 'Tranquila'),
+      op('normal', 'Normal'),
+      op('cargada', 'Cargada'),
+    ]),
+  ],
+};
+
+const comidasHabituales = listaDe(PLANTILLA_NUTRICION_INICIO, 'nut_comidas_habituales');
+
+/**
+ * «Cómo comés hoy» v2 (DL-165): la v1 con lo que decidió Dirección.
+ * - D-9 (FR-10) · la parte «Tus hábitos» va primera, donde la v1 abría con los horarios: salen de «Tu día» los horarios,
+ *   la actividad del día y la de la semana, y «¿En qué momento del día solés entrenar?» (`nut_hora_de_entrenamiento`, que
+ *   es de Nutrición) se abre con «Sí» en el deporte de la semana.
+ * - D-4 · el embarazo, sin pedir por defecto (ya no era obligatoria).
+ * - D-2 · los ejemplos de las comidas pasan a su texto de muestra, en el renglón: «Qué comés» y «Cuánto».
+ * - D-3 · sin los minutos. D-7 · quedan todas las obligatorias de la v1; las de la parte común suman las suyas (D-15).
+ */
+export const PLANTILLA_NUTRICION_INICIO_V2: PlantillaDeInicio = {
+  ...PLANTILLA_NUTRICION_INICIO,
+  version: '2',
+  proposito: `${PLANTILLA_NUTRICION_INICIO.proposito}. Sucede a la v1 (DL-165): empieza con la parte común «Tus hábitos», el embarazo no viene pedido y los ejemplos de las comidas van como texto de muestra`,
+  formato: 3,
+  estimatedMinutes: null,
+  sections: conParteAntesDe(
+    conCambios(PLANTILLA_NUTRICION_INICIO.sections, {
+      nut_horarios: [],
+      nivel_de_actividad: [],
+      nut_actividad_semanal: [],
+      nut_hora_de_entrenamiento: [{ ...campoDe(PLANTILLA_NUTRICION_INICIO, 'nut_hora_de_entrenamiento'), showIf: si('habitos_hace_deporte', true) }],
+      nut_embarazo: [sinPedirNiExigir(campoDe(PLANTILLA_NUTRICION_INICIO, 'nut_embarazo'))],
+      nut_comidas_habituales: [
+        {
+          ...comidasHabituales,
+          helpText: 'Con detalle y con las medidas de tu casa. Sumá al menos tres.',
+          itemFields: comidasHabituales.itemFields.map((sub) =>
+            sub.code === 'que'
+              ? subTexto('que', 'Qué comés', true, 160, 'Milanesa de carne al horno con puré de papa')
+              : sub.code === 'porcion'
+                ? subTexto('porcion', 'Cuánto, con medidas de tu casa', true, 120, '1 plato playo, 2 unidades, 1 taza, 3 cucharadas…')
+                : sub,
+          ),
+        },
+      ],
+    }),
+    null,
+    SECCION_DE_HABITOS,
+  ),
+};
+
 /**
  * «Antes de entrenar» v3 (DL-165): la v2 con lo que decidió Dirección. Conserva los seis códigos de la v1 (DL-100).
+ * - D-9 (FR-10) · la parte «Tus hábitos» va antes de «Tu semana para entrenar», donde estaban esas preguntas: salen de ahí
+ *   la actividad del día y la otra actividad (con sus días y su momento, D-6), y de «Descanso y preferencias» el sueño y
+ *   el estrés. Esa sección queda con las preferencias: «Tus preferencias». La salud sigue primera.
  * - D-4 · el embarazo, sin pedir por defecto y no obligatorio; la pregunta de las indicaciones médicas suma el ejemplo.
  * - D-5 · los días y el horario, en una tabla (reemplaza a `trn_dias_posibles` y `trn_franja`), y los días por semana no
  *   pasan de los marcados (`maxFromMatrix`).
- * - D-6 · cada otra actividad dice qué días (varios) y en qué momento; «Qué días» reemplaza a «Días por semana».
- * - D-2 · el ejemplo de «Cuál» va como texto de muestra. D-3 · sin los minutos.
+ * - D-2 · el ejemplo de «Cuál» va como texto de muestra (en la parte común). D-3 · sin los minutos.
  */
 export const PLANTILLA_ENTRENAMIENTO_V3: PlantillaDeInicio = {
   ...PLANTILLA_ENTRENAMIENTO_V2,
   version: '3',
   proposito:
-    'Lo que la persona cuenta antes de entrenar, para armar el primer plan: su salud, dolor y lesiones, su experiencia, lo que busca, su semana y sus preferencias. Sucede a la v2 (DL-165): los días y el momento en una tabla, otra actividad con sus días y el embarazo sin pedir por defecto. Conserva los seis códigos de la v1 (DL-100)',
+    'Lo que la persona cuenta antes de entrenar, para armar el primer plan: su salud, dolor y lesiones, su experiencia, lo que busca, sus hábitos, su semana y sus preferencias. Sucede a la v2 (DL-165): la parte común «Tus hábitos», los días y el momento en una tabla y el embarazo sin pedir por defecto. Conserva los seis códigos de la v1 (DL-100)',
   formato: 3,
   estimatedMinutes: null,
-  sections: conCambios(PLANTILLA_ENTRENAMIENTO_V2.sections, {
-    trn_embarazo: [sinPedirNiExigir(campoDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_embarazo'))],
-    trn_salud_supervision: [{ ...campoDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_salud_supervision'), helpText: 'Por ejemplo, por un embarazo o un parto reciente.' }],
-    // La tabla va primero y el número después: se cuentan los días marcados antes de decir cuántos se pueden reservar.
-    trn_dias_por_semana: [
-      tabla({ codigo: 'trn_dias_y_horario', etiqueta: '¿Qué días y en qué momento podés?', cat: HABITOS, requerida: true,
-        ayuda: 'Una opción por día. Si un día no podés, marcá «No puedo».',
-        paraQue: 'Ubicar cada sesión en un día y en un momento que te queden bien.' }, DIAS_DE_LA_SEMANA, MOMENTOS_PARA_ENTRENAR),
-      numero({ codigo: 'trn_dias_por_semana', etiqueta: '¿Cuántos días por semana podrías reservar de manera realista?', cat: HABITOS, requerida: true,
-        ayuda: 'Un número entero entre 1 y 7.',
-        paraQue: 'Armar un plan que entre en tu semana.' }, 'días por semana', { minimum: 1, maximum: 7, integer: true }, { fieldCode: 'trn_dias_y_horario', exceptColumns: ['no_puedo'] }),
-    ],
-    trn_dias_posibles: [],
-    trn_franja: [],
-    trn_otros_deportes: [
-      {
-        ...otrosDeportes,
-        itemFields: [
-          subTexto('cual', 'Cuál', true, 80, 'Fútbol, natación, baile…'),
-          subVarias('que_dias', 'Qué días', true, DIAS_DE_LA_SEMANA),
-          subOpcion('momento', 'En qué momento', true, MOMENTOS_PARA_ENTRENAR.filter((m) => m.code !== 'no_puedo')),
-          subNumero('minutos', 'Minutos por vez, más o menos', true, 'min', { minimum: 10, maximum: 300, integer: true }),
-          ...otrosDeportes.itemFields.filter((sub) => sub.code === 'exigencia'),
+  sections: conParteAntesDe(
+    seccionCambiada(
+      conCambios(PLANTILLA_ENTRENAMIENTO_V2.sections, {
+        trn_embarazo: [sinPedirNiExigir(campoDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_embarazo'))],
+        trn_salud_supervision: [{ ...campoDe(PLANTILLA_ENTRENAMIENTO_V2, 'trn_salud_supervision'), helpText: 'Por ejemplo, por un embarazo o un parto reciente.' }],
+        // La tabla va primero y el número después: se cuentan los días marcados antes de decir cuántos se pueden reservar.
+        trn_dias_por_semana: [
+          tabla({ codigo: 'trn_dias_y_horario', etiqueta: '¿Qué días y en qué momento podés?', cat: HABITOS, requerida: true,
+            ayuda: 'Una opción por día. Si un día no podés, marcá «No puedo».',
+            paraQue: 'Ubicar cada sesión en un día y en un momento que te queden bien.' }, DIAS_DE_LA_SEMANA, MOMENTOS_PARA_ENTRENAR),
+          numero({ codigo: 'trn_dias_por_semana', etiqueta: '¿Cuántos días por semana podrías reservar de manera realista?', cat: HABITOS, requerida: true,
+            ayuda: 'Un número entero entre 1 y 7.',
+            paraQue: 'Armar un plan que entre en tu semana.' }, 'días por semana', { minimum: 1, maximum: 7, integer: true }, { fieldCode: 'trn_dias_y_horario', exceptColumns: ['no_puedo'] }),
         ],
-      },
-    ],
-  }),
+        trn_dias_posibles: [],
+        trn_franja: [],
+        // DL-165 D-9: a la parte común.
+        trn_otro_deporte: [],
+        trn_otros_deportes: [],
+        nivel_de_actividad: [],
+        horas_de_sueno: [],
+        trn_estres: [],
+      }),
+      'descanso',
+      { sectionCode: 'preferencias', title: 'Tus preferencias', intro: 'Para que el plan te guste.' },
+    ),
+    'tu_semana',
+    SECCION_DE_HABITOS,
+  ),
 };
 
 /** Todas las versiones de inicio, en el orden en que se siembran: las de DL-164 (formato 2) y las de DL-165 (formato 3). */

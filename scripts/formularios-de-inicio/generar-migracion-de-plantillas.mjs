@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DIST = join(RAIZ, 'packages', 'domain', 'dist');
-const { PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3, contenidoDePlantillaDeInicio } = require(join(DIST, 'plantillas-de-inicio.js'));
+const { PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3, SECCION_DE_HABITOS, contenidoDePlantillaDeInicio } = require(join(DIST, 'plantillas-de-inicio.js'));
 const { loQueUsaDelFormato3 } = require(join(DIST, 'formularios-v2.js'));
 
 /** UUID fijos: las pruebas y las otras capas los nombran, y cada migración tiene que dar lo mismo en cada ambiente. */
@@ -49,6 +49,15 @@ exigir(PLANTILLA_NUTRICION_INICIO.clave === 'FRM-NUTRICION-INICIO' && PLANTILLA_
 exigir(PLANTILLA_ENTRENAMIENTO_V2.clave === 'FRM-ENTRENAMIENTO' && PLANTILLA_ENTRENAMIENTO_V2.version === '2', 'la plantilla de Entrenamiento tiene que ser FRM-ENTRENAMIENTO v2');
 exigir(PLANTILLA_NUTRICION_INICIO_V2.clave === 'FRM-NUTRICION-INICIO' && PLANTILLA_NUTRICION_INICIO_V2.version === '2', 'la sucesora de Nutrición tiene que ser FRM-NUTRICION-INICIO v2');
 exigir(PLANTILLA_ENTRENAMIENTO_V3.clave === 'FRM-ENTRENAMIENTO' && PLANTILLA_ENTRENAMIENTO_V3.version === '3', 'la sucesora de Entrenamiento tiene que ser FRM-ENTRENAMIENTO v3');
+// DL-165 D-9 (FR-10): la parte «Tus hábitos» es la misma en las dos de formato 3, campo por campo, y no está en las de
+// formato 2. Responderla agrega una versión de los hábitos de la persona (API-FRI-04).
+for (const p of [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3]) {
+  const parte = p.sections.filter((s) => s.sectionCode === SECCION_DE_HABITOS.sectionCode);
+  exigir(parte.length === 1 && JSON.stringify(parte[0]) === JSON.stringify(SECCION_DE_HABITOS), `${p.clave} v${p.version}: la parte «Tus hábitos» tiene que ser SECCION_DE_HABITOS, una vez`);
+}
+for (const p of [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2]) {
+  exigir(!p.sections.some((s) => s.sectionCode === SECCION_DE_HABITOS.sectionCode), `${p.clave} v${p.version}: una versión de formato 2 no trae la parte «Tus hábitos»`);
+}
 for (const [p, formato] of [
   [PLANTILLA_NUTRICION_INICIO, 2],
   [PLANTILLA_ENTRENAMIENTO_V2, 2],
@@ -124,21 +133,25 @@ ${filaDeVersion({ id: IDS.versionDeEntrenamientoV2, plantillaId: IDS.plantillaDe
 /** El día en que Dirección ratificó la ronda 2. */
 const MOMENTO_DE_LA_RONDA_2 = '2026-11-05T00:00:00.000Z';
 const PROCEDENCIA_DE_LA_RONDA_2 = {
-  rotulo: 'Catálogo sintético de demostración: preguntas de producto, no un instrumento clínico ni una evaluación de aptitud (DL-165 FR-06; D-D, docs/paquetes/WP-07.md).',
+  rotulo: 'Catálogo sintético de demostración: preguntas de producto, no un instrumento clínico ni una evaluación de aptitud (DL-165 FR-06 y FR-10; D-D, docs/paquetes/WP-07.md).',
 };
 
 const nutricionV2 = PLANTILLA_NUTRICION_INICIO_V2;
 const entrenamientoV3 = PLANTILLA_ENTRENAMIENTO_V3;
-const sqlDeLaRonda2 = `-- WP-FORMULARIOS-RONDA-2 · FR-06 (DEUDA_LEGAJO DL-165, ratificada por Dirección el 2026-11-05): las versiones nuevas de las
--- dos plantillas de inicio, de formato 3, sucesoras de las de DL-164 (que quedan históricas: las Solicitudes ya creadas
--- siguen en su versión, REG-06-209).
--- - ${nutricionV2.clave} v${nutricionV2.version} «${nutricionV2.nombre}» (${nutricionV2.dominio}, ${cantidadDeCampos(nutricionV2)} campos): sucede a la v1 (predecesora_id =
---   ${IDS.versionDeNutricionInicio}). El embarazo no viene pedido (D-4) y los ejemplos de las comidas van como texto de
---   muestra del renglón (D-2); quedan las 20 obligatorias (D-7).
--- - ${entrenamientoV3.clave} v${entrenamientoV3.version} «${entrenamientoV3.nombre}» (${entrenamientoV3.dominio}, ${cantidadDeCampos(entrenamientoV3)} campos): sucede a la v2 (predecesora_id =
---   ${IDS.versionDeEntrenamientoV2}). El embarazo no viene pedido ni es obligatorio, y la pregunta de las indicaciones
---   médicas suma el ejemplo (D-4); los días y el momento en una tabla, con los días por semana sin pasar de los marcados
---   (D-5); cada otra actividad con sus días y su momento (D-6). Conserva los seis códigos de la v1 (DL-100).
+const sqlDeLaRonda2 = `-- WP-FORMULARIOS-RONDA-2 · FR-06 y FR-10 (DEUDA_LEGAJO DL-165, ratificada por Dirección el 2026-11-05): las versiones
+-- nuevas de las dos plantillas de inicio, de formato 3, sucesoras de las de DL-164 (que quedan históricas: las Solicitudes
+-- ya creadas siguen en su versión, REG-06-209). Las dos traen la parte común «Tus hábitos» (D-9, FR-10), igual en las dos:
+-- el sueño y los horarios, la actividad del día, el deporte en la semana y el estrés. Responderla o confirmarla agrega una
+-- versión de los hábitos de la persona (API-FRI-04; habitos_de_la_persona, migración 20261105130100).
+-- - ${nutricionV2.clave} v${nutricionV2.version} «${nutricionV2.nombre}» (${nutricionV2.dominio}, ${cantidadDeCampos(nutricionV2)} campos en ${nutricionV2.sections.length} partes): sucede a la v1 (predecesora_id =
+--   ${IDS.versionDeNutricionInicio}). Empieza con «Tus hábitos», donde la v1 abría con los horarios (D-15); el embarazo no
+--   viene pedido (D-4) y los ejemplos de las comidas van como texto de muestra del renglón (D-2); quedan las obligatorias de
+--   la v1 (D-7), y la parte común suma las suyas.
+-- - ${entrenamientoV3.clave} v${entrenamientoV3.version} «${entrenamientoV3.nombre}» (${entrenamientoV3.dominio}, ${cantidadDeCampos(entrenamientoV3)} campos en ${entrenamientoV3.sections.length} partes): sucede a la v2 (predecesora_id =
+--   ${IDS.versionDeEntrenamientoV2}). «Tus hábitos» va antes de «Tu semana para entrenar» (D-15), con la otra actividad y sus
+--   días y su momento (D-6); el embarazo no viene pedido ni es obligatorio, y la pregunta de las indicaciones médicas suma
+--   el ejemplo (D-4); los días y el momento en una tabla, con los días por semana sin pasar de los marcados (D-5). Conserva
+--   los seis códigos de la v1 (DL-100).
 -- D-10: una versión con "format": 3 solo se le entrega a un cliente que declara forms-format-3 (X-BE-Capabilities). Para la
 -- APK 0.20 y las anteriores no existe: FRI-02 no la lista y FRI-01 y FRI-03 a 08 responden 404, como FRM con las V2.
 -- Solo agrega filas (be_solo_agregar; sucesión del mismo objeto, 20260921220000). Sin minutos estimados (D-3).
