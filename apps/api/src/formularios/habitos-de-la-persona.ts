@@ -1,0 +1,317 @@
+/**
+ * DL-165 D-9 (WP-FORMULARIOS-RONDA-2, FR-10) · los hábitos de la persona y su autorización, en la base: lecturas, cerrojos
+ * y las dos escrituras que viven en transacciones ajenas (API-FRI-04 y el cierre de cuenta). Las reglas son del dominio
+ * (`habitos-de-la-persona.ts`); la base las vuelve a exigir (migración 20261105130100).
+ *
+ * **Cerrojos** (fuera del orden único de `prisma/concurrencia.ts`, y siempre al final de la transacción, después del A3 y del
+ * PDP, para no invertirlo con nadie):
+ * - los hábitos de una persona: exclusivo, para escribir una versión (FRI-04 y API-HBT-02). Ordena dos escrituras
+ *   simultáneas: la segunda lee la versión que dejó la primera y sigue desde ahí;
+ * - su autorización: exclusivo para escribir una versión (API-HBT-03 y 04, el cierre de cuenta) y **compartido para
+ *   leerla** desde API-HBT-05. Así un retiro espera a las lecturas que ya empezaron, y toda lectura que empieza después ve
+ *   el retiro: el corte es a futuro y en el momento (RNF-PRI-002).
+ */
+import {
+  CAMPOS_DE_HABITOS,
+  comoLosRecibe,
+  ETIQUETA_DE_ALCANCE,
+  habitosDespuesDeUnFormulario,
+  parteDeHabitos,
+  type Alcance,
+  type CompartirHabitos,
+  type ComponenteParaHabitos,
+  type OrigenDeHabitos,
+  type Procedencia,
+  type ProfesionalDeLaPersona,
+  type ProfesionalParaHabitos,
+  type RenglonDeLaAutorizacion,
+  type RespuestaDeCampoV2Entrada,
+  type SeccionDePlantillaV2,
+  type VersionDeHabitos,
+} from '@be/domain';
+import { Prisma } from '@prisma/client';
+import type { AutorizacionDeHabitos as FilaDeAutorizacion, HabitosDeLaPersona as FilaDeHabitos } from '@prisma/client';
+import { momentoDeLaBase } from '../prisma/concurrencia';
+import { nombreDeProfesional } from '../vinculo/lectura';
+import { registrarEventoDeFormulario } from './eventos';
+
+type Tx = Prisma.TransactionClient;
+
+const token = (n: number): string => `v${n}`;
+
+// ─── Cerrojos ───────────────────────────────────────────────────────────────────────────────────
+
+export async function tomarLosHabitos(tx: Tx, personaId: string): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`habitos-de-la-persona|${personaId}`}, 0))`;
+}
+
+export async function tomarLaAutorizacion(tx: Tx, personaId: string, modo: 'escribir' | 'leer'): Promise<void> {
+  const clave = `autorizacion-de-habitos|${personaId}`;
+  if (modo === 'escribir') await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${clave}, 0))`;
+  else await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${clave}, 0))`;
+}
+
+// ─── Los hábitos ────────────────────────────────────────────────────────────────────────────────
+
+/** Lo que guarda `contenido`: el formato V2 de una respuesta, cada valor SELF_REPORTED. */
+interface ContenidoDeHabitos {
+  format: 2;
+  answers: { fieldCode: string; answer: RespuestaDeCampoV2Entrada['answer']; provenance: 'SELF_REPORTED' }[];
+}
+
+export const contenidoDeHabitos = (respuestas: readonly RespuestaDeCampoV2Entrada[]): Prisma.InputJsonValue =>
+  ({ format: 2, answers: respuestas.map((r) => ({ fieldCode: r.fieldCode, answer: r.answer, provenance: 'SELF_REPORTED' })) }) as unknown as Prisma.InputJsonValue;
+
+/** Las respuestas de una versión, como entradas (sin la procedencia, que es siempre la misma). */
+export function respuestasDeHabitos(fila: Pick<FilaDeHabitos, 'contenido'>): RespuestaDeCampoV2Entrada[] {
+  const c = fila.contenido as unknown as ContenidoDeHabitos | null;
+  return (c?.answers ?? []).filter((a) => CAMPOS_DE_HABITOS.includes(a.fieldCode)).map((a) => ({ fieldCode: a.fieldCode, answer: a.answer }));
+}
+
+const ORIGEN_API: Readonly<Record<FilaDeHabitos['origen'], OrigenDeHabitos>> = { FORMULARIO: 'FORM', MIS_HABITOS: 'MY_HABITS' };
+
+export function versionDeHabitosApi(fila: FilaDeHabitos): VersionDeHabitos {
+  return {
+    habitsVersionId: fila.id,
+    version: token(fila.version),
+    answers: respuestasDeHabitos(fila).map((r) => ({ ...r, provenance: 'SELF_REPORTED' as const })),
+    origin: ORIGEN_API[fila.origen],
+    recordedAt: fila.momentoDeRegistro.toISOString(),
+  };
+}
+
+export const origenApi = (fila: Pick<FilaDeHabitos, 'origen'>): OrigenDeHabitos => ORIGEN_API[fila.origen];
+
+export function ultimaVersionDeHabitos(tx: Tx, personaId: string): Promise<FilaDeHabitos | null> {
+  return tx.habitosDeLaPersona.findFirst({ where: { asesoradoId: personaId }, orderBy: { version: 'desc' } });
+}
+
+/** Cuántas versiones devuelve «Mis hábitos», como mucho: la vigente y la historia más reciente. */
+export const VERSIONES_EN_MIS_HABITOS = 50;
+
+export function versionesDeHabitos(tx: Tx, personaId: string): Promise<FilaDeHabitos[]> {
+  return tx.habitosDeLaPersona.findMany({ where: { asesoradoId: personaId }, orderBy: { version: 'desc' }, take: VERSIONES_EN_MIS_HABITOS });
+}
+
+/** Una versión nueva, la que sigue a la vigente, con su hecho en la bitácora de los formularios. Con el cerrojo ya tomado. */
+export async function agregarVersionDeHabitos(
+  tx: Tx,
+  p: {
+    readonly personaId: string;
+    readonly respuestas: readonly RespuestaDeCampoV2Entrada[];
+    readonly origen: 'FORMULARIO' | 'MIS_HABITOS';
+    readonly respuestaDeFormularioId: string | null;
+    readonly anterior: Pick<FilaDeHabitos, 'version'> | null;
+    readonly procedencia: Procedencia;
+    readonly momento: Date;
+  },
+): Promise<FilaDeHabitos> {
+  const version = (p.anterior?.version ?? 0) + 1;
+  const fila = await tx.habitosDeLaPersona.create({
+    data: {
+      asesoradoId: p.personaId,
+      version,
+      contenido: contenidoDeHabitos(p.respuestas),
+      origen: p.origen,
+      respuestaDeFormularioId: p.respuestaDeFormularioId,
+      procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
+      momentoDeOcurrencia: p.momento,
+    },
+  });
+  await registrarEventoDeFormulario(tx, {
+    tipo: 'VersionDeHabitosRegistrada',
+    profesionalId: null,
+    asesoradoId: p.personaId,
+    recurso: { tipo: 'HabitosDeLaPersona', id: fila.id },
+    estadoPrevio: p.anterior ? token(p.anterior.version) : null,
+    estadoPosterior: token(version),
+    actorId: p.personaId,
+    procedencia: p.procedencia,
+    momento: p.momento,
+  });
+  return fila;
+}
+
+/**
+ * API-FRI-04 (§4.2; D-16): si la versión del formulario trae la parte «Tus hábitos», lo que la persona respondió ahí agrega
+ * una versión de sus hábitos, en la misma transacción que la Respuesta: lo que el formulario preguntó de la parte reemplaza
+ * lo vigente, lo que no preguntó queda como estaba. Sin la parte, o sin nada que agregar, no escribe nada. La Respuesta
+ * guarda sus respuestas como siempre: por eso, sin la autorización, cada profesional sigue viendo solo lo de su formulario.
+ * Va al final de FRI-04, con el cerrojo de los hábitos (después del PDP y de la Respuesta).
+ */
+export async function registrarHabitosDeUnFormulario(
+  tx: Tx,
+  p: {
+    readonly personaId: string;
+    readonly secciones: readonly SeccionDePlantillaV2[];
+    readonly pedidos: readonly string[];
+    readonly respuestas: readonly RespuestaDeCampoV2Entrada[];
+    readonly respuestaDeFormularioId: string;
+    readonly procedencia: Procedencia;
+    readonly momento: Date;
+  },
+): Promise<FilaDeHabitos | null> {
+  const parte = parteDeHabitos(p.secciones);
+  if (!parte) return null;
+  await tomarLosHabitos(tx, p.personaId);
+  const vigente = await ultimaVersionDeHabitos(tx, p.personaId);
+  const habitos = habitosDespuesDeUnFormulario({ parte, pedidos: p.pedidos, respondidas: p.respuestas, vigentes: vigente ? respuestasDeHabitos(vigente) : null });
+  if (habitos === null) return null;
+  return agregarVersionDeHabitos(tx, {
+    personaId: p.personaId,
+    respuestas: habitos,
+    origen: 'FORMULARIO',
+    respuestaDeFormularioId: p.respuestaDeFormularioId,
+    anterior: vigente,
+    procedencia: p.procedencia,
+    momento: p.momento,
+  });
+}
+
+// ─── La autorización ────────────────────────────────────────────────────────────────────────────
+
+export interface AutorizacionVigente {
+  readonly fila: FilaDeAutorizacion;
+  /** Los renglones, si está ACTIVA; `null` si está RETIRADA. */
+  readonly renglones: readonly RenglonDeLaAutorizacion[] | null;
+  /** Desde cuándo está activa sin un retiro en el medio; `null` si está RETIRADA. */
+  readonly activaDesde: Date | null;
+}
+
+/** La última versión de la autorización de la persona, con su lista si está ACTIVA. `null` si nunca la dio. */
+export async function autorizacionVigente(tx: Tx, personaId: string): Promise<AutorizacionVigente | null> {
+  const filas = await tx.autorizacionDeHabitos.findMany({ where: { asesoradoId: personaId }, orderBy: { version: 'desc' }, include: { destinatarios: true } });
+  const ultima = filas[0];
+  if (!ultima) return null;
+  if (ultima.estado !== 'ACTIVA') return { fila: ultima, renglones: null, activaDesde: null };
+  // La primera ACTIVA de la racha: hacia atrás, mientras siga ACTIVA.
+  let desde = ultima.momentoDeOcurrencia;
+  for (const f of filas) {
+    if (f.estado !== 'ACTIVA') break;
+    desde = f.momentoDeOcurrencia;
+  }
+  return {
+    fila: ultima,
+    renglones: ultima.destinatarios.map((d) => ({ profesionalId: d.profesionalId, alcanceDeVinculoId: d.alcanceDeVinculoId, incluido: d.incluido, incluidoDesde: d.incluidoDesde?.toISOString() ?? null })),
+    activaDesde: desde,
+  };
+}
+
+export function compartirApi(vigente: AutorizacionVigente | null): CompartirHabitos {
+  if (!vigente) return { status: 'NOT_GIVEN', version: null, activeSince: null, withdrawnAt: null, acceptedTextVersionId: null };
+  const activa = vigente.fila.estado === 'ACTIVA';
+  return {
+    status: activa ? 'ACTIVE' : 'WITHDRAWN',
+    version: token(vigente.fila.version),
+    activeSince: activa ? (vigente.activaDesde ?? vigente.fila.momentoDeOcurrencia).toISOString() : null,
+    withdrawnAt: activa ? null : vigente.fila.momentoDeOcurrencia.toISOString(),
+    acceptedTextVersionId: activa ? vigente.fila.versionDeTextoId : null,
+  };
+}
+
+/** Los profesionales de la persona con algún componente de vínculo sin terminar (aceptado o en pausa), con su nombre. */
+export async function profesionalesDeLaPersona(tx: Tx, personaId: string): Promise<(ProfesionalDeLaPersona & { readonly nombre: string })[]> {
+  const filas = await tx.$queryRaw<{ profesional_id: string; alcance_de_vinculo_id: string; alcance: Alcance; estado: 'ACEPTADO' | 'PAUSADO'; nombre: string | null }[]>`
+    SELECT vi."profesional_id"::text AS "profesional_id", av."id"::text AS "alcance_de_vinculo_id", av."alcance"::text AS "alcance",
+           av."estado"::text AS "estado", pp."nombre_visible" AS "nombre"
+      FROM "alcance_de_vinculo" av
+      JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
+      LEFT JOIN "perfil_profesional" pp ON pp."identidad_id" = vi."profesional_id"
+     WHERE vi."asesorado_id" = ${personaId}::uuid AND av."estado" <> 'FINALIZADO'
+     ORDER BY vi."profesional_id", av."alcance"`;
+  const porProfesional = new Map<string, { nombre: string; componentes: ComponenteParaHabitos[] }>();
+  for (const f of filas) {
+    const p = porProfesional.get(f.profesional_id) ?? { nombre: nombreDeProfesional(f.nombre === null ? null : { nombreVisible: f.nombre }), componentes: [] };
+    p.componentes.push({ alcanceDeVinculoId: f.alcance_de_vinculo_id, alcance: f.alcance, estado: f.estado });
+    porProfesional.set(f.profesional_id, p);
+  }
+  return [...porProfesional.entries()].map(([profesionalId, p]) => ({ profesionalId, nombre: p.nombre, componentes: p.componentes }));
+}
+
+/** Lo que la autorización dice de cada profesional, en el orden de sus nombres. */
+export function profesionalesApi(profesionales: readonly (ProfesionalDeLaPersona & { readonly nombre: string })[], vigente: AutorizacionVigente | null): ProfesionalParaHabitos[] {
+  const renglones = vigente?.renglones ?? null;
+  return profesionales
+    .map((p) => {
+      const como = comoLosRecibe(p.componentes, p.profesionalId, renglones);
+      return {
+        professional: { identityId: p.profesionalId, displayName: p.nombre },
+        scopes: [...new Set(p.componentes.map((c) => c.alcance))].map((code) => ({ code, label: ETIQUETA_DE_ALCANCE[code] })),
+        link: p.componentes.some((c) => c.estado === 'ACEPTADO') ? ('ACTIVE' as const) : ('PAUSED' as const),
+        sharing: como.sharing,
+        sharedSince: como.sharedSince,
+      };
+    })
+    .sort((a, b) => a.professional.displayName.localeCompare(b.professional.displayName, 'es') || a.professional.identityId.localeCompare(b.professional.identityId));
+}
+
+/**
+ * Una versión nueva de la autorización, la que sigue a la última, con su hecho. Con el cerrojo de escribir ya tomado. Si
+ * queda ACTIVA, guarda el texto aceptado (con su hash) y sus renglones.
+ */
+export async function agregarVersionDeAutorizacion(
+  tx: Tx,
+  p: {
+    readonly personaId: string;
+    readonly anterior: FilaDeAutorizacion | null;
+    readonly estado: 'ACTIVA' | 'RETIRADA';
+    readonly texto: { readonly id: string; readonly hash: string } | null;
+    readonly renglones: readonly RenglonDeLaAutorizacion[];
+    readonly procedencia: Procedencia;
+    readonly momento: Date;
+  },
+): Promise<FilaDeAutorizacion> {
+  const version = (p.anterior?.version ?? 0) + 1;
+  const fila = await tx.autorizacionDeHabitos.create({
+    data: {
+      asesoradoId: p.personaId,
+      version,
+      predecesoraId: p.anterior?.id ?? null,
+      estado: p.estado,
+      versionDeTextoId: p.texto?.id ?? null,
+      hashDelTexto: p.texto?.hash ?? null,
+      actorId: p.personaId,
+      procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
+      momentoDeOcurrencia: p.momento,
+    },
+  });
+  if (p.estado === 'ACTIVA' && p.renglones.length > 0) {
+    await tx.destinatarioDeHabitos.createMany({
+      data: p.renglones.map((r) => ({
+        autorizacionId: fila.id,
+        alcanceDeVinculoId: r.alcanceDeVinculoId,
+        profesionalId: r.profesionalId,
+        incluido: r.incluido,
+        incluidoDesde: r.incluidoDesde ? new Date(r.incluidoDesde) : null,
+      })),
+    });
+  }
+  const tipo = p.estado === 'RETIRADA' ? 'AutorizacionDeHabitosRetirada' : p.anterior?.estado === 'ACTIVA' ? 'AutorizacionDeHabitosModificada' : 'AutorizacionDeHabitosActivada';
+  await registrarEventoDeFormulario(tx, {
+    tipo,
+    profesionalId: null,
+    asesoradoId: p.personaId,
+    recurso: { tipo: 'AutorizacionDeHabitos', id: fila.id },
+    estadoPrevio: p.anterior ? `${p.anterior.estado} ${token(p.anterior.version)}` : null,
+    estadoPosterior: `${p.estado} ${token(version)}`,
+    actorId: p.personaId,
+    procedencia: p.procedencia,
+    momento: p.momento,
+  });
+  return fila;
+}
+
+/**
+ * Cerrar la cuenta retira la autorización (§4.5): en la transacción del cierre, después de los vínculos y de las
+ * propuestas, una versión RETIRADA si la última está ACTIVA. El actor es la persona, que cerró su cuenta.
+ */
+export async function retirarAutorizacionDeHabitosPorCierre(tx: Tx, p: { readonly personaId: string; readonly procedencia: Procedencia; readonly momento: Date }): Promise<boolean> {
+  await tomarLaAutorizacion(tx, p.personaId, 'escribir');
+  const vigente = await autorizacionVigente(tx, p.personaId);
+  if (!vigente || vigente.fila.estado !== 'ACTIVA') return false;
+  await agregarVersionDeAutorizacion(tx, { personaId: p.personaId, anterior: vigente.fila, estado: 'RETIRADA', texto: null, renglones: [], procedencia: p.procedencia, momento: p.momento });
+  return true;
+}
+
+/** La hora de la base para una escritura de hábitos, tomada después de los cerrojos. */
+export const momentoDeLosHabitos = momentoDeLaBase;

@@ -92,6 +92,8 @@ enum TipoDeTexto {
   EVIDENCIA_VISUAL
   /// La declaración de mayoría de edad del alta (08 §24.7 a; gate §42, ítem 22; DL-138).
   MAYORIA_DE_EDAD
+  /// DL-165 D-9 (FR-10): «Compartir mis hábitos con mis profesionales». Una propuesta, pendiente de validación jurídica.
+  HABITOS_COMPARTIDOS
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -257,6 +259,11 @@ model Identidad {
   // WP-CATALOGO-VISUAL (DL-081)
   asignacionesDeZonas AsignacionDeZonasDeEjercicio[] @relation("AsignacionDeZonasDelAutor")
 
+  // WP-FORMULARIOS-RONDA-2 (DL-165 D-9, FR-10)
+  habitosDeLaPersona       HabitosDeLaPersona[]    @relation("HabitosDeLaPersona")
+  autorizacionesDeHabitos  AutorizacionDeHabitos[] @relation("AutorizacionDeHabitosDeLaPersona")
+  destinatarioDeHabitos    DestinatarioDeHabitos[] @relation("DestinatarioDeHabitosDelProfesional")
+
   @@map("identidad")
 }
 
@@ -417,6 +424,8 @@ model VersionDeTexto {
   actos                     ActoRegistrable[]
   solicitudes               SolicitudDeCierreDeCuenta[]
   versionesDeConsentimiento VersionDeConsentimiento[]
+  /// DL-165 D-9: las versiones de la autorización de hábitos que aceptaron este texto.
+  autorizacionesDeHabitos   AutorizacionDeHabitos[]
 
   @@map("version_de_texto")
 }
@@ -766,6 +775,8 @@ model AlcanceDeVinculo {
   decisiones             DecisionDeAcceso[]
   /// DL-125: los actos `EVIDENCIA_VISUAL` de este alcance.
   actosDeEvidenciaVisual ActoRegistrable[]
+  /// DL-165 D-9: los renglones de la autorización de hábitos que nombran este componente.
+  destinatariosDeHabitos DestinatarioDeHabitos[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -1866,6 +1877,12 @@ enum TipoDeEventoDeFormulario {
   PropuestaDeRespuestaRetirada
   PropuestaDeRespuestaRechazada
   PropuestaDeRespuestaConfirmada
+  /// DL-165 D-9 (FR-10): una versión nueva de los hábitos de la persona (desde un formulario o desde «Mis hábitos»).
+  VersionDeHabitosRegistrada
+  /// DL-165 D-9 (FR-10): la autorización para compartirlos, al darla, al cambiar con quiénes y al retirarla.
+  AutorizacionDeHabitosActivada
+  AutorizacionDeHabitosModificada
+  AutorizacionDeHabitosRetirada
 }
 
 /// DL-164 D-3: PENDIENTE mientras espera que la persona la confirme; después, cómo terminó. Sin retorno.
@@ -2345,6 +2362,8 @@ model RespuestaDeFormulario {
   templateVersion VersionDePlantillaDeFormulario               @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   rectificaciones RectificacionDeRespuestaDeFormulario[]
   citas           CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
+  /// DL-165 D-9: la versión de los hábitos que agregó esta Respuesta, si su versión traía la parte «Tus hábitos».
+  habitos         HabitosDeLaPersona[]
 
   @@map("respuesta_de_formulario")
 }
@@ -2389,6 +2408,97 @@ model EventoDeFormulario {
   @@index([asesoradoId, momentoDeRegistro])
   @@index([recursoId])
   @@map("evento_de_formulario")
+}
+
+// ─── WP-FORMULARIOS-RONDA-2 · FR-10: los hábitos de la persona (DL-165 D-9) ─────────────────────────
+
+/// DL-165 D-9: de dónde salió una versión de los hábitos.
+enum OrigenDeHabitos {
+  /// Un formulario con la parte «Tus hábitos», al responderlo o confirmarlo (API-FRI-04).
+  FORMULARIO
+  /// «Mis hábitos», en la app de la persona (API-HBT-02).
+  MIS_HABITOS
+}
+
+/// DL-165 D-9: la autorización «Compartir mis hábitos con mis profesionales», activa o retirada. Retirarla es una versión
+/// nueva, nunca un cambio de la anterior.
+enum EstadoDeAutorizacionDeHabitos {
+  ACTIVA
+  RETIRADA
+}
+
+/// DL-165 D-9 (FR-10): los hábitos de la persona, que son de ella y no de un área. Solo se agregan: cada versión guarda las
+/// respuestas de la parte «Tus hábitos» en el formato V2 (`{ format: 2, answers: [{ fieldCode, answer, provenance }] }`,
+/// siempre SELF_REPORTED), y la vigente es la de `version` más alta. Una versión que viene de un formulario nombra la
+/// Respuesta que la agregó (CHECK en la migración 20261105130100).
+model HabitosDeLaPersona {
+  id                      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId             String          @map("asesorado_id") @db.Uuid
+  /// 1, 2, 3… por persona, sin huecos (el disparador de la migración lo exige).
+  version                 Int
+  contenido               Json
+  origen                  OrigenDeHabitos
+  respuestaDeFormularioId String?         @map("respuesta_de_formulario_id") @db.Uuid
+  procedencia             Json
+  momentoDeOcurrencia     DateTime        @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro       DateTime        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado             Identidad              @relation("HabitosDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  respuestaDeFormulario RespuestaDeFormulario? @relation(fields: [respuestaDeFormularioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([asesoradoId, version])
+  @@index([respuestaDeFormularioId])
+  @@map("habitos_de_la_persona")
+}
+
+/// DL-165 D-9 (FR-10): la autorización de la persona para que los profesionales que ella elige vean sus hábitos. Un acto
+/// distinto de A3 y de B2: no autoriza un Alcance, sino una categoría hacia una lista explícita (08 C-12). Versionada: cada
+/// cambio (darla, cambiar con quiénes, retirarla) es una fila nueva que sucede a la anterior. La ACTIVA guarda el texto que
+/// la persona aceptó, con su hash (08 §12.2). La da y la retira siempre la persona (`actor_id` = `asesorado_id`).
+model AutorizacionDeHabitos {
+  id                  String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String                        @map("asesorado_id") @db.Uuid
+  version             Int
+  predecesoraId       String?                       @unique @map("predecesora_id") @db.Uuid
+  estado              EstadoDeAutorizacionDeHabitos
+  versionDeTextoId    String?                       @map("version_de_texto_id")
+  hashDelTexto        String?                       @map("hash_del_texto")
+  actorId             String                        @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                      @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado      Identidad               @relation("AutorizacionDeHabitosDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora    AutorizacionDeHabitos?  @relation("SucesionDeAutorizacionDeHabitos", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora       AutorizacionDeHabitos?  @relation("SucesionDeAutorizacionDeHabitos")
+  versionDeTexto VersionDeTexto?         @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  destinatarios  DestinatarioDeHabitos[]
+
+  @@unique([asesoradoId, version])
+  @@index([versionDeTextoId])
+  @@map("autorizacion_de_habitos")
+}
+
+/// DL-165 D-9: un renglón de una versión ACTIVA de la autorización: un profesional, por cada componente de vínculo sin
+/// terminar que tenía con la persona, si recibe sus hábitos (y desde cuándo) o si ella dijo que no. Un componente que no está
+/// acá (un profesional que la acompaña después, o que vuelve con otro vínculo) no los recibe: la app le pregunta. Solo se
+/// agregan.
+model DestinatarioDeHabitos {
+  autorizacionId     String    @map("autorizacion_id") @db.Uuid
+  alcanceDeVinculoId String    @map("alcance_de_vinculo_id") @db.Uuid
+  profesionalId      String    @map("profesional_id") @db.Uuid
+  incluido           Boolean
+  incluidoDesde      DateTime? @map("incluido_desde") @db.Timestamptz(3)
+  momentoDeRegistro  DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  autorizacion     AutorizacionDeHabitos @relation(fields: [autorizacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo      @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional      Identidad             @relation("DestinatarioDeHabitosDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([autorizacionId, alcanceDeVinculoId])
+  @@index([profesionalId])
+  @@index([alcanceDeVinculoId])
+  @@map("destinatario_de_habitos")
 }
 
 // ─── WP-08 · Importación controlada (RF-028, RF-038; UC-I07; 09 v0.12 §3-§7) ─────────────────────

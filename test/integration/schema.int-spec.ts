@@ -290,6 +290,10 @@ describe('08 §29 — historia por adición', () => {
     'zona_de_ejercicio',
     // DL-164 (2026-11-04): la propuesta del profesional (se resuelve con UPDATE; no se borra ni se trunca)
     'propuesta_de_respuesta_de_formulario',
+    // DL-165 D-9 (2026-11-05, FR-10): los hábitos de la persona, la autorización para compartirlos y su lista
+    'habitos_de_la_persona',
+    'autorizacion_de_habitos',
+    'destinatario_de_habitos',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

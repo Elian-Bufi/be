@@ -17,6 +17,10 @@ import { errores } from '../http/errores';
  * Y con `FOR NO KEY UPDATE`, no `FOR UPDATE`: ninguna transacción cambia claves, y así no choca con el `FOR KEY SHARE`
  * que toman las claves foráneas al insertar hechos y decisiones. El PDP toma `FOR SHARE` en el mismo orden
  * (pdp.service.ts), lo que da un orden total entre cada decisión y cada corte (revocar, pausar, finalizar, cerrar).
+ * Los hábitos de la persona y su autorización (DL-165 D-9, `formularios/habitos-de-la-persona.ts`) se ordenan con dos
+ * cerrojos de transacción por persona, que se toman **al final**, después del A3 y del PDP: así no invierten el orden con
+ * nadie. El de la autorización es compartido para leerla (API-HBT-05) y exclusivo para escribirla (darla, cambiarla,
+ * retirarla, cerrar la cuenta): un retiro queda antes o después de cada lectura, nunca en el medio.
  */
 
 /**
