@@ -166,6 +166,7 @@
 | DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` (PR en borrador), sin integrar: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, en su rama; queda documentado el caso de una ejecución nueva leída por una APK anterior; el mismo día Dirección decidió cómo se lee en el escritorio (lo tildado sin escribir no se compara y va hueco en los gráficos; la carga completa se destaca), hecho en la rama `wp-escritorio-niveles`; decisiones I-1 a I-10 a ratificar |
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar · D-1 a D-5 a ratificar: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · en implementación en la rama `wp-formularios-de-inicio` |
+| DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · en implementación en la rama `wp-formularios-ronda-2`; FR-10 (la sección de hábitos), solo diseñado |
 
 ---
 
@@ -6129,3 +6130,103 @@ salud y las incumbencias) antes de usar los formularios con personas reales.
 
 **Condición de cierre:** la CI pasa en main, la candidata de la APK está publicada en test y el recorrido completo (cargar,
 corregir, confirmar y ver la procedencia) queda en `EVIDENCIA/FORMULARIOS-DE-INICIO/`.
+
+## DL-165 — Formularios de inicio, ronda 2: una pantalla por parte, las ayudas plegadas, los días en una tabla y una sección común de hábitos
+
+**Prioridad:** alta (la experiencia de la persona con el formulario que arranca su plan) · **Documento:** RF-071 y
+RNF-SEC-006 (04) · UC-P32 y UC-P33 (05) · REG-06-209 (06) · 08 §11, §11-bis, C-11 y C-12 · DL-164 · DL-152 · DL-122 ·
+**Estado:** RATIFICADA 2026-11-05, en implementación en la rama `wp-formularios-ronda-2`
+(`docs/paquetes/WP-FORMULARIOS-RONDA-2.md`); FR-10 queda diseñado y sin programar
+
+**Qué dice el legajo.**
+- Una versión de plantilla no se cambia (REG-06-209): lo que cambia una pregunta es una versión nueva.
+- La APK instalada lee con esquemas estrictos, y lo que ya lee no cambia de forma (DL-152; DL-164 D-5).
+- Cada profesional ve la porción de sus Alcances: «el profesional la obtiene únicamente si la unión de sus Alcances
+  autorizados la habilita» (08 §11, principio rector y nota 2); Nutrición no obtiene lo de Entrenamiento «salvo
+  autorización explícita» (04 RNF-SEC-006).
+- El 08 dejó «cualquier compartición excepcional […] como capacidad futura que requeriría diseño propio» (C-11), y una
+  ampliación de categoría exige una aceptación nueva del titular (C-12).
+
+**Qué pidió Dirección** (la prueba del 2026-11-05 en la APK 0.20.0-candidata.1 y en el escritorio,
+`EVIDENCIA/FORMULARIOS-DE-INICIO/LEEME.md`, «Resultados»): «es lo mismo pero cambia la experiencia de la persona». Un solo
+desplazamiento agobia; las ayudas ensucian la pantalla; los ejemplos sí, sobre todo en las respuestas de texto; no avisar
+cuánto demora; hay días de mañana y días de tarde, y los días por semana pueden no coincidir con los elegidos; otra
+actividad con su día y su horario; el embarazo, sin elegir; una sección de hábitos para todos los que ven el historial; y
+las respuestas a mano en el escritorio y en la Línea de tiempo.
+
+**Por qué no entra tal cual.**
+- Las preguntas nuevas (el renglón con varias opciones, el tope desde una tabla) y «pedida por defecto» cambian la forma
+  de la definición: una APK 0.20 que las leyera no abriría el formulario.
+- La regla «no más días que los marcados» relaciona dos preguntas: el contrato V2 validaba cada una por separado.
+- La sección común de hábitos haría que un profesional vea algo que la persona respondió para otra área: es lo que el 08
+  no deja sin una autorización explícita.
+
+**Lo decidido** (ratificado por Dirección el 2026-11-05, pregunta por pregunta, sobre la propuesta del paquete):
+- **D-1 · Una pantalla por parte**, en la app y en «Cargar con la persona»: «Parte N de 6», «Anterior», «Siguiente» y un
+  repaso antes de enviar. Si falta una obligatoria, se avisa al pasar de parte y se deja seguir y volver.
+  - *Fundamento:* las mismas preguntas en tandas cortas agobian menos, y la persona sabe cuánto le falta.
+  - *Descartado:* un solo desplazamiento con un índice de partes arriba.
+- **D-2 · Las ayudas, plegadas:** el «para qué» detrás de «¿Para qué?»; «declarado por vos», una vez al empezar; «Quitar
+  respuesta» en vez de «tocá de nuevo», solo con algo elegido en una pregunta opcional; los ejemplos como texto de muestra
+  en las respuestas de texto; TalkBack sigue leyéndolo todo.
+  - *Fundamento:* el texto está, pero no tapa las preguntas; cada pregunta sigue diciendo para qué se pide el dato
+    (minimización).
+- **D-3 · Sin los minutos.** «Parte 1 de 6» dice cuánto falta.
+  - *Fundamento:* un tiempo estimado se lee como una promesa, y cada persona tarda distinto.
+- **D-4 · El embarazo, sin elegir al pedir y no obligatorio**, en los dos formularios; cada pregunta dice si viene pedida
+  por defecto. En Entrenamiento, la pregunta de las indicaciones médicas suma «un embarazo o un parto reciente» como
+  ejemplo.
+  - *Fundamento:* se le pedía a todas las personas, y su importancia es muy particular. La minimización es del
+    profesional (09:1528): la plantilla le sugiere no pedirla, y él la suma cuando corresponde.
+  - *Descartado:* sacarla de los dos formularios.
+- **D-5 · Los días y el horario, en una tabla:** una fila por día y una opción por fila (Temprano, Mañana, Mediodía,
+  Tarde, Noche, Varía o No puedo); reemplaza a `trn_dias_posibles` y `trn_franja`. `trn_dias_por_semana` no puede pasar
+  de los días marcados: es una regla del dominio y de la API, y la app la avisa antes de enviar.
+  - *Fundamento:* hay días de mañana y días de tarde; con la tabla, el entrenador ubica cada sesión sin traducir un texto.
+  - *Descartado:* la opción «Mixto», con un texto que la persona completa.
+- **D-6 · Otra actividad, con sus días:** cada renglón de «Contame cuáles» suma «Qué días» (varios) y «En qué momento»,
+  con un subtipo nuevo de varias opciones dentro del renglón. La APK que no lo conoce no lo ve.
+  - *Fundamento:* el plan pone las sesiones lejos de los días más exigentes.
+  - *Descartado:* «Días por semana», sin decir cuáles.
+- **D-7 · Quedan las 20 obligatorias de «Cómo comés hoy»** (Dirección eligió distinto de la propuesta, que bajaba a 8).
+  Al pedir, la web las muestra más claras; en «Cargar con la persona», más visibles.
+  - *Fundamento:* en la prueba, el problema fue que no se notaban, no que fueran muchas.
+- **D-8 · Las solicitudes, a la vista:** «Cargar con la persona» arriba, junto al estado; «Pedir información» en el
+  Resumen de cada área con formulario; la Línea de tiempo suma los formularios (pedido, respondido, cargado, confirmado o
+  rechazado).
+  - *Fundamento:* las respuestas solo se veían entrando por «Más» → «Pedir información» → «Solicitudes».
+  - La Línea de tiempo le muestra a cada profesional solo las solicitudes que pidió él, en sus Alcances permitidos: la
+    regla de FRI-03 (solo los dos actores de la Solicitud) y de la matriz del 08 §11.
+- **D-9 · Una sección común de hábitos, ya** (Dirección eligió distinto de la propuesta, que la dejaba para el legajo
+  legal y el tablero). Entran solo hábitos: el sueño y los horarios, la actividad del día, el deporte en la semana y el
+  estrés. La salud (medicación, condiciones, embarazo) queda en cada área. La ven los profesionales de la persona solo si
+  ella activa en su app «Compartir mis hábitos con mis profesionales», con la lista de quiénes los ven, y la puede
+  retirar. Sin activarla, cada profesional ve solo lo de su formulario.
+  - **Se aparta del legajo:** el 08 §11 hace que cada área vea solo lo suyo. Con la autorización, un profesional ve
+    hábitos que la persona contó para otra área.
+  - *Fundamento:*
+    - el 04 lo prevé: RNF-SEC-006 separa los dominios «salvo autorización explícita», y esta lo es: del titular y aparte
+      de B2;
+    - el dato es de la persona (08 §7, principio 1) y lo decide ella, con la lista de quiénes lo ven y la revocación a
+      futuro (RNF-PRI-002);
+    - la pertinencia se respeta por categoría (08 §11-bis): el sueño, los horarios, la actividad, el deporte y el estrés
+      cambian el plan de las dos áreas, y lo que no es pertinente para las dos (la salud) queda afuera;
+    - es la «compartición excepcional» que el 08 dejó para un «diseño propio» (C-11), y la autorización es la aceptación
+      nueva que pide una ampliación (C-12), con la lista explícita de profesionales;
+    - sin la autorización no cambia nada: es el default seguro del 08 §11-bis.4.
+  - *Lo legal:* cambia quién ve qué. Las preguntas para el abogado van al legajo legal, fuera del repo público. Con
+    personas reales, solo después de esa revisión (VJR-1, VJR-4 y VJR-5 del 08: el perfil no sanitario, el
+    consentimiento por categoría y el paso de información entre los profesionales de una persona) y del gate del 08 §42.
+    En `test`, con datos sintéticos.
+  - *Diseño:* FR-10, en el paquete (§4): qué preguntas, dónde vive el dato, la autorización y sus operaciones (familia
+    API-HAB), qué ve cada profesional y qué pasa al retirarla. Se programa después de que Dirección lo revise.
+
+**Pruebas** (las suma cada parte): la lógica de las partes y las reglas nuevas en el dominio; la APK y la web en sus
+pruebas de lógica pura; la API en `formularios-de-inicio.int-spec.ts` y `plantillas-de-inicio.int-spec.ts`; lo que lee
+la 0.20 en `lecturas-de-las-apk.int-spec.ts`.
+
+**Lo que queda abierto:** programar FR-10 después de revisar su diseño; la candidata 0.21.0-candidata.1 con TalkBack
+(FR-11); la revisión legal de D-9 antes de personas reales.
+
+**Condición de cierre:** la CI pasa en main, la candidata está publicada en `test` y el recorrido (las partes, el repaso,
+la tabla de días, otra actividad y la Línea de tiempo) queda en la evidencia.
