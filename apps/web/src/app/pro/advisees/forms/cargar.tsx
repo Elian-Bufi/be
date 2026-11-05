@@ -41,6 +41,7 @@ import {
   preguntasQueSeVen,
   primeraParteCon,
   sinRespuestasOcultas,
+  topeDesdeLaTabla,
   type DetalleDeSolicitudV2,
   type ParteDelFormulario,
   type ProblemaDeRespuestaV2,
@@ -413,7 +414,10 @@ export function CargaConLaPersona() {
                       // DL-165 D-2: la ayuda a la vista es corta; en un texto, es su texto de muestra (y la lee el lector).
                       const ayuda = ayudaDeLaPregunta(c);
                       const conAyuda = ayuda.aLaVista !== null || ayuda.deMuestra !== null;
-                      const descripcion = [conAyuda ? `${id}-ayuda` : null, c.purpose ? `${id}-para-que` : null, ...deEsta.map((_, i) => `${id}-problema-${i}`), falta ? `${id}-falta` : null].filter(Boolean).join(' ') || undefined;
+                      // DL-165 D-5: un número con su tope en una tabla dice cuánto admite con lo marcado.
+                      const tope = topeDesdeLaTabla(c, secciones, respuestas);
+                      const descripcion =
+                        [conAyuda ? `${id}-ayuda` : null, tope ? `${id}-tope` : null, c.purpose ? `${id}-para-que` : null, ...deEsta.map((_, i) => `${id}-problema-${i}`), falta ? `${id}-falta` : null].filter(Boolean).join(' ') || undefined;
                       return (
                         <fieldset key={c.fieldCode} id={id} className="pregunta-de-inicio" data-pregunta={c.fieldCode} data-con-problema={deEsta.length > 0 ? 'si' : undefined} tabIndex={-1}>
                           <legend className="pregunta-de-inicio__pregunta">
@@ -431,6 +435,11 @@ export function CargaConLaPersona() {
                             <span id={`${id}-ayuda`} className="visualmente-oculto">
                               {ayuda.deMuestra}
                             </span>
+                          ) : null}
+                          {tope ? (
+                            <p id={`${id}-tope`} className="campo__ayuda">
+                              {V.hastaLoMarcado(tope.tope, tope.tabla)}
+                            </p>
                           ) : null}
                           <CampoV2 id={`${id}-control`} campo={c} valor={respuestaDe(respuestas, c.fieldCode)} onCambiar={(v) => cambiar(c.fieldCode, v)} deshabilitado={enviando} labelledBy={`${id}-texto`} describedBy={descripcion} />
                           {c.purpose ? <ParaQueDeLaPregunta idDelTexto={`${id}-para-que`} pregunta={c.label} texto={c.purpose} /> : null}

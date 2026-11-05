@@ -273,3 +273,22 @@ test('DL-165 D-6 · un renglón con solo sus días elegidos (formato 3) está re
   const secciones = [{ sectionCode: 'semana', title: 'Tu semana', intro: null, fields: [otraActividad] }];
   assert.deepEqual(m.respuestasParaEnviar(secciones, [r('trn_otros_deportes', { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['jue', 'lun', 'jue'] }] })]), [r('trn_otros_deportes', { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] })]);
 });
+
+test('DL-165 D-5 · al cargar con la persona, pasar de los días marcados frena el envío en ese número', () => {
+  const secciones = [
+    {
+      sectionCode: 'semana',
+      title: 'Tu semana',
+      intro: null,
+      fields: [
+        { ...base, fieldCode: 'dias', label: '¿Qué días podés?', dataType: 'MATRIX', rows: [op('lun', 'Lunes'), op('mar', 'Martes')], columns: [op('manana', 'Mañana'), op('no_puedo', 'No puedo')] },
+        { ...base, fieldCode: 'por_semana', label: '¿Cuántos días?', dataType: 'NUMBER', unit: 'días', limits: { minimum: 1, maximum: 7, integer: true }, maxFromMatrix: { fieldCode: 'dias', exceptColumns: ['no_puedo'] } },
+      ],
+    },
+  ];
+  const solicitud = { requestedFieldCodes: ['dias', 'por_semana'], requiredFieldCodes: ['dias', 'por_semana'] };
+  const respuestas = [r('dias', { type: 'MATRIX', cells: [{ row: 'lun', column: 'manana' }, { row: 'mar', column: 'no_puedo' }] }), r('por_semana', { type: 'NUMBER', number: 2, unit: 'días' })];
+  const revision = m.revisarAntesDeEnviar(secciones, solicitud, respuestas);
+  assert.deepEqual(revision.bloqueantes.map((p) => [p.code, p.fieldCode]), [[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED, 'por_semana']]);
+  assert.deepEqual([...m.mensajesPorCampo(revision.bloqueantes).get('por_semana')], [MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]]);
+});

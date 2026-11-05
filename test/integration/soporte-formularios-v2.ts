@@ -124,7 +124,10 @@ export const CON_FORMATO_3: string = CAPACIDAD_FORMULARIOS_FORMATO_3;
 
 const DIAS = [op('lun', 'Lunes'), op('mar', 'Martes'), op('mie', 'Miércoles'), op('jue', 'Jueves'), op('vie', 'Viernes'), op('sab', 'Sábado'), op('dom', 'Domingo')];
 
-/** La plantilla V2 más una parte con otra actividad: su nombre (con su ejemplo) y qué días, varios, en el renglón. */
+/**
+ * La plantilla V2 más una parte con la semana: los días y el momento en una tabla, cuántos días se pueden reservar (con su
+ * tope en los días marcados, FR-07) y otra actividad, con su nombre (y su ejemplo) y qué días, varios, en el renglón (FR-08).
+ */
 export const SECCIONES_V3: SeccionDePlantillaV2[] = [
   ...SECCIONES_V2,
   {
@@ -132,6 +135,17 @@ export const SECCIONES_V3: SeccionDePlantillaV2[] = [
     title: 'Tu semana',
     intro: null,
     fields: [
+      { ...base, fieldCode: 'ini_dias', label: '¿Qué días y en qué momento podés?', category: 'HABITOS_Y_CONTEXTO', dataType: 'MATRIX', rows: DIAS, columns: [op('manana', 'Mañana'), op('tarde', 'Tarde'), op('no_puedo', 'No puedo')] },
+      {
+        ...base,
+        fieldCode: 'ini_dias_por_semana',
+        label: '¿Cuántos días por semana podrías reservar?',
+        category: 'HABITOS_Y_CONTEXTO',
+        dataType: 'NUMBER',
+        unit: 'días por semana',
+        limits: { minimum: 1, maximum: 7, integer: true },
+        maxFromMatrix: { fieldCode: 'ini_dias', exceptColumns: ['no_puedo'] },
+      },
       {
         ...base,
         fieldCode: 'ini_deportes',
@@ -151,8 +165,21 @@ export const SECCIONES_V3: SeccionDePlantillaV2[] = [
 ];
 export const CAMPOS_V3: readonly string[] = SECCIONES_V3.flatMap((s) => s.fields.map((f) => f.fieldCode));
 export const REQUERIDOS_V3: readonly string[] = SECCIONES_V3.flatMap((s) => s.fields.filter((f) => f.requiredByDefault).map((f) => f.fieldCode));
-/** Las respuestas de la V2 más otra actividad, con sus días en el orden de la pregunta (la forma canónica). */
-export const RESPUESTAS_V3: readonly RespuestaDeCampoV2Entrada[] = [...RESPUESTAS_V2, { fieldCode: 'ini_deportes', answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] } }];
+/**
+ * Las respuestas de la V2 más la semana: dos días marcados (el martes, «No puedo», no cuenta), dos días para reservar y otra
+ * actividad con sus días en el orden de la pregunta (la forma canónica).
+ */
+export const RESPUESTAS_V3: readonly RespuestaDeCampoV2Entrada[] = [
+  ...RESPUESTAS_V2,
+  { fieldCode: 'ini_dias', answer: { type: 'MATRIX', cells: [{ row: 'lun', column: 'manana' }, { row: 'mar', column: 'no_puedo' }, { row: 'jue', column: 'tarde' }] } },
+  { fieldCode: 'ini_dias_por_semana', answer: { type: 'NUMBER', number: 2, unit: 'días por semana' } },
+  { fieldCode: 'ini_deportes', answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] } },
+];
+
+/** Las respuestas de formato 3 con otros días para reservar: lo que la regla de FR-07 acepta o rechaza. */
+export function conDiasParaReservar(dias: number): RespuestaDeCampoV2Entrada[] {
+  return RESPUESTAS_V3.map((r) => (r.fieldCode === 'ini_dias_por_semana' ? { fieldCode: r.fieldCode, answer: { type: 'NUMBER' as const, number: dias, unit: 'días por semana' } } : r));
+}
 
 /** Una plantilla de formato 3 sintética, como `sembrarPlantillaV2`. */
 export function sembrarPlantillaV3(prisma: PrismaClient, etiqueta: string, dominio: Alcance | null = 'NUTRICION'): Promise<{ plantillaId: string; versionId: string }> {

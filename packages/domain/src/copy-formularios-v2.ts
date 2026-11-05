@@ -36,6 +36,7 @@ export const MENSAJE_DE_PROBLEMA_V2: Readonly<Record<CodigoDeProblemaV2, string>
   [CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_REQUIRED]: 'Falta completar un dato de este renglón.',
   [CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_UNKNOWN]: 'Este renglón tiene un dato que la pregunta no pide.',
   [CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_INVALID]: 'Revisá un dato de este renglón.',
+  [CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]: 'Es más de lo que marcaste en la tabla.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.NOT_INTEGER]: 'Va un número entero.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.BELOW_MINIMUM]: 'El número es más chico de lo que admite la pregunta.',
   [CODIGO_DE_NUMERO_FUERA_DE_LIMITES.ABOVE_MAXIMUM]: 'El número es más grande de lo que admite la pregunta.',
@@ -81,6 +82,8 @@ export const COPY_FORMULARIOS_V2 = {
   faltanPorResponder: (n: number) => (n === 1 ? 'Falta 1 pregunta obligatoria por responder.' : `Faltan ${n} preguntas obligatorias por responder.`),
   parteSinPreguntas: 'Con lo que respondiste antes, esta parte no tiene preguntas. Seguí con la próxima.',
   obligatoriaSinResponder: 'Sin responder · obligatoria',
+  /** DL-165 D-5 · junto a un número con su tope en una tabla: cuánto admite con lo marcado. */
+  hastaLoMarcado: (n: number, tabla: string) => (n === 0 ? `En «${tabla}» todavía no marcaste ninguno.` : `Hasta ${n}, por lo que marcaste en «${tabla}».`),
   /** En el índice de las partes de «Cargar con la persona» (DL-165 D-7: las obligatorias, a la vista). */
   obligatoriasPorResponder: (n: number) => (n === 1 ? '1 obligatoria por responder' : `${n} obligatorias por responder`),
   partesDelFormulario: 'Partes del formulario',

@@ -77385,6 +77385,28 @@
                                               "type": "null"
                                             }
                                           ]
+                                        },
+                                        "maxFromMatrix": {
+                                          "type": "object",
+                                          "properties": {
+                                            "fieldCode": {
+                                              "type": "string",
+                                              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                            },
+                                            "exceptColumns": {
+                                              "maxItems": 8,
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string",
+                                                "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                              }
+                                            }
+                                          },
+                                          "required": [
+                                            "fieldCode",
+                                            "exceptColumns"
+                                          ],
+                                          "additionalProperties": false
                                         }
                                       },
                                       "required": [
@@ -80923,7 +80945,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: FORM_REQUEST_NOT_RESPONDABLE | FORM_RESPONSE_INVALID. FORM_RESPONSE_INVALID: details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM o FORM_ANSWER_TOO_LONG), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).",
+            "description": "ErrorEnvelope: FORM_REQUEST_NOT_RESPONDABLE | FORM_RESPONSE_INVALID. FORM_RESPONSE_INVALID: details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM, FORM_ANSWER_TOO_LONG o, en el formato 3, FORM_ANSWER_MORE_THAN_MARKED: el número pasa de lo marcado en la tabla de la que toma su tope, DL-165 D-5), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81479,7 +81501,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED | FORM_RESPONSE_INVALID. FORM_RESPONSE_INVALID: details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM o FORM_ANSWER_TOO_LONG), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).",
+            "description": "ErrorEnvelope: FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED | FORM_RESPONSE_INVALID. FORM_RESPONSE_INVALID: details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM, FORM_ANSWER_TOO_LONG o, en el formato 3, FORM_ANSWER_MORE_THAN_MARKED: el número pasa de lo marcado en la tabla de la que toma su tope, DL-165 D-5), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82062,7 +82084,7 @@
             }
           },
           "422": {
-            "description": "ErrorEnvelope: FORM_REQUEST_NOT_RESPONDABLE | FORM_RESPONSE_INVALID. FORM_RESPONSE_INVALID: details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM o FORM_ANSWER_TOO_LONG), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).",
+            "description": "ErrorEnvelope: FORM_REQUEST_NOT_RESPONDABLE | FORM_RESPONSE_INVALID. FORM_RESPONSE_INVALID: details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM, FORM_ANSWER_TOO_LONG o, en el formato 3, FORM_ANSWER_MORE_THAN_MARKED: el número pasa de lo marcado en la tabla de la que toma su tope, DL-165 D-5), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).",
             "content": {
               "application/json": {
                 "schema": {

@@ -33,6 +33,8 @@ export const CODIGO_DE_PROBLEMA_V2 = {
   ITEM_FIELD_REQUIRED: 'FORM_ANSWER_ITEM_FIELD_REQUIRED',
   ITEM_FIELD_UNKNOWN: 'FORM_ANSWER_ITEM_FIELD_UNKNOWN',
   ITEM_FIELD_INVALID: 'FORM_ANSWER_ITEM_FIELD_INVALID',
+  /** DL-165 D-5 (formato 3): el número pasa de lo marcado en la tabla de la que toma su tope (`maxFromMatrix`). */
+  MORE_THAN_MARKED: 'FORM_ANSWER_MORE_THAN_MARKED',
 } as const;
 export type CodigoDeProblemaV2 =
   | (typeof CODIGO_DE_PROBLEMA_V2)[keyof typeof CODIGO_DE_PROBLEMA_V2]
@@ -126,13 +128,15 @@ function problemaDeSubcampo(sub: SubcampoDeLista, valor: ValorDeSubcampo): boole
 // ─── El formato 3 (DL-165) ──────────────────────────────────────────────────────────────────────
 
 /**
- * Lo que una versión usa del formato 3 (DL-165): el subcampo de varias opciones y el ejemplo de un subcampo de texto. Una
+ * Lo que una versión usa del formato 3 (DL-165): el subcampo de varias opciones, el ejemplo de un subcampo de texto y el
+ * tope de un número desde una tabla (`maxFromMatrix`). Una
  * versión que usa algo de esto **tiene que** declarar `format: 3`, y una de formato 2 no puede usarlo: si no, la APK
  * 0.20 recibiría una forma que no lee (DL-152). Lo verifican las pruebas de las plantillas y el generador de la migración.
  */
 export function loQueUsaDelFormato3(secciones: readonly SeccionDePlantillaV2[]): string[] {
   const usos: string[] = [];
   for (const campo of camposEnOrden(secciones)) {
+    if (campo.dataType === 'NUMBER' && campo.maxFromMatrix !== undefined) usos.push(`${campo.fieldCode}: el tope desde la tabla ${campo.maxFromMatrix.fieldCode}`);
     if (campo.dataType !== 'LIST') continue;
     for (const sub of campo.itemFields) {
       if (sub.dataType === 'MULTI_CHOICE') usos.push(`${campo.fieldCode}.${sub.code}: varias opciones en el renglón`);
@@ -246,7 +250,8 @@ export interface SolicitudAValidar {
  * Todos los problemas de un conjunto de respuestas, a la vez (como DL-104). Un campo:
  * - tiene que existir en la versión y estar pedido en la Solicitud (minimización, 09:1528);
  * - no puede repetirse ni estar oculto por su condición (no se guarda lo que no se preguntó);
- * - si es obligatorio y se ve, tiene que estar.
+ * - si es obligatorio y se ve, tiene que estar;
+ * - un número con su tope en una tabla (formato 3, DL-165 D-5) no pasa de lo marcado en ella.
  */
 export function validarRespuestasV2(
   secciones: readonly SeccionDePlantillaV2[],
@@ -274,7 +279,38 @@ export function validarRespuestasV2(
       problemas.push({ code: CODIGO_DE_PROBLEMA_V2.REQUIRED, path: 'answers', fieldCode: codigo });
     }
   }
+  // DL-165 D-5 (formato 3): un número con su tope en una tabla no pasa de lo marcado en ella. Solo si el número no tenía
+  // ya otro problema (un número fuera de sus límites se corrige primero) y si la tabla se respondió.
+  const conProblema = new Set(problemas.map((p) => p.fieldCode));
+  respuestas.forEach((r, i) => {
+    const campo = campos.get(r.fieldCode);
+    if (campo?.dataType !== 'NUMBER' || r.answer.type !== 'NUMBER' || conProblema.has(r.fieldCode) || !visibles.has(r.fieldCode)) return;
+    const tope = topeDesdeLaTabla(campo, secciones, respuestas);
+    if (tope !== null && r.answer.number > tope.tope) problemas.push({ code: CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED, path: `answers[${i}].answer`, fieldCode: r.fieldCode });
+  });
   return problemas;
+}
+
+/**
+ * DL-165 D-5 · el tope que una tabla anterior le pone a un número (`maxFromMatrix`): cuántas filas de la tabla tienen una
+ * columna elegida que no es de las que no cuentan («No puedo»). `null` si el número no tiene ese tope, si la tabla no está
+ * en el formulario o no se respondió: sin tabla respondida no hay tope. Lo usan la validación y el texto que dice
+ * «Hasta 4, por lo que marcaste en…» junto al número, en la APK y en la web.
+ */
+export function topeDesdeLaTabla(
+  campo: CampoDePlantillaV2,
+  secciones: readonly SeccionDePlantillaV2[],
+  respuestas: readonly RespuestaDeCampoV2Entrada[],
+): { readonly tope: number; readonly tabla: string } | null {
+  if (campo.dataType !== 'NUMBER' || !campo.maxFromMatrix) return null;
+  const { fieldCode, exceptColumns } = campo.maxFromMatrix;
+  const tabla = camposEnOrden(secciones).find((c) => c.fieldCode === fieldCode);
+  const valor = respuestas.find((r) => r.fieldCode === fieldCode)?.answer;
+  if (tabla?.dataType !== 'MATRIX' || valor?.type !== 'MATRIX') return null;
+  // Las filas que existen, una vez cada una (la validación de la tabla ya rechaza lo repetido o lo que no existe).
+  const filas = new Set(tabla.rows.map((f) => f.code));
+  const marcadas = new Set(valor.cells.filter((c) => filas.has(c.row) && !exceptColumns.includes(c.column)).map((c) => c.row));
+  return { tope: marcadas.size, tabla: tabla.label };
 }
 
 /** Los obligatorios pedidos que se ven y todavía no tienen respuesta: lo que la pantalla marca antes de enviar. */

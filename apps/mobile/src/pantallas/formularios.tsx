@@ -40,6 +40,7 @@ import {
   reducirFormulario,
   seOfreceQuitarRespuesta,
   sePuedeEnviar,
+  topeDesdeLaTabla,
   valoresAdmitidos,
   type Accion,
   type CampoDePlantillaV2,
@@ -677,12 +678,15 @@ export function PantallaDeMiSolicitud({
             <PieDePregunta etiqueta={etiqueta} paraQue={c.purpose} />
           </View>
         );
-      case 'NUMBER':
+      case 'NUMBER': {
+        // DL-165 D-5: si el número toma su tope de una tabla («días por semana» y los días marcados), se dice cuánto admite.
+        const tope = topeDesdeLaTabla(c, secciones, armadasHoy.respuestas);
+        const ayudaDelNumero = [ayuda.aLaVista ?? (c.limits ? valoresAdmitidos(c.limits, c.unit) : null), tope ? V.hastaLoMarcado(tope.tope, tope.tabla) : null].filter((t): t is string => !!t).join(' ');
         return (
           <View key={c.fieldCode}>
             <Campo
               etiqueta={c.unit ? `${etiqueta} (${c.unit})` : etiqueta}
-              ayuda={ayuda.aLaVista ?? (c.limits ? valoresAdmitidos(c.limits, c.unit) : undefined)}
+              ayuda={ayudaDelNumero || undefined}
               value={valorComo(borrador, c.fieldCode, 'NUMBER').texto}
               error={error}
               onChangeText={(t) => {
@@ -695,6 +699,7 @@ export function PantallaDeMiSolicitud({
             <PieDePregunta etiqueta={etiqueta} paraQue={c.purpose} />
           </View>
         );
+      }
       case 'BOOLEAN':
         // Sí/No se elige entre dos opciones: escribirlo obligaría a interpretar el texto, y lo mal interpretado
         // quedaría guardado como declarado por la persona (09 §22.7).

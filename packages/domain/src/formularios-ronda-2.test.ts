@@ -7,6 +7,7 @@
  * - FR-08 · el formato 3 (D-6): el subcampo de varias opciones en un renglón y el ejemplo de un subcampo de texto, cómo
  *   se validan, se normalizan y se leen, qué hace que una versión sea de formato 3, y por qué no se le puede entregar a la
  *   APK 0.20: su esquema congelado no lo lee (DL-152).
+ * - FR-07 · la regla «no más días que los marcados» (D-5): el tope de un número desde una tabla anterior.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,8 +17,8 @@ import { z } from 'zod';
 import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_OBJETIVOS_POR_SERIE, capacidadesDeclaradas } from './compatibilidad-de-clientes';
 import { SubcampoDeListaSchema, VersionDePlantillaV2Schema, type CampoDePlantillaV2, type RespuestaDeCampoV2Entrada, type SeccionDePlantillaV2 } from './contratos-formularios-v2';
 import { terminosProhibidosDeFormulariosEn } from './copy-formularios';
-import { COPY_FORMULARIOS_V2 } from './copy-formularios-v2';
-import { ayudaDeLaPregunta, camposCorregidos, camposVisibles, CODIGO_DE_PROBLEMA_V2, loQueUsaDelFormato3, normalizarValor, resumenDeValor, seOfreceQuitarRespuesta, TIPOS_CON_QUITAR_RESPUESTA, usaLoDelFormato3, validarRespuestasV2 } from './formularios-v2';
+import { COPY_FORMULARIOS_V2, MENSAJE_DE_PROBLEMA_V2 } from './copy-formularios-v2';
+import { ayudaDeLaPregunta, camposCorregidos, camposVisibles, CODIGO_DE_PROBLEMA_V2, loQueUsaDelFormato3, normalizarValor, resumenDeValor, seOfreceQuitarRespuesta, TIPOS_CON_QUITAR_RESPUESTA, topeDesdeLaTabla, usaLoDelFormato3, validarRespuestasV2 } from './formularios-v2';
 import { obligatoriasSinResponderDeLaParte, partesDelFormulario, pasoAcotado, pasoDelRepaso, preguntasQueSeVen, primeraParteCon } from './partes-de-formulario';
 
 const op = (code: string, label = code) => ({ code, label });
@@ -221,4 +222,47 @@ test('DL-152 · la APK 0.20 no lee el formato 3: su esquema congelado de API-FRI
   // Por eso se le retiene: con el formato 3 o con el subtipo nuevo, esa pantalla diría «respuesta no reconocida».
   assert.equal(deLaApk020.safeParse({ data: { ...version, format: 3, sections: sinLoNuevo } }).success, false);
   assert.equal(deLaApk020.safeParse({ data: { ...version, format: 2, sections: DE_FORMATO_3 } }).success, false);
+});
+
+// ─── FR-07 · no más días que los marcados ───────────────────────────────────────────────────────
+
+const LA_SEMANA: SeccionDePlantillaV2[] = [
+  {
+    sectionCode: 'tu_semana',
+    title: 'Tu semana para entrenar',
+    intro: null,
+    fields: [
+      { ...base, fieldCode: 'trn_dias_y_horario', label: '¿Qué días y en qué momento podés?', dataType: 'MATRIX', rows: DIAS, columns: [op('manana', 'Mañana'), op('tarde', 'Tarde'), op('varia', 'Varía'), op('no_puedo', 'No puedo')] },
+      { ...base, fieldCode: 'trn_dias_por_semana', label: '¿Cuántos días por semana podrías reservar?', dataType: 'NUMBER', unit: 'días por semana', limits: { minimum: 1, maximum: 7, integer: true }, maxFromMatrix: { fieldCode: 'trn_dias_y_horario', exceptColumns: ['no_puedo'] } },
+    ],
+  },
+];
+const PIDE_LA_SEMANA = { requestedFieldCodes: ['trn_dias_y_horario', 'trn_dias_por_semana'], requiredFieldCodes: ['trn_dias_y_horario', 'trn_dias_por_semana'] };
+const semana = (celdas: [string, string][], dias: number | null): RespuestaDeCampoV2Entrada[] => [
+  ...(celdas.length ? [{ fieldCode: 'trn_dias_y_horario', answer: { type: 'MATRIX' as const, cells: celdas.map(([row, column]) => ({ row, column })) } }] : []),
+  ...(dias === null ? [] : [{ fieldCode: 'trn_dias_por_semana', answer: { type: 'NUMBER' as const, number: dias, unit: 'días por semana' } }]),
+];
+
+test('DL-165 D-5 · los días por semana no pasan de los marcados en la tabla; «No puedo» no cuenta', () => {
+  const tresYUnNoPuedo: [string, string][] = [['lun', 'manana'], ['mar', 'no_puedo'], ['mie', 'tarde'], ['vie', 'varia']];
+  assert.deepEqual(validarRespuestasV2(LA_SEMANA, PIDE_LA_SEMANA, semana(tresYUnNoPuedo, 3)), []);
+  assert.deepEqual(validarRespuestasV2(LA_SEMANA, PIDE_LA_SEMANA, semana(tresYUnNoPuedo, 4)), [{ code: CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED, path: 'answers[1].answer', fieldCode: 'trn_dias_por_semana' }]);
+  // Todo «No puedo»: el tope es cero y cualquier día pasa.
+  assert.deepEqual(validarRespuestasV2(LA_SEMANA, PIDE_LA_SEMANA, semana([['lun', 'no_puedo']], 1)).map((p) => p.code), [CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]);
+  // Fuera de sus límites, el número dice solo eso: no suma la regla encima.
+  assert.deepEqual(validarRespuestasV2(LA_SEMANA, PIDE_LA_SEMANA, semana(tresYUnNoPuedo, 8)).map((p) => p.code), ['FORM_ANSWER_ABOVE_MAXIMUM']);
+  // Sin la tabla respondida no hay tope (falta la tabla, que es otra cosa).
+  assert.deepEqual(validarRespuestasV2(LA_SEMANA, PIDE_LA_SEMANA, semana([], 5)).map((p) => [p.code, p.fieldCode]), [[CODIGO_DE_PROBLEMA_V2.REQUIRED, 'trn_dias_y_horario']]);
+  // El orden de las respuestas no importa: la tabla puede venir después del número.
+  assert.deepEqual(validarRespuestasV2(LA_SEMANA, PIDE_LA_SEMANA, [...semana([], 4), ...semana(tresYUnNoPuedo, null)]).map((p) => [p.code, p.path]), [[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED, 'answers[0].answer']]);
+});
+
+test('DL-165 D-5 · el tope se dice junto al número, con el nombre de la tabla; es lo de formato 3 de esa pregunta', () => {
+  const numero = LA_SEMANA[0]!.fields[1]!;
+  assert.deepEqual(topeDesdeLaTabla(numero, LA_SEMANA, semana([['lun', 'manana'], ['mar', 'no_puedo'], ['jue', 'varia']], null)), { tope: 2, tabla: '¿Qué días y en qué momento podés?' });
+  assert.equal(topeDesdeLaTabla(numero, LA_SEMANA, []), null);
+  assert.equal(topeDesdeLaTabla(LA_SEMANA[0]!.fields[0]!, LA_SEMANA, semana([['lun', 'manana']], null)), null);
+  assert.equal(COPY_FORMULARIOS_V2.hastaLoMarcado(2, '¿Qué días y en qué momento podés?'), 'Hasta 2, por lo que marcaste en «¿Qué días y en qué momento podés?».');
+  assert.deepEqual(loQueUsaDelFormato3(LA_SEMANA), ['trn_dias_por_semana: el tope desde la tabla trn_dias_y_horario']);
+  assert.equal(MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED], 'Es más de lo que marcaste en la tabla.');
 });

@@ -83,9 +83,18 @@ export const SubcampoDeListaSchema = z.discriminatedUnion('dataType', [
 ]);
 export type SubcampoDeLista = z.infer<typeof SubcampoDeListaSchema>;
 
+/**
+ * Formato 3 (DL-165 D-5, FR-07): el tope de un número sale de una tabla anterior del formulario. El número no puede pasar
+ * de las filas respondidas de esa tabla con una columna que no esté en `exceptColumns`: «¿Cuántos días por semana podrías
+ * reservar?» no pasa de los días marcados en «¿Qué días y en qué momento podés?», salvo los «No puedo». Si la tabla no se
+ * respondió, no hay tope.
+ */
+export const TopeDesdeTablaSchema = z.strictObject({ fieldCode: CodigoDeCampo, exceptColumns: z.array(CodigoDeOpcionSchema).max(8) });
+export type TopeDesdeTabla = z.infer<typeof TopeDesdeTablaSchema>;
+
 export const CampoDePlantillaV2Schema = z.discriminatedUnion('dataType', [
   z.strictObject({ ...base, dataType: z.literal('TEXT'), multiline: z.boolean(), maxLength: z.number().int().positive().max(2000) }),
-  z.strictObject({ ...base, dataType: z.literal('NUMBER'), unit: z.string().nullable(), limits: LimitesDeCampoSchema.nullable() }),
+  z.strictObject({ ...base, dataType: z.literal('NUMBER'), unit: z.string().nullable(), limits: LimitesDeCampoSchema.nullable(), maxFromMatrix: TopeDesdeTablaSchema.optional() }),
   z.strictObject({ ...base, dataType: z.literal('BOOLEAN') }),
   /** Una opción. Si `otherOptionCode` no es `null`, elegir esa opción deja escribir cuál (`otherText`). */
   z.strictObject({ ...base, dataType: z.literal('CHOICE'), options: z.array(OpcionDeCampoSchema).min(2).max(24), otherOptionCode: CodigoDeOpcionSchema.nullable() }),

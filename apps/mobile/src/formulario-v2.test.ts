@@ -243,6 +243,26 @@ describe('el borrador guarda lo tocado tal cual, y nada viene elegido', () => {
     });
   });
 
+  test('DL-165 D-5 · antes de enviar, la app avisa en el número si pasa de los días marcados en la tabla', () => {
+    const secciones: SeccionDePlantillaV2[] = [
+      {
+        sectionCode: 'semana',
+        title: 'Tu semana',
+        intro: null,
+        fields: [
+          { ...base, fieldCode: 'dias', label: '¿Qué días podés?', dataType: 'MATRIX', rows: [op('lun', 'Lunes'), op('mar', 'Martes'), op('mie', 'Miércoles')], columns: [op('manana', 'Mañana'), op('no_puedo', 'No puedo')] },
+          { ...base, fieldCode: 'por_semana', label: '¿Cuántos días?', dataType: 'NUMBER', unit: 'días', limits: { minimum: 1, maximum: 7, integer: true }, maxFromMatrix: { fieldCode: 'dias', exceptColumns: ['no_puedo'] } },
+        ],
+      },
+    ];
+    const solicitud = { requestedFieldCodes: ['dias', 'por_semana'], requiredFieldCodes: [] };
+    const borrador: Borrador = { dias: { tipo: 'MATRIX', celdas: { lun: 'manana', mar: 'no_puedo' } }, por_semana: { tipo: 'NUMBER', texto: '2' } };
+    const antes = problemasAntesDeEnviar(secciones, solicitud, armarRespuestas(secciones, solicitud, borrador));
+    expect(antes?.errores.por_semana).toBe(MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]);
+    // Con uno, pasa.
+    expect(problemasAntesDeEnviar(secciones, solicitud, armarRespuestas(secciones, solicitud, { ...borrador, por_semana: { tipo: 'NUMBER', texto: '1' } }))).toBeNull();
+  });
+
   test('DL-165 D-2 · «Quitar respuesta» deja la pregunta sin responder y no toca las demás; lo que no estaba, no cambia', () => {
     const cargado = reducir([{ tipo: 'cargar', valores: COMPLETO }]);
     const sinDonde = reducir([{ tipo: 'quitar', fieldCode: 'donde' }], cargado);

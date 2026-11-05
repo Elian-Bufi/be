@@ -6232,6 +6232,13 @@ las respuestas a mano en el escritorio y en la Línea de tiempo.
     versión sin lo que no lee (dos contratos bajo el mismo ID: lo que DL-164 D-5 descartó para FRM).
   - *Consecuencia:* lo que se pida de los dos formularios desde que esto esté en `test` lo responde la APK nueva (FR-11),
     o se carga con la persona desde el escritorio. Lo pedido antes sigue en su versión, y la 0.20 lo responde como hoy.
+- **D-11 · La regla de los días es una propiedad del número, no un caso especial** (FR-07). Un número puede tomar su tope
+  de una tabla anterior (`maxFromMatrix`: la tabla y las columnas que no cuentan, como «No puedo»), y `validarRespuestasV2`
+  lo rechaza con `FORM_ANSWER_MORE_THAN_MARKED` en el número. Lo aplican igual la API (FRI-04, 05 y 06), la app y la web,
+  que además dicen junto al número cuánto admite («Hasta 4, por lo que marcaste en…»). Si la tabla no se respondió no hay
+  tope, y un número fuera de sus límites dice solo eso.
+  - *Descartado:* escribir la regla para `trn_dias_por_semana` en el código (otra plantilla no la podría usar, y la
+    plantilla no diría que la tiene).
 
 **Pruebas** (las suma cada parte): la lógica de las partes y las reglas nuevas en el dominio; la APK y la web en sus
 pruebas de lógica pura; la API en `formularios-ronda-2.int-spec.ts`, `formularios-de-inicio.int-spec.ts` y

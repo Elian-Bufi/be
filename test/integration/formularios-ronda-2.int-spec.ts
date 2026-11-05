@@ -4,13 +4,16 @@
  *   solo se le entrega a un cliente que declara `forms-format-3`. Para los demás (la APK 0.20 y las anteriores) no
  *   existe: FRI-02 no la lista, FRI-01, 03, 04, 05, 06, 07 y 08 responden el 404 de lo inexistente, y las de FRM tampoco
  *   la sirven. Con la capacidad se lee, se responde, se carga y se rectifica con la lista de opciones en el renglón.
+ * - FR-07 · la regla «no más días que los marcados»: un número con su tope en una tabla no pasa de lo marcado en ella
+ *   (los «No puedo» no cuentan), al responder (FRI-04), al rectificar (FRI-05) y al cargar (FRI-06): 422 con
+ *   FORM_ANSWER_MORE_THAN_MARKED en ese número. Sin la tabla respondida, no hay tope.
  */
 import type { INestApplication } from '@nestjs/common';
 import { DetalleDeSolicitudV2ResponseSchema, ListaDeSolicitudesPropiasV2ResponseSchema, VersionDePlantillaV2ResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, conSesion } from './soporte-api';
-import { CAMPOS_V3, CON_FORMATO_3, fri, pedirV2, REQUERIDOS_V3, RESPUESTAS_V3, sembrarPlantillaV3 } from './soporte-formularios-v2';
+import { CAMPOS_V3, CON_FORMATO_3, conDiasParaReservar, fri, pedirV2, REQUERIDOS_V3, RESPUESTAS_V3, sembrarPlantillaV3 } from './soporte-formularios-v2';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -111,5 +114,41 @@ describe('FR-08 · el formato 3, solo para quien lo declara (DL-165 D-6; DL-152)
     await apkNueva.responder(c.formRequestId, { answers: igualesEnOtroOrden, fromProposal: { proposalId: cargada.proposalId, expectedVersion: cargada.version } }).expect(201);
     const final = DetalleDeSolicitudV2ResponseSchema.parse((await web.vista(c.formRequestId).expect(200)).body).data;
     expect(final.response?.transcription?.correctedFieldCodes).toEqual([]);
+  });
+});
+
+describe('FR-07 · no más días que los marcados (DL-165 D-5)', () => {
+  /** El issue de la regla: en el número, nunca en la tabla, y sin repetir el valor enviado. */
+  const delTope = (answers: readonly { fieldCode: string }[]) => ({ code: 'FORM_ANSWER_MORE_THAN_MARKED', fieldCode: 'ini_dias_por_semana', path: `answers[${answers.findIndex((a) => a.fieldCode === 'ini_dias_por_semana')}].answer` });
+
+  it('responder: con dos días marcados (el «No puedo» no cuenta), tres para reservar es 422 en ese número, sin escribir nada; dos pasan', async () => {
+    const c = await circuitoV3(`tope-${++contador}`);
+    const apkNueva = fri(app, c.ase.token, CON_FORMATO_3);
+    const tres = conDiasParaReservar(3);
+    const rechazada = await apkNueva.responder(c.formRequestId, { answers: tres, fromProposal: null }).expect(422);
+    expect(rechazada.body.error.code).toBe('FORM_RESPONSE_INVALID');
+    expect(rechazada.body.error.details.issues).toEqual([delTope(tres)]);
+    expect(JSON.stringify(rechazada.body)).not.toContain('"number":3');
+    expect(await prisma.respuestaDeFormulario.count({ where: { solicitudId: c.formRequestId } })).toBe(0);
+    const respondida = await apkNueva.responder(c.formRequestId, { answers: conDiasParaReservar(2), fromProposal: null }).expect(201);
+    // Rectificar con la misma regla: cuatro días sobre los mismos dos marcados no pasa.
+    const cuatro = conDiasParaReservar(4);
+    const correccion = await apkNueva.corregir(respondida.body.data.formResponseId as string, { expectedVersion: respondida.body.data.version, reason: 'Puedo más días.', answers: cuatro }).expect(422);
+    expect(correccion.body.error.details.issues).toEqual([delTope(cuatro)]);
+  });
+
+  it('cargar con la persona sigue la misma regla; sin la tabla respondida no hay tope, y fuera de sus límites el número dice solo eso', async () => {
+    const c = await circuitoV3(`tope-carga-${++contador}`);
+    const web = fri(app, c.pro.token, CON_FORMATO_3);
+    const cinco = conDiasParaReservar(5);
+    const rechazada = await web.cargar(c.formRequestId, { expectedVersion: null, answers: cinco }).expect(422);
+    expect(rechazada.body.error.details.issues).toEqual([delTope(cinco)]);
+    // Sin la tabla, el número no tiene tope más allá de sus límites (de 1 a 7).
+    const sinTabla = conDiasParaReservar(5).filter((r) => r.fieldCode !== 'ini_dias');
+    await web.cargar(c.formRequestId, { expectedVersion: null, answers: sinTabla }).expect(201);
+    const c2 = await circuitoV3(`tope-limite-${++contador}`);
+    const ocho = conDiasParaReservar(8);
+    const fuera = await fri(app, c2.ase.token, CON_FORMATO_3).responder(c2.formRequestId, { answers: ocho, fromProposal: null }).expect(422);
+    expect(fuera.body.error.details.issues).toEqual([{ code: 'FORM_ANSWER_ABOVE_MAXIMUM', fieldCode: 'ini_dias_por_semana', path: delTope(ocho).path }]);
   });
 });
