@@ -55,6 +55,10 @@ export const COPY_NUTRICION = {
   evaluacionRegistrada: 'Evaluación registrada',
   definirObjetivo: 'Definir objetivo',
   nuevaVersionDeObjetivo: 'Nueva versión de objetivo',
+  // PF-02 · el pedido de información desde el Resumen, como en Entrenamiento (WP-FORMULARIOS-RONDA-2, FR-02)
+  pedirInformacion: 'Pedir información',
+  ayudaPedirInformacion:
+    'Le pide a la persona «Cómo comés hoy»: su día, sus comidas, lo que sí y lo que no, lo que toma y lo que su salud pide tener en cuenta. Pedir no da acceso a nada nuevo hasta que responda.',
   borrador: 'Borrador',
   crearNuevoPlan: 'Crear nuevo plan',
   borradorCreado: 'Borrador creado',

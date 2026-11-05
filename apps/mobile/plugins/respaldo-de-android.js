@@ -3,11 +3,11 @@
  *
  * **Qué hay en el teléfono, por archivo** (una clave de JavaScript no es un archivo que se pueda excluir):
  * - `databases/RKStorage` (y sus `-journal`, `-wal` y `-shm`): la base SQLite de AsyncStorage 2.2.0, sin «next
- *   storage». Guarda el tema, la figura elegida, el ancla del reloj desde el arranque y, cifrado, el entrenamiento en
- *   curso de cada cuenta (`src/almacen-cifrado.ts`);
- * - `shared_prefs/SecureStore.xml`: expo-secure-store, con la credencial de la sesión y la clave de cifrado del
- *   entrenamiento de cada cuenta, cifradas con el Keystore. Esas claves del Keystore nunca salen del teléfono: una copia
- *   restaurada en otro teléfono no se podría descifrar.
+ *   storage». Guarda el tema, la figura elegida, el ancla del reloj desde el arranque y, cifrados, el entrenamiento en
+ *   curso de cada cuenta y el borrador de cada formulario (`src/almacen-cifrado.ts`; desde WP-FORMULARIOS-RONDA-2, FR-01);
+ * - `shared_prefs/SecureStore.xml`: expo-secure-store, con la credencial de la sesión y las claves de cifrado del
+ *   entrenamiento y de los borradores de cada cuenta, cifradas con el Keystore. Esas claves del Keystore nunca salen del
+ *   teléfono: una copia restaurada en otro teléfono no se podría descifrar.
  *
  * **Las reglas** (https://developer.android.com/identity/data/autobackup):
  * - Android 11 o anterior, `android:fullBackupContent`; Android 12 o posterior, `android:dataExtractionRules`, con

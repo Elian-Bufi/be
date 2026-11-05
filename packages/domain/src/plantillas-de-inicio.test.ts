@@ -8,8 +8,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CampoDePlantillaV2Schema, SeccionDePlantillaV2Schema, type CampoDePlantillaV2, type RespuestaDeCampoV2Entrada, type ValorDeRespuestaV2 } from './contratos-formularios-v2';
 import { camposEnOrden, camposVisibles, obligatoriosSinResponder, problemasDeValor, sinRespuestasOcultas, usaTiposNuevos, validarRespuestasV2 } from './formularios-v2';
-import { CONTEXTO_DE_ENTRENAMIENTO } from './formularios';
-import { terminosProhibidosDeFormulariosEn } from './copy-formularios';
+import { CONTEXTO_DE_ENTRENAMIENTO, CONTEXTO_DE_NUTRICION, propositoSugerido } from './formularios';
+import { COPY_FORMULARIOS, terminosProhibidosDeFormulariosEn } from './copy-formularios';
 import {
   PLANTILLAS_DE_INICIO,
   PLANTILLA_ENTRENAMIENTO_V2,
@@ -103,11 +103,25 @@ test('las dos plantillas son las pedidas: clave, versión, nombre, dominio y min
     ['FRM-ENTRENAMIENTO', '2', 'Antes de entrenar', 'ENTRENAMIENTO'],
   ]);
   assert.equal(PLANTILLA_ENTRENAMIENTO_V2.clave, CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
+  assert.equal(PLANTILLA_NUTRICION_INICIO.clave, CONTEXTO_DE_NUTRICION.clavePlantilla);
   for (const p of PLANTILLAS_DE_INICIO) {
     assert.ok(p.estimatedMinutes >= 10 && p.estimatedMinutes <= 15, `${p.clave}: de 10 a 15 minutos`);
     assert.ok(p.proposito.trim().length > 0 && p.sections.length > 0, p.clave);
     assert.deepEqual(contenidoDePlantillaDeInicio(p), { format: 2, estimatedMinutes: p.estimatedMinutes, sections: p.sections });
   }
+});
+
+test('FR-02 · cada formulario de inicio sugiere su «para qué», corto y sin calificar a la persona; los demás no sugieren nada', () => {
+  assert.equal(propositoSugerido(CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla), COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento);
+  assert.equal(propositoSugerido(CONTEXTO_DE_NUTRICION.clavePlantilla), COPY_FORMULARIOS.propositoDeContextoDeNutricion);
+  for (const p of PLANTILLAS_DE_INICIO) {
+    const sugerido = propositoSugerido(p.clave);
+    assert.ok(sugerido && sugerido.length <= 40, `${p.clave}: una frase corta`);
+    assert.deepEqual(terminosProhibidosDeFormulariosEn(sugerido), [], p.clave);
+  }
+  assert.notEqual(propositoSugerido(CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla), propositoSugerido(CONTEXTO_DE_NUTRICION.clavePlantilla));
+  for (const clave of ['FRM-HABITOS', 'FRM-SALUD', '']) assert.equal(propositoSugerido(clave), null, clave);
+  for (const t of [COPY_FORMULARIOS.pedidoDesdeNutricion, COPY_FORMULARIOS.volverANutricion]) assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
 });
 
 test('cada sección y cada campo pasan el contrato V2', () => {

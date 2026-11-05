@@ -39,13 +39,15 @@ import {
   type VersionDePlantillaV2,
 } from '@be/domain';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { api } from '../api';
+import { baseDelBorrador, hayQueGuardar, restauracionDe, type LecturaDelBorrador } from '../borrador-de-formulario';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { CampoDeAlimentos, CampoDeHorarios, ListaQueSeRepite, OPCIONES_SI_O_NO, OpcionUnica, OpcionesMultiples, TablaDeOpciones } from '../campos-de-formulario';
 import { DialogoDeConfirmacion, useAccionConfirmada } from '../dialogo';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha } from '../formato';
+import { borradoresDeFormularios as borradores } from '../formularios-en-el-telefono';
 import {
   armarRespuestas,
   BORRADOR_VACIO,
@@ -108,9 +110,15 @@ function TarjetaDeSolicitud({ s, ir }: { s: SolicitudPropiaV2; ir: (r: Ruta) => 
   );
 }
 
-export function PantallaDeFormularios({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
+export function PantallaDeFormularios({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const pedir = useCallback(() => leerLista(api, token), [token]);
+  const pedir = useCallback(async () => {
+    const r = await leerLista(api, token);
+    // FR-01 · con la bandeja recién leída (nunca con la recordada), se borra del teléfono lo escrito en solicitudes que
+    // ya no están pendientes.
+    if (r.ok) void borradores.conservarSegunLaLista(identidadId, r.datos.solicitudes, r.datos.completa);
+    return r;
+  }, [token, identidadId]);
   // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mis-solicitudes', pedir, sesionPerdida);
   const carga: Carga = r === null ? { tipo: 'cargando' } : r.ok ? { tipo: 'listo', datos: r.datos.solicitudes } : { tipo: 'error', sinConexion: r.tipo === 'RED' };
@@ -197,10 +205,14 @@ function RespuestasEnPalabras({ datos, respuestas, comoSecciones }: { datos: Dat
  * - la carga y su reintento son una sola operación con intención («abrir» o «recuperar»);
  * - el borrador solo se limpia cuando un envío se registra, y cargar nunca reenvía;
  * - con algo cargado por el profesional, primero se lee en palabras; «Corregir» abre el formulario con eso precargado
- *   y confirmar manda lo que quedó, con la versión de lo cargado (`fromProposal`).
+ *   y confirmar manda lo que quedó, con la versión de lo cargado (`fromProposal`);
+ * - lo propio (lo tocado y el motivo) se guarda cifrado en el teléfono, por cuenta y por solicitud (FR-01,
+ *   `borrador-de-formulario.ts`): sobrevive a que se cierre la app, vuelve al abrir la solicitud antes que la precarga, y
+ *   se borra al enviar, al descartar lo cargado (si no era lo de la persona) o cuando ya no queda nada propio.
  */
 export function PantallaDeMiSolicitud({
   token,
+  identidadId,
   id,
   salir,
   volver,
@@ -208,6 +220,7 @@ export function PantallaDeMiSolicitud({
   subir,
 }: {
   token: string;
+  identidadId: string;
   id: string;
   salir: (m: Salida) => void;
   volver: () => void;
@@ -222,6 +235,21 @@ export function PantallaDeMiSolicitud({
   const borradorActual = useRef(borrador);
   borradorActual.current = borrador;
   const [datos, setDatos] = useState<Datos | null>(null);
+  /**
+   * FR-01 · el borrador en el teléfono. `esperando`: todavía no se decidió qué se restaura, y no se escribe nada (lo vacío
+   * del primer dibujo borraría lo guardado). `activo`: lo propio se guarda con cada cambio. `sin-telefono`: no se pudo
+   * leer lo guardado, y no se escribe encima de lo que no se vio: lo escrito queda solo en la pantalla, como antes.
+   */
+  const [enElTelefono, setEnElTelefono] = useState<'esperando' | 'activo' | 'sin-telefono'>('esperando');
+  /** La última escritura en el teléfono falló: lo escrito sigue en la pantalla, pero un cierre lo perdería. */
+  const [falloAlGuardar, setFalloAlGuardar] = useState(false);
+  /** Lo que se mostró venía del teléfono: la pantalla lo dice hasta que se envíe. */
+  const [recuperado, setRecuperado] = useState(false);
+  /** Lo guardado se lee una sola vez por visita, junto con la primera consulta a la API. */
+  const lecturaGuardada = useRef<Promise<LecturaDelBorrador> | null>(null);
+  const restauracionDecidida = useRef(false);
+  /** Si puede haber algo de esta solicitud guardado en el teléfono: si no, no hace falta borrar nada. */
+  const hayAlgoGuardado = useRef(false);
   /** Avisos por campo, subcampo o parte: lo que no se entiende o la API no aceptó se marca ahí, no se descarta en silencio. */
   const [errores, setErrores] = useState<Record<string, string>>({});
   /** Cada envío vuelve a montar el aviso, así se anuncia aunque el texto sea el mismo que en el intento anterior. */
@@ -233,8 +261,12 @@ export function PantallaDeMiSolicitud({
   const motivo = estado.borrador.motivo;
   /** La persona escribió algo propio (no lo precargado sin tocar): se declara al salir y se le dice que sigue ahí. */
   const tieneBorradorPropio = hayAlgoEscrito(borrador) && !mismoBorrador(borrador, base);
-  // El borrador (lo tocado y el motivo) se declara: salir por la barra, la cabecera o atrás pregunta antes (DL-117).
-  useCambiosSinGuardar(tieneBorradorPropio || motivo.trim() !== '' ? 'tus respuestas' : null);
+  const hayAlgoPropio = tieneBorradorPropio || motivo.trim() !== '';
+  /** Lo propio no está protegido ante un cierre: no se pudo leer lo guardado, o la última escritura falló. */
+  const sinProteger = enElTelefono === 'sin-telefono' || falloAlGuardar;
+  // Salir por la barra, la cabecera o atrás pregunta antes solo si lo escrito se perdería (DL-117): guardado en el
+  // teléfono, no se pierde, y la pregunta «¿Salir sin guardar?» no sería cierta. Es la regla del entrenamiento (PA-02).
+  useCambiosSinGuardar(hayAlgoPropio && (enElTelefono !== 'activo' || falloAlGuardar) ? 'tus respuestas' : null);
 
   const precargar = useCallback((valores: Borrador) => {
     editar({ tipo: 'cargar', valores });
@@ -251,6 +283,8 @@ export function PantallaDeMiSolicitud({
     async (intencion: Intencion) => {
       despachar({ tipo: 'cargar', intencion });
       const fallar = (r: Resultado<unknown>) => despachar({ tipo: 'carga-fallida', sinConexion: !r.ok && r.tipo === 'RED' });
+      // FR-01 · lo guardado en el teléfono se lee mientras se consulta la API (nunca lanza: si falla, dice «sin leer»).
+      if (!restauracionDecidida.current && !lecturaGuardada.current) lecturaGuardada.current = borradores.leer(identidadId, id);
       const r = await api.consultarVistaDeSolicitud(token, id);
       if (sesionPerdida(r)) return;
       // DL-115 · sin A3, lo propio no se lee (08:406): ni la solicitud ni la respuesta. Lo escrito queda en el estado.
@@ -261,11 +295,32 @@ export function PantallaDeMiSolicitud({
       if (sesionPerdida(v)) return;
       if (!v.ok) return fallar(v);
       setDatos({ detalle: r.datos.data, plantilla: v.datos.data });
+      // FR-01 · lo guardado vuelve antes que la precarga: si corresponde con lo que dice la API, es lo que se ve.
+      let restaurado = false;
+      if (!restauracionDecidida.current && lecturaGuardada.current) {
+        const lectura = await lecturaGuardada.current;
+        restauracionDecidida.current = true;
+        if (lectura.tipo === 'sin-leer') setEnElTelefono('sin-telefono');
+        else {
+          const decision = restauracionDe(lectura.tipo === 'guardado' ? lectura.guardado : null, r.datos.data, v.datos.data.sections);
+          if (decision.tipo === 'descartar') void borradores.borrar(identidadId, id);
+          if (decision.tipo === 'restaurar') {
+            editar({ tipo: 'cargar', valores: decision.borrador });
+            setBase(decision.base);
+            if (decision.motivo !== '') despachar({ tipo: 'editar-motivo', motivo: decision.motivo });
+            setCorrigiendo(decision.corrigiendo);
+            setRecuperado(true);
+            hayAlgoGuardado.current = true;
+            restaurado = true;
+          }
+          setEnElTelefono('activo');
+        }
+      }
       // Para corregir, se parte de lo que vale hoy: la persona cambia lo que cambió y la historia queda (09:1618).
-      if (intencion === 'abrir' && response && !hayAlgoEscrito(borradorActual.current)) precargar(borradorDeRespuestas(v.datos.data.sections, respuestasVigentes(response)));
+      if (intencion === 'abrir' && response && !restaurado && !hayAlgoEscrito(borradorActual.current)) precargar(borradorDeRespuestas(v.datos.data.sections, respuestasVigentes(response)));
       despachar({ tipo: 'carga-lista', vista: { status: request.status, response, respondable } });
     },
-    [token, id, sesionPerdida, precargar],
+    [token, identidadId, id, sesionPerdida, precargar],
   );
 
   useEffect(() => {
@@ -273,8 +328,48 @@ export function PantallaDeMiSolicitud({
   }, [cargar]);
 
   /**
+   * FR-01 · lo propio se guarda en el teléfono con cada cambio, con una demora corta; si ya no queda nada propio, se
+   * borra. Hasta decidir qué se restaura, o si no se pudo leer lo guardado, no se escribe nada.
+   */
+  const detalle = datos?.detalle ?? null;
+  useEffect(() => {
+    if (enElTelefono !== 'activo' || !detalle) return;
+    if (!hayQueGuardar(borrador, base, motivo)) {
+      if (hayAlgoGuardado.current) void borradores.borrar(identidadId, id);
+      hayAlgoGuardado.current = false;
+      setFalloAlGuardar(false);
+      return;
+    }
+    hayAlgoGuardado.current = true;
+    borradores.escribir(
+      {
+        version: 1,
+        identidadId,
+        formRequestId: id,
+        templateVersionId: detalle.request.templateVersionId,
+        base: baseDelBorrador({ response: detalle.response, proposal: detalle.proposal, corrigiendo }),
+        borrador,
+        motivo,
+      },
+      (guardado) => setFalloAlGuardar(!guardado),
+    );
+  }, [enElTelefono, detalle, borrador, base, motivo, corrigiendo, identidadId, id]);
+
+  // Lo que esperaba su demora se guarda ya al salir de la pantalla y al pasar a segundo plano: Android puede cerrar la app.
+  useEffect(() => {
+    const suscripcion = AppState.addEventListener('change', (momento) => {
+      if (momento !== 'active') void borradores.guardarYa();
+    });
+    return () => {
+      suscripcion.remove();
+      void borradores.guardarYa();
+    };
+  }, []);
+
+  /**
    * Una escritura quedó registrada: el aviso, volver a leer, y limpiar el borrador, salvo que la escritura no haya sido
-   * de él (`conservarBorrador`): descartar lo que cargó el profesional no envía nada de lo que la persona escribió.
+   * de él (`conservarBorrador`): descartar lo que cargó el profesional no envía nada de lo que la persona escribió. Lo
+   * que se limpia se borra también del teléfono; lo que se conserva sigue guardado.
    */
   const terminarEscritura = useCallback(
     (texto: string, opciones: { readonly conservarBorrador: boolean } = { conservarBorrador: false }) => {
@@ -282,13 +377,16 @@ export function PantallaDeMiSolicitud({
       if (!opciones.conservarBorrador) {
         editar({ tipo: 'limpiar' });
         setBase(BORRADOR_VACIO);
+        void borradores.borrar(identidadId, id);
+        hayAlgoGuardado.current = false;
+        setRecuperado(false);
       }
       setErrores({});
       setCorrigiendo(false);
       subir();
       void cargar('abrir');
     },
-    [cargar, subir],
+    [cargar, subir, identidadId, id],
   );
 
   /**
@@ -461,6 +559,11 @@ export function PantallaDeMiSolicitud({
           </Aviso>
         ) : estado.aviso ? (
           <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} />
+        ) : recuperado && tieneBorradorPropio ? (
+          // FR-01 · lo que la persona había escrito volvió del teléfono, y sigue ahí si descarta lo cargado.
+          <Aviso tipo="info" titulo={T.recuperamosLoEscrito}>
+            <Parrafo tenue>{T.siDescartasLoCargado}</Parrafo>
+          </Aviso>
         ) : null}
         <RespuestasEnPalabras datos={datos} respuestas={proposal.answers} comoSecciones />
         <Seccion titulo={COPY_FORMULARIOS.responder}>
@@ -653,7 +756,9 @@ export function PantallaDeMiSolicitud({
       </Parrafo>
       {!esCorreccion && !desdePropuesta && datos.plantilla.estimatedMinutes !== null ? <Parrafo tenue icono="reloj">{COPY_FORMULARIOS_V2.minutos(datos.plantilla.estimatedMinutes)}</Parrafo> : null}
       {/* El texto va como título del aviso: así se anuncia al lector de pantalla y se lee en negrita, como todos (D-C3). */}
-      {estado.aviso ? <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} /> : null}
+      {estado.aviso ? <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} /> : recuperado && hayAlgoPropio ? <Aviso tipo="info" titulo={T.recuperamosLoEscrito} /> : null}
+      {/* FR-01 · si lo escrito no quedó en el teléfono, se dice: un cierre de la app lo perdería. */}
+      {sinProteger && hayAlgoPropio ? <Parrafo tenue>{T.noSeGuardoEnElTelefono}</Parrafo> : null}
 
       {response ? (
         <Seccion titulo={COPY_FORMULARIOS.respuestaOriginal}>

@@ -1,8 +1,8 @@
 /**
  * WP-FORMULARIOS-DE-INICIO (DL-164) · la lógica pura de «Pedir información» con tipos nuevos y de «Cargar con la
  * persona» (`apps/web/src/app/pro/advisees/forms/formulario-de-inicio.ts`), sin React:
- *  1. lo que viene marcado al pedir (todas pedidas; requeridas las que la plantilla sugiere) y la precarga de
- *     entrenamiento con los seis códigos de DL-100;
+ *  1. lo que viene marcado al pedir (todas pedidas; requeridas las que la plantilla sugiere), la precarga de
+ *     entrenamiento con los seis códigos de DL-100, el pedido desde Nutrición y el «para qué» sugerido (FR-02);
  *  2. cada tipo dicho en palabras con sus opciones, y la condición de una pregunta con las etiquetas, nunca los códigos;
  *  3. el estado del formulario: una respuesta por campo, en orden, y lo oculto por una condición se retira;
  *  4. la revisión antes de enviar: lo que la API rechazaría frena; un obligatorio sin responder se marca y no frena;
@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const m = await import('../src/app/pro/advisees/forms/formulario-de-inicio.ts');
-const { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_PROBLEMA_V2, CONTEXTO_DE_ENTRENAMIENTO, MENSAJE_DE_PROBLEMA_V2 } = await import('@be/domain');
+const { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_PROBLEMA_V2, CONTEXTO_DE_ENTRENAMIENTO, CONTEXTO_DE_NUTRICION, COPY_FORMULARIOS, MENSAJE_DE_PROBLEMA_V2 } = await import('@be/domain');
 
 // ─── Una versión con los nueve tipos y una condicional ──────────────────────────────────────────
 
@@ -67,6 +67,45 @@ test('pedir · la precarga desde Entrenamiento toma los seis códigos de DL-100 
   const sinUno = m.precargaDeEntrenamiento(CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => c !== 'trn_preferencias'));
   assert.equal(sinUno.pedidas.includes('trn_preferencias'), false, 'no se pide una pregunta que la versión no tiene');
   assert.deepEqual(sinUno.requeridas, CONTEXTO_DE_ENTRENAMIENTO.requeridos);
+});
+
+test('pedir · FR-02: desde Nutrición se llega con «Cómo comés hoy» y su área, y se vuelve a su Resumen', () => {
+  assert.equal(m.origenDelPedido('nutricion'), 'nutricion');
+  assert.equal(m.origenDelPedido('entrenamiento'), 'entrenamiento');
+  assert.equal(m.origenDelPedido('entrenamiento-plan'), 'entrenamiento-plan');
+  for (const otro of [null, '', 'ficha', 'https://otro.sitio']) assert.equal(m.origenDelPedido(otro), null, String(otro));
+  assert.deepEqual(m.PRECARGA_DEL_ORIGEN.nutricion, { plantilla: CONTEXTO_DE_NUTRICION.clavePlantilla, area: 'NUTRICION' });
+  assert.deepEqual(m.PRECARGA_DEL_ORIGEN.entrenamiento, { plantilla: CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla, area: 'ENTRENAMIENTO' });
+
+  // La dirección del botón del Resumen de Nutrición se lee de vuelta como un pedido desde Nutrición, con su formulario.
+  const direccion = new URL(m.pedidoDesde('nutricion', 'ase/1'), 'https://be.local');
+  assert.equal(direccion.pathname, '/pro/advisees/forms');
+  assert.equal(direccion.searchParams.get('id'), 'ase/1');
+  assert.equal(direccion.searchParams.get('vista'), 'pedir');
+  assert.equal(direccion.searchParams.get('plantilla'), 'FRM-NUTRICION-INICIO');
+  assert.equal(m.origenDelPedido(direccion.searchParams.get('volver')), 'nutricion');
+  // La misma forma que el botón de Entrenamiento, que ya existía.
+  assert.equal(m.pedidoDesde('entrenamiento', 'a1'), '/pro/advisees/forms?id=a1&vista=pedir&plantilla=FRM-ENTRENAMIENTO&volver=entrenamiento');
+
+  assert.deepEqual(m.vueltaDelOrigen('nutricion', 'a1'), { ruta: '/pro/advisees/nutrition', href: '/pro/advisees/nutrition?id=a1&vista=resumen', texto: COPY_FORMULARIOS.volverANutricion });
+  assert.deepEqual(m.vueltaDelOrigen('entrenamiento', 'a1'), { ruta: '/pro/advisees/training', href: '/pro/advisees/training?id=a1&vista=resumen', texto: COPY_FORMULARIOS.volverAEntrenamiento });
+  assert.equal(m.vueltaDelOrigen('entrenamiento-plan', 'a1').href, '/pro/advisees/training?id=a1&vista=plan');
+});
+
+test('pedir · FR-02: al elegir un formulario se sugiere su «para qué» si el profesional no escribió uno, y lo suyo no se pisa', () => {
+  const nutricion = COPY_FORMULARIOS.propositoDeContextoDeNutricion;
+  const entrenamiento = COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento;
+  // Vacío: va el del formulario elegido, desde el área o desde «Más».
+  assert.deepEqual(m.propositoAlElegir('', null, 'FRM-NUTRICION-INICIO'), { proposito: nutricion, sugerido: nutricion });
+  assert.deepEqual(m.propositoAlElegir('  ', null, 'FRM-ENTRENAMIENTO'), { proposito: entrenamiento, sugerido: entrenamiento });
+  // Cambia de formulario sin tocar el «para qué»: la sugerencia sigue al formulario elegido.
+  assert.deepEqual(m.propositoAlElegir(nutricion, nutricion, 'FRM-ENTRENAMIENTO'), { proposito: entrenamiento, sugerido: entrenamiento });
+  // Uno sin sugerencia deja vacío lo que era la sugerencia del anterior: no corresponde a este formulario.
+  assert.deepEqual(m.propositoAlElegir(nutricion, nutricion, 'FRM-HABITOS'), { proposito: '', sugerido: null });
+  // Lo que escribió el profesional no se pisa, ni sobre una sugerencia ni sin ella.
+  assert.deepEqual(m.propositoAlElegir('Saber cómo come los fines de semana', nutricion, 'FRM-ENTRENAMIENTO'), { proposito: 'Saber cómo come los fines de semana', sugerido: nutricion });
+  assert.deepEqual(m.propositoAlElegir('Armar tu plan de alimentación, de a poco', nutricion, 'FRM-NUTRICION-INICIO').proposito, 'Armar tu plan de alimentación, de a poco');
+  assert.deepEqual(m.propositoAlElegir('Lo mío', null, 'FRM-NUTRICION-INICIO'), { proposito: 'Lo mío', sugerido: null });
 });
 
 // ─── 2. En palabras ─────────────────────────────────────────────────────────────────────────────

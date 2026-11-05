@@ -53,6 +53,11 @@ export async function leerMiEvolucion(api: ApiDeLasZonas, token: string): Promis
 export interface ListaConA3 {
   readonly solicitudes: ListaDeSolicitudesPropiasV2Response['data'];
   readonly sinA3: boolean;
+  /**
+   * Si la bandeja vino entera (sin otra página): solo así una solicitud que no está en la lista se da por terminada al
+   * limpiar los borradores guardados en el teléfono (`borrador-de-formulario.ts`).
+   */
+  readonly completa: boolean;
 }
 
 /**
@@ -67,5 +72,5 @@ export async function leerLista(api: ApiDeLasZonas, token: string): Promise<Resu
     if (falla === 'sesion' || falla === 'pasajera') return requisito;
   }
   if (!r.ok) return r;
-  return { ok: true, datos: { solicitudes: r.datos.data, sinA3: requisito.ok && requisito.datos.data.currentConsent?.state !== 'ACTIVE' } };
+  return { ok: true, datos: { solicitudes: r.datos.data, sinA3: requisito.ok && requisito.datos.data.currentConsent?.state !== 'ACTIVE', completa: !r.datos.page.hasMore } };
 }

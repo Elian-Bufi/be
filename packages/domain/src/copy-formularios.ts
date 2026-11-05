@@ -116,6 +116,11 @@ export const COPY_FORMULARIOS = {
   propositoDeContextoDeEntrenamiento: 'Planificar tu entrenamiento',
   pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario, las preguntas y el área ya están elegidos. Podés cambiarlos antes de enviar.',
   volverAEntrenamiento: 'Volver a Entrenamiento',
+
+  // ─── PF-02 · pedido desde el Resumen de Nutrición (WP-FORMULARIOS-RONDA-2, FR-02) ──────────────
+  propositoDeContextoDeNutricion: 'Armar tu plan de alimentación',
+  pedidoDesdeNutricion: 'Viniste desde Nutrición: el formulario y el «para qué» ya están elegidos. Podés cambiarlos antes de enviar.',
+  volverANutricion: 'Volver a Nutrición',
 } as const;
 
 /**

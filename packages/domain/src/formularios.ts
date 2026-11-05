@@ -18,6 +18,7 @@
 import type { TransicionDeMaquina } from './maquina';
 import { transicionDe } from './maquina';
 import type { Alcance } from './alcance';
+import { COPY_FORMULARIOS } from './copy-formularios';
 
 // ─── Estado de la Solicitud (REG-06-210) ────────────────────────────────────────────────────────
 
@@ -97,6 +98,25 @@ export const CONTEXTO_DE_ENTRENAMIENTO = {
   campos: ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'],
   requeridos: ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento'],
 } as const;
+
+/**
+ * Lo mismo desde el Resumen de Nutrición (WP-FORMULARIOS-RONDA-2, FR-02): «Cómo comés hoy». Las preguntas vienen como
+ * al elegirlo en «Más» (todas pedidas; requeridas las que la plantilla sugiere), y el área es la del formulario.
+ */
+export const CONTEXTO_DE_NUTRICION = {
+  clavePlantilla: 'FRM-NUTRICION-INICIO',
+} as const;
+
+/**
+ * El «para qué» que se sugiere al elegir cada formulario de inicio en «Pedir información», se llegue desde su área o
+ * desde «Más» (FR-02). Es una propuesta: el profesional la cambia, y lo que él escribió no se pisa. Un formulario sin
+ * sugerencia deja el campo para que lo escriba él.
+ */
+export function propositoSugerido(clavePlantilla: string): string | null {
+  if (clavePlantilla === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla) return COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento;
+  if (clavePlantilla === CONTEXTO_DE_NUTRICION.clavePlantilla) return COPY_FORMULARIOS.propositoDeContextoDeNutricion;
+  return null;
+}
 
 // ─── Límites de un campo NUMBER (DL-101) ────────────────────────────────────────────────────────
 

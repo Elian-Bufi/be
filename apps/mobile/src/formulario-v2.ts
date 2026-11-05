@@ -66,6 +66,10 @@ export const TEXTOS_DE_FORMULARIO_V2 = {
     'Mientras completabas, tu profesional cargó respuestas para que las confirmes. Lo que escribiste no se envió. Volvé a consultar y revisá lo cargado: podés confirmarlo, corregirlo o descartarlo y responder vos.',
   volvimosAConsultar: 'Volvimos a consultar: hay respuestas cargadas para que las confirmes.',
   loEscritoSigue: 'Si las descartás, lo que escribiste sigue en el formulario.',
+  // FR-01 · el borrador guardado en el teléfono (`borrador-de-formulario.ts`).
+  recuperamosLoEscrito: 'Recuperamos lo que habías escrito: todavía no se envió.',
+  siDescartasLoCargado: 'Si descartás lo cargado, lo que escribiste sigue en el formulario.',
+  noSeGuardoEnElTelefono: 'No se pudo guardar en este teléfono. Si cerrás la app, se pierde lo que escribiste.',
   // Con la solicitud en pausa (el PDP dice que no se puede responder) lo cargado se puede ver y descartar, no confirmar.
   porAhoraNoSePuedeResponder: 'Por ahora no se puede responder: puede que el vínculo esté en pausa o que tus autorizaciones hayan cambiado.',
   revisarSinResponder: 'Podés ver lo que se cargó y, si no es correcto, descartarlo. Para confirmarlo o corregirlo hace falta que se pueda responder.',
