@@ -27,8 +27,10 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
  * GOO (DL-138): el 09 solo bosqueja el acceso con Google («Google federated authorize/complete — P1», 09 §12 y 09v12 §11)
  * sin IDs; BE verifica el ID token que el cliente obtuvo de Google, y lo declara como familia propia.
  * ZON (DL-081): el 09v10 §8 describe el catálogo de las 17 zonas sin un ID de operación; BE declara su descubrimiento.
+ * FRI (DL-164): los formularios de inicio con tipos nuevos y la propuesta del profesional que la persona confirma; el 09
+ * §22 no tiene esas operaciones, y las de FRM quedan como están para las APK instaladas (DL-152; DL-137 D-7).
  */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164' };
 /**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta

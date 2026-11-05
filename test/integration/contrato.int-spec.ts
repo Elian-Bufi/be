@@ -74,6 +74,8 @@ import {
   estructuraDeEntrenamiento,
 } from './soporte-entrenamiento';
 import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
+import { circuitoV2, conAgua, fri, RESPUESTAS_V2 } from './soporte-formularios-v2';
+import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 import { googleDePrueba, idTokenDeGoogle, levantarGoogleFalso, reclamosDeGoogle, subSintetico, type GoogleFalso } from './soporte-google';
 import { alimentosUsda, cuerpoDeReceta, estructuraConRecetas, FOTOS, leerContenido, RECETAS, subirBytes, subirImagen } from './soporte-recetas';
 import {
@@ -1115,10 +1117,94 @@ it('TEST-CT (WP-07): FRM-01 a 08 — catálogo, Solicitud, Respuesta y rectifica
     .expect(404);
 });
 
+it('TEST-CT (DL-164): FRI-01 a 08 — la definición V2, la bandeja, la vista, responder y rectificar en V2, y la propuesta del profesional', async () => {
+  const c = await circuitoV2(app, prisma, 'ct-fri');
+  const pro = fri(app, c.pro.token);
+  const ase = fri(app, c.ase.token);
+  const otroParte = await prepararProfesional(app, 'ct-fri-otro', ['NUTRICION']);
+  await vinculoCompleto(app, otroParte, c.ase, 'NUTRICION');
+  const otro = fri(app, otroParte.token);
+  const oculta = RESPUESTAS_V2.map((r) => (r.fieldCode === 'ini_condiciones' ? { fieldCode: r.fieldCode, answer: { type: 'MULTI_CHOICE', options: ['hipertension'], otherText: null } } : r));
+
+  // FRI-01 — la definición, en V2
+  await ase.definicion(c.plantillaId, c.versionId).expect(200);
+  await ase.definicion(c.plantillaId, randomUUID()).expect(404);
+  await conSesion(app, c.ase.token).get(`/api/v1/form-templates/${c.plantillaId}/versions/${c.versionId}/definition?x=1`).expect(400);
+
+  // FRI-02 — la bandeja
+  await ase.bandeja().expect(200);
+  await ase.bandeja('?status=BOGUS').expect(400); // INVALID_REQUEST
+  await ase.bandeja('?cursor=basura').expect(400); // INVALID_CURSOR
+
+  // FRI-03 — la vista, para los dos actores
+  await ase.vista(c.formRequestId).expect(200);
+  await pro.vista(c.formRequestId).expect(200);
+  await otro.vista(c.formRequestId).expect(404);
+  await conSesion(app, c.ase.token).get(`/api/v1/form-requests/${c.formRequestId}/view?x=1`).expect(400);
+
+  // FRI-06 — cargar y reemplazar
+  await pro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201);
+  await pro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(409); // ya hay una pendiente
+  await pro.cargar(c.formRequestId, { expectedVersion: 'v1', answers: conAgua(5) }).expect(200);
+  await pro.cargar(c.formRequestId, { expectedVersion: 'v1', answers: conAgua(5) }).expect(409); // VERSION_CONFLICT
+  await pro.cargar(c.formRequestId, { expectedVersion: 'v2', answers: oculta }).expect(422); // FORM_RESPONSE_INVALID (lo oculto)
+  await pro.cargar(c.formRequestId, { expectedVersion: 'v2', answers: RESPUESTAS_V2, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await otro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(404);
+  await request(app.getHttpServer()).put(`/api/v1/form-requests/${c.formRequestId}/proposal`).set('Authorization', `Bearer ${c.pro.token}`).send({ expectedVersion: 'v2', answers: RESPUESTAS_V2 }).expect(400); // sin Idempotency-Key
+
+  // FRI-08 — rechazar (la persona)
+  await ase.rechazar(c.formRequestId, { expectedVersion: 'v1' }).expect(409);
+  await pro.rechazar(c.formRequestId, { expectedVersion: 'v2' }).expect(404); // el profesional no es el titular
+  await ase.rechazar(c.formRequestId, { expectedVersion: 'v2' }).expect(200);
+  await ase.rechazar(c.formRequestId, { expectedVersion: 'v2' }).expect(409);
+
+  // FRI-07 — retirar (el profesional)
+  await pro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201);
+  await pro.retirar(c.formRequestId, { expectedVersion: 'v9' }).expect(409);
+  await otro.retirar(c.formRequestId, { expectedVersion: 'v1' }).expect(404);
+  await pro.retirar(c.formRequestId, { expectedVersion: 'v1' }).expect(200);
+  await pro.retirar(c.formRequestId, { expectedVersion: 'v1' }).expect(409);
+
+  // FRI-04 — responder, confirmando la propuesta
+  const tercera = (await pro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body.data.proposalId as string;
+  await ase.responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(409); // hay una pendiente que no se vio
+  await ase.responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: { proposalId: tercera, expectedVersion: 'v7' } }).expect(409);
+  await ase.responder(c.formRequestId, { answers: oculta, fromProposal: { proposalId: tercera, expectedVersion: 'v1' } }).expect(422);
+  await pro.responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(404); // el profesional no es el titular
+  await ase.responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: { proposalId: tercera, expectedVersion: 'v1' }, extra: 1 }).expect(400);
+  const claveFri = claveDeIdempotencia();
+  const confirmada = await ase.responder(c.formRequestId, { answers: conAgua(8), fromProposal: { proposalId: tercera, expectedVersion: 'v1' } }, claveFri).expect(201);
+  await ase.responder(c.formRequestId, { answers: conAgua(8), fromProposal: { proposalId: tercera, expectedVersion: 'v1' } }, claveFri).expect(201); // replay
+  await ase.responder(c.formRequestId, { answers: conAgua(9), fromProposal: { proposalId: tercera, expectedVersion: 'v1' } }, claveFri).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await ase.responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(422); // ya respondida
+  await pro.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(422); // respondida: no hay nada que confirmar
+  await request(app.getHttpServer()).post(`/api/v1/me/form-requests/${c.formRequestId}/answers`).set('Authorization', `Bearer ${c.ase.token}`).send({ answers: RESPUESTAS_V2, fromProposal: null }).expect(400); // sin Idempotency-Key
+
+  // FRI-05 — corregir
+  const formResponseIdV2 = confirmada.body.data.formResponseId as string;
+  await ase.corregir(formResponseIdV2, { expectedVersion: 'v1', reason: 'Ajuste.', answers: RESPUESTAS_V2 }).expect(201);
+  await ase.corregir(formResponseIdV2, { expectedVersion: 'v1', reason: 'Vieja.', answers: RESPUESTAS_V2 }).expect(409);
+  await ase.corregir(formResponseIdV2, { expectedVersion: 'v2', reason: 'Mal.', answers: oculta }).expect(422);
+  await otro.corregir(formResponseIdV2, { expectedVersion: 'v2', reason: 'x', answers: RESPUESTAS_V2 }).expect(404);
+  await ase.corregir(formResponseIdV2, { expectedVersion: 'v2', reason: 'x', answers: RESPUESTAS_V2, extra: 1 }).expect(400);
+
+  // Sin el A3 vigente: 403 en la vista, al responder, al corregir y al rechazar (otro circuito, que respondió antes).
+  const c2 = await circuitoV2(app, prisma, 'ct-fri-a3');
+  const respondida = await fri(app, c2.ase.token).responder(c2.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201);
+  await conSesion(app, c2.ase.token).post(`/api/v1/me/health-data-consents/${await a3Vigente(app, c2.ase.token)}/revoke`).send({}).expect(200);
+  await fri(app, c2.ase.token).vista(c2.formRequestId).expect(403);
+  await fri(app, c2.ase.token).responder(c2.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(403);
+  await fri(app, c2.ase.token).corregir(respondida.body.data.formResponseId as string, { expectedVersion: 'v1', reason: 'x', answers: RESPUESTAS_V2 }).expect(403);
+  await fri(app, c2.ase.token).rechazar(c2.formRequestId, { expectedVersion: 'v1' }).expect(403);
+});
+
 it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — FRM-02 sin propiedades nuevas, límites NUMBER en el servidor y la cita de una versión vieja es 409', async () => {
+  // La v1 del catálogo: histórica desde DL-164 FI-02 (la v2, con tipos nuevos, es la vigente). FRM-02 la sigue sirviendo en P0.
   const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';
   const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
   const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
+  // Para pedir y responder en P0 (FRM-03 ya no deja pedir la v1): una copia de prueba con el mismo contenido y sus límites.
+  const copiaDeP0 = await sembrarAntecedentesDeP0(prisma, 'frm-trn');
 
   const proParte = await prepararProfesional(app, 'frm-trn', ['ENTRENAMIENTO']);
   const pro = conSesion(app, proParte.token);
@@ -1138,7 +1224,7 @@ it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — F
 
   const solicitud = await pro
     .post(`/api/v1/advisees/${aseParte.id}/form-requests`)
-    .send({ templateVersionId: VERSION_ENTRENAMIENTO, purpose: 'Planificar tu entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: SEIS, requiredFieldCodes: SEIS.slice(0, 5) })
+    .send({ templateVersionId: copiaDeP0.versionId, purpose: 'Planificar tu entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: SEIS, requiredFieldCodes: SEIS.slice(0, 5) })
     .expect(201);
   const responder = `/api/v1/me/form-requests/${solicitud.body.data.formRequestId}/responses`;
   const respuestas = (dias: number, minutos: number) => ({

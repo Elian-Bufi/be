@@ -21,10 +21,13 @@ import { nombreDeAsesoradoPara } from '../vinculo/lectura';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
 import { categoriasDeCampos, codigosDeCampo, respuestaApi, solicitudApi } from './lectura-formularios';
+import { esVersionV2, noServidaEnV1, versionesV2 } from './lectura-formularios-v2';
 
 type Tx = Prisma.TransactionClient;
 
-const INCLUIR_SOLICITUD = { templateVersion: { select: { nombre: true, plantillaId: true } }, respuesta: { select: { id: true } } } as const;
+const INCLUIR_SOLICITUD = { templateVersion: { select: { nombre: true, plantillaId: true, contenido: true } }, respuesta: { select: { id: true } } } as const;
+/** FRM-06, además: si hay una propuesta del profesional esperando (DL-164 D-3), que esta operación no conoce. */
+const INCLUIR_SOLICITUD_PROPIA = { ...INCLUIR_SOLICITUD, propuestas: { where: { estado: 'PENDIENTE' as const }, select: { id: true }, take: 1 } } as const;
 
 /**
  * API-FRM-03, 04, 05 y 06 — crear y consultar Solicitudes (09v16.1 §22.3 a §22.6; UC-P32).
@@ -196,6 +199,9 @@ export class SolicitudesService {
       lectura: async (tx) => {
         const s = esUuid(formRequestId) ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId }, include: INCLUIR_SOLICITUD }) : null;
         if (!s) throw this.ejecutor.noRevelable({ operacion: 'API-FRM-05', actorId: actor.identidadId, recurso }, ctx);
+        // DL-164 D-5: la Solicitud de una versión con tipos nuevos no entra en el contrato V1 (la APK instalada no podría
+        // abrirla): para esta operación no existe, con el mismo 404 que lo inexistente. FRI-03 la sirve.
+        if (esVersionV2(s.templateVersion.contenido)) throw noServidaEnV1();
 
         const esAsesorado = s.asesoradoId === actor.identidadId;
         const esProfesional = s.profesionalId === actor.identidadId;
@@ -241,28 +247,29 @@ export class SolicitudesService {
         const filas = await tx.solicitudDeFormulario.findMany({
           where: {
             asesoradoId: actor.identidadId,
+            // DL-164 D-5: las de versiones con tipos nuevos no se listan acá (la APK instalada no las podría abrir); FRI-02 las lista todas.
+            templateVersionId: { notIn: await versionesV2(tx) },
             ...(consulta.filtros.status ? { respuesta: consulta.filtros.status === 'RESPONDED' ? { isNot: null } : { is: null } } : {}),
             ...despuesDelCursor(consulta.cursor),
           },
-          include: INCLUIR_SOLICITUD,
+          include: INCLUIR_SOLICITUD_PROPIA,
           orderBy: ORDEN_DE_LISTA,
           take: consulta.limit + 1,
         });
         const { pagina, page } = paginar(filas, consulta.limit);
+        // El PDP, una vez por par (profesional, Alcance); si está respondida se mira por fila, no por par.
         const combos = new Map<string, boolean>();
         const datos = [];
         for (const s of pagina) {
           const clave = `${s.profesionalId}|${s.alcance}`;
           if (!combos.has(clave)) {
-            combos.set(
-              clave,
-              s.respuesta === null && (await this.puedeAcceder(tx, 'API-FRM-06', actor.identidadId, s.profesionalId, actor.identidadId, s.alcance, ctx)),
-            );
+            combos.set(clave, await this.puedeAcceder(tx, 'API-FRM-06', actor.identidadId, s.profesionalId, actor.identidadId, s.alcance, ctx));
           }
           const nombreProfesional = await this.nombreProfesional(tx, s.profesionalId);
           datos.push({
             ...(solicitudApi(s, nombreProfesional, await nombreDeAsesoradoPara(tx, s.profesionalId, actor.identidadId), s.respuesta !== null) as Record<string, unknown>),
-            respondable: combos.get(clave) === true,
+            // DL-164 D-3: con una propuesta esperando, esta APK no la puede responder (FRM-07 lo rechaza igual).
+            respondable: s.respuesta === null && s.propuestas.length === 0 && combos.get(clave) === true,
           });
         }
         return { data: datos, page };

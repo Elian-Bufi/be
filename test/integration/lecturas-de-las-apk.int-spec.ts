@@ -37,6 +37,8 @@ import {
   subirImagenDeEjercicio,
 } from './soporte-por-serie';
 import { alimentosUsda, crearReceta, cuerpoDeReceta, estructuraConRecetas, FOTOS, RECETAS, subirImagen } from './soporte-recetas';
+import { CAMPOS_V2, sembrarPlantillaV2 } from './soporte-formularios-v2';
+import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 import { prepararAsesorado, prepararProfesional, solicitar, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -61,10 +63,12 @@ const restarDias = (fecha: string, dias: number): string => new Date(Date.parse(
 /** Una foto sintética de una comida, en JPEG, como la que manda la APK desde la cámara. */
 const fotoDeUnaComida = () => sharp({ create: { width: 320, height: 240, channels: 3, background: { r: 200, g: 120, b: 40 } } }).jpeg().toBuffer();
 
-/** Las plantillas de formularios sembradas por la migración (las mismas de `contrato.int-spec.ts` y `formularios-alcance`). */
+/**
+ * FRM-SALUD, sembrada por la migración (la misma de `contrato.int-spec.ts`). «Antecedentes para entrenamiento» se siembra
+ * como copia de P0 en la prueba: desde DL-164 FI-02 su v1 es histórica y la vigente usa tipos nuevos, que estas APK no leen.
+ */
 const VERSION_SALUD = '349161b3-b831-4df1-896f-484517393a57';
-const VERSION_ANTECEDENTES = '0fba80db-0a80-47a7-b183-130232ab7a9c';
-const CAMPOS_DE_ANTECEDENTES = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
+const CAMPOS_DE_ANTECEDENTES =['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
 
 /**
  * Lo que una APK lee pero hoy no puede recibir una respuesta exitosa, por una decisión registrada. De eso se lee el
@@ -441,10 +445,18 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const pedir = async (cuerpo: Record<string, unknown>) => (await conSesion(app, pro.token).post(`/api/v1/advisees/${ase.id}/form-requests`).send(cuerpo).expect(201)).body.data.formRequestId as string;
     const salud = await pedir({ templateVersionId: VERSION_SALUD, purpose: 'Seguridad del entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: ['condiciones_declaradas', 'dolor_o_lesiones'], requiredFieldCodes: ['condiciones_declaradas'] });
     // «Antecedentes para entrenamiento» (DL-100 a 102): campos numéricos con límites que FRM-02 no expone.
-    const antecedentes = await pedir({ templateVersionId: VERSION_ANTECEDENTES, purpose: 'Contexto', scope: 'ENTRENAMIENTO', requestedFieldCodes: CAMPOS_DE_ANTECEDENTES, requiredFieldCodes: CAMPOS_DE_ANTECEDENTES.slice(0, 5) });
+    const copiaDeP0 = await sembrarAntecedentesDeP0(prisma, e);
+    const antecedentes = await pedir({ templateVersionId: copiaDeP0.versionId, purpose: 'Contexto', scope: 'ENTRENAMIENTO', requestedFieldCodes: CAMPOS_DE_ANTECEDENTES, requiredFieldCodes: CAMPOS_DE_ANTECEDENTES.slice(0, 5) });
+    // DL-164 D-5: una Solicitud de una versión con tipos nuevos no existe para esta APK: FRM-06 no la lista, y FRM-05 y
+    // FRM-02 responden el 404 que la APK reconoce. La responde la app nueva, por FRI.
+    const v2 = await sembrarPlantillaV2(prisma, e, null);
+    const inicio = await pedir({ templateVersionId: v2.versionId, purpose: 'Para empezar', scope: 'ENTRENAMIENTO', requestedFieldCodes: [...CAMPOS_V2], requiredFieldCodes: [] });
     const token = ase.token;
 
-    await apk.pide('API-FRM-06', { token });
+    const propias = await apk.pide('API-FRM-06', { token });
+    expect((propias.body.data as { formRequestId: string }[]).map((s) => s.formRequestId)).not.toContain(inicio);
+    await apk.pide('API-FRM-05', { token, params: { formRequestId: inicio }, status: 404 });
+    await apk.pide('API-FRM-02', { token, params: { templateId: v2.plantillaId, versionId: v2.versionId }, status: 404 });
     await apk.pide('API-FRM-06', { token, consulta: { status: 'PENDING', limit: '50' } });
     for (const id of [salud, antecedentes]) {
       const detalle = (await apk.pide('API-FRM-05', { token, params: { formRequestId: id } })).body.data.request;

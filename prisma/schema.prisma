@@ -209,6 +209,8 @@ model Identidad {
   solicitudesDeFormularioComoProfesional SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelProfesional")
   solicitudesDeFormularioComoAsesorado   SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelAsesorado")
   respuestasDeFormulario                 RespuestaDeFormulario[] @relation("RespuestaDeFormularioDelAsesorado")
+  // DL-164
+  propuestasDeRespuestaDeFormulario PropuestaDeRespuestaDeFormulario[] @relation("PropuestaDeRespuestaDelProfesional")
 
   // WP-08
   candidatosDeImportacion CandidatoDeImportacion[] @relation("CandidatoDelProfesional")
@@ -1858,6 +1860,20 @@ enum TipoDeEventoDeFormulario {
   SolicitudDeFormularioCreada
   RespuestaDeFormularioRegistrada
   RespuestaDeFormularioRectificada
+  /// DL-164 (D-3, D-6): los hechos de la propuesta del profesional. Confirmarla también registra la Respuesta (D-4).
+  PropuestaDeRespuestaCargada
+  PropuestaDeRespuestaReemplazada
+  PropuestaDeRespuestaRetirada
+  PropuestaDeRespuestaRechazada
+  PropuestaDeRespuestaConfirmada
+}
+
+/// DL-164 D-3: PENDIENTE mientras espera que la persona la confirme; después, cómo terminó. Sin retorno.
+enum EstadoDePropuestaDeRespuesta {
+  PENDIENTE
+  CONFIRMADA
+  RECHAZADA
+  RETIRADA
 }
 
 /// Catálogo propio de ejercicios (RF-037; REG-06-99 a 101). Un cambio de catálogo no reescribe sesiones ya
@@ -2272,10 +2288,39 @@ model SolicitudDeFormulario {
   vinculo         Vinculo                        @relation(fields: [vinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   templateVersion VersionDePlantillaDeFormulario @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   respuesta       RespuestaDeFormulario?
+  propuestas      PropuestaDeRespuestaDeFormulario[]
 
   @@index([asesoradoId, profesionalId, momentoDeRegistro])
   @@index([vinculoId])
   @@map("solicitud_de_formulario")
+}
+
+/// DL-164 D-3: lo que el profesional cargó desde el escritorio con lo que la persona le contó, y espera que ella lo
+/// confirme desde su app. Acompaña a la Solicitud mientras está pendiente y no es un estado de ella (REG-06-210). Una
+/// sola PENDIENTE por Solicitud (índice parcial en la migración 20261104120200). Las respuestas propuestas viven en
+/// `contenido` solo mientras está PENDIENTE: al confirmar pasan a la Respuesta (D-4); al rechazar o retirar se borran
+/// (D-6) y queda solo cómo y cuándo terminó. La ven solo quien la cargó y la persona.
+model PropuestaDeRespuestaDeFormulario {
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  solicitudId       String                       @map("solicitud_id") @db.Uuid
+  profesionalId     String                       @map("profesional_id") @db.Uuid
+  /// `{ format: 2, answers: [{ fieldCode, answer }] }` mientras está PENDIENTE; NULL después.
+  contenido         Json?
+  estado            EstadoDePropuestaDeRespuesta @default(PENDIENTE)
+  /// Token de concurrencia (`expectedVersion`): avanza de a uno con cada reemplazo; resolverla no lo cambia.
+  version           Int                          @default(1)
+  /// Cuándo se cargó por última vez (un reemplazo la renueva).
+  cargadaEn         DateTime                     @default(now()) @map("cargada_en") @db.Timestamptz(3)
+  resueltaEn        DateTime?                    @map("resuelta_en") @db.Timestamptz(3)
+  procedencia       Json
+  momentoDeRegistro DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  solicitud   SolicitudDeFormulario @relation(fields: [solicitudId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad             @relation("PropuestaDeRespuestaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([solicitudId])
+  @@index([profesionalId])
+  @@map("propuesta_de_respuesta_de_formulario")
 }
 
 /// La respuesta original: colección propia, inmutable (09:1618 «no overwrite»). Siempre SELF_REPORTED (09 §22.7).
@@ -2290,6 +2335,9 @@ model RespuestaDeFormulario {
   procedencia       Json
   /// Token de concurrencia de esta Respuesta (compara contra `expectedVersion` en FRM-08).
   version           Int      @default(1)
+  /// DL-164 D-4: si nació de una propuesta, `{ professionalId, proposalId, loadedAt, confirmedAt, correctedFieldCodes }`.
+  /// Se escribe en el INSERT (la Respuesta es de solo agregar). NULL si la persona respondió sola.
+  transcripcion     Json?
   momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   solicitud       SolicitudDeFormulario                        @relation(fields: [solicitudId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -3185,6 +3233,12 @@ enum TipoDeNovedad {
   ACCESO_PROFESIONAL_SUSPENDIDO
   /// WP-ADMINISTRACION (D-6): a una persona vinculada, cuando el profesional vuelve a poder operar el área.
   ACCESO_PROFESIONAL_RESTABLECIDO
+  /// DL-164: a la persona, cuando su profesional carga o reemplaza lo que ella le contó, para que lo confirme. La
+  /// referencia es la Solicitud.
+  PROPUESTA_DE_FORMULARIO_CARGADA
+  /// DL-164: al profesional, cuando la persona confirma lo cargado (la Respuesta ya existe) o dice «No es correcto».
+  PROPUESTA_DE_FORMULARIO_CONFIRMADA
+  PROPUESTA_DE_FORMULARIO_RECHAZADA
 }
 
 enum PlataformaDeAviso {

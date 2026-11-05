@@ -288,6 +288,8 @@ describe('08 §29 — historia por adición', () => {
     'zona_muscular',
     'asignacion_de_zonas_de_ejercicio',
     'zona_de_ejercicio',
+    // DL-164 (2026-11-04): la propuesta del profesional (se resuelve con UPDATE; no se borra ni se trunca)
+    'propuesta_de_respuesta_de_formulario',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

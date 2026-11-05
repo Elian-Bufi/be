@@ -63,6 +63,15 @@ export const TIPOS_DE_NOVEDAD = [
    */
   'PROFESSIONAL_ACCESS_SUSPENDED',
   'PROFESSIONAL_ACCESS_RESTORED',
+  /**
+   * WP-FORMULARIOS-DE-INICIO (DL-164 D-3): a la persona, cuando su profesional carga (o reemplaza) desde el escritorio
+   * lo que ella le contó, para que lo confirme en su app. La referencia es la Solicitud; abre sus formularios (`FORMS`).
+   * Nunca las respuestas: se leen en el formulario, con su sesión.
+   */
+  'FORM_PROPOSAL_LOADED',
+  /** DL-164 D-4 y D-6: al profesional que cargó, cuando la persona confirma (la Respuesta ya existe) o dice «No es correcto». */
+  'FORM_PROPOSAL_CONFIRMED',
+  'FORM_PROPOSAL_REJECTED',
 ] as const;
 export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
 
@@ -71,9 +80,10 @@ export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
  * (INV-06-33). `referenceId` es lo que esa pantalla necesita (el asesorado en `ADVISEE`, la revisión en `NUTRITION_REVIEW`
  * y `TRAINING_REVIEW`, que la persona lee completa desde REV-A), o `null`. `PRO_HOME` es el espacio profesional (las
  * solicitudes), para el profesional que lee una novedad de una solicitud. Una nota de coordinación (DL-140) abre la ficha
- * de la persona sobre la que trata, en `ADVISEE`.
+ * de la persona sobre la que trata, en `ADVISEE`. `FORMS` (DL-164) abre los formularios de la persona, en la Solicitud que
+ * `referenceId` nombra: una APK anterior no la conoce y abre el centro, como con cualquier vista nueva.
  */
-export const VISTAS_DE_NOVEDAD = ['NEWS', 'NUTRITION', 'TRAINING', 'RELATIONSHIPS', 'ADVISEE', 'NUTRITION_REVIEW', 'TRAINING_REVIEW', 'PRO_HOME'] as const;
+export const VISTAS_DE_NOVEDAD = ['NEWS', 'NUTRITION', 'TRAINING', 'RELATIONSHIPS', 'ADVISEE', 'NUTRITION_REVIEW', 'TRAINING_REVIEW', 'PRO_HOME', 'FORMS'] as const;
 export type VistaDeNovedad = (typeof VISTAS_DE_NOVEDAD)[number];
 
 export const NovedadSchema = z.strictObject({
