@@ -52,6 +52,9 @@ CREATE TYPE "OrigenDeHabitos" AS ENUM ('FORMULARIO', 'MIS_HABITOS');
 -- CreateEnum
 CREATE TYPE "EstadoDeAutorizacionDeHabitos" AS ENUM ('ACTIVA', 'RETIRADA');
 
+-- CreateEnum
+CREATE TYPE "EstadoDeDestinatarioDeHabitos" AS ENUM ('LOS_RECIBE', 'NO_LOS_RECIBE');
+
 -- CreateTable
 CREATE TABLE "habitos_de_la_persona" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -89,7 +92,7 @@ CREATE TABLE "destinatario_de_habitos" (
     "autorizacion_id" UUID NOT NULL,
     "alcance_de_vinculo_id" UUID NOT NULL,
     "profesional_id" UUID NOT NULL,
-    "incluido" BOOLEAN NOT NULL,
+    "estado" "EstadoDeDestinatarioDeHabitos" NOT NULL,
     "incluido_desde" TIMESTAMPTZ(3),
     "momento_de_registro" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -165,7 +168,7 @@ ALTER TABLE "autorizacion_de_habitos" ADD CONSTRAINT "autorizacion_de_habitos_te
 ALTER TABLE "autorizacion_de_habitos" ADD CONSTRAINT "autorizacion_de_habitos_la_da_la_persona" CHECK ("actor_id" = "asesorado_id");
 ALTER TABLE "autorizacion_de_habitos" ADD CONSTRAINT "autorizacion_de_habitos_procedencia_es_objeto" CHECK (COALESCE(jsonb_typeof("procedencia") = 'object', FALSE));
 
-ALTER TABLE "destinatario_de_habitos" ADD CONSTRAINT "destinatario_de_habitos_desde_si_los_recibe" CHECK ("incluido" = ("incluido_desde" IS NOT NULL));
+ALTER TABLE "destinatario_de_habitos" ADD CONSTRAINT "destinatario_de_habitos_desde_si_los_recibe" CHECK (("estado" = 'LOS_RECIBE') = ("incluido_desde" IS NOT NULL));
 
 -- ─── 5. Cada versión sucede a la anterior de la misma persona, y cada renglón es de su lista ────────────────────────
 -- Los hábitos: la versión que sigue (1 si es la primera) y, si viene de un formulario, una Respuesta de la misma persona.

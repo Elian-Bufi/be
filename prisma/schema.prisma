@@ -2479,16 +2479,23 @@ model AutorizacionDeHabitos {
   @@map("autorizacion_de_habitos")
 }
 
+/// DL-165 D-9 (D-17): lo que la versión ACTIVA dice de un profesional, por cada componente: los recibe, o la persona dijo
+/// que no. Un enum y no un booleano, como todo estado de la base.
+enum EstadoDeDestinatarioDeHabitos {
+  LOS_RECIBE
+  NO_LOS_RECIBE
+}
+
 /// DL-165 D-9: un renglón de una versión ACTIVA de la autorización: un profesional, por cada componente de vínculo sin
 /// terminar que tenía con la persona, si recibe sus hábitos (y desde cuándo) o si ella dijo que no. Un componente que no está
 /// acá (un profesional que la acompaña después, o que vuelve con otro vínculo) no los recibe: la app le pregunta. Solo se
 /// agregan.
 model DestinatarioDeHabitos {
-  autorizacionId     String    @map("autorizacion_id") @db.Uuid
-  alcanceDeVinculoId String    @map("alcance_de_vinculo_id") @db.Uuid
-  profesionalId      String    @map("profesional_id") @db.Uuid
-  incluido           Boolean
-  incluidoDesde      DateTime? @map("incluido_desde") @db.Timestamptz(3)
+  autorizacionId     String                        @map("autorizacion_id") @db.Uuid
+  alcanceDeVinculoId String                        @map("alcance_de_vinculo_id") @db.Uuid
+  profesionalId      String                        @map("profesional_id") @db.Uuid
+  estado             EstadoDeDestinatarioDeHabitos
+  incluidoDesde      DateTime?                     @map("incluido_desde") @db.Timestamptz(3)
   momentoDeRegistro  DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   autorizacion     AutorizacionDeHabitos @relation(fields: [autorizacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)

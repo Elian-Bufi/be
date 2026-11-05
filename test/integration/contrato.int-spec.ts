@@ -1199,6 +1199,56 @@ it('TEST-CT (DL-164): FRI-01 a 08 — la definición V2, la bandeja, la vista, r
   await fri(app, c2.ase.token).rechazar(c2.formRequestId, { expectedVersion: 'v1' }).expect(409);
 });
 
+it('TEST-CT (DL-165, FR-10): HBT-01 a 05 — mis hábitos, una versión nueva, compartirlos, dejar de compartirlos y lo que ve el profesional', async () => {
+  const pro = await prepararProfesional(app, 'ct-hbt', ['NUTRICION']);
+  const ajeno = await prepararProfesional(app, 'ct-hbt-ajeno', ['NUTRICION']);
+  const ase = await prepararAsesorado(app, 'ct-hbt', { a3: true });
+  await vinculoCompleto(app, pro, ase, 'NUTRICION');
+  const yo = conSesion(app, ase.token);
+  const servidor = app.getHttpServer();
+  const habitos = [{ fieldCode: 'horas_de_sueno', answer: { type: 'NUMBER', number: 7, unit: 'h' } }];
+
+  // HBT-01 — mis hábitos
+  await yo.get('/api/v1/me/habits').expect(200);
+  await yo.get('/api/v1/me/habits?x=1').expect(400); // INVALID_REQUEST
+  await request(servidor).get('/api/v1/me/habits').expect(401);
+
+  // HBT-02 — una versión nueva
+  const clave = claveDeIdempotencia();
+  await yo.post('/api/v1/me/habits', clave).send({ expectedVersion: null, answers: habitos }).expect(201);
+  await yo.post('/api/v1/me/habits', clave).send({ expectedVersion: null, answers: habitos }).expect(201); // replay
+  await yo.post('/api/v1/me/habits', clave).send({ expectedVersion: 'v1', answers: habitos }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await yo.post('/api/v1/me/habits').send({ expectedVersion: null, answers: habitos }).expect(409); // VERSION_CONFLICT
+  await yo.post('/api/v1/me/habits').send({ expectedVersion: 'v1', answers: [{ fieldCode: 'horas_de_sueno', answer: { type: 'NUMBER', number: 30, unit: 'h' } }] }).expect(422); // FORM_RESPONSE_INVALID
+  await yo.post('/api/v1/me/habits').send({ expectedVersion: 'v1', answers: habitos, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await request(servidor).post('/api/v1/me/habits').set('Authorization', `Bearer ${ase.token}`).send({ expectedVersion: 'v1', answers: habitos }).expect(400); // sin Idempotency-Key
+
+  // HBT-03 — compartirlos
+  const compartir = (cambios: Record<string, unknown>) =>
+    yo.put('/api/v1/me/habits/sharing').send({ expectedVersion: null, textVersionId: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id, professionalIds: [pro.id], declinedProfessionalIds: [], ...cambios });
+  await compartir({ textVersionId: VERSION_VIGENTE.EVIDENCIA_VISUAL.id }).expect(409); // CONSENT_VERSION_STALE
+  await compartir({ professionalIds: [ajeno.id] }).expect(422); // HABITS_RECIPIENT_NOT_AVAILABLE
+  await compartir({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await compartir({}).expect(200);
+  await compartir({}).expect(409); // VERSION_CONFLICT: ya hay una versión
+
+  // HBT-05 — lo que ve el profesional
+  await conSesion(app, pro.token).get(`/api/v1/advisees/${ase.id}/habits`).expect(200);
+  await conSesion(app, pro.token).get(`/api/v1/advisees/${ase.id}/habits?x=1`).expect(400); // INVALID_REQUEST
+  await conSesion(app, ajeno.token).get(`/api/v1/advisees/${ase.id}/habits`).expect(404);
+
+  // HBT-04 — dejar de compartirlos
+  await yo.post('/api/v1/me/habits/sharing/withdrawal').send({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await yo.post('/api/v1/me/habits/sharing/withdrawal').send({ expectedVersion: 'v1', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post('/api/v1/me/habits/sharing/withdrawal').send({ expectedVersion: 'v1' }).expect(200);
+
+  // Sin el A3 vigente: 403 en lo propio (retirar no lo exige).
+  await conSesion(app, ase.token).post(`/api/v1/me/health-data-consents/${await a3Vigente(app, ase.token)}/revoke`).send({}).expect(200);
+  await yo.get('/api/v1/me/habits').expect(403);
+  await yo.post('/api/v1/me/habits').send({ expectedVersion: 'v1', answers: habitos }).expect(403);
+  await compartir({ expectedVersion: 'v2' }).expect(403);
+});
+
 it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — FRM-02 sin propiedades nuevas, límites NUMBER en el servidor y la cita de una versión vieja es 409', async () => {
   // La v1 del catálogo: histórica desde DL-164 FI-02 (la v2, con tipos nuevos, es la vigente). FRM-02 la sigue sirviendo en P0.
   const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';

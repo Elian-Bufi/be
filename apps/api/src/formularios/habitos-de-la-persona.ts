@@ -192,7 +192,12 @@ export async function autorizacionVigente(tx: Tx, personaId: string): Promise<Au
   }
   return {
     fila: ultima,
-    renglones: ultima.destinatarios.map((d) => ({ profesionalId: d.profesionalId, alcanceDeVinculoId: d.alcanceDeVinculoId, incluido: d.incluido, incluidoDesde: d.incluidoDesde?.toISOString() ?? null })),
+    renglones: ultima.destinatarios.map((d) => ({
+      profesionalId: d.profesionalId,
+      alcanceDeVinculoId: d.alcanceDeVinculoId,
+      incluido: d.estado === 'LOS_RECIBE',
+      incluidoDesde: d.incluidoDesde?.toISOString() ?? null,
+    })),
     activaDesde: desde,
   };
 }
@@ -281,7 +286,7 @@ export async function agregarVersionDeAutorizacion(
         autorizacionId: fila.id,
         alcanceDeVinculoId: r.alcanceDeVinculoId,
         profesionalId: r.profesionalId,
-        incluido: r.incluido,
+        estado: r.incluido ? ('LOS_RECIBE' as const) : ('NO_LOS_RECIBE' as const),
         incluidoDesde: r.incluidoDesde ? new Date(r.incluidoDesde) : null,
       })),
     });
