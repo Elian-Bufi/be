@@ -101,7 +101,7 @@ Dos»; y `ASE_TRES_`, «Prueba Tres». Las de `ASE_CUATRO_` y `ASE_CINCO_` no se
 
 **Parte 2 · La persona responde sola «Antes de entrenar»** (Entrenamiento, Prueba Uno)
 1. En la computadora, entrar a https://be-web-1ngj.onrender.com/pro con «Lic. Prueba Dos Áreas» y abrir a «Prueba Uno».
-2. Ir a la pestaña «Información» y elegir «Pedir información». Completar:
+2. Arriba, al lado del nombre, «Más» → «Pedir información» (se abre la página «Información» de la persona). Completar:
    - el formulario: «Antes de entrenar»;
    - las preguntas: vienen todas elegidas;
    - para qué y en qué área: escribir para qué lo necesitás (por ejemplo, «Para armar tu plan») y elegir Entrenamiento.
@@ -114,8 +114,9 @@ Dos»; y `ASE_TRES_`, «Prueba Tres». Las de `ASE_CUATRO_` y `ASE_CINCO_` no se
 7. En la computadora, actualizar. La solicitud figura como respondida y se leen las respuestas en palabras.
 
 **Parte 3 · El profesional la carga y la persona corrige y confirma** (Nutrición, Prueba Dos)
-1. En la computadora, abrir a «Prueba Dos» y pedir «Cómo comés hoy», en el área Nutrición.
-2. En «Solicitudes», abrirla y elegir «Cargar con la persona».
+1. En la computadora, abrir a «Prueba Dos» y, con «Más» → «Pedir información», pedir «Cómo comés hoy», en el área
+   Nutrición.
+2. Al enviarla se vuelve a «Solicitudes», en la misma página: abrirla y elegir «Cargar con la persona».
 3. Completar algunas respuestas y «Enviar para que lo confirme». La solicitud queda «Esperando que lo confirme».
 4. En el teléfono, cerrar la sesión de Prueba Uno y entrar con «Prueba Dos». La solicitud dice «Para confirmar»; abrirla
    con «Revisar».
