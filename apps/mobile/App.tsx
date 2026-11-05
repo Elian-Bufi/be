@@ -72,6 +72,7 @@ import { PantallaDeFormularios, PantallaDeMiSolicitud } from './src/pantallas/fo
 import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantallas/historial';
 import { PantallaDeInicio } from './src/pantallas/inicio';
 import { PantallaDeLogin } from './src/pantallas/login';
+import { PantallaDeMisHabitos } from './src/pantallas/mis-habitos';
 import { PantallaDeNovedades } from './src/pantallas/novedades';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
 import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
@@ -640,6 +641,7 @@ function Contenido() {
               {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
               {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} volver={volverAInformacion} ir={ir} subir={subir} /> : null}
+              {ruta.nombre === 'mis-habitos' ? <PantallaDeMisHabitos token={sesion.token} salir={salir} ir={ir} subir={subir} /> : null}
               {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
             </>
           ) : null}

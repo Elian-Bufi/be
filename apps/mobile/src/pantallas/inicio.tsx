@@ -26,7 +26,7 @@ import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { Titulo } from '../ui';
 import { AccesoIncompleto } from './inicio-acceso';
 import { ActividadDeEntrenamiento, EntrenamientoDeHoy } from './inicio-entrenamiento';
-import { Pendientes } from './inicio-informacion';
+import { Pendientes, PreguntaDeHabitos } from './inicio-informacion';
 import { Mediciones } from './inicio-mediciones';
 import { NutricionDeHoy } from './inicio-nutricion';
 import { estilos } from './tarjeta-de-inicio';
@@ -45,6 +45,8 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
       <EntrenamientoDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
       <NutricionDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
       <Pendientes token={token} sesionPerdida={sesionPerdida} ir={ir} />
+      {/* DL-165 D-9: solo si un profesional nuevo espera la respuesta de la persona; si no, no se dibuja. */}
+      <PreguntaDeHabitos token={token} sesionPerdida={sesionPerdida} ir={ir} />
       <ActividadDeEntrenamiento token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
       <Mediciones token={token} sesionPerdida={sesionPerdida} ir={ir} />
     </View>

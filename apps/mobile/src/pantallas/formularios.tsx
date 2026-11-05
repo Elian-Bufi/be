@@ -21,11 +21,12 @@
  * se revocó, la solicitud sigue estando —es de la persona— pero ya no se puede responder.
  */
 import {
-  ayudaDeLaPregunta,
   camposEnOrden,
+  CODIGO_DE_LA_PARTE_DE_HABITOS,
   COPY,
   COPY_FORMULARIOS,
   COPY_FORMULARIOS_V2,
+  COPY_HABITOS,
   desenlaceDeEnvio,
   estadoInicialDeFormulario,
   habilitacion,
@@ -41,7 +42,6 @@ import {
   seOfreceQuitarRespuesta,
   sePuedeEnviar,
   topeDesdeLaTabla,
-  valoresAdmitidos,
   type Accion,
   type CampoDePlantillaV2,
   type DetalleDeSolicitudV2,
@@ -57,10 +57,9 @@ import { AccessibilityInfo, AppState, View } from 'react-native';
 import { api } from '../api';
 import { baseDelBorrador, hayQueGuardar, restauracionDe, type LecturaDelBorrador } from '../borrador-de-formulario';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
-import { CampoDeAlimentos, CampoDeHorarios, ListaQueSeRepite, OpcionUnica, OpcionesMultiples, PieDePregunta, PreguntaSiONo, TablaDeOpciones } from '../campos-de-formulario';
 import { DialogoDeConfirmacion, useAccionConfirmada } from '../dialogo';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
-import { fecha } from '../formato';
+import { dia, fecha } from '../formato';
 import { borradoresDeFormularios as borradores } from '../formularios-en-el-telefono';
 import {
   armarRespuestas,
@@ -80,16 +79,17 @@ import {
   seccionesEnPalabras,
   TEXTOS_DE_FORMULARIO_V2 as T,
   tieneAlgo,
-  valorComo,
   valorDe,
   type Borrador,
   type RespuestasArmadas,
 } from '../formulario-v2';
+import { precargaDelFormulario, seOfrecePrecargaDeHabitos } from '../habitos-en-el-telefono';
 import { falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada } from '../lecturas';
 import { leerLista } from '../lecturas-de-las-zonas';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Ayuda, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
+import { PreguntaV2 } from '../pregunta-v2';
+import { Aviso, Ayuda, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropiaV2[] } | { tipo: 'error'; sinConexion: boolean };
 
@@ -162,6 +162,13 @@ export function PantallaDeFormularios({ token, identidadId, salir, ir }: { token
           <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
         </Aviso>
       ) : null}
+      {/* DL-165 D-9 (FR-10): «Mis hábitos», arriba de la bandeja. Es lo que la persona contó de su día y su semana, y la
+          autorización para compartirlo con sus profesionales. */}
+      <Tarjeta>
+        <Subtitulo>{COPY_HABITOS.apk.entradaTitulo}</Subtitulo>
+        <Parrafo tenue>{COPY_HABITOS.apk.entradaBajada}</Parrafo>
+        <Boton texto={COPY_HABITOS.apk.verMisHabitos} tipo="secundario" onPress={() => ir({ nombre: 'mis-habitos' })} />
+      </Tarjeta>
       {carga.tipo === 'cargando' ? <Cargando forma="lista" /> : null}
       {carga.tipo === 'error' ? <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} /> : null}
       {carga.tipo === 'listo' && carga.datos.length === 0 ? <Parrafo>{COPY_FORMULARIOS.sinSolicitudesPropias}</Parrafo> : null}
@@ -275,6 +282,11 @@ export function PantallaDeMiSolicitud({
   const [paso, setPaso] = useState(0);
   /** Lo que quedó sin responder en la parte que se acaba de dejar: la siguiente lo dice y deja volver. */
   const [quedaron, setQuedaron] = useState<{ readonly indice: number; readonly titulo: string; readonly n: number } | null>(null);
+  /**
+   * DL-165 D-18 · «¿Sigue igual?»: de cuándo es lo vigente de «Tus hábitos» que se precargó, para decirlo en esa parte.
+   * `null`: no se precargó nada (hay respuesta, algo cargado, un borrador recuperado, o la persona no tiene hábitos).
+   */
+  const [habitosDesde, setHabitosDesde] = useState<string | null>(null);
   const clave = useClaveDeIntento();
   const motivo = estado.borrador.motivo;
   /** La persona escribió algo propio (no lo precargado sin tocar): se declara al salir y se le dice que sigue ahí. */
@@ -336,6 +348,19 @@ export function PantallaDeMiSolicitud({
       }
       // Para corregir, se parte de lo que vale hoy: la persona cambia lo que cambió y la historia queda (09:1618).
       if (intencion === 'abrir' && response && !restaurado && !hayAlgoEscrito(borradorActual.current)) precargar(borradorDeRespuestas(v.datos.data.sections, respuestasVigentes(response)));
+      // DL-165 D-18 · «¿Sigue igual?»: una solicitud nueva con la parte «Tus hábitos» abre con lo vigente de lo que pide.
+      // Es lo propio de la persona, en su teléfono (API-HBT-01); lo que envíe es la respuesta del área que lo pidió. Si la
+      // lectura falla, no hay vigente o ya hay algo escrito o recuperado, el formulario abre como siempre.
+      const loCargado = r.datos.data.proposal;
+      if (intencion === 'abrir' && seOfrecePrecargaDeHabitos({ response, proposal: loCargado, respondable, status: request.status }, v.datos.data.sections, restaurado || hayAlgoEscrito(borradorActual.current))) {
+        const h = await api.misHabitos(token);
+        if (sesionPerdida(h)) return;
+        const precarga = h.ok ? precargaDelFormulario(v.datos.data.sections, request, h.datos.data.current) : null;
+        if (precarga && !hayAlgoEscrito(borradorActual.current)) {
+          precargar(borradorDeRespuestas(v.datos.data.sections, precarga.respuestas));
+          setHabitosDesde(precarga.desde);
+        }
+      }
       despachar({ tipo: 'carga-lista', vista: { status: request.status, response, respondable } });
     },
     [token, identidadId, id, sesionPerdida, precargar],
@@ -398,6 +423,7 @@ export function PantallaDeMiSolicitud({
         void borradores.borrar(identidadId, id);
         hayAlgoGuardado.current = false;
         setRecuperado(false);
+        setHabitosDesde(null);
       }
       setErrores({});
       setCorrigiendo(false);
@@ -468,6 +494,7 @@ export function PantallaDeMiSolicitud({
   const corregirLoCargado = () => {
     if (!proposal) return;
     precargar(borradorDeRespuestas(secciones, proposal.answers));
+    setHabitosDesde(null);
     setCorrigiendo(true);
     setPaso(0);
     setQuedaron(null);
@@ -643,181 +670,21 @@ export function PantallaDeMiSolicitud({
   }
 
   // ─── El formulario: los nueve tipos, por sección, solo lo pedido y lo que se ve con lo respondido ────────────
-  const dibujarCampo = (c: CampoDePlantillaV2) => {
-    const etiqueta = rotuloDe(c, request);
-    const error = errores[c.fieldCode] ?? null;
-    // DL-165 D-2: la ayuda a la vista es corta (en un texto, es su texto de muestra), el «para qué» va plegado al pie y
-    // una pregunta opcional con algo elegido se suelta con «Quitar respuesta».
-    const ayuda = ayudaDeLaPregunta(c);
-    const quitar = seOfreceQuitarRespuesta(c, request, tieneAlgo(valorDe(borrador, c)))
-      ? () => {
-          editar({ tipo: 'quitar', fieldCode: c.fieldCode });
-          limpiarError(c.fieldCode);
-        }
-      : null;
-    const cabecera = { etiqueta, ayuda: ayuda.aLaVista, paraQue: c.purpose, error, quitar };
-    const tocar = (fieldCode: string) => limpiarError(fieldCode);
-    switch (c.dataType) {
-      case 'TEXT':
-        return (
-          <View key={c.fieldCode}>
-            <Campo
-              etiqueta={etiqueta}
-              // El ejemplo es el texto de muestra: se lee donde se escribe y se va al escribir. El lector lo dice igual.
-              placeholder={ayuda.deMuestra ?? undefined}
-              accessibilityHint={ayuda.deMuestra ?? undefined}
-              value={valorComo(borrador, c.fieldCode, 'TEXT').texto}
-              error={error}
-              onChangeText={(t) => {
-                editar({ tipo: 'escribir', fieldCode: c.fieldCode, como: 'TEXT', texto: t });
-                tocar(c.fieldCode);
-              }}
-              maxLength={c.maxLength}
-              {...(c.multiline ? { multiline: true, style: [ui.entrada, estilos.textoLargo, error ? ui.entradaConError : null] } : {})}
-            />
-            <PieDePregunta etiqueta={etiqueta} paraQue={c.purpose} />
-          </View>
-        );
-      case 'NUMBER': {
-        // DL-165 D-5: si el número toma su tope de una tabla («días por semana» y los días marcados), se dice cuánto admite.
-        const tope = topeDesdeLaTabla(c, secciones, armadasHoy.respuestas);
-        const ayudaDelNumero = [ayuda.aLaVista ?? (c.limits ? valoresAdmitidos(c.limits, c.unit) : null), tope ? V.hastaLoMarcado(tope.tope, tope.tabla) : null].filter((t): t is string => !!t).join(' ');
-        return (
-          <View key={c.fieldCode}>
-            <Campo
-              etiqueta={c.unit ? `${etiqueta} (${c.unit})` : etiqueta}
-              ayuda={ayudaDelNumero || undefined}
-              value={valorComo(borrador, c.fieldCode, 'NUMBER').texto}
-              error={error}
-              onChangeText={(t) => {
-                editar({ tipo: 'escribir', fieldCode: c.fieldCode, como: 'NUMBER', texto: t });
-                tocar(c.fieldCode);
-              }}
-              // El teclado decimal de Android puede ofrecer coma: por eso el valor se lee con `leerNumero` al enviar.
-              keyboardType="decimal-pad"
-            />
-            <PieDePregunta etiqueta={etiqueta} paraQue={c.purpose} />
-          </View>
-        );
-      }
-      case 'BOOLEAN':
-        // Sí/No se elige entre dos opciones: escribirlo obligaría a interpretar el texto, y lo mal interpretado
-        // quedaría guardado como declarado por la persona (09 §22.7).
-        return (
-          <PreguntaSiONo
-            key={c.fieldCode}
-            cabecera={cabecera}
-            valor={valorComo(borrador, c.fieldCode, 'BOOLEAN').eleccion}
-            onCambio={(v) => {
-              editar({ tipo: 'elegir-si-o-no', fieldCode: c.fieldCode, eleccion: v });
-              tocar(c.fieldCode);
-            }}
-          />
-        );
-      case 'CHOICE': {
-        const v = valorComo(borrador, c.fieldCode, 'CHOICE');
-        return (
-          <OpcionUnica
-            key={c.fieldCode}
-            cabecera={cabecera}
-            campo={c}
-            valor={v.opcion}
-            otro={v.otro}
-            onCambio={(opcion) => {
-              editar({ tipo: 'elegir-opcion', fieldCode: c.fieldCode, opcion });
-              tocar(c.fieldCode);
-            }}
-            onOtro={(texto) => editar({ tipo: 'escribir-otro', fieldCode: c.fieldCode, texto })}
-          />
-        );
-      }
-      case 'MULTI_CHOICE': {
-        const v = valorComo(borrador, c.fieldCode, 'MULTI_CHOICE');
-        return (
-          <OpcionesMultiples
-            key={c.fieldCode}
-            cabecera={cabecera}
-            campo={c}
-            elegidas={v.opciones}
-            otro={v.otro}
-            onAlternar={(opcion) => {
-              editar({ tipo: 'alternar-opcion', fieldCode: c.fieldCode, opcion, exclusivas: c.exclusiveOptionCodes, maximo: c.maxSelected });
-              tocar(c.fieldCode);
-            }}
-            onOtro={(texto) => editar({ tipo: 'escribir-otro', fieldCode: c.fieldCode, texto })}
-          />
-        );
-      }
-      case 'LIST':
-        return (
-          <ListaQueSeRepite
-            key={c.fieldCode}
-            cabecera={cabecera}
-            campo={c}
-            renglones={valorComo(borrador, c.fieldCode, 'LIST').renglones}
-            errores={errores}
-            onSumar={() => editar({ tipo: 'sumar-renglon', fieldCode: c.fieldCode, maximo: c.maxItems })}
-            onQuitar={(renglon) => {
-              editar({ tipo: 'quitar-renglon', fieldCode: c.fieldCode, id: renglon });
-              tocar(c.fieldCode);
-            }}
-            onEditar={(renglon, code, valor) => {
-              editar({ tipo: 'editar-subcampo', fieldCode: c.fieldCode, id: renglon, code, valor });
-              tocar(c.fieldCode);
-            }}
-          />
-        );
-      case 'MATRIX':
-        return (
-          <TablaDeOpciones
-            key={c.fieldCode}
-            cabecera={cabecera}
-            campo={c}
-            celdas={valorComo(borrador, c.fieldCode, 'MATRIX').celdas}
-            onElegir={(fila, columna) => {
-              editar({ tipo: 'elegir-celda', fieldCode: c.fieldCode, fila, columna });
-              tocar(c.fieldCode);
-            }}
-          />
-        );
-      case 'FOODS':
-        return (
-          <CampoDeAlimentos
-            key={c.fieldCode}
-            cabecera={cabecera}
-            campo={c}
-            alimentos={valorComo(borrador, c.fieldCode, 'FOODS').alimentos}
-            onAlternarSugerido={(nombre) => {
-              editar({ tipo: 'alternar-alimento', fieldCode: c.fieldCode, nombre, maximo: c.maxItems });
-              tocar(c.fieldCode);
-            }}
-            onSumar={(nombre) => {
-              editar({ tipo: 'sumar-alimento', fieldCode: c.fieldCode, nombre, maximo: c.maxItems });
-              tocar(c.fieldCode);
-            }}
-            onQuitar={(nombre) => {
-              editar({ tipo: 'quitar-alimento', fieldCode: c.fieldCode, nombre });
-              tocar(c.fieldCode);
-            }}
-            onMotivo={(nombre, motivoDelAlimento) => editar({ tipo: 'motivo-de-alimento', fieldCode: c.fieldCode, nombre, motivo: motivoDelAlimento })}
-          />
-        );
-      case 'TIMES':
-        return (
-          <CampoDeHorarios
-            key={c.fieldCode}
-            cabecera={cabecera}
-            campo={c}
-            horas={valorComo(borrador, c.fieldCode, 'TIMES').horas}
-            errores={errores}
-            onEditar={(parte, texto) => {
-              editar({ tipo: 'escribir-hora', fieldCode: c.fieldCode, parte, texto });
-              tocar(c.fieldCode);
-            }}
-          />
-        );
-    }
-  };
+  // Cada pregunta la dibuja `PreguntaV2` (la misma de «Mis hábitos»): el rótulo con «(Opcional)», «Quitar respuesta» en
+  // una opcional con algo elegido (DL-165 D-2) y, en un número con su tope en una tabla, cuánto admite (D-5).
+  const dibujarCampo = (c: CampoDePlantillaV2) => (
+    <PreguntaV2
+      key={c.fieldCode}
+      campo={c}
+      etiqueta={rotuloDe(c, request)}
+      borrador={borrador}
+      errores={errores}
+      puedeQuitar={seOfreceQuitarRespuesta(c, request, tieneAlgo(valorDe(borrador, c)))}
+      tope={topeDesdeLaTabla(c, secciones, armadasHoy.respuestas)}
+      editar={editar}
+      alTocar={limpiarError}
+    />
+  );
 
   const textoDelBoton = problema?.incierto ? COPY.reintentar : esCorreccion ? COPY_FORMULARIOS.rectificar : desdePropuesta ? APK.confirmar : COPY_FORMULARIOS.enviarRespuesta;
   const alEmpezar = actual === 0 && !enRepaso;
@@ -883,6 +750,12 @@ export function PantallaDeMiSolicitud({
       {parte ? (
         <Seccion key={parte.sectionCode} titulo={parte.titulo}>
           {parte.intro ? <Parrafo tenue>{parte.intro}</Parrafo> : null}
+          {/* DL-165 D-18: lo vigente de «Tus hábitos» vino precargado; la persona confirma o cambia. */}
+          {habitosDesde && parte.sectionCode === CODIGO_DE_LA_PARTE_DE_HABITOS ? (
+            <Aviso tipo="info" titulo={COPY_HABITOS.apk.sigueIgual(dia(habitosDesde))}>
+              <Parrafo tenue>{COPY_HABITOS.apk.sigueIgualDetalle}</Parrafo>
+            </Aviso>
+          ) : null}
           {preguntasQueSeVen(parte, visibles).length > 0 ? (
             preguntasQueSeVen(parte, visibles).map((codigo) => {
               const c = porCodigo.get(codigo);
@@ -974,8 +847,6 @@ function Repaso({
 }
 
 const estilos = estilosPorTema(() => ({
-  // Un texto de varias líneas, con lo escrito arriba: el estilo del campo, más alto (como en «Comí algo diferente»).
-  textoLargo: { minHeight: 96, paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top' },
   // «Anterior» y «Siguiente», uno debajo del otro: con letra grande, dos botones en fila no entran.
   navegacion: { marginTop: 8, gap: 8 },
 }));

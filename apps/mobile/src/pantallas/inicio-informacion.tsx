@@ -2,14 +2,19 @@
  * Inicio · la tarjeta de Información (DL-117): las solicitudes sin responder, con `respondable` y el A3. Una lista parcial
  * no se presenta como el total. Desde DL-164 lee la bandeja (API-FRI-02): una con algo cargado por el profesional se
  * ofrece para revisar, no para completar.
+ *
+ * Y «Tus hábitos» (DL-165 D-9, FR-10), solo cuando hay algo que preguntar: un profesional empezó a acompañar a la persona
+ * después de que ella compartió sus hábitos, y no los recibe solo (§4.3). La tarjeta pregunta y lleva a «Mis hábitos»,
+ * donde se responde con el texto a la vista. Sin A3, con una falla o sin nada que preguntar, no se dibuja: no es una tarea.
  */
-import { COPY_FORMULARIOS, COPY_FORMULARIOS_V2, numero } from '@be/domain';
+import { COPY_FORMULARIOS, COPY_FORMULARIOS_V2, COPY_HABITOS, numero } from '@be/domain';
 import { useCallback, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
 import { SinActualizar } from '../estados';
 import { dia as diaDe } from '../formato';
 import { TEXTOS_DE_FORMULARIO_V2 } from '../formulario-v2';
+import { areasEnPalabras, preguntaDeInicio } from '../habitos-en-el-telefono';
 import { useLecturaRecordada } from '../lecturas';
 import { leerPendientes, PENDIENTES_EN_INICIO } from '../lecturas-de-inicio';
 import type { Ir } from '../navegacion';
@@ -58,6 +63,22 @@ export function Pendientes({ token, sesionPerdida, ir }: { token: string; sesion
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
       <Boton texto="Ir a Información" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'mis-solicitudes' })} />
+    </TarjetaDeInicio>
+  );
+}
+
+/** API-HBT-01, la misma lectura que «Mis hábitos»: la tarjeta aparece solo si hay un profesional por el que preguntar. */
+export function PreguntaDeHabitos({ token, sesionPerdida, ir }: { token: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
+  const pedir = useCallback(() => api.misHabitos(token), [token]);
+  const { r } = useLecturaRecordada(token, 'mis-habitos', pedir, sesionPerdida);
+  const nuevo = r?.ok ? preguntaDeInicio(r.datos.data) : null;
+  if (!nuevo) return null;
+  return (
+    <TarjetaDeInicio zona="informacion" titulo={COPY_HABITOS.apk.nuevoTitulo}>
+      <Text style={estilos.pregunta}>{COPY_HABITOS.apk.nuevoPregunta(nuevo.professional.displayName)}</Text>
+      <Text style={estilos.detalle}>{areasEnPalabras(nuevo)}</Text>
+      <Parrafo tenue>{COPY_HABITOS.apk.nuevoDetalle}</Parrafo>
+      <Boton texto={COPY_HABITOS.apk.nuevoResponder} onPress={() => ir({ nombre: 'mis-habitos' })} />
     </TarjetaDeInicio>
   );
 }

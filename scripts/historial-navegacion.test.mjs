@@ -195,6 +195,8 @@ const RUTAS = [
   { nombre: 'plan-de-entrenamiento', id: 'p1' },
   { nombre: 'mis-solicitudes' },
   { nombre: 'mi-solicitud', id: 's1' },
+  // DL-165 D-9 (FR-10): «Mis hábitos», desde Información.
+  { nombre: 'mis-habitos' },
   { nombre: 'sesion-de-entrenamiento', draftId: 'd1', sesion: {}, fecha: '2026-10-01' },
   { nombre: 'ejecucion-de-entrenamiento', id: 'e1' },
   { nombre: 'corregir-ejecucion', id: 'e1' },
