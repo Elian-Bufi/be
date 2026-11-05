@@ -415,8 +415,9 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   const fuente = useMemo<FuenteDeContexto>(
     () => ({
       listar: (cursor) => api.listarSolicitudesDeFormulario(token, asesoradoId, { status: 'RESPONDED', limit: LIMITE_DE_PAGINA, ...(cursor ? { cursor } : {}) }),
-      detalle: (formRequestId) => api.consultarSolicitudDeFormulario(token, formRequestId),
-      version: (templateId, templateVersionId) => api.consultarVersionDePlantilla(token, templateId, templateVersionId),
+      // DL-164 D-5: FRM-ENTRENAMIENTO v2 usa tipos nuevos y FRM-05/FRM-02 no la sirven; FRI-03 y FRI-01 sirven cualquier versión.
+      vista: (formRequestId) => api.consultarVistaDeSolicitud(token, formRequestId),
+      definicion: (templateId, templateVersionId) => api.consultarDefinicionDePlantilla(token, templateId, templateVersionId),
     }),
     [token, asesoradoId],
   );

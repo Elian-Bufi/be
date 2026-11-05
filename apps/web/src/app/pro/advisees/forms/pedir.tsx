@@ -8,9 +8,16 @@
  *
  * **Al elegir un formulario vienen todas sus preguntas marcadas,** y el profesional desmarca las que no necesita
  * (decisión de Dirección del 2026-10-12; F-05 de WP-ESCRITORIO-AREAS, DL-131). La minimización sigue siendo del
- * profesional, no del catálogo: la cuenta de las elegidas está a la vista, ninguna viene como requerida, y la API sigue
- * evaluando la pertinencia de cada pregunta al crear la solicitud (FRM-03): marcarlas todas no amplía lo que se puede
- * pedir. No viene ningún formulario elegido: esa primera decisión es del profesional.
+ * profesional, no del catálogo: la cuenta de las elegidas está a la vista, como requeridas vienen solo las que la
+ * plantilla sugiere (`requiredByDefault`, DL-164) y se pueden cambiar, y la API sigue evaluando la pertinencia de cada
+ * pregunta al crear la solicitud (FRM-03): marcarlas todas no amplía lo que se puede pedir. No viene ningún formulario
+ * elegido: esa primera decisión es del profesional.
+ *
+ * WP-FORMULARIOS-DE-INICIO (DL-164): las preguntas se leen con API-FRI-01, que sirve cualquier versión en formato V2
+ * (las de P0 traducidas), así los formularios de inicio con tipos nuevos se piden como los demás. Cada pregunta dice con
+ * qué se responde y un resumen de sus opciones; las condicionales dicen cuándo aparecen. Si la versión usa tipos nuevos,
+ * se avisa que la persona necesita la app nueva y que mientras tanto se puede cargar con ella desde la ficha. El flujo
+ * de creación (FRM-03) no cambia.
  *
  * Lo que la pantalla no hace, a propósito: **no promete el dato.** El aviso dice que pedir no amplía el acceso y que
  * hasta que la persona responda no hay nada nuevo (05:15098-15099). Tampoco dice que a la persona le llega un aviso: BE
@@ -31,7 +38,7 @@
  * vuelve a Entrenamiento. Es una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de
  * enviar.
  */
-import { ALCANCES, CONTEXTO_DE_ENTRENAMIENTO, COPY, COPY_FORMULARIOS as F, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, respondeCon, type Alcance, type Plantilla, type VersionDePlantilla } from '@be/domain';
+import { ALCANCES, CONTEXTO_DE_ENTRENAMIENTO, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -43,6 +50,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dejarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
+import { condicionEnPalabras, marcadoPorOmision, precargaDeEntrenamiento, respondeConV2 } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
 
 /** A dónde se vuelve cuando el pedido salió de la evaluación de entrenamiento. Ahí lo espera `training/resumen.tsx`. */
@@ -56,7 +64,7 @@ const RECHAZO_DE_SOLICITUD: Readonly<Record<string, string>> = {
 };
 
 /** La versión del formulario elegido: de ahí salen sus preguntas. */
-type Lectura = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly version: VersionDePlantilla } | { readonly tipo: 'fallo' };
+type Lectura = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly version: VersionDePlantillaV2 } | { readonly tipo: 'fallo' };
 type Envio = { readonly tipo: 'editando' } | { readonly tipo: 'enviando' } | { readonly tipo: 'error'; readonly texto: string; readonly incierto: boolean };
 /** Lo que falta para enviar, por paso. */
 type Faltas = { readonly formulario?: string; readonly preguntas?: string; readonly proposito?: string; readonly area?: string };
@@ -136,20 +144,19 @@ export function PedidoDeInformacion({
       setLectura({ tipo: 'cargando' });
       setConPrecarga(precarga);
       setFaltas((f) => ({ ...f, formulario: undefined, preguntas: undefined, area: undefined }));
-      const v = await api.consultarVersionDePlantilla(token, p.templateId, p.latestVersionId);
+      // API-FRI-01 sirve cualquier versión en formato V2; FRM-02 responde 404 para las que usan tipos nuevos (DL-164 D-5).
+      const v = await api.consultarDefinicionDePlantilla(token, p.templateId, p.latestVersionId);
       if (esta !== lecturaEnCurso.current || sesionPerdida(v)) return;
       if (!v.ok) return setLectura({ tipo: 'fallo' });
       const preguntas = v.datos.data.sections.flatMap((s) => s.fields.map((c) => c.fieldCode));
       setLectura({ tipo: 'lista', version: v.datos.data });
-      if (!precarga) {
-        // F-05: vienen todas marcadas, y ninguna como requerida. El profesional desmarca lo que no necesita.
-        setPedidas(preguntas);
-        setRequeridas([]);
-        return;
-      }
-      // DL-100: solo lo que la versión elegida realmente tiene; si el catálogo cambiara, no se pide una pregunta inexistente.
-      setPedidas(CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => preguntas.includes(c)));
-      setRequeridas(CONTEXTO_DE_ENTRENAMIENTO.requeridos.filter((c) => preguntas.includes(c)));
+      // F-05: vienen todas marcadas y, requeridas, las que la plantilla sugiere. El profesional cambia lo que necesita.
+      // DL-100: desde Entrenamiento, solo lo que la versión elegida realmente tiene; si el catálogo cambiara, no se pide
+      // una pregunta inexistente.
+      const marcado = precarga ? precargaDeEntrenamiento(preguntas) : marcadoPorOmision(v.datos.data.sections);
+      setPedidas(marcado.pedidas);
+      setRequeridas(marcado.requeridas);
+      if (!precarga) return;
       setProposito(F.propositoDeContextoDeEntrenamiento);
       setArea('ENTRENAMIENTO');
     },
@@ -320,6 +327,7 @@ export function PedidoDeInformacion({
                       {es ? (
                         <p className="formulario-del-pedido__descripcion" id={`${id}-descripcion`}>
                           {p.purpose}
+                          {version?.estimatedMinutes ? ` A la persona le lleva unos ${version.estimatedMinutes} minutos.` : ''}
                         </p>
                       ) : null}
                     </div>
@@ -354,6 +362,13 @@ export function PedidoDeInformacion({
           {lectura?.tipo === 'fallo' && elegido ? <ErrorConReintento mensaje={C.preguntasNoCargaron} onReintentar={() => void elegir(elegido, conPrecarga)} /> : null}
           {version ? (
             <>
+              {/* DL-164 D-5: la APK instalada no ve una versión con tipos nuevos; mientras la persona no actualice, se carga con ella. */}
+              {version.usesNewTypes ? (
+                <p className="pedido__aviso" data-app-nueva>
+                  <Icono nombre="aviso" tamano={18} />
+                  {V.web.appNueva}
+                </p>
+              ) : null}
               <p className="nota">{F.ayudaRequerido}</p>
               {/* Solo si alguna pregunta tiene aclaración. Va arriba de la tabla: no se mueve de lugar al abrirlas. */}
               {preguntas.some((c) => c.helpText) ? (
@@ -387,8 +402,11 @@ export function PedidoDeInformacion({
                     ) : null}
                     {s.fields.map((c) => {
                       const pedida = pedidas.includes(c.fieldCode);
+                      // DL-164 D-2: una pregunta condicional aparece solo cuando se cumple su condición; se dice con palabras.
+                      const condicion = condicionEnPalabras(c, preguntas);
+                      const descripcion = [c.helpText && conAclaraciones ? `${id}-ayuda-${c.fieldCode}` : null, condicion ? `${id}-condicion-${c.fieldCode}` : null].filter(Boolean).join(' ') || undefined;
                       return (
-                        <tr key={c.fieldCode} data-pregunta={c.fieldCode} data-pedida={pedida ? 'si' : undefined}>
+                        <tr key={c.fieldCode} data-pregunta={c.fieldCode} data-pedida={pedida ? 'si' : undefined} data-condicional={condicion ? 'si' : undefined}>
                           <td className="preguntas-del-pedido__casilla">
                             <input
                               type="checkbox"
@@ -396,12 +414,17 @@ export function PedidoDeInformacion({
                               checked={pedida}
                               onChange={() => alternar(c.fieldCode, pedidas, setPedidas)}
                               disabled={enviando}
-                              aria-describedby={c.helpText && conAclaraciones ? `${id}-ayuda-${c.fieldCode}` : undefined}
+                              aria-describedby={descripcion}
                               data-falta={faltas.preguntas && c.fieldCode === primeraPregunta ? 'si' : undefined}
                             />
                           </td>
                           <th scope="row">
                             <label htmlFor={`${id}-pedir-${c.fieldCode}`}>{c.label}</label>
+                            {condicion ? (
+                              <span className="preguntas-del-pedido__condicion" id={`${id}-condicion-${c.fieldCode}`}>
+                                {condicion}
+                              </span>
+                            ) : null}
                             {/* Lo que va a leer la persona debajo de la pregunta: a veces dice el rango que se acepta. */}
                             {c.helpText && conAclaraciones ? (
                               <span className="preguntas-del-pedido__ayuda" id={`${id}-ayuda-${c.fieldCode}`}>
@@ -410,7 +433,7 @@ export function PedidoDeInformacion({
                             ) : null}
                           </th>
                           <td className="preguntas-del-pedido__responde" data-etiqueta={C.respondeCon}>
-                            {respondeCon(c)}
+                            {respondeConV2(c)}
                           </td>
                           <td className="preguntas-del-pedido__requerida">
                             {/* Solo una pregunta pedida puede ser requerida. Lo que se ve marcado es lo que sale. */}
