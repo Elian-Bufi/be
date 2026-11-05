@@ -95,6 +95,12 @@ function TarjetaDeSolicitud({ s, ir }: { s: SolicitudPropiaV2; ir: (r: Ruta) => 
         <Boton texto={propuesta ? T.revisar : COPY_FORMULARIOS.completar} onPress={abrir} />
       ) : s.status === 'RESPONDED' ? (
         <Boton texto={T.verMiRespuesta} tipo="secundario" onPress={abrir} />
+      ) : propuesta ? (
+        // En pausa pero con algo cargado: se puede ver y, si no es correcto, descartar (FRI-08 no depende del PDP).
+        <>
+          <Parrafo tenue>{T.porAhoraNoSePuedeResponder}</Parrafo>
+          <Boton texto={T.revisar} tipo="secundario" onPress={abrir} />
+        </>
       ) : (
         <Parrafo tenue>{COPY_FORMULARIOS.yaNoSePuedeResponder}</Parrafo>
       )}
@@ -225,8 +231,10 @@ export function PantallaDeMiSolicitud({
   const [corrigiendo, setCorrigiendo] = useState(false);
   const clave = useClaveDeIntento();
   const motivo = estado.borrador.motivo;
+  /** La persona escribió algo propio (no lo precargado sin tocar): se declara al salir y se le dice que sigue ahí. */
+  const tieneBorradorPropio = hayAlgoEscrito(borrador) && !mismoBorrador(borrador, base);
   // El borrador (lo tocado y el motivo) se declara: salir por la barra, la cabecera o atrás pregunta antes (DL-117).
-  useCambiosSinGuardar((hayAlgoEscrito(borrador) && !mismoBorrador(borrador, base)) || motivo.trim() !== '' ? 'tus respuestas' : null);
+  useCambiosSinGuardar(tieneBorradorPropio || motivo.trim() !== '' ? 'tus respuestas' : null);
 
   const precargar = useCallback((valores: Borrador) => {
     editar({ tipo: 'cargar', valores });
@@ -264,11 +272,17 @@ export function PantallaDeMiSolicitud({
     void cargar('abrir');
   }, [cargar]);
 
+  /**
+   * Una escritura quedó registrada: el aviso, volver a leer, y limpiar el borrador, salvo que la escritura no haya sido
+   * de él (`conservarBorrador`): descartar lo que cargó el profesional no envía nada de lo que la persona escribió.
+   */
   const terminarEscritura = useCallback(
-    (texto: string) => {
+    (texto: string, opciones: { readonly conservarBorrador: boolean } = { conservarBorrador: false }) => {
       despachar({ tipo: 'enviado', texto });
-      editar({ tipo: 'limpiar' });
-      setBase(BORRADOR_VACIO);
+      if (!opciones.conservarBorrador) {
+        editar({ tipo: 'limpiar' });
+        setBase(BORRADOR_VACIO);
+      }
       setErrores({});
       setCorrigiendo(false);
       subir();
@@ -277,12 +291,17 @@ export function PantallaDeMiSolicitud({
     [cargar, subir],
   );
 
-  // «No es correcto»: un diálogo propio de la app, y después API-FRI-08. Lo cargado se borra; la solicitud sigue pendiente.
+  /**
+   * «No es correcto»: un diálogo propio de la app, y después API-FRI-08. Lo cargado se borra; la solicitud sigue
+   * pendiente. Lo que la persona había escrito (por ejemplo, antes de que apareciera lo cargado) queda en el formulario;
+   * si estaba corrigiendo lo cargado, el borrador era eso y se limpia. Los fallos propios de FRI-08: el 409 (lo que se vio
+   * ya no es lo pendiente: cambió, lo retiraron o ya se resolvió) pide volver a leer; el 404 y lo inesperado, `falloDe`.
+   */
   const rechazo = useAccionConfirmada({
     sesionPerdida,
-    alTerminar: () => terminarEscritura(APK.rechazado),
+    alTerminar: () => terminarEscritura(APK.rechazado, { conservarBorrador: !corrigiendo }),
     alRecargar: () => void cargar('abrir'),
-    propios: { RESOURCE_NOT_FOUND: { mensaje: T.propuestaYaNoEsta, tipo: 'actualizar' }, FORM_REQUEST_NOT_RESPONDABLE: { mensaje: COPY_FORMULARIOS.noSePuedeResponderYa, tipo: 'actualizar' } },
+    propios: { VERSION_CONFLICT: { mensaje: T.propuestaCambioAntesDeDescartar, tipo: 'actualizar' } },
   });
 
   if (estado.carga.tipo === 'sin-a3') {
@@ -311,9 +330,13 @@ export function PantallaDeMiSolicitud({
   const pedidos = new Set(request.requestedFieldCodes);
   const visibles = camposQueSeVen(secciones, request, borrador);
   const esCorreccion = response !== null;
-  /** Lo cargado por el profesional se confirma (tal cual o corregido) solo mientras la solicitud admite responder. */
-  const desdePropuesta = proposal !== null && puede.modo === 'responder';
-  const enRevision = desdePropuesta && !corrigiendo;
+  /** Hay algo cargado por el profesional que espera: se lee en palabras antes que nada. */
+  const hayPropuesta = proposal !== null && !esCorreccion;
+  /** Lo cargado se confirma (tal cual o corregido) solo mientras la solicitud admite responder. */
+  const desdePropuesta = hayPropuesta && puede.modo === 'responder';
+  /** En pausa (el PDP dice que no se puede responder) lo cargado igual se ve y se puede descartar: no confirmar ni corregir. */
+  const revisionSinResponder = hayPropuesta && !desdePropuesta;
+  const enRevision = hayPropuesta && !corrigiendo;
   const problema = estado.problema;
   // Si se abrió una solicitud que no admite acción y no hay otro problema a la vista, se dice por qué, con salidas.
   const sinAccion =
@@ -368,7 +391,7 @@ export function PantallaDeMiSolicitud({
     if (!r.ok) {
       // Un rechazo por los datos vuelve a cada campo; ya no se puede, versión vieja o envío anterior guardado: el reductor
       // lo traduce y suspende el envío hasta volver a leer. Lo escrito queda y no se reenvía solo.
-      const desenlace = rechazoV2(r, campos, armadas, { desdePropuesta }) ?? desenlaceDeEnvio(r, [], { esCorreccion });
+      const desenlace = rechazoV2(r, campos, armadas, { desdePropuesta, esCorreccion }) ?? desenlaceDeEnvio(r, [], { esCorreccion });
       if (desenlace) {
         if (desenlace.tipo === 'por-campo') {
           if (origen === 'tal-cual') corregirLoCargado();
@@ -431,14 +454,27 @@ export function PantallaDeMiSolicitud({
       <View>
         <Titulo>{APK.revisarTitulo(profesional)}</Titulo>
         <Parrafo tenue>{APK.revisarBajada(profesional, request.templateName, fecha(proposal.loadedAt))}</Parrafo>
-        {estado.aviso ? <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} /> : null}
+        {/* El aviso de volver a consultar habla de campos y de enviar; acá se lee lo cargado, así que se dice para esta pantalla. */}
+        {estado.aviso?.tipo === 'info' ? (
+          <Aviso tipo="info" titulo={T.volvimosAConsultar}>
+            {tieneBorradorPropio ? <Parrafo tenue>{T.loEscritoSigue}</Parrafo> : null}
+          </Aviso>
+        ) : estado.aviso ? (
+          <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} />
+        ) : null}
         <RespuestasEnPalabras datos={datos} respuestas={proposal.answers} comoSecciones />
         <Seccion titulo={COPY_FORMULARIOS.responder}>
           <Parrafo>{APK.efectoDeConfirmar}</Parrafo>
           <Parrafo tenue>{COPY_FORMULARIOS.loQueRespondesEsTuyo}</Parrafo>
           {avisoDeProblema}
+          {revisionSinResponder && !problema ? (
+            <Aviso tipo="info" titulo={T.porAhoraNoSePuedeResponder}>
+              <Parrafo tenue>{T.revisarSinResponder}</Parrafo>
+              {acciones(['recuperar', 'volver'])}
+            </Aviso>
+          ) : null}
           <Boton texto={problema?.incierto ? COPY.reintentar : APK.confirmar} onPress={() => void enviar('tal-cual')} ocupado={enviando} deshabilitado={enviando || !sePuedeEnviar(estado)} />
-          <Boton texto={APK.corregir} tipo="secundario" onPress={corregirLoCargado} deshabilitado={enviando} />
+          <Boton texto={APK.corregir} tipo="secundario" onPress={corregirLoCargado} deshabilitado={enviando || !desdePropuesta} />
           <Boton texto={APK.rechazar} tipo="peligroSecundario" onPress={rechazo.abrir} deshabilitado={enviando} />
         </Seccion>
         {dialogoDeRechazo}
@@ -644,7 +680,8 @@ export function PantallaDeMiSolicitud({
         </Seccion>
       ) : null}
 
-      {desdePropuesta && proposal ? (
+      {/* Mientras se corrige lo cargado, siempre hay vuelta a leerlo en palabras, aunque al releer la solicitud haya quedado en pausa. */}
+      {corrigiendo && proposal ? (
         <Aviso tipo="info" titulo={T.loQueCargo(proposal.professional.displayName)}>
           <Parrafo tenue>{T.corrigiendo}</Parrafo>
           <Boton texto={T.volverALoCargado} tipo="enlace" onPress={volverALoCargado} />
@@ -680,7 +717,7 @@ export function PantallaDeMiSolicitud({
           // Solo se envía si la solicitud lo admite y ningún rechazo conocido lo suspendió (`sePuedeEnviar`).
           deshabilitado={enviando || !sePuedeEnviar(estado) || (esCorreccion && motivo.trim().length === 0)}
         />
-        {desdePropuesta ? <Boton texto={APK.rechazar} tipo="peligroSecundario" onPress={rechazo.abrir} deshabilitado={enviando} /> : null}
+        {hayPropuesta ? <Boton texto={APK.rechazar} tipo="peligroSecundario" onPress={rechazo.abrir} deshabilitado={enviando} /> : null}
       </Seccion>
       {dialogoDeRechazo}
     </View>

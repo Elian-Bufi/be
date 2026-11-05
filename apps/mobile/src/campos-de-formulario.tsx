@@ -6,7 +6,8 @@
  * Reglas comunes (10-B10 §7, §9):
  * - **nada viene elegido** y tocar de nuevo lo elegido lo suelta: no responder es legítimo y tiene su estado;
  * - **roles y estados para el lector de pantalla:** `radiogroup`/`radio` con `checked`, `checkbox`, y cada opción de una
- *   tabla se lee con su fila («Sentadilla: Con ayuda»); el error entra en el nombre del grupo, como en `Campo`;
+ *   tabla se lee con su fila («Sentadilla: Con ayuda»); el error de la pregunta se anuncia cuando aparece (la línea de
+ *   error es una región viva) y entra en el nombre del primer control del grupo, como en `Campo` entra en el del campo;
  * - **objetivos de toque de 44 dp o más**, texto además de color, y solo colores de `tema.ts`.
  * Los textos de P0 (`Campo`, `CampoSiONo`) siguen en `ui.tsx`; acá están los seis tipos nuevos y lo que los compone.
  */
@@ -38,7 +39,16 @@ export interface CabeceraDePregunta {
   readonly error?: string | null;
 }
 
+/** El nombre de un control con el error de su pregunta, con las mismas palabras que usa `Campo` para su campo. */
 const nombreParaElLector = (etiqueta: string, error?: string | null): string => (error ? `${etiqueta}. Revisá este campo: ${error}` : etiqueta);
+/** El nombre del primer control de un grupo: lleva el error de la pregunta; los demás, solo su texto. */
+const nombreDelPrimero = (texto: string, esElPrimero: boolean, error?: string | null): string => (esElPrimero && error ? nombreParaElLector(texto, error) : texto);
+/**
+ * Para el primer `Campo` de un grupo: su nombre para el lector con el error de la pregunta (y el propio, si lo tiene),
+ * armado como lo arma `Campo`. Sin error de la pregunta no se pasa nada y `Campo` arma el suyo: así no se lee dos veces.
+ */
+const nombreConErrorDelGrupo = (etiqueta: string, propio: string | null, delGrupo?: string | null): { accessibilityLabel?: string } =>
+  delGrupo ? { accessibilityLabel: nombreParaElLector(etiqueta, [propio, delGrupo].filter((e): e is string => !!e).join(' ')) } : {};
 const conMayuscula = (s: string): string => s.charAt(0).toLocaleUpperCase('es-AR') + s.slice(1);
 
 function Cabecera({ etiqueta, ayuda, paraQue }: CabeceraDePregunta) {
@@ -51,10 +61,14 @@ function Cabecera({ etiqueta, ayuda, paraQue }: CabeceraDePregunta) {
   );
 }
 
-/** Un error dicho con texto y el ícono, debajo del grupo. El lector ya lo oyó en el nombre del grupo: acá no se repite. */
+/**
+ * El error de una pregunta, con texto y el ícono, debajo del grupo. A diferencia del de `Campo` (que el lector ya oye en
+ * el nombre del campo), acá sí es para el lector: el grupo no es un elemento enfocable que pueda llevarlo en su nombre,
+ * así que la línea se anuncia sola cuando aparece (región viva) y se lee al recorrer el formulario.
+ */
 function LineaDeError({ texto }: { texto: string }) {
   return (
-    <View style={ui.lineaDeError} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+    <View style={ui.lineaDeError} accessible accessibilityRole="alert" accessibilityLiveRegion="polite" accessibilityLabel={texto}>
       <View style={ui.iconoDeError}>
         <Icono nombre="aviso" tamano={18} tono="error" />
       </View>
@@ -63,12 +77,15 @@ function LineaDeError({ texto }: { texto: string }) {
   );
 }
 
-/** El marco de una pregunta que no es un `Campo`: cabecera, el grupo con su nombre para el lector, y el error. */
+/**
+ * El marco de una pregunta que no es un `Campo`: cabecera, el grupo con su nombre para el lector, y el error. El error
+ * va en la línea de abajo (que el lector sí anuncia) y en el nombre del primer control del grupo (lo arma cada tipo).
+ */
 function Pregunta({ cabecera, rol, hijos, pie }: { cabecera: CabeceraDePregunta; rol: 'radiogroup' | 'none'; hijos: ReactNode; pie?: ReactNode }) {
   return (
     <View style={[ui.campo, cabecera.error ? estilos.preguntaConError : null]}>
       <Cabecera {...cabecera} />
-      <View accessibilityRole={rol === 'none' ? undefined : rol} accessibilityLabel={nombreParaElLector(cabecera.etiqueta, cabecera.error)}>
+      <View accessibilityRole={rol === 'none' ? undefined : rol} accessibilityLabel={cabecera.etiqueta}>
         {hijos}
       </View>
       {pie}
@@ -119,8 +136,8 @@ export function OpcionUnica({
     <Pregunta
       cabecera={{ ...cabecera, ayuda: cabecera.ayuda ?? T.elegiUna }}
       rol="radiogroup"
-      hijos={campo.options.map((o) => (
-        <RenglonDeOpcion key={o.code} texto={o.label} elegida={valor === o.code} onPress={() => onCambio(valor === o.code ? null : o.code)} />
+      hijos={campo.options.map((o, i) => (
+        <RenglonDeOpcion key={o.code} texto={o.label} etiqueta={nombreDelPrimero(o.label, i === 0, cabecera.error)} elegida={valor === o.code} onPress={() => onCambio(valor === o.code ? null : o.code)} />
       ))}
       pie={campo.otherOptionCode !== null && valor === campo.otherOptionCode ? <CampoDeOtro texto={otro} onCambio={onOtro} /> : null}
     />
@@ -151,7 +168,7 @@ export function OpcionesMultiples({
     <Pregunta
       cabecera={{ ...cabecera, ayuda }}
       rol="none"
-      hijos={campo.options.map((o) => {
+      hijos={campo.options.map((o, i) => {
         const marcada = elegidas.includes(o.code);
         // Con el tope alcanzado, las que no están marcadas esperan; una exclusiva («Ninguna») se puede tocar siempre.
         const deshabilitada = tope && !marcada && !campo.exclusiveOptionCodes.includes(o.code);
@@ -160,7 +177,7 @@ export function OpcionesMultiples({
             key={o.code}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: marcada, disabled: deshabilitada }}
-            accessibilityLabel={o.label}
+            accessibilityLabel={nombreDelPrimero(o.label, i === 0, cabecera.error)}
             disabled={deshabilitada}
             onPress={() => onAlternar(o.code)}
             style={({ pressed }) => [estilos.renglon, marcada && estilos.renglonElegido, deshabilitada && ui.deshabilitado, pressed && ui.presionado]}
@@ -198,12 +215,29 @@ function Chip({ texto, etiqueta, elegido, rol, deshabilitado = false, onPress }:
   );
 }
 
-/** Chips excluyentes (`radiogroup`); tocar el elegido lo suelta. `prefijo` nombra cada chip con su fila para el lector. */
-function ChipsExcluyentes({ etiqueta, opciones, valor, onCambio, prefijo }: { etiqueta: string; opciones: readonly OpcionDeCampo[]; valor: string | null; onCambio: (code: string | null) => void; prefijo?: string }) {
+/**
+ * Chips excluyentes (`radiogroup`); tocar el elegido lo suelta. `prefijo` nombra cada chip con su fila para el lector;
+ * `errorDelGrupo` es el error de la pregunta cuando estos son sus primeros controles: va en el nombre del primero.
+ */
+function ChipsExcluyentes({
+  etiqueta,
+  opciones,
+  valor,
+  onCambio,
+  prefijo,
+  errorDelGrupo,
+}: {
+  etiqueta: string;
+  opciones: readonly OpcionDeCampo[];
+  valor: string | null;
+  onCambio: (code: string | null) => void;
+  prefijo?: string;
+  errorDelGrupo?: string | null;
+}) {
   return (
     <View style={estilos.chips} accessibilityRole="radiogroup" accessibilityLabel={etiqueta}>
-      {opciones.map((o) => (
-        <Chip key={o.code} texto={o.label} etiqueta={prefijo ? `${prefijo}: ${o.label}` : undefined} elegido={valor === o.code} rol="radio" onPress={() => onCambio(valor === o.code ? null : o.code)} />
+      {opciones.map((o, i) => (
+        <Chip key={o.code} texto={o.label} etiqueta={nombreDelPrimero(prefijo ? `${prefijo}: ${o.label}` : o.label, i === 0, errorDelGrupo)} elegido={valor === o.code} rol="radio" onPress={() => onCambio(valor === o.code ? null : o.code)} />
       ))}
     </View>
   );
@@ -211,20 +245,24 @@ function ChipsExcluyentes({ etiqueta, opciones, valor, onCambio, prefijo }: { et
 
 // ─── La lista que se repite ─────────────────────────────────────────────────────────────────────
 
-function Subcampo({ sub, valor, error, onCambio }: { sub: SubcampoDeLista; valor: string; error: string | null; onCambio: (v: string) => void }) {
+/** Un subcampo de un renglón. `errorDelGrupo` llega solo al primero del primer renglón: el error de la lista va en su nombre. */
+function Subcampo({ sub, valor, error, onCambio, errorDelGrupo }: { sub: SubcampoDeLista; valor: string; error: string | null; onCambio: (v: string) => void; errorDelGrupo?: string | null }) {
   const rotulo = sub.required ? sub.label : `${sub.label} (${COPY_FORMULARIOS_V2.opcional})`;
   switch (sub.dataType) {
     case 'TEXT':
-      return <Campo etiqueta={rotulo} value={valor} onChangeText={onCambio} maxLength={sub.maxLength} error={error} />;
-    case 'NUMBER':
-      return <Campo etiqueta={sub.unit ? `${rotulo} (${sub.unit})` : rotulo} value={valor} onChangeText={onCambio} keyboardType="decimal-pad" error={error} />;
+      return <Campo etiqueta={rotulo} value={valor} onChangeText={onCambio} maxLength={sub.maxLength} error={error} {...nombreConErrorDelGrupo(rotulo, error, errorDelGrupo)} />;
+    case 'NUMBER': {
+      const etiqueta = sub.unit ? `${rotulo} (${sub.unit})` : rotulo;
+      return <Campo etiqueta={etiqueta} value={valor} onChangeText={onCambio} keyboardType="decimal-pad" error={error} {...nombreConErrorDelGrupo(etiqueta, error, errorDelGrupo)} />;
+    }
     case 'BOOLEAN':
+      // `CampoSiONo` (P0) no lleva error en el nombre de sus opciones: el de la lista queda en la línea de error, que se anuncia.
       return <CampoSiONo etiqueta={rotulo} opciones={OPCIONES_SI_O_NO} valor={valor} onCambio={onCambio} />;
     case 'CHOICE':
       return (
         <View style={ui.campo}>
           <Text style={ui.etiqueta}>{rotulo}</Text>
-          <ChipsExcluyentes etiqueta={rotulo} opciones={sub.options} valor={valor === '' ? null : valor} onCambio={(c) => onCambio(c ?? '')} />
+          <ChipsExcluyentes etiqueta={rotulo} opciones={sub.options} valor={valor === '' ? null : valor} onCambio={(c) => onCambio(c ?? '')} errorDelGrupo={errorDelGrupo} />
         </View>
       );
   }
@@ -257,8 +295,15 @@ export function ListaQueSeRepite({
       hijos={renglones.map((r, i) => (
         <Tarjeta key={r.id}>
           <Subtitulo>{`${conMayuscula(item)} ${i + 1}`}</Subtitulo>
-          {campo.itemFields.map((sub) => (
-            <Subcampo key={sub.code} sub={sub} valor={r.valores[sub.code] ?? ''} error={errores[claveDeSubcampo(campo.fieldCode, r.id, sub.code)] ?? null} onCambio={(v) => onEditar(r.id, sub.code, v)} />
+          {campo.itemFields.map((sub, j) => (
+            <Subcampo
+              key={sub.code}
+              sub={sub}
+              valor={r.valores[sub.code] ?? ''}
+              error={errores[claveDeSubcampo(campo.fieldCode, r.id, sub.code)] ?? null}
+              onCambio={(v) => onEditar(r.id, sub.code, v)}
+              errorDelGrupo={i === 0 && j === 0 ? cabecera.error : null}
+            />
           ))}
           <Boton texto={COPY_FORMULARIOS_V2.quitarRenglon(item)} etiqueta={`${COPY_FORMULARIOS_V2.quitarRenglon(item)} ${i + 1}`} tipo="enlace" icono="cerrar" onPress={() => onQuitar(r.id)} />
         </Tarjeta>
@@ -266,7 +311,15 @@ export function ListaQueSeRepite({
       pie={
         <>
           <Text style={ui.tenue}>{T.renglones(renglones.length, campo.maxItems)}</Text>
-          <Boton texto={COPY_FORMULARIOS_V2.sumarRenglon(item)} tipo="secundario" icono="mas" onPress={onSumar} deshabilitado={lleno} />
+          {/* Sin renglones, «Sumar» es el primer control de la lista: el error de la pregunta va en su nombre. */}
+          <Boton
+            texto={COPY_FORMULARIOS_V2.sumarRenglon(item)}
+            etiqueta={renglones.length === 0 && cabecera.error ? nombreParaElLector(COPY_FORMULARIOS_V2.sumarRenglon(item), cabecera.error) : undefined}
+            tipo="secundario"
+            icono="mas"
+            onPress={onSumar}
+            deshabilitado={lleno}
+          />
         </>
       }
     />
@@ -291,10 +344,17 @@ export function TablaDeOpciones({
     <Pregunta
       cabecera={{ ...cabecera, ayuda: cabecera.ayuda ?? T.unaPorFila }}
       rol="none"
-      hijos={campo.rows.map((fila) => (
+      hijos={campo.rows.map((fila, i) => (
         <View key={fila.code} style={estilos.filaDeTabla}>
           <Text style={estilos.nombreDeFila}>{fila.label}</Text>
-          <ChipsExcluyentes etiqueta={`${cabecera.etiqueta}: ${fila.label}`} prefijo={fila.label} opciones={campo.columns} valor={celdas[fila.code] ?? null} onCambio={(c) => onElegir(fila.code, c)} />
+          <ChipsExcluyentes
+            etiqueta={`${cabecera.etiqueta}: ${fila.label}`}
+            prefijo={fila.label}
+            opciones={campo.columns}
+            valor={celdas[fila.code] ?? null}
+            onCambio={(c) => onElegir(fila.code, c)}
+            errorDelGrupo={i === 0 ? cabecera.error : null}
+          />
         </View>
       ))}
     />
@@ -338,12 +398,22 @@ export function CampoDeAlimentos({
         <>
           {campo.suggestions.length ? (
             <View style={estilos.chips}>
-              {campo.suggestions.map((s) => (
-                <Chip key={s} texto={s} elegido={elegido(s)} rol="checkbox" deshabilitado={lleno && !elegido(s)} onPress={() => onAlternarSugerido(s)} />
+              {campo.suggestions.map((s, i) => (
+                <Chip key={s} texto={s} etiqueta={nombreDelPrimero(s, i === 0, cabecera.error)} elegido={elegido(s)} rol="checkbox" deshabilitado={lleno && !elegido(s)} onPress={() => onAlternarSugerido(s)} />
               ))}
             </View>
           ) : null}
-          <Campo etiqueta={T.nombreDelAlimento} value={nuevo} onChangeText={setNuevo} maxLength={LARGO_MAXIMO_DE_ALIMENTO} returnKeyType="done" onSubmitEditing={sumar} editable={!lleno} />
+          {/* Sin sugeridos, el campo «Alimento» es el primer control: el error de la pregunta va en su nombre. */}
+          <Campo
+            etiqueta={T.nombreDelAlimento}
+            value={nuevo}
+            onChangeText={setNuevo}
+            maxLength={LARGO_MAXIMO_DE_ALIMENTO}
+            returnKeyType="done"
+            onSubmitEditing={sumar}
+            editable={!lleno}
+            {...nombreConErrorDelGrupo(T.nombreDelAlimento, null, campo.suggestions.length ? null : cabecera.error)}
+          />
           <Boton texto={COPY_FORMULARIOS_V2.sumarAlimento} tipo="secundario" icono="mas" onPress={sumar} deshabilitado={lleno || nuevo.trim() === ''} />
         </>
       }
@@ -387,18 +457,24 @@ export function CampoDeHorarios({
     <Pregunta
       cabecera={cabecera}
       rol="none"
-      hijos={campo.parts.map((p) => (
-        <Campo
-          key={p.code}
-          etiqueta={`${p.label} (HH:MM)`}
-          placeholder={T.horaEjemplo}
-          value={horas[p.code] ?? ''}
-          onChangeText={(t) => onEditar(p.code, t)}
-          keyboardType="numbers-and-punctuation"
-          maxLength={5}
-          error={errores[claveDeParte(campo.fieldCode, p.code)] ?? null}
-        />
-      ))}
+      hijos={campo.parts.map((p, i) => {
+        const etiqueta = `${p.label} (HH:MM)`;
+        const error = errores[claveDeParte(campo.fieldCode, p.code)] ?? null;
+        return (
+          <Campo
+            key={p.code}
+            etiqueta={etiqueta}
+            placeholder={T.horaEjemplo}
+            value={horas[p.code] ?? ''}
+            onChangeText={(t) => onEditar(p.code, t)}
+            keyboardType="numbers-and-punctuation"
+            maxLength={5}
+            error={error}
+            // La primera parte es el primer control del grupo: el error de la pregunta va en su nombre, con el propio si lo tiene.
+            {...nombreConErrorDelGrupo(etiqueta, error, i === 0 ? cabecera.error : null)}
+          />
+        );
+      })}
     />
   );
 }

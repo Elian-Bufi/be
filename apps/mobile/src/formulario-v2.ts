@@ -59,7 +59,16 @@ export const TEXTOS_DE_FORMULARIO_V2 = {
   renglonVacio: 'Completá al menos un dato o quitá el renglón.',
   datoIlegible: 'Hay un dato que no se entiende. Revisá los campos marcados.',
   propuestaCambio: 'Lo que cargó tu profesional cambió desde que lo viste. Volvé a consultar y revisalo de nuevo.',
-  propuestaYaNoEsta: 'Lo que se había cargado ya no está: tu profesional lo retiró o ya se resolvió. Volvé a consultar.',
+  // El 409 de FRI-08: la propuesta que se vio ya no es la pendiente (la cambiaron, la retiraron o ya se resolvió).
+  propuestaCambioAntesDeDescartar: 'Lo que se había cargado cambió o ya no está: tu profesional lo modificó, lo retiró o ya se resolvió. Volvé a consultar antes de descartarlo.',
+  // El 409 de FRI-04 sin `fromProposal`: apareció una propuesta que esta pantalla no vio. Nada se pisa en silencio.
+  aparecioPropuesta:
+    'Mientras completabas, tu profesional cargó respuestas para que las confirmes. Lo que escribiste no se envió. Volvé a consultar y revisá lo cargado: podés confirmarlo, corregirlo o descartarlo y responder vos.',
+  volvimosAConsultar: 'Volvimos a consultar: hay respuestas cargadas para que las confirmes.',
+  loEscritoSigue: 'Si las descartás, lo que escribiste sigue en el formulario.',
+  // Con la solicitud en pausa (el PDP dice que no se puede responder) lo cargado se puede ver y descartar, no confirmar.
+  porAhoraNoSePuedeResponder: 'Por ahora no se puede responder: puede que el vínculo esté en pausa o que tus autorizaciones hayan cambiado.',
+  revisarSinResponder: 'Podés ver lo que se cargó y, si no es correcto, descartarlo. Para confirmarlo o corregirlo hace falta que se pueda responder.',
   revisarCargado: 'Revisar lo cargado',
   cargadoPorEl: (profesional: string, fecha: string) => `${profesional} cargó tus respuestas el ${fecha}.`,
   revisar: 'Revisar',
@@ -530,13 +539,16 @@ export function problemasAntesDeEnviar(
 
 /**
  * Qué hacer con un envío V2 que la API rechazó: un `422 FORM_RESPONSE_INVALID` vuelve a cada campo con su mensaje; un
- * `409 VERSION_CONFLICT` al confirmar lo cargado dice que eso cambió; lo demás lo decide `desenlaceDeEnvio` o `falloDe`.
+ * `409 VERSION_CONFLICT` de API-FRI-04 dice qué pasó con lo cargado: al confirmarlo, que eso cambió; al responder sin
+ * haberlo visto, que el profesional cargó algo mientras la persona completaba (la API no pisa nada en silencio). En los
+ * dos casos el envío queda suspendido hasta volver a leer, y leer trae la propuesta para revisarla. El 409 de una
+ * corrección (API-FRI-05) y lo demás lo decide `desenlaceDeEnvio` o `falloDe`.
  */
 export function rechazoV2(
   r: Resultado<unknown>,
   campos: readonly CampoDePlantillaV2[],
   armadas: Pick<RespuestasArmadas, 'idsDeRenglones'>,
-  opciones: { readonly desdePropuesta: boolean },
+  opciones: { readonly desdePropuesta: boolean; readonly esCorreccion: boolean },
 ): DesenlaceDeEnvio | null {
   if (r.ok || r.tipo !== 'API') return null;
   if (r.codigo === 'FORM_RESPONSE_INVALID') {
@@ -545,7 +557,9 @@ export function rechazoV2(
     const { errores, lineas } = erroresDeProblemas(problemas, campos, armadas.idsDeRenglones);
     return { tipo: 'por-campo', errores, lineas, resumen: COPY.resumenDeErrores(new Set(problemas.map((p) => p.fieldCode)).size) };
   }
-  if (r.codigo === 'VERSION_CONFLICT' && opciones.desdePropuesta) return { tipo: 'version-vieja', mensaje: TEXTOS_DE_FORMULARIO_V2.propuestaCambio, acciones: ['cargar', 'volver'] };
+  if (r.codigo === 'VERSION_CONFLICT' && !opciones.esCorreccion) {
+    return { tipo: 'version-vieja', mensaje: opciones.desdePropuesta ? TEXTOS_DE_FORMULARIO_V2.propuestaCambio : TEXTOS_DE_FORMULARIO_V2.aparecioPropuesta, acciones: ['cargar', 'volver'] };
+  }
   return null;
 }
 

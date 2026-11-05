@@ -317,16 +317,22 @@ describe('la validación del dominio, antes de enviar y al volver de la API', ()
     expect(lineas).toEqual([`Las comidas de tu semana: ${MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_INVALID]}`, `Qué evitás: ${MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.TOO_MANY]}`]);
   });
 
-  test('el rechazo de la API: por campo, dato no aceptado, lo cargado que cambió, y lo que decide otro', () => {
+  test('el rechazo de la API: por campo, dato no aceptado, lo cargado que cambió o apareció, y lo que decide otro', () => {
     const fallo = (codigo: string, issues: unknown[] = []): Resultado<unknown> => ({ ok: false, tipo: 'API', status: 422, codigo, issues }) as unknown as Resultado<unknown>;
-    const porCampo = rechazoV2(fallo('FORM_RESPONSE_INVALID', [{ code: 'FORM_ANSWER_EXCLUSIVE_OPTION', path: 'answers[0].answer', fieldCode: 'evita' }, { sinForma: true }]), CAMPOS, { idsDeRenglones: {} }, { desdePropuesta: false });
+    const respuesta = { desdePropuesta: false, esCorreccion: false };
+    const confirmacion = { desdePropuesta: true, esCorreccion: false };
+    const porCampo = rechazoV2(fallo('FORM_RESPONSE_INVALID', [{ code: 'FORM_ANSWER_EXCLUSIVE_OPTION', path: 'answers[0].answer', fieldCode: 'evita' }, { sinForma: true }]), CAMPOS, { idsDeRenglones: {} }, respuesta);
     expect(porCampo).toEqual({ tipo: 'por-campo', errores: { evita: MENSAJE_DE_PROBLEMA_V2.FORM_ANSWER_EXCLUSIVE_OPTION }, lineas: [`Qué evitás: ${MENSAJE_DE_PROBLEMA_V2.FORM_ANSWER_EXCLUSIVE_OPTION}`], resumen: COPY.resumenDeErrores(1) });
-    expect(rechazoV2(fallo('FORM_RESPONSE_INVALID'), CAMPOS, { idsDeRenglones: {} }, { desdePropuesta: false })).toEqual({ tipo: 'dato-no-aceptado', mensaje: COPY_FORMULARIOS.respuestaNoAceptada });
-    expect(rechazoV2(fallo('VERSION_CONFLICT'), CAMPOS, { idsDeRenglones: {} }, { desdePropuesta: true })).toEqual({ tipo: 'version-vieja', mensaje: T.propuestaCambio, acciones: ['cargar', 'volver'] });
-    // Sin propuesta, el 409 lo interpreta `desenlaceDeEnvio` (una corrección) o `falloDe`.
-    expect(rechazoV2(fallo('VERSION_CONFLICT'), CAMPOS, { idsDeRenglones: {} }, { desdePropuesta: false })).toBeNull();
-    expect(rechazoV2(fallo('FORM_REQUEST_NOT_RESPONDABLE'), CAMPOS, { idsDeRenglones: {} }, { desdePropuesta: true })).toBeNull();
-    expect(rechazoV2({ ok: false, tipo: 'RED' }, CAMPOS, { idsDeRenglones: {} }, { desdePropuesta: true })).toBeNull();
+    expect(rechazoV2(fallo('FORM_RESPONSE_INVALID'), CAMPOS, { idsDeRenglones: {} }, respuesta)).toEqual({ tipo: 'dato-no-aceptado', mensaje: COPY_FORMULARIOS.respuestaNoAceptada });
+    // Al confirmar lo cargado: eso cambió desde que se vio.
+    expect(rechazoV2(fallo('VERSION_CONFLICT'), CAMPOS, { idsDeRenglones: {} }, confirmacion)).toEqual({ tipo: 'version-vieja', mensaje: T.propuestaCambio, acciones: ['cargar', 'volver'] });
+    // Al responder sin haber visto una propuesta: el profesional cargó algo mientras la persona completaba (API-FRI-04).
+    // El envío queda suspendido con las mismas salidas; volver a leer trae la propuesta y abre la revisión.
+    expect(rechazoV2(fallo('VERSION_CONFLICT'), CAMPOS, { idsDeRenglones: {} }, respuesta)).toEqual({ tipo: 'version-vieja', mensaje: T.aparecioPropuesta, acciones: ['cargar', 'volver'] });
+    // El 409 de una corrección (API-FRI-05) no es de una propuesta: lo interpreta `desenlaceDeEnvio` con su texto.
+    expect(rechazoV2(fallo('VERSION_CONFLICT'), CAMPOS, { idsDeRenglones: {} }, { desdePropuesta: false, esCorreccion: true })).toBeNull();
+    expect(rechazoV2(fallo('FORM_REQUEST_NOT_RESPONDABLE'), CAMPOS, { idsDeRenglones: {} }, confirmacion)).toBeNull();
+    expect(rechazoV2({ ok: false, tipo: 'RED' }, CAMPOS, { idsDeRenglones: {} }, confirmacion)).toBeNull();
   });
 });
 
@@ -379,7 +385,8 @@ describe('lo que cargó el profesional se lee en palabras y se puede corregir to
       'Qué evitás': 'Lactosa',
     });
     const comidas = Object.fromEntries(partes[1]!.lineas.map((l) => [l.etiqueta, l.valor]));
-    expect(comidas['Las comidas de tu semana']).toBe('Desayuno · 3,5 · Sí');
+    // El número de un renglón se lee con la unidad de su subcampo («por semana»): lo decide `resumenDeValor` del dominio.
+    expect(comidas['Las comidas de tu semana']).toBe('Desayuno · 3,5 por semana · Sí');
     expect(comidas['Qué podés hacer hoy']).toBe('Flexión: Con ayuda');
     expect(comidas['Alimentos que no comés']).toBe('Leche (Me cae mal)');
     expect(comidas['Tus horarios']).toBe('Me levanto: 06:45');
