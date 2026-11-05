@@ -108,7 +108,8 @@ Dos»; y `ASE_TRES_`, «Prueba Tres». Las de `ASE_CUATRO_` y `ASE_CINCO_` no se
 
    Después, «Enviar solicitud».
 3. En el teléfono, entrar con «Prueba Uno». En Inicio, la tarjeta «Para responder» trae la solicitud: «Completar».
-4. Responder algunas preguntas y, a la mitad, cerrar la app y volver a abrirla: lo escrito sigue.
+4. Responder algunas preguntas y, a la mitad, cerrar la app y volver a abrirla: lo escrito sigue. **En la 0.20.0-candidata.1
+   no pasa:** el borrador se pierde al cerrar la app (falla de FI-04, ver «Resultados»).
 5. Probar una pregunta condicional: elegir una respuesta que abre otra pregunta, y después cambiarla para que se cierre.
 6. «Enviar respuesta».
 7. En la computadora, actualizar. La solicitud figura como respondida y se leen las respuestas en palabras.
@@ -144,16 +145,34 @@ hay que esperar 15 minutos.
 
 | Parte | Paso | Qué se vio | ¿Como se esperaba? | Observación |
 |---|---|---|---|---|
-| 1 | Instalar encima | | | |
-| 2 | Pedir «Antes de entrenar» | | | |
-| 2 | Responder, cerrar y volver | | | |
-| 2 | La condicional | | | |
-| 2 | Lo respondido en el escritorio | | | |
-| 3 | Cargar con la persona | | | |
-| 3 | Revisar, corregir y confirmar | | | |
-| 3 | Lo confirmado en el escritorio | | | |
-| 4 | «No es correcto» | | | |
-| 5 | TalkBack | | | |
+Partes 2 y 3 hechas por Dirección el 2026-11-05, con la computadora y su teléfono, contra `test` (`main` 92db513).
+
+| Parte | Paso | Qué se vio | ¿Como se esperaba? | Observación |
+|---|---|---|---|---|
+| 1 | Instalar encima | La prueba siguió en la 0.20.0-candidata.1 | Sí | Sin observaciones |
+| 2 | Pedir «Antes de entrenar» | Buscó una pestaña «Información» que no existe: el pedido está en «Más» → «Pedir información», o en Entrenamiento | No | La guía decía «pestaña Información» (corregida). El pedido queda escondido en «Más» |
+| 2 | Responder, cerrar y volver | Al ir a Inicio a mitad, la app pregunta si salir sin guardar. Al cerrar la app, lo escrito se pierde | No | **Falla de FI-04:** el borrador vive solo en la memoria de la pantalla (`useReducer` en `pantallas/formularios.tsx`), no en el teléfono |
+| 2 | La condicional | Aparece la lista que corresponde: con dolor, la de los lugares | Sí | |
+| 2 | Lo respondido en el escritorio | Enviada, y figura respondida | Sí | Las respuestas solo se ven entrando por «Más» → «Pedir información» → «Solicitudes»: poco a la vista. Tampoco aparecen en la Línea de tiempo |
+| 3 | Cargar con la persona | Nutrición no tiene su «Pedir información» (solo «Más»). El «para qué» viene vacío, y en Entrenamiento viene sugerido. «Cargar con la persona» está debajo de todas las preguntas | Sí, con observaciones | El embarazo viene elegido para todas las personas |
+| 3 | Revisar, corregir y confirmar | En la app aparecen varias preguntas como obligatorias que en la web no se notaban. En la app es demasiado texto para un solo desplazamiento | Sí | No es una falla: las 20 obligatorias de «Cómo comés hoy» vienen marcadas por la plantilla, en la columna «Requerida» del pedido, y la web las muestra con una etiqueta chica |
+| 3 | Lo confirmado en el escritorio | «Todo bien en estos pasos» | Sí | |
+| 4 | «No es correcto» | | | Pendiente |
+| 5 | TalkBack | | | Pendiente: conviene hacerla en la próxima candidata, si las pantallas cambian |
+
+**Impresiones generales de Dirección** (para la propuesta `docs/paquetes/WP-FORMULARIOS-RONDA-2.md`):
+- Los textos de ayuda («para qué se usa», «queda registrado como declarado por vos», «tocá de nuevo la opción elegida para
+  dejarla sin responder») ensucian la pantalla: mejor detrás de un botón o un desplegable.
+- Un solo desplazamiento largo agobia: mejor pantallas cortas que agrupen preguntas. Lo mismo en Nutrición.
+- Los ejemplos sí, sobre todo en las respuestas de texto, que se confunden más que una de opciones.
+- No avisar cuánto va a demorar el formulario.
+- Horario: hay días que se puede a la mañana y otros a la tarde. Los días por semana (de 1 a 7) pueden no coincidir con
+  los días elegidos.
+- Otra actividad: sumar qué día de la semana y en qué horario.
+- Embarazo: sacarlo, o que venga sin elegir. Su importancia es muy particular.
+- Hay preguntas que se repiten entre los dos formularios (el sueño también le importa al entrenador): una sección de
+  hábitos, para todos los que ven el historial.
+- Las respuestas tienen que estar a mano en el escritorio, y el formulario respondido, en la Línea de tiempo.
 
 ## Lo que queda pendiente
 
