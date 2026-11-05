@@ -22,12 +22,19 @@
  * - **Una parte por pantalla, como en la app** (DL-165 D-1, `partes-de-formulario.ts`): «Parte N de M», «Anterior» y
  *   «Siguiente», un índice de las partes con las obligatorias que le faltan a cada una (D-7) y un repaso antes de enviar.
  *   Pasar de parte no exige nada; un problema al enviar lleva a la parte de la primera pregunta marcada.
+ * - **La parte «Tus hábitos»** (FR-10; DL-165 D-9): si la versión la trae, no hay nada cargado esperando y no se tocó nada,
+ *   se pregunta por los hábitos que la persona le comparte a este profesional (API-HBT-05) y, si los hay, esa parte viene
+ *   con lo que la Solicitud pide de ella, para preguntarle si siguen igual (`sus-habitos.ts`). Sin autorización (el 404) o
+ *   con cualquier falla, no se precarga ni se dice nada: por esta vía nunca se ve lo que respondió en el formulario de otra
+ *   área.
  */
 import {
   ayudaDeLaPregunta,
   camposVisibles,
+  CODIGO_DE_LA_PARTE_DE_HABITOS,
   CODIGO_DE_PROBLEMA_V2,
   COPY,
+  COPY_HABITOS,
   COPY_FORMULARIOS as F,
   COPY_FORMULARIOS_V2 as V,
   COPY_SOLICITUDES as C,
@@ -60,6 +67,7 @@ import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../
 import { CampoV2, ParaQueDeLaPregunta } from './campos-v2';
 import { conRespuesta, lineasDeValor, mensajesPorCampo, problemasDeLaApi, respuestaDe, respuestasParaEnviar, revisarAntesDeEnviar, sinRenglonesVacios } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
+import { precargaAlCargar, preguntaPorLosHabitosAlCargar } from './sus-habitos';
 
 /** Los textos propios de esta pantalla (los que comparte con la APK están en `COPY_FORMULARIOS_V2`). */
 const T = {
@@ -111,6 +119,11 @@ export function CargaConLaPersona() {
   const [intentos, setIntentos] = useState(0);
   const [envio, setEnvio] = useState<Envio>({ tipo: 'editando' });
   const [releido, setReleido] = useState(false);
+  /**
+   * FR-10 · si «Tus hábitos» vino con lo que la persona le comparte a este profesional (API-HBT-05): cuándo los declaró,
+   * para decirlo en esa parte. `null` si no se precargó nada.
+   */
+  const [habitosPrecargados, setHabitosPrecargados] = useState<string | null>(null);
   /** «Volver» con algo cargado y sin enviar pregunta antes, en la página: nada se descarta en silencio. */
   const [saliendo, setSaliendo] = useState(false);
   const preguntaDeSalida = useRef<HTMLParagraphElement>(null);
@@ -131,11 +144,23 @@ export function CargaConLaPersona() {
     const version = await api.consultarDefinicionDePlantilla(token, request.templateId, request.templateVersionId);
     if (sesionPerdida(version)) return;
     if (!version.ok) return setLectura(version);
+    const secciones = version.datos.data.sections;
+    // FR-10 (DL-165 D-9): «Tus hábitos» viene con lo que la persona le comparte a este profesional, antes de dibujar el
+    // formulario. Sin autorización (el 404) o con cualquier falla, nada: ni se precarga ni se dice.
+    let precarga: ReturnType<typeof precargaAlCargar> = null;
+    if (preguntaPorLosHabitosAlCargar({ secciones, hayPropuesta: proposal !== null, tocado: tocadoRef.current })) {
+      const habitos = await api.habitosDeLaPersona(token, request.advisee.identityId);
+      if (sesionPerdida(habitos)) return;
+      precarga = precargaAlCargar(secciones, request, habitos.ok ? habitos.datos.data : null);
+    }
     setLectura({ ok: true, datos: { vista: vista.datos.data, version: version.datos.data } });
     // Lo cargado antes (si espera confirmación) llena el formulario; después de un conflicto, lo escrito se conserva y
     // solo se toma la versión nueva.
     setExpectedVersion(proposal?.version ?? null);
-    if (!tocadoRef.current) setRespuestas(proposal ? sinRespuestasOcultas(version.datos.data.sections, proposal.answers) : []);
+    if (!tocadoRef.current) {
+      setRespuestas(proposal ? sinRespuestasOcultas(secciones, proposal.answers) : (precarga?.respuestas ?? []));
+      setHabitosPrecargados(proposal ? null : (precarga?.declaradosEl ?? null));
+    }
   }, [token, solicitudId, sesionPerdida]);
 
   useEffect(() => {
@@ -406,6 +431,12 @@ export function CargaConLaPersona() {
                       {parte.titulo}
                     </h3>
                     {parte.intro ? <p className="nota formulario-de-inicio__intro">{parte.intro}</p> : null}
+                    {/* FR-10: lo que la persona le comparte vino precargado; se le pregunta si sigue igual. */}
+                    {parte.sectionCode === CODIGO_DE_LA_PARTE_DE_HABITOS && habitosPrecargados ? (
+                      <Aviso tipo="info">
+                        <p data-habitos-precargados>{COPY_HABITOS.web.precargados(diaSinElAnioEnCurso(habitosPrecargados))}</p>
+                      </Aviso>
+                    ) : null}
                     {deLaParte.length === 0 ? <p className="nota">{V.parteSinPreguntas}</p> : null}
                     {deLaParte.map((c) => {
                       const id = idDe(c.fieldCode);

@@ -13411,6 +13411,27 @@ details[open] > summary:not([class])::before {
   font-weight: 600;
 }
 
+/* FR-10 (DL-165 D-9) · «Sus hábitos», arriba de «Solicitudes»: lo que la persona le comparte a este profesional. La
+   procedencia se dice una vez, en un renglón, y las respuestas van como en «Lo que declaró». */
+.sus-habitos {
+  margin-bottom: 1.75rem;
+  padding: 1rem 1.2rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.sus-habitos__procedencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+}
+
+.sus-habitos__procedencia .nota {
+  margin: 0;
+}
+
 /* Una confirmación dentro de la página, en el lugar de la acción: la pregunta, el error si lo hubo y los dos botones. */
 .confirmacion-en-linea {
   display: flex;
