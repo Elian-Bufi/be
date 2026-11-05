@@ -3,7 +3,9 @@
 > **Estado:** RATIFICADO por Dirección el 2026-11-05, pregunta por pregunta (D-1 a D-9; DEUDA_LEGAJO DL-165). En D-7 y
 > D-9 Dirección eligió distinto de la recomendación. FR-01 y FR-02 se programaron antes de ratificar, porque corrigen lo
 > que WP-FORMULARIOS-DE-INICIO ya pedía (FI-04 y PF-02). Rama `wp-formularios-ronda-2`, desde
-> `wp-formularios-ronda-2-fallas` (`main` bbfe316 más FR-01 y FR-02).
+> `wp-formularios-ronda-2-fallas` (`main` bbfe316 más FR-01 y FR-02). FR-03 a FR-10 programados en la rama (PR #237);
+> las decisiones de la implementación D-10 a D-13 las ratificó Dirección el 2026-11-05, y D-14 a D-19 (las del FR-10,
+> §7) quedan a ratificar.
 >
 > **Origen:** la prueba de Dirección del 2026-11-05 en la APK 0.20.0-candidata.1 y en el escritorio
 > (`EVIDENCIA/FORMULARIOS-DE-INICIO/LEEME.md`, «Resultados»). Dirección: «es lo mismo pero cambia la experiencia de la
@@ -88,10 +90,28 @@ las plantillas que los usan (FR-06). Así la migración de las plantillas se esc
 | FR-07 | La regla «no más días que los marcados» | Sí | D-5 | Un número puede tener su tope en una tabla anterior (`maxFromMatrix`, solo en el formato 3): `validarRespuestasV2` lo rechaza con `FORM_ANSWER_MORE_THAN_MARKED`, la API responde 422 con ese issue y la app y la web lo avisan antes de enviar |
 | FR-06 | Las versiones nuevas de las dos plantillas | Sí | D-4, D-5, D-6 | «Pedida por defecto» por pregunta (`requestedByDefault`, solo en el formato 3); FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO v3 por migración que solo agrega, sucesoras de las de DL-164, que quedan históricas; el embarazo sin pedir y no obligatorio; la tabla de días; otra actividad con sus días; la web pide lo que dice la plantilla. Las solicitudes ya creadas siguen en su versión |
 | FR-09 | «Pedir información» en cada área y los formularios en la Línea de tiempo | Sí | D-8 | El Resumen de Nutrición y el de Entrenamiento lo tienen; API-DSH-04 suma cinco tipos de hecho (pedido, respondido, cargado, confirmado y rechazado), solo de las solicitudes de quien consulta y en sus Alcances permitidos, y la web los dibuja y abre la solicitud |
-| FR-10 | La sección común de hábitos, con el interruptor de la persona | Sí | D-9 | Solo el diseño (§4). Se programa después de que lo revise Dirección |
+| FR-10 | La sección común de hábitos, con el interruptor de la persona | Sí | D-9; D-14 a D-19 | Programado (§4 y §7). La parte «Tus hábitos», igual en las dos versiones nuevas; FRI-04 agrega una versión de los hábitos en la misma transacción; la familia API-HBT-01 a 05; «Mis hábitos», el interruptor, la pregunta por un profesional nuevo y el retiro en la APK; «Sus hábitos» en Información del website; el texto del acto, una propuesta. La integración con PostgreSQL prueba el 404 sin autorización y fuera de la lista, el corte al retirar, al pausar y al terminar el vínculo, y que un profesional nuevo no se suma solo. Con personas reales, después de la revisión legal y del gate del 08 §42 (§4.6) |
 | FR-11 | La candidata 0.21.0-candidata.1, sus lecturas congeladas y la evidencia, con TalkBack | No | — | Fuera de esta rama: la construye y la publica Dirección |
 
-## 4. FR-10 · la sección común de hábitos: el diseño (sin programar)
+## 4. FR-10 · la sección común de hábitos (programada)
+
+El diseño lo revisó Dirección el 2026-11-05 y se programó como está acá. Lo que hubo que decidir al programarlo va en §7
+(D-14 a D-19, a ratificar). Dónde está cada cosa:
+- **Dominio:** `SECCION_DE_HABITOS` en `plantillas-de-inicio.ts`; las reglas en `habitos-de-la-persona.ts`; los contratos
+  en `contratos-habitos-de-la-persona.ts`; los textos en `copy-habitos-de-la-persona.ts`; el texto del acto en `textos.ts`.
+- **Base:** las migraciones `20261105130000_tipos_de_habitos_de_la_persona` y `20261105130100_habitos_de_la_persona`,
+  que solo agregan. La de las plantillas, `20261105120000_formularios_ronda_2_plantillas`, se regeneró con la parte: no
+  corrió en ningún ambiente, y solo inserta las dos versiones nuevas (las de DL-164, en `main`, no cambian).
+- **API:** `formularios/habitos.service.ts`, `habitos.controller.ts` y `habitos-de-la-persona.ts`; el agregado en
+  FRI-04 (`respuestas-v2.service.ts`); el retiro al cerrar la cuenta (`identidad/cierre.service.ts`); la decisión del
+  PDP para una lectura que no depende del Alcance (`decidirAlgunAlcanceEnTransaccion`).
+- **APK:** «Mis hábitos» (`pantallas/mis-habitos.tsx`, `habitos-en-el-telefono.ts`), la entrada en Información, la
+  tarjeta de Inicio cuando hay algo que preguntar y «¿Sigue igual?» en `pantallas/formularios.tsx`.
+- **Website:** la tarjeta «Sus hábitos» (`forms/tarjeta-de-sus-habitos.tsx`, `forms/sus-habitos.ts`) y la precarga de
+  «Cargar con la persona» cuando el profesional ya los recibe (`forms/cargar.tsx`).
+- **Pruebas:** `habitos-de-la-persona.test.ts` y `plantillas-de-inicio.test.ts` (dominio),
+  `habitos-de-la-persona.int-spec.ts` (integración con PostgreSQL), `habitos-en-el-telefono.test.ts` (APK) y
+  `sus-habitos.test.mjs` (website).
 
 ### 4.1 Qué preguntas
 
@@ -112,6 +132,20 @@ Quedan en cada área, como hoy: la medicación (`medicacion_relevante`), las con
 Nutrición) y fumar (`fuma`, en Entrenamiento: no está en la lista de Dirección). Sumar una pregunta a la sección común es
 una decisión de Dirección.
 
+**Cómo quedaron las plantillas** (en las versiones nuevas de FR-06, FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO v3, sin
+versiones extra; D-15):
+
+| Formulario | Partes, en orden | Lo que se movió a «Tus hábitos» |
+|---|---|---|
+| «Cómo comés hoy» v2 (56 preguntas) | **Tus hábitos** · Tu día · Las comidas de tu semana · Alimentos que sí y que no · Lo que tomás · Tu salud y la comida · Lo que buscás | De «Tu día»: los horarios (`nut_horarios`), el día en movimiento (`nivel_de_actividad`) y el ejercicio de la semana (`nut_actividad_semanal`). «¿En qué momento del día solés entrenar?» queda en «Tu día» y se abre con «Sí» en el deporte de la parte común |
+| «Antes de entrenar» v3 (43 preguntas) | Tu salud antes de entrenar · Dolor y lesiones · Tu experiencia · Lo que buscás · **Tus hábitos** · Tu semana para entrenar · Tus preferencias | De «Tu semana para entrenar»: el día fuera del entrenamiento (`nivel_de_actividad`), el otro deporte y sus actividades (`trn_otro_deporte`, `trn_otros_deportes`). De «Descanso y preferencias»: las horas de sueño y el estrés; la sección queda como «Tus preferencias» |
+
+Las dos tienen siete partes: «Parte N de 7» cuando se pide todo (antes, seis). El repaso no cambia: dice lo respondido por
+parte, también la de los hábitos. Las obligatorias de la parte son las mismas en los dos formularios: los horarios, las
+horas de sueño, el día en movimiento, si hace deporte y, con «Sí», cuáles. Por eso «Cómo comés hoy» v2 queda con 24
+obligatorias en la plantilla (22 a la vista; las alergias y la lista del deporte, detrás de su condición) y «Antes de
+entrenar» v3, con 23. El profesional las puede cambiar al pedir, como siempre.
+
 ### 4.2 Dónde vive el dato
 
 - **Una entidad nueva de la persona, no de un área:** `habitos_de_la_persona`, de solo agregar. Cada versión guarda las
@@ -125,6 +159,10 @@ una decisión de Dirección.
 - **La persona no responde dos veces lo mismo:** cuando otro formulario pide la parte «Tus hábitos», la app la trae con
   lo vigente para que confirme o cambie («Ya lo respondiste el 5/11: ¿sigue igual?»). Es su propio dato, en su teléfono;
   lo que envía es una respuesta nueva del área que la pidió.
+- **Programado así** (D-16, D-18): lo que el formulario preguntó de la parte reemplaza lo vigente (y lo que dejó sin
+  responder, sale); lo que no preguntó queda como estaba. Rectificar una respuesta no cambia los hábitos. En la web,
+  «Cargar con la persona» no precarga nada de los hábitos, salvo que ese profesional ya los reciba por la autorización
+  (API-HBT-05); así, un profesional nunca ve por esta vía lo que la persona respondió en el formulario de otra área.
 
 ### 4.3 La autorización nueva y sus operaciones
 
@@ -135,23 +173,25 @@ una decisión de Dirección.
 - **La lista es explícita** (08 C-12: ampliar exige una aceptación nueva): al activarla se eligen los profesionales con
   vínculo vigente, todos marcados. Un profesional que se vincula después no la recibe solo: la app le pregunta a la persona
   si lo suma, y sin respuesta no lo suma.
-- **Operaciones nuevas, familia API-HAB** (lo nuevo va en operaciones nuevas, DL-137 D-7):
+- **Operaciones nuevas, familia API-HBT** (lo nuevo va en operaciones nuevas, DL-137 D-7). El diseño las llamaba API-HAB,
+  pero HAB ya es «Mis habituales» de entrenamiento (DL-109) y repetir un ID es lo que prohíbe DL-116: van como HBT (D-14).
 
 | ID | Método y ruta | Quién | Qué hace |
 |---|---|---|---|
-| API-HAB-01 | `GET /me/habits` | La persona | Sus hábitos vigentes, su historia y el estado de la autorización, con quiénes los ven |
-| API-HAB-02 | `POST /me/habits` | La persona | Una versión nueva de sus hábitos desde «Mis hábitos» (Idempotency-Key, la validación de V2) |
-| API-HAB-03 | `PUT /me/habits/sharing` | La persona | Activar la autorización o cambiar con quiénes, con la versión que vio y el texto que acepta |
-| API-HAB-04 | `POST /me/habits/sharing/withdrawal` | La persona | Retirarla, para todos a la vez |
-| API-HAB-05 | `GET /advisees/{adviseeId}/habits` | El profesional | Los hábitos vigentes de la persona, si la autorización está activa y lo incluye y su vínculo está vigente. Si no, el 404 de lo inexistente |
+| API-HBT-01 | `GET /me/habits` | La persona | Sus hábitos vigentes, su historia, el estado de la autorización, sus profesionales con lo que la autorización dice de cada uno, y el texto del acto |
+| API-HBT-02 | `POST /me/habits` | La persona | Una versión nueva de sus hábitos desde «Mis hábitos» (Idempotency-Key, la validación de V2, con la vigente que vio) |
+| API-HBT-03 | `PUT /me/habits/sharing` | La persona | Activar la autorización o cambiar con quiénes, con la versión que vio y el texto que acepta |
+| API-HBT-04 | `POST /me/habits/sharing/withdrawal` | La persona | Retirarla, para todos a la vez |
+| API-HBT-05 | `GET /advisees/{adviseeId}/habits` | El profesional | Los hábitos vigentes de la persona, si la autorización está activa y lo incluye y su vínculo está vigente. Si no, el 404 de lo inexistente |
 
-  Las escrituras van con Idempotency-Key, auditoría y evento, como FRI. HAB-05 no depende del Alcance: la autorización es
+  Las escrituras van con Idempotency-Key, auditoría y evento, como FRI. HBT-05 no depende del Alcance: la autorización es
   de la persona y por profesional. Pasa por el PDP para el vínculo vigente (ni en pausa ni terminado, 08 §14.1) y el A3 de
-  la persona; cada lectura queda en la auditoría de acceso, que la persona ve (08 §19.7).
+  la persona; cada lectura queda en el registro de accesos (`decision_de_acceso`), del que sale lo que la persona puede
+  saber de quién vio sus datos (08 §19.7).
 
 ### 4.4 Qué ve cada profesional
 
-- **Sin la autorización, o sin estar en la lista:** lo de su formulario, como hoy. HAB-05 le responde el 404 de lo
+- **Sin la autorización, o sin estar en la lista:** lo de su formulario, como hoy. HBT-05 le responde el 404 de lo
   inexistente: no se entera de que hay hábitos de otra área.
 - **Con la autorización y en la lista:** la versión vigente de los hábitos, con su fecha y «Declarado por la persona». No
   ve de qué formulario salió ni el área del otro profesional: el origen se dice como «en un formulario» o «en Mis hábitos».
@@ -161,19 +201,25 @@ una decisión de Dirección.
 
 ### 4.5 Qué pasa al retirarla
 
-- El acceso se corta a futuro, para todos y en el momento: desde ahí HAB-05 responde 404 (RNF-PRI-002).
+- El acceso se corta a futuro, para todos y en el momento: desde ahí HBT-05 responde 404 (RNF-PRI-002).
 - No se borra nada: los hábitos son de la persona y siguen en su app; lo que cada profesional tiene de su propio
   formulario sigue siendo suyo, como hoy. Lo que un profesional ya vio no se puede «desver»: se dice en el texto del acto.
 - Terminar o pausar un vínculo corta a ese profesional, aunque la autorización siga activa. Cerrar la cuenta la retira.
 
 ### 4.6 Compatibilidad y legal
 
-- La APK 0.20 no llama API-HAB y no ve las versiones que traigan la parte «Tus hábitos» (formato 3, FR-08): nada cambia
-  para ella.
+- La APK 0.20 no llama API-HBT y no ve las versiones que traigan la parte «Tus hábitos» (formato 3, FR-08): nada cambia
+  para ella. Una prueba del dominio lo fija: ningún congelado de `VIGENTES` lee una operación HBT.
 - Lo legal va al legajo legal, fuera del repo público: el texto del acto; su base (el consentimiento expreso del titular
   para una categoría sensible hacia perfiles no sanitarios, VJR-1 y VJR-4 del 08, y el paso de información entre sus
   profesionales, VJR-5); la revocación y lo que se informa. En `test`, con datos sintéticos; con personas reales, después
   de esa revisión y del gate del 08 §42.
+- **El texto del acto es una propuesta**, como `EVIDENCIA_VISUAL` en DL-125: `habitos-compartidos-2026-11-propuesta`
+  (tipo `HABITOS_COMPARTIDOS`), con «Texto propuesto, pendiente de validación jurídica.» en el texto mismo, y la API lo
+  informa con `approval: 'PENDING_APPROVAL'`. La versión aprobada entra como sucesora, con otro id, y no hereda las
+  aceptaciones de esta. No se agregó ningún interruptor de configuración ni se tocó `render.yaml`.
+- **Habilitarlo con personas reales espera la revisión legal y el gate del 08 §42.** Hasta entonces, la autorización se
+  usa solo en `test` y con cuentas sintéticas.
 
 ## 5. Compatibilidad con las APK instaladas
 
@@ -190,7 +236,40 @@ una decisión de Dirección.
 
 ## 6. Fuera de esta ronda
 
-- Programar la sección común de hábitos (FR-10): espera la revisión de su diseño.
 - La tarjeta de las respuestas en el Resumen de la ficha: WP-TABLERO-ALTA-GAMA.
 - La candidata 0.21.0-candidata.1 (FR-11): la construye y la publica Dirección.
 - Cambiar las versiones ya publicadas: una versión no se toca (REG-06-209).
+- Del FR-10: avisarle al profesional (una novedad) cuando la persona empieza a compartirle sus hábitos o deja de hacerlo, y
+  una pantalla de la persona con quién vio sus datos (08 §19.7; el registro ya existe). Son ideas, sin decidir.
+
+## 7. Decisiones de la implementación
+
+D-10 a D-13 (FR-06 a FR-09) las **ratificó Dirección el 2026-11-05**; el detalle está en DL-165. D-14 a D-19 son las del
+FR-10 y quedan **a ratificar**:
+
+- **D-14 · La familia se llama API-HBT, no API-HAB.** HAB ya es «Mis habituales» de entrenamiento (DL-109), y la guardia
+  de trazabilidad frena un ID repetido (DL-116). Las rutas y lo que hace cada una son las del diseño.
+- **D-15 · Dónde va la parte, y lo que eso cambia.** Primera en «Cómo comés hoy», donde la v1 abría con los horarios; antes
+  de «Tu semana para entrenar» en «Antes de entrenar», donde estaban esas preguntas (la salud sigue primera). Las dos
+  quedan con siete partes. «Descanso y preferencias» pasa a ser «Tus preferencias». Las obligatorias de la parte son las
+  mismas en los dos formularios, así que «Cómo comés hoy» suma dos (las horas de sueño y, con «Sí», la lista del deporte).
+- **D-16 · La versión que agrega un formulario.** Lo que el formulario preguntó de la parte reemplaza lo vigente, y lo que
+  la persona dejó sin responder sale; lo que no preguntó queda como estaba. Cada formulario respondido agrega una versión,
+  aunque no cambie nada: es lo que la persona confirmó ese día. Rectificar una respuesta (FRI-05) no cambia los hábitos,
+  porque lo vigente puede ser más nuevo que ese formulario; se corrigen en «Mis hábitos», que no exige ninguna pregunta y
+  pide la vigente que se vio (409 si entró otra).
+- **D-17 · La lista explícita es por componente de vínculo.** Cada renglón nombra al profesional y cada componente sin
+  terminar (aceptado o en pausa) que tenía en ese momento: si los recibe y desde cuándo, o si la persona dijo que no. El
+  «no» queda: no se le vuelve a preguntar. Un profesional que vuelve con otro vínculo después de terminar es alguien que
+  llega después, y se le pregunta. Un área nueva del mismo profesional se registra en la próxima versión. Límite: si se
+  termina el área por la que se lo sumó y sigue otra más nueva, sin una versión en el medio, se le vuelve a preguntar.
+- **D-18 · «¿Sigue igual?»** Solo en el teléfono de la persona: una solicitud nueva (sin respuesta, sin nada cargado, sin
+  borrador recuperado) trae lo vigente de lo que pide, y la parte lo dice. En la web, solo si ese profesional ya los recibe,
+  con «Sus hábitos, como los compartió el <fecha>: preguntale si siguen igual.».
+- **D-19 · El acto y el corte.** El texto es una versión propia del catálogo, propuesta. Compartir pide la versión vigente
+  del texto (409 CONSENT_VERSION_STALE, como CON-02) y el A3; retirar no pide el A3, porque siempre se puede. Revocar el A3
+  no la retira, pero la suspende: el PDP niega HBT-05 mientras tanto, como con todo lo demás. Cerrar la cuenta la retira.
+  Un retiro queda antes o después de cada lectura, nunca en el medio (un cerrojo por persona: compartido para leer,
+  exclusivo para escribir). La pregunta por un profesional nuevo va en «Mis hábitos» y, solo cuando hay algo que preguntar,
+  en una tarjeta de Inicio. Límite: si nadie recibe los hábitos hoy (todos terminaron su vínculo), «No, por ahora» no se
+  ofrece, porque compartir pide al menos un profesional; la persona puede sumarlo o dejar de compartir.
