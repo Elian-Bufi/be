@@ -23,8 +23,11 @@ import { api } from './api';
 import { enCursoEnElTelefono } from './sesion-en-curso';
 import { relojDeLaSesion } from './reloj-del-telefono';
 
-/** AES-256-GCM de expo-crypto: vector inicial de 12 bytes y etiqueta de 16, los valores por omisión. */
-const aesDeExpo: CifradorAes = {
+/**
+ * AES-256-GCM de expo-crypto: vector inicial de 12 bytes y etiqueta de 16, los valores por omisión. Lo usa también el
+ * borrador de los formularios (`formularios-en-el-telefono.ts`).
+ */
+export const aesDeExpo: CifradorAes = {
   async nuevaClave() {
     return (await AESEncryptionKey.generate(AESKeySize.AES256)).encoded('base64');
   },

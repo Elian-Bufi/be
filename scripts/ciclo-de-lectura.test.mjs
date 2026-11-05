@@ -332,3 +332,11 @@ test('«Información»: si el A3 no se pudo consultar, no se presume vigente; la
   assert.equal((await leerLista(apiDeZonas({ lista, requisito: vigente }), 'token-a')).datos.sinA3, false);
   assert.equal((await leerLista(apiDeZonas({ lista, requisito: revocado }), 'token-a')).datos.sinA3, true);
 });
+
+test('«Información»: la lista dice si vino entera, para no dar por terminada una solicitud de la página siguiente', async () => {
+  const vigente = ok({ data: { currentConsent: { state: 'ACTIVE' } } });
+  const entera = ok({ data: [], page: { limit: 20, nextCursor: null, hasMore: false } });
+  const conOtraPagina = ok({ data: [], page: { limit: 20, nextCursor: 'c2', hasMore: true } });
+  assert.equal((await leerLista(apiDeZonas({ lista: entera, requisito: vigente }), 'token-a')).datos.completa, true);
+  assert.equal((await leerLista(apiDeZonas({ lista: conOtraPagina, requisito: vigente }), 'token-a')).datos.completa, false);
+});
