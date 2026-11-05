@@ -181,8 +181,13 @@ describe('cotaDeElementos · ningún cuerpo válido queda afuera', () => {
     expect(cotaDeElementos(conOpcionales, tamano(vacios))).toBeGreaterThanOrEqual(vacios.length);
     // Anidadas con topes chicos: el producto manda (5 + 5 × 3).
     expect(cotaDeElementos(z.array(z.array(z.number()).max(3)).max(5), LIMITE_DEL_CUERPO)).toBeGreaterThanOrEqual(20);
-    // Un registro no tiene tope: la cota es la de un elemento por carácter.
-    expect(cotaDeElementos(z.strictObject({ r: z.record(z.string(), z.number()) }), 100)).toBeGreaterThanOrEqual(100);
+    // Un registro no acota sus claves, pero sus valores tienen forma: de valores sueltos no trae listas; de listas, las trae sin tope.
+    expect(cotaDeElementos(z.strictObject({ r: z.record(z.string(), z.number()) }), 100)).toBe(0);
+    expect(cotaDeElementos(z.strictObject({ r: z.record(z.string(), z.array(z.number())) }), 100)).toBeGreaterThanOrEqual(50);
+    // Y una lista de registros cuenta cada registro por `{}`: [{},{},…] es válido.
+    const registros = Array.from({ length: Math.floor((LIMITE_DEL_CUERPO - 1) / 3) }, () => ({}));
+    expect(z.array(z.record(z.string(), z.number())).safeParse(registros).success).toBe(true);
+    expect(cotaDeElementos(z.array(z.record(z.string(), z.number())), tamano(registros))).toBeGreaterThanOrEqual(registros.length);
     // Un enum cuenta por su valor más corto, y un número que admite null, por el número: ["a",…] y [0,…].
     const enums = Array.from({ length: Math.floor((LIMITE_DEL_CUERPO - 1) / 4) }, () => 'a');
     expect(z.array(z.enum(['a', 'larguisimo'])).safeParse(enums).success).toBe(true);
@@ -196,7 +201,7 @@ describe('cotaDeElementos · ningún cuerpo válido queda afuera', () => {
     expect(cotaDeElementos(objetosONull, tamano(nulos))).toBeGreaterThanOrEqual(nulos.length);
   });
 
-  it('lo que puede traer listas sin forma conocida no achica la cota: objetos no estrictos, unknown, catch, preprocess, recursión', () => {
+  it('lo que puede traer listas sin forma conocida no achica la cota: objetos no estrictos, unknown, catch, preprocess, registros de listas, recursión', () => {
     const muchos = Array.from({ length: 5000 }, () => 0);
     type Esquema = { safeParse: (v: unknown) => { success: boolean } };
     const Arbol: Esquema = z.lazy(() => z.strictObject({ hijos: z.array(Arbol).max(3) }));
@@ -209,6 +214,7 @@ describe('cotaDeElementos · ningún cuerpo válido queda afuera', () => {
       ['un campo unknown', z.strictObject({ a: z.unknown() }), { a: muchos }, 5000],
       ['un catch acepta cualquier entrada', z.strictObject({ a: z.array(z.string()).max(1).catch([]) }), { a: muchos }, 5000],
       ['un preprocess', z.strictObject({ a: z.preprocess((v: unknown) => v, z.array(z.number())) }), { a: muchos }, 5000],
+      ['un registro de listas', z.strictObject({ r: z.record(z.string(), z.array(z.number())) }), { r: { a: muchos } }, 5000],
       ['un esquema recursivo', Arbol, cadena, 200],
     ];
     for (const [nombre, schema, cuerpo, elementos] of casos) {

@@ -306,7 +306,7 @@ function apiDeZonas({ evolucion = [], lista, requisito }) {
   const cola = [...evolucion];
   return {
     miEvolucionAntropometrica: async () => cola.shift(),
-    misSolicitudesDeFormulario: async () => lista,
+    miBandejaDeFormularios: async () => lista,
     consultarRequisitoA3: async () => requisito,
   };
 }
