@@ -101,6 +101,18 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
       const autor = e.author?.displayName ?? null;
       return { icono: 'texto', nombre: corte < 0 ? e.title : e.title.slice(0, corte), dato: [finalidad, autor ? `de ${autor}` : null].filter(Boolean).join(' · ') || null, modo: null };
     }
+    // DL-165 D-8: los formularios, con el ícono de Información. El dato es el formulario y, si lo hay, cuánto respondió o
+    // cómo terminó lo cargado. Las respuestas no viajan en la línea: se leen en la solicitud.
+    case 'FORM_REQUESTED':
+    case 'FORM_RESPONDED':
+    case 'FORM_LOADED':
+    case 'FORM_CONFIRMED':
+    case 'FORM_REJECTED': {
+      const corte = e.title.indexOf(' · ');
+      const formulario = corte < 0 ? null : e.title.slice(corte + 3);
+      const como = e.eventType === 'FORM_LOADED' ? detalle(e, 'Estado') : e.eventType === 'FORM_RESPONDED' || e.eventType === 'FORM_CONFIRMED' ? detalle(e, 'Respondió') : null;
+      return { icono: 'informacion', nombre: corte < 0 ? e.title : e.title.slice(0, corte), dato: [formulario, como].filter(Boolean).join(' · ') || null, modo: null };
+    }
   }
 }
 
@@ -110,6 +122,8 @@ export const tituloDelHecho = (e: EntradaDeLineaDeTiempo): string => {
   // El dato de una comida es su opción o su descripción: nombra al registro. El de los demás es una cuenta o un resultado.
   // Una nota de coordinación se titula con su finalidad, como llega de la API («Nota de coordinación · Pedido de coordinación»).
   if (e.eventType === 'COORDINATION_NOTE_RECORDED') return e.title;
+  // Un formulario se titula como llega de la API («Formulario respondido · Cómo comés hoy»).
+  if (e.source.type === 'FORM_REQUEST') return e.title;
   return e.eventType === 'MEAL_RECORDED' && r.dato ? `${r.nombre} · ${r.dato}` : r.nombre;
 };
 

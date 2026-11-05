@@ -7,13 +7,15 @@
  * - FR-07 · la regla «no más días que los marcados»: un número con su tope en una tabla no pasa de lo marcado en ella
  *   (los «No puedo» no cuentan), al responder (FRI-04), al rectificar (FRI-05) y al cargar (FRI-06): 422 con
  *   FORM_ANSWER_MORE_THAN_MARKED en ese número. Sin la tabla respondida, no hay tope.
+ * - FR-09 · los formularios en la Línea de tiempo: pedido, respondido, cargado, confirmado o rechazado, uno por hecho y de
+ *   quien lo hizo, sin las respuestas; los ve solo el profesional que pidió el formulario.
  */
 import type { INestApplication } from '@nestjs/common';
-import { DetalleDeSolicitudV2ResponseSchema, ListaDeSolicitudesPropiasV2ResponseSchema, VersionDePlantillaV2ResponseSchema } from '@be/domain';
+import { DetalleDeSolicitudV2ResponseSchema, LineaDeTiempoResponseSchema, ListaDeSolicitudesPropiasV2ResponseSchema, TIPOS_DE_FORMULARIO, VersionDePlantillaV2ResponseSchema, type EntradaDeLineaDeTiempo } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, conSesion } from './soporte-api';
-import { CAMPOS_V3, CON_FORMATO_3, conDiasParaReservar, fri, pedirV2, REQUERIDOS_V3, RESPUESTAS_V3, sembrarPlantillaV3 } from './soporte-formularios-v2';
+import { CAMPOS_V2, CAMPOS_V3, CON_FORMATO_3, conAgua, conDiasParaReservar, circuitoV2, fri, pedirV2, REQUERIDOS_V3, RESPUESTAS_V2, RESPUESTAS_V3, sembrarPlantillaV3 } from './soporte-formularios-v2';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -152,5 +154,76 @@ describe('FR-07 · no más días que los marcados (DL-165 D-5)', () => {
     const ocho = conDiasParaReservar(8);
     const fuera = await fri(app, c2.ase.token, CON_FORMATO_3).responder(c2.formRequestId, { answers: ocho, fromProposal: null }).expect(422);
     expect(fuera.body.error.details.issues).toEqual([{ code: 'FORM_ANSWER_ABOVE_MAXIMUM', fieldCode: 'ini_dias_por_semana', path: delTope(ocho).path }]);
+  });
+});
+
+describe('FR-09 · los formularios en la Línea de tiempo (DL-165 D-8)', () => {
+  const formulariosEnLaLinea = async (pro: Parte, asesoradoId: string): Promise<EntradaDeLineaDeTiempo[]> =>
+    LineaDeTiempoResponseSchema.parse((await conSesion(app, pro.token).get(`/api/v1/advisees/${asesoradoId}/timeline?type=${TIPOS_DE_FORMULARIO.join(',')}&limit=50`).expect(200)).body).data.entries;
+
+  it('pedido, cargado, rechazado, cargado de nuevo y confirmado: un hecho por cada uno, de quien lo hizo, sin las respuestas; otro profesional no los ve', async () => {
+    const c = await circuitoV2(app, prisma, `linea-${++contador}`);
+    const web = fri(app, c.pro.token);
+    const apk = fri(app, c.ase.token);
+    // Lo pedido: un hecho del profesional, con el para qué y cuántas preguntas.
+    const alPedir = await formulariosEnLaLinea(c.pro, c.ase.id);
+    expect(alPedir).toEqual([
+      expect.objectContaining({
+        timelineEntryId: `freq:${c.formRequestId}`,
+        eventType: 'FORM_REQUESTED',
+        domain: 'NUTRITION',
+        source: { type: 'FORM_REQUEST', id: c.formRequestId },
+        author: expect.objectContaining({ identityId: c.pro.id, role: 'PROFESSIONAL' }),
+        title: expect.stringMatching(/^Formulario pedido · /),
+        state: 'EFFECTIVE',
+      }),
+    ]);
+    expect(alPedir[0]!.details.map((d) => d.label)).toEqual(['Para qué', 'Preguntas']);
+    // Cargado y rechazado: lo cargado ya no existe, y la línea lo dice sin contarlo.
+    const primera = (await web.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body.data as { proposalId: string; version: string };
+    await apk.rechazar(c.formRequestId, { expectedVersion: primera.version }).expect(200);
+    // Cargado de nuevo y confirmado: la Respuesta dice quién la cargó.
+    const segunda = (await web.cargar(c.formRequestId, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body.data as { proposalId: string; version: string };
+    const respondida = await apk.responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: { proposalId: segunda.proposalId, expectedVersion: segunda.version } }).expect(201);
+    const entradas = await formulariosEnLaLinea(c.pro, c.ase.id);
+    const porId = new Map(entradas.map((e) => [e.timelineEntryId, e]));
+    expect([...porId.keys()].sort()).toEqual(
+      [`freq:${c.formRequestId}`, `fload:${primera.proposalId}`, `frej:${primera.proposalId}`, `fload:${segunda.proposalId}`, `fresp:${respondida.body.data.formResponseId as string}`].sort(),
+    );
+    expect(porId.get(`fload:${primera.proposalId}`)).toMatchObject({ eventType: 'FORM_LOADED', author: { role: 'PROFESSIONAL' }, details: [{ label: 'Estado', value: expect.stringMatching(/^rechazado el \d{1,2}\/\d{1,2}\/\d{4}$/) }] });
+    expect(porId.get(`frej:${primera.proposalId}`)).toMatchObject({ eventType: 'FORM_REJECTED', author: { identityId: c.ase.id, role: 'ADVISEE' }, details: [{ label: 'Lo cargado', value: 'se borró; el formulario sigue pendiente' }] });
+    expect(porId.get(`fload:${segunda.proposalId}`)?.details).toEqual([{ label: 'Estado', value: expect.stringMatching(/^confirmado el \d{1,2}\/\d{1,2}\/\d{4}$/) }]);
+    const confirmada = porId.get(`fresp:${respondida.body.data.formResponseId as string}`);
+    expect(confirmada).toMatchObject({ eventType: 'FORM_CONFIRMED', title: expect.stringMatching(/^Formulario confirmado · /), author: { identityId: c.ase.id, role: 'ADVISEE' }, state: 'EFFECTIVE' });
+    expect(confirmada!.details).toEqual([
+      { label: 'Respondió', value: `${RESPUESTAS_V2.length} de ${CAMPOS_V2.length} preguntas` },
+      { label: 'Cargado por', value: expect.stringMatching(/ el \d{1,2}\/\d{1,2}\/\d{4}$/) },
+      { label: 'Antes de confirmar', value: 'lo confirmó tal cual' },
+    ]);
+    // Ninguna entrada lleva lo respondido: ni los textos ni los números.
+    const crudo = JSON.stringify(entradas);
+    for (const dicho of ['Milanesa con puré', 'Café con leche', 'Leche', 'tipo_2', '"vasos"']) expect(crudo).not.toContain(dicho);
+    // La cuentan los conteos del período.
+    const linea = LineaDeTiempoResponseSchema.parse((await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/timeline?limit=1`).expect(200)).body).data;
+    expect(linea.periodCounts.byEventType).toEqual(expect.arrayContaining([{ eventType: 'FORM_LOADED', count: 2 }, { eventType: 'FORM_CONFIRMED', count: 1 }]));
+    // Otra profesional que acompaña a la misma persona en otra área no ve los formularios que no pidió ella.
+    const otra = await prepararProfesional(app, `r2-linea-otra-${contador}`, ['ENTRENAMIENTO']);
+    await vinculoCompleto(app, otra, c.ase, 'ENTRENAMIENTO');
+    expect(await formulariosEnLaLinea(otra, c.ase.id)).toEqual([]);
+  });
+
+  it('respondido por la persona sola y corregido después: «respondido», marcado como rectificado, con cuántas correcciones', async () => {
+    const c = await circuitoV2(app, prisma, `linea-sola-${++contador}`);
+    const apk = fri(app, c.ase.token);
+    const respondida = await apk.responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201);
+    await apk.corregir(respondida.body.data.formResponseId as string, { expectedVersion: respondida.body.data.version, reason: 'Tomo más agua.', answers: conAgua(8) }).expect(201);
+    const entrada = (await formulariosEnLaLinea(c.pro, c.ase.id)).find((e) => e.eventType === 'FORM_RESPONDED');
+    expect(entrada).toMatchObject({ title: expect.stringMatching(/^Formulario respondido · /), state: 'RECTIFIED', author: { identityId: c.ase.id, role: 'ADVISEE' } });
+    expect(entrada!.details).toEqual([
+      { label: 'Respondió', value: `${RESPUESTAS_V2.length} de ${CAMPOS_V2.length} preguntas` },
+      { label: 'Correcciones', value: '1' },
+    ]);
+    expect(entrada!.relations).toEqual([expect.objectContaining({ kind: 'RECTIFIED', target: null })]);
+    expect(JSON.stringify(entrada)).not.toContain('Tomo más agua');
   });
 });

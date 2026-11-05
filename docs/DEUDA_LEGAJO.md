@@ -6251,6 +6251,17 @@ las respuestas a mano en el escritorio y en la Línea de tiempo.
     muestra de «Qué comés» y «Cuánto»;
   - las «20 obligatorias» de D-7 son 22 en la plantilla (21, y la de las alergias, que aparece solo si hay alergia), y
     quedan todas.
+- **D-13 · Los formularios en la Línea de tiempo son de quien los pidió** (FR-09). Cinco tipos de hecho nuevos en
+  API-DSH-04 (`FORM_REQUESTED`, `FORM_RESPONDED`, `FORM_LOADED`, `FORM_CONFIRMED` y `FORM_REJECTED`) y un origen
+  (`FORM_REQUEST`, la Solicitud). Los ve solo el profesional que pidió el formulario, en sus Alcances permitidos: la regla
+  de API-FRI-03, que deja ver una Solicitud solo a sus dos actores. Cada hecho dice qué pasó, cuándo y quién lo hizo
+  (pedir y cargar, el profesional; responder, confirmar y rechazar, la persona), con cuántas preguntas se pidieron y
+  cuántas se respondieron, quién cargó lo confirmado y si se corrigió algo antes de confirmar; nunca lo respondido, que
+  se lee en la solicitud (el enlace «Ver en Información · Solicitudes» la abre). Un rechazo dice que lo cargado se borró
+  (DL-164 D-6), sin contarlo. Son hitos, pero no de la planificación: no cambian lo que se le indica a nadie.
+  - *Descartado:* mostrarlos a todo el equipo de la persona (otro profesional vería qué se le preguntó y cuándo, que es
+    del vínculo de quien preguntó; con D-9, eso lo decide la persona) y leerlos de la bitácora de eventos de formularios
+    (las filas ya tienen sus instantes; la bitácora es para la auditoría).
 
 **Pruebas** (las suma cada parte): la lógica de las partes y las reglas nuevas en el dominio; la APK y la web en sus
 pruebas de lógica pura; la API en `formularios-ronda-2.int-spec.ts`, `formularios-de-inicio.int-spec.ts` y
