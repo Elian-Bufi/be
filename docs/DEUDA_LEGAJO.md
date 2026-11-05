@@ -165,6 +165,7 @@
 | DL-160 | Decisión de Dirección · 2026-11-02 (registro rápido y «Ya la hice») | B10-06 §57 · B10-06 §29 · DL-137 · DL-161 | La regla «el día de hoy se entrena con los cronómetros» no está en el legajo: es un comentario de la APK, y B10-06 §57 dice que el temporizador no es requisito P0 | **DECIDIDA** por Dirección el 2026-11-02: el registro rápido y «Ya la hice» valen también el mismo día; los cronómetros quedan como ayuda opcional. La API ya lo admite (confirmar la sesión de hoy no pide eventos de tiempo); la APK lo toma en su rama; falta el teléfono |
 | DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` (PR en borrador), sin integrar: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, en su rama; queda documentado el caso de una ejecución nueva leída por una APK anterior; el mismo día Dirección decidió cómo se lee en el escritorio (lo tildado sin escribir no se compara y va hueco en los gráficos; la carga completa se destaca), hecho en la rama `wp-escritorio-niveles`; decisiones I-1 a I-10 a ratificar |
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar · D-1 a D-5 a ratificar: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
+| DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · en implementación en la rama `wp-formularios-de-inicio` |
 
 ---
 
@@ -6038,3 +6039,79 @@ cuenta que no es administradora. `contrato.int-spec.ts` cubre API-ZON-01, API-EJ
 
 **Condición de cierre:** Dirección ratifica D-1 a D-5, la CI pasa en main y la demostración muestra la foto de un ejercicio
 del catálogo en la sesión de Diego.
+
+## DL-164 — Formularios de inicio: seis tipos nuevos, preguntas condicionales y la carga que la persona confirma
+
+**Prioridad:** alta (el formulario de inicio es el puntapié de la planificación) · **Documento:** RF-071 (04) · UC-P32 y
+UC-P33 (05) · REG-06-209 a REG-06-213 (06) · 09v16.1 §22 · DL-152 · DL-137 D-7 · **Estado:** RATIFICADA 2026-11-04,
+en implementación en la rama `wp-formularios-de-inicio` (`docs/paquetes/WP-FORMULARIOS-DE-INICIO.md`)
+
+**Qué dice el legajo.** RF-071 y el 09 §22 definen la información pertinente con tres tipos de respuesta (`TEXT`,
+`NUMBER`, `BOOLEAN`; WP-07 §9.3 dejó las opciones afuera), una Solicitud con dos estados (`PENDING → RESPONDED`,
+REG-06-210), una respuesta siempre `SELF_REPORTED` (09 §22.7) y ocho operaciones (API-FRM-01 a 08). Responder es un acto
+de la persona (UC-P33); el 09 no declara ninguna operación para que el profesional cargue respuestas.
+
+**Qué pidió Dirección.** Dos formularios de inicio de nivel profesional (Nutrición y Entrenamiento) que se respondan
+tocando, con alimentos que sí y que no, las comidas habituales de la semana y la pregunta por otro deporte; y que el
+profesional pueda cargarlos desde el escritorio con la persona y que ella acepte desde la app que queden en su perfil.
+
+**Por qué no entra tal cual.** Con tres tipos, el formulario es texto libre y el profesional no puede decidir sobre cada
+comida. Ampliar `TipoDeCampoSchema` o los contratos FRM rompe a las APK instaladas, que leen FRM-02, 05, 06, 07 y 08 con
+esquemas estrictos (DL-152). Y una carga del profesional como respuesta suya chocaría con 09 §22.7.
+
+**Lo decidido** (ratificado por Dirección el 2026-11-04 junto con el paquete):
+- **D-1 · Seis tipos nuevos en un contrato V2 aparte:** una opción, varias opciones, lista que se repite, tabla de
+  opciones, alimentos y horarios (`contratos-formularios-v2.ts`), con la validación del servidor en el dominio
+  (`validarRespuestasV2`, un issue por problema, como DL-104).
+  - *Descartado:* ampliar `TipoDeCampoSchema` (la APK instalada no abriría ningún formulario) y el texto libre (camino 1
+    de la propuesta, que Dirección no eligió).
+- **D-2 · Preguntas condicionales:** `showIf` sobre un campo anterior. Lo que queda oculto no se responde ni se guarda
+  (`FORM_ANSWER_NOT_VISIBLE`) y el obligatorio oculto no se exige.
+  - *Descartado:* resolverlas solo en pantalla (el servidor guardaría lo que no se preguntó).
+- **D-3 · La propuesta del profesional es una entidad aparte.** La Solicitud sigue con sus dos estados; la propuesta la
+  acompaña mientras está pendiente, con su versión, y la ven solo quien la cargó y la persona.
+  - *Descartado:* un tercer estado «cargada» de la Solicitud (choca con REG-06-210).
+- **D-4 · Confirmar es responder.** La persona registra la respuesta (sigue `SELF_REPORTED`), y la transcripción queda
+  escrita en ella: quién la cargó, cuándo, cuándo la confirmó y qué campos corrigió antes de confirmar.
+  - *Descartado:* que la respuesta sea del profesional (choca con 09 §22.7 y con la autoría de la persona).
+- **D-5 · Compatibilidad: la familia nueva API-FRI-01 a 08** (lo nuevo va en operaciones nuevas, DL-137 D-7). FRM-06 no
+  lista las solicitudes de versiones con tipos nuevos y FRM-02, 05, 07 y 08 responden para ellas el mismo 404 que a lo
+  inexistente. Las APK instaladas no cambian y `lecturas-de-las-apk.int-spec.ts` lo prueba.
+  - *Descartado:* negociar por `X-BE-Capabilities` en las mismas rutas: es viable, pero cada operación tendría dos
+    contratos bajo un mismo ID del 09.
+- **D-6 · Lo no confirmado se borra.** Rechazar (la persona) o retirar (el profesional) borra las respuestas propuestas;
+  queda solo cuándo y cómo terminó, para quien la cargó.
+  - *Descartado:* conservarlas (un dato de salud que la persona no confirmó).
+- **D-7 · Las plantillas, por migración que solo agrega:** FRM-NUTRICION-INICIO v1 y FRM-ENTRENAMIENTO v2, sucesora de la
+  v1 (que queda histórica). El contexto de entrenamiento (DL-100) sigue con sus seis códigos, que la v2 reutiliza.
+  - *Descartado:* una plantilla nueva de antecedentes de entrenamiento (dejaría dos vigentes para lo mismo).
+- **D-8 · Lo legal, en un legajo aparte para el abogado**, fuera del repo público: no frena el desarrollo y sí el paso a
+  datos reales (gate del 08 §42).
+- **D-9 · Las comidas habituales:** las cuatro decisiones (tal cual, ajustar la porción, mejorar, cambiar) son una ayuda de
+  pantalla y no se guardan; lo que queda es el habitual creado en «Mis habituales» (DL-109).
+
+**Pruebas.** `packages/domain/src/formularios-v2.test.ts` (los tipos, las condiciones, la minimización, las correcciones y
+la traducción de P0); en la API, los oráculos TEST-FRI-001 a 006 del paquete; `lecturas-de-las-apk.int-spec.ts` y
+`contrato.int-spec.ts` siguen verdes.
+
+**Decisiones de la implementación** (2026-11-05, a ratificar por Dirección):
+- **D-10 · La APK instalada no deja una propuesta colgada.** Con una propuesta pendiente sobre una versión de P0, FRM-07
+  responde `422 FORM_REQUEST_NOT_RESPONDABLE` (código ya declarado) y FRM-06 la da con `respondable: false`, sin cambio de
+  forma; la persona la resuelve con la app nueva (FRI-04 o FRI-08).
+- **D-11 · Descartar no es tratar.** API-FRI-08 (rechazar) exige la pertenencia y la versión, no el A3 ni el PDP. La
+  novedad del rechazo al profesional sale solo si sigue autorizado sobre el Alcance.
+- **D-12 · Lo no confirmado se borra también cuando la persona corta.** Revocar el A3 (API-CON-08) y cerrar la cuenta
+  (API-ACC-P1-03) retiran en la misma transacción las propuestas pendientes de la persona: contenido en NULL y el retiro a
+  su nombre, por esa operación.
+- **D-13 · Cargar y responder van en fila.** FRI-06, FRI-04 y FRM-07 toman la fila de la Solicitud antes del PDP; una carga
+  sobre una Solicitud recién respondida da `422 FORM_REQUEST_NOT_RESPONDABLE` en lugar de un 500.
+- **D-14 · La cota de elementos sube de 1 500 a 6 000:** el contrato V2 admite cuerpos válidos de hasta 5 461 elementos
+  (80 respuestas × 40 códigos de opción). Riesgo residual acotado a FRI-04, 05 y 06.
+- **D-15 · Lo corregido no depende de cómo lo guarda la base:** la comparación de la transcripción ordena las claves de
+  cada objeto (jsonb las reordena) y conserva el orden de los renglones, que es de la persona.
+
+**Lo que queda abierto:** que el abogado revise el legajo legal (la confirmación de lo que carga un tercero, los datos de
+salud y las incumbencias) antes de usar los formularios con personas reales.
+
+**Condición de cierre:** la CI pasa en main, la candidata de la APK está publicada en test y el recorrido completo (cargar,
+corregir, confirmar y ver la procedencia) queda en `EVIDENCIA/FORMULARIOS-DE-INICIO/`.

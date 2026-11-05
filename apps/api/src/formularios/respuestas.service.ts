@@ -23,9 +23,11 @@ import { ErrorDeApi, errores } from '../http/errores';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { tomarLaSolicitud } from './cerrojo-de-solicitud';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
 import { camposPorCodigo, limitesDeCampo, tipoDeValorCorrecto } from './lectura-formularios';
+import { esVersionV2, noServidaEnV1 } from './lectura-formularios-v2';
 
 type Tx = Prisma.TransactionClient;
 type Answer = { fieldCode: string; value: string | number | boolean; unit?: string | null; profileSourceRef?: string | null };
@@ -65,15 +67,25 @@ export class RespuestasService {
       cuerpo,
       huellaExtra: { formRequestId },
       efecto: async (tx, pedido, procedencia) => {
+        // La fila de la Solicitud, primero (`cerrojo-de-solicitud.ts`, DL-164): una propuesta que el profesional carga a
+        // la vez (FRI-06) se ve en la relectura y esta operación la respeta (422), en vez de dejarla pendiente para siempre.
+        await tomarLaSolicitud(tx, formRequestId, { asesoradoId: actor.identidadId });
         const s = esUuid(formRequestId)
-          ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId }, include: { respuesta: { select: { id: true } } } })
+          ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId }, include: { respuesta: { select: { id: true } }, templateVersion: { select: { contenido: true } } } })
           : null;
         // Propio y revelable: no es un oráculo de terceros (09:1599). Ajeno o inexistente, el mismo 404.
         if (!s || s.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRM-07', actorId: actor.identidadId, recurso }, ctx);
+        // DL-164 D-5: una versión con tipos nuevos no se responde con el contrato V1; el mismo 404. FRI-04 la responde.
+        if (esVersionV2(s.templateVersion.contenido)) throw noServidaEnV1();
         // Sobre lo propio, el A3 va antes que cualquier otra regla (09 §36; 08:406; DL-115). Sin bloqueo: el PDP de
         // `puedeResponder` lo vuelve a mirar con el acto bloqueado, en el orden único.
         await exigirA3Vigente(tx, actor.identidadId);
         if (s.respuesta) throw new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya tiene una respuesta registrada.');
+        // DL-164 D-3: con una propuesta del profesional esperando (posible sobre una versión de P0), esta operación no la
+        // conoce y no la pisa en silencio: la persona la confirma, corrige o rechaza por FRI-04/08 desde la app actualizada.
+        if (await tx.propuestaDeRespuestaDeFormulario.count({ where: { solicitudId: s.id, estado: 'PENDIENTE' } })) {
+          throw new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Tu profesional cargó respuestas que esperan tu confirmación: revisalas desde la app actualizada.');
+        }
 
         const sigueVigente = await this.puedeResponder(tx, 'API-FRM-07', s.profesionalId, actor.identidadId, s.alcance, recurso, ctx);
         if (!sigueVigente) throw new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya no es respondable.');
@@ -129,10 +141,12 @@ export class RespuestasService {
         const r = esUuid(formResponseId)
           ? await tx.respuestaDeFormulario.findUnique({
               where: { id: formResponseId },
-              include: { rectificaciones: true, solicitud: { select: { profesionalId: true, alcance: true } } },
+              include: { rectificaciones: true, solicitud: { select: { profesionalId: true, alcance: true } }, templateVersion: { select: { contenido: true } } },
             })
           : null;
         if (!r || r.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRM-08', actorId: actor.identidadId, recurso }, ctx);
+        // DL-164 D-5: la respuesta de una versión con tipos nuevos no se rectifica con el contrato V1; el mismo 404. FRI-05 lo hace.
+        if (esVersionV2(r.templateVersion.contenido)) throw noServidaEnV1();
         // Rectificar es registrar datos de salud y no pasa por el PDP (09:1633): sobre lo propio, el A3 se exige antes que
         // cualquier otra regla, con el acto bloqueado para que una revocación en curso también la corte (08:406; DL-115).
         await exigirA3Vigente(tx, actor.identidadId, { bloquear: true });

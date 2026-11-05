@@ -7,13 +7,14 @@
  * acceso o de sesión, se devuelve tal cual y la pantalla la trata como corresponde. Solo un rechazo de otro tipo deja
  * lo que ya se tenía.
  */
-import { clasificarFalla, type EvolucionResponse, type ListaDeSolicitudesPropiasResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
+import { clasificarFalla, type EvolucionResponse, type ListaDeSolicitudesPropiasV2Response, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
 
 type Datos = EvolucionResponse['data'];
 
 export interface ApiDeLasZonas {
   miEvolucionAntropometrica(token: string, periodo?: { periodStart: string; periodEnd: string }): Promise<Resultado<EvolucionResponse>>;
-  misSolicitudesDeFormulario(token: string): Promise<Resultado<ListaDeSolicitudesPropiasResponse>>;
+  /** API-FRI-02 (DL-164): todas las solicitudes propias, también las de versiones con tipos nuevos, con la propuesta que espera. */
+  miBandejaDeFormularios(token: string): Promise<Resultado<ListaDeSolicitudesPropiasV2Response>>;
   consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>>;
 }
 
@@ -50,16 +51,17 @@ export async function leerMiEvolucion(api: ApiDeLasZonas, token: string): Promis
 
 /** La lista de solicitudes y, al lado, si el A3 está vigente: se piden juntas y se confirman juntas. */
 export interface ListaConA3 {
-  readonly solicitudes: ListaDeSolicitudesPropiasResponse['data'];
+  readonly solicitudes: ListaDeSolicitudesPropiasV2Response['data'];
   readonly sinA3: boolean;
 }
 
 /**
- * «Información». Solo un A3 leído y no vigente muestra el aviso. Si la consulta del A3 falla de forma pasajera, o por la
- * sesión, se devuelve esa falla: la lista sin el aviso diría que el A3 está bien sin saberlo.
+ * «Información»: la bandeja (API-FRI-02, que lista también lo que FRM-06 no lista). Solo un A3 leído y no vigente
+ * muestra el aviso. Si la consulta del A3 falla de forma pasajera, o por la sesión, se devuelve esa falla: la lista sin
+ * el aviso diría que el A3 está bien sin saberlo.
  */
 export async function leerLista(api: ApiDeLasZonas, token: string): Promise<Resultado<ListaConA3>> {
-  const [r, requisito] = await Promise.all([api.misSolicitudesDeFormulario(token), api.consultarRequisitoA3(token)]);
+  const [r, requisito] = await Promise.all([api.miBandejaDeFormularios(token), api.consultarRequisitoA3(token)]);
   if (!requisito.ok) {
     const falla = clasificarFalla(requisito);
     if (falla === 'sesion' || falla === 'pasajera') return requisito;

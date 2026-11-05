@@ -79,6 +79,8 @@ function minimo(s: Esquema, pila: ReadonlySet<Esquema>): number {
       return 2;
     case 'tuple':
       return 2;
+    case 'record':
+      return 2; // `{}`
     case 'union':
       return Math.min(...(d.options as Esquema[]).map((o) => minimo(o, p)));
     case 'intersection':
@@ -109,9 +111,11 @@ function tope(def: { checks?: { _zod: { def: Record<string, unknown> } }[] }): n
 /**
  * Lo que puede traer contenido de cualquier forma, listas incluidas, en un cuerpo válido. Cuenta como una lista sin tope y
  * de 0 bytes: con eso, la cota de ese esquema pasa el techo y `validacion.spec.ts` lo hace notar, en vez de dejar afuera
- * cuerpos válidos. Ninguno de los esquemas de entrada del 2026-10-24 usa estos tipos.
+ * cuerpos válidos. Ninguno de los esquemas de entrada del 2026-10-24 usa estos tipos. Un registro (`z.record`) no está acá:
+ * no acota sus claves, pero sus valores tienen la forma que declara, así que las listas que traigan cuentan sin tope y de
+ * valores sueltos no trae ninguna (el renglón de una lista de los formularios V2, DL-164, es un registro de valores sueltos).
  */
-const SIN_FORMA = new Set(['record', 'map', 'set', 'unknown', 'any', 'custom', 'transform', 'catch', 'success']);
+const SIN_FORMA = new Set(['map', 'set', 'unknown', 'any', 'custom', 'transform', 'catch', 'success']);
 
 /** Las listas de un esquema, de la más barata a la más cara. */
 function listasDe(schema: Esquema): Lista[] {
@@ -147,6 +151,7 @@ function listasDe(schema: Esquema): Lista[] {
       // sin tope; lo que arma la salida no está en el cuerpo.
       recorrer(d.in, producto, p);
     } else if (d.type === 'lazy') recorrer(d.getter(), producto, p);
+    else if (d.type === 'record') recorrer(d.valueType, Infinity, p);
     else if (SIN_FORMA.has(d.type)) sinTope();
     else if (ENVOLTORIOS.has(d.type)) recorrer(d.innerType, producto, p);
   };

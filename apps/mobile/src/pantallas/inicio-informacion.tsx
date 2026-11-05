@@ -1,20 +1,22 @@
 /**
  * Inicio · la tarjeta de Información (DL-117): las solicitudes sin responder, con `respondable` y el A3. Una lista parcial
- * no se presenta como el total.
+ * no se presenta como el total. Desde DL-164 lee la bandeja (API-FRI-02): una con algo cargado por el profesional se
+ * ofrece para revisar, no para completar.
  */
-import { COPY_FORMULARIOS, numero } from '@be/domain';
+import { COPY_FORMULARIOS, COPY_FORMULARIOS_V2, numero } from '@be/domain';
 import { useCallback, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
 import { SinActualizar } from '../estados';
 import { dia as diaDe } from '../formato';
+import { TEXTOS_DE_FORMULARIO_V2 } from '../formulario-v2';
 import { useLecturaRecordada } from '../lecturas';
 import { leerPendientes, PENDIENTES_EN_INICIO } from '../lecturas-de-inicio';
 import type { Ir } from '../navegacion';
-import { Boton, Parrafo } from '../ui';
+import { Boton, Insignia, Parrafo } from '../ui';
 import { estilos, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
 
-/** API-FRM-06 filtrada a las pendientes, con el A3: responder lo exige (DL-115). */
+/** API-FRI-02 filtrada a las pendientes, con el A3: responder lo exige (DL-115). */
 export function Pendientes({ token, sesionPerdida, ir }: { token: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
   const pedir = useCallback(() => leerPendientes(api, token), [token]);
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'inicio-pendientes', pedir, sesionPerdida);
@@ -40,7 +42,11 @@ export function Pendientes({ token, sesionPerdida, ir }: { token: string; sesion
             <View key={s.formRequestId} style={estilos.fila}>
               <Text style={estilos.nombre}>{s.templateName}</Text>
               <Text style={estilos.detalle}>{`${s.professional.displayName} · ${diaDe(s.createdAt)}`}</Text>
-              {s.respondable && !sinA3 ? <Boton texto={COPY_FORMULARIOS.completar} onPress={() => ir({ nombre: 'mi-solicitud', id: s.formRequestId })} /> : null}
+              {/* Con algo cargado por el profesional, lo que sigue es revisarlo y confirmarlo (DL-164 D-4), no completarlo. */}
+              {s.pendingProposal ? <Insignia texto={COPY_FORMULARIOS_V2.apk.paraConfirmar} /> : null}
+              {s.respondable && !sinA3 ? (
+                <Boton texto={s.pendingProposal ? TEXTOS_DE_FORMULARIO_V2.revisar : COPY_FORMULARIOS.completar} onPress={() => ir({ nombre: 'mi-solicitud', id: s.formRequestId })} />
+              ) : null}
               {!s.respondable ? <Parrafo tenue>Por ahora no se puede responder. El detalle está en Información.</Parrafo> : null}
             </View>
           ))}

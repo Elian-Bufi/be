@@ -10,6 +10,7 @@
  * - las de WP-07: la familia FRM, transversal a los tres dominios (docs/paquetes/WP-07.md §4).
  * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
  * - las de WP-NOTAS-DE-COORDINACION: API-CRD-01 y sus dos variantes (docs/paquetes/WP-NOTAS-DE-COORDINACION.md; DL-140).
+ * - las de WP-FORMULARIOS-DE-INICIO: la familia FRI, los formularios V2 y la propuesta que la persona confirma (DL-164).
  */
 import { z } from 'zod';
 import {
@@ -241,6 +242,17 @@ import {
   DetalleDeRespuestaFueraDeLimitesSchema,
 } from './contratos-formularios';
 import {
+  CargarPropuestaRequestSchema,
+  DetalleDeSolicitudV2ResponseSchema,
+  EnviarRespuestaV2RequestSchema,
+  ListaDeSolicitudesPropiasV2ResponseSchema,
+  PropuestaCargadaResponseSchema,
+  PropuestaResueltaResponseSchema,
+  RectificarRespuestaV2RequestSchema,
+  ResolverPropuestaRequestSchema,
+  VersionDePlantillaV2ResponseSchema,
+} from './contratos-formularios-v2';
+import {
   AsociarImagenDeEjercicioRequestSchema,
   EjercicioPropioResponseSchema,
   ListaDeEjerciciosPropiosResponseSchema,
@@ -352,6 +364,18 @@ const DETALLE_DE_NUMEROS_FUERA_DE_LIMITES: NonNullable<Operacion['detalleDe422']
   schema: DetalleDeRespuestaFueraDeLimitesSchema,
   descripcion:
     'cuando el rechazo es por números fuera de los límites de la plantilla o por textos más largos que el tope, details.issues trae un issue por campo: FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM o FORM_ANSWER_ABOVE_MAXIMUM con fieldCode y los límites del campo (DL-104), o FORM_ANSWER_TOO_LONG con fieldCode y maxLength (WP-07 §9.3). Los otros rechazos de este código no traen details.',
+};
+
+/**
+ * FRI-04, 05 y 06 (DL-164): el 422 FORM_RESPONSE_INVALID de los formularios V2 trae un issue por problema, con el campo,
+ * como DL-104; los códigos son los de `validarRespuestasV2` de @be/domain. La forma se declara acá y no en el contrato:
+ * ningún cliente la valida estricta (`error.details` es libre para las APK instaladas).
+ */
+const DETALLE_DE_RESPUESTAS_V2: NonNullable<Operacion['detalleDe422']> = {
+  codigo: 'FORM_RESPONSE_INVALID',
+  schema: z.object({ issues: z.array(z.object({ code: z.string(), path: z.string(), fieldCode: z.string() })).min(1) }),
+  descripcion:
+    'details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM o FORM_ANSWER_TOO_LONG), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).',
 };
 
 const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de página (1 a 50; 20 por defecto).', schema: { type: 'integer', minimum: 1, maximum: 50 } };
@@ -2404,7 +2428,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-06',
     metodo: 'get',
     ruta: '/me/form-requests',
-    resumen: 'Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud.',
+    resumen:
+      'Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud. Con una propuesta del profesional esperando confirmación (DL-164 D-3), la Solicitud sale `respondable: false`: se resuelve desde la app actualizada (API-FRI-04 y API-FRI-08). Las Solicitudes de versiones con tipos nuevos no se listan (D-5).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
@@ -2416,7 +2441,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-07',
     metodo: 'post',
     ruta: '/me/form-requests/{formRequestId}/responses',
-    resumen: 'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).',
+    resumen:
+      'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115). Con una propuesta del profesional esperando confirmación (DL-164 D-3), 422 FORM_REQUEST_NOT_RESPONDABLE: la persona la confirma, corrige o rechaza por API-FRI-04 y API-FRI-08 desde la app actualizada. Una Solicitud de una versión con tipos nuevos no existe para esta operación (404, D-5).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: EnviarRespuestaRequestSchema,
@@ -2445,6 +2471,121 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     detalleDe422: DETALLE_DE_NUMEROS_FUERA_DE_LIMITES,
     fuente: '09v16.1 §22.8 · §36 · REG-06-211 · TEST-FRM-006 · DL-104 · DL-115',
+  },
+  // ─── WP-FORMULARIOS-DE-INICIO · FRI (DL-164 D-5). Lo nuevo va en operaciones nuevas (DL-137 D-7): las de FRM quedan
+  // como están para las APK instaladas, y estas sirven para cualquier Solicitud, de P0 o con tipos nuevos. ──────────
+  {
+    id: 'API-FRI-01',
+    metodo: 'get',
+    ruta: '/form-templates/{templateId}/versions/{versionId}/definition',
+    resumen:
+      'La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: VersionDePlantillaV2ResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-164 · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209',
+  },
+  {
+    id: 'API-FRI-02',
+    metodo: 'get',
+    ruta: '/me/form-inbox',
+    resumen:
+      'La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
+    exitos: [{ status: 200, schema: ListaDeSolicitudesPropiasV2ResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: 'DL-164 · WP-FORMULARIOS-DE-INICIO (FI-04, FI-06) · 09v16.1 §22.6 · REG-06-213',
+  },
+  {
+    id: 'API-FRI-03',
+    metodo: 'get',
+    ruta: '/form-requests/{formRequestId}/view',
+    resumen:
+      'El detalle en formato V2, para los dos actores con la misma forma: la Solicitud, si se puede responder, la Respuesta (con su transcripción si nació de una propuesta), la propuesta que espera confirmación (solo para quien la cargó y para la persona) y el desenlace de la última no confirmada (solo para quien la cargó). Mismas negaciones que FRM-05: el profesional, solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente); la persona, con su A3 vigente (si no, 403 ACTION_FORBIDDEN).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: DetalleDeSolicitudV2ResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-164 D-3 y D-4 · WP-FORMULARIOS-DE-INICIO (FI-05, FI-06; TEST-FRI-003) · 09v16.1 §22.5 · REG-06-213 · 08:406 · DL-115',
+  },
+  {
+    id: 'API-FRI-04',
+    metodo: 'post',
+    ruta: '/me/form-requests/{formRequestId}/answers',
+    resumen:
+      'Responder la Solicitud propia con respuestas V2, sola o confirmando la propuesta del profesional (`fromProposal`, con la versión que se vio). Valida contra la versión fijada en la Solicitud: lo que no se pidió, lo oculto por una condición, lo repetido o lo que no tiene la forma del campo es 422 FORM_RESPONSE_INVALID con un issue por problema; un obligatorio visible sin responder también. Guarda en el formato de la versión. Cada respuesta queda SELF_REPORTED; al confirmar, la transcripción dice quién cargó, cuándo, cuándo confirmó y qué corrigió la persona (D-4), y la propuesta queda confirmada sin sus respuestas. Si la propuesta cambió, se retiró, o hay una pendiente que no se vio, 409 VERSION_CONFLICT. Sin el A3 vigente, 403; lo ajeno y lo inexistente, 404; ya respondida o que el PDP ya no la considere respondable, 422 FORM_REQUEST_NOT_RESPONDABLE.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: EnviarRespuestaV2RequestSchema,
+    exitos: [{ status: 201, schema: RespuestaCreadaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-164 D-2 y D-4 · WP-FORMULARIOS-DE-INICIO (FI-04, FI-06; TEST-FRI-002, TEST-FRI-004) · 09v16.1 §22.7 · §36 · REG-06-211 · DL-115',
+  },
+  {
+    id: 'API-FRI-05',
+    metodo: 'post',
+    ruta: '/me/form-responses/{formResponseId}/corrections',
+    resumen:
+      'Rectificar una respuesta propia con respuestas V2: crea una sucesora con la versión que se vio (`expectedVersion`; si no es la vigente, 409 VERSION_CONFLICT) y un motivo; la original no se toca y sigue SELF_REPORTED. Misma validación que responder; se guarda en el formato de la versión. Sin el A3 vigente, 403; lo ajeno y lo inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RectificarRespuestaV2RequestSchema,
+    exitos: [{ status: 201, schema: RectificacionCreadaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      403: ['ACTION_FORBIDDEN'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED', 'FORM_RESPONSE_INVALID'],
+    },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-164 · WP-FORMULARIOS-DE-INICIO (FI-04) · 09v16.1 §22.8 · §36 · REG-06-211 · DL-115',
+  },
+  {
+    id: 'API-FRI-06',
+    metodo: 'put',
+    ruta: '/form-requests/{formRequestId}/proposal',
+    resumen:
+      'El profesional de la Solicitud carga (`expectedVersion: null`; 201) o reemplaza (con la versión que vio; 200) lo que la persona le contó, para que ella lo confirme desde su app. Mismo PDP que FRM-03 para el Alcance de la Solicitud: sin autorización actual, o sobre una Solicitud ajena o inexistente, el mismo 404. La Solicitud tiene que estar pendiente (si no, 422 FORM_REQUEST_NOT_RESPONDABLE). Se valida como una respuesta, sin exigir los obligatorios: los completa la persona al confirmar. Una sola propuesta pendiente por Solicitud: crear habiendo una, o reemplazar con otra versión, es 409 VERSION_CONFLICT. Publica la novedad a la persona. No queda en su perfil ni lo ve nadie más hasta que ella lo confirma (D-3).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CargarPropuestaRequestSchema,
+    exitos: [
+      { status: 201, schema: PropuestaCargadaResponseSchema },
+      { status: 200, schema: PropuestaCargadaResponseSchema },
+    ],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-164 D-3 · WP-FORMULARIOS-DE-INICIO (FI-05; TEST-FRI-003, TEST-FRI-006) · 09v16.1 §22.3 · REG-06-210',
+  },
+  {
+    id: 'API-FRI-07',
+    metodo: 'post',
+    ruta: '/form-requests/{formRequestId}/proposal/withdrawal',
+    resumen:
+      'El profesional que la cargó retira la propuesta pendiente, con la versión que vio: sus respuestas se borran y queda solo cuándo terminó (D-6). La Solicitud sigue pendiente. Sin una pendiente suya con esa versión, 409 VERSION_CONFLICT; sobre una Solicitud ajena o inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResolverPropuestaRequestSchema,
+    exitos: [{ status: 200, schema: PropuestaResueltaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-05; TEST-FRI-005)',
+  },
+  {
+    id: 'API-FRI-08',
+    metodo: 'post',
+    ruta: '/me/form-requests/{formRequestId}/proposal/rejection',
+    resumen:
+      'La persona dice «No es correcto» a la propuesta pendiente de su Solicitud, con la versión que vio: sus respuestas se borran y la Solicitud sigue pendiente (D-6). Descarta un dato que ella no confirmó, no lo lee ni lo escribe: por eso no exige el A3 vigente ni pasa por el PDP, y con el A3 revocado se puede descartar igual (al revocarlo, además, las pendientes se retiran solas). Publica la novedad al profesional que la cargó solo si hoy sigue autorizado sobre el Alcance de la Solicitud; el rechazo y el borrado no dependen de eso. Lo ajeno y lo inexistente, 404; sin una pendiente con esa versión, 409 VERSION_CONFLICT.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResolverPropuestaRequestSchema,
+    exitos: [{ status: 200, schema: PropuestaResueltaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-06; TEST-FRI-005)',
   },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
@@ -3367,6 +3508,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-FRM-04',
   'API-FRM-05',
   'API-FRM-06',
+  'API-FRI-02',
+  'API-FRI-03',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',

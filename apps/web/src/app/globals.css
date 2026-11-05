@@ -12990,3 +12990,463 @@ details[open] > summary:not([class])::before {
   margin: 0 0 0.6rem;
   font-size: 1rem;
 }
+
+/* ═══ Formularios de inicio (WP-FORMULARIOS-DE-INICIO; DL-164) ═══════════════════════════════════════════════════════
+   «Cargar con la persona» a todo el ancho de Información, los nueve tipos de respuesta para el escritorio, lo cargado
+   que espera confirmación en la solicitud abierta y las comidas para decidir (FI-07). Sin colores nuevos: cada estado se
+   reconoce por su forma y su texto, y nada se colorea por lo que la persona respondió. */
+.formulario-de-inicio__volver {
+  margin-left: auto;
+}
+
+.formulario-de-inicio__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 62rem;
+}
+
+.formulario-de-inicio__en-espera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.formulario-de-inicio__seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--borde);
+}
+
+.formulario-de-inicio__seccion h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.formulario-de-inicio__intro {
+  margin: 0;
+}
+
+/* Cada pregunta es un grupo con su borde: la pregunta, la ayuda, para qué se usa, el control y lo que haya que revisar. */
+.pregunta-de-inicio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.pregunta-de-inicio:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.pregunta-de-inicio[data-con-problema] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.pregunta-de-inicio__pregunta {
+  padding: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.pregunta-de-inicio__pregunta .etiqueta-de-dato {
+  margin-left: 0.25rem;
+  font-weight: 400;
+}
+
+.pregunta-de-inicio__para-que {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.pregunta-de-inicio__para-que .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.pregunta-de-inicio .campo,
+.pregunta-de-inicio .campo__ayuda,
+.pregunta-de-inicio .campo__error,
+.pregunta-de-inicio .nota {
+  margin: 0;
+}
+
+/* Lo que falta no es un error: la persona lo completa al confirmar. Va con el color del texto, no con el de error. */
+.pregunta-de-inicio__falta {
+  color: var(--texto);
+}
+
+.campo-de-inicio__control input[type='text'],
+.campo-de-inicio__control textarea {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.campo-de-inicio__con-unidad {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.campo-de-inicio__con-unidad input {
+  width: 10rem;
+}
+
+.campo-de-inicio__unidad {
+  color: var(--tenue);
+}
+
+.campo-de-inicio__sin-responder {
+  align-self: flex-start;
+}
+
+/* Las opciones: botones de opción y casillas nativos, cada uno en su pastilla; la elegida se reconoce por el control y
+   por el borde. */
+.opciones-de-inicio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.opcion-de-inicio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.opcion-de-inicio input {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+}
+
+.opcion-de-inicio:has(input:checked) {
+  border-color: var(--azul);
+  box-shadow: inset 0 0 0 1px var(--azul);
+}
+
+.opcion-de-inicio:has(input:disabled) {
+  color: var(--tenue);
+  cursor: not-allowed;
+}
+
+.opcion-de-inicio:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* La lista que se repite: un renglón por comida (o deporte), con sus subcampos en una grilla. */
+.lista-que-se-repite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.lista-que-se-repite__renglon {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.75rem 0.9rem 0.9rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.lista-que-se-repite__titulo {
+  padding: 0 0.3rem;
+  font-weight: 600;
+}
+
+.lista-que-se-repite__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.6rem 1rem;
+}
+
+.lista-que-se-repite__campos .campo {
+  margin: 0;
+}
+
+.lista-que-se-repite__quitar {
+  align-self: flex-end;
+}
+
+/* La tabla: una columna por fila, con un botón de opción por celda. */
+.tabla-de-opciones thead th {
+  text-align: center;
+}
+
+.tabla-de-opciones thead th:first-child {
+  text-align: left;
+}
+
+.tabla-de-opciones th[scope='row'] {
+  font-weight: 600;
+}
+
+.tabla-de-opciones__celda {
+  text-align: center;
+}
+
+.tabla-de-opciones .casilla-de-celda input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+}
+
+/* Los alimentos: los sugeridos como chips, otros escritos, y los elegidos con su motivo. */
+.chips-de-inicio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alimentos-de-inicio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.alimentos-de-inicio__otro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.alimentos-de-inicio__otro .campo {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.alimentos-elegidos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alimentos-elegidos li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.alimentos-elegidos__nombre {
+  font-weight: 600;
+}
+
+.alimentos-elegidos__motivo {
+  min-height: 2.5rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.horarios-de-inicio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.6rem 1rem;
+}
+
+.horarios-de-inicio .campo {
+  margin: 0;
+}
+
+.formulario-de-inicio__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+/* La solicitud abierta: lo cargado que espera confirmación, la transcripción y los valores por renglón. */
+.propuesta-en-espera {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.propuesta-en-espera__estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.propuesta-en-espera .acciones {
+  margin: 0;
+}
+
+.lo-declarado__lineas {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.lo-declarado__lineas li + li {
+  margin-top: 0.15rem;
+}
+
+.lo-declarado__transcripcion {
+  flex-basis: 100%;
+}
+
+/* Las respuestas van por sección del formulario, como se respondieron: un título chico y sus preguntas debajo. */
+.lo-declarado__seccion + .lo-declarado__seccion {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid var(--borde);
+}
+
+.lo-declarado__titulo-de-seccion {
+  margin: 0.4rem 0 0.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Una confirmación dentro de la página, en el lugar de la acción: la pregunta, el error si lo hubo y los dos botones. */
+.confirmacion-en-linea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  border: 2px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.confirmacion-en-linea > p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.confirmacion-en-linea > p:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.confirmacion-en-linea .acciones {
+  margin: 0;
+}
+
+/* En «Pedir información», cuándo aparece una pregunta condicional. */
+.preguntas-del-pedido__condicion {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+/* FI-07 · las comidas para decidir: una por renglón, las cuatro decisiones y el paso a «Mis habituales». */
+.comidas-declaradas__tabla th[scope='row'] {
+  font-weight: 400;
+}
+
+.comidas-declaradas__que {
+  display: block;
+  font-weight: 600;
+}
+
+.comidas-declaradas__momento {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45rem;
+}
+
+.comidas-declaradas__detalle {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.comidas-declaradas__decisiones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.opcion-de-inicio--decision {
+  min-height: 2.5rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.95rem;
+}
+
+.comidas-declaradas__pasar {
+  white-space: nowrap;
+}
+
+.comidas-declaradas__pasar-a-habituales {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 12px;
+  background: var(--fondo-suave);
+}
+
+.comidas-declaradas__pasar-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.comidas-declaradas__pasar-a-habituales .campo,
+.comidas-declaradas__pasar-a-habituales .acciones {
+  margin: 0;
+}
+
+@media (max-width: 40rem) {
+  .formulario-de-inicio__volver {
+    margin-left: 0;
+  }
+
+  .campo-de-inicio__control input[type='text'],
+  .campo-de-inicio__control textarea {
+    max-width: none;
+  }
+
+  .comidas-declaradas__pasar {
+    white-space: normal;
+  }
+}

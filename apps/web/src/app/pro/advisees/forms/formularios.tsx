@@ -32,19 +32,25 @@ import { EstadoDeLecturaDelArea, MarcoDelArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
 import { AyudaDeSolicitudes } from './ayuda-de-solicitudes';
+import { CargaConLaPersona } from './cargar';
 import { PedidoDeInformacion } from './pedir';
 import { VistaDeSolicitudes } from './solicitudes';
 
 /** La sección que se ve en el marco: una sola. */
 export const SECCIONES = [{ clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes, icono: 'informacion', pista: COPY_PISTAS.secciones.solicitudes }] as const;
 
-/** Los valores de `vista` que la página admite: la sección y el pedido, que se abre sobre ella. */
-export const VISTAS = ['solicitudes', 'pedir'] as const;
+/**
+ * Los valores de `vista` que la página admite: la sección, el pedido (que se abre sobre ella) y «Cargar con la persona»
+ * (WP-FORMULARIOS-DE-INICIO, FI-05), que reemplaza a la lista a todo el ancho mientras se completa, con `solicitud=`.
+ */
+export const VISTAS = ['solicitudes', 'pedir', 'cargar'] as const;
 export type Vista = (typeof VISTAS)[number];
 
 export interface ContextoDeFormularios {
   readonly token: string;
   readonly asesoradoId: string;
+  /** El profesional con sesión, para saber qué solicitudes pidió él (solo esas se cargan con la persona). */
+  readonly yoId: string | null;
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
   /**
    * Un éxito que sobrevive al cierre del cajón (DL-113): lo muestra la pestaña, fijo abajo. Un aviso adentro de un
@@ -97,7 +103,8 @@ export function Formularios() {
   const [exito, setExito] = useState<string | null>(null);
   // Sube con cada solicitud enviada: «Solicitudes» se monta de nuevo y vuelve a leer la lista, que ya tiene una más.
   const [tanda, setTanda] = useState(0);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, avisar: setExito, parametros, ir } : null), [token, id, sesionPerdida, parametros, ir]);
+  const yoId = sesion.yo.tipo === 'listo' ? sesion.yo.id : null;
+  const contexto = useMemo(() => (token ? { token, asesoradoId: id, yoId, sesionPerdida, avisar: setExito, parametros, ir } : null), [token, id, yoId, sesionPerdida, parametros, ir]);
 
   return (
     <MarcoDelArea
@@ -128,7 +135,9 @@ export function Formularios() {
               ) : null}
             </AvisoFlotante>
           ) : null}
-          <VistaDeSolicitudes key={tanda} />
+          {/* «Cargar con la persona» ocupa el lugar de la lista mientras se completa; al enviar, vuelve la lista con la
+              solicitud abierta y lo cargado «Esperando que lo confirme». */}
+          {vista === 'cargar' ? <CargaConLaPersona /> : <VistaDeSolicitudes key={tanda} />}
           {/* El cajón está siempre montado: cerrarlo no descarta un pedido a medio armar. */}
           <PedidoDeInformacion
             abierto={vista === 'pedir'}
