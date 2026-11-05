@@ -4,14 +4,15 @@
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
  * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2, la 0.17.0-candidata.3 y la 0.18.0-candidata.1), como la pide esa APK, y lee la respuesta real
+ * (hoy la estable 0.13.2, la 0.17.0-candidata.3, la 0.18.0-candidata.1 y la 0.20.0-candidata.1), como la pide esa APK, y lee la respuesta real
  * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
  * no pasa hasta que cada lectura suya tenga escenario.
  *
  * Lo que se arma alrededor (los profesionales, los vínculos, los planes, las revisiones) va por la API de hoy, como en el
  * resto de las pruebas: lo que se prueba es lo que pide y lee la APK. Las respuestas se leen con datos de verdad, también
  * en las ramas más cargadas de cada esquema: una opción de receta con su imagen, un plan con objetivos por serie y la imagen
- * del ejercicio, eventos de tiempo, una revisión que cambia el objetivo, una respuesta de formulario rectificada.
+ * del ejercicio, eventos de tiempo, una revisión que cambia el objetivo, una respuesta de formulario rectificada, lo que
+ * cargó el profesional confirmado con una corrección y descartado con «No es correcto».
  */
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
@@ -37,7 +38,7 @@ import {
   subirImagenDeEjercicio,
 } from './soporte-por-serie';
 import { alimentosUsda, crearReceta, cuerpoDeReceta, estructuraConRecetas, FOTOS, RECETAS, subirImagen } from './soporte-recetas';
-import { CAMPOS_V2, sembrarPlantillaV2 } from './soporte-formularios-v2';
+import { CAMPOS_V2, conAgua, fri, pedirV2, RESPUESTAS_V2, sembrarPlantillaV2 } from './soporte-formularios-v2';
 import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 import { prepararAsesorado, prepararProfesional, solicitar, vinculoCompleto } from './soporte-vinculo';
 
@@ -437,7 +438,8 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
 
   // ─── Formularios y antropometría ───────────────────────────────────────────────────────────────
 
-  it('los formularios: las solicitudes propias, el detalle, la plantilla, responder y rectificar (FRM-02, 05 a 08)', async () => {
+  // Las APK hasta la 0.18.0-candidata.1 leen FRM; desde la 0.20.0-candidata.1 (DL-164), FRI, en el bloque que sigue.
+  siLee('API-FRM-06', 'los formularios: las solicitudes propias, el detalle, la plantilla, responder y rectificar (FRM-02, 05 a 08)', async () => {
     const e = etiqueta(`${corta}-frm`);
     const pro = await prepararProfesional(app, e, ['ENTRENAMIENTO']);
     const ase = await prepararAsesorado(app, e, { a3: true });
@@ -488,6 +490,65 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     await apk.pide('API-FRM-05', { token, params: { formRequestId: salud } });
     await apk.pide('API-FRM-05', { token, params: { formRequestId: antecedentes } });
     await apk.pide('API-FRM-06', { token });
+    expect(apk.rechazos()).toEqual([]);
+  });
+
+  siLee('API-FRI-02', 'los formularios de inicio: la bandeja, la estructura, el detalle, responder, confirmar lo cargado, «No es correcto» y rectificar (FRI-01 a 05 y 08, DL-164)', async () => {
+    const e = etiqueta(`${corta}-fri`);
+    const pro = await prepararProfesional(app, e, ['ENTRENAMIENTO']);
+    const ase = await prepararAsesorado(app, e, { a3: true });
+    await vinculoCompleto(app, pro, ase, 'ENTRENAMIENTO');
+    const token = ase.token;
+    // Una de P0 (FRM-SALUD, que FRI traduce a V2) y tres sobre una versión con tipos nuevos: una para responder sola, una
+    // que el profesional carga y la persona confirma corrigiendo un dato, y otra que la persona descarta.
+    const salud = (
+      await conSesion(app, pro.token)
+        .post(`/api/v1/advisees/${ase.id}/form-requests`)
+        .send({ templateVersionId: VERSION_SALUD, purpose: 'Seguridad del entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: ['condiciones_declaradas', 'dolor_o_lesiones'], requiredFieldCodes: ['condiciones_declaradas'] })
+        .expect(201)
+    ).body.data.formRequestId as string;
+    const v2 = await sembrarPlantillaV2(prisma, e, null);
+    const sola = await pedirV2(app, pro, ase.id, v2.versionId, 'ENTRENAMIENTO');
+    const confirmada = await pedirV2(app, pro, ase.id, v2.versionId, 'ENTRENAMIENTO');
+    const descartada = await pedirV2(app, pro, ase.id, v2.versionId, 'ENTRENAMIENTO');
+    // Lo que carga el profesional desde el escritorio (FRI-06): la APK no lo pide, lo lee en la bandeja y en el detalle.
+    const delPro = fri(app, pro.token);
+    const cargada = (await delPro.cargar(confirmada, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body.data as { proposalId: string; version: string };
+    const aDescartar = (await delPro.cargar(descartada, { expectedVersion: null, answers: RESPUESTAS_V2 }).expect(201)).body.data as { proposalId: string; version: string };
+
+    // Inicio pide las pendientes, de a pocas; «Información que me pidieron», todas.
+    await apk.pide('API-FRI-02', { token, consulta: { status: 'PENDING', limit: '3' } });
+    const bandeja = (await apk.pide('API-FRI-02', { token })).body.data as { formRequestId: string; pendingProposal: { proposalId: string } | null }[];
+    expect(bandeja.find((s) => s.formRequestId === confirmada)?.pendingProposal?.proposalId).toBe(cargada.proposalId);
+    for (const id of [salud, sola, confirmada]) {
+      const vista = (await apk.pide('API-FRI-03', { token, params: { formRequestId: id } })).body.data;
+      await apk.pide('API-FRI-01', { token, params: { templateId: vista.request.templateId as string, versionId: vista.request.templateVersionId as string } });
+    }
+
+    // Responder sola: la de P0, con su respuesta en la forma V2, y la de tipos nuevos.
+    await apk.pide('API-FRI-04', { token, params: { formRequestId: salud }, cuerpo: { answers: [{ fieldCode: 'condiciones_declaradas', answer: { type: 'TEXT', text: 'Sin condiciones' } }], fromProposal: null }, status: 201 });
+    const respondida = await apk.pide('API-FRI-04', { token, params: { formRequestId: sola }, cuerpo: { answers: RESPUESTAS_V2, fromProposal: null }, status: 201 });
+    // «Confirmo que son mis datos», después de corregir un dato de lo cargado: la transcripción queda en la respuesta.
+    await apk.pide('API-FRI-04', {
+      token,
+      params: { formRequestId: confirmada },
+      cuerpo: { answers: conAgua(8), fromProposal: { proposalId: cargada.proposalId, expectedVersion: cargada.version } },
+      status: 201,
+    });
+    // «No es correcto»: lo cargado se borra y la solicitud sigue pendiente.
+    await apk.pide('API-FRI-08', { token, params: { formRequestId: descartada }, cuerpo: { expectedVersion: aDescartar.version } });
+    // Rectificar una respuesta propia.
+    await apk.pide('API-FRI-05', {
+      token,
+      params: { formResponseId: respondida.body.data.formResponseId as string },
+      cuerpo: { expectedVersion: respondida.body.data.version, reason: 'Tomo menos agua de lo que dije.', answers: conAgua(4) },
+      status: 201,
+    });
+    // Responder lo ya respondido: el 422, en la forma que la APK reconoce.
+    await apk.pide('API-FRI-04', { token, params: { formRequestId: sola }, cuerpo: { answers: RESPUESTAS_V2, fromProposal: null }, status: 422 });
+    // Lo que queda a la vista: la respuesta rectificada, la confirmada con su transcripción y la descartada, pendiente.
+    for (const id of [sola, confirmada, descartada, salud]) await apk.pide('API-FRI-03', { token, params: { formRequestId: id } });
+    await apk.pide('API-FRI-02', { token });
     expect(apk.rechazos()).toEqual([]);
   });
 

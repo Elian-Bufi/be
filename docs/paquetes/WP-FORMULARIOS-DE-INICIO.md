@@ -102,6 +102,8 @@ idéntico para lo ajeno.
 
 ## 6. Oráculos nuevos (11A, a escribir como los de `WP-07-ORACULOS.md`)
 
+*(2026-11-05: escritos con sus trece campos en `WP-FORMULARIOS-DE-INICIO-ORACULOS.md`.)*
+
 - **TEST-FRI-001 · Las APK instaladas no ven lo nuevo.** Una Solicitud de FRM-NUTRICION-INICIO no aparece en FRM-06, y
   FRM-02, 05 y 07 responden 404 idéntico al de lo inexistente.
 - **TEST-FRI-002 · Lo oculto no se guarda.** Una respuesta a una pregunta condicional cerrada da `422 FORM_RESPONSE_INVALID`
