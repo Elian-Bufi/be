@@ -354,6 +354,9 @@ export const claveDeSubcampo = (fieldCode: string, id: number, code: string): st
 export const claveDeParte = (fieldCode: string, parte: string): string => `${fieldCode}/${parte}`;
 const campoDeLaClave = (clave: string): string => clave.split('/')[0]!;
 
+/** Las preguntas que tienen un aviso, sin repetir: de un campo, de un renglón o de una parte de un horario (DL-165 D-1). */
+export const camposDeLosErrores = (errores: Readonly<Record<string, string>>): string[] => [...new Set(Object.keys(errores).map(campoDeLaClave))];
+
 /**
  * Una hora escrita como la escribe la gente («7:30», «07.30», «0730», «7h30») en `HH:MM`, o `null` si no es una hora.
  */

@@ -5,11 +5,24 @@
  * Uso: cd apps/mobile && npx jest src/formulario-v2.test.ts --runInBand (después de construir @be/domain).
  */
 import { describe, expect, test } from '@jest/globals';
-import { CODIGO_DE_PROBLEMA_V2, COPY, COPY_FORMULARIOS, MENSAJE_DE_PROBLEMA_V2, type RespuestaDeCampoV2Entrada, type Resultado, type SeccionDePlantillaV2, type SolicitudPropiaV2 } from '@be/domain';
+import {
+  CODIGO_DE_PROBLEMA_V2,
+  COPY,
+  COPY_FORMULARIOS,
+  MENSAJE_DE_PROBLEMA_V2,
+  obligatoriasSinResponderDeLaParte,
+  partesDelFormulario,
+  primeraParteCon,
+  type RespuestaDeCampoV2Entrada,
+  type Resultado,
+  type SeccionDePlantillaV2,
+  type SolicitudPropiaV2,
+} from '@be/domain';
 import {
   armarRespuestas,
   BORRADOR_VACIO,
   borradorDeRespuestas,
+  camposDeLosErrores,
   camposQueSeVen,
   claveDeParte,
   claveDeSubcampo,
@@ -301,6 +314,21 @@ describe('la validación del dominio, antes de enviar y al volver de la API', ()
     expect(Object.keys(antes?.errores ?? {}).sort()).toEqual(['come_fuera', 'comidas', 'comidas_por_dia']);
     expect(antes?.errores.comidas).toBe(MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.REQUIRED]);
     expect(antes?.lineas).toContain(`Las comidas de tu semana: ${MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.REQUIRED]}`);
+  });
+
+  test('DL-165 D-1 · lo que falta en cada parte sale de lo que se mandaría, y un problema lleva a la parte de la primera pregunta marcada', () => {
+    const partes = partesDelFormulario(SECCIONES, SOLICITUD);
+    expect(partes.map((p) => p.titulo)).toEqual(['Hábitos', 'Tus comidas']);
+    const armadas = armarRespuestas(SECCIONES, SOLICITUD, { notas: { tipo: 'TEXT', texto: 'hola' } });
+    // En «Hábitos» faltan dos obligatorias que se ven («donde» depende de «come_fuera»: oculta, no falta); en «Tus comidas», una.
+    expect(obligatoriasSinResponderDeLaParte(partes[0]!, SECCIONES, SOLICITUD, armadas.respuestas)).toEqual(['comidas_por_dia', 'come_fuera']);
+    expect(obligatoriasSinResponderDeLaParte(partes[1]!, SECCIONES, SOLICITUD, armadas.respuestas)).toEqual(['comidas']);
+    // Los avisos se juntan por pregunta, también los de un renglón o de una parte de un horario.
+    const marcados = { [claveDeSubcampo('comidas', 3, 'veces')]: 'x', [claveDeParte('horarios', 'levanta')]: 'y', comidas: 'z' };
+    expect(camposDeLosErrores(marcados).sort()).toEqual(['comidas', 'horarios']);
+    expect(primeraParteCon(partes, camposDeLosErrores(marcados))).toBe(1);
+    const antes = problemasAntesDeEnviar(SECCIONES, SOLICITUD, armadas);
+    expect(primeraParteCon(partes, camposDeLosErrores(antes?.errores ?? {}))).toBe(0);
   });
 
   test('con un valor fuera de lo que admite, el resumen cuenta los campos y cada uno dice lo suyo', () => {

@@ -12,7 +12,10 @@
  * - **un campo que no se completa se omite**, no viaja como cero ni como vacío (09:1586-1587), y lo oculto por una
  *   condición no viaja (D-2);
  * - **corregir agrega, no reemplaza**: la respuesta anterior se conserva y se ve (09:1618);
- * - **lo cargado y no confirmado no queda en el perfil**: «No es correcto» lo borra y la solicitud sigue pendiente (D-6).
+ * - **lo cargado y no confirmado no queda en el perfil**: «No es correcto» lo borra y la solicitud sigue pendiente (D-6);
+ * - **una parte por pantalla** (DL-165 D-1): «Parte N de M», «Anterior» y «Siguiente», y un repaso antes de enviar. Pasar
+ *   de parte no exige nada: si quedó una obligatoria sin responder, la parte siguiente lo dice y deja volver. Un problema
+ *   al enviar lleva a la parte de la primera pregunta marcada (`partes-de-formulario.ts`, del dominio).
  *
  * `respondable` lo decide la API en cada lectura, con la política vigente: si el vínculo se pausó o el consentimiento
  * se revocó, la solicitud sigue estando —es de la persona— pero ya no se puede responder.
@@ -27,6 +30,13 @@ import {
   estadoInicialDeFormulario,
   habilitacion,
   LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION,
+  obligatoriasSinResponderDeLaParte,
+  obligatoriosSinResponder,
+  partesDelFormulario,
+  pasoAcotado,
+  pasoDelRepaso,
+  preguntasQueSeVen,
+  primeraParteCon,
   reducirFormulario,
   seOfreceQuitarRespuesta,
   sePuedeEnviar,
@@ -35,13 +45,14 @@ import {
   type CampoDePlantillaV2,
   type DetalleDeSolicitudV2,
   type Intencion,
+  type ParteDelFormulario,
   type RespuestaDeCampoV2Entrada,
   type Resultado,
   type SolicitudPropiaV2,
   type VersionDePlantillaV2,
 } from '@be/domain';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AccessibilityInfo, AppState, View } from 'react-native';
 import { api } from '../api';
 import { baseDelBorrador, hayQueGuardar, restauracionDe, type LecturaDelBorrador } from '../borrador-de-formulario';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
@@ -54,6 +65,7 @@ import {
   armarRespuestas,
   BORRADOR_VACIO,
   borradorDeRespuestas,
+  camposDeLosErrores,
   camposQueSeVen,
   cuantasCorrigio,
   gruposDeLaBandeja,
@@ -80,7 +92,8 @@ import { Aviso, Ayuda, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropiaV2[] } | { tipo: 'error'; sinConexion: boolean };
 
-const APK = COPY_FORMULARIOS_V2.apk;
+const V = COPY_FORMULARIOS_V2;
+const APK = V.apk;
 
 /** Una solicitud en la bandeja: qué es, quién la pidió, cuánto lleva y qué sigue (revisar, completar o ver). */
 function TarjetaDeSolicitud({ s, ir }: { s: SolicitudPropiaV2; ir: (r: Ruta) => void }) {
@@ -254,6 +267,13 @@ export function PantallaDeMiSolicitud({
   const [enviando, setEnviando] = useState(false);
   /** Con algo cargado por el profesional: la persona eligió corregirlo en el formulario en vez de leerlo en palabras. */
   const [corrigiendo, setCorrigiendo] = useState(false);
+  /**
+   * DL-165 D-1 · la parte que se ve, desde 0; una más que la última es el repaso. No se guarda en el teléfono: al volver,
+   * el formulario abre en la primera parte con lo escrito.
+   */
+  const [paso, setPaso] = useState(0);
+  /** Lo que quedó sin responder en la parte que se acaba de dejar: la siguiente lo dice y deja volver. */
+  const [quedaron, setQuedaron] = useState<{ readonly indice: number; readonly titulo: string; readonly n: number } | null>(null);
   const clave = useClaveDeIntento();
   const motivo = estado.borrador.motivo;
   /** La persona escribió algo propio (no lo precargado sin tocar): se declara al salir y se le dice que sigue ahí. */
@@ -380,6 +400,8 @@ export function PantallaDeMiSolicitud({
       }
       setErrores({});
       setCorrigiendo(false);
+      setPaso(0);
+      setQuedaron(null);
       subir();
       void cargar('abrir');
     },
@@ -422,7 +444,6 @@ export function PantallaDeMiSolicitud({
   const vista = estado.carga.vista;
   const puede = habilitacion(vista);
   const campos = camposEnOrden(secciones);
-  const pedidos = new Set(request.requestedFieldCodes);
   const visibles = camposQueSeVen(secciones, request, borrador);
   const esCorreccion = response !== null;
   /** Hay algo cargado por el profesional que espera: se lee en palabras antes que nada. */
@@ -447,6 +468,8 @@ export function PantallaDeMiSolicitud({
     if (!proposal) return;
     precargar(borradorDeRespuestas(secciones, proposal.answers));
     setCorrigiendo(true);
+    setPaso(0);
+    setQuedaron(null);
     subir();
   };
 
@@ -454,6 +477,40 @@ export function PantallaDeMiSolicitud({
   const volverALoCargado = () => {
     precargar(BORRADOR_VACIO);
     setCorrigiendo(false);
+    setPaso(0);
+    setQuedaron(null);
+    subir();
+  };
+
+  // ─── DL-165 D-1 · una parte por pantalla, y el repaso al final ────────────────────────────────────────────
+  const partes = partesDelFormulario(secciones, request);
+  const repaso = pasoDelRepaso(partes);
+  const actual = pasoAcotado(partes, paso);
+  const enRepaso = actual === repaso;
+  const parte = enRepaso ? null : (partes[actual] ?? null);
+  const porCodigo = new Map(campos.map((c) => [c.fieldCode, c] as const));
+  /** Lo que se mandaría hoy: de ahí salen lo que falta en cada parte y el repaso. */
+  const armadasHoy = armarRespuestas(secciones, request, borrador);
+
+  /**
+   * Cambia de parte. Hacia adelante, si en la que se deja quedó una obligatoria sin responder, la siguiente lo dice y deja
+   * volver: pasar no exige nada, lo que frena es el envío. El lector de pantalla anuncia la parte nueva.
+   */
+  const irAlPaso = (destino: number) => {
+    const siguiente = pasoAcotado(partes, destino);
+    const faltan = parte && siguiente > actual ? obligatoriasSinResponderDeLaParte(parte, secciones, request, armadasHoy.respuestas) : [];
+    setQuedaron(parte && faltan.length > 0 ? { indice: parte.indice, titulo: parte.titulo, n: faltan.length } : null);
+    setPaso(siguiente);
+    subir();
+    const nueva = partes[siguiente];
+    AccessibilityInfo.announceForAccessibility(nueva ? V.parteConTitulo(siguiente + 1, partes.length, nueva.titulo) : V.repaso);
+  };
+
+  /** Un problema al enviar lleva a la primera parte que tiene una pregunta marcada, con el aviso arriba. */
+  const irAlProblema = (marcados: Readonly<Record<string, string>>) => {
+    const destino = primeraParteCon(partes, camposDeLosErrores(marcados));
+    setQuedaron(null);
+    if (destino !== null) setPaso(destino);
     subir();
   };
 
@@ -469,6 +526,7 @@ export function PantallaDeMiSolicitud({
     if (antes) {
       if (origen === 'tal-cual') corregirLoCargado();
       setErrores(antes.errores);
+      irAlProblema(antes.errores);
       return despachar({ tipo: 'rechazado', desenlace: { tipo: 'por-campo', errores: antes.errores, resumen: antes.titulo, lineas: antes.lineas } });
     }
     // La API pide al menos una respuesta (min(1)); el mensaje dice eso, no que falta un requerido (D-C3).
@@ -491,6 +549,7 @@ export function PantallaDeMiSolicitud({
         if (desenlace.tipo === 'por-campo') {
           if (origen === 'tal-cual') corregirLoCargado();
           setErrores(desenlace.errores);
+          irAlProblema(desenlace.errores);
         }
         return despachar({ tipo: 'rechazado', desenlace });
       }
@@ -756,6 +815,8 @@ export function PantallaDeMiSolicitud({
   };
 
   const textoDelBoton = problema?.incierto ? COPY.reintentar : esCorreccion ? COPY_FORMULARIOS.rectificar : desdePropuesta ? APK.confirmar : COPY_FORMULARIOS.enviarRespuesta;
+  const alEmpezar = actual === 0 && !enRepaso;
+  const faltanEnTotal = obligatoriosSinResponder(secciones, request, armadasHoy.respuestas);
 
   return (
     <View>
@@ -763,12 +824,16 @@ export function PantallaDeMiSolicitud({
       <Parrafo tenue>
         {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName} · {request.purpose}
       </Parrafo>
+      {/* DL-165 D-1 y D-3: cuánto falta lo dice la parte, no un tiempo estimado. */}
+      <Parrafo tenue>{enRepaso ? V.repaso : V.parte(actual + 1, partes.length)}</Parrafo>
       {/* El texto va como título del aviso: así se anuncia al lector de pantalla y se lee en negrita, como todos (D-C3). */}
       {estado.aviso ? <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} /> : recuperado && hayAlgoPropio ? <Aviso tipo="info" titulo={T.recuperamosLoEscrito} /> : null}
       {/* FR-01 · si lo escrito no quedó en el teléfono, se dice: un cierre de la app lo perdería. */}
       {sinProteger && hayAlgoPropio ? <Parrafo tenue>{T.noSeGuardoEnElTelefono}</Parrafo> : null}
+      {/* Un problema al enviar se dice arriba de la parte adonde llevó, que es donde está la primera pregunta marcada. */}
+      {enRepaso ? null : avisoDeProblema}
 
-      {response ? (
+      {alEmpezar && response ? (
         <Seccion titulo={COPY_FORMULARIOS.respuestaOriginal}>
           {response.effectiveView.kind === 'ORIGINAL' ? <Insignia texto={COPY_FORMULARIOS.vigente} positiva /> : null}
           {/* La procedencia (DL-164 D-4): quién lo cargó, cuándo se confirmó y cuánto se corrigió antes. */}
@@ -800,39 +865,105 @@ export function PantallaDeMiSolicitud({
           <Boton texto={T.volverALoCargado} tipo="enlace" onPress={volverALoCargado} />
         </Aviso>
       ) : null}
-      <Parrafo tenue>{COPY_FORMULARIOS.loQueRespondesEsTuyo}</Parrafo>
+      {/* DL-165 D-2: se dice una sola vez, al empezar. */}
+      {alEmpezar ? <Parrafo tenue>{COPY_FORMULARIOS.loQueRespondesEsTuyo}</Parrafo> : null}
       {estado.borradorSinEnviar ? <Parrafo>{COPY_FORMULARIOS.borradorSinEnviar}</Parrafo> : null}
+      {/* Lo que quedó sin responder en la parte de antes: pasar no exige nada, y se puede volver. */}
+      {quedaron && !enRepaso ? (
+        <Aviso tipo="info" titulo={V.quedaronSinResponder(quedaron.n, quedaron.titulo)}>
+          <Boton texto={V.volverALaParte(quedaron.titulo)} tipo="enlace" onPress={() => irAlPaso(quedaron.indice)} />
+        </Aviso>
+      ) : null}
 
-      {secciones.map((s) => {
-        const delFormulario = s.fields.filter((c) => pedidos.has(c.fieldCode) && visibles.has(c.fieldCode));
-        if (delFormulario.length === 0) return null;
+      {parte ? (
+        <Seccion key={parte.sectionCode} titulo={parte.titulo}>
+          {parte.intro ? <Parrafo tenue>{parte.intro}</Parrafo> : null}
+          {preguntasQueSeVen(parte, visibles).length > 0 ? (
+            preguntasQueSeVen(parte, visibles).map((codigo) => {
+              const c = porCodigo.get(codigo);
+              return c ? dibujarCampo(c) : null;
+            })
+          ) : (
+            <Parrafo tenue>{V.parteSinPreguntas}</Parrafo>
+          )}
+        </Seccion>
+      ) : (
+        <Repaso
+          datos={datos}
+          partes={partes}
+          respuestas={armadasHoy.respuestas}
+          faltan={faltanEnTotal}
+          onCambiar={(indice) => irAlPaso(indice)}
+        />
+      )}
+
+      {/* Moverse entre las partes: «Anterior» desde la segunda; «Siguiente», o «Repasar» en la última. */}
+      <View style={estilos.navegacion}>
+        {actual > 0 ? <Boton texto={V.anterior} tipo="secundario" icono="volver" onPress={() => irAlPaso(actual - 1)} deshabilitado={enviando} /> : null}
+        {!enRepaso ? <Boton texto={actual === partes.length - 1 ? V.repasar : V.siguiente} onPress={() => irAlPaso(actual + 1)} deshabilitado={enviando} /> : null}
+      </View>
+
+      {enRepaso ? (
+        <Seccion titulo={esCorreccion ? COPY_FORMULARIOS.rectificar : COPY_FORMULARIOS.responder}>
+          {esCorreccion ? <Campo etiqueta={COPY_FORMULARIOS.motivoDeRectificacion} value={motivo} maxLength={LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION} onChangeText={(m) => despachar({ tipo: 'editar-motivo', motivo: m })} /> : null}
+          {desdePropuesta ? <Parrafo>{APK.efectoDeConfirmar}</Parrafo> : null}
+          {avisoDeProblema}
+          {sinAccion ? (
+            <Aviso tipo="info" titulo={sinAccion}>
+              {acciones(['recuperar', 'volver'])}
+            </Aviso>
+          ) : null}
+          <Boton
+            texto={textoDelBoton}
+            onPress={() => void enviar('borrador')}
+            ocupado={enviando}
+            // Solo se envía si la solicitud lo admite y ningún rechazo conocido lo suspendió (`sePuedeEnviar`).
+            deshabilitado={enviando || !sePuedeEnviar(estado) || (esCorreccion && motivo.trim().length === 0)}
+          />
+          {hayPropuesta ? <Boton texto={APK.rechazar} tipo="peligroSecundario" onPress={rechazo.abrir} deshabilitado={enviando} /> : null}
+        </Seccion>
+      ) : null}
+      {dialogoDeRechazo}
+    </View>
+  );
+}
+
+/**
+ * DL-165 D-1 · el repaso, antes de enviar: lo respondido por parte, en palabras y con las etiquetas de la plantilla, con
+ * «Cambiar» en cada una. Lo obligatorio sin responder se dice en su renglón y en una línea arriba; enviar lo frena y
+ * lleva a su parte.
+ */
+function Repaso({
+  datos,
+  partes,
+  respuestas,
+  faltan,
+  onCambiar,
+}: {
+  datos: Datos;
+  partes: readonly ParteDelFormulario[];
+  respuestas: readonly RespuestaDeCampoV2Entrada[];
+  faltan: readonly string[];
+  onCambiar: (indice: number) => void;
+}) {
+  const porSeccion = new Map(seccionesEnPalabras(datos.plantilla.sections, datos.detalle.request, respuestas).map((s) => [s.sectionCode, s] as const));
+  const obligatorias = new Set(datos.detalle.request.requiredFieldCodes);
+  return (
+    <View>
+      <Parrafo tenue>{V.repasoBajada}</Parrafo>
+      {faltan.length > 0 ? <Aviso tipo="info" titulo={V.faltanPorResponder(faltan.length)} /> : null}
+      {partes.map((p) => {
+        const s = porSeccion.get(p.sectionCode);
+        if (!s) return null;
         return (
-          <Seccion key={s.sectionCode} titulo={s.title}>
-            {s.intro ? <Parrafo tenue>{s.intro}</Parrafo> : null}
-            {delFormulario.map(dibujarCampo)}
+          <Seccion key={p.sectionCode} titulo={p.titulo}>
+            {s.lineas.map((l) => (
+              <Dato key={l.fieldCode} etiqueta={l.etiqueta} valor={l.valor ?? (obligatorias.has(l.fieldCode) ? V.obligatoriaSinResponder : V.sinResponder)} apilado />
+            ))}
+            <Boton texto={V.cambiarParte} etiqueta={V.cambiarParteDe(p.titulo)} tipo="enlace" onPress={() => onCambiar(p.indice)} />
           </Seccion>
         );
       })}
-
-      <Seccion titulo={esCorreccion ? COPY_FORMULARIOS.rectificar : COPY_FORMULARIOS.responder}>
-        {esCorreccion ? <Campo etiqueta={COPY_FORMULARIOS.motivoDeRectificacion} value={motivo} maxLength={LARGO_MAXIMO_DEL_MOTIVO_DE_RECTIFICACION} onChangeText={(m) => despachar({ tipo: 'editar-motivo', motivo: m })} /> : null}
-        {desdePropuesta ? <Parrafo>{APK.efectoDeConfirmar}</Parrafo> : null}
-        {avisoDeProblema}
-        {sinAccion ? (
-          <Aviso tipo="info" titulo={sinAccion}>
-            {acciones(['recuperar', 'volver'])}
-          </Aviso>
-        ) : null}
-        <Boton
-          texto={textoDelBoton}
-          onPress={() => void enviar('borrador')}
-          ocupado={enviando}
-          // Solo se envía si la solicitud lo admite y ningún rechazo conocido lo suspendió (`sePuedeEnviar`).
-          deshabilitado={enviando || !sePuedeEnviar(estado) || (esCorreccion && motivo.trim().length === 0)}
-        />
-        {hayPropuesta ? <Boton texto={APK.rechazar} tipo="peligroSecundario" onPress={rechazo.abrir} deshabilitado={enviando} /> : null}
-      </Seccion>
-      {dialogoDeRechazo}
     </View>
   );
 }
@@ -840,4 +971,6 @@ export function PantallaDeMiSolicitud({
 const estilos = estilosPorTema(() => ({
   // Un texto de varias líneas, con lo escrito arriba: el estilo del campo, más alto (como en «Comí algo diferente»).
   textoLargo: { minHeight: 96, paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top' },
+  // «Anterior» y «Siguiente», uno debajo del otro: con letra grande, dos botones en fila no entran.
+  navegacion: { marginTop: 8, gap: 8 },
 }));

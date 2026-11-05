@@ -52,6 +52,7 @@ export * from './copy-formularios';
 export * from './contratos-formularios-v2';
 export * from './formularios-v2';
 export * from './copy-formularios-v2';
+export * from './partes-de-formulario';
 export * from './plantillas-de-inicio';
 export * from './errores-de-formulario';
 export * from './recuperacion-de-formulario';

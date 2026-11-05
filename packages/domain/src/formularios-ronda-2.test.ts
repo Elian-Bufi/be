@@ -2,13 +2,16 @@
  * WP-FORMULARIOS-RONDA-2 (DL-165): lo que cambió de los formularios de inicio después de la prueba de Dirección.
  * - FR-05 · las ayudas, plegadas (D-2) y sin los minutos (D-3): dónde va la ayuda de cada pregunta, cuándo se ofrece
  *   «Quitar respuesta» y que ningún texto diga los minutos ni califique a la persona.
+ * - FR-03 y FR-04 · una parte por pantalla (D-1): qué partes tiene una solicitud, qué se ve en cada una, qué falta y
+ *   adónde lleva un problema al enviar.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import type { CampoDePlantillaV2 } from './contratos-formularios-v2';
+import type { CampoDePlantillaV2, RespuestaDeCampoV2Entrada, SeccionDePlantillaV2 } from './contratos-formularios-v2';
 import { terminosProhibidosDeFormulariosEn } from './copy-formularios';
 import { COPY_FORMULARIOS_V2 } from './copy-formularios-v2';
-import { ayudaDeLaPregunta, seOfreceQuitarRespuesta, TIPOS_CON_QUITAR_RESPUESTA } from './formularios-v2';
+import { ayudaDeLaPregunta, camposVisibles, seOfreceQuitarRespuesta, TIPOS_CON_QUITAR_RESPUESTA } from './formularios-v2';
+import { obligatoriasSinResponderDeLaParte, partesDelFormulario, pasoAcotado, pasoDelRepaso, preguntasQueSeVen, primeraParteCon } from './partes-de-formulario';
 
 const op = (code: string, label = code) => ({ code, label });
 const base = { category: 'HABITOS_Y_CONTEXTO' as const, helpText: null, purpose: 'Para armar tu plan.', showIf: null, requiredByDefault: false };
@@ -61,4 +64,82 @@ test('DL-165 D-3 · ningún texto de los formularios V2 dice los minutos, y ning
   assert.equal(COPY_FORMULARIOS_V2.paraQueBoton, '¿Para qué?');
   assert.equal(COPY_FORMULARIOS_V2.paraQueDe('¿Cuántas horas dormís?'), '¿Para qué? ¿Cuántas horas dormís?');
   assert.equal(COPY_FORMULARIOS_V2.quitarRespuestaDe('¿Picoteás?'), 'Quitar respuesta: ¿Picoteás?');
+});
+
+// ─── FR-03 y FR-04 · D-1 ────────────────────────────────────────────────────────────────────────
+
+/** Cuatro secciones: la tercera solo tiene una pregunta que depende de otra, y la cuarta no se pide. */
+const PARTES: SeccionDePlantillaV2[] = [
+  {
+    sectionCode: 'tu_dia',
+    title: 'Tu día',
+    intro: 'Para ubicar las comidas.',
+    fields: [
+      { ...base, fieldCode: 'jornada', label: '¿Cómo es tu jornada?', dataType: 'CHOICE', options: [op('casa'), op('afuera')], otherOptionCode: null },
+      { ...base, fieldCode: 'vianda', label: '¿Llevás vianda?', dataType: 'BOOLEAN', showIf: { fieldCode: 'jornada', anyOf: ['afuera'] } },
+    ],
+  },
+  {
+    sectionCode: 'salud',
+    title: 'Tu salud',
+    intro: null,
+    fields: [
+      { ...base, fieldCode: 'alergias', label: '¿Tenés alergias?', dataType: 'BOOLEAN' },
+      { ...base, fieldCode: 'medicacion', label: '¿Tomás medicación?', dataType: 'BOOLEAN' },
+    ],
+  },
+  {
+    sectionCode: 'detalle',
+    title: 'El detalle',
+    intro: null,
+    fields: [{ ...base, fieldCode: 'cuales', label: '¿Cuáles?', dataType: 'TEXT', multiline: false, maxLength: 100, showIf: { fieldCode: 'alergias', anyOf: [true] } }],
+  },
+  { sectionCode: 'otra', title: 'Otra', intro: null, fields: [{ ...base, fieldCode: 'no_pedida', label: 'No se pide', dataType: 'BOOLEAN' }] },
+];
+const PEDIDO = { requestedFieldCodes: ['jornada', 'vianda', 'alergias', 'medicacion', 'cuales'], requiredFieldCodes: ['jornada', 'vianda', 'alergias', 'cuales'] };
+const r = (fieldCode: string, answer: RespuestaDeCampoV2Entrada['answer']): RespuestaDeCampoV2Entrada => ({ fieldCode, answer });
+
+test('DL-165 D-1 · las partes son las secciones con algo pedido, en orden, y el total no cambia mientras se responde', () => {
+  const partes = partesDelFormulario(PARTES, PEDIDO);
+  assert.deepEqual(
+    partes.map((p) => [p.indice, p.sectionCode, p.pedidas]),
+    [
+      [0, 'tu_dia', ['jornada', 'vianda']],
+      [1, 'salud', ['alergias', 'medicacion']],
+      [2, 'detalle', ['cuales']],
+    ],
+  );
+  assert.equal(partes[0]!.intro, 'Para ubicar las comidas.');
+  // Con todo oculto, «El detalle» sigue siendo una parte: «Parte 3 de 3» no se vuelve «de 2» al responder.
+  const visibles = camposVisibles(PARTES, [r('alergias', { type: 'BOOLEAN', yes: false })]);
+  assert.deepEqual(preguntasQueSeVen(partes[2]!, visibles), []);
+  assert.deepEqual(preguntasQueSeVen(partes[1]!, visibles), ['alergias', 'medicacion']);
+  // El repaso es el paso que sigue a la última parte; un paso fuera de rango se acota.
+  assert.equal(pasoDelRepaso(partes), 3);
+  assert.equal(pasoAcotado(partes, 9), 3);
+  assert.equal(pasoAcotado(partes, -2), 0);
+  assert.equal(COPY_FORMULARIOS_V2.parte(1, 3), 'Parte 1 de 3');
+});
+
+test('DL-165 D-1 · lo que falta en una parte son sus obligatorias visibles sin responder; lo oculto no falta', () => {
+  const [dia, salud, detalle] = partesDelFormulario(PARTES, PEDIDO);
+  // «¿Llevás vianda?» es obligatoria, pero con «En casa» no se ve: no falta.
+  const enCasa = [r('jornada', { type: 'CHOICE', option: 'casa', otherText: null })];
+  assert.deepEqual(obligatoriasSinResponderDeLaParte(dia!, PARTES, PEDIDO, enCasa), []);
+  const afuera = [r('jornada', { type: 'CHOICE', option: 'afuera', otherText: null })];
+  assert.deepEqual(obligatoriasSinResponderDeLaParte(dia!, PARTES, PEDIDO, afuera), ['vianda']);
+  // La medicación es opcional: sin responderla no falta nada en «Tu salud».
+  assert.deepEqual(obligatoriasSinResponderDeLaParte(salud!, PARTES, PEDIDO, [r('alergias', { type: 'BOOLEAN', yes: true })]), []);
+  assert.deepEqual(obligatoriasSinResponderDeLaParte(detalle!, PARTES, PEDIDO, [r('alergias', { type: 'BOOLEAN', yes: true })]), ['cuales']);
+  assert.equal(COPY_FORMULARIOS_V2.quedaronSinResponder(1, 'Tu día'), 'En «Tu día» quedó 1 pregunta obligatoria sin responder. Podés volver cuando quieras.');
+  assert.equal(COPY_FORMULARIOS_V2.faltanPorResponder(2), 'Faltan 2 preguntas obligatorias por responder.');
+});
+
+test('DL-165 D-1 · un problema al enviar lleva a la primera parte, en el orden del formulario, con una pregunta con problema', () => {
+  const partes = partesDelFormulario(PARTES, PEDIDO);
+  assert.equal(primeraParteCon(partes, ['cuales', 'medicacion']), 1);
+  assert.equal(primeraParteCon(partes, ['cuales']), 2);
+  // Una pregunta que no es de ninguna parte (no se pidió) no lleva a ningún lado.
+  assert.equal(primeraParteCon(partes, ['no_pedida']), null);
+  assert.equal(primeraParteCon(partes, []), null);
 });

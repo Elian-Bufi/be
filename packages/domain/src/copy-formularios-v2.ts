@@ -64,6 +64,24 @@ export const COPY_FORMULARIOS_V2 = {
   quitarRespuesta: 'Quitar respuesta',
   quitarRespuestaDe: (pregunta: string) => `Quitar respuesta: ${pregunta}`,
 
+  // DL-165 D-1 · una parte por pantalla, en la app y en «Cargar con la persona» (`partes-de-formulario.ts`).
+  parte: (n: number, total: number) => `Parte ${n} de ${total}`,
+  /** Lo que anuncia el lector de pantalla al cambiar de parte. */
+  parteConTitulo: (n: number, total: number, titulo: string) => `Parte ${n} de ${total}: ${titulo}`,
+  anterior: 'Anterior',
+  siguiente: 'Siguiente',
+  repasar: 'Repasar',
+  repaso: 'Repasá antes de enviar',
+  repasoBajada: 'Así queda lo que respondiste. Podés cambiar cualquier parte antes de enviar.',
+  cambiarParte: 'Cambiar',
+  cambiarParteDe: (titulo: string) => `Cambiar «${titulo}»`,
+  volverALaParte: (titulo: string) => `Volver a «${titulo}»`,
+  quedaronSinResponder: (n: number, titulo: string) =>
+    n === 1 ? `En «${titulo}» quedó 1 pregunta obligatoria sin responder. Podés volver cuando quieras.` : `En «${titulo}» quedaron ${n} preguntas obligatorias sin responder. Podés volver cuando quieras.`,
+  faltanPorResponder: (n: number) => (n === 1 ? 'Falta 1 pregunta obligatoria por responder.' : `Faltan ${n} preguntas obligatorias por responder.`),
+  parteSinPreguntas: 'Con lo que respondiste antes, esta parte no tiene preguntas. Seguí con la próxima.',
+  obligatoriaSinResponder: 'Sin responder · obligatoria',
+
   /** En la APK. */
   apk: {
     paraConfirmar: 'Para confirmar',
