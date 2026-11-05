@@ -2479,19 +2479,19 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/form-templates/{templateId}/versions/{versionId}/definition',
     resumen:
-      'La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales.',
+      'La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales. DL-165: una versión de formato 3 (el renglón con varias opciones y lo demás de la ronda 2) solo se le entrega a un pedido que declara la capacidad forms-format-3 (X-BE-Capabilities); a los demás, 404 como lo inexistente. Lo mismo hacen FRI-03 a 08 con sus Solicitudes y respuestas, y FRI-02 no las lista.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: VersionDePlantillaV2ResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
-    fuente: 'DL-164 · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209',
+    fuente: 'DL-164 · DL-165 (FR-08) · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209',
   },
   {
     id: 'API-FRI-02',
     metodo: 'get',
     ruta: '/me/form-inbox',
     resumen:
-      'La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una.',
+      'La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una. Las de una versión de formato 3 se listan solo a un pedido con la capacidad forms-format-3 (DL-165).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],

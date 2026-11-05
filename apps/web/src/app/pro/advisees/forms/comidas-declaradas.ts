@@ -7,7 +7,7 @@
  *   elegido y nada se guarda (D-9): lo que queda es el habitual que el profesional arma en «Mis habituales» (DL-109).
  * - Los textos ubican, no califican: ninguna comida es «buena» ni «mala», y la decisión la toman juntos.
  */
-import { resumenDeValor, type CampoDePlantillaV2, type NombreDeIcono, type SeccionDePlantillaV2, type SubcampoDeLista, type ValorDeRespuestaV2 } from '@be/domain';
+import { resumenDeValor, type CampoDePlantillaV2, type NombreDeIcono, type SeccionDePlantillaV2, type SubcampoDeLista, type ValorDeRespuestaV2, type ValorDeSubcampo } from '@be/domain';
 
 /** La clave de la plantilla de inicio de Nutrición y el código del campo de comidas, según el diseño ratificado. */
 export const CLAVE_DE_NUTRICION_INICIO = 'FRM-NUTRICION-INICIO';
@@ -37,7 +37,7 @@ export interface ComidaDeclarada {
 }
 
 /** Un valor de un subcampo, en palabras (la etiqueta de una opción, «Sí»/«No», el número con coma). */
-function enPalabras(campo: CampoDeComidas, sub: SubcampoDeLista, valor: string | number | boolean): string {
+function enPalabras(campo: CampoDeComidas, sub: SubcampoDeLista, valor: ValorDeSubcampo): string {
   return resumenDeValor(campo, { type: 'LIST', items: [{ [sub.code]: valor }] });
 }
 

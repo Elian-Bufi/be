@@ -77029,8 +77029,8 @@
     "/form-templates/{templateId}/versions/{versionId}/definition": {
       "get": {
         "operationId": "API-FRI-01",
-        "summary": "La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales.",
-        "description": "Fuente: DL-164 · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209. AuthN: SESSION.",
+        "summary": "La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales. DL-165: una versión de formato 3 (el renglón con varias opciones y lo demás de la ronda 2) solo se le entrega a un pedido que declara la capacidad forms-format-3 (X-BE-Capabilities); a los demás, 404 como lo inexistente. Lo mismo hacen FRI-03 a 08 con sus Solicitudes y respuestas, y FRI-02 no las lista.",
+        "description": "Fuente: DL-164 · DL-165 (FR-08) · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209. AuthN: SESSION.",
         "security": [
           {
             "sesion": []
@@ -77132,8 +77132,16 @@
                           ]
                         },
                         "format": {
-                          "type": "number",
-                          "const": 2
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "const": 2
+                            },
+                            {
+                              "type": "number",
+                              "const": 3
+                            }
+                          ]
                         },
                         "usesNewTypes": {
                           "type": "boolean"
@@ -77869,6 +77877,11 @@
                                                     "type": "integer",
                                                     "exclusiveMinimum": 0,
                                                     "maximum": 300
+                                                  },
+                                                  "helpText": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 160
                                                   }
                                                 },
                                                 "required": [
@@ -78016,6 +78029,59 @@
                                                   "label",
                                                   "required",
                                                   "dataType"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "code": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                                  },
+                                                  "label": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 160
+                                                  },
+                                                  "required": {
+                                                    "type": "boolean"
+                                                  },
+                                                  "dataType": {
+                                                    "type": "string",
+                                                    "const": "MULTI_CHOICE"
+                                                  },
+                                                  "options": {
+                                                    "minItems": 2,
+                                                    "maxItems": 24,
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "code": {
+                                                          "type": "string",
+                                                          "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                                        },
+                                                        "label": {
+                                                          "type": "string",
+                                                          "minLength": 1,
+                                                          "maxLength": 160
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "code",
+                                                        "label"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "code",
+                                                  "label",
+                                                  "required",
+                                                  "dataType",
+                                                  "options"
                                                 ],
                                                 "additionalProperties": false
                                               }
@@ -78551,7 +78617,7 @@
     "/me/form-inbox": {
       "get": {
         "operationId": "API-FRI-02",
-        "summary": "La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una.",
+        "summary": "La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una. Las de una versión de formato 3 se listan solo a un pedido con la capacidad forms-format-3 (DL-165).",
         "description": "Fuente: DL-164 · WP-FORMULARIOS-DE-INICIO (FI-04, FI-06) · 09v16.1 §22.6 · REG-06-213. AuthN: SESSION.",
         "security": [
           {
@@ -79245,10 +79311,25 @@
                                                         "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
                                                       },
                                                       "additionalProperties": {
-                                                        "type": [
-                                                          "string",
-                                                          "number",
-                                                          "boolean"
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "type": "number"
+                                                          },
+                                                          {
+                                                            "type": "boolean"
+                                                          },
+                                                          {
+                                                            "minItems": 1,
+                                                            "maxItems": 24,
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string",
+                                                              "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                                            }
+                                                          }
                                                         ]
                                                       }
                                                     }
@@ -79562,10 +79643,25 @@
                                                           "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
                                                         },
                                                         "additionalProperties": {
-                                                          "type": [
-                                                            "string",
-                                                            "number",
-                                                            "boolean"
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "type": "number"
+                                                            },
+                                                            {
+                                                              "type": "boolean"
+                                                            },
+                                                            {
+                                                              "minItems": 1,
+                                                              "maxItems": 24,
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "string",
+                                                                "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                                              }
+                                                            }
                                                           ]
                                                         }
                                                       }
@@ -80030,10 +80126,25 @@
                                                     "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
                                                   },
                                                   "additionalProperties": {
-                                                    "type": [
-                                                      "string",
-                                                      "number",
-                                                      "boolean"
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string"
+                                                      },
+                                                      {
+                                                        "type": "number"
+                                                      },
+                                                      {
+                                                        "type": "boolean"
+                                                      },
+                                                      {
+                                                        "minItems": 1,
+                                                        "maxItems": 24,
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "string",
+                                                          "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                                        }
+                                                      }
                                                     ]
                                                   }
                                                 }
@@ -80527,10 +80638,25 @@
                                       "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
                                     },
                                     "additionalProperties": {
-                                      "type": [
-                                        "string",
-                                        "number",
-                                        "boolean"
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "minItems": 1,
+                                          "maxItems": 24,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                          }
+                                        }
                                       ]
                                     }
                                   }
@@ -81087,10 +81213,25 @@
                                       "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
                                     },
                                     "additionalProperties": {
-                                      "type": [
-                                        "string",
-                                        "number",
-                                        "boolean"
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "minItems": 1,
+                                          "maxItems": 24,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                          }
+                                        }
                                       ]
                                     }
                                   }
@@ -81630,10 +81771,25 @@
                                       "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
                                     },
                                     "additionalProperties": {
-                                      "type": [
-                                        "string",
-                                        "number",
-                                        "boolean"
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "minItems": 1,
+                                          "maxItems": 24,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "pattern": "^[a-z0-9][a-z0-9_]{0,63}$"
+                                          }
+                                        }
                                       ]
                                     }
                                   }

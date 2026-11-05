@@ -262,3 +262,14 @@ test('en renglones · una lista da un renglón por ítem, una tabla uno por fila
   assert.deepEqual(m.lineasDeValor(porCampo.get('nut_alimentos_no'), { type: 'FOODS', foods: [{ name: 'Leche', reason: 'cae_mal' }, { name: 'Cerdo', reason: null }] }), ['Leche (Me cae mal), Cerdo']);
   assert.deepEqual(m.lineasDeValor(porCampo.get('nut_agua'), { type: 'NUMBER', number: 2.5, unit: 'vasos' }), ['2,5 vasos']);
 });
+
+test('DL-165 D-6 · un renglón con solo sus días elegidos (formato 3) está respondido; con la lista de días vacía, no; y se lee con las etiquetas', () => {
+  const dias = [op('lun', 'Lunes'), op('jue', 'Jueves')];
+  const otraActividad = { ...base, fieldCode: 'trn_otros_deportes', label: 'Contame cuáles', dataType: 'LIST', itemLabel: 'actividad', minItems: 1, maxItems: 4, itemFields: [{ code: 'cual', label: 'Cuál', required: true, dataType: 'TEXT', maxLength: 80 }, { code: 'que_dias', label: 'Qué días', required: true, dataType: 'MULTI_CHOICE', options: dias }] };
+  const conDias = r('trn_otros_deportes', { type: 'LIST', items: [{ que_dias: ['lun'] }, { que_dias: [] }] });
+  assert.deepEqual(m.sinRenglonesVacios([conDias]), [r('trn_otros_deportes', { type: 'LIST', items: [{ que_dias: ['lun'] }] })]);
+  assert.deepEqual(m.lineasDeValor(otraActividad, { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] }), ['Fútbol · Lunes, Jueves']);
+  // El cuerpo que se manda deja los días en el orden de la pregunta, una vez cada uno.
+  const secciones = [{ sectionCode: 'semana', title: 'Tu semana', intro: null, fields: [otraActividad] }];
+  assert.deepEqual(m.respuestasParaEnviar(secciones, [r('trn_otros_deportes', { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['jue', 'lun', 'jue'] }] })]), [r('trn_otros_deportes', { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] })]);
+});

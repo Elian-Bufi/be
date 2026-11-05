@@ -57,12 +57,29 @@ const base = {
   requiredByDefault: z.boolean(),
 };
 
-/** Un subcampo de una lista que se repite: una comida, un deporte, una cirugía. */
+/**
+ * Un subcampo de una lista que se repite: una comida, un deporte, una cirugía.
+ *
+ * **Formato 3** (DL-165, WP-FORMULARIOS-RONDA-2): un subcampo de varias opciones (`MULTI_CHOICE`, «Qué días», D-6) y el
+ * ejemplo de un subcampo de texto (`helpText`, su texto de muestra, D-2). Una versión que los usa es de formato 3 y solo
+ * se le entrega a un cliente que lo declara (`forms-format-3`): la APK 0.20 lee esta forma con el esquema estricto del
+ * formato 2 y no abriría el formulario (DL-152).
+ */
 export const SubcampoDeListaSchema = z.discriminatedUnion('dataType', [
-  z.strictObject({ code: CodigoDeOpcionSchema, label: z.string().min(1).max(160), required: z.boolean(), dataType: z.literal('TEXT'), maxLength: z.number().int().positive().max(300) }),
+  z.strictObject({
+    code: CodigoDeOpcionSchema,
+    label: z.string().min(1).max(160),
+    required: z.boolean(),
+    dataType: z.literal('TEXT'),
+    maxLength: z.number().int().positive().max(300),
+    /** Formato 3: el ejemplo, como texto de muestra del renglón. */
+    helpText: z.string().min(1).max(160).optional(),
+  }),
   z.strictObject({ code: CodigoDeOpcionSchema, label: z.string().min(1).max(160), required: z.boolean(), dataType: z.literal('NUMBER'), unit: z.string().nullable(), limits: LimitesDeCampoSchema.nullable() }),
   z.strictObject({ code: CodigoDeOpcionSchema, label: z.string().min(1).max(160), required: z.boolean(), dataType: z.literal('CHOICE'), options: z.array(OpcionDeCampoSchema).min(2).max(24) }),
   z.strictObject({ code: CodigoDeOpcionSchema, label: z.string().min(1).max(160), required: z.boolean(), dataType: z.literal('BOOLEAN') }),
+  /** Formato 3: varias opciones dentro del renglón («Qué días»); el valor es la lista de códigos elegidos. */
+  z.strictObject({ code: CodigoDeOpcionSchema, label: z.string().min(1).max(160), required: z.boolean(), dataType: z.literal('MULTI_CHOICE'), options: z.array(OpcionDeCampoSchema).min(2).max(24) }),
 ]);
 export type SubcampoDeLista = z.infer<typeof SubcampoDeListaSchema>;
 
@@ -95,6 +112,13 @@ export const SeccionDePlantillaV2Schema = z.strictObject({
 export type SeccionDePlantillaV2 = z.infer<typeof SeccionDePlantillaV2Schema>;
 
 /**
+ * El formato de una versión: 2 es el de DL-164; 3 suma lo de la ronda 2 (DL-165). Una de formato 3 solo se le entrega a
+ * un cliente que declara `forms-format-3` (`X-BE-Capabilities`, como DL-122): para los demás es el 404 de lo inexistente.
+ */
+export const FormatoDeVersionV2Schema = z.union([z.literal(2), z.literal(3)]);
+export type FormatoDeVersionV2 = z.infer<typeof FormatoDeVersionV2Schema>;
+
+/**
  * API-FRM-02b · la estructura de cualquier versión en formato V2 (también las de P0, traducidas). `usesNewTypes` dice si
  * la versión necesita la app nueva: si es `true`, FRM-02 (V1) no la sirve y FRM-06 no la lista (DL-164 D-5).
  */
@@ -107,7 +131,7 @@ export const VersionDePlantillaV2Schema = z.strictObject({
   domain: AlcanceSchema.nullable(),
   version: z.string(),
   status: SeleccionabilidadSchema,
-  format: z.literal(2),
+  format: FormatoDeVersionV2Schema,
   usesNewTypes: z.boolean(),
   /** Minutos que lleva responderlo, para decírselo a la persona; `null` si no se estimó. */
   estimatedMinutes: z.number().int().positive().nullable(),
@@ -121,8 +145,13 @@ export const VersionDePlantillaV2ResponseSchema = z.strictObject({ data: Version
 
 // ─── Respuestas V2 ──────────────────────────────────────────────────────────────────────────────
 
-/** El valor de un renglón de una lista: un valor por subcampo respondido (los opcionales sin responder se omiten). */
-export const RenglonDeListaSchema = z.record(CodigoDeOpcionSchema, z.union([z.string(), z.number(), z.boolean()]));
+/**
+ * El valor de un renglón de una lista: un valor por subcampo respondido (los opcionales sin responder se omiten). Un
+ * subcampo de varias opciones (formato 3) lleva la lista de códigos elegidos.
+ */
+export const ValorDeSubcampoSchema = z.union([z.string(), z.number(), z.boolean(), z.array(CodigoDeOpcionSchema).min(1).max(24)]);
+export type ValorDeSubcampo = z.infer<typeof ValorDeSubcampoSchema>;
+export const RenglonDeListaSchema = z.record(CodigoDeOpcionSchema, ValorDeSubcampoSchema);
 
 /** Cada valor dice su tipo, que tiene que coincidir con el del campo (lo valida `validarRespuestasV2`). */
 export const ValorDeRespuestaV2Schema = z.discriminatedUnion('type', [

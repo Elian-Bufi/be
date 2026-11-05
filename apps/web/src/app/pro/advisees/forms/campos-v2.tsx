@@ -14,7 +14,7 @@
  * - Casillas y botones de opción nativos (foco visible, teclado, lector de pantalla); los alimentos sugeridos son chips
  *   con `aria-pressed`. Cada control lleva un nombre que dice la fila y la columna («Sentadilla: Con ayuda»).
  */
-import { ayudaDeLaPregunta, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, LARGO_MAXIMO_DE_ALIMENTO, LARGO_MAXIMO_DE_OTRO, leerNumero, motivoDeNumeroIlegible, type CampoDePlantillaV2, type LimitesNumericos, type SubcampoDeLista, type ValorDeRespuestaV2 } from '@be/domain';
+import { ayudaDeLaPregunta, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, LARGO_MAXIMO_DE_ALIMENTO, LARGO_MAXIMO_DE_OTRO, leerNumero, motivoDeNumeroIlegible, type CampoDePlantillaV2, type LimitesNumericos, type SubcampoDeLista, type ValorDeRespuestaV2, type ValorDeSubcampo } from '@be/domain';
 import { useEffect, useRef, useState } from 'react';
 import { Campo } from '../../../../components/formulario';
 import { numeroEnCampo } from '../../../../lib/formato';
@@ -276,13 +276,47 @@ function CampoVariasOpciones({ id, campo, valor, onCambiar, deshabilitado, label
 
 // ─── Lista que se repite ────────────────────────────────────────────────────────────────────────
 
-type Renglon = Readonly<Record<string, string | number | boolean>>;
+type Renglon = Readonly<Record<string, ValorDeSubcampo>>;
 
-function Subcampo({ id, sub, valor, onCambiar, deshabilitado }: { id: string; sub: SubcampoDeLista; valor: string | number | boolean | undefined; onCambiar: (v: string | number | boolean | null) => void; deshabilitado: boolean }) {
+function Subcampo({ id, sub, valor, onCambiar, deshabilitado }: { id: string; sub: SubcampoDeLista; valor: ValorDeSubcampo | undefined; onCambiar: (v: ValorDeSubcampo | null) => void; deshabilitado: boolean }) {
   const etiqueta = sub.required ? sub.label : `${sub.label} (${V.opcional.toLowerCase()})`;
   switch (sub.dataType) {
     case 'TEXT':
-      return <Campo id={id} etiqueta={etiqueta} value={typeof valor === 'string' ? valor : ''} maxLength={sub.maxLength} autoComplete="off" disabled={deshabilitado} onChange={(e) => onCambiar(e.target.value === '' ? null : e.target.value)} />;
+      // Formato 3 (DL-165 D-2): el ejemplo del renglón es su texto de muestra.
+      return (
+        <Campo
+          id={id}
+          etiqueta={etiqueta}
+          value={typeof valor === 'string' ? valor : ''}
+          maxLength={sub.maxLength}
+          autoComplete="off"
+          placeholder={sub.helpText}
+          disabled={deshabilitado}
+          onChange={(e) => onCambiar(e.target.value === '' ? null : e.target.value)}
+        />
+      );
+    case 'MULTI_CHOICE': {
+      // Formato 3 (DL-165 D-6): varias opciones dentro del renglón («Qué días»), en el orden de la pregunta.
+      const elegidos = Array.isArray(valor) ? valor : [];
+      const alternar = (codigo: string) => {
+        const nuevos = elegidos.includes(codigo) ? elegidos.filter((c) => c !== codigo) : [...elegidos, codigo];
+        const enOrden = sub.options.map((o) => o.code).filter((c) => nuevos.includes(c));
+        onCambiar(enOrden.length === 0 ? null : enOrden);
+      };
+      return (
+        <fieldset className="lista-que-se-repite__varias" id={id}>
+          <legend>{etiqueta}</legend>
+          <div className="opciones-de-inicio">
+            {sub.options.map((o) => (
+              <label key={o.code} className="opcion-de-inicio">
+                <input type="checkbox" checked={elegidos.includes(o.code)} onChange={() => alternar(o.code)} disabled={deshabilitado} />
+                {o.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      );
+    }
     case 'NUMBER':
       return <EntradaNumerica id={id} etiqueta={etiqueta} numero={typeof valor === 'number' ? valor : null} unidad={sub.unit} limites={sub.limits} onCambiar={onCambiar} deshabilitado={deshabilitado} />;
     case 'CHOICE':
@@ -321,11 +355,11 @@ function CampoLista({ id, campo, valor, onCambiar, deshabilitado, labelledBy, de
   while (claves.current.length < renglones.length) claves.current.push(proxima.current++);
   if (claves.current.length > renglones.length) claves.current.length = renglones.length;
   const emitir = (items: readonly Renglon[]) => onCambiar(items.length === 0 ? null : { type: 'LIST', items: items.map((r) => ({ ...r })) });
-  const cambiar = (i: number, codigo: string, v: string | number | boolean | null) =>
+  const cambiar = (i: number, codigo: string, v: ValorDeSubcampo | null) =>
     emitir(
       renglones.map((r, j) => {
         if (j !== i) return r;
-        const resto: Record<string, string | number | boolean> = { ...r };
+        const resto: Record<string, ValorDeSubcampo> = { ...r };
         delete resto[codigo];
         return v === null ? resto : { ...resto, [codigo]: v };
       }),

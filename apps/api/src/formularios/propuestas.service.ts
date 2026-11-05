@@ -11,7 +11,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { tomarLaSolicitud } from './cerrojo-de-solicitud';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
-import { camposV2PorCodigo, contenidoDePropuesta, definicionV2, exigirRespuestasValidas, solicitudAValidar } from './lectura-formularios-v2';
+import { camposV2PorCodigo, contenidoDePropuesta, definicionV2, exigirRespuestasValidas, formatoRetenido, seRetieneElFormato, solicitudAValidar } from './lectura-formularios-v2';
 
 const RECURSO = 'PropuestaDeRespuestaDeFormulario';
 const yaRespondida = () => new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya tiene una respuesta registrada: no hay nada que confirmar.');
@@ -203,8 +203,10 @@ export class PropuestasService {
       cuerpo,
       huellaExtra: { formRequestId },
       efecto: async (tx, pedido, procedencia) => {
-        const s = esUuid(formRequestId) ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId } }) : null;
+        const s = esUuid(formRequestId) ? await tx.solicitudDeFormulario.findUnique({ where: { id: formRequestId }, include: { templateVersion: { select: { contenido: true } } } }) : null;
         if (!s || s.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRI-08', actorId: actor.identidadId, recurso }, ctx);
+        // DL-165 · una versión de formato 3 no existe para un cliente que no la lee (la APK 0.20): el mismo 404.
+        if (seRetieneElFormato(ctx, s.templateVersion.contenido)) throw formatoRetenido();
         // Sobre lo propio, nada más que el token: descartar un dato que no se confirmó no lee ni escribe datos de salud,
         // así que no exige el A3 (con el A3 revocado tiene que poder descartarla igual) ni pasa por el PDP.
         const pendiente = await tx.propuestaDeRespuestaDeFormulario.findFirst({ where: { solicitudId: s.id, estado: 'PENDIENTE' } });
@@ -261,6 +263,8 @@ export class PropuestasService {
       : null;
     if (!s) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso }, ctx);
     if (s.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso, sujetoId: s.asesoradoId, alcance: s.alcance as Alcance }, ctx);
+    // DL-165 · el website declara `forms-format-3`; un cliente que no lo declara no ve una versión de formato 3.
+    if (seRetieneElFormato(ctx, s.templateVersion.contenido)) throw formatoRetenido();
     return s;
   }
 

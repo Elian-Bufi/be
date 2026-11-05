@@ -6221,9 +6221,21 @@ las respuestas a mano en el escritorio y en la Línea de tiempo.
   - *Diseño:* FR-10, en el paquete (§4): qué preguntas, dónde vive el dato, la autorización y sus operaciones (familia
     API-HAB), qué ve cada profesional y qué pasa al retirarla. Se programa después de que Dirección lo revise.
 
+**Decisiones de la implementación** (2026-11-05, a ratificar por Dirección):
+- **D-10 · El formato 3 y la capacidad `forms-format-3`** (FR-08). Lo que la APK 0.20 no lee (el subcampo de varias
+  opciones de un renglón, el ejemplo de un subcampo de texto y lo que suman FR-06 y FR-07) va en versiones de formato 3.
+  Se entregan solo a un cliente que declara `forms-format-3` en `X-BE-Capabilities`, como los objetivos por serie de
+  DL-122: para los demás, FRI-02 no las lista y FRI-01 y FRI-03 a 08 responden el 404 de lo inexistente (el motivo real,
+  `CLIENT_CAPABILITY_REQUIRED`, queda en la auditoría); FRM tampoco las sirve. La declaran el website, que se despliega con
+  la API, y la APK nueva, que las dibuja.
+  - *Descartado:* una tercera familia de operaciones (duplicaría las ocho FRI por un subtipo) y entregarle a la 0.20 la
+    versión sin lo que no lee (dos contratos bajo el mismo ID: lo que DL-164 D-5 descartó para FRM).
+  - *Consecuencia:* lo que se pida de los dos formularios desde que esto esté en `test` lo responde la APK nueva (FR-11),
+    o se carga con la persona desde el escritorio. Lo pedido antes sigue en su versión, y la 0.20 lo responde como hoy.
+
 **Pruebas** (las suma cada parte): la lógica de las partes y las reglas nuevas en el dominio; la APK y la web en sus
-pruebas de lógica pura; la API en `formularios-de-inicio.int-spec.ts` y `plantillas-de-inicio.int-spec.ts`; lo que lee
-la 0.20 en `lecturas-de-las-apk.int-spec.ts`.
+pruebas de lógica pura; la API en `formularios-ronda-2.int-spec.ts`, `formularios-de-inicio.int-spec.ts` y
+`plantillas-de-inicio.int-spec.ts`; lo que lee la 0.20 en `lecturas-de-las-apk.int-spec.ts`.
 
 **Lo que queda abierto:** programar FR-10 después de revisar su diseño; la candidata 0.21.0-candidata.1 con TalkBack
 (FR-11); la revisión legal de D-9 antes de personas reales.

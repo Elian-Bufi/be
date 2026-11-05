@@ -19,7 +19,7 @@
 import { COPY_FORMULARIOS, COPY_FORMULARIOS_V2, LARGO_MAXIMO_DE_ALIMENTO, LARGO_MAXIMO_DE_OTRO, type CampoDePlantillaV2, type OpcionDeCampo, type SubcampoDeLista } from '@be/domain';
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { claveDeParte, claveDeSubcampo, TEXTOS_DE_FORMULARIO_V2 as T, type AlimentoDeBorrador, type EleccionSiONo, type RenglonDeBorrador } from './formulario-v2';
+import { alternarEnElSubvalor, claveDeParte, claveDeSubcampo, codigosDelSubvalor, TEXTOS_DE_FORMULARIO_V2 as T, type AlimentoDeBorrador, type EleccionSiONo, type RenglonDeBorrador } from './formulario-v2';
 import { Icono } from './icono';
 import { Boton, CajaDeCasilla, Campo, CampoSiONo, Subtitulo, Tarjeta, estilos as ui, estilosPorTema } from './ui';
 
@@ -318,7 +318,41 @@ function Subcampo({ sub, valor, error, onCambio, errorDelGrupo }: { sub: Subcamp
   const rotulo = sub.required ? sub.label : `${sub.label} (${COPY_FORMULARIOS_V2.opcional})`;
   switch (sub.dataType) {
     case 'TEXT':
-      return <Campo etiqueta={rotulo} value={valor} onChangeText={onCambio} maxLength={sub.maxLength} error={error} {...nombreConErrorDelGrupo(rotulo, error, errorDelGrupo)} />;
+      // Formato 3 (DL-165 D-2): el ejemplo del renglón es su texto de muestra, y el lector lo dice.
+      return (
+        <Campo
+          etiqueta={rotulo}
+          value={valor}
+          onChangeText={onCambio}
+          maxLength={sub.maxLength}
+          error={error}
+          placeholder={sub.helpText}
+          accessibilityHint={sub.helpText}
+          {...nombreConErrorDelGrupo(rotulo, error, errorDelGrupo)}
+        />
+      );
+    case 'MULTI_CHOICE': {
+      // Formato 3 (DL-165 D-6): varias opciones dentro del renglón («Qué días»), como casillas en chips.
+      const elegidos = new Set(codigosDelSubvalor(valor));
+      return (
+        <View style={ui.campo}>
+          <Text style={ui.etiqueta}>{rotulo}</Text>
+          <View style={estilos.chips} accessibilityLabel={rotulo}>
+            {sub.options.map((o, i) => (
+              <Chip
+                key={o.code}
+                texto={o.label}
+                etiqueta={nombreDelPrimero(`${sub.label}: ${o.label}`, i === 0, errorDelGrupo)}
+                elegido={elegidos.has(o.code)}
+                rol="checkbox"
+                onPress={() => onCambio(alternarEnElSubvalor(valor, o.code, sub.options))}
+              />
+            ))}
+          </View>
+          {error ? <LineaDeError texto={error} /> : null}
+        </View>
+      );
+    }
     case 'NUMBER': {
       const etiqueta = sub.unit ? `${rotulo} (${sub.unit})` : rotulo;
       return <Campo etiqueta={etiqueta} value={valor} onChangeText={onCambio} keyboardType="decimal-pad" error={error} {...nombreConErrorDelGrupo(etiqueta, error, errorDelGrupo)} />;

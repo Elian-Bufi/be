@@ -8,18 +8,22 @@ import { errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { nombreDeAsesoradoPara } from '../vinculo/lectura';
+import { CAPACIDAD_FORMULARIOS_FORMATO_3 } from '@be/domain';
 import { decideBlando } from './decision-blanda';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import {
   camposV2PorCodigo,
   definicionV2,
   desenlaceApi,
+  formatoRetenido,
   propuestaApi,
   respuestaV2Api,
   resumenDePropuestaApi,
+  seRetieneElFormato,
   solicitudV2Api,
   transcripcionApi,
   versionDePlantillaV2Api,
+  versionesDeFormato3,
   type TranscripcionAlmacenada,
 } from './lectura-formularios-v2';
 
@@ -62,6 +66,8 @@ export class VistasV2Service {
             ? await tx.versionDePlantillaDeFormulario.findFirst({ where: { id: versionId, plantillaId: templateId }, include: { plantilla: true, sucesora: { select: { id: true } } } })
             : null;
         if (!v) throw errores.recursoNoEncontrado();
+        // DL-165 · una versión de formato 3, a un cliente que no la lee (la APK 0.20): el 404 de lo inexistente.
+        if (seRetieneElFormato(ctx, v.contenido)) throw formatoRetenido();
         return { data: versionDePlantillaV2Api(v) };
       },
     });
@@ -77,9 +83,13 @@ export class VistasV2Service {
       ctx,
       recursoIntentado: null,
       lectura: async (tx) => {
+        // DL-165 · a un cliente que no lee el formato 3 no se le listan sus Solicitudes: en el `where`, para que el cursor
+        // y la página sigan siendo consistentes (como FRM-06 con las V2).
+        const sinFormato3 = ctx.capacidades.has(CAPACIDAD_FORMULARIOS_FORMATO_3) ? {} : { templateVersionId: { notIn: await versionesDeFormato3(tx) } };
         const filas = await tx.solicitudDeFormulario.findMany({
           where: {
             asesoradoId: actor.identidadId,
+            ...sinFormato3,
             ...(consulta.filtros.status ? { respuesta: consulta.filtros.status === 'RESPONDED' ? { isNot: null } : { is: null } } : {}),
             ...despuesDelCursor(consulta.cursor),
           },
@@ -129,6 +139,8 @@ export class VistasV2Service {
         if (!esAsesorado && !esProfesional) {
           throw this.ejecutor.noRevelable({ operacion: 'API-FRI-03', actorId: actor.identidadId, recurso, sujetoId: s.asesoradoId, alcance: s.alcance as Alcance }, ctx);
         }
+        // DL-165 · a quien no lee el formato 3, el mismo 404 antes que el A3 o el PDP: para esa APK, la Solicitud no existe.
+        if (seRetieneElFormato(ctx, s.templateVersion.contenido)) throw formatoRetenido();
         let respondable: boolean;
         if (esAsesorado) {
           // Lo propio, «conforme a 08»: sin el A3 vigente, 403 (08:406; DL-115). `respondable` es la proyección del PDP.

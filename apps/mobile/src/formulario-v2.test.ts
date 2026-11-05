@@ -19,11 +19,13 @@ import {
   type SolicitudPropiaV2,
 } from '@be/domain';
 import {
+  alternarEnElSubvalor,
   armarRespuestas,
   BORRADOR_VACIO,
   borradorDeRespuestas,
   camposDeLosErrores,
   camposQueSeVen,
+  codigosDelSubvalor,
   claveDeParte,
   claveDeSubcampo,
   cuantasCorrigio,
@@ -198,6 +200,47 @@ describe('el borrador guarda lo tocado tal cual, y nada viene elegido', () => {
     expect(valorComo(reducir([{ tipo: 'quitar-alimento', fieldCode: 'no_come', nombre: 'Miel' }], b), 'no_come', 'FOODS').alimentos).toEqual([{ nombre: 'Leche', motivo: 'mal' }]);
     const tope = reducir([{ tipo: 'sumar-alimento', fieldCode: 'no_come', nombre: 'Pan', maximo: 2 }], b);
     expect(valorComo(tope, 'no_come', 'FOODS').alimentos).toHaveLength(2);
+  });
+
+  test('DL-165 D-6 · varias opciones en un renglón: van en el borrador como códigos, se mandan en el orden de la pregunta y vuelven igual', () => {
+    const dias = [op('lun', 'Lunes'), op('mar', 'Martes'), op('jue', 'Jueves')];
+    const secciones: SeccionDePlantillaV2[] = [
+      {
+        sectionCode: 'semana',
+        title: 'Tu semana',
+        intro: null,
+        fields: [
+          {
+            ...base,
+            fieldCode: 'deportes',
+            label: 'Otras actividades',
+            dataType: 'LIST',
+            itemLabel: 'actividad',
+            minItems: 1,
+            maxItems: 3,
+            itemFields: [
+              { code: 'cual', label: 'Cuál', required: true, dataType: 'TEXT', maxLength: 80, helpText: 'Fútbol, natación…' },
+              { code: 'que_dias', label: 'Qué días', required: true, dataType: 'MULTI_CHOICE', options: dias },
+            ],
+          },
+        ],
+      },
+    ];
+    // Tocar suma o saca, y el texto queda en el orden de las opciones.
+    expect(alternarEnElSubvalor('', 'jue', dias)).toBe('jue');
+    expect(alternarEnElSubvalor('jue', 'lun', dias)).toBe('lun,jue');
+    expect(alternarEnElSubvalor('lun,jue', 'jue', dias)).toBe('lun');
+    expect(codigosDelSubvalor(' lun, ,jue ')).toEqual(['lun', 'jue']);
+    const borrador: Borrador = { deportes: { tipo: 'LIST', renglones: [{ id: 1, valores: { cual: 'Fútbol', que_dias: 'jue,lun' } }, { id: 2, valores: { cual: 'Natación', que_dias: '' } }] } };
+    const armadas = armarRespuestas(secciones, { requestedFieldCodes: ['deportes'], requiredFieldCodes: ['deportes'] }, borrador);
+    expect(armadas.respuestas).toEqual([{ fieldCode: 'deportes', answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }, { cual: 'Natación' }] } }]);
+    // Sin días en el segundo renglón, falta un dato obligatorio de ese renglón: se marca en él.
+    const antes = problemasAntesDeEnviar(secciones, { requestedFieldCodes: ['deportes'], requiredFieldCodes: ['deportes'] }, armadas);
+    expect(antes?.errores[claveDeSubcampo('deportes', 2, 'que_dias')]).toBe(MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.ITEM_FIELD_REQUIRED]);
+    // Lo guardado vuelve al borrador como códigos separados por coma.
+    expect(borradorDeRespuestas(secciones, [{ fieldCode: 'deportes', answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'] }] } }])).toEqual({
+      deportes: { tipo: 'LIST', renglones: [{ id: 1, valores: { cual: 'Fútbol', que_dias: 'lun,jue' } }] },
+    });
   });
 
   test('DL-165 D-2 · «Quitar respuesta» deja la pregunta sin responder y no toca las demás; lo que no estaba, no cambia', () => {

@@ -1,6 +1,18 @@
-import type { SeccionDePlantillaV2 } from '@be/domain';
+import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_OBJETIVOS_POR_SERIE, type SeccionDePlantillaV2 } from '@be/domain';
 import { ErrorDeApi } from '../http/errores';
-import { camposV2PorCodigo, contenidoDePropuesta, contenidoDeRespuestasV2, definicionV2, desenlaceApi, esVersionV2, exigirRespuestasValidas, respuestasV2De } from './lectura-formularios-v2';
+import {
+  camposV2PorCodigo,
+  contenidoDePropuesta,
+  contenidoDeRespuestasV2,
+  definicionV2,
+  desenlaceApi,
+  esFormato3,
+  esVersionV2,
+  exigirRespuestasValidas,
+  formatoRetenido,
+  respuestasV2De,
+  seRetieneElFormato,
+} from './lectura-formularios-v2';
 
 /**
  * DL-164 · lo que decide el formato de una versión y cómo se guarda y se lee cada respuesta, sin base:
@@ -47,9 +59,34 @@ describe('DL-164 · el formato de una versión', () => {
   });
 
   it('la V2 se sirve tal cual, con sus minutos; minutos que no son un entero positivo salen como null', () => {
-    expect(definicionV2(V2)).toEqual({ usesNewTypes: true, estimatedMinutes: 12, sections: SECCIONES_V2 });
+    expect(definicionV2(V2)).toEqual({ format: 2, usesNewTypes: true, estimatedMinutes: 12, sections: SECCIONES_V2 });
     expect(definicionV2({ ...V2, estimatedMinutes: 0 }).estimatedMinutes).toBeNull();
     expect(definicionV2({ ...V2, estimatedMinutes: undefined }).estimatedMinutes).toBeNull();
+    // La de P0 se traduce al formato 2: es lo que lee la APK 0.20.
+    expect(definicionV2(P0).format).toBe(2);
+  });
+
+  it('DL-165 · el formato 3 también es V2 (FRM no lo sirve), sin minutos, y se retiene a un cliente que no lo declara', () => {
+    const V3 = { format: 3, sections: SECCIONES_V2 };
+    expect(esVersionV2(V3)).toBe(true);
+    expect(esFormato3(V3)).toBe(true);
+    expect(esFormato3(V2)).toBe(false);
+    expect(esFormato3(P0)).toBe(false);
+    expect(esVersionV2({ format: 4, sections: [] })).toBe(false);
+    expect(definicionV2(V3)).toEqual({ format: 3, usesNewTypes: true, estimatedMinutes: null, sections: SECCIONES_V2 });
+    // La APK 0.20 declara solo los objetivos por serie: no recibe el formato 3. El website y la APK nueva, sí.
+    expect(seRetieneElFormato({ capacidades: new Set([CAPACIDAD_OBJETIVOS_POR_SERIE]) }, V3)).toBe(true);
+    expect(seRetieneElFormato({ capacidades: new Set() }, V3)).toBe(true);
+    expect(seRetieneElFormato({ capacidades: new Set([CAPACIDAD_FORMULARIOS_FORMATO_3]) }, V3)).toBe(false);
+    // Lo de formato 2 y lo de P0 no se retiene nunca.
+    expect(seRetieneElFormato({ capacidades: new Set() }, V2)).toBe(false);
+    expect(seRetieneElFormato({ capacidades: new Set() }, P0)).toBe(false);
+    // El 404 es el de lo inexistente; el motivo real queda solo para la auditoría.
+    const e = formatoRetenido();
+    expect(e).toBeInstanceOf(ErrorDeApi);
+    expect(e.status).toBe(404);
+    expect(e.code).toBe('RESOURCE_NOT_FOUND');
+    expect(e.motivoDeAuditoria).toBe('CLIENT_CAPABILITY_REQUIRED');
   });
 });
 

@@ -30,6 +30,7 @@ import {
   type SeccionDePlantillaV2,
   type SolicitudAValidar,
   type ValorDeRespuestaV2,
+  type ValorDeSubcampo,
 } from '@be/domain';
 
 // ─── «Pedir información» ────────────────────────────────────────────────────────────────────────
@@ -200,8 +201,8 @@ export function mensajesPorCampo(problemas: readonly ProblemaDeRespuestaV2[]): R
   return porCampo;
 }
 
-/** Un subcampo de un renglón cuenta como respondido si tiene algo: un número, un sí o no, o un texto con letras. */
-const subcampoRespondido = (v: string | number | boolean): boolean => typeof v !== 'string' || v.trim() !== '';
+/** Un subcampo de un renglón cuenta como respondido si tiene algo: un número, un sí o no, un texto con letras o, en el formato 3, alguna opción. */
+const subcampoRespondido = (v: ValorDeSubcampo): boolean => (Array.isArray(v) ? v.length > 0 : typeof v !== 'string' || v.trim() !== '');
 
 /**
  * Las listas sin sus renglones vacíos: un renglón sumado y dejado sin nada no viaja —sumarlo y no completarlo es como

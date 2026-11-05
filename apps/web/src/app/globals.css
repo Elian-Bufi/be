@@ -13248,6 +13248,20 @@ details[open] > summary:not([class])::before {
   margin: 0;
 }
 
+/* DL-165 D-6 · varias opciones dentro del renglón («Qué días»): ocupan todo el ancho del renglón. */
+.lista-que-se-repite__varias {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lista-que-se-repite__varias legend {
+  padding: 0;
+  font-weight: 600;
+}
+
 .lista-que-se-repite__quitar {
   align-self: flex-end;
 }

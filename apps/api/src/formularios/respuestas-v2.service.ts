@@ -13,7 +13,7 @@ import { tomarLaSolicitud } from './cerrojo-de-solicitud';
 import { decideBlando } from './decision-blanda';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { registrarEventoDeFormulario } from './eventos';
-import { camposV2PorCodigo, contenidoDeRespuestasV2, definicionV2, exigirRespuestasValidas, respuestasDePropuesta, solicitudAValidar, type TranscripcionAlmacenada } from './lectura-formularios-v2';
+import { camposV2PorCodigo, contenidoDeRespuestasV2, definicionV2, exigirRespuestasValidas, formatoRetenido, respuestasDePropuesta, seRetieneElFormato, solicitudAValidar, type TranscripcionAlmacenada } from './lectura-formularios-v2';
 
 const yaRespondida = () => new ErrorDeApi(422, CodigoDeError.FORM_REQUEST_NOT_RESPONDABLE, 'Esta Solicitud ya tiene una respuesta registrada.');
 
@@ -56,6 +56,8 @@ export class RespuestasV2Service {
           : null;
         // Propio y revelable; ajeno o inexistente, el mismo 404 (09:1599).
         if (!s || s.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRI-04', actorId: actor.identidadId, recurso }, ctx);
+        // DL-165 · una versión de formato 3 no existe para la APK que no la lee: el mismo 404, antes que cualquier otra regla.
+        if (seRetieneElFormato(ctx, s.templateVersion.contenido)) throw formatoRetenido();
         // Sobre lo propio, el A3 va antes que cualquier otra regla (09 §36; 08:406; DL-115).
         await exigirA3Vigente(tx, actor.identidadId);
         if (s.respuesta) throw yaRespondida();
@@ -182,6 +184,7 @@ export class RespuestasV2Service {
             })
           : null;
         if (!r || r.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-FRI-05', actorId: actor.identidadId, recurso }, ctx);
+        if (seRetieneElFormato(ctx, r.templateVersion.contenido)) throw formatoRetenido();
         // Como FRM-08: rectificar no pasa por el PDP (09:1633); el A3, con el acto bloqueado (08:406; DL-115).
         await exigirA3Vigente(tx, actor.identidadId, { bloquear: true });
 

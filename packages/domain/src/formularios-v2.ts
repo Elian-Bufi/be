@@ -5,7 +5,7 @@
  */
 import type { CampoDePlantilla } from './contratos-formularios';
 import { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_TEXTO_DEMASIADO_LARGO, largoDeTexto } from './contratos-formularios';
-import type { CampoDePlantillaV2, RespuestaDeCampoV2Entrada, SeccionDePlantillaV2, SubcampoDeLista, TipoDeCampoV2, ValorDeRespuestaV2 } from './contratos-formularios-v2';
+import type { CampoDePlantillaV2, RespuestaDeCampoV2Entrada, SeccionDePlantillaV2, SubcampoDeLista, TipoDeCampoV2, ValorDeRespuestaV2, ValorDeSubcampo } from './contratos-formularios-v2';
 import { limiteVulnerado, type LimitesNumericos } from './formularios';
 
 /** Los seis tipos que la APK instalada no conoce (DL-164 D-1). Con uno solo, la versión «usa tipos nuevos». */
@@ -108,14 +108,41 @@ function problemaDeNumero(valor: number, limites: LimitesNumericos | null | unde
   return vulnerado ? CODIGO_DE_NUMERO_FUERA_DE_LIMITES[vulnerado] : null;
 }
 
-function problemaDeSubcampo(sub: SubcampoDeLista, valor: string | number | boolean): boolean {
+function problemaDeSubcampo(sub: SubcampoDeLista, valor: ValorDeSubcampo): boolean {
   switch (sub.dataType) {
     case 'TEXT': return typeof valor !== 'string' || vacio(valor) || largoDeTexto(valor) > sub.maxLength;
     case 'NUMBER': return typeof valor !== 'number' || problemaDeNumero(valor, sub.limits) !== null;
     case 'CHOICE': return typeof valor !== 'string' || !sub.options.some((o) => o.code === valor);
     case 'BOOLEAN': return typeof valor !== 'boolean';
+    // Formato 3 (DL-165 D-6): al menos una opción, todas de la pregunta y sin repetir.
+    case 'MULTI_CHOICE': {
+      if (!Array.isArray(valor) || valor.length === 0) return true;
+      const codigos = new Set(sub.options.map((o) => o.code));
+      return valor.some((c) => !codigos.has(c)) || new Set(valor).size !== valor.length;
+    }
   }
 }
+
+// ─── El formato 3 (DL-165) ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Lo que una versión usa del formato 3 (DL-165): el subcampo de varias opciones y el ejemplo de un subcampo de texto. Una
+ * versión que usa algo de esto **tiene que** declarar `format: 3`, y una de formato 2 no puede usarlo: si no, la APK
+ * 0.20 recibiría una forma que no lee (DL-152). Lo verifican las pruebas de las plantillas y el generador de la migración.
+ */
+export function loQueUsaDelFormato3(secciones: readonly SeccionDePlantillaV2[]): string[] {
+  const usos: string[] = [];
+  for (const campo of camposEnOrden(secciones)) {
+    if (campo.dataType !== 'LIST') continue;
+    for (const sub of campo.itemFields) {
+      if (sub.dataType === 'MULTI_CHOICE') usos.push(`${campo.fieldCode}.${sub.code}: varias opciones en el renglón`);
+      if (sub.dataType === 'TEXT' && sub.helpText !== undefined) usos.push(`${campo.fieldCode}.${sub.code}: el ejemplo del renglón`);
+    }
+  }
+  return usos;
+}
+
+export const usaLoDelFormato3 = (secciones: readonly SeccionDePlantillaV2[]): boolean => loQueUsaDelFormato3(secciones).length > 0;
 
 /** Los problemas de un valor contra su campo, sin mirar si se pidió o si se ve (eso lo hace `validarRespuestasV2`). */
 export function problemasDeValor(campo: CampoDePlantillaV2, valor: ValorDeRespuestaV2, path: string): ProblemaDeRespuestaV2[] {
@@ -303,7 +330,15 @@ export function normalizarValor(campo: CampoDePlantillaV2 | undefined, valor: Va
       const opciones = campo?.dataType === 'MULTI_CHOICE' ? campo.options : undefined;
       return { type: 'MULTI_CHOICE', options: [...new Set(valor.options)].sort(orden(opciones)), otherText: valor.otherText === null ? null : valor.otherText.trim() };
     }
-    case 'LIST': return { type: 'LIST', items: valor.items.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]))) };
+    case 'LIST': {
+      // Las varias opciones de un renglón (formato 3), sin repetir y en el orden de su subcampo.
+      const subs = new Map((campo?.dataType === 'LIST' ? campo.itemFields : []).map((s) => [s.code, s] as const));
+      const enOrden = (codigo: string, v: readonly string[]) => {
+        const sub = subs.get(codigo);
+        return [...new Set(v)].sort(orden(sub?.dataType === 'MULTI_CHOICE' ? sub.options : undefined));
+      };
+      return { type: 'LIST', items: valor.items.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : Array.isArray(v) ? enOrden(k, v) : v]))) };
+    }
     case 'MATRIX': {
       const filas = campo?.dataType === 'MATRIX' ? campo.rows : undefined;
       const o = orden(filas);
@@ -414,6 +449,8 @@ export function resumenDeValor(campo: CampoDePlantillaV2 | undefined, valor: Val
         .map((s) => {
           const v = renglon[s.code]!;
           if (s.dataType === 'CHOICE' && typeof v === 'string' && 'options' in s) return etiquetaDe(s.options, v);
+          // Formato 3: las varias opciones del renglón, con sus etiquetas («Lunes, Jueves»).
+          if (Array.isArray(v)) return v.map((c) => ('options' in s ? etiquetaDe(s.options, c) : c)).join(', ');
           if (typeof v === 'boolean') return v ? 'Sí' : 'No';
           // El número de un renglón no lleva unidad propia: la de su subcampo, si la tiene.
           if (typeof v === 'number') return s.dataType === 'NUMBER' && s.unit ? `${numeroEnPalabras(v)} ${s.unit}` : numeroEnPalabras(v);
