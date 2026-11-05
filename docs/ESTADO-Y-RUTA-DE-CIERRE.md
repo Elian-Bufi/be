@@ -1,5 +1,9 @@
 # Estado real y ruta de cierre · 2026-10-28
 
+> **Al día el 2026-11-05 en las APK:** las vigentes son la estable 0.13.2 y la 0.20.0-candidata.1. La 0.17.0-candidata.3
+> y la 0.18.0-candidata.1 salieron de `VIGENTES` ese día, porque ningún teléfono las tiene (DL-152). Lo demás sigue siendo
+> el corte del 28/10.
+
 ## Dónde estamos
 
 Lo funcional de esta versión está integrado en `main` (`e4512cb`), desplegado en `test` y en una APK candidata
@@ -47,7 +51,7 @@ escala**: decir solo «el estado más alto» escondería información. Por eso l
 
 Ejemplos de combinaciones que existen hoy:
 - #218 está implementado y verificado, sin integrar.
-- La APK 0.18.0-candidata.1 está distribuida desde su propia rama de versión.
+- La APK 0.20.0-candidata.1 está distribuida desde su propia rama de versión.
 - La Administración está desplegada y validada solo en parte (parte A).
 
 Aparte de las cinco dimensiones hay dos clasificaciones, para lo que no es un cambio en curso:
@@ -65,8 +69,9 @@ Una propuesta no es una funcionalidad aprobada. Un verde de la CI no es una vali
   scripts, 159 de la API, 909 de integración y 17 de 17 recorridos.
 - **`test`:** la API responde `0.11.1` en `e4512cb`, con base y migraciones OK (comprobado el 2026-10-28). El website
   responde.
-- **APK:** estable `0.13.2` (`be-apk-0.13.2`). Candidata `0.18.0-candidata.1` (prerelease del 26/10, `b64d0c4`, código 30):
-  es el `main` del 25/10 con su número de versión.
+- **APK:** estable `0.13.2` (`be-apk-0.13.2`). Candidata `0.20.0-candidata.1` (prerelease del 5/11, `40b12e9`, código 33):
+  los formularios de inicio de DL-164. Son las dos vigentes de DL-152 desde el 5/11. La `0.18.0-candidata.1` (26/10,
+  `b64d0c4`, código 30) y la `0.17.0-candidata.3` ya no están en ningún teléfono y salieron de `VIGENTES`.
 - **PR abiertos, todos en borrador:**
   - #219 (esta rama, `wp-nocturno-2026-10-27`): la guía, el cuaderno, el plan de estudio, el material visual, la medición
     de la cartera y este documento;
@@ -83,7 +88,7 @@ Una propuesta no es una funcionalidad aprobada. Un verde de la CI no es una vali
 | Capacidad | Estado | Evidencia | Qué falta para cerrarlo | ¿Te necesita? |
 |---|---|---|---|---|
 | Plan del día, registro de comidas con recetas y fotos | Distribuido; verificado; validado en parte (0.15, 7 y 8/10) | #147, #151 · CI | Probarlo con la 0.18 (parte C) | Sí |
-| Entrenamiento por serie, días de entrenamiento y sustitución de ejercicios | Distribuido en la 0.18.0-candidata.1; verificado | #149, #174, #175, #195 · DL-151 | Parte C en el teléfono | Sí |
+| Entrenamiento por serie, días de entrenamiento y sustitución de ejercicios | Distribuido en la 0.20.0-candidata.1 (antes, en la 0.18.0-candidata.1); verificado | #149, #174, #175, #195 · DL-151 | Parte C en el teléfono | Sí |
 | Toma antropométrica y evolución | Distribuido; validado en parte (0.14 y 0.15) | #126 a #131 · DL-111 a DL-113 | Ratificar DL-111 a DL-113; TalkBack | Sí |
 | Acceso con Google e invitación por enlace o QR | Validado por una persona (17/10, candidata.2) | DL-138, DL-136 | — | — |
 | Novedades y avisos push | Distribuido; verificado | #163 · DL-133 | Recibir un aviso en un teléfono | Sí |
@@ -120,7 +125,7 @@ Las observaciones de la parte A, a decidir:
 
 | Capacidad | Estado | Evidencia | Qué falta para cerrarlo | ¿Te necesita? |
 |---|---|---|---|---|
-| Las APK publicadas siguen leyendo la API de hoy | Integrado; verificado (lo que leen la 0.13.2, la 0.17.0-candidata.3 y la 0.18.0-candidata.1) | #198, #216 · DL-152 | — | — |
+| Las APK publicadas siguen leyendo la API de hoy | Integrado; verificado (lo que leen la 0.13.2 y la 0.20.0-candidata.1, las vigentes desde el 5/11) | #198, #216, #235 · DL-152 | — | — |
 | Excepciones de la auditoría de dependencias (el zod 3 de Expo y node-forge) | Integrado; **vencen el 2026-12-01 a las 00:00 UTC** (21:00 del 30/11) | #208 · DL-114 | Revisar las fuentes y decidir antes del vencimiento; no se prorroga sola | Sí |
 | Escenarios «Prueba» en `test` | Desplegado (cargados el 26/10); verificado (6 de 6; pantalla 48 de 48) | #217 (borrador) | Decidir si se integra la herramienta y el guion | Sí |
 | Recetas de ejemplo en `test` (las 16 originales) | Integrada la herramienta; **no consta que se hayan cargado** (al 23/10, sin cargar) | #192 | Autorizar la carga | Sí |
@@ -158,7 +163,7 @@ Cada pendiente dice cuándo se da por cerrado y si te necesita.
 |---|---|---|
 | `test` estable | `/health/ready` responde OK con el commit esperado el día anterior. | No |
 | Datos de la demo | La verificación de los escenarios da 6 de 6 el día anterior. Necesita abrir una IP de la base por un rato. | Sí: autorizar la IP |
-| La APK que se muestra | Decidiste si la 0.18.0-candidata.1 pasa a estable («pasala a estable»), después de la parte C. | Sí |
+| La APK que se muestra | Decidiste si la candidata vigente pasa a estable («pasala a estable»), después de la parte C. Hoy es la 0.20.0-candidata.1; la 0.21.0-candidata.1, con la ronda 2 de los formularios, la arma Dirección. | Sí |
 | El recorrido de la demo | Recorriste `EVIDENCIA/ENTREGA/GUIA-DEMO.md` una vez contra `test` sin trabarte. | Sí |
 
 ### 3. Piloto: personas reales con datos reales
