@@ -60,10 +60,11 @@ CREATE UNIQUE INDEX "propuesta_de_respuesta_de_formulario_una_pendiente" ON "pro
 
 -- ─── Coherencia de datos ──────────────────────────────────────────────────────────────────────────
 -- Las respuestas propuestas existen solo mientras espera la confirmación (D-6); resuelta, se sabe cuándo.
+-- Los CHECK sobre jsonb van con COALESCE(…, false): una clave que falta da NULL, y un CHECK que da NULL se acepta.
 ALTER TABLE "propuesta_de_respuesta_de_formulario" ADD CONSTRAINT "propuesta_de_respuesta_de_formulario_contenido_segun_estado" CHECK (("estado" = 'PENDIENTE') = ("contenido" IS NOT NULL));
 ALTER TABLE "propuesta_de_respuesta_de_formulario" ADD CONSTRAINT "propuesta_de_respuesta_de_formulario_resuelta_segun_estado" CHECK (("estado" = 'PENDIENTE') = ("resuelta_en" IS NULL));
 ALTER TABLE "propuesta_de_respuesta_de_formulario" ADD CONSTRAINT "propuesta_de_respuesta_de_formulario_con_respuestas" CHECK (
-  "contenido" IS NULL OR (jsonb_typeof("contenido" -> 'answers') = 'array' AND jsonb_array_length("contenido" -> 'answers') > 0));
+  "contenido" IS NULL OR COALESCE(jsonb_typeof("contenido" -> 'answers') = 'array' AND jsonb_array_length("contenido" -> 'answers') > 0, false));
 ALTER TABLE "propuesta_de_respuesta_de_formulario" ADD CONSTRAINT "propuesta_de_respuesta_de_formulario_version_positiva" CHECK ("version" >= 1);
 ALTER TABLE "propuesta_de_respuesta_de_formulario" ADD CONSTRAINT "propuesta_de_respuesta_de_formulario_resuelta_despues" CHECK ("resuelta_en" IS NULL OR "resuelta_en" >= "cargada_en");
 ALTER TABLE "propuesta_de_respuesta_de_formulario" ADD CONSTRAINT "propuesta_de_respuesta_de_formulario_procedencia_es_objeto" CHECK (jsonb_typeof("procedencia") = 'object');
@@ -117,13 +118,13 @@ CREATE TRIGGER "propuesta_de_respuesta_de_formulario_sin_truncate" BEFORE TRUNCA
 -- Si la Respuesta nació de una propuesta, dice quién la cargó, cuál, cuándo, cuándo la confirmó la persona y qué
 -- corrigió. Se escribe en el INSERT: la Respuesta sigue siendo de solo agregar (REG-06-14/15).
 ALTER TABLE "respuesta_de_formulario" ADD CONSTRAINT "respuesta_de_formulario_transcripcion_completa" CHECK (
-  "transcripcion" IS NULL OR (
+  "transcripcion" IS NULL OR COALESCE(
     jsonb_typeof("transcripcion") = 'object'
     AND jsonb_typeof("transcripcion" -> 'professionalId') = 'string'
     AND jsonb_typeof("transcripcion" -> 'proposalId') = 'string'
     AND jsonb_typeof("transcripcion" -> 'loadedAt') = 'string'
     AND jsonb_typeof("transcripcion" -> 'confirmedAt') = 'string'
-    AND jsonb_typeof("transcripcion" -> 'correctedFieldCodes') = 'array'));
+    AND jsonb_typeof("transcripcion" -> 'correctedFieldCodes') = 'array', false));
 CREATE FUNCTION "be_respuesta_de_formulario_transcripcion"() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW."transcripcion" IS NOT NULL AND NOT EXISTS (

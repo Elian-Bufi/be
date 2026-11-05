@@ -339,8 +339,11 @@ describe('DL-164 — la propuesta del profesional: lo que la base garantiza aunq
     const propuesta = await tx.propuestaDeRespuestaDeFormulario.create({ data: { solicitudId: s.solicitud.id, profesionalId: s.pro.id, contenido: CONTENIDO, procedencia: PROCEDENCIA } });
     return { ...s, propuesta };
   }
-  /** Resolver como lo hace la API: estado final, respuestas borradas y cuándo (D-6). */
-  const resolver = (tx: Tx, id: string) => tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET estado = 'RETIRADA', contenido = NULL, resuelta_en = now() WHERE id = ${id}::uuid`;
+  /**
+   * Resolver como lo hace la API: estado final, respuestas borradas y cuándo (D-6). Con clock_timestamp() y no now(): now()
+   * es la hora de inicio de la transacción, anterior a cargada_en, y el CHECK resuelta_despues cortaría antes que la regla.
+   */
+  const resolver = (tx: Tx, id: string) => tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET estado = 'RETIRADA', contenido = NULL, resuelta_en = clock_timestamp() WHERE id = ${id}::uuid`;
   /** La transacción entera queda rechazada por la regla: nada persiste. */
   const rechaza = (fn: (tx: Tx) => Promise<unknown>, regla: RegExp) => expect(prisma.$transaction(fn)).rejects.toThrow(regla);
 
@@ -365,8 +368,18 @@ describe('DL-164 — la propuesta del profesional: lo que la base garantiza aunq
     await rechaza(async (tx) => {
       const { propuesta } = await propuestaSintetica(tx);
       await resolver(tx, propuesta.id);
-      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET resuelta_en = now() WHERE id = ${propuesta.id}::uuid`;
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET resuelta_en = clock_timestamp() WHERE id = ${propuesta.id}::uuid`;
     }, /una propuesta resuelta \(RETIRADA\) no cambia más/);
+  });
+
+  it('una pendiente tiene respuestas: sin la lista o con la lista vacía, la base la rechaza (D-6)', async () => {
+    for (const contenido of ['{"format":2}', '{"format":2,"answers":[]}']) {
+      await rechaza(async (tx) => {
+        const s = await solicitudSintetica(tx);
+        await tx.$executeRaw`INSERT INTO propuesta_de_respuesta_de_formulario (solicitud_id, profesional_id, contenido, procedencia)
+          VALUES (${s.solicitud.id}::uuid, ${s.pro.id}::uuid, ${contenido}::jsonb, '{}'::jsonb)`;
+      }, /propuesta_de_respuesta_de_formulario_con_respuestas/);
+    }
   });
 
   it('reemplazar avanza la versión de a uno (es el token de `expectedVersion`); resolver no la cambia', async () => {
@@ -380,7 +393,7 @@ describe('DL-164 — la propuesta del profesional: lo que la base garantiza aunq
     }, /reemplazar la propuesta avanza su versión de a uno/);
     await rechaza(async (tx) => {
       const { propuesta } = await propuestaSintetica(tx);
-      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET estado = 'RECHAZADA', contenido = NULL, resuelta_en = now(), version = version + 1 WHERE id = ${propuesta.id}::uuid`;
+      await tx.$executeRaw`UPDATE propuesta_de_respuesta_de_formulario SET estado = 'RECHAZADA', contenido = NULL, resuelta_en = clock_timestamp(), version = version + 1 WHERE id = ${propuesta.id}::uuid`;
     }, /resolver la propuesta no cambia su versión/);
   });
 
@@ -409,7 +422,7 @@ describe('DL-164 — la propuesta del profesional: lo que la base garantiza aunq
       const { solicitud, pro } = await propuestaSintetica(tx);
       await tx.$executeRaw`INSERT INTO propuesta_de_respuesta_de_formulario (solicitud_id, profesional_id, contenido, procedencia)
         VALUES (${solicitud.id}::uuid, ${pro.id}::uuid, ${CONTENIDO_SQL}::jsonb, '{}'::jsonb)`;
-    }, /propuesta_de_respuesta_de_formulario_una_pendiente/);
+    }, /Key \(solicitud_id\)=\([0-9a-f-]+\) already exists/); // Postgres nombra la clave, no el índice parcial «_una_pendiente»
     await rechaza(async (tx) => {
       const s = await solicitudSintetica(tx);
       await tx.respuestaDeFormulario.create({
