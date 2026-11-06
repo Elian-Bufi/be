@@ -29,8 +29,13 @@
  *   (`esperan-respuesta.tsx`) encima de «Tus asesorados». La única lectura nueva es la de las invitaciones sin usar
  *   (API-INV-02), para «Esperan respuesta»; las solicitudes ya se leían.
  * - **Por persona o por pendiente** se recuerda en el navegador (§5 del paquete), sin datos de personas.
+ *
+ * WP-TABLERO-ALTA-GAMA TB-07 (con el cajón apagado o prendido; TA-46): al abrir una ficha de «Tu semana», un verbo de
+ * «Te toca a vos» o una salida del cajón, se guarda el lugar (el filtro, el modo, el período y lo que se abrió, solo
+ * identificadores, `lugar-del-espacio.ts`). Al volver, se lee antes que la cartera, y el foco vuelve a lo que se abrió
+ * o, si ya no está, a lo que seguía. Si se salió por el cajón, se abre el cajón.
  */
-import { COPY_INVITACION, COPY_VINCULO, numero, type FiltroDePendientes } from '@be/domain';
+import { COPY_INVITACION, COPY_VINCULO, numero, type FiltroDePendientes, type PendienteDeCartera } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../components/ayuda';
@@ -56,6 +61,7 @@ import { CifrasDelEspacio, type Cuenta } from './cifras-del-espacio';
 import { EsperanRespuesta, type ListaQueEspera } from './esperan-respuesta';
 import { CAJON_DE_A_UNA, COPY_CAJON, dondeSigue, guardarLugar, leerLugar } from './cajon';
 import { CajonDeAUna } from './cajon-de-a-una';
+import { COPY_LUGAR, dondeVolver, guardarLugarDelEspacio, leerLugarDelEspacio, lugarDelEspacioParaGuardar, siguientesDe, type LugarDelEspacio, type OrigenEnElEspacio } from './lugar-del-espacio';
 import { filtrarPendientes } from '@be/domain';
 import { claveDelPendiente, colaDeLaVista, delCarril, personasPorArea, saludo as saludoDelEspacio, TIPOS_QUE_ESPERAN, TIPOS_QUE_TE_TOCAN, type ModoDeLaMesa } from './mesa';
 
@@ -142,12 +148,16 @@ export function EspacioProfesional() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional('/pro');
   const id = yo.tipo === 'listo' ? yo.id : null;
   const [periodo, setPeriodo] = useState<Periodo>({});
+  // TB-07: el lugar del Espacio, si se vuelve de algo que se abrió desde acá. Se lee una vez, al entrar y antes de leer la
+  // cartera, porque el período del último registro va a la API: así no hay una lectura de más.
+  const [lugarLeido, setLugarLeido] = useState(false);
+  const vueltaAlEspacio = useRef<LugarDelEspacio | null>(null);
 
   // Los pendientes: la cartera entera, de a 50. A la API va solo el período; la vista y los filtros se resuelven acá.
   const cartera = useListaCompleta(
     useMemo(
       () =>
-        token && id
+        token && id && lugarLeido
           ? (filtro: { cursor?: string; limit: string }): Promise<Resultado<PaginaDeCartera>> =>
               api.consultarCartera(token, { ...periodo, ...filtro }).then((r) => {
                 if (!r.ok) return r;
@@ -155,7 +165,7 @@ export function EspacioProfesional() {
                 return { ...r, datos: { data: items, page: r.datos.page, meta } };
               })
           : null,
-      [token, id, periodo],
+      [token, id, periodo, lugarLeido],
     ),
     sesionPerdida,
     DE_LA_CARTERA,
@@ -178,6 +188,19 @@ export function EspacioProfesional() {
   );
   const [filtro, setFiltro] = useState<FiltroDePendientes>(TODO);
   const [modo, setModo] = useModoDeLaMesa();
+  useEffect(() => {
+    const lugar = leerLugarDelEspacio(Date.now());
+    guardarLugarDelEspacio(null);
+    if (lugar) {
+      vueltaAlEspacio.current = lugar;
+      setFiltro(lugar.filtro);
+      setModo(lugar.modo);
+      setPeriodo(lugar.periodo);
+    }
+    setLugarLeido(true);
+    // Solo al entrar: el lugar se usa una vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const nombres = useNombres();
   const nombrePropio = useNombrePropio();
   // TB-12: la cola del cajón es la vista elegida de «Te toca a vos», en su orden. Detrás de su interruptor.
@@ -188,6 +211,7 @@ export function EspacioProfesional() {
   // TB-15: si desde el cajón se aplicó una revisión, la cartera cambió: se vuelve a leer al cerrarlo, no con él abierto
   // (la cola del cajón no se mueve mientras se recorre).
   const releerAlCerrar = useRef(false);
+  const seAbrioElCajon = useRef(false);
   useEffect(() => {
     // Al volver de una salida del cajón, sigue con el siguiente que todavía esté en la cola; el lugar se usa una vez.
     if (!CAJON_DE_A_UNA || retomado.current || !carteraLeida) return;
@@ -195,7 +219,26 @@ export function EspacioProfesional() {
     const lugar = leerLugar(Date.now());
     guardarLugar(null);
     if (lugar) setCajon({ abierto: true, inicio: dondeSigue(lugar, cola.map(claveDelPendiente)) });
+    seAbrioElCajon.current = Boolean(lugar);
   }, [carteraLeida, cola]);
+  // TB-07: con la cartera leída, el foco vuelve a lo que se abrió o a lo que seguía. Si se abrió el cajón, manda el cajón.
+  const devuelto = useRef(false);
+  useEffect(() => {
+    const lugar = vueltaAlEspacio.current;
+    if (devuelto.current || !carteraLeida || !lugar) return;
+    devuelto.current = true;
+    vueltaAlEspacio.current = null;
+    if (seAbrioElCajon.current) return;
+    window.requestAnimationFrame(() => {
+      const buscar = (clave: string): HTMLElement | null =>
+        (lugar.origen === 'semana' ? document.querySelector<HTMLElement>(`[data-ficha="${clave}"]`) : null) ?? document.querySelector<HTMLElement>(`[data-pendiente="${clave}"]`);
+      const donde = dondeVolver(lugar, (c) => buscar(c) !== null);
+      const destino = donde ? buscar(donde.clave) : document.getElementById('te-toca-a-vos');
+      destino?.scrollIntoView({ block: 'center' });
+      destino?.focus({ preventScroll: true });
+      if (!donde?.laMisma) setAviso(donde ? COPY_LUGAR.yaNoEsta : COPY_LUGAR.yaNoEstaNada);
+    });
+  }, [carteraLeida]);
   const conCajon = CAJON_DE_A_UNA && cola.length > 0;
 
   const [formulario, setFormulario] = useState(false);
@@ -252,6 +295,11 @@ export function EspacioProfesional() {
       : null;
   const directorio = vinculos.estado.tipo === 'listo' ? armarElDirectorio(vinculos.estado.items, yo.id, nombres.delAsesorado) : null;
   const elSaludo = saludoDelEspacio(new Date().getHours(), nombrePropio, nombres.ocultos);
+  /** TB-07: al abrir algo desde el Espacio, el lugar para volver, con lo que seguía en la vista: solo identificadores. */
+  const guardarDondeEstabas = (origen: OrigenEnElEspacio, p: Pick<PendienteDeCartera, 'kind' | 'domain' | 'advisee'>) => {
+    const fila = claveDelPendiente(p);
+    guardarLugarDelEspacio(lugarDelEspacioParaGuardar({ origen, fila, siguientes: siguientesDe(cola.map(claveDelPendiente), fila), filtro, modo, periodo }, Date.now()));
+  };
 
   return (
     <Pagina
@@ -280,7 +328,7 @@ export function EspacioProfesional() {
         personas={{ total: directorio && vinculos.estado.tipo === 'listo' ? { n: directorio.length, completa: vinculos.estado.completa } : null, porArea: directorio ? personasPorArea(directorio) : [] }}
       />
       {/* TB-07: las revisiones que acordaste, de hoy a siete días. Sale de la cartera ya leída: ninguna lectura nueva. */}
-      <TuSemana cartera={cartera.estado} />
+      <TuSemana cartera={cartera.estado} alAbrir={(f) => guardarDondeEstabas('semana', f)} />
       {/* TB-11: lo que te toca, por persona; al lado, lo que espera a la persona y a quién abrir. */}
       <div className="espacio-profesional__cuerpo">
         {/* Cada lista con su «Reintentar», que vuelve a leer solo esa; «Actualizar» lee todas. */}
@@ -295,6 +343,7 @@ export function EspacioProfesional() {
           onActualizar={actualizar}
           onReintentar={() => void cartera.recargar()}
           onVerMas={() => void cartera.verMas()}
+          alAbrir={(p) => guardarDondeEstabas('mesa', p)}
           alComienzo={
             conCajon ? (
               <button type="button" className="boton boton--primario cajon__empezar" aria-haspopup="dialog" onClick={() => setCajon({ abierto: true, inicio: 0 })}>
@@ -348,6 +397,7 @@ export function EspacioProfesional() {
           onAplicada={() => {
             releerAlCerrar.current = true;
           }}
+          onSalir={(p) => guardarDondeEstabas('cajon', p)}
         />
       ) : null}
       <InvitarPersona

@@ -6,8 +6,9 @@
  * marco de la ficha llevado a un área: una franja de lado a lado, pegada a la barra de marca, con lo que no cambia al
  * pasar de una sección a otra, en los mismos tres renglones.
  * - **El camino de vuelta, siempre.** «Volver a la ficha, donde estabas» si se llegó desde la ficha (`volver`, validado);
- *   «Volver a la ficha» si no (desde un pendiente o un enlace guardado). Reemplaza a la miga: la barra de marca ya vuelve
- *   al Espacio profesional.
+ *   «Volver al Espacio profesional, donde estabas» si se llegó desde «Tu semana», «Te toca a vos» o el cajón
+ *   (`origen=espacio`, WP-TABLERO-ALTA-GAMA TB-07): /pro vuelve con su lugar; «Volver a la ficha» si no (un enlace
+ *   guardado). Reemplaza a la miga: la barra de marca ya vuelve al Espacio profesional.
  * - **De quién es.** El título es el área; al lado, la referencia de la persona, que sale de sus vínculos. Sin alias
  *   (DL-040).
  * - **El acceso actual de esa área,** con las palabras de BE (`estadoParaMostrar`). Si una lectura o una escritura del
@@ -23,6 +24,7 @@
  */
 import { COPY_PISTAS, COPY, COPY_VINCULO, todasLasPaginas, type DashboardResponse, type NombreDeIcono, type Vinculo } from '@be/domain';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DialogoDeConfirmacion } from '../../../components/dialogo';
 import { BloqueDeEstado, Cargando, ErrorConReintento } from '../../../components/estados';
@@ -35,6 +37,7 @@ import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla } from '../../../lib/fallas
 import { horaDelDia } from '../../../lib/formato';
 import { useNombres } from '../../../lib/nombres-ocultos';
 import { SinEspacioProfesional, type useEspacioProfesional } from '../espacio-profesional';
+import { COPY_LUGAR } from '../lugar-del-espacio';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, type LecturaPorArea } from './acceso-por-area';
 import { hoyEn, periodoEnInstantes, restarDias } from './seguimiento/estado';
 import { Pista } from '../../../components/pista';
@@ -269,6 +272,8 @@ export function MarcoDelArea<C extends string>({
     [leer],
   );
   const { delAsesorado } = useNombres();
+  // TB-07: se llegó desde el Espacio (una ficha de «Tu semana», un verbo de «Te toca a vos» o el cajón).
+  const desdeElEspacio = useSearchParams().get('origen') === 'espacio';
 
   const listo = !!token && yo.tipo === 'listo';
   const vinculos = acceso.tipo === 'listo' ? acceso.vinculos : [];
@@ -276,7 +281,13 @@ export function MarcoDelArea<C extends string>({
   const nombre = vinculos[0] ? delAsesorado(vinculos[0].advisee) : null;
   const sePuedeLeer: LecturaPorArea = resumen === null ? null : resumen === 'nada' ? () => false : (dominio) => resumen[CLAVE_DEL_DOMINIO[dominio]].available;
   const delArea = alcance ? vinculos.filter((v) => v.scope.code === alcance) : vinculos;
-  const camino = vuelta ?? (retorno.href ? { href: retorno.href, texto: 'Volver a la ficha, donde estabas' } : { href: `/pro/advisees?id=${encodeURIComponent(id)}`, texto: 'Volver a la ficha' });
+  const camino =
+    vuelta ??
+    (retorno.href
+      ? { href: retorno.href, texto: 'Volver a la ficha, donde estabas' }
+      : desdeElEspacio
+        ? { href: '/pro', texto: COPY_LUGAR.volver }
+        : { href: `/pro/advisees?id=${encodeURIComponent(id)}`, texto: 'Volver a la ficha' });
 
   return (
     <div className="ficha">

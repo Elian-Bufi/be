@@ -37,7 +37,8 @@ import { diaCivil, diaDelAnioEnCurso, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
 import { useNombres } from '../../lib/nombres-ocultos';
 import { FiltroDePeriodo, type Periodo } from './advisees/periodo';
-import { COPY_MESA, delCarril, porPersona, TIPOS_QUE_TE_TOCAN, type ModoDeLaMesa } from './mesa';
+import { conOrigenEnElEspacio } from './lugar-del-espacio';
+import { claveDelPendiente, COPY_MESA, delCarril, porPersona, TIPOS_QUE_TE_TOCAN, type ModoDeLaMesa } from './mesa';
 import { ICONO_DEL_AREA_DE_CARTERA, ICONO_DEL_PENDIENTE, rutaQueResuelve, textoDePendiente, ultimoRegistroDe } from './pendiente-en-una-fila';
 
 /** Una página de la cartera, como la guarda la lista: los pendientes y lo que la respuesta dice además de ellos. */
@@ -73,6 +74,7 @@ export function TeTocaAVos({
   onReintentar,
   onVerMas,
   alComienzo,
+  alAbrir,
 }: {
   cartera: EstadoDeLaCartera;
   /** El período del último registro que se le pidió a la API (vacío = toda la historia). */
@@ -90,6 +92,8 @@ export function TeTocaAVos({
   onVerMas: () => void;
   /** Lo que va arriba de la lista, al lado del título (TB-12: «Empezar por el primero», con el cajón prendido). */
   alComienzo?: React.ReactNode;
+  /** TB-07: al abrir un verbo se guarda el lugar del Espacio, para volver donde se estaba. */
+  alAbrir?: (p: PendienteDeCartera) => void;
 }) {
   const id = useId();
   const nombres = useNombres();
@@ -141,7 +145,7 @@ export function TeTocaAVos({
     return { texto, area, quien, ultimo: ultimoRegistroDe(p, { zona, conPeriodo, dia }), etiqueta: `${COPY_CARTERA.accion[p.kind]}: ${quien}, ${area}, ${texto}` };
   };
   const verbo = (p: PendienteDeCartera, etiqueta: string) => (
-    <Link className="pendiente__enlace" href={rutaQueResuelve(p)} aria-label={etiqueta}>
+    <Link className="pendiente__enlace" href={conOrigenEnElEspacio(rutaQueResuelve(p))} aria-label={etiqueta} data-pendiente={claveDelPendiente(p)} onClick={() => alAbrir?.(p)}>
       {COPY_CARTERA.accion[p.kind]}
       <Icono nombre="derecha" tamano={18} />
     </Link>

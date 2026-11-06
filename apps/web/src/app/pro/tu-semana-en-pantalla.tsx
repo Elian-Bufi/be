@@ -5,7 +5,8 @@
  * revisiones que acordaste de hoy a siete días, una columna por día, y las vencidas aparte. El modelo está en
  * `tu-semana.ts`.
  * - Cada ficha lleva el monograma, el nombre y el área, y abre lo que resuelve la revisión, como «Abrir» en
- *   «Pendientes». Con «Ocultar nombres», la referencia y el ícono.
+ *   «Pendientes». Con «Ocultar nombres», la referencia y el ícono. Al abrirla se guarda el lugar del Espacio, y el destino
+ *   ofrece volver donde se estaba (TB-07, `lugar-del-espacio.ts`).
  * - Hasta tres por día; «y N más» muestra el resto de ese día. «Ver como lista» las pone en un renglón cada una.
  * - El teclado recorre las columnas en orden: cada una es una lista con su día como título.
  * - Sin revisiones en la semana, el vacío lo dice, con de dónde salen las fechas. Mientras la cartera carga o si falló,
@@ -18,6 +19,8 @@ import { Icono } from '../../components/icono';
 import { Retrato } from '../../components/retrato';
 import { diaDelAnioEnCurso } from '../../lib/formato';
 import { useNombres } from '../../lib/nombres-ocultos';
+import { conOrigenEnElEspacio } from './lugar-del-espacio';
+import { claveDelPendiente } from './mesa';
 import { ICONO_DEL_AREA_DE_CARTERA, rutaQueResuelve } from './pendiente-en-una-fila';
 import type { EstadoDeLaCartera } from './te-toca-a-vos';
 import { claveDeLaFicha, FICHAS_POR_DIA, semanaDeRevisiones, type ColumnaDeLaSemana, type FichaDeLaSemana } from './tu-semana';
@@ -31,7 +34,7 @@ function tituloDelDia(fecha: string, indice: number): string {
   return `${SEMANA_CORTA.format(new Date(`${fecha}T12:00:00Z`)).replace(/\.$/, '')} ${Number(fecha.slice(8, 10))}`;
 }
 
-export function TuSemana({ cartera }: { cartera: EstadoDeLaCartera }) {
+export function TuSemana({ cartera, alAbrir }: { cartera: EstadoDeLaCartera; /** TB-07: al abrir una ficha se guarda el lugar del Espacio. */ alAbrir?: (f: FichaDeLaSemana) => void }) {
   const id = useId();
   const { delAsesorado } = useNombres();
   const [comoLista, setComoLista] = useState(false);
@@ -47,7 +50,7 @@ export function TuSemana({ cartera }: { cartera: EstadoDeLaCartera }) {
     const area = COPY_CARTERA.dominio[f.domain];
     return (
       <li key={claveDeLaFicha(f)}>
-        <Link className="ficha-de-la-semana" href={rutaQueResuelve(f)}>
+        <Link className="ficha-de-la-semana" href={conOrigenEnElEspacio(rutaQueResuelve(f))} data-ficha={claveDelPendiente(f)} onClick={() => alAbrir?.(f)}>
           <Retrato nombre={quien} />
           <span className="ficha-de-la-semana__texto">
             <span className="ficha-de-la-semana__nombre">{quien}</span>

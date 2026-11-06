@@ -17,7 +17,7 @@
 > TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
 > (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49), TEST-TAG-032 (el arreglo de base del quinto tramo), TEST-TAG-008
 > (TB-11), TEST-TAG-009 (TB-12) y, con TB-15, TEST-TAG-013 y TEST-TAG-034 (nuevo: «¿Cuándo la revisás?», que
-> la §6 del paquete suma). Los demás se escriben con su parte (§10 del paquete).
+> la §6 del paquete suma), y TEST-TAG-035 (nuevo: volver al Espacio, con lo que le faltaba a TB-07). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -823,4 +823,53 @@ AUTOMATION           apps/web/test/aplicar-y-cuando.test.mjs («TEST-TAG-034 · 
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. La pregunta vive en la revisión nueva y en el cuadro de
                      activar: capturas-del-tablero todavía no los recorre (§10)
+```
+
+---
+
+## TEST-TAG-035 — Volver al Espacio, donde estabas
+
+```text
+TEST_ID              TEST-TAG-035
+TITLE                Al volver a /pro desde una ficha de «Tu semana», un verbo de «Te toca a vos» o una salida del cajón,
+                     el Espacio queda como estaba: el filtro, el modo, el período y el foco en lo que se abrió o en lo
+                     que seguía; el lugar guarda identificadores, nunca nombres
+LEVEL                Unidad (funciones puras del website) y una lectura de las pantallas que guardan y usan el lugar
+PRIORITY             P2 — con el cajón apagado, cada ficha y cada verbo tienen que llevar a su destino «con el retorno»
+                     (TB-07 y TB-12); el lugar no puede llevar datos de personas (TB-05)
+SOURCES              DL-163 D-4 («vuelve a la cola con el lugar guardado, nunca los datos») · WP-TABLERO-ALTA-GAMA TB-07
+                     («con el cajón apagado, cada ficha lleva a su destino con el retorno») y TB-12 · §10 («Lo que
+                     falta de TB-07 y de TB-12 con el cajón apagado») · TA-38 y TA-46
+PRECONDITIONS        Ninguna: lugarDelEspacioParaGuardar, lugarDelEspacioLeido, dondeVolver, siguientesDe y
+                     conOrigenEnElEspacio, en apps/web/src/app/pro/lugar-del-espacio.ts; el texto de te-toca-a-vos.tsx,
+                     tu-semana-en-pantalla.tsx, cajon-de-a-una.tsx, espacio-profesional.tsx y marco-del-area.tsx.
+SYNTHETIC_FIXTURE    Claves de pendientes con identificadores sintéticos, una con un nombre; filtros, modos y períodos
+                     válidos e inválidos.
+STEPS                1. Guardar un lugar válido y lugares con un nombre, un tipo o un área inventados, un modo, un origen
+                        o un período que no existen, y uno con 40 que seguían.
+                     2. Leer el lugar reciente, viejo, del futuro, roto y con un nombre adentro.
+                     3. Pedir a qué se vuelve con todo presente, sin lo abierto, solo con el último que seguía y sin
+                        nada.
+                     4. Mirar los enlaces de «Tu semana» y de «Te toca a vos», las salidas del cajón y el marco del área.
+                     5. Mirar cómo el Espacio lee el lugar y la cartera.
+                     6. Leer los textos.
+EXPECTED             1 → el válido, tal cual; los demás, nada guardado; lo que seguía, hasta 20.
+                     2 → solo el reciente y entero.
+                     3 → lo abierto; si no está, lo primero que seguía y que está, dicho como otra cosa; sin nada, ninguno
+                        (el foco va al título de «Te toca a vos»).
+                     4 → cada enlace guarda el lugar al abrirse, lleva `origen=espacio` y su clave para el foco; el marco
+                        ofrece «Volver al Espacio profesional, donde estabas», que va a /pro sin parámetros.
+                     5 → la cartera se lee recién con el lugar leído; el lugar se borra al leerlo y restituye el filtro,
+                        el modo y el período; si se abrió el cajón, el foco lo maneja el cajón.
+                     6 → sin términos de la cartera.
+NEGATIVE_ASSERTIONS  Ningún nombre en el almacenamiento; /pro no lleva parámetros; el período no hace leer la cartera dos
+                     veces; los textos no dicen «foco», «cumplimiento», «adherencia», «racha» ni «px». Mutaciones
+                     verificadas: guardando sin mirar que sean identificadores, fallan dos casos; volviendo a lo abierto
+                     aunque ya no esté, falla el paso 3; leyendo la cartera antes que el lugar, falla el paso 5;
+                     retomando un lugar viejo, falla el paso 2.
+AUTOMATION           apps/web/test/lugar-del-espacio.test.mjs («TEST-TAG-035 · …», seis casos), en
+                     `npm run test -w @be/web`; T13 suma lugar-del-espacio.ts al Espacio
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. El recorrido de ir y volver no está en capturas-del-tablero:
+                     queda para la recaptura del cajón con Dirección (§10)
 ```

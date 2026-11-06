@@ -103,7 +103,7 @@ const DOMINIOS = [
     // WP-ESCRITORIO-AMABLE, parte 5: el Espacio profesional (los pendientes de la cartera y el directorio). Una lista de
     // personas no califica a nadie: ni «inactivo», ni «riesgo», ni un porcentaje (TEST-PRJ-009; DL-107).
     nombre: 'el espacio profesional',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts', 'mesa.ts', 'cajon.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts', 'mesa.ts', 'cajon.ts', 'lugar-del-espacio.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
     prohibidos: terminosProhibidosDeCarteraEn,
     minimo: 8,
   },

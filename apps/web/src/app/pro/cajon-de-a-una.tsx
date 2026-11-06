@@ -32,6 +32,7 @@ import { CifrasDesdeLaRevision } from './advisees/seguimiento/pieza-del-area';
 import { TramoDelCiclo } from './advisees/seguimiento/tramo-del-ciclo';
 import { AplicarEnElCajon } from './aplicar-en-el-cajon';
 import { COPY_CAJON, fichaDe, guardarLugar, lugarParaGuardar, revisionPorAplicar, salidaPrincipal } from './cajon';
+import { conOrigenEnElEspacio } from './lugar-del-espacio';
 import { claveDelPendiente } from './mesa';
 import { rutaQueResuelve, textoDePendiente, ultimoRegistroDe } from './pendiente-en-una-fila';
 
@@ -65,6 +66,7 @@ export function CajonDeAUna({
   zona,
   onCerrar,
   onAplicada,
+  onSalir,
 }: {
   abierto: boolean;
   /** La vista elegida, en su orden (`colaDeLaVista`). */
@@ -79,6 +81,8 @@ export function CajonDeAUna({
   onCerrar: () => void;
   /** TB-15: se aplicó una revisión desde el cajón; la cartera cambió, y /pro la vuelve a leer al cerrarlo. */
   onAplicada: () => void;
+  /** TB-07: al salir por una salida, el Espacio guarda su lugar (el filtro, el modo y el período), para rearmar la cola. */
+  onSalir: (p: PendienteDeCartera) => void;
 }) {
   const id = useId();
   const dialogo = useRef<HTMLDialogElement>(null);
@@ -166,6 +170,7 @@ export function CajonDeAUna({
   /** Al salir por una salida se guarda el lugar: solo identificadores. */
   const alSalir = () => {
     if (indice !== null) guardarLugar(lugarParaGuardar(claves, indice, salteados, Date.now()));
+    if (actual) onSalir(actual);
   };
 
   const alTeclear = (e: KeyboardEvent<HTMLDialogElement>) => {
@@ -203,8 +208,9 @@ export function CajonDeAUna({
         }).find((o) => o.regla === 'NOVEDADES_DESDE_EL_CORTE') ?? null)
       : null;
   const salida = actual ? salidaPrincipal(actual, rutaQueResuelve(actual)) : null;
-  const revisiones = actual ? `/pro/advisees/${actual.domain}?id=${encodeURIComponent(actual.advisee.identityId)}&vista=revisiones` : '';
-  const elPlan = actual ? `/pro/advisees/${actual.domain}?id=${encodeURIComponent(actual.advisee.identityId)}&vista=plan` : '';
+  // TB-07: cada destino lleva `origen=espacio`, y su marco ofrece volver al Espacio, donde el cajón sigue.
+  const revisiones = actual ? conOrigenEnElEspacio(`/pro/advisees/${actual.domain}?id=${encodeURIComponent(actual.advisee.identityId)}&vista=revisiones`) : '';
+  const elPlan = actual ? conOrigenEnElEspacio(`/pro/advisees/${actual.domain}?id=${encodeURIComponent(actual.advisee.identityId)}&vista=plan`) : '';
   const siguiente = () => ir(indice !== null && indice + 1 < cola.length ? indice + 1 : null);
   const abrirLaFicha = actual ? (
     <Link className="boton boton--secundario" href={fichaDe(actual)} onClick={alSalir}>
@@ -293,7 +299,7 @@ export function CajonDeAUna({
             </AplicarEnElCajon>
           ) : (
             <div className="cajon__salidas">
-              <Link className="boton boton--primario" href={salida.href} onClick={alSalir}>
+              <Link className="boton boton--primario" href={conOrigenEnElEspacio(salida.href)} onClick={alSalir}>
                 {salida.texto}
               </Link>
               {abrirLaFicha}
