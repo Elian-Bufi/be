@@ -253,3 +253,21 @@ test('TB-48 · se quita cualquier serie, también una del medio, y las demás co
   assert.match(ejercicio, /aria-label=\{`\$\{EDICION\.quitarLaSerie\(n\)\} de \$\{nombre\}`\}/);
   assert.doesNotMatch(ejercicio, /Quitar la última serie|slice\(0, -1\)/);
 });
+
+test('TB-48 · el microciclo se ofrece también con sesiones sueltas, que pasan a la «Semana 1» con sus identificadores', () => {
+  const bloque = { blockId: ID(30), label: 'Fuerza', purpose: 'Base', sessions: [sesionConIds(), { ...sesionConIds(), sessionId: ID(40), prescriptions: [] }] };
+  const organizado = X.organizadoEnMicrociclos(structuredClone(bloque));
+  assert.equal('sessions' in organizado, false, 'un bloque usa microciclos o sesiones sueltas, nunca las dos');
+  assert.deepEqual(organizado.microcycles.map((m) => [m.label, m.sessions.map((s) => s.sessionId)]), [['Semana 1', [ID(20), ID(40)]]]);
+  assert.deepEqual([organizado.blockId, organizado.label, organizado.purpose], [ID(30), 'Fuerza', 'Base']);
+  // La API lo acepta: no hay sesiones y microciclos juntos ni identificadores repetidos.
+  assert.equal(normalizarEntrenamiento({ blocks: [organizado] }).ok, true);
+  assert.equal(normalizarEntrenamiento({ blocks: [{ ...organizado, sessions: bloque.sessions }] }).ok, false, 'mutación: las sesiones quedan también en el bloque');
+  assert.deepEqual(X.organizadoEnMicrociclos({ label: 'Vacío', sessions: [] }).microcycles, [{ label: 'Semana 1', purpose: null, sessions: [] }]);
+  assert.equal(X.loQuePasaConLasSesiones(0), null);
+  assert.equal(X.loQuePasaConLasSesiones(3), 'Las 3 sesiones del bloque pasan a «Semana 1».');
+  const entrenamiento = leer('training/editor.tsx');
+  assert.match(entrenamiento, /cambiar\(\(x\) => \(\(x\[i\] = organizadoEnMicrociclos\(x\[i\]!\)\), x\)\)/);
+  assert.match(entrenamiento, /detalle: loQuePasaConLasSesiones\(sesiones\.length\),\s+noSePuede: sesiones\.length > TOPES_DE_ENTRENAMIENTO\.sesionesDelMicrociclo/);
+  assert.doesNotMatch(entrenamiento, /Solo mientras el bloque no tiene sesiones/);
+});

@@ -75,8 +75,19 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
-import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeEntrenamiento } from '../topes-del-plan';
-import { COPY_DE_LOS_EDITORES as E, copiaDeLaSesion, copiaDelEjercicio, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
+import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
+import {
+  COPY_DE_LOS_EDITORES as E,
+  copiaDeLaSesion,
+  copiaDelEjercicio,
+  duplicarEn,
+  loQuePasaConLasSesiones,
+  mover,
+  organizadoEnMicrociclos,
+  posicionesTrasInsertar,
+  posicionesTrasMover,
+  posicionesTrasQuitar,
+} from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
 import { AgendaDelPlan, agendaVigente, resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
@@ -497,8 +508,9 @@ export function EditorDePlan({
     cambiar((x) => (x.splice(i, 1), x));
     elegirBloque(Math.max(0, i - 1));
   };
+  /** TB-48: también con sesiones sueltas, que pasan a la «Semana 1» con sus identificadores (la agenda no pierde sus días). */
   const organizarPorMicrociclos = () => {
-    cambiar((x) => ((x[i]!.microcycles = [{ label: 'Semana 1', purpose: null, sessions: [] }]), x));
+    cambiar((x) => ((x[i] = organizadoEnMicrociclos(x[i]!)), x));
     elegirMicrociclo(0);
     setTexto({ de: 'nombre-del-microciclo', i, j: 0, k: null });
   };
@@ -785,7 +797,9 @@ export function EditorDePlan({
                         clave: 'microciclos',
                         texto: 'Organizar por microciclos',
                         alElegir: organizarPorMicrociclos,
-                        noSePuede: sesiones.length > 0 ? 'Solo mientras el bloque no tiene sesiones: con microciclos, las sesiones van dentro de ellos.' : null,
+                        // TB-48: se ofrece siempre; si el bloque ya tiene sesiones, dice adónde van.
+                        detalle: loQuePasaConLasSesiones(sesiones.length),
+                        noSePuede: sesiones.length > TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo ? E.topeDelMicrociclo(TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo, sesiones.length) : null,
                       },
                     ]),
                 { clave: 'quitar', texto: 'Quitar este bloque', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es el único bloque de la versión.' : null },
