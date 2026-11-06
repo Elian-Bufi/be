@@ -162,6 +162,12 @@ const PAGINAS = {
     ['cajon', '/pro', 'cajon'],
     ['resumen', '/pro/advisees?id={diego}'],
     ['entrenamiento', '/pro/advisees/training?id={diego}&vista=resumen'],
+    // TB-48: el editor de Entrenamiento, con el borrador que dejó la revisión de hoy de Camila Ortiz («Ajustar»): «Revisar
+    // el plan» y «Guardar como plantilla» a la vista; y «Mis ejercicios», con «Cargar las zonas» en cada ejercicio propio
+    // y, abiertas, las 17 zonas del primero con la figura (abrirlas no lee nada).
+    ['plan-camila', '/pro/advisees/training?id={camila}&vista=plan'],
+    ['mis-ejercicios', '/pro/exercises'],
+    ['mis-ejercicios-zonas', '/pro/exercises', 'zonas'],
   ],
 };
 const NOMBRES = { PRO_N: 'sofia-paz', PRO_T: 'martin-acosta' };
@@ -196,6 +202,8 @@ async function capturarTodo() {
   if (!federico) throw new Error('La cohorte no dejó a Federico Álvarez en estado.json.');
   const hector = estado.personas?.hector?.aseId;
   if (!hector) throw new Error('La cohorte no dejó a Héctor Funes en estado.json.');
+  const camila = estado.personas?.camila?.aseId;
+  if (!camila) throw new Error('La cohorte no dejó a Camila Ortiz en estado.json.');
   const c = cuentas();
   const mediciones = { hoy: estado.hoy, commit: process.env.GITHUB_SHA ?? null, paginas: [], errores: [] };
   const navegador = await puppeteer.launch({
@@ -236,7 +244,7 @@ async function capturarTodo() {
       await page.waitForFunction(() => location.pathname.startsWith('/pro'), { timeout: 60_000 });
       await asentar(page);
       for (const [nombre, plantilla, metrica] of paginas) {
-        const ruta = plantilla.replace('{diego}', diego).replace('{federico}', federico).replace('{hector}', hector);
+        const ruta = plantilla.replace('{diego}', diego).replace('{federico}', federico).replace('{hector}', hector).replace('{camila}', camila);
         // Para contar lo que pide una página al abrirse, se llega desde otra: la cuenta, que no comparte lecturas.
         await page.evaluate(() => window.next.router.push('/account'));
         await asentar(page);
@@ -246,7 +254,12 @@ async function capturarTodo() {
         await page.evaluate((u) => window.next.router.push(u), ruta);
         await asentar(page);
         let asentada = await quieta();
-        if (metrica === 'cajon') {
+        if (metrica === 'zonas') {
+          // TB-48: «Cargar las zonas» del primer ejercicio propio; la ficha ya está leída, así que no suma peticiones.
+          await page.evaluate(() => document.querySelector('[data-cambiar-zonas]')?.click());
+          await asentar(page);
+          asentada = (await quieta()) && asentada;
+        } else if (metrica === 'cajon') {
           // TB-12: «Empezar por el primero» abre el cajón «De a una»; la cuenta suma las lecturas de su primer cuadro.
           await abrirElCajon(page);
           asentada = (await quieta()) && asentada;

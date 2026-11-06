@@ -45,6 +45,12 @@ export const PETICIONES_AL_ABRIR = {
   'martin-acosta/cajon': 8,
   'martin-acosta/resumen': 14,
   'martin-acosta/entrenamiento': 8,
+  // TB-48: el editor de Entrenamiento con el borrador de Camila Ortiz, y «Mis ejercicios» (la cuenta, las novedades,
+  // los ejercicios propios y su ficha visual); con las zonas abiertas, lo mismo: la ficha ya estaba leída. Páginas
+  // nuevas en las capturas, no lecturas nuevas: se cuentan desde su primera corrida.
+  'martin-acosta/plan-camila': 9,
+  'martin-acosta/mis-ejercicios': 4,
+  'martin-acosta/mis-ejercicios-zonas': 4,
 };
 
 /**
