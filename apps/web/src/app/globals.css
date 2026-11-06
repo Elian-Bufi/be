@@ -13868,7 +13868,7 @@ details[open] > summary:not([class])::before {
 .tramo__pista {
   position: relative;
   height: 4px;
-  margin: 0.65rem 0 0.25rem;
+  margin: 0.55rem 0 0.2rem;
   border-radius: 2px;
   background: var(--pista);
 }
@@ -13947,9 +13947,8 @@ details[open] > summary:not([class])::before {
 .cifras-desde-la-revision__celda {
   display: flex;
   flex-direction: column;
-  gap: 0.05rem;
-  min-height: 2.75rem;
-  padding: 0.3rem 0.45rem;
+  gap: 0;
+  padding: 0.15rem 0.35rem;
   border-radius: 8px;
   color: var(--texto);
   text-decoration: none;
@@ -13965,7 +13964,7 @@ a.cifras-desde-la-revision__celda:focus-visible {
 }
 
 .cifras-desde-la-revision .cifra {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
@@ -14002,6 +14001,66 @@ a.cifras-desde-la-revision__celda:focus-visible {
   color: var(--tenue);
   font-size: 0.8125rem;
   line-height: 1.125rem;
+}
+
+/* Plegada (A13): el renglón que la abre lleva el título y lo que se ve de un vistazo; adentro, las cuentas y la cobertura
+   del período. El triángulo gira al abrir. */
+.pieza-del-area--plegada {
+  padding-top: 0.15rem;
+}
+
+.pieza-del-area--plegada > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0 0.3rem;
+  border-radius: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pieza-del-area--plegada > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pieza-del-area--plegada > summary:hover {
+  background: var(--fondo-suave);
+}
+
+.pieza-del-area--plegada > summary:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.pieza-del-area--plegada > summary > .icono {
+  flex: none;
+  color: var(--tenue);
+  transition: transform 120ms ease;
+}
+
+.pieza-del-area--plegada[open] > summary > .icono {
+  transform: rotate(90deg);
+}
+
+.pieza-del-area--plegada > summary > .pieza-del-area__titulo {
+  flex: none;
+  margin: 0;
+}
+
+.pieza-del-area--plegada > summary > .barra-partida {
+  flex: 1 1 auto;
+  min-width: 4rem;
+}
+
+.pieza-del-area__cuerpo {
+  padding: 0 0.3rem 0.2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pieza-del-area--plegada > summary > .icono {
+    transition: none;
+  }
 }
 
 /* La barra partida de los registros del período (R-4; A9): 8 de alto, radio 4 en las puntas y separadores de 2 que

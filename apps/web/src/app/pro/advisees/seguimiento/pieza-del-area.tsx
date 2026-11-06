@@ -11,7 +11,7 @@
  */
 import { COPY_PRIMER_PLAN, numero, type ParteDeObservacion } from '@be/domain';
 import Link from 'next/link';
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
 import { losRegistrosDelPeriodo, pasosDelPrimerPlan, sesionesPorEjercicio, textoDeLasComidas, textoDeLosRectificados } from './piezas-del-area';
 import type { Disponibles } from './series';
@@ -54,21 +54,50 @@ export function CifrasDesdeLaRevision({ partes, href, texto }: { partes: readonl
   );
 }
 
-/** La barra partida de los registros del período (Nutrición): una sola fuente y una sola ventana, la del período. */
-export function RegistrosDelPeriodo({ cobertura }: { cobertura: Disponibles['coberturaNutricional'] }) {
+/**
+ * El envoltorio de una pieza propia. Abierta, con su título. Plegada (A13 de la propuesta: con dos o más tarjetas en
+ * fila, la tarjeta no pasa su tope y los indicadores entran en la primera pantalla), el renglón que la abre lleva el
+ * título y lo que se ve de un vistazo (la barra partida, o cuántos ejercicios); adentro va también lo que se plegaba
+ * aparte, la cobertura del período, para que la tarjeta tenga un solo plegado.
+ */
+function Pieza({ titulo, plegada, aLaVista, children }: { titulo: string; plegada: boolean; aLaVista: ReactNode; children: ReactNode }) {
   const id = useId();
-  const r = losRegistrosDelPeriodo(cobertura);
-  if (!r) return null;
+  if (plegada) {
+    return (
+      <details className="pieza-del-area pieza-del-area--plegada">
+        <summary>
+          <Icono nombre="derecha" tamano={18} />
+          <span className="pieza-del-area__titulo">{titulo}</span>
+          {aLaVista}
+        </summary>
+        <div className="pieza-del-area__cuerpo">{children}</div>
+      </details>
+    );
+  }
   return (
     <section className="pieza-del-area" aria-labelledby={`${id}-titulo`}>
       <h3 id={`${id}-titulo`} className="pieza-del-area__titulo">
-        Registros del período
+        {titulo}
       </h3>
-      <div className="barra-partida" aria-hidden="true">
-        {r.tramos.map((t) => (
-          <span key={t.clave} className="barra-partida__tramo" data-tramo={t.clave} style={{ flexGrow: t.fraccion }} />
-        ))}
-      </div>
+      {aLaVista}
+      {children}
+    </section>
+  );
+}
+
+/** La barra partida de los registros del período (Nutrición): una sola fuente y una sola ventana, la del período. */
+export function RegistrosDelPeriodo({ cobertura, plegada = false, children = null }: { cobertura: Disponibles['coberturaNutricional']; plegada?: boolean; children?: ReactNode }) {
+  const r = losRegistrosDelPeriodo(cobertura);
+  if (!r) return null;
+  const barra = (
+    <span className="barra-partida" aria-hidden="true">
+      {r.tramos.map((t) => (
+        <span key={t.clave} className="barra-partida__tramo" data-tramo={t.clave} style={{ flexGrow: t.fraccion }} />
+      ))}
+    </span>
+  );
+  return (
+    <Pieza titulo="Registros del período" plegada={plegada} aLaVista={barra}>
       <ul className="barra-partida__cuentas">
         {r.tramos.map((t) => (
           <li key={t.clave}>
@@ -79,20 +108,18 @@ export function RegistrosDelPeriodo({ cobertura }: { cobertura: Disponibles['cob
         {r.rectificados > 0 ? <li className="barra-partida__aparte">{textoDeLosRectificados(r.rectificados)}</li> : null}
       </ul>
       {r.comidas ? <p className="pieza-del-area__nota">{textoDeLasComidas(r.comidas)}</p> : null}
-    </section>
+      {children}
+    </Pieza>
   );
 }
 
 /** Las sesiones por ejercicio del período (Entrenamiento): barras sin pista, la cifra al final y «y N más». */
-export function SesionesPorEjercicio({ ejercicios, fecha }: { ejercicios: Disponibles['ejercicios']; fecha: (civil: string) => string }) {
-  const id = useId();
+export function SesionesPorEjercicio({ ejercicios, fecha, plegada = false, children = null }: { ejercicios: Disponibles['ejercicios']; fecha: (civil: string) => string; plegada?: boolean; children?: ReactNode }) {
   const s = sesionesPorEjercicio(ejercicios);
   if (!s) return null;
+  const cuantos = s.filas.length + s.mas;
   return (
-    <section className="pieza-del-area" aria-labelledby={`${id}-titulo`}>
-      <h3 id={`${id}-titulo`} className="pieza-del-area__titulo">
-        Sesiones por ejercicio en el período
-      </h3>
+    <Pieza titulo="Sesiones por ejercicio en el período" plegada={plegada} aLaVista={plegada ? <span className="tenue">{cuantos === 1 ? '1 ejercicio' : `${numero(cuantos)} ejercicios`}</span> : null}>
       <ul className="sesiones-por-ejercicio">
         {s.filas.map((e) => (
           <li key={e.clave}>
@@ -116,7 +143,8 @@ export function SesionesPorEjercicio({ ejercicios, fecha }: { ejercicios: Dispon
       {s.mas > 0 ? (
         <p className="pieza-del-area__nota">y {s.mas === 1 ? '1 ejercicio más' : `${numero(s.mas)} ejercicios más`}</p>
       ) : null}
-    </section>
+      {children}
+    </Pieza>
   );
 }
 

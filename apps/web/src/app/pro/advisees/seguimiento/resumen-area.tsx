@@ -57,6 +57,7 @@ import { useLectura, useSeguimiento } from './contexto';
 import { conRetorno, hoyEn, restarDias, valorDeRetorno } from './estado';
 import { ICONO_DEL_AREA } from './iconos-de-metrica';
 import { CifrasDesdeLaRevision, PrimerPlanEnMiniatura, RegistrosDelPeriodo, SesionesPorEjercicio } from './pieza-del-area';
+import { losRegistrosDelPeriodo, sesionesPorEjercicio } from './piezas-del-area';
 import type { Disponibles } from './series';
 import { TiraDelObjetivo, type MacrosDelObjetivo } from './tira-del-objetivo';
 import { TramoDelCiclo } from './tramo-del-ciclo';
@@ -129,6 +130,10 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
    * dominio.
    */
   const conReloj = (resumen: ResumenDeNutricion | ResumenDeEntrenamiento): boolean => tramoDelCiclo(resumen, hoy)?.tipo === 'RELOJ';
+  // A13 de la propuesta: con dos o más tarjetas en fila, la pieza propia va plegada, con lo que se ve de un vistazo en el
+  // renglón que la abre; así la tarjeta no pasa su tope y los indicadores entran en la primera pantalla. Con una sola
+  // área, la tarjeta va al costado de los indicadores y la pieza queda abierta.
+  const plegada = [d.nutrition.available, d.training.available, d.anthropometry.available].filter(Boolean).length >= 2;
   const delArea = (area: AreaDelResumen) => (p.observaciones === null ? null : p.observaciones.filter((o) => o.area === area));
   const comunes = { formato: p.formato, enlaceDe };
   const c = p.disponibles.coberturaNutricional;
@@ -164,7 +169,8 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
                 revisiones={ruta('NUTRICION', 'revisiones')}
                 tramo={<TramoDelCiclo area="NUTRICION" resumen={d.nutrition.summary} hoy={hoy} fecha={p.formato.fecha} revisiones={ruta('NUTRICION', 'revisiones')} />}
                 sinLaProxima={conReloj(d.nutrition.summary)}
-                pieza={<RegistrosDelPeriodo cobertura={c} />}
+                pieza={(periodo) => <RegistrosDelPeriodo cobertura={c} plegada={plegada}>{periodo}</RegistrosDelPeriodo>}
+                absorbeElPeriodo={plegada && losRegistrosDelPeriodo(c) !== null}
                 // Lo que la cobertura del área dice además de su frase. Los anulados y los rectificados están en la barra
                 // partida de los registros del período (TB-10), a la vista.
                 detallesDeLaCobertura={
@@ -210,7 +216,12 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
                 revisiones={ruta('ENTRENAMIENTO', 'revisiones')}
                 tramo={<TramoDelCiclo area="ENTRENAMIENTO" resumen={d.training.summary} hoy={hoy} fecha={p.formato.fecha} revisiones={ruta('ENTRENAMIENTO', 'revisiones')} />}
                 sinLaProxima={conReloj(d.training.summary)}
-                pieza={<SesionesPorEjercicio ejercicios={p.disponibles.ejercicios} fecha={p.formato.fecha} />}
+                pieza={(periodo) => (
+                  <SesionesPorEjercicio ejercicios={p.disponibles.ejercicios} fecha={p.formato.fecha} plegada={plegada}>
+                    {periodo}
+                  </SesionesPorEjercicio>
+                )}
+                absorbeElPeriodo={plegada && sesionesPorEjercicio(p.disponibles.ejercicios) !== null}
                 detallesDeLaCobertura={[]}
                 {...comunes}
               />
@@ -380,6 +391,7 @@ function Hechos({
   tramo = null,
   sinLaProxima = false,
   pieza = null,
+  absorbeElPeriodo = false,
   detallesDeLaCobertura,
   formato,
   enlaceDe,
@@ -394,8 +406,12 @@ function Hechos({
   tramo?: ReactNode;
   /** Con el tramo dibujado, la próxima revisión ya está en él: el pendiente del dominio no se repite. */
   sinLaProxima?: boolean;
-  /** La pieza propia del área (TB-10): después de lo nuevo desde la revisión. */
-  pieza?: ReactNode;
+  /**
+   * La pieza propia del área (TB-10): después de lo nuevo desde la revisión. Recibe los renglones del período, para
+   * llevarlos adentro cuando va plegada (`absorbeElPeriodo`): la tarjeta tiene un solo plegado.
+   */
+  pieza?: ((periodo: ReactNode) => ReactNode) | null;
+  absorbeElPeriodo?: boolean;
   detallesDeLaCobertura: readonly ParteDeObservacion[];
   formato: FormatoDeLaSintesis;
   enlaceDe: (a: AccionDelResumen) => { href: string; texto: string } | null;
@@ -452,9 +468,9 @@ function Hechos({
           </p>
           {novedades ? <CifrasDesdeLaRevision partes={partesDeObservacion(novedades, formato)} href={enlaceDeLasNovedades?.href ?? null} texto={enlaceDeLasNovedades?.texto ?? ''} /> : null}
           {desdeLaRevision.length > 0 ? <ul className="observaciones">{desdeLaRevision.map(fila)}</ul> : null}
-          {pieza}
+          {pieza ? pieza(absorbeElPeriodo && delPeriodo.length > 0 ? <ul className="observaciones">{delPeriodo.map(fila)}</ul> : null) : null}
           {/* Con revisión, lo del período queda a un clic: los indicadores ya dicen la cobertura de cada número. */}
-          {delPeriodo.length > 0 ? (
+          {delPeriodo.length > 0 && !absorbeElPeriodo ? (
             <details className="area__periodo">
               <summary>
                 {elPeriodo}: cobertura del registro ({numero(delPeriodo.length)})
@@ -472,7 +488,7 @@ function Hechos({
             </span>
           </p>
           <ul className="observaciones">{delPeriodo.map(fila)}</ul>
-          {pieza}
+          {pieza ? pieza(null) : null}
         </>
       ) : revisiones ? (
         // Sin revisión y sin nada del período que decir (su lectura no aplica o falló): igual se dice dónde está parada.
@@ -480,11 +496,11 @@ function Hechos({
           <p className="area__corte">
             <span className="tenue">Sin revisiones registradas</span>
           </p>
-          {pieza}
+          {pieza ? pieza(null) : null}
         </>
-      ) : (
-        pieza
-      )}
+      ) : pieza ? (
+        pieza(null)
+      ) : null}
     </div>
   );
 }
