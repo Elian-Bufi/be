@@ -2597,7 +2597,7 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-06; TEST-FRI-005)',
   },
   // ─── WP-FORMULARIOS-RONDA-2 · HBT: los hábitos de la persona (DL-165 D-9, FR-10). Familia propia de BE: API-HAB ya es
-  // «Mis habituales» (DL-109; D-14). Ninguna APK publicada las lee (DL-152). ──────────────────────────────────────────
+  // «Mis habituales» (DL-109; D-14). La APK 0.21.0-candidata.1 lee 01 a 04, con la forma congelada (DL-152). ──────────
   {
     id: 'API-HBT-01',
     metodo: 'get',

@@ -10,8 +10,9 @@
  * - API-HBT-05 · `GET /advisees/{adviseeId}/habits` — el profesional: lo vigente, si la persona se los comparte a él y el
  *   PDP lo permite. Si no, el 404 de lo inexistente: no se entera de que hay hábitos.
  *
- * Ninguna APK publicada las lee (la 0.20 no las conoce): su forma se congela cuando se publique la que las use (DL-152).
- * Objetos estrictos, como el resto de los contratos (09v7 T12).
+ * Las de la persona (01 a 04) las lee la APK 0.21.0-candidata.1, y su forma quedó congelada (DL-152): lo que la cambie va
+ * en una operación nueva. La 05 es del website, y la 0.20 no conoce ninguna. Objetos estrictos, como el resto de los
+ * contratos (09v7 T12).
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';

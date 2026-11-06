@@ -1536,7 +1536,8 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
 
     // ─── HBT · los hábitos de la persona (WP-FORMULARIOS-RONDA-2, FR-10; DL-165 D-9) ─────────────
-    // Familia propia de BE: API-HAB ya es «Mis habituales» (DL-109). Ninguna APK publicada las lee.
+    // Familia propia de BE: API-HAB ya es «Mis habituales» (DL-109). La APK 0.21.0-candidata.1 llama 01 a 04, con la forma
+    // congelada (DL-152); la 05 es del website.
     /** API-HBT-01: mis hábitos (lo vigente y la historia), la autorización y mis profesionales. */
     misHabitos(token: string) {
       return llamar('GET', '/me/habits', { token, esquema: MisHabitosResponseSchema });

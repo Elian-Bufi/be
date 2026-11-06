@@ -91,7 +91,7 @@ las plantillas que los usan (FR-06). Así la migración de las plantillas se esc
 | FR-06 | Las versiones nuevas de las dos plantillas | Sí | D-4, D-5, D-6 | «Pedida por defecto» por pregunta (`requestedByDefault`, solo en el formato 3); FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO v3 por migración que solo agrega, sucesoras de las de DL-164, que quedan históricas; el embarazo sin pedir y no obligatorio; la tabla de días; otra actividad con sus días; la web pide lo que dice la plantilla. Las solicitudes ya creadas siguen en su versión |
 | FR-09 | «Pedir información» en cada área y los formularios en la Línea de tiempo | Sí | D-8 | El Resumen de Nutrición y el de Entrenamiento lo tienen; API-DSH-04 suma cinco tipos de hecho (pedido, respondido, cargado, confirmado y rechazado), solo de las solicitudes de quien consulta y en sus Alcances permitidos, y la web los dibuja y abre la solicitud |
 | FR-10 | La sección común de hábitos, con el interruptor de la persona | Sí | D-9; D-14 a D-19 | Programado (§4 y §7). La parte «Tus hábitos», igual en las dos versiones nuevas; FRI-04 agrega una versión de los hábitos en la misma transacción; la familia API-HBT-01 a 05; «Mis hábitos», el interruptor, la pregunta por un profesional nuevo y el retiro en la APK; «Sus hábitos» en Información del website; el texto del acto, una propuesta. La integración con PostgreSQL prueba el 404 sin autorización y fuera de la lista, el corte al retirar, al pausar y al terminar el vínculo, y que un profesional nuevo no se suma solo. Con personas reales, después de la revisión legal y del gate del 08 §42 (§4.6) |
-| FR-11 | La candidata 0.21.0-candidata.1, sus lecturas congeladas y la evidencia, con TalkBack | No | — | Fuera de esta rama: la construye y la publica Dirección |
+| FR-11 | La candidata 0.21.0-candidata.1, sus lecturas congeladas y la evidencia, con TalkBack | No | — | Fuera de esta rama: la construye y la publica Dirección. *(2026-11-05: publicada como prerelease; los oráculos TEST-FR2-001 a 010, con sus trece campos, en `WP-FORMULARIOS-RONDA-2-ORACULOS.md`; la publicación, las lecturas congeladas y la guía de la prueba de Dirección, en `EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`.)* |
 
 ## 4. FR-10 · la sección común de hábitos (programada)
 
@@ -209,7 +209,9 @@ entrenar» v3, con 23. El profesional las puede cambiar al pedir, como siempre.
 ### 4.6 Compatibilidad y legal
 
 - La APK 0.20 no llama API-HBT y no ve las versiones que traigan la parte «Tus hábitos» (formato 3, FR-08): nada cambia
-  para ella. Una prueba del dominio lo fija: ningún congelado de `VIGENTES` lee una operación HBT.
+  para ella. Una prueba del dominio lo fija: ningún congelado de `VIGENTES` lee una operación HBT. *(2026-11-05: la
+  0.21.0-candidata.1 lee las de la persona, 01 a 04, con su forma congelada. Desde ahí la prueba fija que hasta la 0.20 no
+  se lee ninguna, y desde la 0.21, solo esas cuatro; DL-152.)*
 - Lo legal va al legajo legal, fuera del repo público: el texto del acto; su base (el consentimiento expreso del titular
   para una categoría sensible hacia perfiles no sanitarios, VJR-1 y VJR-4 del 08, y el paso de información entre sus
   profesionales, VJR-5); la revocación y lo que se informa. En `test`, con datos sintéticos; con personas reales, después
@@ -232,7 +234,8 @@ entrenar» v3, con 23. El profesional las puede cambiar al pedir, como siempre.
 - **Las lecturas congeladas** (`lecturas-de-las-apk.int-spec.ts`, `lecturas-de-la-apk.test.ts`) suman el caso: la 0.20 no
   ve una solicitud de formato 3.
 - **`VIGENTES` queda con la 0.13.2 y la 0.20.0-candidata.1:** ningún teléfono tiene la 0.17.0-candidata.3 ni la
-  0.18.0-candidata.1 (Dirección ya actualizó a la 0.20; nota en DL-152).
+  0.18.0-candidata.1 (Dirección ya actualizó a la 0.20; nota en DL-152). *(2026-11-05: se suma la 0.21.0-candidata.1, sin
+  sacar la 0.20.)*
 
 ## 6. Fuera de esta ronda
 
