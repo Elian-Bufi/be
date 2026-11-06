@@ -25,6 +25,10 @@
 // ninguna nueva en 1,5 s) y se compara con la tabla de `peticiones.mjs`: una cuenta distinta, para arriba o para abajo,
 // hace fallar la corrida. Y la lista de nombres de TEST-TAG-004 ya no sale vacía: quitaba toda palabra, no solo los
 // títulos («Lic.»), y la prueba no encontraba nunca un nombre.
+// Desde TA-71: en el Espacio de cada profesional, en cada tamaño y en los dos temas, y con «Ocultar nombres», mide que
+// el monograma, el nombre y el área de cada ficha de «Tu semana» queden adentro de su columna (`tu-semana.mjs`); una
+// parte que se pasa hace fallar la corrida. Con «Ocultar nombres» guarda además «Tu semana» sola, en los dos temas y
+// en los tres tamaños, para ver la referencia en pantalla.
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
@@ -32,6 +36,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { diferenciasDePeticiones, esperarLaQuietud } from './peticiones.mjs';
+import { fichasMedidas, medirTuSemana, partesQueSePasan } from './tu-semana.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(AQUI, '../../..');
@@ -321,6 +326,9 @@ async function capturarTodo() {
               });
               fila.primeraPantalla ??= {};
               fila.primeraPantalla[`${tema}-${ancho}`] = { ...medida, alto, personasQueEntran: medida.personas.filter((b) => b <= alto).length, entraEsperan: medida.esperanArriba !== null && medida.esperanArriba < alto };
+              // TA-71: ninguna parte de una ficha de «Tu semana» se pasa de su columna.
+              fila.tuSemana ??= {};
+              fila.tuSemana[`${tema}-${ancho}`] = await laSemanaEntra(page, mediciones, `${NOMBRES[prefijo]} · ${tema} · ${ancho}`);
             }
             if (nombre.startsWith('resumen')) {
               const medida = await page.evaluate(() => {
@@ -363,7 +371,25 @@ async function capturarTodo() {
   }
   for (const d of mediciones.diferenciasDePeticiones) console.error(`TEST-TAG-032 · ${d}`);
   if (mediciones.diferenciasDePeticiones.length > 0) process.exitCode = 1;
+  // TA-71: una parte de una ficha de «Tu semana» que se pasa de su columna, en cualquier tamaño, tema o con los nombres
+  // ocultos, hace fallar la corrida.
+  for (const d of mediciones.tuSemanaQueSePasa ?? []) console.error(`TA-71 · ${d}`);
+  if ((mediciones.tuSemanaQueSePasa ?? []).length > 0) process.exitCode = 1;
   return mediciones;
+}
+
+/**
+ * TA-71: mide «Tu semana» en la página (`medirTuSemana`) y anota en `mediciones.tuSemanaQueSePasa` cada parte de una
+ * ficha que se pasa de su columna. Devuelve, para la fila de la página, cuántas fichas midió y lo que se pasa. La
+ * cohorte tiene revisiones en la semana de los dos profesionales (una vencida y una a tres días): sin ninguna ficha
+ * medida la corrida no probaría nada, y también falla.
+ */
+async function laSemanaEntra(page, mediciones, donde) {
+  const columnas = await page.evaluate(medirTuSemana);
+  const sePasan = fichasMedidas(columnas) === 0 ? ['no se midió ninguna ficha de «Tu semana»'] : partesQueSePasan(columnas);
+  mediciones.tuSemanaQueSePasa ??= [];
+  for (const frase of sePasan) mediciones.tuSemanaQueSePasa.push(`${donde} · ${frase}`);
+  return { fichas: fichasMedidas(columnas), sePasan };
 }
 
 /**
@@ -392,6 +418,24 @@ async function recorrerConNombresOcultos(page, prefijo, diego, mediciones) {
     mediciones.ocultarNombres.push(fila);
     console.log(`ocultar nombres · ${NOMBRES[prefijo]} · ${nombre}: ${apariciones.length ? `APARECEN ${apariciones.join(', ')}` : 'ningún nombre'} · ${visto.iniciales} monogramas con iniciales`);
     if (apariciones.length > 0 || visto.iniciales > 0) process.exitCode = 1;
+    if (nombre === 'espacio') {
+      // TA-71: con los nombres ocultos, la referencia («Asesorado · …») tampoco se pasa de su columna. Se mide en los dos
+      // temas y los tres tamaños, y se guarda «Tu semana» sola para verla en pantalla.
+      fila.tuSemana = {};
+      for (const tema of TEMAS) {
+        await ponerTema(page, tema);
+        const carpeta = path.join(salida, NOMBRES[prefijo], tema);
+        fs.mkdirSync(carpeta, { recursive: true });
+        for (const [ancho, alto] of TAMANOS) {
+          await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
+          await pausa(500);
+          fila.tuSemana[`${tema}-${ancho}`] = await laSemanaEntra(page, mediciones, `${NOMBRES[prefijo]} · nombres ocultos · ${tema} · ${ancho}`);
+          const semana = await page.$('.tu-semana');
+          if (semana) await semana.screenshot({ path: path.join(carpeta, `tu-semana-nombres-ocultos-${ancho}.png`) });
+        }
+      }
+      await page.setViewport({ width: TAMANOS[0][0], height: TAMANOS[0][1], deviceScaleFactor: 1 });
+    }
   }
   await alternarNombresOcultos(page, false);
 }
@@ -482,7 +526,7 @@ try {
   await pausa(1500);
   const m = await capturarTodo();
   console.log(`errores de la página: ${m.errores.length ? m.errores.slice(0, 8).join(' | ') : 'ninguno'}`);
-  if (process.exitCode === 1) console.error('Falló un guardián: TEST-TAG-004 (un nombre o una inicial con «Ocultar nombres») o TEST-TAG-032 (las peticiones al abrir). Ver mediciones.json.');
+  if (process.exitCode === 1) console.error('Falló un guardián: TEST-TAG-004 (un nombre o una inicial con «Ocultar nombres»), TEST-TAG-032 (las peticiones al abrir) o TA-71 (una ficha de «Tu semana» que se pasa de su columna). Ver mediciones.json.');
 } finally {
   fs.writeFileSync(path.join(salida, 'api.log'), registroDeLaApi.join(''));
   web?.kill();

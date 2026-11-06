@@ -7,6 +7,9 @@
  * - Cada ficha lleva el monograma, el nombre y el área, y abre lo que resuelve la revisión, como «Abrir» en
  *   «Pendientes». Con «Ocultar nombres», la referencia y el ícono. Al abrirla se guarda el lugar del Espacio, y el destino
  *   ofrece volver donde se estaba (TB-07, `lugar-del-espacio.ts`).
+ * - Nada se pasa de su columna (TA-71): el nombre, o la referencia, va en hasta dos renglones y el área, debajo, a todo
+ *   el ancho. En una columna angosta (a 1280, con las vencidas son nueve) el monograma va arriba y el área, en palabras,
+ *   sin su ícono. Lo mide la corrida de las capturas, que falla si algo se pasa.
  * - Hasta tres por día; «y N más» muestra el resto de ese día. «Ver como lista» las pone en un renglón cada una.
  * - El teclado recorre las columnas en orden: cada una es una lista con su día como título.
  * - Sin revisiones en la semana, el vacío lo dice, con de dónde salen las fechas. Mientras la cartera carga o si falló,
@@ -52,10 +55,14 @@ export function TuSemana({ cartera, alAbrir }: { cartera: EstadoDeLaCartera; /**
       <li key={claveDeLaFicha(f)}>
         <Link className="ficha-de-la-semana" href={conOrigenEnElEspacio(rutaQueResuelve(f))} data-ficha={claveDelPendiente(f)} onClick={() => alAbrir?.(f)}>
           <Retrato nombre={quien} />
-          <span className="ficha-de-la-semana__texto">
-            <span className="ficha-de-la-semana__nombre">{quien}</span>
-            <span className="ficha-de-la-semana__area">
-              <Icono nombre={ICONO_DEL_AREA_DE_CARTERA[f.domain]} tamano={15} />
+          {/* TA-71: si no entra, el nombre pasa a dos renglones y después se corta con «…»; entero queda en el texto del
+              enlace, que es lo que lee el lector de pantalla, y en el título. */}
+          <span className="ficha-de-la-semana__nombre" title={quien}>
+            {quien}
+          </span>
+          <span className="ficha-de-la-semana__area">
+            <Icono nombre={ICONO_DEL_AREA_DE_CARTERA[f.domain]} tamano={15} />
+            <span className="ficha-de-la-semana__cual">
               {area}
               {conDia && f.since ? ` · ${f.kind === 'REVIEW_OVERDUE' ? 'vencida el ' : ''}${diaDelAnioEnCurso(f.since, hoy)}` : ''}
             </span>

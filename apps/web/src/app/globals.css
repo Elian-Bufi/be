@@ -13800,11 +13800,9 @@ details[open] > summary:not([class])::before {
 /* ─── WP-TABLERO-ALTA-GAMA, TB-07 (DL-163 D-3): «Tu semana» ────────────────────────────────────────────────────────── */
 
 /* Las revisiones que acordó el profesional, una columna por día. Es su calendario: nada se colorea por la persona, y
-   «Vencidas» se distingue por su nombre y su lugar, no por un color de alarma. Hoy lleva la única luz (--ahora). */
-.tu-semana {
-  margin-bottom: 1rem;
-}
-
+   «Vencidas» se distingue por su nombre y su lugar, no por un color de alarma. Hoy lleva la única luz (--ahora).
+   Entre «Tu semana» y la mesa va el mismo aire que entre las demás secciones (--entre-secciones): el margen de abajo que
+   tenía se sumaba a ese y era el único doble del Espacio (TA-71). */
 .tu-semana__rango {
   margin: 0;
 }
@@ -13821,6 +13819,8 @@ details[open] > summary:not([class])::before {
 }
 
 .tu-semana__dia {
+  /* TA-71: cada columna es un contenedor, y su ficha se acomoda al ancho de la columna, no al de la ventana. */
+  container: dia-de-la-semana / inline-size;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -13870,19 +13870,64 @@ details[open] > summary:not([class])::before {
   list-style: none;
 }
 
+/* La columna de las fichas no crece con el nombre: sin `minmax(0, 1fr)`, la columna implícita toma el ancho del nombre
+   entero y la ficha se pasa a la columna de al lado sin llegar a cortarse (TA-71). */
+.tu-semana__fichas {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .tu-semana__lista {
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
 }
 
+/* La ficha: el monograma, el nombre y el área. En «Ver como lista», el monograma al costado de los dos. */
 .ficha-de-la-semana {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'retrato nombre'
+    'retrato area';
   align-items: center;
-  gap: 0.45rem;
+  column-gap: 0.45rem;
   min-height: 44px;
   padding: 0.25rem 0.35rem;
   border-radius: 10px;
   color: var(--texto);
   text-decoration: none;
+}
+
+.ficha-de-la-semana > .retrato {
+  grid-area: retrato;
+  justify-self: start;
+}
+
+/* En la columna de un día, el nombre al costado del monograma y el área debajo de los dos, a todo el ancho: el nombre
+   tiene así su lugar y el área no compite con él. */
+.tu-semana__fichas .ficha-de-la-semana {
+  grid-template-areas:
+    'retrato nombre'
+    'area area';
+  column-gap: 0.4rem;
+  row-gap: 0.1rem;
+  padding: 0.15rem 0.25rem;
+}
+
+/* En una columna angosta (a 1280, con las vencidas son nueve), el monograma va arriba y el nombre y el área toman todo
+   el ancho; el área va en palabras, sin su ícono, que la repite: mejor la palabra entera que el ícono con la palabra
+   cortada. */
+@container dia-de-la-semana (max-width: 7.5rem) {
+  .tu-semana__fichas .ficha-de-la-semana {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'retrato'
+      'nombre'
+      'area';
+    row-gap: 0.2rem;
+  }
+
+  .tu-semana__fichas .ficha-de-la-semana__area > .icono {
+    display: none;
+  }
 }
 
 .ficha-de-la-semana:hover {
@@ -13894,26 +13939,39 @@ details[open] > summary:not([class])::before {
   text-underline-offset: 0.18em;
 }
 
-.ficha-de-la-semana__texto {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
+/* El nombre (o la referencia, con «Ocultar nombres»): hasta dos renglones, partido entre palabras y, si una sola no
+   entra, dentro de ella; lo que sobra después del segundo renglón se corta con «…». Entero queda en el texto del
+   enlace y en el título (TA-71). */
 .ficha-de-la-semana__nombre {
+  display: -webkit-box;
+  grid-area: nombre;
   overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 0.94rem;
   font-weight: 600;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .ficha-de-la-semana__area {
-  display: inline-flex;
+  display: flex;
+  grid-area: area;
   align-items: center;
   gap: 0.25rem;
+  min-width: 0;
   color: var(--tenue);
   font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+/* El área (y, en la lista, el día): en un renglón y, si no entra, cortada con «…». */
+.ficha-de-la-semana__cual {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tu-semana__mas {

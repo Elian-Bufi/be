@@ -21,6 +21,11 @@ cambia el website o el dominio, y también a pedido.
 4. Desde TB-05, prende «Ocultar nombres» y recorre el Espacio y el Resumen de cada profesional (TEST-TAG-004): si
    aparece una palabra de un nombre de la cohorte o un monograma con iniciales, la corrida falla. Lo anota en
    `ocultarNombres`.
+   Desde TA-71, en el Espacio de cada profesional, en cada tamaño y en los dos temas, y otra vez con «Ocultar nombres»,
+   mide que el monograma, el nombre y el área de cada ficha de «Tu semana» queden adentro de su columna
+   (`herramientas/tu-semana.mjs`): si algo se pasa, o si no midió ninguna ficha, la corrida falla. Lo anota en
+   `tuSemana`, en cada fila, y en `tuSemanaQueSePasa`; con los nombres ocultos guarda además «Tu semana» sola
+   (`<profesional>/<tema>/tu-semana-nombres-ocultos-<ancho>.png`).
 5. Sube todo como el artefacto `capturas-del-tablero` de esa corrida, que dura 90 días. Las primeras pantallas de cada
    etapa se copian acá.
 

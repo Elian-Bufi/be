@@ -420,3 +420,57 @@ const { DIAS_DE_LA_SEMANA, FICHAS_POR_DIA, semanaDeRevisiones } = await import('
     assert.deepEqual(semanaDeRevisiones([conRegistros], HOY_DE_LA_SEMANA).dias.map((d) => d.fichas.length), semanaDeRevisiones([sinRegistros], HOY_DE_LA_SEMANA).dias.map((d) => d.fichas.length));
   });
 }
+
+// ─── TA-71 · «Tu semana» no pisa la columna de al lado (TB-07) ──────────────────────────────────────────────────────
+// En la galería de capturas del PR #240, a 1280 y a 1440, «Norma Castro» pisaba la raya de «Hoy» y «Diego Sosa» la de
+// «mar 10»: la columna implícita de las fichas crecía con el nombre en un renglón y la elipsis nunca cortaba. La medida
+// en el navegador la hacen las capturas (`EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/tu-semana.mjs`); acá, lo que decide
+// y lo que la sostiene en el código.
+
+const { fichasMedidas, partesQueSePasan, TOLERANCIA_PX } = await import('../EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/tu-semana.mjs');
+const { readFileSync } = await import('node:fs');
+const leer = (ruta) => readFileSync(new URL(`../${ruta}`, import.meta.url), 'utf8');
+
+test('TA-71 · una parte que se pasa de su columna se dice, por la derecha o por la izquierda; dentro de medio punto, no', () => {
+  const columna = { izquierda: 100, derecha: 207 };
+  const parte = (nombre, izquierda, derecha) => ({ parte: nombre, izquierda, derecha });
+  const vencidas = (...partes) => [{ dia: 'Vencidas', columna, fichas: [partes] }];
+  assert.equal(TOLERANCIA_PX, 0.5);
+  assert.deepEqual(partesQueSePasan(vencidas(parte('monograma', 104, 132), parte('nombre', 138, 207.5), parte('área', 104, 190))), []);
+  // Lo de la galería, a 1280: el nombre en un renglón, 39 más allá de la columna.
+  assert.deepEqual(partesQueSePasan(vencidas(parte('nombre', 138, 246))), ['Vencidas · nombre: sobresale 39 a la derecha']);
+  assert.deepEqual(partesQueSePasan(vencidas(parte('área', 98, 150))), ['Vencidas · área: sobresale 2 a la izquierda']);
+  // Con varias fichas en un día se dice cuál.
+  const dos = [{ dia: 'lun 9', columna, fichas: [[parte('nombre', 138, 200)], [parte('nombre', 138, 210)]] }];
+  assert.deepEqual(partesQueSePasan(dos), ['lun 9 (ficha 2) · nombre: sobresale 3 a la derecha']);
+  assert.equal(fichasMedidas([...dos, { dia: 'mar 10', columna, fichas: [] }]), 2);
+});
+
+test('TA-71 · el nombre no estira su columna: hasta dos renglones y «…», y entero en el título y en el texto del enlace', () => {
+  const css = leer('apps/web/src/app/globals.css');
+  const regla = (selector) => {
+    const i = css.indexOf(`\n${selector} {`);
+    assert.ok(i >= 0, `falta la regla ${selector}`);
+    return css.slice(i, css.indexOf('\n}', i));
+  };
+  assert.match(regla('.tu-semana__fichas'), /grid-template-columns: minmax\(0, 1fr\);/, 'la columna de las fichas no crece con el nombre');
+  const nombre = regla('.ficha-de-la-semana__nombre');
+  for (const declaracion of ['overflow: hidden;', '-webkit-line-clamp: 2;', 'overflow-wrap: anywhere;']) assert.ok(nombre.includes(declaracion), `el nombre lleva ${declaracion}`);
+  assert.doesNotMatch(nombre, /white-space: nowrap/, 'en un solo renglón, un nombre largo no entra en la columna de 1280');
+  assert.match(regla('.ficha-de-la-semana__cual'), /text-overflow: ellipsis;/);
+  // En una columna angosta, el monograma arriba y el área en palabras: lo decide el ancho de la columna, no la ventana.
+  assert.match(regla('.tu-semana__dia'), /container: dia-de-la-semana \/ inline-size;/);
+  assert.match(css, /@container dia-de-la-semana \(max-width: 7\.5rem\) \{/);
+  // Entero para el lector de pantalla (el texto del enlace no se recorta) y en el título, con «Ocultar nombres» también.
+  const ficha = leer('apps/web/src/app/pro/tu-semana-en-pantalla.tsx');
+  assert.match(ficha, /<span className="ficha-de-la-semana__nombre" title=\{quien\}>\s*\{quien\}\s*<\/span>/);
+  assert.match(ficha, /const quien = delAsesorado\(f\.advisee\);/);
+});
+
+test('TA-71 · las capturas miden «Tu semana» en cada tamaño y tema, también con los nombres ocultos, y fallan si algo se pasa', () => {
+  const capturas = leer('EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs');
+  assert.match(capturas, /fila\.tuSemana\[`\$\{tema\}-\$\{ancho\}`\] = await laSemanaEntra\(page, mediciones, `\$\{NOMBRES\[prefijo\]\} · \$\{tema\} · \$\{ancho\}`\);/);
+  assert.match(capturas, /await laSemanaEntra\(page, mediciones, `\$\{NOMBRES\[prefijo\]\} · nombres ocultos · \$\{tema\} · \$\{ancho\}`\);/);
+  assert.match(capturas, /if \(\(mediciones\.tuSemanaQueSePasa \?\? \[\]\)\.length > 0\) process\.exitCode = 1;/);
+  assert.match(capturas, /fichasMedidas\(columnas\) === 0 \? \['no se midió ninguna ficha de «Tu semana»'\]/);
+});
