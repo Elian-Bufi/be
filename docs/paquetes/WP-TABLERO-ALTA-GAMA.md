@@ -647,6 +647,7 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 |---|---|---|
 | TB-00 | Hecha. La línea de base es la corrida 42154091600 de `capturas-del-tablero`, sobre dbf19eb, con el website igual al de `main` b91dc3f: ocho páginas en Claro y Azul noche, a 1280 × 800, 1440 × 900 y 1920 × 950, con sus peticiones al abrir y sin errores de la página | `EVIDENCIA/TABLERO-ALTA-GAMA/linea-de-base/` |
 | TB-01 | Hecha. Inter variable y Poppins 600 autoalojadas con `next/font/local`, con su licencia y su respaldo ajustado; Poppins, en el título del Espacio y en el nombre de la persona en el marco de la ficha (la pregunta del cajón llega con TB-12). Se compara con la línea de base en la corrida de su commit | `apps/web/src/letra/`, `scripts/letra-autoalojada.test.cjs` |
+| TB-02 | Hecha. `medidaDeMarca`, `medidaDelRombo`, `medidaDelAro` y `rayaDeCorregido` en `geometria.ts`, con la regla del anexo A7, en el minigráfico, «Analizar», la evolución de Antropometría y los dos gráficos de Entrenamiento. Lo elegido es una guía fina y continua, la fecha en una píldora invertida y un aro del color de la métrica; el foco del teclado lo pasa al color del foco. El piso de la letra, 12,5, rige en los cuatro. TEST-TAG-006 | `seguimiento/geometria.ts`, `seguimiento/marca.tsx`, `scripts/geometria-del-minigrafico.test.mjs` |
 
 ### 10.1 Las decisiones de la implementación
 
@@ -668,3 +669,12 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   pasó a tres renglones y la lista iguala el alto de todas. Se usa el interletrado que el diseño de Inter da para esa
   medida. *Otra opción:* bajar el texto secundario a 13 / 18, como dice la escala de la propuesta, que cambia todas las
   pantallas y no es de esta parte.
+- **TA-04 · Lo no comparable de Antropometría sigue siendo un cuadrado girado lleno.** La propuesta dice que el rombo
+  hueco es solo de lo indicado en el plan y no dice cómo va lo no comparable. Se conserva la forma de hoy, que la leyenda
+  y la tabla ya explican, del mismo tamaño que el punto lleno y distinta del rombo hueco. *Otra opción:* la vertical
+  rotulada del cambio de método (A8), que pide reordenar el gráfico de tomas y su leyenda.
+- **TA-05 · Lo elegido en las barras de Entrenamiento, sin el borde del foco.** Donde no hay una marca que rodear (las
+  barras por serie), lo elegido es la columna en el fondo suave con la guía fina; en la evolución de una serie, la guía
+  y el aro sobre lo registrado. El foco del teclado queda en el marco del gráfico, como en los otros tres. Lo planificado
+  de cada sesión pasa de cuadrado a rombo hueco, la forma de lo indicado en «Analizar». *Otra opción:* dejar el
+  recuadro ámbar, que se confunde con el foco (A11).

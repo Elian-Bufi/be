@@ -37,6 +37,93 @@ export function diasSinRegistros(huecos: readonly { readonly from: string; reado
   });
 }
 
+// ─── La gramática de las marcas (WP-TABLERO-ALTA-GAMA, TB-02; DL-163 D-3) ───────────────────────
+//
+// Una sola regla de tamaño para los cuatro gráficos de la ficha (el minigráfico, «Analizar», la evolución de
+// Antropometría y los de Entrenamiento). Sale del lugar por día (o por observación) y del estado del dato, no de cada
+// gráfico. `R` es el radio que ve el ojo, hasta el borde de afuera del trazo; en el SVG va `r = R − trazo / 2`.
+
+/** La letra más chica de un gráfico, en px: el piso del criterio de diseño, en los cuatro gráficos. */
+export const LETRA_MINIMA = 12.5;
+
+/** Lo que dice una marca: el estado del dato. La forma lo dice además del color (WCAG 1.4.1). */
+export type EstadoDeMarca = 'lleno' | 'hueco' | 'reportado' | 'calculado';
+
+export interface MedidaDeMarca {
+  readonly estado: EstadoDeMarca;
+  /** El radio que ve el ojo. */
+  readonly R: number;
+  /** El radio que va en el SVG. Sin trazo, es `R`. */
+  readonly r: number;
+  /** El grueso del contorno; el lleno no lleva. */
+  readonly trazo: number;
+  /** Un halo de 1 en la superficie: solo con lugar de sobra, para separar el punto de la línea. */
+  readonly halo: boolean;
+  /** El punto del centro de lo calculado; los demás, `null`. */
+  readonly puntoAdentro: number | null;
+  /** El contorno cortado de lo reportado: cuatro trazos y cuatro cortes iguales (`C/8 C/8`); los demás, `null`. */
+  readonly corte: readonly [number, number] | null;
+}
+
+const entre = (v: number, minimo: number, maximo: number): number => Math.min(Math.max(v, minimo), maximo);
+
+/**
+ * La medida de una marca según el lugar que le toca (`porDia`, en px) y su estado:
+ * - **lleno:** `R = clamp(1,25; 0,4 · d; 3,5)`, sin trazo, con halo solo si `d ≥ 6`;
+ * - **con estado** (hueco, reportado, calculado): `R = máx(R_lleno + 1; 2,75)`, y 3,25 como mínimo para lo reportado y lo
+ *   calculado, que tienen que verse cortados o con su punto a densidad 1. El trazo es de 1,25, o de 1,5 si `R ≥ 4`.
+ * Así el agujero del hueco mide por lo menos 1,5 de radio: lleno y hueco se distinguen sin depender de la pantalla.
+ */
+export function medidaDeMarca(estado: EstadoDeMarca, porDia: number): MedidaDeMarca {
+  const lleno = sinRuido(entre(0.4 * porDia, 1.25, 3.5));
+  if (estado === 'lleno') return { estado, R: lleno, r: lleno, trazo: 0, halo: porDia >= 6, puntoAdentro: null, corte: null };
+  const R = sinRuido(Math.max(lleno + 1, 2.75, estado === 'hueco' ? 0 : 3.25));
+  const trazo = R >= 4 ? 1.5 : 1.25;
+  const r = sinRuido(R - trazo / 2);
+  const octavo = sinRuido((2 * Math.PI * r) / 8);
+  return {
+    estado,
+    R,
+    r,
+    trazo,
+    halo: false,
+    puntoAdentro: estado === 'calculado' ? sinRuido(Math.max(0.75, 0.35 * R)) : null,
+    corte: estado === 'reportado' ? [octavo, octavo] : null,
+  };
+}
+
+/** Lo indicado en el plan: un rombo hueco del tamaño del hueco, no del doble (media diagonal `R_hueco + 1`, trazo 1,25). */
+export function medidaDelRombo(porDia: number): { readonly mediaDiagonal: number; readonly trazo: number } {
+  return { mediaDiagonal: sinRuido(medidaDeMarca('hueco', porDia).R + 1), trazo: 1.25 };
+}
+
+/**
+ * Lo elegido: un aro fino del color de la métrica alrededor de la marca, sin taparla (radio `R_hueco + 3`, trazo 1,5),
+ * separado de lo que tiene detrás por 1,5 de superficie. Es la misma forma en los cuatro gráficos; con el foco del
+ * teclado en el gráfico, el aro pasa al color del foco (globals.css, `.grafico__aro`).
+ */
+export function medidaDelAro(porDia: number): { readonly r: number; readonly trazo: number; readonly separacion: number } {
+  return { r: sinRuido(medidaDeMarca('hueco', porDia).R + 3), trazo: 1.5, separacion: 1.5 };
+}
+
+/**
+ * Lo corregido: una raya de 1,25 de grueso y `2 · R` de largo, a `R + 2` por encima del centro. No es un centro claro,
+ * que se confundiría con el hueco.
+ */
+export function rayaDeCorregido(medida: MedidaDeMarca): { readonly ancho: number; readonly grueso: number; readonly arriba: number } {
+  return { ancho: sinRuido(2 * medida.R), grueso: 1.25, arriba: sinRuido(medida.R + 2) };
+}
+
+/**
+ * El estado de un punto de «Analizar» o del minigráfico. Lo reportado y lo calculado se dibujan con su forma aunque sean
+ * subtotales; un subtotal, un día o una semana sin completar y una serie de carga rápida (DL-161), huecos.
+ */
+export function estadoDeMarca(p: PuntoAnalitico): EstadoDeMarca {
+  if (p.dataClass === 'REPORTED') return 'reportado';
+  if (p.dataClass === 'DERIVED') return 'calculado';
+  return p.quality === 'PARTIAL' || p.partialBucket || esPuntoDeCargaRapida(p) ? 'hueco' : 'lleno';
+}
+
 // ─── El minigráfico de un indicador ─────────────────────────────────────────────────────────────
 
 export interface EntradaDelMinigrafico {
@@ -68,7 +155,10 @@ export interface PuntoDelMinigrafico {
   readonly clave: string;
   readonly x: number;
   readonly y: number;
+  /** El radio que ve el ojo (`medida.R`). */
   readonly r: number;
+  /** Cómo se dibuja la marca: su estado, su radio y su trazo (`medidaDeMarca`). */
+  readonly medida: MedidaDeMarca;
   /** Un subtotal, un día o una semana sin completar, o una serie de carga rápida (DL-161): se dibuja hueco. */
   readonly hueco: boolean;
   /** Reportado por la persona o calculado por un método: se dibuja distinto (lo medido, no). */
@@ -133,7 +223,8 @@ export function extremosDelEje(minimo: number, maximo: number, divisiones = 2): 
  * - **Un punto por observación con valor.** Lo que no tiene valor (un día con registros sin cantidades) no es un punto;
  *   tampoco se sombrea, porque no es un día sin registros.
  * - **La línea une solo puntos del mismo tramo.** Lo que está sin completar (el día en curso) va suelto.
- * - **No se quita ningún punto:** con muchos días en poco ancho se achica la marca.
+ * - **No se quita ningún punto:** con muchos días en poco ancho se achica la marca, hasta el mínimo de su estado
+ *   (`medidaDeMarca`).
  * - **Dos marcas en el eje vertical,** en números redondos: ubican el valor sin dibujar una grilla.
  */
 export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelMinigrafico {
@@ -168,15 +259,15 @@ export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelM
   const xEn = (x: number): number => sinRuido(caja.izquierda + ((x - x0) / (x1 - x0)) * anchoUtil);
   const yEn = (v: number): number => sinRuido(caja.abajo - ((v - abajo) / (arriba - abajo)) * altoUtil);
 
-  // El tamaño de la marca sale del lugar que hay por día (la misma regla de «Analizar», más chica).
+  // El tamaño de la marca sale del lugar que hay por día, con la misma regla de los cuatro gráficos (TB-02).
   const porDia = anchoUtil / Math.max(1, Math.round((x1 - x0) / DIA));
-  const radio = porDia >= 9 ? 3 : porDia >= 5 ? 2.5 : porDia >= 2.5 ? 2 : 1.6;
   const puntos = dibujados.map(({ p, x, v }) => {
     // DL-161: una serie de carga rápida (tildada sin escribir) es hueca, como en «Analizar».
     const hueco = p.quality === 'PARTIAL' || p.partialBucket || esPuntoDeCargaRapida(p);
     const clase = p.dataClass === 'REPORTED' || p.dataClass === 'DERIVED' ? p.dataClass : null;
-    // Una marca hueca, cortada o con un punto adentro necesita un mínimo para verse como tal.
-    return { clave: p.pointId, x: xEn(x), y: yEn(v), r: hueco || clase ? Math.max(radio + 0.8, clase ? 3.6 : 2.6) : radio, hueco, clase };
+    // Una marca hueca, cortada o con un punto adentro tiene su mínimo, que la separa del lleno.
+    const medida = medidaDeMarca(estadoDeMarca(p), porDia);
+    return { clave: p.pointId, x: xEn(x), y: yEn(v), r: medida.R, hueco, clase, medida };
   });
 
   // Un trazo por tramo, con sus puntos en orden. Lo que está sin completar no se une a nada.

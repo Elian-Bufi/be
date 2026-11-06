@@ -34,11 +34,11 @@ import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceDot, ReferenceL
 import { diaYMesCivil } from '../../../../lib/formato';
 import type { Modo } from './estado';
 // Dónde cae un punto en el eje de fechas: lo comparte con el minigráfico del Resumen, que no carga esta biblioteca.
-import { DIA, fechaDeX, mediodia, xDe } from './geometria';
-import { ESTILOS, Marca, Punto, Rombo } from './marca';
+import { DIA, estadoDeMarca, fechaDeX, LETRA_MINIMA, medidaDeMarca, medidaDelAro, medidaDelRombo, mediodia, xDe } from './geometria';
+import { Aro, ESTILOS, Marca, Punto, Rombo } from './marca';
 
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
-const LETRA = 12.5;
+const LETRA = LETRA_MINIMA;
 
 /** Una vigencia de plan que acompaña a un gráfico, con el nombre de su área. */
 export type BandaDePlan = VigenciaDePlan & { readonly area: string };
@@ -115,6 +115,33 @@ interface PropsDelLienzo {
  * muestra que los paneles están alineados, sin el texto. Con `tick={false}` la biblioteca tampoco dibuja la rayita.
  */
 const MarcaSinFecha = (): ReactNode => <g />;
+
+/** La caja que la biblioteca le pasa al rótulo de una línea de referencia: para una vertical, su x y el alto del dibujo. */
+interface CajaDeRotulo {
+  readonly x?: number;
+  readonly y?: number;
+  readonly width?: number;
+  readonly height?: number;
+}
+
+/**
+ * La fecha elegida, en una píldora invertida sobre el eje (TB-02; A11 de la propuesta): fondo del texto, letra de la
+ * superficie, 12,5 en 600. Va debajo del dibujo, sobre los rótulos de las fechas, centrada en la guía.
+ */
+function PildoraDeFecha({ caja, texto }: { caja: CajaDeRotulo | undefined; texto: string }) {
+  if (!caja || caja.x === undefined || caja.y === undefined) return <g />;
+  const ancho = texto.length * LETRA * 0.6 + 12;
+  const alto = LETRA + 6;
+  const y = caja.y + (caja.height ?? 0) + 3;
+  return (
+    <g className="grafico__pildora" aria-hidden="true">
+      <rect x={caja.x - ancho / 2} y={y} width={ancho} height={alto} rx={6} fill="var(--texto)" />
+      <text x={caja.x} y={y + alto / 2} textAnchor="middle" dominantBaseline="central" fill="var(--superficie)" fontSize={LETRA} fontWeight={600}>
+        {texto}
+      </text>
+    </g>
+  );
+}
 
 /**
  * El alto del área de dibujo de cada panel: con menos paneles, cada uno aprovecha el lugar. Con tres, los tres y la
@@ -297,19 +324,15 @@ function Panel({
     return () => observador.disconnect();
   }, [lienzo]);
   const espacioPorDia = ancho > 0 ? (ancho - 62 - margenDerecho) / Math.max(1, Math.round((x1 - x0) / DIA)) : 12;
-  const radio = espacioPorDia >= 12 ? 4.5 : espacioPorDia >= 7 ? 3.5 : 2.5;
-  /** El radio de la marca de un punto: una hueca, cortada o con un punto adentro necesita un mínimo para verse como tal. */
-  const radioDe = (pt: PuntoAnalitico): number => {
-    const conClase = pt.dataClass === 'REPORTED' || pt.dataClass === 'DERIVED';
-    return pt.quality === 'PARTIAL' || pt.partialBucket || esPuntoDeCargaRapida(pt) || conClase ? Math.max(radio + 1.5, conClase ? 5 : 3.5) : radio;
-  };
+  /** La marca de un punto, con la regla de los cuatro gráficos (TB-02): una hueca, cortada o con un punto adentro tiene su mínimo. */
+  const medidaDe = (pt: PuntoAnalitico) => medidaDeMarca(estadoDeMarca(pt), espacioPorDia);
   const esElegido = (pt: PuntoAnalitico): boolean => fecha !== null && pt.date <= fecha && fecha <= (pt.dateEnd ?? pt.date);
   // El aro de la fecha elegida, alrededor de cada marca de esa fecha. Va en una capa aparte de las líneas: sus puntos se
   // recortan al área de dibujo, y el aro del último día quedaba cortado contra el borde derecho.
   const aros = [...puntosPorFila.entries()].flatMap(([clave, info]) => {
     if (!esElegido(info.punto)) return [];
     const y = series.find((s) => s.indice === info.indice)?.valor(info.punto) ?? null;
-    return y === null ? [] : [{ clave, x: Number(clave.slice(clave.lastIndexOf('|') + 1)), y, r: Math.max(radioDe(info.punto) * 2, 8) }];
+    return y === null ? [] : [{ clave, x: Number(clave.slice(clave.lastIndexOf('|') + 1)), y, indice: info.indice }];
   });
 
   const punto = (clave: string) =>
@@ -321,22 +344,20 @@ function Panel({
       const e = ESTILOS[info.indice] ?? ESTILOS[0];
       // DL-161: una serie de carga rápida (tildada sin escribir) también es hueca, con su leyenda «carga rápida».
       const cargaRapida = esPuntoDeCargaRapida(info.punto);
-      const hueco = info.punto.quality === 'PARTIAL' || info.punto.partialBucket || cargaRapida;
       const clase = info.punto.dataClass === 'REPORTED' || info.punto.dataClass === 'DERIVED' ? info.punto.dataClass : null;
       return (
         <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
-          <Punto cx={cx} cy={cy} r={radioDe(info.punto)} color={e.color} hueco={hueco} trazo={radio < 4.5 ? 1.5 : 2} clase={clase} />
+          <Punto cx={cx} cy={cy} color={e.color} medida={medidaDe(info.punto)} />
         </g>
       );
     };
 
   const fechaX = fecha ? mediodia(fecha) : null;
   const escalones = [...(unica?.plan?.escalones ?? [])].sort((a, b) => a.desde.localeCompare(b.desde));
-  // Lo indicado en el plan: un rombo hueco por día, bastante más grande que los puntos. Cuando lo registrado vale lo
-  // mismo, el punto queda adentro con un aro libre alrededor: con un rombo apenas más grande, el conjunto parecía un rombo
-  // lleno, otra marca.
+  // Lo indicado en el plan: un rombo hueco por día, del tamaño del hueco y no del doble (TB-02): cuando lo registrado
+  // vale lo mismo, el punto queda adentro y el rombo se ve en sus cuatro puntas.
   const indicados = (unica?.indicado?.dias ?? []).filter((d) => mediodia(d.fecha) >= x0 && mediodia(d.fecha) <= x1);
-  const radioDelRombo = Math.max(radio * 2.1, 8);
+  const radioDelRombo = medidaDelRombo(espacioPorDia).mediaDiagonal;
   const colorDeLaSerie = (ESTILOS[unica?.indice ?? 0] ?? ESTILOS[0]).color;
   // Los días sin registros que se sombrean. Cuando varias métricas comparten el gráfico, los que no tienen registros en
   // ninguna (en las de Nutrición son los mismos días: salen de los mismos registros).
@@ -540,7 +561,7 @@ function Panel({
                 y={d.valor}
                 r={radioDelRombo}
                 ifOverflow="extendDomain"
-                shape={(props: { cx?: number; cy?: number }) => (props.cx === undefined || props.cy === undefined ? <g /> : <Rombo cx={props.cx} cy={props.cy} r={radioDelRombo} color={colorDeLaSerie} trazo={radio < 4.5 ? 1.5 : 2} />)}
+                shape={(props: { cx?: number; cy?: number }) => (props.cx === undefined || props.cy === undefined ? <g /> : <Rombo cx={props.cx} cy={props.cy} porDia={espacioPorDia} color={colorDeLaSerie} />)}
               />
             ))}
             {tramos.map((t) => {
@@ -568,9 +589,19 @@ function Panel({
                   />
                 ))
               : null}
-            {fechaX !== null ? <ReferenceLine x={fechaX} stroke="var(--texto)" strokeWidth={1.5} strokeDasharray="6 3" ifOverflow="hidden" /> : null}
+            {/* Lo elegido (TB-02): una guía fina y continua, la fecha en una píldora invertida sobre el eje y un aro del color
+                de la métrica alrededor de cada marca de esa fecha. Con el foco en el gráfico, el aro pasa al color del foco. La
+                píldora va solo en el panel que escribe las fechas. */}
+            {fechaX !== null && fecha && fechaX >= x0 && fechaX <= x1 ? <ReferenceLine className="grafico__guia" x={fechaX} stroke="var(--tenue)" strokeWidth={1} ifOverflow="visible" label={conFechas ? (p: unknown) => <PildoraDeFecha caja={(p as { viewBox?: CajaDeRotulo } | null)?.viewBox} texto={diaYMesCivil(fecha)} /> : undefined} /> : null}
             {aros.map((a) => (
-              <ReferenceDot key={`aro-${a.clave}`} className="grafico__aro" x={a.x} y={a.y} r={a.r} fill="none" stroke="var(--texto)" strokeWidth={2} ifOverflow="visible" />
+              <ReferenceDot
+                key={`aro-${a.clave}`}
+                x={a.x}
+                y={a.y}
+                r={medidaDelAro(espacioPorDia).r}
+                ifOverflow="visible"
+                shape={(props: { cx?: number; cy?: number }) => (props.cx === undefined || props.cy === undefined ? <g /> : <Aro cx={props.cx} cy={props.cy} porDia={espacioPorDia} color={(ESTILOS[a.indice] ?? ESTILOS[0]).color} />)}
+              />
             ))}
             {arrastre && Math.abs(arrastre.hasta - arrastre.desde) >= DIA ? <ReferenceArea x1={arrastre.desde} x2={arrastre.hasta} fill="var(--fondo-suave)" fillOpacity={0.6} stroke="var(--texto)" /> : null}
           </LineChart>

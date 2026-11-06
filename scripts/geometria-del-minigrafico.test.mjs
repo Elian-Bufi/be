@@ -10,7 +10,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { diasSinRegistros, extremosDelEje, geometriaDelMinigrafico, mediodia, xDe } = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
+const { diasSinRegistros, estadoDeMarca, extremosDelEje, geometriaDelMinigrafico, LETRA_MINIMA, medidaDeMarca, medidaDelAro, medidaDelRombo, mediodia, rayaDeCorregido, xDe } = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
 
 const punto = (date, value, extra = {}) => ({
   pointId: `p-${date}-${extra.segment ?? 't0'}`,
@@ -97,7 +97,7 @@ test('la línea une solo puntos del mismo tramo, y lo que está sin completar va
   assert.equal(g.tramos[0], `M${a.x} ${a.y} L${b.x} ${b.y}`);
 });
 
-test('con muchos días en poco ancho no se quita ningún punto: se achica la marca', () => {
+test('con muchos días en poco ancho no se quita ningún punto: se achica la marca hasta su mínimo', () => {
   const de = (dias) => {
     const hasta = '2026-10-10';
     const desde = new Date(mediodia(hasta) - (dias - 1) * 86_400_000).toISOString().slice(0, 10);
@@ -106,8 +106,10 @@ test('con muchos días en poco ancho no se quita ningún punto: se achica la mar
   };
   const [semana, trimestre, anio] = [de(7), de(90), de(365)];
   assert.deepEqual([semana.puntos.length, trimestre.puntos.length, anio.puntos.length], [7, 90, 365]);
-  assert.ok(semana.puntos[0].r > trimestre.puntos[0].r && trimestre.puntos[0].r > anio.puntos[0].r, `${semana.puntos[0].r} · ${trimestre.puntos[0].r} · ${anio.puntos[0].r}`);
-  assert.ok(anio.puntos[0].r >= 1.5, 'la marca más chica todavía se ve');
+  // TB-02 (DL-163 D-3): la regla de los cuatro gráficos tiene un piso, 1,25 para el lleno; a 90 y a 365 días los dos
+  // llegan al piso (antes, 1,5 y una escala propia del minigráfico). Con TB-04, el minigráfico deja de marcar cada día.
+  assert.ok(semana.puntos[0].r > trimestre.puntos[0].r && trimestre.puntos[0].r >= anio.puntos[0].r, `${semana.puntos[0].r} · ${trimestre.puntos[0].r} · ${anio.puntos[0].r}`);
+  assert.equal(anio.puntos[0].r, 1.25, 'la marca más chica todavía se ve');
 });
 
 test('el día en curso no se sombrea, y el inicio del plan se marca solo si cae adentro del período', () => {
@@ -238,4 +240,88 @@ test('DL-161: una serie de carga rápida (tildada sin escribir) es un punto huec
   // Otro detalle con el mismo rótulo no la vuelve hueca: se reconoce por el rótulo y el valor.
   const otra = geometriaDelMinigrafico({ ...BASE, puntos: [punto(dia(2), 60, { detail: [{ label: 'Cómo se cargó', value: 'Carga completa' }] })] });
   assert.deepEqual(otra.puntos.map((p) => p.hueco), [false]);
+});
+
+// ─── TEST-TAG-006 · La gramática de las marcas (WP-TABLERO-ALTA-GAMA, TB-02; DL-163 D-3) ─────────────────────────
+
+const LUGARES = [0.4, 1, 2.7, 4, 6, 10, 24, 80];
+const ESTADOS = ['lleno', 'hueco', 'reportado', 'calculado'];
+
+test('TEST-TAG-006 · cada marca con estado tiene su mínimo, a cualquier densidad', () => {
+  for (const d of LUGARES) {
+    const lleno = medidaDeMarca('lleno', d);
+    assert.ok(lleno.R >= 1.25 && lleno.R <= 3.5, `lleno a ${d}: ${lleno.R}`);
+    assert.equal(lleno.trazo, 0);
+    assert.equal(lleno.halo, d >= 6, 'el halo, solo con lugar de sobra');
+    for (const estado of ['hueco', 'reportado', 'calculado']) {
+      const m = medidaDeMarca(estado, d);
+      assert.ok(m.R >= (estado === 'hueco' ? 2.75 : 3.25), `${estado} a ${d}: ${m.R}`);
+      assert.ok(m.R >= lleno.R + 1, 'una marca con estado es más grande que el lleno');
+      assert.equal(m.trazo, m.R >= 4 ? 1.5 : 1.25);
+      assert.equal(Number((m.r + m.trazo / 2).toFixed(6)), m.R, 'en el SVG va R menos medio trazo');
+    }
+  }
+});
+
+test('TEST-TAG-006 · el lleno se distingue del hueco: el agujero se ve a densidad 1', () => {
+  for (const d of LUGARES) {
+    const lleno = medidaDeMarca('lleno', d);
+    const hueco = medidaDeMarca('hueco', d);
+    // El agujero del hueco (su radio menos el trazo) mide por lo menos lo que el punto lleno más chico.
+    assert.ok(hueco.R - hueco.trazo >= 1.25, `agujero a ${d}: ${hueco.R - hueco.trazo}`);
+    assert.ok(hueco.R - lleno.R >= 1, 'el borde del hueco queda afuera del lleno');
+    const reportado = medidaDeMarca('reportado', d);
+    assert.ok(reportado.corte, 'lo reportado va cortado');
+    assert.ok(Math.abs(reportado.corte[0] * 8 - 2 * Math.PI * reportado.r) < 1e-4, 'cuatro trazos y cuatro cortes iguales');
+    const calculado = medidaDeMarca('calculado', d);
+    assert.ok(calculado.puntoAdentro !== null && calculado.puntoAdentro >= 0.75 && calculado.puntoAdentro < calculado.r - calculado.trazo / 2);
+    assert.equal(hueco.corte, null);
+    assert.equal(hueco.puntoAdentro, null);
+  }
+});
+
+test('TEST-TAG-006 · lo elegido rodea la marca sin taparla; el rombo es del tamaño del hueco', () => {
+  for (const d of LUGARES) {
+    const hueco = medidaDeMarca('hueco', d);
+    for (const estado of ESTADOS) {
+      const m = medidaDeMarca(estado, d);
+      const aro = medidaDelAro(d);
+      assert.ok(aro.r - aro.trazo / 2 - aro.separacion >= m.R, `el aro no pisa la marca ${estado} a ${d}`);
+    }
+    const rombo = medidaDelRombo(d);
+    assert.equal(rombo.mediaDiagonal, Number((hueco.R + 1).toFixed(6)));
+    assert.ok(rombo.mediaDiagonal < 2 * hueco.R, 'no es el doble');
+    const lleno = medidaDeMarca('lleno', d);
+    const raya = rayaDeCorregido(lleno);
+    assert.ok(raya.arriba - raya.grueso / 2 > lleno.R, 'la raya de lo corregido va encima, sin tocar la marca');
+  }
+});
+
+test('TEST-TAG-006 · el estado sale del punto: la clase manda sobre el subtotal', () => {
+  assert.equal(estadoDeMarca(punto(dia(1), 10)), 'lleno');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { quality: 'PARTIAL' })), 'hueco');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { partialBucket: true })), 'hueco');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { dataClass: 'REPORTED', quality: 'PARTIAL' })), 'reportado');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { dataClass: 'DERIVED' })), 'calculado');
+  assert.equal(LETRA_MINIMA, 12.5);
+});
+
+test('TEST-TAG-006 · ningún punto del minigráfico queda fuera del lienzo', () => {
+  for (const [dias, ancho] of [
+    [7, 120],
+    [30, 300],
+    [90, 300],
+    [365, 260],
+  ]) {
+    const hasta = '2026-10-10';
+    const desde = new Date(mediodia(hasta) - (dias - 1) * 86_400_000).toISOString().slice(0, 10);
+    const puntos = Array.from({ length: dias }, (_, i) =>
+      punto(new Date(mediodia(desde) + i * 86_400_000).toISOString().slice(0, 10), i % 5 === 0 ? 10 : 2000 + i, i % 3 === 0 ? { quality: 'PARTIAL' } : i % 7 === 0 ? { dataClass: 'REPORTED' } : {}),
+    );
+    const g = geometriaDelMinigrafico({ ...BASE, desde, hasta, puntos, ancho, alto: 72 });
+    for (const p of g.puntos) {
+      assert.ok(p.x - p.r >= 0 && p.x + p.r <= ancho && p.y - p.r >= 0 && p.y + p.r <= 72, `${dias} días: ${p.x},${p.y} r ${p.r}`);
+      assert.equal(p.r, p.medida.R);
+    }
+  }
 });

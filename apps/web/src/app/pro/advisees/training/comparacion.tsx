@@ -59,6 +59,8 @@ import { Ayuda } from '../../../../components/ayuda';
 import { Aviso } from '../../../../components/formulario';
 import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
 import { dia, diaCorto, fecha } from '../../../../lib/formato';
+import { LETRA_MINIMA, medidaDeMarca } from '../seguimiento/geometria';
+import { Aro, Punto, Rombo } from '../seguimiento/marca';
 
 export interface Capas {
   readonly planificado: boolean;
@@ -81,7 +83,7 @@ function ControlDeCapas({ capas, onCambio, lineas = false }: { capas: Capas; onC
         <input type="checkbox" checked={capas.planificado} onChange={(e) => onCambio({ ...capas, planificado: e.target.checked })} />
         <span className="muestra muestra--planificado" aria-hidden="true" />
         {COPY_COMPARACION.capaPlanificado}
-        {lineas ? ' (línea discontinua, cuadrados; franja si es un rango)' : ' (rayado; franja si es un rango)'}
+        {lineas ? ' (línea discontinua, rombos huecos; franja si es un rango)' : ' (rayado; franja si es un rango)'}
       </label>
       <label className="capa">
         <input type="checkbox" checked={capas.registrado} onChange={(e) => onCambio({ ...capas, registrado: e.target.checked })} />
@@ -614,7 +616,10 @@ function GraficoPorSerie({
             >
               <Patrones id={id} />
               <CartesianGrid vertical={false} stroke="var(--borde)" />
-              {elegida !== null && datos[elegida] ? <ReferenceArea x1={datos[elegida].numero} x2={datos[elegida].numero} fill="var(--fondo-suave)" stroke="var(--foco)" strokeWidth={2} /> : null}
+              {/* Lo elegido (TB-02): la columna en el fondo suave y la guía fina y continua, como en «Analizar». El foco del
+                  teclado es el del marco del gráfico; ya no se confunde con lo elegido. */}
+              {elegida !== null && datos[elegida] ? <ReferenceArea x1={datos[elegida].numero} x2={datos[elegida].numero} fill="var(--fondo-suave)" stroke="none" /> : null}
+              {elegida !== null && datos[elegida] ? <ReferenceLine className="grafico__guia" x={datos[elegida].numero} stroke="var(--tenue)" strokeWidth={1} /> : null}
               <XAxis
                 dataKey="numero"
                 interval={0}
@@ -629,9 +634,9 @@ function GraficoPorSerie({
                 domain={DOMINIO}
                 allowDecimals={medida.variable !== 'repeticiones'}
                 width={48}
-                tick={{ fill: 'var(--tenue)', fontSize: 12 }}
+                tick={{ fill: 'var(--tenue)', fontSize: LETRA_MINIMA }}
                 axisLine={{ stroke: 'var(--borde-control)' }}
-                label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }}
+                label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: LETRA_MINIMA }}
               />
               {conPuntero ? (
                 <Tooltip cursor={{ fill: 'var(--fondo-suave)' }} content={({ active, label }) => (active ? <TooltipDeSerie serie={series.find((s) => s.numero === label)} medida={medida} /> : null)} />
@@ -943,7 +948,8 @@ function GraficoDeEvolucion({
                     .filter((p) => p.registrado.tipo !== 'valor')
                     .map((p) => <ReferenceArea key={`hueco-${p.indice}`} x1={p.indice} x2={p.indice} fill={`url(#${id}-hueco)`} fillOpacity={1} strokeOpacity={0} className="grafico__elegible" onClick={() => onElegir(p.indice)} />)
                 : null}
-              {elegido !== null ? <ReferenceArea x1={elegido} x2={elegido} fill="var(--fondo-suave)" fillOpacity={0.6} stroke="var(--foco)" strokeWidth={2} /> : null}
+              {/* Lo elegido (TB-02): la guía fina y continua y, sobre lo registrado, el aro del color de la serie. */}
+              {elegido !== null ? <ReferenceLine className="grafico__guia" x={elegido} stroke="var(--tenue)" strokeWidth={1} /> : null}
               {cambiosDeVersion.map((x) => (
                 <ReferenceLine key={`version-${x}`} x={x} stroke="var(--tenue)" strokeDasharray="4 4" />
               ))}
@@ -964,9 +970,9 @@ function GraficoDeEvolucion({
                 domain={DOMINIO}
                 allowDecimals={medida.variable !== 'repeticiones'}
                 width={48}
-                tick={{ fill: 'var(--tenue)', fontSize: 12 }}
+                tick={{ fill: 'var(--tenue)', fontSize: LETRA_MINIMA }}
                 axisLine={{ stroke: 'var(--borde-control)' }}
-                label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: 12 }}
+                label={{ value: unidad, angle: -90, position: 'insideLeft', fill: 'var(--tenue)', fontSize: LETRA_MINIMA }}
               />
               {conPuntero ? (
                 <Tooltip
@@ -991,7 +997,14 @@ function GraficoDeEvolucion({
                       isAnimationActive={false}
                       activeDot={false}
                       dot={({ cx, cy, index }: { cx?: number; cy?: number; index?: number }) =>
-                        cx === undefined || cy === undefined ? <g key={`pd${t}-${index}`} /> : <rect key={`pd${t}-${index}`} x={cx - 5} y={cy - 5} width={10} height={10} fill="var(--superficie)" stroke="var(--grafico-planificado)" strokeWidth={2} className="grafico__elegible" onClick={() => index !== undefined && onElegir(index)} />
+                        cx === undefined || cy === undefined ? (
+                          <g key={`pd${t}-${index}`} />
+                        ) : (
+                          // TB-02: lo indicado en el plan es un rombo hueco del tamaño del hueco, como en «Analizar».
+                          <g key={`pd${t}-${index}`} className="grafico__elegible" onClick={() => index !== undefined && onElegir(index)}>
+                            <Rombo cx={cx} cy={cy} porDia={ancho} color="var(--grafico-planificado)" />
+                          </g>
+                        )
                       }
                     />
                   ))
@@ -1011,11 +1024,12 @@ function GraficoDeEvolucion({
                       dot={({ cx, cy, index }: { cx?: number; cy?: number; index?: number }) =>
                         cx === undefined || cy === undefined ? (
                           <g key={`rd${t}-${index}`} />
-                        ) : index !== undefined && puntos[index]?.cargaRapida ? (
-                          // DL-161: carga rápida, tildada sin escribir: un punto hueco del color de lo registrado.
-                          <circle key={`rd${t}-${index}`} cx={cx} cy={cy} r={5} fill="var(--superficie)" stroke="var(--grafico-registrado)" strokeWidth={2} data-carga-rapida="si" className="grafico__elegible" onClick={() => onElegir(index ?? null)} />
                         ) : (
-                          <circle key={`rd${t}-${index}`} cx={cx} cy={cy} r={5} fill="var(--grafico-registrado)" stroke="var(--superficie)" strokeWidth={1.5} className="grafico__elegible" onClick={() => index !== undefined && onElegir(index)} />
+                          // TB-02: la marca con la regla de los cuatro gráficos. DL-161: la carga rápida (tildada sin escribir), hueca.
+                          <g key={`rd${t}-${index}`} data-carga-rapida={index !== undefined && puntos[index]?.cargaRapida ? 'si' : undefined} className="grafico__elegible" onClick={() => index !== undefined && onElegir(index)}>
+                            <Punto cx={cx} cy={cy} color="var(--grafico-registrado)" medida={medidaDeMarca(index !== undefined && puntos[index]?.cargaRapida ? 'hueco' : 'lleno', ancho)} />
+                            {index === elegido ? <Aro cx={cx} cy={cy} porDia={ancho} color="var(--grafico-registrado)" /> : null}
+                          </g>
                         )
                       }
                     />

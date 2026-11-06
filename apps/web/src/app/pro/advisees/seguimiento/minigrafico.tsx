@@ -15,12 +15,12 @@
 import type { SerieAnalitica } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { diaYMesCivil } from '../../../../lib/formato';
-import { diasSinRegistros, FRANJA_DE_ROTULOS, geometriaDelMinigrafico } from './geometria';
+import { diasSinRegistros, FRANJA_DE_ROTULOS, geometriaDelMinigrafico, LETRA_MINIMA } from './geometria';
 import { ESTILOS, Punto } from './marca';
 
 const ALTO = 60;
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
-const LETRA = 12.5;
+const LETRA = LETRA_MINIMA;
 
 export function Minigrafico({
   serie,
@@ -109,7 +109,7 @@ export function Minigrafico({
           ))}
           {g.puntos.map((p) => (
             <g key={p.clave} className="minigrafico__punto" data-hueco={p.hueco ? 'si' : undefined} data-clase={p.clase ?? undefined}>
-              <Punto cx={p.x} cy={p.y} r={p.r} color={color} hueco={p.hueco} trazo={1.5} clase={p.clase} />
+              <Punto cx={p.x} cy={p.y} color={color} medida={p.medida} />
             </g>
           ))}
           {g.fechas.map((f) => (
