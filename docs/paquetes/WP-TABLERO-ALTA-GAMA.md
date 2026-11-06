@@ -651,6 +651,13 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-03 | Hecha. Los trazos del anexo A8: la línea registrada de 1,5 en «Analizar» y el minigráfico (1,25 en alta densidad) y de 1,75 en Entrenamiento; el objetivo y el plan, discontinuos de 1,25; el cambio de versión o de método, una vertical de 1 punteada en `--borde-control`. La grilla, solo horizontal y sin líneas de eje (las barras conservan su base). La vigencia, una franja de `--banda` (token nuevo, 1,3:1) arriba del dibujo con la vertical que la lleva, en lugar de las columnas de todo el alto. Entrenamiento, en el color de la métrica: lo planificado en contorno discontinuo, línea discontinua y rombo hueco; el rango, en `--banda`. `--grafico-planificado` y `--grafico-registrado` salen de los tokens. TEST-TAG-005 | `tokens.css`, `scripts/contraste.test.cjs` |
 | TB-04 | Hecha en el código y en sus pruebas; falta medirla a 1920 × 950 con la captura de su corrida. El indicador del Resumen tiene su minigráfico propio (`MinigraficoDelIndicador`): 72 de lienzo, sin canal de eje (el tope y la base de la grilla, rotulados adentro), la tira de cobertura con el estado de cada día y la raya de hoy en `--ahora` (token nuevo), y el inicio y el fin abajo. Con poco lugar por día, a más de ocho semanas, la línea es la media de cada semana de BE con su denominador y los días van como puntos claros; con menos semanas o en sesiones y tomas, la línea cortada con la última y las aisladas. Lo de fuera de la escala, una muesca y su cuenta, y la escala nunca es más angosta que 2 kg, 2 cm o 4 mm. La descripción accesible no cambia. La comparación de etapas sigue con su minigráfico. TEST-TAG-007 | `seguimiento/geometria.ts` (`geometriaDelIndicador`), `seguimiento/minigrafico.tsx` |
 
+**Para seguir.** La próxima parte es TB-05 (el rostro y «Ocultar nombres»), y después TB-09, TB-06 a TB-08, TB-10,
+TB-16, TB-24, TB-25 y TB-49, en el orden de §8.1. De TB-04 falta medir a 1920 × 950 si entran los minigráficos (A13);
+el Resumen creció con ellos, y la tarjeta de área se ordena en TB-10. Cada corrida de `capturas-del-tablero` deja su
+artefacto: se compara con `linea-de-base/mediciones.json` (los altos y las peticiones al abrir, que no tienen que
+subir sin aviso). Con poca memoria, un typecheck angosto de los archivos tocados (un `tsconfig` que extiende el del
+website e incluye solo esos archivos) detecta los errores de tipo antes de la CI.
+
 ### 10.1 Las decisiones de la implementación
 
 Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción había. Esperan la ratificación de Dirección.
