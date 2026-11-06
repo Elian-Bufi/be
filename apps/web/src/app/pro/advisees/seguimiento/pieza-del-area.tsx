@@ -65,7 +65,9 @@ function Pieza({ titulo, plegada, aLaVista, children }: { titulo: string; plegad
   if (plegada) {
     return (
       <details className="pieza-del-area pieza-del-area--plegada">
-        <summary>
+        {/* Con clase propia: los desplegables sin clase llevan la flecha y el ancho de BE (globals.css), y acá el renglón
+            va de lado a lado, con la barra. */}
+        <summary className="pieza-del-area__abrir">
           <Icono nombre="derecha" tamano={18} />
           <span className="pieza-del-area__titulo">{titulo}</span>
           {aLaVista}
