@@ -306,12 +306,26 @@ test('los contratos son estrictos: lo que ve el profesional no trae la historia 
   );
 });
 
-test('DL-152 · ninguna APK congelada lee API-HBT (la 0.20 no las conoce)', () => {
+/**
+ * DL-152 · hasta la 0.20.0-candidata.1 (versionCode 33) ninguna APK conoce API-HBT. Desde la 0.21.0-candidata.1 (34), la
+ * APK llama las de la persona (01 a 04), con su forma congelada, y nunca la del profesional (05), que es del website.
+ */
+const PRIMER_VERSION_CODE_CON_HBT = 34;
+
+test('DL-152 · las APK congeladas hasta la 0.20 no leen API-HBT, y desde la 0.21 leen solo las de la persona (01 a 04)', () => {
   const carpeta = join(__dirname, '..', 'fixtures', 'lecturas-de-la-apk');
   for (const archivo of readdirSync(carpeta).filter((f) => f.endsWith('.json'))) {
-    const congelado = JSON.parse(readFileSync(join(carpeta, archivo), 'utf8')) as { lecturas: Record<string, { ruta?: string }> };
-    const ids = Object.keys(congelado.lecturas);
-    assert.deepEqual(ids.filter((id) => id.startsWith('API-HBT-')), [], archivo);
-    assert.ok(Object.values(congelado.lecturas).every((l) => !(l.ruta ?? '').includes('/habits')), archivo);
+    const congelado = JSON.parse(readFileSync(join(carpeta, archivo), 'utf8')) as { apk: { versionCode: number }; lecturas: Record<string, { ruta?: string }> };
+    const ids = Object.keys(congelado.lecturas).filter((id) => id.startsWith('API-HBT-'));
+    const rutas = Object.values(congelado.lecturas)
+      .map((l) => l.ruta ?? '')
+      .filter((ruta) => ruta.includes('/habits'));
+    if (congelado.apk.versionCode < PRIMER_VERSION_CODE_CON_HBT) {
+      assert.deepEqual(ids, [], archivo);
+      assert.deepEqual(rutas, [], archivo);
+    } else {
+      assert.deepEqual(ids, ['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04'], archivo);
+      assert.ok(rutas.every((ruta) => ruta.startsWith('/me/habits')), archivo);
+    }
   }
 });

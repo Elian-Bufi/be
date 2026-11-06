@@ -4,8 +4,8 @@
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
  * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2 y la 0.20.0-candidata.1; la 0.17.0-candidata.3 y la 0.18.0-candidata.1 salieron el 2026-11-05),
- * como la pide esa APK, y lee la respuesta real
+ * (hoy la estable 0.13.2, la 0.20.0-candidata.1 y la 0.21.0-candidata.1; la 0.17.0-candidata.3 y la 0.18.0-candidata.1
+ * salieron el 2026-11-05), como la pide esa APK, con las capacidades que declara, y lee la respuesta real
  * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
  * no pasa hasta que cada lectura suya tenga escenario.
  *
@@ -13,9 +13,11 @@
  * resto de las pruebas: lo que se prueba es lo que pide y lee la APK. Las respuestas se leen con datos de verdad, también
  * en las ramas más cargadas de cada esquema: una opción de receta con su imagen, un plan con objetivos por serie y la imagen
  * del ejercicio, eventos de tiempo, una revisión que cambia el objetivo, una respuesta de formulario rectificada, lo que
- * cargó el profesional confirmado con una corrección y descartado con «No es correcto».
+ * cargó el profesional confirmado con una corrección y descartado con «No es correcto», las versiones de formato 3 del
+ * catálogo y los hábitos de la persona con su historia y con un profesional en pausa y otro que llegó después.
  */
 import type { INestApplication } from '@nestjs/common';
+import { CAMPOS_DE_HABITOS, CAPACIDAD_FORMULARIOS_FORMATO_3, type RespuestaDeCampoV2Entrada } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
@@ -39,9 +41,9 @@ import {
   subirImagenDeEjercicio,
 } from './soporte-por-serie';
 import { alimentosUsda, crearReceta, cuerpoDeReceta, estructuraConRecetas, FOTOS, RECETAS, subirImagen } from './soporte-recetas';
-import { CAMPOS_V2, CAMPOS_V3, CON_FORMATO_3, conAgua, fri, pedirV2, RESPUESTAS_V2, RESPUESTAS_V3, sembrarPlantillaV2, sembrarPlantillaV3 } from './soporte-formularios-v2';
-import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
-import { prepararAsesorado, prepararProfesional, solicitar, vinculoCompleto } from './soporte-vinculo';
+import { CAMPOS_V2, CAMPOS_V3, CON_FORMATO_3, conAgua, conDiasParaReservar, fri, pedirV2, REQUERIDOS_V3, RESPUESTAS_V2, RESPUESTAS_V3, sembrarPlantillaV2, sembrarPlantillaV3 } from './soporte-formularios-v2';
+import { PLANTILLA_NUTRICION_INICIO, sembrarAntecedentesDeP0, VERSION_ENTRENAMIENTO_V3, VERSION_NUTRICION_INICIO_V2 } from './soporte-plantillas-de-inicio';
+import { pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -80,6 +82,33 @@ const CAMPOS_DE_ANTECEDENTES =['trn_objetivo_declarado', 'trn_experiencia', 'trn
  */
 const SOLO_EL_RECHAZO: Readonly<Record<string, readonly string[]>> = { '0.13.2': ['API-ACC-01'] };
 
+/**
+ * DL-165 D-9 · respuestas completas de la parte «Tus hábitos», en su forma canónica (las de
+ * `habitos-de-la-persona.int-spec.ts`). La lista de actividades lleva «Qué días» con varias opciones en el renglón (FR-08).
+ */
+const HABITOS: readonly RespuestaDeCampoV2Entrada[] = [
+  {
+    fieldCode: 'habitos_horarios',
+    answer: {
+      type: 'TIMES',
+      times: [
+        { part: 'semana_me_levanto', time: '07:00' },
+        { part: 'semana_me_acuesto', time: '23:30' },
+        { part: 'finde_me_levanto', time: '09:30' },
+        { part: 'finde_me_acuesto', time: '01:00' },
+      ],
+    },
+  },
+  { fieldCode: 'horas_de_sueno', answer: { type: 'NUMBER', number: 7.5, unit: 'h' } },
+  { fieldCode: 'nivel_de_actividad', answer: { type: 'CHOICE', option: 'sentado_y_de_pie', otherText: null } },
+  { fieldCode: 'habitos_hace_deporte', answer: { type: 'BOOLEAN', yes: true } },
+  { fieldCode: 'habitos_deportes', answer: { type: 'LIST', items: [{ cual: 'Fútbol', que_dias: ['lun', 'jue'], momento: 'noche', minutos: 90, exigencia: 'moderada' }] } },
+  { fieldCode: 'habitos_estres', answer: { type: 'CHOICE', option: 'normal', otherText: null } },
+];
+/** Las respuestas de formato 3 con otros días en el renglón de la otra actividad. */
+const conOtrosDias = (dias: readonly string[]): RespuestaDeCampoV2Entrada[] =>
+  RESPUESTAS_V3.map((r) => (r.fieldCode === 'ini_deportes' ? { fieldCode: r.fieldCode, answer: { type: 'LIST' as const, items: [{ cual: 'Fútbol', que_dias: [...dias] }] } } : r));
+
 describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) => {
   const apk = new LaApk(version, () => app);
   /** La etiqueta de las cuentas sintéticas: el versionCode, corto, para que los correos no se acerquen a 64 caracteres. */
@@ -90,6 +119,10 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
    */
   const siLee = (operacion: string, nombre: string, prueba: () => Promise<void>): void => {
     if (apk.lee(operacion)) it(nombre, prueba);
+  };
+  /** Lo mismo para lo que depende de una capacidad que esta APK declara (DL-122): desde la 0.21.0-candidata.1, el formato 3. */
+  const siDeclara = (capacidad: string, nombre: string, prueba: () => Promise<void>): void => {
+    if (apk.declara(capacidad)) it(nombre, prueba);
   };
 
   // ─── La cuenta ─────────────────────────────────────────────────────────────────────────────────
@@ -558,18 +591,146 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     for (const id of [sola, confirmada, descartada, salud]) await apk.pide('API-FRI-03', { token, params: { formRequestId: id } });
     await apk.pide('API-FRI-02', { token });
 
-    // DL-165 (FR-08): una Solicitud de formato 3 (el renglón con varias opciones) no existe para esta APK, que no declara
-    // `forms-format-3`: la bandeja no la trae, y la estructura y el detalle son el 404 que la APK reconoce. Ni siquiera
-    // con algo cargado por el profesional (desde el website, que sí la declara).
-    const v3 = await sembrarPlantillaV3(prisma, e, null);
-    const ronda2 = await pedirV2(app, pro, ase.id, v3.versionId, 'ENTRENAMIENTO', CAMPOS_V3, []);
-    await fri(app, pro.token, CON_FORMATO_3).cargar(ronda2, { expectedVersion: null, answers: RESPUESTAS_V3 }).expect(201);
-    for (const consulta of [{ status: 'PENDING', limit: '3' }, undefined]) {
-      const conLaRonda2 = (await apk.pide('API-FRI-02', { token, ...(consulta ? { consulta } : {}) })).body.data as { formRequestId: string }[];
-      expect(conLaRonda2.map((s) => s.formRequestId)).not.toContain(ronda2);
+    // DL-165 (FR-08): una Solicitud de formato 3 (el renglón con varias opciones) no existe para una APK que no declara
+    // `forms-format-3` (la 0.20.0-candidata.1): la bandeja no la trae, y la estructura y el detalle son el 404 que la APK
+    // reconoce. Ni siquiera con algo cargado por el profesional (desde el website, que sí la declara). La APK que la declara
+    // (desde la 0.21.0-candidata.1) la lee en el bloque que sigue.
+    if (!apk.declara(CAPACIDAD_FORMULARIOS_FORMATO_3)) {
+      const v3 = await sembrarPlantillaV3(prisma, e, null);
+      const ronda2 = await pedirV2(app, pro, ase.id, v3.versionId, 'ENTRENAMIENTO', CAMPOS_V3, []);
+      await fri(app, pro.token, CON_FORMATO_3).cargar(ronda2, { expectedVersion: null, answers: RESPUESTAS_V3 }).expect(201);
+      for (const consulta of [{ status: 'PENDING', limit: '3' }, undefined]) {
+        const conLaRonda2 = (await apk.pide('API-FRI-02', { token, ...(consulta ? { consulta } : {}) })).body.data as { formRequestId: string }[];
+        expect(conLaRonda2.map((s) => s.formRequestId)).not.toContain(ronda2);
+      }
+      await apk.pide('API-FRI-03', { token, params: { formRequestId: ronda2 }, status: 404 });
+      await apk.pide('API-FRI-01', { token, params: { templateId: v3.plantillaId, versionId: v3.versionId }, status: 404 });
     }
-    await apk.pide('API-FRI-03', { token, params: { formRequestId: ronda2 }, status: 404 });
-    await apk.pide('API-FRI-01', { token, params: { templateId: v3.plantillaId, versionId: v3.versionId }, status: 404 });
+    expect(apk.rechazos()).toEqual([]);
+  });
+
+  siDeclara(
+    CAPACIDAD_FORMULARIOS_FORMATO_3,
+    'el formato 3: la bandeja, las versiones del catálogo, el tope de días, el renglón con varias opciones, lo cargado, «No es correcto», rectificar y la parte «Tus hábitos» (FRI-01 a 05 y 08, DL-165)',
+    async () => {
+      const e = etiqueta(`${corta}-fr3`);
+      const pro = await prepararProfesional(app, e, ['ENTRENAMIENTO']);
+      const ase = await prepararAsesorado(app, e, { a3: true });
+      await vinculoCompleto(app, pro, ase, 'ENTRENAMIENTO');
+      const token = ase.token;
+      // Tres sobre una versión sintética de formato 3 (la tabla de días con su tope y otra actividad con sus días): una para
+      // responder sola, una para confirmar lo cargado y otra para descartarlo. Y una de «Antes de entrenar» v3, la del
+      // catálogo, con la parte «Tus hábitos».
+      const v3 = await sembrarPlantillaV3(prisma, e, null);
+      const pedirV3 = () => pedirV2(app, pro, ase.id, v3.versionId, 'ENTRENAMIENTO', CAMPOS_V3, REQUERIDOS_V3);
+      const sola = await pedirV3();
+      const confirmada = await pedirV3();
+      const descartada = await pedirV3();
+      const antesDeEntrenar = await pedirV2(app, pro, ase.id, VERSION_ENTRENAMIENTO_V3, 'ENTRENAMIENTO', ['trn_objetivo_declarado', ...CAMPOS_DE_HABITOS], ['trn_objetivo_declarado']);
+      // Lo que carga el profesional desde el website, que también declara la capacidad (FRI-06).
+      const web = fri(app, pro.token, CON_FORMATO_3);
+      const cargada = (await web.cargar(confirmada, { expectedVersion: null, answers: RESPUESTAS_V3 }).expect(201)).body.data as { proposalId: string; version: string };
+      const aDescartar = (await web.cargar(descartada, { expectedVersion: null, answers: RESPUESTAS_V3 }).expect(201)).body.data as { proposalId: string; version: string };
+
+      // La bandeja las trae: Inicio, de a pocas; «Información», todas.
+      await apk.pide('API-FRI-02', { token, consulta: { status: 'PENDING', limit: '3' } });
+      const bandeja = (await apk.pide('API-FRI-02', { token })).body.data as { formRequestId: string; pendingProposal: { proposalId: string } | null }[];
+      expect(bandeja.map((s) => s.formRequestId)).toEqual(expect.arrayContaining([sola, confirmada, descartada, antesDeEntrenar]));
+      expect(bandeja.find((s) => s.formRequestId === confirmada)?.pendingProposal?.proposalId).toBe(cargada.proposalId);
+      for (const id of [sola, confirmada, antesDeEntrenar]) {
+        const vista = (await apk.pide('API-FRI-03', { token, params: { formRequestId: id } })).body.data;
+        const definicion = (await apk.pide('API-FRI-01', { token, params: { templateId: vista.request.templateId as string, versionId: vista.request.templateVersionId as string } })).body.data;
+        expect(definicion.format).toBe(3);
+      }
+      // «Cómo comés hoy» v2, la otra versión de formato 3 del catálogo: las comidas, los alimentos y el embarazo sin pedir.
+      expect((await apk.pide('API-FRI-01', { token, params: { templateId: PLANTILLA_NUTRICION_INICIO, versionId: VERSION_NUTRICION_INICIO_V2 } })).body.data.format).toBe(3);
+
+      // El tope de días (FR-07): con dos días marcados, tres para reservar es el 422 que la APK reconoce, y no escribe nada.
+      await apk.pide('API-FRI-04', { token, params: { formRequestId: sola }, cuerpo: { answers: conDiasParaReservar(3), fromProposal: null }, status: 422 });
+      // Responder sola, con varias opciones en el renglón (FR-08).
+      const respondida = (await apk.pide('API-FRI-04', { token, params: { formRequestId: sola }, cuerpo: { answers: RESPUESTAS_V3, fromProposal: null }, status: 201 })).body.data as { formResponseId: string; version: string };
+      // «Confirmo que son mis datos», con otros días en el renglón de lo cargado: la transcripción lo dice.
+      await apk.pide('API-FRI-04', {
+        token,
+        params: { formRequestId: confirmada },
+        cuerpo: { answers: conOtrosDias(['mar', 'sab']), fromProposal: { proposalId: cargada.proposalId, expectedVersion: cargada.version } },
+        status: 201,
+      });
+      // «No es correcto»: lo cargado se borra y la solicitud sigue pendiente.
+      await apk.pide('API-FRI-08', { token, params: { formRequestId: descartada }, cuerpo: { expectedVersion: aDescartar.version } });
+      // Rectificar con otros días; con más días para reservar que los marcados, el mismo 422.
+      const rectificada = (
+        await apk.pide('API-FRI-05', { token, params: { formResponseId: respondida.formResponseId }, cuerpo: { expectedVersion: respondida.version, reason: 'Cambié de días.', answers: conOtrosDias(['mar', 'sab']) }, status: 201 })
+      ).body.data as { version: string };
+      await apk.pide('API-FRI-05', { token, params: { formResponseId: respondida.formResponseId }, cuerpo: { expectedVersion: rectificada.version, reason: 'Puedo más días.', answers: conDiasParaReservar(4) }, status: 422 });
+      // «Antes de entrenar» v3 con la parte «Tus hábitos»: responderla agrega una versión de los hábitos (D-16), que «Mis
+      // hábitos» lee como salida de un formulario.
+      await apk.pide('API-FRI-04', {
+        token,
+        params: { formRequestId: antesDeEntrenar },
+        cuerpo: { answers: [{ fieldCode: 'trn_objetivo_declarado', answer: { type: 'TEXT', text: 'Subir escaleras sin cansarme' } }, ...HABITOS], fromProposal: null },
+        status: 201,
+      });
+      if (apk.lee('API-HBT-01')) expect((await apk.pide('API-HBT-01', { token })).body.data.current).toMatchObject({ origin: 'FORM' });
+      // Lo que queda a la vista: la rectificada, la confirmada con su transcripción, la descartada (pendiente) y la del catálogo.
+      for (const id of [sola, confirmada, descartada, antesDeEntrenar]) await apk.pide('API-FRI-03', { token, params: { formRequestId: id } });
+      await apk.pide('API-FRI-02', { token });
+      expect(apk.rechazos()).toEqual([]);
+    },
+  );
+
+  siLee('API-HBT-01', '«Mis hábitos»: leerlos, contarlos, compartirlos, sumar a quien llegó después, con un vínculo en pausa, y dejar de compartir (HBT-01 a 04, DL-165 D-9)', async () => {
+    const e = etiqueta(`${corta}-hbt`);
+    const ase = await prepararAsesorado(app, e, { a3: true });
+    const nut = await prepararProfesional(app, `${e}-nut`, ['NUTRICION']);
+    const ent = await prepararProfesional(app, `${e}-ent`, ['ENTRENAMIENTO']);
+    const vNut = await vinculoCompleto(app, nut, ase, 'NUTRICION');
+    await vinculoCompleto(app, ent, ase, 'ENTRENAMIENTO');
+    const token = ase.token;
+    interface MisHabitos {
+      readonly current: { readonly origin: string } | null;
+      readonly history: readonly unknown[];
+      readonly sharing: { readonly status: string; readonly version: string | null };
+      readonly professionals: readonly { readonly professional: { readonly identityId: string }; readonly link: string; readonly sharing: string }[];
+      readonly text: { readonly id: string };
+    }
+    const mios = async (): Promise<MisHabitos> => (await apk.pide('API-HBT-01', { token })).body.data as MisHabitos;
+    const de = (d: MisHabitos, pro: { id: string }) => d.professionals.find((p) => p.professional.identityId === pro.id);
+
+    // Sin nada contado y sin compartir.
+    expect(await mios()).toMatchObject({ current: null, history: [], sharing: { status: 'NOT_GIVEN', version: null } });
+    // Contarlos en «Mis hábitos», con la vigente que se vio: con una vieja, el 409; lo que no tiene la forma de la parte, el
+    // 422; y cambiarlos (ninguna pregunta es obligatoria) deja la anterior en la historia.
+    const v1 = (await apk.pide('API-HBT-02', { token, cuerpo: { expectedVersion: null, answers: HABITOS }, status: 201 })).body.data as { version: string };
+    await apk.pide('API-HBT-02', { token, cuerpo: { expectedVersion: null, answers: HABITOS }, status: 409 });
+    await apk.pide('API-HBT-02', { token, cuerpo: { expectedVersion: v1.version, answers: [{ fieldCode: 'horas_de_sueno', answer: { type: 'NUMBER', number: 20, unit: 'h' } }] }, status: 422 });
+    await apk.pide('API-HBT-02', { token, cuerpo: { expectedVersion: v1.version, answers: HABITOS.filter((r) => r.fieldCode !== 'habitos_estres') }, status: 201 });
+
+    // Compartirlos como arma el pedido la app: los dos vienen marcados, y la persona desmarca al entrenador. Con la versión
+    // que ya no es la vigente, el 409.
+    const antes = await mios();
+    expect(antes.history).toHaveLength(1);
+    const pedido = { expectedVersion: antes.sharing.version, textVersionId: antes.text.id, professionalIds: [nut.id], declinedProfessionalIds: [ent.id] };
+    await apk.pide('API-HBT-03', { token, cuerpo: pedido });
+    await apk.pide('API-HBT-03', { token, cuerpo: pedido, status: 409 });
+
+    // Una antropometrista empieza a acompañarla y no los recibe sola (NOT_ASKED); la nutricionista, en pausa, los sigue
+    // teniendo en la lista sin verlos.
+    const ant = await prepararProfesional(app, `${e}-ant`, ['ANTROPOMETRIA']);
+    await vinculoCompleto(app, ant, ase, 'ANTROPOMETRIA');
+    await pausar(app, token, vNut.vinculoId, await versionDeVinculo(app, token, vNut.vinculoId)).expect(200);
+    const conLaNueva = await mios();
+    expect(de(conLaNueva, ant)).toMatchObject({ link: 'ACTIVE', sharing: 'NOT_ASKED' });
+    expect(de(conLaNueva, nut)).toMatchObject({ link: 'PAUSED', sharing: 'RECEIVES' });
+    expect(de(conLaNueva, ent)).toMatchObject({ link: 'ACTIVE', sharing: 'DOES_NOT_RECEIVE' });
+    // «Sí, que los vea»: los que hoy los reciben, más la nueva.
+    const sumada = (await apk.pide('API-HBT-03', { token, cuerpo: { expectedVersion: conLaNueva.sharing.version, textVersionId: conLaNueva.text.id, professionalIds: [nut.id, ant.id], declinedProfessionalIds: [] } }))
+      .body.data as { sharing: { version: string } };
+
+    // Dejar de compartir, para todos a la vez; otra vez con la misma versión, el 409.
+    await apk.pide('API-HBT-04', { token, cuerpo: { expectedVersion: sumada.sharing.version } });
+    await apk.pide('API-HBT-04', { token, cuerpo: { expectedVersion: sumada.sharing.version }, status: 409 });
+    expect((await mios()).sharing.status).toBe('WITHDRAWN');
     expect(apk.rechazos()).toEqual([]);
   });
 
