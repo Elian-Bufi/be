@@ -40,7 +40,7 @@
  * título es la referencia neutral y el monograma lleva el ícono; el nombre que reciben las vistas (la exportación de
  * «Analizar», el diálogo de la nota) es el mismo que se ve.
  */
-import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -56,7 +56,7 @@ import { anotarNombrePropio, nombrePropioEn } from '../../../lib/nombre-propio';
 import { useNombres } from '../../../lib/nombres-ocultos';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
-import { accionDeLaFicha, rutaDeLaAccion } from './accion-de-la-ficha';
+import { accionDeLaFicha, rutaDeLaAccion, type AccionDeLaFicha } from './accion-de-la-ficha';
 import { DialogoDeNota } from './nota-de-coordinacion';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
@@ -68,6 +68,9 @@ import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
 import { EsperandoSesion } from '../../../lib/sesion';
 
 const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.Analizar), { ssr: false, loading: () => <Cargando /> });
+
+/** El ícono de cada eslabón de la acción del momento (TB-09). */
+const ICONO_DE_LA_ACCION: Readonly<Record<AccionDeLaFicha['tipo'], NombreDeIcono>> = { aplicar: 'aplicar', revisar: 'revision', borrador: 'borrador', empezar: 'plan' };
 
 type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vinculos: readonly Vinculo[] };
 
@@ -212,7 +215,7 @@ export function Workspace() {
           {/* La acción principal, según el momento de la persona (bloque 5). Con todo al día no hay ninguna. */}
           {disponible && accion ? (
               <Link className="boton boton--secundario boton--compacto" href={conRetorno(rutaDeLaAccion(accion, id), retorno)} data-accion-de-la-ficha={accion.tipo}>
-                <Icono nombre={accion.tipo === 'revisar' ? 'revision' : accion.tipo === 'borrador' ? 'borrador' : 'plan'} tamano={18} />
+                <Icono nombre={ICONO_DE_LA_ACCION[accion.tipo]} tamano={18} />
                 {accion.texto}
               </Link>
           ) : null}

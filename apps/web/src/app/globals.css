@@ -13704,3 +13704,15 @@ details[open] > summary:not([class])::before {
 .persona__datos > .retrato ~ .persona__resumen {
   flex: 1 1 auto;
 }
+
+/* TB-09: la revisión registrada a la que lleva «Aplicar la revisión» desde la ficha. Se ubica, no se califica: un fondo
+   suave y una línea neutra a la izquierda, sin el acento. */
+.lista__item--pedida {
+  box-shadow: inset 3px 0 0 var(--borde-control);
+  background: var(--fondo-suave);
+}
+
+.lista__item--pedida:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}

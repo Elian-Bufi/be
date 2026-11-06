@@ -13,11 +13,15 @@ cambia el website o el dominio, y también a pedido.
 2. Captura en Claro y en Azul noche, a 1280 × 800, a 1440 × 900 y a 1920 × 950, que es el área útil de un monitor de
    1920 × 1080. De cada página guarda la primera pantalla y la página entera:
    - **Diego Sosa visto por Sofía Paz** (Nutrición y Antropometría): el Espacio profesional, el Resumen de la ficha,
-     «Analizar» (la entrada y, desde TB-04, el gráfico con Calorías elegida), Nutrición y Antropometría.
+     «Analizar» (la entrada y, desde TB-04, el gráfico con Calorías elegida), Nutrición y Antropometría. Desde TB-09,
+     también el Resumen de **Federico Álvarez**, con una revisión registrada sin aplicar.
    - **Diego Sosa visto por Martín Acosta** (Entrenamiento): el Espacio, el Resumen y Entrenamiento.
 3. Cuenta las peticiones a la API al abrir cada página (TEST-TAG-032) y anota el alto de cada página en
-   `mediciones.json`.
-4. Sube todo como el artefacto `capturas-del-tablero` de esa corrida, que dura 90 días. Las primeras pantallas de cada
+   `mediciones.json`, con la acción que ofrece el marco de la ficha (`accionDelMarco`, TB-09).
+4. Desde TB-05, prende «Ocultar nombres» y recorre el Espacio y el Resumen de cada profesional (TEST-TAG-004): si
+   aparece una palabra de un nombre de la cohorte o un monograma con iniciales, la corrida falla. Lo anota en
+   `ocultarNombres`.
+5. Sube todo como el artefacto `capturas-del-tablero` de esa corrida, que dura 90 días. Las primeras pantallas de cada
    etapa se copian acá.
 
 La herramienta es `herramientas/capturas.mjs`. Su encabezado dice cómo correrla.

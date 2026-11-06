@@ -13,7 +13,7 @@
 > en el código que cita cada uno. Un oráculo dice qué hay que observar para aceptar la prueba. No inventa la regla: la
 > lee.
 >
-> **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-005 (con los pares de TB-03, TB-04 y TB-05;
+> **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04 y TB-05;
 > los demás tokens, con su parte), TEST-TAG-006 y TEST-TAG-007. Los demás se escriben con su parte (§10 del paquete).
 
 ---
@@ -232,4 +232,51 @@ AUTOMATION           apps/web/test/retrato.test.mjs («TEST-TAG-004 · …» y �
 ENVIRONMENT          Unidad: CI y local. Recorrido: CI (capturas-del-tablero), con Chrome sin cabeza
 EVIDENCE_EXPECTED    La corrida verde de la CI; la corrida de capturas-del-tablero de TB-05, con
                      `ocultarNombres` vacío de apariciones en mediciones.json
+```
+
+---
+
+## TEST-TAG-010 — La acción del momento sigue la cadena
+
+```text
+TEST_ID              TEST-TAG-010
+TITLE                La acción principal del marco de la ficha sigue el orden aplicar → revisión acordada →
+                     borrador → empezar, y cada eslabón lleva a la pantalla que lo resuelve
+LEVEL                Unidad (función pura del website, sin React)
+PRIORITY             P1 — corrige un defecto de main: con una revisión registrada sin aplicar, la ficha ofrecía
+                     preparar otra encima
+SOURCES              WP-TABLERO-ALTA-GAMA TB-09 («Sigue el orden aplicar → revisión acordada → borrador → empezar,
+                     con una prueba por eslabón, incluido el caso de Federico Álvarez […]. "Preparar la revisión"
+                     abre la revisión ya preparada») · DL-163 D-6 («Una revisión aplicada como "Mantener" sin fecha
+                     nueva no sigue como vencida») · contratos-vinculo.ts (`lastReview.application` en null es
+                     «registrada y sin aplicar, un pendiente explícito. Registrar no es aplicar») · TA-13
+PRECONDITIONS        Ninguna: accionDeLaFicha y rutaDeLaAccion, en apps/web/src/app/pro/advisees/accion-de-la-ficha.ts.
+SYNTHETIC_FIXTURE    Resúmenes de API-DSH-03 armados en la prueba, con hoy el 19 oct 2026: planes con la próxima
+                     revisión vencida, de la semana y lejana; revisiones registradas sin aplicar y aplicadas, en
+                     fechas antes y después de la acordada; borradores; áreas sin plan y áreas ajenas.
+STEPS                1. Federico Álvarez: plan con la revisión del 12 oct vencida y la última revisión sin aplicar.
+                     2. Dos áreas con revisiones sin aplicar, una con borrador; una revisión aplicada al día; un
+                        identificador con «&».
+                     3. Una revisión acordada vencida, con la última revisión de un ciclo anterior; a 7 y a 8 días.
+                     4. Una revisión hecha para la fecha acordada (después, o en la semana anterior) y una
+                        registrada antes de reprogramar.
+                     5. Un borrador con plan al día; un borrador y un área sin plan; dos áreas sin borrador.
+                     6. La cadena de un ciclo: registrada, aplicada con su borrador y activada con fecha nueva.
+EXPECTED             1 → «Aplicar la revisión de Nutrición», a vista=revisiones&revision=rev-1 (no «Preparar»).
+                     2 → la que espera hace más tiempo, con su área; la aplicada no es un pendiente; el
+                        identificador va codificado.
+                     3 → «Preparar la revisión de Nutrición», a vista=revisiones&preparar=1 (la revisión nueva ya
+                        preparada); a 8 días, ninguna.
+                     4 → hecha, ninguna; antes de reprogramar, «Preparar».
+                     5 → «Seguir el borrador» (con su área, si hay dos); «Empezar el plan de Nutrición».
+                     6 → aplicar, borrador y ninguna, en ese orden.
+NEGATIVE_ASSERTIONS  Nunca «Preparar la revisión» con una revisión registrada sin aplicar, ni por una fecha que ya
+                     se revisó. Lo que el profesional no puede leer no entra en la cadena. Llegar a la revisión no
+                     la aplica: aplicar sigue siendo el botón de la lista. Mutaciones verificadas: sin el eslabón
+                     de aplicar fallan dos casos; sin «la revisión ya hecha» fallan dos.
+AUTOMATION           scripts/espacio-profesional.test.mjs («TEST-TAG-010 · …», cinco casos, y la prueba de siempre
+                     de la acción principal), en `npm test`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas de la corrida de TB-09, el marco de la
+                     ficha de Federico Álvarez con «Aplicar la revisión de Nutrición»
 ```

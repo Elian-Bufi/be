@@ -261,3 +261,77 @@ test('el objetivo propone la evaluación más reciente; sin evaluaciones, ningun
   assert.equal(evaluacionMasReciente(evs), 'nueva');
   assert.equal(evaluacionMasReciente([]), '');
 });
+
+// ─── TEST-TAG-010 · La acción del momento sigue la cadena (WP-TABLERO-ALTA-GAMA TB-09) ─────────────────────────────
+
+{
+  const HOY = '2026-10-19';
+  const plan = (nextReviewAt = null) => ({ planVersionId: 'p', activatedAt: '2026-09-01T12:00:00.000Z', nextReviewAt });
+  const resumen = (cambios = {}) => ({ activePlan: null, objective: null, lastReview: null, draftPlan: null, registeredExecutions: 0, lastExecutionAt: null, registeredIntakes: 0, lastIntakeAt: null, ...cambios });
+  const legible = (summary) => ({ available: true, relationshipId: 'r', summary });
+  const ajeno = { available: false, reason: 'NOT_AVAILABLE_TO_VIEW' };
+  const dominios = (nutrition, training) => ({ nutrition, training, anthropometry: ajeno });
+  const autor = { identityId: 'pro-1', displayName: 'Lic. Sintética' };
+  const sinAplicar = (reviewId, recordedAt = '2026-10-10T12:00:00.000Z') => ({ reviewId, recordedAt, author: autor, application: null });
+  const aplicada = (reviewId) => ({ reviewId, recordedAt: '2026-10-01T12:00:00.000Z', author: autor, application: { appliedAt: '2026-10-01T13:00:00.000Z', createdPlanId: null, createdObjectiveVersionId: null } });
+  const borrador = { planVersionId: 'b', recordedAt: '2026-10-18T12:00:00.000Z', fromReviewId: null };
+
+  test('TEST-TAG-010 · 1. aplicar: una revisión registrada y sin aplicar va antes que todo, y lleva a esa revisión', () => {
+    // El caso de Federico Álvarez en la cohorte: la revisión acordada ya venció y la última revisión está sin aplicar.
+    // Antes ofrecía «Preparar la revisión»: preparar otra encima de una que todavía no rige.
+    const federico = dominios(legible(resumen({ activePlan: plan('2026-10-12'), lastReview: sinAplicar('rev-1') })), ajeno);
+    assert.deepEqual(accionDeLaFicha(federico, HOY), { tipo: 'aplicar', area: 'NUTRICION', texto: 'Aplicar la revisión de Nutrición', vista: 'revisiones', extra: '&revision=rev-1' });
+    assert.equal(rutaDeLaAccion(accionDeLaFicha(federico, HOY), 'ase 1'), '/pro/advisees/nutrition?id=ase%201&vista=revisiones&revision=rev-1');
+    // Gana también al borrador y a empezar en la otra área; con dos sin aplicar, la que espera hace más tiempo.
+    const dos = dominios(legible(resumen({ lastReview: sinAplicar('rev-n', '2026-10-15T12:00:00.000Z'), draftPlan: borrador })), legible(resumen({ activePlan: plan('2026-10-20'), lastReview: sinAplicar('rev-t', '2026-10-05T12:00:00.000Z') })));
+    assert.deepEqual(accionDeLaFicha(dos, HOY), { tipo: 'aplicar', area: 'ENTRENAMIENTO', texto: 'Aplicar la revisión de Entrenamiento', vista: 'revisiones', extra: '&revision=rev-t' });
+    // Una revisión aplicada no es un pendiente: sigue la cadena.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-11-30'), lastReview: aplicada('rev-a') })), ajeno), HOY), null);
+    // El identificador va codificado en la dirección.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ lastReview: sinAplicar('a&b') })), ajeno), HOY).extra, '&revision=a%26b');
+  });
+
+  test('TEST-TAG-010 · 2. la revisión acordada: vencida o de la semana, y abre la revisión ya preparada', () => {
+    // La última revisión es del 1 oct, de un ciclo anterior: la del 12 oct todavía no se hizo.
+    const vencida = dominios(legible(resumen({ activePlan: plan('2026-10-12'), lastReview: aplicada('rev-a'), draftPlan: borrador })), ajeno);
+    assert.deepEqual(accionDeLaFicha(vencida, HOY), { tipo: 'revisar', area: 'NUTRICION', texto: 'Preparar la revisión de Nutrición', vista: 'revisiones', extra: '&preparar=1' });
+    // «Preparar la revisión» abre la pantalla de la revisión nueva con el período preparado (`preparar=1`).
+    assert.equal(rutaDeLaAccion(accionDeLaFicha(vencida, HOY), 'x'), '/pro/advisees/nutrition?id=x&vista=revisiones&preparar=1');
+    // A más de siete días, no es la acción del momento.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-27') })), ajeno), HOY), null);
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-26') })), ajeno), HOY).tipo, 'revisar');
+  });
+
+  test('TEST-TAG-010 · una revisión hecha para la fecha acordada no vuelve a pedirse (TA-13)', () => {
+    const hecha = (recordedAt) => ({ ...aplicada('rev-h'), recordedAt });
+    // Registrada el 15 oct para la fecha del 12, y aplicada: la fecha del plan vigente es de un ciclo ya revisado (D-6).
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-12'), lastReview: hecha('2026-10-15T12:00:00.000Z') })), ajeno), HOY), null);
+    // Registrada una semana antes de la fecha, también es la de esa fecha.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-20'), lastReview: hecha('2026-10-13T12:00:00.000Z') })), ajeno), HOY), null);
+    // Registrada el 1 oct, cuando se reprogramó para el 20: la del 20 todavía no se hizo.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-20'), lastReview: hecha('2026-10-01T12:00:00.000Z') })), ajeno), HOY).tipo, 'revisar');
+  });
+
+  test('TEST-TAG-010 · 3. el borrador, después de las revisiones; 4. empezar, al final', () => {
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-11-30'), draftPlan: borrador })), ajeno), HOY).tipo, 'borrador');
+    assert.equal(accionDeLaFicha(dominios(legible(resumen()), legible(resumen({ activePlan: plan('2026-11-30'), draftPlan: borrador }))), HOY).texto, 'Seguir el borrador de Entrenamiento', 'el borrador gana a empezar en la otra área');
+    assert.deepEqual(accionDeLaFicha(dominios(legible(resumen()), legible(resumen({ activePlan: plan('2026-11-30') }))), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan de Nutrición', vista: 'plan', extra: '' });
+  });
+
+  test('TEST-TAG-010 · la cadena entera, de un eslabón al siguiente, como se cierra un ciclo', () => {
+    // Registrada → aplicada (con un borrador nuevo) → activado con fecha → al día.
+    const revisada = { ...aplicada('rev-1'), recordedAt: '2026-10-13T12:00:00.000Z' };
+    const pasos = [
+      resumen({ activePlan: plan('2026-10-12'), lastReview: { ...sinAplicar('rev-1'), recordedAt: '2026-10-13T12:00:00.000Z' } }),
+      resumen({ activePlan: plan('2026-10-12'), lastReview: revisada, draftPlan: { ...borrador, fromReviewId: 'rev-1' } }),
+      resumen({ activePlan: plan('2026-11-16'), lastReview: revisada }),
+    ];
+    assert.deepEqual(
+      pasos.map((r) => accionDeLaFicha(dominios(legible(r), ajeno), HOY)?.tipo ?? null),
+      // Aplicada la revisión, lo que sigue es su borrador: la fecha vieja del plan vigente ya se revisó.
+      ['aplicar', 'borrador', null],
+    );
+    // Lo que el profesional no puede leer no entra en la cadena.
+    assert.equal(accionDeLaFicha(dominios(ajeno, ajeno), HOY), null);
+  });
+}

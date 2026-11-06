@@ -44,7 +44,7 @@ import { avisoDeMarcasQuitadas, marcasDelPeriodoNuevo, referenciasMarcadas, vers
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
 import { EvidenciaRegistrada } from '../evidencia-registrada';
 import { Registro } from './ejecuciones';
-import { usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
+import { useLaRevisionPedida, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 import {
   AreaDeTexto,
   AYUDA_DE_LA_INTERPRETACION,
@@ -429,6 +429,8 @@ function FormularioDeRevision({
 
 function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenamiento; onAplicada: (texto: string, alPlan: boolean) => void }) {
   const { delProfesional } = useNombres();
+  // TB-09: «Aplicar la revisión» desde la ficha trae esta revisión a la vista, con su «Aplicar».
+  const pedida = useLaRevisionPedida(revision.reviewId);
   const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [aplicando, setAplicando] = useState(false);
@@ -458,7 +460,7 @@ function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenam
   }
 
   return (
-    <li className="lista__item">
+    <li ref={pedida.ref} className={`lista__item${pedida.pedida ? ' lista__item--pedida' : ''}`} tabIndex={pedida.pedida ? -1 : undefined} data-revision={revision.reviewId}>
       <p className="lista__titulo">
         {ETIQUETA_DE_RESULTADO[revision.result]} · {fecha(revision.recordedAt)}
       </p>
