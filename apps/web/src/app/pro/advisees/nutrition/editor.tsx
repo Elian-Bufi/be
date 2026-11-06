@@ -57,7 +57,7 @@ import { Cajon } from '../../../../components/cajon';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Aviso } from '../../../../components/formulario';
+import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { api } from '../../../../lib/api';
@@ -77,6 +77,7 @@ import { AgregarItem } from './agregar-item';
 import { ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
 import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 import { NoDisponible, useNutricion } from './nutricion';
+import { COPY_ELEGIR_RECETA, PAGINAS_DE_RECETAS, RECETAS_POR_PAGINA, recetasQueCoinciden } from './recetas-para-elegir';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
 
 /** El contrato admite hasta siete días tipo en un plan. */
@@ -889,21 +890,30 @@ export function EditorDeBorrador({
   );
 }
 
-/** La lista de recetas propias, para sumar una como opción de una comida (DL-119). Va dentro de un cajón. */
+/**
+ * La lista de recetas propias, para sumar una como opción de una comida (DL-119). Va dentro de un cajón. Desde TB-48,
+ * con un buscador: lee todas las propias de a 50 al abrir el cajón y las filtra por su nombre mientras se escribe
+ * (`recetas-para-elegir.ts`). API-REC-02 no busca por texto, así que no le pide nada nuevo.
+ */
 function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
   const { token, sesionPerdida } = useNutricion();
   const [estado, setEstado] = useState<{ tipo: 'cargando' } | { tipo: 'error'; texto: string } | { tipo: 'lista'; recetas: readonly Receta[]; mas: string | null }>({ tipo: 'cargando' });
+  const [texto, setTexto] = useState('');
 
+  /** Lee desde el cursor hasta el final, o hasta `PAGINAS_DE_RECETAS` páginas: lo que queda se ofrece con «Ver más». */
   const cargar = useCallback(
     async (cursor?: string) => {
-      const r = await api.listarRecetas(token, cursor ? { cursor } : {});
-      if (sesionPerdida(r)) return;
-      if (!r.ok) return setEstado({ tipo: 'error', texto: r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN' ? COPY_RECETAS.soloNutricion : mensajeDeFallo(r) });
-      setEstado((e) => ({
-        tipo: 'lista',
-        recetas: cursor && e.tipo === 'lista' ? [...e.recetas, ...r.datos.data] : r.datos.data,
-        mas: r.datos.page.hasMore ? r.datos.page.nextCursor : null,
-      }));
+      const leidas: Receta[] = [];
+      let siguiente = cursor;
+      for (let pagina = 0; pagina < PAGINAS_DE_RECETAS; pagina++) {
+        const r = await api.listarRecetas(token, { limit: String(RECETAS_POR_PAGINA), ...(siguiente ? { cursor: siguiente } : {}) });
+        if (sesionPerdida(r)) return;
+        if (!r.ok) return setEstado({ tipo: 'error', texto: r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN' ? COPY_RECETAS.soloNutricion : mensajeDeFallo(r) });
+        leidas.push(...r.datos.data);
+        siguiente = r.datos.page.hasMore ? (r.datos.page.nextCursor ?? undefined) : undefined;
+        if (!siguiente) break;
+      }
+      setEstado((e) => ({ tipo: 'lista', recetas: cursor && e.tipo === 'lista' ? [...e.recetas, ...leidas] : leidas, mas: siguiente ?? null }));
     },
     [token, sesionPerdida],
   );
@@ -911,6 +921,7 @@ function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
     void cargar();
   }, [cargar]);
 
+  const visibles = estado.tipo === 'lista' ? recetasQueCoinciden(estado.recetas, texto) : [];
   return (
     <div className="recetas-para-elegir">
       {estado.tipo === 'cargando' ? <Cargando /> : null}
@@ -925,24 +936,39 @@ function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
         </p>
       ) : null}
       {estado.tipo === 'lista' && estado.recetas.length > 0 ? (
-        <ul className="lista">
-          {estado.recetas.map((r) => (
-            <li key={r.recipeId} className="lista__item">
-              <p className="lista__titulo">{r.name}</p>
-              <p className="nota">
-                {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
-              </p>
-              <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
-                {COPY_RECETAS.agregarComoOpcion}: {r.name}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <Campo id="buscar-receta" type="search" autoComplete="off" etiqueta={COPY_ELEGIR_RECETA.buscar} ayuda={COPY_ELEGIR_RECETA.ayuda} value={texto} onChange={(e) => setTexto(e.target.value)} data-buscar-receta />
+          {/* Cuántas quedan se dice al escribir, sin mover el foco del buscador. */}
+          <p className="nota" role="status" data-cuantas-recetas>
+            {visibles.length === 0 ? COPY_ELEGIR_RECETA.ninguna(texto) : COPY_ELEGIR_RECETA.cuantas(visibles.length, estado.recetas.length)}
+          </p>
+          {visibles.length === 0 ? (
+            <button type="button" className="boton boton--enlace" onClick={() => setTexto('')}>
+              {COPY_ELEGIR_RECETA.borrar}
+            </button>
+          ) : null}
+          <ul className="lista">
+            {visibles.map((r) => (
+              <li key={r.recipeId} className="lista__item">
+                <p className="lista__titulo">{r.name}</p>
+                <p className="nota">
+                  {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
+                </p>
+                <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
+                  {COPY_RECETAS.agregarComoOpcion}: {r.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : null}
       {estado.tipo === 'lista' && estado.mas ? (
-        <button type="button" className="boton boton--secundario" onClick={() => void cargar(estado.mas ?? undefined)}>
-          Ver más
-        </button>
+        <>
+          {texto.trim() ? <p className="nota">{COPY_ELEGIR_RECETA.hayMas}</p> : null}
+          <button type="button" className="boton boton--secundario" onClick={() => void cargar(estado.mas ?? undefined)}>
+            Ver más
+          </button>
+        </>
       ) : null}
     </div>
   );

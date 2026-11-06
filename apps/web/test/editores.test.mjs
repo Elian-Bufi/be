@@ -328,3 +328,26 @@ test('TB-48 · «Guardar como plantilla» va con su texto, a la vista, y si no s
   }
   assert.equal(d.COPY_PLANTILLAS.guardarComoPlantilla, 'Guardar como plantilla');
 });
+
+test('TB-48 · la receta como opción, con buscador: por su nombre, sin tildes, y sin pedirle a la API una búsqueda que no tiene', async () => {
+  const B = await import('../src/app/pro/advisees/nutrition/recetas-para-elegir.ts');
+  const recetas = [{ name: 'Tarta de verduras' }, { name: 'Pollo al horno con arroz' }, { name: 'Arroz con leche' }, { name: 'Ensalada César' }];
+  assert.deepEqual(B.recetasQueCoinciden(recetas, 'ARROZ').map((r) => r.name), ['Pollo al horno con arroz', 'Arroz con leche']);
+  assert.deepEqual(B.recetasQueCoinciden(recetas, 'arroz pollo').map((r) => r.name), ['Pollo al horno con arroz'], 'todas las palabras, en cualquier orden');
+  assert.deepEqual(B.recetasQueCoinciden(recetas, 'cesar').map((r) => r.name), ['Ensalada César'], 'sin tildes');
+  assert.equal(B.recetasQueCoinciden(recetas, '   ').length, 4, 'sin texto, todas');
+  assert.deepEqual(B.recetasQueCoinciden(recetas, 'pescado'), []);
+  // De a 50, el máximo que admite API-REC-02, y solo con las claves que admite (limit y cursor).
+  const paginacion = readFileSync(new URL('../../api/src/http/paginacion.ts', import.meta.url), 'utf8');
+  assert.equal(B.RECETAS_POR_PAGINA, Number(/LIMITE_MAXIMO = (\d+)/.exec(paginacion)[1]));
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /api\.listarRecetas\(token, \{ limit: String\(RECETAS_POR_PAGINA\), \.\.\.\(siguiente \? \{ cursor: siguiente \} : \{\}\) \}\)/);
+  assert.match(editor, /const visibles = estado\.tipo === 'lista' \? recetasQueCoinciden\(estado\.recetas, texto\) : \[\];/);
+  assert.match(editor, /<p className="nota" role="status" data-cuantas-recetas>/);
+  const C = B.COPY_ELEGIR_RECETA;
+  for (const t of [C.buscar, C.ayuda, C.cuantas(1, 1), C.cuantas(3, 3), C.cuantas(2, 9), C.ninguna(' pescado '), C.borrar, C.hayMas]) {
+    assert.deepEqual(d.terminosProhibidosEn(t), [], t);
+    assert.doesNotMatch(t, /cumplimiento|adherencia|racha|px/i, t);
+  }
+  assert.equal(C.ninguna(' pescado '), 'Ninguna de tus recetas tiene «pescado» en el nombre.');
+});
