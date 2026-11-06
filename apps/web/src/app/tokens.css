@@ -71,11 +71,13 @@
      un juicio ni un peso (B10-06 §21). */
   --zona-principal: #1e6bf2;
   --zona-secundaria: #1453c9;
-  /* Planificado y registrado (gráficos del espacio profesional): además del color, lo planificado va rayado o con
-     línea discontinua y cuadrados, y lo registrado lleno o con línea continua y círculos (B10-10 §11). */
-  --grafico-planificado: #1f5bc4;
-  --grafico-registrado: #c2410c;
+  /* Los días o las sesiones sin dato en un gráfico. Desde WP-TABLERO-ALTA-GAMA (TB-03; DL-163 D-3), lo planificado y
+     lo registrado de Entrenamiento van en el color de la métrica, como en «Analizar»: lo distingue la forma (contorno
+     discontinuo o rombo hueco contra lleno), no un naranja contra un azul. */
   --grafico-hueco: #6b7a90;
+  /* La vigencia de un plan y el rango que fija el profesional (TB-03): un fondo de datos, no un texto ni un borde. Llega
+     a 1,3:1 contra la superficie, para que un proyector no lo borre, y las métricas se leen encima (3:1 o más). */
+  --banda: #d9e2f0;
   /* Las tres métricas de «Analizar» (WP-DASHBOARD-PROFESIONAL): azul, violeta y verde azulado. Ni rojo ni verde, que se
      leerían como juicio, ni el ámbar del foco (`scripts/contraste.test.cjs` mide la diferencia perceptual). Todas las
      marcas son puntos (WP-ESCRITORIO-AMABLE, C-16): además del color, cada métrica lleva su nombre en el encabezado de
@@ -139,10 +141,9 @@
   /* Las zonas sobre el maniquí claro y su muestra sobre la superficie navy: azules que llegan a 3:1 contra los dos. */
   --zona-principal: #2a74ee;
   --zona-secundaria: #3b7ddd;
-  /* Gráficos: planificado en cian, registrado en naranja claro, hueco en gris azulado; rayado y forma siguen igual. */
-  --grafico-planificado: #27d5f9;
-  --grafico-registrado: #ff9b5c;
+  /* Gráficos: el hueco en gris azulado y la banda de la vigencia y del rango, un escalón sobre la superficie. */
   --grafico-hueco: #87a5bd;
+  --banda: #163750;
   /* Las tres métricas sobre navy: las mismas familias, más claras, lejos del cian de los enlaces, del menta del éxito, del
      salmón del error y del amarillo del foco. */
   --metrica-1: #7cb8ff;

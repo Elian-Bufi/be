@@ -76,11 +76,12 @@ export function Minigrafico({
     <div ref={setCaja} className="minigrafico" role="img" aria-label={descripcion} style={{ height: alto }}>
       {ancho > 0 && g.puntos.length > 0 ? (
         <svg width={ancho} height={alto} viewBox={`0 0 ${ancho} ${alto}`} aria-hidden="true" focusable="false">
-          {/* Las etapas: un fondo por etapa y su letra arriba. Entre dos, la línea punteada del cambio. */}
+          {/* Las etapas (TB-03): su letra arriba, una franja de --banda debajo de la letra y, entre dos, la vertical fina y
+              punteada del cambio, que es la que lleva la vigencia. Ya no son columnas de todo el alto. */}
           {g.bandas.map((b, i) => (
             <g key={`banda-${b.rotulo}`} className="minigrafico__banda" data-rotulo={b.rotulo}>
-              <rect x={b.x} y={2} width={b.ancho} height={g.caja.abajo + 6 - 2} fill="var(--fondo-suave)" fillOpacity={i % 2 === 0 ? 0.9 : 0.45} />
-              {i > 0 ? <line x1={b.x} x2={b.x} y1={2} y2={g.caja.abajo + 6} stroke="var(--borde-control)" strokeWidth={1.5} strokeDasharray="2 3" /> : null}
+              <rect x={b.x} y={FRANJA_DE_ROTULOS - 2} width={b.ancho} height={4} fill="var(--banda)" />
+              {i > 0 ? <line x1={b.x} x2={b.x} y1={2} y2={g.caja.abajo + 6} stroke="var(--borde-control)" strokeWidth={1} strokeDasharray="1 3" /> : null}
               {/* La letra va en una franja propia, arriba: ningún punto se dibuja ahí. */}
               <text x={b.x + 6} y={2 + FRANJA_DE_ROTULOS / 2} dominantBaseline="central" fill="var(--texto)" fontSize={LETRA} fontWeight={600}>
                 {b.rotulo}
@@ -93,19 +94,20 @@ export function Minigrafico({
           ))}
           {g.eje.map((m) => (
             <g key={m.valor} className="minigrafico__marca">
-              <line x1={g.caja.izquierda} x2={g.caja.derecha} y1={m.y} y2={m.y} stroke="var(--borde)" />
+              {/* La grilla, solo horizontal y alineada al medio píxel (TB-03). */}
+              <line x1={g.caja.izquierda} x2={g.caja.derecha} y1={Math.round(m.y) + 0.5} y2={Math.round(m.y) + 0.5} stroke="var(--borde)" strokeWidth={1} />
               <text x={g.caja.izquierda - 6} y={m.y} textAnchor="end" dominantBaseline="central" fill="var(--tenue)" fontSize={LETRA}>
                 {m.texto}
               </text>
             </g>
           ))}
-          {g.inicioDelPlan !== null ? <line className="minigrafico__plan" x1={g.inicioDelPlan} x2={g.inicioDelPlan} y1={2} y2={alto - 2} stroke="var(--borde-control)" strokeWidth={1.5} strokeDasharray="3 3" /> : null}
+          {g.inicioDelPlan !== null ? <line className="minigrafico__plan" x1={g.inicioDelPlan} x2={g.inicioDelPlan} y1={2} y2={alto - 2} stroke="var(--borde-control)" strokeWidth={1} strokeDasharray="1 3" /> : null}
           {/* Lo planificado: un tramo horizontal por escalón, discontinuo y sin puntos, como en el gráfico grande. */}
           {g.plan.map((s) => (
-            <line key={`objetivo-${s.x1}`} className="minigrafico__objetivo" x1={s.x1} x2={s.x2} y1={s.y} y2={s.y} stroke={color} strokeWidth={1.75} strokeDasharray="6 4" />
+            <line key={`objetivo-${s.x1}`} className="minigrafico__objetivo" x1={s.x1} x2={s.x2} y1={s.y} y2={s.y} stroke={color} strokeWidth={1.25} strokeDasharray="3 2" />
           ))}
           {g.tramos.map((d) => (
-            <path key={d} className="minigrafico__tramo" d={d} fill="none" stroke={color} strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />
+            <path key={d} className="minigrafico__tramo" d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
           ))}
           {g.puntos.map((p) => (
             <g key={p.clave} className="minigrafico__punto" data-hueco={p.hueco ? 'si' : undefined} data-clase={p.clase ?? undefined}>

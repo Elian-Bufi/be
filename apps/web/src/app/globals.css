@@ -1782,27 +1782,29 @@ details summary {
   border-radius: 3px;
 }
 
+/* Lo planificado y lo registrado de Entrenamiento, en el color de la métrica (TB-03): el contorno discontinuo contra el
+   lleno, como en el gráfico. */
 .muestra--planificado {
-  border: 2px solid var(--grafico-planificado);
-  background: repeating-linear-gradient(135deg, var(--grafico-planificado) 0 2px, transparent 2px 6px);
+  border: 1.25px dashed var(--metrica-1);
+  background: var(--superficie);
 }
 
 .muestra--registrado {
-  background: var(--grafico-registrado);
+  background: var(--metrica-1);
 }
 
 /* Evolución antropométrica: punto comparable y rombo no comparable, del mismo color; la forma dice la diferencia. */
 .muestra--punto {
   width: 0.9rem;
   border-radius: 50%;
-  background: var(--grafico-registrado);
+  background: var(--metrica-1);
 }
 
 .muestra--rombo {
   width: 0.8rem;
   height: 0.8rem;
   border-radius: 2px;
-  background: var(--grafico-registrado);
+  background: var(--metrica-1);
   transform: rotate(45deg);
 }
 
@@ -5001,6 +5003,13 @@ a.observacion__fila:focus-visible {
 
 .minigrafico {
   margin-top: 0.35rem;
+}
+
+/* La línea del minigráfico: 1,5 a densidad 1 y 1,25 en una pantalla de alta densidad (TB-03; A8 de la propuesta). */
+@media (min-resolution: 2dppx) {
+  .minigrafico__tramo {
+    stroke-width: 1.25px;
+  }
 }
 
 .minigrafico svg {

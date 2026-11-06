@@ -74,6 +74,11 @@ function temaApk(nombre) {
 // ─── Los pares que las pantallas usan ───────────────────────────────────────────────────────────
 const TEXTO = 4.5;
 const NO_TEXTO = 3;
+/**
+ * Un fondo de datos (la banda de la vigencia y del rango, WP-TABLERO-ALTA-GAMA TB-03): no es texto ni un borde, pero
+ * tiene que verse en un proyector, que lava los fondos. 1,3:1 contra la superficie, como mínimo (DL-163 D-3, anexo A4).
+ */
+const FONDO_DE_DATO = 1.3;
 
 /** [primer plano, fondo, mínimo, dónde se usa] — los nombres son los de tokens.css. */
 const PARES_WEB = [
@@ -177,10 +182,6 @@ function verificar(tema, pares, nombreDelTema) {
 
 /** En las dos apariencias: los gráficos de entrenamiento y de antropometría se ven en cualquiera. */
 const PARES_GRAFICO = [
-  ['grafico-planificado', 'superficie', NO_TEXTO, 'barras, franjas y línea de lo planificado'],
-  ['grafico-registrado', 'superficie', NO_TEXTO, 'barras, puntos y línea de lo registrado'],
-  ['grafico-planificado', 'fondo-suave', NO_TEXTO, 'muestra de lo planificado en la leyenda'],
-  ['grafico-registrado', 'fondo-suave', NO_TEXTO, 'muestra de lo registrado en la leyenda'],
   ['grafico-hueco', 'superficie', NO_TEXTO, 'rayado de una sesión sin dato en el gráfico'],
   // «Analizar» (WP-DASHBOARD-PROFESIONAL): línea, punto y muestra de cada métrica, sobre el lienzo y en la leyenda.
   ['metrica-1', 'superficie', NO_TEXTO, 'línea y puntos de la primera métrica'],
@@ -189,6 +190,12 @@ const PARES_GRAFICO = [
   ['metrica-1', 'fondo-suave', NO_TEXTO, 'primera métrica sobre una banda de vigencia o en el panel de lectura'],
   ['metrica-2', 'fondo-suave', NO_TEXTO, 'segunda métrica sobre una banda de vigencia o en el panel de lectura'],
   ['metrica-3', 'fondo-suave', NO_TEXTO, 'tercera métrica sobre una banda de vigencia o en el panel de lectura'],
+  // TB-03 (DL-163 D-3): la vigencia del plan y el rango del profesional, en --banda, con las métricas encima.
+  ['banda', 'superficie', FONDO_DE_DATO, 'la banda de la vigencia y del rango, contra la tarjeta'],
+  ['metrica-1', 'banda', NO_TEXTO, 'primera métrica sobre la banda de la vigencia o del rango'],
+  ['metrica-2', 'banda', NO_TEXTO, 'segunda métrica sobre la banda de la vigencia o del rango'],
+  ['metrica-3', 'banda', NO_TEXTO, 'tercera métrica sobre la banda de la vigencia o del rango'],
+  ['grafico-hueco', 'banda', NO_TEXTO, 'una sesión sin dato sobre la banda'],
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
@@ -386,4 +393,24 @@ test('ningún estilo del website ni de la APK escribe un color fuera de los toke
       });
   }
   assert.deepEqual(literales, [], `Colores escritos fuera de los tokens:\n${literales.join('\n')}`);
+});
+
+/**
+ * WP-TABLERO-ALTA-GAMA, TB-03 (DL-163 D-3): lo planificado y lo registrado de Entrenamiento van en el color de la
+ * métrica, como en «Analizar». Los dos colores de antes (un azul contra un naranja) salen de los tokens y de todo el
+ * website: un gráfico que los nombrara quedaría sin color.
+ */
+test('website · los gráficos ya no usan los colores de planificado y registrado (TB-03)', () => {
+  const tokens = readFileSync(TOKENS_WEB, 'utf8');
+  assert.doesNotMatch(tokens, /--grafico-(planificado|registrado)\s*:/);
+  const usos = [];
+  const recorrer = (dir) => {
+    for (const nombre of readdirSync(dir)) {
+      const ruta = join(dir, nombre);
+      if (statSync(ruta).isDirectory()) recorrer(ruta);
+      else if (/\.(css|tsx?)$/.test(nombre) && /var\(--grafico-(planificado|registrado)\)/.test(readFileSync(ruta, 'utf8'))) usos.push(relative(RAIZ, ruta));
+    }
+  };
+  recorrer(join(RAIZ, 'apps/web/src'));
+  assert.deepEqual(usos, []);
 });

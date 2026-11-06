@@ -227,7 +227,8 @@ function Grafico({
       >
         <ResponsiveContainer height={ALTO} initialDimension={{ width: 640, height: ALTO }}>
           <ScatterChart margin={{ top: 20, right: 24, bottom: 8, left: 4 }} accessibilityLayer={false}>
-            <CartesianGrid stroke="var(--borde)" />
+            {/* La grilla, solo horizontal, y sin línea de eje (TB-03; DL-163 D-3). */}
+            <CartesianGrid stroke="var(--borde)" vertical={false} />
             <XAxis
               dataKey="x"
               type="number"
@@ -243,11 +244,11 @@ function Grafico({
                   </text>
                 </g>
               )}
-              axisLine={{ stroke: 'var(--borde-control)' }}
+              axisLine={false}
               tickLine={false}
               height={36}
             />
-            <YAxis dataKey="y" type="number" domain={[dominio.desde, dominio.hasta]} ticks={marcasVerticales} interval={0} width={56} tickFormatter={(v: number) => numero(v, decimales)} tick={{ fill: 'var(--tenue)', fontSize: LETRA_MINIMA }} axisLine={{ stroke: 'var(--borde-control)' }} />
+            <YAxis dataKey="y" type="number" domain={[dominio.desde, dominio.hasta]} ticks={marcasVerticales} interval={0} width={56} tickFormatter={(v: number) => numero(v, decimales)} tick={{ fill: 'var(--tenue)', fontSize: LETRA_MINIMA }} axisLine={false} tickLine={false} />
             {conPuntero ? <Tooltip cursor={false} content={({ active, payload }) => (active && payload?.[0] ? <Recuadro observacion={visibles.find((o) => o.punto.sourceId === (payload[0]!.payload as Dato).sourceId)} zonaHoraria={zonaHoraria} /> : null)} /> : null}
             <Scatter
               data={datos}

@@ -13,7 +13,8 @@
 > en el código que cita cada uno. Un oráculo dice qué hay que observar para aceptar la prueba. No inventa la regla: la
 > lee.
 >
-> **Estado.** Escritos: TEST-TAG-006. Los demás se escriben con su parte (§10 del paquete).
+> **Estado.** Escritos: TEST-TAG-005 (con los pares de TB-03; los demás tokens, con su parte) y TEST-TAG-006. Los demás
+> se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -58,4 +59,36 @@ AUTOMATION           scripts/geometria-del-minigrafico.test.mjs («TEST-TAG-006 
 ENVIRONMENT          CI (verificar · typecheck · unit · build · audit) y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas de capturas-del-tablero de la corrida de TB-02,
                      comparadas con la línea de base (EVIDENCIA/TABLERO-ALTA-GAMA/)
+```
+
+---
+
+## TEST-TAG-005 — Cada token nuevo, con su par
+
+```text
+TEST_ID              TEST-TAG-005
+TITLE                Cada color nuevo del tablero entra en tokens.css con su par medido en la prueba de contraste
+LEVEL                Unidad (lectura de apps/web/src/app/tokens.css, sin navegador)
+PRIORITY             P1 — accesibilidad: un fondo o una marca que no se ve no dice nada (RNF-ACC-001)
+SOURCES              DL-163 D-2, D-3 y D-11 · WP-TABLERO-ALTA-GAMA TB-03 («La vigencia va en --banda, con 1,3:1
+                     como mínimo […] y --grafico-planificado y --grafico-registrado salen de los gráficos») · la
+                     propuesta, anexo A4 (los tokens nuevos y sus pares) · scripts/contraste.test.cjs (WCAG 2.2:
+                     4,5:1 para texto y 3:1 para marcas)
+PRECONDITIONS        Ninguna.
+SYNTHETIC_FIXTURE    Ninguno: los tokens reales de Claro y Azul noche.
+STEPS                1. Leer los dos temas de tokens.css.
+                     2. Medir cada par nuevo: los fondos de datos contra la superficie y las métricas encima.
+                     3. Buscar los dos colores de antes en tokens.css y en todo apps/web/src.
+EXPECTED             1-2 → TB-03: --banda contra --superficie, 1,3:1 o más en los dos temas; las tres métricas y
+                     --grafico-hueco sobre --banda, 3:1 o más. Se suman con su parte: --ahora y --pista (TB-04 y
+                     TB-10), --retrato-fondo y --retrato-tinta (TB-05), --composicion-libre y --composicion-grasa
+                     (TB-24), con las iniciales y las métricas contra --ahora a ΔE 20 o más.
+                     3 → --grafico-planificado y --grafico-registrado no se definen ni se usan.
+NEGATIVE_ASSERTIONS  Ningún estilo escribe un color fuera de los tokens (la prueba que ya existía). Un gráfico de
+                     Entrenamiento no distingue lo planificado de lo registrado por un naranja contra un azul: lo
+                     distingue la forma.
+AUTOMATION           scripts/contraste.test.cjs (los pares de PARES_GRAFICO con FONDO_DE_DATO y «los gráficos ya
+                     no usan los colores de planificado y registrado (TB-03)»), en `npm test`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas de la corrida de TB-03 en los dos temas
 ```

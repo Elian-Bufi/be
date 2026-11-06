@@ -124,6 +124,24 @@ interface CajaDeRotulo {
   readonly height?: number;
 }
 
+/** El alto de la franja de la vigencia, arriba del dibujo. */
+const ALTO_DE_LA_FRANJA = 6;
+
+/**
+ * La vigencia de una versión del plan (TB-03; DL-163 D-3): una franja de `--banda` arriba del dibujo y, donde empieza
+ * una versión que no es la primera del período, la vertical fina y punteada que la lleva. No es una columna de todo el
+ * alto: con 1,07:1 en Claro, la columna de antes no se veía, y tapaba la grilla.
+ */
+function FranjaDeVigencia({ x, y, width, height, primera }: { x?: number; y?: number; width?: number; height?: number; primera: boolean }) {
+  if (x === undefined || y === undefined || width === undefined || height === undefined) return <g />;
+  return (
+    <g className="grafico__vigencia">
+      <rect x={x} y={y} width={width} height={ALTO_DE_LA_FRANJA} fill="var(--banda)" />
+      {primera ? null : <line x1={x} x2={x} y1={y} y2={y + height} stroke="var(--borde-control)" strokeWidth={1} strokeDasharray="1 3" />}
+    </g>
+  );
+}
+
 /**
  * La fecha elegida, en una píldora invertida sobre el eje (TB-02; A11 de la propuesta): fondo del texto, letra de la
  * superficie, 12,5 en 600. Va debajo del dibujo, sobre los rótulos de las fechas, centrada en la guía.
@@ -467,16 +485,16 @@ function Panel({
             onMouseLeave={() => setArrastre(null)}
           >
             <CartesianGrid stroke="var(--borde)" vertical={false} />
+            {/* La vigencia de cada versión (TB-03): la lleva la vertical rotulada donde empieza; la banda, una franja de
+                --banda arriba del dibujo, solo la refuerza. Ya no son columnas de todo el alto. */}
             {bandasDibujadas.map(({ b, xa, xb, rotulo }, i) => (
               <ReferenceArea
                 key={`${b.planVersionId}-${i}`}
                 className="grafico__banda"
                 x1={xa}
                 x2={xb}
-                fill="var(--fondo-suave)"
-                fillOpacity={i % 2 === 0 ? 0.9 : 0.45}
-                stroke="var(--borde)"
                 ifOverflow="hidden"
+                shape={(props: { x?: number; y?: number; width?: number; height?: number }) => <FranjaDeVigencia {...props} primera={i === 0} />}
                 label={rotulo ? { value: rotulo, position: 'top', offset: 7, fill: 'var(--tenue)', fontSize: LETRA } : undefined}
               />
             ))}
@@ -500,8 +518,8 @@ function Panel({
                   className="grafico__corte"
                   x={x}
                   stroke="var(--borde-control)"
-                  strokeWidth={1.5}
-                  strokeDasharray="3 3"
+                  strokeWidth={1}
+                  strokeDasharray="1 3"
                   ifOverflow="hidden"
                   label={{
                     value: cortes.length === 1 ? `${c.texto} · ${diaYMesCivil(c.fecha)}` : String(i + 1),
@@ -525,10 +543,11 @@ function Panel({
               tickSize={conFechas ? 6 : 4}
               tickFormatter={(x: number) => diaYMesCivil(fechaDeX(x))}
               tick={conFechas ? { fill: 'var(--tenue)', fontSize: LETRA } : MarcaSinFecha}
-              axisLine={{ stroke: 'var(--borde-control)' }}
+              axisLine={false}
+              tickLine={{ stroke: 'var(--borde-control)' }}
             />
             {/* Una métrica entera (repeticiones, RIR, conteos) no tiene marcas como «5,25 rep». La unidad va en el encabezado. */}
-            <YAxis width={58} domain={['auto', 'auto']} allowDecimals={modo === 'RELATIVE' || series.some((s) => s.decimales > 0)} tickFormatter={(v: number) => (modo === 'RELATIVE' ? `${v > 0 ? '+' : ''}${numero(v)} %` : numero(v))} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={{ stroke: 'var(--borde-control)' }} />
+            <YAxis width={58} domain={['auto', 'auto']} allowDecimals={modo === 'RELATIVE' || series.some((s) => s.decimales > 0)} tickFormatter={(v: number) => (modo === 'RELATIVE' ? `${v > 0 ? '+' : ''}${numero(v)} %` : numero(v))} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
             {/* Lo planificado: un tramo horizontal por escalón, discontinuo y sin puntos. El eje vertical lo incluye. */}
             {escalones.map((e, i) => {
               const xa = Math.max(x0, mediodia(e.desde) - DIA / 2);
@@ -545,8 +564,8 @@ function Panel({
                     { x: xb, y: e.valor },
                   ]}
                   stroke={(ESTILOS[unica?.indice ?? 0] ?? ESTILOS[0]).color}
-                  strokeWidth={2}
-                  strokeDasharray="6 5"
+                  strokeWidth={1.25}
+                  strokeDasharray="4 3"
                   ifOverflow="extendDomain"
                 />
               );
@@ -566,7 +585,7 @@ function Panel({
             ))}
             {tramos.map((t) => {
               const e = ESTILOS[t.indice] ?? ESTILOS[0];
-              return <Line key={t.clave} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={2} connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
+              return <Line key={t.clave} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
             })}
             {/* El nombre de cada línea, a la derecha de su último punto, en el margen: va en una capa aparte, porque los
                 puntos de una línea se recortan al área de dibujo. */}
