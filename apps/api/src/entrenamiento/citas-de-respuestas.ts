@@ -25,7 +25,7 @@
  * no reemplaza en silencio lo que el profesional eligió. El control va después del PDP y de la pertenencia: sobre una
  * respuesta ajena o inexistente sigue saliendo el 422 neutral, nunca un 409 que revele que existe.
  */
-import { CodigoDeError, resolverVistaEfectiva, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada } from '@be/domain';
+import { CodigoDeError, resolverVistaEfectiva, resumenDeValor, type CampoDePlantillaV2, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada, type ValorDeRespuestaV2 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { ErrorDeApi } from '../http/errores';
 import { camposPorCodigo, terminalVersion } from '../formularios/lectura-formularios';
@@ -33,10 +33,30 @@ import { esUuid } from './ejecutor';
 
 type Tx = Prisma.TransactionClient;
 
+/**
+ * Una respuesta guardada: en V1 (`value`, `unit`: FRM-07 y las versiones de P0) o en V2 (`answer` con su tipo; DL-164).
+ * Las dos se citan igual, por `fieldCode` y versión.
+ */
 interface RespuestaAlmacenada {
   fieldCode: string;
-  value: string | number | boolean;
+  value?: string | number | boolean;
   unit?: string | null;
+  answer?: ValorDeRespuestaV2;
+}
+
+/**
+ * El valor y la unidad con que se cita una respuesta. Una V2 de texto, número o sí/no se cita como una de P0; cualquier
+ * otro tipo (una opción, una lista, una tabla…) se cita en palabras, con las etiquetas de la plantilla (`resumenDeValor`):
+ * la cita es una referencia legible, no una copia de la estructura.
+ */
+function valorCitado(r: RespuestaAlmacenada, campo: { unit?: string | null }): { value: string | number | boolean; unit: string | null } {
+  const unidadDelCampo = campo.unit ?? null;
+  if (r.answer === undefined) return { value: r.value as string | number | boolean, unit: r.unit ?? unidadDelCampo };
+  const a = r.answer;
+  if (a.type === 'NUMBER') return { value: a.number, unit: a.unit ?? unidadDelCampo };
+  if (a.type === 'BOOLEAN') return { value: a.yes, unit: null };
+  if (a.type === 'TEXT') return { value: a.text, unit: null };
+  return { value: resumenDeValor(campo as unknown as CampoDePlantillaV2, a), unit: null };
 }
 
 const INCLUIR_RESPUESTA = { solicitud: true, templateVersion: true, rectificaciones: true } as const;
@@ -127,13 +147,14 @@ export async function citasResueltas(tx: Tx, evaluacionIds: readonly string[]): 
     const campo = camposPorCodigo(f.respuesta.templateVersion.contenido).get(f.codigoDeCampo);
     // La API validó ambos al citar y las filas son de solo agregado: si faltan, la base se alteró por fuera.
     if (!respuesta || !campo) throw new Error(`BE: la cita ${f.id} no se puede resolver (DL-102).`);
+    const { value, unit } = valorCitado(respuesta, campo);
     porEvaluacion.get(f.evaluacionId)!.push({
       formResponseId: f.respuestaId,
       formRequestId: f.respuesta.solicitudId,
       fieldCode: f.codigoDeCampo,
       label: campo.label,
-      value: respuesta.value,
-      unit: respuesta.unit ?? campo.unit,
+      value,
+      unit,
       provenance: 'SELF_REPORTED',
       citedVersion: token(citada.version),
       answeredAt: citada.momentoDeRegistro.toISOString(),

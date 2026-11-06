@@ -301,6 +301,32 @@ import {
   SolicitudDeFormularioCreadaResponseSchema,
   VersionDePlantillaResponseSchema,
 } from './contratos-formularios';
+import {
+  DetalleDeSolicitudV2ResponseSchema,
+  ListaDeSolicitudesPropiasV2ResponseSchema,
+  PropuestaCargadaResponseSchema,
+  PropuestaResueltaResponseSchema,
+  VersionDePlantillaV2ResponseSchema,
+  type CargarPropuestaRequest,
+  type EnviarRespuestaV2Request,
+  type RectificarRespuestaV2Request,
+  type ResolverPropuestaRequest,
+} from './contratos-formularios-v2';
+import {
+  HabitosCompartidosEstadoResponseSchema,
+  HabitosCompartidosResponseSchema,
+  HabitosRegistradosResponseSchema,
+  HabitosParaElProfesionalResponseSchema,
+  MisHabitosResponseSchema,
+  PedidoDeAccesoCreadoResponseSchema,
+  PedidoDeAccesoRespondidoResponseSchema,
+  PedidosDeAccesoResponseSchema,
+  type CompartirHabitosRequest,
+  type DejarDeCompartirHabitosRequest,
+  type PedirAccesoAHabitosRequest,
+  type RegistrarHabitosRequest,
+  type ResponderPedidoDeAccesoRequest,
+} from './contratos-habitos-de-la-persona';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -1478,6 +1504,83 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-FRM-08: rectificar crea una sucesora; la original queda intacta (09:1618). */
     rectificarRespuestaDeFormulario(token: string, respuestaId: string, cuerpo: z.input<typeof RectificarRespuestaRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/me/form-responses/${encodeURIComponent(respuestaId)}/rectifications`, { token, claveDeIdempotencia, esquema: RectificacionCreadaResponseSchema, cuerpo });
+    },
+
+    // ─── FRI · formularios de inicio (WP-FORMULARIOS-DE-INICIO, DL-164) ───────────────────────
+    // Sirven para cualquier Solicitud (de P0 o con tipos nuevos). Las de FRM quedan para las APK instaladas.
+    /** API-FRI-01: la estructura de cualquier versión, en formato V2. */
+    consultarDefinicionDePlantilla(token: string, plantillaId: string, versionId: string) {
+      return llamar('GET', `/form-templates/${encodeURIComponent(plantillaId)}/versions/${encodeURIComponent(versionId)}/definition`, { token, esquema: VersionDePlantillaV2ResponseSchema });
+    },
+    /** API-FRI-02: la bandeja de la persona: todas sus solicitudes, con la propuesta que espera confirmación. */
+    miBandejaDeFormularios(token: string, filtro: { status?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/form-inbox${query(filtro)}`, { token, esquema: ListaDeSolicitudesPropiasV2ResponseSchema });
+    },
+    /** API-FRI-03: el detalle V2, para los dos actores, con la propuesta y la transcripción. */
+    consultarVistaDeSolicitud(token: string, solicitudId: string) {
+      return llamar('GET', `/form-requests/${encodeURIComponent(solicitudId)}/view`, { token, esquema: DetalleDeSolicitudV2ResponseSchema });
+    },
+    /** API-FRI-04: responder (la persona), sola o confirmando lo que cargó el profesional. */
+    responderSolicitudV2(token: string, solicitudId: string, cuerpo: EnviarRespuestaV2Request, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/answers`, { token, claveDeIdempotencia, esquema: RespuestaCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-05: rectificar una respuesta propia; la original queda intacta. */
+    corregirRespuestaV2(token: string, respuestaId: string, cuerpo: RectificarRespuestaV2Request, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-responses/${encodeURIComponent(respuestaId)}/corrections`, { token, claveDeIdempotencia, esquema: RectificacionCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-06: el profesional carga (o reemplaza) lo que la persona le contó, para que ella lo confirme. */
+    cargarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: CargarPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/form-requests/${encodeURIComponent(solicitudId)}/proposal`, { token, claveDeIdempotencia, esquema: PropuestaCargadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-07: el profesional retira lo cargado; se borra. */
+    retirarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: ResolverPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/form-requests/${encodeURIComponent(solicitudId)}/proposal/withdrawal`, { token, claveDeIdempotencia, esquema: PropuestaResueltaResponseSchema, cuerpo });
+    },
+    /** API-FRI-08: la persona dice «No es correcto»; lo cargado se borra y la Solicitud sigue pendiente. */
+    rechazarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: ResolverPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/proposal/rejection`, { token, claveDeIdempotencia, esquema: PropuestaResueltaResponseSchema, cuerpo });
+    },
+
+    // ─── HBT · los hábitos de la persona (WP-FORMULARIOS-RONDA-2, FR-10; DL-165 D-9) ─────────────
+    // Familia propia de BE: API-HAB ya es «Mis habituales» (DL-109). La APK 0.21.0-candidata.1 llama 01 a 04, con la forma
+    // congelada (DL-152); la 05 es del website.
+    /** API-HBT-01: mis hábitos (lo vigente y la historia), la autorización y mis profesionales. */
+    misHabitos(token: string) {
+      return llamar('GET', '/me/habits', { token, esquema: MisHabitosResponseSchema });
+    },
+    /** API-HBT-02: una versión nueva de mis hábitos, desde «Mis hábitos». */
+    registrarMisHabitos(token: string, cuerpo: RegistrarHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/habits', { token, claveDeIdempotencia, esquema: HabitosRegistradosResponseSchema, cuerpo });
+    },
+    /** API-HBT-03: compartirlos, o cambiar con quiénes, con el texto que se acepta. */
+    compartirMisHabitos(token: string, cuerpo: CompartirHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', '/me/habits/sharing', { token, claveDeIdempotencia, esquema: HabitosCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-04: dejar de compartirlos, para todos a la vez. */
+    dejarDeCompartirMisHabitos(token: string, cuerpo: DejarDeCompartirHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/habits/sharing/withdrawal', { token, claveDeIdempotencia, esquema: HabitosCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-05: los hábitos que la persona le comparte a este profesional. Si no se los comparte, el 404 de lo inexistente. */
+    habitosDeLaPersona(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits`, { token, esquema: HabitosCompartidosResponseSchema });
+    },
+    // Ronda 2.1 (DL-165 D-17 nueva): «Pedir acceso a sus hábitos». 06 y 07, del website; 08 y 09, de la APK
+    // 0.22.0-candidata.1, con la forma congelada (DL-152).
+    /** API-HBT-06: el profesional le pide a la persona ver sus hábitos, desde su área. Le llega como novedad importante. */
+    pedirAccesoAHabitos(token: string, asesoradoId: string, cuerpo: PedirAccesoAHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/habits/access-requests`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoCreadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-07: lo que el profesional sabe de los hábitos de la persona (si los recibe, lo más nuevo que ve, su último pedido). */
+    habitosParaElProfesional(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits/status`, { token, esquema: HabitosParaElProfesionalResponseSchema });
+    },
+    /** API-HBT-08: los pedidos de acceso que esperan la respuesta de la persona. */
+    pedidosDeAccesoAMisHabitos(token: string) {
+      return llamar('GET', '/me/habits/access-requests', { token, esquema: PedidosDeAccesoResponseSchema });
+    },
+    /** API-HBT-09: la persona responde un pedido: «Sí, que los vea» o «No, por ahora». */
+    responderPedidoDeAcceso(token: string, pedidoId: string, cuerpo: ResponderPedidoDeAccesoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/habits/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoRespondidoResponseSchema, cuerpo });
     },
   };
 }

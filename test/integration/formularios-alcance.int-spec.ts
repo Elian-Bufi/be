@@ -1,8 +1,8 @@
 /**
  * API-FRM-03 · la plantilla tiene que corresponder al Alcance de la Solicitud (UC-P32, precondición 7 y E04), por la
  * API real y contra PostgreSQL.
- * - Regla: una versión de plantilla con dominio (FRM-ENTRENAMIENTO) se pide solo en su Alcance; una sin dominio
- *   (FRM-SALUD, FRM-HABITOS) es transversal a los tres (D-D; `dominio` NULL en prisma/schema.prisma).
+ * - Regla: una versión de plantilla con dominio (FRM-ENTRENAMIENTO, en su versión vigente) se pide solo en su Alcance; una
+ *   sin dominio (FRM-SALUD, FRM-HABITOS) es transversal a los tres (D-D; `dominio` NULL en prisma/schema.prisma).
  * - El cruce se rechaza con `422 FORM_TEMPLATE_NOT_SELECTABLE`, el código que FRM-03 ya declaraba, y no escribe nada.
  * - Privacidad: el control va después del PDP. A quien no puede pedir, el mismo 404 neutral que ante una plantilla
  *   válida o un asesorado inexistente: el cruce no revela nada.
@@ -12,10 +12,13 @@ import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { VERSION_ENTRENAMIENTO_V4, VERSION_HABITOS_V2 } from './soporte-plantillas-de-inicio';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
-const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
-const VERSION_HABITOS = '4879e539-235f-4f91-83fc-2e113c404393';
+/** La vigente de FRM-ENTRENAMIENTO (v4, de formato 3; DL-165 ronda 2.1): FRM-03 no cambia con el formato de la versión. */
+const VERSION_ENTRENAMIENTO = VERSION_ENTRENAMIENTO_V4;
+/** La vigente de FRM-HABITOS («Tus hábitos» v2, ronda 2.1): sin área propia, la pide cualquier profesional en su área. */
+const VERSION_HABITOS = VERSION_HABITOS_V2;
 const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
 
 const prisma = new PrismaClient();

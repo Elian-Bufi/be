@@ -143,6 +143,25 @@ test('los hitos: cada uno con su ícono, su nombre y el dato que lo distingue', 
   assert.deepEqual(renglonDelHecho(entrada('COORDINATION_NOTE_RECORDED', 'Nota de coordinación')), { icono: 'texto', nombre: 'Nota de coordinación', dato: null, modo: null });
 });
 
+test('DL-165 D-8: un formulario dice qué pasó, cuál es y, si lo hay, cuánto respondió o cómo terminó lo cargado', () => {
+  const formulario = (eventType, title, details = []) => entrada(eventType, title, details, { domain: 'NUTRITION', source: { type: 'FORM_REQUEST', id: 's' } });
+  assert.deepEqual(renglonDelHecho(formulario('FORM_REQUESTED', 'Formulario pedido · Cómo comés hoy', [['Para qué', 'Conocer tus comidas'], ['Preguntas', '24 (22 obligatorias)']])), {
+    icono: 'informacion',
+    nombre: 'Formulario pedido',
+    dato: 'Cómo comés hoy',
+    modo: null,
+  });
+  assert.equal(renglonDelHecho(formulario('FORM_RESPONDED', 'Formulario respondido · Cómo comés hoy', [['Respondió', '20 de 24 preguntas']])).dato, 'Cómo comés hoy · 20 de 24 preguntas');
+  assert.equal(renglonDelHecho(formulario('FORM_CONFIRMED', 'Formulario confirmado · Cómo comés hoy', [['Respondió', '22 de 24 preguntas'], ['Cargado por', 'Lic. Sofía Paz el 5/11/2026']])).dato, 'Cómo comés hoy · 22 de 24 preguntas');
+  assert.equal(renglonDelHecho(formulario('FORM_LOADED', 'Formulario cargado con la persona · Antes de entrenar', [['Estado', 'esperando que lo confirme']])).dato, 'Antes de entrenar · esperando que lo confirme');
+  const rechazado = formulario('FORM_REJECTED', 'Formulario rechazado · Antes de entrenar', [['Lo cargado', 'se borró; el formulario sigue pendiente']]);
+  assert.deepEqual(renglonDelHecho(rechazado), { icono: 'informacion', nombre: 'Formulario rechazado', dato: 'Antes de entrenar', modo: null });
+  // El título del detalle es el de la API, entero.
+  assert.equal(tituloDelHecho(rechazado), 'Formulario rechazado · Antes de entrenar');
+  // Sin el nombre del formulario en el título, no inventa nada.
+  assert.deepEqual(renglonDelHecho(formulario('FORM_REQUESTED', 'Formulario pedido')), { icono: 'informacion', nombre: 'Formulario pedido', dato: null, modo: null });
+});
+
 test('si la API cambia un título o un rótulo, el renglón no inventa: muestra el título entero y lo que haya', () => {
   // Un título sin el punto medio queda entero.
   assert.equal(renglonDelHecho(entrada('MEAL_RECORDED', 'Almuerzo registrado')).nombre, 'Almuerzo registrado');

@@ -34,6 +34,8 @@
  *   UC-E08 E03). Con los avisos activos para la cuenta, al entrar se renueva el token del teléfono.
  * - WP-INVITACION (DL-136): el enlace de una invitación (App Link del website o be://) abre la pantalla de la invitación;
  *   sin sesión, queda pendiente hasta iniciarla, igual que un aviso tocado.
+ * - WP-FORMULARIOS-RONDA-2 (FR-01): lo escrito en un formulario se guarda cifrado en el teléfono, por cuenta y por
+ *   solicitud (src/formularios-en-el-telefono.ts). Cerrar la sesión desde Cuenta lo borra; una sesión vencida, no.
  * Identidad del build visible en Bienvenida (07 §34, TEST-APK-008).
  */
 import Constants from 'expo-constants';
@@ -54,6 +56,8 @@ import { Cabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
 import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambios';
 import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/entrenamiento-en-curso';
+import { borraLosBorradores } from './src/borrador-de-formulario';
+import { borradoresDeFormularios } from './src/formularios-en-el-telefono';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
 import { MenuAuxiliar } from './src/menu-auxiliar';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
@@ -68,6 +72,7 @@ import { PantallaDeFormularios, PantallaDeMiSolicitud } from './src/pantallas/fo
 import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantallas/historial';
 import { PantallaDeInicio } from './src/pantallas/inicio';
 import { PantallaDeLogin } from './src/pantallas/login';
+import { PantallaDeMisHabitos } from './src/pantallas/mis-habitos';
 import { PantallaDeNovedades } from './src/pantallas/novedades';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
 import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
@@ -439,6 +444,10 @@ function Contenido() {
       // Si Cuenta pidió volver a entrar para confirmar una acción, al iniciar sesión se vuelve a Cuenta (alIniciarSesion).
       // Un SESSION_EXPIRED de la API es un vencimiento comprobado: el aviso dice cuánto duraba esa sesión, si se sabe.
       const aviso = motivo === 'sesion-vencida' ? avisoDeVencimiento(sesionActual.current) : AVISOS[motivo];
+      // FR-01 · cerrar la sesión (o pedir el cierre de la cuenta) borra del teléfono lo escrito en los formularios de esa
+      // cuenta. Una sesión vencida no: la persona no eligió salir, y al volver a entrar lo recupera.
+      const cuenta = sesionActual.current?.identidadId;
+      if (cuenta && borraLosBorradores(motivo)) void borradoresDeFormularios.borrarDeLaCuenta(cuenta);
       terminar(
         motivo === 'cierre-registrado'
           ? { nombre: 'bienvenida', aviso }
@@ -630,8 +639,9 @@ function Contenido() {
               ) : null}
               {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
-              {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} salir={salir} ir={ir} /> : null}
-              {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} volver={volverAInformacion} ir={ir} /> : null}
+              {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} volver={volverAInformacion} ir={ir} subir={subir} /> : null}
+              {ruta.nombre === 'mis-habitos' ? <PantallaDeMisHabitos token={sesion.token} salir={salir} ir={ir} subir={subir} /> : null}
               {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
             </>
           ) : null}

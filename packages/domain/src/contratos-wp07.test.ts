@@ -162,8 +162,12 @@ test('09 §22 · las 8 operaciones FRM están en el documento, sin cancelar/rech
   const { documentoOpenApi } = await import('./openapi');
   const doc = documentoOpenApi() as { paths: Record<string, Record<string, unknown>> };
   const deFormularios = Object.entries(doc.paths).filter(([r]) => r.includes('form-') || r.includes('/me/form'));
-  const operaciones = deFormularios.reduce((n, [, m]) => n + Object.keys(m).length, 0);
-  assert.equal(operaciones, 8, 'API-FRM-01 a 08');
+  const ids = deFormularios.flatMap(([, m]) => Object.values(m).map((op) => (op as { operationId: string }).operationId));
+  assert.equal(ids.filter((id) => id.startsWith('API-FRM-')).length, 8, 'API-FRM-01 a 08');
+  // DL-164 D-5: los formularios V2 y la propuesta del profesional van en la familia FRI, ocho operaciones nuevas; las de
+  // FRM no cambian (DL-152). Ninguna otra operación de formularios.
+  assert.equal(ids.filter((id) => id.startsWith('API-FRI-')).length, 8, 'API-FRI-01 a 08');
+  assert.equal(ids.length, 16, 'solo FRM y FRI');
   const metodos = deFormularios.flatMap(([, m]) => Object.keys(m));
   assert.equal(metodos.includes('delete'), false, 'patrón «solo agregar»: sin DELETE en ningún endpoint de formularios');
   assert.equal(Object.keys(doc.paths).includes('/form-templates/{templateId}'), false, 'no hay operación de crear/editar plantilla (D-D)');

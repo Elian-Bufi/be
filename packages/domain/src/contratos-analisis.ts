@@ -66,6 +66,8 @@ export const TipoDeOrigenSchema = z.enum([
   'FOLLOW_UP_PROCESS',
   /** DL-140: una nota de coordinación entre los profesionales de la persona (RF-057; UC-E07). */
   'COORDINATION_NOTE',
+  /** DL-165 D-8: una Solicitud de formulario; «Abrir registro» lleva a la solicitud, en Información. */
+  'FORM_REQUEST',
 ]);
 export type TipoDeOrigen = z.infer<typeof TipoDeOrigenSchema>;
 export const OrigenDeDatoSchema = z.strictObject({ type: TipoDeOrigenSchema, id: IdOpaco });
@@ -442,6 +444,17 @@ export const TIPOS_DE_EVENTO = [
    * no tenga ese alcance: no es un dato de esa área sino una comunicación dirigida a él.
    */
   'COORDINATION_NOTE_RECORDED',
+  /**
+   * DL-165 D-8 (FR-09): los formularios, a la vista. Pedido (el profesional lo pidió), respondido (la persona respondió
+   * sola), cargado (el profesional lo cargó con la persona), confirmado (la persona confirmó lo cargado) y rechazado (dijo
+   * «No es correcto»). Los ve solo el profesional que pidió la Solicitud, en sus Alcances permitidos: es la regla de
+   * API-FRI-03. Su `domain` es el Alcance de la Solicitud. Nunca llevan las respuestas: solo cuántas y cuándo.
+   */
+  'FORM_REQUESTED',
+  'FORM_RESPONDED',
+  'FORM_LOADED',
+  'FORM_CONFIRMED',
+  'FORM_REJECTED',
 ] as const;
 export const TipoDeEventoSchema = z.enum(TIPOS_DE_EVENTO);
 export type TipoDeEvento = z.infer<typeof TipoDeEventoSchema>;

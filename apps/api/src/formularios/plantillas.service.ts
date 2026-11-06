@@ -6,6 +6,7 @@ import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esUuid, EjecutorDeFormularios } from './ejecutor';
 import { plantillaApi, versionDePlantillaApi } from './lectura-formularios';
+import { esVersionV2, noServidaEnV1 } from './lectura-formularios-v2';
 
 /**
  * API-FRM-01 y API-FRM-02 — el catálogo BE de plantillas (09v16.1 §22.1 y §22.2; D-D).
@@ -70,6 +71,8 @@ export class PlantillasService {
               })
             : null;
         if (!v) throw errores.recursoNoEncontrado();
+        // DL-164 D-5: una versión con tipos nuevos no entra en el contrato V1; para esta operación, no existe. FRI-01 la sirve.
+        if (esVersionV2(v.contenido)) throw noServidaEnV1();
         return { data: versionDePlantillaApi(v) };
       },
     });

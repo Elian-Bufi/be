@@ -230,6 +230,12 @@ export const NOMBRE_DE_TIPO_DE_EVENTO: Readonly<Record<TipoDeEvento, string>> = 
   FOLLOW_UP_OPENED: 'Seguimiento abierto',
   FOLLOW_UP_CLOSED: 'Seguimiento cerrado',
   COORDINATION_NOTE_RECORDED: 'Nota de coordinación',
+  // DL-165 D-8: los formularios en la línea de tiempo.
+  FORM_REQUESTED: 'Formulario pedido',
+  FORM_RESPONDED: 'Formulario respondido',
+  FORM_LOADED: 'Formulario cargado con la persona',
+  FORM_CONFIRMED: 'Formulario confirmado',
+  FORM_REJECTED: 'Formulario rechazado',
 };
 
 /** El área de cada tipo. `null`: el tipo no es de un área fija (un seguimiento de cualquiera; una nota, de la que la escribió). */
@@ -246,6 +252,12 @@ export const DOMINIO_DE_TIPO_DE_EVENTO: Readonly<Record<TipoDeEvento, DominioDeA
   FOLLOW_UP_OPENED: null,
   FOLLOW_UP_CLOSED: null,
   COORDINATION_NOTE_RECORDED: null,
+  // Un formulario es del Alcance de su Solicitud: de cualquiera de las tres áreas.
+  FORM_REQUESTED: null,
+  FORM_RESPONDED: null,
+  FORM_LOADED: null,
+  FORM_CONFIRMED: null,
+  FORM_REJECTED: null,
 };
 
 export const NOMBRE_DE_DOMINIO: Readonly<Record<DominioDeAnalisis, string>> = { NUTRITION: 'Nutrición', TRAINING: 'Entrenamiento', ANTHROPOMETRY: 'Antropometría' };

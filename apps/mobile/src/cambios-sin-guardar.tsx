@@ -9,7 +9,8 @@
  * aviso de la sesión dice por qué se salió.
  *
  * No guarda nada en el teléfono: lo escrito vive en la pantalla, y la declaración solo dice que existe. El registro, sin
- * React, está en `registro-de-cambios.ts`.
+ * React, está en `registro-de-cambios.ts`. Una pantalla que guarda lo escrito en el teléfono (la sesión de entrenamiento
+ * desde PA-02, un formulario desde FR-01) lo declara solo mientras no quedó guardado: si no, la pregunta no sería cierta.
  */
 import { createContext, useContext, useEffect, useId, type ReactNode } from 'react';
 import { Alert } from 'react-native';

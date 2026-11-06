@@ -15,6 +15,7 @@ import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { circuitoAntropometrico, type CircuitoAntropometrico } from './soporte-antropometria';
 import { circuitoDeEntrenamiento, type CircuitoDeEntrenamiento } from './soporte-entrenamiento';
 import { circuitoConPlanActivo, registrarComida } from './soporte-nutricion';
+import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 import { a3Vigente, otorgarA3, prepararAsesorado, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -98,7 +99,11 @@ describe('DL-115 · antropometría: la evolución propia exige el A3 vigente', (
 
 // ─── Formularios ────────────────────────────────────────────────────────────────────────────────
 
-const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
+/** Una copia de P0 de «Antecedentes para entrenamiento» (DL-164 FI-02: la v1 es histórica y la vigente usa tipos nuevos, que FRM-07 no sirve). */
+let VERSION_ENTRENAMIENTO: string;
+beforeAll(async () => {
+  ({ versionId: VERSION_ENTRENAMIENTO } = await sembrarAntecedentesDeP0(prisma, 'a3'));
+});
 const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
 const respuestas = (dias: number) => ({
   answers: [

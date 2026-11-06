@@ -1,0 +1,42 @@
+{
+  "artefacto": "/home/runner/work/_temp/aab/0.22.0-candidata.1/be-0.22.0-candidata.1-1254269-sin-firma.aab",
+  "sha256": "402c94bdb34dbf60a1f7c250043e5f12e0fe470e01127d8358cef997769a8992",
+  "bytes": 57923079,
+  "version": "0.22.0-candidata.1",
+  "versionCode": 35,
+  "commit": "1254269843c2dcd4270df349e48d2a59e1b450df",
+  "rama": "aab/candidata-0.22.0-1",
+  "cambiosSinConfirmar": [],
+  "ambiente": {
+    "perfil": "test",
+    "APP_ENV": "test",
+    "API_BASE_URL": "https://be-api-hndp.onrender.com",
+    "WEB_BASE_URL": "https://be-web-1ngj.onrender.com"
+  },
+  "firebase": true,
+  "googleWebClientId": true,
+  "firma": {
+    "sinFirma": true,
+    "nota": "construido sin firma (--sin-firma); se firma aparte con scripts/aab/firmar-aab.mjs"
+  },
+  "maquina": {
+    "sistema": "linux",
+    "actions": {
+      "corrida": "42163070554",
+      "intento": "1",
+      "sha": "1254269843c2dcd4270df349e48d2a59e1b450df"
+    }
+  },
+  "herramientas": {
+    "node": "v22.23.2",
+    "javaHome": "/usr/lib/jvm/temurin-17-jdk-amd64",
+    "androidHome": "/usr/local/lib/android/sdk",
+    "gradle": "wrapper de la plantilla de Expo",
+    "workers": 1,
+    "demonio": false,
+    "jvm": "-Xmx2560m"
+  },
+  "memoriaLibreMbAlEmpezar": 14367,
+  "construidoEn": "2026-11-06T04:42:20.363Z",
+  "minutos": 9
+}

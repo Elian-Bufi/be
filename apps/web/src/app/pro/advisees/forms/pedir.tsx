@@ -8,9 +8,16 @@
  *
  * **Al elegir un formulario vienen todas sus preguntas marcadas,** y el profesional desmarca las que no necesita
  * (decisión de Dirección del 2026-10-12; F-05 de WP-ESCRITORIO-AREAS, DL-131). La minimización sigue siendo del
- * profesional, no del catálogo: la cuenta de las elegidas está a la vista, ninguna viene como requerida, y la API sigue
- * evaluando la pertinencia de cada pregunta al crear la solicitud (FRM-03): marcarlas todas no amplía lo que se puede
- * pedir. No viene ningún formulario elegido: esa primera decisión es del profesional.
+ * profesional, no del catálogo: la cuenta de las elegidas está a la vista, como requeridas vienen solo las que la
+ * plantilla sugiere (`requiredByDefault`, DL-164) y se pueden cambiar, y la API sigue evaluando la pertinencia de cada
+ * pregunta al crear la solicitud (FRM-03): marcarlas todas no amplía lo que se puede pedir. No viene ningún formulario
+ * elegido: esa primera decisión es del profesional.
+ *
+ * WP-FORMULARIOS-DE-INICIO (DL-164): las preguntas se leen con API-FRI-01, que sirve cualquier versión en formato V2
+ * (las de P0 traducidas), así los formularios de inicio con tipos nuevos se piden como los demás. Cada pregunta dice con
+ * qué se responde y un resumen de sus opciones; las condicionales dicen cuándo aparecen. Si la versión usa tipos nuevos,
+ * se avisa que la persona necesita la app nueva y que mientras tanto se puede cargar con ella desde la ficha. El flujo
+ * de creación (FRM-03) no cambia.
  *
  * Lo que la pantalla no hace, a propósito: **no promete el dato.** El aviso dice que pedir no amplía el acceso y que
  * hasta que la persona responda no hay nada nuevo (05:15098-15099). Tampoco dice que a la persona le llega un aviso: BE
@@ -27,11 +34,23 @@
  * no reusa la clave del anterior.
  *
  * PF-02 (DL-100): si el profesional llega desde la evaluación de entrenamiento (`plantilla=FRM-ENTRENAMIENTO` y
- * `volver=entrenamiento`), el cajón precarga el formulario ratificado, sus preguntas, las requeridas y el área, y al enviar
- * vuelve a Entrenamiento. Es una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de
- * enviar.
+ * `volver=entrenamiento`, o `volver=entrenamiento-plan` desde el Plan), el cajón precarga «Antes de entrenar», el «para
+ * qué» y el área, y al enviar vuelve a Entrenamiento. Desde DL-165 D-29 (Dirección, 2026-11-06: «Que venga completo») las
+ * preguntas vienen como al elegirlo en «Más»: todas pedidas y, requeridas, las que sugiere la plantilla. Antes venían
+ * solo las seis de DL-100, sin la tabla «¿Qué días y en qué momento podés?», y el tope de los días (D-5) no actuaba. Es
+ * una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de enviar.
+ *
+ * WP-FORMULARIOS-RONDA-2 (FR-02): lo mismo desde el Resumen de Nutrición (`plantilla=FRM-NUTRICION-INICIO` y
+ * `volver=nutricion`), con las preguntas como al elegirlo en «Más», y al enviar se vuelve a Nutrición. Y al elegir un
+ * formulario de inicio, venga de donde venga, se sugiere su «para qué» si el profesional no escribió uno
+ * (`propositoAlElegir`): lo que escribió no se pisa.
+ *
+ * WP-FORMULARIOS-RONDA-2, ronda 2.1 (DL-165 D-15 nueva; D-22): los hábitos son un formulario aparte, «Tus hábitos». Al
+ * elegir uno de área que no los trae, el cajón ofrece **«Sumar «Tus hábitos»»**, marcado o no según lo que este profesional
+ * ya ve de la persona (API-HBT-07; `sumar-habitos.ts`). Con la casilla marcada se envían las dos solicitudes en un paso:
+ * primero la de área y después la de hábitos, cada una con su clave. Si una falla, se dice cuál.
  */
-import { ALCANCES, CONTEXTO_DE_ENTRENAMIENTO, COPY, COPY_FORMULARIOS as F, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, respondeCon, type Alcance, type Plantilla, type VersionDePlantilla } from '@be/domain';
+import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_HABITOS, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -41,12 +60,14 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, type Resultado } from '../../../../lib/api';
 import { dejarAvisoPara } from '../../../../lib/aviso-al-llegar';
+import { diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
+import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
+import { habitosParaSumar, marcadaPorOmision, mensajeDelEnvio, motivoDeLaSugerencia, pedidoDeHabitos, sugerenciaDelCajon, type DesenlaceDeEnvio, type LecturaDeLoQueSabe } from './sumar-habitos';
 
-/** A dónde se vuelve cuando el pedido salió de la evaluación de entrenamiento. Ahí lo espera `training/resumen.tsx`. */
-const RUTA_DE_ENTRENAMIENTO = '/pro/advisees/training';
+const H = COPY_HABITOS.web;
 
 /** Los rechazos de FRM-03 que dependen de lo elegido: se dicen, en vez de «el servicio no está disponible». */
 const RECHAZO_DE_SOLICITUD: Readonly<Record<string, string>> = {
@@ -56,7 +77,7 @@ const RECHAZO_DE_SOLICITUD: Readonly<Record<string, string>> = {
 };
 
 /** La versión del formulario elegido: de ahí salen sus preguntas. */
-type Lectura = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly version: VersionDePlantilla } | { readonly tipo: 'fallo' };
+type Lectura = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly version: VersionDePlantillaV2 } | { readonly tipo: 'fallo' };
 type Envio = { readonly tipo: 'editando' } | { readonly tipo: 'enviando' } | { readonly tipo: 'error'; readonly texto: string; readonly incierto: boolean };
 /** Lo que falta para enviar, por paso. */
 type Faltas = { readonly formulario?: string; readonly preguntas?: string; readonly proposito?: string; readonly area?: string };
@@ -80,14 +101,26 @@ export function PedidoDeInformacion({
   const id = useId();
   const router = useRouter();
   const intento = useClaveDeIntento();
+  /** Ronda 2.1 · la clave del segundo pedido, el de «Tus hábitos»: otro intento, con su propia clave. */
+  const intentoDeHabitos = useClaveDeIntento();
   const [catalogo, setCatalogo] = useState<Resultado<readonly Plantilla[]> | null>(null);
+  /** Ronda 2.1 (D-22) · lo que este profesional sabe de los hábitos de la persona (API-HBT-07), para sugerir «Tus hábitos». */
+  const [loQueSabe, setLoQueSabe] = useState<LecturaDeLoQueSabe | null>(null);
+  /** La casilla «Sumar «Tus hábitos»», si el profesional la tocó; si no, vale lo que sugiere el dominio. */
+  const [sumarElegido, setSumarElegido] = useState<boolean | null>(null);
+  /** La versión vigente de «Tus hábitos» (API-FRI-01), leída la primera vez que se necesita. */
+  const versionDeHabitos = useRef<VersionDePlantillaV2 | null>(null);
   const [elegido, setElegido] = useState<Plantilla | null>(null);
   const [lectura, setLectura] = useState<Lectura | null>(null);
   const [pedidas, setPedidas] = useState<readonly string[]>([]);
   const [requeridas, setRequeridas] = useState<readonly string[]>([]);
-  /** Lo elegido vino de la precarga ratificada de Entrenamiento (DL-100), no de «todas marcadas». */
+  /** Lo elegido vino de la precarga del área de donde se llegó (DL-100; FR-02), no de una elección en el cajón. */
   const [conPrecarga, setConPrecarga] = useState(false);
   const [proposito, setProposito] = useState('');
+  /** FR-02 · el «para qué» que quedó sugerido por el formulario elegido: mientras siga igual, no lo escribió el profesional. */
+  const sugerencia = useRef<string | null>(null);
+  const propositoActual = useRef(proposito);
+  propositoActual.current = proposito;
   /** El área que eligió el profesional, para un formulario sin área propia. */
   const [area, setArea] = useState<Alcance | ''>('');
   /** Lo que la persona lee debajo de cada pregunta, a la vista. Queda a un clic: con seis preguntas, la tabla no entraba. */
@@ -102,11 +135,13 @@ export function PedidoDeInformacion({
   const [tocado, setTocado] = useState(false);
   useCambiosSinGuardar(tocado, 'el pedido de información');
 
-  // `entrenamiento-plan`: el pedido sale de «Empezar el plan» (DL-145) y vuelve al Plan, con lo mismo precargado.
-  const volver = parametros.get('volver');
-  const desdeEntrenamiento = volver === 'entrenamiento' || volver === 'entrenamiento-plan';
-  const precargar = desdeEntrenamiento && parametros.get('plantilla') === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla;
-  const rutaDeEntrenamiento = `${RUTA_DE_ENTRENAMIENTO}?id=${encodeURIComponent(asesoradoId)}${volver === 'entrenamiento-plan' ? '&vista=plan' : ''}`;
+  // De qué área se llegó: el Resumen de Entrenamiento, su Plan («Empezar el plan», DL-145) o el Resumen de Nutrición
+  // (FR-02). Al enviar se vuelve ahí, y si la dirección pide el formulario del área, viene precargado.
+  const origen = origenDelPedido(parametros.get('volver'));
+  const desdeEntrenamiento = origen === 'entrenamiento' || origen === 'entrenamiento-plan';
+  const precargaDelOrigen = origen ? PRECARGA_DEL_ORIGEN[origen] : null;
+  const precargar = precargaDelOrigen !== null && parametros.get('plantilla') === precargaDelOrigen.plantilla;
+  const vuelta = origen ? vueltaDelOrigen(origen, asesoradoId) : null;
   const cuerpo = useRef<HTMLDivElement>(null);
   const estaAbierto = useRef(abierto);
   estaAbierto.current = abierto;
@@ -118,13 +153,25 @@ export function PedidoDeInformacion({
     setCatalogo(lista.ok ? { ok: true, datos: lista.datos.data } : (lista as Resultado<never>));
   }, [token, sesionPerdida]);
 
+  /**
+   * API-HBT-07: solo lo que este profesional ya puede ver de los hábitos de la persona. El 404 de lo inexistente (hoy no la
+   * acompaña con el acceso vigente) deja la casilla sin ofrecer; otra falla la deja sin marcar y sin motivo.
+   */
+  const cargarLoQueSabe = useCallback(async () => {
+    setLoQueSabe({ tipo: 'cargando' });
+    const r = await api.habitosParaElProfesional(token, asesoradoId);
+    if (sesionPerdida(r)) return;
+    setLoQueSabe(r.ok ? { tipo: 'listo', datos: r.datos.data } : r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'sin-acceso' } : { tipo: 'fallo' });
+  }, [token, asesoradoId, sesionPerdida]);
+
   // El catálogo se lee la primera vez que se abre el cajón: entrar a «Solicitudes» no lo pide.
   const catalogoPedido = useRef(false);
   useEffect(() => {
     if (!abierto || catalogoPedido.current) return;
     catalogoPedido.current = true;
     void cargar();
-  }, [abierto, cargar]);
+    void cargarLoQueSabe();
+  }, [abierto, cargar, cargarLoQueSabe]);
 
   /** Elige un formulario y lee su versión. Si se elige otro antes de que llegue, la respuesta vieja no pisa a la nueva. */
   const lecturaEnCurso = useRef(0);
@@ -135,36 +182,38 @@ export function PedidoDeInformacion({
       setElegido(p);
       setLectura({ tipo: 'cargando' });
       setConPrecarga(precarga);
-      setFaltas((f) => ({ ...f, formulario: undefined, preguntas: undefined, area: undefined }));
-      const v = await api.consultarVersionDePlantilla(token, p.templateId, p.latestVersionId);
+      // Otro formulario: la casilla de «Tus hábitos» vuelve a lo que sugiere el dominio.
+      setSumarElegido(null);
+      // FR-02 · el «para qué» que sugiere el formulario, si el profesional no escribió uno: no es algo que él escribió.
+      const paraQue = propositoAlElegir(propositoActual.current, sugerencia.current, p.key);
+      sugerencia.current = paraQue.sugerido;
+      setProposito(paraQue.proposito);
+      setFaltas((f) => ({ ...f, formulario: undefined, preguntas: undefined, area: undefined, proposito: paraQue.proposito.trim() ? undefined : f.proposito }));
+      // API-FRI-01 sirve cualquier versión en formato V2; FRM-02 responde 404 para las que usan tipos nuevos (DL-164 D-5).
+      const v = await api.consultarDefinicionDePlantilla(token, p.templateId, p.latestVersionId);
       if (esta !== lecturaEnCurso.current || sesionPerdida(v)) return;
       if (!v.ok) return setLectura({ tipo: 'fallo' });
-      const preguntas = v.datos.data.sections.flatMap((s) => s.fields.map((c) => c.fieldCode));
       setLectura({ tipo: 'lista', version: v.datos.data });
-      if (!precarga) {
-        // F-05: vienen todas marcadas, y ninguna como requerida. El profesional desmarca lo que no necesita.
-        setPedidas(preguntas);
-        setRequeridas([]);
-        return;
-      }
-      // DL-100: solo lo que la versión elegida realmente tiene; si el catálogo cambiara, no se pide una pregunta inexistente.
-      setPedidas(CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => preguntas.includes(c)));
-      setRequeridas(CONTEXTO_DE_ENTRENAMIENTO.requeridos.filter((c) => preguntas.includes(c)));
-      setProposito(F.propositoDeContextoDeEntrenamiento);
-      setArea('ENTRENAMIENTO');
+      // F-05: vienen todas marcadas y, requeridas, las que la plantilla sugiere. El profesional cambia lo que necesita.
+      // Igual desde «Más» que llegando desde un área: desde Nutrición (FR-02) y, desde DL-165 D-29, desde Entrenamiento,
+      // que antes precargaba solo las seis de DL-100. Lo que precarga el área es el formulario, el «para qué» y el área.
+      const marcado = marcadoPorOmision(v.datos.data.sections);
+      setPedidas(marcado.pedidas);
+      setRequeridas(marcado.requeridas);
+      if (precarga && precargaDelOrigen) setArea(precargaDelOrigen.area);
     },
-    [token, sesionPerdida, intento],
+    [token, sesionPerdida, intento, precargaDelOrigen],
   );
 
-  // Al llegar desde Entrenamiento, abrir una sola vez el formulario ratificado con su precarga.
+  // Al llegar desde un área, abrir una sola vez su formulario con la precarga.
   const precargado = useRef(false);
   useEffect(() => {
-    if (!abierto || !precargar || precargado.current || !catalogo?.ok) return;
-    const plantilla = catalogo.datos.find((p) => p.key === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla);
+    if (!abierto || !precargar || !precargaDelOrigen || precargado.current || !catalogo?.ok) return;
+    const plantilla = catalogo.datos.find((p) => p.key === precargaDelOrigen.plantilla);
     if (!plantilla) return;
     precargado.current = true;
     void elegir(plantilla, true);
-  }, [abierto, precargar, catalogo, elegir]);
+  }, [abierto, precargar, precargaDelOrigen, catalogo, elegir]);
 
   // Al tocar «Enviar» con algo sin completar, el foco va a lo primero que falta, en el orden de los pasos.
   useEffect(() => {
@@ -191,6 +240,35 @@ export function PedidoDeInformacion({
   /** Hay un formulario elegido y sus preguntas todavía no están (se están leyendo, o esa lectura falló): no se puede enviar. */
   const sinPreguntasTodavia = elegido !== null && !version;
 
+  // Ronda 2.1 (D-22) · «Sumar «Tus hábitos»»: si se ofrece con el formulario elegido, y si viene marcada.
+  const habitos = habitosParaSumar({ version, catalogo: catalogo?.ok ? catalogo.datos : null, lectura: loQueSabe });
+  const sugerenciaDeHabitos = sugerenciaDelCajon(loQueSabe, new Date().toISOString());
+  const conHabitos = habitos !== null && (sumarElegido ?? marcadaPorOmision(sugerenciaDeHabitos));
+  const motivo = habitos ? motivoDeLaSugerencia(sugerenciaDeHabitos, (iso) => diaSinElAnioEnCurso(iso)) : null;
+
+  /** El motivo de un rechazo de FRM-03 o de la lectura de una versión, dicho para el profesional. */
+  const motivoDe = (r: Resultado<unknown>): string => (r.ok ? '' : (RECHAZO_DE_SOLICITUD[r.tipo === 'API' ? r.codigo : ''] ?? mensajeDeFallo(r, COPY_VINCULO.recursoNoDisponible)));
+
+  /**
+   * El segundo pedido, el de «Tus hábitos», en la misma área: con todas sus preguntas, requeridas las que sugiere la
+   * plantilla. Un resultado incierto se reintenta una vez con la misma clave (no duplica: es idempotente).
+   */
+  async function enviarHabitos(p: Plantilla, areaDeLosHabitos: Alcance): Promise<DesenlaceDeEnvio> {
+    if (versionDeHabitos.current?.templateVersionId !== p.latestVersionId) {
+      const v = await api.consultarDefinicionDePlantilla(token, p.templateId, p.latestVersionId);
+      if (!v.ok) return { ok: false, incierto: false, motivo: motivoDe(v) };
+      versionDeHabitos.current = v.datos.data;
+    }
+    const cuerpo = pedidoDeHabitos(versionDeHabitos.current, areaDeLosHabitos);
+    let r = await api.crearSolicitudDeFormulario(token, asesoradoId, cuerpo, intentoDeHabitos.actual());
+    if (esIncierto(r)) r = await api.crearSolicitudDeFormulario(token, asesoradoId, cuerpo, intentoDeHabitos.actual());
+    // Termina este intento, salga como salga: el próximo pedido es otro (una clave retenida no se reusa con otro cuerpo).
+    intentoDeHabitos.descartar();
+    // La sesión perdida sigue su camino de siempre; lo que se diga después ya no lo lee nadie.
+    if (sesionPerdida(r)) return { ok: false, incierto: false, motivo: COPY_VINCULO.recursoNoDisponible };
+    return r.ok ? { ok: true } : { ok: false, incierto: esIncierto(r), motivo: motivoDe(r) };
+  }
+
   async function enviar() {
     if (enviando || sinPreguntasTodavia) return;
     const encontradas: { -readonly [K in keyof Faltas]: Faltas[K] } = {};
@@ -201,6 +279,8 @@ export function PedidoDeInformacion({
     setFaltas(encontradas);
     if (Object.keys(encontradas).length > 0 || !version || !areaDelPedido) return setIntentosConFaltas((n) => n + 1);
 
+    // Lo que estaba elegido al tocar «Enviar»: la casilla de «Tus hábitos» no cambia en el medio del envío.
+    const habitosAlEnviar = conHabitos ? habitos : null;
     setEnvio({ tipo: 'enviando' });
     const r = await api.crearSolicitudDeFormulario(
       token,
@@ -220,10 +300,15 @@ export function PedidoDeInformacion({
     if (!r.ok) {
       // El «no disponible» de una escritura: el marco vuelve a preguntar el acceso (F-09).
       if (r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') avisarSinAcceso();
-      setEnvio({ tipo: 'error', texto: RECHAZO_DE_SOLICITUD[r.tipo === 'API' ? r.codigo : ''] ?? mensajeDeFallo(r, COPY_VINCULO.recursoNoDisponible), incierto: esIncierto(r) });
+      // Con «Tus hábitos» marcado y sabiendo que no llegó, se dice que no se envió ninguna: el segundo no se manda.
+      const texto = mensajeDelEnvio({ formulario: version.name, sumaHabitos: habitosAlEnviar !== null, area: { ok: false, incierto: esIncierto(r), motivo: motivoDe(r) }, habitos: null }).texto;
+      setEnvio({ tipo: 'error', texto, incierto: esIncierto(r) });
       if (!estaAbierto.current) onReabrir();
       return;
     }
+    // Ronda 2.1: salió la de área; ahora la de «Tus hábitos», si estaba marcada.
+    const desenlaceDeHabitos = habitosAlEnviar ? await enviarHabitos(habitosAlEnviar, areaDelPedido) : null;
+    const mensaje = mensajeDelEnvio({ formulario: version.name, sumaHabitos: habitosAlEnviar !== null, area: { ok: true }, habitos: desenlaceDeHabitos }).texto;
     // Enviada: el próximo pedido empieza de cero.
     lecturaEnCurso.current++;
     setElegido(null);
@@ -232,18 +317,24 @@ export function PedidoDeInformacion({
     setRequeridas([]);
     setConPrecarga(false);
     setProposito('');
+    sugerencia.current = null;
     setArea('');
     setFaltas({});
     setTocado(false);
+    setSumarElegido(null);
     setEnvio({ tipo: 'editando' });
-    // CA-FOR-06: si el pedido salió de la evaluación, se vuelve a ella para seguir trabajando. El éxito lo dice
-    // Entrenamiento al llegar: esta página se abandona, y un aviso suyo no lo leería nadie.
-    if (desdeEntrenamiento) {
-      dejarAvisoPara(RUTA_DE_ENTRENAMIENTO, F.solicitudEnviada);
-      return router.push(rutaDeEntrenamiento);
+    // Lo que sabe de los hábitos cambió (hay una solicitud con la parte, pendiente): la próxima sugerencia lo tiene en cuenta.
+    void cargarLoQueSabe();
+    // CA-FOR-06: si el pedido salió de un área (la evaluación de Entrenamiento, su Plan o el Resumen de Nutrición), se
+    // vuelve ahí para seguir trabajando. El éxito lo dice esa página al llegar: esta se abandona, y un aviso suyo no lo
+    // leería nadie.
+    if (vuelta) {
+      dejarAvisoPara(vuelta.ruta, mensaje);
+      return router.push(vuelta.href);
     }
     // DL-113: el éxito lo dice la página, no el cajón, que se cierra: un aviso adentro de un diálogo cerrado no lo lee nadie.
-    avisar(F.solicitudEnviada);
+    // Si «Tus hábitos» no salió, lo dice el mismo aviso: la de área quedó enviada.
+    avisar(mensaje);
     alEnviar();
   }
 
@@ -276,11 +367,11 @@ export function PedidoDeInformacion({
           {F.solicitarNoEsAcceder}
         </p>
         {/* Solo si de verdad hay algo precargado: con `volver=entrenamiento` y sin formulario, no hay nada elegido. */}
-        {conPrecarga ? (
-          <p className="pedido__aviso" data-desde-entrenamiento>
-            <Icono nombre="entrenamiento" tamano={18} />
+        {conPrecarga && vuelta ? (
+          <p className="pedido__aviso" data-desde={origen}>
+            <Icono nombre={desdeEntrenamiento ? 'entrenamiento' : 'nutricion'} tamano={18} />
             <span>
-              {F.pedidoDesdeEntrenamiento} <Link href={rutaDeEntrenamiento}>{F.volverAEntrenamiento}</Link>
+              {desdeEntrenamiento ? F.pedidoDesdeEntrenamiento : F.pedidoDesdeNutricion} <Link href={vuelta.href}>{vuelta.texto}</Link>
             </span>
           </p>
         ) : null}
@@ -319,6 +410,7 @@ export function PedidoDeInformacion({
                       {/* La descripción, solo en el elegido: elegir no envía nada, y la lista se recorre de un vistazo. */}
                       {es ? (
                         <p className="formulario-del-pedido__descripcion" id={`${id}-descripcion`}>
+                          {/* DL-165 D-3: no se dice cuánto le lleva a la persona; ella ve «Parte 1 de 6». */}
                           {p.purpose}
                         </p>
                       ) : null}
@@ -329,6 +421,32 @@ export function PedidoDeInformacion({
             ) : null}
           </EstadoDeLectura>
           {faltas.formulario ? <Falta id={`${id}-falta-formulario`} texto={faltas.formulario} /> : null}
+          {/* Ronda 2.1 (D-15 nueva; D-22): «Tus hábitos» es otro formulario; se puede sumar al de área en el mismo paso. */}
+          {habitos ? (
+            <div className="pedido__sumar-habitos" data-sumar-habitos data-marcada={conHabitos ? 'si' : 'no'} data-motivo={sugerenciaDeHabitos?.motivo}>
+              <label className="pedido__sumar-habitos-casilla">
+                <input
+                  type="checkbox"
+                  checked={conHabitos}
+                  onChange={(e) => {
+                    const marcar = e.target.checked;
+                    editar(() => setSumarElegido(marcar));
+                  }}
+                  disabled={enviando}
+                  aria-describedby={`${id}-sumar-habitos-que-es${motivo ? ` ${id}-sumar-habitos-motivo` : ''}`}
+                />
+                <span>{H.sumarHabitos}</span>
+              </label>
+              <p className="nota" id={`${id}-sumar-habitos-que-es`}>
+                {H.sumarHabitosQueEs}
+              </p>
+              {motivo ? (
+                <p className="nota" id={`${id}-sumar-habitos-motivo`} data-sugerencia>
+                  {motivo}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="paso-del-pedido" aria-labelledby={`${id}-paso-2`} data-paso="preguntas">
@@ -338,9 +456,11 @@ export function PedidoDeInformacion({
             {version ? (
               <p className="nota">
                 <span data-elegidas aria-live="polite">
-                  {C.elegidas(elegidas.length, preguntas.length)}
+                  {C.elegidas(elegidas.length, preguntas.length)} {/* DL-165 D-7: las obligatorias, contadas a la vista. */}
+                  <strong data-obligatorias>{C.obligatoriasElegidas(elegidas.filter((c) => requeridas.includes(c)).length)}</strong>
                 </span>
-                {conPrecarga ? null : ` ${C.vienenTodasElegidas}`}
+                {/* Vengan de un área o de «Más», vienen todas (DL-165 D-29: también desde Entrenamiento). */}
+                {` ${C.vienenTodasElegidas}`}
               </p>
             ) : null}
           </div>
@@ -354,7 +474,17 @@ export function PedidoDeInformacion({
           {lectura?.tipo === 'fallo' && elegido ? <ErrorConReintento mensaje={C.preguntasNoCargaron} onReintentar={() => void elegir(elegido, conPrecarga)} /> : null}
           {version ? (
             <>
-              <p className="nota">{F.ayudaRequerido}</p>
+              {/* DL-164 D-5: la APK instalada no ve una versión con tipos nuevos; mientras la persona no actualice, se carga con ella. */}
+              {version.usesNewTypes ? (
+                <p className="pedido__aviso" data-app-nueva>
+                  <Icono nombre="aviso" tamano={18} />
+                  {V.web.appNueva}
+                </p>
+              ) : null}
+              <p className="nota">
+                {preguntas.some((c) => c.requiredByDefault) ? `${C.obligatoriasDelFormulario} ` : ''}
+                {F.ayudaRequerido}
+              </p>
               {/* Solo si alguna pregunta tiene aclaración. Va arriba de la tabla: no se mueve de lugar al abrirlas. */}
               {preguntas.some((c) => c.helpText) ? (
                 <p className="nota preguntas-del-pedido__aclaraciones">
@@ -387,8 +517,15 @@ export function PedidoDeInformacion({
                     ) : null}
                     {s.fields.map((c) => {
                       const pedida = pedidas.includes(c.fieldCode);
+                      const obligatoria = pedida && requeridas.includes(c.fieldCode);
+                      // DL-164 D-2: una pregunta condicional aparece solo cuando se cumple su condición; se dice con palabras.
+                      const condicion = condicionEnPalabras(c, preguntas);
+                      const descripcion =
+                        [c.helpText && conAclaraciones ? `${id}-ayuda-${c.fieldCode}` : null, condicion ? `${id}-condicion-${c.fieldCode}` : null, noVienePedida(c) && !pedida ? `${id}-sin-pedir-${c.fieldCode}` : null]
+                          .filter(Boolean)
+                          .join(' ') || undefined;
                       return (
-                        <tr key={c.fieldCode} data-pregunta={c.fieldCode} data-pedida={pedida ? 'si' : undefined}>
+                        <tr key={c.fieldCode} data-pregunta={c.fieldCode} data-pedida={pedida ? 'si' : undefined} data-obligatoria={obligatoria ? 'si' : undefined} data-condicional={condicion ? 'si' : undefined}>
                           <td className="preguntas-del-pedido__casilla">
                             <input
                               type="checkbox"
@@ -396,12 +533,29 @@ export function PedidoDeInformacion({
                               checked={pedida}
                               onChange={() => alternar(c.fieldCode, pedidas, setPedidas)}
                               disabled={enviando}
-                              aria-describedby={c.helpText && conAclaraciones ? `${id}-ayuda-${c.fieldCode}` : undefined}
+                              aria-describedby={descripcion}
                               data-falta={faltas.preguntas && c.fieldCode === primeraPregunta ? 'si' : undefined}
                             />
                           </td>
                           <th scope="row">
                             <label htmlFor={`${id}-pedir-${c.fieldCode}`}>{c.label}</label>
+                            {/* DL-165 D-7: la obligatoria se lee en la fila, además de en su casilla. */}
+                            {obligatoria ? (
+                              <span className="etiqueta-de-dato preguntas-del-pedido__obligatoria" data-obligatoria="si" aria-hidden="true">
+                                {V.obligatoria}
+                              </span>
+                            ) : null}
+                            {/* DL-165 D-4: la que la plantilla no trae pedida (el embarazo) dice que se suma cuando corresponde. */}
+                            {noVienePedida(c) && !pedida ? (
+                              <span className="preguntas-del-pedido__condicion" id={`${id}-sin-pedir-${c.fieldCode}`} data-sin-pedir>
+                                {C.noVienePedida}
+                              </span>
+                            ) : null}
+                            {condicion ? (
+                              <span className="preguntas-del-pedido__condicion" id={`${id}-condicion-${c.fieldCode}`}>
+                                {condicion}
+                              </span>
+                            ) : null}
                             {/* Lo que va a leer la persona debajo de la pregunta: a veces dice el rango que se acepta. */}
                             {c.helpText && conAclaraciones ? (
                               <span className="preguntas-del-pedido__ayuda" id={`${id}-ayuda-${c.fieldCode}`}>
@@ -410,7 +564,7 @@ export function PedidoDeInformacion({
                             ) : null}
                           </th>
                           <td className="preguntas-del-pedido__responde" data-etiqueta={C.respondeCon}>
-                            {respondeCon(c)}
+                            {respondeConV2(c)}
                           </td>
                           <td className="preguntas-del-pedido__requerida">
                             {/* Solo una pregunta pedida puede ser requerida. Lo que se ve marcado es lo que sale. */}

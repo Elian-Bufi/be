@@ -7,6 +7,8 @@ import {
   type SolicitarCierreResponse,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
+import { retirarAutorizacionDeHabitosPorCierre } from '../formularios/habitos-de-la-persona';
+import { retirarPropuestasPendientesDelTitular } from '../formularios/propuestas-del-titular';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
@@ -86,6 +88,19 @@ export class CierreService {
           // consentimientos quedan como evidencia (REG-06-52). Cierra DEUDA_LEGAJO DL-018 (TEST-AUTH-013 a).
           await this.solicitudes.invalidarPorCierre(tx, actor.identidadId, procedencia, ctx.momentoDeRecepcion);
           await this.vinculos.finalizarPorCierre(tx, actor.identidadId, procedencia);
+          // Lo que un profesional cargó y la persona nunca confirmó se borra (DL-164 D-6): con la cuenta cerrada ya no
+          // lo va a poder confirmar ni descartar. Después de los vínculos: una confirmación concurrente espera su PDP y
+          // después ya no encuentra nada pendiente. Si la persona es profesional, lo que ella cargó para otros queda en
+          // manos de cada persona, que lo puede descartar (API-FRI-08 no pasa por el PDP).
+          await retirarPropuestasPendientesDelTitular(tx, {
+            titularId: actor.identidadId,
+            actorId: actor.identidadId,
+            procedencia,
+            momento: ctx.momentoDeRecepcion,
+          });
+          // DL-165 D-9 (FR-10; §4.5): cerrar la cuenta retira la autorización para compartir sus hábitos. Al final, con el
+          // cerrojo de la autorización: una lectura de API-HBT-05 que empieza después ya la ve retirada.
+          await retirarAutorizacionDeHabitosPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
 
           const registrada = await tx.solicitudDeCierreDeCuenta.create({
             data: {
