@@ -104,7 +104,7 @@
 | DL-097 | WP-08 · 2026-09-24 | 09v12 §5-§7 (09v12:184-188, 360-364, 369, 390) | Las formas de la importación controlada que el 09 no fija | ABIERTA (hallada al implementar) |
 | DL-098 | WP-08 · 2026-09-24 | 09v12:190 · B10-05 §19 · B10-06 §22 | La búsqueda por texto en los proveedores no tiene contrato | ABIERTA |
 | DL-099 | WP-08 · 2026-09-24 | 04 RF-060 (04:701-708) · 08 licencias | La procedencia externa llega hasta la elección, no hasta el ítem del plan | ABIERTA (hallada en la revisión de calidad) |
-| DL-100 | PF-01/02 · 2026-09-27 | B10-06 §4 (CAND-10-TRN-A) · 04 RF-071 · WP-07 | Plantilla «Antecedentes para entrenamiento» con seis conceptos | **DECIDIDA** 2026-09-27 · ratificada tal cual |
+| DL-100 | PF-01/02 · 2026-09-27 | B10-06 §4 (CAND-10-TRN-A) · 04 RF-071 · WP-07 | Plantilla «Antecedentes para entrenamiento» con seis conceptos | **DECIDIDA** 2026-09-27 · ratificada tal cual. La precarga de esas seis desde Entrenamiento queda reemplazada por DL-165 D-29 (2026-11-06): llega el formulario completo |
 | DL-101 | PF-01/02 · 2026-09-27 | 09v16.1 §22 · DL-095 | Los campos NUMBER aceptaban cualquier número | **DECIDIDA** 2026-09-27 · mínimo, máximo y entero |
 | DL-102 | PF-01/02 · 2026-09-27 | 09v10 TRN-01 · CA-FOR-04 del plan | La evaluación de entrenamiento no puede citar respuestas de forma verificable | **DECIDIDA** 2026-09-27 · referencias verificadas (opción A) |
 | DL-103 | PF-01/02 · 2026-09-27 | Plan Funcional §12.3 · DEC-04 | Alcance del primer incremento de contexto | **DECIDIDA** 2026-09-27 · solo entrenamiento, equipamiento en texto |
@@ -167,7 +167,7 @@
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar · D-1 a D-5 a ratificar: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
 | DL-163 | Pedido de Dirección · 2026-11-03 (WP-TABLERO-ALTA-GAMA; D-1 a D-21 ratificadas el 2026-11-05) | RF-052 a RF-055 · UC-P23 · UC-P24 · 08 §11, §11-bis, C-11 · API-DSH-01 y 02 (09 v0.11 §13 y §14) · B10-08 · B10-10 · GUIA-UX-UI I y I.7 · DL-107 · DL-152 · DL-158 · DL-165 | El inicio del profesional y el Resumen de la ficha se veían sosos y con puntos burdos; Dirección pidió barras de avance, rostro, decisiones guiadas, ver las otras áreas, un mapa corporal, programas propios, más datos y planificar más fácil, y autorizó desafiar el legajo con fundamento | **RATIFICADA** 2026-11-05 · D-1 a D-21, todas como se recomendaron (la D-9 original, reemplazada por la D-9 nueva) · paquete declarado (#239, en borrador), sin código: el alcance espera el sí de Dirección (ACTA-DIR-034), después de la prueba de la APK 0.21 · con personas reales, D-13 y el control semanal de D-16, después de la revisión legal |
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`) y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, a ratificar |
-| DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre en #238 (borrador). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1 (2026-11-06):** D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»); D-14, D-16 y D-18 ratificadas; D-19 y D-20 a D-28, a ratificar; programada en `wp-habitos-formulario-aparte` (PR en borrador), sin integrar. Con personas reales, después de la revisión legal y del gate del 08 §42 |
+| DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre en #238 (borrador). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1 (2026-11-06):** D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»); D-14, D-16 y D-18 ratificadas; D-19 y D-20 a D-28, a ratificar; programada en `wp-habitos-formulario-aparte` (PR en borrador), sin integrar. **D-29 (2026-11-06)**, nueva y ratificada por Dirección: desde Entrenamiento, «Antes de entrenar» llega completo; en `wp-entrenamiento-pedido-completo` (PR en borrador), sin integrar. Con personas reales, después de la revisión legal y del gate del 08 §42 |
 
 ---
 
@@ -2307,6 +2307,8 @@ Una revisión de calidad independiente del tramo —escrito en parte por agentes
 - **Opcional:** preferencias.
 
 Son preguntas de producto, no un instrumento clínico. Los textos pueden ajustarse después con una versión 2 de la plantilla, si lo pide una revisión profesional.
+
+**Nota (2026-11-06): la precarga de las seis quedó reemplazada.** Desde la evaluación (PF-02, CA-FOR-06) el escritorio precargaba estas seis preguntas, con estos cinco obligatorios. Desde DL-165 D-29, ratificada por Dirección el 2026-11-06 («Que venga completo»), desde Entrenamiento llega «Antes de entrenar» en su versión vigente con todas sus preguntas y, requeridas, las que sugiere la plantilla, como desde «Más». La v1 y sus seis códigos no cambian: las versiones siguientes los conservan, y sus respuestas se siguen leyendo y citando.
 
 ## DL-101 — Los campos NUMBER aceptaban cualquier número
 
@@ -6540,7 +6542,9 @@ RNF-SEC-006 (04) · UC-P32 y UC-P33 (05) · REG-06-209 (06) · 08 §11, §11-bis
 diseño a programado el mismo día (§4 y §7 del paquete). D-10 a D-13, ratificadas por Dirección el 2026-11-05. **Ronda
 2.1 (2026-11-06; §8 del paquete):** D-15 y D-17 nuevas de Dirección, que reemplazan a las anteriores; D-14, D-16 y D-18,
 ratificadas por Dirección el 2026-11-06; D-19, a ratificar; D-20 a D-28 (las de la ronda 2.1), a ratificar. Programada en
-la rama `wp-habitos-formulario-aparte` (PR en borrador), sin integrar
+la rama `wp-habitos-formulario-aparte` (PR en borrador), sin integrar. **D-29 (2026-11-06)**, nueva de Dirección y
+ratificada el mismo día: desde Entrenamiento, «Antes de entrenar» llega completo. Programada en la rama
+`wp-entrenamiento-pedido-completo` (PR en borrador), sin integrar
 
 **Qué dice el legajo.**
 - Una versión de plantilla no se cambia (REG-06-209): lo que cambia una pregunta es una versión nueva.
@@ -6820,6 +6824,32 @@ de Dirección**, con sus palabras; D-19: **a ratificar**.
   sin destacarla; al abrirla se queda en Novedades. No hizo falta ocultársela: la puede responder sumándolo en «Mis
   hábitos», y eso cierra el pedido (D-25). El texto del acto («Compartir mis hábitos con mis profesionales») no cambia: pedir
   acceso no cambia lo que la autorización permite, y un texto nuevo obligaría a aceptar de nuevo.
+
+**Decisión del 2026-11-06 sobre el pedido desde Entrenamiento.** D-29: **ratificada por Dirección el 2026-11-06**.
+- **D-29 · Desde Entrenamiento, «Antes de entrenar» llega completo** (ratificada por Dirección el 2026-11-06, por pregunta:
+  «Que venga completo»). Desde el Resumen de Entrenamiento («Abrir Entrenamiento» → «Pedir información») y desde su Plan,
+  el cajón precarga «Antes de entrenar» en su versión vigente (v4) con todas sus preguntas marcadas y, requeridas, las que
+  sugiere la plantilla: lo mismo que al pedirlo desde «Más», y como llega «Cómo comés hoy» desde Nutrición. El embarazo
+  sigue sin venir pedido (D-4). El «para qué» («Planificar tu entrenamiento») y el área siguen precargados, y el
+  profesional desmarca lo que no quiera antes de enviar: la minimización sigue siendo suya (09:1528).
+  - *Fundamento:* la precarga de DL-100 (PF-02, CA-FOR-06, el «contexto de entrenamiento») traía solo seis preguntas, de
+    cuando el formulario tenía seis. En la v4 dejaba afuera, entre otras, la tabla «¿Qué días y en qué momento podés?»: el
+    entrenador no sabía qué días ni en qué momento puede la persona, y el tope de D-5 (los días por semana no pasan de los
+    marcados) no actuaba, porque sin la tabla respondida no hay tope (D-11).
+  - *Qué cambia:* solo el website (`apps/web/src/app/pro/advisees/forms/pedir.tsx`; se retira `precargaDeEntrenamiento`).
+    El aviso del cajón dice «Viniste desde Entrenamiento: el formulario y el «para qué» ya están elegidos. Podés cambiarlos
+    antes de enviar.», el paso 2 suma «Vienen todas elegidas: desmarcá las que no necesites.», y la ayuda «Qué se le pide a
+    la persona» del Resumen nombra «Antes de entrenar» y sus partes.
+  - *Qué no cambia:* la API, FRM-03 y lo que leen las APK instaladas. Una Solicitud con la v4 completa es la misma que se
+    pide desde «Más», y la APK 0.22 la responde como hoy. `CONTEXTO_DE_ENTRENAMIENTO` conserva la clave y los seis
+    códigos de la v1: las versiones siguientes los conservan, sus respuestas se siguen leyendo y citando, y las pruebas de
+    la API y las lecturas congeladas de las APK anteriores al contrato V2 los siguen usando.
+  - *Descartado:* seguir con las seis y marcar la tabla a mano, como decía la guía de la prueba de la 0.22
+    (`EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`): la precarga sería una lista aparte que hay que revisar con cada versión, y
+    el profesional tendría que saber qué falta.
+  - *Pruebas:* `apps/web/test/formulario-de-inicio.test.mjs` (lo marcado desde Entrenamiento es lo de «Más», con la tabla
+    y los días por semana requeridos, y el tope actúa; con las seis, no había tope) y `plantillas-de-inicio.int-spec.ts`
+    (FRM-03 acepta la v4 completa en Entrenamiento y FRI-02 la lista con eso).
 
 **Pruebas** (las suma cada parte): la lógica de las partes y las reglas nuevas en el dominio; la APK y la web en sus
 pruebas de lógica pura; la API en `formularios-ronda-2.int-spec.ts`, `formularios-de-inicio.int-spec.ts` y
