@@ -222,14 +222,16 @@ test('TB-48 · los editores duplican y mueven con el módulo, y lo abierto sigue
   assert.match(nutricion, /duplicarEn\(x, i, copiaDelDiaTipo\(x\[i\]!, i\)\)/);
   assert.match(nutricion, /dejarAbiertas\(posicionesTrasMover\(abiertas, j, hacia\)\)/);
   assert.match(nutricion, /alSubir=\{\(\) => moverComida\(j, j - 1\)\}\s+alBajar=\{\(\) => moverComida\(j, j \+ 1\)\}/);
-  assert.match(comida, /disabled=\{esLaUltima\} onClick=\{alBajar\}/);
+  assert.match(comida, /aria-disabled=\{esLaUltima \|\| undefined\} onClick=\{\(\) => !esLaUltima && alBajar\(\)\}/);
+  assert.match(comida, /aria-disabled=\{esLaPrimera \|\| undefined\} onClick=\{\(\) => !esLaPrimera && alSubir\(\)\}/, 'apagado sin perder el foco');
   assert.match(comida, /\{ clave: 'duplicar', texto: E\.duplicarComida, alElegir: alDuplicar \}/);
   assert.match(comida, /onClick=\{\(\) => alDuplicarOpcion\(k\)\}/);
   // Entrenamiento: la sesión en su menú; el ejercicio con «Subir», «Bajar» y «Duplicar ejercicio».
   for (const clave of ['duplicarSesion', 'moverAntes', 'moverDespues']) assert.match(entrenamiento, new RegExp(`texto: E\\.${clave}`));
   assert.match(entrenamiento, /dejarAbiertos\(posicionesTrasMover\(abiertos, l, hacia\)\)/);
   assert.match(entrenamiento, /onSubir=\{\(\) => moverEjercicio\(l, l - 1\)\}/);
-  assert.match(ejercicio, /disabled=\{esElUltimo\} onClick=\{onBajar\}/);
+  assert.match(ejercicio, /aria-disabled=\{esElUltimo \|\| undefined\} onClick=\{\(\) => !esElUltimo && onBajar\(\)\}/);
+  assert.doesNotMatch(ejercicio + comida, / disabled=\{es(La|El)(Primer|Ultim)/, 'ningún «Subir» ni «Bajar» con disabled');
   assert.match(ejercicio, /\{ clave: 'duplicar', texto: EDICION\.duplicarEjercicio, alElegir: onDuplicar \}/);
 });
 

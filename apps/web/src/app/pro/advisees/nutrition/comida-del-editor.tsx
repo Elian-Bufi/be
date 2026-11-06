@@ -139,12 +139,13 @@ export function ComidaDelEditor({
         </h3>
         {abierta ? (
           <div className="comida-del-editor__acciones">
-            <button type="button" className="boton boton--quieto boton--compacto" disabled={esLaPrimera} onClick={alSubir}>
+            {/* Se apagan con `aria-disabled`: al llegar a la punta, el botón que se tocó conserva el foco (TB-48). */}
+            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esLaPrimera || undefined} onClick={() => !esLaPrimera && alSubir()}>
               <Icono nombre="ordenar" tamano={18} />
               {E.subir}
               <span className="visualmente-oculto"> {plegada.titulo}</span>
             </button>
-            <button type="button" className="boton boton--quieto boton--compacto" disabled={esLaUltima} onClick={alBajar} data-bajar>
+            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esLaUltima || undefined} onClick={() => !esLaUltima && alBajar()} data-bajar>
               {E.bajar}
               <span className="visualmente-oculto"> {plegada.titulo}</span>
             </button>

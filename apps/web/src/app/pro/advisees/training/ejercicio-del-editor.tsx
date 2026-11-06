@@ -216,12 +216,13 @@ export function EjercicioDelEditor({
         </h3>
         {abierto ? (
           <div className="comida-del-editor__acciones">
-            <button type="button" className="boton boton--quieto boton--compacto" disabled={esElPrimero} onClick={onSubir}>
+            {/* Se apagan con `aria-disabled`: al llegar a la punta, el botón que se tocó conserva el foco. */}
+            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esElPrimero || undefined} onClick={() => !esElPrimero && onSubir()}>
               <Icono nombre="ordenar" tamano={18} />
               {EDICION.subir}
               <span className="visualmente-oculto"> {nombre}</span>
             </button>
-            <button type="button" className="boton boton--quieto boton--compacto" disabled={esElUltimo} onClick={onBajar} data-bajar>
+            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esElUltimo || undefined} onClick={() => !esElUltimo && onBajar()} data-bajar>
               {EDICION.bajar}
               <span className="visualmente-oculto"> {nombre}</span>
             </button>
