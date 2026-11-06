@@ -1,0 +1,103 @@
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.utf8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /var/lib/postgresql/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+sh: locale: not found
+2026-10-28 09:08:01.468 UTC [41] WARNING:  no usable system locales were found
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+
+Success. You can now start the database server using:
+
+    pg_ctl -D /var/lib/postgresql/data -l logfile start
+
+initdb: warning: enabling "trust" authentication for local connections
+initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+waiting for server to start....2026-10-28 09:08:02.129 UTC [47] LOG:  starting PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-10-28 09:08:02.129 UTC [47] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-10-28 09:08:02.131 UTC [50] LOG:  database system was shut down at 2026-10-28 09:08:01 UTC
+2026-10-28 09:08:02.135 UTC [47] LOG:  database system is ready to accept connections
+2026-10-28 09:08:02.186 UTC [60] FATAL:  database "be_test" does not exist
+ done
+server started
+CREATE DATABASE
+
+
+/usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+
+waiting for server to shut down...2026-10-28 09:08:02.264 UTC [47] LOG:  received fast shutdown request
+.2026-10-28 09:08:02.264 UTC [47] LOG:  aborting any active transactions
+2026-10-28 09:08:02.266 UTC [47] LOG:  background worker "logical replication launcher" (PID 53) exited with exit code 1
+2026-10-28 09:08:02.268 UTC [48] LOG:  shutting down
+2026-10-28 09:08:02.268 UTC [48] LOG:  checkpoint starting: shutdown immediate
+2026-10-28 09:08:02.323 UTC [48] LOG:  checkpoint complete: wrote 926 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.044 s, sync=0.011 s, total=0.056 s; sync files=301, longest=0.010 s, average=0.001 s; distance=4283 kB, estimate=4283 kB; lsn=0/1925D58, redo lsn=0/1925D58
+2026-10-28 09:08:02.333 UTC [47] LOG:  database system is shut down
+ done
+server stopped
+
+PostgreSQL init process complete; ready for start up.
+
+2026-10-28 09:08:02.388 UTC [1] LOG:  starting PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-10-28 09:08:02.388 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-10-28 09:08:02.388 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-10-28 09:08:02.389 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-10-28 09:08:02.391 UTC [70] LOG:  database system was shut down at 2026-10-28 09:08:02 UTC
+2026-10-28 09:08:02.396 UTC [1] LOG:  database system is ready to accept connections
+2026-10-28 09:08:16.268 UTC [1] LOG:  received SIGHUP, reloading configuration files
+2026-10-28 09:08:16.269 UTC [1] LOG:  parameter "pg_stat_statements.track" changed to "all"
+2026-10-28 09:08:16.269 UTC [1] LOG:  parameter "track_io_timing" changed to "on"
+2026-10-28 09:08:16.269 UTC [1] LOG:  parameter "track_wal_io_timing" changed to "on"
+2026-10-28 09:08:16.269 UTC [1] LOG:  parameter "track_functions" changed to "all"
+2026-10-28 09:13:02.555 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:17:32.050 UTC [68] LOG:  checkpoint complete: wrote 9956 buffers (60.8%); 0 WAL file(s) added, 0 removed, 7 recycled; write=269.447 s, sync=0.010 s, total=269.496 s; sync files=909, longest=0.005 s, average=0.001 s; distance=112814 kB, estimate=112814 kB; lsn=0/B67D3A8, redo lsn=0/8751578
+2026-10-28 09:18:02.081 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:19:01.759 UTC [1] LOG:  received SIGHUP, reloading configuration files
+2026-10-28 09:19:01.759 UTC [1] LOG:  parameter "pg_stat_statements.track" changed to "none"
+2026-10-28 09:19:01.759 UTC [1] LOG:  parameter "track_io_timing" changed to "off"
+2026-10-28 09:19:01.759 UTC [1] LOG:  parameter "track_wal_io_timing" changed to "off"
+2026-10-28 09:19:01.759 UTC [1] LOG:  parameter "track_functions" changed to "none"
+2026-10-28 09:21:20.868 UTC [1] LOG:  received SIGHUP, reloading configuration files
+2026-10-28 09:21:20.869 UTC [1] LOG:  parameter "pg_stat_statements.track" changed to "all"
+2026-10-28 09:21:20.869 UTC [1] LOG:  parameter "track_io_timing" changed to "on"
+2026-10-28 09:21:20.869 UTC [1] LOG:  parameter "track_wal_io_timing" changed to "on"
+2026-10-28 09:21:20.869 UTC [1] LOG:  parameter "track_functions" changed to "all"
+2026-10-28 09:22:32.110 UTC [68] LOG:  checkpoint complete: wrote 3564 buffers (21.8%); 0 WAL file(s) added, 0 removed, 3 recycled; write=270.004 s, sync=0.023 s, total=270.030 s; sync files=27, longest=0.018 s, average=0.001 s; distance=54030 kB, estimate=106935 kB; lsn=0/EFA0728, redo lsn=0/BC14FD0
+2026-10-28 09:23:02.140 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:27:32.148 UTC [68] LOG:  checkpoint complete: wrote 3606 buffers (22.0%); 0 WAL file(s) added, 0 removed, 4 recycled; write=269.929 s, sync=0.065 s, total=270.009 s; sync files=24, longest=0.064 s, average=0.003 s; distance=58671 kB, estimate=102109 kB; lsn=0/1389F1D8, redo lsn=0/F560E18
+2026-10-28 09:28:02.172 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:32:32.043 UTC [68] LOG:  checkpoint complete: wrote 5765 buffers (35.2%); 0 WAL file(s) added, 0 removed, 4 recycled; write=269.839 s, sync=0.030 s, total=269.871 s; sync files=24, longest=0.029 s, average=0.002 s; distance=73911 kB, estimate=99289 kB; lsn=0/18282DB0, redo lsn=0/13D8EDD0
+2026-10-28 09:33:02.044 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:37:32.233 UTC [68] LOG:  checkpoint complete: wrote 5689 buffers (34.7%); 0 WAL file(s) added, 0 removed, 5 recycled; write=269.902 s, sync=0.183 s, total=270.190 s; sync files=23, longest=0.170 s, average=0.008 s; distance=77463 kB, estimate=97106 kB; lsn=0/1F6E9BF0, redo lsn=0/18934CB8
+2026-10-28 09:38:02.263 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:42:32.204 UTC [68] LOG:  checkpoint complete: wrote 8268 buffers (50.5%); 0 WAL file(s) added, 0 removed, 8 recycled; write=269.815 s, sync=0.033 s, total=269.942 s; sync files=24, longest=0.015 s, average=0.002 s; distance=130260 kB, estimate=130260 kB; lsn=0/29AD0898, redo lsn=0/20869CF8
+2026-10-28 09:43:02.228 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:47:32.096 UTC [68] LOG:  checkpoint complete: wrote 11378 buffers (69.4%); 0 WAL file(s) added, 0 removed, 10 recycled; write=269.698 s, sync=0.048 s, total=269.869 s; sync files=23, longest=0.020 s, average=0.003 s; distance=167218 kB, estimate=167218 kB; lsn=0/34AB7300, redo lsn=0/2ABB6668
+2026-10-28 09:48:02.106 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:51:06.890 UTC [1] LOG:  received SIGHUP, reloading configuration files
+2026-10-28 09:51:06.890 UTC [1] LOG:  parameter "pg_stat_statements.track" changed to "none"
+2026-10-28 09:51:06.890 UTC [1] LOG:  parameter "track_io_timing" changed to "off"
+2026-10-28 09:51:06.890 UTC [1] LOG:  parameter "track_wal_io_timing" changed to "off"
+2026-10-28 09:51:06.890 UTC [1] LOG:  parameter "track_functions" changed to "none"
+2026-10-28 09:52:32.108 UTC [68] LOG:  checkpoint complete: wrote 10454 buffers (63.8%); 0 WAL file(s) added, 0 removed, 11 recycled; write=269.801 s, sync=0.021 s, total=270.002 s; sync files=22, longest=0.014 s, average=0.001 s; distance=178708 kB, estimate=178708 kB; lsn=0/3BDB82C0, redo lsn=0/35A3B680
+2026-10-28 09:53:02.111 UTC [68] LOG:  checkpoint starting: time
+2026-10-28 09:53:23.759 UTC [1] LOG:  received SIGHUP, reloading configuration files
+2026-10-28 09:53:23.760 UTC [1] LOG:  parameter "pg_stat_statements.track" changed to "all"
+2026-10-28 09:53:23.760 UTC [1] LOG:  parameter "track_io_timing" changed to "on"
+2026-10-28 09:53:23.760 UTC [1] LOG:  parameter "track_wal_io_timing" changed to "on"
+2026-10-28 09:53:23.760 UTC [1] LOG:  parameter "track_functions" changed to "all"
+2026-10-28 09:57:32.372 UTC [68] LOG:  checkpoint complete: wrote 8830 buffers (53.9%); 0 WAL file(s) added, 0 removed, 7 recycled; write=269.607 s, sync=0.319 s, total=270.261 s; sync files=18, longest=0.270 s, average=0.018 s; distance=107978 kB, estimate=171635 kB; lsn=0/41420AB8, redo lsn=0/3C3AE248
+2026-10-28 09:58:02.402 UTC [68] LOG:  checkpoint starting: time

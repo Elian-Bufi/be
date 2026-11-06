@@ -35,6 +35,14 @@ export class ErrorDeCuraduria extends Error {}
 
 type Tx = Prisma.TransactionClient;
 
+/**
+ * HALLAZGO-P2028 · los tiempos de las dos transacciones de la curaduría. Prisma corta una transacción interactiva a los
+ * 5 s por omisión (P2028). El comando corre desde la máquina del operador contra la base del ambiente (en test, la de
+ * Render, a unos 470 ms por consulta), y varias consultas en serie pasan ese límite. La API en servicio no usa estas
+ * funciones, así que el cambio solo alcanza al comando.
+ */
+export const TIEMPOS_DE_LA_CURADURIA = { maxWait: 10_000, timeout: 120_000 } as const;
+
 export interface DatosDelOperador {
   readonly operador: string;
   readonly fundamento: string;
@@ -126,7 +134,7 @@ export async function curarZonas(prisma: PrismaClient, pedidos: readonly PedidoD
       resultados.push({ exerciseId: e.id, nombre: e.nombre, versionId: e.versionId, antes, despues, accion: igual ? 'SIN_CAMBIOS' : 'ASIGNAR', escrito: !igual && d.escribir });
     }
     return resultados;
-  });
+  }, TIEMPOS_DE_LA_CURADURIA);
 }
 
 // ─── Imagen ──────────────────────────────────────────────────────────────────────────────────────
@@ -264,5 +272,5 @@ export async function curarImagen(
       },
     });
     return { exerciseId: e.id, nombre: e.nombre, versionId: e.versionId, accion: 'ASOCIAR', escrito: true, mediaId: medio.id, imageVersion: numero, ...tamanos };
-  });
+  }, TIEMPOS_DE_LA_CURADURIA);
 }
