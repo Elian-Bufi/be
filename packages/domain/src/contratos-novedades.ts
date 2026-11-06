@@ -72,6 +72,13 @@ export const TIPOS_DE_NOVEDAD = [
   /** DL-164 D-4 y D-6: al profesional que cargó, cuando la persona confirma (la Respuesta ya existe) o dice «No es correcto». */
   'FORM_PROPOSAL_CONFIRMED',
   'FORM_PROPOSAL_REJECTED',
+  /**
+   * DL-165, ronda 2.1 (D-17 nueva; D-23): a la persona, cuando un profesional le pide ver sus hábitos («Pedir acceso a sus
+   * hábitos», API-HBT-06). Dice quién pide, desde qué área y para qué le sirve, y que es su decisión; nunca un hábito. La APK
+   * 0.22 la destaca como importante por su tipo (`esNovedadImportante`), sin un campo nuevo: la 0.21 la lee como cualquier
+   * tipo que no conoce, con su texto, y al abrirla se queda en Novedades. Abre «Mis hábitos» (`MY_HABITS`), con el pedido.
+   */
+  'HABITS_ACCESS_REQUESTED',
 ] as const;
 export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
 
@@ -81,9 +88,10 @@ export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
  * y `TRAINING_REVIEW`, que la persona lee completa desde REV-A), o `null`. `PRO_HOME` es el espacio profesional (las
  * solicitudes), para el profesional que lee una novedad de una solicitud. Una nota de coordinación (DL-140) abre la ficha
  * de la persona sobre la que trata, en `ADVISEE`. `FORMS` (DL-164) abre los formularios de la persona, en la Solicitud que
- * `referenceId` nombra: una APK anterior no la conoce y abre el centro, como con cualquier vista nueva.
+ * `referenceId` nombra: una APK anterior no la conoce y abre el centro, como con cualquier vista nueva. `MY_HABITS` (DL-165,
+ * ronda 2.1) abre «Mis hábitos» de la persona, con el pedido de acceso que `referenceId` nombra.
  */
-export const VISTAS_DE_NOVEDAD = ['NEWS', 'NUTRITION', 'TRAINING', 'RELATIONSHIPS', 'ADVISEE', 'NUTRITION_REVIEW', 'TRAINING_REVIEW', 'PRO_HOME', 'FORMS'] as const;
+export const VISTAS_DE_NOVEDAD = ['NEWS', 'NUTRITION', 'TRAINING', 'RELATIONSHIPS', 'ADVISEE', 'NUTRITION_REVIEW', 'TRAINING_REVIEW', 'PRO_HOME', 'FORMS', 'MY_HABITS'] as const;
 export type VistaDeNovedad = (typeof VISTAS_DE_NOVEDAD)[number];
 
 export const NovedadSchema = z.strictObject({
@@ -106,6 +114,13 @@ export const NovedadSchema = z.strictObject({
   open: z.strictObject({ view: z.string().min(1), referenceId: IdOpaco.nullable() }),
 });
 export type Novedad = z.infer<typeof NovedadSchema>;
+
+/**
+ * DL-165, ronda 2.1 (D-17 nueva): las novedades que la APK destaca como importantes. Se decide por el tipo, que ya viaja en
+ * `kind`: un campo nuevo en `NovedadSchema` dejaría sin leer el centro a las APK instaladas, que lo validan estricto (DL-152).
+ */
+export const TIPOS_DE_NOVEDAD_IMPORTANTES: readonly string[] = ['HABITS_ACCESS_REQUESTED'];
+export const esNovedadImportante = (kind: string): boolean => TIPOS_DE_NOVEDAD_IMPORTANTES.includes(kind);
 
 /** API-NOV-01: de la más nueva a la más vieja, con las no leídas contadas sobre todas, no solo sobre la página. */
 export const ListaDeNovedadesResponseSchema = z.strictObject({

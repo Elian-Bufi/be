@@ -4,6 +4,10 @@
  * la autorización de cada profesional (con el que llega después, D-17), los renglones de una versión nueva, quién los
  * recibe hoy, el texto del acto (una propuesta) y los contratos de la familia API-HBT. La API y la base hacen lo mismo, con
  * sus pruebas de integración (`habitos-de-la-persona.int-spec.ts`).
+ *
+ * Ronda 2.1 (D-15 y D-17 nuevas de Dirección, 2026-11-06): «Tus hábitos» aparte (FRM-HABITOS v2), la sugerencia al pedir
+ * (D-22), el límite de los pedidos de acceso (D-24), a quiénes nombra un «Sí» a un pedido (D-25), la novedad nueva y las
+ * operaciones API-HBT-06 a 09.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +15,17 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { crearClienteBe } from './cliente-http';
-import { CompartirHabitosRequestSchema, HabitosCompartidosResponseSchema, MisHabitosResponseSchema, RegistrarHabitosRequestSchema } from './contratos-habitos-de-la-persona';
+import {
+  CompartirHabitosRequestSchema,
+  HabitosCompartidosResponseSchema,
+  HabitosParaElProfesionalResponseSchema,
+  MisHabitosResponseSchema,
+  PedidosDeAccesoResponseSchema,
+  RegistrarHabitosRequestSchema,
+  ResponderPedidoDeAccesoRequestSchema,
+} from './contratos-habitos-de-la-persona';
+import { esNovedadImportante, NovedadSchema, VISTAS_DE_NOVEDAD } from './contratos-novedades';
+import { textoDeNovedad, textoDelAvisoPush, vistaDeNovedad } from './copy-novedades';
 import type { RespuestaDeCampoV2Entrada } from './contratos-formularios-v2';
 import { COPY_HABITOS } from './copy-habitos-de-la-persona';
 import { terminosProhibidosDeFormulariosEn } from './copy-formularios';
@@ -20,21 +34,35 @@ import {
   CAMPOS_DE_HABITOS,
   CODIGO_DE_LA_PARTE_DE_HABITOS,
   comoLosRecibe,
+  compartirAlAceptarUnPedido,
   desdeCuandoLosRecibe,
+  desdeCuandoSePuedeVolverAPedir,
   habitosDespuesDeUnFormulario,
   habitosEnOrden,
   hayQuePreguntar,
   parteDeHabitos,
   precargaDeHabitos,
   problemasDelPedidoDeCompartir,
+  puedePedirAcceso,
   renglonesDeLaAutorizacion,
   SOLICITUD_DE_MIS_HABITOS,
+  sugerenciaDeSumarHabitos,
+  tienenMasDeTresMeses,
   traeLaParteDeHabitos,
   type ComponenteParaHabitos,
   type RenglonDeLaAutorizacion,
 } from './habitos-de-la-persona';
 import { OPERACIONES } from './openapi';
-import { PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_ENTRENAMIENTO_V3, PLANTILLA_NUTRICION_INICIO, PLANTILLA_NUTRICION_INICIO_V2, SECCION_DE_HABITOS } from './plantillas-de-inicio';
+import {
+  PLANTILLA_ENTRENAMIENTO_V2,
+  PLANTILLA_ENTRENAMIENTO_V3,
+  PLANTILLA_ENTRENAMIENTO_V4,
+  PLANTILLA_HABITOS_V2,
+  PLANTILLA_NUTRICION_INICIO,
+  PLANTILLA_NUTRICION_INICIO_V2,
+  PLANTILLA_NUTRICION_INICIO_V3,
+  SECCION_DE_HABITOS,
+} from './plantillas-de-inicio';
 import { VERSION_VIGENTE, VERSIONES_PROPUESTAS } from './textos';
 
 const r = (fieldCode: string, answer: RespuestaDeCampoV2Entrada['answer']): RespuestaDeCampoV2Entrada => ({ fieldCode, answer });
@@ -47,17 +75,18 @@ const ESTRES = (o: string) => r('habitos_estres', { type: 'CHOICE', option: o, o
 const TODOS: RespuestaDeCampoV2Entrada[] = [HORARIOS, SUENO(7.5), ACTIVIDAD, HACE(true), DEPORTES, ESTRES('normal')];
 const codigos = (rs: readonly RespuestaDeCampoV2Entrada[] | null) => rs?.map((x) => x.fieldCode) ?? null;
 
-test('D-9 · la parte «Tus hábitos» es la misma en las dos versiones vigentes, solo con hábitos, y no está en las de DL-164', () => {
+test('D-9 y D-20 · la parte «Tus hábitos» es la misma en las versiones que la traen (la ronda 2 y «Tus hábitos» aparte), solo con hábitos, y no está en las demás', () => {
   assert.equal(CODIGO_DE_LA_PARTE_DE_HABITOS, 'tus_habitos');
   assert.deepEqual(CAMPOS_DE_HABITOS, ['habitos_horarios', 'horas_de_sueno', 'nivel_de_actividad', 'habitos_hace_deporte', 'habitos_deportes', 'habitos_estres']);
-  for (const p of [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3]) {
+  for (const p of [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3, PLANTILLA_HABITOS_V2]) {
     assert.deepEqual(parteDeHabitos(p.sections), SECCION_DE_HABITOS, `${p.clave} v${p.version}`);
     assert.equal(traeLaParteDeHabitos(p.sections), true);
     // Ninguna pregunta de la parte aparece además en otra parte.
     const fuera = p.sections.filter((s) => s.sectionCode !== 'tus_habitos').flatMap((s) => s.fields.map((c) => c.fieldCode));
     assert.deepEqual(fuera.filter((c) => CAMPOS_DE_HABITOS.includes(c)), [], p.clave);
   }
-  for (const p of [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2]) assert.equal(traeLaParteDeHabitos(p.sections), false, `${p.clave} v${p.version}`);
+  // Las de DL-164 y las de área de la ronda 2.1 no la traen: responderlas no cambia los hábitos.
+  for (const p of [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_NUTRICION_INICIO_V3, PLANTILLA_ENTRENAMIENTO_V4]) assert.equal(traeLaParteDeHabitos(p.sections), false, `${p.clave} v${p.version}`);
   // Solo hábitos: nada de la salud (D-9), y todo de la categoría de hábitos.
   assert.ok(SECCION_DE_HABITOS.fields.every((c) => c.category === 'HABITOS_Y_CONTEXTO'));
   // Lo dice al empezar la parte: también queda en «Mis hábitos».
@@ -249,7 +278,7 @@ test('el copy de los hábitos: frases cortas, sin términos prohibidos ni juicio
   assert.equal(COPY_HABITOS.apk.sigueIgual('5/11'), 'Ya lo respondiste el 5/11: ¿sigue igual?');
 });
 
-test('la familia API-HBT: cinco operaciones propias de BE, con sus rutas, y el cliente las llama así', async () => {
+test('la familia API-HBT: nueve operaciones propias de BE, con sus rutas, y el cliente las llama así', async () => {
   const hbt = OPERACIONES.filter((o) => o.id.startsWith('API-HBT-'));
   assert.deepEqual(hbt.map((o) => [o.id, o.metodo, o.ruta, o.idempotencia]), [
     ['API-HBT-01', 'get', '/me/habits', false],
@@ -257,6 +286,11 @@ test('la familia API-HBT: cinco operaciones propias de BE, con sus rutas, y el c
     ['API-HBT-03', 'put', '/me/habits/sharing', true],
     ['API-HBT-04', 'post', '/me/habits/sharing/withdrawal', true],
     ['API-HBT-05', 'get', '/advisees/{adviseeId}/habits', false],
+    // Ronda 2.1 (D-17 nueva): «Pedir acceso a sus hábitos».
+    ['API-HBT-06', 'post', '/advisees/{adviseeId}/habits/access-requests', true],
+    ['API-HBT-07', 'get', '/advisees/{adviseeId}/habits/status', false],
+    ['API-HBT-08', 'get', '/me/habits/access-requests', false],
+    ['API-HBT-09', 'post', '/me/habits/access-requests/{accessRequestId}/answer', true],
   ]);
   // HAB sigue siendo «Mis habituales» (DL-109): ninguna de esas rutas es de hábitos (D-14).
   assert.ok(OPERACIONES.filter((o) => o.id.startsWith('API-HAB-')).every((o) => !o.ruta.includes('/habits')));
@@ -274,12 +308,20 @@ test('la familia API-HBT: cinco operaciones propias de BE, con sus rutas, y el c
   await cliente.compartirMisHabitos('t', { expectedVersion: null, textVersionId: 'x', professionalIds: [NUT], declinedProfessionalIds: [] }, 'clave-2');
   await cliente.dejarDeCompartirMisHabitos('t', { expectedVersion: 'v1' }, 'clave-3');
   await cliente.habitosDeLaPersona('t', NUT);
+  await cliente.pedirAccesoAHabitos('t', NUT, { scope: 'NUTRICION' }, 'clave-4');
+  await cliente.habitosParaElProfesional('t', NUT);
+  await cliente.pedidosDeAccesoAMisHabitos('t');
+  await cliente.responderPedidoDeAcceso('t', ENT, { expectedVersion: 'v1', answer: 'NOT_NOW', sharing: null }, 'clave-5');
   assert.deepEqual(llamadas, [
     { metodo: 'GET', url: 'https://api.example.invalid/api/v1/me/habits', clave: null },
     { metodo: 'POST', url: 'https://api.example.invalid/api/v1/me/habits', clave: 'clave-1' },
     { metodo: 'PUT', url: 'https://api.example.invalid/api/v1/me/habits/sharing', clave: 'clave-2' },
     { metodo: 'POST', url: 'https://api.example.invalid/api/v1/me/habits/sharing/withdrawal', clave: 'clave-3' },
     { metodo: 'GET', url: `https://api.example.invalid/api/v1/advisees/${NUT}/habits`, clave: null },
+    { metodo: 'POST', url: `https://api.example.invalid/api/v1/advisees/${NUT}/habits/access-requests`, clave: 'clave-4' },
+    { metodo: 'GET', url: `https://api.example.invalid/api/v1/advisees/${NUT}/habits/status`, clave: null },
+    { metodo: 'GET', url: 'https://api.example.invalid/api/v1/me/habits/access-requests', clave: null },
+    { metodo: 'POST', url: `https://api.example.invalid/api/v1/me/habits/access-requests/${ENT}/answer`, clave: 'clave-5' },
   ]);
 });
 
@@ -307,12 +349,14 @@ test('los contratos son estrictos: lo que ve el profesional no trae la historia 
 });
 
 /**
- * DL-152 · hasta la 0.20.0-candidata.1 (versionCode 33) ninguna APK conoce API-HBT. Desde la 0.21.0-candidata.1 (34), la
- * APK llama las de la persona (01 a 04), con su forma congelada, y nunca la del profesional (05), que es del website.
+ * DL-152 · hasta la 0.20.0-candidata.1 (versionCode 33) ninguna APK conoce API-HBT. La 0.21.0-candidata.1 (34) llama las de
+ * la persona de la ronda 2 (01 a 04), con su forma congelada. Desde la ronda 2.1, una APK puede sumar las de la persona que
+ * responden los pedidos de acceso (08 y 09), y nunca las del profesional (05 a 07), que son del website.
  */
 const PRIMER_VERSION_CODE_CON_HBT = 34;
+const DE_LA_PERSONA = new Set(['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04', 'API-HBT-08', 'API-HBT-09']);
 
-test('DL-152 · las APK congeladas hasta la 0.20 no leen API-HBT, y desde la 0.21 leen solo las de la persona (01 a 04)', () => {
+test('DL-152 · las APK congeladas hasta la 0.20 no leen API-HBT; la 0.21 lee solo las de la persona (01 a 04), y ninguna lee las del profesional', () => {
   const carpeta = join(__dirname, '..', 'fixtures', 'lecturas-de-la-apk');
   for (const archivo of readdirSync(carpeta).filter((f) => f.endsWith('.json'))) {
     const congelado = JSON.parse(readFileSync(join(carpeta, archivo), 'utf8')) as { apk: { versionCode: number }; lecturas: Record<string, { ruta?: string }> };
@@ -324,8 +368,117 @@ test('DL-152 · las APK congeladas hasta la 0.20 no leen API-HBT, y desde la 0.2
       assert.deepEqual(ids, [], archivo);
       assert.deepEqual(rutas, [], archivo);
     } else {
-      assert.deepEqual(ids, ['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04'], archivo);
+      if (congelado.apk.versionCode === PRIMER_VERSION_CODE_CON_HBT) assert.deepEqual(ids, ['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04'], archivo);
+      for (const id of ['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04']) assert.ok(ids.includes(id), `${archivo}: ${id}`);
+      assert.ok(ids.every((id) => DE_LA_PERSONA.has(id)), archivo);
       assert.ok(rutas.every((ruta) => ruta.startsWith('/me/habits')), archivo);
     }
   }
+});
+
+// ─── Ronda 2.1 (2026-11-06) · la sugerencia, el límite, el «Sí» a un pedido y la novedad ──────────
+
+test('D-22 · «Sumar «Tus hábitos»»: marcada sin hábitos o con más de 3 meses; sin marcar, con su fecha, si son recientes o si espera una', () => {
+  const ahora = '2026-11-06T15:00:00.000Z';
+  assert.deepEqual(sugerenciaDeSumarHabitos({ vistosEl: null, pendienteDesde: null, ahora }), { marcada: true, motivo: 'SIN_HABITOS', desde: null });
+  assert.deepEqual(sugerenciaDeSumarHabitos({ vistosEl: '2026-10-01T12:00:00.000Z', pendienteDesde: null, ahora }), { marcada: false, motivo: 'RECIENTES', desde: '2026-10-01T12:00:00.000Z' });
+  assert.deepEqual(sugerenciaDeSumarHabitos({ vistosEl: '2026-07-30T12:00:00.000Z', pendienteDesde: null, ahora }), { marcada: true, motivo: 'VIEJOS', desde: '2026-07-30T12:00:00.000Z' });
+  // Con una solicitud con la parte esperando la respuesta, no se marca: pedirla de nuevo no le suma nada a la persona.
+  assert.deepEqual(sugerenciaDeSumarHabitos({ vistosEl: null, pendienteDesde: '2026-11-01T12:00:00.000Z', ahora }), { marcada: false, motivo: 'PENDIENTE', desde: '2026-11-01T12:00:00.000Z' });
+  // Los tres meses son de calendario: justo tres meses todavía no es «más»; un instante después, sí. Del 31 de agosto, el
+  // límite es el 30 de noviembre (el último día del mes).
+  assert.equal(tienenMasDeTresMeses('2026-08-06T15:00:00.000Z', '2026-11-06T15:00:00.000Z'), false);
+  assert.equal(tienenMasDeTresMeses('2026-08-06T15:00:00.000Z', '2026-11-06T15:00:00.001Z'), true);
+  assert.equal(tienenMasDeTresMeses('2026-08-31T12:00:00.000Z', '2026-11-30T12:00:00.000Z'), false);
+  assert.equal(tienenMasDeTresMeses('2026-08-31T12:00:00.000Z', '2026-11-30T12:00:01.000Z'), true);
+  assert.equal(tienenMasDeTresMeses('2026-11-30T12:00:00.000Z', '2027-03-01T12:00:00.000Z'), true);
+  // Los textos de la casilla dicen la fecha y no califican nada.
+  for (const t of [COPY_HABITOS.web.sugerencia.SIN_HABITOS(), COPY_HABITOS.web.sugerencia.VIEJOS('6/8'), COPY_HABITOS.web.sugerencia.RECIENTES('1/10'), COPY_HABITOS.web.sugerencia.PENDIENTE('1/11'), COPY_HABITOS.web.sumarHabitos, COPY_HABITOS.web.sumarHabitosQueEs]) {
+    assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
+  }
+});
+
+test('D-24 · el límite: quien ya los recibe no pide; una pendiente por vez, y volver a pedir recién a los 7 días del último', () => {
+  const pedido = '2026-11-06T10:00:00.000Z';
+  assert.equal(desdeCuandoSePuedeVolverAPedir(pedido), '2026-11-13T10:00:00.000Z');
+  assert.deepEqual(puedePedirAcceso({ losRecibe: false, ultimoPedidoEl: null, ahora: pedido }), { puede: true });
+  assert.deepEqual(puedePedirAcceso({ losRecibe: true, ultimoPedidoEl: null, ahora: pedido }), { puede: false, motivo: 'YA_LOS_RECIBE', desde: null });
+  assert.deepEqual(puedePedirAcceso({ losRecibe: false, ultimoPedidoEl: pedido, ahora: '2026-11-13T09:59:59.999Z' }), { puede: false, motivo: 'MUY_PRONTO', desde: '2026-11-13T10:00:00.000Z' });
+  assert.deepEqual(puedePedirAcceso({ losRecibe: false, ultimoPedidoEl: pedido, ahora: '2026-11-13T10:00:00.000Z' }), { puede: true });
+});
+
+test('D-25 · «Sí, que los vea» a un pedido: con la autorización activa, suma a quien pidió y nadie más cambia; sin compartir, solo él', () => {
+  const profesionales = [
+    { profesionalId: NUT, componentes: [c('av-nut')] },
+    { profesionalId: ENT, componentes: [c('av-ent', 'ACEPTADO', 'ENTRENAMIENTO')] },
+    { profesionalId: ANT, componentes: [c('av-ant', 'ACEPTADO', 'ANTROPOMETRIA')] },
+  ];
+  // Activa: la nutricionista los recibe, el entrenador dijo que no y la antropometrista llegó después. Pide el entrenador.
+  const renglones: RenglonDeLaAutorizacion[] = [
+    { profesionalId: NUT, alcanceDeVinculoId: 'av-nut', incluido: true, incluidoDesde: ANTES },
+    { profesionalId: ENT, alcanceDeVinculoId: 'av-ent', incluido: false, incluidoDesde: null },
+  ];
+  const activa = compartirAlAceptarUnPedido({ profesionales, renglones, profesionalId: ENT });
+  assert.deepEqual([[...activa.incluidos].sort(), [...activa.declinados]], [[NUT, ENT].sort(), []]);
+  const nueva = renglonesDeLaAutorizacion({ profesionales, anteriores: renglones, ...activa, ahora: AHORA });
+  assert.deepEqual(comoLosRecibe(profesionales[0]!.componentes, NUT, nueva), { sharing: 'RECEIVES', sharedSince: ANTES });
+  assert.deepEqual(comoLosRecibe(profesionales[1]!.componentes, ENT, nueva), { sharing: 'RECEIVES', sharedSince: AHORA });
+  // La que llegó después sigue sin que se le pregunte por ella: la persona respondió el pedido de otro.
+  assert.deepEqual(comoLosRecibe(profesionales[2]!.componentes, ANT, nueva), { sharing: 'NOT_ASKED', sharedSince: null });
+  // Sin compartir todavía (nunca o retirada): se activa solo para quien pidió, y los demás quedan nombrados como que no los
+  // ven (no se les pregunta: la persona los suma cuando quiera).
+  const sinCompartir = compartirAlAceptarUnPedido({ profesionales, renglones: null, profesionalId: ENT });
+  assert.deepEqual([[...sinCompartir.incluidos], [...sinCompartir.declinados].sort()], [[ENT], [NUT, ANT].sort()]);
+  const primera = renglonesDeLaAutorizacion({ profesionales, anteriores: null, ...sinCompartir, ahora: AHORA });
+  assert.deepEqual(profesionales.map((p) => comoLosRecibe(p.componentes, p.profesionalId, primera).sharing), ['DOES_NOT_RECEIVE', 'RECEIVES', 'DOES_NOT_RECEIVE']);
+  assert.equal(hayQuePreguntar(profesionales[0]!.componentes, NUT, primera), false);
+  // D-17 nueva: la persona siempre puede cambiar de opinión. Volver a sumar al que dijo que no, desde «Cambiar con quiénes».
+  const otraVez = renglonesDeLaAutorizacion({ profesionales, anteriores: primera, incluidos: new Set([ENT, NUT]), declinados: new Set([ANT]), ahora: '2026-11-07T10:00:00.000Z' });
+  assert.deepEqual(comoLosRecibe(profesionales[0]!.componentes, NUT, otraVez), { sharing: 'RECEIVES', sharedSince: '2026-11-07T10:00:00.000Z' });
+});
+
+test('D-23 · la novedad del pedido: quién pide, desde qué área, para qué le sirve y que es su decisión; nunca un hábito, y el aviso, genérico', () => {
+  for (const alcance of ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'] as const) {
+    const t = textoDeNovedad('HABITS_ACCESS_REQUESTED', { alcance, fuente: 'Ana López' });
+    assert.equal(t.title, 'Te piden ver tus hábitos');
+    assert.match(t.body, /^Ana López, de (Nutrición|Entrenamiento|Antropometría), te pide ver tus hábitos\./);
+    assert.ok(t.body.includes(COPY_HABITOS.paraQueLeSirven[alcance]), alcance);
+    assert.match(t.body, /Es tu decisión/);
+    // Sin presión, sin «recomendado» y sin culpa.
+    assert.doesNotMatch(t.body, /recomend|deberías|tenés que|importante que/i);
+    assert.deepEqual(terminosProhibidosDeFormulariosEn(t.body), [], alcance);
+  }
+  // Abre «Mis hábitos» y la APK la destaca por su tipo; el resto, no.
+  assert.equal(vistaDeNovedad('HABITS_ACCESS_REQUESTED', 'NUTRICION', false), 'MY_HABITS');
+  assert.ok((VISTAS_DE_NOVEDAD as readonly string[]).includes('MY_HABITS'));
+  assert.equal(esNovedadImportante('HABITS_ACCESS_REQUESTED'), true);
+  assert.equal(esNovedadImportante('PLAN_ACTIVATED'), false);
+  assert.equal(textoDelAvisoPush(['HABITS_ACCESS_REQUESTED']), 'Tenés una novedad.');
+  // La novedad viaja en la forma de siempre: `kind` y `open.view` son texto, así una APK que no los conoce la lee igual (la 0.21).
+  const novedad = { newsId: NUT, kind: 'HABITS_ACCESS_REQUESTED', scope: 'NUTRICION', source: { identityId: ENT, displayName: 'Ana López' }, title: 't', body: 'b', date: null, occurredAt: AHORA, recordedAt: AHORA, readAt: null, open: { view: 'MY_HABITS', referenceId: ANT } };
+  assert.ok(NovedadSchema.safeParse(novedad).success);
+  assert.equal(NovedadSchema.safeParse({ ...novedad, important: true }).success, false, 'un campo nuevo rompería a la 0.21: por eso se decide por el tipo');
+  // Los textos de la app para responder: sin presión, y las dos respuestas con el mismo peso.
+  for (const t of [COPY_HABITOS.apk.pedidosTitulo, COPY_HABITOS.apk.pedidoDe('Ana', 'Nutrición'), COPY_HABITOS.apk.loQueVeria, COPY_HABITOS.apk.esTuDecision, COPY_HABITOS.apk.pedidoSi, COPY_HABITOS.apk.pedidoNo, COPY_HABITOS.apk.soloEl('Ana'), COPY_HABITOS.apk.pedidoNoPorAhora('Ana')]) {
+    assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
+    assert.doesNotMatch(t, /recomend/i, t);
+  }
+});
+
+test('los contratos de la ronda 2.1 son estrictos: el profesional no recibe hábitos ni qué respondió la persona; «Sí» lleva lo que se vio', () => {
+  const estado = {
+    data: { scopes: ['NUTRICION'], receives: false, sharedSince: null, latestSeenAt: null, pendingHabitsRequestSince: null, accessRequest: { accessRequestId: NUT, scope: 'NUTRICION', status: 'ANSWERED', requestedAt: ANTES }, canRequestAccess: false, canRequestAccessFrom: AHORA },
+  };
+  assert.ok(HabitosParaElProfesionalResponseSchema.safeParse(estado).success);
+  assert.equal(HabitosParaElProfesionalResponseSchema.safeParse({ data: { ...estado.data, accessRequest: { ...estado.data.accessRequest, answer: 'NOT_NOW' } } }).success, false);
+  assert.equal(HabitosParaElProfesionalResponseSchema.safeParse({ data: { ...estado.data, current: null } }).success, false);
+  assert.equal(HabitosParaElProfesionalResponseSchema.safeParse({ data: { ...estado.data, scopes: [] } }).success, false);
+  assert.ok(PedidosDeAccesoResponseSchema.safeParse({ data: [{ accessRequestId: NUT, version: 'v1', professional: { identityId: ENT, displayName: 'Ana' }, scope: { code: 'NUTRICION', label: 'Nutrición' }, requestedAt: ANTES }] }).success);
+  const si = { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id } };
+  assert.ok(ResponderPedidoDeAccesoRequestSchema.safeParse(si).success);
+  assert.ok(ResponderPedidoDeAccesoRequestSchema.safeParse({ expectedVersion: 'v1', answer: 'NOT_NOW', sharing: null }).success);
+  // «Sí» sin lo que se vio, o «No» con algo para compartir: no tiene forma.
+  assert.equal(ResponderPedidoDeAccesoRequestSchema.safeParse({ ...si, sharing: null }).success, false);
+  assert.equal(ResponderPedidoDeAccesoRequestSchema.safeParse({ ...si, answer: 'NOT_NOW' }).success, false);
+  assert.equal(ResponderPedidoDeAccesoRequestSchema.safeParse({ ...si, extra: 1 }).success, false);
 });
