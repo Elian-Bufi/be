@@ -7,16 +7,19 @@
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import type { FilaDeSerie, IdentidadDelRegistro } from './comparacion-de-entrenamiento';
 import type { EjecucionDeEntrenamiento, EjercicioRegistradoEntrada, RegistroDeEjecucion, SerieEjecutadaApi } from './contratos-entrenamiento';
 import { COPY_REGISTRO_POR_NIVELES, ETIQUETA_DE_NIVEL_DE_DETALLE, terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
 import { problemasDeCoherencia, problemasParaConfirmar } from './plan-de-entrenamiento';
 import {
+  cambiaFrenteAlPlan,
   ejerciciosEnSuForma,
   ejerciciosSinLaMarca,
   esCargaCompleta,
   esNivelPorSerie,
   nivelDeDetalle,
   nivelDeDetalleDelRegistro,
+  nivelDeDetalleFrenteAlPlan,
   seCargoComoElPlan,
   serieEnSuForma,
   textoDelNivelDeDetalle,
@@ -134,6 +137,41 @@ test('el nivel de una ejecución es el de lo que rige: la corrección vigente; c
   assert.equal(nivelDeDetalle(x({ kind: 'ORIGINAL' })), 'COMO_EL_PLAN');
   assert.equal(nivelDeDetalle(x({ kind: 'CORRECTED', correctionId: 'c-1' })), 'PARTE_COMO_EL_PLAN');
   assert.equal(nivelDeDetalle(x({ kind: 'NOT_RESOLVABLE' })), null);
+});
+
+// ─── Frente a la sesión del plan (DL-161 I-10 e I-11; Dirección, 2026-11-06) ────────────────────────────────
+
+/** Una fila de la comparación con la sesión del plan: si la serie estaba indicada y si se registró (tildada). */
+const filaDelPlan = (numero: number, indicada: boolean, registrada: boolean): FilaDeSerie => ({
+  numero,
+  planificada: indicada ? { tipo: 'planificada', repeticiones: { value: 8 }, nota: null } : { tipo: 'no-planificada' },
+  registrada: registrada ? { tipo: 'registrada', serie: comoElPlan(numero) } : { tipo: 'sin-dato', motivo: 'serie-no-registrada' },
+  enElOriginal: undefined,
+  corregida: false,
+});
+const deBanca = (filas: FilaDeSerie[], identidad: IdentidadDelRegistro = 'misma-version') => ({ realizado: { exerciseVersionId: 'ver-banca', exerciseId: 'ej-banca', nombre: 'Press de banca' }, identidad, filas });
+
+test('DL-161 I-10 · frente al plan, la carga rápida con una serie menos, una de más u otro ejercicio es «con cambios»', () => {
+  const tresDeTres = [deBanca([filaDelPlan(1, true, true), filaDelPlan(2, true, true), filaDelPlan(3, true, true)])];
+  // Sin cambios: las tres series indicadas, tildadas. Sigue siendo carga rápida.
+  assert.equal(cambiaFrenteAlPlan(tresDeTres), false);
+  assert.equal(nivelDeDetalleFrenteAlPlan('COMO_EL_PLAN', tresDeTres), 'COMO_EL_PLAN');
+  // Una serie menos.
+  const unaMenos = [deBanca([filaDelPlan(1, true, true), filaDelPlan(2, true, true), filaDelPlan(3, true, false)])];
+  assert.equal(nivelDeDetalleFrenteAlPlan('COMO_EL_PLAN', unaMenos), 'PARTE_COMO_EL_PLAN');
+  // Una de más.
+  assert.equal(nivelDeDetalleFrenteAlPlan('COMO_EL_PLAN', [deBanca([...tresDeTres[0]!.filas, filaDelPlan(4, false, true)])]), 'PARTE_COMO_EL_PLAN');
+  // Un ejercicio entero sin registrar.
+  const sinRegistrar = { realizado: null, identidad: 'sin-registro' as const, filas: [filaDelPlan(1, true, false), filaDelPlan(2, true, false)] };
+  assert.equal(nivelDeDetalleFrenteAlPlan('COMO_EL_PLAN', [...tresDeTres, sinRegistrar]), 'PARTE_COMO_EL_PLAN');
+  // Otro ejercicio en lugar del indicado; también otra versión del mismo, que el contrato informa como sustitución.
+  for (const identidad of ['otro-ejercicio', 'desconocida', 'mismo-ejercicio'] as const) {
+    assert.equal(nivelDeDetalleFrenteAlPlan('COMO_EL_PLAN', [deBanca(tresDeTres[0]!.filas, identidad)]), 'PARTE_COMO_EL_PLAN', identidad);
+  }
+  // Un ejercicio que el plan trae sin series y no se registró no es un cambio: no había qué registrar por serie.
+  assert.equal(nivelDeDetalleFrenteAlPlan('COMO_EL_PLAN', [...tresDeTres, { realizado: null, identidad: 'sin-registro', filas: [] }]), 'COMO_EL_PLAN');
+  // Los demás niveles quedan como los dice la marca: la carga completa con una serie menos sigue completa.
+  for (const n of ['CON_DETALLE', 'PARTE_COMO_EL_PLAN', 'RESUMIDA', 'NO_REALIZADA', null] as const) assert.equal(nivelDeDetalleFrenteAlPlan(n, unaMenos), n);
 });
 
 // ─── Las palabras ───────────────────────────────────────────────────────────────────────────────────────────

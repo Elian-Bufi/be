@@ -8,7 +8,8 @@
  * - una serie «como el plan» sin carga ni repeticiones se rechaza: no existe la serie realizada sin datos;
  * - una corrección que solo cambia la marca no corrige nada; una que cambia la duración, sí;
  * - la línea de tiempo del profesional (API-DSH-04) dice cómo se cargaron las series, con los nombres de Dirección del
- *   2026-11-02 («Carga completa», «Carga rápida», «Carga rápida con cambios»);
+ *   2026-11-02 («Carga completa», «Carga rápida», «Carga rápida con cambios»), y la carga rápida con una serie menos o un
+ *   dato distinto es «con cambios» (I-10, con el cambio que ratificó Dirección el 2026-11-06);
  * - el análisis del profesional (API-PRJ-01) marca el punto de una serie de carga rápida en su detalle y lo explica en
  *   la nota de la serie: el website lo dibuja hueco y lo deja fuera de los resúmenes y del cambio relativo; la cantidad
  *   de series registradas cuenta también las tildadas;
@@ -42,6 +43,13 @@ const escrita = (setIndex: number, reps = 8, carga = 60): Serie => ({ setIndex, 
 const comoElPlan = (setIndex: number, extra: Serie = {}): Serie => ({ ...escrita(setIndex), recordedAs: 'AS_PLANNED', ...extra });
 const deBanca = (sets: Serie[]) => [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets }];
 const conSeries = (sets: Serie[]) => ({ granularity: 'SET', exercises: deBanca(sets) });
+/**
+ * Una serie de sentadilla tildada sin escribir. El plan indica 6 a 8 repeticiones sin carga; la APK pediría anotarlas,
+ * pero la API no recalcula lo planificado (DL-161 I-3): para el nivel alcanza con la marca.
+ */
+const sentadillaComoElPlan = (setIndex: number): Serie => ({ setIndex, load: null, completedRepetitions: 8, rir: null, perceivedExertion: null, recordedAs: 'AS_PLANNED' });
+/** La sesión A entera, como la indica el plan: banca (3 series) y sentadilla (2). */
+const deLaSesionA = (banca: Serie[], sentadilla: Serie[]) => [...deBanca(banca), { prescriptionId: 'rx-sentadilla', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.sentadilla, sets: sentadilla }];
 
 async function borrador() {
   const c = await circuitoConPlanDeEntrenamientoActivo(app, `niveles-${++contador}`);
@@ -53,10 +61,10 @@ async function borrador() {
   return { c, apk, draftId: b.draftId as string, version: b.version as string, guardar };
 }
 
-/** Una sesión registrada con estas series de banca. */
-async function registrada(sets: Serie[]) {
+/** Una sesión registrada con estas series de banca, o con estos ejercicios. */
+async function registrada(sets: Serie[], exercises: unknown[] = deBanca(sets)) {
   const b = await borrador();
-  const v = (await b.guardar(b.version, { ...conSeries(sets), sessionCondition: 'COMPLETED' }).expect(200)).body.data;
+  const v = (await b.guardar(b.version, { granularity: 'SET', exercises, sessionCondition: 'COMPLETED' }).expect(200)).body.data;
   const conf = await b.apk.post(`/api/v1/training/execution-drafts/${b.draftId}/confirm`).send({ expectedVersion: v.version }).expect(201);
   return { ...b, executionId: conf.body.data.executionId as string };
 }
@@ -135,20 +143,33 @@ describe('Registro por niveles (DL-161) · la serie dice cómo se cargó y cuán
     expect(vacia.body.error.details.issues).toEqual([{ code: 'SET_WITHOUT_DATA', path: 'correction.exercises[0].sets[0]' }]);
   });
 
-  it('la línea de tiempo del profesional dice cómo se cargaron las series', async () => {
-    const parte = await registrada([comoElPlan(1), comoElPlan(2), escrita(3, 6)]);
-    const lectura = LineaDeTiempoResponseSchema.parse((await conSesion(app, parte.c.pro.token).get(`/api/v1/advisees/${parte.c.ase.id}/timeline`).expect(200)).body);
-    const sesion = lectura.data.entries.find((e) => e.timelineEntryId === `tses:${parte.executionId}`)!;
-    expect(sesion.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Carga rápida con cambios');
-    expect(sesion.details.find((d) => d.label === 'Series con datos')?.value).toBe('3');
+  it('la línea de tiempo del profesional dice cómo se cargaron las series, y si la carga rápida cambió frente al plan', async () => {
+    const detalleDe = async (x: Awaited<ReturnType<typeof registrada>>, label: string) => {
+      const lectura = LineaDeTiempoResponseSchema.parse((await conSesion(app, x.c.pro.token).get(`/api/v1/advisees/${x.c.ase.id}/timeline`).expect(200)).body);
+      return lectura.data.entries.find((e) => e.timelineEntryId === `tses:${x.executionId}`)!.details.find((d) => d.label === label)?.value;
+    };
+    const tildadas = (n: number) => Array.from({ length: n }, (_, i) => comoElPlan(i + 1));
+    const sentadilla = [sentadillaComoElPlan(1), sentadillaComoElPlan(2)];
 
-    const toda = await registrada([comoElPlan(1), comoElPlan(2), comoElPlan(3)]);
-    const deToda = LineaDeTiempoResponseSchema.parse((await conSesion(app, toda.c.pro.token).get(`/api/v1/advisees/${toda.c.ase.id}/timeline`).expect(200)).body);
-    expect(deToda.data.entries.find((e) => e.timelineEntryId === `tses:${toda.executionId}`)!.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Carga rápida');
+    // Sin cambios: la sesión entera tildada sin escribir, con las cinco series del plan. Es «Carga rápida».
+    const sinCambios = await registrada([], deLaSesionA(tildadas(3), sentadilla));
+    expect(await detalleDe(sinCambios, 'Cómo se cargó')).toBe('Carga rápida');
 
+    // Una serie menos de banca, sin nada escrito (DL-161 I-10; Dirección, 2026-11-06): «Carga rápida con cambios».
+    const unaMenos = await registrada([], deLaSesionA(tildadas(2), sentadilla));
+    expect(await detalleDe(unaMenos, 'Cómo se cargó')).toBe('Carga rápida con cambios');
+    // Lo mismo sin la sentadilla: es un ejercicio entero sin registrar.
+    const sinSentadilla = await registrada(tildadas(3));
+    expect(await detalleDe(sinSentadilla, 'Cómo se cargó')).toBe('Carga rápida con cambios');
+
+    // Un dato distinto: la segunda de banca escrita con 6 repeticiones, sin la marca. Las cinco series tienen datos.
+    const unDatoDistinto = await registrada([], deLaSesionA([comoElPlan(1), escrita(2, 6), comoElPlan(3)], sentadilla));
+    expect(await detalleDe(unDatoDistinto, 'Cómo se cargó')).toBe('Carga rápida con cambios');
+    expect(await detalleDe(unDatoDistinto, 'Series con datos')).toBe('5');
+
+    // Todo escrito: «Carga completa», aunque falten series.
     const escritas = await registrada([escrita(1), escrita(2)]);
-    const deEscritas = LineaDeTiempoResponseSchema.parse((await conSesion(app, escritas.c.pro.token).get(`/api/v1/advisees/${escritas.c.ase.id}/timeline`).expect(200)).body);
-    expect(deEscritas.data.entries.find((e) => e.timelineEntryId === `tses:${escritas.executionId}`)!.details.find((d) => d.label === 'Cómo se cargó')?.value).toBe('Carga completa');
+    expect(await detalleDe(escritas, 'Cómo se cargó')).toBe('Carga completa');
   });
 
   it('el análisis del profesional marca el punto de la serie de carga rápida y lo explica; la cantidad de series cuenta las dos', async () => {

@@ -14,10 +14,12 @@
  * - `serieEnSuForma`: la serie campo por campo, como se guarda y como se devuelve. `TYPED` y una duración `null` no se
  *   guardan, porque dicen lo mismo que la ausencia. Así lo registrado antes queda idéntico, una corrección «sin cambios»
  *   se reconoce, y una ejecución cargada toda a mano y sin duración la sigue leyendo una APK anterior (DL-152).
- * - `nivelDeDetalle`: el nivel de detalle de una ejecución registrada, para el profesional.
+ * - `nivelDeDetalle`: el nivel de detalle de una ejecución registrada, por la marca de cada serie.
+ * - `nivelDeDetalleFrenteAlPlan`: el que lee el escritorio del profesional, que mira también la sesión del plan (I-10).
  *
  * Nada de esto califica: dice cómo se cargó, no si estuvo bien ni si fue mucho o poco.
  */
+import type { ComparacionDeEjercicio } from './comparacion-de-entrenamiento';
 import type { EjecucionDeEntrenamiento, EjercicioRegistradoEntrada, RegistroDeEjecucion, SerieEjecutadaApi } from './contratos-entrenamiento';
 import { ETIQUETA_DE_NIVEL_DE_DETALLE, etiquetaDeCondicionRegistrada, registroVigente } from './copy-entrenamiento';
 
@@ -62,7 +64,8 @@ export function ejerciciosSinLaMarca(ejercicios: readonly EjercicioRegistradoEnt
  * - `CON_DETALLE`: por serie, y la persona escribió cada una («Carga completa»);
  * - `COMO_EL_PLAN`: por serie, y todas se tildaron con lo planificado («Carga rápida»);
  * - `PARTE_COMO_EL_PLAN`: por serie, algunas escritas o cambiadas y otras tildadas con lo planificado («Carga rápida con
- *   cambios»);
+ *   cambios»). En el escritorio, también la sesión tildada entera que cambió frente al plan: una serie menos, una de más
+ *   u otro ejercicio (`nivelDeDetalleFrenteAlPlan`; DL-161 I-10 e I-11);
  * - `RESUMIDA`: por ejercicio o sesión, sin series;
  * - `NO_REALIZADA`: la persona la registró como no realizada.
  */
@@ -94,6 +97,40 @@ export function nivelDeDetalleDelRegistro(r: RegistroParaElNivel): NivelDeDetall
 export function nivelDeDetalle(x: Pick<EjecucionDeEntrenamiento, 'original' | 'corrections' | 'effectiveView'>): NivelDeDetalle | null {
   if (x.effectiveView.kind === 'NOT_RESOLVABLE') return null;
   return nivelDeDetalleDelRegistro(registroVigente(x));
+}
+
+// ─── La carga rápida con cambios (DL-161 I-10 e I-11) ───────────────────────────────────────────────────────
+
+/** Lo que hace falta de la comparación con la sesión del plan (`compararEjecucion`) para saber si cambió. */
+type ComparacionParaLosCambios = Pick<ComparacionDeEjercicio, 'realizado' | 'identidad' | 'filas'>;
+
+/**
+ * La sesión registrada cambió frente a la sesión del plan que rigió ese día, aunque nada se haya escrito (DL-161 I-11;
+ * Dirección, 2026-11-02: «que se diferencien si hay modificación en series o datos»). Es un cambio:
+ * - una serie indicada que no se registró: una serie menos, o un ejercicio entero sin registrar;
+ * - una serie registrada que no estaba indicada: una de más;
+ * - un ejercicio registrado con otra versión del catálogo que la indicada: otro ejercicio en su lugar.
+ *
+ * Un dato distinto no se busca acá: se reconoce por la marca, porque la serie que la persona cambió llega escrita
+ * (`TYPED`). Los valores de una serie tildada no se recalculan contra el plan (I-3: un rango, otra unidad). Alcanza con
+ * la sesión que rigió, que trae la ejecución: no hacen falta los objetivos de cada serie.
+ */
+export function cambiaFrenteAlPlan(comparaciones: readonly ComparacionParaLosCambios[]): boolean {
+  return comparaciones.some(
+    (c) => (c.realizado !== null && c.identidad !== 'misma-version') || c.filas.some((f) => (f.planificada.tipo === 'planificada') !== (f.registrada.tipo === 'registrada')),
+  );
+}
+
+/**
+ * El nivel de detalle que lee el escritorio del profesional (los Registros y la línea de tiempo): el de la marca de cada
+ * serie (`nivelDeDetalleDelRegistro`), salvo que la carga rápida haya cambiado frente al plan. Entonces es «Carga rápida
+ * con cambios», aunque nada se haya escrito (DL-161 I-10, con el cambio que ratificó Dirección el 2026-11-06). Los demás
+ * niveles no cambian: «Carga completa» lo sigue siendo con una serie menos, porque cada serie registrada se escribió.
+ *
+ * La APK no lo usa todavía: dice el nivel de la marca hasta su próxima versión.
+ */
+export function nivelDeDetalleFrenteAlPlan(nivel: NivelDeDetalle | null, comparaciones: readonly ComparacionParaLosCambios[]): NivelDeDetalle | null {
+  return nivel === 'COMO_EL_PLAN' && cambiaFrenteAlPlan(comparaciones) ? 'PARTE_COMO_EL_PLAN' : nivel;
 }
 
 /** El nivel en palabras: «Carga completa», «Carga rápida»… «No realizada» es la condición que la persona registró. */

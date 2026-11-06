@@ -1,9 +1,11 @@
 import {
   COPY_REGISTRO_POR_NIVELES,
   comidaFrenteALoIndicado,
+  compararEjecucion,
   ejerciciosComparables,
   esNivelPorSerie,
   nivelDeDetalleDelRegistro,
+  nivelDeDetalleFrenteAlPlan,
   textoDelNivelDeDetalle,
   frenteALoIndicadoEnPalabras,
   observacionesDelEjercicio,
@@ -244,8 +246,11 @@ export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamient
     const series = vigente?.exercises.flatMap((e) => e.sets ?? []) ?? [];
     const conDato = series.filter((s) => s.load !== null || s.completedRepetitions !== null || s.rir !== null).length;
     const ejercicios = [...new Set(vigente?.exercises.map((e) => e.performedExerciseName) ?? [])];
-    // DL-161: cómo se cargaron las series. Resumida y no realizada ya lo dicen «Registro» y «Condición».
-    const nivel = vigente ? nivelDeDetalleDelRegistro(vigente) : null;
+    // DL-161: cómo se cargaron las series. Resumida y no realizada ya lo dicen «Registro» y «Condición». Con el mismo
+    // nivel que los Registros del website: la carga rápida que cambió frente a la sesión del plan (una serie menos, una
+    // de más u otro ejercicio) es «Carga rápida con cambios» (I-10). Para eso alcanza con la sesión que rigió, que trae
+    // la ejecución: no hacen falta los objetivos de cada serie ni las versiones de las demás sesiones.
+    const nivel = vigente ? nivelDeDetalleFrenteAlPlan(nivelDeDetalleDelRegistro(vigente), compararEjecucion(x)) : null;
     const version = numero.get(x.planId);
     const correccion = x.effectiveView.kind === 'CORRECTED' ? x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) : undefined;
     return {
