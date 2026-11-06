@@ -183,6 +183,9 @@ async function capturarTodo() {
             casilla?.click();
           }, metrica);
           await asentar(page);
+          // Y «Ver los gráficos», que abre el gráfico de lo elegido.
+          await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Ver los gráficos')?.click());
+          await asentar(page);
         }
         const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, alto: {} };
         for (const tema of TEMAS) {
