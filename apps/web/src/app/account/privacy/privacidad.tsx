@@ -23,12 +23,13 @@ import { fecha } from '../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
 import { useListaPaginada } from '../../../lib/lista';
 import { useSesionRequerida } from '../../../lib/sesion-requerida';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 type RequisitoA3 = RequisitoDeConsentimientoDeSaludResponse['data'];
 
 export function Privacidad() {
   const { token, sesionPerdida } = useSesionRequerida('/account/privacy');
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   return (
     <div className="secciones">
       <TratamientoDeDatosDeSalud token={token} sesionPerdida={sesionPerdida} />

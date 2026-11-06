@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  DURACION_DE_SESION_ADMINISTRATIVA_MS,
   DURACION_DE_SESION_MS,
   IniciarSesionRequestSchema,
   cuentaPermiteOperar,
@@ -8,7 +9,7 @@ import {
   type IniciarSesionResponse,
   type MotivoDeRevocacionDeSesion,
 } from '@be/domain';
-import type { Prisma } from '@prisma/client';
+import type { ClaseDeSesion, Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
@@ -110,17 +111,31 @@ export class SesionService {
    * La usan API-ACC-02 y la familia GOO (DL-138): una sesión abierta con Google es exactamente igual a la local.
    * Relee el estado con bloqueo compartido: serializa con CerrarCuenta/SuspenderCuenta (FOR NO KEY UPDATE). Si la cuenta
    * dejó de ser operativa entre la verificación y este punto, no se crea sesión y devuelve el estado encontrado.
+   *
+   * WP-ADMINISTRACION (DL-155): la clase de la sesión la decide el servidor con el rol, leído después del mismo bloqueo
+   * (el comando que incorpora a un administrador toma la identidad en modo exclusivo).
+   * - Una sesión PERSONAL (API-ACC-02, la familia GOO) no se abre para una identidad con el rol administrativo vigente:
+   *   devuelve `ADMINISTRATIVA` y quien llama responde el 401 neutral. Una identidad administrativa no opera como persona
+   *   ni como profesional.
+   * - Una sesión ADMINISTRATIVA (API-ADM-01) se abre solo con el rol vigente (si no, `SIN_ROL_ADMINISTRATIVO`), dura 8 h
+   *   (08 §26.2) y nace con su segundo factor pendiente, en la misma transacción.
    */
   async abrirEn(
     tx: Prisma.TransactionClient,
     identidadId: string,
     ctx: ContextoDeSolicitud,
     operacion: string,
-  ): Promise<SesionAbierta | { readonly estado: EstadoOperativoDeCuenta | 'INEXISTENTE' }> {
-    const [cuenta] = await tx.$queryRaw<{ estado: EstadoOperativoDeCuenta }[]>`
-      SELECT "estado_operativo_de_cuenta" AS "estado" FROM "identidad" WHERE "id" = ${identidadId}::uuid FOR SHARE`;
+    clase: ClaseDeSesion = 'PERSONAL',
+  ): Promise<SesionAbierta | { readonly estado: EstadoOperativoDeCuenta | 'INEXISTENTE' | 'ADMINISTRATIVA' | 'SIN_ROL_ADMINISTRATIVO' }> {
+    const [cuenta] = await tx.$queryRaw<{ estado: EstadoOperativoDeCuenta; administrativa: boolean }[]>`
+      SELECT "estado_operativo_de_cuenta" AS "estado",
+             EXISTS (SELECT 1 FROM "rol_administrativo" r WHERE r."identidad_id" = i."id" AND r."estado" = 'VIGENTE') AS "administrativa"
+        FROM "identidad" i WHERE i."id" = ${identidadId}::uuid FOR SHARE OF i`;
     if (!cuenta || !cuentaPermiteOperar(cuenta.estado)) return { estado: cuenta?.estado ?? 'INEXISTENTE' };
-    const expiraEn = new Date(ctx.momentoDeRecepcion.getTime() + DURACION_DE_SESION_MS);
+    if (clase === 'PERSONAL' && cuenta.administrativa) return { estado: 'ADMINISTRATIVA' };
+    if (clase === 'ADMINISTRATIVA' && !cuenta.administrativa) return { estado: 'SIN_ROL_ADMINISTRATIVO' };
+    const duracion = clase === 'ADMINISTRATIVA' ? DURACION_DE_SESION_ADMINISTRATIVA_MS : DURACION_DE_SESION_MS;
+    const expiraEn = new Date(ctx.momentoDeRecepcion.getTime() + duracion);
     const control = await tx.controlDeSesion.findUniqueOrThrow({ where: { identidadId } });
     const sesion = await tx.sesion.create({
       data: {
@@ -129,8 +144,10 @@ export class SesionService {
         momentoDeOcurrencia: ctx.momentoDeRecepcion,
         expiraEn,
         versionDeControl: control.version,
+        clase,
       },
     });
+    if (clase === 'ADMINISTRATIVA') await tx.segundoFactorDeSesion.create({ data: { sesionId: sesion.id, identidadId } });
     await this.auditoria.registrar(
       {
         operacion,

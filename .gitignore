@@ -43,3 +43,5 @@ docs/fuente_escolar/*.pdf
 # Configuración local de herramientas (rutas de esta máquina).
 .claude/
 apps/web/next-env.d.ts
+# Recorridos de navegador (test/navegador): resultados, capturas y registro de cada corrida
+resultados-recorridos/

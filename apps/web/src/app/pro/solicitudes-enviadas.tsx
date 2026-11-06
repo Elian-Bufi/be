@@ -11,7 +11,7 @@ import { useEffect, useId, useRef } from 'react';
 import { BloqueDeEstado } from '../../components/estados';
 import { Aviso } from '../../components/formulario';
 import { ICONO_DE_FALLA, razonDeFalla } from '../../lib/fallas';
-import { fecha } from '../../lib/formato';
+import { fecha, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
 
 export type EstadoDeLasSolicitudes = EstadoDeListaCompleta<PaginaDeUnaLista<SolicitudDeVinculo>>;
@@ -73,6 +73,12 @@ export function SolicitudesEnviadas({
       {solicitudes.tipo === 'error' ? (
         <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[solicitudes.motivo]} titulo="No pudimos cargar las solicitudes" onReintentar={onReintentar} deQue="las solicitudes">
           {razonDeFalla(solicitudes.motivo)}
+        </BloqueDeEstado>
+      ) : null}
+      {/* Una lectura nueva que falló no borra la que había: se dice, con su hora (bloque 5 del encargo de consolidación). */}
+      {solicitudes.tipo === 'listo' && solicitudes.fallaAlActualizar ? (
+        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[solicitudes.fallaAlActualizar]} titulo="No pudimos actualizar las solicitudes" onReintentar={onReintentar} deQue="las solicitudes">
+          {razonDeFalla(solicitudes.fallaAlActualizar)} Se ven las consultadas a las {horaDelDia(solicitudes.consultado)}.
         </BloqueDeEstado>
       ) : null}
       {solicitudes.tipo === 'listo' ? (

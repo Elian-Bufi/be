@@ -5,6 +5,7 @@
  */
 import { ETIQUETA_DE_ALCANCE, type Alcance } from './alcance';
 import type { TipoDeNovedad, VistaDeNovedad } from './contratos-novedades';
+import { COPY_HABITOS } from './copy-habitos-de-la-persona';
 
 export interface TextoDeNovedad {
   readonly title: string;
@@ -22,6 +23,13 @@ export interface DatosDelTexto {
    * (DL-040: el visible con un vínculo vigente; si no, la referencia neutral).
    */
   readonly sujeto?: string | null;
+  /**
+   * WP-ADMINISTRACION (D-6): la decisión de Administración que cuenta una novedad al profesional: el hecho del 06, el texto
+   * que se le comunicó y si después de la decisión puede operar el área. Nunca el fundamento interno.
+   */
+  readonly decision?: { readonly hecho: string; readonly mensaje: string | null; readonly puedeOperar: boolean } | null;
+  /** WP-ADMINISTRACION: el profesional del que trata el aviso a una persona vinculada, con el nombre que ella ve. */
+  readonly profesional?: string | null;
 }
 
 const area = (alcance: Alcance | null): string => (alcance ? ETIQUETA_DE_ALCANCE[alcance] : 'BE');
@@ -65,6 +73,86 @@ export function textoDeNovedad(tipo: TipoDeNovedad, d: DatosDelTexto): TextoDeNo
     // DL-140 (CRD-D6): quién la escribió y sobre quién; nunca el texto, que se lee en la ficha con su autorización.
     case 'COORDINATION_NOTE_RECEIVED':
       return { title: 'Nota de coordinación', body: `${quien(d.fuente, 'Otro profesional')} dejó una nota de coordinación sobre ${d.sujeto ?? 'una persona que acompañás'}.` };
+    // WP-ADMINISTRACION (D-6): la decisión, lo que se le comunicó y qué significa. Sin el fundamento interno.
+    case 'ADMINISTRATIVE_DECISION':
+      return textoDeDecisionAdministrativa(area(d.alcance), d.decision ?? null);
+    // A la persona: el efecto operativo, sin motivos (D-6). El nombre es el que ella ve de su profesional.
+    case 'PROFESSIONAL_ACCESS_SUSPENDED':
+      return {
+        title: `Acceso de tu profesional a ${area(d.alcance)}`,
+        body: `${quien(d.profesional ?? null, 'Tu profesional')} tiene suspendido el acceso a ${area(d.alcance)} en BE. ${mientrasNoOpera(d.alcance)} Lo que ya registraste se conserva.`,
+      };
+    case 'PROFESSIONAL_ACCESS_RESTORED':
+      return {
+        title: `Acceso de tu profesional a ${area(d.alcance)}`,
+        body: `${quien(d.profesional ?? null, 'Tu profesional')} volvió a tener acceso a ${area(d.alcance)} en BE. Puede ver tu información de ${area(d.alcance)} solo si su vínculo con vos y tu autorización siguen vigentes.`,
+      };
+    // DL-164: qué pasó con lo cargado, nunca las respuestas (se leen en el formulario, con la sesión de cada uno).
+    case 'FORM_PROPOSAL_LOADED':
+      return {
+        title: 'Un formulario para confirmar',
+        body: `${quien(d.fuente, 'Tu profesional')} cargó con vos las respuestas de un formulario de ${area(d.alcance)}. Revisalas en tus formularios: si algo no es así, corregilo antes de confirmar.`,
+      };
+    case 'FORM_PROPOSAL_CONFIRMED':
+      return { title: 'Formulario confirmado', body: `${quien(d.fuente, 'La persona')} confirmó las respuestas que cargaste en un formulario de ${area(d.alcance)}.` };
+    case 'FORM_PROPOSAL_REJECTED':
+      return {
+        title: 'Formulario sin confirmar',
+        body: `${quien(d.fuente, 'La persona')} no confirmó las respuestas que cargaste en un formulario de ${area(d.alcance)}. Se borraron, y el formulario sigue pendiente.`,
+      };
+    // DL-165, ronda 2.1 (D-17 nueva): quién pide, desde qué área y para qué le sirve, y que es su decisión. Nunca un hábito.
+    case 'HABITS_ACCESS_REQUESTED':
+      return {
+        title: COPY_HABITOS.apk.pedidosTitulo,
+        body: `${COPY_HABITOS.apk.pedidoDe(quien(d.fuente, 'Tu profesional'), area(d.alcance))}${d.alcance ? ` ${COPY_HABITOS.paraQueLeSirven[d.alcance]}` : ''} Es tu decisión: lo respondés en «Mis hábitos».`,
+      };
+  }
+}
+
+/** Lo que la persona deja de poder hacer mientras su profesional no opera el área: lo que se decide con los dos (UC-P12 E06). */
+function mientrasNoOpera(alcance: Alcance | null): string {
+  if (alcance === 'NUTRICION') return 'Mientras tanto, no puede ver tu información de Nutrición y no podés registrar comidas en el plan que te indicó.';
+  if (alcance === 'ENTRENAMIENTO') return 'Mientras tanto, no puede ver tu información de Entrenamiento y no podés registrar sesiones en el plan que te indicó.';
+  if (alcance === 'ANTROPOMETRIA') return 'Mientras tanto, no puede ver ni registrar tus tomas de Antropometría.';
+  return 'Mientras tanto, no puede ver tu información de esa área.';
+}
+
+/**
+ * El texto al profesional de cada decisión de Administración (D-6): qué se decidió sobre qué área, lo que Administración le
+ * escribió y qué significa. Sin botones ni promesas de acciones que no existen: no dice «respondé» ni «subsaná».
+ */
+function textoDeDecisionAdministrativa(area: string, d: { readonly hecho: string; readonly mensaje: string | null; readonly puedeOperar: boolean } | null): TextoDeNovedad {
+  const dijo = d?.mensaje ? ` Administración te escribió: «${d.mensaje}».` : '';
+  const opera = d?.puedeOperar ? ` Podés operar ${area} en BE.` : '';
+  switch (d?.hecho) {
+    case 'ObservacionRegistrada':
+      return { title: `Observación sobre ${area}`, body: `Administración de BE registró una observación sobre tu presentación de ${area}.${dijo} Tu verificación sigue pendiente.` };
+    case 'AlcanceVerificado':
+      return { title: `${area}: verificación`, body: `Administración de BE verificó tu presentación de ${area}.${dijo}${d.puedeOperar ? opera : ' Para operar el área falta la habilitación.'}` };
+    case 'AlcanceRechazado':
+      return { title: `${area}: verificación rechazada`, body: `Administración de BE rechazó tu presentación de ${area}.${dijo} No podés operar ${area} en BE.` };
+    case 'AlcanceSuspendido':
+      return {
+        title: `${area}: acceso suspendido`,
+        body: `Administración de BE suspendió tu acceso a ${area} en BE.${dijo} Mientras dure, no podés operar ${area}; tus planes, registros y borradores se conservan, y las otras áreas no cambian.`,
+      };
+    case 'AlcanceRehabilitado':
+      return {
+        title: `${area}: verificación rehabilitada`,
+        body: `Administración de BE rehabilitó tu verificación de ${area}.${dijo}${d.puedeOperar ? `${opera} El acceso a cada persona depende de su vínculo y su autorización.` : ' Todavía no podés operar el área: la habilitación no está vigente.'}`,
+      };
+    case 'HabilitacionConcedida':
+      return {
+        title: `${area}: habilitación concedida`,
+        body: `Administración de BE te concedió la habilitación para operar ${area} en BE.${dijo}${d.puedeOperar ? opera : ' Todavía no podés operar el área: la verificación no está vigente.'}`,
+      };
+    case 'HabilitacionRetirada':
+      return {
+        title: `${area}: habilitación retirada`,
+        body: `Administración de BE retiró tu habilitación para operar ${area} en BE.${dijo} Tus planes, registros y borradores se conservan, y las otras áreas no cambian.`,
+      };
+    default:
+      return { title: `${area}: decisión de Administración`, body: `Administración de BE registró una decisión sobre ${area}.${dijo}` };
   }
 }
 
@@ -96,6 +184,21 @@ export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lec
     case 'RELATIONSHIP_RESUMED':
     case 'RELATIONSHIP_ENDED':
       return lectorEsProfesional ? 'ADVISEE' : 'RELATIONSHIPS';
+    // WP-ADMINISTRACION: el profesional la lee entera en el centro; la persona va a sus vínculos (vistas que la APK conoce).
+    case 'ADMINISTRATIVE_DECISION':
+      return 'NEWS';
+    case 'PROFESSIONAL_ACCESS_SUSPENDED':
+    case 'PROFESSIONAL_ACCESS_RESTORED':
+      return 'RELATIONSHIPS';
+    // DL-164: la persona va a la Solicitud que tiene que confirmar; el profesional, a la ficha de la persona.
+    case 'FORM_PROPOSAL_LOADED':
+      return 'FORMS';
+    case 'FORM_PROPOSAL_CONFIRMED':
+    case 'FORM_PROPOSAL_REJECTED':
+      return 'ADVISEE';
+    // DL-165, ronda 2.1: la persona va a «Mis hábitos», donde responde el pedido.
+    case 'HABITS_ACCESS_REQUESTED':
+      return 'MY_HABITS';
     default:
       return 'RELATIONSHIPS';
   }
@@ -124,6 +227,8 @@ export const COPY_NOVEDADES = {
   vacio: 'Todavía no tenés novedades. Cuando tu profesional active un plan o registre una revisión, aparece acá.',
   vacioProfesional: 'Todavía no tenés novedades. Cuando una persona acepte una solicitud o cambie un vínculo, aparece acá.',
   noLeida: 'Sin leer',
+  /** DL-165, ronda 2.1: lo que la APK dice de una novedad importante (`esNovedadImportante`), con palabras y no solo con el color. */
+  importante: 'Importante',
   deBe: 'BE',
   abrir: 'Ver',
   errorAlCargar: 'No pudimos cargar tus novedades. Las novedades no se pierden: probá de nuevo en un momento.',

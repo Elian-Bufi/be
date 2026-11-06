@@ -11,6 +11,9 @@
  * - Elegir una acción lo cierra. El foco vuelve al botón, salvo que la acción lo lleve a otro lado (un campo que se
  *   abre, un diálogo).
  * - **Una acción que no se puede usar va apagada y dice por qué,** en el mismo renglón: no desaparece.
+ * - Una acción puede llevar, debajo del nombre, una línea que dice qué hace (`detalle`): en una lista no hay un «pasar el
+ *   mouse» que sirva, así que la pista va a la vista. El nombre accesible sigue siendo el de la acción; la línea es su
+ *   descripción.
  */
 import type { NombreDeIcono } from '@be/domain';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
@@ -20,6 +23,8 @@ export interface AccionDelMenu {
   readonly clave: string;
   readonly texto: string;
   readonly icono?: ReactNode;
+  /** Qué hace, en una línea chica debajo del nombre (la pista de la acción). */
+  readonly detalle?: string | null;
   readonly alElegir: () => void;
   /** Por qué no se puede usar ahora. Con un motivo, la acción va apagada y el motivo se lee debajo. */
   readonly noSePuede?: string | null;
@@ -97,7 +102,8 @@ export function MenuDeAcciones({
                   type="button"
                   className="menu-de-acciones__accion"
                   disabled={!!a.noSePuede}
-                  aria-describedby={a.noSePuede ? `${id}-${a.clave}-motivo` : undefined}
+                  aria-labelledby={a.detalle ? `${id}-${a.clave}-texto` : undefined}
+                  aria-describedby={[a.detalle ? `${id}-${a.clave}-detalle` : null, a.noSePuede ? `${id}-${a.clave}-motivo` : null].filter(Boolean).join(' ') || undefined}
                   onClick={() => {
                     setAbierto(false);
                     boton.current?.focus();
@@ -105,7 +111,16 @@ export function MenuDeAcciones({
                   }}
                 >
                   {a.icono ?? null}
-                  <span>{a.texto}</span>
+                  {a.detalle ? (
+                    <span className="menu-de-acciones__textos">
+                      <span id={`${id}-${a.clave}-texto`}>{a.texto}</span>
+                      <span id={`${id}-${a.clave}-detalle`} className="menu-de-acciones__detalle">
+                        {a.detalle}
+                      </span>
+                    </span>
+                  ) : (
+                    <span>{a.texto}</span>
+                  )}
                 </button>
                 {a.noSePuede ? (
                   <p id={`${id}-${a.clave}-motivo`} className="nota menu-de-acciones__motivo">

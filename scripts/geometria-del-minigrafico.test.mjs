@@ -224,3 +224,18 @@ test('el objetivo se dibuja por escalones que no se pisan, y entra en el eje aun
   // Un escalón que terminó antes de lo leído no se dibuja.
   assert.equal(geometriaDelMinigrafico({ ...BASE, puntos, plan: [{ desde: '2026-07-01', hasta: '2026-07-31', valor: 2000 }] }).plan.length, 0);
 });
+
+test('DL-161: una serie de carga rápida (tildada sin escribir) es un punto hueco, y sigue en su línea', () => {
+  const rapida = { detail: [{ label: 'Cómo se cargó', value: 'Carga rápida, tildada sin escribir' }] };
+  const puntos = [punto(dia(2), 60), punto(dia(9), 60, rapida), punto(dia(16), 62.5)];
+  const g = geometriaDelMinigrafico({ ...BASE, puntos });
+  assert.deepEqual(g.puntos.map((p) => p.hueco), [false, true, false]);
+  // Hueca no es más chica: se tiene que ver hueca.
+  assert.ok(g.puntos[1].r >= g.puntos[0].r);
+  // No es un dato sin completar: la línea la une con las otras dos.
+  assert.equal(g.tramos.length, 1);
+  assert.equal((g.tramos[0].match(/L/g) ?? []).length, 2);
+  // Otro detalle con el mismo rótulo no la vuelve hueca: se reconoce por el rótulo y el valor.
+  const otra = geometriaDelMinigrafico({ ...BASE, puntos: [punto(dia(2), 60, { detail: [{ label: 'Cómo se cargó', value: 'Carga completa' }] })] });
+  assert.deepEqual(otra.puntos.map((p) => p.hueco), [false]);
+});

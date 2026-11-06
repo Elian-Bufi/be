@@ -1,13 +1,14 @@
 # Catálogo base · los datos curados
 
 WP-CATALOGO-BASE, DEUDA_LEGAJO **DL-141**, tramos 2 (ejercicios, D-3) y 3 (alimentos, D-4). Aprobado por Dirección el
-2026-10-16 (tanda 3). Estos dos archivos son la fuente de las migraciones que siembran el catálogo base y de
+2026-10-16 (tanda 3). Estos archivos son la fuente de las migraciones que siembran y corrigen el catálogo base y de
 `docs/catalogo/FUENTES.md`. Se revisan en el PR: lo que dice cada uno es lo que queda en la base.
 
 | Archivo | Qué tiene |
 |---|---|
 | `ejercicios.json` | 186 ejercicios de **wger** (https://wger.de/), con la licencia y la autoría de cada texto |
 | `alimentos.json` | 385 alimentos de **USDA FoodData Central · SR Legacy** (dominio público), y los nombres que se suman a los 8 de DL-119 |
+| `correcciones.json` | La correspondencia con la fuente (encargo de Dirección del 2026-10-19, bloque 4): los cortes vacunos revisados contra dos fuentes de cortes, con su nombre fiel y su condición (directa o aproximada), y los nombres alternativos retirados o sumados con el mismo criterio |
 
 ## De dónde salió cada cosa
 
@@ -46,9 +47,14 @@ WP-CATALOGO-BASE, DEUDA_LEGAJO **DL-141**, tramos 2 (ejercicios, D-3) y 3 (alime
   Leche»). En los ejercicios es de origen `PROVEEDOR` (wger), igual que la traducción de wger cuando es un nombre
   alternativo. En los alimentos todo es `SIEMBRA_DE_BE`: USDA no es un proveedor de la tabla de nombres. La región va solo
   cuando el nombre es de un país (ISO 3166-1 alfa-2).
-- **Pocas sentadillas.** A lo sumo 18 ejercicios con la palabra «sentadilla»: la búsqueda con errores de tipeo de la APK
-  instalada trae 20 por página, del más nuevo al más viejo, y la «Sentadilla» de demostración tiene que seguir apareciendo
-  (lo exige la prueba de contenido).
+- **Un nombre dice lo que es.** Un nombre regional parecido no prueba una composición equivalente: el nombre de un corte
+  dice la pieza que describe la fuente («Bife de vacío», el flank steak; no el vacío entero), y si la correspondencia es
+  aproximada, lo dice su procedencia. Un nombre alternativo ayuda a encontrar, pero no convierte dos alimentos en el
+  mismo: no va si nombra otro ingrediente u otra preparación («Copos de avena» no es la avena cocida).
+- **La búsqueda no decide la curaduría.** Cuántos ítems tienen una palabra no es una regla del catálogo: el buscador
+  tolera que crezca (los parecidos van del nombre más cercano a lo escrito al menos cercano, y las pruebas recorren todas
+  las páginas). Hasta el 2026-10-19 había un tope de 18 sentadillas para que la de demostración no saliera de la primera
+  página de la APK instalada; se quitó con ese cambio del buscador.
 - **Los números del proveedor falso de las pruebas** (901 a 907, `test/integration/soporte-proveedores.ts`) no son
   ejercicios del catálogo base.
 
@@ -62,14 +68,17 @@ WP-CATALOGO-BASE, DEUDA_LEGAJO **DL-141**, tramos 2 (ejercicios, D-3) y 3 (alime
 3. Completar con la fuente:
    `node scripts/catalogo-base/completar-con-las-fuentes.mjs --usda <carpeta-usda>/FoodData_Central_sr_legacy_food_csv_2018-04 --wger <carpeta-wger>`
    (con `--verificar`, no escribe: falla si algo no coincide con la fuente).
-4. Generar: `node scripts/catalogo-base/generar-migracion.mjs` escribe las dos migraciones y `docs/catalogo/FUENTES.md`
+4. Generar: `node scripts/catalogo-base/generar-migracion.mjs` escribe las tres migraciones y `docs/catalogo/FUENTES.md`
    (con `--verificar`, falla si no coinciden). Correrlo dos veces da los mismos archivos: los identificadores son UUID v5
    en el espacio «be.dl-141.catalogo-base».
 5. Correr la prueba de contenido: `node --test scripts/catalogo-base.test.mjs` (después de `npm run build:domain`).
 
 **Una migración aplicada no se regenera.** Prisma guarda la suma de verificación de cada migración: una vez integradas,
-`20261019120000_catalogo_base_de_ejercicios` y `20261019120100_catalogo_base_de_alimentos` quedan como están. Un cambio
-posterior al catálogo base es una migración nueva (y, para un ítem ya sembrado, una versión nueva: REG-06-99 a 101).
+`20261019120000_catalogo_base_de_ejercicios` y `20261019120100_catalogo_base_de_alimentos` quedan como están, y
+`ejercicios.json` y `alimentos.json` siguen diciendo lo que sembraron. Un cambio posterior al catálogo base es una
+migración nueva (y, para un ítem ya sembrado, una versión nueva: REG-06-99 a 101). Así se hizo la primera:
+`correcciones.json` → `20261019210000_catalogo_base_correspondencia_de_cortes`. Un cambio más es otro archivo de
+correcciones y otra carpeta, nunca esta migración regenerada.
 
 ## Qué hace la migración
 
@@ -79,5 +88,10 @@ posterior al catálogo base es una migración nueva (y, para un ítem ya sembrad
 - **Alimentos:** cada uno es `CONTROLLED_IMPORT` sin profesional, como los de referencia de DL-119, con la misma forma de
   procedencia (proveedor `USDA_FDC_SR_LEGACY`, FDC, licencia CC0-1.0 y `usdaReference`). Un FDC que ya está en el
   catálogo no se vuelve a crear.
+- **Correcciones:** un corte que cambia de nombre es una versión nueva de su alimento, sucesora de la del tramo 3, con la
+  misma composición, la misma disponibilidad y la misma fuente externa (se copian de la versión anterior, en la base); su
+  procedencia suma la correspondencia (`DIRECTA` o `APROXIMADA`, con la pieza, la grasa, el fundamento y las fuentes). La
+  versión anterior queda, con las instantáneas que la citan. Un nombre retirado es un hecho aparte
+  (`retiro_de_nombre_alternativo_de_alimento`), con su motivo.
 - Cada inserción saltea lo que ya está (`ON CONFLICT DO NOTHING`, `WHERE NOT EXISTS`): correrla dos veces no agrega nada.
   Solo agrega filas; no toca tablas, triggers ni lo sembrado antes.

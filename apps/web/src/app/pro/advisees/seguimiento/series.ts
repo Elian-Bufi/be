@@ -16,7 +16,10 @@ import {
   type DefinicionDeMetrica,
   type DominioDeAnalisis,
   type EjercicioDelPeriodo,
+  type EscalonDelObjetivoApi,
   type FiltroDeProyeccion,
+  type IndicadoDeLaComidaApi,
+  type IndicadoDelDiaApi,
   type ProyeccionResponse,
   type ReferenciaDeMetrica,
   type ResultadoDeProyeccionNutricional,
@@ -38,11 +41,17 @@ export type EstadoDeSerie =
       readonly observaciones: SerieAnalitica;
       readonly bandas: readonly VigenciaDePlan[];
       /**
-       * Lo planificado que llega con la serie, en su misma unidad: los escalones del requerimiento energético (uno por
-       * versión del objetivo vigente en el período). Solo las calorías lo traen; el resto, vacío (WP-ESCRITORIO-AMABLE,
-       * C-17: el objetivo de los macronutrientes no viaja en esta lectura).
+       * Lo que se dibuja del objetivo del profesional, en la unidad de la serie: un escalón por versión del objetivo
+       * vigente en el período, con cantidad (las calorías y, desde DL-158, los macros en gramos). Vacío si no hay.
        */
       readonly objetivo: readonly { readonly desde: string; readonly hasta: string | null; readonly valor: number }[];
+      /** DL-158: los escalones del objetivo tal como llegan, también los que son una proporción de las calorías (no se dibujan). */
+      readonly escalones: readonly EscalonDelObjetivoApi[];
+      /**
+       * DL-158: lo indicado en el plan, por día (cada día del período hasta hoy) y por comida registrada. `null` si la
+       * métrica no lo tiene (Entrenamiento, Antropometría y la cuenta de registros).
+       */
+      readonly indicado: { readonly dias: readonly IndicadoDelDiaApi[]; readonly comidas: readonly IndicadoDeLaComidaApi[] } | null;
       readonly parcial: boolean;
       readonly generada: string;
       readonly zona: string;
@@ -118,9 +127,13 @@ function estadoDe(r: Respuesta, deObservaciones: Respuesta | null): EstadoDeSeri
   const d = r.datos.data;
   const res = d.result;
   const bandas = !res || res.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? [] : res.planVersions;
-  // El requerimiento está en kcal por día: acompaña solo a la serie de calorías (la API ya lo manda vacío en las demás).
-  const objetivo = res?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' && res.metric === 'ENERGY' ? res.prescribed.energyRequirement.map((e) => ({ desde: e.from, hasta: e.to, valor: e.value })) : [];
-  return { tipo: 'lista', serie, observaciones, bandas, objetivo, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
+  // DL-158: el objetivo de la métrica (las calorías o un macro en gramos) y lo indicado en el plan. Lo indicado es por
+  // día: con la vista por semana se lee igual (la API lo arma por día en las dos lecturas) y la pantalla no lo dibuja.
+  const prescripto = res?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' ? res.prescribed : null;
+  const escalones = prescripto?.objectiveSteps ?? [];
+  const objetivo = escalones.flatMap((e) => (e.amount ? [{ desde: e.from, hasta: e.to, valor: e.amount.value }] : []));
+  const indicado = prescripto && res?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' && res.metric !== 'RECORDS' ? { dias: prescripto.planned.days, comidas: prescripto.planned.meals } : null;
+  return { tipo: 'lista', serie, observaciones, bandas, objetivo, escalones, indicado, parcial: d.partialView, generada: d.generatedAt, zona: d.period.timeZone };
 }
 
 export interface SeriePedida {
@@ -146,13 +159,17 @@ export async function leerSerie(token: string, asesoradoId: string, p: SeriePedi
   return { estado: estadoDe(r, o), respuestas: o ? [r, o] : [r] };
 }
 
-/** Las series de las métricas elegidas. Una respuesta tardía de otra selección se descarta. */
+/**
+ * Las series de las métricas elegidas. Una respuesta tardía de otra selección se descarta. `recargar` vuelve a leer todas
+ * (un permiso que cambió); `reintentarFallidas`, solo las que fallaron: es el único «Reintentar» de la vista, y las que se
+ * leyeron bien no vuelven a «cargando» (encargo de consolidación, bloque 5).
+ */
 export function useSeriesDelAnalisis(
   metricas: readonly ReferenciaDeMetrica[],
   grano: GranoElegido,
   /** Otro período que el de la ficha (por ejemplo, el que cubre dos etapas). */
   periodoPropio?: Periodo,
-): { readonly series: readonly SerieDelAnalisis[]; readonly recargar: () => void } {
+): { readonly series: readonly SerieDelAnalisis[]; readonly recargar: () => void; readonly reintentarFallidas: () => void } {
   const { token, asesoradoId, periodo: periodoDeLaFicha, sesionPerdida, avisarSinAcceso, versionDeAcceso } = useSeguimiento();
   const periodo = periodoPropio ?? periodoDeLaFicha;
   const [estados, setEstados] = useState<Readonly<Record<string, EstadoDeSerie>>>({});
@@ -168,27 +185,36 @@ export function useSeriesDelAnalisis(
     [metricas, grano],
   );
   const clave = `${asesoradoId}|${periodo.desde}|${periodo.hasta}|${pedidas.map((p) => `${p.clave}@${p.grano}`).join(',')}|${vuelta}|${versionDeAcceso}`;
+  /** Lee una serie y la guarda, si la lectura sigue siendo la vigente (`esta`). */
+  const leerUna = (p: SeriePedida, esta: number) => {
+    void leerSerie(token, asesoradoId, p, periodo).then(({ estado, respuestas }) => {
+      if (esta !== generacion.current || respuestas.some((r) => sesionPerdida(r))) return;
+      setEstados((e) => ({ ...e, [p.clave]: estado }));
+      // §3.A: el encabezado no puede seguir diciendo «Activo» si la serie dice que el área no está disponible.
+      if (estado.tipo === 'sin-acceso') avisarSinAcceso(DOMINIO_DEL_AREA[p.definicion.area]);
+    });
+  };
   useEffect(() => {
     const esta = ++generacion.current;
     setEstados({});
-    for (const p of pedidas) {
-      void leerSerie(token, asesoradoId, p, periodo).then(({ estado, respuestas }) => {
-        if (esta !== generacion.current || respuestas.some((r) => sesionPerdida(r))) return;
-        setEstados((e) => ({ ...e, [p.clave]: estado }));
-        // §3.A: el encabezado no puede seguir diciendo «Activo» si la serie dice que el área no está disponible.
-        if (estado.tipo === 'sin-acceso') avisarSinAcceso(DOMINIO_DEL_AREA[p.definicion.area]);
-      });
-    }
+    for (const p of pedidas) leerUna(p, esta);
     // `clave` resume lo que cambia la lectura; `pedidas` y `periodo` están dentro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave]);
+  // Las fallidas vuelven a «cargando» y se leen otra vez dentro de la misma lectura: otra selección las descarta.
+  const reintentarFallidas = () => {
+    const fallidas = pedidas.filter((p) => estados[p.clave]?.tipo === 'error');
+    if (fallidas.length === 0) return;
+    setEstados((e) => Object.fromEntries(Object.entries(e).filter(([c]) => !fallidas.some((p) => p.clave === c))));
+    for (const p of fallidas) leerUna(p, generacion.current);
+  };
   const series = pedidas.map((p) => {
     const estado = estados[p.clave] ?? { tipo: 'cargando' as const };
     // La unidad antropométrica sale de los datos: la definición se rehace con ella.
     const definicion = estado.tipo === 'lista' && p.definicion.area === 'ANTROPOMETRIA' ? (definicionDe(p.ref, estado.serie.unit) ?? p.definicion) : p.definicion;
     return { ref: p.ref, clave: p.clave, definicion, grano: p.grano, estado };
   });
-  return { series, recargar: () => setVuelta((v) => v + 1) };
+  return { series, recargar: () => setVuelta((v) => v + 1), reintentarFallidas };
 }
 
 const DOMINIO_DEL_AREA: Readonly<Record<DefinicionDeMetrica['area'], DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };

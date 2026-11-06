@@ -177,3 +177,47 @@ test('cliente ANT: cada operación va a la ruta que declara el 09, y las dos col
     `/api/v1/advisees/${ase}/anthropometry/progress?metric=peso&periodStart=2026-09-01&periodEnd=2026-09-18`,
   ]);
 });
+
+const SESION_ABIERTA = {
+  data: {
+    session: { id: '6f1c1a4e-0000-4000-8000-0000000000a1', expiresAt: '2026-10-20T08:00:00.000Z', renewable: false, accessToken: 'token-sintetico', tokenType: 'Bearer' },
+    actor: { identityId: '6f1c1a4e-0000-4000-8000-000000000001', accountOperationalState: 'OPERATIVA' },
+  },
+};
+
+test('DL-147: el website manda credenciales solo en las operaciones de sesión (abrir, reanudar, cerrar); la APK nunca', async () => {
+  const web: Llamada[] = [];
+  const clienteWeb = crearClienteBe({ baseUrl: 'https://api.example.invalid/api/v1', superficie: 'WEB', fetch: fetchFalso(201, SESION_ABIERTA, web) });
+  await clienteWeb.iniciarSesion('persona@example.invalid', 'clave-sintetica-01');
+  await clienteWeb.iniciarSesionConGoogle('id-token-sintetico');
+  await clienteWeb.reanudarSesion();
+  await clienteWeb.finalizarSesion('token-sintetico');
+  await clienteWeb.cerrarTodasLasSesiones('token-sintetico');
+  assert.deepEqual(
+    web.map((l) => [l.init.method, l.url.replace('https://api.example.invalid/api/v1', ''), l.init.credentials]),
+    [
+      ['POST', '/auth/sessions', 'include'],
+      ['POST', '/auth/federated/google/sessions', 'include'],
+      ['POST', '/auth/sessions/resume', 'include'],
+      ['DELETE', '/auth/sessions/current', 'include'],
+      ['DELETE', '/auth/sessions', 'include'],
+    ],
+  );
+  // La reanudación no lleva Bearer ni cuerpo: la autentica la cookie, y la cabecera de superficie fuerza la verificación previa de CORS.
+  const reanudacion = web[2].init.headers as Record<string, string>;
+  assert.equal(reanudacion.Authorization, undefined);
+  assert.equal(reanudacion['X-BE-Surface'], 'WEB');
+  assert.equal(web[2].init.body, undefined);
+
+  // Cualquier otra operación del website sigue sin credenciales.
+  const otra: Llamada[] = [];
+  await crearClienteBe({ baseUrl: 'https://api.example.invalid/api/v1', superficie: 'WEB', fetch: fetchFalso(200, { data: {} }, otra) }).consultarCuenta('token-sintetico');
+  assert.equal(otra[0].init.credentials, 'omit');
+
+  // La APK no manda ni recibe cookies, ni siquiera al abrir la sesión.
+  const apk: Llamada[] = [];
+  const clienteApk = crearClienteBe({ baseUrl: 'https://api.example.invalid/api/v1', superficie: 'APK', fetch: fetchFalso(201, SESION_ABIERTA, apk) });
+  await clienteApk.iniciarSesion('persona@example.invalid', 'clave-sintetica-01');
+  await clienteApk.finalizarSesion('token-sintetico');
+  assert.deepEqual(apk.map((l) => l.init.credentials), ['omit', 'omit']);
+});

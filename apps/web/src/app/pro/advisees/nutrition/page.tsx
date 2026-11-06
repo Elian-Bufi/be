@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Encabezado } from '../../../../components/encabezado';
 import { NavegacionProfesional } from '../../../../components/navegacion';
 import { Nutricion } from './nutricion';
+import { PorAsesorado } from '../por-asesorado';
 
 export const metadata: Metadata = { title: 'Nutrición · BE' };
 
@@ -16,7 +17,9 @@ export default function PaginaDeNutricion() {
       <Encabezado navegacion={<NavegacionProfesional />} />
       <main id="contenido" className="contenido contenido--ficha">
         <Suspense fallback={null}>
-          <Nutricion />
+          <PorAsesorado>
+            <Nutricion />
+          </PorAsesorado>
         </Suspense>
       </main>
     </>

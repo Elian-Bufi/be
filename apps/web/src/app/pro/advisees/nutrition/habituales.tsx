@@ -9,7 +9,8 @@
  *   apagado —DL-108 D-2— y cada nota de ítem para confirmarla o vaciarla —D-3—); guardar otra con el mismo nombre la
  *   **reemplaza**, con aviso (DL-109 D-2); «Agregar esta comida habitual» inserta una copia sin identificadores de nodo
  *   en el día tipo, así que se puede insertar dos veces: lo insertado ya es del plan.
- * Un profesional sin Nutrición recibe 403 en las comidas habituales: ese bloque queda vacío, sin aviso.
+ * Un profesional sin Nutrición recibe 403 en las comidas habituales: ese bloque queda vacío, sin aviso. Cualquier otra
+ * falla de esa lectura se dice (`falla`): no es «todavía no guardaste ninguna» (encargo de consolidación, bloque 5).
  */
 import {
   COPY_HABITUALES,
@@ -21,7 +22,7 @@ import {
   type ComidaHabitual,
   type ElementoDeCatalogo,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -87,28 +88,34 @@ export function useAlimentosHabituales(token: string): AlimentosHabituales {
 // ─── Comidas habituales ─────────────────────────────────────────────────────────────────────────────────────────────
 
 export interface ComidasHabituales {
-  /** `null` mientras carga; vacía si no hay o si el profesional no tiene Nutrición (403). */
+  /** `null` mientras carga; vacía si no hay, si el profesional no tiene Nutrición (403) o si la lectura falló. */
   readonly lista: readonly ComidaHabitual[] | null;
+  /** La lectura falló (y no fue un 403): la lista vacía no quiere decir que no haya. */
+  readonly falla: boolean;
+  /** Vuelve a leer. Después de una falla, mientras lee, la lista vuelve a «leyendo». */
   readonly recargar: () => Promise<void>;
 }
 
 /** Las comidas habituales del profesional (primera página, tope de la API): para el selector y para avisar el reemplazo. */
 export function useComidasHabituales(token: string): ComidasHabituales {
-  const [lista, setLista] = useState<readonly ComidaHabitual[] | null>(null);
+  const [estado, setEstado] = useState<{ readonly lista: readonly ComidaHabitual[] | null; readonly falla: boolean }>({ lista: null, falla: false });
+  // Una respuesta vieja no pisa una lectura posterior.
+  const generacion = useRef(0);
   const recargar = useCallback(async () => {
+    const esta = ++generacion.current;
+    setEstado((e) => (e.falla ? { lista: null, falla: false } : e));
     const r = await api.listarComidasHabituales(token, {});
-    setLista(r.ok ? r.datos.data : []);
+    if (esta !== generacion.current) return;
+    const sinNutricion = !r.ok && r.tipo === 'API' && r.status === 403;
+    setEstado(r.ok ? { lista: r.datos.data, falla: false } : { lista: [], falla: !sinNutricion });
   }, [token]);
   useEffect(() => {
-    let vigente = true;
-    void api.listarComidasHabituales(token, {}).then((r) => {
-      if (vigente) setLista(r.ok ? r.datos.data : []);
-    });
+    void recargar();
     return () => {
-      vigente = false;
+      generacion.current += 1;
     };
-  }, [token]);
-  return { lista, recargar };
+  }, [recargar]);
+  return { lista: estado.lista, falla: estado.falla, recargar };
 }
 
 const normalizar = nombreNormalizadoDePlantilla;
@@ -235,15 +242,19 @@ export function DialogoGuardarComidaHabitual({
  * guardar el borrador) y entrega los nombres vigentes de sus alimentos para mostrarlos en el editor. Sin comidas
  * habituales no se muestra: la entrada a la función es «Guardar como habitual» sobre una comida.
  */
+/**
+ * Elegir una comida habitual e insertar una copia (sin identificadores) al final del día tipo. Se abre a pedido, desde
+ * «Agregar comida ▾ → Una comida habitual»: al aparecer, el foco va a la lista; lo agregado lo anuncia el editor.
+ */
 export function InsertarComidaHabitual({ comidas, onInsertar }: { comidas: readonly ComidaHabitual[] | null; onInsertar: (comida: Comida, nombres: Readonly<Record<string, string>>) => void }) {
   const id = useId();
   const [elegida, setElegida] = useState('');
-  const [aviso, setAviso] = useState<string | null>(null);
   if (comidas === null || comidas.length === 0) return null;
   return (
     <div className="campo" data-habituales="comidas">
       <label htmlFor={`${id}-comida`}>{COPY_HABITUALES.agregarComida}</label>
-      <select id={`${id}-comida`} value={elegida} onChange={(e) => setElegida(e.target.value)}>
+      {/* Se muestra porque la persona lo acaba de pedir: el foco va a la lista. */}
+      <select id={`${id}-comida`} value={elegida} onChange={(e) => setElegida(e.target.value)} autoFocus>
         <option value="">—</option>
         {comidas.map((c) => (
           <option key={c.presetId} value={c.presetId}>
@@ -261,16 +272,10 @@ export function InsertarComidaHabitual({ comidas, onInsertar }: { comidas: reado
           const nombres: Record<string, string> = {};
           for (const [catalogItemId, it] of Object.entries(c.items)) nombres[catalogItemId] = it.name;
           onInsertar(sinIdentificadoresDeComida(structuredClone(c.structure)), nombres);
-          setAviso(COPY_HABITUALES.insertadaComida);
         }}
       >
         {COPY_HABITUALES.insertarComida}
       </button>
-      {aviso ? (
-        <p className="nota" role="status">
-          {aviso}
-        </p>
-      ) : null}
     </div>
   );
 }

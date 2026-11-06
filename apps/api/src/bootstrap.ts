@@ -31,6 +31,9 @@ export async function crearApp(opciones: OpcionesApp): Promise<INestApplication>
       // Los nombres de cabecera no distinguen mayúsculas: la de capacidades va en minúsculas, como las demás de la lista.
       allowedHeaders: ['authorization', 'content-type', HEADER_IDEMPOTENCY_KEY, HEADER_DE_SUPERFICIE, HEADER_DE_CAPACIDADES.toLowerCase()],
       exposedHeaders: [HEADER_REQUEST_ID],
+      // DL-147: el website manda credenciales (la cookie de reanudación) solo a /api/v1/auth/sessions; las demás
+      // operaciones se autentican con el Bearer, así que ninguna de datos depende de una cookie.
+      credentials: true,
     });
   }
   app.useBodyParser('json', { limit: LIMITE_DE_CUERPO });

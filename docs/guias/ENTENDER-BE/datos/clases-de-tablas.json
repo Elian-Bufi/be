@@ -1,0 +1,630 @@
+{
+ "total": 118,
+ "clases": {
+  "evento": {
+   "nombre": "Hechos y eventos (historia)",
+   "modelos": [
+    {
+     "nombre": "EventoDeVerificacion",
+     "tabla": "evento_de_verificacion",
+     "seccion": "WP-03 · M-02 mínimo: perfil profesional, verificación y habilitación (06 §6; DL-036)"
+    },
+    {
+     "nombre": "EventoDeVinculo",
+     "tabla": "evento_de_vinculo",
+     "seccion": "WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7)"
+    },
+    {
+     "nombre": "DecisionDeAcceso",
+     "tabla": "decision_de_acceso",
+     "seccion": "WP-03 · PDP: decisiones de acceso (08 §29; REG-06-50)"
+    },
+    {
+     "nombre": "EventoDeDominio",
+     "tabla": "evento_de_dominio",
+     "seccion": "Historia: eventos, cierre, supresión, auditoría, idempotencia"
+    },
+    {
+     "nombre": "RegistroDeAuditoria",
+     "tabla": "registro_de_auditoria",
+     "seccion": "Historia: eventos, cierre, supresión, auditoría, idempotencia"
+    },
+    {
+     "nombre": "EventoDeProceso",
+     "tabla": "evento_de_proceso",
+     "seccion": "WP-04 · Proceso operativo (06 §8, B-04) y capacidad (06 §9, B-05)"
+    },
+    {
+     "nombre": "AplicacionDeRevision",
+     "tabla": "aplicacion_de_revision",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "EventoDeNutricion",
+     "tabla": "evento_de_nutricion",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "EventoDeAntropometria",
+     "tabla": "evento_de_antropometria",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "AplicacionDeRevisionDeEntrenamiento",
+     "tabla": "aplicacion_de_revision_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "EventoDeEntrenamiento",
+     "tabla": "evento_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "EventoDeFormulario",
+     "tabla": "evento_de_formulario",
+     "seccion": "WP-07 · Información profesional pertinente (CAP-DAT, 06 §20.4; RF-071)"
+    },
+    {
+     "nombre": "ResolucionDeCandidato",
+     "tabla": "resolucion_de_candidato",
+     "seccion": "WP-08 · Importación controlada (RF-028, RF-038; UC-I07; 09 v0.12 §3-§7)"
+    },
+    {
+     "nombre": "EventoDeTiempoDeEntrenamiento",
+     "tabla": "evento_de_tiempo_de_entrenamiento",
+     "seccion": "WP-ENTRENAMIENTO-SERIES (DL-123, DL-124)"
+    },
+    {
+     "nombre": "LecturaDeNovedad",
+     "tabla": "lectura_de_novedad",
+     "seccion": "Novedades y avisos push (WP-NOVEDADES-Y-AVISOS; DL-133)"
+    },
+    {
+     "nombre": "AvisoPush",
+     "tabla": "aviso_push",
+     "seccion": "Novedades y avisos push (WP-NOVEDADES-Y-AVISOS; DL-133)"
+    },
+    {
+     "nombre": "ResolucionDeInvitacion",
+     "tabla": "resolucion_de_invitacion",
+     "seccion": "WP-INVITACION (DEUDA_LEGAJO DL-136; aprobado por Dirección el 2026-10-16)"
+    }
+   ]
+  },
+  "correccion": {
+   "nombre": "Correcciones, anulaciones y retiros (corregir sin borrar)",
+   "modelos": [
+    {
+     "nombre": "CorreccionDeIngesta",
+     "tabla": "correccion_de_ingesta",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "RetiroDeEspecificacion",
+     "tabla": "retiro_de_especificacion",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "CorreccionDeMedicion",
+     "tabla": "correccion_de_medicion",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "AnulacionDeMedicion",
+     "tabla": "anulacion_de_medicion",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "CorreccionDeEjecucionDeEntrenamiento",
+     "tabla": "correccion_de_ejecucion_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "RectificacionDeRespuestaDeFormulario",
+     "tabla": "rectificacion_de_respuesta_de_formulario",
+     "seccion": "WP-07 · Información profesional pertinente (CAP-DAT, 06 §20.4; RF-071)"
+    },
+    {
+     "nombre": "RetiroDeNombreAlternativoDeEjercicio",
+     "tabla": "retiro_de_nombre_alternativo_de_ejercicio",
+     "seccion": "WP-CATALOGO-BASE · Lo importado es de todos y los nombres alternativos (DL-141)"
+    },
+    {
+     "nombre": "RetiroDeNombreAlternativoDeAlimento",
+     "tabla": "retiro_de_nombre_alternativo_de_alimento",
+     "seccion": "WP-CATALOGO-BASE · Lo importado es de todos y los nombres alternativos (DL-141)"
+    },
+    {
+     "nombre": "AnulacionDeIngesta",
+     "tabla": "anulacion_de_ingesta",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    },
+    {
+     "nombre": "RectificacionDeCantidades",
+     "tabla": "rectificacion_de_cantidades",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    }
+   ]
+  },
+  "version": {
+   "nombre": "Versiones e instantáneas (cambiar sin pisar)",
+   "modelos": [
+    {
+     "nombre": "VersionDePerfilPropio",
+     "tabla": "version_de_perfil_propio",
+     "seccion": "M-01 · Identidad (06 §5)"
+    },
+    {
+     "nombre": "VersionDeTexto",
+     "tabla": "version_de_texto",
+     "seccion": "Relación A: actos A1/A2/A3 (08 §12)"
+    },
+    {
+     "nombre": "VersionDeConsentimiento",
+     "tabla": "version_de_consentimiento",
+     "seccion": "WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7)"
+    },
+    {
+     "nombre": "VersionDeElementoNutricional",
+     "tabla": "version_de_elemento_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "VersionDeObjetivoNutricional",
+     "tabla": "version_de_objetivo_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "VersionDePlanNutricional",
+     "tabla": "version_de_plan_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "InstantaneaDePlanNutricional",
+     "tabla": "instantanea_de_plan_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "VersionDeEspecificacionAntropometrica",
+     "tabla": "version_de_especificacion_antropometrica",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "VersionDeEjercicio",
+     "tabla": "version_de_ejercicio",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "VersionDeObjetivoDeEntrenamiento",
+     "tabla": "version_de_objetivo_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "VersionDePlanDeEntrenamiento",
+     "tabla": "version_de_plan_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "InstantaneaDePlanDeEntrenamiento",
+     "tabla": "instantanea_de_plan_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "VersionDePlantillaDeFormulario",
+     "tabla": "version_de_plantilla_de_formulario",
+     "seccion": "WP-07 · Información profesional pertinente (CAP-DAT, 06 §20.4; RF-071)"
+    },
+    {
+     "nombre": "VersionDePlantillaDePlanDeEntrenamiento",
+     "tabla": "version_de_plantilla_de_plan_de_entrenamiento",
+     "seccion": "PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108)"
+    },
+    {
+     "nombre": "VersionDePlantillaDePlanNutricional",
+     "tabla": "version_de_plantilla_de_plan_nutricional",
+     "seccion": "PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108)"
+    },
+    {
+     "nombre": "VersionDeReceta",
+     "tabla": "version_de_receta",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    }
+   ]
+  },
+  "relacion": {
+   "nombre": "Relaciones y asociaciones",
+   "modelos": [
+    {
+     "nombre": "Habilitacion",
+     "tabla": "habilitacion",
+     "seccion": "WP-03 · M-02 mínimo: perfil profesional, verificación y habilitación (06 §6; DL-036)"
+    },
+    {
+     "nombre": "Vinculo",
+     "tabla": "vinculo",
+     "seccion": "WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7)"
+    },
+    {
+     "nombre": "AlcanceDeVinculo",
+     "tabla": "alcance_de_vinculo",
+     "seccion": "WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7)"
+    },
+    {
+     "nombre": "ReferenciaDeCalculo",
+     "tabla": "referencia_de_calculo",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "EntradaDeCalculo",
+     "tabla": "entrada_de_calculo",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "CitaDeRespuestaEnEvaluacionDeEntrenamiento",
+     "tabla": "cita_de_respuesta_en_evaluacion_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "AsociacionDeImagenDeReceta",
+     "tabla": "asociacion_de_imagen_de_receta",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    },
+    {
+     "nombre": "AsociacionDeImagenDeEjercicio",
+     "tabla": "asociacion_de_imagen_de_ejercicio",
+     "seccion": "WP-ENTRENAMIENTO-SERIES (DL-123, DL-124)"
+    },
+    {
+     "nombre": "DestinatarioDeNota",
+     "tabla": "destinatario_de_nota",
+     "seccion": "WP-NOTAS-DE-COORDINACION (DEUDA_LEGAJO DL-140; aprobado por Dirección el 2026-10-16)"
+    },
+    {
+     "nombre": "ReferenciaDeNota",
+     "tabla": "referencia_de_nota",
+     "seccion": "WP-NOTAS-DE-COORDINACION (DEUDA_LEGAJO DL-140; aprobado por Dirección el 2026-10-16)"
+    }
+   ]
+  },
+  "catalogo": {
+   "nombre": "Catálogos y textos de referencia",
+   "modelos": [
+    {
+     "nombre": "ActoRegistrable",
+     "tabla": "acto_registrable",
+     "seccion": "Relación A: actos A1/A2/A3 (08 §12)"
+    },
+    {
+     "nombre": "ElementoDeCatalogoNutricional",
+     "tabla": "elemento_de_catalogo_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "EspecificacionAntropometrica",
+     "tabla": "especificacion_antropometrica",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "EjercicioDeCatalogo",
+     "tabla": "ejercicio_de_catalogo",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "PlantillaDeFormulario",
+     "tabla": "plantilla_de_formulario",
+     "seccion": "WP-07 · Información profesional pertinente (CAP-DAT, 06 §20.4; RF-071)"
+    },
+    {
+     "nombre": "CandidatoDeImportacion",
+     "tabla": "candidato_de_importacion",
+     "seccion": "WP-08 · Importación controlada (RF-028, RF-038; UC-I07; 09 v0.12 §3-§7)"
+    },
+    {
+     "nombre": "ItemExternoDeCatalogo",
+     "tabla": "item_externo_de_catalogo",
+     "seccion": "WP-CATALOGO-BASE · Lo importado es de todos y los nombres alternativos (DL-141)"
+    },
+    {
+     "nombre": "NombreAlternativoDeEjercicio",
+     "tabla": "nombre_alternativo_de_ejercicio",
+     "seccion": "WP-CATALOGO-BASE · Lo importado es de todos y los nombres alternativos (DL-141)"
+    },
+    {
+     "nombre": "NombreAlternativoDeAlimento",
+     "tabla": "nombre_alternativo_de_alimento",
+     "seccion": "WP-CATALOGO-BASE · Lo importado es de todos y los nombres alternativos (DL-141)"
+    },
+    {
+     "nombre": "PlantillaDePlanDeEntrenamiento",
+     "tabla": "plantilla_de_plan_de_entrenamiento",
+     "seccion": "PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108)"
+    },
+    {
+     "nombre": "PlantillaDePlanNutricional",
+     "tabla": "plantilla_de_plan_nutricional",
+     "seccion": "PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108)"
+    },
+    {
+     "nombre": "Receta",
+     "tabla": "receta",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    }
+   ]
+  },
+  "tecnica": {
+   "nombre": "Operación técnica (sesiones, seguridad, idempotencia, compatibilidad)",
+   "modelos": [
+    {
+     "nombre": "MetodoDeAcceso",
+     "tabla": "metodo_de_acceso",
+     "seccion": "M-01 · Identidad (06 §5)"
+    },
+    {
+     "nombre": "CredencialLocal",
+     "tabla": "credencial_local",
+     "seccion": "M-01 · Identidad (06 §5)"
+    },
+    {
+     "nombre": "Sesion",
+     "tabla": "sesion",
+     "seccion": "Sesiones (07 §43-bis opción A+B; 08 §26)"
+    },
+    {
+     "nombre": "ReanudacionDeSesion",
+     "tabla": "reanudacion_de_sesion",
+     "seccion": "Sesiones (07 §43-bis opción A+B; 08 §26)"
+    },
+    {
+     "nombre": "ControlDeSesion",
+     "tabla": "control_de_sesion",
+     "seccion": "Sesiones (07 §43-bis opción A+B; 08 §26)"
+    },
+    {
+     "nombre": "SolicitudDeCierreDeCuenta",
+     "tabla": "solicitud_de_cierre_de_cuenta",
+     "seccion": "Historia: eventos, cierre, supresión, auditoría, idempotencia"
+    },
+    {
+     "nombre": "RegistroDeSupresion",
+     "tabla": "registro_de_supresion",
+     "seccion": "Historia: eventos, cierre, supresión, auditoría, idempotencia"
+    },
+    {
+     "nombre": "RegistroDeIdempotencia",
+     "tabla": "registro_de_idempotencia",
+     "seccion": "Historia: eventos, cierre, supresión, auditoría, idempotencia"
+    },
+    {
+     "nombre": "Medio",
+     "tabla": "medio",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    },
+    {
+     "nombre": "ContenidoDeMedio",
+     "tabla": "contenido_de_medio",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    },
+    {
+     "nombre": "CapacidadDeClienteDeclarada",
+     "tabla": "capacidad_de_cliente_declarada",
+     "seccion": "Compatibilidad de clientes (precierre del 2026-10-06, §2; DL-122)"
+    },
+    {
+     "nombre": "SuscripcionPush",
+     "tabla": "suscripcion_push",
+     "seccion": "Novedades y avisos push (WP-NOVEDADES-Y-AVISOS; DL-133)"
+    },
+    {
+     "nombre": "CodigoDeIncorporacion",
+     "tabla": "codigo_de_incorporacion",
+     "seccion": "WP-ADMINISTRACION (DL-155): rol administrativo y segundo factor (08 §25)"
+    },
+    {
+     "nombre": "FactorTotp",
+     "tabla": "factor_totp",
+     "seccion": "WP-ADMINISTRACION (DL-155): rol administrativo y segundo factor (08 §25)"
+    },
+    {
+     "nombre": "CodigoDeRecuperacion",
+     "tabla": "codigo_de_recuperacion",
+     "seccion": "WP-ADMINISTRACION (DL-155): rol administrativo y segundo factor (08 §25)"
+    },
+    {
+     "nombre": "SegundoFactorDeSesion",
+     "tabla": "segundo_factor_de_sesion",
+     "seccion": "WP-ADMINISTRACION (DL-155): rol administrativo y segundo factor (08 §25)"
+    }
+   ]
+  },
+  "entidad": {
+   "nombre": "Entidades del negocio (cosas que existen y cambian de estado)",
+   "modelos": [
+    {
+     "nombre": "Identidad",
+     "tabla": "identidad",
+     "seccion": "M-01 · Identidad (06 §5)"
+    },
+    {
+     "nombre": "PerfilPropio",
+     "tabla": "perfil_propio",
+     "seccion": "M-01 · Identidad (06 §5)"
+    },
+    {
+     "nombre": "PerfilProfesional",
+     "tabla": "perfil_profesional",
+     "seccion": "WP-03 · M-02 mínimo: perfil profesional, verificación y habilitación (06 §6; DL-036)"
+    },
+    {
+     "nombre": "VerificacionProfesional",
+     "tabla": "verificacion_profesional",
+     "seccion": "WP-03 · M-02 mínimo: perfil profesional, verificación y habilitación (06 §6; DL-036)"
+    },
+    {
+     "nombre": "SolicitudDeVinculo",
+     "tabla": "solicitud_de_vinculo",
+     "seccion": "WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7)"
+    },
+    {
+     "nombre": "Consentimiento",
+     "tabla": "consentimiento",
+     "seccion": "WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7)"
+    },
+    {
+     "nombre": "CapacidadProfesional",
+     "tabla": "capacidad_profesional",
+     "seccion": "WP-04 · Proceso operativo (06 §8, B-04) y capacidad (06 §9, B-05)"
+    },
+    {
+     "nombre": "ProcesoOperativo",
+     "tabla": "proceso_operativo",
+     "seccion": "WP-04 · Proceso operativo (06 §8, B-04) y capacidad (06 §9, B-05)"
+    },
+    {
+     "nombre": "ProximaRevision",
+     "tabla": "proxima_revision",
+     "seccion": "WP-04 · Proceso operativo (06 §8, B-04) y capacidad (06 §9, B-05)"
+    },
+    {
+     "nombre": "EvaluacionNutricional",
+     "tabla": "evaluacion_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "ObjetivoNutricional",
+     "tabla": "objetivo_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "PlanNutricional",
+     "tabla": "plan_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "IngestaNutricional",
+     "tabla": "ingesta_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "RevisionNutricional",
+     "tabla": "revision_nutricional",
+     "seccion": "WP-04 · Circuito nutricional (06 §10, B-07)"
+    },
+    {
+     "nombre": "EvaluacionAntropometrica",
+     "tabla": "evaluacion_antropometrica",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "MedicionAntropometrica",
+     "tabla": "medicion_antropometrica",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "EjecucionDeCalculo",
+     "tabla": "ejecucion_de_calculo",
+     "seccion": "B-10 · Antropometría (06 §13 y §20)"
+    },
+    {
+     "nombre": "EvaluacionDeEntrenamiento",
+     "tabla": "evaluacion_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "ObjetivoDeEntrenamiento",
+     "tabla": "objetivo_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "PlanDeEntrenamiento",
+     "tabla": "plan_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "BorradorDeEjecucionDeEntrenamiento",
+     "tabla": "borrador_de_ejecucion_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "EjecucionDeEntrenamiento",
+     "tabla": "ejecucion_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "RevisionDeEntrenamiento",
+     "tabla": "revision_de_entrenamiento",
+     "seccion": "WP-06 · Circuito de entrenamiento (B-08, 06:4947-5786)"
+    },
+    {
+     "nombre": "SolicitudDeFormulario",
+     "tabla": "solicitud_de_formulario",
+     "seccion": "WP-07 · Información profesional pertinente (CAP-DAT, 06 §20.4; RF-071)"
+    },
+    {
+     "nombre": "RespuestaDeFormulario",
+     "tabla": "respuesta_de_formulario",
+     "seccion": "WP-07 · Información profesional pertinente (CAP-DAT, 06 §20.4; RF-071)"
+    },
+    {
+     "nombre": "EjercicioHabitual",
+     "tabla": "ejercicio_habitual",
+     "seccion": "Mis habituales (DL-109, decidido el 2026-09-30): elementos y bloques propios del profesional"
+    },
+    {
+     "nombre": "SesionHabitual",
+     "tabla": "sesion_habitual",
+     "seccion": "Mis habituales (DL-109, decidido el 2026-09-30): elementos y bloques propios del profesional"
+    },
+    {
+     "nombre": "AlimentoHabitual",
+     "tabla": "alimento_habitual",
+     "seccion": "Mis habituales (DL-109, decidido el 2026-09-30): elementos y bloques propios del profesional"
+    },
+    {
+     "nombre": "ComidaHabitual",
+     "tabla": "comida_habitual",
+     "seccion": "Mis habituales (DL-109, decidido el 2026-09-30): elementos y bloques propios del profesional"
+    },
+    {
+     "nombre": "EvidenciaVisualDeIngesta",
+     "tabla": "evidencia_visual_de_ingesta",
+     "seccion": "WP-NUTRICION-RECETAS · recetas, medios privados y registro v2 (DL-119, DL-120, DL-121)"
+    },
+    {
+     "nombre": "VistaDeAnalisis",
+     "tabla": "vista_de_analisis",
+     "seccion": "Vistas de análisis guardadas (WP-DASHBOARD-PROFESIONAL; DL-128)"
+    },
+    {
+     "nombre": "Novedad",
+     "tabla": "novedad",
+     "seccion": "Novedades y avisos push (WP-NOVEDADES-Y-AVISOS; DL-133)"
+    },
+    {
+     "nombre": "PreferenciaDeRecordatorio",
+     "tabla": "preferencia_de_recordatorio",
+     "seccion": "Novedades y avisos push (WP-NOVEDADES-Y-AVISOS; DL-133)"
+    },
+    {
+     "nombre": "ResultadoTvcc30",
+     "tabla": "resultado_tvcc30",
+     "seccion": "RF-058 · UC-S01 · TVCC-30 (DL-135)"
+    },
+    {
+     "nombre": "InvitacionDeVinculo",
+     "tabla": "invitacion_de_vinculo",
+     "seccion": "WP-INVITACION (DEUDA_LEGAJO DL-136; aprobado por Dirección el 2026-10-16)"
+    },
+    {
+     "nombre": "NotaDeCoordinacion",
+     "tabla": "nota_de_coordinacion",
+     "seccion": "WP-NOTAS-DE-COORDINACION (DEUDA_LEGAJO DL-140; aprobado por Dirección el 2026-10-16)"
+    },
+    {
+     "nombre": "RolAdministrativo",
+     "tabla": "rol_administrativo",
+     "seccion": "WP-ADMINISTRACION (DL-155): rol administrativo y segundo factor (08 §25)"
+    }
+   ]
+  }
+ }
+}

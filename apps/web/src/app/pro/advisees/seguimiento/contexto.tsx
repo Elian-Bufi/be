@@ -11,7 +11,8 @@
  * - **Lecturas de a pocas:** como mucho cuatro a la vez (`limitarLectura`): la ficha completa pide varias proyecciones y
  *   una base cargada responde mejor de a pocas que todas juntas.
  */
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { cambiarLaDireccion } from '../../../../lib/direccion';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DashboardResponse, DominioDeAnalisis } from '@be/domain';
 import type { Resultado } from '../../../../lib/api';
@@ -101,7 +102,6 @@ export function ProveedorDelSeguimiento({
 }) {
   const params = useSearchParams();
   const ruta = usePathname();
-  const router = useRouter();
   const clave = params.toString();
   const parametros = useMemo(() => new URLSearchParams(clave), [clave]);
   const periodo = useMemo(() => leerPeriodo(parametros), [parametros]);
@@ -109,10 +109,10 @@ export function ProveedorDelSeguimiento({
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
       const destino = hrefConCambios(ruta, parametros, cambios);
-      if (opciones?.agregarAlHistorial) router.push(destino, { scroll: false });
-      else router.replace(destino, { scroll: false });
+      // Sin pedido al servidor: sin conexión, el enrutador navegaba a la página de error del navegador (bloque 3).
+      cambiarLaDireccion(destino, { agregarAlHistorial: opciones?.agregarAlHistorial });
     },
-    [router, ruta, parametros],
+    [ruta, parametros],
   );
   const valor = useMemo(
     () => ({ token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir, yoId, abrirNota }),

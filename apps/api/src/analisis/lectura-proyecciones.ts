@@ -1,8 +1,16 @@
 import {
   coberturaNutricional,
+  comidasDelPlanDeLosDias,
   definicionAntropometrica,
   diasNutricionales,
   ejerciciosDelPeriodo,
+  escalonDelObjetivoApi,
+  escalonesDelObjetivo,
+  fechasDelRango,
+  indicadoDeLaComidaApi,
+  indicadoDeLasComidas,
+  indicadoDeLosDias,
+  indicadoDelDiaApi,
   METRICAS_DEL_DICCIONARIO,
   nombreDeMetrica,
   NOTA_DE_LO_PREVISTO,
@@ -11,9 +19,11 @@ import {
   serieDeEntrenamiento,
   serieNutricional,
   VERSION_DEL_DICCIONARIO,
+  type ContenidoDeInstantanea,
   type DefinicionDeMetrica,
   type EjecucionDeEntrenamiento,
   type InstantaneaDeEntrenamiento,
+  type ObjetivoParaComparar,
   type ObjetivosDeLaVersion,
   type ProyeccionResponse,
   type RegistroDeComida,
@@ -32,7 +42,8 @@ type Tx = Prisma.TransactionClient;
 /**
  * Las tres proyecciones con derivación definida de API-PRJ-01 (DL-126). Cada una es una **vista** del cálculo canónico
  * que ya existe en el dominio (encargo §10 y §16): no hay fórmulas nuevas para obtener una curva.
- * - Nutrición: `calcularNutrientes` de cada registro efectivo (ya resuelto en `consumed`), sumado de forma exacta.
+ * - Nutrición: `calcularNutrientes` de cada registro efectivo (ya resuelto en `consumed`), sumado de forma exacta; y, al
+ *   lado (DL-158), el objetivo del profesional y lo indicado en el plan, de las instantáneas, con la misma cuenta.
  * - Entrenamiento: la serie del mismo número entre sesiones (`evolucion`), con el objetivo histórico de cada serie.
  * - Antropometría: la serie de API-ANT-06 (`seriesDeEvolucion`), con sus grupos de comparabilidad.
  */
@@ -54,17 +65,51 @@ function definicionPorParametro(area: DefinicionDeMetrica['area'], parametro: st
 
 // ─── NUTRITION_PRESCRIBED_VS_RECORDED ───────────────────────────────────────────────────────────
 
+/**
+ * Las versiones que hacen falta para ubicar los registros en su plan (DL-153): las que rigieron en el período y las que
+ * referencian los registros, cada una una sola vez. Se leen sus instantáneas en una sola consulta.
+ */
+export function versionesParaLasComidas(versiones: readonly VersionActivada[], registros: readonly RegistroDeComida[], desde: string, hasta: string): string[] {
+  const vigentes = versiones.filter((v) => v.desde <= hasta && (v.hasta === null || v.hasta >= desde)).map((v) => v.id);
+  return [...new Set([...vigentes, ...registros.map((r) => r.planId)])].sort();
+}
+
 export function proyeccionNutricional(
   c: Extract<ConsultaDeProyeccion, { clave: 'NUTRITION_PRESCRIBED_VS_RECORDED' }>,
-  datos: { readonly registros: readonly RegistroDeComida[]; readonly versiones: readonly VersionActivada[]; readonly objetivos: readonly VersionDeObjetivo[]; readonly hoy: string },
+  datos: {
+    readonly registros: readonly RegistroDeComida[];
+    readonly versiones: readonly VersionActivada[];
+    readonly objetivos: readonly VersionDeObjetivo[];
+    readonly hoy: string;
+    /** Las instantáneas de `versionesParaLasComidas`: el plan con sus días tipo y comidas, tal como se activó. */
+    readonly instantaneas: ReadonlyMap<string, ContenidoDeInstantanea>;
+  },
 ): ResultadoDeProyeccionNutricional {
   const { desde, hasta } = c.periodo;
   const dias = diasNutricionales(datos.registros, desde, hasta);
   const definicion = definicionPorParametro('NUTRICION', c.metrica);
+  // DL-153: el mismo contraste que la pestaña Registros (API-NUT-17), con la vigencia de cada versión. Una versión sin
+  // instantánea legible no aporta comidas: sus días quedan sin determinar, nunca con comidas supuestas.
+  const versionesConPlan = datos.versiones.flatMap((v) => {
+    const instantanea = datos.instantaneas.get(v.id);
+    return instantanea ? [{ planId: v.id, desde: v.desde, hasta: v.hasta, instantanea }] : [];
+  });
+  const comidasDelPlan = comidasDelPlanDeLosDias(dias, versionesConPlan);
+  // DL-158: lo indicado por día llega hasta hoy (el día en curso incluido): un día futuro todavía no tiene la versión que
+  // va a regir. Los anulados no dicen el día tipo ni tienen indicado.
+  const efectivos = datos.registros.filter((r) => !r.annulment);
+  const hastaHoy = hasta < datos.hoy ? hasta : datos.hoy;
+  const objetivos: ObjetivoParaComparar[] = datos.objetivos.map((o) => ({
+    id: o.id,
+    desde: fechaLocalEn(o.vigenteDesde, ZONA),
+    hasta: o.vigenteHasta ? fechaLocalEn(o.vigenteHasta, ZONA) : null,
+    requerimientoKcal: o.requerimientoKcal,
+    macros: o.macros,
+  }));
   return {
     kind: 'NUTRITION_PRESCRIBED_VS_RECORDED',
     metric: c.metrica,
-    recorded: serieNutricional(dias, definicion, c.metrica, c.grano, { desde, hasta, hoy: datos.hoy }),
+    recorded: serieNutricional(dias, definicion, c.metrica, c.grano, { desde, hasta, hoy: datos.hoy, comidasDelPlan }),
     prescribed: {
       // El requerimiento energético del objetivo, como escalón por vigencia: solo para la energía.
       energyRequirement:
@@ -76,8 +121,13 @@ export function proyeccionNutricional(
               .map((o) => ({ objectiveVersionId: o.id, from: o.from, to: o.to, value: o.requerimientoKcal as number, unit: 'kcal/day' as const }))
           : [],
       note: NOTA_DE_LO_PREVISTO,
+      objectiveSteps: escalonesDelObjetivo(objetivos, c.metrica, desde, hasta).map(escalonDelObjetivoApi),
+      planned: {
+        days: indicadoDeLosDias({ fechas: desde <= hastaHoy ? fechasDelRango(desde, hastaHoy) : [], versiones: versionesConPlan, registros: efectivos, metrica: c.metrica }).map(indicadoDelDiaApi),
+        meals: indicadoDeLasComidas({ registros: efectivos, instantaneas: datos.instantaneas, metrica: c.metrica }).map(indicadoDeLaComidaApi),
+      },
     },
-    coverage: coberturaNutricional(dias, desde, hasta),
+    coverage: coberturaNutricional(dias, desde, hasta, { comidasDelPlan, hoy: datos.hoy }),
     planVersions: vigenciasEnElPeriodo(datos.versiones, 'NUTRITION', desde, hasta),
   };
 }

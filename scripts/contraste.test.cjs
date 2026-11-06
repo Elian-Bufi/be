@@ -124,6 +124,15 @@ const PARES_FIGURA = [
   ['figura-posterior', 'escena', NO_TEXTO, 'guía de un pliegue de la cara de atrás sobre la escena'],
   ['figura-guia', 'escena', NO_TEXTO, 'guía de un campo a su sitio, sobre la escena'],
   ['figura-guia', 'figura-cuerpo', NO_TEXTO, 'guía de un campo a su sitio, sobre el maniquí'],
+  // WP-CATALOGO-VISUAL (etapa 2): las zonas musculares sobre el maniquí, su muestra en la lista de zonas y el rótulo de
+  // cada vista, sobre la escena.
+  ['zona-principal', 'figura-cuerpo', NO_TEXTO, 'zona principal (llena) sobre el maniquí'],
+  ['zona-secundaria', 'figura-cuerpo', NO_TEXTO, 'raya de una zona secundaria sobre el maniquí'],
+  ['zona-principal', 'superficie', NO_TEXTO, 'muestra de la zona principal en la lista de zonas'],
+  ['zona-secundaria', 'superficie', NO_TEXTO, 'muestra rayada de la zona secundaria en la lista de zonas'],
+  ['zona-principal', 'fondo-suave', NO_TEXTO, 'muestra de la zona principal sobre una tarjeta'],
+  ['zona-secundaria', 'fondo-suave', NO_TEXTO, 'muestra rayada de la zona secundaria sobre una tarjeta'],
+  ['tenue', 'escena', TEXTO, 'rótulo de cada vista de la figura de zonas («De frente», «De espalda»)'],
 ];
 
 const PARES_APK = [
@@ -147,6 +156,8 @@ const PARES_APK = [
   ['bordeControl', 'fondo', NO_TEXTO, 'borde de campos y casillas (1.4.11)'],
   ['bordeControl', 'superficie', NO_TEXTO, 'borde de campos dentro de tarjetas'],
   ['acento', 'fondo', NO_TEXTO, 'borde de casillas y opciones elegidas'],
+  // La casilla de 2026-11-02: la tilde, en el color de contraste del botón, sobre la caja llena del acento.
+  ['botonTexto', 'acento', NO_TEXTO, 'la tilde dentro de la casilla marcada (1.4.11)'],
   ['laminaNombre', 'laminaTarjeta', TEXTO, 'rótulo de un sitio en la lámina de la toma'],
   ['laminaValor', 'laminaTarjeta', TEXTO, 'valor de un sitio en la lámina de la toma'],
   ['laminaDetalle', 'laminaTarjeta', TEXTO, 'diferencia con la toma anterior en la lámina'],

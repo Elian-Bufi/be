@@ -94,6 +94,9 @@ export const COPY_NOTAS_DE_COORDINACION = {
   referencias: 'Citar algo de tu área (optativo)',
   referenciasAyuda: 'Quien la recibe ve que lo citaste, pero lo abre solo si ya tenía acceso a eso.',
   sinReferencias: 'No hay planes activados, revisiones ni tomas tuyas para citar en esta área.',
+  /** La lectura de lo citable falló (bloque 5 del encargo de consolidación): no es «no hay nada para citar». */
+  referenciasNoSeLeyeron: 'No pudimos leer lo que se puede citar de esta área. Podés enviar la nota sin citar nada, o reintentar.',
+  referenciasDeQue: 'lo que se puede citar',
   corrige: (fecha: string) => `Corrige la nota del ${fecha}`,
   corregir: 'Corregir con otra nota',
   corregirAyuda: 'Una nota no se edita ni se borra. Para corregirla, escribí otra que la cita.',

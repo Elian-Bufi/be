@@ -39,6 +39,7 @@ import { Pendientes, type PaginaDeCartera } from './pendientes';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
 import { areaUnicaDelProfesional } from './directorio';
+import { EsperandoSesion } from '../../lib/sesion';
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -132,7 +133,7 @@ export function EspacioProfesional() {
   if (!token) {
     return (
       <Pagina>
-        <p className="nota">Redirigiendo a Iniciar sesión…</p>
+        <EsperandoSesion />
       </Pagina>
     );
   }
@@ -175,7 +176,8 @@ export function EspacioProfesional() {
     >
       {/* Primero lo que hay que hacer (API-CAR-01, DL-107); al lado, a quién abrir. */}
       <div className="espacio-profesional__cuerpo">
-        <Pendientes cartera={cartera.estado} periodo={periodo} onPeriodo={setPeriodo} onActualizar={actualizar} onVerMas={() => void cartera.verMas()} />
+        {/* Cada lista con su «Reintentar», que vuelve a leer solo esa; «Actualizar» lee las tres. */}
+        <Pendientes cartera={cartera.estado} periodo={periodo} onPeriodo={setPeriodo} onActualizar={actualizar} onReintentar={() => void cartera.recargar()} onVerMas={() => void cartera.verMas()} />
         <Asesorados vinculos={vinculos.estado} profesionalId={yo.id} onReintentar={() => void vinculos.recargar()} onVerMas={() => void vinculos.verMas()}>
           <button type="button" className="boton boton--enlace directorio__solicitudes" aria-haspopup="dialog" onClick={() => setSolicitudes({ abiertas: true, aviso: null })}>
             <Icono nombre="solicitar" tamano={18} />

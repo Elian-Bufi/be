@@ -6,6 +6,7 @@
  * máquinas de WP-04 y WP-05: sirven para probar que **la base** sostiene las garantías aunque el servicio se equivoque.
  */
 import type { INestApplication } from '@nestjs/common';
+import { haceUnRatoHoy } from './soporte-tiempo';
 import type { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { claveDeIdempotencia, conSesion } from './soporte-api';
@@ -196,7 +197,7 @@ export { PROCEDENCIA as PROCEDENCIA_SQL };
 /** Una evaluación de entrenamiento: cada dato con su fuente, como en nutrición (DL-048; B10-06:132). */
 export function cuerpoDeEvaluacionDeEntrenamiento(): Record<string, unknown> {
   return {
-    occurredAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    occurredAt: haceUnRatoHoy(60).toISOString(),
     assessment: {
       entries: [
         { concept: 'Experiencia en entrenamiento de fuerza', value: 'Dos años, con interrupciones', source: 'REPORTED' },
@@ -212,7 +213,7 @@ export function cuerpoDeEvaluacionDeEntrenamiento(): Record<string, unknown> {
 export function cuerpoDeObjetivoDeEntrenamiento(evaluationId: string, enunciado = 'Mejorar la fuerza en los básicos con técnica estable.'): Record<string, unknown> {
   return {
     evaluationId,
-    effectiveFrom: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    effectiveFrom: haceUnRatoHoy(30).toISOString(),
     effectiveUntil: null,
     objective: { statement: enunciado },
     rationale: 'Fundamento sintético: la evaluación muestra base técnica y margen de progresión.',

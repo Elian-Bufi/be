@@ -13,11 +13,29 @@
  *   referencia: la referencia es un rango de fechas, no lo que se ve.
  * - **Comparar dos períodos** usa la misma regla de resumen en los dos, dice la duración, n y la cobertura de cada uno, y
  *   no compara totales de períodos de distinta duración como si fueran equivalentes (encargo §13).
+ * - **Una serie de carga rápida** (DL-161; Dirección, 2026-11-02), tildada sin escribir con los valores del plan, es un
+ *   punto hueco: se ve, pero no entra en la media ni en la mediana de un resumen, ni en la referencia ni en el cambio
+ *   relativo. Lo que la persona escribió o cambió, sí. El resumen dice cuántas quedaron fuera.
  */
 import type { NaturalezaDelMetodo, PuntoAnalitico, ReferenciaDelCambio, SerieAnalitica } from './contratos-analisis';
+import { COPY_REGISTRO_POR_NIVELES } from './copy-entrenamiento';
 import { granoDeObservacion, type DefinicionDeMetrica, type ResumenDePeriodo } from './metricas-del-analisis';
 import { diaSiguiente, diasEntreFechas } from './fechas-civiles';
 import { numero } from './formato-numeros';
+
+// ─── Carga rápida (DL-161) ──────────────────────────────────────────────────────────────────────
+
+/**
+ * El detalle que marca un punto de carga rápida: la serie se tildó sin escribir, con los valores del plan a la vista. Lo
+ * pone `serieDeEntrenamiento` en el detalle del punto (`detail`), que ya es factual y se muestra en la lectura: así la
+ * marca viaja en la respuesta de API-PRJ-01 sin cambiar su contrato. Se reconoce por el rótulo y el valor, no por un
+ * texto suelto.
+ */
+export const DETALLE_DE_CARGA_RAPIDA = { label: COPY_REGISTRO_POR_NIVELES.comoSeCargo, value: 'Carga rápida, tildada sin escribir' } as const;
+
+/** Un punto de carga rápida: se dibuja hueco y no entra en los resúmenes, en la referencia ni en el cambio relativo. */
+export const esPuntoDeCargaRapida = (p: Pick<PuntoAnalitico, 'detail'>): boolean =>
+  (p.detail ?? []).some((d) => d.label === DETALLE_DE_CARGA_RAPIDA.label && d.value === DETALLE_DE_CARGA_RAPIDA.value);
 
 /**
  * Los resúmenes, la comparación y la referencia se calculan sobre las observaciones de la métrica (el día, la sesión o la
@@ -121,6 +139,8 @@ export type MotivoSinReferencia =
   | 'ESCALA_NO_ADMITE'
   /** No hay observaciones con valor en el rango de referencia. */
   | 'SIN_OBSERVACIONES'
+  /** DL-161: en el rango de referencia solo hay series de carga rápida, que no se usan de referencia. */
+  | 'SOLO_CARGA_RAPIDA'
   /** La referencia es cero o negativa: el cambio relativo no se puede calcular. */
   | 'NO_POSITIVA'
   /** El rango de referencia elegido no cae entero dentro del período leído: no hay con qué calcularlo. */
@@ -142,6 +162,8 @@ export type Referencia =
       readonly parciales: number;
       /** Cuántos baldes incompletos del rango quedaron fuera (el día en curso, o una semana que el período corta). */
       readonly incompletos: number;
+      /** DL-161: cuántas series de carga rápida del rango quedaron fuera. Solo está si alguna quedó. */
+      readonly deCargaRapida?: number;
     }
   | { readonly tipo: 'invalida'; readonly motivo: MotivoSinReferencia; readonly desde: string; readonly hasta: string };
 
@@ -159,15 +181,18 @@ const media = (valores: readonly number[]): number => valores.reduce((s, v) => s
  * - entrenamiento: la mediana de las sesiones con valor;
  * - antropometría: la primera observación del rango, y solo se comparan contra ella los puntos de su mismo tramo.
  * Un balde incompleto (el día en curso, o una semana que el período corta) no entra en la media ni en la mediana: su
- * valor todavía no es el de un día o una semana completos. La referencia dice cuántos quedaron fuera.
+ * valor todavía no es el de un día o una semana completos. La referencia dice cuántos quedaron fuera. Una serie de carga
+ * rápida tampoco entra (DL-161): sus valores son los del plan, no algo que la persona escribió.
  */
 export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string): Referencia {
   exigirObservaciones(serie, definicion, 'referenciaDeLaSerie');
   if (!definicion.cambioRelativo || serie.scale !== 'RATIO') return { tipo: 'invalida', motivo: 'ESCALA_NO_ADMITE', desde, hasta };
-  const conValor = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
+  const delRango = serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta);
+  const conValor = delRango.filter((p) => !esPuntoDeCargaRapida(p));
+  const deCargaRapida = delRango.length - conValor.length;
   const enRango = conValor.filter((p) => !p.partialBucket);
   const incompletos = conValor.length - enRango.length;
-  if (enRango.length === 0) return { tipo: 'invalida', motivo: 'SIN_OBSERVACIONES', desde, hasta };
+  if (enRango.length === 0) return { tipo: 'invalida', motivo: deCargaRapida > 0 && conValor.length === 0 ? 'SOLO_CARGA_RAPIDA' : 'SIN_OBSERVACIONES', desde, hasta };
   let valor: number;
   let usados: readonly PuntoAnalitico[] = enRango;
   let regla: 'MEDIA' | 'MEDIANA' | 'PRIMERA';
@@ -186,7 +211,19 @@ export function referenciaDeLaSerie(serie: SerieAnalitica, definicion: Definicio
     regla = 'MEDIA';
   }
   if (!(valor > 0)) return { tipo: 'invalida', motivo: 'NO_POSITIVA', desde, hasta };
-  return { tipo: 'valida', valor, n: usados.length, desde, hasta, fechas: usados.map((p) => p.date), regla, tramo, parciales: usados.filter((p) => p.quality === 'PARTIAL').length, incompletos };
+  return {
+    tipo: 'valida',
+    valor,
+    n: usados.length,
+    desde,
+    hasta,
+    fechas: usados.map((p) => p.date),
+    regla,
+    tramo,
+    parciales: usados.filter((p) => p.quality === 'PARTIAL').length,
+    incompletos,
+    ...(deCargaRapida > 0 ? { deCargaRapida } : {}),
+  };
 }
 
 /**
@@ -223,13 +260,15 @@ export const cambioRelativo = (valor: number, referencia: number): number => (10
 export type PuntoRelativo = PuntoAnalitico & {
   /** El cambio relativo, en %; `null` si no se puede calcular para este punto (y `motivoSinRelativo` dice por qué). */
   readonly relativo: number | null;
-  readonly motivoSinRelativo: 'SIN_VALOR' | 'OTRO_TRAMO' | null;
+  /** `CARGA_RAPIDA`: la serie se tildó sin escribir (DL-161); su valor es el del plan y no se compara. */
+  readonly motivoSinRelativo: 'SIN_VALOR' | 'OTRO_TRAMO' | 'CARGA_RAPIDA' | null;
 };
 
 /** Los puntos con su cambio relativo contra la referencia. Conservan su valor original, su unidad y su fecha. */
 export function puntosRelativos(serie: SerieAnalitica, referencia: Extract<Referencia, { tipo: 'valida' }>): PuntoRelativo[] {
   return serie.points.map((p) => {
     if (p.value === null) return { ...p, relativo: null, motivoSinRelativo: 'SIN_VALOR' };
+    if (esPuntoDeCargaRapida(p)) return { ...p, relativo: null, motivoSinRelativo: 'CARGA_RAPIDA' };
     if (referencia.tramo !== null && p.segment !== referencia.tramo) return { ...p, relativo: null, motivoSinRelativo: 'OTRO_TRAMO' };
     return { ...p, relativo: cambioRelativo(p.value, referencia.valor), motivoSinRelativo: null };
   });
@@ -268,6 +307,19 @@ export interface DiasDelResumen {
   readonly sinDatoDelNutriente: number;
   /** Hoy cae en el rango y todavía no terminó, con o sin registros: la media lo deja fuera; el total, no. */
   readonly hoyEnCurso: boolean;
+  /**
+   * DL-153: las comidas del plan de los días terminados con registros. Son otra dimensión que los días de arriba: un día
+   * con valor puede tener una comida del plan sin registro (entonces es un subtotal) o no dejar saber qué comidas
+   * indicaba el plan. `null` si la serie no lo dice (una serie armada sin esa cuenta).
+   */
+  readonly comidasDelPlan: {
+    /** Comidas del plan sin ningún registro, en los días en que se conocen. */
+    readonly sinRegistro: number;
+    /** Días con alguna comida del plan sin registro. */
+    readonly diasConComidasSinRegistro: number;
+    /** Días con registros en los que no se puede saber qué comidas indicaba el plan. */
+    readonly diasSinDeterminar: number;
+  } | null;
 }
 
 export interface ResumenDeUnPeriodo {
@@ -299,26 +351,46 @@ export interface ResumenDeUnPeriodo {
   readonly primero: PuntoAnalitico | null;
   readonly ultimo: PuntoAnalitico | null;
   readonly tramo: string | null;
+  /**
+   * DL-161: sesiones del rango con la serie de carga rápida (tildada sin escribir, con los valores del plan). Son
+   * observaciones, pero no entran en el valor ni en `n`, y tampoco son «sin valor». Solo está si hay alguna.
+   */
+  readonly deCargaRapida?: number;
 }
 
 /** Los motivos de un día sin valor que son falta de cantidades (y no un nutriente sin dato en lo registrado). */
 const MOTIVOS_SIN_CANTIDADES: ReadonlySet<string> = new Set(['SIN_CANTIDADES', 'COMIDA_DIFERENTE_SIN_CANTIDADES']);
+/**
+ * DL-153: una comida del plan sin registro es otra dimensión (qué falta registrar), no un motivo de los registros que hay:
+ * no cambia si un día sin valor se cuenta «sin cantidades» o «sin el dato del nutriente».
+ */
+const COMIDA_DEL_PLAN_SIN_REGISTRO = 'COMIDA_DEL_PLAN_SIN_REGISTRO';
 
 /**
  * Los días del rango por categoría, desde los puntos del rango: un día sin punto no tiene registros (es un hueco); un
  * punto sin valor tiene registros sin cantidades o sin el nutriente. Hoy lo dice la serie (un punto incompleto) o quien
- * la lee, aunque todavía no tenga registros: así no se cuenta como un día sin registros.
+ * la lee, aunque todavía no tenga registros: así no se cuenta como un día sin registros. Las comidas del plan se cuentan
+ * aparte, en los mismos días terminados.
  */
 function diasDelResumen(delRango: readonly PuntoAnalitico[], desde: string, hasta: string, hoy: string | undefined): DiasDelResumen {
   const hoyEnCurso = (hoy !== undefined && desde <= hoy && hoy <= hasta) || delRango.some((p) => p.partialBucket);
   const terminados = delRango.filter((p) => !p.partialBucket && p.date !== hoy);
   const sinValor = terminados.filter((p) => p.value === null);
-  const sinCantidades = sinValor.filter((p) => p.missing.every((m) => MOTIVOS_SIN_CANTIDADES.has(m.reason))).length;
+  const sinCantidades = sinValor.filter((p) => p.missing.filter((m) => m.reason !== COMIDA_DEL_PLAN_SIN_REGISTRO).every((m) => MOTIVOS_SIN_CANTIDADES.has(m.reason))).length;
+  const conComidas = terminados.flatMap((p) => (p.coverage ? [p.coverage.planMeals] : []));
   return {
     sinRegistros: diasEntreFechas(desde, hasta) + 1 - new Set(terminados.map((p) => p.date)).size - (hoyEnCurso ? 1 : 0),
     sinCantidades,
     sinDatoDelNutriente: sinValor.length - sinCantidades,
     hoyEnCurso,
+    comidasDelPlan:
+      conComidas.length === 0
+        ? null
+        : {
+            sinRegistro: conComidas.reduce((s, c) => s + c.withoutRecord, 0),
+            diasConComidasSinRegistro: conComidas.filter((c) => c.withoutRecord > 0).length,
+            diasSinDeterminar: conComidas.reduce((s, c) => s + c.daysUndetermined.reduce((t, d) => t + d.days, 0), 0),
+          },
   };
 }
 
@@ -332,7 +404,9 @@ function diasDelResumen(delRango: readonly PuntoAnalitico[], desde: string, hast
 export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMetrica, desde: string, hasta: string, hoy?: string): ResumenDeUnPeriodo {
   exigirObservaciones(serie, definicion, 'resumirPeriodo');
   const delRango = serie.points.filter((p) => p.date >= desde && p.date <= hasta);
-  const conValor = delRango.filter((p) => p.value !== null);
+  // DL-161: una serie de carga rápida vale lo que decía el plan. Es una sesión del rango, pero no entra en el resumen.
+  const deCargaRapida = delRango.filter((p) => p.value !== null && esPuntoDeCargaRapida(p)).length;
+  const conValor = delRango.filter((p) => p.value !== null && !esPuntoDeCargaRapida(p));
   // La media y la mediana son de días, sesiones o semanas completos: un balde incompleto queda fuera, y se cuenta.
   const completos = conValor.filter((p) => !p.partialBucket);
   const base = {
@@ -341,10 +415,11 @@ export function resumirPeriodo(serie: SerieAnalitica, definicion: DefinicionDeMe
     duracionDias: diasEntreFechas(desde, hasta) + 1,
     regla: definicion.resumenDePeriodo,
     observaciones: delRango.length,
-    sinValor: delRango.length - conValor.length,
+    sinValor: delRango.length - conValor.length - deCargaRapida,
     // Solo nutrición se resume por días (`exigirObservaciones` ya pidió su grano); sesiones y tomas no tienen días.
     dias: serie.grain === 'DAY' ? diasDelResumen(delRango, desde, hasta, hoy) : null,
     incompletos: conValor.length - completos.length,
+    ...(deCargaRapida > 0 ? { deCargaRapida } : {}),
   };
   const vacio = { valor: null, n: 0, parciales: 0, primero: null, ultimo: null, tramo: null };
   if (conValor.length === 0) return { ...base, ...vacio };
@@ -415,9 +490,11 @@ export function partesDeLaCobertura(r: ResumenDeUnPeriodo): string[] {
     return [
       `${contar(r.duracionDias, 'día', 'días')}: ${numero(r.n)} ${total ? 'con registros' : 'con valor'}`,
       ...(r.parciales > 0 ? [`de ellos, ${r.parciales === 1 ? '1 es un subtotal' : `${numero(r.parciales)} son subtotales`} (falta algún dato)`] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinRegistro'),
       ...(d.sinRegistros > 0 ? [`${numero(d.sinRegistros)} sin registros`] : []),
       ...(d.sinCantidades > 0 ? [`${numero(d.sinCantidades)} con registros sin cantidades`] : []),
       ...(d.sinDatoDelNutriente > 0 ? [`${numero(d.sinDatoDelNutriente)} con registros sin dato de este nutriente`] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinDeterminar'),
       ...(d.hoyEnCurso ? [total ? 'hoy, en curso: el total incluye lo registrado hasta ahora' : 'hoy, en curso: fuera de la media'] : []),
     ];
   }
@@ -431,6 +508,8 @@ export function partesDeLaCobertura(r: ResumenDeUnPeriodo): string[] {
   return [
     total ? contar(r.observaciones, 'sesión', 'sesiones') : `${contar(r.observaciones, 'sesión', 'sesiones')}: ${numero(r.n)} con valor`,
     ...(r.sinValor > 0 && total ? [`${numero(r.sinValor)} sin valor registrado`] : []),
+    // DL-161: las sesiones con la serie tildada sin escribir se ven en el gráfico (huecas) y no entran en el resumen.
+    ...(r.deCargaRapida ? [`${numero(r.deCargaRapida)} de ${COPY_REGISTRO_POR_NIVELES.cargaRapida}, fuera del resumen`] : []),
   ];
 }
 
@@ -451,11 +530,26 @@ export function coberturaBreve(r: ResumenDeUnPeriodo): { readonly principal: rea
     principal: [`${contar(r.duracionDias, 'día', 'días')}: ${numero(r.n)} ${total ? 'con registros' : 'con valor'}`, ...(d.sinRegistros > 0 ? [`${numero(d.sinRegistros)} sin registros`] : [])],
     detalle: [
       ...(r.parciales > 0 ? [contar(r.parciales, 'subtotal', 'subtotales')] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinRegistro'),
       ...(d.sinCantidades > 0 ? [`${numero(d.sinCantidades)} sin cantidades`] : []),
       ...(d.sinDatoDelNutriente > 0 ? [`${numero(d.sinDatoDelNutriente)} sin dato del nutriente`] : []),
+      ...partesDeLasComidasDelPlan(d, 'sinDeterminar'),
       ...(d.hoyEnCurso ? [total ? 'hoy, en curso: el total incluye lo registrado hasta ahora' : 'hoy, en curso: fuera de la media'] : []),
     ],
   };
+}
+
+/**
+ * DL-153: las dos partes de las comidas del plan, con las mismas palabras en la tabla de etapas, «Comparar dos períodos»
+ * y los indicadores: las comidas del plan sin registro (lo que hizo de esos días un subtotal) y los días en que no se
+ * puede saber qué comidas indicaba el plan (sin plan vigente, o sin un registro del plan que diga el día tipo).
+ */
+function partesDeLasComidasDelPlan(d: DiasDelResumen, cual: 'sinRegistro' | 'sinDeterminar'): string[] {
+  const c = d.comidasDelPlan;
+  // Un resumen armado sin esa cuenta (una prueba de pantalla, un cliente viejo) no dice nada de las comidas del plan.
+  if (c === null || c === undefined) return [];
+  if (cual === 'sinRegistro') return c.sinRegistro > 0 ? [contar(c.sinRegistro, 'comida del plan sin registro', 'comidas del plan sin registro')] : [];
+  return c.diasSinDeterminar > 0 ? [`${contar(c.diasSinDeterminar, 'día', 'días')} sin saber qué comidas indicaba el plan`] : [];
 }
 
 // ─── Resumen textual (alternativa al gráfico) ───────────────────────────────────────────────────
@@ -523,8 +617,17 @@ export function partesDelResumenTextual(serie: SerieAnalitica, definicion: Defin
   if (calculados.length > 0) partes.push(`${numero(calculados.length)} ${calculados.length === 1 ? 'es un valor calculado por un método' : 'son valores calculados por un método'}${naturalezaEnElResumen(calculados)}`);
   const parciales = conValor.filter((p) => p.quality === 'PARTIAL').length;
   if (parciales > 0) partes.push(`${numero(parciales)} ${parciales === 1 ? 'es un subtotal' : 'son subtotales'} de lo registrado`);
+  // DL-153: lo que hizo de un día un subtotal también puede ser lo que no se registró: se dice para quien no ve el gráfico.
+  const comidasSinRegistro = delRango.filter((p) => !p.partialBucket).reduce((s, p) => s + (p.coverage?.planMeals.withoutRecord ?? 0), 0);
+  if (comidasSinRegistro > 0) partes.push(`${numero(comidasSinRegistro)} ${comidasSinRegistro === 1 ? 'comida del plan' : 'comidas del plan'} sin registro`);
   const incompletos = conValor.filter((p) => p.partialBucket).length;
   if (incompletos > 0) partes.push(`${numero(incompletos)} ${incompletos === 1 ? 'es de un día o una semana sin completar' : 'son de días o semanas sin completar'} (el día en curso, o una semana que el período corta)`);
+  // DL-161: quien no ve el gráfico tampoco ve los puntos huecos: se dice cuántos son de carga rápida y qué quiere decir.
+  const deCargaRapida = conValor.filter(esPuntoDeCargaRapida).length;
+  if (deCargaRapida > 0)
+    partes.push(
+      `${numero(deCargaRapida)} ${deCargaRapida === 1 ? 'es de carga rápida (tildada sin escribir, con los valores del plan): no se compara ni entra en los resúmenes' : 'son de carga rápida (tildadas sin escribir, con los valores del plan): no se comparan ni entran en los resúmenes'}`,
+    );
   const sinValor = delRango.length - conValor.length;
   if (sinValor > 0) partes.push(`${numero(sinValor)} sin valor conocido`);
   const tramos = new Set(conValor.map((p) => p.segment)).size;

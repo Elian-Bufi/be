@@ -16,7 +16,6 @@ import {
   ALCANCES,
   COPY,
   COPY_INVITACION,
-  COPY_VINCULO,
   ETIQUETA_DE_ALCANCE,
   enlaceDeInvitacion,
   type Alcance,
@@ -109,7 +108,14 @@ export function InvitarPersona({
     }
     if (sesionPerdida(r)) return;
     if (esIncierto(r)) return setEstado({ tipo: 'error', texto: COPY.resultadoIncierto, incierto: true });
-    setEstado({ tipo: 'error', texto: r.tipo === 'API' && r.codigo === 'SCOPE_NOT_AVAILABLE' ? COPY_VINCULO.solicitudNoDisponible : COPY.noDisponible, incierto: false });
+    // El área es lo que se corrige: el error va junto al campo, no arriba del formulario (bloque 5).
+    if (r.tipo === 'API' && r.codigo === 'SCOPE_NOT_AVAILABLE') {
+      setErrorDeArea(COPY_INVITACION.areaNoHabilitada);
+      setEstado({ tipo: 'eligiendo' });
+      window.setTimeout(() => document.getElementById(`${id}-area`)?.focus(), 0);
+      return;
+    }
+    setEstado({ tipo: 'error', texto: COPY.noDisponible, incierto: false });
   }
 
   async function copiar(que: 'enlace' | 'mensaje', texto: string) {
@@ -218,7 +224,7 @@ export function InvitarPersona({
               id={`${id}-area`}
               value={alcance}
               aria-invalid={errorDeArea ? true : undefined}
-              aria-describedby={errorDeArea ? `${id}-area-error` : undefined}
+              aria-describedby={[errorDeArea ? `${id}-area-error` : null, areaSugerida && alcance === areaSugerida ? `${id}-area-sugerida` : null].filter(Boolean).join(' ') || undefined}
               onChange={(e) => {
                 setAlcance(e.target.value as Alcance | '');
                 intento.descartar();
@@ -232,6 +238,11 @@ export function InvitarPersona({
                 </option>
               ))}
             </select>
+            {areaSugerida && alcance === areaSugerida ? (
+              <p id={`${id}-area-sugerida`} className="campo__ayuda">
+                {COPY_INVITACION.areaSugerida}
+              </p>
+            ) : null}
             {errorDeArea ? (
               <p id={`${id}-area-error`} className="campo__error">
                 <span aria-hidden="true">⚠ </span>

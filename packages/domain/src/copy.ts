@@ -23,6 +23,8 @@ export const COPY = {
   iniciarSesion: 'Iniciar sesión',
   /** 10-B02:198-225 — neutral: no dice qué falló. */
   loginFallido: 'No pudimos verificar los datos de acceso.',
+  /** DL-147: una falla de red al entrar no es un problema de los datos de acceso, y lo dice. */
+  loginSinConexion: 'No pudimos conectarnos con BE: no es un problema de tu correo ni de tu contraseña. Revisá la conexión y volvé a intentar.',
   /** 10-B02:310-347 — literal, sin CTA de otorgamiento (DL-024). */
   cuentaSinA3: 'Para usar funciones que procesan datos de salud, revisá y autorizá el tratamiento correspondiente.',
   /** 10-B02:535-551. */
@@ -40,6 +42,8 @@ export const COPY = {
     n === 1 ? 'Revisá los campos marcados. Hay 1 dato que necesita corrección.' : `Revisá los campos marcados. Hay ${n} datos que necesitan corrección.`,
   /** 10-B10:355-378. */
   errorDeVista: 'No pudimos cargar esta vista.',
+  /** «Ver más» que falla: lo que no llegó son los siguientes, no la vista (encargo de consolidación, bloque 5). */
+  errorAlTraerMas: 'No pudimos traer más. Lo que ya se ve sigue igual.',
   reintentar: 'Reintentar',
   /** 10-B10:430-438; 10-B04:1117-1141. */
   verificando: 'Estamos verificando si la acción se completó.',

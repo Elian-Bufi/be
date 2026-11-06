@@ -47,10 +47,13 @@ export interface ImagenALaFecha {
   /** El número del último cambio: 0 si nunca tuvo imagen. Es el `imageVersion` que se espera al cambiarla. */
   readonly numero: number;
   readonly imagen: ImagenDeEjercicio | null;
+  /** DL-162: la asociación vigente, que es la versión del recurso didáctico (`resourceVersionId` de API-TRN-13). */
+  readonly asociacionId?: string;
 }
 
 interface FilaDeImagen {
   ejercicioId: string;
+  asociacionId: string;
   numero: number;
   cambio: 'ASOCIAR' | 'RETIRAR';
   medioId: string | null;
@@ -73,7 +76,7 @@ export async function imagenesDeEjercicios(tx: Tx, ejercicioIds: readonly string
   const ids = [...new Set(ejercicioIds)].filter(esUuid).map((id) => id.toLowerCase());
   if (ids.length === 0) return new Map();
   const filas = await tx.$queryRaw<FilaDeImagen[]>`
-    SELECT DISTINCT ON (a."ejercicio_id") a."ejercicio_id"::text AS "ejercicioId", a."numero", a."cambio"::text AS "cambio", a."medio_id"::text AS "medioId",
+    SELECT DISTINCT ON (a."ejercicio_id") a."ejercicio_id"::text AS "ejercicioId", a."id"::text AS "asociacionId", a."numero", a."cambio"::text AS "cambio", a."medio_id"::text AS "medioId",
            a."version_de_ejercicio_id"::text AS "versionDeEjercicioId", a."texto_alternativo" AS "textoAlternativo", a."licencia",
            a."revision_tecnica"::text AS "revisionTecnica", a."momento_de_registro" AS "momento",
            m."procedencia_de_imagen"::text AS "procedencia", m."autoria"
@@ -82,7 +85,7 @@ export async function imagenesDeEjercicios(tx: Tx, ejercicioIds: readonly string
      WHERE a."ejercicio_id" = ANY(${ids}::uuid[]) ${aLaFecha ? Prisma.sql`AND a."momento_de_registro" <= ${aLaFecha}` : Prisma.empty}
      ORDER BY a."ejercicio_id", a."numero" DESC`;
   const r = new Map<string, ImagenALaFecha>(ids.map((id) => [id, { numero: 0, imagen: null }]));
-  for (const f of filas) r.set(f.ejercicioId, { numero: f.numero, imagen: f.cambio === 'ASOCIAR' ? imagenApi(f) : null });
+  for (const f of filas) r.set(f.ejercicioId, { numero: f.numero, imagen: f.cambio === 'ASOCIAR' ? imagenApi(f) : null, asociacionId: f.asociacionId });
   return r;
 }
 

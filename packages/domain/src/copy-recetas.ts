@@ -133,6 +133,8 @@ export const COPY_REGISTRO_PARA_EL_PROFESIONAL = {
   algoDiferente: 'Comió algo diferente',
   /** El contraste de una comida con algo diferente registrado en su contexto: los dos hechos, sin un «Sin registro» engañoso. */
   sinOpcionDelPlan: 'Sin opción del plan registrada',
+  /** El renglón de un día con registros, pero ninguno en una comida del plan (DL-153): nunca «0 de N». */
+  ningunaComidaDelPlanConRegistro: 'Ninguna comida del plan con registro',
   comidaDiferenteRegistrada: 'Comida diferente registrada',
   registradaEn: (comida: string) => `Registrada en «${comida}»`,
   /** CONS:599-612: una comida diferente no marca la comida prescripta como realizada; el contraste la muestra aparte. */

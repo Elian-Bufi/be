@@ -10,11 +10,14 @@
  * - el texto buscado viaja en el cuerpo de API-DSH-04-BUSQUEDA: nunca en una URL ni en el registro de requests (DL-127);
  * - un tercero recibe el mismo 404 que un asesorado inexistente;
  * - ocho claves, ninguna extra, y las cinco sin especificación no inventan nada (TEST-PRJ-001);
- * - una vista guardada es solo configuración y no concede acceso.
+ * - una vista guardada es solo configuración y no concede acceso;
+ * - DL-153: una comida del plan sin ningún registro hace del día un subtotal y se dice cuál, con el mismo criterio que la
+ *   pestaña Registros (API-NUT-17); una comida diferente en una comida del plan tiene registro, aunque no sea la opción.
  */
 import type { INestApplication } from '@nestjs/common';
 import {
   CLAVES_DE_PROYECCION,
+  ContextoDeRevisionResponseSchema,
   LineaDeTiempoResponseSchema,
   ListaDeVistasResponseSchema,
   ProyeccionResponseSchema,
@@ -237,10 +240,22 @@ describe('API-PRJ-01 · nutrición prescripta y registrada', () => {
     const hace3 = resultado.recorded.points.find((p) => p.date === fechaCivil(haceDias(3)))!;
     expect(hace3.value).toBe(Number(sumaExacta([e.rectificado.energia, e.completo.energia])));
     expect(hace3).toMatchObject({ quality: 'COMPLETE', n: 2, corrected: true });
-    // Hoy: el anulado no cuenta y el único efectivo no tiene cantidades → desconocido, no cero.
+    // DL-153: las dos comidas del plan de ese día tienen su opción registrada; por eso, y solo por eso, no es un subtotal.
+    expect(hace3.coverage?.planMeals).toEqual({ daysKnown: 1, daysUndetermined: [], expected: 2, withPlanOption: 2, withDifferentMeal: 0, withoutRecord: 0 });
+    // Hoy: el anulado no cuenta y el único efectivo no tiene cantidades → desconocido, no cero. Deshacer el almuerzo lo
+    // liberó: esa comida del plan queda sin registro (DL-153), y se dice aparte de la falta de cantidades.
     const hoy = resultado.recorded.points.find((p) => p.date === fechaCivil(new Date()))!;
-    expect(hoy).toMatchObject({ value: null, quality: 'UNKNOWN', missing: [{ reason: 'SIN_CANTIDADES', count: 1 }] });
+    expect(hoy).toMatchObject({
+      value: null,
+      quality: 'UNKNOWN',
+      missing: [
+        { reason: 'SIN_CANTIDADES', count: 1 },
+        { reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 1 },
+      ],
+    });
     expect(resultado.coverage).toMatchObject({ records: 3, recordsWithQuantities: 2, recordsWithoutQuantities: 1, annulledExcluded: 1, rectifiedCountedOnce: 1, daysWithRecords: 2 });
+    // Las comidas del plan del período no cuentan hoy, que sigue en curso.
+    expect(resultado.coverage.planMeals).toEqual({ daysKnown: 1, daysUndetermined: [], expected: 2, withPlanOption: 2, withDifferentMeal: 0, withoutRecord: 0 });
     // El requerimiento del objetivo es un escalón con su vigencia; lo previsto no se suma como objetivo del día.
     expect(resultado.prescribed.energyRequirement).toEqual([expect.objectContaining({ value: 2200, unit: 'kcal/day', to: null })]);
     expect(resultado.prescribed.note).toMatch(/alternativas/);
@@ -294,6 +309,53 @@ describe('API-PRJ-01 · nutrición prescripta y registrada', () => {
     if (resultado.kind !== 'NUTRITION_PRESCRIBED_VS_RECORDED') throw new Error('otra clave');
     expect(resultado.recorded.points).toEqual([]);
     expect(resultado.recorded.gaps).toEqual([{ from: '2026-01-01', to: '2026-01-31', days: 31, state: 'NO_DATA' }]);
+  });
+});
+
+describe('API-PRJ-01 · las comidas del plan sin registro (DL-153)', () => {
+  it('una comida del plan sin registro hace del día un subtotal y dice cuál; algo diferente en la cena es un registro; igual que Registros', async () => {
+    const c = await circuitoConPlanActivo(app, `ana-comidas-${++contador}`);
+    const hoy = (await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today/options').expect(200)).body.data;
+    const [almuerzo, cena] = hoy.meals as { mealId: string; label: string; options: { optionId: string }[] }[];
+    const dayTypeId = hoy.dayTypes[0].dayTypeId as string;
+    const opcion = (comida: { mealId: string; options: { optionId: string }[] }, ocurrio: Date) =>
+      conSesion(app, c.ase.token)
+        .post('/api/v1/me/nutrition/meal-records', claveDeIdempotencia())
+        .send({ kind: 'PLAN_OPTION', activePlanId: c.planId, dayTypeId, mealId: comida.mealId, optionId: comida.options[0]!.optionId, occurredAt: ocurrio.toISOString(), consumption: { status: 'PLAN_PORTIONS' }, observation: null })
+        .expect(201);
+    // Anteayer, solo el almuerzo; ayer, el almuerzo y algo diferente en la cena (texto, sin cantidades).
+    await opcion(almuerzo!, haceDias(2));
+    await opcion(almuerzo!, haceDias(1));
+    await conSesion(app, c.ase.token)
+      .post('/api/v1/me/nutrition/meal-records', claveDeIdempotencia())
+      .send({ kind: 'DIFFERENT', activePlanId: c.planId, dayTypeId, mealId: cena!.mealId, occurredAt: haceDias(1).toISOString(), description: 'Una pizza con amigos', approximateQuantity: null, mediaIds: [] })
+      .expect(201);
+
+    const r = ProyeccionResponseSchema.parse((await proyeccion(c.pro, c.ase.id, 'NUTRITION_PRESCRIBED_VS_RECORDED').expect(200)).body).data.result!;
+    if (r.kind !== 'NUTRITION_PRESCRIBED_VS_RECORDED') throw new Error('otra clave');
+    const anteayer = r.recorded.points.find((p) => p.date === fechaCivil(haceDias(2)))!;
+    // Antes de DL-153 salía COMPLETE («sin faltantes»): el almuerzo tenía cantidades y nadie miraba la cena.
+    expect(anteayer).toMatchObject({ quality: 'PARTIAL', missing: [{ reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 1 }] });
+    expect(anteayer.coverage?.planMeals).toEqual({ daysKnown: 1, daysUndetermined: [], expected: 2, withPlanOption: 1, withDifferentMeal: 0, withoutRecord: 1 });
+    expect(anteayer.detail).toEqual(
+      expect.arrayContaining([
+        { label: 'Comidas del plan', value: '1 de 2 con registro · 1 sin registro' },
+        { label: 'Sin registro', value: cena!.label },
+      ]),
+    );
+    const ayer = r.recorded.points.find((p) => p.date === fechaCivil(haceDias(1)))!;
+    expect(ayer).toMatchObject({ quality: 'PARTIAL', missing: [{ reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 }] });
+    expect(ayer.coverage?.planMeals).toEqual({ daysKnown: 1, daysUndetermined: [], expected: 2, withPlanOption: 1, withDifferentMeal: 1, withoutRecord: 0 });
+    // D-2 (criterios del 2026-10-24): la cena con algo diferente tiene registro, sin ser la opción del plan; su cantidad sigue desconocida.
+    expect(ayer.detail).toEqual(expect.arrayContaining([{ label: 'Comidas del plan', value: '2 de 2 con registro · 1 con opción del plan · 1 con comida diferente' }]));
+    expect(r.coverage.planMeals).toEqual({ daysKnown: 2, daysUndetermined: [], expected: 4, withPlanOption: 2, withDifferentMeal: 1, withoutRecord: 1 });
+
+    // El mismo criterio que la pestaña Registros (API-NUT-17, el período por defecto, que termina hoy).
+    const contexto = ContextoDeRevisionResponseSchema.parse((await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/nutrition/review-context`).expect(200)).body).data;
+    const laCenaDel = (fecha: string) => contexto.descriptiveContrast.days.find((d) => d.date === fecha)!.meals.find((m) => m.mealId === cena!.mealId)!;
+    expect(laCenaDel(fechaCivil(haceDias(2)))).toMatchObject({ state: 'NO_DATA', differentMealExecutionIds: [] });
+    expect(laCenaDel(fechaCivil(haceDias(1)))).toMatchObject({ state: 'NO_DATA' });
+    expect(laCenaDel(fechaCivil(haceDias(1))).differentMealExecutionIds).toHaveLength(1);
   });
 });
 

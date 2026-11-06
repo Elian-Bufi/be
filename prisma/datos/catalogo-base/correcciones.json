@@ -1,0 +1,104 @@
+{
+  "catalogo": "alimentos",
+  "descripcion": "Correspondencia del catálogo base de alimentos con su fuente (DL-141, encargo de consolidación del 2026-10-19, bloque 4). Lo que se corrige va en una versión nueva del ítem o en un retiro del nombre alternativo: las migraciones ya aplicadas no se tocan.",
+  "fuentes": {
+    "glosario": {
+      "cita": "Secretaría de Agricultura, Ganadería, Pesca y Alimentos (SAGPyA): «Glossary of main export cuts from Argentina», con la tabla «Nombres equivalentes o aproximados de cortes de carne bovina en distintos países» (mayo de 2004), publicado por el IPCVA",
+      "url": "https://ipcva.agrositio.com/files/glosario.pdf",
+      "nota": "La dirección www.ipcva.com.ar/files/glosario.pdf responde 404 desde octubre de 2026; el mismo archivo está en ipcva.agrositio.com.",
+      "sha256": "13bebcfb4fee3493a1e869e3c954936327824b9c06c5ed03d7870092ac68509b",
+      "consultadoEl": "2026-10-19"
+    },
+    "imps": {
+      "cita": "USDA Agricultural Marketing Service: «Institutional Meat Purchase Specifications. Fresh Beef, Series 100»",
+      "url": "https://www.ams.usda.gov/sites/default/files/media/IMPS_100_Fresh_Beef%5B1%5D.pdf",
+      "sha256": "fe7413bd8e30a3bf58a2d887ca22e4803e723b986f1f0c8c1bae4ae59dbbd569",
+      "consultadoEl": "2026-10-19"
+    }
+  },
+  "cortes": [
+    {
+      "fdcId": "174055",
+      "nombreAnterior": "Cuadril, magro, crudo",
+      "nombre": "Cuadril sin colita (top sirloin), magro, crudo",
+      "pieza": "Top sirloin butt (IMPS 184): M. gluteus medius, M. gluteus accessorius y M. gluteus profundus, con la tapa (M. biceps femoris) o sin ella (IMPS 184A y 184B); sin el bottom sirloin, que lleva la colita (tri-tip)",
+      "preparacion": "crudo",
+      "grasa": "solo la parte magra separable, de un bife cortado con 1/8\" (3 mm) de grasa externa",
+      "correspondencia": "APROXIMADA",
+      "nota": "Es el top sirloin de USDA: el cuadril sin la colita, con la tapa o sin ella (SR Legacy no lo aclara).",
+      "fundamento": "El glosario relaciona «Cuadril (o cadera) con Tapa sin Colita» con «Rump / Sirloin Butt / Loin End» y «Corazón de Cuadril» con «Eye of Rump / Rump, Cap and Tail Off». El top sirloin de USDA (IMPS 184) es ese corazón, con la tapa o sin ella, y deja afuera la colita. La descripción de SR Legacy no dice si el bife lleva la tapa: el nombre dice «sin colita» y la correspondencia queda aproximada."
+    },
+    {
+      "fdcId": "168634",
+      "nombreAnterior": "Cuadril, magro, asado",
+      "nombre": "Cuadril sin colita (top sirloin), magro, asado",
+      "pieza": "Top sirloin butt (IMPS 184): M. gluteus medius, M. gluteus accessorius y M. gluteus profundus, con la tapa (M. biceps femoris) o sin ella (IMPS 184A y 184B); sin el bottom sirloin, que lleva la colita (tri-tip)",
+      "preparacion": "asado al grill (broiled)",
+      "grasa": "solo la parte magra separable, de un bife sin grasa externa (0\"); el crudo es de un bife con 1/8\", y la parte magra cambia poco",
+      "correspondencia": "APROXIMADA",
+      "nota": "Es el top sirloin de USDA: el cuadril sin la colita, con la tapa o sin ella (SR Legacy no lo aclara).",
+      "fundamento": "La misma pieza que el crudo (IMPS 184), con la misma correspondencia aproximada. SR Legacy publica el asado de la parte magra con 0\" y con 1/8\" de grasa externa; el que está sembrado es el de 0\"."
+    },
+    {
+      "fdcId": "168745",
+      "nombreAnterior": "Entraña, magra, asada",
+      "nombre": "Entraña fina, magra, asada",
+      "pieza": "Outside skirt (IMPS 121C y 1121E): el diafragma, sin el centro de la entraña (hanging tender) y sin el inside skirt (M. transversus abdominis, IMPS 121D)",
+      "preparacion": "asada al grill (broiled)",
+      "grasa": "solo la parte magra separable, sin grasa externa (0\")",
+      "correspondencia": "DIRECTA",
+      "nota": null,
+      "fundamento": "El glosario relaciona «Entraña Fina / Diafragma» con «Thin Skirt / Outside Skirt / Diaphragm», y la «Entraña Gruesa o Centro de Entraña» con otra pieza («Hanging Tender / Thick Skirt»). El outside skirt de USDA es el diafragma (IMPS 121C). SR Legacy no publica la entraña cruda."
+    },
+    {
+      "fdcId": "169563",
+      "nombreAnterior": "Vacío, magro y grasa, crudo",
+      "nombre": "Bife de vacío, magro y grasa, crudo",
+      "pieza": "Flank steak (IMPS 193): el M. rectus abdominis, separado del M. transversus abdominis y de los oblicuos interno y externo",
+      "preparacion": "crudo",
+      "grasa": "la parte magra y la grasa separable, sin grasa externa (0\")",
+      "correspondencia": "DIRECTA",
+      "nota": null,
+      "fundamento": "El glosario de cortes de exportación relaciona «Bife de Vacío» con «Flank Steak», y el flank steak de USDA es el M. rectus abdominis (IMPS 193). El vacío entero es otra pieza («Hindquarter / Flank or Thin Flank»): suma el transverso y los oblicuos, y más grasa. SR Legacy no lo publica, así que esta composición no representa al vacío comercial completo."
+    },
+    {
+      "fdcId": "168733",
+      "nombreAnterior": "Vacío, magro y grasa, asado",
+      "nombre": "Bife de vacío, magro y grasa, asado",
+      "pieza": "Flank steak (IMPS 193): el M. rectus abdominis, separado del M. transversus abdominis y de los oblicuos interno y externo",
+      "preparacion": "asado al grill (broiled)",
+      "grasa": "la parte magra y la grasa separable, sin grasa externa (0\")",
+      "correspondencia": "DIRECTA",
+      "nota": null,
+      "fundamento": "La misma pieza que el crudo (IMPS 193): el bife de vacío, no el vacío entero."
+    },
+    {
+      "fdcId": "173125",
+      "nombreAnterior": "Bola de lomo, magra, cruda",
+      "nombre": "Bola de lomo, magra, cruda",
+      "pieza": "Sirloin tip o knuckle (IMPS 167): el cuádriceps, M. rectus femoris, M. vastus lateralis, M. vastus medialis y M. vastus intermedius",
+      "preparacion": "cruda",
+      "grasa": "solo la parte magra separable, sin grasa externa (0\")",
+      "correspondencia": "DIRECTA",
+      "nota": null,
+      "fundamento": "El glosario relaciona «Bola de Lomo» con «Thick Flank / Knuckle / Sirloin Tip», y el tip round de USDA es el knuckle (IMPS 167). El nombre ya era fiel: no cambia."
+    }
+  ],
+  "nombresRetirados": [
+    { "fdcId": "173905", "nombre": "Copos de avena", "idioma": "ES", "region": "ES", "motivo": "Nombra la avena seca en copos, no la avena cocida: cambia la preparación." },
+    { "fdcId": "173905", "nombre": "Avena en hojuelas", "idioma": "ES", "region": "MX", "motivo": "Nombra la avena seca en hojuelas, no la avena cocida: cambia la preparación." },
+    { "fdcId": "174203", "nombre": "Surimi", "idioma": "ES", "region": null, "motivo": "El surimi es la pasta de pescado; el kanikama la lleva con almidón y azúcar, y USDA da composiciones distintas para los dos: cambia el ingrediente." },
+    { "fdcId": "170460", "nombre": "Tomate triturado", "idioma": "ES", "region": "ES", "motivo": "El tomate triturado es otro producto que el puré de tomate: cambia el ingrediente." },
+    { "fdcId": "171247", "nombre": "Queso rallado", "idioma": "ES", "region": "AR", "motivo": "En la Argentina el queso rallado suele ser reggianito o sardo, no parmesano: cambia el ingrediente." },
+    { "fdcId": "170849", "nombre": "Queso por salut", "idioma": "ES", "region": "AR", "motivo": "El por salut argentino es otro queso que el port-salut que describe USDA: su composición puede ser otra." },
+    { "fdcId": "173461", "nombre": "Cajeta", "idioma": "ES", "region": "MX", "motivo": "La cajeta se hace en general con leche de cabra: cambia el ingrediente." },
+    { "fdcId": "169249", "nombre": "Lechuga criolla", "idioma": "ES", "region": "AR", "motivo": "Ninguna fuente ata la lechuga criolla a la variedad de hoja verde que describe USDA." },
+    { "fdcId": "171695", "nombre": "Compota de manzana", "idioma": "ES", "region": null, "motivo": "La compota suele llevar azúcar, y este puré es sin azúcar: cambia el ingrediente." },
+    { "fdcId": "172143", "nombre": "Entrecot", "idioma": "ES", "region": "ES", "motivo": "En España «entrecot» nombra bifes del lomo alto y del lomo bajo; el ojo de bife es el lomo alto sin tapa (glosario de cortes de exportación)." },
+    { "fdcId": "172142", "nombre": "Entrecot", "idioma": "ES", "region": "ES", "motivo": "En España «entrecot» nombra bifes del lomo alto y del lomo bajo; el ojo de bife es el lomo alto sin tapa (glosario de cortes de exportación)." }
+  ],
+  "nombresNuevos": [
+    { "fdcId": "172143", "nombre": "Lomo alto sin tapa", "idioma": "ES", "region": "ES", "fundamento": "Glosario de cortes de exportación: «Bife Ancho sin Tapa» = «Lomo Alto sin tapa» (España) = «Rib Eye Steak / Rib Eye Roll»." },
+    { "fdcId": "172142", "nombre": "Lomo alto sin tapa", "idioma": "ES", "region": "ES", "fundamento": "Glosario de cortes de exportación: «Bife Ancho sin Tapa» = «Lomo Alto sin tapa» (España) = «Rib Eye Steak / Rib Eye Roll»." }
+  ]
+}

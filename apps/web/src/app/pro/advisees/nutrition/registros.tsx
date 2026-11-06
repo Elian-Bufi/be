@@ -60,6 +60,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNod
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
+import { OrigenEnElCatalogo } from '../../../../components/origen-en-el-catalogo';
 import { Panel } from '../../../../components/panel';
 import { BotonDeVista } from '../../../../components/vista-con-nombre';
 import { api, type Resultado } from '../../../../lib/api';
@@ -290,7 +291,12 @@ function Contraste({ contexto, linea, hoy, onReintentarLaLinea, onCambio }: { co
         {sinContar.sinDiaTipo > 0 ? ` · ${sinContar.sinDiaTipo === 1 ? 'un día' : `${sinContar.sinDiaTipo} días`} sin día tipo determinado: sus comidas no se pueden contar` : ''}
       </p>
 
-      {aLaVista.length === 0 ? (
+      {/* Sin ninguna comida en el período, una vista elegida no es la que deja afuera: se dice el vacío del período, no «Hay 0». */}
+      {aLaVista.length === 0 && vista !== 'TODAS' && total === 0 && deLaVista !== null ? (
+        <EstadoVacio titulo="El período no tiene comidas para mostrar.">
+          <p className="nota">No es un cero: no hay comidas del plan ni registros en estas fechas. Probá con un período más largo.</p>
+        </EstadoVacio>
+      ) : aLaVista.length === 0 ? (
         <EstadoVacio
           titulo={vista === 'TODAS' ? 'El período no tiene días para mostrar.' : deLaVista === null ? `No se puede saber qué comidas trae «${definicion.nombre}».` : `Ninguna comida del período coincide con «${definicion.nombre}».`}
           accion={
@@ -660,6 +666,11 @@ function EstimacionDelProfesional({ ingesta, onCambio }: { ingesta: Ingesta; onC
                     {/* DL-141: si apareció por un nombre alternativo, cuál: «Palta (aguacate)». */}
                     {o.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(o.matchedAlternativeName)})</span> : null}
                   </button>
+                  {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. */}
+                  <span className="nota">
+                    {' · '}
+                    <OrigenEnElCatalogo item={o} />
+                  </span>
                 </li>
               ))}
             </ul>

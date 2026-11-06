@@ -34,6 +34,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { fecha } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useSesionRequerida } from '../../../../lib/sesion-requerida';
+import { EsperandoSesion } from '../../../../lib/sesion';
 
 type Detalle = DetalleDeVinculoResponse['data'];
 type Carga = { tipo: 'cargando' } | { tipo: 'no-revelable' } | { tipo: 'error' } | { tipo: 'listo'; v: Detalle };
@@ -64,7 +65,7 @@ export function DetalleDeVinculo() {
     void cargar();
   }, [cargar]);
 
-  if (!token) return <p className="nota">Redirigiendo a Iniciar sesión…</p>;
+  if (!token) return <EsperandoSesion />;
   if (carga.tipo === 'cargando') return <Cargando />;
   if (carga.tipo === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (carga.tipo === 'no-revelable') {

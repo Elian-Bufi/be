@@ -25,6 +25,7 @@
 import {
   COPY,
   COPY_DE_ACTIVAR_EL_PLAN,
+  COPY_GUARDADO,
   COPY_DEL_PLAN,
   COPY_HABITUALES,
   COPY_NUTRICION,
@@ -50,7 +51,7 @@ import {
   type VersionDePlan,
 } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
@@ -60,7 +61,9 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { api } from '../../../../lib/api';
-import { diaSinElAnioEnCurso } from '../../../../lib/formato';
+import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
+import { useAutoguardado } from '../../../../lib/autoguardado';
+import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
@@ -162,6 +165,13 @@ export function EditorDeBorrador({
   const [sucio, setSucio] = useState(false);
   useCambiosSinGuardar(sucio, 'el plan en preparación');
   const [guardando, setGuardando] = useState(false);
+  // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
+  // el autoguardado. «Guardado» solo con la respuesta del servidor; un 409 por versión no pisa nada.
+  const [fallo, setFallo] = useState(false);
+  const [conflicto, setConflicto] = useState(false);
+  const [guardadoA, setGuardadoA] = useState<string | null>(null);
+  // Cuántas ediciones hubo: lo que se escribe mientras viaja un guardado no se pisa con la respuesta.
+  const ediciones = useRef(0);
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
   const [confirmar, setConfirmar] = useState(false);
@@ -169,6 +179,9 @@ export function EditorDeBorrador({
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
   // «Guardar como habitual» sobre una comida del borrador (DL-109): la posición de la comida elegida, o nada.
   const [guardarHabitual, setGuardarHabitual] = useState<{ readonly i: number; readonly j: number } | null>(null);
+  // «Agregar comida ▾ → Una comida habitual» (bloque 5 del encargo de consolidación): el selector aparece a pedido, como en
+  // Entrenamiento.
+  const [insertandoComida, setInsertandoComida] = useState(false);
   const comidasHabituales = useComidasHabituales(token);
   // Los alimentos habituales se cargan una vez para todo el borrador.
   const alimentosHabituales = useAlimentosHabituales(token);
@@ -194,7 +207,13 @@ export function EditorDeBorrador({
     setRecetas(recetasDe(r.datos.data));
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
     setSucio(false);
+    setFallo(false);
+    setConflicto(false);
   }, [token, planId, sesionPerdida]);
+
+  useEffect(() => {
+    ediciones.current += 1;
+  }, [estructura, proximaRevision]);
 
   useEffect(() => {
     void cargar();
@@ -221,18 +240,22 @@ export function EditorDeBorrador({
   const objetivoVigente = objetivo?.versionId ?? null;
 
   /** Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. */
-  async function guardar(): Promise<VersionDePlan | null> {
+  async function guardar(automatico = false): Promise<VersionDePlan | null> {
     if (!version) return null;
     // Un nombre vacío o una cantidad que no se entiende pueden estar en otro día tipo, en una comida plegada o en otra
     // pestaña: se listan, y cada uno lleva a su lugar.
     const impide = loQueNoDejaGuardar(estructura);
     if (impide.length > 0) {
+      // El autoguardado espera a que se pueda guardar: no abre avisos mientras se escribe.
+      if (automatico) return null;
       setProblemas(impide);
       setMensaje({ tipo: 'error', texto: avisoDeLoQueNoDejaGuardar(impide) });
       return null;
     }
+    const edicionesAlEnviar = ediciones.current;
+    const estructuraEnviada = estructura;
     setGuardando(true);
-    setMensaje(null);
+    if (!automatico) setMensaje(null);
     const actualizarObjetivo = objetivoVigente && objetivoVigente !== version.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
     const r = await api.guardarBorrador(token, planId, {
       expectedVersion: version.version,
@@ -244,17 +267,46 @@ export function EditorDeBorrador({
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(r) || accesoRetirado(r)) return null;
     if (!r.ok) {
+      if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+        // Si el intento anterior se perdió en la red, lo guardado puede ser lo nuestro: entonces no hay conflicto.
+        const actual = fallo ? await api.consultarPlan(token, planId) : null;
+        if (actual?.ok && JSON.stringify(aEntrada(actual.datos.data)) === JSON.stringify(estructuraEnviada) && (actual.datos.data.nextReviewAt ?? '') === proximaRevision) {
+          setVersion(actual.datos.data);
+          setFallo(false);
+          setGuardadoA(horaDelDia(new Date()));
+          if (ediciones.current === edicionesAlEnviar) setSucio(false);
+          return actual.datos.data;
+        }
+        setConflicto(true);
+        return null;
+      }
+      setFallo(true);
+      if (automatico) return null;
       if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
       return null;
     }
     setVersion(r.datos.data);
-    setEstructura(aEntrada(r.datos.data));
+    setFallo(false);
+    setConflicto(false);
+    setGuardadoA(horaDelDia(new Date()));
+    // Lo escrito mientras viajaba el guardado se conserva: sigue pendiente y viaja en el próximo, con la versión nueva.
+    const sinCambiosDespues = ediciones.current === edicionesAlEnviar;
+    if (sinCambiosDespues) setEstructura(aEntrada(r.datos.data));
     setNombres((n) => ({ ...n, ...nombresDe(r.datos.data) }));
     setRecetas((x) => ({ ...x, ...recetasDe(r.datos.data) }));
-    setSucio(false);
+    if (sinCambiosDespues) setSucio(false);
     return r.datos.data;
   }
+
+  // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
+  const puedeGuardar = loQueNoDejaGuardar(estructura).length === 0;
+  const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision], [estructura, proximaRevision]);
+  useAutoguardado({
+    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando,
+    cambios: cambiosParaGuardar,
+    guardar: () => void guardar(true),
+  });
 
   async function validar() {
     const v = sucio ? await guardar() : version;
@@ -394,9 +446,7 @@ export function EditorDeBorrador({
           </span>
         </h2>
         <div className="editor-del-plan__acciones">
-          <p className="editor-del-plan__estado" aria-live="polite" data-estado={guardando ? 'guardando' : sucio ? 'sin-guardar' : 'guardado'}>
-            {guardando ? COPY_NUTRICION.guardando : sucio ? COPY_NUTRICION.cambiosSinGuardar : COPY_NUTRICION.guardado}
-          </p>
+          <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
           <MenuDeAcciones
             rotulo="Más acciones de esta versión"
             acciones={[
@@ -447,6 +497,15 @@ export function EditorDeBorrador({
       <p className="nota editor-del-plan__que-es">
         El asesorado no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
       </p>
+      {conflicto ? (
+        <Aviso tipo="error" enfocar>
+          <p>{COPY_GUARDADO.conflicto}</p>
+          <p className="nota">{COPY_GUARDADO.cargarGuardadaAclaracion}</p>
+          <button type="button" className="boton boton--secundario" onClick={() => void cargar()}>
+            {COPY_GUARDADO.cargarGuardada}
+          </button>
+        </Aviso>
+      ) : null}
       {version.templateOrigin ? <NotaDeOrigenNutricional token={token} origen={version.templateOrigin} /> : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
@@ -577,17 +636,69 @@ export function EditorDeBorrador({
             />
           ))}
           <div className="editor-del-plan__al-pie">
-            <button type="button" className="boton boton--quieto" data-agregar-comida onClick={agregarComida}>
-              <Icono nombre="mas" tamano={18} />
-              Agregar comida
-            </button>
-            <InsertarComidaHabitual
-              comidas={comidasHabituales.lista}
-              onInsertar={(comida, nombresNuevos) => {
-                setNombres((n) => ({ ...n, ...nombresNuevos }));
-                cambiar((x) => (x[i]!.meals.push(comida), x));
-              }}
+            {/* Una sola entrada para sumar una comida, como «Agregar ▾» en Entrenamiento: vacía o una habitual. Sin
+                habituales guardadas, la opción queda apagada y dice cómo se guardan. Si no se pudieron leer, apagada con
+                ese motivo, y una acción más para volver a leerlas (no es «todavía no guardaste ninguna»). */}
+            <MenuDeAcciones
+              id="agregar-comida"
+              rotulo="agregar una comida"
+              texto="Agregar comida"
+              icono="mas"
+              conFlecha
+              alineado="izquierda"
+              acciones={[
+                { clave: 'nueva', texto: 'Una comida vacía', alElegir: agregarComida },
+                {
+                  clave: 'habitual',
+                  texto: 'Una comida habitual',
+                  alElegir: () => setInsertandoComida(true),
+                  noSePuede:
+                    comidasHabituales.lista === null
+                      ? 'Leyendo tus comidas habituales…'
+                      : comidasHabituales.falla
+                        ? COPY_HABITUALES.comidasNoSeLeyeron
+                        : comidasHabituales.lista.length === 0
+                          ? COPY_HABITUALES.sinComidas
+                          : null,
+                },
+                ...(comidasHabituales.falla ? [{ clave: 'releer', texto: COPY_HABITUALES.volverALeerComidas, alElegir: () => void comidasHabituales.recargar() }] : []),
+              ]}
             />
+            {insertandoComida ? (
+              <div
+                className="comida-habitual-a-pedido"
+                onKeyDown={(e) => {
+                  if (e.key !== 'Escape') return;
+                  e.stopPropagation();
+                  setInsertandoComida(false);
+                  document.getElementById('agregar-comida')?.focus();
+                }}
+              >
+                <InsertarComidaHabitual
+                  comidas={comidasHabituales.lista}
+                  onInsertar={(comida, nombresNuevos) => {
+                    const j = dia?.meals.length ?? 0;
+                    setNombres((n) => ({ ...n, ...nombresNuevos }));
+                    cambiar((x) => (x[i]!.meals.push(comida), x));
+                    dejarAbiertas(new Set([...abiertas, j]));
+                    setInsertandoComida(false);
+                    // DL-113: el resultado de una acción, donde se está mirando; el foco vuelve a «Agregar comida».
+                    setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaComida });
+                    document.getElementById('agregar-comida')?.focus();
+                  }}
+                />
+                <button
+                  type="button"
+                  className="boton boton--enlace"
+                  onClick={() => {
+                    setInsertandoComida(false);
+                    document.getElementById('agregar-comida')?.focus();
+                  }}
+                >
+                  {COPY_HABITUALES.cancelar}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

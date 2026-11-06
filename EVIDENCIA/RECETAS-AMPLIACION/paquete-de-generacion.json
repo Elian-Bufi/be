@@ -1,0 +1,1171 @@
+{
+ "paquete": "Las 66 fotos de recetas, para generar en otra herramienta",
+ "conFoto": 0,
+ "primerLote": [
+  "R017",
+  "R029",
+  "R037",
+  "R052"
+ ],
+ "recetas": [
+  {
+   "codigo": "R001",
+   "nombre": "Avena cocida con banana y canela",
+   "origen": "ORIGINAL",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R001-avena-cocida-con-banana-y-canela.png",
+   "archivoDeEntrega": "01-avena-cocida-con-banana-y-canela.jpg",
+   "presentacion": "Avena cocida en leche, cremosa, en el cuenco; encima, rodajas de banana y una línea fina de canela molida. Una cuchara a la derecha.",
+   "noDebe": [
+    "miel",
+    "frutos secos",
+    "frutos rojos",
+    "hojas de menta",
+    "leche aparte"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Avena cocida con banana y canela», 1 porción. Ingredientes, en estas cantidades: Avena arrollada, cruda: 40 g; Leche parcialmente descremada (2 % de grasa): 200 g; Banana cruda: 100 g; Canela molida: 2 g.\nPreparación: Cocinar la avena con la leche 5 minutos. Servir con la banana en rodajas y la canela.\nPresentación: Avena cocida en leche, cremosa, en el cuenco; encima, rodajas de banana y una línea fina de canela molida. Una cuchara a la derecha.\nNo debe aparecer: miel, frutos secos, frutos rojos, hojas de menta, leche aparte.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R002",
+   "nombre": "Tostadas integrales con palta y huevo",
+   "origen": "ORIGINAL",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R002-tostadas-integrales-con-palta-y-huevo.png",
+   "archivoDeEntrega": "02-tostadas-integrales-con-palta-y-huevo.jpg",
+   "presentacion": "Dos rebanadas de pan integral de molde tostadas, con la palta untada y el huevo duro en rodajas encima.",
+   "noDebe": [
+    "semillas",
+    "sal en escamas",
+    "pimienta",
+    "brotes",
+    "tomate",
+    "limón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tostadas integrales con palta y huevo», 1 porción. Ingredientes, en estas cantidades: Pan integral de trigo, de molde: 60 g; Palta cruda: 50 g; Huevo duro: 50 g.\nPreparación: Tostar el pan. Untar la palta y sumar el huevo en rodajas.\nPresentación: Dos rebanadas de pan integral de molde tostadas, con la palta untada y el huevo duro en rodajas encima.\nNo debe aparecer: semillas, sal en escamas, pimienta, brotes, tomate, limón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R003",
+   "nombre": "Yogur natural con granola y frutillas",
+   "origen": "ORIGINAL",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R003-yogur-natural-con-granola-y-frutillas.png",
+   "archivoDeEntrega": "03-yogur-natural-con-granola-y-frutillas.jpg",
+   "presentacion": "Yogur natural blanco en el cuenco, con la granola encima y las frutillas cortadas al medio. Una cuchara a la derecha.",
+   "noDebe": [
+    "miel",
+    "otras frutas",
+    "hojas de menta",
+    "chocolate"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Yogur natural con granola y frutillas», 1 porción. Ingredientes, en estas cantidades: Yogur natural entero: 200 g; Granola casera: 30 g; Frutillas crudas: 80 g.\nPreparación: Servir el yogur con la granola y las frutillas cortadas.\nPresentación: Yogur natural blanco en el cuenco, con la granola encima y las frutillas cortadas al medio. Una cuchara a la derecha.\nNo debe aparecer: miel, otras frutas, hojas de menta, chocolate.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R004",
+   "nombre": "Licuado de banana con leche y avena",
+   "origen": "ORIGINAL",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R004-licuado-de-banana-con-leche-y-avena.png",
+   "archivoDeEntrega": "04-licuado-de-banana-con-leche-y-avena.jpg",
+   "presentacion": "Licuado liso, color crema claro, en el vaso, sin espuma exagerada. Nada apoyado en el borde.",
+   "noDebe": [
+    "rodajas de banana de adorno",
+    "canela",
+    "avena espolvoreada",
+    "crema",
+    "pajita de colores"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: vaso de vidrio liso de 300 ml.\nReceta: «Licuado de banana con leche y avena», 1 porción. Ingredientes, en estas cantidades: Leche parcialmente descremada (2 % de grasa): 250 g; Banana cruda: 120 g; Avena arrollada, cruda: 20 g.\nPreparación: Licuar todo hasta que quede liso.\nPresentación: Licuado liso, color crema claro, en el vaso, sin espuma exagerada. Nada apoyado en el borde.\nNo debe aparecer: rodajas de banana de adorno, canela, avena espolvoreada, crema, pajita de colores.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R005",
+   "nombre": "Tostadas integrales con queso crema y tomate",
+   "origen": "ORIGINAL",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R005-tostadas-integrales-con-queso-crema-y-tomate.png",
+   "archivoDeEntrega": "05-tostadas-integrales-con-queso-crema-y-tomate.jpg",
+   "presentacion": "Dos rebanadas de pan integral de molde tostadas, con el queso crema untado y rodajas de tomate encima.",
+   "noDebe": [
+    "albahaca",
+    "orégano",
+    "aceite",
+    "sal o pimienta visibles",
+    "jamón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tostadas integrales con queso crema y tomate», 1 porción. Ingredientes, en estas cantidades: Pan integral de trigo, de molde: 60 g; Queso crema: 40 g; Tomate rojo maduro, crudo: 80 g.\nPreparación: Tostar el pan. Untar el queso y sumar el tomate en rodajas.\nPresentación: Dos rebanadas de pan integral de molde tostadas, con el queso crema untado y rodajas de tomate encima.\nNo debe aparecer: albahaca, orégano, aceite, sal o pimienta visibles, jamón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R006",
+   "nombre": "Milanesa de carne al horno con puré de calabaza",
+   "origen": "ORIGINAL",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R006-milanesa-de-carne-al-horno-con-pure-de-calabaza.png",
+   "archivoDeEntrega": "06-milanesa-de-carne-al-horno-con-pure-de-calabaza.jpg",
+   "presentacion": "Una milanesa de carne horneada, dorada y crocante, con el puré de zapallo anco al lado, liso y naranja.",
+   "noDebe": [
+    "limón",
+    "perejil",
+    "papas fritas",
+    "ensalada",
+    "huevo frito"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Milanesa de carne al horno con puré de calabaza», 1 porción. Ingredientes, en estas cantidades: Nalga vacuna, magra, cruda: 150 g; Pan rallado común: 25 g; Huevo de gallina entero, crudo: 25 g; Zapallo anco al horno, sin sal: 200 g.\nPreparación: Pasar la carne por huevo y pan rallado. Hornear 20 minutos, dando vuelta a la mitad. Servir con el zapallo hecho puré.\nPresentación: Una milanesa de carne horneada, dorada y crocante, con el puré de zapallo anco al lado, liso y naranja.\nNo debe aparecer: limón, perejil, papas fritas, ensalada, huevo frito.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R007",
+   "nombre": "Bife a la plancha con papas al horno y ensalada",
+   "origen": "ORIGINAL",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R007-bife-a-la-plancha-con-papas-al-horno-y-ensalada.png",
+   "archivoDeEntrega": "07-bife-a-la-plancha-con-papas-al-horno-y-ensalada.jpg",
+   "presentacion": "Un bife a la plancha, con las marcas de la plancha; papas al horno con cáscara, cortadas, y una ensalada de lechuga y tomate apenas brillante por el aceite de oliva.",
+   "noDebe": [
+    "chimichurri",
+    "sal gruesa visible",
+    "cebolla",
+    "huevo frito",
+    "limón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Bife a la plancha con papas al horno y ensalada», 1 porción. Ingredientes, en estas cantidades: Bife de chorizo, magro, crudo: 150 g; Papa al horno con cáscara, sin sal: 200 g; Lechuga de hoja verde, cruda: 50 g; Tomate rojo maduro, crudo: 80 g; Aceite de oliva: 10 g.\nPreparación: Cocinar el bife a la plancha. Servir con las papas y la ensalada condimentada con el aceite.\nPresentación: Un bife a la plancha, con las marcas de la plancha; papas al horno con cáscara, cortadas, y una ensalada de lechuga y tomate apenas brillante por el aceite de oliva.\nNo debe aparecer: chimichurri, sal gruesa visible, cebolla, huevo frito, limón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R008",
+   "nombre": "Merluza al horno con puré de papa y brócoli",
+   "origen": "ORIGINAL",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R008-merluza-al-horno-con-pure-de-papa-y-brocoli.png",
+   "archivoDeEntrega": "08-merluza-al-horno-con-pure-de-papa-y-brocoli.jpg",
+   "presentacion": "Un filete de merluza al horno, blanco y apenas dorado; puré de papa liso y ramilletes de brócoli hervido, verde intenso.",
+   "noDebe": [
+    "limón",
+    "perejil",
+    "manteca visible",
+    "salsa"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Merluza al horno con puré de papa y brócoli», 1 porción. Ingredientes, en estas cantidades: Merluza (whiting), cruda: 150 g; Papa hervida sin cáscara, sin sal: 200 g; Brócoli hervido y escurrido, sin sal: 100 g.\nPreparación: Hornear la merluza 15 minutos. Servir con el puré y el brócoli.\nPresentación: Un filete de merluza al horno, blanco y apenas dorado; puré de papa liso y ramilletes de brócoli hervido, verde intenso.\nNo debe aparecer: limón, perejil, manteca visible, salsa.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R009",
+   "nombre": "Fideos con salsa bolognesa",
+   "origen": "ORIGINAL",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R009-fideos-con-salsa-bolognesa.png",
+   "archivoDeEntrega": "09-fideos-con-salsa-bolognesa.jpg",
+   "presentacion": "Fideos largos tipo spaghetti con la salsa bolognesa encima: carne picada y tomate, roja.",
+   "noDebe": [
+    "queso rallado",
+    "albahaca",
+    "perejil",
+    "pan"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Fideos con salsa bolognesa», 1 porción. Ingredientes, en estas cantidades: Fideos de trigo hervidos, sin sal: 200 g; Carne picada vacuna 90 % magra, cruda: 80 g; Puré de tomate sin sal agregada: 100 g; Cebolla cruda: 30 g.\nPreparación: Dorar la cebolla y la carne. Sumar el puré de tomate y cocinar 15 minutos. Servir sobre los fideos.\nPresentación: Fideos largos tipo spaghetti con la salsa bolognesa encima: carne picada y tomate, roja.\nNo debe aparecer: queso rallado, albahaca, perejil, pan.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R010",
+   "nombre": "Guiso de lentejas con verduras",
+   "origen": "ORIGINAL",
+   "familia": "Ollas, legumbres y arroz",
+   "archivoDeSalida": "R010-guiso-de-lentejas-con-verduras.png",
+   "archivoDeEntrega": "10-guiso-de-lentejas-con-verduras.jpg",
+   "presentacion": "Guiso espeso de lentejas con cubos de zanahoria y de zapallo, y cebolla, en el cuenco. Una cuchara a la derecha.",
+   "noDebe": [
+    "chorizo",
+    "panceta",
+    "perejil",
+    "pan",
+    "huevo"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Guiso de lentejas con verduras», 1 porción. Ingredientes, en estas cantidades: Lentejas hervidas sin sal: 200 g; Zanahoria cruda: 50 g; Zapallo anco crudo: 80 g; Cebolla cruda: 30 g.\nPreparación: Cocinar la cebolla, la zanahoria y el zapallo en un poco de agua. Sumar las lentejas y cocinar hasta que espese.\nPresentación: Guiso espeso de lentejas con cubos de zanahoria y de zapallo, y cebolla, en el cuenco. Una cuchara a la derecha.\nNo debe aparecer: chorizo, panceta, perejil, pan, huevo.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R011",
+   "nombre": "Tarta de acelga con ensalada de tomate",
+   "origen": "ORIGINAL",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R011-tarta-de-acelga-con-ensalada-de-tomate.png",
+   "archivoDeEntrega": "11-tarta-de-acelga-con-ensalada-de-tomate.jpg",
+   "presentacion": "Una porción de tarta de acelga: masa casera dorada y relleno verde de acelga con huevo; al lado, rodajas de tomate solas.",
+   "noDebe": [
+    "queso",
+    "huevo duro",
+    "cebolla",
+    "orégano",
+    "aceite sobre el tomate"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tarta de acelga con ensalada de tomate», 1 porción. Ingredientes, en estas cantidades: Acelga hervida, sin sal: 150 g; Huevo de gallina entero, crudo: 50 g; Harina de trigo blanca de uso general, enriquecida: 40 g; Aceite de girasol: 10 g; Tomate rojo maduro, crudo: 100 g.\nPreparación: Hacer una masa con la harina, el aceite y un poco de agua. Mezclar la acelga con el huevo y cubrir con la masa. Hornear 30 minutos y servir con la ensalada de tomate.\nPresentación: Una porción de tarta de acelga: masa casera dorada y relleno verde de acelga con huevo; al lado, rodajas de tomate solas.\nNo debe aparecer: queso, huevo duro, cebolla, orégano, aceite sobre el tomate.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R012",
+   "nombre": "Bowl de quinoa con garbanzos, huevo y verduras",
+   "origen": "ORIGINAL",
+   "familia": "Ensaladas completas y platos fríos",
+   "archivoDeSalida": "R012-bowl-de-quinoa-con-garbanzos-huevo-y-verduras.png",
+   "archivoDeEntrega": "12-bowl-de-quinoa-con-garbanzos-huevo-y-verduras.jpg",
+   "presentacion": "Bowl armado por sectores: quinoa, garbanzos, un huevo duro en mitades, tomate en cubos y zanahoria rallada, con un brillo de aceite de oliva.",
+   "noDebe": [
+    "palta",
+    "semillas",
+    "hojas verdes",
+    "limón",
+    "salsas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Bowl de quinoa con garbanzos, huevo y verduras», 1 porción. Ingredientes, en estas cantidades: Quinoa cocida: 150 g; Garbanzos hervidos, sin sal: 100 g; Huevo duro: 50 g; Tomate rojo maduro, crudo: 60 g; Zanahoria cruda: 40 g; Aceite de oliva: 10 g.\nPreparación: Armar el bowl con todo y condimentar con el aceite.\nPresentación: Bowl armado por sectores: quinoa, garbanzos, un huevo duro en mitades, tomate en cubos y zanahoria rallada, con un brillo de aceite de oliva.\nNo debe aparecer: palta, semillas, hojas verdes, limón, salsas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R013",
+   "nombre": "Wok de pollo con verduras y arroz",
+   "origen": "ORIGINAL",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R013-wok-de-pollo-con-verduras-y-arroz.png",
+   "archivoDeEntrega": "13-wok-de-pollo-con-verduras-y-arroz.jpg",
+   "presentacion": "Tiras de pollo salteadas con morrón rojo, cebolla y zanahoria en tiras; al lado, arroz blanco de grano largo.",
+   "noDebe": [
+    "salsa de soja",
+    "sésamo",
+    "cebolla de verdeo",
+    "maní",
+    "palitos"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Wok de pollo con verduras y arroz», 1 porción. Ingredientes, en estas cantidades: Pechuga de pollo sin piel ni hueso, cruda: 150 g; Morrón rojo crudo: 60 g; Cebolla cruda: 40 g; Zanahoria cruda: 40 g; Arroz blanco de grano largo, cocido: 150 g; Aceite de girasol: 10 g.\nPreparación: Saltear el pollo en tiras y después las verduras. Servir con el arroz.\nPresentación: Tiras de pollo salteadas con morrón rojo, cebolla y zanahoria en tiras; al lado, arroz blanco de grano largo.\nNo debe aparecer: salsa de soja, sésamo, cebolla de verdeo, maní, palitos.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R014",
+   "nombre": "Hamburguesa casera al plato con ensalada",
+   "origen": "ORIGINAL",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R014-hamburguesa-casera-al-plato-con-ensalada.png",
+   "archivoDeEntrega": "14-hamburguesa-casera-al-plato-con-ensalada.jpg",
+   "presentacion": "Un medallón de carne casero a la plancha, al plato y sin pan, con una ensalada de lechuga, tomate y cebolla al lado.",
+   "noDebe": [
+    "pan de hamburguesa",
+    "queso",
+    "papas fritas",
+    "kétchup, mostaza o mayonesa",
+    "huevo"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Hamburguesa casera al plato con ensalada», 1 porción. Ingredientes, en estas cantidades: Carne picada vacuna 90 % magra, cruda: 150 g; Lechuga de hoja verde, cruda: 50 g; Tomate rojo maduro, crudo: 80 g; Cebolla cruda: 20 g.\nPreparación: Formar la hamburguesa y cocinarla a la plancha. Servir con la ensalada.\nPresentación: Un medallón de carne casero a la plancha, al plato y sin pan, con una ensalada de lechuga, tomate y cebolla al lado.\nNo debe aparecer: pan de hamburguesa, queso, papas fritas, kétchup, mostaza o mayonesa, huevo.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R015",
+   "nombre": "Omelette de espinaca con tostada",
+   "origen": "ORIGINAL",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R015-omelette-de-espinaca-con-tostada.png",
+   "archivoDeEntrega": "15-omelette-de-espinaca-con-tostada.jpg",
+   "presentacion": "Un omelette doblado con espinaca, y una tostada de pan integral de molde al lado.",
+   "noDebe": [
+    "queso",
+    "jamón",
+    "tomate",
+    "hierbas",
+    "manteca"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Omelette de espinaca con tostada», 1 porción. Ingredientes, en estas cantidades: Huevo de gallina entero, crudo: 100 g; Espinaca cruda: 60 g; Pan integral de trigo, de molde: 30 g; Aceite de oliva: 5 g.\nPreparación: Batir los huevos y cocinarlos con la espinaca. Servir con la tostada.\nPresentación: Un omelette doblado con espinaca, y una tostada de pan integral de molde al lado.\nNo debe aparecer: queso, jamón, tomate, hierbas, manteca.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R016",
+   "nombre": "Manzana con nueces",
+   "origen": "ORIGINAL",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R016-manzana-con-nueces.png",
+   "archivoDeEntrega": "16-manzana-con-nueces.jpg",
+   "presentacion": "Una manzana roja con cáscara, cortada en gajos, y nueces peladas en mitades al lado.",
+   "noDebe": [
+    "miel",
+    "canela",
+    "yogur",
+    "otras frutas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Manzana con nueces», 1 porción. Ingredientes, en estas cantidades: Manzana con cáscara, cruda: 150 g; Nueces de nogal, peladas: 20 g.\nPreparación: Cortar la manzana y servir con las nueces.\nPresentación: Una manzana roja con cáscara, cortada en gajos, y nueces peladas en mitades al lado.\nNo debe aparecer: miel, canela, yogur, otras frutas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R017",
+   "nombre": "Tarta de pollo y puerro",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R017-tarta-de-pollo-y-puerro.png",
+   "archivoDeEntrega": "R017-tarta-de-pollo-y-puerro.jpg",
+   "presentacion": "Una porción triangular (un cuarto) de tarta casera abierta, con el borde de masa dorado y el corte a la vista: cubos de pollo y rodajas de puerro ligados con huevo, apenas gratinado arriba.",
+   "noDebe": [
+    "tapa de masa arriba",
+    "ensalada",
+    "jamón",
+    "queso derretido en hilos",
+    "hierbas frescas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tarta de pollo y puerro». Rinde 4 porciones; la foto muestra una sola: un cuarto de tarta.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, pechuga de pollo, puerro, cebolla, huevo, leche descremada, queso parmesano rallado.\nPresentación: Una porción triangular (un cuarto) de tarta casera abierta, con el borde de masa dorado y el corte a la vista: cubos de pollo y rodajas de puerro ligados con huevo, apenas gratinado arriba.\nNo debe aparecer: tapa de masa arriba, ensalada, jamón, queso derretido en hilos, hierbas frescas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R018",
+   "nombre": "Tarta de zapallitos y ricota",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R018-tarta-de-zapallitos-y-ricota.png",
+   "archivoDeEntrega": "R018-tarta-de-zapallitos-y-ricota.jpg",
+   "presentacion": "Una porción triangular (un cuarto) de tarta abierta, con el relleno verde claro de zapallito rallado y ricota, firme y apenas dorado arriba; el borde de masa dorado.",
+   "noDebe": [
+    "tapa de masa arriba",
+    "tomate",
+    "jamón",
+    "cebolla de verdeo encima",
+    "ensalada"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tarta de zapallitos y ricota». Rinde 4 porciones; la foto muestra una sola: un cuarto de tarta.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, zapallitos, cebolla, ricota, huevo, queso parmesano rallado.\nPresentación: Una porción triangular (un cuarto) de tarta abierta, con el relleno verde claro de zapallito rallado y ricota, firme y apenas dorado arriba; el borde de masa dorado.\nNo debe aparecer: tapa de masa arriba, tomate, jamón, cebolla de verdeo encima, ensalada.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R019",
+   "nombre": "Tarta de atún, tomate y huevo",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R019-tarta-de-atun-tomate-y-huevo.png",
+   "archivoDeEntrega": "R019-tarta-de-atun-tomate-y-huevo.jpg",
+   "presentacion": "Una porción triangular (un cuarto) de tarta abierta, con el relleno de atún, tomate y morrón ligado con huevo, y rodajas de huevo duro asomando arriba; el borde de masa dorado.",
+   "noDebe": [
+    "tapa de masa arriba",
+    "aceitunas",
+    "mayonesa",
+    "lechuga",
+    "queso gratinado"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tarta de atún, tomate y huevo». Rinde 4 porciones; la foto muestra una sola: un cuarto de tarta.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, atún al natural, tomate, cebolla, morrón rojo, huevo, huevo duro, orégano.\nPresentación: Una porción triangular (un cuarto) de tarta abierta, con el relleno de atún, tomate y morrón ligado con huevo, y rodajas de huevo duro asomando arriba; el borde de masa dorado.\nNo debe aparecer: tapa de masa arriba, aceitunas, mayonesa, lechuga, queso gratinado.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R020",
+   "nombre": "Tarta de calabaza, cebolla y queso",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R020-tarta-de-calabaza-cebolla-y-queso.png",
+   "archivoDeEntrega": "R020-tarta-de-calabaza-cebolla-y-queso.jpg",
+   "presentacion": "Una porción triangular (un cuarto) de tarta abierta, con el relleno naranja de calabaza, hilos de cebolla dorada y una capa fina de queso gratinado; el borde de masa dorado.",
+   "noDebe": [
+    "tapa de masa arriba",
+    "semillas de zapallo",
+    "hojas verdes",
+    "jamón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tarta de calabaza, cebolla y queso». Rinde 4 porciones; la foto muestra una sola: un cuarto de tarta.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, calabaza, cebolla, huevo, queso muzzarella.\nPresentación: Una porción triangular (un cuarto) de tarta abierta, con el relleno naranja de calabaza, hilos de cebolla dorada y una capa fina de queso gratinado; el borde de masa dorado.\nNo debe aparecer: tapa de masa arriba, semillas de zapallo, hojas verdes, jamón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R021",
+   "nombre": "Empanadas de carne magra al horno",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R021-empanadas-de-carne-magra-al-horno.png",
+   "archivoDeEntrega": "R021-empanadas-de-carne-magra-al-horno.jpg",
+   "presentacion": "Tres empanadas al horno, doradas y con repulgue; una abierta al medio muestra el relleno de carne picada con huevo duro y aceituna.",
+   "noDebe": [
+    "salsa criolla",
+    "limón",
+    "empanadas fritas con burbujas",
+    "papas fritas",
+    "pasas de uva"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Empanadas de carne magra al horno». Rinde 4 porciones; la foto muestra una sola: 3 empanadas.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, carne picada magra, cebolla, morrón rojo, cebolla de verdeo, pimentón, huevo duro, aceitunas verdes, huevo.\nPresentación: Tres empanadas al horno, doradas y con repulgue; una abierta al medio muestra el relleno de carne picada con huevo duro y aceituna.\nNo debe aparecer: salsa criolla, limón, empanadas fritas con burbujas, papas fritas, pasas de uva.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R022",
+   "nombre": "Empanadas de pollo y verduras",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R022-empanadas-de-pollo-y-verduras.png",
+   "archivoDeEntrega": "R022-empanadas-de-pollo-y-verduras.jpg",
+   "presentacion": "Tres empanadas al horno, doradas, con un repulgue distinto del de las de carne; una cortada al medio muestra el relleno cremoso de pollo desmenuzado con verduras.",
+   "noDebe": [
+    "salsa",
+    "limón",
+    "aceitunas",
+    "huevo duro",
+    "empanadas fritas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Empanadas de pollo y verduras». Rinde 4 porciones; la foto muestra una sola: 3 empanadas.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, pollo hervido, cebolla, morrón rojo, zanahoria, cebolla de verdeo, leche descremada, pimentón, huevo.\nPresentación: Tres empanadas al horno, doradas, con un repulgue distinto del de las de carne; una cortada al medio muestra el relleno cremoso de pollo desmenuzado con verduras.\nNo debe aparecer: salsa, limón, aceitunas, huevo duro, empanadas fritas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R023",
+   "nombre": "Empanadas de humita",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R023-empanadas-de-humita.png",
+   "archivoDeEntrega": "R023-empanadas-de-humita.jpg",
+   "presentacion": "Tres empanadas al horno, doradas, con su propio repulgue; una abierta muestra el relleno amarillo y cremoso de choclo.",
+   "noDebe": [
+    "queso derretido",
+    "carne",
+    "salsa",
+    "mazorca de choclo entera",
+    "empanadas fritas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Empanadas de humita». Rinde 4 porciones; la foto muestra una sola: 3 empanadas.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, choclo en granos, cebolla, morrón rojo, leche descremada, huevo.\nPresentación: Tres empanadas al horno, doradas, con su propio repulgue; una abierta muestra el relleno amarillo y cremoso de choclo.\nNo debe aparecer: queso derretido, carne, salsa, mazorca de choclo entera, empanadas fritas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R024",
+   "nombre": "Empanadas de lentejas y calabaza",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R024-empanadas-de-lentejas-y-calabaza.png",
+   "archivoDeEntrega": "R024-empanadas-de-lentejas-y-calabaza.jpg",
+   "presentacion": "Tres empanadas al horno, doradas; una abierta muestra el relleno de lentejas con cubos de calabaza naranja.",
+   "noDebe": [
+    "carne",
+    "queso",
+    "huevo duro",
+    "salsa",
+    "empanadas fritas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Empanadas de lentejas y calabaza». Rinde 4 porciones; la foto muestra una sola: 3 empanadas.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, lentejas hervidas, calabaza, cebolla, morrón rojo, ajo, pimentón.\nPresentación: Tres empanadas al horno, doradas; una abierta muestra el relleno de lentejas con cubos de calabaza naranja.\nNo debe aparecer: carne, queso, huevo duro, salsa, empanadas fritas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R025",
+   "nombre": "Pizza casera de muzzarella y tomate",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R025-pizza-casera-de-muzzarella-y-tomate.png",
+   "archivoDeEntrega": "R025-pizza-casera-de-muzzarella-y-tomate.jpg",
+   "presentacion": "Dos porciones triangulares de pizza casera de masa de espesor normal, con muzzarella derretida, rodajas de tomate y orégano.",
+   "noDebe": [
+    "aceitunas",
+    "jamón",
+    "albahaca",
+    "morrón",
+    "borde relleno"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Pizza casera de muzzarella y tomate». Rinde 4 porciones; la foto muestra una sola: 2 porciones de pizza (un cuarto).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, puré de tomate, ajo, orégano, queso muzzarella, tomate.\nPresentación: Dos porciones triangulares de pizza casera de masa de espesor normal, con muzzarella derretida, rodajas de tomate y orégano.\nNo debe aparecer: aceitunas, jamón, albahaca, morrón, borde relleno.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R026",
+   "nombre": "Pizza casera de pollo y verduras asadas",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R026-pizza-casera-de-pollo-y-verduras-asadas.png",
+   "archivoDeEntrega": "R026-pizza-casera-de-pollo-y-verduras-asadas.jpg",
+   "presentacion": "Dos porciones triangulares de pizza casera de masa apenas integral, con tiras de pollo dorado, verduras asadas (morrón, cebolla, zucchini y berenjena) y poca muzzarella.",
+   "noDebe": [
+    "aceitunas",
+    "rúcula",
+    "jamón",
+    "huevo",
+    "salsa barbacoa"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Pizza casera de pollo y verduras asadas». Rinde 4 porciones; la foto muestra una sola: 2 porciones de pizza (un cuarto).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, harina integral, morrón rojo, cebolla, zucchini, berenjena, pechuga de pollo, pimentón, puré de tomate, orégano, queso muzzarella.\nPresentación: Dos porciones triangulares de pizza casera de masa apenas integral, con tiras de pollo dorado, verduras asadas (morrón, cebolla, zucchini y berenjena) y poca muzzarella.\nNo debe aparecer: aceitunas, rúcula, jamón, huevo, salsa barbacoa.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R027",
+   "nombre": "Fainá de garbanzo y cebolla con ensalada",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R027-faina-de-garbanzo-y-cebolla-con-ensalada.png",
+   "archivoDeEntrega": "R027-faina-de-garbanzo-y-cebolla-con-ensalada.jpg",
+   "presentacion": "Dos porciones de fainá dorada y fina, con cebolla en pluma encima, y al lado una ensalada de lechuga, tomate y huevo duro.",
+   "noDebe": [
+    "pizza",
+    "queso",
+    "aceitunas",
+    "pimienta en grano"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Fainá de garbanzo y cebolla con ensalada». Rinde 4 porciones; la foto muestra una sola: 2 porciones de fainá y un cuarto de la ensalada.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina de garbanzo, cebolla, lechuga, tomate, huevo duro.\nPresentación: Dos porciones de fainá dorada y fina, con cebolla en pluma encima, y al lado una ensalada de lechuga, tomate y huevo duro.\nNo debe aparecer: pizza, queso, aceitunas, pimienta en grano.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R028",
+   "nombre": "Calzone de espinaca y ricota",
+   "origen": "NUEVA",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "archivoDeSalida": "R028-calzone-de-espinaca-y-ricota.png",
+   "archivoDeEntrega": "R028-calzone-de-espinaca-y-ricota.jpg",
+   "presentacion": "Un calzone dorado en forma de media luna, cortado al medio para mostrar el relleno verde y blanco de espinaca y ricota.",
+   "noDebe": [
+    "salsa de tomate",
+    "jamón",
+    "albahaca",
+    "ensalada"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Calzone de espinaca y ricota». Rinde 4 porciones; la foto muestra una sola: un calzone.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, espinaca, ajo, ricota, queso muzzarella, queso parmesano rallado, huevo.\nPresentación: Un calzone dorado en forma de media luna, cortado al medio para mostrar el relleno verde y blanco de espinaca y ricota.\nNo debe aparecer: salsa de tomate, jamón, albahaca, ensalada.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R029",
+   "nombre": "Tallarines con pollo, brócoli y salsa blanca casera",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R029-tallarines-con-pollo-brocoli-y-salsa-blanca-casera.png",
+   "archivoDeEntrega": "R029-tallarines-con-pollo-brocoli-y-salsa-blanca-casera.jpg",
+   "presentacion": "Un plato de tallarines con salsa blanca, cubos de pollo y ramilletes de brócoli verde, con queso parmesano rallado por encima.",
+   "noDebe": [
+    "panceta",
+    "hongos",
+    "perejil",
+    "crema espesa en exceso",
+    "pan"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato hondo blanco liso de 23 cm.\nReceta: «Tallarines con pollo, brócoli y salsa blanca casera». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto de la preparación).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): tallarines secos, pechuga de pollo, brócoli, harina 000, leche descremada, queso parmesano rallado.\nPresentación: Un plato de tallarines con salsa blanca, cubos de pollo y ramilletes de brócoli verde, con queso parmesano rallado por encima.\nNo debe aparecer: panceta, hongos, perejil, crema espesa en exceso, pan.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R030",
+   "nombre": "Fideos con atún, tomate y aceitunas",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R030-fideos-con-atun-tomate-y-aceitunas.png",
+   "archivoDeEntrega": "R030-fideos-con-atun-tomate-y-aceitunas.jpg",
+   "presentacion": "Un plato de fideos largos con salsa roja de tomate, trozos de atún y rodajas de aceituna negra, con perejil picado.",
+   "noDebe": [
+    "queso rallado",
+    "albahaca",
+    "alcaparras",
+    "pan",
+    "limón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato hondo blanco liso de 23 cm.\nReceta: «Fideos con atún, tomate y aceitunas». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto de la preparación).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): fideos secos, ajo, cebolla, tomate pelado en lata, orégano, atún al natural, aceitunas negras, perejil fresco.\nPresentación: Un plato de fideos largos con salsa roja de tomate, trozos de atún y rodajas de aceituna negra, con perejil picado.\nNo debe aparecer: queso rallado, albahaca, alcaparras, pan, limón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R031",
+   "nombre": "Ravioles de ricota y espinaca con salsa de tomate",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R031-ravioles-de-ricota-y-espinaca-con-salsa-de-tomate.png",
+   "archivoDeEntrega": "R031-ravioles-de-ricota-y-espinaca-con-salsa-de-tomate.jpg",
+   "presentacion": "Un plato con unos 15 ravioles caseros cuadrados, de bordes cortados, cubiertos en parte con salsa de tomate; uno abierto deja ver el relleno verde y blanco.",
+   "noDebe": [
+    "queso rallado encima",
+    "albahaca",
+    "crema",
+    "carne"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato hondo blanco liso de 23 cm.\nReceta: «Ravioles de ricota y espinaca con salsa de tomate». Rinde 4 porciones; la foto muestra una sola: unos 15 ravioles, con su salsa.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, huevo, ricota, espinaca, queso parmesano rallado, cebolla, ajo, tomate pelado en lata, orégano.\nPresentación: Un plato con unos 15 ravioles caseros cuadrados, de bordes cortados, cubiertos en parte con salsa de tomate; uno abierto deja ver el relleno verde y blanco.\nNo debe aparecer: queso rallado encima, albahaca, crema, carne.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R032",
+   "nombre": "Canelones de ricota y espinaca al horno",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R032-canelones-de-ricota-y-espinaca-al-horno.png",
+   "archivoDeEntrega": "R032-canelones-de-ricota-y-espinaca-al-horno.jpg",
+   "presentacion": "Tres canelones de panqueque en un plato, con salsa de tomate y salsa blanca gratinada con queso; uno cortado muestra el relleno verde de espinaca y ricota.",
+   "noDebe": [
+    "carne",
+    "jamón",
+    "albahaca",
+    "pan"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Canelones de ricota y espinaca al horno». Rinde 4 porciones; la foto muestra una sola: 3 canelones con su salsa.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, leche descremada, huevo, espinaca, cebolla, ricota, queso parmesano rallado, tomate pelado en lata, ajo, queso muzzarella.\nPresentación: Tres canelones de panqueque en un plato, con salsa de tomate y salsa blanca gratinada con queso; uno cortado muestra el relleno verde de espinaca y ricota.\nNo debe aparecer: carne, jamón, albahaca, pan.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R033",
+   "nombre": "Lasaña de carne y berenjena",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R033-lasana-de-carne-y-berenjena.png",
+   "archivoDeEntrega": "R033-lasana-de-carne-y-berenjena.jpg",
+   "presentacion": "Una porción rectangular de lasaña con las capas a la vista (placas de pasta, salsa de carne roja, rodajas de berenjena y salsa blanca) y el queso gratinado arriba.",
+   "noDebe": [
+    "albahaca",
+    "ricota en grumos",
+    "pan de ajo",
+    "ensalada"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Lasaña de carne y berenjena». Rinde 6 porciones; la foto muestra una sola: un sexto de la fuente.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): placas de lasaña secas, berenjena, cebolla, zanahoria, ajo, carne picada magra, tomate pelado en lata, orégano, leche descremada, queso muzzarella, queso parmesano rallado.\nPresentación: Una porción rectangular de lasaña con las capas a la vista (placas de pasta, salsa de carne roja, rodajas de berenjena y salsa blanca) y el queso gratinado arriba.\nNo debe aparecer: albahaca, ricota en grumos, pan de ajo, ensalada.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R034",
+   "nombre": "Ñoquis de papa con tuco de carne",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R034-noquis-de-papa-con-tuco-de-carne.png",
+   "archivoDeEntrega": "R034-noquis-de-papa-con-tuco-de-carne.jpg",
+   "presentacion": "Un plato de ñoquis de papa con tuco rojo y trozos de carne tierna, con un poco de queso parmesano rallado.",
+   "noDebe": [
+    "albahaca",
+    "crema",
+    "salsa blanca",
+    "pan"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato hondo blanco liso de 23 cm.\nReceta: «Ñoquis de papa con tuco de carne». Rinde 4 porciones; la foto muestra una sola: un plato de ñoquis con su tuco.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): papa hervida, harina 000, huevo, carne para tuco, cebolla, zanahoria, morrón rojo, ajo, tomate pelado en lata, orégano, queso parmesano rallado.\nPresentación: Un plato de ñoquis de papa con tuco rojo y trozos de carne tierna, con un poco de queso parmesano rallado.\nNo debe aparecer: albahaca, crema, salsa blanca, pan.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R035",
+   "nombre": "Polenta cremosa con tuco de carne magra",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R035-polenta-cremosa-con-tuco-de-carne-magra.png",
+   "archivoDeEntrega": "R035-polenta-cremosa-con-tuco-de-carne-magra.jpg",
+   "presentacion": "Un plato hondo con polenta amarilla cremosa y tuco de carne en cubos por encima.",
+   "noDebe": [
+    "queso derretido en hilos",
+    "hongos",
+    "salchichas",
+    "albahaca"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato hondo blanco liso de 23 cm.\nReceta: «Polenta cremosa con tuco de carne magra». Rinde 4 porciones; la foto muestra una sola: un plato hondo de polenta con su tuco.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): polenta, leche descremada, queso parmesano rallado, peceto, cebolla, morrón rojo, zanahoria, ajo, tomate pelado en lata, pimentón, orégano.\nPresentación: Un plato hondo con polenta amarilla cremosa y tuco de carne en cubos por encima.\nNo debe aparecer: queso derretido en hilos, hongos, salchichas, albahaca.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R036",
+   "nombre": "Fideos con salsa de lentejas y tomate",
+   "origen": "NUEVA",
+   "familia": "Pastas y polenta",
+   "archivoDeSalida": "R036-fideos-con-salsa-de-lentejas-y-tomate.png",
+   "archivoDeEntrega": "R036-fideos-con-salsa-de-lentejas-y-tomate.jpg",
+   "presentacion": "Un plato de fideos cortos (mostachol) con una salsa espesa y rojiza de lentejas rojas y tomate, sin carne.",
+   "noDebe": [
+    "carne picada",
+    "queso rallado",
+    "albahaca",
+    "crema"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato hondo blanco liso de 23 cm.\nReceta: «Fideos con salsa de lentejas y tomate». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto de la preparación).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): fideos secos, lentejas rojas, cebolla, zanahoria, apio, ajo, tomate pelado en lata, pimentón.\nPresentación: Un plato de fideos cortos (mostachol) con una salsa espesa y rojiza de lentejas rojas y tomate, sin carne.\nNo debe aparecer: carne picada, queso rallado, albahaca, crema.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R037",
+   "nombre": "Hamburguesa casera de pollo en pan con lechuga y tomate",
+   "origen": "NUEVA",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R037-hamburguesa-casera-de-pollo-en-pan-con-lechuga-y-tomate.png",
+   "archivoDeEntrega": "R037-hamburguesa-casera-de-pollo-en-pan-con-lechuga-y-tomate.jpg",
+   "presentacion": "Una hamburguesa de pollo casera, dorada, en su pan abierto, con lechuga y rodajas de tomate; se ve que la carne es clara, de pollo.",
+   "noDebe": [
+    "queso cheddar",
+    "panceta",
+    "papas fritas",
+    "huevo frito",
+    "kétchup o mayonesa"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Hamburguesa casera de pollo en pan con lechuga y tomate». Rinde 4 porciones; la foto muestra una sola: una hamburguesa en pan, con lechuga, tomate y mostaza.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): pechuga de pollo, cebolla, ajo, perejil fresco, pan rallado, huevo, pimentón, pan de hamburguesa, lechuga, tomate, mostaza.\nPresentación: Una hamburguesa de pollo casera, dorada, en su pan abierto, con lechuga y rodajas de tomate; se ve que la carne es clara, de pollo.\nNo debe aparecer: queso cheddar, panceta, papas fritas, huevo frito, kétchup o mayonesa.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R038",
+   "nombre": "Hamburguesa de lentejas y avena en pan",
+   "origen": "NUEVA",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R038-hamburguesa-de-lentejas-y-avena-en-pan.png",
+   "archivoDeEntrega": "R038-hamburguesa-de-lentejas-y-avena-en-pan.jpg",
+   "presentacion": "Una hamburguesa de lentejas y avena, de color marrón con trocitos de zanahoria, en su pan con lechuga y tomate; se nota que no es de carne.",
+   "noDebe": [
+    "queso",
+    "panceta",
+    "papas fritas",
+    "aspecto de carne vacuna"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Hamburguesa de lentejas y avena en pan». Rinde 4 porciones; la foto muestra una sola: una hamburguesa en pan, con lechuga, tomate y mayonesa liviana.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): lentejas hervidas, avena arrollada, cebolla, zanahoria, ajo, huevo, pimentón, pan de hamburguesa, lechuga, tomate, mayonesa liviana.\nPresentación: Una hamburguesa de lentejas y avena, de color marrón con trocitos de zanahoria, en su pan con lechuga y tomate; se nota que no es de carne.\nNo debe aparecer: queso, panceta, papas fritas, aspecto de carne vacuna.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R039",
+   "nombre": "Medallones de garbanzo y zanahoria con ensalada",
+   "origen": "NUEVA",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R039-medallones-de-garbanzo-y-zanahoria-con-ensalada.png",
+   "archivoDeEntrega": "R039-medallones-de-garbanzo-y-zanahoria-con-ensalada.jpg",
+   "presentacion": "Dos medallones de garbanzo dorados, con trocitos de zanahoria a la vista, al lado de una ensalada de lechuga, tomate y cebolla y una cucharada de salsa blanca de yogur.",
+   "noDebe": [
+    "pan",
+    "papas fritas",
+    "carne",
+    "semillas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Medallones de garbanzo y zanahoria con ensalada». Rinde 4 porciones; la foto muestra una sola: 2 medallones, un cuarto de la ensalada y de la salsa.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): garbanzos de lata, zanahoria, cebolla, ajo, perejil fresco, huevo, pan rallado, lechuga, tomate, yogur griego descremado.\nPresentación: Dos medallones de garbanzo dorados, con trocitos de zanahoria a la vista, al lado de una ensalada de lechuga, tomate y cebolla y una cucharada de salsa blanca de yogur.\nNo debe aparecer: pan, papas fritas, carne, semillas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R040",
+   "nombre": "Milanesa de pollo napolitana al horno con ensalada",
+   "origen": "NUEVA",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R040-milanesa-de-pollo-napolitana-al-horno-con-ensalada.png",
+   "archivoDeEntrega": "R040-milanesa-de-pollo-napolitana-al-horno-con-ensalada.jpg",
+   "presentacion": "Una milanesa de pollo napolitana horneada, con salsa de tomate, jamón y muzzarella derretida con orégano, al lado de una ensalada de lechuga, tomate y cebolla.",
+   "noDebe": [
+    "papas fritas",
+    "huevo frito",
+    "limón",
+    "aceitunas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Milanesa de pollo napolitana al horno con ensalada». Rinde 4 porciones; la foto muestra una sola: una milanesa napolitana con un cuarto de la ensalada.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): pechuga de pollo, huevo, ajo, perejil fresco, pan rallado, puré de tomate, jamón cocido, queso muzzarella, orégano, lechuga, tomate, cebolla.\nPresentación: Una milanesa de pollo napolitana horneada, con salsa de tomate, jamón y muzzarella derretida con orégano, al lado de una ensalada de lechuga, tomate y cebolla.\nNo debe aparecer: papas fritas, huevo frito, limón, aceitunas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R041",
+   "nombre": "Sándwich de pollo desmenuzado, huevo y verduras",
+   "origen": "NUEVA",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R041-sandwich-de-pollo-desmenuzado-huevo-y-verduras.png",
+   "archivoDeEntrega": "R041-sandwich-de-pollo-desmenuzado-huevo-y-verduras.jpg",
+   "presentacion": "Un sándwich de pan integral de molde cortado en diagonal, con el relleno a la vista: pollo desmenuzado, rodajas de huevo duro, tomate, lechuga y zanahoria rallada.",
+   "noDebe": [
+    "jamón",
+    "queso",
+    "papas fritas",
+    "palta"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Sándwich de pollo desmenuzado, huevo y verduras». Rinde 4 porciones; la foto muestra una sola: un sándwich de 2 rebanadas, con su relleno.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): pan integral de molde, pollo hervido, huevo duro, lechuga, tomate, zanahoria, mayonesa liviana.\nPresentación: Un sándwich de pan integral de molde cortado en diagonal, con el relleno a la vista: pollo desmenuzado, rodajas de huevo duro, tomate, lechuga y zanahoria rallada.\nNo debe aparecer: jamón, queso, papas fritas, palta.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R042",
+   "nombre": "Sándwich casero de lomito con verduras",
+   "origen": "NUEVA",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "archivoDeSalida": "R042-sandwich-casero-de-lomito-con-verduras.png",
+   "archivoDeEntrega": "R042-sandwich-casero-de-lomito-con-verduras.jpg",
+   "presentacion": "Un sándwich de lomito en pan francés, abierto a la mitad, con un bife fino de lomo, morrón y cebolla a la plancha, lechuga y tomate.",
+   "noDebe": [
+    "jamón",
+    "queso",
+    "huevo frito",
+    "papas fritas",
+    "panceta"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Sándwich casero de lomito con verduras». Rinde 4 porciones; la foto muestra una sola: un sándwich de lomito.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): lomo, pan francés, morrón rojo, cebolla, lechuga, tomate, mayonesa liviana.\nPresentación: Un sándwich de lomito en pan francés, abierto a la mitad, con un bife fino de lomo, morrón y cebolla a la plancha, lechuga y tomate.\nNo debe aparecer: jamón, queso, huevo frito, papas fritas, panceta.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R043",
+   "nombre": "Pastel de papa con carne magra y arvejas",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R043-pastel-de-papa-con-carne-magra-y-arvejas.png",
+   "archivoDeEntrega": "R043-pastel-de-papa-con-carne-magra-y-arvejas.jpg",
+   "presentacion": "Una porción cuadrada de pastel de papa con las dos capas a la vista: abajo el relleno de carne picada con arvejas, arriba el puré dorado.",
+   "noDebe": [
+    "huevo duro",
+    "aceitunas",
+    "pasas de uva",
+    "queso gratinado"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Pastel de papa con carne magra y arvejas». Rinde 4 porciones; la foto muestra una sola: un cuarto de la fuente.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): carne picada magra, cebolla, morrón rojo, arvejas, pimentón, orégano, papa hervida, leche descremada, manteca, huevo.\nPresentación: Una porción cuadrada de pastel de papa con las dos capas a la vista: abajo el relleno de carne picada con arvejas, arriba el puré dorado.\nNo debe aparecer: huevo duro, aceitunas, pasas de uva, queso gratinado.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R044",
+   "nombre": "Pastel de calabaza y pollo",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R044-pastel-de-calabaza-y-pollo.png",
+   "archivoDeEntrega": "R044-pastel-de-calabaza-y-pollo.jpg",
+   "presentacion": "Una porción de pastel en dos capas: abajo el relleno cremoso de pollo con morrón, arriba el puré naranja de calabaza dorado.",
+   "noDebe": [
+    "papa",
+    "carne picada",
+    "huevo duro",
+    "aceitunas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Pastel de calabaza y pollo». Rinde 4 porciones; la foto muestra una sola: un cuarto de la fuente.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): calabaza, queso parmesano rallado, pechuga de pollo, cebolla, morrón rojo, cebolla de verdeo, leche descremada, pimentón.\nPresentación: Una porción de pastel en dos capas: abajo el relleno cremoso de pollo con morrón, arriba el puré naranja de calabaza dorado.\nNo debe aparecer: papa, carne picada, huevo duro, aceitunas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R045",
+   "nombre": "Zapallitos rellenos de carne y arroz",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R045-zapallitos-rellenos-de-carne-y-arroz.png",
+   "archivoDeEntrega": "R045-zapallitos-rellenos-de-carne-y-arroz.jpg",
+   "presentacion": "Cuatro mitades de zapallito redondo rellenas de carne y arroz, gratinadas con queso, en un plato.",
+   "noDebe": [
+    "salsa de tomate",
+    "ensalada",
+    "pan",
+    "huevo frito"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Zapallitos rellenos de carne y arroz». Rinde 4 porciones; la foto muestra una sola: 2 zapallitos (4 mitades) rellenos.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): zapallitos, arroz, carne picada magra, cebolla, morrón rojo, ajo, huevo, pimentón, queso parmesano rallado.\nPresentación: Cuatro mitades de zapallito redondo rellenas de carne y arroz, gratinadas con queso, en un plato.\nNo debe aparecer: salsa de tomate, ensalada, pan, huevo frito.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R046",
+   "nombre": "Berenjenas rellenas de lentejas y verduras",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R046-berenjenas-rellenas-de-lentejas-y-verduras.png",
+   "archivoDeEntrega": "R046-berenjenas-rellenas-de-lentejas-y-verduras.jpg",
+   "presentacion": "Dos mitades de berenjena asada rellenas de lentejas con verduras, gratinadas con muzzarella.",
+   "noDebe": [
+    "carne",
+    "pan",
+    "ensalada",
+    "salsa blanca"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Berenjenas rellenas de lentejas y verduras». Rinde 4 porciones; la foto muestra una sola: una berenjena (2 mitades) rellena.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): berenjena, lentejas hervidas, cebolla, morrón rojo, zanahoria, ajo, tomate pelado en lata, pimentón, queso muzzarella.\nPresentación: Dos mitades de berenjena asada rellenas de lentejas con verduras, gratinadas con muzzarella.\nNo debe aparecer: carne, pan, ensalada, salsa blanca.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R047",
+   "nombre": "Albóndigas de carne con salsa de tomate y arroz",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R047-albondigas-de-carne-con-salsa-de-tomate-y-arroz.png",
+   "archivoDeEntrega": "R047-albondigas-de-carne-con-salsa-de-tomate-y-arroz.jpg",
+   "presentacion": "Cinco albóndigas de carne en salsa de tomate, al lado de una porción de arroz blanco.",
+   "noDebe": [
+    "queso rallado",
+    "pan",
+    "papas",
+    "perejil fresco encima"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Albóndigas de carne con salsa de tomate y arroz». Rinde 4 porciones; la foto muestra una sola: 5 albóndigas con salsa y un cuarto del arroz.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): carne picada magra, pan rallado, huevo, cebolla, ajo, perejil fresco, morrón rojo, tomate pelado en lata, orégano, arroz.\nPresentación: Cinco albóndigas de carne en salsa de tomate, al lado de una porción de arroz blanco.\nNo debe aparecer: queso rallado, pan, papas, perejil fresco encima.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R048",
+   "nombre": "Pollo al limón con batatas al horno",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R048-pollo-al-limon-con-batatas-al-horno.png",
+   "archivoDeEntrega": "R048-pollo-al-limon-con-batatas-al-horno.jpg",
+   "presentacion": "Una suprema de pollo al horno, dorada y brillante por la marinada, con gajos de batata asada.",
+   "noDebe": [
+    "rodajas de limón",
+    "romero",
+    "papas",
+    "ensalada"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Pollo al limón con batatas al horno». Rinde 4 porciones; la foto muestra una sola: una suprema con un cuarto de las batatas.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): suprema de pollo, ajo, orégano, pimentón, batata.\nPresentación: Una suprema de pollo al horno, dorada y brillante por la marinada, con gajos de batata asada.\nNo debe aparecer: rodajas de limón, romero, papas, ensalada.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R049",
+   "nombre": "Merluza en papillote con verduras y papa",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R049-merluza-en-papillote-con-verduras-y-papa.png",
+   "archivoDeEntrega": "R049-merluza-en-papillote-con-verduras-y-papa.jpg",
+   "presentacion": "Un paquete de papel manteca abierto sobre el plato, con un filete de merluza blanco y jugoso sobre rodajas de papa, bastones de zanahoria, zucchini, cebolla y morrón, con perejil picado.",
+   "noDebe": [
+    "rodajas de limón",
+    "manteca",
+    "salsa",
+    "arroz"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Merluza en papillote con verduras y papa». Rinde 4 porciones; la foto muestra una sola: un paquete.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): merluza, papa, zanahoria, zucchini, cebolla, morrón rojo, ajo, perejil fresco.\nPresentación: Un paquete de papel manteca abierto sobre el plato, con un filete de merluza blanco y jugoso sobre rodajas de papa, bastones de zanahoria, zucchini, cebolla y morrón, con perejil picado.\nNo debe aparecer: rodajas de limón, manteca, salsa, arroz.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R050",
+   "nombre": "Tortilla de papa, cebolla y arvejas al horno",
+   "origen": "NUEVA",
+   "familia": "Platos de horno y sartén",
+   "archivoDeSalida": "R050-tortilla-de-papa-cebolla-y-arvejas-al-horno.png",
+   "archivoDeEntrega": "R050-tortilla-de-papa-cebolla-y-arvejas-al-horno.jpg",
+   "presentacion": "Un cuarto de tortilla de papa alta, dorada por fuera, con el corte cocido y firme donde se ven cubos de papa, cebolla y arvejas.",
+   "noDebe": [
+    "huevo líquido en el centro",
+    "jamón",
+    "queso",
+    "ensalada",
+    "pan"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Tortilla de papa, cebolla y arvejas al horno». Rinde 4 porciones; la foto muestra una sola: un cuarto de tortilla.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): papa hervida, cebolla, arvejas, huevo.\nPresentación: Un cuarto de tortilla de papa alta, dorada por fuera, con el corte cocido y firme donde se ven cubos de papa, cebolla y arvejas.\nNo debe aparecer: huevo líquido en el centro, jamón, queso, ensalada, pan.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R051",
+   "nombre": "Arroz con pollo y arvejas en una olla",
+   "origen": "NUEVA",
+   "familia": "Ollas, legumbres y arroz",
+   "archivoDeSalida": "R051-arroz-con-pollo-y-arvejas-en-una-olla.png",
+   "archivoDeEntrega": "R051-arroz-con-pollo-y-arvejas-en-una-olla.jpg",
+   "presentacion": "Un plato de arroz con pollo de color anaranjado por el pimentón, con cubos de pollo, morrón y arvejas verdes.",
+   "noDebe": [
+    "mariscos",
+    "chorizo",
+    "huevo duro",
+    "aceitunas",
+    "limón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Arroz con pollo y arvejas en una olla». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto de la olla).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): pechuga de pollo, cebolla, morrón rojo, ajo, pimentón, arroz, arvejas.\nPresentación: Un plato de arroz con pollo de color anaranjado por el pimentón, con cubos de pollo, morrón y arvejas verdes.\nNo debe aparecer: mariscos, chorizo, huevo duro, aceitunas, limón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R052",
+   "nombre": "Guiso de garbanzos, pollo y calabaza",
+   "origen": "NUEVA",
+   "familia": "Ollas, legumbres y arroz",
+   "archivoDeSalida": "R052-guiso-de-garbanzos-pollo-y-calabaza.png",
+   "archivoDeEntrega": "R052-guiso-de-garbanzos-pollo-y-calabaza.jpg",
+   "presentacion": "Un cuenco de guiso espeso con garbanzos, cubos de pollo y de calabaza naranja, en un caldo rojizo.",
+   "noDebe": [
+    "chorizo",
+    "panceta",
+    "pan",
+    "arroz",
+    "perejil"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Guiso de garbanzos, pollo y calabaza». Rinde 4 porciones; la foto muestra una sola: un cuenco (un cuarto de la olla).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): garbanzos de lata, pechuga de pollo, calabaza, cebolla, morrón rojo, zanahoria, ajo, tomate pelado en lata, pimentón.\nPresentación: Un cuenco de guiso espeso con garbanzos, cubos de pollo y de calabaza naranja, en un caldo rojizo.\nNo debe aparecer: chorizo, panceta, pan, arroz, perejil.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R053",
+   "nombre": "Guiso de porotos, arroz y verduras",
+   "origen": "NUEVA",
+   "familia": "Ollas, legumbres y arroz",
+   "archivoDeSalida": "R053-guiso-de-porotos-arroz-y-verduras.png",
+   "archivoDeEntrega": "R053-guiso-de-porotos-arroz-y-verduras.jpg",
+   "presentacion": "Un cuenco de guiso espeso de porotos colorados con arroz, cubos de zapallo y verduras.",
+   "noDebe": [
+    "carne",
+    "chorizo",
+    "panceta",
+    "pan",
+    "queso"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Guiso de porotos, arroz y verduras». Rinde 4 porciones; la foto muestra una sola: un cuenco (un cuarto de la olla).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): porotos, arroz, cebolla, morrón rojo, zanahoria, calabaza, ajo, tomate pelado en lata, pimentón.\nPresentación: Un cuenco de guiso espeso de porotos colorados con arroz, cubos de zapallo y verduras.\nNo debe aparecer: carne, chorizo, panceta, pan, queso.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R054",
+   "nombre": "Bifes a la criolla con papas",
+   "origen": "NUEVA",
+   "familia": "Ollas, legumbres y arroz",
+   "archivoDeSalida": "R054-bifes-a-la-criolla-con-papas.png",
+   "archivoDeEntrega": "R054-bifes-a-la-criolla-con-papas.jpg",
+   "presentacion": "Un bife de nalga cocido a la cacerola sobre rodajas de papa, con aros de cebolla, morrón y tomate cocidos y un poco de jugo.",
+   "noDebe": [
+    "huevo frito",
+    "arvejas",
+    "chorizo",
+    "pan",
+    "papas fritas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Bifes a la criolla con papas». Rinde 4 porciones; la foto muestra una sola: un bife con un cuarto de las papas y las verduras.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): bifes de nalga, papa, cebolla, morrón rojo, morrón verde, tomate, ajo, perejil fresco, orégano, pimentón.\nPresentación: Un bife de nalga cocido a la cacerola sobre rodajas de papa, con aros de cebolla, morrón y tomate cocidos y un poco de jugo.\nNo debe aparecer: huevo frito, arvejas, chorizo, pan, papas fritas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R055",
+   "nombre": "Carbonada de carne magra, zapallo y choclo",
+   "origen": "NUEVA",
+   "familia": "Ollas, legumbres y arroz",
+   "archivoDeSalida": "R055-carbonada-de-carne-magra-zapallo-y-choclo.png",
+   "archivoDeEntrega": "R055-carbonada-de-carne-magra-zapallo-y-choclo.jpg",
+   "presentacion": "Un cuenco de carbonada espesa con cubos de carne, de zapallo naranja, de papa y de batata, y granos de choclo amarillo.",
+   "noDebe": [
+    "duraznos",
+    "chorizo",
+    "pan",
+    "arroz"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Carbonada de carne magra, zapallo y choclo». Rinde 4 porciones; la foto muestra una sola: un cuenco (un cuarto de la olla).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): carne para guisar, cebolla, morrón rojo, ajo, tomate pelado en lata, zapallo, choclo en granos, papa, batata, pimentón, orégano.\nPresentación: Un cuenco de carbonada espesa con cubos de carne, de zapallo naranja, de papa y de batata, y granos de choclo amarillo.\nNo debe aparecer: duraznos, chorizo, pan, arroz.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R056",
+   "nombre": "Arroz cremoso con hongos y arvejas",
+   "origen": "NUEVA",
+   "familia": "Ollas, legumbres y arroz",
+   "archivoDeSalida": "R056-arroz-cremoso-con-hongos-y-arvejas.png",
+   "archivoDeEntrega": "R056-arroz-cremoso-con-hongos-y-arvejas.jpg",
+   "presentacion": "Un plato hondo de arroz cremoso con láminas de champiñón dorado, arvejas verdes y perejil picado.",
+   "noDebe": [
+    "pollo",
+    "crema",
+    "queso en hebras",
+    "panceta",
+    "hongos de otras variedades"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato hondo blanco liso de 23 cm.\nReceta: «Arroz cremoso con hongos y arvejas». Rinde 4 porciones; la foto muestra una sola: un plato hondo (un cuarto de la olla).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): manteca, cebolla, ajo, hongos, arroz, arvejas, queso parmesano rallado, perejil fresco.\nPresentación: Un plato hondo de arroz cremoso con láminas de champiñón dorado, arvejas verdes y perejil picado.\nNo debe aparecer: pollo, crema, queso en hebras, panceta, hongos de otras variedades.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R057",
+   "nombre": "Ensalada de arroz, atún, huevo y tomate",
+   "origen": "NUEVA",
+   "familia": "Ensaladas completas y platos fríos",
+   "archivoDeSalida": "R057-ensalada-de-arroz-atun-huevo-y-tomate.png",
+   "archivoDeEntrega": "R057-ensalada-de-arroz-atun-huevo-y-tomate.jpg",
+   "presentacion": "Un plato de ensalada de arroz blanco con atún, cubos de tomate, granos de choclo, aceitunas verdes y cuartos de huevo duro.",
+   "noDebe": [
+    "mayonesa",
+    "lechuga",
+    "arvejas",
+    "jamón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Ensalada de arroz, atún, huevo y tomate». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto de la ensalada).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): arroz cocido, atún al natural, huevo duro, tomate, choclo de lata, aceitunas verdes, mostaza.\nPresentación: Un plato de ensalada de arroz blanco con atún, cubos de tomate, granos de choclo, aceitunas verdes y cuartos de huevo duro.\nNo debe aparecer: mayonesa, lechuga, arvejas, jamón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R058",
+   "nombre": "Salpicón de pollo, papa y verduras",
+   "origen": "NUEVA",
+   "familia": "Ensaladas completas y platos fríos",
+   "archivoDeSalida": "R058-salpicon-de-pollo-papa-y-verduras.png",
+   "archivoDeEntrega": "R058-salpicon-de-pollo-papa-y-verduras.jpg",
+   "presentacion": "Un plato de salpicón: pollo desmenuzado, cubos de papa y de zanahoria, arvejas, morrón y huevo picado, unidos con un aderezo cremoso claro.",
+   "noDebe": [
+    "lechuga",
+    "pan",
+    "aceitunas",
+    "jamón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Salpicón de pollo, papa y verduras». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto del salpicón).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): pollo hervido, papa hervida, zanahoria hervida, arvejas, morrón rojo, cebolla, huevo duro, mayonesa liviana, yogur natural descremado, mostaza.\nPresentación: Un plato de salpicón: pollo desmenuzado, cubos de papa y de zanahoria, arvejas, morrón y huevo picado, unidos con un aderezo cremoso claro.\nNo debe aparecer: lechuga, pan, aceitunas, jamón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R059",
+   "nombre": "Ensalada de garbanzos, huevo, remolacha y zanahoria",
+   "origen": "NUEVA",
+   "familia": "Ensaladas completas y platos fríos",
+   "archivoDeSalida": "R059-ensalada-de-garbanzos-huevo-remolacha-y-zanahoria.png",
+   "archivoDeEntrega": "R059-ensalada-de-garbanzos-huevo-remolacha-y-zanahoria.jpg",
+   "presentacion": "Un plato de ensalada con garbanzos, cubos de remolacha morada, zanahoria rallada, cebolla de verdeo y cuartos de huevo duro.",
+   "noDebe": [
+    "lechuga",
+    "queso",
+    "atún",
+    "pan",
+    "semillas"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Ensalada de garbanzos, huevo, remolacha y zanahoria». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto de la ensalada).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): garbanzos de lata, huevo duro, remolacha hervida, zanahoria, cebolla de verdeo, perejil fresco, mostaza.\nPresentación: Un plato de ensalada con garbanzos, cubos de remolacha morada, zanahoria rallada, cebolla de verdeo y cuartos de huevo duro.\nNo debe aparecer: lechuga, queso, atún, pan, semillas.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R060",
+   "nombre": "Ensalada de fideos, porotos blancos y verduras",
+   "origen": "NUEVA",
+   "familia": "Ensaladas completas y platos fríos",
+   "archivoDeSalida": "R060-ensalada-de-fideos-porotos-blancos-y-verduras.png",
+   "archivoDeEntrega": "R060-ensalada-de-fideos-porotos-blancos-y-verduras.jpg",
+   "presentacion": "Un plato de ensalada de fideos tirabuzón con porotos blancos, cubos de tomate, morrón, pepino y muzzarella, y rodajas de aceituna negra.",
+   "noDebe": [
+    "atún",
+    "mayonesa",
+    "lechuga",
+    "jamón"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Ensalada de fideos, porotos blancos y verduras». Rinde 4 porciones; la foto muestra una sola: un plato (un cuarto de la ensalada).\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): fideos secos, porotos blancos, tomate, morrón rojo, pepino, cebolla, aceitunas negras, queso muzzarella, perejil fresco, orégano.\nPresentación: Un plato de ensalada de fideos tirabuzón con porotos blancos, cubos de tomate, morrón, pepino y muzzarella, y rodajas de aceituna negra.\nNo debe aparecer: atún, mayonesa, lechuga, jamón.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R061",
+   "nombre": "Panqueques de avena y ricota con banana",
+   "origen": "NUEVA",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R061-panqueques-de-avena-y-ricota-con-banana.png",
+   "archivoDeEntrega": "R061-panqueques-de-avena-y-ricota-con-banana.jpg",
+   "presentacion": "Dos panqueques de avena doblados en cuatro, rellenos de ricota, con rodajas de banana asomando y una línea fina de canela.",
+   "noDebe": [
+    "miel",
+    "dulce de leche",
+    "chocolate",
+    "frutos rojos",
+    "crema"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato playo blanco liso de 26 cm.\nReceta: «Panqueques de avena y ricota con banana». Rinde 4 porciones; la foto muestra una sola: 2 panqueques con su relleno.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): avena arrollada, leche descremada, huevo, canela, ricota, banana.\nPresentación: Dos panqueques de avena doblados en cuatro, rellenos de ricota, con rodajas de banana asomando y una línea fina de canela.\nNo debe aparecer: miel, dulce de leche, chocolate, frutos rojos, crema.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R062",
+   "nombre": "Budín de banana, avena y yogur",
+   "origen": "NUEVA",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R062-budin-de-banana-avena-y-yogur.png",
+   "archivoDeEntrega": "R062-budin-de-banana-avena-y-yogur.jpg",
+   "presentacion": "Una rebanada de budín de banana y avena, húmedo, con copos de avena a la vista, en un plato chico.",
+   "noDebe": [
+    "nueces",
+    "chips de chocolate",
+    "glaseado",
+    "banana fresca de adorno",
+    "manteca"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato de postre blanco liso de 20 cm.\nReceta: «Budín de banana, avena y yogur». Rinde 10 porciones; la foto muestra una sola: una rebanada de unos 2,5 cm.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): banana, huevo, yogur natural entero, avena arrollada, harina integral, canela.\nPresentación: Una rebanada de budín de banana y avena, húmedo, con copos de avena a la vista, en un plato chico.\nNo debe aparecer: nueces, chips de chocolate, glaseado, banana fresca de adorno, manteca.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R063",
+   "nombre": "Scones integrales de queso",
+   "origen": "NUEVA",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R063-scones-integrales-de-queso.png",
+   "archivoDeEntrega": "R063-scones-integrales-de-queso.jpg",
+   "presentacion": "Dos scones integrales de queso, altos y dorados, uno partido al medio con la miga a la vista.",
+   "noDebe": [
+    "manteca untada",
+    "mermelada",
+    "jamón",
+    "queso en hebras"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato de postre blanco liso de 20 cm.\nReceta: «Scones integrales de queso». Rinde 8 porciones; la foto muestra una sola: 2 scones.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina integral, harina 000, manteca, queso rallado, leche descremada, huevo.\nPresentación: Dos scones integrales de queso, altos y dorados, uno partido al medio con la miga a la vista.\nNo debe aparecer: manteca untada, mermelada, jamón, queso en hebras.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R064",
+   "nombre": "Arroz con leche y canela",
+   "origen": "NUEVA",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R064-arroz-con-leche-y-canela.png",
+   "archivoDeEntrega": "R064-arroz-con-leche-y-canela.jpg",
+   "presentacion": "Un cuenco de arroz con leche cremoso con canela molida espolvoreada arriba.",
+   "noDebe": [
+    "cáscara de limón",
+    "pasas de uva",
+    "dulce de leche",
+    "canela en rama",
+    "crema"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: cuenco blanco liso de 15 cm.\nReceta: «Arroz con leche y canela». Rinde 4 porciones; la foto muestra una sola: un cuenco.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): arroz, leche parcialmente descremada, canela.\nPresentación: Un cuenco de arroz con leche cremoso con canela molida espolvoreada arriba.\nNo debe aparecer: cáscara de limón, pasas de uva, dulce de leche, canela en rama, crema.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R065",
+   "nombre": "Galletas caseras de avena y maní con yogur natural",
+   "origen": "NUEVA",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R065-galletas-caseras-de-avena-y-mani-con-yogur-natural.png",
+   "archivoDeEntrega": "R065-galletas-caseras-de-avena-y-mani-con-yogur-natural.jpg",
+   "presentacion": "Dos galletas de avena y maní, rústicas, al lado de un cuenco chico con yogur natural blanco.",
+   "noDebe": [
+    "chips de chocolate",
+    "miel",
+    "frutas",
+    "granola"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato de postre blanco liso de 20 cm.\nReceta: «Galletas caseras de avena y maní con yogur natural». Rinde 8 porciones; la foto muestra una sola: 2 galletas y 125 g de yogur natural.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): avena arrollada, harina integral, maní tostado sin sal, pasta de maní, huevo, canela, yogur natural descremado.\nPresentación: Dos galletas de avena y maní, rústicas, al lado de un cuenco chico con yogur natural blanco.\nNo debe aparecer: chips de chocolate, miel, frutas, granola.",
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R066",
+   "nombre": "Tarta dulce de ricota y limón",
+   "origen": "NUEVA",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "archivoDeSalida": "R066-tarta-dulce-de-ricota-y-limon.png",
+   "archivoDeEntrega": "R066-tarta-dulce-de-ricota-y-limon.jpg",
+   "presentacion": "Un octavo de tarta de ricota, con el relleno blanco y firme y la masa dorada, en un plato chico.",
+   "noDebe": [
+    "frutos rojos",
+    "merengue",
+    "dulce de leche",
+    "rodajas de limón",
+    "azúcar impalpable"
+   ],
+   "prompt": "Fotografía gastronómica realista, generada por IA para la app de nutrición BE. Una sola porción, presentada como en una casa cuidada, sin producción de restaurante.\nLuz natural suave desde la izquierda, sombras leves. Fondo neutro cálido y liso, gris claro o beige, sin textura llamativa. Superficie mate.\nVajilla blanca y coherente en toda la serie, según la receta: plato playo liso de 26 cm, plato hondo liso de 23 cm, plato de postre liso de 20 cm, cuenco liso de 15 cm o vaso de vidrio liso de 300 ml. Cubiertos solo si se indican.\nCámara a unos 45 grados, centrada y a la misma distancia en toda la serie: el plato ocupa cerca del 70 % del ancho. Si hace falta mostrar un relleno o unas capas, la cámara puede bajar un poco.\nFormato horizontal 4:3, al menos 1600 × 1200 px. Todo el plato dentro de la franja central: arriba y abajo, un doceavo del alto queda solo con fondo (así se ve entero en 4:3 en el website y en 16:10 en la app). Si la herramienta solo ofrece 3:2 apaisado, dejar más aire a los costados: se recorta a 4:3.\nCocción plausible y comida apoyada de forma natural, con los ingredientes distinguibles. Sin exceso de queso, salsa ni aceite brillante. La porción tiene una escala razonable para el plato.\nSin texto, sin marcas de agua, sin logos, sin personas ni manos. Nada comestible que no esté en la receta: sin salsas, guarniciones, hierbas, semillas ni adornos agregados.\nRecipiente: plato de postre blanco liso de 20 cm.\nReceta: «Tarta dulce de ricota y limón». Rinde 8 porciones; la foto muestra una sola: un octavo de tarta.\nLo que lleva la receta (en la foto, solo lo que se ve en esa porción): harina 000, manteca, huevo, ricota.\nPresentación: Un octavo de tarta de ricota, con el relleno blanco y firme y la masa dorada, en un plato chico.\nNo debe aparecer: frutos rojos, merengue, dulce de leche, rodajas de limón, azúcar impalpable.",
+   "estado": "Falta la foto"
+  }
+ ]
+}

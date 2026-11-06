@@ -17,7 +17,7 @@ import { ejerciciosDelPeriodo, objetivosDeLaVersionDelPlan, serieDeEntrenamiento
 import type { ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
 import { agruparPorDia, codificarCursor, conteosDelPeriodo, cumpleFiltros, decodificarCursor, ordenarEntradas, paginarEntradas, registradoTarde } from './linea-de-tiempo';
 import { definicionAntropometrica, definicionDeMetrica, granoDeObservacion, MAXIMO_DE_METRICAS, METRICAS_DEL_DICCIONARIO } from './metricas-del-analisis';
-import { coberturaNutricional, diasNutricionales, serieNutricional, type RegistroParaAnalisis } from './nutricion-del-analisis';
+import { coberturaNutricional, diasNutricionales, serieNutricional, type ComidasDelPlanDelDia, type RegistroParaAnalisis } from './nutricion-del-analisis';
 import {
   compararPeriodos,
   huecosDelRango,
@@ -107,10 +107,17 @@ function registro(fecha: string, opciones: { kcal?: string | null; sinCantidades
     consumption: sinCantidades ? { status: 'UNCONFIRMED', items: [], source: 'ORIGINAL', rectifiedAt: null } : { status: 'REPORTED', items: [], source: opciones.rectificado ? 'RECTIFIED' : 'ORIGINAL', rectifiedAt: opciones.rectificado ? `${fecha}T20:00:00.000-03:00` : null },
     consumed: sinCantidades ? null : nutrientes(opciones.kcal === undefined ? '600' : opciones.kcal),
     annulment: opciones.anulado ? { annulledAt: `${fecha}T21:00:00.000-03:00`, reason: null } : null,
+    // Sin plan ni comida: estas pruebas son de cantidades. Las comidas del plan están en completitud-nutricional.test.ts.
+    dayTypeId: null,
+    meal: null,
+    option: null,
+    description: null,
   };
 }
 
-const OPC = { desde: '2026-09-28', hasta: '2026-10-11', hoy: '2026-10-11' };
+// Sin el plan (ninguna instantánea): cada día dice que no se saben sus comidas del plan, nunca supone unas (DL-153).
+const OPC = { desde: '2026-09-28', hasta: '2026-10-11', hoy: '2026-10-11', comidasDelPlan: new Map<string, ComidasDelPlanDelDia>() };
+const SIN_PLAN_UN_DIA = { daysKnown: 0, daysUndetermined: [{ reason: 'NO_ACTIVE_PLAN' as const, days: 1 }], expected: 0, withPlanOption: 0, withDifferentMeal: 0, withoutRecord: 0 };
 
 test('600 kcal confirmadas, un registro sin cantidades y una foto no son un total diario de 600 kcal: es un subtotal', () => {
   const dias = diasNutricionales([registro('2026-10-01'), registro('2026-10-01', { sinCantidades: true }), registro('2026-10-01', { sinCantidades: true, diferente: true })], OPC.desde, OPC.hasta);
@@ -123,7 +130,7 @@ test('600 kcal confirmadas, un registro sin cantidades y una foto no son un tota
     { reason: 'SIN_CANTIDADES', count: 1 },
     { reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 },
   ]);
-  assert.deepEqual(p.coverage, { records: 3, recordsWithQuantities: 1, recordsWithoutQuantities: 2, daysWithData: null, daysInBucket: null });
+  assert.deepEqual(p.coverage, { records: 3, recordsWithQuantities: 1, recordsWithoutQuantities: 2, daysWithData: null, daysInBucket: null, planMeals: SIN_PLAN_UN_DIA });
   assert.equal(s.label, 'Calorías registradas', 'nunca «consumo» ni «total»');
   assert.doesNotMatch(JSON.stringify(s), /consumo total|ingesta total del día/i);
 });
@@ -151,7 +158,7 @@ test('una anulación queda fuera del número y una rectificación cuenta una sol
   const p = serieNutricional(dias, definicion('nutricion.energia'), 'ENERGY', 'DAY', OPC).points[0]!;
   assert.equal(p.value, 1350, '700 + 650: la anulada no suma y la rectificada suma su valor vigente una vez');
   assert.equal(p.corrected, true);
-  const c = coberturaNutricional(dias, OPC.desde, OPC.hasta);
+  const c = coberturaNutricional(dias, OPC.desde, OPC.hasta, OPC);
   assert.equal(c.annulledExcluded, 1);
   assert.equal(c.rectifiedCountedOnce, 1);
   assert.equal(c.records, 2);

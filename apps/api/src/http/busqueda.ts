@@ -1,3 +1,4 @@
+import type { OrigenEnElBuscador } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import { errores } from './errores';
 
@@ -20,12 +21,17 @@ import { errores } from './errores';
  *
  * El orden del resultado: primero el nombre igual a lo escrito, después los que empiezan con la primera palabra, después
  * los que tienen todas las palabras y al final los parecidos. Dentro de cada grupo, como siempre: lo más nuevo primero.
+ * Los parecidos van del más parecido al menos parecido y, a igual parecido, del nombre entero más cercano a lo escrito:
+ * el orden no depende de cuántos ítems parecidos tenga el catálogo (encargo de Dirección del 2026-10-19, bloque 4).
  *
  * **Los nombres alternativos (DL-141, D-2).** Un ítem también se encuentra por sus nombres alternativos vigentes:
  * «aguacate» encuentra «Palta» y «bench press», «Press de banca». Cada nombre se mide solo, con las mismas reglas (todas
  * las palabras tienen que estar en un mismo nombre: «bench sentadilla» no mezcla dos), y el ítem va en el grupo de su
  * nombre que mejor coincide; a igual grupo gana el principal. La fila dice qué nombre alternativo coincidió
  * (`nombreAlternativo`), o `null` si fue el principal: lo muestran solo las operaciones que no lee la APK instalada.
+ *
+ * **El origen (DL-141, D-6).** Las búsquedas del website suman a cada fila quién cargó el ítem, si es una carga a mano, y
+ * si su correspondencia con la fuente es aproximada (`origenEnElBuscador`).
  */
 export const CON_MARCA = 'ÁÀÄÂÃÉÈËÊÍÌÏÎÓÒÖÔÕÚÙÜÛÑÇáàäâãéèëêíìïîóòöôõúùüûñç';
 export const SIN_MARCA = 'AAAAAEEEEIIIIOOOOOUUUUNCaaaaaeeeeiiiiooooouuuunc';
@@ -181,6 +187,31 @@ export interface ConNombreAlternativo {
   readonly nombreAlternativo: string | null;
 }
 
+/**
+ * DL-141 D-6: lo que una fila del buscador del website lee de la base para decir su origen: la procedencia del ítem,
+ * quién lo cargó y la correspondencia con la fuente que registró BE en la procedencia de la versión `v`
+ * (`CORRESPONDENCIA`: un objeto JSON o `null`).
+ */
+export interface ConOrigenEnLaBase {
+  readonly procedencia: string;
+  readonly creadoPorId: string | null;
+  readonly correspondencia: unknown;
+}
+
+/** La columna con la correspondencia con la fuente, tal como quedó en la procedencia de la versión `v`. */
+export const CORRESPONDENCIA = Prisma.sql`v."procedencia" -> 'correspondencia' AS "correspondencia"`;
+
+/**
+ * El origen de una fila para quien busca: si es una carga a mano, quién la hizo (vos u otro profesional); y si BE
+ * registró que el ítem corresponde a su fuente solo de forma aproximada, la condición, tal como quedó registrada.
+ */
+export function origenEnElBuscador(f: ConOrigenEnLaBase, actorId: string): OrigenEnElBuscador {
+  const loadedBy = f.procedencia === 'PROFESSIONAL_MANUAL' && f.creadoPorId !== null ? (f.creadoPorId === actorId ? 'YOU' : 'ANOTHER_PROFESSIONAL') : null;
+  const c = typeof f.correspondencia === 'object' && f.correspondencia !== null ? (f.correspondencia as { tipo?: unknown; nota?: unknown }) : null;
+  const nota = c?.tipo === 'APROXIMADA' && typeof c.nota === 'string' && c.nota.trim() !== '' ? c.nota.trim() : null;
+  return { loadedBy, approximateCorrespondence: nota };
+}
+
 export interface ResultadoDeBusqueda<F> {
   readonly filas: readonly F[];
   readonly page: { readonly limit: number; readonly nextCursor: string | null; readonly hasMore: boolean };
@@ -237,8 +268,9 @@ function parecido(p: PalabraBuscada): Prisma.Sql {
  * 1. **Los que tienen todas las palabras** en alguno de sus nombres, por grupo y, dentro de cada grupo, lo más nuevo
  *    primero. El cursor lleva el grupo del último servido, así que las páginas siguen el mismo orden.
  * 2. **Los parecidos**, solo en la primera página y solo si la búsqueda exacta trajo menos de `POCOS_RESULTADOS` y no
- *    tiene más páginas: completan la página, del más parecido al menos parecido, y no tienen página siguiente. Cada
- *    palabra tiene que estar en un mismo nombre o parecerse a una de sus palabras al menos `UMBRAL_DE_PARECIDO`.
+ *    tiene más páginas: completan la página, del más parecido al menos parecido (y, a igual parecido, del nombre entero
+ *    más cercano a lo escrito), y no tienen página siguiente. Cada palabra tiene que estar en un mismo nombre o
+ *    parecerse a una de sus palabras al menos `UMBRAL_DE_PARECIDO`.
  * Cada fila dice qué nombre alternativo coincidió (DL-141), o `null` si fue el principal.
  */
 export async function buscarEnCatalogo<F extends { readonly versionId: string; readonly momentoDeRegistro: Date }>(
@@ -278,19 +310,22 @@ export async function buscarEnCatalogo<F extends { readonly versionId: string; r
   let parecidas: (F & ConNombreAlternativo)[] = [];
   if (busqueda !== null && cursor === null && !hayMas && pagina.length < Math.min(POCOS_RESULTADOS, limite) && busqueda.palabras.some((p) => p.formas.some(admiteParecido))) {
     // El nombre más parecido de cada fila; las que ya trajo la búsqueda exacta (por cualquiera de sus nombres) no vuelven.
+    // A igual parecido palabra por palabra, primero el nombre entero más cercano a lo escrito (`similarity`): «sentadila»
+    // trae primero «Sentadilla» y después «Sentadilla búlgara», tenga el catálogo las sentadillas que tenga (encargo de
+    // Dirección del 2026-10-19, bloque 4: la búsqueda tolera que el catálogo crezca). Solo cambia el orden.
     parecidas = await cliente.$queryRaw<(F & ConNombreAlternativo)[]>`
       SELECT ${catalogo.columnas}, par."alternativo" AS "nombreAlternativo"
         FROM ${catalogo.tablas}
        CROSS JOIN LATERAL (
-         SELECT cmp."alternativo", (SELECT sum(u) FROM unnest(pts."puntajes") AS u) AS "suma"
+         SELECT cmp."alternativo", (SELECT sum(u) FROM unnest(pts."puntajes") AS u) AS "suma", similarity(${busqueda.texto}, cmp."nombre") AS "cercania"
            FROM ${nombres} cmp
           CROSS JOIN LATERAL (SELECT ARRAY[${Prisma.join(busqueda.palabras.map(parecido))}]::real[] AS "puntajes") pts
           WHERE (SELECT min(u) FROM unnest(pts."puntajes") AS u) >= ${UMBRAL_DE_PARECIDO}::real
-          ORDER BY 2 DESC, cmp."orden", cmp."alternativo"
+          ORDER BY 2 DESC, 3 DESC, cmp."orden", cmp."alternativo"
           LIMIT 1) par
        WHERE ${catalogo.visibles}
          AND NOT EXISTS (SELECT 1 FROM ${nombres} cmp WHERE ${todasLasPalabras(busqueda)})
-       ORDER BY par."suma" DESC, v."momento_de_registro" DESC, v."id" DESC
+       ORDER BY par."suma" DESC, par."cercania" DESC, v."momento_de_registro" DESC, v."id" DESC
        LIMIT ${limite - pagina.length}`;
   }
 

@@ -6,26 +6,42 @@
  * cada sesión —buscar en el catálogo BE, elegir un habitual, crear un ejercicio a mano e importar uno desde wger
  * (B10-06:485-498; WP-08)—, y nada más. Es el cajón de «Agregar ítem» del plan de comidas, con las mismas reglas:
  * - **Busca al enviar** (Enter o «Buscar»). Una búsqueda que falla dice su motivo y se reintenta: no es «No encontramos
- *   ejercicios con ese nombre» (B10-10:41).
+ *   ejercicios con ese nombre» (B10-10:41). Una sin resultados dice qué se buscó y ofrece «Limpiar búsqueda», que vacía
+ *   el campo (y el filtro de los habituales) y devuelve el foco al campo (bloque 5 del encargo de consolidación).
  * - **Elegir no cierra el cajón:** el ejercicio se suma a la sesión, con una serie y sin criterio, y el cajón lo
  *   anuncia. Se pueden sumar varios seguidos; se cierra con «Cerrar» o con Escape.
  * - «Crear manualmente» e «Importar desde wger» se abren adentro, con «Volver a la búsqueda».
  * - Al abrirse, el foco va al campo de búsqueda; cada vez que se abre, empieza vacío.
  * - Si los ejercicios habituales no se pueden leer, se dice: no es «todavía no marcaste ninguno».
  * - Si un ejercicio apareció por un nombre alternativo, se dice cuál: «Press de banca (bench press)» (DL-141).
+ * - WP-CATALOGO-VISUAL (etapa 2; DL-081 y DL-162): cada fila dice sus zonas musculares en un renglón (vienen en la
+ *   búsqueda), y el botón del ojo abre debajo el detalle del ejercicio: su imagen y la figura de sus zonas (la ficha
+ *   visual, API-EJE-05). Uno abierto por vez; una búsqueda nueva lo cierra.
  */
-import { COPY_ENTRENAMIENTO, COPY_HABITUALES, COPY_INTEGRACIONES, nombreAlternativoComoAclaracion, type EjercicioDeCatalogo, type EjercicioEncontrado } from '@be/domain';
-import { useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
+import {
+  COPY_ENTRENAMIENTO,
+  COPY_FIGURA_DE_ZONAS,
+  COPY_HABITUALES,
+  COPY_INTEGRACIONES,
+  habitualesQueCoinciden,
+  nombreAlternativoComoAclaracion,
+  zonasEnUnRenglon,
+  type EjercicioDeCatalogo,
+  type EjercicioEncontrado,
+} from '@be/domain';
+import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
 import { Cargando } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
+import { OrigenEnElCatalogo } from '../../../../components/origen-en-el-catalogo';
 import { api } from '../../../../lib/api';
+import { DetalleVisualPorLeer } from '../../exercises/detalle-visual';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
-import { ImportacionDeWger, procedenciaDeEjercicio } from './importacion';
+import { ImportacionDeWger } from './importacion';
 
 type Modo = 'buscar' | 'manual' | 'importar';
 
@@ -103,6 +119,8 @@ function ContenidoDeAgregarEjercicio({
   const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState<Busqueda>({ tipo: 'sin-buscar' });
   const [agregado, setAgregado] = useState<{ readonly nombre: string; readonly veces: number } | null>(null);
+  // El ejercicio cuyo detalle (imagen y zonas) está abierto debajo de su fila: uno por vez.
+  const [detalle, setDetalle] = useState<string | null>(null);
   const pedido = useRef(0);
 
   // Al volver de crear o de importar, el foco vuelve al campo. Al abrirse, lo pone el cajón (`focoInicial`).
@@ -112,6 +130,7 @@ function ContenidoDeAgregarEjercicio({
 
   const buscar = async (que: string) => {
     const esta = ++pedido.current;
+    setDetalle(null);
     setBusqueda({ tipo: 'buscando', texto: que });
     const r = await api.buscarEjercicios(token, que);
     // Una respuesta que llega después de otra búsqueda no pisa a la más nueva.
@@ -122,6 +141,13 @@ function ContenidoDeAgregarEjercicio({
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     void buscar(texto.trim());
+  };
+  /** «Limpiar búsqueda»: el campo vacío (y con él el filtro de los habituales), el foco en él y el cajón como al abrirse. */
+  const limpiar = () => {
+    pedido.current += 1;
+    setTexto('');
+    setBusqueda({ tipo: 'sin-buscar' });
+    campo.current?.focus();
   };
   const elegir = (e: EjercicioDeCatalogo) => {
     onElegir(e);
@@ -161,6 +187,11 @@ function ContenidoDeAgregarEjercicio({
   }
 
   const ejercicios = busqueda.tipo === 'lista' ? busqueda.ejercicios : [];
+  // Los habituales se filtran mientras se escribe; el catálogo, al enviar (bloque 5).
+  const filtro = texto.trim();
+  const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
+  // Con el catálogo ya buscado con ese texto, los habituales no repiten que se busca con Enter: el resultado está debajo.
+  const catalogoBuscado = busqueda.tipo !== 'sin-buscar' && busqueda.texto === filtro;
   return (
     <div className="agregar-item agregar-ejercicio">
       <form onSubmit={enviar} className="agregar-item__buscador" role="search">
@@ -185,7 +216,11 @@ function ContenidoDeAgregarEjercicio({
         <h3 id={`${id}-habituales`} className="agregar-item__titulo">
           <Icono nombre="habitual" tamano={18} />
           {COPY_HABITUALES.misHabituales}
-          {habituales.habituales.length > 0 ? <span className="nota">Los que marcaste: se agregan con un clic.</span> : null}
+          {habituales.habituales.length > 0 ? (
+            <span className="nota" data-habituales-coinciden={filtro ? alaVista.length : undefined}>
+              {filtro ? COPY_HABITUALES.coinciden(alaVista.length, habituales.habituales.length, filtro) : 'Los que marcaste: se agregan con un clic.'}
+            </span>
+          ) : null}
         </h3>
         {habituales.lectura === 'falla' ? (
           <Aviso tipo="error">
@@ -198,9 +233,13 @@ function ContenidoDeAgregarEjercicio({
           <Cargando />
         ) : habituales.habituales.length === 0 ? (
           <p className="nota">{COPY_HABITUALES.sinEjerciciosHabituales}</p>
+        ) : alaVista.length === 0 ? (
+          <p className="nota" data-habituales-sin-coincidencias>
+            {COPY_HABITUALES.ningunoCoincide(filtro, catalogoBuscado)}
+          </p>
         ) : (
           <ul className="agregar-item__fichas">
-            {habituales.habituales.map((h) => (
+            {alaVista.map((h) => (
               <li key={h.exerciseId}>
                 <button type="button" className="boton boton--quieto boton--compacto" aria-label={`Agregar ${h.name}`} onClick={() => elegir(h)}>
                   <Icono nombre="mas" tamano={18} />
@@ -233,7 +272,18 @@ function ContenidoDeAgregarEjercicio({
             </button>
           </Aviso>
         ) : null}
-        {busqueda.tipo === 'lista' && ejercicios.length === 0 ? <p data-sin-resultados>No encontramos ejercicios con ese nombre. Podés crearlo a mano o importarlo, con los botones de abajo.</p> : null}
+        {busqueda.tipo === 'lista' && ejercicios.length === 0 ? (
+          <>
+            <p data-sin-resultados>
+              {busqueda.texto ? `Ningún ejercicio coincide con «${busqueda.texto}».` : 'El catálogo no trajo ejercicios.'} Podés crearlo a mano o importarlo, con los botones de abajo.
+            </p>
+            <div className="acciones">
+              <button type="button" className="boton boton--secundario boton--compacto" onClick={limpiar}>
+                Limpiar búsqueda
+              </button>
+            </div>
+          </>
+        ) : null}
         {busqueda.tipo === 'lista' && ejercicios.length > 0 ? (
           <div className="desplazable-x">
             <table className="tabla alimentos-del-catalogo ejercicios-del-catalogo">
@@ -248,33 +298,63 @@ function ContenidoDeAgregarEjercicio({
               </thead>
               <tbody>
                 {ejercicios.map((ej) => {
-                  const procedencia = [ej.provenance === 'PROFESSIONAL_MANUAL' ? 'cargado por vos' : null, procedenciaDeEjercicio(ej)].filter(Boolean).join(' · ');
                   const marcado = habituales.esHabitual(ej.exerciseId);
+                  const zonas = zonasEnUnRenglon(ej.muscleZones);
+                  const abierto = detalle === ej.exerciseId;
                   return (
-                    <tr key={ej.versionId} data-ejercicio-del-catalogo={ej.versionId}>
-                      <th scope="row">
-                        <span className="alimentos-del-catalogo__nombre">
-                          {ej.name}
-                          {ej.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(ej.matchedAlternativeName)})</span> : null}
-                        </span>
-                        {procedencia ? <span className="nota alimentos-del-catalogo__detalle">{procedencia}</span> : null}
-                      </th>
-                      <td className="alimentos-del-catalogo__acciones">
-                        <button
-                          type="button"
-                          className="boton boton--quieto alimentos-del-catalogo__habitual"
-                          aria-pressed={marcado}
-                          aria-label={`${marcado ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar}: ${ej.name}`}
-                          title={marcado ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar}
-                          onClick={() => void habituales.alternar(ej)}
-                        >
-                          <Icono nombre="habitual" tamano={18} />
-                        </button>
-                        <button type="button" className="boton boton--secundario boton--compacto" aria-label={`Elegir ${ej.name}`} onClick={() => elegir(ej)}>
-                          Elegir
-                        </button>
-                      </td>
-                    </tr>
+                    <Fragment key={ej.versionId}>
+                      <tr data-ejercicio-del-catalogo={ej.versionId} data-detalle-abierto={abierto ? '' : undefined}>
+                        <th scope="row">
+                          <span className="alimentos-del-catalogo__nombre">
+                            {ej.name}
+                            {ej.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(ej.matchedAlternativeName)})</span> : null}
+                          </span>
+                          {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. */}
+                          <span className="nota alimentos-del-catalogo__detalle">
+                            <OrigenEnElCatalogo item={ej} />
+                          </span>
+                          {zonas ? (
+                            <span className="nota alimentos-del-catalogo__detalle ejercicios-del-catalogo__zonas" data-zonas-del-ejercicio>
+                              <span className="visualmente-oculto">{COPY_FIGURA_DE_ZONAS.titulo}: </span>
+                              {zonas}
+                            </span>
+                          ) : null}
+                        </th>
+                        <td className="alimentos-del-catalogo__acciones">
+                          <button
+                            type="button"
+                            className="boton boton--quieto ejercicios-del-catalogo__ver"
+                            aria-expanded={abierto}
+                            aria-label={`${abierto ? COPY_FIGURA_DE_ZONAS.cerrarDetalle : COPY_FIGURA_DE_ZONAS.verDetalle}: ${ej.name}`}
+                            title={abierto ? COPY_FIGURA_DE_ZONAS.cerrarDetalle : COPY_FIGURA_DE_ZONAS.verDetalle}
+                            onClick={() => setDetalle(abierto ? null : ej.exerciseId)}
+                            data-ver-detalle
+                          >
+                            <Icono nombre={abierto ? 'arriba' : 'ver'} tamano={18} />
+                          </button>
+                          <button
+                            type="button"
+                            className="boton boton--quieto alimentos-del-catalogo__habitual"
+                            aria-pressed={marcado}
+                            aria-label={`${marcado ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar}: ${ej.name}`}
+                            title={marcado ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar}
+                            onClick={() => void habituales.alternar(ej)}
+                          >
+                            <Icono nombre="habitual" tamano={18} />
+                          </button>
+                          <button type="button" className="boton boton--secundario boton--compacto" aria-label={`Elegir ${ej.name}`} onClick={() => elegir(ej)}>
+                            Elegir
+                          </button>
+                        </td>
+                      </tr>
+                      {abierto ? (
+                        <tr className="ejercicios-del-catalogo__detalle">
+                          <td colSpan={2}>
+                            <DetalleVisualPorLeer token={token} exerciseId={ej.exerciseId} nombre={ej.name} sesionPerdida={sesionPerdida} />
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   );
                 })}
               </tbody>

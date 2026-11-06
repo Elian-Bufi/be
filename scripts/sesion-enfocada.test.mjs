@@ -281,7 +281,7 @@ test('6 · la banda «Plan de la serie N» y las bases declaradas, sin suponer l
 });
 
 test('6 · con la letra grande, la tabla pasa a tarjetas apiladas', () => {
-  // El ancho disponible: la pantalla menos los 20 dp de relleno de cada lado.
+  // El ancho de la fila. Desde PA-02 la fila lleva cuatro celdas (kg, Rep., RIR y Tiempo) y la casilla de 44 dp.
   assert.equal(series.disposicionDeLaTabla(320, 1), 'tabla');
   assert.equal(series.disposicionDeLaTabla(372, 1.3), 'tabla');
   assert.equal(series.disposicionDeLaTabla(320, 1.3), 'tarjetas');
@@ -335,7 +335,9 @@ function textosDe(archivo) {
   return textos;
 }
 
-const PIEZAS_NUEVAS = ['pantallas/sesion-enfocada.tsx', 'pantallas/plan-por-serie.tsx', 'pantallas/tiempos-de-la-sesion.tsx', 'pantallas/recuperacion.tsx', 'series-de-la-sesion.ts', 'corrida-de-entrenamiento.ts', 'almacen-de-entrenamiento.ts'].map(movil);
+// DL-151 suma la sustitución del ejercicio activo, con sus textos.
+// PA-01 y PA-02 (2026-11-02) suman los textos de la sesión guiada y la franja de arriba.
+const PIEZAS_NUEVAS = ['pantallas/sesion-enfocada.tsx', 'pantallas/plan-por-serie.tsx', 'pantallas/tiempos-de-la-sesion.tsx', 'pantallas/recuperacion.tsx', 'series-de-la-sesion.ts', 'corrida-de-entrenamiento.ts', 'almacen-de-entrenamiento.ts', 'sustitucion-de-ejercicio.ts', 'textos-de-la-sesion.ts', 'franja-de-la-sesion.ts'].map(movil);
 
 test('8 · T13: el copy de las piezas nuevas no tiene puntajes, cumplimiento ni juicios, y no deriva «No realizada»', () => {
   const hallazgos = [];
@@ -381,6 +383,10 @@ test('8 · contraste medido en lo que dibuja la sesión enfocada: el objetivo en
     ['tenue', 'superficie', 4.5, 'los detalles dentro de las tarjetas'],
     ['botonTexto', 'botonFondo', 4.5, '«Registrar serie N» y «Finalizar descanso»'],
     ['botonTexto', 'acento', 3, 'el tilde de una serie guardada'],
+    // La fila registrada va en el azul elevado (Dirección, 2026-11-02): lo registrado, «como el plan» y la casilla, encima.
+    ['texto', 'superficieElevada', 4.5, 'lo registrado en una fila registrada'],
+    ['tenue', 'superficieElevada', 4.5, '«como el plan» y el estado debajo de una fila registrada'],
+    ['acento', 'superficieElevada', 3, 'el borde de la casilla sobre una fila registrada'],
     ['error', 'superficie', 4.5, 'una serie en conflicto'],
     ['peligroTexto', 'peligroFondo', 3, 'el signo del aviso en la recuperación'],
   ];
@@ -400,6 +406,10 @@ test('8 · contraste medido en lo que dibuja la sesión enfocada: el objetivo en
   assert.match(pieza, /celdaQuieta: \{[^}]*backgroundColor: COLOR\.fondo/);
   assert.match(pieza, /filaActiva: \{[^}]*borderColor: COLOR\.acento/);
   assert.match(pieza, /serieActual: \{[^}]*color: COLOR\.acento/);
+  // La fila registrada, en el azul elevado y no en el verde del éxito; «como el plan», en el tenue.
+  assert.match(pieza, /filaRegistrada: \{[^}]*backgroundColor: COLOR\.superficieElevada/);
+  assert.doesNotMatch(pieza, /filaRegistrada: \{[^}]*COLOR\.exito/);
+  assert.match(pieza, /comoElPlan: \{[^}]*color: COLOR\.tenue/);
   // Ningún brillo interno: la superficie es mate (WP-ENTRENAMIENTO-SERIES §7.7).
   assert.doesNotMatch(readFileSync(movil('vidrio.tsx'), 'utf8'), /LinearGradient|BrilloDeVidrio\(/);
   for (const archivo of ['pantallas/progreso.tsx', 'pantallas/indicadores.tsx', 'pantallas/figura-de-la-toma.tsx', 'pantallas/sesion-enfocada.tsx']) assert.doesNotMatch(readFileSync(movil(archivo), 'utf8'), /BrilloDeVidrio/, archivo);

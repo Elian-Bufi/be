@@ -12,6 +12,9 @@
  * - **El lector de pantalla** la lee como descripción del control (`aria-describedby`), aunque no esté a la vista.
  * - **No sale de la ventana:** va arriba del control y, si no entra, abajo; si se pasa de un costado, se corre. Es fija
  *   a la ventana, así que un contenedor con desplazamiento no la corta; al desplazar la página, se cierra.
+ * - **En una pantalla táctil no aparece** (bloque 5 del encargo de consolidación): un toque emula «pasar el mouse», y la
+ *   pista quedaba abierta encima del contenido hasta tocar en otro lado. Responde al mouse y al lápiz, no al dedo; lo
+ *   que explica ya está a la vista, en la ayuda de la vista o en la Guía, y el lector de pantalla la sigue leyendo.
  */
 import { cloneElement, isValidElement, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 
@@ -87,8 +90,14 @@ export function Pista({ texto, children }: { texto: ReactNode; children: ReactEl
     <span
       className="pista"
       ref={control}
-      onMouseEnter={() => (visible ? limpiar() : mostrar(PAUSA_AL_ENTRAR_MS))}
-      onMouseLeave={() => ocultar(PAUSA_AL_SALIR_MS)}
+      onPointerEnter={(e) => {
+        if (e.pointerType === 'touch') return;
+        if (visible) limpiar();
+        else mostrar(PAUSA_AL_ENTRAR_MS);
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType !== 'touch') ocultar(PAUSA_AL_SALIR_MS);
+      }}
       onFocus={(e) => {
         // Con el teclado, enseguida; un clic también enfoca, y ahí la pista sobra.
         if ((e.target as HTMLElement).matches?.(':focus-visible')) mostrar(0);

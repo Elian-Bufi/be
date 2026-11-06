@@ -52,6 +52,25 @@ enum MotivoDeRevocacionDeSesion {
   REVOCACION_POR_TITULAR
   CIERRE_DE_CUENTA
   SUSPENSION_DE_CUENTA
+  /// DL-147: una reanudación del website ya reemplazada volvió a presentarse fuera del margen de gracia.
+  REANUDACION_REUTILIZADA
+  /// WP-ADMINISTRACION (DL-155): cinco códigos fallidos del segundo factor en una sesión administrativa.
+  SEGUNDO_FACTOR_FALLIDO
+  /// WP-ADMINISTRACION: al incorporarse como administradora, una identidad pierde sus sesiones comunes.
+  INCORPORACION_ADMINISTRATIVA
+  /// WP-ADMINISTRACION: el operador restableció el segundo factor; las sesiones administrativas dejan de valer.
+  SEGUNDO_FACTOR_RESTABLECIDO
+  /// WP-ADMINISTRACION: el operador retiró el rol administrativo.
+  ROL_ADMINISTRATIVO_RETIRADO
+  /// WP-ADMINISTRACION: el administrador reemplazó su autenticador o generó códigos nuevos; sus otras sesiones terminan.
+  CREDENCIALES_ADMINISTRATIVAS_RENOVADAS
+}
+
+/// WP-ADMINISTRACION (DL-155): de qué clase es una sesión. Una ADMINISTRATIVA solo sirve en la consola de Administración
+/// (SESSION_MFA); una PERSONAL, en todo lo demás. La decide el servidor al abrirla y no cambia (trigger).
+enum ClaseDeSesion {
+  PERSONAL
+  ADMINISTRATIVA
 }
 
 /// 08 §12.2 «canal/superficie», declarado por el cliente (DEUDA_LEGAJO DL-022).
@@ -73,6 +92,8 @@ enum TipoDeTexto {
   EVIDENCIA_VISUAL
   /// La declaración de mayoría de edad del alta (08 §24.7 a; gate §42, ítem 22; DL-138).
   MAYORIA_DE_EDAD
+  /// DL-165 D-9 (FR-10): «Compartir mis hábitos con mis profesionales». Una propuesta, pendiente de validación jurídica.
+  HABITOS_COMPARTIDOS
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -190,6 +211,8 @@ model Identidad {
   solicitudesDeFormularioComoProfesional SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelProfesional")
   solicitudesDeFormularioComoAsesorado   SolicitudDeFormulario[] @relation("SolicitudDeFormularioDelAsesorado")
   respuestasDeFormulario                 RespuestaDeFormulario[] @relation("RespuestaDeFormularioDelAsesorado")
+  // DL-164
+  propuestasDeRespuestaDeFormulario PropuestaDeRespuestaDeFormulario[] @relation("PropuestaDeRespuestaDelProfesional")
 
   // WP-08
   candidatosDeImportacion CandidatoDeImportacion[] @relation("CandidatoDelProfesional")
@@ -225,6 +248,24 @@ model Identidad {
   nombresAlternativosDeAlimento           NombreAlternativoDeAlimento[]          @relation("NombreAlternativoDeAlimentoDelProfesional")
   retirosDeNombresAlternativosDeEjercicio RetiroDeNombreAlternativoDeEjercicio[] @relation("RetiroDeNombreAlternativoDeEjercicioDelProfesional")
   retirosDeNombresAlternativosDeAlimento  RetiroDeNombreAlternativoDeAlimento[]  @relation("RetiroDeNombreAlternativoDeAlimentoDelProfesional")
+
+  // WP-ADMINISTRACION (DL-155)
+  rolesAdministrativos        RolAdministrativo[]     @relation("RolAdministrativoDeLaIdentidad")
+  codigosDeIncorporacion      CodigoDeIncorporacion[] @relation("CodigoDeIncorporacionDeLaIdentidad")
+  factoresTotp                FactorTotp[]            @relation("FactorTotpDeLaIdentidad")
+  codigosDeRecuperacion       CodigoDeRecuperacion[]  @relation("CodigoDeRecuperacionDeLaIdentidad")
+  decisionesComoAdministrador EventoDeVerificacion[]  @relation("EventoDeVerificacionDelAdministrador")
+
+  // WP-CATALOGO-VISUAL (DL-081)
+  asignacionesDeZonas AsignacionDeZonasDeEjercicio[] @relation("AsignacionDeZonasDelAutor")
+
+  // WP-FORMULARIOS-RONDA-2 (DL-165 D-9, FR-10)
+  habitosDeLaPersona       HabitosDeLaPersona[]    @relation("HabitosDeLaPersona")
+  autorizacionesDeHabitos  AutorizacionDeHabitos[] @relation("AutorizacionDeHabitosDeLaPersona")
+  destinatarioDeHabitos    DestinatarioDeHabitos[] @relation("DestinatarioDeHabitosDelProfesional")
+  // DL-165, ronda 2.1 (D-17 nueva): los pedidos de acceso a los hábitos, de quien pide y de quien responde.
+  pedidosDeAccesoHechos    PedidoDeAccesoAHabitos[] @relation("PedidoDeAccesoDelProfesional")
+  pedidosDeAccesoRecibidos PedidoDeAccesoAHabitos[] @relation("PedidoDeAccesoALaPersona")
 
   @@map("identidad")
 }
@@ -321,11 +362,37 @@ model Sesion {
   versionDeControl      Int                         @map("version_de_control")
   momentoDeFinalizacion DateTime?                   @map("momento_de_finalizacion") @db.Timestamptz(3)
   motivoDeRevocacion    MotivoDeRevocacionDeSesion? @map("motivo_de_revocacion")
+  /// WP-ADMINISTRACION (DL-155): PERSONAL o ADMINISTRATIVA, inmutable. Las filas anteriores son PERSONAL.
+  clase                 ClaseDeSesion               @default(PERSONAL)
 
-  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  identidad     Identidad              @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  /// DL-147: las reanudaciones de una sesión del website, de la más vieja a la vigente.
+  reanudaciones ReanudacionDeSesion[]
+  /// WP-ADMINISTRACION: el estado del segundo factor de una sesión administrativa.
+  segundoFactor SegundoFactorDeSesion?
 
   @@index([identidadId, estado])
   @@map("sesion")
+}
+
+/// DL-147 — La reanudación de una sesión del website después de recargar (el «refresh rotativo» del 07 §43-bis, con cookie
+/// httpOnly). Cada reanudación agrega una fila con la huella del secreto de la cookie, que reemplaza a la anterior; la
+/// vigente es la que no tiene sucesora. El secreto no se guarda. Solo se agrega, y solo para una sesión activa del website (trigger).
+model ReanudacionDeSesion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sesionId          String   @map("sesion_id") @db.Uuid
+  /// La reanudación que esta reemplaza (cada reanudación rota el secreto); NULL en la primera, la del inicio de sesión.
+  predecesoraId     String?  @unique @map("predecesora_id") @db.Uuid
+  /// SHA-256 en hexadecimal del secreto que viaja en la cookie.
+  huella            String   @unique
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  sesion      Sesion               @relation(fields: [sesionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora ReanudacionDeSesion? @relation("CadenaDeReanudacion", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    ReanudacionDeSesion? @relation("CadenaDeReanudacion")
+
+  @@index([sesionId])
+  @@map("reanudacion_de_sesion")
 }
 
 /// tokenVersion por cuenta (07:1795 «refuerzo barato»). Separado de Identidad para no agregarle campos ajenos al 06.
@@ -360,6 +427,8 @@ model VersionDeTexto {
   actos                     ActoRegistrable[]
   solicitudes               SolicitudDeCierreDeCuenta[]
   versionesDeConsentimiento VersionDeConsentimiento[]
+  /// DL-165 D-9: las versiones de la autorización de hábitos que aceptaron este texto.
+  autorizacionesDeHabitos   AutorizacionDeHabitos[]
 
   @@map("version_de_texto")
 }
@@ -513,6 +582,13 @@ enum TipoDeEventoDeVerificacion {
   HabilitacionRetirada
 }
 
+/// WP-ADMINISTRACION (DL-155): quién hizo un hecho de M-02. El servicio interno de DL-036 (todas las filas anteriores a este
+/// paquete y lo que hace la siembra) o un administrador humano, con su identidad.
+enum TipoDeActorDeVerificacion {
+  SERVICIO_INTERNO
+  ADMINISTRADOR
+}
+
 /// 08 §29 — resultado de una decisión de acceso del PDP.
 enum ResultadoDeDecision {
   PERMITIDA
@@ -586,25 +662,37 @@ model Habilitacion {
   @@map("habilitacion")
 }
 
-/// T-06-N08 — hechos de M-02 mínimo. Append-only. El actor es siempre el servicio interno (DL-036).
+/// T-06-N08 — hechos de M-02 mínimo. Append-only. Hasta WP-ADMINISTRACION el actor era siempre el servicio interno (DL-036);
+/// desde ahí puede ser un administrador (`tipo_de_actor`, CHECK con el actor que corresponde).
 model EventoDeVerificacion {
-  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                   String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Orden total de los hechos (ver EventoDeVinculo).
-  secuencia           BigInt                     @unique @default(autoincrement())
-  tipo                TipoDeEventoDeVerificacion
-  identidadId         String                     @map("identidad_id") @db.Uuid
-  alcance             Alcance?
-  estadoPrevio        String?                    @map("estado_previo")
-  estadoPosterior     String?                    @map("estado_posterior")
-  fundamento          String?
-  actorServicio       String                     @map("actor_servicio")
-  procedencia         Json
-  momentoDeOcurrencia DateTime?                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
-  momentoDeRegistro   DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  secuencia            BigInt                     @unique @default(autoincrement())
+  tipo                 TipoDeEventoDeVerificacion
+  identidadId          String                     @map("identidad_id") @db.Uuid
+  alcance              Alcance?
+  estadoPrevio         String?                    @map("estado_previo")
+  estadoPosterior      String?                    @map("estado_posterior")
+  fundamento           String?
+  /// El servicio interno, solo con `tipoDeActor = SERVICIO_INTERNO` (CHECK).
+  actorServicio        String?                    @map("actor_servicio")
+  /// WP-ADMINISTRACION: quién lo hizo. Sin default en la base: cada hecho nuevo lo declara.
+  tipoDeActor          TipoDeActorDeVerificacion  @map("tipo_de_actor")
+  /// La identidad del administrador, solo con `tipoDeActor = ADMINISTRADOR` (CHECK), con su rol vigente al decidir (trigger).
+  administradorId      String?                    @map("administrador_id") @db.Uuid
+  /// Lo que se le comunicó al profesional, separado del fundamento interno. Solo en las decisiones de un administrador.
+  mensajeAlProfesional String?                    @map("mensaje_al_profesional")
+  /// La versión de la trayectoria al decidir: la «versión revisada» (DL-156). NULL en los hechos anteriores.
+  versionPrevia        Int?                       @map("version_previa")
+  procedencia          Json
+  momentoDeOcurrencia  DateTime?                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro    DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  identidad     Identidad  @relation(fields: [identidadId], references: [id], onDelete: Restrict)
+  administrador Identidad? @relation("EventoDeVerificacionDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([identidadId, alcance])
+  @@index([administradorId])
   @@map("evento_de_verificacion")
 }
 
@@ -690,6 +778,10 @@ model AlcanceDeVinculo {
   decisiones             DecisionDeAcceso[]
   /// DL-125: los actos `EVIDENCIA_VISUAL` de este alcance.
   actosDeEvidenciaVisual ActoRegistrable[]
+  /// DL-165 D-9: los renglones de la autorización de hábitos que nombran este componente.
+  destinatariosDeHabitos DestinatarioDeHabitos[]
+  /// DL-165, ronda 2.1: los pedidos de acceso a los hábitos hechos desde este componente.
+  pedidosDeAccesoAHabitos PedidoDeAccesoAHabitos[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -1784,6 +1876,31 @@ enum TipoDeEventoDeFormulario {
   SolicitudDeFormularioCreada
   RespuestaDeFormularioRegistrada
   RespuestaDeFormularioRectificada
+  /// DL-164 (D-3, D-6): los hechos de la propuesta del profesional. Confirmarla también registra la Respuesta (D-4).
+  PropuestaDeRespuestaCargada
+  PropuestaDeRespuestaReemplazada
+  PropuestaDeRespuestaRetirada
+  PropuestaDeRespuestaRechazada
+  PropuestaDeRespuestaConfirmada
+  /// DL-165 D-9 (FR-10): una versión nueva de los hábitos de la persona (desde un formulario o desde «Mis hábitos»).
+  VersionDeHabitosRegistrada
+  /// DL-165 D-9 (FR-10): la autorización para compartirlos, al darla, al cambiar con quiénes y al retirarla.
+  AutorizacionDeHabitosActivada
+  AutorizacionDeHabitosModificada
+  AutorizacionDeHabitosRetirada
+  /// DL-165, ronda 2.1 (D-17 nueva): un profesional pide ver los hábitos, y cómo termina el pedido.
+  PedidoDeAccesoAHabitosHecho
+  PedidoDeAccesoAHabitosReemplazado
+  PedidoDeAccesoAHabitosAceptado
+  PedidoDeAccesoAHabitosNoPorAhora
+}
+
+/// DL-164 D-3: PENDIENTE mientras espera que la persona la confirme; después, cómo terminó. Sin retorno.
+enum EstadoDePropuestaDeRespuesta {
+  PENDIENTE
+  CONFIRMADA
+  RECHAZADA
+  RETIRADA
 }
 
 /// Catálogo propio de ejercicios (RF-037; REG-06-99 a 101). Un cambio de catálogo no reescribe sesiones ya
@@ -1798,12 +1915,14 @@ model EjercicioDeCatalogo {
   versiones           VersionDeEjercicio[]
   importadoPor        ResolucionDeCandidato[]         @relation("EjercicioImportado")
   habitualesDe        EjercicioHabitual[]             @relation("EjercicioHabitualDelCatalogo")
-  /// DL-123: la historia de su imagen (solo los cargados a mano por un profesional la tienen).
+  /// DL-123: la historia de su imagen. DL-162: lo sembrado y lo importado también, curada por BE.
   imagenes            AsociacionDeImagenDeEjercicio[]
   /// DL-141 D-1: el ítem externo que representa, si lo importó un profesional (uno solo por ítem externo).
   itemExterno         ItemExternoDeCatalogo?
   /// DL-141 D-2: los otros nombres con los que se lo encuentra.
   nombresAlternativos NombreAlternativoDeEjercicio[]
+  /// DL-081: la historia de sus zonas musculares.
+  asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -1822,6 +1941,8 @@ model VersionDeEjercicio {
   sucesora    VersionDeEjercicio?             @relation("CadenaDeEjercicio")
   /// DL-123: las imágenes asociadas a esta versión (REG-06-134: la versión a la que resulta aplicable).
   imagenes    AsociacionDeImagenDeEjercicio[]
+  /// DL-081: las zonas declaradas para esta versión (REG-06-139).
+  asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
 
   @@index([ejercicioId])
   @@map("version_de_ejercicio")
@@ -2194,10 +2315,39 @@ model SolicitudDeFormulario {
   vinculo         Vinculo                        @relation(fields: [vinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   templateVersion VersionDePlantillaDeFormulario @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   respuesta       RespuestaDeFormulario?
+  propuestas      PropuestaDeRespuestaDeFormulario[]
 
   @@index([asesoradoId, profesionalId, momentoDeRegistro])
   @@index([vinculoId])
   @@map("solicitud_de_formulario")
+}
+
+/// DL-164 D-3: lo que el profesional cargó desde el escritorio con lo que la persona le contó, y espera que ella lo
+/// confirme desde su app. Acompaña a la Solicitud mientras está pendiente y no es un estado de ella (REG-06-210). Una
+/// sola PENDIENTE por Solicitud (índice parcial en la migración 20261104120200). Las respuestas propuestas viven en
+/// `contenido` solo mientras está PENDIENTE: al confirmar pasan a la Respuesta (D-4); al rechazar o retirar se borran
+/// (D-6) y queda solo cómo y cuándo terminó. La ven solo quien la cargó y la persona.
+model PropuestaDeRespuestaDeFormulario {
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  solicitudId       String                       @map("solicitud_id") @db.Uuid
+  profesionalId     String                       @map("profesional_id") @db.Uuid
+  /// `{ format: 2, answers: [{ fieldCode, answer }] }` mientras está PENDIENTE; NULL después.
+  contenido         Json?
+  estado            EstadoDePropuestaDeRespuesta @default(PENDIENTE)
+  /// Token de concurrencia (`expectedVersion`): avanza de a uno con cada reemplazo; resolverla no lo cambia.
+  version           Int                          @default(1)
+  /// Cuándo se cargó por última vez (un reemplazo la renueva).
+  cargadaEn         DateTime                     @default(now()) @map("cargada_en") @db.Timestamptz(3)
+  resueltaEn        DateTime?                    @map("resuelta_en") @db.Timestamptz(3)
+  procedencia       Json
+  momentoDeRegistro DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  solicitud   SolicitudDeFormulario @relation(fields: [solicitudId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad             @relation("PropuestaDeRespuestaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([solicitudId])
+  @@index([profesionalId])
+  @@map("propuesta_de_respuesta_de_formulario")
 }
 
 /// La respuesta original: colección propia, inmutable (09:1618 «no overwrite»). Siempre SELF_REPORTED (09 §22.7).
@@ -2212,6 +2362,9 @@ model RespuestaDeFormulario {
   procedencia       Json
   /// Token de concurrencia de esta Respuesta (compara contra `expectedVersion` en FRM-08).
   version           Int      @default(1)
+  /// DL-164 D-4: si nació de una propuesta, `{ professionalId, proposalId, loadedAt, confirmedAt, correctedFieldCodes }`.
+  /// Se escribe en el INSERT (la Respuesta es de solo agregar). NULL si la persona respondió sola.
+  transcripcion     Json?
   momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
   solicitud       SolicitudDeFormulario                        @relation(fields: [solicitudId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -2219,6 +2372,8 @@ model RespuestaDeFormulario {
   templateVersion VersionDePlantillaDeFormulario               @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   rectificaciones RectificacionDeRespuestaDeFormulario[]
   citas           CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
+  /// DL-165 D-9: la versión de los hábitos que agregó esta Respuesta, si su versión traía la parte «Tus hábitos».
+  habitos         HabitosDeLaPersona[]
 
   @@map("respuesta_de_formulario")
 }
@@ -2263,6 +2418,142 @@ model EventoDeFormulario {
   @@index([asesoradoId, momentoDeRegistro])
   @@index([recursoId])
   @@map("evento_de_formulario")
+}
+
+// ─── WP-FORMULARIOS-RONDA-2 · FR-10: los hábitos de la persona (DL-165 D-9) ─────────────────────────
+
+/// DL-165 D-9: de dónde salió una versión de los hábitos.
+enum OrigenDeHabitos {
+  /// Un formulario con la parte «Tus hábitos», al responderlo o confirmarlo (API-FRI-04).
+  FORMULARIO
+  /// «Mis hábitos», en la app de la persona (API-HBT-02).
+  MIS_HABITOS
+}
+
+/// DL-165 D-9: la autorización «Compartir mis hábitos con mis profesionales», activa o retirada. Retirarla es una versión
+/// nueva, nunca un cambio de la anterior.
+enum EstadoDeAutorizacionDeHabitos {
+  ACTIVA
+  RETIRADA
+}
+
+/// DL-165 D-9 (FR-10): los hábitos de la persona, que son de ella y no de un área. Solo se agregan: cada versión guarda las
+/// respuestas de la parte «Tus hábitos» en el formato V2 (`{ format: 2, answers: [{ fieldCode, answer, provenance }] }`,
+/// siempre SELF_REPORTED), y la vigente es la de `version` más alta. Una versión que viene de un formulario nombra la
+/// Respuesta que la agregó (CHECK en la migración 20261105130100).
+model HabitosDeLaPersona {
+  id                      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId             String          @map("asesorado_id") @db.Uuid
+  /// 1, 2, 3… por persona, sin huecos (el disparador de la migración lo exige).
+  version                 Int
+  contenido               Json
+  origen                  OrigenDeHabitos
+  respuestaDeFormularioId String?         @map("respuesta_de_formulario_id") @db.Uuid
+  procedencia             Json
+  momentoDeOcurrencia     DateTime        @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro       DateTime        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado             Identidad              @relation("HabitosDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  respuestaDeFormulario RespuestaDeFormulario? @relation(fields: [respuestaDeFormularioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([asesoradoId, version])
+  @@index([respuestaDeFormularioId])
+  @@map("habitos_de_la_persona")
+}
+
+/// DL-165 D-9 (FR-10): la autorización de la persona para que los profesionales que ella elige vean sus hábitos. Un acto
+/// distinto de A3 y de B2: no autoriza un Alcance, sino una categoría hacia una lista explícita (08 C-12). Versionada: cada
+/// cambio (darla, cambiar con quiénes, retirarla) es una fila nueva que sucede a la anterior. La ACTIVA guarda el texto que
+/// la persona aceptó, con su hash (08 §12.2). La da y la retira siempre la persona (`actor_id` = `asesorado_id`).
+model AutorizacionDeHabitos {
+  id                  String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String                        @map("asesorado_id") @db.Uuid
+  version             Int
+  predecesoraId       String?                       @unique @map("predecesora_id") @db.Uuid
+  estado              EstadoDeAutorizacionDeHabitos
+  versionDeTextoId    String?                       @map("version_de_texto_id")
+  hashDelTexto        String?                       @map("hash_del_texto")
+  actorId             String                        @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                      @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado      Identidad               @relation("AutorizacionDeHabitosDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora    AutorizacionDeHabitos?  @relation("SucesionDeAutorizacionDeHabitos", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora       AutorizacionDeHabitos?  @relation("SucesionDeAutorizacionDeHabitos")
+  versionDeTexto VersionDeTexto?         @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  destinatarios  DestinatarioDeHabitos[]
+
+  @@unique([asesoradoId, version])
+  @@index([versionDeTextoId])
+  @@map("autorizacion_de_habitos")
+}
+
+/// DL-165 D-9 (D-17): lo que la versión ACTIVA dice de un profesional, por cada componente: los recibe, o la persona dijo
+/// que no. Un enum y no un booleano, como todo estado de la base.
+enum EstadoDeDestinatarioDeHabitos {
+  LOS_RECIBE
+  NO_LOS_RECIBE
+}
+
+/// DL-165 D-9: un renglón de una versión ACTIVA de la autorización: un profesional, por cada componente de vínculo sin
+/// terminar que tenía con la persona, si recibe sus hábitos (y desde cuándo) o si ella dijo que no. Un componente que no está
+/// acá (un profesional que la acompaña después, o que vuelve con otro vínculo) no los recibe: la app le pregunta. Solo se
+/// agregan.
+model DestinatarioDeHabitos {
+  autorizacionId     String                        @map("autorizacion_id") @db.Uuid
+  alcanceDeVinculoId String                        @map("alcance_de_vinculo_id") @db.Uuid
+  profesionalId      String                        @map("profesional_id") @db.Uuid
+  estado             EstadoDeDestinatarioDeHabitos
+  incluidoDesde      DateTime?                     @map("incluido_desde") @db.Timestamptz(3)
+  momentoDeRegistro  DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  autorizacion     AutorizacionDeHabitos @relation(fields: [autorizacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo      @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional      Identidad             @relation("DestinatarioDeHabitosDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([autorizacionId, alcanceDeVinculoId])
+  @@index([profesionalId])
+  @@index([alcanceDeVinculoId])
+  @@map("destinatario_de_habitos")
+}
+
+/// DL-165, ronda 2.1 (D-17 nueva; D-24, D-25): cómo terminó un pedido de acceso a los hábitos. PENDIENTE mientras espera; la
+/// persona dijo «Sí, que los vea» (ACEPTADO, también cuando lo suma desde «Mis hábitos») o «No, por ahora» (NO_POR_AHORA), o
+/// lo reemplazó un pedido nuevo del mismo profesional a los 7 días (REEMPLAZADO). Sin retorno.
+enum EstadoDePedidoDeAccesoAHabitos {
+  PENDIENTE
+  ACEPTADO
+  NO_POR_AHORA
+  REEMPLAZADO
+}
+
+/// DL-165, ronda 2.1 (D-17 nueva: «el profesional puede reenviar la solicitud de acceso y que a la persona le llegue como
+/// importante»): un profesional le pide a la persona ver sus hábitos, desde un componente de vínculo suyo con ella. No cambia
+/// ningún acceso: lo decide la persona. Una pendiente por profesional y persona (índice parcial en la migración
+/// 20261106120200); resuelto, no cambia más. No se borra.
+model PedidoDeAccesoAHabitos {
+  id                 String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId      String                         @map("profesional_id") @db.Uuid
+  asesoradoId        String                         @map("asesorado_id") @db.Uuid
+  alcanceDeVinculoId String                         @map("alcance_de_vinculo_id") @db.Uuid
+  alcance            Alcance
+  estado             EstadoDePedidoDeAccesoAHabitos @default(PENDIENTE)
+  /// Token de concurrencia (`expectedVersion` de API-HBT-09). Un pedido no se edita: nace en 1 y resolverlo no lo cambia.
+  version            Int                            @default(1)
+  pedidoEn           DateTime                       @map("pedido_en") @db.Timestamptz(3)
+  resueltoEn         DateTime?                      @map("resuelto_en") @db.Timestamptz(3)
+  procedencia        Json
+  momentoDeRegistro  DateTime                       @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional      Identidad        @relation("PedidoDeAccesoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado        Identidad        @relation("PedidoDeAccesoALaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([asesoradoId, estado])
+  @@index([profesionalId, asesoradoId])
+  @@index([alcanceDeVinculoId])
+  @@map("pedido_de_acceso_a_habitos")
 }
 
 // ─── WP-08 · Importación controlada (RF-028, RF-038; UC-I07; 09 v0.12 §3-§7) ─────────────────────
@@ -2923,6 +3214,75 @@ model AsociacionDeImagenDeEjercicio {
   @@map("asociacion_de_imagen_de_ejercicio")
 }
 
+// ─── WP-CATALOGO-VISUAL (DL-081, DL-162) ─────────────────────────────────────────────────────────────────────────────
+// Las zonas musculares de un ejercicio, con su rol (REG-06-137 a 139). La imagen del catálogo de todos usa la misma
+// historia de DL-123 (`asociacion_de_imagen_de_ejercicio`), curada por BE. Las garantías que Prisma no modela están en
+// la migración 20261102120000.
+
+/// DL-081: el rol de una zona en un ejercicio (REG-06-139). En la API, PRIMARY y SECONDARY (09v10 §7.1). Sin porcentajes.
+enum RolDeZonaMuscular {
+  PRINCIPAL
+  SECUNDARIO
+}
+
+/// DL-081: la vista anatómica en la que se representa una zona (09v10:458-463), la misma de `VistaAnatomicaSchema`.
+enum VistaAnatomica {
+  ANTERIOR
+  POSTERIOR
+}
+
+/// DL-081 — El catálogo de las 17 zonas musculares (REG-06-137), igual al de `ZONAS_MUSCULARES` del dominio y sembrado
+/// por la migración. Una zona es dominio, no un archivo gráfico (REG-06-138): las máscaras citan su `id`. Append-only.
+model ZonaMuscular {
+  id                 String   @id
+  nombre             String
+  /// Las vistas en las que se representa: anterior, posterior o las dos, sin booleanos (CHECK: una o dos, sin repetir).
+  vistasAnatomicas   VistaAnatomica[] @map("vistas_anatomicas")
+  versionDelCatalogo String           @map("version_del_catalogo")
+  momentoDeRegistro  DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  enEjercicios ZonaDeEjercicio[]
+
+  @@map("zona_muscular")
+}
+
+/// DL-081 — Cada cambio de las zonas de un ejercicio es una asignación nueva, con número correlativo por ejercicio; la
+/// vigente es la de mayor `numero`, y puede no tener ninguna zona (quitar todas). Se declara para una versión del
+/// ejercicio (REG-06-139). Lo cargado a mano lo asigna su profesional (`autor_id`); lo sembrado y lo importado lo cura BE
+/// con el comando del operador (`autor_id` nulo, procedencia CURADURIA_BE). Nunca sale de wger ni del nombre. Append-only.
+model AsignacionDeZonasDeEjercicio {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId          String   @map("ejercicio_id") @db.Uuid
+  versionDeEjercicioId String   @map("version_de_ejercicio_id") @db.Uuid
+  numero               Int
+  autorId              String?  @map("autor_id") @db.Uuid
+  procedencia          Json
+  momentoDeRegistro    DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejercicio          EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeEjercicio VersionDeEjercicio  @relation(fields: [versionDeEjercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor              Identidad?          @relation("AsignacionDeZonasDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  zonas              ZonaDeEjercicio[]
+
+  @@unique([ejercicioId, numero])
+  @@index([versionDeEjercicioId])
+  @@map("asignacion_de_zonas_de_ejercicio")
+}
+
+/// DL-081 — Una zona de una asignación, con su rol. Una zona aparece una sola vez por asignación. Append-only.
+model ZonaDeEjercicio {
+  asignacionId String            @map("asignacion_id") @db.Uuid
+  zonaId       String            @map("zona_id")
+  rol          RolDeZonaMuscular
+
+  asignacion AsignacionDeZonasDeEjercicio @relation(fields: [asignacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  zona       ZonaMuscular                 @relation(fields: [zonaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([asignacionId, zonaId])
+  @@index([zonaId])
+  @@map("zona_de_ejercicio")
+}
+
 /// DL-124 — Un evento de tiempo de la sesión en curso, colgado del borrador de ejecución. `contenido` es el evento tal
 /// como se validó (EventoDeTiempoSchema): es lo que se compara para decidir un duplicado o un conflicto. Las columnas
 /// repiten lo que se consulta: la corrida, la secuencia sin huecos, el identificador del cliente, el tipo y el instante con
@@ -3031,6 +3391,21 @@ enum TipoDeNovedad {
   RECORDATORIO_DE_SESION_PENDIENTE
   /// DL-140 (CRD-D6): a cada profesional que recibe una nota de coordinación. La referencia es la nota.
   NOTA_DE_COORDINACION_RECIBIDA
+  /// WP-ADMINISTRACION (D-6): al profesional, una decisión de Administración sobre un área suya. La referencia es el hecho.
+  DECISION_ADMINISTRATIVA
+  /// WP-ADMINISTRACION (D-6): a una persona vinculada, cuando el profesional deja de poder operar el área. La referencia
+  /// es su componente de vínculo.
+  ACCESO_PROFESIONAL_SUSPENDIDO
+  /// WP-ADMINISTRACION (D-6): a una persona vinculada, cuando el profesional vuelve a poder operar el área.
+  ACCESO_PROFESIONAL_RESTABLECIDO
+  /// DL-164: a la persona, cuando su profesional carga o reemplaza lo que ella le contó, para que lo confirme. La
+  /// referencia es la Solicitud.
+  PROPUESTA_DE_FORMULARIO_CARGADA
+  /// DL-164: al profesional, cuando la persona confirma lo cargado (la Respuesta ya existe) o dice «No es correcto».
+  PROPUESTA_DE_FORMULARIO_CONFIRMADA
+  PROPUESTA_DE_FORMULARIO_RECHAZADA
+  /// DL-165, ronda 2.1 (D-17 nueva): a la persona, cuando un profesional le pide ver sus hábitos. La referencia es el pedido.
+  PEDIDO_DE_ACCESO_A_HABITOS
 }
 
 enum PlataformaDeAviso {
@@ -3371,4 +3746,141 @@ model ReferenciaDeNota {
   @@id([notaId, orden])
   @@unique([notaId, tipo, recursoId])
   @@map("referencia_de_nota")
+}
+
+// ─── WP-ADMINISTRACION (DL-155): rol administrativo y segundo factor (08 §25) ─────────────────────────────────────────
+// docs/paquetes/WP-ADMINISTRACION.md. Lo que Prisma no modela (un rol vigente por identidad, un factor activo y uno pendiente,
+// las transiciones, lo inmutable, la identidad separada) está en la migración 20261025120000_administracion.
+
+enum EstadoDeRolAdministrativo {
+  VIGENTE
+  RETIRADO
+}
+
+/// El rol administrativo de una identidad (D-3): lo asigna solo el comando interno, nunca una operación HTTP ni la propia
+/// identidad. Una identidad con rol vigente no es profesional ni parte de un vínculo (trigger), y no abre sesiones comunes.
+model RolAdministrativo {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String                    @map("identidad_id") @db.Uuid
+  estado              EstadoDeRolAdministrativo @default(VIGENTE)
+  /// El nombre con que figura como autor en el historial administrativo.
+  nombreVisible       String                    @map("nombre_visible")
+  fundamento          String
+  /// Quién corrió el comando, tal como lo declaró (el comando no tiene sesión).
+  operador            String
+  procedencia         Json
+  momentoDeOcurrencia DateTime                  @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeRetiro     DateTime?                 @map("momento_de_retiro") @db.Timestamptz(3)
+  fundamentoDelRetiro String?                   @map("fundamento_del_retiro")
+  /// Quién lo retiró, tal como lo declaró al correr el comando.
+  operadorDelRetiro   String?                   @map("operador_del_retiro")
+
+  identidad Identidad @relation("RolAdministrativoDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@map("rol_administrativo")
+}
+
+enum MotivoDeCodigoDeIncorporacion {
+  INCORPORACION
+  RESTABLECIMIENTO
+}
+
+/// El código de un solo uso con que una identidad administrativa configura su autenticador la primera vez o después de un
+/// restablecimiento. Se guarda solo su huella SHA-256; vence a las 24 h.
+model CodigoDeIncorporacion {
+  id                 String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId        String                        @map("identidad_id") @db.Uuid
+  huella             String                        @unique
+  motivo             MotivoDeCodigoDeIncorporacion
+  /// Por qué se emitió (la incorporación o el restablecimiento del segundo factor).
+  fundamento         String
+  operador           String
+  venceEn            DateTime                      @map("vence_en") @db.Timestamptz(3)
+  momentoDeUso       DateTime?                     @map("momento_de_uso") @db.Timestamptz(3)
+  momentoDeAnulacion DateTime?                     @map("momento_de_anulacion") @db.Timestamptz(3)
+  procedencia        Json
+  momentoDeRegistro  DateTime                      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation("CodigoDeIncorporacionDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@map("codigo_de_incorporacion")
+}
+
+/// PENDIENTE → ACTIVO | DESCARTADO; ACTIVO → REEMPLAZADO | REVOCADO (trigger).
+enum EstadoDeFactorTotp {
+  PENDIENTE
+  ACTIVO
+  REEMPLAZADO
+  REVOCADO
+  DESCARTADO
+}
+
+/// El autenticador TOTP de una identidad administrativa. El secreto va cifrado (AES-256-GCM con una clave derivada de
+/// BE_CLAVE_DEL_SEGUNDO_FACTOR) y no cambia; `ultimoPaso` es el último paso de 30 s aceptado: un código ya usado no vale
+/// otra vez. Como máximo uno ACTIVO y uno PENDIENTE por identidad.
+model FactorTotp {
+  id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId             String             @map("identidad_id") @db.Uuid
+  estado                  EstadoDeFactorTotp @default(PENDIENTE)
+  secretoCifrado          String             @map("secreto_cifrado")
+  ultimoPaso              BigInt?            @map("ultimo_paso")
+  /// Códigos que no valen, seguidos, en cualquier sesión: con 10 queda bloqueado hasta un código de recuperación.
+  fallosSeguidos          Int                @default(0) @map("fallos_seguidos")
+  /// La sesión que empezó la configuración: solo ella la confirma.
+  sesionDeConfiguracionId String?            @map("sesion_de_configuracion_id") @db.Uuid
+  /// Hasta cuándo se puede confirmar, mientras está PENDIENTE.
+  venceEn                 DateTime?          @map("vence_en") @db.Timestamptz(3)
+  momentoDeActivacion     DateTime?          @map("momento_de_activacion") @db.Timestamptz(3)
+  momentoDeBaja           DateTime?          @map("momento_de_baja") @db.Timestamptz(3)
+  procedencia             Json
+  momentoDeRegistro       DateTime           @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation("FactorTotpDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId, estado])
+  @@map("factor_totp")
+}
+
+/// Un código de recuperación de un solo uso (08 §25), guardado como HMAC-SHA-256 con una clave del servidor. Cada lote
+/// (`loteId`) reemplaza al anterior: los que quedan sin usar se invalidan.
+model CodigoDeRecuperacion {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId           String    @map("identidad_id") @db.Uuid
+  loteId                String    @map("lote_id") @db.Uuid
+  huella                String    @unique
+  momentoDeUso          DateTime? @map("momento_de_uso") @db.Timestamptz(3)
+  sesionDeUsoId         String?   @map("sesion_de_uso_id") @db.Uuid
+  momentoDeInvalidacion DateTime? @map("momento_de_invalidacion") @db.Timestamptz(3)
+  momentoDeRegistro     DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad Identidad @relation("CodigoDeRecuperacionDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId, loteId])
+  @@map("codigo_de_recuperacion")
+}
+
+enum MetodoDeSegundoFactor {
+  TOTP
+  CODIGO_DE_RECUPERACION
+  CONFIGURACION
+}
+
+/// El segundo factor de una sesión administrativa, en la base: cuándo se verificó, con qué, la última actividad y los
+/// intentos fallidos. La vigencia la decide el servidor con esto (`estadoDelSegundoFactor` de @be/domain), nunca el token.
+model SegundoFactorDeSesion {
+  sesionId          String                 @id @map("sesion_id") @db.Uuid
+  identidadId       String                 @map("identidad_id") @db.Uuid
+  verificadoEn      DateTime?              @map("verificado_en") @db.Timestamptz(3)
+  metodo            MetodoDeSegundoFactor?
+  ultimaActividad   DateTime?              @map("ultima_actividad") @db.Timestamptz(3)
+  intentosFallidos  Int                    @default(0) @map("intentos_fallidos")
+  momentoDeRegistro DateTime               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  sesion Sesion @relation(fields: [sesionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@map("segundo_factor_de_sesion")
 }

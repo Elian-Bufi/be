@@ -30,6 +30,7 @@ import {
 } from '@be/domain';
 import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Cargando } from '../../../../components/estados';
+import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
@@ -40,24 +41,47 @@ import type { Disponibles } from './series';
 /** El período más largo que lee la ficha: un año y un día (DL-126). */
 const DIAS_MAXIMOS_DEL_ANALISIS_WEB = 366;
 
-/** Las etapas de los dos planes en el último año (el máximo del análisis): las versiones que se pueden elegir. */
-export function useEtapasDelAno(activo: boolean): { readonly etapas: ContextoDeLaPregunta['etapas']; readonly cargando: boolean; readonly falla: string | null } {
+/**
+ * Las etapas de los dos planes en el último año (el máximo del análisis): las versiones que se pueden elegir. Si una
+ * lectura falla, se dice cuál (`falla`, `fallaDe`) y `reintentar` vuelve a pedir solo las que fallaron: un área cuyas
+ * versiones no se pudieron leer no es un área sin versiones.
+ */
+export function useEtapasDelAno(activo: boolean): {
+  readonly etapas: ContextoDeLaPregunta['etapas'];
+  readonly cargando: boolean;
+  readonly falla: string | null;
+  readonly fallaDe: Readonly<Record<'NUTRITION' | 'TRAINING', boolean>>;
+  readonly reintentar: () => void;
+} {
   const { token, asesoradoId } = useSeguimiento();
   const hoy = hoyEn();
   const desde = restarDias(hoy, DIAS_MAXIMOS_DEL_ANALISIS_WEB - 1);
   const base = { periodStart: desde, periodEnd: hoy };
-  const { lectura: n } = useLectura<ProyeccionResponse>(activo ? `etapas|NUT|${asesoradoId}|${hoy}` : null, () => api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' }), 'NUTRITION');
-  const { lectura: t } = useLectura<ProyeccionResponse>(activo ? `etapas|TRN|${asesoradoId}|${hoy}` : null, () => api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base), 'TRAINING');
+  const { lectura: n, recargar: recargarN } = useLectura<ProyeccionResponse>(activo ? `etapas|NUT|${asesoradoId}|${hoy}` : null, () => api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' }), 'NUTRITION');
+  const { lectura: t, recargar: recargarT } = useLectura<ProyeccionResponse>(activo ? `etapas|TRN|${asesoradoId}|${hoy}` : null, () => api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base), 'TRAINING');
   return useMemo(() => {
     const vigencias = (l: typeof n) => (l.tipo === 'listo' && l.datos.data.result && l.datos.data.result.kind !== 'ANTHROPOMETRY_LONGITUDINAL' ? l.datos.data.result.planVersions : []);
     const ahora = n.tipo === 'listo' ? n.datos.data.generatedAt : t.tipo === 'listo' ? t.datos.data.generatedAt : new Date().toISOString();
-    const falla = n.tipo === 'error' ? textoDeFalla(n.motivo, 'las versiones del plan de Nutrición') : t.tipo === 'error' ? textoDeFalla(t.motivo, 'las versiones del plan de Entrenamiento') : null;
+    // Las dos, si fallaron las dos: antes se decía solo la primera.
+    const falla =
+      n.tipo === 'error' && t.tipo === 'error'
+        ? textoDeFalla(n.motivo, 'las versiones de los planes de Nutrición y de Entrenamiento')
+        : n.tipo === 'error'
+          ? textoDeFalla(n.motivo, 'las versiones del plan de Nutrición')
+          : t.tipo === 'error'
+            ? textoDeFalla(t.motivo, 'las versiones del plan de Entrenamiento')
+            : null;
     return {
       etapas: { NUTRITION: etapasDelArea(vigencias(n), 'NUTRITION', hoy, ahora), TRAINING: etapasDelArea(vigencias(t), 'TRAINING', hoy, ahora) },
       cargando: activo && (n.tipo === 'cargando' || t.tipo === 'cargando'),
       falla,
+      fallaDe: { NUTRITION: n.tipo === 'error', TRAINING: t.tipo === 'error' },
+      reintentar: () => {
+        if (n.tipo === 'error') recargarN();
+        if (t.tipo === 'error') recargarT();
+      },
     };
-  }, [n, t, hoy, activo]);
+  }, [n, t, hoy, activo, recargarN, recargarT]);
 }
 
 /** El contexto de la pregunta con lo que ya se leyó del asesorado. */
@@ -127,7 +151,8 @@ export function ListaDePreguntas() {
 
 /**
  * Lo que falta elegir para responder. Lo que se ofrece sale de lo que hay con este asesorado; lo que venía elegido y no
- * aplica se dice. Las opciones por defecto, si las hay, quedan a la vista y se confirman con el botón.
+ * aplica se dice. Las opciones por defecto, si las hay, quedan a la vista y se confirman con el botón. Lo que no se pudo
+ * leer (las versiones de un plan, los datos del período) se dice arriba, con un solo «Reintentar», y nunca como «no hay».
  */
 export function ElegirParametros({
   pregunta,
@@ -136,6 +161,8 @@ export function ElegirParametros({
   disponibles,
   cargando,
   falla,
+  fallaDe,
+  onReintentar,
   onListo,
 }: {
   pregunta: PreguntaElegida;
@@ -143,7 +170,11 @@ export function ElegirParametros({
   contexto: ContextoDeLaPregunta;
   disponibles: Disponibles;
   cargando: boolean;
+  /** Qué versiones de los planes no se pudieron leer, dicho para la persona. */
   falla: string | null;
+  fallaDe: Readonly<Record<'NUTRITION' | 'TRAINING', boolean>>;
+  /** Vuelve a pedir lo que no se pudo leer: las versiones y, si falló, qué hay en el período. */
+  onReintentar: () => void;
   onListo?: () => void;
 }) {
   const { ir } = useSeguimiento();
@@ -153,6 +184,9 @@ export function ElegirParametros({
   const requisitos = requisitosDe(pregunta.id, borrador);
   const areas = [...contexto.areas];
   const etapas = borrador.area ? contexto.etapas[borrador.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING'] : [];
+  // Si las versiones del área elegida no se pudieron leer, no se dice que no hay: lo dice el aviso de arriba.
+  const sinLeerLasVersiones = borrador.area ? fallaDe[borrador.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING'] : false;
+  const faltaLeer = [falla, disponibles.falla ? textoDeFalla(disponibles.falla, 'los datos del período de cada área (las medidas y los ejercicios)') : null].filter((x): x is string => x !== null);
   const ejercicio = contexto.ejercicios.find((e) => e.exerciseKey === borrador.exerciseKey) ?? null;
   const [error, setError] = useState<string | null>(null);
   const cambiar = (c: Partial<ParametrosDePregunta>) => setBorrador((b) => conSugerencias(pregunta.id, { ...b, ...c }, contexto));
@@ -175,7 +209,17 @@ export function ElegirParametros({
         </p>
       ) : null}
       {cargando ? <Cargando /> : null}
-      {falla ? <p className="campo__error">{falla}</p> : null}
+      {faltaLeer.length > 0 ? (
+        <Aviso tipo="error">
+          {faltaLeer.map((texto) => (
+            <p key={texto}>{texto}</p>
+          ))}
+          <button type="button" className="boton boton--secundario boton--compacto" onClick={onReintentar}>
+            <Icono nombre="actualizar" tamano={18} />
+            Reintentar lo que faltó
+          </button>
+        </Aviso>
+      ) : null}
       {requisitos.includes('AREA') ? (
         <fieldset className="capas">
           <legend>Área</legend>
@@ -199,7 +243,7 @@ export function ElegirParametros({
               </option>
             ))}
           </select>
-          {!cargando && etapas.length === 0 ? <p className="nota">No hay versiones activadas en el último año.</p> : null}
+          {!cargando && !sinLeerLasVersiones && etapas.length === 0 ? <p className="nota">No hay versiones activadas en el último año.</p> : null}
         </div>
       ) : null}
       {requisitos.includes('ETAPAS') && borrador.area ? (
@@ -217,7 +261,7 @@ export function ElegirParametros({
               </select>
             </div>
           ))}
-          {!cargando && etapas.length < 2 ? <p className="nota">Hacen falta dos versiones activadas en el último año para comparar etapas.</p> : null}
+          {!cargando && !sinLeerLasVersiones && etapas.length < 2 ? <p className="nota">Hacen falta dos versiones activadas en el último año para comparar etapas.</p> : null}
         </div>
       ) : null}
       {requisitos.includes('MEDIDA_CORPORAL') || (pregunta.id === 'comparar-etapas' && borrador.area === 'NUTRICION') ? (
@@ -231,7 +275,7 @@ export function ElegirParametros({
               </option>
             ))}
           </select>
-          {!disponibles.cargando && (disponibles.antropometria ?? []).length === 0 ? <p className="nota">No hay tomas en el período elegido.</p> : null}
+          {!disponibles.cargando && !disponibles.fallas.antropometria && (disponibles.antropometria ?? []).length === 0 ? <p className="nota">No hay tomas en el período elegido.</p> : null}
         </div>
       ) : null}
       {requisitos.includes('EJERCICIO') ? (

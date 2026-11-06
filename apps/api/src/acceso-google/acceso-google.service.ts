@@ -27,7 +27,7 @@ const OPERACION_ALTA = 'API-GOO-03';
 
 /** La sesión no se abrió porque la cuenta dejó de ser operativa en el medio: la transacción se revierte entera. */
 class CuentaNoOperativa extends Error {
-  constructor(readonly estado: EstadoOperativoDeCuenta | 'INEXISTENTE') {
+  constructor(readonly estado: EstadoOperativoDeCuenta | 'INEXISTENTE' | 'ADMINISTRATIVA' | 'SIN_ROL_ADMINISTRATIVO') {
     super(`cuenta ${estado}`);
   }
 }

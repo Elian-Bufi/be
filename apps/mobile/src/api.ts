@@ -2,7 +2,7 @@
  * Cliente de la API para el APK: base absoluta del perfil de build (API_BASE_URL, eas.json) y superficie APK.
  * La APK va directo a la API por HTTPS, sin CORS (07:645, 790). La definición del cliente es única: @be/domain.
  */
-import { CAPACIDAD_OBJETIVOS_POR_SERIE, crearClienteBe } from '@be/domain';
+import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_OBJETIVOS_POR_SERIE, crearClienteBe } from '@be/domain';
 import Constants from 'expo-constants';
 import { randomUUID } from 'expo-crypto';
 import { memoria } from './lecturas';
@@ -42,7 +42,13 @@ const fetchQueOlvidaAlEscribir: typeof fetch = async (entrada, init) => {
  * (API-SER-02), sin mostrar nunca los generales como si fueran los de una serie (`sesionDesdeLaOcurrencia`). Las APK
  * anteriores no la declaran, y la API no les entrega un plan que exige objetivos por serie.
  */
-export const api = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: [CAPACIDAD_OBJETIVOS_POR_SERIE], fetch: fetchQueOlvidaAlEscribir });
+/**
+ * Lo que declara esta APK: los objetivos de cada serie y, desde la ronda 2 de los formularios (DL-165, FR-08), las versiones
+ * de formato 3 (el renglón con varias opciones y lo demás de la ronda 2), que dibuja `campos-de-formulario.tsx`.
+ */
+const CAPACIDADES = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3] as const;
+
+export const api = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: CAPACIDADES, fetch: fetchQueOlvidaAlEscribir });
 
 /**
  * API-ACC-05 con una señal para cortar el pedido (precierre del 2026-10-06, §5): la verificación de la credencial al
@@ -50,7 +56,7 @@ export const api = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`,
  * con la señal en cada `fetch`.
  */
 export function consultarCuentaConSenal(token: string, senal: AbortSignal) {
-  const conSenal = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: [CAPACIDAD_OBJETIVOS_POR_SERIE], fetch: (entrada, init) => fetchQueOlvidaAlEscribir(entrada, { ...init, signal: senal }) });
+  const conSenal = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: CAPACIDADES, fetch: (entrada, init) => fetchQueOlvidaAlEscribir(entrada, { ...init, signal: senal }) });
   return conSenal.consultarCuenta(token);
 }
 

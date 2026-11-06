@@ -9,10 +9,15 @@
  * - **Juntas** (misma familia y unidad) y **cambio relativo** (contra una referencia explícita) en un solo gráfico.
  * - **Todas las marcas son puntos.** La métrica se reconoce por su color **y por su nombre**: en el encabezado de su
  *   panel o, cuando comparten un gráfico, al final de su línea. El color nunca es el único medio (WCAG 1.4.1).
- * - **Lo registrado** es una línea continua con puntos. **Lo planificado** en la misma unidad (el objetivo de calorías)
- *   es una línea discontinua del mismo color, sin puntos: un escalón por cada versión del objetivo.
+ * - **Lo registrado** es una línea continua con puntos. **El objetivo del profesional** en la misma unidad (las calorías
+ *   o un macro en gramos) es una línea discontinua del mismo color, sin puntos: un escalón por cada versión del objetivo.
+ *   **Lo indicado en el plan** (DL-158) es un rombo hueco por día, suelto: solo los días en que el plan no dejaba elegir.
+ *   Las tres capas van solo en su propio panel y se distinguen por la forma y por su nombre en la leyenda, no solo por
+ *   el color.
  * - **Puntos reales:** la línea une solo puntos del mismo tramo; los huecos y los cambios de método la cortan (F-02). Un
- *   subtotal, el día en curso y una semana sin completar son puntos huecos; lo desconocido no es un punto.
+ *   subtotal, el día en curso y una semana sin completar son puntos huecos; lo desconocido no es un punto. Una serie de
+ *   carga rápida (DL-161: tildada sin escribir, con los valores del plan) también: sigue en su línea y lleva la leyenda
+ *   «carga rápida»; lo que la persona escribió va lleno.
  * - **Los días sin registros** de una serie diaria llevan un sombreado gris leve: la línea sigue cortada (un hueco no se
  *   une ni se vuelve cero), pero se ve dónde no hubo carga. El día en curso no se sombrea. Si varias métricas comparten
  *   el gráfico, se sombrean los días sin registros en todas.
@@ -23,14 +28,14 @@
  * - **El valor exacto no depende del puntero:** el panel de lectura y la tabla lo dicen; el teclado mueve la fecha
  *   elegida (flechas, Inicio y Fin) y el arrastre sobre un panel es solo un atajo de los campos de fecha (WCAG 2.5.7).
  */
-import { numero, type PuntoAnalitico, type SerieAnalitica, type VigenciaDePlan } from '@be/domain';
+import { esPuntoDeCargaRapida, numero, type PuntoAnalitico, type SerieAnalitica, type VigenciaDePlan } from '@be/domain';
 import { useEffect, useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { diaYMesCivil } from '../../../../lib/formato';
 import type { Modo } from './estado';
 // Dónde cae un punto en el eje de fechas: lo comparte con el minigráfico del Resumen, que no carga esta biblioteca.
 import { DIA, fechaDeX, mediodia, xDe } from './geometria';
-import { ESTILOS, Marca, Punto } from './marca';
+import { ESTILOS, Marca, Punto, Rombo } from './marca';
 
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
 const LETRA = 12.5;
@@ -58,8 +63,13 @@ export interface SerieParaDibujar {
   /** El valor que se dibuja de cada punto (el real o el cambio relativo); `null` no se dibuja. */
   readonly valor: (p: PuntoAnalitico) => number | null;
   readonly decimales: number;
-  /** Lo planificado en la misma unidad, si llega con la serie: se dibuja solo en su propio panel. */
+  /** El objetivo del profesional en la misma unidad, si llega con la serie: se dibuja solo en su propio panel. */
   readonly plan?: { readonly nombre: string; readonly escalones: readonly EscalonDelPlan[] } | null;
+  /**
+   * DL-158: lo indicado en el plan, un rombo por día que lo tiene; solo en su propio panel y por día. `nota`: por qué no
+   * hay ninguno para dibujar, si es así (se dice debajo del gráfico).
+   */
+  readonly indicado?: { readonly nombre: string; readonly dias: readonly { readonly fecha: string; readonly valor: number }[]; readonly nota: string | null } | null;
   /** Los días sin registros de una serie diaria (rangos de fechas, sin el día en curso). */
   readonly sinRegistros?: readonly { readonly desde: string; readonly hasta: string }[];
   /** Las vigencias de plan que acompañan a su panel y si llevan su rótulo (se rotulan una vez por área). */
@@ -200,6 +210,13 @@ function Panel({
         if (!final || x >= final.x) finales.set(s.indice, { clave, x, valor: v });
       }
     }
+    // Los días con un indicado en el plan también son filas (sin valores): un clic sobre un rombo elige ese día.
+    if (series.length === 1) {
+      for (const d of series[0]?.indicado?.dias ?? []) {
+        const x = mediodia(d.fecha);
+        if (x >= x0 && x <= x1 && !mapa.has(x)) mapa.set(x, { x });
+      }
+    }
     return { filas: [...mapa.values()].sort((a, b) => (a.x as number) - (b.x as number)), tramos: columnas, puntosPorFila: puntos, ultimos: finales };
   }, [series, x0, x1]);
 
@@ -284,7 +301,7 @@ function Panel({
   /** El radio de la marca de un punto: una hueca, cortada o con un punto adentro necesita un mínimo para verse como tal. */
   const radioDe = (pt: PuntoAnalitico): number => {
     const conClase = pt.dataClass === 'REPORTED' || pt.dataClass === 'DERIVED';
-    return pt.quality === 'PARTIAL' || pt.partialBucket || conClase ? Math.max(radio + 1.5, conClase ? 5 : 3.5) : radio;
+    return pt.quality === 'PARTIAL' || pt.partialBucket || esPuntoDeCargaRapida(pt) || conClase ? Math.max(radio + 1.5, conClase ? 5 : 3.5) : radio;
   };
   const esElegido = (pt: PuntoAnalitico): boolean => fecha !== null && pt.date <= fecha && fecha <= (pt.dateEnd ?? pt.date);
   // El aro de la fecha elegida, alrededor de cada marca de esa fecha. Va en una capa aparte de las líneas: sus puntos se
@@ -302,10 +319,12 @@ function Panel({
       const info = puntosPorFila.get(`${clave}|${payload.x}`);
       if (!info) return <g />;
       const e = ESTILOS[info.indice] ?? ESTILOS[0];
-      const hueco = info.punto.quality === 'PARTIAL' || info.punto.partialBucket;
+      // DL-161: una serie de carga rápida (tildada sin escribir) también es hueca, con su leyenda «carga rápida».
+      const cargaRapida = esPuntoDeCargaRapida(info.punto);
+      const hueco = info.punto.quality === 'PARTIAL' || info.punto.partialBucket || cargaRapida;
       const clase = info.punto.dataClass === 'REPORTED' || info.punto.dataClass === 'DERIVED' ? info.punto.dataClass : null;
       return (
-        <g className="grafico__elegible" data-clase={clase ?? undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
+        <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
           <Punto cx={cx} cy={cy} r={radioDe(info.punto)} color={e.color} hueco={hueco} trazo={radio < 4.5 ? 1.5 : 2} clase={clase} />
         </g>
       );
@@ -313,6 +332,12 @@ function Panel({
 
   const fechaX = fecha ? mediodia(fecha) : null;
   const escalones = [...(unica?.plan?.escalones ?? [])].sort((a, b) => a.desde.localeCompare(b.desde));
+  // Lo indicado en el plan: un rombo hueco por día, bastante más grande que los puntos. Cuando lo registrado vale lo
+  // mismo, el punto queda adentro con un aro libre alrededor: con un rombo apenas más grande, el conjunto parecía un rombo
+  // lleno, otra marca.
+  const indicados = (unica?.indicado?.dias ?? []).filter((d) => mediodia(d.fecha) >= x0 && mediodia(d.fecha) <= x1);
+  const radioDelRombo = Math.max(radio * 2.1, 8);
+  const colorDeLaSerie = (ESTILOS[unica?.indice ?? 0] ?? ESTILOS[0]).color;
   // Los días sin registros que se sombrean. Cuando varias métricas comparten el gráfico, los que no tienen registros en
   // ninguna (en las de Nutrición son los mismos días: salen de los mismos registros).
   const sinRegistros = useMemo(() => {
@@ -361,9 +386,21 @@ function Panel({
           {unica ? <Marca indice={unica.indice} /> : null}
           <strong>{nombre}</strong> <span className="grafico__detalle">{detalle}</span>
         </span>
-        {unica?.plan && unica.plan.escalones.length > 0 ? (
-          <span className="grafico__muestra">
-            <Marca indice={unica.indice} plan /> {unica.plan.nombre}
+        {unica && ((unica.plan?.escalones.length ?? 0) > 0 || indicados.length > 0) ? (
+          <span className="grafico__muestras" aria-label="Capas del gráfico">
+            <span className="grafico__muestra">
+              <Marca indice={unica.indice} /> Registrado
+            </span>
+            {unica.plan && unica.plan.escalones.length > 0 ? (
+              <span className="grafico__muestra">
+                <Marca indice={unica.indice} plan /> {unica.plan.nombre}
+              </span>
+            ) : null}
+            {unica.indicado && indicados.length > 0 ? (
+              <span className="grafico__muestra">
+                <Marca indice={unica.indice} indicado /> {unica.indicado.nombre}
+              </span>
+            ) : null}
           </span>
         ) : null}
         {compartido ? (
@@ -493,6 +530,19 @@ function Panel({
                 />
               );
             })}
+            {/* Lo indicado en el plan: un rombo hueco por día, suelto, debajo de lo registrado (un punto del mismo día queda
+                adentro y el rombo se ve alrededor). El eje vertical lo incluye. */}
+            {indicados.map((d) => (
+              <ReferenceDot
+                key={`indicado-${d.fecha}`}
+                className="grafico__indicado"
+                x={mediodia(d.fecha)}
+                y={d.valor}
+                r={radioDelRombo}
+                ifOverflow="extendDomain"
+                shape={(props: { cx?: number; cy?: number }) => (props.cx === undefined || props.cy === undefined ? <g /> : <Rombo cx={props.cx} cy={props.cy} r={radioDelRombo} color={colorDeLaSerie} trazo={radio < 4.5 ? 1.5 : 2} />)}
+              />
+            ))}
             {tramos.map((t) => {
               const e = ESTILOS[t.indice] ?? ESTILOS[0];
               return <Line key={t.clave} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={2} connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
@@ -527,6 +577,7 @@ function Panel({
         </ResponsiveContainer>
       </div>
       {filas.length === 0 ? <p className="nota">Sin puntos para dibujar en este período.</p> : null}
+      {unica?.indicado?.nota ? <p className="nota grafico__nota-del-indicado">{unica.indicado.nota}</p> : null}
     </figure>
   );
 }

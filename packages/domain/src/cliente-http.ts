@@ -104,6 +104,7 @@ import {
   type CrearVistaRequest,
   type ReemplazarVistaRequest,
 } from './contratos-analisis';
+import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
 
 /**
  * Los filtros de API-DSH-04, ya como texto de la consulta (listas separadas por coma). Sin `q`: la búsqueda va en el
@@ -285,6 +286,8 @@ import {
   type AsociarImagenDeEjercicioRequest,
   type RegistrarEventosDeTiempoRequest,
 } from './contratos-entrenamiento-por-serie';
+import { FichaVisualDeEjercicioResponseSchema, FichasVisualesResponseSchema, type CambiarZonasDeEjercicioRequest } from './contratos-catalogo-visual';
+import { ListaDeZonasMuscularesResponseSchema } from './zonas-musculares';
 import {
   CrearSolicitudDeFormularioRequestSchema,
   DetalleDeSolicitudResponseSchema,
@@ -298,6 +301,32 @@ import {
   SolicitudDeFormularioCreadaResponseSchema,
   VersionDePlantillaResponseSchema,
 } from './contratos-formularios';
+import {
+  DetalleDeSolicitudV2ResponseSchema,
+  ListaDeSolicitudesPropiasV2ResponseSchema,
+  PropuestaCargadaResponseSchema,
+  PropuestaResueltaResponseSchema,
+  VersionDePlantillaV2ResponseSchema,
+  type CargarPropuestaRequest,
+  type EnviarRespuestaV2Request,
+  type RectificarRespuestaV2Request,
+  type ResolverPropuestaRequest,
+} from './contratos-formularios-v2';
+import {
+  HabitosCompartidosEstadoResponseSchema,
+  HabitosCompartidosResponseSchema,
+  HabitosRegistradosResponseSchema,
+  HabitosParaElProfesionalResponseSchema,
+  MisHabitosResponseSchema,
+  PedidoDeAccesoCreadoResponseSchema,
+  PedidoDeAccesoRespondidoResponseSchema,
+  PedidosDeAccesoResponseSchema,
+  type CompartirHabitosRequest,
+  type DejarDeCompartirHabitosRequest,
+  type PedirAccesoAHabitosRequest,
+  type RegistrarHabitosRequest,
+  type ResponderPedidoDeAccesoRequest,
+} from './contratos-habitos-de-la-persona';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -366,7 +395,17 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
   async function llamar<S extends EsquemaDeContrato | null>(
     metodo: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     ruta: string,
-    extra: { token?: string; cuerpo?: unknown; claveDeIdempotencia?: string; esquema: S },
+    extra: {
+      token?: string;
+      cuerpo?: unknown;
+      claveDeIdempotencia?: string;
+      esquema: S;
+      /**
+       * DL-147: la operación abre, reanuda o cierra una sesión del website, y viaja con la cookie de reanudación
+       * (HttpOnly, de la API). Solo en la superficie WEB: la APK nunca manda ni recibe cookies.
+       */
+      conCookies?: boolean;
+    },
   ): Promise<Resultado<S extends EsquemaDeContrato ? SalidaDe<S> : null>> {
     const encabezados: Record<string, string> = { Accept: 'application/json', 'X-BE-Surface': opciones.superficie };
     if (capacidades) encabezados[HEADER_DE_CAPACIDADES] = capacidades;
@@ -380,7 +419,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         method: metodo,
         headers: encabezados,
         body: extra.cuerpo === undefined ? undefined : JSON.stringify(extra.cuerpo),
-        credentials: 'omit',
+        credentials: extra.conCookies && opciones.superficie === 'WEB' ? 'include' : 'omit',
         cache: 'no-store',
       });
     } catch {
@@ -472,11 +511,11 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      * disponible y el acceso local sigue.
      */
     iniciarSesionConGoogle(idToken: string): Promise<Resultado<IniciarSesionResponse>> {
-      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.sesiones, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken } });
+      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.sesiones, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken }, conCookies: true });
     },
     /** API-GOO-02 (DL-138): vincular Google a la cuenta con contraseña del mismo correo, confirmando esa contraseña. */
     vincularGoogle(idToken: string, contrasena: string): Promise<Resultado<IniciarSesionResponse>> {
-      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.vinculos, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken, credential: contrasena } });
+      return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.vinculos, { esquema: SesionConGoogleResponseSchema, cuerpo: { idToken, credential: contrasena }, conCookies: true });
     },
     /**
      * API-GOO-03 (DL-138): crear la cuenta con Google, con los mismos actos que `registrar` y la casilla de mayoría de
@@ -492,6 +531,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
           privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
           adultDeclaration: declaracionDeMayoriaDeEdad(mayoriaDeEdad),
         },
+        conCookies: true,
       });
     },
     /** API-ACC-02. */
@@ -499,15 +539,23 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       return llamar('POST', '/auth/sessions', {
         esquema: IniciarSesionResponseSchema,
         cuerpo: { method: 'LOCAL', identifier: correo, credential: contrasena },
+        conCookies: true,
       });
     },
-    /** API-ACC-03. */
-    finalizarSesion(token: string): Promise<Resultado<null>> {
-      return llamar('DELETE', '/auth/sessions/current', { token, esquema: null });
+    /**
+     * API-ACC-02-REANUDACION (DL-147): después de recargar, el website pide un token nuevo de la misma sesión con la cookie
+     * de reanudación. Sin cookie, o con una sesión que ya no sirve, responde un código de sesión (401).
+     */
+    reanudarSesion(): Promise<Resultado<IniciarSesionResponse>> {
+      return llamar('POST', '/auth/sessions/resume', { esquema: IniciarSesionResponseSchema, conCookies: true });
     },
-    /** API-ACC-04. */
+    /** API-ACC-03. En el website, también borra la cookie de reanudación (DL-147). */
+    finalizarSesion(token: string): Promise<Resultado<null>> {
+      return llamar('DELETE', '/auth/sessions/current', { token, esquema: null, conCookies: true });
+    },
+    /** API-ACC-04. En el website, también borra la cookie de reanudación de este navegador (DL-147). */
     cerrarTodasLasSesiones(token: string): Promise<Resultado<null>> {
-      return llamar('DELETE', '/auth/sessions', { token, esquema: null });
+      return llamar('DELETE', '/auth/sessions', { token, esquema: null, conCookies: true });
     },
     /** API-ACC-05. */
     consultarCuenta(token: string): Promise<Resultado<MeResponse>> {
@@ -970,6 +1018,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     consultarRevision(token: string, revisionId: string) {
       return llamar('GET', `/nutrition/reviews/${encodeURIComponent(revisionId)}`, { token, esquema: RevisionResponseSchema });
     },
+    /** API-NUT-19-EVIDENCIA (DL-154): la evidencia que guardó la revisión, resuelta con el permiso de hoy. Solo la lee el website. */
+    evidenciaDeRevision(token: string, revisionId: string) {
+      return llamar('GET', `/nutrition/reviews/${encodeURIComponent(revisionId)}/evidence`, { token, esquema: EvidenciaDeRevisionResponseSchema });
+    },
     /** API-NUT-20. Aplica la próxima acción que la revisión ya declaró. */
     aplicarRevision(token: string, revisionId: string, claveDeIdempotencia: string) {
       return llamar('POST', `/nutrition/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
@@ -1233,6 +1285,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     registrarRevisionDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof RegistrarRevisionDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/reviews`, { token, claveDeIdempotencia, esquema: RevisionDeEntrenamientoResponseSchema, cuerpo });
     },
+    /** API-TRN-23-EVIDENCIA (DL-154): la evidencia que guardó la revisión de entrenamiento, resuelta con el permiso de hoy. Solo la lee el website. */
+    evidenciaDeRevisionDeEntrenamiento(token: string, revisionId: string) {
+      return llamar('GET', `/training/reviews/${encodeURIComponent(revisionId)}/evidence`, { token, esquema: EvidenciaDeRevisionResponseSchema });
+    },
     /** API-TRN-24. */
     aplicarRevisionDeEntrenamiento(token: string, revisionId: string, claveDeIdempotencia: string) {
       return llamar('POST', `/training/reviews/${encodeURIComponent(revisionId)}/apply`, { token, claveDeIdempotencia, esquema: AplicarRevisionResponseSchema, cuerpo: { expectedVersion: 'v1' } });
@@ -1402,6 +1458,20 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       return llamar('DELETE', `/training/exercises/${encodeURIComponent(exerciseId)}/image${query({ expectedImageVersion: String(expectedImageVersion) })}`, { token, claveDeIdempotencia, esquema: EjercicioPropioResponseSchema });
     },
 
+    // ─── ZON y EJE · zonas musculares e imagen del catálogo (DL-081, DL-162) ──────────────────────
+    /** API-ZON-01: las 17 zonas, en el orden del catálogo (de la cabeza a los pies). */
+    zonasMusculares(token: string) {
+      return llamar('GET', '/training/muscle-zones', { token, esquema: ListaDeZonasMuscularesResponseSchema });
+    },
+    /** API-EJE-04: reemplaza las zonas de un ejercicio propio (la lista completa; vacía quita todas). */
+    cambiarZonasDeEjercicio(token: string, exerciseId: string, cuerpo: CambiarZonasDeEjercicioRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/training/exercises/${encodeURIComponent(exerciseId)}/muscle-zones`, { token, claveDeIdempotencia, esquema: FichaVisualDeEjercicioResponseSchema, cuerpo });
+    },
+    /** API-EJE-05: la ficha visual (zonas e imagen) de 1 a 50 ejercicios, en el orden pedido. */
+    fichasVisualesDeEjercicios(token: string, exerciseIds: readonly string[]) {
+      return llamar('POST', '/training/exercises/visual-sheets', { token, esquema: FichasVisualesResponseSchema, cuerpo: { exerciseIds: [...exerciseIds] } });
+    },
+
     // ─── FRM · información profesional pertinente (WP-07; 09v16.1 §22) ───────────────────────
     /** API-FRM-01: el catálogo. Una plantilla listada no prueba que sus campos puedan pedirse a alguien. */
     listarPlantillasDeFormulario(token: string, filtro: { domain?: string; status?: string; cursor?: string; limit?: string } = {}) {
@@ -1434,6 +1504,83 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-FRM-08: rectificar crea una sucesora; la original queda intacta (09:1618). */
     rectificarRespuestaDeFormulario(token: string, respuestaId: string, cuerpo: z.input<typeof RectificarRespuestaRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/me/form-responses/${encodeURIComponent(respuestaId)}/rectifications`, { token, claveDeIdempotencia, esquema: RectificacionCreadaResponseSchema, cuerpo });
+    },
+
+    // ─── FRI · formularios de inicio (WP-FORMULARIOS-DE-INICIO, DL-164) ───────────────────────
+    // Sirven para cualquier Solicitud (de P0 o con tipos nuevos). Las de FRM quedan para las APK instaladas.
+    /** API-FRI-01: la estructura de cualquier versión, en formato V2. */
+    consultarDefinicionDePlantilla(token: string, plantillaId: string, versionId: string) {
+      return llamar('GET', `/form-templates/${encodeURIComponent(plantillaId)}/versions/${encodeURIComponent(versionId)}/definition`, { token, esquema: VersionDePlantillaV2ResponseSchema });
+    },
+    /** API-FRI-02: la bandeja de la persona: todas sus solicitudes, con la propuesta que espera confirmación. */
+    miBandejaDeFormularios(token: string, filtro: { status?: string; cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/me/form-inbox${query(filtro)}`, { token, esquema: ListaDeSolicitudesPropiasV2ResponseSchema });
+    },
+    /** API-FRI-03: el detalle V2, para los dos actores, con la propuesta y la transcripción. */
+    consultarVistaDeSolicitud(token: string, solicitudId: string) {
+      return llamar('GET', `/form-requests/${encodeURIComponent(solicitudId)}/view`, { token, esquema: DetalleDeSolicitudV2ResponseSchema });
+    },
+    /** API-FRI-04: responder (la persona), sola o confirmando lo que cargó el profesional. */
+    responderSolicitudV2(token: string, solicitudId: string, cuerpo: EnviarRespuestaV2Request, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/answers`, { token, claveDeIdempotencia, esquema: RespuestaCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-05: rectificar una respuesta propia; la original queda intacta. */
+    corregirRespuestaV2(token: string, respuestaId: string, cuerpo: RectificarRespuestaV2Request, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-responses/${encodeURIComponent(respuestaId)}/corrections`, { token, claveDeIdempotencia, esquema: RectificacionCreadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-06: el profesional carga (o reemplaza) lo que la persona le contó, para que ella lo confirme. */
+    cargarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: CargarPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/form-requests/${encodeURIComponent(solicitudId)}/proposal`, { token, claveDeIdempotencia, esquema: PropuestaCargadaResponseSchema, cuerpo });
+    },
+    /** API-FRI-07: el profesional retira lo cargado; se borra. */
+    retirarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: ResolverPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/form-requests/${encodeURIComponent(solicitudId)}/proposal/withdrawal`, { token, claveDeIdempotencia, esquema: PropuestaResueltaResponseSchema, cuerpo });
+    },
+    /** API-FRI-08: la persona dice «No es correcto»; lo cargado se borra y la Solicitud sigue pendiente. */
+    rechazarPropuestaDeRespuesta(token: string, solicitudId: string, cuerpo: ResolverPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/form-requests/${encodeURIComponent(solicitudId)}/proposal/rejection`, { token, claveDeIdempotencia, esquema: PropuestaResueltaResponseSchema, cuerpo });
+    },
+
+    // ─── HBT · los hábitos de la persona (WP-FORMULARIOS-RONDA-2, FR-10; DL-165 D-9) ─────────────
+    // Familia propia de BE: API-HAB ya es «Mis habituales» (DL-109). La APK 0.21.0-candidata.1 llama 01 a 04, con la forma
+    // congelada (DL-152); la 05 es del website.
+    /** API-HBT-01: mis hábitos (lo vigente y la historia), la autorización y mis profesionales. */
+    misHabitos(token: string) {
+      return llamar('GET', '/me/habits', { token, esquema: MisHabitosResponseSchema });
+    },
+    /** API-HBT-02: una versión nueva de mis hábitos, desde «Mis hábitos». */
+    registrarMisHabitos(token: string, cuerpo: RegistrarHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/habits', { token, claveDeIdempotencia, esquema: HabitosRegistradosResponseSchema, cuerpo });
+    },
+    /** API-HBT-03: compartirlos, o cambiar con quiénes, con el texto que se acepta. */
+    compartirMisHabitos(token: string, cuerpo: CompartirHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', '/me/habits/sharing', { token, claveDeIdempotencia, esquema: HabitosCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-04: dejar de compartirlos, para todos a la vez. */
+    dejarDeCompartirMisHabitos(token: string, cuerpo: DejarDeCompartirHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/habits/sharing/withdrawal', { token, claveDeIdempotencia, esquema: HabitosCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-05: los hábitos que la persona le comparte a este profesional. Si no se los comparte, el 404 de lo inexistente. */
+    habitosDeLaPersona(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits`, { token, esquema: HabitosCompartidosResponseSchema });
+    },
+    // Ronda 2.1 (DL-165 D-17 nueva): «Pedir acceso a sus hábitos». 06 y 07, del website; 08 y 09, de la APK
+    // 0.22.0-candidata.1, con la forma congelada (DL-152).
+    /** API-HBT-06: el profesional le pide a la persona ver sus hábitos, desde su área. Le llega como novedad importante. */
+    pedirAccesoAHabitos(token: string, asesoradoId: string, cuerpo: PedirAccesoAHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/habits/access-requests`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoCreadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-07: lo que el profesional sabe de los hábitos de la persona (si los recibe, lo más nuevo que ve, su último pedido). */
+    habitosParaElProfesional(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits/status`, { token, esquema: HabitosParaElProfesionalResponseSchema });
+    },
+    /** API-HBT-08: los pedidos de acceso que esperan la respuesta de la persona. */
+    pedidosDeAccesoAMisHabitos(token: string) {
+      return llamar('GET', '/me/habits/access-requests', { token, esquema: PedidosDeAccesoResponseSchema });
+    },
+    /** API-HBT-09: la persona responde un pedido: «Sí, que los vea» o «No, por ahora». */
+    responderPedidoDeAcceso(token: string, pedidoId: string, cuerpo: ResponderPedidoDeAccesoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/habits/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoRespondidoResponseSchema, cuerpo });
     },
   };
 }

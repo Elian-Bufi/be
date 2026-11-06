@@ -14,7 +14,14 @@ const { readdirSync, readFileSync } = require('node:fs');
 const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
-const { terminosProhibidosEn, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeCarteraEn, terminosProhibidosDeEntrenamientoEn, terminosProhibidosDeFormulariosEn } = require('../packages/domain/dist/index.js');
+const {
+  terminosProhibidosEn,
+  terminosProhibidosDeAdministracionEn,
+  terminosProhibidosDeAntropometriaEn,
+  terminosProhibidosDeCarteraEn,
+  terminosProhibidosDeEntrenamientoEn,
+  terminosProhibidosDeFormulariosEn,
+} = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
 /** Los textos también viven en módulos sin JSX (`.ts`): se leen como TypeScript, no como TSX. */
@@ -22,6 +29,8 @@ const tipoDeArchivo = (archivo) => (archivo.endsWith('.ts') ? ts.ScriptKind.TS :
 /** Las frases de Inicio y de los gráficos chicos que se arman fuera de las pantallas, en módulos puros. */
 const movil = (archivo) => join(RAIZ, 'apps/mobile/src', archivo);
 const tsx = (dir) => readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) => join(dir, f));
+/** La corrección de una sesión registrada en la APK (PA-04): su pantalla y su lógica. */
+const CORRECCION_EN_LA_APK = [join(RAIZ, 'apps/mobile/src/pantallas/correccion-de-entrenamiento.tsx'), movil('correccion-de-la-sesion.ts')];
 
 /**
  * Inicio (DL-117): cada tarjeta vive en el archivo de su módulo y se revisa con la lista de su dominio. Las piezas comunes
@@ -75,7 +84,18 @@ const DOMINIOS = [
   },
   {
     nombre: 'entrenamiento',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_Y_NOVEDADES],
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')),
+      join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'),
+      // PA-04: la corrección dejó entrenamiento.tsx y vive en su pantalla y su módulo; siguen bajo la misma guardia.
+      ...CORRECCION_EN_LA_APK,
+      inicio('inicio-entrenamiento.tsx'),
+      movil('lecturas-de-inicio.ts'),
+      // PA-03: el registro rápido («Ya la hice»), su pantalla y sus textos.
+      inicio('registro-rapido.tsx'),
+      movil('registro-rapido.ts'),
+      ...INICIO_Y_NOVEDADES,
+    ],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },
@@ -95,6 +115,24 @@ const DOMINIOS = [
     archivos: tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/forms')),
     prohibidos: terminosProhibidosDeFormulariosEn,
     minimo: 4,
+  },
+  {
+    // WP-FORMULARIOS-RONDA-2, FR-10 (DL-165 D-9): los hábitos de la persona, en la APK («Mis hábitos», compartirlos, la
+    // pregunta por un profesional nuevo y «¿Sigue igual?») y en el website («Sus hábitos»), con su copy. Hablan de las dos
+    // áreas: pasan por la lista de los formularios, la de nutrición y la de entrenamiento.
+    nombre: 'los hábitos de la persona',
+    archivos: [
+      inicio('mis-habitos.tsx'),
+      movil('habitos-en-el-telefono.ts'),
+      movil('pregunta-v2.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/sus-habitos.ts'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/tarjeta-de-sus-habitos.tsx'),
+      // Ronda 2.1 (DL-165 D-22): «Sumar «Tus hábitos»» en el cajón de «Pedir información».
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/sumar-habitos.ts'),
+      join(RAIZ, 'packages/domain/src/copy-habitos-de-la-persona.ts'),
+    ],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 6,
   },
   {
     // WP-NOTAS-DE-COORDINACION (DL-140): el diálogo y el Resumen del website, la pantalla de la APK y su copy. Una nota habla
@@ -118,6 +156,28 @@ const DOMINIOS = [
     archivos: ['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
     prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
     minimo: 5,
+  },
+  {
+    // DL-141 D-6 (encargo de Dirección del 2026-10-19, bloque 4): el origen de un ítem en la fila del buscador, en Nutrición
+    // y en Entrenamiento. Su texto vive en el dominio y lo muestra un componente común: pasan por las dos listas.
+    nombre: 'el origen en la fila del buscador',
+    archivos: [join(RAIZ, 'apps/web/src/components/origen-en-el-catalogo.tsx'), join(RAIZ, 'packages/domain/src/copy-origen-en-el-catalogo.ts')],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 2,
+  },
+  {
+    // WP-ADMINISTRACION (DL-155): la consola de Administración y su copy. B10-03 §20: se dice verificación, habilitación,
+    // observación, suspensión y rehabilitación, por área; nunca «certificado por BE», «profesional aprobado» ni una
+    // sanción, tampoco negados. Pasa además por la lista de nutrición y por la de la cartera: la consola no califica a nadie.
+    nombre: 'la administración',
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin')),
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin/professional')),
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin/security')),
+      join(RAIZ, 'packages/domain/src/copy-administracion.ts'),
+    ],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosDeAdministracionEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeCarteraEn(texto)])],
+    minimo: 14,
   },
 ];
 
@@ -275,7 +335,7 @@ test('T13 · el titular de la medición muestra el valor vigente, no el original
  * - ninguna pantalla lee `execution.sessionCondition` directamente, que es la puerta para saltearse esa función.
  */
 test('WP-06 §9.2 · ninguna pantalla de entrenamiento deriva «No realizada» de la ausencia de registro', () => {
-  const archivos = [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx')];
+  const archivos = [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), ...CORRECCION_EN_LA_APK];
   assert.ok(archivos.length >= 7, `se esperaban las pantallas de entrenamiento, hay ${archivos.length}`);
   const hallazgos = [];
   for (const a of archivos) {
@@ -293,4 +353,59 @@ test('WP-06 §9.2 · la guardia detecta una pantalla que escribe «No realizada�
   const textos = textosDe('fixture.tsx', contenido).map((t) => t.texto);
   assert.ok(textos.some((t) => /no realizad/i.test(t)));
   assert.match(contenido, /execution\.sessionCondition/);
+});
+
+/**
+ * D-C2 (prueba breve del 2026-10-29): la lista de «Tu historial» mostraba la condición del registro original aunque la
+ * sesión estuviera corregida. Lo que rige sale de `registroVigente` (REG-06-16): ninguna pantalla de la APK ni del
+ * entrenamiento del website escribe la condición leyendo `.original` directo. El original se muestra solo donde se
+ * rotula como tal («Registro original»), y ahí no pasa por esta función.
+ */
+const CONDICION_DEL_ORIGINAL = /etiquetaDeCondicionRegistrada\(\s*[\w.]*\.original\s*\)/;
+
+test('D-C2 · ninguna pantalla muestra la condición del original como si fuera la que rige', () => {
+  const archivos = [...tsx(join(RAIZ, 'apps/mobile/src/pantallas')), ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training'))];
+  assert.ok(archivos.length >= 30, `se esperaban las pantallas de la APK y del entrenamiento del website, hay ${archivos.length}`);
+  const hallazgos = archivos.filter((a) => CONDICION_DEL_ORIGINAL.test(readFileSync(a, 'utf8'))).map((a) => a.slice(RAIZ.length + 1));
+  assert.deepEqual(hallazgos, []);
+  // El historial de la APK, que es donde estaba el defecto, lee lo vigente.
+  assert.match(readFileSync(join(RAIZ, 'apps/mobile/src/pantallas/historial.tsx'), 'utf8'), /etiquetaDeCondicionRegistrada\(registroVigente\(e\)\)/);
+});
+
+test('D-C2 · la guardia detecta la condición leída del original', () => {
+  assert.match('<Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />', CONDICION_DEL_ORIGINAL);
+  assert.match('etiquetaDeCondicionRegistrada( x.ejecucion.original )', CONDICION_DEL_ORIGINAL);
+  assert.doesNotMatch('etiquetaDeCondicionRegistrada(registroVigente(e))', CONDICION_DEL_ORIGINAL);
+});
+
+/**
+ * PA-06 (2026-11-02): los íconos de la APK son los de la familia de BE (`apps/mobile/src/icono.tsx`), dibujados con
+ * elementos y no con `SvgXml`, y ningún texto hace de ícono. La tilde, el aviso y las flechas escritos como letras se
+ * leían en voz alta («marca de verificación»), no cambiaban con el tema como el resto, y la tilde suelta se leía como
+ * «aprobado». La tilde de la familia va solo dentro de una casilla.
+ */
+const GLIFOS = /[✓✔⚠↑↓‹›]/;
+
+test('PA-06 · la APK no escribe glifos como íconos ni dibuja íconos con SvgXml', () => {
+  const archivos = [];
+  const recorrer = (dir) => {
+    for (const nombre of readdirSync(dir, { withFileTypes: true })) {
+      const ruta = join(dir, nombre.name);
+      if (nombre.isDirectory()) recorrer(ruta);
+      else if (/\.tsx?$/.test(nombre.name)) archivos.push(ruta);
+    }
+  };
+  recorrer(join(RAIZ, 'apps/mobile/src'));
+  archivos.push(join(RAIZ, 'apps/mobile/App.tsx'));
+  assert.ok(archivos.length >= 60, `se esperaban los archivos de la APK, hay ${archivos.length}`);
+  const hallazgos = [];
+  for (const a of archivos) {
+    const contenido = readFileSync(a, 'utf8');
+    for (const { texto, linea } of textosDe(a, contenido)) if (GLIFOS.test(texto)) hallazgos.push(`${a.slice(RAIZ.length + 1)}:${linea} escribe ${JSON.stringify(texto)}`);
+    // Los comentarios no cuentan: el de icono.tsx explica por qué no se usa.
+    const codigo = contenido.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    if (/\bSvgXml\b/.test(codigo)) hallazgos.push(`${a.slice(RAIZ.length + 1)} usa SvgXml`);
+  }
+  assert.deepEqual(hallazgos, []);
+  assert.ok(GLIFOS.test('✓ Guardado') && GLIFOS.test('‹ Anterior') && !GLIFOS.test('Anterior'), 'la guardia reconoce los glifos');
 });

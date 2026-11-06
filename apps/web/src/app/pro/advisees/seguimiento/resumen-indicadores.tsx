@@ -11,7 +11,8 @@
  *
  * Describen lo registrado, sin calificar: no hay verde ni rojo, flechas de tendencia ni distancia a un objetivo. Un
  * indicador que no se pudo leer, que no tiene datos o que no está disponible lo dice en su lugar, con su motivo: una
- * falla nunca es «sin datos», y «sin datos» nunca es un cero.
+ * falla nunca es «sin datos», y «sin datos» nunca es un cero. Los que fallaron se reintentan juntos, con un solo botón en
+ * la cabecera de la sección; qué hay en el período se reintenta arriba del Resumen, con lo demás que faltó (bloque 5).
  */
 import {
   COPY_PISTAS,
@@ -32,10 +33,10 @@ import {
 } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { BloqueDeEstado, Cargando, ErrorConReintento, EstadoVacio } from '../../../../components/estados';
+import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
-import { textoDeFalla, useSeguimiento } from './contexto';
+import { razonDeFalla, textoDeFalla, useSeguimiento } from './contexto';
 import { claveDeLaReferencia, codificarReferencia, hoyEn } from './estado';
 import { ICONO_DE_CLASE, ICONO_DE_FALLA, iconoDeLaReferencia } from './iconos-de-metrica';
 import { Minigrafico } from './minigrafico';
@@ -107,7 +108,8 @@ function Indicadores({
   const id = useId();
   const { periodo, href } = useSeguimiento();
   const pedidos = useMemo(() => (cargando ? [] : indicadores), [cargando, indicadores]);
-  const { series, recargar } = useSeriesDelAnalisis(pedidos, 'DAY');
+  const { series, reintentarFallidas } = useSeriesDelAnalisis(pedidos, 'DAY');
+  const fallidas = series.filter((s) => s.estado.tipo === 'error').length;
   const [editando, setEditando] = useState(false);
   const hoy = hoyEn();
   return (
@@ -122,8 +124,20 @@ function Indicadores({
             {editando ? 'Cerrar' : 'Elegir indicadores'}
           </button>
         </Pista>
+        {/* Uno solo para todos los que fallaron: cada indicador dice en su lugar que no se pudo leer. */}
+        {fallidas > 0 ? (
+          <button type="button" className="boton boton--secundario boton--compacto" onClick={reintentarFallidas}>
+            <Icono nombre="actualizar" tamano={18} />
+            {fallidas === 1 ? 'Reintentar el indicador que falló' : 'Reintentar los indicadores que fallaron'}
+          </button>
+        ) : null}
       </div>
-      {disponibles.falla ? <ErrorConReintento mensaje={textoDeFalla(disponibles.falla, 'qué datos hay en el período')} onReintentar={disponibles.recargar} /> : null}
+      {/* Es la misma lectura que la de las tarjetas: se reintenta arriba del Resumen, con «Reintentar lo que faltó». */}
+      {disponibles.falla ? (
+        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[disponibles.falla]} titulo="No pudimos leer los datos del período de cada área">
+          {razonDeFalla(disponibles.falla)} Los indicadores pueden estar incompletos: se reintenta arriba del Resumen, con «Reintentar lo que faltó».
+        </BloqueDeEstado>
+      ) : null}
       {sinLeerLaEleccion ? <p className="nota">No pudimos leer los indicadores que elegiste: se muestran los de por defecto. Tu elección sigue guardada.</p> : null}
       {cargando ? <Cargando /> : null}
       {series.length > 0 ? (
@@ -164,7 +178,7 @@ function Indicadores({
                   </BloqueDeEstado>
                 ) : null}
                 {s.estado.tipo === 'error' ? (
-                  <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[s.estado.motivo]} onReintentar={recargar} deQue={nombre}>
+                  <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[s.estado.motivo]}>
                     {textoDeFalla(s.estado.motivo, 'este indicador')}
                   </BloqueDeEstado>
                 ) : null}

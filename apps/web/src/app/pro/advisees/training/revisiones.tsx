@@ -12,6 +12,9 @@
  * Nutrición, con las piezas de `revision-en-preparacion.tsx`. Lo que difiere: la evidencia son sesiones, la grilla trae
  * solo los días con sesiones y la cuenta de los demás (DEC-18), y el nuevo objetivo es un enunciado con su fundamento.
  * Los errores ahora se dicen también en cada campo, como en Nutrición.
+ * DL-154 (hallazgo UX-02): cada revisión registrada dice su período, quién la registró y la evidencia que se marcó al
+ * registrarla, consultable con «Ver la evidencia» (`evidencia-registrada.tsx`); una sesión se abre en el panel, con el
+ * permiso de hoy.
  */
 import {
   COPY_ENTRENAMIENTO,
@@ -21,20 +24,26 @@ import {
   fechaCivil,
   registroVigente,
   type ContextoDeRevisionDeEntrenamientoResponse,
+  type EjecucionDeEntrenamiento,
   type EvaluacionDeEntrenamiento,
+  type OrigenDeDato,
   type RevisionDeEntrenamiento,
 } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
+import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia, diaDelAnioEnCurso, fecha, horaEnZona } from '../../../../lib/formato';
+import { motivoDeFalla, textoDeFalla } from '../../../../lib/fallas';
+import { dia, diaDelAnioEnCurso, fecha, horaEnZona, rangoCivil } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { avisoDeMarcasQuitadas, marcasDelPeriodoNuevo, referenciasMarcadas, versionesDelPlan } from '../evidencia';
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
+import { EvidenciaRegistrada } from '../evidencia-registrada';
+import { Registro } from './ejecuciones';
 import { usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 import {
   AreaDeTexto,
@@ -451,10 +460,22 @@ function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenam
       <p className="lista__titulo">
         {ETIQUETA_DE_RESULTADO[revision.result]} · {fecha(revision.recordedAt)}
       </p>
+      {/* DL-154: el contexto de la revisión, a la vista: qué período se revisó y quién la registró. */}
+      <p className="nota">
+        Entrenamiento · período revisado: {rangoCivil(revision.period.start, revision.period.end)} · registró: {revision.author.displayName}
+      </p>
       <p>{revision.interpretation}</p>
       <p className="nota">
         Fundamento: {revision.rationale} · {revision.result === 'FINALIZE' ? 'Cierre' : 'Próxima acción'}: {revision.nextAction.description}
       </p>
+      <EvidenciaRegistrada
+        area="TRAINING"
+        revision={revision}
+        leer={() => api.evidenciaDeRevisionDeEntrenamiento(token, revision.reviewId)}
+        sesionPerdida={sesionPerdida}
+        abrible={(o) => o.type === 'TRAINING_EXECUTION'}
+        contenidoDelOrigen={(o, _item, alNoEstarDisponible) => <SesionDeLaEvidencia origen={o} onNoDisponible={alNoEstarDisponible} />}
+      />
       {revision.application ? (
         <p>
           <span className="insignia insignia--si">Aplicada</span> {fecha(revision.application.appliedAt)}
@@ -473,5 +494,48 @@ function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenam
         </>
       )}
     </li>
+  );
+}
+
+/**
+ * Una sesión de la evidencia, en el panel (DL-154): leída por API-TRN-19 con el permiso de hoy, con la corrección vigente
+ * si la tiene. Si ya no se puede leer, lo dice y avisa a quien la abrió.
+ */
+function SesionDeLaEvidencia({ origen, onNoDisponible }: { origen: OrigenDeDato; onNoDisponible: () => void }) {
+  const { token, sesionPerdida } = useEntrenamiento();
+  const [r, setR] = useState<Resultado<{ data: EjecucionDeEntrenamiento }> | null>(null);
+  const cargar = useCallback(async () => {
+    setR(null);
+    const res = await api.consultarEjecucionDeEntrenamiento(token, origen.id);
+    if (sesionPerdida(res)) return;
+    setR(res);
+  }, [token, origen.id, sesionPerdida]);
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+  // Como el detalle de una comida: un 404 (o un 403) es «sin acceso», el mismo texto para lo revocado y lo inexistente.
+  const sinAcceso = r !== null && !r.ok && r.tipo === 'API' && (r.codigo === 'RESOURCE_NOT_FOUND' || r.status === 403);
+  const aviso = useRef(onNoDisponible);
+  aviso.current = onNoDisponible;
+  useEffect(() => {
+    if (sinAcceso) aviso.current();
+  }, [sinAcceso]);
+  if (r === null) return <Cargando />;
+  if (sinAcceso) return <p className="nota">Esta sesión no está disponible con tu acceso actual.</p>;
+  if (!r.ok) return <ErrorConReintento mensaje={textoDeFalla(motivoDeFalla(r), 'la sesión registrada')} onReintentar={() => void cargar()} />;
+  const x = r.datos.data;
+  const vigente = registroVigente(x);
+  return (
+    <div className="detalle-de-valores">
+      <p>
+        <strong>{x.plannedSession.label}</strong> · ocurrió el {fecha(x.occurredAt)} · registrada el {fecha(x.recordedAt)}
+      </p>
+      {x.corrections.length > 0 ? (
+        <p className="nota">
+          {x.effectiveView.kind === 'CORRECTED' ? 'Se muestra la corrección vigente' : 'Tiene correcciones'}: {x.corrections.map((c) => `${c.author.displayName}, ${fecha(c.recordedAt)}`).join(' · ')}
+        </p>
+      ) : null}
+      {vigente ? <Registro registro={vigente} /> : <p className="nota">La vista vigente de esta sesión no se puede resolver.</p>}
+    </div>
   );
 }

@@ -16,6 +16,9 @@
  * Lo que se mudó (no se quitó): «Qué se registró en el período» está en cada tarjeta (a un clic cuando hay revisión) y
  * en la cobertura de cada indicador; «Lo último que pasó» es la pestaña «Línea de tiempo»; «de dónde sale» cada hecho y
  * cómo se arma la lista están en «Cómo se lee esta vista». Abrir la ficha no crea ni registra nada.
+ *
+ * Una lectura de la síntesis que falla (encargo de consolidación, bloque 5) se reintenta con un solo botón, arriba de las
+ * tarjetas, que vuelve a pedir solo lo que faltó; cada tarjeta y los indicadores dicen en su lugar qué parte les falta.
  */
 import {
   fechaCivil,
@@ -40,8 +43,9 @@ import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/es
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaDelAnioEnCurso } from '../../../../lib/formato';
-import { razonDeFalla, useLectura, useSeguimiento, type Lectura } from './contexto';
+import { razonDeFalla, useLectura, useSeguimiento, type Lectura, type MotivoDeFalla } from './contexto';
 import { hoyEn, parametrosDePregunta, restarDias } from './estado';
+import { enumerar } from './etapas-en-pantalla';
 import { ICONO_DE_FALLA } from './iconos-de-metrica';
 import { NotasRecientesDelEquipo } from './notas-del-equipo';
 import { TarjetasDeArea } from './resumen-area';
@@ -79,9 +83,10 @@ export function ResumenDelSeguimiento() {
 
   if (panel.tipo === 'cargando') return <Cargando />;
   // Con su motivo, como cualquier otra lectura de la ficha: «esperá un minuto» no es lo mismo que «revisá la conexión».
+  // Es el único «Reintentar» de esta lectura: el encabezado solo dice que no pudo leer el acceso.
   if (panel.tipo === 'error') {
     return (
-      <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos cargar el resumen por área" onReintentar={recargarPanel}>
+      <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[panel.motivo]} titulo="No pudimos cargar el resumen por área" onReintentar={recargarPanel} deQue="el resumen por área">
         {razonDeFalla(panel.motivo)}
       </BloqueDeEstado>
     );
@@ -90,6 +95,28 @@ export function ResumenDelSeguimiento() {
 
   const d = panel.datos.domains;
   const areas = [d.nutrition.available, d.training.available, d.anthropometry.available].filter(Boolean).length;
+  // Lo que la síntesis no pudo leer: se dice una vez, arriba de las tarjetas, y se reintenta solo eso. Antes cada tarjeta
+  // y los indicadores tenían su «Reintentar», y todos volvían a pedir las mismas lecturas.
+  const faltan: readonly { readonly que: string; readonly motivo: MotivoDeFalla; readonly reintentar: () => void }[] = [
+    ...(disponibles.falla ? [{ que: 'los datos del período de cada área', motivo: disponibles.falla, reintentar: disponibles.recargar }] : []),
+    ...(delPeriodo.tipo === 'error' ? [{ que: 'los hechos del período', motivo: delPeriodo.motivo, reintentar: recargarDelPeriodo }] : []),
+    ...(novedadesDeNutricion.estado === 'FALLO' ? [{ que: 'lo nuevo desde la revisión de Nutrición', motivo: novedadesDeNutricion.motivo, reintentar: novedadesDeNutricion.recargar }] : []),
+    ...(novedadesDeEntrenamiento.estado === 'FALLO' ? [{ que: 'lo nuevo desde la revisión de Entrenamiento', motivo: novedadesDeEntrenamiento.motivo, reintentar: novedadesDeEntrenamiento.recargar }] : []),
+  ];
+  const primeraFalta = faltan[0];
+  const loQueFalto = primeraFalta ? (
+    <BloqueDeEstado
+      tipo="error"
+      icono={ICONO_DE_FALLA[primeraFalta.motivo]}
+      titulo="Falta una parte del resumen"
+      onReintentar={() => faltan.forEach((f) => f.reintentar())}
+      textoDelBoton="Reintentar lo que faltó"
+      deQue="del resumen"
+      rol="alert"
+    >
+      No pudimos leer {enumerar(faltan.map((f) => f.que))}. {razonDeFalla(primeraFalta.motivo)} Lo demás se leyó: cada parte que falta lo dice en su lugar.
+    </BloqueDeEstado>
+  ) : null;
   const tarjetas = (
     <TarjetasDeArea
       disponibles={disponibles}
@@ -97,12 +124,6 @@ export function ResumenDelSeguimiento() {
       formato={formato}
       macros={macros}
       onReintentarMacros={recargarMacros}
-      onReintentar={() => {
-        disponibles.recargar();
-        recargarDelPeriodo();
-        novedadesDeNutricion.recargar();
-        novedadesDeEntrenamiento.recargar();
-      }}
       onAbrirToma={(evaluationId) => setOrigen({ origen: { type: 'ANTHROPOMETRIC_EVALUATION', id: evaluationId }, titulo: 'Última toma' })}
     />
   );
@@ -116,6 +137,7 @@ export function ResumenDelSeguimiento() {
   const notas = <NotasRecientesDelEquipo />;
   return (
     <>
+      {loQueFalto}
       {areas === 0 ? <EstadoVacio titulo="Ninguna área disponible con tu acceso actual">El acceso de cada área se ve en el encabezado de la ficha.</EstadoVacio> : null}
       {areas === 1 ? (
         // Una sola área: su tarjeta a la izquierda y, al costado, los indicadores, las notas del equipo y las preguntas. En
@@ -171,7 +193,12 @@ export function ResumenDelSeguimiento() {
 
 // ─── Lo nuevo desde la última revisión de un área ───────────────────────────────────────────────
 
-type Novedades = LecturaDeLaSintesis<NovedadesDeUnArea> & { readonly cargando: boolean; readonly recargar: () => void };
+/** Con una falla, su motivo: el aviso de lo que faltó lo dice («esperá un minuto» no es «revisá la conexión»). */
+type Novedades = (
+  | { readonly estado: 'LISTA'; readonly valor: NovedadesDeUnArea }
+  | { readonly estado: 'NO_APLICA' }
+  | { readonly estado: 'FALLO'; readonly motivo: MotivoDeFalla }
+) & { readonly cargando: boolean; readonly recargar: () => void };
 
 /**
  * Lo nuevo desde la última revisión registrada del área: API-DSH-04 con `since` (el instante de la revisión), en el área y
@@ -191,7 +218,7 @@ function useNovedades(area: 'NUTRICION' | 'ENTRENAMIENTO'): Novedades {
   );
   if (corte === null) return { estado: 'NO_APLICA', cargando: false, recargar };
   if (lectura.tipo === 'cargando') return { estado: 'NO_APLICA', cargando: true, recargar };
-  if (lectura.tipo === 'error') return { estado: 'FALLO', cargando: false, recargar };
+  if (lectura.tipo === 'error') return { estado: 'FALLO', motivo: lectura.motivo, cargando: false, recargar };
   if (lectura.tipo === 'no-disponible' || !lectura.datos.data.sinceCounts) return { estado: 'NO_APLICA', cargando: false, recargar };
   return { estado: 'LISTA', valor: { conteos: lectura.datos.data.sinceCounts, leidoDesde: desde }, cargando: false, recargar };
 }

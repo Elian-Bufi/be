@@ -15,12 +15,13 @@ export function AyudaDeRegistros() {
       <p className="nota">Lo indicado y lo registrado, día por día. Describe lo registrado: no califica ni dice si alcanza.</p>
       <ul className="como-se-lee__lista">
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
-          <strong>El día es la unidad.</strong> Los días van del más nuevo al más viejo. Cada uno se dice en un renglón («3 de 4 comidas registradas») y se abre en el lugar. Arrancan abiertos los que tienen una comida
+          <strong>El día es la unidad.</strong> Los días van del más nuevo al más viejo. Cada uno se dice en un renglón («3 de 4 comidas con registro») y se abre en el lugar. Arrancan abiertos los que tienen una comida
           diferente o algo distinto de lo indicado: plegar no esconde.
         </Renglon>
         <Renglon muestra={<Icono nombre="comida" tamano={20} />}>
-          <strong>Cada comida del plan es una fila,</strong> en el orden del plan: la opción que registró la persona, cómo informó las cantidades y la diferencia observada. «N de M comidas registradas» es una cuenta: no
-          dice si alcanza.
+          <strong>Cada comida del plan es una fila,</strong> en el orden del plan: la opción que registró la persona, cómo informó las cantidades y la diferencia observada. «N de M comidas con registro» cuenta las
+          comidas del plan que tienen registro, sea la opción del plan o una comida diferente; si hay comidas diferentes, se dice cuántas tienen la opción del plan. Es una cuenta: no dice si alcanza ni califica
+          cómo siguió el plan.
         </Renglon>
         <Renglon esencial muestra={<Icono nombre="sin-datos" tamano={20} />}>
           <strong>«Sin registro»</strong> es eso: no hay dato de esa comida. No es un cero, y no se interpreta. Un día sin ningún registro dice «Sin registro», no «0 de 4».
@@ -36,8 +37,8 @@ export function AyudaDeRegistros() {
           <strong>Sin confirmar:</strong> registró la opción y no confirmó las cantidades. Sigue sin confirmar: no se completa con las porciones del plan.
         </Renglon>
         <Renglon esencial muestra={<Icono nombre="desvio" tamano={20} />}>
-          <strong>Comida diferente:</strong> registró algo que no es una opción del plan. Va en la comida donde lo registró y no la marca como registrada; si no la registró en ninguna, va en un renglón propio del día.
-          Queda fuera de lo indicado: no se compara.
+          <strong>Comida diferente:</strong> registró algo que no es una opción del plan. Va en la comida donde lo registró: esa comida tiene registro, pero no es la opción del plan ni se cuenta como si lo fuera. Si no la
+          registró en ninguna, va en un renglón propio del día y no cubre ninguna comida del plan. Queda fuera de lo indicado: no se compara, y sus cantidades, si no las dijo, siguen sin saberse.
         </Renglon>
         <Renglon muestra={<Icono nombre="ver" tamano={20} />}>
           <strong>Las vistas</strong> son filtros con nombre. El número es la cantidad de comidas que trae cada una; elegir una no le pide nada nuevo a BE. Volver a tocarla deja «Todas las comidas».

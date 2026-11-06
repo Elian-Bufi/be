@@ -31,6 +31,7 @@ import Svg, { Circle, G, Line, Rect, Text as TextoSvg } from 'react-native-svg';
 import { anchoEstimado, ESCALA_DESDE_LA_QUE_VAN_NUMEROS } from '../composicion-de-la-figura';
 import { fecha, fechaCivil, fechaCorta } from '../formato';
 import { componerGrafico, componerGraficoCompacto, puntoMasCercano, RADIO_COMPACTO, RADIO_COMPACTO_ELEGIDA, type ComposicionDelGrafico } from '../grafico-de-evolucion';
+import { Icono } from '../icono';
 import { indiceDeLaToma, serieDeLaMedida } from '../serie-de-la-medida';
 import { Boton, Cifra, COLOR, Desplegable, estilosPorTema, Parrafo, Rotulo, Segmentos, Tarjeta } from '../ui';
 import { HuecoDeLaSerie, PuntoDeLaSerie } from './serie-en-lista';
@@ -43,17 +44,18 @@ type Periodo = { readonly start: string; readonly end: string };
 /**
  * El cambio respecto de la anterior comparable, en partes, para la cabecera de una tarjeta: la diferencia con su flecha y
  * con qué fecha se compara; o por qué no hay anterior. Es descriptivo, nunca califica: la flecha dice para dónde, no si es
- * bueno o malo, y va del mismo color hacia arriba y hacia abajo. Cada medida tiene su fecha: la cabecera de la pantalla no
+ * bueno o malo, y va del mismo color hacia arriba y hacia abajo. Es un ícono de la familia (`sube`, `baja`), siempre junto
+ * al número con su signo, que es lo que lee el lector de pantalla. Cada medida tiene su fecha: la cabecera de la pantalla no
  * la dice (ajuste de Dirección del 2026-10-05).
  */
 export type PartesDelCambio =
-  | { readonly tipo: 'diferencia'; readonly flecha: '↑' | '↓' | null; readonly diferencia: string; readonly respecto: string }
+  | { readonly tipo: 'diferencia'; readonly flecha: 'sube' | 'baja' | null; readonly diferencia: string; readonly respecto: string }
   | { readonly tipo: 'motivo'; readonly motivo: string };
 
 export function partesDelCambio(medida: MedidaDeLaToma): PartesDelCambio {
   const { diferencia, anterior, motivoSinAnterior } = medida;
   if (diferencia && anterior) {
-    const flecha = diferencia.delta > 0 ? '↑' : diferencia.delta < 0 ? '↓' : null;
+    const flecha = diferencia.delta > 0 ? 'sube' : diferencia.delta < 0 ? 'baja' : null;
     // Sin unidad (un índice), la cantidad termina en un espacio: se recorta.
     return { tipo: 'diferencia', flecha, diferencia: textoDeDiferenciaAntropometrica(diferencia).trim(), respecto: `respecto del ${fechaCorta(anterior.fecha)}` };
   }
@@ -94,10 +96,13 @@ export function ValorYCambio({ medida, tamano, angosta = false }: { medida: Medi
       <View style={estilos.valorApilado}>
         {textoDelValor}
         {cambio.tipo === 'diferencia' ? (
-          <Text style={estilos.respectoEnLinea}>
-            <Text style={estilos.diferencia}>{cambio.flecha ? `${cambio.flecha} ${cambio.diferencia}` : cambio.diferencia}</Text>
-            {` ${cambio.respecto}`}
-          </Text>
+          <View style={estilos.cambioEnLinea}>
+            {cambio.flecha ? <Icono nombre={cambio.flecha} tamano={18} tono="acento" /> : null}
+            <Text style={[estilos.respectoEnLinea, estilos.textoDelCambioEnLinea]}>
+              <Text style={estilos.diferencia}>{cambio.diferencia}</Text>
+              {` ${cambio.respecto}`}
+            </Text>
+          </View>
         ) : (
           <Text style={estilos.motivo}>{cambio.motivo}</Text>
         )}
@@ -109,7 +114,10 @@ export function ValorYCambio({ medida, tamano, angosta = false }: { medida: Medi
       {textoDelValor}
       {cambio.tipo === 'diferencia' ? (
         <View style={estilos.cambio}>
-          <Text style={estilos.diferencia}>{cambio.flecha ? `${cambio.flecha} ${cambio.diferencia}` : cambio.diferencia}</Text>
+          <View style={estilos.diferenciaConFlecha}>
+            {cambio.flecha ? <Icono nombre={cambio.flecha} tamano={18} tono="acento" /> : null}
+            <Text style={estilos.diferencia}>{cambio.diferencia}</Text>
+          </View>
           <Text style={estilos.respecto}>{cambio.respecto}</Text>
         </View>
       ) : (
@@ -237,10 +245,10 @@ export function ProgresoDeUnaMedida({ datos, metrica, grupoInicial, evaluacionId
       {serie.observaciones.length > 1 ? (
         <View style={estilos.pasos}>
           <View style={estilos.paso}>
-            <Boton texto={`‹ ${COPY_ANTROPOMETRIA.observacionAnterior}`} tipo="secundario" deshabilitado={indice <= 0} onPress={() => setElegida(Math.max(0, indice - 1))} />
+            <Boton texto={COPY_ANTROPOMETRIA.observacionAnterior} icono="izquierda" tipo="secundario" deshabilitado={indice <= 0} onPress={() => setElegida(Math.max(0, indice - 1))} />
           </View>
           <View style={estilos.paso}>
-            <Boton texto={`${COPY_ANTROPOMETRIA.observacionSiguiente} ›`} tipo="secundario" deshabilitado={indice >= serie.observaciones.length - 1} onPress={() => setElegida(Math.min(serie.observaciones.length - 1, indice + 1))} />
+            <Boton texto={COPY_ANTROPOMETRIA.observacionSiguiente} icono="derecha" iconoAlFinal tipo="secundario" deshabilitado={indice >= serie.observaciones.length - 1} onPress={() => setElegida(Math.min(serie.observaciones.length - 1, indice + 1))} />
           </View>
         </View>
       ) : null}
@@ -424,6 +432,10 @@ const estilos = estilosPorTema((COLOR) => ({
   motivo: { flexBasis: '100%', fontSize: 13, lineHeight: 18, color: COLOR.tenue },
   valorApilado: { marginTop: 4, rowGap: 2 },
   respectoEnLinea: { fontSize: 13, lineHeight: 21, color: COLOR.tenue },
+  // La flecha de la familia va al lado del número, no adentro del texto: un ícono no entra en un renglón de texto.
+  cambioEnLinea: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  textoDelCambioEnLinea: { flexShrink: 1 },
+  diferenciaConFlecha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   compacto: { marginTop: 6 },
   valores: { marginTop: 4, borderRadius: 10, backgroundColor: COLOR.superficieElevada, paddingVertical: 4, paddingHorizontal: 10 },
   textoDeValores: { fontSize: 15, lineHeight: 21, fontWeight: '700', color: COLOR.texto, textAlign: 'center' },

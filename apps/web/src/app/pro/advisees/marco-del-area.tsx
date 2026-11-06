@@ -36,6 +36,7 @@ import { SinEspacioProfesional, type useEspacioProfesional } from '../espacio-pr
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, type LecturaPorArea } from './acceso-por-area';
 import { hoyEn, periodoEnInstantes, restarDias } from './seguimiento/estado';
 import { Pista } from '../../../components/pista';
+import { EsperandoSesion } from '../../../lib/sesion';
 
 /** El alcance de los vínculos de un área (`scope.code`). */
 export type AlcanceDelArea = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
@@ -71,6 +72,17 @@ export function useCambiosSinGuardar(hay: boolean, que: string): void {
     marco.anotarCambios(clave, que);
     return () => marco.anotarCambios(clave, null);
   }, [marco, hay, que, clave]);
+  // Bloque 3 del encargo de consolidación: recargar o cerrar la pestaña con algo sin guardar pide confirmar (el navegador
+  // muestra su propio aviso). Lo que nunca llegó al servidor no se guarda en el navegador.
+  useEffect(() => {
+    if (!hay) return;
+    const alSalir = (evento: BeforeUnloadEvent) => {
+      evento.preventDefault();
+      evento.returnValue = '';
+    };
+    window.addEventListener('beforeunload', alSalir);
+    return () => window.removeEventListener('beforeunload', alSalir);
+  }, [hay]);
 }
 
 /**
@@ -112,15 +124,16 @@ export function NoDisponibleEnElArea() {
 
 /**
  * El resultado de la lectura de una sección: cargando; «no disponible», neutral; o una falla, dicha con su motivo y con
- * «Reintentar» (C-43). Una falla nunca se presenta como ausencia de datos.
+ * «Reintentar» (C-43). Una falla nunca se presenta como ausencia de datos. Si la sección sabe qué lectura falló (`que`:
+ * «las versiones del plan», «el objetivo vigente»), lo dicen el título y el nombre del botón; si no, «esta vista».
  */
-export function EstadoDeLecturaDelArea({ r, onReintentar, children }: { r: Resultado<unknown> | null; onReintentar: () => void; children: ReactNode }) {
+export function EstadoDeLecturaDelArea({ r, onReintentar, que = null, children }: { r: Resultado<unknown> | null; onReintentar: () => void; que?: string | null; children: ReactNode }) {
   if (!r) return <Cargando />;
   if (!r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') return <NoDisponibleEnElArea />;
   if (!r.ok) {
     const motivo = motivoDeFalla(r);
     return (
-      <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[motivo]} titulo={COPY.errorDeVista.replace(/\.$/, '')} onReintentar={onReintentar}>
+      <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[motivo]} titulo={que ? `No pudimos cargar ${que}` : COPY.errorDeVista.replace(/\.$/, '')} onReintentar={onReintentar} deQue={que ?? undefined}>
         {razonDeFalla(motivo)}
       </BloqueDeEstado>
     );
@@ -294,7 +307,12 @@ export function MarcoDelArea<C extends string>({
                   <strong>Acceso actual</strong>
                 </p>
                 {acceso.tipo === 'cargando' ? <Cargando /> : null}
-                {acceso.tipo === 'error' ? <ErrorConReintento onReintentar={() => void leer(false, sePreguntoElResumen.current)} /> : null}
+                {/* Sin un «Reintentar» propio: «Actualizar», en este mismo encabezado, vuelve a pedir el acceso con lo demás. */}
+                {acceso.tipo === 'error' ? (
+                  <Aviso tipo="error">
+                    <p>{COPY_VINCULO.accesoNoSeLeyo}</p>
+                  </Aviso>
+                ) : null}
                 {acceso.tipo === 'listo' && delArea.length > 0 ? <AccesoPorArea vinculos={delArea} sePuedeLeer={sePuedeLeer} /> : null}
                 {/* Sin un vínculo de esta área no hay acceso que decir: el mismo texto para lo ajeno y para lo inexistente. */}
                 {acceso.tipo === 'listo' && delArea.length === 0 ? (
@@ -318,7 +336,7 @@ export function MarcoDelArea<C extends string>({
         <div className={ancho ? 'seccion-del-area seccion-del-area--ancha' : 'seccion-del-area'} key={version}>
           <Contexto.Provider value={contexto}>
             <ContextoDeLaPersona.Provider value={nombre}>
-              {!token ? <p className="nota">Redirigiendo a Iniciar sesión…</p> : null}
+              {!token ? <EsperandoSesion /> : null}
               {token && yo.tipo === 'cargando' ? <Cargando /> : null}
               {token && yo.tipo === 'error' ? <ErrorConReintento onReintentar={cargarYo} /> : null}
               {token && yo.tipo === 'sin-espacio' ? <SinEspacioProfesional /> : null}

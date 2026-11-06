@@ -16,7 +16,7 @@ import { useId, useMemo, useState, type ReactNode } from 'react';
 import { BloqueDeEstado, EstadoVacio } from '../../components/estados';
 import { Icono } from '../../components/icono';
 import { ICONO_DE_FALLA, razonDeFalla } from '../../lib/fallas';
-import { dia } from '../../lib/formato';
+import { dia, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
 import { armarElDirectorio, buscarEnElDirectorio, type PersonaDelDirectorio } from './directorio';
 
@@ -76,6 +76,12 @@ export function Asesorados({
       {vinculos.tipo === 'error' ? (
         <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[vinculos.motivo]} titulo="No pudimos cargar tus asesorados" onReintentar={onReintentar} deQue="tus asesorados">
           {razonDeFalla(vinculos.motivo)}
+        </BloqueDeEstado>
+      ) : null}
+      {/* Un «Actualizar» que falló: lo leído sigue a la vista, con su hora (bloque 5 del encargo de consolidación). */}
+      {listo?.fallaAlActualizar ? (
+        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[listo.fallaAlActualizar]} titulo="No pudimos actualizar tus asesorados" onReintentar={onReintentar} deQue="tus asesorados" rol="alert">
+          {razonDeFalla(listo.fallaAlActualizar)} Se ve lo consultado a las {horaDelDia(listo.consultado)}.
         </BloqueDeEstado>
       ) : null}
 

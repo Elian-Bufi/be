@@ -1,0 +1,363 @@
+// Las cuentas y los datos de CADA recorrido, propios y nuevos en cada corrida (bloque 6): ningún recorrido usa lo que
+// prepara o deja otro, así que se pueden correr solos, en cualquier orden, y una falla no arrastra a los demás.
+// - `cuentas`: registra un profesional y una persona por recorrido y devuelve BE_DEMO_PROFESIONALES. La habilitación
+//   profesional de los ambientes de prueba se declara al arrancar la API (DL-036): por eso la API se arranca una segunda
+//   vez, ANTES de cualquier recorrido. No es un reinicio para esconder una falla ni para vaciar un límite.
+// - `datos`: con la API ya habilitando a esos profesionales, los vínculos con su consentimiento y lo que cada recorrido
+//   necesita encontrar hecho (un borrador, un plan con revisión acordada, tres tomas de peso).
+import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
+import * as OTPAuth from 'otpauth';
+import { CREDENCIAL, dominio, pedir, ponerNombre, registrar, sesion, vincular } from './api.mjs';
+import { baseDeclarada, REPO } from './entorno.mjs';
+
+const ZONA = 'America/Argentina/Buenos_Aires';
+export const hoyCivil = () => new Intl.DateTimeFormat('en-CA', { timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+export function diaMas(fecha, dias) {
+  const d = new Date(`${fecha}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+const instante = (fecha, hora) => new Date(`${fecha}T${hora}:00-03:00`);
+
+/**
+ * Qué necesita cada recorrido: las áreas en que el profesional está habilitado, las de sus vínculos con la persona (por
+ * omisión, las mismas) y lo que tiene que encontrar hecho.
+ */
+export const RECORRIDOS = {
+  sesion: { habilitado: ['NUTRICION'], datos: [] },
+  pistas: { habilitado: ['NUTRICION'], datos: [] },
+  primerPlan: { habilitado: ['NUTRICION'], datos: [] },
+  borrador: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  retorno: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
+  grafico: { habilitado: ['ANTROPOMETRIA'], datos: ['tomas'] },
+  // El área sugerida al invitar (bloque 5): sin vínculos, ninguna; con vínculos en una sola de dos áreas, esa.
+  primeraInvitacion: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: [], datos: [] },
+  areaSugerida: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: ['NUTRICION'], datos: [] },
+  // Bloque 3: el servidor sigue decidiendo; recargar recupera la sesión, no un permiso ni una sesión revocados.
+  sesionRevocada: { habilitado: ['NUTRICION'], datos: [] },
+  accesoRevocado: { habilitado: ['NUTRICION'], datos: [] },
+  // Bloque 5: una lectura que falla no borra el resto de la vista.
+  faltaUnaParte: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
+  // DL-153 (encargo del 2026-10-23): el número de Nutrición dice qué representa y qué falta registrar del plan.
+  completitud: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan'] },
+  // DL-154: una revisión registrada dice en qué evidencia se apoyó, y lo que cambió después.
+  evidencia: { habilitado: ['NUTRICION'], datos: ['comidas-del-plan', 'revision-con-evidencia'] },
+  // WP-ADMINISTRACION (DL-155): la consola de Administración. El profesional del recorrido opera Nutrición y Entrenamiento
+  // con la persona; además hay un profesional con las dos áreas pendientes de revisión y dos cuentas administrativas: una
+  // entra por el navegador y la otra decide por la API (para el conflicto).
+  administracion: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], datos: ['administracion'] },
+  // DL-158: el objetivo del profesional, lo indicado en el plan y lo registrado en el mismo gráfico; con un plan de una
+  // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
+  comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
+  comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
+};
+const vinculosDe = (r) => r.vinculos ?? r.habilitado;
+
+export const nombreDeLaPersona = (recorrido) => `Persona ${recorrido}`;
+export const nombreDelProfesional = (recorrido) => `Lic. Recorrido ${recorrido}`;
+export const NOMBRE_DEL_PENDIENTE = 'Lic. Pendiente Recorrido';
+export const NOMBRE_DEL_ADMINISTRADOR = 'Admin Recorrido';
+export const NOMBRE_DEL_OTRO_ADMINISTRADOR = 'Otra Admin Recorrido';
+
+/**
+ * Lo que da acceso a Administración en esta corrida: el código de incorporación de la cuenta que entra por el navegador y
+ * la clave del autenticador de la otra. Vive solo en memoria: no va a `estado.json` ni a ningún registro.
+ */
+export const SECRETOS = new Map();
+
+export async function cuentas(corrida) {
+  const estado = {};
+  for (const recorrido of Object.keys(RECORRIDOS)) {
+    const pro = { correo: `rec-${corrida}-${recorrido}-pro@example.invalid` };
+    const ase = { correo: `rec-${corrida}-${recorrido}-persona@example.invalid` };
+    pro.id = await registrar(pro.correo);
+    ase.id = await registrar(ase.correo);
+    estado[recorrido] = { pro, ase };
+  }
+  // Administración: las dos cuentas administrativas se registran por el alta común y las incorpora el comando del operador
+  // (en `datos`); el profesional pendiente lo declara BE_DEMO_PROFESIONALES con el quinto campo PENDIENTE.
+  const a = estado.administracion;
+  for (const clave of ['admin', 'otroAdmin', 'pendiente']) {
+    a[clave] = { correo: `rec-${corrida}-administracion-${clave.toLowerCase()}@example.invalid` };
+    a[clave].id = await registrar(a[clave].correo);
+  }
+  const demo = [
+    ...Object.entries(RECORRIDOS).flatMap(([recorrido, r]) => r.habilitado.map((alcance) => `${estado[recorrido].pro.id}|${alcance}|SANITARIO|${nombreDelProfesional(recorrido)}`)),
+    ...['NUTRICION', 'ENTRENAMIENTO'].map((alcance) => `${a.pendiente.id}|${alcance}|SANITARIO|${NOMBRE_DEL_PENDIENTE}|PENDIENTE`),
+  ].join(';');
+  return { estado, demo };
+}
+
+/** El comando interno del operador (D-3): incorpora una cuenta como administradora. El código vuelve en memoria. */
+function incorporar(correo, nombre) {
+  const salida = execFileSync(
+    process.execPath,
+    [join(REPO, 'apps/api/dist/administracion/comando.js'), 'incorporar', '--correo', correo, '--nombre', nombre, '--fundamento', 'Recorrido de navegador sintético', '--operador', 'Recorridos de la CI', '--salida', 'json'],
+    { cwd: REPO, env: { ...process.env, DATABASE_URL: baseDeclarada(), APP_ENV: 'test' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  return JSON.parse(salida).codigoDeIncorporacion;
+}
+
+/** El código del autenticador para un momento (por omisión, ahora). */
+export const codigoTotp = (secreto, desfaseMs = 0) =>
+  new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(secreto), algorithm: 'SHA1', digits: 6, period: 30 }).generate({ timestamp: Date.now() + desfaseMs });
+
+/**
+ * Una sesión administrativa con el segundo factor vigente, por la API: la contraseña y un código del autenticador. Si el
+ * código de este paso ya se usó (no se acepta dos veces), el del paso siguiente.
+ */
+export async function sesionAdministrativa(correo, secreto) {
+  const token = (await pedir('POST', '/admin/auth/sessions', { cuerpo: { identifier: correo, credential: CREDENCIAL }, clave: false })).data.session.accessToken;
+  for (const desfase of [0, 30_000]) {
+    const r = await pedir('POST', '/admin/auth/sessions/current/second-factor', { token, cuerpo: { code: codigoTotp(secreto, desfase) }, clave: false, esperado: [200, 422] });
+    if (r?.data) return token;
+  }
+  throw new Error('no se pudo completar el segundo factor de la cuenta administrativa por la API');
+}
+
+const evaluacionNutricional = (ocurrio) => ({
+  occurredAt: ocurrio.toISOString(),
+  context: 'Primera consulta del recorrido.',
+  assessment: { entries: [{ concept: 'Comidas por día', value: 4, unit: 'comidas', source: 'REPORTED' }] },
+  evidenceReferences: [],
+  professionalNotes: 'Datos sintéticos del recorrido de navegador.',
+});
+const objetivoNutricional = (evaluationId, desde) => ({
+  evaluationId,
+  effectiveFrom: desde.toISOString(),
+  effectiveUntil: null,
+  estimatedEnergyRequirement: { value: 2100, unit: 'kcal/day' },
+  macronutrientDistribution: { protein: { value: 130, unit: 'g/day' }, carbohydrate: { value: 220, unit: 'g/day' }, fat: { value: 65, unit: 'g/day' } },
+  mealDistribution: 'Cuatro comidas.',
+  rationale: 'Objetivo sintético del recorrido de navegador.',
+  methodStatement: null,
+});
+
+async function alimento(pro, texto) {
+  const r = await pedir('POST', '/nutrition/catalog-items/search', { token: pro, cuerpo: { q: texto, limit: 5 }, clave: false });
+  const primero = r.data[0];
+  if (!primero) throw new Error(`el catálogo base no tiene «${texto}» (¿se aplicaron las migraciones?)`);
+  return primero.catalogItemId;
+}
+
+/** El plan de los recorridos: un día tipo con dos comidas, cada una con una opción con un alimento del catálogo base. */
+async function estructura(pro) {
+  const avena = await alimento(pro, 'avena');
+  const arroz = await alimento(pro, 'arroz');
+  return {
+    dayTypes: [
+      {
+        label: 'Día habitual',
+        meals: [
+          { label: 'Desayuno', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Avena', items: [{ catalogItemId: avena, quantity: { value: 50, unit: 'g' }, preparationState: 'RAW' }] }] },
+          { label: 'Almuerzo', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Arroz', items: [{ catalogItemId: arroz, quantity: { value: 150, unit: 'g' }, preparationState: 'COOKED' }] }] },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * El plan de la comparación (DL-158): las dos comidas de siempre, con porciones de un día de verdad (avena 80 g y arroz
+ * 300 g), para que lo indicado y el objetivo tengan magnitudes parecidas y el gráfico no quede aplastado contra el eje.
+ * Con alternativas, el almuerzo tiene además una opción con pollo.
+ */
+async function estructuraDeLaComparacion(pro, conOpciones) {
+  const avena = await alimento(pro, 'avena');
+  const arroz = await alimento(pro, 'arroz');
+  const item = (catalogItemId, gramos, preparationState) => ({ catalogItemId, quantity: { value: gramos, unit: 'g' }, preparationState });
+  const opcionesDelAlmuerzo = [{ label: 'Arroz', items: [item(arroz, 300, 'COOKED')] }, ...(conOpciones ? [{ label: 'Pollo', items: [item(await alimento(pro, 'pollo'), 200, 'COOKED')] }] : [])];
+  return {
+    dayTypes: [
+      {
+        label: 'Día habitual',
+        meals: [
+          { label: 'Desayuno', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Avena', items: [item(avena, 80, 'RAW')] }] },
+          { label: 'Almuerzo', prescriptionMode: 'DISH_OPTIONS', options: opcionesDelAlmuerzo },
+        ],
+      },
+    ],
+  };
+}
+
+async function evaluacionYObjetivo(pro, aseId) {
+  const evaluacion = (await pedir('POST', `/advisees/${aseId}/nutrition/evaluations`, { token: pro, cuerpo: evaluacionNutricional(new Date(Date.now() - 2 * 3600_000)) })).data.evaluationId;
+  const objetivo = (await pedir('POST', `/advisees/${aseId}/nutrition/objectives`, { token: pro, cuerpo: objetivoNutricional(evaluacion, new Date(Date.now() - 3600_000)) })).data;
+  return { evaluacion, objetivo: objetivo.versionId };
+}
+
+/** Una toma de peso por el flujo de la web (borrador y registro, API-ANT-07 y 11). */
+async function toma(pro, aseId, fecha, peso) {
+  const creada = (
+    await pedir('POST', `/advisees/${aseId}/anthropometry/evaluation-drafts`, {
+      token: pro,
+      cuerpo: {
+        occurredAt: instante(fecha, '08:30').toISOString(),
+        // El «Perfil antropométrico completo» del catálogo que siembran las migraciones.
+        specificationVersionId: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a2f10',
+        source: { type: 'DIRECT_CAPTURE' },
+        directMeasurements: [{ metricCode: 'peso', value: peso, unit: 'kg' }],
+      },
+    })
+  ).data;
+  return (await pedir('POST', `/anthropometry/evaluation-drafts/${creada.evaluationId}/register`, { token: pro, cuerpo: { expectedVersion: creada.version } })).data.evaluationId;
+}
+
+export async function datos(estado) {
+  const hoy = hoyCivil();
+  for (const [recorrido, r] of Object.entries(RECORRIDOS)) {
+    const e = estado[recorrido];
+    const pro = await sesion(e.pro.correo);
+    const ase = await sesion(e.ase.correo, 'APK');
+    e.ase.nombre = nombreDeLaPersona(recorrido);
+    await ponerNombre(ase, e.ase.nombre);
+    await pedir('POST', '/me/health-data-consents', { token: ase, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
+    e.vinculos = {};
+    e.consentimientos = {};
+    for (const alcance of vinculosDe(r)) {
+      const { vinculoId, consentId } = await vincular(pro, ase, e.ase.id, alcance);
+      e.vinculos[alcance] = vinculoId;
+      e.consentimientos[alcance] = consentId;
+    }
+
+    if (r.datos.includes('borrador')) {
+      const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
+      const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
+      e.borrador = { planId: plan.planId };
+    }
+    if (r.datos.includes('plan-con-revision')) {
+      const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
+      const proxima = diaMas(hoy, 3);
+      const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro), nextReviewAt: proxima } })).data;
+      await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } });
+      e.plan = { planId: plan.planId, proximaRevision: proxima };
+    }
+    if (r.datos.includes('comidas-del-plan')) {
+      // Un plan activo de dos comidas (desayuno y almuerzo). La persona registra desde la APK: anteayer las dos, con las
+      // porciones del plan; ayer, solo el desayuno. Hoy, nada todavía.
+      const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
+      const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
+      await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } });
+      const opciones = (await pedir('GET', '/me/nutrition/today/options', { token: ase, superficie: 'APK' })).data;
+      const [desayuno, almuerzo] = opciones.meals;
+      const registrarComida = (comida, fecha, hora) =>
+        pedir('POST', '/me/nutrition/meal-records', {
+          token: ase,
+          superficie: 'APK',
+          cuerpo: { kind: 'PLAN_OPTION', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: comida.mealId, optionId: comida.options[0].optionId, occurredAt: instante(fecha, hora).toISOString(), consumption: { status: 'PLAN_PORTIONS' }, observation: null },
+        });
+      const anteayer = diaMas(hoy, -2);
+      const ayer = diaMas(hoy, -1);
+      const desayunoAnteayer = (await registrarComida(desayuno, anteayer, '08:30')).data;
+      const almuerzoAnteayer = (await registrarComida(almuerzo, anteayer, '13:00')).data;
+      await registrarComida(desayuno, ayer, '08:30');
+      // DL-153, D-2 (criterios de Dirección del 2026-10-24): hace tres días, el desayuno con la opción del plan y, en el
+      // almuerzo, una comida diferente sin cantidades. El almuerzo tiene registro sin ser la opción del plan; el día es un
+      // subtotal por la cantidad, no por una comida sin registro.
+      const haceTres = diaMas(hoy, -3);
+      await registrarComida(desayuno, haceTres, '08:30');
+      await pedir('POST', '/me/nutrition/meal-records', {
+        token: ase,
+        superficie: 'APK',
+        cuerpo: { kind: 'DIFFERENT', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: almuerzo.mealId, occurredAt: instante(haceTres, '13:00').toISOString(), description: 'Una pizza con amigos', approximateQuantity: null, mediaIds: [] },
+      });
+      e.comidas = { anteayer, ayer, haceTres, faltante: almuerzo.label, desayuno: desayuno.label, almuerzo: almuerzo.label, planVersionId: opciones.plan.planId, objetivo, desayunoAnteayer, almuerzoAnteayer };
+    }
+    if (r.datos.includes('revision-con-evidencia')) {
+      // DL-154: el profesional revisa con las dos comidas de anteayer y la versión del plan (no con el desayuno de ayer, que
+      // está en el período). Después de la revisión, la persona deshace el almuerzo de anteayer desde la APK, y el
+      // profesional activa otra versión del plan: la revisada no cambia, deja de ser la vigente (D-2).
+      const { anteayer, ayer, desayunoAnteayer, almuerzoAnteayer, planVersionId, objetivo } = e.comidas;
+      const revision = (
+        await pedir('POST', `/advisees/${e.ase.id}/nutrition/reviews`, {
+          token: pro,
+          cuerpo: {
+            period: { start: anteayer, end: ayer, timeZone: ZONA },
+            evidenceReferences: [
+              { type: 'EXECUTION', id: desayunoAnteayer.recordId },
+              { type: 'EXECUTION', id: almuerzoAnteayer.recordId },
+              { type: 'PLAN_VERSION', id: planVersionId },
+            ],
+            interpretation: 'Registró las dos comidas de anteayer. Interpretación sintética del recorrido.',
+            result: 'MAINTAIN',
+            rationale: 'Fundamento sintético del recorrido.',
+            nextAction: { description: 'Seguir con el plan.' },
+          },
+        })
+      ).data;
+      await pedir('POST', `/nutrition/meal-records/${almuerzoAnteayer.recordId}/annulment`, { token: ase, superficie: 'APK', cuerpo: { reason: 'Me equivoqué de día', expectedVersion: almuerzoAnteayer.version } });
+      const sucesora = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
+      await pedir('POST', `/nutrition/plans/${sucesora.planId}/activate`, { token: pro, cuerpo: { expectedVersion: sucesora.version } });
+      e.revision = { reviewId: revision.reviewId };
+    }
+    if (r.datos.includes('administracion')) {
+      // La cuenta del navegador queda incorporada, con su código para configurar el autenticador en la consola. La otra
+      // configura el suyo por la API, como lo haría desde su propia consola.
+      const codigo = incorporar(e.admin.correo, NOMBRE_DEL_ADMINISTRADOR);
+      const codigoDelOtro = incorporar(e.otroAdmin.correo, NOMBRE_DEL_OTRO_ADMINISTRADOR);
+      const token = (await pedir('POST', '/admin/auth/sessions', { cuerpo: { identifier: e.otroAdmin.correo, credential: CREDENCIAL }, clave: false })).data.session.accessToken;
+      const configuracion = (await pedir('POST', '/admin/auth/second-factor/enrollment', { token, cuerpo: { incorporationCode: codigoDelOtro }, clave: false })).data;
+      await pedir('POST', '/admin/auth/second-factor/enrollment/confirm', { token, cuerpo: { code: codigoTotp(configuracion.secret) }, clave: false });
+      SECRETOS.set('administracion', { codigoDeIncorporacion: codigo, secretoDelOtro: configuracion.secret });
+    }
+    if (r.datos.includes('comparacion') || r.datos.includes('comparacion-con-opciones')) {
+      // DL-158 (WP-NUTRICION-COMPARACION): dos versiones del objetivo —la segunda, desde anteayer, con otras calorías y
+      // otras proteínas— y un plan de dos comidas. Sin alternativas, cada comida tiene una opción y el día tiene indicado;
+      // con alternativas, el almuerzo tiene dos y el día no. Registros desde la APK: hace seis días, las dos comidas; hace
+      // cinco, nada (un hueco); hace cuatro, solo el desayuno; hace tres, el desayuno y algo diferente en el almuerzo;
+      // ayer, las dos (con alternativas, la segunda opción del almuerzo). Hoy, nada todavía.
+      const conOpciones = r.datos.includes('comparacion-con-opciones');
+      const dia = (n) => diaMas(hoy, -n);
+      const evaluacion = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/evaluations`, { token: pro, cuerpo: evaluacionNutricional(instante(dia(9), '10:00')) })).data.evaluationId;
+      const objetivo = (desde, kcal, proteinas) => ({
+        ...objetivoNutricional(evaluacion, desde),
+        estimatedEnergyRequirement: { value: kcal, unit: 'kcal/day' },
+        macronutrientDistribution: { protein: { value: proteinas, unit: 'g/day' }, carbohydrate: { value: 220, unit: 'g/day' }, fat: { value: 65, unit: 'g/day' } },
+      });
+      // Un objetivo sintético cerca de lo que indica el plan (los dos números son del recorrido, no una recomendación).
+      await pedir('POST', `/advisees/${e.ase.id}/nutrition/objectives`, { token: pro, cuerpo: objetivo(instante(dia(8), '09:00'), 750, 26) });
+      const vigente = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/objectives`, { token: pro, cuerpo: objetivo(instante(dia(2), '09:00'), 700, 24) })).data.versionId;
+      const initialStructure = await estructuraDeLaComparacion(pro, conOpciones);
+      const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: vigente, initialStructure } })).data;
+      await pedir('POST', `/nutrition/plans/${plan.planId}/activate`, { token: pro, cuerpo: { expectedVersion: plan.version } });
+      const opciones = (await pedir('GET', '/me/nutrition/today/options', { token: ase, superficie: 'APK' })).data;
+      const [desayuno, almuerzo] = opciones.meals;
+      const delAlmuerzo = almuerzo.options[almuerzo.options.length - 1];
+      const registrar = (comida, opcion, fecha, hora) =>
+        pedir('POST', '/me/nutrition/meal-records', {
+          token: ase,
+          superficie: 'APK',
+          cuerpo: { kind: 'PLAN_OPTION', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: comida.mealId, optionId: opcion.optionId, occurredAt: instante(fecha, hora).toISOString(), consumption: { status: 'PLAN_PORTIONS' }, observation: null },
+        });
+      await registrar(desayuno, desayuno.options[0], dia(6), '08:30');
+      await registrar(almuerzo, delAlmuerzo, dia(6), '13:00');
+      await registrar(desayuno, desayuno.options[0], dia(4), '08:30');
+      await registrar(desayuno, desayuno.options[0], dia(3), '08:30');
+      await pedir('POST', '/me/nutrition/meal-records', {
+        token: ase,
+        superficie: 'APK',
+        cuerpo: { kind: 'DIFFERENT', activePlanId: opciones.plan.planId, dayTypeId: opciones.selectedDayTypeId, mealId: almuerzo.mealId, occurredAt: instante(dia(3), '13:00').toISOString(), description: 'Una pizza con amigos', approximateQuantity: null, mediaIds: [] },
+      });
+      await registrar(desayuno, desayuno.options[0], dia(1), '08:30');
+      await registrar(almuerzo, delAlmuerzo, dia(1), '13:00');
+      // Lo que dice la API, para comparar con la pantalla: el gráfico, la lectura, la tabla y el origen dicen lo mismo.
+      const leer = async (metrica) => (await pedir('GET', `/advisees/${e.ase.id}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=${metrica}&periodStart=${dia(7)}&periodEnd=${hoy}`, { token: pro })).data.result;
+      e.comparacion = { hoy, desde: dia(7), ayer: dia(1), anteayer: dia(2), haceTres: dia(3), haceSeis: dia(6), almuerzo: almuerzo.label, energia: await leer('ENERGY'), proteinas: await leer('PROTEIN') };
+    }
+    if (r.datos.includes('tomas')) {
+      const pesos = [
+        [diaMas(hoy, -20), 81.2],
+        [diaMas(hoy, -12), 80.5],
+        [diaMas(hoy, -4), 79.9],
+      ];
+      e.tomas = [];
+      for (const [fecha, peso] of pesos) e.tomas.push({ fecha, peso, evaluationId: await toma(pro, e.ase.id, fecha, peso) });
+    }
+  }
+  return estado;
+}
+
+export const nuevaCorrida = () => randomUUID().slice(0, 8);

@@ -63,7 +63,7 @@ export function FormularioDeRegistro() {
 
   /** La sesión que abre Google (API-GOO-01 o 03): se guarda como la del login y lleva a Cuenta. */
   function entrarConGoogle(respuesta: IniciarSesionResponse) {
-    guardar(respuesta.data.session.accessToken, respuesta.data.session.expiresAt);
+    guardar(respuesta);
     router.push(destinoSeguro(null));
   }
 

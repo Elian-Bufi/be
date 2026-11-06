@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Encabezado } from '../../../../components/encabezado';
 import { NavegacionProfesional } from '../../../../components/navegacion';
 import { Entrenamiento } from './entrenamiento';
+import { PorAsesorado } from '../por-asesorado';
 
 export const metadata: Metadata = { title: 'Entrenamiento · BE' };
 
@@ -16,7 +17,9 @@ export default function PaginaDeEntrenamiento() {
       <Encabezado navegacion={<NavegacionProfesional />} />
       <main id="contenido" className="contenido contenido--ficha">
         <Suspense fallback={null}>
-          <Entrenamiento />
+          <PorAsesorado>
+            <Entrenamiento />
+          </PorAsesorado>
         </Suspense>
       </main>
     </>

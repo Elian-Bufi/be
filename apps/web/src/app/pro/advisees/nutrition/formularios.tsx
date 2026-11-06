@@ -20,13 +20,14 @@ import {
   type CrearObjetivoRequest,
   type EvaluacionNutricional,
 } from '@be/domain';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { dia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useNutricion } from './nutricion';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
+import { evaluacionMasReciente } from '../evaluacion-reciente';
 
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
 interface Dato {
@@ -337,7 +338,11 @@ export function FormularioDeObjetivo({
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
-  const [valores, setValores] = useState(objetivoVacio(evaluaciones[0]?.evaluationId ?? ''));
+  const [valores, setValores] = useState(objetivoVacio(evaluacionMasReciente(evaluaciones)));
+  // En el primer plan, el formulario se abre apenas se registra la evaluación, antes de que la lista vuelva a leerse.
+  useEffect(() => {
+    if (evaluaciones.length > 0) setValores((v) => (v.evaluacionId ? v : { ...v, evaluacionId: evaluacionMasReciente(evaluaciones) }));
+  }, [evaluaciones]);
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
   const [enviando, setEnviando] = useState(false);

@@ -273,6 +273,13 @@ export const COPY_ANTROPOMETRIA = {
   tomasRegistradas: (n: number): string => (n === 1 ? '1 registrada.' : `${numero(n)} registradas.`),
   unaTomaNoSeEdita: 'Una toma registrada no se edita: cada medición se corrige o se anula, y queda constancia.',
   prepararUnaToma: 'Preparar una toma',
+  /**
+   * La lectura de la toma en preparación falló (bloque 5 del encargo de consolidación): no se sabe si hay una. El botón
+   * no dice ni «seguir» ni «preparar una nueva»: la preparación vuelve a leerla y muestra la que haya.
+   */
+  preparacionNoSeLeyo: 'No pudimos leer si hay una toma en preparación.',
+  preparacionDeQue: 'la lectura de la toma en preparación',
+  prepararOSeguirUnaToma: 'Preparar o seguir una toma',
   /** Hay una sola toma en preparación a la vez: el botón lo dice, para no abrir una ya empezada sin avisar. */
   hayUnaTomaEnPreparacion: (mediciones: number): string =>
     mediciones === 0 ? 'Hay una toma en preparación, todavía sin mediciones.' : `Hay una toma en preparación, con ${numero(mediciones)} ${mediciones === 1 ? 'medición' : 'mediciones'}.`,

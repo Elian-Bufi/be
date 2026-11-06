@@ -58,6 +58,16 @@ const filasDeDatos = (csv: string): string[][] => {
   return lineas.slice(i + 1).map((l) => l.split(';'));
 };
 
+/** La cobertura de un día de nutrición, con sus comidas del plan (DL-153): como la arma `serieNutricional`. */
+const cobertura = (registros: number, conCantidades: number, comidas: Partial<NonNullable<PuntoAnalitico['coverage']>['planMeals']> = {}): NonNullable<PuntoAnalitico['coverage']> => ({
+  records: registros,
+  recordsWithQuantities: conCantidades,
+  recordsWithoutQuantities: registros - conCantidades,
+  daysWithData: null,
+  daysInBucket: null,
+  planMeals: { daysKnown: 1, daysUndetermined: [], expected: 0, withPlanOption: 0, withDifferentMeal: 0, withoutRecord: 0, ...comidas },
+});
+
 test('desconocido vacío, cero como 0, subtotal y día sin completar en sus columnas; redondeo de la pantalla (PRO-10)', () => {
   const energia = def('nutricion.energia');
   const csv = csvDelAnalisis({
@@ -72,11 +82,20 @@ test('desconocido vacío, cero como 0, subtotal y día sin completar en sus colu
         definicion: energia,
         serie: serie(energia, [
           punto('2026-09-30', 1999), // fuera del rango: no se exporta
-          punto('2026-10-01', 1341.5, { coverage: { records: 4, recordsWithQuantities: 4, recordsWithoutQuantities: 0, daysWithData: null, daysInBucket: null } }),
-          punto('2026-10-02', 0),
-          punto('2026-10-03', null, { missing: [{ reason: 'SIN_CANTIDADES', count: 2 }] }),
-          punto('2026-10-04', 900, { quality: 'PARTIAL', missing: [{ reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 }] }),
-          punto('2026-10-08', 227, { partialBucket: true, corrected: true }),
+          punto('2026-10-01', 1341.5, { coverage: cobertura(4, 4, { expected: 4, withPlanOption: 4 }) }),
+          // Un cero registrado un día sin plan vigente: es 0, y no se dice que el día esté completo.
+          punto('2026-10-02', 0, { coverage: cobertura(1, 1, { daysKnown: 0, daysUndetermined: [{ reason: 'NO_ACTIVE_PLAN', days: 1 }] }) }),
+          punto('2026-10-03', null, { missing: [{ reason: 'SIN_CANTIDADES', count: 2 }], coverage: cobertura(2, 0, { expected: 2, withPlanOption: 2 }) }),
+          punto('2026-10-04', 900, {
+            quality: 'PARTIAL',
+            missing: [
+              { reason: 'COMIDA_DIFERENTE_SIN_CANTIDADES', count: 1 },
+              { reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 1 },
+            ],
+            coverage: cobertura(3, 2, { expected: 4, withPlanOption: 2, withDifferentMeal: 1, withoutRecord: 1 }),
+          }),
+          // Hoy, con una comida de cuatro: subtotal, y sin completar.
+          punto('2026-10-08', 227, { quality: 'PARTIAL', partialBucket: true, corrected: true, missing: [{ reason: 'COMIDA_DEL_PLAN_SIN_REGISTRO', count: 3 }], coverage: cobertura(1, 1, { expected: 4, withPlanOption: 1, withoutRecord: 3 }) }),
         ]),
       },
     ],
@@ -85,22 +104,29 @@ test('desconocido vacío, cero como 0, subtotal y día sin completar en sus colu
   assert.deepEqual(
     filas.map((f) => [f[3], f[6], f[7], f[8], f[11]]),
     [
-      ['2026-10-01', '1342', 'sin faltantes', 'no', 'no'],
-      ['2026-10-02', '0', 'sin faltantes', 'no', 'no'],
+      ['2026-10-01', '1342', 'cada comida del plan con registro, con cantidades', 'no', 'no'],
+      ['2026-10-02', '0', 'registros con cantidades, sin saber qué comidas indicaba el plan', 'no', 'no'],
       ['2026-10-03', '', 'sin valor conocido', 'no', 'no'],
       ['2026-10-04', '900', 'subtotal', 'no', 'no'],
-      ['2026-10-08', '227', 'sin faltantes', 'sí', 'sí'],
+      ['2026-10-08', '227', 'subtotal', 'sí', 'sí'],
     ],
   );
+  // DL-153: en nutrición la calidad nunca dice «sin faltantes»: lo registrado no es todo lo que se comió.
+  assert.doesNotMatch(csv, /sin faltantes/);
   assert.deepEqual(filas[0]!.slice(12, 15), ['4', '4', '0'], 'la cobertura del punto');
-  assert.equal(filas[2]![15], '2 registro(s) sin cantidades');
-  assert.equal(filas[3]![15], '1 comida(s) diferente(s) sin cantidades');
+  assert.deepEqual(
+    filas.map((f) => f[15]),
+    ['4 de 4 con registro', 'sin determinar: no había un plan vigente', '2 de 2 con registro', '3 de 4 con registro · 1 sin registro · 2 con opción del plan · 1 con comida diferente', '1 de 4 con registro · 3 sin registro'],
+    'las comidas del plan de cada día: el mismo conteo que la pantalla y la pestaña Registros (DL-153, criterios del 2026-10-24)',
+  );
+  assert.equal(filas[2]![16], '2 registro(s) sin cantidades');
+  assert.equal(filas[3]![16], '1 comida(s) diferente(s) sin cantidades, 1 comida(s) del plan sin registro');
   assert.match(csv, new RegExp(`Diccionario de métricas;${VERSION_DEL_DICCIONARIO}`));
   assert.match(csv, /Zona horaria;America\/Argentina\/Buenos_Aires/);
   assert.match(csv, /Generado;2026-10-08T18:00:00.000Z/);
   assert.match(csv, /Valor vacío: sin valor conocido \(nunca es 0\)/);
   assert.match(csv, /Agrupación;Energía: por día/);
-  assert.ok(filas.every((f) => f[16] === ''), 'en nutrición la clase de dato no aplica: la columna queda vacía');
+  assert.ok(filas.every((f) => f[17] === ''), 'en nutrición la clase de dato no aplica: la columna queda vacía');
 });
 
 test('la clase del dato antropométrico se exporta: medido, reportado por la persona o calculado por un método (PRO-10)', () => {
@@ -125,7 +151,7 @@ test('la clase del dato antropométrico se exporta: medido, reportado por la per
     ],
   });
   assert.deepEqual(
-    filasDeDatos(csv).map((f) => [f[3], f[6], f[16]]),
+    filasDeDatos(csv).map((f) => [f[3], f[6], f[17]]),
     [
       ['2026-09-01', '80,0', 'Medido'],
       ['2026-09-10', '79,0', 'Reportado por la persona, no medido'],
@@ -159,7 +185,7 @@ test('calculado no es siempre estimado: la exportación dice la naturaleza del m
     ],
   });
   assert.deepEqual(
-    filasDeDatos(csv).map((f) => f[16]),
+    filasDeDatos(csv).map((f) => f[17]),
     ['Calculado: un índice calculado sobre medidas, no una estimación (Índice de masa corporal (IMC))', 'Calculado: una estimación con una ecuación de predicción (Durnin y Womersley, hombres · Siri)'],
   );
 });
@@ -198,4 +224,57 @@ test('una celda de texto nunca es una fórmula, y un separador o una comilla no 
   assert.equal(filasDeDatos(csv)[0]![0], "'=cmd|/c calc · serie 1 (kg)");
   assert.equal(filasDeDatos(csv)[0]![6], '62,5');
   assert.equal(nombreDeLaExportacion('2026-07-11', '2026-10-08'), 'BE-analisis-2026-07-11-a-2026-10-08.csv');
+});
+
+test('DL-158: el objetivo y lo indicado en sus columnas; un día sin registros con indicado tiene su fila, con el valor vacío', () => {
+  const energia = def('nutricion.energia');
+  const proteinas = def('nutricion.proteinas');
+  const objetivo = [
+    { objectiveVersionId: 'o1', from: '2026-09-20', to: '2026-10-02', amount: { value: 2200, unit: 'kcal/day' as const }, energyShare: null },
+    { objectiveVersionId: 'o2', from: '2026-10-02', to: null, amount: { value: 1950, unit: 'kcal/day' as const }, energyShare: null },
+  ];
+  const indicado = [
+    { date: '2026-10-01', state: 'DETERMINED' as const, value: 2012.4, planVersionId: 'p1', dayTypeId: 'd', dayType: 'Día habitual' },
+    { date: '2026-10-02', state: 'DETERMINED' as const, value: 1890, planVersionId: 'p1', dayTypeId: 'd', dayType: 'Día habitual' },
+    { date: '2026-10-03', state: 'UNDETERMINED' as const, reason: 'SEVERAL_OPTIONS' as const, planVersionId: 'p1', mealsWithSeveralOptions: [{ meal: 'Almuerzo', options: 3 }] },
+    { date: '2026-10-04', state: 'UNDETERMINED' as const, reason: 'NO_ACTIVE_PLAN' as const, planVersionId: null, mealsWithSeveralOptions: [] },
+  ];
+  // Una semana que empieza en el rango (la exportación no lleva las que empiezan antes) y en la que cambió el objetivo.
+  const semanal: SerieAnalitica = { ...serie(energia, [punto('2026-10-01', 1500, { dateEnd: '2026-10-04' })]), grain: 'WEEK', aggregation: 'MEAN_OF_DAYS_WITH_DATA' };
+  const csv = csvDelAnalisis({
+    asesorado: 'Asesorado · 9b2284',
+    desde: '2026-10-01',
+    hasta: '2026-10-04',
+    zona: 'America/Argentina/Buenos_Aires',
+    generadoEl: '2026-10-04T18:00:00.000Z',
+    series: [
+      { nombre: 'Calorías registradas', definicion: energia, serie: serie(energia, [punto('2026-10-01', 1341.5, { coverage: cobertura(2, 2, { expected: 2, withPlanOption: 2 }) }), punto('2026-10-03', null)]), comparacion: { objetivo, indicado } },
+      { nombre: 'Proteínas registradas', definicion: proteinas, serie: serie(proteinas, [punto('2026-10-01', 80)]), comparacion: { objetivo: [{ objectiveVersionId: 'o3', from: '2026-09-01', to: null, amount: null, energyShare: 0.3 }], indicado: [] } },
+      { nombre: 'Calorías por semana', definicion: energia, serie: semanal, comparacion: { objetivo, indicado } },
+      { nombre: 'Sin comparación', definicion: energia, serie: serie(energia, [punto('2026-10-02', 10)]) },
+    ],
+  });
+  const filas = filasDeDatos(csv);
+  const objetivoCol = COLUMNAS_DE_LA_EXPORTACION.indexOf('Objetivo del profesional (por día)');
+  const indicadoCol = COLUMNAS_DE_LA_EXPORTACION.indexOf('Indicado en el plan');
+  assert.deepEqual([objetivoCol, indicadoCol], [18, 19], 'las columnas nuevas van al final: las de antes no se mueven');
+  assert.deepEqual(
+    filas.map((f) => [f[0], f[3], f[6], f[9], f[objetivoCol], f[indicadoCol]]),
+    [
+      ['Calorías registradas', '2026-10-01', '1342', '1', '2200', '2012'],
+      // El día del cambio de objetivo ya vale el nuevo; sin registros, pero con indicado: su fila, con el valor vacío.
+      ['Calorías registradas', '2026-10-02', '', '0', '1950', '1890'],
+      ['Calorías registradas', '2026-10-03', '', '1', '1950', 'sin indicado: comidas con varias opciones'],
+      // El 2026-10-04 no tiene registros ni indicado: no hay fila (el gráfico tampoco dibuja nada).
+      ['Proteínas registradas', '2026-10-01', '80,0', '1', 'proporción de las calorías 0,3', ''],
+      ['Calorías por semana', '2026-10-01', '1500', '1', '2200 y 1950', 'es por día: no se agrupa por semana'],
+      ['Sin comparación', '2026-10-02', '10', '1', '', ''],
+    ],
+  );
+  // La fila del día sin registros lo dice en la calidad, y no tiene cobertura que contar más que cero.
+  assert.deepEqual(filas[1]!.slice(6, 16), ['', 'sin registros', '', '0', '', '', '0', '0', '0', '']);
+  assert.equal(filas[0]![7], 'cada comida del plan con registro, con cantidades');
+  assert.ok(filas.every((f) => f.length === COLUMNAS_DE_LA_EXPORTACION.length), 'cada fila tiene todas las columnas');
+  assert.match(csv, /Indicado en el plan: lo que indicaba el plan ese día, solo si cada comida tenía una sola opción/);
+  assert.match(csv, /Las alternativas no se suman ni se promedian/);
 });

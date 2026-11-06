@@ -195,8 +195,13 @@ const RUTAS = [
   { nombre: 'plan-de-entrenamiento', id: 'p1' },
   { nombre: 'mis-solicitudes' },
   { nombre: 'mi-solicitud', id: 's1' },
+  // DL-165 D-9 (FR-10): «Mis hábitos», desde Información.
+  { nombre: 'mis-habitos' },
   { nombre: 'sesion-de-entrenamiento', draftId: 'd1', sesion: {}, fecha: '2026-10-01' },
   { nombre: 'ejecucion-de-entrenamiento', id: 'e1' },
+  { nombre: 'corregir-ejecucion', id: 'e1' },
+  // PA-03: el registro rápido de una sesión del plan.
+  { nombre: 'registro-rapido', occurrenceId: 'o1', fecha: '2026-11-02', etiqueta: 'Piernas A', sessionId: 's1', planId: 'p1' },
 ];
 const RAICES = ['inicio', 'hoy', 'entrenamiento', 'mi-evolucion', 'mis-solicitudes'].map((nombre) => ({ nombre }));
 const conSesion = RUTAS.filter(nav.requiereSesion);
@@ -432,7 +437,9 @@ test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el bot�
   const declaran = {
     'opcion-de-comida.tsx': ['el registro de «${comida.label}»'],
     'comida-diferente.tsx': ['lo que comiste en «${comida}»'],
-    'entrenamiento.tsx': ['lo que escribiste en esta sesión', 'lo que cargaste en «${p.exerciseName}»', 'la corrección del registro'],
+    'entrenamiento.tsx': ['lo que escribiste en esta sesión', 'lo que cargaste en «${p.exerciseName}»'],
+    // PA-04: la corrección pasó a su pantalla; el texto vive en su módulo (`correccion-de-la-sesion.ts`).
+    'correccion-de-entrenamiento.tsx': ['useCambiosSinGuardar(hayAlgoSinGuardar(estado, inicial) ? T.loQueEscribiste : null)'],
     'formularios.tsx': ['tus respuestas'],
     'registro.tsx': ['los datos de tu cuenta nueva'],
   };
@@ -440,6 +447,7 @@ test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el bot�
     const fuente = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas', archivo), 'utf8');
     for (const texto of textos) assert.ok(fuente.includes(texto), `${archivo} declara «${texto}»`);
   }
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/correccion-de-la-sesion.ts'), 'utf8'), /loQueEscribiste: 'la corrección del registro'/);
 });
 
 test('«Volver a Información», dentro de una solicitud, va a Información aunque se haya abierto desde Inicio, y pregunta antes', () => {
@@ -556,4 +564,23 @@ test('la raíz de la APK usa la restauración y la descarta cuando la persona ar
   assert.match(APP, /restauracion\.pedir\(/);
   assert.match(APP, /restauracion\.alCambiarElAlto\(/);
   assert.doesNotMatch(APP, /Date\.now\(\) \+ 1500/, 'el plazo fijo de 1,5 s dejaba la zona arriba con la red del teléfono');
+});
+
+test('PA-04: la corrección se abre desde el detalle, vuelve a él, y al registrarla el detalle muestra el aviso', () => {
+  for (const raiz of [{ nombre: 'inicio' }, { nombre: 'entrenamiento' }, HISTORIAL]) {
+    const detalle = nav.navegar(raiz, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' });
+    const correccion = nav.navegar(detalle, { nombre: 'corregir-ejecucion', id: 'e1' });
+    assert.deepEqual(nav.anterior(correccion), detalle, `volver desde la corrección, abierta desde ${raiz.nombre}`);
+    assert.equal(nav.moduloDe(correccion), 'entrenamiento');
+    // Registrar vuelve al detalle que ya estaba en la cadena, sin duplicarlo, con su origen y con el aviso.
+    const registrada = nav.navegar(correccion, { nombre: 'ejecucion-de-entrenamiento', id: 'e1', aviso: 'Corrección registrada.' }, 'reemplazar');
+    assert.deepEqual(registrada, { ...detalle, aviso: 'Corrección registrada.' }, `desde ${raiz.nombre}`);
+    assert.deepEqual(nav.anterior(registrada), raiz);
+  }
+  // Sin origen, la corrección vuelve al detalle de esa misma ejecución.
+  assert.deepEqual(nav.anterior({ nombre: 'corregir-ejecucion', id: 'e7' }), { nombre: 'ejecucion-de-entrenamiento', id: 'e7' });
+  assert.equal(nav.textoDeVolverA({ nombre: 'ejecucion-de-entrenamiento', id: 'e1' }), 'Volver a la sesión registrada');
+  const ENTRENAMIENTO = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), 'utf8');
+  assert.match(ENTRENAMIENTO, /ir\(\{ nombre: 'corregir-ejecucion', id: x\.executionId \}\)/, '«Corregir registro» abre la pantalla de la corrección');
+  assert.match(APP, /ruta\.nombre === 'corregir-ejecucion' \? <PantallaDeCorreccion /);
 });

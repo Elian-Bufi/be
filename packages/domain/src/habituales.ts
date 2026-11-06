@@ -60,3 +60,18 @@ export const itemsDeLaComida = (m: ComidaEntrada): number => m.options.reduce((n
 
 /** El mismo nombre normalizado que las plantillas: la unicidad por profesional ignora mayúsculas, acentos y espacios repetidos. */
 export const nombreNormalizadoDeHabitual = nombreNormalizadoDePlantilla;
+
+/**
+ * Los habituales que coinciden con lo que se escribe en el buscador de «Agregar ítem» o «Agregar ejercicio» (bloque 5 del
+ * encargo de consolidación, 2026-10-19): el mismo campo filtra los habituales mientras se escribe y busca en el catálogo
+ * al enviar. Sin texto, todos. Compara sin acentos ni mayúsculas, palabra por palabra y en cualquier orden: «cocido
+ * arroz» encuentra «Arroz blanco, cocido». Solo filtra lo que el profesional ya marcó: no busca ni ordena por relevancia.
+ */
+export function habitualesQueCoinciden<T extends { readonly name: string }>(habituales: readonly T[], texto: string): readonly T[] {
+  const palabras = nombreNormalizadoDePlantilla(texto).split(' ').filter(Boolean);
+  if (palabras.length === 0) return habituales;
+  return habituales.filter((h) => {
+    const nombre = nombreNormalizadoDePlantilla(h.name);
+    return palabras.every((p) => nombre.includes(p));
+  });
+}

@@ -30,9 +30,11 @@ import { EvaluacionDeEntrenamientoResponseSchema, type RespuestaCitada } from '@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { circuitoDeEntrenamiento, cuerpoDeEvaluacionDeEntrenamiento, type CircuitoDeEntrenamiento } from './soporte-entrenamiento';
+import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 
-const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
-const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
+/** Una copia de P0 de «Antecedentes para entrenamiento» (DL-164 FI-02: la v1 es histórica y la vigente usa tipos nuevos, que FRM-07 y FRM-08 no sirven). */
+let VERSION_ENTRENAMIENTO: string;
+const SEIS =['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
 const ROTULO_DIAS = 'Cuántos días por semana podrías reservar de manera realista';
 const ROTULO_OBJETIVO = 'Qué te gustaría poder hacer o mejorar con el entrenamiento';
 
@@ -44,6 +46,7 @@ let contador = 0;
 
 beforeAll(async () => {
   app = await appDePrueba();
+  ({ versionId: VERSION_ENTRENAMIENTO } = await sembrarAntecedentesDeP0(prisma, 'conc'));
 }, 120_000);
 afterAll(async () => {
   await app.close();

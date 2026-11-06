@@ -40,7 +40,7 @@ import {
   ValoracionSchema,
   ZonaHorariaSchema,
 } from './contratos-nutricion';
-import { FuenteExternaSchema } from './contratos-procedencia-externa';
+import { FuenteExternaSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
@@ -453,11 +453,16 @@ export type EjercicioDeCatalogo = z.infer<typeof EjercicioDeCatalogoSchema>;
 export const ListaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioDeCatalogoSchema), page: PaginaSchema });
 /**
  * DL-141 D-2: un ejercicio que encontró el buscador del website (API-TRN-13-BUSQUEDA), con el nombre alternativo que
- * coincidió con lo buscado. API-TRN-13, la que lee la APK instalada con su esquema congelado, responde sin este campo.
+ * coincidió con lo buscado y (D-6) lo que hace falta para decir su origen en la fila. API-TRN-13, la que lee la APK
+ * instalada con su esquema congelado, responde sin estos campos. Desde DL-151 también busca con esta operación la
+ * sustitución de la APK: una APK construida sobre una base anterior a D-6 rechazaría `origin`, y cuando se publique una
+ * APK con esta lectura su forma queda congelada (DL-152).
  */
 export const EjercicioEncontradoSchema = EjercicioDeCatalogoSchema.extend({
   /** El nombre alternativo que coincidió («Bench press» al buscar «bench press»), tal como está guardado; `null` si coincidió el principal, o sin texto. */
   matchedAlternativeName: z.string().nullable(),
+  /** DL-141 D-6: quién lo cargó y si su correspondencia con la fuente es aproximada. */
+  origin: OrigenEnElBuscadorSchema,
 });
 export type EjercicioEncontrado = z.infer<typeof EjercicioEncontradoSchema>;
 export const BusquedaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioEncontradoSchema), page: PaginaSchema });
@@ -609,8 +614,18 @@ export const SerieEjecutadaSchema = z.strictObject({
   completedRepetitions: z.number().int().nonnegative().max(1000).nullable(),
   rir: z.number().nonnegative().max(20).finite().nullable(),
   perceivedExertion: z.number().min(0).max(10).nullable(),
+  /**
+   * Cómo se cargó la serie (DL-161). `TYPED`: la persona escribió algún valor. `AS_PLANNED`: la tildó sin escribir,
+   * con lo planificado a la vista, y los valores son los del plan que confirmó (B10-06 §56: repetir el objetivo con
+   * confirmación visible). El profesional ve la diferencia. Ausente = `TYPED`: así quedó todo lo registrado antes.
+   */
+  recordedAs: z.enum(['TYPED', 'AS_PLANNED']).optional(),
+  /** Cuánto duró la serie, en segundos (DL-161): la midió el cronómetro o la escribió la persona; nunca se infiere. */
+  durationSeconds: z.number().int().nonnegative().max(36000).nullable().optional(),
 });
 export type SerieEjecutadaApi = z.infer<typeof SerieEjecutadaSchema>;
+/** Cómo se cargó una serie; ausente se lee como `TYPED` (DL-161). */
+export type FormaDeCarga = NonNullable<SerieEjecutadaApi['recordedAs']>;
 /** «Ejercicio realizado + resumen» (B10-06:737-738). Solo lo capturado: no se sintetizan series (09v10:1099-1101). */
 export const ResumenDeEjercicioSchema = z.strictObject({ description: Texto(1000) });
 export const ResumenDeSesionSchema = z.strictObject({ description: Texto(2000) });

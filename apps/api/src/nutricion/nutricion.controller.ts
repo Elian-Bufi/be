@@ -261,6 +261,13 @@ export class NutricionController {
     return this.revisiones.consultar(actorDe(req), reviewId, query, contextoDe(req));
   }
 
+  /** API-NUT-19-EVIDENCIA (DL-154): la evidencia que guardó la revisión, resuelta con el permiso de hoy. */
+  @Get('nutrition/reviews/:reviewId/evidence')
+  evidenciaDeRevision(@Param('reviewId') reviewId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.revisiones.evidencia(actorDe(req), reviewId, query, contextoDe(req));
+  }
+
   /** API-NUT-19-LISTA (REV-A, DL-134): las revisiones de Nutrición propias, completas. */
   @Get('me/nutrition/reviews')
   misRevisiones(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {

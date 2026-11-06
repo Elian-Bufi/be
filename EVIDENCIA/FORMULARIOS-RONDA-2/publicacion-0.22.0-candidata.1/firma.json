@@ -1,0 +1,26 @@
+{
+  "origen": {
+    "archivo": "be-0.22.0-candidata.1-1254269-sin-firma.aab",
+    "sha256": "402c94bdb34dbf60a1f7c250043e5f12e0fe470e01127d8358cef997769a8992",
+    "entradas": 1303
+  },
+  "artefacto": "C:\\Users\\bufim\\BE-artefactos\\aab\\actions-42163070554\\aab-sin-firma-1254269843c2dcd4270df349e48d2a59e1b450df\\0.22.0-candidata.1\\be-0.22.0-candidata.1-1254269.aab",
+  "sha256": "30cb860ebdab9ad252b0e25a125a0ff1f6358f700d875b782e15e7e631e4e6f7",
+  "bytes": 58044413,
+  "certificadoSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+  "certificadoEsperado": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+  "entradasComparadas": 1303,
+  "entradasAgregadasPorLaFirma": [
+    "META-INF/MANIFEST.MF",
+    "META-INF/BE.SF",
+    "META-INF/BE.RSA"
+  ],
+  "certificadoAutofirmado": true,
+  "jarsignerVerifyStrict": {
+    "codigo": 4,
+    "lectura": "verificado; el único aviso es la cadena de un certificado autofirmado, lo normal en Android"
+  },
+  "keystore": "keystore.jks",
+  "nota": "alias y contraseñas solo en el proceso de jarsigner (entorno y argumento), nunca impresos ni escritos",
+  "firmadoEn": "2026-11-06T04:43:35.208Z"
+}

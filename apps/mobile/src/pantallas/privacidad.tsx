@@ -123,7 +123,7 @@ export function PantallaDePrivacidad({
                   <Insignia texto={COPY_VINCULO.estadoDeConsentimiento[acto.state]} positiva={acto.state === 'ACTIVE'} etiqueta="Estado" />
                   <Dato etiqueta="Otorgado" valor={fecha(acto.acceptedAt)} />
                   {acto.revokedAt ? <Dato etiqueta="Revocado" valor={fecha(acto.revokedAt)} /> : null}
-                  <Dato etiqueta="Versión" valor={acto.consentVersionId} />
+                  <Dato etiqueta="Versión" valor={acto.consentVersionId} apilado />
                 </Tarjeta>
               ))
             : null}
@@ -213,7 +213,7 @@ export function TratamientoDeDatosDeSalud({
       <>
         <Insignia texto="Otorgado" positiva etiqueta="Tratamiento de datos de salud" />
         <Dato etiqueta="Desde" valor={fecha(actual.acceptedAt)} />
-        <Dato etiqueta="Versión" valor={actual.consentVersionId} />
+        <Dato etiqueta="Versión" valor={actual.consentVersionId} apilado />
         <Boton texto={COPY_VINCULO.revocarA3} tipo="peligroSecundario" onPress={revocar.abrir} />
         <DialogoDeConfirmacion
           visible={revocar.visible}

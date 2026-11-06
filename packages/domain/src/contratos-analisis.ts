@@ -66,6 +66,8 @@ export const TipoDeOrigenSchema = z.enum([
   'FOLLOW_UP_PROCESS',
   /** DL-140: una nota de coordinación entre los profesionales de la persona (RF-057; UC-E07). */
   'COORDINATION_NOTE',
+  /** DL-165 D-8: una Solicitud de formulario; «Abrir registro» lleva a la solicitud, en Información. */
+  'FORM_REQUEST',
 ]);
 export type TipoDeOrigen = z.infer<typeof TipoDeOrigenSchema>;
 export const OrigenDeDatoSchema = z.strictObject({ type: TipoDeOrigenSchema, id: IdOpaco });
@@ -78,8 +80,12 @@ export const DetalleFactualSchema = z.strictObject({ label: z.string().min(1), v
 
 /**
  * Calidad de un punto:
- * - `COMPLETE`: todo lo que el punto declara sumar o medir está;
- * - `PARTIAL`: es un **subtotal de lo registrado** (falta algún dato: registros sin cantidades o un nutriente sin dato);
+ * - `COMPLETE`: todo lo que el punto declara sumar o medir está. En nutrición quiere decir que cada registro tiene sus
+ *   cantidades y que no se sabe de ninguna comida del plan sin registro: **no** que el día esté completo ni que la
+ *   persona haya comido exactamente eso. Si las comidas del plan de ese día no se pueden conocer, lo dice
+ *   `coverage.planMeals`, y la palabra en pantalla también (DL-153);
+ * - `PARTIAL`: es un **subtotal de lo registrado** (falta algún dato: registros sin cantidades, un nutriente sin dato o,
+ *   desde DL-153, una comida del plan sin ningún registro);
  * - `UNKNOWN`: hay registros, pero ningún valor conocido para esta métrica (`value: null`).
  */
 export const CalidadDePuntoSchema = z.enum(['COMPLETE', 'PARTIAL', 'UNKNOWN']);
@@ -98,7 +104,31 @@ export type Agregacion = z.infer<typeof AgregacionSchema>;
 /** Lo que falta en un punto, por motivo y cuántas veces (por ejemplo, «2 registros sin cantidades»). */
 export const FaltanteDelPuntoSchema = z.strictObject({ reason: z.string().min(1), count: z.number().int().positive() });
 
-/** La cobertura que sostiene un punto de nutrición: qué se registró y con qué cantidades. */
+/**
+ * Las comidas del plan detrás de un valor de nutrición (extensión de BE, DL-153; encargo del 2026-10-23): cuántas indicaba
+ * el plan en los días en que se pueden conocer y cómo quedó cada una. Es el criterio de la pestaña Registros
+ * (`construirContraste`, API-NUT-17): el plan que regía ese día y su día tipo, el que usó la persona al registrar o el
+ * único del plan.
+ * - Si no había un plan vigente, o el plan tiene más de un día tipo y ese día no hay registros del plan que digan cuál,
+ *   las comidas esperadas **no se conocen y no se inventan**: el día va en `daysUndetermined`, con su motivo.
+ * - Cada comida conocida está en un solo estado: con la opción del plan registrada, con una comida diferente registrada
+ *   en ella, o sin ningún registro. Las tres suman `expected`.
+ * - Es una cuenta, no un cumplimiento: una comida sin registro es un dato que falta, nunca un cero ni un incumplimiento.
+ */
+export const ComidasDelPlanSchema = z.strictObject({
+  /** Días con registros en los que se conocen las comidas del plan (en un punto diario, 0 o 1). */
+  daysKnown: z.number().int().nonnegative(),
+  /** Días con registros en los que no se pueden conocer, por motivo. */
+  daysUndetermined: z.array(z.strictObject({ reason: z.enum(['NO_ACTIVE_PLAN', 'DAY_TYPE_NOT_RECORDED']), days: z.number().int().positive() })),
+  /** Las comidas que indicaba el plan en los días conocidos. */
+  expected: z.number().int().nonnegative(),
+  withPlanOption: z.number().int().nonnegative(),
+  withDifferentMeal: z.number().int().nonnegative(),
+  withoutRecord: z.number().int().nonnegative(),
+});
+export type ComidasDelPlan = z.infer<typeof ComidasDelPlanSchema>;
+
+/** La cobertura que sostiene un punto de nutrición: qué se registró, con qué cantidades y qué comidas del plan tienen registro. */
 export const CoberturaDelPuntoSchema = z.strictObject({
   records: z.number().int().nonnegative(),
   recordsWithQuantities: z.number().int().nonnegative(),
@@ -106,6 +136,8 @@ export const CoberturaDelPuntoSchema = z.strictObject({
   /** En el grano semanal: los días con al menos un valor conocido, y los días del balde que caen en el período. */
   daysWithData: z.number().int().nonnegative().nullable(),
   daysInBucket: z.number().int().positive().nullable(),
+  /** Extensión de BE (DL-153): las comidas del plan de los días del punto. Solo la lee el website (API-PRJ-01). */
+  planMeals: ComidasDelPlanSchema,
 });
 export type CoberturaDelPunto = z.infer<typeof CoberturaDelPuntoSchema>;
 
@@ -228,6 +260,46 @@ export const EscalonDeRequerimientoSchema = z.strictObject({
   unit: z.literal('kcal/day'),
 });
 
+/**
+ * WP-NUTRICION-COMPARACION (DL-158): el **objetivo del profesional** para la métrica, un escalón por versión. `amount` es lo
+ * que se dibuja (kcal o g por día); un macro que el objetivo expresa como proporción de las calorías trae `energyShare`
+ * y `amount: null`: BE no lo convierte a gramos.
+ */
+export const EscalonDelObjetivoSchema = z.strictObject({
+  objectiveVersionId: IdOpaco,
+  from: FechaLocalSchema,
+  to: FechaLocalSchema.nullable(),
+  amount: z.strictObject({ value: z.number().nonnegative().finite(), unit: z.enum(['kcal/day', 'g/day']) }).nullable(),
+  energyShare: z.number().nonnegative().finite().nullable(),
+});
+export type EscalonDelObjetivoApi = z.infer<typeof EscalonDelObjetivoSchema>;
+
+/** Por qué un día no tiene «Indicado en el plan» (el dominio: `MotivoSinIndicadoDelDia`). */
+export const MotivoSinIndicadoDelDiaSchema = z.enum(['NO_ACTIVE_PLAN', 'PLAN_VERSION_CHANGED', 'DAY_TYPE_UNKNOWN', 'NO_MEALS', 'SEVERAL_OPTIONS', 'EXCHANGE_PORTIONS', 'NUTRIENT_DATA_MISSING']);
+
+/**
+ * DL-158: lo **indicado en el plan** de un día, en la unidad de la métrica, solo si el plan no deja elegir (una versión, el
+ * día tipo conocido y una sola opción por comida). Si no, el motivo; con `SEVERAL_OPTIONS`, qué comidas y cuántas opciones.
+ */
+export const IndicadoDelDiaSchema = z.discriminatedUnion('state', [
+  z.strictObject({ date: FechaLocalSchema, state: z.literal('DETERMINED'), value: z.number().nonnegative().finite(), planVersionId: IdOpaco, dayTypeId: IdOpaco, dayType: z.string() }),
+  z.strictObject({
+    date: FechaLocalSchema,
+    state: z.literal('UNDETERMINED'),
+    reason: MotivoSinIndicadoDelDiaSchema,
+    planVersionId: IdOpaco.nullable(),
+    mealsWithSeveralOptions: z.array(z.strictObject({ meal: z.string(), options: z.number().int().nonnegative() })),
+  }),
+]);
+export type IndicadoDelDiaApi = z.infer<typeof IndicadoDelDiaSchema>;
+
+/** DL-158: lo indicado de la opción registrada en una comida, con la versión que cita el registro, o por qué no hay. */
+export const IndicadoDeLaComidaSchema = z.discriminatedUnion('state', [
+  z.strictObject({ recordId: IdOpaco, state: z.literal('DETERMINED'), value: z.number().nonnegative().finite(), planVersionId: IdOpaco }),
+  z.strictObject({ recordId: IdOpaco, state: z.literal('UNDETERMINED'), reason: z.enum(['DIFFERENT_MEAL', 'OPTION_NOT_FOUND', 'NUTRIENT_DATA_MISSING']), planVersionId: IdOpaco }),
+]);
+export type IndicadoDeLaComidaApi = z.infer<typeof IndicadoDeLaComidaSchema>;
+
 export const ResultadoDeProyeccionNutricionalSchema = z.strictObject({
   kind: z.literal('NUTRITION_PRESCRIBED_VS_RECORDED'),
   metric: MetricaNutricionalSchema,
@@ -238,6 +310,10 @@ export const ResultadoDeProyeccionNutricionalSchema = z.strictObject({
     energyRequirement: z.array(EscalonDeRequerimientoSchema),
     /** Por qué lo previsto de las opciones no se suma como un objetivo diario (alternativas por comida). */
     note: z.string(),
+    /** DL-158: el objetivo del profesional para esta métrica (también los macros), un escalón por versión. */
+    objectiveSteps: z.array(EscalonDelObjetivoSchema),
+    /** DL-158: lo indicado en el plan, por día (cada día del período) y por comida registrada (cada registro efectivo). */
+    planned: z.strictObject({ days: z.array(IndicadoDelDiaSchema), meals: z.array(IndicadoDeLaComidaSchema) }),
   }),
   coverage: z.strictObject({
     daysInPeriod: z.number().int().positive(),
@@ -251,6 +327,11 @@ export const ResultadoDeProyeccionNutricionalSchema = z.strictObject({
     annulledExcluded: z.number().int().nonnegative(),
     /** Registros cuyo valor vigente es una rectificación: cuentan una sola vez, en su versión efectiva. */
     rectifiedCountedOnce: z.number().int().nonnegative(),
+    /**
+     * Extensión de BE (DL-153): las comidas del plan de los días con registros del período, **sin el día de hoy**, que
+     * sigue en curso (todavía se puede registrar).
+     */
+    planMeals: ComidasDelPlanSchema,
   }),
   planVersions: z.array(VigenciaDePlanSchema),
 });
@@ -363,6 +444,17 @@ export const TIPOS_DE_EVENTO = [
    * no tenga ese alcance: no es un dato de esa área sino una comunicación dirigida a él.
    */
   'COORDINATION_NOTE_RECORDED',
+  /**
+   * DL-165 D-8 (FR-09): los formularios, a la vista. Pedido (el profesional lo pidió), respondido (la persona respondió
+   * sola), cargado (el profesional lo cargó con la persona), confirmado (la persona confirmó lo cargado) y rechazado (dijo
+   * «No es correcto»). Los ve solo el profesional que pidió la Solicitud, en sus Alcances permitidos: es la regla de
+   * API-FRI-03. Su `domain` es el Alcance de la Solicitud. Nunca llevan las respuestas: solo cuántas y cuándo.
+   */
+  'FORM_REQUESTED',
+  'FORM_RESPONDED',
+  'FORM_LOADED',
+  'FORM_CONFIRMED',
+  'FORM_REJECTED',
 ] as const;
 export const TipoDeEventoSchema = z.enum(TIPOS_DE_EVENTO);
 export type TipoDeEvento = z.infer<typeof TipoDeEventoSchema>;

@@ -209,3 +209,49 @@ test('«hoy» se dice con su día de la semana y su año, sin pasar por la zona 
   assert.equal(diaConSuSemana('2026-09-28'), 'lunes 28 sept 2026');
   assert.equal(diaConSuSemana(''), '');
 });
+
+// ─── La acción principal de la ficha (bloque 5 del encargo de consolidación) ─────────────────────────────────────
+
+const { accionDeLaFicha, rutaDeLaAccion } = await import('../apps/web/src/app/pro/advisees/accion-de-la-ficha.ts');
+
+test('la acción principal de la ficha: revisión de la semana, después el borrador, después empezar; con todo al día, ninguna', () => {
+  const HOY = '2026-10-19';
+  const plan = (nextReviewAt = null) => ({ planVersionId: 'p', activatedAt: '2026-09-01T12:00:00.000Z', nextReviewAt });
+  const resumen = (cambios = {}) => ({ activePlan: null, objective: null, lastReview: null, draftPlan: null, registeredExecutions: 0, lastExecutionAt: null, registeredIntakes: 0, lastIntakeAt: null, ...cambios });
+  const legible = (summary) => ({ available: true, relationshipId: 'r', summary });
+  const ajeno = { available: false, reason: 'NOT_AVAILABLE_TO_VIEW' };
+  const dominios = (nutrition, training) => ({ nutrition, training, anthropometry: ajeno });
+
+  // Persona nueva, solo Entrenamiento: empezar, sin decir el área.
+  assert.deepEqual(accionDeLaFicha(dominios(ajeno, legible(resumen())), HOY), { tipo: 'empezar', area: 'ENTRENAMIENTO', texto: 'Empezar el plan', vista: 'plan', extra: '' });
+  // Con borrador: seguirlo.
+  assert.equal(accionDeLaFicha(dominios(ajeno, legible(resumen({ draftPlan: { planVersionId: 'b', recordedAt: '2026-10-18T12:00:00.000Z', fromReviewId: null } }))), HOY).tipo, 'borrador');
+  // Plan vigente al día: ninguna.
+  assert.equal(accionDeLaFicha(dominios(ajeno, legible(resumen({ activePlan: plan('2026-11-30') }))), HOY), null);
+  // La revisión de la semana gana al borrador y a empezar; con dos áreas, la más cercana, con su nombre.
+  const dos = dominios(legible(resumen({ activePlan: plan('2026-10-24') })), legible(resumen({ activePlan: plan('2026-10-17'), draftPlan: { planVersionId: 'b', recordedAt: '2026-10-18T12:00:00.000Z', fromReviewId: null } })));
+  assert.deepEqual(accionDeLaFicha(dos, HOY), { tipo: 'revisar', area: 'ENTRENAMIENTO', texto: 'Preparar la revisión de Entrenamiento', vista: 'revisiones', extra: '&preparar=1' });
+  // Sin revisión cercana y con dos áreas, el borrador dice de qué área es.
+  assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan() })), legible(resumen({ draftPlan: { planVersionId: 'b', recordedAt: '2026-10-18T12:00:00.000Z', fromReviewId: null } }))), HOY).texto, 'Seguir el borrador de Entrenamiento');
+  // Lo que el profesional no puede leer no cuenta.
+  assert.equal(accionDeLaFicha(dominios(ajeno, ajeno), HOY), null);
+  // Un área legible sin ningún dato llega con el resumen en null: es un área sin plan, y la acción es empezarlo.
+  assert.deepEqual(accionDeLaFicha(dominios(legible(null), ajeno), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan', vista: 'plan', extra: '' });
+  // La dirección: el área, la vista y, para la revisión, el formulario abierto (`preparar=1`); el id va codificado.
+  assert.equal(rutaDeLaAccion(accionDeLaFicha(dos, HOY), 'a b'), '/pro/advisees/training?id=a%20b&vista=revisiones&preparar=1');
+  assert.equal(rutaDeLaAccion(accionDeLaFicha(dominios(legible(resumen()), ajeno), HOY), 'x'), '/pro/advisees/nutrition?id=x&vista=plan');
+});
+
+// ─── La evaluación que el objetivo propone de entrada (bloque 5) ───────────────────────────────────────────────────
+
+const { evaluacionMasReciente } = await import('../apps/web/src/app/pro/advisees/evaluacion-reciente.ts');
+
+test('el objetivo propone la evaluación más reciente; sin evaluaciones, ninguna', () => {
+  const evs = [
+    { evaluationId: 'vieja', occurredAt: '2026-09-01T10:00:00.000Z' },
+    { evaluationId: 'nueva', occurredAt: '2026-10-19T09:30:00.000Z' },
+    { evaluationId: 'media', occurredAt: '2026-10-01T10:00:00.000Z' },
+  ];
+  assert.equal(evaluacionMasReciente(evs), 'nueva');
+  assert.equal(evaluacionMasReciente([]), '');
+});

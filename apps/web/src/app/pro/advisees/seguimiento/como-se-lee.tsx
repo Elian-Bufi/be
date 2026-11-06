@@ -39,7 +39,10 @@ function DeAnalizar() {
           <strong>Con un punto adentro:</strong> lo calculó un método. La lectura dice si es un índice, una suma o una estimación.
         </Renglon>
         <Renglon esencial muestra={<Marca indice={0} plan />}>
-          <strong>Línea discontinua:</strong> lo planificado en la misma unidad; hoy, el objetivo de calorías. Va junto a lo registrado para ubicarlo: no se resta ni se califica.
+          <strong>Línea discontinua:</strong> el objetivo del profesional en la misma unidad (las calorías o un macro en gramos), un escalón por versión del objetivo. Va junto a lo registrado para ubicarlo: no se resta ni se califica.
+        </Renglon>
+        <Renglon esencial muestra={<Marca indice={0} indicado />}>
+          <strong>Rombos huecos:</strong> lo indicado en el plan para cada día, con las porciones de la versión que regía. Hay rombo solo si el plan no deja elegir (una sola opción en cada comida): BE no elige entre alternativas, no las suma ni las promedia. Lo indicado de cada comida registrada está en «Ver origen».
         </Renglon>
         <Renglon esencial muestra={<span className="muestra-de-hueco" />}>
           <strong>Gris:</strong> días sin registros. No son ceros.
@@ -116,7 +119,8 @@ function DeResumen() {
         </Renglon>
         <Renglon esencial muestra={<Icono nombre="analizar" tamano={20} />}>
           <strong>Un indicador</strong> es un número del período con su regla: la media de los días con valor, la mediana de las sesiones o la última toma del tramo comparable. Debajo, cuántos días, sesiones o tomas lo
-          sostienen y lo que cambia cómo se lee: cuántos de esos días son subtotales (falta algún dato) y que hoy, en curso, no entra en la media. La cobertura entera de cada uno está en «Analizar». No hay verde ni rojo,
+          sostienen y lo que cambia cómo se lee: cuántos de esos días son subtotales (falta algún dato) y que hoy, en curso, no entra en la media. En Nutrición, el número es lo registrado: no es la ingesta real. La
+          cobertura entera de cada uno está en «Analizar». No hay verde ni rojo,
           ni distancia a un objetivo.
         </Renglon>
         <Renglon muestra={<Marca indice={0} />}>

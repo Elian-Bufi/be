@@ -419,7 +419,8 @@ export function LineaDeTiempo() {
       {primera ? (
         <>
           {entradas.length === 0 ? (
-            hayFiltros || corte ? (
+            // Con el período vacío, lo que falta no es una coincidencia: se dice el vacío del período, no «Hay 0 hechos».
+            (hayFiltros || corte) && todoElPeriodo !== 0 ? (
               <EstadoVacio
                 titulo="Ningún hecho coincide con los filtros."
                 accion={
@@ -678,6 +679,8 @@ function Hecho({ e, zona, enGrupo, buscado = '', elegido, onAbrir }: { e: Entrad
             {enGrupo ? null : <span className="visualmente-oculto entrada__area">{NOMBRE_DE_DOMINIO[e.domain]}: </span>}
             <strong className="entrada__titulo">{r.nombre}</strong>
             {r.dato ? <span className="entrada__dato">{r.dato}</span> : null}
+            {/* DL-161: una sesión con carga completa se destaca con el acento; las demás dicen su nivel en el dato. */}
+            {r.destacado ? <span className="etiqueta-de-dato etiqueta-de-dato--acento">{r.destacado}</span> : null}
             {coincide ? (
               <span className="entrada__coincide">
                 <span className="visualmente-oculto">Coincide en: </span>

@@ -76,30 +76,81 @@ export async function subirImagen(
 
 export type EstadoDeImagen = { readonly tipo: 'sin-imagen' } | { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly dataUrl: string } | { readonly tipo: 'fallo' };
 
+type Descarga = { readonly acceso: Resultado<unknown>; readonly dataUrl: string | null };
+
+/** El acceso firmado (API-MED-03) y la descarga de un medio, como data URL; `null` si alguno de los dos falla. */
+async function descargar(token: string, medioId: string): Promise<Descarga> {
+  const acceso = await api.accederAMedio(token, medioId);
+  if (!acceso.ok) return { acceso, dataUrl: null };
+  const dataUrl = await fetch(api.urlDe(acceso.datos.data.path), { credentials: 'omit', cache: 'no-store' })
+    .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(`status ${r.status}`))))
+    .then(leerComoDataUrl)
+    .catch(() => null);
+  return { acceso, dataUrl };
+}
+
 /**
- * Una imagen guardada, como data URL: el acceso firmado (API-MED-03) y la descarga, cada vez que se monta o cambia el
- * medio. Si la sesión se perdió, no muestra nada: la página ya redirige. Una falla queda como `fallo`, para que la
- * pantalla muestre su respaldo sin ocultar el resto.
+ * Las imágenes de referencia ya descargadas en esta pestaña, por sesión y por medio (encargo del 2026-10-19, bloque 4):
+ * ir y volver de «Mis recetas» o guardar una receta no las pide de nuevo. Cada pedido es un acceso auditado que consume
+ * el cupo de lecturas protegidas, y una lista de recetas con fotos los multiplicaba. Viven en la memoria de la pestaña,
+ * como la sesión, y nunca en disco; las más viejas se olvidan. Solo para lo que lo pide (`recordar`): las fotos privadas
+ * de un registro de comida no se recuerdan.
  */
-export function useImagenDeMedio(token: string, medioId: string | null, sesionPerdida: (r: Resultado<unknown>) => boolean) {
-  const [estado, setEstado] = useState<EstadoDeImagen>(medioId ? { tipo: 'cargando' } : { tipo: 'sin-imagen' });
+const RECORDADAS_COMO_MAXIMO = 40;
+const recordadas = new Map<string, string>();
+const enCurso = new Map<string, Promise<Descarga>>();
+
+function recordar(clave: string, dataUrl: string) {
+  recordadas.delete(clave);
+  recordadas.set(clave, dataUrl);
+  while (recordadas.size > RECORDADAS_COMO_MAXIMO) {
+    const masVieja = recordadas.keys().next().value;
+    if (masVieja === undefined) break;
+    recordadas.delete(masVieja);
+  }
+}
+
+/** La descarga compartida: dos tarjetas con la misma imagen que se montan a la vez hacen un solo pedido. */
+function descargaCompartida(clave: string, token: string, medioId: string): Promise<Descarga> {
+  const ya = enCurso.get(clave);
+  if (ya) return ya;
+  const pedido = descargar(token, medioId).finally(() => enCurso.delete(clave));
+  enCurso.set(clave, pedido);
+  return pedido;
+}
+
+/**
+ * Una imagen guardada, como data URL: el acceso firmado (API-MED-03) y la descarga, cuando se monta o cambia el medio.
+ * Con `recordar`, la de esta pestaña si ya se descargó; `recargar` la vuelve a pedir igual. Si la sesión se perdió, no
+ * muestra nada: la página ya redirige. Una falla queda como `fallo`, para que la pantalla muestre su respaldo sin ocultar
+ * el resto.
+ */
+export function useImagenDeMedio(token: string, medioId: string | null, sesionPerdida: (r: Resultado<unknown>) => boolean, opciones: { readonly recordar?: boolean } = {}) {
+  const recordarla = opciones.recordar === true;
+  const [estado, setEstado] = useState<EstadoDeImagen>(() => {
+    if (!medioId) return { tipo: 'sin-imagen' };
+    const ya = recordarla ? recordadas.get(`${token}|${medioId}`) : undefined;
+    return ya ? { tipo: 'lista', dataUrl: ya } : { tipo: 'cargando' };
+  });
   const generacion = useRef(0);
-  const cargar = useCallback(async () => {
-    const esta = ++generacion.current;
-    if (!medioId) return setEstado({ tipo: 'sin-imagen' });
-    setEstado({ tipo: 'cargando' });
-    const acceso = await api.accederAMedio(token, medioId);
-    if (esta !== generacion.current || sesionPerdida(acceso)) return;
-    if (!acceso.ok) return setEstado({ tipo: 'fallo' });
-    const dataUrl = await fetch(api.urlDe(acceso.datos.data.path), { credentials: 'omit', cache: 'no-store' })
-      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(`status ${r.status}`))))
-      .then(leerComoDataUrl)
-      .catch(() => null);
-    if (esta !== generacion.current) return;
-    setEstado(dataUrl ? { tipo: 'lista', dataUrl } : { tipo: 'fallo' });
-  }, [token, medioId, sesionPerdida]);
+  const cargar = useCallback(
+    async (forzar = false) => {
+      const esta = ++generacion.current;
+      if (!medioId) return setEstado({ tipo: 'sin-imagen' });
+      const clave = `${token}|${medioId}`;
+      const ya = recordarla && !forzar ? recordadas.get(clave) : undefined;
+      if (ya) return setEstado({ tipo: 'lista', dataUrl: ya });
+      setEstado({ tipo: 'cargando' });
+      const { acceso, dataUrl } = await (recordarla ? descargaCompartida(clave, token, medioId) : descargar(token, medioId));
+      if (esta !== generacion.current || sesionPerdida(acceso)) return;
+      if (dataUrl && recordarla) recordar(clave, dataUrl);
+      setEstado(dataUrl ? { tipo: 'lista', dataUrl } : { tipo: 'fallo' });
+    },
+    [token, medioId, sesionPerdida, recordarla],
+  );
   useEffect(() => {
     void cargar();
   }, [cargar]);
-  return { estado, recargar: cargar };
+  const recargar = useCallback(() => cargar(true), [cargar]);
+  return { estado, recargar };
 }

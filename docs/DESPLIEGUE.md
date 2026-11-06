@@ -78,6 +78,12 @@ Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa pa
 - **Credenciales:** al azar y fuera del repo, en `C:\Users\bufim\BE-datos-locales\cohorte-test\cuentas.env`, en la máquina de Dirección.
 - **Cómo se cargó y qué es sintético:** `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/LEEME.md`.
 - **Acceso a la base:** la historia se escribe por SQL, con la base abierta solo a la IP de esa máquina mientras dura la carga. Es el acceso del operador que admite el 07 §29. **Al terminar, la IP se quita a mano** en `be-db-test` → Networking, y se confirma que la conexión desde afuera se rechaza. El 2026-10-16 la volvieron a cerrar los push a `main` que cambiaron `render.yaml` o redesplegaron la API: el `ipAllowList: []` del Blueprint se impuso. En cambio, un push que no toca las rutas del `buildFilter` ni `render.yaml` no la cierra. Fue lo que pasó con el de la cohorte, que solo tocó `EVIDENCIA/` y `docs/`.
+
+**El profesional descartable de la prueba breve (desde el 2026-10-26):** Lic. Prueba Dos Áreas (Nutrición y
+Entrenamiento), declarado en `BE_DEMO_PROFESIONALES` a continuación de las entradas anteriores, que no cambian. Es el que
+se puede suspender y rehabilitar desde Administración en test: nunca los de la demostración ni los de la cohorte. Sus
+personas («Prueba Uno» a «Prueba Cinco») y cómo se prepararon están en `EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md`, en
+el PR de la prueba breve.
 - **Cargada en test el 2026-10-16** (de 06:35 a 06:46, sobre `4f10121`). Se comprobó de dos maneras: contando en la base las comidas, sesiones y tomas de cada persona (las mismas que en local), y entrando por la API con cada profesional para ver sus vínculos, con la fecha real de «Desde el…», y sus pendientes. Los pendientes se fijaron contra ese día y corren con el calendario. Por ejemplo, la revisión de Diego, que ese día faltaba 3 días, desde el 2026-10-20 aparece vencida.
 
 ### Avisos push y recordatorios (DL-133, WP-NOVEDADES-Y-AVISOS)
@@ -120,6 +126,18 @@ La API verifica el ID token de Google con las claves públicas de Google: no hay
 - el website muestra el error de Google «The given origin is not allowed for the given client ID»: falta el origen del website en el client ID web (o el Referrer-Policy de be-web no es `strict-origin-when-cross-origin`);
 - la APK dice «Ahora no podemos usar Google» justo después de elegir la cuenta: casi siempre es el `DEVELOPER_ERROR` de Google, el client ID Android no coincide con el paquete o con la huella de la firma, o está en otro proyecto que el client ID web;
 - las dos dicen «Ahora no podemos usar Google» después de elegir la cuenta, y la API registra `GOOGLE_NO_CONFIGURADO`: falta `GOOGLE_CLIENT_IDS` en be-api.
+
+### Administración: la clave del segundo factor (DL-155, WP-ADMINISTRACION)
+
+| Variable | Origen | Nota |
+|---|---|---|
+| `BE_CLAVE_DEL_SEGUNDO_FACTOR` | `render.yaml` → `generateValue: true` | La clave **del servidor** con que la API protege el segundo factor de Administración: cifra los autenticadores guardados y firma las huellas de los códigos de recuperación. No es el código de seis dígitos de la aplicación autenticadora. **Nunca se versiona ni se muestra** |
+
+- **Se integra antes que Administración (#210)**, en un PR solo de configuración (DL-008). Al integrarlo, Render sincroniza el Blueprint, crea la variable con un valor al azar (base64 de 256 bits) y vuelve a desplegar be-api. El código de `main` todavía no la lee, así que no cambia nada. Las sincronizaciones siguientes la conservan.
+- **Comprobar, sin verla:** be-api → Environment la muestra con el valor oculto. Con Administración integrada, `/admin` muestra la entrada y no «La administración no está configurada en este ambiente».
+- **Sin ella**, `/admin` responde 503 y el resto de BE sigue. **Mal formada** (solo puede pasar si se carga a mano), la API no arranca y el readiness gate cancela el deploy, como con `JWT_SECRET`. **Reemplazarla** deja sin valor todos los autenticadores y los códigos de recuperación: el operador restablece el segundo factor de cada administrador.
+- El procedimiento del operador, el primer administrador y cómo comprobar que no lee datos de salud están en `EVIDENCIA/ADMINISTRACION/OPERACION.md` (llega con #210).
+- Como todo push a `main` que toca `render.yaml`, vuelve a aplicar `ipAllowList: []` de la base: una IP del operador habilitada a mano queda cerrada.
 
 ### APK
 

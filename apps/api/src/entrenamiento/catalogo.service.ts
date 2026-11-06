@@ -1,9 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { CrearEjercicioRequestSchema, type EjercicioDeCatalogo, type EjercicioEncontrado, type ValidationIssue } from '@be/domain';
+import {
+  CrearEjercicioRequestSchema,
+  ordenarZonasDeEjercicio,
+  problemasDeZonas,
+  type EjercicioDeCatalogo,
+  type EjercicioEncontrado,
+  type FichasVisualesRequest,
+  type FichaVisualDeEjercicio,
+  type ValidationIssue,
+} from '@be/domain';
 import { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
-import { buscarEnCatalogo, leerBusqueda, leerCursorDeBusqueda, type ConNombreAlternativo } from '../http/busqueda';
+import { buscarEnCatalogo, CORRESPONDENCIA, leerBusqueda, leerCursorDeBusqueda, origenEnElBuscador, type ConNombreAlternativo, type ConOrigenEnLaBase } from '../http/busqueda';
 import { errores } from '../http/errores';
 import { leerConsultaDeLista } from '../http/paginacion';
 import { EJERCICIO_DE_UN_ITEM_EXTERNO } from '../integraciones/item-externo';
@@ -11,6 +20,7 @@ import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { asignarZonas, fichasVisuales, visualDeEjercicios } from './catalogo-visual';
 import { EjecutorDeEntrenamiento } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import { ejercicioApi, type FilaDeEjercicio } from './lectura-entrenamiento';
@@ -40,6 +50,9 @@ const COLUMNAS = Prisma.sql`e."id"::text AS "ejercicioId", v."id"::text AS "vers
        e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
        v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`;
 
+/** Las del buscador suman la correspondencia con la fuente, para el origen de la fila (DL-141 D-6). */
+const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, ${CORRESPONDENCIA}`;
+
 /**
  * Catálogo propio de ejercicios (RF-037; API-TRN-13 y API-INT-TRN-01).
  * - Ejercicio con identificador estable y versiones inmutables; la prescripción cita una **versión** (09v10:323,
@@ -66,26 +79,53 @@ export class CatalogoDeEjerciciosService {
    */
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioDeCatalogo[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);
-    return { data: filas.map(ejercicioApi), page };
+    const visual = await visualDeEjercicios(this.lector(), filas.map((f) => f.ejercicioId));
+    return { data: filas.map((f) => ejercicioApi(f, visual(f.ejercicioId))), page };
   }
 
-  /** API-TRN-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2). Solo el website. */
+  /**
+   * API-TRN-13-BUSQUEDA: las mismas filas, y cada una con el nombre alternativo que coincidió (DL-141 D-2) y su origen:
+   * quién lo cargó y si su correspondencia con la fuente es aproximada (D-6). La lee el website y, desde DL-151, la
+   * sustitución de la APK: cuando se publique una APK con esa lectura, su forma queda congelada (DL-152) y un campo nuevo
+   * va en otra operación.
+   */
   async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);
-    return { data: filas.map((f) => ({ ...ejercicioApi(f), matchedAlternativeName: f.nombreAlternativo })), page };
+    const visual = await visualDeEjercicios(this.lector(), filas.map((f) => f.ejercicioId));
+    return { data: filas.map((f) => ({ ...ejercicioApi(f, visual(f.ejercicioId)), matchedAlternativeName: f.nombreAlternativo, origin: origenEnElBuscador(f, actor.identidadId) })), page };
   }
 
-  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeEjercicio & ConNombreAlternativo)[]; page: unknown }> {
+  // ─── API-EJE-05 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * La ficha visual (zonas e imagen vigentes) de los ejercicios pedidos que el actor ve en el catálogo, en el orden pedido
+   * y sin repetir. Lo que no ve no existe para él: no se responde, igual que lo inexistente. Es la lectura del website.
+   */
+  async fichas(actor: ActorAutenticado, pedido: FichasVisualesRequest): Promise<{ data: FichaVisualDeEjercicio[] }> {
+    const creadores = await this.creadoresVisibles(this.prisma, actor.identidadId, 'CUALQUIERA');
+    const ids = [...new Set(pedido.exerciseIds.filter((id) => UUID.test(id)).map((id) => id.toLowerCase()))];
+    if (ids.length === 0) return { data: [] };
+    const filas = await this.prisma.$queryRaw<FilaDeEjercicio[]>`
+      SELECT ${COLUMNAS}
+        FROM "version_de_ejercicio" v
+        JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
+       WHERE e."id" = ANY(${ids}::uuid[])
+         AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
+         AND ${ejercicioVisible(creadores)}`;
+    const porId = new Map(filas.map((f) => [f.ejercicioId, f]));
+    return { data: await fichasVisuales(this.lector(), ids.flatMap((id) => porId.get(id) ?? [])) };
+  }
+
+  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeEjercicio & ConOrigenEnLaBase & ConNombreAlternativo)[]; page: unknown }> {
     const { q: crudo, cursor: cursorEscrito, ...resto } = query;
     if (crudo !== undefined && typeof crudo !== 'string') throw errores.solicitudInvalida([{ code: 'INVALID_FILTER', path: 'q' }]);
     const consulta = leerConsultaDeLista(resto, {});
     const cursor = leerCursorDeBusqueda(cursorEscrito);
     const q = (crudo ?? '').trim().slice(0, 80);
     const creadores = await this.creadoresVisibles(this.prisma, actor.identidadId, 'CUALQUIERA');
-    return buscarEnCatalogo<FilaDeEjercicio>(
+    return buscarEnCatalogo<FilaDeEjercicio & ConOrigenEnLaBase>(
       this.prisma,
       {
-        columnas: COLUMNAS,
+        columnas: COLUMNAS_DEL_BUSCADOR,
         tablas: Prisma.sql`"version_de_ejercicio" v JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'
@@ -112,10 +152,10 @@ export class CatalogoDeEjerciciosService {
       huellaExtra: {},
       efecto: async (tx, pedido, procedencia) => {
         if (!(await this.esProfesionalDeEntrenamiento(tx, actor.identidadId))) throw errores.accionNoPermitida();
-        // Las zonas y el material didáctico no están en la entrega (DL-081): el dominio no tiene ninguno, así que
-        // cualquier referencia es a algo que no existe. Cero zonas sí es legítimo (REG-06-139).
+        // DL-081: cada zona es una de las 17, sin repetirse; cero zonas es legítimo (REG-06-139). El material didáctico
+        // se asocia después, con su medio (API-EJE-02): acá cualquier referencia es a algo que no existe.
         const issues: ValidationIssue[] = [
-          ...pedido.muscleZones.map((_, i) => ({ code: 'MUSCLE_ZONE_UNKNOWN', path: `muscleZones[${i}].zoneId` })),
+          ...problemasDeZonas(pedido.muscleZones),
           ...pedido.didacticResources.map((_, i) => ({ code: 'DIDACTIC_RESOURCE_UNKNOWN', path: `didacticResources[${i}].resourceVersionId` })),
         ];
         if (issues.length > 0) throw errores.validacionFallida(issues);
@@ -128,6 +168,10 @@ export class CatalogoDeEjerciciosService {
             procedencia: { ...procedencia, carga: 'MANUAL' } as unknown as Prisma.InputJsonValue,
           },
         });
+        // Las zonas declaradas al cargarlo son su primera asignación, para esta versión (REG-06-139).
+        if (pedido.muscleZones.length > 0) {
+          await asignarZonas(tx, { ejercicioId: ejercicio.id, versionDeEjercicioId: version.id, numero: 1, autorId: actor.identidadId, procedencia, zonas: pedido.muscleZones });
+        }
         await registrarEventoDeEntrenamiento(tx, {
           tipo: 'EjercicioDeCatalogoCreado',
           profesionalId: actor.identidadId,
@@ -139,16 +183,19 @@ export class CatalogoDeEjerciciosService {
           procedencia,
           momento: await momentoDeLaBase(tx),
         });
-        const item = ejercicioApi({
-          ejercicioId: ejercicio.id,
-          versionId: version.id,
-          nombre: version.nombre,
-          disponible: true,
-          procedencia: 'PROFESSIONAL_MANUAL',
-          creadoPorId: actor.identidadId,
-          momentoDeRegistro: version.momentoDeRegistro,
-          fuenteExterna: null,
-        });
+        const item = ejercicioApi(
+          {
+            ejercicioId: ejercicio.id,
+            versionId: version.id,
+            nombre: version.nombre,
+            disponible: true,
+            procedencia: 'PROFESSIONAL_MANUAL',
+            creadoPorId: actor.identidadId,
+            momentoDeRegistro: version.momentoDeRegistro,
+            fuenteExterna: null,
+          },
+          { muscleZones: ordenarZonasDeEjercicio(pedido.muscleZones), didacticResources: [] },
+        );
         return { estadoHttp: 201, cuerpo: { data: item }, sujetoId: null, recurso: { tipo: 'EjercicioDeCatalogo', id: ejercicio.id } };
       },
     });
@@ -186,7 +233,9 @@ export class CatalogoDeEjerciciosService {
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE e."id" = ${ejercicioId}::uuid
          AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")`;
-    return fila ? ejercicioApi(fila) : null;
+    if (!fila) return null;
+    const visual = await visualDeEjercicios(cliente as Prisma.TransactionClient, [fila.ejercicioId]);
+    return ejercicioApi(fila, visual(fila.ejercicioId));
   }
 
   /**
@@ -195,6 +244,11 @@ export class CatalogoDeEjerciciosService {
    */
   esProfesionalDeEntrenamiento(cliente: Cliente, identidadId: string): Promise<boolean> {
     return esProfesionalDeEntrenamiento(cliente, identidadId);
+  }
+
+  /** El cliente de la base fuera de una transacción, para las lecturas de lo visual (zonas e imagen), que piden uno. */
+  private lector(): Prisma.TransactionClient {
+    return this.prisma as unknown as Prisma.TransactionClient;
   }
 
   /**

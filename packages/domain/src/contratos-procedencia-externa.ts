@@ -66,3 +66,21 @@ export const FuenteExternaDeAlimentoSchema = FuenteExternaSchema.extend({
   usdaReference: ReferenciaUsdaSchema.optional(),
 });
 export type FuenteExternaDeAlimento = z.infer<typeof FuenteExternaDeAlimentoSchema>;
+
+/**
+ * DL-141 D-6: lo que la fila de un buscador del website (API-NUT-13-BUSQUEDA y API-TRN-13-BUSQUEDA) suma para decir de
+ * dónde sale el ítem, además de su procedencia y su fuente externa: quién lo cargó, si es una carga a mano, y si su
+ * correspondencia con la fuente es aproximada. Las lecturas legadas no lo llevan: la APK instalada lee API-TRN-13 con un
+ * esquema congelado.
+ */
+export const OrigenEnElBuscadorSchema = z.strictObject({
+  /** Con una carga a mano (`PROFESSIONAL_MANUAL`), quién la hizo: vos u otro profesional (el de un plan tuyo). `null` en lo sembrado y lo importado. */
+  loadedBy: z.enum(['YOU', 'ANOTHER_PROFESSIONAL']).nullable(),
+  /**
+   * Si BE registró que el ítem corresponde a su fuente solo de forma aproximada, en qué, tal como quedó en la procedencia
+   * de su versión («Es el top sirloin de USDA: el cuadril sin la colita…»). `null` si la correspondencia es directa o no
+   * se registró.
+   */
+  approximateCorrespondence: z.string().min(1).nullable(),
+});
+export type OrigenEnElBuscador = z.infer<typeof OrigenEnElBuscadorSchema>;

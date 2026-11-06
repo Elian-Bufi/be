@@ -14,8 +14,9 @@ recomendación ni una prescripción (INV-06-143).
 - **Qué se tomó:** de 385 alimentos, la composición cada 100 g (energía, proteínas, carbohidratos «by difference», grasas y
   fibra), el NDB, la fecha de publicación y la descripción original en inglés, que también es un nombre alternativo. A los
   8 alimentos de USDA que ya estaban (DL-119) se les sumó la descripción en inglés como nombre alternativo.
-- **Qué es de BE:** el nombre en castellano rioplatense, la preparación en castellano y los nombres de otros países.
-  Ningún valor de la composición se completó ni se estimó.
+- **Qué es de BE:** el nombre en castellano rioplatense, la preparación en castellano, los nombres de otros países y la
+  correspondencia de los cortes vacunos con su pieza de USDA (abajo). Ningún valor de la composición se completó ni se
+  estimó.
 - **Descarga:** https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip (SHA-256 `b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0`), el 2026-10-19.
 
 | Alimento en BE | FDC | Descripción original de USDA |
@@ -193,16 +194,16 @@ recomendación ni una prescripción (INV-06-143).
 | Bife de chorizo, magro, asado | [171813](https://fdc.nal.usda.gov/food-details/171813/nutrients) | Beef, short loin, top loin, steak, separable lean only, trimmed to 1/8" fat, all grades, cooked, broiled |
 | Ojo de bife, magro, crudo | [172143](https://fdc.nal.usda.gov/food-details/172143/nutrients) | Beef, rib eye steak, boneless, lip off, separable lean only, trimmed to 0" fat, all grades, raw |
 | Ojo de bife, magro, a la parrilla | [172142](https://fdc.nal.usda.gov/food-details/172142/nutrients) | Beef, rib eye steak, boneless, lip off, separable lean only, trimmed to 0" fat, all grades, cooked, grilled |
-| Cuadril, magro, crudo | [174055](https://fdc.nal.usda.gov/food-details/174055/nutrients) | Beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, all grades, raw |
-| Cuadril, magro, asado | [168634](https://fdc.nal.usda.gov/food-details/168634/nutrients) | Beef, top sirloin, steak, separable lean only, trimmed to 0" fat, all grades, cooked, broiled |
+| Cuadril sin colita (top sirloin), magro, crudo | [174055](https://fdc.nal.usda.gov/food-details/174055/nutrients) | Beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, all grades, raw |
+| Cuadril sin colita (top sirloin), magro, asado | [168634](https://fdc.nal.usda.gov/food-details/168634/nutrients) | Beef, top sirloin, steak, separable lean only, trimmed to 0" fat, all grades, cooked, broiled |
 | Peceto, magro, crudo | [173998](https://fdc.nal.usda.gov/food-details/173998/nutrients) | Beef, round, eye of round roast, boneless, separable lean only, trimmed to 0" fat, all grades, raw |
 | Peceto, magro, al horno | [170633](https://fdc.nal.usda.gov/food-details/170633/nutrients) | Beef, round, eye of round roast, boneless, separable lean only, trimmed to 0" fat, all grades, cooked, roasted |
 | Nalga vacuna, magra, cruda | [171757](https://fdc.nal.usda.gov/food-details/171757/nutrients) | Beef, round, top round steak, boneless, separable lean only, trimmed to 0" fat, all grades, raw |
 | Nalga vacuna, magra, a la parrilla | [168649](https://fdc.nal.usda.gov/food-details/168649/nutrients) | Beef, round, top round steak, boneless, separable lean only, trimmed to 0" fat, all grades, cooked, grilled |
 | Bola de lomo, magra, cruda | [173125](https://fdc.nal.usda.gov/food-details/173125/nutrients) | Beef, round, tip round, roast, separable lean only, trimmed to 0" fat, all grades, raw |
-| Vacío, magro y grasa, crudo | [169563](https://fdc.nal.usda.gov/food-details/169563/nutrients) | Beef, flank, steak, separable lean and fat, trimmed to 0" fat, all grades, raw |
-| Vacío, magro y grasa, asado | [168733](https://fdc.nal.usda.gov/food-details/168733/nutrients) | Beef, flank, steak, separable lean and fat, trimmed to 0" fat, all grades, cooked, broiled |
-| Entraña, magra, asada | [168745](https://fdc.nal.usda.gov/food-details/168745/nutrients) | Beef, plate, outside skirt steak, separable lean only, trimmed to 0" fat, all grades, cooked, broiled |
+| Bife de vacío, magro y grasa, crudo | [169563](https://fdc.nal.usda.gov/food-details/169563/nutrients) | Beef, flank, steak, separable lean and fat, trimmed to 0" fat, all grades, raw |
+| Bife de vacío, magro y grasa, asado | [168733](https://fdc.nal.usda.gov/food-details/168733/nutrients) | Beef, flank, steak, separable lean and fat, trimmed to 0" fat, all grades, cooked, broiled |
+| Entraña fina, magra, asada | [168745](https://fdc.nal.usda.gov/food-details/168745/nutrients) | Beef, plate, outside skirt steak, separable lean only, trimmed to 0" fat, all grades, cooked, broiled |
 | Pecho vacuno, magro, braseado | [170612](https://fdc.nal.usda.gov/food-details/170612/nutrients) | Beef, brisket, whole, separable lean only, trimmed to 0" fat, all grades, cooked, braised |
 | Osobuco vacuno, magro, crudo | [169441](https://fdc.nal.usda.gov/food-details/169441/nutrients) | Beef, shank crosscuts, separable lean only, trimmed to 1/4" fat, choice, raw |
 | Paleta vacuna, magra, cruda | [169480](https://fdc.nal.usda.gov/food-details/169480/nutrients) | Beef, shoulder pot roast or steak, boneless, separable lean only, trimmed to 0" fat, all grades, raw |
@@ -405,6 +406,44 @@ recomendación ni una prescripción (INV-06-143).
 | Polvo de hornear | [172803](https://fdc.nal.usda.gov/food-details/172803/nutrients) | Leavening agents, baking powder, double-acting, sodium aluminum sulfate |
 | Caldo de pollo listo para consumir | [174536](https://fdc.nal.usda.gov/food-details/174536/nutrients) | Soup, chicken broth, ready-to-serve |
 | Caldo de carne listo para consumir | [171538](https://fdc.nal.usda.gov/food-details/171538/nutrients) | Soup, beef broth or bouillon canned, ready-to-serve |
+
+### La correspondencia de los cortes vacunos
+
+Un nombre regional parecido no prueba una composición equivalente. Cada corte vacuno se revisó contra dos fuentes de
+cortes, y su nombre dice la pieza de USDA que describe la composición. Si la correspondencia es aproximada, lo dice la
+procedencia del alimento y el buscador lo muestra donde se elige. Un nombre que cambió es una versión nueva del alimento:
+lo ya citado conserva el nombre de su momento.
+
+- [Secretaría de Agricultura, Ganadería, Pesca y Alimentos (SAGPyA): «Glossary of main export cuts from Argentina», con la tabla «Nombres equivalentes o aproximados de cortes de carne bovina en distintos países» (mayo de 2004), publicado por el IPCVA](https://ipcva.agrositio.com/files/glosario.pdf) (SHA-256 `13bebcfb4fee3493a1e869e3c954936327824b9c06c5ed03d7870092ac68509b`, consultado el 2026-10-19). La dirección www.ipcva.com.ar/files/glosario.pdf responde 404 desde octubre de 2026; el mismo archivo está en ipcva.agrositio.com.
+- [USDA Agricultural Marketing Service: «Institutional Meat Purchase Specifications. Fresh Beef, Series 100»](https://www.ams.usda.gov/sites/default/files/media/IMPS_100_Fresh_Beef%5B1%5D.pdf) (SHA-256 `fe7413bd8e30a3bf58a2d887ca22e4803e723b986f1f0c8c1bae4ae59dbbd569`, consultado el 2026-10-19).
+
+| Alimento en BE | FDC · NDB | Descripción original de USDA | Pieza o músculo | Preparación | Grasa | Correspondencia | Fundamento |
+|---|---|---|---|---|---|---|---|
+| Cuadril sin colita (top sirloin), magro, crudo (antes, «Cuadril, magro, crudo») | [174055](https://fdc.nal.usda.gov/food-details/174055/nutrients) · 23611 | Beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, all grades, raw | Top sirloin butt (IMPS 184): M. gluteus medius, M. gluteus accessorius y M. gluteus profundus, con la tapa (M. biceps femoris) o sin ella (IMPS 184A y 184B); sin el bottom sirloin, que lleva la colita (tri-tip) | crudo | solo la parte magra separable, de un bife cortado con 1/8" (3 mm) de grasa externa | aproximada: Es el top sirloin de USDA: el cuadril sin la colita, con la tapa o sin ella (SR Legacy no lo aclara). | El glosario relaciona «Cuadril (o cadera) con Tapa sin Colita» con «Rump / Sirloin Butt / Loin End» y «Corazón de Cuadril» con «Eye of Rump / Rump, Cap and Tail Off». El top sirloin de USDA (IMPS 184) es ese corazón, con la tapa o sin ella, y deja afuera la colita. La descripción de SR Legacy no dice si el bife lleva la tapa: el nombre dice «sin colita» y la correspondencia queda aproximada. |
+| Cuadril sin colita (top sirloin), magro, asado (antes, «Cuadril, magro, asado») | [168634](https://fdc.nal.usda.gov/food-details/168634/nutrients) · 13454 | Beef, top sirloin, steak, separable lean only, trimmed to 0" fat, all grades, cooked, broiled | Top sirloin butt (IMPS 184): M. gluteus medius, M. gluteus accessorius y M. gluteus profundus, con la tapa (M. biceps femoris) o sin ella (IMPS 184A y 184B); sin el bottom sirloin, que lleva la colita (tri-tip) | asado al grill (broiled) | solo la parte magra separable, de un bife sin grasa externa (0"); el crudo es de un bife con 1/8", y la parte magra cambia poco | aproximada: Es el top sirloin de USDA: el cuadril sin la colita, con la tapa o sin ella (SR Legacy no lo aclara). | La misma pieza que el crudo (IMPS 184), con la misma correspondencia aproximada. SR Legacy publica el asado de la parte magra con 0" y con 1/8" de grasa externa; el que está sembrado es el de 0". |
+| Entraña fina, magra, asada (antes, «Entraña, magra, asada») | [168745](https://fdc.nal.usda.gov/food-details/168745/nutrients) · 13979 | Beef, plate, outside skirt steak, separable lean only, trimmed to 0" fat, all grades, cooked, broiled | Outside skirt (IMPS 121C y 1121E): el diafragma, sin el centro de la entraña (hanging tender) y sin el inside skirt (M. transversus abdominis, IMPS 121D) | asada al grill (broiled) | solo la parte magra separable, sin grasa externa (0") | directa | El glosario relaciona «Entraña Fina / Diafragma» con «Thin Skirt / Outside Skirt / Diaphragm», y la «Entraña Gruesa o Centro de Entraña» con otra pieza («Hanging Tender / Thick Skirt»). El outside skirt de USDA es el diafragma (IMPS 121C). SR Legacy no publica la entraña cruda. |
+| Bife de vacío, magro y grasa, crudo (antes, «Vacío, magro y grasa, crudo») | [169563](https://fdc.nal.usda.gov/food-details/169563/nutrients) · 13970 | Beef, flank, steak, separable lean and fat, trimmed to 0" fat, all grades, raw | Flank steak (IMPS 193): el M. rectus abdominis, separado del M. transversus abdominis y de los oblicuos interno y externo | crudo | la parte magra y la grasa separable, sin grasa externa (0") | directa | El glosario de cortes de exportación relaciona «Bife de Vacío» con «Flank Steak», y el flank steak de USDA es el M. rectus abdominis (IMPS 193). El vacío entero es otra pieza («Hindquarter / Flank or Thin Flank»): suma el transverso y los oblicuos, y más grasa. SR Legacy no lo publica, así que esta composición no representa al vacío comercial completo. |
+| Bife de vacío, magro y grasa, asado (antes, «Vacío, magro y grasa, asado») | [168733](https://fdc.nal.usda.gov/food-details/168733/nutrients) · 13948 | Beef, flank, steak, separable lean and fat, trimmed to 0" fat, all grades, cooked, broiled | Flank steak (IMPS 193): el M. rectus abdominis, separado del M. transversus abdominis y de los oblicuos interno y externo | asado al grill (broiled) | la parte magra y la grasa separable, sin grasa externa (0") | directa | La misma pieza que el crudo (IMPS 193): el bife de vacío, no el vacío entero. |
+| Bola de lomo, magra, cruda | [173125](https://fdc.nal.usda.gov/food-details/173125/nutrients) · 23651 | Beef, round, tip round, roast, separable lean only, trimmed to 0" fat, all grades, raw | Sirloin tip o knuckle (IMPS 167): el cuádriceps, M. rectus femoris, M. vastus lateralis, M. vastus medialis y M. vastus intermedius | cruda | solo la parte magra separable, sin grasa externa (0") | directa | El glosario relaciona «Bola de Lomo» con «Thick Flank / Knuckle / Sirloin Tip», y el tip round de USDA es el knuckle (IMPS 167). El nombre ya era fiel: no cambia. |
+
+Los nombres alternativos ayudan a encontrar, pero no convierten dos alimentos en el mismo. Con el mismo criterio se
+retiraron los que nombraban otro ingrediente u otra preparación, y se sumó el nombre de la fuente de cortes:
+
+| Nombre alternativo | Alimento en BE | Qué se hizo |
+|---|---|---|
+| Copos de avena (ES) | Avena cocida con agua, sin sal | Se retiró: Nombra la avena seca en copos, no la avena cocida: cambia la preparación. |
+| Avena en hojuelas (MX) | Avena cocida con agua, sin sal | Se retiró: Nombra la avena seca en hojuelas, no la avena cocida: cambia la preparación. |
+| Surimi | Kanikama (imitación de cangrejo de surimi) | Se retiró: El surimi es la pasta de pescado; el kanikama la lleva con almidón y azúcar, y USDA da composiciones distintas para los dos: cambia el ingrediente. |
+| Tomate triturado (ES) | Puré de tomate sin sal agregada | Se retiró: El tomate triturado es otro producto que el puré de tomate: cambia el ingrediente. |
+| Queso rallado (AR) | Queso parmesano rallado | Se retiró: En la Argentina el queso rallado suele ser reggianito o sardo, no parmesano: cambia el ingrediente. |
+| Queso por salut (AR) | Queso port salut | Se retiró: El por salut argentino es otro queso que el port-salut que describe USDA: su composición puede ser otra. |
+| Cajeta (MX) | Dulce de leche | Se retiró: La cajeta se hace en general con leche de cabra: cambia el ingrediente. |
+| Lechuga criolla (AR) | Lechuga de hoja verde, cruda | Se retiró: Ninguna fuente ata la lechuga criolla a la variedad de hoja verde que describe USDA. |
+| Compota de manzana | Puré de manzana sin azúcar | Se retiró: La compota suele llevar azúcar, y este puré es sin azúcar: cambia el ingrediente. |
+| Entrecot (ES) | Ojo de bife, magro, crudo | Se retiró: En España «entrecot» nombra bifes del lomo alto y del lomo bajo; el ojo de bife es el lomo alto sin tapa (glosario de cortes de exportación). |
+| Entrecot (ES) | Ojo de bife, magro, a la parrilla | Se retiró: En España «entrecot» nombra bifes del lomo alto y del lomo bajo; el ojo de bife es el lomo alto sin tapa (glosario de cortes de exportación). |
+| Lomo alto sin tapa (ES) | Ojo de bife, magro, crudo | Se sumó: Glosario de cortes de exportación: «Bife Ancho sin Tapa» = «Lomo Alto sin tapa» (España) = «Rib Eye Steak / Rib Eye Roll». |
+| Lomo alto sin tapa (ES) | Ojo de bife, magro, a la parrilla | Se sumó: Glosario de cortes de exportación: «Bife Ancho sin Tapa» = «Lomo Alto sin tapa» (España) = «Rib Eye Steak / Rib Eye Roll». |
 
 ## Ejercicios · wger
 

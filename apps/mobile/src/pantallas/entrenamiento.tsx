@@ -7,10 +7,14 @@
  *   abre la sesión sin cronómetros: el pasado no se cronometra.
  * - El estado de cada sesión sale **solo** de `vistaDeOcurrencia`: sin registro es «No iniciada» o «Sin registro», nunca
  *   «No realizada» (H-09-TRN-01; B10-06:626-640). Si hay varias, la persona elige cuál hace: BE no decide (DL-077).
- * - **La sesión enfocada** (`PantallaDeSesion`, con las piezas de `sesion-enfocada.tsx`): un ejercicio a la vez, su
- *   imagen y su técnica, la tabla compacta con lo planificado en gris, la banda del plan, el descanso y la serie
- *   cronometrada. Sin barra inferior. Lo que se registra se guarda primero en el teléfono, por cuenta
+ * - **La sesión guiada** (`PantallaDeSesion`, con las piezas de `sesion-enfocada.tsx`; PA-01 y PA-02, Dirección del
+ *   2026-11-02): la franja de progreso arriba, un ejercicio a la vez con su imagen y su técnica, y la tabla con lo
+ *   planificado en gris, la columna Tiempo y una casilla por serie: tildar registra lo escrito y, en lo vacío, lo
+ *   planificado (`recordedAs`), y destildar deshace. Lo escrito se guarda en el teléfono aunque no se registre, así que la
+ *   barra inferior queda visible y salir no pregunta. Lo registrado se guarda primero en el teléfono, por cuenta
  *   (`entrenamiento-en-curso.ts`), y viaja después: API-TRN-17 para las series y API-TIE-01 para los tiempos.
+ *   «Sustituir ejercicio» registra otro ejercicio en lugar del planificado, como en la 0.13.2 (DL-151; las reglas, en
+ *   `sustitucion-de-ejercicio.ts`): necesita conexión y no toca los tiempos.
  * - **Finalizar** muestra antes un resumen, manda el fin de la sesión (SESSION_FINISHED) y confirma el borrador
  *   (API-TRN-18). Confirmar es definitivo, y después se corrige sin borrar (B10-06:820-898).
  * - Un resultado incierto ofrece reintentar con la misma Idempotency-Key: no duplica.
@@ -25,6 +29,7 @@ import {
   COPY_AGENDA_DE_ENTRENAMIENTO as AG,
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
+  COPY_REGISTRO_POR_NIVELES,
   COPY_REVISIONES_PROPIAS,
   duracionParaMostrar,
   ETIQUETA_DE_CALIDAD_DE_TIEMPO,
@@ -32,9 +37,11 @@ import {
   etiquetaDeCondicionRegistrada,
   leerNumero,
   lineasDePrescripcion,
+  nivelDeDetalleDelRegistro,
   numero,
   registroVigente,
-  textoDeDuracion,
+  seCargoComoElPlan,
+  textoDelNivelDeDetalle,
   vistaDeOcurrencia,
   type AgendaDeHoyResponse,
   type BorradorDeEjecucion,
@@ -57,60 +64,75 @@ import { useDiaDeLaApi } from '../dia-de-la-api';
 import { entrenamientoLocal, useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha, fechaCivil, fechaLarga, hora as horaDe } from '../formato';
-import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
+import { Icono } from '../icono';
+import { IconoDeEjercicio, iconoDelEstado } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import { enCursoDeLaApi, enCursoEnElTelefono, otraSesionEnCurso, sesionEnCursoParaMostrar, type EnCurso } from '../sesion-en-curso';
+import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
   bandaDeLaSerie,
   basesDeLaPrescripcion,
+  claveDeFila,
   disposicionDeLaTabla,
   ejerciciosYSeries,
+  escritaDeLaSerie,
+  escritasDelEjercicio,
   FILA_VACIA,
   filasDelEjercicio,
   focoTrasElDescanso,
-  guardadasDe,
+  focoTrasTildar,
+  guardadasVigentes,
   hayAlgoEscrito,
-  leerFila,
   MAXIMO_DE_SERIES,
+  motivoDeLaLectura,
+  pendientesDeRegistrar,
   primeraSinRegistrar,
   problemaParaConfirmar,
-  puedeRegistrar,
   resumenDelRegistro,
+  serieAlTildar,
+  serieQueOriginaElDescanso,
   sesionDesdeLaOcurrencia,
   AVISO_SIN_PLAN_POR_SERIE,
+  textoDeTiempo,
   unidadDelEjercicio,
   type ErroresDeFila,
+  type FilaDeLaTabla,
   type FilaEscrita,
+  type FilaEscritaGuardada,
   type SerieLocal,
   type Unidad,
 } from '../series-de-la-sesion';
+import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
+import { cambiosParaSustituir, ejercicioRealizadoDe, sePuedeSustituir, sustitucionDe, textoDeLaConfirmacion, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado } from '../sustitucion-de-ejercicio';
 import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { ContenidoDelHistorial } from './historial';
 import { PlanPorSerie } from './plan-por-serie';
+import { AlLado, aRegistroRapido } from './registro-rapido';
 import {
   AvisoDeMedicionAbierta,
-  AyudaDelRir,
+  AyudaDeLaTabla,
   BandaDelPlan,
-  BarraDeLaSesion,
   BloqueDeDescanso,
-  CronometrarSerie,
   duracionParaLeer,
   EjercicioActivo,
   ErroresDeLaFila,
   EstadoDelEnvio,
   ExplicacionDeLosTiempos,
+  FranjaDeLaSesion,
   RutinaDeLaSesion,
   SeriesDelResumen,
+  SustituirEjercicio,
   TablaDeSeries,
   TecnicaDelEjercicio,
   textoDeLaCondicion,
   TiemposMarcados,
-  type CronometroDeSerie,
   type EstadoDelDescanso,
+  type RelojDeLaTabla,
   type Temporizador,
 } from './sesion-enfocada';
+import { TEXTOS_DE_LA_SESION } from '../textos-de-la-sesion';
 import { TiemposDeLaEjecucion } from './tiempos-de-la-sesion';
 
 type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
@@ -129,16 +151,17 @@ export function textoDePrescripcion(p: Prescripcion): string {
 
 /**
  * Antes de una acción sensible se pregunta (B10-10:337: no se ejecuta de un toque, y menos al lado de una frecuente). El
- * diálogo del sistema es accesible y dice qué pasa.
+ * diálogo del sistema es accesible y dice qué pasa. Lo que descarta algo es `destructive`; lo que cambia sin borrar (una
+ * sustitución con series ya registradas), `default`.
  */
-function preguntar(titulo: string, detalle: string, accion: string): Promise<boolean> {
+function preguntar(titulo: string, detalle: string, accion: string, estilo: 'destructive' | 'default' = 'destructive'): Promise<boolean> {
   return new Promise((resolver) =>
     Alert.alert(
       titulo,
       detalle,
       [
         { text: 'Cancelar', style: 'cancel', onPress: () => resolver(false) },
-        { text: accion, style: 'destructive', onPress: () => resolver(true) },
+        { text: accion, style: estilo, onPress: () => resolver(true) },
       ],
       { cancelable: true, onDismiss: () => resolver(false) },
     ),
@@ -315,9 +338,12 @@ function HoyDeEntrenamiento({
 
   return (
     <View>
-      <Text style={estilos.fechaDeHoy} accessibilityRole="header">
-        {fechaLarga(hoy.date)}
-      </Text>
+      <View style={estilos.filaDeLaFecha}>
+        <Icono nombre="calendario" tamano={20} tono="acento" />
+        <Text style={estilos.fechaDeHoy} accessibilityRole="header">
+          {fechaLarga(hoy.date)}
+        </Text>
+      </View>
       {deOtroDia ? (
         <AvisoDeEntrenamientoEnCurso
           enCurso={deOtroDia}
@@ -340,7 +366,7 @@ function HoyDeEntrenamiento({
       )}
       {hoy.planState === 'AVAILABLE' ? (
         // Plegado: es para lo que quedó sin registrar; lo de hoy va primero.
-        <Desplegable titulo={COPY_ENTRENAMIENTO.registrarOtroDia} abiertoAlInicio={delDia !== null || aviso !== null}>
+        <Desplegable titulo={COPY_ENTRENAMIENTO.registrarOtroDia} icono="cargado-otro-dia" abiertoAlInicio={delDia !== null || aviso !== null}>
           <Parrafo tenue>Si hiciste una sesión otro día y no la registraste, podés registrarla ahora. El pasado no se cronometra: se registran las series.</Parrafo>
           <Campo
             etiqueta="Fecha (AAAA-MM-DD)"
@@ -505,6 +531,9 @@ function TarjetaDePendiente({
   const intento = useClaveDeIntento();
   const [salteando, setSalteando] = useState(false);
   const [problema, setProblema] = useState<string | null>(null);
+  // PA-03: «La hice ese día» registra la de esa fecha, sin cronómetros; si esa fecha corre en el teléfono, se continúa ahí.
+  const local = useEntrenamientoLocal();
+  const laHiceEseDia = !local.sesiones().some((s) => s.occurrenceId === occurrenceId);
 
   async function saltear() {
     if (!(await preguntar(AG.saltearTitulo, AG.saltearDetalle(etiqueta, prevista), AG.saltearla))) return;
@@ -525,8 +554,19 @@ function TarjetaDePendiente({
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
-      <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />
-      <Boton texto={AG.saltearla} tipo="secundario" onPress={() => void saltear()} ocupado={salteando} deshabilitado={abriendo} />
+      <AlLado>
+        <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />
+        {laHiceEseDia ? (
+          <Boton
+            texto={TEXTOS_DEL_REGISTRO_RAPIDO.laHiceEseDia}
+            tipo="secundario"
+            onPress={() => ir(aRegistroRapido(ocurrenciaDeHoy, { occurrenceId, fecha: prevista }))}
+            deshabilitado={abriendo || salteando}
+            icono="ya-la-hice"
+          />
+        ) : null}
+      </AlLado>
+      <Boton texto={AG.saltearla} tipo="secundario" icono="salteada" onPress={() => void saltear()} ocupado={salteando} deshabilitado={abriendo} />
     </Tarjeta>
   );
 }
@@ -785,6 +825,9 @@ function TarjetaDeOcurrencia({
   const vista = vistaDeOcurrencia(o, hoy);
   const deHoy = o.date === hoy;
   const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS';
+  // PA-03 (DL-160): «Ya la hice» registra la sesión por pasos, sin cronómetros, también hoy. Solo sin borrador.
+  const local = useEntrenamientoLocal();
+  const yaLaHice = sePuedeOfrecer(o, enCurso, local.sesiones());
 
   /**
    * Empezar una sesión con otra pendiente: la persona decide si la saltea o la deja pendiente (Dirección, 2026-10-16).
@@ -825,7 +868,7 @@ function TarjetaDeOcurrencia({
           <Parrafo tenue>{`${ejerciciosYSeries(o.plannedSession.prescriptions)}${deHoy ? '' : ` · ${fechaCivil(o.date)}`}`}</Parrafo>
         </View>
       </View>
-      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
+      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
       {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
@@ -834,7 +877,10 @@ function TarjetaDeOcurrencia({
       {o.execution.state === 'REGISTERED' && o.execution.executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: o.execution.executionId! })} />
       ) : (
-        <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
+        <AlLado>
+          <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
+          {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
+        </AlLado>
       )}
       {o.plannedSession.prescriptions.map((p) => (
         <Text key={p.prescriptionId} style={estilos.ejercicioDeLaSesion}>
@@ -848,9 +894,9 @@ function TarjetaDeOcurrencia({
 
 // ─── La sesión enfocada ─────────────────────────────────────────────────────────────────────────
 
-type Dialogo = null | { readonly tipo: 'rutina' } | { readonly tipo: 'tecnica'; readonly prescriptionId: string };
+type Dialogo = null | { readonly tipo: 'rutina' } | { readonly tipo: 'tecnica' | 'sustituir'; readonly prescriptionId: string };
 
-/** Lo que se declara para no perderlo al salir: la serie a medio escribir de un ejercicio. */
+/** Lo que se declara para no perderlo al salir, si el guardado en el teléfono falló: lo escrito en un ejercicio. */
 const loEscritoEn = (p: PrescripcionConObjetivos | undefined): string | null => (p ? `lo que cargaste en «${p.exerciseName}»` : null);
 
 /** La descripción de una medición abierta: «Descanso · Serie 1 · Sentadilla goblet, desde las 10:42». */
@@ -889,15 +935,17 @@ export function PantallaDeSesion({
   const hoy = useDiaDeLaApi();
   const modo = local?.modo ?? modoDeLaRuta ?? (fechaDeLaSesion === hoy ? 'en-vivo' : 'otro-dia');
   const [carga, setCarga] = useState<'leyendo' | 'lista' | 'error'>('leyendo');
-  const [escritas, setEscritas] = useState<Readonly<Record<string, FilaEscrita>>>({});
-  const [errores, setErrores] = useState<ErroresDeFila>({});
-  const [unidades, setUnidades] = useState<Readonly<Record<string, Unidad>>>({});
-  const [extras, setExtras] = useState<Readonly<Record<string, number>>>({});
+  // Lo escrito vive en el almacén del teléfono (PA-01): acá quedan solo los errores de la última fila que se quiso tildar.
+  const [errores, setErrores] = useState<{ readonly setIndex: number; readonly errores: ErroresDeFila } | null>(null);
+  /** La fila en la que se escribe el tiempo sin medirlo (se mantuvo apretado su reloj). */
+  const [escribiendoTiempo, setEscribiendoTiempo] = useState<number | null>(null);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
   const [finalizando, setFinalizando] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [hora, setHora] = useState('');
   const [aviso, setAviso] = useState<{ tipo: 'error' | 'info' | 'exito'; texto: string } | null>(null);
+  /** Por qué no se pudo guardar una sustitución: se dice en su diálogo, no arriba de la pantalla, que queda detrás. */
+  const [falloDeSustitucion, setFalloDeSustitucion] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [, setPulso] = useState(0);
   // Un doble toque es una sola operación: el segundo toque llega antes de que la pantalla se vuelva a dibujar.
@@ -954,6 +1002,14 @@ export function PantallaDeSesion({
     void leer();
   }, [leer]);
 
+  // Al salir de la sesión (por la barra, la cabecera o atrás), lo escrito que esperaba su demora se guarda ya (PA-01).
+  useEffect(
+    () => () => {
+      void entrenamientoLocal.guardarYa();
+    },
+    [],
+  );
+
   // ─── Lo que se deriva ───
   const estado = local ? estadoLocal(local.corrida) : null;
   const corre = !!estado && estado.runId !== null && estado.cierre === null && (!estado.pausada || estado.medicionAbierta !== null);
@@ -971,23 +1027,30 @@ export function PantallaDeSesion({
   const conCorrida = modo === 'en-vivo' && estado !== null && estado.runId !== null && estado.cierre === null;
   const activoDeLaCorrida = conCorrida ? estado.ejercicioActivo : null;
   const p = prescripciones.find((x) => x.prescriptionId === (activoDeLaCorrida ?? local?.foco?.prescriptionId)) ?? prescripciones[0] ?? null;
-  const unidad: Unidad = p ? (unidades[p.prescriptionId] ?? unidadDelEjercicio(p)) : 'kg';
+  const borrador = local?.borrador ?? null;
+  const quitadas = local?.quitadas ?? [];
+  const escritasDeLaSesion = local?.escritas ?? {};
+  const unidadDe = (x: PrescripcionConObjetivos): Unidad => local?.unidades[x.prescriptionId] ?? unidadDelEjercicio(x);
+  const unidad: Unidad = p ? unidadDe(p) : 'kg';
   const proteccion = (l: SerieLocal) => almacen.proteccionDeSerie(draftId, l);
-  const filas = p ? filasDelEjercicio(p, guardadasDe(local?.borrador ?? null, p.prescriptionId), local?.series ?? [], extras[p.prescriptionId] ?? 0, proteccion) : [];
+  /** Las filas de un ejercicio: lo del servidor sin lo destildado, lo del teléfono, las filas de más y las escritas. */
+  const filasDe = (x: PrescripcionConObjetivos) => filasDelEjercicio(x, guardadasVigentes(borrador, x.prescriptionId, quitadas), local?.series ?? [], local?.filasDeMas[x.prescriptionId] ?? 0, proteccion, escritasDelEjercicio(escritasDeLaSesion, x.prescriptionId).keys());
+  const escritasDelActivo = p ? escritasDelEjercicio(escritasDeLaSesion, p.prescriptionId) : new Map<number, FilaEscritaGuardada>();
+  const filas = p ? filasDe(p) : [];
   const focoGuardado = local?.foco && p && local.foco.prescriptionId === p.prescriptionId ? local.foco.setIndex : null;
   const filaActiva = filas.find((f) => f.setIndex === focoGuardado) ?? primeraSinRegistrar(filas) ?? filas[filas.length - 1] ?? null;
-  const claveDeFila = p && filaActiva ? `${p.prescriptionId}:${filaActiva.setIndex}` : '';
-  const escrita = escritas[claveDeFila] ?? FILA_VACIA;
   const vivo = local ? enVivoDeLaCorrida(local.corrida, almacen.reloj) : null;
   const calculo = local ? calcularTiempos(eventosDeLaCorrida(local.corrida), recomendadoDe) : null;
   const abierta = estado?.medicionAbierta ?? null;
   const deOtroProceso = local && modo === 'en-vivo' ? almacen.medicionDeOtroProceso(draftId) : null;
   const envio = local ? estadoDeSincronizacion(local, almacen.enviando(draftId)) : 'sincronizado';
 
-  // Sin pérdidas silenciosas: una serie escrita y sin registrar, o el motivo y la hora del resumen, preguntan al salir.
-  const conEscritura = prescripciones.find((x) => Object.entries(escritas).some(([clave, f]) => clave.startsWith(`${x.prescriptionId}:`) && hayAlgoEscrito(f)));
+  // Lo escrito queda guardado en el teléfono (PA-01): salir ya no pregunta por eso, salvo que el guardado haya fallado o
+  // que no se haya podido leer lo guardado. El motivo y la hora del resumen siguen preguntando: viven en la pantalla.
+  const guardado = almacen.estadoDelGuardado();
+  const sinProteger = guardado === 'fallo-al-guardar' || guardado === 'sin-leer';
+  const conEscritura = sinProteger ? prescripciones.find((x) => Object.entries(escritasDeLaSesion).some(([clave, f]) => clave.startsWith(`${x.prescriptionId}:`) && hayAlgoEscrito(f))) : undefined;
   useCambiosSinGuardar(loEscritoEn(conEscritura));
-  const borrador = local?.borrador ?? null;
   useCambiosSinGuardar(borrador !== null && (motivo.trim() !== (borrador.reason ?? '').trim() || (finalizando && hora.trim() !== '')) ? 'lo que escribiste en esta sesión' : null);
 
   // La fila enfocada se guarda en el teléfono: al volver, la misma fila del mismo ejercicio.
@@ -1019,39 +1082,110 @@ export function PantallaDeSesion({
     return true;
   }
 
-  function registrar() {
-    if (!p || !filaActiva || enCurso.current) return;
+  function enfocar(setIndex: number) {
+    if (!p) return;
+    setErrores(null);
+    setEscribiendoTiempo((x) => (x === setIndex ? x : null));
+    entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex });
+  }
+
+  /** Lo escrito en una fila va al almacén del teléfono con la unidad del ejercicio; una fila que queda vacía se olvida. */
+  function escribir(setIndex: number, campo: keyof FilaEscrita, texto: string) {
+    if (!p) return;
+    const previa = escritasDelActivo.get(setIndex);
+    const fila: FilaEscritaGuardada = { ...FILA_VACIA, tiempo: '', ...previa, [campo]: texto, unidad };
+    entrenamientoLocal.escribirEnFila(draftId, claveDeFila(p.prescriptionId, setIndex), hayAlgoEscrito(fila) ? fila : null);
+    if (errores?.setIndex === setIndex && (errores.errores[campo] || errores.errores.fila)) setErrores({ setIndex, errores: { ...errores.errores, [campo]: undefined, fila: undefined } });
+  }
+
+  /**
+   * Cierra la serie cronometrada que está abierta y anota lo medido en el tiempo de su fila, si todavía no está
+   * registrada (DL-161: medido, nunca inferido). Devuelve los segundos medidos, o `null`.
+   */
+  function pararElReloj(medida: { readonly prescriptionId: string; readonly setIndex: number }, accion: AccionDeTiempo = { tipo: 'finalizar-serie' }, anuncio = TEXTOS_DE_LA_SESION.serieMedida(medida.setIndex)): number | null {
+    if (!hacer(accion, anuncio)) return null;
+    const s = entrenamientoLocal.sesion(draftId);
+    if (!s) return null;
+    const segundos = segundosMedidosDeLaFila(s.corrida, medida.prescriptionId, medida.setIndex);
+    if (segundos === null) return null;
+    const presc = prescripciones.find((x) => x.prescriptionId === medida.prescriptionId);
+    const yaRegistrada = !!presc && filasDe(presc).some((f) => f.setIndex === medida.setIndex && f.estado !== 'sin-registrar');
+    if (presc && !yaRegistrada) {
+      const clave = claveDeFila(medida.prescriptionId, medida.setIndex);
+      const previa = s.escritas[clave];
+      entrenamientoLocal.escribirEnFila(draftId, clave, { ...FILA_VACIA, ...previa, tiempo: textoDeTiempo(segundos), unidad: previa?.unidad ?? unidadDe(presc) });
+    }
+    return segundos;
+  }
+
+  /** El reloj de la fila: lo para si es el de esa serie; si no, para el que corría (si había uno) y arranca el de esta. */
+  function relojDeLaFila(setIndex: number) {
+    if (!p || enCurso.current) return;
+    if (abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId && abierta.setIndex === setIndex) {
+      pararElReloj(abierta);
+      return;
+    }
+    if (abierta?.kind === 'SET') {
+      pararElReloj(abierta);
+      const ahora = entrenamientoLocal.sesion(draftId);
+      if (ahora && estadoLocal(ahora.corrida).medicionAbierta?.kind === 'SET') return;
+    }
+    // Con un descanso en curso, la acción compuesta lo finaliza y arranca la serie en el mismo instante.
+    if (!hacer({ tipo: 'cronometrar-serie', prescriptionId: p.prescriptionId, setIndex }, COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(setIndex))) return;
+    enfocar(setIndex);
+  }
+
+  function escribirTiempo(setIndex: number) {
+    enfocar(setIndex);
+    setEscribiendoTiempo(setIndex);
+  }
+
+  /**
+   * La casilla de la fila (PA-02). Tildar registra la serie con lo escrito y, en lo vacío, lo planificado que se veía, y
+   * para su reloj si corría; el foco pasa a la próxima sin registrar del mismo ejercicio. Destildar deshace el registro
+   * mientras la sesión no se confirmó: lo escrito vuelve a la fila.
+   */
+  function tildar(f: FilaDeLaTabla) {
+    if (!p || enCurso.current) return;
     enCurso.current = true;
     try {
-      const lectura = leerFila(escrita, filaActiva.setIndex, unidad);
-      if (!lectura.ok) return setErrores(lectura.errores);
-      setErrores({});
-      // Se registra con el ejercicio que figura en el borrador (una sustitución hecha antes se respeta).
-      const realizado = borrador?.exercises.find((e) => e.prescriptionId === p.prescriptionId)?.performedExerciseVersionId ?? p.exerciseVersionId;
-      const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: realizado, serie: lectura.serie });
-      if (resultado !== 'registrada') return;
-      setEscritas((actuales) => {
-        const { [claveDeFila]: _registrada, ...resto } = actuales;
-        return resto;
-      });
-      if (!filaActiva.planificada) setExtras((x) => ({ ...x, [p.prescriptionId]: 0 }));
-      AccessibilityInfo.announceForAccessibility(COPY_ENTRENAMIENTO_POR_SERIE.serieGuardada(filaActiva.setIndex));
+      if (f.estado === 'sin-registrar') {
+        let escrita: FilaEscrita = escritasDelActivo.get(f.setIndex) ?? FILA_VACIA;
+        if (abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId && abierta.setIndex === f.setIndex) {
+          const medidos = pararElReloj(abierta);
+          if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
+        }
+        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, escritasDelActivo.get(f.setIndex)?.unidad ?? unidad);
+        if (!lectura.ok) {
+          enfocar(f.setIndex);
+          setErrores({ setIndex: f.setIndex, errores: lectura.errores });
+          return;
+        }
+        setErrores(null);
+        // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
+        const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie }, { olvidarFilasDeMas: !f.planificada });
+        if (resultado !== 'registrada') return;
+        setEscribiendoTiempo(null);
+        AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieRegistradaAnuncio(f.setIndex));
+        const tildadas = filas.map((x): FilaDeLaTabla => (x.setIndex === f.setIndex ? { ...x, estado: 'pendiente-de-enviar' } : x));
+        const siguiente = focoTrasTildar(tildadas, f.setIndex, filaActiva?.setIndex ?? f.setIndex);
+        entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex: siguiente });
+        void sincronizar();
+        return;
+      }
+      if (f.estado === 'en-conflicto' || !f.registrada) return;
+      const restaurar = escritaDeLaSerie(f.registrada, unidad);
+      const conAlgo = hayAlgoEscrito(restaurar);
+      // Una carga registrada en otra unidad vuelve con su unidad: la columna del ejercicio pasa a esa.
+      if (conAlgo && restaurar.carga !== '' && restaurar.unidad !== unidad) entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, restaurar.unidad);
+      if (entrenamientoLocal.quitarSerie(draftId, p.prescriptionId, f.setIndex, conAlgo ? restaurar : null) !== 'quitada') return;
+      setErrores(null);
+      AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieDestildada(f.setIndex));
+      entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex: f.setIndex });
       void sincronizar();
     } finally {
       enCurso.current = false;
     }
-  }
-
-  function enfocar(setIndex: number) {
-    if (!p) return;
-    setErrores({});
-    entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex });
-  }
-
-  function escribir(campo: keyof FilaEscrita, texto: string) {
-    if (!claveDeFila) return;
-    setEscritas((actuales) => ({ ...actuales, [claveDeFila]: { ...(actuales[claveDeFila] ?? FILA_VACIA), [campo]: texto } }));
-    if (errores[campo] || errores.fila) setErrores((x) => ({ ...x, [campo]: undefined, fila: undefined }));
   }
 
   function pasarA(prescriptionId: string) {
@@ -1059,9 +1193,10 @@ export function PantallaDeSesion({
     if (!destino) return;
     // Pasar a otro ejercicio es explícito: con la corrida, marca el ejercicio activo. Ver su técnica no.
     if (conCorrida && estado?.ejercicioActivo !== prescriptionId && !hacer({ tipo: 'activar-ejercicio', prescriptionId })) return;
-    const filasDestino = filasDelEjercicio(destino, guardadasDe(borrador, prescriptionId), local?.series ?? [], extras[prescriptionId] ?? 0, proteccion);
+    const filasDestino = filasDe(destino);
     entrenamientoLocal.enfocar(draftId, { prescriptionId, setIndex: (primeraSinRegistrar(filasDestino) ?? filasDestino[0])?.setIndex ?? 1 });
-    setErrores({});
+    setErrores(null);
+    setEscribiendoTiempo(null);
     setDialogo(null);
   }
 
@@ -1071,13 +1206,10 @@ export function PantallaDeSesion({
     if (p && filaActiva && abierta.prescriptionId === p.prescriptionId) enfocar(focoTrasElDescanso(filas, abierta.setIndex, filaActiva.setIndex));
   }
 
-  /** La serie que se cronometra: la enfocada; con un descanso en curso, la que sigue a la del descanso. */
-  const serieParaCronometrar = !p || !filaActiva ? null : abierta?.kind === 'REST' && abierta.prescriptionId === p.prescriptionId ? (primeraSinRegistrar(filas, abierta.setIndex)?.setIndex ?? null) : filaActiva.setIndex;
-
-  function cronometrar() {
-    if (!p || serieParaCronometrar === null) return;
-    if (!hacer({ tipo: 'cronometrar-serie', prescriptionId: p.prescriptionId, setIndex: serieParaCronometrar }, COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(serieParaCronometrar))) return;
-    enfocar(serieParaCronometrar);
+  /** «Pausar sesión»: en pausa no se mide nada; si una serie se estaba midiendo, lo medido queda en su fila. */
+  function pausar() {
+    if (abierta?.kind === 'SET') pararElReloj(abierta, { tipo: 'pausar' }, COPY_ENTRENAMIENTO_POR_SERIE.sesionEnPausa);
+    else hacer({ tipo: 'pausar' }, COPY_ENTRENAMIENTO_POR_SERIE.sesionEnPausa);
   }
 
   async function iniciarEntrenamiento() {
@@ -1116,6 +1248,48 @@ export function PantallaDeSesion({
     return true;
   }
 
+  /**
+   * «Confirmar sustitución» (DL-151): el ejercicio realizado de la prescripción, con API-TRN-17. Como
+   * `guardarEnElBorrador`, primero manda lo pendiente y guarda con la versión vigente; pero los cambios se arman sobre ese
+   * borrador vigente (`cambiosParaSustituir`), y el fallo se dice en el diálogo. Con series ya registradas, antes
+   * pregunta: pasan a contar como el elegido. No arma eventos ni cambia la fila enfocada: los tiempos siguen como estaban.
+   */
+  async function sustituir(prescripcion: PrescripcionConObjetivos, elegido: EjercicioNombrado) {
+    if (enCurso.current) return;
+    enCurso.current = true;
+    setFalloDeSustitucion(null);
+    try {
+      const enElTelefono = entrenamientoLocal.sesion(draftId);
+      const antes = sustitucionDe(prescripcion, enElTelefono?.borrador ?? null, enElTelefono?.series ?? []);
+      const confirmacion = textoDeLaConfirmacion(antes, elegido);
+      if (confirmacion && !(await preguntar(COPY_ENTRENAMIENTO.sustituirEjercicio, confirmacion, COPY_ENTRENAMIENTO.confirmarSustitucion, 'default'))) return;
+      setOcupado(true);
+      const previo = await entrenamientoLocal.sincronizarYEsperar(draftId);
+      if (previo && sesionPerdida(previo)) return;
+      const vigente = entrenamientoLocal.sesion(draftId)?.borrador ?? null;
+      if (!vigente) return setFalloDeSustitucion(COPY.resultadoIncierto);
+      if (!sePuedeSustituir(vigente)) return setFalloDeSustitucion(TEXTOS_DE_LA_SUSTITUCION.cambioLaSesion);
+      const cambios = cambiosParaSustituir(vigente, prescripcion, elegido.versionId);
+      if (!cambios) return setDialogo(null);
+      const r = await api.guardarBorradorDeEjecucion(token, draftId, { expectedVersion: vigente.version, changes: cambios });
+      if (sesionPerdida(r)) return;
+      if (!r.ok) {
+        if (accesoRetirado(r)) return;
+        const f = falloDe(r, { EXERCISE_REFERENCE_INVALID: { mensaje: TEXTOS_DE_LA_SUSTITUCION.noSePuedeRegistrar, tipo: 'otro' } });
+        // Otro dispositivo cambió el borrador, o no se sabe si llegó: se relee, y la tarjeta dice lo que quedó guardado.
+        if (f.tipo === 'actualizar' || f.tipo === 'incierto') void entrenamientoLocal.actualizarBorrador(draftId);
+        // Sin respuesta (R-5): no se sabe si llegó; se dice eso, con lo que hacer, y que lo registrado no se pierde.
+        return setFalloDeSustitucion(f.tipo === 'incierto' ? TEXTOS_DE_LA_SUSTITUCION.sinRespuestaAlGuardar : f.mensaje);
+      }
+      entrenamientoLocal.fijarBorrador(draftId, r.datos.data);
+      setDialogo(null);
+      AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SUSTITUCION.anuncio(elegido.nombre, elegido.versionId === antes.planificado.versionId));
+    } finally {
+      enCurso.current = false;
+      setOcupado(false);
+    }
+  }
+
   async function cambiarAPorSerie() {
     if (!borrador) return;
     const cargado = borrador.exercises.length > 0 || borrador.sessionSummary !== null;
@@ -1133,9 +1307,51 @@ export function PantallaDeSesion({
     await guardarEnElBorrador({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivo.trim() || null });
   }
 
+  /** Lo escrito sin registrar de toda la sesión, en el teléfono ahora (PA-01). */
+  function pendientesAhora() {
+    const s = entrenamientoLocal.sesion(draftId);
+    return s?.sesion ? pendientesDeRegistrar(s.sesion, s.borrador, s.series, s.quitadas, s.escritas) : [];
+  }
+
+  /**
+   * «Registrarlas», en «Antes de finalizar» (PA-01): registra de una lo escrito sin registrar, como si se tildara cada
+   * fila. Las que no se pueden registrar quedan escritas, y se dice por qué.
+   */
+  function registrarPendientes() {
+    if (enCurso.current) return;
+    enCurso.current = true;
+    try {
+      let registradas = 0;
+      const fallas: string[] = [];
+      for (const x of pendientesAhora()) {
+        if (!x.lectura.ok) {
+          fallas.push(TEXTOS_DE_LA_SESION.noSePudoRegistrar(x.nombre, x.setIndex, motivoDeLaLectura(x.lectura)));
+          continue;
+        }
+        const presc = prescripciones.find((q) => q.prescriptionId === x.prescriptionId);
+        if (!presc) continue;
+        const r = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: x.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(entrenamientoLocal.sesion(draftId)?.borrador ?? null, presc), serie: x.lectura.serie }, { olvidarFilasDeMas: !x.planificada });
+        if (r === 'registrada') registradas++;
+      }
+      const hechas = registradas > 0 ? TEXTOS_DE_LA_SESION.registradasDeUna(registradas) : null;
+      if (fallas.length > 0) setAviso({ tipo: 'error', texto: [hechas, ...fallas].filter((x): x is string => x !== null).join(' ') });
+      else if (hechas) setAviso({ tipo: 'info', texto: hechas });
+      if (hechas) AccessibilityInfo.announceForAccessibility(hechas);
+      void sincronizar();
+    } finally {
+      enCurso.current = false;
+    }
+  }
+
+  async function descartarEscritas() {
+    if (!(await preguntar(TEXTOS_DE_LA_SESION.descartarLoEscrito, TEXTOS_DE_LA_SESION.descartarDetalle, TEXTOS_DE_LA_SESION.descartar))) return;
+    entrenamientoLocal.olvidarEscritas(draftId, pendientesAhora().map((x) => claveDeFila(x.prescriptionId, x.setIndex)));
+  }
+
   /**
    * Finalizar: lo abierto ya se resolvió; se mandan las series, se cierra la corrida (SESSION_FINISHED) y se mandan los
-   * tiempos; después se confirma el borrador (API-TRN-18) con su clave de idempotencia. Nada se confirma a medias.
+   * tiempos; después se confirma el borrador (API-TRN-18) con su clave de idempotencia. Nada se confirma a medias. Lo
+   * escrito sin registrar no se pierde en silencio: primero se registra o se descarta (PA-01).
    */
   async function finalizar() {
     if (enCurso.current) return;
@@ -1146,6 +1362,7 @@ export function PantallaDeSesion({
       let s = entrenamientoLocal.sesion(draftId);
       if (!s?.borrador) return setAviso({ tipo: 'error', texto: COPY.resultadoIncierto });
       if (modo === 'en-vivo' && estadoLocal(s.corrida).medicionAbierta) return setAviso({ tipo: 'error', texto: 'Hay una medición abierta: resolvela antes de finalizar.' });
+      if (pendientesAhora().length > 0) return setAviso({ tipo: 'error', texto: TEXTOS_DE_LA_SESION.quedanEscritas });
       if (!s.borrador.sessionCondition) return setAviso({ tipo: 'error', texto: 'Falta indicar cómo resultó la sesión.' });
       if (motivo.trim() !== (s.borrador.reason ?? '').trim() && !(await guardarEnElBorrador({ reason: motivo.trim() || null }))) return;
       s = entrenamientoLocal.sesion(draftId);
@@ -1160,7 +1377,7 @@ export function PantallaDeSesion({
       if (series && sesionPerdida(series)) return;
       s = entrenamientoLocal.sesion(draftId);
       if (!s) return;
-      if (s.series.length > 0) return setAviso({ tipo: 'error', texto: 'Hay series guardadas en el teléfono que todavía no se enviaron. Revisá el estado del envío y reintentá.' });
+      if (s.series.length > 0 || s.quitadas.length > 0) return setAviso({ tipo: 'error', texto: 'Hay series guardadas en el teléfono que todavía no se enviaron. Revisá el estado del envío y reintentá.' });
       const falta = problemaParaConfirmar(s.borrador);
       if (falta) return setAviso({ tipo: 'error', texto: falta });
       if (modo === 'en-vivo' && corridaAbierta(s.corrida)) {
@@ -1218,9 +1435,10 @@ export function PantallaDeSesion({
   const indice = s.prescriptions.findIndex((x) => x.prescriptionId === p.prescriptionId);
   const siguiente = s.prescriptions[indice + 1] ?? null;
   const pausada = conCorrida && estado.pausada;
-  const resumen = resumenDelRegistro(s, borrador, local.series);
+  const resumen = resumenDelRegistro(s, borrador, local.series, quitadas, escritasDeLaSesion);
   const conflictos = local.series.filter((l) => l.enConflicto).map((l) => ({ ...l, nombre: nombreDe(l.prescriptionId) }));
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
+  const t = TEXTOS_DE_LA_SESION;
 
   const sesionSinPausas = estado?.cierre === null ? (vivo?.sesionSinPausas ?? null) : (calculo?.session.withoutPauses ?? null);
   const temporizador: Temporizador | null =
@@ -1230,6 +1448,12 @@ export function PantallaDeSesion({
           calidad: sesionSinPausas.quality === 'MEASURED' ? null : ETIQUETA_DE_CALIDAD_DE_TIEMPO[sesionSinPausas.quality],
           etiqueta: `${pausada ? e.sesionEnPausa : e.sesion}, sin pausas: ${duracionParaLeer(sesionSinPausas.ms)}`,
         }
+      : null;
+  // El tiempo en el ejercicio actual, con la corrida abierta: sus tramos activos, sin las pausas (PA-02).
+  const enElEjercicio = conCorrida ? tiempoDelEjercicioEnVivo(local.corrida, almacen.reloj.ahora(), p.prescriptionId) : null;
+  const temporizadorDelEjercicio: Temporizador | null =
+    enElEjercicio && enElEjercicio.ms !== null
+      ? { texto: `${t.esteEjercicio} ${duracionParaMostrar(enElEjercicio.ms) ?? '—'}`, calidad: null, etiqueta: `${t.esteEjercicio}: ${duracionParaLeer(enElEjercicio.ms)}` }
       : null;
 
   const dialogoDeMedicion = (titulo: string, m: NonNullable<typeof abierta>) => (
@@ -1245,7 +1469,7 @@ export function PantallaDeSesion({
   const estadoDelEnvioSinBloqueo = (
     <EstadoDelEnvio
       estado={envio}
-      guardado={almacen.estadoDelGuardado()}
+      guardado={guardado}
       problema={local.problema}
       conflictos={conflictos}
       onReintentar={() => void entrenamientoLocal.reintentar(draftId)}
@@ -1275,21 +1499,38 @@ export function PantallaDeSesion({
 
   if (finalizando) {
     const deHoy = borrador ? borrador.date === hoyEn(borrador.timeZone) : true;
+    const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion);
+    const porEjercicio = s.prescriptions.flatMap((x) => {
+      const series = pendientes.filter((q) => q.prescriptionId === x.prescriptionId).map((q) => q.setIndex);
+      return series.length > 0 ? [{ prescriptionId: x.prescriptionId, nombre: x.exerciseName, series }] : [];
+    });
     return (
       <View>
         <Titulo>{e.resumenAntesDeFinalizar}</Titulo>
         <Parrafo tenue>{`${s.label} · ${fechaCivil(local.fecha)}`}</Parrafo>
         {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
         {modo === 'en-vivo' && abierta ? dialogoDeMedicion(deOtroProceso ? e.laSesionQuedoAbierta : e.medicionAbierta, abierta) : null}
-        <Seccion titulo={COPY_ENTRENAMIENTO.series}>
+        {/* Lo escrito sin registrar, antes que todo: se registra de una o se descarta, nunca se pierde en silencio (PA-01). */}
+        {porEjercicio.length > 0 ? (
+          <Seccion titulo={t.escritasTitulo} icono="borrador">
+            {porEjercicio.map((x) => (
+              <Parrafo key={x.prescriptionId}>{t.escritasDe(x.nombre, x.series)}</Parrafo>
+            ))}
+            <Parrafo tenue>{t.escritasPregunta}</Parrafo>
+            <Boton texto={t.registrarlas} onPress={registrarPendientes} deshabilitado={ocupado} />
+            <Boton texto={t.descartarLoEscrito} tipo="peligroSecundario" onPress={() => void descartarEscritas()} deshabilitado={ocupado} />
+          </Seccion>
+        ) : null}
+        <Seccion titulo={COPY_ENTRENAMIENTO.series} icono="series">
           <SeriesDelResumen resumen={resumen} />
+          <Parrafo tenue>{t.sinTildarNoCuentan}</Parrafo>
         </Seccion>
         {modo === 'en-vivo' ? (
-          <Seccion titulo={e.tiemposDeLaSesion}>
+          <Seccion titulo={e.tiemposDeLaSesion} icono="reloj">
             <TiemposMarcados tiempos={{ sesion: sesionSinPausas, calculo, nombreDe }} />
           </Seccion>
         ) : null}
-        <Seccion titulo={COPY_ENTRENAMIENTO.condicionDeLaSesion}>
+        <Seccion titulo={COPY_ENTRENAMIENTO.condicionDeLaSesion} icono="desvio">
           {/* El motivo va antes que los botones: lo escrito viaja con la condición. */}
           <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} ayuda={COPY_ENTRENAMIENTO.ayudaDelMotivo} value={motivo} onChangeText={setMotivo} />
           <Parrafo>{textoDeLaCondicion(borrador?.sessionCondition ?? null)}</Parrafo>
@@ -1316,7 +1557,7 @@ export function PantallaDeSesion({
         <Boton texto={e.finalizarEntrenamiento} onPress={() => void finalizar()} ocupado={ocupado} />
         <Boton texto="Volver a la sesión" tipo="secundario" onPress={() => setFinalizando(false)} deshabilitado={ocupado} />
         {/* Lejos de «Finalizar» y de los botones frecuentes, y con confirmación si hay algo cargado (B10-10:337). */}
-        <Seccion titulo="¿No pudiste entrenar?">
+        <Seccion titulo="¿No pudiste entrenar?" icono="salteada">
           <Boton texto={COPY_ENTRENAMIENTO.noPudeRealizarla} tipo="secundario" seleccionado={borrador?.sessionCondition === 'NOT_COMPLETED'} onPress={() => void noPude()} deshabilitado={ocupado} />
         </Seccion>
       </View>
@@ -1325,19 +1566,12 @@ export function PantallaDeSesion({
 
   const bases = basesDeLaPrescripcion(p);
   const banda = filaActiva ? bandaDeLaSerie(filaActiva.setIndex, filaActiva.objetivo) : null;
-  const registrable = filaActiva !== null && filaActiva.estado === 'sin-registrar';
-  const siguienteFila = filaActiva ? primeraSinRegistrar(filas, filaActiva.setIndex) : null;
-  const tituloDeLaSerie = !filaActiva
-    ? null
-    : filaActiva.estado !== 'sin-registrar'
-      ? e.serieGuardada(filaActiva.setIndex)
-      : filaActiva.planificada
-        ? e.serieDe(filaActiva.setIndex, p.sets.length)
-        : `${COPY_ENTRENAMIENTO.serie} ${numero(filaActiva.setIndex, 0)} · sin planificar`;
+  // La serie que origina un descanso que se inicia ahora: la que se hizo, no la que viene (al tildar, el foco avanza).
+  const serieDelDescanso = filaActiva ? serieQueOriginaElDescanso(filas, filaActiva.setIndex) : null;
   // Al terminar el descanso: la fila que quedará enfocada, si no es la misma del descanso.
   const trasElDescanso = abierta?.kind === 'REST' && filaActiva && abierta.prescriptionId === p.prescriptionId ? focoTrasElDescanso(filas, abierta.setIndex, filaActiva.setIndex) : null;
   const descanso: EstadoDelDescanso | null =
-    !conCorrida || !filaActiva
+    !conCorrida || !filaActiva || serieDelDescanso === null
       ? null
       : abierta?.kind === 'REST'
         ? {
@@ -1350,28 +1584,38 @@ export function PantallaDeSesion({
           }
         : pausada || abierta?.kind === 'SET'
           ? null
-          : { tipo: 'disponible', serie: filaActiva.setIndex, recomendado: filaActiva.objetivo?.restSeconds ?? null };
-  const cronometro: CronometroDeSerie | null =
-    !conCorrida || pausada
-      ? null
-      : abierta?.kind === 'SET'
-        ? { tipo: 'en-curso', serie: abierta.setIndex, duracion: vivo?.medicionAbierta ?? null }
-        : serieParaCronometrar === null
-          ? null
-          : abierta?.kind === 'REST'
-            ? { tipo: 'tras-descanso', serie: serieParaCronometrar }
-            : { tipo: 'disponible', serie: serieParaCronometrar };
-  const medida = filaActiva ? (calculo?.timedSets.filter((t) => t.prescriptionId === p.prescriptionId && t.setIndex === filaActiva.setIndex && t.finishedAt !== null).pop() ?? null) : null;
+          : { tipo: 'disponible', serie: serieDelDescanso, recomendado: recomendadoDe(p.prescriptionId, serieDelDescanso) };
+  // El reloj de las filas: solo en vivo, con la corrida abierta y sin pausa. Otro día el tiempo se escribe.
+  const relojDeLaTabla: RelojDeLaTabla = {
+    disponible: conCorrida && !pausada,
+    enCurso:
+      abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId
+        ? { setIndex: abierta.setIndex, texto: duracionParaMostrar(vivo?.medicionAbierta?.ms ?? null) ?? '—', minutos: duracionParaLeer(vivo?.medicionAbierta?.ms ?? null) }
+        : null,
+  };
   // Una serie de más es legítima: se ofrece cuando las planificadas ya tienen registro y no hay otra vacía esperando.
   const sePuedeAgregar = filas.length > 0 && Math.max(...filas.map((f) => f.setIndex)) < MAXIMO_DE_SERIES && filas.every((f) => f.estado !== 'sin-registrar');
+  const hayParaEscribir = filas.some((f) => f.estado === 'sin-registrar');
   // El estado del envío se dice cuando hay algo registrado o pendiente: antes de registrar nada, no hay qué decir.
   const hayRegistro = local.series.length > 0 || (borrador?.exercises.some((x) => (x.sets ?? []).length > 0) ?? false);
   const mostrarEnvio = hayRegistro || envio !== 'sincronizado';
   const elegidaEnTecnica = dialogo?.tipo === 'tecnica' ? (s.prescriptions.find((x) => x.prescriptionId === dialogo.prescriptionId) ?? null) : null;
+  // La sustitución del ejercicio activo (DL-151): lo planificado y lo ejecutado según el borrador, y si se ofrece.
+  const sustitucion = sustitucionDe(p, borrador, local.series);
+  const aSustituir = dialogo?.tipo === 'sustituir' ? (s.prescriptions.find((x) => x.prescriptionId === dialogo.prescriptionId) ?? null) : null;
 
   return (
     <View>
-      <BarraDeLaSesion nombre={s.label} temporizador={temporizador} onVerRutina={() => setDialogo({ tipo: 'rutina' })} />
+      <FranjaDeLaSesion
+        sesion={s.label}
+        ejercicio={p.exerciseName}
+        posicion={posicionEnLaSesion(indice + 1, s.prescriptions.length, filaActiva, p.sets.length)}
+        tramos={tramosDelRecorrido(resumen, p.prescriptionId)}
+        cuenta={cuentaDelRecorrido(resumen)}
+        tiempoDeLaSesion={temporizador}
+        tiempoDelEjercicio={temporizadorDelEjercicio}
+        onVerRutina={() => setDialogo({ tipo: 'rutina' })}
+      />
       {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
       {local.objetivosGenerales ? (
         <Aviso tipo="info" titulo={AVISO_SIN_PLAN_POR_SERIE}>
@@ -1395,44 +1639,62 @@ export function PantallaDeSesion({
           <Boton texto={e.reanudarSesion} onPress={() => void hacer({ tipo: 'reanudar' }, 'Sesión reanudada')} />
         </Aviso>
       ) : null}
-      <EjercicioActivo token={token} sesionPerdida={sesionPerdida} prescripcion={p} posicion={indice + 1} total={s.prescriptions.length} bases={bases} onVerTecnica={() => setDialogo({ tipo: 'tecnica', prescriptionId: p.prescriptionId })} />
-      {tituloDeLaSerie ? (
-        <Text style={estilos.tituloDeLaSerie} accessibilityRole="header">
-          {tituloDeLaSerie}
-        </Text>
-      ) : null}
-      <TablaDeSeries filas={filas} activa={filaActiva?.setIndex ?? 0} unidad={unidad} escrita={escrita} errores={errores} disposicion={disposicionDeLaTabla(width - 40, fontScale)} onEnfocar={enfocar} onEscribir={escribir} />
+      <EjercicioActivo
+        token={token}
+        sesionPerdida={sesionPerdida}
+        prescripcion={p}
+        posicion={indice + 1}
+        total={s.prescriptions.length}
+        bases={bases}
+        ejecutado={sustitucion.ejecutado?.nombre ?? null}
+        conNombre={false}
+        onVerTecnica={() => setDialogo({ tipo: 'tecnica', prescriptionId: p.prescriptionId })}
+        onSustituir={
+          sePuedeSustituir(borrador)
+            ? () => {
+                setFalloDeSustitucion(null);
+                setDialogo({ tipo: 'sustituir', prescriptionId: p.prescriptionId });
+              }
+            : undefined
+        }
+      />
+      {/* La ayuda por defecto, plegada junto al encabezado de la tabla, con el ícono de ayuda (PA-02). */}
+      <AyudaDeLaTabla />
+      <TablaDeSeries
+        filas={filas}
+        activa={filaActiva?.setIndex ?? 0}
+        unidad={unidad}
+        escritas={escritasDelActivo}
+        errores={errores}
+        // El ancho de la fila: la pantalla menos los 20 dp de relleno de cada lado y los 6 del borde y el relleno de la fila.
+        disposicion={disposicionDeLaTabla(width - 52, fontScale)}
+        reloj={relojDeLaTabla}
+        escribiendoTiempo={escribiendoTiempo}
+        ocupado={ocupado}
+        acciones={{ onEnfocar: enfocar, onEscribir: escribir, onTildar: tildar, onReloj: relojDeLaFila, onEscribirTiempo: escribirTiempo }}
+      />
       <ErroresDeLaFila errores={errores} />
       <View style={estilos.accionesDeLaTabla}>
-        {registrable ? <Boton texto={`Cambiar a ${unidad === 'kg' ? 'lb' : 'kg'}`} tipo="enlace" onPress={() => setUnidades((u) => ({ ...u, [p.prescriptionId]: unidad === 'kg' ? 'lb' : 'kg' }))} /> : null}
+        {hayParaEscribir ? <Boton texto={t.cambiarUnidad(unidad === 'kg' ? 'lb' : 'kg')} tipo="enlace" onPress={() => entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, unidad === 'kg' ? 'lb' : 'kg')} /> : null}
         {sePuedeAgregar ? (
           <Boton
-            texto="Agregar una serie"
+            texto={t.agregarUnaSerie}
             tipo="enlace"
             onPress={() => {
               const nueva = Math.max(...filas.map((f) => f.setIndex)) + 1;
-              setExtras((x) => ({ ...x, [p.prescriptionId]: (x[p.prescriptionId] ?? 0) + 1 }));
+              entrenamientoLocal.fijarFilasDeMas(draftId, p.prescriptionId, (local.filasDeMas[p.prescriptionId] ?? 0) + 1);
               enfocar(nueva);
             }}
           />
         ) : null}
       </View>
       {banda ? <BandaDelPlan banda={banda} /> : null}
-      {registrable ? <AyudaDelRir /> : null}
-      <CronometrarSerie estado={cronometro} medida={medida ? `${e.duracionMedida}: ${textoDeDuracion(medida.duration)}` : null} onCronometrar={cronometrar} onFinalizar={() => void hacer({ tipo: 'finalizar-serie' }, 'Serie finalizada')} deshabilitado={ocupado} />
-      {registrable && filaActiva ? (
-        <>
-          <Boton texto={e.registrarSerie(filaActiva.setIndex)} onPress={registrar} deshabilitado={!puedeRegistrar(escrita)} />
-          {puedeRegistrar(escrita) ? null : <Text style={estilos.ayudaDelBoton}>{e.faltaUnDato}</Text>}
-        </>
-      ) : null}
-      {!registrable && siguienteFila && abierta?.kind !== 'REST' ? <Boton texto={`Pasar a la serie ${numero(siguienteFila.setIndex, 0)}`} tipo="enlace" onPress={() => enfocar(siguienteFila.setIndex)} /> : null}
       {mostrarEnvio ? estadoDelEnvio : null}
       <BloqueDeDescanso
         estado={descanso}
         onIniciar={() => {
-          // El descanso queda ligado a la serie enfocada, la que lo origina. Guardar una serie no lo inicia.
-          if (filaActiva) hacer({ tipo: 'iniciar-descanso', prescriptionId: p.prescriptionId, setIndex: filaActiva.setIndex }, 'Descanso iniciado');
+          // El descanso queda ligado a la serie que lo origina, la última hecha. Tildar una serie no lo inicia.
+          if (serieDelDescanso !== null) hacer({ tipo: 'iniciar-descanso', prescriptionId: p.prescriptionId, setIndex: serieDelDescanso }, 'Descanso iniciado');
         }}
         onFinalizar={finalizarDescanso}
         deshabilitado={ocupado}
@@ -1443,7 +1705,7 @@ export function PantallaDeSesion({
           {pausada ? <Text style={estilos.ayudaDelBoton}>Reanudá la sesión para cambiar de ejercicio.</Text> : null}
         </>
       ) : null}
-      {conCorrida && !pausada ? <Boton texto={e.pausarSesion} tipo="secundario" onPress={() => void hacer({ tipo: 'pausar' }, e.sesionEnPausa)} /> : null}
+      {conCorrida && !pausada ? <Boton texto={e.pausarSesion} tipo="secundario" onPress={pausar} /> : null}
       <Boton texto={e.finalizarEntrenamiento} tipo="secundario" onPress={() => setFinalizando(true)} />
       <RutinaDeLaSesion
         visible={dialogo?.tipo === 'rutina'}
@@ -1457,13 +1719,23 @@ export function PantallaDeSesion({
         onCerrar={() => setDialogo(null)}
       />
       <TecnicaDelEjercicio visible={elegidaEnTecnica !== null} prescripcion={elegidaEnTecnica} token={token} sesionPerdida={sesionPerdida} onCerrar={() => setDialogo(null)} />
+      <SustituirEjercicio
+        visible={aSustituir !== null}
+        sustitucion={aSustituir ? sustitucionDe(aSustituir, borrador, local.series) : null}
+        buscar={(texto) => api.buscarEjercicios(token, texto)}
+        sesionPerdida={sesionPerdida}
+        ocupado={ocupado}
+        fallo={falloDeSustitucion}
+        onElegir={(elegido) => {
+          if (aSustituir) void sustituir(aSustituir, elegido);
+        }}
+        onCerrar={() => setDialogo(null)}
+      />
     </View>
   );
 }
 
 // ─── La ejecución registrada, con su corrección ─────────────────────────────────────────────
-
-type UnidadDeCarga = 'kg' | 'lb';
 
 /** «60 kg × 8 reps · RIR 2 · esfuerzo 7». Una carga que no se registró se dice así: no es «sin carga» (06:5675). */
 function textoDeSerie(s: { load: { value: number; unit: string } | null; completedRepetitions: number | null; rir: number | null; perceivedExertion: number | null }): string {
@@ -1471,20 +1743,34 @@ function textoDeSerie(s: { load: { value: number; unit: string } | null; complet
   return `${s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} × ${reps} ${COPY_ENTRENAMIENTO.reps.toLowerCase()}${s.rir !== null ? ` · RIR ${numero(s.rir)}` : ''}${s.perceivedExertion !== null ? ` · esfuerzo ${numero(s.perceivedExertion)}` : ''}`;
 }
 
+/**
+ * El nivel de detalle de un registro, con el mismo rótulo que lee el profesional (DL-161, `textoDelNivelDeDetalle`):
+ * «Cargada como el plan», «Parte como el plan», «Con detalle» o «Resumida, sin series». `null` para una sesión no
+ * realizada, que ya lo dice su condición, o si no se puede decir.
+ */
+export function textoDelNivelDelRegistro(registro: Pick<RegistroDeEjecucion, 'sessionCondition' | 'granularity' | 'exercises'>): string | null {
+  const nivel = nivelDeDetalleDelRegistro(registro);
+  return nivel === null || nivel === 'NO_REALIZADA' ? null : textoDelNivelDeDetalle(nivel);
+}
+
 function Registro({ registro }: { registro: RegistroDeEjecucion }) {
+  const nivel = textoDelNivelDelRegistro(registro);
   return (
     <View>
       <Dato etiqueta={COPY_ENTRENAMIENTO.condicionDeLaSesion} valor={etiquetaDeCondicionRegistrada(registro)} />
-      {registro.reason ? <Dato etiqueta="Motivo" valor={registro.reason} /> : null}
+      {nivel ? <Dato etiqueta={COPY_REGISTRO_POR_NIVELES.comoSeCargo} valor={nivel} /> : null}
+      {registro.reason ? <Dato etiqueta="Motivo" valor={registro.reason} apilado /> : null}
       {registro.exercises.map((e) => (
         <View key={e.prescriptionId}>
           <Dato
             etiqueta={e.substituted ? `${COPY_ENTRENAMIENTO.planificado}: ${e.prescribedExerciseName}` : e.performedExerciseName}
             valor={e.substituted ? `${COPY_ENTRENAMIENTO.ejecutado}: ${e.performedExerciseName}` : ''}
           />
+          {/* La serie tildada sin escribir dice «como el plan», como en el website: sus valores son los del plan. */}
           {(e.sets ?? []).map((s) => (
             <Parrafo key={s.setIndex}>
               {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)}
+              {seCargoComoElPlan(s) ? ` · ${COPY_REGISTRO_POR_NIVELES.comoElPlan}` : ''}
             </Parrafo>
           ))}
           {e.executionSummary ? <Parrafo>{e.executionSummary.description}</Parrafo> : null}
@@ -1495,12 +1781,11 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
   );
 }
 
-export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, salir }: { token: string; id: string; avisoInicial?: string; salir: (m: Salida) => void }) {
+export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, salir, ir }: { token: string; id: string; avisoInicial?: string; salir: (m: Salida) => void; ir: Ir }) {
   const sesionPerdida = useSesionPerdida(salir);
-  const { retirado, accesoRetirado } = useAccesoRetirado();
   const [r, setR] = useState<Resultado<{ data: EjecucionDeEntrenamiento }> | null>(null);
-  const [corrigiendo, setCorrigiendo] = useState(false);
-  const [aviso, setAviso] = useState<string | null>(avisoInicial ?? null);
+  // El aviso llega con la ruta: «Corrección registrada», al volver de la corrección (PA-04).
+  const aviso = avisoInicial ?? null;
 
   const cargar = useCallback(async () => {
     setR(null);
@@ -1513,8 +1798,7 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
     void cargar();
   }, [cargar]);
 
-  // Corregir es una escritura: denegada con el 404 no revelador, el registro se retira de la pantalla.
-  if (retirado) return <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible} />;
+  // Esta pantalla solo lee: la corrección, que escribe, retira el contenido en la suya si el acceso ya no está.
   if (!r) return <Cargando />;
   if (!r.ok) return <ErrorConReintento sinConexion={r.tipo === 'RED'} onReintentar={cargar} />;
   const x = r.datos.data;
@@ -1527,21 +1811,21 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
       <Parrafo tenue>{fechaCivil(x.date)}</Parrafo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
       {vigente ? (
-        <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente}>
+        <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente} icono="corregido">
           <Parrafo tenue>
             {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : COPY_ENTRENAMIENTO.corregidoPorVos} · {fecha(vigente.recordedAt)} · {vigente.reason}
           </Parrafo>
           <Registro registro={vigente.correction} />
         </Seccion>
       ) : null}
-      <Seccion titulo={COPY_ENTRENAMIENTO.registroOriginal}>
+      <Seccion titulo={COPY_ENTRENAMIENTO.registroOriginal} icono="texto">
         <Parrafo tenue>Registrado el {fecha(x.recordedAt)}</Parrafo>
         <Registro registro={x.original} />
       </Seccion>
       {/* Los tiempos marcados, cada uno con su calidad (API-TIE-03). Una sesión registrada sin tiempos sigue sin tiempos. */}
       <TiemposDeLaEjecucion token={token} executionId={x.executionId} nombreDe={nombreDe} sesionPerdida={sesionPerdida} />
       {x.corrections.length > 1 ? (
-        <Seccion titulo={COPY_ENTRENAMIENTO.historialDeCorrecciones}>
+        <Seccion titulo={COPY_ENTRENAMIENTO.historialDeCorrecciones} icono="linea-de-tiempo">
           {x.corrections.map((c) => (
             <Parrafo key={c.correctionId}>
               {fecha(c.recordedAt)} · {c.author.displayName} · {c.reason}
@@ -1549,219 +1833,16 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
           ))}
         </Seccion>
       ) : null}
-      {corrigiendo ? (
-        <FormularioDeCorreccion
-          token={token}
-          ejecucion={x}
-          sesionPerdida={sesionPerdida}
-          accesoRetirado={accesoRetirado}
-          onCorregida={() => {
-            setCorrigiendo(false);
-            setAviso('Corrección registrada. El registro original se conserva.');
-            void cargar();
-          }}
-          onCancelar={() => setCorrigiendo(false)}
-        />
-      ) : (
-        <Boton texto={COPY_ENTRENAMIENTO.corregirRegistro} tipo="secundario" onPress={() => setCorrigiendo(true)} />
-      )}
+      {/* PA-04: la corrección tiene su pantalla, con las tarjetas y las filas del registro. Al registrarla se vuelve acá. */}
+      <Boton texto={COPY_ENTRENAMIENTO.corregirRegistro} tipo="secundario" icono="corregido" onPress={() => ir({ nombre: 'corregir-ejecucion', id: x.executionId })} />
     </View>
   );
 }
 
-/**
- * Lo que la persona escribió y no se puede leer como número. `leerNumero` de `@be/domain` devuelve `null` tanto para el
- * campo vacío como para lo que no es un número, así que la diferencia la hace el texto: vacío es «no cargó nada»
- * —legítimo, el RIR es opcional—; escrito y sin leer es un error que hay que decir.
- */
-const sinLeer = (t: string): boolean => t.trim() !== '' && leerNumero(t) === null;
-
-/**
- * Un número ya guardado, escrito dentro de un campo editable: solo cambia el punto decimal por la coma. Acá no va
- * `numero`, que es para **mostrar**: separa los miles con punto, y cambiaría el valor que la persona no tocó. Lo que se
- * precarga tiene que volver de `leerNumero` idéntico a como salió.
- */
-const paraEditar = (v: number): string => String(v).replace('.', ',');
-
-type Condicion = 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED';
-interface SerieEnCorreccion {
-  readonly carga: string;
-  readonly unidad: UnidadDeCarga;
-  readonly reps: string;
-  readonly rir: string;
-}
-interface EstadoDeCorreccion {
-  readonly condicion: Condicion;
-  readonly motivoDeCondicion: string;
-  readonly series: readonly (readonly SerieEnCorreccion[])[];
-  readonly resumenes: readonly string[];
-  readonly resumenDeSesion: string;
-}
-
-/**
- * «Corregir registro» (B10-06:868-886): exige motivo **y un cambio**. Se corrigen la condición y su motivo, la carga
- * (con su unidad), las repeticiones y el RIR de cada serie, y los resúmenes; la corrección lleva el registro completo y
- * el original no se toca (REG-06-116).
- * - Corregir a «No pude realizarla» deja la corrección sin series: el original las conserva.
- * - Corregir un «No pude realizarla» a realizada pide contar cómo fue la sesión: no se inventan series que no se
- *   registraron (09v10:1099-1101).
- */
-function FormularioDeCorreccion({
-  token,
-  ejecucion: x,
-  sesionPerdida,
-  accesoRetirado,
-  onCorregida,
-  onCancelar,
-}: {
-  token: string;
-  ejecucion: EjecucionDeEntrenamiento;
-  sesionPerdida: (r: Resultado<unknown>) => boolean;
-  accesoRetirado: (r: Resultado<unknown>) => boolean;
-  onCorregida: () => void;
-  onCancelar: () => void;
-}) {
-  const base = registroVigente(x);
-  const inicial: EstadoDeCorreccion = {
-    condicion: base.sessionCondition,
-    motivoDeCondicion: base.reason ?? '',
-    series: base.exercises.map((e) =>
-      (e.sets ?? []).map((s) => ({
-        carga: s.load ? paraEditar(s.load.value) : '',
-        unidad: (s.load?.unit ?? 'kg') as UnidadDeCarga,
-        reps: s.completedRepetitions === null ? '' : paraEditar(s.completedRepetitions),
-        rir: s.rir === null ? '' : paraEditar(s.rir),
-      })),
-    ),
-    resumenes: base.exercises.map((e) => e.executionSummary?.description ?? ''),
-    resumenDeSesion: base.sessionSummary?.description ?? '',
-  };
-  const [estado, setEstado] = useState<EstadoDeCorreccion>(inicial);
-  const [motivo, setMotivo] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [fallo, setFallo] = useState<string | null>(null);
-  const intento = useClaveDeIntento();
-  useCambiosSinGuardar(motivo.trim() !== '' || JSON.stringify(estado) !== JSON.stringify(inicial) ? 'la corrección del registro' : null);
-  const sinDatosOriginales = base.sessionCondition === 'NOT_COMPLETED';
-
-  /** El registro corregido que describe un estado del formulario. El inicial describe lo que hoy rige. */
-  function construir(e: EstadoDeCorreccion) {
-    const reason = e.motivoDeCondicion.trim() || null;
-    if (e.condicion === 'NOT_COMPLETED') return { granularity: null, sessionCondition: e.condicion, reason, exercises: [], sessionSummary: null };
-    if (sinDatosOriginales) {
-      return { granularity: 'EXERCISE_OR_SESSION' as const, sessionCondition: e.condicion, reason, exercises: [], sessionSummary: e.resumenDeSesion.trim() ? { description: e.resumenDeSesion.trim() } : null };
-    }
-    return {
-      granularity: base.granularity,
-      sessionCondition: e.condicion,
-      reason,
-      exercises: base.exercises.map((ej, i) =>
-        ej.sets
-          ? {
-              prescriptionId: ej.prescriptionId,
-              performedExerciseVersionId: ej.performedExerciseVersionId,
-              sets: ej.sets.map((s, j) => {
-                const v = e.series[i]?.[j];
-                const carga = v ? leerNumero(v.carga) : null;
-                const reps = v ? leerNumero(v.reps) : null;
-                return {
-                  setIndex: s.setIndex,
-                  load: carga === null ? null : { value: carga, unit: v?.unidad ?? 'kg' },
-                  completedRepetitions: reps === null ? null : Math.round(reps),
-                  rir: v ? leerNumero(v.rir) : null,
-                  perceivedExertion: s.perceivedExertion,
-                };
-              }),
-            }
-          : { prescriptionId: ej.prescriptionId, performedExerciseVersionId: ej.performedExerciseVersionId, executionSummary: { description: (e.resumenes[i] ?? '').trim() } },
-      ),
-      sessionSummary: base.granularity === 'EXERCISE_OR_SESSION' && e.resumenDeSesion.trim() ? { description: e.resumenDeSesion.trim() } : null,
-    };
-  }
-
-  const cambiarSerie = (i: number, j: number, cambio: Partial<SerieEnCorreccion>) =>
-    setEstado((s) => ({ ...s, series: s.series.map((fila, a) => (a === i ? fila.map((c, k) => (k === j ? { ...c, ...cambio } : c)) : fila)) }));
-
-  async function enviar() {
-    if (!motivo.trim()) return setFallo('Contá por qué corregís el registro.');
-    if (!estado.series.every((fila) => fila.every((v) => ![v.carga, v.reps, v.rir].some(sinLeer)))) return setFallo('Revisá los números de las series.');
-    const correccion = construir(estado);
-    // Corregir exige un cambio: una corrección igual a lo que rige no rectifica nada (B10-06:879-884).
-    if (JSON.stringify(correccion) === JSON.stringify(construir(inicial))) return setFallo('La corrección no cambia nada del registro.');
-    if (sinDatosOriginales && estado.condicion !== 'NOT_COMPLETED' && !estado.resumenDeSesion.trim()) return setFallo('Contá cómo fue la sesión.');
-    setEnviando(true);
-    setFallo(null);
-    const r = await api.corregirEjecucion(token, x.executionId, { reason: motivo.trim(), correction: correccion }, intento.actual());
-    intento.registrar(r);
-    setEnviando(false);
-    if (sesionPerdida(r)) return;
-    if (accesoRetirado(r)) return;
-    if (!r.ok) return setFallo(r.tipo === 'API' && r.issues.some((i) => i.code === 'CORRECTION_WITHOUT_CHANGES') ? 'La corrección no cambia nada del registro.' : r.tipo === 'API' && r.issues.length > 0 ? 'Hay un dato de la corrección que no se puede guardar.' : falloDe(r).mensaje);
-    onCorregida();
-  }
-
-  const CONDICIONES: readonly { valor: Condicion; texto: string }[] = [
-    { valor: 'COMPLETED', texto: 'Realizada' },
-    { valor: 'COMPLETED_WITH_DEVIATION', texto: 'Realizada con desvío' },
-    { valor: 'NOT_COMPLETED', texto: COPY_ENTRENAMIENTO.noPudeRealizarla },
-  ];
-
-  return (
-    <Seccion titulo={COPY_ENTRENAMIENTO.corregirRegistro}>
-      <Campo etiqueta={COPY_ENTRENAMIENTO.motivoDeLaCorreccion} value={motivo} onChangeText={setMotivo} />
-      <Subtitulo>{COPY_ENTRENAMIENTO.condicionDeLaSesion}</Subtitulo>
-      {CONDICIONES.map((c) => (
-        <Boton key={c.valor} texto={c.texto} tipo={estado.condicion === c.valor ? 'primario' : 'secundario'} seleccionado={estado.condicion === c.valor} onPress={() => setEstado((s) => ({ ...s, condicion: c.valor }))} />
-      ))}
-      <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} value={estado.motivoDeCondicion} onChangeText={(v) => setEstado((s) => ({ ...s, motivoDeCondicion: v }))} />
-      {estado.condicion === 'NOT_COMPLETED' ? (
-        <Parrafo tenue>La corrección queda sin series. El registro original se conserva tal como está.</Parrafo>
-      ) : sinDatosOriginales ? (
-        <Campo etiqueta={`${COPY_ENTRENAMIENTO.resumenDeLaSesion}: contá cómo fue`} value={estado.resumenDeSesion} onChangeText={(v) => setEstado((s) => ({ ...s, resumenDeSesion: v }))} multiline />
-      ) : (
-        <>
-          {base.exercises.map((e, i) => (
-            <View key={e.prescriptionId}>
-              <Subtitulo>{e.performedExerciseName}</Subtitulo>
-              {(e.sets ?? []).map((s, j) => {
-                const v = estado.series[i]?.[j];
-                return (
-                  <View key={s.setIndex}>
-                    <Parrafo>
-                      {COPY_ENTRENAMIENTO.serie} {s.setIndex}
-                    </Parrafo>
-                    <Campo etiqueta={`${COPY_ENTRENAMIENTO.carga} (${v?.unidad ?? 'kg'})`} value={v?.carga ?? ''} onChangeText={(t) => cambiarSerie(i, j, { carga: t })} keyboardType="decimal-pad" />
-                    <Boton texto={`Cambiar a ${v?.unidad === 'lb' ? 'kg' : 'lb'}`} tipo="enlace" onPress={() => cambiarSerie(i, j, { unidad: v?.unidad === 'lb' ? 'kg' : 'lb' })} />
-                    <Campo etiqueta={COPY_ENTRENAMIENTO.reps} value={v?.reps ?? ''} onChangeText={(t) => cambiarSerie(i, j, { reps: t })} keyboardType="number-pad" />
-                    {/* El RIR admite decimales (de 0 a 20): teclado decimal. */}
-                    <Campo etiqueta={`${COPY_ENTRENAMIENTO.rir} (opcional)`} value={v?.rir ?? ''} onChangeText={(t) => cambiarSerie(i, j, { rir: t })} keyboardType="decimal-pad" />
-                  </View>
-                );
-              })}
-              {e.executionSummary ? (
-                <Campo
-                  etiqueta={COPY_ENTRENAMIENTO.resumenDelEjercicio}
-                  value={estado.resumenes[i] ?? ''}
-                  onChangeText={(t) => setEstado((s) => ({ ...s, resumenes: s.resumenes.map((r0, k) => (k === i ? t : r0)) }))}
-                  multiline
-                />
-              ) : null}
-            </View>
-          ))}
-          {base.granularity === 'EXERCISE_OR_SESSION' ? (
-            <Campo etiqueta={`${COPY_ENTRENAMIENTO.resumenDeLaSesion} (opcional)`} value={estado.resumenDeSesion} onChangeText={(v) => setEstado((s) => ({ ...s, resumenDeSesion: v }))} multiline />
-          ) : null}
-        </>
-      )}
-      {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
-      <Boton texto="Registrar corrección" onPress={() => void enviar()} ocupado={enviando} />
-      <Boton texto="Cancelar" tipo="enlace" onPress={onCancelar} deshabilitado={enviando} />
-    </Seccion>
-  );
-}
-
 const estilos = estilosPorTema((COLOR) => ({
-  fechaDeHoy: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginTop: 10, marginBottom: 4 },
+  // La fecha con el calendario al lado (PA-06): el margen va en la fila.
+  filaDeLaFecha: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 4 },
+  fechaDeHoy: { flexShrink: 1, fontSize: 19, fontWeight: '800', color: COLOR.texto },
   cabezaDeSesion: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconoDeSesion: { width: 52, height: 52, borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficieElevada, alignItems: 'center', justifyContent: 'center' },
   textosDeSesion: { flex: 1 },

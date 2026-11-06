@@ -16,6 +16,7 @@ import {
 import { decisionesDe, OperacionProtegida, PdpGuard, type SolicitudAutorizada } from '../autorizacion/pdp.guard';
 import { leerFilas } from '../antropometria/evolucion.service';
 import { EjecucionesDeEntrenamientoService } from '../entrenamiento/ejecuciones.service';
+import { instantaneasDe } from '../nutricion/lectura-registro';
 import { fechaLocalEn } from '../nutricion/zona';
 import { conReintento, momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -25,6 +26,7 @@ import { leerBusquedaDeLineaDeTiempo, leerConsultaDeLineaDeTiempo, leerConsultaD
 import { ejecucionesDelPeriodo, hayRegistrosDeOtros, registrosDeComidaDelPeriodo, versionesActivadas, versionesDeObjetivo, ZONA } from './fuentes';
 import {
   entradasDeComidas,
+  entradasDeFormularios,
   entradasDeNotas,
   entradasDeObjetivos,
   entradasDeRevisiones,
@@ -34,7 +36,7 @@ import {
   entradasDeVersiones,
   NombresDeAutores,
 } from './lectura-linea-de-tiempo';
-import { DERIVACION, objetivosDeLasVersiones, proyeccionAntropometrica, proyeccionDeEntrenamiento, proyeccionNutricional } from './lectura-proyecciones';
+import { DERIVACION, objetivosDeLasVersiones, proyeccionAntropometrica, proyeccionDeEntrenamiento, proyeccionNutricional, versionesParaLasComidas } from './lectura-proyecciones';
 
 /** El dominio de cada clave de proyección, para decidir con el PDP (las cinco sin especificación son de Entrenamiento). */
 const ALCANCE_DE_LA_CLAVE: Readonly<Record<ConsultaDeProyeccion['clave'], Alcance>> = {
@@ -122,6 +124,8 @@ export class AnalisisController {
         todas.push(...(await entradasDeSeguimientos(tx, permitidos, profesionalId, titularId, desde, hasta, nombres)));
         // DL-140: las notas de coordinación que este profesional escribió o recibió, con algún alcance permitido (el guard).
         todas.push(...(await entradasDeNotas(tx, profesionalId, titularId, desde, hasta)));
+        // DL-165 D-8: los formularios que este profesional le pidió a la persona, en los alcances permitidos.
+        todas.push(...(await entradasDeFormularios(tx, permitidos, profesionalId, titularId, desde, hasta, nombres, nombreDelTitular)));
         return { entradas: todas, generatedAt: (await momentoDeLaBase(tx)).toISOString() };
       }),
     );
@@ -207,10 +211,14 @@ export class AnalisisController {
       case 'NUTRITION_PRESCRIBED_VS_RECORDED': {
         const d = await leer(async (tx) => {
           const ahora = await momentoDeLaBase(tx);
+          const registros = await registrosDeComidaDelPeriodo(tx, profesionalId, titularId, desde, hasta);
+          const versiones = await versionesActivadas(tx, 'NUTRICION', profesionalId, titularId);
           return {
             ahora,
-            registros: await registrosDeComidaDelPeriodo(tx, profesionalId, titularId, desde, hasta),
-            versiones: await versionesActivadas(tx, 'NUTRICION', profesionalId, titularId),
+            registros,
+            versiones,
+            // DL-153: el plan de cada versión, para saber qué comidas indicaba cada día (una sola consulta).
+            instantaneas: await instantaneasDe(tx, versionesParaLasComidas(versiones, registros, desde, hasta)),
             objetivos: await versionesDeObjetivo(tx, 'NUTRICION', profesionalId, titularId),
             deOtros: await hayRegistrosDeOtros(tx, 'NUTRICION', profesionalId, titularId, desde, hasta),
           };

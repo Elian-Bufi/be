@@ -37,11 +37,15 @@ export class SesionGuard implements CanActivate {
         expiraEn: true,
         momentoDeOcurrencia: true,
         versionDeControl: true,
+        clase: true,
         identidad: { select: { estadoOperativoDeCuenta: true, controlDeSesion: { select: { version: true } } } },
       },
     });
     if (!sesion || sesion.identidadId !== reclamos.sub) throw errores.sesionInvalida();
     if (sesion.estado !== 'ACTIVA') throw errores.sesionRevocada();
+    // WP-ADMINISTRACION (DL-155): una sesión administrativa solo sirve en la consola de Administración (su propio guard).
+    // Acá es una sesión que no vale: el administrador no opera como persona ni como profesional, ni lee datos de salud.
+    if (sesion.clase !== 'PERSONAL') throw errores.sesionInvalida();
     if (sesion.expiraEn.getTime() <= Date.now()) throw errores.sesionExpirada();
     const versionVigente = sesion.identidad.controlDeSesion?.version;
     if (versionVigente !== reclamos.tv || sesion.versionDeControl !== reclamos.tv) throw errores.sesionRevocada();

@@ -21,6 +21,9 @@ import { agruparPorDia, type FiltrosDeLineaDeTiempo } from './linea-de-tiempo';
 /** Lo que la persona registra una y otra vez. Todo lo demás es un hito. */
 const DE_TODOS_LOS_DIAS: ReadonlySet<TipoDeEvento> = new Set<TipoDeEvento>(['MEAL_RECORDED', 'TRAINING_SESSION_RECORDED']);
 
+/** DL-165 D-8 · los hechos de un formulario: hitos de la línea de tiempo, pero no de planificación (no cambian lo que se le indica a nadie). */
+export const TIPOS_DE_FORMULARIO: readonly TipoDeEvento[] = ['FORM_REQUESTED', 'FORM_RESPONDED', 'FORM_LOADED', 'FORM_CONFIRMED', 'FORM_REJECTED'];
+
 /** Los tipos de hecho que son hitos, en el orden del contrato. */
 export const TIPOS_DE_HITO: readonly TipoDeEvento[] = TIPOS_DE_EVENTO.filter((t) => !DE_TODOS_LOS_DIAS.has(t));
 
@@ -28,12 +31,13 @@ export const esHito = (e: EntradaDeLineaDeTiempo): boolean => !DE_TODOS_LOS_DIAS
 
 /**
  * Los hitos de planificación: los que marcan un antes y un después en lo que se le indica a la persona (un plan que se
- * activa, un objetivo, una revisión, un seguimiento que se abre o se cierra). Son los hitos menos las tomas y las notas de
- * coordinación: una toma es una medición, y en un gráfico ya es un punto; una nota no cambia lo que se le indica a nadie
- * (UC-E07: no prescribe ni modifica, DL-140). «Analizar» dibuja estos como líneas verticales; la línea de tiempo destaca
- * todos los hitos. Los dos conjuntos salen de acá, para que no se separen.
+ * activa, un objetivo, una revisión, un seguimiento que se abre o se cierra). Son los hitos menos las tomas, las notas de
+ * coordinación y los formularios: una toma es una medición, y en un gráfico ya es un punto; una nota no cambia lo que se le
+ * indica a nadie (UC-E07: no prescribe ni modifica, DL-140), y un formulario tampoco (DL-165 D-8). «Analizar» dibuja
+ * estos como líneas verticales; la línea de tiempo destaca todos los hitos. Los dos conjuntos salen de acá, para que no
+ * se separen.
  */
-export const TIPOS_DE_HITO_DE_PLANIFICACION: readonly TipoDeEvento[] = TIPOS_DE_HITO.filter((t) => t !== 'ANTHROPOMETRIC_EVALUATION_RECORDED' && t !== 'COORDINATION_NOTE_RECORDED');
+export const TIPOS_DE_HITO_DE_PLANIFICACION: readonly TipoDeEvento[] = TIPOS_DE_HITO.filter((t) => t !== 'ANTHROPOMETRIC_EVALUATION_RECORDED' && t !== 'COORDINATION_NOTE_RECORDED' && !TIPOS_DE_FORMULARIO.includes(t));
 
 // ─── Los rasgos de un hecho ─────────────────────────────────────────────────────────────────────
 

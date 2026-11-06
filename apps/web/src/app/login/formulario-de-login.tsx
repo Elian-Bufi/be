@@ -6,11 +6,13 @@
  * en Cuenta (DL-025; pedido de Dirección del 2026-10-17), salvo que haya un retorno pedido.
  * DL-138: «Continuar con Google» arriba del formulario, si el build tiene el client ID. La sesión que abre Google se guarda
  * igual que la del login y lleva al mismo destino.
+ * DL-147: si al abrir la entrada se reanuda una sesión (una recarga, otra pestaña), sigue directo al destino pedido o al
+ * inicio, sin pedir la contraseña. Mientras se pregunta, el formulario dice «Recuperando tu sesión…».
  */
 import type { IniciarSesionResponse } from '@be/domain';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AccesoConGoogle } from '../../components/acceso-con-google';
 import { Aviso, Campo, ResumenDeErrores } from '../../components/formulario';
 import { api } from '../../lib/api';
@@ -24,7 +26,9 @@ export function FormularioDeLogin() {
   const parametros = useSearchParams();
   const aviso = avisoDe(parametros.get('aviso'));
   const router = useRouter();
-  const { guardar } = useSesion();
+  const { guardar, sesion, restaurando } = useSesion();
+  // La sesión que abre este formulario navega desde `entrar`; la que se reanuda al cargar, desde el efecto de abajo.
+  const entroAca = useRef(false);
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [errores, setErrores] = useState<{ correo?: string; contrasena?: string }>({});
@@ -37,7 +41,8 @@ export function FormularioDeLogin() {
    */
   function entrar(respuesta: IniciarSesionResponse) {
     const token = respuesta.data.session.accessToken;
-    guardar(token, respuesta.data.session.expiresAt);
+    entroAca.current = true;
+    guardar(respuesta);
     const volver = parametros.get('volver');
     if (volver) {
       router.push(destinoSeguro(volver));
@@ -45,6 +50,14 @@ export function FormularioDeLogin() {
     }
     void buscarInicioPropio(token).then((destino) => router.push(destino));
   }
+
+  const tokenReanudado = sesion?.token ?? null;
+  useEffect(() => {
+    if (restaurando || !tokenReanudado || entroAca.current) return;
+    const volver = parametros.get('volver');
+    if (volver) router.replace(destinoSeguro(volver));
+    else void buscarInicioPropio(tokenReanudado).then((destino) => router.replace(destino));
+  }, [restaurando, tokenReanudado, parametros, router]);
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
@@ -63,7 +76,8 @@ export function FormularioDeLogin() {
       entrar(r.datos);
       return;
     }
-    if (r.tipo === 'RED') return setEstado({ tipo: 'error', mensaje: COPY.resultadoIncierto });
+    // Sin conexión, el mensaje lo dice: no es «datos incorrectos» (DL-147).
+    if (r.tipo === 'RED') return setEstado({ tipo: 'error', mensaje: COPY.loginSinConexion });
     if (r.codigo === 'INVALID_CREDENTIALS') return setEstado({ tipo: 'error', mensaje: COPY.loginFallido });
     if (r.codigo === 'RATE_LIMITED') return setEstado({ tipo: 'error', mensaje: COPY.demasiadosIntentos });
     if (r.codigo === 'INVALID_REQUEST' || r.codigo === 'UNKNOWN_FIELD') return setEstado({ tipo: 'error', mensaje: COPY.loginFallido });
@@ -72,6 +86,15 @@ export function FormularioDeLogin() {
 
   const lista = Object.entries(errores).map(([id, texto]) => ({ id, texto: texto as string }));
   const enviando = estado.tipo === 'enviando';
+
+  // Sin parpadeo: mientras se pregunta por la sesión, o mientras se va con la que se reanudó, no se dibuja el formulario.
+  if (restaurando || (tokenReanudado && !entroAca.current)) {
+    return (
+      <p className="nota" aria-live="polite">
+        {restaurando ? 'Recuperando tu sesión…' : 'Ya iniciaste sesión: te llevamos…'}
+      </p>
+    );
+  }
 
   return (
     <AccesoConGoogle alEntrar={entrar}>

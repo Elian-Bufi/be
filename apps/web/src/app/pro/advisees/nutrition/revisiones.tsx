@@ -11,6 +11,9 @@
  * «Nueva revisión». La revisión nueva es otra pantalla de la misma sección (`preparar=1`, también desde la ficha), en tres
  * pasos y con la barra de «Registrar revisión» pegada abajo; al registrar o cancelar se vuelve a la lista. Las piezas
  * comunes con Entrenamiento están en `revision-en-preparacion.tsx`.
+ * DL-154 (hallazgo UX-02): cada revisión registrada dice su período, quién la registró y la evidencia que se marcó al
+ * registrarla, consultable con «Ver la evidencia» (`evidencia-registrada.tsx`): las comidas y las versiones del plan se
+ * abren en el panel, con el permiso de hoy.
  */
 import {
   COPY_NUTRICION,
@@ -19,17 +22,23 @@ import {
   fechaCivil,
   type ContextoDeRevisionResponse,
   type EvaluacionNutricional,
+  type EvidenciaResuelta,
+  type OrigenDeDato,
   type Revision,
+  type VersionDePlan,
 } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
+import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
-import { dia, diaDelAnioEnCurso, fecha, horaEnZona } from '../../../../lib/formato';
+import { motivoDeFalla, textoDeFalla } from '../../../../lib/fallas';
+import { dia, diaDelAnioEnCurso, fecha, horaEnZona, rangoCivil } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { avisoDeMarcasQuitadas, diasDelPeriodo, marcasDelPeriodoNuevo, referenciasMarcadas, versionesDelPlan } from '../evidencia';
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
+import { EvidenciaRegistrada } from '../evidencia-registrada';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 import {
@@ -43,8 +52,10 @@ import {
   SALIR_DE_LA_REVISION,
   useContextoDeLaRevision,
 } from '../revision-en-preparacion';
+import { DetalleDeRegistroDeComida } from './detalle-de-registro';
 import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
 import { EstadoDeLectura, useNutricion } from './nutricion';
+import { VersionSoloLectura } from './plan';
 
 type Contexto = ContextoDeRevisionResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;
@@ -430,10 +441,22 @@ function ItemDeRevision({ revision, onAplicada }: { revision: Revision; onAplica
       <p className="lista__titulo">
         {ETIQUETA_DE_RESULTADO[revision.result]} · {fecha(revision.recordedAt)}
       </p>
+      {/* DL-154: el contexto de la revisión, a la vista: qué período se revisó y quién la registró. */}
+      <p className="nota">
+        Nutrición · período revisado: {rangoCivil(revision.period.start, revision.period.end)} · registró: {revision.author.displayName}
+      </p>
       <p>{revision.interpretation}</p>
       <p className="nota">
         Fundamento: {revision.rationale} · {revision.result === 'FINALIZE' ? 'Cierre' : 'Próxima acción'}: {revision.nextAction.description}
       </p>
+      <EvidenciaRegistrada
+        area="NUTRITION"
+        revision={revision}
+        leer={() => api.evidenciaDeRevision(token, revision.reviewId)}
+        sesionPerdida={sesionPerdida}
+        abrible={(o, item) => o.type === 'MEAL_RECORD' || (o.type === 'NUTRITION_PLAN_VERSION' && item.what?.kind === 'PLAN_VERSION' && item.what.number !== null)}
+        contenidoDelOrigen={(o, item, alNoEstarDisponible) => <OrigenDeLaEvidencia origen={o} item={item} onNoDisponible={alNoEstarDisponible} />}
+      />
       {revision.application ? (
         <p>
           <span className="insignia insignia--si">Aplicada</span> {fecha(revision.application.appliedAt)}
@@ -453,4 +476,39 @@ function ItemDeRevision({ revision, onAplicada }: { revision: Revision; onAplica
       )}
     </li>
   );
+}
+
+/**
+ * El origen de un elemento de la evidencia, en el panel (DL-154): la comida o la versión del plan, leídas por su propia
+ * operación con el permiso de hoy. Si ya no se pueden leer, lo dicen y avisan a quien las abrió.
+ */
+function OrigenDeLaEvidencia({ origen, item, onNoDisponible }: { origen: OrigenDeDato; item: EvidenciaResuelta; onNoDisponible: () => void }) {
+  const { token, sesionPerdida } = useNutricion();
+  if (origen.type === 'MEAL_RECORD') return <DetalleDeRegistroDeComida registroId={origen.id} token={token} sesionPerdida={sesionPerdida} onNoDisponible={onNoDisponible} />;
+  return <VersionDeLaEvidencia planId={origen.id} numero={item.what?.kind === 'PLAN_VERSION' ? (item.what.number ?? 0) : 0} onNoDisponible={onNoDisponible} />;
+}
+
+function VersionDeLaEvidencia({ planId, numero, onNoDisponible }: { planId: string; numero: number; onNoDisponible: () => void }) {
+  const { token, sesionPerdida } = useNutricion();
+  const [r, setR] = useState<Resultado<{ data: VersionDePlan }> | null>(null);
+  const cargar = useCallback(async () => {
+    setR(null);
+    const res = await api.consultarPlan(token, planId);
+    if (sesionPerdida(res)) return;
+    setR(res);
+  }, [token, planId, sesionPerdida]);
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+  // Como el detalle de una comida: un 404 (o un 403) es «sin acceso», el mismo texto para lo revocado y lo inexistente.
+  const sinAcceso = r !== null && !r.ok && r.tipo === 'API' && (r.codigo === 'RESOURCE_NOT_FOUND' || r.status === 403);
+  const aviso = useRef(onNoDisponible);
+  aviso.current = onNoDisponible;
+  useEffect(() => {
+    if (sinAcceso) aviso.current();
+  }, [sinAcceso]);
+  if (r === null) return <Cargando />;
+  if (sinAcceso) return <p className="nota">Esta versión del plan no está disponible con tu acceso actual.</p>;
+  if (!r.ok) return <ErrorConReintento mensaje={textoDeFalla(motivoDeFalla(r), 'la versión del plan')} onReintentar={() => void cargar()} />;
+  return <VersionSoloLectura version={r.datos.data} numero={numero} />;
 }

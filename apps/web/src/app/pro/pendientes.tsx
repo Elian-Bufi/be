@@ -16,6 +16,10 @@
  * - **El período no cambia qué está pendiente:** acota solo el último registro de cada fila, y lo dice. Sin período se
  *   mira toda la historia, y entonces no se habla de «el período».
  * - **Una falla dice su motivo,** y una vista sin filas no es «nada pendiente».
+ *
+ * Bloque 5 del encargo de consolidación: el «Reintentar» de los pendientes vuelve a leer solo los pendientes (el de «Tus
+ * asesorados» lee los suyos); «Ver todo» y «Limpiar filtros» son la misma acción, y no se ofrecen dos veces a la vez; y
+ * un «Actualizar» que falla deja a la vista lo ya leído, con el aviso arriba.
  */
 import {
   COPY_CARTERA,
@@ -72,6 +76,7 @@ export function Pendientes({
   periodo,
   onPeriodo,
   onActualizar,
+  onReintentar,
   onVerMas,
 }: {
   cartera: EstadoDeLaCartera;
@@ -80,6 +85,8 @@ export function Pendientes({
   onPeriodo: (p: Periodo) => void;
   /** Vuelve a leer todo lo que la página muestra: los pendientes, los asesorados y las solicitudes. */
   onActualizar: () => void;
+  /** Vuelve a leer solo los pendientes: es lo que falló. */
+  onReintentar: () => void;
   onVerMas: () => void;
 }) {
   const id = useId();
@@ -99,6 +106,7 @@ export function Pendientes({
     onPeriodo({});
     setVersionDelPeriodo((v) => v + 1);
   };
+  /** «Limpiar filtros» y «Ver todo» son la misma acción: «Todo», sin área, sin tipo y sin período. */
   const limpiar = () => {
     setFiltro(TODO);
     if (conPeriodo) quitarPeriodo();
@@ -246,29 +254,39 @@ export function Pendientes({
         </p>
       ) : null}
       {cartera.tipo === 'error' ? (
-        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[cartera.motivo]} titulo="No pudimos cargar los pendientes" onReintentar={onActualizar} deQue="los pendientes">
+        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[cartera.motivo]} titulo="No pudimos cargar los pendientes" onReintentar={onReintentar} deQue="los pendientes">
           {razonDeFalla(cartera.motivo)}
         </BloqueDeEstado>
       ) : null}
 
       {listo ? (
         <>
+          {/* Un «Actualizar» que falló: lo leído sigue a la vista, con su hora. */}
+          {listo.fallaAlActualizar ? (
+            <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[listo.fallaAlActualizar]} titulo="No pudimos actualizar los pendientes" onReintentar={onReintentar} deQue="los pendientes" rol="alert">
+              {razonDeFalla(listo.fallaAlActualizar)} Se ven los consultados a las {horaDelDia(listo.consultado)}.
+            </BloqueDeEstado>
+          ) : null}
           {listo.items.length === 0 ? (
             <p className="pendientes__vacio">
               <Icono nombre="pendientes" tamano={20} />
               {COPY_CARTERA.vacio}
             </p>
           ) : filas.length === 0 ? (
+            // Con filtros a la vista, la salida es su «Limpiar filtros», arriba: la misma acción no se ofrece dos veces.
             <EstadoVacio
               titulo={COPY_CARTERA.sinCoincidencias}
               accion={
-                <button type="button" className="boton boton--secundario" onClick={() => setFiltro(TODO)}>
-                  Ver todo
-                </button>
+                etiquetas.length > 0 ? undefined : (
+                  <button type="button" className="boton boton--secundario" onClick={limpiar}>
+                    Ver todo
+                  </button>
+                )
               }
             >
               <p className="nota">
                 {listo.items.length === 1 ? 'Hay un pendiente' : `Hay ${numero(listo.items.length)}${listo.completa ? '' : ' o más'} pendientes`} en total.
+                {etiquetas.length > 0 ? ' «Limpiar filtros», arriba, los muestra.' : ''}
               </p>
             </EstadoVacio>
           ) : (

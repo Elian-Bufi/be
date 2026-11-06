@@ -263,6 +263,9 @@ describe('DSH-03 — query antes del PDP, límite por actor y sin caché', () =>
         registro: { maximo: 10_000, ventanaMs: 60_000 },
         consultaProtegida: { maximo: 3, ventanaMs: 60_000 },
         invitacion: { maximo: 10_000, ventanaMs: 60_000 },
+        reanudacion: { maximo: 10_000, ventanaMs: 60_000 },
+        loginAdministrativo: { maximo: 10_000, ventanaMs: 60_000 },
+        segundoFactor: { maximo: 10_000, ventanaMs: 60_000 },
       },
     });
     try {

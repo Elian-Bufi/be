@@ -95,6 +95,9 @@ export function DialogoDeNota({
   const [finalidad, setFinalidad] = useState<FinalidadDeNota | ''>('');
   const [texto, setTexto] = useState('');
   const [citables, setCitables] = useState<readonly Citable[] | null>(null);
+  // Si lo citable no se pudo leer, se dice y se vuelve a pedir: no es «no hay nada tuyo para citar» (bloque 5).
+  const [falloLoCitable, setFalloLoCitable] = useState(false);
+  const [vueltaDeLoCitable, setVueltaDeLoCitable] = useState(0);
   const [citadas, setCitadas] = useState<readonly string[]>([]);
   const [errores, setErrores] = useState<Readonly<Record<string, string>>>({});
   const [envio, setEnvio] = useState<Envio>({ tipo: 'escribiendo' });
@@ -138,13 +141,18 @@ export function DialogoDeNota({
     if (!abierto || !origen) return;
     let vigente = true;
     setCitables(null);
+    setFalloLoCitable(false);
     setCitadas([]);
     const hoy = hoyEn();
     void api
       .lineaDeTiempo(token, asesoradoId, { periodStart: restarDias(hoy, 365), periodEnd: hoy, domain: DOMINIO[origen], type: HITOS_CITABLES[origen].join(','), limit: '50' })
       .then((r) => {
         if (!vigente) return;
-        if (!r.ok) return setCitables([]);
+        if (!r.ok) {
+          // Un «no disponible» es neutral: desde acá no hay nada que citar. Cualquier otra falla se dice.
+          setFalloLoCitable(!(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND'));
+          return setCitables([]);
+        }
         const tipos: readonly string[] = TIPOS_DE_REFERENCIA_DE_NOTA;
         setCitables(
           r.datos.data.entries
@@ -155,7 +163,7 @@ export function DialogoDeNota({
     return () => {
       vigente = false;
     };
-  }, [abierto, origen, token, asesoradoId]);
+  }, [abierto, origen, token, asesoradoId, vueltaDeLoCitable]);
 
   const destinatarios = carga.tipo === 'listo' ? carga.datos.recipients : [];
   const origenes = carga.tipo === 'listo' ? carga.datos.origins : [];
@@ -422,7 +430,17 @@ export function DialogoDeNota({
                 <legend>{T.referencias}</legend>
                 <p className="nota">{T.referenciasAyuda}</p>
                 {citables === null ? <p className="nota">Cargando…</p> : null}
-                {citables !== null && citables.length === 0 ? <p className="nota">{T.sinReferencias}</p> : null}
+                {falloLoCitable ? (
+                  <p className="campo__error" role="alert">
+                    {T.referenciasNoSeLeyeron}{' '}
+                    <button type="button" className="boton boton--enlace" onClick={() => setVueltaDeLoCitable((v) => v + 1)}>
+                      {COPY.reintentar}
+                      <span className="visualmente-oculto"> {T.referenciasDeQue}</span>
+                    </button>
+                  </p>
+                ) : citables !== null && citables.length === 0 ? (
+                  <p className="nota">{T.sinReferencias}</p>
+                ) : null}
                 {(citables ?? []).map((c) => {
                   const clave = `${c.type}|${c.id}`;
                   const marcada = citadas.includes(clave);

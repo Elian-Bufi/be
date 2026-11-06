@@ -176,7 +176,7 @@ test('sin la línea de tiempo, los días se arman igual y lo que depende de ella
   assert.ok(dias.flatMap((d) => d.filas).flatMap((f) => f.registros).every((r) => r.entrada === null));
   assert.deepEqual(contarLasVistas(dias, false), { TODAS: 19, DISTINTAS: null, SIN_CONFIRMAR: null, COMIDA_DIFERENTE: 2, SIN_REGISTRO: 6 });
   // El día se sigue pudiendo decir con lo que el contraste sabe.
-  assert.deepEqual(resumenDeUnDia(elDia('2026-09-24', dias), false), { principal: '4 de 4 comidas registradas', notas: [] });
+  assert.deepEqual(resumenDeUnDia(elDia('2026-09-24', dias), false), { principal: '4 de 4 comidas con registro', notas: [] });
 });
 
 test('un registro anulado no arma ninguna fila, aunque la línea de tiempo lo traiga', () => {
@@ -184,18 +184,21 @@ test('un registro anulado no arma ninguna fila, aunque la línea de tiempo lo tr
   assert.equal(elDia('2026-09-22').sinRegistros, true);
 });
 
-test('el día en un renglón: «N de M comidas registradas», con lo que tiene de distinto', () => {
-  assert.deepEqual(resumenDeUnDia(elDia('2026-09-23'), true), { principal: '4 de 4 comidas registradas', notas: [{ rasgo: null, texto: 'todas con las porciones del plan' }] });
-  assert.deepEqual(resumenDeUnDia(elDia('2026-09-24'), true), { principal: '4 de 4 comidas registradas', notas: [{ rasgo: 'DISTINTO_DE_LO_INDICADO', texto: '1 distinta de lo indicado' }] });
+test('el día en un renglón: «N de M comidas con registro», con lo que tiene de distinto (DL-153, criterios del 2026-10-24)', () => {
+  assert.deepEqual(resumenDeUnDia(elDia('2026-09-23'), true), { principal: '4 de 4 comidas con registro', notas: [{ rasgo: null, texto: 'todas con las porciones del plan' }] });
+  assert.deepEqual(resumenDeUnDia(elDia('2026-09-24'), true), { principal: '4 de 4 comidas con registro', notas: [{ rasgo: 'DISTINTO_DE_LO_INDICADO', texto: '1 distinta de lo indicado' }] });
+  // El 25: dos con la opción del plan, la cena con una comida diferente y la merienda sin registro. La cena tiene registro.
   assert.deepEqual(resumenDeUnDia(elDia('2026-09-25'), true), {
-    principal: '2 de 4 comidas registradas',
+    principal: '3 de 4 comidas con registro',
     notas: [
+      { rasgo: null, texto: '2 con opción del plan' },
       { rasgo: 'COMIDA_DIFERENTE', texto: '1 comida diferente' },
       { rasgo: null, texto: '1 sin registro' },
     ],
   });
+  // El 21: la comida diferente suelta no se registró en ninguna comida del plan, así que no cubre el almuerzo.
   assert.deepEqual(resumenDeUnDia(elDia('2026-09-21'), true), {
-    principal: '1 de 2 comidas registradas',
+    principal: '1 de 2 comidas con registro',
     notas: [
       { rasgo: 'COMIDA_DIFERENTE', texto: '1 comida diferente' },
       { rasgo: 'SIN_CONFIRMAR', texto: '1 sin confirmar' },
@@ -210,18 +213,34 @@ test('un día sin ningún registro dice «Sin registro», nunca «0 de 4»', () 
   assert.ok(!/\b0 de\b/.test(`${resumen.principal} ${resumen.notas.map((n) => n.texto).join(' ')}`));
 });
 
-test('un día con solo una comida diferente no dice «0 de N»: dice que no hay una opción del plan registrada', () => {
+test('un día con solo una comida diferente, registrada en la cena: la cena tiene registro, y ninguna tiene la opción del plan', () => {
   const contraste: ContrasteDescriptivo = {
     days: [dia('2026-09-27', [comida('Desayuno'), comida('Cena', { differentMealExecutionIds: ['r-x'] })], { outsidePrescription: [{ executionId: 'r-x', description: 'Asado' }] })],
   };
   const [d] = componerLosRegistros(contraste, []);
   assert.deepEqual(resumenDeUnDia(d!, true), {
-    principal: 'Sin opción del plan registrada',
+    principal: '1 de 2 comidas con registro',
     notas: [
+      { rasgo: null, texto: 'ninguna con opción del plan' },
       { rasgo: 'COMIDA_DIFERENTE', texto: '1 comida diferente' },
       { rasgo: null, texto: '1 sin registro' },
     ],
   });
+});
+
+test('un día con registros, pero ninguno en una comida del plan, no dice «0 de N»', () => {
+  const contraste: ContrasteDescriptivo = {
+    days: [dia('2026-09-27', [comida('Desayuno'), comida('Cena')], { dataState: 'HAS_DATA', outsidePrescription: [{ executionId: 'r-x', description: 'Asado' }] })],
+  };
+  const resumen = resumenDeUnDia(componerLosRegistros(contraste, [])[0]!, true);
+  assert.deepEqual(resumen, {
+    principal: 'Ninguna comida del plan con registro',
+    notas: [
+      { rasgo: 'COMIDA_DIFERENTE', texto: '1 comida diferente' },
+      { rasgo: null, texto: '2 sin registro' },
+    ],
+  });
+  assert.ok(!/\b0 de\b/.test(`${resumen.principal} ${resumen.notas.map((n) => n.texto).join(' ')}`));
 });
 
 test('un día sin plan vigente, o sin un día tipo determinado, lo dice y no aporta filas del plan', () => {
@@ -250,7 +269,7 @@ test('«todas con las porciones del plan» se dice solo si es cierto de todas', 
   assert.deepEqual(con(['QUANTITIES_REPORTED']), []);
   // Con una comida sin registro tampoco: no es cierto de todas las del día.
   const conHueco = componerLosRegistros({ days: [dia('2026-09-28', [registrada('Desayuno', 'a'), comida('Cena')])] }, [entrada('a')])[0]!;
-  assert.deepEqual(resumenDeUnDia(conHueco, true), { principal: '1 de 2 comidas registradas', notas: [{ rasgo: null, texto: '1 sin registro' }] });
+  assert.deepEqual(resumenDeUnDia(conHueco, true), { principal: '1 de 2 comidas con registro', notas: [{ rasgo: null, texto: '1 sin registro' }] });
 });
 
 test('arrancan abiertos los días con una comida diferente o con algo distinto de lo indicado; los demás, en un renglón', () => {
@@ -324,6 +343,6 @@ test('los rasgos de una fila salen de su registro: sin confirmar, distinta, rect
 
 test('con una sola comida en el plan, el día se dice en singular', () => {
   const unaSola = (meals: Comida[], entradas: EntradaDeLineaDeTiempo[]) => resumenDeUnDia(componerLosRegistros({ days: [dia('2026-09-29', meals)] }, entradas)[0]!, true);
-  assert.deepEqual(unaSola([registrada('Almuerzo', 'u')], [entrada('u')]), { principal: '1 de 1 comida registrada', notas: [{ rasgo: null, texto: 'con las porciones del plan' }] });
+  assert.deepEqual(unaSola([registrada('Almuerzo', 'u')], [entrada('u')]), { principal: '1 de 1 comida con registro', notas: [{ rasgo: null, texto: 'con las porciones del plan' }] });
   assert.deepEqual(unaSola([comida('Almuerzo')], []), { principal: 'Sin registro', notas: [{ rasgo: null, texto: '1 comida en el plan' }] });
 });

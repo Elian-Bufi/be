@@ -19,7 +19,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
-import { FuenteExternaDeAlimentoSchema } from './contratos-procedencia-externa';
+import { FuenteExternaDeAlimentoSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 // ─── Tipos comunes ──────────────────────────────────────────────────────────────────────────────
@@ -317,11 +317,14 @@ export type ElementoDeCatalogo = z.infer<typeof ElementoDeCatalogoSchema>;
 export const ListaDeCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoDeCatalogoSchema), page: PaginaSchema });
 /**
  * DL-141 D-2: un alimento que encontró el buscador del website (API-NUT-13-BUSQUEDA), con el nombre alternativo que
- * coincidió con lo buscado. API-NUT-13 responde sin este campo: la forma de las lecturas legadas no cambia.
+ * coincidió con lo buscado y (D-6) lo que hace falta para decir su origen en la fila. API-NUT-13 responde sin estos
+ * campos: la forma de las lecturas legadas no cambia.
  */
 export const ElementoEncontradoSchema = ElementoDeCatalogoSchema.extend({
   /** El nombre alternativo que coincidió («Aguacate» al buscar «aguacate»), tal como está guardado; `null` si coincidió el principal, o sin texto. */
   matchedAlternativeName: z.string().nullable(),
+  /** DL-141 D-6: quién lo cargó y si su correspondencia con la fuente es aproximada. */
+  origin: OrigenEnElBuscadorSchema,
 });
 export type ElementoEncontrado = z.infer<typeof ElementoEncontradoSchema>;
 export const BusquedaEnCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoEncontradoSchema), page: PaginaSchema });
