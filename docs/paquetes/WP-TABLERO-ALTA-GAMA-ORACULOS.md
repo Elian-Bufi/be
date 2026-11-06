@@ -14,8 +14,8 @@
 > lee.
 >
 > **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05
-> y TB-10; los de TB-24, con su parte), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), y TEST-TAG-014
-> (TB-16). Los demás se escriben con su parte (§10 del paquete).
+> y TB-10; los de TB-24, con su parte), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014
+> (TB-16) y TEST-TAG-033 (TB-49). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -400,4 +400,51 @@ AUTOMATION           apps/web/test/persona-nueva.test.mjs («TEST-TAG-014 · …
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas de la corrida de TB-16, el Resumen de la
                      cohorte igual al de TB-10. La recaptura con una cuenta recién creada queda para la etapa B (§8.3)
+```
+
+---
+
+## TEST-TAG-033 — «Lo que contó al empezar» ubica lo declarado y no lo califica
+
+```text
+TEST_ID              TEST-TAG-033
+TITLE                La tarjeta del Resumen muestra las respuestas que rigen de los formularios que pidió este
+                     profesional, en palabras, con su fecha y su procedencia, abre la solicitud y no cuenta, no
+                     califica ni escribe
+LEVEL                Unidad (funciones puras del website y lectura del componente, sin navegador)
+PRIORITY             P1 — lo declarado es de la persona (09 §22.7): se ubica, nunca se puntúa
+SOURCES              DL-165 D-8 («la tarjeta de las respuestas en el Resumen») · WP-TABLERO-ALTA-GAMA TB-49 («las
+                     respuestas vigentes de los formularios de inicio que ese profesional pidió, en palabras, con su
+                     fecha y su procedencia […]. Abre la solicitud. Es de solo lectura, sin contar ni calificar, y lee
+                     lo que ya existe») · HBT-05 · TA-23
+PRECONDITIONS        Ninguna: solicitudQueConto y respondidasParaLeer (seguimiento/lo-que-conto.ts), con
+                     loDeclaradoV2 (forms/lo-declarado-v2.ts); el código de seguimiento/lo-que-conto-en-pantalla.tsx.
+SYNTHETIC_FIXTURE    Los de lo-declarado-v2.test.mjs: un formulario con una opción, un número y una lista; una
+                     respuesta original, una corregida y una cargada por Sofía Paz y confirmada por la persona; cuatro
+                     solicitudes, una pendiente.
+STEPS                1. Una solicitud respondida, sin correcciones.
+                     2. La misma, corregida; y cargada por un profesional y confirmada.
+                     3. Sin respuesta, pendiente, sin la versión del formulario y sin lo declarado.
+                     4. Con un tope de dos respuestas a la vista.
+                     5. Cuatro solicitudes, tres respondidas; y solo una pendiente.
+                     6. Leer el componente.
+EXPECTED             1 → las tres preguntas con su texto y sus respuestas con las etiquetas («En casa»), la fecha en
+                        que respondió y ninguna transcripción: «Declarado por la persona».
+                     2 → rige la corregida («Fuera de casa»), con su fecha; la cargada dice quién la cargó y cuándo
+                        la confirmó la persona.
+                     3 → nada que mostrar de esa solicitud: la pantalla nunca muestra el código de una pregunta.
+                     4 → dos respuestas y el enlace a todas.
+                     5 → las dos respondidas más nuevas con sus respuestas, y una más con un enlace; con solo una
+                        pendiente, ninguna: no hay tarjeta.
+                     6 → ningún botón ni ninguna operación que escriba; sin puntajes ni cuentas de respuestas; solo
+                        las tres lecturas que ya hace la pestaña Información.
+NEGATIVE_ASSERTIONS  La tarjeta no suma ni puntúa respuestas, no escribe y no muestra solicitudes de otro
+                     profesional: API-FRM-04 lista solo las de quien consulta, así que «Tus hábitos» entra solo si
+                     este profesional la pidió (HBT-05). Mutación verificada: sin el filtro de lo pendiente, falla el
+                     paso 3.
+AUTOMATION           apps/web/test/lo-que-conto.test.mjs («TEST-TAG-033 · …», seis casos), en
+                     `npm run test -w @be/web`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas, la tarjeta en el Resumen de Diego Sosa si
+                     la cohorte tiene solicitudes respondidas de Sofía Paz, y las peticiones al abrir anotadas
 ```

@@ -14255,3 +14255,83 @@ a.cifras-desde-la-revision__celda:focus-visible {
   color: var(--tenue);
   font-size: 0.8rem;
 }
+
+/* ─── WP-TABLERO-ALTA-GAMA, TB-49 (DL-165 D-8): «Lo que contó al empezar» ─────────────────────────────────────────── */
+/* Una tarjeta de solo lectura, como las notas del equipo: cada solicitud respondida con su procedencia y sus primeras
+   respuestas, pregunta y respuesta en dos columnas, y el enlace que la abre. Sin cuentas ni colores por respuesta. */
+.lo-que-conto {
+  padding: 0.9rem 1.15rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.lo-que-conto > h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.lo-que-conto > h2 .icono {
+  color: var(--tenue);
+}
+
+.lo-que-conto__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lo-que-conto__solicitud h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.lo-que-conto__procedencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+.lo-que-conto__respuestas {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0 0 0.45rem;
+}
+
+.lo-que-conto__respuestas > div {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 0.75rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.lo-que-conto__respuestas dt {
+  color: var(--tenue);
+  font-size: 0.875rem;
+}
+
+.lo-que-conto__respuestas dd {
+  margin: 0;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.lo-que-conto__abrir,
+.lo-que-conto__otras {
+  font-size: 0.875rem;
+}
+
+.lo-que-conto__otras {
+  margin: 0.6rem 0 0;
+}
