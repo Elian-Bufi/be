@@ -149,6 +149,8 @@ export interface EntradaDelMinigrafico {
    * gráfico de 60 px de alto tiene dos marcas bien separadas; uno más alto admite 4, que ajusta más el eje a los datos.
    */
   readonly divisionesDelEje?: number;
+  /** TA-72: la métrica se cuenta entera (`escalaDeLaUnidad`): el eje va en enteros. */
+  readonly enteros?: boolean;
 }
 
 export interface PuntoDelMinigrafico {
@@ -204,11 +206,15 @@ function pasoRedondo(rango: number, divisiones: number): number {
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * potencia;
 }
 
-/** Los dos extremos del eje vertical para un mínimo y un máximo: números redondos que encierran todos los valores. */
-export function extremosDelEje(minimo: number, maximo: number, divisiones = 2): { readonly abajo: number; readonly arriba: number; readonly decimales: number } {
+/**
+ * Los dos extremos del eje vertical para un mínimo y un máximo: números redondos que encierran todos los valores. Con
+ * `enteros` (lo que se cuenta, TA-72), el paso es 1 como mínimo: 4 series iguales van entre 3 y 5, no entre 3,8 y 4,2.
+ */
+export function extremosDelEje(minimo: number, maximo: number, divisiones = 2, enteros = false): { readonly abajo: number; readonly arriba: number; readonly decimales: number } {
   // Con un solo valor (o todos iguales) no hay rango: se abre un margen alrededor, para que el punto no quede en un borde.
   const margen = maximo === minimo ? Math.abs(maximo) * 0.05 || 1 : 0;
-  const paso = pasoRedondo(maximo - minimo + 2 * margen, divisiones);
+  const redondo = pasoRedondo(maximo - minimo + 2 * margen, divisiones);
+  const paso = enteros ? Math.max(1, redondo) : redondo;
   let abajo = sinRuido(Math.floor(sinRuido((minimo - margen) / paso)) * paso);
   const arriba = sinRuido(Math.ceil(sinRuido((maximo + margen) / paso)) * paso);
   // Una métrica que no baja de cero no muestra una marca negativa.
@@ -245,7 +251,7 @@ export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelM
       return b > a ? [{ a, b, valor: s.valor }] : [];
     });
   const valores = [...dibujados.map((d) => d.v), ...escalones.map((s) => s.valor)];
-  const { abajo, arriba, decimales } = extremosDelEje(Math.min(...valores), Math.max(...valores), e.divisionesDelEje ?? 2);
+  const { abajo, arriba, decimales } = extremosDelEje(Math.min(...valores), Math.max(...valores), e.divisionesDelEje ?? 2, e.enteros ?? false);
   const textos = [abajo, arriba].map((v) => numeroConPrecision(v, decimales));
   const conFechas = (e.fechas ?? []).length > 0;
   const caja = {
@@ -364,6 +370,11 @@ export interface EntradaDelIndicador {
    */
   readonly rangoMinimo?: number;
   /**
+   * TA-72: la métrica se cuenta entera (series, repeticiones, RIR, registros o sesiones; `escalaDeLaUnidad`). La grilla
+   * va en enteros y, con todos los valores iguales, se abre uno de cada lado: 4 series se leen entre 3 y 5.
+   */
+  readonly enteros?: boolean;
+  /**
    * TB-16 (DL-163 D-7): el día en que empezó el vínculo de esta área, si es posterior al inicio del período. Lo anterior
    * no se dibuja, ni en el lienzo ni en la tira: no es «sin registros», es antes del acompañamiento. La escala de fechas
    * sigue siendo la del período, la misma de los demás indicadores.
@@ -373,6 +384,22 @@ export interface EntradaDelIndicador {
 
 /** La escala mínima de cada unidad (la propuesta, A9): 2 kg, 2 cm o 4 mm, centrada en los valores. */
 export const RANGO_MINIMO_POR_UNIDAD: Readonly<Record<string, number>> = { kg: 2, cm: 2, mm: 4 };
+
+/**
+ * TA-72: las unidades de lo que se cuenta entero, con las que salen las series del análisis (`metricas-del-analisis.ts`
+ * y `entrenamiento-del-analisis.ts`): las series registradas, las repeticiones, el RIR y los registros de comida. Las
+ * sesiones todavía no tienen una serie propia en un minigráfico; si la tienen, entran con su unidad. Las calorías no
+ * son una cuenta, aunque se escriban sin decimales: su escala sigue siendo la de una medida.
+ */
+export const UNIDADES_QUE_SE_CUENTAN: ReadonlySet<string> = new Set(['series', 'rep', 'RIR', 'registros', 'sesiones']);
+
+/**
+ * Lo que la unidad decide de la escala de un minigráfico, en un solo lugar: su rango mínimo (2 kg, 2 cm o 4 mm, TB-04) y
+ * si va en enteros (TA-72). Lo usan los dos minigráficos (`minigrafico.tsx`).
+ */
+export function escalaDeLaUnidad(unidad: string): { readonly rangoMinimo: number | undefined; readonly enteros: boolean } {
+  return { rangoMinimo: RANGO_MINIMO_POR_UNIDAD[unidad], enteros: UNIDADES_QUE_SE_CUENTAN.has(unidad) };
+}
 
 export interface PuntoDelIndicador {
   readonly clave: string;
@@ -422,12 +449,17 @@ export const SEMANAL_CON_MAS_DE_DIAS = 56;
 /** Con hasta tantos días con valor no se dibuja línea ni media: van los puntos sueltos. */
 export const SOLO_PUNTOS_HASTA = 3;
 
-/** El paso redondo de la grilla del indicador: 1, 2, 2,5, 5 o 10 por una potencia de diez (A14). */
-function pasoDeLaGrilla(rango: number, divisiones: number): number {
+/**
+ * El paso redondo de la grilla del indicador: 1, 2, 2,5, 5 o 10 por una potencia de diez (A14). Lo que se cuenta
+ * (TA-72) va en enteros: el paso es 1 como mínimo y, donde tocaría 2,5, es 2.
+ */
+function pasoDeLaGrilla(rango: number, divisiones: number, enteros = false): number {
   const bruto = rango / divisiones;
+  if (enteros && bruto <= 1) return 1;
   const potencia = 10 ** Math.floor(Math.log10(bruto));
   const m = sinRuido(bruto / potencia);
-  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * potencia;
+  const dosYMedio = enteros && potencia === 1 ? 2 : 2.5;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? dosYMedio : m <= 5 ? 5 : 10) * potencia;
 }
 
 const fechasEntre = (desde: string, hasta: string): string[] => {
@@ -493,6 +525,12 @@ export function geometriaDelIndicador(entrada: EntradaDelIndicador): GeometriaDe
     lo = centro - e.rangoMinimo / 2;
     hi = centro + e.rangoMinimo / 2;
   }
+  // TA-72: lo que se cuenta, con todos los valores iguales, se abre uno de cada lado: un margen entero (4 series se leen
+  // entre 3 y 5, no entre 3,99 y 4,01).
+  if (e.enteros && hi === lo) {
+    lo -= 1;
+    hi += 1;
+  }
   const margen = (hi - lo || Math.abs(hi) * 0.05 || 1) * 0.08;
   lo -= margen;
   hi += margen;
@@ -505,7 +543,7 @@ export function geometriaDelIndicador(entrada: EntradaDelIndicador): GeometriaDe
 
   // La grilla y sus dos rótulos, adentro: el tope por encima de su línea y la base por debajo, para que no se pisen.
   const divisiones = e.lienzo >= 72 ? 4 : 2;
-  const paso = pasoDeLaGrilla(hi - lo, divisiones);
+  const paso = pasoDeLaGrilla(hi - lo, divisiones, e.enteros ?? false);
   const decimales = Number.isInteger(sinRuido(paso)) ? 0 : Number.isInteger(sinRuido(paso * 10)) ? 1 : 2;
   const grilla: { y: number; valor: number; texto: string }[] = [];
   for (let v = Math.ceil(sinRuido(lo / paso)) * paso; v <= hi + 1e-9; v = sinRuido(v + paso)) grilla.push({ y: Math.round(yEn(v)) + 0.5, valor: sinRuido(v), texto: numeroConPrecision(sinRuido(v), decimales) });

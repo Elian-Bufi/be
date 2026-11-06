@@ -122,11 +122,12 @@ SOURCES              DL-163 D-5 («la tira de cobertura lleva el estado de cada 
                      elegido y los aislados; lo que cae fuera de escala va con una muesca en la base y su cuenta. A
                      90 días, la línea es la media de cada semana de BE, con su denominador, y los días van como
                      puntos claros detrás») · WP-TABLERO-ALTA-GAMA TB-04 · la propuesta, anexos A7, A9, A13 y A14 ·
-                     REG-06-166 (sin interpolar ni completar huecos)
+                     REG-06-166 (sin interpolar ni completar huecos) · TA-72 (lo que se cuenta, en enteros)
 PRECONDITIONS        Ninguna: geometriaDelIndicador y estadosDeLosDias, en seguimiento/geometria.ts.
 SYNTHETIC_FIXTURE    Períodos diarios de 30 y 90 días desde el lunes 10 de agosto de 2026, con días sin registros,
                      subtotales (PARTIAL), un subtotal muy bajo y días aislados; sesiones de dos tramos; anchos de
-                     100 y 300 px.
+                     100 y 300 px. Diez sesiones con 4 series, con RIR 1 y con RIR 0 en todas, como las de Diego
+                     visto por Martín Acosta en la galería del PR.
 STEPS                1. 90 días en 300 px (3,3 px por día): leer el estado de la tira en el centro de cada día.
                      2. 90 días en 300 px: leer las semanas de BE, sus denominadores y los puntos de los días.
                      3. 30 días en 100 px: contar los tramos de la línea y las marcas.
@@ -135,6 +136,9 @@ STEPS                1. 90 días en 300 px (3,3 px por día): leer el estado de 
                      6. Tres días con valor en 90: leer el modo, la línea y la media.
                      7. Sesiones de dos tramos: contar los trazos y la tira.
                      8. Tres tomas de peso con 0,2 kg de diferencia, con y sin la escala mínima del kilo.
+                     9. Las diez sesiones, con la escala de su unidad (escalaDeLaUnidad), y series que van de 4 a 5 y
+                        de 1 a 9; las mismas como una medida; la comparación de etapas (extremosDelEje) con 4 series
+                        iguales.
 EXPECTED             1 → cada uno de los 90 días tiene en la tira el estado que da estadosDeLosDias (con valor, sin
                      completar o sin registros); hoy lleva su raya debajo.
                      2 → la línea es la media semanal: la primera semana, de lunes a domingo, con 6 días con valor de
@@ -148,11 +152,17 @@ EXPECTED             1 → cada uno de los 90 días tiene en la tira el estado q
                      7 → un trazo por tramo; las sesiones no llevan tira.
                      8 → con la escala mínima (2 kg, 2 cm, 4 mm), 0,2 kg ocupa menos de un octavo del alto; sin ella,
                      casi todo: una diferencia chica no parece un precipicio.
+                     9 → lo que se cuenta va en enteros: con 4 series iguales, la grilla en 3, 4 y 5, «5» arriba y los
+                        puntos sobre el 4; RIR 1, en 0, 1 y 2; RIR 0, en 0 y 1; de 4 a 5, en 4 y 5; de 1 a 9, de a 2.
+                        Como una medida, lo de antes: «4,01» y «3,99», y el 2,5. En la comparación de etapas, 3 y 5.
 NEGATIVE_ASSERTIONS  La línea no une días con un día sin registros o un subtotal en el medio, ni dos tramos. Lo de
                      fuera de la escala no se dibuja a una altura que no es la suya. Hoy no entra en la media de su
                      semana. Mutaciones verificadas: sin la celda de los días sin registros falla el paso 1; con hoy
-                     en la media falla el paso 2.
-AUTOMATION           scripts/geometria-del-minigrafico.test.mjs («TEST-TAG-007 · …», ocho casos), en `npm test`
+                     en la media falla el paso 2. Una cuenta nunca lleva un rótulo con decimales. Mutaciones
+                     verificadas (TA-72): sin el margen entero, sin el paso mínimo de 1 o con 2,5 en lo que se cuenta,
+                     falla el paso 9; con el Resumen o la comparación de etapas sin la escala de su unidad, o la
+                     comparación sin el paso mínimo de 1, falla la prueba de la unidad.
+AUTOMATION           scripts/geometria-del-minigrafico.test.mjs («TEST-TAG-007 · …», diez casos), en `npm test`
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas del Resumen de la corrida de TB-04, a 1440 y a
                      1920 × 950, comparadas con la línea de base

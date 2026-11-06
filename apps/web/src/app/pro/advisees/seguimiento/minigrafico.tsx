@@ -15,7 +15,7 @@
 import type { SerieAnalitica } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { diaYMesCivil } from '../../../../lib/formato';
-import { diasSinRegistros, FRANJA_DE_ROTULOS, geometriaDelIndicador, geometriaDelMinigrafico, LETRA_MINIMA, LUGAR_PARA_MARCAR_CADA_DIA, RANGO_MINIMO_POR_UNIDAD } from './geometria';
+import { diasSinRegistros, escalaDeLaUnidad, FRANJA_DE_ROTULOS, geometriaDelIndicador, geometriaDelMinigrafico, LETRA_MINIMA, LUGAR_PARA_MARCAR_CADA_DIA } from './geometria';
 import { ESTILOS, Punto } from './marca';
 
 const ALTO = 60;
@@ -68,7 +68,8 @@ export function Minigrafico({
   }, [caja]);
   const sombreados = useMemo(() => (serie.grain === 'DAY' ? diasSinRegistros(serie.gaps, hoy) : []), [serie, hoy]);
   const g = useMemo(
-    () => geometriaDelMinigrafico({ puntos: serie.points, sinRegistros: sombreados, desde, hasta, ancho, alto, inicioDelPlan, bandas, fechas, plan, divisionesDelEje: ejeFino ? 4 : 2 }),
+    // TA-72: lo que se cuenta (series, repeticiones, RIR, registros) va en enteros.
+    () => geometriaDelMinigrafico({ puntos: serie.points, sinRegistros: sombreados, desde, hasta, ancho, alto, inicioDelPlan, bandas, fechas, plan, divisionesDelEje: ejeFino ? 4 : 2, enteros: escalaDeLaUnidad(serie.unit).enteros }),
     [serie, sombreados, desde, hasta, ancho, alto, inicioDelPlan, bandas, fechas, plan, ejeFino],
   );
   const color = (ESTILOS[indice] ?? ESTILOS[0]).color;
@@ -177,7 +178,8 @@ export function MinigraficoDelIndicador({
   const diaria = serie.grain === 'DAY';
   const sinRegistros = useMemo(() => (diaria ? diasSinRegistros(serie.gaps, hoy) : []), [serie, diaria, hoy]);
   const g = useMemo(
-    () => geometriaDelIndicador({ puntos: serie.points, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan, rangoMinimo: RANGO_MINIMO_POR_UNIDAD[serie.unit], desdeElVinculo }),
+    // La escala de la unidad: el rango mínimo (2 kg, 2 cm o 4 mm) y, en lo que se cuenta, los enteros (TA-72).
+    () => geometriaDelIndicador({ puntos: serie.points, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan, ...escalaDeLaUnidad(serie.unit), desdeElVinculo }),
     [serie, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan, desdeElVinculo],
   );
   const color = ESTILOS[0].color;

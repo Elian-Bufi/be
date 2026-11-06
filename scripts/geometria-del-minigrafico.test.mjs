@@ -8,6 +8,7 @@
  * - dos marcas en el eje vertical, en números redondos, que encierran todo lo dibujado.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const { diasSinRegistros, estadoDeMarca, extremosDelEje, geometriaDelMinigrafico, LETRA_MINIMA, medidaDeMarca, medidaDelAro, medidaDelRombo, mediodia, rayaDeCorregido, xDe } = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
@@ -443,4 +444,54 @@ test('TEST-TAG-007 · una diferencia chica no parece un precipicio: la escala m�
   assert.ok(salto(sinMinimo) > 50, 'sin la escala mínima, −0,2 kg ocupa casi todo el alto');
   assert.ok(salto(conMinimo) < 72 / 8, `con 2 kg de escala, −0,2 kg ocupa menos de un octavo del alto (${salto(conMinimo).toFixed(1)})`);
   assert.deepEqual([RANGO_MINIMO_POR_UNIDAD.kg, RANGO_MINIMO_POR_UNIDAD.cm, RANGO_MINIMO_POR_UNIDAD.mm], [2, 2, 4]);
+});
+
+// ─── TA-72 · Lo que se cuenta va en enteros ───────────────────────────────────────────────────────────────────────
+// En la galería del PR #240, el Resumen de Diego visto por Martín Acosta tenía 4 series en cada una de sus 10 sesiones
+// y RIR 1 en todas: la escala decía 3,99 y 4,01, y 1,00. Las series, las repeticiones, el RIR, los registros y las
+// sesiones se cuentan enteros: su grilla va en enteros y, con todos los valores iguales, se abre uno de cada lado.
+
+const { escalaDeLaUnidad, UNIDADES_QUE_SE_CUENTAN } = geometria;
+/** Diez sesiones (series registradas o RIR de la serie 1), del 12 ago al 2 nov, como las de Diego con Martín Acosta. */
+const sesiones = (valores) => valores.map((v, i) => punto(fecha('2026-08-12', i * 9), v));
+const indicador = (puntos, unidad) =>
+  geometriaDelIndicador({ puntos, sinRegistros: [], desde: '2026-08-09', hasta: '2026-11-06', hoy: '2026-11-06', diaria: false, ancho: 400, lienzo: 72, inicioDelPlan: null, ...escalaDeLaUnidad(unidad) });
+const valoresDeLaGrilla = (g) => g.grilla.map((l) => l.valor);
+
+test('TEST-TAG-007 · TA-72 · lo que se cuenta va en enteros y, con todos los valores iguales, se abre uno de cada lado', () => {
+  // 4 series en las diez sesiones: la grilla, 3, 4 y 5; los rótulos, enteros. Antes, 3,99 y 4,01.
+  const series = indicador(sesiones(Array(10).fill(4)), 'series');
+  assert.deepEqual(valoresDeLaGrilla(series), [3, 4, 5]);
+  assert.ok(series.rotulos.length > 0 && series.rotulos.every((r) => /^\d+$/.test(r.texto)), `rótulos enteros: ${series.rotulos.map((r) => r.texto)}`);
+  assert.equal(series.rotulos[0].texto, '5');
+  // Los puntos van sobre la línea del 4, en el medio.
+  const linea4 = series.grilla.find((l) => l.valor === 4);
+  assert.ok(series.puntos.every((p) => Math.abs(p.y - linea4.y) < 1));
+  // Sin la regla (una medida, no una cuenta), lo de antes: 3,99 y 4,01.
+  const comoMedida = indicador(sesiones(Array(10).fill(4)), 'kcal');
+  assert.deepEqual(comoMedida.rotulos.map((r) => r.texto), ['4,01', '3,99']);
+  // RIR 1 en todas: 0, 1 y 2, sin marcas negativas; RIR 0 en todas: 0 y 1.
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones(Array(10).fill(1)), 'RIR')), [0, 1, 2]);
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones(Array(10).fill(0)), 'RIR')), [0, 1]);
+  // Con valores distintos, el paso también es entero: de 4 a 5 series, 4 y 5 (no 4,5); de 1 a 9, de a 2 (no de a 2,5).
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones([4, 5, 4, 5, 4, 5, 4, 5, 4, 5]), 'series')), [4, 5]);
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones([1, 3, 5, 7, 9, 8, 6, 4, 2, 1]), 'rep')), [2, 4, 6, 8]);
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones([1, 3, 5, 7, 9, 8, 6, 4, 2, 1]), 'kcal')), [2.5, 5, 7.5], 'una medida conserva el 2,5');
+});
+
+test('TEST-TAG-007 · TA-72 · la unidad decide la escala en un solo lugar, para los dos minigráficos', () => {
+  for (const unidad of ['series', 'rep', 'RIR', 'registros', 'sesiones']) assert.equal(escalaDeLaUnidad(unidad).enteros, true, unidad);
+  for (const unidad of ['kg', 'cm', 'mm', 'kcal', 'g', '%']) assert.equal(escalaDeLaUnidad(unidad).enteros, false, unidad);
+  assert.deepEqual(escalaDeLaUnidad('kg'), { rangoMinimo: 2, enteros: false });
+  assert.deepEqual(escalaDeLaUnidad('series'), { rangoMinimo: undefined, enteros: true });
+  assert.equal(UNIDADES_QUE_SE_CUENTAN.size, 5);
+  // El minigráfico de la comparación de etapas: 4 series iguales, entre 3 y 5 (antes, 3,8 y 4,2).
+  assert.deepEqual(extremosDelEje(4, 4, 2, true), { abajo: 3, arriba: 5, decimales: 0 });
+  assert.deepEqual(extremosDelEje(1, 1, 2, true), { abajo: 0, arriba: 2, decimales: 0 });
+  assert.deepEqual(extremosDelEje(4, 4), { abajo: 3.8, arriba: 4.2, decimales: 1 });
+  assert.equal(extremosDelEje(4, 5, 4, true).decimales, 0);
+  // Los dos minigráficos toman la escala de la unidad de su serie.
+  const fuente = readFileSync(new URL('../apps/web/src/app/pro/advisees/seguimiento/minigrafico.tsx', import.meta.url), 'utf8');
+  assert.match(fuente, /geometriaDelIndicador\(\{[^}]*\.\.\.escalaDeLaUnidad\(serie\.unit\)/);
+  assert.match(fuente, /geometriaDelMinigrafico\(\{[^}]*enteros: escalaDeLaUnidad\(serie\.unit\)\.enteros/);
 });
