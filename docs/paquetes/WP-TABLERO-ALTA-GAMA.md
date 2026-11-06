@@ -21,8 +21,8 @@
 > solo sintéticos (la cohorte de `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/`), en una base local
 > propia.
 >
-> **Esta declaración:** rama `wp-tablero-alta-gama-declaracion`, desde `main` bdbf490. Solo documentación: ningún código
-> ni migración.
+> **Esta declaración:** rama `wp-tablero-alta-gama-declaracion`, desde `main` bdbf490 (#239, en borrador). Solo
+> documentación: ningún código ni migración.
 
 ## 0. Legajo y decisiones que cita
 
