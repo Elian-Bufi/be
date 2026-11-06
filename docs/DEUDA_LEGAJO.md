@@ -165,8 +165,9 @@
 | DL-160 | Decisión de Dirección · 2026-11-02 (registro rápido y «Ya la hice») | B10-06 §57 · B10-06 §29 · DL-137 · DL-161 | La regla «el día de hoy se entrena con los cronómetros» no está en el legajo: es un comentario de la APK, y B10-06 §57 dice que el temporizador no es requisito P0 | **DECIDIDA** por Dirección el 2026-11-02: el registro rápido y «Ya la hice» valen también el mismo día; los cronómetros quedan como ayuda opcional. La API ya lo admite (confirmar la sesión de hoy no pide eventos de tiempo); la APK lo toma en su rama; falta el teléfono |
 | DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` (PR en borrador), sin integrar: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, en su rama; queda documentado el caso de una ejecución nueva leída por una APK anterior; el mismo día Dirección decidió cómo se lee en el escritorio (lo tildado sin escribir no se compara y va hueco en los gráficos; la carga completa se destaca), hecho en la rama `wp-escritorio-niveles`; decisiones I-1 a I-10 a ratificar |
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual`, sin integrar ni desplegar · D-1 a D-5 a ratificar: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
-| DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · en implementación en la rama `wp-formularios-de-inicio` |
-| DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · programada en la rama `wp-formularios-ronda-2` (PR #237, borrador), sin integrar: FR-03 a FR-10, con la sección común de hábitos (familia API-HBT). D-10 a D-13 ratificadas el 2026-11-05; D-14 a D-19 (FR-10), a ratificar. Con personas reales, después de la revisión legal y del gate del 08 §42 |
+| DL-163 | Pedido de Dirección · 2026-11-03 (WP-TABLERO-ALTA-GAMA; D-1 a D-21 ratificadas el 2026-11-05) | RF-052 a RF-055 · UC-P23 · UC-P24 · 08 §11, §11-bis, C-11 · API-DSH-01 y 02 (09 v0.11 §13 y §14) · B10-08 · B10-10 · GUIA-UX-UI I y I.7 · DL-107 · DL-152 · DL-158 · DL-165 | El inicio del profesional y el Resumen de la ficha se veían sosos y con puntos burdos; Dirección pidió barras de avance, rostro, decisiones guiadas, ver las otras áreas, un mapa corporal, programas propios, más datos y planificar más fácil, y autorizó desafiar el legajo con fundamento | **RATIFICADA** 2026-11-05 · D-1 a D-21, todas como se recomendaron (la D-9 original, reemplazada por la D-9 nueva) · paquete declarado (#239, en borrador), sin código: el alcance espera el sí de Dirección (ACTA-DIR-034), después de la prueba de la APK 0.21 · con personas reales, D-13 y el control semanal de D-16, después de la revisión legal |
+| DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`) y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, a ratificar |
+| DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre en #238 (borrador). D-10 a D-13 ratificadas el 2026-11-05; D-14 a D-19 (FR-10), a ratificar. Con personas reales, después de la revisión legal y del gate del 08 §42 |
 
 ---
 
@@ -6103,6 +6104,332 @@ cuenta que no es administradora. `contrato.int-spec.ts` cubre API-ZON-01, API-EJ
 
 **Condición de cierre:** Dirección ratifica D-1 a D-5, la CI pasa en main y la demostración muestra la foto de un ejercicio
 del catálogo en la sesión de Diego.
+
+## DL-163 — El tablero del profesional: el tiempo a la vista, el rostro, las decisiones de a una y cómo planifica
+
+**Prioridad:** alta (el inicio del profesional, la ficha y los editores de los planes) · **Documento:** RF-052 a RF-056,
+RF-017, RF-030 y RF-039 a RF-041 (04) · UC-P23 y UC-P24 (05) · REG-06-123, REG-06-126, REG-06-129, REG-06-139,
+REG-06-145, REG-06-178, REG-06-179, REG-06-183, INV-06-133 e INV-06-143 (06) · 08 §11, §11-bis, C-11, C-12 y §21 ·
+API-DSH-01 y API-DSH-02 (09 v0.11 §13 y §14) · B10-08 y B10-09 · B10-10 · `docs/ux/GUIA-UX-UI.md` I y I.7 · DL-107 ·
+DL-152 · DL-158 · DL-165 · **Estado:** RATIFICADA 2026-11-05, de D-1 a D-21, todas como se recomendaron (la D-9 original
+se reemplazó por la D-9 nueva), con el paquete declarado (`docs/paquetes/WP-TABLERO-ALTA-GAMA.md`, #239, en borrador).
+El alcance espera el sí de Dirección (ACTA-DIR-034), después de la prueba de la APK 0.21: nada programado
+
+**Qué pidió Dirección.** El 2026-11-03, sobre el inicio del profesional y el Resumen de la ficha: «todavía lo veo muy
+soso»; «los puntos de los gráficos los veo muy burdos»; «pequeñas barras de avance, o círculos porcentuales»; «poner
+fotos de perfil»; y «un flujo de pequeñas decisiones guiadas», como el de Entrenamiento. Autorizó desafiar el legajo y
+las decisiones anteriores si el fundamento es bueno. El 2026-11-05 sumó ver lo de las otras áreas, algo bien visual en
+la ficha, que las 5 semanas sean un programa propio y no de todos, los datos que usan los mejores profesionales y que
+planificar sea fácil e intuitivo.
+
+**Qué dice el legajo, y qué decisiones anteriores choca.**
+- **La vara de las maquetas** (el criterio de auditoría de las maquetas v4, fuera del repo) manda rehacer una imagen con
+  «un avatar» o con «un porcentaje, una barra de progreso o un medidor». Era una regla de fidelidad, porque BE no tenía
+  esas piezas, no un rechazo de diseño.
+- **La guía:** el acento «marca lo que se elige o se toca: enlaces, lo elegido, las casillas, los títulos de las ayudas,
+  los puntos de un gráfico» y «no va en superficies, títulos ni bordes de tarjetas» (`GUIA-UX-UI.md:152-153`); y en el
+  minigráfico, «No se quita ningún punto por falta de lugar: se achica la marca» (`:438-441`).
+- **Pendientes** (DL-107 y la maqueta 13): siete tipos en orden fijo, una fila por persona, área y tipo, y «Invitar a
+  una persona» como único botón lleno.
+- **El alcance del 2026-09-22:** API-DSH-01 y API-DSH-02, que el 09 define, quedaron fuera de la entrega.
+- **B10-08 §9 y DEC-10-UX-01/02:** el Resumen no adelanta lo que es de Análisis. Tres piezas del Resumen (Nutrición,
+  Entrenamiento y Antropometría) adelantan datos de API-PRJ-01 que API-DSH-03 no trae. Esos datos ya llegan, se dibujan
+  sin gráficos pesados y suman una sola lectura, y DEC-10-UX-01/02 son todavía candidatas.
+- **DL-111, decisión 11,** dejó afuera los anillos, y **la nota de DL-158** dice que «un macro expresado como proporción
+  de las calorías no se convierte (se dice, no se dibuja)».
+- **El período por omisión del Resumen** es de 90 días.
+- **DL-009** aprobó un solo campo de perfil, el nombre visible, y **DL-117 D-2** dejó abierta la foto.
+- **El 08 §11:** cada profesional ve la porción de sus Alcances. La compartición que decide el titular queda «para
+  diseñar y aprobar por separado» (§11-bis.3 y C-11).
+- **BE no tiene programas,** y hay una sola próxima revisión por Proceso.
+- **El microciclo no tiene orden en el tiempo** (REG-06-126), y DL-137 dejó como «otra decisión» que la agenda recorra
+  las semanas.
+- **Ninguna operación descarta un borrador.**
+
+**Qué no cambia:** «ubicar, nunca calificar»; el legajo, que no se edita; API-CAR-01, con sus siete tipos; ningún campo
+ni valor nuevo en lo que leen las APK instaladas (DL-152); las pruebas T13, de contraste, de términos de la cartera y de
+lo que leen las APK; «registrar, aplicar y activar son tres actos»; «ver no es revisar» (ADV-10-DSH-03).
+
+**Lo decidido.** Ninguna decisión toca el núcleo: nada califica a la persona.
+
+*D-1 a D-12, ratificadas por Dirección el 2026-11-05 a la tarde, como se recomendaron («De las decisiones iremos con
+todas las recomendadas»), salvo la D-9 original, que se reabrió:*
+- **D-1 · Barras que se llenan solo con el calendario del profesional o con sus actos,** en una lista cerrada: el tramo
+  del ciclo de revisión, en la tarjeta de cada área; la franja «Pendiente n de m» del cajón; los pasos de un flujo
+  (Listo · Ahora · Después); y la semana del programa (D-9 nueva). Son lineales.
+  - *Desafía:* la vara de las maquetas («un porcentaje, una barra de progreso o un medidor») y la lectura amplia de la
+    guía (I.1.3 y II.4). La regla de no medir a la persona sigue igual.
+  - *Fundamento:* hoy el ciclo son frases sueltas que hay que leer y restar tarjeta por tarjeta; como tramo, se ve
+    cuánto del ciclo acordado pasó y si venció. La entrada son fechas y actos del profesional, nunca registros: con las
+    mismas fechas, la barra es la misma, registre lo que registre la persona.
+  - *Salvaguardas:* `avanceDelReloj`, con una prueba de propiedad; sin «%», sin «te faltan» y sin color nuevo al vencer
+    (lo vencido sigue en discontinua neutra y se escribe); sin fecha acordada no hay barra; para el lector de pantalla,
+    la frase en palabras (`aria-valuetext`); no van en las filas de /pro.
+  - *Descartado:* mantener la vara y escribir el ciclo como texto, y los aros: un aro al lado de datos de salud se lee
+    como los anillos de actividad, que miden conducta.
+- **D-2 · El rostro.** Un monograma de un solo tono neutro con las iniciales del nombre visible, donde ya se ve el
+  nombre y con la regla de DL-040. La foto del profesional, en la etapa B, después de la candidata de la APK, como dato
+  profesional (C3), con su alta en el inventario del 08 y su DL. La de las personas, después del piloto, con las mismas
+  condiciones y el texto A2.
+  - *Desafía:* la vara de las maquetas («un avatar»), las reglas de sus planos («ni avatares, ni fotos»), DL-009 y
+    DL-117 D-2.
+  - *Fundamento:* en una cola de a una o en una agenda, la cara se reconoce antes que el texto. Sale del nombre que el
+    profesional ya ve, con el mismo tono para todos: no expone ningún dato nuevo.
+  - *Salvaguardas:* `inicialesDe`, con sus casos; las iniciales en tinta neutra, nunca en el acento; decorativo para el
+    lector de pantalla; nunca en solicitudes ni invitaciones a quien no tiene un vínculo vigente, ni en avisos; «Ocultar
+    nombres», con una prueba que falla si aparece un nombre o una inicial. DL-138 D-3 se mantiene: sin la foto de
+    Google.
+  - *Descartado:* seis tonos por persona, los retratos generados por IA y decidir ahora la foto de las personas.
+- **D-3 · La dirección de arte y una sola gramática de gráficos.** Inter autoalojada con cifras tabulares, y Poppins 600
+  en tres momentos de marca; una sola luz (`--ahora`); marcas según el lugar de cada día, con mínimos por estado, y una
+  sola forma de lo elegido; Entrenamiento, con el lenguaje de Analizar.
+  - *Desafía:* la regla de la guía sobre dónde va el acento. Los enlaces de texto pasan a `--texto`, con un subrayado
+    fino; el acento puede ir en el borde de una vista que filtra, solo mientras está elegida; dentro de un gráfico, los
+    puntos y lo elegido van en el color de su métrica, y el acento marca solo «hoy».
+  - *Fundamento:* hoy hay unos veinte elementos en acento en la primera pantalla del Resumen, y cuando todo llama la
+    atención, nada la llama. Cambia dónde va un color de la interfaz, no qué se dice de la persona.
+  - *Salvaguardas:* el subrayado distingue los enlaces sin depender del color (WCAG 1.4.1); los pares nuevos, en
+    `contraste.test.cjs`.
+  - *Descartado:* la letra y las marcas, con el acento como hoy.
+- **D-4 · Pendientes por persona, en dos carriles, y el cajón «De a una».** «Te toca a vos» (revisiones, planes y
+  tomas), agrupado por persona, y «Esperan respuesta» (formularios, solicitudes e invitaciones), aparte. La vista «Por
+  pendiente», con exactamente el orden de DL-107, queda a un clic. «Empezar por el primero» abre el cajón, que lee el
+  contexto al abrir cada cuadro, saltea sin escribir y vuelve a la cola con el lugar guardado, nunca los datos. El cajón
+  no registra, no aplica ni activa: aplicar llega con D-6.
+  - *Desafía:* DL-107 (una fila por persona, área y tipo, en orden fijo) y la maqueta 13.
+  - *Fundamento:* hoy cada decisión es ir, resolver, recargar y volver a filtrar, y lo que espera a la persona se mezcla
+    con lo que decide el profesional. El criterio sigue siendo la urgencia objetiva de las fechas
+    (`compararPendientes`): las personas se ordenan por su pendiente más urgente. Los carriles separan quién tiene la
+    próxima jugada, no cómo se porta nadie.
+  - *Salvaguardas:* `compararPendientes` intacta, con tres pruebas de orden; se agrupa por `identityId`, nunca por
+    nombre; los atajos funcionan solo con el foco adentro; el cajón va detrás de un interruptor hasta que su recaptura
+    esté bien, y apagado cada verbo lleva a su destino exacto.
+  - *Descartado:* solo el agrupado, sin cajón.
+- **D-5 · El minigráfico, con una línea fina y el estado de cada día en la tira.** Cuando a cada día le toca menos lugar
+  que el mínimo de un punto, una línea que une los días completos y se corta en los días sin registros y en los huecos;
+  la tira de cobertura lleva el estado de cada día; llevan marca el último día, el elegido y los aislados; lo que cae
+  fuera de escala va con una muesca en la base y su cuenta. A 90 días, la línea es la media de cada semana de BE, con su
+  denominador, y los días van como puntos claros detrás.
+  - *Desafía:* la guía, I.7: «No se quita ningún punto por falta de lugar: se achica la marca».
+  - *Fundamento:* a 90 días no hay radio que no pise al vecino, y con los mínimos de cada estado los días menos firmes
+    llevarían más tinta que los completos. Ningún día queda sin dibujar: la tira conserva un registro por día con su
+    estado. No es un suavizado: es el grano semanal que BE ya tiene.
+  - *Descartado:* todos los puntos, siempre, más chicos. Analizar y los gráficos de área conservan todos los puntos.
+- **D-6 · La cola de revisiones y aplicar desde el cajón.** API-DSH-02, una operación nueva de solo lectura, con
+  «Próxima acción pendiente» (`NEXT_ACTION_PENDING`), primera, y «Sin revisión acordada» (`ACTIVE_PLAN_WITHOUT_REVIEW`),
+  última, con la definición de pendiente del dominio de revisión. Desde el cajón se aplica una revisión ya registrada,
+  con la misma operación que Revisiones y el efecto escrito antes del botón. «¿Cuándo la revisás?» se pregunta en «Lo
+  que decidís», antes de registrar, y al activar, con nada elegido; después de aplicar no se pregunta. «Sin revisión
+  acordada» lleva «Revisar», que abre la revisión preparada con «Reprogramar revisión».
+  - *Desafía:* el alcance del 2026-09-22, que dejó fuera API-DSH-02, y que solo se escriba desde la ficha. API-CAR-01 no
+    cambia.
+  - *Fundamento:* es la decisión más corta y la que cierra el ciclo de la North Star. Un plan activado sin próxima
+    revisión hoy sale de toda cola: es el caso que más se escapa. Los textos son los que el legajo ya permite (B10-08:
+    «Próxima acción pendiente»).
+  - *Descartado:* los dos estados como valores nuevos de API-CAR-01 (cambiaría un contrato existente), solo la cola
+    aplicando en Revisiones, y una operación aparte para fijar la próxima revisión.
+- **D-7 · La persona nueva.** Con un vínculo de menos de 90 días, el período por omisión del Resumen y de Analizar
+  arranca en el vínculo más antiguo de las áreas que ve el profesional, y lo dice («Desde el 3 nov, inicio del
+  acompañamiento»). En cada tarjeta y en su tira, lo anterior al vínculo de esa área no se dibuja. Con uno a tres días
+  con valor no se dibuja línea ni media.
+  - *Desafía:* el período por omisión de 90 días.
+  - *Fundamento:* una persona de tres días aparecería con 87 días «sin registros». Es un recorte rotulado del período:
+    no cambia ningún valor.
+  - *Salvaguarda:* antes se verifica qué devuelve la API antes del vínculo. Si el profesional viera historia previa al
+    consentimiento, es una pregunta del 08.
+- **D-8 · El panorama de la cartera.** API-DSH-01, una operación nueva recortada, leída por conjuntos con una sola
+  pasada del PDP, con tope de 200 y los pendientes de API-CAR-01 adentro. Por persona y área trae el plan vigente, la
+  última revisión y la próxima acordada a cualquier distancia; la nueva evidencia desde la revisión, solo en un área con
+  una revisión vencida, próxima o sin aplicar.
+  - *Desafía:* el alcance del 2026-09-22, que dejó fuera API-DSH-01, y la prudencia de B10-08 §5.
+  - *Fundamento:* hoy /pro solo ve a quien tiene un pendiente: quien está al día no aparece. Son los hechos operativos
+    que el 09 y B10-08 ya definen, con sus textos permitidos, sin valores de salud y sin orden por actividad.
+  - *Salvaguardas:* integrar antes la lectura de la cartera por conjuntos (#222, sin integrar); decidir la marca con
+    `conteosDesde`, para que /pro y la ficha digan lo mismo. Prohibido: ordenar, filtrar o resaltar por actividad,
+    contar personas con o sin registro, la nueva evidencia como columna de toda la cartera y los valores de salud.
+- **D-10 · El anillo del reparto declarado, opcional.** Un aro chico de tres tramos, solo cuando el profesional declaró
+  los macros como proporción de las calorías, con los números escritos y sin «%». No hay otros anillos en el website.
+  - *Desafía:* la nota de DL-158, DL-111 decisión 11 y el «medidor» de la vara.
+  - *Fundamento:* dibuja la prescripción del profesional, no lo registrado, y no se llena hacia una meta. B10-05 §59
+    habilita para el objetivo la «distribución gráfica». Con la cohorte no aparece: declara kcal y proteínas por kilo.
+  - *Descartado:* una barra apilada con los mismos números, o DL-158 tal cual.
+- **D-11 · La composición corporal en kg.** Una pieza nueva en Antropometría («Composición corporal»), la pregunta «¿De
+  qué está hecho el cambio de peso?» en Analizar y la barra de la última toma en la tarjeta del Resumen. La columna se
+  parte solo con un método de dos compartimentos (Durnin y Womersley o Faulkner); la masa muscular de Lee va en su fila,
+  porque no suma el peso; un cambio de método corta las diferencias; sin «%» en el Resumen; dos colores propios,
+  validados para daltonismo en los dos temas.
+  - *Desafía:* nada del legajo: BE ya calcula esas masas en kg y su regla de superposición lo permite. Cambia la tarjeta
+    de Antropometría del Resumen.
+  - *Fundamento:* ninguna pantalla lo muestra de un vistazo, y dos ecuaciones dan hasta 3 kg de diferencia sobre la
+    misma toma: por eso, un método por gráfico.
+- **D-12 · Los indicadores del Resumen salen de las áreas del profesional.** Los cuatro por defecto, por sus áreas; lo
+  que cada cuenta ya guardó manda.
+  - *Fundamento:* hoy son los mismos para todos, y cada profesional mira primero lo suyo.
+
+*La D-9 original, reabierta el 2026-11-05 y reemplazada por la D-9 nueva:* «Semana N de 5» para todos, contada desde el
+vínculo durante las primeras cinco semanas, con el 5 como constante del website, y una entidad de programa después del
+piloto. Queda como registro: las 5 semanas son el método de Elián, no el de BE.
+
+*La D-9 nueva y D-13 a D-16, ratificadas por Dirección el 2026-11-05 a la noche, pregunta por pregunta, todas como se
+recomendaron:*
+- **D-9 nueva · Los programas de cada profesional.** Cada profesional que trabaja por programas declara los suyos en
+  «Plantillas y habituales → Programas»: un nombre, cuántas semanas y, por semana, un nombre y sus hitos, cada uno con
+  el acto que lo deja «Listo» (la evaluación registrada, la toma registrada, el plan activado, la revisión aplicada o
+  «Lo marco yo»). Por defecto no hay ninguno. Al empezar con una persona se elige uno o ninguno, sin nada elegido. BE
+  muestra «Semana N de M · hito» junto al nombre, y los hitos en «Tu semana» y entre las opciones de «¿Cuándo la
+  revisás?». Cambiar un programa crea una versión nueva. En el piloto, las 5 semanas de Elián son su programa; si la
+  parte no llega antes de la S1, el piloto va con revisiones semanales y sin la semana a la vista. Familia API-PRG.
+  - *Desafía:* el alcance: BE no tiene programas, y hay una sola próxima revisión por Proceso.
+  - *Fundamento:* así BE no le impone un calendario a nadie. Se queda lo que hacía honesta a la D-9 original: la semana
+    sale de las fechas, un hito queda «Listo» solo con un acto del profesional y nunca va un aro alrededor de la cara.
+    La barra sigue en la lista cerrada de D-1. Es un dato operativo del vínculo, sin categoría sensible nueva.
+  - *Salvaguardas:* una prueba de propiedad (ningún registro de la persona cambia una semana ni un hito); un hito que
+    pasa sin su acto se dice como un hecho del profesional («Toma prevista para la semana 5 · sin toma registrada
+    todavía»), sin color nuevo; al terminar, la persona sigue con su próxima revisión y no vuelve a la cola como «Sin
+    plan activo».
+  - *Descartado:* un programa de BE para todos, y contar los hitos a tiempo por profesional (sería la TVCC-30 por la
+    puerta de atrás, DL-135 D-8).
+- **D-13 · Ver las otras áreas, si la persona lo comparte.** La persona le comparte a un profesional, desde su app, un
+  resumen de solo lectura de otra área, profesional por profesional y área por área, con el mismo modelo que «Compartir
+  mis hábitos» (DL-165 D-9): lista explícita, revocable, auditada y que ella ve (quién lo miró y cuándo). Qué entra lo
+  fija una matriz por pertinencia, asimétrica (el paquete, §3.1): la nutricionista ve de Entrenamiento los días y las
+  sesiones por semana, el tipo y la evolución de los ejercicios principales; el entrenador no ve números de Nutrición;
+  las molestias no viajan nunca. En la ficha, la franja «Otras áreas · compartido por la persona», las métricas
+  compartidas en Analizar y los hitos sin contenido en la Línea de tiempo; en la app, una sola pantalla «Quién ve qué».
+  Familia API-RES.
+  - *Se aparta del legajo:* el 08 §11 hace que cada profesional vea la porción de sus Alcances. Con el resumen, un
+    profesional ve algo de un área que no lleva.
+  - *Fundamento:* es la capacidad de compartición explícita que el 08 deja «para diseñar y aprobar por separado»
+    (§11-bis.3 y C-11), y el 04 la prevé (RNF-SEC-006, «salvo autorización explícita»). El dato es de la persona y lo
+    decide ella, con la lista de quiénes lo ven y la revocación (RNF-PRI-002). La matriz es de Dirección, por acta y
+    versionada, y sin fila es no (08 §11-bis.4-bis); una ampliación no se ve hasta que la persona acepta de nuevo (C-12
+    y la prueba A-5). No es un Alcance, no da escritura y el profesional no lo pide desde el escritorio (§11-bis.2). Sin
+    nada compartido no hay tarjeta, candado ni aviso (§11-bis.7).
+  - *Lo legal:* cambia quién ve qué. Con personas reales, después de la revisión legal (VJR-1, VJR-4 y VJR-5 del 08) y
+    del gate del 08 §42; en `test`, con datos sintéticos. No frena el piloto, donde Elián lleva las dos áreas.
+  - *Descartado:* un tablero de toda la persona que mezcle las áreas, compartir el plan completo, los borradores o las
+    notas, y que los profesionales se compartan cosas sin la persona (para eso sigue la nota de coordinación, DL-140).
+- **D-14 · El mapa corporal, con tres capas.** En el Resumen de la ficha, a la derecha de las tarjetas: el cuerpo de
+  frente y de espalda (el set de capas de Dirección) con una capa por vez, según las áreas que ve el profesional.
+  Medidas: los perímetros y los pliegues de la última toma, con el cambio desde la comparable anterior, con signo y sin
+  color. Trabajo: las series del período como zona principal, en un solo tono de cuatro tramos; la secundaria, rayada;
+  cero, sin relleno. Molestias declaradas: lo que la persona contó en «Antes de entrenar», con su fecha y «Declarado por
+  la persona», solo para quien lleva Entrenamiento. A un costado, la columna de composición; al otro, la tabla de la
+  capa.
+  - *Desafía:* que la figura de hoy no cuente: en un ejercicio o en una sesión dice qué zonas nombra, no cuánto
+    (DL-081).
+  - *Fundamento:* el 06 pide contar por zona, con el rol explícito y sin coeficientes (REG-06-179 y REG-06-183), y el 10
+    deja «el mapa corporal exacto y su escala» para que los decida Dirección (B10-08/09 §39 y CAND-10-PRJ-09): la
+    intensidad es la contribución observada, nunca riesgo, lesión ni calidad. Usa el lenguaje que BE ya tiene, la lámina
+    y la figura de zonas.
+  - *Salvaguarda:* la leyenda dice qué es el tono, no hay objetivo ni rango por zona y la tabla dice cada número. Si en
+    la prueba con profesionales una zona clara se lee como una falta, la capa Trabajo pasa a barras agrupadas por zona
+    (CAND-10-PRJ-04).
+  - *Descartado:* un mapa de calor ponderado, la secundaria como media serie, comparar zona por zona con lo que indicaba
+    el plan, y rojo, semáforo o escala de dolor en las molestias.
+- **D-15 · Los cuatro derivados, con lo que BE ya registra.** Las series por zona muscular por semana (una serie por
+  cada zona de su ejercicio, por rol y sin ponderar), el volumen de carga por ejercicio (por ejercicio y por semana,
+  nunca sumando ejercicios), la proteína por comida del plan y la somatocarta (los tres componentes que ya se calculan,
+  sin el nombre de una categoría ni un «ideal»). Cada uno, con su especificación escrita.
+  - *Desafía:* nada del legajo: completa lo que el 06 pide (REG-06-178, REG-06-179 y REG-06-183) y las claves de
+    API-PRJ-01 que el 09 declara y hoy responden «especificación pendiente» (DL-126).
+  - *Fundamento:* son de lo que más usan los preparadores y las nutricionistas, no piden un dato nuevo y no tocan lo
+    legal. Las series por zona son, además, la capa Trabajo del mapa.
+- **D-16 · Los datos nuevos, por partes.** El esfuerzo de la sesión, sí: una pregunta opcional al terminar, de 0 a 10
+  con palabras, que con la duración medida da la carga interna, sin derivados de riesgo ni de fatiga (familia API-ESF).
+  El control semanal, para el piloto, con las preguntas mínimas revisadas por el abogado y por la validación disciplinar
+  (LC-41 del plan de datos reales), sin puntaje. El peso en casa, después del piloto, cuando el profesional lo habilita
+  para esa persona, como dato reportado en su propia serie (familia API-PCA). Las fotos de progreso, no por ahora, y la
+  bioimpedancia, solo si un profesional la usa, cada una con su DL.
+  - *Desafía:* lo que BE registra hoy. El esfuerzo es un dato de ejecución, como el de cada serie, y el legajo lo admite
+    solo así (REG-06-129); el control semanal es salud y espera lo legal; el peso en casa cambia quién carga una
+    medición, y pide su línea en el inventario del 08 y el texto A2.
+  - *Fundamento:* el esfuerzo de la sesión es la medida de carga interna más usada en entrenamiento, y es barata. Lo
+    demás suma, pero toca salud o cambia quién carga el dato.
+  - *Descartado:* puntajes que sumen escalas, la relación aguda:crónica o un «riesgo de lesión», y los datos de relojes
+    o del teléfono (terceros, VJR-2).
+
+*D-17 a D-21, de la planificación, ratificadas por Dirección el 2026-11-05, por pregunta, todas como se recomendaron:*
+- **D-17 · Los rangos de macros, en el plan de Nutrición.** Por día tipo y, si el profesional quiere, por comida: cada
+  macro y las calorías, con un mínimo y un máximo, todos opcionales, en g o en g por kg (con el peso de la última toma,
+  que se dice). En el editor, cada opción se ubica frente al rango de su comida con una franja y un punto, sin color; si
+  queda afuera, se dice con palabras. «Usar lo que cubren como rango» copia el mínimo y el máximo de las opciones, solo
+  cuando el profesional lo toca. El objetivo no cambia y queda como referencia general: en el editor, «Objetivo del día»
+  pasa a «Objetivo general». En Analizar, cada día se ubica frente al rango de su día tipo y cada comida frente al de su
+  comida. La persona no ve los rangos. Familia API-PLN.
+  - *Desafía:* la nota de DL-158 y del catálogo de Analizar: «Calorías previstas del día» no se ofrece, porque sumar las
+    alternativas inflaría el objetivo.
+  - *Fundamento:* es el pedido de Dirección del 2026-10-09 (los macros planificados por día y por comida). El legajo
+    deja abierta la forma de los macros y no prevé rangos ni los prohíbe; el rango lo escribe el profesional, porque BE
+    no calcula el requerimiento (INV-06-133). El objetivo y el plan siguen siendo dos cosas con versiones propias
+    (REG-06-123).
+  - *Descartado:* un objetivo con un valor por día tipo: cambia el formulario, el contrato y lo que lee la app, y ata
+    cada versión del objetivo a los días tipo de un plan.
+- **D-18 · Los días de cada día tipo.** Cada día tipo dice a qué días de la semana aplica. Los marca el profesional; si
+  la persona le comparte su agenda de Entrenamiento (D-13) o él lleva las dos áreas, BE le propone «los días con sesión»
+  y él confirma. En la app, «Hoy · Día de entrenamiento», con el selector para elegir otro: nunca se elige en silencio.
+  Sin días marcados, sigue como hoy.
+  - *Desafía:* que hoy el día tipo sea solo un nombre, y la persona elija cada día cuál corresponde.
+  - *Fundamento:* B10-05 §28 pide una «regla canónica» para mostrar el día tipo que aplica, y DL-049 sigue abierta. Con
+    la regla, la persona no elige todos los días, y Analizar sabe qué rango corresponde a cada fecha.
+- **D-19 · Las semanas del bloque de Entrenamiento, opcionales.** Cada semana es un microciclo, en orden desde el
+  «Empieza el» de la agenda. El profesional escribe la semana 1, la copia («Copiar la semana») y la ajusta: «Ajustar la
+  semana» suma lo que él dice a las cargas, las repeticiones o el RIR, y escribe valores que se ven y se cambian antes
+  de guardar; no queda una regla guardada. Cada semana lleva su nombre y su propósito, libres: la descarga es una semana
+  más. La app muestra la semana que toca. Familia API-PLE.
+  - *Desafía:* que el microciclo no tenga orden en el tiempo (REG-06-126) y que la agenda no recorra los microciclos:
+    DL-137 lo dejó como «otra decisión», y es esta.
+  - *Fundamento:* es como los preparadores escriben un mes de trabajo; hoy cada semana distinta es una versión nueva. El
+    legajo deja la periodización al profesional (INV-06-143) y no admite que un cálculo cambie el plan solo (B10-06): BE
+    escribe solo lo que el profesional pide, cuando lo pide. La semana sale del calendario, nunca de lo que registra la
+    persona. En el legajo, «progresión» sigue siendo la próxima acción de una revisión, con «Ajustar» o «Sustituir».
+  - *Descartado:* una regla de progresión guardada, que BE aplique sola: el 06 deja las fórmulas de progresión fuera del
+    modelo.
+- **D-20 · Lo que BE ya sabe calcular, a la vista al planificar.** En Nutrición, la estimación de cada opción para las
+  porciones del plan, la misma cuenta que hoy ve la persona en la app. En Entrenamiento, las series de la semana por
+  zona, contadas del plan con la regla de D-15, en el cuerpo en un tono y en una tabla. Las dos dicen de dónde salen.
+  Las series por zona no tienen mínimos ni un ideal, y nunca se ponen al lado de lo registrado.
+  - *Desafía:* nada del legajo. Pide una lectura nueva del profesional, sin cambiar lo que lee la app (DL-152).
+  - *Fundamento:* hoy la persona sabe cuánto aporta cada opción, y el profesional que la escribió no. Contar las series
+    de la semana por grupo muscular es lo que más usan los preparadores para repartir el trabajo. Ninguna de las dos
+    pide un dato nuevo.
+- **D-21 · Descartar un borrador que la persona nunca vio.** «Descartar el borrador», con confirmación, en una operación
+  nueva de cada área, con su auditoría y su evento. Solo un borrador que nunca se activó: una versión activada no se
+  descarta nunca.
+  - *Desafía:* que hoy ninguna operación descarte un borrador. Quien empezó desde cero no puede pasar a una plantilla, y
+    un borrador viejo traba la aplicación de una revisión con «Ajustar» o «Sustituir».
+  - *Fundamento:* el 05 define el borrador como una versión que «no se presenta al asesorado como plan vigente»
+    (glosario, «Borrador de plan»): descartarlo no borra nada que la persona haya visto.
+
+**Lo que se descartó.** El aro del porcentaje de grasa, el aro de la semana alrededor de la cara, los anillos del ciclo
+en cada fila, la actividad de la cartera, las cuentas de lo que hizo el profesional, los seis tonos por persona, la foto
+de las personas decidida ahora, los retratos generados por IA, la mancuerna de Antropometría, la fila de caras de la
+celda «Personas», las cuentas y los tachados del cierre de la cola, la nueva evidencia como columna de toda la cartera y
+la pregunta de la fecha después de aplicar. Varios tocaban el núcleo por la puerta de atrás.
+
+**Trazabilidad:** RF-052, RF-053, RF-055 y RF-017; B10-08 (CAND-10-DSH-02, ADV-10-DSH-02, ADV-10-DSH-03, ADV-10-PRJ-01,
+DEC-10-UX-01, DEC-10-UX-02, §5 y §9); B10-10 (§4, §7 y §11 a §13); B10-05 §59; TEST-PRJ-009. Para planificar: RF-030 y
+RF-039 a RF-041; B10-05 §28; B10-06 H10-TRN-04; DL-049, DL-108, DL-109, DL-137 y DL-158.
+
+**Pruebas.** Los oráculos TEST-TAG-001 a 032 del paquete (§6), escritos con sus trece campos antes del código de cada
+parte, y las pruebas que ya existen, extendidas: T13, el contraste, la geometría del minigráfico, la prueba de términos
+de la cartera, `lecturas-de-las-apk.int-spec.ts` y la guardia de trazabilidad, que suma las siete familias nuevas (PRG,
+RES, PLN, PLE, ESF, PCA y RET) con esta DL.
+
+**Lo que queda abierto:**
+- El sí de Dirección al alcance, las partes TB-00 a TB-48 (ACTA-DIR-034), después de la prueba de la APK 0.21. Hasta
+  entonces no se programa nada.
+- Lo legal antes de personas reales: D-13 (VJR-1, VJR-4 y VJR-5) y el control semanal de D-16 (LC-41); el alta en el
+  inventario del 08 de la foto del profesional, del peso en casa y, después del piloto, de la foto de las personas.
+- Cuándo se integra: cuando la escuela cierre su evaluación sobre `test`. Si no la cerró el 2026-12-04, Dirección decide
+  si se integran antes las partes del piloto.
+- La tarjeta «Lo que contó al empezar», que WP-FORMULARIOS-RONDA-2 mandó a este paquete y que la propuesta no tiene como
+  parte.
+- Las decisiones de la implementación, desde TA-01, a medida que se programe.
+
+**Condición de cierre:** Dirección da el sí al alcance; cada parte autorizada pasa la CI en `main`, con sus oráculos;
+las candidatas de la APK quedan publicadas en `test` y probadas en el teléfono, con TalkBack; y en la prueba con
+profesionales (TB-21) nadie lee una barra del reloj como el progreso de la persona.
 
 ## DL-164 — Formularios de inicio: seis tipos nuevos, preguntas condicionales y la carga que la persona confirma
 
