@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="COMP-02">
+<title>Componentes · Los módulos de la API</title>
+<desc>Los 22 módulos de NestJS agrupados por responsabilidad, las familias de operaciones que expone cada uno y sus dependencias. · Fuente: apps/api/src/*/*.module.ts · datos/modulos-api.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<path d="M 8 25 L 8 11 Q 8 8 11 8 L 199.77 8 Q 202.77 8 202.77 11 L 202.77 25" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="8" y="25" width="734" height="65" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="17" y="21" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Comunes (cinco globales y Health)</text>
+<path d="M 8 119 L 8 105 Q 8 102 11 102 L 61.24 102 Q 64.24 102 64.24 105 L 64.24 119" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="8" y="119" width="250" height="121" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="17" y="115" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Acceso</text>
+<path d="M 270 119 L 270 105 Q 270 102 273 102 L 323.5 102 Q 326.5 102 326.5 105 L 326.5 119" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="270" y="119" width="132" height="121" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="279" y="115" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Vínculo</text>
+<path d="M 414 119 L 414 105 Q 414 102 417 102 L 492.72 102 Q 495.72 102 495.72 105 L 495.72 119" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="414" y="119" width="328" height="121" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="423" y="115" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Seguimiento</text>
+<path d="M 8 287 L 8 273 Q 8 270 11 270 L 159.11 270 Q 162.11 270 162.11 273 L 162.11 287" fill="#DCE8FC" stroke="#1453C9" stroke-width="1.1"/>
+<rect x="8" y="287" width="734" height="111" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.1"/>
+<text x="17" y="283" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Dominios de salud y apoyo</text>
+<rect x="520" y="408" width="222" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<rect x="530" y="414" width="30" height="13" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/><rect x="549" y="416.5" width="7" height="8" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.8"/>
+<text x="568" y="424.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">módulo de NestJS</text>
+<path d="M 530 439.5 L 559 439.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 553 442.86 L 560 439.5 L 553 436.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="568" y="443.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">importa (depende de)</text>
+<path d="M 248 151 L 278 151" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 271 154.36 L 278 151 L 271 147.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 107.6 184 L 107.6 182 Q 107.6 180 109.6 180 L 156.4 180 Q 158.4 180 158.4 178 L 158.4 176" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 161.76 183 L 158.4 176 L 155.04 183" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 514 234 L 514 285 Q 514 290 509 290 L 449.5 290 Q 444.5 290 444.5 295 L 444.5 312" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 441.14 305 L 444.5 312 L 447.86 305" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 138 337 L 130 337" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 137 333.64 L 130 337 L 137 340.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 470 337 L 482 337" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 475 340.36 L 482 337 L 475 333.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 243 362 L 243 377 Q 243 382 248 382 L 521.8 382 Q 526.8 382 526.8 377 L 526.8 362" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 530.16 369 L 526.8 362 L 523.44 369" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 334 312 L 334 305 Q 334 300 329 300 L 90.2 300 Q 85.2 300 85.2 305 L 85.2 312" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 81.84 305 L 85.2 312 L 88.56 305" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="18" y="32" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="110" y="38" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="41" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="47" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="26" y="49" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Prisma</text>
+<text x="26" y="64" font-family="Inter" font-size="10" font-weight="500" fill="#566881">acceso a la base</text>
+<rect x="138" y="32" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="230" y="38" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="227" y="41" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="227" y="47" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="146" y="49" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Plataforma</text>
+<text x="146" y="64" font-family="Inter" font-size="10" font-weight="500" fill="#566881">auditoría e</text>
+<text x="146" y="77" font-family="Inter" font-size="10" font-weight="500" fill="#566881">idempotencia</text>
+<rect x="258" y="32" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="350" y="38" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="347" y="41" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="347" y="47" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="266" y="49" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Autorizacion</text>
+<text x="266" y="64" font-family="Inter" font-size="10" font-weight="500" fill="#566881">PDP</text>
+<rect x="378" y="32" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="470" y="38" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="467" y="41" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="467" y="47" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="386" y="49" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Proceso</text>
+<text x="386" y="64" font-family="Inter" font-size="10" font-weight="500" fill="#566881">proceso y</text>
+<text x="386" y="77" font-family="Inter" font-size="10" font-weight="500" fill="#566881">revisiones</text>
+<rect x="498" y="32" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="590" y="38" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="587" y="41" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="587" y="47" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="506" y="49" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Novedades</text>
+<text x="506" y="64" font-family="Inter" font-size="10" font-weight="500" fill="#566881">NOV</text>
+<rect x="618" y="32" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="710" y="38" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="707" y="41" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="707" y="47" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="626" y="49" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Health</text>
+<text x="626" y="64" font-family="Inter" font-size="10" font-weight="500" fill="#566881">/health/ready</text>
+<rect x="18" y="126" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="110" y="132" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="135" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="141" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="26" y="143" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Sesion</text>
+<text x="26" y="158" font-family="Inter" font-size="10" font-weight="500" fill="#566881">ACC</text>
+<rect x="136" y="126" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="228" y="132" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="225" y="135" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="225" y="141" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="144" y="143" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Identidad</text>
+<text x="144" y="158" font-family="Inter" font-size="10" font-weight="500" fill="#566881">ACC</text>
+<rect x="18" y="184" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="110" y="190" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="193" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="199" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="26" y="201" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">AccesoGoogle</text>
+<text x="26" y="216" font-family="Inter" font-size="10" font-weight="500" fill="#566881">GOO</text>
+<rect x="136" y="184" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="228" y="190" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="225" y="193" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="225" y="199" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="144" y="201" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Profesional</text>
+<text x="144" y="216" font-family="Inter" font-size="10" font-weight="500" fill="#566881">habilitación</text>
+<text x="144" y="229" font-family="Inter" font-size="10" font-weight="500" fill="#566881">(DL-036)</text>
+<rect x="278" y="126" width="118" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="376" y="132" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="373" y="135" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="373" y="141" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="286" y="143" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Vinculo</text>
+<text x="286" y="158" font-family="Inter" font-size="10" font-weight="500" fill="#566881">INV · REL</text>
+<rect x="278" y="184" width="118" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="376" y="190" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="373" y="193" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="373" y="199" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="286" y="201" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Consentimiento</text>
+<text x="286" y="216" font-family="Inter" font-size="10" font-weight="500" fill="#566881">CON · EVI</text>
+<rect x="424" y="126" width="150" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="554" y="132" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="551" y="135" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="551" y="141" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="432" y="143" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Cartera</text>
+<text x="432" y="158" font-family="Inter" font-size="10" font-weight="500" fill="#566881">CAR · DSH · ANT · TRN</text>
+<rect x="582" y="126" width="150" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="712" y="132" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="135" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="141" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="590" y="143" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Dashboard</text>
+<text x="590" y="158" font-family="Inter" font-size="10" font-weight="500" fill="#566881">DSH</text>
+<rect x="424" y="184" width="150" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="554" y="190" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="551" y="193" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="551" y="199" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="432" y="201" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Analisis</text>
+<text x="432" y="216" font-family="Inter" font-size="10" font-weight="500" fill="#566881">DSH · PRJ · ANT · VAN</text>
+<rect x="582" y="184" width="150" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="712" y="190" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="193" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="199" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="590" y="201" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Coordinacion</text>
+<text x="590" y="216" font-family="Inter" font-size="10" font-weight="500" fill="#566881">CRD</text>
+<rect x="18" y="312" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="110" y="318" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="321" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="107" y="327" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="26" y="329" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Medios</text>
+<text x="26" y="344" font-family="Inter" font-size="10" font-weight="500" fill="#566881">MED</text>
+<rect x="138" y="312" width="150" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="268" y="318" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="265" y="321" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="265" y="327" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="146" y="329" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Nutricion</text>
+<text x="146" y="344" font-family="Inter" font-size="10" font-weight="500" fill="#566881">HAN · INT · DSH · NUT ·</text>
+<text x="146" y="357" font-family="Inter" font-size="10" font-weight="500" fill="#566881">TPN · REC · ING</text>
+<rect x="300" y="312" width="170" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="450" y="318" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="447" y="321" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="447" y="327" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="308" y="329" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Entrenamiento</text>
+<text x="308" y="344" font-family="Inter" font-size="10" font-weight="500" fill="#566881">SER · TIE · EJE · DSH · INT · TRN</text>
+<text x="308" y="357" font-family="Inter" font-size="10" font-weight="500" fill="#566881">· TPL · AGE · HAB</text>
+<rect x="482" y="312" width="112" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="574" y="318" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="571" y="321" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="571" y="327" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="490" y="329" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Integraciones</text>
+<text x="490" y="344" font-family="Inter" font-size="10" font-weight="500" fill="#566881">Open Food Facts,</text>
+<text x="490" y="357" font-family="Inter" font-size="10" font-weight="500" fill="#566881">wger</text>
+<rect x="604" y="294" width="128" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="712" y="300" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="303" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="309" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="612" y="311" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Antropometria</text>
+<text x="612" y="326" font-family="Inter" font-size="10" font-weight="500" fill="#566881">DSH · ANT · MTH · CAL</text>
+<rect x="604" y="346" width="128" height="50" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="712" y="352" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="355" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="709" y="361" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="612" y="363" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Formularios</text>
+<text x="612" y="378" font-family="Inter" font-size="10" font-weight="500" fill="#566881">FRM · DSH</text>
+<path d="M 8 408 L 499 408 L 508 417 L 508 447.6 L 8 447.6 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 499 408 L 499 417 L 508 417" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="17" y="424.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Las flechas son «imports» entre módulos. Casi todos importan SesionModule (no se dibuja) y todos</text>
+<text x="17" y="437.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">usan los globales. Sin módulo: config, http y la TVCC-30 (comando).</text>
+</svg>

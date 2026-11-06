@@ -1,0 +1,209 @@
+{
+ "_que_es": "Índices únicos parciales vigentes al final de las migraciones (lectura del SQL).",
+ "indices": [
+  {
+   "indice": "solicitud_de_vinculo_pendiente_equivalente",
+   "tabla": "solicitud_de_vinculo",
+   "migracion": "20260919200100_vinculo_consentimiento_y_pdp",
+   "definicion": "(profesional_id, asesorado_id, alcance, finalidad) WHERE estado = 'PENDIENTE'"
+  },
+  {
+   "indice": "alcance_de_vinculo_no_finalizado",
+   "tabla": "alcance_de_vinculo",
+   "migracion": "20260919200100_vinculo_consentimiento_y_pdp",
+   "definicion": "(vinculo_id, alcance) WHERE estado <> 'FINALIZADO'"
+  },
+  {
+   "indice": "version_de_consentimiento_una_raiz",
+   "tabla": "version_de_consentimiento",
+   "migracion": "20260919200100_vinculo_consentimiento_y_pdp",
+   "definicion": "(consentimiento_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "acto_registrable_un_a3_vigente",
+   "tabla": "acto_registrable",
+   "migracion": "20260919200100_vinculo_consentimiento_y_pdp",
+   "definicion": "(identidad_id) WHERE estado = 'VIGENTE' AND tipo = 'DATOS_SALUD_BE'"
+  },
+  {
+   "indice": "version_de_texto_una_raiz_por_tipo",
+   "tabla": "version_de_texto",
+   "migracion": "20260919200100_vinculo_consentimiento_y_pdp",
+   "definicion": "(tipo) WHERE reemplaza_a_id IS NULL"
+  },
+  {
+   "indice": "proceso_operativo_uno_abierto",
+   "tabla": "proceso_operativo",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(profesional_id, asesorado_id, alcance) WHERE estado = 'ABIERTO'"
+  },
+  {
+   "indice": "capacidad_profesional_una_raiz",
+   "tabla": "capacidad_profesional",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(identidad_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "proxima_revision_una_raiz",
+   "tabla": "proxima_revision",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(proceso_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_elemento_nutricional_una_raiz",
+   "tabla": "version_de_elemento_nutricional",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(elemento_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_objetivo_nutricional_una_raiz",
+   "tabla": "version_de_objetivo_nutricional",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(objetivo_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_plan_nutricional_una_raiz",
+   "tabla": "version_de_plan_nutricional",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(plan_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_plan_nutricional_un_borrador",
+   "tabla": "version_de_plan_nutricional",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(plan_id) WHERE estado = 'BORRADOR'"
+  },
+  {
+   "indice": "correccion_de_ingesta_una_raiz",
+   "tabla": "correccion_de_ingesta",
+   "migracion": "20260920100000_circuito_nutricional",
+   "definicion": "(ingesta_id) WHERE correccion_previa_id IS NULL"
+  },
+  {
+   "indice": "version_de_especificacion_antropometrica_una_raiz",
+   "tabla": "version_de_especificacion_antropometrica",
+   "migracion": "20260920200000_antropometria",
+   "definicion": "(especificacion_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "correccion_de_medicion_una_raiz",
+   "tabla": "correccion_de_medicion",
+   "migracion": "20260920200000_antropometria",
+   "definicion": "(medicion_id) WHERE correccion_previa_id IS NULL"
+  },
+  {
+   "indice": "referencia_de_calculo_una_raiz",
+   "tabla": "referencia_de_calculo",
+   "migracion": "20260920220000_metodos_y_calculos",
+   "definicion": "(asesorado_id, profesional_id, finalidad) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_ejercicio_una_raiz",
+   "tabla": "version_de_ejercicio",
+   "migracion": "20260921100000_circuito_de_entrenamiento",
+   "definicion": "(ejercicio_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_objetivo_de_entrenamiento_una_raiz",
+   "tabla": "version_de_objetivo_de_entrenamiento",
+   "migracion": "20260921100000_circuito_de_entrenamiento",
+   "definicion": "(objetivo_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_plan_de_entrenamiento_una_raiz",
+   "tabla": "version_de_plan_de_entrenamiento",
+   "migracion": "20260921100000_circuito_de_entrenamiento",
+   "definicion": "(plan_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "correccion_de_ejecucion_de_entrenamiento_una_raiz",
+   "tabla": "correccion_de_ejecucion_de_entrenamiento",
+   "migracion": "20260921100000_circuito_de_entrenamiento",
+   "definicion": "(ejecucion_id) WHERE correccion_previa_id IS NULL"
+  },
+  {
+   "indice": "version_de_plan_de_entrenamiento_un_borrador",
+   "tabla": "version_de_plan_de_entrenamiento",
+   "migracion": "20260921100000_circuito_de_entrenamiento",
+   "definicion": "(plan_id) WHERE estado = 'BORRADOR'"
+  },
+  {
+   "indice": "version_de_plantilla_de_formulario_una_raiz",
+   "tabla": "version_de_plantilla_de_formulario",
+   "migracion": "20260921220000_formularios_de_informacion_profesional",
+   "definicion": "(plantilla_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "rectificacion_de_respuesta_de_formulario_una_raiz",
+   "tabla": "rectificacion_de_respuesta_de_formulario",
+   "migracion": "20260921220000_formularios_de_informacion_profesional",
+   "definicion": "(respuesta_id) WHERE correccion_previa_id IS NULL"
+  },
+  {
+   "indice": "resolucion_de_candidato_una_version",
+   "tabla": "resolucion_de_candidato",
+   "migracion": "20260924100000_importacion_controlada",
+   "definicion": "(version_creada_id) WHERE version_creada_id IS NOT NULL"
+  },
+  {
+   "indice": "ingesta_nutricional_prescripta_unica",
+   "tabla": "ingesta_nutricional",
+   "migracion": "20261005120000_recetas_medios_y_registro_v2",
+   "definicion": "(version_de_plan_id, fecha_local, comida_id, secuencia) WHERE origen = 'PRESCRIPTA'"
+  },
+  {
+   "indice": "rectificacion_de_cantidades_una_raiz",
+   "tabla": "rectificacion_de_cantidades",
+   "migracion": "20261005120000_recetas_medios_y_registro_v2",
+   "definicion": "(ingesta_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "version_de_receta_una_raiz",
+   "tabla": "version_de_receta",
+   "migracion": "20261005120000_recetas_medios_y_registro_v2",
+   "definicion": "(receta_id) WHERE predecesora_id IS NULL"
+  },
+  {
+   "indice": "acto_registrable_una_evidencia_visual_vigente",
+   "tabla": "acto_registrable",
+   "migracion": "20261006160100_acto_de_evidencia_visual",
+   "definicion": "(alcance_de_vinculo_id) WHERE estado = 'VIGENTE' AND tipo = 'EVIDENCIA_VISUAL'"
+  },
+  {
+   "indice": "vista_de_analisis_un_resumen_por_profesional",
+   "tabla": "vista_de_analisis",
+   "migracion": "20261008120000_vistas_de_analisis",
+   "definicion": "(profesional_id) WHERE uso = 'INDICADORES_DEL_RESUMEN'"
+  },
+  {
+   "indice": "suscripcion_push_una_vigente_por_dispositivo",
+   "tabla": "suscripcion_push",
+   "migracion": "20261016120000_novedades_y_avisos",
+   "definicion": "(dispositivo_id) WHERE momento_de_baja IS NULL"
+  },
+  {
+   "indice": "metodo_de_acceso_un_google_por_identidad",
+   "tabla": "metodo_de_acceso",
+   "migracion": "20261016220100_acceso_google",
+   "definicion": "(identidad_id) WHERE tipo = 'GOOGLE'"
+  },
+  {
+   "indice": "acto_registrable_una_mayoria_de_edad",
+   "tabla": "acto_registrable",
+   "migracion": "20261016220100_acceso_google",
+   "definicion": "(identidad_id) WHERE tipo = 'MAYORIA_DE_EDAD'"
+  },
+  {
+   "indice": "resolucion_de_candidato_crea_un_elemento_nutricional",
+   "tabla": "resolucion_de_candidato",
+   "migracion": "20261017010000_lo_importado_es_de_todos",
+   "definicion": "(elemento_nutricional_id) WHERE elemento_nutricional_id IS NOT NULL AND version_creada_id IS NOT NULL"
+  },
+  {
+   "indice": "resolucion_de_candidato_crea_un_ejercicio",
+   "tabla": "resolucion_de_candidato",
+   "migracion": "20261017010000_lo_importado_es_de_todos",
+   "definicion": "(ejercicio_id) WHERE ejercicio_id IS NOT NULL AND version_creada_id IS NOT NULL"
+  }
+ ]
+}

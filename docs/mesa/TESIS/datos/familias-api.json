@@ -1,0 +1,156 @@
+{
+ "_que_es": "Familias de operaciones de packages/domain/src/openapi.ts.",
+ "operaciones": 191,
+ "familias": {
+  "ACC": {
+   "n": 9,
+   "ejemplo": "POST /registrations",
+   "resumen": "Registrar identidad BE y perfil propio con A1 (términos), A2 (privacidad) y la declaración de mayoría de edad (08 §24.7 a) como actos separados. No concede A3. Sin la declaración no hay alta: un cuerpo que no la trae (un cliente anterior a DL-138) recibe 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue ADULT_DECLARATION_REQUIRED, para que las APK instaladas pidan actualizar; sin marcar o con otra versión, 422 VALIDATION_FAILED con ADULT_DECLARATION_REQUIRED o ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE. Un correo que ya usa otra cuenta, también con Google, responde el mismo 409 neutral."
+  },
+  "CON": {
+   "n": 8,
+   "ejemplo": "GET /me/health-data-consent-requirement",
+   "resumen": "Requisito A3 y el último acto A3 del titular. `currentConsent: null` = A3 nunca otorgado."
+  },
+  "REL": {
+   "n": 9,
+   "ejemplo": "POST /relationship-requests",
+   "resumen": "Crear una solicitud de vínculo por alcance y finalidad. No concede acceso. Una equivalente pendiente se devuelve con 200 deduplicado (REG-06-44)."
+  },
+  "EVI": {
+   "n": 4,
+   "ejemplo": "GET /relationships/{relationshipId}/visual-evidence-requirement",
+   "resumen": "La información destacada de las fotos de comidas para un vínculo de Nutrición propio (solo el asesorado titular): el texto versionado a mostrar, si es una propuesta (`textApproval`), si la API ya exige el acto (`enforced`) y el acto vigente, si hay uno. Otro alcance, ajeno o inexistente: 404."
+  },
+  "DSH": {
+   "n": 3,
+   "ejemplo": "GET /advisees/{adviseeId}/dashboard",
+   "resumen": "Dashboard del asesorado para un profesional, evaluado por el PDP en cada alcance. Cada alcance permitido trae el resumen factual de su dominio, o `null` si todavía no tiene datos. Ningún alcance autorizado → 404 idéntico a inexistente."
+  },
+  "CAR": {
+   "n": 1,
+   "ejemplo": "GET /me/portfolio",
+   "resumen": "Pendientes de toda la cartera del profesional: por cada asesorado con vínculo vigente y cada dominio que el PDP permite, los hechos fechados que piden una acción (revisión vencida, próxima o sin fecha; plan en borrador; sin plan activo; formulario sin responder; evaluación en preparación), con la última actividad registrada como dato. Sin puntajes ni juicios; un dominio no disponible no aparece y `partialView` lo avisa una sola vez. El período acota solo la actividad."
+  },
+  "NUT": {
+   "n": 25,
+   "ejemplo": "POST /advisees/{adviseeId}/nutrition/evaluations",
+   "resumen": "Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores."
+  },
+  "INT": {
+   "n": 6,
+   "ejemplo": "POST /nutrition/catalog-items",
+   "resumen": "Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027)."
+  },
+  "ANT": {
+   "n": 13,
+   "ejemplo": "GET /anthropometry/specifications",
+   "resumen": "Especificaciones admitidas: protocolos y métodos con su versión vigente. Evita hardcodear contenido técnico en las superficies. El contenido es sintético de demostración y está rotulado como tal."
+  },
+  "MTH": {
+   "n": 2,
+   "ejemplo": "GET /professional-methods",
+   "resumen": "Métodos profesionales seleccionables, con su versión vigente, entradas requeridas, procedencias admisibles, unidad de salida y precisión declarada. Son metadatos: no acepta adviseeId y no implica compatibilidad con los datos de ninguna persona."
+  },
+  "CAL": {
+   "n": 4,
+   "ejemplo": "POST /advisees/{adviseeId}/calculations",
+   "resumen": "Ejecutar un método sobre entradas efectivas declaradas una por una. Disponible no es admisible: la versión declara qué entradas necesita, en qué unidades y de qué procedencias. La respuesta no afirma que se haya creado un objetivo, una prescripción ni un plan: no los crea."
+  },
+  "TRN": {
+   "n": 29,
+   "ejemplo": "POST /advisees/{adviseeId}/training/evaluations",
+   "resumen": "Registrar una evaluación de entrenamiento. Cada dato declara su fuente. Evidencia no es ejecución, y una evaluación posterior no sobrescribe la anterior."
+  },
+  "TPL": {
+   "n": 5,
+   "ejemplo": "POST /training/plan-templates",
+   "resumen": "Guardar una plantilla propia de plan de entrenamiento: nombre único por profesional y una estructura con la misma forma que API-TRN-07, validada como un plan (forma, criterios, referencias del catálogo). Sin cargas sugeridas salvo pedido explícito; nada del asesorado. Solo un profesional de Entrenamiento verificado y habilitado."
+  },
+  "TPN": {
+   "n": 5,
+   "ejemplo": "POST /nutrition/plan-templates",
+   "resumen": "Guardar una plantilla propia de plan de comidas: nombre único por profesional y una estructura con la misma forma que API-NUT-07, validada como un borrador (forma y elementos del catálogo disponibles). Sin cantidades salvo pedido explícito; nada del asesorado. Solo un profesional de Nutrición verificado y habilitado."
+  },
+  "HAB": {
+   "n": 5,
+   "ejemplo": "GET /training/favorite-exercises",
+   "resumen": "Mis ejercicios habituales: los que marqué y siguen disponibles para mí, con la misma forma que el buscador del catálogo (versión vigente); el marcado más reciente primero; hasta 200, sin paginar. Solo un profesional de Entrenamiento verificado y habilitado."
+  },
+  "HAN": {
+   "n": 5,
+   "ejemplo": "GET /nutrition/favorite-items",
+   "resumen": "Mis alimentos habituales: los que marqué y siguen disponibles para mí, con la misma forma que el buscador del catálogo (versión vigente); el marcado más reciente primero; hasta 200, sin paginar. Solo un profesional de Nutrición verificado y habilitado."
+  },
+  "SER": {
+   "n": 2,
+   "ejemplo": "GET /training/plans/{planId}/detail",
+   "resumen": "La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02."
+  },
+  "TIE": {
+   "n": 4,
+   "ejemplo": "POST /training/execution-drafts/{draftId}/timing-events",
+   "resumen": "Registrar eventos de tiempo de la sesión en curso: inicio, pausa, ejercicio activo, descansos, series cronometradas y fin, en orden de secuencia. Cada evento trae su identificador: repetirlo no suma; con otro contenido es un conflicto. Responde qué pasó con cada uno y los tiempos calculados. Sin Idempotency-Key: la identidad es la de cada evento."
+  },
+  "AGE": {
+   "n": 1,
+   "ejemplo": "GET /me/training/agenda",
+   "resumen": "La agenda del día del titular: las sesiones previstas para hoy, las de días anteriores que siguen sin registro (una semana, hasta la próxima fecha de la misma sesión) y las de los siete días que siguen. Cada fecha prevista trae su ocurrencia: registrarla «no realizada» es saltearla, sin hora. Es una operación propia porque «Hoy» (API-TRN-14) no cambia de forma. Un plan sin agenda responde con las listas vacías."
+  },
+  "EJE": {
+   "n": 3,
+   "ejemplo": "GET /training/own-exercises",
+   "resumen": "Los ejercicios propios del profesional (carga manual), con su imagen vigente. Hasta 500, del más nuevo al más viejo."
+  },
+  "FRM": {
+   "n": 8,
+   "ejemplo": "GET /form-templates",
+   "resumen": "Catálogo BE de plantillas, sintético y de demostración. Metadatos: una plantilla listada no prueba que todos sus campos puedan solicitarse a un asesorado concreto."
+  },
+  "REC": {
+   "n": 7,
+   "ejemplo": "POST /nutrition/recipes",
+   "resumen": "Crear una receta propia (versión 1): ingredientes del catálogo por identidad y versión, con gramos o mililitros del estado indicado, porciones y pasos. La API calcula energía y macros con SUM_SOURCE_PER_100G_V1 y no acepta totales del cliente. Solo un profesional de Nutrición verificado y habilitado."
+  },
+  "MED": {
+   "n": 5,
+   "ejemplo": "POST /me/media/upload-intents",
+   "resumen": "Intención de subida: finalidad, tipo y bytes declarados. Crea el medio pendiente y devuelve una ruta firmada de subida que vence a los … minutos. RECIPE_REFERENCE: un profesional de Nutrición verificado y habilitado; EXERCISE_REFERENCE: uno de Entrenamiento verificado y habilitado, con autoría declarada; MEAL_EVIDENCE: un asesorado con A3 vigente, siempre PERSON_PROVIDED; con la exigencia de EVIDENCIA_VISUAL activa, además, con un plan de Nutrición vigente y el acto de ese vínculo vigente (si falta, 403 VISUAL_EVIDENCE_ACT_REQUIRED con el vínculo y la versión a mostrar). Crear la intención no es subir."
+  },
+  "ING": {
+   "n": 6,
+   "ejemplo": "GET /me/nutrition/today/options",
+   "resumen": "«Hoy» con opciones: las comidas del día tipo, cada opción con su receta, su imagen de referencia, sus ingredientes con estado y los macros de las porciones del plan, calculados por la API desde la instantánea. Más los registros de hoy que no están anulados. Sin día tipo elegido entre varios, no elige uno en silencio."
+  },
+  "PRJ": {
+   "n": 1,
+   "ejemplo": "GET /advisees/{adviseeId}/projections/{projectionKey}",
+   "resumen": "Proyección profunda del asesorado (taxonomía cerrada de ocho claves). Tres tienen una derivación definida (nutrición prescripto y registrado, progresión por ejercicio y evolución antropométrica); las otras cinco responden INSUFFICIENT_INFORMATION con SPECIFICATION_PENDING. Puntos reales, sin interpolar, imputar ni arrastrar; lo desconocido es null con su motivo."
+  },
+  "VAN": {
+   "n": 4,
+   "ejemplo": "GET /me/analysis-views",
+   "resumen": "Las vistas de análisis guardadas por el profesional y su configuración de indicadores del Resumen. Son configuración: no traen datos de salud ni conceden acceso."
+  },
+  "NOV": {
+   "n": 6,
+   "ejemplo": "GET /me/news",
+   "resumen": "Las novedades del actor, de la más nueva a la más vieja, con las no leídas contadas sobre todas. Contenido operativo no clínico: qué pasó y quién, nunca datos de salud (UC-P30). Funciona aunque no haya avisos push."
+  },
+  "INV": {
+   "n": 5,
+   "ejemplo": "POST /relationship-invitations",
+   "resumen": "Crear una invitación de un solo uso para un alcance, que vence a los 7 días. Responde el token del enlace y el código corto, la única vez que se muestran: BE guarda solo su SHA-256. No crea ninguna solicitud ni concede nada."
+  },
+  "GOO": {
+   "n": 3,
+   "ejemplo": "POST /auth/federated/google/sessions",
+   "resumen": "Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible."
+  },
+  "CRD": {
+   "n": 3,
+   "ejemplo": "POST /advisees/{adviseeId}/coordination-notes",
+   "resumen": "Registrar una nota de coordinación sobre la persona, para todos los profesionales que hoy la acompañan o para uno en particular (solo los que tienen un vínculo aceptado y el B2 vigente, según el PDP). El autor escribe desde un área suya con la persona, con una finalidad de la lista cerrada, hasta 600 caracteres de texto y hasta tres referencias de su área. La nota no prescribe, no modifica planes ni objetivos, no registra revisiones, no cierra ciclos y no transfiere responsabilidad. Solo se agrega: para corregirla, otra nota que la cita. Cada destinatario recibe una novedad, sin el texto. Sin acceso del autor a la persona en esa área: el mismo 404 que una persona inexistente."
+  }
+ }
+}
