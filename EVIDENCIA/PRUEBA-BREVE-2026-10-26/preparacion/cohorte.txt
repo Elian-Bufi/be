@@ -1,0 +1,10 @@
+# La cohorte después de integrar #215, el 2026-10-26 entre las 19:15 y las 19:20 UTC (sin la hora exacta), con test en b40421d (solo lectura).
+# Una entrada por profesional de la cohorte; sus vínculos vigentes por área y una lectura protegida por el PDP de una
+# persona con autorización activa en cada área. Nunca Diego Sosa (d5e3bc). Las lecturas fueron de Agustina Ledesma
+# (50450a) y de Camila (defb03). La comprobación (fuera del repositorio) no imprime correos, claves ni tokens.
+# Transcripto de la consola, tal cual.
+
+PRO_N: cartera OK (3 pendientes) · NUTRICION: 5 vínculos vigentes (5 con autorización activa) · lectura de 50450a: OK · ANTROPOMETRIA: 5 vínculos vigentes (5 con autorización activa) · lectura de 50450a: OK
+PRO_T: cartera OK (5 pendientes) · ENTRENAMIENTO: 5 vínculos vigentes (5 con autorización activa) · lectura de 50450a: OK
+PRO_A: cartera OK (0 pendientes) · ANTROPOMETRIA: 1 vínculos vigentes (1 con autorización activa) · lectura de defb03: OK
+COHORTE OK

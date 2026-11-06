@@ -82,8 +82,8 @@ Una identidad puede declararse más de una vez, una por alcance. WP-05 lo usa pa
 **El profesional descartable de la prueba breve (desde el 2026-10-26):** Lic. Prueba Dos Áreas (Nutrición y
 Entrenamiento), declarado en `BE_DEMO_PROFESIONALES` a continuación de las entradas anteriores, que no cambian. Es el que
 se puede suspender y rehabilitar desde Administración en test: nunca los de la demostración ni los de la cohorte. Sus
-personas («Prueba Uno» a «Prueba Cinco») y cómo se prepararon están en `EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md`, en
-el PR de la prueba breve.
+personas («Prueba Uno» a «Prueba Cinco») y cómo se prepararon están en
+`EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md`.
 - **Cargada en test el 2026-10-16** (de 06:35 a 06:46, sobre `4f10121`). Se comprobó de dos maneras: contando en la base las comidas, sesiones y tomas de cada persona (las mismas que en local), y entrando por la API con cada profesional para ver sus vínculos, con la fecha real de «Desde el…», y sus pendientes. Los pendientes se fijaron contra ese día y corren con el calendario. Por ejemplo, la revisión de Diego, que ese día faltaba 3 días, desde el 2026-10-20 aparece vencida.
 
 ### Avisos push y recordatorios (DL-133, WP-NOVEDADES-Y-AVISOS)
