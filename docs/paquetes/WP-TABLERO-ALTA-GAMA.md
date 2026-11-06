@@ -1,7 +1,9 @@
 # WP-TABLERO-ALTA-GAMA — el tablero del profesional, de alta gama
 
-> **Estado:** DECLARADO, con las decisiones DL-163 D-1 a D-21 ratificadas el 2026-11-05. **El alcance (las partes)
-> espera el sí de Dirección (ACTA-DIR-034): no se programa hasta entonces.** Va después de la prueba de la APK 0.21.
+> **Estado:** ALCANCE RATIFICADO por Dirección el 2026-11-05 (por pregunta); etapa A en programación. Las decisiones
+> DL-163 D-1 a D-21 están ratificadas, y el alcance son las partes TB-00 a TB-49: TB-49, la tarjeta «Lo que contó al
+> empezar», se sumó con el sí. La etapa A se programa en la rama `wp-tablero-etapa-a`, que sale de `main` b91dc3f con
+> esta declaración.
 >
 > **Encargo** (Dirección, del 2026-11-03 al 2026-11-05):
 > - «En la página inicial del profesional en el inicio donde hace el resumen todavía lo veo muy soso»; «los puntos de
@@ -13,6 +15,8 @@
 >   trabajar propia, no en general ni para todos los profesionales»; «dime si necesitamos algunos datos más que
 >   requieren los mejores profesionales»; y que planificar sea «fácil e intuitivo».
 > - Al cierre del 2026-11-05, ante «¿declaro el paquete?»: «Sí, declaralo».
+> - El 2026-11-05, ante el alcance: «Ratifico, arrancá la etapa A ya», con la tarjeta «Lo que contó al empezar» en la
+>   etapa A (TB-49).
 >
 > **Fuente:** la propuesta de Dirección «Tablero de alta gama» (27 secciones y 16 maquetas), que no está en el repo.
 > Este paquete es autocontenido: lo que hace falta de ella está acá, y las maquetas, descritas con palabras (§1.1).
@@ -55,7 +59,7 @@
 - **10:** B10-08 y B10-09 (CAND-10-DSH-02, ADV-10-DSH-02, ADV-10-DSH-03, ADV-10-PRJ-01, DEC-10-UX-01, DEC-10-UX-02,
   CAND-10-PRJ-04, CAND-10-PRJ-09, §5, §9, §10, §21, §25 y §39); B10-10 (§4, §7 y §11 a §13); B10-05 (§28 y §59); B10-06
   (H10-TRN-04); B10-07 (§7, §49 y §51); 10-B02 §7.3.
-- **11A:** TEST-PRJ-009 sigue verde. Los oráculos nuevos son TEST-TAG-001 a 032 (§6).
+- **11A:** TEST-PRJ-009 sigue verde. Los oráculos nuevos son TEST-TAG-001 a 033 (§6).
 - **DL:** DL-163; DL-152 (lo que leen las APK instaladas no cambia); DL-137 D-7 (lo nuevo va en operaciones nuevas);
   DL-116 (la guardia de trazabilidad); DL-107 (Pendientes); DL-040 (el nombre visible); DL-009 y DL-117 D-2 (el perfil y
   la foto); DL-138 D-3 (sin la foto de Google); DL-158 y DL-153 (lo indicado en el plan y las comidas del plan); DL-111
@@ -216,6 +220,7 @@ que cambian la forma de un contrato se ratifican antes de integrar.
 | TB-46 | «Empezar el plan» en un solo cuadro | A | D-9 nueva | No | El mismo cuadro en las dos áreas, sin nada elegido: desde una plantilla, con lo que trae a la vista antes de elegirla; desde la versión anterior; o desde cero. Qué se copia y qué no, antes de crear. El programa y el hito que cierra el plan al activarse. En Entrenamiento, la agenda. Si falta la evaluación o el objetivo, empieza por ahí; si ya hay un borrador, ofrece seguirlo o descartarlo (TB-47). Reusa las operaciones de hoy |
 | TB-47 | Descartar un borrador | A, en la rama de la API | D-21 | Sí | Una operación nueva por área (API-PLN-07 y API-PLE-05): descarta un borrador que nunca se activó, con `Idempotency-Key`, auditoría, evento y confirmación en pantalla. Libera «Empezar desde una plantilla» y la aplicación de una revisión. Una prueba: una versión activada no se descarta nunca |
 | TB-48 | Lo que se arregla en los editores | A | — | No | La nota del ítem en el editor de Nutrición; duplicar un día tipo, una comida, una opción, una sesión y un ejercicio; reordenar; quitar una serie del medio; los topes, avisados antes de guardar; el microciclo ofrecido también con sesiones sueltas; «Validar plan» pasa a «Revisar el plan» y lista también lo incompleto, sin bloquear; «Guardar como plantilla» con su texto; el cuadro sin plantillas deja de prometer que se escriben en «Plantillas y habituales»; la receta como opción, con buscador; y las zonas de un ejercicio propio, desde «Mis ejercicios» |
+| TB-49 | La tarjeta «Lo que contó al empezar» | A | DL-165 D-8 | No | El Resumen de la ficha muestra las respuestas vigentes de los formularios de inicio que ese profesional pidió, en palabras, con su fecha y su procedencia: «Declarado por la persona», o cargado por el profesional y confirmado por ella. Abre la solicitud. Es de solo lectura, sin contar ni calificar, y lee lo que ya existe |
 
 ### 3.1 La matriz por pertinencia (D-13)
 
@@ -243,8 +248,7 @@ escriba ni entra como evidencia de una revisión propia.
 ### 3.2 Lo que otro paquete mandó acá y no tiene parte todavía
 
 WP-FORMULARIOS-RONDA-2 (DL-165 D-8) dejó para este paquete «la tarjeta de las respuestas en el Resumen («Lo que contó al
-empezar»)». La propuesta no le da una parte: se decide con el sí al alcance, como una parte nueva (TB-49) o para
-después.
+empezar»)». La propuesta no le daba una parte. Con el sí al alcance, Dirección la sumó a la etapa A como TB-49.
 
 ## 4. Las operaciones nuevas
 
@@ -363,8 +367,8 @@ Se confirman al abrir la parte, con su línea en el inventario del 08 (§9).
 Todas las migraciones solo agregan: las tablas de historia, con los triggers `be_solo_agregar`, y cada enum nuevo en su
 migración propia. Nada se crea antes del sí al alcance.
 
-- **Sin datos nuevos:** TB-01 a TB-12, TB-15, TB-16, TB-24, TB-25, TB-30, TB-32, TB-38, TB-45 y TB-46 leen lo que ya
-  existe. «Ocultar nombres» y la elección de la vista se recuerdan en el navegador, sin datos de personas. TB-14, TB-18
+- **Sin datos nuevos:** TB-01 a TB-12, TB-15, TB-16, TB-24, TB-25, TB-30, TB-32, TB-38, TB-45, TB-46 y TB-49 leen lo
+  que ya existe. «Ocultar nombres» y la elección de la vista se recuerdan en el navegador, sin datos de personas. TB-14, TB-18
   y las claves de API-PRJ-01 (TB-31 y TB-34) calculan sobre lo que hay.
 - **La matriz de lo que se comparte (TB-26):** una tabla de configuración (área de origen, área de quien recibe,
   categoría, permitido y detalle), versionada y auditada, que carga Dirección por acta.
@@ -488,6 +492,9 @@ tiene su mutación, como E-06 y E-16 de WP-ESCRITORIO-AMABLE.
 - **TEST-TAG-032 · Los guardianes.** Las herramientas de captura cuentan las peticiones a la API al abrir /pro, el
   Resumen y el cajón, y fallan si suben sin aviso; la primera pantalla se mide a 1280 × 800, a 1440 × 900 y a 1920 × 950
   (el área útil de un monitor de 1920 × 1080).
+- **TEST-TAG-033 · «Lo que contó al empezar» ubica lo declarado y no lo califica** (DL-165 D-8; TB-49). Solo las
+  respuestas vigentes de las solicitudes que pidió ese profesional, cada una con su fecha y su procedencia; abre la
+  solicitud; sin cuentas, sin puntajes y sin ningún botón que escriba; sin solicitudes respondidas no hay tarjeta.
 
 **La evidencia,** en `EVIDENCIA/TABLERO-ALTA-GAMA/`:
 - las capturas de antes y de después, en Claro y Azul noche, a 1440 y a 1920; a 1280 y a 1024 se revisa la composición,
@@ -533,8 +540,8 @@ minigráfico no cambia; `prefers-reduced-motion`; WCAG 1.4.13 en las etiquetas f
 
 ## 8. Etapas y orden
 
-**Antes de programar:** el sí de Dirección al alcance, con las partes de §3 (ACTA-DIR-034). Va después de que Dirección
-pruebe la APK 0.21. Hasta entonces no se programa nada.
+**Antes de programar:** el sí de Dirección al alcance, con las partes de §3 (ACTA-DIR-034). Lo dio el 2026-11-05, por
+pregunta: «Ratifico, arrancá la etapa A ya», con TB-49.
 
 ### 8.1 Etapa A · en ramas, con datos sintéticos
 
@@ -557,8 +564,8 @@ Desde el sí al alcance hasta que la escuela cierre su evaluación sobre `test`.
 5. **TB-05:** el rostro y «Ocultar nombres».
 6. **TB-09:** la acción del momento encadenada. Arregla un defecto que hoy está en `main`.
 7. **TB-06, TB-07 y TB-08:** el encabezado y las cifras, «Tu semana» y el directorio.
-8. **TB-10, TB-16, TB-24 y TB-25:** las tarjetas del Resumen, la persona nueva, la composición y los indicadores por
-   área.
+8. **TB-10, TB-16, TB-24, TB-25 y TB-49:** las tarjetas del Resumen, la persona nueva, la composición, los indicadores
+   por área y «Lo que contó al empezar».
 9. **TB-11 y TB-12:** Pendientes por persona y el cajón «De a una», detrás de su interruptor.
 10. **En la rama de la API, TB-13 y TB-14:** las dos pruebas y su arreglo, y la cola de revisiones. **En el website,
     TB-15:** aplicar desde el cajón y «¿Cuándo la revisás?».
@@ -569,7 +576,7 @@ Desde el sí al alcance hasta que la escuela cierre su evaluación sobre `test`.
 13. **En paralelo, porque son otras pantallas (los editores y la pestaña Plan):** TB-38 a TB-41, TB-43 y TB-45 a TB-48.
     Las partes que tocan la API, en su rama.
 
-**El criterio de corte:** una parte hoja (TB-07, TB-08, TB-12, TB-16 y TB-22, y cualquier otra en la que no se apoye
+**El criterio de corte:** una parte hoja (TB-07, TB-08, TB-12, TB-16, TB-22 y TB-49, y cualquier otra en la que no se apoye
 ninguna) sale de la pila sin frenar a las demás si su recaptura muestra una regresión. Si falla una base (TB-01, TB-02 o
 TB-05), se arregla antes de seguir, porque TB-04 y TB-06 a TB-12 se apoyan en ellas.
 
