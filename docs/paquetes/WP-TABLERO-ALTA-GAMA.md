@@ -669,11 +669,12 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
 - **TA-03 · El interletrado de Inter a 16 px (−0,011 em), en todo el texto.** Inter es más ancha que el respaldo de la
   línea de base: en la corrida de TB-01, «Analizar» a 1280 × 800 creció 104 px, porque una descripción de las preguntas
   pasó a tres renglones y la lista iguala el alto de todas. Se usa el interletrado que el diseño de Inter da para esa
-  medida. *Otra opción:* bajar el texto secundario a 13 / 18, como dice la escala de la propuesta, que cambia todas las
-  pantallas y no es de esta parte.
+  medida. No alcanzó: la descripción siguió en tres renglones, y el texto secundario de las preguntas de «Analizar»
+  pasó a 13 / 18, el secundario de la escala de la propuesta (A3). *Otra opción:* bajar todo el texto secundario a
+  13 / 18, que cambia todas las pantallas y no es de esta parte.
 - **TA-04 · Lo no comparable de Antropometría sigue siendo un cuadrado girado lleno.** La propuesta dice que el rombo
   hueco es solo de lo indicado en el plan y no dice cómo va lo no comparable. Se conserva la forma de hoy, que la leyenda
-  y la tabla ya explican, del mismo tamaño que el punto lleno y distinta del rombo hueco. *Otra opción:* la vertical
+  y la tabla ya explican, 2 px más grande que el punto lleno (a 7 px no se distinguían) y distinta del rombo hueco. *Otra opción:* la vertical
   rotulada del cambio de método (A8), que pide reordenar el gráfico de tomas y su leyenda.
 - **TA-05 · Lo elegido en las barras de Entrenamiento, sin el borde del foco.** Donde no hay una marca que rodear (las
   barras por serie), lo elegido es la columna en el fondo suave con la guía fina; en la evolución de una serie, la guía

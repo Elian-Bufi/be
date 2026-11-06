@@ -11624,13 +11624,19 @@ details[open] > summary:not([class])::before {
 }
 
 /* Los puntos de Evolución van en el azul de los datos, y la leyenda dice las tres formas, del tamaño con que se dibujan
-   (TB-02): el punto lleno de 7 y el cuadrado girado del mismo lado. */
+   (TB-02): el punto lleno de 7 y el cuadrado girado de 9. */
 .leyenda--evolucion .muestra--punto,
 .leyenda--evolucion .muestra--rombo {
   width: 7px;
   height: 7px;
   margin-inline: 2px;
   background: var(--metrica-1);
+}
+
+.leyenda--evolucion .muestra--rombo {
+  width: 9px;
+  height: 9px;
+  margin-inline: 3px;
 }
 
 .muestra--corregida {

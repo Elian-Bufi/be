@@ -260,10 +260,11 @@ function Grafico({
                 const esElegido = i === elegido;
                 const noComparable = o.punto.incomparableWithPrevious.length > 0;
                 const corregido = o.punto.correctionState === 'CORRECTED';
-                // TB-02: la marca llena con la regla de los cuatro gráficos; lo no comparable, un cuadrado girado lleno del
-                // mismo tamaño (no es el rombo hueco de lo indicado); lo corregido, una raya fina encima; lo elegido, el aro.
+                // TB-02: la marca llena con la regla de los cuatro gráficos; lo no comparable, un cuadrado girado lleno, 2 px
+                // más grande para que a 7 px se distinga del punto (no es el rombo hueco de lo indicado); lo corregido, una
+                // raya fina encima; lo elegido, el aro.
                 const medida = medidaDeMarca('lleno', porToma);
-                const lado = medida.R * 2;
+                const lado = medida.R * 2 + 2;
                 return (
                   <g className="grafico__elegible" onClick={() => onElegir(i)} aria-hidden="true">
                     {noComparable ? (
