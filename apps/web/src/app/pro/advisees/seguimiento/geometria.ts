@@ -6,7 +6,7 @@
  *
  * Son funciones puras: no leen la pantalla ni la hora. Tienen su prueba en `scripts/geometria-del-minigrafico.test.mjs`.
  */
-import { esPuntoDeCargaRapida, numeroConPrecision, type PuntoAnalitico } from '@be/domain';
+import { esPuntoDeCargaRapida, lunesDe, numeroConPrecision, type PuntoAnalitico } from '@be/domain';
 
 export const DIA = 86_400_000;
 export const mediodia = (fecha: string): number => Date.parse(`${fecha}T12:00:00Z`);
@@ -322,4 +322,299 @@ export function geometriaDelMinigrafico(e: EntradaDelMinigrafico): GeometriaDelM
     plan: escalones.map((s) => ({ x1: xEn(s.a), x2: xEn(s.b), y: yEn(s.valor) })),
     caja,
   };
+}
+
+// ─── El minigráfico de un indicador del Resumen (WP-TABLERO-ALTA-GAMA, TB-04; DL-163 D-5) ───────
+//
+// Más alto que el de la comparación de etapas, sin canal de eje (el tope y la base de la grilla van rotulados adentro)
+// y con la tira de cobertura debajo, que lleva el estado de cada día. Según el lugar que le toca a cada día:
+// - **con 4 px o más,** todas las marcas, y la línea une los días completos seguidos;
+// - **con menos, en una serie diaria de más de ocho semanas** (los 90 días del Resumen), la línea es la media de cada
+//   semana de BE (de lunes a domingo), con su denominador, y los días van como puntos claros detrás: es el grano
+//   semanal que BE ya tiene, no un suavizado;
+// - **con menos, en un período más corto o en sesiones o tomas,** la línea une lo completo y seguido, y llevan marca la
+//   última y las aisladas; lo sin completar, en la tira (o con su marca, donde no hay tira).
+// La línea se corta en los días sin registros, en lo que está sin completar y entre tramos no comparables. Lo que cae
+// fuera de la escala (un subtotal muy bajo, el día en curso) va con una muesca en la base o en el tope, en su día, y su
+// cuenta, sin ubicarlo en una altura que no es la suya. En una serie diaria con uno a tres días con valor no hay línea
+// ni media: van los puntos sueltos (las tomas sí se unen, como la línea de las tomas de la propuesta).
+
+/** El estado de un día en la tira: con valor, sin completar, sin registros, o nada que decir (sin cantidades, hoy). */
+export type EstadoDelDia = 'con' | 'hueco' | 'sin' | 'nada';
+
+export interface EntradaDelIndicador {
+  readonly puntos: readonly PuntoAnalitico[];
+  /** Los días sin registros (`diasSinRegistros`); vacío si la serie no es diaria. */
+  readonly sinRegistros: readonly { readonly desde: string; readonly hasta: string }[];
+  readonly desde: string;
+  readonly hasta: string;
+  /** El día en curso: queda fuera de la media semanal y se marca debajo de la tira. */
+  readonly hoy: string;
+  /** Si la serie tiene un valor por día (Nutrición): lleva tira y, con poco lugar, la media semanal. */
+  readonly diaria: boolean;
+  readonly ancho: number;
+  /** El alto del lienzo, sin la franja de rótulos, la tira ni las fechas (A13: 72; 64 si no entra). */
+  readonly lienzo: number;
+  readonly inicioDelPlan: string | null;
+  /** Lo planificado en la unidad de la métrica (el objetivo), un escalón por versión. Entra en el eje. */
+  readonly plan?: readonly { readonly desde: string; readonly hasta: string | null; readonly valor: number }[];
+}
+
+export interface PuntoDelIndicador {
+  readonly clave: string;
+  readonly x: number;
+  readonly y: number;
+  readonly medida: MedidaDeMarca;
+  /** Un día como punto claro detrás de la media semanal: sin trazo y a media tinta. */
+  readonly claro: boolean;
+}
+
+export interface SemanaDelIndicador {
+  readonly lunes: string;
+  readonly x: number;
+  readonly y: number;
+  readonly valor: number;
+  /** El denominador: los días con valor y los días de la semana dentro del período. */
+  readonly conValor: number;
+  readonly dias: number;
+  readonly medida: MedidaDeMarca;
+}
+
+export interface GeometriaDelIndicador {
+  readonly modo: 'todos' | 'pocos' | 'semanal' | 'sueltos';
+  /** El lugar por día del período, en px. */
+  readonly porDia: number;
+  readonly puntos: readonly PuntoDelIndicador[];
+  readonly semanas: readonly SemanaDelIndicador[];
+  /** Un trazo por tramo de la línea («M x y L x y…»): días seguidos completos, observaciones o semanas con valor. */
+  readonly tramos: readonly string[];
+  /** La grilla, en números redondos: 4 divisiones con 72 px de lienzo o más, 2 con menos. */
+  readonly grilla: readonly { readonly y: number; readonly valor: number; readonly texto: string }[];
+  /** Los dos rótulos de la grilla, adentro del lienzo: el tope y la base. */
+  readonly rotulos: readonly { readonly y: number; readonly texto: string }[];
+  readonly muescas: readonly { readonly x: number; readonly abajo: boolean }[];
+  readonly fuera: { readonly abajo: number; readonly arriba: number };
+  readonly tira: readonly { readonly x: number; readonly ancho: number; readonly estado: Exclude<EstadoDelDia, 'nada'> }[];
+  /** La raya de hoy, debajo de la tira, si hoy está en el período. */
+  readonly hoy: { readonly x: number; readonly ancho: number } | null;
+  readonly inicioDelPlan: number | null;
+  readonly plan: readonly { readonly x1: number; readonly x2: number; readonly y: number }[];
+}
+
+/** La media semanal se dibuja con menos de este lugar por día; las marcas de cada observación, desde acá. */
+export const LUGAR_PARA_MARCAR_CADA_DIA = 4;
+/** La media semanal, solo en un período de más de ocho semanas: con menos, la línea de los días, cortada. */
+export const SEMANAL_CON_MAS_DE_DIAS = 56;
+/** Con hasta tantos días con valor no se dibuja línea ni media: van los puntos sueltos. */
+export const SOLO_PUNTOS_HASTA = 3;
+
+/** El paso redondo de la grilla del indicador: 1, 2, 2,5, 5 o 10 por una potencia de diez (A14). */
+function pasoDeLaGrilla(rango: number, divisiones: number): number {
+  const bruto = rango / divisiones;
+  const potencia = 10 ** Math.floor(Math.log10(bruto));
+  const m = sinRuido(bruto / potencia);
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * potencia;
+}
+
+const fechasEntre = (desde: string, hasta: string): string[] => {
+  const lista: string[] = [];
+  for (let x = mediodia(desde); x <= mediodia(hasta); x += DIA) lista.push(fechaDeX(x));
+  return lista;
+};
+
+export function geometriaDelIndicador(e: EntradaDelIndicador): GeometriaDelIndicador {
+  const dias = fechasEntre(e.desde, e.hasta);
+  const porDia = e.ancho / Math.max(1, dias.length);
+  const indiceDe = new Map(dias.map((f, i) => [f, i]));
+  const xDelDia = (fecha: string): number => sinRuido(porDia * ((indiceDe.get(fecha) ?? 0) + 0.5));
+  const conValor = e.puntos.filter((p) => p.value !== null && indiceDe.has(p.date));
+  const firmes = conValor.filter((p) => estadoDeMarca(p) !== 'hueco');
+  const vacia: GeometriaDelIndicador = { modo: 'todos', porDia, puntos: [], semanas: [], tramos: [], grilla: [], rotulos: [], muescas: [], fuera: { abajo: 0, arriba: 0 }, tira: [], hoy: null, inicioDelPlan: null, plan: [] };
+  if (dias.length === 0 || e.ancho <= 0 || e.lienzo <= 0) return vacia;
+
+  // El modo, según el lugar y la cantidad de observaciones.
+  const porObservacion = e.ancho / Math.max(1, conValor.length);
+  const lugar = e.diaria ? porDia : porObservacion;
+  const modo: GeometriaDelIndicador['modo'] =
+    e.diaria && firmes.length <= SOLO_PUNTOS_HASTA
+      ? 'sueltos'
+      : lugar >= LUGAR_PARA_MARCAR_CADA_DIA
+        ? 'todos'
+        : e.diaria && dias.length > SEMANAL_CON_MAS_DE_DIAS
+          ? 'semanal'
+          : 'pocos';
+
+  // Las semanas de BE dentro del período, con la media de los días con valor (sin hoy, que sigue en curso).
+  const semanasCrudas =
+    modo === 'semanal'
+      ? [...new Set(dias.map((f) => lunesDe(f)))].flatMap((lunes) => {
+          const delBalde = dias.filter((f) => lunesDe(f) === lunes);
+          const contados = conValor.filter((p) => lunesDe(p.date) === lunes && p.date !== e.hoy);
+          if (contados.length === 0) return [];
+          const valor = contados.reduce((s, p) => s + (p.value as number), 0) / contados.length;
+          const hueca = delBalde.length < 7 || delBalde.includes(e.hoy) || contados.some((p) => estadoDeMarca(p) === 'hueco');
+          const centro = (mediodia(delBalde[0] as string) + mediodia(delBalde[delBalde.length - 1] as string)) / 2;
+          return [{ lunes, valor, conValor: contados.length, dias: delBalde.length, hueca, centro }];
+        })
+      : [];
+
+  // El dominio: los días completos (o las semanas) y el objetivo, con un 8 % de margen. Sin forzar el cero.
+  const x0 = mediodia(e.desde) - DIA / 2;
+  const x1 = mediodia(e.hasta) + DIA / 2;
+  const escalones = [...(e.plan ?? [])]
+    .sort((a, b) => a.desde.localeCompare(b.desde))
+    .flatMap((s, i, todos) => {
+      const siguiente = todos[i + 1];
+      const a = Math.max(x0, mediodia(s.desde) - DIA / 2);
+      const b = Math.min(x1, s.hasta ? mediodia(s.hasta) + DIA / 2 : x1, siguiente ? mediodia(siguiente.desde) - DIA / 2 : x1);
+      return b > a ? [{ a, b, valor: s.valor }] : [];
+    });
+  const base = [...(firmes.length > 0 ? firmes : conValor).map((p) => p.value as number), ...semanasCrudas.map((s) => s.valor), ...escalones.map((s) => s.valor)];
+  if (base.length === 0) return { ...vacia, modo, tira: e.diaria ? tiraDe(e, dias, porDia) : [], hoy: hoyDe(e, indiceDe, porDia) };
+  let lo = Math.min(...base);
+  let hi = Math.max(...base);
+  const margen = (hi - lo || Math.abs(hi) * 0.05 || 1) * 0.08;
+  lo -= margen;
+  hi += margen;
+  if (Math.min(...base) >= 0 && lo < 0) lo = 0;
+  const arriba = 6;
+  const abajo = e.lienzo - 4;
+  const yEn = (v: number): number => sinRuido(arriba + (1 - (v - lo) / (hi - lo)) * (abajo - arriba));
+  const xEn = (x: number): number => sinRuido(((x - x0) / (x1 - x0)) * e.ancho);
+  const fueraDeEscala = (v: number): boolean => v < lo || v > hi;
+
+  // La grilla y sus dos rótulos, adentro: el tope por encima de su línea y la base por debajo, para que no se pisen.
+  const divisiones = e.lienzo >= 72 ? 4 : 2;
+  const paso = pasoDeLaGrilla(hi - lo, divisiones);
+  const decimales = Number.isInteger(sinRuido(paso)) ? 0 : Number.isInteger(sinRuido(paso * 10)) ? 1 : 2;
+  const grilla: { y: number; valor: number; texto: string }[] = [];
+  for (let v = Math.ceil(sinRuido(lo / paso)) * paso; v <= hi + 1e-9; v = sinRuido(v + paso)) grilla.push({ y: Math.round(yEn(v)) + 0.5, valor: sinRuido(v), texto: numeroConPrecision(sinRuido(v), decimales) });
+  const rotulos: { y: number; texto: string }[] = [];
+  const tope = grilla[grilla.length - 1];
+  const piso = grilla[0];
+  if (tope) rotulos.push({ y: tope.y - 4 >= 10 ? tope.y - 4 : tope.y + 13, texto: tope.texto });
+  if (piso && piso !== tope && piso.y + 13 <= e.lienzo && piso.y - (tope?.y ?? 0) >= 18) rotulos.push({ y: piso.y + 13, texto: piso.texto });
+
+  // Los puntos: lo que cae fuera de la escala no es un punto, es una muesca.
+  const muescas: { x: number; abajo: boolean }[] = [];
+  const fuera = { abajo: 0, arriba: 0 };
+  const dibujables = conValor.filter((p) => {
+    const v = p.value as number;
+    if (!fueraDeEscala(v)) return true;
+    muescas.push({ x: e.diaria ? xDelDia(p.date) : xEn(xDe(p)), abajo: v < lo });
+    if (v < lo) fuera.abajo += 1;
+    else fuera.arriba += 1;
+    return false;
+  });
+  const xDelPunto = (p: PuntoAnalitico): number => (e.diaria ? xDelDia(p.date) : xEn(xDe(p)));
+  const ultimoFirme = [...firmes].filter((p) => !fueraDeEscala(p.value as number)).sort((a, b) => xDe(a) - xDe(b)).at(-1) ?? null;
+  // Los grupos de la línea: lo completo y dentro de la escala, seguido (en una serie diaria, días consecutivos) y del
+  // mismo tramo. Un punto completo que queda solo en su grupo es una aislada: lleva marca aunque haya poco lugar.
+  const grupos: PuntoAnalitico[][] = [];
+  {
+    let anterior: PuntoAnalitico | null = null;
+    for (const p of [...dibujables].filter((q) => estadoDeMarca(q) !== 'hueco').sort((a, b) => xDe(a) - xDe(b))) {
+      const seguido = anterior !== null && anterior.segment === p.segment && (!e.diaria || mediodia(p.date) - mediodia(anterior.date) === DIA);
+      if (seguido) grupos[grupos.length - 1]?.push(p);
+      else grupos.push([p]);
+      anterior = p;
+    }
+  }
+  const enUnTramo = new Set(grupos.filter((gr) => gr.length >= 2).flatMap((gr) => gr.map((p) => p.pointId)));
+  const puntos: PuntoDelIndicador[] = dibujables.flatMap((p) => {
+    const estado = estadoDeMarca(p);
+    const x = xDelPunto(p);
+    const y = yEn(p.value as number);
+    if (modo === 'semanal') return [{ clave: p.pointId, x, y, medida: medidaDeMarca('lleno', 3.4), claro: true }];
+    if (modo === 'pocos') {
+      // Solo la última, las aisladas y lo que no es completo (que no va en la línea), con los mínimos de su estado.
+      // Con la tira, lo sin completar ya dice su estado ahí; en sesiones o tomas, que no llevan tira, lleva su marca.
+      const aislada = estado !== 'hueco' && !enUnTramo.has(p.pointId);
+      if ((estado === 'hueco' && !e.diaria) || aislada || p === ultimoFirme) return [{ clave: p.pointId, x, y, medida: estado === 'lleno' ? medidaDeMarca('lleno', 5) : medidaDeMarca(estado, lugar), claro: false }];
+      return [];
+    }
+    return [{ clave: p.pointId, x, y, medida: medidaDeMarca(estado, lugar), claro: false }];
+  });
+  const semanas: SemanaDelIndicador[] = semanasCrudas
+    .filter((s) => !fueraDeEscala(s.valor))
+    .map((s) => ({ lunes: s.lunes, x: xEn(s.centro), y: yEn(s.valor), valor: sinRuido(s.valor), conValor: s.conValor, dias: s.dias, medida: medidaDeMarca(s.hueca ? 'hueco' : 'lleno', porDia * 7) }));
+
+  // La línea: se corta en los días sin registros, en lo que está sin completar y entre tramos.
+  const tramos: string[] = [];
+  const trazar = (lista: readonly { x: number; y: number }[]): void => {
+    if (lista.length >= 2) tramos.push(lista.map((q, i) => `${i === 0 ? 'M' : 'L'}${q.x} ${q.y}`).join(' '));
+  };
+  if (modo === 'semanal') {
+    let actual: { x: number; y: number }[] = [];
+    let lunesAnterior: string | null = null;
+    for (const s of semanas) {
+      const seguida = lunesAnterior !== null && mediodia(s.lunes) - mediodia(lunesAnterior) === 7 * DIA;
+      if (!seguida) {
+        trazar(actual);
+        actual = [];
+      }
+      actual.push({ x: s.x, y: s.y });
+      lunesAnterior = s.lunes;
+    }
+    trazar(actual);
+  } else if (modo !== 'sueltos') {
+    for (const gr of grupos) trazar(gr.map((p) => ({ x: xDelPunto(p), y: yEn(p.value as number) })));
+  }
+
+  const inicio = e.inicioDelPlan ? mediodia(e.inicioDelPlan) - DIA / 2 : null;
+  return {
+    modo,
+    porDia: sinRuido(porDia),
+    puntos,
+    semanas,
+    tramos,
+    grilla,
+    rotulos,
+    muescas,
+    fuera,
+    tira: e.diaria ? tiraDe(e, dias, porDia) : [],
+    hoy: hoyDe(e, indiceDe, porDia),
+    inicioDelPlan: inicio !== null && inicio > x0 && inicio < x1 ? Math.round(xEn(inicio)) + 0.5 : null,
+    plan: escalones.map((s) => ({ x1: xEn(s.a), x2: xEn(s.b), y: yEn(s.valor) })),
+  };
+}
+
+/** El estado de cada día del período, para la tira. */
+export function estadosDeLosDias(e: Pick<EntradaDelIndicador, 'puntos' | 'sinRegistros' | 'desde' | 'hasta'>): readonly { readonly fecha: string; readonly estado: EstadoDelDia }[] {
+  const conValor = new Map<string, PuntoAnalitico>();
+  for (const p of e.puntos) if (p.value !== null) conValor.set(p.date, p);
+  const sin = new Set(e.sinRegistros.flatMap((h) => fechasEntre(h.desde, h.hasta)));
+  return fechasEntre(e.desde, e.hasta).map((fecha) => {
+    const p = conValor.get(fecha);
+    const estado: EstadoDelDia = p ? (estadoDeMarca(p) === 'hueco' ? 'hueco' : 'con') : sin.has(fecha) ? 'sin' : 'nada';
+    return { fecha, estado };
+  });
+}
+
+/** Las celdas de la tira: una por día con lugar de sobra; con poco, los días seguidos del mismo estado, juntos. */
+function tiraDe(e: EntradaDelIndicador, dias: readonly string[], porDia: number): GeometriaDelIndicador['tira'] {
+  const estados = estadosDeLosDias(e);
+  const celdas: { x: number; ancho: number; estado: Exclude<EstadoDelDia, 'nada'> }[] = [];
+  if (porDia < LUGAR_PARA_MARCAR_CADA_DIA) {
+    for (let i = 0; i < estados.length; ) {
+      let j = i;
+      while (j + 1 < estados.length && estados[j + 1]?.estado === estados[i]?.estado) j += 1;
+      const estado = estados[i]?.estado ?? 'nada';
+      const a = Math.round(porDia * i);
+      const b = Math.round(porDia * (j + 1)) - (j + 1 < dias.length ? 1 : 0);
+      if (estado !== 'nada') celdas.push({ x: a, ancho: Math.max(b - a, 1), estado });
+      i = j + 1;
+    }
+    return celdas;
+  }
+  const ancho = Math.max(porDia - (porDia >= 6 ? 2 : 1), 1);
+  estados.forEach(({ estado }, i) => {
+    if (estado !== 'nada') celdas.push({ x: sinRuido(porDia * i + (porDia - ancho) / 2), ancho: sinRuido(ancho), estado });
+  });
+  return celdas;
+}
+
+function hoyDe(e: EntradaDelIndicador, indiceDe: ReadonlyMap<string, number>, porDia: number): GeometriaDelIndicador['hoy'] {
+  const i = indiceDe.get(e.hoy);
+  return i === undefined ? null : { x: Math.round(porDia * i), ancho: Math.max(Math.round(porDia), 3) };
 }

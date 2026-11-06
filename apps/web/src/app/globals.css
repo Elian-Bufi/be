@@ -5005,6 +5005,29 @@ a.observacion__fila:focus-visible {
   margin-top: 0.35rem;
 }
 
+/* La muestra de los días sin registros junto a su cuenta, con la forma de la tira del indicador (TB-04): una raya baja. */
+.muestra-de-sin-registros {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.5rem;
+  margin-right: 0.3rem;
+  border-bottom: 1.5px solid var(--grafico-hueco);
+}
+
+/* Los rótulos de la grilla del indicador van adentro del lienzo, con un halo de la superficie para que una línea no los
+   corte. */
+.minigrafico__rotulo {
+  paint-order: stroke;
+  stroke: var(--superficie);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  font-variant-numeric: tabular-nums;
+}
+
+.minigrafico__fecha {
+  font-variant-numeric: tabular-nums;
+}
+
 /* La línea del minigráfico: 1,5 a densidad 1 y 1,25 en una pantalla de alta densidad (TB-03; A8 de la propuesta). */
 @media (min-resolution: 2dppx) {
   .minigrafico__tramo {

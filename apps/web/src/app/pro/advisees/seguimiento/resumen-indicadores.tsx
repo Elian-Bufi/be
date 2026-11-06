@@ -39,7 +39,7 @@ import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
 import { razonDeFalla, textoDeFalla, useSeguimiento } from './contexto';
 import { claveDeLaReferencia, codificarReferencia, hoyEn } from './estado';
 import { ICONO_DE_CLASE, ICONO_DE_FALLA, iconoDeLaReferencia } from './iconos-de-metrica';
-import { Minigrafico } from './minigrafico';
+import { MinigraficoDelIndicador } from './minigrafico';
 import { nombreDeLaReferencia } from './selector';
 import { useSeriesDelAnalisis, type Disponibles, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
@@ -310,13 +310,14 @@ function ValorDelIndicador({
       <p className="indicador__regla">
         {deTomas ? `${REGLA[definicion.resumenDePeriodo]}: ${ultimo ? formato.fecha(ultimo.date) : '—'}` : REGLA[definicion.resumenDePeriodo]}
       </p>
-      <Minigrafico serie={serie} desde={desde} hasta={hasta} hoy={hoy} inicioDelPlan={inicioDelPlan} descripcion={`Gráfico de ${nombre}. ${resumenTextual(serie, definicion, desde, hasta)}`} />
+      {/* TB-04 (DL-163 D-5): más alto, con la tira que lleva el estado de cada día; la descripción no cambia. */}
+      <MinigraficoDelIndicador serie={serie} desde={desde} hasta={hasta} hoy={hoy} inicioDelPlan={inicioDelPlan} descripcion={`Gráfico de ${nombre}. ${resumenTextual(serie, definicion, desde, hasta)}`} />
       <p className="indicador__cobertura">
         {cobertura.map((parte, i) => (
           <span key={parte}>
             {i > 0 ? ' · ' : ''}
-            {/* La muestra gris acompaña a la cuenta solo si el minigráfico sombrea esos días. */}
-            {/sin registros$/.test(parte) && sombrea ? <span className="muestra-de-hueco" aria-hidden="true" /> : null}
+            {/* La muestra acompaña a la cuenta con la forma que tienen esos días en la tira: una raya baja (TB-04). */}
+            {/sin registros$/.test(parte) && sombrea ? <span className="muestra-de-sin-registros" aria-hidden="true" /> : null}
             {parte}
           </span>
         ))}

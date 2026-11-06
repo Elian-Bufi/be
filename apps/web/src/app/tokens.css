@@ -78,6 +78,9 @@
   /* La vigencia de un plan y el rango que fija el profesional (TB-03): un fondo de datos, no un texto ni un borde. Llega
      a 1,3:1 contra la superficie, para que un proyector no lo borre, y las métricas se leen encima (3:1 o más). */
   --banda: #d9e2f0;
+  /* La luz del tablero (TB-04; DL-163 D-3): dentro de un gráfico marca solo «hoy». Es una marca, no un texto: 3:1 contra
+     la superficie, y lejos de las tres métricas (ΔE 20 o más), para que hoy no se lea como un dato. */
+  --ahora: #1e6bf2;
   /* Las tres métricas de «Analizar» (WP-DASHBOARD-PROFESIONAL): azul, violeta y verde azulado. Ni rojo ni verde, que se
      leerían como juicio, ni el ámbar del foco (`scripts/contraste.test.cjs` mide la diferencia perceptual). Todas las
      marcas son puntos (WP-ESCRITORIO-AMABLE, C-16): además del color, cada métrica lleva su nombre en el encabezado de
@@ -144,6 +147,7 @@
   /* Gráficos: el hueco en gris azulado y la banda de la vigencia y del rango, un escalón sobre la superficie. */
   --grafico-hueco: #87a5bd;
   --banda: #163750;
+  --ahora: #27d5f9;
   /* Las tres métricas sobre navy: las mismas familias, más claras, lejos del cian de los enlaces, del menta del éxito, del
      salmón del error y del amarillo del foco. */
   --metrica-1: #7cb8ff;

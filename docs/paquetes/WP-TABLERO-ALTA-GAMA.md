@@ -649,6 +649,7 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-01 | Hecha. Inter variable y Poppins 600 autoalojadas con `next/font/local`, con su licencia y su respaldo ajustado; Poppins, en el título del Espacio y en el nombre de la persona en el marco de la ficha (la pregunta del cajón llega con TB-12). Se compara con la línea de base en la corrida de su commit | `apps/web/src/letra/`, `scripts/letra-autoalojada.test.cjs` |
 | TB-02 | Hecha. `medidaDeMarca`, `medidaDelRombo`, `medidaDelAro` y `rayaDeCorregido` en `geometria.ts`, con la regla del anexo A7, en el minigráfico, «Analizar», la evolución de Antropometría y los dos gráficos de Entrenamiento. Lo elegido es una guía fina y continua, la fecha en una píldora invertida y un aro del color de la métrica; el foco del teclado lo pasa al color del foco. El piso de la letra, 12,5, rige en los cuatro. TEST-TAG-006 | `seguimiento/geometria.ts`, `seguimiento/marca.tsx`, `scripts/geometria-del-minigrafico.test.mjs` |
 | TB-03 | Hecha. Los trazos del anexo A8: la línea registrada de 1,5 en «Analizar» y el minigráfico (1,25 en alta densidad) y de 1,75 en Entrenamiento; el objetivo y el plan, discontinuos de 1,25; el cambio de versión o de método, una vertical de 1 punteada en `--borde-control`. La grilla, solo horizontal y sin líneas de eje (las barras conservan su base). La vigencia, una franja de `--banda` (token nuevo, 1,3:1) arriba del dibujo con la vertical que la lleva, en lugar de las columnas de todo el alto. Entrenamiento, en el color de la métrica: lo planificado en contorno discontinuo, línea discontinua y rombo hueco; el rango, en `--banda`. `--grafico-planificado` y `--grafico-registrado` salen de los tokens. TEST-TAG-005 | `tokens.css`, `scripts/contraste.test.cjs` |
+| TB-04 | Hecha en el código y en sus pruebas; falta medirla a 1920 × 950 con la captura de su corrida. El indicador del Resumen tiene su minigráfico propio (`MinigraficoDelIndicador`): 72 de lienzo, sin canal de eje (el tope y la base de la grilla, rotulados adentro), la tira de cobertura con el estado de cada día y la raya de hoy en `--ahora` (token nuevo), y el inicio y el fin abajo. Con poco lugar por día, a más de ocho semanas, la línea es la media de cada semana de BE con su denominador y los días van como puntos claros; con menos semanas o en sesiones y tomas, la línea cortada con la última y las aisladas. Lo de fuera de la escala, una muesca y su cuenta. La descripción accesible no cambia. La comparación de etapas sigue con su minigráfico. TEST-TAG-007 | `seguimiento/geometria.ts` (`geometriaDelIndicador`), `seguimiento/minigrafico.tsx` |
 
 ### 10.1 Las decisiones de la implementación
 
@@ -679,3 +680,16 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   y el aro sobre lo registrado. El foco del teclado queda en el marco del gráfico, como en los otros tres. Lo planificado
   de cada sesión pasa de cuadrado a rombo hueco, la forma de lo indicado en «Analizar». *Otra opción:* dejar el
   recuadro ámbar, que se confunde con el foco (A11).
+- **TA-06 · La media semanal del minigráfico, desde más de ocho semanas.** D-5 pide, con poco lugar por día, la línea
+  cortada y las marcas de la última y de las aisladas, y a 90 días la media de cada semana. Las dos reglas se cruzan: a
+  90 días siempre falta lugar. La media semanal va en una serie diaria con menos de 4 px por día y más de 56 días; con
+  menos semanas, la línea de los días, cortada. Las sesiones y las tomas no se promedian por semana. *Otra opción:* la
+  media semanal con cualquier período corto que no entre, que dibuja tres o cuatro semanas como si fueran una tendencia.
+- **TA-07 · El minigráfico del indicador es otro componente.** La comparación de dos etapas usa el minigráfico de
+  siempre, con sus bandas y sus fechas; el del Resumen tiene la tira, la media semanal y la grilla adentro. Comparten
+  la gramática de las marcas y de las líneas. *Otra opción:* un solo componente con todas las variantes, que mezcla dos
+  lecturas distintas.
+- **TA-08 · La cuenta de lo que cae fuera de la escala: «N datos sin completar debajo de la escala».** La propuesta
+  dice «2 subtotales debajo de la escala», pero lo que queda afuera puede ser también el día en curso o una carga
+  rápida (DL-161). Va debajo del minigráfico, solo cuando hay algo afuera. *Otra opción:* nombrar cada clase, que
+  alarga el pie.

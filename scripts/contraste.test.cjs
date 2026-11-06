@@ -196,6 +196,8 @@ const PARES_GRAFICO = [
   ['metrica-2', 'banda', NO_TEXTO, 'segunda métrica sobre la banda de la vigencia o del rango'],
   ['metrica-3', 'banda', NO_TEXTO, 'tercera métrica sobre la banda de la vigencia o del rango'],
   ['grafico-hueco', 'banda', NO_TEXTO, 'una sesión sin dato sobre la banda'],
+  // TB-04: la raya de hoy debajo de la tira del minigráfico.
+  ['ahora', 'superficie', NO_TEXTO, 'la raya de hoy debajo de la tira de cobertura'],
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
@@ -413,4 +415,16 @@ test('website · los gráficos ya no usan los colores de planificado y registrad
   };
   recorrer(join(RAIZ, 'apps/web/src'));
   assert.deepEqual(usos, []);
+});
+
+/** TB-04 (DL-163 D-3): «hoy», en --ahora, no se confunde con ninguna de las tres métricas (ΔE 20 o más, en los dos temas). */
+test('website · la luz de hoy no se confunde con las métricas (TB-04)', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const m of ['metrica-1', 'metrica-2', 'metrica-3']) {
+      const d = deltaE(tema.ahora, tema[m]);
+      if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${m} ${tema[m]}: ΔE ${d.toFixed(1)}`);
+    }
+  }
+  assert.deepEqual(fallas, []);
 });

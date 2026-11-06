@@ -15,7 +15,7 @@
 import type { SerieAnalitica } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { diaYMesCivil } from '../../../../lib/formato';
-import { diasSinRegistros, FRANJA_DE_ROTULOS, geometriaDelMinigrafico, LETRA_MINIMA } from './geometria';
+import { diasSinRegistros, FRANJA_DE_ROTULOS, geometriaDelIndicador, geometriaDelMinigrafico, LETRA_MINIMA, LUGAR_PARA_MARCAR_CADA_DIA } from './geometria';
 import { ESTILOS, Punto } from './marca';
 
 const ALTO = 60;
@@ -123,4 +123,138 @@ export function Minigrafico({
       ) : null}
     </div>
   );
+}
+
+// ─── El minigráfico de un indicador del Resumen (WP-TABLERO-ALTA-GAMA, TB-04; DL-163 D-5) ───────
+
+/** La franja de arriba, reservada siempre para que los minigráficos de una fila queden alineados. */
+const FRANJA_DE_ARRIBA = 14;
+/** La tira: 6 de alto, 6 por debajo del lienzo; la raya de hoy, 2 por debajo de la tira. */
+const SEPARACION_DE_LA_TIRA = 6;
+const ALTO_DE_LA_TIRA = 6;
+const ZONA_DE_LA_TIRA = SEPARACION_DE_LA_TIRA + ALTO_DE_LA_TIRA + 4;
+const ALTO_DE_LAS_FECHAS = 16;
+
+/** El alto total del minigráfico del indicador, con su franja de arriba, la tira y las fechas. */
+export const altoDelIndicador = (lienzo: number): number => FRANJA_DE_ARRIBA + lienzo + ZONA_DE_LA_TIRA + ALTO_DE_LAS_FECHAS;
+
+/**
+ * El minigráfico de un indicador del Resumen: más alto, sin canal de eje y con la tira de cobertura, que lleva el estado
+ * de cada día (D-5). Con poco lugar por día, la línea de una serie diaria es la media de cada semana de BE y los días van
+ * como puntos claros; en sesiones o tomas, la línea une las observaciones y llevan marca la última y las aisladas. La
+ * descripción para el lector de pantalla es la de siempre (el resumen en texto del dominio).
+ */
+export function MinigraficoDelIndicador({
+  serie,
+  desde,
+  hasta,
+  hoy,
+  inicioDelPlan,
+  descripcion,
+  lienzo = 72,
+}: {
+  serie: SerieAnalitica;
+  desde: string;
+  hasta: string;
+  hoy: string;
+  inicioDelPlan: string | null;
+  descripcion: string;
+  lienzo?: number;
+}) {
+  const [caja, setCaja] = useState<HTMLDivElement | null>(null);
+  const [ancho, setAncho] = useState(0);
+  useEffect(() => {
+    if (!caja) return;
+    setAncho(caja.clientWidth);
+    if (typeof ResizeObserver === 'undefined') return;
+    const observador = new ResizeObserver(() => setAncho(caja.clientWidth));
+    observador.observe(caja);
+    return () => observador.disconnect();
+  }, [caja]);
+  const diaria = serie.grain === 'DAY';
+  const sinRegistros = useMemo(() => (diaria ? diasSinRegistros(serie.gaps, hoy) : []), [serie, diaria, hoy]);
+  const g = useMemo(
+    () => geometriaDelIndicador({ puntos: serie.points, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan }),
+    [serie, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan],
+  );
+  const color = ESTILOS[0].color;
+  const alto = altoDelIndicador(lienzo);
+  const yDeLaTira = FRANJA_DE_ARRIBA + lienzo + SEPARACION_DE_LA_TIRA;
+  const nitida = g.porDia < LUGAR_PARA_MARCAR_CADA_DIA ? 'crispEdges' : undefined;
+  const hayAlgo = g.puntos.length > 0 || g.semanas.length > 0 || g.tira.length > 0;
+  return (
+    <div className="minigrafico-del-indicador">
+      <div ref={setCaja} className="minigrafico" role="img" aria-label={descripcion} style={{ height: alto }} data-modo={g.modo}>
+        {ancho > 0 && hayAlgo ? (
+          <svg width={ancho} height={alto} viewBox={`0 0 ${ancho} ${alto}`} aria-hidden="true" focusable="false">
+            <g transform={`translate(0 ${FRANJA_DE_ARRIBA})`}>
+              {g.grilla.map((m) => (
+                <line key={`grilla-${m.valor}`} className="minigrafico__grilla" x1={0} x2={ancho} y1={m.y} y2={m.y} stroke="var(--borde)" strokeWidth={1} />
+              ))}
+              {g.inicioDelPlan !== null ? (
+                <line className="minigrafico__plan" x1={g.inicioDelPlan} x2={g.inicioDelPlan} y1={0} y2={lienzo} stroke="var(--borde-control)" strokeWidth={1} strokeDasharray="1 3" />
+              ) : null}
+              {g.plan.map((s) => (
+                <line key={`objetivo-${s.x1}`} className="minigrafico__objetivo" x1={s.x1} x2={s.x2} y1={s.y} y2={s.y} stroke={color} strokeWidth={1.25} strokeDasharray="3 2" />
+              ))}
+              {g.modo === 'semanal' ? g.puntos.map((p) => <circle key={p.clave} className="minigrafico__dia" cx={p.x} cy={p.y} r={p.medida.R} fill={color} opacity={0.45} />) : null}
+              {g.tramos.map((d) => (
+                <path key={d} className="minigrafico__tramo" d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+              ))}
+              {g.semanas.map((s) => (
+                <g key={s.lunes} className="minigrafico__semana" data-con-valor={s.conValor} data-dias={s.dias}>
+                  <Punto cx={s.x} cy={s.y} color={color} medida={s.medida} />
+                </g>
+              ))}
+              {g.modo === 'semanal'
+                ? null
+                : g.puntos.map((p) => (
+                    <g key={p.clave} className="minigrafico__punto" data-estado={p.medida.estado}>
+                      <Punto cx={p.x} cy={p.y} color={color} medida={p.medida} />
+                    </g>
+                  ))}
+              {g.muescas.map((m, i) => (
+                <rect key={`muesca-${i}`} className="minigrafico__muesca" x={m.x - 0.75} y={m.abajo ? lienzo - 3 : 0} width={1.5} height={3} fill="var(--tenue)" />
+              ))}
+              {g.rotulos.map((r) => (
+                <text key={`rotulo-${r.texto}`} className="minigrafico__rotulo" x={2} y={r.y} fill="var(--tenue)" fontSize={LETRA} fontWeight={500}>
+                  {r.texto}
+                </text>
+              ))}
+            </g>
+            {/* La tira: el alto dice el estado del día además del color (entera, a media altura o una raya baja). */}
+            <g className="minigrafico__tira" shapeRendering={nitida}>
+              {g.tira.map((c) =>
+                c.estado === 'con' ? (
+                  <rect key={`tira-${c.x}`} x={c.x} y={yDeLaTira} width={c.ancho} height={ALTO_DE_LA_TIRA} rx={nitida ? 0 : 1} fill={color} data-estado="con" />
+                ) : c.estado === 'hueco' ? (
+                  c.ancho >= 5 && !nitida ? (
+                    <rect key={`tira-${c.x}`} x={c.x + 0.5} y={yDeLaTira + 0.5} width={c.ancho - 1} height={ALTO_DE_LA_TIRA - 1} rx={1} fill="none" stroke={color} strokeWidth={1} data-estado="hueco" />
+                  ) : (
+                    <rect key={`tira-${c.x}`} x={c.x} y={yDeLaTira + ALTO_DE_LA_TIRA / 2} width={c.ancho} height={ALTO_DE_LA_TIRA / 2} fill={color} data-estado="hueco" />
+                  )
+                ) : (
+                  <rect key={`tira-${c.x}`} x={c.x} y={yDeLaTira + ALTO_DE_LA_TIRA - 1.5} width={c.ancho} height={1.5} fill="var(--grafico-hueco)" data-estado="sin" />
+                ),
+              )}
+              {g.hoy ? <rect className="minigrafico__hoy" x={g.hoy.x} y={yDeLaTira + ALTO_DE_LA_TIRA + 2} width={g.hoy.ancho} height={2} fill="var(--ahora)" /> : null}
+            </g>
+            <text className="minigrafico__fecha" x={0} y={alto - 3} fill="var(--tenue)" fontSize={LETRA}>
+              {diaYMesCivil(desde)}
+            </text>
+            <text className="minigrafico__fecha" x={ancho} y={alto - 3} textAnchor="end" fill="var(--tenue)" fontSize={LETRA}>
+              {hasta === hoy ? 'hoy' : diaYMesCivil(hasta)}
+            </text>
+          </svg>
+        ) : null}
+      </div>
+      {g.fuera.abajo + g.fuera.arriba > 0 ? <p className="indicador__nota">{fueraDeLaEscala(g.fuera)}</p> : null}
+    </div>
+  );
+}
+
+/** La cuenta de lo que cae fuera de la escala, escrita en el pie: la muesca dice que existe y cuándo; la tabla, su valor. */
+export function fueraDeLaEscala({ abajo, arriba }: { readonly abajo: number; readonly arriba: number }): string {
+  const parte = (n: number, donde: string): string => `${n} ${n === 1 ? 'dato' : 'datos'} sin completar ${donde} de la escala`;
+  return [abajo > 0 ? parte(abajo, 'debajo') : null, arriba > 0 ? parte(arriba, 'encima') : null].filter(Boolean).join(' · ');
 }

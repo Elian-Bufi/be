@@ -325,3 +325,109 @@ test('TEST-TAG-006 · ningún punto del minigráfico queda fuera del lienzo', ()
     }
   }
 });
+
+// ─── TEST-TAG-007 · El minigráfico del indicador no esconde días (WP-TABLERO-ALTA-GAMA, TB-04; DL-163 D-5) ──────────
+
+const { estadosDeLosDias, geometriaDelIndicador, LUGAR_PARA_MARCAR_CADA_DIA, SEMANAL_CON_MAS_DE_DIAS } = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
+
+const fecha = (desde, i) => new Date(mediodia(desde) + i * 86_400_000).toISOString().slice(0, 10);
+/** Un período diario: `forma(i)` da el valor del día i (o null: sin registros) y sus extras. */
+function periodo(dias, forma, { hoy = null, ancho = 300 } = {}) {
+  const desde = '2026-08-10'; // un lunes
+  const hasta = fecha(desde, dias - 1);
+  const puntos = [];
+  const sinRegistros = [];
+  for (let i = 0; i < dias; i++) {
+    const f = forma(i);
+    if (f === null) sinRegistros.push({ desde: fecha(desde, i), hasta: fecha(desde, i) });
+    else puntos.push(punto(fecha(desde, i), f.valor, f.extra ?? {}));
+  }
+  const entrada = { puntos, sinRegistros, desde, hasta, hoy: hoy ?? hasta, diaria: true, ancho, lienzo: 72, inicioDelPlan: null };
+  return { entrada, g: geometriaDelIndicador(entrada), desde, hasta };
+}
+/** El estado que la tira dibuja en el día i: la celda que cubre su centro. */
+function estadoEnLaTira(g, i) {
+  const x = g.porDia * (i + 0.5);
+  const celda = g.tira.find((c) => x >= c.x - 0.5 && x <= c.x + c.ancho + 0.5);
+  return celda?.estado ?? 'nada';
+}
+
+test('TEST-TAG-007 · con poco lugar, cada día tiene su celda en la tira con su estado', () => {
+  // 90 días en 300 px: 3,3 por día. Días con valor, subtotales y días sin registros mezclados.
+  const forma = (i) => (i % 9 === 4 ? null : i % 11 === 6 ? { valor: 900, extra: { quality: 'PARTIAL' } } : { valor: 2000 + (i % 5) * 40 });
+  const { entrada, g } = periodo(90, forma);
+  assert.ok(g.porDia < LUGAR_PARA_MARCAR_CADA_DIA);
+  const esperados = estadosDeLosDias(entrada);
+  assert.equal(esperados.length, 90);
+  for (let i = 0; i < 90; i++) assert.equal(estadoEnLaTira(g, i), esperados[i].estado, `día ${i}`);
+  // Hoy (el último) va marcado debajo.
+  assert.ok(g.hoy && g.hoy.x <= g.porDia * 89.5 && g.hoy.x + g.hoy.ancho >= g.porDia * 89.5);
+});
+
+test('TEST-TAG-007 · a 90 días la línea es la media de cada semana de BE, con su denominador, y los días van claros', () => {
+  const forma = (i) => (i === 3 ? null : { valor: 1000 + i });
+  const { g, desde } = periodo(90, forma);
+  assert.ok(90 > SEMANAL_CON_MAS_DE_DIAS);
+  assert.equal(g.modo, 'semanal');
+  // La primera semana (lunes 10 a domingo 16 de agosto): seis días con valor (el jueves no tiene registros).
+  const primera = g.semanas[0];
+  assert.equal(primera.lunes, desde);
+  assert.deepEqual([primera.conValor, primera.dias], [6, 7]);
+  assert.equal(primera.valor, Number(((1000 + 1000 + 1 + 1002 + 1004 + 1005 + 1006) / 6).toFixed(6)));
+  assert.equal(primera.medida.estado, 'lleno');
+  // La semana de hoy va hueca, y hoy queda fuera de su media.
+  const ultima = g.semanas.at(-1);
+  assert.equal(ultima.medida.estado, 'hueco');
+  // Del lunes 2 al sábado 7 de noviembre: seis días en el período, cinco en la media (hoy, el 7, sigue en curso).
+  assert.deepEqual([ultima.lunes, ultima.dias, ultima.conValor], ['2026-11-02', 6, 5]);
+  assert.ok(g.semanas.every((s) => s.conValor <= s.dias));
+  // Cada día con valor, un punto claro detrás; ningún día queda sin dibujar.
+  assert.equal(g.puntos.length, 89);
+  assert.ok(g.puntos.every((p) => p.claro));
+});
+
+test('TEST-TAG-007 · con poco lugar y menos semanas, la línea se corta y llevan marca la última y las aisladas', () => {
+  // 30 días en 100 px: 3,3 por día. El día 10 queda solo entre dos días sin registros.
+  const forma = (i) => (i === 9 || i === 11 ? null : i === 20 ? { valor: 2050, extra: { quality: 'PARTIAL' } } : { valor: 2000 + i });
+  const { g } = periodo(30, forma, { ancho: 100 });
+  assert.equal(g.modo, 'pocos');
+  // Tres tramos: días 0-8, 12-19 y 21-29 (el 10 está aislado y el 20 está sin completar).
+  assert.equal(g.tramos.length, 3);
+  const marcados = g.puntos.map((p) => p.clave);
+  assert.ok(marcados.includes('p-2026-08-20-t0'), 'la aislada lleva marca');
+  assert.ok(marcados.includes('p-2026-09-08-t0'), 'la última lleva marca');
+  assert.equal(g.puntos.length, 2, 'las demás van en la línea, sin marca');
+});
+
+test('TEST-TAG-007 · con más lugar, todo día con valor tiene su marca', () => {
+  const forma = (i) => (i % 6 === 2 ? null : { valor: 2000 + i * 3 });
+  const { g, entrada } = periodo(30, forma, { ancho: 300 });
+  assert.equal(g.modo, 'todos');
+  assert.equal(g.puntos.length, entrada.puntos.length);
+});
+
+test('TEST-TAG-007 · lo que cae fuera de la escala es una muesca en su día, contada, y no un punto', () => {
+  const forma = (i) => (i === 15 ? { valor: 120, extra: { quality: 'PARTIAL' } } : { valor: 2000 + (i % 4) * 30 });
+  const { g } = periodo(30, forma, { ancho: 300 });
+  assert.deepEqual(g.fuera, { abajo: 1, arriba: 0 });
+  assert.equal(g.muescas.length, 1);
+  assert.ok(Math.abs(g.muescas[0].x - g.porDia * 15.5) < 1e-6, 'la muesca va en su día');
+  assert.ok(g.muescas[0].abajo);
+  assert.ok(!g.puntos.some((p) => p.clave === 'p-2026-08-25-t0'), 'no se ubica en una altura que no es la suya');
+});
+
+test('TEST-TAG-007 · con uno a tres días con valor no hay línea ni media', () => {
+  const forma = (i) => (i === 2 || i === 5 || i === 6 ? { valor: 1800 + i } : null);
+  const { g } = periodo(90, forma);
+  assert.equal(g.modo, 'sueltos');
+  assert.deepEqual([g.tramos.length, g.semanas.length], [0, 0]);
+  assert.equal(g.puntos.length, 3);
+});
+
+test('TEST-TAG-007 · la línea no cruza lo sin completar ni une sesiones de otro tramo', () => {
+  const sesiones = [punto('2026-09-01', 60), punto('2026-09-03', 62.5), punto('2026-09-05', 65, { segment: 't1' }), punto('2026-09-08', 65, { segment: 't1' })];
+  const g = geometriaDelIndicador({ puntos: sesiones, sinRegistros: [], desde: '2026-08-10', hasta: '2026-11-07', hoy: '2026-11-07', diaria: false, ancho: 300, lienzo: 72, inicioDelPlan: null });
+  assert.equal(g.modo, 'todos');
+  assert.equal(g.tramos.length, 2, 'un tramo por segmento');
+  assert.equal(g.tira.length, 0, 'las sesiones no llevan tira');
+});

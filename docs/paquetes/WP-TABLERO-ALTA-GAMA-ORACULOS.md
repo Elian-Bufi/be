@@ -13,8 +13,8 @@
 > en el código que cita cada uno. Un oráculo dice qué hay que observar para aceptar la prueba. No inventa la regla: la
 > lee.
 >
-> **Estado.** Escritos: TEST-TAG-005 (con los pares de TB-03; los demás tokens, con su parte) y TEST-TAG-006. Los demás
-> se escriben con su parte (§10 del paquete).
+> **Estado.** Escritos: TEST-TAG-005 (con los pares de TB-03 y TB-04; los demás tokens, con su parte), TEST-TAG-006 y
+> TEST-TAG-007. Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -91,4 +91,51 @@ AUTOMATION           scripts/contraste.test.cjs (los pares de PARES_GRAFICO con 
                      no usan los colores de planificado y registrado (TB-03)»), en `npm test`
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas de la corrida de TB-03 en los dos temas
+```
+
+---
+
+## TEST-TAG-007 — El minigráfico no esconde días
+
+```text
+TEST_ID              TEST-TAG-007
+TITLE                En el minigráfico del indicador, cada día tiene su estado en la tira, la línea se corta donde
+                     falta un dato completo y lo que cae fuera de la escala se marca sin ubicarlo
+LEVEL                Unidad (geometría pura del website)
+PRIORITY             P1 — «un hueco es un hueco, nunca un cero» (REG-06-166): ningún día puede desaparecer
+SOURCES              DL-163 D-5 («la tira de cobertura lleva el estado de cada día; llevan marca el último día, el
+                     elegido y los aislados; lo que cae fuera de escala va con una muesca en la base y su cuenta. A
+                     90 días, la línea es la media de cada semana de BE, con su denominador, y los días van como
+                     puntos claros detrás») · WP-TABLERO-ALTA-GAMA TB-04 · la propuesta, anexos A7, A9, A13 y A14 ·
+                     REG-06-166 (sin interpolar ni completar huecos)
+PRECONDITIONS        Ninguna: geometriaDelIndicador y estadosDeLosDias, en seguimiento/geometria.ts.
+SYNTHETIC_FIXTURE    Períodos diarios de 30 y 90 días desde el lunes 10 de agosto de 2026, con días sin registros,
+                     subtotales (PARTIAL), un subtotal muy bajo y días aislados; sesiones de dos tramos; anchos de
+                     100 y 300 px.
+STEPS                1. 90 días en 300 px (3,3 px por día): leer el estado de la tira en el centro de cada día.
+                     2. 90 días en 300 px: leer las semanas de BE, sus denominadores y los puntos de los días.
+                     3. 30 días en 100 px: contar los tramos de la línea y las marcas.
+                     4. 30 días en 300 px: contar las marcas.
+                     5. Un subtotal muy por debajo del resto: buscar su muesca y su punto.
+                     6. Tres días con valor en 90: leer el modo, la línea y la media.
+                     7. Sesiones de dos tramos: contar los trazos y la tira.
+EXPECTED             1 → cada uno de los 90 días tiene en la tira el estado que da estadosDeLosDias (con valor, sin
+                     completar o sin registros); hoy lleva su raya debajo.
+                     2 → la línea es la media semanal: la primera semana, de lunes a domingo, con 6 días con valor de
+                     7 y su media exacta, llena; la de hoy, hueca, con 6 días en el período y 5 en la media (hoy
+                     sigue en curso); cada día con valor es un punto claro (89 de 89).
+                     3 → tres tramos (la línea se corta en los días sin registros y en el subtotal); llevan marca solo
+                     la aislada y la última.
+                     4 → todo día con valor tiene su marca.
+                     5 → una muesca en su día, en la base, contada como «debajo de la escala»; ningún punto la ubica.
+                     6 → puntos sueltos, sin línea ni media.
+                     7 → un trazo por tramo; las sesiones no llevan tira.
+NEGATIVE_ASSERTIONS  La línea no une días con un día sin registros o un subtotal en el medio, ni dos tramos. Lo de
+                     fuera de la escala no se dibuja a una altura que no es la suya. Hoy no entra en la media de su
+                     semana. Mutaciones verificadas: sin la celda de los días sin registros falla el paso 1; con hoy
+                     en la media falla el paso 2.
+AUTOMATION           scripts/geometria-del-minigrafico.test.mjs («TEST-TAG-007 · …», siete casos), en `npm test`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas del Resumen de la corrida de TB-04, a 1440 y a
+                     1920 × 950, comparadas con la línea de base
 ```
