@@ -26,6 +26,7 @@ import {
   TEXTO_DEL_CAMBIO,
   textoDeLaParticion,
   textoSinPartir,
+  unDecimal,
   tomasDeLaEvolucion,
   tramosDeLectura,
   UNA_SOLA_TOMA,
@@ -226,7 +227,7 @@ function useAncho(): [(e: HTMLDivElement | null) => void, number] {
 }
 
 const mediodia = (f: string): number => Date.parse(`${f}T12:00:00Z`);
-const IZQUIERDA = 40;
+const IZQUIERDA = 58;
 const DERECHA = 10;
 
 function xDeLaFecha(desde: string, hasta: string, ancho: number): (f: string) => number {
@@ -310,7 +311,7 @@ function ColumnasDeLaComposicion({ c, desde, hasta, fecha, descripcion }: { c: C
                 )}
                 {rotuladas.has(col.evaluacionId) && ancho > 260 ? (
                   <text x={cx} y={y(col.peso) - 5} textAnchor={i === 0 ? 'start' : 'end'} fill="var(--texto)" fontSize={LETRA_MINIMA} fontWeight={600}>
-                    {numero(col.peso, 1)}
+                    {unDecimal(col.peso)}
                   </text>
                 ) : null}
               </g>
@@ -345,12 +346,12 @@ function FilasDelCambio({ filas, c, desde, hasta }: { filas: readonly FilaDelCam
           <span className="composicion__cifras">
             {f.desde && f.hasta && f.diferencia !== null ? (
               <>
-                <span className="cifra">{numero(f.desde.valor, 1)}</span> → <span className="cifra">{numero(f.hasta.valor, 1)}</span> kg ·{' '}
+                <span className="cifra">{unDecimal(f.desde.valor)}</span> → <span className="cifra">{unDecimal(f.hasta.valor)}</span> kg ·{' '}
                 <strong className="cifra">{diferenciaEnPalabras(f.diferencia)}</strong>
               </>
             ) : f.puntos.length > 0 ? (
               <>
-                <span className="cifra">{numero((f.puntos[f.puntos.length - 1] as FilaDelCambio['puntos'][number]).valor, 1)}</span> kg
+                <span className="cifra">{unDecimal((f.puntos[f.puntos.length - 1] as FilaDelCambio['puntos'][number]).valor)}</span> kg
               </>
             ) : null}
           </span>
@@ -404,10 +405,10 @@ function TablaDeLaComposicion({ c }: { c: Composicion }) {
             <tr key={col.evaluacionId}>
               <th scope="row">{diaCivil(col.fecha)}</th>
               <td className="cifra">
-                {numero(col.peso, 1)} kg{col.pesoReportado ? ' · reportado por la persona' : ''}
+                {unDecimal(col.peso)} kg{col.pesoReportado ? ' · reportado por la persona' : ''}
               </td>
-              <td className="cifra">{col.particion ? `${numero(col.particion.libre, 1)} kg` : '—'}</td>
-              <td className="cifra">{col.particion ? `${numero(col.particion.grasa, 1)} kg` : '—'}</td>
+              <td className="cifra">{col.particion ? `${unDecimal(col.particion.libre)} kg` : '—'}</td>
+              <td className="cifra">{col.particion ? `${unDecimal(col.particion.grasa)} kg` : '—'}</td>
               <td>{col.particion ? `Partida con ${DOS_COMPARTIMENTOS[col.particion.familia].nombre}` : textoSinPartir(col)}</td>
             </tr>
           ))}

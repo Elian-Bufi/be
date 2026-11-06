@@ -16,7 +16,7 @@
  * - **Una toma con solo peso es una columna en contorno,** sin partir, y no corta la fila del peso.
  * - **Ubica, no califica:** sin «%», sin rangos ni colores de bien o mal. Las diferencias se escriben con su signo.
  */
-import { fechaCivil, nombreDeMetrica, numero, type EvolucionResponse } from '@be/domain';
+import { fechaCivil, nombreDeMetrica, numeroConPrecision, type EvolucionResponse } from '@be/domain';
 
 type DatosDeLaEvolucion = EvolucionResponse['data'];
 type ClaseDeDato = 'MEASURED' | 'REPORTED' | 'DERIVED';
@@ -362,16 +362,18 @@ export function escalaComun(filas: readonly Pick<FilaDelCambio, 'puntos'>[], min
 
 // ─── Los textos ─────────────────────────────────────────────────────────────────────────────────────────────────
 
-const kg = (x: number): string => `${numero(x, 1)} kg`;
+/** Los kilos, siempre con un decimal, como los calcula el método (DL-112): «15,0», no «15». */
+export const unDecimal = (x: number): string => numeroConPrecision(x, 1);
+const kg = (x: number): string => `${unDecimal(x)} kg`;
 
 /** «+0,1 kg», «−0,4 kg», «sin cambio»: con su signo, sin flechas ni colores. */
 export function diferenciaEnPalabras(x: number): string {
   if (Math.abs(x) < 0.05) return 'sin cambio';
-  return `${x > 0 ? '+' : ''}${numero(x, 1)} kg`;
+  return `${x > 0 ? '+' : ''}${unDecimal(x)} kg`;
 }
 
 /** «80,8 kg = 66,6 libre de grasa + 14,2 grasa»: la barra, en palabras. */
-export const textoDeLaParticion = (p: Particion): string => `${kg(p.peso)} = ${numero(p.libre, 1)} libre de grasa + ${numero(p.grasa, 1)} grasa`;
+export const textoDeLaParticion = (p: Particion): string => `${kg(p.peso)} = ${unDecimal(p.libre)} libre de grasa + ${unDecimal(p.grasa)} grasa`;
 
 /** «peso −0,4 kg · grasa −0,5 kg · libre de grasa +0,1 kg». */
 export function textoDeLasDiferencias(a: Particion, b: Particion): string {

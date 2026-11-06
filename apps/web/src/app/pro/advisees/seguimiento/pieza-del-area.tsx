@@ -13,7 +13,7 @@ import { COPY_PRIMER_PLAN, numero, type ParteDeObservacion } from '@be/domain';
 import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
-import { DOS_COMPARTIMENTOS, laUltimaToma, pesosDeLasTomas, textoDeLaParticion, textoDeLasDiferencias } from './composicion';
+import { DOS_COMPARTIMENTOS, laUltimaToma, pesosDeLasTomas, textoDeLaParticion, textoDeLasDiferencias, unDecimal } from './composicion';
 import { LineaDeLosPesos, type LecturaDeLaComposicion } from './composicion-en-pantalla';
 import { losRegistrosDelPeriodo, pasosDelPrimerPlan, sesionesPorEjercicio, textoDeLasComidas, textoDeLosRectificados } from './piezas-del-area';
 import type { Disponibles } from './series';
@@ -212,7 +212,7 @@ export function ComposicionDeLaUltimaToma({
         ) : null}
         {ultima.despues ? (
           <p className="pieza-del-area__nota">
-            Después, el {fecha(ultima.despues.fecha)}, una toma con solo el peso: {numero(ultima.despues.peso, 1)} kg.
+            Después, el {fecha(ultima.despues.fecha)}, una toma con solo el peso: {unDecimal(ultima.despues.peso)} kg.
           </p>
         ) : null}
         <p className="pieza-del-area__nota">
@@ -226,10 +226,10 @@ export function ComposicionDeLaUltimaToma({
   if (pesos.length === 0) return null;
   const ultimo = pesos[pesos.length - 1] as (typeof pesos)[number];
   return (
-    <Pieza titulo="Peso en las tomas" plegada={plegada} aLaVista={plegada ? <span className="tenue">{numero(ultimo.valor, 1)} kg</span> : null}>
+    <Pieza titulo="Peso en las tomas" plegada={plegada} aLaVista={plegada ? <span className="tenue">{unDecimal(ultimo.valor)} kg</span> : null}>
       <LineaDeLosPesos pesos={pesos} desde={desde} hasta={hasta} />
       <p className="pieza-del-area__nota">
-        {pesos.length === 1 ? `Una toma con peso, el ${fecha(ultimo.fecha)}: ${numero(ultimo.valor, 1)} kg.` : `${numero(pesos.length, 0)} tomas con peso; la última, el ${fecha(ultimo.fecha)}: ${numero(ultimo.valor, 1)} kg.`} Ninguna tiene un método que parta el peso
+        {pesos.length === 1 ? `Una toma con peso, el ${fecha(ultimo.fecha)}: ${unDecimal(ultimo.valor)} kg.` : `${numero(pesos.length, 0)} tomas con peso; la última, el ${fecha(ultimo.fecha)}: ${unDecimal(ultimo.valor)} kg.`} Ninguna tiene un método que parta el peso
         en masa libre de grasa y masa grasa.
       </p>
     </Pieza>

@@ -660,16 +660,12 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-24 | Hecha. **La pieza «Composición corporal»**, en la pestaña Antropometría, como sección propia al lado de «Evolución» (`vista=composicion`, con su ayuda y sus atajos de 90 días y un año; abre con un año): «De qué está hecho el peso», una columna por toma, en su fecha y desde cero, con la masa libre de grasa abajo y la masa grasa arriba, separadas por un corte que deja ver la tarjeta; «Cuánto cambió cada parte», el peso, la masa grasa y la masa libre de grasa en filas con las mismas fechas y la misma vara, con la primera y la última cifra y la diferencia; y la tabla de cada toma. **Las reglas:** la columna se parte solo con las dos masas de un método de dos compartimentos (Durnin y Womersley con Siri, o Faulkner) que suman el peso de la toma; Lee y la masa de cuatro componentes van en su fila, «no suma con las otras»; un cambio de método o de protocolo es una vertical rotulada («Cambia el método · 9 jun») y ninguna diferencia la cruza; una toma con solo peso es una columna en contorno y no corta la fila del peso; un método por gráfico, con la elección si hay dos (TA-27); sin «%». **La pregunta «¿De qué está hecho el cambio de peso?»**, entre las principales de «Analizar» si el profesional ve Antropometría, responde con la misma pieza en el período de la ficha y ofrece «Ver peso y masas «Juntas»» (TA-25). **La tarjeta de Antropometría del Resumen** (TA-20): «Composición de la última toma», con la barra («80,8 kg = 66,6 libre de grasa + 14,2 grasa»), el método y «Desde la toma del …: peso −0,4 kg · grasa −0,5 kg · libre de grasa +0,1 kg»; plegada, la barra en el renglón; sin ninguna toma partida, «Peso en las tomas», la línea de los pesos (R-6). Lee API-ANT-06 sin tocar la API, en tramos de 92 días y solo con el peso y las masas (TA-24 y TA-26). `--composicion-libre` y `--composicion-grasa`, tokens nuevos, con sus pares. **La cohorte:** Diego y Camila tienen las masas de Durnin y Womersley en cada toma; Héctor también las pide, pero sus tomas no tienen pliegues (`sinPliegues`) y el método no tiene con qué calcular: es el caso sin método, con la línea de los pesos. **No está cargado en la base de `test`:** pide la IP del operador y lo decide Dirección. TEST-TAG-017 y TEST-TAG-005 | `seguimiento/composicion.ts`, `seguimiento/composicion-en-pantalla.tsx`, `seguimiento/composicion-en-analizar.tsx`, `anthropometry/composicion.tsx`, `seguimiento/pieza-del-area.tsx`, `apps/web/test/composicion.test.mjs`, `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/personas.mjs` |
 | TB-25 | Hecha. Los indicadores del Resumen por defecto salen de las áreas que el profesional ve en esta ficha, con la tabla de la propuesta (§18.4): con Nutrición, calorías, proteínas, masa grasa (o peso) y registros; con Nutrición y Antropometría, la suma de 6 pliegues en lugar de los registros; con Entrenamiento, la carga de la serie principal, las series registradas, el RIR y la masa libre de grasa (o el peso), si ve Antropometría; con Antropometría, masa grasa (o peso), la suma de 6 pliegues, la cintura y el perímetro del brazo flexionado. Con Nutrición y Entrenamiento, que la tabla no dice, calorías, proteínas, la carga y la masa grasa, o los registros (TA-28). La masa grasa es la de Durnin y Womersley o, si no, la de Faulkner; sin masas en el período, el peso. Un indicador cuyo dato no está en el período no se pone, y nunca hay dos iguales. «Series por semana» son las series registradas del ejercicio principal, sesión a sesión (TA-29). Lo guardado por la cuenta manda, como antes. Sin API y sin lecturas nuevas: el Resumen pide una serie por indicador, así que con más indicadores sube la cuenta de peticiones al abrir. TEST-TAG-018 | `seguimiento/indicadores-por-area.ts`, `seguimiento/resumen-indicadores.tsx`, `apps/web/test/indicadores-por-area.test.mjs` |
 
-**Para seguir.** De TB-00 a TB-10, TB-16 y TB-49 están hechas, salvo TB-06, que va con TB-11 (TA-16), y la pieza de
-Antropometría de TB-10, que va con TB-24 (TA-20). Lo próximo, en el orden de §8.1:
-- **TB-24 y TB-25, juntas, en un tramo propio.** TB-25 pone «masa grasa (o peso)» entre los indicadores por defecto, y
-  la cohorte recién tiene masas con TB-24 (Durnin y Womersley en las tomas de Diego, Camila y Héctor, en
-  `personas.mjs`). TB-24 trae también la pieza de la tarjeta de Antropometría que dejó TB-10: la barra de la composición
-  de la última toma y, sin método, la línea de las tomas (R-6, con su lectura); los tokens `--composicion-libre` y
-  `--composicion-grasa` (#0b62a4 / #4f97ea y #0f9488 / #16a085, validados en §18.7 de la propuesta) con su par en
-  `contraste.test.cjs`; la pieza de la pestaña y la pregunta de «Analizar». Antes del código, leer qué devuelve
-  API-ANT-06 por toma. La pieza va en `Hechos` como las de TB-10 (`pieza`, `absorbeElPeriodo`), plegada con dos o más
-  tarjetas en fila.
+**Para seguir.** De TB-00 a TB-10, TB-16, TB-24, TB-25 y TB-49 están hechas, salvo TB-06, que va con TB-11 (TA-16). Lo
+próximo, en el orden de §8.1:
+- **Un paso pendiente de TB-24, que decide Dirección:** cargar en la base de `test` las masas de Durnin y Womersley de la
+  cohorte: los cálculos de los dos métodos nuevos sobre las tomas de Diego y Camila que ya están (la fase `calculos` de
+  `cargar.mjs`, que hoy no se repite porque su estado la da por hecha). Pide la IP del operador. Hasta entonces, en `test`
+  la composición de Diego y Camila se ve como el caso sin método (la línea de los pesos), y solo la CI la muestra partida.
 - **TB-06 con TB-11 (TA-16), y después TB-12.** Lo que hay que saber de TB-06:
   - «Esperan respuesta» y «Personas» son enlaces dentro de la página: «Personas» lleva a «Tus asesorados», pero el
     carril «Esperan respuesta» todavía no existe, porque llega con TB-11. Las cifras filtran o llevan a los dos carriles,
@@ -681,7 +677,31 @@ Antropometría de TB-10, que va con TB-24 (TA-20). Lo próximo, en el orden de �
     (`TIPOS_DE_LA_VISTA_DE_PENDIENTES`). El único botón lleno sigue siendo «Invitar a una persona».
 - Después, TB-15, TB-17 y el resto de §8.1.
 
-**Lo medido en este tramo.**
+**Lo medido en el tramo de TB-24 y TB-25** (corrida 42180079803 de `capturas-del-tablero`, sobre c14e1ed, con la cohorte
+que ya tiene las masas):
+- **La pestaña Composición corporal de Diego Sosa (Sofía Paz):** un año, nueve tomas, las nueve partidas con Durnin y
+  Womersley y sin cambios de método: «La última toma partida, el 1 nov: 80,9 kg = 65,5 libre de grasa + 15,4 grasa» y,
+  del 1 dic 2025 al 1 nov, peso −2,4 kg, grasa −1,6 kg y libre de grasa −0,8 kg. Siete peticiones al abrir: las cuatro
+  lecturas de API-ANT-06 de un año y las del marco.
+- **La pregunta de «Analizar»:** con los 90 días de la ficha, tres tomas, del 12 ago al 1 nov: peso −0,4 kg, grasa
+  −0,5 kg y libre de grasa +0,1 kg.
+- **El Resumen de Diego (Sofía Paz):** la tarjeta de Antropometría lleva «Composición de la última toma» plegada, con la
+  barra en el renglón; los indicadores pasan a calorías, proteínas, masa grasa (Durnin y Womersley) y suma de 6 pliegues.
+  A 1440 × 900, los valores de los indicadores terminan en 829 (808 antes); a 1920 × 950, los minigráficos, en 915:
+  entran.
+- **El Resumen de Héctor Funes (Sofía Paz):** «Peso en las tomas · 86,2 kg», sin barra; los indicadores caen al peso y a
+  los registros. Su tarjeta más alta mide 502 y, a 1920 × 950, sus minigráficos terminan en 969: no entran en la primera
+  pantalla. Es la primera vez que se mide su Resumen.
+- **Las peticiones al abrir varían de una corrida a otra con la misma página:** el Resumen de Diego dio 18 (22 en la
+  corrida de 731b9c3), el de Federico Álvarez 24 (16) y el de Martín Acosta 14 (13). Esta parte suma dos lecturas con
+  Sofía Paz (la composición y el cuarto indicador) y dos con Martín Acosta (las series y el RIR), pero la cuenta no lo
+  muestra. Una explicación posible, sin verificar: las capturas cuentan hasta 800 ms sin peticiones y, con las lecturas
+  de a cuatro, una tanda lenta queda fuera de la cuenta. Hallazgo para TEST-TAG-032 (severidad media: el guardián no
+  detecta una subida chica): contar hasta que no quede ninguna lectura en curso. No se arregló en este tramo.
+- **Arreglado después de esa corrida:** el rótulo «100 kg» del eje quedaba cortado a la izquierda, y una masa redonda se
+  escribía «17» en lugar de «17,0».
+
+**Lo medido en el tramo de TB-10, TB-16 y TB-49.**
 - **El Espacio:** en la corrida 42166891703 (b9d6996), a 1440 × 900, la primera pantalla muestra el encabezado, «Tu
   semana» y las dos primeras personas de la cola, con lugar para una tercera. El alto de 1104 lo pone «Tus asesorados»,
   debajo: no hace falta un arreglo.

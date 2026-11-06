@@ -243,6 +243,7 @@ test('los textos ubican: sin «%», sin «bien» ni «mal», con el signo y la u
   const [a, b] = tomasDe([{ fecha: '2026-08-18', valores: dw(81.2, 14.7) }, { fecha: '2026-09-29', valores: dw(81.2, 14.2) }]).map((t) => particionDe(t, 'DURNIN_WOMERSLEY'));
   const textos = [textoDeLaParticion(a), textoDeLasDiferencias(a, b), C.UNA_SOLA_TOMA, C.NO_SUMA_CON_LAS_OTRAS, ...Object.values(C.TEXTO_SIN_PARTIR), ...Object.values(C.TEXTO_DEL_CAMBIO)];
   assert.equal(textoDeLasDiferencias(a, b), 'peso sin cambio · grasa −0,5 kg · libre de grasa +0,5 kg');
+  assert.equal(C.unDecimal(17), '17,0', 'los kilos van siempre con un decimal, como los calcula el método');
   for (const t of textos) assert.doesNotMatch(t, /%|por ciento|\bbien\b|\bmal\b|normal|ideal/i, t);
 });
 
