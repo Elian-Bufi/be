@@ -400,6 +400,8 @@ Lo que lee la 0.21 (HBT-01 a 04) no cambia de forma (DL-152): todo lo nuevo va e
   - «Mis hábitos» (HBT-01 a 04) no cambia de forma, con o sin un pedido esperando.
 - **0.22:** suma API-HBT-08 y 09. Sus lecturas se congelan desde su tag, como las de la 0.21 (DL-152): la prueba del dominio
   ya admite que una APK desde la 0.21 lea las de la persona (01 a 04, 08 y 09) y nunca las del profesional (05 a 07).
+  *(2026-11-06: la 0.22.0-candidata.1, `1254269`, congelada. Lee 88 operaciones, las 86 de la 0.21 con la misma forma y
+  HBT-08 y 09, y se sumó a `VIGENTES` sin sacar la 0.20 ni la 0.21; nota en DL-152.)*
 
 ### 8.6 Decisiones de la implementación (a ratificar)
 

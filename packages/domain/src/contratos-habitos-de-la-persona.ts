@@ -16,9 +16,9 @@
  * - API-HBT-08 · `GET /me/habits/access-requests` — la persona: los pedidos que esperan su respuesta.
  * - API-HBT-09 · `POST /me/habits/access-requests/{accessRequestId}/answer` — la persona responde: sí o no, por ahora.
  *
- * Las de la persona (01 a 04) las lee la APK 0.21.0-candidata.1, y su forma quedó congelada (DL-152): lo que la cambie va
- * en una operación nueva. La 05 es del website, y la 0.20 no conoce ninguna. Objetos estrictos, como el resto de los
- * contratos (09v7 T12).
+ * Las de la persona (01 a 04) las lee la APK 0.21.0-candidata.1, y la 0.22.0-candidata.1 suma 08 y 09: la forma de las
+ * seis quedó congelada (DL-152), y lo que la cambie va en una operación nueva. La 05 a la 07 son del website, y la 0.20 no
+ * conoce ninguna. Objetos estrictos, como el resto de los contratos (09v7 T12).
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';

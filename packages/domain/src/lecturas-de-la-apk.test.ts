@@ -50,9 +50,11 @@ const APK = readdirSync(CARPETA)
  * y 08) en lugar de FRM-02 y 05 a 08. El mismo día, Dirección sacó la 0.17.0-candidata.3 y la 0.18.0-candidata.1: ya no
  * hay teléfonos con ellas (DL-152, en el encargo de DL-165). La 0.21.0-candidata.1 (2026-11-05, la ronda 2 de DL-165)
  * se sumó sin sacar la 0.20, que Dirección tiene instalada hasta que actualice: declara `forms-format-3`, lee FRI en el
- * formato 3 y suma API-HBT-01 a 04.
+ * formato 3 y suma API-HBT-01 a 04. La 0.22.0-candidata.1 (2026-11-06, la ronda 2.1 de DL-165) se sumó sin sacar la 0.20
+ * ni la 0.21, porque Dirección todavía no actualizó: suma API-HBT-08 y 09, los pedidos de acceso a sus hábitos, y lo demás
+ * lo lee con la forma de la 0.21.
  */
-const VIGENTES = ['0.13.2', '0.20.0-candidata.1', '0.21.0-candidata.1'];
+const VIGENTES = ['0.13.2', '0.20.0-candidata.1', '0.21.0-candidata.1', '0.22.0-candidata.1'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en
