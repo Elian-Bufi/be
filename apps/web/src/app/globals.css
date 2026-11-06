@@ -5237,9 +5237,13 @@ a.observacion__fila:focus-visible {
   color: var(--enlace);
 }
 
+/* El texto secundario de cada pregunta, en 13 / 18, como el secundario de la escala de la propuesta (TB-01; TA-03):
+   con Inter, a 0,92rem, una descripción pasaba a tres renglones a 1280 y la lista, que iguala el alto de todas, crecía
+   104 px. */
 .tarjeta-de-pregunta__muestra {
   color: var(--tenue);
-  font-size: 0.92rem;
+  font-size: 0.8125rem;
+  line-height: 1.385;
 }
 
 .preguntas-profesionales__mas {
