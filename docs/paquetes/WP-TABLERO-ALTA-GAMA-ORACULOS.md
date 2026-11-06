@@ -15,7 +15,7 @@
 >
 > **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05,
 > TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
-> (TB-24) y TEST-TAG-033 (TB-49). Los demás se escriben con su parte (§10 del paquete).
+> (TB-24), TEST-TAG-018 (TB-25) y TEST-TAG-033 (TB-49). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -520,4 +520,56 @@ ENVIRONMENT          CI (verificar · typecheck · unit · build · audit) y loc
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, la pestaña Composición corporal y la
                      pregunta de «Analizar» de Diego Sosa vistas por Sofía Paz, con `composicion.partidas` y
                      `composicion.sinPartir` en mediciones.json, y el Resumen de Héctor Funes con la línea de los pesos
+```
+
+---
+
+## TEST-TAG-018 — Los indicadores salen de las áreas del profesional
+
+```text
+TEST_ID              TEST-TAG-018
+TITLE                Sin nada guardado, los cuatro indicadores del Resumen son los de las áreas del profesional, con lo
+                     que hay en el período; con algo guardado por la cuenta, lo guardado
+LEVEL                Unidad (función pura del website y lectura del componente, sin navegador)
+PRIORITY             P2 — orientación: cada profesional mira primero lo suyo; un indicador de otra área es ruido
+SOURCES              DL-163 D-12 («Los cuatro por defecto, por sus áreas; lo que cada cuenta ya guardó manda») ·
+                     WP-TABLERO-ALTA-GAMA TB-25 (la tabla de las áreas: Nutrición; Nutrición y Antropometría;
+                     Entrenamiento; Antropometría) · la propuesta, §18.4 · TA-28 y TA-29
+PRECONDITIONS        Ninguna: indicadoresPorDefecto y areasDe (apps/web/src/app/pro/advisees/seguimiento/
+                     indicadores-por-area.ts); el código de resumen-indicadores.tsx.
+SYNTHETIC_FIXTURE    Lo que el Resumen ya leyó del período (`Disponibles`): Nutrición visible o no; los ejercicios del
+                     período (una sentadilla con cargas en kg y una plancha sin cargas) o ninguno; las medidas de
+                     Antropometría (peso, masa grasa y masa libre de grasa de Durnin y Womersley, masa grasa de
+                     Faulkner, suma de 6 pliegues, cintura y brazo flexionado), algunas o ninguna. Y las 32
+                     combinaciones de las tres áreas con esos datos.
+STEPS                1. Solo Nutrición.
+                     2. Nutrición y Antropometría, con todas las medidas; solo con el peso y la cintura; con Faulkner.
+                     3. Solo Entrenamiento, sin y con Antropometría; con un ejercicio sin cargas; sin sesiones.
+                     4. Solo Antropometría, con todas las medidas y con dos.
+                     5. Nutrición y Entrenamiento, con y sin Antropometría.
+                     6. Las 32 combinaciones.
+                     7. Leer resumen-indicadores.tsx.
+EXPECTED             1 → calorías, proteínas y registros.
+                     2 → calorías, proteínas, masa grasa (Durnin y Womersley) y la suma de 6 pliegues; sin masa grasa
+                        ni pliegues, el peso y los registros; con Faulkner, la masa grasa de Faulkner.
+                     3 → la carga de la serie 1 del ejercicio con más sesiones (en kg), sus series registradas y su
+                        RIR, y la masa libre de grasa (o el peso) solo si ve Antropometría; sin cargas, las series
+                        registradas una sola vez y el RIR; sin sesiones, ninguno.
+                     4 → masa grasa, suma de 6 pliegues, cintura y brazo flexionado; con dos medidas, el peso y la
+                        cintura.
+                     5 → calorías, proteínas, la carga y la masa grasa; sin Antropometría, los registros (TA-28).
+                     6 → nunca más de cuatro ni dos iguales; un indicador de un área solo si el profesional la ve, y
+                        una medida solo si está en el período.
+                     7 → los de por defecto solo cuando no hay una elección guardada (`guardada === null`).
+NEGATIVE_ASSERTIONS  Ningún indicador por defecto es de un área que el profesional no ve, ni de una medida que no está
+                     en el período: no se inventa un dato. Lo guardado nunca se reemplaza por lo de por defecto.
+                     Mutaciones verificadas: con los mismos para todos, fallan cuatro casos; con la suma de pliegues sin
+                     mirar si está, tres; sin quitar los repetidos, dos; con lo de por defecto encima de lo guardado,
+                     el paso 7.
+AUTOMATION           apps/web/test/indicadores-por-area.test.mjs («TEST-TAG-018 · …», siete casos), en
+                     `npm run test -w @be/web`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, los indicadores del Resumen de Diego
+                     Sosa vistos por Sofía Paz (Nutrición y Antropometría) y por Martín Acosta (Entrenamiento), y las
+                     peticiones al abrir anotadas
 ```

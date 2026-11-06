@@ -9,6 +9,9 @@
  * - **la cobertura,** con las partes y las palabras del dominio (`partesDeLaCobertura`): cuántos días, sesiones o tomas
  *   lo sostienen y cuántos no. Antes había que bajar a «Qué se registró en el período» para leerla.
  *
+ * Los de por defecto salen de las áreas del profesional (WP-TABLERO-ALTA-GAMA TB-25; DL-163 D-12), en
+ * `indicadores-por-area.ts`; lo guardado por la cuenta manda.
+ *
  * Describen lo registrado, sin calificar: no hay verde ni rojo, flechas de tendencia ni distancia a un objetivo. Un
  * indicador que no se pudo leer, que no tiene datos o que no está disponible lo dice en su lugar, con su motivo: una
  * falla nunca es «sin datos», y «sin datos» nunca es un cero. Los que fallaron se reintentan juntos, con un solo botón en
@@ -41,34 +44,16 @@ import { claveDeLaReferencia, codificarReferencia, hoyEn } from './estado';
 import { ICONO_DE_CLASE, ICONO_DE_FALLA, iconoDeLaReferencia } from './iconos-de-metrica';
 import { MinigraficoDelIndicador } from './minigrafico';
 import { nombreDeLaReferencia } from './selector';
+import { indicadorDelEjercicio, indicadoresPorDefecto, MAXIMO_DE_INDICADORES } from './indicadores-por-area';
 import { useSeriesDelAnalisis, type Disponibles, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
 import { Pista } from '../../../../components/pista';
 
-const MAXIMO_DE_INDICADORES = 4;
 type Guardada = Extract<VistaDeAnalisis, { usage: 'SUMMARY_INDICATORS' }>;
 const SIN_EJERCICIO = { exerciseKey: null, setIndex: null, unit: null } as const;
 
-/** La carga de la primera serie de un ejercicio, en su unidad; si no registra cargas, sus series registradas. */
-function indicadorDelEjercicio(e: NonNullable<Disponibles['ejercicios']>[number]): ReferenciaDeMetrica {
-  const unidad = e.loadUnits[0];
-  return unidad ? { metricId: 'entrenamiento.carga', exerciseKey: e.exerciseKey, setIndex: e.setNumbers[0] ?? 1, unit: unidad } : { metricId: 'entrenamiento.series-registradas', exerciseKey: e.exerciseKey, setIndex: null, unit: null };
-}
-
-/**
- * Los indicadores por defecto, con lo que hay y en el orden de las áreas: calorías y proteínas registradas, la carga
- * de la primera serie del ejercicio más registrado y el peso. Es la misma elección con la que abre la entrada de
- * «Analizar». Un área sin datos o sin acceso no aporta el suyo.
- */
-export function indicadoresPorDefecto(d: Disponibles): ReferenciaDeMetrica[] {
-  const lista: ReferenciaDeMetrica[] = [];
-  if (d.nutricion) lista.push({ metricId: 'nutricion.energia', ...SIN_EJERCICIO }, { metricId: 'nutricion.proteinas', ...SIN_EJERCICIO });
-  const ejercicio = d.ejercicios?.[0];
-  if (ejercicio) lista.push(indicadorDelEjercicio(ejercicio));
-  const peso = d.antropometria?.find((m) => m.metricCode === 'peso') ?? d.antropometria?.[0];
-  if (peso) lista.push({ metricId: `antropometria.${peso.metricCode}`, ...SIN_EJERCICIO });
-  return lista.slice(0, MAXIMO_DE_INDICADORES);
-}
+// Los de por defecto salen de las áreas del profesional (TB-25; DL-163 D-12): `indicadores-por-area.ts`, sin React.
+export { indicadoresPorDefecto };
 
 export function IndicadoresDelResumen({ disponibles, formato }: { disponibles: Disponibles; formato: FormatoDeLaSintesis }) {
   const { token, sesionPerdida } = useSeguimiento();
