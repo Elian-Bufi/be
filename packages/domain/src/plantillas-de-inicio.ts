@@ -11,7 +11,8 @@
  *   saltear va detrás de una condición (`showIf`) sobre una pregunta anterior;
  * - ubicar, nunca calificar: las opciones ubican a la persona («me cuesta», «con dudas»), no la puntúan;
  * - los códigos que ya existen en FRM-SALUD, FRM-HABITOS y FRM-ENTRENAMIENTO v1 se conservan cuando la pregunta es la
- *   misma; la v2 de entrenamiento mantiene los seis de la v1 porque `CONTEXTO_DE_ENTRENAMIENTO` los precarga (DL-100).
+ *   misma; la v2 de entrenamiento mantiene los seis de la v1 porque `CONTEXTO_DE_ENTRENAMIENTO` los precargaba (DL-100;
+ *   desde DL-165 D-29, el escritorio pide el formulario entero).
  */
 import type { CampoDePlantillaV2, CondicionDeVisibilidad, OpcionDeCampo, SeccionDePlantillaV2, SubcampoDeLista, TopeDesdeTabla } from './contratos-formularios-v2';
 import type { Alcance } from './alcance';

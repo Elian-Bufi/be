@@ -34,9 +34,11 @@
  * no reusa la clave del anterior.
  *
  * PF-02 (DL-100): si el profesional llega desde la evaluación de entrenamiento (`plantilla=FRM-ENTRENAMIENTO` y
- * `volver=entrenamiento`), el cajón precarga el formulario ratificado, sus preguntas, las requeridas y el área, y al enviar
- * vuelve a Entrenamiento. Es una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de
- * enviar.
+ * `volver=entrenamiento`, o `volver=entrenamiento-plan` desde el Plan), el cajón precarga «Antes de entrenar», el «para
+ * qué» y el área, y al enviar vuelve a Entrenamiento. Desde DL-165 D-29 (Dirección, 2026-11-06: «Que venga completo») las
+ * preguntas vienen como al elegirlo en «Más»: todas pedidas y, requeridas, las que sugiere la plantilla. Antes venían
+ * solo las seis de DL-100, sin la tabla «¿Qué días y en qué momento podés?», y el tope de los días (D-5) no actuaba. Es
+ * una propuesta editable, no una excepción a la minimización: se puede desmarcar antes de enviar.
  *
  * WP-FORMULARIOS-RONDA-2 (FR-02): lo mismo desde el Resumen de Nutrición (`plantilla=FRM-NUTRICION-INICIO` y
  * `volver=nutricion`), con las preguntas como al elegirlo en «Más», y al enviar se vuelve a Nutrición. Y al elegir un
@@ -61,7 +63,7 @@ import { dejarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
-import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, precargaDeEntrenamiento, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
+import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
 import { habitosParaSumar, marcadaPorOmision, mensajeDelEnvio, motivoDeLaSugerencia, pedidoDeHabitos, sugerenciaDelCajon, type DesenlaceDeEnvio, type LecturaDeLoQueSabe } from './sumar-habitos';
 
@@ -191,17 +193,16 @@ export function PedidoDeInformacion({
       const v = await api.consultarDefinicionDePlantilla(token, p.templateId, p.latestVersionId);
       if (esta !== lecturaEnCurso.current || sesionPerdida(v)) return;
       if (!v.ok) return setLectura({ tipo: 'fallo' });
-      const preguntas = v.datos.data.sections.flatMap((s) => s.fields.map((c) => c.fieldCode));
       setLectura({ tipo: 'lista', version: v.datos.data });
       // F-05: vienen todas marcadas y, requeridas, las que la plantilla sugiere. El profesional cambia lo que necesita.
-      // DL-100: desde Entrenamiento, solo lo que la versión elegida realmente tiene; si el catálogo cambiara, no se pide
-      // una pregunta inexistente. Desde Nutrición (FR-02), como al elegirlo en «Más».
-      const marcado = precarga && desdeEntrenamiento ? precargaDeEntrenamiento(preguntas) : marcadoPorOmision(v.datos.data.sections);
+      // Igual desde «Más» que llegando desde un área: desde Nutrición (FR-02) y, desde DL-165 D-29, desde Entrenamiento,
+      // que antes precargaba solo las seis de DL-100. Lo que precarga el área es el formulario, el «para qué» y el área.
+      const marcado = marcadoPorOmision(v.datos.data.sections);
       setPedidas(marcado.pedidas);
       setRequeridas(marcado.requeridas);
       if (precarga && precargaDelOrigen) setArea(precargaDelOrigen.area);
     },
-    [token, sesionPerdida, intento, desdeEntrenamiento, precargaDelOrigen],
+    [token, sesionPerdida, intento, precargaDelOrigen],
   );
 
   // Al llegar desde un área, abrir una sola vez su formulario con la precarga.
@@ -458,8 +459,8 @@ export function PedidoDeInformacion({
                   {C.elegidas(elegidas.length, preguntas.length)} {/* DL-165 D-7: las obligatorias, contadas a la vista. */}
                   <strong data-obligatorias>{C.obligatoriasElegidas(elegidas.filter((c) => requeridas.includes(c)).length)}</strong>
                 </span>
-                {/* Desde Entrenamiento vienen solo las seis de DL-100; desde Nutrición, todas, como en «Más». */}
-                {conPrecarga && desdeEntrenamiento ? null : ` ${C.vienenTodasElegidas}`}
+                {/* Vengan de un área o de «Más», vienen todas (DL-165 D-29: también desde Entrenamiento). */}
+                {` ${C.vienenTodasElegidas}`}
               </p>
             ) : null}
           </div>
