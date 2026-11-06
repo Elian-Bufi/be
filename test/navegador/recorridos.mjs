@@ -424,14 +424,16 @@ async function grafico({ p, d }) {
   await entrar(p, d.pro.correo);
   await p.goto(`${WEB}/pro/advisees/anthropometry?id=${encodeURIComponent(d.ase.id)}&vista=evolucion`, { waitUntil: 'networkidle2' });
   await elemento(p, '.grafico__lienzo');
-  await p.waitForFunction(() => document.querySelectorAll('.grafico__lienzo g.grafico__elegible circle[r="6"]').length === 3, { timeout: ESPERA });
+  // Cada toma es una marca con su estado (WP-TABLERO-ALTA-GAMA, TB-02): se busca por lo que dice, no por su radio, que
+  // sale del lugar por toma. Lo comprobado sigue igual: la altura de cada toma, el tiempo a escala, ningún rombo y el teclado.
+  await p.waitForFunction(() => document.querySelectorAll('.grafico__lienzo g.grafico__elegible > g[data-estado="lleno"]').length === 3, { timeout: ESPERA });
   const dibujo = await p.evaluate(() => {
     const centro = (e) => {
       const r = e.getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     };
-    const puntos = [...document.querySelectorAll('.grafico__lienzo g.grafico__elegible circle[r="6"]')].map(centro);
-    const rombos = document.querySelectorAll('.grafico__lienzo g.grafico__elegible rect').length;
+    const puntos = [...document.querySelectorAll('.grafico__lienzo g.grafico__elegible > g[data-estado="lleno"]')].map(centro);
+    const rombos = document.querySelectorAll('.grafico__lienzo g.grafico__elegible > g[data-estado="no-comparable"]').length;
     // Las marcas del eje vertical son los únicos textos numéricos del dibujo (las del tiempo son fechas con letras).
     const marcas = [...document.querySelectorAll('.grafico__lienzo svg text')].filter((t) => /^[\d.,]+$/.test(t.textContent.trim()))
       .map((t) => ({ valor: Number(t.textContent.replace(/\./g, '').replace(',', '.')), y: centro(t).y }))
