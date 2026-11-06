@@ -242,3 +242,14 @@ test('TB-48 · los textos de duplicar y reordenar pasan las listas de términos'
     assert.doesNotMatch(t, /cumplimiento|adherencia|racha|px/i, t);
   }
 });
+
+test('TB-48 · se quita cualquier serie, también una del medio, y las demás conservan lo suyo', () => {
+  const series = [{ repetitions: { value: 10 } }, { repetitions: { value: 8 }, suggestedLoad: { value: 60, unit: 'kg' }, rir: null }, { repetitions: { value: 6 }, restSeconds: 180 }];
+  assert.deepEqual(X.sinLaSerie(series, 1), [series[0], series[2]], 'la del medio sale; la tercera pasa a ser la segunda con su descanso propio');
+  assert.deepEqual(X.sinLaSerie(series, 0), [series[1], series[2]]);
+  assert.equal(series.length, 3, 'no cambia la lista que recibe');
+  const ejercicio = leer('training/ejercicio-del-editor.tsx');
+  assert.match(ejercicio, /data-quitar-serie=\{n \+ 1\}\s+onClick=\{\(\) => onCambiar\(\{ sets: sinLaSerie\(p\.sets, n\) \}\)\}/);
+  assert.match(ejercicio, /aria-label=\{`\$\{EDICION\.quitarLaSerie\(n\)\} de \$\{nombre\}`\}/);
+  assert.doesNotMatch(ejercicio, /Quitar la última serie|slice\(0, -1\)/);
+});

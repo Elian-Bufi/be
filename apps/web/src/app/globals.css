@@ -10348,8 +10348,17 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 6rem;
 }
 
-.series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(:last-child) {
+.series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
   width: 8.5rem;
+}
+
+/* TB-48: quitar cada serie, al final de su fila, como un ítem de Nutrición. */
+.series-del-editor thead th.series-del-editor__columna-quitar {
+  width: 3.25rem;
+}
+
+.series-del-editor .series-del-editor__quitar {
+  text-align: right;
 }
 
 .series-del-editor tbody th[scope="row"] {
@@ -10576,8 +10585,13 @@ button.comida-del-dia__fila > .icono:last-child {
   }
 
   .series-del-editor th[scope="row"],
-  .series-del-editor .series-del-editor__nota {
+  .series-del-editor .series-del-editor__nota,
+  .series-del-editor .series-del-editor__quitar {
     grid-column: 1 / -1;
+  }
+
+  .series-del-editor .series-del-editor__quitar {
+    justify-self: end;
   }
 
   .series-del-editor th,

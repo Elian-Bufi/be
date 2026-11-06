@@ -46,7 +46,7 @@ import { Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { numeroEnCampo } from '../../../../lib/formato';
-import { COPY_DE_LOS_EDITORES as EDICION } from '../editar-la-estructura';
+import { COPY_DE_LOS_EDITORES as EDICION, sinLaSerie } from '../editar-la-estructura';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEntrenamiento } from './entrenamiento';
 
@@ -371,7 +371,12 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
               <th scope="col">
                 {COPY_ENTRENAMIENTO.descanso} <span className="nota">02:30</span>
               </th>
-              <th scope="col">{C.nota}</th>
+              <th scope="col" className="series-del-editor__columna-nota">
+                {C.nota}
+              </th>
+              <th scope="col" className="series-del-editor__columna-quitar">
+                <span className="visualmente-oculto">Quitar</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -433,6 +438,19 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
                     onChange={(e) => cambiarLaSerie(n, (x) => ({ ...x, note: e.target.value || null }))}
                   />
                 </td>
+                {/* TB-48: cada serie se quita en su fila, también una del medio; las de abajo pasan a numerarse una menos. */}
+                <td className="series-del-editor__quitar">
+                  <button
+                    type="button"
+                    className="boton boton--quieto item-del-editor__boton-de-quitar"
+                    aria-label={`${EDICION.quitarLaSerie(n)} de ${nombre}`}
+                    title={EDICION.quitarLaSerie(n)}
+                    data-quitar-serie={n + 1}
+                    onClick={() => onCambiar({ sets: sinLaSerie(p.sets, n) })}
+                  >
+                    <Icono nombre="cerrar" tamano={18} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -444,14 +462,7 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
           <Icono nombre="mas" tamano={18} />
           Agregar serie
         </button>
-        {p.sets.length > 0 ? (
-          <>
-            <p className="nota">En gris, lo que la serie toma de lo general. Escribí un valor para que tenga el suyo, o elegí «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» con la flecha de la celda. Es lo que recibe tu asesorado.</p>
-            <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ sets: p.sets.slice(0, -1) })}>
-              Quitar la última serie
-            </button>
-          </>
-        ) : null}
+        {p.sets.length > 0 ? <p className="nota">En gris, lo que la serie toma de lo general. Escribí un valor para que tenga el suyo, o elegí «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» con la flecha de la celda. Es lo que recibe tu asesorado.</p> : null}
       </div>
     </div>
   );
