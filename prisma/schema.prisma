@@ -1183,9 +1183,12 @@ enum ProcedenciaDeCatalogo {
 }
 
 /// 06 §10.7: BORRADOR y ACTIVADA. No hay salida desde ACTIVADA (06:4307; trigger en la migración).
+/// DESCARTADA (DL-163 D-21; TB-47): un borrador que nunca se activó y se descartó. Terminal, solo desde BORRADOR; la fila
+/// se guarda (06 §4.4) y no se muestra. Lo comparten las dos versiones de plan.
 enum EstadoDeVersionDePlan {
   BORRADOR
   ACTIVADA
+  DESCARTADA
 }
 
 enum OrigenDeIngesta {
@@ -1233,6 +1236,8 @@ enum TipoDeEventoDeNutricion {
   ImagenDeRecetaRetirada
   IngestaAnulada
   CantidadesDeIngestaRectificadas
+  /// WP-TABLERO-ALTA-GAMA (DL-163 D-21; TB-47): un borrador de plan que nunca se activó, descartado.
+  BorradorDePlanDescartado
 }
 
 /// T-06-31 — Elemento de catálogo: identificador BE estable (REG-06-99). Inmutable; el contenido vive en sus versiones.
@@ -1363,10 +1368,12 @@ model PlanNutricional {
 
 /// T-06-29 — Versión de plan (06 §10.7). El contenido es la jerarquía validada por @be/domain (WP-04 T3). Un solo
 /// BORRADOR por plan y una sola sucesora por versión (REG-06-12). ACTIVADA es inmutable (INV-06-109; trigger).
+/// Una sola sucesora sin contar las DESCARTADAS (TB-47): la exige un índice parcial de la migración, que Prisma no
+/// modela; por eso `predecesoraId` no es `@unique` y la relación es uno a muchos.
 model VersionDePlanNutricional {
   id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   planId              String                @map("plan_id") @db.Uuid
-  predecesoraId       String?               @unique @map("predecesora_id") @db.Uuid
+  predecesoraId       String?               @map("predecesora_id") @db.Uuid
   estado              EstadoDeVersionDePlan @default(BORRADOR)
   version             Int                   @default(1)
   versionDeObjetivoId String                @map("version_de_objetivo_id") @db.Uuid
@@ -1384,7 +1391,7 @@ model VersionDePlanNutricional {
 
   plan               PlanNutricional               @relation("VersionesDelPlan", fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   predecesora        VersionDePlanNutricional?     @relation("CadenaDePlan", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sucesora           VersionDePlanNutricional?     @relation("CadenaDePlan")
+  sucesoras          VersionDePlanNutricional[]    @relation("CadenaDePlan")
   versionDeObjetivo  VersionDeObjetivoNutricional  @relation(fields: [versionDeObjetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   revisionDeOrigen   RevisionNutricional?          @relation("PlanDeRevision", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   instantanea        InstantaneaDePlanNutricional?
@@ -1868,6 +1875,8 @@ enum TipoDeEventoDeEntrenamiento {
   EjercicioHabitualQuitado
   SesionHabitualGuardada
   SesionHabitualEditada
+  /// WP-TABLERO-ALTA-GAMA (DL-163 D-21; TB-47): un borrador de plan que nunca se activó, descartado.
+  BorradorDePlanDeEntrenamientoDescartado
 }
 
 /// D-B (docs/paquetes/WP-07.md): mismos dos nombres de evento que las transiciones de
@@ -2055,11 +2064,13 @@ model PlanDeEntrenamiento {
   @@map("plan_de_entrenamiento")
 }
 
+/// Una sola sucesora sin contar las DESCARTADAS (TB-47), con un índice parcial de la migración que Prisma no modela.
 model VersionDePlanDeEntrenamiento {
   id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   planId              String                @map("plan_id") @db.Uuid
-  predecesoraId       String?               @unique @map("predecesora_id") @db.Uuid
-  /// Dos estados, no tres: no existe VALIDADO. Validar es condición de ActivarVersion (06:4330).
+  predecesoraId       String?               @map("predecesora_id") @db.Uuid
+  /// Dos estados del 06, no tres: no existe VALIDADO. Validar es condición de ActivarVersion (06:4330). DESCARTADA es la
+  /// extensión de DL-163 D-21 (TB-47), solo para un borrador que nunca se activó.
   estado              EstadoDeVersionDePlan @default(BORRADOR)
   version             Int                   @default(1)
   versionDeObjetivoId String                @map("version_de_objetivo_id") @db.Uuid
@@ -2077,7 +2088,7 @@ model VersionDePlanDeEntrenamiento {
 
   plan                  PlanDeEntrenamiento                  @relation("VersionesDelPlanDeEntrenamiento", fields: [planId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   predecesora           VersionDePlanDeEntrenamiento?        @relation("CadenaDePlanDeEntrenamiento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sucesora              VersionDePlanDeEntrenamiento?        @relation("CadenaDePlanDeEntrenamiento")
+  sucesoras             VersionDePlanDeEntrenamiento[]       @relation("CadenaDePlanDeEntrenamiento")
   versionDeObjetivo     VersionDeObjetivoDeEntrenamiento     @relation(fields: [versionDeObjetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   revisionDeOrigen      RevisionDeEntrenamiento?             @relation("PlanDeRevisionDeEntrenamiento", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   instantanea           InstantaneaDePlanDeEntrenamiento?

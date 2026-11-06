@@ -269,8 +269,9 @@ export class PlantillasDeEntrenamientoService {
 
   /** El origen declarado tiene que ser una versión de plan del propio profesional; si no, 422 (no se revela nada del plan). */
   private async exigirVersionDePlanPropia(tx: Tx, profesionalId: string, planVersionId: string): Promise<void> {
-    const v = /^[0-9a-f-]{36}$/i.test(planVersionId) ? await tx.versionDePlanDeEntrenamiento.findUnique({ where: { id: planVersionId }, select: { plan: { select: { profesionalId: true } } } }) : null;
-    if (!v || v.plan.profesionalId !== profesionalId) throw errores.validacionFallida([{ code: 'TEMPLATE_ORIGIN_NOT_OWN', path: 'origin.planVersionId' }]);
+    const v = /^[0-9a-f-]{36}$/i.test(planVersionId) ? await tx.versionDePlanDeEntrenamiento.findUnique({ where: { id: planVersionId }, select: { estado: true, plan: { select: { profesionalId: true } } } }) : null;
+    // Una versión descartada no existe para nadie: como origen, el mismo rechazo que una inexistente (TB-47).
+    if (!v || v.estado === 'DESCARTADA' || v.plan.profesionalId !== profesionalId) throw errores.validacionFallida([{ code: 'TEMPLATE_ORIGIN_NOT_OWN', path: 'origin.planVersionId' }]);
   }
 
   private async exigirNombreLibre(tx: Tx, profesionalId: string, nombre: string, salvoId: string | null): Promise<void> {

@@ -66,6 +66,8 @@ import {
   type VinculoResponse,
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
+import { ColaDeRevisionesResponseSchema, type ColaDeRevisionesResponse, type FiltroDeLaCola } from './contratos-cola-de-revisiones';
+import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
 import {
   InvitacionCreadaResponseSchema,
   InvitacionResponseSchema,
@@ -791,6 +793,13 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {
       return llamar('GET', `/me/portfolio${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: CarteraResponseSchema });
     },
+    /**
+     * API-DSH-02 (09 v0.11 §14; DL-163 D-6): la cola de revisiones. Una API anterior a la operación responde 404: el
+     * website muestra la mesa sin esas filas (TB-14).
+     */
+    consultarColaDeRevisiones(token: string, filtro: FiltroDeLaCola = {}): Promise<Resultado<ColaDeRevisionesResponse>> {
+      return llamar('GET', `/me/review-queue${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: ColaDeRevisionesResponseSchema });
+    },
 
     // ─── PF-09 bis · «Mis habituales» (DL-109) ────────────────────────────────────────────────
     /** API-HAB-01. */
@@ -881,6 +890,18 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         token,
         claveDeIdempotencia,
         esquema: ActivacionDePlanResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /**
+     * API-PLN-07 (DL-163 D-21; TB-47): descartar un borrador que nunca se activó, con la versión que la pantalla mostró.
+     * Una versión activada responde 422 PLAN_NOT_EDITABLE; una descartada, el mismo 404 que una inexistente.
+     */
+    descartarBorradorDePlanNutricional(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/plans/${encodeURIComponent(planId)}/discard`, {
+        token,
+        claveDeIdempotencia,
+        esquema: DescarteDeBorradorResponseSchema,
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
@@ -1194,6 +1215,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         token,
         claveDeIdempotencia,
         esquema: ActivacionDePlanDeEntrenamientoResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /** API-PLE-05 (DL-163 D-21; TB-47): el par de API-PLN-07 en Entrenamiento. */
+    descartarBorradorDePlanDeEntrenamiento(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/plans/${encodeURIComponent(planId)}/discard`, {
+        token,
+        claveDeIdempotencia,
+        esquema: DescarteDeBorradorResponseSchema,
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
