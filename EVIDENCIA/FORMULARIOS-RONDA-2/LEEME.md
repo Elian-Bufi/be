@@ -111,14 +111,16 @@ son las de la prueba breve (`EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md`). Sus c
 «Prueba Uno»; y `ASE_DOS_`, «Prueba Dos».
 
 La guía se escribió desde el código. Antes de copiarla se verificó cada rótulo en el código de la candidata (la APK en
-`b5bc929`, el website en `bdbf490`). Cuatro pasos se corrigieron para que digan lo que muestra la app: la Parte 2 (la
-otra actividad está en «Tus hábitos»), la Parte 3 (el botón de la tarjeta es «Ver mis hábitos» y el de compartir es
-«Compartir mis hábitos») y la Parte 5 (al enviar, el website vuelve a Nutrición).
+`b5bc929`, el website en `bdbf490`), y todos existen. Seis pasos se ajustaron para que digan lo que muestra la app:
+- Parte 1: la bienvenida se ve con la sesión cerrada.
+- Parte 2: lo recuperado se ve al abrir de nuevo la solicitud, y la otra actividad está en «Tus hábitos».
+- Parte 3: el botón de la tarjeta es «Ver mis hábitos», y el de compartir, «Compartir mis hábitos».
+- Parte 5: al enviar, el website vuelve a Nutrición.
 
 **Parte 1 · Instalar** (teléfono)
 1. Abrir https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.21.0-candidata.1 y bajar `be-0.21.0-candidata.1-b5bc929.apk`.
 2. Instalarla encima de la 0.20, sin desinstalar.
-3. La bienvenida dice «app 0.21.0-candidata.1 · test · commit b5bc929».
+3. La bienvenida dice «app 0.21.0-candidata.1 · test · commit b5bc929». Se ve con la sesión cerrada: al instalar encima, la sesión sigue abierta.
 
 **Parte 2 · Responder por partes** («Antes de entrenar», Prueba Uno)
 1. **Computadora:** entrar a https://be-web-1ngj.onrender.com/pro con «Lic. Prueba Dos Áreas» (`PRO_`) y abrir a Prueba Uno. En la tarjeta de Entrenamiento, «Abrir Entrenamiento» → «Pedir información»: ya viene «Antes de entrenar». El embarazo viene sin marcar. «Enviar solicitud».
@@ -128,7 +130,7 @@ otra actividad está en «Tus hábitos»), la Parte 3 (el botón de la tarjeta e
    - En una pregunta opcional, elegir algo y probar «Quitar respuesta».
    - En «¿Qué días y en qué momento podés?», marcar 3 días y poner 5 en los días por semana: tiene que avisar.
    - En «¿Hacés ejercicio, deporte u otra actividad en la semana?» (parte «Tus hábitos»), elegir «Sí» y, en «Contame cuáles», cargar una con sus días y su momento.
-   - A mitad, cerrar la app desde Recientes y volver a abrirla: tiene que decir «Recuperamos lo que habías escrito».
+   - A mitad, cerrar la app desde Recientes, volver a abrirla y abrir de nuevo la solicitud: tiene que decir «Recuperamos lo que habías escrito».
    - Al final, «Repasar» y enviar.
 3. **Computadora:** actualizar. La Línea de tiempo muestra «Formulario pedido» y «Formulario respondido».
 
