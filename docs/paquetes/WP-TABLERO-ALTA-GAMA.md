@@ -632,15 +632,16 @@ Lo de Nutrición (TB-39 a TB-42 y la estimación de TB-38) sirve para el servici
 
 ## 10.2 · Decisiones de la rama de la API
 
-La rama de la API es `wp-tablero-etapa-a-api`, desde `main` 67d7f61, con su PR en borrador y sin integrar (§8.1: «la API
-se toca solo en su rama, con su CI y sin integrar»). La §10 y la §10.1 viven en la rama del website (#240); esta sección
-se une a ellas cuando las dos ramas se junten. Los oráculos de esta rama están en
+La rama de la API es `wp-tablero-etapa-a-api`, desde `main` 67d7f61, con su PR en borrador (#243) y sin integrar
+(§8.1: «la API se toca solo en su rama, con su CI y sin integrar»). La §10 y la §10.1 viven en la rama del website
+(#240); esta sección se une a ellas cuando las dos ramas se junten. Los oráculos de esta rama están en
 `WP-TABLERO-ALTA-GAMA-ORACULOS-API.md`, por la misma razón.
 
 | Parte | Estado | Dónde |
 |---|---|---|
 | TB-13 | Hecha. **Las dos pruebas fallaron contra la cartera de `main`** (la corrida de 4507193, solas): una revisión aplicada como «Mantener» sin fecha nueva seguía como vencida, y un seguimiento finalizado volvía como «Sin plan activo». **El arreglo:** la cartera (API-CAR-01) usa la definición de pendiente del dominio de revisión (REG-06-150): una revisión acordada que resolvió una revisión aplicada después no sigue como vencida, próxima ni sin fecha; y un seguimiento cerrado con «Finalizar» no vuelve como «Sin plan activo» (TA-56). La forma de API-CAR-01 no cambia. TEST-TAG-011 | `packages/domain/src/cola-de-revisiones.ts` (`revisionEnLaCartera`, `sinPlanActivoEnLaCartera`), `apps/api/src/cartera/hechos-de-revision.ts`, `apps/api/src/cartera/lectura-cartera.ts`, `test/integration/cola-de-revisiones.int-spec.ts` |
 | TB-14 | Hecha. **API-DSH-02, `GET /me/review-queue`**, de solo lectura, con la ruta, `domain` y `status` del 09 (v0.11 §14): un ítem por seguimiento abierto, con «Próxima acción pendiente» (`NEXT_ACTION_PENDING`) primero, «Revisión pendiente» (`REVIEW_DUE`, la del dominio) en el medio y «Sin revisión acordada» (`ACTIVE_PLAN_WITHOUT_REVIEW`) al final (TA-57 a TA-60); una revisión acordada a futuro no entra. Abrirla no resuelve nada. API-CAR-01 no cambia y las APK instaladas no la leen. TEST-TAG-012 y TEST-CT-DSH-02 | `cola-de-revisiones.ts`, `contratos-cola-de-revisiones.ts`, `apps/api/src/cartera/lectura-cola-de-revisiones.ts`, `cartera.controller.ts`, `consultarColaDeRevisiones` en `cliente-http.ts` |
+| TB-47 | Hecha. **API-PLN-07, `POST /nutrition/plans/{planId}/discard`, y API-PLE-05, `POST /training/plans/{planId}/discard`** (`planId` es el id de la versión, como en las rutas de hoy), con `{ expectedVersion }`, `Idempotency-Key`, PDP, auditoría y un evento por área (`BorradorDePlanDescartado` y `BorradorDePlanDeEntrenamientoDescartado`). Responden `{ data: { planId, discardedAt } }`. La versión pasa a DESCARTADA, terminal, y la fila se guarda (TA-63 y TA-64). Lo descartado no se lista, no se lee ni se escribe: el mismo 404 que lo inexistente (TA-65). Una versión activada, 422 `PLAN_NOT_EDITABLE`, antes de mirar la versión esperada (TA-66). Después de descartar se puede empezar otro borrador (otra vez la raíz, o la sucesora de la vigente) y aplicar «Ajustar» o «Sustituir» (TA-67 y TA-68). Dos migraciones: `20261106140000_tipos_de_descarte_de_borrador` (los valores de enum) y `20261106140100_descarte_de_borrador` (las dos guardas y los índices de la cadena). Lo que leen las APK instaladas no cambia. TEST-TAG-029, TEST-CT-PLN-07 y TEST-CT-PLE-05 | `packages/domain/src/descarte-de-borrador.ts`, `contratos-descarte-de-borrador.ts`, `descartar` en `apps/api/src/nutricion/planes.service.ts` y `apps/api/src/entrenamiento/planes.service.ts`, los dos controladores, las dos lecturas de la versión, `series.service.ts`, los dos `plantillas.service.ts`, `prisma/schema.prisma`, `test/integration/descartar-borrador.int-spec.ts`, `descartarBorradorDePlanNutricional` y `descartarBorradorDePlanDeEntrenamiento` en `cliente-http.ts` |
 
 **Para unir con la rama del website (#240).** No se programó acá porque son archivos que #240 cambió:
 - **«Te toca a vos» lee la cola** junto con la cartera y suma sus dos estados nuevos: «Próxima acción pendiente», con
@@ -648,6 +649,18 @@ se une a ellas cuando las dos ramas se junten. Los oráculos de esta rama están
   (D-6). Si la API responde 404 (una API anterior), la mesa se muestra sin esas filas (TB-14). Va en `pro/mesa.ts` y
   `pro/espacio-profesional.tsx`, con `consultarColaDeRevisiones`.
 - **Los textos de «Sin fecha por ahora» (TA-41) cambian con la cola** (TA-61).
+- **«Descartar el borrador» (TB-47)**, con confirmación en pantalla, en el editor de cada área y en el cuadro de «Empezar
+  el plan» (TB-46: «si ya hay un borrador, ofrece seguirlo o descartarlo»). Va en los editores de #240, con
+  `descartarBorradorDePlanNutricional` y `descartarBorradorDePlanDeEntrenamiento` y la versión que la pantalla mostró.
+  Los textos de TA-70: la pregunta «¿Descartás este borrador?»; el efecto, «La persona nunca lo vio. Después podés empezar
+  otro desde una plantilla, desde la versión vigente o desde cero.»; y los botones «Descartar el borrador» y «Seguir con
+  el borrador», con el foco en el segundo. Si el borrador nació de una revisión, se suma «La revisión queda aplicada.».
+  Después de descartar, la ficha vuelve a «Empezar el plan» (o a la versión vigente) con «Descartaste el borrador.». Con
+  422: «Esta versión ya se activó: no se descarta nunca.»; con 409: «El borrador cambió desde que lo abriste. Actualizá y
+  volvé a intentar.»; con 404: «Este borrador ya no está.». Hasta que esta rama se integre, el cuadro ofrece solo seguir
+  el borrador, como hoy.
+- **Una revisión cuyo borrador se descartó** conserva `createdPlanId` (es historia), y abrir esa versión da 404: el enlace
+  al borrador se oculta (TA-68).
 
 **Las decisiones** (se ratifican antes de integrar; las que cambian la forma de un contrato, también):
 
@@ -684,3 +697,44 @@ se une a ellas cuando las dos ramas se junten. Los oráculos de esta rama están
   leerla por conjuntos va con TB-18, después de la lectura de la cartera por conjuntos (#222), que no está integrada.
   Cuando #222 se integre, el arreglo de TB-13 se lleva a su lectura: son dos llamadas, `aplicacionPosteriorA` y
   `cerradoConFinalizar`. *Otra opción:* armarla ya por conjuntos, que choca con #222.
+- **TA-63 · Descartar guarda la fila y la marca DESCARTADA; quién y cuándo, en el evento y en la auditoría.** Es un
+  estado terminal nuevo de la versión de plan, solo desde BORRADOR, que la guarda de la base admite sin cambiar contenido,
+  objetivo, próxima revisión, origen de plantilla, plan, predecesora ni autoría. La base sigue sin dejar borrar una versión
+  (06 §4.4: la historia es por adición). Quién y cuándo quedan en el evento nuevo de cada área (actor y momento) y en la
+  auditoría de la operación, en la misma transacción: no hacen falta columnas. *Otra opción:* borrar la fila, que la base
+  prohíbe y que dejaría la auditoría apuntando a nada; o columnas de quién y cuándo, que repiten el evento.
+- **TA-64 · La máquina del 06 queda literal; el descarte es una extensión aparte.** `TRANSICIONES_DE_VERSION_DE_PLAN` y
+  su par de Entrenamiento siguen con dos estados, porque sus pruebas son oráculos del 06 («exactamente dos estados»,
+  06:5149-5162). El descarte vive en `descarte-de-borrador.ts` (`evaluarDescarteDeBorrador`, `cadenaSinDescartadas`) y
+  en las dos guardas de la base, con la cita de D-21. *Otra opción:* sumar la transición a la lista blanca del 06, que
+  cambia un oráculo sin que el 06 cambie.
+- **TA-65 · Lo descartado no existe para nadie.** No se lista (API-NUT-08 y API-TRN-08, tampoco sin filtro), no se lee
+  (API-NUT-09, API-TRN-09 y API-SER-01) ni se escribe (editar, validar, activar o descartar otra vez): el mismo 404 no
+  revelable que lo inexistente. Como origen de «Guardar como plantilla», el mismo 422 `TEMPLATE_ORIGIN_NOT_OWN` que un
+  origen inexistente. Si alguna lectura dejara pasar una descartada, la lectura falla cerrado en vez de mostrarla como
+  borrador. *Otra opción:* un estado `DISCARDED` en la API o un 410, que cambian lo que leen las APK instaladas (DL-152).
+- **TA-66 · Una versión activada responde 422 `PLAN_NOT_EDITABLE`, antes de mirar la versión esperada.** Con su texto,
+  «Esta versión ya se activó: no se descarta nunca.». Es el código que el editor ya conoce para una activada (API-NUT-10
+  y 11), y como al editar, la inmutabilidad se informa antes que la versión: con una versión vieja también es 422. *Otra
+  opción:* `INVALID_STATE_TRANSITION`, que es genérico; o mirar la versión primero, que respondería 409 a quien no puede
+  descartar con ninguna versión.
+- **TA-67 · La cadena no cuenta lo descartado.** El índice único de la predecesora pasa a parcial (`…_una_sucesora`, sin
+  las descartadas), y `…_una_raiz` también; en `schema.prisma`, `predecesoraId` deja de ser `@unique` y la relación
+  pasa a uno a muchos (`sucesoras`), porque Prisma no modela índices parciales. La sucesión del dominio se evalúa sin lo
+  descartado. Así, el borrador nuevo vuelve a ser la raíz de un plan que nunca se activó, o la sucesora de la vigente, y
+  activar sigue exigiendo la sucesora directa de la efectiva. *Otra opción:* soltar la predecesora del borrador
+  descartado, que cambia su historia.
+- **TA-68 · Un borrador que nació de una revisión también se descarta, y la revisión queda aplicada.** Es el caso que
+  traba «Ajustar» con un borrador viejo. La revisión conserva `createdPlanId`, porque es historia; abrir esa versión da
+  404. Para ajustar otra vez, se registra otra revisión o se empieza otro borrador. *Otra opción:* no dejar descartar un
+  borrador que nació de una revisión, que lo vuelve a trabar todo.
+- **TA-69 · La respuesta es mínima, y el descarte no aparece en la línea de tiempo.** `{ data: { planId, discardedAt } }`:
+  con una versión descartada no se hace nada más. La línea de tiempo (API-DSH-04) arma sus entradas con las versiones
+  activadas, no con los eventos, así que el descarte no aparece: el borrador nunca se le presentó a la persona. La
+  cartera y el cajón (API-DSH-03) ya leen solo los borradores: no cambian. *Otra opción:* devolver la versión entera con
+  un estado nuevo, que pide sumarlo al esquema del plan (DL-152); o una entrada «Borrador descartado», que cuenta trabajo
+  del profesional y no algo de la persona.
+- **TA-70 · Los textos de «Descartar el borrador», para el website.** La pregunta, el efecto y los dos botones de la lista
+  de arriba, con el foco en «Seguir con el borrador»: lo que no se puede deshacer no queda a un Enter. Se dice
+  «descartar», no «eliminar» ni «borrar»: la fila se guarda. *Otra opción:* «Eliminar el borrador», que dice algo que no
+  pasa.
