@@ -406,7 +406,7 @@ const loQueMuestraElCajon = (page) =>
   page.evaluate(() => {
     const d = document.querySelector('dialog.cajon[open]');
     if (!d) return { abierto: false };
-    const texto = (sel) => d.querySelector(sel)?.textContent?.replace(/s+/g, ' ').trim() ?? null;
+    const texto = (sel) => d.querySelector(sel)?.textContent?.replace(/\s+/g, ' ').trim() ?? null;
     return {
       abierto: true,
       posicion: texto('.cajon__posicion'),
