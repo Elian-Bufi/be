@@ -5521,6 +5521,30 @@ actualice.
 - Tres comentarios del dominio decían que ninguna APK lee API-HBT: los del contrato, del cliente y de `openapi.ts`. Ahora
   dicen que su forma quedó congelada y que lo que la cambie va en una operación nueva.
 
+**2026-11-06 · la 0.22.0-candidata.1** (`1254269`, la ronda 2.1 de los formularios de DL-165), congelada con estos pasos en
+un PR en borrador. Se sumó a `VIGENTES` sin sacar la 0.20.0-candidata.1 ni la 0.21.0-candidata.1, porque Dirección
+todavía no actualizó.
+- Lee 88 operaciones: las 86 de la 0.21, todas con la misma forma, y API-HBT-08 y 09, las de la persona que responden un
+  pedido de acceso a sus hábitos (la lista de los que esperan, y «Sí, que los vea» o «No, por ahora»). API-HBT-06 y 07 son
+  del profesional y las llama el website.
+- Las cabeceras (`X-BE-Capabilities: training-set-targets-1,forms-format-3`), las versiones de los textos, el sobre de
+  error y los detalles de rechazo que lee son los de la 0.21. No suma reglas que JSON Schema no represente.
+- La novedad del pedido no cambia ninguna lectura. En NOV-01 y 02, `kind` y `open.view` ya eran texto: la 0.22 la destaca
+  por su tipo y la abre en «Mis hábitos» con el pedido (`open.referenceId`).
+- El script la congeló sin cambios. Su aviso sobre `reanudarSesion` es el de las versiones anteriores: la APK nombra así el
+  rótulo de un botón (`e.reanudarSesion`), no el método del cliente.
+- La prueba de integración suma un escenario, el de los pedidos de acceso:
+  - la novedad, que la 0.22 abre en «Mis hábitos» con ese pedido;
+  - la lista, vacía y con un pedido;
+  - «No, por ahora», que no toca la autorización, y el 409 de responderlo otra vez;
+  - «Sí, que los vea» sin compartir todavía, que la activa solo para quien pidió;
+  - el pedido nuevo a los 7 días y el «Sí» con la autorización activa, con el 409 de la versión que se vio antes;
+  - el 404 de un pedido que no existe y el 422 de uno cuyo vínculo terminó, que ya no se lista.
+- Los comentarios del escenario de «Mis hábitos» y del de las novedades dicen ahora qué cambia con la 0.22. El de «Mis
+  hábitos» corre igual en la 0.21 y en la 0.22.
+- La prueba del dominio fija lo que lee cada una: la 0.21, HBT-01 a 04; la 0.22, además 08 y 09; ninguna, 05 a 07. Los
+  comentarios del contrato, del cliente y de `openapi.ts` dicen que la forma de 08 y 09 también quedó congelada.
+
 Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
 
 **La regla para promover.** Una candidata no pasa a estable mientras:

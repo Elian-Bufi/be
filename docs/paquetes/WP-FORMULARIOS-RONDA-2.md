@@ -337,7 +337,7 @@ FR-10: el 2026-11-06 Dirección **ratificó D-14, D-16 y D-18** y **reemplazó D
 | FR-13 | «Sumar «Tus hábitos»» al pedir un formulario de área | Sí | D-22 | API-HBT-07 dice lo que ve este profesional; el cajón marca o no la casilla con `sugerenciaDeSumarHabitos` y su fecha; con la casilla, dos solicitudes en un paso, y si una falla se dice cuál; una prueba de integración fija que lo que la persona respondió a otro profesional no aparece |
 | FR-14 | «Pedir acceso a sus hábitos», la novedad y el límite | Sí | D-17 nueva; D-23 a D-25 | API-HBT-06 a 09; la novedad `HABITS_ACCESS_REQUESTED` con el aviso genérico; una pendiente por vez y 7 días entre pedidos, en el dominio y en la base; «Sí» es compartir (texto y A3) y «No, por ahora» no cambia nada; sumarlo desde «Mis hábitos» da por aceptado su pedido; la tarjeta «Sus hábitos» del website sin acceso ofrece pedirlo |
 | FR-15 | La APK 0.22: la novedad destacada, el pedido, «Tus hábitos» aparte y «Mis hábitos» | Sí (lee 08 y 09) | D-17 nueva, D-18; D-26, D-27 | «Importante» con palabras; el pedido en «Mis hábitos» y en Inicio, con las dos respuestas del mismo peso; quien tiene un pedido no recibe además la pregunta por el profesional nuevo; «Tus hábitos» aparte se responde y trae «¿Sigue igual?»; «Cambiar con quiénes» vuelve a sumar a quien dijo que no |
-| FR-16 | La candidata 0.22, sus lecturas congeladas y la evidencia, con TalkBack | No | — | Fuera de esta rama: la construye y la publica Dirección. La guía de la prueba, en `EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`, «La prueba de la 0.22» |
+| FR-16 | La candidata 0.22, sus lecturas congeladas y la evidencia, con TalkBack | No | — | Fuera de esta rama: la construye y la publica Dirección. La guía de la prueba, en `EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`, «La prueba de la 0.22» *(2026-11-06: publicada como prerelease, la 0.22.0-candidata.1; los oráculos TEST-FR2-011 a 016, en `WP-FORMULARIOS-RONDA-2-ORACULOS.md`; la publicación y las lecturas congeladas, en el mismo LEEME.)* |
 
 ### 8.3 Las plantillas
 
@@ -400,6 +400,8 @@ Lo que lee la 0.21 (HBT-01 a 04) no cambia de forma (DL-152): todo lo nuevo va e
   - «Mis hábitos» (HBT-01 a 04) no cambia de forma, con o sin un pedido esperando.
 - **0.22:** suma API-HBT-08 y 09. Sus lecturas se congelan desde su tag, como las de la 0.21 (DL-152): la prueba del dominio
   ya admite que una APK desde la 0.21 lea las de la persona (01 a 04, 08 y 09) y nunca las del profesional (05 a 07).
+  *(2026-11-06: la 0.22.0-candidata.1, `1254269`, congelada. Lee 88 operaciones, las 86 de la 0.21 con la misma forma y
+  HBT-08 y 09, y se sumó a `VIGENTES` sin sacar la 0.20 ni la 0.21; nota en DL-152.)*
 
 ### 8.6 Decisiones de la implementación (a ratificar)
 

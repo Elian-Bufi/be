@@ -4,8 +4,8 @@
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
  * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2, la 0.20.0-candidata.1 y la 0.21.0-candidata.1; la 0.17.0-candidata.3 y la 0.18.0-candidata.1
- * salieron el 2026-11-05), como la pide esa APK, con las capacidades que declara, y lee la respuesta real
+ * (hoy la estable 0.13.2, la 0.20.0-candidata.1, la 0.21.0-candidata.1 y la 0.22.0-candidata.1; la 0.17.0-candidata.3 y
+ * la 0.18.0-candidata.1 salieron el 2026-11-05), como la pide esa APK, con las capacidades que declara, y lee la respuesta real
  * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
  * no pasa hasta que cada lectura suya tenga escenario.
  *
@@ -18,7 +18,8 @@
  *
  * DL-165, ronda 2.1 (2026-11-06): la 0.21 responde «Tus hábitos» aparte (FRM-HABITOS v2, formato 3, una sola parte) y
  * sigue respondiendo una Solicitud de la ronda 2 pedida antes; lee la novedad nueva («Te piden ver tus hábitos», un tipo y una
- * vista que no conoce) con su esquema; y «Mis hábitos» no cambia de forma aunque haya un pedido de acceso esperando.
+ * vista que no conoce) con su esquema; y «Mis hábitos» no cambia de forma aunque haya un pedido de acceso esperando. La
+ * 0.22.0-candidata.1 lee además los pedidos (API-HBT-08) y los responde (API-HBT-09), y abre «Mis hábitos» desde la novedad.
  */
 import type { INestApplication } from '@nestjs/common';
 import { CAMPOS_DE_HABITOS, CAPACIDAD_FORMULARIOS_FORMATO_3, type RespuestaDeCampoV2Entrada } from '@be/domain';
@@ -58,7 +59,7 @@ import {
   VERSION_NUTRICION_INICIO_V2,
   VERSION_NUTRICION_INICIO_V3,
 } from './soporte-plantillas-de-inicio';
-import { pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
+import { finalizar, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -723,8 +724,8 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const mios = async (): Promise<MisHabitos> => (await apk.pide('API-HBT-01', { token })).body.data as MisHabitos;
     const de = (d: MisHabitos, pro: { id: string }) => d.professionals.find((p) => p.professional.identityId === pro.id);
 
-    // Ronda 2.1: el entrenador le pidió acceso (API-HBT-06, del website). La 0.21 no conoce los pedidos, y lo que lee de
-    // «Mis hábitos» no cambia de forma.
+    // Ronda 2.1: el entrenador le pidió acceso (API-HBT-06, del website). La 0.21 no conoce los pedidos (la 0.22 los lee en
+    // el bloque que sigue), y lo que lee de «Mis hábitos» no cambia de forma.
     await conSesion(app, ent.token).post(`/api/v1/advisees/${ase.id}/habits/access-requests`).send({ scope: 'ENTRENAMIENTO' }).expect(201);
     // Sin nada contado y sin compartir.
     expect(await mios()).toMatchObject({ current: null, history: [], sharing: { status: 'NOT_GIVEN', version: null } });
@@ -756,7 +757,7 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const sumada = (await apk.pide('API-HBT-03', { token, cuerpo: { expectedVersion: conLaNueva.sharing.version, textVersionId: conLaNueva.text.id, professionalIds: [nut.id, ant.id], declinedProfessionalIds: [] } }))
       .body.data as { sharing: { version: string } };
 
-    // Con la 0.21, sumar al entrenador desde «Cambiar con quiénes» responde que sí a su pedido (D-25).
+    // Sumar al entrenador desde «Cambiar con quiénes» (en la 0.21 y en la 0.22) responde que sí a su pedido (D-25).
     const conElEntrenador = await mios();
     const sumadoElEntrenador = (
       await apk.pide('API-HBT-03', { token, cuerpo: { expectedVersion: sumada.sharing.version, textVersionId: conElEntrenador.text.id, professionalIds: [nut.id, ant.id, ent.id], declinedProfessionalIds: [] } })
@@ -768,6 +769,94 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     expect((await mios()).sharing.status).toBe('WITHDRAWN');
     expect(apk.rechazos()).toEqual([]);
   });
+
+  siLee(
+    'API-HBT-08',
+    'los pedidos de acceso a sus hábitos: la novedad que abre «Mis hábitos», «No, por ahora», «Sí, que los vea» sin compartir todavía y con la autorización activa, y los que ya no esperan (HBT-08 y 09, NOV-01 y 02, DL-165 D-17 nueva y D-25)',
+    async () => {
+      const e = etiqueta(`${corta}-acc`);
+      const ase = await prepararAsesorado(app, e, { a3: true });
+      const nut = await prepararProfesional(app, `${e}-nut`, ['NUTRICION']);
+      const ent = await prepararProfesional(app, `${e}-ent`, ['ENTRENAMIENTO']);
+      const ant = await prepararProfesional(app, `${e}-ant`, ['ANTROPOMETRIA']);
+      await vinculoCompleto(app, nut, ase, 'NUTRICION');
+      await vinculoCompleto(app, ent, ase, 'ENTRENAMIENTO');
+      const vAnt = await vinculoCompleto(app, ant, ase, 'ANTROPOMETRIA');
+      const token = ase.token;
+      interface PedidoDeAcceso {
+        readonly accessRequestId: string;
+        readonly version: string;
+        readonly professional: { readonly identityId: string };
+        readonly scope: { readonly code: string };
+      }
+      interface MisHabitos {
+        readonly sharing: { readonly status: string; readonly version: string | null };
+        readonly professionals: readonly { readonly professional: { readonly identityId: string }; readonly sharing: string }[];
+        readonly text: { readonly id: string };
+      }
+      const pendientes = async (): Promise<PedidoDeAcceso[]> => (await apk.pide('API-HBT-08', { token })).body.data as PedidoDeAcceso[];
+      const mios = async (): Promise<MisHabitos> => (await apk.pide('API-HBT-01', { token })).body.data as MisHabitos;
+      const comoLosRecibe = (d: MisHabitos) => Object.fromEntries(d.professionals.map((p) => [p.professional.identityId, p.sharing]));
+      /** API-HBT-06, desde el website: el profesional pide acceso desde su área. */
+      const pedirAcceso = async (pro: { token: string }, scope: string): Promise<string> =>
+        (await conSesion(app, pro.token).post(`/api/v1/advisees/${ase.id}/habits/access-requests`).send({ scope }).expect(201)).body.data.accessRequestId as string;
+      /** El cuerpo de API-HBT-09 como lo arma la app (`respuestaAlPedido`): «Sí» con la autorización y el texto que vio. */
+      const si = (version: string, d: MisHabitos) => ({ expectedVersion: version, answer: 'SHARE', sharing: { expectedVersion: d.sharing.version, textVersionId: d.text.id } });
+      const noPorAhora = (version: string) => ({ expectedVersion: version, answer: 'NOT_NOW', sharing: null });
+
+      await apk.pide('API-HBT-02', { token, cuerpo: { expectedVersion: null, answers: HABITOS }, status: 201 });
+      expect(await pendientes()).toEqual([]);
+
+      // El entrenador pide acceso. Le llega a la persona la novedad «Te piden ver tus hábitos», que esta APK destaca como
+      // «Importante» por su tipo y abre en «Mis hábitos», con el pedido.
+      const deEnt = await pedirAcceso(ent, 'ENTRENAMIENTO');
+      const novedades = (await apk.pide('API-NOV-01', { token, consulta: { limit: '30' } })).body.data as { newsId: string; kind: string; open: { view: string; referenceId: string | null } }[];
+      const novedad = novedades.find((n) => n.kind === 'HABITS_ACCESS_REQUESTED');
+      expect(novedad?.open).toEqual({ view: 'MY_HABITS', referenceId: deEnt });
+      await apk.pide('API-NOV-02', { token, params: { newsId: novedad!.newsId } });
+      const [pedido] = await pendientes();
+      expect(pedido).toMatchObject({ accessRequestId: deEnt, version: 'v1', professional: { identityId: ent.id }, scope: { code: 'ENTRENAMIENTO' } });
+
+      // «No, por ahora»: no toca la autorización, y el pedido deja de esperar. Responderlo otra vez es el 409 que la app dice
+      // como «ese pedido ya no está».
+      expect((await apk.pide('API-HBT-09', { token, params: { accessRequestId: deEnt }, cuerpo: noPorAhora(pedido!.version) })).body.data.answer).toBe('NOT_NOW');
+      await apk.pide('API-HBT-09', { token, params: { accessRequestId: deEnt }, cuerpo: noPorAhora(pedido!.version), status: 409 });
+      expect(await pendientes()).toEqual([]);
+      expect((await mios()).sharing).toMatchObject({ status: 'NOT_GIVEN', version: null });
+
+      // «Sí, que los vea» a la nutricionista, sin compartir todavía: con el texto que la app muestra, la autorización se activa
+      // solo para ella, y el entrenador sigue sin verlos.
+      const deNut = await pedirAcceso(nut, 'NUTRICION');
+      const sinCompartir = await mios();
+      expect((await apk.pide('API-HBT-09', { token, params: { accessRequestId: deNut }, cuerpo: si('v1', sinCompartir) })).body.data.answer).toBe('SHARE');
+      const conLaNutricionista = await mios();
+      expect(conLaNutricionista.sharing).toMatchObject({ status: 'ACTIVE', version: 'v1' });
+      expect(comoLosRecibe(conLaNutricionista)).toMatchObject({ [nut.id]: 'RECEIVES', [ent.id]: 'DOES_NOT_RECEIVE' });
+      expect(await pendientes()).toEqual([]);
+
+      // D-17 nueva: la persona cambia de opinión. El entrenador vuelve a pedir a los 7 días (acá, el pedido directo en la base,
+      // como en `habitos-de-la-persona.int-spec.ts`) y ella dice que sí con la autorización activa: con la autorización que vio
+      // antes, el 409 que la app dice como «cambió mientras respondías»; con la vigente, lo suma.
+      const componente = await prisma.alcanceDeVinculo.findFirstOrThrow({ where: { alcance: 'ENTRENAMIENTO', estado: 'ACEPTADO', vinculo: { profesionalId: ent.id, asesoradoId: ase.id } } });
+      const otraVez = await prisma.pedidoDeAccesoAHabitos.create({ data: { profesionalId: ent.id, asesoradoId: ase.id, alcanceDeVinculoId: componente.id, alcance: 'ENTRENAMIENTO', pedidoEn: new Date(), procedencia: {} } });
+      expect((await pendientes()).map((p) => p.accessRequestId)).toEqual([otraVez.id]);
+      await apk.pide('API-HBT-09', { token, params: { accessRequestId: otraVez.id }, cuerpo: si('v1', sinCompartir), status: 409 });
+      await apk.pide('API-HBT-09', { token, params: { accessRequestId: otraVez.id }, cuerpo: si('v1', await mios()) });
+      const conLosDos = await mios();
+      expect(conLosDos.sharing).toMatchObject({ status: 'ACTIVE', version: 'v2' });
+      expect(comoLosRecibe(conLosDos)).toMatchObject({ [nut.id]: 'RECEIVES', [ent.id]: 'RECEIVES' });
+
+      // Los que ya no esperan: uno que no existe, el 404; el de la antropometrista, con el vínculo terminado, ya no se lista, y
+      // decirle que sí es el 422 que la app también dice como «ese pedido ya no está».
+      await apk.pide('API-HBT-09', { token, params: { accessRequestId: randomUUID() }, cuerpo: noPorAhora('v1'), status: 404 });
+      const deAnt = await pedirAcceso(ant, 'ANTROPOMETRIA');
+      expect((await pendientes()).map((p) => p.accessRequestId)).toEqual([deAnt]);
+      await finalizar(app, token, vAnt.vinculoId, await versionDeVinculo(app, token, vAnt.vinculoId)).expect(200);
+      expect(await pendientes()).toEqual([]);
+      await apk.pide('API-HBT-09', { token, params: { accessRequestId: deAnt }, cuerpo: si('v1', await mios()), status: 422 });
+      expect(apk.rechazos()).toEqual([]);
+    },
+  );
 
   it('la antropometría: la evolución propia, completa y de una medida (ANT-06-PROPIA)', async () => {
     const c = await circuitoAntropometrico(app, prisma, etiqueta(`${corta}-ant`));
@@ -806,9 +895,9 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       .send({ originScope: 'NUTRICION', purpose: 'CONTEXT_FOR_YOUR_AREA', recipients: { mode: 'ALL' }, text: 'Nota sintética para la APK.', references: [{ type: 'NUTRITION_PLAN_VERSION', id: c.planId }] })
       .expect(201);
 
-    // DL-165, ronda 2.1: el entrenador le pide ver sus hábitos (API-HBT-06). La novedad trae un tipo y una vista que estas APK
-    // no conocen (`HABITS_ACCESS_REQUESTED`, `MY_HABITS`): la leen con su esquema, la muestran con su texto y, al abrirla, se
-    // quedan en Novedades.
+    // DL-165, ronda 2.1: el entrenador le pide ver sus hábitos (API-HBT-06). La novedad trae un tipo y una vista que la 0.20 y
+    // la 0.21 no conocen (`HABITS_ACCESS_REQUESTED`, `MY_HABITS`): la leen con su esquema, la muestran con su texto y, al
+    // abrirla, se quedan en Novedades. La 0.22 la destaca y la abre en «Mis hábitos» (el bloque de los pedidos de acceso).
     await conSesion(app, ent.token).post(`/api/v1/advisees/${c.ase.id}/habits/access-requests`).send({ scope: 'ENTRENAMIENTO' }).expect(201);
     const novedades = (await apk.pide('API-NOV-01', { token, consulta: { limit: '30' } })).body.data as { newsId: string; kind: string; open: { view: string } }[];
     expect(novedades.length).toBeGreaterThan(0);
