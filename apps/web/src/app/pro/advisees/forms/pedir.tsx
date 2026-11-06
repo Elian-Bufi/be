@@ -42,8 +42,13 @@
  * `volver=nutricion`), con las preguntas como al elegirlo en «Más», y al enviar se vuelve a Nutrición. Y al elegir un
  * formulario de inicio, venga de donde venga, se sugiere su «para qué» si el profesional no escribió uno
  * (`propositoAlElegir`): lo que escribió no se pisa.
+ *
+ * WP-FORMULARIOS-RONDA-2, ronda 2.1 (DL-165 D-15 nueva; D-22): los hábitos son un formulario aparte, «Tus hábitos». Al
+ * elegir uno de área que no los trae, el cajón ofrece **«Sumar «Tus hábitos»»**, marcado o no según lo que este profesional
+ * ya ve de la persona (API-HBT-07; `sumar-habitos.ts`). Con la casilla marcada se envían las dos solicitudes en un paso:
+ * primero la de área y después la de hábitos, cada una con su clave. Si una falla, se dice cuál.
  */
-import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
+import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_HABITOS, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -53,10 +58,14 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, type Resultado } from '../../../../lib/api';
 import { dejarAvisoPara } from '../../../../lib/aviso-al-llegar';
+import { diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, precargaDeEntrenamiento, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
+import { habitosParaSumar, marcadaPorOmision, mensajeDelEnvio, motivoDeLaSugerencia, pedidoDeHabitos, sugerenciaDelCajon, type DesenlaceDeEnvio, type LecturaDeLoQueSabe } from './sumar-habitos';
+
+const H = COPY_HABITOS.web;
 
 /** Los rechazos de FRM-03 que dependen de lo elegido: se dicen, en vez de «el servicio no está disponible». */
 const RECHAZO_DE_SOLICITUD: Readonly<Record<string, string>> = {
@@ -90,7 +99,15 @@ export function PedidoDeInformacion({
   const id = useId();
   const router = useRouter();
   const intento = useClaveDeIntento();
+  /** Ronda 2.1 · la clave del segundo pedido, el de «Tus hábitos»: otro intento, con su propia clave. */
+  const intentoDeHabitos = useClaveDeIntento();
   const [catalogo, setCatalogo] = useState<Resultado<readonly Plantilla[]> | null>(null);
+  /** Ronda 2.1 (D-22) · lo que este profesional sabe de los hábitos de la persona (API-HBT-07), para sugerir «Tus hábitos». */
+  const [loQueSabe, setLoQueSabe] = useState<LecturaDeLoQueSabe | null>(null);
+  /** La casilla «Sumar «Tus hábitos»», si el profesional la tocó; si no, vale lo que sugiere el dominio. */
+  const [sumarElegido, setSumarElegido] = useState<boolean | null>(null);
+  /** La versión vigente de «Tus hábitos» (API-FRI-01), leída la primera vez que se necesita. */
+  const versionDeHabitos = useRef<VersionDePlantillaV2 | null>(null);
   const [elegido, setElegido] = useState<Plantilla | null>(null);
   const [lectura, setLectura] = useState<Lectura | null>(null);
   const [pedidas, setPedidas] = useState<readonly string[]>([]);
@@ -134,13 +151,25 @@ export function PedidoDeInformacion({
     setCatalogo(lista.ok ? { ok: true, datos: lista.datos.data } : (lista as Resultado<never>));
   }, [token, sesionPerdida]);
 
+  /**
+   * API-HBT-07: solo lo que este profesional ya puede ver de los hábitos de la persona. El 404 de lo inexistente (hoy no la
+   * acompaña con el acceso vigente) deja la casilla sin ofrecer; otra falla la deja sin marcar y sin motivo.
+   */
+  const cargarLoQueSabe = useCallback(async () => {
+    setLoQueSabe({ tipo: 'cargando' });
+    const r = await api.habitosParaElProfesional(token, asesoradoId);
+    if (sesionPerdida(r)) return;
+    setLoQueSabe(r.ok ? { tipo: 'listo', datos: r.datos.data } : r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'sin-acceso' } : { tipo: 'fallo' });
+  }, [token, asesoradoId, sesionPerdida]);
+
   // El catálogo se lee la primera vez que se abre el cajón: entrar a «Solicitudes» no lo pide.
   const catalogoPedido = useRef(false);
   useEffect(() => {
     if (!abierto || catalogoPedido.current) return;
     catalogoPedido.current = true;
     void cargar();
-  }, [abierto, cargar]);
+    void cargarLoQueSabe();
+  }, [abierto, cargar, cargarLoQueSabe]);
 
   /** Elige un formulario y lee su versión. Si se elige otro antes de que llegue, la respuesta vieja no pisa a la nueva. */
   const lecturaEnCurso = useRef(0);
@@ -151,6 +180,8 @@ export function PedidoDeInformacion({
       setElegido(p);
       setLectura({ tipo: 'cargando' });
       setConPrecarga(precarga);
+      // Otro formulario: la casilla de «Tus hábitos» vuelve a lo que sugiere el dominio.
+      setSumarElegido(null);
       // FR-02 · el «para qué» que sugiere el formulario, si el profesional no escribió uno: no es algo que él escribió.
       const paraQue = propositoAlElegir(propositoActual.current, sugerencia.current, p.key);
       sugerencia.current = paraQue.sugerido;
@@ -208,6 +239,35 @@ export function PedidoDeInformacion({
   /** Hay un formulario elegido y sus preguntas todavía no están (se están leyendo, o esa lectura falló): no se puede enviar. */
   const sinPreguntasTodavia = elegido !== null && !version;
 
+  // Ronda 2.1 (D-22) · «Sumar «Tus hábitos»»: si se ofrece con el formulario elegido, y si viene marcada.
+  const habitos = habitosParaSumar({ version, catalogo: catalogo?.ok ? catalogo.datos : null, lectura: loQueSabe });
+  const sugerenciaDeHabitos = sugerenciaDelCajon(loQueSabe, new Date().toISOString());
+  const conHabitos = habitos !== null && (sumarElegido ?? marcadaPorOmision(sugerenciaDeHabitos));
+  const motivo = habitos ? motivoDeLaSugerencia(sugerenciaDeHabitos, (iso) => diaSinElAnioEnCurso(iso)) : null;
+
+  /** El motivo de un rechazo de FRM-03 o de la lectura de una versión, dicho para el profesional. */
+  const motivoDe = (r: Resultado<unknown>): string => (r.ok ? '' : (RECHAZO_DE_SOLICITUD[r.tipo === 'API' ? r.codigo : ''] ?? mensajeDeFallo(r, COPY_VINCULO.recursoNoDisponible)));
+
+  /**
+   * El segundo pedido, el de «Tus hábitos», en la misma área: con todas sus preguntas, requeridas las que sugiere la
+   * plantilla. Un resultado incierto se reintenta una vez con la misma clave (no duplica: es idempotente).
+   */
+  async function enviarHabitos(p: Plantilla, areaDeLosHabitos: Alcance): Promise<DesenlaceDeEnvio> {
+    if (versionDeHabitos.current?.templateVersionId !== p.latestVersionId) {
+      const v = await api.consultarDefinicionDePlantilla(token, p.templateId, p.latestVersionId);
+      if (!v.ok) return { ok: false, incierto: false, motivo: motivoDe(v) };
+      versionDeHabitos.current = v.datos.data;
+    }
+    const cuerpo = pedidoDeHabitos(versionDeHabitos.current, areaDeLosHabitos);
+    let r = await api.crearSolicitudDeFormulario(token, asesoradoId, cuerpo, intentoDeHabitos.actual());
+    if (esIncierto(r)) r = await api.crearSolicitudDeFormulario(token, asesoradoId, cuerpo, intentoDeHabitos.actual());
+    // Termina este intento, salga como salga: el próximo pedido es otro (una clave retenida no se reusa con otro cuerpo).
+    intentoDeHabitos.descartar();
+    // La sesión perdida sigue su camino de siempre; lo que se diga después ya no lo lee nadie.
+    if (sesionPerdida(r)) return { ok: false, incierto: false, motivo: COPY_VINCULO.recursoNoDisponible };
+    return r.ok ? { ok: true } : { ok: false, incierto: esIncierto(r), motivo: motivoDe(r) };
+  }
+
   async function enviar() {
     if (enviando || sinPreguntasTodavia) return;
     const encontradas: { -readonly [K in keyof Faltas]: Faltas[K] } = {};
@@ -218,6 +278,8 @@ export function PedidoDeInformacion({
     setFaltas(encontradas);
     if (Object.keys(encontradas).length > 0 || !version || !areaDelPedido) return setIntentosConFaltas((n) => n + 1);
 
+    // Lo que estaba elegido al tocar «Enviar»: la casilla de «Tus hábitos» no cambia en el medio del envío.
+    const habitosAlEnviar = conHabitos ? habitos : null;
     setEnvio({ tipo: 'enviando' });
     const r = await api.crearSolicitudDeFormulario(
       token,
@@ -237,10 +299,15 @@ export function PedidoDeInformacion({
     if (!r.ok) {
       // El «no disponible» de una escritura: el marco vuelve a preguntar el acceso (F-09).
       if (r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') avisarSinAcceso();
-      setEnvio({ tipo: 'error', texto: RECHAZO_DE_SOLICITUD[r.tipo === 'API' ? r.codigo : ''] ?? mensajeDeFallo(r, COPY_VINCULO.recursoNoDisponible), incierto: esIncierto(r) });
+      // Con «Tus hábitos» marcado y sabiendo que no llegó, se dice que no se envió ninguna: el segundo no se manda.
+      const texto = mensajeDelEnvio({ formulario: version.name, sumaHabitos: habitosAlEnviar !== null, area: { ok: false, incierto: esIncierto(r), motivo: motivoDe(r) }, habitos: null }).texto;
+      setEnvio({ tipo: 'error', texto, incierto: esIncierto(r) });
       if (!estaAbierto.current) onReabrir();
       return;
     }
+    // Ronda 2.1: salió la de área; ahora la de «Tus hábitos», si estaba marcada.
+    const desenlaceDeHabitos = habitosAlEnviar ? await enviarHabitos(habitosAlEnviar, areaDelPedido) : null;
+    const mensaje = mensajeDelEnvio({ formulario: version.name, sumaHabitos: habitosAlEnviar !== null, area: { ok: true }, habitos: desenlaceDeHabitos }).texto;
     // Enviada: el próximo pedido empieza de cero.
     lecturaEnCurso.current++;
     setElegido(null);
@@ -253,16 +320,20 @@ export function PedidoDeInformacion({
     setArea('');
     setFaltas({});
     setTocado(false);
+    setSumarElegido(null);
     setEnvio({ tipo: 'editando' });
+    // Lo que sabe de los hábitos cambió (hay una solicitud con la parte, pendiente): la próxima sugerencia lo tiene en cuenta.
+    void cargarLoQueSabe();
     // CA-FOR-06: si el pedido salió de un área (la evaluación de Entrenamiento, su Plan o el Resumen de Nutrición), se
     // vuelve ahí para seguir trabajando. El éxito lo dice esa página al llegar: esta se abandona, y un aviso suyo no lo
     // leería nadie.
     if (vuelta) {
-      dejarAvisoPara(vuelta.ruta, F.solicitudEnviada);
+      dejarAvisoPara(vuelta.ruta, mensaje);
       return router.push(vuelta.href);
     }
     // DL-113: el éxito lo dice la página, no el cajón, que se cierra: un aviso adentro de un diálogo cerrado no lo lee nadie.
-    avisar(F.solicitudEnviada);
+    // Si «Tus hábitos» no salió, lo dice el mismo aviso: la de área quedó enviada.
+    avisar(mensaje);
     alEnviar();
   }
 
@@ -349,6 +420,32 @@ export function PedidoDeInformacion({
             ) : null}
           </EstadoDeLectura>
           {faltas.formulario ? <Falta id={`${id}-falta-formulario`} texto={faltas.formulario} /> : null}
+          {/* Ronda 2.1 (D-15 nueva; D-22): «Tus hábitos» es otro formulario; se puede sumar al de área en el mismo paso. */}
+          {habitos ? (
+            <div className="pedido__sumar-habitos" data-sumar-habitos data-marcada={conHabitos ? 'si' : 'no'} data-motivo={sugerenciaDeHabitos?.motivo}>
+              <label className="pedido__sumar-habitos-casilla">
+                <input
+                  type="checkbox"
+                  checked={conHabitos}
+                  onChange={(e) => {
+                    const marcar = e.target.checked;
+                    editar(() => setSumarElegido(marcar));
+                  }}
+                  disabled={enviando}
+                  aria-describedby={`${id}-sumar-habitos-que-es${motivo ? ` ${id}-sumar-habitos-motivo` : ''}`}
+                />
+                <span>{H.sumarHabitos}</span>
+              </label>
+              <p className="nota" id={`${id}-sumar-habitos-que-es`}>
+                {H.sumarHabitosQueEs}
+              </p>
+              {motivo ? (
+                <p className="nota" id={`${id}-sumar-habitos-motivo`} data-sugerencia>
+                  {motivo}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="paso-del-pedido" aria-labelledby={`${id}-paso-2`} data-paso="preguntas">
