@@ -362,3 +362,61 @@ test('TB-08 · en orden alfabético, como en español, y a igual nombre por la r
   // No cambia la lista que recibe: el orden de la API sigue disponible.
   assert.equal(personas[0].nombre, 'diego sosa');
 });
+
+// ─── TB-07 · «Tu semana» (WP-TABLERO-ALTA-GAMA; DL-163 D-3) ─────────────────────────────────────────────────────────
+
+const { DIAS_DE_LA_SEMANA, FICHAS_POR_DIA, semanaDeRevisiones } = await import('../apps/web/src/app/pro/tu-semana.ts');
+
+{
+  const HOY_DE_LA_SEMANA = '2026-11-06';
+  let n = 0;
+  const fila = (kind, since, extra = {}) => ({
+    advisee: { identityId: `ase-${++n}`, displayName: `Persona ${n}` },
+    relationshipId: `rel-${n}`,
+    domain: 'nutrition',
+    kind,
+    since,
+    open: { view: 'revisiones' },
+    ...extra,
+  });
+
+  test('TB-07 · ocho días de hoy a hoy + 7, también los vacíos, y las vencidas aparte', () => {
+    const items = [fila('REVIEW_OVERDUE', '2026-10-30'), fila('REVIEW_DUE_SOON', '2026-11-06'), fila('REVIEW_DUE_SOON', '2026-11-13'), fila('REVIEW_OVERDUE', '2026-11-02')];
+    const s = semanaDeRevisiones(items, HOY_DE_LA_SEMANA);
+    assert.equal(DIAS_DE_LA_SEMANA, 8);
+    assert.deepEqual(
+      s.dias.map((d) => d.clave),
+      ['2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13'],
+    );
+    assert.deepEqual(s.dias.map((d) => d.fichas.length), [1, 0, 0, 0, 0, 0, 0, 1], 'un día vacío es un día, no un hueco');
+    assert.deepEqual(s.vencidas.fichas.map((f) => f.since), ['2026-10-30', '2026-11-02'], 'en el orden de la cartera');
+    assert.equal(s.total, 4);
+  });
+
+  test('TB-07 · solo revisiones con fecha: sin tomas, sin planes, sin formularios y sin las que no tienen fecha', () => {
+    const items = [fila('REVIEW_UNDATED', null), fila('ANTHRO_DRAFT_PENDING', '2026-11-06'), fila('PLAN_DRAFT_PENDING', '2026-11-06'), fila('NO_ACTIVE_PLAN', null), fila('FORM_REQUEST_OPEN', '2026-11-06')];
+    const s = semanaDeRevisiones(items, HOY_DE_LA_SEMANA);
+    assert.equal(s.total, 0);
+    assert.equal(s.vencidas.fichas.length, 0);
+    assert.ok(s.dias.every((d) => d.fichas.length === 0));
+  });
+
+  test('TB-07 · hasta tres por día y después «y N más», con el orden de la cartera', () => {
+    const items = [1, 2, 3, 4, 5].map(() => fila('REVIEW_DUE_SOON', '2026-11-08'));
+    const s = semanaDeRevisiones(items, HOY_DE_LA_SEMANA);
+    const dia = s.dias[2];
+    assert.equal(FICHAS_POR_DIA, 3);
+    assert.deepEqual(dia.fichas.map((f) => f.advisee.identityId), items.slice(0, 3).map((f) => f.advisee.identityId));
+    assert.equal(dia.mas, 2);
+    // Sin tope («Ver como lista» y «y N más» abierto), todas.
+    assert.equal(semanaDeRevisiones(items, HOY_DE_LA_SEMANA, Infinity).dias[2].fichas.length, 5);
+    assert.equal(semanaDeRevisiones(items, HOY_DE_LA_SEMANA, Infinity).dias[2].mas, 0);
+  });
+
+  test('TB-07 · lo que registra la persona no mueve nada: el día sale de la fecha acordada', () => {
+    const base = fila('REVIEW_DUE_SOON', '2026-11-10');
+    const conRegistros = { ...base, lastActivityAt: '2026-11-05T12:00:00.000Z', activityCount: 40 };
+    const sinRegistros = { ...base, lastActivityAt: null, activityCount: 0 };
+    assert.deepEqual(semanaDeRevisiones([conRegistros], HOY_DE_LA_SEMANA).dias.map((d) => d.fichas.length), semanaDeRevisiones([sinRegistros], HOY_DE_LA_SEMANA).dias.map((d) => d.fichas.length));
+  });
+}

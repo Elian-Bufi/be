@@ -13675,3 +13675,135 @@ details[open] > summary:not([class])::before {
   outline: 3px solid var(--foco);
   outline-offset: 2px;
 }
+
+/* ─── WP-TABLERO-ALTA-GAMA, TB-07 (DL-163 D-3): «Tu semana» ────────────────────────────────────────────────────────── */
+
+/* Las revisiones que acordó el profesional, una columna por día. Es su calendario: nada se colorea por la persona, y
+   «Vencidas» se distingue por su nombre y su lugar, no por un color de alarma. Hoy lleva la única luz (--ahora). */
+.tu-semana {
+  margin-bottom: 1rem;
+}
+
+.tu-semana__rango {
+  margin: 0;
+}
+
+.tu-semana__vista {
+  margin-left: auto;
+  align-self: center;
+}
+
+.tu-semana__dias {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.tu-semana__dia {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.5rem 0.5rem 0.6rem;
+  border-top: 2px solid var(--borde);
+  border-radius: 0 0 10px 10px;
+}
+
+.tu-semana__dia--hoy {
+  border-top-color: var(--ahora);
+}
+
+.tu-semana__dia--vencidas {
+  background: var(--fondo-suave);
+  border-top-style: dashed;
+  border-top-color: var(--borde-control);
+}
+
+.tu-semana__dia h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.tu-semana__cuenta {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tu-semana__nada {
+  margin: 0;
+  color: var(--tenue);
+}
+
+.tu-semana__fichas,
+.tu-semana__lista {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tu-semana__lista {
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+.ficha-de-la-semana {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.25rem 0.35rem;
+  border-radius: 10px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.ficha-de-la-semana:hover {
+  background: var(--fondo-suave);
+}
+
+.ficha-de-la-semana:hover .ficha-de-la-semana__nombre {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.ficha-de-la-semana__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ficha-de-la-semana__nombre {
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ficha-de-la-semana__area {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--tenue);
+  font-size: 0.85rem;
+}
+
+.tu-semana__mas {
+  align-self: flex-start;
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+
+.tu-semana__vacio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}

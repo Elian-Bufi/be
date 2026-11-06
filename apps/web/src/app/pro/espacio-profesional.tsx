@@ -38,6 +38,7 @@ import { InvitarPersona } from './invitar-persona';
 import { Pendientes, type PaginaDeCartera } from './pendientes';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
+import { TuSemana } from './tu-semana-en-pantalla';
 import { areaUnicaDelProfesional } from './directorio';
 import { EsperandoSesion } from '../../lib/sesion';
 import { anotarNombrePropio, nombrePropioEn } from '../../lib/nombre-propio';
@@ -180,6 +181,8 @@ export function EspacioProfesional() {
         </>
       }
     >
+      {/* TB-07: las revisiones que acordaste, de hoy a siete días. Sale de la cartera ya leída: ninguna lectura nueva. */}
+      <TuSemana cartera={cartera.estado} />
       {/* Primero lo que hay que hacer (API-CAR-01, DL-107); al lado, a quién abrir. */}
       <div className="espacio-profesional__cuerpo">
         {/* Cada lista con su «Reintentar», que vuelve a leer solo esa; «Actualizar» lee las tres. */}
