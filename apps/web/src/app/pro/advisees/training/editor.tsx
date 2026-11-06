@@ -76,6 +76,7 @@ import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type Elec
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeEntrenamiento } from '../topes-del-plan';
+import { COPY_DE_LOS_EDITORES as E, copiaDeLaSesion, copiaDelEjercicio, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
 import { AgendaDelPlan, agendaVigente, resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
@@ -522,6 +523,17 @@ export function EditorDePlan({
     cambiar((x) => (lasSesiones(x).splice(k, 1), x));
     elegirSesion(Math.max(0, k - 1));
   };
+  /** TB-48: la copia de la sesión va justo después, y se la mira con su nombre a la vista para cambiarlo. */
+  const duplicarSesion = () => {
+    cambiar((x) => (duplicarEn(lasSesiones(x), k, copiaDeLaSesion(lasSesiones(x)[k]!, k)), x));
+    elegirSesion(k + 1);
+    setTexto({ de: 'nombre-de-la-sesion', i, j, k: k + 1 });
+  };
+  /** TB-48: mueve la sesión que se mira, con su identificador (la agenda no pierde sus días), y se la sigue mirando. */
+  const moverSesion = (hacia: number) => {
+    cambiar((x) => (mover(lasSesiones(x), k, hacia), x));
+    elegirSesion(hacia);
+  };
   /** Una copia de la sesión habitual (sin identificadores: el servidor los asigna al guardar) al final de las sesiones que se miran. */
   const insertarSesion = (h: SesionHabitual) => {
     const n = sesiones.length;
@@ -542,7 +554,19 @@ export function EditorDePlan({
   const quitarEjercicio = (l: number) => {
     cambiar((x) => (lasSesiones(x)[k]!.prescriptions.splice(l, 1), x));
     // Lo abierto acompaña a su ejercicio: los de más abajo suben un lugar.
-    dejarAbiertos(new Set([...abiertos].filter((p) => p !== l).map((p) => (p > l ? p - 1 : p))));
+    dejarAbiertos(posicionesTrasQuitar(abiertos, l));
+  };
+  /** TB-48: sube o baja un ejercicio; lo abierto lo acompaña. */
+  const moverEjercicio = (l: number, hacia: number) => {
+    cambiar((x) => (mover(lasSesiones(x)[k]!.prescriptions, l, hacia), x));
+    dejarAbiertos(posicionesTrasMover(abiertos, l, hacia));
+  };
+  /** TB-48: la copia del ejercicio, con sus series y lo general, justo después y abierta. */
+  const duplicarEjercicio = (l: number) => {
+    cambiar((x) => (duplicarEn(lasSesiones(x)[k]!.prescriptions, l, copiaDelEjercicio(lasSesiones(x)[k]!.prescriptions[l]!)), x));
+    dejarAbiertos(new Set([...posicionesTrasInsertar(abiertos, l + 1), l + 1]));
+    // La copia no se lleva el foco: se dice dónde quedó (DL-113).
+    setMensaje({ tipo: 'exito', texto: E.duplicado });
   };
 
   /**
@@ -859,6 +883,10 @@ export function EditorDePlan({
               alineado="izquierda"
               acciones={[
                 { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-de-la-sesion', ...deLaSesion }) },
+                // TB-48: duplicar y mover la sesión que se mira.
+                { clave: 'duplicar', texto: E.duplicarSesion, alElegir: duplicarSesion },
+                { clave: 'antes', texto: E.moverAntes, alElegir: () => moverSesion(k - 1), noSePuede: k === 0 ? E.yaEsElPrimero : null },
+                { clave: 'despues', texto: E.moverDespues, alElegir: () => moverSesion(k + 1), noSePuede: k === sesiones.length - 1 ? E.yaEsElUltimo : null },
                 { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: () => setSesionHabitual(structuredClone(sesion)), noSePuede: antesHayQueCorregir },
                 { clave: 'quitar', texto: 'Quitar esta sesión', alElegir: quitarSesion },
               ]}
@@ -955,6 +983,11 @@ export function EditorDePlan({
               }}
               onCambiar={(c) => cambiarEjercicio(l, c)}
               onQuitar={() => quitarEjercicio(l)}
+              esElPrimero={l === 0}
+              esElUltimo={l === sesion.prescriptions.length - 1}
+              onSubir={() => moverEjercicio(l, l - 1)}
+              onBajar={() => moverEjercicio(l, l + 1)}
+              onDuplicar={() => duplicarEjercicio(l)}
             />
           ))}
           <div className="editor-del-plan__al-pie">

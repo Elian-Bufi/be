@@ -15,6 +15,8 @@
  *   ingrediente, pero el editor no la dejaba escribir. Va en un renglón debajo del ítem, a pedido («Agregar una nota
  *   sobre …», `components/texto-a-pedido.tsx`), hasta 300 caracteres. No cambia lo que lee la app: el campo ya
  *   existía.
+ * - **Duplicar y reordenar** (TB-48): «Duplicar comida» en «Más», «Subir» y «Bajar» al lado, y «Duplicar opción N» junto
+ *   a cambiar su nombre. La copia va justo después y nace con su nombre a la vista (`advisees/editar-la-estructura.ts`).
  */
 import {
   cantidad as formatearCantidad,
@@ -38,6 +40,7 @@ import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
+import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
 export type ComidaEnEdicion = Estructura[number]['meals'][number];
@@ -57,6 +60,7 @@ export function ComidaDelEditor({
   abierta,
   problemas,
   esLaPrimera,
+  esLaUltima,
   opcionElegida,
   nombreEnEdicion,
   nombres,
@@ -67,6 +71,9 @@ export function ComidaDelEditor({
   alEditarNombre,
   alCambiar,
   alSubir,
+  alBajar,
+  alDuplicar,
+  alDuplicarOpcion,
   alQuitar,
   alGuardarComoHabitual,
   alAgregarItem,
@@ -80,6 +87,7 @@ export function ComidaDelEditor({
   /** Cuántos problemas de «Validar» hay adentro. */
   problemas: number;
   esLaPrimera: boolean;
+  esLaUltima: boolean;
   opcionElegida: number;
   nombreEnEdicion: NombreEnEdicion;
   nombres: Readonly<Record<string, string>>;
@@ -91,6 +99,11 @@ export function ComidaDelEditor({
   /** Cambia la comida: recibe una copia que se puede modificar. */
   alCambiar: (f: (m: ComidaEnEdicion) => void) => void;
   alSubir: () => void;
+  alBajar: () => void;
+  /** TB-48: la copia de la comida, justo después. */
+  alDuplicar: () => void;
+  /** TB-48: la copia de la opción `k`, justo después. */
+  alDuplicarOpcion: (k: number) => void;
   alQuitar: () => void;
   alGuardarComoHabitual: () => void;
   alAgregarItem: (k: number) => void;
@@ -128,13 +141,19 @@ export function ComidaDelEditor({
           <div className="comida-del-editor__acciones">
             <button type="button" className="boton boton--quieto boton--compacto" disabled={esLaPrimera} onClick={alSubir}>
               <Icono nombre="ordenar" tamano={18} />
-              Subir
+              {E.subir}
+              <span className="visualmente-oculto"> {plegada.titulo}</span>
+            </button>
+            <button type="button" className="boton boton--quieto boton--compacto" disabled={esLaUltima} onClick={alBajar} data-bajar>
+              {E.bajar}
+              <span className="visualmente-oculto"> {plegada.titulo}</span>
             </button>
             <MenuDeAcciones
               rotulo={`más acciones de ${plegada.titulo}`}
               texto="Más"
               acciones={[
                 { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => alEditarNombre({ de: 'comida' }) },
+                { clave: 'duplicar', texto: E.duplicarComida, alElegir: alDuplicar },
                 { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: alGuardarComoHabitual, noSePuede: conRecetas ? COPY_RECETAS.recetaEnPlantilla : null },
                 { clave: 'quitar', texto: 'Quitar comida', alElegir: alQuitar },
               ]}
@@ -256,6 +275,9 @@ export function ComidaDelEditor({
                   <span className="opcion-del-editor__del-nombre">
                     <button type="button" className="boton boton--enlace" onClick={() => alEditarNombre({ de: 'opcion', opcion: k })}>
                       Cambiar el nombre
+                    </button>
+                    <button type="button" className="boton boton--enlace" data-duplicar-opcion onClick={() => alDuplicarOpcion(k)}>
+                      {E.duplicarOpcion(k)}
                     </button>
                     <button
                       type="button"

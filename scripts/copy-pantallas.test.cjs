@@ -162,9 +162,10 @@ const DOMINIOS = [
     minimo: 5,
   },
   {
-    // WP-TABLERO-ALTA-GAMA TB-48: los topes de un plan, avisados antes de guardar en los editores de las dos áreas.
-    nombre: 'los topes del plan',
-    archivos: [join(RAIZ, 'apps/web/src/app/pro/advisees/topes-del-plan.ts')],
+    // WP-TABLERO-ALTA-GAMA TB-48: los topes de un plan, avisados antes de guardar, y duplicar, reordenar y quitar en los
+    // editores de las dos áreas.
+    nombre: 'los editores de los planes',
+    archivos: [join(RAIZ, 'apps/web/src/app/pro/advisees/topes-del-plan.ts'), join(RAIZ, 'apps/web/src/app/pro/advisees/editar-la-estructura.ts')],
     prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
     minimo: 1,
   },

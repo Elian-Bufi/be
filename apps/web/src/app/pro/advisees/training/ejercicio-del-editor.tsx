@@ -15,6 +15,8 @@
  * - **Lo que no se entiende no se guarda como otra cosa:** la celda lo marca, el renglón del ejercicio lo dice, también
  *   plegado, y el editor no deja guardar hasta corregirlo.
  * - Cómo se cuentan la carga y las repeticiones va a un clic; si ya hay algo elegido, se abre solo: no se esconde un dato.
+ * - **Duplicar y reordenar** (TB-48): «Subir» y «Bajar» al lado de «Más», y «Duplicar ejercicio» adentro; la copia va
+ *   justo después, abierta (`advisees/editar-la-estructura.ts`).
  */
 import {
   BaseDeCargaSchema,
@@ -44,6 +46,7 @@ import { Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { numeroEnCampo } from '../../../../lib/formato';
+import { COPY_DE_LOS_EDITORES as EDICION } from '../editar-la-estructura';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEntrenamiento } from './entrenamiento';
 
@@ -161,6 +164,11 @@ export function EjercicioDelEditor({
   alAlternar,
   onCambiar,
   onQuitar,
+  esElPrimero,
+  esElUltimo,
+  onSubir,
+  onBajar,
+  onDuplicar,
 }: {
   /** El prefijo de los identificadores de sus campos: `b0-s1-p2`, las posiciones del bloque, la sesión y el ejercicio. */
   id: string;
@@ -174,6 +182,12 @@ export function EjercicioDelEditor({
   alAlternar: () => void;
   onCambiar: (c: Partial<PrescripcionE>) => void;
   onQuitar: () => void;
+  esElPrimero: boolean;
+  esElUltimo: boolean;
+  onSubir: () => void;
+  onBajar: () => void;
+  /** TB-48: la copia del ejercicio, justo después. */
+  onDuplicar: () => void;
 }) {
   const { token, sesionPerdida } = useEntrenamiento();
   const propio = useId();
@@ -202,7 +216,23 @@ export function EjercicioDelEditor({
         </h3>
         {abierto ? (
           <div className="comida-del-editor__acciones">
-            <MenuDeAcciones rotulo={`más acciones de ${nombre}`} texto="Más" acciones={[{ clave: 'quitar', texto: `Quitar ${nombre}`, alElegir: onQuitar }]} />
+            <button type="button" className="boton boton--quieto boton--compacto" disabled={esElPrimero} onClick={onSubir}>
+              <Icono nombre="ordenar" tamano={18} />
+              {EDICION.subir}
+              <span className="visualmente-oculto"> {nombre}</span>
+            </button>
+            <button type="button" className="boton boton--quieto boton--compacto" disabled={esElUltimo} onClick={onBajar} data-bajar>
+              {EDICION.bajar}
+              <span className="visualmente-oculto"> {nombre}</span>
+            </button>
+            <MenuDeAcciones
+              rotulo={`más acciones de ${nombre}`}
+              texto="Más"
+              acciones={[
+                { clave: 'duplicar', texto: EDICION.duplicarEjercicio, alElegir: onDuplicar },
+                { clave: 'quitar', texto: `Quitar ${nombre}`, alElegir: onQuitar },
+              ]}
+            />
           </div>
         ) : null}
       </div>

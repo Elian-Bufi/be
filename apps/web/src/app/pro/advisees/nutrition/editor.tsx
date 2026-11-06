@@ -69,6 +69,7 @@ import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type Elec
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
+import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { AgregarItem } from './agregar-item';
@@ -412,15 +413,39 @@ export function EditorDeBorrador({
     // Una comida sin nombre no se puede guardar: nace con el campo abierto.
     setNombreQueSeCambia({ de: 'comida', i, j });
   };
-  const subirComida = (j: number) => {
-    cambiar((x) => ([x[i]!.meals[j - 1], x[i]!.meals[j]] = [x[i]!.meals[j]!, x[i]!.meals[j - 1]!], x));
-    // Lo abierto y la opción elegida acompañan a su comida.
-    dejarAbiertas(new Set([...abiertas].map((p) => (p === j ? j - 1 : p === j - 1 ? j : p))));
-    setPestanas((p) => ({ ...p, [`${i}-${j - 1}`]: p[`${i}-${j}`] ?? 0, [`${i}-${j}`]: p[`${i}-${j - 1}`] ?? 0 }));
+  /** TB-48: mueve el día tipo que se mira, y se lo sigue mirando en su lugar nuevo, con sus comidas abiertas. */
+  const moverDia = (hacia: number) => {
+    cambiar((x) => mover(x, i, hacia));
+    setPestanas({});
+    setParaEnfocar(null);
+    ir({ dia: pedidoDeLaPosicion(hacia) });
+  };
+  /** TB-48: la copia del día tipo va justo después, y se la mira con su nombre a la vista para cambiarlo. */
+  const duplicarDia = () => {
+    cambiar((x) => duplicarEn(x, i, copiaDelDiaTipo(x[i]!, i)));
+    setPestanas({});
+    elegirDia(i + 1);
+    setNombreQueSeCambia({ de: 'dia', i: i + 1 });
+  };
+  /** Sube o baja una comida (TB-48 suma «Bajar»): lo abierto y la opción elegida acompañan a su comida. */
+  const moverComida = (j: number, hacia: number) => {
+    cambiar((x) => (mover(x[i]!.meals, j, hacia), x));
+    dejarAbiertas(posicionesTrasMover(abiertas, j, hacia));
+    setPestanas((p) => ({ ...p, [`${i}-${hacia}`]: p[`${i}-${j}`] ?? 0, [`${i}-${j}`]: p[`${i}-${hacia}`] ?? 0 }));
+  };
+  /** TB-48: la copia de la comida va justo después, abierta y con su nombre a la vista para cambiarlo. */
+  const duplicarComida = (j: number) => {
+    cambiar((x) => (duplicarEn(x[i]!.meals, j, copiaDeLaComida(x[i]!.meals[j]!, j)), x));
+    dejarAbiertas(new Set([...posicionesTrasInsertar(abiertas, j + 1), j + 1]));
+    setPestanas((p) => Object.fromEntries(Object.entries(p).map(([clave, k]) => {
+      const [d, m] = clave.split('-').map(Number);
+      return [d === i && m! > j ? `${d}-${m! + 1}` : clave, k];
+    })));
+    setNombreQueSeCambia({ de: 'comida', i, j: j + 1 });
   };
   const quitarComida = (j: number) => {
     cambiar((x) => (x[i]!.meals.splice(j, 1), x));
-    dejarAbiertas(new Set([...abiertas].filter((p) => p !== j).map((p) => (p > j ? p - 1 : p))));
+    dejarAbiertas(posicionesTrasQuitar(abiertas, j));
     setPestanas({});
   };
   /**
@@ -582,6 +607,10 @@ export function EditorDeBorrador({
             rotulo={`más acciones del día tipo ${nombreDelDia}`}
             acciones={[
               { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setNombreQueSeCambia({ de: 'dia', i }) },
+              // TB-48: duplicar y mover el día tipo que se mira.
+              { clave: 'duplicar', texto: E.duplicarDiaTipo, alElegir: duplicarDia, noSePuede: estructura.length >= MAXIMO_DE_DIAS_TIPO ? E.topeDeDiasTipo(MAXIMO_DE_DIAS_TIPO) : null },
+              { clave: 'antes', texto: E.moverAntes, alElegir: () => moverDia(i - 1), noSePuede: i === 0 ? E.yaEsElPrimero : null },
+              { clave: 'despues', texto: E.moverDespues, alElegir: () => moverDia(i + 1), noSePuede: i === estructura.length - 1 ? E.yaEsElUltimo : null },
               { clave: 'quitar', texto: 'Quitar este día tipo', alElegir: quitarDia, noSePuede: estructura.length <= 1 ? 'Es el único día tipo de la versión.' : null },
             ]}
           />
@@ -623,6 +652,7 @@ export function EditorDeBorrador({
               abierta={abiertas.has(j)}
               problemas={problemasDeLaComida(rutasConProblemas, i, j)}
               esLaPrimera={j === 0}
+              esLaUltima={j === dia.meals.length - 1}
               opcionElegida={pestana(j)}
               nombreEnEdicion={
                 nombreQueSeCambia?.de === 'comida' && nombreQueSeCambia.i === i && nombreQueSeCambia.j === j
@@ -642,7 +672,14 @@ export function EditorDeBorrador({
               alElegirOpcion={(k) => elegirPestana(j, k)}
               alEditarNombre={(que) => setNombreQueSeCambia(que === null ? null : que.de === 'comida' ? { de: 'comida', i, j } : { de: 'opcion', i, j, k: que.opcion })}
               alCambiar={(f) => cambiar((x) => (f(x[i]!.meals[j]!), x))}
-              alSubir={() => subirComida(j)}
+              alSubir={() => moverComida(j, j - 1)}
+              alBajar={() => moverComida(j, j + 1)}
+              alDuplicar={() => duplicarComida(j)}
+              alDuplicarOpcion={(k) => {
+                cambiar((x) => (duplicarEn(x[i]!.meals[j]!.options, k, copiaDeLaOpcion(x[i]!.meals[j]!.options[k]!, k)), x));
+                elegirPestana(j, k + 1);
+                setNombreQueSeCambia({ de: 'opcion', i, j, k: k + 1 });
+              }}
               alQuitar={() => quitarComida(j)}
               alGuardarComoHabitual={() => setGuardarHabitual({ i, j })}
               alAgregarItem={(k) => setAgregando({ i, j, k })}
