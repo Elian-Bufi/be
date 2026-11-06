@@ -141,3 +141,5 @@ export * from './cliente-administrativo';
 export * from './terminos-de-administracion';
 export * from './zonas-musculares';
 export * from './contratos-catalogo-visual';
+export * from './descarte-de-borrador';
+export * from './contratos-descarte-de-borrador';

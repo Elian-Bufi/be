@@ -67,6 +67,7 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
 import { ColaDeRevisionesResponseSchema, type ColaDeRevisionesResponse, type FiltroDeLaCola } from './contratos-cola-de-revisiones';
+import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
 import {
   InvitacionCreadaResponseSchema,
   InvitacionResponseSchema,
@@ -893,6 +894,18 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       });
     },
     /**
+     * API-PLN-07 (DL-163 D-21; TB-47): descartar un borrador que nunca se activó, con la versión que la pantalla mostró.
+     * Una versión activada responde 422 PLAN_NOT_EDITABLE; una descartada, el mismo 404 que una inexistente.
+     */
+    descartarBorradorDePlanNutricional(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/plans/${encodeURIComponent(planId)}/discard`, {
+        token,
+        claveDeIdempotencia,
+        esquema: DescarteDeBorradorResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /**
      * API-NUT-13-BUSQUEDA (DL-130): buscar en el catálogo con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
      * clave de idempotencia. API-NUT-13 (`q` en la URL) queda como contrato legado de la API. Cada alimento trae el nombre
      * alternativo que coincidió, si fue por uno (DL-141).
@@ -1202,6 +1215,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         token,
         claveDeIdempotencia,
         esquema: ActivacionDePlanDeEntrenamientoResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /** API-PLE-05 (DL-163 D-21; TB-47): el par de API-PLN-07 en Entrenamiento. */
+    descartarBorradorDePlanDeEntrenamiento(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/plans/${encodeURIComponent(planId)}/discard`, {
+        token,
+        claveDeIdempotencia,
+        esquema: DescarteDeBorradorResponseSchema,
         cuerpo: { expectedVersion: versionMostrada },
       });
     },

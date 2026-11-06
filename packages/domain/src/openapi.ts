@@ -11,6 +11,7 @@
  * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
  * - las de WP-NOTAS-DE-COORDINACION: API-CRD-01 y sus dos variantes (docs/paquetes/WP-NOTAS-DE-COORDINACION.md; DL-140).
  * - las de WP-FORMULARIOS-DE-INICIO: la familia FRI, los formularios V2 y la propuesta que la persona confirma (DL-164).
+ * - las de WP-TABLERO-ALTA-GAMA: API-DSH-02 y las familias PLN y PLE, como descartar un borrador (DL-163 D-6 y D-21).
  */
 import { z } from 'zod';
 import {
@@ -98,6 +99,7 @@ import {
 } from './contratos-vinculo';
 import { CarteraResponseSchema } from './contratos-cartera';
 import { ColaDeRevisionesResponseSchema } from './contratos-cola-de-revisiones';
+import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -1031,6 +1033,24 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: '09v9:601-644 · REG-06-104 · REG-06-91 · DEUDA_LEGAJO DL-051, DL-055 (NUTRITION_SCOPE_NOT_OPERATIONAL: 404)',
   },
+  // ─── WP-TABLERO-ALTA-GAMA · PLN: planificar Nutrición (DL-163 D-17 a D-21). Familia propia de BE ─────────────────────
+  {
+    id: 'API-PLN-07',
+    metodo: 'post',
+    ruta: '/nutrition/plans/{planId}/discard',
+    resumen:
+      'Descartar un borrador de plan nutricional que nunca se activó (DL-163 D-21): la persona nunca lo vio. Queda como versión descartada, que no se lista, no se lee ni se escribe (el mismo 404 que lo inexistente), con su evento y su auditoría; la fila no se borra. Después se puede empezar otro borrador desde una plantilla, desde la versión vigente o desde cero, y aplicar una revisión «Ajustar» o «Sustituir». Una versión activada no se descarta nunca: 422 PLAN_NOT_EDITABLE, antes de mirar la versión esperada. planId es el id de la versión, como en API-NUT-09 a 12.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDeBorradorResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['PLAN_NOT_EDITABLE'],
+    },
+    fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 D-21 · WP-TABLERO-ALTA-GAMA TB-47 y §4.4 · 05 glosario («Borrador de plan») · 06 §4.4',
+  },
   {
     id: 'API-NUT-13',
     metodo: 'get',
@@ -1684,6 +1704,24 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['OPERATION_NOT_READY', 'CAPACITY_NOT_AVAILABLE', 'PLAN_NOT_EDITABLE'],
     },
     fuente: '09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087 · DL-122 (precierre del 2026-10-06, §2)',
+  },
+  // ─── WP-TABLERO-ALTA-GAMA · PLE: planificar Entrenamiento (DL-163 D-19 y D-21). Familia propia de BE ─────────────────
+  {
+    id: 'API-PLE-05',
+    metodo: 'post',
+    ruta: '/training/plans/{planId}/discard',
+    resumen:
+      'Descartar un borrador de plan de entrenamiento que nunca se activó (DL-163 D-21): la persona nunca lo vio. Queda como versión descartada, que no se lista, no se lee ni se escribe (el mismo 404 que lo inexistente), con su evento y su auditoría; la fila no se borra. Después se puede empezar otro borrador desde una plantilla, desde la versión vigente o desde cero, y aplicar una revisión «Ajustar» o «Sustituir». Una versión activada no se descarta nunca: 422 PLAN_NOT_EDITABLE, antes de mirar la versión esperada. planId es el id de la versión, como en API-TRN-09 a 12.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDeBorradorResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['PLAN_NOT_EDITABLE'],
+    },
+    fuente: 'ID propio de BE (familia PLE) · DEUDA_LEGAJO DL-163 D-21 · WP-TABLERO-ALTA-GAMA TB-47 y §4.5 · 05 glosario («Borrador de plan») · 06 §4.4',
   },
   {
     id: 'API-TRN-13',

@@ -15,7 +15,8 @@
  * - WP-ACCESO-GOOGLE: la familia GOO (DL-138) contra un Google falso local, y el 503 en una segunda app sin client IDs.
  * - WP-NOTAS-DE-COORDINACION: API-CRD-01 (09 §11.6) y sus dos variantes, CRD-01-LISTA y CRD-01-PROPIA (DL-140).
  * - WP-ADMINISTRACION: la familia ADM (DL-155), con un administrador incorporado por el comando interno y su autenticador.
- * - WP-TABLERO-ALTA-GAMA: API-DSH-02, la cola de revisiones (09 v0.11 §14; DL-163 D-6; TB-14).
+ * - WP-TABLERO-ALTA-GAMA: API-DSH-02, la cola de revisiones (09 v0.11 §14; DL-163 D-6; TB-14), y API-PLN-07 y API-PLE-05,
+ *   descartar un borrador de plan que nunca se activó (DL-163 D-21; TB-47).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -2111,6 +2112,48 @@ it('TEST-CT (WP-ADMINISTRACION): ADM-01 a 13, con éxitos y errores declarados (
   await adm(app, tercera).delete('/admin/auth/sessions/current').expect(204);
   await adm(app, tercera).delete('/admin/auth/sessions/current?x=1').expect(400);
   await adm(app).delete('/admin/auth/sessions/current').expect(401); // AUTHENTICATION_REQUIRED
+});
+
+it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-47): PLN-07 y PLE-05 — descartar un borrador, con éxitos y errores declarados (DL-163 D-21)', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const sinClave = (token: string, ruta: string) => request(servidor).post(ruta).set('Authorization', `Bearer ${token}`);
+
+  // PLN-07
+  const n = await circuitoListoParaPlanificar(app, 'contrato-descarte');
+  const pn = conSesion(app, n.pro.token);
+  const bn = await crearBorrador(app, n);
+  const pln = (id: string) => `/api/v1/nutrition/plans/${id}/discard`;
+  await pn.post(pln(bn.planId)).send({ expectedVersion: bn.version, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await sinClave(n.pro.token, pln(bn.planId)).send({ expectedVersion: bn.version }).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await request(servidor).post(pln(bn.planId)).send({ expectedVersion: bn.version }).expect(401);
+  await pn.post(pln(bn.planId)).send({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await pn.post(pln(ajeno)).send({ expectedVersion: 'v1' }).expect(404);
+  const claveN = claveDeIdempotencia();
+  await pn.post(pln(bn.planId), claveN).send({ expectedVersion: bn.version }).expect(200);
+  await pn.post(pln(bn.planId), claveN).send({ expectedVersion: 'v9' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pn.post(pln(bn.planId)).send({ expectedVersion: 'v2' }).expect(404); // ya descartado
+  const an = await crearBorrador(app, n);
+  const actN = await activar(app, n.pro, an.planId, an.version).expect(200);
+  await pn.post(pln(an.planId)).send({ expectedVersion: actN.body.data.version }).expect(422); // PLAN_NOT_EDITABLE
+
+  // PLE-05
+  const e = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-descarte');
+  const pe = conSesion(app, e.pro.token);
+  const be = await crearBorradorDeEntrenamiento(app, e);
+  const ple = (id: string) => `/api/v1/training/plans/${id}/discard`;
+  await pe.post(ple(be.planId)).send({ expectedVersion: be.version, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await sinClave(e.pro.token, ple(be.planId)).send({ expectedVersion: be.version }).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await request(servidor).post(ple(be.planId)).send({ expectedVersion: be.version }).expect(401);
+  await pe.post(ple(be.planId)).send({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await pe.post(ple(ajeno)).send({ expectedVersion: 'v1' }).expect(404);
+  const claveE = claveDeIdempotencia();
+  await pe.post(ple(be.planId), claveE).send({ expectedVersion: be.version }).expect(200);
+  await pe.post(ple(be.planId), claveE).send({ expectedVersion: 'v9' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pe.post(ple(be.planId)).send({ expectedVersion: 'v2' }).expect(404); // ya descartado
+  const ae = await crearBorradorDeEntrenamiento(app, e);
+  const actE = await activarPlanDeEntrenamiento(app, e.pro, ae.planId, ae.version).expect(200);
+  await pe.post(ple(ae.planId)).send({ expectedVersion: actE.body.data.version }).expect(422); // PLAN_NOT_EDITABLE
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
