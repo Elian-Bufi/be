@@ -20,12 +20,17 @@
 // sus minigráficos, y el alto de la tarjeta más alta (A13 de la propuesta).
 // Desde TB-24, la composición corporal de Diego en la pestaña y en la pregunta de «Analizar», el Resumen de Héctor (sin
 // pliegues: la línea de los pesos) y, en `composicion`, cuántas columnas van partidas y qué dice la barra de la tarjeta.
+// Desde el arreglo de TEST-TAG-032 (TA-30): la cuenta sigue hasta que la API queda quieta (ninguna petición en curso y
+// ninguna nueva en 1,5 s) y se compara con la tabla de `peticiones.mjs`: una cuenta distinta, para arriba o para abajo,
+// hace fallar la corrida. Y la lista de nombres de TEST-TAG-004 ya no sale vacía: quitaba toda palabra, no solo los
+// títulos («Lic.»), y la prueba no encontraba nunca un nombre.
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { diferenciasDePeticiones, esperarLaQuietud } from './peticiones.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(AQUI, '../../..');
@@ -163,7 +168,11 @@ const NOMBRES_DE_LA_COHORTE = (() => {
   const personas = [...fs.readFileSync(path.join(COHORTE, 'personas.mjs'), 'utf8').matchAll(/^\s+nombre: '([^']+)'/gm)].map((m) => m[1]);
   const profesionales = [...fs.readFileSync(path.join(COHORTE, 'catalogo.mjs'), 'utf8').matchAll(/^\s+[A-Z]: \{ nombre: '([^']+)'/gm)].map((m) => m[1]);
   if (personas.length < 6 || profesionales.length < 3) throw new Error('No se encontraron los nombres de la cohorte.');
-  return [...personas, ...profesionales].flatMap((n) => n.split(' ').filter((p) => !/.$/.test(p)));
+  // Sin los títulos («Lic.»), que terminan en punto. Antes el punto iba sin escapar: quitaba toda palabra y la lista
+  // salía vacía, así que la prueba no encontraba nunca un nombre (TA-30).
+  const palabras = [...personas, ...profesionales].flatMap((n) => n.split(' ').filter((p) => p && !/\.$/.test(p)));
+  if (palabras.length < 12) throw new Error(`TEST-TAG-004: solo ${palabras.length} palabras de nombres para buscar.`);
+  return palabras;
 })();
 /** Las páginas que recorre «Ocultar nombres»: las de la prueba (el cajón se suma con TB-12). */
 const CON_NOMBRES_OCULTOS = [
@@ -195,9 +204,23 @@ async function capturarTodo() {
       await page.emulateTimezone('America/Argentina/Buenos_Aires');
       page.on('pageerror', (e) => mediciones.errores.push(`${NOMBRES[prefijo]}: ${String(e).slice(0, 300)}`));
       let peticiones = 0;
+      // TEST-TAG-032: las que están en curso y la hora de la última que empezó o terminó, para saber cuándo quedó quieta.
+      const enLaApi = { enCurso: 0, ultima: Date.now() };
+      const deLaApi = (r) => r.url().startsWith(`${API}/api/`) && r.method() !== 'OPTIONS';
       page.on('request', (r) => {
-        if (r.url().startsWith(`${API}/api/`) && r.method() !== 'OPTIONS') peticiones += 1;
+        if (!deLaApi(r)) return;
+        peticiones += 1;
+        enLaApi.enCurso += 1;
+        enLaApi.ultima = Date.now();
       });
+      const termino = (r) => {
+        if (!deLaApi(r)) return;
+        enLaApi.enCurso = Math.max(0, enLaApi.enCurso - 1);
+        enLaApi.ultima = Date.now();
+      };
+      page.on('requestfinished', termino);
+      page.on('requestfailed', termino);
+      const quieta = () => esperarLaQuietud(() => enLaApi);
       await page.goto(`${WEB}/login?volver=${encodeURIComponent('/pro')}`, { waitUntil: 'networkidle0' });
       await page.type('#correo', c[`${prefijo}_CORREO`]);
       await page.type('#contrasena', c[`${prefijo}_CLAVE`]);
@@ -209,10 +232,12 @@ async function capturarTodo() {
         // Para contar lo que pide una página al abrirse, se llega desde otra: la cuenta, que no comparte lecturas.
         await page.evaluate(() => window.next.router.push('/account'));
         await asentar(page);
+        await quieta();
         peticiones = 0;
         // La sesión vive en memoria: se navega dentro de la aplicación, sin recargar.
         await page.evaluate((u) => window.next.router.push(u), ruta);
         await asentar(page);
+        let asentada = await quieta();
         if (metrica) {
           await page.evaluate((m) => {
             const casilla = [...document.querySelectorAll('label')].find((l) => l.textContent.trim() === m)?.querySelector('input[type="checkbox"]');
@@ -222,6 +247,7 @@ async function capturarTodo() {
           // Y «Ver los gráficos», que abre el gráfico de lo elegido.
           await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Ver los gráficos')?.click());
           await asentar(page);
+          asentada = (await quieta()) && asentada;
         }
         // TB-09: la acción del momento que ofrece el marco de la ficha, si la hay (TEST-TAG-010, en pantalla).
         const accionDelMarco = await page.evaluate(() => document.querySelector('[data-accion-de-la-ficha]')?.textContent?.trim() ?? null);
@@ -234,7 +260,7 @@ async function capturarTodo() {
           barraDeLaUltimaToma: document.querySelectorAll('.barra-de-la-composicion').length > 0,
           texto: document.querySelector('.composicion-de-la-toma__cifra, .composicion__resumen')?.textContent?.trim() ?? null,
         }));
-        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, accionDelMarco, composicion, alto: {} };
+        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, accionDelMarco, composicion, alto: {} };
         for (const tema of TEMAS) {
           await ponerTema(page, tema);
           for (const [ancho, alto] of TAMANOS) {
@@ -279,9 +305,13 @@ async function capturarTodo() {
       await contexto.close();
     }
   } finally {
+    // TEST-TAG-032: lo medido contra la tabla de `peticiones.mjs`. Una diferencia hace fallar la corrida.
+    mediciones.diferenciasDePeticiones = diferenciasDePeticiones(mediciones.paginas);
     fs.writeFileSync(path.join(salida, 'mediciones.json'), `${JSON.stringify(mediciones, null, 2)}\n`);
     await navegador.close();
   }
+  for (const d of mediciones.diferenciasDePeticiones) console.error(`TEST-TAG-032 · ${d}`);
+  if (mediciones.diferenciasDePeticiones.length > 0) process.exitCode = 1;
   return mediciones;
 }
 
@@ -377,7 +407,7 @@ try {
   await pausa(1500);
   const m = await capturarTodo();
   console.log(`errores de la página: ${m.errores.length ? m.errores.slice(0, 8).join(' | ') : 'ninguno'}`);
-  if (process.exitCode === 1) console.error('TEST-TAG-004: con «Ocultar nombres» apareció un nombre o una inicial (ver mediciones.json).');
+  if (process.exitCode === 1) console.error('Falló un guardián: TEST-TAG-004 (un nombre o una inicial con «Ocultar nombres») o TEST-TAG-032 (las peticiones al abrir). Ver mediciones.json.');
 } finally {
   fs.writeFileSync(path.join(salida, 'api.log'), registroDeLaApi.join(''));
   web?.kill();

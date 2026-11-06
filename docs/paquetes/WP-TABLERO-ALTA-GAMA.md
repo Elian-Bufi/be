@@ -889,3 +889,16 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   «Analizar», agrupando por semana. El ejercicio principal es el de más sesiones en el período (el de la carga); el RIR es
   el de su primera serie. *Otra opción:* sumar el grano a la referencia, que cambia lo que guarda y acepta API-VAN, o
   agrupar por semana solo en el Resumen, que dibujaría distinto lo mismo que una vista guardada.
+- **TA-30 · El guardián de las peticiones cuenta hasta que la API queda quieta, y la cuenta es exacta.** El hallazgo de
+  TEST-TAG-032 (con el mismo código, el Resumen de Héctor contó 24 y después 18) no era de la medición sino de la
+  ficha: la cobertura del Resumen (y de «Analizar») pregunta por las tres áreas, y el área que el profesional no ve
+  responde «no disponible». Si esa respuesta llegaba antes que la del marco, el aviso se miraba contra el encabezado en
+  «cargando», que da todas las áreas por activas: el marco volvía a preguntar el acceso, descartaba su primera lectura
+  y, al comparar con «cargando», daba el acceso por cambiado y repetía todas las lecturas de la ficha (seis peticiones
+  más, y el doble de espera). Ahora el aviso que llega mientras el marco lee espera su respuesta y se mira contra lo
+  que trae; una revalidación programada no descarta una lectura en curso. Las capturas cuentan hasta que no queda
+  ninguna petición en curso y pasa 1,5 s sin una nueva, y comparan con una tabla exacta (`peticiones.mjs`): una parte
+  que suma o quita una lectura la declara ahí, en el mismo commit. De paso, la lista de nombres de TEST-TAG-004 salía
+  vacía (el punto de «Lic.» iba sin escapar y quitaba toda palabra): ahora busca los nombres de verdad. *Otra opción:*
+  dejar la ficha como estaba y medir con un margen de seis peticiones, que esconde justo una subida chica como las dos
+  lecturas de TB-24 y TB-25.

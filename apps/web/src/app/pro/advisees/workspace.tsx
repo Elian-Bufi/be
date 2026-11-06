@@ -115,6 +115,15 @@ export function Workspace() {
   const [versionDeAcceso, setVersionDeAcceso] = useState(0);
   const generacion = useRef(0);
   const ultimaConsulta = useRef(0);
+  /**
+   * TEST-TAG-032: mientras el marco lee el acceso, un aviso de «no disponible» espera esa respuesta y se mira contra lo
+   * que trae. Antes se miraba contra el encabezado en «cargando», que da todas las áreas por activas: la cobertura del
+   * Resumen, que pregunta por las tres áreas, a veces llegaba antes que el marco, el área que el profesional no ve volvía
+   * a preguntar el acceso, la primera lectura se descartaba y la ficha entera se leía dos veces (seis peticiones más).
+   */
+  const leyendo = useRef(false);
+  const avisosEnEspera = useRef(new Set<DominioDeAnalisis | null>());
+  const revalidar = useRef<() => void>(() => {});
   const yoId = yo.tipo === 'listo' ? yo.id : null;
   // DL-140: el diálogo de la nota de coordinación es uno solo para toda la ficha; `null`, cerrado.
   const [nota, setNota] = useState<PedidoDeNota | null>(null);
@@ -132,6 +141,7 @@ export function Workspace() {
     async (silencioso: boolean) => {
       if (!token || !yoId) return;
       const esta = ++generacion.current;
+      leyendo.current = true;
       if (!silencioso) {
         setPanel({ tipo: 'cargando' });
         setEncabezado({ tipo: 'cargando' });
@@ -162,7 +172,16 @@ export function Workspace() {
         if (silencioso && huellaDeAcceso(anterior) !== huellaDeAcceso(nuevo)) setVersionDeAcceso((v) => v + 1);
         return nuevo;
       });
-      setEncabezado(vinculos ? { tipo: 'listo', vinculos } : { tipo: 'error' });
+      const elEncabezado: Encabezado = vinculos ? { tipo: 'listo', vinculos } : { tipo: 'error' };
+      setEncabezado(elEncabezado);
+      // Los avisos que llegaron durante la lectura se miran contra lo que trajo: si el área sigue activa, se vuelve a preguntar.
+      leyendo.current = false;
+      const enEspera = [...avisosEnEspera.current];
+      avisosEnEspera.current.clear();
+      if (enEspera.length > 0) {
+        const activasAhora = dominiosActivos(elEncabezado, nuevo);
+        if (enEspera.some((d) => d === null || activasAhora.has(d))) revalidar.current();
+      }
     },
     [token, yoId, id, sesionPerdida, periodo],
   );
@@ -185,24 +204,33 @@ export function Workspace() {
   const activasRef = useRef(activas);
   activasRef.current = activas;
   const programada = useRef<number | null>(null);
+  const programar = useCallback(() => {
+    if (programada.current !== null) return;
+    const espera = Math.max(0, ESPERA_ENTRE_REVALIDACIONES_MS - (Date.now() - ultimaConsulta.current));
+    programada.current = window.setTimeout(() => {
+      programada.current = null;
+      // Si mientras tanto empezó otra lectura, ella trae el acceso de ahora: no se la descarta.
+      if (!leyendo.current) void leer(true);
+    }, espera);
+  }, [leer]);
+  revalidar.current = programar;
   const avisarSinAcceso = useCallback(
     (dominio: DominioDeAnalisis | null) => {
+      if (leyendo.current) {
+        avisosEnEspera.current.add(dominio);
+        return;
+      }
       if (dominio !== null && !activasRef.current.has(dominio)) return;
-      if (programada.current !== null) return;
-      const espera = Math.max(0, ESPERA_ENTRE_REVALIDACIONES_MS - (Date.now() - ultimaConsulta.current));
-      programada.current = window.setTimeout(() => {
-        programada.current = null;
-        void leer(true);
-      }, espera);
+      programar();
     },
-    [leer],
+    [programar],
   );
   useEffect(() => () => {
     if (programada.current !== null) window.clearTimeout(programada.current);
   }, []);
   useEffect(() => {
     const alVolver = () => {
-      if (document.visibilityState === 'visible' && Date.now() - ultimaConsulta.current > VOLVER_A_PREGUNTAR_AL_VOLVER_MS) void leer(true);
+      if (document.visibilityState === 'visible' && !leyendo.current && Date.now() - ultimaConsulta.current > VOLVER_A_PREGUNTAR_AL_VOLVER_MS) void leer(true);
     };
     document.addEventListener('visibilitychange', alVolver);
     return () => document.removeEventListener('visibilitychange', alVolver);

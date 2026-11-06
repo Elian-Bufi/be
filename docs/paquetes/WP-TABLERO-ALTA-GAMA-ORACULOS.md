@@ -15,7 +15,8 @@
 >
 > **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05,
 > TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
-> (TB-24), TEST-TAG-018 (TB-25) y TEST-TAG-033 (TB-49). Los demás se escriben con su parte (§10 del paquete).
+> (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49) y TEST-TAG-032 (el arreglo de base del quinto tramo). Los demás se
+> escriben con su parte (§10 del paquete).
 
 ---
 
@@ -572,4 +573,47 @@ ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, los indicadores del Resumen de Diego
                      Sosa vistos por Sofía Paz (Nutrición y Antropometría) y por Martín Acosta (Entrenamiento), y las
                      peticiones al abrir anotadas
+```
+
+---
+
+## TEST-TAG-032 — Los guardianes: las peticiones al abrir y la primera pantalla
+
+```text
+TEST_ID              TEST-TAG-032
+TITLE                Las capturas cuentan las peticiones a la API al abrir cada página hasta que la API queda quieta,
+                     y fallan si la cuenta cambia sin aviso; la primera pantalla se mide en los tres tamaños
+LEVEL                Unidad (la comparación y la espera, sin navegador) y recorrido en la CI (capturas-del-tablero)
+PRIORITY             P2 — el guardián de lo que cuesta abrir el tablero: una lectura de más en el Resumen se paga en
+                     cada ficha que se abre
+SOURCES              WP-TABLERO-ALTA-GAMA §6 (TEST-TAG-032: «cuentan las peticiones a la API al abrir /pro, el Resumen
+                     y el cajón, y fallan si suben sin aviso») · §10 (el hallazgo: con el mismo código, el Resumen de
+                     Héctor contó 24 y después 18) · TA-30
+PRECONDITIONS        Ninguna para la unidad. En la CI: la cohorte cargada, la API y el website compilados.
+SYNTHETIC_FIXTURE    Tablas y mediciones armadas en la prueba; un reloj de mentira con dos tandas de lecturas separadas
+                     por 900 ms (menos que la quietud). En la CI, la cohorte sintética de siempre.
+STEPS                1. Comparar mediciones con la tabla: la misma cuenta, una más, seis más y una menos.
+                     2. Sumar una página que no está en la tabla, quitar una que sí está y marcar una sin asentar.
+                     3. Esperar la quietud con dos tandas separadas por menos que la quietud, y con una lectura que no
+                        termina.
+                     4. Leer las páginas de capturas.mjs y compararlas con la tabla.
+                     5. En la CI, abrir cada página desde /account, contar hasta la quietud y comparar.
+EXPECTED             1 → sin diferencias con la misma cuenta; «suben de 18 a 19 sin aviso», «suben de 18 a 24» y
+                        «bajan de 18 a 17».
+                     2 → una frase por cada caso: «no está en la tabla», «está en la tabla y no se midió», «la API no
+                        quedó quieta».
+                     3 → la espera no termina en la pausa entre tandas: termina después de la segunda, con su quietud;
+                        con una lectura colgada, se corta y devuelve que no asentó.
+                     4 → las mismas páginas, ni una más ni una menos.
+                     5 → todas las cuentas iguales a la tabla, en cada corrida; si no, la corrida falla y
+                        mediciones.json dice cuál.
+NEGATIVE_ASSERTIONS  Una cuenta que cambia no pasa por tener margen: la tabla es exacta (TA-30). La espera no se da por
+                     cumplida con una lectura en curso. La lista de nombres de TEST-TAG-004 no sale vacía. Mutaciones
+                     verificadas: comparando solo para arriba, falla el paso 1; dando la página por quieta sin mirar la
+                     última petición, falla el paso 3.
+AUTOMATION           scripts/guardian-de-peticiones.test.mjs («TEST-TAG-032 · …», cinco casos), en `npm test`; la
+                     comparación en la CI, EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs con peticiones.mjs
+ENVIRONMENT          CI y local, sin servicios; el paso 5, en capturas-del-tablero
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR y dos corridas de capturas-del-tablero con el mismo código y las
+                     mismas cuentas
 ```
