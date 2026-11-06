@@ -646,6 +646,7 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | Parte | Estado | Dónde |
 |---|---|---|
 | TB-00 | Hecha. La línea de base es la corrida 42154091600 de `capturas-del-tablero`, sobre dbf19eb, con el website igual al de `main` b91dc3f: ocho páginas en Claro y Azul noche, a 1280 × 800, 1440 × 900 y 1920 × 950, con sus peticiones al abrir y sin errores de la página | `EVIDENCIA/TABLERO-ALTA-GAMA/linea-de-base/` |
+| TB-01 | Hecha. Inter variable y Poppins 600 autoalojadas con `next/font/local`, con su licencia y su respaldo ajustado; Poppins, en el título del Espacio y en el nombre de la persona en el marco de la ficha (la pregunta del cajón llega con TB-12). Se compara con la línea de base en la corrida de su commit | `apps/web/src/letra/`, `scripts/letra-autoalojada.test.cjs` |
 
 ### 10.1 Las decisiones de la implementación
 
@@ -656,3 +657,9 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   PostgreSQL efímero y captura cada página. Corre en las ramas `wp-tablero-*`, no bloquea nada y deja las imágenes
   como artefacto, por 90 días; las primeras pantallas se copian a `EVIDENCIA/TABLERO-ALTA-GAMA/`. *Otra opción:* sumar
   las capturas a los recorridos de la CI, que tienen datos más pobres que la cohorte y bloquean la integración.
+- **TA-02 · La letra, del paquete Fontsource 5.3.0 y solo con el subconjunto latino.** La propuesta pedía Inter con el
+  latino y el latino extendido, `font-optical-sizing`, Poppins desde `BE-material-visual` y un respaldo sobre Segoe UI.
+  `next/font/local` no admite un rango de caracteres por archivo ni otro respaldo que Arial, y el latino cubre el
+  español: una letra que no está la dibuja el respaldo. Se usa el Inter de pesos (48 KB), sin el eje óptico, y Poppins
+  600 del mismo origen (8 KB), las dos con la SIL OFL 1.1. *Otra opción:* `@font-face` escritos a mano, con los dos
+  subconjuntos y `size-adjust` medido sobre Segoe UI, a cambio de perder la precarga y el respaldo que calcula Next.

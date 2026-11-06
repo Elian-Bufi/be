@@ -14,7 +14,9 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--texto);
-  font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* Inter autoalojada (TB-01; DL-163 D-3): la variable la define next/font en <html> (src/letra/letra.ts), con su
+     respaldo ajustado. Sin la variable, la lista de siempre. */
+  font-family: var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 100%;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -39,6 +41,14 @@ h4 {
 h1 {
   font-size: clamp(1.6rem, 1.1rem + 1.8vw, 2.15rem);
   margin: 0.5rem 0 1rem;
+}
+
+/* Los momentos de marca (TB-01; DL-163 D-3): Poppins 600 solo en el título del Espacio profesional y en el nombre de la
+   persona en el marco de la ficha. Con TB-12 se suma la pregunta del cajón «De a una». En el resto, Inter. */
+.espacio-profesional__encabezado h1,
+.marco-de-la-ficha__nombre h1 {
+  font-family: var(--letra-marca, Poppins), var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
+  font-weight: 600;
 }
 
 h2 {
