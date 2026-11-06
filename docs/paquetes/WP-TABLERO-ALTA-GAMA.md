@@ -673,10 +673,10 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-12 | Hecha, detrás de su interruptor (TA-39): «Empezar por el primero» abre el cajón «De a una» con la vista elegida, en su orden. Cada cuadro: «Pendiente 1 de 3», la pregunta, quién y el área, el pendiente, el tramo del ciclo y lo nuevo desde la revisión, con dos lecturas como mucho (TA-36); las salidas «Preparar la revisión» (o el verbo de la fila), «Abrir la ficha» y «Saltear por ahora»; J, K y S con el foco adentro, y Escape (TA-37). El cierre es un comprobante. Al salir por una salida, el lugar se guarda con identificadores y, al volver a /pro, el cajón sigue con el siguiente (TA-38). No incluye aplicar: eso es TB-15, que reusa API-TRN-24 y API-NUT-20 sin tocar la API. TEST-TAG-009 | `pro/cajon.ts`, `pro/cajon-de-a-una.tsx`, `apps/web/test/cajon.test.mjs` |
 | TB-15 | Hecha, sin tocar la API. **«¿Cuándo la revisás?»**, en el paso 3 de la revisión de Nutrición y de Entrenamiento («Lo que decidís») y en el cuadro de activar de los dos editores, en lugar del campo «Próxima revisión (opcional)»: «En 1 semana · miércoles 11 nov», «En 2 semanas», «En 4 semanas», «Elegir una fecha» y «Sin fecha por ahora», sin nada elegido (TA-40); al elegir, el efecto («Al aplicar esta revisión, la próxima queda para el …», «Al activar, la próxima revisión queda para el …»); «Sin fecha por ahora» dice lo que hace BE hoy (TA-41) y no aparece con «Reprogramar revisión»; con «Finalizar» no se pregunta, y después de aplicar tampoco. Al activar, la fecha que ya tenía la versión viene elegida y se dice (TA-44); en la revisión, lo acordado la última vez va como dato («La última vez acordaste revisar a las 4 semanas.», TA-45). **Aplicar desde el cajón:** si lo leído al abrir el cuadro trae una revisión registrada y sin aplicar, la pregunta es «La revisión del 16 oct está registrada y sin aplicar. ¿La aplicás?», y antes del botón van el resultado, el fundamento, la próxima acción y lo que pasa al aplicar, con la fecha que deja; el botón es el de cada área («Aplicar continuidad» o «Aplicar próxima acción»), con la misma operación, la clave del intento, los conflictos y los textos de la lista de Revisiones (TA-42). La segunda lectura del cuadro es la revisión (API-NUT-19 o API-TRN-23, que el cliente suma), no lo nuevo desde ella: siguen siendo dos. Lo aplicado se dice en su cuadro, con «Seguir el borrador» si se preparó uno, y en el cierre («Lo que aplicaste:»), y al cerrar el cajón /pro vuelve a leer la cartera (TA-43). TEST-TAG-013 (con la integración de las dos áreas) y TEST-TAG-034 | `lib/cuando-la-revisas.ts`, `advisees/cuando-la-revisas.tsx`, `advisees/aplicar-la-revision.ts`, `pro/aplicar-en-el-cajon.tsx`, `pro/cajon-de-a-una.tsx`, `apps/web/test/aplicar-y-cuando.test.mjs`, `test/integration/aplicar-desde-el-cajon.int-spec.ts` |
 | TB-17 | Hecha. **La guía** (`docs/ux/GUIA-UX-UI.md`): I.1.3 suma las barras de la lista cerrada de D-1; I.5, la letra (D-3); I.6, el acento como una sola luz y los tokens de la etapa A (D-3); I.7, la gramática de las marcas (D-3); II.4, que el tramo del ciclo no es una cobertura; II.6, el minigráfico (D-5, que reemplaza a «No se quita ningún punto por falta de lugar: se achica la marca»), las tarjetas del Resumen y el Espacio (D-2 y D-4); la pauta nueva **II.12 «Decisiones guiadas»**; y **V.4**, lo que cambia con la etapa A. **El criterio de auditoría de las maquetas** (`BE-maquetas/CRITERIO-Y-AUDITORIA.md`, fuera del repo): la vara de la §6 con el monograma (D-2) y las barras de la lista cerrada (D-1), y la validación del 2026-10-10 asentada. **DEUDA_LEGAJO:** el estado de DL-163 al día y la nota que confronta los minigráficos de E-53 y E-54, que leen API-PRJ-01, con DEC-10-UX-01. **Las cuatro desalineaciones,** corregidas: DL-161 figuraba «sin integrar» (se integró el 2026-11-02, #229 y #224); el criterio decía validación «Pendiente»; la guía contaba 105 íconos (son 115); y faltaba la nota de DEC-10-UX-01. **Lo que la guía deja dicho que falta:** los enlaces de texto en tinta con un subrayado fino (D-3), que tocan todas las pantallas, y el cajón con un lector de pantalla y en un proyector | `docs/ux/GUIA-UX-UI.md`, `docs/DEUDA_LEGAJO.md` |
-| TB-48 | A medias (TA-47). **Hecho:** la nota de cada ítem en el editor de Nutrición, en un renglón debajo del ítem, a pedido («Agregar una nota sobre …»), hasta 300 caracteres: el campo ya estaba en el contrato y la persona ya la lee en la app; **los topes** del contrato, avisados antes de guardar en los dos editores (7 días tipo, 12 comidas, 12 opciones y 40 ítems; 12 bloques, 26 microciclos, 30 sesiones por bloque y 14 por microciclo, 40 ejercicios, 20 series y 12 parámetros), cada uno como un problema más de lo que no deja guardar, con su lugar, y el autoguardado espera; y el cuadro sin plantillas, que prometía que «se escriben en «Plantillas y habituales»» y ahora dice «Se guardan desde una versión de plan, con «Guardar como plantilla». En «Plantillas y habituales» se ven y se cambian.». **Falta:** duplicar (un día tipo, una comida, una opción, una sesión y un ejercicio); reordenar con algo más que «Subir»; quitar una serie del medio; el microciclo ofrecido también con sesiones sueltas; «Validar plan» → «Revisar el plan», que liste también lo incompleto sin bloquear; «Guardar como plantilla» con su texto; la receta como opción, con buscador; y las zonas de un ejercicio propio desde «Mis ejercicios». Ninguno pide la API | `advisees/topes-del-plan.ts`, `nutrition/comida-del-editor.tsx`, `apps/web/test/editores.test.mjs` |
+| TB-48 | Hecha (TA-47 a TA-55), sin tocar la API. **La primera parte** (sexto tramo): la nota de cada ítem en el editor de Nutrición, en un renglón debajo del ítem, a pedido («Agregar una nota sobre …»), hasta 300 caracteres: el campo ya estaba en el contrato y la persona ya la lee en la app; **los topes** del contrato, avisados antes de guardar en los dos editores (7 días tipo, 12 comidas, 12 opciones y 40 ítems; 12 bloques, 26 microciclos, 30 sesiones por bloque y 14 por microciclo, 40 ejercicios, 20 series y 12 parámetros), cada uno como un problema más de lo que no deja guardar, con su lugar, y el autoguardado espera; y el cuadro sin plantillas, que prometía que «se escriben en «Plantillas y habituales»» y ahora dice «Se guardan desde una versión de plan, con «Guardar como plantilla». En «Plantillas y habituales» se ven y se cambian.». **La segunda parte** (séptimo tramo): **duplicar** un día tipo («Duplicar este día tipo», en su menú), una comida («Duplicar comida», en «Más»), una opción («Duplicar opción 2», junto a cambiar su nombre), una sesión («Duplicar esta sesión») y un ejercicio («Duplicar ejercicio», en «Más»): la copia va justo después, sin identificadores de nodo, con todo lo escrito y «… (copia)» en el nombre, que nace a la vista (TA-48); **reordenar**: «Bajar» junto a «Subir» en cada comida, «Subir» y «Bajar» en cada ejercicio, y «Mover antes» y «Mover después» en el menú del día tipo y en el de la sesión, con lo abierto siguiendo a su elemento; las opciones no se reordenan (TA-49); **quitar cualquier serie**, en su fila, en lugar de «Quitar la última serie» (TA-50); **el microciclo con sesiones sueltas**: «Organizar por microciclos» se ofrece siempre y las sesiones pasan a la «Semana 1» con sus identificadores («Las 3 sesiones del bloque pasan a «Semana 1».», TA-51); **«Revisar el plan»**, antes «Validar plan», que lista también lo que queda sin completar —cada ítem sin cantidad («… → sin cantidad: en la app dice «Sin dato»»), cada ejercicio sin series y cada serie sin repeticiones fijadas—, con su lugar y sin bloquear («Queda sin completar. No impide activar: si es a propósito, podés activarlo así.»); sin nada, «No hay nada que impida activar.» (TA-52); **«Guardar como plantilla»**, con su texto y a la vista, en lugar de un menú «⋯» sin texto, apagado con su motivo cuando no se puede (TA-53); **la receta como opción, con buscador**: «Buscar en tus recetas», por su nombre y sin tildes, sobre todas las propias, leídas al abrir el cajón (TA-54); y **las zonas de un ejercicio propio**, desde «Mis ejercicios» («Cargar las zonas» o «Cambiar las zonas»): las 17 del catálogo con «No la nombra», «Principal» o «Secundaria», y la figura de siempre al lado, con API-EJE-04, que ya existía (TA-55). Ningún oráculo TEST-TAG la pide; las pruebas, con sus mutaciones, en `editores.test.mjs` | `advisees/topes-del-plan.ts`, `advisees/editar-la-estructura.ts`, `advisees/revisar-el-plan.ts`, `nutrition/recetas-para-elegir.ts`, `exercises/zonas-propias.ts`, `exercises/zonas-del-ejercicio.tsx`, `apps/web/test/editores.test.mjs` |
 
-**Para seguir.** De TB-00 a TB-12, TB-15, TB-16, TB-17, TB-24, TB-25 y TB-49 están hechas, con el arreglo de base de
-TEST-TAG-032; TB-48, a medias. Lo próximo:
+**Para seguir.** De TB-00 a TB-12, TB-15, TB-16, TB-17, TB-24, TB-25, TB-48 y TB-49 están hechas, con el arreglo de base
+de TEST-TAG-032. Lo próximo:
 - **Un paso pendiente de TB-24, que decide Dirección:** cargar en la base de `test` las masas de Durnin y Womersley de la
   cohorte: los cálculos de los dos métodos nuevos sobre las tomas de Diego y Camila que ya están (la fase `calculos` de
   `cargar.mjs`, que hoy no se repite porque su estado la da por hecha). Pide la IP del operador. Hasta entonces, en `test`
@@ -704,18 +704,36 @@ TEST-TAG-032; TB-48, a medias. Lo próximo:
   vista; la versión anterior; desde cero), qué se copia y qué no, y la agenda en Entrenamiento se arman con las
   operaciones de hoy. «El programa y el hito que cierra el plan» piden TB-33 (API-PRG) y «seguirlo o descartarlo»,
   TB-47 (API-PLN-07 y API-PLE-05): hasta entonces, el cuadro ofrece seguir el borrador, sin descartar.
-- **Lo que falta de TB-48,** en el website y sin la API: duplicar (un día tipo, una comida, una opción, una sesión y un
-  ejercicio), reordenar, quitar una serie del medio, el microciclo ofrecido también con sesiones sueltas, «Revisar el
-  plan» que liste lo incompleto sin bloquear, «Guardar como plantilla» con su texto, la receta como opción con buscador y
-  las zonas de un ejercicio propio desde «Mis ejercicios».
 - **En la rama de la API, aparte:** TB-13 y TB-14 (las dos pruebas de la cola y API-DSH-02); con TB-13, los textos de
   «Sin fecha por ahora» (TA-41) cambian con la cola. Y TB-26, TB-27, TB-29, TB-31, TB-33, TB-34, TB-38 a TB-41, TB-43 y
   TB-47.
 - **Los enlaces de texto en tinta, con un subrayado fino** (D-3): la guía lo deja dicho como pendiente; tocan todas las
   pantallas y sus capturas, así que van en su propia parte.
-- **El recorrido local del Espacio** (`EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/recorrido.mjs espacio`, que no corre
-  en la CI) busca las vistas dentro de «Pendientes»: con TB-11 pasaron a las cifras, y desde TB-07 los destinos llevan
-  `origen=espacio`. Se actualiza cuando se use.
+- **Los recorridos locales, que no corren en la CI,** se actualizan cuando se usen: el del Espacio
+  (`EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/recorrido.mjs espacio`) busca las vistas dentro de «Pendientes» (con
+  TB-11 pasaron a las cifras, y desde TB-07 los destinos llevan `origen=espacio`); los de los editores (el mismo
+  `recorrido.mjs` y `EVIDENCIA/ENTRENAMIENTO-SERIES/herramientas/recorrido/recorrido-web.mjs`) tocan «Validar plan»,
+  cuentan el menú «⋯» de la versión y «Quitar la última serie», que con TB-48 pasaron a «Revisar el plan», a «Guardar
+  como plantilla» a la vista y a quitar cada serie en su fila.
+
+**Lo medido en el séptimo tramo** (TB-48, la segunda parte; la corrida 42207018963 de `capturas-del-tablero`, sobre
+40882a4):
+- **Las capturas suman tres páginas de Martín Acosta,** porque lo visible de TB-48 está en los editores y en «Mis
+  ejercicios», que no se abrían: el editor de Entrenamiento con el borrador que deja la revisión de hoy de Camila Ortiz
+  (`plan-camila`), «Mis ejercicios» y sus 17 zonas abiertas (`mis-ejercicios-zonas`). La tabla de TA-30 las suma con
+  9, 4 y 4 peticiones al abrir: son páginas nuevas en las capturas, no lecturas nuevas, y abrir las zonas no lee nada.
+  Las dieciocho páginas que ya estaban dieron las mismas cuentas, sin errores de la página.
+- **El editor de Entrenamiento** (1440 × 900, en Claro): «Guardado», «Guardar como plantilla» con su ícono, «Revisar el
+  plan», «Activar plan» y «Guardar cambios» entran en un renglón. Los ejercicios abren plegados, así que «Subir»,
+  «Bajar» y la columna para quitar cada serie no se ven en la captura.
+- **«Mis ejercicios»:** cada tarjeta de los seis ejercicios propios lleva «Cargar las zonas» (no tienen ninguna), en un
+  tercer renglón de botones: la página pasa a medir 1566 a 1440. Con las zonas abiertas, en Azul noche: las 17 en cuatro
+  columnas, el foco en «Trapecio» y, al lado, «Así se ve» con «Todavía no elegiste ninguna zona.».
+- **Los recorridos de la CI** (`test/navegador`) abren el editor de Nutrición de un borrador, renombran comidas desde
+  «Más» y capturan su encabezado, que ahora lleva «Guardar como plantilla» y «Bajar» al lado de «Subir».
+- **No se vio en pantalla:** el editor de Nutrición con «Revisar el plan» y lo sin completar, el cajón de recetas con el
+  buscador (la cohorte no tiene recetas propias), un ejercicio abierto con «Subir», «Bajar» y quitar una serie, ni el
+  microciclo con sesiones sueltas. Los cubren sus pruebas.
 
 **Lo medido en el sexto tramo** (las corridas de `capturas-del-tablero` sobre ae418e0 y cc98a08, y la de la CI del PR
 sobre ae418e0):
@@ -1078,3 +1096,47 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   admite un plan. Quitá los que sobran antes de guardar.». Agregar no se apaga al llegar al tope: el problema aparece
   al guardar, antes de pedirle nada a la API. *Otra opción:* apagar «Agregar» en el tope, que no explica por qué y no
   sirve para un borrador que ya los pasó (una plantilla vieja, por ejemplo).
+- **TA-48 · Duplicar: la copia va justo después, es del mismo plan y copia todo lo escrito.** Sin identificadores de nodo
+  (el servidor los asigna al guardar, como al insertar un habitual), con «… (copia)» en el nombre, dentro del largo del
+  contrato, y con ese nombre a la vista para cambiarlo; la de un ejercicio no tiene nombre propio: nace abierta, y se
+  dice dónde quedó («Se duplicó. La copia está justo después.»). Copia las cantidades, las cargas y las notas, porque
+  son del mismo profesional para la misma persona; una plantilla no las copia porque sale del plan (DL-108 D-2). Una
+  sesión copiada no entra en la agenda hasta tener días. Vive en `advisees/editar-la-estructura.ts` (§8.2). *Otra
+  opción:* copiar sin cantidades ni cargas, como una plantilla, que obliga a volver a escribirlas; o la copia al final,
+  lejos de lo que se copió.
+- **TA-49 · Reordenar: «Subir» y «Bajar» donde la lista se pliega, «Mover antes» y «Mover después» donde se mira uno por
+  vez.** Las comidas y los ejercicios, con dos botones en su renglón abierto (el nombre, para el lector de pantalla:
+  «Bajar Almuerzo»); el día tipo y la sesión, en su menú, apagados con su motivo en las puntas («Ya está primero.»). Las
+  opciones no se reordenan: son las alternativas de un carrusel y la persona elige una, y nadie lo pidió. Los
+  identificadores viajan con su nodo: la agenda no pierde los días de una sesión movida. *Otra opción:* arrastrar y
+  soltar, que pide un segundo mecanismo para el teclado y el lector; o reordenar también las opciones.
+- **TA-50 · Cada serie se quita en su fila.** Un botón por serie, el mismo de un ítem de Nutrición («Quitar la serie 2 de
+  Sentadilla», para el lector), en lugar de «Quitar la última serie». Las demás conservan lo suyo y se numeran de nuevo.
+  *Otra opción:* dejar también «Quitar la última serie», que es una segunda forma de hacer lo mismo.
+- **TA-51 · El microciclo se ofrece siempre, y las sesiones sueltas pasan a la «Semana 1».** Con sus identificadores y
+  sus días, sin volver a escribir nada; el menú lo dice debajo de la acción. Si el bloque tiene más sesiones de las que
+  admite un microciclo (14), la acción se apaga con su motivo: a diferencia de TA-47, crearía el exceso de una vez, sin
+  que el profesional agregue nada. *Otra opción:* dejar que el tope aparezca al guardar, como en TA-47; o repartir las
+  sesiones en varias semanas, que es decidir por el profesional cómo se organizan.
+- **TA-52 · «Revisar el plan» lista lo que queda sin completar, y no bloquea.** Lo sin completar es lo que la persona ve
+  sin el dato que el profesional suele escribir: un ítem sin cantidad (la app dice «Sin dato»), un ejercicio sin series
+  y una serie sin repeticiones fijadas. La carga, el criterio de intensidad, el descanso y las notas son opcionales por
+  diseño (DL-122): que falten no es incompleto. Cada cosa lleva a su lugar, como un problema, pero no cuenta en el
+  renglón de su comida o de su ejercicio, no se pinta y ni guardar ni activar la leen. El nombre del botón cambia en el
+  dominio (`validarPlan`, con «No hay nada que impida activar.» en lugar de «Plan válido» y la aclaración de
+  Entrenamiento); los textos nuevos, en el website. *Otra opción:* decirlo también en el cuadro de activar, que suma un
+  paso al acto; o contar la carga sin escribir, que empujaría a escribir una carga que el profesional decidió no fijar.
+- **TA-53 · «Guardar como plantilla», un botón con su texto.** Al lado de «Revisar el plan». Cuando no se puede (una
+  opción de receta en Nutrición; algo que no deja guardar en Entrenamiento), apagado con `aria-disabled`, con el
+  motivo como su descripción y, al tocarlo, en un aviso. *Otra opción:* un menú «Más» con texto, que vuelve a esconder
+  la única acción que tiene.
+- **TA-54 · La receta, con un buscador sobre lo leído.** API-REC-02 no busca por texto: el cajón lee todas las propias
+  de a 50 (su máximo), hasta 10 páginas, al abrirse, y filtra en el navegador por todas las palabras del nombre, sin
+  tildes; con más, «Ver más», y avisa que la búsqueda mira las ya leídas. *Otra opción:* sumar un parámetro de texto a
+  API-REC-02, que toca la API (en su rama) para una lista que cabe en una lectura.
+- **TA-55 · Las zonas de un ejercicio propio, con un selector por zona y la figura de siempre como vista previa.** Las
+  17 del catálogo (`ZONAS_MUSCULARES`), en su orden, con «No la nombra», «Principal» o «Secundaria» (los nombres de la
+  figura), sin porcentajes; la figura no se toca. El botón aparece en la tarjeta solo con la ficha visual leída, que da
+  la versión vigente y el número de la última asignación (`expectedZonesVersion`); un conflicto se dice. *Otra opción:*
+  elegir tocando la figura, que pide ubicar cada clic sobre las máscaras (lugares nuevos, que no se inventan); o dos
+  listas de casillas, «Principales» y «Secundarias», donde una zona podría quedar en las dos.
