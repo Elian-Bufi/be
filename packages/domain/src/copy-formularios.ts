@@ -115,7 +115,8 @@ export const COPY_FORMULARIOS = {
 
   // ─── PF-02 · pedido desde la evaluación de entrenamiento ─────────────────────────────────────
   propositoDeContextoDeEntrenamiento: 'Planificar tu entrenamiento',
-  pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario, las preguntas y el área ya están elegidos. Podés cambiarlos antes de enviar.',
+  /** DL-165 D-29: las preguntas ya no son una precarga aparte; vienen todas, como en «Más», y lo dice el paso 2. */
+  pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario y el «para qué» ya están elegidos. Podés cambiarlos antes de enviar.',
   volverAEntrenamiento: 'Volver a Entrenamiento',
 
   // ─── PF-02 · pedido desde el Resumen de Nutrición (WP-FORMULARIOS-RONDA-2, FR-02) ──────────────

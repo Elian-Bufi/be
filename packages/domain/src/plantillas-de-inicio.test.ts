@@ -159,7 +159,7 @@ test('FR-02 · cada formulario de inicio sugiere su «para qué», corto y sin c
   // Ronda 2.1: «Tus hábitos» sugiere el suyo, aparte o sumado a uno de área (D-22).
   assert.equal(propositoSugerido(CLAVE_DEL_FORMULARIO_DE_HABITOS), COPY_HABITOS.web.propositoDelFormulario);
   for (const clave of ['FRM-SALUD', '']) assert.equal(propositoSugerido(clave), null, clave);
-  for (const t of [COPY_FORMULARIOS.pedidoDesdeNutricion, COPY_FORMULARIOS.volverANutricion]) assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
+  for (const t of [COPY_FORMULARIOS.pedidoDesdeNutricion, COPY_FORMULARIOS.volverANutricion, COPY_FORMULARIOS.pedidoDesdeEntrenamiento, COPY_FORMULARIOS.volverAEntrenamiento]) assert.deepEqual(terminosProhibidosDeFormulariosEn(t), [], t);
 });
 
 test('cada sección y cada campo pasan el contrato V2', () => {

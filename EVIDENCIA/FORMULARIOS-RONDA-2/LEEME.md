@@ -288,6 +288,10 @@ la APK en `1254269` (el tag) y el website en `67d7f61`. Se corrigió esto:
   partes («Parte N de 4»), sin la tabla de días, y con eso no hay tope ni «Quitar respuesta», que se ofrece solo en
   preguntas opcionales de elegir. Por eso la guía marca a mano «¿Qué días y en qué momento podés?», sin hacerla
   obligatoria.
+  - **Desde la integración de este cambio** (DL-165 D-29, ratificada por Dirección el 2026-11-06: «Que venga
+    completo»; rama `wp-entrenamiento-pedido-completo`), «Antes de entrenar» llega completo desde Entrenamiento, como
+    desde «Más»: la Parte 2 tiene, en los pasos 1 y 6, lo que se hace en cada caso. Cuál toca se ve en el mismo cajón:
+    si en «Qué preguntas» dice «Vienen todas elegidas: desmarcá las que no necesites.», el cambio ya está.
 - Parte 2: el motivo «Ya tenés sus hábitos del …» sale solo si respondió un formulario que pedía preguntas de «Tus
   hábitos». Con una solicitud esperando, la casilla también viene sin marcar: hay que marcarla en los dos casos. En «Para
   responder» puede quedar otra solicitud de la prueba de la 0.21.
@@ -308,9 +312,15 @@ la APK en `1254269` (el tag) y el website en `67d7f61`. Se corrigió esto:
 
 **Parte 2 · Pedir «Antes de entrenar» y sumar «Tus hábitos»** (Prueba Uno)
 1. **Computadora:** entrar a https://be-web-1ngj.onrender.com/pro con «Lic. Prueba Dos Áreas» (`PRO_`) y abrir a Prueba Uno.
-   En la tarjeta de Entrenamiento, «Abrir Entrenamiento» → «Pedir información»: ya viene «Antes de entrenar», con las seis
-   preguntas de Entrenamiento marcadas. En la lista de preguntas, marcar también «¿Qué días y en qué momento podés?» (en
-   «Tu semana para entrenar»), sin marcarla como obligatoria.
+   En la tarjeta de Entrenamiento, «Abrir Entrenamiento» → «Pedir información»: ya viene «Antes de entrenar».
+   - **Desde la integración de este cambio** (DL-165 D-29): viene completo. Arriba dice «Viniste desde Entrenamiento: el
+     formulario y el «para qué» ya están elegidos. Podés cambiarlos antes de enviar.», y en «Qué preguntas», «Vienen
+     todas elegidas: desmarcá las que no necesites.». Están marcadas todas menos el embarazo, que viene sin marcar.
+     «¿Qué días y en qué momento podés?» (en «Tu semana para entrenar») ya viene marcada y obligatoria: no hay que
+     tocar nada.
+   - Antes de esa integración (con el website en `67d7f61`): vienen las seis preguntas de Entrenamiento marcadas. En la
+     lista de preguntas, marcar también «¿Qué días y en qué momento podés?» (en «Tu semana para entrenar»), sin marcarla
+     como obligatoria.
 2. Debajo de la lista de formularios, la casilla **«Sumar «Tus hábitos»»**, con «Es un formulario aparte, con su sueño, su
    día, su actividad y su semana. Se envía junto con este, como otra solicitud.». Debajo dice por qué viene así:
    - «Todavía no tenés sus hábitos.» o «Los hábitos que ves son del …: tienen más de 3 meses.»: viene marcada.
@@ -329,11 +339,16 @@ la APK en `1254269` (el tag) y el website en `67d7f61`. Se corrigió esto:
      días y su momento;
    - «Repasar» y «Enviar respuesta».
 6. «Antes de entrenar» → «Completar»:
-   - pasar las partes con «Siguiente» («Parte N de 4»: «Tu experiencia», «Lo que buscás», «Tu semana para entrenar» y «Tus
-     preferencias»): no hay ninguna «Tus hábitos»;
+   - **desde la integración de este cambio** (DL-165 D-29), pasar las partes con «Siguiente» («Parte N de 6»: «Tu salud
+     antes de entrenar», «Dolor y lesiones», «Tu experiencia», «Lo que buscás», «Tu semana para entrenar» y «Tus
+     preferencias»); antes, eran cuatro («Parte N de 4»: de «Tu experiencia» a «Tus preferencias»). En los dos casos, no
+     hay ninguna «Tus hábitos»;
    - abrir un «¿Para qué?»;
-   - en «¿Qué días y en qué momento podés?», que viene opcional, marcar 3 días y probar «Quitar respuesta»;
-   - volver a marcar los 3 días y poner 5 en los días por semana: tiene que avisar;
+   - **desde la integración de este cambio**, «¿Qué días y en qué momento podés?» viene obligatoria, y ahí no está
+     «Quitar respuesta»: marcar 3 días, y probar «Quitar respuesta» en «¿Qué actividad aeróbica te gusta?» (en «Tus
+     preferencias»), que es opcional, después de elegir una. Antes, la tabla venía opcional: marcar 3 días y probar ahí
+     «Quitar respuesta»;
+   - con los 3 días marcados (si se quitaron, volver a marcarlos), poner 5 en los días por semana: tiene que avisar;
    - a mitad, cerrar la app desde Recientes, volver a abrirla y abrir de nuevo la solicitud: tiene que decir «Recuperamos lo
      que habías escrito»;
    - al final, «Repasar» y «Enviar respuesta».
@@ -422,7 +437,7 @@ hay que esperar 15 minutos.
 | 2 | «Sumar «Tus hábitos»» y su motivo | | | |
 | 2 | Las dos solicitudes enviadas en un paso | | | |
 | 2 | «Tus hábitos» aparte, sin «Parte 1 de 1» | | | |
-| 2 | «Antes de entrenar» en cuatro partes, «Quitar respuesta», el tope de días y lo recuperado | | | |
+| 2 | «Antes de entrenar» en sus partes (seis desde D-29; cuatro antes), «Quitar respuesta», el tope de días y lo recuperado | | | |
 | 2 | «Mis hábitos» con lo respondido | | | |
 | 3 | «Pedir acceso a sus hábitos» en el escritorio | | | |
 | 3 | El aviso y la novedad «Importante» | | | |

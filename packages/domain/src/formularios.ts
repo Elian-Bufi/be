@@ -90,9 +90,15 @@ export function requeridosDentroDeSolicitados(requestedFieldCodes: readonly stri
 // ─── Pedido de contexto desde la evaluación de entrenamiento (PF-02 · DL-100) ─────────────────────
 
 /**
- * Lo que la pantalla precarga cuando el profesional llega desde la evaluación de entrenamiento: la plantilla ratificada
- * por Dirección (DL-100), sus seis campos y los cinco obligatorios (preferencias es opcional). Es una propuesta
- * editable: el profesional puede desmarcar antes de enviar, porque la minimización sigue siendo suya (09:1528).
+ * El formulario de entrenamiento (DL-100) y los seis campos de su v1, con los cinco obligatorios (preferencias es
+ * opcional). Las versiones siguientes conservan los seis códigos, y las respuestas de la v1 se siguen leyendo y citando
+ * con ellos. La v1 es la única versión de este formulario que leen las APK anteriores al contrato V2 (DL-164 D-5).
+ *
+ * El website usa solo la clave: llegando desde Entrenamiento precarga ese formulario, el «para qué» y el área, y las
+ * preguntas vienen como al elegirlo en «Más», todas pedidas y, requeridas, las que sugiere la plantilla (DL-165 D-29,
+ * ratificada por Dirección el 2026-11-06). Hasta entonces precargaba solo estos seis campos, sin la tabla de los días, y
+ * el tope de los días por semana (D-5) no actuaba. Sigue siendo una propuesta editable: el profesional puede desmarcar
+ * antes de enviar, porque la minimización sigue siendo suya (09:1528).
  */
 export const CONTEXTO_DE_ENTRENAMIENTO = {
   clavePlantilla: 'FRM-ENTRENAMIENTO',
