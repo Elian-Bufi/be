@@ -655,11 +655,22 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-08 | Hecha. Cada renglón de «Tus asesorados» lleva el monograma, el nombre, la referencia, las áreas con acceso, las sin acceso con los estados en palabras y «Con vos desde el …» (el vínculo vigente más antiguo). El renglón entero abre la ficha y las personas van en orden alfabético, como en español, sin datos de seguimiento (TA-14) | `pro/directorio.ts` (`conVosDesde`, `enOrdenAlfabetico`), `pro/asesorados.tsx` |
 | TB-07 | Hecha, salvo el retorno a /pro, que llega con el cajón (TB-12). «Tu semana», entre el encabezado y la mesa: las revisiones acordadas de hoy a hoy + 7, una columna por día (TA-15), y las vencidas aparte, en «Vencidas»; fichas con monograma, nombre y área, hasta tres por día y «y N más». Sin tomas, horas ni «hecho»; hoy lleva la raya de `--ahora`; el vacío lo dice con de dónde salen las fechas; «Ver como lista»; cada columna es una lista con su día como título. Sale de la cartera ya leída: ninguna lectura nueva (en la corrida de TB-09, el Espacio sigue con 5 peticiones al abrir) | `pro/tu-semana.ts`, `pro/tu-semana-en-pantalla.tsx` |
 
-**Para seguir.** La próxima parte es TB-06 (el encabezado y las cifras de /pro), y después TB-10,
-TB-16, TB-24, TB-25 y TB-49, en el orden de §8.1. Toda pantalla nueva de /pro que muestre a alguien lee su nombre con
-`useNombres` (la guardia de `retrato.test.mjs` falla con un `.displayName` suelto) y, donde ya se ve el nombre, suma
-`Retrato`; el cajón (TB-12) se suma a `CON_NOMBRES_OCULTOS` de las capturas. De TB-04 falta medir a 1920 × 950 si entran los minigráficos (A13);
-el Resumen creció con ellos, y la tarjeta de área se ordena en TB-10. Cada corrida de `capturas-del-tablero` deja su
+**Para seguir.** De TB-00 a TB-09 están hechas, salvo TB-06. La próxima es TB-06 (el encabezado y las cifras de
+/pro), y después TB-10, TB-16, TB-24, TB-25 y TB-49, en el orden de §8.1. Lo que hay que saber de TB-06:
+- «Esperan respuesta» y «Personas» son enlaces dentro de la página: «Personas» lleva a «Tus asesorados», pero el carril
+  «Esperan respuesta» todavía no existe, porque llega con TB-11. Por eso se propone programar TB-06 junto con TB-11
+  (TA-16): las cifras filtran o llevan a los dos carriles, y el filtro de «Pendientes» sube a `EspacioProfesional`.
+- El saludo puede salir de `useNombrePropio` (TA-10), sin una lectura nueva; con «Ocultar nombres», va a secas. La
+  lectura nueva que queda es la de las invitaciones (`api.consultarInvitaciones`), para el desglose de «Esperan
+  respuesta».
+- «Te toca a vos» cuenta los pendientes de revisiones, planes y tomas; sus desgloses son las vistas de DL-107
+  (`TIPOS_DE_LA_VISTA_DE_PENDIENTES`). El único botón lleno sigue siendo «Invitar a una persona».
+
+Toda pantalla nueva de /pro que muestre a alguien lee su nombre con `useNombres` (la guardia de `retrato.test.mjs`
+falla con un `.displayName` suelto) y, donde ya se ve el nombre, suma `Retrato`; el cajón (TB-12) se suma a
+`CON_NOMBRES_OCULTOS` de las capturas, y su retorno es el que le falta a las fichas de «Tu semana». De TB-04 falta
+medir a 1920 × 950 si entran los minigráficos (A13); el Resumen creció con ellos, y la tarjeta de área se ordena en
+TB-10. Cada corrida de `capturas-del-tablero` deja su
 artefacto: se compara con `linea-de-base/mediciones.json` (los altos y las peticiones al abrir, que no tienen que
 subir sin aviso). Con poca memoria, un typecheck angosto de los archivos tocados (un `tsconfig` que extiende el del
 website e incluye solo esos archivos) detecta los errores de tipo antes de la CI.
@@ -747,3 +758,9 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   abre el resto de ese día en el lugar, y «Ver como lista» vale por la visita. Cada ficha lleva a lo que resuelve la
   revisión, como «Abrir» en «Pendientes»; volver a /pro con el lugar guardado llega con el cajón (TB-12). *Otra
   opción:* siete columnas, de hoy a hoy + 6, con las del día 7 solo en «Pendientes».
+- **TA-16 · Propuesta: TB-06 se programa junto con TB-11.** Las cifras de TB-06 filtran «Te toca a vos» y llevan a
+  «Esperan respuesta», que es uno de los dos carriles de TB-11: hechas antes, o filtran la lista de hoy con un estado
+  que TB-11 vuelve a armar, o llevan a un carril que no existe. Juntas, el encabezado, las cifras y los carriles se
+  prueban y se recapturan una sola vez. No cambia el alcance ni el orden de las demás partes: TB-10, TB-16, TB-24,
+  TB-25 y TB-49 pueden ir antes. *Otra opción:* TB-06 sola, con «Esperan respuesta» llevando por ahora a «Pendientes»
+  filtrado por formularios, y TB-11 rehaciendo ese destino.
