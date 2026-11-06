@@ -401,6 +401,136 @@ export async function entradasDeTomas(tx: Tx, profesionalId: string, asesoradoId
   return salida;
 }
 
+// ─── Formularios (DL-165 D-8): pedido, respondido, cargado, confirmado o rechazado ──────────────
+
+const enPlural = (n: number, uno: string, varios: string): string => `${n} ${n === 1 ? uno : varios}`;
+
+/**
+ * Los hechos de las Solicitudes que **este profesional** pidió a la persona, en sus Alcances permitidos (la regla de
+ * API-FRI-03: una Solicitud la ven solo sus dos actores). Uno por hecho:
+ * - pedido, cuando se creó la Solicitud;
+ * - respondido (la persona sola) o confirmado (lo que él cargó), cuando entró la Respuesta; con sus correcciones;
+ * - cargado, por cada vez que él cargó con la persona, con cómo terminó (esperando, confirmado, rechazado o retirado);
+ * - rechazado, cuando la persona dijo «No es correcto».
+ * Nunca llevan las respuestas: cuántas y cuándo. Lo que la persona no confirmó ya se borró (DL-164 D-6).
+ */
+export async function entradasDeFormularios(
+  tx: Tx,
+  alcances: readonly Alcance[],
+  profesionalId: string,
+  asesoradoId: string,
+  desde: string,
+  hasta: string,
+  nombres: NombresDeAutores,
+  nombreDelAsesorado: string,
+): Promise<EntradaDeLineaDeTiempo[]> {
+  if (alcances.length === 0) return [];
+  const inicio = inicioDelDiaLocal(desde, ZONA);
+  const fin = finDelDiaLocal(hasta, ZONA);
+  const enElPeriodo = (d: Date | null): d is Date => d !== null && d >= inicio && d < fin;
+  const solicitudes = await tx.solicitudDeFormulario.findMany({
+    where: { profesionalId, asesoradoId, alcance: { in: [...alcances] }, momentoDeRegistro: { lt: fin } },
+    include: {
+      templateVersion: { select: { nombre: true } },
+      respuesta: { include: { rectificaciones: { select: { momentoDeRegistro: true }, orderBy: { momentoDeRegistro: 'asc' } } } },
+      propuestas: { where: { profesionalId }, orderBy: [{ momentoDeRegistro: 'asc' }, { id: 'asc' }] },
+    },
+  });
+  const nombreDelProfesional = await nombres.de(profesionalId);
+  const autor = (quien: 'PROFESIONAL' | 'PERSONA') =>
+    quien === 'PROFESIONAL' ? { identityId: profesionalId, displayName: nombreDelProfesional, role: 'PROFESSIONAL' as const } : { identityId: asesoradoId, displayName: nombreDelAsesorado, role: 'ADVISEE' as const };
+  const salida: EntradaDeLineaDeTiempo[] = [];
+  for (const s of solicitudes) {
+    const nombre = s.templateVersion.nombre;
+    const pedidas = (s.camposSolicitados as string[]).length;
+    const obligatorias = (s.camposRequeridos as string[]).length;
+    const comun = {
+      domain: DOMINIO_DEL_ALCANCE[s.alcance as Alcance],
+      source: { type: 'FORM_REQUEST' as const, id: s.id },
+      quality: [],
+      planVersionId: null,
+      exerciseKeys: [],
+    };
+    if (enElPeriodo(s.momentoDeRegistro)) {
+      salida.push({
+        ...comun,
+        timelineEntryId: `freq:${s.id}`,
+        eventType: 'FORM_REQUESTED',
+        // Pedir ocurre cuando BE lo registra: los dos instantes son el mismo.
+        ...tiempos(s.momentoDeRegistro, s.momentoDeRegistro),
+        author: autor('PROFESIONAL'),
+        title: `Formulario pedido · ${nombre}`,
+        details: [
+          { label: 'Para qué', value: s.proposito },
+          { label: 'Preguntas', value: obligatorias > 0 ? `${pedidas} (${enPlural(obligatorias, 'obligatoria', 'obligatorias')})` : String(pedidas) },
+        ],
+        state: 'EFFECTIVE',
+        relations: [],
+      });
+    }
+    const r = s.respuesta;
+    if (r && enElPeriodo(r.momentoDeRegistro)) {
+      const respondidas = ((r.contenido as { answers?: unknown[] } | null)?.answers ?? []).length;
+      const transcripcion = r.transcripcion as { professionalId: string; loadedAt: string; correctedFieldCodes: string[] } | null;
+      const ultima = r.rectificaciones.at(-1) ?? null;
+      const corregidas = transcripcion?.correctedFieldCodes.length ?? 0;
+      salida.push({
+        ...comun,
+        timelineEntryId: `fresp:${r.id}`,
+        eventType: transcripcion ? 'FORM_CONFIRMED' : 'FORM_RESPONDED',
+        ...tiempos(r.momentoDeRegistro, r.momentoDeRegistro),
+        author: autor('PERSONA'),
+        title: `${transcripcion ? 'Formulario confirmado' : 'Formulario respondido'} · ${nombre}`,
+        details: [
+          { label: 'Respondió', value: `${respondidas} de ${enPlural(pedidas, 'pregunta', 'preguntas')}` },
+          ...(transcripcion
+            ? [
+                { label: 'Cargado por', value: `${await nombres.de(transcripcion.professionalId)} el ${fechaCorta(civil(new Date(transcripcion.loadedAt)))}` },
+                { label: 'Antes de confirmar', value: corregidas === 0 ? 'lo confirmó tal cual' : `corrigió ${enPlural(corregidas, 'respuesta', 'respuestas')}` },
+              ]
+            : []),
+          ...(r.rectificaciones.length > 0 ? [{ label: 'Correcciones', value: String(r.rectificaciones.length) }] : []),
+        ],
+        state: ultima ? 'RECTIFIED' : 'EFFECTIVE',
+        relations: ultima ? [{ kind: 'RECTIFIED' as const, at: iso(ultima.momentoDeRegistro), target: null, label: 'Corregida por la persona: la original se conserva' }] : [],
+      });
+    }
+    for (const p of s.propuestas) {
+      if (enElPeriodo(p.momentoDeRegistro)) {
+        const resuelta = p.resueltaEn ? fechaCorta(civil(p.resueltaEn)) : null;
+        const estado =
+          p.estado === 'PENDIENTE' ? 'esperando que lo confirme' : p.estado === 'CONFIRMADA' ? `confirmado el ${resuelta}` : p.estado === 'RECHAZADA' ? `rechazado el ${resuelta}` : `retirado el ${resuelta}`;
+        salida.push({
+          ...comun,
+          timelineEntryId: `fload:${p.id}`,
+          eventType: 'FORM_LOADED',
+          ...tiempos(p.momentoDeRegistro, p.momentoDeRegistro),
+          author: autor('PROFESIONAL'),
+          title: `Formulario cargado con la persona · ${nombre}`,
+          details: [{ label: 'Estado', value: estado }],
+          state: 'EFFECTIVE',
+          relations: [],
+        });
+      }
+      if (p.estado === 'RECHAZADA' && enElPeriodo(p.resueltaEn)) {
+        salida.push({
+          ...comun,
+          timelineEntryId: `frej:${p.id}`,
+          eventType: 'FORM_REJECTED',
+          ...tiempos(p.resueltaEn, p.resueltaEn),
+          author: autor('PERSONA'),
+          title: `Formulario rechazado · ${nombre}`,
+          // Lo que no se confirmó ya no existe (DL-164 D-6): se dice qué pasó, no qué tenía.
+          details: [{ label: 'Lo cargado', value: 'se borró; el formulario sigue pendiente' }],
+          state: 'EFFECTIVE',
+          relations: [],
+        });
+      }
+    }
+  }
+  return salida;
+}
+
 // ─── Notas de coordinación (DL-140): un hito por nota ───────────────────────────────────────────
 
 /**

@@ -5,7 +5,7 @@
  * qué quiere decir cada estado y qué no hace la pantalla. Los textos que el dominio ya fija con una prueba se usan como
  * están. El botón y el diálogo son los de la ficha (`AyudaDeVista`); va en el marco del área.
  */
-import { COPY_FORMULARIOS as F, COPY_SOLICITUDES as C } from '@be/domain';
+import { COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_SOLICITUDES as C } from '@be/domain';
 import { AyudaDeVista, RenglonDeAyuda as Renglon } from '../../../../components/ayuda-de-vista';
 import { Icono } from '../../../../components/icono';
 
@@ -22,6 +22,12 @@ export function AyudaDeSolicitudes() {
         </Renglon>
         <Renglon esencial muestra={<Icono nombre="reportado" tamano={20} />}>
           <strong>{F.declaradoPorLaPersona}.</strong> {F.noEsMedicion} Se dice una vez, para todas las respuestas de la solicitud.
+        </Renglon>
+        <Renglon esencial muestra={<Icono nombre="reloj" tamano={20} />}>
+          <strong>{V.web.esperando}.</strong> Cargaste el formulario con la persona y ella todavía no lo confirmó desde su app. Hasta entonces no queda en su perfil y no lo ve nadie más. Podés editarlo o retirarlo; si dice que no es correcto, se borra.
+        </Renglon>
+        <Renglon esencial muestra={<Icono nombre="tilde" tamano={20} />}>
+          <strong>Cargado por vos y confirmado por la persona.</strong> La respuesta es de ella, porque la confirmó; la solicitud dice quién la cargó, cuándo la confirmó y cuántas respuestas corrigió antes.
         </Renglon>
         <Renglon muestra={<Icono nombre="tilde" tamano={20} />}>
           <strong>{C.requerida}.</strong> {C.siRespondeLasRequeridas} La solicitud entera sí puede quedar sin responder.

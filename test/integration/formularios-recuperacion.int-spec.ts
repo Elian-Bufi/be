@@ -16,11 +16,13 @@ import { PrismaClient } from '@prisma/client';
 import type { Response } from 'supertest';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { circuitoDeEntrenamiento, type CircuitoDeEntrenamiento } from './soporte-entrenamiento';
+import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
 import { pausar, versionDeVinculo } from './soporte-vinculo';
 
-const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';
-const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
-const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
+/** Una copia de P0 de «Antecedentes para entrenamiento» (DL-164 FI-02: la v1 es histórica y la vigente usa tipos nuevos, que FRM-02, 07 y 08 no sirven). */
+let PLANTILLA_ENTRENAMIENTO: string;
+let VERSION_ENTRENAMIENTO: string;
+const SEIS =['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -29,6 +31,7 @@ let campos: CampoDePlantilla[] = [];
 
 beforeAll(async () => {
   app = await appDePrueba();
+  ({ plantillaId: PLANTILLA_ENTRENAMIENTO, versionId: VERSION_ENTRENAMIENTO } = await sembrarAntecedentesDeP0(prisma, 'rec'));
 }, 120_000);
 afterAll(async () => {
   await app.close();

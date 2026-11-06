@@ -11,7 +11,7 @@
  *
  * WP-ESCRITORIO-AREAS (parte 0): el encabezado es el marco del área, común a las cuatro (`MarcoDelArea`). Como
  * Información es de las tres áreas, el acceso actual las nombra a las tres. Si se llegó desde Entrenamiento
- * (`volver=entrenamiento`), el camino de vuelta lleva a Entrenamiento y lo dice.
+ * (`volver=entrenamiento`) o desde Nutrición (`volver=nutricion`, FR-02), el camino de vuelta lleva a esa área y lo dice.
  *
  * Parte 4: **«Pedir información» dejó de ser una sección.** El marco tiene una sola, «Solicitudes» (`solicitudes.tsx`),
  * y el pedido es un cajón que se abre sobre ella (`pedir.tsx`). `vista=pedir` sigue abriéndolo: la usan el marco de la
@@ -19,6 +19,11 @@
  * la dirección como estaba: la persona queda en Información, y el marco le ofrece la vuelta a donde vino. Lo que
  * «Solicitudes» elige —la vista y la solicitud abierta— también vive en la dirección (`ver=`, `solicitud=`), y
  * «Actualizar» lo conserva.
+ *
+ * WP-FORMULARIOS-RONDA-2 (FR-10; DL-165 D-9): arriba de «Solicitudes», la tarjeta «Sus hábitos»
+ * (`tarjeta-de-sus-habitos.tsx`) con lo que la persona le comparte a este profesional (API-HBT-05). Ronda 2.1 (D-17 nueva):
+ * si no se los comparte y el PDP lo deja acompañarla (API-HBT-07), la tarjeta lo dice y ofrece «Pedir acceso a sus
+ * hábitos»; si el PDP no lo deja, la tarjeta no existe.
  */
 import { COPY_PISTAS, COPY_FORMULARIOS } from '@be/domain';
 import Link from 'next/link';
@@ -32,19 +37,27 @@ import { EstadoDeLecturaDelArea, MarcoDelArea } from '../marco-del-area';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
 import { AyudaDeSolicitudes } from './ayuda-de-solicitudes';
+import { CargaConLaPersona } from './cargar';
+import { origenDelPedido, vueltaDelOrigen } from './formulario-de-inicio';
 import { PedidoDeInformacion } from './pedir';
 import { VistaDeSolicitudes } from './solicitudes';
+import { SusHabitos } from './tarjeta-de-sus-habitos';
 
 /** La sección que se ve en el marco: una sola. */
 export const SECCIONES = [{ clave: 'solicitudes', texto: COPY_FORMULARIOS.solicitudes, icono: 'informacion', pista: COPY_PISTAS.secciones.solicitudes }] as const;
 
-/** Los valores de `vista` que la página admite: la sección y el pedido, que se abre sobre ella. */
-export const VISTAS = ['solicitudes', 'pedir'] as const;
+/**
+ * Los valores de `vista` que la página admite: la sección, el pedido (que se abre sobre ella) y «Cargar con la persona»
+ * (WP-FORMULARIOS-DE-INICIO, FI-05), que reemplaza a la lista a todo el ancho mientras se completa, con `solicitud=`.
+ */
+export const VISTAS = ['solicitudes', 'pedir', 'cargar'] as const;
 export type Vista = (typeof VISTAS)[number];
 
 export interface ContextoDeFormularios {
   readonly token: string;
   readonly asesoradoId: string;
+  /** El profesional con sesión, para saber qué solicitudes pidió él (solo esas se cargan con la persona). */
+  readonly yoId: string | null;
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
   /**
    * Un éxito que sobrevive al cierre del cajón (DL-113): lo muestra la pestaña, fijo abajo. Un aviso adentro de un
@@ -79,12 +92,10 @@ export function Formularios() {
 
   const retorno = useRetornoALaFicha(id);
   // Desde Entrenamiento se llega con `volver=entrenamiento` (la evaluación, en Resumen) o `volver=entrenamiento-plan`
-  // («Empezar el plan», DL-145): no son direcciones de la ficha, y la vuelta es a esa sección de Entrenamiento.
-  const volver = parametros.get('volver');
-  const vuelta =
-    volver === 'entrenamiento' || volver === 'entrenamiento-plan'
-      ? { href: `/pro/advisees/training?id=${encodeURIComponent(id)}&vista=${volver === 'entrenamiento-plan' ? 'plan' : 'resumen'}`, texto: 'Volver a Entrenamiento' }
-      : null;
+  // («Empezar el plan», DL-145), y desde Nutrición con `volver=nutricion` (su Resumen, FR-02): no son direcciones de la
+  // ficha, y la vuelta es a esa sección del área.
+  const origen = origenDelPedido(parametros.get('volver'));
+  const vuelta = origen ? vueltaDelOrigen(origen, id) : null;
   const enLaDireccion = parametros.toString();
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
@@ -97,7 +108,8 @@ export function Formularios() {
   const [exito, setExito] = useState<string | null>(null);
   // Sube con cada solicitud enviada: «Solicitudes» se monta de nuevo y vuelve a leer la lista, que ya tiene una más.
   const [tanda, setTanda] = useState(0);
-  const contexto = useMemo(() => (token ? { token, asesoradoId: id, sesionPerdida, avisar: setExito, parametros, ir } : null), [token, id, sesionPerdida, parametros, ir]);
+  const yoId = sesion.yo.tipo === 'listo' ? sesion.yo.id : null;
+  const contexto = useMemo(() => (token ? { token, asesoradoId: id, yoId, sesionPerdida, avisar: setExito, parametros, ir } : null), [token, id, yoId, sesionPerdida, parametros, ir]);
 
   return (
     <MarcoDelArea
@@ -128,7 +140,17 @@ export function Formularios() {
               ) : null}
             </AvisoFlotante>
           ) : null}
-          <VistaDeSolicitudes key={tanda} />
+          {/* «Cargar con la persona» ocupa el lugar de la lista mientras se completa; al enviar, vuelve la lista con la
+              solicitud abierta y lo cargado «Esperando que lo confirme». */}
+          {vista === 'cargar' ? (
+            <CargaConLaPersona />
+          ) : (
+            <>
+              {/* FR-10 (DL-165 D-9): los hábitos que la persona le comparte a este profesional. Sin autorización, nada. */}
+              <SusHabitos />
+              <VistaDeSolicitudes key={tanda} />
+            </>
+          )}
           {/* El cajón está siempre montado: cerrarlo no descarta un pedido a medio armar. */}
           <PedidoDeInformacion
             abierto={vista === 'pedir'}

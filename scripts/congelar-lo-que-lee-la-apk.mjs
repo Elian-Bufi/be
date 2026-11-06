@@ -177,12 +177,35 @@ function cabecerasDeLaApk(dominio) {
   const api = leer('apps/mobile/src/api.ts');
   const superficie = /superficie: '([A-Z]+)'/.exec(api)?.[1];
   if (superficie !== 'APK') throw new Error('apps/mobile/src/api.ts no declara la superficie APK');
-  const capacidades = /capacidades: \[([^\]]*)\]/.exec(api)?.[1];
-  const valores = capacidades ? capacidades.split(',').map((c) => c.trim()).filter(Boolean).map((c) => dominio[c]) : [];
-  if (valores.some((v) => typeof v !== 'string')) throw new Error(`No pude leer las capacidades de la APK: ${capacidades}`);
+  const valores = capacidadesDeLaApk(api, dominio);
   const cabeceras = { 'X-BE-Surface': superficie };
   if (valores.length > 0) cabeceras[dominio.HEADER_DE_CAPACIDADES ?? 'X-BE-Capabilities'] = dominio.valorDeCapacidades ? dominio.valorDeCapacidades(valores) : valores.join(', ');
   return cabeceras;
+}
+
+/**
+ * Las capacidades con las que la APK crea su cliente (`capacidades:` en `crearClienteBe`). Hasta la 0.20.0-candidata.1
+ * van escritas en el lugar (`capacidades: [A]`); desde la 0.21.0-candidata.1, en una constante del mismo archivo
+ * (`capacidades: CAPACIDADES`, con `const CAPACIDADES = [A, B] as const;`). Antes el script leía solo la primera forma y,
+ * con la segunda, congelaba las cabeceras sin las capacidades y sin avisar: la prueba habría pedido como otra APK. Por eso
+ * se niega si una declaración no se sabe leer, si los clientes que crea la APK declaran cosas distintas o si alguno no
+ * declara nada cuando otro sí.
+ */
+function capacidadesDeLaApk(api, dominio) {
+  const codigo = api.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const clientes = [...codigo.matchAll(/crearClienteBe\(/g)].length;
+  const declaradas = [...codigo.matchAll(/capacidades: (\[[^\]]*\]|[A-Za-z_$][\w$]*)/g)].map((m) => m[1]);
+  if (declaradas.length === 0) return [];
+  if (declaradas.length !== clientes) throw new Error(`La APK crea ${clientes} clientes y declara capacidades en ${declaradas.length}: revisá apps/mobile/src/api.ts a mano`);
+  const listas = declaradas.map((declarada) => {
+    const lista = declarada.startsWith('[') ? declarada : new RegExp(`const ${declarada.replace(/\$/g, '\\$')}(?::[^=]+)? = (\\[[^\\]]*\\])`).exec(codigo)?.[1];
+    if (!lista) throw new Error(`No pude leer las capacidades de la APK: ${declarada} no es una lista escrita en apps/mobile/src/api.ts`);
+    const valores = lista.slice(1, -1).split(',').map((c) => c.trim()).filter(Boolean).map((c) => dominio[c]);
+    if (valores.some((v) => typeof v !== 'string')) throw new Error(`No pude leer las capacidades de la APK: ${lista}`);
+    return valores;
+  });
+  if (new Set(listas.map((l) => JSON.stringify(l))).size > 1) throw new Error(`Los clientes de la APK declaran capacidades distintas: ${declaradas.join(' y ')}`);
+  return listas[0];
 }
 
 /** JSON Schema del lado de la entrada: lo que `safeParse` acepta (un objeto no estricto acepta claves de más). */

@@ -9,13 +9,20 @@
  * Bloque 5 del encargo de consolidación (2026-10-19): las cuatro lecturas tienen cada una su estado. Si falla una, el
  * resto sigue a la vista, el aviso de arriba dice qué falta y vuelve a pedir solo eso, y cada dato que dependía de lo
  * que falta dice «No se pudo leer», nunca «no hay» (`lecturas-parciales.tsx`).
+ *
+ * PF-02 (WP-FORMULARIOS-RONDA-2, FR-02): «Pedir información» está acá, como en el Resumen de Entrenamiento. Abre el
+ * pedido con «Cómo comés hoy» elegido y su «para qué» sugerido, que se pueden cambiar, y al enviarlo se vuelve acá, con
+ * «Solicitud enviada.».
  */
 import { COPY_PRIMER_PLAN, cantidad, COPY_NUTRICION, type ContextoDeRevisionResponse, type EvaluacionNutricional, type VersionDeObjetivo, type VersionDePlan } from '@be/domain';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AvisoFlotante } from '../../../../components/ayuda';
+import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Cargando } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
+import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { dia, fecha } from '../../../../lib/formato';
+import { pedidoDesde } from '../forms/formulario-de-inicio';
 import { datosDe, fallo, LecturasParciales, SegunLectura, type Lectura } from '../lecturas-parciales';
 import { useNutricion } from './nutricion';
 import { numerosDeVersion } from './plan';
@@ -43,6 +50,12 @@ export function VistaDeResumen() {
   const [aviso, setAviso] = useState<string | null>(null);
   // Una respuesta que llega después de un pedido más nuevo de la misma lectura no lo pisa.
   const turnos = useRef<Record<Clave, number>>({ evaluaciones: 0, objetivos: 0, planes: 0, contexto: 0 });
+  // Lo que alguien dejó dicho para esta página antes de volver a ella: «Solicitud enviada.», cuando el pedido de
+  // información salió de acá (FR-02). Se toma una vez.
+  useEffect(() => {
+    const alLlegar = tomarAvisoPara('/pro/advisees/nutrition');
+    if (alLlegar) setAviso(alLlegar);
+  }, []);
 
   /** Lee lo pedido (todo, o solo lo que falló); lo demás queda como está. */
   const leer = useCallback(
@@ -99,6 +112,7 @@ export function VistaDeResumen() {
         }}
         onIrAlPlan={() => irA('plan')}
         onIrARevisiones={() => irA('revisiones')}
+        pedirInformacion={pedidoDesde('nutricion', asesoradoId)}
       />
     </LecturasParciales>
   );
@@ -113,6 +127,7 @@ function Resumen({
   onListo,
   onIrAlPlan,
   onIrARevisiones,
+  pedirInformacion,
 }: {
   lecturas: Lecturas;
   formulario: 'evaluacion' | 'objetivo' | null;
@@ -122,6 +137,8 @@ function Resumen({
   onListo: (texto: string) => void;
   onIrAlPlan: () => void;
   onIrARevisiones: () => void;
+  /** PF-02 (FR-02): la dirección del pedido, con «Cómo comés hoy» elegido y la vuelta a este Resumen. */
+  pedirInformacion: string;
 }) {
   const { evaluaciones, objetivos, planes, contexto } = lecturas;
   const efectivo = objetivos?.ok ? (objetivos.datos.find((o) => o.isEffective) ?? null) : null;
@@ -279,12 +296,19 @@ function Resumen({
             <button type="button" className="boton boton--secundario" onClick={() => onFormulario('objetivo')} disabled={!!objetivoNoSePuede} aria-describedby={objetivoNoSePuede ? 'objetivo-no-se-puede' : undefined}>
               {efectivo ? COPY_NUTRICION.nuevaVersionDeObjetivo : COPY_NUTRICION.definirObjetivo}
             </button>
+            {/* PF-02 (FR-02): pedir información desde acá y volver acá al enviarla, como en Entrenamiento. */}
+            <Link className="boton boton--secundario" href={pedirInformacion}>
+              {COPY_NUTRICION.pedirInformacion}
+            </Link>
           </div>
           {objetivoNoSePuede && (evaluaciones !== null && objetivos !== null) ? (
             <p id="objetivo-no-se-puede" className="nota">
               {objetivoNoSePuede}
             </p>
           ) : null}
+          <Ayuda titulo="Qué se le pide a la persona">
+            <p>{COPY_NUTRICION.ayudaPedirInformacion}</p>
+          </Ayuda>
         </>
       ) : null}
     </div>

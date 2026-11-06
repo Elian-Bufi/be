@@ -78,9 +78,17 @@ export async function esperarQueEsperen(prisma: PrismaClient, n: number, opcione
  * - la identidad, en modo exclusivo (FOR UPDATE): frena también las claves foráneas que la nombran (insertar códigos);
  * - los códigos vigentes de la identidad: frenan solo a quien quiera invalidarlos;
  * - una sesión: frena a quien quiera cerrarla o revocarla;
- * - un autenticador (`factor_totp`): frena a quien quiera cambiarlo o descartarlo.
+ * - un autenticador (`factor_totp`): frena a quien quiera cambiarlo o descartarlo;
+ * - una Solicitud de formulario (DL-164): frena a quien quiera responderla o cargarle una propuesta (toman la fila al
+ *   empezar, `formularios/cerrojo-de-solicitud.ts`) y, por las claves foráneas, a quien le inserte una Respuesta o una
+ *   propuesta sin tomarla.
  */
-export type FilaRetenida = { readonly identidad: string } | { readonly codigosDe: string } | { readonly sesion: string } | { readonly factorTotp: string };
+export type FilaRetenida =
+  | { readonly identidad: string }
+  | { readonly codigosDe: string }
+  | { readonly sesion: string }
+  | { readonly factorTotp: string }
+  | { readonly solicitudDeFormulario: string };
 
 /**
  * Retiene una fila en una transacción de la prueba mientras `mientras` dispara los pedidos y espera a que queden
@@ -96,6 +104,7 @@ export async function conLaFilaRetenida<T>(prisma: PrismaClient, fila: FilaReten
           SELECT 1 FROM "codigo_de_recuperacion"
            WHERE "identidad_id" = ${fila.codigosDe}::uuid AND "momento_de_uso" IS NULL AND "momento_de_invalidacion" IS NULL FOR UPDATE`;
       else if ('sesion' in fila) await tx.$queryRaw`SELECT 1 FROM "sesion" WHERE "id" = ${fila.sesion}::uuid FOR UPDATE`;
+      else if ('solicitudDeFormulario' in fila) await tx.$queryRaw`SELECT 1 FROM "solicitud_de_formulario" WHERE "id" = ${fila.solicitudDeFormulario}::uuid FOR UPDATE`;
       else await tx.$queryRaw`SELECT 1 FROM "factor_totp" WHERE "id" = ${fila.factorTotp}::uuid FOR UPDATE`;
       resultado = await mientras(await pidDeLaTransaccion(tx));
     },

@@ -12,8 +12,8 @@
  * - el análisis del profesional (API-PRJ-01) marca el punto de una serie de carga rápida en su detalle y lo explica en
  *   la nota de la serie: el website lo dibuja hueco y lo deja fuera de los resúmenes y del cambio relativo; la cantidad
  *   de series registradas cuenta también las tildadas;
- * - la APK 0.18.0-candidata.1 (lo que congeló DL-152) lee igual lo registrado sin los campos nuevos, y no puede leer una
- *   ejecución que los trae: es el caso que queda documentado en DL-161.
+ * - la APK estable 0.13.2 (lo que congeló DL-152; tampoco conoce los campos nuevos) lee igual lo registrado sin ellos, y
+ *   no puede leer una ejecución que los trae: es el caso que queda documentado en DL-161.
  */
 import type { INestApplication } from '@nestjs/common';
 import { HoyDeEntrenamientoResponseSchema, LineaDeTiempoResponseSchema, ProyeccionResponseSchema } from '@be/domain';
@@ -178,8 +178,9 @@ describe('Registro por niveles (DL-161) · la serie dice cómo se cargó y cuán
     expect((await serieDe('metric=SETS_RECORDED')).points.map((p) => p.value)).toEqual([2]);
   });
 
-  it('la APK 0.18.0-candidata.1 lee igual lo registrado sin los campos nuevos; una ejecución que los trae no la puede leer', async () => {
-    const vieja = new LaApk('0.18.0-candidata.1', () => app);
+  it('la APK 0.13.2, anterior a DL-161, lee igual lo registrado sin los campos nuevos; una ejecución que los trae no la puede leer', async () => {
+    // Era la 0.18.0-candidata.1, que salió de las vigentes el 2026-11-05 (DL-152): la estable tampoco conoce los campos.
+    const vieja = new LaApk('0.13.2', () => app);
     // Cargada con una APK nueva, toda escrita y sin cronómetro: lo que viaja es lo de siempre.
     const sinNada = await registrada([{ ...escrita(1), recordedAs: 'TYPED', durationSeconds: null }, escrita(2)]);
     await vieja.pide('API-TRN-19', { token: sinNada.c.ase.token, params: { executionId: sinNada.executionId } });
