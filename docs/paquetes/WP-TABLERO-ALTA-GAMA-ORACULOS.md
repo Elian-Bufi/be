@@ -14,8 +14,8 @@
 > lee.
 >
 > **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05
-> y TB-10; los de TB-24, con su parte), TEST-TAG-006 y TEST-TAG-007, y TEST-TAG-001 y TEST-TAG-002 (TB-10). Los demás se
-> escriben con su parte (§10 del paquete).
+> y TB-10; los de TB-24, con su parte), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), y TEST-TAG-014
+> (TB-16). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -354,4 +354,50 @@ AUTOMATION           apps/web/test/tarjetas-del-resumen.test.mjs («TEST-TAG-002
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. La prueba a mano con un lector de pantalla queda pendiente
                      (no se pudo hacer en esta PC)
+```
+
+---
+
+## TEST-TAG-014 — El período de la persona nueva
+
+```text
+TEST_ID              TEST-TAG-014
+TITLE                Con un acompañamiento de menos de 90 días, el período por omisión arranca en el vínculo y lo
+                     dice; lo anterior al vínculo de cada área no se dibuja; la ficha de la cohorte no cambia
+LEVEL                Unidad (funciones puras del website, sin React)
+PRIORITY             P1 — sin esto, una persona de tres días aparece con 87 días «sin registros», que se leen como un
+                     abandono (D-7)
+SOURCES              DL-163 D-7 («el período por omisión del Resumen y de Analizar arranca en el vínculo más antiguo de
+                     las áreas que ve el profesional, y lo dice»; «En cada tarjeta y en su tira, lo anterior al
+                     vínculo de esa área no se dibuja»; «Con uno a tres días con valor no se dibuja línea ni media») ·
+                     WP-TABLERO-ALTA-GAMA TB-16 · la propuesta, §10.4 · TA-22
+PRECONDITIONS        Ninguna: inicioDelAcompanamiento, periodoDesdeElVinculo, parametrosDePeriodo y leerPeriodo
+                     (seguimiento/estado.ts); recortadaAlVinculo, estadosDeLosDias y geometriaDelIndicador
+                     (seguimiento/geometria.ts).
+SYNTHETIC_FIXTURE    Vínculos armados en la prueba (aceptados, en pausa y terminados, con la hora en UTC); hoy, el
+                     6 nov 2026; una serie diaria de calorías con un registro antes del vínculo y tres o cuatro
+                     después.
+STEPS                1. El inicio del acompañamiento con vínculos de Nutrición y Antropometría aceptados, uno de
+                        Entrenamiento en pausa y uno de Nutrición terminado.
+                     2. El período sin nada en la URL con un vínculo del 3 nov; sus parámetros; un vínculo de hoy.
+                     3. El período con un vínculo de 2023, de justo 90 días, sin vínculos leídos, con p=30 y con un
+                        rango propio.
+                     4. La geometría del indicador con el vínculo del área el 3 nov, y sin él.
+                     5. Tres días con valor desde el vínculo; cuatro días.
+EXPECTED             1 → Nutrición desde el 3 nov y Antropometría desde el 4 (las 2:30 UTC del 5 son el 4 en la zona
+                        de BE); el inicio, el 3 nov; lo pausado y lo terminado no cuentan.
+                     2 → del 3 nov a hoy, marcado como desde el vínculo, sin nada en la URL; con un vínculo de hoy,
+                        un día.
+                     3 → el período de siempre en los tres primeros; lo elegido manda en los otros dos.
+                     4 → solo los puntos desde el 3 nov; ningún día sin registros ni ninguna celda de la tira antes;
+                        sin el corte, lo anterior se dibuja.
+                     5 → con tres, puntos sueltos, sin tramos ni semanas; con cuatro, la línea.
+NEGATIVE_ASSERTIONS  Lo anterior al vínculo no se dice «sin registros». La cohorte (vínculos de 6 meses a 3 años) no
+                     cambia de período ni de lecturas. Un período elegido no se reemplaza. Mutación verificada: sin el
+                     recorte al vínculo, falla el paso 4.
+AUTOMATION           apps/web/test/persona-nueva.test.mjs («TEST-TAG-014 · …», cinco casos), en
+                     `npm run test -w @be/web`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas de la corrida de TB-16, el Resumen de la
+                     cohorte igual al de TB-10. La recaptura con una cuenta recién creada queda para la etapa B (§8.3)
 ```

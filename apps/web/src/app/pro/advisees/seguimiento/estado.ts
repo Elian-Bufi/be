@@ -44,6 +44,55 @@ export interface Periodo {
   readonly preset: DiasDePreset | null;
   readonly desde: string;
   readonly hasta: string;
+  /**
+   * TB-16 (DL-163 D-7): el período por omisión, acortado al inicio del acompañamiento. No va en la URL: sigue siendo
+   * «el de siempre», y elegir otro lo reemplaza.
+   */
+  readonly desdeElVinculo?: true;
+}
+
+/** Las áreas de BE, como las nombra el alcance de un vínculo. */
+type AreaDelVinculo = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
+
+/** Desde cuándo acompaña el profesional a la persona: el día más antiguo, y el de cada área. */
+export interface Acompanamiento {
+  readonly inicio: string | null;
+  readonly porArea: Readonly<Partial<Record<AreaDelVinculo, string>>>;
+}
+
+/**
+ * TB-16 (DL-163 D-7): el inicio del acompañamiento, de los vínculos de este profesional con la persona: por área, el día
+ * (civil, en la zona de BE) en que se aceptó el vínculo vigente más antiguo de las áreas que ve, y el más antiguo de
+ * todos. Un vínculo en pausa, pendiente o terminado no cuenta: esas áreas no se ven.
+ */
+export function inicioDelAcompanamiento(
+  vinculos: readonly { readonly relationshipState: string; readonly acceptedAt: string | null; readonly scope: { readonly code: string } }[],
+  zona = 'America/Argentina/Buenos_Aires',
+): Acompanamiento {
+  const porArea: Partial<Record<AreaDelVinculo, string>> = {};
+  for (const v of vinculos) {
+    if (v.relationshipState !== 'ACEPTADO' || !v.acceptedAt) continue;
+    if (v.scope.code !== 'NUTRICION' && v.scope.code !== 'ENTRENAMIENTO' && v.scope.code !== 'ANTROPOMETRIA') continue;
+    const dia = new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(v.acceptedAt));
+    const area = v.scope.code;
+    const anterior = porArea[area];
+    if (anterior === undefined || dia < anterior) porArea[area] = dia;
+  }
+  const dias = Object.values(porArea);
+  return { inicio: dias.length > 0 ? dias.reduce((a, b) => (b < a ? b : a)) : null, porArea };
+}
+
+/** Si la URL no elige ningún período: entonces rige el por omisión, y TB-16 lo puede acortar. */
+export const sinPeriodoEnLaUrl = (params: URLSearchParams): boolean => !params.get('p') && !params.get('desde') && !params.get('hasta');
+
+/**
+ * TB-16 (DL-163 D-7): con un acompañamiento de menos de 90 días, el período por omisión arranca el día en que empezó,
+ * y lo dice. Es un recorte rotulado del período: no cambia ningún valor. Si la URL elige un período, o el acompañamiento
+ * tiene 90 días o más, el período queda como está (la cohorte no cambia).
+ */
+export function periodoDesdeElVinculo(p: Periodo, sinNadaEnLaUrl: boolean, inicio: string | null, hoy: string = hoyEn()): Periodo {
+  if (!sinNadaEnLaUrl || inicio === null || p.preset !== PRESET_POR_DEFECTO || inicio <= p.desde) return p;
+  return { preset: null, desde: inicio > hoy ? hoy : inicio, hasta: hoy, desdeElVinculo: true };
 }
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -73,6 +122,8 @@ export function leerPeriodo(params: URLSearchParams, hoy: string = hoyEn()): Per
 }
 
 export function parametrosDePeriodo(p: Periodo): Record<string, string | null> {
+  // El período desde el vínculo es el por omisión: no se escribe en la URL (TB-16).
+  if (p.desdeElVinculo) return { p: null, desde: null, hasta: null };
   return p.preset ? { p: String(p.preset), desde: null, hasta: null } : { p: null, desde: p.desde, hasta: p.hasta };
 }
 

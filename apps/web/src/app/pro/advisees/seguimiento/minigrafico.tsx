@@ -152,6 +152,7 @@ export function MinigraficoDelIndicador({
   inicioDelPlan,
   descripcion,
   lienzo = 72,
+  desdeElVinculo = null,
 }: {
   serie: SerieAnalitica;
   desde: string;
@@ -160,6 +161,8 @@ export function MinigraficoDelIndicador({
   inicioDelPlan: string | null;
   descripcion: string;
   lienzo?: number;
+  /** TB-16: el inicio del vínculo de esta área; lo anterior no se dibuja. */
+  desdeElVinculo?: string | null;
 }) {
   const [caja, setCaja] = useState<HTMLDivElement | null>(null);
   const [ancho, setAncho] = useState(0);
@@ -174,8 +177,8 @@ export function MinigraficoDelIndicador({
   const diaria = serie.grain === 'DAY';
   const sinRegistros = useMemo(() => (diaria ? diasSinRegistros(serie.gaps, hoy) : []), [serie, diaria, hoy]);
   const g = useMemo(
-    () => geometriaDelIndicador({ puntos: serie.points, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan, rangoMinimo: RANGO_MINIMO_POR_UNIDAD[serie.unit] }),
-    [serie, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan],
+    () => geometriaDelIndicador({ puntos: serie.points, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan, rangoMinimo: RANGO_MINIMO_POR_UNIDAD[serie.unit], desdeElVinculo }),
+    [serie, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan, desdeElVinculo],
   );
   const color = ESTILOS[0].color;
   const alto = altoDelIndicador(lienzo);

@@ -363,6 +363,12 @@ export interface EntradaDelIndicador {
    * parece un precipicio. Sin él, el rango sale solo de los valores.
    */
   readonly rangoMinimo?: number;
+  /**
+   * TB-16 (DL-163 D-7): el día en que empezó el vínculo de esta área, si es posterior al inicio del período. Lo anterior
+   * no se dibuja, ni en el lienzo ni en la tira: no es «sin registros», es antes del acompañamiento. La escala de fechas
+   * sigue siendo la del período, la misma de los demás indicadores.
+   */
+  readonly desdeElVinculo?: string | null;
 }
 
 /** La escala mínima de cada unidad (la propuesta, A9): 2 kg, 2 cm o 4 mm, centrada en los valores. */
@@ -430,7 +436,8 @@ const fechasEntre = (desde: string, hasta: string): string[] => {
   return lista;
 };
 
-export function geometriaDelIndicador(e: EntradaDelIndicador): GeometriaDelIndicador {
+export function geometriaDelIndicador(entrada: EntradaDelIndicador): GeometriaDelIndicador {
+  const e = recortadaAlVinculo(entrada);
   const dias = fechasEntre(e.desde, e.hasta);
   const porDia = e.ancho / Math.max(1, dias.length);
   const indiceDe = new Map(dias.map((f, i) => [f, i]));
@@ -602,6 +609,20 @@ export function estadosDeLosDias(e: Pick<EntradaDelIndicador, 'puntos' | 'sinReg
     const estado: EstadoDelDia = p ? (estadoDeMarca(p) === 'hueco' ? 'hueco' : 'con') : sin.has(fecha) ? 'sin' : 'nada';
     return { fecha, estado };
   });
+}
+
+/**
+ * TB-16: la entrada sin lo anterior al vínculo del área: sin sus puntos y sin sus días sin registros. Los días que quedan
+ * antes del vínculo no tienen estado («nada»), así que la tira no los dibuja.
+ */
+export function recortadaAlVinculo(e: EntradaDelIndicador): EntradaDelIndicador {
+  const corte = e.desdeElVinculo;
+  if (!corte || corte <= e.desde) return e;
+  return {
+    ...e,
+    puntos: e.puntos.filter((p) => p.date >= corte),
+    sinRegistros: e.sinRegistros.filter((h) => h.hasta >= corte).map((h) => (h.desde < corte ? { desde: corte, hasta: h.hasta } : h)),
+  };
 }
 
 /** Las celdas de la tira: una por día con lugar de sobra; con poco, los días seguidos del mismo estado, juntos. */

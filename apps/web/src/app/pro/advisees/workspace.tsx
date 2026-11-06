@@ -60,7 +60,7 @@ import { accionDeLaFicha, rutaDeLaAccion, type AccionDeLaFicha } from './accion-
 import { DialogoDeNota } from './nota-de-coordinacion';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
-import { conRetorno, hoyEn, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
+import { conRetorno, hoyEn, inicioDelAcompanamiento, leerPeriodo, leerVista, periodoDesdeElVinculo, periodoEnInstantes, sinPeriodoEnLaUrl, valorDeRetorno, type Acompanamiento, type Periodo } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
 import { Pista } from '../../../components/pista';
@@ -71,6 +71,9 @@ const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.An
 
 /** El ícono de cada eslabón de la acción del momento (TB-09). */
 const ICONO_DE_LA_ACCION: Readonly<Record<AccionDeLaFicha['tipo'], NombreDeIcono>> = { aplicar: 'aplicar', revisar: 'revision', borrador: 'borrador', empezar: 'plan' };
+
+/** TB-16: mientras no se leyeron los vínculos, no se sabe desde cuándo: el período es el por omisión. */
+const SIN_ACOMPANAMIENTO: Acompanamiento = { inicio: null, porArea: {} };
 
 type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vinculos: readonly Vinculo[] };
 
@@ -88,11 +91,25 @@ export function Workspace() {
   const id = parametros.get('id') ?? '';
   const vista = leerVista(parametros.get('vista'));
   const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const periodo = useMemo(() => leerPeriodo(new URLSearchParams(parametros.toString())), [claveDelPeriodo]);
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees?id=${id}`);
   const [panel, setPanel] = useState<PanelDelResumen>({ tipo: 'cargando' });
   const [encabezado, setEncabezado] = useState<Encabezado>({ tipo: 'cargando' });
+  /**
+   * TB-16 (DL-163 D-7): desde cuándo acompaña este profesional a la persona, de los vínculos que ya lee el marco. Con
+   * menos de 90 días y sin un período elegido en la URL, el período por omisión arranca ahí, y lo dice.
+   */
+  // En su propio estado, por persona: cada lectura vuelve a poner el encabezado en «cargando», y el período no oscila.
+  const [acompanamientoLeido, setAcompanamientoLeido] = useState<{ readonly id: string; readonly valor: Acompanamiento } | null>(null);
+  const acompanamiento: Acompanamiento = acompanamientoLeido?.id === id ? acompanamientoLeido.valor : SIN_ACOMPANAMIENTO;
+  const periodoEfectivo = (inicio: string | null): Periodo => {
+    const url = new URLSearchParams(parametros.toString());
+    return periodoDesdeElVinculo(leerPeriodo(url), sinPeriodoEnLaUrl(url), inicio);
+  };
+  const enPalabras = (p: Periodo) => `${p.preset ?? ''}|${p.desde}|${p.hasta}`;
+  const claveDelEfectivo = enPalabras(periodoEfectivo(acompanamiento.inicio));
+  // El período, por su valor: si los vínculos no lo cambian (la cohorte, cualquiera con 90 días o más), nada se relee.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const periodo = useMemo(() => periodoEfectivo(acompanamiento.inicio), [claveDelPeriodo, claveDelEfectivo]);
   const [consultadoEn, setConsultadoEn] = useState<Date | null>(null);
   // Sube cuando cambia lo que se puede leer, y cuando se pide «Actualizar»: las lecturas de la ficha se repiten.
   const [versionDeAcceso, setVersionDeAcceso] = useState(0);
@@ -126,6 +143,12 @@ export function Workspace() {
       ]);
       if (esta !== generacion.current) return;
       if ((respuesta && sesionPerdida(respuesta)) || sesionPerdida(lista)) return;
+      const vinculos = lista.ok ? lista.datos.data.filter((v) => v.professional.identityId === yoId && v.advisee.identityId === id) : null;
+      // TB-16: si los vínculos acortan el período, este resumen se leyó con otro: no se muestra. Cambia el período y la
+      // ficha vuelve a leer con el correcto (solo con una persona de menos de 90 días; con las demás, nada cambia).
+      const delVinculo = vinculos ? inicioDelAcompanamiento(vinculos) : null;
+      if (delVinculo) setAcompanamientoLeido({ id, valor: delVinculo });
+      if (delVinculo && enPalabras(periodoEfectivo(delVinculo.inicio)) !== enPalabras(periodo)) return;
       ultimaConsulta.current = Date.now();
       setConsultadoEn(new Date());
       const nuevo: PanelDelResumen =
@@ -139,7 +162,7 @@ export function Workspace() {
         if (silencioso && huellaDeAcceso(anterior) !== huellaDeAcceso(nuevo)) setVersionDeAcceso((v) => v + 1);
         return nuevo;
       });
-      setEncabezado(lista.ok ? { tipo: 'listo', vinculos: lista.datos.data.filter((v) => v.professional.identityId === yoId && v.advisee.identityId === id) } : { tipo: 'error' });
+      setEncabezado(vinculos ? { tipo: 'listo', vinculos } : { tipo: 'error' });
     },
     [token, yoId, id, sesionPerdida, periodo],
   );
@@ -306,6 +329,7 @@ export function Workspace() {
         versionDeAcceso={versionDeAcceso}
         yoId={yo.id}
         abrirNota={abrirNota}
+        acompanamiento={acompanamiento}
       >
         {marco(
           <div className="marco-de-la-ficha__vistas">

@@ -266,6 +266,7 @@ function ValorDelIndicador({
   inicioDelPlan: string | null;
   formato: FormatoDeLaSintesis;
 }) {
+  const { acompanamiento } = useSeguimiento();
   const r = resumirPeriodo(serie, definicion, desde, hasta, hoy);
   if (r.valor === null) {
     return (
@@ -311,7 +312,7 @@ function ValorDelIndicador({
         {deTomas ? `${REGLA[definicion.resumenDePeriodo]}: ${ultimo ? formato.fecha(ultimo.date) : '—'}` : REGLA[definicion.resumenDePeriodo]}
       </p>
       {/* TB-04 (DL-163 D-5): más alto, con la tira que lleva el estado de cada día; la descripción no cambia. */}
-      <MinigraficoDelIndicador serie={serie} desde={desde} hasta={hasta} hoy={hoy} inicioDelPlan={inicioDelPlan} descripcion={`Gráfico de ${nombre}. ${resumenTextual(serie, definicion, desde, hasta)}`} />
+      <MinigraficoDelIndicador serie={serie} desde={desde} hasta={hasta} hoy={hoy} inicioDelPlan={inicioDelPlan} desdeElVinculo={acompanamiento.porArea[definicion.area] ?? null} descripcion={`Gráfico de ${nombre}. ${resumenTextual(serie, definicion, desde, hasta)}`} />
       <p className="indicador__cobertura">
         {cobertura.map((parte, i) => (
           <span key={parte}>

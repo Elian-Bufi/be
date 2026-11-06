@@ -17,7 +17,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { DashboardResponse, DominioDeAnalisis } from '@be/domain';
 import type { Resultado } from '../../../../lib/api';
 import { motivoDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
-import { hrefConCambios, leerPeriodo, type Periodo } from './estado';
+import { hrefConCambios, leerPeriodo, periodoDesdeElVinculo, sinPeriodoEnLaUrl, type Acompanamiento, type Periodo } from './estado';
 
 // Las fallas de una lectura viven en `lib/fallas` (las usa también el Espacio profesional): acá se vuelven a exportar
 // para las vistas de la ficha.
@@ -60,6 +60,11 @@ export interface ContextoDelSeguimiento {
   readonly yoId: string;
   /** DL-140: abre «Escribir una nota de coordinación» (el diálogo vive en la ficha), o la corrección de una nota propia. */
   readonly abrirNota: (pedido: PedidoDeNota) => void;
+  /**
+   * TB-16 (DL-163 D-7): desde cuándo acompaña el profesional a la persona, en total y por área, de los vínculos que lee el
+   * marco. El período por omisión arranca ahí si tiene menos de 90 días, y lo anterior al vínculo de un área no se dibuja.
+   */
+  readonly acompanamiento: Acompanamiento;
 }
 
 /** Lo que se le pide al diálogo de la nota: escribir una nueva, o corregir una propia con otra que la cita (CRD-D7). */
@@ -86,6 +91,7 @@ export function ProveedorDelSeguimiento({
   versionDeAcceso,
   yoId,
   abrirNota,
+  acompanamiento,
   children,
 }: {
   token: string;
@@ -98,13 +104,18 @@ export function ProveedorDelSeguimiento({
   versionDeAcceso: number;
   yoId: string;
   abrirNota: (pedido: PedidoDeNota) => void;
+  acompanamiento: Acompanamiento;
   children: ReactNode;
 }) {
   const params = useSearchParams();
   const ruta = usePathname();
   const clave = params.toString();
   const parametros = useMemo(() => new URLSearchParams(clave), [clave]);
-  const periodo = useMemo(() => leerPeriodo(parametros), [parametros]);
+  // TB-16: el mismo período que lee el marco (workspace.tsx), por su valor.
+  const efectivo = periodoDesdeElVinculo(leerPeriodo(parametros), sinPeriodoEnLaUrl(parametros), acompanamiento.inicio);
+  const claveDelPeriodo = `${efectivo.preset ?? ''}|${efectivo.desde}|${efectivo.hasta}`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const periodo = useMemo(() => efectivo, [claveDelPeriodo]);
   const href = useCallback((cambios: Readonly<Record<string, string | null>>) => hrefConCambios(ruta, parametros, cambios), [ruta, parametros]);
   const ir = useCallback(
     (cambios: Readonly<Record<string, string | null>>, opciones?: { readonly agregarAlHistorial?: boolean }) => {
@@ -115,8 +126,8 @@ export function ProveedorDelSeguimiento({
     [ruta, parametros],
   );
   const valor = useMemo(
-    () => ({ token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir, yoId, abrirNota }),
-    [token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir, yoId, abrirNota],
+    () => ({ token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir, yoId, abrirNota, acompanamiento }),
+    [token, asesoradoId, avisarSinAcceso, panel, recargarPanel, versionDeAcceso, nombreDelAsesorado, periodo, parametros, sesionPerdida, href, ir, yoId, abrirNota, acompanamiento],
   );
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
