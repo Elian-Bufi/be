@@ -1,0 +1,67 @@
+# Fase «verificar», el 2026-10-26 a las 20:27 UTC, con la base ya cerrada al exterior (salida de escenarios.mjs verificar; salida 0)
+
+ASE_DOS  ENERGY desde 2026-10-18:
+    2026-10-18 · indicado 1572 (API 1572) · registrado sin registros
+    2026-10-19 · indicado 1572 (API 1572) · registrado 1730 (API 1730 COMPLETE)
+    2026-10-20 · indicado 1572 (API 1572) · registrado 1418 (API 1417.5 COMPLETE)
+    2026-10-21 · indicado 1572 (API 1572) · registrado 1745 (API 1745.3 COMPLETE)
+    2026-10-22 · indicado 1572 (API 1572) · registrado hueco
+    2026-10-23 · indicado 1572 (API 1572) · registrado 1435 (API 1434.8 COMPLETE)
+    2026-10-24 · indicado 1572 (API 1572) · registrado 1032 (subtotal) (API 1032.1 PARTIAL)
+    2026-10-25 · indicado 1572 (API 1572) · registrado 1590 (API 1589.8 COMPLETE)
+    2026-10-26 · indicado 1572 (API 1572) · registrado sin registros
+ASE_DOS  PROTEIN desde 2026-10-18:
+    2026-10-18 · indicado 108.8 (API 108.8) · registrado sin registros
+    2026-10-19 · indicado 108.8 (API 108.8) · registrado 120.4 (API 120.4 COMPLETE)
+    2026-10-20 · indicado 108.8 (API 108.8) · registrado 97.6 (API 97.64 COMPLETE)
+    2026-10-21 · indicado 108.8 (API 108.8) · registrado 113.5 (API 113.465 COMPLETE)
+    2026-10-22 · indicado 108.8 (API 108.8) · registrado hueco
+    2026-10-23 · indicado 108.8 (API 108.8) · registrado 98.6 (API 98.55 COMPLETE)
+    2026-10-24 · indicado 108.8 (API 108.8) · registrado 60.1 (subtotal) (API 60.11 PARTIAL)
+    2026-10-25 · indicado 108.8 (API 108.8) · registrado 109.0 (API 109.02 COMPLETE)
+    2026-10-26 · indicado 108.8 (API 108.8) · registrado sin registros
+ASE_TRES  ENERGY desde 2026-10-18:
+    2026-10-18 · indicado sin indicado (SEVERAL_OPTIONS) · registrado sin registros
+    2026-10-19 · indicado sin indicado (SEVERAL_OPTIONS) · registrado sin registros
+    2026-10-20 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 1572 (API 1572 COMPLETE)
+    2026-10-21 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 1288 (API 1288.1 COMPLETE)
+    2026-10-22 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 1411 (API 1410.5 COMPLETE)
+    2026-10-23 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 1097 (subtotal) (API 1096.9 PARTIAL)
+    2026-10-24 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 1396 (API 1396.3 COMPLETE)
+    2026-10-25 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 1381 (API 1380.6 COMPLETE)
+    2026-10-26 · indicado sin indicado (SEVERAL_OPTIONS) · registrado sin registros
+ASE_TRES  PROTEIN desde 2026-10-18:
+    2026-10-18 · indicado sin indicado (SEVERAL_OPTIONS) · registrado sin registros
+    2026-10-19 · indicado sin indicado (SEVERAL_OPTIONS) · registrado sin registros
+    2026-10-20 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 108.8 (API 108.8 COMPLETE)
+    2026-10-21 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 85.4 (API 85.43 COMPLETE)
+    2026-10-22 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 77.6 (API 77.58 COMPLETE)
+    2026-10-23 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 70.9 (subtotal) (API 70.92 PARTIAL)
+    2026-10-24 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 85.2 (API 85.21 COMPLETE)
+    2026-10-25 · indicado sin indicado (SEVERAL_OPTIONS) · registrado 81.5 (API 81.45 COMPLETE)
+    2026-10-26 · indicado sin indicado (SEVERAL_OPTIONS) · registrado sin registros
+PRO · Lic. Prueba Dos Áreas opera Nutrición y Entrenamiento
+  COMPROBADO      Entrenamiento: lee el plan vigente de Prueba Uno
+  COMPROBADO      Nutrición: la comparación de Prueba Dos: responde
+ASE_UNO · Prueba Uno: la sesión para sustituir un ejercicio
+  COMPROBADO      vínculo de ENTRENAMIENTO: ACEPTADO / ACTIVE / CONTEXTUAL
+  COMPROBADO      la sesión de hoy, sin empezar: Press de banca 3×10 con 40 kg y Sentadilla 3×8 con 50 kg
+  COMPROBADO      la búsqueda «press» trae 19 ejercicios disponibles para sustituir (entre ellos Press de pecho en el piso con mancuernas, Press de pecho en máquina, Press de banca con agarre cerrado)
+ASE_DOS · Prueba Dos: objetivo, indicado del día y registrado, con un hueco y un subtotal
+  COMPROBADO      vínculo de NUTRICION: ACEPTADO / ACTIVE / CONTEXTUAL
+  COMPROBADO      la comparación (ENERGY): todo coincide con lo calculado aparte
+  COMPROBADO      la comparación (PROTEIN): todo coincide con lo calculado aparte
+ASE_TRES · Prueba Tres: alternativas, sin indicado del día
+  COMPROBADO      vínculo de NUTRICION: ACEPTADO / ACTIVE / CONTEXTUAL
+  COMPROBADO      la comparación (ENERGY): todo coincide con lo calculado aparte
+  COMPROBADO      la comparación (PROTEIN): todo coincide con lo calculado aparte
+ASE_CUATRO · Prueba Cuatro: la autorización revocada
+  COMPROBADO      vínculo de NUTRICION: ACEPTADO / REVOKED / BLOCKED
+  COMPROBADO      404 RESOURCE_NOT_FOUND, el rechazo que prevé el contrato
+  COMPROBADO      control: la misma sesión lee sus vínculos en el mismo momento
+ASE_CINCO · Prueba Cinco: el vínculo finalizado
+  COMPROBADO      vínculo de NUTRICION: FINALIZADO / BLOCKED
+  COMPROBADO      404 RESOURCE_NOT_FOUND, el rechazo que prevé el contrato
+  COMPROBADO      control: la misma sesión lee sus vínculos en el mismo momento
+Escenarios comprobados: 6 de 6 (Lic. Prueba Dos Áreas opera Nutrición y Entrenamiento; Prueba Uno: la sesión para sustituir un ejercicio; Prueba Dos: objetivo, indicado del día y registrado, con un hueco y un subtotal; Prueba Tres: alternativas, sin indicado del día; Prueba Cuatro: la autorización revocada; Prueba Cinco: el vínculo finalizado).
+SIN DIFERENCIAS: los 6 escenarios obligatorios, comprobados.
