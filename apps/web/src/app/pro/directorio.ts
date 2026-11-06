@@ -8,6 +8,9 @@
  * - El asesorado se ve con el nombre de su perfil mientras el vínculo esté vigente (DL-040, decidida por Dirección el
  *   2026-10-15) y, si no, con su referencia neutral. Se busca por los dos: el nombre y la referencia corta.
  * - Con «Ocultar nombres» (TB-05), el nombre es la referencia neutral: no se ve ni se puede buscar.
+ * - WP-TABLERO-ALTA-GAMA TB-08 (DL-163 D-2): cada persona dice desde cuándo la acompaña este profesional («Con vos
+ *   desde»: el vínculo vigente más antiguo, en pausa o aceptado) y se lista en orden alfabético (`enOrdenAlfabetico`),
+ *   sin datos de seguimiento.
  */
 import { ALCANCES, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, normalizarTexto, referenciaCorta, type Alcance, type Vinculo } from '@be/domain';
 
@@ -37,6 +40,11 @@ export interface PersonaDelDirectorio {
   readonly conAcceso: readonly string[];
   /** Las áreas sin acceso activo: una por área (el vínculo que más dice), con las palabras de BE. */
   readonly sinAcceso: readonly { readonly area: string; readonly estado: string }[];
+  /**
+   * Desde cuándo la acompaña este profesional (TB-08): el instante en que se aceptó el más antiguo de sus vínculos
+   * vigentes (aceptados o en pausa). `null` si ninguno sigue vigente: un vínculo que terminó no es «con vos».
+   */
+  readonly conVosDesde: string | null;
 }
 
 /** El acceso activo, con la misma regla que `estadoParaMostrar` para «Activo · con acceso» (DL-146; antes, «Activo · acceso contextual»). */
@@ -102,8 +110,19 @@ export function armarElDirectorio(vinculos: readonly Vinculo[], profesionalId: s
       const elQueMasDice = [...delArea].sort((a, b) => PESO_DEL_ESTADO[a.relationshipState] - PESO_DEL_ESTADO[b.relationshipState])[0] as Vinculo;
       sinAcceso.push({ area: elQueMasDice.scope.label, estado: estadoEnUnaFrase(vinculoDelDirectorio(elQueMasDice)) });
     }
-    return { identityId, nombre, referencia: referenciaCorta(identityId), vinculos: ordenados.map(vinculoDelDirectorio), conAcceso, sinAcceso };
+    const vigentes = ordenados.filter((v) => v.relationshipState !== 'FINALIZADO').map((v) => v.acceptedAt);
+    const conVosDesde = vigentes.length > 0 ? vigentes.reduce((a, b) => (b < a ? b : a)) : null;
+    return { identityId, nombre, referencia: referenciaCorta(identityId), vinculos: ordenados.map(vinculoDelDirectorio), conAcceso, sinAcceso, conVosDesde };
   });
+}
+
+/**
+ * «Tus asesorados» en orden alfabético (TB-08), por el nombre que se ve: sin distinguir mayúsculas ni tildes, como en
+ * español, y a igual nombre, por la referencia. Con «Ocultar nombres», el orden es el de las referencias: no dice nada
+ * de los nombres.
+ */
+export function enOrdenAlfabetico<P extends Pick<PersonaDelDirectorio, 'nombre' | 'referencia'>>(personas: readonly P[]): P[] {
+  return [...personas].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }) || a.referencia.localeCompare(b.referencia));
 }
 
 /** Letras y números, sin acentos ni signos: «Asesorado · a9be23» y «asesorado a9be23» coinciden. */

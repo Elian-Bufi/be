@@ -335,3 +335,30 @@ test('el objetivo propone la evaluación más reciente; sin evaluaciones, ningun
     assert.equal(accionDeLaFicha(dominios(ajeno, ajeno), HOY), null);
   });
 }
+
+// ─── TB-08 · «Tus asesorados» con rostro y antigüedad (WP-TABLERO-ALTA-GAMA; DL-163 D-2) ───────────────────────────
+
+const { enOrdenAlfabetico } = await import('../apps/web/src/app/pro/directorio.ts');
+
+test('TB-08 · «Con vos desde» es el vínculo vigente más antiguo, y un vínculo que terminó no cuenta', () => {
+  const [dos] = armarElDirectorio(
+    [vinculo('a9be23', 'NUTRICION', { acceptedAt: '2026-05-10T12:00:00.000Z' }), vinculo('a9be23', 'ANTROPOMETRIA', { acceptedAt: '2025-11-03T12:00:00.000Z', relationshipState: 'PAUSADO', pausedBy: 'ADVISEE' })],
+    YO,
+  );
+  assert.equal(dos.conVosDesde, '2025-11-03T12:00:00.000Z', 'el más antiguo, aunque esté en pausa');
+  const [conUnoTerminado] = armarElDirectorio([vinculo('a9be23', 'NUTRICION', { relationshipState: 'FINALIZADO', acceptedAt: '2024-01-01T12:00:00.000Z' }), vinculo('a9be23', 'ENTRENAMIENTO', { acceptedAt: '2026-02-01T12:00:00.000Z' })], YO);
+  assert.equal(conUnoTerminado.conVosDesde, '2026-02-01T12:00:00.000Z', 'lo que terminó no alarga la antigüedad');
+  const [terminado] = armarElDirectorio([vinculo('a9be23', 'NUTRICION', { relationshipState: 'FINALIZADO' })], YO);
+  assert.equal(terminado.conVosDesde, null, 'sin un vínculo vigente, no es «con vos»');
+});
+
+test('TB-08 · en orden alfabético, como en español, y a igual nombre por la referencia', () => {
+  const conNombre = (asesorado, nombre) => vinculo(asesorado, 'NUTRICION', { advisee: { identityId: `ase-${asesorado}`, displayName: nombre } });
+  const personas = armarElDirectorio([conNombre('000003', 'diego sosa'), conNombre('000001', 'Ángela Ruiz'), conNombre('000004', 'Agustina Ledesma'), conNombre('000002', 'Diego Sosa'), conNombre('000005', 'Benítez Lucía')], YO);
+  assert.deepEqual(
+    enOrdenAlfabetico(personas).map((p) => `${p.nombre} ${p.referencia}`),
+    ['Agustina Ledesma 000004', 'Ángela Ruiz 000001', 'Benítez Lucía 000005', 'Diego Sosa 000002', 'diego sosa 000003'],
+  );
+  // No cambia la lista que recibe: el orden de la API sigue disponible.
+  assert.equal(personas[0].nombre, 'diego sosa');
+});

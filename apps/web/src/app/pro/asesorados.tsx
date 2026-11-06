@@ -3,7 +3,10 @@
 /**
  * «Tus asesorados» (REL-05; WP-ESCRITORIO-AMABLE, parte 5): un directorio para entrar a la ficha de una persona.
  * - Una persona por renglón, con sus áreas (`directorio.ts`): las que tienen acceso se nombran solas y las que no, con
- *   las palabras de BE. El detalle de cada vínculo (finalidad, estado y desde cuándo) está a un clic, en el lugar.
+ *   las palabras de BE.
+ * - WP-TABLERO-ALTA-GAMA TB-08 (DL-163 D-2): cada renglón lleva el monograma, el nombre, la referencia, las áreas y
+ *   «Con vos desde»; el renglón entero abre la ficha, y las personas van en orden alfabético, sin datos de seguimiento.
+ *   El detalle de cada vínculo (su finalidad y su estado) está en la ficha, en «Acceso actual».
  * - Se busca por el nombre o por la referencia, mientras se escribe y sin pedirle nada a la API: la lista ya está leída
  *   entera. Con un nombre visible (DL-040, decidida por Dirección el 2026-10-15), la referencia corta va al lado, chica:
  *   distingue a dos personas que se llaman igual.
@@ -20,7 +23,7 @@ import { ICONO_DE_FALLA, razonDeFalla } from '../../lib/fallas';
 import { dia, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
 import { useNombres } from '../../lib/nombres-ocultos';
-import { armarElDirectorio, buscarEnElDirectorio, type PersonaDelDirectorio } from './directorio';
+import { armarElDirectorio, buscarEnElDirectorio, enOrdenAlfabetico, type PersonaDelDirectorio } from './directorio';
 
 export type EstadoDeLosVinculos = EstadoDeListaCompleta<PaginaDeUnaLista<Vinculo>>;
 
@@ -41,21 +44,13 @@ export function Asesorados({
 }) {
   const id = useId();
   const [buscado, setBuscado] = useState('');
-  const [abiertas, setAbiertas] = useState<ReadonlySet<string>>(new Set());
   const listo = vinculos.tipo === 'listo' ? vinculos : null;
   // TB-05: con «Ocultar nombres», cada persona es su referencia, también para buscar.
   const { delAsesorado } = useNombres();
-  const personas = useMemo(() => (listo ? armarElDirectorio(listo.items, profesionalId, delAsesorado) : []), [listo, profesionalId, delAsesorado]);
+  const personas = useMemo(() => (listo ? enOrdenAlfabetico(armarElDirectorio(listo.items, profesionalId, delAsesorado)) : []), [listo, profesionalId, delAsesorado]);
   const coinciden = useMemo(() => buscarEnElDirectorio(personas, buscado), [personas, buscado]);
   const buscando = buscado.trim() !== '';
   const mas = listo && !listo.completa ? '+' : '';
-
-  const alternar = (identityId: string) =>
-    setAbiertas((antes) => {
-      const ahora = new Set(antes);
-      if (!ahora.delete(identityId)) ahora.add(identityId);
-      return ahora;
-    });
 
   return (
     <section className="tarjeta-del-espacio directorio" aria-labelledby={`${id}-titulo`}>
@@ -114,7 +109,7 @@ export function Asesorados({
           ) : (
             <ul className="directorio__personas">
               {coinciden.map((p) => (
-                <Persona key={p.identityId} persona={p} abierta={abiertas.has(p.identityId)} alAlternar={() => alternar(p.identityId)} />
+                <Persona key={p.identityId} persona={p} />
               ))}
             </ul>
           )}
@@ -135,12 +130,14 @@ export function Asesorados({
   );
 }
 
-function Persona({ persona, abierta, alAlternar }: { persona: PersonaDelDirectorio; abierta: boolean; alAlternar: () => void }) {
-  const id = useId();
+/**
+ * Una persona del directorio (TB-08): el renglón entero es el enlace a su ficha. La ficha es una por persona, aunque los
+ * vínculos sean por área (DL-039). Lleva `persona__abrir`, como el «Abrir» de antes, para los recorridos.
+ */
+function Persona({ persona }: { persona: PersonaDelDirectorio }) {
   return (
     <li className="persona" data-persona={persona.identityId}>
-      {/* La referencia y las áreas son el resumen de la persona y, a la vez, lo que abre el detalle de sus vínculos. */}
-      <button type="button" className="persona__datos" aria-expanded={abierta} aria-controls={`${id}-vinculos`} onClick={alAlternar}>
+      <Link className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`}>
         {/* TB-05: el monograma; sin nombre visible (un vínculo que terminó) o con los nombres ocultos, el ícono. */}
         <Retrato nombre={persona.nombre} tamano="medio" />
         <span className="persona__resumen">
@@ -157,31 +154,9 @@ function Persona({ persona, abierta, alAlternar }: { persona: PersonaDelDirector
               </span>
             </span>
           ))}
+          {persona.conVosDesde ? <span className="persona__desde">Con vos desde el {dia(persona.conVosDesde)}</span> : null}
         </span>
-        <span className="visualmente-oculto">. Ver el detalle de sus vínculos</span>
-        <Icono nombre={abierta ? 'arriba' : 'abajo'} tamano={18} />
-      </button>
-      <ul id={`${id}-vinculos`} className="persona__vinculos" hidden={!abierta}>
-        {abierta
-          ? persona.vinculos.map((v) => (
-              <li key={v.relationshipId}>
-                <span className="persona__vinculo">
-                  {v.area} · {v.finalidad}
-                </span>
-                <span>
-                  <span className="insignia">{v.estado}</span>
-                  {v.detalle ? ` ${v.detalle}` : ''}
-                </span>
-                <span className="nota">Desde el {dia(v.desde)}</span>
-              </li>
-            ))
-          : null}
-      </ul>
-      {/* La ficha es una por persona, aunque los vínculos sean por área (DL-039). Va después del detalle en el documento,
-          para que el detalle siga a lo que lo abre; a la vista, está al lado de la referencia. Es un enlace, como «Abrir»
-          en «Pendientes»: una columna de botones con borde pesaba de más (crítica de diseño, 2026-10-15). */}
-      <Link className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`} aria-label={`Abrir la ficha de ${persona.nombre}`}>
-        Abrir
+        <span className="visualmente-oculto">. Abrir su ficha</span>
         <Icono nombre="derecha" tamano={18} />
       </Link>
     </li>
