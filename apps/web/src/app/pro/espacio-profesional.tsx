@@ -32,7 +32,7 @@
  */
 import { COPY_INVITACION, COPY_VINCULO, numero, type FiltroDePendientes } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../components/estados';
 import { Aviso } from '../../components/formulario';
@@ -54,7 +54,10 @@ import { anotarNombrePropio, nombrePropioEn, useNombrePropio } from '../../lib/n
 import { useNombres } from '../../lib/nombres-ocultos';
 import { CifrasDelEspacio, type Cuenta } from './cifras-del-espacio';
 import { EsperanRespuesta, type ListaQueEspera } from './esperan-respuesta';
-import { delCarril, personasPorArea, saludo as saludoDelEspacio, TIPOS_QUE_ESPERAN, TIPOS_QUE_TE_TOCAN, type ModoDeLaMesa } from './mesa';
+import { CAJON_DE_A_UNA, COPY_CAJON, dondeSigue, guardarLugar, leerLugar } from './cajon';
+import { CajonDeAUna } from './cajon-de-a-una';
+import { filtrarPendientes } from '@be/domain';
+import { claveDelPendiente, colaDeLaVista, delCarril, personasPorArea, saludo as saludoDelEspacio, TIPOS_QUE_ESPERAN, TIPOS_QUE_TE_TOCAN, type ModoDeLaMesa } from './mesa';
 
 /** Por persona o por pendiente: una preferencia del navegador, sin datos de personas. Puede no haber dónde guardarla. */
 const CLAVE_DEL_MODO = 'be-mesa-modo';
@@ -177,6 +180,20 @@ export function EspacioProfesional() {
   const [modo, setModo] = useModoDeLaMesa();
   const nombres = useNombres();
   const nombrePropio = useNombrePropio();
+  // TB-12: la cola del cajón es la vista elegida de «Te toca a vos», en su orden. Detrás de su interruptor.
+  const carteraLeida = cartera.estado.tipo === 'listo' ? cartera.estado.items : null;
+  const cola = useMemo(() => (carteraLeida ? colaDeLaVista(filtrarPendientes(delCarril(carteraLeida, TIPOS_QUE_TE_TOCAN), filtro), modo) : []), [carteraLeida, filtro, modo]);
+  const [cajon, setCajon] = useState<{ abierto: boolean; inicio: number | null }>({ abierto: false, inicio: 0 });
+  const retomado = useRef(false);
+  useEffect(() => {
+    // Al volver de una salida del cajón, sigue con el siguiente que todavía esté en la cola; el lugar se usa una vez.
+    if (!CAJON_DE_A_UNA || retomado.current || !carteraLeida) return;
+    retomado.current = true;
+    const lugar = leerLugar(Date.now());
+    guardarLugar(null);
+    if (lugar) setCajon({ abierto: true, inicio: dondeSigue(lugar, cola.map(claveDelPendiente)) });
+  }, [carteraLeida, cola]);
+  const conCajon = CAJON_DE_A_UNA && cola.length > 0;
 
   const [formulario, setFormulario] = useState(false);
   // WP-INVITACION (DL-136): invitar por enlace, QR o código es el camino principal; el identificador queda como alternativa.
@@ -238,7 +255,7 @@ export function EspacioProfesional() {
       alLado={
         <>
           {hoy ? <p className="espacio-profesional__hoy">Hoy, {diaConSuSemana(hoy)}</p> : null}
-          <button type="button" className="boton boton--primario espacio-profesional__invitar" aria-haspopup="dialog" onClick={() => setInvitar(true)}>
+          <button type="button" className={`boton ${conCajon ? 'boton--secundario' : 'boton--primario'} espacio-profesional__invitar`} aria-haspopup="dialog" onClick={() => setInvitar(true)}>
             <Icono nombre="persona" tamano={20} />
             {COPY_INVITACION.invitar}
           </button>
@@ -275,6 +292,14 @@ export function EspacioProfesional() {
           onActualizar={actualizar}
           onReintentar={() => void cartera.recargar()}
           onVerMas={() => void cartera.verMas()}
+          alComienzo={
+            conCajon ? (
+              <button type="button" className="boton boton--primario cajon__empezar" aria-haspopup="dialog" onClick={() => setCajon({ abierto: true, inicio: 0 })}>
+                <Icono nombre="derecha" tamano={20} />
+                {COPY_CAJON.empezar}
+              </button>
+            ) : null
+          }
         />
         <div className="espacio-profesional__costado">
         <EsperanRespuesta
@@ -301,6 +326,9 @@ export function EspacioProfesional() {
         </div>
       </div>
 
+      {CAJON_DE_A_UNA ? (
+        <CajonDeAUna abierto={cajon.abierto} cola={cola} inicio={cajon.inicio} token={token} sesionPerdida={sesionPerdida} hoy={hoy ?? ''} zona={zona} onCerrar={() => setCajon((c) => ({ ...c, abierto: false }))} />
+      ) : null}
       <InvitarPersona
         abierto={invitar}
         areaSugerida={areaSugerida}

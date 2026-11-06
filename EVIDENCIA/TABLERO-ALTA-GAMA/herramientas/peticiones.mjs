@@ -21,6 +21,9 @@ export const PETICIONES_AL_ABRIR = {
   // El Espacio: la cuenta, las novedades, los pendientes (API-CAR-01), los vínculos, las solicitudes enviadas y, desde
   // TB-06, las invitaciones sin usar, para «Esperan respuesta».
   'sofia-paz/espacio': 6,
+  // TB-12: el Espacio y el primer cuadro del cajón: el resumen de la persona y, con una revisión registrada, lo nuevo
+  // desde ella (dos lecturas como mucho, solo del cuadro actual).
+  'sofia-paz/cajon': 8,
   // El Resumen: la cuenta, las novedades, el resumen por área y los vínculos (el marco), la cobertura de las tres áreas,
   // la línea de tiempo, los indicadores guardados y sus cuatro series, el objetivo vigente, las solicitudes respondidas
   // (TB-49) y la composición de la última toma (TB-24).
@@ -36,6 +39,7 @@ export const PETICIONES_AL_ABRIR = {
   'sofia-paz/analizar-composicion': 5,
   'sofia-paz/resumen-hector': 18,
   'martin-acosta/espacio': 6,
+  'martin-acosta/cajon': 8,
   'martin-acosta/resumen': 14,
   'martin-acosta/entrenamiento': 8,
 };

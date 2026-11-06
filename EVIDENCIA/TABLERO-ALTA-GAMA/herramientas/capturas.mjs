@@ -139,6 +139,8 @@ function cuentas() {
 const PAGINAS = {
   PRO_N: [
     ['espacio', '/pro'],
+    // TB-12: el cajón «De a una», abierto con «Empezar por el primero» (la compilación de las capturas lo prende).
+    ['cajon', '/pro', 'cajon'],
     ['resumen', '/pro/advisees?id={diego}'],
     ['resumen-federico', '/pro/advisees?id={federico}'],
     ['analizar', '/pro/advisees?id={diego}&vista=analizar'],
@@ -154,6 +156,7 @@ const PAGINAS = {
   ],
   PRO_T: [
     ['espacio', '/pro'],
+    ['cajon', '/pro', 'cajon'],
     ['resumen', '/pro/advisees?id={diego}'],
     ['entrenamiento', '/pro/advisees/training?id={diego}&vista=resumen'],
   ],
@@ -176,6 +179,8 @@ const NOMBRES_DE_LA_COHORTE = (() => {
 })();
 /** Las páginas que recorre «Ocultar nombres»: las de la prueba (el cajón se suma con TB-12). */
 const CON_NOMBRES_OCULTOS = [
+  // TB-12: el cajón, con su primer cuadro abierto. Va primero: con el diálogo abierto, el menú de la cuenta no se toca.
+  ['cajon', '/pro', 'cajon'],
   ['espacio', '/pro'],
   ['resumen', '/pro/advisees?id={diego}'],
 ];
@@ -238,7 +243,11 @@ async function capturarTodo() {
         await page.evaluate((u) => window.next.router.push(u), ruta);
         await asentar(page);
         let asentada = await quieta();
-        if (metrica) {
+        if (metrica === 'cajon') {
+          // TB-12: «Empezar por el primero» abre el cajón «De a una»; la cuenta suma las lecturas de su primer cuadro.
+          await abrirElCajon(page);
+          asentada = (await quieta()) && asentada;
+        } else if (metrica) {
           await page.evaluate((m) => {
             const casilla = [...document.querySelectorAll('label')].find((l) => l.textContent.trim() === m)?.querySelector('input[type="checkbox"]');
             casilla?.click();
@@ -250,6 +259,7 @@ async function capturarTodo() {
           asentada = (await quieta()) && asentada;
         }
         // TB-09: la acción del momento que ofrece el marco de la ficha, si la hay (TEST-TAG-010, en pantalla).
+        const cajon = metrica === 'cajon' ? await loQueMuestraElCajon(page) : null;
         const accionDelMarco = await page.evaluate(() => document.querySelector('[data-accion-de-la-ficha]')?.textContent?.trim() ?? null);
         // TB-24: cuántas columnas de la composición van partidas y cuántas no, y si la tarjeta de Antropometría del
         // Resumen muestra la barra de la última toma o la línea de los pesos.
@@ -260,9 +270,14 @@ async function capturarTodo() {
           barraDeLaUltimaToma: document.querySelectorAll('.barra-de-la-composicion').length > 0,
           texto: document.querySelector('.composicion-de-la-toma__cifra, .composicion__resumen')?.textContent?.trim() ?? null,
         }));
-        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, accionDelMarco, composicion, alto: {} };
+        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, accionDelMarco, cajon, composicion, alto: {} };
         for (const tema of TEMAS) {
-          await ponerTema(page, tema);
+          // Con el cajón abierto (un diálogo modal) el menú de la cuenta no se toca: se cierra, se cambia el tema y se abre.
+          if (metrica === 'cajon' && (await page.evaluate(() => document.documentElement.dataset.tema)) !== tema) {
+            await page.evaluate(() => document.querySelector('dialog.cajon[open]')?.close());
+            await ponerTema(page, tema);
+            await abrirElCajon(page);
+          } else await ponerTema(page, tema);
           for (const [ancho, alto] of TAMANOS) {
             const carpeta = path.join(salida, NOMBRES[prefijo], tema);
             fs.mkdirSync(carpeta, { recursive: true });
@@ -343,11 +358,12 @@ async function capturarTodo() {
 async function recorrerConNombresOcultos(page, prefijo, diego, mediciones) {
   mediciones.ocultarNombres ??= [];
   await alternarNombresOcultos(page, true);
-  for (const [nombre, plantilla] of CON_NOMBRES_OCULTOS) {
+  for (const [nombre, plantilla, accion] of CON_NOMBRES_OCULTOS) {
     await page.evaluate(() => window.next.router.push('/account'));
     await asentar(page);
     await page.evaluate((u) => window.next.router.push(u), plantilla.replace('{diego}', diego));
     await asentar(page);
+    if (accion === 'cajon') await abrirElCajon(page);
     const visto = await page.evaluate(() => ({
       texto: document.body.innerText,
       rotulos: [...document.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('aria-label')).join('\n'),
@@ -377,6 +393,29 @@ async function alternarNombresOcultos(page, prender) {
   await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
   await pausa(300);
 }
+
+/** TB-12: abre el cajón «De a una» con su botón, como lo haría el profesional. Sin el botón (apagado), no hace nada. */
+async function abrirElCajon(page) {
+  await page.evaluate(() => document.querySelector('.cajon__empezar')?.click());
+  await page.waitForSelector('dialog.cajon[open]', { timeout: 10_000 }).catch(() => {});
+  await asentar(page);
+}
+
+/** Lo que muestra el primer cuadro del cajón: la posición, la pregunta, las salidas y si el foco está en la pregunta. */
+const loQueMuestraElCajon = (page) =>
+  page.evaluate(() => {
+    const d = document.querySelector('dialog.cajon[open]');
+    if (!d) return { abierto: false };
+    const texto = (sel) => d.querySelector(sel)?.textContent?.replace(/s+/g, ' ').trim() ?? null;
+    return {
+      abierto: true,
+      posicion: texto('.cajon__posicion'),
+      pregunta: texto('.cajon__pregunta'),
+      salidas: [...d.querySelectorAll('.cajon__salidas a, .cajon__salidas button')].map((e) => e.textContent.trim()),
+      conTramo: Boolean(d.querySelector('.tramo__titulo')),
+      focoEnLaPregunta: document.activeElement === d.querySelector('.cajon__pregunta'),
+    };
+  });
 
 /** Espera a que la página termine de pedir datos y de acomodarse. */
 async function asentar(page) {

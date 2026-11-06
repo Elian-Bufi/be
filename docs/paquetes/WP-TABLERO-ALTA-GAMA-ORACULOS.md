@@ -15,8 +15,8 @@
 >
 > **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05,
 > TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
-> (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49), TEST-TAG-032 (el arreglo de base del quinto tramo) y TEST-TAG-008
-> (TB-11). Los demás se
+> (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49), TEST-TAG-032 (el arreglo de base del quinto tramo), TEST-TAG-008
+> (TB-11) y TEST-TAG-009 (TB-12). Los demás se
 > escriben con su parte (§10 del paquete).
 
 ---
@@ -662,4 +662,48 @@ AUTOMATION           apps/web/test/mesa.test.mjs («TEST-TAG-008 · …», tres 
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, el Espacio de los dos profesionales
                      con el saludo, las cifras y la mesa en dos carriles, y en `primeraPantalla` cuántas personas entran
+```
+
+---
+
+## TEST-TAG-009 — El cajón lee y no escribe
+
+```text
+TEST_ID              TEST-TAG-009
+TITLE                El cajón «De a una» sigue la vista elegida, lee solo lo del cuadro actual, no escribe nada y
+                     guarda para volver identificadores, nunca nombres
+LEVEL                Unidad (funciones puras del website) y una lectura del componente (qué operaciones llama y qué
+                     teclas atiende); el recorrido, en capturas-del-tablero
+PRIORITY             P1 — el cajón no registra, no aplica ni activa (D-4): aplicar llega con TB-15
+SOURCES              DL-163 D-4 («lee el contexto al abrir cada cuadro, saltea sin escribir y vuelve a la cola con el
+                     lugar guardado, nunca los datos») · WP-TABLERO-ALTA-GAMA TB-12 y §6 (la accesibilidad: J, K, S y
+                     Escape solo con el foco adentro; Enter nunca dispara nada que escriba) · TA-36 a TA-39
+PRECONDITIONS        Ninguna: colaDeLaVista y claveDelPendiente (mesa.ts); salidaPrincipal, lugarParaGuardar,
+                     lugarLeido y dondeSigue (cajon.ts); el texto de cajon-de-a-una.tsx.
+SYNTHETIC_FIXTURE    Filas de API-CAR-01 armadas en la prueba, con dos personas y cuatro pendientes; claves con
+                     identificadores sintéticos y una con un nombre.
+STEPS                1. Juntar las operaciones de la API que llama el componente.
+                     2. Mirar qué hace «Saltear por ahora» y qué teclas atiende el diálogo.
+                     3. Armar la cola por persona y por pendiente.
+                     4. Guardar un lugar, leerlo, leerlo viejo o roto, y retomarlo con colas nuevas.
+                     5. Pedir la pregunta de cada tipo y la salida de una revisión y de un plan.
+                     6. Leer el cierre y los textos.
+EXPECTED             1 → solo consultarDashboard y lineaDeTiempo; ninguna clave de idempotencia.
+                     2 → saltear no llama a la API; las teclas son J, K y S, escuchadas en el diálogo; Escape lo cierra
+                        el diálogo y devuelve el foco.
+                     3 → por pendiente, el orden de llegada; por persona, el agrupado de TEST-TAG-008.
+                     4 → el lugar no tiene nombres; uno con un nombre no se guarda; viejo, roto o del futuro no se
+                        retoma; se sigue con el siguiente que todavía está, y sin ninguno, el cierre.
+                     5 → una pregunta por tipo; en una revisión, «Preparar la revisión» con `preparar=1`.
+                     6 → el cierre no tiene números, signos de festejo ni tachados; los textos pasan la prueba de
+                        términos de la cartera.
+NEGATIVE_ASSERTIONS  Ninguna escritura desde el cajón; ningún nombre en el almacenamiento; Enter no es un atajo.
+                     Mutaciones verificadas: guardando sin mirar que sean identificadores, falla el paso 4; con una
+                     llamada a la API al saltear, fallan los pasos 1 y 2.
+AUTOMATION           apps/web/test/cajon.test.mjs («TEST-TAG-009 · …», cuatro casos, y tres más), en
+                     `npm run test -w @be/web`; T13 suma cajon.ts al Espacio
+ENVIRONMENT          CI y local, sin servicios; el recorrido, en capturas-del-tablero con BE_CAJON_DE_A_UNA=si
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, el cajón abierto de los dos
+                     profesionales (la pregunta con el foco, la posición y las salidas), sus peticiones al abrir y el
+                     recorrido de «Ocultar nombres» sobre el cajón
 ```

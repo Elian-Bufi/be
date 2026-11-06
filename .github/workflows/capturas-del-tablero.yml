@@ -54,6 +54,8 @@ jobs:
         run: npm run build:web
         env:
           BE_API_BASE_URL: http://localhost:3001
+          # TB-12: el cajón «De a una» va detrás de su interruptor; las capturas lo prenden para recapturarlo.
+          BE_CAJON_DE_A_UNA: si
       - name: La cohorte y las capturas
         run: node EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs capturas-del-tablero
         env:

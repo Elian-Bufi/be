@@ -75,6 +75,14 @@ export function porPersona<T extends Ordenable>(items: readonly T[]): PersonaDeL
   return personas.sort((a, b) => compararFilas(a.pendientes[0] as T, b.pendientes[0] as T));
 }
 
+/** Un pendiente, por sus identificadores: el tipo, el área y la persona. Sin nombres (el lugar del cajón, TB-12). */
+export const claveDelPendiente = (p: Pick<PendienteDeCartera, 'kind' | 'domain' | 'advisee'>): string => `${p.kind}|${p.domain}|${p.advisee.identityId}`;
+
+/** La cola del cajón «De a una» (TB-12): la vista elegida, en su orden. */
+export function colaDeLaVista<T extends Ordenable>(filas: readonly T[], modo: ModoDeLaMesa): T[] {
+  return modo === 'persona' ? porPersona(filas).flatMap((p) => [...p.pendientes]) : [...filas];
+}
+
 /** Los de un carril, en el orden en que llegaron: «Por pendiente» es exactamente la lista de DL-107. */
 export const delCarril = <T extends Pick<PendienteDeCartera, 'kind'>>(items: readonly T[], tipos: readonly TipoDePendiente[]): T[] => items.filter((p) => tipos.includes(p.kind));
 

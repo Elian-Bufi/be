@@ -926,3 +926,25 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   Desde 75 rem, como el corte que ya tenía el Espacio; más angosto, uno debajo del otro. Las cifras de «Esperan
   respuesta» y «Personas» llevan a su sección, que toma el foco. *Otra opción:* tres columnas, que a 1440 deja «Te toca a
   vos» demasiado angosto para el renglón de cada pendiente.
+- **TA-36 · El cajón lee dos cosas por cuadro, y solo del cuadro actual.** El resumen de la persona (API-DSH-03, con los
+  90 días por omisión) y, si el área tiene una revisión registrada, lo nuevo desde ella (API-DSH-04 con `since` y una
+  página, la misma lectura que la tarjeta del Resumen); en Antropometría, solo la primera. Con eso, el cuadro dice la
+  pregunta, quién y el área, el pendiente con su último registro (de la cartera, sin leer), el tramo del ciclo (TB-10)
+  y lo nuevo desde la revisión en cifras, con la misma síntesis del Resumen. *Otra opción:* el Resumen entero de la
+  persona en cada cuadro, que son 18 lecturas.
+- **TA-37 · Las salidas y el cierre.** En una revisión, «Preparar la revisión», que abre la revisión nueva ya preparada
+  (TB-09); en lo demás, el verbo de la fila, a la misma pantalla; «Abrir la ficha» y «Saltear por ahora». «Anterior» y
+  «Siguiente» recorren sin saltear. La pregunta de cada tipo es corta («¿Preparás la revisión de Nutrición?», «¿Seguís
+  el borrador de Entrenamiento?», «¿Empezás el plan de Nutrición?», «¿Seguís la toma en preparación?»). El cierre dice
+  «Llegaste al final de esta vista.», nombra los salteados con un enlace a cada uno y ofrece «Volver al primero»: sin
+  cuentas, festejos ni tachados. *Otra opción:* un cierre con «Revisaste 3 de 5», que es una cuenta de lo hecho.
+- **TA-38 · El lugar para volver vive en la pestaña, con identificadores, por dos horas.** Al salir por una salida se
+  guardan la cola (tipo, área e `identityId` de cada pendiente), dónde se estaba y los salteados en `sessionStorage`; al
+  volver a /pro con el cajón prendido, se abre en el siguiente que todavía esté en la cola (lo resuelto ya no está), y
+  el lugar se usa una sola vez. /pro sigue sin parámetros. *Otra opción:* el lugar en la dirección de /pro, que el
+  retorno del inicio de sesión no admite.
+- **TA-39 · El interruptor es una variable de la compilación.** `BE_CAJON_DE_A_UNA=si`, inyectada por
+  `next.config.mjs` como las demás (sin `NEXT_PUBLIC_`); solo la prende la compilación de `capturas-del-tablero`, y
+  Render no la define. Apagado, «Empezar por el primero» no se muestra y el botón lleno es «Invitar a una persona»;
+  prendido y con algo en la cola, el lleno es «Empezar por el primero» e «Invitar a una persona» pasa a secundario.
+  *Otra opción:* una constante en el código, que pide un commit para recapturar y otro para apagarla.
