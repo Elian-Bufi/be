@@ -19,6 +19,9 @@ body {
   font-family: var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 100%;
   line-height: 1.55;
+  /* El interletrado que el diseño de Inter da para 16 px (sus «dynamic metrics»): Inter es más ancha que el respaldo, y
+     con este ajuste la primera pantalla a 1280 y a 1440 sigue mostrando lo de la línea de base (TB-01; TA-03). */
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

@@ -663,3 +663,8 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   español: una letra que no está la dibuja el respaldo. Se usa el Inter de pesos (48 KB), sin el eje óptico, y Poppins
   600 del mismo origen (8 KB), las dos con la SIL OFL 1.1. *Otra opción:* `@font-face` escritos a mano, con los dos
   subconjuntos y `size-adjust` medido sobre Segoe UI, a cambio de perder la precarga y el respaldo que calcula Next.
+- **TA-03 · El interletrado de Inter a 16 px (−0,011 em), en todo el texto.** Inter es más ancha que el respaldo de la
+  línea de base: en la corrida de TB-01, «Analizar» a 1280 × 800 creció 104 px, porque una descripción de las preguntas
+  pasó a tres renglones y la lista iguala el alto de todas. Se usa el interletrado que el diseño de Inter da para esa
+  medida. *Otra opción:* bajar el texto secundario a 13 / 18, como dice la escala de la propuesta, que cambia todas las
+  pantallas y no es de esta parte.
