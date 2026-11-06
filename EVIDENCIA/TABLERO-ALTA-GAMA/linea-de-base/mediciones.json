@@ -1,0 +1,119 @@
+{
+  "hoy": "2026-11-06",
+  "commit": "dbf19eb5c34f2a0b786fa33f2fcf1f7bc543f18f",
+  "paginas": [
+    {
+      "profesional": "sofia-paz",
+      "pagina": "espacio",
+      "ruta": "/pro",
+      "peticionesAlAbrir": 5,
+      "alto": {
+        "claro-1280": 800,
+        "claro-1440": 900,
+        "claro-1920": 950,
+        "azul-noche-1280": 800,
+        "azul-noche-1440": 900,
+        "azul-noche-1920": 950
+      }
+    },
+    {
+      "profesional": "sofia-paz",
+      "pagina": "resumen",
+      "ruta": "/pro/advisees?id={diego}",
+      "peticionesAlAbrir": 21,
+      "alto": {
+        "claro-1280": 1170,
+        "claro-1440": 1096,
+        "claro-1920": 1052,
+        "azul-noche-1280": 1170,
+        "azul-noche-1440": 1096,
+        "azul-noche-1920": 1052
+      }
+    },
+    {
+      "profesional": "sofia-paz",
+      "pagina": "analizar",
+      "ruta": "/pro/advisees?id={diego}&vista=analizar",
+      "peticionesAlAbrir": 11,
+      "alto": {
+        "claro-1280": 955,
+        "claro-1440": 930,
+        "claro-1920": 950,
+        "azul-noche-1280": 955,
+        "azul-noche-1440": 930,
+        "azul-noche-1920": 950
+      }
+    },
+    {
+      "profesional": "sofia-paz",
+      "pagina": "nutricion",
+      "ruta": "/pro/advisees/nutrition?id={diego}&vista=resumen",
+      "peticionesAlAbrir": 7,
+      "alto": {
+        "claro-1280": 975,
+        "claro-1440": 939,
+        "claro-1920": 950,
+        "azul-noche-1280": 975,
+        "azul-noche-1440": 939,
+        "azul-noche-1920": 950
+      }
+    },
+    {
+      "profesional": "sofia-paz",
+      "pagina": "antropometria",
+      "ruta": "/pro/advisees/anthropometry?id={diego}&vista=evolucion",
+      "peticionesAlAbrir": 4,
+      "alto": {
+        "claro-1280": 1304,
+        "claro-1440": 1268,
+        "claro-1920": 1268,
+        "azul-noche-1280": 1304,
+        "azul-noche-1440": 1268,
+        "azul-noche-1920": 1268
+      }
+    },
+    {
+      "profesional": "martin-acosta",
+      "pagina": "espacio",
+      "ruta": "/pro",
+      "peticionesAlAbrir": 5,
+      "alto": {
+        "claro-1280": 800,
+        "claro-1440": 900,
+        "claro-1920": 950,
+        "azul-noche-1280": 800,
+        "azul-noche-1440": 900,
+        "azul-noche-1920": 950
+      }
+    },
+    {
+      "profesional": "martin-acosta",
+      "pagina": "resumen",
+      "ruta": "/pro/advisees?id={diego}",
+      "peticionesAlAbrir": 12,
+      "alto": {
+        "claro-1280": 867,
+        "claro-1440": 900,
+        "claro-1920": 950,
+        "azul-noche-1280": 867,
+        "azul-noche-1440": 900,
+        "azul-noche-1920": 950
+      }
+    },
+    {
+      "profesional": "martin-acosta",
+      "pagina": "entrenamiento",
+      "ruta": "/pro/advisees/training?id={diego}&vista=resumen",
+      "peticionesAlAbrir": 8,
+      "alto": {
+        "claro-1280": 1109,
+        "claro-1440": 1073,
+        "claro-1920": 1073,
+        "azul-noche-1280": 1109,
+        "azul-noche-1440": 1073,
+        "azul-noche-1920": 1073
+      }
+    }
+  ],
+  "errores": []
+}

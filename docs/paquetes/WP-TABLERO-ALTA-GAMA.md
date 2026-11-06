@@ -636,3 +636,23 @@ Lo de Nutrición (TB-39 a TB-42 y la estimación de TB-38) sirve para el servici
   del 08, no de diseño. TB-16 lo verifica antes de dibujar.
 - **En `test` y en local se trabaja con datos sintéticos** (08 §33): la cohorte y las cuentas de demostración. Ni fotos
   reales ni datos de personas reales.
+
+## 10. La etapa A, parte por parte
+
+La rama de la etapa A es `wp-tablero-etapa-a`, desde `main` b91dc3f con esta declaración. Cada parte va en su commit,
+con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabajo `capturas-del-tablero`
+(`EVIDENCIA/TABLERO-ALTA-GAMA/LEEME.md`): esta PC no levanta la API, el website y PostgreSQL juntos.
+
+| Parte | Estado | Dónde |
+|---|---|---|
+| TB-00 | Hecha. La línea de base es la corrida 42154091600 de `capturas-del-tablero`, sobre dbf19eb, con el website igual al de `main` b91dc3f: ocho páginas en Claro y Azul noche, a 1280 × 800, 1440 × 900 y 1920 × 950, con sus peticiones al abrir y sin errores de la página | `EVIDENCIA/TABLERO-ALTA-GAMA/linea-de-base/` |
+
+### 10.1 Las decisiones de la implementación
+
+Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción había. Esperan la ratificación de Dirección.
+
+- **TA-01 · Las capturas, en la CI.** TB-00 pide capturas antes de tocar nada, y esta PC no tiene memoria para levantar
+  la API, el website y PostgreSQL juntos. Un trabajo aparte de la CI (`capturas-del-tablero`) carga la cohorte en un
+  PostgreSQL efímero y captura cada página. Corre en las ramas `wp-tablero-*`, no bloquea nada y deja las imágenes
+  como artefacto, por 90 días; las primeras pantallas se copian a `EVIDENCIA/TABLERO-ALTA-GAMA/`. *Otra opción:* sumar
+  las capturas a los recorridos de la CI, que tienen datos más pobres que la cohorte y bloquean la integración.

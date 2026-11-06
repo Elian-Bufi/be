@@ -24,4 +24,6 @@ La herramienta es `herramientas/capturas.mjs`. Su encabezado dice cómo correrla
 
 ## Las capturas
 
-- **TB-00 · La línea de base:** `linea-de-base/`, con el website de `main` b91dc3f.
+- **TB-00 · La línea de base:** `linea-de-base/<profesional>/<tema>/<página>-<ancho>.png`, las primeras pantallas de la
+  corrida 42154091600 (dbf19eb, con el website igual al de `main` b91dc3f), y `linea-de-base/mediciones.json`, con
+  el alto de cada página y las peticiones a la API al abrirla. Las páginas enteras están en el artefacto de esa corrida.
