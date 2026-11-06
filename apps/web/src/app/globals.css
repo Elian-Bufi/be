@@ -13843,3 +13843,356 @@ details[open] > summary:not([class])::before {
   gap: 0.5rem;
   margin: 0;
 }
+
+/* ─── WP-TABLERO-ALTA-GAMA, TB-10 (DL-163 D-1): las tarjetas del Resumen ───────────────────────────────────────────── */
+/* El tramo del ciclo (A10 de la propuesta): una pista de 4 en --pista; lo transcurrido, en --borde-control; hoy, una
+   marca de 2 × 12 en --ahora; la fecha acordada, una de 1,5 × 10 en --texto. Si venció, la pista sigue en discontinua
+   3 2 de 1,5, sin color nuevo, y la cuenta se escribe arriba. Nada cambia de color por lo que registra la persona. */
+.tramo {
+  margin: 0.4rem 0 0.1rem;
+}
+
+.tramo__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.tramo__titulo .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.tramo__pista {
+  position: relative;
+  height: 4px;
+  margin: 0.65rem 0 0.25rem;
+  border-radius: 2px;
+  background: var(--pista);
+}
+
+.tramo__transcurrido {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 2px;
+  background: var(--borde-control);
+}
+
+/* Lo vencido tapa la pista con la tarjeta y dibuja encima la discontinua, centrada en el alto de la pista. */
+.tramo__vencido {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--superficie);
+}
+
+.tramo__vencido::after {
+  content: '';
+  position: absolute;
+  top: 1.25px;
+  right: 0;
+  left: 0;
+  height: 1.5px;
+  background: repeating-linear-gradient(to right, var(--borde-control) 0 3px, transparent 3px 5px);
+}
+
+.tramo__acordada {
+  position: absolute;
+  top: -3px;
+  width: 1.5px;
+  height: 10px;
+  margin-left: -0.75px;
+  background: var(--texto);
+}
+
+.tramo__hoy {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ahora);
+}
+
+.tramo__puntas {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lo nuevo desde la última revisión, en cifras en fila (R-3): la cifra arriba y lo que cuenta debajo, en 13 / 18. */
+.cifras-desde-la-revision {
+  margin: 0.1rem 0 0.15rem;
+}
+
+.cifras-desde-la-revision__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cifras-desde-la-revision__celda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 8px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+a.cifras-desde-la-revision__celda:hover {
+  background: var(--fondo-suave);
+}
+
+a.cifras-desde-la-revision__celda:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.cifras-desde-la-revision .cifra {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifras-desde-la-revision__texto {
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.cifras-desde-la-revision__frase {
+  margin: 0.25rem 0.3rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+/* La pieza propia del área, después de lo nuevo desde la revisión. */
+.pieza-del-area {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--borde);
+}
+
+.pieza-del-area__titulo {
+  margin: 0 0 0.45rem;
+  color: var(--texto);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.pieza-del-area__nota {
+  margin: 0.3rem 0 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+/* La barra partida de los registros del período (R-4; A9): 8 de alto, radio 4 en las puntas y separadores de 2 que
+   dejan ver la tarjeta. Con cantidades, en la métrica; sin cantidades, en el gris de los huecos; anulados, en la pista
+   con su contorno: están fuera de los totales. Las cuentas, debajo, con su muestra, dicen lo mismo en palabras. */
+.barra-partida {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+}
+
+.barra-partida__tramo {
+  flex-basis: 0;
+  min-width: 3px;
+  border-radius: 1px;
+}
+
+.barra-partida__tramo:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.barra-partida__tramo:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.barra-partida__tramo[data-tramo='CON_CANTIDADES'],
+.barra-partida__muestra[data-tramo='CON_CANTIDADES'] {
+  background: var(--metrica-1);
+}
+
+.barra-partida__tramo[data-tramo='SIN_CANTIDADES'],
+.barra-partida__muestra[data-tramo='SIN_CANTIDADES'] {
+  background: var(--grafico-hueco);
+}
+
+.barra-partida__tramo[data-tramo='ANULADOS'],
+.barra-partida__muestra[data-tramo='ANULADOS'] {
+  background: var(--pista);
+  box-shadow: inset 0 0 0 1px var(--borde-control);
+}
+
+.barra-partida__cuentas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.9rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  list-style: none;
+}
+
+.barra-partida__cuentas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.barra-partida__cuentas .cifra {
+  color: var(--texto);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.barra-partida__muestra {
+  flex: none;
+  width: 10px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* Las sesiones por ejercicio (R-5; A9): barras de 8, sin pista, desde cero, con la cifra al final. */
+.sesiones-por-ejercicio {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sesiones-por-ejercicio li {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.sesiones-por-ejercicio__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sesiones-por-ejercicio__barra {
+  display: block;
+  height: 8px;
+}
+
+.sesiones-por-ejercicio__barra > span {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  background: var(--metrica-1);
+}
+
+.sesiones-por-ejercicio__cifra {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* «Empezar el plan» en miniatura (R-8; A10): círculos de 20 unidos por un conector de 2, con su palabra debajo. Lo
+   listo, lleno en neutro (en --tenue, para que el número llegue a 4,5:1 en los dos temas); lo que toca, lleno en
+   --ahora con un halo de 4; lo que viene, en contorno. */
+.primer-plan-en-miniatura {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin: 0.45rem 0 0.2rem;
+}
+
+.pasos-en-miniatura {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pasos-en-miniatura li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.25rem;
+  text-align: center;
+}
+
+.pasos-en-miniatura li + li::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  right: calc(50% + 16px);
+  left: calc(-50% + 16px);
+  height: 2px;
+  background: var(--borde-control);
+}
+
+.pasos-en-miniatura__circulo {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pasos-en-miniatura li[data-estado='listo'] .pasos-en-miniatura__circulo {
+  background: var(--tenue);
+  color: var(--superficie);
+}
+
+.pasos-en-miniatura li[data-estado='ahora'] .pasos-en-miniatura__circulo {
+  background: var(--ahora);
+  box-shadow: 0 0 0 4px var(--fondo-suave);
+  color: var(--superficie);
+}
+
+.pasos-en-miniatura li[data-estado='despues'] .pasos-en-miniatura__circulo {
+  border: 1.5px solid var(--borde-control);
+  color: var(--tenue);
+}
+
+.pasos-en-miniatura__titulo {
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.pasos-en-miniatura__detalle {
+  color: var(--tenue);
+  font-size: 0.8rem;
+}

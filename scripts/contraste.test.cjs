@@ -200,6 +200,12 @@ const PARES_GRAFICO = [
   ['ahora', 'superficie', NO_TEXTO, 'la raya de hoy debajo de la tira de cobertura'],
   // TB-05 (DL-163 D-2): las iniciales del monograma sobre su círculo. Son decorativas, pero son letras: 4,5:1.
   ['retrato-tinta', 'retrato-fondo', TEXTO, 'las iniciales del monograma sobre su círculo'],
+  // TB-10 (DL-163 D-1): el tramo del ciclo. Lo que falta del tramo es un fondo de datos; lo transcurrido, hoy y la
+  // fecha acordada son marcas que se leen sobre él. Los pasos de «Empezar el plan» en miniatura usan los mismos tonos.
+  ['pista', 'superficie', FONDO_DE_DATO, 'lo que falta del tramo del ciclo, contra la tarjeta'],
+  ['ahora', 'pista', NO_TEXTO, 'la marca de hoy sobre la pista del tramo'],
+  ['texto', 'pista', NO_TEXTO, 'la marca de la fecha acordada sobre la pista del tramo'],
+  ['borde-control', 'superficie', NO_TEXTO, 'lo transcurrido del tramo y lo vencido, en discontinua, contra la tarjeta'],
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */

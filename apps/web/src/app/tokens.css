@@ -81,6 +81,9 @@
   /* La luz del tablero (TB-04; DL-163 D-3): dentro de un gráfico marca solo «hoy». Es una marca, no un texto: 3:1 contra
      la superficie, y lejos de las tres métricas (ΔE 20 o más), para que hoy no se lea como un dato. */
   --ahora: #1e6bf2;
+  /* Lo que falta de un tramo del reloj (TB-10; DL-163 D-1): un fondo de datos, como --banda, a 1,3:1 contra la superficie
+     para que un proyector no lo borre. La información la llevan las marcas y el texto, nunca este fondo. */
+  --pista: #dbe2ed;
   /* El rostro (TB-05; DL-163 D-2): el monograma, en tinta neutra sobre un círculo de un solo tono, el mismo para todas
      las personas. La tinta llega a 4,5:1 sobre su fondo, casi no tiene color (no es el acento) y queda lejos de --ahora. */
   --retrato-fondo: #e4e9f0;
@@ -152,6 +155,7 @@
   --grafico-hueco: #87a5bd;
   --banda: #163750;
   --ahora: #27d5f9;
+  --pista: #113754;
   --retrato-fondo: #22384d;
   --retrato-tinta: #dde4ec;
   /* Las tres métricas sobre navy: las mismas familias, más claras, lejos del cian de los enlaces, del menta del éxito, del

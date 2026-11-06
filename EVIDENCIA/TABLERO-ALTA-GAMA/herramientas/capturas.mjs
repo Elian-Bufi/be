@@ -16,6 +16,8 @@
 // Cuenta las peticiones a la API al abrir cada página (TEST-TAG-032): la cuenta queda en mediciones.json.
 // Desde TB-05, con «Ocultar nombres» prendido recorre el Espacio y el Resumen de cada profesional (TEST-TAG-004): si
 // aparece el nombre de alguien de la cohorte, una inicial o un nombre en el título de la pestaña, la corrida falla.
+// Desde TB-10, en cada Resumen anota en `primeraPantalla` dónde terminan las tarjetas, los valores de los indicadores y
+// sus minigráficos, y el alto de la tarjeta más alta (A13 de la propuesta).
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
@@ -223,6 +225,26 @@ async function capturarTodo() {
             await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
             await pausa(700);
             await page.screenshot({ path: path.join(carpeta, `${nombre}-${ancho}-pantalla.png`) });
+            // TB-10 (A13 de la propuesta): en el Resumen, dónde terminan las tarjetas, el valor de cada indicador y sus
+            // minigráficos, y el alto de la tarjeta más alta, para comparar con la primera pantalla de cada tamaño.
+            if (nombre.startsWith('resumen')) {
+              const medida = await page.evaluate(() => {
+                const cajas = (selector) => [...document.querySelectorAll(selector)].map((e) => e.getBoundingClientRect());
+                const fondo = (selector) => {
+                  const c = cajas(selector);
+                  return c.length ? Math.round(Math.max(...c.map((r) => r.bottom))) : null;
+                };
+                const tarjetas = cajas('.areas > .area');
+                return {
+                  tarjetas: fondo('.areas > .area'),
+                  tarjetaMasAlta: tarjetas.length ? Math.round(Math.max(...tarjetas.map((r) => r.height))) : null,
+                  valores: fondo('.indicador__valor'),
+                  minigraficos: fondo('.indicador [role="img"]'),
+                };
+              });
+              fila.primeraPantalla ??= {};
+              fila.primeraPantalla[`${tema}-${ancho}`] = { ...medida, alto, entranLosValores: medida.valores !== null && medida.valores <= alto, entranLosMinigraficos: medida.minigraficos !== null && medida.minigraficos <= alto };
+            }
             const total = await page.evaluate(() => Math.max(document.documentElement.scrollHeight, document.body.scrollHeight));
             // La página entera con la ventana estirada a su alto: con `fullPage`, los gráficos se quedan sin dibujo.
             await page.setViewport({ width: ancho, height: Math.min(Math.max(total, alto), 16000), deviceScaleFactor: 1 });

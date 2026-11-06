@@ -13,8 +13,9 @@
 > en el código que cita cada uno. Un oráculo dice qué hay que observar para aceptar la prueba. No inventa la regla: la
 > lee.
 >
-> **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04 y TB-05;
-> los demás tokens, con su parte), TEST-TAG-006 y TEST-TAG-007. Los demás se escriben con su parte (§10 del paquete).
+> **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05
+> y TB-10; los de TB-24, con su parte), TEST-TAG-006 y TEST-TAG-007, y TEST-TAG-001 y TEST-TAG-002 (TB-10). Los demás se
+> escriben con su parte (§10 del paquete).
 
 ---
 
@@ -80,9 +81,10 @@ STEPS                1. Leer los dos temas de tokens.css.
                      2. Medir cada par nuevo: los fondos de datos contra la superficie y las métricas encima.
                      3. Buscar los dos colores de antes en tokens.css y en todo apps/web/src.
 EXPECTED             1-2 → TB-03: --banda contra --superficie, 1,3:1 o más en los dos temas; las tres métricas y
-                     --grafico-hueco sobre --banda, 3:1 o más. Se suman con su parte: --ahora y --pista (TB-04 y
-                     TB-10), --retrato-fondo y --retrato-tinta (TB-05), --composicion-libre y --composicion-grasa
-                     (TB-24), con las iniciales y las métricas contra --ahora a ΔE 20 o más. TB-05:
+                     --grafico-hueco sobre --banda, 3:1 o más. TB-10: --pista contra --superficie, 1,3:1 o más, y
+                     --ahora y --texto sobre --pista, 3:1 o más. Se suman con su parte: --ahora (TB-04),
+                     --retrato-fondo y --retrato-tinta (TB-05), --composicion-libre y --composicion-grasa (TB-24),
+                     con las iniciales y las métricas contra --ahora a ΔE 20 o más. TB-05:
                      --retrato-tinta sobre --retrato-fondo, 4,5:1; la tinta y el círculo, a ΔE 20 o más de
                      --ahora; la tinta con croma de CIELAB de 12 o menos, y el círculo, de 16 o menos: neutros,
                      nunca el acento.
@@ -279,4 +281,77 @@ AUTOMATION           scripts/espacio-profesional.test.mjs («TEST-TAG-010 · …
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas de la corrida de TB-09, el marco de la
                      ficha de Federico Álvarez con «Aplicar la revisión de Nutrición»
+```
+
+---
+
+## TEST-TAG-001 — La barra del reloj no se mueve con lo que registra la persona
+
+```text
+TEST_ID              TEST-TAG-001
+TITLE                El tramo del ciclo de cada tarjeta sale solo de las fechas del profesional: con las mismas
+                     fechas, la barra es la misma, registre lo que registre la persona
+LEVEL                Unidad, con una prueba de propiedad (función pura del website, sin React)
+PRIORITY             P1 — es la salvaguarda de D-1: una barra que se llena no puede medir a la persona
+SOURCES              DL-163 D-1 («La entrada son fechas y actos del profesional, nunca registros: con las mismas
+                     fechas, la barra es la misma, registre lo que registre la persona»; «sin fecha acordada no hay
+                     barra»; «lo vencido sigue en discontinua neutra y se escribe») · WP-TABLERO-ALTA-GAMA TB-10 ·
+                     la propuesta, R-2 y anexo A10 (el tope del 25 % para lo vencido) · TA-13 y TA-17
+PRECONDITIONS        Ninguna: avanceDelReloj, tramoDelCiclo y textosDelTramo, en apps/web/src/lib/reloj.ts.
+SYNTHETIC_FIXTURE    Resúmenes de API-DSH-03 (Nutrición y Entrenamiento) armados al azar con una semilla fija:
+                     la activación del plan vigente, la fecha acordada (o ninguna), la última revisión (o ninguna,
+                     aplicada o no) y lo registrado (registeredIntakes, lastIntakeAt, registeredExecutions,
+                     lastExecutionAt), con hoy alrededor del 6 nov 2026.
+STEPS                1. Para 2000 resúmenes, calcular el tramo; cambiar cuatro veces solo lo registrado y volver a
+                        calcularlo, con sus textos.
+                     2. El avance con tres fechas: en curso, el día acordado y un ciclo de cero días.
+                     3. Un ciclo vencido hace 4 días y uno vencido más que lo acordado.
+                     4. Un plan sin fecha acordada, sin plan vigente y con la revisión de la fecha ya registrada.
+                     5. Una revisión posterior y una anterior a la activación del plan vigente.
+EXPECTED             1 → el tramo y sus textos son idénticos en cada variante; más de 500 casos tienen barra.
+                     2 → 21 de 31 días (hoy a 21/31 del ancho); 31 de 31; un ciclo de cero días, hoy al final.
+                     3 → hoy al final, la fecha acordada a 1 − 4/35 del ancho, «vencida hace 4 días» y «hoy» en la
+                        punta; con más días vencidos que acordados, lo vencido ocupa la cuarta parte, no más.
+                     4 → «SIN_FECHA», sin frase de barra; sin plan, ningún tramo; con la revisión de esa fecha,
+                        «REVISADA» (TA-13).
+                     5 → el tramo empieza en la revisión si es posterior a la activación, y en la activación si no
+                        (TA-17).
+NEGATIVE_ASSERTIONS  Nada de lo que registra la persona cambia el tramo. Sin fecha acordada no hay barra. Al vencer
+                     no aparece un color nuevo: la pista sigue en discontinua de --borde-control y la cuenta se
+                     escribe. Mutación verificada: con el tramo empezando en el último registro de la persona, la
+                     propiedad falla.
+AUTOMATION           apps/web/test/tarjetas-del-resumen.test.mjs («TEST-TAG-001 · …», cinco casos), en
+                     `npm run test -w @be/web`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas de la corrida de TB-10, el tramo de la
+                     tarjeta de Nutrición de Diego Sosa (Sofía Paz) y el de Entrenamiento (Martín Acosta)
+```
+
+---
+
+## TEST-TAG-002 — Las barras se dicen en palabras
+
+```text
+TEST_ID              TEST-TAG-002
+TITLE                Toda barra de progreso del website lleva su frase en palabras para el lector de pantalla, sin
+                     porcentajes
+LEVEL                Unidad (lectura del código del website y de las frases del tramo, sin navegador)
+PRIORITY             P1 — accesibilidad (RNF-ACC-001) y la salvaguarda de D-1: una barra no se lee como un puntaje
+SOURCES              DL-163 D-1 («para el lector de pantalla, la frase en palabras (aria-valuetext)»; «sin "%", sin
+                     "te faltan"») · WP-TABLERO-ALTA-GAMA §6 (TEST-TAG-002) · WAI-ARIA 1.2, progressbar
+PRECONDITIONS        Ninguna.
+SYNTHETIC_FIXTURE    Los archivos .ts y .tsx de apps/web/src; 500 tramos al azar con una semilla fija.
+STEPS                1. Buscar cada role="progressbar" en apps/web/src y leer el elemento que lo lleva.
+                     2. Armar los textos de 500 tramos (el título, el detalle y la frase de la barra).
+EXPECTED             1 → hay al menos una barra (el tramo del ciclo) y cada una lleva aria-valuetext en el mismo
+                        elemento.
+                     2 → ningún texto tiene «%», «por ciento», «te faltan», «cumplimiento», «adherencia» ni «racha».
+NEGATIVE_ASSERTIONS  Ninguna barra se anuncia como un porcentaje: sin aria-valuetext, un lector de pantalla diría
+                     el valor como «68 por ciento». Mutación verificada: sin aria-valuetext en el tramo, falla el
+                     paso 1.
+AUTOMATION           apps/web/test/tarjetas-del-resumen.test.mjs («TEST-TAG-002 · …», dos casos), en
+                     `npm run test -w @be/web`
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. La prueba a mano con un lector de pantalla queda pendiente
+                     (no se pudo hacer en esta PC)
 ```

@@ -654,6 +654,7 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-09 | Hecha. La acción del marco de la ficha sigue la cadena aplicar → revisión acordada → borrador → empezar. Con una revisión registrada sin aplicar ofrece «Aplicar la revisión de Nutrición», que abre la lista de Revisiones con el foco en esa revisión y su «Aplicar» a la vista (`revision=…`); llegar no aplica nada. «Preparar la revisión» sigue abriendo la revisión nueva ya preparada (`preparar=1`). Una revisión registrada desde siete días antes de la fecha acordada es la de esa fecha (TA-13): ya aplicada, lo que sigue es su borrador o nada. Federico Álvarez, que ofrecía «Preparar la revisión», ahora ofrece «Aplicar»; las capturas suman su Resumen y anotan la acción del marco. TEST-TAG-010 | `advisees/accion-de-la-ficha.ts`, `retorno-y-preparacion.tsx` (`useLaRevisionPedida`), `scripts/espacio-profesional.test.mjs` |
 | TB-08 | Hecha. Cada renglón de «Tus asesorados» lleva el monograma, el nombre, la referencia, las áreas con acceso, las sin acceso con los estados en palabras y «Con vos desde el …» (el vínculo vigente más antiguo). El renglón entero abre la ficha y las personas van en orden alfabético, como en español, sin datos de seguimiento (TA-14) | `pro/directorio.ts` (`conVosDesde`, `enOrdenAlfabetico`), `pro/asesorados.tsx` |
 | TB-07 | Hecha, salvo el retorno a /pro, que llega con el cajón (TB-12). «Tu semana», entre el encabezado y la mesa: las revisiones acordadas de hoy a hoy + 7, una columna por día (TA-15), y las vencidas aparte, en «Vencidas»; fichas con monograma, nombre y área, hasta tres por día y «y N más». Sin tomas, horas ni «hecho»; hoy lleva la raya de `--ahora`; el vacío lo dice con de dónde salen las fechas; «Ver como lista»; cada columna es una lista con su día como título. Sale de la cartera ya leída: ninguna lectura nueva (en la corrida de TB-09, el Espacio sigue con 5 peticiones al abrir) | `pro/tu-semana.ts`, `pro/tu-semana-en-pantalla.tsx` |
+| TB-10 | Hecha en el código y en sus pruebas, salvo la pieza de Antropometría, que va con TB-24 (TA-20); falta medirla en las capturas de su corrida. En cada área con plan, **el tramo del ciclo**: una pista fina de la última revisión (o de la activación del plan vigente, TA-17) a la fecha acordada, con lo transcurrido en neutro, hoy en `--ahora` y la fecha marcada; vencida, sigue en discontinua y lo dice («Acordada para el lun 2 nov · vencida hace 4 días»); sin fecha, «Sin revisión acordada». Es una barra de progreso con su frase (`aria-valuetext`). `avanceDelReloj` y `tramoDelCiclo` leen solo fechas del profesional (TEST-TAG-001, una prueba de propiedad). **Lo nuevo desde la revisión, en cifras en fila** (TA-19). **La pieza propia:** en Nutrición, la barra partida de los registros del período (con cantidades, sin cantidades y anulados, y los rectificados aparte) y las comidas del plan con registro; en Entrenamiento, las sesiones por ejercicio, hasta cinco y «y N más» (TA-18). Un área sin nada registrado muestra **«Empezar el plan» en miniatura**, con una lectura de sus evaluaciones (TA-21). `--pista`, token nuevo, con sus pares. Las capturas anotan dónde terminan las tarjetas y los valores de los indicadores (`primeraPantalla`). TEST-TAG-001, TEST-TAG-002 y TEST-TAG-005 | `lib/reloj.ts`, `seguimiento/tramo-del-ciclo.tsx`, `seguimiento/piezas-del-area.ts`, `seguimiento/pieza-del-area.tsx`, `apps/web/test/tarjetas-del-resumen.test.mjs` |
 
 **Para seguir.** De TB-00 a TB-09 están hechas, salvo TB-06. La próxima es TB-06 (el encabezado y las cifras de
 /pro), y después TB-10, TB-16, TB-24, TB-25 y TB-49, en el orden de §8.1. Lo que hay que saber de TB-06:
@@ -764,3 +765,25 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   prueban y se recapturan una sola vez. No cambia el alcance ni el orden de las demás partes: TB-10, TB-16, TB-24,
   TB-25 y TB-49 pueden ir antes. *Otra opción:* TB-06 sola, con «Esperan respuesta» llevando por ahora a «Pendientes»
   filtrado por formularios, y TB-11 rehaciendo ese destino.
+- **TA-17 · El tramo empieza en la última revisión o, si el plan vigente se activó después, en su activación.** La
+  propuesta dice «de la última revisión a la fecha acordada». Cuando una revisión se aplica con un plan nuevo, la fecha
+  se acuerda al activarlo: desde la revisión, el tramo contaría como transcurridos los días en que ese plan todavía no
+  regía. Sin ninguna revisión, el ciclo empieza con el plan. La frase de la barra dice cuál es («desde la revisión del
+  16 oct» o «desde que rige el plan, el 17 oct»). *Otra opción:* siempre desde la última revisión, y sin revisión, sin
+  barra.
+- **TA-18 · Las sesiones por ejercicio van de más a menos sesiones, no en el orden del plan.** El orden del plan pide
+  leer el plan (una lectura más) y, si en el período rigieron dos versiones, no hay un solo orden. Con las mismas
+  sesiones, por nombre. *Otra opción:* leer el plan vigente y ordenar por él.
+- **TA-19 · «Desde la revisión», con las palabras del dominio, y cada dato una sola vez en la tarjeta.** La propuesta
+  llama a la pieza «Desde tu revisión»; la §2 conserva «Desde la revisión» como garantía del dominio, y las cifras se
+  parten sin reescribirse. Con el tramo dibujado, el pendiente «Próxima revisión» no se repite debajo: el tramo lleva la
+  misma fecha y la cuenta. Los anulados y los rectificados pasan de la cobertura plegada a la barra partida, a la vista.
+  *Otra opción:* «Desde tu revisión», que reescribe un texto del dominio, y el pendiente repetido.
+- **TA-20 · La pieza de Antropometría va con TB-24.** TB-10 pide en esa tarjeta «la barra de la composición de la última
+  toma, con la línea de las tomas como respaldo cuando no hay método»: es la pieza de D-11. Hecha acá, la línea de las
+  tomas se dibujaría sola y la próxima parte la cambiaría. *Otra opción:* la línea de las tomas (R-6) ahora, con su
+  lectura, y la barra después.
+- **TA-21 · «Empezar el plan» en miniatura, con el botón secundario.** Los tres pasos dicen cuál toca (la evaluación,
+  el objetivo o el plan) con una lectura de las evaluaciones del área, una por área sin plan (A15). El botón deja de
+  ser lleno: la acción del momento ya está en el marco (TB-09), y con dos áreas sin plan había dos botones llenos. Si
+  la lectura falla, quedan las palabras de antes y el botón. *Otra opción:* el botón lleno, sin los pasos.
