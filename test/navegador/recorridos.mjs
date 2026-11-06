@@ -627,6 +627,10 @@ async function faltaUnaParte({ p, d, salida }) {
 async function completitud({ p, d, salida }) {
   await entrar(p, d.pro.correo);
   await abrirFicha(p, d.ase.nombre);
+  // WP-TABLERO-ALTA-GAMA TB-16 (DL-163 D-7): la persona de este recorrido se vincula hoy y sus registros tienen fechas de
+  // los días anteriores; el período por omisión arrancaría hoy, el día del vínculo. El recorrido elige 30 días, como lo
+  // haría el profesional, y comprueba lo mismo de siempre.
+  await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&p=30`, { waitUntil: 'networkidle2' });
   const indicador = 'li.indicador[data-metrica="nutricion.energia"]';
   await p.waitForFunction((s) => document.querySelector(s)?.innerText.includes('comida del plan sin registro'), { timeout: ESPERA, polling: 100 }, indicador);
   const tarjeta = await p.$eval(indicador, (e) => e.innerText);
@@ -639,7 +643,7 @@ async function completitud({ p, d, salida }) {
   await captura(p, salida, 'completitud-indicador-1440');
 
   const lecturaDel = async (fecha, texto) => {
-    await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=analizar&m=nutricion.energia&f=${fecha}`, { waitUntil: 'networkidle2' });
+    await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}&vista=analizar&p=30&m=nutricion.energia&f=${fecha}`, { waitUntil: 'networkidle2' });
     await p.waitForFunction((t) => document.querySelector('.panel-de-lectura')?.innerText.includes(t), { timeout: ESPERA, polling: 100 }, texto);
     return p.$eval('.panel-de-lectura', (e) => e.innerText);
   };
