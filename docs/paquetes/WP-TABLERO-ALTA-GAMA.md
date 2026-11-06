@@ -495,6 +495,10 @@ tiene su mutación, como E-06 y E-16 de WP-ESCRITORIO-AMABLE.
 - **TEST-TAG-033 · «Lo que contó al empezar» ubica lo declarado y no lo califica** (DL-165 D-8; TB-49). Solo las
   respuestas vigentes de las solicitudes que pidió ese profesional, cada una con su fecha y su procedencia; abre la
   solicitud; sin cuentas, sin puntajes y sin ningún botón que escriba; sin solicitudes respondidas no hay tarjeta.
+- **TEST-TAG-034 · «¿Cuándo la revisás?» no viene elegida y dice lo que deja** (D-6; TB-15). Se suma con TB-15: la
+  pregunta no tenía oráculo propio. Sin nada elegido no hay fecha y falta elegir, también «Sin fecha por ahora»; cada
+  opción dice la fecha que resulta, contada desde hoy, y su efecto en el acto que la fija; con «Reprogramar revisión» no
+  hay «Sin fecha por ahora», y con «Finalizar» no se pregunta; sale solo de fechas del profesional.
 
 **La evidencia,** en `EVIDENCIA/TABLERO-ALTA-GAMA/`:
 - las capturas de antes y de después, en Claro y Azul noche, a 1440 y a 1920; a 1280 y a 1024 se revisa la composición,
@@ -663,6 +667,7 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-06 | Hecha, con TB-11 (TA-16). Debajo del título, el saludo («Buen día, Sofía», o a secas con «Ocultar nombres», TA-31) y tres cifras: «Te toca a vos» con Revisiones, Planes y Tomas, que filtran con `aria-pressed` (TA-32); «Esperan respuesta» con Formularios, Solicitudes e Invitaciones, y «Personas» con sus áreas, que llevan a su sección. Dicen «al menos» si faltan páginas. La única lectura nueva es la de las invitaciones sin usar: el Espacio pasa de 5 a 6 peticiones al abrir | `pro/cifras-del-espacio.tsx`, `pro/mesa.ts` (`saludo`, `primerNombre`, `personasPorArea`) |
 | TB-11 | Hecha. «Te toca a vos» (antes «Pendientes»): revisiones, planes y tomas, por persona por omisión (las personas por su pendiente más urgente según `compararPendientes`, agrupadas por `identityId`, con «un pendiente» o «N pendientes» al lado del nombre) o «Por pendiente», la tabla de DL-107 tal cual; la elección se recuerda en el navegador (TA-34). «Más filtros» queda en la tarjeta. «Esperan respuesta», al costado y encima de «Tus asesorados» (TA-35): los formularios sin responder, las solicitudes de vínculo sin responder y las invitaciones sin usar, lo más antiguo primero (TA-33). Medido en la corrida de 1e6cfb5: a 1440 × 900 y a 1920 × 950 entran el saludo, las cifras, «Tu semana», «Esperan respuesta» y las dos primeras personas de la cola. TEST-TAG-008 | `pro/te-toca-a-vos.tsx`, `pro/esperan-respuesta.tsx`, `pro/mesa.ts`, `apps/web/test/mesa.test.mjs` |
 | TB-12 | Hecha, detrás de su interruptor (TA-39): «Empezar por el primero» abre el cajón «De a una» con la vista elegida, en su orden. Cada cuadro: «Pendiente 1 de 3», la pregunta, quién y el área, el pendiente, el tramo del ciclo y lo nuevo desde la revisión, con dos lecturas como mucho (TA-36); las salidas «Preparar la revisión» (o el verbo de la fila), «Abrir la ficha» y «Saltear por ahora»; J, K y S con el foco adentro, y Escape (TA-37). El cierre es un comprobante. Al salir por una salida, el lugar se guarda con identificadores y, al volver a /pro, el cajón sigue con el siguiente (TA-38). No incluye aplicar: eso es TB-15, que reusa API-TRN-24 y API-NUT-20 sin tocar la API. TEST-TAG-009 | `pro/cajon.ts`, `pro/cajon-de-a-una.tsx`, `apps/web/test/cajon.test.mjs` |
+| TB-15 | Hecha, sin tocar la API. **«¿Cuándo la revisás?»**, en el paso 3 de la revisión de Nutrición y de Entrenamiento («Lo que decidís») y en el cuadro de activar de los dos editores, en lugar del campo «Próxima revisión (opcional)»: «En 1 semana · miércoles 11 nov», «En 2 semanas», «En 4 semanas», «Elegir una fecha» y «Sin fecha por ahora», sin nada elegido (TA-40); al elegir, el efecto («Al aplicar esta revisión, la próxima queda para el …», «Al activar, la próxima revisión queda para el …»); «Sin fecha por ahora» dice lo que hace BE hoy (TA-41) y no aparece con «Reprogramar revisión»; con «Finalizar» no se pregunta, y después de aplicar tampoco. Al activar, la fecha que ya tenía la versión viene elegida y se dice (TA-44); en la revisión, lo acordado la última vez va como dato («La última vez acordaste revisar a las 4 semanas.», TA-45). **Aplicar desde el cajón:** si lo leído al abrir el cuadro trae una revisión registrada y sin aplicar, la pregunta es «La revisión del 16 oct está registrada y sin aplicar. ¿La aplicás?», y antes del botón van el resultado, el fundamento, la próxima acción y lo que pasa al aplicar, con la fecha que deja; el botón es el de cada área («Aplicar continuidad» o «Aplicar próxima acción»), con la misma operación, la clave del intento, los conflictos y los textos de la lista de Revisiones (TA-42). La segunda lectura del cuadro es la revisión (API-NUT-19 o API-TRN-23, que el cliente suma), no lo nuevo desde ella: siguen siendo dos. Lo aplicado se dice en su cuadro, con «Seguir el borrador» si se preparó uno, y en el cierre («Lo que aplicaste:»), y al cerrar el cajón /pro vuelve a leer la cartera (TA-43). TEST-TAG-013 (con la integración de las dos áreas) y TEST-TAG-034 | `lib/cuando-la-revisas.ts`, `advisees/cuando-la-revisas.tsx`, `advisees/aplicar-la-revision.ts`, `pro/aplicar-en-el-cajon.tsx`, `pro/cajon-de-a-una.tsx`, `apps/web/test/aplicar-y-cuando.test.mjs`, `test/integration/aplicar-desde-el-cajon.int-spec.ts` |
 
 **Para seguir.** De TB-00 a TB-12, TB-16, TB-24, TB-25 y TB-49 están hechas, con el arreglo de base de TEST-TAG-032.
 Lo próximo, en el orden de §8.1:
@@ -968,3 +973,46 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   Render no la define. Apagado, «Empezar por el primero» no se muestra y el botón lleno es «Invitar a una persona»;
   prendido y con algo en la cola, el lleno es «Empezar por el primero» e «Invitar a una persona» pasa a secundario.
   *Otra opción:* una constante en el código, que pide un commit para recapturar y otro para apagarla.
+- **TA-40 · «¿Cuándo la revisás?» pide elegir, también «Sin fecha por ahora».** D-6 la quiere «con nada elegido»: si no
+  elegir valiera como «sin fecha», BE elegiría por el profesional el caso que más se escapa (un plan sin revisión
+  acordada sale de la cola). En la revisión, registrar sin elegir dice «Elegí cuándo la revisás, o “Sin fecha por
+  ahora”.» en el resumen de errores, como cualquier campo; en el cuadro de activar, el botón lleno espera a que se elija
+  (como el motivo de DL-033) y debajo de las opciones se dice qué falta. Con «Finalizar» no se pregunta: no hay próxima.
+  Las opciones son en 1, 2 o 4 semanas desde hoy, una fecha a elección o «Sin fecha por ahora», y cada una dice la
+  fecha que resulta («En 1 semana · miércoles 11 nov», con el día como lo dice el tramo del ciclo). *Otra opción:* la
+  pregunta opcional, que es el campo de antes con botones.
+- **TA-41 · «Sin fecha por ahora» dice lo que BE hace hoy, no lo que hará la cola de TB-14.** La API no borra la
+  revisión acordada cuando se aplica una revisión o se activa una versión sin fecha (`fijarProximaRevision` se llama solo
+  con una fecha): la que estaba sigue, y en la cartera puede seguir vencida (es la divergencia que prueba TB-13, en la
+  rama de la API). Por eso, en la revisión: «Al aplicar esta revisión no se acuerda una fecha nueva: la revisión que ya
+  estaba acordada no cambia.»; al activar una versión sobre otra, lo mismo con «Al activar»; y solo al activar el primer
+  plan, «Sin fecha acordada, esta área no aparece en las revisiones de «Te toca a vos».». Cuando TB-13 y TB-14 cambien
+  la cola, estos textos cambian con ellas. *Otra opción:* el texto de la propuesta («esta área no aparece en las
+  revisiones de Pendientes») en todos los casos, que hoy es falso en la revisión.
+- **TA-42 · Aplicar desde el cajón: la segunda lectura del cuadro es la revisión, y escribe una pieza propia.** Con una
+  revisión registrada y sin aplicar (`lastReview.application` en null en API-DSH-03, y el pendiente es una revisión), el
+  cuadro lee esa revisión (API-NUT-19 o API-TRN-23) en lugar de lo nuevo desde ella: siguen siendo dos lecturas, y lo
+  que va antes del botón (el resultado, el fundamento, la próxima acción y el efecto con su fecha) sale de ahí. API-TRN-23
+  ya existía en la API sin un método en el cliente: `consultarRevisionDeEntrenamiento` lo suma, sin tocar la API ni lo
+  que leen las APK. El botón es el de cada área («Aplicar continuidad», «Aplicar próxima acción»), y los textos y los
+  conflictos salen de `advisees/aplicar-la-revision.ts`, que ahora usan también las dos listas de Revisiones. La
+  escritura vive en `aplicar-en-el-cajon.tsx`, la única pieza del cajón que escribe: TEST-TAG-009 sigue mirando que el
+  cajón no escriba. Sin la revisión leída no se ofrece aplicar. *Otra opción:* leer el contexto de la revisión
+  (API-NUT-17 o API-TRN-21), que trae el período entero; o un verbo común para el cajón, distinto del de Revisiones.
+- **TA-43 · Lo aplicado se dice en su cuadro y en el cierre, y la cartera se relee al cerrar el cajón.** En el cuadro:
+  «Se aplicó la revisión de Nutrición.», lo que hizo (con las palabras de la lista de Revisiones), «Seguir el borrador»
+  si se preparó uno, «Abrir la ficha» y «Siguiente». En el cierre, «Lo que aplicaste:» y un renglón por persona y área
+  («… · se aplicó la revisión»), sin cuentas, como los salteados. La fila de «Te toca a vos» sigue hasta que /pro relee
+  la cartera, al cerrar el cajón: releer con el cajón abierto movería la cola mientras se recorre. Lo aplicado se guarda
+  por la clave del pendiente, sin nombres, y solo mientras el cajón está abierto. *Otra opción:* releer al aplicar, o
+  sacar el cuadro de la cola, que cambia la posición («Pendiente 2 de 3») debajo del profesional.
+- **TA-44 · Al activar, la fecha que ya tenía la versión viene elegida, y se dice.** Una versión que preparó una
+  revisión con «Ajustar» o «Sustituir» trae la fecha que el profesional eligió en esa revisión (API-NUT-20 y API-TRN-24
+  la copian al borrador). «Nada elegido» es la regla para lo que BE elegiría; esa fecha la eligió él: va en «Elegir una
+  fecha», con «Es la fecha que ya tenía esta versión.», y se puede cambiar o pasar a «Sin fecha por ahora». Sin fecha,
+  nada elegido. *Otra opción:* nada elegido siempre, que pide volver a elegir lo que se acordó en la revisión.
+- **TA-45 · En la revisión, lo que se acordó la última vez va como dato.** «La última vez acordaste revisar a las 4
+  semanas.»: de la última revisión registrada con una fecha a esa fecha, en semanas si son justas y si no en días. Es lo
+  que el profesional acordó, no el tiempo que pasó, y no es una opción elegida. Al activar no se dice: no hay una
+  revisión de la que salga. *Otra opción:* «El ciclo anterior fue de 4 semanas», contado hasta que se revisó, que mezcla
+  lo acordado con cuándo se hizo.

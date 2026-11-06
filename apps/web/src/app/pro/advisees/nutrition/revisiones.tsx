@@ -31,7 +31,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
+import { Aviso, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { motivoDeFalla, textoDeFalla } from '../../../../lib/fallas';
 import { dia, diaDelAnioEnCurso, fecha, horaEnZona, rangoCivil } from '../../../../lib/formato';
@@ -40,6 +40,9 @@ import { avisoDeMarcasQuitadas, diasDelPeriodo, marcasDelPeriodoNuevo, referenci
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
 import { EvidenciaRegistrada } from '../evidencia-registrada';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { admiteSinFecha, cicloAcordadoAntes, eleccionAlCambiarElResultado, fechaQueResulta, loQueFalta, NADA_ELEGIDO, sePregunta, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
+import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { falloPropioDeAplicar, textoDeLaAplicacion } from '../aplicar-la-revision';
 import { useLaRevisionPedida, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 import {
   AreaDeTexto,
@@ -239,11 +242,13 @@ function FormularioDeRevision({
   const [resultado, setResultado] = useState<ResultadoApi | ''>('');
   const [fundamento, setFundamento] = useState('');
   const [accion, setAccion] = useState('');
-  const [proxima, setProxima] = useState('');
+  // TB-15: «¿Cuándo la revisás?», con nada elegido; la fecha que resulta es la de la próxima acción.
+  const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
+  const proxima = fechaQueResulta(cuando, hoy);
   const [objetivo, setObjetivo] = useState(objetivoVacio(evaluaciones[0]?.evaluationId ?? ''));
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
-  useCambiosSinGuardar(evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima].some((t) => t.trim() !== ''), 'la revisión');
+  useCambiosSinGuardar(evidencia.size > 0 || resultado !== '' || cuando.tipo !== 'NADA' || [interpretacion, fundamento, accion].some((t) => t.trim() !== ''), 'la revisión');
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
@@ -267,6 +272,12 @@ function FormularioDeRevision({
       ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
     ],
     [contexto, hoy],
+  );
+
+  // TB-15: lo que acordaste la última vez, como dato y no como opción elegida: de una revisión a la fecha que se acordó en ella.
+  const ciclo = useMemo(
+    () => cicloAcordadoAntes(contexto.previousReviews.map((r) => ({ dia: fechaCivil(r.recordedAt, contexto.period.timeZone), acordada: r.nextAction.nextReviewAt ?? null }))),
+    [contexto],
   );
 
   // DEC-20: con otro período, se quita solo lo marcado que quedó afuera, y se dice. Lo escrito no cambia.
@@ -293,7 +304,9 @@ function FormularioDeRevision({
     if (!resultado) problemas.push({ id: 'revision-resultado', texto: 'Elegí un resultado.' });
     if (!fundamento.trim()) problemas.push({ id: 'revision-fundamento', texto: 'Falta el fundamento.' });
     if (!accion.trim()) problemas.push({ id: 'revision-accion', texto: resultado === 'FINALIZE' ? 'Describí el cierre.' : 'Falta la próxima acción.' });
-    if (resultado === 'RESCHEDULE_REVIEW' && !proxima) problemas.push({ id: 'revision-proxima', texto: 'Para reprogramar, indicá la fecha de la próxima revisión.' });
+    // TB-15: la fecha se elige siempre, también «Sin fecha por ahora»; con «Finalizar» no hay próxima revisión.
+    const faltaLaFecha = sePregunta(resultado) ? loQueFalta(cuando, hoy, resultado || null) : null;
+    if (faltaLaFecha) problemas.push({ id: 'revision-proxima', texto: faltaLaFecha });
     if (resultado === 'CHANGE_OBJECTIVE') problemas.push(...erroresDeObjetivo(objetivo, 'revision-objetivo'));
     setErrores(problemas);
     setEnvios((n) => n + 1);
@@ -371,23 +384,26 @@ function FormularioDeRevision({
               etiquetas={ETIQUETA_DE_RESULTADO}
               efectos={EFECTO_VISIBLE_DE_RESULTADO}
               valor={resultado}
-              alElegir={setResultado}
+              alElegir={(r) => {
+                setResultado(r);
+                setCuando((c) => eleccionAlCambiarElResultado(c, r));
+              }}
               error={porCampo['revision-resultado'] ?? null}
             />
             <AreaDeTexto id="revision-fundamento" etiqueta="Fundamento" valor={fundamento} onCambiar={setFundamento} filas={2} maximo={4000} porCampo={porCampo} />
-            <div className="revision-nueva__siguiente">
-              <AreaDeTexto id="revision-accion" etiqueta={resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'} valor={accion} onCambiar={setAccion} filas={2} maximo={2000} porCampo={porCampo} />
-              {resultado !== 'FINALIZE' ? (
-                <Campo
-                  id="revision-proxima"
-                  etiqueta={resultado === 'RESCHEDULE_REVIEW' ? 'Fecha de la próxima revisión' : 'Próxima revisión (opcional)'}
-                  type="date"
-                  value={proxima}
-                  onChange={(e) => setProxima(e.target.value)}
-                  error={porCampo['revision-proxima'] ?? null}
-                />
-              ) : null}
-            </div>
+            <AreaDeTexto id="revision-accion" etiqueta={resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'} valor={accion} onCambiar={setAccion} filas={2} maximo={2000} porCampo={porCampo} />
+            {sePregunta(resultado) ? (
+              <CuandoLaRevisas
+                id="revision-proxima"
+                hoy={hoy}
+                momento="REVISION"
+                conSinFecha={admiteSinFecha(resultado)}
+                eleccion={cuando}
+                alElegir={setCuando}
+                ciclo={ciclo}
+                error={porCampo['revision-proxima'] ?? null}
+              />
+            ) : null}
             {resultado === 'CHANGE_OBJECTIVE' ? (
               <fieldset className="grupo">
                 <legend>Nuevo objetivo</legend>
@@ -424,20 +440,10 @@ function ItemDeRevision({ revision, onAplicada }: { revision: Revision; onAplica
     setAplicando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok) {
-      if (r.tipo === 'API' && r.codigo === 'CONTINUITY_ACTION_NOT_APPLICABLE') return setFallo('No se puede aplicar ahora: revisá si ya hay un borrador del plan o si el seguimiento cambió.');
-      return setFallo(mensajeDeFallo(r));
-    }
+    // Los textos y los conflictos, los mismos que en el cajón «De a una» (TB-15): aplicar desde el cajón es aplicar.
+    if (!r.ok) return setFallo(falloPropioDeAplicar(r) ?? mensajeDeFallo(r));
     const a = r.datos.data.application;
-    const texto =
-      a.processStateAfter === 'CERRADO'
-        ? 'Seguimiento cerrado. La historia se conserva.'
-        : a.createdPlanId
-          ? 'Continuidad aplicada: se preparó una nueva versión del plan en borrador. La versión activa no cambió.'
-          : a.createdObjectiveVersionId
-            ? 'Continuidad aplicada: se emitió una nueva versión del objetivo.'
-            : COPY_NUTRICION.continuidadAplicada;
-    onAplicada(texto, Boolean(a.createdPlanId));
+    onAplicada(textoDeLaAplicacion('nutrition', a), Boolean(a.createdPlanId));
   }
 
   return (

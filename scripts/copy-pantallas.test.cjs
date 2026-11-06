@@ -153,7 +153,11 @@ const DOMINIOS = [
     // día, la revisión en preparación, el período y su ayuda). Muestran texto de las dos áreas: pasan por las dos listas.
     // Hasta acá la evidencia no la miraba ninguna prueba de palabras.
     nombre: 'la revisión de Nutrición y de Entrenamiento',
-    archivos: ['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+    // WP-TABLERO-ALTA-GAMA TB-15: «¿Cuándo la revisás?» y aplicar una revisión, que comparten las dos áreas y el cajón.
+    archivos: [
+      ...['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts', 'cuando-la-revisas.tsx', 'aplicar-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+      join(RAIZ, 'apps/web/src/lib/cuando-la-revisas.ts'),
+    ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
     minimo: 5,
   },

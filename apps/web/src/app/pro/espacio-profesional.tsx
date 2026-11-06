@@ -185,6 +185,9 @@ export function EspacioProfesional() {
   const cola = useMemo(() => (carteraLeida ? colaDeLaVista(filtrarPendientes(delCarril(carteraLeida, TIPOS_QUE_TE_TOCAN), filtro), modo) : []), [carteraLeida, filtro, modo]);
   const [cajon, setCajon] = useState<{ abierto: boolean; inicio: number | null }>({ abierto: false, inicio: 0 });
   const retomado = useRef(false);
+  // TB-15: si desde el cajón se aplicó una revisión, la cartera cambió: se vuelve a leer al cerrarlo, no con él abierto
+  // (la cola del cajón no se mueve mientras se recorre).
+  const releerAlCerrar = useRef(false);
   useEffect(() => {
     // Al volver de una salida del cajón, sigue con el siguiente que todavía esté en la cola; el lugar se usa una vez.
     if (!CAJON_DE_A_UNA || retomado.current || !carteraLeida) return;
@@ -327,7 +330,25 @@ export function EspacioProfesional() {
       </div>
 
       {CAJON_DE_A_UNA ? (
-        <CajonDeAUna abierto={cajon.abierto} cola={cola} inicio={cajon.inicio} token={token} sesionPerdida={sesionPerdida} hoy={hoy ?? ''} zona={zona} onCerrar={() => setCajon((c) => ({ ...c, abierto: false }))} />
+        <CajonDeAUna
+          abierto={cajon.abierto}
+          cola={cola}
+          inicio={cajon.inicio}
+          token={token}
+          sesionPerdida={sesionPerdida}
+          hoy={hoy ?? ''}
+          zona={zona}
+          onCerrar={() => {
+            setCajon((c) => ({ ...c, abierto: false }));
+            if (releerAlCerrar.current) {
+              releerAlCerrar.current = false;
+              void cartera.recargar();
+            }
+          }}
+          onAplicada={() => {
+            releerAlCerrar.current = true;
+          }}
+        />
       ) : null}
       <InvitarPersona
         abierto={invitar}

@@ -3,15 +3,16 @@
  * salidas y el lugar que se guarda para volver.
  * - **La cola** es la vista elegida en «Te toca a vos», en su orden: por persona (las personas por su pendiente más
  *   urgente) o por pendiente (DL-107), con los filtros puestos.
- * - **El cajón lee y no escribe:** saltear no escribe, y ninguna salida registra, aplica ni activa (aplicar llega con
- *   TB-15). Cada salida lleva a la pantalla que lo resuelve, como el verbo de la fila.
+ * - **El cajón lee y no escribe, salvo aplicar:** saltear no escribe, y ninguna salida registra ni activa. Cada salida
+ *   lleva a la pantalla que lo resuelve, como el verbo de la fila. La única escritura es aplicar una revisión ya
+ *   registrada (TB-15; DL-163 D-6), con la misma operación que Revisiones, en su propia pieza (`aplicar-en-el-cajon.tsx`).
  * - **El lugar** guarda identificadores (el tipo, el área y el `identityId` de cada pendiente), nunca nombres, y vive en la
  *   pestaña (`sessionStorage`): al volver a /pro, el cajón sigue con el siguiente que todavía esté en la cola.
  * - **Detrás de una constante** hasta que su recaptura esté verde: `BE_CAJON_DE_A_UNA=si` al compilar (`next.config.mjs`). Apagado,
  *   «Empezar por el primero» no se muestra y el botón lleno es «Invitar a una persona».
  * Los textos viven acá hasta TB-20 (§8.2 del paquete) y pasan la prueba de términos de la cartera.
  */
-import { COPY_CARTERA, type PendienteDeCartera, type TipoDePendiente } from '@be/domain';
+import { COPY_CARTERA, type DashboardResponse, type PendienteDeCartera, type TipoDePendiente } from '@be/domain';
 
 /** El interruptor del cajón (TB-12): apagado salvo que la compilación lo prenda. */
 export const CAJON_DE_A_UNA: boolean = process.env.BE_CAJON_DE_A_UNA === 'si';
@@ -35,6 +36,16 @@ export const COPY_CAJON = {
   volverAlPrimero: 'Volver al primero',
   leyendo: 'Leyendo lo de este pendiente…',
   sinLeer: 'No pudimos leer el resumen de este pendiente. Las salidas siguen funcionando.',
+  // TB-15: aplicar desde el cajón una revisión ya registrada.
+  preguntaDeAplicar: (dia: string): string => `La revisión del ${dia} está registrada y sin aplicar. ¿La aplicás?`,
+  leyendoLaRevision: 'Leyendo la revisión…',
+  sinLeerLaRevision: 'No pudimos leer la revisión, y sin leerla no se aplica desde acá.',
+  verLaRevision: 'Ver la revisión en Revisiones',
+  alAplicar: 'Al aplicar:',
+  aplicada: (p: Pick<PendienteDeCartera, 'domain'>): string => `Se aplicó la revisión ${DEL_AREA[p.domain]}.`,
+  seguirElBorrador: 'Seguir el borrador',
+  aplicadas: 'Lo que aplicaste:',
+  aplicadaEnElCierre: 'se aplicó la revisión',
   pregunta: (p: Pick<PendienteDeCartera, 'kind' | 'domain'>): string => {
     const area = DEL_AREA[p.domain];
     switch (p.kind) {
@@ -55,6 +66,18 @@ export const COPY_CAJON = {
 } as const;
 
 const REVISIONES: readonly TipoDePendiente[] = ['REVIEW_OVERDUE', 'REVIEW_DUE_SOON', 'REVIEW_UNDATED'];
+
+/**
+ * TB-15: la revisión registrada y sin aplicar del área del cuadro, si el pendiente es una revisión: entonces el cuadro
+ * pregunta si la aplicás. Sale de lo que se lee al abrir (API-DSH-03), no del tipo de la fila: la cartera no conoce ese
+ * estado y la muestra como vencida o próxima (§8.4 de la propuesta). Antropometría no tiene revisiones.
+ */
+export function revisionPorAplicar(p: Pick<PendienteDeCartera, 'kind' | 'domain'>, dominios: DashboardResponse['data']['domains']): { readonly reviewId: string; readonly recordedAt: string } | null {
+  if (!REVISIONES.includes(p.kind) || p.domain === 'anthropometry') return null;
+  const d = dominios[p.domain];
+  const ultima = d.available ? (d.summary?.lastReview ?? null) : null;
+  return ultima && ultima.application === null ? { reviewId: ultima.reviewId, recordedAt: ultima.recordedAt } : null;
+}
 
 /**
  * La salida principal de un cuadro (`ruta`, la que resuelve el pendiente, como la de la fila): en una revisión, «Preparar la revisión», que abre la revisión nueva ya preparada

@@ -63,7 +63,7 @@ import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Aviso, Campo } from '../../../../components/formulario';
+import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
@@ -72,6 +72,8 @@ import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
+import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { hoyEn } from '../seguimiento/estado';
 import { AgendaDelPlan, agendaVigente, resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
@@ -194,6 +196,9 @@ export function EditorDePlan({
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [imagenes, setImagenes] = useState<Record<string, ImagenDeEjercicio | null>>({});
   const [proximaRevision, setProximaRevision] = useState('');
+  // TB-15: «¿Cuándo la revisás?» al activar, con nada elegido (o la fecha que ya tenía la versión); la fecha que resulta
+  // es la que se guarda en la versión antes de activarla.
+  const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
   // La agenda (DL-137): los días de cada sesión. Se ve plegada en un renglón y se abre para cambiarla.
   const [agenda, setAgenda] = useState<AgendaDeEntrenamiento | null>(null);
   const [agendaAbierta, setAgendaAbierta] = useState(false);
@@ -369,11 +374,13 @@ export function EditorDePlan({
     const v = sucio ? await guardar() : version;
     if (!v) return;
     setFalloDeActivacion(null);
+    setCuando(eleccionAlActivar(v.nextReviewAt));
+    setProximaRevision(v.nextReviewAt ?? '');
     setConfirmar(true);
   }
 
   async function activar() {
-    if (!version) return;
+    if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
     setActivando(true);
     setFalloDeActivacion(null);
     // La próxima revisión se fija en este acto: si cambió, se guarda antes, y se activa la versión que eso deja.
@@ -999,11 +1006,13 @@ export function EditorDePlan({
         enviando={activando}
         error={falloDeActivacion}
         focoEnVolver
+        confirmarDeshabilitado={fechaQueResulta(cuando, hoyEn()) === undefined}
         onVolver={() => {
           setConfirmar(false);
           setFalloDeActivacion(null);
           // La fecha es de este acto: si no se activa, vuelve a la que estaba guardada.
           setProximaRevision(version.nextReviewAt ?? '');
+          setCuando(NADA_ELEGIDO);
           intentoDeActivar.descartar();
         }}
         onConfirmar={() => void activar()}
@@ -1022,13 +1031,18 @@ export function EditorDePlan({
             <strong>{COPY_AGENDA_DE_ENTRENAMIENTO.titulo}:</strong> {resumenDeLaAgenda(agendaVisible, sesionesDeLaAgenda)}
           </p>
         ) : null}
-        <Campo
+        <CuandoLaRevisas
           id="trn-proxima-revision"
-          etiqueta={`${COPY_DE_ACTIVAR_EL_PLAN.proximaRevision} (${COPY_DE_ACTIVAR_EL_PLAN.opcional})`}
-          ayuda={COPY_DE_ACTIVAR_EL_PLAN.ayudaDeLaRevision}
-          type="date"
-          value={proximaRevision}
-          onChange={(e) => setProximaRevision(e.target.value)}
+          hoy={hoyEn()}
+          momento="ACTIVAR"
+          conSinFecha
+          primerPlan={!vigente}
+          eleccion={cuando}
+          alElegir={(e) => {
+            setCuando(e);
+            setProximaRevision(fechaQueResulta(e, hoyEn()) ?? '');
+          }}
+          aviso={loQueFalta(cuando, hoyEn())}
         />
       </DialogoDeConfirmacion>
     </section>

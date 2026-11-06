@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
+import { Aviso, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { motivoDeFalla, textoDeFalla } from '../../../../lib/fallas';
 import { dia, diaDelAnioEnCurso, fecha, horaEnZona, rangoCivil } from '../../../../lib/formato';
@@ -44,6 +44,9 @@ import { avisoDeMarcasQuitadas, marcasDelPeriodoNuevo, referenciasMarcadas, vers
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
 import { EvidenciaRegistrada } from '../evidencia-registrada';
 import { Registro } from './ejecuciones';
+import { admiteSinFecha, cicloAcordadoAntes, eleccionAlCambiarElResultado, fechaQueResulta, loQueFalta, NADA_ELEGIDO, sePregunta, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
+import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { falloPropioDeAplicar, textoDeLaAplicacion } from '../aplicar-la-revision';
 import { useLaRevisionPedida, usePreparar, useRetornoALaFicha } from '../retorno-y-preparacion';
 import {
   AreaDeTexto,
@@ -238,12 +241,14 @@ function FormularioDeRevision({
   const [resultado, setResultado] = useState<ResultadoApi | ''>('');
   const [fundamento, setFundamento] = useState('');
   const [accion, setAccion] = useState('');
-  const [proxima, setProxima] = useState('');
+  // TB-15: «¿Cuándo la revisás?», con nada elegido; la fecha que resulta es la de la próxima acción.
+  const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
+  const proxima = fechaQueResulta(cuando, hoy);
   const [nuevoObjetivo, setNuevoObjetivo] = useState('');
   const [fundamentoDelObjetivo, setFundamentoDelObjetivo] = useState('');
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
-  useCambiosSinGuardar(evidencia.size > 0 || resultado !== '' || [interpretacion, fundamento, accion, proxima, nuevoObjetivo, fundamentoDelObjetivo].some((t) => t.trim() !== ''), 'la revisión');
+  useCambiosSinGuardar(evidencia.size > 0 || resultado !== '' || cuando.tipo !== 'NADA' || [interpretacion, fundamento, accion, nuevoObjetivo, fundamentoDelObjetivo].some((t) => t.trim() !== ''), 'la revisión');
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
@@ -267,6 +272,12 @@ function FormularioDeRevision({
       ...(contexto.objective ? [{ tipo: 'OBJECTIVE_VERSION' as const, id: contexto.objective.versionId, dia: null, texto: 'Objetivo vigente' }] : []),
     ],
     [contexto, hoy],
+  );
+
+  // TB-15: lo que acordaste la última vez, como dato y no como opción elegida: de una revisión a la fecha que se acordó en ella.
+  const ciclo = useMemo(
+    () => cicloAcordadoAntes(contexto.previousReviews.map((r) => ({ dia: fechaCivil(r.recordedAt, contexto.period.timeZone), acordada: r.nextAction.nextReviewAt ?? null }))),
+    [contexto],
   );
 
   // DEC-20: con otro período, se quita solo lo marcado que quedó afuera, y se dice. Lo escrito no cambia.
@@ -293,7 +304,9 @@ function FormularioDeRevision({
     if (!resultado) problemas.push({ id: 'trn-revision-resultado', texto: 'Elegí un resultado.' });
     if (!fundamento.trim()) problemas.push({ id: 'trn-revision-fundamento', texto: 'Falta el fundamento.' });
     if (!accion.trim()) problemas.push({ id: 'trn-revision-accion', texto: resultado === 'FINALIZE' ? 'Describí el cierre.' : 'Falta la próxima acción.' });
-    if (resultado === 'RESCHEDULE_REVIEW' && !proxima) problemas.push({ id: 'trn-revision-proxima', texto: 'Para reprogramar, indicá la fecha de la próxima revisión.' });
+    // TB-15: la fecha se elige siempre, también «Sin fecha por ahora»; con «Finalizar» no hay próxima revisión.
+    const faltaLaFecha = sePregunta(resultado) ? loQueFalta(cuando, hoy, resultado || null) : null;
+    if (faltaLaFecha) problemas.push({ id: 'trn-revision-proxima', texto: faltaLaFecha });
     if (resultado === 'CHANGE_OBJECTIVE' && (!nuevoObjetivo.trim() || !fundamentoDelObjetivo.trim() || !evaluaciones[0])) {
       problemas.push({ id: 'trn-revision-objetivo', texto: 'Para cambiar el objetivo, escribí el nuevo y su fundamento (hace falta una evaluación).' });
     }
@@ -382,24 +395,27 @@ function FormularioDeRevision({
               etiquetas={ETIQUETA_DE_RESULTADO}
               efectos={EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO}
               valor={resultado}
-              alElegir={setResultado}
+              alElegir={(r) => {
+                setResultado(r);
+                setCuando((c) => eleccionAlCambiarElResultado(c, r));
+              }}
               error={porCampo['trn-revision-resultado'] ?? null}
               explicacion={COPY_ENTRENAMIENTO.progresionComoAjuste}
             />
             <AreaDeTexto id="trn-revision-fundamento" etiqueta="Fundamento" valor={fundamento} onCambiar={setFundamento} filas={2} maximo={4000} porCampo={porCampo} />
-            <div className="revision-nueva__siguiente">
-              <AreaDeTexto id="trn-revision-accion" etiqueta={resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'} valor={accion} onCambiar={setAccion} filas={2} maximo={2000} porCampo={porCampo} />
-              {resultado !== 'FINALIZE' ? (
-                <Campo
-                  id="trn-revision-proxima"
-                  etiqueta={resultado === 'RESCHEDULE_REVIEW' ? 'Fecha de la próxima revisión' : 'Próxima revisión (opcional)'}
-                  type="date"
-                  value={proxima}
-                  onChange={(e) => setProxima(e.target.value)}
-                  error={porCampo['trn-revision-proxima'] ?? null}
-                />
-              ) : null}
-            </div>
+            <AreaDeTexto id="trn-revision-accion" etiqueta={resultado === 'FINALIZE' ? 'Cierre' : 'Próxima acción'} valor={accion} onCambiar={setAccion} filas={2} maximo={2000} porCampo={porCampo} />
+            {sePregunta(resultado) ? (
+              <CuandoLaRevisas
+                id="trn-revision-proxima"
+                hoy={hoy}
+                momento="REVISION"
+                conSinFecha={admiteSinFecha(resultado)}
+                eleccion={cuando}
+                alElegir={setCuando}
+                ciclo={ciclo}
+                error={porCampo['trn-revision-proxima'] ?? null}
+              />
+            ) : null}
             {resultado === 'CHANGE_OBJECTIVE' ? (
               <fieldset
                 className={`grupo${errorDelObjetivo ? ' campo--error' : ''}`}
@@ -443,20 +459,10 @@ function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenam
     intento.registrar(r);
     setAplicando(false);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok) {
-      if (r.tipo === 'API' && r.codigo === 'CONTINUITY_ACTION_NOT_APPLICABLE') return setFallo('No se puede aplicar ahora: revisá si ya hay un borrador del plan o si el seguimiento cambió.');
-      return setFallo(mensajeDeFallo(r));
-    }
+    // Los textos y los conflictos, los mismos que en el cajón «De a una» (TB-15): aplicar desde el cajón es aplicar.
+    if (!r.ok) return setFallo(falloPropioDeAplicar(r) ?? mensajeDeFallo(r));
     const a = r.datos.data.application;
-    const texto =
-      a.processStateAfter === 'CERRADO'
-        ? 'Seguimiento cerrado. La historia se conserva.'
-        : a.createdPlanId
-          ? 'Próxima acción aplicada: se preparó una nueva versión del plan en borrador. La versión activa no cambió.'
-          : a.createdObjectiveVersionId
-            ? 'Próxima acción aplicada: se emitió una nueva versión del objetivo.'
-            : 'Próxima acción aplicada.';
-    onAplicada(texto, Boolean(a.createdPlanId));
+    onAplicada(textoDeLaAplicacion('training', a), Boolean(a.createdPlanId));
   }
 
   return (

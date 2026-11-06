@@ -10749,18 +10749,6 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
-/* La próxima acción y la próxima revisión, una al lado de la otra; la fecha, con su ancho. */
-.revision-nueva__siguiente {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 13rem);
-  gap: 0 1rem;
-  align-items: start;
-}
-
-.revision-nueva__siguiente .campo {
-  margin: 0;
-}
-
 /* El resultado: «Qué hace cada resultado» a la derecha de su título, las seis opciones en dos columnas (bajan por
  * columna, en el orden del dominio) y el efecto del elegido en un recuadro. */
 .resultado-de-revision {
@@ -10848,6 +10836,61 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
+/* WP-TABLERO-ALTA-GAMA TB-15: «¿Cuándo la revisás?», en la revisión y al activar. Las opciones para tocar, cada una con
+ * la fecha que resulta, en las columnas que entren; el campo de la fecha, con su ancho; y el efecto de lo elegido en un
+ * recuadro, como el del resultado. Nada viene elegido. */
+.cuando-la-revisas {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cuando-la-revisas__pregunta {
+  padding: 0;
+  font-weight: 700;
+}
+
+.cuando-la-revisas__opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 0.15rem 1rem;
+}
+
+.cuando-la-revisas__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.cuando-la-revisas__opcion input {
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+}
+
+.cuando-la-revisas__opcion:has(input:checked) span {
+  font-weight: 700;
+}
+
+.cuando-la-revisas .campo {
+  max-width: 14rem;
+  margin: 0;
+}
+
+.cuando-la-revisas__efecto {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--azul);
+  border-radius: 0 8px 8px 0;
+  background: var(--fondo-suave);
+}
+
 /* La barra: la de los formularios largos (`acciones--fijas`), con lo que pasa al registrar a la izquierda. */
 .barra-de-revision {
   justify-content: space-between;
@@ -10903,20 +10946,12 @@ button.comida-del-dia__fila > .icono:last-child {
   }
 }
 
-/* Una tarjeta angosta: el resultado, en una columna; la fecha, debajo. */
+/* Una tarjeta angosta: el resultado, en una columna. */
 @container tarjeta-de-revision (max-width: 26rem) {
   .resultado-de-revision__opciones {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     grid-auto-flow: row;
-  }
-
-  .revision-nueva__siguiente {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .revision-nueva__siguiente .campo + .campo {
-    margin-top: 1rem;
   }
 
   .resultado-de-revision__lista {
@@ -14829,4 +14864,46 @@ p.cifra-del-espacio__desglose {
 
 .cajon__atajos {
   margin: 1rem 0 0;
+}
+
+/* TB-15: aplicar desde el cajón. Lo que registró la revisión (el resultado, el fundamento y la próxima acción) en una
+ * lista de dos columnas, y lo que pasa al aplicar en un recuadro, como el efecto de un resultado en la revisión. Después
+ * de aplicar, lo que se hizo, en el mismo recuadro, sin festejo. */
+.cajon__revision {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cajon__lo-registrado {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.cajon__lo-registrado div {
+  display: contents;
+}
+
+.cajon__lo-registrado dt {
+  color: var(--tenue);
+}
+
+.cajon__lo-registrado dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.cajon__efecto,
+.cajon__hecho {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--azul);
+  border-radius: 0 8px 8px 0;
+  background: var(--fondo-suave);
+}
+
+.cajon__revision .nota {
+  margin: 0;
 }

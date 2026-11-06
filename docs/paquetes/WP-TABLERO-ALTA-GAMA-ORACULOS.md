@@ -16,8 +16,8 @@
 > **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05,
 > TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
 > (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49), TEST-TAG-032 (el arreglo de base del quinto tramo), TEST-TAG-008
-> (TB-11) y TEST-TAG-009 (TB-12). Los demás se
-> escriben con su parte (§10 del paquete).
+> (TB-11), TEST-TAG-009 (TB-12) y, con TB-15, TEST-TAG-013 y TEST-TAG-034 (nuevo: «¿Cuándo la revisás?», que
+> la §6 del paquete suma). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -706,4 +706,121 @@ ENVIRONMENT          CI y local, sin servicios; el recorrido, en capturas-del-ta
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, el cajón abierto de los dos
                      profesionales (la pregunta con el foco, la posición y las salidas), sus peticiones al abrir y el
                      recorrido de «Ocultar nombres» sobre el cajón
+```
+
+---
+
+## TEST-TAG-013 — Aplicar desde el cajón es aplicar
+
+```text
+TEST_ID              TEST-TAG-013
+TITLE                El cajón «De a una» aplica una revisión ya registrada con la misma operación que Revisiones: la
+                     misma clave no aplica dos veces, una versión vieja da el conflicto de siempre y el resultado, el
+                     fundamento y el efecto se escriben antes del botón
+LEVEL                Integración (API-NUT-20 y API-TRN-24 contra PostgreSQL real) y unidad (funciones puras del website
+                     y una lectura de los componentes)
+PRIORITY             P1 — registrar, aplicar y activar son tres actos: aplicar desde el cajón no puede ser otra cosa que
+                     aplicar, ni dispararse solo
+SOURCES              DL-163 D-6 («desde el cajón se aplica una revisión ya registrada, con la misma operación que
+                     Revisiones y el efecto escrito antes del botón») · WP-TABLERO-ALTA-GAMA TB-15 y §6 · UC-I06 ·
+                     09 v0.16.1:208 y 09v10:1438 (la aplicación, una sola vez) · TA-42 y TA-43
+PRECONDITIONS        Integración: un circuito de Nutrición y uno de Entrenamiento con plan activo, una comida o una
+                     sesión registrada y una revisión «Mantener» con la próxima el 2030-01-08, sin aplicar. Unidad:
+                     revisionPorAplicar (cajon.ts); efectoDelResultado, efectoDeLaFecha, textoDeLaAplicacion y
+                     falloPropioDeAplicar (advisees/aplicar-la-revision.ts); el texto de aplicar-en-el-cajon.tsx, de
+                     cajon-de-a-una.tsx y de las dos listas de Revisiones.
+SYNTHETIC_FIXTURE    Las cuentas sintéticas de test/integration (soporte-nutricion y entrenamiento.int-spec.ts); en la
+                     unidad, resúmenes de API-DSH-03 armados en la prueba, con y sin la aplicación.
+STEPS                1. Leer el resumen de la persona (API-DSH-03) y la revisión (API-NUT-19 o API-TRN-23).
+                     2. Aplicar con `expectedVersion` v2.
+                     3. Aplicar con una clave K y repetir con la misma K.
+                     4. Aplicar con otra clave.
+                     5. Volver a leer el resumen.
+                     6. Pedir la revisión por aplicar de cada tipo de pendiente, con la revisión aplicada y sin aplicar.
+                     7. Juntar las operaciones que llama la pieza del cajón y compararlas con las de las listas.
+                     8. Pedir el efecto de cada resultado, el de la fecha y lo que dice cada aplicación.
+EXPECTED             1 → `lastReview.application` en null; la revisión con su resultado, su fundamento y la próxima
+                        acción con su fecha.
+                     2 → 409 VERSION_CONFLICT, y ninguna aplicación.
+                     3 → la misma respuesta 200 dos veces, una sola aplicación y (en Nutrición) un solo evento
+                        ContinuidadOCierreAplicado.
+                     4 → 409 REVIEW_ALREADY_APPLIED, y sigue una sola aplicación.
+                     5 → `lastReview.application` con su fecha: el cajón ya no pregunta si la aplicás.
+                     6 → solo las tres revisiones, en Nutrición o Entrenamiento, con la revisión sin aplicar; nunca un
+                        borrador, Antropometría ni un área que no se lee.
+                     7 → consultarRevision, consultarRevisionDeEntrenamiento, aplicarRevision y
+                        aplicarRevisionDeEntrenamiento, con `intento.actual()` como en las listas; el cajón en sí no
+                        aplica ni arma claves.
+                     8 → los efectos del dominio de cada área; «La próxima revisión queda para el …» o «No se acuerda
+                        una fecha nueva: la revisión que ya estaba acordada no cambia.»; con «Finalizar», sin fecha; lo
+                        que hizo, con las palabras de la lista de Revisiones de cada área.
+NEGATIVE_ASSERTIONS  El foco nunca va al botón de aplicar y Enter no es un atajo; sin la revisión leída no hay botón; el
+                     cierre y lo aplicado no tienen cuentas ni festejos; los textos nuevos no tienen términos de la
+                     cartera, «cumplimiento», «adherencia», «racha» ni «px». Mutaciones verificadas: con una clave
+                     nueva en cada intento, falla el paso 7; preguntando por aplicar con la revisión ya aplicada, falla
+                     el paso 6; con el botón sin la revisión leída, falla la prueba del foco y del botón.
+AUTOMATION           test/integration/aplicar-desde-el-cajon.int-spec.ts (Nutrición) y entrenamiento.int-spec.ts
+                     («TEST-TAG-013 · …», Entrenamiento), en `npm run test:integration`;
+                     apps/web/test/aplicar-y-cuando.test.mjs («TEST-TAG-013 · …», seis casos), en
+                     `npm run test -w @be/web`; T13 suma aplicar-la-revision.ts a la revisión de las dos áreas
+ENVIRONMENT          CI (integración, con PostgreSQL 16 de Testcontainers) y local, sin servicios (la unidad)
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. En capturas-del-tablero, el cuadro de aplicar aparece solo si
+                     la cohorte tiene una revisión registrada y sin aplicar con su fecha relativa a hoy (§10)
+```
+
+---
+
+## TEST-TAG-034 — «¿Cuándo la revisás?» no viene elegida y dice lo que deja
+
+```text
+TEST_ID              TEST-TAG-034
+TITLE                «¿Cuándo la revisás?», en la revisión y al activar, empieza sin nada elegido, dice la fecha que
+                     resulta y su efecto, no ofrece «Sin fecha por ahora» con «Reprogramar revisión» y sale solo de
+                     fechas del profesional
+LEVEL                Unidad (funciones puras del website) y una lectura de las pantallas que la usan
+PRIORITY             P1 — la fecha de la próxima revisión es una decisión del profesional (REG-06-145): BE no la elige
+                     por él, y un plan sin revisión acordada sale de la cola (D-6)
+SOURCES              DL-163 D-6 («“¿Cuándo la revisás?” se pregunta en “Lo que decidís”, antes de registrar, y al
+                     activar, con nada elegido; después de aplicar no se pregunta») · WP-TABLERO-ALTA-GAMA TB-15 ·
+                     REG-06-145 · TA-40, TA-41, TA-44 y TA-45
+PRECONDITIONS        Ninguna: fechaQueResulta, loQueFalta, opcionesDeLaPregunta, admiteSinFecha, sePregunta,
+                     eleccionAlCambiarElResultado, eleccionAlActivar, cicloAcordadoAntes y COPY_CUANDO, en
+                     apps/web/src/lib/cuando-la-revisas.ts; el texto de las dos revisiones y los dos editores.
+SYNTHETIC_FIXTURE    Fechas civiles armadas en la prueba, una de ellas a fin de año (2026-12-28), y revisiones con y
+                     sin fecha acordada.
+STEPS                1. Pedir la fecha y lo que falta sin nada elegido, con «Elegir una fecha» vacía o imposible y con
+                        «Sin fecha por ahora»; abrir la activación con y sin una fecha en la versión.
+                     2. Armar las opciones desde el 2026-12-28.
+                     3. Cambiar el resultado a «Reprogramar revisión» con «Sin fecha por ahora» elegida, y pedir las
+                        opciones sin ella; preguntar con «Finalizar».
+                     4. Pedir el efecto de una fecha y el de «Sin fecha por ahora» en la revisión y al activar, con y
+                        sin plan anterior.
+                     5. Contar lo acordado la última vez con 28, 7 y 10 días, y con revisiones en desorden.
+                     6. Leer las pantallas y los textos.
+EXPECTED             1 → sin fecha y «Elegí cuándo la revisás, o “Sin fecha por ahora”.»; «Escribí la fecha…» con la
+                        fecha vacía o imposible; con «Sin fecha por ahora», nada falta; al activar, nada elegido sin
+                        fecha, y la de la versión elegida y dicha («Es la fecha que ya tenía esta versión.»).
+                     2 → el 4, el 11 y el 25 de enero de 2027, cada una en su opción, y después «Elegir una fecha» y
+                        «Sin fecha por ahora».
+                     3 → la elección vuelve a nada, y «Sin fecha por ahora» no está; con «Finalizar» no se pregunta.
+                     4 → «Al aplicar esta revisión, la próxima queda para el …» y «Al activar, la próxima revisión
+                        queda para el …»; sin fecha, con el primer plan, «esta área no aparece en las revisiones de “Te
+                        toca a vos”»; si no, «no se acuerda una fecha nueva: la revisión que ya estaba acordada no
+                        cambia».
+                     5 → «a las 4 semanas», «a la semana» y «a los 10 días», de la última revisión con fecha.
+                     6 → las dos revisiones empiezan en NADA_ELEGIDO y validan lo que falta; ya no dicen «Próxima
+                        revisión (opcional)»; los dos cuadros de activar esperan a que se elija.
+NEGATIVE_ASSERTIONS  Nada viene elegido por BE; en la revisión, «Sin fecha por ahora» nunca promete que el área sale de
+                     la cola (la expectativa que ya estaba sigue, TA-41); el modelo no lee nada de lo que registra la
+                     persona y solo importa @be/domain; los textos no tienen términos de Nutrición, de Entrenamiento ni
+                     de la cartera, «cumplimiento», «adherencia», «racha» ni «px». Mutaciones verificadas: con una
+                     semana elegida de entrada, fallan dos casos; con «Sin fecha por ahora» al reprogramar, falla el
+                     paso 3; con la revisión prometiendo que el área sale de la cola, falla el paso 4; con las semanas
+                     mal contadas, falla el paso 2.
+AUTOMATION           apps/web/test/aplicar-y-cuando.test.mjs («TEST-TAG-034 · …», seis casos), en
+                     `npm run test -w @be/web`; T13 suma cuando-la-revisas.ts y cuando-la-revisas.tsx a la revisión de
+                     las dos áreas
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. La pregunta vive en la revisión nueva y en el cuadro de
+                     activar: capturas-del-tablero todavía no los recorre (§10)
 ```
